@@ -104,7 +104,9 @@ known job ID and reuse saved results. If a submitted request has an unknown outc
 When creation is done, press **Start dressing up** to dress Standing or open **Moves → Add a move** and pick
 **Idle**, **Walk**, or another move. Each move shows its own estimate before you queue it.
 **Standing** is the character's protected State: one still frame per facing and the default source for new Moves.
-It appears in **States**, in the footer picker and in Share. Runtime exports identify it as `standing`.
+It appears in **States**, in the footer picker and in Share. Share starts on **Standing** when available. Its
+picker also lets you share an individual State or Move, **All states**, **All moves**, or **All states and moves**.
+Runtime exports identify Standing as `standing`.
 
 ## Use items from your other characters
 

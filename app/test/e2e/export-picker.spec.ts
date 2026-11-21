@@ -2,11 +2,17 @@ import {
 	enterStudio,
 	noDisabledHover,
 	openStudio,
-	playbackPicker,
 	selectPlaybackClip
 } from './immersive-helpers.ts';
 import { createHash } from 'node:crypto';
-import { chromium, expect, test, type BrowserContext, type Page } from '@playwright/test';
+import {
+	chromium,
+	expect,
+	test,
+	type BrowserContext,
+	type Locator,
+	type Page
+} from '@playwright/test';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -19,6 +25,16 @@ import type { StoredProject } from '../../src/lib/store/project.ts';
 import { PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
 import { runtimeTypes } from '../../src/lib/runtime/sources.ts';
 import { travelSpeed } from '../../src/studio/experience/movement.ts';
+
+const shareClipPicker = (popover: Locator) =>
+	popover.getByRole('button', { name: /^States and moves:/ });
+
+async function selectShareClip(popover: Locator, name: string) {
+	await shareClipPicker(popover).click();
+	const menu = popover.getByRole('menu', { name: 'States and moves', exact: true });
+	await menu.getByRole('menuitemradio', { name, exact: true }).click();
+	await expect(menu).toBeHidden();
+}
 
 async function captureWorkspaceStore(page: Page, projectKeys: string[], artworkKeys: string[]) {
 	return page.evaluate(
@@ -2586,6 +2602,7 @@ for (const auto of [false, true])
 		});
 		await page.getByRole('button', { name: 'Share character' }).click();
 		const popover = page.getByRole('dialog', { name: 'Share character preview' });
+		await selectShareClip(popover, 'Walk');
 		const hasMarker = () =>
 			popover.locator('.share-preview canvas').evaluate((element) => {
 				const canvas = element as HTMLCanvasElement,
@@ -2875,10 +2892,11 @@ test('Share preview and downloaded GIF loop continuously for a one-shot move', a
 		];
 		studio.doc.rev++;
 	});
-	await page.clock.install({ time: new Date('2026-10-27T12:00:00Z') });
-	await page.clock.pauseAt(new Date('2026-10-27T12:00:01Z'));
 	await page.getByRole('button', { name: 'Share character' }).click();
 	const popover = page.getByRole('dialog', { name: 'Share character preview' });
+	await page.clock.install({ time: new Date('2026-10-27T12:00:00Z') });
+	await selectShareClip(popover, 'Walk');
+	await page.clock.pauseAt(new Date('2026-10-27T12:00:01Z'));
 	const frameData = () =>
 		popover.locator('.share-preview canvas').evaluate((element) => {
 			const canvas = element as HTMLCanvasElement;
@@ -2923,6 +2941,7 @@ test('Copy PNG writes a readable image through the real browser clipboard in ani
 	await openStudio(page, testInfo.project.use.baseURL! + '/#/', { waitUntil: 'networkidle' });
 	await page.getByRole('button', { name: 'Share character' }).click();
 	const popover = page.getByRole('dialog', { name: 'Share character preview' });
+	await selectShareClip(popover, 'Walk');
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('2');
 	await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled();
 	const [download] = await Promise.all([
@@ -3011,7 +3030,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	const popover = page.getByRole('dialog', { name: 'Share character preview' });
 	await expect(popover).toBeVisible();
 	await expect(popover).toHaveAttribute('data-positioned', '');
-	await expect(popover.locator('.bu-popover-arrow')).toBeVisible();
+	await expect(popover.locator(':scope > .bu-popover-arrow')).toBeVisible();
 	expect(
 		await popover.evaluate((element) => {
 			const arrow = element.querySelector('.bu-popover-arrow')!.getBoundingClientRect();
@@ -3021,8 +3040,27 @@ test('Share popover follows the selected move, direction and Animate switch on d
 			return Math.abs(arrow.x + arrow.width / 2 - trigger.x - trigger.width / 2);
 		})
 	).toBeLessThanOrEqual(12);
-	await expect(popover.getByRole('combobox', { name: 'Move' })).toBeFocused();
-	await expect(popover.getByRole('combobox', { name: 'Move' })).toHaveValue('walk');
+	await expect(shareClipPicker(popover)).toBeFocused();
+	await expect(shareClipPicker(popover)).toHaveAttribute('value', 'walk');
+	await shareClipPicker(popover).press('ArrowDown');
+	const clipMenu = popover.getByRole('menu', { name: 'States and moves', exact: true });
+	await expect(
+		clipMenu.getByRole('group', { name: 'States', exact: true }).getByRole('menuitemradio')
+	).toHaveText(['All states']);
+	await expect(
+		clipMenu.getByRole('menuitemradio', { name: 'All states', exact: true })
+	).toBeDisabled();
+	await expect(
+		clipMenu.getByRole('group', { name: 'Moves', exact: true }).getByRole('menuitemradio')
+	).toHaveText(['All moves', 'Walk', 'Cross punch']);
+	await expect(clipMenu.getByRole('menuitemradio', { name: 'Walk', exact: true })).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(clipMenu).toBeHidden();
+	await expect(shareClipPicker(popover)).toBeFocused();
+	await selectShareClip(popover, 'All moves');
+	await expect(shareClipPicker(popover)).toHaveAttribute('value', '__all_moves__');
+	await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled();
+	await selectShareClip(popover, 'Walk');
 	await expect(popover.getByRole('combobox', { name: 'Direction' })).toHaveValue('south');
 	await expect(popover.getByRole('combobox', { name: 'Size' }).locator('option')).toHaveText([
 		'1x size',
@@ -3049,7 +3087,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 			return {
 				popover: rect('#share-popover'),
 				preview: rect('.share-preview'),
-				move: rect('select[aria-label="Move"]'),
+				move: rect('.clip-trigger'),
 				direction: rect('select[aria-label="Direction"]'),
 				size: rect('select[aria-label="Size"]'),
 				animate: rect('.share-animate'),
@@ -3098,7 +3136,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		}
 	};
 	const desktopLayout = await geometry();
-	const desktopMove = (await popover.getByRole('combobox', { name: 'Move' }).boundingBox())!;
+	const desktopMove = (await shareClipPicker(popover).boundingBox())!;
 	const desktopSwitch = (await popover.locator('.share-animate').boundingBox())!;
 	expect(desktopSwitch.y).toBeGreaterThanOrEqual(desktopMove.y + desktopMove.height);
 	await page.screenshot({ path: testInfo.outputPath('share-desktop.png') });
@@ -3145,9 +3183,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		)
 		.toBe('image/gif');
 
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('cross-punch');
+	await selectShareClip(popover, 'Cross punch');
 	await fixedLayout(desktopLayout);
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk');
+	await selectShareClip(popover, 'Walk');
 	await expect(popover.getByRole('switch')).toBeEnabled();
 	await expect(popover.getByRole('switch')).toBeChecked();
 
@@ -3185,7 +3223,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 			.locator('.share-preview canvas')
 			.evaluate((element) => (element as HTMLCanvasElement).width)
 	).toBeGreaterThan(64);
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('__all_moves__');
+	await selectShareClip(popover, 'All states and moves');
 	await fixedLayout(desktopLayout);
 	await expect(popover.getByRole('switch')).toBeEnabled();
 	await expect(popover.getByRole('switch')).not.toBeChecked();
@@ -3212,7 +3250,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	expect((await readFile((await allGif.path())!)).subarray(0, 6).toString()).toBe('GIF89a');
 	await popover.getByRole('switch').uncheck();
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('east');
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('cross-punch');
+	await selectShareClip(popover, 'Cross punch');
 	await expect(popover.locator('.share-preview canvas')).toBeVisible();
 	await expect(popover.getByRole('status')).toContainText('cross punch East');
 	const [fallbackPng] = await Promise.all([
@@ -3237,7 +3275,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await selectPlaybackClip(page, 'walk');
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await trigger.click();
-	await expect(popover.getByRole('combobox', { name: 'Move' })).toHaveValue('cross-punch');
+	await expect(shareClipPicker(popover)).toHaveAttribute('value', 'cross-punch');
 	await expect(popover.getByRole('combobox', { name: 'Direction' })).toHaveValue(
 		'__all_directions__'
 	);
@@ -3254,22 +3292,22 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		.getByRole('button', { name: 'Share...', exact: true })
 		.click();
 	await expect(popover).toBeVisible();
-	await expect(popover.getByRole('combobox', { name: 'Move' })).toHaveValue('cross-punch');
+	await expect(shareClipPicker(popover)).toHaveAttribute('value', 'cross-punch');
 	const box = (await popover.boundingBox())!;
 	expect(box.x).toBeGreaterThanOrEqual(0);
 	expect(box.x + box.width).toBeLessThanOrEqual(390);
-	const moveBox = (await popover.getByRole('combobox', { name: 'Move' }).boundingBox())!;
+	const moveBox = (await shareClipPicker(popover).boundingBox())!;
 	const directionBox = (await popover.getByRole('combobox', { name: 'Direction' }).boundingBox())!;
 	const animateBox = (await popover.locator('.share-animate').boundingBox())!;
 	expect(moveBox.width).toBeCloseTo(directionBox.width, 0);
 	expect(animateBox.width).toBeCloseTo(moveBox.width, 0);
 	const phoneLayout = await geometry();
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk');
+	await selectShareClip(popover, 'Walk');
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await fixedLayout(phoneLayout);
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('__all_directions__');
 	await fixedLayout(phoneLayout);
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('__all_moves__');
+	await selectShareClip(popover, 'All states and moves');
 	await fixedLayout(phoneLayout);
 	await popover.getByRole('switch').check();
 	await fixedLayout(phoneLayout);
@@ -3283,18 +3321,18 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		(await popover.boundingBox())!.y + (await popover.boundingBox())!.height
 	).toBeLessThanOrEqual(700);
 	const smallLayout = await geometry();
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk');
+	await selectShareClip(popover, 'Walk');
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await fixedLayout(smallLayout);
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('__all_directions__');
 	await fixedLayout(smallLayout);
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('__all_moves__');
+	await selectShareClip(popover, 'All states and moves');
 	await fixedLayout(smallLayout);
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
 	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	await headerFits();
 	await page.screenshot({ path: testInfo.outputPath('share-grid-320.png') });
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk');
+	await selectShareClip(popover, 'Walk');
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await page.setViewportSize({ width: 844, height: 390 });
 	await expect
@@ -3308,14 +3346,14 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await fixedLayout(landscapeLayout);
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('__all_directions__');
 	await fixedLayout(landscapeLayout);
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('__all_moves__');
+	await selectShareClip(popover, 'All states and moves');
 	await fixedLayout(landscapeLayout);
 	await popover.getByRole('switch').check();
 	await fixedLayout(landscapeLayout);
 	await popover.getByRole('switch').uncheck();
 	await fixedLayout(landscapeLayout);
 	await page.screenshot({ path: testInfo.outputPath('share-grid-landscape.png') });
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk');
+	await selectShareClip(popover, 'Walk');
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await page.setViewportSize({ width: 320, height: 390 });
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
@@ -3328,9 +3366,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await fixedLayout(shortLayout);
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('__all_directions__');
 	await fixedLayout(shortLayout);
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('__all_moves__');
+	await selectShareClip(popover, 'All states and moves');
 	await fixedLayout(shortLayout);
-	await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk');
+	await selectShareClip(popover, 'Walk');
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('10');
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('2');
@@ -3387,10 +3425,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	expect(apiRequests).toEqual([]);
 });
 
-test('Share choices reset to the current stage when switching characters', async ({
-	page,
-	context
-}, testInfo) => {
+test('Share resets to Standing when switching characters', async ({ page, context }, testInfo) => {
 	await context.route('https://api.pixellab.ai/**', (route) => route.abort());
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
@@ -3399,9 +3434,8 @@ test('Share choices reset to the current stage when switching characters', async
 	await openStudio(page, testInfo.project.use.baseURL! + '/#/', { waitUntil: 'networkidle' });
 	const trigger = page.getByRole('button', { name: 'Share character' });
 	const popover = page.getByRole('dialog', { name: 'Share character preview' });
-	const move = popover.getByRole('combobox', { name: 'Move' });
+	const move = shareClipPicker(popover);
 	const direction = popover.getByRole('combobox', { name: 'Direction' });
-	const stageMove = playbackPicker(page);
 	const stageDirection = () =>
 		page
 			.getByRole('group', { name: 'Direction' })
@@ -3409,11 +3443,14 @@ test('Share choices reset to the current stage when switching characters', async
 			.getAttribute('aria-label')
 			.then((label) => label!.replace('Face ', ''));
 	await trigger.click();
-	await move.selectOption('__all_moves__');
+	await selectShareClip(popover, 'All states and moves');
 	await direction.selectOption('__all_directions__');
 	await popover.getByRole('switch').uncheck();
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('4');
 	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const download = page.waitForEvent('download');
 	await page.getByRole('button', { name: /Download ZIP/ }).click();
@@ -3434,18 +3471,18 @@ test('Share choices reset to the current stage when switching characters', async
 		timeout: 30_000
 	});
 	await trigger.click();
-	await expect(move).toHaveValue((await stageMove.getAttribute('value'))!);
+	await expect(move).toHaveAttribute('value', 'default');
 	await expect(direction).toHaveValue(await stageDirection());
-	await expect(popover.getByRole('switch')).toBeChecked();
+	await expect(popover.getByRole('switch')).toBeDisabled();
 	await expect(popover.getByRole('combobox', { name: 'Size' })).toHaveValue('1');
-	await move.selectOption('__all_moves__');
+	await selectShareClip(popover, 'All states and moves');
 	await direction.selectOption('__all_directions__');
 	await page.keyboard.press('Escape');
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer', { timeout: 30_000 });
 	await trigger.click();
-	await expect(move).toHaveValue((await stageMove.getAttribute('value'))!);
+	await expect(move).toHaveAttribute('value', 'walk');
 	await expect(direction).toHaveValue(await stageDirection());
 	await expect(popover.getByRole('switch')).toBeChecked();
 	await page.keyboard.press('Escape');
@@ -3455,9 +3492,9 @@ test('Share choices reset to the current stage when switching characters', async
 		timeout: 30_000
 	});
 	await trigger.click();
-	await expect(move).toHaveValue((await stageMove.getAttribute('value'))!);
+	await expect(move).toHaveAttribute('value', 'default');
 	await expect(direction).toHaveValue(await stageDirection());
-	await expect(popover.getByRole('switch')).toBeChecked();
+	await expect(popover.getByRole('switch')).toBeDisabled();
 });
 
 test('export picker has accessible categories, local icons and a native GDevelop download on every layout', async ({

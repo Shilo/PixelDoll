@@ -11,7 +11,6 @@ import type {
 } from '../../src/lib/store/manifest.ts';
 import {
 	ALL_DIRECTIONS,
-	ALL_MOVES,
 	SHARE_SCALES,
 	buildShareMedia,
 	buildSharePresentation as buildPresentation,
@@ -22,6 +21,7 @@ import {
 	sharePreviewFrames
 } from '../../src/studio/shareMedia.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { ALL_CLIPS, ALL_MOVES, ALL_STATES } from '../../src/studio/shareClips.ts';
 
 const hash = (name: string) => `sha256:${name}` as Sha256;
 function fixture(directions: DirectionName[] = ['south', 'east']): Project {
@@ -121,7 +121,7 @@ describe('share media', () => {
 	test('every size preserves exact RGBA blocks and clipboard uses the first animated frame, not the contact sheet', async () => {
 		const project = fixture(),
 			a = buildPresentation(project);
-		const media = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, true);
+		const media = buildShareMedia(a, {}, ALL_CLIPS, ALL_DIRECTIONS, true);
 		expect(media.still.h).toBeGreaterThan(media.frames[0].image.h);
 		const source = media.frames[0].image;
 		for (const scale of SHARE_SCALES) {
@@ -140,7 +140,7 @@ describe('share media', () => {
 					}
 			expect(mismatch).toBe(-1);
 		}
-		const still = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, false);
+		const still = buildShareMedia(a, {}, ALL_CLIPS, ALL_DIRECTIONS, false);
 		expect(await encodeSharePng(still, 2)).toEqual(await encodeShareMedia(still, 2));
 	});
 
@@ -186,12 +186,12 @@ describe('share media', () => {
 		expect([...standing.still.data]).toEqual([60, 0, 0, 255, 90, 0, 0, 255]);
 		const decoded = await decodePngBytes(await encodeShareMedia(standing));
 		expect([...decoded.data]).toEqual([...standing.still.data]);
-		const all = buildShareMedia(a, { head: 'hat' }, ALL_MOVES, ALL_DIRECTIONS, false);
+		const all = buildShareMedia(a, { head: 'hat' }, ALL_CLIPS, ALL_DIRECTIONS, false);
 		expect([all.still.w, all.still.h, all.extension]).toEqual([8, 6, 'png']);
 		expect([...all.still.data.slice(0, 8)]).toEqual([...standing.still.data]);
 		// All moves lists Default once: one standing moment, then the two walk frames
 		expect(
-			buildShareMedia(a, { head: 'hat' }, ALL_MOVES, 'south', true).frames.map((frame) => frame.ms)
+			buildShareMedia(a, { head: 'hat' }, ALL_CLIPS, 'south', true).frames.map((frame) => frame.ms)
 		).toEqual([100, 70, 120]);
 	});
 
@@ -214,6 +214,34 @@ describe('share media', () => {
 		expect(delays).toEqual([7, 12]);
 	});
 
+	test('single clips and bulk scopes share only their own saved frames', () => {
+		const project = fixture();
+		project.manifest.rig.animations.push({
+			id: 'sit',
+			kind: 'state',
+			cells: 1,
+			loop: false,
+			frames: [{ cell: 0, ms: 200 }]
+		});
+		project.manifest.items[0].layers[0].cells!.sit = { south: [hash('body1')] };
+		const availability = buildPresentation(project);
+		for (const [selection, colors] of [
+			['default', [60]],
+			['sit', [50]],
+			['walk', [40, 50]],
+			[ALL_STATES, [60, 50]],
+			[ALL_MOVES, [40, 50]],
+			[ALL_CLIPS, [60, 40, 50, 50]]
+		] as const) {
+			const media = buildShareMedia(availability, {}, selection, 'south', true);
+			expect(
+				media.frames.map(({ image }) => image.data[0]),
+				selection
+			).toEqual(colors);
+			expect(canAnimateShare(availability, selection, 'south'), selection).toBe(colors.length > 1);
+		}
+	});
+
 	test('aggregate choices omit unavailable pairs and an empty selection shares a still', () => {
 		const project = fixture();
 		delete project.manifest.items[0].layers[0].cells!.walk.east;
@@ -229,12 +257,12 @@ describe('share media', () => {
 			[2, 1],
 			[2, 1]
 		]);
-		const oneFacing = buildShareMedia(a, {}, ALL_MOVES, 'east', true);
+		const oneFacing = buildShareMedia(a, {}, ALL_CLIPS, 'east', true);
 		expect(oneFacing.omitted.map((pair) => [pair.move, pair.direction])).toEqual([
 			['walk', 'east']
 		]);
 		expect(oneFacing.extension).toBe('png');
-		const all = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, true);
+		const all = buildShareMedia(a, {}, ALL_CLIPS, ALL_DIRECTIONS, true);
 		expect(all.omitted.map((pair) => [pair.move, pair.direction])).toEqual([['walk', 'east']]);
 		expect(all.frames.map((frame) => [frame.image.w, frame.image.h])).toEqual([
 			[8, 1],
@@ -283,7 +311,7 @@ describe('share media', () => {
 		project.manifest.rig.animations[1].frames = [];
 		const a = buildPresentation(project);
 		expect(buildShareMedia(a, {}, 'missing', 'south', true).still.data[0]).toBe(60);
-		expect(buildShareMedia(a, {}, ALL_MOVES, 'south', true).still.data[0]).toBe(60);
+		expect(buildShareMedia(a, {}, ALL_CLIPS, 'south', true).still.data[0]).toBe(60);
 		project.images.clear();
 		const empty = buildShareMedia(buildPresentation(project), {}, 'walk', 'south', true);
 		expect(empty.empty).toBe(true);

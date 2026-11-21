@@ -1475,14 +1475,29 @@ function offlineCreation(config: CreationCase) {
 		});
 		await page.getByRole('button', { name: 'Share character' }).click();
 		const share = page.getByRole('dialog', { name: 'Share character preview' }),
-			shareMove = share.getByRole('combobox', { name: 'Move' });
-		await expect(shareMove.locator('option')).toHaveText(['Standing', 'Idle', 'Walk', 'All moves']);
-		await shareMove.selectOption('default');
+			shareMove = share.getByRole('button', { name: /^States and moves:/ });
+		await expect(shareMove).toHaveAttribute('value', 'default');
+		await shareMove.click();
+		const shareMenu = share.getByRole('menu', { name: 'States and moves', exact: true });
+		await expect(shareMenu.getByRole('menuitemradio')).toHaveText([
+			'All states',
+			'Standing',
+			'All moves',
+			'Idle',
+			'Walk',
+			'All states and moves'
+		]);
+		await shareMenu.getByRole('menuitemradio', { name: 'Standing', exact: true }).click();
 		await expect(share.getByRole('switch')).toBeDisabled();
 		await expect(share.getByRole('switch')).not.toBeChecked();
 		await noDisabledHover(page, share.locator('.share-animate'));
 		await expect(share.getByRole('button', { name: 'Download PNG' })).toBeEnabled();
-		await shareMove.selectOption('walk');
+		await shareMove.click();
+		await shareMenu.getByRole('menuitemradio', { name: 'All states', exact: true }).click();
+		await expect(shareMove).toHaveAttribute('value', '__all_states__');
+		await expect(share.getByRole('button', { name: 'Download PNG' })).toBeEnabled();
+		await shareMove.click();
+		await shareMenu.getByRole('menuitemradio', { name: 'Walk', exact: true }).click();
 		await expect(share.getByRole('switch')).toBeEnabled();
 		await expect(share.getByRole('switch')).toBeChecked();
 		await page.keyboard.press('Escape');

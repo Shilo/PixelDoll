@@ -11,8 +11,9 @@ import {
 	type PresentationAvailability
 } from './experience/presentation.ts';
 import { LocalizedError } from '../lib/message.ts';
+import { clipKind } from '../lib/runtime/timeline.js';
+import { includesShareClip } from './shareClips.ts';
 
-export const ALL_MOVES = '__all_moves__';
 export const ALL_DIRECTIONS = '__all_directions__';
 export const SHARE_SCALES = [1, 2, 3, 4, 6, 8, 10] as const;
 
@@ -102,8 +103,8 @@ export const buildSharePresentation = (
 ) => buildPresentation(project, { ...options, allowPartialAnimations: true });
 
 const selectedMoves = (a: PresentationAvailability, move: string) =>
-	a.project.manifest.rig.animations.filter(
-		(animation) => move === ALL_MOVES || animation.id === move
+	a.project.manifest.rig.animations.filter((animation) =>
+		includesShareClip(move, animation.id, clipKind(animation))
 	);
 const selectedDirections = (a: PresentationAvailability, direction: string) =>
 	direction === ALL_DIRECTIONS ? a.directions : a.directions.filter((id) => id === direction);
