@@ -11,6 +11,7 @@ import {
 	freeOf,
 	makeRoom,
 	reframeCharacter,
+	canvasLift,
 	roomFrame,
 	roomShort,
 	standingRoom,
@@ -366,6 +367,17 @@ test('the room rule grows a 92 px PixelLab canvas with its feet on row 90 to 112
 	expect(roomFrame(93, room)).toBe(105);
 	expect(roomFrame(250, room)).toBe(256);
 	expect(roomFrame(92, room, 104)).toBe(104);
+});
+
+test('a new character canvas sits high enough for a body filling it to walk, never past the frame top', () => {
+	// Sizes only: characters of one body and frame size share a placement. 4 + lift rows end below the canvas.
+	expect(canvasLift(64, 80)).toBe(3);
+	expect(canvasLift(96, 128)).toBe(5);
+	expect(canvasLift(128, 160)).toBe(7);
+	// A tight frame keeps its 6 px headroom above the canvas: only the rows beyond it are used.
+	expect(canvasLift(64, 76)).toBe(2);
+	expect(canvasLift(96, 105)).toBe(0);
+	expect(canvasLift(256, 256)).toBe(0);
 });
 
 test('standing room is the union of the standing views', () => {

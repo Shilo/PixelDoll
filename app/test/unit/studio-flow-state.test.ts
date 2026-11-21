@@ -359,6 +359,24 @@ test('discarding a failed creation cannot race a retry for the same draft', asyn
 	expect(s.createPresentation.id).toBe('');
 });
 
+test('a new creation fixes its walk-room lift, and a resumed one keeps the lift its registration was sent with', async () => {
+	mocks.create.mockResolvedValue('rig-done');
+	const s = await import('../../src/studio/state.svelte.ts');
+	const spec = {
+		description: 'body',
+		name: 'Fixture',
+		seed: 1,
+		size: 96,
+		frame: 128,
+		directions: [{ id: 'south' as const }]
+	};
+	await s.startCreate(spec);
+	expect(mocks.create.mock.calls[0][0]).toMatchObject({ lift: 5 });
+	// A draft started before placement was lifted resumes with its stored spec: changing its pixels would re-buy registration.
+	await s.startCreate({ ...spec, projectId: 'rig-old' }, false, 'old-draft');
+	expect(mocks.create.mock.calls[1][0].lift).toBeUndefined();
+});
+
 test('a paid step failure keeps its review across a reload', async () => {
 	// A misaligned repair batch is re-rolled alone; after a reload only the full retry would remain, re-buying good batches.
 	const { PaidStepError } = await import('../../src/lib/pixellab/paid-results.ts');

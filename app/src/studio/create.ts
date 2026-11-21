@@ -194,6 +194,9 @@ export interface CreateSpec {
 	registrationSeed?: number;
 	/** Preflight warnings (PreflightWarning ids) the user chose to generate past. */
 	acceptedWarnings?: string[];
+	/** Rows the drawn views sit above the fixed floor (canvasLift), chosen from the sizes when the creation starts: characters
+	 *  of one body and frame size share a placement, and a resumed draft keeps the registration request it may have paid for. */
+	lift?: number;
 }
 const CELL = 64,
 	EST = 0.1;
@@ -1082,9 +1085,14 @@ async function completedCreation(
 
 /** A drawn view placed on the creation frame: a V3 reference keeps its own height as the character canvas. */
 const drawnView = (spec: CreateSpec, img: Img, cell: number) =>
-	spec.reference && !spec.model
-		? normalize(img, cell, cell, 128, Math.min(img.h, cell))
-		: normalize(img, cell, cell);
+	normalize(
+		img,
+		cell,
+		cell,
+		128,
+		Math.min(spec.reference && !spec.model ? img.h : img.w, cell),
+		spec.lift ?? 0
+	);
 
 export interface CreatePaidOption extends PaidOption {
 	spec: CreateSpec;

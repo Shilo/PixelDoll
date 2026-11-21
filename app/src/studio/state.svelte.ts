@@ -135,6 +135,7 @@ import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
 import { DEFAULT_MOVE, type Sha256 } from '../lib/rig/rig.ts';
 import {
+	canvasLift,
 	frameChangeText,
 	frameFacts,
 	makeRoom,
@@ -3468,8 +3469,15 @@ export function reviewFailedCreate(id: string) {
 const canDriveCreate = () => !hmrReloading && queue.role !== 'follower';
 export async function startCreate(input: CreateSpec, present = false, attemptId?: string) {
 	if (!canDriveCreate()) return;
+	// A new creation fixes its placement now (absent when 0, like other defaults); a resumed one keeps the lift its
+	// registration was sent with.
+	const lift = input.projectId || !input.frame ? input.lift : canvasLift(input.size, input.frame);
 	const spec = withActivityScope(
-		{ ...input, projectId: input.projectId ?? `rig-${crypto.randomUUID()}` },
+		{
+			...input,
+			lift: lift || undefined,
+			projectId: input.projectId ?? `rig-${crypto.randomUUID()}`
+		},
 		'create'
 	);
 	const id = attemptId ?? spec.projectId;
