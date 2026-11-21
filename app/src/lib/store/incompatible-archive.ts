@@ -15,7 +15,7 @@ import {
 import { MAX_ZIP_BYTES, MAX_ZIP_ENTRIES, unzip, zip } from './zip.ts';
 
 const format = 'pixeldoll-incompatible/1';
-const indexPath = 'incompatible.json';
+export const incompatibleIndexPath = 'incompatible.json';
 const blobPath = /^blobs\/([0-9a-f]{64})$/;
 const blobKey = /^[0-9a-f]{64}$/;
 const maxBuild = 100;
@@ -33,6 +33,7 @@ interface Index {
 }
 
 export interface IncompatibleData {
+	build: string;
 	records: Map<string, unknown>;
 	blobs: Map<string, Blob>;
 	missing: string[];
@@ -102,21 +103,19 @@ function checkLossless(value: unknown, path: string, open = new Set<object>()): 
 }
 
 /** Throws when the text holds the connected or remembered PixelLab key (as the workspace export does). */
+const containsKey = () =>
+	new LocalizedError(
+		'A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.',
+		'workspace.error.containsKey'
+	);
+
 function refuseKeys(json: string, keys: readonly string[]) {
 	if (
 		keys.some(
 			(key) => key && (json.includes(key) || json.includes(JSON.stringify(key).slice(1, -1)))
 		)
 	)
-		throw new LocalizedError(
-			'A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.',
-			'workspace.error.containsKey'
-		);
-}
-
-/** How many incompatible records are stored, by kind, for the user to see. */
-export async function storedIncompatibleCounts(): Promise<IncompatibleCounts> {
-	return incompatibleCounts(await db.all('projects'));
+		throw containsKey();
 }
 
 /**
@@ -162,7 +161,7 @@ export async function packIncompatible(
 	refuseKeys(json, keys);
 	const data = new TextEncoder().encode(json);
 	if (data.length + bytes > MAX_ZIP_BYTES) throw tooLarge();
-	const packed = await zip([{ name: indexPath, data }, ...files]);
+	const packed = await zip([{ name: incompatibleIndexPath, data }, ...files]);
 	if (packed.length > MAX_ZIP_BYTES) throw tooLarge();
 	return {
 		bytes: packed,
@@ -183,26 +182,40 @@ export async function unpackIncompatible(
 ): Promise<IncompatibleData> {
 	if (options?.userOptIn !== true)
 		throw new Error('Saved data from earlier versions is restored only when the user chooses it.');
-	return inspectIncompatible(bytes, keys);
+	return inspectIncompatibleFiles(await unzip(bytes), keys, true);
 }
 
 export async function inspectIncompatible(
 	bytes: Uint8Array,
 	keys: readonly string[]
 ): Promise<IncompatibleData> {
-	const files = await unzip(bytes);
-	const json = files.get(indexPath);
+	return inspectIncompatibleFiles(await unzip(bytes), keys);
+}
+
+export function inspectIncompatibleFiles(
+	files: ReadonlyMap<string, Uint8Array>,
+	keys: readonly string[],
+	readArtwork = false
+): IncompatibleData {
+	const json = files.get(incompatibleIndexPath);
 	if (!json) throw invalid();
 	let text: string, index: Index;
+	let foundKey = false;
+	const knownKeys = keys.filter(Boolean);
 	try {
 		text = new TextDecoder('utf-8', { fatal: true }).decode(json);
 		index = JSON.parse(text, (key, value: unknown) => {
 			if (key === '__proto__') throw new Error('Unsafe property');
+			if (!foundKey)
+				foundKey = knownKeys.some(
+					(known) => key.includes(known) || (typeof value === 'string' && value.includes(known))
+				);
 			return value;
 		});
 	} catch (cause) {
 		throw invalid(cause);
 	}
+	if (foundKey) throw containsKey();
 	if (
 		index?.format !== format ||
 		typeof index.build !== 'string' ||
@@ -230,6 +243,7 @@ export async function inspectIncompatible(
 	}
 	const references = blobReferences(records.values());
 	const listed = new Set<string>();
+	const artwork = new Set<string>();
 	const blobs = new Map<string, Blob>();
 	for (const row of index.blobs) {
 		if (
@@ -246,7 +260,9 @@ export async function inspectIncompatible(
 		const data = files.get(`blobs/${row[0]}`);
 		if (!data) throw invalid();
 		listed.add(row[0]);
-		blobs.set(row[0], new Blob([data as Uint8Array<ArrayBuffer>], { type: row[1] }));
+		artwork.add(row[0]);
+		if (readArtwork)
+			blobs.set(row[0], new Blob([data as Uint8Array<ArrayBuffer>], { type: row[1] }));
 	}
 	for (const hash of index.missing) {
 		if (
@@ -260,10 +276,11 @@ export async function inspectIncompatible(
 	}
 	for (const path of files.keys()) {
 		const hash = blobPath.exec(path)?.[1];
-		if (path !== indexPath && (!hash || !blobs.has(hash))) throw invalid();
+		if (path !== incompatibleIndexPath && (!hash || !artwork.has(hash))) throw invalid();
 	}
 	if (listed.size !== references.size) throw invalid();
 	return {
+		build: index.build,
 		records,
 		blobs,
 		missing: [...index.missing],

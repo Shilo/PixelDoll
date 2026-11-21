@@ -297,17 +297,28 @@ export async function saveDress(
 				)
 			: d.slots;
 	if (id.startsWith('fixture:')) {
-		// The bundled demo's dress state is its own small record, read as openFixture reads it (unreadable: the bundled
-		// character this view opened). Not one transaction: the demo is a preview, and its items never change.
-		const key = `dress-${id}`,
-			prev = await db.get<DressState>('projects', key).catch(() => undefined);
-		const theirs =
-			prev?.format === CURRENT_FORMAT && Array.isArray(prev.slots)
-				? prev.slots
-				: (slotSave?.base ?? d.slots);
-		const slots = merged(theirs, m.items);
-		await db.put('projects', key, { id: key, kind: 'dress', ...d, slots });
-		return structuredClone(slots);
+		const key = `dress-${id}`;
+		const saved = await db.update<DressState>(
+			'projects',
+			key,
+			(previous) => {
+				const theirs =
+					previous?.format === CURRENT_FORMAT && Array.isArray(previous.slots)
+						? previous.slots
+						: (slotSave?.base ?? d.slots);
+				return { id: key, kind: 'dress', ...d, slots: merged(theirs, m.items) };
+			},
+			[],
+			(previous) => {
+				if (previous === undefined || previous?.format === CURRENT_FORMAT) return;
+				const archive = `dress-archived:${crypto.randomUUID()}`;
+				return {
+					key: archive,
+					record: { id: archive, kind: 'dress', source: key, original: previous }
+				};
+			}
+		);
+		return structuredClone(saved.slots);
 	}
 	let saved: Slot[] = [];
 	await db.update<ProjectRecord>('projects', id, (rec) => {

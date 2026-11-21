@@ -4,6 +4,7 @@
 import { supportedFormat } from './manifest.ts';
 
 export const CREATE_DRAFT_PREFIX = 'studio-create:';
+export const RETAINED_ARCHIVE_PREFIX = 'library-archive:';
 
 /** characters: a character in an earlier format; outfits: the demo's saved outfit in an earlier format; creations: an
  *  unfinished character creation saved before explicit direction plans (its paid pipeline is never re-keyed); retired:

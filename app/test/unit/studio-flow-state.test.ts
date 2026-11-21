@@ -112,6 +112,15 @@ beforeEach(() => {
 	mockAccount.balance = null;
 	mocks.put.mockResolvedValue(undefined);
 	mocks.get.mockResolvedValue(undefined);
+	mocks.update.mockImplementation(async (store, key, change, _relatedKeys, preserve) => {
+		if (!preserve) return;
+		const previous = await mocks.get(store, key);
+		const archived = preserve(previous);
+		const saved = change(previous, () => undefined);
+		if (archived) await mocks.put(store, archived.key, archived.record);
+		await mocks.put(store, key, saved);
+		return saved;
+	});
 	mocks.del.mockResolvedValue(undefined);
 	mocks.clear.mockResolvedValue(0);
 	mocks.all.mockResolvedValue([]);

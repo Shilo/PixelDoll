@@ -10,7 +10,7 @@
 	import {
 		downloadArchivedBackup,
 		exportBackup,
-		libraryArchiveCount,
+		listArchiveDownloads,
 		planRestore,
 		readRestoreSource,
 		restoreCharacters,
@@ -39,7 +39,8 @@
 		reviewing = !!plan;
 		return () => (reviewing = false);
 	});
-	let archivedCount = $state(0);
+	let archives = $state.raw({ localCount: 0, retainedIds: [] as string[] });
+	const hasArchives = $derived(archives.localCount > 0 || archives.retainedIds.length > 0);
 	let filename = $state('');
 	let error = $state<Message | string>();
 	let status = $state<Message>();
@@ -66,8 +67,8 @@
 	const keys = () => [app.key, readSavedKey()];
 	const today = () => new Date().toISOString().slice(0, 10);
 	onMount(() => {
-		void libraryArchiveCount().then(
-			(count) => (archivedCount = count),
+		void listArchiveDownloads().then(
+			(downloads) => (archives = downloads),
 			(cause) => (error = errorMessage(cause))
 		);
 	});
@@ -97,10 +98,11 @@
 		});
 	}
 
-	function downloadArchive() {
+	function downloadArchive(id?: string, number?: number) {
 		return perform(async () => {
-			const bytes = await downloadArchivedBackup(keys());
-			if (bytes) saveZip(bytes, `pixeldoll-${today()}.archived.zip`);
+			const bytes = await downloadArchivedBackup(keys(), id);
+			if (bytes) saveZip(bytes, `pixeldoll-${today()}${number ? `-${number}` : ''}.archived.zip`);
+			else archives = await listArchiveDownloads();
 		});
 	}
 
@@ -138,7 +140,7 @@
 					status = result.added.length
 						? message('librarySettings.restored', { count: result.added.length })
 						: message('librarySettings.archivedSaved');
-					if (keepArchived) archivedCount = await libraryArchiveCount();
+					if (keepArchived) archives = await listArchiveDownloads();
 					await refreshRestoredLibrary();
 				} catch (cause) {
 					if (!(cause instanceof RestoreChangedError)) throw cause;
@@ -217,7 +219,7 @@
 	{:else}
 		<p class="bu-muted">{t('librarySettings.scope')}</p>
 		<p class="bu-muted">{t('librarySettings.privacy')}</p>
-		{#if archivedCount > 0}
+		{#if hasArchives}
 			<label class="check">
 				<input type="checkbox" bind:checked={includeArchived} disabled={busy} />
 				{t('librarySettings.includeArchived')}
@@ -253,20 +255,28 @@
 			<Upload size={18} aria-hidden="true" />
 			<span class="row-name">{t('librarySettings.restoreFromBackup')}</span>
 		</button>
-		{#if archivedCount > 0}
+		{#if hasArchives}
 			<hr class="bu-separator" />
 			<h4>{t('librarySettings.archived')}</h4>
-			<p class="bu-muted">{t('librarySettings.archivedHint', { count: archivedCount })}</p>
-			<button
-				type="button"
-				class="row bu-action"
-				data-variant="quiet"
-				disabled={busy}
-				onclick={downloadArchive}
-			>
-				<Archive size={18} aria-hidden="true" />
-				<span class="row-name">{t('librarySettings.downloadArchived')}</span>
-			</button>
+			{#if archives.localCount}
+				<p class="bu-muted">{t('librarySettings.archivedHint', { count: archives.localCount })}</p>
+			{/if}
+			{#each [...(archives.localCount ? [undefined] : []), ...archives.retainedIds] as id, index (id)}
+				{@const number = id ? index + (archives.localCount ? 0 : 1) : undefined}
+				<button
+					type="button"
+					class="row bu-action"
+					data-variant="quiet"
+					disabled={busy}
+					onclick={() => downloadArchive(id, number)}
+				>
+					<Archive size={18} aria-hidden="true" />
+					<span class="row-name">
+						{t('librarySettings.downloadArchived')}{#if number}
+							({formatNumber(number)}){/if}
+					</span>
+				</button>
+			{/each}
 		{/if}
 	{/if}
 	{#if busy}<p class="bu-muted" role="status">{t('common.preparing')}</p>{/if}

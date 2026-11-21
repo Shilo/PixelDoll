@@ -3,10 +3,12 @@
 import { sha256, stableStringify } from '../image/hash.ts';
 import { LocalizedError } from '../message.ts';
 import * as db from './db.ts';
+import { incompatibleKind, RETAINED_ARCHIVE_PREFIX as retainedPrefix } from './incompatible.ts';
 import {
+	incompatibleIndexPath,
 	inspectIncompatible,
-	packIncompatible,
-	storedIncompatibleCounts
+	inspectIncompatibleFiles,
+	packIncompatible
 } from './incompatible-archive.ts';
 import { supportedFormat } from './manifest.ts';
 import type { RestoredFrom, StoredProject } from './project.ts';
@@ -21,12 +23,11 @@ import {
 	type ArchiveErrors,
 	type WorkspaceArchive
 } from './workspace.ts';
-import { MAX_ZIP_BYTES, MAX_ZIP_ENTRIES, unzip, zip } from './zip.ts';
+import { MAX_ZIP_BYTES, unzip } from './zip.ts';
 
 export const BACKUP_FORMAT = 'pixeldoll-backup/1';
 const indexPath = 'backup.json';
 const maxRecords = 500;
-const retainedPrefix = 'library-archive:';
 const archivePath = /^archives\/([a-f0-9]{64})\.zip$/;
 
 interface ArchivePack {
@@ -35,25 +36,17 @@ interface ArchivePack {
 	count: number;
 }
 
-async function retainedPacks() {
-	const { projects } = await db.readWorkspaceSnapshot(
-		(key) => key.startsWith(retainedPrefix),
+export async function listArchiveDownloads() {
+	let localCount = 0;
+	const { retainedIds } = await db.readWorkspaceSnapshot(
+		(_key, value) => {
+			if (incompatibleKind(value)) localCount++;
+			return false;
+		},
 		() => new Map(),
 		false
 	);
-	return [...projects].map(([id, value]) => {
-		const pack = value as Partial<ArchivePack> | null;
-		if (
-			!pack ||
-			pack.id !== id ||
-			!(pack.data instanceof Uint8Array) ||
-			!Number.isSafeInteger(pack.count) ||
-			!pack.count ||
-			pack.count < 0
-		)
-			throw invalidArchive();
-		return { id, data: pack.data, count: pack.count };
-	});
+	return { localCount, retainedIds };
 }
 
 const invalidArchive = () =>
@@ -62,44 +55,45 @@ const invalidArchive = () =>
 		'incompatible.error.invalid'
 	);
 
-export async function libraryArchiveCount() {
-	const [local, retained] = await Promise.all([storedIncompatibleCounts(), retainedPacks()]);
-	return local.total + retained.reduce((count, pack) => count + pack.count, 0);
+async function retainedArchive(id: string, keys: readonly string[]) {
+	const digest = id.slice(retainedPrefix.length);
+	if (!id.startsWith(retainedPrefix) || !/^[a-f0-9]{64}$/.test(digest)) throw invalidArchive();
+	const pack = await db.get<Partial<ArchivePack>>('projects', id);
+	if (
+		!pack ||
+		pack.id !== id ||
+		!(pack.data instanceof Uint8Array) ||
+		pack.data.length > MAX_ZIP_BYTES ||
+		(await sha256(pack.data)) !== digest
+	)
+		throw invalidArchive();
+	await inspectIncompatible(pack.data, keys);
+	return { digest, data: pack.data };
 }
 
 async function archiveEntries(keys: readonly string[]) {
-	const retained = await retainedPacks();
+	const { retainedIds } = await listArchiveDownloads();
 	const local = await packIncompatible(keys);
 	const entries = new Map<string, Uint8Array>();
-	if (local) entries.set(await sha256(local.bytes), local.bytes);
-	for (const pack of retained) {
-		const digest = pack.id.slice(retainedPrefix.length);
-		if ((await sha256(pack.data)) !== digest) throw invalidArchive();
-		await inspectIncompatible(pack.data, keys);
-		entries.set(digest, pack.data);
+	let size = 0;
+	function include(digest: string, data: Uint8Array) {
+		if (entries.has(digest)) return;
+		size += data.length;
+		if (size > MAX_ZIP_BYTES) throw backupErrors.tooLarge();
+		entries.set(digest, data);
+	}
+	if (local) include(await sha256(local.bytes), local.bytes);
+	for (const id of retainedIds) {
+		const { digest, data } = await retainedArchive(id, keys);
+		include(digest, data);
 	}
 	return [...entries].map(([digest, data]) => ({ name: `archives/${digest}.zip`, data }));
 }
 
-export async function downloadArchivedBackup(keys: readonly string[]) {
-	const entries = await archiveEntries(keys);
-	if (!entries.length) return;
-	const index = new TextEncoder().encode(
-		JSON.stringify({
-			format: BACKUP_FORMAT,
-			build: archiveBuild(),
-			characters: [],
-			missing: []
-		} satisfies BackupIndex)
-	);
-	if (
-		entries.length + 1 > MAX_ZIP_ENTRIES ||
-		entries.reduce((n, entry) => n + entry.data.length, index.length) > MAX_ZIP_BYTES
-	)
-		throw backupErrors.tooLarge();
-	const bytes = await zip([{ name: indexPath, data: index }, ...entries]);
-	if (bytes.length > MAX_ZIP_BYTES) throw backupErrors.tooLarge();
-	return bytes;
+export async function downloadArchivedBackup(keys: readonly string[], id?: string) {
+	return id === undefined
+		? (await packIncompatible(keys))?.bytes
+		: (await retainedArchive(id, keys)).data;
 }
 
 interface BackupIndex {
@@ -175,7 +169,21 @@ export async function readRestoreSource(
 	bytes: Uint8Array,
 	keys: readonly string[] = []
 ): Promise<RestoreSource> {
-	return readRestoreFiles(await unzip(bytes), keys);
+	const files = await unzip(bytes);
+	if (!files.has(indexPath) && !files.has('workspace.json') && files.has(incompatibleIndexPath)) {
+		const { build, counts } = inspectIncompatibleFiles(files, keys);
+		return {
+			kind: 'backup',
+			build,
+			characters: new Map(),
+			blobs: new Map(),
+			unreadable: 0,
+			archives: [
+				{ id: `${retainedPrefix}${await sha256(bytes)}`, data: bytes.slice(), count: counts.total }
+			]
+		};
+	}
+	return readRestoreFiles(files, keys);
 }
 
 async function readRestoreFiles(

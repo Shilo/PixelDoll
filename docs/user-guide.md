@@ -358,6 +358,7 @@ existing characters. If a character with the same ID has changed, its backup bec
 ZIPs can also be reviewed for character restore.
 
 **Download archived data** preserves records this version cannot edit. You can also include it in a library backup.
+Archives retained from other backups can be downloaded one at a time, even when they cannot fit in a single library backup.
 When restoring, choose **Keep archived data for future downloads** to retain it without adding it to the editable library.
 Treat the archive as private: it preserves old records as stored and cannot identify every credential they might contain.
 

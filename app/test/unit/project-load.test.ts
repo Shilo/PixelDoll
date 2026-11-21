@@ -419,7 +419,8 @@ describe('saved data from earlier versions', () => {
 			return {
 				projects: kept,
 				blobs: new Map(blobs.filter(([hash]) => wanted.has(hash))),
-				jobs: []
+				jobs: [],
+				retainedIds: []
 			};
 		});
 	const build = () => {

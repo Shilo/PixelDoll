@@ -4,6 +4,7 @@ import { cellHash } from '../../src/lib/rig/rig.ts';
 import {
 	downloadArchivedBackup,
 	exportBackup,
+	listArchiveDownloads,
 	planRestore,
 	readRestoreSource,
 	RestoreChangedError,
@@ -11,6 +12,7 @@ import {
 } from '../../src/lib/store/backup.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import { exportWorkspace } from '../../src/lib/store/workspace.ts';
+import { unzip, zip } from '../../src/lib/store/zip.ts';
 import { equipmentFixture } from './equipment-fixture.ts';
 
 // IndexedDB is a browser API (its batch rollback is a self-test in db.ts): this stand-in keeps the same contract, reading one
@@ -34,6 +36,8 @@ vi.mock(import('../../src/lib/store/db.ts'), async (original) => {
 	});
 	return {
 		...(await original()),
+		get: async <T>(_store: string, key: string) =>
+			structuredClone(saved.projects.get(key)) as T | undefined,
 		askPersist() {},
 		readCharacters: async (hashes: readonly string[]) => snapshot(hashes),
 		async addCharacters(
@@ -63,7 +67,7 @@ vi.mock(import('../../src/lib/store/db.ts'), async (original) => {
 		) {
 			const projects = new Map(
 				[...saved.projects]
-					.filter(([key, value]) => select(key, value))
+					.filter(([key, value]) => !key.startsWith('library-archive:') && select(key, value))
 					.map(([key, value]) => [key, structuredClone(value)])
 			);
 			const blobs = new Map<string, Blob>();
@@ -71,7 +75,12 @@ vi.mock(import('../../src/lib/store/db.ts'), async (original) => {
 				const blob = saved.blobs.get(hash);
 				if (blob) blobs.set(hash, blob);
 			}
-			return { projects, blobs, jobs: [] };
+			return {
+				projects,
+				blobs,
+				jobs: [],
+				retainedIds: [...saved.projects.keys()].filter((key) => key.startsWith('library-archive:'))
+			};
 		}
 	};
 });
@@ -204,11 +213,53 @@ test('archive downloads can be retained and re-exported byte for byte', async ()
 	saved.projects.delete('rig-old');
 	const plan = await planRestore(source);
 	const options = { keepArchived: true, keys: [], copyName: (name: string) => name };
+	await restoreCharacters(plan, { ...options, keepArchived: false });
+	expect((await listArchiveDownloads()).retainedIds).toEqual([]);
 	await restoreCharacters(plan, options);
 	await restoreCharacters(plan, options);
 	expect(saved.projects.has('rig-old')).toBe(false);
+	const id = source.archives![0].id;
+	expect(await downloadArchivedBackup([], id)).toEqual(download);
 	const reexport = await readRestoreSource((await exportBackup([], true)).bytes);
 	expect(reexport.archives).toEqual(source.archives);
+});
+
+test('an archive cannot carry a known key disguised as JSON escapes', async () => {
+	const key = 'fake-known-key';
+	saved.projects.set('rig-old', {
+		...character,
+		id: 'rig-old',
+		manifest: { ...character.manifest, format: 'pixeldoll/2', name: key }
+	});
+	const files = await unzip((await downloadArchivedBackup([]))!);
+	const index = 'incompatible.json';
+	const text = new TextDecoder().decode(files.get(index));
+	files.set(index, new TextEncoder().encode(text.replace(key, '\\u0066ake-known-key')));
+	const escaped = await zip([...files].map(([name, data]) => ({ name, data })));
+	await expect(readRestoreSource(escaped, [key])).rejects.toMatchObject({
+		translation: { key: 'workspace.error.containsKey' }
+	});
+});
+
+test('an invalid retained archive does not block downloading another archive', async () => {
+	saved.projects.set('rig-old', {
+		...character,
+		id: 'rig-old',
+		manifest: { ...character.manifest, format: 'pixeldoll/2' }
+	});
+	const download = (await downloadArchivedBackup([]))!;
+	const [archive] = (await readRestoreSource(download)).archives!;
+	const damaged = `library-archive:${'0'.repeat(64)}`;
+	saved.projects.set(damaged, { ...archive, id: damaged });
+	saved.projects.set(archive.id, archive);
+	expect(await listArchiveDownloads()).toEqual({
+		localCount: 1,
+		retainedIds: [damaged, archive.id]
+	});
+	await expect(downloadArchivedBackup([], damaged)).rejects.toMatchObject({
+		translation: { key: 'incompatible.error.invalid' }
+	});
+	await expect(downloadArchivedBackup([], archive.id)).resolves.toEqual(download);
 });
 
 test('identical characters under different IDs are separate characters', async () => {

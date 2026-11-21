@@ -2,7 +2,12 @@
 import { sha256, stableStringify } from '../image/hash.ts';
 import { LocalizedError } from '../message.ts';
 import type { StoredProject } from './project.ts';
-import { blobReferences, CREATE_DRAFT_PREFIX, incompatibleKind } from './incompatible.ts';
+import {
+	blobReferences,
+	CREATE_DRAFT_PREFIX,
+	incompatibleKind,
+	RETAINED_ARCHIVE_PREFIX
+} from './incompatible.ts';
 import { workspaceCopy } from './workspace-mode.ts';
 
 export { CREATE_DRAFT_PREFIX };
@@ -81,41 +86,48 @@ export async function readWorkspaceSnapshot(
 	includeErrors: boolean
 ) {
 	const db = await open();
-	return new Promise<{ projects: Map<string, unknown>; blobs: Map<string, Blob>; jobs: unknown[] }>(
-		(resolve, reject) => {
-			const stores: StoreName[] = ['projects', 'blobs'];
-			if (includeErrors) stores.push('jobs');
-			const transaction = db.transaction(stores, 'readonly');
-			const projects = new Map<string, unknown>();
-			const blobs = new Map<string, Blob>();
-			const jobs = includeErrors ? transaction.objectStore('jobs').getAll() : undefined;
-			const cursor = transaction.objectStore('projects').openCursor();
-			let error: unknown;
-			cursor.onsuccess = () => {
-				try {
-					const row = cursor.result;
-					if (row) {
-						if (typeof row.key === 'string' && select(row.key, row.value))
-							projects.set(row.key, row.value);
-						row.continue();
-					} else {
-						const images = transaction.objectStore('blobs');
-						for (const hash of references(projects).keys()) {
-							const image = images.get(hash);
-							image.onsuccess = () => {
-								if (image.result instanceof Blob) blobs.set(hash, image.result);
-							};
-						}
+	return new Promise<{
+		projects: Map<string, unknown>;
+		blobs: Map<string, Blob>;
+		jobs: unknown[];
+		retainedIds: string[];
+	}>((resolve, reject) => {
+		const stores: StoreName[] = ['projects', 'blobs'];
+		if (includeErrors) stores.push('jobs');
+		const transaction = db.transaction(stores, 'readonly');
+		const projects = new Map<string, unknown>();
+		const blobs = new Map<string, Blob>();
+		const retainedIds: string[] = [];
+		const jobs = includeErrors ? transaction.objectStore('jobs').getAll() : undefined;
+		const cursor = transaction.objectStore('projects').openCursor();
+		let error: unknown;
+		cursor.onsuccess = () => {
+			try {
+				const row = cursor.result;
+				if (row) {
+					if (typeof row.key === 'string') {
+						if (row.key.startsWith(RETAINED_ARCHIVE_PREFIX)) retainedIds.push(row.key);
+						else if (select(row.key, row.value)) projects.set(row.key, row.value);
 					}
-				} catch (cause) {
-					error = cause;
-					transaction.abort();
+					row.continue();
+				} else {
+					const images = transaction.objectStore('blobs');
+					for (const hash of references(projects).keys()) {
+						const image = images.get(hash);
+						image.onsuccess = () => {
+							if (image.result instanceof Blob) blobs.set(hash, image.result);
+						};
+					}
 				}
-			};
-			transaction.oncomplete = () => resolve({ projects, blobs, jobs: jobs?.result ?? [] });
-			transaction.onerror = transaction.onabort = () => reject(error ?? transaction.error);
-		}
-	);
+			} catch (cause) {
+				error = cause;
+				transaction.abort();
+			}
+		};
+		transaction.oncomplete = () =>
+			resolve({ projects, blobs, jobs: jobs?.result ?? [], retainedIds });
+		transaction.onerror = transaction.onabort = () => reject(error ?? transaction.error);
+	});
 }
 
 /** Encoding happens before this transaction, so garbage collection cannot sweep an import's partial blob writes. */
@@ -158,13 +170,13 @@ export const readCharacters = (hashes: readonly string[]) => characterBatch(hash
 export const addCharacters = (
 	hashes: readonly string[],
 	add: (snapshot: CharacterSnapshot) => { records: Map<string, unknown>; blobs: Map<string, Blob> },
-	opaque: ReadonlyMap<string, unknown> = new Map()
+	opaque: ReadonlyMap<string, { id: string; data: Uint8Array }> = new Map()
 ) => characterBatch(hashes, add, opaque);
 
 async function characterBatch(
 	hashes: readonly string[],
 	add?: Parameters<typeof addCharacters>[1],
-	opaque: ReadonlyMap<string, unknown> = new Map()
+	opaque: Parameters<typeof addCharacters>[2] = new Map()
 ): Promise<CharacterSnapshot> {
 	if (copy) {
 		if (opaque.size) throw new Error('Cannot retain archives in a backup copy.');
@@ -192,7 +204,7 @@ async function characterBatch(
 			values = projects.getAll(range),
 			keys = projects.getAllKeys(range),
 			counts = hashes.map((hash) => [hash, images.count(hash)] as const),
-			archives = [...opaque].map(([id, record]) => ({ id, record, found: projects.count(id) }));
+			archives = [...opaque].map(([id, record]) => ({ id, record, found: projects.get(id) }));
 		const snapshot: CharacterSnapshot = { records: new Map(), stored: new Set() };
 		let error: unknown;
 		// Requests in one transaction complete in order: the last one finds all the others done.
@@ -207,7 +219,23 @@ async function characterBatch(
 				for (const [hash, blob] of out.blobs)
 					if (!snapshot.stored.has(hash)) images.add(blob, hash);
 				for (const [id, record] of out.records) projects.add(record, id);
-				for (const { id, record, found } of archives) if (!found.result) projects.add(record, id);
+				for (const { id, record, found } of archives) {
+					if (found.result === undefined) {
+						projects.add(record, id);
+						continue;
+					}
+					const previous = found.result;
+					if (
+						previous?.id !== id ||
+						!(previous.data instanceof Uint8Array) ||
+						previous.data.length !== record.data.length ||
+						!record.data.every((value, index) => value === previous.data[index])
+					)
+						throw new LocalizedError(
+							'A saved copy of this archive is damaged. Existing data was not changed.',
+							'incompatible.error.invalid'
+						);
+				}
 			} catch (failure) {
 				error = failure;
 				t.abort();
@@ -415,12 +443,14 @@ export async function saveIdleCharacter(
 }
 
 type RelatedRecord = <R>(key: string) => R | undefined;
+type PreserveRecord<T> = (previous: T | undefined) => { key: string; record: unknown } | undefined;
 
 export function update<T>(
 	s: StoreName,
 	key: string,
 	fn: (v: T | undefined, related: RelatedRecord) => T,
-	relatedKeys: readonly string[]
+	relatedKeys: readonly string[],
+	preserve?: PreserveRecord<T>
 ): Promise<T>;
 export function update<T>(s: StoreName, key: string, fn: (v: T | undefined) => T): Promise<T>;
 /** Atomic read-modify-write: get + put in ONE readwrite transaction, so concurrent writers (another accept, autosave, another
@@ -430,16 +460,31 @@ export async function update<T>(
 	s: StoreName,
 	key: string,
 	fn: (v: T | undefined, related: RelatedRecord) => T,
-	relatedKeys: readonly string[] = []
+	relatedKeys: readonly string[] = [],
+	preserve?: PreserveRecord<T>
 ): Promise<T> {
+	const archiveOf = (previous: T | undefined) => {
+		const archive = preserve?.(previous);
+		if (archive?.key === key) throw new DOMException('Key already exists.', 'ConstraintError');
+		return archive;
+	};
 	if (copy) {
 		const records = copy[s];
-		const result = fn(structuredClone(records.get(key)) as T | undefined, <R>(related: string) =>
+		const previous = structuredClone(records.get(key)) as T | undefined;
+		const archived = archiveOf(previous);
+		const saved = archived && structuredClone(archived.record);
+		const result = fn(previous, <R>(related: string) =>
 			relatedKeys.includes(related)
 				? (structuredClone(records.get(related)) as R | undefined)
 				: undefined
 		);
-		copy[s].set(key, structuredClone(result));
+		const next = structuredClone(result);
+		if (archived) {
+			if (records.has(archived.key))
+				throw new DOMException('Key already exists.', 'ConstraintError');
+			records.set(archived.key, saved);
+		}
+		records.set(key, next);
 		return result;
 	}
 	const db = await open();
@@ -453,6 +498,8 @@ export async function update<T>(
 		let out: T, err: unknown;
 		const write = () => {
 			try {
+				const archived = archiveOf(g.result as T | undefined);
+				if (archived) o.add(archived.record, archived.key);
 				out = fn(
 					g.result as T | undefined,
 					<R>(relatedKey: string) => related.get(relatedKey)?.result as R | undefined
@@ -465,7 +512,8 @@ export async function update<T>(
 		};
 		(related.size ? [...related.values()].at(-1)! : g).onsuccess = write;
 		t.oncomplete = () => res(out);
-		t.onerror = t.onabort = () => rej(err ?? t.error);
+		t.onerror = (event) => (err ??= (event.target as IDBRequest).error);
+		t.onabort = () => rej(err ?? t.error);
 	});
 }
 
@@ -511,16 +559,24 @@ export async function gcBlobs(): Promise<number> {
 	const db = await open();
 	return new Promise((res, rej) => {
 		const t = db.transaction(['projects', 'jobs', 'blobs'], 'readwrite');
-		const p = t.objectStore('projects').getAll(),
-			j = t.objectStore('jobs').getAll(),
-			b = t.objectStore('blobs').getAllKeys();
+		const jobs = t.objectStore('jobs').getAll(),
+			images = t.objectStore('blobs'),
+			blobs = images.getAllKeys(),
+			projects = t.objectStore('projects').openCursor(),
+			refs = new Set<string>();
 		let n = 0;
-		b.onsuccess = () => {
-			// requests in one transaction complete in order: p and j are done
-			const refs = blobReferences([...p.result, ...j.result]);
-			for (const k of b.result)
+		projects.onsuccess = () => {
+			const row = projects.result;
+			if (row) {
+				if (typeof row.key !== 'string' || !row.key.startsWith(RETAINED_ARCHIVE_PREFIX))
+					blobReferences([row.value], refs);
+				row.continue();
+				return;
+			}
+			blobReferences(jobs.result, refs);
+			for (const k of blobs.result)
 				if (!refs.has(String(k))) {
-					t.objectStore('blobs').delete(k);
+					images.delete(k);
 					n++;
 				}
 		};
@@ -566,6 +622,40 @@ export async function selfTest() {
 		throw new Error('x');
 	}).catch(() => {});
 	console.assert((await get<{ n: number }>('projects', k))?.n === 3, 'db update aborts on throw');
+	const archive = `${k}-archive`;
+	try {
+		const replace = () =>
+			update<{ n: number }>(
+				'projects',
+				k,
+				() => ({ n: 4 }),
+				[],
+				(record) => ({
+					key: archive,
+					record
+				})
+			);
+		await put('projects', archive, { n: 2 });
+		const refused = await replace().then(
+			() => undefined,
+			(error: DOMException) => error
+		);
+		console.assert(
+			refused?.name === 'ConstraintError' &&
+				(await get<{ n: number }>('projects', k))?.n === 3 &&
+				(await get<{ n: number }>('projects', archive))?.n === 2,
+			'db update rolls back replacement when the archived copy cannot be inserted'
+		);
+		await del('projects', archive);
+		await replace();
+		console.assert(
+			(await get<{ n: number }>('projects', k))?.n === 4 &&
+				(await get<{ n: number }>('projects', archive))?.n === 3,
+			'db update saves both the replacement and the archived copy'
+		);
+	} finally {
+		await del('projects', archive);
+	}
 	const claimGroup = 'selftest-claim-' + Math.random(),
 		candidates = Array.from({ length: 10 }, (_, i) => ({
 			id: `${claimGroup}-${i}`,
@@ -607,6 +697,7 @@ export async function selfTest() {
 	}
 	const taken = `rig-selftest-${Math.random()}`,
 		added = `rig-selftest-${Math.random()}`,
+		retained = `${RETAINED_ARCHIVE_PREFIX}selftest-${Math.random()}`,
 		image = `selftest-${Math.random()}`;
 	try {
 		await put('projects', taken, { n: 1 });
@@ -626,6 +717,27 @@ export async function selfTest() {
 				(await get<{ n: number }>('projects', taken))?.n === 1,
 			'db addCharacters never overwrites and rolls the whole batch back'
 		);
+		const opaque = (byte: number) => ({ id: retained, data: new Uint8Array([byte]) });
+		await put('projects', retained, opaque(1));
+		const addWithArchive = (byte: number) =>
+			addCharacters(
+				[],
+				() => ({ records: new Map([[added, { id: added }]]), blobs: new Map() }),
+				new Map([[retained, opaque(byte)]])
+			);
+		const conflict = await addWithArchive(2).then(
+			() => undefined,
+			(error: unknown) => error
+		);
+		console.assert(
+			conflict instanceof LocalizedError &&
+				!(await get('projects', added)) &&
+				(await get<ReturnType<typeof opaque>>('projects', retained))?.data[0] === 1,
+			'db addCharacters rolls back on a conflicting retained archive'
+		);
+		await addWithArchive(1);
+		console.assert(!!(await get('projects', added)), 'an identical retained archive is a no-op');
+		await del('projects', added);
 		await batch([added]);
 		const seen = await readCharacters([image]);
 		console.assert(
@@ -633,7 +745,12 @@ export async function selfTest() {
 			'db addCharacters writes records and blobs together'
 		);
 	} finally {
-		await Promise.all([del('projects', taken), del('projects', added), del('blobs', image)]);
+		await Promise.all([
+			del('projects', taken),
+			del('projects', added),
+			del('projects', retained),
+			del('blobs', image)
+		]);
 	}
 	await del('projects', k); // gcBlobs is not run here: it sweeps the whole origin's store (probe in B13 report)
 }

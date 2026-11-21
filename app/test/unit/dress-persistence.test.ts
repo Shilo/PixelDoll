@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest';
-import type { Manifest, Slot } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT, type Manifest, type Slot } from '../../src/lib/store/manifest.ts';
 import { mergeSlotEdits, saveDress, saveSplit } from '../../src/lib/dress/project.ts';
 import { deleteItem, deleteItems, type StoredProject } from '../../src/lib/store/project.ts';
 import { rigArtworkVersion } from '../../src/lib/rig/rig.ts';
@@ -11,12 +11,40 @@ vi.mock('../../src/lib/store/db.ts', () => ({
 		records.set(key, next);
 		return next;
 	},
-	update: async (_store: string, key: string, fn: (r: unknown) => unknown) => {
-		const next = fn(structuredClone(records.get(key)));
+	update: async (
+		_store: string,
+		key: string,
+		fn: (r: unknown) => unknown,
+		_related: unknown,
+		preserve?: (r: unknown) => { key: string; record: unknown } | undefined
+	) => {
+		const previous = structuredClone(records.get(key));
+		const archive = preserve?.(previous);
+		const next = fn(previous);
+		if (archive) records.set(archive.key, archive.record);
 		records.set(key, next);
 		return next;
 	}
 }));
+
+test('saving the demo keeps an incompatible outfit unchanged and preserves it only once', async () => {
+	const key = 'dress-fixture:s2';
+	const old = {
+		id: key,
+		kind: 'dress',
+		format: 'pixeldoll/2',
+		presets: [{ name: 'Older outfit' }]
+	};
+	records.set(key, old);
+	const manifest = record().manifest as unknown as Manifest;
+	const current = { items: {}, variants: {} };
+	await saveDress('fixture:s2', manifest, current);
+	await saveDress('fixture:s2', manifest, current);
+	const archived = [...records].filter(([id]) => id.startsWith('dress-archived:'));
+	expect(archived).toHaveLength(1);
+	expect(archived[0][1]).toEqual({ id: archived[0][0], kind: 'dress', source: key, original: old });
+	expect(records.get(key)).toMatchObject({ id: key, format: CURRENT_FORMAT });
+});
 
 function record() {
 	const material = (owner: string) => ({
