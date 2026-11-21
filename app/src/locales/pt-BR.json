@@ -2635,7 +2635,7 @@
 	},
 	"adjustFrame": {
 		"title": "Ajustar quadro",
-		"intro": "Mova {name} para cima ou para baixo no quadro, ou mude o tamanho do quadro. Cada item, animação e quadro acompanha. É grátis e nada é redesenhado.",
+		"intro": "Mova o personagem para cima ou para baixo no quadro, ou mude o tamanho do quadro. Cada item, animação e quadro acompanha. É grátis e nada é redesenhado.",
 		"previewLabel": "Personagem no quadro",
 		"preview": "Vista {direction} em um quadro de {size} px",
 		"keys": "Com a prévia em foco, as setas para cima e para baixo movem o personagem 1 px (com Shift, 4 px).",

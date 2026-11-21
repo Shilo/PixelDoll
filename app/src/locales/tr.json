@@ -2615,7 +2615,7 @@
 	},
 	"adjustFrame": {
 		"title": "Kareyi ayarla",
-		"intro": "{name} karakterini karesi içinde yukarı veya aşağı taşıyın ya da kare boyutunu değiştirin. Her eşya, animasyon ve kare birlikte taşınır. Ücretsizdir ve hiçbir şey yeniden çizilmez.",
+		"intro": "Karakteri karesi içinde yukarı veya aşağı taşıyın ya da kare boyutunu değiştirin. Her eşya, animasyon ve kare birlikte taşınır. Ücretsizdir ve hiçbir şey yeniden çizilmez.",
 		"previewLabel": "Karesindeki karakter",
 		"preview": "{size} px karede yön: {direction}",
 		"keys": "Önizleme odaktayken yukarı ve aşağı ok tuşları karakteri 1 px (Shift ile 4 px) taşır.",

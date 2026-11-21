@@ -2621,7 +2621,7 @@
 	},
 	"adjustFrame": {
 		"title": "Frame anpassen",
-		"intro": "Verschiebe {name} im Frame nach oben oder unten oder ändere die Frame-Größe. Jeder Gegenstand, jede Animation und jeder Frame bewegt sich mit. Das ist kostenlos und zeichnet nichts neu.",
+		"intro": "Verschiebe die Figur im Frame nach oben oder unten oder ändere die Frame-Größe. Jeder Gegenstand, jede Animation und jeder Frame bewegt sich mit. Das ist kostenlos und zeichnet nichts neu.",
 		"previewLabel": "Figur in ihrem Frame",
 		"preview": "Ansicht {direction} in einem {size}-px-Frame",
 		"keys": "Ist die Vorschau fokussiert, bewegen die Pfeiltasten nach oben und unten die Figur um 1 px (mit Umschalt 4 px).",

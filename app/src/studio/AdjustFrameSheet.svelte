@@ -7,7 +7,7 @@
 	import Sprite from './Sprite.svelte';
 	import { LocalizedError, errorMessage, type Message } from '../lib/message.ts';
 	import { formatNumber, t } from 'svelte-whisper';
-	import { displayError, displayMessage } from '../lib/i18n.ts';
+	import { displayError, displayMessage, displayNestedMessage } from '../lib/i18n.ts';
 	import { composeCell } from '../lib/compose/compose.ts';
 	import { makeImg, type Img } from '../lib/image/png.ts';
 	import { loadProject, readStoredImage } from '../lib/store/project.ts';
@@ -168,7 +168,7 @@
 
 <Sheet title={t('adjustFrame.title')} wide cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
 	{#if loaded && m && facts}
-		<p class="muted">{t('adjustFrame.intro', { name: m.name })}</p>
+		<p class="muted">{t('adjustFrame.intro')}</p>
 		<div class="adjust">
 			<div
 				class="preview"
@@ -199,6 +199,12 @@
 				<p class="faint small" id="adjust-frame-keys">{t('adjustFrame.keys')}</p>
 			</div>
 			<div class="controls">
+				<button class="bu-action btn room" data-variant="outline" disabled={busy} onclick={room}
+					><WandSparkles size={16} />{t('adjustFrame.makeRoom')}</button
+				>
+				<p class="muted small">{t('adjustFrame.makeRoomHelp')}</p>
+				{#if note}<p class="notice small" role="status">{displayMessage(note)}</p>{/if}
+				{#if short && !changed}<p class="notice warn small">{t('adjustFrame.short')}</p>{/if}
 				{#if directions.length > 1}
 					<div class="seg" role="group" aria-label={t('adjustFrame.direction')}>
 						{#each directions as d (d)}
@@ -257,16 +263,7 @@
 							onclick={() => resize(2)}><Plus size={16} /></button
 						>
 					</div>
-					<span class="readout" aria-live="polite"
-						>{t('adjustFrame.sizeReadout', { size: formatNumber(size) })}</span
-					>
 				</div>
-				<button class="bu-action btn room" data-variant="outline" disabled={busy} onclick={room}
-					><WandSparkles size={16} />{t('adjustFrame.makeRoom')}</button
-				>
-				<p class="muted small">{t('adjustFrame.makeRoomHelp')}</p>
-				{#if note}<p class="notice small" role="status">{displayMessage(note)}</p>{/if}
-				{#if short && !changed}<p class="notice warn small">{t('adjustFrame.short')}</p>{/if}
 				{#if issue}<p class="notice warn small" role="status">{displayError(issue)}</p>
 				{:else if step}<p class="notice small">{t(STEP_TEXT[step])}</p>{/if}
 				{#if changed}<p class="muted small">{t('adjustFrame.consequences')}</p>{/if}
@@ -279,10 +276,10 @@
 								flows: !!blocked && blocked.translation.key !== 'adjustFrame.errors.resolveDrafts'
 							})}>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 					>{/if}
-				{#if error}<p class="notice bad small" role="alert">{displayError(error)}</p>{/if}
+				{#if error}<p class="notice bad small" role="alert">{displayNestedMessage(error)}</p>{/if}
 			</div>
 		</div>
-	{:else if error}<p class="notice bad small" role="alert">{displayError(error)}</p>
+	{:else if error}<p class="notice bad small" role="alert">{displayNestedMessage(error)}</p>
 	{:else}<p class="muted" role="status">{t('adjustFrame.loading')}</p>{/if}
 	{#snippet footer()}
 		{#if loaded}<button
@@ -302,9 +299,10 @@
 </Sheet>
 
 <style>
+	/* Two columns only when the sheet itself has room; a narrow sheet (phone landscape) stacks instead of squeezing the preview. */
 	.adjust {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 		gap: 24px;
 		align-items: start;
 	}
@@ -388,7 +386,6 @@
 	}
 	@media (max-width: 760px) {
 		.adjust {
-			grid-template-columns: minmax(0, 1fr);
 			gap: 16px;
 		}
 	}

@@ -2628,7 +2628,7 @@
 	},
 	"adjustFrame": {
 		"title": "Ajustar marco",
-		"intro": "Mueve a {name} hacia arriba o hacia abajo en su marco, o cambia el tamaño del marco. Cada objeto, animación y fotograma se mueve con él. Es gratis y no redibuja nada.",
+		"intro": "Mueve al personaje hacia arriba o hacia abajo en su marco, o cambia el tamaño del marco. Cada objeto, animación y fotograma se mueve con él. Es gratis y no redibuja nada.",
 		"previewLabel": "Personaje en su marco",
 		"preview": "Vista {direction} en un marco de {size} px",
 		"keys": "Con la vista previa enfocada, las flechas arriba y abajo mueven al personaje 1 px (con Mayús, 4 px).",

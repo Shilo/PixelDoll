@@ -2606,7 +2606,7 @@
 	},
 	"adjustFrame": {
 		"title": "Adjust frame",
-		"intro": "Move {name} up or down in its frame, or change the frame size. Every item, move and frame moves along. It is free and redraws nothing.",
+		"intro": "Move the character up or down in its frame, or change the frame size. Every item, move and frame moves along. It is free and redraws nothing.",
 		"previewLabel": "Character in its frame",
 		"preview": "{direction} view in a {size} px frame",
 		"keys": "With the preview focused, the Up and Down arrow keys move the character 1 px (with Shift, 4 px).",

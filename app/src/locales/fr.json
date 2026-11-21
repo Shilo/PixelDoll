@@ -2622,7 +2622,7 @@
 	},
 	"adjustFrame": {
 		"title": "Ajuster le cadre",
-		"intro": "Déplacez {name} vers le haut ou le bas dans son cadre, ou changez la taille du cadre. Chaque objet, animation et image suit. C’est gratuit et rien n’est redessiné.",
+		"intro": "Déplacez le personnage vers le haut ou le bas dans son cadre, ou changez la taille du cadre. Chaque objet, animation et image suit. C’est gratuit et rien n’est redessiné.",
 		"previewLabel": "Personnage dans son cadre",
 		"preview": "Vue {direction} dans un cadre de {size} px",
 		"keys": "Quand l’aperçu a le focus, les flèches haut et bas déplacent le personnage de 1 px (avec Maj, 4 px).",

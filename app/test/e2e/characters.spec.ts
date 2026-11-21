@@ -1095,6 +1095,29 @@ test('character directions can be mirrored and unlinked on import and after savi
 			.click();
 		return page.getByRole('dialog', { name: 'Adjust frame', exact: true });
 	};
+	// Saves made before export ids existed have none; loading fills a default, and saving must not read that as a change.
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve, reject) => {
+				const r = indexedDB.open('pixeldoll');
+				r.onerror = () => reject(r.error);
+				r.onsuccess = () => {
+					const db = r.result,
+						store = db.transaction('projects', 'readwrite').objectStore('projects'),
+						all = store.getAll();
+					all.onsuccess = () => {
+						const rec = all.result.find((p) => p?.manifest?.name === 'Direction test hero');
+						if (!rec) return reject(new Error('Direction test hero not stored'));
+						delete rec.manifest.exportId;
+						store.put(rec, rec.id).onsuccess = () => {
+							db.close();
+							resolve();
+						};
+					};
+				};
+			})
+	);
+	await reloadStudio(page);
 	let frame = await openFrame();
 	const size = frame.getByRole('spinbutton', { name: 'Frame size', exact: true });
 	const position = frame.getByRole('slider', { name: 'Character in its frame', exact: true });

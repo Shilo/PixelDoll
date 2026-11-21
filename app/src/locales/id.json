@@ -2509,7 +2509,7 @@
 	},
 	"adjustFrame": {
 		"title": "Sesuaikan frame",
-		"intro": "Geser {name} ke atas atau ke bawah di dalam frame, atau ubah ukuran frame. Setiap item, animasi, dan frame ikut bergeser. Gratis dan tidak ada yang digambar ulang.",
+		"intro": "Geser karakter ke atas atau ke bawah di dalam frame, atau ubah ukuran frame. Setiap item, animasi, dan frame ikut bergeser. Gratis dan tidak ada yang digambar ulang.",
 		"previewLabel": "Karakter di dalam frame",
 		"preview": "Tampilan {direction} dalam frame {size} px",
 		"keys": "Saat pratinjau difokuskan, tombol panah atas dan bawah menggeser karakter 1 px (dengan Shift, 4 px).",

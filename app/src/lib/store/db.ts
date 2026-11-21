@@ -3,6 +3,7 @@ import { sha256, stableStringify } from '../image/hash.ts';
 import { LocalizedError } from '../message.ts';
 import type { StoredProject } from './project.ts';
 import { workspaceCopy } from './workspace-mode.ts';
+import { defaultCharacterExportId } from './identity.ts';
 
 export type StoreName = 'projects' | 'blobs' | 'jobs';
 export const CREATE_DRAFT_PREFIX = 'studio-create:';
@@ -342,7 +343,7 @@ export async function saveIdleCharacter(
 								'adjustFrame.errors.resolveDrafts'
 							)
 						: new Error('Keep or dismiss this character’s item drafts before changing directions.');
-			if (stableStringify(records.find((record) => record?.id === id)) !== version)
+			if (stableStringify(asLoaded(records.find((record) => record?.id === id))) !== version)
 				throw frames
 					? new LocalizedError(
 							'These frames changed since your review. Import the file again.',
@@ -361,6 +362,15 @@ export async function saveIdleCharacter(
 		blobs,
 		stoppedMove
 	);
+}
+
+/** A stored record as loadProject returns it: callers compare their loaded copy, which gains a default export id. */
+function asLoaded(record: StoredProject | undefined): StoredProject | undefined {
+	if (!record?.manifest || record.manifest.exportId) return record;
+	return {
+		...record,
+		manifest: { ...record.manifest, exportId: defaultCharacterExportId(record.id) }
+	};
 }
 
 type RelatedRecord = <R>(key: string) => R | undefined;
