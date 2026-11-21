@@ -602,11 +602,22 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await expect(copy.locator('.workspace-banner')).toBeVisible();
 	await expect(copy.locator('html')).toHaveAttribute('data-theme', 'light');
 	await expect(copy.locator('.project-btn')).toContainText('Workspace Alpha');
-	const warning = copy.locator('.world-coverage').filter({ hasText: /missing .* frames/ });
-	await expect(warning).toBeVisible();
-	const bannerBounds = (await copy.locator('.workspace-banner').boundingBox())!;
-	const warningBounds = (await warning.boundingBox())!;
-	expect(bannerBounds.y + bannerBounds.height).toBeLessThan(warningBounds.y);
+	await expect(
+		copy.getByRole('button', { name: 'Leather vest, missing some Walk frames' })
+	).toBeVisible();
+	const warning = copy
+		.locator('.world-coverage')
+		.filter({ hasText: '1 equipped item hidden for this view' });
+	await copy.locator('.world-stage').focus();
+	await copy.keyboard.down('s');
+	try {
+		await expect(warning).toBeVisible();
+		const bannerBounds = (await copy.locator('.workspace-banner').boundingBox())!;
+		const warningBounds = (await warning.boundingBox())!;
+		expect(bannerBounds.y + bannerBounds.height).toBeLessThan(warningBounds.y);
+	} finally {
+		await copy.keyboard.up('s');
+	}
 	if (evidence)
 		await copy.screenshot({
 			path: join(evidence, '03-workspace-copy-open.png'),
