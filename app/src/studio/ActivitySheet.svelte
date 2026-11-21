@@ -157,7 +157,7 @@
 					: []),
 				...running.flatMap((r) => [
 					{
-						scope: `job-running-${r.id}`,
+						scope: `job-${r.id}`,
 						label: `${nice(r)} · ${r.id}`,
 						plan: [],
 						queueIds: [r.id],
@@ -170,7 +170,7 @@
 					}
 				]),
 				...done.map((r) => ({
-					scope: `job-result-${r.id}`,
+					scope: `job-${r.id}`,
 					label: `${nice(r)} · ${r.id}`,
 					plan: [],
 					queueIds: [r.id],

@@ -1252,7 +1252,6 @@
 		"error": {
 			"tooLarge": "이 워크스페이스는 ZIP 크기나 아트워크 한도를 넘어요. 대신 캐릭터별 ZIP을 사용하세요.",
 			"containsKey": "저장된 필드에 연결됐거나 기억된 PixelLab 키가 있어요. 내보내기 전에 워크스페이스에서 제거하세요.",
-			"notWorkspace": "캐릭터 ZIP이 아닌, 내 워크스페이스 내보내기로 만든 ZIP을 선택하세요.",
 			"invalidIndex": "이 워크스페이스 인덱스가 잘못됐어요.",
 			"unsupportedVersion": "이 워크스페이스 파일 버전은 지원하지 않아요.",
 			"duplicateRecord": "이 워크스페이스에 지원하지 않거나 중복된 저장 레코드가 있어요.",

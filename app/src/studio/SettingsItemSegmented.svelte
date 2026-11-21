@@ -61,6 +61,10 @@
 		min-height: 38px;
 		gap: 6px;
 	}
+	.bu-segment > input {
+		inset-block: -3px;
+		height: calc(100% + 6px);
+	}
 	.option-icon {
 		display: flex;
 	}

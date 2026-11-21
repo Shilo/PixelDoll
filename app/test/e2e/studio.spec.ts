@@ -716,10 +716,17 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		.getByRole('button', { name: 'Language', exact: true })
 		.boundingBox();
 	expect(segmented?.height).toBe(language?.height);
+	for (const option of await settings
+		.getByRole('radiogroup', { name: 'Theme' })
+		.getByRole('radio')
+		.all()) {
+		expect((await option.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+	}
 
 	// Compact pages move page Reset into the header, which keeps one height on every page.
 	await page.setViewportSize({ width: 390, height: 844 });
 	const back = settings.getByRole('button', { name: 'Settings', exact: true });
+	expect((await back.boundingBox())?.width).toBeGreaterThanOrEqual(44);
 	await back.click();
 	await expect(pageReset).toHaveCount(0);
 	await expect(resetAll).toBeDisabled();

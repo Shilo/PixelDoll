@@ -25,6 +25,9 @@
 			return null;
 		return { used: total - remaining, total, remaining, exhausted: remaining === 0 };
 	});
+	const usedPercent = $derived(
+		usage ? formatPercent(usage.exhausted ? 1 : Math.min(0.999, usage.used / usage.total), 1) : ''
+	);
 	const creditBalance = $derived(balance?.credits?.usd);
 	const credits = $derived(
 		typeof creditBalance === 'number' &&
@@ -58,7 +61,7 @@
 				aria-label={t('usage.generations')}
 			></progress>
 			<div class="usage-stat bu-muted bu-small">
-				<span>{t('usage.used', { percent: formatPercent(usage.used / usage.total, 1) })}</span>
+				<span>{t('usage.used', { percent: usedPercent })}</span>
 				<span>{t('usage.remaining', { n: formatNumber(usage.remaining) })}</span>
 			</div>
 		{:else}
@@ -100,12 +103,7 @@
 						<progress class="bu-progress" value={usage.used} max={usage.total} aria-hidden="true"
 						></progress>
 						<span class="bu-small bu-muted bu-number">
-							{t('usage.used', {
-								percent: formatPercent(
-									usage.exhausted ? 1 : Math.min(0.999, usage.used / usage.total),
-									1
-								)
-							})}
+							{t('usage.used', { percent: usedPercent })}
 						</span>
 					{/if}
 					{#if credits !== null}

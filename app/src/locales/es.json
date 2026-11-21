@@ -1303,7 +1303,6 @@
 		"error": {
 			"tooLarge": "Este espacio de trabajo supera el límite de tamaño del ZIP o el de las imágenes. Usa ZIP de personajes individuales.",
 			"containsKey": "Un campo guardado contiene la clave de PixelLab en uso o guardada en el dispositivo. Elimínala de ese campo antes de exportar el espacio de trabajo.",
-			"notWorkspace": "Elige un ZIP creado con Exportar mi espacio de trabajo, no un ZIP de personaje.",
 			"invalidIndex": "El índice de este espacio de trabajo no es válido.",
 			"unsupportedVersion": "Esta versión de archivo de espacio de trabajo no es compatible.",
 			"duplicateRecord": "Este espacio de trabajo contiene un registro guardado no compatible o duplicado.",

@@ -570,8 +570,8 @@ export async function readWorkspaceFiles(
 	const json = files.get(indexPath);
 	if (!json)
 		throw new LocalizedError(
-			'Choose a ZIP made with Export my workspace, not a character ZIP.',
-			'workspace.error.notWorkspace'
+			'Choose a PixelDoll backup or workspace ZIP, not a character ZIP.',
+			'backup.error.notBackup'
 		);
 	const index = parseIndex(json, workspaceErrors) as WorkspaceIndex | null;
 	if (index?.format !== format)

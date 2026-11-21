@@ -36,7 +36,7 @@
 			display: inline-flex;
 			gap: 2px;
 			max-width: 100%;
-			min-width: 0;
+			min-width: 44px;
 			min-height: 0;
 			position: relative;
 			/* The chevron's drawn stroke starts 6px into its 18px box; line that stroke up with the body's

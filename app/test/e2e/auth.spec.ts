@@ -309,14 +309,20 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 	let held: Promise<void> | undefined;
 	await page.route('https://api.pixellab.ai/v2/balance', async (route) => {
 		await held;
-		await route.fallback();
+		await route.fulfill({
+			json: {
+				subscription: { type: 'generations', status: 'active', generations: 1, total: 10_000 },
+				credits: { usd: 0 }
+			}
+		});
 	});
 	await page.addInitScript((key) => localStorage.setItem('pixellabApiKey', key), key);
 	await openStudio(page, '/');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
-	await expect(settings.getByText('Remaining: 42', { exact: true })).toBeVisible();
+	await expect(settings.getByText('Remaining: 1', { exact: true })).toBeVisible();
+	await expect(settings.getByText('99.9% used', { exact: true })).toBeVisible();
 
 	const heading = settings.getByRole('heading', { name: 'PixelLab usage', exact: true });
 	const refresh = settings.getByRole('button', { name: 'Refresh balance', exact: true });

@@ -1303,7 +1303,6 @@
 		"error": {
 			"tooLarge": "Dieser Arbeitsbereich überschreitet das Limit für die ZIP-Größe oder die Grafiken. Verwende stattdessen einzelne Figuren-ZIPs.",
 			"containsKey": "Ein gespeichertes Feld enthält den verbundenen oder gespeicherten PixelLab-Schlüssel. Entferne ihn vor dem Export aus dem Arbeitsbereich.",
-			"notWorkspace": "Wähle ein ZIP aus „Meinen Arbeitsbereich exportieren“, kein Figuren-ZIP.",
 			"invalidIndex": "Dieser Arbeitsbereichsindex ist ungültig.",
 			"unsupportedVersion": "Diese Version der Arbeitsbereichsdatei wird nicht unterstützt.",
 			"duplicateRecord": "Dieser Arbeitsbereich enthält einen nicht unterstützten oder doppelten gespeicherten Datensatz.",

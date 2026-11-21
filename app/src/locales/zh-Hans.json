@@ -1237,7 +1237,6 @@
 		"error": {
 			"tooLarge": "此工作区超出 ZIP 大小或图像限制。请改用单独的角色 ZIP。",
 			"containsKey": "已保存的字段包含已连接或已记住的 PixelLab 密钥。导出前请将其从工作区中移除。",
-			"notWorkspace": "请选择用“导出我的工作区”制作的 ZIP，而不是角色 ZIP。",
 			"invalidIndex": "此工作区索引无效。",
 			"unsupportedVersion": "不支持此工作区文件版本。",
 			"duplicateRecord": "此工作区包含不受支持或重复的已保存记录。",

@@ -1294,7 +1294,6 @@
 		"error": {
 			"tooLarge": "This workspace exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.",
 			"containsKey": "A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.",
-			"notWorkspace": "Choose a ZIP made with Export my workspace, not a character ZIP.",
 			"invalidIndex": "This workspace index is invalid.",
 			"unsupportedVersion": "This workspace file version is not supported.",
 			"duplicateRecord": "This workspace contains an unsupported or duplicate saved record.",

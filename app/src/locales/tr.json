@@ -1297,7 +1297,6 @@
 		"error": {
 			"tooLarge": "Bu çalışma alanı ZIP boyutu veya görsel sınırını aşıyor. Bunun yerine karakterleri ayrı ZIP dosyaları olarak alın.",
 			"containsKey": "Kayıtlı bir alan, bağlı veya hatırlanan PixelLab anahtarını içeriyor. Dışa aktarmadan önce anahtarı çalışma alanından kaldırın.",
-			"notWorkspace": "Karakter ZIP dosyası yerine Çalışma alanımı dışa aktarın komutuyla oluşturulmuş bir ZIP seçin.",
 			"invalidIndex": "Bu çalışma alanı dizini geçersiz.",
 			"unsupportedVersion": "Bu çalışma alanı dosyasının sürümü desteklenmiyor.",
 			"duplicateRecord": "Bu çalışma alanı desteklenmeyen veya yinelenen bir kayıt içeriyor.",

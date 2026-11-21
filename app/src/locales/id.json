@@ -1249,7 +1249,6 @@
 		"error": {
 			"tooLarge": "Ruang kerja ini melebihi batas ukuran ZIP atau gambar. Gunakan ZIP per karakter sebagai gantinya.",
 			"containsKey": "Ada kolom tersimpan yang berisi kunci PixelLab yang terhubung atau diingat. Hapus kunci tersebut dari ruang kerja sebelum mengekspor.",
-			"notWorkspace": "Pilih ZIP dari Ekspor ruang kerja saya, bukan ZIP karakter.",
 			"invalidIndex": "Indeks ruang kerja ini tidak valid.",
 			"unsupportedVersion": "Versi file ruang kerja ini tidak didukung.",
 			"duplicateRecord": "Ruang kerja ini berisi data tersimpan yang tidak didukung atau duplikat.",
