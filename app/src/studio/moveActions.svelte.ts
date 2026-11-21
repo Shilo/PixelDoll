@@ -56,7 +56,11 @@ export async function captureState(moveId: string) {
 
 	const root = `${moveId}-end`;
 	let id = root;
-	for (let suffix = 2; rig.animations.some((clip) => clip.id === id); suffix++)
+	for (
+		let suffix = 2;
+		rig.animations.some((clip) => clip.id === id) || Object.hasOwn(snapshot.moveReviews ?? {}, id);
+		suffix++
+	)
 		id = `${root}-${suffix}`;
 	const captured: typeof sourceCells = {};
 	const sources: NonNullable<typeof move.sources> = {};
@@ -107,7 +111,7 @@ export async function captureState(moveId: string) {
 		check();
 		if (!record)
 			throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
-		if (stableStringify(record.manifest) !== version)
+		if (stableStringify(record.manifest) !== version || Object.hasOwn(record.moveReviews ?? {}, id))
 			throw new LocalizedError(
 				'This character changed before the state could be captured. Try again.',
 				'stateCapture.concurrentEdit'

@@ -323,21 +323,25 @@ or **Slash** below the field. Typing deselects the preset; picking a preset clea
 **Start from** normally uses Standing. Pick a State to use its still, or a Move to use its last saved playback frame in each drawn facing. Open **Choose a frame** to pick a different frame by thumbnail. The selected frame must have artwork and measured joints in every requested facing. It is a generation reference, not a guarantee that the first generated frame will be pixel-identical. A redraw keeps its saved starting frame unless you select another source.
 
 In **Moves**, open a Move's **More actions** menu and choose **Capture final pose** to save its last playback frame as a local, body-only State without using credits. Equipment is fitted separately and never borrowed from Standing. Deleting a State removes its own frames and fits, not finished Moves that used it. Generic runtime exports include both States and Moves; engine formats limited to specific animations may omit additional States.
-Items you check under **Animate these items too** are made for the new move.
-Items are unchecked by default so you can approve the body motion before buying its equipment frames.
-Items you leave out stay hidden in that move until you make them. A worn item without frames for the current move shows
-a note on the stage with **Make it** and its price.
 
-**Queue another move** lets you set up the next move while one is running. Moves run one at a time. If a move fails, the queue waits: **Try again** continues
-with the queued moves, **Start over** drops them.
+**Generate move** buys only the character's motion. In **Review move**, play or step through the new frames and check
+each direction. Choose **Save move** or **Replace move** when it looks right. If any items can be animated, the optional
+item picker opens with nothing selected. Each item has its own estimate, and the total updates as you select items.
+Click **Animate** with the selected count to request those frames, or **Done** to finish without spending more.
+Items you leave out stay hidden in that move until you make them. A worn item without
+frames for the current move shows a note on the stage with **Make it** and its price.
+
+**Queue another move** lets you set up the next move while one is running. Moves run one at a time. Completed reviews
+stay in **Moves**, even after reloading, and don't hold up the queue. If a move fails, the queue waits: **Try again**
+continues with the queued moves, **Start over** drops them.
 
 Moves are added to your own characters (not the demo), using their existing direction policy. Older mirrored characters
 stay mirrored; the new-character setting does not rebuild their frozen artwork.
 
 To repair an existing move, select its **added** chip in **Add a move**, then use the **Directions to redraw** compass. Views with failed body
-checks are selected initially. Other directions and moves keep their existing pixels. Selected equipment is re-posed
-only for the replaced views; other equipment stays hidden there until **Make it** fills the missing views. A replacement
-that still fails body checks keeps the previous artwork.
+checks are selected initially. The current move and its fitted equipment stay in place until you accept the replacement.
+Only the replaced views lose their old equipment frames. Animate selected items there or use **Make it** later.
+Visual warnings don't stop you from saving or replacing a move. Missing frames or invalid joints still prevent saving.
 
 For an accepted item that has bad frames, select the move and facing direction in the preview, then use **Try new item
 frames** in the Item sheet. This redraws that item's frames on the frozen body, preserving its saved design and the other

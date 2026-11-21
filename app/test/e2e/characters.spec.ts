@@ -2390,11 +2390,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await page.getByRole('radio', { name: 'Idle', exact: true }).click();
-	await page.getByRole('button', { name: /^Add Idle/ }).click();
-	await expect(
-		page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true })
-	).toBeVisible({ timeout: 45_000 });
-	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('button', { name: /^Generate move/ }).click();
+	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
+	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
+	await expect(review).not.toBeVisible();
 	const after = await read(),
 		idle = after.manifest.rig.animations.find((a) => a.id === 'idle')!;
 	expect(after.manifest.items[0].layers[0].cells!.default).toEqual(
@@ -2491,6 +2490,25 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const remaining = await read();
 	expect(remaining.manifest.rig.animations).toEqual(after.manifest.rig.animations);
 	expect(posts).toHaveLength(posted);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
+	await moveSheet.getByRole('radio', { name: 'Slash', exact: true }).click();
+	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
+	await moveSheet
+		.locator('.move-source-list button')
+		.filter({ hasText: /^Idle$/ })
+		.click();
+	await moveSheet.getByText('Choose a frame', { exact: true }).click();
+	await frames.filter({ hasText: /^Frame 2$/ }).click();
+	await moveSheet.getByRole('button', { name: /^Generate move/ }).click();
+	await expect(review).toBeVisible({ timeout: 45_000 });
+	const pending = await read();
+	expect(pending.manifest.rig.animations.some(({ id }) => id === 'slash')).toBe(false);
+	expect(pending.moveReviews?.slash?.spec.startFrom).toMatchObject({ clip: 'idle', cell: 1 });
+	await review.getByRole('button', { name: /^Regenerate/ }).click();
+	await expect(moveSheet.getByText('Start from · Idle', { exact: true })).toBeVisible();
+	await moveSheet.getByText('Choose a frame', { exact: true }).click();
+	await expect(frames.filter({ hasText: /^Frame 2$/ })).toHaveAttribute('aria-pressed', 'true');
 	expect(errors).toEqual([]);
 });
 
@@ -2545,9 +2563,8 @@ test('a stopped move blocks deleting only its own character and opens from the b
 	await deletion.getByRole('button', { name: 'View pending work' }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move' });
 	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeVisible();
-	await move.getByRole('button', { name: 'Start over' }).click();
-	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeHidden();
-	await page.keyboard.press('Escape');
+	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(move).toBeHidden();
 	await remove();
 	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(deletion).toBeHidden();

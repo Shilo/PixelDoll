@@ -12,6 +12,7 @@
 		moving,
 		blockedByWork,
 		openPendingWork,
+		openMoveReview,
 		openFrames,
 		toast
 	} from './state.svelte.ts';
@@ -62,6 +63,20 @@
 	{#if m && view.project && thumbnails}
 		<span class="sr" role="status">{capturing ? t('stateCapture.saving') : ''}</span>
 		<div class="move-list">
+			{#each kind === 'move' ? Object.values(store.moveReviews) : [] as candidate (candidate.spec.id)}
+				<button
+					class="move-row bu-action"
+					data-variant="tile"
+					onclick={() => openMoveReview(candidate.spec.id)}
+				>
+					<span class="move-text"
+						><b>{nice(candidate.spec.id)}</b><span class="muted small"
+							>{t('moveSheet.checkpoint.review')}</span
+						></span
+					>
+					<ChevronRight size={16} />
+				</button>
+			{/each}
 			{#each clips as { clip: a } (a.id)}
 				{@const image = thumbnails(a.id, ui.dir, ui.frame)}
 				{@const base = m.items.find((i) => i.id === m.rig.baseItem)}

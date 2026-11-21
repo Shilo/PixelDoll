@@ -19,6 +19,7 @@
 		disabled = false,
 		shortLabels = false,
 		compact = false,
+		preview = false,
 		ontoggle,
 		onmirror
 	}: {
@@ -32,6 +33,7 @@
 		disabled?: boolean;
 		shortLabels?: boolean;
 		compact?: boolean;
+		preview?: boolean;
 		ontoggle: (dir: DirectionName) => void;
 		onmirror?: (dir: DirectionName) => void;
 	} = $props();
@@ -98,7 +100,7 @@
 				>
 					<ArrowUp size={18} style="transform:rotate({ANGLES[dir]}deg)" />
 					<span>
-						{displayDirectionShort(dir)}{#if compact && selected.includes(dir)}<Check
+						{displayDirectionShort(dir)}{#if compact && !preview && selected.includes(dir)}<Check
 								size={11}
 								aria-hidden="true"
 							/>{/if}{#if !onmirror && source}<MirrorViews size={12} />{/if}

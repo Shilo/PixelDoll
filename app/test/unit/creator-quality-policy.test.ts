@@ -30,8 +30,10 @@ vi.mock('../../src/lib/store/db.ts', () => ({
 	updateCharacter: async (
 		id: string,
 		images: Map<string, Blob>,
-		update: (record: StoredProject | undefined) => StoredProject
+		update: (record: StoredProject | undefined) => StoredProject,
+		stored?: { keys: Iterable<string>; missing: (key: string) => Error }
 	) => {
+		for (const key of stored?.keys ?? []) if (!state.blobs.has(key)) throw stored!.missing(key);
 		const next = update(structuredClone(state.projects.get(id)));
 		for (const [hash, image] of images) state.blobs.set(hash, image);
 		state.projects.set(id, structuredClone(next));
@@ -69,7 +71,8 @@ vi.mock('../../src/lib/pixellab/queue.ts', () => ({
 	}
 }));
 
-import { addMove } from '../../src/studio/create.ts';
+import { addMove, resolveMoveCandidate, reviewItemMove } from '../../src/studio/create.ts';
+import { moveCandidateInput } from '../../src/studio/replaceMove.ts';
 import { equipmentFixture, bodyOnly } from './equipment-fixture.ts';
 import { decodePng, makeImg, type Img } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -136,6 +139,129 @@ afterEach(() => {
 });
 const add = () =>
 	addMove('rig-quality', { id: 'jump', action: 'idle', frames: 4, items: [], seed: 7 });
+
+test('the Studio checkpoint stages move frames without publishing or requesting items', async () => {
+	const projectId = 'rig-quality';
+	const spec = {
+		id: 'jump',
+		action: 'idle',
+		frames: 4,
+		items: [],
+		seed: 7,
+		reviewBeforePublish: true as const
+	};
+	await expect(addMove(projectId, { ...spec, items: ['sword'] })).rejects.toThrow(
+		'Review the move'
+	);
+	expect(state.requests).toHaveLength(0);
+	await expect(addMove(projectId, spec)).resolves.toMatchObject({ moveReview: 'jump' });
+	const record = state.projects.get(projectId)!;
+	const candidate = record.moveReviews!.jump;
+	expect(record.manifest.rig.animations.map((move) => move.id)).not.toContain('jump');
+	expect(candidate.cells.south).toHaveLength(4);
+	expect(state.rawCount).toBe(1);
+	const count = state.requests.length;
+	await expect(addMove(projectId, spec)).resolves.toMatchObject({ moveReview: 'jump' });
+	await expect(addMove(projectId, { ...spec, seed: 8 })).rejects.toThrow('changed');
+	const input = await resolveMoveCandidate(projectId, candidate, true);
+	const published = state.projects.get(projectId)!;
+	expect(input).toBe(moveCandidateInput(published, spec.id));
+	expect(published.moveReviews?.jump).toBeUndefined();
+	expect(published.manifest.rig.animations.map((move) => move.id)).toContain('jump');
+	await expect(resolveMoveCandidate(projectId, candidate, true)).rejects.toThrow('changed');
+	expect(state.requests).toHaveLength(count);
+});
+
+test.each(['save', 'discard', 'structural failure'] as const)(
+	'a replacement with visual warnings: %s',
+	async (decision) => {
+		await add();
+		const projectId = 'rig-quality';
+		const before = state.projects.get(projectId)!;
+		const hat = (await equipmentFixture()).manifest.items[1];
+		hat.baseHash = before.manifest.rig.baseHash;
+		const frame = before.manifest.rig.rest!.south!.image;
+		hat.layers[0].cells = { jump: { south: [frame, frame, frame, frame] } };
+		before.manifest.items.push(hat);
+		state.output = (await store(image(-4, true))).slice(7);
+		state.estimate = points(0.9);
+		await expect(
+			addMove(projectId, {
+				id: 'jump',
+				action: 'idle',
+				frames: 4,
+				items: [],
+				seed: 8,
+				dirs: ['south'],
+				replace: true,
+				reviewBeforePublish: true
+			})
+		).resolves.toMatchObject({ moveReview: 'jump' });
+		const staged = state.projects.get(projectId)!;
+		const candidate = staged.moveReviews!.jump;
+		expect(candidate.checks['jump/south'].fails).toEqual([]);
+		expect(candidate.warnings).not.toHaveLength(0);
+		expect(staged.manifest).toEqual(before.manifest);
+		const requests = state.requests.length;
+		if (decision === 'save') {
+			await resolveMoveCandidate(projectId, candidate, true);
+			const saved = state.projects.get(projectId)!;
+			expect(saved.moveReviews?.jump).toBeUndefined();
+			expect(saved.manifest.items[0].layers[0].cells!.jump.south).not.toEqual(
+				before.manifest.items[0].layers[0].cells!.jump.south
+			);
+			expect(
+				saved.manifest.items.find((item) => item.id === hat.id)!.layers[0].cells?.jump?.south
+			).toBeUndefined();
+			expect(saved.rigQa).toMatchObject({ warnings: expect.arrayContaining(candidate.warnings) });
+		} else {
+			if (decision === 'structural failure') {
+				const reviewed = structuredClone(candidate);
+				candidate.checks['jump/south'].fails.push('missing or invalid frame joints');
+				state.projects.set(projectId, staged);
+				await expect(resolveMoveCandidate(projectId, reviewed, true)).rejects.toThrow(
+					'needs fixes'
+				);
+			} else await resolveMoveCandidate(projectId, candidate, false);
+			expect(state.projects.get(projectId)?.manifest).toEqual(before.manifest);
+		}
+		expect(state.requests).toHaveLength(requests);
+	}
+);
+
+test('approved item work skips already-fitted views and refuses changed artwork', async () => {
+	await add();
+	const projectId = 'rig-quality';
+	const record = state.projects.get(projectId)!;
+	const manifest = record.manifest;
+	const item = (await equipmentFixture()).manifest.items[1];
+	const rest = manifest.rig.rest!.south!.image;
+	item.baseHash = manifest.rig.baseHash;
+	item.route = 'skeleton-pose';
+	item.key = 'green';
+	item.dressed = { south: rest };
+	manifest.items.push(item);
+	const spec = reviewItemMove(manifest, {
+		id: 'jump',
+		items: [item.id],
+		itemsOnly: true,
+		reviewedMoveItems: true,
+		dirs: ['south'],
+		frames: 4,
+		seed: 7
+	});
+	expect(spec.itemReview!.gens).toBeGreaterThan(0);
+	item.layers[0].cells = { jump: { south: [rest, rest, rest, rest] } };
+	item.coverage = [0, 1, 2, 3].map((cell) => `jump/south/${cell}` as const);
+	const count = state.requests.length;
+	await addMove(projectId, spec);
+	expect(state.requests).toHaveLength(count);
+	const after = state.projects.get(projectId)!;
+	after.manifest.rig.animations.find((move) => move.id === 'jump')!.sources!.south!.motion =
+		'different';
+	await expect(addMove(projectId, spec)).rejects.toThrow('item or price changed');
+	expect(state.requests).toHaveLength(count);
+});
 
 test('actual Add move keeps detached parts and observation differences without another paid drawing', async () => {
 	const art = image(-3, true, true);
