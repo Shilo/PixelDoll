@@ -333,6 +333,10 @@ interface DryRun {
 	records: JobRec[];
 	checks: number;
 	unmeasured: boolean;
+	/** A joint check of this replay is still at PixelLab, so what follows it is not known yet. */
+	running: boolean;
+	/** A request the stopped flow canceled before sending was never bought; a continuation on a new attempt sends it. */
+	reopensCanceled?: boolean;
 }
 const dryRuns = new WeakMap<AbortSignal, DryRun>();
 /** The finished record a resume-safe run of `req` would return (done, or stopped and replayed), never one still running. */
@@ -357,7 +361,9 @@ async function dryRecord(req: Req, label: string, dry: DryRun): Promise<JobRec> 
 		return done;
 	}
 	if (matches.some(live)) throw new Unpaid(req.path, true);
-	const stopped = matches[0];
+	const stopped = dry.reopensCanceled
+		? matches.find((r) => !(r.state === 'canceled' && r.autoCanceledAttempts?.length))
+		: matches[0];
 	// A resume-safe request replays its stopped record instead of sending again, so only a new seed can buy another.
 	if (stopped)
 		throw new PaidStepError(
@@ -584,7 +590,8 @@ export async function joints(
 		const dry = signal && dryRuns.get(signal);
 		if (dry && e instanceof Unpaid) {
 			// A review prices an unbought check instead of failing on it; the steps after it are priced from the plan.
-			if (!e.running) dry.checks++;
+			if (e.running) dry.running = true;
+			else dry.checks++;
 			dry.unmeasured = true;
 			return undefined;
 		}
@@ -706,7 +713,8 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 			return k;
 		})
 	);
-	if (j.signal && dryRuns.get(j.signal)?.unmeasured) throw new Unpaid('render-joints');
+	const dryJoints = j.signal && dryRuns.get(j.signal);
+	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('render-joints', dryJoints.running);
 	if (measured.some((k) => !hasAll(k)))
 		throw new PaidStepError(
 			`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`,
@@ -919,7 +927,8 @@ async function motion(
 			return k;
 		})
 	);
-	if (signal && dryRuns.get(signal)?.unmeasured) throw new Unpaid('motion-joints');
+	const dryJoints = signal && dryRuns.get(signal);
+	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('motion-joints', dryJoints.running);
 	if (kps.some((k) => !k))
 		throw new PaidStepError(
 			`${label}: joints not found on every frame`,
@@ -1088,7 +1097,7 @@ export interface CreatePaidReview extends PaidReview {
  *  when nothing was drawn yet or the character is already saved. */
 export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidReview | undefined> {
 	const scope = new AbortController(),
-		dry: DryRun = { records: [], checks: 0, unmeasured: false };
+		dry: DryRun = { records: [], checks: 0, unmeasured: false, running: false };
 	dryRuns.set(scope.signal, dry);
 	let outcome: unknown;
 	try {
@@ -1380,7 +1389,8 @@ export async function createCharacter(
 			);
 		restKps[d] = kps!;
 	}
-	if (signal && dryRuns.get(signal)?.unmeasured) throw new Unpaid('/estimate-skeleton');
+	const dryJoints = signal && dryRuns.get(signal);
+	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('/estimate-skeleton', dryJoints.running);
 
 	// 3. freeze the Default move: one standing frame per direction, posed by its own rest keypoints (`imported-rest`, so items
 	// reuse their dressed standing view for it). Idle, walk and other moves are added from Moves through addMove.
@@ -1508,6 +1518,9 @@ export interface MoveSpec {
 	seed: number;
 	/** Per-view seed salts chosen in a paid-result review: only that view's failed step is bought again. */
 	reroll?: Partial<Record<DirectionName, { motion?: number; render?: number }>>;
+	/** The attempt a reviewed continuation runs as (default: the seed). A new one reopens requests the stopped attempt
+	 *  canceled before sending (queue autoCanceledAttempts), so they are sent instead of replayed as stopped. */
+	attempt?: number;
 	/** Consent to raise each overflowing motion frame of a view by these rows so the skeleton source fits the frame. */
 	motionLift?: Partial<Record<DirectionName, number[]>>;
 	/** Preflight warnings (PreflightWarning ids from movePreflightWarnings) the user chose to generate past. */
@@ -3337,7 +3350,13 @@ interface ReplayedView {
 }
 async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedView> {
 	const scope = new AbortController(),
-		dry: DryRun = { records: [], checks: 0, unmeasured: false };
+		dry: DryRun = {
+			records: [],
+			checks: 0,
+			unmeasured: false,
+			running: false,
+			reopensCanceled: true
+		};
 	dryRuns.set(scope.signal, dry);
 	const priced = (gens: number) => +(dry.checks * EST + gens).toFixed(2);
 	try {
@@ -3450,12 +3469,19 @@ async function makeRoomOption(
 	return {
 		id: 'enlarge-frame',
 		label: message('moveReview.makeRoom'),
-		detail: message('moveReview.makeRoomDetail', { change: frameChangeText(size, change) }),
+		// A native model draws from the standing frame, so the changed frame is drawn again in every view (priced above).
+		detail: message(
+			plan.model === 'skeleton-v3'
+				? 'moveReview.makeRoomDetail'
+				: 'moveReview.makeRoomDetailRedraw',
+			{ change: frameChangeText(size, change) }
+		),
 		gens,
 		paid: gens > 0,
 		primary,
 		spec,
-		change: { size: change.size, dy: change.dy }
+		change: { size: change.size, dy: change.dy },
+		reviewed: rec
 	};
 }
 /** The box of pixels at or above `thr` alpha: what normalize keeps and counts as cut. */
@@ -3478,6 +3504,8 @@ export interface MovePaidOption extends PaidOption {
 	spec: MoveSpec;
 	/** `enlarge-frame`: the free Adjust frame change applied before the move continues with `spec`. */
 	change?: FrameChange;
+	/** The character `change` was planned and priced on; a changed character needs a new review. */
+	reviewed?: StoredProject;
 }
 export interface MovePaidReview extends PaidReview {
 	options: MovePaidOption[];
@@ -3494,6 +3522,7 @@ const resumeSpec = (spec: MoveSpec, change: Partial<MoveSpec> = {}): MoveSpec =>
 	reuseItemFrames: undefined,
 	measurementRecovery: undefined,
 	bodyPaletteRepair: undefined,
+	attempt: salt(),
 	...change
 });
 /** API-free review of a stopped body move: every view replayed from the request cache in one pass, showing what each bought
@@ -3713,7 +3742,7 @@ async function addBodyClip(
 					tick();
 				})
 		),
-		spec.seed,
+		spec.attempt ?? spec.seed,
 		recovery && {
 			intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] },
 			rawHashes: new Set(recovery.rawHashes),

@@ -2616,6 +2616,7 @@
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, for free. The paid motion is reused; only the steps on the changed frame are bought.",
+		"makeRoomDetailRedraw": "{change}, for free. This model draws from the standing frame, so the move is drawn again on the changed frame.",
 		"makeRoom": "Make room and continue",
 		"resume": "Continue with paid results",
 		"lift": "Continue, lifted to fit",

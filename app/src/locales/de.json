@@ -2631,6 +2631,7 @@
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, kostenlos. Die bezahlte Bewegung wird wiederverwendet; nur die Schritte im geänderten Frame werden gekauft.",
+		"makeRoomDetailRedraw": "{change}, kostenlos. Dieses Modell zeichnet vom stehenden Frame aus, daher wird die Bewegung im geänderten Frame neu gezeichnet.",
 		"makeRoom": "Platz schaffen und fortfahren",
 		"resume": "Mit bezahlten Ergebnissen fortfahren",
 		"lift": "Fortfahren, angehoben",

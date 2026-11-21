@@ -2522,6 +2522,7 @@
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, gratis. Gerakan yang sudah dibayar dipakai ulang; hanya langkah pada frame yang diubah yang dibeli.",
+		"makeRoomDetailRedraw": "{change}, gratis. Model ini menggambar dari frame berdiri, jadi gerakan digambar ulang pada frame yang diubah.",
 		"makeRoom": "Beri ruang dan lanjutkan",
 		"resume": "Lanjutkan dengan hasil berbayar",
 		"lift": "Lanjutkan, dinaikkan agar muat",

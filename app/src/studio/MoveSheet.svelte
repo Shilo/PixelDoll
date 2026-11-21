@@ -87,7 +87,7 @@
 	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
-	import { errorText, message, type Message } from '../lib/message.ts';
+	import { errorText, LocalizedError, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
 
@@ -479,6 +479,8 @@
 		}, recoveryTier);
 	}
 
+	// A new seed while a reviewed request is still at PixelLab would buy that view again before its result is known.
+	const paidRunning = $derived(!!paid?.views.some((view) => view.state === 'running'));
 	// An item repair stopped by a misaligned batch: its earlier batches are kept; only that batch is re-rolled.
 	const batchReview = $derived.by((): (PaidReviewData & { start: string }) | null => {
 		const error = moving.error,
@@ -528,15 +530,25 @@
 	function choosePaid(option: MovePaidOption) {
 		const projectId = moving.projectId,
 			spec = $state.snapshot(option.spec),
-			change = option.change && { ...option.change };
+			change = option.change && { ...option.change },
+			reviewed = option.reviewed && $state.snapshot(option.reviewed);
 		const go = () => {
 			ui.sheet = 'move';
 			void (async () => {
 				if (change) {
 					try {
-						await adjustCharacter(projectId, change, { stoppedMove: true, quiet: true });
+						await adjustCharacter(projectId, change, {
+							stoppedMove: true,
+							quiet: true,
+							expect: reviewed
+						});
 					} catch (error) {
-						recoveryError = errorMessage(error);
+						// Changed since this review (another tab): the planned change and its price no longer apply.
+						recoveryError =
+							error instanceof LocalizedError &&
+							error.translation.key === 'adjustFrame.errors.changed'
+								? message('moveSheet.checkpoint.changed')
+								: errorMessage(error);
 						return;
 					}
 				}
@@ -761,7 +773,7 @@
 						class="bu-action btn"
 						class:primary={!hasFrameRecovery}
 						data-variant={hasFrameRecovery ? 'outline' : 'primary'}
-						disabled={!!retryAccess.error || tierBlocked(retryTier)}
+						disabled={!!retryAccess.error || tierBlocked(retryTier) || paidRunning}
 						aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
 						onclick={() =>
 							moving.spec &&
@@ -771,6 +783,7 @@
 									reuseItemFrames: undefined,
 									measurementRecovery: undefined,
 									bodyPaletteRepair: undefined,
+									attempt: undefined,
 									seed: 1 + Math.floor(Math.random() * 1_000_000)
 								});
 								ui.sheet = 'move';

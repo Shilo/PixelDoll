@@ -2632,6 +2632,7 @@
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, gratuitement. Le mouvement payé est réutilisé ; seules les étapes sur le cadre modifié sont achetées.",
+		"makeRoomDetailRedraw": "{change}, gratuitement. Ce modèle dessine à partir du cadre debout, donc le mouvement est redessiné sur le cadre modifié.",
 		"makeRoom": "Faire de la place et continuer",
 		"resume": "Continuer avec les résultats payés",
 		"lift": "Continuer, relevé pour tenir",

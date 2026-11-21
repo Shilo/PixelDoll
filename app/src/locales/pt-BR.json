@@ -2645,6 +2645,7 @@
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, de graça. O movimento pago é reutilizado; só as etapas no quadro alterado são compradas.",
+		"makeRoomDetailRedraw": "{change}, de graça. Este modelo desenha a partir do quadro parado, então o movimento é desenhado de novo no quadro alterado.",
 		"makeRoom": "Abrir espaço e continuar",
 		"resume": "Continuar com os resultados pagos",
 		"lift": "Continuar, elevado para caber",

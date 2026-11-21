@@ -11,6 +11,8 @@ import {
 	type Message
 } from '../lib/message.ts';
 import { SvelteSet } from 'svelte/reactivity';
+import type { WhisperKey, WhisperVars } from 'svelte-whisper';
+import { PaidStepError, type PaidStep } from '../lib/pixellab/paid-results.ts';
 import {
 	applyDress,
 	dressOf,
@@ -3340,11 +3342,15 @@ interface FlowDraft<S> {
 	spec: S;
 	status?: 'running' | 'failed' | 'review';
 	error?: string;
+	/** The failure was a PaidStepError: its review (such as a single repair batch re-roll) survives a reload. */
+	paid?: { key: WhisperKey; vars?: WhisperVars; step: PaidStep };
 	progress?: Progress | null;
 	requestText?: number;
 }
 function restoredFlowError(record: FlowDraft<{ activityScope?: string }>, fallback: string) {
 	const raw = record.error || fallback;
+	if (record.paid && record.error)
+		return new PaidStepError(raw, record.paid.key, record.paid.vars, record.paid.step);
 	if (raw === STOPPED) return new LocalizedError(raw, 'generation.outcome.stopped');
 	if (raw === SETUP_STOPPED) return new LocalizedError(raw, 'generation.outcome.setupStopped');
 	if (raw === REPAIR_REVIEW_RECOVERY) return new LocalizedError(raw, 'repairReview.recover');
@@ -3381,7 +3387,21 @@ async function persistFlowFailure(
 	const shown = error instanceof LocalizedError ? error : text;
 	if (error instanceof LoadError) return shown;
 	try {
-		await write({ id: key, ...record, status: 'failed', error: text });
+		await write({
+			id: key,
+			...record,
+			status: 'failed',
+			error: text,
+			...(error instanceof PaidStepError
+				? {
+						paid: {
+							key: error.translation.key,
+							vars: error.translation.vars,
+							step: error.paid
+						}
+					}
+				: {})
+		});
 	} catch {
 		return new LocalizedError(
 			`${text} Could not save this failure on this device. Dismiss this operation before reloading.`,

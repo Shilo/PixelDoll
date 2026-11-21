@@ -2500,6 +2500,7 @@
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}，免费。复用已付费的动作；只购买在更改后的帧上的步骤。",
+		"makeRoomDetailRedraw": "{change}，免费。此模型基于站立帧绘制，因此会在更改后的帧上重新绘制动作。",
 		"makeRoom": "腾出空间并继续",
 		"resume": "使用付费结果继续",
 		"lift": "抬高以适配并继续",

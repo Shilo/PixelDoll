@@ -2519,6 +2519,7 @@
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, 무료예요. 결제한 움직임을 다시 쓰고, 바뀐 프레임에서의 단계만 구매해요.",
+		"makeRoomDetailRedraw": "{change}, 무료예요. 이 모델은 서 있는 프레임에서 그리므로, 바뀐 프레임에서 움직임을 다시 그려요.",
 		"makeRoom": "공간 만들고 계속",
 		"resume": "결제된 결과로 계속",
 		"lift": "맞게 올려서 계속",

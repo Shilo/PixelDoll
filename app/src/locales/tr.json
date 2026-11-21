@@ -2625,6 +2625,7 @@
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, ücretsiz. Ödenmiş hareket yeniden kullanılır; yalnızca değişen karedeki adımlar satın alınır.",
+		"makeRoomDetailRedraw": "{change}, ücretsiz. Bu model duran kareden çizer, bu yüzden hareket değişen karede yeniden çizilir.",
 		"makeRoom": "Yer açın ve devam edin",
 		"resume": "Ücretli sonuçlarla devam et",
 		"lift": "Sığması için yükseltip devam et",

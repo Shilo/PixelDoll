@@ -1759,6 +1759,46 @@ test('a view whose paid request is still at PixelLab is reviewed as running, not
 	expect(review.views.map((view) => view.state)).toEqual(['ready', 'running']);
 });
 
+test('a view whose joint check is still at PixelLab is reviewed as running', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	const jobs = f.q.snapshot().jobs,
+		last = jobs
+			.filter((record) => record.endpoint === '/estimate-skeleton')
+			.reduce((a, b) => (b.createdAt > a.createdAt ? b : a));
+	vi.spyOn(queue, 'snapshot').mockImplementation(() => ({
+		...f.q.snapshot(),
+		jobs: jobs.map((record) => (record.id === last.id ? { ...record, state: 'running' } : record))
+	}));
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(review.views.map((view) => view.state)).toEqual(['ready', 'running']);
+});
+
+test('a view the stopped attempt canceled before sending is unbought, and continuing sends it on a new attempt', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	const jobs = f.q.snapshot().jobs;
+	vi.spyOn(queue, 'snapshot').mockImplementation(() => ({
+		...f.q.snapshot(),
+		jobs: jobs.map((record) =>
+			record.id === 'raw-west'
+				? {
+						...record,
+						state: 'canceled',
+						requestStarted: false,
+						autoCanceledAttempts: [f.spec.seed]
+					}
+				: record
+		)
+	}));
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(review.views.map((view) => view.state)).toEqual(['ready', 'pending']);
+	const resume = review.options.find((option) => option.id === 'resume')!;
+	expect(resume.paid).toBe(true);
+	expect(resume.spec.seed).toBe(f.spec.seed);
+	expect(resume.spec.attempt).not.toBe(f.spec.seed);
+});
+
 test('a body move stopped after every view was bought resumes free with the same seed', async () => {
 	const f = await fixture(false, 'walk');
 	await f.finishOriginalChecks();

@@ -2638,6 +2638,7 @@
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, gratis. Se reutiliza el movimiento pagado; solo se compran los pasos en el marco cambiado.",
+		"makeRoomDetailRedraw": "{change}, gratis. Este modelo dibuja a partir del marco de pie, así que el movimiento se vuelve a dibujar en el marco cambiado.",
 		"makeRoom": "Hacer espacio y continuar",
 		"resume": "Continuar con los resultados pagados",
 		"lift": "Continuar, elevado para que quepa",
