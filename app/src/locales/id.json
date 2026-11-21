@@ -2481,10 +2481,12 @@
 		"free": "Gratis",
 		"download": "Unduh hasil berbayar",
 		"frame": "{view}, frame {number}",
+		"waiting": "Beberapa permintaan berbayar masih berjalan di PixelLab. Pilihan ini terbuka setelah selesai.",
 		"state": {
 			"ready": "Siap",
 			"pending": "Belum dibeli",
-			"failed": "Berhenti"
+			"failed": "Berhenti",
+			"running": "Masih berjalan di PixelLab"
 		}
 	},
 	"moveReview": {

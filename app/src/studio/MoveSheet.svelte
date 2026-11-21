@@ -383,6 +383,12 @@
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
 	let paid = $state.raw<MovePaidReview | null>(null);
+	const errorInReview = $derived(
+		!!moving.error &&
+			!!paid?.views.some((view) =>
+				view.notes.some((note) => displayNestedMessage(note) === displayError(moving.error))
+			)
+	);
 	const keepK = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1 : 1.5))));
 	const recoveryItemGens = $derived(
 		recovery && m && moving.spec ? moveEstimate(m, moving.spec).items : 0
@@ -884,9 +890,11 @@
 					</li>
 				{/each}
 			</ol>
-			{#if moving.error}<p class="notice bad small">
+			<!-- The paid review names each stopped view's reason under its frames; the summary shows only a reason it does not. -->
+			{#if moving.error && !errorInReview}<p class="notice bad small">
 					<CircleAlert size={14} />{displayError(moving.error)}
-				</p>
+				</p>{/if}
+			{#if moving.error}
 				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
 						{retryAccess.error || recoveryAccess.error}
 					</p>{/if}

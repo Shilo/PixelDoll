@@ -2594,10 +2594,12 @@
 		"free": "Gratuit",
 		"download": "Télécharger les résultats payés",
 		"frame": "{view}, image {number}",
+		"waiting": "Certaines requêtes payantes sont encore en cours chez PixelLab. Ces choix se débloquent quand elles sont terminées.",
 		"state": {
 			"ready": "Prêt",
 			"pending": "Pas encore acheté",
-			"failed": "Arrêté"
+			"failed": "Arrêté",
+			"running": "Toujours en cours chez PixelLab"
 		}
 	},
 	"moveReview": {

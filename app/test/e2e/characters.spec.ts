@@ -1138,6 +1138,10 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await expect(position).toHaveAttribute('aria-valuetext', 'Moved up 5 px');
 	await size.fill('81');
 	await expect(save).toBeDisabled();
+	// A typed size far past the limit is refused in text and never drawn (drawing it would freeze the page).
+	await size.fill('100000');
+	await expect(save).toBeDisabled();
+	await expect(frame).toContainText('Frame must be');
 	await size.fill('80');
 	await expect(frame).toContainText('Items copy exactly only between characters');
 	await save.click();

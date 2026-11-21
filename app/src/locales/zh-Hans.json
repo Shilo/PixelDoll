@@ -2459,10 +2459,12 @@
 		"free": "免费",
 		"download": "下载付费结果",
 		"frame": "{view}，第 {number} 帧",
+		"waiting": "部分付费请求仍在 PixelLab 处理中。完成后即可使用这些选项。",
 		"state": {
 			"ready": "就绪",
 			"pending": "尚未购买",
-			"failed": "已停止"
+			"failed": "已停止",
+			"running": "仍在 PixelLab 处理中"
 		}
 	},
 	"moveReview": {

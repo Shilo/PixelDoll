@@ -3160,7 +3160,8 @@ function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 /** A view of a stopped body move replayed from the request cache: what it bought, what stopped it, what is left to buy. */
 interface ReplayedView {
 	d: Direction;
-	state: 'ready' | 'pending' | 'failed';
+	/** `running`: a request of this view is still at PixelLab, so its result is not known yet. */
+	state: 'ready' | 'pending' | 'running' | 'failed';
 	gens: number;
 	records: JobRec[];
 	error?: PaidStepError;
@@ -3176,7 +3177,12 @@ async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedVie
 		return { d, state: 'ready', gens: 0, records: dry.records, clip };
 	} catch (error) {
 		if (error instanceof Unpaid)
-			return { d, state: 'pending', gens: priced(unpaidGens(plan, error)), records: dry.records };
+			return {
+				d,
+				state: error.running ? 'running' : 'pending',
+				gens: priced(unpaidGens(plan, error)),
+				records: dry.records
+			};
 		if (error instanceof PaidStepError)
 			return { d, state: 'failed', gens: priced(0), records: dry.records, error };
 		throw error;
@@ -3339,6 +3345,7 @@ export async function reviewMoveResults(
 	const total = (views: ReplayedView[]) => +views.reduce((sum, v) => sum + v.gens, 0).toFixed(2);
 	const views = await replay(plan.spec);
 	const records = [...new Map(views.flatMap((v) => v.records).map((r) => [r.id, r])).values()];
+	const equipment = spec.items.length ? moveEstimate(m, spec).items : 0;
 	const gated = !!spec.dirs?.length || !!spec.motionLift;
 	const failed = views.filter(
 		(v) =>
@@ -3470,13 +3477,22 @@ export async function reviewMoveResults(
 			frames: shown[i],
 			notes: [
 				...(v.error ? [v.error.translation] : []),
-				...(v.state === 'pending' ? [message('moveReview.pending', { gens: v.gens })] : []),
+				...(v.state === 'pending' || v.state === 'running'
+					? [message('moveReview.pending', { gens: v.gens })]
+					: []),
 				...(notes.get(v.d) ?? [])
 			]
 		})),
 		spent: spentGens(records),
 		recordIds: records.map((r) => r.id),
-		options
+		// Every way on finishes the whole move, so it also poses the chosen equipment after the body: the quote includes it.
+		options: equipment
+			? options.map((option) => ({
+					...option,
+					gens: +(option.gens + equipment).toFixed(2),
+					paid: true
+				}))
+			: options
 	};
 }
 

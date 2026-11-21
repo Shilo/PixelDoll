@@ -1736,6 +1736,21 @@ test('an overflowing paid motion is reviewed from the cache with a priced lift a
 	expect(reroll.gens).toBeCloseTo(3 + 0.8 + 3 + 0.8);
 });
 
+test('a view whose paid request is still at PixelLab is reviewed as running, not as unbought', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	// A sibling view's body render was sent before another view stopped the move; PixelLab is still working on it.
+	const jobs = f.q.snapshot().jobs;
+	vi.spyOn(queue, 'snapshot').mockImplementation(() => ({
+		...f.q.snapshot(),
+		jobs: jobs.map((record) =>
+			record.id === 'raw-west' ? { ...record, state: 'running' } : record
+		)
+	}));
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(review.views.map((view) => view.state)).toEqual(['ready', 'running']);
+});
+
 test('a body move stopped after every view was bought resumes free with the same seed', async () => {
 	const f = await fixture(false, 'walk');
 	await f.finishOriginalChecks();

@@ -2578,10 +2578,12 @@
 		"free": "Free",
 		"download": "Download paid results",
 		"frame": "{view} frame {number}",
+		"waiting": "Some paid requests are still running at PixelLab. These choices unlock when they finish.",
 		"state": {
 			"ready": "Ready",
 			"pending": "Not bought yet",
-			"failed": "Stopped"
+			"failed": "Stopped",
+			"running": "Still running at PixelLab"
 		}
 	},
 	"moveReview": {

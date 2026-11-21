@@ -27,8 +27,11 @@
 	const STATE = {
 		ready: 'paidReview.state.ready',
 		pending: 'paidReview.state.pending',
+		running: 'paidReview.state.running',
 		failed: 'paidReview.state.failed'
 	} as const;
+	// Choices wait for requests still at PixelLab: their results decide what each choice costs and whether the frame can change.
+	const running = $derived(review.views.some((view) => view.state === 'running'));
 	const k = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1 : 1.5))));
 	const cost = (gens: number) =>
 		gens
@@ -60,12 +63,13 @@
 				</p>{/each}
 		</div>
 	{/each}
+	{#if running}<p class="muted small" role="status">{t('paidReview.waiting')}</p>{/if}
 	<div class="paid-actions">
 		{#each review.options as option (option.id)}<button
 				class="bu-action btn"
 				class:primary={option.primary}
 				data-variant={option.primary ? 'primary' : 'outline'}
-				disabled={busy || (option.paid && blocked)}
+				disabled={busy || running || (option.paid && blocked)}
 				onclick={() => onchoose(option)}
 				>{displayNestedMessage(option.label)} <span class="cost">{cost(option.gens)}</span></button
 			>{/each}

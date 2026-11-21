@@ -1225,7 +1225,11 @@ const pngBlobs = async (images: Map<Sha256, Img>) => {
 export async function adjustCharacter(
 	id: string,
 	change: FrameChange,
-	{ stoppedMove = false, quiet = false } = {}
+	{
+		stoppedMove = false,
+		quiet = false,
+		expect
+	}: { stoppedMove?: boolean; quiet?: boolean; expect?: StoredProject } = {}
 ): Promise<void> {
 	const blocked = () => {
 		const reason = frameEditsBlocked(id, stoppedMove);
@@ -1234,6 +1238,11 @@ export async function adjustCharacter(
 	blocked();
 	await flushSave();
 	const { rec, project } = await loadProject(id);
+	if (expect && stableStringify(expect) !== stableStringify(rec))
+		throw new LocalizedError(
+			'This character changed. Reopen Adjust frame to review the latest version.',
+			'adjustFrame.errors.changed'
+		);
 	const before = rec.manifest.rig.cell.w,
 		old = new Map(project.images as Map<Sha256, Img>);
 	const { record: next, newImages } = await reframeCharacter(

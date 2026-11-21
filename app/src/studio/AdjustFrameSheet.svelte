@@ -44,6 +44,8 @@
 	const m = $derived(loaded?.project.manifest);
 	const current = $derived(facts?.size ?? 0);
 	const valid = $derived(Number.isInteger(size) && (size - current) % 2 === 0);
+	// A typed size can be anything; only the allowed range is ever drawn (a huge one would freeze the page).
+	const inRange = $derived(!!facts && size >= facts.min && size <= facts.max);
 	const issue = $derived(facts && valid ? frameIssue(facts, { size, dy }) : undefined);
 	const changed = $derived(!!facts && valid && (size !== current || dy !== 0));
 	const blocked = $derived(frameEditsBlocked(id));
@@ -75,7 +77,7 @@
 	);
 	// The view as Save will store it: re-centered on the new frame and moved; anything outside the frame is cut off.
 	const view = $derived.by((): Img | null => {
-		if (!loaded || !m || !valid || size < 1) return null;
+		if (!loaded || !m || !valid || !inRange) return null;
 		const d = directions.includes(dir) ? dir : directions[0];
 		if (!d || !m.rig.animations.some((a) => a.id === DEFAULT_MOVE)) return null;
 		const art = composeCell(loaded.project, outfit, DEFAULT_MOVE, d, 0),
@@ -125,7 +127,7 @@
 		return () => controller.abort();
 	});
 	const nudge = (rows: number) => {
-		dy += rows;
+		dy = Math.max(-size, Math.min(size, dy + rows));
 		note = '';
 	};
 	function keys(event: KeyboardEvent) {
@@ -157,7 +159,8 @@
 		busy = true;
 		error = '';
 		try {
-			await adjustCharacter(id, { size, dy });
+			// Saved only onto the version this preview showed: a change made elsewhere since then is refused, not overwritten.
+			await adjustCharacter(id, { size, dy }, { expect: loaded?.rec });
 			ui.sheet = null;
 		} catch (failure) {
 			error = errorMessage(failure);
@@ -177,8 +180,8 @@
 				aria-orientation="vertical"
 				aria-label={t('adjustFrame.previewLabel')}
 				aria-describedby="adjust-frame-keys"
-				aria-valuemin={-(facts.free.bottom + (size - current) / 2)}
-				aria-valuemax={facts.free.top + (size - current) / 2}
+				aria-valuemin={-size}
+				aria-valuemax={size}
 				aria-valuenow={-dy}
 				aria-valuetext={moved}
 				onkeydown={keys}

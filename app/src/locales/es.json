@@ -2600,10 +2600,12 @@
 		"free": "Gratis",
 		"download": "Descargar resultados pagados",
 		"frame": "{view}, fotograma {number}",
+		"waiting": "Algunas solicitudes pagadas siguen en curso en PixelLab. Estas opciones se activan cuando terminen.",
 		"state": {
 			"ready": "Listo",
 			"pending": "Aún no comprado",
-			"failed": "Detenido"
+			"failed": "Detenido",
+			"running": "Aún en curso en PixelLab"
 		}
 	},
 	"moveReview": {

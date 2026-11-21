@@ -2607,10 +2607,12 @@
 		"free": "Grátis",
 		"download": "Baixar resultados pagos",
 		"frame": "{view}, quadro {number}",
+		"waiting": "Algumas solicitações pagas ainda estão em andamento no PixelLab. Estas opções são liberadas quando terminarem.",
 		"state": {
 			"ready": "Pronto",
 			"pending": "Ainda não comprado",
-			"failed": "Parado"
+			"failed": "Parado",
+			"running": "Ainda em andamento no PixelLab"
 		}
 	},
 	"moveReview": {

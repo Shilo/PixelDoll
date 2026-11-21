@@ -2587,10 +2587,12 @@
 		"free": "Ücretsiz",
 		"download": "Ücretli sonuçları indir",
 		"frame": "{view}, kare {number}",
+		"waiting": "Bazı ücretli istekler PixelLab'de hâlâ işleniyor. Bu seçenekler bitince açılır.",
 		"state": {
 			"ready": "Hazır",
 			"pending": "Henüz satın alınmadı",
-			"failed": "Durduruldu"
+			"failed": "Durduruldu",
+			"running": "PixelLab'de hâlâ işleniyor"
 		}
 	},
 	"moveReview": {

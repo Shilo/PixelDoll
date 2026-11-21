@@ -56,7 +56,8 @@ export interface PaidView {
 	label: Message;
 	frames: { img: Img; label: Message }[];
 	notes: (Message | string)[];
-	state: 'ready' | 'pending' | 'failed';
+	/** `running`: still at PixelLab; the review holds its choices until it finishes. */
+	state: 'ready' | 'pending' | 'running' | 'failed';
 }
 export interface PaidReview {
 	views: PaidView[];

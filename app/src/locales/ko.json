@@ -2478,10 +2478,12 @@
 		"free": "무료",
 		"download": "결제된 결과 다운로드",
 		"frame": "{view}, 프레임 {number}",
+		"waiting": "유료 요청 일부가 아직 PixelLab에서 처리 중이에요. 완료되면 이 선택지를 쓸 수 있어요.",
 		"state": {
 			"ready": "준비됨",
 			"pending": "아직 구매 안 함",
-			"failed": "중지됨"
+			"failed": "중지됨",
+			"running": "PixelLab에서 처리 중"
 		}
 	},
 	"moveReview": {

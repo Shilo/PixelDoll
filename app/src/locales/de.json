@@ -2593,10 +2593,12 @@
 		"free": "Kostenlos",
 		"download": "Bezahlte Ergebnisse herunterladen",
 		"frame": "{view} Frame {number}",
+		"waiting": "Einige bezahlte Anfragen laufen noch bei PixelLab. Diese Optionen werden freigegeben, sobald sie fertig sind.",
 		"state": {
 			"ready": "Fertig",
 			"pending": "Noch nicht gekauft",
-			"failed": "Angehalten"
+			"failed": "Angehalten",
+			"running": "Läuft noch bei PixelLab"
 		}
 	},
 	"moveReview": {

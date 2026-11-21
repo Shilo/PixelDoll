@@ -2490,10 +2490,12 @@
 		"free": "無料",
 		"download": "支払い済みの結果をダウンロード",
 		"frame": "{view}、フレーム{number}",
+		"waiting": "有料リクエストの一部がまだ PixelLab で処理中です。完了するとこれらの選択肢を使えます。",
 		"state": {
 			"ready": "完了",
 			"pending": "未購入",
-			"failed": "停止"
+			"failed": "停止",
+			"running": "PixelLab で処理中"
 		}
 	},
 	"moveReview": {
