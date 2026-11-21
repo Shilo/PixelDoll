@@ -43,12 +43,15 @@ test('Developer mode defaults to off, persists, and closes an open inspector whe
 	await expect(mode).not.toBeChecked();
 	await expect(history).toHaveCount(0);
 	await expect(preview.getByText('Preview', { exact: true })).toBeVisible();
+	await expect(preview.getByText('Example Activity', { exact: true })).toBeVisible();
 	// The practice sample is docked open as a single-open scope list; the job row numbers its disclosure and Copy ID.
 	const sample = preview.getByRole('group', { name: 'API calls', exact: true });
 	const balance = sample.getByRole('button', { name: 'Refresh balance', exact: true });
 	const job = sample.locator('.scope-toggle').filter({ hasText: 'job-example-0001' });
 	const copyId = sample.getByRole('button', { name: 'Copy ID job-example-0001', exact: true });
 	await expect(balance).toHaveAttribute('aria-expanded', 'true');
+	await expect(sample.locator('.peek-call')).toHaveCount(1);
+	await expect(sample.locator('.peek-call')).toContainText('/balance');
 	await expect(job).toHaveAttribute('aria-expanded', 'false');
 	await expect(job.locator('[data-step="2"]')).toHaveCount(1);
 	await expect(copyId).toHaveAttribute('data-step', '3');
@@ -57,11 +60,16 @@ test('Developer mode defaults to off, persists, and closes an open inspector whe
 	await expect(job).toHaveAttribute('aria-expanded', 'true');
 	await expect(balance).toHaveAttribute('aria-expanded', 'false');
 	await expect(sample.locator('.peek-call')).toHaveCount(1);
-	await expect(sample.locator('.peek-call')).toContainText('/background-jobs/job-example-0001');
+	await expect(sample.locator('.peek-call')).toContainText('/create-character-v3');
 	await sample.getByRole('button', { name: 'Show background calls', exact: true }).click();
+	await expect(sample.locator('.peek-call')).toHaveCount(3);
+	await expect(
+		sample.locator('.peek-call').filter({ hasText: '/background-jobs/job-example-0001' })
+	).toBeVisible();
 	await expect(sample.locator('.peek-call').filter({ hasText: '/balance' })).toBeVisible();
 	await sample.getByRole('button', { name: 'Hide background calls', exact: true }).click();
 	await expect(sample.locator('.peek-call')).toHaveCount(1);
+	await expect(sample.locator('.peek-call')).toContainText('/create-character-v3');
 	await copyId.click();
 	await expect(sample.getByRole('status')).toHaveText('ID copied');
 	await expect

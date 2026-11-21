@@ -37,7 +37,14 @@
 
 {#if detailed}
 	<div class="usage detailed-usage">
-		<h4 class="settings-label">{t('usage.title')}</h4>
+		{#if actions}
+			<div class="usage-heading">
+				<h4 class="settings-label">{t('usage.title')}</h4>
+				{@render actions()}
+			</div>
+		{:else}
+			<h4 class="settings-label">{t('usage.title')}</h4>
+		{/if}
 		{#if balance?.subscription?.plan}<span class="bu-muted">{balance.subscription.plan}</span>{/if}
 		{#if usage}
 			<div class="usage-stat">
@@ -116,6 +123,12 @@
 <style>
 	.detailed-usage {
 		display: grid;
+		gap: 8px;
+	}
+	.usage-heading {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		gap: 8px;
 	}
 	.detailed-usage progress {

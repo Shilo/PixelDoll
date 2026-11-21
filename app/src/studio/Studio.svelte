@@ -38,6 +38,7 @@
 		lastProject,
 		loadGens,
 		toast,
+		activateToast,
 		dismissToast,
 		resumeCreate,
 		resumeMove,
@@ -55,6 +56,7 @@
 	import { WifiOff } from './icons.ts';
 	import { PRE_RELEASE, PREVIEW_NOTICE } from './previewNotice.ts';
 	import Toast from './Toast.svelte';
+	import LibraryBackupButton from './LibraryBackupButton.svelte';
 	import PwaRuntime from './PwaRuntime.svelte';
 
 	// On-demand parts, out of the startup bundle.
@@ -83,7 +85,8 @@
 			ui.sheet = null;
 	});
 	$effect(() => {
-		if (experience.screen === 'studio' && ui.toast === previewNoticeDetails) untrack(dismissToast);
+		if (experience.screen === 'studio' && ui.toast === previewNoticeDetails && !backingUp)
+			untrack(dismissToast);
 	});
 	$effect(() => {
 		if (!workspaceCopy || !generationPending()) return;
@@ -111,7 +114,8 @@
 			ui.welcome = false;
 		}
 		const off = initUi();
-		if (PRE_RELEASE && !workspaceCopy) toast(previewNoticeDetails, PREVIEW_NOTICE);
+		if (PRE_RELEASE && !workspaceCopy)
+			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: backupFromNotice });
 		void (async () => {
 			const listed = await refreshProjects();
 			const initial = lastProject();
@@ -337,15 +341,12 @@
 	const offline = $derived(!online || $queue.paused === 'offline');
 	let backingUp = $state(false);
 	async function backupFromNotice() {
-		if (backingUp) return;
-		backingUp = true;
 		try {
 			const { downloadLibraryBackup } = await import('./downloadLibraryBackup.ts');
-			toast(await downloadLibraryBackup());
+			if (await downloadLibraryBackup())
+				toast(message('librarySettings.backupOmissions'), { tone: 'warning' });
 		} catch (error) {
 			toast(errorMessage(error), { tone: 'danger' });
-		} finally {
-			backingUp = false;
 		}
 	}
 </script>
@@ -353,14 +354,11 @@
 {#snippet previewNoticeDetails()}
 	<div><strong class="preview-risk">{t('studio.previewRisk')}</strong></div>
 	{t('studio.previewBackupDescription')}
-	<button
-		type="button"
-		class="bu-action btn sm preview-backup"
-		data-variant="outline"
-		disabled={!store.project || backingUp}
-		onclick={backupFromNotice}
-		>{t(backingUp ? 'common.preparing' : 'librarySettings.backup')}</button
-	>
+	<LibraryBackupButton
+		disabled={!store.project}
+		bind:pending={backingUp}
+		onbackup={activateToast}
+	/>
 {/snippet}
 
 <svelte:window
@@ -412,9 +410,5 @@
 	.preview-risk {
 		font-weight: 600;
 		text-wrap: pretty;
-	}
-	.preview-backup {
-		display: block;
-		margin-top: 6px;
 	}
 </style>

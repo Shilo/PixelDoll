@@ -117,6 +117,7 @@ import {
 	NO_USABLE_FRAMES
 } from './generationStatus.ts';
 import { copyPreferences, workspaceCopy, workspaceKeys as K } from '../lib/store/workspace-mode.ts';
+import { deleteLocalWork } from '../lib/store/local-work.ts';
 import type { SetupSpec } from './setup.ts';
 import {
 	forgetFits,
@@ -1334,6 +1335,51 @@ export async function prepareForUpdate(): Promise<void> {
 	await verifyHaltedFlows();
 	const changed = updateBlocker();
 	if (changed) throw changed;
+}
+
+/** Why this tab cannot delete its local work now: generation work here could write deleted work back. Other tabs and
+ *  saved jobs are checked when the deletion runs. */
+export function localWorkDeletionBlocked(): LocalizedError | '' {
+	if (studioStartup !== 'ready' || doc.loading)
+		return new LocalizedError(
+			'Wait for your character and saved work to finish loading.',
+			'state.update.loading'
+		);
+	return !workIdle() || ui.waitingForTab || moving.resolvingRepair
+		? new LocalizedError(
+				'Finish or dismiss pending generation work before deleting local work. Nothing was deleted.',
+				'librarySettings.deleteWork.generating'
+			)
+		: '';
+}
+
+/** Delete this device's local work (deleteLocalWork), then reload: nothing in this tab's memory may be saved back. */
+export async function deleteLocalWorkAndReload(): Promise<void> {
+	const blocked = () => {
+		const reason = localWorkDeletionBlocked();
+		if (reason) throw reason;
+	};
+	blocked();
+	// A refused deletion keeps everything, including the outfit: save it now rather than drop it. A save that still fails
+	// is kept in memory to retry, as before.
+	if (edits !== savedEdits && !pendingSave) save();
+	await flushSave();
+	blocked();
+	await deleteLocalWork();
+	// Stop resumes and unload snapshots: the deleted work must not come back from this tab's memory.
+	hmrReloading = true;
+	clearTimeout(saveT);
+	pendingSave = null;
+	savedEdits = edits;
+	try {
+		for (const key of Object.keys(localStorage))
+			if (key.startsWith(UNSAVED)) localStorage.removeItem(key);
+		localStorage.removeItem(K.last);
+	} catch {
+		/* storage blocked: the next listing drops snapshots of deleted characters */
+	}
+	queue.disconnect();
+	location.reload();
 }
 
 export async function removeProject(id = doc.id): Promise<void> {

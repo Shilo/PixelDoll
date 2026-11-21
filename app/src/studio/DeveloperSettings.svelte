@@ -8,7 +8,7 @@
 	import { developerModeEnabled, setDeveloperMode } from './developerMode.svelte.ts';
 	import { toast } from './state.svelte.ts';
 	import { Wrench } from './icons.ts';
-	import { balancePlan } from './apiPlans.ts';
+	import { balancePlan, characterActivityExample } from './apiPlans.ts';
 	const description = $props.id();
 	const exampleJob = 'job-example-0001';
 
@@ -37,7 +37,7 @@
 	<figcaption class="settings-label">{t('developer.preview')}</figcaption>
 	<div class="sheet-head has-developer example-sheet">
 		<span></span>
-		<strong class="sheet-title">{t('activity.title')}</strong>
+		<strong class="sheet-title">{t('developer.exampleActivity')}</strong>
 		<ApiPeek
 			preview
 			targets={[
@@ -49,19 +49,7 @@
 				{
 					scope: 'example-job',
 					label: `${t('apiPeek.plan.createBase')} · ${exampleJob}`,
-					plan: [
-						{
-							method: 'GET',
-							path: `/background-jobs/${exampleJob}`,
-							label: t('apiPeek.plan.checkProgress')
-						},
-						{
-							method: 'GET',
-							path: '/balance',
-							label: t('apiPeek.plan.updateBalance'),
-							background: true
-						}
-					],
+					plan: characterActivityExample(exampleJob, t('developer.examplePrompt')),
 					copyId: exampleJob
 				}
 			]}

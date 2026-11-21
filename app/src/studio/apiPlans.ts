@@ -98,11 +98,11 @@ const proPriceNote = (size: number) => {
 		});
 	return { text, display };
 };
-const lifecycle = (): PeekCall[] => [
+const lifecycle = (jobId = '{job_id}', downloadImages = true): PeekCall[] => [
 	shown(
 		{
 			method: 'GET',
-			path: '/background-jobs/{job_id}',
+			path: `/background-jobs/${jobId}`,
 			label: 'Check generation progress',
 			background: true,
 			note: 'Repeated for each returned job ID; no generation is submitted by polling.'
@@ -110,17 +110,21 @@ const lifecycle = (): PeekCall[] => [
 		({ t }) => t('apiPeek.plan.checkProgress'),
 		({ t }) => t('apiPeek.plan.checkProgressNote')
 	),
-	shown(
-		{
-			method: 'GET',
-			path: '{result image URL}',
-			label: 'Download result images',
-			background: true,
-			note: 'Only when PixelLab returns image URLs. No account token is sent to artwork URLs.'
-		},
-		({ t }) => t('apiPeek.plan.downloadResults'),
-		({ t }) => t('apiPeek.plan.downloadResultsNote')
-	),
+	...(downloadImages
+		? [
+				shown<PeekCall>(
+					{
+						method: 'GET',
+						path: '{result image URL}',
+						label: 'Download result images',
+						background: true,
+						note: 'Only when PixelLab returns image URLs. No account token is sent to artwork URLs.'
+					},
+					({ t }) => t('apiPeek.plan.downloadResults'),
+					({ t }) => t('apiPeek.plan.downloadResultsNote')
+				)
+			]
+		: []),
 	shown(
 		{
 			method: 'GET',
@@ -132,6 +136,16 @@ const lifecycle = (): PeekCall[] => [
 		({ t }) => t('apiPeek.plan.updateBalance'),
 		({ t }) => t('apiPeek.plan.updateBalanceNote')
 	)
+];
+export const characterActivityExample = (jobId: string, description: string): PeekCall[] => [
+	shown(
+		{
+			...drawRequest({ description, size: 48, exactPrompt: true }, 42),
+			label: 'Create base character'
+		},
+		({ t }) => t('apiPeek.plan.createBase')
+	),
+	...lifecycle(jobId, false)
 ];
 export const balancePlan = (): PeekCall[] => [
 	shown(

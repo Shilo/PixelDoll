@@ -4,7 +4,8 @@
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
-	import { resetSettings } from './resetSettings.ts';
+	import { isResettableSection, resetSettings, type ResetScope } from './resetSettings.ts';
+	import { settingsAtDefaults } from './settingsDefaults.svelte.ts';
 	import {
 		Archive,
 		CodeXml,
@@ -12,7 +13,6 @@
 		Info,
 		KeyRound,
 		Moon,
-		RotateCcw,
 		Settings2,
 		Shirt,
 		Sun,
@@ -20,7 +20,7 @@
 	} from './icons.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
-	import SettingsItemButton from './SettingsItemButton.svelte';
+	import SettingsResetButton from './SettingsResetButton.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
@@ -33,18 +33,21 @@
 		settingsNavigation,
 		type SettingsSection
 	} from './settingsNavigation.svelte.ts';
-	import { setTheme, ui } from './state.svelte.ts';
+	import { message } from '../lib/message.ts';
+	import { setTheme, toast, ui } from './state.svelte.ts';
 
 	let {
 		exportSettings,
 		busy,
 		libraryBusy = $bindable(false),
-		resetOpen = $bindable(false)
+		reviewingBackup = $bindable(false),
+		resetScope = $bindable(null)
 	}: {
 		exportSettings: Snippet<[string | undefined]>;
 		busy: boolean;
 		libraryBusy?: boolean;
-		resetOpen?: boolean;
+		reviewingBackup?: boolean;
+		resetScope?: ResetScope | null;
 	} = $props();
 	const themeLabel = $derived(t('settings.theme'));
 	const appearanceOptions = $derived([
@@ -65,10 +68,12 @@
 						'usage.generations',
 						'usage.creditBalance',
 						'connectSheet.aPIKey',
+						'connectSheet.replaceKey',
 						'connectSheet.forgetKey'
 					]
 				},
-				{ id: 'recent-activity', label: 'activity.title' }
+				{ id: 'recent-activity', label: 'activity.title' },
+				{ id: 'pixellab-website', label: 'settings.pixelLabWebsite' }
 			]
 		},
 		{
@@ -81,7 +86,8 @@
 					label: 'settings.theme',
 					terms: ['toolbar.lightMode', 'toolbar.darkMode']
 				},
-				{ id: 'language', label: 'language.label' }
+				{ id: 'language', label: 'language.label' },
+				{ id: 'reset', label: 'settings.reset.action', terms: ['settings.reset.title'] }
 			]
 		},
 		{
@@ -165,6 +171,7 @@
 	const navigation = groups
 		.map((group) => available.filter(({ id }) => group.includes(id)))
 		.filter((group) => group.length);
+	const canReset = $derived(!workspaceCopy && !settingsNavigation.fromExport);
 	const wide = new MediaQuery('(min-width: 660px) and (min-height: 520px)');
 	const active = $derived(
 		available.find(
@@ -173,10 +180,8 @@
 		)
 	);
 	let query = $state('');
-	let reviewingBackup = $state(false);
 	let resetting = $state(false);
 	let resetFailures = $state<WhisperKey[]>([]);
-	let resetComplete = $state(false);
 	let targetEntry = $state<string>();
 	let panel: HTMLElement;
 	let search: HTMLInputElement;
@@ -200,6 +205,7 @@
 		const words = normalize(query.trim(), locale).split(/\s+/);
 		return available.flatMap((section) =>
 			section.entries.flatMap((entry) => {
+				if (entry.id === 'reset' && !canReset) return [];
 				const text = normalize(
 					[
 						...[section.label, entry.label, ...('terms' in entry ? (entry.terms ?? []) : [])].map(
@@ -215,6 +221,10 @@
 	});
 
 	async function show(section: SettingsSection | null, entry?: string) {
+		if (entry === 'reset') {
+			resetScope = 'all';
+			return;
+		}
 		query = '';
 		targetEntry = entry;
 		settingsNavigation.section = section;
@@ -237,15 +247,27 @@
 	}
 
 	async function confirmReset() {
-		if (resetting) return;
+		if (resetting || !resetScope) return;
+		const scope = resetScope;
 		resetting = true;
 		try {
-			resetFailures = await resetSettings();
-			resetComplete = resetFailures.length === 0;
-			if (resetComplete) resetOpen = false;
+			resetFailures = await resetSettings(scope);
+			if (!resetFailures.length) {
+				closeReset();
+				toast(message('settings.reset.done'));
+				// The Reset that opened the dialog is now disabled at defaults, so focus cannot return to it.
+				await tick();
+				if (!document.activeElement?.closest('.settings-content'))
+					(panel.querySelector<HTMLElement>('.settings-heading') ?? search).focus();
+			}
 		} finally {
 			resetting = false;
 		}
+	}
+
+	function closeReset() {
+		resetScope = null;
+		resetFailures = [];
 	}
 </script>
 
@@ -290,23 +312,6 @@
 						{/each}
 					{/each}
 				</nav>
-				{#if !workspaceCopy && !settingsNavigation.fromExport}
-					<hr class="bu-separator" />
-					<SettingsItemButton
-						disabled={busy || reviewingBackup}
-						onclick={() => {
-							resetFailures = [];
-							resetComplete = false;
-							resetOpen = true;
-						}}
-					>
-						<RotateCcw size={18} aria-hidden="true" />
-						{t('settings.reset.action')}
-					</SettingsItemButton>
-					{#if resetComplete}<p class="settings-description" role="status">
-							{t('settings.reset.done')}
-						</p>{/if}
-				{/if}
 			</div>
 		{/if}
 	</div>
@@ -324,7 +329,7 @@
 				<button
 					class="row bu-action search-result"
 					data-variant="quiet"
-					disabled={busy}
+					disabled={busy || (entry.id === 'reset' && settingsAtDefaults('all'))}
 					onclick={() => show(section.id, entry.id)}
 				>
 					<span class="row-name"
@@ -336,7 +341,15 @@
 				<p role="status" class="bu-muted">{t('settings.noResults')}</p>
 			{/each}
 		{:else if active}
-			<h3 class="settings-heading" tabindex="-1">{t(active.label)}</h3>
+			<div class="settings-panel-heading">
+				<h3 class="settings-heading" tabindex="-1">{t(active.label)}</h3>
+				{#if canReset && isResettableSection(active.id)}
+					{@const scope = active.id}
+					<div class="wide-reset">
+						<SettingsResetButton {scope} disabled={busy} onclick={() => (resetScope = scope)} />
+					</div>
+				{/if}
+			</div>
 			{#if settingsNavigation.fromExport && settingsNavigation.section}
 				<button
 					class="row bu-action settings-index-link"
@@ -381,23 +394,50 @@
 	</section>
 </div>
 
-{#if resetOpen}
+{#if resetScope}
 	<ConfirmDialog
-		title={t('settings.reset.title')}
-		action={t('settings.reset.action')}
+		title={resetScope === 'all'
+			? t('settings.reset.title')
+			: t('settings.reset.pageTitle', { page: t(settingsLabels[resetScope]) })}
+		action={t(resetScope === 'all' ? 'settings.reset.action' : 'settings.reset.pageAction')}
 		busyAction={t('common.preparing')}
 		busy={resetting}
 		problem={resetFailures.length
 			? t('settings.reset.failed', { sections: resetFailures.map((key) => t(key)).join(', ') })
 			: ''}
-		oncancel={() => (resetOpen = false)}
+		oncancel={closeReset}
 		onconfirm={confirmReset}
 	>
-		<p>{t('settings.reset.description')}</p>
+		<div class="reset-description">
+			<p>
+				{t(resetScope === 'all' ? 'settings.reset.description' : 'settings.reset.pageDescription')}
+			</p>
+			<p>{t('settings.reset.kept')}</p>
+		</div>
 	</ConfirmDialog>
 {/if}
 
 <style>
+	/* Reserve the Reset button's height so pages without one keep the same heading. */
+	.settings-panel-heading {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		min-block-size: var(--ctl-h);
+	}
+	@media (max-width: 659px), (max-height: 519px) {
+		.settings-panel-heading {
+			display: contents;
+		}
+		.wide-reset {
+			display: none;
+		}
+	}
+	.reset-description {
+		display: grid;
+		gap: 8px;
+	}
 	:global(dialog.settings-sheet.center) {
 		height: min(540px, calc(100dvh - 32px));
 	}

@@ -27,6 +27,7 @@ export { default as Sparkles } from '@lucide/svelte/icons/sparkles';
 export { default as LayoutTemplate } from '@lucide/svelte/icons/layout-template';
 export { default as Palette } from '@lucide/svelte/icons/palette';
 export { default as KeyRound } from '@lucide/svelte/icons/key-round';
+export { default as LogOut } from '@lucide/svelte/icons/log-out';
 export { default as Sun } from '@lucide/svelte/icons/sun';
 export { default as Moon } from '@lucide/svelte/icons/moon';
 export { default as SunMoon } from '@lucide/svelte/icons/sun-moon';

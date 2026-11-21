@@ -8,6 +8,7 @@
 	import SettingsContent from './SettingsContent.svelte';
 	import SettingsHeader from './SettingsHeader.svelte';
 	import { openSettings, settingsNavigation } from './settingsNavigation.svelte.ts';
+	import { noteExportSettings, showExportSettings } from './settingsDefaults.svelte.ts';
 	import { tick, untrack } from 'svelte';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { buildExport } from '../lib/export/build.ts';
@@ -177,6 +178,13 @@
 	let loadError = $state<Message | null>(null);
 	let invalidPreferences = $state(false);
 	let content = $state<HTMLDivElement>();
+	// Settings' Reset buttons reuse this page's loaded preferences instead of reading them again.
+	$effect(() => (embedded ? showExportSettings() : undefined));
+	$effect(() => {
+		if (!embedded) return;
+		if (loadError) noteExportSettings(null);
+		else if (ready && preferences) noteExportSettings(preferences);
+	});
 	$effect(() => {
 		if (!ready || !focusEntry || !document.activeElement?.matches('.settings-heading')) return;
 		const row = content?.querySelector<HTMLElement>(`[data-setting="${focusEntry}"]`);

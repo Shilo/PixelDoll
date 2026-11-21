@@ -245,6 +245,79 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBeNull();
 });
 
+test('Settings replaces and forgets the key in place, refreshing usage without moving it', async ({
+	page
+}) => {
+	let held: Promise<void> | undefined;
+	await page.route('https://api.pixellab.ai/v2/balance', async (route) => {
+		await held;
+		await route.fallback();
+	});
+	await page.addInitScript((key) => localStorage.setItem('pixellabApiKey', key), key);
+	await openStudio(page, '/');
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await expect(settings.getByText('Remaining: 42', { exact: true })).toBeVisible();
+
+	const heading = settings.getByRole('heading', { name: 'PixelLab usage', exact: true });
+	const refresh = settings.getByRole('button', { name: 'Refresh balance', exact: true });
+	await expect(refresh).toHaveText('');
+	const before = await heading.boundingBox();
+	const meterBefore = await settings.locator('progress').boundingBox();
+	let release!: () => void;
+	held = new Promise<void>((resolve) => (release = resolve));
+	await refresh.click();
+	await expect(
+		settings.getByRole('button', { name: 'Refreshing balance…', exact: true })
+	).toBeVisible();
+	expect(await heading.boundingBox()).toEqual(before);
+	expect(await settings.locator('progress').boundingBox()).toEqual(meterBefore);
+	held = undefined;
+	release();
+	await expect(refresh).toBeVisible();
+
+	const replace = settings.getByRole('button', { name: 'Replace key...', exact: true });
+	await replace.click();
+	const replacement = page.getByRole('dialog', { name: 'Replace PixelLab key', exact: true });
+	await expect(replacement.getByLabel('API key', { exact: true })).toBeFocused();
+	await expect(
+		replacement.getByRole('checkbox', { name: 'Remember on this device' })
+	).toBeChecked();
+	await replacement.getByRole('button', { name: 'Keep current key' }).click();
+	await expect(replace).toBeVisible();
+	await replace.click();
+	await replacement.getByLabel('API key', { exact: true }).fill('synthetic-replacement');
+	await replacement.getByRole('button', { name: 'Replace key', exact: true }).click();
+	await expect(replace).toBeVisible();
+	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBe(
+		'synthetic-replacement'
+	);
+
+	const forget = settings.getByRole('button', { name: 'Forget key...', exact: true });
+	const confirm = page.getByRole('alertdialog', { name: 'Forget PixelLab key?', exact: true });
+	await forget.click();
+	await expect(confirm).toContainText('Other PixelDoll tabs and PixelLab apps');
+	await confirm.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(forget).toBeFocused();
+	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBe(
+		'synthetic-replacement'
+	);
+	await forget.click();
+	await confirm.getByRole('button', { name: 'Forget key', exact: true }).click();
+	await expect(settings.getByText('Not connected', { exact: true })).toBeVisible();
+	await expect(
+		settings.getByRole('button', { name: 'Connect PixelLab...', exact: true })
+	).toBeFocused();
+	await expect(forget).toHaveCount(0);
+	expect(
+		await page.evaluate(() => [
+			localStorage.getItem('pixellabApiKey'),
+			!!localStorage.getItem('pixellabAuthForget')
+		])
+	).toEqual([null, true]);
+});
+
 test('a delayed replacement does not undo another tab’s Forget', async ({ page, context }) => {
 	await openStudio(page, '/');
 	const more = page.getByRole('button', { name: 'More options', exact: true });

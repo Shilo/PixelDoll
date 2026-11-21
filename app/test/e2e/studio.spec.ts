@@ -184,7 +184,9 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await expect(settings.getByText('Pre-release', { exact: true })).toBeVisible();
 	const version = await settings.getByText(/^Version \d+\.\d+\.\d+$/).innerText();
 	const repository = 'https://github.com/Shilo/PixelDoll';
-	const source = settings.getByRole('button', { name: 'Open source code' });
+	const source = settings.getByRole('button', { name: 'Open source Shilo/PixelDoll', exact: true });
+	await expect(settings.getByText('Powered by PixelLab.', { exact: true })).toBeVisible();
+	await expect(settings.getByText(/^Dress up your 2D game characters/)).toBeVisible();
 	const commit = settings.getByRole('button', { name: /^View commit [a-f0-9]{7}$/i });
 	const copy = settings.getByRole('button', { name: 'Copy details', exact: true });
 	const panelBounds = await settings.locator('.settings-panel').boundingBox();
@@ -380,8 +382,23 @@ test('the startup pre-release notice downloads a library backup', async ({ page 
 	}
 	await expect(backupButton).toBeEnabled();
 	expect(await notice.evaluate((element) => element.clientHeight)).toBe(loadingHeight);
+	let releaseBackup!: () => void;
+	const backupHeld = new Promise<void>((resolve) => {
+		releaseBackup = resolve;
+	});
+	await page.route('**/src/studio/downloadLibraryBackup.ts', async (route) => {
+		await backupHeld;
+		await route.continue();
+	});
 	const downloading = page.waitForEvent('download');
-	await backupButton.click();
+	try {
+		await backupButton.click();
+		await page.mouse.move(0, 0);
+		await expect(backupButton).toHaveAttribute('aria-busy', 'true');
+		await expect(backupButton).toBeDisabled();
+	} finally {
+		releaseBackup();
+	}
 	const download = await downloading;
 	expect(download.suggestedFilename()).toMatch(/\.backup\.zip$/);
 	const files = await unzip(new Uint8Array(readFileSync((await download.path())!)));
@@ -389,9 +406,78 @@ test('the startup pre-release notice downloads a library backup', async ({ page 
 		'pixeldoll-backup/1'
 	);
 	await expect(notice).toHaveCount(0);
+	await expect(page.getByText('Backup is ready to download.', { exact: true })).toHaveCount(0);
 });
 
-test('Settings reset restores global preferences without removing work or the PixelLab key', async ({
+test('Library deletes local work only after confirmation and offers a backup first', async ({
+	page
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await page.route('https://api.pixellab.ai/v2/balance', (route) =>
+		route.fulfill({ json: { credits: { usd: 0 } } })
+	);
+	await openStudio(page, dev);
+	const character = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const exportPath = '/src/lib/store/export-settings.ts';
+		const dbPath = '/src/lib/store/db.ts';
+		const state = await import(statePath);
+		await state.copyDemo();
+		await (await import(exportPath)).saveExportSetting({ engine: 'unity' });
+		await (
+			await import(dbPath)
+		).put('projects', 'rig-older', {
+			id: 'rig-older',
+			manifest: { format: 0 }
+		});
+		localStorage.setItem('pixellabApiKey', 'synthetic-deletion-key');
+		return state.doc.id as string;
+	});
+	const saved = () =>
+		page.evaluate(async (id) => {
+			const exportPath = '/src/lib/store/export-settings.ts';
+			const dbPath = '/src/lib/store/db.ts';
+			const db = await import(dbPath);
+			return {
+				character: Boolean(await db.get('projects', id)),
+				archive: Boolean(await db.get('projects', 'rig-older')),
+				engine: (await (await import(exportPath)).readExportSettings()).engine,
+				keyKept: localStorage.getItem('pixellabApiKey') === 'synthetic-deletion-key'
+			};
+		}, character);
+	const original = { character: true, archive: true, engine: 'unity', keyKept: true };
+	expect(await saved()).toEqual(original);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Library', exact: true }).click();
+	const danger = settings.locator('details[data-setting="delete-work"]');
+	const remove = danger.getByRole('button', { name: 'Delete local work', exact: true });
+	await expect(remove).toBeHidden();
+	await danger.locator('summary').click();
+	await remove.click();
+	const confirmation = page.getByRole('alertdialog', { name: 'Delete all local work?' });
+	const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
+	await expect(cancel).toBeFocused();
+	await cancel.click();
+	expect(await saved()).toEqual(original);
+	await remove.click();
+	const downloading = page.waitForEvent('download');
+	await confirmation.getByRole('button', { name: 'Back up library', exact: true }).click();
+	const download = await downloading;
+	const files = await unzip(new Uint8Array(readFileSync((await download.path())!)));
+	const index = new TextDecoder().decode(files.get('backup.json'));
+	expect(index).toContain(character);
+	expect(index).not.toContain('synthetic-deletion-key');
+	const reloaded = page.waitForEvent('load');
+	await confirmation.getByRole('button', { name: 'Delete local work', exact: true }).click();
+	await reloaded;
+	await expect(settings).toHaveCount(0);
+	expect(await saved()).toEqual({ ...original, character: false });
+});
+
+test('Settings resets restore only their scope, keep work and the PixelLab key, and disable at defaults', async ({
 	page
 }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
@@ -409,6 +495,7 @@ test('Settings reset restores global preferences without removing work or the Pi
 		localStorage.setItem('pixeldoll.locale', 'en');
 		localStorage.setItem('pixeldoll.developerMode', '1');
 		localStorage.setItem('pixeldoll.wardrobe.hideShared', '1');
+		localStorage.setItem('pixeldoll.wardrobe.showDemo', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-settings-reset');
 	});
 	await openStudio(page, dev);
@@ -416,52 +503,188 @@ test('Settings reset restores global preferences without removing work or the Pi
 		const statePath = '/src/studio/state.svelte.ts';
 		const exportPath = '/src/lib/store/export-settings.ts';
 		const state = await import(statePath);
+		const exports = await import(exportPath);
 		await state.copyDemo();
-		await (await import(exportPath)).saveExportSetting({ engine: 'unity' });
+		await exports.saveExportSetting({ engine: 'unity' });
+		await exports.saveExportSetting({ dressedCharacterSheets: false });
+		await exports.saveExportSetting({ animation: 'walk', playOnce: true });
 		return state.doc.id as string;
 	});
-	await page.setViewportSize({ width: 390, height: 844 });
+	const saved = () =>
+		page.evaluate(async (id) => {
+			const exportPath = '/src/lib/store/export-settings.ts';
+			const dbPath = '/src/lib/store/db.ts';
+			return {
+				keptKey: localStorage.getItem('pixellabApiKey') === 'synthetic-settings-reset',
+				keptCharacter: Boolean(await (await import(dbPath)).get('projects', id)),
+				theme: document.documentElement.dataset.theme,
+				language: localStorage.getItem('pixeldoll.locale'),
+				hideShared: localStorage.getItem('pixeldoll.wardrobe.hideShared'),
+				showDemo: localStorage.getItem('pixeldoll.wardrobe.showDemo'),
+				developer: localStorage.getItem('pixeldoll.developerMode'),
+				exports: await (await import(exportPath)).readExportSettings()
+			};
+		}, character);
+	const changed = {
+		keptKey: true,
+		keptCharacter: true,
+		theme: 'light',
+		language: 'en',
+		hideShared: '1',
+		showDemo: '1',
+		developer: '1',
+		exports: { engine: 'unity', dressedCharacterSheets: false, playOnce: ['walk'] }
+	};
+	const defaults = {
+		general: { theme: 'dark', language: null },
+		wardrobe: { hideShared: null, showDemo: null },
+		developer: { developer: null },
+		export: { exports: { engine: 'godot', dressedCharacterSheets: true, playOnce: [] } }
+	};
+	const allDefaults = {
+		...changed,
+		...defaults.general,
+		...defaults.wardrobe,
+		...defaults.developer,
+		...defaults.export
+	};
+	expect(await saved()).toEqual(changed);
+
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
-	await settings.getByRole('button', { name: 'Settings', exact: true }).click();
-	const reset = settings.getByRole('button', { name: 'Reset settings', exact: true });
-	await reset.click();
+	const nav = settings.getByRole('navigation', { name: 'Settings', exact: true });
+	const pageReset = settings.getByRole('button', { name: 'Reset this page', exact: true });
+	const resetAll = settings.getByRole('button', { name: 'Reset settings', exact: true });
+	const focusInPanel = () =>
+		page.evaluate(() => Boolean(document.activeElement?.closest('.settings-content')));
+	const height = (selector: string) =>
+		settings
+			.locator(selector)
+			.first()
+			.evaluate((element) => element.getBoundingClientRect().height);
+	const scoped = [
+		['Wardrobe', 'wardrobe'],
+		['Developer', 'developer'],
+		['Export', 'export'],
+		['Appearance', 'general']
+	] as const;
+
+	// Every page keeps one header and panel heading size, whether or not it has a Reset.
+	const sizes = new Set<string>();
+	for (const name of [
+		'PixelLab',
+		'Appearance',
+		'Wardrobe',
+		'Export',
+		'Library',
+		'Developer',
+		'About'
+	]) {
+		await nav.getByRole('button', { name, exact: true }).click();
+		await expect(settings.getByRole('heading', { name, exact: true, level: 3 })).toBeVisible();
+		const resettable = scoped.some(([label]) => label === name);
+		await expect(pageReset).toHaveCount(resettable ? 1 : 0);
+		if (resettable) await expect(pageReset).toBeEnabled();
+		await expect(resetAll).toBeEnabled();
+		sizes.add(`${await height('.sheet-head')}/${await height('.settings-panel-heading')}`);
+	}
+	expect([...sizes]).toHaveLength(1);
+
+	// Each page Reset changes only its own preferences, then stays in place but disabled.
+	let expected: Record<string, unknown> = { ...changed };
+	for (const [name, scope] of scoped) {
+		await nav.getByRole('button', { name, exact: true }).click();
+		await pageReset.click();
+		const confirmation = page.getByRole('alertdialog', { name: `Reset ${name} settings?` });
+		await confirmation.getByRole('button', { name: 'Reset this page', exact: true }).click();
+		await expect(confirmation).toHaveCount(0);
+		await expect(pageReset).toBeDisabled();
+		expect(await focusInPanel()).toBe(true);
+		expected = { ...expected, ...defaults[scope] };
+		await expect.poll(saved).toEqual(expected);
+	}
+	expect(expected).toEqual(allDefaults);
+	await expect(resetAll).toBeDisabled();
+	const search = settings.getByRole('searchbox', { name: 'Search settings', exact: true });
+	await search.fill('reset');
+	await expect(settings.locator('.search-result', { hasText: 'Reset settings' })).toBeDisabled();
+	await search.fill('');
+	await nav.getByRole('button', { name: 'Appearance', exact: true }).click();
+
+	// Choosing a language explicitly, even the detected one, is a saved preference that Reset clears.
+	await page.evaluate(async () => {
+		const i18nPath = '/src/lib/i18n.ts';
+		await (await import(i18nPath)).selectLanguage('en');
+	});
+	await expect(pageReset).toBeEnabled();
+	await expect(resetAll).toBeEnabled();
+
+	// Export preferences changed while its page is closed re-enable Reset all through Export's change signal.
+	await page.evaluate(async () => {
+		const i18nPath = '/src/lib/i18n.ts';
+		const exportPath = '/src/lib/store/export-settings.ts';
+		await (await import(i18nPath)).selectLanguage();
+		await (await import(exportPath)).saveExportSetting({ engine: 'unity' });
+	});
+	await expect(pageReset).toBeDisabled();
+	await expect(resetAll).toBeEnabled();
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const i18nPath = '/src/lib/i18n.ts';
+		const developerPath = '/src/studio/developerMode.svelte.ts';
+		const wardrobePath = '/src/studio/wardrobeVisibility.svelte.ts';
+		const exportPath = '/src/lib/store/export-settings.ts';
+		(await import(statePath)).setTheme('light');
+		await (await import(i18nPath)).selectLanguage('en');
+		(await import(developerPath)).setDeveloperMode(true);
+		const wardrobe = await import(wardrobePath);
+		wardrobe.setSharedItemsHiddenForAll(true);
+		wardrobe.setDemoItemsShown(true);
+		const exports = await import(exportPath);
+		await exports.saveExportSetting({ dressedCharacterSheets: false });
+		await exports.saveExportSetting({ animation: 'walk', playOnce: true });
+	});
+	await expect.poll(saved).toEqual(changed);
+	await expect(pageReset).toBeEnabled();
+
+	await resetAll.click();
 	const confirmation = page.getByRole('alertdialog', { name: 'Reset all settings?' });
 	const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
 	await expect(cancel).toBeFocused();
 	await cancel.click();
-	await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-	await reset.click();
+	await expect(confirmation).toHaveCount(0);
+	expect(await saved()).toEqual(changed);
+	await resetAll.click();
 	await confirmation.getByRole('button', { name: 'Reset settings', exact: true }).click();
-	await expect(settings.getByRole('status')).toHaveText('Settings reset.');
-	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-	const saved = await page.evaluate(async (id) => {
-		const exportPath = '/src/lib/store/export-settings.ts';
-		const dbPath = '/src/lib/store/db.ts';
-		return {
-			keptKey: localStorage.getItem('pixellabApiKey') === 'synthetic-settings-reset',
-			keptCharacter: Boolean(await (await import(dbPath)).get('projects', id)),
-			developer: localStorage.getItem('pixeldoll.developerMode'),
-			wardrobe: localStorage.getItem('pixeldoll.wardrobe.hideShared'),
-			language: localStorage.getItem('pixeldoll.locale'),
-			exports: await (await import(exportPath)).readExportSettings()
-		};
-	}, character);
-	expect(saved).toEqual({
-		keptKey: true,
-		keptCharacter: true,
-		developer: null,
-		wardrobe: null,
-		language: null,
-		exports: { engine: 'godot', dressedCharacterSheets: true, playOnce: [] }
-	});
-	await settings.getByRole('button', { name: 'Appearance', exact: true }).click();
+	await expect(confirmation).toHaveCount(0);
+	await expect(settings.getByText('Settings reset.', { exact: true })).toBeVisible();
+	await expect.poll(saved).toEqual(allDefaults);
+	await expect(resetAll).toBeDisabled();
+	await expect(pageReset).toBeDisabled();
+	expect(await focusInPanel()).toBe(true);
 	const segmented = await settings.getByRole('radiogroup', { name: 'Theme' }).boundingBox();
 	const language = await settings
 		.getByRole('button', { name: 'Language', exact: true })
 		.boundingBox();
 	expect(segmented?.height).toBe(language?.height);
+
+	// Compact pages move page Reset into the header, which keeps one height on every page.
+	await page.setViewportSize({ width: 390, height: 844 });
+	const back = settings.getByRole('button', { name: 'Settings', exact: true });
+	await back.click();
+	await expect(pageReset).toHaveCount(0);
+	await expect(resetAll).toBeDisabled();
+	const compactHeights = new Set([await height('.sheet-head')]);
+	for (const name of ['PixelLab', 'Appearance', 'Library', 'Export']) {
+		await nav.getByRole('button', { name, exact: true }).click();
+		const resettable = name === 'Appearance' || name === 'Export';
+		await expect(pageReset).toHaveCount(resettable ? 1 : 0);
+		if (resettable) await expect(pageReset).toBeDisabled();
+		compactHeights.add(await height('.sheet-head'));
+		await back.click();
+	}
+	expect([...compactHeights]).toHaveLength(1);
 });
 
 for (const [width, height] of [

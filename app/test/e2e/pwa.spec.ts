@@ -1647,9 +1647,7 @@ test('installation help upgrades on a late native offer and preserves explicit p
 		);
 		await expect(reportProblem).toHaveAttribute('target', '_blank');
 		await expect(reportProblem).toHaveAttribute('rel', 'noreferrer');
-		await expect(reportProblem).toHaveAccessibleDescription(
-			'Opens GitHub in a new tab. Reports are public and require a GitHub account.'
-		);
+		await expect(reportProblem).toHaveAccessibleDescription('Public bug form on GitHub.');
 		await helpMenu.getByRole('button', { name: 'Installation help...', exact: true }).click();
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
 		await expect(help).toContainText('A browser install prompt isn’t available in this window.');

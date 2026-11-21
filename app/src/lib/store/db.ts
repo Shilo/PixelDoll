@@ -15,8 +15,10 @@ export type StoreName = 'projects' | 'blobs' | 'jobs';
 // Bump when PixelLab request inputs change. Work saved with different inputs no longer matches its ledger records and would
 // resend paid calls, so it waits for review instead of resuming by itself.
 export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout (2026-11-07)
-const DB = 'pixeldoll',
-	VERSION = 1;
+// Opened at whatever version it has: Delete local work raises the version as its fence (fenceStoredWork). A page of an
+// earlier version opens version 1 explicitly, so after a fence it fails to open instead of writing into the emptied
+// library. A future schema change must open at max(current version, its own).
+const DB = 'pixeldoll';
 
 let dbp: Promise<IDBDatabase> | null = null;
 let copy: Record<StoreName, Map<string, unknown>> | undefined;
@@ -25,10 +27,9 @@ export function installWorkspaceCopy(projects: Map<string, unknown>, blobs: Map<
 	copy = { projects, blobs, jobs: new Map() };
 }
 
-function open(): Promise<IDBDatabase> {
-	if (workspaceCopy) throw new Error('This operation is not available in a workspace copy.');
-	return (dbp ??= new Promise((res, rej) => {
-		const r = indexedDB.open(DB, VERSION);
+function openDatabase(name: string): Promise<IDBDatabase> {
+	return new Promise((res, rej) => {
+		const r = indexedDB.open(name);
 		r.onupgradeneeded = () => {
 			const db = r.result;
 			for (const s of ['projects', 'blobs', 'jobs'])
@@ -37,11 +38,84 @@ function open(): Promise<IDBDatabase> {
 		r.onsuccess = () => {
 			r.result.onversionchange = () => r.result.close();
 			res(r.result);
-		}; // a newer tab's schema bump is never blocked
+		}; // another page's version change (a fence) is never blocked
 		r.onerror = () => rej(r.error);
 		r.onblocked = () =>
 			rej(new Error('storage is held by an older PixelDoll tab; close it and reload'));
-	}));
+	});
+}
+
+function open(): Promise<IDBDatabase> {
+	if (workspaceCopy) throw new Error('This operation is not available in a workspace copy.');
+	return (dbp ??= (async () => {
+		await holdPresence(storage);
+		return openDatabase(DB);
+	})());
+}
+
+// ---- Exclusive access (Delete local work) ----
+// Every page that opens the database first holds `lock` shared for its lifetime: a page holding it exclusively knows no
+// page of this version has the database open, and pages opening it meanwhile wait. Pages of earlier versions hold no such
+// lock, so the deletion itself runs in a version change, which IndexedDB starts only once every other connection has
+// closed. Write transactions check `sealed` as they are created: from the start of a deletion until it is refused and
+// the lock is held again, or for good once it commits, this page writes nothing that could restore deleted work.
+interface Hold {
+	release(): Promise<void>;
+}
+interface Fence {
+	name: string;
+	lock: string;
+	/** Held exclusively for a whole attempt: two pages never give up their presence for deletions at once. */
+	intent: string;
+	presence?: Promise<Hold>;
+	sealed: boolean;
+	connection(): Promise<IDBDatabase>;
+	/** Forget the connection a refused version change closed. */
+	reset(): void;
+}
+const storage: Fence = {
+	name: DB,
+	lock: 'pixeldoll-storage',
+	intent: 'pixeldoll-storage-delete',
+	sealed: false,
+	connection: () => open(),
+	reset: () => (dbp = null)
+};
+const storageLocks = () => (workspaceCopy ? undefined : globalThis.navigator?.locks);
+
+/** Hold `name` shared until release() resolves, which waits until the lock is actually free again. */
+function holdShared(locks: LockManager, name: string) {
+	let leave!: () => void;
+	const held = new Promise<void>((resolve) => (leave = resolve));
+	return new Promise<Hold>((granted, failed) => {
+		const done = locks.request(name, { mode: 'shared' }, () => {
+			granted({
+				release() {
+					leave();
+					return done;
+				}
+			});
+			return held;
+		});
+		done.catch(failed);
+	});
+}
+
+/** Without Web Locks (no browser that supports PixelDoll's other features lacks them) nothing is held, and Delete local
+ *  work refuses to run. A failed request fails the open: an untracked page could write after a deletion. */
+async function holdPresence(fence: Fence) {
+	const locks = storageLocks();
+	if (locks) await (fence.presence ??= holdShared(locks, fence.lock));
+}
+
+const sealedError = () =>
+	new LocalizedError(
+		'Local work was deleted. Reload PixelDoll to continue.',
+		'librarySettings.deleteWork.sealed'
+	);
+function writable(database: IDBDatabase, stores: StoreName | StoreName[]) {
+	if (storage.sealed) throw sealedError();
+	return database.transaction(stores, 'readwrite');
 }
 
 async function tx<T>(
@@ -51,7 +125,7 @@ async function tx<T>(
 ): Promise<T> {
 	const db = await open();
 	return new Promise((res, rej) => {
-		const t = db.transaction(store, mode);
+		const t = mode === 'readwrite' ? writable(db, store) : db.transaction(store, mode);
 		const req = fn(t.objectStore(store));
 		t.oncomplete = () => res(req.result);
 		t.onerror = t.onabort = () => rej(t.error ?? req.error);
@@ -145,7 +219,7 @@ export async function putCharacter(
 	}
 	const db = await open();
 	return new Promise((res, rej) => {
-		const t = db.transaction(['projects', 'blobs'], 'readwrite');
+		const t = writable(db, ['projects', 'blobs']);
 		for (const [hash, blob] of blobs) t.objectStore('blobs').put(blob, hash);
 		t.objectStore('projects').add(record, id);
 		t.oncomplete = () => res();
@@ -197,7 +271,7 @@ async function characterBatch(
 	}
 	const db = await open();
 	return new Promise((resolve, reject) => {
-		const t = db.transaction(['projects', 'blobs'], add ? 'readwrite' : 'readonly'),
+		const t = add ? writable(db, ['projects', 'blobs']) : db.transaction(['projects', 'blobs']),
 			projects = t.objectStore('projects'),
 			images = t.objectStore('blobs'),
 			range = IDBKeyRange.bound('rig-', 'rig.', false, true),
@@ -266,7 +340,7 @@ export async function updateCharacter<T>(
 	}
 	const db = await open();
 	return new Promise((res, rej) => {
-		const t = db.transaction(['projects', 'blobs'], 'readwrite'),
+		const t = writable(db, ['projects', 'blobs']),
 			projects = t.objectStore('projects'),
 			read = projects.get(id),
 			keys = [...(stored?.keys ?? [])];
@@ -309,6 +383,38 @@ export function withoutCharacters(r: any, ids: Set<string>): Record<string, unkn
 	return kept.length === r[list].length ? undefined : { ...r, [list]: kept };
 }
 
+type FlowRecord = {
+	status?: string;
+	requestText?: number;
+	projectId?: string;
+	spec?: { projectId?: string };
+	queued?: { projectId?: string }[];
+};
+/** Running work could write any character back; older inputs wait for review. */
+export const runningFlow = (r: FlowRecord) =>
+	r.status === 'running' && r.requestText === REQUEST_TEXT;
+/** Whether saved ledger `jobs` or flow `records` show generation work that `holds` cares about: any queued, submitting or
+ *  running job, a create, move or setup draft it holds, or an item draft that is running. Records an earlier version saved
+ *  never run, so they hold nothing. */
+export function generationWork(
+	records: readonly any[],
+	jobs: readonly any[],
+	holds: (r: FlowRecord) => boolean
+): boolean {
+	return (
+		jobs.some((j) => ['queued', 'submitting', 'running'].includes(j?.state)) ||
+		records.some(
+			(r) =>
+				(!incompatibleKind(r) &&
+					(r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
+						r?.id === 'studio-move' ||
+						r?.id === 'studio-setup') &&
+					holds(r)) ||
+				(r?.id === 'studio-drafts' && r.gens?.some((g: { phase: string }) => g.phase === 'running'))
+		)
+	);
+}
+
 async function editIdleCharacter(
 	id: string,
 	action: 'delete' | 'change directions for' | 'replace body frames of',
@@ -334,41 +440,20 @@ async function editIdleCharacter(
 	}
 	const db = await open();
 	return new Promise((res, rej) => {
-		const t = db.transaction(
-				blobs?.size ? ['projects', 'jobs', 'blobs'] : ['projects', 'jobs'],
-				'readwrite'
-			),
+		const t = writable(db, blobs?.size ? ['projects', 'jobs', 'blobs'] : ['projects', 'jobs']),
 			projects = t.objectStore('projects');
 		const records = projects.getAll(),
 			jobs = t.objectStore('jobs').getAll();
 		let error: unknown;
 		jobs.onsuccess = () => {
-			const busy = jobs.result.some((j) => ['queued', 'submitting', 'running'].includes(j.state));
-			// Running work could write any character back. Stopped work waits for the user and holds only its own character.
-			const holds = (r: {
-				status?: string;
-				requestText?: number;
-				projectId?: string;
-				spec?: { projectId?: string };
-				queued?: { projectId?: string }[];
-			}) =>
-				(r.status === 'running' && r.requestText === REQUEST_TEXT) || // older inputs wait for review
+			// Stopped work waits for the user and holds only its own character.
+			const holds = (r: FlowRecord) =>
+				runningFlow(r) ||
 				r.projectId === id ||
 				r.spec?.projectId === id ||
 				!!r.queued?.some((queued) => queued.projectId === id);
-			// Records an earlier version saved never run, so they hold nothing.
-			const work = records.result.some(
-				(r) =>
-					(!incompatibleKind(r) &&
-						(r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
-							r?.id === 'studio-move' ||
-							r?.id === 'studio-setup') &&
-						holds(r)) ||
-					(r?.id === 'studio-drafts' &&
-						r.gens?.some((g: { phase: string }) => g.phase === 'running'))
-			);
 			try {
-				if (busy || work)
+				if (generationWork(records.result, jobs.result, holds))
 					throw action === 'delete'
 						? new LocalizedError(
 								'Finish or dismiss pending generation work before deleting a character.',
@@ -489,7 +574,7 @@ export async function update<T>(
 	}
 	const db = await open();
 	return new Promise((res, rej) => {
-		const t = db.transaction(s, 'readwrite'),
+		const t = writable(db, s),
 			o = t.objectStore(s),
 			g = o.get(key),
 			related = new Map(
@@ -532,7 +617,7 @@ export async function claimJob<T extends { id: string }>(
 	}
 	const database = await open();
 	return new Promise((resolve, reject) => {
-		const transaction = database.transaction('jobs', 'readwrite'),
+		const transaction = writable(database, 'jobs'),
 			jobs = transaction.objectStore('jobs'),
 			read = jobs.getAll();
 		let result: T, error: unknown;
@@ -550,6 +635,149 @@ export async function claimJob<T extends { id: string }>(
 		transaction.onerror = transaction.onabort = () => reject(error ?? transaction.error);
 	});
 }
+/** A retained archive is an opaque ZIP: hashes inside it name no stored blob. */
+function referencedBy(key: IDBValidKey, value: unknown, refs: Set<string>) {
+	if (typeof key !== 'string' || !key.startsWith(RETAINED_ARCHIVE_PREFIX))
+		blobReferences([value], refs);
+}
+
+export interface StoredWork {
+	projects: ReadonlyMap<string, unknown>;
+	jobs: ReadonlyMap<string, unknown>;
+}
+export class StorageInUseError extends LocalizedError {
+	constructor() {
+		super(
+			'Close other PixelDoll tabs and windows, then try again. Nothing was deleted.',
+			'librarySettings.deleteWork.otherTabs'
+		);
+	}
+}
+type SelectWork = (stored: StoredWork) => { projects: Iterable<string>; jobs: Iterable<string> };
+
+/** Delete the `projects` and `jobs` keys `select` picks, with the blobs only they referenced, in ONE transaction: `select`
+ *  decides against exactly what is deleted and may throw to refuse; any failure changes nothing. It runs only while no
+ *  other page can have the database open (fenceStoredWork). Once it resolves, the caller must reload the page: this
+ *  page's connection is closed and it writes nothing more. */
+export async function deleteStoredWork(select: SelectWork): Promise<void> {
+	if (copy) throw new Error('This operation is not available in a workspace copy.');
+	await fenceStoredWork(storage, select);
+}
+
+async function fenceStoredWork(fence: Fence, select: SelectWork) {
+	const locks = storageLocks();
+	if (!locks)
+		throw new LocalizedError(
+			'This browser cannot confirm that other PixelDoll tabs are closed, so nothing was deleted.',
+			'librarySettings.deleteWork.unsupported'
+		);
+	await fence.connection(); // holds presence
+	if (fence.sealed) throw sealedError();
+	await locks.request(fence.intent, { mode: 'exclusive', ifAvailable: true }, async (intent) => {
+		if (!intent) throw new StorageInUseError();
+		fence.sealed = true; // writes this page created earlier finish first: IndexedDB runs overlapping ones in order
+		let committed = false,
+			changing = false;
+		try {
+			const hold = await fence.presence;
+			fence.presence = undefined;
+			await hold?.release();
+			await locks.request(fence.lock, { mode: 'exclusive', ifAvailable: true }, async (lock) => {
+				if (!lock) throw new StorageInUseError();
+				const database = await fence.connection();
+				// Refuse before the version change, which closes every other connection, even an earlier version's page.
+				await new Promise<void>((resolve, reject) => {
+					const t = database.transaction(['projects', 'jobs']);
+					withStoredWork(t, select, reject);
+					t.oncomplete = () => resolve();
+					t.onerror = t.onabort = () => reject(t.error);
+				});
+				changing = true; // from here this page's own connection closes for the version change
+				await deleteInVersionChange(fence.name, database.version + 1, select);
+				committed = true;
+			});
+		} finally {
+			if (!committed) {
+				if (changing) fence.reset();
+				await holdPresence(fence); // throws while still sealed: then nothing more is written
+				fence.sealed = false;
+			}
+		}
+	});
+}
+
+function withStoredWork(
+	t: IDBTransaction,
+	use: (stored: StoredWork) => unknown,
+	fail: (error: unknown) => void
+) {
+	const projects = t.objectStore('projects'),
+		jobs = t.objectStore('jobs'),
+		projectKeys = projects.getAllKeys(),
+		projectValues = projects.getAll(),
+		jobKeys = jobs.getAllKeys(),
+		jobValues = jobs.getAll();
+	const pairs = (keys: IDBValidKey[], values: unknown[]) =>
+		new Map(keys.map((key, index) => [String(key), values[index]]));
+	// Requests in one transaction complete in order: the last one finds all the others done.
+	jobValues.onsuccess = () => {
+		try {
+			use({
+				projects: pairs(projectKeys.result, projectValues.result),
+				jobs: pairs(jobKeys.result, jobValues.result)
+			});
+		} catch (error) {
+			fail(error);
+			t.abort();
+		}
+	};
+}
+
+function deleteInVersionChange(name: string, version: number, select: SelectWork) {
+	return new Promise<void>((resolve, reject) => {
+		let blocked = false,
+			error: unknown;
+		const r = indexedDB.open(name, version);
+		// A connection that does not close holds the change back: give up now, and abort the change if it ever starts.
+		r.onblocked = () => {
+			blocked = true;
+			reject(new StorageInUseError());
+		};
+		r.onupgradeneeded = () => {
+			const t = r.transaction!;
+			if (blocked) return t.abort();
+			withStoredWork(
+				t,
+				(stored) => {
+					const chosen = select(stored),
+						goneProjects = new Set(chosen.projects),
+						goneJobs = new Set(chosen.jobs),
+						gone = new Set<string>(),
+						kept = new Set<string>();
+					for (const [key, value] of stored.projects)
+						if (goneProjects.has(key)) {
+							t.objectStore('projects').delete(key);
+							referencedBy(key, value, gone);
+						} else referencedBy(key, value, kept);
+					for (const [key, value] of stored.jobs)
+						if (goneJobs.has(key)) {
+							t.objectStore('jobs').delete(key);
+							blobReferences([value], gone);
+						} else blobReferences([value], kept);
+					// Only artwork the deleted records used: blobs nothing references were never this deletion's to remove.
+					for (const hash of gone) if (!kept.has(hash)) t.objectStore('blobs').delete(hash);
+				},
+				(failure) => (error = failure)
+			);
+		};
+		r.onsuccess = () => {
+			r.result.close();
+			resolve();
+		};
+		r.onerror = () => reject(error ?? r.error);
+	});
+}
+
 /** Mark-and-sweep in one transaction over all stores: a blob survives when any project/draft/job record mentions its hash
  * (blobReferences), including records an earlier version saved, which stay until the user removes them. Returns the number
  * of blobs deleted. Callers run it only while this tab is idle, because writers put cell blobs one transaction before the
@@ -558,7 +786,7 @@ export async function gcBlobs(): Promise<number> {
 	if (copy) return 0;
 	const db = await open();
 	return new Promise((res, rej) => {
-		const t = db.transaction(['projects', 'jobs', 'blobs'], 'readwrite');
+		const t = writable(db, ['projects', 'jobs', 'blobs']);
 		const jobs = t.objectStore('jobs').getAll(),
 			images = t.objectStore('blobs'),
 			blobs = images.getAllKeys(),
@@ -568,8 +796,7 @@ export async function gcBlobs(): Promise<number> {
 		projects.onsuccess = () => {
 			const row = projects.result;
 			if (row) {
-				if (typeof row.key !== 'string' || !row.key.startsWith(RETAINED_ARCHIVE_PREFIX))
-					blobReferences([row.value], refs);
+				referencedBy(row.key, row.value, refs);
 				row.continue();
 				return;
 			}
@@ -753,4 +980,172 @@ export async function selfTest() {
 		]);
 	}
 	await del('projects', k); // gcBlobs is not run here: it sweeps the whole origin's store (probe in B13 report)
+	await fenceSelfTest();
+}
+
+/** Delete local work's fence on a throwaway database and locks of its own: the app's data and presence are never touched. */
+async function fenceSelfTest() {
+	const locks = storageLocks();
+	console.assert(!!locks, 'fence self-test needs Web Locks');
+	if (!locks) return;
+	const tag = `pixeldoll-selftest-fence-${crypto.randomUUID()}`;
+	const connection: { pending?: Promise<IDBDatabase> } = {};
+	const fence: Fence = {
+		name: tag,
+		lock: `${tag}-lock`,
+		intent: `${tag}-intent`,
+		sealed: false,
+		connection: () =>
+			(connection.pending ??= (async () => {
+				await holdPresence(fence);
+				return openDatabase(tag);
+			})()),
+		reset: () => (connection.pending = undefined)
+	};
+	const hex = (n: number) => String(n).repeat(64);
+	const [only, shared, orphan, jobOnly] = [1, 2, 3, 4].map(hex);
+	const select = () => ({ projects: ['rig-gone'], jobs: ['job-gone'] });
+	const refused = (run: Promise<unknown>) =>
+		run.then(
+			() => undefined,
+			(error: unknown) => error
+		);
+	const snapshot = async () => {
+		const database = await fence.connection();
+		const read = (store: StoreName) =>
+			new Promise<string[]>((resolve, reject) => {
+				const request = database.transaction(store).objectStore(store).getAllKeys();
+				request.onsuccess = () => resolve(request.result.map(String).sort());
+				request.onerror = () => reject(request.error);
+			});
+		return {
+			version: database.version,
+			projects: await read('projects'),
+			jobs: await read('jobs'),
+			blobs: await read('blobs')
+		};
+	};
+	try {
+		const database = await fence.connection();
+		await new Promise<void>((resolve, reject) => {
+			const t = database.transaction(['projects', 'jobs', 'blobs'], 'readwrite');
+			t.objectStore('projects').put(
+				{ id: 'rig-gone', art: [only, `sha256:${shared}`] },
+				'rig-gone'
+			);
+			t.objectStore('projects').put({ id: 'rig-kept', art: shared }, 'rig-kept');
+			t.objectStore('projects').put({ data: only }, `${RETAINED_ARCHIVE_PREFIX}x`);
+			t.objectStore('jobs').put({ id: 'job-gone', results: [{ sha: jobOnly }] }, 'job-gone');
+			for (const hash of [only, shared, orphan, jobOnly])
+				t.objectStore('blobs').put(new Blob([hash]), hash);
+			t.oncomplete = () => resolve();
+			t.onerror = t.onabort = () => reject(t.error);
+		});
+		const before = await snapshot();
+		const unchanged = async (label: string) =>
+			console.assert(
+				stableStringify(await snapshot()) === stableStringify(before) && !fence.sealed,
+				`fence leaves everything unchanged and writable: ${label}`
+			);
+
+		const otherPage = await holdShared(locks, fence.lock);
+		console.assert(
+			(await refused(fenceStoredWork(fence, select))) instanceof StorageInUseError,
+			'fence refuses while another page holds the database'
+		);
+		await otherPage.release();
+		await unchanged('another page');
+
+		let releaseIntent!: () => void;
+		const intentHeld = new Promise<void>((granted) =>
+			locks.request(fence.intent, () => {
+				granted();
+				return new Promise<void>((resolve) => (releaseIntent = resolve));
+			})
+		);
+		await intentHeld;
+		console.assert(
+			(await refused(fenceStoredWork(fence, select))) instanceof StorageInUseError,
+			'fence refuses while another deletion is under way'
+		);
+		releaseIntent();
+		await unchanged('another deletion');
+
+		const refusal = new Error('refused');
+		console.assert(
+			(await refused(
+				fenceStoredWork(fence, () => {
+					throw refusal;
+				})
+			)) === refusal,
+			'fence refuses before the version change'
+		);
+		await unchanged('refused before the version change');
+		let calls = 0;
+		console.assert(
+			(await refused(
+				fenceStoredWork(fence, () => {
+					if (++calls === 2) throw refusal; // the library changed between the check and the change
+					return select();
+				})
+			)) === refusal,
+			'fence refuses inside the version change'
+		);
+		await unchanged('refused inside the version change');
+
+		const stale = indexedDB.open(tag); // a connection that never closes for a version change
+		const holder = await new Promise<IDBDatabase>((resolve, reject) => {
+			stale.onsuccess = () => resolve(stale.result);
+			stale.onerror = () => reject(stale.error);
+		});
+		console.assert(
+			(await refused(fenceStoredWork(fence, select))) instanceof StorageInUseError,
+			'fence refuses while a connection holds the version change back'
+		);
+		holder.close(); // the abandoned change starts now and must abort
+		await unchanged('blocked version change');
+
+		const old = await fence.connection();
+		await fenceStoredWork(fence, select);
+		console.assert(fence.sealed, 'fence keeps the page sealed after deleting');
+		let staleWrite: unknown;
+		try {
+			old.transaction('projects', 'readwrite');
+		} catch (error) {
+			staleWrite = error;
+		}
+		console.assert(
+			(staleWrite as DOMException)?.name === 'InvalidStateError',
+			"the deleting page's old connection can no longer write"
+		);
+		const earlier = await refused(
+			new Promise<IDBDatabase>((resolve, reject) => {
+				const r = indexedDB.open(tag, before.version);
+				r.onsuccess = () => resolve(r.result);
+				r.onerror = () => reject(r.error);
+			})
+		);
+		console.assert(
+			(earlier as DOMException)?.name === 'VersionError',
+			'a page opening the earlier version cannot write into the emptied library'
+		);
+		fence.reset();
+		fence.sealed = false;
+		const after = await snapshot();
+		console.assert(
+			after.version === before.version + 1 &&
+				stableStringify(after.projects) ===
+					stableStringify([`${RETAINED_ARCHIVE_PREFIX}x`, 'rig-kept']) &&
+				after.jobs.length === 0 &&
+				stableStringify(after.blobs) === stableStringify([shared, orphan].sort()),
+			'fence deletes the chosen records and only the artwork just they used'
+		);
+	} finally {
+		(await connection.pending?.catch(() => undefined))?.close();
+		await (await fence.presence?.catch(() => undefined))?.release();
+		await new Promise((resolve) => {
+			const r = indexedDB.deleteDatabase(tag);
+			r.onsuccess = r.onerror = r.onblocked = resolve;
+		});
+	}
 }

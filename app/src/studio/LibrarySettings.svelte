@@ -4,8 +4,10 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
-	import { Archive, Download, Lock, TriangleAlert, Upload } from './icons.ts';
-	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { Archive, Lock, Trash, TriangleAlert, Upload } from './icons.ts';
+	import ConfirmDialog from './ConfirmDialog.svelte';
+	import LibraryBackupButton from './LibraryBackupButton.svelte';
+	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { readSavedKey } from '../lib/shared-auth.ts';
@@ -19,7 +21,12 @@
 		RestoreChangedError,
 		type RestorePlan
 	} from '../lib/store/backup.ts';
-	import { refreshRestoredLibrary } from './state.svelte.ts';
+	import {
+		deleteLocalWorkAndReload,
+		localWorkDeletionBlocked,
+		refreshRestoredLibrary
+	} from './state.svelte.ts';
+	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { downloadLibraryBackup } from './downloadLibraryBackup.ts';
 	import { saveZip } from './download.svelte.ts';
 
@@ -92,8 +99,44 @@
 
 	function backup() {
 		return perform(async () => {
-			status = await downloadLibraryBackup(includeArchived);
+			if (await downloadLibraryBackup(includeArchived))
+				status = message('librarySettings.backupOmissions');
 		});
+	}
+
+	let confirmingDelete = $state(false);
+	let deleteError = $state<Message | string>();
+	let deleteNote = $state<Message>();
+	let backingUp = $state(false);
+	const deleteBlocked = $derived(confirmingDelete ? localWorkDeletionBlocked() : '');
+
+	function openDeleteConfirm() {
+		deleteError = undefined;
+		deleteNote = undefined;
+		confirmingDelete = true;
+	}
+
+	async function backupBeforeDelete() {
+		deleteError = undefined;
+		deleteNote = undefined;
+		try {
+			if (await downloadLibraryBackup(includeArchived))
+				deleteNote = message('librarySettings.backupOmissions');
+		} catch (cause) {
+			deleteError = errorMessage(cause);
+		}
+	}
+
+	async function deleteWork() {
+		if (busy || backingUp || deleteBlocked) return;
+		busy = true;
+		deleteError = undefined;
+		try {
+			await deleteLocalWorkAndReload(); // the page reloads, so busy stays set
+		} catch (cause) {
+			deleteError = errorMessage(cause);
+			busy = false;
+		}
 	}
 
 	function downloadArchive(id?: string, number?: number) {
@@ -231,10 +274,7 @@
 		</section>
 	{:else}
 		<section class="library-task">
-			<SettingsItemButton data-setting="backup" disabled={busy} onclick={backup}>
-				<Download size={18} aria-hidden="true" />
-				{t('librarySettings.backup')}
-			</SettingsItemButton>
+			<LibraryBackupButton settings disabled={busy} onbackup={backup} />
 			<div class="backup-notes">
 				<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
 				<p class="bu-muted settings-description privacy">
@@ -294,6 +334,48 @@
 		{/if}
 	{/if}
 	{#if !preview}<SettingsBackupCopy separated />{/if}
+	{#if !preview && !workspaceCopy}
+		<details class="bu-details notice bad danger-zone" data-setting="delete-work">
+			<summary>{t('librarySettings.deleteWork.section')}</summary>
+			<div class="library-task">
+				<p class="bu-muted settings-description">{t('librarySettings.deleteWork.description')}</p>
+				<p class="bu-muted settings-description">{t('librarySettings.deleteWork.kept')}</p>
+				<button
+					type="button"
+					class="bu-btn delete-work"
+					data-variant="danger"
+					disabled={busy}
+					onclick={openDeleteConfirm}
+				>
+					<Trash size={16} aria-hidden="true" />{t('librarySettings.deleteWork.action')}
+				</button>
+			</div>
+		</details>
+	{/if}
+	{#if confirmingDelete}
+		<ConfirmDialog
+			title={t('librarySettings.deleteWork.title')}
+			action={t('librarySettings.deleteWork.action')}
+			busyAction={backingUp ? t('librarySettings.deleteWork.action') : t('common.deleting')}
+			busy={busy || backingUp}
+			problem={deleteError
+				? displayMessage(deleteError)
+				: deleteBlocked
+					? displayError(deleteBlocked)
+					: ''}
+			blocked={!!deleteBlocked}
+			oncancel={() => (confirmingDelete = false)}
+			onconfirm={() => void deleteWork()}
+		>
+			<p>{t('librarySettings.deleteWork.body')}</p>
+			<p class="bu-muted">{t('librarySettings.deleteWork.kept')}</p>
+			<!-- While it runs, the dialog stays open and Delete waits, so the deletion never races its own backup. -->
+			<LibraryBackupButton disabled={busy} bind:pending={backingUp} onbackup={backupBeforeDelete} />
+			{#if deleteNote}<p class="notice warn small" role="status">
+					<TriangleAlert size={14} aria-hidden="true" />{displayMessage(deleteNote)}
+				</p>{/if}
+		</ConfirmDialog>
+	{/if}
 	{#if busy}<p class="bu-muted settings-description" role="status">{t('common.preparing')}</p>{/if}
 	{#if error}<p class="notice bad small" role="alert">
 			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(error)}
@@ -345,6 +427,19 @@
 	.restore-counts dd {
 		margin: 0;
 		font-variant-numeric: tabular-nums;
+	}
+	.danger-zone {
+		display: block;
+		padding-block: 0;
+	}
+	.danger-zone summary {
+		color: var(--bu-danger);
+	}
+	.delete-work {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		justify-self: start;
 	}
 	.restore-actions {
 		display: flex;

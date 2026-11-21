@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsItemButton from './SettingsItemButton.svelte';
+	import AffiliationNotice from './AffiliationNotice.svelte';
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { repository } from '../lib/repository.ts';
@@ -38,6 +39,8 @@
 		<span class="bu-muted">{version}</span>
 		{#if mode}<span class="bu-muted">{mode}</span>{/if}
 	</div>
+	<p class="settings-description about-description">{t('versionRow.description')}</p>
+	<AffiliationNotice />
 	<div class="about-actions">
 		<SettingsItemButton
 			aria-describedby={externalHint}
@@ -45,6 +48,7 @@
 		>
 			<Github size={18} />
 			<span class="row-name">{t('versionRow.openSource')}</span>
+			<span class="bu-muted">{new URL(repository).pathname.slice(1)}</span>
 			<ExternalLink size={16} aria-hidden="true" />
 		</SettingsItemButton>
 		{#if hasCommit}
@@ -74,5 +78,9 @@
 	.about-actions {
 		display: grid;
 		gap: 8px;
+		margin-block-start: 12px;
+	}
+	.about-description {
+		margin-block: 0 8px;
 	}
 </style>

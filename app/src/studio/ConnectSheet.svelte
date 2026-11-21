@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { closeSettingsAccount } from './settingsNavigation.svelte.ts';
+	import { closeSettingsAccount, settingsNavigation } from './settingsNavigation.svelte.ts';
 	import { t, type WhisperKey } from 'svelte-whisper';
 	import { onDestroy, tick } from 'svelte';
 	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
@@ -21,13 +21,19 @@
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { readSavedKey, SAVED_KEY } from '../lib/shared-auth.ts';
 
+	// Settings > Replace key opens straight into the replacement form and returns to Settings when it ends.
+	const replaceOnly =
+		settingsNavigation.accountOpen &&
+		settingsNavigation.accountReplace &&
+		!!app.key &&
+		!app.keyRejected;
 	let key = $state('');
-	let remember = $state(false);
+	let remember = $state(replaceOnly && app.remembered);
 	let savedKeyAvailable = $state(workspaceCopy && !!readSavedKey().trim());
 	let checking = $state(false);
 	let refreshing = $state(false);
 	const refreshLabel = $derived(t(refreshing ? 'usage.refreshing' : 'activity.refreshBalance'));
-	let replacing = $state(false);
+	let replacing = $state(replaceOnly);
 	let replacementError = $state<WhisperKey>();
 	let limitedAccess = $state(false);
 	let connectionFailed = $state(false);
@@ -112,6 +118,7 @@
 				background: false
 			});
 			if (!isCurrent()) return;
+			if (installed && replaceOnly && closeSettingsAccount()) return;
 			if (installed) replacing = false;
 			else {
 				if (needsKey) replacing = false;
@@ -140,6 +147,7 @@
 		keyInput?.focus();
 	}
 	async function cancelReplace() {
+		if (replaceOnly && !needsKey && closeSettingsAccount()) return;
 		replacing = false;
 		replacementError = undefined;
 		key = '';

@@ -19,8 +19,16 @@ export const settingsNavigation = $state<{
 	section: SettingsSection | null;
 	fromExport: boolean;
 	accountOpen: boolean;
+	/** Account opens straight into Replace key and returns to Settings when it ends. */
+	accountReplace: boolean;
 	activityOpen: boolean;
-}>({ section: null, fromExport: false, accountOpen: false, activityOpen: false });
+}>({
+	section: null,
+	fromExport: false,
+	accountOpen: false,
+	accountReplace: false,
+	activityOpen: false
+});
 
 export function openSettings(section: SettingsSection | null = workspaceCopy ? null : 'pixellab') {
 	settingsNavigation.fromExport = ui.sheet === 'export';
@@ -37,8 +45,9 @@ export function backFromSettings(): boolean {
 	return true;
 }
 
-export function openSettingsAccount() {
+export function openSettingsAccount(replace = false) {
 	settingsNavigation.accountOpen = true;
+	settingsNavigation.accountReplace = replace;
 	ui.sheet = 'connect';
 }
 
