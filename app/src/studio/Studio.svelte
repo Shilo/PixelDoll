@@ -31,6 +31,7 @@
 		reviewFailedCreate,
 		settingUp,
 		initUi,
+		generationPending,
 		refreshProjects,
 		openProject,
 		lastProject,
@@ -81,6 +82,12 @@
 	});
 	$effect(() => {
 		if (experience.screen === 'studio' && ui.toast === previewNoticeDetails) untrack(dismissToast);
+	});
+	$effect(() => {
+		if (!workspaceCopy || !generationPending()) return;
+		const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+		window.addEventListener('beforeunload', warn);
+		return () => window.removeEventListener('beforeunload', warn);
 	});
 
 	// once on mount (an $effect would re-run on every state it reads, e.g. the theme)
@@ -362,31 +369,23 @@
 			onclose={() => (ui.sheet = null)}
 			><div class="inspection-stage"><Stage /><Lazy load={parts.notes} sheet={false} /></div></Sheet
 		>{/if}
-	{#if workspaceCopy && ['connect', 'importPixelLab', 'create', 'newitem', 'move', 'setup'].some((sheet) => sheet === ui.sheet)}
-		<Sheet
-			title={t('studio.titleWorkspaceCopy')}
-			cancel="common.done"
-			onclose={() => (ui.sheet = null)}><p>{t('workspaceCopy.generationOff')}</p></Sheet
-		>
-	{:else if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
-	{#if !workspaceCopy && ui.sheet === 'create'}<Lazy load={parts.create} />{/if}
-	{#if !workspaceCopy && ui.sheet === 'newitem'}<Lazy load={parts.newitem} />{/if}
+	{#if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
+	{#if ui.sheet === 'create'}<Lazy load={parts.create} />{/if}
+	{#if ui.sheet === 'newitem'}<Lazy load={parts.newitem} />{/if}
 	{#if ui.sheet === 'export'}<Lazy load={parts.export} />{/if}
-	{#if ui.sheet === 'activity'}
-		{#if workspaceCopy}<Lazy load={parts.workspace} report={true} />
-		{:else}<Lazy load={parts.activity} />{/if}
-	{/if}
+	{#if ui.sheet === 'activity'}<Lazy load={parts.activity} />{/if}
+	{#if ui.sheet === 'workspaceReport' && workspaceCopy}<Lazy load={parts.workspace} report />{/if}
 	{#if ui.sheet === 'workspaceExport' && !workspaceCopy}<Lazy load={parts.workspace} />{/if}
-	{#if !workspaceCopy && ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
+	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
 	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}
-	{#if ui.sheet === 'importZip' || (!workspaceCopy && ui.sheet === 'importPixelLab')}{#key ui.sheet}<Lazy
+	{#if ui.sheet === 'importZip' || ui.sheet === 'importPixelLab'}{#key ui.sheet}<Lazy
 				load={parts[ui.sheet]}
 				source={ui.sheet === 'importZip' ? 'device' : 'pixellab'}
 			/>{/key}{/if}
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
 	{#if ui.sheet === 'details'}<Lazy load={parts.details} />{/if}
-	{#if !workspaceCopy && ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
+	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
 	{#if ui.sheet === 'frames' && store.project}<Lazy load={parts.frames} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}

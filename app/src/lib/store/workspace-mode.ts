@@ -1,8 +1,6 @@
 export const workspaceCopy =
 	typeof location !== 'undefined' && new URLSearchParams(location.search).has('workspace-copy');
 
-export const COPY_GENERATION_OFF = 'PixelLab is off in workspace copies.';
-
 export function workspaceUrl(copy: boolean): string {
 	const url = new URL(location.href);
 	url.hash = '';

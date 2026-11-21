@@ -1185,7 +1185,7 @@
 	},
 	"workspace": {
 		"activityTitle": "Çalışma alanı etkinliği",
-		"activityIntro": "Çalışma alanıyla birlikte PixelDoll {build} sürümünden kaydedildi. PixelLab kapalı ve hiçbir işlem yeniden başlamayacak.",
+		"activityIntro": "Çalışma alanıyla birlikte PixelDoll {build} sürümünden kaydedildi. ZIP dosyasındaki işler yeniden başlatılmaz.",
 		"missing": {
 			"one": "{count} görsel dosyası eksikti veya okunamadı.",
 			"other": "{count} görsel dosyası eksikti veya okunamadı."
@@ -1222,7 +1222,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "PixelLab burada kapalı. Sekmeyi kapattığınızda veya yeniden yüklediğinizde kopyada yaptığınız tüm değişiklikler atılır.",
+		"privacy": "Kopya, PixelLab’a bağlı olmadan açılır. Sekmeyi kapattığınızda veya yeniden yüklediğinizde kopyada yaptığınız tüm değişiklikler atılır.",
 		"chooseZip": "Çalışma alanı ZIP dosyasını seçin",
 		"opening": "Açılıyor…",
 		"release": "Açmak için bırakın",
@@ -2389,7 +2389,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Çalışma alanı kopyasını açın",
-		"generationOff": "Çalışma alanı kopyalarında PixelLab kapalıdır."
+		"tabOnlyKey": "Bu bağlantı yalnızca bu sekme için geçerlidir ve kaydedilmez.",
+		"useSavedKey": "Kayıtlı anahtarı kullan"
 	},
 	"moveNames": { "default": "Varsayılan", "idle": "Bekleme", "walk": "Yürüme" },
 	"moveRemoval": {

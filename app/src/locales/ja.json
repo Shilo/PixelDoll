@@ -1144,7 +1144,7 @@
 	},
 	"workspace": {
 		"activityTitle": "ワークスペースのアクティビティ",
-		"activityIntro": "PixelDoll {build}でワークスペースと一緒に保存された記録です。PixelLabは無効で、ジョブは再開されません。",
+		"activityIntro": "PixelDoll {build}でワークスペースと一緒に保存された記録です。ZIP内のジョブは再開されません。",
 		"missing": {
 			"other": "{count}個のアートワークファイルが見つからないか、読み込めませんでした。"
 		},
@@ -1179,7 +1179,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "ここではPixelLabは無効です。このタブを閉じるか再読み込みすると、コピーへの変更はすべて破棄されます。",
+		"privacy": "コピーを開いた時点ではPixelLabに接続していません。このタブを閉じるか再読み込みすると、コピーへの変更はすべて破棄されます。",
 		"chooseZip": "ワークスペースのZIPを選択",
 		"opening": "開いています…",
 		"release": "離すと開きます",
@@ -2302,7 +2302,8 @@
 	},
 	"workspaceCopy": {
 		"title": "ワークスペースのコピーを開く",
-		"generationOff": "ワークスペースのコピーではPixelLabは無効です。"
+		"tabOnlyKey": "この接続はこのタブでのみ有効で、保存されません。",
+		"useSavedKey": "保存済みのキーを使う"
 	},
 	"moveNames": { "default": "デフォルト", "idle": "待機", "walk": "歩き" },
 	"moveRemoval": {

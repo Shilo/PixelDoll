@@ -4,7 +4,7 @@ import type { Balance } from './pixellab/routes.ts';
 import { queue } from './pixellab/queue.ts';
 import type { ActivityContext } from './pixellab/activity.ts';
 import { SAVED_KEY, readForgetMarker, readSavedKey, watchSharedAuth } from './shared-auth.ts';
-import { COPY_GENERATION_OFF, workspaceCopy } from './store/workspace-mode.ts';
+import { workspaceCopy } from './store/workspace-mode.ts';
 
 const clearSavedKey = () => {
 	try {
@@ -38,22 +38,19 @@ queue.subscribe(() => {
 	});
 });
 
-const sharedAuth = workspaceCopy
-	? undefined
-	: watchSharedAuth(
-			() => clearLocalKey(),
-			() => {
-				if (!app.remembered) return; // a session-only key remains local; future apps can read the saved key on load
-				const saved = readSavedKey();
-				if (saved === app.key) return;
-				if (!saved) clearLocalKey();
-				else app.remembered = false; // keep this account in memory; never silently run its paid work with another key
-			}
-		);
-import.meta.hot?.dispose(() => sharedAuth?.close());
+const sharedAuth = watchSharedAuth(
+	() => clearLocalKey(),
+	() => {
+		if (!app.remembered) return; // a session-only key remains local; future apps can read the saved key on load
+		const saved = readSavedKey();
+		if (saved === app.key) return;
+		if (!saved) clearLocalKey();
+		else app.remembered = false; // keep this account in memory; never silently run its paid work with another key
+	}
+);
+import.meta.hot?.dispose(() => sharedAuth.close());
 
 function installKey(key: string, remember: boolean) {
-	if (!sharedAuth) throw new Error(COPY_GENERATION_OFF);
 	sharedAuth.acknowledge(); // a fresh connection supersedes any already-persisted Forget notification
 	keyRevision++;
 	app.key = key.trim();
@@ -62,15 +59,17 @@ function installKey(key: string, remember: boolean) {
 	app.balanceError = '';
 	app.balanceAt = 0;
 	app.remembered = false;
-	try {
-		if (remember && app.key) {
-			localStorage.setItem(SAVED_KEY, app.key);
-			app.remembered = true;
-		} else clearSavedKey();
-	} catch {
-		clearSavedKey();
+	if (!workspaceCopy) {
+		try {
+			if (remember && app.key) {
+				localStorage.setItem(SAVED_KEY, app.key);
+				app.remembered = true;
+			} else clearSavedKey();
+		} catch {
+			clearSavedKey();
+		}
+		sharedAuth.changed();
 	}
-	sharedAuth.changed();
 	queue.setKey(app.key);
 }
 
@@ -87,13 +86,13 @@ export async function replaceKey(
 ) {
 	const candidate = key.trim();
 	const revision = keyRevision;
-	const savedKey = readSavedKey();
+	const savedKey = workspaceCopy ? '' : readSavedKey();
 	const forgetMarker = readForgetMarker();
 	const balance = await readBalance(candidate, activity);
 	if (
 		!isCurrent() ||
 		revision !== keyRevision ||
-		savedKey !== readSavedKey() ||
+		(!workspaceCopy && savedKey !== readSavedKey()) ||
 		forgetMarker !== readForgetMarker()
 	)
 		return false;
@@ -103,10 +102,9 @@ export async function replaceKey(
 }
 
 export function forgetKey() {
-	if (!sharedAuth) throw new Error(COPY_GENERATION_OFF);
-	clearSavedKey();
+	if (!workspaceCopy) clearSavedKey();
 	clearLocalKey();
-	sharedAuth.forget();
+	if (!workspaceCopy) sharedAuth.forget();
 }
 
 // A remote notification must never delete a newer saved credential written by another app.

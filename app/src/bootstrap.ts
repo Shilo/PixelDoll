@@ -20,7 +20,7 @@ export async function launchStudio() {
 	try {
 		// leader tab resumes the ledger; other tabs mirror it (Web Locks). Only a real open error fails here (no IndexedDB,
 		// onerror, onblocked in db.ts): a slow open (big ledger, hidden throttled tab) just takes longer.
-		if (!workspaceCopy) await queue.connect();
+		await queue.connect();
 	} catch (e) {
 		const status = startup?.querySelector('p');
 		if (status) {

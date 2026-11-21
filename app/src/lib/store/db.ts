@@ -2,7 +2,7 @@
 import { sha256, stableStringify } from '../image/hash.ts';
 import { LocalizedError } from '../message.ts';
 import type { StoredProject } from './project.ts';
-import { COPY_GENERATION_OFF, workspaceCopy } from './workspace-mode.ts';
+import { workspaceCopy } from './workspace-mode.ts';
 
 export type StoreName = 'projects' | 'blobs' | 'jobs';
 export const CREATE_DRAFT_PREFIX = 'studio-create:';
@@ -58,7 +58,6 @@ export const get = async <T>(s: StoreName, key: string) =>
 		: tx<T | undefined>(s, 'readonly', (o) => o.get(key));
 export const put = async (s: StoreName, key: string, value: unknown) => {
 	if (copy) {
-		if (s === 'jobs') throw new Error(COPY_GENERATION_OFF);
 		copy[s].set(key, structuredClone(value));
 	} else await tx(s, 'readwrite', (o) => o.put(value, key));
 };
@@ -352,7 +351,6 @@ export async function update<T>(
 	relatedKeys: readonly string[] = []
 ): Promise<T> {
 	if (copy) {
-		if (s === 'jobs') throw new Error(COPY_GENERATION_OFF);
 		const records = copy[s];
 		const result = fn(structuredClone(records.get(key)) as T | undefined, <R>(related: string) =>
 			relatedKeys.includes(related)
@@ -395,6 +393,13 @@ export async function claimJob<T extends { id: string }>(
 	record: T,
 	chooseExisting: (records: T[]) => T | undefined
 ): Promise<T> {
+	if (copy) {
+		const existing = chooseExisting(structuredClone([...copy.jobs.values()]) as T[]);
+		if (existing) return existing;
+		if (copy.jobs.has(record.id)) throw new DOMException('Job already exists.', 'ConstraintError');
+		copy.jobs.set(record.id, structuredClone(record));
+		return record;
+	}
 	const database = await open();
 	return new Promise((resolve, reject) => {
 		const transaction = database.transaction('jobs', 'readwrite'),

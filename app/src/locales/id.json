@@ -1139,7 +1139,7 @@
 	},
 	"workspace": {
 		"activityTitle": "Aktivitas ruang kerja",
-		"activityIntro": "Disimpan bersama ruang kerja dari PixelDoll {build}. PixelLab nonaktif dan tidak ada proses yang akan dimulai ulang.",
+		"activityIntro": "Disimpan bersama ruang kerja dari PixelDoll {build}. Tugas dari ZIP tidak dimulai ulang.",
 		"missing": {
 			"other": "{count} file gambar tidak ditemukan atau tidak dapat dibaca."
 		},
@@ -1174,7 +1174,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "PixelLab nonaktif di sini. Semua perubahan pada salinan akan dibuang saat Anda menutup atau memuat ulang tab ini.",
+		"privacy": "Salinan dibuka tanpa terhubung ke PixelLab. Semua perubahan pada salinan akan dibuang saat Anda menutup atau memuat ulang tab ini.",
 		"chooseZip": "Pilih ZIP ruang kerja",
 		"opening": "Membuka…",
 		"release": "Lepas untuk membuka",
@@ -2293,7 +2293,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Buka salinan ruang kerja",
-		"generationOff": "PixelLab nonaktif di salinan ruang kerja."
+		"tabOnlyKey": "Koneksi ini hanya berlaku di tab ini dan tidak disimpan.",
+		"useSavedKey": "Gunakan kunci tersimpan"
 	},
 	"moveNames": { "default": "Bawaan", "idle": "Diam", "walk": "Berjalan" },
 	"moveRemoval": {
