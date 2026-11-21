@@ -202,6 +202,17 @@ const lsSet = (k: string, v: string | null) => {
 export const DEMO = 'fixture:s2';
 export const DEMO_NAME = 'Adventurer';
 
+const pixelLabConnectOpened = 'pixeldoll.pixelLabConnectOpened';
+let pixelLabConnectOpenedInTab = false;
+
+export function claimPixelLabConnectOpen(): boolean {
+	if (pixelLabConnectOpenedInTab) return false;
+	pixelLabConnectOpenedInTab = true;
+	if (lsGet(pixelLabConnectOpened) === '1') return false;
+	lsSet(pixelLabConnectOpened, '1');
+	return true;
+}
+
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
 export type SheetId =
