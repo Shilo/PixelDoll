@@ -5,7 +5,7 @@
 	import type { Snippet } from 'svelte';
 	import { openRename, ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { Compass, Download, Info, Pencil } from './icons.ts';
+	import { Compass, Download, Frame, Info, Pencil } from './icons.ts';
 	import DeleteRow from './DeleteRow.svelte';
 	import RowActions from './RowActions.svelte';
 	import DemoCopyRow from './DemoCopyRow.svelte';
@@ -54,6 +54,20 @@
 					ui.sheet = 'directions';
 				}}
 				><Compass size={16} />{openerLabel(t('characterActions.directions'))}<SurfaceChevron
+				/></button
+			>
+			<button
+				class="row"
+				role="menuitem"
+				onclick={() => {
+					close();
+					document
+						.querySelectorAll<HTMLElement>('[popover]:popover-open')
+						.forEach((popover) => popover.hidePopover());
+					ui.frameProject = id;
+					ui.sheet = 'adjustFrame';
+				}}
+				><Frame size={16} />{openerLabel(t('characterActions.adjustFrame'))}<SurfaceChevron
 				/></button
 			>
 		{/if}

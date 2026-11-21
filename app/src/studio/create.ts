@@ -15,6 +15,14 @@ import {
 } from '../lib/pixellab/queue.ts';
 import { reportedUsage } from '../lib/pixellab/activity.ts';
 import {
+	PaidStepError,
+	spentGens,
+	type PaidFailure,
+	type PaidOption,
+	type PaidReview,
+	type PaidView
+} from '../lib/pixellab/paid-results.ts';
+import {
 	BASE_ANIMS,
 	baseAnimation,
 	frameOrder,
@@ -29,10 +37,21 @@ import type { ImageReference } from '../lib/image/reference.ts';
 import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
-import { loadProject, type StoredProject } from '../lib/store/project.ts';
-import { defaultCharacterExportId, itemContent } from '../lib/store/identity.ts';
+import { loadProject, readStoredImage, type StoredProject } from '../lib/store/project.ts';
+import {
+	frameChangeText,
+	frameFacts,
+	freeOf,
+	makeRoom,
+	reframeCharacter,
+	roomShort,
+	standingRoom,
+	standingViews,
+	type FrameChange
+} from '../lib/rig/reframe.ts';
+import { defaultCharacterExportId, itemContent, retainMoveChoices } from '../lib/store/identity.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
-import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
+import { liftToFit, normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
 import {
 	ANCHORS,
@@ -45,7 +64,6 @@ import {
 	storedCellHashes,
 	defaultMs,
 	playlist,
-	retainPlaybackChoices,
 	rigArtworkVersion,
 	validateRig,
 	type ClipSource,
@@ -99,11 +117,13 @@ import {
 	type RigCtx
 } from '../lib/items/run.ts';
 import { directionLabel } from './experience/movement.ts';
+import { directionNames } from './directionKeys.ts';
 import { coverage } from './itemRoute.ts';
 import {
 	CURRENT_FORMAT,
 	type CellKey,
 	type Manifest,
+	type Project,
 	type Provenance
 } from '../lib/store/manifest.ts';
 import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
@@ -144,10 +164,12 @@ import {
 } from './moveAnimationOptions.ts';
 import { cellImg } from '../lib/compose/compose.ts';
 import {
+	blockingIssues,
 	errorMessage,
 	errorTranslation,
 	LocalizedError,
 	message,
+	PreflightWarning,
 	type Message
 } from '../lib/message.ts';
 import { localizedPlanRestriction } from '../lib/pixellab/plans.ts';
@@ -171,6 +193,10 @@ export interface CreateSpec {
 	detail?: string;
 	activityScope?: string;
 	projectId?: string;
+	/** A new registration of the same drawn views after a registration returned no usable character (absent: `seed`). */
+	registrationSeed?: number;
+	/** Preflight warnings (PreflightWarning ids) the user chose to generate past. */
+	acceptedWarnings?: string[];
 }
 const CELL = 64,
 	EST = 0.1;
@@ -296,6 +322,65 @@ interface GenerationRecovery {
 	tail: Promise<void>;
 }
 const measurementRecoveries = new WeakMap<AbortSignal, GenerationRecovery>();
+/** A request a review would still have to buy: nothing is sent while a flow is priced or reviewed from the cache. */
+class Unpaid extends Error {
+	constructor(
+		readonly path: string,
+		readonly running = false
+	) {
+		super(`${path} is not in the request cache`);
+	}
+}
+/** One direction replayed from the request cache only: the completed records it reused and the joint checks still unbought. */
+interface DryRun {
+	records: JobRec[];
+	checks: number;
+	unmeasured: boolean;
+	/** A joint check of this replay is still at PixelLab, so what follows it is not known yet. */
+	running: boolean;
+	/** A request the stopped flow canceled before sending was never bought; a continuation on a new attempt sends it. */
+	reopensCanceled?: boolean;
+}
+const dryRuns = new WeakMap<AbortSignal, DryRun>();
+/** The finished record a resume-safe run of `req` would return (done, or stopped and replayed), never one still running. */
+export async function latestOutcome(req: Req): Promise<JobRec | undefined> {
+	const matches = await requestMatches(req);
+	return matches.some(live) ? undefined : (matches.find((r) => r.state === 'done') ?? matches[0]);
+}
+/** Ledger records of this exact request, newest first. */
+async function requestMatches(req: Req): Promise<JobRec[]> {
+	const { requestHash } = await requestIdentity(req);
+	return queue
+		.snapshot()
+		.jobs.filter((r) => r.requestHash === requestHash)
+		.sort((a, b) => b.createdAt - a.createdAt);
+}
+/** The completed record a real run of `req` would reuse, or why it cannot: Unpaid, or the stopped record it would replay. */
+async function dryRecord(req: Req, label: string, dry: DryRun): Promise<JobRec> {
+	const matches = await requestMatches(req);
+	const done = matches.find((r) => r.state === 'done');
+	if (done) {
+		if (!dry.records.includes(done)) dry.records.push(done);
+		return done;
+	}
+	if (matches.some(live)) throw new Unpaid(req.path, true);
+	const stopped = dry.reopensCanceled
+		? matches.find((r) => !(r.state === 'canceled' && r.autoCanceledAttempts?.length))
+		: matches[0];
+	// A resume-safe request replays its stopped record instead of sending again, so only a new seed can buy another.
+	if (stopped)
+		throw new PaidStepError(
+			`${label}: ${stopped.state}. Generation stopped without resending.`,
+			'create.errors.requestStoppedResume',
+			{
+				label,
+				state: activityStateMessage(stopped.state),
+				error: stopped.error ? ` (${stopped.error.slice(0, 160)})` : ''
+			},
+			{ step: req.path, failure: 'stopped', recordId: stopped.id }
+		);
+	throw new Unpaid(req.path);
+}
 export async function parallelGeneration<T>(
 	tasks: ((signal: AbortSignal) => Promise<T>)[],
 	attempt?: number,
@@ -329,6 +414,8 @@ export async function run(
 	activityScope?: string
 ): Promise<JobRec> {
 	signal?.throwIfAborted();
+	const dry = signal && dryRuns.get(signal);
+	if (dry) return dryRecord(req, label, dry);
 	const recovery = signal ? measurementRecoveries.get(signal) : undefined;
 	if (recovery) {
 		const { requestHash } = await requestIdentity(req);
@@ -505,6 +592,14 @@ export async function joints(
 			release();
 		}
 	} catch (e) {
+		const dry = signal && dryRuns.get(signal);
+		if (dry && e instanceof Unpaid) {
+			// A review prices an unbought check instead of failing on it; the steps after it are priced from the plan.
+			if (e.running) dry.running = true;
+			else dry.checks++;
+			dry.unmeasured = true;
+			return undefined;
+		}
 		if (resumeSafe) throw e;
 		return undefined;
 	}
@@ -541,6 +636,8 @@ interface ClipJob {
 	paletteRepair?: boolean;
 	authored?: boolean;
 	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number };
+	/** Rows each motion frame was lifted by with the user's consent; disclosed with the clip's checks. */
+	lifts?: readonly number[];
 }
 interface ClipOut {
 	frames: Img[];
@@ -581,11 +678,13 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 	);
 	j.tick();
 	const outs = await imagesOf(r);
+	const rejected = (failure: PaidFailure) => ({ step: 'render', failure, recordId: r.id });
 	if (!j.native && outs.length !== j.keypoints.length)
-		throw new LocalizedError(
+		throw new PaidStepError(
 			`${j.anim} ${j.dir}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.`,
 			'create.errors.pixellabReturnedWrongNumber',
-			{ move: j.anim, direction: j.dir }
+			{ move: j.anim, direction: j.dir },
+			rejected('frame-count')
 		);
 	const nativeFrames =
 		j.native &&
@@ -602,18 +701,20 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		? []
 		: outs.map((o) => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
 	if (normalized.some((n) => n.cutPx))
-		throw new LocalizedError(
-			`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame or reduce Body size before creating again.`,
+		throw new PaidStepError(
+			`${j.anim} ${j.dir}: the body frames do not fit the ${j.rest.w} px frame. They were kept for review; nothing was saved.`,
 			'create.errors.animationExceedsPxFrame',
-			{ move: j.anim, direction: j.dir, w: j.rest.w }
+			{ move: j.anim, direction: j.dir, w: j.rest.w },
+			rejected('overflow')
 		);
 	const rawFrames = nativeFrames ?? normalized.map((n) => n.img);
 	// Do not spend on joint measurements or another render when the returned artwork is empty.
 	if (rawFrames.some((f) => !opaqueBox(f)))
-		throw new LocalizedError(
+		throw new PaidStepError(
 			`${j.anim} ${j.dir}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.`,
 			'create.errors.pixellabReturnedEmptyFrames',
-			{ move: j.anim, direction: j.dir }
+			{ move: j.anim, direction: j.dir },
+			rejected('empty')
 		);
 	const candidate = j.paletteRepair
 		? await paletteCandidate(j.anim, j.dir, j.rest, rawFrames, j.keypoints, 0)
@@ -627,11 +728,14 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 			return k;
 		})
 	);
+	const dryJoints = j.signal && dryRuns.get(j.signal);
+	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('render-joints', dryJoints.running);
 	if (measured.some((k) => !hasAll(k)))
-		throw new LocalizedError(
+		throw new PaidStepError(
 			`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`,
 			'create.errors.validJointsWereFound',
-			{ move: j.anim, direction: j.dir }
+			{ move: j.anim, direction: j.dir },
+			rejected('joints')
 		);
 	const qa = bodyClipQa(
 		j.anim,
@@ -639,7 +743,8 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		frames,
 		j.native ? undefined : j.keypoints,
 		measured,
-		j.authored ? undefined : { dir: j.dir, rest: j.restKps }
+		j.authored ? undefined : { dir: j.dir, rest: j.restKps },
+		j.lifts
 	);
 	return {
 		frames,
@@ -657,9 +762,10 @@ const bodyClipQa = (
 	frames: Img[],
 	requested: Keypoint[][] | undefined,
 	measured: (Keypoint[] | undefined)[],
-	facing?: { dir: string; rest: Keypoint[] }
-) =>
-	clipQa({
+	facing?: { dir: string; rest: Keypoint[] },
+	lifts?: readonly number[]
+) => {
+	const qa = clipQa({
 		anim,
 		rest,
 		frames,
@@ -669,6 +775,14 @@ const bodyClipQa = (
 		disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0),
 		...(facing ? { facing } : {})
 	});
+	const lifted = lifts?.filter(Boolean) ?? [];
+	if (lifted.length)
+		qa.warnings.push(liftNote(rest.w, Math.max(...lifted), lifted.length, lifts!.length));
+	return qa;
+};
+/** The disclosure a body made from a lifted motion keeps with its checks (rigQa), in the words of the consent. */
+const liftNote = (size: number, px: number, frames: number, of: number) =>
+	`motion lifted to fit the ${size} px frame: feet rise up to ${px} px in ${frames} of ${of} frames`;
 /** Numerical body checks a partial or new targeted move must pass unless the user keeps the reviewed frames. */
 const failsBodyGate = (qa: ClipQa, native = false) =>
 	qa.fails.length > 0 ||
@@ -802,7 +916,9 @@ async function motion(
 	signal?: AbortSignal,
 	activityScope?: string,
 	size = CELL,
-	standing?: Img
+	standing?: Img,
+	lifts?: readonly number[],
+	below = 0
 ): Promise<{ keypoints: Keypoint[][]; record: JobRec }> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
@@ -813,7 +929,11 @@ async function motion(
 		label,
 		expected,
 		size,
-		standing
+		standing,
+		'optional-exact',
+		lifts,
+		'motion',
+		below
 	);
 	const kps = await Promise.all(
 		frames.map(async (f) => {
@@ -822,15 +942,35 @@ async function motion(
 			return k;
 		})
 	);
+	const dryJoints = signal && dryRuns.get(signal);
+	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('motion-joints', dryJoints.running);
 	if (kps.some((k) => !k))
-		throw new LocalizedError(
+		throw new PaidStepError(
 			`${label}: joints not found on every frame`,
 			'create.errors.jointsFoundEveryFrame',
-			{ label }
+			{ label },
+			{ step: 'motion', failure: 'joints', recordId: r.id }
+		);
+	// Skeleton renders accept joints inside the image only (Keypoint-Input x and y are 0..1). A lifted source whose joints
+	// still fall outside stops here, before its render is bought.
+	if (
+		lifts?.some(Boolean) &&
+		kps.some((k) => k!.some((p) => p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1))
+	)
+		throw new PaidStepError(
+			`${label}: the lifted motion still has joints outside the ${size} px frame. No body render was requested.`,
+			'create.errors.liftedJointsOutside',
+			{ label, size },
+			{ step: 'motion', failure: 'overflow', recordId: r.id }
 		);
 	return { keypoints: kps as Keypoint[][], record: r };
 }
 
+/** The one placement of managed motion frames (live, cached replay, standing echo, lift and Make room): PixelLab draws them
+ *  from the registered standing view, centered on its canvas, so they land rig.artOffset rows lower once Adjust frame has
+ *  moved our art since that registration. Native V3/PixMiniMax moves start from our own art and take no offset. */
+export const artMapping = (rig: Pick<Manifest['rig'], 'artOffset'>, dir: DirectionName) =>
+	rig.artOffset?.[dir] ?? 0;
 function normalizeMotionFrames(
 	r: JobRec,
 	images: Img[],
@@ -839,31 +979,39 @@ function normalizeMotionFrames(
 	expected: number,
 	size: number,
 	standing?: Img,
-	echo: 'optional-exact' | 'required-leading' | 'optional-leading' = 'optional-exact'
+	echo: 'optional-exact' | 'required-leading' | 'optional-leading' = 'optional-exact',
+	lifts?: readonly number[],
+	step = 'motion',
+	/** Rows our standing art sits below the registered view (artMapping): managed motion only, never native moves. */
+	below = 0
 ): Img[] {
+	const rejected = (failure: PaidFailure) => ({ step, failure, recordId: r.id });
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
-		throw new LocalizedError(
+		throw new PaidStepError(
 			`${label}: PixelLab dropped the direction (busy). Try again.`,
 			'create.errors.pixellabDroppedDirectionBusy',
-			{ label }
+			{ label },
+			rejected('dropped')
 		); // S4 truncation
 	const returned = images.length,
-		mismatch = new LocalizedError(
+		mismatch = new PaidStepError(
 			`${label}: PixelLab returned ${returned} motion frames for ${expected} requested. No joint checks or body render were requested for this view.`,
 			'create.errors.pixellabReturnedMotionFrames',
-			{ label, returned, expected: expected }
+			{ label, returned, expected: expected },
+			rejected('frame-count')
 		);
 	const startKept = returned === expected + 1 && !!standing;
 	if ((returned !== expected && !startKept) || (echo === 'required-leading' && !startKept))
 		throw mismatch;
-	const normalizeFrame = (image: Img) => {
-		const normalized = normalize(image, size, size, 128, size);
+	const normalizeFrame = (image: Img, lift = 0) => {
+		const normalized = normalize(image, size, size, 128, size, lift - below);
 		if (normalized.cutPx)
-			throw new LocalizedError(
-				`${label}: motion exceeds the ${size} px frame. Increase Frame or reduce Body size before creating again.`,
+			throw new PaidStepError(
+				`${label}: the motion does not fit the ${size} px frame. Its frames were kept for review; nothing was saved.`,
 				'create.errors.motionExceedsPxFrame',
-				{ label, size }
+				{ label, size },
+				rejected('overflow')
 			);
 		return normalized.img;
 	};
@@ -876,12 +1024,15 @@ function normalizeMotionFrames(
 		)
 			throw mismatch;
 	}
-	const frames = (startKept ? images.slice(1) : images).map(normalizeFrame);
+	const frames = (startKept ? images.slice(1) : images).map((image, i) =>
+		normalizeFrame(image, lifts?.[i])
+	);
 	if (frames.some((f) => !opaqueBox(f)))
-		throw new LocalizedError(
+		throw new PaidStepError(
 			`${label}: PixelLab returned an empty motion frame`,
 			'create.errors.pixellabReturnedEmptyMotion',
-			{ label }
+			{ label },
+			rejected('empty')
 		);
 	return frames;
 }
@@ -903,7 +1054,9 @@ function normalizeNativeMoveFrames(
 		count,
 		rest.w,
 		rest,
-		model === 'pixminimax' ? 'required-leading' : 'optional-leading'
+		model === 'pixminimax' ? 'required-leading' : 'optional-leading',
+		undefined,
+		'render'
 	);
 }
 
@@ -940,6 +1093,86 @@ async function completedCreation(
 			'create.errors.creationIdentityBelongsAnother'
 		);
 	return saved;
+}
+
+/** A drawn view placed on the creation frame: a V3 reference keeps its own height as the character canvas. */
+const drawnView = (spec: CreateSpec, img: Img, cell: number) =>
+	spec.reference && !spec.model
+		? normalize(img, cell, cell, 128, Math.min(img.h, cell))
+		: normalize(img, cell, cell);
+
+export interface CreatePaidOption extends PaidOption {
+	spec: CreateSpec;
+}
+export interface CreatePaidReview extends PaidReview {
+	options: CreatePaidOption[];
+}
+/** API-free review of a stopped creation, replayed from the request cache: the drawn views it bought, and whether it can finish
+ *  from them for free, with a new registration of the same views, or only with a new draw (the sheet's Try again). Undefined
+ *  when nothing was drawn yet or the character is already saved. */
+export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidReview | undefined> {
+	const scope = new AbortController(),
+		dry: DryRun = { records: [], checks: 0, unmeasured: false, running: false };
+	dryRuns.set(scope.signal, dry);
+	let outcome: unknown;
+	try {
+		await createCharacter(spec, undefined, undefined, scope.signal);
+		return undefined;
+	} catch (error) {
+		outcome = error;
+	}
+	const base = dry.records[0]; // the draw is the first request
+	if (!base) return undefined;
+	const cell = spec.frame ?? CELL,
+		drawn = labelViews(spec.model, await imagesOf(base));
+	const views: PaidView[] = DIRECTIONS.map((d) => {
+		const view = drawn.find((x) => x.label === d),
+			placed = view && drawnView(spec, view.img, cell);
+		const problem = !placed
+			? message('create.errors.pixellabReturnedView', { direction: d })
+			: placed.cutPx
+				? message('create.errors.viewDoesFitPx', { direction: d, cell })
+				: !opaqueBox(placed.img)
+					? message('create.errors.pixellabReturnedEmptyView', { direction: d })
+					: undefined;
+		return {
+			label: viewName(d),
+			state: problem ? 'failed' : 'ready',
+			frames: view
+				? [{ img: placed && !placed.cutPx ? placed.img : view.img, label: viewName(d) }]
+				: [],
+			notes: problem ? [problem] : []
+		};
+	});
+	const options: CreatePaidOption[] = [];
+	const paid = outcome instanceof PaidStepError ? outcome.paid : undefined;
+	if (outcome instanceof Unpaid) {
+		// Everything bought so far is reused; only an unbought registration or check is still charged.
+		const gens = +(
+			(outcome.path === '/create-character-v3' && !outcome.running ? 0.25 : 0) +
+			dry.checks * EST
+		).toFixed(2);
+		options.push({
+			id: 'resume',
+			label: message('createReview.resume'),
+			gens,
+			paid: gens > 0,
+			primary: true,
+			spec
+		});
+	} else if (paid && paid.step !== 'draw' && paid.recordId !== base.id) {
+		// The drawn views are fine: register them again with a new registration seed, keeping the paid draw.
+		options.push({
+			id: 'register',
+			label: message('createReview.register'),
+			detail: message('createReview.registerDetail'),
+			gens: 0.25,
+			paid: true,
+			primary: true,
+			spec: { ...spec, registrationSeed: salt(spec.registrationSeed ?? spec.seed) }
+		});
+	}
+	return { views, spent: spentGens(dry.records), recordIds: dry.records.map((r) => r.id), options };
 }
 
 /** Insert-only publication. Concurrent/recovered completion can never replace an already customized character. */
@@ -979,7 +1212,9 @@ export interface Progress {
 export async function createCharacter(
 	spec: CreateSpec,
 	onProgress: (p: Progress) => void = () => {},
-	onViews: (views: { id: DirectionName; img: Img }[]) => void = () => {}
+	onViews: (views: { id: DirectionName; img: Img }[]) => void = () => {},
+	/** A review's dry run (reviewCreateResults): every request is read from the cache and nothing is published. */
+	signal?: AbortSignal
 ): Promise<string> {
 	const projectId = spec.projectId ?? `rig-${crypto.randomUUID()}`;
 	if (!/^rig-[a-z0-9-]+$/.test(projectId))
@@ -1006,6 +1241,10 @@ export async function createCharacter(
 		spec.seed > Number.MAX_SAFE_INTEGER - 100_000
 			? invalid('Invalid seed.', 'create.errors.invalidSeed')
 			: []),
+		...(spec.registrationSeed !== undefined &&
+		(!Number.isSafeInteger(spec.registrationSeed) || spec.registrationSeed < 0)
+			? invalid('Invalid seed.', 'create.errors.invalidSeed')
+			: []),
 		...(spec.view && !['low top-down', 'high top-down', 'side'].includes(spec.view)
 			? invalid('Invalid camera.', 'create.errors.invalidCamera')
 			: []),
@@ -1027,6 +1266,7 @@ export async function createCharacter(
 			: [])
 	];
 	// The English message keeps every reason; the translated message shows the first.
+	errors.splice(0, errors.length, ...blockingIssues(errors, spec.acceptedWarnings));
 	if (errors.length)
 		throw new LocalizedError(
 			errors.map((e) => e.message).join(' '),
@@ -1034,7 +1274,8 @@ export async function createCharacter(
 			errors[0].translation.vars
 		);
 	const referenceIssue = characterReferenceIssue(spec.reference, spec.model, cell, spec.size);
-	if (referenceIssue) throw referenceIssue;
+	if (referenceIssue && blockingIssues([referenceIssue], spec.acceptedWarnings).length)
+		throw referenceIssue;
 	const creationSpec = await sha256(
 		stableStringify({ ...spec, projectId: undefined, activityScope: undefined })
 	);
@@ -1053,9 +1294,10 @@ export async function createCharacter(
 		'studio-base',
 		false,
 		true,
-		undefined,
+		signal,
 		spec.activityScope
 	);
+	const drew = (failure: PaidFailure) => ({ step: 'draw', failure, recordId: base.id });
 
 	// 2. all eight original rotations on the frame. Re-import for rest keypoints.
 	onProgress({ step: 'rest', done: 0, total: 1, recIds: [] });
@@ -1066,27 +1308,27 @@ export async function createCharacter(
 	for (const d of DIRECTIONS) {
 		const r = rots.find((x) => x.label === d);
 		if (!r)
-			throw new LocalizedError(
+			throw new PaidStepError(
 				`PixelLab returned no ${d} view`,
 				'create.errors.pixellabReturnedView',
-				{ direction: d }
+				{ direction: d },
+				drew('frame-count')
 			);
-		const n =
-			spec.reference && !spec.model
-				? normalize(r.img, cell, cell, 128, Math.min(r.img.h, cell))
-				: normalize(r.img, cell, cell);
+		const n = drawnView(spec, r.img, cell);
 		if (n.cutPx)
-			throw new LocalizedError(
+			throw new PaidStepError(
 				`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`,
 				'create.errors.viewDoesFitPx',
-				{ direction: d, cell }
+				{ direction: d, cell },
+				drew('overflow')
 			);
 		const top = opaqueBox(n.img)?.y0 ?? cell;
 		if (!opaqueBox(n.img))
-			throw new LocalizedError(
+			throw new PaidStepError(
 				`PixelLab returned an empty ${d} view.`,
 				'create.errors.pixellabReturnedEmptyView',
-				{ direction: d }
+				{ direction: d },
+				drew('empty')
 			);
 		if (top < HEADROOM_MIN)
 			restWarnings.push(
@@ -1115,20 +1357,22 @@ export async function createCharacter(
 			view,
 			template_id: 'mannequin',
 			no_background: true,
-			seed: spec.seed
+			seed: spec.registrationSeed ?? spec.seed
 		}),
 		`${spec.name} · rest views`,
 		'studio-base',
 		false,
 		true,
-		undefined,
+		signal,
 		spec.activityScope
 	);
 	const charId = (imp.response as { character_id?: string })?.character_id;
 	if (!charId)
-		throw new LocalizedError(
+		throw new PaidStepError(
 			'PixelLab did not return a character ID',
-			'create.errors.pixellabDidReturnCharacter'
+			'create.errors.pixellabDidReturnCharacter',
+			undefined,
+			{ step: 'register', failure: 'empty', recordId: imp.id }
 		);
 	const ch = await run(
 		routes.getCharacter(charId),
@@ -1136,7 +1380,7 @@ export async function createCharacter(
 		'studio-base',
 		true,
 		false,
-		undefined,
+		signal,
 		spec.activityScope
 	);
 	const refs = (
@@ -1149,15 +1393,19 @@ export async function createCharacter(
 	const restKps = {} as Record<DirectionName, Keypoint[]>,
 		managed = managedRestKeypoints(refs, DIRS);
 	for (const d of DIRS) {
-		const kps = managed[d] ?? (await joints(rest[d], true, undefined, spec.activityScope)); // only absent references use the existing bounded estimate fallback
+		const kps = managed[d] ?? (await joints(rest[d], true, signal, spec.activityScope)); // only absent references use the existing bounded estimate fallback
+		if (signal && dryRuns.get(signal)?.unmeasured) continue;
 		if (!hasAll(kps))
-			throw new LocalizedError(
+			throw new PaidStepError(
 				`no valid joints found on the ${d} view`,
 				'create.errors.validJointsFoundView',
-				{ direction: d }
+				{ direction: d },
+				{ step: 'register', failure: 'joints', recordId: imp.id }
 			);
 		restKps[d] = kps!;
 	}
+	const dryJoints = signal && dryRuns.get(signal);
+	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('/estimate-skeleton', dryJoints.running);
 
 	// 3. freeze the Default move: one standing frame per direction, posed by its own rest keypoints (`imported-rest`, so items
 	// reuse their dressed standing view for it). Idle, walk and other moves are added from Moves through addMove.
@@ -1262,6 +1510,7 @@ export async function createCharacter(
 	};
 	const images = new Map<Sha256, Img>(Object.values(built.cells).map((c) => [c.hash, c.img]));
 	for (const d of Object.keys(rig.rest) as DirectionName[]) images.set(rig.rest[d]!.image, rest[d]);
+	if (signal && dryRuns.get(signal)) throw new Unpaid('publish');
 	await publishCreatedCharacter(rec, images);
 	db.askPersist();
 	return rec.id;
@@ -1282,6 +1531,17 @@ export interface MoveSpec {
 	reviewRegeneration?: { id: string; seed: number; activityScope?: string };
 	reviewedMoveItems?: true;
 	seed: number;
+	/** Per-view seed salts chosen in a paid-result review: only that view's failed step is bought again. */
+	reroll?: Partial<Record<DirectionName, { motion?: number; render?: number }>>;
+	/** The attempt a reviewed continuation runs as (default: the seed). A new one reopens requests the stopped attempt
+	 *  canceled before sending (queue autoCanceledAttempts), so they are sent instead of replayed as stopped. */
+	attempt?: number;
+	/** Consent to raise each overflowing motion frame of a view by these rows so the skeleton source fits the frame. */
+	motionLift?: Partial<Record<DirectionName, number[]>>;
+	/** Preflight warnings (PreflightWarning ids from movePreflightWarnings) the user chose to generate past. */
+	acceptedWarnings?: string[];
+	/** Item repair: seed salts by batch start for re-rolling only a misaligned batch (regridClip). */
+	gridReroll?: Record<string, number>;
 	replace?: boolean;
 	activityScope?: string;
 	dirs?: DirectionName[];
@@ -1463,6 +1723,7 @@ interface CachedBodyClip {
 	keypoints: Keypoint[][] | undefined;
 	frames: Img[];
 	facing?: { dir: string; rest: Keypoint[] };
+	lifts?: readonly number[];
 }
 /** An expected eligibility limit, distinct from a failed storage read or malformed PNG. */
 class RecoveryUnavailable extends LocalizedError {}
@@ -1658,7 +1919,10 @@ async function inspectKeptBody(
 					'create.errors.someFramesValidMeasured',
 					{ direction: directionLabel(c.dir) }
 				);
-			return { ...c, qa: bodyClipQa(spec.id, c.rest, c.frames, c.keypoints, measured, c.facing) };
+			return {
+				...c,
+				qa: bodyClipQa(spec.id, c.rest, c.frames, c.keypoints, measured, c.facing, c.lifts)
+			};
 		})
 	);
 	const broken = clips.find((c) => c.qa.fails.length);
@@ -1833,7 +2097,11 @@ async function inspectMeasurementRecovery(
 				`${spec.id} ${d} (motion)`,
 				moveMotionFrames(rec.manifest, spec),
 				rig.cell.w,
-				restImg
+				restImg,
+				'optional-exact',
+				spec.motionLift?.[d],
+				'motion',
+				artMapping(rig, d)
 			);
 			const measured = await Promise.all(
 				frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
@@ -1868,7 +2136,7 @@ async function inspectMeasurementRecovery(
 							description: rec.character!.looks,
 							action: bodyAction(spec),
 							dir: d,
-							seed: spec.seed + 101 + attempt * 7919,
+							seed: viewSeed(spec, d, 'render')! + attempt * 7919,
 							view: rig.view
 						});
 			const rawHash = (await requestIdentity(req)).requestHash;
@@ -1920,6 +2188,7 @@ async function inspectMeasurementRecovery(
 					rest: restImg,
 					keypoints,
 					frames,
+					...(spec.motionLift?.[d] ? { lifts: spec.motionLift[d] } : {}),
 					...(authored && model === 'skeleton-v3'
 						? {}
 						: { facing: { dir: d, rest: rest.keypoints } })
@@ -2146,6 +2415,15 @@ export function bodyMoveIssue(
 			blocked ? 'create.errors.moveAnimationFramesBlocked' : 'create.errors.moveAnimationFrames',
 			{ frames }
 		);
+	const { w, h } = m.rig.cell;
+	if (
+		Object.values(s.animation?.references ?? {}).some(({ start, end }) =>
+			[start, model === 'skeleton-v3' ? undefined : end].some(
+				(frame) => frame && (frame.width !== w || frame.height !== h)
+			)
+		)
+	)
+		return moveReferenceIssue(m.rig.cell);
 	return gaitTemplate(s.action) || isAuthoredAction(s.action) || s.text?.trim()
 		? undefined
 		: new LocalizedError(
@@ -2243,7 +2521,9 @@ export function skeletonMoveReview(
 			seed: 0,
 			replace: !!saved,
 			approvedDirs: dirs,
-			...(saved ? { dirs } : {})
+			...(saved ? { dirs } : {}),
+			// Warnings the user already generated past (the frame room check) stay accepted for the same move.
+			...(spec.acceptedWarnings ? { acceptedWarnings: spec.acceptedWarnings } : {})
 		};
 		if (bodyMoveIssue(manifest, review) || partialMoveFrameIssue(manifest, review, dirs.length))
 			return;
@@ -2525,7 +2805,8 @@ export async function addMove(
 			'Keeping reviewed body frames saves only the body. No request was made.',
 			'create.errors.keepingReviewedBodyFrames'
 		);
-	const { rec } = await loadProject(projectId);
+	const { rec, project: loaded } = await loadProject(projectId);
+	checkedReviewChoices(rec.manifest, spec);
 	if (spec.reviewBeforePublish) {
 		if (spec.items.length || spec.itemsOnly || spec.itemMethod)
 			throw new LocalizedError(
@@ -2535,13 +2816,23 @@ export async function addMove(
 		const saved = Object.hasOwn(rec.moveReviews ?? {}, spec.id)
 			? rec.moveReviews![spec.id]
 			: undefined;
-		if (saved && saved.spec.activityScope === spec.activityScope && saved.spec.seed === spec.seed)
+		// A draft staged on another rig (a resize since) is stale: it is refused below, never resumed as is.
+		if (
+			saved &&
+			saved.spec.activityScope === spec.activityScope &&
+			saved.spec.seed === spec.seed &&
+			saved.input === moveCandidateInput(rec, spec.id)
+		)
 			return { warnings: saved.warnings, moveReview: spec.id };
 		if (saved || spec.reviewRegeneration) {
 			if (!saved || spec.reviewRegeneration?.id !== spec.id) throw changedMoveCandidate();
 			const original = currentMoveCandidate(rec, spec.reviewRegeneration);
 			if (moveCandidateInput(rec, spec.id) !== original.input) throw changedMoveCandidate();
 		}
+	}
+	if (!spec.itemsOnly) {
+		const warning = blockingIssues(movePreflightWarnings(loaded, spec), spec.acceptedWarnings)[0];
+		if (warning) throw warning;
 	}
 	const assertReview = (m: Manifest) => {
 		if (!itemMoveReviewMatches(m, spec)) {
@@ -2720,6 +3011,20 @@ export async function addMove(
 			).length
 		);
 	}, 0);
+	// Finished views were saved; Try again skips complete views unless it replaces the move, which redraws every view.
+	const partialSaved = (error: unknown): never => {
+		if (!(error instanceof PartialMoveError)) throw error;
+		const views = error.savedDirs.map(directionLabel).join(', ');
+		throw new LocalizedError(
+			`${error.reason} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,
+			spec.replace
+				? 'create.errors.partialSaved'
+				: spec.reuseItemFrames
+					? 'create.errors.partialSavedNewFrames'
+					: 'create.errors.partialSavedRetry',
+			{ reason: error.reason, views }
+		);
+	};
 	let posed = 0;
 	if (itemTotal) onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
 	const tick = () =>
@@ -2739,7 +3044,7 @@ export async function addMove(
 				savedOnly: spec.reuseItemFrames,
 				plannedDirs: spec.reuseItemFrames ? dirs : undefined,
 				activityScope: spec.activityScope
-			});
+			}).catch(partialSaved);
 		else if (spec.itemMethod === 'grid')
 			for (const d of plan.dirs) {
 				const current = await loadProject(projectId),
@@ -2759,7 +3064,8 @@ export async function addMove(
 					spec.preferTierOneRepair,
 					spec.activityScope,
 					spec.reuseItemFrames,
-					spec.redrawItem
+					spec.redrawItem,
+					spec.gridReroll
 				);
 				tick();
 				if (result.review) return { warnings: [], repairReview: result.review };
@@ -2774,20 +3080,7 @@ export async function addMove(
 				plan.dirs,
 				spec.activityScope,
 				!!spec.reuseItemFrames
-			).catch((error: unknown) => {
-				if (!(error instanceof PartialMoveError)) throw error;
-				// Try again skips complete views unless it replaces the move, which redraws the body and every view.
-				const views = error.savedDirs.map(directionLabel).join(', ');
-				throw new LocalizedError(
-					`${error.reason} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,
-					spec.replace
-						? 'create.errors.partialSaved'
-						: spec.reuseItemFrames
-							? 'create.errors.partialSavedNewFrames'
-							: 'create.errors.partialSavedRetry',
-					{ reason: error.reason, views }
-				);
-			});
+			).catch(partialSaved);
 	}
 	const saved = (await loadProject(projectId)).rec;
 	const clipQa = (saved.rigQa as { clips?: Record<string, ClipQa> } | undefined)?.clips ?? {};
@@ -2845,7 +3138,7 @@ export function moveMotionRequest(
 					rec.character?.id ?? '',
 					BASE_ANIMS.find((animation) => animation.name === 'walk')!,
 					[dir],
-					spec.seed
+					viewSeed(spec, dir, 'motion')
 				)
 			: {
 					character_id: rec.character?.id ?? '',
@@ -2855,10 +3148,19 @@ export function moveMotionRequest(
 					keep_first_frame: false,
 					animation_name: spec.id,
 					directions: [dir],
-					seed: spec.seed
+					seed: viewSeed(spec, dir, 'motion')
 				}
 	);
 }
+/** A per-view re-roll salts only that view's failed step, so every other view and step keeps reusing what it bought. */
+export const viewSeed = (
+	spec: Pick<MoveRequestSpec, 'seed' | 'reroll'>,
+	dir: DirectionName,
+	step: 'motion' | 'render'
+): number | undefined =>
+	spec.seed === undefined
+		? undefined
+		: spec.seed + (step === 'render' ? 101 : 0) + (spec.reroll?.[dir]?.[step] ?? 0);
 
 export function nativeMoveRequest(
 	rec: Pick<StoredProject, 'manifest' | 'character'>,
@@ -2888,7 +3190,7 @@ export function nativeMoveRequest(
 		first_frame: png(start),
 		...(end ? { last_frame: png(end) } : {}),
 		frame_count: moveFrames(rec.manifest, spec),
-		...(spec.seed === undefined ? {} : { seed: spec.seed }),
+		...(spec.seed === undefined ? {} : { seed: viewSeed(spec, dir, 'motion') }),
 		no_background: true as const,
 		enhance_prompt: false as const
 	};
@@ -2928,13 +3230,16 @@ async function moveReferenceImage(
 		!opaqueBox(image) ||
 		!image.data.some((alpha, index) => index % 4 === 3 && alpha === 0)
 	)
-		throw new LocalizedError(
-			'Use a frame of the correct size with a transparent background.',
-			'moveSheet.referenceInvalid',
-			{ width: cell.w, height: cell.h }
-		);
+		throw moveReferenceIssue(cell);
 	return image;
 }
+
+const moveReferenceIssue = (cell: Manifest['rig']['cell']) =>
+	new LocalizedError(
+		'Use a frame of the correct size with a transparent background.',
+		'moveSheet.referenceInvalid',
+		{ width: cell.w, height: cell.h }
+	);
 
 function movePoseEndpoints(poses: Keypoint[][], start?: Keypoint[]): Keypoint[][] {
 	return start ? [start, ...poses.slice(1)] : poses;
@@ -2979,6 +3284,581 @@ function sampleMovePoses(
 	});
 }
 
+/** App-side checks that warn before a body move is bought. Each returns a PreflightWarning the user can explicitly generate
+ *  past (MoveSheet shows it and offers Generate move anyway). Requests PixelLab would refuse, missing data and saved-data corruption
+ *  stay hard stops instead: bodyMoveIssue, partialMoveFrameIssue, reservedMove and addMove's prerequisites. */
+export const MOVE_PREFLIGHT: ((p: Project, spec: MoveSpec) => PreflightWarning | undefined)[] = [
+	frameRoomWarning
+];
+export const movePreflightWarnings = (p: Project, spec: MoveSpec): PreflightWarning[] =>
+	MOVE_PREFLIGHT.flatMap((check) => check(p, spec) ?? []);
+/** A body move from standing views with less room than a move reaches (lib/rig/reframe.ts moveReach) may step past the
+ *  frame and stop after paying. MoveSheet offers Make room (free, Adjust frame) or Generate move anyway. */
+export function frameRoomWarning(p: Project, spec: MoveSpec): PreflightWarning | undefined {
+	if (spec.itemsOnly) return undefined;
+	const m = p.manifest,
+		frame = m.rig.cell.w,
+		room = standingRoom(standingViews(m, p.images), frame);
+	if (!room || !roomShort(room)) return undefined;
+	return new PreflightWarning(
+		'frame-room-move',
+		`This move may step past the ${frame} px frame: the character has ${room.below} px below its feet. Make room for free first, or generate the move anyway.`,
+		'moveSheet.frameRoom',
+		{ frame, below: room.below }
+	);
+}
+
+interface BodyClipPlan {
+	rec: StoredProject;
+	project: Project;
+	spec: MoveSpec;
+	model: ReturnType<typeof moveAnimationModel>;
+	authored?: string;
+	n: number;
+}
+function bodyClipPlan(rec: StoredProject, project: Project, spec: MoveSpec): BodyClipPlan {
+	const model = moveAnimationModel(spec);
+	return {
+		rec,
+		project,
+		spec,
+		model,
+		authored: model === 'skeleton-v3' && isAuthoredAction(spec.action) ? spec.action : undefined,
+		n: moveFrames(rec.manifest, spec)
+	};
+}
+async function bodyStartPose(
+	image: Img,
+	direction: DirectionName,
+	spec: MoveSpec,
+	signal: AbortSignal,
+	onRecord?: (record: JobRec) => void
+): Promise<NonNullable<ClipJob['start']>> {
+	const points = await joints(image, true, signal, spec.activityScope, onRecord);
+	const dry = dryRuns.get(signal);
+	if (dry?.unmeasured) throw new Unpaid('start-joints', dry.running);
+	return { image, keypoints: requireMoveStartJoints(points, direction) };
+}
+/** One view of a body move: motion source -> keypoints -> body render -> checks. A review replays it from the cache only. */
+async function bodyClip(
+	plan: BodyClipPlan,
+	d: Direction,
+	signal: AbortSignal,
+	tick: () => void,
+	startImage?: Img,
+	start?: ClipJob['start']
+): Promise<{ d: Direction; keypoints: Keypoint[][]; out: ClipOut; motion?: JobRec }> {
+	const { rec, project, spec, model, authored, n } = plan,
+		m = rec.manifest,
+		rig = m.rig;
+	const restKps = rig.rest![d]!.keypoints,
+		restImg = project.images.get(rig.rest![d]!.image)!;
+	if (model !== 'skeleton-v3') {
+		const out = await renderClip({
+			anim: spec.id,
+			dir: d,
+			rest: restImg,
+			nativeStart: startImage,
+			restKps,
+			keypoints: [],
+			looks: rec.character!.looks,
+			seed: spec.seed,
+			name: m.name,
+			tick,
+			view: rig.view,
+			signal,
+			activityScope: spec.activityScope,
+			action: bodyAction(spec),
+			native: {
+				request: nativeMoveRequest(rec, spec, d, model, await b64(restImg)),
+				model,
+				frames: n
+			}
+		});
+		return { d, keypoints: out.measured as Keypoint[][], out };
+	}
+	let keypoints: Keypoint[][], source: JobRec | undefined;
+	if (authored)
+		keypoints = authoredPoses(
+			authored,
+			fromApi(restKps, rig.cell),
+			d,
+			rig.cell.w,
+			spec.poseStyle
+		).map((p) => armDepth(toApi(p, rig.cell), d));
+	else {
+		const result = await motion(
+			moveMotionRequest(rec, spec, d),
+			d,
+			`${m.name} · ${spec.id} ${d} (motion)`,
+			tick,
+			moveMotionFrames(m, spec),
+			signal,
+			spec.activityScope,
+			rig.cell.w,
+			restImg,
+			spec.motionLift?.[d],
+			artMapping(rig, d)
+		);
+		keypoints = result.keypoints;
+		source = result.record;
+	}
+	keypoints = movePoseEndpoints(
+		sampleMovePoses(keypoints, n, spec.action, spec.animation?.loop),
+		start?.keypoints
+	);
+	return {
+		d,
+		keypoints,
+		...(source ? { motion: source } : {}),
+		out: await renderClip({
+			anim: spec.id,
+			dir: d,
+			rest: restImg,
+			start,
+			restKps,
+			keypoints,
+			authored: !!authored,
+			looks: rec.character!.looks,
+			seed: viewSeed(spec, d, 'render')!,
+			name: m.name,
+			tick,
+			view: rig.view,
+			signal,
+			activityScope: spec.activityScope,
+			action: bodyAction(spec),
+			paletteRepair: !!spec.bodyPaletteRepair,
+			lifts: spec.motionLift?.[d]
+		})
+	};
+}
+/** Review choices are exact: salts and lifts only for drawn views, lifts only for a generated motion source. */
+function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
+	const views = genDirs(m),
+		invalid = () =>
+			new LocalizedError(
+				'This review choice no longer matches the move. Review it again. No request was made.',
+				'create.errors.reviewChoiceInvalid'
+			);
+	const record = (value: unknown) =>
+		!!value && typeof value === 'object' && !Array.isArray(value)
+			? Object.entries(value as Record<string, unknown>)
+			: undefined;
+	if (spec.reroll !== undefined) {
+		const entries = record(spec.reroll);
+		if (!entries) throw invalid();
+		for (const [dir, salts] of entries) {
+			const steps = record(salts);
+			if (
+				!views.includes(dir as DirectionName) ||
+				!steps ||
+				steps.some(
+					([step, salt]) =>
+						(step !== 'motion' && step !== 'render') ||
+						!Number.isSafeInteger(salt) ||
+						(salt as number) < 1 ||
+						(salt as number) > 1e9
+				)
+			)
+				throw invalid();
+		}
+	}
+	if (spec.gridReroll !== undefined) {
+		const entries = record(spec.gridReroll);
+		if (
+			!entries ||
+			spec.itemMethod !== 'grid' ||
+			entries.some(
+				([start, salt]) =>
+					!/^\d+$/.test(start) || !Number.isSafeInteger(salt) || (salt as number) < 1
+			)
+		)
+			throw invalid();
+	}
+	if (spec.motionLift !== undefined) {
+		const entries = record(spec.motionLift);
+		if (
+			!entries ||
+			moveAnimationModel(spec) !== 'skeleton-v3' ||
+			isAuthoredAction(spec.action) ||
+			entries.some(
+				([dir, lifts]) =>
+					!views.includes(dir as DirectionName) ||
+					!Array.isArray(lifts) ||
+					lifts.length !== moveMotionFrames(m, spec) ||
+					lifts.some((px) => !Number.isSafeInteger(px) || px < 0 || px >= m.rig.cell.h)
+			)
+		)
+			throw invalid();
+	}
+}
+
+/** A view of a stopped body move replayed from the request cache: what it bought, what stopped it, what is left to buy. */
+interface ReplayedView {
+	d: Direction;
+	/** `running`: a request of this view is still at PixelLab, so its result is not known yet. */
+	state: 'ready' | 'pending' | 'running' | 'failed';
+	gens: number;
+	records: JobRec[];
+	error?: PaidStepError;
+	clip?: Awaited<ReturnType<typeof bodyClip>>;
+}
+async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedView> {
+	const scope = new AbortController(),
+		dry: DryRun = {
+			records: [],
+			checks: 0,
+			unmeasured: false,
+			running: false,
+			reopensCanceled: true
+		};
+	dryRuns.set(scope.signal, dry);
+	const priced = (gens: number) => +(dry.checks * EST + gens).toFixed(2);
+	try {
+		const reference =
+			plan.spec.action === 'ride' ? undefined : plan.spec.animation?.references?.[d];
+		const image = await moveReferenceImage(reference, 'start', plan.rec.manifest.rig.cell);
+		if (plan.model !== 'skeleton-v3')
+			await moveReferenceImage(reference, 'end', plan.rec.manifest.rig.cell);
+		const start =
+			image && plan.model === 'skeleton-v3'
+				? await bodyStartPose(image, d, plan.spec, scope.signal)
+				: undefined;
+		const clip = await bodyClip(plan, d, scope.signal, () => {}, image, start);
+		return { d, state: 'ready', gens: 0, records: dry.records, clip };
+	} catch (error) {
+		if (error instanceof Unpaid)
+			return {
+				d,
+				state: error.running ? 'running' : 'pending',
+				gens: priced(unpaidGens(plan, error)),
+				records: dry.records
+			};
+		if (error instanceof PaidStepError)
+			return { d, state: 'failed', gens: priced(0), records: dry.records, error };
+		throw error;
+	}
+}
+/** The planned price of the step a replay could not take from the cache and of every step of that view after it. */
+function unpaidGens({ rec, spec, model, authored, n }: BodyClipPlan, e: Unpaid): number {
+	const m = rec.manifest,
+		checks = n * EST,
+		render = poseCallGens(n);
+	if (model !== 'skeleton-v3')
+		return e.path === 'render-joints'
+			? 0
+			: (e.running ? 0 : nativeMoveGens(model, m.rig.cell, n)) + checks;
+	if (e.path === 'render-joints') return 0;
+	if (e.path === '/animate-with-skeleton-v3') return (e.running ? 0 : render) + checks;
+	if (e.path === 'motion-joints' || authored) return render + checks;
+	return (
+		(e.running && e.path !== 'start-joints' ? 0 : moveMotionGens(m, spec)) +
+		moveMotionFrames(m, spec) * EST +
+		render +
+		checks
+	);
+}
+/** The seed a view's failed step takes for a re-roll: the motion source, or only the body render on a kept motion. */
+function rerollStep(plan: BodyClipPlan, error: PaidStepError): 'motion' | 'render' | undefined {
+	const { step } = error.paid;
+	if (step === '/estimate-skeleton') return undefined; // a joint check is deterministic: re-rolling cannot change it
+	if (plan.model !== 'skeleton-v3') return 'motion';
+	return step === 'render' || step === '/animate-with-skeleton-v3' ? 'render' : 'motion';
+}
+const viewName = (d: DirectionName) => message(directionNames[d]);
+const salt = (previous = 0) => previous + 1 + Math.floor(Math.random() * 1_000_000);
+/** Rows each returned motion frame needs to fit the cell, or null when lifting cannot fit one (cut at a side or the top). */
+async function motionLiftOf(
+	plan: BodyClipPlan,
+	record: JobRec,
+	d: DirectionName
+): Promise<number[] | null> {
+	const { rec, spec } = plan,
+		size = rec.manifest.rig.cell.w,
+		expected = moveMotionFrames(rec.manifest, spec),
+		images = (await imagesOf(record)).map((out) => out.img),
+		frames = images.length === expected + 1 ? images.slice(1) : images;
+	if (frames.length !== expected) return null;
+	const below = artMapping(rec.manifest.rig, d),
+		lifts = frames.map((image) => liftToFit(image, size, size, 128, size, below));
+	return lifts.every((lift): lift is number => lift !== null) ? lifts : null;
+}
+
+/** Make room and continue: Adjust frame keeps character.id, so every cached motion request stays reusable and only the
+ *  joint checks and body renders on the changed frame are bought. The change is Make room's (lib/rig/reframe.ts) with every
+ *  cached motion this continuation reuses, in every view, kept inside the frame where artMapping will place it; priced by a
+ *  replay of the changed character from the cache. Undefined when nothing overflowed, or when no change fits. */
+async function makeRoomOption(
+	plan: BodyClipPlan,
+	failed: ReplayedView[],
+	dirs: Direction[],
+	primary: boolean
+): Promise<MovePaidOption | undefined> {
+	if (!failed.length || failed.some((v) => v.error?.paid.failure !== 'overflow')) return undefined;
+	const { rec, project } = plan,
+		m = rec.manifest,
+		size = m.rig.cell.w,
+		spec = resumeSpec(plan.spec, { motionLift: undefined });
+	const boxes: { y0: number; y1: number; x0: number; x1: number }[] = [];
+	if (plan.model === 'skeleton-v3' && !plan.authored)
+		for (const d of dirs) {
+			const hash = (await requestIdentity(moveMotionRequest(rec, spec, d))).requestHash,
+				cached = queue
+					.snapshot()
+					.jobs.find((job) => job.requestHash === hash && job.state === 'done');
+			if (!cached) continue;
+			for (const { img } of await imagesOf(cached)) {
+				const box = opaqueAt(img, 128);
+				if (!box) continue;
+				const x = Math.floor((size - img.w) / 2),
+					y = Math.floor((size - img.h) / 2) + artMapping(m.rig, d);
+				boxes.push({ x0: box.x0 + x, x1: box.x1 + x, y0: box.y0 + y, y1: box.y1 + y });
+			}
+		}
+	const change = makeRoom(
+		await frameFacts(rec, project.images, readStoredImage),
+		freeOf(boxes, size)
+	);
+	if (change.limit || (change.size === size && !change.dy)) return undefined;
+	const { record, newImages } = await reframeCharacter(
+		rec,
+		project.images,
+		change,
+		readStoredImage
+	);
+	if (bodyMoveIssue(record.manifest, spec)) return undefined;
+	const next = bodyClipPlan(
+		record,
+		{ manifest: record.manifest, images: new Map([...project.images, ...newImages]) },
+		spec
+	);
+	const views = await Promise.all(dirs.map((d) => replayView(next, d))),
+		gens = +views.reduce((sum, v) => sum + v.gens, 0).toFixed(2);
+	return {
+		id: 'enlarge-frame',
+		label: message('moveReview.makeRoom'),
+		// A native model draws from the standing frame, so the changed frame is drawn again in every view (priced above).
+		detail: message(
+			plan.model === 'skeleton-v3'
+				? 'moveReview.makeRoomDetail'
+				: 'moveReview.makeRoomDetailRedraw',
+			{ change: frameChangeText(size, change) }
+		),
+		gens,
+		paid: gens > 0,
+		primary,
+		spec,
+		change: { size: change.size, dy: change.dy },
+		reviewed: rec
+	};
+}
+/** The box of pixels at or above `thr` alpha: what normalize keeps and counts as cut. */
+function opaqueAt(im: Img, thr: number) {
+	let x0 = im.w,
+		y0 = im.h,
+		x1 = -1,
+		y1 = -1;
+	for (let y = 0; y < im.h; y++)
+		for (let x = 0; x < im.w; x++)
+			if (im.data[(y * im.w + x) * 4 + 3] >= thr) {
+				x0 = Math.min(x0, x);
+				x1 = Math.max(x1, x);
+				y0 = Math.min(y0, y);
+				y1 = y;
+			}
+	return x1 < 0 ? undefined : { x0, y0, x1, y1 };
+}
+export interface MovePaidOption extends PaidOption {
+	spec: MoveSpec;
+	/** `enlarge-frame`: the free Adjust frame change applied before the move continues with `spec`. */
+	change?: FrameChange;
+	/** The character `change` was planned and priced on; a changed character needs a new review. */
+	reviewed?: StoredProject;
+}
+export interface MovePaidReview extends PaidReview {
+	options: MovePaidOption[];
+}
+/** The next attempt of a reviewed move keeps its seed, so every completed request is reused; only consents change. */
+/** Every way on is body only and lands in the staged visual review (addBodyClip reviewBeforePublish): equipment is a
+ *  separate, freshly quoted choice after Save, never posed automatically after a recovery. */
+const resumeSpec = (spec: MoveSpec, change: Partial<MoveSpec> = {}): MoveSpec => ({
+	...spec,
+	items: [],
+	itemReview: undefined,
+	reviewedMoveItems: undefined,
+	reviewBeforePublish: true,
+	reuseItemFrames: undefined,
+	measurementRecovery: undefined,
+	bodyPaletteRepair: undefined,
+	attempt: salt(),
+	...change
+});
+/** API-free review of a stopped body move: every view replayed from the request cache in one pass, showing what each bought
+ * and why it stopped, with each way on priced from the cache (0 when nothing is left to buy). Undefined when its body is
+ * already saved or this is equipment-only work. */
+export async function reviewMoveResults(
+	projectId: string,
+	spec: MoveSpec
+): Promise<MovePaidReview | undefined> {
+	if (spec.itemsOnly || spec.itemMethod) return undefined;
+	const { rec, project } = await loadProject(projectId),
+		m = rec.manifest;
+	if (
+		!isV13(rec) ||
+		bodyMoveIssue(m, spec) ||
+		(!spec.replace && m.rig.animations.some((a) => a.id === spec.id))
+	)
+		return undefined;
+	const dirs = approvedMoveDirections(m, spec) as Direction[],
+		plan = bodyClipPlan(rec, project, resumeSpec(spec));
+	const replay = (candidate: MoveSpec) =>
+		Promise.all(dirs.map((d) => replayView({ ...plan, spec: candidate }, d)));
+	const total = (views: ReplayedView[]) => +views.reduce((sum, v) => sum + v.gens, 0).toFixed(2);
+	const views = await replay(plan.spec);
+	const records = [...new Map(views.flatMap((v) => v.records).map((r) => [r.id, r])).values()];
+	const gated = !!spec.dirs?.length || !!spec.motionLift;
+	const failed = views.filter(
+		(v) =>
+			v.state === 'failed' ||
+			(gated && v.clip && failsBodyGate(v.clip.out.qa, plan.model !== 'skeleton-v3'))
+	);
+	const options: MovePaidOption[] = [];
+	// Lift every overflowing motion that a vertical lift can fit; anything else that stopped is re-rolled at its own step.
+	const lifts: NonNullable<MoveSpec['motionLift']> = {},
+		reroll: NonNullable<MoveSpec['reroll']> = { ...plan.spec.reroll },
+		rerolled: Direction[] = [];
+	const notes = new Map<Direction, (Message | string)[]>();
+	for (const v of failed) {
+		const error = v.error;
+		const source =
+			error?.paid.recordId &&
+			records.concat(queue.snapshot().jobs).find((r) => r.id === error.paid.recordId);
+		if (
+			error?.paid.failure === 'overflow' &&
+			error.paid.step === 'motion' &&
+			source &&
+			!plan.spec.motionLift?.[v.d]
+		) {
+			const lift = await motionLiftOf(plan, source, v.d);
+			if (lift) {
+				lifts[v.d] = lift;
+				const raised = lift.filter(Boolean);
+				notes.set(v.d, [
+					message('moveReview.liftable', {
+						px: Math.max(...raised),
+						frames: raised.length,
+						total: lift.length
+					})
+				]);
+				continue;
+			}
+			notes.set(v.d, [message('moveReview.notLiftable')]);
+		}
+		const step = error ? rerollStep(plan, error) : 'render';
+		if (step) {
+			reroll[v.d] = { ...reroll[v.d], [step]: salt(reroll[v.d]?.[step]) };
+			rerolled.push(v.d);
+		}
+	}
+	const names = (list: DirectionName[]) => list.map(viewName);
+	const lifted = Object.keys(lifts) as Direction[];
+	if (!failed.length)
+		options.push({
+			id: 'resume',
+			label: message('moveReview.resume'),
+			gens: total(views),
+			paid: total(views) > 0,
+			primary: true,
+			spec: plan.spec
+		});
+	if (lifted.length && lifted.length + rerolled.length === failed.length) {
+		const candidate = resumeSpec(plan.spec, {
+			motionLift: { ...plan.spec.motionLift, ...lifts },
+			...(rerolled.length ? { reroll } : {})
+		});
+		const gens = total(await replay(candidate)),
+			raised = lifted.flatMap((d) => lifts[d]!.filter(Boolean));
+		const px = Math.max(...raised);
+		options.push({
+			id: 'lift',
+			label: rerolled.length
+				? message('moveReview.liftAndReroll', { views: names(rerolled) })
+				: message('moveReview.lift'),
+			detail: message(
+				px <= RIG_GATES.silhouetteBottomDelta
+					? 'moveReview.liftDetail'
+					: spec.dirs?.length
+						? 'moveReview.liftDetailReview'
+						: 'moveReview.liftDetailWarned',
+				{
+					views: names(lifted),
+					px,
+					frames: raised.length,
+					total: lifted.length * moveMotionFrames(m, spec),
+					limit: RIG_GATES.silhouetteBottomDelta
+				}
+			),
+			gens,
+			paid: gens > 0,
+			primary: true,
+			spec: candidate
+		});
+	}
+	const enlarge = await makeRoomOption(
+		plan,
+		failed,
+		dirs,
+		!options.some((option) => option.primary)
+	);
+	if (enlarge) options.push(enlarge);
+	if (rerolled.length || lifted.length) {
+		// Re-rolling instead of lifting buys a new motion source for the overflowing views too.
+		const all = { ...reroll };
+		for (const d of lifted) all[d] = { ...all[d], motion: salt(all[d]?.motion) };
+		const candidate = resumeSpec(plan.spec, { reroll: all }),
+			gens = total(await replay(candidate)),
+			changed = [...rerolled, ...lifted];
+		options.push({
+			id: 'reroll',
+			label: message('moveReview.reroll', { views: names(changed) }),
+			detail: message('moveReview.rerollDetail'),
+			gens,
+			paid: gens > 0,
+			spec: candidate
+		});
+	}
+	// What each view bought: the output a step rejected, as PixelLab returned it.
+	const shown = await Promise.all(
+		views.map(async (v) => {
+			const id = v.error?.paid.recordId,
+				source = id && queue.snapshot().jobs.find((r) => r.id === id && r.state === 'done');
+			// Finished body frames that only miss a numerical check are shown by the Keep review, not twice.
+			const images = source ? (await imagesOf(source)).map((out) => out.img) : [];
+			return images.map((img, i) => ({
+				img,
+				label: message('paidReview.frame', { view: viewName(v.d), number: i + 1 })
+			}));
+		})
+	);
+	return {
+		views: views.map((v, i) => ({
+			label: viewName(v.d),
+			state: failed.includes(v) ? 'failed' : v.state,
+			frames: shown[i],
+			notes: [
+				...(v.error ? [v.error.translation] : []),
+				...(v.state === 'pending' || v.state === 'running'
+					? [message('moveReview.pending', { gens: v.gens })]
+					: []),
+				...(notes.get(v.d) ?? [])
+			]
+		})),
+		spent: spentGens(records),
+		recordIds: records.map((r) => r.id),
+		options
+	};
+}
+
 async function addBodyClip(
 	projectId: string,
 	spec: MoveSpec,
@@ -3002,7 +3882,8 @@ async function addBodyClip(
 		affected = affectedMoveDirections(rig, dirs),
 		n = moveFrames(m, spec),
 		name = m.name;
-	const model = moveAnimationModel(spec);
+	const plan = bodyClipPlan(rec, project, spec),
+		{ model, authored } = plan;
 	const starts = new Map<DirectionName, Img>();
 	if (spec.action !== 'ride')
 		for (const direction of dirs) {
@@ -3022,8 +3903,6 @@ async function addBodyClip(
 					{ direction }
 				);
 		}
-	const authored =
-		model === 'skeleton-v3' && isAuthoredAction(spec.action) ? spec.action : undefined;
 	const total =
 		dirs.length *
 			(1 + n + (authored || model !== 'skeleton-v3' ? 0 : 1 + moveMotionFrames(m, spec))) +
@@ -3046,104 +3925,34 @@ async function addBodyClip(
 					dirs.map((direction, index) => async (signal) => {
 						const image = starts.get(direction);
 						if (!image) return undefined;
-						const points = await joints(image, true, signal, spec.activityScope, (record) =>
+						const start = await bodyStartPose(image, direction, spec, signal, (record) =>
 							extra[index].push(record)
 						);
 						signal.throwIfAborted();
 						tick();
-						return { image, keypoints: requireMoveStartJoints(points, direction) };
+						return start;
 					}),
-					spec.seed,
+					spec.attempt ?? spec.seed,
 					recoveryState,
 					minimumTier
 				)
 			: [];
 	const clips = await parallelGeneration(
-		dirs.map((d, k) => async (signal) => {
-			const checkedTick = () => {
-				signal.throwIfAborted();
-				tick();
-			};
-			const restKps = rig.rest![d]!.keypoints,
-				restImg = project.images.get(rig.rest![d]!.image)!;
-			const startImage = starts.get(d);
-			if (model !== 'skeleton-v3') {
-				const out = await renderClip({
-					anim: spec.id,
-					dir: d,
-					rest: restImg,
-					nativeStart: startImage,
-					restKps,
-					keypoints: [],
-					looks: rec.character!.looks,
-					seed: spec.seed,
-					name,
-					tick: checkedTick,
-					view: rig.view,
-					signal,
-					activityScope: spec.activityScope,
-					action: bodyAction(spec),
-					native: {
-						request: nativeMoveRequest(rec, spec, d, model, await b64(restImg)),
-						model,
-						frames: n
-					}
-				});
-				return { d, keypoints: out.measured as Keypoint[][], out };
-			}
-			const start = startPoses[k];
-			let keypoints: Keypoint[][];
-			if (authored)
-				keypoints = authoredPoses(
-					authored,
-					fromApi(restKps, rig.cell),
+		dirs.map(
+			(d, index) => (signal) =>
+				bodyClip(
+					plan,
 					d,
-					rig.cell.w,
-					spec.poseStyle
-				).map((p) => armDepth(toApi(p, rig.cell), d));
-			else {
-				const result = await motion(
-					moveMotionRequest(rec, spec, d),
-					d,
-					`${name} · ${spec.id} ${d} (motion)`,
-					checkedTick,
-					moveMotionFrames(m, spec),
 					signal,
-					spec.activityScope,
-					rig.cell.w,
-					restImg
-				);
-				keypoints = result.keypoints;
-				extra[k].push(result.record);
-			}
-			keypoints = movePoseEndpoints(
-				sampleMovePoses(keypoints, n, spec.action, spec.animation?.loop),
-				start?.keypoints
-			);
-			return {
-				d,
-				keypoints,
-				out: await renderClip({
-					anim: spec.id,
-					dir: d,
-					rest: restImg,
-					start,
-					restKps,
-					keypoints,
-					authored: !!authored,
-					looks: rec.character!.looks,
-					seed: spec.seed + 101,
-					name,
-					tick: checkedTick,
-					view: rig.view,
-					signal,
-					activityScope: spec.activityScope,
-					action: bodyAction(spec),
-					paletteRepair: !!spec.bodyPaletteRepair
-				})
-			};
-		}),
-		spec.seed,
+					() => {
+						signal.throwIfAborted();
+						tick();
+					},
+					starts.get(d),
+					startPoses[index]
+				)
+		),
+		spec.attempt ?? spec.seed,
 		recoveryState,
 		minimumTier
 	);
@@ -3215,10 +4024,11 @@ async function addBodyClip(
 	};
 	const provenanceStart = baseIt.provenance.length;
 	clearMovePoseData(frig, skeletons, spec.id, dirs);
-	for (const [k, c] of clips.entries()) {
+	for (const [index, c] of clips.entries()) {
 		const produced = c.out.frames.map((_, i) => cellKey(spec.id, c.d, i) as CellKey);
-		const idx = [...(extra[k] ?? []), ...c.out.recs].map(
-			(r, j) => baseIt.provenance.push(provOf(r, j >= (extra[k]?.length ?? 0) ? produced : [])) - 1
+		const sources = [...extra[index], ...(c.motion ? [c.motion] : [])];
+		const idx = [...sources, ...c.out.recs].map(
+			(r, j) => baseIt.provenance.push(provOf(r, j >= sources.length ? produced : [])) - 1
 		);
 		const src: ClipSource = {
 			route: model,
@@ -3363,7 +4173,7 @@ async function addBodyClip(
 		const cb = cur.manifest.items.find((i) => i.id === frig.baseItem)!;
 		if (old) invalidateMoveItems(cur.manifest, spec.id, dirs);
 		// Export choices can change while artwork is being generated. The current record owns those choices.
-		retainPlaybackChoices(frig, cur.manifest.rig);
+		retainMoveChoices(frig, cur.manifest.rig);
 		applyMoveLoop(
 			anim,
 			spec.animation?.loop,
@@ -3509,7 +4319,7 @@ export async function resolveMoveCandidate(
 			if (currentBase.provenance.length !== provenanceStart) throw changedMoveCandidate();
 			clearMovePoseData(manifest.rig, (current.skeletons ??= {}), id, candidate.dirs);
 			if (candidate.spec.replace) invalidateMoveItems(manifest, id, candidate.dirs);
-			retainPlaybackChoices(rig, manifest.rig);
+			retainMoveChoices(rig, manifest.rig);
 			applyMoveLoop(
 				next,
 				candidate.spec.animation?.loop,

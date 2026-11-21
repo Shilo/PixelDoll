@@ -184,9 +184,11 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 	await remember.press('Space');
 	await expect(remember).toBeChecked({ checked: initial });
 
-	await dialog.getByText('API key', { exact: true }).dblclick({ position: { x: 12, y: 8 } });
-	expect(await selected()).toMatch(/API|key/);
-	const key = dialog.getByLabel('API key', { exact: true });
+	await dialog
+		.getByText('Paste your Secret API key', { exact: true })
+		.dblclick({ position: { x: 12, y: 8 } });
+	expect(await selected()).toMatch(/^Paste\s*$/);
+	const key = dialog.getByLabel('Paste your Secret API key', { exact: true });
 	await key.fill('synthetic-key');
 	await key.press('ControlOrMeta+a');
 	expect(
@@ -1615,6 +1617,22 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 		)
 	).toBe(4);
 	await boundedMotion();
+	// With two characters the left card is the only side card, so clicking it must rotate the same way as the
+	// Previous arrow rather than wrapping around the other way.
+	const sideCard = page.locator('.cast-character:not(.chosen):not([inert])');
+	await expect(sideCard).toHaveCount(1);
+	const sideId = await sideCard.getAttribute('data-character-id');
+	await sideCard.click();
+	await expect(chosen).toHaveAttribute('data-character-id', sideId!);
+	await expect
+		.poll(() =>
+			chosen.evaluate(
+				(node) =>
+					(node.getAnimations()[0]?.effect as KeyframeEffect | undefined)?.getKeyframes().length ??
+					0
+			)
+		)
+		.toBe(2);
 	await page.setViewportSize({ width: 390, height: 844 });
 	await settled();
 	await expect(page.locator('.cast-character')).toHaveCount(2);

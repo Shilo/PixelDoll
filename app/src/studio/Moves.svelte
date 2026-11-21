@@ -13,7 +13,8 @@
 		blockedByWork,
 		openPendingWork,
 		openMoveReview,
-		openFrames
+		openFrames,
+		openRename
 	} from './state.svelte.ts';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
@@ -28,8 +29,8 @@
 	import { t } from 'svelte-whisper';
 	const m = $derived(store.project?.manifest);
 	const bodySize = $derived(store.project && characterBodySize(store.project));
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
-	const nice = (id: string) => displayMove(id, moveIds);
+	const moveRefs = $derived(m?.rig.animations ?? []);
+	const nice = (id: string) => displayMove(id, moveRefs);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
 	const assets = $derived.by(() => {
@@ -78,6 +79,7 @@
 									flows: !!lock && lock.translation.key !== 'moveRemoval.resolveDrafts'
 								})
 						: undefined}
+					onrename={isDemo() ? undefined : () => openRename(doc.id, { moveId: a.id })}
 					ondownload={() => downloadMoveZip(a.id)}
 					onfixframes={() => openFrames('', a.id)}
 					ondelete={() => removeMove(a.id)}

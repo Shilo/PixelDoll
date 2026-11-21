@@ -4,6 +4,7 @@ import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
 import { handHides, hidesOf, layerFrame, variantCovers } from '../compose/compose.ts';
 import { portableAssetName } from './paths.ts';
+import { exportUnit } from '../rig/rig.ts';
 
 function exportId(m: Manifest): string {
 	// Namespace + assembly identity: importing different characters must not define duplicate C# types.
@@ -22,7 +23,7 @@ export function unityJson(m: Manifest) {
 		cellH: rig.cell.h,
 		pivotX: rig.pivot.x,
 		pivotY: rig.pivot.y,
-		ppu: m.export?.pixelsPerUnit ?? rig.cell.w,
+		ppu: m.export?.pixelsPerUnit ?? exportUnit(rig),
 		baseItem: rig.baseItem,
 		directions: rig.directions.map((d) => d.id),
 		animations: rig.animations.map((a) => ({
@@ -546,7 +547,7 @@ Different characters use independent namespaces and assemblies; do not import tw
 If replacing an older PixelDoll exporter, remove its unity/Runtime and unity/Editor scripts first to avoid stale assembly definitions.
 The importer runs on unity/pixeldoll_unity.json import. After scripts finish compiling, use
 Tools > PixelDoll > ${identity} > Import if no prefab appeared.
-Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? m.rig.cell.w}, pivot at the feet),
+Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)}, pivot at the feet),
 <anim>_<dir>.anim clips for supported views, ${unityJson(m).name}.controller and ${unityJson(m).name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).

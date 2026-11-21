@@ -2,7 +2,7 @@ import { DIRECTIONS, type DirectionName, type RigDirection, type Rig } from '../
 import { mirrorPartner } from '../lib/rig/mirror.ts';
 export { PAIRS } from '../lib/rig/mirror.ts';
 import { BASE_BODY, UNDERWEAR_BODY, isBaseBody } from './model.ts';
-import { LocalizedError, message, type Message } from '../lib/message.ts';
+import { LocalizedError, PreflightWarning, message, type Message } from '../lib/message.ts';
 import {
 	referenceSizeError,
 	type ImageReference,
@@ -152,7 +152,8 @@ export function characterReferenceIssue(
 			'create.form.reference.increaseBody'
 		);
 	if (model === 'v3' && frame && edge > frame)
-		return new LocalizedError(
+		return new PreflightWarning(
+			'reference-frame',
 			'Increase Frame to fit this reference, or choose a smaller sprite.',
 			'create.form.reference.increaseFrame'
 		);
@@ -452,12 +453,24 @@ export function sizeErrors(
 	const bad = bodyErrors(body, model);
 	if (bad.length) return bad;
 	const min = autoFrame(body!);
-	return !Number.isInteger(frame) || frame! < min || frame! > 256
+	if (!Number.isInteger(frame) || frame! < 32 || frame! > 256)
+		return [
+			new LocalizedError(
+				`Frame must be ${min}–256 whole pixels.`,
+				'create.config.errors.frameRange',
+				{
+					min
+				}
+			)
+		];
+	// Less room than the automatic frame is a fit risk, not a request PixelLab refuses: drawn views that overflow stop for review.
+	return frame! < min
 		? [
-				new LocalizedError(
-					`Frame must be ${min}–256 whole pixels.`,
-					'create.config.errors.frameRange',
-					{ min }
+				new PreflightWarning(
+					'frame-room',
+					`A ${frame} px frame leaves less room than ${min} px around a ${body} px body. Parts of the character may not fit.`,
+					'create.config.errors.frameRoom',
+					{ frame: frame!, min, body: body! }
 				)
 			]
 		: [];

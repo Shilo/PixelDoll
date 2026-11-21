@@ -82,7 +82,7 @@
 	});
 
 	const m = $derived(store.project?.manifest);
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const moveRefs = $derived(m?.rig.animations ?? []);
 	// oversize layers (96 px held items) show whole: the stage uses the union frame of every layer around the pivot
 	const frame = $derived(m ? bakedFrame(m) : undefined);
 	const cellW = $derived(frame?.w ?? 64);
@@ -150,7 +150,7 @@
 			store.projects.find((project) => project.id === doc.id)?.name.replace(/ \(demo\)$/, '') ??
 			m?.name ??
 			t('common.character');
-		const move = displayMove(ui.anim, moveIds);
+		const move = displayMove(ui.anim, moveRefs);
 		const facing = displayDirectionInSentence(direction);
 		const locale = getLocale();
 		return wearing.length
@@ -270,12 +270,12 @@
 				<span class="sr">{t('common.move')}</span>
 				<select
 					class="bu-select select"
-					title={displayMove(ui.anim, moveIds)}
+					title={displayMove(ui.anim, moveRefs)}
 					bind:value={ui.anim}
 					onchange={() => (ui.frame = 0)}
 				>
 					{#each m.rig.animations as a (a.id)}<option value={a.id}
-							>{displayMove(a.id, moveIds)}</option
+							>{displayMove(a.id, moveRefs)}</option
 						>{/each}
 				</select>
 				<ChevronDown size={12} />

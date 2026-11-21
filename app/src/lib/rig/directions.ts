@@ -156,7 +156,8 @@ function pruneDirections<T>(
 	if (entries) for (const dir of DIRECTIONS) if (!keep.has(dir)) delete entries[dir];
 }
 
-async function rehash(manifest: Manifest) {
+/** Recompute `baseHash` from the base cells and move the items made for the previous body to it. */
+export async function rehash(manifest: Manifest) {
 	const base = manifest.items.find(({ id }) => id === manifest.rig.baseItem)!;
 	const previous = manifest.rig.baseHash;
 	manifest.rig.baseHash = await baseHashOf(

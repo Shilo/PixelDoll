@@ -8,7 +8,7 @@ import type { SetupPlan } from '../../src/lib/rig/setup.ts';
 import type { Keypoint, Sha256 } from '../../src/lib/rig/rig.ts';
 import type { Project, Provenance } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
-import { setupCharacter, type SetupSpec } from '../../src/studio/setup.ts';
+import { setupCharacter, setupRegistrationStuck, type SetupSpec } from '../../src/studio/setup.ts';
 import type { Progress } from '../../src/studio/create.ts';
 import { equipmentFixture } from './equipment-fixture.ts';
 
@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
 	run: vi.fn(),
 	b64: vi.fn(),
 	provenance: vi.fn(),
+	outcome: vi.fn(),
 	load: vi.fn(),
 	plan: vi.fn(),
 	attach: vi.fn(),
@@ -26,7 +27,8 @@ vi.mock('../../src/studio/create.ts', () => ({
 	joints: mocks.joints,
 	run: mocks.run,
 	b64: mocks.b64,
-	provOf: mocks.provenance
+	provOf: mocks.provenance,
+	latestOutcome: mocks.outcome
 }));
 vi.mock('../../src/lib/store/project.ts', () => ({ loadProject: mocks.load }));
 vi.mock('../../src/lib/rig/setup.ts', () => ({
@@ -284,10 +286,30 @@ test('setup keeps identical cached provenance requests and resume-safe flags whe
 	expect(f.records.size).toBe(4);
 });
 
+test('a new registration of the current standing views clears the Adjust frame offset', async () => {
+	const f = await fixture(3);
+	const { project } = (await mocks.load.mock.results.at(-1)?.value) ?? (await mocks.load());
+	project.manifest.rig.artOffset = { south: -5, east: -5, north: -5, west: -5 };
+	await setupCharacter(f.spec, () => {});
+	expect(f.saved().manifest.rig.artOffset).toBeUndefined();
+});
+
 test('an empty measurement plan stops before requests or publication', async () => {
 	const f = await fixture(0);
 	await expect(setupCharacter(f.spec, () => {})).rejects.toThrow('No body frames are available');
 	expect(mocks.joints).not.toHaveBeenCalled();
 	expect(mocks.run).not.toHaveBeenCalled();
 	expect(mocks.update).not.toHaveBeenCalled();
+});
+
+test('a registration that finished without a character needs a new seed; any other stop resumes the same one', async () => {
+	const f = await fixture(2);
+	mocks.outcome.mockResolvedValue({ state: 'done', response: {} });
+	await expect(setupRegistrationStuck(f.spec)).resolves.toBe(true);
+	expect(mocks.outcome.mock.calls[0][0]).toMatchObject({ body: { seed: f.spec.seed } });
+	mocks.outcome.mockResolvedValue({ state: 'done', response: { character_id: 'managed-test' } });
+	await expect(setupRegistrationStuck(f.spec)).resolves.toBe(false);
+	mocks.outcome.mockResolvedValue(undefined);
+	await expect(setupRegistrationStuck(f.spec)).resolves.toBe(false);
+	expect(mocks.run).not.toHaveBeenCalled();
 });

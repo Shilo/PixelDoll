@@ -32,8 +32,15 @@ Animation `loop` records playback in exported files. Studio Export honors `moveL
   be reserved Windows path names. Existing implicit IDs remain usable until explicitly edited; newly created items get a
   portable default. Item Export IDs must be unique within the character, including the body. Choose different
   character Export IDs for distinct characters that share a game project. `name` is a label, not a game key or a prompt.
+- **Moves** (`rig.animations[]`) may carry a display `name` and an `exportId` with the same rules, unique among the
+  character's moves. The Default move always exports as `default`, and no other move can take it. A new move whose ID
+  another move already exports as gets the first free `_2`, `_3`… Export ID. Play-once export settings follow move
+  Export IDs. **Outfits** have no separate Export ID: renaming one changes `presets[].id` (never `current`), since
+  nothing else stores it.
 - The editable `project.json` preserves internal IDs and Export IDs separately. In `manifest.json`, game-facing item IDs
-  replace internal IDs consistently in equipment, presets, material owners and generated layer paths. Runtime callers use
+  replace internal IDs consistently in equipment, presets, material owners and generated layer paths, and move Export
+  IDs replace internal move IDs in every move-keyed field (frames, sheets, keypoints, depth exceptions, coverage and
+  records). PixelLab provenance such as `source.template_animation_id` keeps the PixelLab name. Runtime callers use
   those exported IDs directly. Changing an Export ID can require updating existing game references; changing a display
   name does not. PixelLab character, request and job identifiers are unaffected.
 - Editable imports preserve the character Export ID, with a warning when another saved character uses it. Phaser isolates
@@ -98,6 +105,8 @@ export interface Rig {
   baseItem: string; // id of the item in slot "body"
   baseHash: Sha256; // hash over all base cell hashes (anim, dir, cell order)
   pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: {x: 8, y: 12}, 4 px floor)
+  pixelsPerUnit?: number; // export world unit kept by Adjust frame (the cell width before the first resize); absent = cell width
+  artOffset?: Partial<Record<DirectionName, number>>; // rows each standing view sits below its PixelLab registration (Adjust frame); authoring only
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 export interface RigDirection {
@@ -306,7 +315,7 @@ export interface ExportInfo {
   engines: (
     "generic" | "godot" | "unity" | "phaser" | "gdevelop" | "aseprite"
   )[]; // RPG Maker zips ship no manifest.json
-  pixelsPerUnit: number; // Unity; default = rig.cell.w
+  pixelsPerUnit: number; // Unity; default = rig.pixelsPerUnit ?? rig.cell.w
   baked?: string[]; // preset ids with baked composites
   bakedCell?: { w: number; h: number }; // v1.3.1: cell of every baked sheet = union of all exported layers around the pivot
   bakedPivot?: { x: number; y: number }; //   (64 rig + 96 sword -> 96x96, pivot rig.pivot + 16); = rig cell/pivot without oversize
@@ -335,7 +344,7 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
   node origin.
 - **Mirrored directions** flip the whole layer cell, so an oversize cell must be centered on the rig cell
   (`2 · (rig.pivot.x − layer.pivot.x) + layer.cell.w = rig.cell.w`; inv. 10).
-- **World scale** stays the base's: Unity PPU = `export.pixelsPerUnit` (default `rig.cell.w`) for every layer, never the
+- **World scale** stays the base's: Unity PPU = `export.pixelsPerUnit` (default `rig.pixelsPerUnit ?? rig.cell.w`) for every layer, never the
   layer's width, or a 96 sword renders at 2/3 scale.
 - `Slot` defaults (held 96, back 96 optional, others 64) are an item-pipeline choice; the manifest only stores the layer's.
   Since B9 the item pipeline gives every `skeleton-pose` held item (`main_hand`, `off_hand`) `cell {96, 96}` and

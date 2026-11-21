@@ -1250,13 +1250,30 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 		const last = [...element.querySelectorAll<HTMLElement>('section[data-own]')].at(-1)!;
 		element.scrollTop = last.offsetTop - 40;
 	});
-	const lastHeader = (await page.locator('[data-slot-button="off_hand"]').boundingBox())!;
-	const notShown = (await page.locator('.not-shown-toggle').boundingBox())!;
-	await page.mouse.move(lastHeader.x + 20, lastHeader.y + 20);
-	await page.mouse.down();
-	await page.mouse.move(notShown.x + 20, notShown.y + 8, { steps: 6 });
-	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	const dragToNotShown = async (key: string) => {
+		const from = (await page.locator(`[data-slot-button="${key}"]`).boundingBox())!;
+		const to = (await page.locator('.not-shown-toggle').boundingBox())!;
+		await page.mouse.move(from.x + 20, from.y + 20);
+		await page.mouse.down();
+		await page.mouse.move(to.x + 20, to.y + 8, { steps: 6 });
+		await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	};
+	// An empty slot dropped on Not shown hides, like Hide slot in its menu.
+	await dragToNotShown('off_hand');
+	await expect(page.locator('.not-shown-toggle')).toHaveAttribute('data-current', 'true');
 	await page.mouse.up();
+	await expect.poll(keys).toEqual(original.filter((key) => key !== 'off_hand'));
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	// A slot with items is refused with the menu's reason.
+	await list.evaluate((element) => {
+		element.scrollTop =
+			element.querySelector<HTMLElement>('[data-group="main_hand"]')!.offsetTop - 40;
+	});
+	await dragToNotShown('main_hand');
+	await expect(page.locator('.not-shown-toggle')).not.toHaveAttribute('data-current');
+	await page.mouse.up();
+	await expect(page.locator('.toast')).toContainText('Only empty slots can be hidden.');
 	expect(await keys()).toEqual(original);
 	await list.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }));
 	const startHead = (await head.boundingBox())!;
@@ -2310,7 +2327,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	for (const shortcut of ['Control+Enter', 'Meta+Enter']) {
 		await prompt.press(shortcut);
 		await expect(connect).toBeVisible();
-		await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 		await newItem(page, 'Head');
 		await expect(prompt).toHaveValue('a leather hat\n');
 		await expect(attachment).toContainText(filename);
@@ -2374,7 +2391,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await item.getByRole('button', { name: /^Make/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await newItem(page, 'Head');
 	await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
@@ -2435,7 +2452,9 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	// Connecting later must not start the character generation canceled above.
 	await openAccount(page);
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-manual-qa-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await page.locator('.project-btn').click();
 	await expect(page.getByRole('menuitem', { name: 'PixelLab account', exact: true })).toContainText(
@@ -2513,7 +2532,9 @@ test('closing Connect before its code loads still discards the pending action', 
 	// Connecting later must not start the character generation abandoned above.
 	await openAccount(page);
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-manual-qa-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0); // a revived action would open its progress sheet here
 	await page.locator('.project-btn').click();
@@ -2712,7 +2733,9 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
 			});
 			if (initial === 'old-only') {
 				await expect(dialog.getByRole('button', { name: 'Forget key' })).toHaveCount(0);
-				await expect(dialog.getByLabel('API key', { exact: true })).toHaveValue('');
+				await expect(dialog.getByLabel('Paste your Secret API key', { exact: true })).toHaveValue(
+					''
+				);
 				expect(requests).toBe(0);
 			} else {
 				await expect(dialog.getByText(/Connected and remembered/)).toBeVisible();
@@ -2816,7 +2839,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await setup.getByRole('button', { name: /^Set up ·/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -2880,6 +2903,12 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await model.selectOption('skeleton-v3');
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
+	// The s2 body stands on its frame's last row: the move warns and offers free room first, keeping every choice.
+	await expect(move).toContainText('This move may step past the 64 px frame');
+	await move.getByRole('button', { name: 'Make room', exact: true }).click();
+	await expect(page.locator('.toast')).toContainText('Frame adjusted');
+	await expect(move).not.toContainText('This move may step past');
+	await expect(description).toHaveValue('jumping in place');
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toContainText(
 		/Est\. \d+ gens/
 	);
@@ -2891,7 +2920,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await move.getByRole('button', { name: /^Generate move/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
@@ -3486,7 +3515,7 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.locator('#experience-options')).toContainText('Other tab');
 	await page.keyboard.press('Escape');
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	create = await openCreate();
 	await expect(create.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'a cheerful copper clockwork scout'
@@ -3881,7 +3910,9 @@ test('character retry preserves the direction plan and allocates a fresh publica
 			.getByRole('button', { name: /^Generate again/ })
 			.click();
 		const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-		await connect.getByLabel('API key', { exact: true }).fill('synthetic-retry-test-key');
+		await connect
+			.getByLabel('Paste your Secret API key', { exact: true })
+			.fill('synthetic-retry-test-key');
 		await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toContainText(
@@ -5600,7 +5631,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await expect(east).toHaveAttribute('aria-pressed', 'true');
@@ -5615,7 +5646,9 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	});
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-targeted-repair-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-targeted-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
 	const scope = await page.evaluate(async () => {
@@ -5688,7 +5721,9 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	}, before);
 	await suggestion.click();
 	await review.getByRole('button', { name: /^Replace Walk views/ }).click();
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-reconnected-repair-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-reconnected-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
 	const confirmed = await page.evaluate(async () => {
@@ -5827,7 +5862,9 @@ test('partial missing gear and explicit item repair stay on the current move and
 	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-partial-repair-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-partial-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	let sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(sheet).toContainText('Scoped repair stopped before paid work');
@@ -6205,7 +6242,9 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 	await repair.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await oversizedItemFixture(page, fixture.itemId);
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-delayed-item-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-delayed-item-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Repair item frames', exact: true })).toContainText(
 		'review its current estimate'
@@ -6526,7 +6565,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await expect(connect).toBeVisible();
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
@@ -6549,7 +6588,9 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 		};
 	});
 	await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click();
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-measurement-recovery-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-measurement-recovery-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Offline consent storage blocked');
 	const pending = await page.evaluate(async () => {
@@ -6810,7 +6851,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
 	await expect(sheet).toContainText('Existing body views are kept if a check still fails');
 	await action.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
@@ -6826,7 +6867,9 @@ test('bounded body color correction discloses changed checks and equipment cost 
 		};
 	});
 	await action.click();
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-body-color-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-body-color-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Color consent storage blocked');
 	const consent = await page.evaluate(async () => {
@@ -6970,7 +7013,9 @@ test('standing-first items quote only standing and offer actual custom moves one
 	);
 	await pane.getByRole('button', { name: /^Make for Custom walk/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-progressive-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-progressive-key');
 	await page.evaluate(() => {
 		const put = IDBObjectStore.prototype.put;
 		IDBObjectStore.prototype.put = function (value, key) {
@@ -7094,6 +7139,21 @@ test('move review gates item selection and shows live estimates without spending
 	await expect(review.getByRole('button', { name: 'Replace move', exact: true })).toBeEnabled();
 	await expect(review.getByRole('button', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await review.getByRole('button', { name: 'Later', exact: true }).click();
+	// A staged draft was drawn on this frame: Adjust frame waits for it instead of leaving it behind.
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const s = await import(path);
+		s.ui.frameProject = s.doc.id;
+		s.ui.sheet = 'adjustFrame';
+	});
+	const frame = page.getByRole('dialog', { name: 'Adjust frame', exact: true });
+	await expect(frame).toContainText(
+		'Save or discard the move waiting for review before adjusting the frame.'
+	);
+	await frame.getByRole('button', { name: 'Up', exact: true }).click();
+	await expect(frame.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+	await page.keyboard.press('Escape');
+	await expect(frame).toBeHidden();
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	const compass = review.getByRole('group', { name: 'Directions', exact: true });
 	const north = compass.getByRole('button', { name: 'North direction' });
@@ -7209,7 +7269,7 @@ test('move review gates item selection and shows live estimates without spending
 	await animate.click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await seedReview(77);
 	await reloadStudio(page);
@@ -7231,7 +7291,7 @@ test('move review gates item selection and shows live estimates without spending
 	expect(staleRegeneration).toBeNull();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	expect(posts).toEqual([]);
 });
@@ -7756,12 +7816,8 @@ for (const kind of ['outfit', 'move'] as const) {
 		await expect(menu).toBeVisible();
 		await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 		await expect(menu.locator('hr')).toHaveCount(1);
-		// The first action takes focus: moves start with Fix frames, outfits with Download ZIP.
-		await expect(
-			kind === 'outfit'
-				? menu.getByRole('menuitem', { name: 'Download ZIP', exact: true })
-				: menu.getByRole('menuitem', { name: /^Fix frames/ })
-		).toBeFocused();
+		// The first action takes focus: Rename, as in character and item menus.
+		await expect(menu.getByRole('menuitem', { name: 'Rename...', exact: true })).toBeFocused();
 		await page.keyboard.press('Escape');
 		await expect(trigger).toBeFocused();
 		await choice.click({ button: 'right' });

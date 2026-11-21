@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "公式アプリではありません。"
 	},
 	"characterActions": {
+		"adjustFrame": "フレームを調整…",
 		"directions": "向き…",
 		"demoDeleteLocked": "デモのキャラクターは削除できません",
 		"labelDeleteCharacter": "キャラクターを削除…"
@@ -165,16 +166,22 @@
 		"freePlanNotice": "キーは有効です。装備の生成にはPixelLabのTier 1以上が必要です。Free/Trialでも、キャラクターや素体のモーションの作成、インポート、着せ替え、色の変更、エクスポートができます。生成回数の上限や料金は、Free/Trialでも適用されます。",
 		"sharedOriginWarning": "このPixelDollは、他のGitHub Pagesプロジェクトと同じサイト（{host}）内のフォルダーで動作しています。キーを記憶すると、それらのプロジェクトのページからも読み取れます。ここでは「このデバイスに記憶する」をオフのままにするか、PixelDollの専用アドレスから使ってください。",
 		"titleConnectPixelLab": "PixelLabに接続",
-		"generateCharactersAndEquipmentWithYourPixelLab": "PixelLabアカウントでキャラクターと装備を生成します。",
-		"generationsComeFromYourPixelLabAccount": "生成には、お使いのPixelLabアカウントの生成枠を使います。",
+		"generationProvider": "PixelDoll の AI 生成には PixelLab を使用します。",
+		"startFreeTrial": "無料トライアルを開始",
+		"trialNotEnough": "この操作は無料トライアルの対象外です。",
+		"copyInstructions": "{account}の設定で {secret} までスクロールし、{copy}を選んで、キーをここに貼り付けてください。",
+		"pixelLabAccount": "PixelLab アカウント",
+		"secretLabel": "Secret",
+		"copyKey": "コピー",
+		"demoNoAccount": "デモにアカウントは不要です。",
+		"notNow": "今はしない",
 		"sentOnlyToApiPixellabAi": "api.pixellab.aiにのみ送信されます。",
 		"forgetKey": "キーを削除",
 		"viewPixelLabPlans": "PixelLabのプランを見る",
 		"continueWithLimitedAccess": "機能を制限して続ける",
-		"aPIKey": "APIキー",
-		"placeholderPasteYourKey": "キーを貼り付け",
+		"secretApiKey": "シークレットAPIキーを貼り付け",
 		"rememberOnThisDevice": "このデバイスに記憶する",
-		"getAKey": "キーを取得",
+		"getSecretKey": "シークレットAPIキーを取得",
 		"checking": "確認中…",
 		"connect": "接続"
 	},
@@ -402,14 +409,21 @@
 		"couldNotRename": "名前を変更できませんでした：{reason}",
 		"titleRenameCharacter": "キャラクター名を変更",
 		"titleRenameItem": "アイテム名を変更",
+		"titleRenameOutfit": "コーディネート名を変更",
+		"titleRenameMove": "モーション名を変更",
 		"displayName": "表示名",
 		"exportId": "エクスポートID",
 		"exportIdHelp": "エクスポートファイルやゲームコードで使用されます。変更した場合は、旧IDを使うゲーム側も更新してください。",
 		"invalidExportId": "先頭には英小文字または数字を使ってください。使えるのは英小文字、数字、ハイフン、アンダースコアのみです。予約名は使用できません。",
 		"duplicateExportId": "別のアイテムがこのエクスポートIDを使用しています。",
+		"duplicateOutfitExportId": "別のコーディネートがこのエクスポートIDを使用しています。",
+		"duplicateMoveExportId": "別のモーションがこのエクスポートIDを使用しています。",
+		"defaultMoveExportId": "ゲームはデフォルトのモーションから始まるため、そのエクスポートIDは常に default です。",
 		"characterIdConflict": "この作業スペースの別のキャラクターがこのエクスポートIDを使用しています。同じゲームで両方を使うには、別々のIDを指定してください。",
 		"invalidName": "名前は1〜60文字で入力してください。",
-		"itemMissing": "このアイテムは削除されました。"
+		"itemMissing": "このアイテムは削除されました。",
+		"outfitMissing": "このコーディネートは削除されました。",
+		"moveMissing": "このモーションは削除されました。"
 	},
 	"savedActions": {
 		"labelDeleteMove": "モーションを削除…",
@@ -595,7 +609,7 @@
 		"slotHidden": "{label}は非表示です。「非表示」の一覧にあります。",
 		"slotShown": "{label}を{total}個中{position}番目に表示しています。",
 		"dragInRail": "{label}をドラッグ中。ナビゲーションレールの装備スロットの間にドロップしてください。Escapeでキャンセルします。",
-		"dragInList": "{label}をドラッグ中。リストの装備スロットの間にドロップしてください。Escapeでキャンセルします。",
+		"dragInList": "{label}をドラッグ中。リストの装備スロットの間にドロップするか、「非表示」にドロップして非表示にします。Escapeでキャンセルします。",
 		"slotUnmoved": "{label}は元の位置のままです。",
 		"dragCanceled": "ドラッグをキャンセルしました。",
 		"heldBy": "{name}を両手で持っているため、この手は使用中です。",
@@ -710,6 +724,7 @@
 		"couldNotEnterFullScreenTryAgain": "全画面表示にできませんでした。もう一度試すか、ブラウザーの全画面表示の操作を使ってください。"
 	},
 	"state": {
+		"finishBeforeFrameChange": "フレームを調整する前に、保留中の生成作業を完了するか取り消してください。",
 		"couldNotCheckNamedFrames": "{names}のフレームを確認できませんでした：{reason}",
 		"couldNotCheckSeveralFrames": "{names}のフレームを確認できませんでした。",
 		"copyMissingOneMove": "{move}のフレームが一部不足しているため、その箇所では非表示になります。",
@@ -814,7 +829,9 @@
 		"anotherRigSetupIsStillRunningSo": "別のリグのセットアップを実行中のため、このセットアップは開始されませんでした。選択した内容は残っています。",
 		"characterReadyForSkeletonPosedItemsAnd": "キャラクターの準備ができました。スケルトンでポーズを付けるアイテムと新しいモーションを使えます",
 		"couldNotCheckCopiedFrames": "コピーしたアイテムのフレームを確認できませんでした：{reason}",
-		"couldNotReadSharedItems": "他のキャラクターのアイテムを読み込めませんでした：{reason}"
+		"couldNotReadSharedItems": "他のキャラクターのアイテムを読み込めませんでした：{reason}",
+		"finishedFramesChanged": "完成したフレームが変わりました。アイテムをもう一度確認してください。何も保存されていません。",
+		"rerollPriceChanged": "再生成の価格が変わりました。もう一度確認してください。何もリクエストしていません。"
 	},
 	"history": {
 		"wear": "{name}を装備",
@@ -825,6 +842,7 @@
 		"randomItem": "ランダムな{name}",
 		"saveOutfit": "コーディネートの保存",
 		"deleteOutfit": "コーディネートの削除",
+		"renameOutfit": "コーディネート名の変更",
 		"show": "{name}の表示",
 		"hide": "{name}の非表示",
 		"oneHanded": "片手持ち",
@@ -1077,6 +1095,7 @@
 		"imported": "{name}をインポートしました",
 		"untitledState": "無題のステート",
 		"warning": {
+			"noRoom": "このキャラクターは画像のピクセル数が多すぎるため、モーション用の余白を追加しませんでした。読み込み後に「フレームを調整」で追加できます。",
 			"fixedBase": "インポートしたアートワークは固定の素体になります。元の服や髪は取り除けません。スケルトンでポーズを付ける装備を使ったり新しいモーションを追加したりするには、ポーズ用のリグをセットアップしてください。",
 			"frameCounts": "「{move}」は向きによってフレーム数が異なります。元のフレームと各向きの再生時間を保つため、向きごとに別々のモーションとしてインポートしました。",
 			"semiAlpha": "半透明の縁をピクセルアート向けの透明度に変換しました。"
@@ -1232,7 +1251,8 @@
 		"failedRetry": "{label}をダウンロードできませんでした。もう一度お試しください。",
 		"recoveryStarted": "完全なエクスポートはできません。元のPNGのダウンロードを開始しました。",
 		"startedNotes": "ダウンロードを開始しました。ZIP内のエクスポートの注意事項を確認してください。",
-		"started": "エクスポートのダウンロードを開始しました。"
+		"started": "エクスポートのダウンロードを開始しました。",
+		"paidStarted": "支払い済みの結果のダウンロードを開始しました。"
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}：アイテムの品質チェック結果を確認してください。有料の再試行は開始していません。",
@@ -1698,7 +1718,11 @@
 			"magenta": "マゼンタ",
 			"blue": "明るい青",
 			"azure": "鮮やかな空色"
-		}
+		},
+		"rerollFailed": "失敗した呼び出しを再生成",
+		"rerollFailedDetail": "失敗した呼び出しと、それに依存するものだけを再購入します。ほかの完了した呼び出しは再利用します。",
+		"keepFinished": "完成したモーションを保持",
+		"keepFinishedDetail": "すべてのフレームが完成したモーションを保存します。ほかは不足フレームとして残り、あとで作成できます。"
 	},
 	"generationDetails": {
 		"copiedFrom": "{name}用に作成したときに一度だけ費用がかかり、ここへのコピーは無料です",
@@ -1801,7 +1825,8 @@
 			"noCharacterId": "PixelLabから管理用のキャラクターIDが返されませんでした。既存のアートワークは変わりません。",
 			"referenceChanged": "セットアップ中に立ちの参照画像が変更されました。",
 			"characterChanged": "セットアップ中にキャラクターが変更されました。現在の作業は残しています。"
-		}
+		},
+		"newRegistration": "もう一度登録"
 	},
 	"create": {
 		"errors": {
@@ -1847,7 +1872,7 @@
 			"resultMissingStorage": "結果{label}がストレージにありません",
 			"pixellabReturnedIncompleteInvalid": "{direction}：PixelLabが返した立ちポーズの関節データが不完全か無効です。この関節データによるアニメーション生成は開始していません。既存の結果は残しています。",
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLabから返されたフレーム数が正しくありません。有料の再試行は開始していません。もう一度リクエストする前にアクティビティを確認してください。",
-			"animationExceedsPxFrame": "{move} {direction}：アニメーションが{w} pxのフレームをはみ出しています。もう一度作成する前に、フレームを大きくするか体のサイズを小さくしてください。",
+			"animationExceedsPxFrame": "{move} {direction}：体のフレームが{w} pxのフレームに収まりません。確認用に保持されています。何も保存されていません。",
 			"pixellabReturnedEmptyFrames": "{move} {direction}：PixelLabから空のフレームが返されました。有料の再試行は開始していません。もう一度リクエストする前にアクティビティを確認してください。",
 			"validJointsWereFound": "{move}の{direction}向き：有効な関節が見つからなかったフレームがあります。生成した画像はアクティビティに残っています。セットアップは、画像を描き直さずに停止しました。",
 			"matchBodyColorsOnly": "{direction}：体の色を合わせるのは、元の関節チェックがすべて完了してからにしてください。",
@@ -1857,7 +1882,7 @@
 			"jointsFoundEveryFrame": "{label}：関節が見つからなかったフレームがあります",
 			"pixellabDroppedDirectionBusy": "{label}：PixelLabの混雑により、この向きの処理は完了しませんでした。もう一度お試しください。",
 			"pixellabReturnedMotionFrames": "{label}：{expected}フレームをリクエストしましたが、PixelLabから返されたモーションのフレームは{returned}フレームでした。このビューでは関節チェックも体の描画もリクエストしていません。",
-			"motionExceedsPxFrame": "{label}：モーションが{size} pxのフレームをはみ出しています。もう一度作成する前に、フレームを大きくするか体のサイズを小さくしてください。",
+			"motionExceedsPxFrame": "{label}：モーションが{size} pxのフレームに収まりません。フレームは確認用に保持されています。何も保存されていません。",
 			"pixellabReturnedEmptyMotion": "{label}：PixelLabから空のモーションのフレームが返されました",
 			"pixellabReturnedView": "PixelLabから{direction}のビューが返されませんでした",
 			"viewDoesFitPx": "{direction}のビューが{cell} pxのフレームに収まりません。もう一度作成する前に、フレームを大きくするか体のサイズを小さくしてください。",
@@ -1902,7 +1927,9 @@
 			"chooseRepairTarget": "修復する前に、既存のモーションからアイテムと向きを1つずつ選んでください。生成はリクエストされていません。",
 			"moveAnimationFramesBlocked": "このモデルとキャンバスサイズでは{frames}フレームに対応していません。生成リクエストは送信されていません。",
 			"describeMoveBlocked": "生成する前に、このモーションを説明してください。 生成リクエストは送信されていません。",
-			"chooseExistingMoveRepairing": "装備を修復する前に、既存のモーションを選んでください。"
+			"chooseExistingMoveRepairing": "装備を修復する前に、既存のモーションを選んでください。",
+			"liftedJointsOutside": "{label}：持ち上げたモーションに、まだ{size} pxのフレーム外の関節があります。体の描画はリクエストしていません。",
+			"reviewChoiceInvalid": "この選択はもうモーションと一致しません。もう一度確認してください。リクエストは送信していません。"
 		},
 		"steps": {
 			"draw": "キャラクターを描画中",
@@ -1926,7 +1953,8 @@
 				"frameRange": "フレームは{min}～256の整数ピクセルにしてください。",
 				"seed": "シードには安全な範囲の0以上の整数を指定してください。",
 				"promptRequired": "キャラクターのプロンプトを入力してください。",
-				"promptLength": "プロンプト全体は2,000文字以内にしてください。"
+				"promptLength": "プロンプト全体は2,000文字以内にしてください。",
+				"frameRoom": "{frame} pxのフレームでは、{body} pxの体の周りの余白が{min} pxより少なくなります。キャラクターの一部が収まらない可能性があります。"
 			}
 		},
 		"form": {
@@ -2086,7 +2114,8 @@
 			"estimated": "見積もり：{gens}",
 			"keepWorking": "作業を続ける",
 			"costTitle": "全方向の立ちポーズを作成します。待機、歩き、その他のモーションはあとで追加できます。立ちポーズの関節が不足している場合は、費用が少し増えることがあります",
-			"create": "キャラクターを作成"
+			"create": "キャラクターを作成",
+			"createAnyway": "このまま作成"
 		}
 	},
 	"moveSheet": {
@@ -2114,12 +2143,15 @@
 		"changeLoopTitle": "ループを変更して終了フレームをリセットしますか？",
 		"changeLoopWarning": "このモーションのカスタム終了フレームが自動設定に置き換わります。",
 		"changeLoopAccept": "ループを変更",
+		"makeRoom": "余白を作る",
+		"frameRoom": "このモーションは {frame} px のフレームからはみ出すおそれがあります。キャラクターの足元の余白は {below} px です。先に無料で余白を作るか、このまま生成してください。",
 		"skeleton": {
 			"title": "Skeleton V3 を確認",
 			"hint": "Skeleton V3 も選べます。品質チェックに通らない場合もあります。",
 			"back": "結果に戻る"
 		},
 		"checkpoint": {
+			"generateAnyway": "このままモーションを生成",
 			"generate": "モーションを生成",
 			"initialEstimate": "約{minutes}分・アイテムなし",
 			"review": "モーションを確認",
@@ -2270,7 +2302,9 @@
 			"currentFrame": "現在のフレーム {number}",
 			"redrawnFrame": "描き直したフレーム {number}",
 			"repairedFrame": "修復したフレーム {number}"
-		}
+		},
+		"rerollBatch": "このバッチを再生成",
+		"rerollBatchDetail": "前のバッチはそのままです。見積もりには、このバッチとまだ購入していない後続のバッチが含まれます。"
 	},
 	"itemRoute": {
 		"errors": {
@@ -2511,6 +2545,84 @@
 			"resolveDrafts": "素体フレームを置き換える前に、このキャラクターのアイテムの下書きを残すか破棄してください。",
 			"importFailed": "これらのフレームを読み込めませんでした。もう一度お試しください。",
 			"saveFailed": "これらのフレームを保存できませんでした。何も変更されていません。もう一度お試しください。"
+		}
+	},
+	"paidReview": {
+		"title": "支払い済みの結果",
+		"spent": "支払い済み：{gens} gen。これらの結果は保持され、再利用されます。",
+		"free": "無料",
+		"download": "支払い済みの結果をダウンロード",
+		"frame": "{view}、フレーム{number}",
+		"waiting": "有料リクエストの一部がまだ PixelLab で処理中です。完了するとこれらの選択肢を使えます。",
+		"state": {
+			"ready": "完了",
+			"pending": "未購入",
+			"failed": "停止",
+			"running": "PixelLab で処理中"
+		}
+	},
+	"moveReview": {
+		"makeRoomDetail": "{change}（無料）。支払い済みの動きを再利用し、購入するのは変更後のフレームでの手順だけです。",
+		"makeRoomDetailRedraw": "{change}（無料）。このモデルは立ちフレームから描くため、変更後のフレームで動きを描き直します。",
+		"makeRoom": "余白を作って続ける",
+		"resume": "支払い済みの結果で続ける",
+		"lift": "持ち上げて収めて続ける",
+		"liftAndReroll": "持ち上げて収め、{views}を再生成",
+		"liftDetail": "{views}：モーションをフレームに収めるため、{total}枚中{frames}枚のモーションフレームで足が最大{px} px上がります。",
+		"liftDetailReview": "{views}：モーションをフレームに収めるため、{total}枚中{frames}枚のモーションフレームで足が最大{px} px上がります。{limit} pxの足チェックを超えるため、現在のフレームを置き換える前に体のフレームを確認します。",
+		"liftDetailWarned": "{views}：モーションをフレームに収めるため、{total}枚中{frames}枚のモーションフレームで足が最大{px} px上がります。{limit} pxの足チェックを超えるため、モーションは足の警告付きで保存されます。",
+		"reroll": "{views}を再生成",
+		"rerollDetail": "再生成では、その向きだけ新しい試行を購入します。ほかの向きは支払い済みの結果をそのまま使います。",
+		"pending": "未購入：約{gens} gen。",
+		"liftable": "持ち上げて収められます：{total}枚中{frames}枚で足が最大{px} px上がります。",
+		"notLiftable": "持ち上げても収まりません：モーションが横か上で切れています。"
+	},
+	"createReview": {
+		"resume": "支払い済みの結果で続ける",
+		"register": "描いた向きをもう一度登録",
+		"registerDetail": "支払い済みの描画はそのままで、同じ向きの登録を新しく1回購入します。"
+	},
+	"adjustFrame": {
+		"title": "フレームを調整",
+		"intro": "キャラクターをフレーム内で上下に動かすか、フレームサイズを変えます。すべてのアイテム、モーション、フレームが一緒に動きます。無料で、何も描き直しません。",
+		"previewLabel": "フレーム内のキャラクター",
+		"preview": "{size} px フレームでの{direction}の向き",
+		"keys": "プレビューにフォーカスがあるとき、上下の矢印キーでキャラクターを 1 px（Shift で 4 px）動かせます。",
+		"direction": "向き",
+		"position": "位置",
+		"up": "上へ",
+		"down": "下へ",
+		"movedUp": "{px} px 上へ移動",
+		"movedDown": "{px} px 下へ移動",
+		"notMoved": "移動なし",
+		"size": "フレームサイズ",
+		"smaller": "フレームを小さく",
+		"larger": "フレームを大きく",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "余白を作る",
+		"makeRoomHelp": "歩くための余白ができるだけキャラクターを動かし、動かすだけでは足りないときだけフレームを大きくします。",
+		"madeRoom": "余白を作りました。プレビューを確認して保存してください。",
+		"roomy": "このキャラクターにはすでにモーション用の余白があります。",
+		"short": "モーションがこのフレームからはみ出すおそれがあります。「余白を作る」で無料で直せます。",
+		"above96": "96 px を超えると、手に持つアイテムと修復グリッドの費用が高くなります。",
+		"above170": "170 px を超えると、すべてのアイテムで着せる呼び出し 1 回あたり 25 gens かかります。",
+		"consequences": "アイテムを正確にコピーできるのは、フレームサイズと位置が同じキャラクター同士だけです。書き出してもゲーム内の大きさと原点は変わりません。変更を使うには、もう一度書き出してください。",
+		"loading": "フレームを読み込んでいます…",
+		"saved": "フレームを調整しました：{change}。",
+		"undone": "フレームの変更を元に戻しました。",
+		"errors": {
+			"reviewOpen": "フレームを調整する前に、確認待ちのモーションを保存するか破棄してください。",
+			"missingArtwork": "このキャラクターの保存済みアートが見つからないため、フレームを変更できません。",
+			"even": "偶数ピクセル分だけ変わるフレームサイズを選んでください。",
+			"range": "このキャラクターのフレームは {min}～{max} px にしてください。",
+			"clipTop": "キャラクターかアイテムの上端が {px} px 切れます。",
+			"clipBottom": "キャラクターかアイテムの下端が {px} px 切れます。",
+			"clipSides": "キャラクターかアイテムの左右が {px} px 切れます。",
+			"unchanged": "先にフレームサイズか位置を変えてください。",
+			"limit": "{size} px のフレームでも、このキャラクターにモーション用の余白を作れません。",
+			"resolveDrafts": "フレームを調整する前に、このキャラクターのアイテム下書きを保存するか破棄してください。",
+			"changed": "このキャラクターは変更されました。「フレームを調整」を開き直して最新の状態を確認してください。",
+			"undoFailed": "フレームの変更を元に戻せませんでした。"
 		}
 	}
 }

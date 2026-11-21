@@ -136,6 +136,9 @@ async function decodeCell(h: Sha256, owner: string, signal?: AbortSignal): Promi
 	}
 }
 
+/** Decode one stored image a loaded project leaves out (Fix frames and palette history). */
+export const readStoredImage = (h: Sha256) => decodeCell(h, 'saved artwork');
+
 /** Decode every cell referenced by the manifest's layers (and the v1.3 rest views) into Project.images. */
 export async function loadProject(
 	id: string,

@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "Keine offizielle App."
 	},
 	"characterActions": {
+		"adjustFrame": "Frame anpassen…",
 		"directions": "Blickrichtungen…",
 		"demoDeleteLocked": "Die Demo-Figur kann nicht gelöscht werden",
 		"labelDeleteCharacter": "Figur löschen…"
@@ -165,16 +166,22 @@
 		"freePlanNotice": "Dein Schlüssel ist gültig. Zum Generieren von Ausrüstung brauchst du bei PixelLab mindestens Tier 1. Mit Free/Trial kannst du Figuren und Animationen für den Grundkörper erstellen, importieren, Figuren ausstatten, Farben ändern und exportieren. Limits und Kosten für Generierungen gelten weiterhin.",
 		"sharedOriginWarning": "Diese Kopie von PixelDoll läuft in einem Ordner auf {host}, einer Website, die sich mehrere GitHub Pages-Projekte teilen. Jede dieser Seiten könnte einen gespeicherten Schlüssel auslesen. Lass „Auf diesem Gerät merken“ hier ausgeschaltet oder öffne PixelDoll unter seiner eigenen Adresse.",
 		"titleConnectPixelLab": "PixelLab verbinden",
-		"generateCharactersAndEquipmentWithYourPixelLab": "Generiere Figuren und Ausrüstung mit deinem PixelLab-Konto.",
-		"generationsComeFromYourPixelLabAccount": "Generierungen werden deinem PixelLab-Konto angerechnet.",
+		"generationProvider": "PixelLab ermöglicht die KI-Generierung in PixelDoll.",
+		"startFreeTrial": "Kostenlos testen",
+		"trialNotEnough": "Die kostenlose Testversion deckt diese Aktion nicht ab.",
+		"copyInstructions": "Öffne in deinem {account} die Einstellungen, scrolle zu {secret}, wähle {copy} und füge den Schlüssel hier ein.",
+		"pixelLabAccount": "PixelLab-Konto",
+		"secretLabel": "Secret",
+		"copyKey": "Kopieren",
+		"demoNoAccount": "Für die Demo brauchst du kein Konto.",
+		"notNow": "Jetzt nicht",
 		"sentOnlyToApiPixellabAi": "Der Schlüssel wird nur an api.pixellab.ai gesendet.",
 		"forgetKey": "Schlüssel entfernen",
 		"viewPixelLabPlans": "PixelLab-Tarife ansehen",
 		"continueWithLimitedAccess": "Mit eingeschränktem Zugriff fortfahren",
-		"aPIKey": "API-Schlüssel",
-		"placeholderPasteYourKey": "Schlüssel einfügen",
+		"secretApiKey": "Füge deinen geheimen API-Schlüssel ein",
 		"rememberOnThisDevice": "Auf diesem Gerät merken",
-		"getAKey": "Schlüssel holen",
+		"getSecretKey": "Geheimen API-Schlüssel holen",
 		"checking": "Wird geprüft…",
 		"connect": "Verbinden"
 	},
@@ -418,14 +425,21 @@
 		"couldNotRename": "Umbenennen nicht möglich: {reason}",
 		"titleRenameCharacter": "Figur umbenennen",
 		"titleRenameItem": "Gegenstand umbenennen",
+		"titleRenameOutfit": "Outfit umbenennen",
+		"titleRenameMove": "Animation umbenennen",
 		"displayName": "Anzeigename",
 		"exportId": "Export-ID",
 		"exportIdHelp": "Wird in Exportdateien und im Spielcode verwendet. Wenn du sie änderst, aktualisiere alle Spiele, die die alte ID verwenden.",
 		"invalidExportId": "Beginne mit einem Kleinbuchstaben oder einer Ziffer. Verwende nur Kleinbuchstaben, Ziffern, Bindestriche oder Unterstriche. Reservierte Namen sind nicht zulässig.",
 		"duplicateExportId": "Ein anderer Gegenstand verwendet diese Export-ID.",
+		"duplicateOutfitExportId": "Ein anderes Outfit verwendet diese Export-ID.",
+		"duplicateMoveExportId": "Eine andere Animation verwendet diese Export-ID.",
+		"defaultMoveExportId": "Spiele starten mit der Standpose, daher ist ihre Export-ID immer default.",
 		"characterIdConflict": "Eine andere Figur in diesem Arbeitsbereich nutzt diese Export-ID. Verwende unterschiedliche IDs, um beide im selben Spiel zu nutzen.",
 		"invalidName": "Gib einen Namen mit 1 bis 60 Zeichen ein.",
-		"itemMissing": "Diesen Gegenstand gibt es nicht mehr."
+		"itemMissing": "Diesen Gegenstand gibt es nicht mehr.",
+		"outfitMissing": "Dieses Outfit gibt es nicht mehr.",
+		"moveMissing": "Diese Animation gibt es nicht mehr."
 	},
 	"savedActions": {
 		"labelDeleteMove": "Animation löschen…",
@@ -618,7 +632,7 @@
 		"slotHidden": "{label} ist jetzt ausgeblendet und steht in der Liste „Ausgeblendet“.",
 		"slotShown": "{label} wird an Position {position} von {total} angezeigt.",
 		"dragInRail": "{label} wird gezogen. Lege den Platz in der Navigationsleiste zwischen zwei Plätzen ab. Esc bricht ab.",
-		"dragInList": "{label} wird gezogen. Lege den Platz in der Liste zwischen zwei Plätzen ab. Esc bricht ab.",
+		"dragInList": "{label} wird gezogen. Lege den Platz in der Liste zwischen zwei Plätzen ab oder auf Ausgeblendet, um ihn auszublenden. Esc bricht ab.",
 		"slotUnmoved": "{label} bleibt an der bisherigen Position.",
 		"dragCanceled": "Ziehen abgebrochen.",
 		"heldBy": "Von {name} belegt (zweihändig).",
@@ -737,6 +751,7 @@
 		"couldNotEnterFullScreenTryAgain": "Das Vollbild konnte nicht geöffnet werden. Versuch es noch einmal oder verwende die Vollbildsteuerung deines Browsers."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Schließe ausstehende Generierungen ab oder verwirf sie, bevor du den Frame anpasst.",
 		"couldNotCheckNamedFrames": "Bilder für {names} konnten nicht geprüft werden: {reason}",
 		"couldNotCheckSeveralFrames": "Bilder für {names} konnten nicht geprüft werden.",
 		"copyMissingOneMove": "Für {move} fehlen Bilder; der Gegenstand bleibt dort unsichtbar.",
@@ -845,7 +860,9 @@
 		"anotherRigSetupIsStillRunningSo": "Ein anderes Rig wird noch eingerichtet. Diese Einrichtung wurde deshalb nicht gestartet. Deine Auswahl bleibt erhalten.",
 		"characterReadyForSkeletonPosedItemsAnd": "Die Figur ist bereit für per Skelett animierte Gegenstände und neue Animationen",
 		"couldNotCheckCopiedFrames": "Die Frames kopierter Gegenstände konnten nicht geprüft werden: {reason}",
-		"couldNotReadSharedItems": "Gegenstände deiner anderen Figuren konnten nicht gelesen werden: {reason}"
+		"couldNotReadSharedItems": "Gegenstände deiner anderen Figuren konnten nicht gelesen werden: {reason}",
+		"finishedFramesChanged": "Die fertigen Frames haben sich geändert. Prüfe den Gegenstand erneut. Nichts wurde gespeichert.",
+		"rerollPriceChanged": "Der Preis für das Neu-Würfeln hat sich geändert. Prüfe ihn erneut. Es wurde nichts angefordert."
 	},
 	"history": {
 		"wear": "{name} anlegen",
@@ -856,6 +873,7 @@
 		"randomItem": "Zufälliger Gegenstand: {name}",
 		"saveOutfit": "Outfit speichern",
 		"deleteOutfit": "Outfit löschen",
+		"renameOutfit": "Outfit umbenennen",
 		"show": "{name} einblenden",
 		"hide": "{name} ausblenden",
 		"oneHanded": "Einhändig",
@@ -1124,6 +1142,7 @@
 		"imported": "{name} importiert",
 		"untitledState": "Unbenannter Zustand",
 		"warning": {
+			"noRoom": "Platz für Animationen wurde nicht hinzugefügt, weil diese Figur zu viele Bildpixel hat. Nutze nach dem Import Frame anpassen, um ihn hinzuzufügen.",
 			"fixedBase": "Importierte Grafiken bilden den festen Grundkörper: Vorhandene Kleidung und Haare können nicht entfernt werden. Richte das Posen-Rig ein, um Ausrüstung per Skelett zu animieren und neue Animationen hinzuzufügen.",
 			"frameCounts": "„{move}“ hat je nach Blickrichtung unterschiedlich viele Frames. Die Blickrichtungen wurden als separate Animationen importiert, damit alle Originalframes und die jeweilige Länge erhalten bleiben.",
 			"semiAlpha": "Teiltransparente Kanten wurden in harte Pixelgrafik-Transparenz umgewandelt."
@@ -1283,7 +1302,8 @@
 		"failedRetry": "{label} konnte nicht heruntergeladen werden. Versuch es noch einmal.",
 		"recoveryStarted": "Der vollständige Export ist nicht verfügbar. Der Download der Quell-PNGs wurde gestartet.",
 		"startedNotes": "Download gestartet. Die Exporthinweise findest du im ZIP.",
-		"started": "Download des Exports gestartet."
+		"started": "Download des Exports gestartet.",
+		"paidStarted": "Download der bezahlten Ergebnisse gestartet."
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}: Prüfe die Ergebnisse der Qualitätskontrolle für diesen Gegenstand. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
@@ -1774,7 +1794,11 @@
 			"magenta": "Magenta",
 			"blue": "leuchtendes Blau",
 			"azure": "leuchtendes Azurblau"
-		}
+		},
+		"rerollFailed": "Fehlgeschlagene Aufrufe neu würfeln",
+		"rerollFailedDetail": "Nur die fehlgeschlagenen Aufrufe und was von ihnen abhängt werden neu gekauft. Alle anderen fertigen Aufrufe werden wiederverwendet.",
+		"keepFinished": "Fertige Animationen behalten",
+		"keepFinishedDetail": "Speichert die Animationen, deren Frames alle fertig sind. Die anderen bleiben als fehlende Frames aufgeführt, die du später erstellen kannst."
 	},
 	"generationDetails": {
 		"copiedFrom": "einmal für {name} bezahlt, hierher kostenlos kopiert",
@@ -1883,7 +1907,8 @@
 			"noCharacterId": "PixelLab hat keine verwaltete Figuren-ID zurückgegeben. Vorhandene Grafiken bleiben unverändert.",
 			"referenceChanged": "Eine Standreferenz hat sich während der Einrichtung geändert.",
 			"characterChanged": "Die Figur hat sich während der Einrichtung geändert. Der aktuelle Stand der Figur bleibt erhalten."
-		}
+		},
+		"newRegistration": "Neu registrieren"
 	},
 	"create": {
 		"errors": {
@@ -1929,7 +1954,7 @@
 			"resultMissingStorage": "Ergebnis {label} fehlt im Speicher",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab hat unvollständige oder ungültige Gelenkpunkte für die Standpose zurückgegeben. Mit diesen Gelenken wurde keine Animation gestartet. Vorhandene Ergebnisse bleiben erhalten.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab hat die falsche Anzahl an Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
-			"animationExceedsPxFrame": "{move} {direction}: Die Animation passt nicht in den {w} px großen Frame. Vergrößere den Frame oder verkleinere den Grundkörper, bevor du erneut generierst.",
+			"animationExceedsPxFrame": "{move} {direction}: Die Körper-Frames passen nicht in den {w} px großen Frame. Sie wurden zur Prüfung behalten; nichts wurde gespeichert.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab hat leere Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
 			"validJointsWereFound": "{move} {direction}: Es wurden nicht in jedem Frame gültige Gelenke gefunden. Die generierten Bilder bleiben unter „Aktivität“ erhalten. Die Einrichtung wurde beendet, ohne sie neu zu zeichnen.",
 			"matchBodyColorsOnly": "{direction}: Gleiche die Grundkörperfarben erst ab, wenn alle ursprünglichen Gelenkprüfungen abgeschlossen sind.",
@@ -1939,7 +1964,7 @@
 			"jointsFoundEveryFrame": "{label}: Nicht in jedem Frame wurden Gelenke gefunden",
 			"pixellabDroppedDirectionBusy": "{label}: PixelLab hat die Blickrichtung wegen Auslastung ausgelassen. Versuch es noch einmal.",
 			"pixellabReturnedMotionFrames": "{label}: PixelLab hat für {expected} angeforderte Bewegungsframes nur {returned} zurückgegeben. Für diese Ansicht wurden weder Gelenkprüfungen noch ein Rendering des Grundkörpers angefordert.",
-			"motionExceedsPxFrame": "{label}: Die Bewegung passt nicht in den {size} px großen Frame. Vergrößere den Frame oder verkleinere den Grundkörper, bevor du erneut generierst.",
+			"motionExceedsPxFrame": "{label}: Die Bewegung passt nicht in den {size} px großen Frame. Ihre Frames wurden zur Prüfung behalten; nichts wurde gespeichert.",
 			"pixellabReturnedEmptyMotion": "{label}: PixelLab hat einen leeren Bewegungsframe zurückgegeben",
 			"pixellabReturnedView": "PixelLab hat keine Ansicht für {direction} zurückgegeben",
 			"viewDoesFitPx": "Die Ansicht für {direction} passt nicht in den {cell} px großen Frame. Vergrößere den Frame oder verkleinere den Grundkörper, bevor du erneut generierst.",
@@ -1984,7 +2009,9 @@
 			"chooseRepairTarget": "Wähle vor der Reparatur einen Gegenstand und eine Blickrichtung einer vorhandenen Animation. Es wurde keine Generierung angefordert.",
 			"moveAnimationFramesBlocked": "Das Modell und die Leinwandgröße unterstützen keine {frames} Frames. Es wurde keine Generierung angefordert.",
 			"describeMoveBlocked": "Beschreibe diese Animation, bevor du sie generierst. Es wurde keine Generierung angefordert.",
-			"chooseExistingMoveRepairing": "Wähle eine vorhandene Animation, bevor du ihre Ausrüstung reparierst."
+			"chooseExistingMoveRepairing": "Wähle eine vorhandene Animation, bevor du ihre Ausrüstung reparierst.",
+			"liftedJointsOutside": "{label}: Die angehobene Bewegung hat noch Gelenke außerhalb des {size} px großen Frames. Es wurde kein Körper-Rendering angefordert.",
+			"reviewChoiceInvalid": "Diese Auswahl passt nicht mehr zur Animation. Prüfe sie erneut. Es wurde keine Anfrage gesendet."
 		},
 		"steps": {
 			"draw": "Deine Figur wird gezeichnet",
@@ -2008,7 +2035,8 @@
 				"frameRange": "Die Frame-Größe muss {min}–256 ganze Pixel betragen.",
 				"seed": "Der Seed muss eine sicher darstellbare, nicht negative Ganzzahl sein.",
 				"promptRequired": "Gib einen Prompt für die Figur ein.",
-				"promptLength": "Der vollständige Prompt darf höchstens 2.000 Zeichen lang sein."
+				"promptLength": "Der vollständige Prompt darf höchstens 2.000 Zeichen lang sein.",
+				"frameRoom": "Ein {frame} px großer Frame lässt weniger Platz als {min} px um einen {body} px großen Körper. Teile der Figur passen eventuell nicht hinein."
 			}
 		},
 		"form": {
@@ -2171,7 +2199,8 @@
 			"estimated": "Geschätzt: {gens}",
 			"keepWorking": "Weiterarbeiten",
 			"costTitle": "Enthält die Standansichten in allen Blickrichtungen. Idle, Gehen und weitere Animationen fügst du danach hinzu. Ein fehlendes Gelenk in der Standpose kann etwas mehr kosten",
-			"create": "Figur erstellen"
+			"create": "Figur erstellen",
+			"createAnyway": "Trotzdem erstellen"
 		}
 	},
 	"moveSheet": {
@@ -2199,12 +2228,15 @@
 		"changeLoopTitle": "Schleife ändern und End-Frames zurücksetzen?",
 		"changeLoopWarning": "Dadurch werden die eigenen End-Frames dieser Animation durch die automatischen Einstellungen ersetzt.",
 		"changeLoopAccept": "Schleife ändern",
+		"makeRoom": "Platz schaffen",
+		"frameRoom": "Diese Animation kann über den {frame}-px-Frame hinausgehen: Unter den Füßen der Figur sind {below} px frei. Schaffe zuerst kostenlos Platz oder generiere die Animation trotzdem.",
 		"skeleton": {
 			"title": "Skeleton V3 prüfen",
 			"hint": "Skeleton V3 ist eine weitere Option. Auch damit können die Qualitätsprüfungen fehlschlagen.",
 			"back": "Zurück zu den Ergebnissen"
 		},
 		"checkpoint": {
+			"generateAnyway": "Animation trotzdem generieren",
 			"generate": "Animation generieren",
 			"initialEstimate": "Ca. {minutes} Min. · Ohne Gegenstände",
 			"review": "Animation prüfen",
@@ -2362,7 +2394,9 @@
 			"currentFrame": "Aktueller Frame {number}",
 			"redrawnFrame": "Neu gezeichneter Frame {number}",
 			"repairedFrame": "Reparierter Frame {number}"
-		}
+		},
+		"rerollBatch": "Diesen Stapel neu würfeln",
+		"rerollBatchDetail": "Die früheren Stapel bleiben unverändert. Die Schätzung umfasst diesen Stapel und die folgenden, die noch nicht gekauft wurden."
 	},
 	"itemRoute": {
 		"errors": {
@@ -2613,6 +2647,84 @@
 			"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du Grundkörper-Frames ersetzt.",
 			"importFailed": "Diese Frames konnten nicht gelesen werden. Versuche es erneut.",
 			"saveFailed": "Diese Frames konnten nicht gespeichert werden. Es wurde nichts geändert. Versuche es erneut."
+		}
+	},
+	"paidReview": {
+		"title": "Bezahlte Ergebnisse",
+		"spent": "Bereits bezahlt: {gens} Gens. Diese Ergebnisse bleiben erhalten und werden wiederverwendet.",
+		"free": "Kostenlos",
+		"download": "Bezahlte Ergebnisse herunterladen",
+		"frame": "{view} Frame {number}",
+		"waiting": "Einige bezahlte Anfragen laufen noch bei PixelLab. Diese Optionen werden freigegeben, sobald sie fertig sind.",
+		"state": {
+			"ready": "Fertig",
+			"pending": "Noch nicht gekauft",
+			"failed": "Angehalten",
+			"running": "Läuft noch bei PixelLab"
+		}
+	},
+	"moveReview": {
+		"makeRoomDetail": "{change}, kostenlos. Die bezahlte Bewegung wird wiederverwendet; nur die Schritte im geänderten Frame werden gekauft.",
+		"makeRoomDetailRedraw": "{change}, kostenlos. Dieses Modell zeichnet vom stehenden Frame aus, daher wird die Bewegung im geänderten Frame neu gezeichnet.",
+		"makeRoom": "Platz schaffen und fortfahren",
+		"resume": "Mit bezahlten Ergebnissen fortfahren",
+		"lift": "Fortfahren, angehoben",
+		"liftAndReroll": "Anheben, {views} neu würfeln",
+		"liftDetail": "{views}: Die Füße heben sich um bis zu {px} px in {frames} von {total} Bewegungs-Frames, damit die Bewegung in den Frame passt.",
+		"liftDetailReview": "{views}: Die Füße heben sich um bis zu {px} px in {frames} von {total} Bewegungs-Frames, damit die Bewegung in den Frame passt. Das liegt über der Fußprüfung von {limit} px, daher prüfst du die Körper-Frames, bevor sie die aktuellen ersetzen.",
+		"liftDetailWarned": "{views}: Die Füße heben sich um bis zu {px} px in {frames} von {total} Bewegungs-Frames, damit die Bewegung in den Frame passt. Das liegt über der Fußprüfung von {limit} px, daher wird die Animation mit einem Fuß-Hinweis gespeichert.",
+		"reroll": "{views} neu würfeln",
+		"rerollDetail": "Neu würfeln kauft nur für diese Blickrichtungen einen neuen Versuch. Alle anderen behalten ihre bezahlten Ergebnisse.",
+		"pending": "Noch zu kaufen: etwa {gens} Gens.",
+		"liftable": "Kann angehoben werden: Die Füße heben sich um bis zu {px} px in {frames} von {total} Frames.",
+		"notLiftable": "Anheben reicht nicht: Die Bewegung ist seitlich oder oben abgeschnitten."
+	},
+	"createReview": {
+		"resume": "Mit bezahlten Ergebnissen fortfahren",
+		"register": "Gezeichnete Ansichten neu registrieren",
+		"registerDetail": "Behält die bezahlte Zeichnung und kauft eine neue Registrierung derselben Ansichten."
+	},
+	"adjustFrame": {
+		"title": "Frame anpassen",
+		"intro": "Verschiebe die Figur im Frame nach oben oder unten oder ändere die Frame-Größe. Jeder Gegenstand, jede Animation und jeder Frame bewegt sich mit. Das ist kostenlos und zeichnet nichts neu.",
+		"previewLabel": "Figur in ihrem Frame",
+		"preview": "Ansicht {direction} in einem {size}-px-Frame",
+		"keys": "Ist die Vorschau fokussiert, bewegen die Pfeiltasten nach oben und unten die Figur um 1 px (mit Umschalt 4 px).",
+		"direction": "Ansicht",
+		"position": "Position",
+		"up": "Nach oben",
+		"down": "Nach unten",
+		"movedUp": "{px} px nach oben verschoben",
+		"movedDown": "{px} px nach unten verschoben",
+		"notMoved": "Nicht verschoben",
+		"size": "Frame-Größe",
+		"smaller": "Kleinerer Frame",
+		"larger": "Größerer Frame",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "Platz schaffen",
+		"makeRoomHelp": "Verschiebt die Figur gerade so weit, dass Platz zum Gehen bleibt, und vergrößert den Frame nur, wenn das Verschieben nicht reicht.",
+		"madeRoom": "Platz geschaffen. Prüfe die Vorschau und speichere dann.",
+		"roomy": "Diese Figur hat schon Platz für Animationen.",
+		"short": "Animationen können über diesen Frame hinausgehen. Platz schaffen behebt das kostenlos.",
+		"above96": "Über 96 px kosten gehaltene Gegenstände und Reparaturraster mehr.",
+		"above170": "Über 170 px kostet jeder Gegenstand 25 Gens pro Anzieh-Aufruf.",
+		"consequences": "Gegenstände werden nur zwischen Figuren mit gleicher Frame-Größe und Position exakt kopiert. Exporte behalten Maßstab und Ursprung im Spiel; exportiere erneut, um die Änderung zu verwenden.",
+		"loading": "Frame wird geladen…",
+		"saved": "Frame angepasst: {change}.",
+		"undone": "Frame-Änderung rückgängig gemacht.",
+		"errors": {
+			"reviewOpen": "Speichere oder verwirf die Animation, die auf Prüfung wartet, bevor du den Frame anpasst.",
+			"missingArtwork": "Gespeicherte Grafik dieser Figur fehlt, daher kann ihr Frame nicht geändert werden.",
+			"even": "Wähle eine Frame-Größe, die sich um eine gerade Pixelzahl ändert.",
+			"range": "Der Frame muss für diese Figur {min}–{max} px groß sein.",
+			"clipTop": "Das schneidet oben {px} px von der Figur oder ihren Gegenständen ab.",
+			"clipBottom": "Das schneidet unten {px} px von der Figur oder ihren Gegenständen ab.",
+			"clipSides": "Das schneidet an den Seiten {px} px von der Figur oder ihren Gegenständen ab.",
+			"unchanged": "Ändere zuerst die Frame-Größe oder die Position.",
+			"limit": "Selbst ein {size}-px-Frame bietet dieser Figur keinen Platz für Animationen.",
+			"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du den Frame anpasst.",
+			"changed": "Diese Figur hat sich geändert. Öffne Frame anpassen erneut, um die neueste Version zu prüfen.",
+			"undoFailed": "Die Frame-Änderung konnte nicht rückgängig gemacht werden."
 		}
 	}
 }

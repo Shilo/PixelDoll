@@ -49,9 +49,7 @@
 	);
 	const project = $derived(doc.id === projectId ? store.project : null);
 	const manifest = $derived(project?.manifest);
-	const name = $derived(
-		displayMove(id, [...(manifest?.rig.animations.map((move) => move.id) ?? []), id])
-	);
+	const name = $derived(displayMove(id, [...(manifest?.rig.animations ?? []), id]));
 	const directions = $derived.by(() => {
 		if (!manifest || !candidate) return [];
 		return manifest.rig.directions.filter(

@@ -14,7 +14,14 @@
 	import { loadProject } from '../lib/store/project.ts';
 	import type { Project } from '../lib/store/manifest.ts';
 	import type { ClipQa } from '../lib/rig/clips.ts';
-	import { estimate, type CreateSpec } from './create.ts';
+	import {
+		estimate,
+		reviewCreateResults,
+		type CreatePaidOption,
+		type CreatePaidReview,
+		type CreateSpec
+	} from './create.ts';
+	import PaidReview from './PaidReview.svelte';
 	import CharacterForm from './CharacterForm.svelte';
 	import {
 		CREATE_STEPS,
@@ -39,7 +46,7 @@
 	import { displayDirection, displayDirectionInSentence } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayError, displayMessage } from '../lib/i18n.ts';
-	import { errorText } from '../lib/message.ts';
+	import { PreflightWarning, errorText } from '../lib/message.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	const wardrobeMenuId = $props.id();
 	const policyDecline = /\b5000\b|policy/i;
@@ -49,7 +56,12 @@
 	let enhancing = $state(false);
 	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
-	const errors = $derived(draftErrors(d));
+	const issues = $derived(draftErrors(d));
+	// Fit warnings never block: Create becomes Create anyway, which records the accepted warnings with the attempt.
+	const accepted = $derived(
+		issues.flatMap((issue) => (issue instanceof PreflightWarning ? [issue.id] : []))
+	);
+	const errors = $derived(issues.filter((issue) => !(issue instanceof PreflightWarning)));
 	const reference = $derived(d.reference);
 	const formSpec = $derived<CreateSpec>({
 		description: d.prompt,
@@ -111,6 +123,29 @@
 			active = false;
 		};
 	});
+	// A stopped attempt shows what it already bought and only offers ways on that reuse it (or say what they cost).
+	let paid = $state.raw<CreatePaidReview | null>(null);
+	$effect(() => {
+		const spec = creating?.error && !creating.running ? $state.snapshot(creating.spec) : undefined;
+		let active = true;
+		paid = null;
+		if (spec)
+			void reviewCreateResults(spec)
+				.then((review) => {
+					if (active) paid = review ?? null;
+				})
+				.catch((error: unknown) => console.error('create review', error));
+		return () => {
+			active = false;
+		};
+	});
+	function choosePaid(option: CreatePaidOption) {
+		if (!creating) return;
+		const id = creating.id,
+			spec = $state.snapshot(option.spec);
+		if (option.paid) withKey(() => void startCreate(spec, true, id));
+		else void startCreate(spec, true, id);
+	}
 	let frame = $state(0);
 	$effect(() => {
 		const timer = setInterval(() => frame++, 110);
@@ -121,7 +156,11 @@
 	function go() {
 		if (createPresentation.id || errors.length || enhancing || referenceLoading) return;
 		formDrafts.character = $state.snapshot(d);
-		const spec = { ...$state.snapshot(formSpec), seed: d.seed ? Number(d.seed) : freshSeed() };
+		const spec = {
+			...$state.snapshot(formSpec),
+			seed: d.seed ? Number(d.seed) : freshSeed(),
+			...(accepted.length ? { acceptedWarnings: [...accepted] } : {})
+		};
 		withKey(() => {
 			formDrafts.character = undefined;
 			void startCreate(spec, true);
@@ -274,6 +313,12 @@
 						? t('create.sheet.declined')
 						: displayError(creating.error)}
 				</p>
+				{#if paid}<PaidReview
+						review={paid}
+						name={creating.spec?.name ?? ''}
+						busy={creating.running}
+						onchoose={choosePaid}
+					/>{/if}
 			{:else}
 				<p class="muted small">
 					{t('create.sheet.time', { minutes: formatNumber(est.minutes) })}
@@ -367,7 +412,8 @@
 					class="bu-action btn primary lg"
 					data-variant="primary"
 					disabled={!!errors.length || enhancing || referenceLoading}
-					onclick={go}>{t('create.sheet.create')}</button
+					onclick={go}
+					>{accepted.length ? t('create.sheet.createAnyway') : t('create.sheet.create')}</button
 				></span
 			>
 		{/if}
