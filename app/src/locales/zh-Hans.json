@@ -2056,6 +2056,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "查看 Skeleton V3 方案",
+			"hint": "也可以选择 Skeleton V3，但仍可能无法通过质量检查。",
+			"back": "返回结果",
+			"equipment": "将重新生成的装备：{names}"
+		},
 		"sharedCopiesCoverage": "共享物品的副本仍可在有帧的朝向中穿戴。",
 		"thatCharacter": "该角色",
 		"recoveryCheckFailed": "无法检查缓存帧：{error}",

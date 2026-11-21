@@ -37,6 +37,7 @@
 		isV13,
 		reservedMove,
 		reviewMoveRecovery,
+		skeletonMoveReview,
 		moveEstimate,
 		moveMinimumTier,
 		type MoveSpec,
@@ -84,6 +85,7 @@
 	$effect(() => {
 		const id = doc.id;
 		void moving.error;
+		void moving.done;
 		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
 	});
 	const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null));
@@ -250,7 +252,7 @@
 	});
 	let included = $state<string[]>(draft?.items ?? []);
 	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
-	const est = $derived(
+	const formEstimate = $derived(
 		m && id && targetDirs.length && !reservedMove(id) && !motionIssue && !pendingIds.includes(id)
 			? moveEstimate(m, { ...motion, items: chosen, dirs: targetDirs })
 			: null
@@ -282,7 +284,25 @@
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id);
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
 	let adding = $state(false);
-	const progress = $derived(mine && !adding);
+	let reviewingSkeletonFor = $state.raw<MoveSpec | null>(null);
+	const skeletonOffer = $derived.by(() => {
+		if (!mine || !moving.spec || !m || !rec || !ok || moving.repairReview) return;
+		if (
+			moving.queued.some((entry) => entry.projectId === doc.id && entry.spec.id === moving.spec?.id)
+		)
+			return;
+		return skeletonMoveReview(
+			{ ...rec, manifest: m },
+			moving.spec,
+			moving.error,
+			moving.done ? moving.qualityDirs : []
+		);
+	});
+	const skeletonReview = $derived(
+		reviewingSkeletonFor && reviewingSkeletonFor === moving.spec ? skeletonOffer : undefined
+	);
+	const est = $derived(skeletonReview?.estimate ?? formEstimate);
+	const progress = $derived(mine && !adding && !skeletonReview);
 	const repairReview = $derived(progress ? moving.repairReview : null);
 	const busy = $derived(!!moving.spec && !moving.done);
 	const savedItemFrames = $derived(
@@ -435,7 +455,21 @@
 
 	function go() {
 		const projectId = doc.id;
-		if (!est || addAccess.error) return;
+		if (skeletonReview && moving.spec) {
+			const offer = skeletonReview;
+			const prior = moving.spec;
+			const replaceFailed = !!moving.error;
+			withKey(() => {
+				if (doc.id !== projectId || moving.spec !== prior || skeletonReview !== offer) return;
+				const spec = { ...offer.review, seed: 1 + Math.floor(Math.random() * 1_000_000) };
+				reviewingSkeletonFor = null;
+				if (replaceFailed) void startMove(projectId, spec);
+				else void queueMoves(projectId, [spec]);
+				ui.sheet = 'move';
+			}, offer.tier);
+			return;
+		}
+		if (!formEstimate || addAccess.error) return;
 		const spec = {
 			...motion,
 			items: chosen,
@@ -583,6 +617,15 @@
 		{#if est}
 			<span class="foot-note move-cost-note">
 				<span>
+		{@const review = skeletonReview?.review}
+		{@const requiredTier = skeletonReview?.tier ?? addTier}
+		{@const replace = review ? review.replace : replacing}
+		{@const move = review?.id ?? id}
+		{#if review}<button
+				class="bu-action btn plain"
+				data-variant="quiet"
+				onclick={() => (reviewingSkeletonFor = null)}>{t('moveSheet.skeleton.back')}</button
+			>{/if}
 					{est.items
 						? t('moveSheet.footEstimateItems', {
 								minutes: formatNumber(est.minutes),
@@ -601,31 +644,36 @@
 			{#if est}<ApiPeek
 					scope="move-add"
 					label={t('moveSheet.addLabel')}
-					plan={movePlan(rec, {
-						...motion,
-						items: chosen,
-						poseStyle: 'visible-side-v1',
-						...(replacing ? { dirs: [...targetDirs] } : {})
-					})}
+					plan={movePlan(
+						rec,
+						review
+							? { ...review, seed: undefined }
+							: {
+									...motion,
+									items: chosen,
+									poseStyle: 'visible-side-v1',
+									...(replacing ? { dirs: [...targetDirs] } : {})
+								}
+					)}
 				/>{/if}<button
 				class="bu-action btn primary lg"
 				data-variant="primary"
 				disabled={!est ||
-					!!addAccess.error ||
+					(!review && !!addAccess.error) ||
 					(!!settingUp.spec && !settingUp.done) ||
-					tierBlocked(addTier)}
-				aria-describedby={tierBlocked(addTier) ? 'move-action-tier' : undefined}
+					tierBlocked(requiredTier)}
+				aria-describedby={tierBlocked(requiredTier) ? 'move-action-tier' : undefined}
 				onclick={go}
 				><span>
 					{t(
-						busy
-							? replacing
+						busy && !review
+							? replace
 								? 'moveSheet.submit.queueReplacement'
 								: 'moveSheet.submit.queue'
-							: replacing
+							: replace
 								? 'moveSheet.submit.replaceViews'
 								: 'moveSheet.submit.add',
-						{ move: id ? nice(id) : t('moveSheet.submit.move') }
+						{ move: move ? nice(move) : t('moveSheet.submit.move') }
 					)}
 					{#if est}<span class="cost">
 							{t(est.items ? 'moveSheet.estimateWithItems' : 'moves.estimate', {
@@ -639,17 +687,19 @@
 {/snippet}
 
 <Sheet
-	title={repairReview
-		? moving.spec?.redrawItem
-			? t('moveSheet.review.redrawTitle')
-			: t('moveSheet.review.repairTitle')
-		: progress && moving.spec?.itemMethod === 'grid'
+	title={skeletonReview
+		? t('moveSheet.skeleton.title')
+		: repairReview
 			? moving.spec?.redrawItem
-				? t('moveSheet.review.redrawProgress')
-				: t('moveSheet.titleRepair')
-			: (progress ? moving.spec?.replace : replacing)
-				? t('moveSheet.titleReplace')
-				: t('moves.add')}
+				? t('moveSheet.review.redrawTitle')
+				: t('moveSheet.review.repairTitle')
+			: progress && moving.spec?.itemMethod === 'grid'
+				? moving.spec?.redrawItem
+					? t('moveSheet.review.redrawProgress')
+					: t('moveSheet.titleRepair')
+				: (progress ? moving.spec?.replace : replacing)
+					? t('moveSheet.titleReplace')
+					: t('moves.add')}
 	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
@@ -738,6 +788,37 @@
 	{:else if progress}
 		<div class="form">
 			<p style="font-weight:600">
+	{:else if skeletonReview}
+		{@const review = skeletonReview.review}
+		<div class="form">
+			<p>
+				{nice(review.id)} · {t(MODEL_TEXT['skeleton-v3'])} · {t('moveSheet.framesValue', {
+					count: skeletonReview.estimate.frames
+				})}
+			</p>
+			<p class="small">
+				{t('common.directions')}: {skeletonReview.affected.map(directionLabel).join(', ')}
+			</p>
+			{#if review.text}<p class="small">{review.text}</p>{/if}
+			{#if review.items.length}
+				<p class="small">
+					{t('moveSheet.skeleton.equipment', {
+						names: review.items
+							.map((itemId) => m?.items.find((item) => item.id === itemId)?.name ?? itemId)
+							.join(', ')
+					})}
+				</p>
+			{/if}
+			{#if review.replace}<p class="notice small">
+					{t('moveSheet.redrawHidesEquipment')}
+					{t('moveSheet.redrawOtherMoves')}
+				</p>{/if}
+			{#if tierBlocked(skeletonReview.tier)}<TierNotice
+					id="move-action-tier"
+					minimumTier={skeletonReview.tier}
+					feature={t('moveSheet.retryFeature')}
+				/>{/if}
+		</div>
 				{nice(moving.spec!.id)}{moving.spec?.dirs
 					? ` · ${moving.spec.dirs.map(directionLabel).join(', ')}`
 					: ''}<ApiPeek
@@ -887,6 +968,22 @@
 		</div>
 	{:else if isDemo() || !ok}
 		<p class="notice small">
+			{#if skeletonOffer && !tierBlocked(skeletonOffer.tier)}
+				<p class="notice small">
+					<span>{t('moveSheet.skeleton.hint')}</span>
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={() => (reviewingSkeletonFor = moving.spec)}
+					>
+						{t('moveSheet.skeleton.title')}
+						<span class="cost">
+							{t('moves.estimate', { gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens)) })}
+						</span>
+						<SurfaceChevron />
+					</button>
+				</p>
+			{/if}
 			<CircleAlert size={14} />{isDemo() ? t('moveSheet.demo') : t('moveSheet.needsSetup')}
 		</p>
 		{#if !isDemo()}<button

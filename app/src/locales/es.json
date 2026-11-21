@@ -2173,6 +2173,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Revisar Skeleton V3",
+			"hint": "Skeleton V3 es otra opción. Los controles de calidad aún pueden fallar.",
+			"back": "Volver a los resultados",
+			"equipment": "Equipo que se volverá a generar: {names}"
+		},
 		"sharedCopiesCoverage": "Las copias compartidas se pueden usar en las vistas en las que tienen fotogramas.",
 		"thatCharacter": "ese personaje",
 		"recoveryCheckFailed": "No se pudieron comprobar los fotogramas en caché: {error}",

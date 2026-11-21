@@ -2171,6 +2171,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Examiner Skeleton V3",
+			"hint": "Skeleton V3 est une autre option. Les contrôles qualité peuvent encore échouer.",
+			"back": "Retour aux résultats",
+			"equipment": "Équipement à régénérer : {names}"
+		},
 		"sharedCopiesCoverage": "Les copies partagées peuvent toujours être portées dans les vues où elles ont des images.",
 		"thatCharacter": "ce personnage",
 		"recoveryCheckFailed": "Impossible de vérifier les images en cache : {error}",

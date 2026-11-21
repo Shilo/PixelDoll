@@ -2155,6 +2155,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Review Skeleton V3",
+			"hint": "Skeleton V3 is another option. It may still fail the quality checks.",
+			"back": "Back to results",
+			"equipment": "Equipment to regenerate: {names}"
+		},
 		"sharedCopiesCoverage": "Shared copies can still be worn in views where they have frames.",
 		"thatCharacter": "that character",
 		"recoveryCheckFailed": "Could not check cached frames: {error}",

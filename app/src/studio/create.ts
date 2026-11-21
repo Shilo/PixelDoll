@@ -136,7 +136,7 @@ import {
 	type MoveAnimationOptions
 } from './moveAnimationOptions.ts';
 import { cellImg } from '../lib/compose/compose.ts';
-import { errorMessage, LocalizedError, message, type Message } from '../lib/message.ts';
+import { errorMessage, errorText, LocalizedError, message, type Message } from '../lib/message.ts';
 import { localizedPlanRestriction } from '../lib/pixellab/plans.ts';
 import { activityStateMessage } from './generationStatus.ts';
 import type { WhisperKey } from 'svelte-whisper';
@@ -2106,6 +2106,91 @@ export function bodyMoveIssue(
 				blocked ? 'create.errors.describeMoveBlocked' : 'create.errors.describeMove'
 			);
 }
+const replacementBodyQa = () =>
+	new LocalizedError(
+		'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.',
+		'create.errors.replacementFailsQa'
+	);
+const newMoveBodyQa = () =>
+	new LocalizedError(
+		'The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.',
+		'create.errors.newMoveFailsQa'
+	);
+
+export function skeletonMoveReview(
+	rec: StoredProject,
+	spec: MoveSpec,
+	error: unknown,
+	qualityDirs: readonly DirectionName[]
+) {
+	if (!isV13(rec) || reservedMove(spec.id) || spec.itemMethod === 'grid') return;
+	const manifest = rec.manifest;
+	const saved = manifest.rig.animations.find((clip) => clip.id === spec.id);
+	const bodyRejected =
+		!spec.itemsOnly &&
+		moveAnimationModel(spec) !== 'skeleton-v3' &&
+		errorText(error) === (spec.replace ? replacementBodyQa() : newMoveBodyQa()).message;
+	if (error && !bodyRejected) return;
+	try {
+		const dirs = bodyRejected
+			? approvedMoveDirections(manifest, spec)
+			: genDirs(manifest).filter((dir) => {
+					const route = saved?.sources?.[dir]?.route;
+					return qualityDirs.includes(dir) && (route === 'pixminimax' || route === 'v3');
+				});
+		if (!dirs.length || (bodyRejected && !!saved !== !!spec.replace)) return;
+		const motions = new Set(
+			dirs.map((dir) => {
+				const source = saved?.sources?.[dir];
+				if (source?.route !== 'v3' && source?.route !== 'pixminimax') return;
+				const prefix = `${source.route}:`;
+				if (source.motion?.startsWith(prefix)) return source.motion.slice(prefix.length);
+			})
+		);
+		const motion = motions.values().next().value;
+		if (!bodyRejected && (motions.size !== 1 || !motion)) return;
+		const action = bodyRejected
+			? spec.action
+			: motion === spec.id && (motion === 'walk' || isAuthoredAction(motion))
+				? motion
+				: undefined;
+		const preferred = saved?.cells ?? moveFrames(manifest, spec);
+		const frameCount = defaultMoveFrameCount('skeleton-v3', manifest.rig.cell.w, preferred);
+		const affected = affectedMoveDirections(manifest.rig, dirs);
+		const eligible = new Set(posable(manifest, dirs).map((item) => item.id));
+		const coveredItems = manifest.items.filter(
+			(item) =>
+				item.id !== manifest.rig.baseItem &&
+				item.layers.some((layer) =>
+					affected.some((dir) => layer.cells?.[spec.id]?.[dir]?.some(Boolean))
+				)
+		);
+		const items = [...new Set([...spec.items, ...coveredItems.map((item) => item.id)])];
+		if (items.some((id) => !eligible.has(id))) return;
+		const review: MoveSpec = {
+			id: spec.id,
+			action,
+			text: bodyRejected ? spec.text : action ? undefined : motion,
+			frames: preferred,
+			animation: { model: 'skeleton-v3', frameCount },
+			items,
+			poseStyle: 'visible-side-v1',
+			seed: 0,
+			replace: !!saved,
+			approvedDirs: dirs,
+			...(saved ? { dirs } : {})
+		};
+		if (bodyMoveIssue(manifest, review) || partialMoveFrameIssue(manifest, review, dirs.length))
+			return;
+		const estimate = moveEstimate(manifest, review);
+		const tier = moveMinimumTier(manifest, review);
+		if (Number.isFinite(estimate.gens) && estimate.gens > 0)
+			return { review, estimate, tier, affected };
+	} catch {
+		return undefined;
+	}
+}
+
 export function moveEstimate(
 	m: Manifest,
 	s: Pick<
@@ -2317,7 +2402,12 @@ export async function addMove(
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void = () => {},
 	onReviewed: () => Promise<void> = async () => {}
-): Promise<{ warnings: string[]; reviewItems?: string[]; repairReview?: RepairReview }> {
+): Promise<{
+	warnings: string[];
+	reviewItems?: string[];
+	qualityDirs?: DirectionName[];
+	repairReview?: RepairReview;
+}> {
 	approvedMeasurementIds(spec.measurementRecovery);
 	checkedPaletteIntent(spec.bodyPaletteRepair);
 	// Keeping reviewed frames is free and body-only: equipment for the move is a separate, priced choice afterward.
@@ -2602,8 +2692,24 @@ export async function addMove(
 		warnings.push(
 			`${saved.manifest.items.find((item) => item.id === id)!.name}: item quality checks need review. No paid retry was started.`
 		);
+	const qualityDirs = dirs.filter((dir) => {
+		const clip = `${spec.id}/${dir}`;
+		return (
+			(!published &&
+				(spec.replace || !existing) &&
+				clipQa[clip] &&
+				failsBodyGate(clipQa[clip], true)) ||
+			plans.some(
+				(plan) =>
+					plan.dirs.includes(dir) &&
+					saved.manifest.items.find((item) => item.id === plan.id)?.qa?.clips?.[clip]?.status ===
+						'fail'
+			)
+		);
+	});
 	return {
 		warnings: [...new Set(warnings)],
+		...(qualityDirs.length ? { qualityDirs } : {}),
 		...(reviewItems.length ? { reviewItems } : {})
 	};
 }
@@ -2872,15 +2978,7 @@ async function addBodyClip(
 		spec.dirs &&
 		clips.some(({ out: { qa } }) => failsBodyGate(qa, model !== 'skeleton-v3'))
 	)
-		throw old
-			? new LocalizedError(
-					'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.',
-					'create.errors.replacementFailsQa'
-				)
-			: new LocalizedError(
-					'The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.',
-					'create.errors.newMoveFailsQa'
-				);
+		throw old ? replacementBodyQa() : newMoveBodyQa();
 	const layer = baseIt.layers[0],
 		cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = {
 			...baseIt.layers[0].cells?.[spec.id]

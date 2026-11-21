@@ -2170,6 +2170,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Skeleton V3 prüfen",
+			"hint": "Skeleton V3 ist eine weitere Option. Auch damit können die Qualitätsprüfungen fehlschlagen.",
+			"back": "Zurück zu den Ergebnissen",
+			"equipment": "Neu zu erzeugende Ausrüstung: {names}"
+		},
 		"sharedCopiesCoverage": "Geteilte Kopien können weiterhin in Ansichten getragen werden, für die sie Bilder haben.",
 		"thatCharacter": "diese Figur",
 		"recoveryCheckFailed": "Zwischengespeicherte Frames konnten nicht geprüft werden: {error}",

@@ -2184,6 +2184,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Revisar Skeleton V3",
+			"hint": "Skeleton V3 é outra opção. As verificações de qualidade ainda podem falhar.",
+			"back": "Voltar aos resultados",
+			"equipment": "Equipamentos a gerar novamente: {names}"
+		},
 		"sharedCopiesCoverage": "As cópias compartilhadas ainda podem ser usadas nas vistas em que têm quadros.",
 		"thatCharacter": "esse personagem",
 		"recoveryCheckFailed": "Não foi possível verificar os quadros em cache: {error}",

@@ -2085,6 +2085,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Skeleton V3 を確認",
+			"hint": "Skeleton V3 も選べます。品質チェックに通らない場合もあります。",
+			"back": "結果に戻る",
+			"equipment": "再生成する装備: {names}"
+		},
 		"sharedCopiesCoverage": "共有アイテムのコピーは、フレームがある向きでは装備したまま表示できます。",
 		"thatCharacter": "そのキャラクター",
 		"recoveryCheckFailed": "キャッシュされたフレームを確認できませんでした：{error}",

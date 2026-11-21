@@ -2,6 +2,8 @@
 
 Status: matched live Slash (body only) and matched live Walk (body and fitted cap) are complete. Keep Skeleton V3 as the default and PixMiniMax as the leading optional alternative. Held-item parity, repeatability and default-promotion criteria remain unverified. The earlier interrupted Skeleton V3 receipt is still unknown. No new artwork is retained in this report or the repository.
 
+When a native body or its fitted motion equipment fails automatic checks, the move results may offer a priced Skeleton V3 review. This is an optional recovery path at the point of failure, not a changed default or a guarantee that the next result will pass. The review uses the existing paid move action and is omitted when the views, frame count, or equipment cannot be safely quoted. Opening it leaves the saved artwork unchanged.
+
 Decision: could PixMiniMax replace Skeleton V3 as the Add a move default without trading expressive motion for lower equipment accuracy, character consistency, or reliability? Text V3 is the third arm, not a presumed fallback. The equipment renderer stays Skeleton V3 in every arm. Ride is out of scope and stays on its pose-driven path.
 
 ## Stage 0: executed offline

@@ -2078,6 +2078,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Tinjau Skeleton V3",
+			"hint": "Skeleton V3 adalah opsi lain. Pemeriksaan kualitas masih bisa gagal.",
+			"back": "Kembali ke hasil",
+			"equipment": "Perlengkapan yang akan dibuat ulang: {names}"
+		},
 		"sharedCopiesCoverage": "Salinan bersama tetap bisa dipakai pada tampilan yang memiliki bingkai.",
 		"thatCharacter": "karakter tersebut",
 		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",

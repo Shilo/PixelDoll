@@ -2075,6 +2075,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Skeleton V3 검토",
+			"hint": "Skeleton V3도 선택할 수 있습니다. 품질 검사를 통과하지 못할 수도 있습니다.",
+			"back": "결과로 돌아가기",
+			"equipment": "다시 생성할 장비: {names}"
+		},
 		"sharedCopiesCoverage": "공유 복사본은 프레임이 있는 방향에서 계속 착용할 수 있습니다.",
 		"thatCharacter": "해당 캐릭터",
 		"recoveryCheckFailed": "캐시된 프레임을 확인하지 못했어요: {error}",

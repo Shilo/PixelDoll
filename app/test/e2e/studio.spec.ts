@@ -5539,6 +5539,77 @@ test('targeted move replacement names mirrored effects without offering a separa
 }, info) => {
 	await openStudio(
 		page,
+	const suggestion = sheet.getByRole('button', { name: /^Review Skeleton V3/ });
+	await expect(suggestion).toHaveCount(0);
+	const before = await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		const manifest = state.store.project.manifest;
+		for (const item of manifest.items)
+			if (item.id !== manifest.rig.baseItem && !state.moving.spec.items.includes(item.id))
+				for (const layer of item.layers) if (layer.cells?.walk) delete layer.cells.walk.east;
+		state.moving.spec = { ...state.moving.spec, animation: { model: 'pixminimax', frameCount: 8 } };
+		state.moving.error =
+			'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.';
+		return JSON.stringify(manifest);
+	});
+	await expect(suggestion).toContainText('Est. 11 gens');
+	await suggestion.click();
+	const review = page.getByRole('dialog', { name: 'Review Skeleton V3', exact: true });
+	await expect(review).toContainText('8 frames');
+	await expect(review).toContainText('Directions: East');
+	await expect(review).toContainText(`Equipment to regenerate: ${fixture.itemName}`);
+	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
+		'Est. 11 gens'
+	);
+	await review.getByRole('button', { name: 'Back to results' }).click();
+	await expect(suggestion).toBeVisible();
+	const after = await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		return {
+			manifest: JSON.stringify(state.store.project.manifest),
+			model: state.moving.spec.animation.model
+		};
+	});
+	expect(after).toEqual({ manifest: before, model: 'pixminimax' });
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		state.moving.spec.animation.model = 'skeleton-v3';
+	});
+	await expect(suggestion).toHaveCount(0);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		const walk = state.store.project.manifest.rig.animations.find(
+			(clip: { id: string }) => clip.id === 'walk'
+		);
+		Object.assign(walk.sources.east, { route: 'v3', motion: 'v3:walk' });
+		state.moving.error = '';
+		state.moving.spec = { ...state.moving.spec, itemsOnly: true, replace: false };
+		state.moving.qualityDirs = ['east'];
+		state.moving.done = true;
+	});
+	const completed = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await completed.getByRole('button', { name: /^Review Skeleton V3/ }).click();
+	await expect(review).toContainText('Directions: East');
+	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
+		'Est. 11 gens'
+	);
+	await review.getByRole('button', { name: 'Back to results' }).click();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		const walk = state.store.project.manifest.rig.animations.find(
+			(clip: { id: string }) => clip.id === 'walk'
+		);
+		walk.cells = 16;
+		for (const source of Object.values(walk.sources) as { keypoints: unknown[] }[])
+			source.keypoints = [...source.keypoints, ...source.keypoints];
+		state.moving.qualityDirs = ['east'];
+	});
+	await expect(completed.getByRole('button', { name: /^Review Skeleton V3/ })).toHaveCount(0);
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
 	await targetedRepairFixture(page, true);

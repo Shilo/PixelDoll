@@ -2164,6 +2164,12 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Skeleton V3 seçeneğini incele",
+			"hint": "Skeleton V3 başka bir seçenektir. Kalite kontrolleri yine başarısız olabilir.",
+			"back": "Sonuçlara dön",
+			"equipment": "Yeniden oluşturulacak ekipman: {names}"
+		},
 		"sharedCopiesCoverage": "Paylaşılan kopyalar, kareleri olan görünümlerde kullanılabilir.",
 		"thatCharacter": "söz konusu karakter",
 		"recoveryCheckFailed": "Önbellekteki kareler kontrol edilemedi: {error}",
