@@ -31,7 +31,16 @@ export const settingsNavigation = $state<{
 	exportOpen: false
 });
 
+let returnFocus: 'connection' | 'recent-activity' | undefined;
+
+export function takeSettingsReturnFocus() {
+	const entry = returnFocus;
+	returnFocus = undefined;
+	return entry;
+}
+
 export function openSettings(section: SettingsSection | null = null) {
+	returnFocus = undefined;
 	settingsNavigation.fromExport = ui.sheet === 'export';
 	settingsNavigation.section = section;
 	ui.sheet = 'settings';
@@ -55,6 +64,8 @@ export function openSettingsAccount(replace = false) {
 export function closeSettingsAccount(): boolean {
 	if (ui.sheet !== 'connect' || !settingsNavigation.accountOpen) return false;
 	settingsNavigation.accountOpen = false;
+	settingsNavigation.section = 'pixellab';
+	returnFocus = 'connection';
 	ui.sheet = 'settings';
 	return true;
 }
@@ -67,6 +78,8 @@ export function openSettingsActivity() {
 export function closeSettingsActivity(): boolean {
 	if (ui.sheet !== 'activity' || !settingsNavigation.activityOpen) return false;
 	settingsNavigation.activityOpen = false;
+	settingsNavigation.section = 'pixellab';
+	returnFocus = 'recent-activity';
 	ui.sheet = 'settings';
 	return true;
 }

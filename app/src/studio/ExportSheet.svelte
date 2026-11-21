@@ -173,7 +173,8 @@
 	let pendingWrites = $state(0);
 	const saving = $derived(pendingWrites > 0);
 	let libraryBusy = $state(false);
-	const settingsBusy = $derived(saving || libraryBusy);
+	let reviewingBackup = $state(false);
+	const settingsBusy = $derived(saving || libraryBusy || reviewingBackup);
 	let writeSequence = 0,
 		publishedSequence = 0;
 	let refreshAgain = false,
@@ -794,6 +795,7 @@
 				<SettingsContent
 					busy={settingsBusy}
 					bind:libraryBusy
+					bind:reviewingBackup
 					{exportSettings}
 					openExport={navigate}
 				/>

@@ -238,11 +238,21 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		await transfer.dispose();
 		await expect(review).toBeFocused();
 		await expect(review.getByText('Characters to add')).toBeVisible();
+		await recipientPage.setViewportSize({ width: 900, height: 740 });
+		const appearance = recipientSettings.getByRole('button', { name: 'Appearance', exact: true });
+		await expect(appearance).toBeVisible();
+		await expect(appearance).toBeDisabled();
+		await expect(
+			recipientSettings.getByRole('button', { name: 'Close', exact: true })
+		).toBeDisabled();
+		await recipientPage.keyboard.press('Escape');
+		await expect(review).toBeVisible();
 		await expect(
 			review.getByText('Nothing in your library will be replaced or deleted.', { exact: true })
 		).toBeVisible();
 		await review.getByRole('button', { name: 'Restore', exact: true }).click();
 		await expect(recipientPage.getByText('Added 2 characters.')).toBeVisible();
+		await expect(appearance).toBeEnabled();
 		await picker.setInputFiles((await download.path())!);
 		await expect(review.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
 		await expect(review.getByText('Already in your library')).toBeVisible();

@@ -197,10 +197,10 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await settingsActivity.click();
 	const activitySheet = page.getByRole('dialog', { name: 'Activity', exact: true });
 	await activitySheet.getByRole('button', { name: 'Done', exact: true }).click();
-	await expect(settingsActivity).toBeVisible();
+	await expect(settingsActivity).toBeFocused();
 	await settingsActivity.click();
 	await page.goBack();
-	await expect(settingsActivity).toBeVisible();
+	await expect(settingsActivity).toBeFocused();
 });
 
 test('PixelLab usage recovers from errors, replaces a key, reconnects, and forgets locally', async ({
@@ -350,7 +350,7 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 		replacement.getByRole('checkbox', { name: 'Remember on this device' })
 	).toBeChecked();
 	await replacement.getByRole('button', { name: 'Keep current key' }).click();
-	await expect(replace).toBeVisible();
+	await expect(replace).toBeFocused();
 	await replace.click();
 	await replacement
 		.getByLabel('Paste your Secret API key', { exact: true })
@@ -362,7 +362,7 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 	);
 
 	const forget = settings.getByRole('button', { name: 'Forget key...', exact: true });
-	const reset = settings.getByRole('button', { name: 'Forget PixelLab key?', exact: true });
+	const reset = settings.getByRole('button', { name: 'Forget key', exact: true });
 	const confirm = page.getByRole('alertdialog', { name: 'Forget PixelLab key?', exact: true });
 	await expect(reset).toBeEnabled();
 	await forget.click();
@@ -374,7 +374,6 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 	);
 	await page.setViewportSize({ width: 390, height: 844 });
 	await expect(reset).toHaveCount(0);
-	await settings.getByRole('button', { name: 'PixelLab', exact: true }).click();
 	await expect(forget).toBeEnabled();
 	const search = settings.getByRole('searchbox', { name: 'Search settings' });
 	await search.fill('theme');

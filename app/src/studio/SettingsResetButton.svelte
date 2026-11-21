@@ -18,7 +18,7 @@
 	} = $props();
 	const label = $derived(
 		scope === 'pixellab'
-			? t('connectSheet.forgetTitle')
+			? t('connectSheet.forgetKey')
 			: t(
 					scope === 'all'
 						? labeled

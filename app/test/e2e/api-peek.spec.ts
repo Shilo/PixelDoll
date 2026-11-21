@@ -103,6 +103,15 @@ test('Developer mode defaults to off, persists, and closes an open inspector whe
 	await expect(history).toHaveCount(0);
 	await expect(mode).not.toBeChecked();
 	await other.close();
+	await settings.getByRole('button', { name: 'Appearance', exact: true }).click();
+	await settings.getByRole('button', { name: 'Language', exact: true }).click();
+	await settings.getByRole('button', { name: 'Deutsch German', exact: true }).click();
+	await page.getByRole('button', { name: 'Entwicklung', exact: true }).click();
+	const balanceCall = page.locator('.developer-preview .peek-call').filter({ hasText: '/balance' });
+	await balanceCall.locator('summary').click();
+	await expect(
+		balanceCall.getByRole('button', { name: 'Endpunkt GET /balance, Kontostand abfragen kopieren' })
+	).toBeVisible();
 });
 
 async function newCharacter(page: Page) {

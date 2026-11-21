@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick, type Snippet } from 'svelte';
+	import { onMount, tick, type Snippet } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
@@ -33,6 +33,7 @@
 	import {
 		settingsLabels,
 		settingsNavigation,
+		takeSettingsReturnFocus,
 		type SettingsSection
 	} from './settingsNavigation.svelte.ts';
 	import { message } from '../lib/message.ts';
@@ -94,7 +95,7 @@
 					terms: ['toolbar.lightMode', 'toolbar.darkMode']
 				},
 				{ id: 'language', label: 'language.label' },
-				{ id: 'reset', label: 'settings.reset.action', terms: ['settings.reset.title'] }
+				{ id: 'reset', label: 'settings.reset.allAction', terms: ['settings.reset.action'] }
 			]
 		},
 		{
@@ -191,6 +192,14 @@
 	let targetEntry = $state<string>();
 	let panel: HTMLElement;
 	let search: HTMLInputElement;
+	onMount(() => {
+		const entry = takeSettingsReturnFocus();
+		void tick().then(() => {
+			if (!search.isConnected) return;
+			if (entry) panel.querySelector<HTMLElement>(`[data-setting="${entry}"] button`)?.focus();
+			else if (matchMedia('(pointer: fine)').matches) search.focus({ preventScroll: true });
+		});
+	});
 	let previousSection: SettingsSection | null = null;
 	$effect(() => {
 		const section = settingsNavigation.section;
@@ -214,9 +223,8 @@
 				if (entry.id === 'reset' && !canReset) return [];
 				const text = normalize(
 					[
-						...[section.label, entry.label, ...('terms' in entry ? (entry.terms ?? []) : [])].map(
-							(key) => t(key)
-						),
+						...[entry.label, ...('terms' in entry ? (entry.terms ?? []) : [])].map((key) => t(key)),
+						...(entry.id === 'reset' ? [] : [t(section.label)]),
 						...('names' in entry ? (entry.names ?? []) : [])
 					].join(' '),
 					locale
@@ -342,7 +350,9 @@
 					onclick={() => show(section.id, entry.id)}
 				>
 					<span class="row-name"
-						>{t(entry.label)}<small class="bu-muted">{t(section.label)}</small></span
+						>{#if entry.id === 'reset'}{openerLabel(t(entry.label))}{:else}{t(entry.label)}<small
+								class="bu-muted">{t(section.label)}</small
+							>{/if}</span
 					>
 					<SurfaceChevron />
 				</button>
@@ -530,12 +540,12 @@
 		font-size: 1.125rem;
 		font-weight: 600;
 	}
-	.settings-content :global(.row) {
+	.settings-content :global(.row:not([popover] *)) {
 		width: 100%;
 		text-align: start;
 		min-height: 44px;
 	}
-	.settings-content :global(.row-name) {
+	.settings-content :global(.row-name:not([popover] *)) {
 		white-space: normal;
 	}
 	.export-character-label {
@@ -556,7 +566,7 @@
 	nav button :global(svg) {
 		flex: none;
 	}
-	.settings-panel :global(.row:not([data-variant='field'])) {
+	.settings-panel :global(.row:not([data-variant='field'], [popover] *)) {
 		padding-inline: 0;
 	}
 	/* PixelLab: the recent-activity list takes whatever height the page leaves. */

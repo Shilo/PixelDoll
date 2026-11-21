@@ -19,7 +19,7 @@
 	let libraryBusy = $state(false);
 	let reviewingBackup = $state(false);
 	let resetScope = $state<ResetScope | null>(null);
-	const busy = $derived(saving || libraryBusy || resetScope !== null);
+	const busy = $derived(saving || libraryBusy || reviewingBackup || resetScope !== null);
 	const canReset = $derived(!workspaceCopy && !settingsNavigation.fromExport);
 	$effect(() => (canReset ? watchExportDefaults() : undefined));
 </script>
@@ -33,7 +33,7 @@
 	onclose={() => (ui.sheet = null)}
 >
 	{#snippet leading()}<SettingsHeader
-			busy={busy || reviewingBackup}
+			{busy}
 			onreset={canReset ? () => (resetScope = 'all') : undefined}
 		/>{/snippet}
 	{#snippet heading()}{#if settingsNavigation.section}<span class="settings-page-title"

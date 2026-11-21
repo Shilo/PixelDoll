@@ -293,7 +293,7 @@ Each color choice is a small 44×24px rounded chip showing the whole ramp from s
 
 ### Navigation
 
-The header is the only global navigation (see Layout for its contents per screen). More opens a menu with Activity, API calls, Connect PixelLab, the Light/Dark mode switch, and a version row that opens source and build actions.
+The header is the only global navigation (see Layout for its contents per screen). More includes PixelLab connection or usage, Settings, Language, contextual wardrobe visibility, library backup, Activity, and app and help actions. Settings contains appearance preferences, Developer mode and its Example Activity, and About with source and build actions.
 
 ### Playback bar
 

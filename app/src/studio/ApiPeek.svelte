@@ -478,7 +478,7 @@
 								? t('apiPeek.copyEndpointLabelContext', {
 										method: c.method,
 										endpoint,
-										label: c.label
+										label: labelText(c)
 									})
 								: t('apiPeek.copyEndpointLabel', { method: c.method, endpoint })}
 							<details class="peek-call">

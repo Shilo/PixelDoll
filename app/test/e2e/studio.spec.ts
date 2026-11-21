@@ -600,6 +600,8 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	const nav = settings.getByRole('navigation', { name: 'Settings', exact: true });
 	const pageReset = settings.getByRole('button', { name: 'Reset this page', exact: true });
 	const resetAll = settings.getByRole('button', { name: 'Reset settings', exact: true });
+	const search = settings.getByRole('searchbox', { name: 'Search settings', exact: true });
+	await expect(search).toBeFocused();
 	const focusInPanel = () =>
 		page.evaluate(() => Boolean(document.activeElement?.closest('.settings-content')));
 	const height = (selector: string) =>
@@ -666,9 +668,12 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	}
 	expect(expected).toEqual(allDefaults);
 	await expect(resetAll).toBeDisabled();
-	const search = settings.getByRole('searchbox', { name: 'Search settings', exact: true });
 	await search.fill('reset');
-	await expect(settings.locator('.search-result', { hasText: 'Reset settings' })).toBeDisabled();
+	const resetResult = settings.getByRole('button', {
+		name: 'Reset all settings...',
+		exact: true
+	});
+	await expect(resetResult).toBeDisabled();
 	await search.fill('');
 	await nav.getByRole('button', { name: 'Wardrobe', exact: true }).click();
 	await page.evaluate(async () => {
@@ -717,13 +722,15 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	await expect.poll(saved).toEqual(changed);
 	await expect(pageReset).toBeEnabled();
 
-	await resetAll.click();
+	await search.fill('reset');
+	await resetResult.click();
 	const confirmation = page.getByRole('alertdialog', { name: 'Reset all settings?' });
 	const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
 	await expect(cancel).toBeFocused();
 	await cancel.click();
 	await expect(confirmation).toHaveCount(0);
 	expect(await saved()).toEqual(changed);
+	await search.clear();
 	await resetAll.click();
 	await confirmation.getByRole('button', { name: 'Reset settings', exact: true }).click();
 	await expect(confirmation).toHaveCount(0);

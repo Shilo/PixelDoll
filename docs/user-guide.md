@@ -366,7 +366,7 @@ Treat the archive as private: it preserves old records as stored and cannot iden
 
 To troubleshoot with an isolated copy, enable **Developer mode** in **Settings → Developer** and open the backup-copy
 picker there. Drop the ZIP in the box or click the box to choose it. The
-`?workspace-copy` address opens a separate, temporary copy. You can inspect or change the copy
+`?workspace-copy` address also opens the picker when Developer mode is enabled. You can inspect or change the temporary copy
 without changing your own library. PixelLab starts disconnected, and no jobs from the ZIP restart. To reproduce a PixelLab
 issue, choose **More options → Connect PixelLab** and enter your own key or select **Use saved key** if this browser
 already has a remembered PixelLab key for this site. Pages hosted at the same web address (origin) share that saved key.
