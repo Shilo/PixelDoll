@@ -2501,6 +2501,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await moveSheet.getByText('Choose a frame', { exact: true }).click();
 	await frames.filter({ hasText: /^Frame 2$/ }).click();
 	await moveSheet.getByRole('button', { name: /^Generate move/ }).click();
+	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
+	await connect.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key');
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(review).toBeVisible({ timeout: 45_000 });
 	const pending = await read();
 	expect(pending.manifest.rig.animations.some(({ id }) => id === 'slash')).toBe(false);
