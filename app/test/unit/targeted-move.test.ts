@@ -5,13 +5,15 @@ import {
 	moveDirections,
 	moveEstimate,
 	moveFrames,
+	moveMotionRequest,
 	nativeMoveGens,
 	nativeMoveRequest,
 	reviewItemMove,
 	reviewMoveRecovery,
+	resolveMoveMotionSource,
 	skeletonMoveReview
 } from '../../src/studio/create.ts';
-import { moveFrameCounts } from '../../src/studio/moveAnimationOptions.ts';
+import { moveFrameCounts, moveTemplatePrompt } from '../../src/studio/moveAnimationOptions.ts';
 import { resolveMoveSource } from '../../src/studio/moveSource.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
 import { withClipWriteLock } from '../../src/studio/clipName.ts';
@@ -27,6 +29,61 @@ import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
 
+test('managed ownership decides the quoted source without sending any generation', async () => {
+	const { original } = await fixture();
+	const controller = new AbortController();
+	const fetch = vi.spyOn(globalThis, 'fetch');
+	const route = () => resolveMoveMotionSource('test-key', 'test-character', controller.signal);
+	expect(await resolveMoveMotionSource('test-key', undefined, controller.signal)).toBe(
+		'standalone'
+	);
+	expect(fetch).not.toHaveBeenCalled();
+	fetch.mockResolvedValueOnce(Response.json({ id: 'test-character' }));
+	const managed = await route();
+	expect(managed).toBe('managed');
+	for (const status of [403, 404]) {
+		fetch.mockResolvedValueOnce(Response.json({ detail: 'unavailable' }, { status }));
+		expect(await route()).toBe('standalone');
+	}
+	fetch.mockResolvedValueOnce(Response.json({ detail: 'unauthorized' }, { status: 401 }));
+	await expect(route()).rejects.toMatchObject({ status: 401 });
+	expect(fetch).toHaveBeenCalledTimes(4);
+	for (const [url, init] of fetch.mock.calls) {
+		expect(String(url)).toMatch(/\/characters\/test-character$/);
+		expect(init?.method).toBe('GET');
+	}
+	const prompt = moveTemplatePrompt('walk');
+	const spec = {
+		id: 'walk',
+		action: 'walk',
+		text: prompt,
+		frames: 12,
+		items: [],
+		animation: { model: 'skeleton-v3' as const, frameCount: 12, loop: true }
+	};
+	const owned = moveMotionRequest(original, { ...spec, motionSource: managed }, 'east');
+	expect(owned).toMatchObject({
+		path: '/characters/animations',
+		body: { mode: 'pixminimax', frame_count: 12 }
+	});
+	expect((owned.body as { action_description: string }).action_description).toContain(prompt);
+	const standalone = moveMotionRequest(
+		original,
+		{ ...spec, motionSource: 'standalone' },
+		'east',
+		'standalone-start'
+	);
+	expect(standalone).toMatchObject({
+		path: '/animate-pixminimax',
+		body: {
+			first_frame: png('standalone-start'),
+			last_frame: png('standalone-start'),
+			frame_count: 12
+		}
+	});
+	expect(standalone.body).not.toHaveProperty('character_id');
+});
+
 test('native motion uses only the selected direction’s start and end frames', async () => {
 	const { original } = await fixture();
 	const start = { width: 64, height: 64, base64: 'start' };
@@ -35,6 +92,7 @@ test('native motion uses only the selected direction’s start and end frames', 
 		const spec = {
 			id: 'idle',
 			action: 'idle',
+			motionSource: 'standalone' as const,
 			frames: 8,
 			items: [],
 			animation: { model, loop: true, references: { east: { start, end } } }
@@ -47,9 +105,20 @@ test('native motion uses only the selected direction’s start and end frames', 
 			first_frame: png('standing'),
 			last_frame: png('standing')
 		});
-		expect(
-			nativeMoveRequest(original, { ...spec, action: 'walk' }, 'south', model, 'standing').body
-		).not.toHaveProperty('last_frame');
+		for (const action of ['walk', 'run']) {
+			expect(
+				nativeMoveRequest(original, { ...spec, action }, 'south', model, 'standing').body
+			).toMatchObject({ first_frame: png('standing'), last_frame: png('standing') });
+			expect(
+				nativeMoveRequest(
+					original,
+					{ ...spec, action, motionSource: undefined },
+					'south',
+					model,
+					'standing'
+				).body
+			).not.toHaveProperty('last_frame');
+		}
 		expect(
 			nativeMoveRequest(
 				original,
@@ -296,6 +365,18 @@ async function fixture(
 			})
 	};
 }
+
+test('an unregistered character with stored joints can render a prompt-driven Skeleton V3 move', async () => {
+	const f = await fixture(false, 'exact');
+	delete f.saved().character;
+	await expect(
+		f.run({ action: undefined, text: 'Step carefully', motionSource: 'standalone' })
+	).resolves.toMatchObject({ warnings: expect.any(Array) });
+	const paths = f.enqueue.mock.calls.map(([request]) => request.path);
+	expect(paths[0]).toBe('/animate-pixminimax');
+	expect(paths).toContain('/animate-with-skeleton-v3');
+	expect(paths).not.toContain('/characters/animations');
+});
 
 test('skeleton Loop checks a custom start first without repeating the start pose at the end', async () => {
 	const fixtureState = await fixture();

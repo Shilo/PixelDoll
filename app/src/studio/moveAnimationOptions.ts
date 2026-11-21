@@ -1,4 +1,5 @@
 import type { ImageReference } from '../lib/image/reference.ts';
+import { actionOf } from '../lib/rig/clips.ts';
 import type { DirectionName } from '../lib/store/manifest.ts';
 
 export type MoveAnimationModel = 'skeleton-v3' | 'v3' | 'pixminimax';
@@ -17,18 +18,24 @@ export type MoveAnimationOptions = {
 export const gaitTemplate = (action?: string) => action === 'walk' || action === 'run';
 export const templateLoops = (action?: string) => action === 'idle' || gaitTemplate(action);
 
-export function automaticMoveEnd(action: string | undefined, loop: boolean | undefined): boolean {
-	return !!loop && !gaitTemplate(action);
+export function moveTemplatePrompt(action: string, loop = templateLoops(action)): string {
+	const prompt = actionOf(action);
+	return gaitTemplate(action) && loop
+		? `${prompt}, continuous even strides, no stopping or settling into a standing pose`
+		: prompt;
+}
+
+export function automaticMoveEnd(loop: boolean | undefined): boolean {
+	return !!loop;
 }
 
 export function moveReferenceEnd<Image>(
 	references: { end?: Image | null } | undefined,
-	action: string | undefined,
 	loop: boolean | undefined,
 	start: Image
 ): Image | undefined {
 	return references?.end === undefined
-		? automaticMoveEnd(action, loop)
+		? automaticMoveEnd(loop)
 			? start
 			: undefined
 		: (references.end ?? undefined);

@@ -86,6 +86,13 @@ export interface EnhancedCharacterV3Prompt {
 	enhanced_prompt: string;
 	usage?: Usage | null;
 }
+export interface EnhanceAnimationV3Prompt {
+	first_frame: B64Image;
+	last_frame?: B64Image;
+	action: string;
+	engine: 'v3' | 'pixminimax' | 'skeleton-v3';
+	frame_count: number;
+}
 export interface CharacterAnimation {
 	character_id: string;
 	mode?: BaseAnimMode; // newer models only: legacy template/pro modes do not type-check (D8, user rule 2026-10-21)
@@ -225,6 +232,8 @@ export const routes = {
 	createCharacterProFlash: (b: CreateCharacterProFlash) => post('/create-character-pro-flash', b),
 	enhanceCharacterV3Prompt: (b: EnhanceCharacterV3Prompt) =>
 		post('/enhance-character-v3-prompt', b),
+	enhanceAnimationV3Prompt: (b: EnhanceAnimationV3Prompt) =>
+		post('/enhance-animation-v3-prompt', b),
 	animateCharacter: (b: CharacterAnimation) => post('/characters/animations', b),
 	getCharacter: (id: string) => get(`/characters/${encodeURIComponent(id)}`),
 	estimateSkeleton: (image: B64Image) => post('/estimate-skeleton', { image }),
