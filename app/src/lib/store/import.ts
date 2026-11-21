@@ -14,6 +14,7 @@ import {
 	type Sha256
 } from '../rig/rig.ts';
 import { normalize, opaqueBox, pivotOf } from '../rig/normalize.ts';
+import { AUTHORED } from '../rig/poses.ts';
 import type { Manifest, Project } from './manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
 import type { StoredProject } from './project.ts';
@@ -865,7 +866,7 @@ async function pixelLab(
 		}
 		for (const pose of poses) {
 			let id = slug(pose.name).slice(0, 45);
-			if (id === DEFAULT_MOVE || id === 'standing') id = `state-${id}`;
+			if ([DEFAULT_MOVE, 'standing', 'idle', 'walk', ...AUTHORED].includes(id)) id = `state-${id}`;
 			while (animations.some((animation) => animation.id === id)) id += '-copy';
 			cells[id] = {};
 			for (const { dir, path } of pose.rotations) cells[id][dir] = [await put(path)];

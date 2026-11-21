@@ -9,5 +9,7 @@ const labels: Readonly<Record<string, WhisperKey>> = {
 
 export function displayMove(id: string, ids: readonly string[] = []): string {
 	const label = moveLabel(id, ids);
+	if (id === 'standing' && ids.includes('default') && label === moveLabel(id))
+		return `${label} (${id})`;
 	return Object.hasOwn(labels, id) && !label.endsWith(` (${id})`) ? t(labels[id]) : label;
 }

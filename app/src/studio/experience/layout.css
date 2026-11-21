@@ -506,6 +506,7 @@
 }
 .equipment-modes {
 	display: flex;
+	flex-wrap: wrap;
 	flex: none;
 	container: equipment-tabs / inline-size;
 }
@@ -521,7 +522,9 @@
 }
 @container equipment-tabs (max-width: 370px) {
 	.equipment-modes button {
-		flex-basis: auto;
+		flex: 1 0 auto;
+		padding-inline: 2px;
+		font-size: clamp(12px, 4cqi, 15px);
 	}
 }
 .customize-panel {

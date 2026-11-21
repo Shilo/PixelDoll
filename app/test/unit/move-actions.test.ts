@@ -9,7 +9,8 @@ import {
 	gens,
 	deletionBlocked,
 	flushSave,
-	openProject
+	openProject,
+	toast
 } from '../../src/studio/state.svelte.ts';
 import * as db from '../../src/lib/store/db.ts';
 
@@ -64,6 +65,12 @@ test('removing a move saves rebased tracks and metadata, then reloads the select
 	expect(Object.keys(record.skeletons!)).toEqual(['rest/south/0']);
 	expect(record.savedAt).not.toBe('');
 	expect(openProject).toHaveBeenCalledWith('project');
+});
+
+test('removing a State confirms the State name instead of calling it a Move', async () => {
+	record.manifest.rig.animations[1].kind = 'state';
+	await removeMove('walk');
+	expect(toast).toHaveBeenCalledWith({ key: 'state.removedName', vars: { name: 'Walk' } });
 });
 
 test('move deletion protects the final move, demo, dependent standing designs, and paid drafts', async () => {

@@ -91,8 +91,11 @@
 		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
 	});
 	const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null));
-	const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []));
 	const sourceClips = $derived(playbackClips(m?.rig.animations ?? []));
+	const have = $derived(new Set(sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)));
+	const stateIds = $derived(
+		new Set(sourceClips.filter((a) => a.kind === 'state').map((a) => a.key))
+	);
 	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
@@ -103,7 +106,7 @@
 				...AUTHORED,
 				...sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)
 			])
-		].filter((a) => !reservedMove(a))
+		].filter((a) => !stateIds.has(a) && !reservedMove(a, have.has(a)))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let sourceId = $state<string | undefined>(draft?.source?.clip);
@@ -153,7 +156,8 @@
 	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
 	const freeMoveId = () => {
 		let n = 1;
-		while (have.has(`move-${n}`) || pendingIds.includes(`move-${n}`)) n++;
+		while (have.has(`move-${n}`) || stateIds.has(`move-${n}`) || pendingIds.includes(`move-${n}`))
+			n++;
 		return `move-${n}`;
 	};
 	const id = $derived(
@@ -293,7 +297,8 @@
 		if (!action && id && options.includes(id))
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (!m || !id) return '';
-		if (!action && have.has(id)) return t('moveSheet.duplicateOption', { move: nice(id) });
+		if (!action && (have.has(id) || stateIds.has(id)))
+			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
 		return (
 			bodyMoveIssue(m, motion) ||
@@ -303,7 +308,12 @@
 	let included = $state<string[]>(draft?.items ?? []);
 	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
 	const est = $derived(
-		m && id && targetDirs.length && !reservedMove(id) && !motionIssue && !pendingIds.includes(id)
+		m &&
+			id &&
+			targetDirs.length &&
+			!reservedMove(id, replacing) &&
+			!motionIssue &&
+			!pendingIds.includes(id)
 			? moveEstimate(m, { ...motion, items: chosen, dirs: targetDirs })
 			: null
 	);
@@ -389,7 +399,7 @@
 		)
 	);
 	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
-	const nice = (s: string) => displayMove(s, options);
+	const nice = (s: string) => displayMove(s, [...options, ...stateIds]);
 	const decimal = (n: number) =>
 		formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 	const usd = (n: number) =>
@@ -1162,8 +1172,8 @@
 					</div>
 				</details>
 			{/if}
-			{#if reservedMove(id)}<p class="notice warn small">
-					<CircleAlert size={14} />{displayError(reservedMove(id))}
+			{#if reservedMove(id, replacing)}<p class="notice warn small">
+					<CircleAlert size={14} />{displayError(reservedMove(id, replacing))}
 				</p>{:else if motionIssue}<p class="notice warn small">
 					<CircleAlert size={14} />{displayError(motionIssue)}
 				</p>{:else if pendingIds.includes(id)}<p class="notice small">

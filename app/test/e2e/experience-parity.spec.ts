@@ -3000,6 +3000,28 @@ test('leaving a live view clears its sky so Preview never shows a stale one', as
 	await expect.poll(painted).toBe(false);
 });
 
+test('translated State and Move tabs do not overlap on a 320px phone', async ({ page }) => {
+	await page.setViewportSize({ width: 320, height: 568 });
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.locale', 'tr'));
+	await page.goto('/');
+	await page.locator('.customize-action').click();
+	const labels = page.locator('.equipment-modes [role="tab"] .bu-tab-label');
+	await expect(labels).toHaveCount(5);
+	const boxes = await labels.evaluateAll((elements) =>
+		elements.map((element) => {
+			const range = document.createRange();
+			range.selectNodeContents(element);
+			return range.getBoundingClientRect().toJSON();
+		})
+	);
+	for (const [index, box] of boxes.entries()) {
+		expect(box.left).toBeGreaterThanOrEqual(16);
+		expect(box.right).toBeLessThanOrEqual(304);
+		for (const next of boxes.slice(index + 1))
+			expect(box.right <= next.left || box.bottom <= next.top).toBe(true);
+	}
+});
+
 test('Moves stays in place, disabled with its reason, in the live views', async ({ page }) => {
 	await customize(page);
 	const tabs = page.getByRole('tablist', { name: 'Customization panels' });

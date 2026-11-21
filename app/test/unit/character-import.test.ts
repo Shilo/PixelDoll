@@ -461,6 +461,20 @@ test('PixelLab imports explicitly chosen sibling animations without inventing mo
 	await expect(readCharacterZip(bytes, id, ['missing'])).rejects.toThrow('selected move states');
 });
 
+test('PixelLab sibling States do not occupy Move preset IDs', async () => {
+	const entries = await pixelLabFiles();
+	const metadata = JSON.parse(new TextDecoder().decode(entries[0].data));
+	metadata.states[1].character.name = 'Idle';
+	metadata.states[1].frames = { rotations: metadata.states[0].frames.rotations, animations: {} };
+	entries[0].data = enc.encode(JSON.stringify(metadata));
+	const imported = await readCharacterZip(await zip(entries), id, [id], ['second']);
+	expect(imported.project.manifest.rig.animations.map(({ id, kind }) => [id, kind])).toEqual([
+		['default', undefined],
+		['walking', undefined],
+		['state-idle', 'state']
+	]);
+});
+
 test('PixelLab standing rotations and chosen animation states are independent, including Default alone', async () => {
 	const entries = await pixelLabFiles(),
 		meta = JSON.parse(new TextDecoder().decode(entries[0].data));

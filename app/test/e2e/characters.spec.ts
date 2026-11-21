@@ -2398,6 +2398,38 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBe(true);
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('Rig parity fixture');
+	const posted = posts.length;
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'Capture final pose', exact: true }).click();
+	await expect(page.getByText('Captured state', { exact: true })).toBeVisible();
+	const captured = await read();
+	const body = captured.manifest.items.find(({ id }) => id === captured.manifest.rig.baseItem)!;
+	const cells = body.layers[0].cells!;
+	const lastCell = idle.frames.at(-1)!.cell;
+	for (const direction of ['south', 'east', 'north', 'west'] as const)
+		expect(cells['idle-end'][direction]).toEqual([cells.idle[direction]![lastCell]]);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
+	const moveSheet = page.getByRole('dialog', { name: 'Add a move' });
+	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
+	await moveSheet
+		.locator('.move-source-list button')
+		.filter({ hasText: /^Idle$/ })
+		.click();
+	await moveSheet.getByText('Choose a frame', { exact: true }).click();
+	const frames = moveSheet.locator('.move-source-list button');
+	await expect(frames.filter({ hasText: /^Frame 4$/ })).toHaveAttribute('aria-pressed', 'true');
+	await frames.filter({ hasText: /^Frame 2$/ }).click();
+	await expect(frames.filter({ hasText: /^Frame 2$/ })).toHaveAttribute('aria-pressed', 'true');
+	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'More actions for Idle end', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Delete State/ }).click();
+	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
+	await expect(page.getByText('Removed Idle end', { exact: true })).toBeVisible();
+	const remaining = await read();
+	expect(remaining.manifest.rig.animations).toEqual(after.manifest.rig.animations);
+	expect(posts).toHaveLength(posted);
 	expect(errors).toEqual([]);
 });
 

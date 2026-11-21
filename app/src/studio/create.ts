@@ -1377,8 +1377,8 @@ export const MOVE_STEPS = [
 ];
 export const isV13 = rigReady;
 /** Why a move can't take this id: Default is every character's standing views, never generated or replaced. */
-export const reservedMove = (id: string) =>
-	id === DEFAULT_MOVE || id === 'standing'
+export const reservedMove = (id: string, existingMove = false) =>
+	id === DEFAULT_MOVE || (id === 'standing' && !existingMove)
 		? new LocalizedError(
 				'Standing is a reserved State. Name the move something else.',
 				'create.errors.reservedMove'
@@ -2424,9 +2424,8 @@ export async function addMove(
 			'Choose one item and one facing of an existing move before repairing. No generation was requested.',
 			'create.errors.chooseRepairTarget'
 		);
-	const reserved = reservedMove(spec.id);
-	if (reserved && (spec.replace || !existing) && !(existing?.id === 'standing' && !existing.kind))
-		throw reserved;
+	const reserved = reservedMove(spec.id, !!existing && existing.kind !== 'state');
+	if (reserved && (spec.replace || !existing)) throw reserved;
 	if (existing?.kind === 'state' && spec.replace)
 		throw new LocalizedError(
 			'A State cannot be replaced as a Move.',

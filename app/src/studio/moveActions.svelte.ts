@@ -8,6 +8,7 @@ import { clipKind, lastPlaybackCell } from '../lib/runtime/timeline.js';
 import * as db from '../lib/store/db.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import { LocalizedError, message } from '../lib/message.ts';
+import { moveLabel } from './model.ts';
 import {
 	deletionBlocked,
 	directionEditsBlocked,
@@ -184,6 +185,7 @@ export async function removeMove(id: string) {
 	if (!snapshot)
 		throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
 	const version = stableStringify(snapshot.manifest);
+	const removed = snapshot.manifest.rig.animations.find((clip) => clip.id === id);
 	const ids = new Set(
 		snapshot.manifest.rig.animations.map((move) => move.id).filter((move) => move !== id)
 	);
@@ -212,5 +214,9 @@ export async function removeMove(id: string) {
 		return record;
 	});
 	if (doc.id === projectId) await openProject(projectId);
-	toast(message('moveRemoval.removed'));
+	toast(
+		removed && clipKind(removed) === 'state'
+			? message('state.removedName', { name: moveLabel(id) })
+			: message('moveRemoval.removed')
+	);
 }
