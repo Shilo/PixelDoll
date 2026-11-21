@@ -132,7 +132,9 @@
 
 <svelte:window ondragover={preventMissedFileDrop} ondrop={preventMissedFileDrop} />
 
-<div class={['reference', { 'side-by-side': sideBySide, attached: !!value }]}>
+<div
+	class={['reference', { 'side-by-side': sideBySide, attached: !!value, 'move-frame': exactFrame }]}
+>
 	<span class="label reference-label"
 		>{label ?? t('referenceField.label')}{#if !exactFrame}
 			<span class="faint">{t('common.optional')}</span>{/if}</span
@@ -150,7 +152,11 @@
 					: value
 						? t('referenceField.chooseDifferent')
 						: t('referenceField.addImage')}
-			aria-describedby={value || exactFrame ? `${fileId} ${helpId}` : helpId}
+			aria-describedby={exactFrame && !hint
+				? fileId
+				: value || exactFrame
+					? `${fileId} ${helpId}`
+					: helpId}
 			aria-disabled={disabled || loading}
 			onclick={() => {
 				pick(() => {
@@ -196,7 +202,7 @@
 							>{t('share.resolution', { width: value.width, height: value.height })}</span
 						>
 					</small>
-				{:else}
+				{:else if !exactFrame || !disabled}
 					<span id={fileId}
 						>{loading
 							? t('referenceField.opening')
@@ -208,11 +214,14 @@
 				{/if}
 			</span>
 		</button>
+		{#if exactFrame && disabled}
+			<span class="frame-unavailable" id={fileId}>{caption}</span>
+		{/if}
 		{#if value || (thumbnail && onremove)}
 			<button
 				type="button"
 				class="bu-action remove"
-				data-variant="outline"
+				data-variant={exactFrame ? 'quiet' : 'outline'}
 				aria-label={removeLabel ?? t('referenceField.remove')}
 				disabled={disabled || loading}
 				onclick={() => {
@@ -236,10 +245,12 @@
 			input.value = '';
 		}}
 	/>
-	<small class="faint" id={helpId}
-		>{hint}{#if !exactFrame}
-			{limits}{/if}</small
-	>
+	{#if hint || !exactFrame}
+		<small class="faint" id={helpId}
+			>{hint}{#if !exactFrame}
+				{limits}{/if}</small
+		>
+	{/if}
 	{#if error || issue}<small role="alert">{displayNestedMessage(error || issue)}</small>{/if}
 	{#if resizeNotice}<small>{displayNestedMessage(resizeNotice)}</small>{/if}
 	<span class="reference-announcement" role="status"
@@ -256,6 +267,9 @@
 	.reference-label {
 		color: var(--text);
 	}
+	.move-frame {
+		align-content: start;
+	}
 	.reference-row {
 		display: flex;
 		align-items: stretch;
@@ -270,6 +284,10 @@
 	.side-by-side:not(.attached) .reference-row {
 		block-size: auto;
 		min-block-size: 44px;
+	}
+	.move-frame.side-by-side .reference-row {
+		position: relative;
+		block-size: 68px;
 	}
 	.drop {
 		flex: 1;
@@ -290,6 +308,27 @@
 	}
 	.attached .drop {
 		padding: 2px 4px;
+	}
+	.move-frame.side-by-side .drop {
+		padding-inline: 8px;
+		gap: 6px;
+	}
+	.move-frame.side-by-side .reference-row:has(.remove) .drop {
+		padding-inline-end: 44px;
+	}
+	.move-frame .remove {
+		position: absolute;
+		inset-block-start: 50%;
+		inset-inline-end: 0;
+		translate: 0 -50%;
+	}
+	.frame-unavailable {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		align-content: center;
+		padding-inline: 8px;
+		pointer-events: none;
 	}
 	.drop > :global(svg) {
 		flex: none;
@@ -332,6 +371,9 @@
 	}
 	.dimensions {
 		white-space: nowrap;
+	}
+	.move-frame .dimensions {
+		display: none;
 	}
 	.reference-copy .filename {
 		overflow: hidden;

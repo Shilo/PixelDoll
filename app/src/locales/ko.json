@@ -2081,7 +2081,7 @@
 	"moveSheet": {
 		"loop": "반복",
 		"loopHint": "내보내기에서 기본으로 반복해요.",
-		"referenceDirection": "방향",
+		"referenceDirection": "방향별 프레임",
 		"referenceEdited": "{direction}(사용자 지정 프레임)",
 		"referenceSize": "몸체만 있는 {width} × {height} 투명 PNG를 사용하세요.",
 		"referenceInvalid": "보이는 그림과 투명 배경이 있는 {width} × {height} PNG를 사용하세요.",
@@ -2092,7 +2092,7 @@
 		"standingFrame": "서 있는 프레임",
 		"sameAsStart": "시작과 같음",
 		"noEndFrame": "종료 프레임 없음",
-		"endUnavailable": "Skeleton V3는 종료 이미지를 지원하지 않아요.",
+		"endUnavailable": "이 모델에서는 사용할 수 없어요",
 		"customFrames": "사용자 지정 프레임",
 		"customStartTitle": "사용자 지정 시작 프레임을 사용할까요?",
 		"customStartWarning": "생성하면 사용자 지정 시작마다 유료 자세 확인이 추가돼요. 이 프레임에서 동작이 튀거나 장비가 어긋날 수 있어요.",

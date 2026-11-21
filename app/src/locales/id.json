@@ -2084,7 +2084,7 @@
 	"moveSheet": {
 		"loop": "Ulangi",
 		"loopHint": "Diulang secara bawaan di ekspor.",
-		"referenceDirection": "Arah",
+		"referenceDirection": "Frame per arah",
 		"referenceEdited": "{direction} (frame khusus)",
 		"referenceSize": "Gunakan PNG transparan khusus tubuh berukuran {width} × {height}.",
 		"referenceInvalid": "Gunakan PNG {width} × {height} dengan gambar yang terlihat dan latar transparan.",
@@ -2095,7 +2095,7 @@
 		"standingFrame": "Frame berdiri",
 		"sameAsStart": "Sama dengan awal",
 		"noEndFrame": "Tanpa frame akhir",
-		"endUnavailable": "Skeleton V3 tidak menerima gambar akhir.",
+		"endUnavailable": "Tidak tersedia untuk model ini",
 		"customFrames": "Frame khusus",
 		"customStartTitle": "Gunakan frame awal khusus?",
 		"customStartWarning": "Proses generasi menambahkan pemeriksaan pose berbayar untuk setiap awal khusus. Animasi bisa melompat dari frame ini, dan perlengkapan mungkin tidak sejajar.",

@@ -2062,7 +2062,7 @@
 	"moveSheet": {
 		"loop": "循环",
 		"loopHint": "默认在导出中重复播放。",
-		"referenceDirection": "朝向",
+		"referenceDirection": "各朝向的帧",
 		"referenceEdited": "{direction}（自定义帧）",
 		"referenceSize": "请使用仅含身体的 {width} × {height} 透明 PNG。",
 		"referenceInvalid": "请使用 {width} × {height}、含可见画面且背景透明的 PNG。",
@@ -2073,7 +2073,7 @@
 		"standingFrame": "站立帧",
 		"sameAsStart": "与起始相同",
 		"noEndFrame": "无结束帧",
-		"endUnavailable": "Skeleton V3 不接受结束图像。",
+		"endUnavailable": "此模型不支持结束帧",
 		"customFrames": "自定义帧",
 		"customStartTitle": "使用自定义起始帧？",
 		"customStartWarning": "生成会为每个自定义起始帧增加一次付费姿势检查。动作可能从该帧跳变，装备也可能对不齐。",

@@ -2170,7 +2170,7 @@
 	"moveSheet": {
 		"loop": "Döngü",
 		"loopHint": "Dışa aktarımlarda varsayılan olarak tekrarlanır.",
-		"referenceDirection": "Yön",
+		"referenceDirection": "Yöne göre kareler",
 		"referenceEdited": "{direction} (özel kareler)",
 		"referenceSize": "Yalnızca gövdeyi içeren {width} × {height} boyutunda saydam PNG kullanın.",
 		"referenceInvalid": "Görünür çizim ve saydam arka plan içeren {width} × {height} boyutunda bir PNG kullanın.",
@@ -2181,7 +2181,7 @@
 		"standingFrame": "Ayakta duruş karesi",
 		"sameAsStart": "Başlangıçla aynı",
 		"noEndFrame": "Bitiş karesi yok",
-		"endUnavailable": "Skeleton V3 bitiş görseli kabul etmez.",
+		"endUnavailable": "Bu modelde kullanılamaz",
 		"customFrames": "Özel kareler",
 		"customStartTitle": "Özel bir başlangıç karesi kullanılsın mı?",
 		"customStartWarning": "Üretim, her özel başlangıç için ücretli bir poz kontrolü ekler. Animasyon bu kareden atlayabilir ve ekipman hizalanmayabilir.",

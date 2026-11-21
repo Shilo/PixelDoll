@@ -2190,7 +2190,7 @@
 	"moveSheet": {
 		"loop": "Repetir",
 		"loopHint": "Repetida por padrão nas exportações.",
-		"referenceDirection": "Direção",
+		"referenceDirection": "Quadros por direção",
 		"referenceEdited": "{direction} (quadros personalizados)",
 		"referenceSize": "Use PNGs transparentes apenas do corpo com {width} × {height}.",
 		"referenceInvalid": "Use um PNG de {width} × {height} com arte visível e fundo transparente.",
@@ -2201,7 +2201,7 @@
 		"standingFrame": "Quadro em pé",
 		"sameAsStart": "Igual ao inicial",
 		"noEndFrame": "Sem quadro final",
-		"endUnavailable": "O Skeleton V3 não aceita uma imagem final.",
+		"endUnavailable": "Indisponível neste modelo",
 		"customFrames": "Quadros personalizados",
 		"customStartTitle": "Usar um quadro inicial personalizado?",
 		"customStartWarning": "Gerar adiciona uma verificação de pose paga por início personalizado. A animação pode saltar deste quadro e o equipamento pode não se alinhar.",

@@ -2179,7 +2179,7 @@
 	"moveSheet": {
 		"loop": "Repetir",
 		"loopHint": "Se repite de forma predeterminada en las exportaciones.",
-		"referenceDirection": "Dirección",
+		"referenceDirection": "Fotogramas por dirección",
 		"referenceEdited": "{direction} (fotogramas propios)",
 		"referenceSize": "Usa PNG transparentes solo del cuerpo de {width} × {height}.",
 		"referenceInvalid": "Usa un PNG de {width} × {height} con arte visible y fondo transparente.",
@@ -2190,7 +2190,7 @@
 		"standingFrame": "Fotograma de pie",
 		"sameAsStart": "Igual que el inicial",
 		"noEndFrame": "Sin fotograma final",
-		"endUnavailable": "Skeleton V3 no acepta una imagen final.",
+		"endUnavailable": "No disponible en este modelo",
 		"customFrames": "Fotogramas propios",
 		"customStartTitle": "¿Usar un fotograma inicial propio?",
 		"customStartWarning": "Generar agrega una comprobación de pose de pago por cada inicio propio. La animación puede saltar desde este fotograma y el equipo podría no quedar alineado.",

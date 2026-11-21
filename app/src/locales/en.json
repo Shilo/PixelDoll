@@ -2161,7 +2161,7 @@
 	"moveSheet": {
 		"loop": "Loop",
 		"loopHint": "Repeat by default in exports.",
-		"referenceDirection": "Direction",
+		"referenceDirection": "Frames by direction",
 		"referenceEdited": "{direction} (custom frames)",
 		"referenceSize": "Use body-only {width} × {height} transparent PNGs.",
 		"referenceInvalid": "Use a {width} × {height} PNG with visible art and a transparent background.",
@@ -2172,7 +2172,7 @@
 		"standingFrame": "Standing frame",
 		"sameAsStart": "Same as start",
 		"noEndFrame": "No end frame",
-		"endUnavailable": "Skeleton V3 does not accept an end image.",
+		"endUnavailable": "Not available for this model",
 		"customFrames": "Custom frames",
 		"customStartTitle": "Use a custom start frame?",
 		"customStartWarning": "Generating adds a paid pose check per custom start. The move may jump from this frame, and equipment may not line up.",

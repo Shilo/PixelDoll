@@ -5421,6 +5421,11 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	const addModel = add.getByRole('combobox', { name: 'Motion model', exact: true });
 	if (!(await addModel.isVisible())) await addAdvanced.click();
 	await addModel.selectOption('v3');
+	const frameTabs = add.getByRole('tablist', { name: /Frames by direction/ });
+	const directionTabs = frameTabs.getByRole('tab');
+	const firstDirection = directionTabs.first();
+	const lastDirection = directionTabs.last();
+	await firstDirection.click();
 	await loop.check();
 	const end = add.getByRole('button', { name: 'End frame', exact: true });
 	await expect(end).toContainText('Same as start');
@@ -5428,6 +5433,13 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(end).toContainText('No end frame');
 	const [endPicker] = await Promise.all([page.waitForEvent('filechooser'), end.click()]);
 	await endPicker.setFiles('dev-fixtures/s4rig/walk_east_1.png');
+	await expect(end).toContainText('walk_east_1.png');
+	await firstDirection.press('End');
+	await expect(lastDirection).toBeFocused();
+	await expect(lastDirection).toHaveAttribute('aria-selected', 'true');
+	await expect(end).toContainText('Same as start');
+	await lastDirection.press('Home');
+	await expect(firstDirection).toBeFocused();
 	await expect(end).toContainText('walk_east_1.png');
 	await loop.click();
 	const reset = page.getByRole('alertdialog', { name: 'Change Loop and reset end frames?' });

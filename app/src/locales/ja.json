@@ -2091,7 +2091,7 @@
 	"moveSheet": {
 		"loop": "ループ",
 		"loopHint": "エクスポートでは既定で繰り返します。",
-		"referenceDirection": "向き",
+		"referenceDirection": "向きごとのフレーム",
 		"referenceEdited": "{direction}（カスタムフレーム）",
 		"referenceSize": "体だけの透明PNG（{width} × {height}）を使用してください。",
 		"referenceInvalid": "見える絵と透明な背景がある {width} × {height} のPNGを使用してください。",
@@ -2102,7 +2102,7 @@
 		"standingFrame": "立ちフレーム",
 		"sameAsStart": "開始と同じ",
 		"noEndFrame": "終了フレームなし",
-		"endUnavailable": "Skeleton V3 は終了画像を受け付けません。",
+		"endUnavailable": "このモデルでは使用できません",
 		"customFrames": "カスタムフレーム",
 		"customStartTitle": "カスタムの開始フレームを使いますか？",
 		"customStartWarning": "生成すると、カスタムの開始ごとに有料のポーズチェックが追加されます。モーションがこのフレームから跳ねたり、装備がずれることがあります。",

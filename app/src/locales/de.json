@@ -2176,7 +2176,7 @@
 	"moveSheet": {
 		"loop": "Schleife",
 		"loopHint": "In Exporten standardmäßig wiederholen.",
-		"referenceDirection": "Blickrichtung",
+		"referenceDirection": "Frames nach Blickrichtung",
 		"referenceEdited": "{direction} (eigene Frames)",
 		"referenceSize": "Verwende transparente PNGs nur mit dem Körper in {width} × {height}.",
 		"referenceInvalid": "Verwende ein PNG mit sichtbarer Grafik und transparentem Hintergrund in {width} × {height}.",
@@ -2187,7 +2187,7 @@
 		"standingFrame": "Stand-Frame",
 		"sameAsStart": "Wie Start",
 		"noEndFrame": "Kein End-Frame",
-		"endUnavailable": "Skeleton V3 akzeptiert kein Endbild.",
+		"endUnavailable": "Für dieses Modell nicht verfügbar",
 		"customFrames": "Eigene Frames",
 		"customStartTitle": "Eigenen Start-Frame verwenden?",
 		"customStartWarning": "Beim Generieren kommt pro eigenem Start eine bezahlte Posenprüfung hinzu. Die Animation kann von diesem Frame springen, und Ausrüstung passt möglicherweise nicht genau.",

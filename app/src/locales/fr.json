@@ -2177,7 +2177,7 @@
 	"moveSheet": {
 		"loop": "Boucle",
 		"loopHint": "Répétée par défaut dans les exports.",
-		"referenceDirection": "Direction",
+		"referenceDirection": "Images par direction",
 		"referenceEdited": "{direction} (images personnalisées)",
 		"referenceSize": "Utilisez des PNG transparents du corps seul en {width} × {height}.",
 		"referenceInvalid": "Utilisez un PNG de {width} × {height} avec un visuel visible et un fond transparent.",
@@ -2188,7 +2188,7 @@
 		"standingFrame": "Image debout",
 		"sameAsStart": "Identique au départ",
 		"noEndFrame": "Aucune image de fin",
-		"endUnavailable": "Skeleton V3 n’accepte pas d’image de fin.",
+		"endUnavailable": "Indisponible pour ce modèle",
 		"customFrames": "Images personnalisées",
 		"customStartTitle": "Utiliser une image de départ personnalisée ?",
 		"customStartWarning": "La génération ajoute une vérification de pose payante par départ personnalisé. L’animation peut sauter depuis cette image et l’équipement risque de ne pas s’aligner.",
