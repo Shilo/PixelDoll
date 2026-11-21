@@ -372,6 +372,61 @@ test('character actions download and delete an unopened character without select
 	).toBe(false);
 });
 
+test('character rows keep their ⋮ out of sight until hover or keyboard focus on desktop', async ({
+	page
+}) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await page.goto('/');
+	const row = page.locator('.cast-library .character-entry').first();
+	const more = row.locator('.character-more');
+	await expect(row.locator('.character-row')).toBeVisible();
+	await page.mouse.move(0, 0);
+	await expect(more).toHaveCSS('opacity', '0');
+	await row.locator('.character-row').hover();
+	await expect(more).toHaveCSS('opacity', '1');
+	await page.mouse.move(0, 0);
+	await expect(more).toHaveCSS('opacity', '0');
+	// Keyboard focus reveals it, Tab reaches it, and Enter opens it.
+	await page.keyboard.press('Tab');
+	await row.locator('.character-row').focus();
+	await expect(more).toHaveCSS('opacity', '1');
+	await page.keyboard.press('Tab');
+	await expect(more).toBeFocused();
+	await expect(more).toHaveCSS('opacity', '1');
+	await page.keyboard.press('Enter');
+	await expect(more).toHaveAttribute('aria-expanded', 'true');
+	await page.keyboard.press('Escape');
+	await expect(more).toBeFocused();
+	await expect(more).toHaveCSS('opacity', '1');
+	// An open menu keeps it visible after the pointer leaves.
+	await page.mouse.move(0, 0);
+	await more.click();
+	await expect(more).toHaveAttribute('aria-expanded', 'true');
+	await page.mouse.move(0, 0);
+	await expect(more).toHaveCSS('opacity', '1');
+});
+
+test.describe('character actions on a touch screen', () => {
+	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+	test('the ⋮ stays visible without hover', async ({ page }) => {
+		await page.addInitScript(() => {
+			localStorage.setItem('pixeldoll.agentKey', 'off');
+			localStorage.setItem('pixeldoll.welcomed', '1');
+		});
+		await page.goto('/');
+		const more = page.locator('.cast-library .character-more').first();
+		await expect(more).toBeVisible();
+		await expect(more).toHaveCSS('opacity', '1');
+		expect(
+			await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)
+		).toBe(false);
+	});
+});
+
 test('both New character entry points offer separate import sources on desktop and phone', async ({
 	page
 }) => {
@@ -2292,11 +2347,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await page.getByRole('radio', { name: 'Idle', exact: true }).click();
-	await page.getByRole('button', { name: /^Add Idle/ }).click();
-	await expect(
-		page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true })
-	).toBeVisible({ timeout: 45_000 });
-	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('button', { name: /^Generate move/ }).click();
+	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
+	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
+	await expect(review).not.toBeVisible();
 	const after = await read(),
 		idle = after.manifest.rig.animations.find((a) => a.id === 'idle')!;
 	expect(after.manifest.items[0].layers[0].cells!.default).toEqual(
@@ -2385,9 +2439,8 @@ test('a stopped move blocks deleting only its own character and opens from the b
 	await deletion.getByRole('button', { name: 'View pending work' }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move' });
 	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeVisible();
-	await move.getByRole('button', { name: 'Start over' }).click();
-	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeHidden();
-	await page.keyboard.press('Escape');
+	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(move).toBeHidden();
 	await remove();
 	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(deletion).toBeHidden();

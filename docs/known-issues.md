@@ -139,8 +139,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   in one job; the creator cannot show them one by one. The pivot comes from the standing south view (`default/south/0`),
   not from the first idle frame as on older characters, and moves added later keep it. Each move gets a new random
   seed; the character's seed no longer reaches its moves, so an earlier attempt cannot be reproduced.
-- **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user taps
-  the item's priced offer for each move. **Add a move** leaves equipment unchecked by default.
+- **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user
+  selects them after reviewing the move or uses each item's priced offer later.
 - **Small held objects can vanish behind the body in the back view.** Held items are no longer forced to point down: a red
   dot on the intended wrist picks the hand and the item's own description decides how it is held (a candle stays upright).
   A small object carried in front of the body can then be hidden in the standing back view, and the back-view moves may

@@ -16,10 +16,11 @@ export const formDrafts: {
 	setup?: { projectId: string; looks: string; restAnim: string };
 	move?: {
 		projectId: string;
+		reopen?: true;
+		regeneration?: { id: string; seed: number; activityScope?: string };
 		action: string;
 		replace: boolean;
 		text: string;
-		items: string[];
 		dirs?: import('../lib/store/manifest.ts').DirectionName[];
 		poseStyle?: 'visible-side-v1';
 		animation?: import('./moveAnimationOptions.ts').MoveAnimationOptions;
