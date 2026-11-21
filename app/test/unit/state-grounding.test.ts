@@ -59,11 +59,28 @@ describe('State grounding', () => {
 	});
 
 	it('abstains when two heights fit the soles about equally well', () => {
-		// A second, detached pair of feet 4 rows lower leaves no single clear answer.
+		// A second pair of feet 4 rows lower, joined to the body at the sides, matches the soles just as well.
 		const doubled = figure(29);
 		paint(doubled, 10, 32, 14, 33);
 		paint(doubled, 17, 32, 21, 33);
+		paint(doubled, 9, 28, 9, 33);
+		paint(doubled, 22, 28, 22, 33);
 		expect(groundingShift(doubled, source)).toBe(0);
+	});
+
+	it('never follows a prop larger than the body that moved alone', () => {
+		const before = figure(38);
+		paint(before, 24, 20, 31, 52);
+		const after = figure(38);
+		paint(after, 24, 11, 31, 43);
+		expect(groundingShift(after, before)).toBe(0);
+	});
+
+	it('matches nothing when the source has no solid art', () => {
+		const blank = makeImg(W, H);
+		const block = makeImg(W, H);
+		paint(block, 0, 43, W - 1, 54);
+		expect(groundingShift(block, blank)).toBe(0);
 	});
 
 	it('abstains when the feet were redrawn instead of moved', () => {

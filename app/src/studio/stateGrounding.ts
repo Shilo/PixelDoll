@@ -11,6 +11,8 @@ const SOLES = 0.6;
 const MARGIN = 0.25;
 /** Shares of the source's feet and of its legs above them that must also line up at that offset. */
 const SHAPE = 0.6;
+/** How much more of the source's art the move must line up than leaving the view in place. */
+const WHOLE = 0.1;
 const MIN_RUN = 3;
 const MAX_UNMATCHED_BELOW = 4;
 
@@ -69,7 +71,12 @@ function body(image: Img, isSolid: Mask): Mask {
 		}
 	}
 	return (x, y) =>
-		x >= 0 && y >= 0 && x < image.w && y < image.h && label[y * image.w + x] === biggest;
+		biggest > 0 &&
+		x >= 0 &&
+		y >= 0 &&
+		x < image.w &&
+		y < image.h &&
+		label[y * image.w + x] === biggest;
 }
 
 function points(mask: Mask, w: number, top: number, bottom: number) {
@@ -140,6 +147,10 @@ export function groundingShift(generated: Img, source: Img): number {
 		overlap(legs, nowBody, best) < SHAPE
 	)
 		return 0;
+	// The whole picture must agree too: the move has to line up more of the source's art than leaving it in
+	// place does, so a large prop that moved alone can never drag an aligned character with it.
+	const all = points(solid(source), w, 0, source.h - 1);
+	if (overlap(all, now, best) < overlap(all, now, 0) + WHOLE) return 0;
 	const shift = -best;
 	// Any art, body or not, left below the source's feet after the move means the match is not the whole story.
 	let below = 0;
