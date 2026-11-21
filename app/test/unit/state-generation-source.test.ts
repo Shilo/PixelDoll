@@ -1,11 +1,63 @@
 import { describe, expect, it, vi } from 'vitest';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
+import type { Project } from '../../src/lib/store/manifest.ts';
 import {
+	stateGenerationSource,
 	verifyManagedStateParent,
 	type ManagedStateDetail,
 	type StateGenerationSource
 } from '../../src/studio/stateGenerationSource.ts';
+
+describe('State source frames', () => {
+	it('reads the drawn views of any Move frame and versions the chosen frame', async () => {
+		const pixel = (value: number) => {
+			const image = makeImg(8, 8);
+			image.data.set([value, 0, 0, 255], 4 * 9);
+			return image;
+		};
+		const [first, second, east] = [pixel(1), pixel(2), pixel(3)];
+		const [a, b, c] = await Promise.all([first, second, east].map(cellHash));
+		const project = {
+			images: new Map([
+				[a, first],
+				[b, second],
+				[c, east]
+			]),
+			manifest: {
+				rig: {
+					baseItem: 'body',
+					cell: { w: 8, h: 8 },
+					pivot: { x: 4, y: 7 },
+					directions: [{ id: 'south' }, { id: 'east' }, { id: 'west', mirrorOf: 'east' }],
+					animations: [
+						{
+							id: 'punch',
+							kind: 'move',
+							cells: 2,
+							frames: [
+								{ cell: 0, ms: 100 },
+								{ cell: 1, ms: 100 }
+							]
+						}
+					]
+				},
+				// East exists only in the second frame; mirrored west is never a separate view.
+				items: [{ id: 'body', layers: [{ cells: { punch: { south: [a, b], east: [null, c] } } }] }]
+			}
+		} as unknown as Project;
+		const last = stateGenerationSource(project, { clip: 'punch', frame: 1 });
+		const opening = stateGenerationSource(project, { clip: 'punch', frame: 0 });
+		expect(last?.views.map(({ direction, hash }) => [direction, hash])).toEqual([
+			['south', b],
+			['east', c]
+		]);
+		expect(opening?.views.map(({ direction, hash }) => [direction, hash])).toEqual([['south', a]]);
+		expect(opening?.version).not.toBe(last?.version);
+		expect(stateGenerationSource(project, { clip: 'punch', frame: 2 })).toBeNull();
+		expect(stateGenerationSource(project, { clip: 'missing', frame: 0 })).toBeNull();
+	});
+});
 
 async function fixture() {
 	const image = makeImg(80, 80);

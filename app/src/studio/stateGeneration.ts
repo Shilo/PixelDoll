@@ -44,7 +44,8 @@ import {
 	managedStateRotations,
 	stateGenerationSource,
 	verifyManagedStateParent,
-	type ManagedStateDetail
+	type ManagedStateDetail,
+	type StateSourceFrame
 } from './stateGenerationSource.ts';
 import {
 	decodeStateBatch,
@@ -55,6 +56,7 @@ import {
 export interface StateAttempt {
 	token: string;
 	id: string;
+	source: StateSourceFrame;
 	sourceVersion: string;
 	plan: ReadyStatePlan & { cost: StateGenerationCost };
 	continuation?: {
@@ -81,6 +83,7 @@ export interface StateContinuationQuote {
 export interface PreparedState {
 	projectId: string;
 	id: string;
+	source: StateSourceFrame;
 	description: string;
 	model: StateGenerationModel;
 	reference?: ImageReference;
@@ -93,6 +96,7 @@ export interface PreparedState {
 export interface StateReview {
 	projectId: string;
 	id: string;
+	source: StateSourceFrame;
 	token: string;
 	sourceVersion: string;
 	endpoint: ReadyStatePlan['endpoint'];
@@ -110,9 +114,15 @@ const error = (text: string, key: StateErrorKey) =>
 const changed = () =>
 	error('The source or quote changed. Review a new quote before generating.', 'changed');
 const missing = () =>
-	error('Standing needs saved artwork in every drawn direction.', 'sourceUnavailable');
+	error('The source frame needs saved artwork in every drawn direction.', 'sourceUnavailable');
 const invalidResult = () =>
 	error('PixelLab did not return all expected views at the planned size.', 'invalidResult');
+// Attempts saved before States recorded their source frame can only be discarded.
+const outdated = () =>
+	error(
+		'This unfinished State was started by an older version of PixelDoll. Discard it to start again.',
+		'outdated'
+	);
 const unfinished = () =>
 	error(
 		'This attempt has unfinished or unavailable results. Check Activity. No request was resent.',
@@ -239,16 +249,18 @@ async function flashCost(plan: ReadyStatePlan): Promise<StateGenerationCost> {
 
 export async function prepareState(
 	projectId: string,
+	source: StateSourceFrame,
 	id: string,
 	description: string,
 	model: StateGenerationModel,
 	reference?: ImageReference
 ): Promise<PreparedState> {
-	return prepareStatePlan(projectId, id, description, model, reference);
+	return prepareStatePlan(projectId, source, id, description, model, reference);
 }
 
 async function prepareStatePlan(
 	projectId: string,
+	sourceFrame: StateSourceFrame,
 	id: string,
 	description: string,
 	model: StateGenerationModel,
@@ -277,10 +289,13 @@ async function prepareStatePlan(
 	)
 		throw new LocalizedError('That State name is unavailable.', issue ?? 'stateCapture.takenName');
 	if (rec.stateGeneration?.token !== continuationToken) throw unfinished();
-	const source = stateGenerationSource(project, DEFAULT_MOVE);
+	const source = stateGenerationSource(project, sourceFrame);
 	if (!source) throw missing();
 	let managedParent;
+	// Only Standing matches the character's own PixelLab rotations; other frames use image edits.
 	if (
+		sourceFrame.clip === DEFAULT_MOVE &&
+		sourceFrame.frame === 0 &&
 		model === 'pro' &&
 		!reference &&
 		rec.character?.id &&
@@ -340,6 +355,7 @@ async function prepareStatePlan(
 	return {
 		projectId,
 		id,
+		source: { ...sourceFrame },
 		description,
 		model,
 		reference,
@@ -414,6 +430,7 @@ async function readReview(
 		...result,
 		projectId,
 		id: attempt.id,
+		source: attempt.source,
 		token: attempt.token,
 		sourceVersion: attempt.sourceVersion,
 		endpoint: plan.endpoint,
@@ -428,20 +445,21 @@ export function startState(prepared: PreparedState): Promise<StateReview> {
 }
 
 async function generateState(prepared: PreparedState): Promise<StateReview> {
-	const { projectId, id, description, model, reference } = prepared;
+	const { projectId, source: sourceFrame, id, description, model, reference } = prepared;
 	if (prepared.keyRevision !== getKeyRevision()) throw changed();
-	const fresh = await prepareState(projectId, id, description, model, reference);
+	const fresh = await prepareState(projectId, sourceFrame, id, description, model, reference);
 	if (
 		fresh.sourceVersion !== prepared.sourceVersion ||
 		stableStringify(fresh.plan) !== stableStringify(prepared.plan)
 	)
 		throw changed();
 	const { rec, project } = await loadProject(projectId);
-	const source = stateGenerationSource(project, DEFAULT_MOVE);
+	const source = stateGenerationSource(project, sourceFrame);
 	if (source?.version !== fresh.sourceVersion) throw changed();
 	const attempt: StateAttempt = {
 		token: crypto.randomUUID(),
 		id,
+		source: { ...sourceFrame },
 		sourceVersion: source.version,
 		plan: fresh.plan
 	};
@@ -493,7 +511,7 @@ export async function hasStateContinuation(projectId: string) {
 	return navigator.locks.request(stateLockName(projectId), { ifAvailable: true }, async (lock) => {
 		if (!lock) return false;
 		const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGeneration;
-		return !!(attempt && stateContinuationBatches(attempt, await db.all<JobRec>('jobs')));
+		return !!(attempt?.source && stateContinuationBatches(attempt, await db.all<JobRec>('jobs')));
 	});
 }
 
@@ -507,10 +525,11 @@ async function prepareContinuation(projectId: string) {
 	const { rec, project } = await loadProject(projectId);
 	const attempt = rec.stateGeneration;
 	const saved = attempt?.continuation;
-	if (!attempt || !saved || attempt.plan.endpoint === '/create-character-state') throw unfinished();
+	if (!attempt?.source || !saved || attempt.plan.endpoint === '/create-character-state')
+		throw unfinished();
 	const keyRevision = getKeyRevision();
 	if ((await continuationCredential(attempt.token)) !== saved.credential) throw originalAccount();
-	const source = stateGenerationSource(project, DEFAULT_MOVE);
+	const source = stateGenerationSource(project, attempt.source);
 	if (source?.version !== attempt.sourceVersion || rec.character?.id !== saved.parentId)
 		throw changed();
 	const batches = stateContinuationBatches(attempt, await db.all<JobRec>('jobs'));
@@ -540,6 +559,7 @@ async function prepareContinuation(projectId: string) {
 	}
 	const fresh = await prepareStatePlan(
 		projectId,
+		attempt.source,
 		attempt.id,
 		saved.description,
 		saved.model,
@@ -669,6 +689,7 @@ async function submitStateBatches(
 export async function pendingState(projectId: string): Promise<StateReview | null> {
 	const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGeneration;
 	if (!attempt) return null;
+	if (!attempt.source) throw outdated();
 	const records = stateRecoveryRecords(attempt, await db.all<JobRec>('jobs'));
 	if (!records) throw unfinished();
 	try {
@@ -710,7 +731,7 @@ export async function saveState(review: StateReview): Promise<void> {
 	const { rec, project } = await loadProject(projectId);
 	if (
 		rec.stateGeneration?.token !== review.token ||
-		stateGenerationSource(project, DEFAULT_MOVE)?.version !== review.sourceVersion ||
+		stateGenerationSource(project, review.source)?.version !== review.sourceVersion ||
 		stateCaptureNameIssue(rec.manifest, id) ||
 		Object.hasOwn(rec.moveReviews ?? {}, id)
 	)

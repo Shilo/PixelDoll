@@ -999,10 +999,10 @@ test('device import includes sibling moves and preserves explicit selections whe
 	await page.getByRole('button', { name: 'More actions for Right punch', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
 	const capture = page.getByRole('dialog', { name: 'Create State', exact: true });
-	await expect(capture.getByRole('combobox', { name: 'Start from' })).toHaveValue('right_punch');
-	await expect(capture.getByRole('img', { name: 'Right punch preview' })).toBeVisible();
-	await expect(capture.locator('.capture-preview')).toHaveCSS('cursor', 'auto');
-	await expect(capture.getByRole('button', { name: /^(Pause|Play)$/ })).toHaveCount(0);
+	await expect(
+		capture.getByRole('button', { name: 'Source: Right punch', exact: true })
+	).toBeVisible();
+	await expect(capture.getByRole('group', { name: 'Right punch views' })).toBeVisible();
 });
 
 test('character directions can be mirrored and unlinked on import and after saving', async ({
@@ -2500,13 +2500,18 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'Add a state...', exact: true }).click();
 	const emptyCapture = page.getByRole('dialog', { name: 'Create State', exact: true });
-	await expect(emptyCapture.getByRole('tab', { name: 'New', exact: true })).toHaveAttribute(
-		'aria-selected',
-		'true'
-	);
-	await emptyCapture.getByRole('tab', { name: 'From Move', exact: true }).click();
-	await expect(emptyCapture).toContainText('Add a Move to create a State from one of its frames.');
-	await expect(emptyCapture.getByRole('combobox')).toHaveCount(0);
+	await emptyCapture.getByRole('button', { name: 'Source: Standing', exact: true }).click();
+	await expect(page.getByRole('menu', { name: 'Source' }).getByRole('menuitemradio')).toHaveText([
+		'Standing'
+	]);
+	await page.keyboard.press('Escape');
+	await expect(
+		emptyCapture.getByRole('button', { name: 'Source: Standing', exact: true })
+	).toBeFocused();
+	await expect(emptyCapture.getByText(/^Frame \d+ of \d+$/)).toHaveCount(0);
+	await expect(
+		emptyCapture.getByRole('button', { name: 'Create State', exact: true })
+	).toBeEnabled();
 	await emptyCapture.getByRole('button', { name: 'Cancel', exact: true }).click();
 	expect(before.manifest.rig.rest?.west?.keypoints).toHaveLength(18);
 	expect(
@@ -2631,33 +2636,26 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		createState.getByRole('button', { name: 'Create State', exact: true })
 	).toBeDisabled();
 	expect((await read()).manifest).toEqual(after.manifest);
+	await createState.getByRole('button', { name: 'Reload source', exact: true }).click();
+	await expect(
+		createState.getByRole('button', { name: 'Create State', exact: true })
+	).toBeEnabled();
 	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
 	const nextFrame = createState.getByRole('button', { name: 'Next frame', exact: true });
-	const stateSource = createState.getByRole('combobox', { name: 'Start from', exact: true });
-	await expect(stateSource).toHaveValue('idle');
+	await expect(
+		createState.getByRole('button', { name: 'Source: Idle', exact: true })
+	).toBeVisible();
 	await expect(createState.getByLabel('State name', { exact: true })).toHaveValue('Idle pose');
 	await expect(nextFrame).toBeDisabled();
-	const preview = createState.getByRole('img', { name: 'Idle preview', exact: true });
-	await expect(preview).toBeVisible();
-	await expect(createState.getByRole('img')).toHaveCount(1);
+	const views = createState.getByRole('group', { name: 'Idle views', exact: true });
+	await expect(views.locator('figcaption')).toHaveText(['South', 'East', 'North', 'West']);
 	await expect(createState.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
-	const previewFacing = createState.locator('[data-facing]');
-	await expect(previewFacing).not.toHaveAttribute('data-facing', 'south');
-	await expect(createState.getByRole('button', { name: 'Pause', exact: true })).toHaveCSS(
-		'cursor',
-		'pointer'
-	);
-	await preview.click();
-	await expect(createState.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
-	const pausedFacing = await previewFacing.getAttribute('data-facing');
 	await createState.getByRole('button', { name: 'Previous frame', exact: true }).click();
 	await expect(createState.getByText('Frame 3 of 4', { exact: true })).toBeVisible();
-	await expect(previewFacing).toHaveAttribute('data-facing', pausedFacing!);
-	await createState.getByRole('button', { name: 'Play', exact: true }).press('Space');
-	await expect(previewFacing).not.toHaveAttribute('data-facing', pausedFacing!);
 	await expect(nextFrame).toBeEnabled();
+	await expect(createState.getByText('No credits used.', { exact: true })).toBeVisible();
 	const createButton = createState.getByRole('button', { name: 'Create State', exact: true });
 	await createState.getByLabel('State name', { exact: true }).fill('Standing');
 	await expect(createButton).toBeDisabled();
@@ -2698,15 +2696,28 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const addState = panel.getByRole('button', { name: 'Add a state...', exact: true });
 	await expect(panel.locator('.cta + details')).toBeVisible();
 	await addState.click();
-	await expect(createState.getByRole('tab', { name: 'New', exact: true })).toHaveAttribute(
-		'aria-selected',
-		'true'
-	);
-	await createState.getByRole('tab', { name: 'From Move', exact: true }).click();
-	await expect(stateSource.locator('option', { hasText: 'Standing' })).toHaveCount(0);
-	await expect(stateSource.locator('option', { hasText: 'Rest pose' })).toHaveCount(0);
-	await expect(stateSource.locator('option:checked')).toHaveText('Idle');
-	await expect(createState.getByRole('img', { name: 'Idle preview', exact: true })).toBeVisible();
+	await createState.getByRole('button', { name: 'Source: Standing', exact: true }).click();
+	const sources = page.getByRole('menu', { name: 'Source' });
+	await expect(
+		sources.getByRole('group', { name: 'States' }).getByRole('menuitemradio')
+	).toHaveText(['Standing', 'Rest pose']);
+	await expect(
+		sources.getByRole('menuitemradio', { name: 'Standing', exact: true })
+	).toHaveAttribute('aria-checked', 'true');
+	// Keyboard: End moves from the checked Standing to the last source, Enter picks it.
+	await expect(sources.getByRole('menuitemradio', { name: 'Standing', exact: true })).toBeFocused();
+	await page.keyboard.press('End');
+	await expect(sources.getByRole('menuitemradio', { name: 'Idle', exact: true })).toBeFocused();
+	await page.keyboard.press('ArrowUp');
+	await expect(
+		sources.getByRole('menuitemradio', { name: 'Rest pose', exact: true })
+	).toBeFocused();
+	await page.keyboard.press('ArrowDown');
+	await page.keyboard.press('Enter');
+	await expect(
+		createState.getByRole('button', { name: 'Source: Idle', exact: true })
+	).toBeFocused();
+	await expect(createState.getByLabel('State name', { exact: true })).toHaveValue('Idle pose');
 	await expect(createState.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
 	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(addState).toBeFocused();
@@ -2764,7 +2775,16 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'States');
 	await addState.click();
-	const newState = createState.getByRole('tabpanel', { name: 'New', exact: true });
+	const newState = createState;
+	// A paid edit starts from the chosen Move frame, not Standing.
+	await newState.getByRole('button', { name: 'Source: Standing', exact: true }).click();
+	await page
+		.getByRole('menu', { name: 'Source' })
+		.getByRole('menuitemradio', { name: 'Idle', exact: true })
+		.click();
+	await newState.getByRole('button', { name: 'Previous frame', exact: true }).click();
+	await expect(newState.getByText('Frame 3 of 4', { exact: true })).toBeVisible();
+	await newState.getByRole('switch', { name: 'Edit with PixelLab' }).check();
 	await newState.getByRole('textbox', { name: 'State name' }).fill('Ready stance');
 	await newState
 		.getByRole('textbox', { name: 'Describe what should change' })
@@ -2776,6 +2796,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await newState.getByRole('button', { name: 'Check cost', exact: true }).click();
 	const generateState = newState.getByRole('button', { name: 'Generate State', exact: true });
 	await expect(generateState).toBeVisible();
+	// Only the Generate State button approves a paid request, never Enter in a field.
+	await newState.getByRole('textbox', { name: 'State name' }).press('Enter');
+	await expect(newState.getByText('This State will be saved in PixelDoll only.')).toBeVisible();
 	expect(statePosts()).toHaveLength(0);
 	await generateState.click();
 	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
@@ -2784,9 +2807,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		method: 'edit_with_text',
 		description: 'Raise both hands'
 	});
-	expect((await read()).manifest.rig.animations.some(({ id }) => id === 'ready-stance')).toBe(
-		false
-	);
+	const attempt = await read();
+	expect(attempt.manifest.rig.animations.some(({ id }) => id === 'ready-stance')).toBe(false);
+	expect(attempt.stateGeneration?.source).toEqual({ clip: 'idle', frame: 2 });
 	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'States');
@@ -2943,7 +2966,8 @@ test('a managed State reloads its child without another submission', async ({
 	const addState = page.getByRole('button', { name: 'Add a state...', exact: true });
 	await addState.click();
 	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
-	const panel = dialog.getByRole('tabpanel', { name: 'New', exact: true });
+	const panel = dialog;
+	await panel.getByRole('switch', { name: 'Edit with PixelLab' }).check();
 	await panel.getByRole('textbox', { name: 'State name' }).fill('Potion ready');
 	await panel.getByRole('textbox', { name: 'Describe what should change' }).fill('Hold a potion');
 	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
@@ -3075,7 +3099,8 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	const addState = page.getByRole('button', { name: 'Add a state...', exact: true });
 	await addState.click();
 	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
-	const panel = dialog.getByRole('tabpanel', { name: 'New', exact: true });
+	const panel = dialog;
+	await panel.getByRole('switch', { name: 'Edit with PixelLab' }).check();
 	await panel.getByRole('textbox', { name: 'State name' }).fill('Torch ready');
 	await panel.getByRole('textbox', { name: 'Describe what should change' }).fill('Hold a torch');
 	await panel.getByText('Advanced', { exact: true }).click();

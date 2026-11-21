@@ -87,7 +87,7 @@
 					onrename={isDemo() ? undefined : () => openRename(doc.id, { moveId: a.id })}
 					ondownload={() => downloadMoveZip(a.id)}
 					onfixframes={() => openFrames('', a.id)}
-					oncapture={kind === 'move' && !isDemo()
+					oncapture={!isDemo()
 						? () => {
 								ui.stateCaptureMove = a.id;
 								ui.sheet = 'stateCapture';
