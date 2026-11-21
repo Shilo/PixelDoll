@@ -1528,6 +1528,7 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	await page.getByRole('button', { name: 'Appearance', exact: true }).click();
 	await page.getByRole('radio', { name: 'Light', exact: true }).check();
+	await expect(page.locator('[data-setting="theme"] .lucide-sun-moon')).toBeVisible();
 	await expect(page.getByRole('radio', { name: 'Light', exact: true })).toBeChecked();
 	await page.getByRole('radio', { name: 'Light', exact: true }).press('ArrowLeft');
 	await expect(page.getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();

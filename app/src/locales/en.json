@@ -13,7 +13,8 @@
 		"archived": "Archived data",
 		"edited": "An earlier restored copy was edited. Restoring again adds a separate copy.",
 		"keepArchived": "Keep archived data for future downloads",
-		"restoreHint": "Nothing in your library will be replaced or deleted. Archived data is only kept for download if you check the box.",
+		"restoreHint": "Nothing in your library will be replaced or deleted.",
+		"restoreArchivedHint": "Archived data is only kept for download if you check the box.",
 		"restore": "Restore",
 		"archivedHint": "{count} older records are kept for download only.",
 		"downloadArchived": "Download archived data",
@@ -1699,6 +1700,8 @@
 		"copyFailed": "Could not copy automatically. Use the endpoint field to copy manually."
 	},
 	"activity": {
+		"recentSettings": "Recent activity",
+		"noRecentSettings": "No recent activity.",
 		"pendingWork": "Pending work",
 		"openWork": "Open",
 		"openWorkNamed": "Open {label}",

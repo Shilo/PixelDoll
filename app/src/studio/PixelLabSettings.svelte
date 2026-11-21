@@ -41,7 +41,9 @@
 				? app.remembered
 					? 'connectSheet.connectedRemembered'
 					: 'connectSheet.connectedForTab'
-				: 'usage.notConnected'
+				: app.keyRejected
+					? 'connectSheet.keyRejected'
+					: 'usage.notConnected'
 		)}
 	</p>
 	<button class="row bu-action" data-variant="quiet" type="button" onclick={openSettingsAccount}>
@@ -58,7 +60,7 @@
 				class="bu-action btn icon plain"
 				data-variant="quiet"
 				type="button"
-				disabled={refreshing}
+				aria-disabled={refreshing}
 				aria-label={t(refreshing ? 'usage.refreshing' : 'activity.refreshBalance')}
 				title={t('activity.refreshBalance')}
 				onclick={refresh}
@@ -70,10 +72,17 @@
 	{#if app.balanceError}<p class="notice bad small" role="status">{t('usage.loadFailed')}</p>{/if}
 {/if}
 <hr class="bu-separator" />
-<section data-setting="recent-activity" tabindex="-1" aria-labelledby={activityHeading}>
-	<h4 id={activityHeading} class="settings-label">{t('activity.recent')}</h4>
-	{#if recentJobs.length}
-		<div class="recent-jobs" role="region" aria-labelledby={activityHeading}>
+<div class="settings-activity" data-setting="recent-activity">
+	<h4 id={activityHeading} class="settings-label">{t('activity.recentSettings')}</h4>
+	<div
+		class="recent-jobs"
+		role="region"
+		aria-labelledby={activityHeading}
+		{@attach (element) => {
+			element.tabIndex = recentJobs.length ? 0 : -1;
+		}}
+	>
+		{#if recentJobs.length}
 			<ul>
 				{#each recentJobs as job (job.id)}
 					<li>
@@ -81,10 +90,10 @@
 					</li>
 				{/each}
 			</ul>
-		</div>
-	{:else}
-		<p class="bu-muted settings-description">{t('activity.nothing')}</p>
-	{/if}
+		{:else}
+			<p class="bu-muted settings-description">{t('activity.noRecentSettings')}</p>
+		{/if}
+	</div>
 	<button
 		class="row bu-action"
 		data-variant="quiet"
@@ -95,18 +104,23 @@
 		<span class="row-name">{openerLabel(t('activity.title'))}</span>
 		<SurfaceChevron />
 	</button>
-</section>
+</div>
 
 <style>
 	.connection-status {
 		margin-block: 0 4px;
+	}
+	.settings-activity {
+		display: grid;
+		gap: 4px;
 	}
 	.recent-jobs {
 		max-block-size: 10rem;
 		overflow: auto;
 	}
 	.recent-jobs ul {
-		padding: 0 8px 0 0;
+		padding: 0;
+		padding-inline-end: 8px;
 		margin: 0;
 		list-style: none;
 	}

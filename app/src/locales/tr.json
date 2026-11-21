@@ -13,7 +13,8 @@
 		"archived": "Arşivlenmiş veriler",
 		"edited": "Daha önce geri yüklenen bir kopya düzenlendi. Yeniden geri yüklediğinizde ayrı bir kopya eklenir.",
 		"keepArchived": "Arşivlenmiş verileri daha sonra indirmek için sakla",
-		"restoreHint": "Kitaplığınızdaki hiçbir öğe silinmez veya başka bir öğeyle değiştirilmez. Arşivlenmiş veriler ancak kutuyu işaretlerseniz indirmek üzere saklanır.",
+		"restoreHint": "Kitaplığınızdaki hiçbir öğe silinmez veya başka bir öğeyle değiştirilmez.",
+		"restoreArchivedHint": "Arşivlenmiş veriler ancak kutuyu işaretlerseniz indirmek üzere saklanır.",
 		"restore": "Geri yükle",
 		"archivedHint": "{count} eski kayıt yalnızca indirme için saklanıyor.",
 		"downloadArchived": "Arşivlenmiş verileri indir",
@@ -1705,6 +1706,8 @@
 		"copyFailed": "Otomatik kopyalanamadı. Kopyalamak için uç nokta alanını kullanın."
 	},
 	"activity": {
+		"recentSettings": "Son etkinlikler",
+		"noRecentSettings": "Yakın zamanda etkinlik yok.",
 		"pendingWork": "Bekleyen işler",
 		"openWork": "Aç",
 		"openWorkNamed": "{label} aç",

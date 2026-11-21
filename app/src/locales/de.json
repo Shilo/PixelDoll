@@ -13,7 +13,8 @@
 		"archived": "Archivierte Daten",
 		"edited": "Eine zuvor wiederhergestellte Kopie wurde bearbeitet. Bei erneuter Wiederherstellung wird eine separate Kopie hinzugefügt.",
 		"keepArchived": "Archivierte Daten für spätere Downloads behalten",
-		"restoreHint": "In deiner Bibliothek wird nichts ersetzt oder gelöscht. Archivierte Daten werden nur dann zum Download aufbewahrt, wenn du das Kästchen aktivierst.",
+		"restoreHint": "In deiner Bibliothek wird nichts ersetzt oder gelöscht.",
+		"restoreArchivedHint": "Archivierte Daten werden nur dann zum Download aufbewahrt, wenn du das Kästchen aktivierst.",
 		"restore": "Wiederherstellen",
 		"archivedHint": "Ältere Datensätze nur zum Download verfügbar: {count}.",
 		"downloadArchived": "Archivierte Daten herunterladen",
@@ -1711,6 +1712,8 @@
 		"copyFailed": "Automatisches Kopieren war nicht möglich. Kopiere den Endpunkt über das Feld manuell."
 	},
 	"activity": {
+		"recentSettings": "Letzte Aktivitäten",
+		"noRecentSettings": "Keine aktuellen Aktivitäten.",
 		"pendingWork": "Ausstehende Aufgaben",
 		"openWork": "Öffnen",
 		"openWorkNamed": "{label} öffnen",

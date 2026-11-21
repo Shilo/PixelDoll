@@ -199,6 +199,9 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		await picker.setInputFiles((await download.path())!);
 		await expect(review).toBeFocused();
 		await expect(review.getByText('Characters to add')).toBeVisible();
+		await expect(
+			review.getByText('Nothing in your library will be replaced or deleted.', { exact: true })
+		).toBeVisible();
 		await review.getByRole('button', { name: 'Restore', exact: true }).click();
 		await expect(recipientPage.getByText('Added 2 characters.')).toBeVisible();
 		await picker.setInputFiles((await download.path())!);

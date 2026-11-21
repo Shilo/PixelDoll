@@ -46,6 +46,7 @@
 	);
 	let closed = false;
 	const activityScope = crypto.randomUUID();
+	const externalHint = $props.id();
 	let minimumTier = $state(pendingConnectionMinimumTier() ?? 0);
 	onDestroy(() => {
 		closed = true;
@@ -227,7 +228,9 @@
 					data-variant="outline"
 					href="https://www.pixellab.ai/#pricing"
 					target="_blank"
-					rel="noreferrer">{t('connectSheet.viewPixelLabPlans')} <ExternalLink size={12} /></a
+					rel="noreferrer"
+					aria-describedby={externalHint}
+					>{t('connectSheet.viewPixelLabPlans')} <ExternalLink size={16} aria-hidden="true" /></a
 				>
 				{#if limitedAccess}
 					<button class="bu-action btn sm" data-variant="outline" onclick={finishConnection}
@@ -252,8 +255,14 @@
 				>{t('connectSheet.forgetKey')}</button
 			>
 		</div>
-		<a class="small" href="https://www.pixellab.ai/account" target="_blank" rel="noreferrer"
-			>{t('connectSheet.openAccount')} <ExternalLink size={12} style="display:inline" /></a
+		<a
+			class="small"
+			href="https://www.pixellab.ai/account"
+			target="_blank"
+			rel="noreferrer"
+			aria-describedby={externalHint}
+			>{t('connectSheet.openAccount')}
+			<ExternalLink size={16} aria-hidden="true" style="display:inline" /></a
 		>
 	{:else}
 		<div class="connect-hero">
@@ -321,8 +330,14 @@
 				</p>{/if}
 			<AffiliationNotice multiline />
 			<div class="field-row">
-				<a class="small" href="https://pixellab.ai/account" target="_blank" rel="noreferrer"
-					>{t('connectSheet.getAKey')} <ExternalLink size={12} style="display:inline" /></a
+				<a
+					class="small"
+					href="https://pixellab.ai/account"
+					target="_blank"
+					rel="noreferrer"
+					aria-describedby={externalHint}
+					>{t('connectSheet.getAKey')}
+					<ExternalLink size={16} aria-hidden="true" style="display:inline" /></a
 				>
 				<span class="actions">
 					{#if app.keyRejected && !checking}<button
@@ -356,4 +371,5 @@
 			</div>
 		</form>
 	{/if}
+	<span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
 </Sheet>

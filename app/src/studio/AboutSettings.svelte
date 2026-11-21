@@ -8,6 +8,7 @@
 
 	const hasCommit = /^[a-f0-9]{7,40}$/i.test(__APP_COMMIT__);
 	const commitUrl = `${repository}/commit/${__APP_COMMIT__}`;
+	const externalHint = $props.id();
 	const modeKey = import.meta.env.DEV
 		? 'versionRow.development'
 		: PRE_RELEASE
@@ -38,21 +39,22 @@
 	</div>
 	<ul class="about-links">
 		<li>
-			<a href={repository} target="_blank" rel="noreferrer"
-				>{t('versionRow.openSource')} <ExternalLink size={14} aria-hidden="true" /></a
+			<a href={repository} target="_blank" rel="noreferrer" aria-describedby={externalHint}
+				>{t('versionRow.openSource')} <ExternalLink size={16} aria-hidden="true" /></a
 			>
 		</li>
 		{#if hasCommit}
 			<li>
-				<a href={commitUrl} target="_blank" rel="noreferrer"
+				<a href={commitUrl} target="_blank" rel="noreferrer" aria-describedby={externalHint}
 					>{t('versionRow.viewCommit')} <span class="bu-number">{__APP_COMMIT__.slice(0, 7)}</span>
-					<ExternalLink size={14} aria-hidden="true" /></a
+					<ExternalLink size={16} aria-hidden="true" /></a
 				>
 			</li>
 		{/if}
 	</ul>
+	<span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
 	<button class="row bu-action" data-variant="quiet" type="button" onclick={copyDetails}>
-		<Copy size={16} aria-hidden="true" /><span class="row-name">{t('versionRow.copyDetails')}</span>
+		<Copy size={18} aria-hidden="true" /><span class="row-name">{t('versionRow.copyDetails')}</span>
 	</button>
 </div>
 
@@ -64,10 +66,14 @@
 	}
 	.about-links {
 		display: grid;
-		gap: 8px;
 		list-style: none;
 		padding: 0;
-		margin-block: 0 12px;
+		margin: 0;
+	}
+	.about-links a {
+		display: inline-block;
+		min-height: 44px;
+		padding-block: 10px;
 	}
 	.about-links :global(svg) {
 		vertical-align: middle;

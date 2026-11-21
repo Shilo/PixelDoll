@@ -38,7 +38,9 @@
 	{:else}
 		<p class="menu-sec" id={headingId}>{t('sharedVisibility.heading')}</p>
 	{/if}
-	{#if hideAll}<span id={lockReasonId} hidden>{t('sharedVisibility.allOn')}</span>{/if}
+	{#if hideAll && scope !== 'global'}<span id={lockReasonId} hidden
+			>{t('sharedVisibility.allOn')}</span
+		>{/if}
 	{#if scope !== 'character'}<label class="row bu-check">
 			<UsersRound size={18} aria-hidden="true" />
 			{#snippet all()}<strong>{t('sharedVisibility.allEmphasis')}</strong>{/snippet}
@@ -93,7 +95,9 @@
 				}}
 			/>
 		</label>{/if}
-	{#if hideAll && onManage}
+	{#if hideAll && scope === 'global'}
+		<p class="bu-muted settings-description" id={lockReasonId}>{t('sharedVisibility.allOn')}</p>
+	{:else if hideAll && onManage}
 		<p class="menu-sec">{t('sharedVisibility.allOn')}</p>
 		<button class="row bu-action" data-variant="quiet" onclick={onManage}
 			>{t('settings.wardrobe')}</button

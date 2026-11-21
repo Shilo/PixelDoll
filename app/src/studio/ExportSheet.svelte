@@ -624,30 +624,30 @@
 
 {#snippet preferencesStatus()}
 	{#if loadError || saveError}<p class="notice bad small" role="alert">
-			<TriangleAlert size={14} />{saveError
+			<TriangleAlert size={14} aria-hidden="true" />{saveError
 				? displayMessage(saveError)
 				: loadError
 					? displayMessage(loadError)
 					: ''}
 		</p>{/if}
 	{#if invalidPreferences}
-		<p class="muted small">
+		<p class="bu-muted settings-description">
 			{t('export.settings.resetHint')}
 		</p>
 		<button class="bu-action btn" onclick={resetSettings} disabled={saving || refreshing}
 			>{t('export.settings.reset')}</button
 		>
 	{/if}
-	{#if !ready && refreshing}<p class="muted small" role="status">
+	{#if !ready && refreshing}<p class="bu-muted settings-description" role="status">
 			{t('export.settings.loading')}
 		</p>{/if}
 	{#each catalog.warningMessages as warning}<p class="notice warn small">
-			<TriangleAlert size={14} />{displayMessage(warning)}
+			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(warning)}
 		</p>{/each}
 {/snippet}
 
 {#snippet exportSettings(_entry?: string)}
-	<div class="export-page" bind:this={content} tabindex="-1">
+	<div class="export-page export-preferences" bind:this={content} tabindex="-1">
 		{@render preferencesStatus()}
 		<fieldset
 			class="export-playback"
@@ -696,12 +696,14 @@
 			</p>
 		</div>
 		<hr class="bu-separator export-divider" />
-		<label class="export-dressed" data-setting="format" tabindex="-1">
-			<span class="settings-label">{t('export.settings.defaultTarget')}</span>
+		<div class="export-format" data-setting="format" tabindex="-1">
+			<label class="settings-label" for="default-export-target"
+				>{t('export.settings.defaultTarget')}</label
+			>
 			<select
+				id="default-export-target"
 				class="bu-input input"
 				value={engine}
-				aria-label={t('export.settings.defaultTarget')}
 				aria-describedby="default-export-target-hint"
 				disabled={!ready || saving}
 				onchange={(event) => chooseEngine(event.currentTarget.value as Engine)}
@@ -719,7 +721,7 @@
 			<span class="bu-muted settings-description" id="default-export-target-hint"
 				>{t('export.settings.defaultTargetHint')}</span
 			>
-		</label>
+		</div>
 	</div>
 {/snippet}
 
@@ -1037,7 +1039,16 @@
 		flex-direction: column;
 		gap: 16px;
 		min-width: 0;
+	}
+	.export-page:not(.export-preferences) {
 		animation: export-back 150ms ease-out;
+	}
+	.export-preferences {
+		gap: 12px;
+	}
+	.export-format {
+		display: grid;
+		gap: 4px;
 	}
 	@keyframes export-back {
 		from {
@@ -1048,7 +1059,7 @@
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.export-page {
+		.export-page:not(.export-preferences) {
 			animation: none;
 		}
 	}

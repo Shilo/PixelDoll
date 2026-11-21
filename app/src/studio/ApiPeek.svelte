@@ -292,7 +292,7 @@
 		aria-controls={id}
 		popovertarget={id}
 		><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name"
-				>{openerLabel(t('apiPeek.title'))}</span
+				>{openerLabel(t(all ? 'apiPeek.inspectAll' : 'apiPeek.title'))}</span
 			><SurfaceChevron />{/if}</button
 	>
 	<div

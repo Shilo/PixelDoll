@@ -14,7 +14,8 @@
 		Moon,
 		Settings2,
 		Shirt,
-		Sun
+		Sun,
+		SunMoon
 	} from './icons.ts';
 	import { developerModeEnabled } from './developerMode.svelte.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
@@ -101,17 +102,17 @@
 			icon: Download,
 			entries: [
 				{
-					id: 'format',
-					label: 'export.settings.defaultTarget',
-					terms: ['export.settings.format', 'export.group.engines', 'export.settings.versionMenu'],
-					names: Object.values(exportFormatNames)
-				},
-				{
 					id: 'playback',
 					label: 'export.settings.playOnce',
 					terms: ['export.settings.playOnceHint']
 				},
-				{ id: 'sheets', label: 'export.settings.dressed', terms: ['export.settings.dressedHint'] }
+				{ id: 'sheets', label: 'export.settings.dressed', terms: ['export.settings.dressedHint'] },
+				{
+					id: 'format',
+					label: 'export.settings.defaultTarget',
+					terms: ['export.settings.format', 'export.group.engines', 'export.settings.versionMenu'],
+					names: Object.values(exportFormatNames)
+				}
 			]
 		},
 		{
@@ -299,8 +300,9 @@
 				>
 			{/if}
 			{#if active.id === 'general'}
-				<div class="row appearance-row" data-setting="theme">
-					<span class="row-name settings-label">{themeLabel}</span>
+				<div class="appearance-row" data-setting="theme">
+					<span class="appearance-label"><SunMoon size={18} aria-hidden="true" /> {themeLabel}</span
+					>
 					<div class="appearance-options" role="radiogroup" aria-label={themeLabel}>
 						{#each appearanceOptions as { value, label, icon: Icon } (value)}
 							<label class="appearance-option">
@@ -385,7 +387,20 @@
 		font-weight: 600;
 	}
 	.appearance-row {
+		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0 10px;
+	}
+	.appearance-label {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 44px;
+	}
+	.appearance-label :global(svg) {
+		flex: none;
 	}
 	.appearance-options {
 		display: flex;
@@ -422,6 +437,15 @@
 	}
 	.detail:not(.searching) .settings-links {
 		display: none;
+	}
+	@media (max-width: 659px), (max-height: 519px) {
+		.settings-heading {
+			position: absolute;
+			inline-size: 1px;
+			block-size: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+		}
 	}
 	@media (min-width: 660px) and (min-height: 520px) {
 		.detail,

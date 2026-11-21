@@ -13,7 +13,8 @@
 		"archived": "已归档的数据",
 		"edited": "之前恢复的副本已被编辑。再次恢复会另行添加一份副本。",
 		"keepArchived": "保留已归档的数据以便日后下载",
-		"restoreHint": "角色库中的任何内容都不会被替换或删除。只有勾选此选项，才会保留归档数据供下载。",
+		"restoreHint": "角色库中的任何内容都不会被替换或删除。",
+		"restoreArchivedHint": "只有勾选此选项，才会保留归档数据供下载。",
 		"restore": "恢复",
 		"archivedHint": "有 {count} 条旧记录仅供下载。",
 		"downloadArchived": "下载已归档的数据",
@@ -1619,6 +1620,8 @@
 		"copyFailed": "无法自动复制。请使用端点字段手动复制。"
 	},
 	"activity": {
+		"recentSettings": "近期活动",
+		"noRecentSettings": "暂无近期活动。",
 		"pendingWork": "待处理工作",
 		"openWork": "打开",
 		"openWorkNamed": "打开{label}",

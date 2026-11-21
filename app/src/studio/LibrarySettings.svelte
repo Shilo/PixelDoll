@@ -2,7 +2,7 @@
 	import { Notice } from '@shilo/bronze-ui/svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
-	import { Archive, Download, Upload } from './icons.ts';
+	import { Archive, Download, TriangleAlert, Upload } from './icons.ts';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -160,9 +160,15 @@
 
 <div class="library-settings" aria-busy={busy}>
 	{#if preview}
-		<section aria-labelledby={heading} data-setting="restore" tabindex="-1" bind:this={review}>
-			<h4 id={heading}>{t('librarySettings.review')}</h4>
-			<p class="bu-muted filename">{preview.name}</p>
+		<section
+			class="restore-review"
+			aria-labelledby={heading}
+			data-setting="restore"
+			tabindex="-1"
+			bind:this={review}
+		>
+			<h4 class="settings-label" id={heading}>{t('librarySettings.review')}</h4>
+			<p class="bu-muted settings-description filename">{preview.name}</p>
 			<dl class="restore-counts">
 				<div>
 					<dt>{t('librarySettings.add')}</dt>
@@ -183,9 +189,14 @@
 					</div>
 				{/if}
 			</dl>
-			{#if preview.edited}<p class="bu-muted">{t('librarySettings.edited')}</p>{/if}
-			{#if preview.warning}<p class="notice warn">{displayMessage(preview.warning)}</p>{/if}
-			{#if plan?.blockers.length}<p class="notice warn" role="alert">
+			{#if preview.edited}<p class="bu-muted settings-description">
+					{t('librarySettings.edited')}
+				</p>{/if}
+			{#if preview.warning}<p class="notice warn small">
+					<TriangleAlert size={14} aria-hidden="true" />{displayMessage(preview.warning)}
+				</p>{/if}
+			{#if plan?.blockers.length}<p class="notice bad small" role="alert">
+					<TriangleAlert size={14} aria-hidden="true" />
 					{t('librarySettings.incomplete')}
 				</p>{/if}
 			{#if preview.archived}
@@ -194,7 +205,11 @@
 					{t('librarySettings.keepArchived')}
 				</label>
 			{/if}
-			<p class="bu-muted">{t('librarySettings.restoreHint')}</p>
+			<p class="bu-muted settings-description">
+				{t('librarySettings.restoreHint')}
+				{#if preview.archived}
+					{t('librarySettings.restoreArchivedHint')}{/if}
+			</p>
 			<div class="restore-actions">
 				<button
 					type="button"
@@ -262,9 +277,11 @@
 		</button>
 		{#if hasArchives}
 			<hr class="bu-separator" />
-			<h4>{t('librarySettings.archived')}</h4>
+			<h4 class="settings-label">{t('librarySettings.archived')}</h4>
 			{#if archives.localCount}
-				<p class="bu-muted">{t('librarySettings.archivedHint', { count: archives.localCount })}</p>
+				<p class="bu-muted settings-description">
+					{t('librarySettings.archivedHint', { count: archives.localCount })}
+				</p>
 			{/if}
 			{#each [...(archives.localCount ? [undefined] : []), ...archives.retainedIds] as id, index (id)}
 				{@const number = id ? index + (archives.localCount ? 0 : 1) : undefined}
@@ -284,26 +301,30 @@
 			{/each}
 		{/if}
 	{/if}
-	{#if busy}<p class="bu-muted" role="status">{t('common.preparing')}</p>{/if}
-	{#if error}<p class="notice warn" role="alert">{displayMessage(error)}</p>{/if}
-	{#if status}<p role="status">{displayMessage(status)}</p>{/if}
+	{#if busy}<p class="bu-muted settings-description" role="status">{t('common.preparing')}</p>{/if}
+	{#if error}<p class="notice bad small" role="alert">
+			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(error)}
+		</p>{/if}
+	{#if status}<p class="settings-description" role="status">{displayMessage(status)}</p>{/if}
 </div>
 
 <style>
-	.library-settings p {
-		margin: 0.5rem 0;
+	.library-settings,
+	.restore-review {
+		display: grid;
+		gap: 12px;
 	}
-	.library-settings h4 {
-		margin: 0.75rem 0 0.25rem;
+	.library-settings .notice {
+		margin: 0;
 	}
-	.library-settings .row {
-		width: 100%;
+	.library-settings hr {
+		margin-block: 0;
 	}
 	.filename {
 		overflow-wrap: anywhere;
 	}
 	.restore-counts {
-		margin: 0.75rem 0;
+		margin: 0;
 	}
 	.restore-counts div {
 		display: flex;

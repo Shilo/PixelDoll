@@ -13,7 +13,8 @@
 		"archived": "Dados arquivados",
 		"edited": "Uma cópia restaurada anteriormente foi editada. Restaurar de novo adiciona uma cópia separada.",
 		"keepArchived": "Manter dados arquivados para baixar depois",
-		"restoreHint": "Nada na sua biblioteca será substituído ou excluído. Os dados arquivados só serão mantidos para download se você marcar a caixa.",
+		"restoreHint": "Nada na sua biblioteca será substituído ou excluído.",
+		"restoreArchivedHint": "Os dados arquivados só serão mantidos para download se você marcar a caixa.",
 		"restore": "Restaurar",
 		"archivedHint": "Registros antigos disponíveis apenas para baixar: {count}.",
 		"downloadArchived": "Baixar dados arquivados",
@@ -1724,6 +1725,8 @@
 		"copyFailed": "Não foi possível copiar automaticamente. Use o campo do endpoint para copiar manualmente."
 	},
 	"activity": {
+		"recentSettings": "Atividade recente",
+		"noRecentSettings": "Nenhuma atividade recente.",
 		"pendingWork": "Trabalho pendente",
 		"openWork": "Abrir",
 		"openWorkNamed": "Abrir {label}",

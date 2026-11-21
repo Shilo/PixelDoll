@@ -13,7 +13,8 @@
 		"archived": "Données archivées",
 		"edited": "Une copie restaurée précédemment a été modifiée. Une nouvelle restauration ajoutera une copie distincte.",
 		"keepArchived": "Conserver les données archivées pour de futurs téléchargements",
-		"restoreHint": "Rien ne sera remplacé ni supprimé dans votre bibliothèque. Les données archivées ne seront conservées pour téléchargement que si vous cochez la case.",
+		"restoreHint": "Rien ne sera remplacé ni supprimé dans votre bibliothèque.",
+		"restoreArchivedHint": "Les données archivées ne seront conservées pour téléchargement que si vous cochez la case.",
 		"restore": "Restaurer",
 		"archivedHint": "Anciens enregistrements conservés uniquement pour le téléchargement : {count}.",
 		"downloadArchived": "Télécharger les données archivées",
@@ -1705,6 +1706,8 @@
 		"copyFailed": "La copie automatique a échoué. Utilisez le champ du point d’accès pour copier manuellement."
 	},
 	"activity": {
+		"recentSettings": "Activité récente",
+		"noRecentSettings": "Aucune activité récente.",
 		"pendingWork": "Travaux en attente",
 		"openWork": "Ouvrir",
 		"openWorkNamed": "Ouvrir {label}",

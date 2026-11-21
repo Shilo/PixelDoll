@@ -13,7 +13,8 @@
 		"archived": "Data arsip",
 		"edited": "Salinan yang sebelumnya dipulihkan telah diedit. Jika Anda memulihkan lagi, salinan terpisah akan ditambahkan.",
 		"keepArchived": "Simpan data arsip agar bisa diunduh nanti",
-		"restoreHint": "Tidak ada isi pustaka Anda yang akan diganti atau dihapus. Data arsip hanya disimpan untuk diunduh jika Anda mencentang kotaknya.",
+		"restoreHint": "Tidak ada isi pustaka Anda yang akan diganti atau dihapus.",
+		"restoreArchivedHint": "Data arsip hanya disimpan untuk diunduh jika Anda mencentang kotaknya.",
 		"restore": "Pulihkan",
 		"archivedHint": "{count} catatan lama disimpan hanya untuk diunduh.",
 		"downloadArchived": "Unduh data arsip",
@@ -1637,6 +1638,8 @@
 		"copyFailed": "Tidak dapat menyalin otomatis. Gunakan kolom endpoint untuk menyalin secara manual."
 	},
 	"activity": {
+		"recentSettings": "Aktivitas terbaru",
+		"noRecentSettings": "Tidak ada aktivitas terbaru.",
 		"pendingWork": "Pekerjaan tertunda",
 		"openWork": "Buka",
 		"openWorkNamed": "Buka {label}",

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
 	import { localDeveloperToolsEnabled } from './developerMode.svelte.ts';
+	import { Terminal } from './icons.ts';
+	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { doc, openProject, store, ui } from './state.svelte.ts';
 
 	const rigs = $derived(store.projects.filter((project) => project.dev));
@@ -19,10 +21,14 @@
 		data-variant="quiet"
 		onclick={() => {
 			if (localDeveloperToolsEnabled()) location.hash = '/dev';
-		}}><span class="row-name">{t('developer.pages')}</span></button
+		}}
 	>
+		<Terminal size={18} aria-hidden="true" />
+		<span class="row-name">{t('developer.pages')}</span>
+		<SurfaceChevron />
+	</button>
 	{#if rigs.length}
-		<p class="menu-sec" data-local-developer-rigs>{t('developer.rigs')}</p>
+		<h4 class="settings-label" data-local-developer-rigs>{t('developer.rigs')}</h4>
 		{#each rigs as project (project.id)}
 			<button
 				type="button"

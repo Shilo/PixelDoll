@@ -10,8 +10,9 @@
 		setDeveloperMode
 	} from './developerMode.svelte.ts';
 	import { toast } from './state.svelte.ts';
-	import { CodeXml, Copy } from './icons.ts';
+	import { CodeXml, Copy, Wrench } from './icons.ts';
 	const localTools = import.meta.env.DEV ? () => import('./LocalDeveloperTools.svelte') : undefined;
+	const description = $props.id();
 
 	let {
 		tools
@@ -27,16 +28,18 @@
 </script>
 
 <label class="row bu-check" data-setting="developer-mode">
-	<span class="row-name settings-label">{t('developer.mode')}</span>
+	<Wrench size={18} aria-hidden="true" />
+	<span class="row-name">{t('developer.mode')}</span>
 	<input
 		class="bu-switch"
 		type="checkbox"
 		role="switch"
+		aria-describedby={description}
 		checked={developerModeEnabled()}
 		onchange={changeMode}
 	/>
 </label>
-<p class="bu-muted settings-description">{t('developer.description')}</p>
+<p class="bu-muted settings-description" id={description}>{t('developer.description')}</p>
 {#if developerModeEnabled()}
 	{#if !workspaceCopy}<ApiPeek all menu />{/if}
 	{@render tools?.()}
