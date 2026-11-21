@@ -67,7 +67,7 @@
 						'usage.title',
 						'usage.generations',
 						'usage.creditBalance',
-						'connectSheet.aPIKey',
+						'connectSheet.secretApiKey',
 						'connectSheet.replaceKey',
 						'connectSheet.forgetKey'
 					]

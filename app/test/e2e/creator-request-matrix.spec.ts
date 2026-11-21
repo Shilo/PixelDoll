@@ -58,7 +58,9 @@ async function setup(page: Page) {
 	await openStudio(page, '/');
 	await openAccount(page);
 	const connection = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	await connection.getByLabel('API key', { exact: true }).fill('offline-matrix-not-a-real-key');
+	await connection
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('offline-matrix-not-a-real-key');
 	await connection.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connection).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -100,7 +102,7 @@ async function setup(page: Page) {
 		expect(body).not.toHaveProperty('direction_images');
 		expect(body).not.toHaveProperty('n_directions'); // V3's from-scratch default is eight, independent of kept views.
 		expect(unexpected).toEqual([]);
-		await sheet.getByRole('button', { name: 'Discard', exact: true }).click();
+		await sheet.getByRole('button', { name: 'Edit setup…', exact: true }).click();
 		await expect(sheet.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		return body;
 	}

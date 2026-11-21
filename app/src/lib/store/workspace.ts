@@ -386,6 +386,7 @@ export async function packArchive(
 		const record = value as Partial<StoredProject>;
 		delete record.creationSpec;
 		delete record.moveRecovery;
+		delete record.moveReviews;
 	}
 	const artwork: { name: string; data: Uint8Array }[] = [];
 	let pixels = 0,

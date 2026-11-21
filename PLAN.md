@@ -207,11 +207,11 @@ animation, quality retry, or substitute static item is introduced.
 
 ## Advanced move generation
 
-Keep Skeleton v3 and the move's default frame count on the ordinary Add a move path. Put the model and frame count in
-an Advanced accordion, like New character. Show only counts the chosen model accepts on the request canvas, rather
-than letting users type unsupported values. V3 and PixMiniMax are for users who want to keep those models' body pixels;
-estimate joints on the frozen frames so equipment can still use Skeleton v3. Joint editing and conversion of saved
-moves are separate work. A change to either option must refresh the paid estimate before submission.
+Default new moves to PixMiniMax. Keep Skeleton V3 and V3 available in Advanced, with only frame counts supported by the
+selected model and canvas. Ride uses its static Skeleton V3 pose; replacements prefer the saved route when compatible.
+Native routes estimate joints on the frozen frames so equipment can still use Skeleton V3. After a native quality
+failure, offer a priced, optional Skeleton V3 retry where compatible. Review the new body draft before saving; animating
+equipment is a separate decision after saving. A model or frame count change refreshes the estimate before submission.
 
 ## PWA (2026-11-02, supersedes D13)
 

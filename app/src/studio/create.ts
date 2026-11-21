@@ -111,7 +111,10 @@ import {
 	affectedMoveDirections,
 	clearMovePoseData,
 	invalidateMoveItems,
-	moveRigVersion
+	moveCandidateHasStructuralFailure,
+	moveCandidateInput,
+	moveRigVersion,
+	type MoveCandidate
 } from './replaceMove.ts';
 import {
 	DETAIL_VALUES,
@@ -136,7 +139,13 @@ import {
 	type MoveAnimationOptions
 } from './moveAnimationOptions.ts';
 import { cellImg } from '../lib/compose/compose.ts';
-import { errorMessage, LocalizedError, message, type Message } from '../lib/message.ts';
+import {
+	errorMessage,
+	errorTranslation,
+	LocalizedError,
+	message,
+	type Message
+} from '../lib/message.ts';
 import { localizedPlanRestriction } from '../lib/pixellab/plans.ts';
 import { activityStateMessage } from './generationStatus.ts';
 import type { WhisperKey } from 'svelte-whisper';
@@ -895,13 +904,10 @@ export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
 		produced
 	};
 };
+const cellBlob = async (image: Img) =>
+	new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], { type: 'image/png' });
 const putCell = async (h: Sha256, im: Img) => {
-	if (!(await db.getBlob(h.slice(7))))
-		await db.put(
-			'blobs',
-			h.slice(7),
-			new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
-		);
+	if (!(await db.getBlob(h.slice(7)))) await db.put('blobs', h.slice(7), await cellBlob(im));
 };
 const warn = (clip: string, qa: ClipQa) =>
 	[...qa.fails, ...(qa.warnings ?? [])].map((f) => `${clip}: ${f}`);
@@ -1256,6 +1262,9 @@ export interface MoveSpec {
 	animation?: MoveAnimationOptions;
 	items: string[];
 	itemsOnly?: true;
+	reviewBeforePublish?: true;
+	reviewRegeneration?: { id: string; seed: number; activityScope?: string };
+	reviewedMoveItems?: true;
 	seed: number;
 	replace?: boolean;
 	activityScope?: string;
@@ -2106,6 +2115,94 @@ export function bodyMoveIssue(
 				blocked ? 'create.errors.describeMoveBlocked' : 'create.errors.describeMove'
 			);
 }
+const replacementBodyQa = () =>
+	new LocalizedError(
+		'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.',
+		'create.errors.replacementFailsQa'
+	);
+const newMoveBodyQa = () =>
+	new LocalizedError(
+		'The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.',
+		'create.errors.newMoveFailsQa'
+	);
+
+export function skeletonMoveReview(
+	rec: StoredProject,
+	spec: MoveSpec,
+	error: unknown,
+	qualityDirs: readonly DirectionName[],
+	candidate?: MoveCandidate
+) {
+	if (!isV13(rec) || reservedMove(spec.id) || spec.itemMethod === 'grid') return;
+	const manifest = rec.manifest;
+	const saved = manifest.rig.animations.find((clip) => clip.id === spec.id);
+	const qualityError = spec.replace ? replacementBodyQa() : newMoveBodyQa();
+	const bodyRejected =
+		!spec.itemsOnly &&
+		moveAnimationModel(spec) !== 'skeleton-v3' &&
+		(errorTranslation(error)?.key === qualityError.translation.key ||
+			error === qualityError.message);
+	if (error && !bodyRejected) return;
+	const draftWarning =
+		candidate &&
+		moveAnimationModel(spec) !== 'skeleton-v3' &&
+		!moveCandidateHasStructuralFailure(candidate) &&
+		Object.values(candidate.checks).some((qa) => failsBodyGate(qa, true));
+	if (candidate ? !draftWarning : Object.hasOwn(rec.moveReviews ?? {}, spec.id)) return;
+	try {
+		const dirs = draftWarning
+			? candidate.dirs
+			: bodyRejected
+				? approvedMoveDirections(manifest, spec)
+				: genDirs(manifest).filter((dir) => {
+						const route = saved?.sources?.[dir]?.route;
+						return qualityDirs.includes(dir) && (route === 'pixminimax' || route === 'v3');
+					});
+		if (!dirs.length || (bodyRejected && !!saved !== !!spec.replace)) return;
+		const motions = new Set(
+			dirs.map((dir) => {
+				const source = saved?.sources?.[dir];
+				if (source?.route !== 'v3' && source?.route !== 'pixminimax') return;
+				const prefix = `${source.route}:`;
+				if (source.motion?.startsWith(prefix)) return source.motion.slice(prefix.length);
+			})
+		);
+		const motion = motions.values().next().value;
+		if (!bodyRejected && !draftWarning && (motions.size !== 1 || !motion)) return;
+		const action =
+			bodyRejected || draftWarning
+				? spec.action
+				: motion === spec.id && (motion === 'walk' || isAuthoredAction(motion))
+					? motion
+					: undefined;
+		const preferred = candidate?.animation.cells ?? saved?.cells ?? moveFrames(manifest, spec);
+		const frameCount = defaultMoveFrameCount('skeleton-v3', manifest.rig.cell.w, preferred);
+		const affected = affectedMoveDirections(manifest.rig, dirs);
+		const review: MoveSpec = {
+			id: spec.id,
+			action,
+			text: bodyRejected || draftWarning ? spec.text : action ? undefined : motion,
+			frames: preferred,
+			animation: { model: 'skeleton-v3', frameCount },
+			items: [],
+			reviewBeforePublish: true,
+			poseStyle: 'visible-side-v1',
+			seed: 0,
+			replace: !!saved,
+			approvedDirs: dirs,
+			...(saved ? { dirs } : {})
+		};
+		if (bodyMoveIssue(manifest, review) || partialMoveFrameIssue(manifest, review, dirs.length))
+			return;
+		const estimate = moveEstimate(manifest, review);
+		const tier = moveMinimumTier(manifest, review);
+		if (Number.isFinite(estimate.gens) && estimate.gens > 0)
+			return { review, estimate, tier, affected };
+	} catch {
+		return undefined;
+	}
+}
+
 export function moveEstimate(
 	m: Manifest,
 	s: Pick<
@@ -2250,30 +2347,49 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 				'The selected equipment is no longer available.',
 				'create.errors.selectedEquipmentLongerAvailable'
 			);
+		const ignoreOutputs = spec.reviewedMoveItems && id !== m.rig.baseItem;
 		return {
 			...itemContent(item),
+			baseHash: spec.reviewedMoveItems ? undefined : item.baseHash,
 			qa: undefined,
 			provenance: undefined,
 			designWarnings: undefined,
 			materials: undefined,
 			hides: undefined,
-			coverage: item.coverage?.filter(
-				(key) => key.startsWith(`${spec.id}/`) && dirs.includes(key.split('/')[1] as DirectionName)
-			),
-			baseCut: rows(item.baseCut?.[spec.id]),
+			coverage: ignoreOutputs
+				? undefined
+				: item.coverage?.filter(
+						(key) =>
+							key.startsWith(`${spec.id}/`) && dirs.includes(key.split('/')[1] as DirectionName)
+					),
+			baseCut: ignoreOutputs ? undefined : rows(item.baseCut?.[spec.id]),
 			paletteRepairs: item.paletteRepairs?.filter(
 				(p) => p.anim === spec.id && dirs.includes(p.dir)
 			),
 			layers: item.layers.map((layer) => ({
 				...layer,
-				cells: rows(layer.cells?.[spec.id]),
-				sheets: layer.sheets?.[spec.id],
-				sourceSheets: layer.sourceSheets?.[spec.id]
+				cells: ignoreOutputs ? undefined : rows(layer.cells?.[spec.id]),
+				sheets: ignoreOutputs ? undefined : layer.sheets?.[spec.id],
+				sourceSheets: ignoreOutputs ? undefined : layer.sourceSheets?.[spec.id]
 			}))
 		};
 	});
 	const artwork = stableStringify({
-		rig: rigArtworkVersion(m.rig, undefined),
+		rig: rigArtworkVersion(
+			spec.reviewedMoveItems
+				? {
+						...m.rig,
+						baseHash: '' as Sha256,
+						animations: m.rig.animations.filter((move) => move.id === spec.id),
+						anchors: Object.fromEntries(
+							Object.entries(m.rig.anchors ?? {}).flatMap(([anchor, track]) =>
+								track?.[spec.id] ? [[anchor, { [spec.id]: track[spec.id] }]] : []
+							)
+						)
+					}
+				: m.rig,
+			undefined
+		),
 		items,
 		scope: {
 			id: spec.id,
@@ -2289,6 +2405,17 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 		}
 	});
 	return { ...spec, itemReview: { gens: moveEstimate(m, spec).items, artwork } };
+}
+
+export function itemMoveReviewMatches(m: Manifest, spec: MoveSpec): boolean {
+	if (!spec.itemReview) return !spec.reviewedMoveItems;
+	const reviewed = reviewItemMove(m, spec).itemReview!;
+	return (
+		reviewed.artwork === spec.itemReview.artwork &&
+		(spec.reviewedMoveItems
+			? reviewed.gens <= spec.itemReview.gens
+			: reviewed.gens === spec.itemReview.gens)
+	);
 }
 
 /** An unsupported pose or grid has no valid price. Keep the offer visible with its reason instead of breaking the view. */
@@ -2317,7 +2444,13 @@ export async function addMove(
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void = () => {},
 	onReviewed: () => Promise<void> = async () => {}
-): Promise<{ warnings: string[]; reviewItems?: string[]; repairReview?: RepairReview }> {
+): Promise<{
+	warnings: string[];
+	reviewItems?: string[];
+	qualityDirs?: DirectionName[];
+	repairReview?: RepairReview;
+	moveReview?: string;
+}> {
 	approvedMeasurementIds(spec.measurementRecovery);
 	checkedPaletteIntent(spec.bodyPaletteRepair);
 	// Keeping reviewed frames is free and body-only: equipment for the move is a separate, priced choice afterward.
@@ -2335,11 +2468,25 @@ export async function addMove(
 			'create.errors.keepingReviewedBodyFrames'
 		);
 	const { rec } = await loadProject(projectId);
+	if (spec.reviewBeforePublish) {
+		if (spec.items.length || spec.itemsOnly || spec.itemMethod)
+			throw new LocalizedError(
+				'Review the move before animating items.',
+				'moveSheet.checkpoint.beforeItems'
+			);
+		const saved = Object.hasOwn(rec.moveReviews ?? {}, spec.id)
+			? rec.moveReviews![spec.id]
+			: undefined;
+		if (saved && saved.spec.activityScope === spec.activityScope && saved.spec.seed === spec.seed)
+			return { warnings: saved.warnings, moveReview: spec.id };
+		if (saved || spec.reviewRegeneration) {
+			if (!saved || spec.reviewRegeneration?.id !== spec.id) throw changedMoveCandidate();
+			const original = currentMoveCandidate(rec, spec.reviewRegeneration);
+			if (moveCandidateInput(rec, spec.id) !== original.input) throw changedMoveCandidate();
+		}
+	}
 	const assertReview = (m: Manifest) => {
-		if (
-			spec.itemReview &&
-			stableStringify(reviewItemMove(m, spec).itemReview) !== stableStringify(spec.itemReview)
-		) {
+		if (!itemMoveReviewMatches(m, spec)) {
 			throw new LocalizedError(
 				'This character, item or price changed. Reopen the item and review its current estimate before generating. No paid request was made.',
 				'create.errors.characterItemPriceChanged'
@@ -2440,8 +2587,10 @@ export async function addMove(
 	if (blocked) throw localizedPlanRestriction(blocked) ?? new Error(blocked);
 	const recovery =
 		intent && !published ? await measurementRecoveryPlan(projectId, spec) : undefined;
-	if (!published && (spec.replace || !existing))
-		await addBodyClip(projectId, spec, onProgress, recovery);
+	if (!published && (spec.replace || !existing)) {
+		const candidate = await addBodyClip(projectId, spec, onProgress, recovery);
+		if (candidate) return { warnings: candidate.warnings, moveReview: spec.id };
+	}
 	// Freeze durable garment-region colors before posing: this move's frames when the request draws its body (also one
 	// resumed after a reload cut it off between saving the frames and splitting them), or a body never split. Item work on a
 	// move the body already had (a repair, Make it) splits nothing, so those frames keep their pixels.
@@ -2459,7 +2608,7 @@ export async function addMove(
 	const fresh = await loadProject(projectId),
 		frames = fresh.rec.manifest.rig.animations.find((a) => a.id === spec.id)!.cells;
 	assertReview(fresh.rec.manifest);
-	if (spec.itemReview && spec.itemMethod !== 'grid') {
+	if (spec.itemReview && spec.itemMethod !== 'grid' && !spec.reviewedMoveItems) {
 		const reviewed = spec.itemReview;
 		delete spec.itemReview;
 		try {
@@ -2602,8 +2751,24 @@ export async function addMove(
 		warnings.push(
 			`${saved.manifest.items.find((item) => item.id === id)!.name}: item quality checks need review. No paid retry was started.`
 		);
+	const qualityDirs = dirs.filter((dir) => {
+		const clip = `${spec.id}/${dir}`;
+		return (
+			(!published &&
+				(spec.replace || !existing) &&
+				clipQa[clip] &&
+				failsBodyGate(clipQa[clip], true)) ||
+			plans.some(
+				(plan) =>
+					plan.dirs.includes(dir) &&
+					saved.manifest.items.find((item) => item.id === plan.id)?.qa?.clips?.[clip]?.status ===
+						'fail'
+			)
+		);
+	});
 	return {
 		warnings: [...new Set(warnings)],
+		...(qualityDirs.length ? { qualityDirs } : {}),
 		...(reviewItems.length ? { reviewItems } : {})
 	};
 }
@@ -2869,24 +3034,23 @@ async function addBodyClip(
 				'create.errors.bodyFramesTheirQuality'
 			);
 	} else if (
+		!spec.reviewBeforePublish &&
 		spec.dirs &&
 		clips.some(({ out: { qa } }) => failsBodyGate(qa, model !== 'skeleton-v3'))
 	)
-		throw old
-			? new LocalizedError(
-					'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.',
-					'create.errors.replacementFailsQa'
-				)
-			: new LocalizedError(
-					'The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.',
-					'create.errors.newMoveFailsQa'
-				);
+		throw old ? replacementBodyQa() : newMoveBodyQa();
 	const layer = baseIt.layers[0],
 		cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = {
 			...baseIt.layers[0].cells?.[spec.id]
 		};
 	const skeletons = (fresh.skeletons ??= {}),
 		warnings: string[] = [];
+	const reviewBlobs = spec.reviewBeforePublish ? new Map<string, Blob>() : null;
+	const writeCell = async (hash: Sha256, image: Img) => {
+		if (reviewBlobs) reviewBlobs.set(hash.slice(7), await cellBlob(image));
+		else await putCell(hash, image);
+	};
+	const provenanceStart = baseIt.provenance.length;
 	clearMovePoseData(frig, skeletons, spec.id, dirs);
 	for (const [k, c] of clips.entries()) {
 		const produced = c.out.frames.map((_, i) => cellKey(spec.id, c.d, i) as CellKey);
@@ -2913,7 +3077,7 @@ async function addBodyClip(
 		cellMap[c.d] = await Promise.all(
 			c.out.frames.map(async (f, i) => {
 				const h = await cellHash(f);
-				await putCell(h, f);
+				await writeCell(h, f);
 				const s = c.out.measured[i];
 				if (s) skeletons[cellKey(spec.id, c.d, i)] = fromApi(s, frig.cell);
 				return h;
@@ -2928,7 +3092,7 @@ async function addBodyClip(
 			src.out.frames.map(async (f, i) => {
 				const im = flipH(f),
 					h = await cellHash(im);
-				await putCell(h, im);
+				await writeCell(h, im);
 				const s = skeletons[cellKey(spec.id, src.d, i)];
 				if (s) skeletons[cellKey(spec.id, d.id, i)] = flipSkeleton(s, frig.cell.w);
 				return h;
@@ -2975,13 +3139,52 @@ async function addBodyClip(
 			errs: errs.join('; ')
 		});
 	const qa = (fresh.rigQa ?? {}) as { warnings?: string[]; clips?: Record<string, ClipQa> };
+	const checks = Object.fromEntries(clips.map((clip) => [`${spec.id}/${clip.d}`, clip.out.qa]));
+	if (reviewBlobs) {
+		const candidate: MoveCandidate = {
+			spec,
+			input: moveCandidateInput(rec, spec.id),
+			dirs,
+			animation: anim,
+			cells: cellMap,
+			provenance: baseIt.provenance.slice(provenanceStart),
+			provenanceStart,
+			anchors: Object.fromEntries(
+				Object.entries(frig.anchors ?? {}).flatMap(([id, track]) =>
+					track?.[spec.id] ? [[id, { [spec.id]: track[spec.id] }]] : []
+				)
+			),
+			skeletons: Object.fromEntries(
+				Object.entries(skeletons).filter(([key]) => key.startsWith(`${spec.id}/`))
+			),
+			checks,
+			warnings
+		};
+		await db.updateCharacter<StoredProject>(
+			projectId,
+			reviewBlobs,
+			(current) => {
+				if (!current || moveCandidateInput(current, spec.id) !== candidate.input)
+					throw new LocalizedError(
+						'The character changed before the review was saved.',
+						'moveSheet.checkpoint.changed'
+					);
+				if (spec.reviewRegeneration) currentMoveCandidate(current, spec.reviewRegeneration);
+				else if (Object.hasOwn(current.moveReviews ?? {}, spec.id)) throw changedMoveCandidate();
+				current.moveReviews = { ...current.moveReviews, [spec.id]: candidate };
+				return current;
+			},
+			moveCandidateBlobGuard(cellMap, reviewBlobs)
+		);
+		return candidate;
+	}
 	fresh.rigQa = {
 		...qa,
 		warnings: [
 			...(qa.warnings ?? []).filter((w) => !affected.some((d) => w.startsWith(`${spec.id}/${d}:`))),
 			...warnings
 		],
-		clips: { ...qa.clips, ...Object.fromEntries(clips.map((c) => [`${spec.id}/${c.d}`, c.out.qa])) }
+		clips: { ...qa.clips, ...checks }
 	};
 	// R6 P1-5: `fresh` was read before ~30 cell writes; graft only what this clip changed onto the CURRENT record in one
 	// transaction, so an item accepted or an outfit autosaved meanwhile survives.
@@ -3013,6 +3216,162 @@ async function addBodyClip(
 		cur.savedAt = new Date().toISOString();
 		return cur;
 	});
+}
+
+const changedMoveCandidate = () =>
+	new LocalizedError(
+		'The character or move changed. Reopen the review before continuing.',
+		'moveSheet.checkpoint.changed'
+	);
+
+function currentMoveCandidate(
+	rec: StoredProject,
+	reviewed: Pick<MoveSpec, 'id' | 'seed' | 'activityScope'>
+) {
+	const id = reviewed.id;
+	const saved = Object.hasOwn(rec.moveReviews ?? {}, id) ? rec.moveReviews![id] : undefined;
+	if (
+		!saved ||
+		saved.spec.activityScope !== reviewed.activityScope ||
+		saved.spec.seed !== reviewed.seed
+	)
+		throw changedMoveCandidate();
+	return saved;
+}
+
+export async function readMoveCandidateImages(candidate: MoveCandidate) {
+	const images = new Map<string, Img>();
+	const hashes = new Set(Object.values(candidate.cells).flatMap((cells) => cells ?? []));
+	await Promise.all(
+		[...hashes].map(async (hash) => {
+			if (!hash) return;
+			const blob = await db.getBlob(hash.slice(7));
+			if (!blob)
+				throw new LocalizedError(
+					'The reviewed frames are no longer available.',
+					'moveSheet.checkpoint.missingFrames'
+				);
+			images.set(hash, await decodePng(blob));
+		})
+	);
+	return images;
+}
+
+function moveCandidateBlobGuard(cells: MoveCandidate['cells'], written: Map<string, Blob>) {
+	return {
+		keys: [...new Set(Object.values(cells).flat())].flatMap((hash) =>
+			hash && !written.has(hash.slice(7)) ? [hash.slice(7)] : []
+		),
+		missing: () =>
+			new LocalizedError(
+				'The reviewed frames are no longer available.',
+				'moveSheet.checkpoint.missingFrames'
+			)
+	};
+}
+
+export async function resolveMoveCandidate(
+	projectId: string,
+	reviewed: MoveCandidate,
+	accept: boolean
+) {
+	const id = reviewed.spec.id;
+	if (!accept) {
+		await db.update<StoredProject>('projects', projectId, (current) => {
+			if (!current) throw changedMoveCandidate();
+			currentMoveCandidate(current, reviewed.spec);
+			delete current.moveReviews![id];
+			return current;
+		});
+		return;
+	}
+	const { rec, project } = await loadProject(projectId);
+	const candidate = currentMoveCandidate(rec, reviewed.spec);
+	if (moveCandidateInput(rec, id) !== candidate.input) throw changedMoveCandidate();
+	if (moveCandidateHasStructuralFailure(candidate))
+		throw new LocalizedError(
+			'This move needs fixes before it can be kept.',
+			'moveSheet.checkpoint.hardFailure'
+		);
+	const version = moveRigVersion(rec);
+	const rig = rec.manifest.rig;
+	const oldHash = rig.baseHash;
+	const base = rec.manifest.items.find((item) => item.id === rig.baseItem)!;
+	const provenanceStart = base.provenance.length;
+	const next = structuredClone(candidate.animation);
+	for (const dir of candidate.dirs) {
+		const source = next.sources?.[dir];
+		if (source)
+			source.provenance = source.provenance?.map(
+				(index) => index - candidate.provenanceStart + provenanceStart
+			);
+	}
+	if (candidate.spec.replace)
+		rig.animations = rig.animations.map((move) => (move.id === id ? next : move));
+	else rig.animations.push(next);
+	clearMovePoseData(rig, (rec.skeletons ??= {}), id, candidate.dirs);
+	for (const [anchor, track] of Object.entries(candidate.anchors ?? {}))
+		if (track?.[id])
+			((rig.anchors ??= {})[anchor as keyof NonNullable<Rig['anchors']>] ??= {})[id] = track[id];
+	base.provenance.push(...candidate.provenance);
+	(base.layers[0].cells ??= {})[id] = candidate.cells;
+	for (const [hash, image] of await readMoveCandidateImages(candidate))
+		project.images.set(hash, image);
+	rig.baseHash = await baseHashOf(rig, storedCellHashes(rig, base.layers[0].cells));
+	const split = await splitBase(project, id);
+	deriveMaterials(project);
+	const blobs = new Map<string, Blob>();
+	for (const [hash, image] of split.images) blobs.set(hash.slice(7), await cellBlob(image));
+	const affected = affectedMoveDirections(rig, candidate.dirs);
+	await db.updateCharacter<StoredProject>(
+		projectId,
+		blobs,
+		(current) => {
+			if (
+				!current ||
+				moveRigVersion(current) !== version ||
+				current.manifest.rig.baseHash !== oldHash
+			)
+				throw changedMoveCandidate();
+			currentMoveCandidate(current, reviewed.spec);
+			const manifest = current.manifest;
+			const currentBase = manifest.items.find((item) => item.id === rig.baseItem)!;
+			if (currentBase.provenance.length !== provenanceStart) throw changedMoveCandidate();
+			clearMovePoseData(manifest.rig, (current.skeletons ??= {}), id, candidate.dirs);
+			if (candidate.spec.replace) invalidateMoveItems(manifest, id, candidate.dirs);
+			retainPlaybackChoices(rig, manifest.rig);
+			manifest.rig = rig;
+			Object.assign(currentBase, {
+				provenance: base.provenance,
+				layers: base.layers,
+				regions: base.regions,
+				materials: base.materials
+			});
+			manifest.materials = [
+				...manifest.materials.filter((material) => material.owner !== base.id),
+				...rec.manifest.materials.filter((material) => material.owner === base.id)
+			];
+			for (const item of manifest.items)
+				if (item.baseHash === oldHash) item.baseHash = rig.baseHash;
+			Object.assign(current.skeletons, candidate.skeletons);
+			const qa = (current.rigQa ?? {}) as { warnings?: string[]; clips?: Record<string, ClipQa> };
+			current.rigQa = {
+				...qa,
+				warnings: [
+					...(qa.warnings ?? []).filter(
+						(warning) => !affected.some((dir) => warning.startsWith(`${id}/${dir}:`))
+					),
+					...candidate.warnings
+				],
+				clips: { ...qa.clips, ...candidate.checks }
+			};
+			delete current.moveReviews![id];
+			current.savedAt = new Date().toISOString();
+			return current;
+		},
+		moveCandidateBlobGuard(base.layers[0].cells?.[id] ?? {}, blobs)
+	);
+	return moveCandidateInput(rec, id);
 }
 
 /** Copy a loaded (fixture) project into IndexedDB as an editable rig project, so items can be generated for it. */

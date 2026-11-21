@@ -5,7 +5,7 @@ import {
 	openAccount,
 	noDisabledHover
 } from './immersive-helpers.ts';
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 import { CharacterApi } from '../fixtures/character-api.ts';
 import { readFile } from 'node:fs/promises';
 import { unzip } from '../../src/lib/store/zip.ts';
@@ -44,7 +44,9 @@ async function open(page: Page, navigate = true) {
 	return page.getByRole('dialog', { name: 'New character', exact: true });
 }
 async function connect(page: Page) {
-	await page.getByLabel('API key', { exact: true }).fill('offline-fixture-not-a-real-key');
+	await page
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('offline-fixture-not-a-real-key');
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
 		.getByRole('button', { name: 'Connect', exact: true })
@@ -400,6 +402,14 @@ test.describe('creation safety', () => {
 	});
 });
 
+async function chooseSkeletonMove(sheet: Locator) {
+	const advanced = sheet.locator('details.advanced');
+	if ((await advanced.getAttribute('open')) === null) await advanced.locator('summary').click();
+	await sheet
+		.getByRole('combobox', { name: 'Motion model', exact: true })
+		.selectOption('skeleton-v3');
+}
+
 test('Add a move queues behind the running move and runs it next', async ({ page, context }) => {
 	test.setTimeout(150_000);
 	const api = new CharacterApi();
@@ -429,7 +439,8 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
-	await move.getByRole('button', { name: /^Add Walk/ }).click();
+	await chooseSkeletonMove(move);
+	await move.getByRole('button', { name: /^Generate move/ }).click();
 	await expect(move).not.toContainText('Queued next: Idle');
 	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
@@ -437,14 +448,28 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await expect(move.getByRole('button', { name: /^Queue Walk/ })).toBeDisabled();
 	await expect(move.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
+	await chooseSkeletonMove(move);
 	await expect(move).toContainText('It waits for the move in progress, then runs by itself.');
 	await move.getByRole('button', { name: /^Queue Idle/ }).click();
 	await expect(move).toContainText('Queued next: Idle');
 	await expect(page.locator('.move-row', { hasText: 'Idle' })).toContainText('Queued');
+	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
+	const draft = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
+	await draft.fill('jump softly');
 	held = false;
-	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Walk', 'Idle'], {
+	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
+	await expect(
+		page.locator('.move-list button').filter({ hasText: 'Idle' }).filter({ hasText: 'Review move' })
+	).toBeVisible({
 		timeout: 120_000
 	});
+	await expect(draft).toHaveValue('jump softly');
+	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('button', { name: /Walk Review move/ }).click();
+	await review.getByRole('button', { name: 'Save move', exact: true }).click();
+	await page.getByRole('button', { name: /Idle Review move/ }).click();
+	await review.getByRole('button', { name: 'Save move', exact: true }).click();
+	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Walk', 'Idle']);
 });
 
 test('a failed required measurement stops the queued idle without paying for an art reroll', async ({
@@ -488,7 +513,8 @@ test('a failed required measurement stops the queued idle without paying for an 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await move.getByRole('button', { name: /^Add Idle/ }).click();
+	await chooseSkeletonMove(move);
+	await move.getByRole('button', { name: /^Generate move/ }).click();
 	try {
 		await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
 		await move.getByRole('radio', { name: 'Walk', exact: true }).click();
@@ -911,7 +937,7 @@ test('canceling the connection discards the pending enhancement instead of charg
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await openAccount(page);
 	await connect(page);
@@ -1433,11 +1459,15 @@ function offlineCreation(config: CreationCase) {
 		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await equipmentMode(page, 'Moves');
 		const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+		const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 		for (const name of ['Idle', 'Walk']) {
 			await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 			await move.getByRole('radio', { name, exact: true }).click();
-			await move.getByRole('button', { name: new RegExp(`^Add ${name}`) }).click();
-			await move.getByRole('button', { name: 'Done', exact: true }).click({ timeout: 120_000 });
+			await chooseSkeletonMove(move);
+			await move.getByRole('button', { name: /^Generate move/ }).click();
+			await review
+				.getByRole('button', { name: 'Save move', exact: true })
+				.click({ timeout: 120_000 });
 		}
 		await expect(page.locator('.move-list .move-row')).toHaveCount(3, { timeout: 150_000 });
 		await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk']);

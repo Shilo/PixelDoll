@@ -6,6 +6,7 @@
 	import './share.css';
 	import './experience/theme.css';
 	import './experience/layout.css';
+	import './experience/hoverActions.css';
 	import { rememberActivation } from './experience/focus.ts';
 	import { backFromSettings, settingsNavigation } from './settingsNavigation.svelte.ts';
 	import { localDeveloperToolsEnabled } from './developerMode.svelte.ts';
@@ -69,6 +70,7 @@
 		settings: () => import('./SettingsSheet.svelte'),
 		activity: () => import('./ActivitySheet.svelte'),
 		move: () => import('./MoveSheet.svelte'),
+		moveReview: () => import('./MoveReviewSheet.svelte'),
 		importZip: () => import('./ImportSheet.svelte'),
 		importPixelLab: () => import('./ImportSheet.svelte'),
 		setup: () => import('./SetupSheet.svelte'),
@@ -387,6 +389,7 @@
 	{#if ui.sheet === 'activity'}<Lazy load={parts.activity} />{/if}
 	{#if ui.sheet === 'workspaceReport' && workspaceCopy}<Lazy load={parts.workspace} />{/if}
 	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
+	{#if ui.sheet === 'moveReview'}{#key ui.moveReview}<Lazy load={parts.moveReview} />{/key}{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
 	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}
 	{#if ui.sheet === 'importZip' || ui.sheet === 'importPixelLab'}{#key ui.sheet}<Lazy

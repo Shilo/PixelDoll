@@ -184,9 +184,11 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 	await remember.press('Space');
 	await expect(remember).toBeChecked({ checked: initial });
 
-	await dialog.getByText('API key', { exact: true }).dblclick({ position: { x: 12, y: 8 } });
-	expect(await selected()).toMatch(/API|key/);
-	const key = dialog.getByLabel('API key', { exact: true });
+	await dialog
+		.getByText('Paste your Secret API key', { exact: true })
+		.dblclick({ position: { x: 12, y: 8 } });
+	expect(await selected()).toMatch(/^Paste\s*$/);
+	const key = dialog.getByLabel('Paste your Secret API key', { exact: true });
 	await key.fill('synthetic-key');
 	await key.press('ControlOrMeta+a');
 	expect(
@@ -199,11 +201,12 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const exportDialog = page.getByRole('dialog', { name: 'Export', exact: true });
+	await expect(exportDialog.getByRole('radio', { name: 'PNG + JSON', exact: true })).toBeChecked();
 	const godotLabel = exportDialog
 		.getByRole('group', { name: 'Export format', exact: true })
 		.getByText('Godot', { exact: true });
 	await godotLabel.dblclick();
-	await expect(exportDialog.getByRole('radio', { name: 'PNG + JSON', exact: true })).toBeChecked();
+	await expect(exportDialog.getByRole('radio', { name: 'Godot', exact: true })).toBeChecked();
 	expect(await selected()).toBe('');
 	const files = exportDialog.locator('details', { hasText: 'Files included' });
 	const summary = files.locator('summary');

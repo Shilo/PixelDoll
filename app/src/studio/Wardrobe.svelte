@@ -1010,7 +1010,7 @@
 								{@const marks = marksOf(it)}
 								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
 								<div
-									class="tile-wrap"
+									class="tile-wrap hover-actions"
 									role="none"
 									{@attach (node) =>
 										untrack(() =>
@@ -1045,7 +1045,7 @@
 										<TileMarks {marks} />
 									</button>
 									<button
-										class="bu-tile-more tile-more"
+										class="bu-tile-more tile-more hover-actions-button"
 										popovertarget="item-menu"
 										aria-haspopup="menu"
 										aria-expanded={menuOpen && menuFor === it.id}
@@ -1080,7 +1080,7 @@
 								{@const thumbnail = firstFrame ? crop(firstFrame) : null}
 								<!-- a draft tile wears the draft like a saved item (display only, while it loads or awaits review) -->
 								<div
-									class="tile-wrap"
+									class="tile-wrap hover-actions"
 									role="none"
 									oncontextmenu={(event) => {
 										event.preventDefault();
@@ -1166,7 +1166,7 @@
 											})}
 										></span>{/if}
 									<button
-										class="bu-tile-more tile-more"
+										class="bu-tile-more tile-more hover-actions-button"
 										popovertarget="item-menu"
 										aria-haspopup="menu"
 										aria-expanded={menuOpen && menuFor === 'gen:' + x.draft.spec.id}
@@ -1186,7 +1186,7 @@
 								{@const remake = x.fit === 'remake'}
 								{@const marks = sharedMarks(x)}
 								<!-- Like an own tile: the tile wears it (on the demo, in a saved copy), the ⋮ explains how it fits. -->
-								<div class="tile-wrap" role="none" {@attach contextMenu(openMenu)}>
+								<div class="tile-wrap hover-actions" role="none" {@attach contextMenu(openMenu)}>
 									<button
 										class="bu-tile item-tile shared-tile"
 										data-selected={ui.selected === key || undefined}
@@ -1206,7 +1206,7 @@
 										<TileMarks {marks} />
 									</button>
 									<button
-										class="bu-tile-more tile-more"
+										class="bu-tile-more tile-more hover-actions-button"
 										popovertarget="item-menu"
 										aria-haspopup="menu"
 										aria-expanded={menuOpen && menuFor === key}

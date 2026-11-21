@@ -100,7 +100,7 @@
 
 <Sheet
 	title={t('setup.title')}
-	cancel={active ? 'common.hide' : 'sheet.later'}
+	cancel={active || (mine && settingUp.error) ? 'common.hide' : 'sheet.later'}
 	onclose={() => (ui.sheet = null)}
 >
 	{#snippet developer()}
@@ -228,19 +228,27 @@
 					ui.sheet = null;
 				}}>{t('create.sheet.startDressing')}</button
 			>
-		{:else if mine && settingUp.error}<button
-				class="bu-action btn plain"
-				data-variant="quiet"
-				onclick={dismissSetup}>{t('setup.dismiss')}</button
-			><span class="api-action"
-				><button
-					class="bu-action btn primary"
-					data-variant="primary"
-					onclick={() =>
-						settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)))}
-					>{t('setup.resume')}</button
-				></span
-			>
+		{:else if mine && settingUp.error}
+			<div class="recovery-actions">
+				<button
+					class="bu-action btn plain"
+					data-variant="quiet"
+					onclick={async () => {
+						if ((await dismissSetup()) && ui.sheet === 'setup') ui.sheet = null;
+					}}>{t('common.cancel')}</button
+				>
+				<div class="recovery-options">
+					<span class="api-action"
+						><button
+							class="bu-action btn primary"
+							data-variant="primary"
+							onclick={() =>
+								settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)))}
+							>{t('setup.resume')}</button
+						></span
+					>
+				</div>
+			</div>
 		{:else if active}<span class="foot-note">{t('setup.keepWorking')}</span><button
 				class="bu-action btn"
 				data-variant="outline"

@@ -8,7 +8,8 @@ import {
 	nativeMoveGens,
 	nativeMoveRequest,
 	reviewItemMove,
-	reviewMoveRecovery
+	reviewMoveRecovery,
+	skeletonMoveReview
 } from '../../src/studio/create.ts';
 import { moveFrameCounts } from '../../src/studio/moveAnimationOptions.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
@@ -23,7 +24,11 @@ import { cellHash, type Keypoint, type DirectionName } from '../../src/lib/rig/r
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
-async function fixture(fail = false, nativeReply?: 'redrawn' | 'exact' | 'none', withHat = false) {
+async function fixture(
+	fail = false,
+	nativeReply?: 'redrawn' | 'exact' | 'none' | 'bad-palette',
+	withHat = false
+) {
 	const dirs: DirectionName[] = ['south', 'east', 'north', 'west'],
 		im = makeImg(64, 64);
 	for (let y = 10; y < 60; y++)
@@ -180,6 +185,9 @@ async function fixture(fail = false, nativeReply?: 'redrawn' | 'exact' | 'none',
 								? 180
 								: 91
 							: (skeleton ? 180 : 185) + i - echo;
+					if (!skeleton && nativeReply === 'bad-palette' && i >= echo)
+						for (let offset = 0; offset < image.data.length; offset += 4)
+							if (image.data[offset + 3]) image.data.set([0, 10, 250, 255], offset);
 					const sha = 'frame-' + i;
 					blobs.set(
 						sha,
@@ -303,6 +311,49 @@ test('native PixMiniMax rejects a missing leading frame before buying any joint 
 	);
 	expect(f.enqueue).toHaveBeenCalledOnce();
 	expect(f.saved()).toEqual(f.original);
+});
+
+test('a native quality failure offers a priced body draft retry without buying equipment', async () => {
+	const f = await fixture(false, 'bad-palette', true);
+	const spec = {
+		id: 'idle',
+		action: 'idle',
+		frames: 4,
+		items: ['hat'],
+		seed: 23,
+		replace: true,
+		dirs: ['east'] as DirectionName[],
+		animation: { model: 'pixminimax' as const, frameCount: 4 }
+	};
+	const result = await f.run(spec).then(
+		() => null,
+		(error: unknown) => error
+	);
+	expect(result).toBeInstanceOf(Error);
+	expect(f.saved()).toEqual(f.original);
+	const offer = skeletonMoveReview(f.saved(), spec, result, []);
+	expect(offer).toMatchObject({
+		review: {
+			dirs: ['east'],
+			items: [],
+			reviewBeforePublish: true,
+			animation: { model: 'skeleton-v3', frameCount: 4 }
+		},
+		affected: ['east']
+	});
+	expect(offer?.estimate.gens).toBeGreaterThan(0);
+	expect(
+		skeletonMoveReview(f.saved(), spec, new Error('Standing reference is missing'), [])
+	).toBeUndefined();
+	expect(
+		skeletonMoveReview(f.saved(), { ...spec, animation: { model: 'skeleton-v3' } }, result, [])
+	).toBeUndefined();
+	await expect(f.run({ ...offer!.review, seed: 24 })).resolves.toMatchObject({
+		moveReview: 'idle'
+	});
+	const saved = f.saved();
+	expect(saved.manifest).toEqual(f.original.manifest);
+	expect(saved.moveReviews?.idle?.spec).toMatchObject({ items: [], reviewBeforePublish: true });
 });
 
 test('native PixMiniMax discards a redrawn leading frame and plans all 40 equipment poses in order', async () => {

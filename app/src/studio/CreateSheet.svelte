@@ -160,7 +160,7 @@
 
 <Sheet
 	title={t('create.sheet.title')}
-	cancel={running ? 'common.hide' : creating?.projectId ? 'common.close' : 'common.cancel'}
+	cancel={creating?.projectId ? 'common.close' : creating ? 'common.hide' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
 	className="character-sheet"
 	wide
@@ -349,29 +349,51 @@
 				>{t('create.sheet.startDressing')}</button
 			>
 		{:else if creating?.error}
-			<button
-				class="bu-action btn plain"
-				data-variant="quiet"
-				disabled={creating.running}
-				onclick={() => creating && discardCreate(creating.id)}>{t('common.discard')}</button
-			>
-			<span class="api-action"
-				><button
-					class="bu-action btn primary"
-					data-variant="primary"
+			<div class="recovery-actions">
+				<button
+					class="bu-action btn plain"
+					data-variant="quiet"
 					disabled={creating.running}
-					onclick={() => {
-						if (!creating) return;
-						const id = creating.id;
-						const spec = {
-							...$state.snapshot(creating.spec),
-							projectId: undefined,
-							seed: freshSeed()
-						};
-						withKey(() => void startCreate(spec, true, id));
-					}}>{t('common.tryAgain')} <span class="cost">{gensRange}</span></button
-				></span
-			><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
+					onclick={async () => {
+						if (
+							creating &&
+							(await discardCreate(creating.id)) &&
+							ui.sheet === 'create' &&
+							!createPresentation.id
+						)
+							ui.sheet = null;
+					}}>{t('common.cancel')}</button
+				>
+				<div class="recovery-options">
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={creating.running}
+						onclick={() => creating && discardCreate(creating.id)}
+						>{t('create.sheet.editSetup')}</button
+					>
+					<span class="api-action"
+						><button
+							class="bu-action btn primary"
+							data-variant="primary"
+							disabled={creating.running}
+							onclick={() => {
+								if (!creating) return;
+								const id = creating.id;
+								const spec = {
+									...$state.snapshot(creating.spec),
+									projectId: undefined,
+									seed: freshSeed()
+								};
+								withKey(() => void startCreate(spec, true, id));
+							}}
+							>{t('common.generateAgain')}
+							<span class="cost">{t('create.sheet.estimated', { gens: gensRange })}</span></button
+						></span
+					>
+				</div>
+			</div>
+			<!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
 		{:else if running}
 			<span class="foot-note">{t('create.sheet.estimated', { gens: gensRange })}</span>
 			<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}

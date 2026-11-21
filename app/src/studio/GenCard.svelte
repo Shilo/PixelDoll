@@ -288,7 +288,7 @@
 						onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
 						disabled={busy || retryGens === null || retryBlocked}
 						aria-describedby={retryBlocked ? tierNoticeId : undefined}
-						>{t('common.tryAgain')}
+						>{t('common.generateAgain')}
 						<span class="cost"
 							>{t('moves.estimate', {
 								gens: retryGens === null ? '–' : formatNumber(retryGens)
@@ -334,27 +334,27 @@
 					{t('genCard.newPaidAttempt')}
 				</p>
 			{/if}
-			<div class="actions">
-				<span class="api-action"
-					><button
-						class="bu-action btn primary"
-						data-variant="primary"
-						onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
-						disabled={busy || retryGens === null || retryBlocked}
-						aria-describedby={retryBlocked ? tierNoticeId : undefined}
-						>{t('common.tryAgain')}
-						<span class="cost"
-							>{t('moves.estimate', {
-								gens: retryGens === null ? '–' : formatNumber(retryGens)
-							})}</span
-						></button
-					></span
+			<div class="recovery-actions">
+				<button class="bu-action btn plain" data-variant="quiet" onclick={() => discardGen(g)}
+					>{t(g.canceled ? 'common.discard' : 'common.cancel')}</button
 				>
-				<button
-					class="bu-action btn plain danger"
-					data-variant="quiet"
-					onclick={() => discardGen(g)}>{t('common.discard')}</button
-				>
+				<div class="recovery-options">
+					<span class="api-action"
+						><button
+							class="bu-action btn primary"
+							data-variant="primary"
+							onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
+							disabled={busy || retryGens === null || retryBlocked}
+							aria-describedby={retryBlocked ? tierNoticeId : undefined}
+							>{t('common.generateAgain')}
+							<span class="cost"
+								>{t('moves.estimate', {
+									gens: retryGens === null ? '–' : formatNumber(retryGens)
+								})}</span
+							></button
+						></span
+					>
+				</div>
 			</div>
 		{/if}
 

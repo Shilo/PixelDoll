@@ -37,7 +37,11 @@ const mockAccount = vi.hoisted(() => ({ key: '', balance: null as Balance | null
 vi.mock('../../src/studio/create.ts', () => ({
 	createCharacter: mocks.create,
 	addMove: mocks.move,
-	reviewItemMove: mocks.moveReview,
+	itemMoveReviewMatches: (manifest: Manifest, spec: MoveSpec) => {
+		if (!spec.itemReview) return !spec.reviewedMoveItems;
+		const reviewed = mocks.moveReview(manifest, spec).itemReview;
+		return reviewed.artwork === spec.itemReview.artwork && reviewed.gens === spec.itemReview.gens;
+	},
 	moveItems: mocks.moveItems,
 	reviewMoveRecovery: async (...args: unknown[]) => ({
 		recovery: await mocks.recovery(...args),
@@ -475,7 +479,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 		// a failed move holds the queue while its sheet is closed, so it says so
 		if (kind === 'move')
 			expect(first.ui).toMatchObject({
-				toast: message('state.moveNameFailedOpenMovesToTryAgain', { moveName: 'Cast' }),
+				toast: message('state.moveFailedOpen', { moveName: 'Cast' }),
 				toastTone: 'danger'
 			});
 		mocks[kind].mockClear();
