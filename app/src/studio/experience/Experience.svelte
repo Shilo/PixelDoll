@@ -324,7 +324,7 @@
 					: experience.mode
 		]
 	);
-	async function pick(id: string, activate = true) {
+	async function pick(id: string, activate = true, side?: number) {
 		resetWheel();
 		if (doc.loading) return;
 		if (id === doc.id) {
@@ -333,7 +333,9 @@
 			const distance =
 				(list.findIndex((project) => project.id === id) - Math.max(0, index) + list.length) %
 				list.length;
-			castDirection = distance <= list.length / 2 ? 1 : -1;
+			// A clicked card turns the way its side suggests, like the arrows; the character list keeps the
+			// shorter route.
+			castDirection = Math.sign(side || 0) || (distance <= list.length / 2 ? 1 : -1);
 			await openProject(id);
 		}
 	}
