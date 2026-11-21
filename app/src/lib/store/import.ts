@@ -388,6 +388,16 @@ async function pixelLab(
 	let projectName: string | undefined;
 	const warnings: string[] = [],
 		warningKeys: Message[] = [];
+	const frameSize = (path: string) => {
+		const size = pngSize(required(files, path));
+		if (!size || !fitsEditableImage(size))
+			throw new LocalizedError(
+				`${path} is not a PNG or exceeds the import size limit.`,
+				'import.error.frameImage',
+				{ path }
+			);
+		return size;
+	};
 	try {
 		if (meta.states !== undefined) {
 			if (
@@ -571,6 +581,7 @@ async function pixelLab(
 					);
 				rotations.push({ dir: dir as DirectionName, path });
 			}
+			const standingSizes = new Map(rotations.map(({ path }) => [path, frameSize(path)]));
 			const requested =
 				animationStateIds === undefined
 					? [selected.character.id]
@@ -595,11 +606,10 @@ async function pixelLab(
 				return rotations.map(({ dir, path }) => {
 					const alternate = siblingRotations[dir];
 					if (typeof alternate !== 'string') throw incompatible();
-					const baseBytes = files.get(path);
+					const baseSize = standingSizes.get(path)!;
 					const poseBytes = files.get(alternate);
-					const baseSize = baseBytes && pngSize(baseBytes);
 					const poseSize = poseBytes && pngSize(poseBytes);
-					if (!baseSize || !poseSize || baseSize.w !== poseSize.w || baseSize.h !== poseSize.h)
+					if (!poseSize || baseSize.w !== poseSize.w || baseSize.h !== poseSize.h)
 						throw incompatible();
 					return { dir, path: alternate };
 				});
@@ -817,20 +827,7 @@ async function pixelLab(
 			)
 		];
 		const dimensions = paths.map((path) => {
-			const size = pngSize(required(files, path));
-			if (
-				!size ||
-				size.w < 1 ||
-				size.h < 1 ||
-				size.w > 8192 ||
-				size.h > 8192 ||
-				size.w * size.h > 8_388_608
-			)
-				throw new LocalizedError(
-					`${path} is not a PNG or exceeds the import size limit.`,
-					'import.error.frameImage',
-					{ path }
-				);
+			const size = frameSize(path);
 			return Math.max(size.w, size.h);
 		});
 		// A common canvas preserves the source origin across padded frames. Small exports retain the existing floor margin.

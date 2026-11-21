@@ -1090,6 +1090,7 @@
 		"untitledCharacter": "Personaje sin título",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "one": "{count} estado", "other": "{count} estados" },
 			"separateItems": {
 				"one": "{count} objeto separado",
 				"other": "{count} objetos separados"
@@ -1108,7 +1109,7 @@
 		"preview": "Vista previa",
 		"previewArtwork": "Vista previa de importación del personaje",
 		"stalePreview": "Se muestra la última vista previa. Actualiza tu selección para continuar.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Actualizando vista previa…",
 		"characterName": "Nombre del personaje",
 		"directionsHint": "Usa las flechas para conservar u omitir vistas. El botón de reflejo invierte la vista opuesta. Desactívalo antes de importar para conservar las imágenes originales. Si no las hay, los fotogramas invertidos quedan como vista independiente.",
@@ -2424,6 +2425,7 @@
 	},
 	"stateCapture": {
 		"add": "Capturar pose final",
+		"saving": "Guardando estado…",
 		"saved": "Estado capturado",
 		"blocked": "Espera a que se cargue el personaje y resuelve las tareas pendientes antes de capturar un estado.",
 		"unavailable": "Esta animación no tiene un fotograma final del cuerpo guardado que se pueda capturar.",

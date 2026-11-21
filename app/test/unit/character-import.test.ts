@@ -475,6 +475,25 @@ test('PixelLab sibling States do not occupy Move preset IDs', async () => {
 	]);
 });
 
+test('PixelLab default State selection does not blame siblings for missing Standing artwork', async () => {
+	const entries = await pixelLabFiles();
+	const metadata = JSON.parse(new TextDecoder().decode(entries[0].data));
+	metadata.states[1].frames.rotations = { ...metadata.states[0].frames.rotations };
+	metadata.states[0].frames.rotations.south = 'Missing-standing.png';
+	entries[0].data = enc.encode(JSON.stringify(metadata));
+	const bytes = await zip(entries);
+	const failure = await readCharacterZip(bytes, id, 'all', { exclude: [] }).catch(
+		(error: unknown) => error
+	);
+	expect(failure).toBeInstanceOf(CharacterImportError);
+	expect((failure as CharacterImportError).message).toBe('Missing file: Missing-standing.png');
+	const sibling = (failure as CharacterImportError).states.find((state) => state.id === 'second');
+	expect(sibling).toBeDefined();
+	expect(sibling?.poseCompatible).toBeUndefined();
+	const recovered = await readCharacterZip(bytes, 'second', 'all', { exclude: [] });
+	expect(recovered.states?.find((state) => state.id === id)?.poseCompatible).toBe(false);
+});
+
 test('PixelLab standing rotations and chosen animation states are independent, including Default alone', async () => {
 	const entries = await pixelLabFiles(),
 		meta = JSON.parse(new TextDecoder().decode(entries[0].data));

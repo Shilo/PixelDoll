@@ -1046,6 +1046,7 @@
 		"untitledCharacter": "제목 없는 캐릭터",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "other": "상태 {count}개" },
 			"separateItems": { "other": "별도 아이템 {count}개" }
 		},
 		"previousCharacterPage": "이전 캐릭터 페이지",
@@ -1061,7 +1062,7 @@
 		"preview": "미리보기",
 		"previewArtwork": "캐릭터 가져오기 미리보기",
 		"stalePreview": "마지막 미리보기를 표시하고 있어요. 계속하려면 선택을 업데이트하세요.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "미리보기 업데이트 중…",
 		"characterName": "캐릭터 이름",
 		"directionsHint": "화살표로 뷰를 유지하거나 건너뛰세요. 대칭 버튼은 반대쪽 뷰를 뒤집어요. 가져오기 전에 끄면 원본이 유지돼요. 원본이 없으면 뒤집힌 프레임이 독립 뷰로 남아요.",
@@ -2312,6 +2313,7 @@
 	"moveNames": { "default": "서 있기", "idle": "대기", "walk": "걷기" },
 	"stateCapture": {
 		"add": "마지막 자세 저장",
+		"saving": "상태 저장 중…",
 		"saved": "상태를 저장했어요",
 		"blocked": "캐릭터가 로드되고 대기 중인 작업을 해결한 뒤 상태를 저장하세요.",
 		"unavailable": "이 동작에는 상태로 저장할 수 있는 마지막 몸체 프레임이 없어요.",

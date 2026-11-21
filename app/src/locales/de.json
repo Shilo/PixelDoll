@@ -1090,6 +1090,7 @@
 		"untitledCharacter": "Unbenannte Figur",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "one": "{count} Zustand", "other": "{count} Zustände" },
 			"separateItems": {
 				"one": "{count} separater Gegenstand",
 				"other": "{count} separate Gegenstände"
@@ -1108,7 +1109,7 @@
 		"preview": "Vorschau",
 		"previewArtwork": "Vorschau für den Figurenimport",
 		"stalePreview": "Die letzte Vorschau wird angezeigt. Aktualisiere deine Auswahl, um fortzufahren.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Vorschau wird aktualisiert…",
 		"characterName": "Figurenname",
 		"directionsHint": "Wähle mit den Pfeilen, welche Ansichten du behältst. Die Spiegelschaltfläche spiegelt die gegenüberliegende Ansicht. Schalte sie vor dem Import aus, um die Originalgrafiken zu behalten. Gibt es keine, bleiben die gespiegelten Frames als eigenständige Ansicht erhalten.",
@@ -2417,6 +2418,7 @@
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen" },
 	"stateCapture": {
 		"add": "Endpose speichern",
+		"saving": "Zustand wird gespeichert…",
 		"saved": "Zustand gespeichert",
 		"blocked": "Warte, bis der Charakter geladen ist, und schließe offene Arbeiten ab, bevor du einen Zustand speicherst.",
 		"unavailable": "Für diese Animation ist kein letzter Körperframe gespeichert, aus dem sich ein Zustand erstellen lässt.",

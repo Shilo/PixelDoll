@@ -939,7 +939,9 @@ test('device import includes sibling moves and preserves explicit selections whe
 	await expect(
 		states.getByRole('checkbox', { name: 'Still appearance', exact: true })
 	).toBeChecked();
+	await expect(dialog.locator('.import-preview')).toContainText('3 states · 2 moves');
 	await punchState.uncheck();
+	await expect(dialog.locator('.import-preview')).toContainText('2 states · 2 moves');
 	await expect(moves).toContainText('Moves keep the appearance of their source state.');
 	await expect(base).toBeChecked();
 	await expect(base).toBeEnabled();
@@ -2432,7 +2434,34 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(page.getByRole('combobox', { name: 'Source move' })).toHaveCount(0);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Capture final pose', exact: true }).click();
+	await page.evaluate(() => {
+		const original = crypto.subtle.digest;
+		let release!: () => void;
+		const pending = new Promise<void>((resolve) => (release = resolve));
+		crypto.subtle.digest = async function (...args: Parameters<SubtleCrypto['digest']>) {
+			await pending;
+			return original.apply(this, args);
+		};
+		(window as unknown as { releaseCapture: () => void }).releaseCapture = () => {
+			crypto.subtle.digest = original;
+			release();
+		};
+	});
+	try {
+		await page.getByRole('menuitem', { name: 'Capture final pose', exact: true }).click();
+		await expect(page.locator('.move-row').filter({ hasText: 'Idle' })).toContainText(
+			'Saving state'
+		);
+		await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
+		await expect(
+			page.getByRole('menuitem', { name: 'Capture final pose', exact: true })
+		).toBeDisabled();
+		await page.keyboard.press('Escape');
+	} finally {
+		await page.evaluate(() =>
+			(window as unknown as { releaseCapture: () => void }).releaseCapture()
+		);
+	}
 	await expect(page.getByText('Captured state', { exact: true })).toBeVisible();
 	const captured = await read();
 	const body = captured.manifest.items.find(({ id }) => id === captured.manifest.rig.baseItem)!;

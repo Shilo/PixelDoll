@@ -1084,6 +1084,7 @@
 		"untitledCharacter": "Personnage sans titre",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "one": "{count} état", "other": "{count} états" },
 			"separateItems": {
 				"one": "{count} objet séparé",
 				"other": "{count} objets séparés"
@@ -1102,7 +1103,7 @@
 		"preview": "Prévisualiser",
 		"previewArtwork": "Aperçu de l’import du personnage",
 		"stalePreview": "Affichage du dernier aperçu. Mettez à jour vos sélections pour continuer.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Mise à jour de l’aperçu…",
 		"characterName": "Nom du personnage",
 		"directionsHint": "Utilisez les flèches pour garder ou ignorer des vues. Le bouton miroir retourne la vue opposée. Désactivez-le avant l’importation pour garder le visuel d’origine. S’il n’existe pas, les images retournées forment une vue indépendante.",
@@ -2418,6 +2419,7 @@
 	"moveNames": { "default": "Debout", "idle": "Attente", "walk": "Marche" },
 	"stateCapture": {
 		"add": "Capturer la pose finale",
+		"saving": "Enregistrement de l’état…",
 		"saved": "État capturé",
 		"blocked": "Attendez la fin du chargement du personnage et réglez les tâches en attente avant de capturer un état.",
 		"unavailable": "Cette animation n’a pas d’image finale du corps enregistrée à capturer.",

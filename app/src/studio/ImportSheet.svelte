@@ -677,6 +677,11 @@
 			{:else}<p class="muted">
 					{t('import.previewSummary', {
 						directions: t('export.count.directions', { count: directions.length }),
+						states: t('import.count.states', {
+							count: prepared.project.manifest.rig.animations.filter(
+								(clip) => clipKind(clip) === 'state'
+							).length
+						}),
 						moves: t('export.count.moves', {
 							count: prepared.project.manifest.rig.animations.filter(
 								(clip) => clipKind(clip) === 'move'

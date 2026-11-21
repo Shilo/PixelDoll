@@ -1046,6 +1046,7 @@
 		"untitledCharacter": "無題のキャラクター",
 		"libraryCounts": "{directions}・{moves}",
 		"count": {
+			"states": { "other": "ステート{count}個" },
 			"separateItems": { "other": "素体とは別のアイテム{count}個" }
 		},
 		"previousCharacterPage": "キャラクター一覧の前のページ",
@@ -1061,7 +1062,7 @@
 		"preview": "プレビュー",
 		"previewArtwork": "キャラクターのインポートのプレビュー",
 		"stalePreview": "前回のプレビューを表示しています。続けるには選択内容を更新してください。",
-		"previewSummary": "{directions}・{moves}・{items}",
+		"previewSummary": "{directions}・{states}・{moves}・{items}",
 		"updatingPreview": "プレビューを更新中…",
 		"characterName": "キャラクター名",
 		"directionsHint": "矢印で取り込む向きを選びます。反転ボタンで反対向きの画像を左右反転します。取り込み前に解除すると元の画像を残します。元の画像がない場合は、反転フレームを独立したビューとして残します。",
@@ -2324,6 +2325,7 @@
 	"moveNames": { "default": "立ちポーズ", "idle": "待機", "walk": "歩き" },
 	"stateCapture": {
 		"add": "最後のポーズを保存",
+		"saving": "ステートを保存中…",
 		"saved": "ステートを保存しました",
 		"blocked": "キャラクターの読み込みを待ち、保留中の作業を解決してからステートを保存してください。",
 		"unavailable": "このモーションには、ステートとして保存できる素体の最終フレームがありません。",

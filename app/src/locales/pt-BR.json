@@ -1097,6 +1097,7 @@
 		"untitledCharacter": "Personagem sem nome",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "one": "{count} estado", "other": "{count} estados" },
 			"separateItems": {
 				"0": "{count} itens separados",
 				"one": "{count} item separado",
@@ -1116,7 +1117,7 @@
 		"preview": "Prévia",
 		"previewArtwork": "Prévia da importação do personagem",
 		"stalePreview": "Mostrando a última prévia. Atualize suas seleções para continuar.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Atualizando prévia…",
 		"characterName": "Nome do personagem",
 		"directionsHint": "Use as setas para manter ou pular vistas. O botão de espelhar inverte a vista oposta. Desative-o antes de importar para manter a arte original. Se não houver arte original, os quadros invertidos ficam como uma vista independente.",
@@ -2431,6 +2432,7 @@
 	"moveNames": { "default": "Em pé", "idle": "Repouso", "walk": "Caminhada" },
 	"stateCapture": {
 		"add": "Capturar pose final",
+		"saving": "Salvando estado…",
 		"saved": "Estado capturado",
 		"blocked": "Aguarde o carregamento do personagem e resolva as tarefas pendentes antes de capturar um estado.",
 		"unavailable": "Esta animação não tem um quadro final do corpo salvo para capturar.",

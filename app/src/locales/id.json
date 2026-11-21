@@ -1041,6 +1041,7 @@
 		"untitledCharacter": "Karakter tanpa nama",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "other": "{count} keadaan" },
 			"separateItems": { "other": "{count} item terpisah" }
 		},
 		"previousCharacterPage": "Halaman karakter sebelumnya",
@@ -1056,7 +1057,7 @@
 		"preview": "Pratinjau",
 		"previewArtwork": "Pratinjau impor karakter",
 		"stalePreview": "Menampilkan pratinjau terakhir. Perbarui pilihan Anda untuk melanjutkan.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Memperbarui pratinjau…",
 		"characterName": "Nama karakter",
 		"directionsHint": "Gunakan panah untuk mempertahankan atau melewati tampilan. Tombol cermin membalik tampilan dari arah berlawanan. Nonaktifkan sebelum mengimpor untuk mempertahankan gambar asli. Jika tidak ada gambar asli, frame terbalik menjadi tampilan tersendiri.",
@@ -2315,6 +2316,7 @@
 	"moveNames": { "default": "Berdiri", "idle": "Diam", "walk": "Berjalan" },
 	"stateCapture": {
 		"add": "Simpan pose akhir",
+		"saving": "Menyimpan varian…",
 		"saved": "Varian tersimpan",
 		"blocked": "Tunggu hingga karakter selesai dimuat dan selesaikan pekerjaan yang tertunda sebelum menyimpan varian.",
 		"unavailable": "Animasi ini tidak memiliki frame akhir tubuh tersimpan yang bisa digunakan.",

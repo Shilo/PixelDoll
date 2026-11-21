@@ -33,7 +33,7 @@
 	const m = $derived(store.project?.manifest);
 	const playback = $derived(playbackClips(m?.rig.animations ?? []));
 	const clips = $derived(playback.filter((entry) => entry.kind === kind));
-	let capturing = $state(false);
+	let capturing = $state<string>();
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const nice = (id: string) => displayMove(id, moveIds);
@@ -47,19 +47,20 @@
 
 	async function saveState(moveId: string) {
 		if (capturing) return;
-		capturing = true;
+		capturing = moveId;
 		try {
 			await captureState(moveId);
 		} catch (error) {
 			toast(errorMessage(error), { tone: 'danger' });
 		} finally {
-			capturing = false;
+			capturing = undefined;
 		}
 	}
 </script>
 
 <div class="colors">
 	{#if m && view.project && thumbnails}
+		<span class="sr" role="status">{capturing ? t('stateCapture.saving') : ''}</span>
 		<div class="move-list">
 			{#each clips as { clip: a } (a.id)}
 				{@const image = thumbnails(a.id, ui.dir, ui.frame)}
@@ -86,6 +87,7 @@
 					ondownload={() => downloadMoveZip(a.id)}
 					onfixframes={() => openFrames('', a.id)}
 					oncapture={kind === 'move' && !isDemo() ? () => void saveState(a.id) : undefined}
+					captureDisabled={capturing !== undefined}
 					ondelete={() => removeMove(a.id)}
 				>
 					<button
@@ -106,15 +108,17 @@
 							/></span
 						>
 						<span class="move-text"
-							><b>{nice(a.id)}</b><span class="muted small"
-								>{t('moves.frames', { count: a.cells })} · {nDirs === 1
-									? dirs[0]
-										? t('moves.onlyDirection', {
-												direction: displayDirectionInSentence(dirs[0].id)
-											})
-										: t('moves.oneDirection')
-									: t('export.count.directions', { count: nDirs })}</span
-							></span
+							><b>{nice(a.id)}</b>{#if capturing === a.id}<span class="muted small"
+									>{t('stateCapture.saving')}</span
+								>{:else}<span class="muted small"
+									>{t('moves.frames', { count: a.cells })} · {nDirs === 1
+										? dirs[0]
+											? t('moves.onlyDirection', {
+													direction: displayDirectionInSentence(dirs[0].id)
+												})
+											: t('moves.oneDirection')
+										: t('export.count.directions', { count: nDirs })}</span
+								>{/if}</span
 						>
 					</button>
 				</SavedActions>

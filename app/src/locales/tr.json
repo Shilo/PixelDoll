@@ -1084,6 +1084,7 @@
 		"untitledCharacter": "Adsız karakter",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "one": "{count} durum", "other": "{count} durum" },
 			"separateItems": {
 				"one": "{count} ayrı eşya",
 				"other": "{count} ayrı eşya"
@@ -1102,7 +1103,7 @@
 		"preview": "Önizleme",
 		"previewArtwork": "Karakter içe aktarım önizlemesi",
 		"stalePreview": "Son önizleme gösteriliyor. Devam etmek için seçimlerinizi güncelleyin.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Önizleme güncelleniyor…",
 		"characterName": "Karakter adı",
 		"directionsHint": "Görünümleri tutmak veya atlamak için okları kullanın. Aynalama düğmesi karşı görünümü çevirir. Özgün görselleri tutmak için aynalamayı içe aktarmadan önce kapatın. Özgün görsel yoksa çevrilmiş kareler bağımsız bir görünüm olarak kalır.",
@@ -2411,6 +2412,7 @@
 	"moveNames": { "default": "Ayakta", "idle": "Bekleme", "walk": "Yürüme" },
 	"stateCapture": {
 		"add": "Son pozu kaydet",
+		"saving": "Durum kaydediliyor…",
 		"saved": "Durum kaydedildi",
 		"blocked": "Durumu kaydetmeden önce karakterin yüklenmesini bekleyin ve bekleyen işleri sonuçlandırın.",
 		"unavailable": "Bu animasyonun durum olarak kaydedilebilecek kayıtlı bir son gövde karesi yok.",

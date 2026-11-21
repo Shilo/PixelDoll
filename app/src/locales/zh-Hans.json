@@ -1033,6 +1033,7 @@
 		"untitledCharacter": "未命名角色",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "other": "{count} 个状态" },
 			"separateItems": { "other": "{count} 件独立装备" }
 		},
 		"previousCharacterPage": "上一页角色",
@@ -1048,7 +1049,7 @@
 		"preview": "预览",
 		"previewArtwork": "角色导入预览",
 		"stalePreview": "正在显示上一次预览。请更新选择以继续。",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "正在更新预览…",
 		"characterName": "角色名称",
 		"directionsHint": "使用箭头保留或跳过视图。镜像按钮会翻转相对视图。导入前关闭镜像可保留原图；没有原图时，翻转后的帧将保留为独立视图。",
@@ -2293,6 +2294,7 @@
 	"moveNames": { "default": "站立", "idle": "待机", "walk": "行走" },
 	"stateCapture": {
 		"add": "保存最后的姿势",
+		"saving": "正在保存状态…",
 		"saved": "状态已保存",
 		"blocked": "请等待角色加载完成并处理待办任务，然后再保存状态。",
 		"unavailable": "此动作没有已保存的最后一帧身体图像，无法将其保存为状态。",
