@@ -11,8 +11,8 @@ const SOLES = 0.6;
 const MARGIN = 0.25;
 /** Shares of the source's feet and of its legs above them that must also line up at that offset. */
 const SHAPE = 0.6;
-/** How much more of the source's art the move must line up than leaving the view in place. */
-const WHOLE = 0.1;
+/** Smallest detached piece of the source that must agree with the move. */
+const MIN_SHAPE = 12;
 const MIN_RUN = 3;
 const MAX_UNMATCHED_BELOW = 4;
 
@@ -34,49 +34,44 @@ function solid(image: Img): Mask {
 	};
 }
 
-/** The largest 8-connected solid shape: the character's body, never a detached prop or speck. */
-function body(image: Img, isSolid: Mask): Mask {
-	const label = new Int32Array(image.w * image.h);
-	let biggest = 0;
-	let biggestSize = 0;
-	let next = 0;
-	for (let start = 0; start < label.length; start++) {
+/** The 8-connected solid shapes of an image, largest first. */
+function shapes(image: Img, isSolid: Mask): [number, number][][] {
+	const seen = new Uint8Array(image.w * image.h);
+	const out: [number, number][][] = [];
+	for (let start = 0; start < seen.length; start++) {
 		const sx = start % image.w;
 		const sy = (start - sx) / image.w;
-		if (label[start] || !isSolid(sx, sy)) continue;
-		const id = ++next;
+		if (seen[start] || !isSolid(sx, sy)) continue;
+		const shape: [number, number][] = [];
 		const stack = [start];
-		label[start] = id;
-		let size = 0;
+		seen[start] = 1;
 		while (stack.length) {
 			const at = stack.pop()!;
-			size++;
 			const x = at % image.w;
 			const y = (at - x) / image.w;
+			shape.push([x, y]);
 			for (let dy = -1; dy <= 1; dy++)
 				for (let dx = -1; dx <= 1; dx++) {
 					const nx = x + dx;
 					const ny = y + dy;
 					if (nx < 0 || ny < 0 || nx >= image.w || ny >= image.h) continue;
 					const index = ny * image.w + nx;
-					if (!label[index] && isSolid(nx, ny)) {
-						label[index] = id;
+					if (!seen[index] && isSolid(nx, ny)) {
+						seen[index] = 1;
 						stack.push(index);
 					}
 				}
 		}
-		if (size > biggestSize) {
-			biggestSize = size;
-			biggest = id;
-		}
+		out.push(shape);
 	}
-	return (x, y) =>
-		biggest > 0 &&
-		x >= 0 &&
-		y >= 0 &&
-		x < image.w &&
-		y < image.h &&
-		label[y * image.w + x] === biggest;
+	return out.sort((left, right) => right.length - left.length);
+}
+
+/** Membership in one shape; an absent shape matches nothing. */
+function maskOf(image: Img, shape: readonly [number, number][] | undefined): Mask {
+	const inside = new Uint8Array(image.w * image.h);
+	for (const [x, y] of shape ?? []) inside[y * image.w + x] = 1;
+	return (x, y) => x >= 0 && y >= 0 && x < image.w && y < image.h && inside[y * image.w + x] === 1;
 }
 
 function points(mask: Mask, w: number, top: number, bottom: number) {
@@ -106,8 +101,9 @@ export function groundingShift(generated: Img, source: Img): number {
 	if (generated.w !== source.w || generated.h !== source.h) return 0;
 	const now = solid(generated);
 	// Feet are measured on the body itself, so a detached prop (sword, shadow) can never decide the move.
-	const was = body(source, solid(source));
-	const nowBody = body(generated, now);
+	const sourceShapes = shapes(source, solid(source));
+	const was = maskOf(source, sourceShapes[0]);
+	const nowBody = maskOf(generated, shapes(generated, now)[0]);
 	const w = source.w;
 	let sole = -1;
 	for (let y = source.h - 1; y >= 0 && sole < 0; y--)
@@ -147,10 +143,21 @@ export function groundingShift(generated: Img, source: Img): number {
 		overlap(legs, nowBody, best) < SHAPE
 	)
 		return 0;
-	// The whole picture must agree too: the move has to line up more of the source's art than leaving it in
-	// place does, so a large prop that moved alone can never drag an aligned character with it.
-	const all = points(solid(source), w, 0, source.h - 1);
-	if (overlap(all, now, best) < overlap(all, now, 0) + WHOLE) return 0;
+	// Every other recognizable piece of the source must agree: a piece that still lines up best somewhere else
+	// (a stationary body beside a prop that moved alone) means this is not one drift of the whole character.
+	for (const shape of sourceShapes.slice(1)) {
+		if (shape.length < MIN_SHAPE) continue;
+		let own = 0;
+		let ownScore = 0;
+		for (let dy = -range; dy <= range; dy++) {
+			const score = overlap(shape, now, dy);
+			if (score > ownScore) {
+				ownScore = score;
+				own = dy;
+			}
+		}
+		if (ownScore >= SHAPE && own !== best) return 0;
+	}
 	const shift = -best;
 	// Any art, body or not, left below the source's feet after the move means the match is not the whole story.
 	let below = 0;

@@ -58,14 +58,40 @@ describe('State grounding', () => {
 		expect(groundingShift(after, before)).toBe(0);
 	});
 
-	it('abstains when two heights fit the soles about equally well', () => {
-		// A second pair of feet 4 rows lower, joined to the body at the sides, matches the soles just as well.
-		const doubled = figure(29);
-		paint(doubled, 10, 32, 14, 33);
-		paint(doubled, 17, 32, 21, 33);
-		paint(doubled, 9, 28, 9, 33);
-		paint(doubled, 22, 28, 22, 33);
-		expect(groundingShift(doubled, source)).toBe(0);
+	it('abstains when a second height fits the soles almost as well', () => {
+		// Feet joined by a bar with thin middle legs, so soles at two heights are both clear bottom edges.
+		const bridged = (ground: number) => {
+			const image = makeImg(W, H);
+			paint(image, 12, ground - 24, 19, ground - 13); // torso
+			paint(image, 15, ground - 12, 16, ground - 3); // legs
+			paint(image, 10, ground - 2, 21, ground - 2); // bar
+			paint(image, 10, ground - 1, 14, ground); // left foot
+			paint(image, 17, ground - 1, 21, ground); // right foot
+			return image;
+		};
+		const view = bridged(33);
+		// A higher pair of feet, joined at the side, matches 10 of the 12 sole pixels against the real feet's 12.
+		paint(view, 10, 28, 14, 29);
+		paint(view, 17, 28, 21, 29);
+		paint(view, 9, 28, 9, 31);
+		expect(groundingShift(view, bridged(38))).toBe(0);
+		expect(groundingShift(bridged(33), bridged(38))).toBe(5);
+	});
+
+	it('never follows a larger detached prop that moved while the body stayed', () => {
+		const shifted = (ground: number, propTop: number) => {
+			const image = makeImg(W, H);
+			const body = figure(ground);
+			for (let y = 0; y < H; y++)
+				for (let x = 0; x + 8 < W; x++)
+					image.data.set(
+						body.data.subarray((y * W + x) * 4, (y * W + x) * 4 + 4),
+						(y * W + x + 8) * 4
+					);
+			paint(image, 0, propTop, 15, propTop + 19);
+			return image;
+		};
+		expect(groundingShift(shifted(38, 24), shifted(38, 33))).toBe(0);
 	});
 
 	it('never follows a prop larger than the body that moved alone', () => {
