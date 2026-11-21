@@ -138,10 +138,14 @@
 	}
 	$effect(() => {
 		if (!developerModeEnabled() || !open || all || (!activityScope && !queueIds.length)) return;
+		let current = true;
 		void $queue.jobs;
 		void queue.inspectActivity(queueIds, activityScope).catch(() => {
-			inspectionError = true;
+			if (current) inspectionError = true;
 		});
+		return () => {
+			current = false;
+		};
 	});
 	function close() {
 		panel?.hidePopover();
@@ -173,6 +177,7 @@
 	}
 	async function copyIdentifier() {
 		if (!developerModeEnabled() || !identifier) return;
+		resetFeedback();
 		const attempt = ++copyAttempt;
 		try {
 			await navigator.clipboard.writeText(identifier);

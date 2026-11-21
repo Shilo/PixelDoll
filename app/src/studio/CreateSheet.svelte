@@ -166,43 +166,45 @@
 	wide
 >
 	{#snippet developer()}
-		<ApiPeek
-			targets={creating?.projectId
-				? [
-						{
-							scope: 'character-create-result',
-							label: t('create.sheet.resultLabel'),
-							plan: creating.spec ? createPlan(creating.spec) : [],
-							activityScope: creating.spec?.activityScope
-						}
-					]
-				: creating
+		<div class="creator-developer">
+			<ApiPeek
+				targets={creating?.projectId
 					? [
 							{
-								scope: 'character-create-progress',
-								label: t('create.sheet.progressLabel'),
+								scope: 'character-create-result',
+								label: t('create.sheet.resultLabel'),
 								plan: creating.spec ? createPlan(creating.spec) : [],
 								activityScope: creating.spec?.activityScope
-							},
-							...(creating.error
-								? [
-										{
-											scope: 'character-create-retry',
-											label: t('create.sheet.retryLabel'),
-											plan: creating.spec ? createPlan(creating.spec, true) : []
-										}
-									]
-								: [])
+							}
 						]
-					: [
-							{
-								scope: 'character-create',
-								label: t('create.sheet.create'),
-								plan: createPlan(formSpec, !d.seed)
-							},
-							...enhanceTargets
-						]}
-		/>
+					: creating
+						? [
+								{
+									scope: 'character-create-progress',
+									label: t('create.sheet.progressLabel'),
+									plan: creating.spec ? createPlan(creating.spec) : [],
+									activityScope: creating.spec?.activityScope
+								},
+								...(creating.error
+									? [
+											{
+												scope: 'character-create-retry',
+												label: t('create.sheet.retryLabel'),
+												plan: creating.spec ? createPlan(creating.spec, true) : []
+											}
+										]
+									: [])
+							]
+						: [
+								{
+									scope: 'character-create',
+									label: t('create.sheet.create'),
+									plan: createPlan(formSpec, !d.seed)
+								},
+								...enhanceTargets
+							]}
+			/>
+		</div>
 	{/snippet}
 
 	{#snippet heading()}{#if !creating}<label class="character-name-field"
@@ -392,13 +394,30 @@
 </Sheet>
 
 <style>
+	.creator-developer {
+		position: absolute;
+		left: 96px;
+		top: 28px;
+		min-height: 50px;
+		display: flex;
+		align-items: center;
+	}
 	:global(.studio-app .character-sheet) .btn.creation-wardrobe {
 		left: 40px;
 		right: auto;
 	}
 	@media (max-width: 760px) and (min-height: 541px), (max-height: 540px) and (min-width: 600px) {
+		.creator-developer {
+			left: 76px;
+			top: 8px;
+		}
 		:global(.studio-app .character-sheet) .btn.creation-wardrobe {
 			left: 20px;
+		}
+	}
+	@media (max-width: 760px) and (min-height: 541px) {
+		.creator-developer {
+			top: 12px;
 		}
 	}
 	.quality-notes {
