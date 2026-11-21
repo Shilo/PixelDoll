@@ -992,6 +992,15 @@ test('device import includes sibling moves and preserves explicit selections whe
 		'Base appearance',
 		'Right punch'
 	]);
+	await page.keyboard.press('Escape');
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'More actions for Right punch', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
+	const capture = page.getByRole('dialog', { name: 'Create State', exact: true });
+	await expect(capture.getByRole('combobox', { name: 'Start from' })).toHaveValue('right_punch');
+	await expect(capture.getByRole('img', { name: 'Right punch preview' })).toBeVisible();
+	await expect(capture.locator('.capture-preview')).toHaveCSS('cursor', 'auto');
+	await expect(capture.getByRole('button', { name: /^(Pause|Play)$/ })).toHaveCount(0);
 });
 
 test('character directions can be mirrored and unlinked on import and after saving', async ({
@@ -2500,6 +2509,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
 	const nextFrame = createState.getByRole('button', { name: 'Next frame', exact: true });
+	const stateSource = createState.getByRole('combobox', { name: 'Start from', exact: true });
+	await expect(stateSource).toHaveValue('idle');
+	await expect(createState.getByLabel('State name', { exact: true })).toHaveValue('Idle pose');
 	await expect(nextFrame).toBeDisabled();
 	const preview = createState.getByRole('img', { name: 'Idle preview', exact: true });
 	await expect(preview).toBeVisible();
@@ -2507,12 +2519,17 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(createState.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
 	const previewFacing = createState.locator('[data-facing]');
 	await expect(previewFacing).not.toHaveAttribute('data-facing', 'south');
-	await createState.getByRole('button', { name: 'Pause', exact: true }).click();
+	await expect(createState.getByRole('button', { name: 'Pause', exact: true })).toHaveCSS(
+		'cursor',
+		'pointer'
+	);
+	await preview.click();
+	await expect(createState.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 	const pausedFacing = await previewFacing.getAttribute('data-facing');
 	await createState.getByRole('button', { name: 'Previous frame', exact: true }).click();
 	await expect(createState.getByText('Frame 3 of 4', { exact: true })).toBeVisible();
 	await expect(previewFacing).toHaveAttribute('data-facing', pausedFacing!);
-	await createState.getByRole('button', { name: 'Play', exact: true }).click();
+	await createState.getByRole('button', { name: 'Play', exact: true }).press('Space');
 	await expect(previewFacing).not.toHaveAttribute('data-facing', pausedFacing!);
 	await expect(nextFrame).toBeEnabled();
 	const createButton = createState.getByRole('button', { name: 'Create State', exact: true });
@@ -2552,7 +2569,6 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const addState = panel.getByRole('button', { name: 'Add a state...', exact: true });
 	await expect(panel.locator('.cta + details')).toBeVisible();
 	await addState.click();
-	const stateSource = createState.getByRole('combobox', { name: 'Start from', exact: true });
 	await expect(stateSource.locator('option', { hasText: 'Standing' })).toHaveCount(0);
 	await expect(stateSource.locator('option', { hasText: 'Rest pose' })).toHaveCount(0);
 	await expect(stateSource.locator('option:checked')).toHaveText('Idle');

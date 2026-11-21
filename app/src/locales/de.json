@@ -2443,7 +2443,6 @@
 		"add": "Zustand erstellen aus …",
 		"noMoves": "Füge eine Animation hinzu, um aus einem ihrer Frames einen Zustand zu erstellen.",
 		"title": "Zustand erstellen",
-		"source": "Wähle einen Frame aus {move}",
 		"name": "Zustandsname",
 		"noEquipment": "Ausrüstung bleibt zurück.",
 		"noCredits": "Keine Credits.",

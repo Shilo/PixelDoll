@@ -22,8 +22,8 @@
 
 	const formId = $props.id();
 	const projectId = doc.id;
-	const fixedSource = ui.stateCaptureMove;
-	const initialSource = fixedSource || stateCaptureMoves(store.project?.manifest)[0]?.id || '';
+	const initialSource =
+		ui.stateCaptureMove || stateCaptureMoves(store.project?.manifest)[0]?.id || '';
 	const initialSnapshot =
 		store.project && stateCaptureSource(store.project.manifest, initialSource);
 	let moveId = $state(initialSource);
@@ -31,7 +31,7 @@
 	const clipIds = $derived(store.project?.manifest.rig.animations.map(({ id }) => id) ?? []);
 	const moveName = $derived(displayMove(moveId, clipIds));
 	const selectable = $derived(stateCaptureMoves(store.project?.manifest));
-	const noMoves = $derived(!fixedSource && !selectable.length);
+	const noMoves = $derived(!selectable.length);
 	function suggestedName(sourceId: string) {
 		const manifest = store.project?.manifest;
 		const root = stateCaptureId(sourceId).slice(0, 48) || 'pose';
@@ -55,10 +55,6 @@
 	const project = $derived(store.project);
 	const source = $derived(project && stateCaptureSource(project.manifest, moveId));
 	const changed = $derived(stale || doc.id !== projectId || source?.version !== initial?.version);
-	const sourcePlaceholder = '\uFFFC';
-	const [beforeMove, afterMove] = $derived(
-		t('stateCapture.source', { move: sourcePlaceholder }).split(sourcePlaceholder)
-	);
 	const total = $derived(source?.move.frames.length ?? 0);
 	const cell = $derived(source?.move.frames[index]?.cell);
 	const id = $derived(stateCaptureId(name));
@@ -86,11 +82,12 @@
 	});
 	const ready = $derived(previews.length > 0 && previews.every(({ image }) => !!image));
 	const facingCount = $derived(previews.length);
+	const canRotate = $derived(total > 1 && facingCount > 1);
 	const preview = $derived(previews[facingIndex]);
 
 	$effect(() => {
 		const count = facingCount;
-		if (!rotating || count < 2) return;
+		if (!rotating || !canRotate) return;
 		const timer = window.setInterval(() => (facingIndex = (facingIndex + 1) % count), 700);
 		return () => window.clearInterval(timer);
 	});
@@ -102,12 +99,11 @@
 
 	function chooseSource(id: string) {
 		if (!project || busy || doc.id !== projectId) return;
-		const wasSuggested = name === suggestedName(moveId);
 		moveId = id;
 		initial = stateCaptureSource(project.manifest, id);
 		index = Math.max(0, (initial?.move.frames.length ?? 1) - 1);
 		facingIndex = 0;
-		if (wasSuggested) name = suggestedName(id);
+		name = suggestedName(id);
 		stale = false;
 		failure = '';
 	}
@@ -140,9 +136,7 @@
 >
 	<form id={formId} class="capture-form" onsubmit={save}>
 		<span class="sr" role="status">{busy ? t('stateCapture.saving') : ''}</span>
-		{#if fixedSource}
-			<p class="muted small capture-source">{beforeMove}<strong>{moveName}</strong>{afterMove}</p>
-		{:else if !noMoves}
+		{#if !noMoves}
 			<label class="field">
 				<span class="label">{t('moveSheet.startFrom.label')}</span>
 				<select
@@ -161,7 +155,7 @@
 			</label>
 		{/if}
 		{#if !changed && total}
-			{#if fixedSource || total > 1}
+			{#if total > 1}
 				<div class="capture-nav">
 					<button
 						class="bu-action"
@@ -184,27 +178,31 @@
 				</div>
 			{/if}
 			{#if previews.length}
-				<div class="capture-preview">
-					<div class="capture-sprite" data-facing={preview?.id}>
+				{#snippet sprite()}
+					<span class="capture-sprite" data-facing={preview?.id}>
 						<Sprite
 							img={preview?.image ?? null}
 							k={1}
 							fitToBox
 							label={t('moves.preview', { move: moveName })}
 						/>
-					</div>
-					{#if facingCount > 1}
-						<button
-							class="bu-action capture-rotation"
-							data-variant="quiet"
-							type="button"
-							aria-label={t(rotating ? 'common.pause' : 'common.play')}
-							onclick={() => (rotating = !rotating)}
-						>
+					</span>
+				{/snippet}
+				{#if canRotate}
+					<button
+						class="bu-btn capture-preview"
+						type="button"
+						aria-label={t(rotating ? 'common.pause' : 'common.play')}
+						onclick={() => (rotating = !rotating)}
+					>
+						{@render sprite()}
+						<span class="capture-rotation" aria-hidden="true">
 							{#if rotating}<Pause size={18} />{:else}<Play size={18} />{/if}
-						</button>
-					{/if}
-				</div>
+						</span>
+					</button>
+				{:else}
+					<div class="capture-preview">{@render sprite()}</div>
+				{/if}
 			{/if}
 		{/if}
 		{#if !noMoves}<label class="field">
@@ -268,10 +266,6 @@
 	.capture-footer p {
 		margin: 0;
 	}
-	.capture-source {
-		text-align: center;
-		overflow-wrap: anywhere;
-	}
 	.capture-nav {
 		display: grid;
 		grid-template-columns: 44px minmax(0, 1fr) 44px;
@@ -292,6 +286,7 @@
 	.capture-preview {
 		position: relative;
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		place-items: center;
 		padding: 8px 24px;
 		background: var(--stage);

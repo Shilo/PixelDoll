@@ -2437,7 +2437,6 @@
 		"add": "Kareden durum oluştur…",
 		"noMoves": "Karelerinden biriyle durum oluşturmak için bir animasyon ekleyin.",
 		"title": "Durum oluştur",
-		"source": "{move} hareketinden bir kare seç",
 		"name": "Durum adı",
 		"noEquipment": "Ekipman kopyalanmaz.",
 		"noCredits": "Kredi kullanılmaz.",

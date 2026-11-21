@@ -2450,7 +2450,6 @@
 		"add": "Crear estado a partir de…",
 		"noMoves": "Agrega una animación para crear un estado a partir de uno de sus fotogramas.",
 		"title": "Crear estado",
-		"source": "Elige un fotograma de {move}",
 		"name": "Nombre del estado",
 		"noEquipment": "No se copia el equipo.",
 		"noCredits": "No se gastan créditos.",

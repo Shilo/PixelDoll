@@ -2428,7 +2428,6 @@
 		"add": "Create State from…",
 		"noMoves": "Add a Move to create a State from one of its frames.",
 		"title": "Create State",
-		"source": "Choose a frame from {move}",
 		"name": "State name",
 		"noEquipment": "Equipment isn’t copied.",
 		"noCredits": "No credits used.",

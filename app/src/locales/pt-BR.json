@@ -2457,7 +2457,6 @@
 		"add": "Criar estado a partir de…",
 		"noMoves": "Adicione uma animação para criar um estado a partir de um de seus quadros.",
 		"title": "Criar estado",
-		"source": "Escolha um quadro de {move}",
 		"name": "Nome do estado",
 		"noEquipment": "Equipamento não copiado.",
 		"noCredits": "Nenhum crédito usado.",

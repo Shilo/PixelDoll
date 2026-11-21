@@ -2444,7 +2444,6 @@
 		"add": "Créer un état à partir de…",
 		"noMoves": "Ajoutez une animation pour créer un état à partir de l’une de ses images.",
 		"title": "Créer un état",
-		"source": "Choisissez une image de {move}",
 		"name": "Nom de l’état",
 		"noEquipment": "Équipement non copié.",
 		"noCredits": "Aucun crédit utilisé.",
