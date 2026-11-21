@@ -2187,6 +2187,11 @@
 		}
 	},
 	"moveSheet": {
+		"skeleton": {
+			"title": "Revisar Skeleton V3",
+			"hint": "Skeleton V3 é outra opção. As verificações de qualidade ainda podem falhar.",
+			"back": "Voltar aos resultados"
+		},
 		"checkpoint": {
 			"generate": "Gerar animação",
 			"initialEstimate": "Cerca de {minutes} min · Sem itens",
@@ -2295,9 +2300,9 @@
 		"motionModel": "Modelo de movimento",
 		"motionModelHelp": "Skeleton v3 usa as mesmas poses para o corpo e o equipamento. V3 e PixMiniMax desenham o corpo primeiro. Depois, o PixelDoll detecta as poses para o equipamento.",
 		"models": {
-			"skeletonV3": "Padrão (Skeleton V3)",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "Padrão (PixMiniMax)"
 		},
 		"frames": "Quadros",
 		"framesHelp": "As opções cabem neste modelo e na tela do personagem ({canvas} px). A opção padrão mantém a contagem de quadros predefinida do PixelDoll.",

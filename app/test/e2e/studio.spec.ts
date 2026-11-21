@@ -2859,8 +2859,9 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await advanced.locator('summary').click();
 	const model = advanced.getByRole('combobox', { name: 'Motion model' });
 	const slider = advanced.getByRole('slider', { name: 'Frames' });
-	await expect(model).toHaveValue('skeleton-v3');
-	await expect(model.getByRole('option')).toHaveText(['Default (Skeleton V3)', 'PixMiniMax', 'V3']);
+	await expect(model).toHaveValue('pixminimax');
+	await expect(model.getByRole('option')).toHaveText(['Default (PixMiniMax)', 'Skeleton V3', 'V3']);
+	await model.selectOption('skeleton-v3');
 	await slider.press('Home');
 	await expect(slider).toHaveAttribute('aria-valuetext', '3 frames');
 	await model.selectOption('pixminimax');
@@ -5538,6 +5539,108 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		reviewBeforePublish: true,
 		poseStyle: 'visible-side-v1'
 	});
+	const suggestion = sheet.getByRole('button', { name: /^Review Skeleton V3/ });
+	await expect(suggestion).toHaveCount(0);
+	const before = await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		const messagePath = '/src/lib/message.ts';
+		const { LocalizedError } = await import(messagePath);
+		const manifest = state.store.project.manifest;
+		for (const item of manifest.items)
+			if (item.id !== manifest.rig.baseItem && !state.moving.spec.items.includes(item.id))
+				for (const layer of item.layers) if (layer.cells?.walk) delete layer.cells.walk.east;
+		state.moving.spec = { ...state.moving.spec, animation: { model: 'pixminimax', frameCount: 8 } };
+		state.moving.error = new LocalizedError(
+			'Fixture QA failure',
+			'create.errors.replacementFailsQa'
+		);
+		return JSON.stringify(manifest);
+	});
+	await expect(suggestion).toContainText('Est. 8 gens');
+	await suggestion.click();
+	const review = page.getByRole('dialog', { name: 'Review Skeleton V3', exact: true });
+	await expect(review).toContainText('8 frames');
+	await expect(review).toContainText('Directions: East');
+	await expect(review.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
+	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
+		'Est. 8 gens'
+	);
+	await review.getByRole('button', { name: 'Back to results' }).click();
+	await expect(suggestion).toBeVisible();
+	const after = await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		return {
+			manifest: JSON.stringify(state.store.project.manifest),
+			model: state.moving.spec.animation.model
+		};
+	});
+	expect(after).toEqual({ manifest: before, model: 'pixminimax' });
+	await page.evaluate(async (manifest) => {
+		const state = await import('/src/studio/state.svelte.ts' as string);
+		const db = await import('/src/lib/store/db.ts' as string);
+		const { app } = await import('/src/lib/app.svelte.ts' as string);
+		const record = await db.get('projects', state.doc.id);
+		record.manifest = JSON.parse(manifest);
+		await db.put('projects', state.doc.id, record);
+		app.keyRejected = true;
+	}, before);
+	await suggestion.click();
+	await review.getByRole('button', { name: /^Replace Walk views/ }).click();
+	await connect.getByLabel('API key', { exact: true }).fill('synthetic-reconnected-repair-key');
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
+	const confirmed = await page.evaluate(async () => {
+		const state = await import('/src/studio/state.svelte.ts' as string);
+		return state.moving.spec;
+	});
+	expect(confirmed).toMatchObject({
+		id: 'walk',
+		replace: true,
+		dirs: ['east'],
+		items: [],
+		reviewBeforePublish: true,
+		animation: { model: 'skeleton-v3', frameCount: 8 },
+		seed: expect.any(Number)
+	});
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		state.moving.spec.animation.model = 'skeleton-v3';
+	});
+	await expect(suggestion).toHaveCount(0);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		const walk = state.store.project.manifest.rig.animations.find(
+			(clip: { id: string }) => clip.id === 'walk'
+		);
+		Object.assign(walk.sources.east, { route: 'v3', motion: 'v3:walk' });
+		state.moving.error = '';
+		state.moving.spec = { ...state.moving.spec, itemsOnly: true, replace: false };
+		state.moving.qualityDirs = ['east'];
+		state.moving.done = true;
+	});
+	const completed = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await completed.getByRole('button', { name: /^Review Skeleton V3/ }).click();
+	await expect(review).toContainText('Directions: East');
+	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
+		'Est. 8 gens'
+	);
+	await review.getByRole('button', { name: 'Back to results' }).click();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		const walk = state.store.project.manifest.rig.animations.find(
+			(clip: { id: string }) => clip.id === 'walk'
+		);
+		walk.cells = 16;
+		for (const source of Object.values(walk.sources) as { keypoints: unknown[] }[])
+			source.keypoints = [...source.keypoints, ...source.keypoints];
+		state.moving.qualityDirs = ['east'];
+	});
+	await expect(completed.getByRole('button', { name: /^Review Skeleton V3/ })).toHaveCount(0);
 	expect(posts).toEqual([]);
 	expect(errors).toEqual([]);
 });
@@ -6830,7 +6933,15 @@ test('move review gates item selection and shows live estimates without spending
 			delete cells.west;
 			rec.moveReviews = {
 				walk: {
-					spec: { id: 'walk', seed, replace: true, reviewBeforePublish: true, items: [] },
+					spec: {
+						id: 'walk',
+						action: 'walk',
+						seed,
+						replace: true,
+						reviewBeforePublish: true,
+						items: [],
+						animation: { model: 'pixminimax', frameCount: 8 }
+					},
 					input: moveCandidateInput(rec, 'walk'),
 					dirs: ['east'],
 					animation: rig.animations.find((move: { id: string }) => move.id === 'walk'),
@@ -6839,7 +6950,9 @@ test('move review gates item selection and shows live estimates without spending
 					provenanceStart: base.provenance.length,
 					anchors: {},
 					skeletons: {},
-					checks: {},
+					checks: {
+						'walk/east': { feetDrift: 4, paletteFit: 1, border: 0, fails: [], warnings: [] }
+					},
 					warnings: ['walk/east: silhouette bottom differs up to 4 px from standing reference'],
 					itemsBlocked: true
 				}
@@ -6853,6 +6966,14 @@ test('move review gates item selection and shows live estimates without spending
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await review.getByText('Quality notes', { exact: true }).click();
 	await expect(review.getByText(/silhouette bottom differs up to 4 px/)).toBeVisible();
+	await review.getByRole('button', { name: /^Review Skeleton V3.*Est\./ }).click();
+	const retry = page.getByRole('dialog', { name: 'Replace move views', exact: true });
+	await expect(retry.getByRole('combobox', { name: 'Motion model' })).toHaveValue('skeleton-v3');
+	await expect(retry.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
+		'Est. 8 gens'
+	);
+	await retry.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	await expect(review.getByRole('button', { name: 'Replace move', exact: true })).toBeEnabled();
 	await expect(review.getByRole('button', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await review.getByRole('button', { name: 'Later', exact: true }).click();

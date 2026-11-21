@@ -13,7 +13,9 @@
 		itemMoveOffer,
 		missingItemMoves,
 		moveMinimumTier,
-		readMoveCandidateImages
+		readMoveCandidateImages,
+		skeletonMoveReview,
+		type MoveSpec
 	} from './create.ts';
 	import { moveCandidateHasStructuralFailure, moveCandidateInput } from './replaceMove.ts';
 	import { formDrafts } from './formDrafts.ts';
@@ -80,6 +82,18 @@
 	});
 	const hardFailure = !!candidate && moveCandidateHasStructuralFailure(candidate);
 	const blocked = $derived(moveReviewBlocked(projectId));
+	const skeletonOffer = $derived.by(() => {
+		const record = store.exportRecord;
+		if (
+			!candidate ||
+			record?.id !== projectId ||
+			moveCandidateInput(record, id) !== candidate.input
+		)
+			return;
+		const offer = skeletonMoveReview(record, candidate.spec, undefined, [], candidate);
+		if (offer && tierDecision(app.balance, { required: offer.tier }).kind !== 'required')
+			return offer;
+	});
 	const previewSize = $derived(ui.size === 'landscape' ? 128 : 192);
 	const changed = $derived(
 		!!acceptedInput &&
@@ -153,7 +167,7 @@
 		playing = false;
 		frame = (frame + delta + playlist.length) % playlist.length;
 	}
-	function regenerate() {
+	function regenerate(animation?: MoveSpec['animation']) {
 		if (!candidate || blocked) return;
 		const { spec } = candidate;
 		formDrafts.move = {
@@ -164,7 +178,7 @@
 			replace: !!spec.replace,
 			text: spec.text ?? '',
 			dirs: candidate.dirs,
-			animation: spec.animation
+			animation: animation ?? spec.animation
 		};
 		ui.sheet = 'move';
 	}
@@ -251,7 +265,7 @@
 					class={['bu-action btn', { 'primary checkpoint-primary': hardFailure }]}
 					data-variant={hardFailure ? 'primary' : 'outline'}
 					disabled={busy || !!blocked}
-					onclick={regenerate}>{t('moveSheet.checkpoint.regenerate')}</button
+					onclick={() => regenerate()}>{t('moveSheet.checkpoint.regenerate')}</button
 				>
 				{#if !hardFailure}
 					<button
@@ -340,6 +354,22 @@
 							</li>{/each}
 					</ul>
 				</details>
+				{#if skeletonOffer}
+					<p>{t('moveSheet.skeleton.hint')}</p>
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={busy || !!blocked}
+						onclick={() => regenerate(skeletonOffer?.review.animation)}
+					>
+						{t('moveSheet.skeleton.title')}
+						<span class="cost"
+							>{t('moves.estimate', {
+								gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens))
+							})}</span
+						>
+					</button>
+				{/if}
 			</div>
 		{/if}
 		<div class="checkpoint-preview">
