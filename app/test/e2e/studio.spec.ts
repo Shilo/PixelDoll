@@ -3339,7 +3339,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toBeVisible();
 	const move = page.getByRole('dialog', { name: /^(Add a move|Replace move views)$/ });
-	const description = move.getByRole('textbox', { name: /^Describe (the motion|a new move)$/ });
+	const description = move.getByRole('textbox', { name: /^Describe the (motion|replacement)$/ });
 	const choices = move.getByRole('radiogroup', { name: 'Or choose a move' });
 	const cast = choices.getByRole('radio', { name: 'Cast', exact: true });
 	await expect(description).toBeVisible();
@@ -3347,6 +3347,9 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await cast.click();
 	await description.focus();
 	await expect(cast).toBeChecked();
+	await description.fill('cast with a wide overhead sweep');
+	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
+	await move.getByRole('button', { name: 'Describe a new move', exact: true }).click();
 	await description.fill('walk');
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeDisabled();
 	await expect(move.getByText('Directions to redraw')).toHaveCount(0);
@@ -3358,7 +3361,8 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(description).toHaveValue('jumping in place');
 	await page.keyboard.press('ArrowRight');
 	await expect(choices.getByRole('radio').nth(1)).toBeChecked();
-	await expect(description).toHaveValue('');
+	await expect(description).not.toHaveValue('');
+	await move.getByRole('button', { name: 'Describe a new move', exact: true }).click();
 	await description.fill('jumping in place');
 	await description.clear();
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeDisabled();
@@ -3396,13 +3400,8 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(move).not.toContainText('This move may step past');
 	await expect(description).toHaveValue('jumping in place');
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toContainText(
-		/Est\. \d+ gens/
+		'Connect PixelLab'
 	);
-	await expect(
-		move.getByText('PixelLab may charge in dollars. Retries and fallbacks cost extra.', {
-			exact: true
-		})
-	).toBeVisible();
 	await move.getByRole('button', { name: /^Generate move/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
@@ -3415,13 +3414,11 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
 	await cast.click();
 	await expect(description).toBeEnabled();
-	await expect(description).toHaveValue('');
+	await expect(description).toHaveValue('cast');
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
 	await expect(cast).toBeChecked();
-	// Presets offer the model and frame choices too; static Ride stays on its Skeleton v3 pose.
 	await expect(advanced).toHaveCount(1);
-	await choices.getByRole('radio', { name: /^Ride\b/ }).click();
-	await expect(advanced).toHaveCount(0);
+	await expect(choices.getByRole('radio', { name: 'Ride', exact: true })).toHaveCount(0);
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -5870,6 +5867,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	await page.getByRole('radio', { name: 'Cross punch · added', exact: true }).click();
 	const replacePunch = sheet.getByRole('button', { name: /^Replace Cross punch views/ });
+	await sheet.getByRole('textbox', { name: 'Describe the replacement', exact: true }).fill('');
 	await expect(replacePunch).toBeDisabled();
 	await sheet
 		.getByRole('textbox', { name: 'Describe the replacement', exact: true })
@@ -5877,16 +5875,20 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(replacePunch).toBeEnabled();
 	await sheet.getByRole('radio', { name: 'Idle · added', exact: true }).click();
 	const replace = sheet.getByRole('button', { name: /^Replace Idle views/ });
+	await expect(
+		sheet.getByRole('textbox', { name: 'Describe the replacement', exact: true })
+	).toHaveValue('idle, shift weight to the leading foot');
+	await sheet.getByRole('textbox', { name: 'Describe the replacement', exact: true }).fill('');
 	await expect(replace).toBeDisabled();
 	await expect(sheet).toContainText('Describe this move before generating it.');
 	await sheet
 		.getByRole('textbox', { name: 'Describe the replacement', exact: true })
 		.fill('Step sideways and shift weight to the leading foot');
 	await expect(replace).toBeEnabled();
-	await expect(replace).toContainText('Est. 23 gens');
+	await expect(replace).toContainText('Connect PixelLab');
 	const sword = sheet.getByRole('checkbox', { name: /Steel longsword/ });
 	await expect(sword).toHaveCount(0);
-	await expect(sheet).toContainText('No items included');
+	await expect(sheet).not.toContainText('No items included');
 	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
 	const west = directions.getByRole('button', { name: 'West direction', exact: true });
 	const east = directions.getByRole('button', { name: 'East direction', exact: true });
@@ -5912,6 +5914,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
 	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
 	await expect(model).toHaveValue('v3');
+	await expect(sheet).toContainText('No items included');
 	await east.click();
 	await expect(model).toHaveValue('skeleton-v3');
 	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
@@ -5924,6 +5927,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(sheet.getByRole('button', { name: 'End frame', exact: true })).toBeDisabled();
 	const start = sheet.getByRole('button', { name: 'Start frame', exact: true });
 	await start.click();
+	await sheet.getByRole('button', { name: 'From device', exact: true }).click();
 	const startWarning = page.getByRole('alertdialog', { name: 'Use a custom start frame?' });
 	await expect(startWarning).toBeVisible();
 	await startWarning.getByRole('button', { name: 'Keep default' }).click();
@@ -5940,7 +5944,8 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(start).not.toContainText('start.png');
 	await startWarning.getByRole('button', { name: 'Continue', exact: true }).click();
 	await expect(start).toContainText('start.png');
-	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
+	await sheet.getByRole('button', { name: 'Describe a new move', exact: true }).click();
+	const custom = page.getByRole('textbox', { name: 'Describe the motion', exact: true });
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');
 	const add = page.getByRole('dialog', { name: 'Add a move', exact: true });
@@ -5990,9 +5995,17 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await page.setViewportSize(originalViewport);
 	await add.getByRole('button', { name: 'Remove end frame', exact: true }).click();
 	await expect(end).toContainText('No end frame');
-	const [endPicker] = await Promise.all([page.waitForEvent('filechooser'), end.click()]);
+	await end.click();
+	const [endPicker] = await Promise.all([
+		page.waitForEvent('filechooser'),
+		add.getByRole('button', { name: 'From device', exact: true }).click()
+	]);
 	await endPicker.setFiles('dev-fixtures/s4rig/walk_east_1.png');
 	await expect(end).toContainText('walk_east_1.png');
+	const addStart = add.getByRole('button', { name: 'Start frame', exact: true });
+	await addStart.click();
+	await add.getByRole('button', { name: 'Same as end', exact: true }).click();
+	await expect(addStart).toContainText('walk_east_1.png');
 	await firstDirection.press('End');
 	await expect(lastDirection).toBeFocused();
 	await expect(lastDirection).toHaveAttribute('aria-selected', 'true');
@@ -6000,6 +6013,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await lastDirection.press('Home');
 	await expect(firstDirection).toBeFocused();
 	await expect(end).toContainText('walk_east_1.png');
+	await add.getByRole('button', { name: 'Remove reference', exact: true }).click();
 	await loop.click();
 	const reset = page.getByRole('alertdialog', { name: 'Change Loop and reset end frames?' });
 	await reset.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -6009,6 +6023,18 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await reset.getByRole('button', { name: 'Change Loop', exact: true }).click();
 	await expect(loop).not.toBeChecked();
 	await expect(end).toContainText('No end frame');
+	await expect(add.getByRole('radio', { name: 'Ride', exact: true })).toHaveCount(0);
+	for (const name of ['Walk', 'Run']) {
+		await add.getByRole('radio', { name, exact: true }).click();
+		await expect(custom).toHaveValue(/continuous even strides/);
+		await expect(loop).toBeChecked();
+		await expect(end).toContainText('Same as start');
+	}
+	await end.click();
+	await add
+		.getByRole('combobox', { name: 'From this character', exact: true })
+		.selectOption('default/0');
+	await expect(end).toContainText('Standing');
 });
 
 async function oversizedItemFixture(page: Page, itemId: string) {
@@ -6059,6 +6085,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	context
 }, info) => {
 	const posts: string[] = [];
+	const enhancements: { action: string; engine: string; frame_count: number }[] = [];
 	await context.route('https://api.pixellab.ai/**', async (r) => {
 		if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance'))
 			await r.fulfill({
@@ -6067,7 +6094,16 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 					credits: { usd: 1 }
 				}
 			});
-		else {
+		else if (
+			r.request().method() === 'GET' &&
+			new URL(r.request().url()).pathname.includes('/characters/')
+		)
+			await r.fulfill({ status: 404, json: { detail: 'Not available on this account' } });
+		else if (new URL(r.request().url()).pathname.endsWith('/enhance-animation-v3-prompt')) {
+			const { action, engine, frame_count } = r.request().postDataJSON();
+			enhancements.push({ action, engine, frame_count });
+			await r.fulfill({ json: { enhanced_prompt: 'Swing each arm in time with the strides' } });
+		} else {
 			posts.push(r.request().method());
 			await r.abort();
 		}
@@ -6103,14 +6139,14 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	);
 	await expect(sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 16 gens'
+		'Connect PixelLab'
 	);
 	await east.press('Space');
 	await west.click();
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toBeDisabled();
 	await east.click();
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 8 gens'
+		'Connect PixelLab'
 	);
 	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
 	if (!(await model.isVisible()))
@@ -6140,6 +6176,15 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		.getByLabel('Paste your Secret API key', { exact: true })
 		.fill('synthetic-targeted-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	expect(posts).toEqual([]);
+	const prompt = sheet.getByRole('textbox', { name: 'Describe the replacement', exact: true });
+	const originalPrompt = await prompt.inputValue();
+	await sheet.getByRole('button', { name: /^Enhance.*0\.05 gens/ }).click();
+	await expect(prompt).toHaveValue('Swing each arm in time with the strides');
+	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(prompt).toHaveValue(originalPrompt);
+	expect(enhancements).toEqual([{ action: originalPrompt, engine: 'pixminimax', frame_count: 8 }]);
+	await sheet.getByRole('button', { name: /^Replace Walk views.*Est\. 6 gens/ }).click();
 	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
 	const scope = await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
@@ -6148,6 +6193,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	});
 	expect(scope).toMatchObject({
 		id: 'walk',
+		motionSource: 'standalone',
 		replace: true,
 		dirs: ['east'],
 		items: [],
@@ -6179,7 +6225,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		);
 		return JSON.stringify(manifest);
 	});
-	await expect(suggestion).toContainText('Est. 8 gens');
+	await expect(suggestion).toContainText('Est. 6 gens');
 	await suggestion.click();
 	const review = page.getByRole('dialog', { name: 'Review Skeleton V3', exact: true });
 	await expect(review).toContainText('8 frames');
@@ -6187,7 +6233,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(review).toContainText('End frame: Not available for this model');
 	await expect(review.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 8 gens'
+		'Est. 6 gens'
 	);
 	await review.getByRole('button', { name: 'Back to results' }).click();
 	await expect(suggestion).toBeVisible();
@@ -6251,7 +6297,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await completed.getByRole('button', { name: /^Review Skeleton V3/ }).click();
 	await expect(review).toContainText('Directions: East');
 	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 8 gens'
+		'Est. 6 gens'
 	);
 	await review.getByRole('button', { name: 'Back to results' }).click();
 	await page.evaluate(async () => {
@@ -7617,7 +7663,7 @@ test('move review gates item selection and shows live estimates without spending
 	await expect(retry.getByRole('combobox', { name: 'Motion model' })).toHaveValue('skeleton-v3');
 	await expect(retry.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
 	await expect(retry.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 8 gens'
+		'Est. 6 gens'
 	);
 	await retry.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await page.getByRole('button', { name: /Walk Review move/ }).click();

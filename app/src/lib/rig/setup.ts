@@ -33,9 +33,13 @@ export interface SetupPlan {
 }
 export const STATE_CAPTURE_MODE = 'state-capture';
 
-export function rigReady(rec?: Pick<StoredProject, 'manifest' | 'character'> | null): boolean {
+export function rigReady(
+	rec?: Pick<StoredProject, 'manifest' | 'character'> | null,
+	requireRegistration = true
+): boolean {
 	const r = rec?.manifest.rig;
-	if (!r || !rec?.character?.id || !rec.character.looks?.trim()) return false;
+	if (!r || (requireRegistration && (!rec.character?.id || !rec.character.looks?.trim())))
+		return false;
 	const base = rec.manifest.items.find((i) => i.id === r.baseItem)?.layers[0];
 	return (
 		!!base &&

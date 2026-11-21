@@ -11,6 +11,8 @@
 	import { errorMessage, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { X } from './icons.ts';
+	import PopoverArrow from './PopoverArrow.svelte';
+	import { popoverFocus } from './experience/focus.ts';
 
 	let {
 		value = $bindable(),
@@ -26,6 +28,7 @@
 		caption,
 		thumbnail,
 		beforePick,
+		picker,
 		removeLabel,
 		onremove
 	}: {
@@ -42,12 +45,15 @@
 		caption?: string;
 		thumbnail?: Snippet;
 		beforePick?: (accept: () => void) => void;
+		picker?: Snippet<[() => void, () => void]>;
 		removeLabel?: string;
 		onremove?: () => void;
 	} = $props();
 	const id = $props.id();
 	const helpId = `${id}-help`;
 	const fileId = `${id}-file`;
+	const pickerId = `${id}-picker`;
+	let menu = $state<HTMLElement>();
 	let input: HTMLInputElement;
 	let drop: HTMLButtonElement;
 	let dragging = $state(false);
@@ -159,8 +165,11 @@
 					? `${fileId} ${helpId}`
 					: helpId}
 			aria-disabled={disabled || loading}
+			popovertarget={picker && !disabled && !loading ? pickerId : undefined}
+			aria-haspopup={picker && !disabled ? 'dialog' : undefined}
 			title={exactFrame && !loading ? (value?.name ?? caption) : undefined}
 			onclick={() => {
+				if (picker) return;
 				pick(() => {
 					if (active) input.click();
 				});
@@ -216,6 +225,32 @@
 				{/if}
 			</span>
 		</button>
+		{#if picker && !disabled}
+			<div
+				id={pickerId}
+				class="bu-popover-anchor"
+				data-placement="bottom-start"
+				popover
+				role="dialog"
+				aria-label={label}
+				ontoggle={popoverFocus}
+				bind:this={menu}
+			>
+				<PopoverArrow />
+				<div class="bu-popover-surface bu-floating">
+					{@render picker(
+						() => {
+							menu?.hidePopover();
+							pick(() => input.click());
+						},
+						() => {
+							menu?.hidePopover();
+							drop.focus();
+						}
+					)}
+				</div>
+			</div>
+		{/if}
 		{#if exactFrame && disabled}
 			<span class="frame-unavailable" id={fileId}
 				><span class="reference-caption">{caption}</span></span

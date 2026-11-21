@@ -14,6 +14,7 @@ import {
 	type JobRec
 } from '../lib/pixellab/queue.ts';
 import { reportedUsage } from '../lib/pixellab/activity.ts';
+import { api, ApiError } from '../lib/pixellab/client.ts';
 import {
 	PaidStepError,
 	spentGens,
@@ -168,6 +169,7 @@ import {
 	gaitTemplate,
 	moveFrameCounts,
 	moveReferenceEnd,
+	moveTemplatePrompt,
 	type MoveAnimationOptions
 } from './moveAnimationOptions.ts';
 import { cellImg } from '../lib/compose/compose.ts';
@@ -947,7 +949,8 @@ async function motion(
 	size = CELL,
 	standing?: Img,
 	lifts?: readonly number[],
-	below = 0
+	below = 0,
+	echo: 'optional-exact' | 'required-leading' = 'optional-exact'
 ): Promise<{ keypoints: Keypoint[][]; record: JobRec }> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
@@ -959,7 +962,7 @@ async function motion(
 		expected,
 		size,
 		standing,
-		'optional-exact',
+		echo,
 		lifts,
 		'motion',
 		below
@@ -1555,6 +1558,7 @@ export async function createCharacter(
 /** itemsOnly: the caller poses items onto a move the body already has (Make it, item frame repair); finishing changes no move. */
 export interface MoveSpec {
 	id: string;
+	motionSource?: 'managed' | 'standalone';
 	startFrom?: MoveSource;
 	action?: string;
 	text?: string;
@@ -1694,6 +1698,10 @@ export const MOVE_STEPS = [
 	{ id: 'items', label: message('create.moveSteps.items') }
 ];
 export const isV13 = rigReady;
+export const moveRigReady = (rec?: Pick<StoredProject, 'manifest' | 'character'> | null) =>
+	rigReady(rec, false);
+export const moveLooks = (rec: Pick<StoredProject, 'manifest' | 'character'>) =>
+	rec.character?.looks?.trim() ? rec.character.looks : rec.manifest.name || 'the character';
 /** Why a move can't take this id: Default is every character's standing views, never generated or replaced. */
 export const reservedMove = (id: string, existingMove = false) =>
 	id === DEFAULT_MOVE || (id === 'standing' && !existingMove)
@@ -2116,7 +2124,8 @@ async function inspectMeasurementRecovery(
 				spec.poseStyle
 			).map((p) => armDepth(toApi(p, rig.cell), d));
 		else if (model === 'skeleton-v3') {
-			const request = moveMotionRequest(rec, spec, d as Direction),
+			const motionStart = start ?? restImg;
+			const request = moveMotionRequest(rec, spec, d as Direction, await b64(motionStart)),
 				hash = (await requestIdentity(request)).requestHash,
 				record = jobs.find((job) => job.requestHash === hash && job.state === 'done');
 			if (!record)
@@ -2132,11 +2141,11 @@ async function inspectMeasurementRecovery(
 				`${spec.id} ${d} (motion)`,
 				moveMotionFrames(rec.manifest, spec),
 				rig.cell.w,
-				restImg,
-				'optional-exact',
+				motionStart,
+				spec.motionSource === 'standalone' ? 'required-leading' : 'optional-exact',
 				spec.motionLift?.[d],
 				'motion',
-				artMapping(rig, d)
+				spec.motionSource === 'standalone' ? 0 : artMapping(rig, d)
 			);
 			const measured = await Promise.all(
 				frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
@@ -2168,7 +2177,7 @@ async function inspectMeasurementRecovery(
 							first,
 							rest: startPoints ?? rest.keypoints,
 							keypoints: keypoints!,
-							description: rec.character!.looks,
+							description: moveLooks(rec),
 							action: bodyAction(spec),
 							dir: d,
 							seed: viewSeed(spec, d, 'render')! + attempt * 7919,
@@ -2365,9 +2374,8 @@ export function missingItemMoves(
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const isAuthoredAction = (action?: string): action is string =>
 	!!action && Object.hasOwn(ACTIONS, action);
-type MoveFrameSpec = Pick<MoveSpec, 'action' | 'frames' | 'animation'>;
-export const moveAnimationModel = (spec: MoveFrameSpec) =>
-	spec.action === 'ride' ? 'skeleton-v3' : (spec.animation?.model ?? 'skeleton-v3');
+type MoveFrameSpec = Pick<MoveSpec, 'action' | 'frames' | 'animation' | 'motionSource'>;
+export const moveAnimationModel = (spec: MoveFrameSpec) => spec.animation?.model ?? 'skeleton-v3';
 export const moveFrames = (m: Manifest, s: MoveFrameSpec) => {
 	const dir = m.rig.directions.find((d) => !d.mirrorOf && m.rig.rest?.[d.id])?.id;
 	const r = dir && m.rig.rest?.[dir];
@@ -2377,7 +2385,6 @@ export const moveFrames = (m: Manifest, s: MoveFrameSpec) => {
 			: isAuthoredAction(s.action) && r && dir
 				? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length
 				: s.frames;
-	if (s.action === 'ride') return preferred;
 	const model = moveAnimationModel(s);
 	return (
 		s.animation?.frameCount ??
@@ -2414,11 +2421,13 @@ export function nativeMoveGens(
 }
 
 export function moveMotionFrames(m: Manifest, spec: MoveFrameSpec): number {
-	return spec.action === 'walk' ? 8 : Math.ceil(moveFrames(m, spec) / 4) * 4;
+	return spec.action === 'walk' && spec.motionSource === undefined
+		? 8
+		: Math.ceil(moveFrames(m, spec) / 4) * 4;
 }
 
 export function moveMotionGens(m: Manifest, spec: MoveFrameSpec): number {
-	return spec.action === 'walk'
+	return spec.action === 'walk' && spec.motionSource === undefined
 		? 3
 		: nativeMoveGens('pixminimax', m.rig.cell, moveMotionFrames(m, spec));
 }
@@ -2442,14 +2451,14 @@ export function bodyMoveIssue(
 ): LocalizedError | undefined {
 	if (
 		s.startFrom &&
-		(s.action === 'ride' ||
-			(moveAnimationModel(s) === 'skeleton-v3' && !isAuthoredAction(s.action)))
+		moveAnimationModel(s) === 'skeleton-v3' &&
+		s.motionSource !== 'standalone' &&
+		!isAuthoredAction(s.action)
 	)
 		return new LocalizedError(
 			'This route starts from Standing. Choose a different animation model to use a saved frame.',
 			'moveSheet.startFrom.route'
 		);
-	if (s.action === 'ride') return undefined;
 	const frames = moveFrames(m, s);
 	const model = moveAnimationModel(s);
 	const suffix = blocked ? ' No generation was requested.' : '';
@@ -2493,7 +2502,7 @@ export function skeletonMoveReview(
 	qualityDirs: readonly DirectionName[],
 	candidate?: MoveCandidate
 ) {
-	if (!isV13(rec) || reservedMove(spec.id) || spec.itemMethod === 'grid') return;
+	if (!moveRigReady(rec) || reservedMove(spec.id) || spec.itemMethod === 'grid') return;
 	const manifest = rec.manifest;
 	const saved = manifest.rig.animations.find((clip) => clip.id === spec.id);
 	const qualityError = spec.replace ? replacementBodyQa() : newMoveBodyQa();
@@ -2565,8 +2574,11 @@ export function skeletonMoveReview(
 		);
 		const review: MoveSpec = {
 			id: spec.id,
+			...(!startFrom || isAuthoredAction(action) ? { motionSource: 'standalone' as const } : {}),
 			action,
-			text: bodyRejected || draftWarning ? spec.text : action ? undefined : motion,
+			text:
+				(bodyRejected || draftWarning ? spec.text : action ? undefined : motion) ??
+				(action ? moveTemplatePrompt(action, !!loop) : undefined),
 			frames: preferred,
 			animation: {
 				model: 'skeleton-v3',
@@ -2975,7 +2987,7 @@ async function addMoveUnlocked(
 				'This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.',
 				'create.errors.moveItemMissingStored'
 			);
-	} else if (!isV13(rec))
+	} else if (!(spec.itemsOnly ? isV13(rec) : moveRigReady(rec)))
 		throw new LocalizedError(
 			'Set up this character’s pose rig before adding moves.',
 			'create.errors.setUpRigFirst'
@@ -3213,10 +3225,29 @@ type MoveRequestSpec = Omit<MoveSpec, 'seed'> & { seed?: number };
 export function moveMotionRequest(
 	rec: Pick<StoredProject, 'manifest' | 'character'>,
 	spec: MoveRequestSpec,
-	dir: Direction
+	dir: Direction,
+	first = '[starting artwork]',
+	preview = false
 ): Req {
+	if (spec.motionSource === 'standalone') {
+		return nativeMoveRequest(
+			rec,
+			{
+				...spec,
+				animation: {
+					...spec.animation,
+					model: 'pixminimax',
+					frameCount: moveMotionFrames(rec.manifest, spec)
+				}
+			},
+			dir,
+			'pixminimax',
+			first,
+			preview
+		);
+	}
 	return routes.animateCharacter(
-		spec.action === 'walk'
+		spec.action === 'walk' && spec.motionSource === undefined
 			? baseAnimation(
 					'skeleton-v3',
 					rec.character?.id ?? '',
@@ -3235,6 +3266,22 @@ export function moveMotionRequest(
 					seed: viewSeed(spec, dir, 'motion')
 				}
 	);
+}
+
+export async function resolveMoveMotionSource(
+	key: string,
+	characterId: string | undefined,
+	signal: AbortSignal
+): Promise<NonNullable<MoveSpec['motionSource']>> {
+	if (!characterId) return 'standalone';
+	try {
+		await api(key, 'GET', routes.getCharacter(characterId).path, undefined, signal);
+		return 'managed';
+	} catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 404))
+			return 'standalone';
+		throw error;
+	}
 }
 /** A per-view re-roll salts only that view's failed step, so every other view and step keeps reusing what it bought. */
 export const viewSeed = (
@@ -3265,8 +3312,7 @@ export function nativeMoveRequest(
 		reference?.end === undefined
 			? undefined
 			: { end: reference.end && (preview ? '[uploaded end frame]' : reference.end.base64) },
-		spec.action,
-		spec.animation?.loop,
+		spec.animation?.loop && (spec.motionSource !== undefined || !gaitTemplate(spec.action)),
 		start
 	);
 	const guard = ', unarmed, no weapon, no props, no other people, no effects';
@@ -3300,7 +3346,8 @@ export function nativeMoveRequest(
 }
 
 function moveMotionText(spec: MoveRequestSpec): string {
-	const motion = spec.text?.trim() || actionOf(spec.action ?? spec.id);
+	if (spec.text?.trim()) return spec.text.trim();
+	const motion = actionOf(spec.action ?? spec.id);
 	return gaitTemplate(spec.action) && spec.animation?.loop
 		? `${motion.slice(0, 830)}, continuous even strides, no stopping or settling into a standing pose`
 		: motion.slice(0, 900);
@@ -3456,7 +3503,7 @@ async function bodyClip(
 			nativeStart: startImage,
 			restKps,
 			keypoints: [],
-			looks: rec.character!.looks,
+			looks: moveLooks(rec),
 			seed: spec.seed,
 			name: m.name,
 			tick,
@@ -3482,8 +3529,14 @@ async function bodyClip(
 			spec.poseStyle
 		).map((p) => armDepth(toApi(p, rig.cell), d));
 	else {
+		const motionStart = startImage ?? restImg;
 		const result = await motion(
-			moveMotionRequest(rec, spec, d),
+			moveMotionRequest(
+				rec,
+				spec,
+				d,
+				spec.motionSource === 'standalone' ? await b64(motionStart) : undefined
+			),
 			d,
 			`${m.name} · ${spec.id} ${d} (motion)`,
 			tick,
@@ -3491,9 +3544,10 @@ async function bodyClip(
 			signal,
 			spec.activityScope,
 			rig.cell.w,
-			restImg,
+			motionStart,
 			spec.motionLift?.[d],
-			artMapping(rig, d)
+			spec.motionSource === 'standalone' ? 0 : artMapping(rig, d),
+			spec.motionSource === 'standalone' ? 'required-leading' : 'optional-exact'
 		);
 		keypoints = result.keypoints;
 		source = result.record;
@@ -3514,7 +3568,7 @@ async function bodyClip(
 			restKps,
 			keypoints,
 			authored: !!authored,
-			looks: rec.character!.looks,
+			looks: moveLooks(rec),
 			seed: viewSeed(spec, d, 'render')!,
 			name: m.name,
 			tick,
@@ -3610,8 +3664,7 @@ async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedVie
 	dryRuns.set(scope.signal, dry);
 	const priced = (gens: number) => +(dry.checks * EST + gens).toFixed(2);
 	try {
-		const reference =
-			plan.spec.action === 'ride' ? undefined : plan.spec.animation?.references?.[d];
+		const reference = plan.spec.animation?.references?.[d];
 		const image = await moveReferenceImage(reference, 'start', plan.rec.manifest.rig.cell);
 		if (plan.model !== 'skeleton-v3')
 			await moveReferenceImage(reference, 'end', plan.rec.manifest.rig.cell);
@@ -3674,7 +3727,7 @@ async function motionLiftOf(
 		images = (await imagesOf(record)).map((out) => out.img),
 		frames = images.length === expected + 1 ? images.slice(1) : images;
 	if (frames.length !== expected) return null;
-	const below = artMapping(rec.manifest.rig, d),
+	const below = spec.motionSource === 'standalone' ? 0 : artMapping(rec.manifest.rig, d),
 		lifts = frames.map((image) => liftToFit(image, size, size, 128, size, below));
 	return lifts.every((lift): lift is number => lift !== null) ? lifts : null;
 }
@@ -3689,7 +3742,12 @@ async function makeRoomOption(
 	dirs: Direction[],
 	primary: boolean
 ): Promise<MovePaidOption | undefined> {
-	if (!failed.length || failed.some((v) => v.error?.paid.failure !== 'overflow')) return undefined;
+	if (
+		plan.spec.motionSource === 'standalone' ||
+		!failed.length ||
+		failed.some((v) => v.error?.paid.failure !== 'overflow')
+	)
+		return undefined;
 	const { rec, project } = plan,
 		m = rec.manifest,
 		size = m.rig.cell.w,
@@ -3814,7 +3872,7 @@ export async function reviewMoveResults(
 	const { rec, project } = await loadProject(projectId),
 		m = rec.manifest;
 	if (
-		!isV13(rec) ||
+		!moveRigReady(rec) ||
 		bodyMoveIssue(m, spec) ||
 		(!spec.replace && m.rig.animations.some((a) => a.id === spec.id))
 	)
@@ -4004,13 +4062,12 @@ async function addBodyClip(
 			'moveSheet.startFrom.changed'
 		);
 	const starts = new Map<DirectionName, Img>();
-	if (spec.action !== 'ride')
-		for (const direction of dirs) {
-			const reference = spec.animation?.references?.[direction];
-			const start = await moveReferenceImage(reference, 'start', rig.cell);
-			if (start) starts.set(direction, start);
-			if (model !== 'skeleton-v3') await moveReferenceImage(reference, 'end', rig.cell);
-		}
+	for (const direction of dirs) {
+		const reference = spec.animation?.references?.[direction];
+		const start = await moveReferenceImage(reference, 'start', rig.cell);
+		if (start) starts.set(direction, start);
+		if (model !== 'skeleton-v3') await moveReferenceImage(reference, 'end', rig.cell);
+	}
 	if (spec.startFrom || model !== 'skeleton-v3')
 		for (const direction of dirs) {
 			const rest = moveReferenceView(m, spec, direction);
@@ -4162,7 +4219,7 @@ async function addBodyClip(
 			motion:
 				model !== 'skeleton-v3'
 					? `${model}:${spec.text?.trim() || spec.action || spec.id}`
-					: spec.action === 'walk'
+					: spec.action === 'walk' && spec.motionSource === undefined
 						? 'managed-skeleton-v3:walking-8-frames'
 						: authored
 							? `authored:${spec.action}`

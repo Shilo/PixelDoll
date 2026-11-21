@@ -17,6 +17,7 @@
 		skeletonMoveReview
 	} from './create.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+	import { moveTemplatePrompt } from './moveAnimationOptions.ts';
 	import {
 		moveCandidateHasStructuralFailure,
 		moveCandidateInput,
@@ -187,7 +188,10 @@
 			skeletonRetry,
 			action: spec.replace ? id : (spec.action ?? ''),
 			replace: !!spec.replace,
-			text: spec.text ?? '',
+			text:
+				skeletonRetry?.review.text ??
+				spec.text ??
+				moveTemplatePrompt(spec.action ?? id, !!(animation?.loop ?? spec.animation?.loop)),
 			dirs: candidate.dirs,
 			source:
 				spec.startFrom && !spec.startFrom.replacement

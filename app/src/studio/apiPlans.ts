@@ -17,6 +17,7 @@ import {
 	moveMotionFrames,
 	moveMotionGens,
 	moveMotionRequest,
+	moveLooks,
 	nativeMoveGens,
 	nativeMoveRequest,
 	PRO_RECEIPTS,
@@ -432,7 +433,7 @@ export function movePlan(
 											: '[standing artwork]',
 										true
 									)
-								: moveMotionRequest(rec, spec, direction)),
+								: moveMotionRequest(rec, spec, direction, undefined, true)),
 							label: `Create motion · ${direction}`,
 							generations: native
 								? nativeMoveGens(model, m.rig.cell, frames)
@@ -473,7 +474,7 @@ export function movePlan(
 							label: `${spec.id} ${direction} · render body`,
 							generations: poseCallGens(frames),
 							body: {
-								description: rec.character?.looks,
+								description: moveLooks(rec),
 								action: bodyAction(spec),
 								direction,
 								view: m.rig.view ?? 'low top-down',

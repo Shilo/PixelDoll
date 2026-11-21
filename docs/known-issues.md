@@ -22,9 +22,13 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 ## PixelLab credits and API
 
 - **Credits are real money.** Query the balance before paid work. Creating a character costs about 2–5 gens up to a
-  128 px body (the Default standing views only). **Add a move** estimates Idle and Walk separately, at about 3.4 and
-  7.6 gens per drawn view before items and retries. Item and move estimates depend on route and coverage. Some calls bill dollars; estimates are not caps. Lost responses may have run or charged and are never
+  128 px body (the Default standing views only). **Add a move** estimates the selected model, motion source, frame count,
+  and drawn views before items and retries. Some calls bill dollars; estimates are not caps. Lost responses may have run or charged and are never
   auto-resent.
+- **Skeleton V3 has no separate End input.** Loop still controls exported playback. For text-driven Skeleton V3 Moves,
+  Studio first generates motion to measure joints, then sends the poses to the Skeleton V3 renderer. An unavailable
+  managed character uses standalone motion when the route is quoted. A paid managed submission that fails after the
+  ownership check is not automatically replaced with a standalone submission.
 - **Unknown paid outcomes.** Three Cast body joint-measurement outcomes remain unknown and cannot be reconciled (the
   synchronous endpoint returned no job IDs to query); do not infer their charges from
   the shared balance or resend them. Fitting records both generations and USD, including rejected attempts and explicit
