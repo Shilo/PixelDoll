@@ -136,8 +136,9 @@
 	class={['reference', { 'side-by-side': sideBySide, attached: !!value, 'move-frame': exactFrame }]}
 >
 	<span class="label reference-label"
-		>{label ?? t('referenceField.label')}{#if !exactFrame}
-			<span class="faint">{t('common.optional')}</span>{/if}</span
+		>{label ?? t('referenceField.label')}{#if !exactFrame}{' '}<span class="faint"
+				>{t('common.optional')}</span
+			>{/if}</span
 	>
 	<div class="reference-row">
 		<button
