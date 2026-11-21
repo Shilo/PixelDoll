@@ -41,13 +41,17 @@
 		targets = [],
 		copyId,
 		all = false,
-		menu = false
+		menu = false,
+		preview = false
 	}: {
 		targets?: DeveloperTarget[];
 		copyId?: string;
 		all?: boolean;
 		menu?: boolean; // menu: a labeled row inside an options menu
+		/** Works while Developer mode is off, for the Settings example; pass only example targets. */
+		preview?: boolean;
 	} = $props();
+	const enabled = () => preview || developerModeEnabled();
 	const id = $props.id();
 	let selected = $state('');
 	const target = $derived(targets.find(({ scope }) => scope === selected) ?? targets[0]);
@@ -137,7 +141,7 @@
 		}
 	}
 	$effect(() => {
-		if (!developerModeEnabled() || !open || all || (!activityScope && !queueIds.length)) return;
+		if (!enabled() || !open || all || (!activityScope && !queueIds.length)) return;
 		let current = true;
 		void $queue.jobs;
 		void queue.inspectActivity(queueIds, activityScope).catch(() => {
@@ -162,10 +166,7 @@
 	}
 	function isCurrentCopy(attempt: number) {
 		return (
-			developerModeEnabled() &&
-			attempt === copyAttempt &&
-			panel?.isConnected &&
-			panel.matches(':popover-open')
+			enabled() && attempt === copyAttempt && panel?.isConnected && panel.matches(':popover-open')
 		);
 	}
 	function resetFeedback() {
@@ -176,7 +177,7 @@
 		inspectionError = false;
 	}
 	async function copyIdentifier() {
-		if (!developerModeEnabled() || !identifier) return;
+		if (!enabled() || !identifier) return;
 		resetFeedback();
 		const attempt = ++copyAttempt;
 		try {
@@ -187,7 +188,7 @@
 		}
 	}
 	async function copy() {
-		if (!developerModeEnabled()) return;
+		if (!enabled()) return;
 		const attempt = ++copyAttempt;
 		const count = calls.length;
 		const text = recorded
@@ -234,7 +235,7 @@
 		endpoint: string,
 		status: Message
 	) {
-		if (!developerModeEnabled()) return;
+		if (!enabled()) return;
 		const button = event.currentTarget;
 		const active = document.activeElement;
 		const attempt = ++copyAttempt;
@@ -280,7 +281,7 @@
 	</p>
 {/snippet}
 
-{#if developerModeEnabled() && (hasCalls || identifier)}
+{#if enabled() && (hasCalls || identifier)}
 	<button
 		bind:this={opener}
 		type="button"
@@ -304,7 +305,7 @@
 		aria-label={title}
 		tabindex="-1"
 		onbeforetoggle={(event) => {
-			if (event.newState === 'open' && !developerModeEnabled()) event.preventDefault();
+			if (event.newState === 'open' && !enabled()) event.preventDefault();
 			if (event.newState === 'closed') copyAttempt++;
 		}}
 		ontoggle={toggled}

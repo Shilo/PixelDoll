@@ -73,6 +73,16 @@
 {/if}
 <hr class="bu-separator" />
 <div class="settings-activity" data-setting="recent-activity">
+	<button
+		class="row bu-action"
+		data-variant="quiet"
+		type="button"
+		onclick={() => (ui.sheet = 'activity')}
+	>
+		<Activity size={18} aria-hidden="true" />
+		<span class="row-name">{openerLabel(t('activity.title'))}</span>
+		<SurfaceChevron />
+	</button>
 	<h4 id={activityHeading} class="settings-label">{t('activity.recentSettings')}</h4>
 	<div
 		class="recent-jobs"
@@ -94,28 +104,26 @@
 			<p class="bu-muted settings-description">{t('activity.noRecentSettings')}</p>
 		{/if}
 	</div>
-	<button
-		class="row bu-action"
-		data-variant="quiet"
-		type="button"
-		onclick={() => (ui.sheet = 'activity')}
-	>
-		<Activity size={18} aria-hidden="true" />
-		<span class="row-name">{openerLabel(t('activity.title'))}</span>
-		<SurfaceChevron />
-	</button>
 </div>
 
 <style>
 	.connection-status {
 		margin-block: 0 4px;
 	}
+	/* Fills the rest of the page (SettingsContent .fill); the list scrolls inside it. */
 	.settings-activity {
-		display: grid;
-		gap: 4px;
+		flex: 1 1 0;
+		min-block-size: 14rem;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.settings-activity h4 {
+		margin-block-start: 4px;
 	}
 	.recent-jobs {
-		max-block-size: 10rem;
+		flex: 1 1 0;
+		min-block-size: 0;
 		overflow: auto;
 	}
 	.recent-jobs ul {

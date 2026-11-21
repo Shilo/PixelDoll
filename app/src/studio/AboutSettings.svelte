@@ -53,12 +53,15 @@
 		{/if}
 	</ul>
 	<span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
-	<button class="row bu-action" data-variant="quiet" type="button" onclick={copyDetails}>
-		<Copy size={18} aria-hidden="true" /><span class="row-name">{t('versionRow.copyDetails')}</span>
+	<button class="bu-action btn" data-variant="outline" type="button" onclick={copyDetails}>
+		<Copy size={18} aria-hidden="true" />{t('versionRow.copyDetails')}
 	</button>
 </div>
 
 <style>
+	.about-details > .btn {
+		margin-block-start: 8px;
+	}
 	.build-summary {
 		display: grid;
 		gap: 4px;

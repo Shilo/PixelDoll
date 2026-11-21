@@ -48,6 +48,7 @@
 		"rigs": "Rigs de desarrollo",
 		"target": "Llamadas a la API para",
 		"copyId": "Copiar ID",
+		"previewHint": "Con el modo de desarrollador activado, este botón aparece junto a los títulos de las hojas. Pruébalo con datos de ejemplo; no se envía nada.",
 		"idCopied": "ID copiado",
 		"idCopyFailed": "No se pudo copiar el ID."
 	},

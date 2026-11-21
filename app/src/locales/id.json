@@ -48,6 +48,7 @@
 		"rigs": "Rig pengembang",
 		"target": "Panggilan API untuk",
 		"copyId": "Salin ID",
+		"previewHint": "Dengan mode Developer aktif, tombol ini muncul di samping judul panel. Coba dengan data contoh; tidak ada yang dikirim.",
 		"idCopied": "ID disalin",
 		"idCopyFailed": "ID tidak dapat disalin."
 	},

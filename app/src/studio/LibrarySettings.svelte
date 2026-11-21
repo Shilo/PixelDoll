@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { Notice } from '@shilo/bronze-ui/svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
-	import { Archive, Download, TriangleAlert, Upload } from './icons.ts';
+	import { Archive, Download, Lock, TriangleAlert, Upload } from './icons.ts';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -233,72 +232,80 @@
 			</div>
 		</section>
 	{:else}
-		<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
-		<Notice>{t('librarySettings.privacy')}</Notice>
-		{#if hasArchives}
-			<label class="check">
-				<input type="checkbox" bind:checked={includeArchived} disabled={busy} />
-				{t('librarySettings.includeArchived')}
-			</label>
-		{/if}
-		<button
-			type="button"
-			class="row bu-action"
-			data-variant="quiet"
-			data-setting="backup"
-			disabled={busy}
-			onclick={backup}
-		>
-			<Download size={18} aria-hidden="true" />
-			<span class="row-name">{t('librarySettings.backup')}</span>
-		</button>
-		<input
-			type="file"
-			accept=".zip,application/zip"
-			bind:this={picker}
-			onchange={selectFile}
-			oncancel={(event) => {
-				event.stopPropagation();
-				openPicker?.focus();
-			}}
-			hidden
-		/>
-		<button
-			type="button"
-			class="row bu-action"
-			data-variant="quiet"
-			data-setting="restore"
-			disabled={busy}
-			bind:this={openPicker}
-			onclick={() => picker?.click()}
-		>
-			<Upload size={18} aria-hidden="true" />
-			<span class="row-name">{t('librarySettings.restoreFromBackup')}</span>
-		</button>
+		<section class="library-task">
+			<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
+			{#if hasArchives}
+				<label class="check">
+					<input type="checkbox" bind:checked={includeArchived} disabled={busy} />
+					{t('librarySettings.includeArchived')}
+				</label>
+			{/if}
+			<button
+				type="button"
+				class="bu-action btn"
+				data-variant="outline"
+				data-setting="backup"
+				disabled={busy}
+				onclick={backup}
+			>
+				<Download size={18} aria-hidden="true" />
+				{t('librarySettings.backup')}
+			</button>
+			<p class="bu-muted bu-small privacy">
+				<Lock size={14} aria-hidden="true" />{t('librarySettings.privacy')}
+			</p>
+		</section>
+		<hr class="bu-separator" />
+		<section class="library-task">
+			<p class="bu-muted settings-description">{t('librarySettings.restoreHint')}</p>
+			<input
+				type="file"
+				accept=".zip,application/zip"
+				bind:this={picker}
+				onchange={selectFile}
+				oncancel={(event) => {
+					event.stopPropagation();
+					openPicker?.focus();
+				}}
+				hidden
+			/>
+			<button
+				type="button"
+				class="bu-action btn"
+				data-variant="outline"
+				data-setting="restore"
+				disabled={busy}
+				bind:this={openPicker}
+				onclick={() => picker?.click()}
+			>
+				<Upload size={18} aria-hidden="true" />
+				{t('librarySettings.restoreFromBackup')}
+			</button>
+		</section>
 		{#if hasArchives}
 			<hr class="bu-separator" />
-			<h4 class="settings-label">{t('librarySettings.archived')}</h4>
-			{#if archives.localCount}
-				<p class="bu-muted settings-description">
-					{t('librarySettings.archivedHint', { count: archives.localCount })}
-				</p>
-			{/if}
-			{#each [...(archives.localCount ? [undefined] : []), ...archives.retainedIds] as id, index (id)}
-				{@const number = id ? index + (archives.localCount ? 0 : 1) : undefined}
-				<button
-					type="button"
-					class="row bu-action"
-					data-variant="quiet"
-					disabled={busy}
-					onclick={() => downloadArchive(id, number)}
-				>
-					<Archive size={18} aria-hidden="true" />
-					<span class="row-name">
+			<section class="library-task">
+				<h4 class="settings-label">{t('librarySettings.archived')}</h4>
+				{#if archives.localCount}
+					<p class="bu-muted settings-description">
+						{t('librarySettings.archivedHint', { count: archives.localCount })}
+					</p>
+				{/if}
+				{#each [...(archives.localCount ? [undefined] : []), ...archives.retainedIds] as id, index (id)}
+					{@const number = id ? index + (archives.localCount ? 0 : 1) : undefined}
+					<button
+						type="button"
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={busy}
+						onclick={() => downloadArchive(id, number)}
+					>
+						<Archive size={18} aria-hidden="true" />
 						{t('librarySettings.downloadArchived')}{#if number}
 							({formatNumber(number)}){/if}
-					</span>
-				</button>
-			{/each}
+					</button>
+				{/each}
+			</section>
 		{/if}
 	{/if}
 	{#if busy}<p class="bu-muted settings-description" role="status">{t('common.preparing')}</p>{/if}
@@ -312,7 +319,29 @@
 	.library-settings,
 	.restore-review {
 		display: grid;
+		gap: 16px;
+	}
+	.library-task {
+		display: grid;
+		justify-items: start;
 		gap: 12px;
+	}
+	.library-task .btn {
+		height: auto;
+		min-height: var(--ctl-h);
+		padding-block: 8px;
+		max-inline-size: 100%;
+		white-space: normal;
+		text-align: start;
+	}
+	.privacy {
+		display: flex;
+		gap: 6px;
+		margin: 0;
+	}
+	.privacy :global(svg) {
+		flex: none;
+		margin-block-start: 3px;
 	}
 	.library-settings .notice {
 		margin: 0;

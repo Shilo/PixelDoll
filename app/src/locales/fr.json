@@ -48,6 +48,7 @@
 		"rigs": "Rigs de développement",
 		"target": "Appels API pour",
 		"copyId": "Copier l’identifiant",
+		"previewHint": "Avec le mode développeur, ce bouton apparaît à côté des titres des panneaux. Essayez-le avec des données d’exemple ; rien n’est envoyé.",
 		"idCopied": "Identifiant copié",
 		"idCopyFailed": "Impossible de copier l’identifiant."
 	},

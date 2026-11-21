@@ -229,7 +229,16 @@
 	}
 </script>
 
-<div class={['settings-content', { detail: Boolean(active), searching: Boolean(query.trim()) }]}>
+<div
+	class={[
+		'settings-content',
+		{
+			detail: Boolean(active),
+			searching: Boolean(query.trim()),
+			fill: active?.id === 'pixellab' && !query.trim()
+		}
+	]}
+>
 	<div class="settings-index">
 		<input
 			class="bu-input input"
@@ -303,9 +312,9 @@
 				<div class="appearance-row" data-setting="theme">
 					<span class="appearance-label"><SunMoon size={18} aria-hidden="true" /> {themeLabel}</span
 					>
-					<div class="appearance-options" role="radiogroup" aria-label={themeLabel}>
+					<div class="bu-segmented" role="radiogroup" aria-label={themeLabel}>
 						{#each appearanceOptions as { value, label, icon: Icon } (value)}
-							<label class="appearance-option">
+							<label class="bu-segment">
 								<input
 									type="radio"
 									name={appearanceGroup}
@@ -313,8 +322,12 @@
 									checked={ui.theme === value}
 									onchange={() => setTheme(value)}
 								/>
-								<Icon size={14} aria-hidden="true" />
-								<span>{label}</span>
+								<!-- Wrapped so Bronze's check-mark slot (a direct svg child) leaves the theme icon visible. -->
+								<span class="bu-segment-face"
+									><span class="appearance-icon"><Icon size={16} aria-hidden="true" /></span><span
+										>{label}</span
+									></span
+								>
 							</label>
 						{/each}
 					</div>
@@ -333,8 +346,8 @@
 					{#snippet tools()}
 						{#if !workspaceCopy}
 							<button
-								class="row bu-action"
-								data-variant="quiet"
+								class="bu-action btn settings-action"
+								data-variant="outline"
 								type="button"
 								onclick={() => {
 									if (developerModeEnabled())
@@ -342,7 +355,7 @@
 								}}
 							>
 								<Archive size={18} aria-hidden="true" />
-								<span class="row-name">{t('workspaceCopy.title')}</span>
+								{t('workspaceCopy.title')}
 								<ExternalLink size={16} aria-hidden="true" />
 							</button>
 						{/if}
@@ -402,17 +415,16 @@
 	.appearance-label :global(svg) {
 		flex: none;
 	}
-	.appearance-options {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0 16px;
+	.appearance-row .bu-segmented {
+		flex: 1 1 11rem;
+		max-inline-size: 15rem;
 	}
-	.appearance-option {
+	.appearance-row .bu-segment-face {
+		min-height: 44px;
+		gap: 6px;
+	}
+	.appearance-icon {
 		display: flex;
-		align-items: center;
-		min-block-size: 44px;
-		gap: 4px;
-		cursor: pointer;
 	}
 	.settings-content :global(.row) {
 		width: 100%;
@@ -431,6 +443,25 @@
 	}
 	.settings-panel :global(.row:not([data-variant='field'])) {
 		padding-inline: 0;
+	}
+	/* PixelLab: the recent-activity list takes whatever height the page leaves. */
+	.fill {
+		flex: 1 0 auto;
+		grid-template-rows: auto minmax(0, 1fr);
+	}
+	.fill .settings-panel {
+		display: flex;
+		flex-direction: column;
+	}
+	/* Actions that do something inside a page read as buttons; navigation rows keep their chevrons. */
+	.settings-panel :global(.settings-action) {
+		height: auto;
+		min-height: var(--ctl-h);
+		padding-block: 8px;
+		justify-self: start;
+		max-inline-size: 100%;
+		white-space: normal;
+		text-align: start;
 	}
 	.search-result small {
 		display: block;
@@ -452,6 +483,9 @@
 		.searching {
 			grid-template-columns: minmax(248px, 1fr) minmax(0, 1.8fr);
 			gap: 24px;
+		}
+		.fill {
+			grid-template-rows: minmax(0, 1fr);
 		}
 		.detail:not(.searching) .settings-links {
 			display: block;

@@ -10,7 +10,8 @@
 		setDeveloperMode
 	} from './developerMode.svelte.ts';
 	import { toast } from './state.svelte.ts';
-	import { CodeXml, Copy, Wrench } from './icons.ts';
+	import { Wrench } from './icons.ts';
+	import { balancePlan } from './apiPlans.ts';
 	const localTools = import.meta.env.DEV ? () => import('./LocalDeveloperTools.svelte') : undefined;
 	const description = $props.id();
 
@@ -48,37 +49,51 @@
 			<LocalDeveloperTools />
 		{/await}
 	{/if}
-{:else}
-	<figure class="developer-preview bu-floating">
-		<figcaption class="settings-label">{t('import.preview')}</figcaption>
-		<div class="preview-example">
-			<span>{t('common.character')}</span>
-			<span><CodeXml size={16} aria-hidden="true" /> {t('apiPeek.title')}</span>
-		</div>
-		<div class="preview-example">
-			<span class="bu-number">rig-example</span>
-			<span><Copy size={16} aria-hidden="true" /> {t('developer.copyId')}</span>
-		</div>
-	</figure>
 {/if}
+<figure class="developer-preview">
+	<figcaption class="settings-label">{t('import.preview')}</figcaption>
+	<!-- A sheet header in miniature: the same ApiPeek button, on a free example plan, where users meet it. -->
+	<div class="example-sheet">
+		<div class="example-head">
+			<strong>{t('activity.title')}</strong>
+			<ApiPeek
+				preview
+				targets={[
+					{
+						scope: 'example',
+						label: t('activity.refreshBalance'),
+						plan: balancePlan(),
+						copyId: 'job-example-0001'
+					}
+				]}
+			/>
+		</div>
+		<p class="bu-muted bu-small">{t('developer.previewHint')}</p>
+	</div>
+</figure>
 
 <style>
 	.developer-preview {
-		margin: 0;
-		padding: 12px;
 		display: grid;
 		gap: 8px;
+		margin: 8px 0 0;
 	}
-	.preview-example {
+	.example-sheet {
+		border: 1px solid var(--bu-rim);
+		border-radius: var(--bu-radius-panel);
+		overflow: hidden;
+	}
+	.example-head {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		flex-wrap: wrap;
-		gap: 6px 12px;
+		justify-content: center;
+		gap: 12px;
+		min-block-size: 52px;
+		padding-inline: 12px;
+		border-block-end: 1px solid var(--bu-line);
 	}
-	.preview-example span:last-child {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
+	.example-sheet p {
+		margin: 0;
+		padding: 12px;
 	}
 </style>

@@ -1,63 +1,59 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
 	import { ChevronLeft } from './icons.ts';
-	import { settingsLabels, settingsNavigation } from './settingsNavigation.svelte.ts';
+	import { settingsNavigation } from './settingsNavigation.svelte.ts';
 
 	let { busy }: { busy: boolean } = $props();
 </script>
 
-{#if settingsNavigation.section}
-	<div class="settings-compact-heading">
-		{#if !settingsNavigation.fromExport}
-			<button
-				class="bu-action btn plain link"
-				data-variant="quiet"
-				disabled={busy}
-				onclick={() => (settingsNavigation.section = null)}
-				><ChevronLeft size={16} aria-hidden="true" />{t('export.sheet.settings')}</button
-			>
-		{/if}
-		<span>{t(settingsLabels[settingsNavigation.section])}</span>
-	</div>
-{/if}
+<!-- Sheet's leading column: equal side columns keep the centered title independent of this button's width. -->
+<span class="settings-back">
+	{#if settingsNavigation.section && !settingsNavigation.fromExport}
+		<button
+			class="bu-action btn plain link"
+			data-variant="quiet"
+			disabled={busy}
+			onclick={() => (settingsNavigation.section = null)}
+			><ChevronLeft size={18} aria-hidden="true" /><span>{t('export.sheet.settings')}</span></button
+		>
+	{/if}
+</span>
 
 <style>
-	.settings-compact-heading {
+	.settings-back {
+		display: flex;
+		min-width: 0;
+	}
+	.settings-back button {
 		display: none;
 	}
 	@media (max-width: 659px), (max-height: 519px) {
-		:global(.sheet-head:has(.settings-compact-heading)) {
-			grid-template-columns: auto minmax(0, 1fr) auto;
-			column-gap: 8px;
-		}
-		:global(.sheet-heading:has(.settings-compact-heading) .sheet-title) {
-			position: absolute;
-			clip-path: inset(50%);
-		}
-		.settings-compact-heading {
-			display: flex;
-			align-items: center;
-			gap: 10px;
-			width: 100%;
+		.settings-back button {
+			display: inline-flex;
+			gap: 2px;
+			max-width: 100%;
 			min-width: 0;
-			font-weight: 600;
-		}
-		.settings-compact-heading button {
-			flex: none;
 			min-height: 0;
 			position: relative;
+			/* The chevron's drawn stroke starts 6px into its 18px box; line that stroke up with the body's
+			   16px (phone) or 20px content edge from the header's 12px padding. */
+			padding-inline-start: 0;
+			margin-inline-start: -2px;
 		}
-		.settings-compact-heading button::after {
+		.settings-back button::after {
 			content: '';
 			position: absolute;
 			inset: calc((100% - 44px) / 2) 0;
 		}
-		.settings-compact-heading span {
-			flex: 1;
-			text-align: center;
+		.settings-back button span {
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
+		}
+	}
+	@media (min-width: 600px) and ((max-width: 659px) or (max-height: 519px)) {
+		.settings-back button {
+			margin-inline-start: 2px;
 		}
 	}
 </style>

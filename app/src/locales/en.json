@@ -48,6 +48,7 @@
 		"rigs": "Developer rigs",
 		"target": "API call scope",
 		"copyId": "Copy ID",
+		"previewHint": "With Developer mode on, this button appears beside sheet titles. Try it with example data; nothing is sent.",
 		"idCopied": "ID copied",
 		"idCopyFailed": "Could not copy the ID."
 	},

@@ -48,6 +48,7 @@
 		"rigs": "Geliştirici rig’leri",
 		"target": "API çağrılarının kapsamı",
 		"copyId": "Kimliği kopyala",
+		"previewHint": "Geliştirici modu açıkken bu düğme sayfa başlıklarının yanında görünür. Örnek verilerle deneyin; hiçbir şey gönderilmez.",
 		"idCopied": "Kimlik kopyalandı",
 		"idCopyFailed": "Kimlik kopyalanamadı."
 	},
