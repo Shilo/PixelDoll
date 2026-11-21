@@ -333,8 +333,8 @@ stay mirrored; the new-character setting does not rebuild their frozen artwork.
 
 To repair an existing move, select its **added** chip in **Add a move**, then use the **Directions to redraw** compass. Views with failed body
 checks are selected initially. The current move and its fitted equipment stay in place until you accept the replacement.
-Only the replaced views lose their old equipment frames. Animate selected items there or use **Make it** later. A
-replacement that still fails body checks cannot replace the previous artwork.
+Only the replaced views lose their old equipment frames. Animate selected items there or use **Make it** later.
+Visual warnings don't stop you from saving or replacing a move. Missing frames or invalid joints still prevent saving.
 
 For an accepted item that has bad frames, select the move and facing direction in the preview, then use **Try new item
 frames** in the Item sheet. This redraws that item's frames on the frozen body, preserving its saved design and the other

@@ -111,6 +111,7 @@ import {
 	affectedMoveDirections,
 	clearMovePoseData,
 	invalidateMoveItems,
+	moveCandidateHasStructuralFailure,
 	moveCandidateInput,
 	moveRigVersion,
 	type MoveCandidate
@@ -3053,10 +3054,7 @@ async function addBodyClip(
 				Object.entries(skeletons).filter(([key]) => key.startsWith(`${spec.id}/`))
 			),
 			checks,
-			warnings,
-			itemsBlocked: clips.some(({ out: { qa } }) =>
-				spec.replace ? failsBodyGate(qa, model !== 'skeleton-v3') : qa.fails.length > 0
-			)
+			warnings
 		};
 		await db.updateCharacter<StoredProject>(
 			projectId,
@@ -3186,7 +3184,7 @@ export async function resolveMoveCandidate(
 	const { rec, project } = await loadProject(projectId);
 	const candidate = currentMoveCandidate(rec, reviewed.spec);
 	if (moveCandidateInput(rec, id) !== candidate.input) throw changedMoveCandidate();
-	if (candidate.itemsBlocked)
+	if (moveCandidateHasStructuralFailure(candidate))
 		throw new LocalizedError(
 			'This move needs fixes before it can be kept.',
 			'moveSheet.checkpoint.hardFailure'

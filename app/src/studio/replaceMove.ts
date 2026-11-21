@@ -20,7 +20,10 @@ export interface MoveCandidate {
 	skeletons: Record<string, Skeleton>;
 	checks: Record<string, ClipQa>;
 	warnings: string[];
-	itemsBlocked: boolean;
+}
+
+export function moveCandidateHasStructuralFailure(candidate: MoveCandidate): boolean {
+	return Object.values(candidate.checks).some(({ fails }) => fails.length > 0);
 }
 
 export function moveCandidateInput(record: StoredProject, id: string): string {

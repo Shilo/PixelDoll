@@ -172,36 +172,60 @@ test('the Studio checkpoint stages move frames without publishing or requesting 
 	expect(state.requests).toHaveLength(count);
 });
 
-test('a replacement that fails quality checks leaves the current move and fitted items intact', async () => {
-	await add();
-	const projectId = 'rig-quality';
-	const before = state.projects.get(projectId)!;
-	const hat = (await equipmentFixture()).manifest.items[1];
-	hat.baseHash = before.manifest.rig.baseHash;
-	const frame = before.manifest.rig.rest!.south!.image;
-	hat.layers[0].cells = { jump: { south: [frame, frame, frame, frame] } };
-	before.manifest.items.push(hat);
-	state.output = (await store(image(-4, true))).slice(7);
-	state.estimate = points(0.9);
-	await expect(
-		addMove(projectId, {
-			id: 'jump',
-			action: 'idle',
-			frames: 4,
-			items: [],
-			seed: 8,
-			dirs: ['south'],
-			replace: true,
-			reviewBeforePublish: true
-		})
-	).resolves.toMatchObject({ moveReview: 'jump' });
-	const staged = state.projects.get(projectId)!;
-	const candidate = staged.moveReviews!.jump;
-	expect(candidate.itemsBlocked).toBe(true);
-	await expect(resolveMoveCandidate(projectId, candidate, true)).rejects.toThrow('needs fixes');
-	await resolveMoveCandidate(projectId, candidate, false);
-	expect(state.projects.get(projectId)?.manifest).toEqual(before.manifest);
-});
+test.each(['save', 'discard', 'structural failure'] as const)(
+	'a replacement with visual warnings: %s',
+	async (decision) => {
+		await add();
+		const projectId = 'rig-quality';
+		const before = state.projects.get(projectId)!;
+		const hat = (await equipmentFixture()).manifest.items[1];
+		hat.baseHash = before.manifest.rig.baseHash;
+		const frame = before.manifest.rig.rest!.south!.image;
+		hat.layers[0].cells = { jump: { south: [frame, frame, frame, frame] } };
+		before.manifest.items.push(hat);
+		state.output = (await store(image(-4, true))).slice(7);
+		state.estimate = points(0.9);
+		await expect(
+			addMove(projectId, {
+				id: 'jump',
+				action: 'idle',
+				frames: 4,
+				items: [],
+				seed: 8,
+				dirs: ['south'],
+				replace: true,
+				reviewBeforePublish: true
+			})
+		).resolves.toMatchObject({ moveReview: 'jump' });
+		const staged = state.projects.get(projectId)!;
+		const candidate = staged.moveReviews!.jump;
+		expect(candidate.checks['jump/south'].fails).toEqual([]);
+		expect(candidate.warnings).not.toHaveLength(0);
+		expect(staged.manifest).toEqual(before.manifest);
+		const requests = state.requests.length;
+		if (decision === 'save') {
+			await resolveMoveCandidate(projectId, candidate, true);
+			const saved = state.projects.get(projectId)!;
+			expect(saved.moveReviews?.jump).toBeUndefined();
+			expect(saved.manifest.items[0].layers[0].cells!.jump.south).not.toEqual(
+				before.manifest.items[0].layers[0].cells!.jump.south
+			);
+			expect(
+				saved.manifest.items.find((item) => item.id === hat.id)!.layers[0].cells?.jump?.south
+			).toBeUndefined();
+			expect(saved.rigQa).toMatchObject({ warnings: expect.arrayContaining(candidate.warnings) });
+		} else {
+			if (decision === 'structural failure') {
+				candidate.checks['jump/south'].fails.push('missing or invalid frame joints');
+				await expect(resolveMoveCandidate(projectId, candidate, true)).rejects.toThrow(
+					'needs fixes'
+				);
+			} else await resolveMoveCandidate(projectId, candidate, false);
+			expect(state.projects.get(projectId)?.manifest).toEqual(before.manifest);
+		}
+		expect(state.requests).toHaveLength(requests);
+	}
+);
 
 test('approved item work skips already-fitted views and refuses changed artwork', async () => {
 	await add();

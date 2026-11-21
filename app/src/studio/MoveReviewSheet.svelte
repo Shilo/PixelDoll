@@ -15,7 +15,7 @@
 		moveMinimumTier,
 		readMoveCandidateImages
 	} from './create.ts';
-	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
+	import { moveCandidateHasStructuralFailure, moveCandidateInput } from './replaceMove.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import {
 		doc,
@@ -47,12 +47,9 @@
 	);
 	const directions = $derived.by(() => {
 		if (!manifest || !candidate) return [];
-		const affected = affectedMoveDirections(manifest.rig, candidate.dirs);
 		return manifest.rig.directions.filter(
 			({ id, mirrorOf }) =>
-				affected.includes(id) &&
-				(candidate.cells[id]?.some(Boolean) ||
-					(mirrorOf && candidate.cells[mirrorOf]?.some(Boolean)))
+				candidate.cells[id]?.some(Boolean) || (mirrorOf && candidate.cells[mirrorOf]?.some(Boolean))
 		);
 	});
 	let direction = $state<DirectionName | null>(null);
@@ -79,7 +76,7 @@
 		const original = source && images.get(candidate.cells[source]?.[cell] ?? '');
 		return original ? flipH(original) : null;
 	});
-	const hardFailure = !!candidate?.itemsBlocked;
+	const hardFailure = !!candidate && moveCandidateHasStructuralFailure(candidate);
 	const blocked = $derived(moveReviewBlocked(projectId));
 	const previewSize = $derived(ui.size === 'landscape' ? 128 : 192);
 	const changed = $derived(
@@ -259,7 +256,12 @@
 						class="bu-action btn primary checkpoint-primary"
 						data-variant="primary"
 						disabled={busy || !!blocked || !images}
-						aria-describedby={candidate.spec.replace ? 'move-replace-note' : undefined}
+						aria-describedby={[
+							candidate.spec.replace && 'move-replace-note',
+							candidate.warnings.length && 'move-quality-notes'
+						]
+							.filter(Boolean)
+							.join(' ') || undefined}
 						onclick={() => void decide(true)}
 						>{t(
 							candidate.spec.replace ? 'moveSheet.checkpoint.replace' : 'moveSheet.checkpoint.save'
@@ -324,6 +326,20 @@
 		</div>
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
 	{:else if candidate}
+		{#if candidate.warnings.length}
+			<div class="notice warn small">
+				<details class="disclosure" open={hardFailure}>
+					<summary id="move-quality-notes"
+						><ChevronRight size={14} />{t('moveSheet.checkpoint.findings')}</summary
+					>
+					<ul>
+						{#each candidate.warnings as warning, index (index)}<li>
+								{bodyQualityNote(warning, t)}
+							</li>{/each}
+					</ul>
+				</details>
+			</div>
+		{/if}
 		<div class="checkpoint-preview">
 			<div class="checkpoint-motion">
 				<div class="checkpoint-stage" aria-busy={!images && !error}>
@@ -384,16 +400,6 @@
 			<p class="checkpoint-note muted small">
 				{t('moveSheet.checkpoint.reviewNote', { move: name })}
 			</p>
-		{/if}
-		{#if candidate.warnings.length}
-			<details class="disclosure" open={hardFailure}>
-				<summary><ChevronRight size={14} />{t('moveSheet.checkpoint.findings')}</summary>
-				<ul>
-					{#each candidate.warnings as warning, index (index)}<li>
-							{bodyQualityNote(warning, t)}
-						</li>{/each}
-				</ul>
-			</details>
 		{/if}
 		{#if hardFailure}<p class="notice warn small">{t('moveSheet.checkpoint.hardFailure')}</p>{/if}
 		{#if blocked && !busy}<p class="notice small" role="status">{t(blocked)}</p>{/if}

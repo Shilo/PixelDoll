@@ -6818,8 +6818,8 @@ test('move review gates item selection and shows live estimates without spending
 					anchors: {},
 					skeletons: {},
 					checks: {},
-					warnings: [],
-					itemsBlocked: false
+					warnings: ['walk/east: silhouette bottom differs up to 4 px from standing reference'],
+					itemsBlocked: true
 				}
 			};
 			await db.put('projects', s.doc.id, rec);
@@ -6829,10 +6829,14 @@ test('move review gates item selection and shows live estimates without spending
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
+	await review.getByText('Quality notes', { exact: true }).click();
+	await expect(review.getByText(/silhouette bottom differs up to 4 px/)).toBeVisible();
+	await expect(review.getByRole('button', { name: 'Replace move', exact: true })).toBeEnabled();
 	await expect(review.getByRole('button', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await review.getByRole('button', { name: 'Later', exact: true }).click();
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	const compass = review.getByRole('group', { name: 'Directions', exact: true });
+	const north = compass.getByRole('button', { name: 'North direction' });
 	const east = compass.getByRole('button', { name: 'East direction' });
 	const south = compass.getByRole('button', { name: 'South direction' });
 	const west = compass.getByRole('button', { name: /West direction.*Mirrors East/ });
@@ -6850,6 +6854,11 @@ test('move review gates item selection and shows live estimates without spending
 					canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
 				)
 			}));
+	await north.click();
+	await expect(north).toHaveAttribute('aria-pressed', 'true');
+	const retained = await pixels('North');
+	expect(retained.data.some((value, index) => index % 4 === 3 && value > 0)).toBe(true);
+	await east.click();
 	const original = await pixels('East');
 	await west.click();
 	await expect(west).toHaveAttribute('aria-pressed', 'true');
