@@ -48,7 +48,11 @@
 		"rigs": "Rigs de desarrollo",
 		"target": "Llamadas a la API para",
 		"copyId": "Copiar ID",
-		"previewHint": "Con el modo de desarrollador activado, este botón aparece junto a títulos de hojas como {activity}. Ábrelo y selecciona el trabajo de ejemplo para probar “{copyId}”. El modo también añade “{all}” y “{backup}” a esta página. Prueba el ejemplo; no se envía nada.",
+		"practice": "Pruébalo",
+		"stepFind": "Busca Llamadas a la API junto al título de una hoja",
+		"stepChoose": "Elige el trabajo de ejemplo",
+		"stepCopy": "Selecciona “{copyId}”",
+		"practiceNote": "Solo datos de ejemplo. No se envía nada.",
 		"idCopied": "ID copiado",
 		"idCopyFailed": "No se pudo copiar el ID."
 	},

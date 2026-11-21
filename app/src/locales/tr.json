@@ -48,7 +48,11 @@
 		"rigs": "Geliştirici rig’leri",
 		"target": "API çağrılarının kapsamı",
 		"copyId": "Kimliği kopyala",
-		"previewHint": "Geliştirici modu açıkken bu düğme {activity} gibi sayfa başlıklarının yanında durur. Paneli açıp “{copyId}” seçeneğini denemek için örnek işi seçin. Mod bu sayfaya ayrıca “{all}” ve “{backup}” ekler. Örneği deneyin; hiçbir şey gönderilmez.",
+		"practice": "Deneyin",
+		"stepFind": "Sayfa başlığının yanındaki API çağrılarını bulun",
+		"stepChoose": "Örnek işi seçin",
+		"stepCopy": "“{copyId}” seçeneğini seçin",
+		"practiceNote": "Yalnızca örnek veri. Hiçbir şey gönderilmez.",
 		"idCopied": "Kimlik kopyalandı",
 		"idCopyFailed": "Kimlik kopyalanamadı."
 	},

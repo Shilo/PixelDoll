@@ -48,7 +48,11 @@
 		"rigs": "Rigs de développement",
 		"target": "Appels API pour",
 		"copyId": "Copier l’identifiant",
-		"previewHint": "Avec le mode développeur, ce bouton apparaît à côté des titres de panneaux comme {activity}. Ouvrez-le et sélectionnez la tâche d’exemple pour essayer « {copyId} ». Le mode ajoute aussi « {all} » et « {backup} » à cette page. Essayez l’exemple ; rien n’est envoyé.",
+		"practice": "Essayer",
+		"stepFind": "Repérez Appels API à côté d’un titre de panneau",
+		"stepChoose": "Choisissez la tâche d’exemple",
+		"stepCopy": "Sélectionnez « {copyId} »",
+		"practiceNote": "Données d’exemple uniquement. Rien n’est envoyé.",
 		"idCopied": "Identifiant copié",
 		"idCopyFailed": "Impossible de copier l’identifiant."
 	},

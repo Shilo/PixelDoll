@@ -12,9 +12,8 @@
 </script>
 
 <script lang="ts">
-	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import {
 		apiActivity,
 		activityRetention,
@@ -48,7 +47,10 @@
 		copyId?: string;
 		all?: boolean;
 		menu?: boolean; // menu: a labeled row inside an options menu
-		/** A sample for Settings: works while Developer mode is off and never reads the live log or queue. */
+		/**
+		 * A sample for Settings: docked inline and open, works while Developer mode is off, never reads
+		 * the live log or queue, and numbers the trigger, scope picker and Copy ID for its practice steps.
+		 */
 		preview?: boolean;
 	} = $props();
 	const enabled = () => preview || developerModeEnabled();
@@ -61,11 +63,13 @@
 	const queueIds = $derived(target?.queueIds ?? []);
 	const activityScope = $derived(target?.activityScope);
 	const identifier = $derived(target?.copyId ?? copyId);
+	const offersId = $derived(!!identifier || (preview && targets.some((choice) => choice.copyId)));
 	const hasCalls = $derived(all || !!target);
 	const title = $derived(hasCalls ? t('apiPeek.title') : t('developer.title'));
 	let panel = $state<HTMLDivElement>();
 	let opener = $state<HTMLButtonElement>();
-	let open = $state(false);
+	// The docked sample starts open; a component never switches between docked and floating.
+	let open = $state(untrack(() => preview));
 	let backgrounds = $state(false);
 	let copyStatus = $state<Message | string>('');
 	let copiedAll = $state(false);
@@ -155,8 +159,34 @@
 			current = false;
 		};
 	});
+	// The docked sample points its arrow at the trigger wherever the layout puts it.
+	$effect(() => {
+		if (!preview || !open || !panel || !opener) return;
+		const el = panel,
+			anchor = opener;
+		const place = () => {
+			const a = anchor.getBoundingClientRect(),
+				p = el.getBoundingClientRect();
+			el.style.setProperty('--peek-arrow-x', `${a.left + a.width / 2 - p.left - 6}px`);
+		};
+		place();
+		const observer = new ResizeObserver(place);
+		observer.observe(el);
+		if (el.parentElement) observer.observe(el.parentElement);
+		observer.observe(anchor);
+		return () => observer.disconnect();
+	});
+	function toggleDocked() {
+		open = !open;
+		if (open) {
+			selected = '';
+			resetFeedback();
+		} else copyAttempt++;
+	}
 	function close() {
-		panel?.hidePopover();
+		if (!preview) return panel?.hidePopover();
+		toggleDocked();
+		opener?.focus();
 	}
 	function keydown(e: KeyboardEvent) {
 		// Keep Studio playback, direction and undo shortcuts outside this inspector.
@@ -170,7 +200,10 @@
 	}
 	function isCurrentCopy(attempt: number) {
 		return (
-			enabled() && attempt === copyAttempt && panel?.isConnected && panel.matches(':popover-open')
+			enabled() &&
+			attempt === copyAttempt &&
+			panel?.isConnected &&
+			(preview ? open : panel.matches(':popover-open'))
 		);
 	}
 	function resetFeedback() {
@@ -289,31 +322,36 @@
 	<button
 		bind:this={opener}
 		type="button"
-		class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'}
-		data-variant="quiet"
+		class={menu
+			? 'row bu-action settings-action api-peek-trigger'
+			: 'bu-action btn icon plain api-peek-trigger'}
+		data-variant={menu ? 'outline' : 'quiet'}
+		data-step={preview ? '1' : undefined}
 		aria-label={all ? t('apiPeek.inspectAll') : hasCalls ? t('apiPeek.inspect') : title}
 		title={hasCalls ? t('apiPeek.triggerTitle') : title}
 		aria-expanded={open}
 		aria-controls={id}
-		popovertarget={id}
+		popovertarget={preview ? undefined : id}
+		onclick={preview ? toggleDocked : undefined}
 		><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name"
 				>{openerLabel(t(all ? 'apiPeek.inspectAll' : 'apiPeek.title'))}</span
-			><SurfaceChevron />{/if}</button
+			>{/if}</button
 	>
 	<div
 		bind:this={panel}
 		{id}
-		popover="auto"
-		class="api-peek bu-popover-anchor"
-		role="dialog"
+		popover={preview ? undefined : 'auto'}
+		class={preview ? 'api-peek docked' : 'api-peek bu-popover-anchor'}
+		role={preview ? 'group' : 'dialog'}
 		aria-label={title}
 		tabindex="-1"
+		hidden={preview && !open}
 		onbeforetoggle={(event) => {
 			if (event.newState === 'open' && !enabled()) event.preventDefault();
 			if (event.newState === 'closed') copyAttempt++;
 		}}
 		ontoggle={toggled}
-		onkeydown={keydown}
+		onkeydown={preview ? undefined : keydown}
 	>
 		<PopoverArrow />
 		<div class="api-peek-surface bu-popover-surface bu-floating">
@@ -367,25 +405,29 @@
 						onclick={close}><X size={17} /></button
 					>
 				</header>
-				{#if targets.length > 1 || identifier}
+				{#if targets.length > 1 || offersId}
 					<div class="peek-controls">
-						{#if targets.length > 1}<select
-								class="bu-input input"
-								aria-label={t('developer.target')}
-								value={scope}
-								onchange={(event) => {
-									selected = event.currentTarget.value;
-									resetFeedback();
-								}}
-							>
-								{#each targets as choice (choice.scope)}<option value={choice.scope}
-										>{choice.label}</option
-									>{/each}
-							</select>{/if}
-						{#if identifier}<button
+						{#if targets.length > 1}<span class="peek-scope" data-step={preview ? '2' : undefined}
+								><select
+									class="bu-input input"
+									aria-label={t('developer.target')}
+									value={scope}
+									onchange={(event) => {
+										selected = event.currentTarget.value;
+										resetFeedback();
+									}}
+								>
+									{#each targets as choice (choice.scope)}<option value={choice.scope}
+											>{choice.label}</option
+										>{/each}
+								</select></span
+							>{/if}
+						{#if offersId}<button
 								type="button"
 								class="bu-action btn small"
 								data-variant="outline"
+								data-step={preview ? '3' : undefined}
+								disabled={!identifier}
 								onclick={copyIdentifier}>{t('developer.copyId')}</button
 							>{/if}
 					</div>
@@ -538,9 +580,22 @@
 		gap: 8px;
 		padding: 8px 12px;
 	}
+	.peek-scope {
+		display: flex;
+		min-width: 0;
+		max-width: 100%;
+	}
 	.peek-controls select {
 		min-width: 0;
 		max-width: 100%;
+	}
+	.docked {
+		position: relative;
+		inline-size: auto;
+	}
+	.docked > :global(.bu-popover-arrow) {
+		inset-block-start: -8px;
+		left: var(--peek-arrow-x, 50%);
 	}
 	.api-peek-trigger {
 		vertical-align: middle;

@@ -52,66 +52,102 @@
 	{/if}
 {/if}
 <figure class="developer-preview">
-	<figcaption class="settings-label">{t('import.preview')}</figcaption>
-	<div class="example-sheet">
-		<div class="example-head">
-			<strong>{t('activity.title')}</strong>
-			<ApiPeek
-				preview
-				targets={[
-					{
-						scope: 'example-balance',
-						label: t('activity.refreshBalance'),
-						plan: balancePlan()
-					},
-					{
-						scope: 'example-job',
-						label: `${t('activity.ledger.job')} · ${exampleJob}`,
-						plan: [
-							{
-								method: 'GET',
-								path: `/background-jobs/${exampleJob}`,
-								label: t('apiPeek.plan.checkProgress')
-							}
-						],
-						copyId: exampleJob
-					}
-				]}
-			/>
-		</div>
-		<p class="bu-muted bu-small">
-			{t('developer.previewHint', {
-				activity: t('activity.title'),
-				copyId: t('developer.copyId'),
-				all: t('apiPeek.inspectAll'),
-				backup: t('workspaceCopy.title')
+	<figcaption class="settings-label">{t('developer.practice')}</figcaption>
+	<ol class="bu-steps practice-steps">
+		<li><span class="step-number" aria-hidden="true">1</span>{t('developer.stepFind')}</li>
+		<li><span class="step-number" aria-hidden="true">2</span>{t('developer.stepChoose')}</li>
+		<li>
+			<span class="step-number" aria-hidden="true">3</span>{t('developer.stepCopy', {
+				copyId: t('developer.copyId')
 			})}
-		</p>
+		</li>
+	</ol>
+	<div class="example-sheet">
+		<strong>{t('activity.title')}</strong>
+		<ApiPeek
+			preview
+			targets={[
+				{
+					scope: 'example-balance',
+					label: t('activity.refreshBalance'),
+					plan: balancePlan()
+				},
+				{
+					scope: 'example-job',
+					label: `${t('activity.ledger.job')} · ${exampleJob}`,
+					plan: [
+						{
+							method: 'GET',
+							path: `/background-jobs/${exampleJob}`,
+							label: t('apiPeek.plan.checkProgress')
+						}
+					],
+					copyId: exampleJob
+				}
+			]}
+		/>
 	</div>
+	<p class="bu-muted bu-small practice-note">{t('developer.practiceNote')}</p>
 </figure>
 
 <style>
 	.developer-preview {
 		display: grid;
-		gap: 8px;
+		gap: 12px;
+		min-inline-size: 0;
 		margin: 8px 0 0;
 	}
-	.example-sheet {
-		border: 1px solid var(--bu-rim);
-		border-radius: var(--bu-radius-panel);
-		overflow: hidden;
+	.practice-steps {
+		gap: 8px;
 	}
-	.example-head {
+	.practice-steps li {
+		gap: 10px;
+	}
+	/* The sample tags its real controls with data-step; the markers sit on their corners without moving them. */
+	.developer-preview :global([data-step]) {
+		position: relative;
+		overflow: visible;
+	}
+	.developer-preview :global([data-step]::after) {
+		content: attr(data-step);
+		content: attr(data-step) / '';
+		position: absolute;
+		inset-block-start: -7px;
+		inset-inline-end: -7px;
+		z-index: 1;
+		pointer-events: none;
+	}
+	.step-number,
+	.developer-preview :global([data-step]::after) {
+		display: grid;
+		place-items: center;
+		flex: none;
+		inline-size: 16px;
+		block-size: 16px;
+		border-radius: 50%;
+		background: var(--bu-accent);
+		color: var(--bu-on-accent);
+		font: 600 10px/1 var(--font-ui, system-ui);
+		font-variant-numeric: tabular-nums;
+	}
+	/* A sheet header in miniature: the title with its inspector beside it, the inspector docked below. */
+	.example-sheet {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		justify-content: center;
-		gap: 12px;
-		min-block-size: 52px;
-		padding-inline: 12px;
-		border-block-end: 1px solid var(--bu-line);
+		gap: 4px 8px;
+		min-inline-size: 0;
+		padding: 10px 12px 12px;
+		border: 1px solid var(--bu-rim);
+		border-radius: var(--bu-radius-panel);
 	}
-	.example-sheet p {
+	.example-sheet > :global(.api-peek) {
+		flex: 1 0 100%;
+		min-inline-size: 0;
+		margin-block-start: 10px;
+	}
+	.practice-note {
 		margin: 0;
-		padding: 12px;
 	}
 </style>

@@ -48,7 +48,11 @@
 		"rigs": "Rigs de desenvolvimento",
 		"target": "Chamadas de API para",
 		"copyId": "Copiar ID",
-		"previewHint": "Com o modo de desenvolvedor ativado, este botão fica ao lado de títulos de janelas como {activity}. Abra o painel e selecione a tarefa de exemplo para testar “{copyId}”. O modo também adiciona “{all}” e “{backup}” a esta página. Experimente o exemplo; nada é enviado.",
+		"practice": "Experimente",
+		"stepFind": "Encontre Chamadas de API ao lado do título de uma janela",
+		"stepChoose": "Escolha a tarefa de exemplo",
+		"stepCopy": "Selecione “{copyId}”",
+		"practiceNote": "Apenas dados de exemplo. Nada é enviado.",
 		"idCopied": "ID copiado",
 		"idCopyFailed": "Não foi possível copiar o ID."
 	},

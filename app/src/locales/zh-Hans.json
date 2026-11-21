@@ -48,7 +48,11 @@
 		"rigs": "开发者绑定结构",
 		"target": "API 调用范围",
 		"copyId": "复制 ID",
-		"previewHint": "开启开发者模式后，此按钮会显示在{activity}等面板标题旁。打开面板并选择示例任务，即可试用“{copyId}”。此模式还会在本页添加“{all}”和“{backup}”。可试用示例，不会发送任何内容。",
+		"practice": "试一试",
+		"stepFind": "在面板标题旁找到“API 调用”",
+		"stepChoose": "选择示例任务",
+		"stepCopy": "选择“{copyId}”",
+		"practiceNote": "仅为示例数据，不会发送任何内容。",
 		"idCopied": "已复制 ID",
 		"idCopyFailed": "无法复制 ID。"
 	},

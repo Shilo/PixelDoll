@@ -48,7 +48,11 @@
 		"rigs": "Rig pengembang",
 		"target": "Panggilan API untuk",
 		"copyId": "Salin ID",
-		"previewHint": "Dengan mode Developer aktif, tombol ini ada di samping judul panel seperti {activity}. Buka panelnya dan pilih tugas contoh untuk mencoba “{copyId}”. Mode ini juga menambahkan “{all}” dan “{backup}” ke halaman ini. Coba contohnya; tidak ada yang dikirim.",
+		"practice": "Coba",
+		"stepFind": "Temukan Panggilan API di samping judul panel",
+		"stepChoose": "Pilih tugas contoh",
+		"stepCopy": "Pilih “{copyId}”",
+		"practiceNote": "Hanya data contoh. Tidak ada yang dikirim.",
 		"idCopied": "ID disalin",
 		"idCopyFailed": "ID tidak dapat disalin."
 	},
