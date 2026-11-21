@@ -4,7 +4,7 @@
 	import { getLocale, getLocales, localeName, t } from 'svelte-whisper';
 	import { detectedLanguage, languagePreference, selectLanguage } from '../lib/i18n.ts';
 	import { popoverFocus } from './experience/focus.ts';
-	import { Check, Languages } from './icons.ts';
+	import { Check, ChevronDown, Languages } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 
 	const nameOf = (id: string) => (id === 'id' ? 'Bahasa Indonesia' : localeName(id));
@@ -14,7 +14,7 @@
 		.sort((first, second) => alphabetical.compare(first.name, second.name));
 	const menuId = $props.id();
 	const valueId = `${menuId}-value`;
-	let { compact = false }: { compact?: boolean } = $props();
+	let { compact = false, settings = false }: { compact?: boolean; settings?: boolean } = $props();
 	const activeLanguage = $derived(getLocale() || 'en');
 	let menu = $state<HTMLElement>();
 	let expanded = $state(false);
@@ -37,8 +37,11 @@
 {#if choices.length > 1}
 	<button
 		type="button"
-		class={compact ? 'bu-action btn icon plain' : 'row bu-action'}
-		data-variant="quiet"
+		class={[
+			compact ? 'bu-action btn icon plain' : 'row bu-action',
+			{ 'settings-action': settings }
+		]}
+		data-variant={settings ? 'outline' : 'quiet'}
 		aria-label={t('language.label')}
 		title={compact ? t('language.label') : undefined}
 		aria-describedby={compact ? undefined : valueId}
@@ -50,7 +53,7 @@
 		{#if !compact}
 			<span class="row-name">{openerLabel(t('language.label'))}</span>
 			<span id={valueId} class="faint small" lang={activeLanguage}>{nameOf(activeLanguage)}</span>
-			<SurfaceChevron />
+			{#if settings}<ChevronDown size={16} aria-hidden="true" />{:else}<SurfaceChevron />{/if}
 		{/if}
 	</button>
 	<div

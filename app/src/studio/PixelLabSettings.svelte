@@ -46,7 +46,12 @@
 					: 'usage.notConnected'
 		)}
 	</p>
-	<button class="row bu-action" data-variant="quiet" type="button" onclick={openSettingsAccount}>
+	<button
+		class="bu-action settings-action"
+		data-variant="outline"
+		type="button"
+		onclick={openSettingsAccount}
+	>
 		<KeyRound size={18} aria-hidden="true" />
 		<span class="row-name">{openerLabel(connectionAction)}</span>
 		<SurfaceChevron />
@@ -54,28 +59,24 @@
 </div>
 {#if connected}
 	<hr class="bu-separator" />
-	<PixelLabUsage detailed>
-		{#snippet actions()}
-			<button
-				class="bu-action btn icon plain"
-				data-variant="quiet"
-				type="button"
-				aria-disabled={refreshing}
-				aria-label={t(refreshing ? 'usage.refreshing' : 'activity.refreshBalance')}
-				title={t('activity.refreshBalance')}
-				onclick={refresh}
-			>
-				<RefreshCw size={17} aria-hidden="true" />
-			</button>
-		{/snippet}
-	</PixelLabUsage>
+	<PixelLabUsage detailed />
+	<button
+		class="bu-action settings-action"
+		data-variant="outline"
+		type="button"
+		aria-disabled={refreshing}
+		onclick={refresh}
+	>
+		<RefreshCw size={18} aria-hidden="true" />
+		{t(refreshing ? 'usage.refreshing' : 'activity.refreshBalance')}
+	</button>
 	{#if app.balanceError}<p class="notice bad small" role="status">{t('usage.loadFailed')}</p>{/if}
 {/if}
 <hr class="bu-separator" />
 <div class="settings-activity" data-setting="recent-activity">
 	<button
-		class="row bu-action"
-		data-variant="quiet"
+		class="bu-action settings-action"
+		data-variant="outline"
 		type="button"
 		onclick={() => (ui.sheet = 'activity')}
 	>
@@ -110,7 +111,7 @@
 	.connection-status {
 		margin-block: 0 4px;
 	}
-	/* Fills the rest of the page (SettingsContent .fill); the list scrolls inside it. */
+	/* Fills the rest of the page; the list scrolls inside it. */
 	.settings-activity {
 		flex: 1 1 0;
 		min-block-size: 14rem;

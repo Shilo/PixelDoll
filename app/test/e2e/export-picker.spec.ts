@@ -134,6 +134,12 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await exportDialog.getByRole('button', { name: 'Library', exact: true }).click();
 	const backUp = exportDialog.getByRole('button', { name: 'Back up library' });
 	await expect(backUp).toBeVisible();
+	await expect(
+		exportDialog.locator('.library-task').first().locator(':scope > :first-child')
+	).toHaveText('Back up library');
+	await expect(
+		exportDialog.locator('.library-task').nth(1).locator(':scope > button + p')
+	).toHaveText('Nothing in your library will be replaced or deleted.');
 	const evidence = process.env.PIXELDOLL_WORKSPACE_EVIDENCE;
 	if (evidence)
 		await exportDialog.screenshot({

@@ -131,6 +131,10 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'PixelLab', exact: true }).click();
+	await expect(settings.locator('.settings-content')).toHaveCSS(
+		'background-color',
+		'rgba(0, 0, 0, 0)'
+	);
 	await expect(settings.getByText('Connected and remembered on this device.')).toBeVisible();
 	await expect(settings.getByRole('progressbar', { name: 'Generations' })).toHaveAttribute(
 		'max',

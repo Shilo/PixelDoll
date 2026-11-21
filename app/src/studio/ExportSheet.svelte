@@ -622,7 +622,7 @@
 		>{/if}
 {/snippet}
 
-{#snippet preferencesStatus()}
+{#snippet preferencesStatus(inSettings = false)}
 	{#if loadError || saveError}<p class="notice bad small" role="alert">
 			<TriangleAlert size={14} aria-hidden="true" />{saveError
 				? displayMessage(saveError)
@@ -634,8 +634,11 @@
 		<p class="bu-muted settings-description">
 			{t('export.settings.resetHint')}
 		</p>
-		<button class="bu-action btn" onclick={resetSettings} disabled={saving || refreshing}
-			>{t('export.settings.reset')}</button
+		<button
+			class={inSettings ? 'bu-action settings-action' : 'bu-action btn'}
+			data-variant={inSettings ? 'outline' : undefined}
+			onclick={resetSettings}
+			disabled={saving || refreshing}>{t('export.settings.reset')}</button
 		>
 	{/if}
 	{#if !ready && refreshing}<p class="bu-muted settings-description" role="status">
@@ -648,7 +651,7 @@
 
 {#snippet exportSettings(_entry?: string)}
 	<div class="export-page export-preferences" bind:this={content} tabindex="-1">
-		{@render preferencesStatus()}
+		{@render preferencesStatus(true)}
 		<fieldset
 			class="export-playback"
 			data-setting="playback"

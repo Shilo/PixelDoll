@@ -17,8 +17,8 @@
 {#if localDeveloperToolsEnabled()}
 	<button
 		type="button"
-		class="row bu-action"
-		data-variant="quiet"
+		class="bu-action settings-action"
+		data-variant="outline"
 		onclick={() => {
 			if (localDeveloperToolsEnabled()) location.hash = '/dev';
 		}}
@@ -32,8 +32,8 @@
 		{#each rigs as project (project.id)}
 			<button
 				type="button"
-				class="row bu-action"
-				data-variant="quiet"
+				class="bu-action settings-action"
+				data-variant="outline"
 				onclick={() => pick(project.id)}
 			>
 				<span class="row-name">{project.name}</span>

@@ -43,6 +43,7 @@
 	} = $props();
 	const themeLabel = $derived(t('settings.theme'));
 	const appearanceGroup = $props.id();
+	const copyOpenerDescription = `${appearanceGroup}-copy-new-tab`;
 	const appearanceOptions = $derived([
 		{ value: 'dark', label: t('settings.dark'), icon: Moon },
 		{ value: 'light', label: t('settings.light'), icon: Sun }
@@ -235,7 +236,7 @@
 		{
 			detail: Boolean(active),
 			searching: Boolean(query.trim()),
-			fill: active?.id === 'pixellab' && !query.trim()
+			'fills-activity': active?.id === 'pixellab' && !query.trim()
 		}
 	]}
 >
@@ -332,7 +333,7 @@
 						{/each}
 					</div>
 				</div>
-				<div data-setting="language" tabindex="-1"><LanguagePicker /></div>
+				<div data-setting="language" tabindex="-1"><LanguagePicker settings /></div>
 			{:else if active.id === 'wardrobe'}
 				<div data-setting="visibility" tabindex="-1">
 					<WardrobeVisibility scope="global" />
@@ -346,18 +347,20 @@
 					{#snippet tools()}
 						{#if !workspaceCopy}
 							<button
-								class="bu-action btn settings-action"
+								class="bu-action settings-action"
 								data-variant="outline"
 								type="button"
+								aria-describedby={copyOpenerDescription}
 								onclick={() => {
 									if (developerModeEnabled())
 										window.open(workspaceUrl(true), '_blank', 'noopener,noreferrer');
 								}}
 							>
 								<Archive size={18} aria-hidden="true" />
-								{t('workspaceCopy.title')}
+								<span class="row-name">{t('workspaceCopy.title')}</span>
 								<ExternalLink size={16} aria-hidden="true" />
 							</button>
+							<span id={copyOpenerDescription} hidden>{t('noticeLink.opensInANewTab')}</span>
 						{/if}
 					{/snippet}
 				</DeveloperSettings>
@@ -441,27 +444,33 @@
 	nav button :global(svg) {
 		flex: none;
 	}
-	.settings-panel :global(.row:not([data-variant='field'])) {
+	.settings-panel :global(.row:not([data-variant='field']):not(.settings-action)) {
 		padding-inline: 0;
 	}
 	/* PixelLab: the recent-activity list takes whatever height the page leaves. */
-	.fill {
+	.fills-activity {
 		flex: 1 0 auto;
 		grid-template-rows: auto minmax(0, 1fr);
 	}
-	.fill .settings-panel {
+	.fills-activity .settings-panel {
 		display: flex;
 		flex-direction: column;
 	}
-	/* Actions that do something inside a page read as buttons; navigation rows keep their chevrons. */
 	.settings-panel :global(.settings-action) {
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		gap: 10px;
+		inline-size: 100%;
 		height: auto;
-		min-height: var(--ctl-h);
-		padding-block: 8px;
-		justify-self: start;
-		max-inline-size: 100%;
+		min-height: 44px;
+		padding: 8px 12px;
 		white-space: normal;
+		overflow-wrap: anywhere;
 		text-align: start;
+	}
+	.settings-panel :global(.settings-action svg) {
+		flex: none;
 	}
 	.search-result small {
 		display: block;
@@ -484,7 +493,7 @@
 			grid-template-columns: minmax(248px, 1fr) minmax(0, 1.8fr);
 			gap: 24px;
 		}
-		.fill {
+		.fills-activity {
 			grid-template-rows: minmax(0, 1fr);
 		}
 		.detail:not(.searching) .settings-links {

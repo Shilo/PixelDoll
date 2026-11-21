@@ -184,16 +184,35 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await expect(settings.getByText('Pre-release', { exact: true })).toBeVisible();
 	const version = await settings.getByText(/^Version \d+\.\d+\.\d+$/).innerText();
 	const repository = 'https://github.com/Shilo/PixelDoll';
-	const source = settings.getByRole('link', { name: 'Open source code' });
-	const commit = settings.getByRole('link', { name: /^View commit [a-f0-9]{7}$/i });
-	const hash = (await commit.getAttribute('href'))?.split('/').at(-1);
+	const source = settings.getByRole('button', { name: 'Open source code' });
+	const commit = settings.getByRole('button', { name: /^View commit [a-f0-9]{7}$/i });
+	const copy = settings.getByRole('button', { name: 'Copy details', exact: true });
+	const panelBounds = await settings.locator('.settings-panel').boundingBox();
+	for (const action of [source, commit, copy]) {
+		await expect(action).toHaveCSS('border-top-style', 'solid');
+		expect((await action.boundingBox())?.width).toBeCloseTo(panelBounds!.width, 0);
+	}
+	const opened = await page.evaluateHandle(() => {
+		const calls: string[][] = [];
+		window.open = (...args) => {
+			calls.push(args.map(String));
+			return null;
+		};
+		return calls;
+	});
+	await source.click();
+	await commit.click();
+	const targets = await opened.jsonValue();
+	const hash = targets[1]?.[0]?.split('/').at(-1);
 	expect(hash).toMatch(/^[a-f0-9]{7,40}$/i);
-	await expect(source).toHaveAttribute('href', repository);
-	await expect(commit).toHaveAttribute('href', `${repository}/commit/${hash}`);
+	expect(targets).toEqual([
+		[repository, '_blank', 'noopener,noreferrer'],
+		[`${repository}/commit/${hash}`, '_blank', 'noopener,noreferrer']
+	]);
 	await expect(source.locator('svg.lucide-external-link')).toBeVisible();
 	await expect(commit.locator('svg.lucide-external-link')).toBeVisible();
 	await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-	await settings.getByRole('button', { name: 'Copy details', exact: true }).click();
+	await copy.click();
 	await expect
 		.poll(() =>
 			page.evaluate(async () => (await navigator.clipboard.readText()).replace(/\r\n/g, '\n'))

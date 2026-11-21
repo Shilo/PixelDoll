@@ -37,10 +37,7 @@
 
 {#if detailed}
 	<div class="usage detailed-usage">
-		<div class="usage-stat">
-			<h4 class="settings-label">{t('usage.title')}</h4>
-			{@render actions?.()}
-		</div>
+		<h4 class="settings-label">{t('usage.title')}</h4>
 		{#if balance?.subscription?.plan}<span class="bu-muted">{balance.subscription.plan}</span>{/if}
 		{#if usage}
 			<div class="usage-stat">

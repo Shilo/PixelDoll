@@ -2,7 +2,7 @@
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { repository } from '../lib/repository.ts';
-	import { Copy, ExternalLink } from './icons.ts';
+	import { Copy, ExternalLink, GitCommitHorizontal, Github } from './icons.ts';
 	import { PRE_RELEASE } from './previewNotice.ts';
 	import { toast } from './state.svelte.ts';
 
@@ -37,48 +37,52 @@
 		<span class="bu-muted">{version}</span>
 		{#if mode}<span class="bu-muted">{mode}</span>{/if}
 	</div>
-	<ul class="about-links">
-		<li>
-			<a href={repository} target="_blank" rel="noreferrer" aria-describedby={externalHint}
-				>{t('versionRow.openSource')} <ExternalLink size={16} aria-hidden="true" /></a
-			>
-		</li>
+	<div class="about-actions">
+		<button
+			class="bu-action settings-action"
+			data-variant="outline"
+			type="button"
+			aria-describedby={externalHint}
+			onclick={() => window.open(repository, '_blank', 'noopener,noreferrer')}
+		>
+			<Github size={18} />
+			<span class="row-name">{t('versionRow.openSource')}</span>
+			<ExternalLink size={16} aria-hidden="true" />
+		</button>
 		{#if hasCommit}
-			<li>
-				<a href={commitUrl} target="_blank" rel="noreferrer" aria-describedby={externalHint}
-					>{t('versionRow.viewCommit')} <span class="bu-number">{__APP_COMMIT__.slice(0, 7)}</span>
-					<ExternalLink size={16} aria-hidden="true" /></a
-				>
-			</li>
+			<button
+				class="bu-action settings-action"
+				data-variant="outline"
+				type="button"
+				aria-describedby={externalHint}
+				onclick={() => window.open(commitUrl, '_blank', 'noopener,noreferrer')}
+			>
+				<GitCommitHorizontal size={18} aria-hidden="true" />
+				<span class="row-name">{t('versionRow.viewCommit')}</span>
+				<span class="bu-muted bu-number">{__APP_COMMIT__.slice(0, 7)}</span>
+				<ExternalLink size={16} aria-hidden="true" />
+			</button>
 		{/if}
-	</ul>
-	<span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
-	<button class="bu-action btn" data-variant="outline" type="button" onclick={copyDetails}>
-		<Copy size={18} aria-hidden="true" />{t('versionRow.copyDetails')}
-	</button>
+		<span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
+		<button
+			class="bu-action settings-action"
+			data-variant="outline"
+			type="button"
+			onclick={copyDetails}
+		>
+			<Copy size={18} aria-hidden="true" />{t('versionRow.copyDetails')}
+		</button>
+	</div>
 </div>
 
 <style>
-	.about-details > .btn {
-		margin-block-start: 8px;
-	}
 	.build-summary {
 		display: grid;
 		gap: 4px;
-		margin-block-end: 8px;
+		margin-block-end: 12px;
 	}
-	.about-links {
+	.about-actions {
 		display: grid;
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-	.about-links a {
-		display: inline-block;
-		min-height: 44px;
-		padding-block: 10px;
-	}
-	.about-links :global(svg) {
-		vertical-align: middle;
+		gap: 8px;
 	}
 </style>

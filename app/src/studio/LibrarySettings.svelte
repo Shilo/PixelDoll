@@ -233,16 +233,9 @@
 		</section>
 	{:else}
 		<section class="library-task">
-			<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
-			{#if hasArchives}
-				<label class="check">
-					<input type="checkbox" bind:checked={includeArchived} disabled={busy} />
-					{t('librarySettings.includeArchived')}
-				</label>
-			{/if}
 			<button
 				type="button"
-				class="bu-action btn"
+				class="bu-action settings-action"
 				data-variant="outline"
 				data-setting="backup"
 				disabled={busy}
@@ -251,13 +244,21 @@
 				<Download size={18} aria-hidden="true" />
 				{t('librarySettings.backup')}
 			</button>
-			<p class="bu-muted bu-small privacy">
-				<Lock size={14} aria-hidden="true" />{t('librarySettings.privacy')}
-			</p>
+			<div class="backup-notes">
+				<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
+				<p class="bu-muted settings-description privacy">
+					<Lock size={14} aria-hidden="true" />{t('librarySettings.privacy')}
+				</p>
+			</div>
+			{#if hasArchives}
+				<label class="check">
+					<input type="checkbox" bind:checked={includeArchived} disabled={busy} />
+					{t('librarySettings.includeArchived')}
+				</label>
+			{/if}
 		</section>
 		<hr class="bu-separator" />
 		<section class="library-task">
-			<p class="bu-muted settings-description">{t('librarySettings.restoreHint')}</p>
 			<input
 				type="file"
 				accept=".zip,application/zip"
@@ -271,7 +272,7 @@
 			/>
 			<button
 				type="button"
-				class="bu-action btn"
+				class="bu-action settings-action"
 				data-variant="outline"
 				data-setting="restore"
 				disabled={busy}
@@ -281,6 +282,7 @@
 				<Upload size={18} aria-hidden="true" />
 				{t('librarySettings.restoreFromBackup')}
 			</button>
+			<p class="bu-muted settings-description">{t('librarySettings.restoreHint')}</p>
 		</section>
 		{#if hasArchives}
 			<hr class="bu-separator" />
@@ -295,7 +297,7 @@
 					{@const number = id ? index + (archives.localCount ? 0 : 1) : undefined}
 					<button
 						type="button"
-						class="bu-action btn"
+						class="bu-action settings-action"
 						data-variant="outline"
 						disabled={busy}
 						onclick={() => downloadArchive(id, number)}
@@ -323,16 +325,11 @@
 	}
 	.library-task {
 		display: grid;
-		justify-items: start;
-		gap: 12px;
+		gap: 8px;
 	}
-	.library-task .btn {
-		height: auto;
-		min-height: var(--ctl-h);
-		padding-block: 8px;
-		max-inline-size: 100%;
-		white-space: normal;
-		text-align: start;
+	.backup-notes {
+		display: grid;
+		gap: 6px;
 	}
 	.privacy {
 		display: flex;
