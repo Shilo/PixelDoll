@@ -150,13 +150,20 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await expect(exportDialog.getByRole('alert')).toContainText(
 		'A saved character contains the connected or remembered PixelLab key.'
 	);
-	await page.evaluate(async (id) => {
+	const missingDressed = await page.evaluate(async ({ id, otherId, item }) => {
 		const dbPath = '/src/lib/store/db.ts';
 		const db = await import(dbPath);
-		const saved = await db.get('projects', id);
-		saved.manifest.name = 'Workspace Beta';
-		await db.put('projects', id, saved);
-	}, sample.otherId);
+		const original = (await db.get('projects', id)).manifest.items.find(
+			(entry: { id: string }) => entry.id === item
+		);
+		const other = await db.get('projects', otherId);
+		const garment = other.manifest.items.find((entry: { id: string }) => entry.id === item);
+		const missing = garment.dressed.south;
+		garment.dressed.south = original.dressed.south;
+		other.manifest.name = 'Workspace Beta';
+		await db.put('projects', otherId, other);
+		return missing as string;
+	}, sample);
 	const waitDownload = page.waitForEvent('download');
 	await backUp.click();
 	const download = await waitDownload;
@@ -188,6 +195,17 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	} finally {
 		await recipientContext.close();
 	}
+	await page.evaluate(
+		async ({ otherId, item, missingDressed }) => {
+			const dbPath = '/src/lib/store/db.ts';
+			const db = await import(dbPath);
+			const saved = await db.get('projects', otherId);
+			saved.manifest.items.find((entry: { id: string }) => entry.id === item).dressed.south =
+				missingDressed;
+			await db.put('projects', otherId, saved);
+		},
+		{ ...sample, missingDressed }
+	);
 	const archive = Buffer.from(
 		await page.evaluate(async () => {
 			const workspacePath = '/src/lib/store/workspace.ts';
