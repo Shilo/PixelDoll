@@ -9,8 +9,13 @@ import {
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { developerModeEnabled } from './developerMode.svelte.ts';
 import type { ResetScope } from './resetSettings.ts';
-import { ui } from './state.svelte.ts';
-import { demoItemsShown, sharedItemsHiddenForAll } from './wardrobeVisibility.svelte.ts';
+import { doc, ui } from './state.svelte.ts';
+import {
+	demoItemsShown,
+	hasHiddenCharacterWardrobes,
+	sharedItemsHiddenForAll,
+	sharedItemsHiddenForCharacter
+} from './wardrobeVisibility.svelte.ts';
 
 const language = fromStore(languagePreference);
 // Unknown until read; an unreadable record counts as changed so Reset stays available to repair it.
@@ -64,13 +69,14 @@ export function watchExportDefaults() {
 const atDefaults = {
 	// An explicit language, even the detected one, is a saved choice that Reset clears.
 	general: () => ui.theme === 'dark' && language.current === undefined,
-	wardrobe: () => !sharedItemsHiddenForAll() && !demoItemsShown(),
+	wardrobe: () =>
+		!sharedItemsHiddenForAll() && !demoItemsShown() && !sharedItemsHiddenForCharacter(doc.id),
 	export: () => exportDefaults === true,
 	developer: () => !developerModeEnabled()
 };
 
 export function settingsAtDefaults(scope: ResetScope) {
 	return scope === 'all'
-		? Object.values(atDefaults).every((check) => check())
+		? Object.values(atDefaults).every((check) => check()) && !hasHiddenCharacterWardrobes()
 		: atDefaults[scope]();
 }

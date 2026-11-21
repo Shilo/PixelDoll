@@ -534,9 +534,11 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	const character = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts';
 		const exportPath = '/src/lib/store/export-settings.ts';
+		const wardrobePath = '/src/studio/wardrobeVisibility.svelte.ts';
 		const state = await import(statePath);
 		const exports = await import(exportPath);
 		await state.copyDemo();
+		(await import(wardrobePath)).setSharedItemsHiddenForCharacter(state.doc.id, true);
 		await exports.saveExportSetting({ engine: 'unity' });
 		await exports.saveExportSetting({ dressedCharacterSheets: false });
 		await exports.saveExportSetting({ animation: 'walk', playOnce: true });
@@ -552,6 +554,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 				theme: document.documentElement.dataset.theme,
 				language: localStorage.getItem('pixeldoll.locale'),
 				hideShared: localStorage.getItem('pixeldoll.wardrobe.hideShared'),
+				hideCurrent: localStorage.getItem(`pixeldoll.wardrobe.hideShared:${id}`),
 				showDemo: localStorage.getItem('pixeldoll.wardrobe.showDemo'),
 				developer: localStorage.getItem('pixeldoll.developerMode'),
 				exports: await (await import(exportPath)).readExportSettings()
@@ -563,13 +566,14 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		theme: 'light',
 		language: 'en',
 		hideShared: '1',
+		hideCurrent: '1',
 		showDemo: '1',
 		developer: '1',
 		exports: { engine: 'unity', dressedCharacterSheets: false, playOnce: ['walk'] }
 	};
 	const defaults = {
 		general: { theme: 'dark', language: null },
-		wardrobe: { hideShared: null, showDemo: null },
+		wardrobe: { hideShared: null, hideCurrent: null, showDemo: null },
 		developer: { developer: null },
 		export: { exports: { engine: 'generic', dressedCharacterSheets: true, playOnce: [] } }
 	};
@@ -642,6 +646,13 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	await search.fill('reset');
 	await expect(settings.locator('.search-result', { hasText: 'Reset settings' })).toBeDisabled();
 	await search.fill('');
+	await nav.getByRole('button', { name: 'Wardrobe', exact: true }).click();
+	await page.evaluate(async () => {
+		const wardrobePath = '/src/studio/wardrobeVisibility.svelte.ts';
+		(await import(wardrobePath)).setSharedItemsHiddenForCharacter('rig-inactive', true);
+	});
+	await expect(pageReset).toBeDisabled();
+	await expect(resetAll).toBeEnabled();
 	await nav.getByRole('button', { name: 'Appearance', exact: true }).click();
 
 	// Choosing a language explicitly, even the detected one, is a saved preference that Reset clears.
@@ -667,11 +678,13 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		const developerPath = '/src/studio/developerMode.svelte.ts';
 		const wardrobePath = '/src/studio/wardrobeVisibility.svelte.ts';
 		const exportPath = '/src/lib/store/export-settings.ts';
-		(await import(statePath)).setTheme('light');
+		const state = await import(statePath);
+		state.setTheme('light');
 		await (await import(i18nPath)).selectLanguage('en');
 		(await import(developerPath)).setDeveloperMode(true);
 		const wardrobe = await import(wardrobePath);
 		wardrobe.setSharedItemsHiddenForAll(true);
+		wardrobe.setSharedItemsHiddenForCharacter(state.doc.id, true);
 		wardrobe.setDemoItemsShown(true);
 		const exports = await import(exportPath);
 		await exports.saveExportSetting({ dressedCharacterSheets: false });
@@ -692,6 +705,9 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	await expect(confirmation).toHaveCount(0);
 	await expect(settings.getByText('Settings reset.', { exact: true })).toBeVisible();
 	await expect.poll(saved).toEqual(allDefaults);
+	expect(
+		await page.evaluate(() => localStorage.getItem('pixeldoll.wardrobe.hideShared:rig-inactive'))
+	).toBeNull();
 	await expect(resetAll).toBeDisabled();
 	await expect(pageReset).toBeDisabled();
 	expect(await focusInPanel()).toBe(true);

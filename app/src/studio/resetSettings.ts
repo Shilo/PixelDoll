@@ -3,8 +3,14 @@ import { selectLanguage } from '../lib/i18n.ts';
 import { defaultExportSettings, resetExportSettings } from '../lib/store/export-settings.ts';
 import { setDeveloperMode } from './developerMode.svelte.ts';
 import { noteExportSettings } from './settingsDefaults.svelte.ts';
-import { setTheme } from './state.svelte.ts';
-import { setDemoItemsShown, setSharedItemsHiddenForAll } from './wardrobeVisibility.svelte.ts';
+import { doc, isDemo, refreshShared, setTheme, store } from './state.svelte.ts';
+import {
+	demoItemsShown,
+	resetHiddenCharacterWardrobes,
+	setDemoItemsShown,
+	setSharedItemsHiddenForAll,
+	setSharedItemsHiddenForCharacter
+} from './wardrobeVisibility.svelte.ts';
 
 const resettableSections = ['general', 'wardrobe', 'export', 'developer'] as const;
 type ResettableSection = (typeof resettableSections)[number];
@@ -19,9 +25,15 @@ export async function resetSettings(scope: ResetScope): Promise<WhisperKey[]> {
 	if ((scope === 'all' || scope === 'general') && !setTheme('dark'))
 		failures.push('settings.theme');
 	if (scope === 'all' || scope === 'wardrobe') {
+		const refresh = demoItemsShown() && store.project && !isDemo();
 		const shared = setSharedItemsHiddenForAll(false);
 		const demo = setDemoItemsShown(false);
-		if (!shared || !demo) failures.push('experience.tabWardrobe');
+		const character =
+			scope === 'all'
+				? resetHiddenCharacterWardrobes()
+				: !doc.id || setSharedItemsHiddenForCharacter(doc.id, false);
+		if (refresh) await refreshShared();
+		if (!shared || !demo || !character) failures.push('experience.tabWardrobe');
 	}
 	if ((scope === 'all' || scope === 'developer') && !setDeveloperMode(false))
 		failures.push('developer.title');
