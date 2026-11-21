@@ -12,20 +12,37 @@
 		moving,
 		blockedByWork,
 		openPendingWork,
-		openFrames
+		openFrames,
+		toast
 	} from './state.svelte.ts';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayError } from '../lib/i18n.ts';
+	import { errorMessage } from '../lib/message.ts';
+	import { STATE_CAPTURE_MODE } from '../lib/rig/setup.ts';
 	import { characterBodySize } from './experience/bounds.ts';
 	import { buildPresentation } from './experience/presentation.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadMoveZip } from './download.svelte.ts';
-	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
+	import { captureState, moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
+	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { t } from 'svelte-whisper';
+	let { kind }: { kind: 'state' | 'move' } = $props();
 	const m = $derived(store.project?.manifest);
+	const playback = $derived(playbackClips(m?.rig.animations ?? []));
+	const clips = $derived(playback.filter((entry) => entry.kind === kind));
+	const captureMoves = $derived(playback.filter((entry) => entry.kind === 'move'));
+	let captureChoice = $state<{ projectId: string; moveId: string }>();
+	let capturing = $state(false);
+	const captureMove = $derived(
+		(captureChoice?.projectId === doc.id &&
+			captureMoves.find((entry) => entry.key === captureChoice?.moveId)?.key) ||
+			captureMoves.find((entry) => entry.key === ui.anim)?.key ||
+			captureMoves[0]?.key ||
+			''
+	);
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const nice = (id: string) => displayMove(id, moveIds);
@@ -36,12 +53,24 @@
 		return view.project ? buildPresentation(view.project) : null;
 	});
 	const thumbnails = $derived(assets && moveThumbnails(assets, view.items));
+
+	async function saveState() {
+		if (!captureMove || capturing) return;
+		capturing = true;
+		try {
+			await captureState(captureMove);
+		} catch (error) {
+			toast(errorMessage(error), { tone: 'danger' });
+		} finally {
+			capturing = false;
+		}
+	}
 </script>
 
 <div class="colors">
 	{#if m && view.project && thumbnails}
 		<div class="move-list">
-			{#each m.rig.animations as a (a.id)}
+			{#each clips as { clip: a } (a.id)}
 				{@const image = thumbnails(a.id, ui.dir, ui.frame)}
 				{@const base = m.items.find((i) => i.id === m.rig.baseItem)}
 				{@const dirs = m.rig.directions.filter(
@@ -54,7 +83,7 @@
 				{@const lock = moveDeletionBlocked(a.id)}
 				<SavedActions
 					name={nice(a.id)}
-					kind="move"
+					{kind}
 					locked={displayError(lock)}
 					onlocked={blockedByWork(lock)
 						? () =>
@@ -99,6 +128,34 @@
 				</SavedActions>
 			{/each}
 		</div>
+		{#if kind === 'state' && !isDemo() && captureMoves.length}
+			<div class="move-list">
+				<label class="muted small">
+					{t('stateCapture.source')}
+					<select
+						class="bu-select"
+						value={captureMove}
+						disabled={capturing}
+						onchange={(event) => {
+							captureChoice = { projectId: doc.id, moveId: event.currentTarget.value };
+						}}
+					>
+						{#each captureMoves as { key } (key)}
+							<option value={key}>{nice(key)}</option>
+						{/each}
+					</select>
+				</label>
+				<button
+					class="bu-action add-row"
+					data-variant="outline"
+					disabled={capturing}
+					onclick={saveState}
+				>
+					<Plus size={16} />{capturing ? t('stateCapture.saving') : t('stateCapture.add')}
+				</button>
+				<span class="muted small">{t('stateCapture.hint')}</span>
+			</div>
+		{/if}
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>
@@ -116,15 +173,19 @@
 							y: m.rig.pivot.y
 						})}
 					</dd>
-					{#each m.rig.animations as a (a.id)}
+					{#each clips as { clip: a } (a.id)}
 						{@const src = Object.values(a.sources ?? {})[0]}
+						{@const sourceDetails =
+							a.source?.mode === STATE_CAPTURE_MODE
+								? ''
+								: src
+									? ` · ${src.route}, ${src.motion}`
+									: a.source?.mode
+										? ` · ${a.source.mode}`
+										: ''}
 						<dt>{nice(a.id)}</dt>
 						<dd>
-							{a.frames.map((f) => `${f.cell}:${f.ms}ms`).join(' ')}{src
-								? ` · ${src.route}, ${src.motion}`
-								: a.source?.mode
-									? ` · ${a.source.mode}`
-									: ''}
+							{a.frames.map((f) => `${f.cell}:${f.ms}ms`).join(' ')}{sourceDetails}
 						</dd>
 					{/each}
 					<dt>{t('common.directions')}</dt>
@@ -143,46 +204,48 @@
 				</dl>
 			</div>
 		</details>
-		{#if mine && moving.spec}
-			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-				><span
-					class="bu-ring ring"
-					class:spin={!moving.error && !moving.repairReview}
-					aria-hidden="true"
-				></span><span class="move-text"
-					><b>{nice(moving.spec.id)}</b><span class="muted small"
-						>{moving.repairReview
-							? moving.spec?.redrawItem
-								? t('moveSheet.review.redrawTitle')
-								: t('moveSheet.review.repairTitle')
-							: moving.error
-								? t('moves.failed')
-								: t('moves.adding', {
-										done: moving.progress?.done ?? 0,
-										total: moving.progress?.total ?? '?'
-									})}</span
-					></span
-				></button
-			>
+		{#if kind === 'move'}
+			{#if mine && moving.spec}
+				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+					><span
+						class="bu-ring ring"
+						class:spin={!moving.error && !moving.repairReview}
+						aria-hidden="true"
+					></span><span class="move-text"
+						><b>{nice(moving.spec.id)}</b><span class="muted small"
+							>{moving.repairReview
+								? moving.spec?.redrawItem
+									? t('moveSheet.review.redrawTitle')
+									: t('moveSheet.review.repairTitle')
+								: moving.error
+									? t('moves.failed')
+									: t('moves.adding', {
+											done: moving.progress?.done ?? 0,
+											total: moving.progress?.total ?? '?'
+										})}</span
+						></span
+					></button
+				>
+			{/if}
+			{#each queued as q, i (i)}
+				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+					><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
+						><b>{nice(q.spec.id)}</b><span class="muted small"
+							>{moving.repairReview
+								? t('moves.waitingForRepairReview')
+								: moving.error
+									? t('moves.waitingForFailed')
+									: t('generation.status.queued')}</span
+						></span
+					></button
+				>
+			{/each}
+			{#if !isDemo()}<button
+					class="bu-action add-row"
+					data-variant="outline"
+					onclick={() => (ui.sheet = 'move')}
+					><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
+				>{/if}
 		{/if}
-		{#each queued as q, i (i)}
-			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-				><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
-					><b>{nice(q.spec.id)}</b><span class="muted small"
-						>{moving.repairReview
-							? t('moves.waitingForRepairReview')
-							: moving.error
-								? t('moves.waitingForFailed')
-								: t('generation.status.queued')}</span
-					></span
-				></button
-			>
-		{/each}
-		{#if !isDemo()}<button
-				class="bu-action add-row"
-				data-variant="outline"
-				onclick={() => (ui.sheet = 'move')}
-				><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
-			>{/if}
 	{/if}
 </div>

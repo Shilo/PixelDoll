@@ -111,7 +111,8 @@ export interface RestView {
   keypoints: Keypoint[]; // 18 joints (managed skeletons["2d_references"][dir] or estimate-skeleton)
 }
 export interface Clip {
-  id: string; // "idle", "walk", "slash", "hurt"
+  id: string; // "standing", "idle", "walk", "slash"
+  kind?: "state" | "move"; // runtime exports declare the role; a State has one saved cell per facing
   cells: number; // stored poses per direction = sheet columns
   loop: boolean; // serialized playback metadata; global Export settings replace it on export copies
   frames: { cell: number; ms: number }[]; // playlist; cells may repeat (holds, ping-pong)
@@ -121,6 +122,7 @@ export interface Clip {
 export interface ClipSource {
   route: "skeleton-v3" | "pixminimax" | "v3" | "import";
   reference: Sha256; // first_frame sent (normally rig.rest[dir].image)
+  referenceKeypoints?: Keypoint[]; // pins the exact non-Standing source; its PNG travels in editable ZIPs
   keypoints?: Keypoint[][]; // [cell][18]: requested sequence, or measured sequence on frozen imported art
   motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "estimated"
   measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (anchors, QA)
@@ -1008,7 +1010,7 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   frame's, exactly for standing frames and within 1 px for walk frames (pixel-art feet vary that much). Other exports keep
   frames as generated.
 - Columns: MZ/MV/VX play 1, 2, 1, 0, so they are [stride A, standing, stride B]; XP plays 0, 1, 2, 3, so [standing, stride A,
-  passing, stride B]. Standing is the `default` move's frame; without one (or where it lacks the view), the walk's other feet-together frame (three
+  passing, stride B]. Standing is the `standing` State's frame; without one (or where it lacks the view), the walk's other feet-together frame (three
   quarters of a cycle after stride A); for a view the walk lacks, frame 0 of a move that has the view. Stride A, best evidence
   first: (1) the view's own keypoints (`measured`, else requested): the playlist entry whose left-ankle lead along the facing
   (east +x, west −x, south +y, north −y) most exceeds the lead half a cycle later; views sharing a `managed-` motion with the

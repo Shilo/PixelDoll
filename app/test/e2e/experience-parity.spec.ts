@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { equipmentGroup, equipmentMode } from './immersive-helpers.ts';
+import {
+	equipmentGroup,
+	equipmentMode,
+	openPlaybackPicker,
+	playbackPicker,
+	selectPlaybackClip
+} from './immersive-helpers.ts';
 import { layout } from '../../src/studio/experience/geometry.ts';
 import { focalSlot, pickFacings } from '../../src/studio/experience/lineup.ts';
 import { DIRECTIONS, type DirectionName } from '../../src/lib/rig/rig.ts';
@@ -630,8 +636,8 @@ test('Preview resolves partial chord releases, preserves pause and clip selectio
 }) => {
 	await landing(page);
 	await page.keyboard.press('Enter');
-	const clip = page.getByRole('combobox', { name: 'Move', exact: true });
-	const original = await clip.inputValue();
+	const clip = playbackPicker(page);
+	const original = (await clip.getAttribute('value'))!;
 	const pause = page.getByRole('button', { name: 'Pause', exact: true });
 	if (await pause.isVisible()) await pause.click();
 	await world(page).focus();
@@ -648,7 +654,7 @@ test('Preview resolves partial chord releases, preserves pause and clip selectio
 	await page.keyboard.up('d');
 	await expect(world(page)).toHaveAttribute('data-facing', 'west');
 	await page.keyboard.up('a');
-	await expect(clip).toHaveValue(original);
+	await expect(clip).toHaveAttribute('value', original);
 	await expect(page.getByRole('button', { name: 'Mount settings', exact: true })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 	await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
@@ -675,9 +681,7 @@ test('Moves preserves paused Preview and Side-scroller enters using an authored 
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await expect(world(page)).toHaveAttribute('data-presentation', 'still');
 	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
-	await expect(page.getByRole('combobox', { name: 'Move', exact: true })).toHaveValue(
-		'cross-punch'
-	);
+	await expect(playbackPicker(page)).toHaveAttribute('value', 'cross-punch');
 	await modes(page).getByRole('button', { name: 'Side-scroller', exact: true }).click();
 	await expect(world(page)).toHaveAttribute('data-facing', 'east');
 	await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
@@ -725,9 +729,10 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await pause(page);
 	const toggle = page.locator('.test-mount-toggle');
 	const inactiveMountColor = await toggle.evaluate((element) => getComputedStyle(element).color);
-	const move = page.getByRole('combobox', { name: 'Move', exact: true });
-	await move.selectOption('cross-punch');
-	const moves = await move.locator('option').count();
+	const move = playbackPicker(page);
+	await selectPlaybackClip(page, 'cross-punch');
+	const moves = await (await openPlaybackPicker(page)).getByRole('menuitemradio').count();
+	await page.keyboard.press('Escape');
 	await expect(toggle).toHaveAccessibleName('Mount settings');
 	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 	await expect(toggle.locator('.view-label')).toHaveCount(0);
@@ -769,10 +774,11 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 			new RegExp('^narrow-saddle ' + direction + ' \\d+$')
 		);
 	}
-	await expect(move).toHaveValue('cross-punch');
-	await expect(move.locator('option')).toHaveCount(moves);
+	await expect(move).toHaveAttribute('value', 'cross-punch');
+	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveCount(moves);
+	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: 'Face east', exact: true }).click();
-	await move.selectOption('walk');
+	await selectPlaybackClip(page, 'walk');
 	await toggle.click();
 	await expect(shown).toBeFocused();
 	await expect(mountMenu).toContainText('Mount settings');
@@ -819,7 +825,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await toggle.click();
 	await legs.selectOption('none');
 	await page.keyboard.press('Escape');
-	await move.selectOption('cross-punch');
+	await selectPlaybackClip(page, 'cross-punch');
 	await expect(
 		page.locator('.world-notes, .preview-note').filter({ hasText: 'Test only' })
 	).toHaveCount(0);
@@ -845,7 +851,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle west \d+$/);
 	}
 	await page.getByRole('button', { name: 'Preview', exact: true }).click();
-	await expect(move).toHaveValue('cross-punch');
+	await expect(move).toHaveAttribute('value', 'cross-punch');
 	await expect(toggle).toHaveAttribute('data-active', 'true');
 	for (const viewport of [
 		{ width: 320, height: 400 },
@@ -981,14 +987,35 @@ test('imported move names remain readable, distinct and contained in Preview and
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await importing.getByRole('button', { name: 'Import character', exact: true }).click();
-	const move = page.getByRole('combobox', { name: 'Move', exact: true });
-	await expect(move.locator('option')).toHaveText([
-		'Default',
+	await expect(importing).toBeHidden();
+	const move = playbackPicker(page);
+	await move.press('ArrowDown');
+	const picker = page.getByRole('menu', { name: 'Move', exact: true });
+	await expect(picker).toBeVisible();
+	await expect(picker.getByRole('menuitemradio')).toHaveText([
+		'Standing',
 		'Right punch (right_punch)',
 		'Right punch (right-punch)',
 		longLabel
 	]);
-	await expect(move).toHaveValue('default');
+	const states = picker.getByRole('group', { name: 'States', exact: true });
+	const moves = picker.getByRole('group', { name: 'Moves', exact: true });
+	await expect(states.getByRole('menuitemradio')).toHaveText(['Standing']);
+	await expect(moves.getByRole('menuitemradio')).toHaveCount(3);
+	const desktopStates = (await states.boundingBox())!;
+	const desktopMoves = (await moves.boundingBox())!;
+	expect(desktopMoves.x).toBeGreaterThan(desktopStates.x);
+	expect(desktopMoves.y).toBeCloseTo(desktopStates.y, 0);
+	const active = picker.getByRole('menuitemradio', { checked: true });
+	await expect(active).toBeFocused();
+	await page.keyboard.press('ArrowDown');
+	await expect(
+		picker.getByRole('menuitemradio', { name: 'Right punch (right_punch)', exact: true })
+	).toBeFocused();
+	await expect(active).toBeChecked();
+	await page.keyboard.press('Escape');
+	await expect(move).toBeFocused();
+	await expect(move).toHaveAttribute('value', 'default');
 	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
 	const inspectAction = page
 		.getByRole('toolbar', { name: 'Preview controls', exact: true })
@@ -996,11 +1023,11 @@ test('imported move names remain readable, distinct and contained in Preview and
 	await expect(inspectAction).toHaveText('');
 	await expect(inspectAction).toHaveAttribute('title', 'Inspect');
 	await expect(inspectAction.locator('svg')).toHaveCount(1);
-	await move.selectOption('right_punch');
-	await expect(move).toHaveValue('right_punch');
-	await move.selectOption('right-punch');
-	await expect(move).toHaveValue('right-punch');
-	await move.selectOption(longId);
+	await selectPlaybackClip(page, 'right_punch');
+	await expect(move).toHaveAttribute('value', 'right_punch');
+	await selectPlaybackClip(page, 'right-punch');
+	await expect(move).toHaveAttribute('value', 'right-punch');
+	await selectPlaybackClip(page, longId);
 	await expect(move).toHaveAttribute('title', longLabel);
 	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
 	const sizes = [
@@ -1044,8 +1071,8 @@ test('imported move names remain readable, distinct and contained in Preview and
 							Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1
 					)
 			);
-			const select = node.querySelector('select')!,
-				style = getComputedStyle(select),
+			const value = node.querySelector('.clip-value')!,
+				style = getComputedStyle(value),
 				bounds = node.getBoundingClientRect();
 			return {
 				overlaps,
@@ -1059,8 +1086,12 @@ test('imported move names remain readable, distinct and contained in Preview and
 		expect(geometry.left).toBeGreaterThanOrEqual(0);
 		expect(geometry.right).toBeLessThanOrEqual(size.width);
 		if (size.width === 390) {
-			await move.click();
-			const option = move.locator('option').last();
+			await openPlaybackPicker(page);
+			const compactStates = (await states.boundingBox())!;
+			const compactMoves = (await moves.boundingBox())!;
+			expect(compactMoves.x).toBeCloseTo(compactStates.x, 0);
+			expect(compactMoves.y).toBeGreaterThan(compactStates.y);
+			const option = moves.getByRole('menuitemradio').last();
 			await expect(option).toBeVisible();
 			const bounds = await option.boundingBox();
 			expect(bounds!.x).toBeGreaterThanOrEqual(0);
@@ -1075,7 +1106,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 	const inspectMove = inspect.getByRole('combobox', { name: 'Move', exact: true });
 	await expect(inspectMove).toHaveValue(longId);
 	await expect(inspectMove.locator('option')).toHaveText([
-		'Default',
+		'Standing',
 		'Right punch (right_punch)',
 		'Right punch (right-punch)',
 		longLabel
@@ -2973,11 +3004,13 @@ test('Moves stays in place, disabled with its reason, in the live views', async 
 	await customize(page);
 	const tabs = page.getByRole('tablist', { name: 'Customization panels' });
 	const moves = tabs.getByRole('tab', { name: 'Moves', exact: true });
+	const states = tabs.getByRole('tab', { name: 'States', exact: true });
 	const before = (await moves.boundingBox())!;
 	const views = page.getByRole('group', { name: 'Character view', exact: true });
 	for (const view of ['Top-down', 'Side-scroller']) {
 		await views.getByRole('button', { name: view, exact: true }).click();
 		await expect(moves).toHaveAttribute('aria-disabled', 'true');
+		await expect(states).toHaveAttribute('aria-disabled', 'true');
 		await expect(moves).toHaveAccessibleDescription(/Moves are picked in Preview/);
 		const box = (await moves.boundingBox())!;
 		expect(Math.abs(box.x - before.x) + Math.abs(box.width - before.width)).toBeLessThan(1);
@@ -2993,6 +3026,8 @@ test('Moves stays in place, disabled with its reason, in the live views', async 
 		// Tab still reaches it, so keyboard and screen reader users get its reason, and arrows step on from it without
 		// selecting it.
 		await outfits.click();
+		await page.keyboard.press('Tab');
+		await expect(states).toBeFocused();
 		await page.keyboard.press('Tab');
 		await expect(moves).toBeFocused();
 		await page.keyboard.press('ArrowLeft');

@@ -5,7 +5,8 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
-	pickItem
+	pickItem,
+	openPlaybackPicker
 } from './immersive-helpers.ts';
 import './setup-concurrency.ts';
 import { test, expect } from '@playwright/test';
@@ -966,13 +967,16 @@ test('device import includes sibling moves and preserves explicit selections whe
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
-	await expect(
-		page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')
-	).toHaveText(['Default', 'Right punch']);
+	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
+		'Standing',
+		'Right punch'
+	]);
+	await page.keyboard.press('Escape');
 	await reloadStudio(page);
-	await expect(
-		page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')
-	).toHaveText(['Default', 'Right punch']);
+	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
+		'Standing',
+		'Right punch'
+	]);
 });
 
 test('character directions can be mirrored and unlinked on import and after saving', async ({
@@ -1277,9 +1281,9 @@ test('standing state updates retain the preview, optional moves, edited names an
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
-	await expect(
-		page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')
-	).toHaveText(['Default']);
+	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
+		'Standing'
+	]);
 });
 
 test('failed standing state updates retain the old preview but block saving until recovery', async ({
@@ -1300,7 +1304,10 @@ test('failed standing state updates retain the old preview but block saving unti
 		buffer: Buffer.from(bytes)
 	});
 	await expect(dialog.getByRole('alert')).toBeVisible();
-	await dialog.getByRole('checkbox', { name: /^Punch appearance/ }).uncheck();
+	await dialog
+		.getByRole('group', { name: 'Moves to import' })
+		.getByRole('checkbox', { name: /^Punch appearance/ })
+		.uncheck();
 	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await dialog.getByLabel('Character name', { exact: true }).fill('Preserved through failure');
 	const bounds = await dialog.boundingBox();
@@ -1371,7 +1378,10 @@ test('an incompatible sibling move can be unchecked after the initial import err
 	await expect(
 		dialog.getByRole('button', { name: 'Import character', exact: true })
 	).toBeDisabled();
-	await dialog.getByRole('checkbox', { name: /^Punch appearance/ }).uncheck();
+	await dialog
+		.getByRole('group', { name: 'Moves to import' })
+		.getByRole('checkbox', { name: /^Punch appearance/ })
+		.uncheck();
 	await expect(dialog.getByRole('alert')).toHaveCount(0);
 	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled();
@@ -1431,7 +1441,9 @@ test('PixelLab link import initially selects only the requested state and offers
 	await dialog.getByLabel('Direct import (connection optional)', { exact: true }).fill(ID);
 	await dialog.getByRole('button', { name: 'Preview character', exact: true }).click();
 	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
-	const punch = dialog.getByRole('checkbox', { name: /^Punch appearance/ });
+	const punch = dialog
+		.getByRole('group', { name: 'Moves to import' })
+		.getByRole('checkbox', { name: /^Punch appearance/ });
 	await expect(punch).not.toBeChecked();
 	await punch.check();
 	await expect(dialog.locator('.import-preview')).toContainText('3 moves');

@@ -28,6 +28,10 @@
 		posable
 	} from '../lib/items/run.ts';
 	import { AUTHORED } from '../lib/rig/poses.ts';
+	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+	import { cellImg } from '../lib/compose/compose.ts';
+	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
+	import { resolveMoveSource, savedReplacementSource } from './moveSource.ts';
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
@@ -88,14 +92,36 @@
 	});
 	const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null));
 	const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []));
+	const sourceClips = $derived(playbackClips(m?.rig.animations ?? []));
 	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
 		[
-			...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])
+			...new Set([
+				'idle',
+				'walk',
+				...AUTHORED,
+				...sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)
+			])
 		].filter((a) => !reservedMove(a))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
+	let sourceId = $state<string | undefined>(draft?.source?.clip);
+	let sourceCell = $state<number | undefined>(draft?.source?.cell);
+	let sourceOpen = $state(!!draft?.source);
+	const sourceClip = $derived(
+		sourceClips.find(({ key }) => key === (sourceId ?? DEFAULT_MOVE))?.clip
+	);
+	const sourceFrames = $derived([...new Set(sourceClip?.frames.map(({ cell }) => cell) ?? [])]);
+	const sourceThumbnail = (clip: string, cell: number) => {
+		const project = store.project;
+		const base = project?.manifest.items.find((item) => item.id === project.manifest.rig.baseItem);
+		if (!project || !base?.layers[0]) return null;
+		const facing =
+			project.manifest.rig.directions.find(({ id }) => id === ui.dir) ??
+			project.manifest.rig.directions[0];
+		return facing ? (cellImg(project, base.layers[0], clip, facing.id, cell) ?? null) : null;
+	};
 	// The PixelLab models that can make a move's body frames; Skeleton v3 keeps the current flow.
 	const MODELS: MoveAnimationModel[] = ['skeleton-v3', 'pixminimax', 'v3'];
 	const advancedId = $props.id();
@@ -142,6 +168,17 @@
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
 	);
+	const sourceSelection = $derived(
+		sourceId === undefined ? undefined : { clip: sourceId, cell: sourceCell }
+	);
+	const explicitFrame = $derived(sourceSelection && sourceId !== DEFAULT_MOVE);
+	const startFrom = $derived(
+		m && explicitFrame && sourceSelection
+			? resolveMoveSource(m, sourceSelection, targetDirs)
+			: m && !sourceSelection && replacing && action !== 'ride'
+				? savedReplacementSource(m, action, targetDirs)
+				: undefined
+	);
 	const affectedMirrors = $derived(
 		m
 			? affectedMoveDirections(m.rig, targetDirs)
@@ -173,6 +210,12 @@
 	const canvas = $derived(m?.rig.cell.w ?? 0);
 	// Ride is a static authored pose on Skeleton v3 (create.ts moveAnimationModel), so it has no model or frame choice.
 	const riding = $derived(!describing && action === 'ride');
+	$effect(() => {
+		if (riding) {
+			sourceId = undefined;
+			sourceCell = undefined;
+		}
+	});
 	// The frame count the core falls back to: a replaced clip's cells, otherwise PixelDoll's 8-frame preset.
 	const baseFrames = $derived(replacing ? (savedMove?.cells ?? 8) : 8);
 	// A partial replacement must keep the saved clip's cell count so redrawn views line up with the kept ones.
@@ -188,6 +231,12 @@
 			(m && moveFrames(m, { action: describing ? undefined : action, frames: baseFrames }));
 		const fitsPreferred = (option: MoveAnimationModel) =>
 			preferred !== undefined && moveFrameCounts(option, canvas).includes(preferred);
+		if (startFrom && (describing || !isAuthoredAction(action)))
+			return (
+				MODELS.find(
+					(option) => option !== 'skeleton-v3' && fitsKept(option) && fitsPreferred(option)
+				) ?? 'pixminimax'
+			);
 		if (replacing) {
 			for (const dir of targetDirs) {
 				const route = savedMove?.sources?.[dir]?.route;
@@ -236,13 +285,16 @@
 		text: describing ? text.trim() || undefined : undefined,
 		frames: baseFrames,
 		replace: replacing,
-		animation: animationOptions
+		animation: animationOptions,
+		startFrom
 	});
 	const motionIssue = $derived.by(() => {
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
 		if (!action && id && options.includes(id))
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (!m || !id) return '';
+		if (!action && have.has(id)) return t('moveSheet.duplicateOption', { move: nice(id) });
+		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
 		return (
 			bodyMoveIssue(m, motion) ||
 			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
@@ -451,6 +503,7 @@
 			items: $state.snapshot(included),
 			dirs: [...selectedDirs],
 			poseStyle: 'visible-side-v1',
+			source: sourceSelection,
 			animation:
 				!riding && (modelChoice !== undefined || userFrameCount !== undefined)
 					? { model, frameCount: userFrameCount }
@@ -967,6 +1020,76 @@
 					/>
 				</label>{/if}
 			{#if !riding}
+				{#if sourceClips.some(({ key }) => key !== DEFAULT_MOVE)}
+					<details class="disclosure" bind:open={sourceOpen}>
+						<summary
+							><ChevronRight size={14} />{t('moveSheet.startFrom.label')} · {startFrom?.replacement
+								? t('moveSheet.startFrom.savedSource')
+								: nice(sourceId ?? DEFAULT_MOVE)}</summary
+						>
+						<div class="move-source-list">
+							{#each ['state', 'move'] as kind (kind)}
+								{#if sourceClips.some((entry) => entry.kind === kind)}
+									<p class="label">
+										{t(kind === 'state' ? 'experience.tabStates' : 'experience.tabMoves')}
+									</p>
+									{#each sourceClips.filter((entry) => entry.kind === kind) as { key, clip } (key)}
+										<button
+											class="bu-action"
+											data-variant="outline"
+											aria-pressed={!startFrom?.replacement && (sourceId ?? DEFAULT_MOVE) === key}
+											onclick={() => {
+												sourceId = key;
+												sourceCell = undefined;
+											}}
+										>
+											<Sprite
+												img={sourceThumbnail(key, lastPlaybackCell(clip) ?? 0)}
+												k={1}
+												limit={32}
+												label={nice(key)}
+											/>{nice(key)}
+										</button>
+									{/each}
+								{/if}
+							{/each}
+							{#if !sourceClips.some(({ key }) => key === DEFAULT_MOVE)}
+								<button
+									class="bu-action"
+									data-variant="outline"
+									aria-pressed={sourceId === DEFAULT_MOVE}
+									onclick={() => {
+										sourceId = DEFAULT_MOVE;
+										sourceCell = undefined;
+									}}>{nice(DEFAULT_MOVE)}</button
+								>
+							{/if}
+							{#if sourceFrames.length > 1}
+								<details class="disclosure">
+									<summary><ChevronRight size={14} />{t('moveSheet.startFrom.chooseFrame')}</summary
+									>
+									{#each sourceFrames as cell (cell)}
+										{@const label = t('moveSheet.startFrom.frame', { number: cell + 1 })}
+										<button
+											class="bu-action"
+											data-variant="outline"
+											aria-pressed={(sourceCell ?? (sourceClip && lastPlaybackCell(sourceClip))) ===
+												cell}
+											onclick={() => (sourceCell = cell)}
+										>
+											<Sprite
+												img={sourceThumbnail(sourceId ?? DEFAULT_MOVE, cell)}
+												k={1}
+												limit={32}
+												{label}
+											/>{label}
+										</button>
+									{/each}
+								</details>
+							{/if}
+						</div>
+					</details>
+				{/if}
 				<details class="disclosure advanced" bind:open={advancedOpen}>
 					<summary
 						><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
@@ -1117,6 +1240,13 @@
 </Sheet>
 
 <style>
+	.move-source-list .bu-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		margin: 0 0.25rem 0.25rem 0;
+		min-height: 44px;
+	}
 	.redraw-form {
 		gap: 12px;
 	}

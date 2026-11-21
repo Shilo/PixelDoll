@@ -14,6 +14,31 @@ import { PAPERDOLL_JS, phaserFiles } from '../../src/lib/export/phaser.ts';
 import { CURRENT_FORMAT, type Project, type Item } from '../../src/lib/store/manifest.ts';
 import { orderingProbe } from '../fixtures/runtime-order.ts';
 import { assertEmbeddable } from '../../scripts/runtime-modules.mjs';
+import {
+	resolveMoveSource,
+	moveSourceMatches,
+	savedReplacementSource
+} from '../../src/studio/moveSource.ts';
+import { LABELS } from '../../src/lib/rig/poses.ts';
+import { projectExportIdentity } from '../../src/lib/export/identity.ts';
+
+test('playback distinguishes Standing from a move with a Standing ID', () => {
+	const frames = [
+		{ cell: 1, ms: 100 },
+		{ cell: 0, ms: 240 }
+	];
+	const clips = [
+		{ id: 'default', cells: 1, loop: false, frames: [{ cell: 0, ms: 100 }] },
+		{ id: 'standing', cells: 2, loop: true, frames },
+		{ id: 'guard', kind: 'state' as const, cells: 1, loop: false, frames: [{ cell: 0, ms: 100 }] }
+	];
+	expect(timeline.playbackClips(clips).map(({ id, key, kind }) => ({ id, key, kind }))).toEqual([
+		{ id: 'standing', key: 'default', kind: 'state' },
+		{ id: 'standing-move', key: 'standing', kind: 'move' },
+		{ id: 'guard', key: 'guard', kind: 'state' }
+	]);
+	expect(timeline.lastPlaybackCell(clips[1])).toBe(0);
+});
 
 const delivered = () =>
 	new Function(
@@ -67,6 +92,85 @@ function project(): Project {
 		}
 	};
 }
+
+test('a move source pins the saved timeline tail for all authored facings', () => {
+	const { manifest } = project();
+	const { rig } = manifest;
+	rig.directions.push({ id: 'south' });
+	const clip = rig.animations[0];
+	clip.cells = 2;
+	clip.frames = [
+		{ cell: 1, ms: 60 },
+		{ cell: 0, ms: 100 }
+	];
+	const joints = LABELS.map((label) => ({ label, x: 0.25, y: 0.5 }));
+	clip.sources = {
+		east: {
+			route: 'skeleton-v3',
+			reference: 'sha256:rest',
+			measured: [joints, joints],
+			provenance: []
+		},
+		south: {
+			route: 'skeleton-v3',
+			reference: 'sha256:rest',
+			measured: [joints, joints],
+			provenance: []
+		}
+	};
+	const track = manifest.items[0].layers[0].cells!.walk;
+	track.east = ['sha256:east-tail', 'sha256:east-first'];
+	track.south = ['sha256:south-tail', 'sha256:south-first'];
+	const directions = ['east', 'south'] as const;
+	const pin = resolveMoveSource(manifest, { clip: 'walk' }, directions)!;
+	expect(pin.views).toEqual({
+		east: { image: 'sha256:east-tail', keypoints: joints },
+		south: { image: 'sha256:south-tail', keypoints: joints }
+	});
+	expect(
+		resolveMoveSource(manifest, { clip: 'walk', cell: 1 }, directions)?.views.east?.image
+	).toBe('sha256:east-first');
+	track.south[0] = 'sha256:edited';
+	expect(moveSourceMatches(manifest, pin, directions)).toBe(false);
+	delete track.south;
+	expect(resolveMoveSource(manifest, { clip: 'walk' }, directions)).toBeUndefined();
+});
+
+test('replacement keeps the pinned source without depending on the deleted source clip', () => {
+	const { manifest } = project();
+	const joints = LABELS.map((label) => ({ label, x: 0.25, y: 0.5 }));
+	manifest.rig.animations[0].sources = {
+		east: {
+			route: 'skeleton-v3',
+			reference: 'sha256:deleted-source',
+			referenceKeypoints: joints,
+			provenance: []
+		}
+	};
+	const pin = savedReplacementSource(manifest, 'walk', ['east'])!;
+	expect(pin.views.east).toEqual({ image: 'sha256:deleted-source', keypoints: joints });
+	expect(moveSourceMatches(manifest, pin, ['east'])).toBe(true);
+	manifest.rig.animations[0].sources.east!.reference = 'sha256:replacement';
+	expect(moveSourceMatches(manifest, pin, ['east'])).toBe(false);
+});
+
+test('public Standing identity rewrites the gear track without changing saved art', () => {
+	const source = project();
+	source.manifest.rig.animations[0].id = 'default';
+	for (const item of source.manifest.items) {
+		const cells = item.layers[0].cells!;
+		cells.default = cells.walk;
+		delete cells.walk;
+	}
+	const publicProject = projectExportIdentity(source);
+	expect(publicProject.manifest.rig.animations[0]).toMatchObject({ id: 'standing', kind: 'state' });
+	for (const item of publicProject.manifest.items) {
+		expect(item.layers[0].cells?.standing?.east).toEqual(['sha256:shared']);
+		expect(item.layers[0].cells?.default).toBeUndefined();
+	}
+	expect(source.manifest.rig.animations[0].id).toBe('default');
+	expect(source.manifest.items[0].layers[0].cells?.default?.east).toEqual(['sha256:shared']);
+});
 
 test('the shipped standalone JavaScript contains every canonical source byte-for-byte', async () => {
 	const directory = new URL('../../src/lib/runtime/', import.meta.url);

@@ -21,7 +21,7 @@
 		children
 	}: {
 		name: string;
-		kind: 'outfit' | 'move';
+		kind: 'outfit' | 'move' | 'state';
 		locked?: string;
 		/** Opens what causes the lock, when it can be shown. */
 		onlocked?: () => void;
@@ -70,14 +70,16 @@
 		>
 		<hr class="bu-separator" />
 		<DeleteRow
-			opens={kind === 'move'}
+			opens={kind !== 'outfit'}
 			label={kind === 'move'
 				? t('savedActions.labelDeleteMove')
-				: t('savedActions.labelDeleteOutfit')}
+				: kind === 'state'
+					? t('savedActions.labelDeleteState')
+					: t('savedActions.labelDeleteOutfit')}
 			{locked}
 			onclick={() => {
 				close();
-				if (kind === 'move') deleting = true;
+				if (kind !== 'outfit') deleting = true;
 				else void remove();
 			}}
 		/>
@@ -106,7 +108,11 @@
 		}}
 		onconfirm={remove}
 	>
-		<p>{t('savedActions.thisRemovesTheMoveFromTheBody')}</p>
+		<p>
+			{t(
+				kind === 'state' ? 'savedActions.removeState' : 'savedActions.thisRemovesTheMoveFromTheBody'
+			)}
+		</p>
 		{#if locked}<p>{locked}</p>{/if}
 	</ConfirmDialog>
 {/if}

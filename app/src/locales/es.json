@@ -428,6 +428,8 @@
 		"itemMissing": "Este objeto ya no existe."
 	},
 	"savedActions": {
+		"labelDeleteState": "Eliminar estado",
+		"removeState": "Esto elimina el estado y los fotogramas de los objetos adaptados a él de este personaje. Las animaciones terminadas conservan sus fotogramas y las imágenes de origen guardadas. Esta acción no se puede deshacer.",
 		"labelDeleteMove": "Eliminar animación…",
 		"labelDeleteOutfit": "Eliminar atuendo",
 		"thisRemovesTheMoveFromTheBody": "Esto quita la animación del cuerpo y de todos los objetos. Esto no se puede deshacer."
@@ -658,6 +660,7 @@
 		"tabWardrobe": "Armario",
 		"tabColors": "Colores",
 		"tabOutfits": "Atuendos",
+		"tabStates": "Estados",
 		"tabMoves": "Animaciones",
 		"facing": "Dirección: {direction}",
 		"nextDirection": "Dirección actual: {direction}. Cambiar a la siguiente",
@@ -1051,6 +1054,9 @@
 		}
 	},
 	"import": {
+		"posesTitle": "Importar también como estados",
+		"posesHint": "Elige poses del mismo cuerpo que no tengan equipamiento dibujado. Si el aspecto es distinto, impórtalo como un personaje aparte. Elige las animaciones más abajo.",
+		"poseMismatch": "Este estado tiene otras dimensiones de imagen, direcciones o ajustes de cámara. Impórtalo como un personaje aparte.",
 		"titleDevice": "Importar desde el dispositivo",
 		"titlePixelLab": "Importar desde PixelLab",
 		"browseLibrary": "Explorar personajes de PixelLab",
@@ -1173,7 +1179,7 @@
 			"stateMetadata": "Las animaciones de “{state}” tienen metadatos de tamaño o de cámara no válidos: {detail} Desmarca las animaciones de ese estado para continuar.",
 			"stateMismatch": "Las animaciones de “{state}” usan otro tamaño de personaje u otra vista de cámara. Desmarca ese estado para continuar.",
 			"missingStandingView": "La animación {move}/{direction} no tiene una vista de pie correspondiente en el estado seleccionado.",
-			"tooManyMoves": "Este personaje contiene demasiadas animaciones. Selecciona menos estados o exporta menos animaciones (hasta 99 más Predeterminada).",
+			"tooManyMoves": "Este personaje contiene demasiadas animaciones. Selecciona menos estados o exporta menos animaciones (hasta 99 más De pie).",
 			"orphanFile": "Este ZIP contiene un archivo de animación sin un diseño de estado inequívoco: {path}. Exporta un ZIP de personaje nuevo con fotogramas individuales.",
 			"rotationPathName": "Ruta de imagen de rotación no compatible: {path}. Exporta un ZIP de personaje con PNG nombrados por dirección.",
 			"animationPath": "Ruta de fotograma de animación no compatible: {path}. Exporta un ZIP de personaje con fotogramas individuales numerados.",
@@ -1617,7 +1623,7 @@
 			"motionFrame": "{move} {direction} · fotograma de movimiento {frame}",
 			"measureMotionNote": "Envía el fotograma de movimiento generado como image (PNG en base64), salvo que ya esté medido.",
 			"renderBody": "{move} {direction} · renderizar cuerpo",
-			"renderBodyNote": "Solo campos conocidos. Agrega first_frame de pie, first_frame_keypoints y los keypoints de {source}. Se envía un solo renderizado. Si el resultado está vacío o mal formado, se detiene para revisión sin otro intento de pago.",
+			"renderBodyNote": "Solo campos conocidos. Agrega first_frame, first_frame_keypoints y los keypoints de {source}. Se envía un solo renderizado. Si el resultado está vacío o mal formado, se detiene para revisión sin otro intento de pago.",
 			"locallyAuthored": "creado en local",
 			"generatedMotion": "movimiento generado",
 			"checkFrame": "{move} {direction} · comprobar fotograma {frame}",
@@ -1964,7 +1970,7 @@
 			"styleUnsupported": "El contorno y el detalle no se aplican a {model}.",
 			"invalidOutline": "Contorno no válido.",
 			"invalidDetail": "Detalle no válido.",
-			"reservedMove": "Ese nombre está reservado para la pose de pie (Predeterminada). Ponle otro nombre a la animación.",
+			"reservedMove": "Ese nombre está reservado para la pose de pie. Ponle otro nombre a la animación.",
 			"recoveryNeedsAuthored": "La recuperación de comprobaciones de articulaciones necesita los ajustes originales de reparación del cuerpo.",
 			"recoveryAlreadySaved": "Esta animación se guardó después de ese intento. No queda nada que recuperar.",
 			"keepNeedsChecks": "Conservar esta animación requiere comprobaciones de articulaciones en caché completadas para todos los fotogramas.",
@@ -2175,6 +2181,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Fotograma inicial original",
+			"label": "Empezar desde",
+			"chooseFrame": "Elegir un fotograma",
+			"frame": "Fotograma {number}",
+			"unavailable": "Este fotograma necesita una imagen del cuerpo y articulaciones medidas para cada dirección seleccionada.",
+			"changed": "El fotograma inicial seleccionado ha cambiado. Vuelve a elegir el origen. No se ha solicitado ninguna generación.",
+			"route": "Este método empieza desde la pose de pie. Elige otro modelo de animación para usar un fotograma guardado.",
+			"stateTarget": "No se puede sustituir un estado como si fuera una animación."
+		},
 		"sharedCopiesCoverage": "Las copias compartidas se pueden usar en las vistas en las que tienen fotogramas.",
 		"thatCharacter": "ese personaje",
 		"recoveryCheckFailed": "No se pudieron comprobar los fotogramas en caché: {error}",
@@ -2402,9 +2418,19 @@
 		"useSavedKey": "Usar clave guardada"
 	},
 	"moveNames": {
-		"default": "Predeterminada",
+		"default": "De pie",
 		"idle": "Reposo",
 		"walk": "Caminar"
+	},
+	"stateCapture": {
+		"source": "Animación de origen",
+		"add": "Capturar pose final",
+		"saving": "Guardando estado…",
+		"hint": "Guarda la pose final de la animación sin equipamiento. No consume créditos.",
+		"saved": "Estado capturado",
+		"blocked": "Espera a que se cargue el personaje y resuelve las tareas pendientes antes de capturar un estado.",
+		"unavailable": "Esta animación no tiene un fotograma final del cuerpo guardado que se pueda capturar.",
+		"concurrentEdit": "El personaje ha cambiado antes de que se pudiera capturar el estado. Inténtalo de nuevo."
 	},
 	"moveRemoval": {
 		"unavailable": "Esta animación ya no está disponible.",

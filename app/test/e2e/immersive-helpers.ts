@@ -1,5 +1,25 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+export const playbackPicker = (page: Page) =>
+	page
+		.getByRole('toolbar', { name: 'Preview controls', exact: true })
+		.getByRole('button', { name: /^Move:/ });
+
+export async function openPlaybackPicker(page: Page) {
+	await playbackPicker(page).click();
+	const menu = page.getByRole('menu', { name: 'Move', exact: true });
+	await expect(menu).toBeVisible();
+	return menu;
+}
+
+export async function selectPlaybackClip(page: Page, key: string) {
+	const menu = await openPlaybackPicker(page);
+	await menu
+		.getByRole('menuitemradio')
+		.and(menu.locator(`[value="${key}"]`))
+		.click();
+}
+
 /** A disabled control looks the same hovered as at rest and shows the not-allowed cursor. */
 export async function noDisabledHover(page: Page, locator: Locator) {
 	const surface = () =>
@@ -43,7 +63,10 @@ export async function reloadStudio(page: Page, options?: Parameters<Page['reload
 	return response;
 }
 
-export async function equipmentMode(page: Page, name: 'Wardrobe' | 'Colors' | 'Outfits' | 'Moves') {
+export async function equipmentMode(
+	page: Page,
+	name: 'Wardrobe' | 'Colors' | 'Outfits' | 'States' | 'Moves'
+) {
 	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
 	if (await inspect.count())
 		await inspect.getByRole('button', { name: 'Done', exact: true }).click();

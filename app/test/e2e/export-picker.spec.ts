@@ -1,4 +1,10 @@
-import { enterStudio, noDisabledHover, openStudio } from './immersive-helpers.ts';
+import {
+	enterStudio,
+	noDisabledHover,
+	openStudio,
+	playbackPicker,
+	selectPlaybackClip
+} from './immersive-helpers.ts';
 import { createHash } from 'node:crypto';
 import { chromium, expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
@@ -3228,10 +3234,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 
 	await page.keyboard.press('Escape');
 	await expect(popover).toBeHidden();
-	await page
-		.getByRole('toolbar', { name: 'Preview controls' })
-		.getByRole('combobox', { name: 'Move' })
-		.selectOption('walk');
+	await selectPlaybackClip(page, 'walk');
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await trigger.click();
 	await expect(popover.getByRole('combobox', { name: 'Move' })).toHaveValue('cross-punch');
@@ -3398,9 +3401,7 @@ test('Share choices reset to the current stage when switching characters', async
 	const popover = page.getByRole('dialog', { name: 'Share character preview' });
 	const move = popover.getByRole('combobox', { name: 'Move' });
 	const direction = popover.getByRole('combobox', { name: 'Direction' });
-	const stageMove = page
-		.getByRole('toolbar', { name: 'Preview controls' })
-		.getByRole('combobox', { name: 'Move' });
+	const stageMove = playbackPicker(page);
 	const stageDirection = () =>
 		page
 			.getByRole('group', { name: 'Direction' })
@@ -3433,7 +3434,7 @@ test('Share choices reset to the current stage when switching characters', async
 		timeout: 30_000
 	});
 	await trigger.click();
-	await expect(move).toHaveValue(await stageMove.inputValue());
+	await expect(move).toHaveValue((await stageMove.getAttribute('value'))!);
 	await expect(direction).toHaveValue(await stageDirection());
 	await expect(popover.getByRole('switch')).toBeChecked();
 	await expect(popover.getByRole('combobox', { name: 'Size' })).toHaveValue('1');
@@ -3444,7 +3445,7 @@ test('Share choices reset to the current stage when switching characters', async
 	await page.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer', { timeout: 30_000 });
 	await trigger.click();
-	await expect(move).toHaveValue(await stageMove.inputValue());
+	await expect(move).toHaveValue((await stageMove.getAttribute('value'))!);
 	await expect(direction).toHaveValue(await stageDirection());
 	await expect(popover.getByRole('switch')).toBeChecked();
 	await page.keyboard.press('Escape');
@@ -3454,7 +3455,7 @@ test('Share choices reset to the current stage when switching characters', async
 		timeout: 30_000
 	});
 	await trigger.click();
-	await expect(move).toHaveValue(await stageMove.inputValue());
+	await expect(move).toHaveValue((await stageMove.getAttribute('value'))!);
 	await expect(direction).toHaveValue(await stageDirection());
 	await expect(popover.getByRole('switch')).toBeChecked();
 });

@@ -428,6 +428,8 @@
 		"itemMissing": "Diesen Gegenstand gibt es nicht mehr."
 	},
 	"savedActions": {
+		"labelDeleteState": "Zustand löschen",
+		"removeState": "Dadurch werden der Zustand und die dafür angepassten Gegenstandsframes von diesem Charakter entfernt. Fertige Animationen behalten ihre Frames und alle gespeicherten Ausgangsbilder. Das lässt sich nicht rückgängig machen.",
 		"labelDeleteMove": "Animation löschen…",
 		"labelDeleteOutfit": "Outfit löschen",
 		"thisRemovesTheMoveFromTheBody": "Dadurch wird die Animation vom Grundkörper und von allen Gegenständen entfernt. Das lässt sich nicht rückgängig machen."
@@ -658,6 +660,7 @@
 		"tabWardrobe": "Garderobe",
 		"tabColors": "Farben",
 		"tabOutfits": "Outfits",
+		"tabStates": "Zustände",
 		"tabMoves": "Animationen",
 		"facing": "Blickrichtung: {direction}",
 		"nextDirection": "Blickrichtung: {direction}. Nächste Blickrichtung",
@@ -1051,6 +1054,9 @@
 		}
 	},
 	"import": {
+		"posesTitle": "Auch als Zustände importieren",
+		"posesHint": "Wähle Posen desselben Körpers ohne fest eingezeichnete Ausrüstung. Importiere ein anderes Aussehen als separaten Charakter. Die Animationen wählst du weiter unten aus.",
+		"poseMismatch": "Dieser Zustand hat andere Bildabmessungen, Blickrichtungen oder Kameraeinstellungen. Importiere ihn als separaten Charakter.",
 		"titleDevice": "Vom Gerät importieren",
 		"titlePixelLab": "Aus PixelLab importieren",
 		"browseLibrary": "PixelLab-Figuren durchsuchen",
@@ -1617,7 +1623,7 @@
 			"motionFrame": "{move} {direction} · Bewegungsframe {frame}",
 			"measureMotionNote": "Sendet den generierten Bewegungsframe als image (Base64-PNG), falls er noch nicht vermessen wurde.",
 			"renderBody": "{move} {direction} · Grundkörper rendern",
-			"renderBodyNote": "Nur bekannte Felder. Fügt first_frame und first_frame_keypoints aus der Standpose sowie Gelenkpunkte aus dieser Quelle hinzu: {source}. Es wird genau ein Renderauftrag gesendet. Bei leerer oder fehlerhafter Ausgabe stoppt der Vorgang zur Prüfung, ohne weiteren kostenpflichtigen Versuch.",
+			"renderBodyNote": "Nur bekannte Felder. Fügt first_frame und first_frame_keypoints sowie Gelenkpunkte aus dieser Quelle hinzu: {source}. Es wird genau ein Renderauftrag gesendet. Bei leerer oder fehlerhafter Ausgabe stoppt der Vorgang zur Prüfung, ohne weiteren kostenpflichtigen Versuch.",
 			"locallyAuthored": "lokal erstellt",
 			"generatedMotion": "generierte Bewegung",
 			"checkFrame": "{move} {direction} · Frame {frame} prüfen",
@@ -1964,7 +1970,7 @@
 			"styleUnsupported": "Kontur und Detailgrad gelten nicht für {model}.",
 			"invalidOutline": "Ungültige Kontur.",
 			"invalidDetail": "Ungültiger Detailgrad.",
-			"reservedMove": "Default ist die Standpose. Wähle einen anderen Namen für die Animation.",
+			"reservedMove": "Standpose ist die Standpose. Wähle einen anderen Namen für die Animation.",
 			"recoveryNeedsAuthored": "Zum Wiederherstellen der Gelenkprüfung sind die ursprünglichen Einstellungen der manuell erstellten Grundkörperreparatur nötig.",
 			"recoveryAlreadySaved": "Diese Animation wurde seit diesem Versuch gespeichert. Es gibt nichts mehr wiederherzustellen.",
 			"keepNeedsChecks": "Um diese Animation zu behalten, müssen für jeden Frame abgeschlossene Gelenkprüfungen im Zwischenspeicher vorliegen.",
@@ -2172,6 +2178,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Ursprünglicher Startframe",
+			"label": "Ausgangspunkt",
+			"chooseFrame": "Frame auswählen",
+			"frame": "Frame {number}",
+			"unavailable": "Für diesen Frame werden Körperbilder und vermessene Gelenke für jede ausgewählte Blickrichtung benötigt.",
+			"changed": "Der ausgewählte Startframe hat sich geändert. Wähle die Quelle erneut aus. Es wurde keine Generierung angefordert.",
+			"route": "Dieses Verfahren startet mit der Standpose. Wähle ein anderes Animationsmodell, um einen gespeicherten Frame zu verwenden.",
+			"stateTarget": "Ein Zustand kann nicht als Animation ersetzt werden."
+		},
 		"sharedCopiesCoverage": "Geteilte Kopien können weiterhin in Ansichten getragen werden, für die sie Bilder haben.",
 		"thatCharacter": "diese Figur",
 		"recoveryCheckFailed": "Zwischengespeicherte Frames konnten nicht geprüft werden: {error}",
@@ -2399,6 +2415,16 @@
 		"useSavedKey": "Gespeicherten Schlüssel verwenden"
 	},
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen" },
+	"stateCapture": {
+		"source": "Quellanimation",
+		"add": "Endpose speichern",
+		"saving": "Zustand wird gespeichert…",
+		"hint": "Speichert die Endpose der Animation ohne Ausrüstung. Das kostet keine Credits.",
+		"saved": "Zustand gespeichert",
+		"blocked": "Warte, bis der Charakter geladen ist, und schließe offene Arbeiten ab, bevor du einen Zustand speicherst.",
+		"unavailable": "Für diese Animation ist kein letzter Körperframe gespeichert, aus dem sich ein Zustand erstellen lässt.",
+		"concurrentEdit": "Der Charakter hat sich geändert, bevor der Zustand gespeichert werden konnte. Versuche es erneut."
+	},
 	"moveRemoval": {
 		"unavailable": "Diese Animation ist nicht mehr verfügbar.",
 		"keepStanding": "Behalte die Standansichten, die zum Erstellen und Erweitern von Gegenständen dienen.",

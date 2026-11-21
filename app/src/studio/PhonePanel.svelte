@@ -20,6 +20,8 @@
 	{:else if ui.tab === 'colors'}
 		<ColorSections />
 	{:else}
-		<div class="equipment-scroll panel-list"><Moves /></div>
+		<div class="equipment-scroll panel-list">
+			<Moves kind={ui.tab === 'states' ? 'state' : 'move'} />
+		</div>
 	{/if}
 </div>

@@ -409,6 +409,8 @@
 		"itemMissing": "Item ini sudah tidak ada."
 	},
 	"savedActions": {
+		"labelDeleteState": "Hapus varian",
+		"removeState": "Varian ini dan frame item yang disesuaikan dengannya akan dihapus dari karakter ini. Animasi yang sudah selesai tetap menyimpan frame dan gambar sumbernya yang sudah tersimpan. Tindakan ini tidak dapat dibatalkan.",
 		"labelDeleteMove": "Hapus animasi…",
 		"labelDeleteOutfit": "Hapus setelan",
 		"thisRemovesTheMoveFromTheBody": "Ini menghapus animasi dari tubuh dan semua item. Tindakan ini tidak dapat diurungkan."
@@ -632,6 +634,7 @@
 		"tabWardrobe": "Lemari",
 		"tabColors": "Warna",
 		"tabOutfits": "Setelan",
+		"tabStates": "Keadaan",
 		"tabMoves": "Animasi",
 		"facing": "Menghadap: {direction}",
 		"nextDirection": "Menghadap {direction}. Arah berikutnya",
@@ -1005,6 +1008,9 @@
 		}
 	},
 	"import": {
+		"posesTitle": "Impor juga sebagai varian",
+		"posesHint": "Pilih pose dari tubuh yang sama tanpa perlengkapan yang menyatu dengan gambar. Impor tampilan yang berbeda sebagai karakter terpisah. Pilih animasinya di bawah.",
+		"poseMismatch": "Varian ini memiliki ukuran gambar, arah hadap, atau pengaturan kamera yang berbeda. Impor sebagai karakter terpisah.",
 		"titleDevice": "Impor dari perangkat",
 		"titlePixelLab": "Impor dari PixelLab",
 		"browseLibrary": "Jelajahi karakter PixelLab",
@@ -1121,7 +1127,7 @@
 			"stateMetadata": "Metadata ukuran atau kamera pada animasi dari “{state}” tidak valid: {detail} Hapus centang pada animasi varian tersebut untuk melanjutkan.",
 			"stateMismatch": "Animasi dari “{state}” memakai ukuran karakter atau sudut kamera yang berbeda. Hapus centang pada varian tersebut untuk melanjutkan.",
 			"missingStandingView": "Animasi {move}/{direction} tidak memiliki tampilan berdiri yang cocok pada varian pilihan.",
-			"tooManyMoves": "Karakter ini memiliki terlalu banyak animasi. Pilih lebih sedikit varian atau ekspor lebih sedikit animasi (maksimal 99 ditambah Default).",
+			"tooManyMoves": "Karakter ini memiliki terlalu banyak animasi. Pilih lebih sedikit varian atau ekspor lebih sedikit animasi (maksimal 99 ditambah Berdiri).",
 			"orphanFile": "ZIP ini berisi file animasi dengan tata letak varian yang tidak jelas: {path}. Ekspor ZIP karakter baru dengan file terpisah untuk tiap frame.",
 			"rotationPathName": "Jalur gambar rotasi tidak didukung: {path}. Ekspor ZIP karakter yang berisi PNG dengan nama sesuai arah.",
 			"animationPath": "Jalur frame animasi tidak didukung: {path}. Ekspor ZIP karakter dengan file bernomor yang terpisah untuk tiap frame.",
@@ -1543,7 +1549,7 @@
 			"motionFrame": "{move} {direction} · frame gerakan {frame}",
 			"measureMotionNote": "Mengirim frame gerakan hasil generasi sebagai image (PNG base64), kecuali jika sudah diukur.",
 			"renderBody": "{move} {direction} · render tubuh",
-			"renderBodyNote": "Hanya kolom yang sudah diketahui. Menambahkan first_frame pose berdiri, first_frame_keypoints, dan titik sendi {source}. Satu render dikirim. Hasil yang kosong atau rusak menghentikan proses untuk ditinjau tanpa percobaan berbayar tambahan.",
+			"renderBodyNote": "Hanya kolom yang sudah diketahui. Menambahkan first_frame, first_frame_keypoints, dan titik sendi {source}. Satu render dikirim. Hasil yang kosong atau rusak menghentikan proses untuk ditinjau tanpa percobaan berbayar tambahan.",
 			"locallyAuthored": "yang dibuat secara lokal",
 			"generatedMotion": "gerakan hasil generasi",
 			"checkFrame": "{move} {direction} · periksa frame {frame}",
@@ -1875,7 +1881,7 @@
 			"styleUnsupported": "Garis tepi dan detail tidak berlaku untuk {model}.",
 			"invalidOutline": "Garis tepi tidak valid.",
 			"invalidDetail": "Detail tidak valid.",
-			"reservedMove": "Nama “Default” dicadangkan untuk pose berdiri. Beri animasi nama lain.",
+			"reservedMove": "Nama “Berdiri” dicadangkan untuk pose berdiri. Beri animasi nama lain.",
 			"recoveryNeedsAuthored": "Pemulihan pemeriksaan sendi memerlukan pengaturan asli yang dipakai saat membuat perbaikan tubuh.",
 			"recoveryAlreadySaved": "Animasi ini sudah disimpan sejak percobaan itu. Tidak ada yang perlu dipulihkan.",
 			"keepNeedsChecks": "Untuk menyimpan animasi ini, setiap frame harus memiliki hasil pemeriksaan sendi yang sudah selesai di cache.",
@@ -2080,6 +2086,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Bingkai awal asli",
+			"label": "Mulai dari",
+			"chooseFrame": "Pilih frame",
+			"frame": "Frame {number}",
+			"unavailable": "Frame ini memerlukan gambar tubuh dan sendi yang sudah diukur untuk setiap arah yang dipilih.",
+			"changed": "Frame awal yang dipilih telah berubah. Pilih ulang sumbernya. Tidak ada permintaan generasi yang dikirim.",
+			"route": "Metode ini dimulai dari pose berdiri. Pilih model animasi lain untuk menggunakan frame yang tersimpan.",
+			"stateTarget": "Varian tidak dapat diganti seperti animasi."
+		},
 		"sharedCopiesCoverage": "Salinan bersama tetap bisa dipakai pada tampilan yang memiliki bingkai.",
 		"thatCharacter": "karakter tersebut",
 		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",
@@ -2296,7 +2312,17 @@
 		"tabOnlyKey": "Koneksi ini hanya berlaku di tab ini dan tidak disimpan.",
 		"useSavedKey": "Gunakan kunci tersimpan"
 	},
-	"moveNames": { "default": "Bawaan", "idle": "Diam", "walk": "Berjalan" },
+	"moveNames": { "default": "Berdiri", "idle": "Diam", "walk": "Berjalan" },
+	"stateCapture": {
+		"source": "Animasi sumber",
+		"add": "Simpan pose akhir",
+		"saving": "Menyimpan varian…",
+		"hint": "Menyimpan pose akhir animasi tanpa perlengkapan. Tidak memerlukan kredit.",
+		"saved": "Varian tersimpan",
+		"blocked": "Tunggu hingga karakter selesai dimuat dan selesaikan pekerjaan yang tertunda sebelum menyimpan varian.",
+		"unavailable": "Animasi ini tidak memiliki frame akhir tubuh tersimpan yang bisa digunakan.",
+		"concurrentEdit": "Karakter ini berubah sebelum varian dapat disimpan. Coba lagi."
+	},
 	"moveRemoval": {
 		"unavailable": "Animasi ini tidak lagi tersedia.",
 		"keepStanding": "Pertahankan tampilan berdiri yang digunakan untuk membuat item dan menambahkannya ke animasi lain.",

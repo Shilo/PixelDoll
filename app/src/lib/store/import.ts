@@ -8,6 +8,7 @@ import {
 	cellHash,
 	DEFAULT_MOVE,
 	DIRECTIONS,
+	pinnedArtwork,
 	playlist,
 	type DirectionName,
 	type Sha256
@@ -187,7 +188,8 @@ export async function projectEntries(
 export async function readCharacterZip(
 	bytes: Uint8Array,
 	stateId?: string,
-	animationStateIds?: readonly string[] | 'all'
+	animationStateIds?: readonly string[] | 'all',
+	poseStateIds: readonly string[] = []
 ): Promise<ImportedCharacter> {
 	let files = await unzip(bytes);
 	// Downloads often wrap the character in one enclosing folder.
@@ -212,7 +214,7 @@ export async function readCharacterZip(
 	if (files.has('project.json')) result = await editable(files);
 	else if (files.has('metadata.json')) {
 		checkArchivePixels(files.values());
-		result = await pixelLab(files, stateId, animationStateIds);
+		result = await pixelLab(files, stateId, animationStateIds, poseStateIds);
 	} else
 		throw new LocalizedError(
 			'This ZIP needs PixelLab metadata.json or a PixelDoll project.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.',
@@ -280,6 +282,7 @@ async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharact
 				for (const cells of Object.values(dirs)) for (const h of cells ?? []) if (h) refs.add(h);
 	}
 	for (const r of Object.values(m.rig.rest ?? {})) if (r) refs.add(r.image);
+	for (const hash of pinnedArtwork(m.rig)) refs.add(hash);
 	const cells = new Map<string, Uint8Array>();
 	for (const h of refs) {
 		if (!hashPattern.test(h))
@@ -362,7 +365,8 @@ function pixelLabInfo(character: PixelLabCharacter) {
 async function pixelLab(
 	files: Map<string, Uint8Array>,
 	stateId?: string,
-	animationStateIds?: readonly string[] | 'all'
+	animationStateIds?: readonly string[] | 'all',
+	poseStateIds: readonly string[] = []
 ): Promise<ImportedCharacter> {
 	const metadata = json(files, 'metadata.json');
 	if (!object(metadata))
@@ -377,6 +381,7 @@ async function pixelLab(
 	let states: CharacterImportState[] | undefined;
 	const rotations: { dir: DirectionName; path: string }[] = [],
 		source: PixelLabMove[] = [];
+	const poses: { name: string; rotations: typeof rotations }[] = [];
 	let projectName: string | undefined;
 	const warnings: string[] = [],
 		warningKeys: Message[] = [];
@@ -569,6 +574,34 @@ async function pixelLab(
 					: animationStateIds === 'all'
 						? states.filter((s) => s.animations !== 0).map((s) => s.id)
 						: animationStateIds;
+			for (const id of new Set(poseStateIds)) {
+				if (id === stateId) continue;
+				const sibling = meta.states.find((state) => state.character.id === id);
+				const siblingRotations = sibling?.frames?.rotations;
+				const incompatible = () =>
+					new LocalizedError(
+						'This state has different artwork dimensions, facings, or camera settings. Import it as a separate character.',
+						'import.poseMismatch'
+					);
+				if (
+					!sibling ||
+					!object(siblingRotations) ||
+					Object.keys(siblingRotations).length !== rotations.length ||
+					sibling.character.view !== selected.character.view ||
+					sibling.character.template_id !== selected.character.template_id
+				)
+					throw incompatible();
+				const views = rotations.map(({ dir, path }) => {
+					const alternate = siblingRotations[dir];
+					if (typeof alternate !== 'string') throw incompatible();
+					const baseSize = pngSize(required(files, path));
+					const poseSize = pngSize(required(files, alternate));
+					if (!baseSize || !poseSize || baseSize.w !== poseSize.w || baseSize.h !== poseSize.h)
+						throw incompatible();
+					return { dir, path: alternate };
+				});
+				poses.push({ name: sibling.character.name ?? 'state', rotations: views });
+			}
 			for (const id of requested)
 				if (!meta.states.some((s) => s.character.id === id))
 					throw new LocalizedError(
@@ -631,7 +664,7 @@ async function pixelLab(
 					source.push({ name, state: character.name, sibling, dirs });
 					if (source.length > 99)
 						throw new LocalizedError(
-							'This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).',
+							'This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Standing).',
 							'import.error.tooManyMoves'
 						);
 				}
@@ -742,13 +775,14 @@ async function pixelLab(
 				};
 			});
 		});
-		if (groups.length > 99)
+		if (groups.length + poses.length > 99)
 			throw new LocalizedError(
-				'This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).',
+				'This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Standing).',
 				'import.error.tooManyMoves'
 			);
 		const paths = [
 			...rotations.map((r) => r.path),
+			...poses.flatMap((pose) => pose.rotations.map(({ path }) => path)),
 			...groups.flatMap((move) =>
 				[...move.dirs.values()].flatMap((frames) => frames.map((f) => f.path))
 			)
@@ -828,6 +862,14 @@ async function pixelLab(
 				for (const source of frames) cells[id][dir]!.push(await put(source.path));
 			}
 			animations.push({ id, cells: move.count, loop: true, frames: playlist(move.count, 100) });
+		}
+		for (const pose of poses) {
+			let id = slug(pose.name).slice(0, 45);
+			if (id === DEFAULT_MOVE || id === 'standing') id = `state-${id}`;
+			while (animations.some((animation) => animation.id === id)) id += '-copy';
+			cells[id] = {};
+			for (const { dir, path } of pose.rotations) cells[id][dir] = [await put(path)];
+			animations.push({ id, kind: 'state', cells: 1, loop: false, frames: playlist(1, 150) });
 		}
 		const rest = images.get(cells[restId][directions[0]]![0]!)!;
 		const view = meta.view ?? meta.character?.view ?? 'low top-down',

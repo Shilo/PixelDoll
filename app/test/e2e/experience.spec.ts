@@ -3,7 +3,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { unzip } from '../../src/lib/store/zip.ts';
 import { layout } from '../../src/studio/experience/geometry.ts';
-import { openInspect } from './immersive-helpers.ts';
+import { openInspect, playbackPicker, selectPlaybackClip } from './immersive-helpers.ts';
 
 const captures = resolve('test-results/experience');
 const requests = new WeakMap<Page, string[]>();
@@ -235,9 +235,7 @@ for (const theme of ['dark', 'light'] as const)
 			}
 			const playback = page.getByRole('toolbar', { name: 'Preview controls' });
 			expect(
-				await playback
-					.getByRole('combobox', { name: 'Move', exact: true })
-					.evaluate((el) => getComputedStyle(el).alignItems),
+				await playbackPicker(page).evaluate((el) => getComputedStyle(el).alignItems),
 				'Host-sized move picker centers its value'
 			).toBe('center');
 			expect(
@@ -619,28 +617,27 @@ test('Preview keyboard uses declared facing; live movement continues, stops, and
 }) => {
 	await customize(page);
 	await pause(page);
-	const clip = page.getByRole('combobox', { name: 'Move', exact: true });
-	const originalClip = await clip.inputValue();
+	const originalClip = (await playbackPicker(page).getAttribute('value'))!;
 	await world(page).focus();
 	await page.keyboard.press('ArrowLeft');
 	await expect(page.getByRole('button', { name: 'Face west', exact: true })).toHaveAttribute(
 		'aria-pressed',
 		'true'
 	);
-	await expect(clip).toHaveValue(originalClip);
+	await expect(playbackPicker(page)).toHaveAttribute('value', originalClip);
 	await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
 	// Cross punch is genuinely south-only in the bundled project. Preview must retain north intent.
-	await clip.selectOption('cross-punch');
+	await selectPlaybackClip(page, 'cross-punch');
 	const north = page.getByRole('button', { name: 'Face north', exact: true });
 	await expect(north).toBeEnabled();
 	await north.click();
 	await expect(north).toHaveAttribute('aria-pressed', 'true');
-	await expect(clip).toHaveValue('cross-punch');
+	await expect(playbackPicker(page)).toHaveAttribute('value', 'cross-punch');
 	await expect(
 		page.getByRole('toolbar', { name: 'Preview controls' }).getByText('Still', { exact: true })
 	).toBeVisible();
 	await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
-	await clip.selectOption(originalClip);
+	await selectPlaybackClip(page, originalClip);
 	await world(page).focus();
 	await page.keyboard.press('2');
 	await expect(modes(page).getByRole('button', { name: 'Top-down', exact: true })).toHaveAttribute(

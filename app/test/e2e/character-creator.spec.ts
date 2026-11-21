@@ -442,7 +442,7 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await expect(move).toContainText('Queued next: Idle');
 	await expect(page.locator('.move-row', { hasText: 'Idle' })).toContainText('Queued');
 	held = false;
-	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Walk', 'Idle'], {
+	await expect(page.locator('.move-list .move-row b')).toHaveText(['Walk', 'Idle'], {
 		timeout: 120_000
 	});
 });
@@ -1439,13 +1439,13 @@ function offlineCreation(config: CreationCase) {
 			await move.getByRole('button', { name: new RegExp(`^Add ${name}`) }).click();
 			await move.getByRole('button', { name: 'Done', exact: true }).click({ timeout: 120_000 });
 		}
-		await expect(page.locator('.move-list .move-row')).toHaveCount(3, { timeout: 150_000 });
-		await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk']);
-		// Share lists Default once, as a move: its one standing frame is a PNG; Walk animates again.
+		await expect(page.locator('.move-list .move-row b')).toHaveText(['Idle', 'Walk'], {
+			timeout: 150_000
+		});
 		await page.getByRole('button', { name: 'Share character' }).click();
 		const share = page.getByRole('dialog', { name: 'Share character preview' }),
 			shareMove = share.getByRole('combobox', { name: 'Move' });
-		await expect(shareMove.locator('option')).toHaveText(['Default', 'Idle', 'Walk', 'All moves']);
+		await expect(shareMove.locator('option')).toHaveText(['Standing', 'Idle', 'Walk', 'All moves']);
 		await shareMove.selectOption('default');
 		await expect(share.getByRole('switch')).toBeDisabled();
 		await expect(share.getByRole('switch')).not.toBeChecked();
@@ -1487,6 +1487,7 @@ function offlineCreation(config: CreationCase) {
 		const zipBytes = await readFile((await (await downloaded).path())!);
 		const entries = await unzip(new Uint8Array(zipBytes));
 		const manifest = JSON.parse(new TextDecoder().decode(entries.get('manifest.json'))) as Manifest;
+		expect(manifest.rig.animations[0]).toMatchObject({ id: 'standing', kind: 'state' });
 		expect(manifest.rig.cell).toEqual({ w: config.frame, h: config.frame });
 		expect(manifest.rig.directions).toHaveLength(config.rows);
 		expect(Object.keys(manifest.rig.rest!)).toHaveLength(8);

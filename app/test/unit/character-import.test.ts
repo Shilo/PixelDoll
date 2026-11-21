@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
 import { cellImg, composeCell } from '../../src/lib/compose/compose.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
+import { moveProject } from '../../src/lib/export/build.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { characterId, downloadCharacter, listCharacters } from '../../src/lib/pixellab/library.ts';
@@ -1354,6 +1355,35 @@ test('current PixelDoll ZIPs support one enclosing folder containing both manife
 	const exported = await exportFiles(project, { engines: ['generic'], baked: false });
 	const wrapped = exported.entries.map((e) => ({ ...e, name: `My character/${e.name}` }));
 	expect((await readCharacterZip(await zip(wrapped))).project.manifest).toEqual(project.manifest);
+});
+
+test('editable character and move ZIPs retain pinned artwork after the source State is gone', async () => {
+	const project = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url)))
+	);
+	const { rig } = project.manifest;
+	const move = rig.animations.find(({ id }) => id === 'walk')!;
+	const artwork = makeImg(rig.cell.w, rig.cell.h);
+	artwork.data.set([223, 105, 34, 255], (artwork.w + 1) * 4);
+	const reference = await cellHash(artwork);
+	const referenceKeypoints = LABELS.map((label) => ({ label, x: 0.25, y: 0.5 }));
+	project.images.set(reference, artwork);
+	(move.sources ??= {}).south = {
+		route: 'skeleton-v3',
+		reference,
+		referenceKeypoints,
+		provenance: []
+	};
+	for (const source of [project, await moveProject(project, move.id)]) {
+		const out = await exportFiles(source, { engines: ['generic'], baked: false });
+		expect(out.errors).toEqual([]);
+		const restored = (await readCharacterZip(await zip(out.entries))).project;
+		expectPixels(restored.images.get(reference), artwork);
+		expect(
+			restored.manifest.rig.animations.find(({ id }) => id === move.id)?.sources?.south
+		).toMatchObject({ reference, referenceKeypoints });
+	}
 });
 
 test('editable projects preserve slot metadata while the runtime manifest keeps only its label', async () => {

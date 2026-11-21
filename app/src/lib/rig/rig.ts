@@ -41,7 +41,8 @@ export interface RestView {
 /** How one clip-direction was made. Stored, never regenerated (PixelLab is not bit-repeatable). */
 export interface ClipSource {
 	route: 'skeleton-v3' | 'pixminimax' | 'v3' | 'import';
-	reference: Sha256; // first_frame sent (rig.rest[dir].image)
+	reference: Sha256;
+	referenceKeypoints?: Keypoint[];
 	keypoints?: Keypoint[][]; // [cell][18]: the sequence sent to raw skeleton-v3; items are posed with exactly this
 	motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "pixminimax:<text>"
 	measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (QA, anchors)
@@ -59,6 +60,7 @@ export interface ClipSource {
 }
 export interface RigAnimation {
 	id: string;
+	kind?: 'state' | 'move';
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
 	cells: number;
@@ -92,6 +94,14 @@ export interface Rig {
 /** The one-frame move of the standing views that characters are created and imported with (UI "Default"). Not `rest`, which
  * names the item pipeline's pseudo cells (items.ts restKey); the reserved id a user's move can never take. */
 export const DEFAULT_MOVE = 'default';
+
+export function pinnedArtwork(rig: Rig): Sha256[] {
+	return rig.animations.flatMap((animation) =>
+		Object.values(animation.sources ?? {}).flatMap((source) =>
+			source?.referenceKeypoints ? [source.reference] : []
+		)
+	);
+}
 /** Stored standing provenance remains valid when local garment-region encoding changes only the base's color hashes. */
 export function matchesStanding(
 	rig: Rig,

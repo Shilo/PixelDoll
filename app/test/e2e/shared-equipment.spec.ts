@@ -4,7 +4,9 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
-	section
+	section,
+	playbackPicker,
+	selectPlaybackClip
 } from './immersive-helpers.ts';
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import type { Preset } from '../../src/lib/store/manifest.ts';
@@ -845,14 +847,13 @@ test('a copy missing frames its source item has copies them for free into the sa
 		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
 		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
 		.and(ownTile(page));
-	const move = page.locator('.playback-move select');
-	await expect(move).toHaveValue('default');
+	await expect(playbackPicker(page)).toHaveAttribute('value', 'default');
 	await expect(worn).toHaveAttribute('aria-pressed', 'true');
 	await expect(worn).not.toHaveAccessibleName(/not shown in this move/);
-	await move.selectOption('walk');
+	await selectPlaybackClip(page, 'walk');
 	await expect(worn).toHaveAccessibleName(/not shown in this move/);
 	await expect(worn).toHaveAttribute('data-dim');
-	await move.selectOption('default');
+	await selectPlaybackClip(page, 'default');
 	await page
 		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
 		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })

@@ -1,4 +1,33 @@
 /** @typedef {{cell: number, ms: number}} TimelineFrame */
+/** @typedef {import('./types.d.ts').RigAnimation} PlaybackClip */
+
+/** @param {PlaybackClip} clip @returns {'state' | 'move'} */
+export function clipKind(clip) {
+	return clip.kind ?? (clip.id === 'default' ? 'state' : 'move');
+}
+
+/** @param {readonly PlaybackClip[]} clips */
+export function playbackClips(clips) {
+	const occupied = new Set(clips.map(({ id }) => id));
+	let displaced = 'standing-move';
+	while (occupied.has(displaced)) displaced += '-move';
+	return clips.map((clip) => ({
+		id:
+			clip.id === 'default'
+				? 'standing'
+				: clip.id === 'standing' && occupied.has('default')
+					? displaced
+					: clip.id,
+		key: clip.id,
+		kind: clipKind(clip),
+		clip
+	}));
+}
+
+/** @param {{frames: readonly TimelineFrame[]}} clip */
+export function lastPlaybackCell(clip) {
+	return clip.frames.at(-1)?.cell;
+}
 
 /** @param {readonly TimelineFrame[]} frames */
 export function timelineDuration(frames) {

@@ -107,6 +107,7 @@ import {
 	type Provenance
 } from '../lib/store/manifest.ts';
 import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
+import { moveSourceFitsGeometry, moveSourceMatches, type MoveSource } from './moveSource.ts';
 import {
 	affectedMoveDirections,
 	clearMovePoseData,
@@ -1250,6 +1251,7 @@ export async function createCharacter(
 /** itemsOnly: the caller poses items onto a move the body already has (Make it, item frame repair); finishing changes no move. */
 export interface MoveSpec {
 	id: string;
+	startFrom?: MoveSource;
 	action?: string;
 	text?: string;
 	frames: number;
@@ -1376,9 +1378,9 @@ export const MOVE_STEPS = [
 export const isV13 = rigReady;
 /** Why a move can't take this id: Default is every character's standing views, never generated or replaced. */
 export const reservedMove = (id: string) =>
-	id === DEFAULT_MOVE
+	id === DEFAULT_MOVE || id === 'standing'
 		? new LocalizedError(
-				'Default is the standing pose. Name the move something else.',
+				'Standing is a reserved State. Name the move something else.',
 				'create.errors.reservedMove'
 			)
 		: undefined;
@@ -1763,7 +1765,7 @@ async function inspectMeasurementRecovery(
 		changedFrames: 0
 	};
 	for (const d of moveDirections(rec.manifest, spec.dirs)) {
-		const rest = rig.rest?.[d];
+		const rest = spec.startFrom ? spec.startFrom.views[d] : rig.rest?.[d];
 		if (!rest || !hasAll(rest.keypoints))
 			throw new LocalizedError(
 				`${d}: original standing artwork or joints are missing.`,
@@ -2086,9 +2088,18 @@ export function partialMoveFrameIssue(
 }
 export function bodyMoveIssue(
 	m: Manifest,
-	s: MoveFrameSpec & Pick<MoveSpec, 'text'>,
+	s: MoveFrameSpec & Pick<MoveSpec, 'text' | 'startFrom'>,
 	blocked = false
 ): LocalizedError | undefined {
+	if (
+		s.startFrom &&
+		(s.action === 'ride' ||
+			(moveAnimationModel(s) === 'skeleton-v3' && !isAuthoredAction(s.action)))
+	)
+		return new LocalizedError(
+			'This route starts from Standing. Choose a different animation model to use a saved frame.',
+			'moveSheet.startFrom.route'
+		);
 	if (s.action === 'ride') return undefined;
 	const frames = moveFrames(m, s);
 	const model = moveAnimationModel(s);
@@ -2414,7 +2425,13 @@ export async function addMove(
 			'create.errors.chooseRepairTarget'
 		);
 	const reserved = reservedMove(spec.id);
-	if (reserved && (spec.replace || !existing)) throw reserved;
+	if (reserved && (spec.replace || !existing) && !(existing?.id === 'standing' && !existing.kind))
+		throw reserved;
+	if (existing?.kind === 'state' && spec.replace)
+		throw new LocalizedError(
+			'A State cannot be replaced as a Move.',
+			'moveSheet.startFrom.stateTarget'
+		);
 	if (!existing && dirs.length !== genDirs(rec.manifest).length)
 		throw new LocalizedError(
 			'A new move needs every independently drawn direction.',
@@ -2662,7 +2679,9 @@ export function nativeMoveRequest(
 				...body,
 				description: `${motion.slice(0, 900)}${guard}`,
 				subject_description: rec.character?.looks.trim().slice(0, 300) || 'the character',
-				initial_pose: 'standing upright with empty hands',
+				initial_pose: spec.startFrom
+					? 'the pose in the supplied frame'
+					: 'standing upright with empty hands',
 				view: rec.manifest.rig.view ?? 'low top-down',
 				direction: dir
 			});
@@ -2713,9 +2732,20 @@ async function addBodyClip(
 		n = moveFrames(m, spec),
 		name = m.name;
 	const model = moveAnimationModel(spec);
-	if (model !== 'skeleton-v3')
+	const referenceAt = (direction: DirectionName) =>
+		spec.startFrom ? spec.startFrom.views[direction] : rig.rest?.[direction];
+	if (
+		spec.startFrom &&
+		(!moveSourceFitsGeometry(m, spec.startFrom) ||
+			(!recovery && !moveSourceMatches(m, spec.startFrom, dirs)))
+	)
+		throw new LocalizedError(
+			'The selected starting frame changed. Choose the source again. No generation was requested.',
+			'moveSheet.startFrom.changed'
+		);
+	if (spec.startFrom || model !== 'skeleton-v3')
 		for (const direction of dirs) {
-			const rest = rig.rest?.[direction];
+			const rest = referenceAt(direction);
 			const image = rest && project.images.get(rest.image);
 			if (!rest || !hasAll(rest.keypoints) || image?.w !== rig.cell.w || image.h !== rig.cell.h)
 				throw new LocalizedError(
@@ -2740,8 +2770,9 @@ async function addBodyClip(
 				signal.throwIfAborted();
 				tick();
 			};
-			const restKps = rig.rest![d]!.keypoints,
-				restImg = project.images.get(rig.rest![d]!.image)!;
+			const reference = referenceAt(d)!;
+			const restKps = reference.keypoints,
+				restImg = project.images.get(reference.image)!;
 			if (model !== 'skeleton-v3') {
 				const out = await renderClip({
 					anim: spec.id,
@@ -2895,7 +2926,8 @@ async function addBodyClip(
 		);
 		const src: ClipSource = {
 			route: model,
-			reference: frig.rest![c.d]!.image,
+			reference: referenceAt(c.d)!.image,
+			...(spec.startFrom ? { referenceKeypoints: referenceAt(c.d)!.keypoints } : {}),
 			keypoints: c.keypoints,
 			motion:
 				model !== 'skeleton-v3'
@@ -2987,7 +3019,10 @@ async function addBodyClip(
 	// transaction, so an item accepted or an outfit autosaved meanwhile survives.
 	await db.update<StoredProject>('projects', projectId, (cur) => {
 		if (!cur) throw new Error(`project ${projectId} vanished`);
-		if (moveRigVersion(cur) !== version)
+		if (
+			moveRigVersion(cur) !== version ||
+			(!recovery && spec.startFrom && !moveSourceMatches(cur.manifest, spec.startFrom, dirs))
+		)
 			throw new LocalizedError(
 				'This character changed in another tab before the move could be saved. Reopen it before trying again.',
 				'create.errors.characterChangedAnotherTab2'

@@ -192,7 +192,10 @@ export type RpgLayout = 'vx' | 'xp';
 /** The move RPG Maker sheets take their steps from: the first whose id has a walk word. */
 export const walkMove = (rig: { animations: RigAnimation[] }) =>
 	rig.animations.find(
-		(a) => a.id !== DEFAULT_MOVE && moveWords(a.id).some((w) => WALK_WORDS.includes(w))
+		(a) =>
+			a.kind !== 'state' &&
+			a.id !== DEFAULT_MOVE &&
+			moveWords(a.id).some((w) => WALK_WORDS.includes(w))
 	);
 
 /** One sheet per outfit in `layout`, at the zip root, plus a README; or an Error whose message starts with "RPG Maker: ".
@@ -222,7 +225,9 @@ export function rpgMakerFiles(
 		warnings.push(text);
 		warningMessages.set(text, display);
 	};
-	const standing = rig.animations.find((a) => a.id === DEFAULT_MOVE);
+	const standing = rig.animations.find(
+		(a) => a.id === DEFAULT_MOVE || (a.id === 'standing' && a.kind === 'state')
+	);
 	const walk = walkMove(rig);
 	if (!walk)
 		note(

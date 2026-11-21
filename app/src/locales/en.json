@@ -425,6 +425,8 @@
 		"itemMissing": "This item no longer exists."
 	},
 	"savedActions": {
+		"labelDeleteState": "Delete State",
+		"removeState": "This removes the State and its fitted item frames from this character. Finished Moves keep their frames and any saved source artwork. This cannot be undone.",
 		"labelDeleteMove": "Delete move…",
 		"labelDeleteOutfit": "Delete outfit",
 		"thisRemovesTheMoveFromTheBody": "This removes the move from the body and every item. This can't be undone."
@@ -649,6 +651,7 @@
 		"tabWardrobe": "Wardrobe",
 		"tabColors": "Colors",
 		"tabOutfits": "Outfits",
+		"tabStates": "States",
 		"tabMoves": "Moves",
 		"facing": "Facing: {direction}",
 		"nextDirection": "Facing {direction}. Next direction",
@@ -1042,6 +1045,9 @@
 		}
 	},
 	"import": {
+		"posesTitle": "Also import as States",
+		"posesHint": "Choose poses of the same body with no baked-in gear. Import a different look as a separate character. Moves are selected below.",
+		"poseMismatch": "This state has different artwork dimensions, facings, or camera settings. Import it as a separate character.",
 		"titleDevice": "Import from device",
 		"titlePixelLab": "Import from PixelLab",
 		"browseLibrary": "Browse PixelLab characters",
@@ -1164,7 +1170,7 @@
 			"stateMetadata": "Moves from “{state}” have invalid size or camera metadata: {detail} Uncheck that state’s moves to continue.",
 			"stateMismatch": "Moves from “{state}” use a different character size or camera view. Uncheck that state to continue.",
 			"missingStandingView": "The {move}/{direction} animation has no matching standing view in the selected state.",
-			"tooManyMoves": "This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).",
+			"tooManyMoves": "This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Standing).",
 			"orphanFile": "This ZIP contains an animation file without an unambiguous state layout: {path}. Export a new character ZIP with individual frames.",
 			"rotationPathName": "Unsupported rotation image path: {path}. Export a character ZIP with named direction PNGs.",
 			"animationPath": "Unsupported animation frame path: {path}. Export a character ZIP with individual numbered frames.",
@@ -1605,7 +1611,7 @@
 			"motionFrame": "{move} {direction} · motion frame {frame}",
 			"measureMotionNote": "Sends the generated motion frame as image (base64 PNG), unless already measured.",
 			"renderBody": "{move} {direction} · render body",
-			"renderBodyNote": "Known fields only. Adds standing first_frame, first_frame_keypoints and {source} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.",
+			"renderBodyNote": "Known fields only. Adds first_frame, first_frame_keypoints and {source} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.",
 			"locallyAuthored": "locally authored",
 			"generatedMotion": "generated motion",
 			"checkFrame": "{move} {direction} · check frame {frame}",
@@ -1949,7 +1955,7 @@
 			"styleUnsupported": "Outline and detail do not apply to {model}.",
 			"invalidOutline": "Invalid outline.",
 			"invalidDetail": "Invalid detail.",
-			"reservedMove": "Default is the standing pose. Name the move something else.",
+			"reservedMove": "Standing is reserved for the standing state. Name the move something else.",
 			"recoveryNeedsAuthored": "Joint-check recovery needs the original authored body-repair settings.",
 			"recoveryAlreadySaved": "This move was saved since that attempt. Nothing is left to recover.",
 			"keepNeedsChecks": "Keeping this move requires completed cached joint checks for every frame.",
@@ -2157,6 +2163,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Original starting frame",
+			"label": "Start from",
+			"chooseFrame": "Choose a frame",
+			"frame": "Frame {number}",
+			"unavailable": "This frame needs body artwork and measured joints for every selected facing.",
+			"changed": "The selected starting frame changed. Choose the source again. No generation was requested.",
+			"route": "This route starts from Standing. Choose a different animation model to use a saved frame.",
+			"stateTarget": "A State cannot be replaced as a Move."
+		},
 		"sharedCopiesCoverage": "Shared copies can still be worn in views where they have frames.",
 		"thatCharacter": "that character",
 		"recoveryCheckFailed": "Could not check cached frames: {error}",
@@ -2383,7 +2399,17 @@
 		"tabOnlyKey": "This connection is only for this tab and is not saved.",
 		"useSavedKey": "Use saved key"
 	},
-	"moveNames": { "default": "Default", "idle": "Idle", "walk": "Walk" },
+	"moveNames": { "default": "Standing", "idle": "Idle", "walk": "Walk" },
+	"stateCapture": {
+		"source": "Source move",
+		"add": "Capture final pose",
+		"saving": "Saving state…",
+		"hint": "Saves the move's final pose without equipment. No credits needed.",
+		"saved": "Captured state",
+		"blocked": "Wait for the character to load and resolve pending work before capturing a state.",
+		"unavailable": "This move has no saved final body frame to capture.",
+		"concurrentEdit": "This character changed before the state could be captured. Try again."
+	},
 	"moveRemoval": {
 		"unavailable": "This move is no longer available.",
 		"keepStanding": "Keep the standing views used to create and extend items.",

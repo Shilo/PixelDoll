@@ -395,7 +395,15 @@ export function movePlan(
 					shown(
 						{
 							...(native
-								? nativeMoveRequest(rec, spec, direction, model, '[standing artwork]')
+								? nativeMoveRequest(
+										rec,
+										spec,
+										direction,
+										model,
+										spec.startFrom
+											? `[${spec.startFrom.clip}${spec.startFrom.cell === undefined ? '' : `, frame ${spec.startFrom.cell + 1}`} artwork]`
+											: '[standing artwork]'
+									)
 								: moveMotionRequest(rec, spec, direction)),
 							label: `Create motion · ${direction}`,
 							generations: native
@@ -444,7 +452,7 @@ export function movePlan(
 								...(spec.seed === undefined ? {} : { seed: spec.seed + 101 }),
 								no_background: true
 							},
-							note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${authored ? 'locally authored' : 'generated motion'} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.`
+							note: `Known fields only. Adds ${spec.startFrom ? 'the selected starting frame as' : 'Standing as'} first_frame, first_frame_keypoints and ${authored ? 'locally authored' : 'generated motion'} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.`
 						},
 						({ t, displayDirection }) =>
 							t('apiPeek.plan.renderBody', {
@@ -452,11 +460,20 @@ export function movePlan(
 								direction: displayDirection(direction)
 							}),
 						({ t }) =>
-							t('apiPeek.plan.renderBodyNote', {
+							`${t('moveSheet.startFrom.label')}: ${
+								spec.startFrom?.replacement
+									? t('moveSheet.startFrom.savedSource')
+									: spec.startFrom
+										? spec.startFrom.clip +
+											(spec.startFrom.cell === undefined
+												? ''
+												: ` (${t('moveSheet.startFrom.frame', { number: spec.startFrom.cell + 1 })})`)
+										: t('moveNames.default')
+							}. ${t('apiPeek.plan.renderBodyNote', {
 								source: t(
 									authored ? 'apiPeek.plan.locallyAuthored' : 'apiPeek.plan.generatedMotion'
 								)
-							})
+							})}`
 					)
 				);
 			for (let frame = 0; frame < frames; frame++)

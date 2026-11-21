@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { openPlaybackPicker, playbackPicker } from './immersive-helpers.ts';
 
 // The zoom camera is easiest to seed and inspect against the dev server, as the other immersive specs do.
 // The production preview strips the state module this spec imports to build several library characters.
@@ -1387,22 +1388,15 @@ test('wheel, keys, middle click and native controls only change zoom where the s
 		'middle click never moves the character'
 	).toBe(position);
 
-	// Native move select and the scrolling rail keep their own input.
-	const move = page.getByRole('combobox', { name: 'Move', exact: true });
-	const options = await move.locator('option').count();
-	expect(options, 'the fixture has more than one move').toBeGreaterThan(1);
-	const beforeMove = await move.inputValue();
-	const nextMove = await move
-		.locator('option')
-		.evaluateAll(
-			(nodes, current) =>
-				nodes.map((node) => (node as HTMLOptionElement).value).find((value) => value !== current) ??
-				current,
-			beforeMove
-		);
-	await move.selectOption(nextMove);
-	await expect(move).toHaveValue(nextMove);
-	await expectAtFit(preview, 'a native select never zooms');
+	// The playback picker and scrolling rail keep their own input.
+	const picker = await openPlaybackPicker(page);
+	const moves = picker.getByRole('menuitemradio');
+	expect(await moves.count(), 'the fixture has more than one move').toBeGreaterThan(1);
+	const nextMove = picker.getByRole('menuitemradio', { checked: false }).first();
+	const nextKey = (await nextMove.getAttribute('value'))!;
+	await nextMove.click();
+	await expect(playbackPicker(page)).toHaveAttribute('value', nextKey);
+	await expectAtFit(preview, 'the playback picker never zooms');
 	const rail = page.locator('#wardrobe-list');
 	await expect(rail).toBeVisible();
 	expect(

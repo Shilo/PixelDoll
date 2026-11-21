@@ -425,6 +425,8 @@
 		"itemMissing": "Bu eşya artık mevcut değil."
 	},
 	"savedActions": {
+		"labelDeleteState": "Durumu sil",
+		"removeState": "Bu işlem, durumu ve bu duruma uyarlanmış eşya karelerini karakterden kaldırır. Tamamlanmış animasyonların kareleri ve kayıtlı kaynak görselleri korunur. Bu işlem geri alınamaz.",
 		"labelDeleteMove": "Animasyonu silin…",
 		"labelDeleteOutfit": "Kıyafeti silin",
 		"thisRemovesTheMoveFromTheBody": "Animasyon gövdeden ve tüm eşyalardan kaldırılır. Bu işlem geri alınamaz."
@@ -655,6 +657,7 @@
 		"tabWardrobe": "Gardırop",
 		"tabColors": "Renkler",
 		"tabOutfits": "Kıyafetler",
+		"tabStates": "Durumlar",
 		"tabMoves": "Animasyonlar",
 		"facing": "Yön: {direction}",
 		"nextDirection": "Yön: {direction}. Sonraki yöne geçin",
@@ -1045,6 +1048,9 @@
 		}
 	},
 	"import": {
+		"posesTitle": "Durum olarak da içe aktar",
+		"posesHint": "Aynı gövdenin, görsele işlenmiş ekipman içermeyen pozlarını seçin. Farklı bir görünümü ayrı bir karakter olarak içe aktarın. Animasyonları aşağıdan seçin.",
+		"poseMismatch": "Bu durumun görsel boyutları, bakış yönleri veya kamera ayarları farklı. Ayrı bir karakter olarak içe aktarın.",
 		"titleDevice": "Cihazdan içe aktarın",
 		"titlePixelLab": "PixelLab üzerinden içe aktarın",
 		"browseLibrary": "PixelLab karakterlerine göz atın",
@@ -1167,7 +1173,7 @@
 			"stateMetadata": "“{state}” durumundaki animasyonların boyut veya kamera meta verileri geçersiz: {detail} Devam etmek için o durumun animasyonlarının işaretini kaldırın.",
 			"stateMismatch": "“{state}” durumundaki animasyonlar farklı karakter boyutu veya kamera açısı kullanıyor. Devam etmek için o durumun işaretini kaldırın.",
 			"missingStandingView": "Seçilen durumda {move}/{direction} animasyonuna karşılık gelen ayakta duruş görünümü yok.",
-			"tooManyMoves": "Bu karakterde çok fazla animasyon var. Daha az durum seçin veya daha az animasyon dışa aktarın (Varsayılan dışında en fazla 99).",
+			"tooManyMoves": "Bu karakterde çok fazla animasyon var. Daha az durum seçin veya daha az animasyon dışa aktarın (Ayakta dışında en fazla 99).",
 			"orphanFile": "Bu ZIP içinde durum düzeni belirsiz bir animasyon dosyası var: {path}. Her karenin ayrı dosya olduğu yeni bir karakter ZIP dosyası dışa aktarın.",
 			"rotationPathName": "Desteklenmeyen yön görseli yolu: {path}. Yön adlarını taşıyan PNG dosyalarının yer aldığı bir karakter ZIP dosyası dışa aktarın.",
 			"animationPath": "Desteklenmeyen animasyon karesi yolu: {path}. Her karenin ayrı ve numaralı olduğu bir karakter ZIP dosyası dışa aktarın.",
@@ -1611,7 +1617,7 @@
 			"motionFrame": "{move} {direction} · Hareket karesi {frame}",
 			"measureMotionNote": "Daha önce ölçülmediyse üretilen hareket karesini image (base64 PNG) olarak gönderir.",
 			"renderBody": "{move} {direction} · Gövdeyi çizin",
-			"renderBodyNote": "Yalnızca bilinen alanlar. Ayakta duruş first_frame ve first_frame_keypoints değerlerini, ayrıca {source} anahtar noktalarını ekler. Tek çizim isteği gönderilir. Çıktı boş veya hatalı biçimdeyse ücretli yeni deneme yapılmadan inceleme için durulur.",
+			"renderBodyNote": "Yalnızca bilinen alanlar. first_frame ve first_frame_keypoints değerlerini, ayrıca {source} anahtar noktalarını ekler. Tek çizim isteği gönderilir. Çıktı boş veya hatalı biçimdeyse ücretli yeni deneme yapılmadan inceleme için durulur.",
 			"locallyAuthored": "yerelde oluşturulan",
 			"generatedMotion": "üretilen hareketin",
 			"checkFrame": "{move} {direction} · {frame} numaralı kareyi kontrol edin",
@@ -1958,7 +1964,7 @@
 			"styleUnsupported": "{model} için dış çizgi ve ayrıntı ayarları geçerli değil.",
 			"invalidOutline": "Geçersiz dış çizgi.",
 			"invalidDetail": "Geçersiz ayrıntı düzeyi.",
-			"reservedMove": "Default adı ayakta duruş pozuna ayrılmıştır. Animasyona başka bir ad verin.",
+			"reservedMove": "Ayakta adı ayakta duruş pozuna ayrılmıştır. Animasyona başka bir ad verin.",
 			"recoveryNeedsAuthored": "Eklem kontrolünü kurtarmak için özgün gövde onarımı ayarları gerekir.",
 			"recoveryAlreadySaved": "Bu animasyon o denemeden sonra kaydedildi. Kurtarılacak işlem kalmadı.",
 			"keepNeedsChecks": "Bu animasyonu saklamak için tüm karelerin önbellekte tamamlanmış eklem kontrolleri olmalı.",
@@ -2166,6 +2172,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Orijinal başlangıç karesi",
+			"label": "Başlangıç noktası",
+			"chooseFrame": "Kare seçin",
+			"frame": "Kare {number}",
+			"unavailable": "Bu kare için seçilen her yönde gövde görseli ve ölçülmüş eklem konumları gerekir.",
+			"changed": "Seçilen başlangıç karesi değişti. Kaynağı yeniden seçin. Üretim isteği gönderilmedi.",
+			"route": "Bu yöntem ayakta duruşla başlar. Kayıtlı bir kareyi kullanmak için başka bir animasyon modeli seçin.",
+			"stateTarget": "Bir durum, animasyon gibi değiştirilemez."
+		},
 		"sharedCopiesCoverage": "Paylaşılan kopyalar, kareleri olan görünümlerde kullanılabilir.",
 		"thatCharacter": "söz konusu karakter",
 		"recoveryCheckFailed": "Önbellekteki kareler kontrol edilemedi: {error}",
@@ -2392,7 +2408,17 @@
 		"tabOnlyKey": "Bu bağlantı yalnızca bu sekme için geçerlidir ve kaydedilmez.",
 		"useSavedKey": "Kayıtlı anahtarı kullan"
 	},
-	"moveNames": { "default": "Varsayılan", "idle": "Bekleme", "walk": "Yürüme" },
+	"moveNames": { "default": "Ayakta", "idle": "Bekleme", "walk": "Yürüme" },
+	"stateCapture": {
+		"source": "Kaynak animasyon",
+		"add": "Son pozu kaydet",
+		"saving": "Durum kaydediliyor…",
+		"hint": "Animasyonun son pozunu ekipmansız kaydeder. Kredi gerekmez.",
+		"saved": "Durum kaydedildi",
+		"blocked": "Durumu kaydetmeden önce karakterin yüklenmesini bekleyin ve bekleyen işleri sonuçlandırın.",
+		"unavailable": "Bu animasyonun durum olarak kaydedilebilecek kayıtlı bir son gövde karesi yok.",
+		"concurrentEdit": "Durum kaydedilemeden karakter değişti. Tekrar deneyin."
+	},
 	"moveRemoval": {
 		"unavailable": "Bu animasyon artık kullanılamıyor.",
 		"keepStanding": "Eşya üretmek ve eşyaları yeni animasyonlara uyarlamak için kullanılan ayakta duruş görünümlerini koruyun.",

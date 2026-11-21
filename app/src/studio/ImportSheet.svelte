@@ -98,7 +98,8 @@
 	);
 	let states = $state.raw<CharacterImportState[]>([]),
 		stateId = $state(''),
-		moveStates = $state.raw<string[]>([]);
+		moveStates = $state.raw<string[]>([]),
+		poseStates = $state.raw<string[]>([]);
 	let bytes: Uint8Array | null = null;
 	let name = $state(''),
 		id = $state(''),
@@ -188,6 +189,7 @@
 		states = [];
 		stateId = '';
 		moveStates = [];
+		poseStates = [];
 		drop.reset();
 	}
 	function close() {
@@ -243,7 +245,7 @@
 		bytes = data;
 		previewValid = false;
 		try {
-			const result = await readCharacterZip(data, selected, selection);
+			const result = await readCharacterZip(data, selected, selection, poseStates);
 			if (!alive) return;
 			if (prepared?.stateId !== result.stateId) {
 				directionChoices = null;
@@ -314,6 +316,7 @@
 			states.some((s) => s.id === id && s.animations !== 0)
 		);
 		stateId = value;
+		poseStates = poseStates.filter((id) => id !== value);
 		error = '';
 		busy = true;
 		try {
@@ -332,6 +335,19 @@
 		busy = true;
 		try {
 			await prepare(data, stateId, moveStates);
+		} catch (e) {
+			if (alive) error = errorMessage(e);
+		} finally {
+			if (alive) busy = false;
+		}
+	}
+	async function changePose(id: string, include: boolean) {
+		if (!bytes || busy) return;
+		poseStates = include ? [...poseStates, id] : poseStates.filter((value) => value !== id);
+		error = '';
+		busy = true;
+		try {
+			await prepare(bytes, stateId, moveStates);
 		} catch (e) {
 			if (alive) error = errorMessage(e);
 		} finally {
@@ -419,6 +435,20 @@
 				{t('import.standingStateHint')}
 			</p>
 		</div>
+		<section class="state-moves" role="group" aria-labelledby="import-poses-title">
+			<h3 class="label" id="import-poses-title">{t('import.posesTitle')}</h3>
+			<p class="faint small">{t('import.posesHint')}</p>
+			{#each states.filter((state) => state.id !== stateId) as state (state.id)}
+				<label class="check"
+					><input
+						type="checkbox"
+						checked={poseStates.includes(state.id)}
+						disabled={busy}
+						onchange={(event) => changePose(state.id, event.currentTarget.checked)}
+					/><span>{stateLabel(state)}</span></label
+				>
+			{/each}
+		</section>
 	{/if}
 	{#if states.some((state) => state.animations !== 0)}
 		<section class="state-moves" role="group" aria-labelledby="import-moves-title">

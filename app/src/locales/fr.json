@@ -425,6 +425,8 @@
 		"itemMissing": "Cet item n’existe plus."
 	},
 	"savedActions": {
+		"labelDeleteState": "Supprimer l’état",
+		"removeState": "Cette action supprime de ce personnage l’état et les images des objets adaptés à cet état. Les animations terminées conservent leurs images et les visuels sources enregistrés. Cette action est irréversible.",
 		"labelDeleteMove": "Supprimer l’animation…",
 		"labelDeleteOutfit": "Supprimer la tenue",
 		"thisRemovesTheMoveFromTheBody": "Cela supprime l’animation du corps et de tous les objets. Cette action est irréversible."
@@ -652,6 +654,7 @@
 		"tabWardrobe": "Garde-robe",
 		"tabColors": "Couleurs",
 		"tabOutfits": "Tenues",
+		"tabStates": "États",
 		"tabMoves": "Animations",
 		"facing": "Orientation : {direction}",
 		"nextDirection": "Orientation {direction}. Direction suivante",
@@ -1045,6 +1048,9 @@
 		}
 	},
 	"import": {
+		"posesTitle": "Importer aussi comme états",
+		"posesHint": "Choisissez des poses du même corps sans équipement intégré au dessin. Importez une apparence différente comme personnage distinct. Sélectionnez les animations plus bas.",
+		"poseMismatch": "Les dimensions des images, les directions ou les réglages de caméra de cet état diffèrent. Importez-le comme personnage distinct.",
 		"titleDevice": "Importer depuis l’appareil",
 		"titlePixelLab": "Importer depuis PixelLab",
 		"browseLibrary": "Parcourir les personnages PixelLab",
@@ -1167,7 +1173,7 @@
 			"stateMetadata": "Les animations de « {state} » ont des métadonnées de taille ou de caméra invalides : {detail} Décochez les animations de cet état pour continuer.",
 			"stateMismatch": "Les animations de « {state} » utilisent une taille de personnage ou une vue de caméra différente. Décochez cet état pour continuer.",
 			"missingStandingView": "L’animation {move}/{direction} n’a aucune vue debout correspondante dans l’état sélectionné.",
-			"tooManyMoves": "Ce personnage contient trop d’animations. Sélectionnez moins d’états ou exportez moins d’animations (99 au maximum, sans compter Default).",
+			"tooManyMoves": "Ce personnage contient trop d’animations. Sélectionnez moins d’états ou exportez moins d’animations (99 au maximum, sans compter Debout).",
 			"orphanFile": "Dans ce ZIP, l’état auquel appartient ce fichier d’animation n’est pas identifiable : {path}. Exportez un nouveau ZIP de personnage avec des images individuelles.",
 			"rotationPathName": "Chemin d’image de rotation non pris en charge : {path}. Exportez un ZIP de personnage avec des PNG nommés par direction.",
 			"animationPath": "Chemin d’image d’animation non pris en charge : {path}. Exportez un ZIP de personnage avec des images individuelles numérotées.",
@@ -1611,7 +1617,7 @@
 			"motionFrame": "{move} {direction} · image {frame} du mouvement",
 			"measureMotionNote": "Envoie l’image de mouvement générée comme image (PNG en base64), sauf si elle est déjà mesurée.",
 			"renderBody": "{move} {direction} · rendu du corps",
-			"renderBodyNote": "Champs connus uniquement. Ajoute first_frame (pose debout), first_frame_keypoints et les points clés {source}. Une seule requête de rendu est envoyée. Si le résultat est vide ou mal formé, l’opération s’arrête pour vérification sans autre tentative payante.",
+			"renderBodyNote": "Champs connus uniquement. Ajoute first_frame, first_frame_keypoints et les points clés {source}. Une seule requête de rendu est envoyée. Si le résultat est vide ou mal formé, l’opération s’arrête pour vérification sans autre tentative payante.",
 			"locallyAuthored": "définis localement",
 			"generatedMotion": "du mouvement généré",
 			"checkFrame": "{move} {direction} · contrôle de l’image {frame}",
@@ -1962,7 +1968,7 @@
 			"styleUnsupported": "Le contour et le détail ne s’appliquent pas à {model}.",
 			"invalidOutline": "Contour invalide.",
 			"invalidDetail": "Détail invalide.",
-			"reservedMove": "Le nom « Default » est réservé à la pose debout. Donnez un autre nom à l’animation.",
+			"reservedMove": "Le nom « Debout » est réservé à la pose debout. Donnez un autre nom à l’animation.",
 			"recoveryNeedsAuthored": "La récupération du contrôle des articulations nécessite les réglages de réparation du corps d’origine.",
 			"recoveryAlreadySaved": "Cette animation a été enregistrée depuis cette tentative. Il n’y a plus rien à récupérer.",
 			"keepNeedsChecks": "Garder cette animation nécessite des contrôles d’articulations en cache terminés pour chaque image.",
@@ -2173,6 +2179,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Image de départ d'origine",
+			"label": "Point de départ",
+			"chooseFrame": "Choisir une image",
+			"frame": "Image {number}",
+			"unavailable": "Cette image nécessite un visuel du corps et des articulations mesurées pour chaque direction sélectionnée.",
+			"changed": "L’image de départ sélectionnée a changé. Choisissez à nouveau la source. Aucune génération n’a été demandée.",
+			"route": "Cette méthode part de la pose debout. Choisissez un autre modèle d’animation pour utiliser une image enregistrée.",
+			"stateTarget": "Un état ne peut pas être remplacé comme une animation."
+		},
 		"sharedCopiesCoverage": "Les copies partagées peuvent toujours être portées dans les vues où elles ont des images.",
 		"thatCharacter": "ce personnage",
 		"recoveryCheckFailed": "Impossible de vérifier les images en cache : {error}",
@@ -2399,7 +2415,17 @@
 		"tabOnlyKey": "Cette connexion est limitée à cet onglet et n’est pas enregistrée.",
 		"useSavedKey": "Utiliser la clé enregistrée"
 	},
-	"moveNames": { "default": "Par défaut", "idle": "Attente", "walk": "Marche" },
+	"moveNames": { "default": "Debout", "idle": "Attente", "walk": "Marche" },
+	"stateCapture": {
+		"source": "Animation source",
+		"add": "Capturer la pose finale",
+		"saving": "Enregistrement de l’état…",
+		"hint": "Enregistre la pose finale de l’animation sans équipement. Aucun crédit n’est nécessaire.",
+		"saved": "État capturé",
+		"blocked": "Attendez la fin du chargement du personnage et réglez les tâches en attente avant de capturer un état.",
+		"unavailable": "Cette animation n’a pas d’image finale du corps enregistrée à capturer.",
+		"concurrentEdit": "Le personnage a changé avant que l’état puisse être capturé. Réessayez."
+	},
 	"moveRemoval": {
 		"unavailable": "Cette animation n’est plus disponible.",
 		"keepStanding": "Conservez les vues debout qui servent à créer des objets ou à les adapter à d’autres animations.",

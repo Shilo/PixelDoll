@@ -6,7 +6,7 @@ import { storeVariants, variantOf } from '../dress/dress.ts';
 import { itemHashes } from '../equipment/copy.ts';
 import { SLOTS } from '../items/slots.ts';
 import { retainMoves } from '../rig/moves.ts';
-import { cellHash, DEFAULT_MOVE } from '../rig/rig.ts';
+import { cellHash, DEFAULT_MOVE, pinnedArtwork } from '../rig/rig.ts';
 import { validEquipment } from '../runtime/paperdoll.js';
 import { leaveEmptyFrames, recoverArtwork } from './recovery.ts';
 import { applyExportSettings, type ExportSettings } from '../store/export-settings.ts';
@@ -304,6 +304,7 @@ function lookProject(
 	}
 	const hashes = new Set<string>(items.flatMap(itemHashes));
 	for (const view of Object.values(m.rig.rest ?? {})) if (view?.image) hashes.add(view.image);
+	for (const hash of pinnedArtwork(m.rig)) hashes.add(hash);
 	return {
 		project: {
 			manifest: { ...m, items, materials, presets: [] },

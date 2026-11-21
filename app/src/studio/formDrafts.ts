@@ -21,6 +21,7 @@ export const formDrafts: {
 		text: string;
 		items: string[];
 		dirs?: import('../lib/store/manifest.ts').DirectionName[];
+		source?: import('./moveSource.ts').MoveSourceSelection;
 		poseStyle?: 'visible-side-v1';
 		animation?: import('./moveAnimationOptions.ts').MoveAnimationOptions;
 	};

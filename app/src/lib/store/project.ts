@@ -4,6 +4,7 @@ import { decodePng, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { copyMissingArtwork } from './workspace-mode.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
+import { pinnedArtwork } from '../rig/rig.ts';
 import * as db from './db.ts';
 import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
@@ -170,6 +171,7 @@ export async function loadProject(
 		images.set(h, image);
 	};
 	for (const v of Object.values(rec.manifest.rig.rest ?? {})) await add(v?.image, 'rest view');
+	for (const hash of pinnedArtwork(rec.manifest.rig)) await add(hash, 'move source');
 	for (const it of rec.manifest.items) {
 		for (const h of Object.values(it.dressed ?? {})) await add(h, `${it.id} dressed view`);
 		if (allowMissingImages && !Array.isArray(it.layers)) {

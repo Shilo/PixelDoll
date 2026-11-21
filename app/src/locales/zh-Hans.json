@@ -407,6 +407,8 @@
 		"itemMissing": "此装备已不存在。"
 	},
 	"savedActions": {
+		"labelDeleteState": "删除状态",
+		"removeState": "这会从该角色中删除此状态及适配它的装备帧。已完成的动作会保留其帧和已保存的源图像。此操作无法撤消。",
 		"labelDeleteMove": "删除动作…",
 		"labelDeleteOutfit": "删除套装",
 		"thisRemovesTheMoveFromTheBody": "这会从身体和所有装备中移除此动作。此操作无法撤销。"
@@ -630,6 +632,7 @@
 		"tabWardrobe": "衣橱",
 		"tabColors": "颜色",
 		"tabOutfits": "套装",
+		"tabStates": "状态",
 		"tabMoves": "动作",
 		"facing": "朝向：{direction}",
 		"nextDirection": "朝向{direction}。下一个朝向",
@@ -997,6 +1000,9 @@
 		}
 	},
 	"import": {
+		"posesTitle": "同时作为状态导入",
+		"posesHint": "请选择同一身体且未画入装备的姿势。外观不同的请作为独立角色导入。请在下方选择动作。",
+		"poseMismatch": "此状态的图像尺寸、朝向或相机设置不同。请将其作为独立角色导入。",
 		"titleDevice": "从设备导入",
 		"titlePixelLab": "从 PixelLab 导入",
 		"browseLibrary": "浏览 PixelLab 角色",
@@ -1113,7 +1119,7 @@
 			"stateMetadata": "来自“{state}”的动作包含无效的尺寸或相机元数据：{detail} 取消勾选该状态的动作以继续。",
 			"stateMismatch": "来自“{state}”的动作使用不同的角色尺寸或相机视图。取消勾选该状态以继续。",
 			"missingStandingView": "{move}/{direction}动画在所选状态中没有匹配的站立视图。",
-			"tooManyMoves": "此角色包含过多动作。请选择更少的状态或导出更少的动画（最多 99 个，另加 Default）。",
+			"tooManyMoves": "此角色包含过多动作。请选择更少的状态或导出更少的动画（最多 99 个，另加 站立）。",
 			"orphanFile": "此 ZIP 包含一个无法明确对应状态布局的动画文件：{path}。请导出含单独帧的新角色 ZIP。",
 			"rotationPathName": "不支持的旋转图像路径：{path}。请导出包含命名朝向 PNG 的角色 ZIP。",
 			"animationPath": "不支持的动画帧路径：{path}。请导出包含单独编号帧的角色 ZIP。",
@@ -1525,7 +1531,7 @@
 			"motionFrame": "{move} {direction} · 运动帧 {frame}",
 			"measureMotionNote": "将生成的运动帧作为 image（base64 PNG）发送，除非已经测量。",
 			"renderBody": "{move} {direction} · 渲染身体",
-			"renderBodyNote": "仅已知字段。添加站立 first_frame、first_frame_keypoints 和 {source} 关键点。提交一次渲染。空或格式错误的输出会停止并等待检查，不会再进行付费尝试。",
+			"renderBodyNote": "仅已知字段。添加 first_frame、first_frame_keypoints 和 {source} 关键点。提交一次渲染。空或格式错误的输出会停止并等待检查，不会再进行付费尝试。",
 			"locallyAuthored": "本地创作",
 			"generatedMotion": "生成的运动",
 			"checkFrame": "{move} {direction} · 检查帧 {frame}",
@@ -1857,7 +1863,7 @@
 			"styleUnsupported": "描边和细节设置不适用于{model}。",
 			"invalidOutline": "描边无效。",
 			"invalidDetail": "细节无效。",
-			"reservedMove": "Default 是站立姿势。请为该动作取其他名称。",
+			"reservedMove": "站立 是站立姿势。请为该动作取其他名称。",
 			"recoveryNeedsAuthored": "关节检查恢复需要原始的已创作身体修复设置。",
 			"recoveryAlreadySaved": "自那次尝试后，此动作已保存。没有可恢复的内容。",
 			"keepNeedsChecks": "保留此动作需要每一帧都有已完成的缓存关节检查。",
@@ -2058,6 +2064,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "原始起始帧",
+			"label": "起始姿势",
+			"chooseFrame": "选择帧",
+			"frame": "第 {number} 帧",
+			"unavailable": "要使用此帧，每个选中的朝向都需要有身体图像和已测量的关节位置。",
+			"changed": "选中的起始帧已更改。请重新选择来源。未发送生成请求。",
+			"route": "此方式从站立姿势开始。若要使用已保存的帧，请选择其他动画模型。",
+			"stateTarget": "状态不能像动作那样被替换。"
+		},
 		"sharedCopiesCoverage": "共享物品的副本仍可在有帧的朝向中穿戴。",
 		"thatCharacter": "该角色",
 		"recoveryCheckFailed": "无法检查缓存帧：{error}",
@@ -2274,7 +2290,17 @@
 		"tabOnlyKey": "连接仅在此标签页中有效，不会保存。",
 		"useSavedKey": "使用已保存的密钥"
 	},
-	"moveNames": { "default": "Default", "idle": "待机", "walk": "行走" },
+	"moveNames": { "default": "站立", "idle": "待机", "walk": "行走" },
+	"stateCapture": {
+		"source": "来源动作",
+		"add": "保存最后的姿势",
+		"saving": "正在保存状态…",
+		"hint": "保存动作最后一帧的无装备姿势。不消耗点数。",
+		"saved": "状态已保存",
+		"blocked": "请等待角色加载完成并处理待办任务，然后再保存状态。",
+		"unavailable": "此动作没有已保存的最后一帧身体图像，无法将其保存为状态。",
+		"concurrentEdit": "保存状态前角色已更改。请重试。"
+	},
 	"moveRemoval": {
 		"unavailable": "此动作已不可用。",
 		"keepStanding": "请保留用于创建和扩展装备的站立视图。",

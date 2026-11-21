@@ -9,7 +9,9 @@ import {
 	inspectStage,
 	openAccount,
 	pickItem,
-	section
+	section,
+	playbackPicker,
+	selectPlaybackClip
 } from './immersive-helpers.ts';
 import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import assert from 'node:assert/strict';
@@ -1989,7 +1991,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	// The copy is another character, so it opens on its standing move: pick the animated one this test watches.
-	await page.locator('.playback-move select').selectOption('walk');
+	await selectPlaybackClip(page, 'walk');
 	await pickItem(page, 'Red cape');
 	let inspector = await selectedItemDetails(page);
 	async function checkFrames() {
@@ -2089,8 +2091,8 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	const setup = page.getByRole('checkbox', { name: /Set up the pose rig next/ });
 	if (await setup.count()) await setup.uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
-	await expect(page.locator('.playback-move select')).toHaveValue('default'); // a new character, standing again
-	await page.locator('.playback-move select').selectOption('walk');
+	await expect(playbackPicker(page)).toHaveAttribute('value', 'default'); // a new character, standing again
+	await selectPlaybackClip(page, 'walk');
 	await pickItem(page, 'Red cape');
 	inspector = await selectedItemDetails(page);
 	await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8);
@@ -3062,9 +3064,7 @@ test('draft review can inspect every generated move and only its available views
 	await review
 		.getByRole('combobox', { name: 'Preview move', exact: true })
 		.selectOption('cross-punch');
-	await expect(page.getByRole('combobox', { name: 'Move', exact: true })).toHaveValue(
-		'cross-punch'
-	);
+	await expect(playbackPicker(page)).toHaveAttribute('value', 'cross-punch');
 	await expect(review.locator('.review-grid figure')).toHaveCount(1);
 	await expect(review.getByRole('img', { name: /facing south/ })).toBeVisible();
 	expect(
@@ -3073,7 +3073,11 @@ test('draft review can inspect every generated move and only its available views
 			.first()
 			.evaluate((c) => (c as HTMLCanvasElement).toDataURL())
 	).not.toBe(before);
-	await page.getByRole('combobox', { name: 'Move', exact: true }).selectOption('walk');
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		(await import(path)).ui.anim = 'walk';
+	});
+	await expect(playbackPicker(page)).toHaveAttribute('value', 'walk');
 	await expect(review.getByRole('combobox', { name: 'Preview move', exact: true })).toHaveValue(
 		'walk'
 	);
@@ -6727,10 +6731,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await peek.getByRole('button', { name: 'Close API calls', exact: true }).click();
 	await newSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	const coverage = page.getByRole('button', { name: /equipped items? needs? frames/ });
-	await page
-		.getByRole('toolbar', { name: 'Preview controls' })
-		.getByRole('combobox', { name: 'Move' })
-		.selectOption('default');
+	await selectPlaybackClip(page, 'default');
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await expect(coverage).toBeVisible();
 	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
@@ -6738,10 +6739,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await page.getByRole('button', { name: 'Preview', exact: true }).click();
 	await expect(coverage).toBeVisible();
 	await page.setViewportSize({ width: 844, height: 390 });
-	await page
-		.getByRole('toolbar', { name: 'Preview controls' })
-		.getByRole('combobox', { name: 'Move' })
-		.selectOption('custom_walk');
+	await selectPlaybackClip(page, 'custom_walk');
 	await expect(coverage).toBeInViewport();
 	await coverage.click();
 	const gaps = page.locator('#preview-coverage');
@@ -7141,31 +7139,31 @@ for (const kind of ['outfit', 'move'] as const) {
 		const menu = page.getByRole('menu', { name: `Actions for ${name}`, exact: true });
 		if (kind === 'outfit') {
 			await expect(choice).toHaveAttribute('aria-pressed', 'true');
-			const move = page.getByRole('combobox', { name: 'Move', exact: true });
+			const move = playbackPicker(page);
 			const pause = page.getByRole('button', { name: 'Pause', exact: true });
 			if (await pause.isVisible()) await pause.click();
 			const stage = () =>
 				page
 					.locator('.world-actors')
 					.evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL());
-			await move.selectOption('default');
+			await selectPlaybackClip(page, 'default');
 			const warning = page.getByRole('button', { name: /equipped items? needs? frames/ });
 			await expect(warning).toBeHidden();
 			const dressedDefault = await stage();
-			await move.selectOption('cross-punch');
+			await selectPlaybackClip(page, 'cross-punch');
 			await expect(warning).toBeVisible();
 			await expect.poll(stage).not.toBe(dressedDefault);
 			await choice.click();
-			await expect(move).toHaveValue('default');
+			await expect(move).toHaveAttribute('value', 'default');
 			await expect(warning).toBeHidden();
 			await expect.poll(stage).toBe(dressedDefault);
 			await equipmentGroup(page, 'Head');
 			await section(page, 'Head').getByRole('button', { name: 'Empty head', exact: true }).click();
-			await move.selectOption('walk');
+			await selectPlaybackClip(page, 'walk');
 			await equipmentMode(page, 'Outfits');
 			await expect(choice).toHaveAttribute('aria-pressed', 'false');
 			await choice.click();
-			await expect(move).toHaveValue('default');
+			await expect(move).toHaveAttribute('value', 'default');
 			await expect(choice).toHaveAttribute('aria-pressed', 'true');
 			await expect.poll(stage).toBe(dressedDefault);
 			await equipmentGroup(page, 'Head');
@@ -7287,7 +7285,7 @@ for (const kind of ['outfit', 'move'] as const) {
 		await expect(row).toHaveCount(0);
 		if (kind === 'move') {
 			const remaining = page.locator('.move-list .character-entry');
-			while ((await remaining.count()) > 1) {
+			while ((await remaining.count()) > 0) {
 				await remaining
 					.last()
 					.getByRole('button', { name: /^More actions/ })
@@ -7299,14 +7297,15 @@ for (const kind of ['outfit', 'move'] as const) {
 					.click();
 				await expect(page.getByRole('alertdialog')).toHaveCount(0);
 			}
+			await equipmentMode(page, 'States');
 			await expect(remaining).toHaveCount(1);
 			await remaining
-				.getByRole('button', { name: 'More actions for Default', exact: true })
+				.getByRole('button', { name: 'More actions for Standing', exact: true })
 				.click();
 			await expect(
-				page.getByRole('menuitem', { name: 'Delete move…', exact: true })
+				page.getByRole('menuitem', { name: 'Delete State', exact: true })
 			).toHaveAttribute('aria-disabled', 'true');
-			await expect(remaining).toContainText('Default');
+			await expect(remaining).toContainText('Standing');
 		}
 	});
 }

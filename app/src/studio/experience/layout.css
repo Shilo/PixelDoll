@@ -421,23 +421,6 @@
 	min-width: 0;
 	max-width: 100%;
 }
-.playback-bar select {
-	height: 44px;
-	min-width: 0;
-	max-width: 180px;
-	padding: 0 10px;
-	font-size: 15px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.playback-bar select::picker(select) {
-	max-width: calc(100vw - 24px);
-}
-.playback-bar option {
-	white-space: normal;
-	overflow-wrap: anywhere;
-}
 .facing-buttons {
 	display: flex;
 	flex-wrap: wrap;
@@ -463,12 +446,6 @@
 }
 .compact-playback .playback-move {
 	flex: 1 1 auto;
-}
-.compact-playback .playback-bar select {
-	flex: 1;
-	max-width: none;
-	padding: 0 6px;
-	font-size: 14px;
 }
 .compact-playback :is(.playback-inspect, .playback-still, .playback-sep) {
 	display: none !important;
@@ -530,6 +507,7 @@
 .equipment-modes {
 	display: flex;
 	flex: none;
+	container: equipment-tabs / inline-size;
 }
 /* Equal-width tabs with centered labels, like Material fixed tabs and Apple segmented controls: they fill the row, so
    there is no dead space between targets, and the label carries the underline (Bronze .bu-tab-label). */
@@ -540,6 +518,11 @@
 	min-height: 44px;
 	padding: 0;
 	font-size: 15px;
+}
+@container equipment-tabs (max-width: 370px) {
+	.equipment-modes button {
+		flex-basis: auto;
+	}
 }
 .customize-panel {
 	display: flex;

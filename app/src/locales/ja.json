@@ -412,6 +412,8 @@
 		"itemMissing": "このアイテムは削除されました。"
 	},
 	"savedActions": {
+		"labelDeleteState": "ステートを削除",
+		"removeState": "このキャラクターから、ステートとそのステートに合わせたアイテムのフレームを削除します。完成したモーションのフレームや保存済みの元画像は残ります。この操作は取り消せません。",
 		"labelDeleteMove": "モーションを削除…",
 		"labelDeleteOutfit": "コーディネートを削除",
 		"thisRemovesTheMoveFromTheBody": "素体とすべてのアイテムからこのモーションを削除します。この操作は取り消せません。"
@@ -635,6 +637,7 @@
 		"tabWardrobe": "装備",
 		"tabColors": "カラー",
 		"tabOutfits": "コーデ一覧",
+		"tabStates": "ステート",
 		"tabMoves": "モーション",
 		"facing": "向き：{direction}",
 		"nextDirection": "{direction}向き。次の向き",
@@ -1010,6 +1013,9 @@
 		}
 	},
 	"import": {
+		"posesTitle": "ステートとしてもインポート",
+		"posesHint": "装備が描き込まれていない、同じ素体のポーズを選んでください。外見が異なるものは別のキャラクターとしてインポートしてください。モーションは下で選びます。",
+		"poseMismatch": "このステートは画像サイズ、向き、またはカメラ設定が異なります。別のキャラクターとしてインポートしてください。",
 		"titleDevice": "デバイスからインポート",
 		"titlePixelLab": "PixelLabからインポート",
 		"browseLibrary": "PixelLabのキャラクターを見る",
@@ -1126,7 +1132,7 @@
 			"stateMetadata": "「{state}」のモーションのサイズまたはカメラのメタデータが無効です：{detail} 続けるにはそのステートのモーションのチェックを外してください。",
 			"stateMismatch": "「{state}」のモーションは、キャラクターのサイズまたはカメラビューが異なります。続けるにはそのステートのチェックを外してください。",
 			"missingStandingView": "{move}/{direction}のアニメーションに対応する立ちビューが、選択したステートにありません。",
-			"tooManyMoves": "このキャラクターはモーションが多すぎます。ステートを減らして選択するか、アニメーションを減らしてエクスポートしてください（Defaultのほかに最大99個）。",
+			"tooManyMoves": "このキャラクターはモーションが多すぎます。ステートを減らして選択するか、アニメーションを減らしてエクスポートしてください（立ちポーズのほかに最大99個）。",
 			"orphanFile": "このZIPには、ステートのレイアウトを特定できないアニメーションファイルが含まれています：{path}。個別のフレームを含む新しいキャラクターZIPをエクスポートしてください。",
 			"rotationPathName": "対応していない回転画像のパスです：{path}。向きの名前が付いたPNGを含むキャラクターZIPをエクスポートしてください。",
 			"animationPath": "対応していないアニメーションフレームのパスです：{path}。番号付きの個別フレームを含むキャラクターZIPをエクスポートしてください。",
@@ -1546,7 +1552,7 @@
 			"motionFrame": "{move} {direction}・モーションのフレーム{frame}",
 			"measureMotionNote": "計測済みでなければ、生成したモーションのフレームをimage（base64 PNG）として送信します。",
 			"renderBody": "{move} {direction}・体を描画",
-			"renderBodyNote": "判明しているフィールドのみ。立ちポーズのfirst_frame、first_frame_keypoints、{source}のキーポイントを追加します。描画リクエストは1回だけ送信します。出力が空か不正ならそこで止まり、有料の再試行はせずに確認を待ちます。",
+			"renderBodyNote": "判明しているフィールドのみ。first_frame、first_frame_keypoints、{source}のキーポイントを追加します。描画リクエストは1回だけ送信します。出力が空か不正ならそこで止まり、有料の再試行はせずに確認を待ちます。",
 			"locallyAuthored": "ローカルで作成",
 			"generatedMotion": "生成したモーション",
 			"checkFrame": "{move} {direction}・フレーム{frame}をチェック",
@@ -1882,7 +1888,7 @@
 			"styleUnsupported": "アウトラインとディテールは{model}には適用されません。",
 			"invalidOutline": "アウトラインが無効です。",
 			"invalidDetail": "ディテールが無効です。",
-			"reservedMove": "Defaultは立ちポーズです。モーションには別の名前を付けてください。",
+			"reservedMove": "立ちポーズは立ちポーズです。モーションには別の名前を付けてください。",
 			"recoveryNeedsAuthored": "関節チェックの復旧には、元の体の修復設定が必要です。",
 			"recoveryAlreadySaved": "その試行のあとにこのモーションは保存されています。復旧するものはありません。",
 			"keepNeedsChecks": "このモーションを残すには、すべてのフレームでキャッシュされた関節チェックが完了している必要があります。",
@@ -2087,6 +2093,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "元の開始フレーム",
+			"label": "開始位置",
+			"chooseFrame": "フレームを選択",
+			"frame": "フレーム{number}",
+			"unavailable": "このフレームを使うには、選択したすべての向きに素体画像と計測済みの関節位置が必要です。",
+			"changed": "選択した開始フレームが変更されました。開始元を選び直してください。生成はリクエストされていません。",
+			"route": "この方法は立ちポーズから始まります。保存済みフレームを使うには、別のアニメーションモデルを選んでください。",
+			"stateTarget": "ステートをモーションとして置き換えることはできません。"
+		},
 		"sharedCopiesCoverage": "共有アイテムのコピーは、フレームがある向きでは装備したまま表示できます。",
 		"thatCharacter": "そのキャラクター",
 		"recoveryCheckFailed": "キャッシュされたフレームを確認できませんでした：{error}",
@@ -2305,7 +2321,17 @@
 		"tabOnlyKey": "この接続はこのタブでのみ有効で、保存されません。",
 		"useSavedKey": "保存済みのキーを使う"
 	},
-	"moveNames": { "default": "デフォルト", "idle": "待機", "walk": "歩き" },
+	"moveNames": { "default": "立ちポーズ", "idle": "待機", "walk": "歩き" },
+	"stateCapture": {
+		"source": "元のモーション",
+		"add": "最後のポーズを保存",
+		"saving": "ステートを保存中…",
+		"hint": "モーションの最後のポーズを装備なしで保存します。クレジットは不要です。",
+		"saved": "ステートを保存しました",
+		"blocked": "キャラクターの読み込みを待ち、保留中の作業を解決してからステートを保存してください。",
+		"unavailable": "このモーションには、ステートとして保存できる素体の最終フレームがありません。",
+		"concurrentEdit": "ステートを保存する前にキャラクターが変更されました。もう一度お試しください。"
+	},
 	"moveRemoval": {
 		"unavailable": "このモーションは利用できなくなりました。",
 		"keepStanding": "アイテムの作成や、既存のアイテムを別のモーションに対応させるときに使う立ちポーズの画像は残してください。",
