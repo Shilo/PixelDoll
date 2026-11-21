@@ -2437,7 +2437,7 @@
 		"title": "Durum oluştur",
 		"source": "{move} hareketinden",
 		"name": "Durum adı",
-		"bodyOnly": "Yalnızca gövde. Kredi kullanılmaz.",
+		"noEquipment": "Ekipman kopyalanmaz. Kredi kullanılmaz.",
 		"invalidName": "Latin harfi veya rakam içeren bir ad girin.",
 		"takenName": "Bu ad kullanılıyor veya ayrılmış. Başka bir ad seçin.",
 		"savedAs": "{name} olarak kaydedilir",

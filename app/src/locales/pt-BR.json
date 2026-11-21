@@ -2457,7 +2457,7 @@
 		"title": "Criar estado",
 		"source": "De {move}",
 		"name": "Nome do estado",
-		"bodyOnly": "Só o corpo. Nenhum crédito usado.",
+		"noEquipment": "O equipamento não é copiado. Nenhum crédito usado.",
 		"invalidName": "Digite um nome com uma letra latina ou um número.",
 		"takenName": "Este nome está em uso ou é reservado. Escolha outro.",
 		"savedAs": "Salvo como {name}",

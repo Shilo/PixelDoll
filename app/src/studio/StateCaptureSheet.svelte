@@ -4,11 +4,11 @@
 	import { errorMessage, type Message } from '../lib/message.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import { opaqueBox } from '../lib/rig/normalize.ts';
+	import { DIRECTIONS } from '../lib/rig/rig.ts';
 	import { displayError } from '../lib/i18n.ts';
 	import Sheet from './Sheet.svelte';
 	import Sprite from './Sprite.svelte';
-	import { ChevronLeft, ChevronRight } from './icons.ts';
-	import { displayDirection, displayDirectionShort } from './displayDirection.ts';
+	import { ChevronLeft, ChevronRight, Pause, Play } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import { moveLabel } from './model.ts';
 	import {
@@ -42,6 +42,8 @@
 	}
 	let name = $state(suggestedName());
 	let index = $state(Math.max(0, (initial?.move.frames.length ?? 1) - 1));
+	let facingIndex = $state(0);
+	let rotating = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
 	let busy = $state(false);
 	let stale = $state(false);
 	let failure = $state<Message | string>('');
@@ -61,6 +63,7 @@
 		const drawn = new Set(source.drawn.map(({ id }) => id));
 		return project.manifest.rig.directions
 			.filter(({ id, mirrorOf }) => drawn.has(mirrorOf ?? id))
+			.sort((left, right) => DIRECTIONS.indexOf(left.id) - DIRECTIONS.indexOf(right.id))
 			.map(({ id, mirrorOf }) => {
 				const base = cellImg(project, source.body, moveId, mirrorOf ?? id, cell);
 				const image =
@@ -73,6 +76,15 @@
 			});
 	});
 	const ready = $derived(previews.length > 0 && previews.every(({ image }) => !!image));
+	const facingCount = $derived(previews.length);
+	const preview = $derived(previews[facingIndex]);
+
+	$effect(() => {
+		const count = facingCount;
+		if (!rotating || count < 2) return;
+		const timer = window.setInterval(() => (facingIndex = (facingIndex + 1) % count), 700);
+		return () => window.clearInterval(timer);
+	});
 
 	function step(delta: number) {
 		index = Math.max(0, Math.min(total - 1, index + delta));
@@ -124,20 +136,26 @@
 				>
 			</div>
 			{#if previews.length}
-				<div class="capture-views" style:--capture-columns={Math.min(previews.length, 4)}>
-					{#each previews as { id: direction, image } (direction)}
-						<div class="capture-view">
-							<span class="capture-sprite">
-								{#if image}<Sprite
-										img={image}
-										k={1}
-										fitToBox
-										label={displayDirection(direction)}
-									/>{/if}
-							</span>
-							<span class="muted small" aria-hidden="true">{displayDirectionShort(direction)}</span>
-						</div>
-					{/each}
+				<div class="capture-preview">
+					<div class="capture-sprite" data-facing={preview?.id}>
+						<Sprite
+							img={preview?.image ?? null}
+							k={1}
+							fitToBox
+							label={t('moves.preview', { move: moveName })}
+						/>
+					</div>
+					{#if facingCount > 1}
+						<button
+							class="bu-action capture-rotation"
+							data-variant="quiet"
+							type="button"
+							aria-label={t(rotating ? 'common.pause' : 'common.play')}
+							onclick={() => (rotating = !rotating)}
+						>
+							{#if rotating}<Pause size={18} />{:else}<Play size={18} />{/if}
+						</button>
+					{/if}
 				</div>
 			{/if}
 		{/if}
@@ -170,7 +188,7 @@
 	</form>
 	{#snippet footer()}
 		<div class="capture-footer">
-			<p class="muted small">{t('stateCapture.bodyOnly')}</p>
+			<p class="muted small">{t('stateCapture.noEquipment')}</p>
 			<button
 				class="bu-btn"
 				data-variant="primary"
@@ -213,24 +231,27 @@
 	.capture-nav strong {
 		font-variant-numeric: tabular-nums;
 	}
-	.capture-views {
-		display: grid;
-		grid-template-columns: repeat(var(--capture-columns), minmax(0, 1fr));
-		justify-items: center;
-		gap: 10px 4px;
-	}
-	.capture-view {
-		min-inline-size: 0;
-		width: 100%;
-		display: grid;
-		justify-items: center;
-		gap: 4px;
-	}
-	.capture-sprite {
+	.capture-preview {
+		position: relative;
 		display: grid;
 		place-items: center;
-		inline-size: min(100%, 96px);
+		padding: 8px 44px;
+		background: var(--stage);
+		border: 1px solid var(--bu-line);
+		border-radius: var(--r-ctl);
+	}
+	.capture-sprite {
+		inline-size: min(100%, 208px);
 		aspect-ratio: 1;
+	}
+	.capture-rotation {
+		position: absolute;
+		inset-inline-end: 0;
+		inset-block-end: 0;
+		min-inline-size: 44px;
+		min-block-size: 44px;
+		display: grid;
+		place-items: center;
 	}
 	.capture-footer {
 		flex: 1;

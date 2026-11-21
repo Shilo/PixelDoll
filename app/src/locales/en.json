@@ -2428,7 +2428,7 @@
 		"title": "Create State",
 		"source": "From {move}",
 		"name": "State name",
-		"bodyOnly": "Body only. No credits used.",
+		"noEquipment": "Equipment isn’t copied. No credits used.",
 		"invalidName": "Enter a name with a Latin letter or number.",
 		"takenName": "This name is taken or reserved. Choose another.",
 		"savedAs": "Saved as {name}",

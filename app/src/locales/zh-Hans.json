@@ -2322,7 +2322,7 @@
 		"title": "创建状态",
 		"source": "来自 {move}",
 		"name": "状态名称",
-		"bodyOnly": "仅保存身体，不消耗点数。",
+		"noEquipment": "不会复制装备，也不会消耗点数。",
 		"invalidName": "请输入包含拉丁字母或数字的名称。",
 		"takenName": "此名称已被使用或保留，请选择其他名称。",
 		"savedAs": "另存为 {name}",

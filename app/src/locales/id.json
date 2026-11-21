@@ -2344,7 +2344,7 @@
 		"title": "Buat status",
 		"source": "Dari {move}",
 		"name": "Nama status",
-		"bodyOnly": "Hanya tubuh. Tidak memakai kredit.",
+		"noEquipment": "Perlengkapan tidak disalin. Tidak memakai kredit.",
 		"invalidName": "Masukkan nama dengan huruf Latin atau angka.",
 		"takenName": "Nama ini sudah dipakai atau dicadangkan. Pilih nama lain.",
 		"savedAs": "Disimpan sebagai {name}",

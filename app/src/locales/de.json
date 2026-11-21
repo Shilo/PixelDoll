@@ -2443,7 +2443,7 @@
 		"title": "Zustand erstellen",
 		"source": "Aus {move}",
 		"name": "Zustandsname",
-		"bodyOnly": "Nur Körper. Keine Credits.",
+		"noEquipment": "Ausrüstung wird nicht kopiert. Keine Credits.",
 		"invalidName": "Gib einen Namen mit einem lateinischen Buchstaben oder einer Zahl ein.",
 		"takenName": "Dieser Name ist vergeben oder reserviert. Wähle einen anderen.",
 		"savedAs": "Gespeichert als {name}",

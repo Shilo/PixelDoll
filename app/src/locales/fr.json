@@ -2444,7 +2444,7 @@
 		"title": "Créer un état",
 		"source": "Depuis {move}",
 		"name": "Nom de l’état",
-		"bodyOnly": "Corps uniquement. Aucun crédit utilisé.",
+		"noEquipment": "L’équipement n’est pas copié. Aucun crédit utilisé.",
 		"invalidName": "Saisissez un nom contenant une lettre latine ou un chiffre.",
 		"takenName": "Ce nom est pris ou réservé. Choisissez-en un autre.",
 		"savedAs": "Enregistré sous {name}",
