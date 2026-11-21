@@ -2838,7 +2838,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await addState.click();
 	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
 	// Grounding is offered on by default; turned off, Save keeps the returned placement.
-	const ground = newState.getByRole('switch', { name: 'Keep on the ground' });
+	const ground = newState.getByRole('switch', { name: 'Align to source' });
 	await expect(ground).toBeChecked();
 	await ground.uncheck();
 	await newState.getByRole('button', { name: 'Save', exact: true }).click();

@@ -2520,8 +2520,8 @@
 		"generated": "生成结果",
 		"sourceMissing": "来源不可用",
 		"sourceChanged": "生成后来源已更改，因此无法保存此结果。请放弃后重试。",
-		"keepGrounded": "保持在地面上",
-		"groundedHint": "部分视图返回的位置比来源更高或更低。跳跃等离地姿势请关闭此项。"
+		"keepGrounded": "与来源对齐",
+		"groundedHint": "部分视图返回的位置比来源更高或更低，因此已移动其脚部以对齐。关闭即可保留生成时的位置。"
 	},
 	"stateJointFit": {
 		"busy": "正在测量关节。请在测量完成后重试。",

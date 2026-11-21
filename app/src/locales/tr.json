@@ -2636,8 +2636,8 @@
 		"generated": "Oluşturulan",
 		"sourceMissing": "Kaynak kullanılamıyor",
 		"sourceChanged": "Oluşturmadan sonra kaynak değişti, bu yüzden bu sonuç kaydedilemez. Atıp yeniden deneyin.",
-		"keepGrounded": "Yerde tut",
-		"groundedHint": "Bazı görünümler kaynaktan daha yüksek veya alçak geldi. Zıplama gibi yerden kopan pozlar için bunu kapatın."
+		"keepGrounded": "Kaynağa hizala",
+		"groundedHint": "Bazı görünümler kaynaktan daha yüksek veya alçak geldi, bu yüzden ayakları eşleşecek şekilde taşındı. Oluşturulduğu gibi tutmak için kapatın."
 	},
 	"stateJointFit": {
 		"busy": "Eklem ölçümü zaten sürüyor. Tamamlandığında tekrar deneyin.",

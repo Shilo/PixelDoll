@@ -2542,8 +2542,8 @@
 		"generated": "Hasil generasi",
 		"sourceMissing": "Sumber tidak tersedia",
 		"sourceChanged": "Sumber berubah setelah pembuatan, jadi hasil ini tidak dapat disimpan. Buang lalu coba lagi.",
-		"keepGrounded": "Tetap di tanah",
-		"groundedHint": "Beberapa tampilan kembali lebih tinggi atau lebih rendah dari sumber. Matikan ini untuk lompatan dan pose lain yang tidak menapak."
+		"keepGrounded": "Sejajarkan dengan sumber",
+		"groundedHint": "Beberapa tampilan kembali lebih tinggi atau lebih rendah dari sumber, jadi kakinya dipindahkan agar sesuai. Matikan untuk mempertahankan hasil aslinya."
 	},
 	"stateJointFit": {
 		"busy": "Pengukuran sendi sedang berlangsung. Coba lagi setelah selesai.",

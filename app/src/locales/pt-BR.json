@@ -2656,8 +2656,8 @@
 		"generated": "Gerado",
 		"sourceMissing": "Origem indisponível",
 		"sourceChanged": "A origem mudou depois da geração, então este resultado não pode ser salvo. Descarte e tente de novo.",
-		"keepGrounded": "Manter no chão",
-		"groundedHint": "Algumas vistas voltaram mais altas ou mais baixas que a origem. Desative para saltos e outras poses fora do chão."
+		"keepGrounded": "Alinhar à origem",
+		"groundedHint": "Algumas vistas voltaram mais altas ou mais baixas que a origem, então os pés foram movidos para combinar. Desative para mantê-las como geradas."
 	},
 	"stateJointFit": {
 		"busy": "A medição das articulações já está em andamento. Tente novamente quando terminar.",

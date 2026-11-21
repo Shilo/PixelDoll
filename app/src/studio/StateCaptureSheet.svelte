@@ -462,13 +462,7 @@
 </script>
 
 {#snippet cell(image: Img | null, box: number, label: string)}
-	<Sprite
-		img={image}
-		k={image ? croppedBacking(box, image, ui.dpr) : 1}
-		limit={box}
-		checker
-		{label}
-	/>
+	<Sprite img={image} k={image ? croppedBacking(box, image, ui.dpr) : 1} fitToBox checker {label} />
 {/snippet}
 
 {#snippet costLabel(cost: StateGenerationCost)}
@@ -895,12 +889,15 @@
 		margin: 0;
 	}
 	/* The whole stage is the play/pause target; the frame stepper sits outside it. */
+	/* The stored cell fills the preview: the box edge is the cell edge. */
 	.source-preview {
 		position: relative;
 		display: grid;
-		place-items: center;
-		inline-size: 100%;
-		padding: 8px 44px;
+		justify-self: center;
+		inline-size: min(100%, 280px, 36dvh);
+		aspect-ratio: 1;
+		padding: 0;
+		overflow: hidden;
 		color: inherit;
 		font: inherit;
 		background: var(--stage);
@@ -913,15 +910,10 @@
 	button.source-preview:hover {
 		border-color: var(--bu-border);
 	}
-	/* Previews are the stored cell: whole-pixel scale on a checkerboard, its edges outlined. */
 	.cell-frame {
-		display: inline-grid;
-		max-inline-size: 100%;
-		outline: 1px solid var(--bu-rim);
-	}
-	.cell-frame :global(canvas) {
-		max-inline-size: 100%;
-		block-size: auto !important;
+		display: grid;
+		inline-size: 100%;
+		block-size: 100%;
 	}
 	.cell-caption {
 		margin: -4px 0 0;
@@ -1001,8 +993,8 @@
 	.review-stage {
 		display: grid;
 		place-items: center;
-		min-block-size: 144px;
-		padding: 8px;
+		aspect-ratio: 1;
+		overflow: hidden;
 		text-align: center;
 		background: var(--stage);
 		border: 1px solid var(--bu-line);

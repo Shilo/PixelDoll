@@ -2627,8 +2627,8 @@
 		"generated": "Generated",
 		"sourceMissing": "Source unavailable",
 		"sourceChanged": "The source changed after generating, so this result can’t be saved. Discard it and try again.",
-		"keepGrounded": "Keep on the ground",
-		"groundedHint": "Some views came back higher or lower than the source. Turn this off for jumps and other poses off the ground."
+		"keepGrounded": "Align to source",
+		"groundedHint": "Some views came back higher or lower than the source, so their feet were moved to match. Turn off to keep them as generated."
 	},
 	"stateJointFit": {
 		"busy": "Joint fitting is already in progress. Try again when it finishes.",

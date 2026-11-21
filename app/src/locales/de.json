@@ -2642,8 +2642,8 @@
 		"generated": "Generiert",
 		"sourceMissing": "Quelle nicht verfügbar",
 		"sourceChanged": "Die Quelle hat sich nach dem Generieren geändert, daher kann dieses Ergebnis nicht gespeichert werden. Verwirf es und versuche es erneut.",
-		"keepGrounded": "Auf dem Boden halten",
-		"groundedHint": "Einige Ansichten kamen höher oder tiefer als die Quelle zurück. Schalte das für Sprünge und andere Posen in der Luft aus."
+		"keepGrounded": "An Quelle ausrichten",
+		"groundedHint": "Einige Ansichten kamen höher oder tiefer als die Quelle zurück, daher wurden ihre Füße passend verschoben. Schalte das aus, um sie wie generiert zu behalten."
 	},
 	"stateJointFit": {
 		"busy": "Die Gelenke werden bereits bestimmt. Versuche es danach erneut.",
