@@ -6,6 +6,7 @@
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { balancePlan, cancelPlan, queuedPlan } from './apiPlans.ts';
 	import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+	import { jobLabel as nice, jobStateText as stateText } from './activityLabels.ts';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
 	import { localizedPlanRestriction, requestTier } from '../lib/pixellab/plans.ts';
 	import { displayError, displayMessage } from '../lib/i18n.ts';
@@ -83,20 +84,6 @@
 		if (setup && (!projectId || doc.id !== projectId)) unopenedSetup = setup;
 		else if (!projectId || doc.id === projectId) ui.sheet = sheet;
 	}
-	const nice = (r: JobRec) =>
-		/^skeleton sha256:.{8}/.test(r.label)
-			? t('activity.findingJoints')
-			: r.label.replace(/^M3 /, '');
-	const STATES: Record<JobRec['state'], () => string> = {
-		queued: () => t('activity.state.queued'),
-		submitting: () => t('activity.state.submitting'),
-		running: () => t('activity.state.running'),
-		done: () => t('activity.state.done'),
-		failed: () => t('activity.state.failed'),
-		lost: () => t('activity.state.lost'),
-		canceled: () => t('activity.state.canceled')
-	};
-	const stateText = (state: JobRec['state']) => STATES[state]?.() ?? state;
 	const errorText = (r: JobRec) => displayMessage(queueErrorMessage(r, displayMessage) ?? '');
 	const money = usdText;
 	const gensText = (n: number) =>
