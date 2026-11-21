@@ -57,6 +57,7 @@
 	import { PRE_RELEASE, PREVIEW_NOTICE } from './previewNotice.ts';
 	import Toast from './Toast.svelte';
 	import LibraryBackupButton from './LibraryBackupButton.svelte';
+	import { downloadLibraryBackup } from './downloadLibraryBackup.ts';
 	import PwaRuntime from './PwaRuntime.svelte';
 
 	// On-demand parts, out of the startup bundle.
@@ -342,7 +343,6 @@
 	let backingUp = $state(false);
 	async function backupFromNotice() {
 		try {
-			const { downloadLibraryBackup } = await import('./downloadLibraryBackup.ts');
 			if (await downloadLibraryBackup())
 				toast(message('librarySettings.backupOmissions'), { tone: 'warning' });
 		} catch (error) {

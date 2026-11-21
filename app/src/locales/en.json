@@ -1,10 +1,9 @@
 {
 	"librarySettings": {
 		"title": "Library",
-		"scope": "Back up saved characters and their artwork. Preferences, drafts, and jobs are not included.",
+		"scope": "Back up saved characters, artwork, and archived data. Preferences, drafts, and jobs are not included.",
 		"privacy": "Backups can contain artwork and prompts. Keep archived data private.",
 		"backup": "Back up library",
-		"includeArchived": "Include archived data",
 		"restoreFromBackup": "Restore from backup",
 		"review": "Review backup",
 		"add": "Characters to add",
@@ -26,6 +25,8 @@
 		"incomplete": "Some artwork is missing or invalid. Nothing was restored.",
 		"backupOmissions": "Backup downloaded with some characters or artwork missing.",
 		"deleteWork": {
+			"deleteAll": "Delete all",
+			"confirm": "Confirm",
 			"section": "Delete local work",
 			"description": "Removes the characters, outfits, drafts and Activity history saved on this device.",
 			"kept": "Archived data, preferences, downloaded backups and your PixelLab key stay.",

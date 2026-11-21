@@ -1986,7 +1986,10 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	await expect(settings.getByRole('status')).toHaveText('No settings match your search.');
 	await search.fill('png json');
 	await settings.getByRole('button', { name: /Default export target/ }).click();
-	await expect(settings.getByRole('combobox', { name: 'Default export target' })).toBeFocused();
+	const target = settings.getByRole('combobox', { name: 'Default export target' });
+	await expect(target).toBeFocused();
+	await expect(target.getByRole('option').first()).toHaveText('PNG + JSON');
+	await expect(target).toHaveValue('generic');
 	await page.setViewportSize({ width: 320, height: 640 });
 	await page.goBack();
 	await expect(search).toBeFocused();
@@ -2053,7 +2056,7 @@ test('Export settings show storage failures without changing the choice or trapp
 	}
 	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
 	await expect(dialog.locator('.export-summary dd')).toHaveText(before);
-	const originalEngine = dialog.getByRole('radio', { name: 'Godot', exact: true });
+	const originalEngine = dialog.getByRole('radio', { name: 'PNG + JSON', exact: true });
 	await expect(originalEngine).toBeChecked();
 	await page.evaluate(() => {
 		const original = IDBObjectStore.prototype.put;
@@ -2071,7 +2074,7 @@ test('Export settings show storage failures without changing the choice or trapp
 	);
 	await expect(originalEngine).toBeChecked();
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).not.toBeChecked();
-	await expect(dialog.locator('#export-description')).toContainText('Godot:');
+	await expect(dialog.locator('#export-description')).toContainText('PNG + JSON:');
 	await dialog.getByRole('button', { name: 'Close export' }).click();
 	await expect(dialog).toHaveCount(0);
 });
@@ -2130,7 +2133,7 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 		await reset.click();
 		await expect(reset).toHaveCount(0);
 		await expect(dialog.getByRole('alert')).toHaveCount(0);
-		await expect(dialog.getByRole('radio', { name: 'Godot', exact: true })).toBeChecked();
+		await expect(dialog.getByRole('radio', { name: 'PNG + JSON', exact: true })).toBeChecked();
 		await expect(dialog.locator('.export-summary dd')).toHaveText([
 			'None',
 			'Current look + saved outfits'
@@ -3673,7 +3676,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	expect(
 		await radios.evaluateAll((inputs) => inputs.map((input) => input.getAttribute('aria-label')))
 	).toEqual(['Godot', 'Unity', 'Phaser', 'GDevelop', 'RPG Maker', 'Aseprite', 'PNG + JSON']);
-	await expect(dialog.getByRole('radio', { name: 'Godot', exact: true })).toBeChecked();
+	await expect(dialog.getByRole('radio', { name: 'PNG + JSON', exact: true })).toBeChecked();
 	await dialog.getByRole('radio', { name: 'Godot', exact: true }).focus();
 	await page.keyboard.press('ArrowRight');
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked();

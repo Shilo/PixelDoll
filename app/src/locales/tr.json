@@ -1,10 +1,9 @@
 {
 	"librarySettings": {
 		"title": "Kitaplık",
-		"scope": "Kayıtlı karakterleri ve görsellerini yedekleyin. Tercihler, taslaklar ve işler dahil edilmez.",
+		"scope": "Kayıtlı karakterleri, görselleri ve arşivlenmiş verileri yedekleyin. Tercihler, taslaklar ve işler dahil edilmez.",
 		"privacy": "Yedekler görseller ve istemler içerebilir. Arşivlenmiş verileri paylaşmayın.",
 		"backup": "Kitaplığı yedekle",
-		"includeArchived": "Arşivlenmiş verileri dahil et",
 		"restoreFromBackup": "Yedekten geri yükle",
 		"review": "Yedeği incele",
 		"add": "Eklenecek karakterler",
@@ -26,6 +25,8 @@
 		"incomplete": "Bazı görseller eksik veya geçersiz. Hiçbir şey geri yüklenmedi.",
 		"backupOmissions": "Yedek indirildi ancak bazı karakterler veya görseller eksik.",
 		"deleteWork": {
+			"deleteAll": "Tümünü sil",
+			"confirm": "Onayla",
 			"section": "Yerel çalışmayı sil",
 			"description": "Bu cihazda kayıtlı karakterleri, kıyafetleri, taslakları ve Etkinlik geçmişini kaldırır.",
 			"kept": "Arşivlenmiş veriler, tercihler, indirilen yedekler ve PixelLab anahtarınız korunur.",

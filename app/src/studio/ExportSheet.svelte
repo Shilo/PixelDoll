@@ -23,6 +23,7 @@
 		InvalidAnimationNames,
 		InvalidExportSettings,
 		readExportSettings,
+		DEFAULT_EXPORT_ENGINE,
 		resetInvalidExportSettings,
 		saveExportSetting,
 		subscribeExportSettings,
@@ -152,10 +153,11 @@
 		}
 	];
 	const ENGINES = GROUPS.flatMap((group) => group.targets);
+	const OTHER_ENGINES = ENGINES.filter((target) => target.id !== DEFAULT_EXPORT_ENGINE);
 	let preferences = $state.raw<ExportSettings | null>(null);
 	let savedProjects = $state.raw<StoredProject[]>([]);
 	let formatChoice = $state<Engine | null>(null);
-	const engine = $derived(formatChoice ?? preferences?.engine ?? 'godot');
+	const engine = $derived(formatChoice ?? preferences?.engine ?? DEFAULT_EXPORT_ENGINE);
 	const selected = $derived(
 		engine === 'rpgmakerxp' ? RPG_XP : ENGINES.find((target) => target.id === engine)
 	);
@@ -723,7 +725,8 @@
 				disabled={!ready || saving}
 				onchange={(event) => chooseEngine(event.currentTarget.value as Engine)}
 			>
-				{#each ENGINES as target (target.id)}
+				<option value={DEFAULT_EXPORT_ENGINE}>{exportFormatNames[DEFAULT_EXPORT_ENGINE]}</option>
+				{#each OTHER_ENGINES as target (target.id)}
 					{#if target.id === 'rpgmaker'}
 						{#each RPG_VERSIONS as version (version.id)}
 							<option value={version.id}>{target.name} {t(version.value)}</option>

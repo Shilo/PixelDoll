@@ -220,7 +220,7 @@ test('archive downloads can be retained and re-exported byte for byte', async ()
 	expect(saved.projects.has('rig-old')).toBe(false);
 	const id = source.archives![0].id;
 	expect(await downloadArchivedBackup([], id)).toEqual(download);
-	const reexport = await readRestoreSource((await exportBackup([], true)).bytes);
+	const reexport = await readRestoreSource((await exportBackup([])).bytes);
 	expect(reexport.archives).toEqual(source.archives);
 });
 

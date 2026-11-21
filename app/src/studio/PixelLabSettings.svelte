@@ -87,6 +87,7 @@
 			<SettingsItemButton onclick={() => (forgetRevision = getKeyRevision())}>
 				<LogOut size={18} aria-hidden="true" />
 				<span class="row-name">{openerLabel(t('connectSheet.forgetKey'))}</span>
+				<SurfaceChevron />
 			</SettingsItemButton>
 		{/if}
 	</div>
@@ -170,6 +171,8 @@
 	/* Keeps the heading row at its text height; the icon only spins while refreshing, so nothing moves. */
 	.usage-refresh {
 		flex: none;
+		position: relative;
+		inset-block-start: 3px;
 		margin-block: calc((0.9375rem * 1.4 - var(--ctl-h)) / 2);
 		margin-inline-end: -8px;
 	}

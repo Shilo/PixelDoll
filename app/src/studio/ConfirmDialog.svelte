@@ -4,6 +4,7 @@
 	import type { Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import { TriangleAlert } from './icons.ts';
+	import { backdropDismiss } from './backdropDismiss.ts';
 	let {
 		title,
 		action,
@@ -13,6 +14,7 @@
 		problem = '',
 		problemAction,
 		blocked = false,
+		actionButton,
 		onconfirm,
 		oncancel,
 		children
@@ -29,6 +31,7 @@
 		problemAction?: Snippet;
 		/** The action cannot run now (problem says why). */
 		blocked?: boolean;
+		actionButton?: Snippet<[label: string, disabled: boolean, activate: () => void]>;
 		onconfirm: () => void;
 		oncancel: () => void;
 		children?: Snippet;
@@ -36,6 +39,9 @@
 	const id = $props.id();
 	let dialog: HTMLDialogElement;
 	let keep: HTMLButtonElement;
+	function dismiss() {
+		if (!busy) oncancel();
+	}
 	$effect(() => {
 		const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		dialog.showModal();
@@ -52,6 +58,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <dialog
 	bind:this={dialog}
+	use:backdropDismiss={dismiss}
 	class="confirm-dialog bu-dialog-surface"
 	role="alertdialog"
 	aria-labelledby="{id}-title"
@@ -59,7 +66,7 @@
 	onkeydown={(e) => e.stopPropagation()}
 	oncancel={(e) => {
 		e.preventDefault();
-		if (!busy) oncancel();
+		dismiss();
 	}}
 >
 	<h2 id="{id}-title">{title}</h2>
@@ -72,9 +79,13 @@
 		<button bind:this={keep} class="bu-btn" disabled={busy} onclick={oncancel}
 			>{cancel ?? t('common.cancel')}</button
 		>
-		<button class="bu-btn" data-variant="danger" disabled={busy || blocked} onclick={onconfirm}
-			>{busy ? busyAction : action}</button
-		>
+		{#if actionButton}
+			{@render actionButton(busy ? busyAction : action, busy || blocked, onconfirm)}
+		{:else}
+			<button class="bu-btn" data-variant="danger" disabled={busy || blocked} onclick={onconfirm}
+				>{busy ? busyAction : action}</button
+			>
+		{/if}
 	</div>
 </dialog>
 

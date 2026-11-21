@@ -6,6 +6,8 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import { Archive, Lock, Trash, TriangleAlert, Upload } from './icons.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import DestructiveConfirmButton from './DestructiveConfirmButton.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import LibraryBackupButton from './LibraryBackupButton.svelte';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
@@ -70,7 +72,6 @@
 	let picker = $state<HTMLInputElement>();
 	let openPicker = $state<HTMLButtonElement>();
 	let review = $state<HTMLElement>();
-	let includeArchived = $state(false);
 	let keepArchived = $state(false);
 	const additions = $derived(preview ? preview.add + preview.copies : 0);
 	const heading = $props.id();
@@ -99,8 +100,7 @@
 
 	function backup() {
 		return perform(async () => {
-			if (await downloadLibraryBackup(includeArchived))
-				status = message('librarySettings.backupOmissions');
+			if (await downloadLibraryBackup()) status = message('librarySettings.backupOmissions');
 		});
 	}
 
@@ -120,8 +120,7 @@
 		deleteError = undefined;
 		deleteNote = undefined;
 		try {
-			if (await downloadLibraryBackup(includeArchived))
-				deleteNote = message('librarySettings.backupOmissions');
+			if (await downloadLibraryBackup()) deleteNote = message('librarySettings.backupOmissions');
 		} catch (cause) {
 			deleteError = errorMessage(cause);
 		}
@@ -281,12 +280,6 @@
 					<Lock size={14} aria-hidden="true" />{t('librarySettings.privacy')}
 				</p>
 			</div>
-			{#if hasArchives}
-				<label class="check">
-					<input type="checkbox" bind:checked={includeArchived} disabled={busy} />
-					{t('librarySettings.includeArchived')}
-				</label>
-			{/if}
 		</section>
 		<hr class="bu-separator" />
 		<section class="library-task">
@@ -347,7 +340,9 @@
 					disabled={busy}
 					onclick={openDeleteConfirm}
 				>
-					<Trash size={16} aria-hidden="true" />{t('librarySettings.deleteWork.action')}
+					<Trash size={16} aria-hidden="true" />
+					<span class="row-name">{openerLabel(t('librarySettings.deleteWork.action'))}</span>
+					<SurfaceChevron />
 				</button>
 			</div>
 		</details>
@@ -355,8 +350,8 @@
 	{#if confirmingDelete}
 		<ConfirmDialog
 			title={t('librarySettings.deleteWork.title')}
-			action={t('librarySettings.deleteWork.action')}
-			busyAction={backingUp ? t('librarySettings.deleteWork.action') : t('common.deleting')}
+			action={t('librarySettings.deleteWork.deleteAll')}
+			busyAction={backingUp ? t('librarySettings.deleteWork.deleteAll') : t('common.deleting')}
 			busy={busy || backingUp}
 			problem={deleteError
 				? displayMessage(deleteError)
@@ -368,6 +363,16 @@
 			onconfirm={() => void deleteWork()}
 		>
 			<p>{t('librarySettings.deleteWork.body')}</p>
+			{#snippet actionButton(label, disabled, onconfirm)}
+				{#key disabled}
+					<DestructiveConfirmButton
+						{label}
+						confirmLabel={t('librarySettings.deleteWork.confirm')}
+						{disabled}
+						{onconfirm}
+					/>
+				{/key}
+			{/snippet}
 			<p class="bu-muted">{t('librarySettings.deleteWork.kept')}</p>
 			<!-- While it runs, the dialog stays open and Delete waits, so the deletion never races its own backup. -->
 			<LibraryBackupButton disabled={busy} bind:pending={backingUp} onbackup={backupBeforeDelete} />
@@ -439,7 +444,10 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		justify-self: start;
+		inline-size: 100%;
+		min-height: 44px;
+		text-align: start;
+		white-space: normal;
 	}
 	.restore-actions {
 		display: flex;

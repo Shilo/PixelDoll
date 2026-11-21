@@ -67,8 +67,8 @@ async function retainedArchive(id: string, keys: readonly string[]) {
 		(await sha256(pack.data)) !== digest
 	)
 		throw invalidArchive();
-	await inspectIncompatible(pack.data, keys);
-	return { digest, data: pack.data };
+	const { missing } = await inspectIncompatible(pack.data, keys);
+	return { digest, data: pack.data, missing: missing.length };
 }
 
 async function archiveEntries(keys: readonly string[]) {
@@ -76,6 +76,7 @@ async function archiveEntries(keys: readonly string[]) {
 	const local = await packIncompatible(keys);
 	const entries = new Map<string, Uint8Array>();
 	let size = 0;
+	let hasOmissions = Boolean(local?.missing);
 	function include(digest: string, data: Uint8Array) {
 		if (entries.has(digest)) return;
 		size += data.length;
@@ -84,10 +85,14 @@ async function archiveEntries(keys: readonly string[]) {
 	}
 	if (local) include(await sha256(local.bytes), local.bytes);
 	for (const id of retainedIds) {
-		const { digest, data } = await retainedArchive(id, keys);
+		const { digest, data, missing } = await retainedArchive(id, keys);
 		include(digest, data);
+		hasOmissions ||= missing > 0;
 	}
-	return [...entries].map(([digest, data]) => ({ name: `archives/${digest}.zip`, data }));
+	return {
+		files: [...entries].map(([digest, data]) => ({ name: `archives/${digest}.zip`, data })),
+		hasOmissions
+	};
 }
 
 export async function downloadArchivedBackup(keys: readonly string[], id?: string) {
@@ -128,7 +133,8 @@ const backupErrors: ArchiveErrors = {
 /** Every saved Studio character with its artwork, read in one snapshot. Preferences, the demo outfit, export settings,
  *  drafts, jobs, credentials and diagnostics stay out. `keys`: the connected and remembered PixelLab keys, refused if any
  *  saved field holds one. hasOmissions: a character or some artwork failed verification and was left out. */
-export async function exportBackup(keys: readonly string[], includeArchived = false) {
+export async function exportBackup(keys: readonly string[]) {
+	const archives = await archiveEntries(keys);
 	const { bytes, hasOmissions, records } = await packArchive(
 		studioCharacter,
 		false,
@@ -144,10 +150,10 @@ export async function exportBackup(keys: readonly string[], includeArchived = fa
 				...(omitted && { omitted: omitted.characters })
 			} satisfies BackupIndex
 		],
-		includeArchived ? await archiveEntries(keys) : undefined,
+		archives.files,
 		true
 	);
-	return { bytes, hasOmissions, characters: records };
+	return { bytes, hasOmissions: hasOmissions || archives.hasOmissions, characters: records };
 }
 
 export interface RestoreSource {

@@ -1,10 +1,9 @@
 {
 	"librarySettings": {
 		"title": "Biblioteca",
-		"scope": "Haz una copia de seguridad de tus personajes guardados y sus gráficos. No se incluyen las preferencias, los borradores ni las tareas.",
+		"scope": "Guarda una copia de los personajes, sus ilustraciones y los datos archivados. No se incluyen preferencias, borradores ni tareas.",
 		"privacy": "Las copias pueden contener imágenes e indicaciones. No compartas los datos archivados.",
 		"backup": "Hacer una copia de seguridad",
-		"includeArchived": "Incluir datos archivados",
 		"restoreFromBackup": "Restaurar desde una copia de seguridad",
 		"review": "Revisar copia de seguridad",
 		"add": "Personajes por añadir",
@@ -26,6 +25,8 @@
 		"incomplete": "Faltan algunos gráficos o no son válidos. No se restauró nada.",
 		"backupOmissions": "La copia de seguridad se descargó, pero faltan personajes o imágenes.",
 		"deleteWork": {
+			"deleteAll": "Eliminar todo",
+			"confirm": "Confirmar",
 			"section": "Eliminar el trabajo local",
 			"description": "Elimina los personajes, atuendos, borradores y el historial de Actividad guardados en este dispositivo.",
 			"kept": "Los datos archivados, las preferencias, las copias descargadas y tu clave de PixelLab se conservan.",

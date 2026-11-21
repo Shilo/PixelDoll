@@ -1,10 +1,9 @@
 {
 	"librarySettings": {
 		"title": "Biblioteca",
-		"scope": "Faça backup dos personagens salvos e de suas artes. Preferências, rascunhos e tarefas não são incluídos.",
+		"scope": "Faça backup dos personagens salvos, das imagens e dos dados arquivados. Preferências, rascunhos e tarefas não são incluídos.",
 		"privacy": "Backups podem conter artes e prompts. Não compartilhe dados arquivados.",
 		"backup": "Fazer backup da biblioteca",
-		"includeArchived": "Incluir dados arquivados",
 		"restoreFromBackup": "Restaurar de um backup",
 		"review": "Revisar backup",
 		"add": "Personagens a adicionar",
@@ -26,6 +25,8 @@
 		"incomplete": "Algumas artes estão ausentes ou são inválidas. Nada foi restaurado.",
 		"backupOmissions": "O backup foi baixado, mas alguns personagens ou imagens estão ausentes.",
 		"deleteWork": {
+			"deleteAll": "Excluir tudo",
+			"confirm": "Confirmar",
 			"section": "Excluir trabalho local",
 			"description": "Remove os personagens, roupas, rascunhos e o histórico de Atividade salvos neste dispositivo.",
 			"kept": "Dados arquivados, preferências, backups baixados e sua chave do PixelLab são mantidos.",

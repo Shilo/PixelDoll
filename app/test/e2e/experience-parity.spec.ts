@@ -203,7 +203,7 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 		.getByRole('group', { name: 'Export format', exact: true })
 		.getByText('Godot', { exact: true });
 	await godotLabel.dblclick();
-	await expect(exportDialog.getByRole('radio', { name: 'Godot', exact: true })).toBeChecked();
+	await expect(exportDialog.getByRole('radio', { name: 'PNG + JSON', exact: true })).toBeChecked();
 	expect(await selected()).toBe('');
 	const files = exportDialog.locator('details', { hasText: 'Files included' });
 	const summary = files.locator('summary');

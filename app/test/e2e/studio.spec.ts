@@ -382,29 +382,28 @@ test('the startup pre-release notice downloads a library backup', async ({ page 
 	}
 	await expect(backupButton).toBeEnabled();
 	expect(await notice.evaluate((element) => element.clientHeight)).toBe(loadingHeight);
-	let releaseBackup!: () => void;
-	const backupHeld = new Promise<void>((resolve) => {
-		releaseBackup = resolve;
+	await page.evaluate(async () => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		await db.put('projects', 'rig-older', { id: 'rig-older', manifest: { format: 0 } });
 	});
-	await page.route('**/src/studio/downloadLibraryBackup.ts', async (route) => {
-		await backupHeld;
-		await route.continue();
+	await backupButton.evaluate((button) => {
+		new MutationObserver(() => {
+			if (button.getAttribute('aria-busy') === 'true' && button.matches(':disabled'))
+				document.body.dataset.observedBackupBusy = 'true';
+		}).observe(button, { attributes: true });
 	});
 	const downloading = page.waitForEvent('download');
-	try {
-		await backupButton.click();
-		await page.mouse.move(0, 0);
-		await expect(backupButton).toHaveAttribute('aria-busy', 'true');
-		await expect(backupButton).toBeDisabled();
-	} finally {
-		releaseBackup();
-	}
+	await backupButton.click();
 	const download = await downloading;
+	await expect(page.locator('body')).toHaveAttribute('data-observed-backup-busy', 'true');
 	expect(download.suggestedFilename()).toMatch(/\.backup\.zip$/);
 	const files = await unzip(new Uint8Array(readFileSync((await download.path())!)));
 	expect(JSON.parse(new TextDecoder().decode(files.get('backup.json'))).format).toBe(
 		'pixeldoll-backup/1'
 	);
+	const archive = [...files.keys()].find((name) => name.startsWith('archives/'));
+	expect(archive).toMatch(/^archives\/[a-f0-9]{64}\.zip$/);
 	await expect(notice).toHaveCount(0);
 	await expect(page.getByText('Backup is ready to download.', { exact: true })).toHaveCount(0);
 });
@@ -453,13 +452,30 @@ test('Library deletes local work only after confirmation and offers a backup fir
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'Library', exact: true }).click();
 	const danger = settings.locator('details[data-setting="delete-work"]');
-	const remove = danger.getByRole('button', { name: 'Delete local work', exact: true });
+	const remove = danger.getByRole('button', { name: 'Delete local work...', exact: true });
 	await expect(remove).toBeHidden();
 	await danger.locator('summary').click();
 	await remove.click();
 	const confirmation = page.getByRole('alertdialog', { name: 'Delete all local work?' });
 	const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
 	await expect(cancel).toBeFocused();
+	const deleteButton = confirmation.getByRole('button', { name: 'Delete all', exact: true });
+	const confirmDelete = confirmation.getByRole('button', { name: 'Confirm', exact: true });
+	await deleteButton.dblclick();
+	await expect(confirmDelete).toBeVisible();
+	expect(await saved()).toEqual(original);
+	await cancel.focus();
+	await expect(deleteButton).toBeVisible();
+	const box = (await confirmation.boundingBox())!;
+	await page.mouse.move(box.x + 12, box.y + 12);
+	await page.mouse.down();
+	await page.mouse.move(4, 4);
+	await page.mouse.up();
+	await expect(confirmation).toBeVisible();
+	await page.mouse.click(4, 4);
+	await expect(confirmation).toHaveCount(0);
+	await expect(settings).toBeVisible();
+	await remove.click();
 	await cancel.click();
 	expect(await saved()).toEqual(original);
 	await remove.click();
@@ -470,8 +486,12 @@ test('Library deletes local work only after confirmation and offers a backup fir
 	const index = new TextDecoder().decode(files.get('backup.json'));
 	expect(index).toContain(character);
 	expect(index).not.toContain('synthetic-deletion-key');
+	expect([...files.keys()].some((name) => name.startsWith('archives/'))).toBe(true);
+	await deleteButton.press('Enter');
+	await expect(confirmDelete).toBeFocused();
+	expect(await saved()).toEqual(original);
 	const reloaded = page.waitForEvent('load');
-	await confirmation.getByRole('button', { name: 'Delete local work', exact: true }).click();
+	await confirmDelete.press('Enter');
 	await reloaded;
 	await expect(settings).toHaveCount(0);
 	expect(await saved()).toEqual({ ...original, character: false });
@@ -539,7 +559,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		general: { theme: 'dark', language: null },
 		wardrobe: { hideShared: null, showDemo: null },
 		developer: { developer: null },
-		export: { exports: { engine: 'godot', dressedCharacterSheets: true, playOnce: [] } }
+		export: { exports: { engine: 'generic', dressedCharacterSheets: true, playOnce: [] } }
 	};
 	const allDefaults = {
 		...changed,
@@ -1892,13 +1912,13 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	const [download] = await Promise.all([page.waitForEvent('download'), dl.click()]);
 	const bytes = readFileSync((await download.path())!);
 	assert.equal(bytes.subarray(0, 2).toString(), 'PK');
-	for (const f of ['manifest.json', 'godot/', 'layers/head/hat_wizard/'])
+	for (const f of ['manifest.json', 'layers/head/hat_wizard/'])
 		assert.ok(bytes.includes(Buffer.from(f)), `zip has ${f}`);
 	step(`export ${download.suggestedFilename()} ${Math.round(bytes.length / 1024)} KB`);
 
 	// zip names (stored uncompressed in the zip headers)
-	for (const f of ['README.txt', 'godot/README.txt'])
-		assert.ok(bytes.includes(Buffer.from(f)), `zip has ${f}`);
+	assert.ok(bytes.includes(Buffer.from('README.txt')), 'zip has README.txt');
+	assert.ok(!bytes.includes(Buffer.from('godot/')), 'the default ZIP has no Godot adapter');
 	assert.ok(download.suggestedFilename().startsWith('adventurer-'), download.suggestedFilename());
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
 	await expect(page.locator('.toast').getByText('Export download started.')).toBeVisible();
@@ -3287,7 +3307,7 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 	await expect(tabs.getByRole('button').first()).toBeFocused();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const engines = page.getByRole('group', { name: 'Export format', exact: true });
-	await expect(engines.getByRole('radio', { name: /Godot/ })).toBeChecked();
+	await expect(engines.getByRole('radio', { name: 'PNG + JSON', exact: true })).toBeChecked();
 	await expect(engines.getByRole('radio', { name: /Godot/ })).toBeEnabled();
 	await engines.getByRole('radio', { name: /Godot/ }).focus();
 	await expect(engines.getByRole('radio', { name: /Godot/ })).toBeFocused();

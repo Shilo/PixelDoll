@@ -1,10 +1,9 @@
 {
 	"librarySettings": {
 		"title": "Pustaka",
-		"scope": "Cadangkan karakter yang tersimpan beserta gambarnya. Preferensi, draf, dan tugas tidak disertakan.",
+		"scope": "Cadangkan karakter tersimpan, karya seni, dan data arsip. Preferensi, draf, dan tugas tidak disertakan.",
 		"privacy": "Cadangan bisa berisi gambar dan prompt. Jangan bagikan data arsip.",
 		"backup": "Cadangkan pustaka",
-		"includeArchived": "Sertakan data arsip",
 		"restoreFromBackup": "Pulihkan dari cadangan",
 		"review": "Tinjau cadangan",
 		"add": "Karakter yang akan ditambahkan",
@@ -26,6 +25,8 @@
 		"incomplete": "Sebagian gambar hilang atau tidak valid. Tidak ada yang dipulihkan.",
 		"backupOmissions": "Cadangan telah diunduh, tetapi beberapa karakter atau gambar tidak disertakan.",
 		"deleteWork": {
+			"deleteAll": "Hapus semua",
+			"confirm": "Konfirmasi",
 			"section": "Hapus pekerjaan lokal",
 			"description": "Menghapus karakter, pakaian, draf, dan riwayat Aktivitas yang disimpan di perangkat ini.",
 			"kept": "Data arsip, preferensi, cadangan yang diunduh, dan kunci PixelLab Anda tetap ada.",

@@ -1,10 +1,9 @@
 {
 	"librarySettings": {
 		"title": "Bibliothek",
-		"scope": "Sichere gespeicherte Charaktere und ihre Grafiken. Einstellungen, Entwürfe und Aufträge sind nicht enthalten.",
+		"scope": "Sichere gespeicherte Figuren, Grafiken und archivierte Daten. Einstellungen, Entwürfe und Aufträge sind nicht enthalten.",
 		"privacy": "Sicherungen können Grafiken und Prompts enthalten. Gib archivierte Daten nicht weiter.",
 		"backup": "Bibliothek sichern",
-		"includeArchived": "Archivierte Daten einschließen",
 		"restoreFromBackup": "Aus Sicherung wiederherstellen",
 		"review": "Sicherung prüfen",
 		"add": "Hinzuzufügende Charaktere",
@@ -26,6 +25,8 @@
 		"incomplete": "Einige Grafiken fehlen oder sind ungültig. Es wurde nichts wiederhergestellt.",
 		"backupOmissions": "Die Sicherung wurde heruntergeladen. Einige Charaktere oder Grafiken fehlen.",
 		"deleteWork": {
+			"deleteAll": "Alles löschen",
+			"confirm": "Bestätigen",
 			"section": "Lokale Arbeit löschen",
 			"description": "Entfernt die auf diesem Gerät gespeicherten Figuren, Outfits, Entwürfe und den Aktivitätsverlauf.",
 			"kept": "Archivierte Daten, Einstellungen, heruntergeladene Sicherungen und dein PixelLab-Schlüssel bleiben erhalten.",

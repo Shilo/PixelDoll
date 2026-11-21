@@ -14,8 +14,9 @@ export type ExportSettingChange =
 	| { dressedCharacterSheets: boolean }
 	| { animation: string; playOnce: boolean };
 export const EXPORT_SETTINGS_KEY = 'studio-export-settings';
+export const DEFAULT_EXPORT_ENGINE = 'generic' satisfies Engine;
 export const defaultExportSettings = (): ExportSettings => ({
-	engine: 'godot',
+	engine: DEFAULT_EXPORT_ENGINE,
 	dressedCharacterSheets: true,
 	playOnce: []
 });

@@ -1,10 +1,9 @@
 {
 	"librarySettings": {
 		"title": "角色库",
-		"scope": "备份已保存的角色及其美术素材。不包含偏好设置、草稿和任务。",
+		"scope": "备份已保存的角色、素材和归档数据。不包含偏好设置、草稿和任务。",
 		"privacy": "备份可能包含美术素材和提示词。请勿分享归档数据。",
 		"backup": "备份角色库",
-		"includeArchived": "包含已归档的数据",
 		"restoreFromBackup": "从备份恢复",
 		"review": "检查备份",
 		"add": "待添加的角色",
@@ -26,6 +25,8 @@
 		"incomplete": "部分美术素材缺失或无效。未恢复任何内容。",
 		"backupOmissions": "备份已下载，但缺少部分角色或图像。",
 		"deleteWork": {
+			"deleteAll": "全部删除",
+			"confirm": "确认",
 			"section": "删除本地作品",
 			"description": "移除此设备上保存的角色、服装、草稿和活动记录。",
 			"kept": "归档数据、偏好设置、已下载的备份和你的 PixelLab 密钥都会保留。",

@@ -1,10 +1,9 @@
 {
 	"librarySettings": {
 		"title": "Bibliothèque",
-		"scope": "Sauvegardez vos personnages enregistrés et leurs illustrations. Les préférences, les brouillons et les tâches ne sont pas inclus.",
+		"scope": "Sauvegardez les personnages enregistrés, leurs images et les données archivées. Les préférences, les brouillons et les tâches ne sont pas inclus.",
 		"privacy": "Les sauvegardes peuvent contenir des images et des instructions. Gardez les données archivées privées.",
 		"backup": "Sauvegarder la bibliothèque",
-		"includeArchived": "Inclure les données archivées",
 		"restoreFromBackup": "Restaurer depuis une sauvegarde",
 		"review": "Vérifier la sauvegarde",
 		"add": "Personnages à ajouter",
@@ -26,6 +25,8 @@
 		"incomplete": "Certaines illustrations sont manquantes ou non valides. Rien n’a été restauré.",
 		"backupOmissions": "La sauvegarde a été téléchargée, mais certains personnages ou visuels manquent.",
 		"deleteWork": {
+			"deleteAll": "Tout supprimer",
+			"confirm": "Confirmer",
 			"section": "Supprimer le travail local",
 			"description": "Supprime les personnages, tenues, brouillons et l’historique d’Activité enregistrés sur cet appareil.",
 			"kept": "Les données archivées, les préférences, les sauvegardes téléchargées et votre clé PixelLab sont conservées.",
