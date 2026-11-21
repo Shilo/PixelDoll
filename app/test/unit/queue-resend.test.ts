@@ -20,6 +20,12 @@ function fixture() {
 			return r && structuredClone(r);
 		},
 		all: async () => [...records.values()].map((r) => structuredClone(r)),
+		claimEstimate: async (candidate, choose) => {
+			const existing = choose([...records.values()].map((record) => structuredClone(record)));
+			if (existing) return existing;
+			records.set(candidate.id, structuredClone(candidate));
+			return candidate;
+		},
 		api: async <T>(_key: string, method: string, path: string): Promise<T> => {
 			if (path === '/balance') return accountBalance as T;
 			calls.push({ method, path });
@@ -133,4 +139,69 @@ test('leader adoption of an accepted follower job only polls its existing remote
 	await q.tick();
 	expect(f.calls).toEqual([{ method: 'GET', path: '/background-jobs/accepted-job' }]);
 	expect(f.records.get(r.id)!.state).toBe('running');
+});
+
+test('a stale queued-only cancel and the first submission are mutually exclusive on the stored record', async () => {
+	const f = fixture(),
+		r = await saved('studio-move');
+	f.records.set(r.id, r);
+	const leader = f.make(),
+		follower = f.make();
+	leader.role = 'leader';
+	follower.role = 'follower';
+	await leader.load();
+	await follower.load();
+	await follower.cancel(r.id, true);
+	await leader.tick();
+	expect(f.calls).toHaveLength(0);
+	expect(f.records.get(r.id)!.state).toBe('canceled');
+	expect(leader.snapshot().jobs[0].state).toBe('canceled');
+
+	const g = fixture(),
+		s = await saved('studio-move');
+	g.records.set(s.id, s);
+	const first = g.make(),
+		stale = g.make();
+	first.role = 'leader';
+	stale.role = 'follower';
+	await first.load();
+	await stale.load();
+	await first.tick();
+	await stale.cancel(s.id, true);
+	expect(g.calls.filter((c) => c.method === 'POST')).toHaveLength(1);
+	expect(g.records.get(s.id)).toMatchObject({
+		state: 'running',
+		jobs: [{ id: 'accepted-job' }]
+	});
+	expect(stale.snapshot().jobs[0].state).toBe('running');
+});
+
+test('a fresh joint quote cannot replace a durable lost check invisible to its tab', async () => {
+	const f = fixture();
+	const estimate = { method: 'POST', path: '/estimate-skeleton' } as const;
+	const { requestHash } = await requestIdentity(estimate);
+	const follower = f.make();
+	await follower.load();
+	const uncertain = await saved('m2-skel', {
+		endpoint: estimate.path,
+		requestHash,
+		state: 'lost',
+		requestStarted: true
+	});
+	f.records.set(uncertain.id, uncertain);
+	await expect(
+		follower.enqueue(estimate, {
+			tag: 'm2-skel',
+			attempt: 2,
+			quotedEstimate: {
+				reuseOnly: false,
+				changed: () => {
+					throw new Error('Quote changed');
+				}
+			}
+		})
+	).rejects.toThrow('Quote changed');
+	await follower.tick();
+	expect(f.calls).toHaveLength(0);
+	expect(f.records.size).toBe(1);
 });
