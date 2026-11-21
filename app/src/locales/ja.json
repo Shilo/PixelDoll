@@ -44,11 +44,12 @@
 	"creationSettings": {
 		"character": "キャラクター",
 		"move": "モーション",
-		"state": "状態",
+		"state": "ステート",
 		"item": "アイテム",
 		"automatic": "自動",
 		"automaticFramesHelp": "歩行とカスタムモーションは通常8フレームから始まります。テンプレートや置き換えではフレーム数が異なることがあります。",
 		"autoSize": "自動（{size} px）",
+		"frameMinimum": "「自動」または {min} px 以上のカスタムフレームサイズを選択してください。",
 		"custom": "カスタム",
 		"description": "このブラウザーに保存されます。作成ダイアログにはまだ反映されません。",
 		"defaults": "作成時の既定値",

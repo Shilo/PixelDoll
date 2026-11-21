@@ -49,6 +49,7 @@
 		"automatic": "自动",
 		"automaticFramesHelp": "行走和自定义动作通常从 8 帧开始。模板和替换动作可能使用不同的帧数。",
 		"autoSize": "自动（{size} 像素）",
+		"frameMinimum": "请选择“自动”，或输入至少 {min} 像素的自定义帧尺寸。",
 		"custom": "自定义",
 		"description": "保存在此浏览器中。创建对话框暂不使用这些值。",
 		"defaults": "创建默认值",

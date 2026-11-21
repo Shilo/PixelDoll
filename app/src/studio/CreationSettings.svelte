@@ -75,7 +75,7 @@
 					typeof next.frame === 'number' &&
 					next.frame < min &&
 					!bodyErrors(next.body, next.model).length
-						? t('create.config.errors.frameRange', { min })
+						? t('creationSettings.frameMinimum', { min })
 						: issue
 							? displayError(issue)
 							: t('creationSettings.saveFailed');

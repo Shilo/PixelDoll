@@ -165,7 +165,7 @@
 				{
 					id: 'state-model',
 					label: 'create.form.model',
-					names: ['Pro', 'Pro Flash', 'V3', 'Pixen']
+					names: ['Pro', 'Pro Flash', 'V3', 'Pixen', 'V3 (Pixen)']
 				}
 			]
 		},
