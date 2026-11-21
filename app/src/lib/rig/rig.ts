@@ -87,6 +87,10 @@ export interface Rig {
 	pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
 	/** Export world unit (pixels per unit) kept when Frame size changed the cell; default: the cell width. */
 	pixelsPerUnit?: number;
+	/** Rows each direction's standing art sits below the view PixelLab registered for it (Adjust frame moved the character
+	 *  since): managed motion frames, drawn from the registered views, are placed this much lower. Absent = 0; reset by a new
+	 *  registration. */
+	artOffset?: Partial<Record<DirectionName, number>>;
 	rest?: Partial<Record<DirectionName, RestView>>; // original standing views, including unused views retained for account reconnection
 	anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
@@ -183,6 +187,9 @@ export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[]
 		!(Number.isFinite(rig.pixelsPerUnit) && rig.pixelsPerUnit > 0)
 	)
 		e.push(`pixelsPerUnit ${rig.pixelsPerUnit}: must be a positive number`);
+	for (const [dir, rows] of Object.entries(rig.artOffset ?? {}))
+		if (!DIRECTIONS.includes(dir as DirectionName) || !Number.isInteger(rows))
+			e.push(`artOffset ${dir} ${rows}: must be whole rows of a known direction`);
 	const ids = rig.directions.map((d) => d.id);
 	if (!rig.directions.length) e.push('no directions');
 	if (new Set(ids).size !== ids.length) e.push('duplicate direction');

@@ -65,9 +65,10 @@
 						.querySelectorAll<HTMLElement>('[popover]:popover-open')
 						.forEach((popover) => popover.hidePopover());
 					ui.frameProject = id;
-					ui.sheet = 'frameSize';
+					ui.sheet = 'adjustFrame';
 				}}
-				><Frame size={16} />{openerLabel(t('characterActions.frameSize'))}<SurfaceChevron /></button
+				><Frame size={16} />{openerLabel(t('characterActions.adjustFrame'))}<SurfaceChevron
+				/></button
 			>
 		{/if}
 		<button

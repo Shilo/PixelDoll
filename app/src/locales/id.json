@@ -128,7 +128,7 @@
 		"notAnOfficialApp": "Bukan aplikasi resmi."
 	},
 	"characterActions": {
-		"frameSize": "Ukuran frame…",
+		"adjustFrame": "Sesuaikan frame…",
 		"directions": "Arah…",
 		"demoDeleteLocked": "Karakter demo tidak dapat dihapus",
 		"labelDeleteCharacter": "Hapus karakter…"
@@ -706,7 +706,7 @@
 		"couldNotEnterFullScreenTryAgain": "Tidak dapat masuk ke layar penuh. Coba lagi atau gunakan kontrol layar penuh di browser Anda."
 	},
 	"state": {
-		"finishBeforeFrameChange": "Selesaikan atau tutup pekerjaan pembuatan yang tertunda sebelum mengubah ukuran frame.",
+		"finishBeforeFrameChange": "Selesaikan atau tutup pekerjaan pembuatan yang tertunda sebelum menyesuaikan frame.",
 		"couldNotCheckNamedFrames": "Tidak dapat memeriksa bingkai {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Tidak dapat memeriksa bingkai untuk {names}.",
 		"copyMissingOneMove": "Beberapa bingkai {move} hilang; item tidak terlihat dalam gerakan itu.",
@@ -1075,7 +1075,7 @@
 		"imported": "{name} diimpor",
 		"untitledState": "Varian tanpa nama",
 		"warning": {
-			"noRoom": "Ruang untuk animasi tidak ditambahkan karena karakter ini memiliki terlalu banyak piksel gambar. Gunakan Ukuran frame setelah mengimpor untuk menambahkannya.",
+			"noRoom": "Ruang untuk animasi tidak ditambahkan karena karakter ini memiliki terlalu banyak piksel gambar. Gunakan Sesuaikan frame setelah mengimpor untuk menambahkannya.",
 			"fixedBase": "Gambar yang diimpor menjadi dasar tetap: pakaian dan rambut yang sudah ada tidak dapat dihapus. Siapkan rig pose untuk memakai perlengkapan yang mengikuti pose kerangka dan menambahkan animasi baru.",
 			"frameCounts": "Jumlah frame “{move}” berbeda di setiap arah. Setiap arah diimpor sebagai animasi terpisah agar semua frame asli dan durasi tiap arah tetap utuh.",
 			"semiAlpha": "Tepi yang transparan sebagian diubah menjadi transparansi khas pixel art."
@@ -2095,8 +2095,8 @@
 		}
 	},
 	"moveSheet": {
-		"enlargeFrame": "Perbesar ke {size} px",
-		"frameRoom": "Animasi ini bisa melewati frame {frame} px: karakter hanya punya {below} px di bawah kakinya. Perbesar frame ke {size} px secara gratis dulu, atau tetap tambahkan animasinya.",
+		"makeRoom": "Beri ruang",
+		"frameRoom": "Animasi ini bisa melewati frame {frame} px: karakter hanya punya {below} px di bawah kakinya. Beri ruang secara gratis dulu, atau tetap tambahkan animasinya.",
 		"sharedCopiesCoverage": "Salinan bersama tetap bisa dipakai pada tampilan yang memiliki bingkai.",
 		"thatCharacter": "karakter tersebut",
 		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",
@@ -2488,8 +2488,8 @@
 		}
 	},
 	"moveReview": {
-		"enlargeDetail": "Menambah ruang kosong gratis di sekitar seluruh karakter ({from} px menjadi {size} px) dan memakai ulang gerakan yang sudah dibayar; hanya langkah pada frame yang lebih besar yang dibeli.",
-		"enlarge": "Perbesar frame ke {size} px dan lanjutkan",
+		"makeRoomDetail": "{change}, gratis. Gerakan yang sudah dibayar dipakai ulang; hanya langkah pada frame yang diubah yang dibeli.",
+		"makeRoom": "Beri ruang dan lanjutkan",
 		"resume": "Lanjutkan dengan hasil berbayar",
 		"lift": "Lanjutkan, dinaikkan agar muat",
 		"liftAndReroll": "Naikkan agar muat, buat ulang {views}",
@@ -2507,27 +2507,46 @@
 		"register": "Daftarkan ulang tampilan yang digambar",
 		"registerDetail": "Mempertahankan gambar berbayar dan membeli satu pendaftaran baru untuk tampilan yang sama."
 	},
-	"frameSheet": {
-		"title": "Ukuran frame",
+	"adjustFrame": {
+		"title": "Sesuaikan frame",
+		"intro": "Geser {name} ke atas atau ke bawah di dalam frame, atau ubah ukuran frame. Setiap item, animasi, dan frame ikut bergeser. Gratis dan tidak ada yang digambar ulang.",
+		"previewLabel": "Karakter di dalam frame",
+		"preview": "Tampilan {direction} dalam frame {size} px",
+		"keys": "Saat pratinjau difokuskan, tombol panah atas dan bawah menggeser karakter 1 px (dengan Shift, 4 px).",
+		"direction": "Arah",
+		"position": "Posisi",
+		"up": "Naik",
+		"down": "Turun",
+		"movedUp": "Naik {px} px",
+		"movedDown": "Turun {px} px",
+		"notMoved": "Tidak digeser",
 		"size": "Ukuran frame",
-		"intro": "Tambah atau kurangi ruang kosong di sekitar {name}. Gratis dan tidak ada yang digambar ulang: setiap item, animasi, dan frame tetap di tempatnya.",
-		"preview": "Tampilan berdiri dalam frame {size} px",
-		"useRecommended": "Gunakan {size} px",
-		"range": "Sekarang {current} px. Pilih {min}–{max} px dengan kelipatan 2.",
-		"roomShort": "Animasi bisa melewati frame ini. {size} px menambah ruang di bawah kaki dan di samping.",
+		"smaller": "Frame lebih kecil",
+		"larger": "Frame lebih besar",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "Beri ruang",
+		"makeRoomHelp": "Menggeser karakter secukupnya agar ada ruang untuk berjalan, dan memperbesar frame hanya bila menggeser tidak cukup.",
+		"madeRoom": "Ruang dibuat. Periksa pratinjau, lalu simpan.",
+		"roomy": "Karakter ini sudah punya ruang untuk animasi.",
+		"short": "Animasi bisa melewati frame ini. Beri ruang bisa memperbaikinya secara gratis.",
 		"above96": "Di atas 96 px, item yang dipegang dan grid perbaikan lebih mahal.",
 		"above170": "Di atas 170 px, setiap item memakan 25 gens per panggilan pemakaian.",
-		"consequences": "Item hanya tersalin persis antar karakter dengan ukuran frame yang sama. Ekspor tetap memakai skala dalam game yang sama; ekspor lagi untuk memakai frame baru.",
+		"consequences": "Item hanya tersalin persis antar karakter dengan ukuran dan posisi frame yang sama. Ekspor tetap memakai skala dan titik asal dalam game yang sama; ekspor lagi untuk memakai perubahan.",
 		"loading": "Memuat frame…",
-		"saved": "Frame diubah dari {before} px menjadi {size} px.",
-		"undone": "Frame dikembalikan ke {size} px.",
+		"saved": "Frame disesuaikan: {change}.",
+		"undone": "Perubahan frame dibatalkan.",
 		"errors": {
 			"missingArtwork": "Gambar tersimpan karakter ini hilang, jadi frame-nya tidak dapat diubah.",
-			"even": "Pilih ukuran frame lain yang berubah sebanyak jumlah piksel genap.",
+			"even": "Pilih ukuran frame yang berubah sebanyak jumlah piksel genap.",
 			"range": "Frame harus {min}–{max} px untuk karakter ini.",
-			"resolveDrafts": "Simpan atau tutup draf item karakter ini sebelum mengubah ukuran frame.",
-			"changed": "Karakter ini berubah. Buka lagi Ukuran frame untuk meninjau versi terbaru.",
-			"saveFailed": "Frame tidak dapat dikembalikan."
+			"clipTop": "Ini memotong {px} px dari bagian atas karakter atau itemnya.",
+			"clipBottom": "Ini memotong {px} px dari bagian bawah karakter atau itemnya.",
+			"clipSides": "Ini memotong {px} px dari sisi karakter atau itemnya.",
+			"unchanged": "Ubah dulu ukuran atau posisi frame.",
+			"limit": "Bahkan frame {size} px tidak bisa memberi ruang animasi untuk karakter ini.",
+			"resolveDrafts": "Simpan atau tutup draf item karakter ini sebelum menyesuaikan frame.",
+			"changed": "Karakter ini berubah. Buka lagi Sesuaikan frame untuk meninjau versi terbaru.",
+			"undoFailed": "Perubahan frame tidak dapat dibatalkan."
 		}
 	}
 }

@@ -1008,7 +1008,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			'Details...',
 			'Rename...',
 			'Directions...',
-			'Frame size...',
+			'Adjust frame...',
 			'Download ZIP',
 			'Delete character...'
 		]);
@@ -1082,7 +1082,8 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await expect(west).toHaveAttribute('aria-pressed', 'true');
 	await page.keyboard.press('Escape');
 	await expect(settings).toBeHidden();
-	// Frame size: free room around the mirrored character, saved across a reload and undone from its notice.
+	// Adjust frame: move the mirrored character and resize its frame for free, saved across a reload and undone from its
+	// notice.
 	const openFrame = async () => {
 		await page.locator('.project-btn').click();
 		await page
@@ -1090,15 +1091,28 @@ test('character directions can be mirrored and unlinked on import and after savi
 			.click();
 		await page
 			.getByRole('menu', { name: 'Actions for Direction test hero', exact: true })
-			.getByRole('menuitem', { name: 'Frame size...', exact: true })
+			.getByRole('menuitem', { name: 'Adjust frame...', exact: true })
 			.click();
-		return page.getByRole('dialog', { name: 'Frame size', exact: true });
+		return page.getByRole('dialog', { name: 'Adjust frame', exact: true });
 	};
 	let frame = await openFrame();
 	const size = frame.getByRole('spinbutton', { name: 'Frame size', exact: true });
+	const position = frame.getByRole('slider', { name: 'Character in its frame', exact: true });
 	await expect(size).toHaveValue('64');
+	await expect(position).toHaveAttribute('aria-valuetext', 'Not moved');
 	const save = frame.getByRole('button', { name: 'Save', exact: true });
 	await expect(save).toBeDisabled();
+	await frame.getByRole('button', { name: 'Make room', exact: true }).click();
+	await expect(frame.getByRole('status')).toContainText(
+		'This character already has room for moves.'
+	);
+	await frame.getByRole('button', { name: 'Up', exact: true }).click();
+	await frame.getByRole('button', { name: 'Up', exact: true }).click();
+	await expect(position).toHaveAttribute('aria-valuetext', 'Moved up 2 px');
+	await position.focus();
+	await page.keyboard.press('Shift+ArrowUp');
+	await page.keyboard.press('ArrowDown');
+	await expect(position).toHaveAttribute('aria-valuetext', 'Moved up 5 px');
 	await size.fill('81');
 	await expect(save).toBeDisabled();
 	await size.fill('80');
@@ -1106,15 +1120,16 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await save.click();
 	await expect(frame).toBeHidden();
 	const notice = page.locator('.toast');
-	await expect(notice).toContainText('Frame changed from 64 px to 80 px.');
+	await expect(notice).toContainText('Frame adjusted');
+	await expect(notice).toContainText('Moved up 5 px');
 	await reloadStudio(page);
 	frame = await openFrame();
 	await expect(size).toHaveValue('80');
 	await size.fill('64');
 	await save.click();
 	await expect(frame).toBeHidden();
-	await notice.getByRole('button', { name: /Frame changed from 80 px to 64 px/ }).click();
-	await expect(notice).toContainText('Frame changed back to 80 px.');
+	await notice.getByRole('button', { name: /Frame adjusted/ }).click();
+	await expect(notice).toContainText('Frame change undone.');
 	frame = await openFrame();
 	await expect(size).toHaveValue('80');
 });

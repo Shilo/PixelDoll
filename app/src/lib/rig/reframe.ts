@@ -1,16 +1,24 @@
-// Frame size: free, lossless room around a saved character. Every stored image gains (or loses) the same transparent border
-// on all sides, and every pixel coordinate, index and API keypoint moves with it. Centered symmetric padding keeps the
-// PixelLab character (registered on the old canvas, which PixelLab centers its animation canvases on) and every cached
-// motion request valid: a new move's frames are centered on the larger frame exactly as the padded old ones are.
+// Adjust frame: free, lossless room around a saved character. Every stored image gains (or loses) the same transparent border
+// on all sides and may move up or down inside it, and every pixel coordinate, index and API keypoint moves with it. A centered
+// size change keeps the PixelLab character (registered on the old canvas, which PixelLab centers its animation canvases on)
+// aligned by itself; a vertical move is recorded per direction in rig.artOffset, which places managed motion frames the same
+// rows lower (artOffset in create.ts), so cached motion requests stay valid either way. Horizontal moves are not offered:
+// mirrored views flip whole cells about the cell center, so moving the art sideways would make them jump.
 import { makeImg, type Img } from '../image/png.ts';
 import { padKeypoints } from '../items/items.ts';
-import { LocalizedError } from '../message.ts';
+import { LocalizedError, message, type Message } from '../message.ts';
 import type { Item, Manifest } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 import { rehash } from './directions.ts';
 import { HEADROOM_MIN } from './freeze.ts';
 import { opaqueBox, type Box } from './normalize.ts';
-import { cellHash, rigArtworkVersion, type Keypoint, type Sha256 } from './rig.ts';
+import {
+	cellHash,
+	rigArtworkVersion,
+	type DirectionName,
+	type Keypoint,
+	type Sha256
+} from './rig.ts';
 import type { Skeleton } from './skeleton.ts';
 
 export const MIN_FRAME = 32;
@@ -49,12 +57,12 @@ export function standingRoom(views: readonly Img[], size: number): FrameRoom | u
 		: undefined;
 }
 /** How far a move reaches past the standing outline. Measured (2026-11-20, a 76 px imported character): a managed walk
- *  stepped 5 px below the standing feet (south) and 14 px past its side (east), about H/16 and H/6. A created 64 px body
- *  stepped 1 px, so this is a conservative bound, not a constant. Tune it here: import, the Frame size suggestion and the
- *  move room warning all read this one rule. */
+ *  stepped 5 px below the standing feet (south) and 14 px past its side (east); the rule covers that sample exactly (a created
+ *  64 px body stepped 1 px, so it is a conservative bound, not a constant). Tune it here: import, Make room and the move room
+ *  warning all read this one rule. */
 export const moveReach = (height: number) => ({
-	below: Math.ceil(height / 16),
-	side: Math.ceil(height / 6)
+	below: Math.ceil((height * 5) / 76),
+	side: Math.ceil((height * 14) / 76)
 });
 /** The room a frame should leave: the reach plus 2 guard rows below (PixelLab erases the outermost row, B4) and the usual
  *  headroom for hats above. */
@@ -153,27 +161,43 @@ async function readAll(m: Manifest, images: ReadonlyMap<string, Img>, read?: Rea
 		if (!image)
 			throw new LocalizedError(
 				'Saved artwork of this character is missing, so its frame cannot be changed.',
-				'frameSheet.errors.missingArtwork'
+				'adjustFrame.errors.missingArtwork'
 			);
 		all.set(h, image);
 	}
 	return all;
 }
-/** Free px between stored content and the frame edge: how much a frame can shrink on each side without cutting a pixel or
- *  moving a joint, anchor, cut index or pivot outside it. */
-function inset(record: FrameRecord, all: ReadonlyMap<Sha256, Img>): number {
+/** Free px between stored content and each frame edge (top, bottom, left, right), over every stored image on its own canvas
+ *  (held layers keep their padding) and every joint, anchor, cut index and the pivot: how far the art can move toward an
+ *  edge, or the frame shrink there, without cutting a visible pixel or moving a point outside. */
+export interface FrameFree {
+	top: number;
+	bottom: number;
+	left: number;
+	right: number;
+}
+const unbounded = (): FrameFree => ({
+	top: Infinity,
+	bottom: Infinity,
+	left: Infinity,
+	right: Infinity
+});
+const within = (free: FrameFree, top: number, bottom: number, left: number, right: number) => {
+	free.top = Math.min(free.top, top);
+	free.bottom = Math.min(free.bottom, bottom);
+	free.left = Math.min(free.left, left);
+	free.right = Math.min(free.right, right);
+};
+function storedFree(record: FrameRecord, all: ReadonlyMap<Sha256, Img>): FrameFree {
 	const { rig } = record.manifest,
-		c = rig.cell.w;
-	let free = Math.floor(c / 2);
-	const at = (x: number, y: number, w: number, h: number) =>
-		(free = Math.min(free, x, y, w - 1 - x, h - 1 - y));
+		c = rig.cell.w,
+		free = unbounded();
 	for (const image of all.values()) {
-		const box = opaqueBoxAny(image);
-		if (box) free = Math.min(free, box.x0, box.y0, image.w - 1 - box.x1, image.h - 1 - box.y1);
+		const box = visibleBox(image);
+		if (box) within(free, box.y0, image.h - 1 - box.y1, box.x0, image.w - 1 - box.x1);
 	}
-	const kp = (k: Keypoint[] | undefined) => {
-		for (const q of k ?? []) at(q.x * c, q.y * c, c + 1, c + 1);
-	};
+	const edge = (x: number, y: number) => within(free, y, c - y, x, c - x); // pixel-edge points, 0..c
+	const kp = (k: Keypoint[] | undefined) => k?.forEach((point) => edge(point.x * c, point.y * c));
 	for (const rest of Object.values(rig.rest ?? {})) kp(rest?.keypoints);
 	for (const a of rig.animations)
 		for (const s of Object.values(a.sources ?? {})) {
@@ -181,18 +205,24 @@ function inset(record: FrameRecord, all: ReadonlyMap<Sha256, Img>): number {
 			s?.measured?.forEach(kp);
 		}
 	for (const s of Object.values(record.skeletons ?? {}))
-		for (const q of Object.values(s)) at(q.x, q.y, c + 1, c + 1);
+		for (const point of Object.values(s)) edge(point.x, point.y);
+	const index = (x: number, y: number) => within(free, y, c - 1 - y, x, c - 1 - x); // pixel indices, 0..c-1
 	for (const track of Object.values(rig.anchors ?? {}))
 		for (const rows of Object.values(track ?? {}))
-			for (const pts of Object.values(rows ?? {})) for (const [x, y] of pts ?? []) at(x, y, c, c);
+			for (const pts of Object.values(rows ?? {})) for (const [x, y] of pts ?? []) index(x, y);
 	for (const item of record.manifest.items)
 		for (const list of indexLists(item))
-			for (const i of list ?? []) at(i % c, Math.floor(i / c), c, c);
-	at(rig.pivot.x, rig.pivot.y, c + 1, c + 1);
-	return Math.max(0, Math.floor(free));
+			for (const i of list ?? []) index(i % c, Math.floor(i / c));
+	edge(rig.pivot.x, rig.pivot.y);
+	return {
+		top: Math.floor(free.top),
+		bottom: Math.floor(free.bottom),
+		left: Math.floor(free.left),
+		right: Math.floor(free.right)
+	};
 }
-/** Any visible alpha, not only opaque: a shrink must keep every stored byte that shows. */
-function opaqueBoxAny(im: Img): Box | null {
+/** Any visible alpha, not only opaque: a move or shrink must keep every stored byte that shows. */
+function visibleBox(im: Img): Box | null {
 	let x0 = im.w,
 		y0 = im.h,
 		x1 = -1,
@@ -208,19 +238,6 @@ function opaqueBoxAny(im: Img): Box | null {
 	return x1 < 0 ? null : { x0, y0, x1, y1 };
 }
 
-/** The frame sizes a character can take: from the smallest that keeps everything it stores to the largest whose oversize
- *  layers still fit 256 px, both with the current size's parity (an even change keeps mirrored views exact). */
-export async function frameLimits(
-	record: FrameRecord,
-	images: ReadonlyMap<string, Img>,
-	read?: ReadImage
-): Promise<{ min: number; max: number }> {
-	const m = record.manifest,
-		c = m.rig.cell.w;
-	const all = await readAll(m, images, read);
-	const lowest = c - 2 * inset(record, all);
-	return { min: Math.max(lowest, MIN_FRAME + ((c - MIN_FRAME) % 2)), max: frameMax(m) };
-}
 /** The largest frame (the current parity) whose oversize layers, which grow with it, still fit 256 px. */
 export function frameMax(m: Manifest): number {
 	const c = m.rig.cell.w;
@@ -230,16 +247,128 @@ export function frameMax(m: Manifest): number {
 	);
 	return capped(c, MAX_FRAME - extra);
 }
+/** What Adjust frame knows about a character before a change: its frame, the size limits, the free space per edge and the
+ *  room around its standing views. */
+export interface FrameFacts {
+	size: number;
+	min: number;
+	max: number;
+	free: FrameFree;
+	room?: FrameRoom;
+}
+export async function frameFacts(
+	record: FrameRecord,
+	images: ReadonlyMap<string, Img>,
+	read?: ReadImage
+): Promise<FrameFacts> {
+	const m = record.manifest,
+		size = m.rig.cell.w;
+	return {
+		size,
+		min: MIN_FRAME + ((size - MIN_FRAME) % 2),
+		max: frameMax(m),
+		free: storedFree(record, await readAll(m, images, read)),
+		room: standingRoom(standingViews(m, images), size)
+	};
+}
+/** A frame change: the new square size (changed by an even number of px, centered) and the rows the art then moves down
+ *  (negative: up). */
+export interface FrameChange {
+	size: number;
+	dy: number;
+}
+/** Why a change cannot be saved, or undefined. Clipping names the edge in words, never by color alone. */
+export function frameIssue(facts: FrameFacts, change: FrameChange): LocalizedError | undefined {
+	const { size, dy } = change,
+		p = (size - facts.size) / 2,
+		{ free } = facts;
+	if (!Number.isInteger(size) || !Number.isInteger(dy) || (size - facts.size) % 2)
+		return new LocalizedError(
+			'Choose a frame size that changes by an even number of pixels.',
+			'adjustFrame.errors.even'
+		);
+	if (size < facts.min || size > facts.max)
+		return new LocalizedError(
+			`Frame must be ${facts.min}–${facts.max} px for this character.`,
+			'adjustFrame.errors.range',
+			{ min: facts.min, max: facts.max }
+		);
+	const cut = (edge: number) => Math.max(0, -edge);
+	const top = cut(free.top + p + dy),
+		bottom = cut(free.bottom + p - dy),
+		sides = Math.max(cut(free.left + p), cut(free.right + p));
+	if (top)
+		return new LocalizedError(
+			`This cuts ${top} px off the top of the character or its items.`,
+			'adjustFrame.errors.clipTop',
+			{ px: top }
+		);
+	if (bottom)
+		return new LocalizedError(
+			`This cuts ${bottom} px off the bottom of the character or its items.`,
+			'adjustFrame.errors.clipBottom',
+			{ px: bottom }
+		);
+	if (sides)
+		return new LocalizedError(
+			`This cuts ${sides} px off the sides of the character or its items.`,
+			'adjustFrame.errors.clipSides',
+			{ px: sides }
+		);
+	return undefined;
+}
+/** Extra content a change must keep inside the frame, as free px per edge of the current `size` frame (negative: already
+ *  outside), such as the cached motion frames a stopped move continues with. */
+export function freeOf(boxes: readonly Box[], size: number): FrameFree {
+	const free = unbounded();
+	for (const box of boxes) within(free, box.y0, size - 1 - box.y1, box.x0, size - 1 - box.x1);
+	return free;
+}
+export type RoomPlan = (FrameChange & { limit?: false }) | { limit: true; size: number };
+/** Make room: the smallest vertical move at the current size that leaves roomNeed around the standing views and keeps all
+ *  stored content (and `extra`) inside; only when no move can, the smallest larger frame (centered, rounded as roomFrame
+ *  rounds: multiples of 16 for an even size, never across a cost step), moved as little as needed. Never shrinks. `limit`
+ *  when even the largest frame cannot fit it. */
+export function makeRoom(facts: FrameFacts, extra: FrameFree = unbounded()): RoomPlan {
+	const c = facts.size,
+		hard = {
+			top: Math.min(facts.free.top, extra.top),
+			bottom: Math.min(facts.free.bottom, extra.bottom),
+			left: Math.min(facts.free.left, extra.left),
+			right: Math.min(facts.free.right, extra.right)
+		},
+		room = facts.room,
+		need = room ? roomNeed(room.height) : undefined;
+	const at = (size: number): number | undefined => {
+		const p = (size - c) / 2;
+		if (hard.left + p < 0 || hard.right + p < 0) return undefined;
+		if (room && need && (room.left + p < need.side || room.right + p < need.side)) return undefined;
+		const lo = Math.max(-(hard.top + p), room && need ? need.top - room.top - p : -Infinity),
+			hi = Math.min(hard.bottom + p, room && need ? room.below + p - need.below : Infinity);
+		if (lo > hi) return undefined;
+		return Math.min(hi, Math.max(lo, 0));
+	};
+	const still = at(c);
+	if (still !== undefined) return { size: c, dy: still };
+	for (let size = c + 2; size <= facts.max; size += 2) {
+		if (at(size) === undefined) continue;
+		let rounded = c % 2 ? size : Math.min(16 * Math.ceil(size / 16), facts.max);
+		if (FRAME_COST_STEPS.some((step) => size <= step && rounded > step)) rounded = size;
+		if (at(rounded) === undefined) rounded = size;
+		return { size: rounded, dy: at(rounded)! };
+	}
+	return { limit: true, size: facts.max };
+}
 
-/** Copy `im` onto a canvas 2p larger (p < 0: smaller), byte for byte; counts the visible px a crop would drop. */
-function shifted(im: Img, p: number): { img: Img; cut: number } {
+/** Copy `im` onto a canvas 2p larger (p < 0: smaller), `dy` rows lower, byte for byte; counts the visible px a crop drops. */
+function shifted(im: Img, p: number, dy: number): { img: Img; cut: number } {
 	const img = makeImg(im.w + 2 * p, im.h + 2 * p);
 	let cut = 0;
 	for (let y = 0; y < im.h; y++)
 		for (let x = 0; x < im.w; x++) {
 			const i = (y * im.w + x) * 4,
 				X = x + p,
-				Y = y + p;
+				Y = y + p + dy;
 			if (X < 0 || Y < 0 || X >= img.w || Y >= img.h) {
 				if (im.data[i + 3]) cut++;
 				continue;
@@ -250,33 +379,32 @@ function shifted(im: Img, p: number): { img: Img; cut: number } {
 }
 
 /**
- * A character on a `size` px frame: every image re-centered (lossless both ways; a shrink is refused if it would drop a
- * visible pixel or move a joint, anchor, pivot or cut index outside), the pivot, anchors, skeletons, standing and move
- * keypoints and cut indices moved with it, `baseHash` rebased and a matching move-recovery receipt kept. The export unit
+ * A character on a `size` px frame with its art `dy` rows lower: every image re-centered and moved (lossless both ways; a
+ * change is refused if it would drop a visible pixel or move a joint, anchor, pivot or cut index outside), the pivot (so the
+ * feet stay on the origin in every move and engine), anchors, skeletons, standing and move keypoints and cut indices moved
+ * with it, rig.artOffset advanced by `dy`, `baseHash` rebased and a matching move-recovery receipt kept. The export unit
  * stays the old frame width (`rig.pixelsPerUnit`), so games keep the same in-game scale. Provenance, QA history and the
  * PixelLab character are kept: they describe what was bought, which this does not change.
  */
 export async function reframeCharacter<R extends FrameRecord>(
 	record: R,
 	images: ReadonlyMap<string, Img>,
-	size: number,
+	change: FrameChange,
 	read?: ReadImage
 ): Promise<{ record: R; newImages: Map<Sha256, Img> }> {
-	const old = record.manifest.rig.cell.w;
-	if (!Number.isInteger(size) || size === old || (size - old) % 2)
-		throw new LocalizedError(
-			'Choose a different frame size that changes by an even number of pixels.',
-			'frameSheet.errors.even'
-		);
-	const limits = await frameLimits(record, images, read);
-	if (size < limits.min || size > limits.max)
-		throw new LocalizedError(
-			`Frame must be ${limits.min}–${limits.max} px for this character.`,
-			'frameSheet.errors.range',
-			limits
-		);
+	const old = record.manifest.rig.cell.w,
+		{ size, dy } = change;
+	const issue =
+		size === old && !dy
+			? new LocalizedError(
+					'Change the frame size or position first.',
+					'adjustFrame.errors.unchanged'
+				)
+			: frameIssue(await frameFacts(record, images, read), change);
+	if (issue) throw issue;
 	const all = await readAll(record.manifest, images, read);
-	const p = (size - old) / 2;
+	const p = (size - old) / 2,
+		q = p + dy;
 	const result = structuredClone(record);
 	const m = result.manifest,
 		{ rig } = m;
@@ -288,8 +416,8 @@ export async function reframeCharacter<R extends FrameRecord>(
 	const move = (h: Sha256): Promise<Sha256> => {
 		let next = moved.get(h);
 		if (!next) {
-			const { img, cut } = shifted(all.get(h)!, p);
-			if (cut) throw new Error(`Frame change would cut ${cut} px of ${h}.`); // frameLimits refuses this first
+			const { img, cut } = shifted(all.get(h)!, p, dy);
+			if (cut) throw new Error(`Frame change would cut ${cut} px of ${h}.`); // frameIssue refuses this first
 			next = cellHash(img).then((key) => {
 				if (!images.has(key)) newImages.set(key, img);
 				return key;
@@ -299,16 +427,29 @@ export async function reframeCharacter<R extends FrameRecord>(
 		return next;
 	};
 	const moveNull = async (h: Sha256 | null | undefined) => (h ? move(h) : (h ?? null));
-	const keypoints = (k: Keypoint[]) => padKeypoints(k, { w: old, h: old }, p);
-	const index = (i: number) => (Math.floor(i / old) + p) * size + (i % old) + p;
+	const keypoints = (k: Keypoint[]) => padKeypoints(k, { w: old, h: old }, p, dy);
+	const index = (i: number) => (Math.floor(i / old) + q) * size + (i % old) + p;
 	const indices = (list: number[] | null) => (list ? list.map(index).sort((a, b) => a - b) : list);
 
 	rig.cell = { w: size, h: size };
-	rig.pivot = { x: rig.pivot.x + p, y: rig.pivot.y + p };
-	if (rig.pad) rig.pad = { x: rig.pad.x + p, y: rig.pad.y + p };
+	rig.pivot = { x: rig.pivot.x + p, y: rig.pivot.y + q };
+	if (rig.pad) rig.pad = { x: rig.pad.x + p, y: rig.pad.y + q };
 	const unit = record.manifest.rig.pixelsPerUnit ?? old;
 	if (unit === size) delete rig.pixelsPerUnit;
 	else rig.pixelsPerUnit = unit;
+	if (dy) {
+		const offsets = { ...rig.artOffset };
+		for (const dir of new Set([
+			...rig.directions.map((d) => d.id),
+			...(Object.keys(rig.rest ?? {}) as DirectionName[])
+		])) {
+			const rows = (offsets[dir] ?? 0) + dy;
+			if (rows) offsets[dir] = rows;
+			else delete offsets[dir];
+		}
+		if (Object.keys(offsets).length) rig.artOffset = offsets;
+		else delete rig.artOffset;
+	}
 	for (const rest of Object.values(rig.rest ?? {}))
 		if (rest) {
 			rest.image = await move(rest.image);
@@ -324,11 +465,11 @@ export async function reframeCharacter<R extends FrameRecord>(
 	for (const track of Object.values(rig.anchors ?? {}))
 		for (const rows of Object.values(track ?? {}))
 			for (const [dir, pts] of Object.entries(rows ?? {}))
-				rows![dir as keyof typeof rows] = pts!.map(([x, y]) => [x + p, y + p]);
+				rows![dir as keyof typeof rows] = pts!.map(([x, y]) => [x + p, y + q]);
 	for (const item of m.items) {
 		for (const layer of item.layers) {
 			if (layer.cell) layer.cell = { w: layer.cell.w + 2 * p, h: layer.cell.h + 2 * p };
-			if (layer.pivot) layer.pivot = { x: layer.pivot.x + p, y: layer.pivot.y + p };
+			if (layer.pivot) layer.pivot = { x: layer.pivot.x + p, y: layer.pivot.y + q };
 			for (const rows of Object.values(layer.cells ?? {}))
 				for (const [dir, row] of Object.entries(rows ?? {}))
 					rows![dir as keyof typeof rows] = await Promise.all((row ?? []).map(moveNull));
@@ -361,7 +502,10 @@ export async function reframeCharacter<R extends FrameRecord>(
 			Object.entries(result.skeletons).map(([key, s]) => [
 				key,
 				Object.fromEntries(
-					Object.entries(s).map(([label, q]) => [label, { ...q, x: q.x + p, y: q.y + p }])
+					Object.entries(s).map(([label, point]) => [
+						label,
+						{ ...point, x: point.x + p, y: point.y + q }
+					])
 				) as Skeleton
 			])
 		);
@@ -373,4 +517,18 @@ export async function reframeCharacter<R extends FrameRecord>(
 		};
 	if ('savedAt' in result) result.savedAt = new Date().toISOString();
 	return { record: result, newImages };
+}
+
+/** A frame change in words: the new size when it changes, and how far the character moves. */
+export function frameChangeText(from: number, change: FrameChange): Message[] {
+	return [
+		...(change.size !== from ? [message('adjustFrame.sizeReadout', { size: change.size })] : []),
+		...(change.dy
+			? [
+					message(change.dy < 0 ? 'adjustFrame.movedUp' : 'adjustFrame.movedDown', {
+						px: Math.abs(change.dy)
+					})
+				]
+			: [])
+	];
 }

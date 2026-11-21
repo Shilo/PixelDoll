@@ -70,7 +70,8 @@
 		resolveRepairReview,
 		dismissMove,
 		frameEditsBlocked,
-		resizeCharacter,
+		adjustCharacter,
+		makeRoomFor,
 		openProject,
 		pendingMoves,
 		withKey
@@ -482,18 +483,18 @@
 			ui.sheet = 'move';
 		}, recoveryTier);
 	}
-	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. Enlarge
-	 *  frame resizes the character first (free; this stopped move waits for it) and then continues the same move. */
+	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. Make room
+	 *  adjusts the frame first (free; this stopped move waits for it) and then continues the same move. */
 	function choosePaid(option: MovePaidOption) {
 		const projectId = moving.projectId,
 			spec = $state.snapshot(option.spec),
-			frame = option.frame;
+			change = option.change && { ...option.change };
 		const go = () => {
 			ui.sheet = 'move';
 			void (async () => {
-				if (frame) {
+				if (change) {
 					try {
-						await resizeCharacter(projectId, frame, { stoppedMove: true, quiet: true });
+						await adjustCharacter(projectId, change, { stoppedMove: true, quiet: true });
 					} catch (error) {
 						recoveryError = errorMessage(error);
 						return;
@@ -505,18 +506,14 @@
 		if (option.paid) withKey(go, retryTier);
 		else go();
 	}
-	// Enlarge frame from the room warning: free; the form keeps every choice and its warnings are checked again.
-	const enlargeSize = (warning: { id: string; translation: { vars?: unknown } }) => {
-		const size = (warning.translation.vars as { size?: unknown } | undefined)?.size;
-		return warning.id === 'frame-room-move' && typeof size === 'number' ? size : undefined;
-	};
+	// Make room from the room warning: free; the form keeps every choice and its warnings are checked again.
 	let enlarging = $state(false);
 	let enlargeError = $state('');
-	async function enlarge(size: number) {
+	async function room() {
 		enlarging = true;
 		enlargeError = '';
 		try {
-			await resizeCharacter(doc.id, size);
+			await makeRoomFor(doc.id);
 		} catch (error) {
 			enlargeError = displayError(error);
 		} finally {
@@ -1179,14 +1176,12 @@
 					>
 						<CircleAlert size={14} />{displayError(warning)}
 					</p>
-					{@const size = enlargeSize(warning)}
-					{#if size}
+					{#if warning.id === 'frame-room-move'}
 						<button
 							class="bu-action btn"
 							data-variant="outline"
 							disabled={enlarging || !!frameEditsBlocked(doc.id)}
-							onclick={() => void enlarge(size)}
-							>{t('moveSheet.enlargeFrame', { size: formatNumber(size) })}</button
+							onclick={() => void room()}>{t('moveSheet.makeRoom')}</button
 						>
 						{#if enlargeError}<p class="notice bad small" role="alert">{enlargeError}</p>{/if}
 					{/if}{/each}{:else if pendingIds.includes(id)}<p class="notice small">

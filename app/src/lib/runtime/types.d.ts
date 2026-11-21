@@ -355,6 +355,10 @@ export interface Rig {
 	pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
 	/** Export world unit (pixels per unit) kept when Frame size changed the cell; default: the cell width. */
 	pixelsPerUnit?: number;
+	/** Rows each direction's standing art sits below the view PixelLab registered for it (Adjust frame moved the character
+	 *  since): managed motion frames, drawn from the registered views, are placed this much lower. Absent = 0; reset by a new
+	 *  registration. */
+	artOffset?: Partial<Record<DirectionName, number>>;
 	rest?: Partial<Record<DirectionName, RestView>>; // original standing views, including unused views retained for account reconnection
 	anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }

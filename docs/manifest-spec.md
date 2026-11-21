@@ -98,7 +98,8 @@ export interface Rig {
   baseItem: string; // id of the item in slot "body"
   baseHash: Sha256; // hash over all base cell hashes (anim, dir, cell order)
   pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: {x: 8, y: 12}, 4 px floor)
-  pixelsPerUnit?: number; // export world unit kept by Frame size (the cell width before the first resize); absent = cell width
+  pixelsPerUnit?: number; // export world unit kept by Adjust frame (the cell width before the first resize); absent = cell width
+  artOffset?: Partial<Record<DirectionName, number>>; // rows each standing view sits below its PixelLab registration (Adjust frame); authoring only
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 export interface RigDirection {

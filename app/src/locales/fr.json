@@ -128,7 +128,7 @@
 		"notAnOfficialApp": "Application non officielle."
 	},
 	"characterActions": {
-		"frameSize": "Taille du cadre…",
+		"adjustFrame": "Ajuster le cadre…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Le personnage de la démo ne peut pas être supprimé",
 		"labelDeleteCharacter": "Supprimer le personnage…"
@@ -732,7 +732,7 @@
 		"couldNotEnterFullScreenTryAgain": "Impossible de passer en plein écran. Réessayez ou utilisez la commande plein écran de votre navigateur."
 	},
 	"state": {
-		"finishBeforeFrameChange": "Terminez ou ignorez la génération en attente avant de changer la taille du cadre.",
+		"finishBeforeFrameChange": "Terminez ou ignorez la génération en attente avant d’ajuster le cadre.",
 		"couldNotCheckNamedFrames": "Impossible de vérifier les images de {names} : {reason}",
 		"couldNotCheckSeveralFrames": "Impossible de vérifier les images de {names}.",
 		"copyMissingOneMove": "Des images manquent pour {move} ; l’objet y reste masqué.",
@@ -1121,7 +1121,7 @@
 		"imported": "{name} importé",
 		"untitledState": "État sans titre",
 		"warning": {
-			"noRoom": "L’espace pour les animations n’a pas été ajouté, car ce personnage a trop de pixels d’image. Utilisez Taille du cadre après l’import pour l’ajouter.",
+			"noRoom": "L’espace pour les animations n’a pas été ajouté, car ce personnage a trop de pixels d’image. Utilisez Ajuster le cadre après l’import pour l’ajouter.",
 			"fixedBase": "Le visuel importé devient le corps de base figé : il est impossible de retirer les vêtements et les cheveux déjà dessinés. Configurez le rig de pose pour animer l’équipement avec le squelette et ajouter de nouvelles animations.",
 			"frameCounts": "« {move} » a un nombre d’images différent selon la direction. Ses directions ont été importées comme animations distinctes pour conserver chaque image et la durée d’origine de chaque direction.",
 			"semiAlpha": "Les pixels partiellement transparents en bordure ont été convertis en pixels opaques ou transparents, comme en pixel art."
@@ -2188,8 +2188,8 @@
 		}
 	},
 	"moveSheet": {
-		"enlargeFrame": "Agrandir à {size} px",
-		"frameRoom": "Cette animation peut dépasser le cadre de {frame} px : le personnage a {below} px sous les pieds. Agrandissez d’abord gratuitement le cadre à {size} px, ou ajoutez l’animation quand même.",
+		"makeRoom": "Faire de la place",
+		"frameRoom": "Cette animation peut dépasser le cadre de {frame} px : le personnage a {below} px sous les pieds. Faites d’abord de la place gratuitement, ou ajoutez l’animation quand même.",
 		"sharedCopiesCoverage": "Les copies partagées peuvent toujours être portées dans les vues où elles ont des images.",
 		"thatCharacter": "ce personnage",
 		"recoveryCheckFailed": "Impossible de vérifier les images en cache : {error}",
@@ -2601,8 +2601,8 @@
 		}
 	},
 	"moveReview": {
-		"enlargeDetail": "Ajoute gratuitement de l’espace vide autour de tout le personnage (de {from} px à {size} px) et réutilise le mouvement payé ; seules les étapes sur le cadre plus grand sont achetées.",
-		"enlarge": "Agrandir le cadre à {size} px et continuer",
+		"makeRoomDetail": "{change}, gratuitement. Le mouvement payé est réutilisé ; seules les étapes sur le cadre modifié sont achetées.",
+		"makeRoom": "Faire de la place et continuer",
 		"resume": "Continuer avec les résultats payés",
 		"lift": "Continuer, relevé pour tenir",
 		"liftAndReroll": "Relever pour tenir, relancer {views}",
@@ -2620,27 +2620,46 @@
 		"register": "Réenregistrer les vues dessinées",
 		"registerDetail": "Conserve le dessin payé et achète un nouvel enregistrement des mêmes vues."
 	},
-	"frameSheet": {
-		"title": "Taille du cadre",
+	"adjustFrame": {
+		"title": "Ajuster le cadre",
+		"intro": "Déplacez {name} vers le haut ou le bas dans son cadre, ou changez la taille du cadre. Chaque objet, animation et image suit. C’est gratuit et rien n’est redessiné.",
+		"previewLabel": "Personnage dans son cadre",
+		"preview": "Vue {direction} dans un cadre de {size} px",
+		"keys": "Quand l’aperçu a le focus, les flèches haut et bas déplacent le personnage de 1 px (avec Maj, 4 px).",
+		"direction": "Vue",
+		"position": "Position",
+		"up": "Haut",
+		"down": "Bas",
+		"movedUp": "Monté de {px} px",
+		"movedDown": "Descendu de {px} px",
+		"notMoved": "Non déplacé",
 		"size": "Taille du cadre",
-		"intro": "Ajoutez ou retirez de l’espace vide autour de {name}. C’est gratuit et rien n’est redessiné : chaque objet, animation et image garde sa place.",
-		"preview": "Vue debout dans un cadre de {size} px",
-		"useRecommended": "Utiliser {size} px",
-		"range": "Actuellement {current} px. Choisissez de {min} à {max} px par pas de 2.",
-		"roomShort": "Les animations peuvent dépasser ce cadre. {size} px ajoute de l’espace sous les pieds et sur les côtés.",
+		"smaller": "Cadre plus petit",
+		"larger": "Cadre plus grand",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "Faire de la place",
+		"makeRoomHelp": "Déplace le personnage juste assez pour laisser de la place à la marche, et n’agrandit le cadre que si cela ne suffit pas.",
+		"madeRoom": "Place faite. Vérifiez l’aperçu, puis enregistrez.",
+		"roomy": "Ce personnage a déjà de la place pour les animations.",
+		"short": "Les animations peuvent dépasser ce cadre. Faire de la place le corrige gratuitement.",
 		"above96": "Au-delà de 96 px, les objets tenus et les grilles de réparation coûtent plus cher.",
 		"above170": "Au-delà de 170 px, chaque objet coûte 25 gens par appel d’habillage.",
-		"consequences": "Les objets ne se copient à l’identique qu’entre personnages de même taille de cadre. Les exports gardent la même échelle en jeu ; exportez à nouveau pour utiliser le nouveau cadre.",
+		"consequences": "Les objets ne se copient à l’identique qu’entre personnages de même taille et position de cadre. Les exports gardent la même échelle et la même origine en jeu ; exportez à nouveau pour utiliser le changement.",
 		"loading": "Chargement du cadre…",
-		"saved": "Cadre modifié de {before} px à {size} px.",
-		"undone": "Cadre revenu à {size} px.",
+		"saved": "Cadre ajusté : {change}.",
+		"undone": "Modification du cadre annulée.",
 		"errors": {
 			"missingArtwork": "Des illustrations enregistrées de ce personnage manquent, son cadre ne peut donc pas être modifié.",
-			"even": "Choisissez une autre taille de cadre qui change d’un nombre pair de pixels.",
+			"even": "Choisissez une taille de cadre qui change d’un nombre pair de pixels.",
 			"range": "Le cadre doit mesurer de {min} à {max} px pour ce personnage.",
-			"resolveDrafts": "Conservez ou ignorez les brouillons d’objets de ce personnage avant de changer la taille du cadre.",
-			"changed": "Ce personnage a changé. Rouvrez Taille du cadre pour vérifier la dernière version.",
-			"saveFailed": "Impossible de rétablir le cadre."
+			"clipTop": "Cela coupe {px} px en haut du personnage ou de ses objets.",
+			"clipBottom": "Cela coupe {px} px en bas du personnage ou de ses objets.",
+			"clipSides": "Cela coupe {px} px sur les côtés du personnage ou de ses objets.",
+			"unchanged": "Changez d’abord la taille ou la position du cadre.",
+			"limit": "Même un cadre de {size} px ne laisse pas assez de place aux animations de ce personnage.",
+			"resolveDrafts": "Conservez ou ignorez les brouillons d’objets de ce personnage avant d’ajuster le cadre.",
+			"changed": "Ce personnage a changé. Rouvrez Ajuster le cadre pour vérifier la dernière version.",
+			"undoFailed": "Impossible d’annuler la modification du cadre."
 		}
 	}
 }

@@ -128,7 +128,7 @@
 		"notAnOfficialApp": "Este não é um app oficial."
 	},
 	"characterActions": {
-		"frameSize": "Tamanho do quadro…",
+		"adjustFrame": "Ajustar quadro…",
 		"directions": "Direções…",
 		"demoDeleteLocked": "Não é possível excluir o personagem da demo",
 		"labelDeleteCharacter": "Excluir personagem…"
@@ -740,7 +740,7 @@
 		"couldNotEnterFullScreenTryAgain": "Não foi possível entrar em tela cheia. Tente novamente ou use o controle de tela cheia do navegador."
 	},
 	"state": {
-		"finishBeforeFrameChange": "Conclua ou descarte o trabalho de geração pendente antes de mudar o tamanho do quadro.",
+		"finishBeforeFrameChange": "Conclua ou descarte o trabalho de geração pendente antes de ajustar o quadro.",
 		"couldNotCheckNamedFrames": "Não foi possível verificar os quadros de {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Não foi possível verificar os quadros de {names}.",
 		"copyMissingOneMove": "Faltam quadros em {move}; o item fica oculto nela.",
@@ -1135,7 +1135,7 @@
 		"imported": "{name} foi importado",
 		"untitledState": "Estado sem nome",
 		"warning": {
-			"noRoom": "Não foi adicionado espaço para animações porque este personagem tem pixels de imagem demais. Use Tamanho do quadro depois de importar para adicioná-lo.",
+			"noRoom": "Não foi adicionado espaço para animações porque este personagem tem pixels de imagem demais. Use Ajustar quadro depois de importar para adicioná-lo.",
 			"fixedBase": "A arte importada vira a base fixa: as roupas e os cabelos existentes não podem ser removidos. Configure o rig de poses para usar equipamentos animados pelo esqueleto e adicionar novas animações.",
 			"frameCounts": "“{move}” tem quantidades diferentes de quadros em cada direção. As direções foram importadas como animações separadas para preservar todos os quadros originais e a duração de cada direção.",
 			"semiAlpha": "As bordas parcialmente transparentes foram convertidas para transparência de pixel art."
@@ -2201,8 +2201,8 @@
 		}
 	},
 	"moveSheet": {
-		"enlargeFrame": "Ampliar para {size} px",
-		"frameRoom": "Esta animação pode passar do quadro de {frame} px: o personagem tem {below} px abaixo dos pés. Amplie o quadro para {size} px de graça primeiro ou adicione a animação mesmo assim.",
+		"makeRoom": "Abrir espaço",
+		"frameRoom": "Esta animação pode passar do quadro de {frame} px: o personagem tem {below} px abaixo dos pés. Abra espaço de graça primeiro ou adicione a animação mesmo assim.",
 		"sharedCopiesCoverage": "As cópias compartilhadas ainda podem ser usadas nas vistas em que têm quadros.",
 		"thatCharacter": "esse personagem",
 		"recoveryCheckFailed": "Não foi possível verificar os quadros em cache: {error}",
@@ -2614,8 +2614,8 @@
 		}
 	},
 	"moveReview": {
-		"enlargeDetail": "Adiciona espaço vazio grátis ao redor de todo o personagem (de {from} px para {size} px) e reutiliza o movimento pago; só as etapas no quadro maior são compradas.",
-		"enlarge": "Ampliar o quadro para {size} px e continuar",
+		"makeRoomDetail": "{change}, de graça. O movimento pago é reutilizado; só as etapas no quadro alterado são compradas.",
+		"makeRoom": "Abrir espaço e continuar",
 		"resume": "Continuar com os resultados pagos",
 		"lift": "Continuar, elevado para caber",
 		"liftAndReroll": "Elevar para caber e gerar {views} de novo",
@@ -2633,27 +2633,46 @@
 		"register": "Registrar as vistas desenhadas de novo",
 		"registerDetail": "Mantém o desenho pago e compra um novo registro das mesmas vistas."
 	},
-	"frameSheet": {
-		"title": "Tamanho do quadro",
+	"adjustFrame": {
+		"title": "Ajustar quadro",
+		"intro": "Mova {name} para cima ou para baixo no quadro, ou mude o tamanho do quadro. Cada item, animação e quadro acompanha. É grátis e nada é redesenhado.",
+		"previewLabel": "Personagem no quadro",
+		"preview": "Vista {direction} em um quadro de {size} px",
+		"keys": "Com a prévia em foco, as setas para cima e para baixo movem o personagem 1 px (com Shift, 4 px).",
+		"direction": "Vista",
+		"position": "Posição",
+		"up": "Para cima",
+		"down": "Para baixo",
+		"movedUp": "Movido {px} px para cima",
+		"movedDown": "Movido {px} px para baixo",
+		"notMoved": "Não movido",
 		"size": "Tamanho do quadro",
-		"intro": "Adicione ou remova espaço vazio ao redor de {name}. É grátis e nada é redesenhado: cada item, animação e quadro mantém seu lugar.",
-		"preview": "Vista em pé em um quadro de {size} px",
-		"useRecommended": "Usar {size} px",
-		"range": "Agora {current} px. Escolha de {min} a {max} px, de 2 em 2.",
-		"roomShort": "As animações podem passar deste quadro. {size} px adiciona espaço abaixo dos pés e nas laterais.",
+		"smaller": "Quadro menor",
+		"larger": "Quadro maior",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "Abrir espaço",
+		"makeRoomHelp": "Move o personagem só o necessário para deixar espaço para andar e amplia o quadro apenas quando mover não basta.",
+		"madeRoom": "Espaço aberto. Confira a prévia e salve.",
+		"roomy": "Este personagem já tem espaço para as animações.",
+		"short": "As animações podem passar deste quadro. Abrir espaço resolve isso de graça.",
 		"above96": "Acima de 96 px, itens segurados e grades de reparo custam mais.",
 		"above170": "Acima de 170 px, cada item custa 25 gens por chamada de vestir.",
-		"consequences": "Itens só são copiados exatamente entre personagens com o mesmo tamanho de quadro. As exportações mantêm a mesma escala no jogo; exporte de novo para usar o novo quadro.",
+		"consequences": "Itens só são copiados exatamente entre personagens com o mesmo tamanho e posição de quadro. As exportações mantêm a mesma escala e origem no jogo; exporte de novo para usar a mudança.",
 		"loading": "Carregando o quadro…",
-		"saved": "Quadro alterado de {before} px para {size} px.",
-		"undone": "Quadro voltou para {size} px.",
+		"saved": "Quadro ajustado: {change}.",
+		"undone": "Mudança no quadro desfeita.",
 		"errors": {
 			"missingArtwork": "Falta arte salva deste personagem, então o quadro não pode ser alterado.",
-			"even": "Escolha outro tamanho de quadro que mude em um número par de pixels.",
+			"even": "Escolha um tamanho de quadro que mude em um número par de pixels.",
 			"range": "O quadro deve ter de {min} a {max} px para este personagem.",
-			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de mudar o tamanho do quadro.",
-			"changed": "Este personagem mudou. Abra Tamanho do quadro de novo para revisar a versão mais recente.",
-			"saveFailed": "Não foi possível voltar o quadro."
+			"clipTop": "Isso corta {px} px do topo do personagem ou dos itens.",
+			"clipBottom": "Isso corta {px} px da base do personagem ou dos itens.",
+			"clipSides": "Isso corta {px} px das laterais do personagem ou dos itens.",
+			"unchanged": "Mude o tamanho ou a posição do quadro primeiro.",
+			"limit": "Nem um quadro de {size} px consegue dar espaço para as animações deste personagem.",
+			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de ajustar o quadro.",
+			"changed": "Este personagem mudou. Abra Ajustar quadro de novo para revisar a versão mais recente.",
+			"undoFailed": "Não foi possível desfazer a mudança no quadro."
 		}
 	}
 }

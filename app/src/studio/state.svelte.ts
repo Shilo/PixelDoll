@@ -132,7 +132,13 @@ import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
 import { DEFAULT_MOVE, type Sha256 } from '../lib/rig/rig.ts';
-import { reframeCharacter } from '../lib/rig/reframe.ts';
+import {
+	frameChangeText,
+	frameFacts,
+	makeRoom,
+	reframeCharacter,
+	type FrameChange
+} from '../lib/rig/reframe.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
@@ -233,7 +239,7 @@ export type SheetId =
 	| 'workspaceReport'
 	| 'slots'
 	| 'frames'
-	| 'frameSize';
+	| 'adjustFrame';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -273,7 +279,7 @@ export const ui = $state({
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
 	directionProject: '',
-	frameProject: '', // the character the Frame size sheet is for
+	frameProject: '', // the character the Adjust frame sheet is for
 	details: '', // the character the Details sheet is for
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		group: string;
@@ -1075,7 +1081,7 @@ const WORK_BLOCKS = new Set([
 	'directionsSheet.resolveDrafts',
 	'moveRemoval.resolveDrafts',
 	'state.finishBeforeFrameChange',
-	'frameSheet.errors.resolveDrafts'
+	'adjustFrame.errors.resolveDrafts'
 ]);
 export const blockedByWork = (reason: LocalizedError | '') =>
 	!!reason && WORK_BLOCKS.has(reason.translation.key);
@@ -1146,7 +1152,7 @@ function characterEditBlocked(
 						)
 					: action === 'change the frame of'
 						? new LocalizedError(
-								'Finish or dismiss pending generation work before changing the frame size.',
+								'Finish or dismiss pending generation work before adjusting the frame.',
 								'state.finishBeforeFrameChange'
 							)
 						: new LocalizedError(
@@ -1198,8 +1204,8 @@ export function frameEditsBlocked(id: string, stoppedMove = false): LocalizedErr
 			: '') ||
 		(gens.some((gen) => gen.draft.rigId === id && !gen.draft.acceptedAt)
 			? new LocalizedError(
-					'Keep or dismiss this character’s item drafts before changing the frame size.',
-					'frameSheet.errors.resolveDrafts'
+					'Keep or dismiss this character’s item drafts before adjusting the frame.',
+					'adjustFrame.errors.resolveDrafts'
 				)
 			: '')
 	);
@@ -1213,11 +1219,12 @@ const pngBlobs = async (images: Map<Sha256, Img>) => {
 		);
 	return blobs;
 };
-/** Frame size: re-center the whole character on a `size` px frame (free and lossless), with an Undo toast that restores
- *  the record as it was. `stoppedMove`: chosen from this character's stopped move review, which continues on the result. */
-export async function resizeCharacter(
+/** Adjust frame: move the whole character up or down and change its frame (free and lossless), with an Undo notice that
+ *  restores the record as it was. `stoppedMove`: chosen from this character's stopped move review, which continues on the
+ *  result. */
+export async function adjustCharacter(
 	id: string,
-	size: number,
+	change: FrameChange,
 	{ stoppedMove = false, quiet = false } = {}
 ): Promise<void> {
 	const blocked = () => {
@@ -1232,7 +1239,7 @@ export async function resizeCharacter(
 	const { record: next, newImages } = await reframeCharacter(
 		rec,
 		project.images,
-		size,
+		change,
 		async (hash) => {
 			const image = await readStoredImage(hash);
 			old.set(hash, image);
@@ -1244,16 +1251,33 @@ export async function resizeCharacter(
 	await db.saveIdleCharacter(rec, next, blobs, 'change the frame of', stoppedMove);
 	await refreshCharacterDirections(id);
 	if (quiet) return;
-	toast([message('frameSheet.saved', { size, before }), message('common.undo')], {
-		tone: 'success',
-		duration: 10000,
-		action: () => void undoResize(id, next, rec, old)
-	});
+	toast(
+		[
+			message('adjustFrame.saved', { change: frameChangeText(before, change) }),
+			message('common.undo')
+		],
+		{ tone: 'success', duration: 10000, action: () => void undoAdjust(id, next, rec, old) }
+	);
 }
-/** Put back the record a resize replaced, if nothing changed it since; its images are stored again in case cleanup ran. */
-async function undoResize(
+/** Make room for moves (lib/rig/reframe.ts makeRoom) and save it like Adjust frame; says why when nothing can or need change. */
+export async function makeRoomFor(id: string): Promise<void> {
+	await flushSave();
+	const { rec, project } = await loadProject(id);
+	const plan = makeRoom(await frameFacts(rec, project.images, readStoredImage));
+	if (plan.limit)
+		throw new LocalizedError(
+			`Even a ${plan.size} px frame cannot give this character room for moves.`,
+			'adjustFrame.errors.limit',
+			{ size: plan.size }
+		);
+	if (plan.size === rec.manifest.rig.cell.w && !plan.dy)
+		throw new LocalizedError('This character already has room for moves.', 'adjustFrame.roomy');
+	await adjustCharacter(id, plan);
+}
+/** Put back the record a change replaced, if nothing changed it since; its images are stored again in case cleanup ran. */
+async function undoAdjust(
 	id: string,
-	resized: StoredProject,
+	changed: StoredProject,
 	original: StoredProject,
 	images: Map<Sha256, Img>
 ) {
@@ -1261,13 +1285,11 @@ async function undoResize(
 		const blocked = frameEditsBlocked(id);
 		if (blocked) throw blocked;
 		await flushSave();
-		await db.saveIdleCharacter(resized, original, await pngBlobs(images), 'change the frame of');
+		await db.saveIdleCharacter(changed, original, await pngBlobs(images), 'change the frame of');
 		await refreshCharacterDirections(id);
-		toast(message('frameSheet.undone', { size: original.manifest.rig.cell.w }), {
-			tone: 'success'
-		});
+		toast(message('adjustFrame.undone'), { tone: 'success' });
 	} catch (error) {
-		toast(errorTranslation(error) ?? message('frameSheet.errors.saveFailed'), { tone: 'danger' });
+		toast(errorTranslation(error) ?? message('adjustFrame.errors.undoFailed'), { tone: 'danger' });
 	}
 }
 function generationSettled() {

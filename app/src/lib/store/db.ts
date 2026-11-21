@@ -212,7 +212,7 @@ async function editIdleCharacter(
 		records: any[]
 	) => void,
 	blobs?: Map<string, Blob>,
-	/** Frame size from a stopped move's review: that failed move of this character waits for the resize and continues on
+	/** Adjust frame from a stopped move's review: that failed move of this character waits for the resize and continues on
 	 *  it, so it does not hold the edit. Any other stopped or running work still does. */
 	stoppedMove = false
 ): Promise<void> {
@@ -284,7 +284,7 @@ async function editIdleCharacter(
 								)
 							: action === 'change the frame of'
 								? new LocalizedError(
-										'Finish or dismiss pending generation work before changing the frame size.',
+										'Finish or dismiss pending generation work before adjusting the frame.',
 										'state.finishBeforeFrameChange'
 									)
 								: new LocalizedError(
@@ -338,8 +338,8 @@ export async function saveIdleCharacter(
 						)
 					: frame
 						? new LocalizedError(
-								'Keep or dismiss this character’s item drafts before changing the frame size.',
-								'frameSheet.errors.resolveDrafts'
+								'Keep or dismiss this character’s item drafts before adjusting the frame.',
+								'adjustFrame.errors.resolveDrafts'
 							)
 						: new Error('Keep or dismiss this character’s item drafts before changing directions.');
 			if (stableStringify(records.find((record) => record?.id === id)) !== version)
@@ -350,8 +350,8 @@ export async function saveIdleCharacter(
 						)
 					: frame
 						? new LocalizedError(
-								'This character changed. Reopen Frame size to review the latest version.',
-								'frameSheet.errors.changed'
+								'This character changed. Reopen Adjust frame to review the latest version.',
+								'adjustFrame.errors.changed'
 							)
 						: new Error(
 								'This character changed. Close and reopen Directions to review the latest version.'

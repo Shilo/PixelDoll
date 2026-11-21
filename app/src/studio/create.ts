@@ -39,12 +39,15 @@ import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { loadProject, readStoredImage, type StoredProject } from '../lib/store/project.ts';
 import {
-	frameMax,
+	frameChangeText,
+	frameFacts,
+	freeOf,
+	makeRoom,
 	reframeCharacter,
-	roomFrame,
 	roomShort,
 	standingRoom,
-	standingViews
+	standingViews,
+	type FrameChange
 } from '../lib/rig/reframe.ts';
 import { defaultCharacterExportId, itemContent } from '../lib/store/identity.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
@@ -887,7 +890,8 @@ async function motion(
 	activityScope?: string,
 	size = CELL,
 	standing?: Img,
-	lifts?: readonly number[]
+	lifts?: readonly number[],
+	below = 0
 ): Promise<{ keypoints: Keypoint[][]; record: JobRec }> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
@@ -900,7 +904,9 @@ async function motion(
 		size,
 		standing,
 		'optional-exact',
-		lifts
+		lifts,
+		'motion',
+		below
 	);
 	const kps = await Promise.all(
 		frames.map(async (f) => {
@@ -932,6 +938,11 @@ async function motion(
 	return { keypoints: kps as Keypoint[][], record: r };
 }
 
+/** The one placement of managed motion frames (live, cached replay, standing echo, lift and Make room): PixelLab draws them
+ *  from the registered standing view, centered on its canvas, so they land rig.artOffset rows lower once Adjust frame has
+ *  moved our art since that registration. Native V3/PixMiniMax moves start from our own art and take no offset. */
+export const artMapping = (rig: Pick<Manifest['rig'], 'artOffset'>, dir: DirectionName) =>
+	rig.artOffset?.[dir] ?? 0;
 function normalizeMotionFrames(
 	r: JobRec,
 	images: Img[],
@@ -942,7 +953,9 @@ function normalizeMotionFrames(
 	standing?: Img,
 	echo: 'optional-exact' | 'required-leading' | 'optional-leading' = 'optional-exact',
 	lifts?: readonly number[],
-	step = 'motion'
+	step = 'motion',
+	/** Rows our standing art sits below the registered view (artMapping): managed motion only, never native moves. */
+	below = 0
 ): Img[] {
 	const rejected = (failure: PaidFailure) => ({ step, failure, recordId: r.id });
 	const got = (r.response as SubmitResponse | undefined)?.directions;
@@ -964,7 +977,7 @@ function normalizeMotionFrames(
 	if ((returned !== expected && !startKept) || (echo === 'required-leading' && !startKept))
 		throw mismatch;
 	const normalizeFrame = (image: Img, lift = 0) => {
-		const normalized = normalize(image, size, size, 128, size, lift);
+		const normalized = normalize(image, size, size, 128, size, lift - below);
 		if (normalized.cutPx)
 			throw new PaidStepError(
 				`${label}: the motion does not fit the ${size} px frame. Its frames were kept for review; nothing was saved.`,
@@ -2044,7 +2057,9 @@ async function inspectMeasurementRecovery(
 				rig.cell.w,
 				restImg,
 				'optional-exact',
-				spec.motionLift?.[d]
+				spec.motionLift?.[d],
+				'motion',
+				artMapping(rig, d)
 			);
 			const measured = await Promise.all(
 				frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
@@ -2961,21 +2976,18 @@ export const MOVE_PREFLIGHT: ((p: Project, spec: MoveSpec) => PreflightWarning |
 export const movePreflightWarnings = (p: Project, spec: MoveSpec): PreflightWarning[] =>
 	MOVE_PREFLIGHT.flatMap((check) => check(p, spec) ?? []);
 /** A body move from standing views with less room than a move reaches (lib/rig/reframe.ts moveReach) may step past the
- *  frame and stop after paying. `size` is the frame Frame size would enlarge to for free (MoveSheet offers it); the user may
- *  also add the move anyway. */
+ *  frame and stop after paying. MoveSheet offers Make room (free, Adjust frame) or Add anyway. */
 export function frameRoomWarning(p: Project, spec: MoveSpec): PreflightWarning | undefined {
 	if (spec.itemsOnly) return undefined;
 	const m = p.manifest,
 		frame = m.rig.cell.w,
 		room = standingRoom(standingViews(m, p.images), frame);
 	if (!room || !roomShort(room)) return undefined;
-	const size = roomFrame(frame, room, frameMax(m));
-	if (size <= frame) return undefined;
 	return new PreflightWarning(
 		'frame-room-move',
-		`This move may step past the ${frame} px frame: the character has ${room.below} px below its feet. Enlarge the frame to ${size} px for free first, or add the move anyway.`,
+		`This move may step past the ${frame} px frame: the character has ${room.below} px below its feet. Make room for free first, or add the move anyway.`,
 		'moveSheet.frameRoom',
-		{ frame, below: room.below, size }
+		{ frame, below: room.below }
 	);
 }
 
@@ -3053,7 +3065,8 @@ async function bodyClip(
 			spec.activityScope,
 			rig.cell.w,
 			restImg,
-			spec.motionLift?.[d]
+			spec.motionLift?.[d],
+			artMapping(rig, d)
 		);
 		keypoints = result.keypoints;
 		source = result.record;
@@ -3195,69 +3208,102 @@ function rerollStep(plan: BodyClipPlan, error: PaidStepError): 'motion' | 'rende
 const viewName = (d: DirectionName) => message(directionNames[d]);
 const salt = (previous = 0) => previous + 1 + Math.floor(Math.random() * 1_000_000);
 /** Rows each returned motion frame needs to fit the cell, or null when lifting cannot fit one (cut at a side or the top). */
-async function motionLiftOf(plan: BodyClipPlan, record: JobRec): Promise<number[] | null> {
+async function motionLiftOf(
+	plan: BodyClipPlan,
+	record: JobRec,
+	d: DirectionName
+): Promise<number[] | null> {
 	const { rec, spec } = plan,
 		size = rec.manifest.rig.cell.w,
 		expected = moveMotionFrames(rec.manifest, spec),
 		images = (await imagesOf(record)).map((out) => out.img),
 		frames = images.length === expected + 1 ? images.slice(1) : images;
 	if (frames.length !== expected) return null;
-	const lifts = frames.map((image) => liftToFit(image, size, size, 128, size));
+	const below = artMapping(rec.manifest.rig, d),
+		lifts = frames.map((image) => liftToFit(image, size, size, 128, size, below));
 	return lifts.every((lift): lift is number => lift !== null) ? lifts : null;
 }
 
-/** Enlarge frame and continue: centered symmetric padding (Frame size) keeps character.id, so every cached motion request
- *  stays reusable and only the checks and body renders on the larger frame are bought. The frame is the room rule's size
- *  (lib/rig/reframe.ts), grown in 2 px steps until every overflowing motion that was bought fits; priced by a replay of the
- *  resized character from the cache. Undefined when nothing overflowed or no frame up to the limit fits. */
-async function enlargeFrameOption(
+/** Make room and continue: Adjust frame keeps character.id, so every cached motion request stays reusable and only the
+ *  joint checks and body renders on the changed frame are bought. The change is Make room's (lib/rig/reframe.ts) with every
+ *  cached motion this continuation reuses, in every view, kept inside the frame where artMapping will place it; priced by a
+ *  replay of the changed character from the cache. Undefined when nothing overflowed, or when no change fits. */
+async function makeRoomOption(
 	plan: BodyClipPlan,
 	failed: ReplayedView[],
-	records: JobRec[],
 	dirs: Direction[],
 	primary: boolean
 ): Promise<MovePaidOption | undefined> {
-	const overflowing = failed.filter((v) => v.error?.paid.failure === 'overflow');
-	if (!overflowing.length || overflowing.length !== failed.length) return undefined;
+	if (!failed.length || failed.some((v) => v.error?.paid.failure !== 'overflow')) return undefined;
 	const { rec, project } = plan,
 		m = rec.manifest,
 		size = m.rig.cell.w,
-		max = frameMax(m);
-	const motions: Img[] = [];
-	for (const v of overflowing) {
-		const id = v.error!.paid.recordId,
-			source = id && records.concat(queue.snapshot().jobs).find((r) => r.id === id);
-		if (!source) return undefined;
-		motions.push(...(await imagesOf(source)).map((out) => out.img));
-	}
-	const room = standingRoom(standingViews(m, project.images), size);
-	let frame = Math.max(size + 2, room ? roomFrame(size, room, max) : size);
-	const fits = (f: number) => motions.every((img) => !normalize(img, f, f, 128, f).cutPx);
-	while (frame <= max && !fits(frame)) frame += 2;
-	if (frame > max) return undefined;
-	const { record, newImages } = await reframeCharacter(rec, project.images, frame, readStoredImage);
+		spec = resumeSpec(plan.spec, { motionLift: undefined });
+	const boxes: { y0: number; y1: number; x0: number; x1: number }[] = [];
+	if (plan.model === 'skeleton-v3' && !plan.authored)
+		for (const d of dirs) {
+			const hash = (await requestIdentity(moveMotionRequest(rec, spec, d))).requestHash,
+				cached = queue
+					.snapshot()
+					.jobs.find((job) => job.requestHash === hash && job.state === 'done');
+			if (!cached) continue;
+			for (const { img } of await imagesOf(cached)) {
+				const box = opaqueAt(img, 128);
+				if (!box) continue;
+				const x = Math.floor((size - img.w) / 2),
+					y = Math.floor((size - img.h) / 2) + artMapping(m.rig, d);
+				boxes.push({ x0: box.x0 + x, x1: box.x1 + x, y0: box.y0 + y, y1: box.y1 + y });
+			}
+		}
+	const change = makeRoom(
+		await frameFacts(rec, project.images, readStoredImage),
+		freeOf(boxes, size)
+	);
+	if (change.limit || (change.size === size && !change.dy)) return undefined;
+	const { record, newImages } = await reframeCharacter(
+		rec,
+		project.images,
+		change,
+		readStoredImage
+	);
 	const next = bodyClipPlan(
 		record,
 		{ manifest: record.manifest, images: new Map([...project.images, ...newImages]) },
-		plan.spec
+		spec
 	);
 	const views = await Promise.all(dirs.map((d) => replayView(next, d))),
 		gens = +views.reduce((sum, v) => sum + v.gens, 0).toFixed(2);
 	return {
 		id: 'enlarge-frame',
-		label: message('moveReview.enlarge', { size: frame }),
-		detail: message('moveReview.enlargeDetail', { from: size, size: frame }),
+		label: message('moveReview.makeRoom'),
+		detail: message('moveReview.makeRoomDetail', { change: frameChangeText(size, change) }),
 		gens,
 		paid: gens > 0,
 		primary,
-		spec: plan.spec,
-		frame
+		spec,
+		change: { size: change.size, dy: change.dy }
 	};
+}
+/** The box of pixels at or above `thr` alpha: what normalize keeps and counts as cut. */
+function opaqueAt(im: Img, thr: number) {
+	let x0 = im.w,
+		y0 = im.h,
+		x1 = -1,
+		y1 = -1;
+	for (let y = 0; y < im.h; y++)
+		for (let x = 0; x < im.w; x++)
+			if (im.data[(y * im.w + x) * 4 + 3] >= thr) {
+				x0 = Math.min(x0, x);
+				x1 = Math.max(x1, x);
+				y0 = Math.min(y0, y);
+				y1 = y;
+			}
+	return x1 < 0 ? undefined : { x0, y0, x1, y1 };
 }
 export interface MovePaidOption extends PaidOption {
 	spec: MoveSpec;
-	/** `enlarge-frame`: the frame Frame size changes the character to (free) before the move continues with `spec`. */
-	frame?: number;
+	/** `enlarge-frame`: the free Adjust frame change applied before the move continues with `spec`. */
+	change?: FrameChange;
 }
 export interface MovePaidReview extends PaidReview {
 	options: MovePaidOption[];
@@ -3316,7 +3362,7 @@ export async function reviewMoveResults(
 			source &&
 			!plan.spec.motionLift?.[v.d]
 		) {
-			const lift = await motionLiftOf(plan, source);
+			const lift = await motionLiftOf(plan, source, v.d);
 			if (lift) {
 				lifts[v.d] = lift;
 				const raised = lift.filter(Boolean);
@@ -3381,10 +3427,9 @@ export async function reviewMoveResults(
 			spec: candidate
 		});
 	}
-	const enlarge = await enlargeFrameOption(
+	const enlarge = await makeRoomOption(
 		plan,
 		failed,
-		records,
 		dirs,
 		!options.some((option) => option.primary)
 	);

@@ -2882,8 +2882,8 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).check();
 	// The s2 body stands on its frame's last row: the move warns and offers free room first, keeping every choice.
 	await expect(move).toContainText('This move may step past the 64 px frame');
-	await move.getByRole('button', { name: 'Enlarge to 80 px', exact: true }).click();
-	await expect(page.locator('.toast')).toContainText('Frame changed from 64 px to 80 px.');
+	await move.getByRole('button', { name: 'Make room', exact: true }).click();
+	await expect(page.locator('.toast')).toContainText('Frame adjusted');
 	await expect(move).not.toContainText('This move may step past');
 	await expect(description).toHaveValue('jumping in place');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toBeChecked();

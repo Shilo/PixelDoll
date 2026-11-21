@@ -128,7 +128,7 @@
 		"notAnOfficialApp": "Resmî bir uygulama değildir."
 	},
 	"characterActions": {
-		"frameSize": "Kare boyutu…",
+		"adjustFrame": "Kareyi ayarla…",
 		"directions": "Yönler…",
 		"demoDeleteLocked": "Demo karakteri silinemez",
 		"labelDeleteCharacter": "Karakteri silin…"
@@ -735,7 +735,7 @@
 		"couldNotEnterFullScreenTryAgain": "Tam ekrana geçilemedi. Tekrar deneyin veya tarayıcınızın tam ekran kontrolünü kullanın."
 	},
 	"state": {
-		"finishBeforeFrameChange": "Kare boyutunu değiştirmeden önce bekleyen üretim işini bitirin veya kapatın.",
+		"finishBeforeFrameChange": "Kareyi ayarlamadan önce bekleyen üretim işini bitirin veya kapatın.",
 		"couldNotCheckNamedFrames": "{names} için kareler denetlenemedi: {reason}",
 		"couldNotCheckSeveralFrames": "{names} için kareler denetlenemedi.",
 		"copyMissingOneMove": "{move} hareketinde eksik kareler var; eşya orada görünmez.",
@@ -1121,7 +1121,7 @@
 		"imported": "{name} içe aktarıldı",
 		"untitledState": "Adsız durum",
 		"warning": {
-			"noRoom": "Bu karakterde çok fazla görüntü pikseli olduğu için animasyon alanı eklenmedi. Eklemek için içe aktardıktan sonra Kare boyutunu kullanın.",
+			"noRoom": "Bu karakterde çok fazla görüntü pikseli olduğu için animasyon alanı eklenmedi. Eklemek için içe aktardıktan sonra Kareyi ayarla’yı kullanın.",
 			"fixedBase": "İçe aktarılan görsel sabit temel gövdedir: Mevcut giysiler ve saç kaldırılamaz. İskelete göre pozlanan ekipmanları kullanmak ve yeni animasyonlar eklemek için poz rig'ini kurun.",
 			"frameCounts": "“{move}” animasyonunda yönlere göre kare sayısı değişiyor. Özgün karelerin tümünü ve her yönün uzunluğunu korumak için yönler ayrı animasyonlar olarak içe aktarıldı.",
 			"semiAlpha": "Kısmen şeffaf kenarlar piksel sanatına uygun şeffaflığa dönüştürüldü."
@@ -2181,8 +2181,8 @@
 		}
 	},
 	"moveSheet": {
-		"enlargeFrame": "{size} px’e büyütün",
-		"frameRoom": "Bu animasyon {frame} px karenin dışına taşabilir: karakterin ayaklarının altında {below} px var. Önce kareyi ücretsiz olarak {size} px’e büyütün veya animasyonu yine de ekleyin.",
+		"makeRoom": "Yer aç",
+		"frameRoom": "Bu animasyon {frame} px karenin dışına taşabilir: karakterin ayaklarının altında {below} px var. Önce ücretsiz yer açın veya animasyonu yine de ekleyin.",
 		"sharedCopiesCoverage": "Paylaşılan kopyalar, kareleri olan görünümlerde kullanılabilir.",
 		"thatCharacter": "söz konusu karakter",
 		"recoveryCheckFailed": "Önbellekteki kareler kontrol edilemedi: {error}",
@@ -2594,8 +2594,8 @@
 		}
 	},
 	"moveReview": {
-		"enlargeDetail": "Karakterin tamamının çevresine ücretsiz boş alan ekler ({from} px’ten {size} px’e) ve ödenmiş hareketi yeniden kullanır; yalnızca büyük karedeki adımlar satın alınır.",
-		"enlarge": "Kareyi {size} px’e büyütün ve devam edin",
+		"makeRoomDetail": "{change}, ücretsiz. Ödenmiş hareket yeniden kullanılır; yalnızca değişen karedeki adımlar satın alınır.",
+		"makeRoom": "Yer açın ve devam edin",
 		"resume": "Ücretli sonuçlarla devam et",
 		"lift": "Sığması için yükseltip devam et",
 		"liftAndReroll": "Sığması için yükselt, yeniden oluştur: {views}",
@@ -2613,27 +2613,46 @@
 		"register": "Çizilen görünümleri yeniden kaydet",
 		"registerDetail": "Ücretli çizimi korur ve aynı görünümler için yeni bir kayıt satın alır."
 	},
-	"frameSheet": {
-		"title": "Kare boyutu",
+	"adjustFrame": {
+		"title": "Kareyi ayarla",
+		"intro": "{name} karakterini karesi içinde yukarı veya aşağı taşıyın ya da kare boyutunu değiştirin. Her eşya, animasyon ve kare birlikte taşınır. Ücretsizdir ve hiçbir şey yeniden çizilmez.",
+		"previewLabel": "Karesindeki karakter",
+		"preview": "{size} px karede yön: {direction}",
+		"keys": "Önizleme odaktayken yukarı ve aşağı ok tuşları karakteri 1 px (Shift ile 4 px) taşır.",
+		"direction": "Yön",
+		"position": "Konum",
+		"up": "Yukarı",
+		"down": "Aşağı",
+		"movedUp": "{px} px yukarı taşındı",
+		"movedDown": "{px} px aşağı taşındı",
+		"notMoved": "Taşınmadı",
 		"size": "Kare boyutu",
-		"intro": "{name} çevresine boş alan ekleyin veya kaldırın. Ücretsizdir ve hiçbir şey yeniden çizilmez: her eşya, animasyon ve kare yerinde kalır.",
-		"preview": "{size} px karede ayakta görünüm",
-		"useRecommended": "{size} px kullanın",
-		"range": "Şu an {current} px. 2’şer adımla {min}–{max} px seçin.",
-		"roomShort": "Animasyonlar bu karenin dışına taşabilir. {size} px, ayakların altına ve yanlara yer açar.",
+		"smaller": "Daha küçük kare",
+		"larger": "Daha büyük kare",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "Yer aç",
+		"makeRoomHelp": "Karakteri yürüme için yer kalacak kadar taşır, taşımak yetmediğinde kareyi büyütür.",
+		"madeRoom": "Yer açıldı. Önizlemeyi kontrol edip kaydedin.",
+		"roomy": "Bu karakterin animasyonlar için zaten yeri var.",
+		"short": "Animasyonlar bu karenin dışına taşabilir. Yer aç bunu ücretsiz düzeltir.",
 		"above96": "96 px’in üzerinde, elde tutulan eşyalar ve onarım ızgaraları daha pahalıdır.",
 		"above170": "170 px’in üzerinde her eşya, giydirme çağrısı başına 25 gens tutar.",
-		"consequences": "Eşyalar yalnızca kare boyutu aynı olan karakterler arasında birebir kopyalanır. Dışa aktarımlar oyun içi ölçeği korur; yeni kareyi kullanmak için yeniden dışa aktarın.",
+		"consequences": "Eşyalar yalnızca kare boyutu ve konumu aynı olan karakterler arasında birebir kopyalanır. Dışa aktarımlar oyun içi ölçeği ve başlangıç noktasını korur; değişikliği kullanmak için yeniden dışa aktarın.",
 		"loading": "Kare yükleniyor…",
-		"saved": "Kare {before} px’ten {size} px’e değiştirildi.",
-		"undone": "Kare yeniden {size} px yapıldı.",
+		"saved": "Kare ayarlandı: {change}.",
+		"undone": "Kare değişikliği geri alındı.",
 		"errors": {
 			"missingArtwork": "Bu karakterin kayıtlı çizimleri eksik, bu yüzden karesi değiştirilemez.",
-			"even": "Çift sayıda piksel değişen farklı bir kare boyutu seçin.",
+			"even": "Çift sayıda piksel değişen bir kare boyutu seçin.",
 			"range": "Bu karakter için kare {min}–{max} px olmalıdır.",
-			"resolveDrafts": "Kare boyutunu değiştirmeden önce bu karakterin eşya taslaklarını saklayın veya kapatın.",
-			"changed": "Bu karakter değişti. En son sürümü incelemek için Kare boyutunu yeniden açın.",
-			"saveFailed": "Kare geri alınamadı."
+			"clipTop": "Bu, karakterin veya eşyalarının üstünden {px} px keser.",
+			"clipBottom": "Bu, karakterin veya eşyalarının altından {px} px keser.",
+			"clipSides": "Bu, karakterin veya eşyalarının yanlarından {px} px keser.",
+			"unchanged": "Önce kare boyutunu veya konumu değiştirin.",
+			"limit": "{size} px’lik bir kare bile bu karaktere animasyonlar için yer açamaz.",
+			"resolveDrafts": "Kareyi ayarlamadan önce bu karakterin eşya taslaklarını saklayın veya kapatın.",
+			"changed": "Bu karakter değişti. En son sürümü incelemek için Kareyi ayarla’yı yeniden açın.",
+			"undoFailed": "Kare değişikliği geri alınamadı."
 		}
 	}
 }

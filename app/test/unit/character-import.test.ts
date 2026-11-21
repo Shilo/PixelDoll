@@ -607,7 +607,7 @@ test.each([80, 92, 96, 128, 160, 256])(
 		const imported = await readCharacterZip(bytes),
 			{ manifest } = imported.project,
 			frame = importFrame(original);
-		expect(frame).toBe({ 80: 112, 92: 128, 96: 144, 128: 176, 160: 224, 256: 256 }[size]);
+		expect(frame).toBe({ 80: 128, 92: 144, 96: 144, 128: 192, 160: 224, 256: 256 }[size]);
 		expect(manifest.rig.cell).toEqual({ w: frame, h: frame });
 		const cell = cellImg(imported.project, manifest.items[0].layers[0], 'default', 'south', 0)!,
 			p = (frame - size) / 2;

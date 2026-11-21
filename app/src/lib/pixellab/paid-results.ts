@@ -31,8 +31,7 @@ export class PaidStepError extends LocalizedError {
 	}
 }
 
-/** Every way on a review can offer. `enlarge-frame` (pad the frame and continue) is typed for the Frame size action and is
- *  not offered until that action exists. */
+/** Every way on a review can offer. `enlarge-frame` is Make room and continue: Adjust frame first, then the same move. */
 export type PaidOptionId =
 	| 'resume'
 	| 'lift'

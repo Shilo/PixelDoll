@@ -286,6 +286,14 @@ test('setup keeps identical cached provenance requests and resume-safe flags whe
 	expect(f.records.size).toBe(4);
 });
 
+test('a new registration of the current standing views clears the Adjust frame offset', async () => {
+	const f = await fixture(3);
+	const { project } = (await mocks.load.mock.results.at(-1)?.value) ?? (await mocks.load());
+	project.manifest.rig.artOffset = { south: -5, east: -5, north: -5, west: -5 };
+	await setupCharacter(f.spec, () => {});
+	expect(f.saved().manifest.rig.artOffset).toBeUndefined();
+});
+
 test('an empty measurement plan stops before requests or publication', async () => {
 	const f = await fixture(0);
 	await expect(setupCharacter(f.spec, () => {})).rejects.toThrow('No body frames are available');

@@ -1715,10 +1715,12 @@ test('an overflowing paid motion is reviewed from the cache with a priced lift a
 	expect(review.recordIds).toContain('motion-east');
 	expect(review.options.map((option) => option.id)).toEqual(['lift', 'enlarge-frame', 'reroll']);
 	const [lift, enlarge, reroll] = review.options;
-	// Enlarge frame keeps character.id, so both paid motions are reused from the cache; on the larger frame each view needs
+	// Make room moves the art up 2 px at the same size (the stepping foot overflowed 2 rows): Adjust frame keeps character.id,
+	// so both paid motions are reused from the cache, placed by the same artOffset; every view's inputs moved, so each needs
 	// new motion checks, a body render and its checks. Nothing was requested to price it.
 	expect(enlarge).toMatchObject({
-		frame: 80,
+		change: { size: 64, dy: -2 },
+		detail: { key: 'moveReview.makeRoomDetail' },
 		paid: true,
 		primary: false,
 		spec: { seed: f.spec.seed }

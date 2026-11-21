@@ -159,6 +159,8 @@ export async function setupCharacter(
 	// Persist the registration template used above: future fitting must distinguish a set-up mannequin from artwork whose
 	// template is still unknown.
 	result.manifest.rig.template = 'mannequin';
+	// PixelLab now holds exactly these standing views: managed motion needs no Adjust frame offset any more.
+	delete result.manifest.rig.artOffset;
 	// A single transaction publishes new rest blobs and metadata together; current outfits/items are retained.
 	const blobs = new Map<string, Blob>();
 	for (const rest of Object.values(result.manifest.rig.rest ?? {}))

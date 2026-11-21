@@ -58,9 +58,11 @@ export function liftToFit(
 	w: number,
 	h: number,
 	thr = 128,
-	char = Math.min(src.w, w)
+	char = Math.min(src.w, w),
+	/** Rows the art sits below its PixelLab registration (rig.artOffset): the placement the lift starts from. */
+	below = 0
 ): number | null {
-	const { offset } = normalize(src, w, h, thr, char);
+	const { offset } = normalize(src, w, h, thr, char, -below);
 	let top = Infinity,
 		bottom = -Infinity;
 	for (let y = 0; y < src.h; y++)
