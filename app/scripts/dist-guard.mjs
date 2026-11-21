@@ -24,10 +24,10 @@ const MARKERS = [
 	'agent-badge',
 	'sourceMappingURL',
 	'#/selftest',
-	'Developer pages',
+	'#/dev',
 	'Verifying the PixelDoll update'
 ];
-const DEV_UI = ['Developer rigs', '8-dir held dress: every direction dressed once'];
+const DEV_UI = ['data-local-developer-rigs', '8-dir held dress: every direction dressed once'];
 const bad = [];
 let startupPolicies = 0;
 const dist = distDir();

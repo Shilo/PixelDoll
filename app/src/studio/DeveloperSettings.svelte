@@ -9,7 +9,8 @@
 		localDeveloperToolsEnabled,
 		setDeveloperMode
 	} from './developerMode.svelte.ts';
-	import { doc, openProject, store, toast, ui } from './state.svelte.ts';
+	import { toast } from './state.svelte.ts';
+	const localTools = import.meta.env.DEV ? () => import('./LocalDeveloperTools.svelte') : undefined;
 
 	let {
 		tools
@@ -17,19 +18,10 @@
 		/** Additional Developer rows, such as the backup-copy opener, rendered only while enabled. */
 		tools?: Snippet;
 	} = $props();
-	const rigs = $derived(
-		localDeveloperToolsEnabled() ? store.projects.filter((project) => project.dev) : []
-	);
 
 	function changeMode(event: Event & { currentTarget: HTMLInputElement }) {
 		if (!setDeveloperMode(event.currentTarget.checked))
 			toast(message('developer.notSaved'), { tone: 'warning' });
-	}
-
-	function pick(id: string) {
-		if (!localDeveloperToolsEnabled()) return;
-		ui.sheet = null;
-		if (id !== doc.id) void openProject(id);
 	}
 </script>
 
@@ -43,23 +35,13 @@
 		onchange={changeMode}
 	/>
 </label>
+<p class="bu-muted">{t('developer.description')}</p>
 {#if developerModeEnabled()}
 	{#if !workspaceCopy}<ApiPeek all menu />{/if}
 	{@render tools?.()}
-	{#if localDeveloperToolsEnabled()}
-		<a class="row bu-action" data-variant="quiet" href="#/dev">{t('developer.pages')}</a>
-		{#if rigs.length}
-			<p class="menu-sec">{t('developer.rigs')}</p>
-			{#each rigs as project (project.id)}
-				<button
-					type="button"
-					class="row bu-action"
-					data-variant="quiet"
-					onclick={() => pick(project.id)}
-				>
-					<span class="row-name">{project.name}</span>
-				</button>
-			{/each}
-		{/if}
+	{#if localTools && localDeveloperToolsEnabled()}
+		{#await localTools() then { default: LocalDeveloperTools }}
+			<LocalDeveloperTools />
+		{/await}
 	{/if}
 {/if}

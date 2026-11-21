@@ -40,6 +40,7 @@ async function captureWorkspaceStore(page: Page, projectKeys: string[], artworkK
 }
 
 test('workspace ZIP isolates the library and PixelLab connection', async ({
+	browser,
 	page,
 	context
 }, info) => {
@@ -127,23 +128,11 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		return { id, otherId: other.id, item: item.id, uniqueHash: uniqueHash.slice(7) };
 	});
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	const workspace = page.getByRole('button', { name: 'Workspace...', exact: true });
-	const workspaceActions = page.getByRole('group', { name: 'Workspace actions' });
-	const exportWorkspace = workspaceActions.getByRole('button', { name: 'Export my workspace' });
-	await expect(page.getByRole('button', { name: 'Export my workspace' })).toBeHidden();
-	await expect(page.getByRole('link', { name: 'Open workspace copy' })).toBeHidden();
-	await workspace.press('Enter');
-	await expect(exportWorkspace).toBeFocused();
-	await page.keyboard.press('Escape');
-	await expect(workspaceActions).toBeHidden();
-	await expect(workspace).toBeFocused();
-	await workspace.press('Enter');
-	await exportWorkspace.click();
-	const exportDialog = page.getByRole('dialog', { name: 'Export my workspace' });
-	await expect(
-		exportDialog.getByRole('checkbox', { name: 'Include recent errors' })
-	).not.toBeChecked();
-	await exportDialog.getByRole('checkbox', { name: 'Include recent errors' }).check();
+	await expect(page.getByRole('link', { name: 'Open backup as a copy' })).toBeHidden();
+	await page.getByRole('button', { name: 'Library backups...', exact: true }).click();
+	const exportDialog = page.getByRole('dialog', { name: 'Settings' });
+	const backUp = exportDialog.getByRole('button', { name: 'Back up library' });
+	await expect(backUp).toBeVisible();
 	const evidence = process.env.PIXELDOLL_WORKSPACE_EVIDENCE;
 	if (evidence)
 		await exportDialog.screenshot({
@@ -157,9 +146,9 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		saved.manifest.name = localStorage.getItem('pixellabApiKey');
 		await db.put('projects', id, saved);
 	}, sample.otherId);
-	await exportDialog.getByRole('button', { name: 'Download ZIP' }).click();
+	await backUp.click();
 	await expect(exportDialog.getByRole('alert')).toContainText(
-		'A saved field contains the connected or remembered PixelLab key.'
+		'A saved character contains the connected or remembered PixelLab key.'
 	);
 	await page.evaluate(async (id) => {
 		const dbPath = '/src/lib/store/db.ts';
@@ -169,10 +158,65 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		await db.put('projects', id, saved);
 	}, sample.otherId);
 	const waitDownload = page.waitForEvent('download');
-	await exportDialog.getByRole('button', { name: 'Download ZIP' }).click();
+	await backUp.click();
 	const download = await waitDownload;
-	if (evidence) await download.saveAs(join(evidence, 'tested.workspace.zip'));
-	const archive = await readFile((await download.path())!);
+	const backupFiles = await unzip(await readFile((await download.path())!));
+	const backupText = new TextDecoder().decode(backupFiles.get('backup.json'));
+	expect(backupText).not.toMatch(/fake-workspace-test-key|diagnostic-private-body/);
+	expect(
+		JSON.parse(backupText)
+			.characters.map(([key]: [string, unknown]) => key)
+			.sort()
+	).toEqual([sample.id, sample.otherId].sort());
+	const recipientContext = await browser.newContext({ viewport: { width: 360, height: 740 } });
+	try {
+		await recipientContext.route('https://*.pixellab.ai/**', (route) => route.abort());
+		await recipientContext.addInitScript(() => localStorage.setItem('pixeldoll.agentKey', 'off'));
+		const recipientPage = await recipientContext.newPage();
+		await openStudio(recipientPage, dev);
+		await recipientPage.getByRole('button', { name: 'Have a backup? Restore it' }).click();
+		const picker = recipientPage.locator('input[type=file][accept=".zip,application/zip"]');
+		const review = recipientPage.getByRole('region', { name: 'Review backup' });
+		await picker.setInputFiles((await download.path())!);
+		await expect(review).toBeFocused();
+		await expect(review.getByText('Characters to add')).toBeVisible();
+		await review.getByRole('button', { name: 'Restore', exact: true }).click();
+		await expect(recipientPage.getByText('Added 2 characters.')).toBeVisible();
+		await picker.setInputFiles((await download.path())!);
+		await expect(review.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+		await expect(review.getByText('Already in your library')).toBeVisible();
+	} finally {
+		await recipientContext.close();
+	}
+	const archive = Buffer.from(
+		await page.evaluate(async () => {
+			const workspacePath = '/src/lib/store/workspace.ts';
+			const activityPath = '/src/lib/pixellab/activity.ts';
+			const statePath = '/src/studio/state.svelte.ts';
+			const { ui, doc } = await import(statePath);
+			const { apiActivity } = await import(activityPath);
+			let calls: unknown[] = [];
+			apiActivity.subscribe((value: unknown[]) => (calls = value))();
+			const { bytes } = await (
+				await import(workspacePath)
+			).exportWorkspace(
+				{
+					project: doc.id,
+					item: ui.selected,
+					move: ui.anim,
+					direction: ui.dir,
+					frame: ui.frame,
+					screen: 'characters',
+					mode: 'preview',
+					tab: ui.tab,
+					theme: ui.theme
+				},
+				{ tier: null, calls },
+				[localStorage.getItem('pixellabApiKey')]
+			);
+			return [...bytes];
+		})
+	);
 	const files = await unzip(archive);
 	const indexText = new TextDecoder().decode(files.get('workspace.json'));
 	expect(indexText).not.toMatch(/fake-workspace-test-key|diagnostic-private-body/);
@@ -214,13 +258,15 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	expect(index.diagnostics.errors).toContainEqual(
 		expect.objectContaining({ tool: 'edit-animation-v2', outcome: 'lost' })
 	);
-	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await workspace.click();
+	await exportDialog.getByRole('button', { name: 'Developer', exact: true }).click();
+	await expect(exportDialog.getByRole('link', { name: 'Open backup as a copy' })).toBeHidden();
+	await exportDialog.getByRole('switch', { name: 'Developer mode' }).check();
 	const waitCopy = page.waitForEvent('popup');
-	await workspaceActions.getByRole('link', { name: 'Open workspace copy' }).click();
+	await exportDialog.getByRole('link', { name: 'Open backup as a copy' }).click();
 	const copy = await waitCopy;
-	const picker = copy.getByLabel('Choose workspace ZIP');
-	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	await exportDialog.getByRole('button', { name: 'Close', exact: true }).click();
+	const picker = copy.getByLabel('Choose backup ZIP');
+	await expect(copy.getByRole('heading', { name: 'Open backup as a copy' })).toBeVisible();
 	expect(new URL(copy.url()).origin).toBe(new URL(page.url()).origin);
 	expect(new URL(copy.url()).search).toBe('?workspace-copy');
 	await expect(copy.locator('html')).toHaveAttribute('data-app', 'studio');
@@ -269,11 +315,11 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	const recipientKeys = [...projectKeys, 'rig-recipient-only', 'rig-damaged'];
 	const recipient = await captureWorkspaceStore(page, recipientKeys, artworkKeys);
 	const chooseZip = copy.waitForEvent('filechooser');
-	await copy.getByRole('button', { name: /Drop a workspace ZIP here/ }).click();
+	await copy.getByRole('button', { name: /Drop a backup ZIP here/ }).click();
 	await (
 		await chooseZip
 	).setFiles({
-		name: download.suggestedFilename(),
+		name: 'legacy.workspace.zip',
 		mimeType: 'application/zip',
 		buffer: archive
 	});
@@ -484,9 +530,9 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await expect(useSavedKey).toHaveCount(0);
 	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await copy.reload();
-	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	await expect(copy.getByRole('heading', { name: 'Open backup as a copy' })).toBeVisible();
 	await copy.goto(new URL('/?workspace-copy=', page.url()).href);
-	const dropZone = copy.getByRole('button', { name: /Drop a workspace ZIP here/ });
+	const dropZone = copy.getByRole('button', { name: /Drop a backup ZIP here/ });
 	await dropZone.evaluate((zone, encoded) => {
 		const transfer = new DataTransfer();
 		transfer.items.add(
@@ -509,7 +555,13 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	);
 	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
 	await copy.goto(new URL('/?workspace-copy', info.project.use.baseURL!).href);
-	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	await expect(
+		copy.getByText('Enable Developer mode in Settings to open a backup as a copy.')
+	).toBeVisible();
+	await expect(picker).toHaveCount(0);
+	await copy.evaluate(() => localStorage.setItem('pixeldoll.developerMode', '1'));
+	await copy.reload();
+	await expect(copy.getByRole('heading', { name: 'Open backup as a copy' })).toBeVisible();
 	expect(new URL(copy.url()).origin).not.toBe(new URL(page.url()).origin);
 	expect(
 		await copy

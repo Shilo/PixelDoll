@@ -667,8 +667,16 @@ test('dev server: offline pauses the queue, back online resumes it, and develope
 	await page.waitForFunction(() => window.__queue!.paused === null);
 	await page.locator('.project-btn').click();
 	const projectMenu = page.locator('#project-menu');
-	await expect(projectMenu.getByText('Developer rigs', { exact: true })).toHaveCount(1);
-	await expect(projectMenu.getByText('E2E dev rig', { exact: true })).toBeHidden();
+	await expect(projectMenu.getByText('E2E dev rig', { exact: true })).toHaveCount(0);
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: /^Settings/ }).click();
+	await page.getByRole('button', { name: 'Developer', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings' });
+	await expect(settings.getByText('E2E dev rig', { exact: true })).toHaveCount(0);
+	await settings.getByRole('switch', { name: 'Developer mode' }).check();
+	await expect(settings.getByText('Developer rigs', { exact: true })).toBeVisible();
+	await expect(settings.getByRole('button', { name: 'E2E dev rig', exact: true })).toBeVisible();
 });
 
 // The demo tests run the production preview without a key. Each is independent so a slow machine costs one short test,

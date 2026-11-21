@@ -1329,14 +1329,14 @@ test('a production workspace copy offers the user guide without install actions'
 	try {
 		await page.goto(server.url);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await page.getByRole('button', { name: 'Workspace...', exact: true }).click();
-		await page.getByRole('button', { name: 'Export my workspace...', exact: true }).click();
+		await page.getByRole('button', { name: 'Library backups...', exact: true }).click();
 		const [archive] = await Promise.all([
 			page.waitForEvent('download'),
-			page.getByRole('button', { name: 'Download ZIP', exact: true }).click()
+			page.getByRole('button', { name: 'Back up library', exact: true }).click()
 		]);
+		await page.evaluate(() => localStorage.setItem('pixeldoll.developerMode', '1'));
 		await page.goto(new URL('?workspace-copy', server.url).href);
-		await page.getByLabel('Choose workspace ZIP').setInputFiles(await archive.path());
+		await page.getByLabel('Choose backup ZIP').setInputFiles(await archive.path());
 		await expect(page.getByText('Workspace copy · PixelLab off', { exact: true })).toBeVisible();
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await expect(page.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(

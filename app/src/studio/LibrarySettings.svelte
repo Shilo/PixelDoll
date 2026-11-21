@@ -30,8 +30,15 @@
 		warning?: Message;
 	};
 
-	let { busy = $bindable(false) }: { busy?: boolean } = $props();
+	let {
+		busy = $bindable(false),
+		reviewing = $bindable(false)
+	}: { busy?: boolean; reviewing?: boolean } = $props();
 	let plan = $state.raw<RestorePlan>();
+	$effect(() => {
+		reviewing = !!plan;
+		return () => (reviewing = false);
+	});
 	let archivedCount = $state(0);
 	let filename = $state('');
 	let error = $state<Message | string>();
@@ -59,7 +66,10 @@
 	const keys = () => [app.key, readSavedKey()];
 	const today = () => new Date().toISOString().slice(0, 10);
 	onMount(() => {
-		void libraryArchiveCount().then((count) => (archivedCount = count), (cause) => (error = errorMessage(cause)));
+		void libraryArchiveCount().then(
+			(count) => (archivedCount = count),
+			(cause) => (error = errorMessage(cause))
+		);
 	});
 
 	async function perform(action: () => Promise<void>) {
@@ -81,7 +91,9 @@
 			await prepareWorkspaceExport();
 			const result = await exportBackup(keys(), includeArchived);
 			saveZip(result.bytes, `pixeldoll-${today()}.backup.zip`);
-			status = message(result.hasOmissions ? 'librarySettings.backupOmissions' : 'librarySettings.downloaded');
+			status = message(
+				result.hasOmissions ? 'librarySettings.backupOmissions' : 'librarySettings.downloaded'
+			);
 		});
 	}
 
@@ -104,7 +116,9 @@
 				return;
 			}
 			filename = file.name;
-			plan = await planRestore(await readRestoreSource(new Uint8Array(await file.arrayBuffer()), keys()));
+			plan = await planRestore(
+				await readRestoreSource(new Uint8Array(await file.arrayBuffer()), keys())
+			);
 		});
 		await tick();
 		(review ?? openPicker)?.focus();
@@ -168,7 +182,9 @@
 			</dl>
 			{#if preview.edited}<p class="bu-muted">{t('librarySettings.edited')}</p>{/if}
 			{#if preview.warning}<p class="notice warn">{displayMessage(preview.warning)}</p>{/if}
-			{#if plan?.blockers.length}<p class="notice warn" role="alert">{t('librarySettings.incomplete')}</p>{/if}
+			{#if plan?.blockers.length}<p class="notice warn" role="alert">
+					{t('librarySettings.incomplete')}
+				</p>{/if}
 			{#if preview.archived}
 				<label class="check">
 					<input type="checkbox" bind:checked={keepArchived} disabled={busy} />
@@ -190,7 +206,9 @@
 					type="button"
 					class="btn primary bu-action"
 					data-variant="primary"
-					disabled={busy || !!plan?.blockers.length || (!additions && !(preview.archived && keepArchived))}
+					disabled={busy ||
+						!!plan?.blockers.length ||
+						(!additions && !(preview.archived && keepArchived))}
 					onclick={() => leaveReview(true)}
 					>{t(additions ? 'librarySettings.restore' : 'common.save')}</button
 				>
@@ -198,6 +216,7 @@
 		</section>
 	{:else}
 		<p class="bu-muted">{t('librarySettings.scope')}</p>
+		<p class="bu-muted">{t('librarySettings.privacy')}</p>
 		{#if archivedCount > 0}
 			<label class="check">
 				<input type="checkbox" bind:checked={includeArchived} disabled={busy} />

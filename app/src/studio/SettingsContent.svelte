@@ -3,8 +3,20 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
-	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
-	import { Archive, CodeXml, Download, Info, KeyRound, Moon, Settings2, Shirt, Sun } from './icons.ts';
+	import { workspaceCopy, workspaceUrl } from '../lib/store/workspace-mode.ts';
+	import {
+		Archive,
+		CodeXml,
+		Download,
+		ExternalLink,
+		Info,
+		KeyRound,
+		Moon,
+		Settings2,
+		Shirt,
+		Sun
+	} from './icons.ts';
+	import { developerModeEnabled } from './developerMode.svelte.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
@@ -118,7 +130,7 @@
 			id: 'developer',
 			label: settingsLabels.developer,
 			icon: CodeXml,
-			entries: [{ id: 'developer-mode', label: 'developer.mode' }]
+			entries: [{ id: 'developer-mode', label: 'developer.mode', terms: ['developer.description'] }]
 		},
 		{
 			id: 'about',
@@ -140,7 +152,7 @@
 		entries: { id: string; label: WhisperKey; terms?: WhisperKey[]; names?: readonly string[] }[];
 	}[];
 	const available = sections.filter(
-		(section) => !workspaceCopy || (section.id !== 'pixellab' && section.id !== 'library')
+		(section) => !workspaceCopy || !['pixellab', 'library', 'developer'].includes(section.id)
 	);
 	const wide = new MediaQuery('(min-width: 660px) and (min-height: 520px)');
 	const active = $derived(
@@ -149,6 +161,7 @@
 		)
 	);
 	let query = $state('');
+	let reviewingBackup = $state(false);
 	let targetEntry = $state<string>();
 	let panel: HTMLElement;
 	let search: HTMLInputElement;
@@ -212,7 +225,7 @@
 		<input
 			class="bu-input input"
 			type="search"
-			readonly={busy}
+			readonly={busy || reviewingBackup}
 			aria-label={t('settings.search')}
 			placeholder={t('experience.placeholderSearch')}
 			bind:this={search}
@@ -311,9 +324,28 @@
 			{:else if active.id === 'export'}
 				{@render exportSettings(targetEntry)}
 			{:else if active.id === 'library'}
-				<LibrarySettings bind:busy={libraryBusy} />
+				<LibrarySettings bind:busy={libraryBusy} bind:reviewing={reviewingBackup} />
 			{:else if active.id === 'developer'}
-				<DeveloperSettings />
+				<DeveloperSettings>
+					{#snippet tools()}
+						{#if !workspaceCopy}
+							<a
+								class="row bu-action"
+								data-variant="quiet"
+								href={workspaceUrl(true)}
+								target="_blank"
+								rel="noreferrer"
+								onclick={(event) => {
+									if (!developerModeEnabled()) event.preventDefault();
+								}}
+							>
+								<Archive size={18} aria-hidden="true" />
+								<span class="row-name">{t('workspaceCopy.title')}</span>
+								<ExternalLink size={16} aria-hidden="true" />
+							</a>
+						{/if}
+					{/snippet}
+				</DeveloperSettings>
 			{:else if active.id === 'about'}
 				<AboutSettings />
 			{:else}

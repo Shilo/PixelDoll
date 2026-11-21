@@ -349,14 +349,20 @@ small, unambiguous changes to nearby colors from the standing reference. It pres
 different-hue changes alone, and measures changed images again. The displayed cost includes those measurements and
 selected equipment posing. The previous body remains if any quality check still fails.
 
-## Export
+## Library backups
 
-To share your whole saved library for troubleshooting, choose **More options → Workspace... → Export my workspace**.
-The ZIP includes your saved characters, artwork, items, moves, outfits, and workspace settings. **Include recent errors**
-adds your PixelLab tier and a summary of failed and unfinished requests. Your key, request bodies, and unfinished drafts
-are not included. The ZIP does include artwork and saved prompts, so share it privately with someone you trust.
+Choose **Settings → Library → Back up library** to download saved characters and their artwork. The ZIP can contain
+personal artwork and prompts, so share it only with someone you trust. Preferences, jobs, and drafts are not restored.
+Use **Restore from backup** to review what will be added or skipped before confirming. Restore never replaces or deletes
+existing characters. If a character with the same ID has changed, its backup becomes a separate copy. Older workspace
+ZIPs can also be reviewed for character restore.
 
-Choose **More options → Workspace... → Open workspace copy**, then drop the ZIP in the box or click the box to choose it. The
+**Download archived data** preserves records this version cannot edit. You can also include it in a library backup.
+When restoring, choose **Keep archived data for future downloads** to retain it without adding it to the editable library.
+Treat the archive as private: it preserves old records as stored and cannot identify every credential they might contain.
+
+To troubleshoot with an isolated copy, enable **Developer mode** in **Settings → Developer** and open the backup-copy
+picker there. Drop the ZIP in the box or click the box to choose it. The
 `?workspace-copy` address opens a separate, temporary copy. You can inspect or change the copy
 without changing your own library. PixelLab starts disconnected, and no jobs from the ZIP restart. To reproduce a PixelLab
 issue, choose **More options → Connect PixelLab** and enter your own key or select **Use saved key** if this browser
@@ -370,10 +376,10 @@ Wait for generations to finish and export any results you want to keep before cl
 the copy, its edits, its jobs, and its key, but does not cancel or refund work submitted to PixelLab. If a tab closes
 mid-generation, check your PixelLab account before manually retrying: the original job may still count against your
 usage. Your browser may warn you before leaving while jobs are in progress. This is not a backup restore or merge.
-Export and open keep usable records and artwork when some data is damaged. **More options → Workspace activity** reports
-skipped records, missing artwork, and any diagnostics included in the ZIP. Unreadable or unsupported ZIPs cannot be
-opened. Workspace ZIPs are limited to 64 MB, 5,000 files, and additional artwork and record limits; for larger
-libraries, use individual character ZIPs. Uncommitted edits outside the current character are not included.
+Unreadable ZIPs cannot be opened. Backups are limited to 64 MB, 5,000 files, and additional artwork and record limits;
+for larger libraries, export individual character ZIPs. Uncommitted edits outside the current character are not included.
+
+## Export
 
 Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines and frameworks** lists Godot, Unity,
 Phaser, GDevelop and RPG Maker; **Assets** lists Aseprite and PNG + JSON. Export is

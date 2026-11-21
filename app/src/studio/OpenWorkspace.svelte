@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import { installWorkspaceCopy } from '../lib/store/db.ts';
 	import { readBackupCopy } from '../lib/store/backup.ts';
@@ -7,28 +8,31 @@
 	import { LocalizedError, message, type Message } from '../lib/message.ts';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import RichMessage from './RichMessage.svelte';
+	import { developerModeEnabled, watchDeveloperMode } from './developerMode.svelte.ts';
 	import { FileArchive } from './icons.ts';
 	import { fileDrop, preventFileNavigation } from './fileDrop.ts';
 	import './studio.css';
 
 	let { openStudio }: { openStudio: () => Promise<void> } = $props();
-	let input: HTMLInputElement;
+	let input = $state<HTMLInputElement>();
 	let busy = $state(false);
 	let installed = $state(false);
 	let error = $state<Message | string>('');
 	let dragging = $state(false);
+	onMount(watchDeveloperMode);
 	const drop = fileDrop(
-		() => busy || installed,
+		() => !developerModeEnabled() || busy || installed,
 		(active) => (dragging = active),
 		(files) => void openFiles(files)
 	);
 	function choose() {
+		if (!input) return;
 		const files = Array.from(input.files ?? []);
 		input.value = '';
 		if (files.length) void openFiles(files);
 	}
 	async function openFiles(files: File[]) {
-		if (busy || installed) return;
+		if (!developerModeEnabled() || busy || installed) return;
 		const [file] = files;
 		if (!file || files.length !== 1) {
 			error = message('openWorkspace.chooseOne');
@@ -42,6 +46,7 @@
 			const { projects, blobs, ...info } = await readBackupCopy(
 				new Uint8Array(await file.arrayBuffer())
 			);
+			if (!developerModeEnabled()) return;
 			installWorkspaceCopy(projects, blobs);
 			setWorkspaceInfo(info);
 			installed = true;
@@ -58,39 +63,43 @@
 <main class="studio-app picker" aria-busy={busy}>
 	<section class="bu-surface" aria-labelledby="workspace-title">
 		<h1 id="workspace-title">{t('workspaceCopy.title')}</h1>
-		{#snippet command()}<strong>{t('librarySettings.backup')}</strong>{/snippet}
-		<p><RichMessage key="openWorkspace.introCommand" slots={{ command }} /></p>
-		<p>{t('openWorkspace.privacy')}</p>
-		<input
-			type="file"
-			accept=".zip,application/zip"
-			aria-label={t('openWorkspace.chooseZip')}
-			hidden
-			disabled={busy || installed}
-			bind:this={input}
-			onchange={choose}
-		/>
-		<button
-			class="btn bu-action drop-target"
-			data-variant={dragging ? 'primary' : 'outline'}
-			disabled={busy || installed}
-			onclick={() => input.click()}
-			ondragenter={drop.enter}
-			ondragleave={drop.leave}
-			ondragover={drop.over}
-			ondrop={drop.drop}
-		>
-			<FileArchive size={30} aria-hidden="true" />
-			<strong aria-live="polite"
-				>{busy
-					? t('openWorkspace.opening')
-					: dragging
-						? t('openWorkspace.release')
-						: t('openWorkspace.drop')}</strong
+		{#if developerModeEnabled()}
+			{#snippet command()}<strong>{t('librarySettings.backup')}</strong>{/snippet}
+			<p><RichMessage key="openWorkspace.introCommand" slots={{ command }} /></p>
+			<p>{t('openWorkspace.privacy')}</p>
+			<input
+				type="file"
+				accept=".zip,application/zip"
+				aria-label={t('openWorkspace.chooseZip')}
+				hidden
+				disabled={busy || installed}
+				bind:this={input}
+				onchange={choose}
+			/>
+			<button
+				class="btn bu-action drop-target"
+				data-variant={dragging ? 'primary' : 'outline'}
+				disabled={busy || installed}
+				onclick={() => input?.click()}
+				ondragenter={drop.enter}
+				ondragleave={drop.leave}
+				ondragover={drop.over}
+				ondrop={drop.drop}
 			>
-			<span>{t('openWorkspace.orChoose')}</span>
-		</button>
-		{#if error}<p class="notice warn" role="alert">{displayMessage(error)}</p>{/if}
+				<FileArchive size={30} aria-hidden="true" />
+				<strong aria-live="polite"
+					>{busy
+						? t('openWorkspace.opening')
+						: dragging
+							? t('openWorkspace.release')
+							: t('openWorkspace.drop')}</strong
+				>
+				<span>{t('openWorkspace.orChoose')}</span>
+			</button>
+			{#if error}<p class="notice warn" role="alert">{displayMessage(error)}</p>{/if}
+		{:else}
+			<p>{t('workspaceCopy.developerRequired')}</p>
+		{/if}
 		<div class="actions">
 			<a class="btn bu-action" data-variant="quiet" href={workspaceUrl(false)}
 				>{t('openWorkspace.libraryLink')}</a
