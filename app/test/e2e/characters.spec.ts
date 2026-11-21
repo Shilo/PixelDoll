@@ -2576,7 +2576,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			exact: true
 		})
 	).toHaveAttribute('aria-selected', 'true');
-	await expect(page.locator('.clip-trigger')).toHaveAttribute('value', 'rest-pose');
+	await expect(page.locator('.clip-trigger[data-variant="quiet"]')).toHaveAttribute(
+		'value',
+		'rest-pose'
+	);
 	const captured = await read();
 	const body = captured.manifest.items.find(({ id }) => id === captured.manifest.rig.baseItem)!;
 	const cells = body.layers[0].cells!;
