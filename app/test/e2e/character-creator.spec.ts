@@ -441,6 +441,9 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await move.getByRole('button', { name: /^Queue Idle/ }).click();
 	await expect(move).toContainText('Queued next: Idle');
 	await expect(page.locator('.move-row', { hasText: 'Idle' })).toContainText('Queued');
+	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
+	const draft = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
+	await draft.fill('jump softly');
 	held = false;
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await expect(
@@ -448,6 +451,9 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	).toBeVisible({
 		timeout: 120_000
 	});
+	await expect(draft).toHaveValue('jump softly');
+	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	await review.getByRole('button', { name: 'Save move', exact: true }).click();
 	await page.getByRole('button', { name: /Idle Review move/ }).click();
 	await review.getByRole('button', { name: 'Save move', exact: true }).click();

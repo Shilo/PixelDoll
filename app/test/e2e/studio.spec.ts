@@ -6899,7 +6899,31 @@ test('move review gates item selection and shows live estimates without spending
 	await item.click();
 	await expect(animate).toBeDisabled();
 	await item.click();
-	await picker.getByRole('button', { name: 'Done', exact: true }).click();
+	const handoff = await page.evaluate(async () => {
+		const queuePath = '/src/lib/pixellab/queue.ts';
+		const statePath = '/src/studio/state.svelte.ts';
+		const { queue } = await import(queuePath);
+		const { ui, cancelWaitingForTab } = await import(statePath);
+		const role = queue.role;
+		const requests: boolean[] = [];
+		queue.role = 'follower';
+		queue.requestHandoff = (want: boolean) => requests.push(want);
+		try {
+			const dialog = document.querySelector('dialog[open]')!;
+			const button = (name: string) =>
+				Array.from(dialog.querySelectorAll('button')).find(
+					(button) => button.textContent?.trim() === name
+				)!;
+			button('Animate 1 item').click();
+			button('Done').click();
+			return { requests: [...requests], waiting: ui.waitingForTab };
+		} finally {
+			cancelWaitingForTab();
+			queue.role = role;
+			Reflect.deleteProperty(queue, 'requestHandoff');
+		}
+	});
+	expect(handoff).toEqual({ requests: [true, false], waiting: false });
 	await expect(picker).not.toBeVisible();
 	await expect(page.getByRole('button', { name: /Walk Review move/ })).toHaveCount(0);
 	expect(posts).toEqual([]);
@@ -6910,6 +6934,27 @@ test('move review gates item selection and shows live estimates without spending
 	await replace.click();
 	await item.click();
 	await animate.click();
+	await page
+		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
+		.getByRole('button', { name: 'Cancel', exact: true })
+		.click();
+	await seedReview(77);
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	const walkReview = page.getByRole('button', { name: /Walk Review move/ });
+	await walkReview.click();
+	await review.getByRole('button', { name: 'Regenerate…', exact: true }).click();
+	const replacement = page.getByRole('dialog', { name: 'Replace move views', exact: true });
+	await replacement.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await walkReview.click();
+	await review.getByRole('button', { name: 'Discard draft', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
+	await replacement.getByRole('button', { name: /^Replace Walk views/ }).click();
+	const staleRegeneration = await page.evaluate(async () => {
+		const path = '/src/studio/formDrafts.ts';
+		return (await import(path)).formDrafts.move?.regeneration ?? null;
+	});
+	expect(staleRegeneration).toBeNull();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
 		.getByRole('button', { name: 'Cancel', exact: true })

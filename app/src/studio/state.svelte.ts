@@ -249,11 +249,14 @@ export const ui = $state({
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
+	moveFormOpen: false,
 	get sheet(): SheetId {
 		return panel;
 	},
 	set sheet(next: SheetId) {
-		if (panel === 'create' && next !== 'activity' && afterTakeOver) cancelWaitingForTab();
+		if ((panel === 'create' || panel === 'moveReview') && next !== 'activity' && afterTakeOver)
+			cancelWaitingForTab();
+		if (panel === 'move' && next !== 'move') ui.moveFormOpen = false;
 		const id = createPresentation.id;
 		createPresentation.id = '';
 		if (id) {
@@ -3586,7 +3589,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			await refreshMoveReviews(projectId);
 			if (!current()) return;
 			moving.spec = null;
-			if (viewing(projectId) && ui.sheet === 'move') openMoveReview(id);
+			if (viewing(projectId) && ui.sheet === 'move' && !ui.moveFormOpen) openMoveReview(id);
 			else
 				toast(message('moveSheet.checkpoint.ready', { move: moveName }), {
 					action: async () => {

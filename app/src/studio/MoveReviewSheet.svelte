@@ -201,7 +201,7 @@
 		}
 	}
 	function animate() {
-		if (busy || !specs.length || access.error) return;
+		if (busy || ui.waitingForTab || !specs.length || access.error) return;
 		const approved = $state.snapshot(specs);
 		withKey(() => {
 			if (doc.id !== projectId || busy) return;
@@ -223,7 +223,7 @@
 				<button
 					class="bu-action btn primary checkpoint-primary"
 					data-variant="primary"
-					disabled={busy || !specs.length || !!access.error}
+					disabled={busy || ui.waitingForTab || !specs.length || !!access.error}
 					aria-describedby="move-item-cost"
 					onclick={animate}
 				>
@@ -293,7 +293,7 @@
 				<button
 					class="bu-action checkpoint-item"
 					data-variant="tile"
-					disabled={busy || !offer?.specs.length}
+					disabled={busy || ui.waitingForTab || !offer?.specs.length}
 					aria-pressed={selected.includes(item.id)}
 					onclick={() =>
 						(selected = selected.includes(item.id)

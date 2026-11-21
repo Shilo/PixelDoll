@@ -122,9 +122,16 @@
 			.slice(0, 24);
 	const replacing = $derived(replaceSelected && have.has(action));
 	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
+	const draftRegeneration = $derived.by(() => {
+		const reference = draft?.regeneration;
+		if (!reference || !Object.hasOwn(store.moveReviews, reference.id)) return;
+		const { spec } = store.moveReviews[reference.id];
+		if (spec.seed === reference.seed && spec.activityScope === reference.activityScope)
+			return reference;
+	});
 	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
 	const freeMoveId = () => {
-		if (draft?.regeneration && text.trim() === draft.text?.trim()) return draft.regeneration.id;
+		if (draftRegeneration && text.trim() === draft?.text?.trim()) return draftRegeneration.id;
 		let n = 1;
 		while (
 			have.has(`move-${n}`) ||
@@ -236,7 +243,7 @@
 		replace: replacing,
 		animation: animationOptions
 	});
-	const regeneration = $derived(draft?.regeneration?.id === id ? draft.regeneration : undefined);
+	const regeneration = $derived(draftRegeneration?.id === id ? draftRegeneration : undefined);
 	const motionIssue = $derived.by(() => {
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
 		if (Object.hasOwn(store.moveReviews, id) && !regeneration)
@@ -280,8 +287,8 @@
 	const addTier = $derived(addAccess.tier);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id);
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
-	let adding = $state(!!reopen);
-	const progress = $derived(mine && !adding);
+	ui.moveFormOpen = !!reopen;
+	const progress = $derived(mine && !ui.moveFormOpen);
 	const repairReview = $derived(progress ? moving.repairReview : null);
 	const busy = $derived(!!moving.spec && !moving.done);
 	const savedItemFrames = $derived(
@@ -459,7 +466,7 @@
 		};
 		withKey(() => {
 			formDrafts.move = undefined;
-			adding = false;
+			ui.moveFormOpen = false;
 			void queueMoves(projectId, [spec]);
 			ui.sheet = 'move';
 		}, addTier);
@@ -574,7 +581,7 @@
 			>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
 		<span class="foot-note">{t('moveSheet.keepWorking')}</span>
-		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = true)}
+		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = true)}
 			>{t('moveSheet.queueAnother')}</button
 		>
 		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}
@@ -658,8 +665,8 @@
 				>{t('moveSheet.open', { character: holder })}</button
 			>
 		</p>{/if}
-	{#if mine && adding && moving.repairReview}
-		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = false)}
+	{#if mine && ui.moveFormOpen && moving.repairReview}
+		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = false)}
 			>{moving.spec?.redrawItem
 				? t('moveSheet.review.redrawTitle')
 				: t('moveSheet.review.repairTitle')}</button
