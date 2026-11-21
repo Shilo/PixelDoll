@@ -2447,7 +2447,9 @@ export function skeletonMoveReview(
 			seed: 0,
 			replace: !!saved,
 			approvedDirs: dirs,
-			...(saved ? { dirs } : {})
+			...(saved ? { dirs } : {}),
+			// Warnings the user already generated past (the frame room check) stay accepted for the same move.
+			...(spec.acceptedWarnings ? { acceptedWarnings: spec.acceptedWarnings } : {})
 		};
 		if (bodyMoveIssue(manifest, review) || partialMoveFrameIssue(manifest, review, dirs.length))
 			return;
