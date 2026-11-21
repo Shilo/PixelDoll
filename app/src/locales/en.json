@@ -970,6 +970,7 @@
 			"dressedHint": "Adds PNG sprite sheets of your current look and each saved outfit, with the body and equipped items combined. Separate layers are always included, except in RPG Maker sheets, which are always combined.",
 			"format": "Export format",
 			"defaultTarget": "Default export target",
+			"openCharacter": "Export {name} character",
 			"defaultTargetHint": "Preselected when you open Export. You can still choose another target.",
 			"versionMenu": "RPG Maker version",
 			"version": "Version",

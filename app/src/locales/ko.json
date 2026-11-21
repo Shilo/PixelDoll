@@ -948,6 +948,7 @@
 			"dressedHint": "현재 룩과 저장된 코디마다 몸체와 착용 아이템을 합친 PNG 스프라이트 시트를 추가해요. 별도 레이어는 항상 포함되지만, RPG Maker 시트는 항상 합쳐져요.",
 			"format": "내보내기 형식",
 			"defaultTarget": "기본 내보내기 대상",
+			"openCharacter": "{name} 캐릭터 내보내기",
 			"defaultTargetHint": "내보내기를 열면 미리 선택됩니다. 다른 대상을 선택할 수도 있습니다.",
 			"versionMenu": "RPG Maker 버전",
 			"version": "버전",

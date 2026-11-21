@@ -213,6 +213,8 @@
 		const sheet = ui.sheet;
 		if (sheetBefore === 'activity' && sheet !== 'activity') cancelWaitingForTab();
 		if (sheet !== 'activity') settingsNavigation.activityOpen = false;
+		if (sheet !== 'export' && !(sheet === 'settings' && settingsNavigation.fromExport))
+			settingsNavigation.exportOpen = false;
 		sheetBefore = sheet;
 	});
 	const onpop = () => {

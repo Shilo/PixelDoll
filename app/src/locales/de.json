@@ -979,6 +979,7 @@
 			"dressedHint": "Fügt PNG-Spritesheets für deinen aktuellen Look und jedes gespeicherte Outfit hinzu, jeweils mit Grundkörper und angelegten Gegenständen in einem Bild. Separate Ebenen sind immer dabei, außer bei RPG Maker: Dort sind alle Ebenen zusammengefasst.",
 			"format": "Exportformat",
 			"defaultTarget": "Standard-Exportziel",
+			"openCharacter": "Charakter {name} exportieren",
 			"defaultTargetHint": "Beim Öffnen des Exports vorausgewählt. Du kannst ein anderes Ziel wählen.",
 			"versionMenu": "RPG Maker-Version",
 			"version": "Version",

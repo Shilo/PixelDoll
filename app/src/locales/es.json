@@ -979,6 +979,7 @@
 			"dressedHint": "Agrega hojas de sprites PNG de tu look actual y de cada atuendo guardado, con el cuerpo y los objetos puestos combinados. Las capas separadas siempre se incluyen, salvo en las hojas de RPG Maker, que siempre van combinadas.",
 			"format": "Formato de exportación",
 			"defaultTarget": "Destino de exportación predeterminado",
+			"openCharacter": "Exportar el personaje {name}",
 			"defaultTargetHint": "Se selecciona al abrir Exportar. Puedes elegir otro destino.",
 			"versionMenu": "Versión de RPG Maker",
 			"version": "Versión",

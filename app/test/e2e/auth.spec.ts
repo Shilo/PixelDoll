@@ -355,7 +355,9 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 	);
 
 	const forget = settings.getByRole('button', { name: 'Forget key...', exact: true });
+	const reset = settings.getByRole('button', { name: 'Forget PixelLab key?', exact: true });
 	const confirm = page.getByRole('alertdialog', { name: 'Forget PixelLab key?', exact: true });
+	await expect(reset).toBeEnabled();
 	await forget.click();
 	await expect(confirm).toContainText('Other PixelDoll tabs and PixelLab apps');
 	await confirm.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -363,13 +365,20 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBe(
 		'synthetic-replacement'
 	);
-	await forget.click();
+	await page.setViewportSize({ width: 390, height: 844 });
+	const search = settings.getByRole('searchbox', { name: 'Search settings' });
+	await search.fill('theme');
+	await expect(reset).toBeHidden();
+	await search.clear();
+	await expect(confirm).toBeHidden();
+	await reset.click();
 	await confirm.getByRole('button', { name: 'Forget key', exact: true }).click();
 	await expect(settings.getByText('Not connected', { exact: true })).toBeVisible();
 	await expect(
 		settings.getByRole('button', { name: 'Connect PixelLab...', exact: true })
 	).toBeFocused();
 	await expect(forget).toHaveCount(0);
+	await expect(reset).toBeDisabled();
 	expect(
 		await page.evaluate(() => [
 			localStorage.getItem('pixellabApiKey'),

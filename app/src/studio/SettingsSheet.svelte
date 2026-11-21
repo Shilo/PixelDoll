@@ -9,13 +9,20 @@
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { isResettableSection, type ResetScope } from './resetSettings.ts';
 	import { watchExportDefaults } from './settingsDefaults.svelte.ts';
-	import { settingsLabels, settingsNavigation } from './settingsNavigation.svelte.ts';
+	import {
+		openSettingsExport,
+		settingsLabels,
+		settingsNavigation
+	} from './settingsNavigation.svelte.ts';
+	import { getKeyRevision } from '../lib/app.svelte.ts';
 
 	const loadExport = () => import('./ExportSheet.svelte');
 	let saving = $state(false);
 	let libraryBusy = $state(false);
 	let reviewingBackup = $state(false);
 	let resetScope = $state<ResetScope | null>(null);
+	let forgetRevision = $state(-1);
+	let query = $state('');
 	const busy = $derived(saving || libraryBusy || resetScope !== null);
 	const section = $derived(settingsNavigation.section);
 	const canReset = $derived(!workspaceCopy && !settingsNavigation.fromExport);
@@ -39,7 +46,15 @@
 			>{/if}{/snippet}
 	{#snippet trailing()}
 		<div class="settings-end">
-			{#if canReset && isResettableSection(section)}
+			{#if section === 'pixellab' && !workspaceCopy && !query.trim()}
+				<div class="compact-reset">
+					<SettingsResetButton
+						scope="pixellab"
+						disabled={busy}
+						onclick={() => (forgetRevision = getKeyRevision())}
+					/>
+				</div>
+			{:else if canReset && isResettableSection(section)}
 				<div class="compact-reset">
 					<SettingsResetButton
 						scope={section}
@@ -57,7 +72,15 @@
 			>
 		</div>
 	{/snippet}
-	<SettingsContent {busy} bind:libraryBusy bind:reviewingBackup bind:resetScope>
+	<SettingsContent
+		{busy}
+		openExport={openSettingsExport}
+		bind:libraryBusy
+		bind:reviewingBackup
+		bind:resetScope
+		bind:forgetRevision
+		bind:query
+	>
 		{#snippet exportSettings(entry)}
 			<Lazy
 				load={loadExport}

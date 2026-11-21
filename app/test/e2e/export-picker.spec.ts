@@ -2008,18 +2008,35 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	await expect(dressed).toBeVisible();
 	await up.click();
 	await expect(search).toBeFocused();
-	await expect(settings.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
-	await settings.getByRole('button', { name: 'Close', exact: true }).click();
-	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	await settings.getByRole('button', { name: 'Export', exact: true }).click();
+	await settings
+		.getByRole('button', { name: 'Export Adventurer character...', exact: true })
+		.click();
 	const dialog = page.getByRole('dialog');
+	await expect(dialog).toHaveAccessibleName('Export');
+	await page.goBack();
+	await expect(settings).toHaveAccessibleName('Settings');
+	const shortcut = settings.getByRole('button', { name: 'Export Adventurer character...' });
+	await shortcut.click();
+	await expect(dialog).toHaveAccessibleName('Export');
+	await page.keyboard.press('Escape');
+	await expect(shortcut).toBeVisible();
+	await shortcut.click();
+	await expect(dialog).toHaveAccessibleName('Export');
 	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
 	await expect(dialog).toHaveAccessibleName('Settings');
 	await expect(dialog.getByRole('heading', { name: 'Export', exact: true })).toBeVisible();
 	await expect(
 		dialog.getByRole('checkbox', { name: 'Include dressed character sheets' })
 	).not.toBeChecked();
+	await dialog.getByRole('button', { name: 'Export Adventurer character...', exact: true }).click();
+	await expect(dialog).toHaveAccessibleName('Export');
+	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
+	await expect(dialog).toHaveAccessibleName('Settings');
 	await page.goBack();
 	await expect(dialog).toHaveAccessibleName('Export');
+	await page.keyboard.press('Escape');
+	await expect(shortcut).toBeVisible();
 });
 
 test('Export settings show storage failures without changing the choice or trapping navigation', async ({

@@ -22,12 +22,14 @@ export const settingsNavigation = $state<{
 	/** Account opens straight into Replace key and returns to Settings when it ends. */
 	accountReplace: boolean;
 	activityOpen: boolean;
+	exportOpen: boolean;
 }>({
 	section: null,
 	fromExport: false,
 	accountOpen: false,
 	accountReplace: false,
-	activityOpen: false
+	activityOpen: false,
+	exportOpen: false
 });
 
 export function openSettings(section: SettingsSection | null = workspaceCopy ? null : 'pixellab') {
@@ -37,7 +39,7 @@ export function openSettings(section: SettingsSection | null = workspaceCopy ? n
 }
 
 export function backFromSettings(): boolean {
-	if (closeSettingsAccount() || closeSettingsActivity()) return true;
+	if (closeSettingsAccount() || closeSettingsActivity() || closeSettingsExport()) return true;
 	if (ui.sheet !== 'settings') return false;
 	if (settingsNavigation.fromExport) ui.sheet = 'export';
 	else if (settingsNavigation.section) settingsNavigation.section = null;
@@ -66,6 +68,20 @@ export function openSettingsActivity() {
 export function closeSettingsActivity(): boolean {
 	if (ui.sheet !== 'activity' || !settingsNavigation.activityOpen) return false;
 	settingsNavigation.activityOpen = false;
+	ui.sheet = 'settings';
+	return true;
+}
+
+export function openSettingsExport() {
+	settingsNavigation.exportOpen = true;
+	ui.sheet = 'export';
+}
+
+export function closeSettingsExport(): boolean {
+	if (ui.sheet !== 'export' || !settingsNavigation.exportOpen) return false;
+	settingsNavigation.exportOpen = false;
+	settingsNavigation.fromExport = false;
+	settingsNavigation.section = 'export';
 	ui.sheet = 'settings';
 	return true;
 }

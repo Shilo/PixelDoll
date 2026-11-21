@@ -943,6 +943,7 @@
 			"dressedHint": "Menambahkan sprite sheet PNG untuk penampilan saat ini dan setiap setelan tersimpan, dengan tubuh dan item yang dikenakan digabungkan. Lapisan terpisah selalu disertakan, kecuali pada sprite sheet RPG Maker yang selalu digabungkan.",
 			"format": "Format ekspor",
 			"defaultTarget": "Target ekspor bawaan",
+			"openCharacter": "Ekspor karakter {name}",
 			"defaultTargetHint": "Dipilih saat membuka Ekspor. Anda tetap bisa memilih target lain.",
 			"versionMenu": "Versi RPG Maker",
 			"version": "Versi",

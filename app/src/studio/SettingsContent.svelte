@@ -4,6 +4,7 @@
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { getKeyRevision } from '../lib/app.svelte.ts';
 	import { isResettableSection, resetSettings, type ResetScope } from './resetSettings.ts';
 	import { settingsAtDefaults } from './settingsDefaults.svelte.ts';
 	import {
@@ -20,6 +21,7 @@
 	} from './icons.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
+	import SettingsItemButton from './SettingsItemButton.svelte';
 	import SettingsResetButton from './SettingsResetButton.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import LanguagePicker from './LanguagePicker.svelte';
@@ -34,20 +36,27 @@
 		type SettingsSection
 	} from './settingsNavigation.svelte.ts';
 	import { message } from '../lib/message.ts';
-	import { setTheme, toast, ui } from './state.svelte.ts';
+	import { characterName, setTheme, store, toast, ui } from './state.svelte.ts';
+	import { openerLabel } from './openerLabel.ts';
 
 	let {
 		exportSettings,
+		openExport,
 		busy,
 		libraryBusy = $bindable(false),
 		reviewingBackup = $bindable(false),
-		resetScope = $bindable(null)
+		resetScope = $bindable(null),
+		forgetRevision = $bindable(-1),
+		query = $bindable('')
 	}: {
 		exportSettings: Snippet<[string | undefined]>;
+		openExport: () => void;
 		busy: boolean;
 		libraryBusy?: boolean;
 		reviewingBackup?: boolean;
 		resetScope?: ResetScope | null;
+		forgetRevision?: number;
+		query?: string;
 	} = $props();
 	const themeLabel = $derived(t('settings.theme'));
 	const appearanceOptions = $derived([
@@ -179,7 +188,6 @@
 				section.id === (settingsNavigation.section ?? (wide.current ? available[0]?.id : null))
 		)
 	);
-	let query = $state('');
 	let resetting = $state(false);
 	let resetFailures = $state<WhisperKey[]>([]);
 	let targetEntry = $state<string>();
@@ -343,7 +351,15 @@
 		{:else if active}
 			<div class="settings-panel-heading">
 				<h3 class="settings-heading" tabindex="-1">{t(active.label)}</h3>
-				{#if canReset && isResettableSection(active.id)}
+				{#if active.id === 'pixellab'}
+					<div class="wide-reset">
+						<SettingsResetButton
+							scope="pixellab"
+							disabled={busy}
+							onclick={() => (forgetRevision = getKeyRevision())}
+						/>
+					</div>
+				{:else if canReset && isResettableSection(active.id)}
 					{@const scope = active.id}
 					<div class="wide-reset">
 						<SettingsResetButton {scope} disabled={busy} onclick={() => (resetScope = scope)} />
@@ -380,6 +396,25 @@
 					<WardrobeVisibility settings />
 				</div>
 			{:else if active.id === 'export'}
+				{#if store.project?.manifest}
+					{@const name = characterName()}
+					{@const namePlaceholder = '\uFFFC'}
+					{@const [beforeName, afterName] = openerLabel(
+						t('export.settings.openCharacter', { name: namePlaceholder })
+					).split(namePlaceholder)}
+					<SettingsItemButton
+						disabled={busy}
+						aria-haspopup="dialog"
+						aria-label={openerLabel(t('export.settings.openCharacter', { name }))}
+						onclick={openExport}
+					>
+						<Download size={18} aria-hidden="true" />
+						<span class="export-character-label" aria-hidden="true"
+							>{beforeName}<bdi>{name}</bdi>{afterName}</span
+						>
+						<SurfaceChevron />
+					</SettingsItemButton>
+				{/if}
 				{@render exportSettings(targetEntry)}
 			{:else if active.id === 'library'}
 				<LibrarySettings bind:busy={libraryBusy} bind:reviewing={reviewingBackup} />
@@ -388,7 +423,7 @@
 			{:else if active.id === 'about'}
 				<AboutSettings />
 			{:else}
-				<PixelLabSettings />
+				<PixelLabSettings bind:forgetRevision />
 			{/if}
 		{/if}
 	</section>
@@ -474,6 +509,17 @@
 	.settings-content :global(.row-name) {
 		white-space: normal;
 		overflow-wrap: anywhere;
+	}
+	.export-character-label {
+		display: flex;
+		flex: 1;
+		min-inline-size: 0;
+		white-space: pre;
+	}
+	.export-character-label bdi {
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	nav button[aria-current='page'] {
 		font-weight: 700;

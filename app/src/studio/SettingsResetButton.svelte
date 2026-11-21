@@ -3,10 +3,20 @@
 	import { RotateCcw } from './icons.ts';
 	import type { ResetScope } from './resetSettings.ts';
 	import { settingsAtDefaults } from './settingsDefaults.svelte.ts';
-	let { scope, disabled, onclick }: { scope: ResetScope; disabled: boolean; onclick: () => void } =
-		$props();
+	import { app } from '../lib/app.svelte.ts';
+	let {
+		scope,
+		disabled,
+		onclick
+	}: {
+		scope: ResetScope | 'pixellab';
+		disabled: boolean;
+		onclick: () => void;
+	} = $props();
 	const label = $derived(
-		t(scope === 'all' ? 'settings.reset.action' : 'settings.reset.pageAction')
+		scope === 'pixellab'
+			? t('connectSheet.forgetTitle')
+			: t(scope === 'all' ? 'settings.reset.action' : 'settings.reset.pageAction')
 	);
 </script>
 
@@ -15,7 +25,7 @@
 	type="button"
 	class="bu-action btn icon plain"
 	data-variant="quiet"
-	disabled={disabled || settingsAtDefaults(scope)}
+	disabled={disabled || (scope === 'pixellab' ? !app.key : settingsAtDefaults(scope))}
 	{onclick}
 	aria-label={label}
 	title={label}

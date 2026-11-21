@@ -973,6 +973,7 @@
 			"dressedHint": "Ajoute des feuilles de sprites PNG de votre look actuel et de chaque tenue enregistrée, avec le corps et les objets portés combinés. Les calques séparés sont toujours inclus, sauf dans les feuilles RPG Maker, qui sont toujours combinées.",
 			"format": "Format d’export",
 			"defaultTarget": "Cible d’exportation par défaut",
+			"openCharacter": "Exporter le personnage {name}",
 			"defaultTargetHint": "Présélectionnée à l’ouverture de l’exportation. Vous pouvez choisir une autre cible.",
 			"versionMenu": "Version de RPG Maker",
 			"version": "Version",

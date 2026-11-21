@@ -981,6 +981,7 @@
 			"dressedHint": "Adiciona folhas de sprites em PNG para o visual atual e cada traje salvo, com o corpo e os itens equipados juntos. As camadas separadas sempre são incluídas, exceto nas folhas para RPG Maker, que sempre combinam as camadas.",
 			"format": "Formato de exportação",
 			"defaultTarget": "Destino padrão de exportação",
+			"openCharacter": "Exportar o personagem {name}",
 			"defaultTargetHint": "Selecionado ao abrir Exportar. Você pode escolher outro destino.",
 			"versionMenu": "Versão do RPG Maker",
 			"version": "Versão",

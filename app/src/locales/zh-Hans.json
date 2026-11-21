@@ -935,6 +935,7 @@
 			"dressedHint": "添加当前外观和每个已保存套装的 PNG 精灵图集，身体和已穿戴的装备会合并。始终包含独立图层，但 RPG Maker 图集除外，它们始终合并。",
 			"format": "导出格式",
 			"defaultTarget": "默认导出目标",
+			"openCharacter": "导出角色 {name}",
 			"defaultTargetHint": "打开导出时会预选此目标，你仍可选择其他目标。",
 			"versionMenu": "RPG Maker 版本",
 			"version": "版本",

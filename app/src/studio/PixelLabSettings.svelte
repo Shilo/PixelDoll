@@ -13,6 +13,7 @@
 	import PixelLabUsage from './PixelLabUsage.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openSettingsAccount, openSettingsActivity } from './settingsNavigation.svelte.ts';
+	let { forgetRevision = $bindable(-1) }: { forgetRevision: number } = $props();
 
 	const recentJobs = $derived(
 		$queue.jobs
@@ -48,7 +49,6 @@
 		if (app.keyRejected) await focusConnection();
 	}
 	// The question belongs to the key it was asked about: a Forget from another tab or app, or any new key, dismisses it.
-	let forgetRevision = $state(-1);
 	const confirmingForget = $derived(!!app.key && forgetRevision === getKeyRevision());
 	async function forget() {
 		forgetRevision = -1;

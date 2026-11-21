@@ -976,6 +976,7 @@
 			"dressedHint": "Gövdeyi ve giyili eşyaları birleştirerek mevcut görünümün ve her kayıtlı kıyafetin PNG sprite sayfasını ekler. Sayfaları her zaman birleşik olan RPG Maker dışında ayrı katmanlar da her zaman dahil edilir.",
 			"format": "Dışa aktarım biçimi",
 			"defaultTarget": "Varsayılan dışa aktarma hedefi",
+			"openCharacter": "{name} karakterini dışa aktar",
 			"defaultTargetHint": "Dışa aktarma açıldığında seçili gelir. Başka bir hedef seçebilirsiniz.",
 			"versionMenu": "RPG Maker sürümü",
 			"version": "Sürüm",

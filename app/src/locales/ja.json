@@ -948,6 +948,7 @@
 			"dressedHint": "現在の見た目と保存済みの各コーディネートについて、素体と装備中のアイテムを合成したPNGスプライトシートを追加します。RPG Maker以外では個別のレイヤーも必ず含まれます。RPG Makerでは合成済みのシートのみ出力します。",
 			"format": "エクスポート形式",
 			"defaultTarget": "既定のエクスポート先",
+			"openCharacter": "キャラクター「{name}」をエクスポート",
 			"defaultTargetHint": "エクスポートを開くと最初に選択されます。別の出力先も選べます。",
 			"versionMenu": "RPG Makerのバージョン",
 			"version": "バージョン",
