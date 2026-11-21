@@ -18,7 +18,6 @@
 		ondownload,
 		onfixframes,
 		oncapture,
-		captureDisabled = false,
 		ondelete,
 		children
 	}: {
@@ -30,7 +29,6 @@
 		ondownload: () => Promise<void>;
 		onfixframes?: () => void;
 		oncapture?: () => void;
-		captureDisabled?: boolean;
 		ondelete: () => void | Promise<void>;
 		children: Snippet;
 	} = $props();
@@ -68,11 +66,10 @@
 			<button
 				class="row"
 				role="menuitem"
-				disabled={captureDisabled}
 				onclick={() => {
 					close();
 					oncapture();
-				}}><Plus size={16} />{t('stateCapture.add')}</button
+				}}><Plus size={16} />{openerLabel(t('stateCapture.add'))}<SurfaceChevron /></button
 			>
 		{/if}
 		<button

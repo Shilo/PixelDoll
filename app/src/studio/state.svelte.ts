@@ -216,6 +216,7 @@ export type SheetId =
 	| 'gen'
 	| 'move'
 	| 'moveReview'
+	| 'stateCapture'
 	| 'rename'
 	| 'directions'
 	| 'importZip'
@@ -249,6 +250,7 @@ export const ui = $state({
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
+	stateCaptureMove: '',
 	moveFormOpen: false,
 	get sheet(): SheetId {
 		return panel;

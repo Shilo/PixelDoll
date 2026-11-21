@@ -13,20 +13,18 @@
 		blockedByWork,
 		openPendingWork,
 		openMoveReview,
-		openFrames,
-		toast
+		openFrames
 	} from './state.svelte.ts';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayError } from '../lib/i18n.ts';
-	import { errorMessage } from '../lib/message.ts';
 	import { STATE_CAPTURE_MODE } from '../lib/rig/setup.ts';
 	import { characterBodySize } from './experience/bounds.ts';
 	import { buildPresentation } from './experience/presentation.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadMoveZip } from './download.svelte.ts';
-	import { captureState, moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
+	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { t } from 'svelte-whisper';
@@ -34,7 +32,6 @@
 	const m = $derived(store.project?.manifest);
 	const playback = $derived(playbackClips(m?.rig.animations ?? []));
 	const clips = $derived(playback.filter((entry) => entry.kind === kind));
-	let capturing = $state<string>();
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const nice = (id: string) => displayMove(id, moveIds);
@@ -45,23 +42,10 @@
 		return view.project ? buildPresentation(view.project) : null;
 	});
 	const thumbnails = $derived(assets && moveThumbnails(assets, view.items));
-
-	async function saveState(moveId: string) {
-		if (capturing) return;
-		capturing = moveId;
-		try {
-			await captureState(moveId);
-		} catch (error) {
-			toast(errorMessage(error), { tone: 'danger' });
-		} finally {
-			capturing = undefined;
-		}
-	}
 </script>
 
 <div class="colors">
 	{#if m && view.project && thumbnails}
-		<span class="sr" role="status">{capturing ? t('stateCapture.saving') : ''}</span>
 		<div class="move-list">
 			{#each kind === 'move' ? Object.values(store.moveReviews) : [] as candidate (candidate.spec.id)}
 				<button
@@ -101,8 +85,12 @@
 						: undefined}
 					ondownload={() => downloadMoveZip(a.id)}
 					onfixframes={() => openFrames('', a.id)}
-					oncapture={kind === 'move' && !isDemo() ? () => void saveState(a.id) : undefined}
-					captureDisabled={capturing !== undefined}
+					oncapture={kind === 'move' && !isDemo()
+						? () => {
+								ui.stateCaptureMove = a.id;
+								ui.sheet = 'stateCapture';
+							}
+						: undefined}
 					ondelete={() => removeMove(a.id)}
 				>
 					<button
@@ -123,17 +111,15 @@
 							/></span
 						>
 						<span class="move-text"
-							><b>{nice(a.id)}</b>{#if capturing === a.id}<span class="muted small"
-									>{t('stateCapture.saving')}</span
-								>{:else}<span class="muted small"
-									>{t('moves.frames', { count: a.cells })} · {nDirs === 1
-										? dirs[0]
-											? t('moves.onlyDirection', {
-													direction: displayDirectionInSentence(dirs[0].id)
-												})
-											: t('moves.oneDirection')
-										: t('export.count.directions', { count: nDirs })}</span
-								>{/if}</span
+							><b>{nice(a.id)}</b><span class="muted small"
+								>{t('moves.frames', { count: a.cells })} · {nDirs === 1
+									? dirs[0]
+										? t('moves.onlyDirection', {
+												direction: displayDirectionInSentence(dirs[0].id)
+											})
+										: t('moves.oneDirection')
+									: t('export.count.directions', { count: nDirs })}</span
+							></span
 						>
 					</button>
 				</SavedActions>

@@ -2433,12 +2433,19 @@
 	},
 	"moveNames": { "default": "Ayakta", "idle": "Bekleme", "walk": "Yürüme" },
 	"stateCapture": {
-		"add": "Son pozu kaydet",
+		"add": "Kareden durum oluştur…",
+		"title": "Durum oluştur",
+		"source": "{move} hareketinden",
+		"name": "Durum adı",
+		"bodyOnly": "Yalnızca gövde. Kredi kullanılmaz.",
+		"invalidName": "Latin harfi veya rakam içeren bir ad girin.",
+		"takenName": "Bu ad kullanılıyor veya ayrılmış. Başka bir ad seçin.",
+		"savedAs": "{name} olarak kaydedilir",
 		"saving": "Durum kaydediliyor…",
 		"saved": "Durum kaydedildi",
 		"blocked": "Durumu kaydetmeden önce karakterin yüklenmesini bekleyin ve bekleyen işleri sonuçlandırın.",
-		"unavailable": "Bu animasyonun durum olarak kaydedilebilecek kayıtlı bir son gövde karesi yok.",
-		"concurrentEdit": "Durum kaydedilemeden karakter değişti. Tekrar deneyin."
+		"unavailable": "Bu karede hareketin kaydedilmiş görünümlerinin tümü yok.",
+		"concurrentEdit": "Kaynak değişti. Güncellenen hareketten bir kare seçmek için pencereyi kapatıp yeniden açın."
 	},
 	"moveRemoval": {
 		"unavailable": "Bu animasyon artık kullanılamıyor.",

@@ -2424,12 +2424,19 @@
 	},
 	"moveNames": { "default": "Standing", "idle": "Idle", "walk": "Walk" },
 	"stateCapture": {
-		"add": "Capture final pose",
+		"add": "Create State from…",
+		"title": "Create State",
+		"source": "From {move}",
+		"name": "State name",
+		"bodyOnly": "Body only. No credits used.",
+		"invalidName": "Enter a name with a Latin letter or number.",
+		"takenName": "This name is taken or reserved. Choose another.",
+		"savedAs": "Saved as {name}",
 		"saving": "Saving state…",
 		"saved": "Captured state",
 		"blocked": "Wait for the character to load and resolve pending work before capturing a state.",
-		"unavailable": "This move has no saved final body frame to capture.",
-		"concurrentEdit": "This character changed before the state could be captured. Try again."
+		"unavailable": "This frame does not have all saved views for this Move.",
+		"concurrentEdit": "The source changed. Close and reopen to choose a frame from the updated Move."
 	},
 	"moveRemoval": {
 		"unavailable": "This move is no longer available.",

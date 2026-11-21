@@ -2340,12 +2340,19 @@
 	},
 	"moveNames": { "default": "Berdiri", "idle": "Diam", "walk": "Berjalan" },
 	"stateCapture": {
-		"add": "Simpan pose akhir",
+		"add": "Buat status dari…",
+		"title": "Buat status",
+		"source": "Dari {move}",
+		"name": "Nama status",
+		"bodyOnly": "Hanya tubuh. Tidak memakai kredit.",
+		"invalidName": "Masukkan nama dengan huruf Latin atau angka.",
+		"takenName": "Nama ini sudah dipakai atau dicadangkan. Pilih nama lain.",
+		"savedAs": "Disimpan sebagai {name}",
 		"saving": "Menyimpan varian…",
 		"saved": "Varian tersimpan",
 		"blocked": "Tunggu hingga karakter selesai dimuat dan selesaikan pekerjaan yang tertunda sebelum menyimpan varian.",
-		"unavailable": "Animasi ini tidak memiliki frame akhir tubuh tersimpan yang bisa digunakan.",
-		"concurrentEdit": "Karakter ini berubah sebelum varian dapat disimpan. Coba lagi."
+		"unavailable": "Tidak semua tampilan gerakan tersimpan untuk bingkai ini.",
+		"concurrentEdit": "Sumber berubah. Tutup lalu buka kembali untuk memilih bingkai dari gerakan yang diperbarui."
 	},
 	"moveRemoval": {
 		"unavailable": "Animasi ini tidak lagi tersedia.",

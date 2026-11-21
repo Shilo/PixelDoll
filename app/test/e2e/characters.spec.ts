@@ -2451,16 +2451,64 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			release();
 		};
 	});
+	const createState = page.getByRole('dialog', { name: 'Create State', exact: true });
+	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
+	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(createState).not.toBeVisible();
+	await expect(
+		page.getByRole('button', { name: 'More actions for Idle', exact: true })
+	).toBeFocused();
+	expect((await read()).manifest).toEqual(after.manifest);
+	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
+	await expect(createState).toBeVisible();
+	idle.frames[0].ms += 1;
+	await page.evaluate(
+		(record) =>
+			new Promise<void>((resolve, reject) => {
+				const request = indexedDB.open('pixeldoll');
+				request.onerror = () => reject(request.error);
+				request.onsuccess = () => {
+					const database = request.result;
+					const transaction = database.transaction('projects', 'readwrite');
+					transaction.objectStore('projects').put(record, record.id);
+					transaction.onabort = () => {
+						database.close();
+						reject(transaction.error);
+					};
+					transaction.oncomplete = () => {
+						database.close();
+						resolve();
+					};
+				};
+			}),
+		after
+	);
+	await createState.getByRole('button', { name: 'Create State', exact: true }).click();
+	await expect(createState.getByText('The source changed.', { exact: false })).toBeVisible();
+	await expect(
+		createState.getByRole('button', { name: 'Create State', exact: true })
+	).toBeDisabled();
+	expect((await read()).manifest).toEqual(after.manifest);
+	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
+	const nextFrame = createState.getByRole('button', { name: 'Next frame', exact: true });
+	await expect(nextFrame).toBeDisabled();
+	await expect(createState.getByRole('img')).toHaveCount(4);
+	await expect(createState.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
+	await createState.getByRole('button', { name: 'Previous frame', exact: true }).click();
+	await expect(createState.getByText('Frame 3 of 4', { exact: true })).toBeVisible();
+	await expect(nextFrame).toBeEnabled();
+	const createButton = createState.getByRole('button', { name: 'Create State', exact: true });
+	await createState.getByLabel('State name', { exact: true }).fill('Standing');
+	await expect(createButton).toBeDisabled();
+	await createState.getByLabel('State name', { exact: true }).fill('Rest pose');
 	try {
-		await page.getByRole('menuitem', { name: 'Capture final pose', exact: true }).click();
-		await expect(page.locator('.move-row').filter({ hasText: 'Idle' })).toContainText(
-			'Saving state'
-		);
-		await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
-		await expect(
-			page.getByRole('menuitem', { name: 'Capture final pose', exact: true })
-		).toBeDisabled();
+		await createButton.click();
+		await expect(createState.getByRole('button', { name: 'Saving state…' })).toBeDisabled();
 		await page.keyboard.press('Escape');
+		await expect(createState).toBeVisible();
 	} finally {
 		await page.evaluate(() =>
 			(window as unknown as { releaseCapture: () => void }).releaseCapture()
@@ -2470,9 +2518,14 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const captured = await read();
 	const body = captured.manifest.items.find(({ id }) => id === captured.manifest.rig.baseItem)!;
 	const cells = body.layers[0].cells!;
-	const lastCell = idle.frames.at(-1)!.cell;
+	const chosenCell = idle.frames.at(-2)!.cell;
+	expect(chosenCell).not.toBe(idle.frames.at(-1)!.cell);
+	expect(captured.manifest.rig.animations.find(({ id }) => id === 'rest-pose')).toMatchObject({
+		kind: 'state',
+		cells: 1
+	});
 	for (const direction of ['south', 'east', 'north', 'west'] as const)
-		expect(cells['idle-end'][direction]).toEqual([cells.idle[direction]![lastCell]]);
+		expect(cells['rest-pose'][direction]).toEqual([cells.idle[direction]![chosenCell]]);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const moveSheet = page.getByRole('dialog', { name: 'Add a move' });
@@ -2488,10 +2541,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(frames.filter({ hasText: /^Frame 2$/ })).toHaveAttribute('aria-pressed', 'true');
 	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'States');
-	await page.getByRole('button', { name: 'More actions for Idle end', exact: true }).click();
+	await page.getByRole('button', { name: 'More actions for Rest pose', exact: true }).click();
 	await page.getByRole('menuitem', { name: /^Delete State/ }).click();
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
-	await expect(page.getByText('Removed Idle end', { exact: true })).toBeVisible();
+	await expect(page.getByText('Removed Rest pose', { exact: true })).toBeVisible();
 	const remaining = await read();
 	expect(remaining.manifest.rig.animations).toEqual(after.manifest.rig.animations);
 	expect(posts).toHaveLength(posted);

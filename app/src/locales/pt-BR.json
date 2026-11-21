@@ -2453,12 +2453,19 @@
 	},
 	"moveNames": { "default": "Em pé", "idle": "Repouso", "walk": "Caminhada" },
 	"stateCapture": {
-		"add": "Capturar pose final",
+		"add": "Criar estado a partir de…",
+		"title": "Criar estado",
+		"source": "De {move}",
+		"name": "Nome do estado",
+		"bodyOnly": "Só o corpo. Nenhum crédito usado.",
+		"invalidName": "Digite um nome com uma letra latina ou um número.",
+		"takenName": "Este nome está em uso ou é reservado. Escolha outro.",
+		"savedAs": "Salvo como {name}",
 		"saving": "Salvando estado…",
 		"saved": "Estado capturado",
 		"blocked": "Aguarde o carregamento do personagem e resolva as tarefas pendentes antes de capturar um estado.",
-		"unavailable": "Esta animação não tem um quadro final do corpo salvo para capturar.",
-		"concurrentEdit": "O personagem mudou antes que o estado pudesse ser capturado. Tente novamente."
+		"unavailable": "Faltam vistas salvas do movimento neste quadro.",
+		"concurrentEdit": "A origem mudou. Feche e abra novamente para escolher um quadro do movimento atualizado."
 	},
 	"moveRemoval": {
 		"unavailable": "Esta animação não está mais disponível.",

@@ -2446,12 +2446,19 @@
 		"walk": "Caminar"
 	},
 	"stateCapture": {
-		"add": "Capturar pose final",
+		"add": "Crear estado a partir de…",
+		"title": "Crear estado",
+		"source": "De {move}",
+		"name": "Nombre del estado",
+		"bodyOnly": "Solo el cuerpo. No se gastan créditos.",
+		"invalidName": "Escribe un nombre con una letra latina o un número.",
+		"takenName": "Este nombre está en uso o reservado. Elige otro.",
+		"savedAs": "Se guardará como {name}",
 		"saving": "Guardando estado…",
 		"saved": "Estado capturado",
 		"blocked": "Espera a que se cargue el personaje y resuelve las tareas pendientes antes de capturar un estado.",
-		"unavailable": "Esta animación no tiene un fotograma final del cuerpo guardado que se pueda capturar.",
-		"concurrentEdit": "El personaje ha cambiado antes de que se pudiera capturar el estado. Inténtalo de nuevo."
+		"unavailable": "A este fotograma le faltan vistas guardadas del movimiento.",
+		"concurrentEdit": "La fuente cambió. Cierra y vuelve a abrir para elegir un fotograma del movimiento actualizado."
 	},
 	"moveRemoval": {
 		"unavailable": "Esta animación ya no está disponible.",

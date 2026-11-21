@@ -2440,12 +2440,19 @@
 	},
 	"moveNames": { "default": "Debout", "idle": "Attente", "walk": "Marche" },
 	"stateCapture": {
-		"add": "Capturer la pose finale",
+		"add": "Créer un état à partir de…",
+		"title": "Créer un état",
+		"source": "Depuis {move}",
+		"name": "Nom de l’état",
+		"bodyOnly": "Corps uniquement. Aucun crédit utilisé.",
+		"invalidName": "Saisissez un nom contenant une lettre latine ou un chiffre.",
+		"takenName": "Ce nom est pris ou réservé. Choisissez-en un autre.",
+		"savedAs": "Enregistré sous {name}",
 		"saving": "Enregistrement de l’état…",
 		"saved": "État capturé",
 		"blocked": "Attendez la fin du chargement du personnage et réglez les tâches en attente avant de capturer un état.",
-		"unavailable": "Cette animation n’a pas d’image finale du corps enregistrée à capturer.",
-		"concurrentEdit": "Le personnage a changé avant que l’état puisse être capturé. Réessayez."
+		"unavailable": "Il manque des vues enregistrées du mouvement pour cette image.",
+		"concurrentEdit": "La source a changé. Fermez puis rouvrez la fenêtre pour choisir une image du mouvement mis à jour."
 	},
 	"moveRemoval": {
 		"unavailable": "Cette animation n’est plus disponible.",

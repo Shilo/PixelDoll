@@ -1,10 +1,11 @@
 import { retainMoves, retainMoveMetadata } from '../lib/rig/moves.ts';
 import { stableStringify } from '../lib/image/hash.ts';
 import { baseHashOf, cellKey, DEFAULT_MOVE, storedCellHashes } from '../lib/rig/rig.ts';
-import { fromApi, hasAll } from '../lib/rig/poses.ts';
+import { AUTHORED, fromApi, hasAll } from '../lib/rig/poses.ts';
 import { STATE_CAPTURE_MODE } from '../lib/rig/setup.ts';
 import { flipSkeleton } from '../lib/rig/skeleton.ts';
-import { clipKind, lastPlaybackCell } from '../lib/runtime/timeline.js';
+import { clipKind } from '../lib/runtime/timeline.js';
+import type { Manifest } from '../lib/store/manifest.ts';
 import * as db from '../lib/store/db.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import { LocalizedError, message } from '../lib/message.ts';
@@ -21,8 +22,48 @@ import {
 	toast
 } from './state.svelte.ts';
 
-export async function captureState(moveId: string) {
-	const projectId = doc.id;
+export function stateCaptureSource(manifest: Manifest, moveId: string) {
+	const { rig } = manifest;
+	const move = rig.animations.find((clip) => clip.id === moveId && clipKind(clip) === 'move');
+	const body = manifest.items.find((item) => item.id === rig.baseItem)?.layers[0];
+	const cells = body?.cells?.[moveId];
+	if (!move || !body?.cells || !cells) return null;
+	const drawn = rig.directions.filter(({ id, mirrorOf }) => !mirrorOf && cells[id]?.some(Boolean));
+	return {
+		move,
+		body,
+		cells,
+		drawn,
+		version: stableStringify([move, cells, rig.baseItem, rig.directions, rig.cell, rig.pivot])
+	};
+}
+
+export function stateCaptureId(name: string) {
+	return name
+		.normalize('NFKD')
+		.replace(/\p{M}/gu, '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+}
+
+export function stateCaptureNameIssue(manifest: Manifest, id: string) {
+	if (!id) return 'stateCapture.invalidName';
+	if (
+		[DEFAULT_MOVE, 'standing', 'walk', 'idle', ...AUTHORED].includes(id) ||
+		manifest.rig.animations.some((clip) => stateCaptureId(clip.id) === id)
+	)
+		return 'stateCapture.takenName';
+	return undefined;
+}
+
+export async function captureState(
+	projectId: string,
+	moveId: string,
+	position: number,
+	id: string,
+	sourceVersion: string
+) {
 	const check = () => {
 		if (doc.id !== projectId)
 			throw new LocalizedError(
@@ -37,7 +78,7 @@ export async function captureState(moveId: string) {
 	};
 	const unavailable = () =>
 		new LocalizedError(
-			'This move has no saved final body frame to capture.',
+			'This frame does not have all saved views for this move.',
 			'stateCapture.unavailable'
 		);
 	check();
@@ -48,24 +89,25 @@ export async function captureState(moveId: string) {
 	const manifest = snapshot.manifest;
 	const version = stableStringify(manifest);
 	const rig = manifest.rig;
-	const move = rig.animations.find((clip) => clip.id === moveId && clipKind(clip) === 'move');
-	const cell = move && lastPlaybackCell(move);
-	const body = manifest.items.find((item) => item.id === rig.baseItem)?.layers[0];
-	const sourceCells = body?.cells?.[moveId];
-	if (!move || cell === undefined || !body?.cells || !sourceCells) throw unavailable();
-
-	const root = `${moveId}-end`;
-	let id = root;
-	for (
-		let suffix = 2;
-		rig.animations.some((clip) => clip.id === id) || Object.hasOwn(snapshot.moveReviews ?? {}, id);
-		suffix++
-	)
-		id = `${root}-${suffix}`;
+	const capture = stateCaptureSource(manifest, moveId);
+	if (!capture || capture.version !== sourceVersion)
+		throw new LocalizedError(
+			'The source changed. Close and reopen to choose a frame from the updated Move.',
+			'stateCapture.concurrentEdit'
+		);
+	const { move, body, cells: sourceCells, drawn } = capture;
+	const frame = move.frames[position];
+	if (!frame || !body.cells || !drawn.length) throw unavailable();
+	const { cell } = frame;
+	const nameIssue = stateCaptureNameIssue(manifest, id);
+	if (nameIssue || Object.hasOwn(snapshot.moveReviews ?? {}, id))
+		throw new LocalizedError(
+			'Choose a different State name.',
+			nameIssue ?? 'stateCapture.takenName'
+		);
 	const captured: typeof sourceCells = {};
 	const sources: NonNullable<typeof move.sources> = {};
-	for (const { id: dir, mirrorOf } of rig.directions) {
-		if (mirrorOf || !sourceCells[dir]?.some(Boolean)) continue;
+	for (const { id: dir } of drawn) {
 		const hash = sourceCells[dir]?.[cell];
 		if (!hash) throw unavailable();
 		captured[dir] = [hash];
@@ -97,7 +139,7 @@ export async function captureState(moveId: string) {
 		kind: 'state',
 		cells: 1,
 		loop: false,
-		frames: [{ cell: 0, ms: move.frames.at(-1)!.ms }],
+		frames: [{ cell: 0, ms: frame.ms }],
 		source: { endpoint: 'local', mode: STATE_CAPTURE_MODE },
 		...(Object.keys(sources).length ? { sources } : {})
 	});
@@ -113,7 +155,7 @@ export async function captureState(moveId: string) {
 			throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
 		if (stableStringify(record.manifest) !== version || Object.hasOwn(record.moveReviews ?? {}, id))
 			throw new LocalizedError(
-				'This character changed before the state could be captured. Try again.',
+				'The source changed. Close and reopen to choose a frame from the updated Move.',
 				'stateCapture.concurrentEdit'
 			);
 		const skeletons = { ...record.skeletons };

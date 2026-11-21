@@ -2439,12 +2439,19 @@
 	},
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen" },
 	"stateCapture": {
-		"add": "Endpose speichern",
+		"add": "Zustand erstellen aus …",
+		"title": "Zustand erstellen",
+		"source": "Aus {move}",
+		"name": "Zustandsname",
+		"bodyOnly": "Nur Körper. Keine Credits.",
+		"invalidName": "Gib einen Namen mit einem lateinischen Buchstaben oder einer Zahl ein.",
+		"takenName": "Dieser Name ist vergeben oder reserviert. Wähle einen anderen.",
+		"savedAs": "Gespeichert als {name}",
 		"saving": "Zustand wird gespeichert…",
 		"saved": "Zustand gespeichert",
 		"blocked": "Warte, bis der Charakter geladen ist, und schließe offene Arbeiten ab, bevor du einen Zustand speicherst.",
-		"unavailable": "Für diese Animation ist kein letzter Körperframe gespeichert, aus dem sich ein Zustand erstellen lässt.",
-		"concurrentEdit": "Der Charakter hat sich geändert, bevor der Zustand gespeichert werden konnte. Versuche es erneut."
+		"unavailable": "Für dieses Bild fehlen gespeicherte Ansichten der Bewegung.",
+		"concurrentEdit": "Die Quelle wurde geändert. Schließe und öffne das Fenster erneut, um ein Bild aus der aktualisierten Bewegung zu wählen."
 	},
 	"moveRemoval": {
 		"unavailable": "Diese Animation ist nicht mehr verfügbar.",
