@@ -2191,6 +2191,11 @@
 	"moveSheet": {
 		"makeRoom": "Faire de la place",
 		"frameRoom": "Cette animation peut dépasser le cadre de {frame} px : le personnage a {below} px sous les pieds. Faites d’abord de la place gratuitement, ou générez l’animation quand même.",
+		"skeleton": {
+			"title": "Examiner Skeleton V3",
+			"hint": "Skeleton V3 est une autre option. Les contrôles qualité peuvent encore échouer.",
+			"back": "Retour aux résultats"
+		},
 		"checkpoint": {
 			"generateAnyway": "Générer l’animation quand même",
 			"generate": "Générer l’animation",
@@ -2300,9 +2305,9 @@
 		"motionModel": "Modèle de mouvement",
 		"motionModelHelp": "Skeleton v3 utilise les mêmes poses pour le corps et l’équipement. V3 et PixMiniMax dessinent d’abord le corps, puis PixelDoll détecte les poses pour l’équipement.",
 		"models": {
-			"skeletonV3": "Par défaut (Skeleton V3)",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "Par défaut (PixMiniMax)"
 		},
 		"frames": "Images",
 		"framesHelp": "Les choix correspondent à ce modèle et au canevas du personnage ({canvas} px). L'option par défaut garde le nombre d'images prédéfini de PixelDoll.",

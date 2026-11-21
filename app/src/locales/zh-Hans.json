@@ -2076,6 +2076,11 @@
 	"moveSheet": {
 		"makeRoom": "腾出空间",
 		"frameRoom": "此动作可能超出 {frame} px 帧：角色脚下只有 {below} px。请先免费腾出空间，或仍然生成此动作。",
+		"skeleton": {
+			"title": "查看 Skeleton V3 方案",
+			"hint": "也可以选择 Skeleton V3，但仍可能无法通过质量检查。",
+			"back": "返回结果"
+		},
 		"checkpoint": {
 			"generateAnyway": "仍然生成动作",
 			"generate": "生成动作",
@@ -2181,9 +2186,9 @@
 		"motionModel": "运动模型",
 		"motionModelHelp": "Skeleton v3 为身体和装备使用相同的姿势。V3 和 PixMiniMax 会先绘制身体，再由 PixelDoll 检测装备所用的姿势。",
 		"models": {
-			"skeletonV3": "默认（Skeleton V3）",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "默认（PixMiniMax）"
 		},
 		"frames": "帧",
 		"framesHelp": "选项会随此模型和角色的画布（{canvas} px）变化。默认选项使用 PixelDoll 预设的帧数。",

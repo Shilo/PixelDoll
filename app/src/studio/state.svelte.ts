@@ -3566,6 +3566,7 @@ export const moving = $state({
 	error: '' as string | LocalizedError,
 	done: false,
 	warnings: [] as string[],
+	qualityDirs: [] as NonNullable<MoveSpec['approvedDirs']>,
 	queued: [] as QueuedMove[],
 	repairReview: null as RepairReview | null,
 	repairApplied: false,
@@ -3774,6 +3775,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			return;
 		}
 		moving.warnings = result.warnings;
+		moving.qualityDirs = result.qualityDirs ?? [];
 		moving.done = true;
 		await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
 		if (!current()) return;

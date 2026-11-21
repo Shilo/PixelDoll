@@ -2105,6 +2105,11 @@
 	"moveSheet": {
 		"makeRoom": "余白を作る",
 		"frameRoom": "このモーションは {frame} px のフレームからはみ出すおそれがあります。キャラクターの足元の余白は {below} px です。先に無料で余白を作るか、このまま生成してください。",
+		"skeleton": {
+			"title": "Skeleton V3 を確認",
+			"hint": "Skeleton V3 も選べます。品質チェックに通らない場合もあります。",
+			"back": "結果に戻る"
+		},
 		"checkpoint": {
 			"generateAnyway": "このままモーションを生成",
 			"generate": "モーションを生成",
@@ -2210,9 +2215,9 @@
 		"motionModel": "モーションのモデル",
 		"motionModelHelp": "Skeleton v3 は体と装備に同じポーズを使います。V3 と PixMiniMax は先に体を描き、その後 PixelDoll が装備用のポーズを検出します。",
 		"models": {
-			"skeletonV3": "標準（Skeleton V3）",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "標準（PixMiniMax）"
 		},
 		"frames": "フレーム",
 		"framesHelp": "選択肢はこのモデルとキャラクターのキャンバス（{canvas} px）に合わせて変わります。デフォルトでは PixelDoll のプリセットのフレーム数を使用します。",

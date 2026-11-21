@@ -2190,6 +2190,11 @@
 	"moveSheet": {
 		"makeRoom": "Platz schaffen",
 		"frameRoom": "Diese Animation kann über den {frame}-px-Frame hinausgehen: Unter den Füßen der Figur sind {below} px frei. Schaffe zuerst kostenlos Platz oder generiere die Animation trotzdem.",
+		"skeleton": {
+			"title": "Skeleton V3 prüfen",
+			"hint": "Skeleton V3 ist eine weitere Option. Auch damit können die Qualitätsprüfungen fehlschlagen.",
+			"back": "Zurück zu den Ergebnissen"
+		},
 		"checkpoint": {
 			"generateAnyway": "Animation trotzdem generieren",
 			"generate": "Animation generieren",
@@ -2299,9 +2304,9 @@
 		"motionModel": "Bewegungsmodell",
 		"motionModelHelp": "Skeleton v3 verwendet dieselben Posen für Körper und Ausrüstung. V3 und PixMiniMax zeichnen zuerst den Körper. Danach ermittelt PixelDoll die Posen für die Ausrüstung.",
 		"models": {
-			"skeletonV3": "Standard (Skeleton V3)",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "Standard (PixMiniMax)"
 		},
 		"frames": "Frames",
 		"framesHelp": "Die Auswahl passt zu diesem Modell und der Leinwand des Charakters ({canvas} px). Die Standardoption behält PixelDolls voreingestellte Framezahl.",
