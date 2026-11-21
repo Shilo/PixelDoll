@@ -675,6 +675,16 @@ function syncProjectRef(p: StoredProject) {
 	const ref = savedProjectRef(p);
 	store.projects = store.projects.map((entry) => (entry.id === p.id ? ref : entry));
 }
+/** A save finished for a character this tab may not be showing: read its record and keep its listed summary in step, since
+ *  only opening it reloads the record. The summary is not work the save depends on, so a read failure is logged, never
+ *  reported as a failed save. */
+async function syncStoredProject(id: string) {
+	const record = await db.get<StoredProject>('projects', id).catch((error: unknown) => {
+		console.error('saved character summary', error);
+		return undefined;
+	});
+	if (record?.manifest) syncProjectRef(record);
+}
 
 /** False when the saved characters could not be read (already reported). */
 export async function refreshProjects(): Promise<boolean> {
@@ -2836,6 +2846,7 @@ export async function acceptItemIssues(projectId: string, itemId: string, review
 	if (follower()) return;
 	await (await itemRun()).acceptItemReview(projectId, itemId, reviewed);
 	if (viewing(projectId)) await openProject(projectId, { quiet: true });
+	else await syncStoredProject(projectId);
 	toast(message('state.nameAcceptedAsIs', { name: reviewed.name }));
 }
 async function openItemReview(projectId: string, itemId: string, anim?: string) {
@@ -2970,7 +2981,7 @@ export async function acceptGen(g: Gen, auto = false, finished = false): Promise
 				doc.id,
 				auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id }
 			);
-		}
+		} else if (!viewing(g.draft.rigId)) void syncStoredProject(g.draft.rigId);
 		if (doc.id !== g.draft.rigId) {
 			drop(g);
 			void refreshShared(); // the new item is offered to the character in view
@@ -3695,7 +3706,10 @@ export async function saveReviewedMove(
 	if (blocked) throw new LocalizedError('Move review is blocked by other work.', blocked);
 	moveReviewPublishing = true;
 	try {
-		return await (await createFlow()).resolveMoveCandidate(projectId, candidate, accept);
+		const input = await (await createFlow()).resolveMoveCandidate(projectId, candidate, accept);
+		// Accepting a reviewed move saves the character even when another one is open here.
+		if (accept && !viewing(projectId)) await syncStoredProject(projectId);
+		return input;
 	} finally {
 		moveReviewPublishing = false;
 	}
@@ -3851,7 +3865,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (viewing(projectId)) {
 				await openProject(projectId, { quiet: true });
 				if (!current()) return;
-			}
+			} else await syncStoredProject(projectId);
 			const names = spec.items
 				.map((id) => store.project?.manifest.items.find((i) => i.id === id)?.name)
 				.filter(Boolean)
@@ -3876,7 +3890,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 					ui.frame = 0;
 					ui.playing = true;
 				}
-			}
+			} else await syncStoredProject(projectId);
 			toast(message('state.moveNameAdded', { moveName }));
 		}
 		const reviewItem = result.reviewItems?.[0];
@@ -4158,6 +4172,7 @@ export async function resolveRepairReview(useRepair: boolean) {
 		moving.repairApplied = false;
 		moving.done = true;
 		if (useRepair && viewing(projectId)) await openProject(projectId, { quiet: true });
+		else if (useRepair) await syncStoredProject(projectId);
 		toast(useRepair ? message('repairReview.saved') : message('repairReview.kept'));
 	} catch (error) {
 		moving.error = error instanceof LocalizedError ? error : errorText(error);
@@ -4246,6 +4261,7 @@ export async function startSetup(spec: SetupSpec) {
 		await db.del('projects', SETUP_KEY);
 		if (!current()) return;
 		if (viewing(spec.projectId)) await openProject(spec.projectId);
+		else await syncStoredProject(spec.projectId);
 		toast(message('state.characterReadyForSkeletonPosedItemsAnd'));
 	} catch (e) {
 		if (current()) {

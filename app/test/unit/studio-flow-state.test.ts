@@ -5,6 +5,7 @@ import type { RepairReview } from '../../src/lib/items/run.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import type { Balance } from '../../src/lib/pixellab/routes.ts';
 import { message } from '../../src/lib/message.ts';
+import { characterFacts } from '../../src/studio/model.ts';
 import { readFileSync } from 'node:fs';
 import { equipmentFixture } from './equipment-fixture.ts';
 
@@ -142,6 +143,47 @@ test('canceling from a follower explains that generation has not stopped without
 	} finally {
 		queue.role = 'leader';
 	}
+});
+
+test('a move saved for another character refreshes its listed summary', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const fixture = await equipmentFixture();
+	const savedAt = '2026-11-21T10:00:00.000Z';
+	const manifest = {
+		...structuredClone(fixture.manifest),
+		name: 'Other',
+		rig: {
+			...fixture.manifest.rig,
+			animations: [
+				...fixture.manifest.rig.animations,
+				{ id: 'cast', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }
+			]
+		}
+	};
+	// The open character is not the one the move is for: its save must still reach the list row.
+	state.doc.id = 'rig-open';
+	state.store.projects = [
+		{ id: 'rig-open', name: 'Open', demo: false, dev: false, savedAt: '', look: '' },
+		{ id: 'rig-other', name: 'Stale', demo: false, dev: false, savedAt: '', look: '' }
+	];
+	mocks.get.mockImplementation(async (_store: string, id: string) =>
+		id === 'rig-other'
+			? { id, origin: 'studio', savedAt, manifest: structuredClone(manifest) }
+			: undefined
+	);
+	mocks.move.mockResolvedValue({ warnings: [], qualityDirs: [] });
+	await state.startMove('rig-other', {
+		id: 'cast',
+		action: 'cast',
+		frames: 1,
+		items: [],
+		seed: 1
+	});
+	expect(state.store.projects.find((entry) => entry.id === 'rig-other')).toMatchObject({
+		name: 'Other',
+		savedAt,
+		facts: characterFacts(manifest)
+	});
 });
 
 test('a failed review write leaves the paid candidate available and a cache-only recovery record', async () => {
