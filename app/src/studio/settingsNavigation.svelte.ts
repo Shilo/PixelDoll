@@ -1,13 +1,14 @@
 import { ui } from './state.svelte.ts';
 import type { WhisperKey } from 'svelte-whisper';
 
-export type SettingsSection = 'general' | 'wardrobe' | 'export' | 'pixellab';
+export type SettingsSection = 'general' | 'wardrobe' | 'export' | 'pixellab' | 'about';
 
 export const settingsLabels = {
-	general: 'settings.general',
-	wardrobe: 'settings.wardrobe',
-	export: 'settings.exportDefaults',
-	pixellab: 'settings.connection'
+	general: 'settings.appearance',
+	wardrobe: 'experience.tabWardrobe',
+	export: 'export.sheet.title',
+	pixellab: 'settings.connection',
+	about: 'settings.about'
 } satisfies Record<SettingsSection, WhisperKey>;
 
 export const settingsNavigation = $state<{

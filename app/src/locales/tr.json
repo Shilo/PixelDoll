@@ -1,10 +1,12 @@
 {
 	"settings": {
 		"wardrobe": "Paylaşılan gardırop eşyaları",
-		"exportDefaults": "Dışa aktarma varsayılanları",
-		"connection": "PixelLab bağlantısı",
-		"general": "Görünüm ve dil",
+		"connection": "PixelLab",
+		"about": "Hakkında",
 		"theme": "Tema",
+		"appearance": "Görünüm",
+		"dark": "Koyu",
+		"light": "Açık",
 		"search": "Ayarlarda ara",
 		"noResults": "Aramanızla eşleşen ayar bulunamadı.",
 		"all": "Tüm ayarlar"
@@ -901,6 +903,8 @@
 			"dressed": "Giydirilmiş karakter sayfalarını dahil edin",
 			"dressedHint": "Gövdeyi ve giyili eşyaları birleştirerek mevcut görünümün ve her kayıtlı kıyafetin PNG sprite sayfasını ekler. Sayfaları her zaman birleşik olan RPG Maker dışında ayrı katmanlar da her zaman dahil edilir.",
 			"format": "Dışa aktarım biçimi",
+			"defaultTarget": "Varsayılan dışa aktarma hedefi",
+			"defaultTargetHint": "Dışa aktarma açıldığında seçili gelir. Başka bir hedef seçebilirsiniz.",
 			"versionMenu": "RPG Maker sürümü",
 			"version": "Sürüm",
 			"versionLabel": "RPG Maker sürümü: {version}"
@@ -1455,6 +1459,8 @@
 		"recommended": "{feature} planınızda kullanılabilir. Tier {tier} veya üzeri önerilir."
 	},
 	"usage": {
+		"remaining": "Kalan: {n}",
+		"creditBalance": "Kredi bakiyesi",
 		"generations": "Üretimler",
 		"refreshing": "Bakiye yenileniyor…",
 		"loadFailed": "PixelLab kullanım bilgileri yüklenemedi. Bakiyeyi yenilemeyi deneyin.",
@@ -2433,12 +2439,12 @@
 		"notSaved": "Görünürlük değişti ancak tarayıcı bu ayarı kaydedemedi."
 	},
 	"versionRow": {
-		"actions": "Sürüm işlemleri",
+		"development": "Geliştirme",
+		"preRelease": "Ön sürüm",
 		"openSource": "Kaynak kodunu aç",
 		"viewCommit": "Commit’i görüntüle",
-		"copyDetails": "Sürüm ayrıntılarını kopyala",
-		"copied": "Sürüm kopyalandı",
-		"copyFailed": "Sürüm ayrıntıları kopyalanamadı."
+		"copyDetails": "Ayrıntıları kopyala",
+		"copyFailed": "Uygulama ayrıntıları kopyalanamadı."
 	},
 	"repairReview": {
 		"finishFirst": "Tamamlanan onarımı kullanıp kullanmayacağınıza önce Hareketler bölümünde karar verin.",

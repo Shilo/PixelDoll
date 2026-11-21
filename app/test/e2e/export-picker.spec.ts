@@ -1643,7 +1643,7 @@ test('Export settings persist explicit None, list and All choices, and toggle co
 	const openSettings = async () => {
 		await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
 		await expect(dialog).toHaveAccessibleName('Settings');
-		await expect(dialog.getByRole('heading', { name: 'Export defaults' })).toBeVisible();
+		await expect(dialog.getByRole('heading', { name: 'Export', exact: true })).toBeVisible();
 	};
 	const back = async () => {
 		await dialog.getByRole('button', { name: 'Back', exact: true }).click();
@@ -1739,8 +1739,8 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	await search.fill('no such preference');
 	await expect(settings.getByRole('status')).toHaveText('No settings match your search.');
 	await search.fill('png json');
-	await settings.getByRole('button', { name: /Export format/ }).click();
-	await expect(settings.getByRole('combobox', { name: 'Export format' })).toBeFocused();
+	await settings.getByRole('button', { name: /Default export target/ }).click();
+	await expect(settings.getByRole('combobox', { name: 'Default export target' })).toBeFocused();
 	await page.setViewportSize({ width: 320, height: 640 });
 	await page.goBack();
 	await expect(search).toBeFocused();
@@ -1755,15 +1755,13 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	await expect(dressed).toBeVisible();
 	await up.click();
 	await expect(search).toBeFocused();
-	await expect(
-		settings.getByRole('button', { name: 'Export defaults', exact: true })
-	).toBeVisible();
+	await expect(settings.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
 	await expect(dialog).toHaveAccessibleName('Settings');
-	await expect(dialog.getByRole('heading', { name: 'Export defaults' })).toBeVisible();
+	await expect(dialog.getByRole('heading', { name: 'Export', exact: true })).toBeVisible();
 	await expect(
 		dialog.getByRole('checkbox', { name: 'Include dressed character sheets' })
 	).not.toBeChecked();

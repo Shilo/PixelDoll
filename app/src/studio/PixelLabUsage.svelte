@@ -7,8 +7,9 @@
 	let {
 		label,
 		compact = false,
+		detailed = false,
 		actions
-	}: { label?: string; compact?: boolean; actions?: Snippet } = $props();
+	}: { label?: string; compact?: boolean; detailed?: boolean; actions?: Snippet } = $props();
 	const balance = $derived(app.keyRejected || app.balanceError ? null : app.balance);
 	const usage = $derived.by(() => {
 		if (!balance?.subscription) return null;
@@ -22,62 +23,113 @@
 			remaining > total
 		)
 			return null;
-		return { used: total - remaining, total, exhausted: remaining === 0 };
+		return { used: total - remaining, total, remaining, exhausted: remaining === 0 };
 	});
 	const creditBalance = $derived(balance?.credits?.usd);
 	const credits = $derived(
 		typeof creditBalance === 'number' &&
 			Number.isFinite(creditBalance) &&
-			(usage?.exhausted || ((!compact || !usage) && creditBalance > 0))
+			(detailed || usage?.exhausted || ((!compact || !usage) && creditBalance > 0))
 			? formatNumber(creditBalance, { style: 'currency', currency: 'USD' })
 			: null
 	);
 </script>
 
-<span class={['usage', { compact }]}>
-	<span class="summary">
-		<span class="label"><Gauge size={18} /><span>{label ?? t('usage.title')}</span></span>
+{#if detailed}
+	<div class="usage detailed-usage">
+		<div class="usage-stat">
+			<strong>{t('usage.title')}</strong>
+			{@render actions?.()}
+		</div>
+		{#if balance?.subscription?.plan}<span class="bu-muted">{balance.subscription.plan}</span>{/if}
 		{#if usage}
-			<span class="count bu-small bu-number">
-				{formatNumber(usage.used)}<span class="bu-muted">{` / ${formatNumber(usage.total)}`}</span>
-			</span>
+			<div class="usage-stat">
+				<span>{t('usage.generations')}</span>
+				<span class="bu-number">{formatNumber(usage.used)} / {formatNumber(usage.total)}</span>
+			</div>
+			<progress
+				class="bu-progress"
+				value={usage.used}
+				max={usage.total}
+				aria-label={t('usage.generations')}
+			></progress>
+			<div class="usage-stat bu-muted bu-small">
+				<span>{t('usage.used', { percent: formatPercent(usage.used / usage.total, 1) })}</span>
+				<span>{t('usage.remaining', { n: formatNumber(usage.remaining) })}</span>
+			</div>
+		{:else}
+			<span class="bu-muted bu-small"
+				>{t(app.balance || app.balanceError ? 'usage.unavailable' : 'usage.checking')}</span
+			>
 		{/if}
-		<span class="actions">
-			{#if compact}<ChevronRight size={16} aria-hidden="true" />{:else}{@render actions?.()}{/if}
+		{#if credits !== null}
+			<div class="usage-stat">
+				<span>{t('usage.creditBalance')}</span><span class="bu-number">{credits}</span>
+			</div>
+		{/if}
+	</div>
+{:else}
+	<span class={['usage', { compact }]}>
+		<span class="summary">
+			<span class="label"><Gauge size={18} /><span>{label ?? t('usage.title')}</span></span>
+			{#if usage}
+				<span class="count bu-small bu-number">
+					{formatNumber(usage.used)}<span class="bu-muted">{` / ${formatNumber(usage.total)}`}</span
+					>
+				</span>
+			{/if}
+			<span class="actions">
+				{#if compact}<ChevronRight size={16} aria-hidden="true" />{:else}{@render actions?.()}{/if}
+			</span>
+			{#if !usage && (app.key || !compact)}
+				<span class="detail bu-small bu-muted">
+					{!app.key
+						? t('usage.notConnected')
+						: app.balance || app.balanceError || app.keyRejected
+							? t('usage.unavailable')
+							: t('usage.checking')}
+				</span>
+			{/if}
+			{#if usage || credits !== null}
+				<span class="meter">
+					{#if usage}
+						<progress class="bu-progress" value={usage.used} max={usage.total} aria-hidden="true"
+						></progress>
+						<span class="bu-small bu-muted bu-number">
+							{t('usage.used', {
+								percent: formatPercent(
+									usage.exhausted ? 1 : Math.min(0.999, usage.used / usage.total),
+									1
+								)
+							})}
+						</span>
+					{/if}
+					{#if credits !== null}
+						{#if usage}<span class="bu-small bu-muted" aria-hidden="true">·</span>{/if}
+						<span class="credits bu-small bu-muted bu-number"
+							>{t('usage.credits', { credits })}</span
+						>
+					{/if}
+				</span>
+			{/if}
 		</span>
-		{#if !usage && (app.key || !compact)}
-			<span class="detail bu-small bu-muted">
-				{!app.key
-					? t('usage.notConnected')
-					: app.balance || app.balanceError || app.keyRejected
-						? t('usage.unavailable')
-						: t('usage.checking')}
-			</span>
-		{/if}
-		{#if usage || credits !== null}
-			<span class="meter">
-				{#if usage}
-					<progress class="bu-progress" value={usage.used} max={usage.total} aria-hidden="true"
-					></progress>
-					<span class="bu-small bu-muted bu-number">
-						{t('usage.used', {
-							percent: formatPercent(
-								usage.exhausted ? 1 : Math.min(0.999, usage.used / usage.total),
-								1
-							)
-						})}
-					</span>
-				{/if}
-				{#if credits !== null}
-					{#if usage}<span class="bu-small bu-muted" aria-hidden="true">·</span>{/if}
-					<span class="credits bu-small bu-muted bu-number">{t('usage.credits', { credits })}</span>
-				{/if}
-			</span>
-		{/if}
 	</span>
-</span>
+{/if}
 
 <style>
+	.detailed-usage {
+		display: grid;
+		gap: 8px;
+	}
+	.detailed-usage progress {
+		width: 100%;
+	}
+	.usage-stat {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px;
+	}
 	.usage {
 		display: block;
 		width: 100%;

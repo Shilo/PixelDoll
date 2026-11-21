@@ -1,10 +1,12 @@
 {
 	"settings": {
 		"wardrobe": "Objets partagés de la garde-robe",
-		"exportDefaults": "Exportation par défaut",
-		"connection": "Connexion à PixelLab",
-		"general": "Apparence et langue",
+		"connection": "PixelLab",
+		"about": "À propos",
 		"theme": "Thème",
+		"appearance": "Apparence",
+		"dark": "Sombre",
+		"light": "Clair",
 		"search": "Rechercher dans les paramètres",
 		"noResults": "Aucun paramètre ne correspond à votre recherche.",
 		"all": "Tous les paramètres"
@@ -898,6 +900,8 @@
 			"dressed": "Inclure les feuilles de sprites du personnage habillé",
 			"dressedHint": "Ajoute des feuilles de sprites PNG de votre look actuel et de chaque tenue enregistrée, avec le corps et les objets portés combinés. Les calques séparés sont toujours inclus, sauf dans les feuilles RPG Maker, qui sont toujours combinées.",
 			"format": "Format d’export",
+			"defaultTarget": "Cible d’exportation par défaut",
+			"defaultTargetHint": "Présélectionnée à l’ouverture de l’exportation. Vous pouvez choisir une autre cible.",
 			"versionMenu": "Version de RPG Maker",
 			"version": "Version",
 			"versionLabel": "Version de RPG Maker : {version}"
@@ -1455,6 +1459,8 @@
 		"recommended": "Cette fonctionnalité est disponible avec votre forfait : {feature}. Un forfait Tier {tier} ou supérieur est recommandé."
 	},
 	"usage": {
+		"remaining": "Restantes : {n}",
+		"creditBalance": "Solde de crédits",
 		"generations": "Générations",
 		"refreshing": "Actualisation du solde…",
 		"loadFailed": "Impossible de charger les données d’utilisation de PixelLab. Essayez d’actualiser le solde.",
@@ -2440,12 +2446,12 @@
 		"notSaved": "La visibilité a changé, mais le navigateur n’a pas pu l’enregistrer."
 	},
 	"versionRow": {
-		"actions": "Actions de version",
+		"development": "Développement",
+		"preRelease": "Version préliminaire",
 		"openSource": "Ouvrir le code source",
 		"viewCommit": "Voir le commit",
-		"copyDetails": "Copier les détails de la version",
-		"copied": "Version copiée",
-		"copyFailed": "Impossible de copier les détails de la version."
+		"copyDetails": "Copier les détails",
+		"copyFailed": "Impossible de copier les détails de l’application."
 	},
 	"repairReview": {
 		"finishFirst": "Ouvrez d’abord Animations pour décider si vous souhaitez utiliser la réparation terminée.",

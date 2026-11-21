@@ -1,10 +1,12 @@
 {
 	"settings": {
 		"wardrobe": "Item lemari bersama",
-		"exportDefaults": "Setelan ekspor bawaan",
-		"connection": "Koneksi PixelLab",
-		"general": "Tampilan dan bahasa",
+		"connection": "PixelLab",
+		"about": "Tentang",
 		"theme": "Tema",
+		"appearance": "Tampilan",
+		"dark": "Gelap",
+		"light": "Terang",
 		"search": "Cari pengaturan",
 		"noResults": "Tidak ada pengaturan yang cocok dengan pencarian Anda.",
 		"all": "Semua pengaturan"
@@ -868,6 +870,8 @@
 			"dressed": "Sertakan sprite sheet karakter berperlengkapan",
 			"dressedHint": "Menambahkan sprite sheet PNG untuk penampilan saat ini dan setiap setelan tersimpan, dengan tubuh dan item yang dikenakan digabungkan. Lapisan terpisah selalu disertakan, kecuali pada sprite sheet RPG Maker yang selalu digabungkan.",
 			"format": "Format ekspor",
+			"defaultTarget": "Target ekspor bawaan",
+			"defaultTargetHint": "Dipilih saat membuka Ekspor. Anda tetap bisa memilih target lain.",
 			"versionMenu": "Versi RPG Maker",
 			"version": "Versi",
 			"versionLabel": "Versi RPG Maker: {version}"
@@ -1395,6 +1399,8 @@
 		"recommended": "{feature} tersedia dalam paket Anda. Tier {tier} atau lebih tinggi disarankan."
 	},
 	"usage": {
+		"remaining": "Tersisa: {n}",
+		"creditBalance": "Saldo kredit",
 		"generations": "Generasi",
 		"refreshing": "Memperbarui saldo…",
 		"loadFailed": "Data penggunaan dari PixelLab tidak dapat dimuat. Coba perbarui saldo.",
@@ -2337,12 +2343,12 @@
 		"notSaved": "Visibilitas berubah, tetapi browser ini tidak dapat menyimpannya."
 	},
 	"versionRow": {
-		"actions": "Tindakan versi",
+		"development": "Pengembangan",
+		"preRelease": "Prarilis",
 		"openSource": "Buka kode sumber",
 		"viewCommit": "Lihat commit",
-		"copyDetails": "Salin detail versi",
-		"copied": "Versi disalin",
-		"copyFailed": "Tidak dapat menyalin detail versi."
+		"copyDetails": "Salin detail",
+		"copyFailed": "Detail aplikasi tidak dapat disalin."
 	},
 	"repairReview": {
 		"finishFirst": "Buka Animasi untuk memutuskan dulu apakah akan menggunakan hasil perbaikan.",

@@ -66,10 +66,11 @@ Settings is the home for rules that apply beyond the current task, not an invent
 
 | Area | Placement and control |
 | --- | --- |
-| Appearance and language | Settings. Two named theme choices show the active value; the language picker keeps native names and browser detection. Quick access does not create another preference. |
-| Shared wardrobe items | Settings holds the global switches. A visibility override for one character stays in the contextual Wardrobe controls, alongside the wardrobe it changes. |
-| Export defaults | Settings holds the remembered format, independent play-once choices, and the combined-sheets checkbox. Export opens that same section directly and retains its descriptive format picker and output summary. Play once changes the exported result across characters and deliberately does not change Studio playback. |
-| PixelLab connection | Settings links to the existing connection flow. Key entry, opt-in Remember, Replace, and Forget stay together there. Usage and Activity are also reachable from More. Workspace copies do not show the connection section. |
+| Appearance | The Theme row toggles Dark and Light; each segment selects its value directly. The language picker keeps native names and browser detection. |
+| Wardrobe | Settings holds the global shared-item switches. A visibility override for one character stays alongside the wardrobe it changes. |
+| Export | Settings holds the default export target, play-once choices, and the combined-sheets checkbox. Export opens the same section directly. Play once changes exported results, not Studio playback. |
+| PixelLab | Connection status and generation and credit balances are shown without displaying or copying the API key. Connect, Replace, and Forget stay in the connection flow. Workspace copies do not show this section. |
+| About | Version, source and commit links, and a copy action for support. Development and pre-release builds show a build label; standard production builds do not. |
 | Character and item properties | Keep names and IDs, directions/mirroring, slots, attachment points, colors, outfits and rig setup in their character, item or creation flows. They describe the work, not how PixelDoll behaves for all work. |
 | Temporary view and task options | Keep pose, facing, frame, playback, zoom, mount display, asset selection and share size in the view or task they affect. Draft forms and restoring the last selection are not preferences just because some state is recoverable. |
 | Actions and status | Import, export downloads, backups, installation, updates, review, deletion and paid generations stay where consequences and recovery are visible. Search does not trigger them or index user content or secrets. |

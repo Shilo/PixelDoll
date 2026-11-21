@@ -1,10 +1,12 @@
 {
 	"settings": {
 		"wardrobe": "공유 아이템",
-		"exportDefaults": "내보내기 기본값",
-		"connection": "PixelLab 연결",
-		"general": "모양 및 언어",
+		"connection": "PixelLab",
+		"about": "앱 정보",
 		"theme": "테마",
+		"appearance": "모양",
+		"dark": "다크",
+		"light": "라이트",
 		"search": "설정 검색",
 		"noResults": "검색과 일치하는 설정이 없어요.",
 		"all": "모든 설정"
@@ -873,6 +875,8 @@
 			"dressed": "옷을 입힌 캐릭터 시트 포함",
 			"dressedHint": "현재 룩과 저장된 코디마다 몸체와 착용 아이템을 합친 PNG 스프라이트 시트를 추가해요. 별도 레이어는 항상 포함되지만, RPG Maker 시트는 항상 합쳐져요.",
 			"format": "내보내기 형식",
+			"defaultTarget": "기본 내보내기 대상",
+			"defaultTargetHint": "내보내기를 열면 미리 선택됩니다. 다른 대상을 선택할 수도 있습니다.",
 			"versionMenu": "RPG Maker 버전",
 			"version": "버전",
 			"versionLabel": "RPG Maker 버전: {version}"
@@ -1396,6 +1400,8 @@
 		"recommended": "{feature} 기능은 현재 요금제에서 사용할 수 있어요. Tier {tier} 이상을 권장해요."
 	},
 	"usage": {
+		"remaining": "남은 횟수: {n}",
+		"creditBalance": "크레딧 잔액",
 		"generations": "생성 횟수",
 		"refreshing": "잔액 새로 고치는 중…",
 		"loadFailed": "PixelLab 사용량을 불러올 수 없어요. 잔액을 새로 고쳐 보세요.",
@@ -2334,12 +2340,12 @@
 		"notSaved": "표시 설정을 바꿨지만 이 브라우저에 저장하지 못했어요."
 	},
 	"versionRow": {
-		"actions": "버전 메뉴",
+		"development": "개발 버전",
+		"preRelease": "사전 출시 버전",
 		"openSource": "소스 코드 열기",
 		"viewCommit": "커밋 보기",
-		"copyDetails": "버전 정보 복사",
-		"copied": "버전 정보를 복사했어요",
-		"copyFailed": "버전 정보를 복사하지 못했어요."
+		"copyDetails": "세부 정보 복사",
+		"copyFailed": "앱 세부 정보를 복사할 수 없습니다."
 	},
 	"repairReview": {
 		"finishFirst": "동작을 열고 완료된 수정을 사용할지 먼저 결정해 주세요.",

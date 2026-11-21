@@ -1,10 +1,12 @@
 {
 	"settings": {
 		"wardrobe": "Geteilte Garderobenobjekte",
-		"exportDefaults": "Exportvorgaben",
-		"connection": "PixelLab-Verbindung",
-		"general": "Darstellung und Sprache",
+		"connection": "PixelLab",
+		"about": "Über PixelDoll",
 		"theme": "Design",
+		"appearance": "Erscheinungsbild",
+		"dark": "Dunkel",
+		"light": "Hell",
 		"search": "Einstellungen durchsuchen",
 		"noResults": "Keine passenden Einstellungen gefunden.",
 		"all": "Alle Einstellungen"
@@ -904,6 +906,8 @@
 			"dressed": "Angezogene Figur als Spritesheets exportieren",
 			"dressedHint": "Fügt PNG-Spritesheets für deinen aktuellen Look und jedes gespeicherte Outfit hinzu, jeweils mit Grundkörper und angelegten Gegenständen in einem Bild. Separate Ebenen sind immer dabei, außer bei RPG Maker: Dort sind alle Ebenen zusammengefasst.",
 			"format": "Exportformat",
+			"defaultTarget": "Standard-Exportziel",
+			"defaultTargetHint": "Beim Öffnen des Exports vorausgewählt. Du kannst ein anderes Ziel wählen.",
 			"versionMenu": "RPG Maker-Version",
 			"version": "Version",
 			"versionLabel": "RPG Maker-Version: {version}"
@@ -1461,6 +1465,8 @@
 		"recommended": "{feature} ist in deinem Tarif verfügbar. Empfohlen wird mindestens Tier {tier}."
 	},
 	"usage": {
+		"remaining": "Verbleibend: {n}",
+		"creditBalance": "Guthaben",
 		"generations": "Generierungen",
 		"refreshing": "Kontostand wird aktualisiert…",
 		"loadFailed": "Die Nutzungsdaten von PixelLab konnten nicht geladen werden. Versuche, sie zu aktualisieren.",
@@ -2439,12 +2445,12 @@
 		"notSaved": "Die Sichtbarkeit wurde geändert, konnte aber in diesem Browser nicht gespeichert werden."
 	},
 	"versionRow": {
-		"actions": "Versionsaktionen",
+		"development": "Entwicklung",
+		"preRelease": "Vorabversion",
 		"openSource": "Quellcode öffnen",
 		"viewCommit": "Commit ansehen",
-		"copyDetails": "Versionsdetails kopieren",
-		"copied": "Version kopiert",
-		"copyFailed": "Versionsdetails konnten nicht kopiert werden."
+		"copyDetails": "Details kopieren",
+		"copyFailed": "App-Details konnten nicht kopiert werden."
 	},
 	"repairReview": {
 		"finishFirst": "Öffne zuerst die Bewegungen und entscheide, ob du die fertige Reparatur verwenden möchtest.",

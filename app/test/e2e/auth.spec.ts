@@ -126,6 +126,19 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await usage.click();
 	await expect(account.getByText('50,000 / 50,000', { exact: true })).toBeVisible();
 	await expectInlineCredits(account);
+	await account.getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'PixelLab', exact: true }).click();
+	await expect(settings.getByText('Connected and remembered on this device.')).toBeVisible();
+	await expect(settings.getByRole('progressbar', { name: 'Generations' })).toHaveAttribute(
+		'max',
+		'50000'
+	);
+	await expect(settings.getByText('Remaining: 0', { exact: true })).toBeVisible();
+	await expect(settings.getByText('$3.06', { exact: true })).toBeVisible();
+	await expect(settings.getByLabel('API key', { exact: true })).toHaveCount(0);
 });
 
 test('PixelLab usage recovers from errors, replaces a key, reconnects, and forgets locally', async ({

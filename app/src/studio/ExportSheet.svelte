@@ -695,10 +695,12 @@
 		</div>
 		<hr class="bu-separator export-divider" />
 		<label class="export-dressed" data-setting="format" tabindex="-1">
-			<span class="label">{t('export.settings.format')}</span>
+			<span class="label">{t('export.settings.defaultTarget')}</span>
 			<select
 				class="bu-input input"
 				value={engine}
+				aria-label={t('export.settings.defaultTarget')}
+				aria-describedby="default-export-target-hint"
 				disabled={!ready || saving}
 				onchange={(event) => chooseEngine(event.currentTarget.value as Engine)}
 			>
@@ -712,6 +714,9 @@
 					{/if}
 				{/each}
 			</select>
+			<span class="muted small" id="default-export-target-hint"
+				>{t('export.settings.defaultTargetHint')}</span
+			>
 		</label>
 	</div>
 {/snippet}

@@ -162,88 +162,55 @@ async function showNotification(
 	);
 }
 
-test('Settings version opens build actions by click, keyboard, and tap', async ({ page }, info) => {
-	await page.goto('/');
-	const more = page.getByRole('button', { name: 'More options', exact: true });
+test('Settings About opens a page with build details and copies them', async ({ page }, info) => {
 	const openSettings = async () => {
-		await more.click();
-		await expect(
-			page.locator('#experience-options').getByRole('button', { name: /^Version / })
-		).toHaveCount(0);
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await expect(page.getByRole('button', { name: 'Help...', exact: true })).toBeVisible();
 		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	};
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await page.goto('/');
 	await openSettings();
-	const version = page
-		.getByRole('dialog', { name: 'Settings' })
-		.getByRole('button', { name: /^Version \d/ });
-	const actions = page.getByRole('group', { name: 'Version actions', exact: true });
+	const about = settings.getByRole('button', { name: 'About', exact: true });
+	const aboutIcon = about.locator('svg.lucide-info');
+	const aboutLabel = about.getByText('About', { exact: true });
+	const iconX = (await aboutIcon.boundingBox())?.x;
+	const labelX = (await aboutLabel.boundingBox())?.x;
+	await about.press('Enter');
+	const heading = settings.getByRole('heading', { name: 'About', exact: true });
+	await expect(heading).toBeFocused();
+	expect((await aboutIcon.boundingBox())?.x).toBe(iconX);
+	expect((await aboutLabel.boundingBox())?.x).toBe(labelX);
+	await expect(settings.getByText('Pre-release', { exact: true })).toBeVisible();
+	const version = await settings.getByText(/^Version \d+\.\d+\.\d+$/).innerText();
 	const repository = 'https://github.com/Shilo/PixelDoll';
-	const [, label, hash] = /^(Version \d+\.\d+\.\d+-pre)\s+([a-f0-9]{7,})$/i.exec(
-		(await version.innerText()).trim()
-	)!;
-	await expect(version).toHaveAttribute('aria-expanded', 'false');
-	await version.click({ button: 'right' });
-	await expect(actions).toBeHidden();
-	await version.click();
-	await expect(actions).toBeVisible();
-	await expect(version).toHaveAttribute('aria-expanded', 'true');
-	expect(page.context().pages()).toHaveLength(1);
-	const source = actions.getByRole('link', {
-		name: 'Open source code Shilo/PixelDoll',
-		exact: true
-	});
-	const commit = actions.getByRole('link', { name: `View commit ${hash}` });
+	const source = settings.getByRole('link', { name: /^Open source code:/ });
+	const commit = settings.getByRole('link', { name: /^View commit: [a-f0-9]{7,40}$/i });
+	const hash = await commit.innerText();
+	await expect(source).toHaveAttribute('href', repository);
+	await expect(commit).toHaveAttribute('href', `${repository}/commit/${hash}`);
 	await expect(source.locator('svg.lucide-external-link')).toBeVisible();
 	await expect(commit.locator('svg.lucide-external-link')).toBeVisible();
-	await expect(commit).toHaveAttribute('href', `${repository}/commit/${hash}`);
-	await page.context().route(repository, (route) => route.fulfill({ body: '' }));
-	const opened = page.waitForEvent('popup');
-	await source.click();
-	const sourcePage = await opened;
-	await expect(sourcePage).toHaveURL(repository);
-	await sourcePage.close();
-	if (await actions.isVisible()) await page.keyboard.press('Escape');
-	if (!(await version.isVisible())) await openSettings();
-	await version.press('Enter');
-	await expect(source).toBeFocused();
-	await page.keyboard.press('Escape');
-	await expect(actions).toBeHidden();
-	await expect(version).toHaveAttribute('aria-expanded', 'false');
-	await expect(version).toBeFocused();
-	await version.press('Space');
 	await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-	await actions.getByRole('button', { name: 'Copy version details' }).click();
-	await expect(actions).toBeHidden();
+	await settings.getByRole('button', { name: 'Copy details', exact: true }).click();
 	await expect
-		.poll(() => page.evaluate(() => navigator.clipboard.readText()))
-		.toBe(`${label} (${hash})`);
-
+		.poll(() =>
+			page.evaluate(async () => (await navigator.clipboard.readText()).replace(/\r\n/g, '\n'))
+		)
+		.toBe(
+			['PixelDoll', version, 'Pre-release', repository, `${repository}/commit/${hash}`].join('\n')
+		);
 	await page.setViewportSize({ width: 320, height: 568 });
-	await version.scrollIntoViewIfNeeded();
-	await expect(version.getByText(hash, { exact: true })).toBeInViewport({ ratio: 1 });
-	await expect(version.locator('svg:not(.lucide-chevron-right)')).toBeInViewport({ ratio: 1 });
-	await expect(version.locator('svg.lucide-chevron-right')).toBeInViewport({ ratio: 1 });
-	const box = (await version.boundingBox())!;
-	const touch = await page.context().newCDPSession(page);
-	await touch.send('Input.dispatchTouchEvent', {
-		type: 'touchStart',
-		touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }]
-	});
-	await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-	await expect(actions).toBeInViewport({ ratio: 1 });
-	await expect(commit).toBeVisible();
-	await expect(source.getByText('Shilo/PixelDoll', { exact: true })).toBeInViewport({ ratio: 1 });
-	const sourceLabel = source.getByText('Open source code', { exact: true });
-	expect(await sourceLabel.evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(
-		await sourceLabel.evaluate((element) => element.clientWidth)
-	);
-	expect(page.context().pages()).toHaveLength(1);
-
+	await expect(source).toBeInViewport();
+	await settings.getByRole('button', { name: 'Settings', exact: true }).click();
+	await expect(about).toBeVisible();
 	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
 		.baseURL!;
 	await page.goto(dev);
 	await openSettings();
-	await expect(version).toHaveAccessibleName(/^Version \d+\.\d+\.\d+-dev [a-f0-9]{7,}$/i);
+	await about.click();
+	await expect(settings.getByText(/^Version \d+\.\d+\.\d+-dev$/)).toBeVisible();
+	await expect(settings.getByText('Development', { exact: true })).toBeVisible();
 });
 
 test('notifications support optional titles, keyboard dismissal and visible errors inside dialogs', async ({
@@ -985,8 +952,8 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
-	await page.getByRole('button', { name: 'Appearance and language', exact: true }).click();
-	await page.getByRole('radio', { name: 'Light mode', exact: true }).check();
+	await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+	await page.getByRole('radio', { name: 'Light', exact: true }).check();
 	await page
 		.getByRole('dialog', { name: 'Settings' })
 		.getByRole('button', { name: 'Close', exact: true })
@@ -1550,8 +1517,13 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
-	await page.getByRole('button', { name: 'Appearance and language', exact: true }).click();
-	await page.getByRole('radio', { name: 'Light mode', exact: true }).check();
+	await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+	const theme = page.getByRole('button', { name: 'Theme', exact: true });
+	await theme.click();
+	await expect(page.getByRole('radio', { name: 'Light', exact: true })).toBeChecked();
+	await theme.press('Space');
+	await expect(page.getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();
+	await page.getByRole('radio', { name: 'Light', exact: true }).check();
 	await page
 		.getByRole('dialog', { name: 'Settings' })
 		.getByRole('button', { name: 'Close', exact: true })
@@ -7395,7 +7367,10 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await editableCopy(page);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
-	await page.getByRole('button', { name: 'Shared wardrobe items', exact: true }).click();
+	await page
+		.getByRole('dialog', { name: 'Settings' })
+		.getByRole('button', { name: 'Wardrobe', exact: true })
+		.click();
 	await page.getByRole('switch', { name: 'Hide shared items from demo character' }).uncheck();
 	await page.keyboard.press('Escape');
 	await equipmentGroup(page, 'Head');

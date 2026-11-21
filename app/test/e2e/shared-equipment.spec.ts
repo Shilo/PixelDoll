@@ -116,7 +116,10 @@ const sharedTile = (grid: Locator, name: string) => grid.locator('.shared-tile',
 async function openGlobalVisibility(page: Page) {
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
-	await page.getByRole('button', { name: 'Shared wardrobe items', exact: true }).click();
+	await page
+		.getByRole('dialog', { name: 'Settings' })
+		.getByRole('button', { name: 'Wardrobe', exact: true })
+		.click();
 }
 
 test('demo offers are opt-in and both visibility choices survive reload', async ({ page }) => {

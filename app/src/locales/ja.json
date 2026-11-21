@@ -1,10 +1,12 @@
 {
 	"settings": {
 		"wardrobe": "共有アイテム",
-		"exportDefaults": "エクスポートの既定値",
-		"connection": "PixelLab 接続",
-		"general": "外観と言語",
+		"connection": "PixelLab",
+		"about": "アプリについて",
 		"theme": "テーマ",
+		"appearance": "外観",
+		"dark": "ダーク",
+		"light": "ライト",
 		"search": "設定を検索",
 		"noResults": "検索に一致する設定がありません。",
 		"all": "すべての設定"
@@ -873,6 +875,8 @@
 			"dressed": "着せ替え済みキャラクターのシートを含める",
 			"dressedHint": "現在の見た目と保存済みの各コーディネートについて、素体と装備中のアイテムを合成したPNGスプライトシートを追加します。RPG Maker以外では個別のレイヤーも必ず含まれます。RPG Makerでは合成済みのシートのみ出力します。",
 			"format": "エクスポート形式",
+			"defaultTarget": "既定のエクスポート先",
+			"defaultTargetHint": "エクスポートを開くと最初に選択されます。別の出力先も選べます。",
 			"versionMenu": "RPG Makerのバージョン",
 			"version": "バージョン",
 			"versionLabel": "RPG Makerのバージョン：{version}"
@@ -1400,6 +1404,8 @@
 		"recommended": "{feature}はお使いのプランで利用できます。Tier {tier}以上を推奨します。"
 	},
 	"usage": {
+		"remaining": "残り：{n}",
+		"creditBalance": "クレジット残高",
 		"generations": "生成回数",
 		"refreshing": "残高を更新中…",
 		"loadFailed": "PixelLabの利用状況を読み込めませんでした。残高を更新してください。",
@@ -2346,12 +2352,12 @@
 		"notSaved": "表示設定は変更されましたが、このブラウザーには保存できませんでした。"
 	},
 	"versionRow": {
-		"actions": "バージョンの操作",
+		"development": "開発版",
+		"preRelease": "プレリリース",
 		"openSource": "ソースコードを開く",
 		"viewCommit": "コミットを表示",
-		"copyDetails": "バージョン情報をコピー",
-		"copied": "バージョン情報をコピーしました",
-		"copyFailed": "バージョン情報をコピーできませんでした。"
+		"copyDetails": "詳細をコピー",
+		"copyFailed": "アプリの詳細をコピーできませんでした。"
 	},
 	"repairReview": {
 		"finishFirst": "モーションを開き、完了した修正を適用するか先に決めてください。",

@@ -1,10 +1,12 @@
 {
 	"settings": {
 		"wardrobe": "Shared wardrobe items",
-		"exportDefaults": "Export defaults",
-		"connection": "PixelLab connection",
-		"general": "Appearance and language",
+		"connection": "PixelLab",
+		"about": "About",
 		"theme": "Theme",
+		"appearance": "Appearance",
+		"dark": "Dark",
+		"light": "Light",
 		"search": "Search settings",
 		"noResults": "No settings match your search.",
 		"all": "All settings"
@@ -895,6 +897,8 @@
 			"dressed": "Include dressed character sheets",
 			"dressedHint": "Adds PNG sprite sheets of your current look and each saved outfit, with the body and equipped items combined. Separate layers are always included, except in RPG Maker sheets, which are always combined.",
 			"format": "Export format",
+			"defaultTarget": "Default export target",
+			"defaultTargetHint": "Preselected when you open Export. You can still choose another target.",
 			"versionMenu": "RPG Maker version",
 			"version": "Version",
 			"versionLabel": "RPG Maker version: {version}"
@@ -1452,6 +1456,8 @@
 		"recommended": "{feature} is available on your plan. Tier {tier} or higher is recommended."
 	},
 	"usage": {
+		"remaining": "Remaining: {n}",
+		"creditBalance": "Credit balance",
 		"generations": "Generations",
 		"refreshing": "Refreshing balance…",
 		"loadFailed": "Couldn’t load usage from PixelLab. Try refreshing.",
@@ -2424,12 +2430,12 @@
 		"notSaved": "Visibility changed, but this browser could not save it."
 	},
 	"versionRow": {
-		"actions": "Version actions",
+		"development": "Development",
+		"preRelease": "Pre-release",
 		"openSource": "Open source code",
 		"viewCommit": "View commit",
-		"copyDetails": "Copy version details",
-		"copied": "Version copied",
-		"copyFailed": "Could not copy version details."
+		"copyDetails": "Copy details",
+		"copyFailed": "Could not copy app details."
 	},
 	"repairReview": {
 		"finishFirst": "Open Moves to decide whether to use the finished repair first.",

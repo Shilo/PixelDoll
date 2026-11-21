@@ -2,33 +2,58 @@
 	import { tick, type Snippet } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
-	import { app } from '../lib/app.svelte.ts';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
-	import { Download, KeyRound, Moon, Settings2, Shirt, Sun } from './icons.ts';
+	import { Download, Info, KeyRound, Moon, Settings2, Shirt, Sun } from './icons.ts';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
-	import VersionRow from './VersionRow.svelte';
+	import AboutSettings from './AboutSettings.svelte';
+	import PixelLabSettings from './PixelLabSettings.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { openerLabel } from './openerLabel.ts';
 	import {
-		openSettingsAccount,
 		settingsLabels,
 		settingsNavigation,
 		type SettingsSection
 	} from './settingsNavigation.svelte.ts';
-	import { setTheme, ui } from './state.svelte.ts';
+	import { setTheme, toggleTheme, ui } from './state.svelte.ts';
 
 	let { exportSettings, busy }: { exportSettings: Snippet<[string | undefined]>; busy: boolean } =
 		$props();
-	const themes = ['dark', 'light'] as const;
+	const themeLabel = $derived(t('settings.theme'));
+	const appearanceGroup = $props.id();
+	const appearanceOptions = $derived([
+		{ value: 'dark', label: t('settings.dark'), icon: Moon },
+		{ value: 'light', label: t('settings.light'), icon: Sun }
+	] as const);
 	const sections = [
+		{
+			id: 'pixellab',
+			label: settingsLabels.pixellab,
+			icon: KeyRound,
+			entries: [
+				{
+					id: 'connection',
+					label: 'toolbar.pixelLabAccount',
+					terms: [
+						'usage.title',
+						'usage.generations',
+						'usage.creditBalance',
+						'connectSheet.aPIKey',
+						'connectSheet.forgetKey'
+					]
+				}
+			]
+		},
 		{
 			id: 'general',
 			label: settingsLabels.general,
 			icon: Settings2,
 			entries: [
-				{ id: 'theme', label: 'settings.theme', terms: ['toolbar.lightMode', 'toolbar.darkMode'] },
+				{
+					id: 'theme',
+					label: 'settings.theme',
+					terms: ['toolbar.lightMode', 'toolbar.darkMode']
+				},
 				{ id: 'language', label: 'language.label' }
 			]
 		},
@@ -55,8 +80,8 @@
 			entries: [
 				{
 					id: 'format',
-					label: 'export.settings.format',
-					terms: ['export.group.engines', 'export.settings.versionMenu'],
+					label: 'export.settings.defaultTarget',
+					terms: ['export.settings.format', 'export.group.engines', 'export.settings.versionMenu'],
 					names: Object.values(exportFormatNames)
 				},
 				{
@@ -68,19 +93,15 @@
 			]
 		},
 		{
-			id: 'pixellab',
-			label: settingsLabels.pixellab,
-			icon: KeyRound,
+			id: 'about',
+			label: settingsLabels.about,
+			icon: Info,
 			entries: [
 				{
-					id: 'connection',
-					label: 'toolbar.pixelLabAccount',
-					terms: [
-						'toolbar.connectPixelLab2',
-						'connectSheet.aPIKey',
-						'connectSheet.forgetKey',
-						'connectSheet.rememberOnThisDevice'
-					]
+					id: 'about',
+					label: 'settings.about',
+					terms: ['versionRow.openSource', 'versionRow.viewCommit'],
+					names: ['PixelDoll', __APP_VERSION__, __APP_COMMIT__]
 				}
 			]
 		}
@@ -146,9 +167,10 @@
 		const row = entry && panel.querySelector<HTMLElement>(`[data-setting="${entry}"]`);
 		const target =
 			(row &&
-				(row.querySelector<HTMLElement>(
-					'input:checked:not(:disabled), button:not(:disabled), select:not(:disabled), input:not(:disabled)'
-				) ||
+				(row.querySelector<HTMLElement>('input:checked:not(:disabled)') ||
+					row.querySelector<HTMLElement>(
+						'button:not(:disabled), select:not(:disabled), input:not(:disabled)'
+					) ||
 					row)) ||
 			panel.querySelector<HTMLElement>('h3');
 		target?.focus();
@@ -162,7 +184,7 @@
 			type="search"
 			readonly={busy}
 			aria-label={t('settings.search')}
-			placeholder={t('settings.search')}
+			placeholder={t('experience.placeholderSearch')}
 			bind:this={search}
 			bind:value={query}
 		/>
@@ -172,7 +194,8 @@
 					{#each available as section (section.id)}
 						<button
 							class="row bu-action"
-							data-variant={active?.id === section.id ? 'field' : 'quiet'}
+							data-variant="quiet"
+							data-active={active?.id === section.id}
 							aria-current={active?.id === section.id ? 'page' : undefined}
 							disabled={busy}
 							onclick={() => show(section.id)}
@@ -181,10 +204,9 @@
 							<span class="row-name">{t(section.label)}</span>
 							<SurfaceChevron />
 						</button>
+						{#if section.id === 'pixellab'}<hr class="bu-separator" />{/if}
 					{/each}
 				</nav>
-				<hr class="bu-separator" />
-				<VersionRow />
 			</div>
 		{/if}
 	</div>
@@ -224,27 +246,33 @@
 				>
 			{/if}
 			{#if active.id === 'general'}
-				<fieldset class="theme-options" data-setting="theme" tabindex="-1">
-					<legend class="label">{t('settings.theme')}</legend>
-					{#each themes as theme (theme)}
-						<label class="row bu-check bu-action" data-variant="field">
-							{#if theme === 'dark'}<Moon size={18} aria-hidden="true" />{:else}<Sun
-									size={18}
-									aria-hidden="true"
-								/>{/if}
-							<span class="row-name"
-								>{t(theme === 'dark' ? 'toolbar.darkMode' : 'toolbar.lightMode')}</span
-							>
-							<input
-								type="radio"
-								name="settings-theme"
-								checked={ui.theme === theme}
-								onchange={() => setTheme(theme)}
-							/>
-						</label>
-					{/each}
-				</fieldset>
-				<hr class="bu-separator" />
+				<div class="row appearance-row" data-setting="theme">
+					<button
+						class="row-name bu-action bu-focus theme-toggle"
+						type="button"
+						data-variant="quiet"
+						onclick={toggleTheme}>{themeLabel}</button
+					>
+					<div class="bu-segmented" role="radiogroup" aria-label={themeLabel}>
+						{#each appearanceOptions as { value, label, icon: Icon } (value)}
+							<label class="bu-segment">
+								<input
+									type="radio"
+									name={appearanceGroup}
+									{value}
+									checked={ui.theme === value}
+									onchange={() => setTheme(value)}
+								/>
+								<span class="bu-segment-face">
+									<span class="appearance-option">
+										<span class="appearance-icon"><Icon size={14} aria-hidden="true" /></span>
+										<span>{label}</span>
+									</span>
+								</span>
+							</label>
+						{/each}
+					</div>
+				</div>
 				<div data-setting="language" tabindex="-1"><LanguagePicker /></div>
 			{:else if active.id === 'wardrobe'}
 				<div data-setting="visibility" tabindex="-1">
@@ -252,21 +280,10 @@
 				</div>
 			{:else if active.id === 'export'}
 				{@render exportSettings(targetEntry)}
+			{:else if active.id === 'about'}
+				<AboutSettings />
 			{:else}
-				<button
-					class="row bu-action"
-					data-setting="connection"
-					data-variant="quiet"
-					onclick={openSettingsAccount}
-				>
-					<KeyRound size={18} aria-hidden="true" />
-					<span class="row-name"
-						>{openerLabel(
-							t(app.key ? 'toolbar.pixelLabAccount' : 'toolbar.connectPixelLab2')
-						)}</span
-					>
-					<SurfaceChevron />
-				</button>
+				<PixelLabSettings />
 			{/if}
 		{/if}
 	</section>
@@ -299,17 +316,34 @@
 	.settings-heading {
 		margin: 0;
 	}
-	.theme-options {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
-		gap: 8px;
-		min-width: 0;
-		margin: 0;
-		padding: 0;
-		border: 0;
+	.appearance-row {
+		position: relative;
 	}
-	.theme-options legend {
-		margin-block-end: 8px;
+	.theme-toggle {
+		min-height: 44px;
+		text-align: start;
+		cursor: pointer;
+	}
+	.theme-toggle::after {
+		position: absolute;
+		inset: 0;
+		content: '';
+	}
+	.appearance-row .bu-segmented {
+		position: relative;
+	}
+	.appearance-row .bu-segment-face {
+		min-height: 44px;
+	}
+	.appearance-option {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+	}
+	.appearance-icon {
+		display: flex;
+		flex: none;
 	}
 	.settings-content :global(.row) {
 		width: 100%;
@@ -322,6 +356,9 @@
 	}
 	nav button[aria-current='page'] {
 		font-weight: 700;
+	}
+	nav button :global(svg) {
+		flex: none;
 	}
 	.settings-panel :global(.row:not([data-variant='field'])) {
 		padding-inline: 0;

@@ -1,10 +1,12 @@
 {
 	"settings": {
 		"wardrobe": "Objetos compartidos del armario",
-		"exportDefaults": "Valores de exportación",
-		"connection": "Conexión con PixelLab",
-		"general": "Apariencia e idioma",
+		"connection": "PixelLab",
+		"about": "Acerca de",
 		"theme": "Tema",
+		"appearance": "Apariencia",
+		"dark": "Oscuro",
+		"light": "Claro",
 		"search": "Buscar ajustes",
 		"noResults": "No hay ajustes que coincidan con tu búsqueda.",
 		"all": "Todos los ajustes"
@@ -904,6 +906,8 @@
 			"dressed": "Incluir hojas de sprites del personaje vestido",
 			"dressedHint": "Agrega hojas de sprites PNG de tu look actual y de cada atuendo guardado, con el cuerpo y los objetos puestos combinados. Las capas separadas siempre se incluyen, salvo en las hojas de RPG Maker, que siempre van combinadas.",
 			"format": "Formato de exportación",
+			"defaultTarget": "Destino de exportación predeterminado",
+			"defaultTargetHint": "Se selecciona al abrir Exportar. Puedes elegir otro destino.",
 			"versionMenu": "Versión de RPG Maker",
 			"version": "Versión",
 			"versionLabel": "Versión de RPG Maker: {version}"
@@ -1461,6 +1465,8 @@
 		"recommended": "{feature} está disponible en tu plan. Se recomienda Tier {tier} o superior."
 	},
 	"usage": {
+		"remaining": "Restantes: {n}",
+		"creditBalance": "Saldo de créditos",
 		"generations": "Generaciones",
 		"refreshing": "Actualizando saldo…",
 		"loadFailed": "No se pudieron cargar los datos de uso de PixelLab. Intenta actualizar el saldo.",
@@ -2446,12 +2452,12 @@
 		"notSaved": "Se cambió la visibilidad, pero el navegador no pudo guardarla."
 	},
 	"versionRow": {
-		"actions": "Acciones de versión",
+		"development": "Desarrollo",
+		"preRelease": "Versión preliminar",
 		"openSource": "Abrir código fuente",
 		"viewCommit": "Ver commit",
-		"copyDetails": "Copiar datos de la versión",
-		"copied": "Versión copiada",
-		"copyFailed": "No se pudieron copiar los datos de la versión."
+		"copyDetails": "Copiar detalles",
+		"copyFailed": "No se pudieron copiar los detalles de la aplicación."
 	},
 	"repairReview": {
 		"finishFirst": "Abre Animaciones para decidir primero si quieres usar la reparación terminada.",
