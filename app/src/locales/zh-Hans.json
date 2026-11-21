@@ -2058,12 +2058,35 @@
 		}
 	},
 	"moveSheet": {
-		"sharedCopiesCoverage": "共享物品的副本仍可在有帧的朝向中穿戴。",
+		"checkpoint": {
+			"generate": "生成动作",
+			"initialEstimate": "约 {minutes} 分钟 · 不含装备",
+			"review": "检查动作",
+			"ready": "可以检查{move}了。",
+			"reviewNote": "花费生成次数制作装备前，请先检查{move}。",
+			"replaceNote": "请检查{move}。接受后，被替换朝向中的适配装备帧将被移除。",
+			"regenerate": "重新生成动作…",
+			"keep": "保留动作，不制作装备",
+			"keepCurrent": "保留当前动作",
+			"choose": "选择装备",
+			"titleItems": "制作装备动画",
+			"chooseFor": "请选择要随{move}播放的装备。",
+			"total": "预计再生成 {gens} 次",
+			"count": "已选：{count} 件",
+			"selected": "已选",
+			"animate": "生成所选装备动画",
+			"unavailable": "不可用",
+			"findings": "质量提示",
+			"hardFailure": "请先修正此动作，再制作装备动画。",
+			"beforeItems": "制作装备动画前，请先检查动作。",
+			"changed": "角色或动作已更改。请重新打开检查界面。",
+			"missingFrames": "已检查的帧不再可用。",
+			"tier": "当前的 PixelLab 套餐不支持部分已选装备。"
+		},
 		"thatCharacter": "该角色",
 		"recoveryCheckFailed": "无法检查缓存帧：{error}",
 		"retryLabel": "再次生成动作",
 		"newFrames": "生成新帧",
-		"estimateWithItems": "预计 {gens} 次生成（含装备）",
 		"useSaved": "使用已保存的帧",
 		"retryChecks": "重试关节检查",
 		"reuseCached": "复用缓存帧",
@@ -2071,11 +2094,8 @@
 		"keepFrames": "保留帧",
 		"keepWorking": "你可以继续工作。",
 		"queueAnother": "再排一个动作",
-		"footEstimate": "约 {minutes} 分钟 · 身体 {body} 次生成",
-		"footEstimateItems": "约 {minutes} 分钟 · 身体 {body} 次生成；如果生成装备，另加 {items} 次生成",
 		"addLabel": "添加或替换动作",
 		"submit": {
-			"add": "添加{move}",
 			"replaceViews": "替换{move}视图",
 			"queue": "将{move}加入队列",
 			"move": "动作",
@@ -2106,8 +2126,12 @@
 			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成，可能发生重试和美元计费。"
 		},
 		"color": {
-			"pixels": { "other": "{count} 个相近颜色像素" },
-			"frames": { "other": "{count} 个缓存的{directions}帧" },
+			"pixels": {
+				"other": "{count} 个相近颜色像素"
+			},
+			"frames": {
+				"other": "{count} 个缓存的{directions}帧"
+			},
 			"match": "在 {frames}中，将 {pixels}匹配到站立调色板。身体形状保持固定；其他颜色不受影响。",
 			"recheck": "重新检查 {count} 个已更改帧 · 预计 {gens} 次生成或 {usd}。",
 			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成。",
@@ -2121,14 +2145,12 @@
 		"alreadyQueued": "{move}已排队。",
 		"waitsForCurrent": "它会等待正在进行的动作，然后自行运行。",
 		"addFeature": "已穿戴装备的动作",
-		"animateItems": "同时为这些装备制作动画",
 		"pipeline": {
 			"described": "pixminimax 运动（徒手、无道具、无特效）→ 关节 → 在静止视图上运行原始 skeleton-v3",
 			"walk": "行走 skeleton-v3 运动 → 关节 → 在静止视图上运行原始 skeleton-v3",
 			"authored": "从静止姿势创作关键点 → 原始 skeleton-v3",
 			"grid": "{frames} 帧 × {dirs} 个朝向",
-			"gridMirrored": "{frames} 帧 × {dirs} 个朝向（{mirrored} 个镜像）",
-			"cost": "身体约 {body} 次生成，装备 {items} 次生成 · 身体检查说明不会触发重绘。"
+			"gridMirrored": "{frames} 帧 × {dirs} 个朝向（{mirrored} 个镜像）"
 		},
 		"changedDuringEdit": "编辑期间此动作已更改。请重新选择它以继续。",
 		"duplicateOption": "{move} 已在动作选项中。请用其他词语开头。",
@@ -2159,9 +2181,6 @@
 		"redrawHidesEquipment": "替换这些视图后，装备会隐藏，直到生成新帧。",
 		"redrawMirrors": "镜像视图也会变更：{directions}。",
 		"redrawOtherMoves": "其他动作保持不变。",
-		"equipmentWaitsForBody": "如果身体检查阻止生成动作，就不会发送装备生成请求。",
-		"uncheckedItemsHidden": "未勾选的装备会保持隐藏，直到为其生成动画。",
-		"fittedEquipmentOnly": "这里只能为适配所有选中视图的装备生成动画。",
 		"review": {
 			"redrawTitle": "审核装备重绘",
 			"repairTitle": "审核装备修复",

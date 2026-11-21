@@ -2077,12 +2077,35 @@
 		}
 	},
 	"moveSheet": {
-		"sharedCopiesCoverage": "공유 복사본은 프레임이 있는 방향에서 계속 착용할 수 있습니다.",
+		"checkpoint": {
+			"generate": "동작 생성",
+			"initialEstimate": "약 {minutes}분 · 아이템 제외",
+			"review": "동작 검토",
+			"ready": "검토할 동작: {move}",
+			"reviewNote": "아이템 생성 비용을 쓰기 전에 동작을 검토하세요: {move}",
+			"replaceNote": "동작을 검토하세요: {move}. 적용하면 교체되는 방향의 기존 아이템 프레임이 삭제돼요.",
+			"regenerate": "동작 다시 생성…",
+			"keep": "아이템 없이 동작 저장",
+			"keepCurrent": "현재 동작 유지",
+			"choose": "아이템 선택",
+			"titleItems": "아이템 애니메이션",
+			"chooseFor": "동작에 맞춰 움직일 아이템을 선택하세요: {move}",
+			"total": "예상 추가 생성 {gens}회",
+			"count": "선택: {count}개",
+			"selected": "선택됨",
+			"animate": "선택한 아이템 애니메이션",
+			"unavailable": "사용할 수 없음",
+			"findings": "품질 안내",
+			"hardFailure": "아이템을 움직이려면 먼저 이 동작을 수정하세요.",
+			"beforeItems": "아이템을 움직이기 전에 동작을 검토하세요.",
+			"changed": "캐릭터 또는 동작이 변경됐어요. 검토 화면을 다시 열어 주세요.",
+			"missingFrames": "검토한 프레임을 더 이상 사용할 수 없어요.",
+			"tier": "현재 PixelLab 요금제에서 선택한 일부 아이템을 지원하지 않아요."
+		},
 		"thatCharacter": "해당 캐릭터",
 		"recoveryCheckFailed": "캐시된 프레임을 확인하지 못했어요: {error}",
 		"retryLabel": "동작 다시 생성",
 		"newFrames": "새 프레임 생성",
-		"estimateWithItems": "장비 포함 예상 생성 {gens}회",
 		"useSaved": "저장된 프레임 사용",
 		"retryChecks": "관절 검사 다시 시도",
 		"reuseCached": "캐시된 프레임 재사용",
@@ -2090,11 +2113,8 @@
 		"keepFrames": "프레임 유지",
 		"keepWorking": "계속 작업할 수 있어요.",
 		"queueAnother": "다른 동작 대기열에 추가",
-		"footEstimate": "약 {minutes}분 · 몸체 생성 {body}회",
-		"footEstimateItems": "약 {minutes}분 · 몸체 생성 {body}회 + 장비 실행 시 생성 {items}회",
 		"addLabel": "동작 추가 또는 교체",
 		"submit": {
-			"add": "{move} 추가",
 			"replaceViews": "{move} 뷰 교체",
 			"queue": "{move} 대기열에 추가",
 			"move": "동작",
@@ -2125,8 +2145,12 @@
 			"items": "몸체가 통과하면 선택한 장비 포즈가 이어서 진행돼요 · 추가 예상 생성 {gens}회, 재시도와 달러 청구가 발생할 수 있어요."
 		},
 		"color": {
-			"pixels": { "other": "주변 색상 픽셀 {count}개" },
-			"frames": { "other": "캐시된 {directions} 프레임 {count}개" },
+			"pixels": {
+				"other": "주변 색상 픽셀 {count}개"
+			},
+			"frames": {
+				"other": "캐시된 {directions} 프레임 {count}개"
+			},
 			"match": "서 있는 자세의 팔레트에 맞춰요: {pixels}({frames}). 몸체 모양은 고정되고 다른 색상은 그대로예요.",
 			"recheck": "변경된 프레임 {count}개 다시 확인 · 예상 생성 {gens}회 또는 {usd}.",
 			"items": "몸체가 통과하면 선택한 장비 포즈가 이어서 진행돼요 · 추가 예상 생성 {gens}회.",
@@ -2140,14 +2164,12 @@
 		"alreadyQueued": "{move} 동작은 이미 대기열에 있어요.",
 		"waitsForCurrent": "진행 중인 동작이 끝난 뒤 자동으로 실행돼요.",
 		"addFeature": "착용 아이템용 동작",
-		"animateItems": "이 아이템에도 애니메이션 적용",
 		"pipeline": {
 			"described": "pixminimax 모션(무기 없음, 소품 없음, 효과 없음) → 관절 → 기본 자세 뷰의 원본 skeleton-v3",
 			"walk": "걷기 skeleton-v3 모션 → 관절 → 기본 자세 뷰의 원본 skeleton-v3",
 			"authored": "기본 자세에서 만든 키포인트 → 원본 skeleton-v3",
 			"grid": "{frames}프레임 × {dirs}방향",
-			"gridMirrored": "{frames}프레임 × {dirs}방향({mirrored}개 대칭)",
-			"cost": "몸체 ≈ 생성 {body}회, 아이템 생성 {items}회 · 몸체 검토 참고 사항으로 다시 그리지는 않아요."
+			"gridMirrored": "{frames}프레임 × {dirs}방향({mirrored}개 대칭)"
 		},
 		"changedDuringEdit": "편집하는 동안 이 동작이 바뀌었어요. 계속하려면 다시 선택하세요.",
 		"duplicateOption": "{move}은(는) 이미 동작 목록에 있어요. 설명을 다른 단어로 시작하세요.",
@@ -2178,9 +2200,6 @@
 		"redrawHidesEquipment": "이 뷰를 교체하면 새 프레임을 만들 때까지 장비가 숨겨져요.",
 		"redrawMirrors": "반전된 뷰도 바뀌어요: {directions}.",
 		"redrawOtherMoves": "다른 동작은 바뀌지 않아요.",
-		"equipmentWaitsForBody": "몸체 검사로 동작 생성이 중단되면 장비 생성 요청은 보내지 않아요.",
-		"uncheckedItemsHidden": "선택하지 않은 아이템은 애니메이션을 만들 때까지 숨겨져요.",
-		"fittedEquipmentOnly": "선택한 모든 뷰에 맞는 장비만 여기서 애니메이션으로 만들 수 있어요.",
 		"review": {
 			"redrawTitle": "아이템 다시 그리기 검토",
 			"repairTitle": "아이템 수정 검토",

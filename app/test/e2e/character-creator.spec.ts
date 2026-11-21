@@ -429,7 +429,7 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
-	await move.getByRole('button', { name: /^Add Walk/ }).click();
+	await move.getByRole('button', { name: /^Generate move/ }).click();
 	await expect(move).not.toContainText('Queued next: Idle');
 	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
@@ -442,9 +442,16 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await expect(move).toContainText('Queued next: Idle');
 	await expect(page.locator('.move-row', { hasText: 'Idle' })).toContainText('Queued');
 	held = false;
-	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Walk', 'Idle'], {
+	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
+	await expect(
+		page.locator('.move-list button').filter({ hasText: 'Idle' }).filter({ hasText: 'Review move' })
+	).toBeVisible({
 		timeout: 120_000
 	});
+	await review.getByRole('button', { name: 'Keep move without items', exact: true }).click();
+	await page.getByRole('button', { name: /Idle Review move/ }).click();
+	await review.getByRole('button', { name: 'Keep move without items', exact: true }).click();
+	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Walk', 'Idle']);
 });
 
 test('a failed required measurement stops the queued idle without paying for an art reroll', async ({
@@ -488,7 +495,7 @@ test('a failed required measurement stops the queued idle without paying for an 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await move.getByRole('button', { name: /^Add Idle/ }).click();
+	await move.getByRole('button', { name: /^Generate move/ }).click();
 	try {
 		await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
 		await move.getByRole('radio', { name: 'Walk', exact: true }).click();
@@ -1433,11 +1440,14 @@ function offlineCreation(config: CreationCase) {
 		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await equipmentMode(page, 'Moves');
 		const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+		const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 		for (const name of ['Idle', 'Walk']) {
 			await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 			await move.getByRole('radio', { name, exact: true }).click();
-			await move.getByRole('button', { name: new RegExp(`^Add ${name}`) }).click();
-			await move.getByRole('button', { name: 'Done', exact: true }).click({ timeout: 120_000 });
+			await move.getByRole('button', { name: /^Generate move/ }).click();
+			await review
+				.getByRole('button', { name: 'Keep move without items', exact: true })
+				.click({ timeout: 120_000 });
 		}
 		await expect(page.locator('.move-list .move-row')).toHaveCount(3, { timeout: 150_000 });
 		await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk']);

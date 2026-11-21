@@ -215,6 +215,7 @@ export type SheetId =
 	| 'item'
 	| 'gen'
 	| 'move'
+	| 'moveReview'
 	| 'rename'
 	| 'directions'
 	| 'importZip'
@@ -247,6 +248,7 @@ export const ui = $state({
 	group: 'head', // a Wardrobe category: its slot key
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
+	moveReview: '',
 	get sheet(): SheetId {
 		return panel;
 	},
@@ -494,6 +496,10 @@ function allowsTier(minimumTier: number): boolean {
 	return true;
 }
 export function withKey(fn: () => void, minimumTier = 0) {
+	if (moveReviewPublishing) {
+		toast(message('directionsSheet.waitForGeneration'), { tone: 'warning' });
+		return;
+	}
 	if (follower(() => withKey(fn, minimumTier))) return;
 	if (app.key && !app.keyRejected && !allowsTier(minimumTier)) {
 		afterConnect = null;
@@ -530,6 +536,7 @@ export interface ProjectRef {
 }
 class Store {
 	project = $state.raw<Project | null>(null);
+	moveReviews = $state.raw<NonNullable<StoredProject['moveReviews']>>({});
 	exportRecord = $state.raw<StoredProject>();
 	projects = $state.raw<ProjectRef[]>([]);
 	results = $state.raw<Record<string, ItemResult | null>>({});
@@ -756,6 +763,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
+		store.moveReviews = r.record?.moveReviews ?? {};
 		store.exportRecord = r.record;
 		// Another acceptance can supersede its reload. Retire worn drafts only when their saved items are published.
 		let acceptedWear = false;
@@ -1081,6 +1089,7 @@ let characterJobsPending = $state(false),
 function workHolds(id: string) {
 	return (
 		characterJobsPending ||
+		moveReviewPublishing ||
 		gens.some((g) => g.phase === 'running') ||
 		settling.size > 0 ||
 		creates.some(
@@ -1174,6 +1183,7 @@ function activeGenerationSettled() {
 		!createRestoring &&
 		!creates.some((run) => run.running) &&
 		!moveRunning &&
+		!moveReviewPublishing &&
 		!setupRunning &&
 		!takeOverRunning &&
 		!itemStarting &&
@@ -3367,6 +3377,7 @@ export const moving = $state({
 });
 const MOVE_KEY = 'studio-move';
 let moveRunning = $state(false),
+	moveReviewPublishing = $state(false),
 	moveRevision = 0;
 /** The stored move record without its queue (null: the current move is finished or dismissed). */
 let moveRecord: object | null = null,
@@ -3407,6 +3418,37 @@ export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	moving.queued = rest;
 	await startMove(next.projectId, next.spec);
 }
+
+export async function refreshMoveReviews(projectId: string) {
+	const record = await db.get<StoredProject>('projects', projectId);
+	if (viewing(projectId)) store.moveReviews = record?.moveReviews ?? {};
+}
+
+export function openMoveReview(id: string) {
+	ui.moveReview = id;
+	ui.sheet = 'moveReview';
+}
+
+export function moveReviewBlocked(projectId: string) {
+	if (characterJobsInOtherTab) return 'state.manageMovesInOtherTab';
+	if (workHolds(projectId)) return 'directionsSheet.waitForGeneration';
+	return '';
+}
+
+export async function saveReviewedMove(
+	projectId: string,
+	candidate: NonNullable<StoredProject['moveReviews']>[string],
+	accept: boolean
+) {
+	const blocked = moveReviewBlocked(projectId);
+	if (blocked) throw new LocalizedError('Move review is blocked by other work.', blocked);
+	moveReviewPublishing = true;
+	try {
+		return await (await createFlow()).resolveMoveCandidate(projectId, candidate, accept);
+	} finally {
+		moveReviewPublishing = false;
+	}
+}
 /** A character's moves running, publishing or queued; with `itemId`, only those that pose that item. */
 export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 	[
@@ -3429,7 +3471,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		toast(message('state.useSavedFramesInTheTabThat'), { tone: 'warning' });
 		return;
 	}
-	if (moveRunning) {
+	if (moveRunning || moveReviewPublishing) {
 		toast(message('state.anotherMoveIsStillBeingAddedSo'), {
 			tone: 'warning',
 			action: () => openFlow('move', moving.projectId)
@@ -3454,10 +3496,9 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		warnings: []
 	});
 	try {
-		if (spec.itemReview) {
+		if (spec.itemReview || spec.reviewedMoveItems) {
 			const { rec } = await loadProject(projectId);
-			const reviewed = (await createFlow()).reviewItemMove(rec.manifest, spec).itemReview!;
-			if (reviewed.artwork !== spec.itemReview.artwork || reviewed.gens !== spec.itemReview.gens) {
+			if (!(await createFlow()).itemMoveReviewMatches(rec.manifest, spec)) {
 				throw new LocalizedError(
 					'This character, item or price changed. Reopen the item and review its current estimate before generating. No paid request was made.',
 					'create.errors.characterItemPriceChanged'
@@ -3540,7 +3581,20 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		moving.done = true;
 		await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
 		if (!current()) return;
-		if (spec.itemsOnly) {
+		if (result.moveReview) {
+			const id = result.moveReview;
+			await refreshMoveReviews(projectId);
+			if (!current()) return;
+			moving.spec = null;
+			if (viewing(projectId) && ui.sheet === 'move') openMoveReview(id);
+			else
+				toast(message('moveSheet.checkpoint.ready', { move: moveName }), {
+					action: async () => {
+						if (!viewing(projectId)) await openProject(projectId);
+						if (viewing(projectId) && Object.hasOwn(store.moveReviews, id)) openMoveReview(id);
+					}
+				});
+		} else if (spec.itemsOnly) {
 			// items posed onto a move the body already had: the move and the undo history stay as they are
 			if (viewing(projectId)) {
 				await openProject(projectId, { quiet: true });
@@ -3703,6 +3757,7 @@ export async function keepMoveBody(projectId: string, spec: MoveSpec, reviewed: 
 	await startMove(projectId, {
 		...$state.snapshot(spec),
 		items: [],
+		reviewBeforePublish: undefined,
 		reuseItemFrames: undefined,
 		itemReview: undefined,
 		measurementRecovery: {

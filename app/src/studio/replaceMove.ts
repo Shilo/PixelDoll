@@ -3,7 +3,39 @@ import { retainItemQa } from '../lib/items/qa-summary.ts';
 import { dropCut } from '../lib/compose/compose.ts';
 import { rigArtworkVersion, type DirectionName, type Rig, type Sha256 } from '../lib/rig/rig.ts';
 import type { Skeleton } from '../lib/rig/skeleton.ts';
-import type { Manifest } from '../lib/store/manifest.ts';
+import type { Layer, Manifest, Provenance } from '../lib/store/manifest.ts';
+import type { RigAnimation } from '../lib/rig/rig.ts';
+import type { ClipQa } from '../lib/rig/clips.ts';
+import type { MoveSpec } from './create.ts';
+
+export interface MoveCandidate {
+	spec: MoveSpec;
+	input: string;
+	dirs: DirectionName[];
+	animation: RigAnimation;
+	cells: NonNullable<Layer['cells']>[string];
+	provenance: Provenance[];
+	provenanceStart: number;
+	anchors: Rig['anchors'];
+	skeletons: Record<string, Skeleton>;
+	checks: Record<string, ClipQa>;
+	warnings: string[];
+	itemsBlocked: boolean;
+}
+
+export function moveCandidateInput(record: StoredProject, id: string): string {
+	const rig = record.manifest.rig;
+	const base = record.manifest.items.find((item) => item.id === rig.baseItem);
+	return rigArtworkVersion(
+		{
+			...rig,
+			baseHash: '' as Sha256,
+			anchors: undefined,
+			animations: rig.animations.filter((move) => move.id === id)
+		},
+		[record.character, base?.layers[0].cells?.[id]]
+	);
+}
 
 /** Include western mirror children whenever their authored source changes. */
 export function affectedMoveDirections(

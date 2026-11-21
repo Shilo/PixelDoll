@@ -2839,7 +2839,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await description.focus();
 	await expect(cast).toBeChecked();
 	await description.fill('walk');
-	await expect(move.getByRole('button', { name: /^Add Walk/ })).toBeDisabled();
+	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeDisabled();
 	await expect(move.getByText('Directions to redraw')).toHaveCount(0);
 	await expect(move).toContainText('Walk is already a move option.');
 	await description.fill('jumping in place');
@@ -2852,7 +2852,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(description).toHaveValue('');
 	await description.fill('jumping in place');
 	await description.clear();
-	await expect(move.getByRole('button', { name: /^Add move/ })).toBeDisabled();
+	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeDisabled();
 	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
 	await description.fill('jumping in place');
 	const advanced = move.locator('details.advanced');
@@ -2878,9 +2878,8 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await model.selectOption('skeleton-v3');
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
-	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked();
-	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).check();
-	await expect(move.getByRole('button', { name: /^Add Jumping in/ })).toContainText(
+	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
+	await expect(move.getByRole('button', { name: /^Generate move/ })).toContainText(
 		/Est\. \d+ gens/
 	);
 	await expect(
@@ -2888,7 +2887,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 			exact: true
 		})
 	).toBeVisible();
-	await move.getByRole('button', { name: /^Add Jumping in/ }).click();
+	await move.getByRole('button', { name: /^Generate move/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
 		.getByRole('button', { name: 'Cancel', exact: true })
@@ -2896,12 +2895,12 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await expect(description).toHaveValue('jumping in place');
-	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toBeChecked();
+	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
 	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
 	await cast.click();
 	await expect(description).toBeEnabled();
 	await expect(description).toHaveValue('');
-	await expect(move.getByRole('button', { name: /^Add Cast/ })).toBeEnabled();
+	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
 	await expect(cast).toBeChecked();
 	// Presets offer the model and frame choices too; static Ride stays on its Skeleton v3 pose.
 	await expect(advanced).toHaveCount(1);
@@ -5343,27 +5342,16 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(replace).toContainText('Est. 23 gens');
 	const sword = sheet.getByRole('checkbox', { name: /Steel longsword/ });
 	await expect(sword).toHaveCount(0);
-	await expect(sheet).toContainText(
-		'Only equipment fitted to every selected view can be animated here.'
-	);
-	await expect(sheet).not.toContainText(
-		'Shared copies can still be worn in views where they have frames.'
-	);
+	await expect(sheet).toContainText('No items included');
 	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
 	const west = directions.getByRole('button', { name: 'West direction', exact: true });
 	const east = directions.getByRole('button', { name: 'East direction', exact: true });
 	await west.click();
 	await directions.getByRole('button', { name: 'South direction', exact: true }).click();
 	await directions.getByRole('button', { name: 'North direction', exact: true }).click();
-	await sword.check();
-	await expect(replace).toContainText('gens with equipment');
-	await expect(sheet).toContainText('3 gens if equipment runs');
-	await expect(sheet).toContainText(
-		'Equipment requests are not sent if body checks stop the move.'
-	);
+	await expect(sword).toHaveCount(0);
 	await west.click();
 	await expect(sword).toHaveCount(0);
-	await expect(sheet).not.toContainText('if equipment runs');
 	await east.click();
 	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
 		'Step sideways and shift weight to the leading foot'
@@ -5389,7 +5377,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');
 	const add = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await expect(add.getByRole('button', { name: /^Add Jumping in/ })).toBeEnabled();
+	await expect(add.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
 	await expect(add.getByText('Directions to redraw')).toHaveCount(0);
 });
 
@@ -5483,19 +5471,16 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		'aria-pressed',
 		'false'
 	);
-	await expect(
-		sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })
-	).not.toBeChecked();
-	await sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) }).check();
+	await expect(sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 22 gens'
+		'Est. 16 gens'
 	);
 	await east.press('Space');
 	await west.click();
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toBeDisabled();
 	await east.click();
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 11 gens'
+		'Est. 8 gens'
 	);
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	await page
@@ -5527,7 +5512,8 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		id: 'walk',
 		replace: true,
 		dirs: ['east'],
-		items: [fixture.itemId],
+		items: [],
+		reviewBeforePublish: true,
 		poseStyle: 'visible-side-v1'
 	});
 	expect(posts).toEqual([]);
@@ -6781,10 +6767,15 @@ test('standing-first items quote only standing and offer actual custom moves one
 	expect(posts).toEqual([]);
 });
 
-test('new body moves leave equipment unchecked and preserve an explicit selection through canceled Connect', async ({
+test('move review gates item selection and shows live estimates without spending', async ({
 	page,
 	context
 }, info) => {
+	const posts: string[] = [];
+	await context.route('https://*.pixellab.ai/**', (route) => {
+		if (route.request().method() === 'POST') posts.push(route.request().url());
+		return route.abort();
+	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
@@ -6799,21 +6790,75 @@ test('new body moves leave equipment unchecked and preserve an explicit selectio
 		(await import(path)).ui.sheet = 'move';
 	});
 	const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await expect(
-		sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })
-	).not.toBeChecked();
-	await expect(sheet.getByRole('checkbox', { checked: true })).toHaveCount(0);
-	await sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) }).check();
-	await sheet.getByRole('button', { name: /^Add Idle/ }).click();
+	await expect(sheet.getByRole('checkbox')).toHaveCount(0);
+	await expect(sheet.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const dbPath = '/src/lib/store/db.ts';
+		const replacePath = '/src/studio/replaceMove.ts';
+		const s = await import(statePath);
+		const db = await import(dbPath);
+		const { moveCandidateInput } = await import(replacePath);
+		const rec = await db.get('projects', s.doc.id);
+		const rig = rec.manifest.rig;
+		const base = rec.manifest.items.find((item: { id: string }) => item.id === rig.baseItem);
+		rec.moveReviews = {
+			walk: {
+				spec: { id: 'walk', seed: 75, replace: true, reviewBeforePublish: true, items: [] },
+				input: moveCandidateInput(rec, 'walk'),
+				dirs: ['east'],
+				animation: rig.animations.find((move: { id: string }) => move.id === 'walk'),
+				cells: base.layers[0].cells.walk,
+				provenance: [],
+				provenanceStart: base.provenance.length,
+				anchors: {},
+				skeletons: {},
+				checks: {},
+				warnings: [],
+				itemsBlocked: false
+			}
+		};
+		await db.put('projects', s.doc.id, rec);
+	});
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: /Walk Review move/ }).click();
+	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
+	await expect(review.getByRole('button', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const s = await import(path);
+		s.moving.queued = [
+			{ projectId: s.doc.id, spec: { id: 'idle', frames: 4, items: [], seed: 1 } }
+		];
+	});
+	await expect(review.getByRole('button', { name: 'Choose items', exact: true })).toBeDisabled();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		(await import(path)).moving.queued = [];
+	});
+	await review.getByRole('button', { name: 'Choose items', exact: true }).click();
+	const picker = page.getByRole('dialog', { name: 'Animate items', exact: true });
+	const item = picker.getByRole('button', { name: new RegExp(fixture.itemName) });
+	const animate = picker.getByRole('button', { name: 'Animate selected', exact: true });
+	await expect(item).toHaveAttribute('aria-pressed', 'false');
+	await expect(picker).toContainText('Est. 0 more gens');
+	await expect(animate).toBeDisabled();
+	const price = Number((await item.innerText()).match(/(\d+) gens/)?.[1]);
+	expect(price).toBeGreaterThan(0);
+	await expect(item.locator('canvas')).toBeVisible();
+	await item.press('Space');
+	await expect(item).toHaveAttribute('aria-pressed', 'true');
+	await expect(picker).toContainText(`Est. ${price} more gens`);
+	await item.click();
+	await expect(animate).toBeDisabled();
+	await item.click();
+	await animate.click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
 		.getByRole('button', { name: 'Cancel', exact: true })
 		.click();
-	await page.evaluate(async () => {
-		const path = '/src/studio/state.svelte.ts';
-		(await import(path)).ui.sheet = 'move';
-	});
-	await expect(sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toBeChecked();
+	expect(posts).toEqual([]);
 });
 
 test('draft retry prices a fresh item plan rather than historical grid fallbacks and stops when pricing is unavailable', async ({

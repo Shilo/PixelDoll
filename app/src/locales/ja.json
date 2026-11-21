@@ -2087,12 +2087,35 @@
 		}
 	},
 	"moveSheet": {
-		"sharedCopiesCoverage": "共有アイテムのコピーは、フレームがある向きでは装備したまま表示できます。",
+		"checkpoint": {
+			"generate": "モーションを生成",
+			"initialEstimate": "約{minutes}分・アイテムなし",
+			"review": "モーションを確認",
+			"ready": "{move}を確認できます。",
+			"reviewNote": "アイテムに費用をかける前に、{move}を確認してください。",
+			"replaceNote": "{move}を確認してください。採用すると、差し替える向きのアイテムフレームが削除されます。",
+			"regenerate": "モーションを再生成…",
+			"keep": "アイテムなしで保存",
+			"keepCurrent": "現在のモーションを残す",
+			"choose": "アイテムを選択",
+			"titleItems": "アイテムを動かす",
+			"chooseFor": "{move}に合わせて動かすアイテムを選択してください。",
+			"total": "追加で約{gens}回の生成",
+			"count": "選択：{count}個",
+			"selected": "選択済み",
+			"animate": "選択したアイテムを動かす",
+			"unavailable": "利用不可",
+			"findings": "品質に関する注意",
+			"hardFailure": "アイテムを動かすには、先にこのモーションを修正してください。",
+			"beforeItems": "アイテムを動かす前に、モーションを確認してください。",
+			"changed": "キャラクターまたはモーションが変更されました。確認画面を開き直してください。",
+			"missingFrames": "確認済みのフレームは利用できなくなりました。",
+			"tier": "ご利用のPixelLabプランでは、選択した一部のアイテムに対応していません。"
+		},
 		"thatCharacter": "そのキャラクター",
 		"recoveryCheckFailed": "キャッシュされたフレームを確認できませんでした：{error}",
 		"retryLabel": "モーションをもう一度生成",
 		"newFrames": "新しいフレームを生成",
-		"estimateWithItems": "装備込みで約{gens}回分",
 		"useSaved": "保存済みのフレームを使う",
 		"retryChecks": "関節チェックを再試行",
 		"reuseCached": "キャッシュされたフレームを再利用",
@@ -2100,11 +2123,8 @@
 		"keepFrames": "フレームを残す",
 		"keepWorking": "作業を続けられます。",
 		"queueAnother": "別のモーションをキューに追加",
-		"footEstimate": "約{minutes}分・素体：{body}回分",
-		"footEstimateItems": "約{minutes}分・素体：{body}回分／装備も生成する場合は追加で{items}回分",
 		"addLabel": "モーションを追加または置き換え",
 		"submit": {
-			"add": "{move}を追加",
 			"replaceViews": "{move}の向き別フレームを置き換え",
 			"queue": "{move}をキューに追加",
 			"move": "モーション",
@@ -2135,7 +2155,9 @@
 			"items": "体がチェックに合格したあと、選択した装備のポーズ付けを続けて行います・追加で約{gens}回分の見込み。再試行やドル建ての請求が発生する場合があります。"
 		},
 		"color": {
-			"pixels": { "other": "近い色のピクセル{count}個" },
+			"pixels": {
+				"other": "近い色のピクセル{count}個"
+			},
 			"frames": {
 				"other": "キャッシュにある{directions}向きの{count}フレーム"
 			},
@@ -2152,14 +2174,12 @@
 		"alreadyQueued": "{move}はすでにキューに入っています。",
 		"waitsForCurrent": "実行中のモーションが終わるのを待ってから、自動で実行します。",
 		"addFeature": "装備中のアイテムのモーション",
-		"animateItems": "これらのアイテムもアニメーションさせる",
 		"pipeline": {
 			"described": "pixminimaxのモーション（素手、小道具なし、エフェクトなし）→ 関節 → 基準ビューでraw skeleton-v3",
 			"walk": "歩きのskeleton-v3モーション → 関節 → 基準ビューでraw skeleton-v3",
 			"authored": "基準ポーズから作成したキーポイント → raw skeleton-v3",
 			"grid": "{frames}フレーム × {dirs}方向",
-			"gridMirrored": "{frames}フレーム × {dirs}方向（{mirrored}方向は反転）",
-			"cost": "素体：約{body}回分、アイテム：{items}回分。素体に確認事項が見つかっても、自動では描き直しません。"
+			"gridMirrored": "{frames}フレーム × {dirs}方向（{mirrored}方向は反転）"
 		},
 		"changedDuringEdit": "編集中にこのモーションが変更されました。続けるには選び直してください。",
 		"duplicateOption": "「{move}」はすでに候補にあります。別の言葉で説明を書き始めてください。",
@@ -2190,9 +2210,6 @@
 		"redrawHidesEquipment": "この向きの画像を差し替えると、新しいフレームを作るまで装備が非表示になります。",
 		"redrawMirrors": "反転表示も変わります：{directions}。",
 		"redrawOtherMoves": "ほかのモーションは変わりません。",
-		"equipmentWaitsForBody": "体のチェックでモーションの生成が止まった場合、装備の生成はリクエストされません。",
-		"uncheckedItemsHidden": "選んでいないアイテムは、アニメーションを作るまで非表示です。",
-		"fittedEquipmentOnly": "ここでは、選んだすべての向きに合う装備だけを動かせます。",
 		"review": {
 			"redrawTitle": "アイテムの描き直しを確認",
 			"repairTitle": "アイテムの修復を確認",
