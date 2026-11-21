@@ -8108,8 +8108,12 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await review.getByRole('button', { name: /^Replace 1 frame/ }).click();
 	await expect(sheet).toContainText('Restore original · 1');
 	expect(await pixels('walk', 'helmet_steel')).not.toEqual(original);
-	await sheet.getByRole('button', { name: /^Replaced 1 frame of Steel helmet. Undo/ }).click();
-	await expect(sheet.getByText('Undid 1 frame.')).toBeVisible();
+	// The notice body is inert: only its Undo button reverts the import.
+	const toast = page.locator('.bu-toast-region');
+	await toast.locator('.bu-notice-content').click();
+	expect(await pixels('walk', 'helmet_steel')).not.toEqual(original);
+	await toast.getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(toast).toContainText('Undid 1 frame.');
 	expect(await pixels('walk', 'helmet_steel')).toEqual(original);
 
 	await importPng(await edit(3 * 64 + 31, 12));

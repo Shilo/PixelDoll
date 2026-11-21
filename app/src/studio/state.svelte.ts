@@ -286,6 +286,7 @@ export const ui = $state({
 	toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
 	toastSheet: null as SheetId,
 	toastAction: null as (() => void | Promise<void>) | null,
+	toastActionLabel: '' as string | Message,
 	waitingForTab: false // a spending action waits for the other tab that runs the jobs
 });
 let afterConnect: { run: () => void; minimumTier: number } | null = null;
@@ -385,6 +386,8 @@ type ToastOptions = {
 	tone?: typeof ui.toastTone;
 	duration?: number;
 	action?: () => void | Promise<void>;
+	/** Names the explicit button that runs `action`: without it, the whole notice stays the button. */
+	actionLabel?: string | Message;
 };
 function stopToastTimer() {
 	clearTimeout(toastT);
@@ -399,6 +402,7 @@ export function dismissToast() {
 	ui.toastTitle = '';
 	ui.toastPending = false;
 	ui.toastAction = null;
+	ui.toastActionLabel = '';
 }
 export async function activateToast() {
 	if (!ui.toast || toastActivating === toastRevision) return;
@@ -444,6 +448,7 @@ export function toast(
 	ui.toastTone = o.tone ?? 'info';
 	ui.toastSheet = ui.sheet;
 	ui.toastAction = o.action ?? null;
+	ui.toastActionLabel = o.actionLabel ?? '';
 	toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000);
 	armToast();
 	return true;
@@ -1659,17 +1664,12 @@ export async function replaceFrames(prepared: PreparedFrames, name: string) {
 		{ projectId, plan } = prepared;
 	const id = await (await framesModule()).saveFrames(prepared);
 	await refreshSaved(projectId, request);
-	toast(
-		[
-			message('fixFrames.replaced', { count: plan.changed.length, name }),
-			message('fixFrames.undo')
-		],
-		{
-			tone: 'success',
-			duration: 10000,
-			action: () => revertFrames(projectId, plan.itemId, { undo: id })
-		}
-	);
+	toast(message('fixFrames.replaced', { count: plan.changed.length, name }), {
+		tone: 'success',
+		duration: 10000,
+		action: () => revertFrames(projectId, plan.itemId, { undo: id }),
+		actionLabel: message('fixFrames.undo')
+	});
 }
 /** Undo one import of an item's frames, or restore every edited frame of it. */
 export async function revertFrames(
