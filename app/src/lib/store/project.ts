@@ -14,6 +14,7 @@ export interface StoredProject {
 	id: string;
 	savedAt: string;
 	creationSpec?: string; // internal creation-attempt fingerprint; never exported or used as clone identity
+	moveReviews?: Record<string, import('../../studio/replaceMove.ts').MoveCandidate>;
 	moveRecovery?: {
 		id: string;
 		originalRigVersion: string;
@@ -203,7 +204,8 @@ export async function saveItem(
 	item: Item,
 	images: Map<Sha256, Img>,
 	ladder: Slot[],
-	check?: (rec: StoredProject) => void
+	check?: (rec: StoredProject) => void,
+	stored?: Parameters<typeof db.updateCharacter>[3]
 ): Promise<void> {
 	const blobs = new Map<string, Blob>();
 	for (const [h, im] of images)
@@ -211,19 +213,24 @@ export async function saveItem(
 			h.slice(7),
 			new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
 		);
-	await db.updateCharacter<StoredProject>(id, blobs, (rec) => {
-		if (!rec) throw new Error(`project ${id} not found`);
-		check?.(rec);
-		const previous = rec.manifest.items.find((entry) => entry.id === item.id);
-		const next = {
-			...item,
-			name: previous?.name ?? item.name,
-			exportId: previous ? previous.exportId : newItemExportId(rec.manifest.items, item.id)
-		};
-		putItem(rec.manifest, next, ladder);
-		rec.savedAt = new Date().toISOString();
-		return rec;
-	});
+	await db.updateCharacter<StoredProject>(
+		id,
+		blobs,
+		(rec) => {
+			if (!rec) throw new Error(`project ${id} not found`);
+			check?.(rec);
+			const previous = rec.manifest.items.find((entry) => entry.id === item.id);
+			const next = {
+				...item,
+				name: previous?.name ?? item.name,
+				exportId: previous ? previous.exportId : newItemExportId(rec.manifest.items, item.id)
+			};
+			putItem(rec.manifest, next, ladder);
+			rec.savedAt = new Date().toISOString();
+			return rec;
+		},
+		stored
+	);
 }
 
 export type DressedRecord = StoredProject & {

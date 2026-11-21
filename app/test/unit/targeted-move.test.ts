@@ -313,7 +313,7 @@ test('native PixMiniMax rejects a missing leading frame before buying any joint 
 	expect(f.saved()).toEqual(f.original);
 });
 
-test('a real native body quality rejection offers a priced replacement for the original view and gear', async () => {
+test('a native quality failure offers a priced body draft retry without buying equipment', async () => {
 	const f = await fixture(false, 'bad-palette', true);
 	const spec = {
 		id: 'idle',
@@ -333,7 +333,12 @@ test('a real native body quality rejection offers a priced replacement for the o
 	expect(f.saved()).toEqual(f.original);
 	const offer = skeletonMoveReview(f.saved(), spec, result, []);
 	expect(offer).toMatchObject({
-		review: { dirs: ['east'], items: ['hat'], animation: { model: 'skeleton-v3', frameCount: 4 } },
+		review: {
+			dirs: ['east'],
+			items: [],
+			reviewBeforePublish: true,
+			animation: { model: 'skeleton-v3', frameCount: 4 }
+		},
 		affected: ['east']
 	});
 	expect(offer?.estimate.gens).toBeGreaterThan(0);
@@ -343,6 +348,12 @@ test('a real native body quality rejection offers a priced replacement for the o
 	expect(
 		skeletonMoveReview(f.saved(), { ...spec, animation: { model: 'skeleton-v3' } }, result, [])
 	).toBeUndefined();
+	await expect(f.run({ ...offer!.review, seed: 24 })).resolves.toMatchObject({
+		moveReview: 'idle'
+	});
+	const saved = f.saved();
+	expect(saved.manifest).toEqual(f.original.manifest);
+	expect(saved.moveReviews?.idle?.spec).toMatchObject({ items: [], reviewBeforePublish: true });
 });
 
 test('native PixMiniMax discards a redrawn leading frame and plans all 40 equipment poses in order', async () => {

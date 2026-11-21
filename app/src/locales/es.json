@@ -34,7 +34,7 @@
 		"redo": "Rehacer",
 		"save": "Guardar",
 		"share": "Compartir",
-		"startOver": "Empezar de cero",
+		"generateAgain": "Volver a generar",
 		"takeOff": "Quitar",
 		"tryAgain": "Reintentar",
 		"unavailable": "No disponible",
@@ -241,7 +241,7 @@
 		"wearName": "Poner {name}",
 		"titleWearingTakeOff": "Puesto (quitar)",
 		"twoHanded": "A dos manos",
-		"tryAgain": "Reintentar…",
+		"createVariant": "Crear una variante…",
 		"labelDeleteItem": "Eliminar objeto…",
 		"titleCancelName": "¿Cancelar {name}?",
 		"generationsAlreadyUsedAreNotRefundedAnd": "Las generaciones ya consumidas no se devuelven y las solicitudes ya enviadas todavía pueden generar cargos.",
@@ -772,6 +772,7 @@
 		"finishBeforeCharacterRemoval": "Termina o descarta la generación pendiente antes de eliminar un personaje.",
 		"finishBeforeMoveRemoval": "Termina o descarta la generación pendiente antes de eliminar una animación.",
 		"finishBeforeDirectionRemoval": "Termina o descarta la generación pendiente antes de cambiar las direcciones.",
+		"finishBeforeFixFrames": "Espera a que termine la generación en curso antes de corregir fotogramas.",
 		"couldNotRemoveCharactersSavedByAn": "No se pudieron quitar los personajes guardados por una versión preliminar anterior: {reason}",
 		"couldNotReadYourSavedCharactersReason": "No se pudieron leer tus personajes guardados: {reason}",
 		"couldNotOpenThatCharacterError": "No se pudo abrir ese personaje: {error}",
@@ -828,9 +829,9 @@
 		"anotherMoveIsStillBeingAddedSo": "Todavía se está agregando otra animación, así que esta no empezó. Inténtalo de nuevo cuando termine.",
 		"moveNameAdded": "{moveName} agregada",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} tiene problemas de objetos que revisar. No se inició ningún reintento de pago.",
-		"moveNameFailedOpenMovesToTryAgain": "{moveName} falló. Abre Animaciones para intentarlo de nuevo o empezar de cero.",
-		"createFailedOpen": "No se pudo crear {name}. Ábrelo para intentarlo de nuevo o empezar de cero.",
-		"setupFailedOpen": "La configuración del personaje se detuvo. Ábrela para intentarlo de nuevo o empezar de cero.",
+		"moveFailedOpen": "{moveName} falló. Abre Animaciones para ver las opciones.",
+		"createFailedOpen": "No se pudo crear {name}. Abre el intento para ver las opciones.",
+		"setupFailedOpen": "La configuración del personaje se detuvo. Abre el intento para ver las opciones.",
 		"stoppedWork": {
 			"one": "Se detuvo {count} generación. Ábrela para ver el motivo y vuelve a intentarlo o descártala.",
 			"other": "Se detuvieron {count} generaciones. Ábrelas para ver el motivo y vuelve a intentarlo o descártalas."
@@ -1190,7 +1191,7 @@
 	},
 	"workspace": {
 		"activityTitle": "Actividad del espacio de trabajo",
-		"activityIntro": "Guardado con el espacio de trabajo desde PixelDoll {build}. PixelLab está desactivado y nada se reiniciará.",
+		"activityIntro": "Guardado con el espacio de trabajo desde PixelDoll {build}. Las tareas del ZIP no se reinician.",
 		"missing": {
 			"one": "Faltaba {count} archivo de imagen o no se pudo leer.",
 			"other": "Faltaban {count} archivos de imagen o no se pudieron leer."
@@ -1227,7 +1228,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "Aquí PixelLab está desactivado. Los cambios en la copia se descartan al cerrar o recargar esta pestaña.",
+		"privacy": "La copia se abre sin conexión a PixelLab. Los cambios en la copia se descartan al cerrar o recargar esta pestaña.",
 		"chooseZip": "Elegir ZIP del espacio de trabajo",
 		"opening": "Abriendo…",
 		"release": "Suelta para abrir",
@@ -1292,7 +1293,8 @@
 			"look": "Por revisar",
 			"unfitted": "Sin ajustar",
 			"stale": "Hecho para otro cuerpo",
-			"demo": "Demo"
+			"demo": "Demo",
+			"edited": "Editado por ti"
 		},
 		"coverage": {
 			"oneMove": "Faltan algunos fotogramas de {move}",
@@ -1466,7 +1468,7 @@
 		"outcome": {
 			"standingFrames": "PixelLab devolvió fotogramas de pie incompletos o con formato incorrecto. No se hizo ningún reintento automático.",
 			"passed": "Todos los fotogramas superaron las comprobaciones.",
-			"reviewIssues": "Se detectaron problemas. Revisa el objeto y elige Reintentar o Aceptar tal cual. No se hizo ningún reintento automático.",
+			"reviewIssues": "Se detectaron problemas. Revisa el objeto y elige Volver a generar o Conservarlo. No se hizo ningún reintento automático.",
 			"callError": "Solicitud {index} ({state}): {error}",
 			"callStopped": "Solicitud {index} ({state})",
 			"canceled": "Cancelado. Las generaciones ya usadas no se reembolsan. Las solicitudes ya enviadas aún pueden completarse y es posible que se te cobren. Revisa Actividad para ver sus resultados.",
@@ -1742,7 +1744,7 @@
 		"loading": "cargando",
 		"checking": "Comprobando los fotogramas…",
 		"someChecks": "Algunas comprobaciones necesitan revisión.",
-		"noRetryStarted": "No se inició ningún reintento de pago. Elige «Reintentar» para un nuevo intento o «Conservarlo» para aceptar el diseño completo con estas advertencias. Si cierras la revisión, el objeto queda en espera.",
+		"noRetryStarted": "No se inició ningún reintento de pago. Elige «Volver a generar» para un nuevo intento o «Conservarlo» para aceptar el diseño completo con estas advertencias. Si cierras la revisión, el objeto queda en espera.",
 		"keep": "Conservarlo",
 		"retryLabel": "Reintentar {name}",
 		"incomplete": "No se generaron algunos fotogramas. Hace falta un intento nuevo para poder conservar este objeto.",
@@ -1755,9 +1757,9 @@
 		"costUnreported": "PixelLab no informó el costo completo. Revisa tu saldo antes de reintentar.",
 		"costReported": "PixelLab informó un costo de {cost} para este intento.",
 		"noCharge": "PixelLab indicó que no hubo ningún cargo por este intento.",
-		"newPaidAttempt": "Reintentar inicia un nuevo intento de pago.",
+		"newPaidAttempt": "Volver a generar inicia un nuevo intento de pago.",
 		"retryFeature": "Volver a generar este equipamiento",
-		"retryNote": "Al reintentar, se redibuja el diseño de la pose de pie en las direcciones del personaje. Se muestra el costo estimado. Cuando te guste el diseño, genera las demás animaciones por separado. Si quieres otro reintento o reparación por motivos de calidad, tendrás que enviar otra solicitud. PixelLab puede cobrar algunas llamadas en dólares; el tiempo en cola varía.",
+		"retryNote": "Al volver a generar, se redibuja el diseño de la pose de pie en las direcciones del personaje. Se muestra el costo estimado. Cuando te guste el diseño, genera las demás animaciones por separado. Si quieres otro reintento o reparación por motivos de calidad, tendrás que enviar otra solicitud. PixelLab puede cobrar algunas llamadas en dólares; el tiempo en cola varía.",
 		"slotKey": "{slot} · Color clave: {key}",
 		"calls": "Llamadas",
 		"call": "{index}: {cells} celdas",
@@ -1972,7 +1974,7 @@
 			"describeMove": "Describe esta animación antes de generarla.",
 			"partialSaved": "{reason} Se guardaron las vistas terminadas ({views}).",
 			"partialSavedNewFrames": "{reason} Se guardaron las vistas terminadas ({views}); Generar fotogramas nuevos solo pide las que faltan.",
-			"partialSavedRetry": "{reason} Se guardaron las vistas terminadas ({views}); Reintentar solo pide las que faltan.",
+			"partialSavedRetry": "{reason} Se guardaron las vistas terminadas ({views}). Volver a generar solo solicita las que faltan.",
 			"replacementFailsQa": "El reemplazo sigue sin pasar las comprobaciones de calidad de la pose del cuerpo. Se conservaron las direcciones existentes. Revisa los resultados antes de reintentar.",
 			"newMoveFailsQa": "La animación nueva no pasa las comprobaciones de calidad de la pose del cuerpo, así que no se guardó. Revisa los resultados antes de reintentar.",
 			"moveDirectionsChanged": "Las direcciones del personaje cambiaron. Revisa la estimación actual de la animación antes de volver a intentarlo. No se solicitó ninguna generación.",
@@ -2166,6 +2168,7 @@
 			"saved": "Guardado en este dispositivo.",
 			"startDressing": "Empezar a vestir al personaje",
 			"retryLabel": "Volver a crear el personaje",
+			"editSetup": "Editar ajustes…",
 			"estimated": "Aprox. {gens}",
 			"keepWorking": "Seguir trabajando",
 			"costTitle": "Incluye la pose de pie en todas las direcciones. Agrega Reposo, Caminar y otras animaciones después. Si falta una articulación en la pose de pie, el costo puede subir un poco.",
@@ -2176,15 +2179,39 @@
 		"skeleton": {
 			"title": "Revisar Skeleton V3",
 			"hint": "Skeleton V3 es otra opción. Los controles de calidad aún pueden fallar.",
-			"back": "Volver a los resultados",
-			"equipment": "Equipo que se volverá a generar: {names}"
+			"back": "Volver a los resultados"
 		},
-		"sharedCopiesCoverage": "Las copias compartidas se pueden usar en las vistas en las que tienen fotogramas.",
+		"checkpoint": {
+			"generate": "Generar animación",
+			"initialEstimate": "Unos {minutes} min · Sin objetos",
+			"review": "Revisar animación",
+			"ready": "Puedes revisar {move}.",
+			"reviewNote": "Revisa {move} antes de gastar en objetos.",
+			"replaceNote": "Al reemplazar {move}, se eliminan los fotogramas ajustados de los objetos en las direcciones modificadas.",
+			"regenerate": "Volver a generar…",
+			"save": "Guardar animación",
+			"replace": "Reemplazar animación",
+			"discardDraft": "Descartar borrador",
+			"titleItems": "Animar objetos",
+			"chooseFor": "Elige los objetos que quieras animar para {move}.",
+			"total": "Unas {gens} generaciones más",
+			"selected": "Seleccionado",
+			"animateCount": {
+				"one": "Animar {n} objeto",
+				"other": "Animar {n} objetos"
+			},
+			"unavailable": "No disponible",
+			"findings": "Notas de calidad",
+			"hardFailure": "Vuelve a generar esta animación antes de guardarla.",
+			"beforeItems": "Revisa la animación antes de animar objetos.",
+			"changed": "El personaje o la animación ha cambiado. Vuelve a abrir la revisión.",
+			"missingFrames": "Los fotogramas revisados ya no están disponibles.",
+			"tier": "Tu plan de PixelLab no admite algunos objetos seleccionados."
+		},
 		"thatCharacter": "ese personaje",
 		"recoveryCheckFailed": "No se pudieron comprobar los fotogramas en caché: {error}",
 		"retryLabel": "Volver a generar la animación",
-		"newFrames": "Generar fotogramas nuevos",
-		"estimateWithItems": "Aprox. {gens} generaciones con equipamiento",
+		"newSetup": "Nueva animación…",
 		"useSaved": "Usar fotogramas guardados",
 		"retryChecks": "Reintentar comprobar articulaciones",
 		"reuseCached": "Reutilizar fotogramas en caché",
@@ -2192,11 +2219,8 @@
 		"keepFrames": "Conservar fotogramas",
 		"keepWorking": "Puedes seguir trabajando.",
 		"queueAnother": "Poner otra animación en cola",
-		"footEstimate": "Unos {minutes} min · cuerpo {body} generaciones",
-		"footEstimateItems": "Unos {minutes} min · cuerpo {body} generaciones + {items} generaciones si se procesa el equipamiento",
 		"addLabel": "Agregar o reemplazar animación",
 		"submit": {
-			"add": "Agregar {move}",
 			"replaceViews": "Reemplazar vistas de {move}",
 			"queue": "Poner {move} en cola",
 			"move": "animación",
@@ -2204,17 +2228,16 @@
 		},
 		"titleRepair": "Reparar fotogramas del objeto",
 		"titleReplace": "Reemplazar vistas de la animación",
-		"heldBy": "{move} falló en {character}, así que las animaciones nuevas quedan en espera. Abre el personaje para reintentar o empezar de cero.",
+		"heldBy": "Falló {move} en {character}, así que las animaciones nuevas quedan en espera. Abre el intento para ver las opciones.",
 		"open": "Abrir {character}",
 		"progressLabel": "Generación de animación en curso",
 		"retryFeature": "Volver a generar esta animación",
 		"savedFramesNote": "Usa los fotogramas guardados para buscar resultados completos que coincidan con esta animación y su equipamiento. Recuperarlos no envía ninguna solicitud a PixelLab.",
 		"checkingCached": "Comprobando fotogramas en caché…",
 		"queuedNext": "Siguientes en cola: {moves}",
-		"queuedNextKeep": "En cola: {moves}. Si eliges «Conservar fotogramas» o «Reintentar», seguirán en cola. Si eliges «Descartar», también se quitarán de la cola.",
-		"queuedNextRetry": "En cola: {moves}. Si eliges «Reintentar», seguirán en cola. Si eliges «Empezar de cero», se quitarán de la cola.",
+		"queuedNextRetry": "En cola: {moves}. Si descartas este intento, también se quitarán estas animaciones de la cola.",
 		"keepReview": "Revisar fotogramas del cuerpo",
-		"keepNote": "Estos fotogramas pasaron las comprobaciones estructurales, pero tienen las advertencias de calidad que se indican abajo. «Conservar fotogramas» guarda solo el cuerpo tal cual, sin enviar solicitudes a PixelLab. «Descartar» no guarda nada; las imágenes generadas quedan en Actividad.",
+		"keepNote": "Estos fotogramas pasaron las comprobaciones estructurales, pero tienen las advertencias de calidad que se indican abajo. «Conservar fotogramas» guarda solo el cuerpo tal cual, sin enviar solicitudes a PixelLab. «Cancelar» no guarda nada; las imágenes generadas quedan en Actividad.",
 		"keepItemsNote": "No se pidió a PixelLab que animara los objetos seleccionados. Puedes generar sus fotogramas más tarde, en un paso aparte de pago.",
 		"keepReplaceNote": "Conservar estas vistas oculta sus fotogramas de equipamiento antiguos hasta que crees otros nuevos.",
 		"frameLabel": "{move} {direction} fotograma {number}",
@@ -2249,14 +2272,12 @@
 		"alreadyQueued": "{move} ya está en cola.",
 		"waitsForCurrent": "Espera a que termine la animación en curso y luego se ejecuta sola.",
 		"addFeature": "Animaciones para objetos puestos",
-		"animateItems": "Animar también estos objetos",
 		"pipeline": {
 			"described": "movimiento pixminimax (sin armas, sin accesorios, sin efectos) → articulaciones → skeleton-v3 sin procesar en la vista de reposo",
 			"walk": "movimiento skeleton-v3 al caminar → articulaciones → skeleton-v3 sin procesar en la vista de reposo",
 			"authored": "keypoints creados a partir de la pose de reposo → skeleton-v3 sin procesar",
 			"grid": "{frames} fotogramas × {dirs} direcciones",
-			"gridMirrored": "{frames} fotogramas × {dirs} direcciones ({mirrored} reflejadas)",
-			"cost": "cuerpo ≈ {body} generaciones, objetos {items} generaciones · las notas de revisión del cuerpo no provocan redibujados."
+			"gridMirrored": "{frames} fotogramas × {dirs} direcciones ({mirrored} reflejadas)"
 		},
 		"changedDuringEdit": "Esta animación cambió mientras la editabas. Vuelve a seleccionarla para continuar.",
 		"duplicateOption": "{move} ya está entre las animaciones disponibles. Empieza la descripción con otras palabras.",
@@ -2268,9 +2289,9 @@
 		"motionModel": "Modelo de movimiento",
 		"motionModelHelp": "Skeleton v3 usa las mismas poses para el cuerpo y el equipo. V3 y PixMiniMax dibujan primero el cuerpo. Después, PixelDoll detecta las poses para el equipo.",
 		"models": {
-			"skeletonV3": "Predeterminado (Skeleton V3)",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "Predeterminado (PixMiniMax)"
 		},
 		"frames": "Fotogramas",
 		"framesHelp": "Las opciones encajan con este modelo y el lienzo del personaje ({canvas} px). La opción predeterminada mantiene la cantidad de fotogramas predefinida de PixelDoll.",
@@ -2290,9 +2311,6 @@
 		"redrawHidesEquipment": "Al reemplazar estas vistas, el equipo se oculta hasta que se creen nuevos fotogramas.",
 		"redrawMirrors": "También cambian las vistas reflejadas: {directions}.",
 		"redrawOtherMoves": "Las demás animaciones no cambian.",
-		"equipmentWaitsForBody": "Si las comprobaciones del cuerpo detienen la animación, no se solicitan fotogramas para el equipo.",
-		"uncheckedItemsHidden": "Los objetos sin marcar siguen ocultos hasta que se animen.",
-		"fittedEquipmentOnly": "Aquí solo se puede animar el equipo adaptado a todas las vistas seleccionadas.",
 		"review": {
 			"redrawTitle": "Revisar el redibujado del objeto",
 			"repairTitle": "Revisar la reparación del objeto",
@@ -2402,7 +2420,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Abrir copia del espacio de trabajo",
-		"generationOff": "PixelLab está desactivado en las copias del espacio de trabajo."
+		"tabOnlyKey": "Esta conexión solo se usa en esta pestaña y no se guarda.",
+		"useSavedKey": "Usar clave guardada"
 	},
 	"moveNames": {
 		"default": "Predeterminada",
@@ -2482,5 +2501,99 @@
 		"unreadable": "No se pudo abrir esta imagen. Elige otro archivo.",
 		"noArtworkResized": "No queda arte visible tras cambiar el tamaño. Elige otra imagen.",
 		"noArtwork": "Esta imagen no tiene arte visible. Elige otro archivo."
+	},
+	"fixFrames": {
+		"open": "Corregir fotogramas",
+		"title": "Corregir fotogramas",
+		"reviewTitle": "Revisar fotogramas",
+		"target": "Fotogramas de",
+		"body": "Cuerpo base",
+		"move": "Animación",
+		"gridLabel": "Fotogramas de {name} en {move}",
+		"frameLabel": "{dir}, fotograma {n}",
+		"editedByYou": "Editado por ti",
+		"mirrors": "Reflejo de {of}",
+		"hint": "Descarga el PNG, edítalo en cualquier editor de píxeles como Aseprite, Pixelorama o Piskel y luego impórtalo. Mantén su tamaño y su cuadrícula de {w}×{h}: las filas son direcciones y las columnas, fotogramas. Los colores son los originales, así que Cambiar colores sigue funcionando.",
+		"hintLayers": "Descarga el ZIP: tiene un PNG por capa. Edítalos en cualquier editor de píxeles como Aseprite, Pixelorama o Piskel, mantén sus nombres, su tamaño y la cuadrícula de {w}×{h}, y luego importa el ZIP o los PNG. Los colores son los originales, así que Cambiar colores sigue funcionando.",
+		"downloadPng": "Descargar PNG",
+		"downloadZip": "Descargar ZIP",
+		"import": "Importar PNG editado",
+		"importFiles": "Importar archivos editados",
+		"demoNote": "Esta es la demo incluida. Edita una copia para reemplazar sus fotogramas.",
+		"restoring": "Restaurando…",
+		"beforeFrame": "Antes, {dir} {n}",
+		"afterFrame": "Después, {dir} {n}",
+		"playing": "{move}, en reproducción",
+		"changedFrame": "{dir}, fotograma {n}, cambiado",
+		"editedFrame": "{dir}, fotograma {n}, editado por ti",
+		"reading": "Leyendo…",
+		"release": "Suelta para importar",
+		"changedCount": {
+			"one": "{n} fotograma cambiado",
+			"other": "{n} fotogramas cambiados"
+		},
+		"nothingChanged": "No cambió ningún fotograma. Edita el PNG descargado, guárdalo e impórtalo de nuevo.",
+		"replace": {
+			"one": "Reemplazar {n} fotograma",
+			"other": "Reemplazar {n} fotogramas"
+		},
+		"restore": {
+			"one": "Restaurar original · {n}",
+			"other": "Restaurar originales · {n}"
+		},
+		"restoreTitle": {
+			"one": "¿Restaurar {n} fotograma original?",
+			"other": "¿Restaurar {n} fotogramas originales?"
+		},
+		"restoreAction": "Restaurar",
+		"restoreBody": "Cada fotograma de {name} que reemplazaste vuelve a estar como antes de tus ediciones.",
+		"replaced": {
+			"one": "Se reemplazó {count} fotograma de {name}.",
+			"other": "Se reemplazaron {count} fotogramas de {name}."
+		},
+		"undo": "Deshacer",
+		"undone": {
+			"one": "Se deshizo {count} fotograma.",
+			"other": "Se deshicieron {count} fotogramas."
+		},
+		"restored": {
+			"one": "Se restauró {count} fotograma original.",
+			"other": "Se restauraron {count} fotogramas originales."
+		},
+		"notes": {
+			"softAlpha": {
+				"one": "{n} píxel semitransparente se volverá totalmente opaco o totalmente transparente.",
+				"other": "{n} píxeles semitransparentes se volverán totalmente opacos o totalmente transparentes."
+			},
+			"newColors": {
+				"one": "{n} color nuevo no cambiará con Cambiar colores.",
+				"other": "{n} colores nuevos no cambiarán con Cambiar colores."
+			},
+			"mirrored": "{dir} es un reflejo de {of}, así que sus ediciones no se usaron. Edita {of} o desactiva el reflejo en Direcciones para editar {dir} por separado.",
+			"noBodyRow": "Esta animación no tiene fotogramas del cuerpo base en {dir}, así que las ediciones ahí no se usaron.",
+			"missingLayer": "Ningún archivo termina en -{layer}.png, así que esa capa se queda como está.",
+			"ignored": {
+				"one": "Se ignoró {n} archivo más.",
+				"other": "Se ignoraron {n} archivos más."
+			},
+			"fitted": "Los objetos ajustados a estos fotogramas del cuerpo base siguen puestos: {names}. Revísalos en los fotogramas cambiados.",
+			"emptiedBody": "Un fotograma vacío del cuerpo base se omite al crear objetos nuevos para él."
+		},
+		"errors": {
+			"size": "Este PNG mide {got} px, pero estos fotogramas necesitan {want} px. Mantén el tamaño y la cuadrícula originales.",
+			"duplicateLayer": "Más de un archivo termina en -{layer}.png. Elige un archivo por capa.",
+			"noLayerMatch": "Ningún PNG coincide con estos fotogramas. Usa los archivos descargados y conserva los nombres que terminan en -fg o -bg.",
+			"noPng": "No se encontró ningún PNG. Elige el PNG que descargaste y editaste.",
+			"notEditable": "Copia este personaje antes de corregir sus fotogramas.",
+			"targetGone": "Este objeto o esta animación ya no existe.",
+			"changed": "Estos fotogramas cambiaron desde tu revisión. Importa el archivo de nuevo.",
+			"originalsMissing": "Los fotogramas originales no están guardados en esta copia del personaje.",
+			"originalsUnusable": "Los fotogramas originales de esta copia del personaje no se pueden usar, así que no se cambió nada.",
+			"nothingToRevert": "Estos fotogramas se cambiaron de nuevo después, así que aquí no hay nada que deshacer.",
+			"badPng": "Este archivo no se pudo leer como PNG. Guárdalo de nuevo como PNG e impórtalo.",
+			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de reemplazar fotogramas del cuerpo base.",
+			"importFailed": "No se pudieron leer estos fotogramas. Inténtalo de nuevo.",
+			"saveFailed": "No se pudieron guardar estos fotogramas. No se cambió nada. Inténtalo de nuevo."
+		}
 	}
 }

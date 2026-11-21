@@ -6,16 +6,17 @@
 	import RowActions from './RowActions.svelte';
 	import DeleteRow from './DeleteRow.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
-	import { Download } from './icons.ts';
-	import { toast } from './state.svelte.ts';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
+	import { Download, Grid2x2 } from './icons.ts';
+	import { toast } from './state.svelte.ts';
 	let {
 		name,
 		kind,
 		locked = '',
 		onlocked,
 		ondownload,
+		onfixframes,
 		ondelete,
 		children
 	}: {
@@ -25,6 +26,7 @@
 		/** Opens what causes the lock, when it can be shown. */
 		onlocked?: () => void;
 		ondownload: () => Promise<void>;
+		onfixframes?: () => void;
 		ondelete: () => void | Promise<void>;
 		children: Snippet;
 	} = $props();
@@ -48,6 +50,16 @@
 
 <RowActions {name} {children}>
 	{#snippet actions(close)}
+		{#if onfixframes}
+			<button
+				class="row"
+				role="menuitem"
+				onclick={() => {
+					close();
+					onfixframes();
+				}}><Grid2x2 size={16} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
+			>
+		{/if}
 		<button
 			class="row"
 			role="menuitem"

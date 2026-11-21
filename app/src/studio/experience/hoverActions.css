@@ -1,0 +1,12 @@
+/* A row or tile's ⋮ actions button stays out of the way until its owner is hovered or holds keyboard focus.
+   Contract: put .hover-actions on the row/tile wrapper and .hover-actions-button on its immediate child button, and
+   keep aria-expanded on that button so an open menu stays visible after the pointer leaves. The button keeps its
+   size, place and accessible name, so nothing shifts and keyboard and screen-reader access stay intact. Devices
+   whose primary pointer cannot hover (phones, tablets, touch-first layouts) always show it. A hybrid touchscreen
+   with a mouse follows its primary pointer, so a tap still opens the menu even while the icon is hidden. */
+@media (hover: hover) and (pointer: fine) {
+	.hover-actions:not(:hover):not(:has(:focus-visible))
+		> .hover-actions-button:not([aria-expanded='true']) {
+		opacity: 0;
+	}
+}

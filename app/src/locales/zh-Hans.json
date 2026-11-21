@@ -34,7 +34,7 @@
 		"redo": "重做",
 		"save": "保存",
 		"share": "分享",
-		"startOver": "重新开始",
+		"generateAgain": "重新生成",
 		"takeOff": "脱下",
 		"tryAgain": "重试",
 		"unavailable": "不可用",
@@ -231,7 +231,7 @@
 		"wearName": "穿戴{name}",
 		"titleWearingTakeOff": "已穿戴（脱下）",
 		"twoHanded": "双手",
-		"tryAgain": "重试…",
+		"createVariant": "创建变体…",
 		"labelDeleteItem": "删除装备…",
 		"titleCancelName": "取消生成{name}？",
 		"generationsAlreadyUsedAreNotRefundedAnd": "已使用的生成次数不会退还，已发送的请求仍可能计费。",
@@ -735,6 +735,7 @@
 		"finishBeforeCharacterRemoval": "删除角色前，请完成或放弃待处理的生成任务。",
 		"finishBeforeMoveRemoval": "删除动作前，请完成或放弃待处理的生成任务。",
 		"finishBeforeDirectionRemoval": "更改朝向之前，请完成或放弃待处理的生成任务。",
+		"finishBeforeFixFrames": "修正帧之前，请等待当前生成任务完成。",
 		"couldNotRemoveCharactersSavedByAn": "无法移除由早期预览版本保存的角色：{reason}",
 		"couldNotReadYourSavedCharactersReason": "无法读取已保存的角色：{reason}",
 		"couldNotOpenThatCharacterError": "无法打开该角色：{error}",
@@ -787,9 +788,9 @@
 		"anotherMoveIsStillBeingAddedSo": "另一个动作仍在添加中，因此此动作未开始。请在其完成后重试。",
 		"moveNameAdded": "已添加{moveName}",
 		"moveNameHasItemIssuesToReviewNo": "{moveName}有装备问题需要检查。未启动付费重试。",
-		"moveNameFailedOpenMovesToTryAgain": "{moveName}失败。请打开“动作”重试或重新开始。",
-		"createFailedOpen": "无法创建{name}。请打开以重试或重新开始。",
-		"setupFailedOpen": "角色设置已停止。请打开以重试或重新开始。",
+		"moveFailedOpen": "{moveName}失败。打开“动作”以查看恢复选项。",
+		"createFailedOpen": "无法创建{name}。打开该尝试以查看恢复选项。",
+		"setupFailedOpen": "角色设置已停止。打开该尝试以查看恢复选项。",
 		"stoppedWork": { "other": "{count} 个生成已停止。请打开查看原因，然后重试或放弃。" },
 		"thisOperationChangedReviewTheJointChecks": "此操作已更改。请再次查看关节检查。",
 		"thePendingJointChecksChangedReviewTheir": "待处理的关节检查已更改。请再次检查其费用。",
@@ -1130,7 +1131,7 @@
 	},
 	"workspace": {
 		"activityTitle": "工作区活动",
-		"activityIntro": "随工作区一起保存，PixelDoll 版本为 {build}。PixelLab 已关闭，不会重新启动任何任务。",
+		"activityIntro": "随工作区一起保存，PixelDoll 版本为 {build}。ZIP 中的任务不会重新启动。",
 		"missing": { "other": "有 {count} 个图像文件缺失或无法读取。" },
 		"skippedCharacters": { "other": "已跳过的已保存角色：{count}。" },
 		"demoOutfit": "演示使用其默认套装设置。",
@@ -1161,7 +1162,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "此处 PixelLab 已关闭。关闭或重新加载此标签页时，对副本的任何更改都会被丢弃。",
+		"privacy": "打开副本时不会连接到 PixelLab。关闭或重新加载此标签页时，对副本的任何更改都会被丢弃。",
 		"chooseZip": "选择工作区 ZIP",
 		"opening": "正在打开…",
 		"release": "松开以打开",
@@ -1222,7 +1223,8 @@
 			"look": "需要检查",
 			"unfitted": "未适配",
 			"stale": "为另一个身体制作",
-			"demo": "演示"
+			"demo": "演示",
+			"edited": "已由你编辑"
 		},
 		"coverage": {
 			"oneMove": "缺少部分{move}帧",
@@ -1386,7 +1388,7 @@
 		"outcome": {
 			"standingFrames": "PixelLab 返回了不完整或格式错误的站立帧。未进行自动重试。",
 			"passed": "所有帧均通过检查。",
-			"reviewIssues": "检测到问题。请检查装备，然后选择“重试”或“按现状接受”。未进行自动重试。",
+			"reviewIssues": "检测到问题。请检查装备，然后选择“重新生成”或“保留”。未进行自动重试。",
 			"callError": "请求 {index}（{state}）：{error}",
 			"callStopped": "请求 {index}（{state}）",
 			"canceled": "已取消。已使用的生成次数不会退还。已发送的请求仍可能完成并计费。请在“活动”中查看其结果。",
@@ -1632,7 +1634,7 @@
 		"waitingBody": "你的生成尚未开始。请保持“活动”打开，另一个标签页就绪后 PixelDoll 会在这里继续。"
 	},
 	"genCard": {
-		"retryKey": "重试会使用从本设计颜色测得的{color}背景",
+		"retryKey": "重新生成会使用从本设计颜色测得的{color}背景",
 		"estimateFailed": "无法估计此次重试。请重新打开角色并重试。",
 		"generateLabel": "生成{name}",
 		"previewMove": "预览动作",
@@ -1641,7 +1643,7 @@
 		"loading": "加载中",
 		"checking": "正在检查各帧…",
 		"someChecks": "部分检查需要查看。",
-		"noRetryStarted": "未启动付费重试。选择“重试”进行新的尝试，或选择“保留”以接受带有这些警告的完整图像。关闭此检查会使其继续等待。",
+		"noRetryStarted": "未启动付费重试。选择“重新生成”进行新的尝试，或选择“保留”以接受带有这些警告的完整图像。关闭此检查会使其继续等待。",
 		"keep": "保留",
 		"retryLabel": "再次尝试{name}",
 		"incomplete": "部分帧未生成。此装备必须经过新的尝试才能保留。",
@@ -1654,9 +1656,9 @@
 		"costUnreported": "PixelLab 未报告完整费用。重试前请检查余额。",
 		"costReported": "PixelLab 报告此次尝试的费用为 {cost}。",
 		"noCharge": "PixelLab 报告此次尝试未收费。",
-		"newPaidAttempt": "重试会开始新的付费尝试。",
+		"newPaidAttempt": "重新生成会开始新的付费尝试。",
 		"retryFeature": "再次生成此装备",
-		"retryNote": "重试会按显示的预估费用，在角色的各朝向上重绘站立设计。满意后，请再单独生成其他动作。进一步的质量重试或修复需要另一次请求。PixelLab 可能对部分调用按美元计费；排队时间不定。",
+		"retryNote": "重新生成会按显示的预估费用，在角色的各朝向上重绘站立设计。满意后，请再单独生成其他动作。进一步的质量重试或修复需要另一次请求。PixelLab 可能对部分调用按美元计费；排队时间不定。",
 		"slotKey": "{slot} · 色键：{key}",
 		"calls": "调用",
 		"call": "{index}：{cells} 个单元格",
@@ -1865,7 +1867,7 @@
 			"describeMove": "生成前请先描述此动作。",
 			"partialSaved": "{reason} 已保存完成的视图（{views}）。",
 			"partialSavedNewFrames": "{reason} 已保存完成的视图（{views}）；“生成新帧”只会请求缺失的帧。",
-			"partialSavedRetry": "{reason} 已保存完成的视图（{views}）；“重试”只会请求缺失的帧。",
+			"partialSavedRetry": "{reason} 已保存完成的视图（{views}）。重新生成时只会请求缺失的视图。",
 			"replacementFailsQa": "替换仍未通过身体姿势质量检查。现有朝向已保留。重试前请查看结果。",
 			"newMoveFailsQa": "新动作未通过身体姿势质量检查，因此未保存。重试前请查看结果。",
 			"moveDirectionsChanged": "角色的朝向已更改。请先查看此动作的最新费用预估，再重试。未发送生成请求。",
@@ -2049,6 +2051,7 @@
 			"saved": "已保存到此设备。",
 			"startDressing": "开始换装",
 			"retryLabel": "再次创建角色",
+			"editSetup": "编辑设置…",
 			"estimated": "预计 {gens}",
 			"keepWorking": "继续工作",
 			"costTitle": "每个朝向的站立视图；之后可添加待机、行走和其他动作。缺少站立关节可能会略微增加费用",
@@ -2059,15 +2062,38 @@
 		"skeleton": {
 			"title": "查看 Skeleton V3 方案",
 			"hint": "也可以选择 Skeleton V3，但仍可能无法通过质量检查。",
-			"back": "返回结果",
-			"equipment": "将重新生成的装备：{names}"
+			"back": "返回结果"
 		},
-		"sharedCopiesCoverage": "共享物品的副本仍可在有帧的朝向中穿戴。",
+		"checkpoint": {
+			"generate": "生成动作",
+			"initialEstimate": "约 {minutes} 分钟 · 不含装备",
+			"review": "检查动作",
+			"ready": "可以检查{move}了。",
+			"reviewNote": "花费生成次数制作装备前，请先检查{move}。",
+			"replaceNote": "替换{move}会移除已更改朝向中的适配装备帧。",
+			"regenerate": "重新生成…",
+			"save": "保存动作",
+			"replace": "替换动作",
+			"discardDraft": "丢弃草稿",
+			"titleItems": "制作装备动画",
+			"chooseFor": "请选择要随{move}播放的装备。",
+			"total": "预计再生成 {gens} 次",
+			"selected": "已选",
+			"animateCount": {
+				"other": "为 {n} 件装备生成动画"
+			},
+			"unavailable": "不可用",
+			"findings": "质量提示",
+			"hardFailure": "请重新生成此动作后再保存。",
+			"beforeItems": "制作装备动画前，请先检查动作。",
+			"changed": "角色或动作已更改。请重新打开检查界面。",
+			"missingFrames": "已检查的帧不再可用。",
+			"tier": "当前的 PixelLab 套餐不支持部分已选装备。"
+		},
 		"thatCharacter": "该角色",
 		"recoveryCheckFailed": "无法检查缓存帧：{error}",
 		"retryLabel": "再次生成动作",
-		"newFrames": "生成新帧",
-		"estimateWithItems": "预计 {gens} 次生成（含装备）",
+		"newSetup": "新建动作…",
 		"useSaved": "使用已保存的帧",
 		"retryChecks": "重试关节检查",
 		"reuseCached": "复用缓存帧",
@@ -2075,11 +2101,8 @@
 		"keepFrames": "保留帧",
 		"keepWorking": "你可以继续工作。",
 		"queueAnother": "再排一个动作",
-		"footEstimate": "约 {minutes} 分钟 · 身体 {body} 次生成",
-		"footEstimateItems": "约 {minutes} 分钟 · 身体 {body} 次生成；如果生成装备，另加 {items} 次生成",
 		"addLabel": "添加或替换动作",
 		"submit": {
-			"add": "添加{move}",
 			"replaceViews": "替换{move}视图",
 			"queue": "将{move}加入队列",
 			"move": "动作",
@@ -2087,17 +2110,16 @@
 		},
 		"titleRepair": "修复装备帧",
 		"titleReplace": "替换动作视图",
-		"heldBy": "{move}在{character}上失败，因此新动作会等待。请打开它重试或重新开始。",
+		"heldBy": "{character}的{move}失败，新动作需要等待。打开该尝试以查看恢复选项。",
 		"open": "打开{character}",
 		"progressLabel": "当前动作生成",
 		"retryFeature": "再次生成此动作",
 		"savedFramesNote": "使用已保存的帧检查是否有与此动作和装备匹配的已完成图像。恢复这些帧不会发出 PixelLab 请求。",
 		"checkingCached": "正在检查缓存帧…",
 		"queuedNext": "接下来排队：{moves}",
-		"queuedNextKeep": "接下来排队：{moves}。选择“保留帧”或“重试”会继续使用它们；选择“放弃”也会丢弃它们。",
-		"queuedNextRetry": "接下来排队：{moves}。选择“重试”会继续使用它们；选择“重新开始”会丢弃它们。",
+		"queuedNextRetry": "排队中的动作：{moves}。放弃本次尝试也会清除这些排队中的动作。",
 		"keepReview": "检查身体帧",
-		"keepNote": "这些帧通过了结构检查，但存在下方的质量警告。“保留”会按原样保存它们（仅身体），不发出 PixelLab 请求。“放弃”不会保存任何内容；生成的图像仍保留在“活动”中。",
+		"keepNote": "这些帧通过了结构检查，但存在下方的质量警告。“保留”会按原样保存它们（仅身体），不发出 PixelLab 请求。“取消”不会保存任何内容；生成的图像仍保留在“活动”中。",
 		"keepItemsNote": "PixelLab 未被要求为所选装备制作动画。请稍后作为单独的计价步骤生成其帧。",
 		"keepReplaceNote": "保留这些视图会隐藏其旧装备帧，直到你制作新的帧。",
 		"frameLabel": "{move} {direction} 第 {number} 帧",
@@ -2110,8 +2132,12 @@
 			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成，可能发生重试和美元计费。"
 		},
 		"color": {
-			"pixels": { "other": "{count} 个相近颜色像素" },
-			"frames": { "other": "{count} 个缓存的{directions}帧" },
+			"pixels": {
+				"other": "{count} 个相近颜色像素"
+			},
+			"frames": {
+				"other": "{count} 个缓存的{directions}帧"
+			},
 			"match": "在 {frames}中，将 {pixels}匹配到站立调色板。身体形状保持固定；其他颜色不受影响。",
 			"recheck": "重新检查 {count} 个已更改帧 · 预计 {gens} 次生成或 {usd}。",
 			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成。",
@@ -2125,14 +2151,12 @@
 		"alreadyQueued": "{move}已排队。",
 		"waitsForCurrent": "它会等待正在进行的动作，然后自行运行。",
 		"addFeature": "已穿戴装备的动作",
-		"animateItems": "同时为这些装备制作动画",
 		"pipeline": {
 			"described": "pixminimax 运动（徒手、无道具、无特效）→ 关节 → 在静止视图上运行原始 skeleton-v3",
 			"walk": "行走 skeleton-v3 运动 → 关节 → 在静止视图上运行原始 skeleton-v3",
 			"authored": "从静止姿势创作关键点 → 原始 skeleton-v3",
 			"grid": "{frames} 帧 × {dirs} 个朝向",
-			"gridMirrored": "{frames} 帧 × {dirs} 个朝向（{mirrored} 个镜像）",
-			"cost": "身体约 {body} 次生成，装备 {items} 次生成 · 身体检查说明不会触发重绘。"
+			"gridMirrored": "{frames} 帧 × {dirs} 个朝向（{mirrored} 个镜像）"
 		},
 		"changedDuringEdit": "编辑期间此动作已更改。请重新选择它以继续。",
 		"duplicateOption": "{move} 已在动作选项中。请用其他词语开头。",
@@ -2144,9 +2168,9 @@
 		"motionModel": "运动模型",
 		"motionModelHelp": "Skeleton v3 为身体和装备使用相同的姿势。V3 和 PixMiniMax 会先绘制身体，再由 PixelDoll 检测装备所用的姿势。",
 		"models": {
-			"skeletonV3": "默认（Skeleton V3）",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "默认（PixMiniMax）"
 		},
 		"frames": "帧",
 		"framesHelp": "选项会随此模型和角色的画布（{canvas} px）变化。默认选项使用 PixelDoll 预设的帧数。",
@@ -2163,9 +2187,6 @@
 		"redrawHidesEquipment": "替换这些视图后，装备会隐藏，直到生成新帧。",
 		"redrawMirrors": "镜像视图也会变更：{directions}。",
 		"redrawOtherMoves": "其他动作保持不变。",
-		"equipmentWaitsForBody": "如果身体检查阻止生成动作，就不会发送装备生成请求。",
-		"uncheckedItemsHidden": "未勾选的装备会保持隐藏，直到为其生成动画。",
-		"fittedEquipmentOnly": "这里只能为适配所有选中视图的装备生成动画。",
 		"review": {
 			"redrawTitle": "审核装备重绘",
 			"repairTitle": "审核装备修复",
@@ -2275,7 +2296,8 @@
 	},
 	"workspaceCopy": {
 		"title": "打开工作区副本",
-		"generationOff": "工作区副本中 PixelLab 已关闭。"
+		"tabOnlyKey": "连接仅在此标签页中有效，不会保存。",
+		"useSavedKey": "使用已保存的密钥"
 	},
 	"moveNames": { "default": "Default", "idle": "待机", "walk": "行走" },
 	"moveRemoval": {
@@ -2351,5 +2373,89 @@
 		"unreadable": "无法打开此图像。请选择其他文件。",
 		"noArtworkResized": "调整大小后没有可见画面。请选择其他图像。",
 		"noArtwork": "此图像没有可见画面。请选择其他文件。"
+	},
+	"fixFrames": {
+		"open": "修正帧",
+		"title": "修正帧",
+		"reviewTitle": "检查帧",
+		"target": "对象",
+		"body": "基础身体",
+		"move": "动作",
+		"gridLabel": "{name}在{move}中的帧",
+		"frameLabel": "{dir}，第 {n} 帧",
+		"editedByYou": "已手动编辑",
+		"mirrors": "镜像自{of}",
+		"hint": "下载 PNG，在 Aseprite、Pixelorama 或 Piskel 等任意像素编辑器中编辑，然后导入。保持其尺寸和 {w}×{h} 网格不变：每行是一个朝向，每列是一帧。颜色为原始颜色，因此重新上色仍然有效。",
+		"hintLayers": "下载 ZIP：其中每个图层对应一个 PNG。在 Aseprite、Pixelorama 或 Piskel 等任意像素编辑器中编辑，保持文件名、尺寸和 {w}×{h} 网格不变，然后导入 ZIP 或这些 PNG。颜色为原始颜色，因此重新上色仍然有效。",
+		"downloadPng": "下载 PNG",
+		"downloadZip": "下载 ZIP",
+		"import": "导入编辑后的 PNG",
+		"importFiles": "导入编辑后的文件",
+		"demoNote": "这是内置演示。编辑它的副本即可替换其中的帧。",
+		"restoring": "正在恢复…",
+		"beforeFrame": "之前，{dir} {n}",
+		"afterFrame": "之后，{dir} {n}",
+		"playing": "{move}，播放中",
+		"changedFrame": "{dir}，第 {n} 帧，已更改",
+		"editedFrame": "{dir}，第 {n} 帧，已手动编辑",
+		"reading": "正在读取…",
+		"release": "松开以导入",
+		"changedCount": {
+			"other": "已更改 {n} 帧"
+		},
+		"nothingChanged": "没有帧被更改。请编辑下载的 PNG，保存后再次导入。",
+		"replace": {
+			"other": "替换 {n} 帧"
+		},
+		"restore": {
+			"other": "恢复原始帧 · {n}"
+		},
+		"restoreTitle": {
+			"other": "要将 {n} 帧恢复为原始状态吗？"
+		},
+		"restoreAction": "恢复",
+		"restoreBody": "你替换过的{name}的每一帧都会恢复到编辑前的样子。",
+		"replaced": {
+			"other": "已替换{name}的 {count} 帧。"
+		},
+		"undo": "撤销",
+		"undone": {
+			"other": "已撤销 {count} 帧。"
+		},
+		"restored": {
+			"other": "已将 {count} 帧恢复为原始状态。"
+		},
+		"notes": {
+			"softAlpha": {
+				"other": "{n} 个半透明像素将变为完全不透明或完全透明。"
+			},
+			"newColors": {
+				"other": "{n} 种新颜色不会随重新上色而改变。"
+			},
+			"mirrored": "{dir}是{of}的镜像，因此其编辑未被使用。请编辑{of}，或在朝向中关闭镜像以单独编辑{dir}。",
+			"noBodyRow": "此动作没有{dir}的基础身体帧，因此该处的编辑未被使用。",
+			"missingLayer": "没有文件名以 -{layer}.png 结尾的文件，因此该图层保持不变。",
+			"ignored": {
+				"other": "已忽略其他 {n} 个文件。"
+			},
+			"fitted": "适配这些基础身体帧的装备仍保持穿戴：{names}。请在更改的帧上检查它们。",
+			"emptiedBody": "为空的基础身体帧制作新装备时，会跳过该帧。"
+		},
+		"errors": {
+			"size": "此 PNG 为 {got} px，但这些帧需要 {want} px。请保持原始尺寸和网格。",
+			"duplicateLayer": "有多个文件名以 -{layer}.png 结尾的文件。请为每个图层只选择一个文件。",
+			"noLayerMatch": "没有与这些帧匹配的 PNG。请使用下载的文件，并保留以 -fg 或 -bg 结尾的文件名。",
+			"noPng": "未找到 PNG。请选择你下载并编辑过的 PNG。",
+			"notEditable": "修正帧之前，请先复制此角色。",
+			"targetGone": "此装备或动作已不存在。",
+			"changed": "这些帧在你检查后已更改。请重新导入文件。",
+			"originalsMissing": "此角色副本中没有保存原始帧。",
+			"originalsUnusable": "此角色副本中的原始帧无法使用，因此未做任何更改。",
+			"nothingToRevert": "这些帧之后又被更改过，因此这里没有可撤销的内容。",
+			"badPng": "无法将此文件读取为 PNG。请重新保存为 PNG 后再导入。",
+			"resolveDrafts": "替换基础身体帧之前，请保留或丢弃此角色的装备草稿。",
+			"importFailed": "无法读取这些帧。请重试。",
+			"saveFailed": "无法保存这些帧。未做任何更改。请重试。"
+		}
 	}
 }

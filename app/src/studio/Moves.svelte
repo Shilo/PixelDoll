@@ -11,7 +11,9 @@
 		isDemo,
 		moving,
 		blockedByWork,
-		openPendingWork
+		openPendingWork,
+		openMoveReview,
+		openFrames
 	} from './state.svelte.ts';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
@@ -40,6 +42,20 @@
 <div class="colors">
 	{#if m && view.project && thumbnails}
 		<div class="move-list">
+			{#each Object.values(store.moveReviews) as candidate (candidate.spec.id)}
+				<button
+					class="move-row bu-action"
+					data-variant="tile"
+					onclick={() => openMoveReview(candidate.spec.id)}
+				>
+					<span class="move-text"
+						><b>{nice(candidate.spec.id)}</b><span class="muted small"
+							>{t('moveSheet.checkpoint.review')}</span
+						></span
+					>
+					<ChevronRight size={16} />
+				</button>
+			{/each}
 			{#each m.rig.animations as a (a.id)}
 				{@const image = thumbnails(a.id, ui.dir, ui.frame)}
 				{@const base = m.items.find((i) => i.id === m.rig.baseItem)}
@@ -63,6 +79,7 @@
 								})
 						: undefined}
 					ondownload={() => downloadMoveZip(a.id)}
+					onfixframes={() => openFrames('', a.id)}
 					ondelete={() => removeMove(a.id)}
 				>
 					<button

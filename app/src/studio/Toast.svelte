@@ -145,18 +145,27 @@
 				tone={ui.toastTone}
 				indicator={ui.toastPending ? pendingIndicator : undefined}
 				live
-				onactivate={typeof ui.toast !== 'function' ? activate : undefined}
+				onactivate={typeof ui.toast !== 'function' && !ui.toastActionLabel ? activate : undefined}
 				ondismiss={dismiss}
 			>
 				{#if typeof ui.toast === 'function'}{@render ui.toast()}{:else if Array.isArray(ui.toast)}{ui.toast
 						.map(displayNestedMessage)
 						.join(' ')}{:else}{displayNestedMessage(ui.toast)}{/if}
+				{#if ui.toastActionLabel}<button
+						class="bu-action btn sm toast-action"
+						data-variant="outline"
+						onclick={activate}>{displayNestedMessage(ui.toastActionLabel)}</button
+					>{/if}
 			</Notice>{/if}
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>
 {/if}
 
 <style>
+	.toast-action {
+		display: block;
+		margin-top: 6px;
+	}
 	@media (pointer: coarse) {
 		.toast-controls-only {
 			pointer-events: none;

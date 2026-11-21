@@ -36,6 +36,7 @@
 		openGenerationReview,
 		addShared,
 		itemSlotTargets,
+		openFrames,
 		type Gen
 	} from './state.svelte.ts';
 	import {
@@ -44,6 +45,7 @@
 		Download,
 		CircleCheck,
 		CopyPlus,
+		Grid2x2,
 		HandGrab,
 		Info,
 		ArrowRightLeft,
@@ -447,10 +449,17 @@
 									})
 								)}
 							><RefreshCw size={16} aria-hidden="true" />{openerLabel(
-								remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.tryAgain')
+								remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.createVariant')
 							)}<SurfaceChevron /></button
 						>
 					{/if}
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						role="menuitem"
+						onclick={() => act(() => openFrames(it.id))}
+						><Grid2x2 size={16} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
+					>
 					<button
 						class="row bu-action"
 						data-variant="quiet"

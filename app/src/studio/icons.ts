@@ -6,6 +6,7 @@ export { default as Redo2 } from '@lucide/svelte/icons/redo-2';
 export { default as Play } from '@lucide/svelte/icons/play';
 export { default as Pause } from '@lucide/svelte/icons/pause';
 export { default as Download } from '@lucide/svelte/icons/download';
+export { default as Upload } from '@lucide/svelte/icons/upload';
 export { default as MonitorDown } from '@lucide/svelte/icons/monitor-down';
 export { default as BookOpen } from '@lucide/svelte/icons/book-open';
 export { default as CircleHelp } from '@lucide/svelte/icons/circle-question-mark';

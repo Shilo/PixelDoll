@@ -2,7 +2,14 @@
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
 import type { Snippet } from 'svelte';
-import { errorMessage, errorText, message, LocalizedError, type Message } from '../lib/message.ts';
+import {
+	errorMessage,
+	errorText,
+	errorTranslation,
+	message,
+	LocalizedError,
+	type Message
+} from '../lib/message.ts';
 import { SvelteSet } from 'svelte/reactivity';
 import {
 	applyDress,
@@ -120,6 +127,7 @@ import {
 import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
 import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
+import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
 import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
@@ -207,6 +215,7 @@ export type SheetId =
 	| 'item'
 	| 'gen'
 	| 'move'
+	| 'moveReview'
 	| 'rename'
 	| 'directions'
 	| 'importZip'
@@ -215,7 +224,9 @@ export type SheetId =
 	| 'details'
 	| 'setup'
 	| 'workspaceExport'
-	| 'slots';
+	| 'workspaceReport'
+	| 'slots'
+	| 'frames';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -237,11 +248,15 @@ export const ui = $state({
 	group: 'head', // a Wardrobe category: its slot key
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
+	moveReview: '',
+	moveFormOpen: false,
 	get sheet(): SheetId {
 		return panel;
 	},
 	set sheet(next: SheetId) {
-		if (panel === 'create' && next !== 'activity' && afterTakeOver) cancelWaitingForTab();
+		if ((panel === 'create' || panel === 'moveReview') && next !== 'activity' && afterTakeOver)
+			cancelWaitingForTab();
+		if (panel === 'move' && next !== 'move') ui.moveFormOpen = false;
 		const id = createPresentation.id;
 		createPresentation.id = '';
 		if (id) {
@@ -276,6 +291,7 @@ export const ui = $state({
 	toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
 	toastSheet: null as SheetId,
 	toastAction: null as (() => void | Promise<void>) | null,
+	toastActionLabel: '' as string | Message,
 	waitingForTab: false // a spending action waits for the other tab that runs the jobs
 });
 let afterConnect: { run: () => void; minimumTier: number } | null = null;
@@ -375,6 +391,8 @@ type ToastOptions = {
 	tone?: typeof ui.toastTone;
 	duration?: number;
 	action?: () => void | Promise<void>;
+	/** Names the explicit button that runs `action`: without it, the whole notice stays the button. */
+	actionLabel?: string | Message;
 };
 function stopToastTimer() {
 	clearTimeout(toastT);
@@ -389,6 +407,7 @@ export function dismissToast() {
 	ui.toastTitle = '';
 	ui.toastPending = false;
 	ui.toastAction = null;
+	ui.toastActionLabel = '';
 }
 export async function activateToast() {
 	if (!ui.toast || toastActivating === toastRevision) return;
@@ -434,6 +453,7 @@ export function toast(
 	ui.toastTone = o.tone ?? 'info';
 	ui.toastSheet = ui.sheet;
 	ui.toastAction = o.action ?? null;
+	ui.toastActionLabel = o.actionLabel ?? '';
 	toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000);
 	armToast();
 	return true;
@@ -484,8 +504,8 @@ function allowsTier(minimumTier: number): boolean {
 	return true;
 }
 export function withKey(fn: () => void, minimumTier = 0) {
-	if (workspaceCopy) {
-		toast(message('workspaceCopy.generationOff'));
+	if (moveReviewPublishing) {
+		toast(message('directionsSheet.waitForGeneration'), { tone: 'warning' });
 		return;
 	}
 	if (follower(() => withKey(fn, minimumTier))) return;
@@ -524,6 +544,7 @@ export interface ProjectRef {
 }
 class Store {
 	project = $state.raw<Project | null>(null);
+	moveReviews = $state.raw<NonNullable<StoredProject['moveReviews']>>({});
 	exportRecord = $state.raw<StoredProject>();
 	projects = $state.raw<ProjectRef[]>([]);
 	results = $state.raw<Record<string, ItemResult | null>>({});
@@ -750,6 +771,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
+		store.moveReviews = r.record?.moveReviews ?? {};
 		store.exportRecord = r.record;
 		// Another acceptance can supersede its reload. Retire worn drafts only when their saved items are published.
 		let acceptedWear = false;
@@ -1075,6 +1097,7 @@ let characterJobsPending = $state(false),
 function workHolds(id: string) {
 	return (
 		characterJobsPending ||
+		moveReviewPublishing ||
 		gens.some((g) => g.phase === 'running') ||
 		settling.size > 0 ||
 		creates.some(
@@ -1092,7 +1115,7 @@ function workHolds(id: string) {
 }
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(
-	action: 'delete' | 'delete move' | 'change directions for',
+	action: 'delete' | 'delete move' | 'change directions for' | 'fix frames of',
 	id: string
 ): LocalizedError | '' {
 	if (doc.loading || opening)
@@ -1118,10 +1141,15 @@ function characterEditBlocked(
 						'Finish or dismiss pending generation work before deleting a move.',
 						'state.finishBeforeMoveRemoval'
 					)
-				: new LocalizedError(
-						'Finish or dismiss pending generation work before changing directions.',
-						'state.finishBeforeDirectionRemoval'
-					);
+				: action === 'fix frames of'
+					? new LocalizedError(
+							'Wait for the current generation work to finish before fixing frames.',
+							'state.finishBeforeFixFrames'
+						)
+					: new LocalizedError(
+							'Finish or dismiss pending generation work before changing directions.',
+							'state.finishBeforeDirectionRemoval'
+						);
 	return '';
 }
 
@@ -1154,18 +1182,24 @@ export function directionEditsBlocked(id: string): LocalizedError | '' {
 	);
 }
 function generationSettled() {
+	return !afterConnect && activeGenerationSettled();
+}
+function activeGenerationSettled() {
 	return (
 		!gens.some((g) => g.phase === 'running') &&
 		!settling.size &&
 		!createRestoring &&
 		!creates.some((run) => run.running) &&
 		!moveRunning &&
+		!moveReviewPublishing &&
 		!setupRunning &&
 		!takeOverRunning &&
-		!afterConnect &&
 		!itemStarting &&
 		!runningGens.size
 	);
+}
+export function generationPending() {
+	return characterJobsPending || !activeGenerationSettled();
 }
 const heldCreate = () => creates.some((run) => !run.projectId);
 const heldMove = () => moving.spec && !moving.done;
@@ -1582,17 +1616,8 @@ export function resetLayer(itemId: string, ladder: ZOverride[]) {
 }
 
 let itemPaletteRefresh = 0;
-/** Free, explicit correction of one saved item view; keep the open outfit and inspector selection. */
-export async function matchItemPalette(
-	projectId: string,
-	itemId: string,
-	anim: string,
-	dir: DirectionName,
-	reviewed: ItemPaletteRepairPlan
-) {
-	const request = openRequest;
-	await flushSave();
-	await (await itemRun()).matchItemColors(projectId, itemId, anim, dir, reviewed);
+/** Show what a free local edit just saved, keeping the open outfit and inspector selection. */
+async function refreshSaved(projectId: string, request: number) {
 	if (doc.id !== projectId || request !== openRequest) return;
 	const refresh = ++itemPaletteRefresh;
 	for (;;) {
@@ -1605,6 +1630,77 @@ export async function matchItemPalette(
 		slotBase = { id: projectId, slots: structuredClone(fresh.project.manifest.slots) };
 		doc.rev++;
 		return;
+	}
+}
+/** Free, explicit correction of one saved item view; keep the open outfit and inspector selection. */
+export async function matchItemPalette(
+	projectId: string,
+	itemId: string,
+	anim: string,
+	dir: DirectionName,
+	reviewed: ItemPaletteRepairPlan
+) {
+	const request = openRequest;
+	await flushSave();
+	await (await itemRun()).matchItemColors(projectId, itemId, anim, dir, reviewed);
+	await refreshSaved(projectId, request);
+}
+
+// ---------- Fix frames ----------
+export const frames = $state({ item: '', anim: '' });
+const framesModule = () => lazy(() => import('../lib/frames/save.ts'));
+/** Open Fix frames for an item (the body when empty) and a move (the one playing when empty). */
+export function openFrames(itemId = '', anim = '') {
+	const m = store.project?.manifest;
+	if (!m) return;
+	frames.item = itemId || m.rig.baseItem;
+	frames.anim =
+		anim || (m.rig.animations.some((a) => a.id === ui.anim) ? ui.anim : m.rig.animations[0].id);
+	ui.sheet = 'frames';
+}
+export function framesBlocked(): LocalizedError | '' {
+	if (!doc.id.startsWith('rig-')) return '';
+	return characterEditBlocked('fix frames of', doc.id);
+}
+export async function prepareFrames(
+	projectId: string,
+	itemId: string,
+	anim: string,
+	files: FramesFile[]
+) {
+	await flushSave();
+	return (await framesModule()).prepareFrames(projectId, itemId, anim, files);
+}
+/** Save a reviewed import; the toast's Undo reverts exactly this import. `name` is how the sheet calls the target. */
+export async function replaceFrames(prepared: PreparedFrames, name: string) {
+	const request = openRequest,
+		{ projectId, plan } = prepared;
+	const id = await (await framesModule()).saveFrames(prepared);
+	await refreshSaved(projectId, request);
+	toast(message('fixFrames.replaced', { count: plan.changed.length, name }), {
+		tone: 'success',
+		duration: 10000,
+		action: () => revertFrames(projectId, plan.itemId, { undo: id }),
+		actionLabel: message('fixFrames.undo')
+	});
+}
+/** Undo one import of an item's frames, or restore every edited frame of it. */
+export async function revertFrames(
+	projectId: string,
+	itemId: string,
+	how: { undo: string } | 'restore'
+) {
+	const request = openRequest;
+	try {
+		await flushSave();
+		const count = await (await framesModule()).revertFrames(projectId, itemId, how);
+		await refreshSaved(projectId, request);
+		toast(message(how === 'restore' ? 'fixFrames.restored' : 'fixFrames.undone', { count }), {
+			tone: 'success'
+		});
+	} catch (error) {
+		console.error('fix frames', error);
+		toast(errorTranslation(error) ?? message('fixFrames.errors.saveFailed'), { tone: 'danger' });
 	}
 }
 
@@ -2181,7 +2277,7 @@ const saveGens = () =>
 // Only the queue leader runs drafts, creates and moves (R6 P1-1: two tabs re-rolled the same draft and overwrote each
 // other's studio-drafts). A follower tab shows the leader's drafts, re-read when the ledger changes, and takes over when
 // the leader's tab closes.
-const runningGens = new Set<string>();
+const runningGens = new SvelteSet<string>();
 const generationControllers = new Map<string, AbortController>();
 const generationRuns = new Map<string, Promise<void>>();
 const cancellationRequested = new Set<string>();
@@ -2191,9 +2287,9 @@ let loading: Promise<void> | null = null,
 	takingOver = false,
 	takeOverRunning = false,
 	resumedHere = false,
-	itemStarting = 0,
 	mirrored = '',
 	mirrorAt = 0;
+let itemStarting = $state(0);
 let studioStartup = $state<'loading' | 'ready' | 'failed'>('loading');
 // A failed read rejects: an empty list would let the next save overwrite the stored drafts and cleanUp prune their records.
 const readGens = async () =>
@@ -3255,13 +3351,15 @@ export async function resumeCreate() {
 }
 export async function discardCreate(id: string) {
 	const run = creates.find((attempt) => attempt.id === id);
-	if (!canDriveCreate() || !run || !run.error || run.running) return;
+	if (!canDriveCreate() || !run || !run.error || run.running) return false;
 	run.running = true;
 	try {
 		await db.del('projects', createDraftKey(id));
 		removeCreate(run);
+		return true;
 	} catch (error) {
 		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });
+		return false;
 	} finally {
 		run.running = false;
 	}
@@ -3285,6 +3383,7 @@ export const moving = $state({
 });
 const MOVE_KEY = 'studio-move';
 let moveRunning = $state(false),
+	moveReviewPublishing = $state(false),
 	moveRevision = 0;
 /** The stored move record without its queue (null: the current move is finished or dismissed). */
 let moveRecord: object | null = null,
@@ -3325,6 +3424,37 @@ export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	moving.queued = rest;
 	await startMove(next.projectId, next.spec);
 }
+
+export async function refreshMoveReviews(projectId: string) {
+	const record = await db.get<StoredProject>('projects', projectId);
+	if (viewing(projectId)) store.moveReviews = record?.moveReviews ?? {};
+}
+
+export function openMoveReview(id: string) {
+	ui.moveReview = id;
+	ui.sheet = 'moveReview';
+}
+
+export function moveReviewBlocked(projectId: string) {
+	if (characterJobsInOtherTab) return 'state.manageMovesInOtherTab';
+	if (workHolds(projectId)) return 'directionsSheet.waitForGeneration';
+	return '';
+}
+
+export async function saveReviewedMove(
+	projectId: string,
+	candidate: NonNullable<StoredProject['moveReviews']>[string],
+	accept: boolean
+) {
+	const blocked = moveReviewBlocked(projectId);
+	if (blocked) throw new LocalizedError('Move review is blocked by other work.', blocked);
+	moveReviewPublishing = true;
+	try {
+		return await (await createFlow()).resolveMoveCandidate(projectId, candidate, accept);
+	} finally {
+		moveReviewPublishing = false;
+	}
+}
 /** A character's moves running, publishing or queued; with `itemId`, only those that pose that item. */
 export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 	[
@@ -3347,7 +3477,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		toast(message('state.useSavedFramesInTheTabThat'), { tone: 'warning' });
 		return;
 	}
-	if (moveRunning) {
+	if (moveRunning || moveReviewPublishing) {
 		toast(message('state.anotherMoveIsStillBeingAddedSo'), {
 			tone: 'warning',
 			action: () => openFlow('move', moving.projectId)
@@ -3372,10 +3502,9 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		warnings: []
 	});
 	try {
-		if (spec.itemReview) {
+		if (spec.itemReview || spec.reviewedMoveItems) {
 			const { rec } = await loadProject(projectId);
-			const reviewed = (await createFlow()).reviewItemMove(rec.manifest, spec).itemReview!;
-			if (reviewed.artwork !== spec.itemReview.artwork || reviewed.gens !== spec.itemReview.gens) {
+			if (!(await createFlow()).itemMoveReviewMatches(rec.manifest, spec)) {
 				throw new LocalizedError(
 					'This character, item or price changed. Reopen the item and review its current estimate before generating. No paid request was made.',
 					'create.errors.characterItemPriceChanged'
@@ -3459,7 +3588,20 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		moving.done = true;
 		await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
 		if (!current()) return;
-		if (spec.itemsOnly) {
+		if (result.moveReview) {
+			const id = result.moveReview;
+			await refreshMoveReviews(projectId);
+			if (!current()) return;
+			moving.spec = null;
+			if (viewing(projectId) && ui.sheet === 'move' && !ui.moveFormOpen) openMoveReview(id);
+			else
+				toast(message('moveSheet.checkpoint.ready', { move: moveName }), {
+					action: async () => {
+						if (!viewing(projectId)) await openProject(projectId);
+						if (viewing(projectId) && Object.hasOwn(store.moveReviews, id)) openMoveReview(id);
+					}
+				});
+		} else if (spec.itemsOnly) {
 			// items posed onto a move the body already had: the move and the undo history stay as they are
 			if (viewing(projectId)) {
 				await openProject(projectId, { quiet: true });
@@ -3511,7 +3653,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (current()) moving.error = error;
 			// queued moves now run unattended: a failure that holds them says so wherever the user is
 			if (current() && ui.sheet !== 'move')
-				toast(message('state.moveNameFailedOpenMovesToTryAgain', { moveName }), {
+				toast(message('state.moveFailedOpen', { moveName }), {
 					tone: 'danger',
 					duration: 8000,
 					action: () => openFlow('move', projectId)
@@ -3622,6 +3764,7 @@ export async function keepMoveBody(projectId: string, spec: MoveSpec, reviewed: 
 	await startMove(projectId, {
 		...$state.snapshot(spec),
 		items: [],
+		reviewBeforePublish: undefined,
 		reuseItemFrames: undefined,
 		itemReview: undefined,
 		measurementRecovery: {
@@ -3816,7 +3959,7 @@ export const settingUp = $state({
 	warnings: [] as string[]
 });
 const SETUP_KEY = 'studio-setup';
-let setupRunning = false,
+let setupRunning = $state(false),
 	setupResumed = false,
 	setupRecovering = false,
 	setupRevision = 0;
