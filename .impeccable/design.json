@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-09T10:47:28.754Z",
+  "generatedAt": "2026-11-21T03:53:56.000Z",
   "title": "Design System: PixelDoll",
   "extensions": {
     "colorMeta": {
@@ -348,15 +348,15 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Characters title and current character name; New character uses clamp(28px, 2.3vw, 40px) and 28px on phones."
+        "purpose": "Character name in the top bar's name menu (20px, 18px on phones) and the Characters title in the bar (19px, 17px on phones); New character uses clamp(28px, 2.3vw, 40px) and 28px on phones."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Selected character name below the Characters stage: 30px default, 38px above 1100px wide and 541px tall, 28px in the phone layout, 24px in short landscape."
+        "purpose": "Selected character name below the Characters stage: 30px, 24px on phones, line height 1.2."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Equipment panel headings (19px). Standard dialog headings are 18px; Your characters is 24px."
+        "purpose": "Sized per component: 14px weight 600 sticky section headers in Wardrobe and Colors; 18px standard dialog headings. Panels have no title rows."
       },
       "body": {
         "displayName": "Body",
@@ -368,11 +368,11 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Header actions, small descriptions, counts and eyebrows."
+        "purpose": "Header actions, small descriptions and counts."
       },
       "caption": {
         "displayName": "Caption",
-        "purpose": "Help hints, field sub-labels, costs and keyboard hints."
+        "purpose": "11 to 12px: the facts line under the name (hidden under 900px wide or 540px tall), 11px slot rail labels, help hints, field sub-labels, costs and keyboard hints."
       },
       "mono": {
         "displayName": "Mono",
@@ -408,27 +408,39 @@
     "breakpoints": [
       {
         "name": "tiny",
-        "value": "360px"
+        "value": "360px (Undo moves into More)"
       },
       {
-        "name": "dialog-sheet",
-        "value": "600px"
+        "name": "compact-phone",
+        "value": "400px"
       },
       {
         "name": "phone",
-        "value": "max-width 760px and min-height 541px"
+        "value": "max-width 600px (16px margins; Redo and Share move into More)"
       },
       {
-        "name": "intermediate-desktop",
-        "value": "max-width 1100px (24px margin, 300px rail)"
+        "name": "bottom-sheet",
+        "value": "max-width 760px, or portrait up to 1024px"
       },
       {
-        "name": "header-wide",
-        "value": "1101px (and min-height 541px)"
+        "name": "rail-320",
+        "value": "900px (320px rail; facts line shown)"
       },
       {
-        "name": "tabs-top-center",
-        "value": "1280px"
+        "name": "tab-labels",
+        "value": "1000px (view tabs show text)"
+      },
+      {
+        "name": "desktop",
+        "value": "1100px (24px margins, clamp(340px, 24vw, 420px) rail, header action text)"
+      },
+      {
+        "name": "wide",
+        "value": "1920px (32px margins)"
+      },
+      {
+        "name": "short-landscape",
+        "value": "max-height 540px (side rail kept)"
       },
       {
         "name": "creator-three-columns",
@@ -439,22 +451,21 @@
         "value": "1000px"
       },
       {
-        "name": "short-landscape",
-        "value": "max-height 540px and min-width 600px"
-      },
-      {
         "name": "short-dialog",
-        "value": "max-height: 500px"
+        "value": "max-height 500px"
       }
     ],
     "layout": {
-      "rail": "clamp(300px, 21.56vw, 414px)",
-      "edge": "clamp(28px, 2.92vw, 56px) on wide desktop; 24px with a fixed 300px rail up to 1100px wide; 20px in the phone layout",
-      "header": "from 761px wide and 541px tall: 44px row 20px from the top; above 1100px wide and 541px tall: 50px row 28px from the top",
-      "viewTabs": "top center from 1280px wide; in the character details from 761px to 1279px wide; both only when at least 541px tall",
-      "phone": "max-width 760px and min-height 541px",
-      "shortLandscape": "max-height 540px and min-width 600px",
-      "equipmentGrid": "desktop two columns, 16px gaps, full-width None; phones three columns, 8px gaps, None as a cell",
+      "geometrySource": "app/src/studio/experience/geometry.ts computes margins, header, rail, sheet, stage, feet and world placement; CSS reads them as custom properties on .experience",
+      "rail": "clamp(340px, 24vw, 420px) from 1100px wide, 320px from 900px, 300px below; starts 12px under the header (4px in short landscape)",
+      "edge": "16px on phones (600px or less), 20px under 1100px, 24px on desktop, 32px from 1920px",
+      "header": "8px from the top on phones and short landscape, 12px otherwise; 44px row (48px elsewhere)",
+      "viewTabs": "underline tabs centered in the Customize top bar, icons only under 1000px; float under the bar as an icon row with a bottom sheet",
+      "bottomSheet": "phones (760px or less) and portrait tablets (1024px or less): clamp(45% of the height, 240px, height - 250px) with a decorative handle; never 1-199px",
+      "shortLandscape": "max-height 540px keeps the side rail",
+      "characterSize": "largest whole-device-pixel scale filling 75% of the free stage height on Customize (about 60% on Characters), at most 62% of the stage width; feet 14px above the playback bar",
+      "panel": "full-width underline tabs Wardrobe, Colors, Outfits and Moves; Wardrobe and Colors are continuous lists with sticky section headers",
+      "equipmentGrid": "at most four columns of tiles at least 88px wide (84px on phones), up to 112px tall, 8px gaps; Empty is always the first tile",
       "creator": "four columns, three at 1250px, two at 1000px, stacked on phones"
     }
   },
@@ -463,8 +474,8 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Scene primary action (New item): bronze fill, 46px desktop, 44px and 14px text on phones. Hover keeps the fill and adds an inset on-accent ring; sheet actions share this hover.",
-      "html": "<button class=\"ds-btn-primary\">+ New head item</button>",
+      "description": "Bronze-filled primary action (Create character, Download): weight 600, 46px desktop, 44px and 14px text on phones. Hover keeps the fill and adds an inset on-accent ring.",
+      "html": "<button class=\"ds-btn-primary\">Create character</button>",
       "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--bu-accent, #c9a66b); color: var(--bu-on-accent, #111317); font: 600 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-btn-primary:hover { box-shadow: inset 0 0 0 2px var(--bu-on-accent, #111317); } .ds-btn-primary:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
@@ -479,7 +490,7 @@
       "name": "Outline Button",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "Desktop header actions such as Share, Export, Import and New character (icon-only on phones).",
+      "description": "Header actions such as New character, Share and Export (text from 1100px wide, icons below).",
       "html": "<button class=\"ds-btn-outline\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 15V3\"/><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5\"/></svg>Export</button>",
       "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--bu-line, #3d3f43); border-radius: 8px; background: var(--bu-outline, rgba(32,35,41,.4)); color: var(--bu-text, #f2eee6); font: 400 14px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; transition: background-color var(--bu-duration, 140ms); } .ds-btn-outline:hover { background: var(--bu-hover, #2d3035); border-color: var(--bu-border, #9a9892); } .ds-btn-outline:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
@@ -487,7 +498,7 @@
       "name": "Quiet Button",
       "kind": "button",
       "refersTo": "button-quiet",
-      "description": "Borderless text or icon actions on the scene, such as the Characters back link.",
+      "description": "Borderless text or icon actions on the scene: back, Undo, Redo, More, Random and Reset.",
       "html": "<button class=\"ds-btn-quiet\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m15 18-6-6 6-6\"/></svg>Characters</button>",
       "css": ".ds-btn-quiet { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 8px; background: none; color: var(--bu-text, #f2eee6); font: 400 14px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-btn-quiet:hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-btn-quiet:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
@@ -495,17 +506,17 @@
       "name": "View Tabs",
       "kind": "nav",
       "refersTo": "tab-selected",
-      "description": "View and panel-mode buttons with aria-pressed and a 1px underline. (Appearance/Prompt is a tablist with aria-selected and a 2px underline.)",
+      "description": "View switch (Preview/Top-down/Side-scroller): aria-pressed buttons with a 1px bronze underline, centered in the top bar, icons only under 1000px. The panel tabs (Wardrobe/Colors/Outfits/Moves) share the look as a full-width tablist with aria-selected.",
       "html": "<nav class=\"ds-tabs\" aria-label=\"Character view\"><button aria-pressed=\"true\">Preview</button><button aria-pressed=\"false\">Top-down</button><button aria-pressed=\"false\">Side-scroller</button></nav>",
-      "css": ".ds-tabs { display: flex; gap: 28px; font: 400 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-tabs button { min-height: 44px; padding: 8px 0; border: 0; border-radius: 0; border-bottom: 1px solid transparent; background: none; color: var(--bu-text, #f2eee6); font: inherit; cursor: pointer; } .ds-tabs button:hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-tabs button[aria-pressed=true] { color: var(--bu-accent, #c9a66b); border-bottom-color: var(--bu-accent, #c9a66b); font-weight: 600; } .ds-tabs button:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
+      "css": ".ds-tabs { display: flex; gap: 28px; font: 400 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-tabs button { min-height: 44px; padding: 8px 0; border: 0; border-radius: 0; border-bottom: 1px solid transparent; background: none; color: var(--bu-text, #f2eee6); font: inherit; cursor: pointer; } .ds-tabs button:hover { color: var(--bu-accent, #c9a66b); } .ds-tabs button[aria-pressed=true] { color: var(--bu-accent, #c9a66b); border-bottom-color: var(--bu-accent, #c9a66b); font-weight: 600; } .ds-tabs button:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "Item Tile",
       "kind": "card",
       "refersTo": "item-tile-selected",
-      "description": "Desktop Wardrobe card (two columns); selected shows a bronze border, name and check. Phones use three compact columns.",
-      "html": "<div class=\"ds-tiles\"><button class=\"ds-tile\" aria-pressed=\"true\"><span class=\"ds-tile-art\"></span><span>Steel helmet</span></button><button class=\"ds-tile\" aria-pressed=\"false\"><span class=\"ds-tile-art\"></span><span>Wizard hat</span></button></div>",
-      "css": ".ds-tiles { display: grid; grid-template-columns: repeat(2, 148px); gap: 16px; } .ds-tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 148px; padding: 12px 6px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: var(--bu-tile, rgba(32,35,41,.65)); color: var(--bu-text, #f2eee6); font: 400 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-tile-art { width: 64px; height: 64px; background: repeating-conic-gradient(var(--bu-muted, #b8b5ad) 0 25%, transparent 0 50%) 0 0 / 16px 16px; opacity: .35; } .ds-tile:hover { border-color: var(--bu-border, #9a9892); background: var(--bu-hover, #2d3035); } .ds-tile[aria-pressed=true] { color: var(--bu-accent, #c9a66b); border-color: var(--bu-accent, #c9a66b); background: var(--bu-selected, #353330); } .ds-tile[aria-pressed=true]:hover { background: var(--bu-hover, #2d3035); border-color: var(--bu-border, #9a9892); } .ds-tile[aria-pressed=true]::after { content: '\\2713'; position: absolute; top: 8px; right: 10px; color: var(--bu-accent, #c9a66b); } .ds-tile:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
+      "description": "Wardrobe tiles in up to four columns (at least 88px wide, up to 112px tall, 8px gaps). Empty is always first (dashed); the worn tile shows a bronze border, name and top-right check; saved items carry a top-left options button.",
+      "html": "<div class=\"ds-tiles\"><button class=\"ds-tile\" data-variant=\"empty\" aria-pressed=\"false\"><span class=\"ds-tile-art\"></span><span class=\"ds-tile-label\">Empty</span></button><div class=\"ds-tile-cell\"><button class=\"ds-tile\" aria-pressed=\"true\"><span class=\"ds-tile-art\"><i></i></span><span class=\"ds-tile-check\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"/></svg></span><span class=\"ds-tile-label\">Steel helmet</span></button><button class=\"ds-tile-more\" aria-label=\"Steel helmet options\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"5\" r=\"1\"/><circle cx=\"12\" cy=\"12\" r=\"1\"/><circle cx=\"12\" cy=\"19\" r=\"1\"/></svg></button></div><div class=\"ds-tile-cell\"><button class=\"ds-tile\" aria-pressed=\"false\"><span class=\"ds-tile-art\"><i></i></span><span class=\"ds-tile-label\">Wizard hat</span></button><button class=\"ds-tile-more\" aria-label=\"Wizard hat options\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"5\" r=\"1\"/><circle cx=\"12\" cy=\"12\" r=\"1\"/><circle cx=\"12\" cy=\"19\" r=\"1\"/></svg></button></div></div>",
+      "css": ".ds-tiles { display: grid; grid-template-columns: repeat(3, 96px); gap: 8px; } .ds-tile-cell { position: relative; display: grid; } .ds-tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; width: 100%; height: 112px; padding: 6px 6px 9px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: var(--bu-tile, rgba(32,35,41,.65)); color: var(--bu-text, #f2eee6); font: 400 14px/1.25 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-tile-art { flex: 1; min-height: 0; width: 100%; display: grid; place-items: center; } .ds-tile-art > i { width: 56px; height: 56px; background: repeating-conic-gradient(var(--bu-muted, #b8b5ad) 0 25%, transparent 0 50%) 0 0 / 14px 14px; opacity: .35; } .ds-tile-label { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-tile-check { position: absolute; top: 5px; right: 6px; line-height: 0; color: var(--bu-accent, #c9a66b); } .ds-tile:hover { border-color: var(--bu-border, #9a9892); } .ds-tile[aria-pressed=true] { color: var(--bu-accent, #c9a66b); border-color: var(--bu-accent, #c9a66b); background: var(--bu-selected, #353330); } .ds-tile[aria-pressed=true]:hover { border-color: var(--bu-accent, #c9a66b); } .ds-tile[data-variant=empty] { color: var(--bu-muted, #b8b5ad); border-style: dashed; } .ds-tile-more { position: absolute; top: 3px; left: 3px; display: grid; place-items: center; width: 28px; height: 25px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--bu-muted, #b8b5ad); cursor: pointer; transition: color var(--bu-duration, 140ms), background-color var(--bu-duration, 140ms); } .ds-tile-more:hover { color: var(--bu-text, #f2eee6); background: var(--bu-hover, #2d3035); } .ds-tile:focus-visible, .ds-tile-more:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "Text Input",
@@ -527,22 +538,22 @@
       "name": "Notice",
       "kind": "custom",
       "refersTo": "toast",
-      "description": "Toasts and notices with a tone stripe, icon and dismiss button.",
+      "description": "Toasts and notices with a tone stripe, icon and dismiss button; toasts are top-anchored under the header, at most 420px wide.",
       "html": "<div class=\"ds-notice\" role=\"status\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg><div><strong>Preview</strong><br>Features and saved work may change. Export your work to keep a backup.</div><button class=\"ds-notice-x\" aria-label=\"Dismiss\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg></button></div>",
-      "css": ".ds-notice { display: flex; gap: 12px; align-items: flex-start; max-width: 380px; padding: 12px 16px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-inline-start: 3px solid var(--bu-warning, #e7bc75); border-radius: 12px; background: color-mix(in srgb, var(--bu-warning, #e7bc75) 8%, var(--bu-surface, #202329)); color: var(--bu-text, #f2eee6); font: 400 14px/1.5 var(--bu-font, 'Segoe UI', system-ui, sans-serif); box-shadow: var(--bu-shadow, 0 8px 28px rgb(0 0 0 / .18)); } .ds-notice > svg { flex: none; color: var(--bu-warning, #e7bc75); } .ds-notice-x { flex: none; display: grid; place-items: center; min-width: 44px; min-height: 44px; margin: -10px -12px -10px 0; border: 0; border-radius: 8px; background: none; color: inherit; cursor: pointer; } .ds-notice-x:hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-notice-x:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
+      "css": ".ds-notice { display: flex; gap: 12px; align-items: flex-start; max-width: 420px; padding: 12px 16px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-inline-start: 3px solid var(--bu-warning, #e7bc75); border-radius: 12px; background: color-mix(in srgb, var(--bu-warning, #e7bc75) 8%, var(--bu-surface, #202329)); color: var(--bu-text, #f2eee6); font: 400 14px/1.5 var(--bu-font, 'Segoe UI', system-ui, sans-serif); box-shadow: var(--bu-shadow, 0 8px 28px rgb(0 0 0 / .18)); } .ds-notice > svg { flex: none; color: var(--bu-warning, #e7bc75); } .ds-notice-x { flex: none; display: grid; place-items: center; min-width: 44px; min-height: 44px; margin: -10px -12px -10px 0; border: 0; border-radius: 8px; background: none; color: inherit; cursor: pointer; } .ds-notice-x:hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-notice-x:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "Playback Bar",
       "kind": "custom",
       "refersTo": "button-quiet",
-      "description": "Floating bar under the character in Preview: pause, native move select, facing and Inspect.",
+      "description": "Floating bar under the character's feet in Preview: play/pause, native move select, facing and Inspect, every control a 44px target. On a stage 430px wide or less Inspect moves into More; under 300px one facing button steps through directions.",
       "html": "<div class=\"ds-playback\"><button aria-label=\"Pause\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"14\" y=\"3\" width=\"5\" height=\"18\" rx=\"1\"/><rect x=\"5\" y=\"3\" width=\"5\" height=\"18\" rx=\"1\"/></svg></button><select aria-label=\"Move\"><option>Walk</option><option>Idle</option></select><button aria-pressed=\"true\" aria-label=\"Face south\">S</button><button aria-pressed=\"false\" aria-label=\"Face east\">E</button><button aria-pressed=\"false\" aria-label=\"Face north\">N</button><button aria-pressed=\"false\" aria-label=\"Face west\">W</button><button><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/><path d=\"M3 12h18\"/><path d=\"M12 3v18\"/></svg>Inspect</button></div>",
-      "css": ".ds-playback { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; min-height: 54px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: var(--bu-floating, rgba(32,35,41,.92)); -webkit-backdrop-filter: blur(var(--bu-blur, 12px)); backdrop-filter: blur(var(--bu-blur, 12px)); box-shadow: var(--bu-shadow, 0 8px 28px rgb(0 0 0 / .18)); color: var(--bu-text, #f2eee6); font: 400 18px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-playback button { display: flex; align-items: center; gap: 6px; min-width: 40px; height: 44px; padding: 6px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; } .ds-playback select { height: 44px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: 400 20px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-playback :is(button, select):hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-playback button[aria-pressed=true] { color: var(--bu-accent, #c9a66b); background: var(--bu-direction-selected, rgba(201,166,107,.14)); } .ds-playback :is(button, select):focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
+      "css": ".ds-playback { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; min-height: 54px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: var(--bu-floating, rgba(32,35,41,.92)); -webkit-backdrop-filter: blur(var(--bu-blur, 12px)); backdrop-filter: blur(var(--bu-blur, 12px)); box-shadow: var(--bu-shadow, 0 8px 28px rgb(0 0 0 / .18)); color: var(--bu-text, #f2eee6); font: 400 18px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-playback button { display: flex; align-items: center; gap: 6px; min-width: 44px; height: 44px; padding: 6px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; } .ds-playback select { height: 44px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: 400 20px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-playback :is(button, select):hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-playback button[aria-pressed=true] { color: var(--bu-accent, #c9a66b); background: var(--bu-direction-selected, rgba(201,166,107,.14)); } .ds-playback :is(button, select):focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "In character views, the character is prominent and controls are grouped around it.",
-    "overview": "Characters and Customize share a full-window world background: a photographic floor that fades into mist (dark stone in dark mode, pale polished stone in light mode). Characters centers the selected character beside the library. Customize places the character's name and description at the upper left, equipment and colors in a column on the right, and the playback controls in a small floating bar under the character. New character instead uses a full-screen form over the same world background. On phones the pieces stack: header, name, view tabs, a shorter stage, and an expandable bottom panel for equipment.\n\nThe look is calm and modern: system sans-serif text, Lucide line icons, thin borders, and a single warm bronze accent. The only serif is Georgia for screen titles and character names. The character's pixels are never lit, tinted, filtered or resized with smoothing. Internally the two world themes are called Obsidian (dark) and Porcelain (light), together \"Obsidian / Porcelain Bronze\" ([approved direction](docs/design/2026-10-22-redesign/round-4-discussion/current-design.md)).\n\nDensity is low around the stage and moderate in the right column, where people do most of their work: picking items, recoloring and adding new items.",
+    "overview": "Characters and Customize share a world background: a photographic floor that fades into mist (dark stone in dark mode, pale polished stone in light mode). It is scaled uniformly, never stretched, with its horizon on the character's eye line and its vanishing line on the character, so the feet always stand on its floor. Characters centers the selected character beside the library. Customize has an immersive top bar (no solid bar) with the character's name menu, the view tabs and the actions; equipment and colors sit in a column on the right, and the playback controls in a small floating bar just under the character's feet. New character instead uses a full-screen form over the same world background. On phones and portrait tablets the panel becomes a bottom sheet and the view tabs float under the bar.\n\nThe look is calm and modern: system sans-serif text, Lucide line icons, thin borders, and a single warm bronze accent. The only serif is Georgia for screen titles and character names. The character's pixels are never lit, tinted, filtered or resized with smoothing. Internally the two world themes are called Obsidian (dark) and Porcelain (light), together \"Obsidian / Porcelain Bronze\" ([approved direction](docs/design/2026-10-22-redesign/round-4-discussion/current-design.md)).\n\nDensity is low around the stage and moderate in the right column, where people do most of their work: picking items, recoloring and adding new items.",
     "keyCharacteristics": [
       "Full-window world background with the character as the visual focus of character views.",
       "Dark by default, with a complete light theme (not an inverted filter).",
@@ -589,7 +600,8 @@
       "**Do** use bronze for selection, focus, links and primary actions.",
       "**Do** use Georgia only for screen titles and character names, and Lucide for functional icons at the size their component sets.",
       "**Do** keep primary touch targets about 44px and inputs at 16px or larger on phones.",
-      "**Do** check every visual change in dark and light at desktop and phone sizes (including 320×568 and 844×390)."
+      "**Do** check every visual change in dark and light at desktop and phone sizes (including 320×568 and 844×390).",
+      "**Do** keep scene geometry in `geometry.ts`; don't hard-code stage, feet, rail or sheet positions in CSS."
     ],
     "donts": [
       "**Don't** light, tint, filter, shadow or smoothly scale character or equipment pixels.",
