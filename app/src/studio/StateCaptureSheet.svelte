@@ -869,6 +869,12 @@
 		border: 1px solid var(--bu-line);
 		border-radius: var(--r-ctl);
 	}
+	/* The stored cell fills its review box: the box edge is the cell edge. */
+	.cell-frame {
+		display: grid;
+		inline-size: 100%;
+		block-size: 100%;
+	}
 	.review-pair figcaption {
 		overflow-wrap: anywhere;
 		text-align: center;
