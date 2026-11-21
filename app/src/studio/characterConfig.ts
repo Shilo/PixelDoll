@@ -130,7 +130,7 @@ export interface CharacterDraft {
 export type CharacterModel = 'v3' | 'standard' | 'pro' | 'pro-flash';
 export const characterReference = {
 	v3: { max: 256, hint: 'create.form.reference.frontFacing' },
-	standard: { max: 128, hint: 'create.form.reference.standardTextOnly' },
+	standard: { max: 128, hint: 'create.form.reference.frontFacing' },
 	pro: { max: 1024, hint: 'create.form.reference.concept' },
 	'pro-flash': { max: 256, hint: 'create.form.reference.style' }
 } as const satisfies Record<CharacterModel, { max: number; hint: string }>;
@@ -142,16 +142,11 @@ export function characterReferenceIssue(
 	body?: number
 ): LocalizedError | undefined {
 	if (!image) return undefined;
-	if (model === 'standard')
-		return new LocalizedError(
-			'Standard uses text only. Remove the reference image or choose another model.',
-			'create.form.reference.standardTextOnly'
-		);
 	const { max } = characterReference[model];
 	const sizeIssue = referenceSizeError(image, max);
 	if (sizeIssue) return new LocalizedError(sizeIssue, 'create.form.reference.tooLarge', { max });
 	const edge = Math.max(image.width, image.height);
-	if (model === 'pro-flash' && body && edge > body)
+	if ((model === 'standard' || model === 'pro-flash') && body && edge > body)
 		return new LocalizedError(
 			'Increase Body size to fit this reference, or choose smaller artwork.',
 			'create.form.reference.increaseBody'
@@ -181,12 +176,6 @@ export const MODELS: Record<CharacterModel, ModelLimits> = {
 		body: { min: 32, max: 256 },
 		styleHints: true
 	},
-	standard: {
-		label: 'Standard',
-		help: 'Draws eight views on a fixed template from text.',
-		body: { min: 32, max: 128 },
-		styleHints: true
-	},
 	pro: {
 		label: 'Pro',
 		help: 'Follows the prompt more closely, at several times the cost.',
@@ -198,12 +187,24 @@ export const MODELS: Record<CharacterModel, ModelLimits> = {
 		help: 'A chibi style with a big head and short legs, at about three times the cost.',
 		body: { min: 32, max: 256 },
 		styleHints: false
+	},
+	standard: {
+		label: 'Standard',
+		help: 'Draws eight views using a template or your front-facing sprite.',
+		body: { min: 32, max: 128 },
+		styleHints: true
 	}
 };
 export const MODEL_IDS = Object.keys(MODELS) as CharacterModel[];
 /** The limits of a model; absent or unknown means the default (createCharacter refuses unknown models separately). */
 export const modelOf = (model?: string): ModelLimits =>
 	MODELS[model && Object.hasOwn(MODELS, model) ? (model as CharacterModel) : 'v3'];
+/** The body size a price estimate may use: the form can hold an out-of-range number, but costs never grow past the
+ * model's accepted range. */
+export const costBody = (body: number, model?: string): number => {
+	const { min, max } = modelOf(model).body;
+	return Math.min(max, Math.max(min, Number.isFinite(body) ? body : min));
+};
 /** V3 style hints (soft guidance the model may not follow exactly), for models with styleHints. */
 export const OUTLINES = [
 	{ value: '', label: 'Default (black)' },

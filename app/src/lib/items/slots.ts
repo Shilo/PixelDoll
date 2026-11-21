@@ -1,8 +1,13 @@
 import type { DirectionName, Rig } from '../rig/rig.ts';
-import type { Manifest, Slot, SlotProfile } from '../store/manifest.ts';
+import type { Layer, Manifest, Slot, SlotProfile } from '../store/manifest.ts';
 
 export type SlotSource = readonly Slot[] | Pick<Manifest, 'slots'>;
 export type SlotRef = string | Slot;
+
+export function retargetLayerDepth(layer: Layer, from: Slot, to: Slot) {
+	const baseline = (slot: Slot) => (layer.role === 'bg' ? (slot.bgZ ?? slot.z) : slot.z);
+	return layer.z - baseline(from) + baseline(to);
+}
 
 export function retainSlotDirections(slots: Slot[], directions: Rig['directions']): Slot[] {
 	const allowed = new Set(directions.map(({ id }) => id));

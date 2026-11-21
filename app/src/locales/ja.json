@@ -262,6 +262,7 @@
 		"titleShowThisFrame": "このフレームを表示",
 		"checksFoundIssuesNoPaidRetryWas": "チェックで問題が見つかりました。有料の再試行は開始していません。もう一度生成をリクエストするか、このアイテムをそのまま承認できます。",
 		"acceptAsIs": "このまま承認",
+		"pendingWorkBusy": "モーションまたはセットアップが実行中か停止しています。これらの操作を使うには、完了するか破棄してください。",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "クレジットを消費せずに現在のアートワークを承認します。検出された問題は詳細に残ります。",
 		"youAcceptedThisArtworkWithItsRecorded": "記録された品質メモとともに、このアートワークを承認しました。",
 		"generateItemForMove": "モーション用のアイテムを生成",
@@ -543,6 +544,11 @@
 		"workspaceActions": "ワークスペースの操作"
 	},
 	"wardrobe": {
+		"moveItemTo": "スロットに移動",
+		"dragItem": "{name} をドラッグ中です。別のスロットにドロップしてください。",
+		"itemMoved": "{name} を「{label}」に移動しました。",
+		"itemMoveBusy": "このアイテムを移動する前に、関連する生成を完了または破棄してください。",
+		"itemMoveChanged": "アイテムまたはスロットが変更されました。もう一度お試しください。",
 		"notShownInMove": "この動作では非表示",
 		"notShownInMoveNote": "装備中ですが、この動作ではどの向きにもフレームがないため表示されません。",
 		"randomLowerItem": "ランダムな{lower}",
@@ -794,6 +800,11 @@
 		"moveNameAdded": "{moveName}を追加しました",
 		"moveNameHasItemIssuesToReviewNo": "{moveName}には、確認が必要なアイテムがあります。有料の再試行は開始していません。",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName}の生成に失敗しました。「モーション」を開き、再試行するか最初からやり直してください。",
+		"createFailedOpen": "{name}を作成できませんでした。開いて再試行するか、最初からやり直してください。",
+		"setupFailedOpen": "キャラクターのセットアップが停止しました。開いて再試行するか、最初からやり直してください。",
+		"stoppedWork": {
+			"other": "{count}件の生成が停止しました。開いて理由を確認し、再試行するか破棄してください。"
+		},
 		"thisOperationChangedReviewTheJointChecks": "この操作が変更されました。関節のチェックをもう一度確認してください。",
 		"thePendingJointChecksChangedReviewTheir": "保留中の関節のチェックが変更されました。費用をもう一度確認してください。",
 		"thisOperationChangedReviewTheBodyFrames": "この操作が変更されました。体のフレームをもう一度確認してください。",
@@ -1877,7 +1888,7 @@
 			"keepNeedsChecks": "このモーションを残すには、すべてのフレームでキャッシュされた関節チェックが完了している必要があります。",
 			"noFailedChecks": "キャッシュされたフレームに、再試行が必要な失敗した関節チェックはありません。",
 			"paletteDrift": "色のずれが大きく、パレットの微調整では直せません。既存のアートワークは残しています。",
-			"describedFrames": "説明から作るモーションは4、8、12フレームで生成できます。このモーションは{frames}フレームです。",
+			"moveAnimationFrames": "このモデルとキャンバスサイズでは{frames}フレームに対応していません。対応するフレーム数を選んでください。",
 			"describeMove": "生成する前に、このモーションを説明してください。",
 			"partialSaved": "{reason} 完了したビューは保存しました（{views}）。",
 			"partialSavedNewFrames": "{reason} 完了したビューは保存しました（{views}）。［新しいフレームを生成］では、不足しているビューだけをリクエストします。",
@@ -1887,7 +1898,7 @@
 			"moveDirectionsChanged": "キャラクターの向きが変わりました。再試行する前に、モーションの現在の見積もりを確認してください。生成はリクエストされていません。",
 			"reviewItemRedrawFirst": "生成前に、アイテムの描き直しと見積もりを確認してください。リクエストは送信されていません。",
 			"chooseRepairTarget": "修復する前に、既存のモーションからアイテムと向きを1つずつ選んでください。生成はリクエストされていません。",
-			"describedFramesBlocked": "説明から作るモーションは4、8、12フレームで生成できます。このモーションは{frames}フレームです。 生成リクエストは送信されていません。",
+			"moveAnimationFramesBlocked": "このモデルとキャンバスサイズでは{frames}フレームに対応していません。生成リクエストは送信されていません。",
 			"describeMoveBlocked": "生成する前に、このモーションを説明してください。 生成リクエストは送信されていません。",
 			"chooseExistingMoveRepairing": "装備を修復する前に、既存のモーションを選んでください。"
 		},
@@ -1965,7 +1976,7 @@
 				"v3": { "label": "標準（V3）", "help": "バランスの取れた頭身です。" },
 				"standard": {
 					"label": "スタンダード",
-					"help": "固定テンプレートを使い、テキストから8方向の画像を描きます。"
+					"help": "テンプレートまたは正面を向いたスプライトを使って、8方向の画像を描きます。"
 				},
 				"pro": {
 					"label": "Pro",
@@ -2045,7 +2056,7 @@
 			"sizeGuideReference": "サイズガイドと参考画像",
 			"reference": {
 				"frontFacing": "正面を向いたスプライトを使ってください。",
-				"standardTextOnly": "スタンダードではテキストのみを使用します。参照画像を削除するか、別のモデルを選んでください。",
+				"characterSprite": "キャラクタースプライト",
 				"concept": "スケッチやキャラクターのデザイン画を使ってください。",
 				"style": "作風の参考になる画像を使ってください。",
 				"tooLarge": "{max} × {max} px 以下の参考画像を選んでください。",
@@ -2157,6 +2168,24 @@
 		"describeMotion": "動きを説明",
 		"motionOnly": "体の動きだけを説明してください。武器や小道具はアイテムとして追加します。",
 		"orChoose": "またはモーションを選択",
+		"motionModel": "モーションのモデル",
+		"motionModelHelp": "Skeleton v3 は体と装備に同じポーズを使います。V3 と PixMiniMax は先に体を描き、その後 PixelDoll が装備用のポーズを検出します。",
+		"models": {
+			"skeletonV3": "標準（Skeleton V3）",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "フレーム",
+		"framesHelp": "選択肢はこのモデルとキャラクターのキャンバス（{canvas} px）に合わせて変わります。デフォルトでは PixelDoll のプリセットのフレーム数を使用します。",
+		"framesDefault": {
+			"other": "デフォルト（{count} フレーム）"
+		},
+		"framesValue": {
+			"other": "{count} フレーム"
+		},
+		"framesKept": {
+			"other": "維持: {count} フレーム"
+		},
 		"redrawDirections": "描き直す向き",
 		"redrawHidesEquipment": "この向きの画像を差し替えると、新しいフレームを作るまで装備が非表示になります。",
 		"redrawMirrors": "反転表示も変わります：{directions}。",

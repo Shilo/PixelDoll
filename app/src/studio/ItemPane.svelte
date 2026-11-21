@@ -65,6 +65,7 @@
 		shared,
 		copyFromSource,
 		restoreFromDesign,
+		openPendingWork,
 		openFrames
 	} from './state.svelte.ts';
 	import {
@@ -406,6 +407,17 @@
 						</li>{/each}
 				</ul>
 			</div>
+		{/if}
+		{#if !isDemo() && repairBusy && (repairSpec || colorPlan || it.qa?.status === 'warn' || it.qa?.status === 'fail')}
+			<p class="notice small" role="status">
+				{t('itemPane.pendingWorkBusy')}
+				<button
+					class="bu-action btn sm plain"
+					data-variant="quiet"
+					onclick={() => void openPendingWork({ flows: true })}
+					>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
+				>
+			</p>
 		{/if}
 		{#if it.unfitted}<p class="notice warn small">
 				<Puzzle size={14} />{unfitText(

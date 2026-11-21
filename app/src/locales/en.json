@@ -268,6 +268,7 @@
 		"titleShowThisFrame": "Show this frame",
 		"checksFoundIssuesNoPaidRetryWas": "Checks found issues. No paid retry was started. You can request another attempt or accept this item as it is.",
 		"acceptAsIs": "Accept as is",
+		"pendingWorkBusy": "A move or setup is running or stopped. Finish or dismiss it to use these actions.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Accepts the current artwork without spending credits. The detected issues remain in its details.",
 		"youAcceptedThisArtworkWithItsRecorded": "You accepted this artwork with its recorded quality notes.",
 		"generateItemForMove": "Generate item for move",
@@ -557,6 +558,11 @@
 		"workspaceActions": "Workspace actions"
 	},
 	"wardrobe": {
+		"moveItemTo": "Move to slot",
+		"dragItem": "Dragging {name}. Drop it on another slot.",
+		"itemMoved": "Moved {name} to {label}.",
+		"itemMoveBusy": "Finish or discard the related generation before moving this item.",
+		"itemMoveChanged": "The item or slot changed. Try again.",
 		"notShownInMove": "Not shown in this move",
 		"notShownInMoveNote": "Wearing it, but it is missing frames for this move in every view, so it is not shown.",
 		"randomLowerItem": "Random {lower} item",
@@ -815,6 +821,12 @@
 		"moveNameAdded": "{moveName} added",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} has item issues to review. No paid retry was started.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} failed. Open Moves to try again or start over.",
+		"createFailedOpen": "{name} could not be created. Open it to try again or start over.",
+		"setupFailedOpen": "Character setup stopped. Open it to try again or start over.",
+		"stoppedWork": {
+			"one": "{count} generation stopped. Open it to see why, then try again or discard it.",
+			"other": "{count} generations stopped. Open them to see why, then try again or discard them."
+		},
 		"thisOperationChangedReviewTheJointChecks": "This operation changed. Review the joint checks again.",
 		"thePendingJointChecksChangedReviewTheir": "The pending joint checks changed. Review their cost again.",
 		"thisOperationChangedReviewTheBodyFrames": "This operation changed. Review the body frames again.",
@@ -1943,7 +1955,7 @@
 			"keepNeedsChecks": "Keeping this move requires completed cached joint checks for every frame.",
 			"noFailedChecks": "Cached frames have no failed joint checks to retry.",
 			"paletteDrift": "Too much color drift for a small palette repair. Existing artwork was kept.",
-			"describedFrames": "Described moves can be generated with 4, 8 or 12 frames. This move has {frames}.",
+			"moveAnimationFrames": "This model and canvas don’t support {frames} frames. Choose a supported frame count.",
 			"describeMove": "Describe this move before generating it.",
 			"partialSaved": "{reason} The finished views were saved ({views}).",
 			"partialSavedNewFrames": "{reason} The finished views were saved ({views}); Generate new frames requests only the missing ones.",
@@ -1953,7 +1965,7 @@
 			"moveDirectionsChanged": "Character directions changed. Review the move’s current estimate before trying again. No generation was requested.",
 			"reviewItemRedrawFirst": "Review the item redraw and its estimate before generating. No request was made.",
 			"chooseRepairTarget": "Choose one item and one facing of an existing move before repairing. No generation was requested.",
-			"describedFramesBlocked": "Described moves can be generated with 4, 8 or 12 frames. This move has {frames}. No generation was requested.",
+			"moveAnimationFramesBlocked": "This model and canvas don’t support {frames} frames. No generation was requested.",
 			"describeMoveBlocked": "Describe this move before generating it. No generation was requested.",
 			"chooseExistingMoveRepairing": "Choose an existing move before repairing its equipment."
 		},
@@ -2031,7 +2043,7 @@
 				"v3": { "label": "Default (V3)", "help": "Balanced proportions." },
 				"standard": {
 					"label": "Standard",
-					"help": "Draws eight views on a fixed template from text."
+					"help": "Draws eight views using a template or your front-facing sprite."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2111,7 +2123,7 @@
 			"sizeGuideReference": "Size guide and reference",
 			"reference": {
 				"frontFacing": "Use a front-facing sprite.",
-				"standardTextOnly": "Standard uses text only. Remove the reference image or choose another model.",
+				"characterSprite": "Character sprite",
 				"concept": "Use a sketch or character design.",
 				"style": "Use artwork as a style guide.",
 				"tooLarge": "Choose a reference no larger than {max} × {max} px.",
@@ -2231,6 +2243,27 @@
 		"describeMotion": "Describe the motion",
 		"motionOnly": "Describe body motion only. Add weapons and props as items.",
 		"orChoose": "Or choose a move",
+		"motionModel": "Motion model",
+		"motionModelHelp": "Skeleton v3 uses shared poses for the body and equipment. V3 and PixMiniMax draw the body first, then PixelDoll finds poses for equipment.",
+		"models": {
+			"skeletonV3": "Default (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Frames",
+		"framesHelp": "Choices fit this model and the character's {canvas} px canvas. The default keeps PixelDoll's preset frame count.",
+		"framesDefault": {
+			"one": "Default ({count} frame)",
+			"other": "Default ({count} frames)"
+		},
+		"framesValue": {
+			"one": "{count} frame",
+			"other": "{count} frames"
+		},
+		"framesKept": {
+			"one": "Kept: {count} frame",
+			"other": "Kept: {count} frames"
+		},
 		"redrawDirections": "Directions to redraw",
 		"redrawHidesEquipment": "Replacing these views hides equipment until new frames are made.",
 		"redrawMirrors": "Mirrored views also change: {directions}.",

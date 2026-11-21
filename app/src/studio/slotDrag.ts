@@ -8,9 +8,11 @@ export function slotDrag(
 		end: (commit: boolean) => void;
 		armed?: (value: boolean) => void;
 		menu?: (element: HTMLElement) => void;
+		allowStart?: (target: EventTarget | null) => boolean;
 	}
 ): () => void {
-	let press: { kind: 'pointer' | 'touch'; id: number; x: number; y: number } | undefined;
+	let press:
+		{ kind: 'pointer' | 'touch'; id: number; x: number; y: number; canDrag: boolean } | undefined;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let armed = false;
 	let dragging = false;
@@ -31,7 +33,7 @@ export function slotDrag(
 	};
 	const cancel = () => finish(false);
 	const advance = (x: number, y: number, threshold: number) => {
-		if (!press) return;
+		if (!press?.canDrag) return;
 		if (!dragging) {
 			if (Math.hypot(x - press.x, y - press.y) < threshold) return;
 			dragging = true;
@@ -44,7 +46,13 @@ export function slotDrag(
 	const pointerDown = (event: PointerEvent) => {
 		if (event.pointerType === 'touch' || event.button !== 0 || !event.isPrimary || press) return;
 		suppressClick = false;
-		press = { kind: 'pointer', id: event.pointerId, x: event.clientX, y: event.clientY };
+		press = {
+			kind: 'pointer',
+			id: event.pointerId,
+			x: event.clientX,
+			y: event.clientY,
+			canDrag: options.allowStart?.(event.target) ?? true
+		};
 	};
 	const nextPointer = (event: PointerEvent) => {
 		if (!press && event.pointerType !== 'touch') suppressClick = false;
@@ -56,14 +64,26 @@ export function slotDrag(
 		if (dragging) event.preventDefault();
 	};
 	const pointerEnd = (event: PointerEvent) => {
-		if (event.pointerType !== 'touch' && press?.kind === 'pointer' && event.pointerId === press.id)
+		if (
+			event.pointerType !== 'touch' &&
+			press?.kind === 'pointer' &&
+			event.pointerId === press.id
+		) {
 			finish(event.type === 'pointerup');
+		}
 	};
 	const touchStart = (event: TouchEvent) => {
 		if (event.touches.length !== 1 || press) return;
 		const touch = event.touches[0]!;
 		suppressClick = false;
-		press = { kind: 'touch', id: touch.identifier, x: touch.clientX, y: touch.clientY };
+		press = {
+			kind: 'touch',
+			id: touch.identifier,
+			x: touch.clientX,
+			y: touch.clientY,
+			canDrag: options.allowStart?.(event.target) ?? true
+		};
+		if (!press.canDrag) return;
 		timer = setTimeout(() => {
 			timer = undefined;
 			armed = true;
@@ -141,7 +161,7 @@ export function slotDrag(
 				suppressClick = true;
 				options.menu!(element);
 			},
-			() => press?.kind === 'touch' && !dragging
+			() => !!press && !dragging
 		)(node);
 	return () => {
 		if (typeof menuCleanup === 'function') menuCleanup();

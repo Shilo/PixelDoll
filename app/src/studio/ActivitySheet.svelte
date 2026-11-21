@@ -21,7 +21,9 @@
 		reviewFailedCreate,
 		moving,
 		settingUp,
+		dismissSetup,
 		gens,
+		openDraft,
 		openProject,
 		cleanUp,
 		toast
@@ -62,7 +64,8 @@
 	const creatingPending = $derived(creates.filter((run) => !run.projectId));
 	const movingPending = $derived(moving.spec && !moving.done ? moving.spec : null);
 	const setupPending = $derived(settingUp.spec && !settingUp.done ? settingUp.spec : null);
-	const generatingItems = $derived(gens.filter((gen) => gen.phase === 'running'));
+	// Every unsaved item draft: running ones, and stopped or reviewable ones that hold their slot until kept or discarded.
+	const generatingItems = $derived(gens.filter((gen) => !gen.draft.acceptedAt));
 	const flowsPending = $derived(
 		creatingPending.length ||
 			movingPending ||
@@ -72,9 +75,13 @@
 	);
 	const characterName = (id: string) =>
 		store.projects.find((project) => project.id === id)?.name ?? t('common.character');
+	let unopenedSetup = $state.raw<typeof settingUp.spec>(null);
 	async function openWork(sheet: 'move' | 'setup', projectId?: string) {
+		const setup = sheet === 'setup' ? setupPending : null;
 		if (projectId && doc.id !== projectId) await openProject(projectId);
-		if (ui.sheet === 'activity' && (!projectId || doc.id === projectId)) ui.sheet = sheet;
+		if (ui.sheet !== 'activity') return;
+		if (setup && (!projectId || doc.id !== projectId)) unopenedSetup = setup;
+		else if (!projectId || doc.id === projectId) ui.sheet = sheet;
 	}
 	const nice = (r: JobRec) =>
 		/^skeleton sha256:.{8}/.test(r.label)
@@ -174,7 +181,10 @@
 						{@render workRow(
 							`${t('activity.characterSetup')} · ${characterName(setupPending.projectId)}`,
 							settingUp.error ? t('generation.status.needsAttention') : t('activity.inProgress'),
-							() => void openWork('setup', setupPending.projectId)
+							() => void openWork('setup', setupPending.projectId),
+							unopenedSetup === setupPending && settingUp.error
+								? () => void dismissSetup()
+								: undefined
 						)}
 					{/if}
 					{#each moving.queued as work (work)}
@@ -186,7 +196,12 @@
 					{#each generatingItems as gen (gen.draft.spec.id)}
 						{@render workRow(
 							`${gen.input.name} · ${characterName(gen.draft.rigId)}`,
-							t('activity.inProgress')
+							gen.phase === 'failed'
+								? t('generation.status.needsAttention')
+								: gen.phase === 'review'
+									? t('activity.readyToReview')
+									: t('activity.inProgress'),
+							() => void openDraft(gen)
 						)}
 					{/each}
 				</ul>
@@ -446,10 +461,15 @@
 	</div>
 </Sheet>
 
-{#snippet workRow(label: string, status: string, open?: () => void)}
+{#snippet workRow(label: string, status: string, open?: () => void, dismiss?: () => void)}
 	<li>
 		<span class="act-main"><span>{label}</span><span class="muted small">{status}</span></span>
-		{#if open}<button
+		{#if dismiss}<button
+				class="bu-action btn sm"
+				data-variant="outline"
+				disabled={doc.loading || $queue.role === 'follower'}
+				onclick={dismiss}>{t('setup.dismiss')}</button
+			>{:else if open}<button
 				class="bu-action btn sm"
 				data-variant="outline"
 				aria-label={t('activity.openWorkNamed', { label })}

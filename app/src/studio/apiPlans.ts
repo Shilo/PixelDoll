@@ -1,6 +1,6 @@
 import { specSlot } from '../lib/items/slots.ts';
 // Offline explanations only. These never encode images, submit work or invent dependent payloads.
-import { routes, BASE_ANIMS, baseAnimation, type Req } from '../lib/pixellab/routes.ts';
+import { routes, type Req } from '../lib/pixellab/routes.ts';
 import {
 	type CreateSpec,
 	type MoveSpec,
@@ -13,6 +13,12 @@ import {
 	isAuthoredAction,
 	moveDirections,
 	moveFrames,
+	moveAnimationModel,
+	moveMotionFrames,
+	moveMotionGens,
+	moveMotionRequest,
+	nativeMoveGens,
+	nativeMoveRequest,
 	PRO_RECEIPTS,
 	proDrawGens
 } from './create.ts';
@@ -373,6 +379,7 @@ export function movePlan(
 			(spec.replace || !m.rig.animations.some((a) => a.id === spec.id)),
 		calls: PeekCall[] = [],
 		frames = moveFrames(m, spec),
+		model = moveAnimationModel(spec),
 		poseRig = bodyNeeded
 			? { ...m.rig, animations: m.rig.animations.filter((animation) => animation.id !== spec.id) }
 			: m.rig;
@@ -382,32 +389,18 @@ export function movePlan(
 			return [];
 		const authored = isAuthoredAction(spec.action);
 		for (const direction of generatedDirections) {
-			if (!authored) {
-				const b =
-					spec.action === 'walk'
-						? baseAnimation(
-								'skeleton-v3',
-								rec.character?.id ?? '',
-								BASE_ANIMS.find((a) => a.name === 'walk')!,
-								[direction],
-								spec.seed
-							)
-						: {
-								character_id: rec.character?.id ?? '',
-								mode: 'pixminimax' as const,
-								action_description: `${spec.text?.trim()}, unarmed, no weapon, no props, no other people, no effects`,
-								frame_count: frames,
-								keep_first_frame: false,
-								animation_name: spec.id,
-								directions: [direction],
-								...(spec.seed === undefined ? {} : { seed: spec.seed })
-							};
+			if (model !== 'skeleton-v3' || !authored) {
+				const native = model !== 'skeleton-v3';
 				calls.push(
 					shown(
 						{
-							...routes.animateCharacter(b),
+							...(native
+								? nativeMoveRequest(rec, spec, direction, model, '[standing artwork]')
+								: moveMotionRequest(rec, spec, direction)),
 							label: `Create motion · ${direction}`,
-							generations: spec.action === 'walk' ? 3 : 1,
+							generations: native
+								? nativeMoveGens(model, m.rig.cell, frames)
+								: moveMotionGens(m, spec),
 							note: spec.seed === undefined ? `Known fields only. ${selectedSeed}` : undefined
 						},
 						({ t, displayDirection }) =>
@@ -415,7 +408,7 @@ export function movePlan(
 						spec.seed === undefined ? ({ t }) => knownSelectedSeedText(t) : undefined
 					)
 				);
-				for (let frame = 0; frame < frames; frame++)
+				for (let frame = 0; !native && frame < moveMotionFrames(m, spec); frame++)
 					calls.push(
 						shown(
 							{
@@ -435,34 +428,37 @@ export function movePlan(
 						)
 					);
 			}
-			calls.push(
-				shown(
-					{
-						method: 'POST',
-						path: '/animate-with-skeleton-v3',
-						label: `${spec.id} ${direction} · render body`,
-						generations: poseCallGens(frames),
-						body: {
-							description: rec.character?.looks,
-							action: bodyAction(spec),
-							direction,
-							view: m.rig.view ?? 'low top-down',
-							...(spec.seed === undefined ? {} : { seed: spec.seed + 101 }),
-							no_background: true
+			if (model === 'skeleton-v3')
+				calls.push(
+					shown(
+						{
+							method: 'POST',
+							path: '/animate-with-skeleton-v3',
+							label: `${spec.id} ${direction} · render body`,
+							generations: poseCallGens(frames),
+							body: {
+								description: rec.character?.looks,
+								action: bodyAction(spec),
+								direction,
+								view: m.rig.view ?? 'low top-down',
+								...(spec.seed === undefined ? {} : { seed: spec.seed + 101 }),
+								no_background: true
+							},
+							note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${authored ? 'locally authored' : 'generated motion'} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.`
 						},
-						note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${authored ? 'locally authored' : 'generated motion'} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.`
-					},
-					({ t, displayDirection }) =>
-						t('apiPeek.plan.renderBody', {
-							move: spec.id,
-							direction: displayDirection(direction)
-						}),
-					({ t }) =>
-						t('apiPeek.plan.renderBodyNote', {
-							source: t(authored ? 'apiPeek.plan.locallyAuthored' : 'apiPeek.plan.generatedMotion')
-						})
-				)
-			);
+						({ t, displayDirection }) =>
+							t('apiPeek.plan.renderBody', {
+								move: spec.id,
+								direction: displayDirection(direction)
+							}),
+						({ t }) =>
+							t('apiPeek.plan.renderBodyNote', {
+								source: t(
+									authored ? 'apiPeek.plan.locallyAuthored' : 'apiPeek.plan.generatedMotion'
+								)
+							})
+					)
+				);
 			for (let frame = 0; frame < frames; frame++)
 				calls.push(
 					shown(

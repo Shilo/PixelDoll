@@ -134,7 +134,7 @@
 	const referenceMax = $derived(
 		Math.min(
 			characterReference[modelId].max,
-			modelId === 'pro-flash' && d.body && !bodyError
+			(modelId === 'pro-flash' || modelId === 'standard') && d.body && !bodyError
 				? d.body
 				: modelId === 'v3' && frame && Number.isInteger(frame) && frame >= 32
 					? frame
@@ -497,14 +497,15 @@
 			<h3>{t('create.form.sizeGuide')}</h3>
 			<SizePreview body={d.body || 0} frame={frame || 0} />
 		</div>
-		{#if modelId !== 'standard' || d.reference}<ReferenceField
-				bind:value={d.reference}
-				bind:loading={referenceLoading}
-				hint={t(characterReference[modelId].hint)}
-				max={{ width: referenceMax, height: referenceMax }}
-				issue={displayError(characterReferenceIssue(d.reference, d.model, frame, d.body) ?? '')}
-				disabled={busy}
-			/>{/if}
+		<ReferenceField
+			bind:value={d.reference}
+			bind:loading={referenceLoading}
+			label={modelId === 'standard' ? t('create.form.reference.characterSprite') : undefined}
+			hint={t(characterReference[modelId].hint)}
+			max={{ width: referenceMax, height: referenceMax }}
+			issue={displayError(characterReferenceIssue(d.reference, d.model, frame, d.body) ?? '')}
+			disabled={busy}
+		/>
 	</section>
 	<section class="geometry" aria-label={t('create.form.geometrySection')}>
 		<div class="creator-field">

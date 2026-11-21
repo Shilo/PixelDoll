@@ -35,6 +35,9 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Generation and quality
 
+- **V3 and PixMiniMax moves keep their body artwork.** Equipment uses poses found on those frames, so a successful
+  body generation can still leave an equipment layer that needs review. Native body frames do not get the Shirt and
+  Shorts region color marks; existing exact dye matches still apply, but some areas can recolor differently or not at all.
 - **Automatic dye correction trades coverage for detail.** Close, unambiguous owned shades can be matched to the approved standing palette. A clip-wide veto keeps an existing visible RGB boundary from collapsing, so some generated shades remain outside exact dye ramps. This does not identify semantic pixel ownership or recover a missing motif. Global palette snapping remains unqualified. See the [palette experiment and boundary safeguard](research/deep-paperdoll-target-palette-2026-11-06.md).
 - **Thin held-item fragments can be lost inside an allowed mask.** Conservative outline and held-component cleanup can
   remove valid rear handle or pommel pixels. Mask containment limits where pixels may survive; it is not a semantic
@@ -260,6 +263,13 @@ Sharing covers this browser origin's saved characters only; there is no account 
 can lose unexported work.
 
 ## Layout
+
+- **Moving saved items changes their slot, not their pixels.** Use the Wardrobe drag or the item's Move to slot menu to
+  correct a category without generating again. The destination controls draw order, clipping, and future generation.
+  A worn item stays on the character, replacing equipment in the destination on the current look only. Saved outfits
+  keep any item already worn in the destination. Moving is limited to wearable slots with the same equipment class and
+  attachment joint, and cannot discard back-layer artwork. It does not re-fit, redraw, or split existing pixels into a
+  new back layer. If the original art was fitted to the wrong part of the body, generate it for the intended slot instead.
 
 - On a 390 px phone with the equipment panel expanded, the character sprite overlaps the Preview / Top-down /
   Side-scroller labels (Later card "Keep the phone character clear of the view tabs").

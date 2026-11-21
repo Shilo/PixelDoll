@@ -1005,8 +1005,8 @@ test('character directions can be mirrored and unlinked on import and after savi
 			.click();
 		const menu = page.getByRole('menu', { name: 'Actions for Direction test hero', exact: true });
 		await expect(menu.getByRole('menuitem')).toHaveText([
-			'Rename...',
 			'Details...',
+			'Rename...',
 			'Directions...',
 			'Download ZIP',
 			'Delete character...'
@@ -2136,7 +2136,12 @@ test('PixelLab library connection, pagination and direct import use only free re
 				const db = r.result,
 					t = db.transaction('projects', 'readwrite');
 				t.objectStore('projects').put(
-					{ id: 'studio-create:rig-fixture', spec: { name: 'Pending fixture' } },
+					{
+						id: 'studio-create:rig-fixture',
+						spec: { name: 'Pending fixture', projectId: 'rig-fixture' },
+						status: 'running',
+						requestText: 5
+					},
 					'studio-create:rig-fixture'
 				);
 				t.oncomplete = () => {
@@ -2329,7 +2334,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(errors).toEqual([]);
 });
 
-test('character deletion links to an unfinished move on another character', async ({
+test('a stopped move blocks deleting only its own character and opens from the block', async ({
 	page,
 	context
 }, info) => {
@@ -2357,35 +2362,36 @@ test('character deletion links to an unfinished move on another character', asyn
 	});
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
-	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
 	const deletion = page.getByRole('alertdialog');
+	const remove = async () => {
+		await page.locator('.project-btn').click();
+		await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+	};
+	// Another character's stopped move waits for its own review and does not lock this one.
+	await remove();
+	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
+	await expect(deletion).toBeHidden();
+	await expect(page.locator('.project-btn')).not.toContainText('Adventurer copy');
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const studio = await import(statePath);
+		await studio.openProject(
+			studio.store.projects.find((project: { name: string }) => project.name === 'Pending hero').id
+		);
+	});
+	await expect(page.locator('.project-btn')).toContainText('Pending hero');
+	await remove();
 	await expect(deletion.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
-	const pendingWork = deletion.getByRole('button', { name: 'View pending work' });
-	await expect(pendingWork).toBeVisible();
-	await pendingWork.click();
-	const activity = page.getByRole('dialog', { name: 'Activity' });
-	await expect(activity.getByText('Walk · Pending hero', { exact: true })).toBeVisible();
-	await expect(activity.getByText('Needs attention', { exact: true })).toBeVisible();
-	await activity.getByRole('button', { name: 'Open Walk · Pending hero' }).click();
+	await deletion.getByRole('button', { name: 'View pending work' }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move' });
 	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeVisible();
 	await move.getByRole('button', { name: 'Start over' }).click();
 	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeHidden();
 	await page.keyboard.press('Escape');
-	await page.evaluate(async () => {
-		const statePath = '/src/studio/state.svelte.ts';
-		const studio = await import(statePath);
-		await studio.openProject(
-			studio.store.projects.find((project: { name: string }) => project.name === 'Adventurer copy')
-				.id
-		);
-	});
-	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+	await remove();
 	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(deletion).toBeHidden();
-	await expect(page.locator('.project-btn')).not.toContainText('Adventurer copy');
+	await expect(page.locator('.project-btn')).not.toContainText('Pending hero');
 });
 
 test('deleting a disposable character preserves another character’s pending review', async ({
@@ -2590,7 +2596,14 @@ test('rename display names and export IDs without changing saved keys or calling
 	const rename = async (title: string, name: string, alias: string) => {
 		const dialog = page.getByRole('dialog', { name: title, exact: true });
 		await dialog.getByRole('textbox', { name: 'Display name' }).fill(name);
-		await dialog.locator('summary').click();
+		const summary = dialog.locator('summary');
+		const chevron = summary.locator('svg');
+		await expect(chevron).toHaveCSS('transform', 'none');
+		await summary.click();
+		await expect(chevron).toHaveCSS('transform', 'matrix(0, 1, -1, 0, 0, 0)');
+		await summary.press('Space');
+		await expect(chevron).toHaveCSS('transform', 'none');
+		await summary.press('Space');
 		const id = dialog.getByRole('textbox', { name: 'Export ID' });
 		await id.fill('aux');
 		await expect(id).toHaveAttribute('aria-invalid', 'true');

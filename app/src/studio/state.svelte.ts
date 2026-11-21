@@ -17,6 +17,7 @@ import {
 	mergeSlotEdits,
 	openSource,
 	openFixture,
+	reconcileItemSlots,
 	saveDress,
 	saveSplit,
 	type DressState,
@@ -24,6 +25,7 @@ import {
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
 import { retainSlotDirections } from '../lib/items/slots.ts';
+import { canRelocateItem, relocateItem, relocateWornItem } from '../lib/items/relocate.ts';
 import { keepThumbnails } from './experience/thumbnails.svelte.ts';
 import { experience } from './experience/state.svelte.ts';
 import {
@@ -46,6 +48,7 @@ import {
 	deleteOutdated,
 	listProjects,
 	loadProject,
+	type DressedRecord,
 	type StoredProject
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
@@ -99,7 +102,9 @@ import {
 	setHidden,
 	type SlotSettings,
 	shownCategories,
+	slotDef,
 	slotLabel,
+	slotLabelMessage,
 	slotUse,
 	slotUseMessages,
 	type SlotUse
@@ -721,6 +726,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 			current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
 		if (!quiet) {
 			doc.items = { ...current.items };
+			reconcileItemSlots(doc.items, new Map(m.items.map((it) => [it.id, it.slot])));
 			doc.variants = { ...current.variants };
 		} // in place: keep the live outfit
 		if (id !== doc.id) doc.drafts = {};
@@ -1054,6 +1060,17 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 	}
 }
 
+/** Blocks that unfinished generation work causes, which openPendingWork can show. */
+const WORK_BLOCKS = new Set([
+	'state.finishBeforeCharacterRemoval',
+	'state.finishBeforeMoveRemoval',
+	'state.finishBeforeDirectionRemoval',
+	'directionsSheet.waitForGeneration',
+	'directionsSheet.resolveDrafts',
+	'moveRemoval.resolveDrafts'
+]);
+export const blockedByWork = (reason: LocalizedError | '') =>
+	!!reason && WORK_BLOCKS.has(reason.translation.key);
 export const DELETE_GENERATION_BLOCK = new LocalizedError(
 	'Finish or dismiss pending generation work before deleting a character.',
 	'state.finishBeforeCharacterRemoval'
@@ -1062,9 +1079,30 @@ export const DELETE_GENERATION_BLOCK = new LocalizedError(
 let characterJobsPending = $state(false),
 	characterJobsInOtherTab = $state(false);
 
+/** Running work can write to any character, so it holds them all. Stopped work waits for the user and holds only its own
+ *  character: a failed move or setup must not lock every other character until it is found and dismissed. */
+function workHolds(id: string) {
+	return (
+		characterJobsPending ||
+		gens.some((g) => g.phase === 'running') ||
+		settling.size > 0 ||
+		creates.some(
+			(run) => !run.projectId && (run.running || !run.error || run.spec.projectId === id)
+		) ||
+		(heldMove() &&
+			(moveRunning ||
+				moving.resolvingRepair ||
+				(!moving.error && !moving.repairReview) ||
+				moving.projectId === id)) ||
+		moving.queued.some((queued) => queued.projectId === id) ||
+		(moving.queued.length > 0 && !heldMove()) ||
+		(heldSetup() && (!settingUp.error || settingUp.spec?.projectId === id))
+	);
+}
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(
-	action: 'delete' | 'delete move' | 'change directions for' | 'fix frames of'
+	action: 'delete' | 'delete move' | 'change directions for' | 'fix frames of',
+	id: string
 ): LocalizedError | '' {
 	if (doc.loading || opening)
 		return new LocalizedError(
@@ -1081,15 +1119,7 @@ function characterEditBlocked(
 					'Manage characters in the other PixelDoll tab, or close it first.',
 					'state.manageCharactersInOtherTab'
 				);
-	if (
-		characterJobsPending ||
-		gens.some((g) => g.phase === 'running') ||
-		settling.size ||
-		heldCreate() ||
-		heldMove() ||
-		moving.queued.length ||
-		heldSetup()
-	)
+	if (workHolds(id))
 		return action === 'delete'
 			? DELETE_GENERATION_BLOCK
 			: action === 'delete move'
@@ -1115,21 +1145,21 @@ export function deletionBlocked(
 ): LocalizedError | '' {
 	return id.startsWith('fixture:')
 		? new LocalizedError('The bundled demo cannot be deleted.', 'deleteSheet.demo')
-		: characterEditBlocked(kind === 'character' ? 'delete' : 'delete move');
+		: characterEditBlocked(kind === 'character' ? 'delete' : 'delete move', id);
 }
 
 export function directionEditsBlocked(id: string): LocalizedError | '' {
 	if (!id.startsWith('rig-'))
 		return new LocalizedError('Only saved characters can be edited.', 'directionsSheet.savedOnly');
 	return (
-		characterEditBlocked('change directions for') ||
+		characterEditBlocked('change directions for', id) ||
 		(!generationSettled()
 			? new LocalizedError(
 					'Wait for the current generation work to finish.',
 					'directionsSheet.waitForGeneration'
 				)
 			: '') ||
-		(gens.some((gen) => gen.draft.rigId === id)
+		(gens.some((gen) => gen.draft.rigId === id && !gen.draft.acceptedAt)
 			? new LocalizedError(
 					'Keep or dismiss this character’s item drafts before changing directions.',
 					'directionsSheet.resolveDrafts'
@@ -1162,6 +1192,7 @@ function workIdle() {
 		!heldCreate() &&
 		!heldMove() &&
 		!moving.queued.length &&
+		!setupRecovering &&
 		!heldSetup()
 	);
 }
@@ -1609,7 +1640,7 @@ export function openFrames(itemId = '', anim = '') {
 }
 export function framesBlocked(): LocalizedError | '' {
 	if (!doc.id.startsWith('rig-')) return '';
-	return characterEditBlocked('fix frames of');
+	return characterEditBlocked('fix frames of', doc.id);
 }
 export async function prepareFrames(
 	projectId: string,
@@ -1667,6 +1698,131 @@ export async function removeItem(itemId: string) {
 	await deleteItem(projectId, itemId);
 	toast(message('state.removedName', { name: it.name }));
 	if (doc.id === projectId && request === openRequest) await openProject(projectId);
+}
+
+let relocating = $state(false);
+
+export function itemSlotTargets(manifest: Manifest, item: Item) {
+	if (isDemo() || relocating || !canRelocateItem(manifest, item)) return [];
+	return categories(manifest).filter((category) => {
+		const target = slotDef(manifest, category.key);
+		return target && canRelocateItem(manifest, item, target);
+	});
+}
+
+export async function moveItemToSlot(
+	itemId: string,
+	targetId: string,
+	{ showDestination = false } = {}
+): Promise<boolean> {
+	const item = itemById(itemId),
+		projectId = doc.id,
+		request = openRequest;
+	if (!item || isDemo() || relocating) return false;
+	relocating = true;
+	if (edits !== savedEdits && !pendingSave) save();
+	const startingEdits = edits;
+	const previous = flushSave();
+	const work = previous.then(async () => {
+		if (openRequest !== request || savedEdits < startingEdits) return false;
+		const record = await db.update<DressedRecord>(
+			'projects',
+			projectId,
+			(rec, related) => {
+				const savedGens = related<{ gens: Gen[] }>(GENS_KEY)?.gens ?? [],
+					savedMove = related<QueuedMove & { queued?: QueuedMove[] }>(MOVE_KEY);
+				// Only a move that poses this item holds it (another tab's moves are read from storage), as pendingMoves does here.
+				const poses = (move?: QueuedMove) =>
+					move?.projectId === projectId && !!move.spec?.items?.includes(itemId);
+				if (
+					itemStarting ||
+					[...gens, ...savedGens].some(
+						(gen) =>
+							gen.draft.rigId === projectId &&
+							!gen.draft.acceptedAt &&
+							(gen.input.slot === item.slot || gen.input.slot === targetId)
+					) ||
+					pendingMoves(projectId, itemId).length ||
+					poses(savedMove) ||
+					savedMove?.queued?.some(poses)
+				)
+					throw new LocalizedError(
+						'Finish or discard the related generation before moving this item.',
+						'wardrobe.itemMoveBusy'
+					);
+				const manifest = rec?.manifest,
+					live = manifest?.items.find((entry) => entry.id === itemId),
+					target = manifest && slotDef(manifest, targetId),
+					current =
+						rec?.dress?.current ?? (manifest?.presets[0] && structuredClone(manifest.presets[0]));
+				if (
+					!rec ||
+					!manifest ||
+					!live ||
+					live.slot !== item.slot ||
+					!target ||
+					!relocateItem(manifest, live, target)
+				)
+					throw new LocalizedError(
+						'The item or slot changed. Try again.',
+						'wardrobe.itemMoveChanged'
+					);
+				if (
+					current &&
+					relocateWornItem(current.items, itemId, item.slot, targetId, { replace: true })
+				)
+					rec.dress = { current: { items: current.items, variants: current.variants } };
+				rec.savedAt = new Date().toISOString();
+				return rec;
+			},
+			[GENS_KEY, MOVE_KEY]
+		);
+		if (doc.id === projectId && openRequest === request && store.project) {
+			const manifest = store.project.manifest,
+				moved = record.manifest.items.find((entry) => entry.id === itemId)!,
+				target = record.manifest.slots.find((slot) => slot.id === targetId)!;
+			manifest.items = manifest.items.map((entry) => (entry.id === itemId ? moved : entry));
+			if (!manifest.slots.some((slot) => slot.id === targetId))
+				insertSlotInLadder(manifest.slots, target, record.manifest.slots);
+			for (const outfit of manifest.presets)
+				relocateWornItem(outfit.items, itemId, item.slot, targetId);
+			if (relocateWornItem(doc.items, itemId, item.slot, targetId, { replace: true }))
+				delete doc.drafts[targetId];
+			for (const step of [...doc.undo, ...doc.redo]) {
+				const dress = JSON.parse(step.snap) as DressState;
+				for (const outfit of [...dress.presets, ...(dress.current ? [dress.current] : [])])
+					relocateWornItem(outfit.items, itemId, item.slot, targetId);
+				step.snap = JSON.stringify(dress);
+			}
+			store.exportRecord = record;
+			if (showDestination) ui.group = targetId;
+			bump();
+			if (edits !== startingEdits) save();
+		}
+		toast(
+			message('wardrobe.itemMoved', {
+				name: item.name,
+				label: slotLabelMessage(record.manifest, targetId)
+			})
+		);
+		return true;
+	});
+	const handled = work.catch((error: unknown) => {
+		const reason = errorMessage(error);
+		if (typeof reason !== 'string' && reason.key === 'wardrobe.itemMoveBusy')
+			toast(reason, {
+				tone: 'warning',
+				action: () => openPendingWork({ projectId, slots: [item.slot, targetId] })
+			});
+		else toast(message('state.couldNotSaveReason', { reason }), { tone: 'danger' });
+		return false;
+	});
+	saving = handled.then(() => undefined);
+	try {
+		return await handled;
+	} finally {
+		relocating = false;
+	}
 }
 
 // ---------- items from other characters ----------
@@ -2075,9 +2231,7 @@ export function pick(id: string) {
 }
 
 // ---------- item generations ----------
-// Bump when PixelLab request inputs change. Work saved with different inputs no longer matches its ledger records and would
-// resend paid calls, so it waits for review instead of resuming by itself.
-export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout (2026-11-07)
+export const REQUEST_TEXT = db.REQUEST_TEXT;
 const STOPPED = GENERATION_STOPPED;
 const SETUP_STOPPED = 'Setup stopped. Review Activity before trying again.';
 const REPAIR_REVIEW_RECOVERY =
@@ -2214,8 +2368,28 @@ async function takeOver() {
 /** Studio's startup resumes are done; as the leader, a click waiting from before can now run. */
 export function startupResumed() {
 	studioStartup = 'ready';
-	if (queue.role !== 'follower') resumedHere = true;
+	if (queue.role !== 'follower') {
+		resumedHere = true;
+		announceStoppedWork();
+	}
 	runWaiting();
+}
+/** Stopped item drafts, moves, setups and new characters: each waits for the user and blocks related edits. */
+export const stoppedWork = () =>
+	gens.filter((g) => g.phase === 'failed').length +
+	(heldMove() && moving.error && !moveRunning ? 1 : 0) +
+	(heldSetup() && settingUp.error ? 1 : 0) +
+	creates.filter((run) => !run.projectId && run.error && !run.running).length;
+/** Work that stopped before this page loaded waits silently in its panel, so say so once. */
+function announceStoppedWork() {
+	const count = stoppedWork();
+	// A warning: an error already shown stays visible, and the panel it opens is not covered.
+	if (count)
+		toast(message('state.stoppedWork', { count }), {
+			tone: 'warning',
+			duration: 10000,
+			action: () => openPendingWork()
+		});
 }
 
 /** `reported`: the failure already showed its own notice. */
@@ -2234,6 +2408,14 @@ interface ItemAttemptConsent {
 }
 export async function startItem(input: NewItemInput, consent?: ItemAttemptConsent) {
 	if (hmrReloading) return;
+	if (relocating) {
+		const request = openRequest;
+		await saving;
+		if (request !== openRequest) {
+			toast(message('state.thisCharacterOrItemChangedReopenIt'), { tone: 'warning' });
+			return;
+		}
+	}
 	itemStarting++; // counted from the click, before the draft exists, so this tab keeps the jobs meanwhile
 	try {
 		await startItemDraft(input, consent);
@@ -2410,6 +2592,51 @@ export async function openGenerationReview(id: string) {
 	ui.tab = 'wardrobe';
 	ui.group = g.input.slot;
 	ui.selected = `gen:${id}`;
+}
+/** Shows an item draft: its review when it stopped or waits for one, else its tile, which shows the progress. */
+export async function openDraft(g: Gen) {
+	if (g.phase !== 'running') return openGenerationReview(g.draft.spec.id);
+	await openProject(g.draft.rigId);
+	if (!gens.includes(g) || doc.id !== g.draft.rigId) return;
+	ui.sheet = null;
+	ui.tab = 'wardrobe';
+	ui.group = g.input.slot;
+	ui.selected = `gen:${g.draft.spec.id}`;
+}
+/** Opens a character's move or setup panel, which shows its progress or failure and how to retry or dismiss it. */
+export async function openFlow(sheet: 'move' | 'setup', projectId: string) {
+	if (projectId && doc.id !== projectId) await openProject(projectId);
+	if (!projectId || doc.id === projectId) ui.sheet = sheet;
+}
+/** Opens the work a busy or failure notice is about, so the user can finish or discard it, stopped work first: the item
+ *  draft, move, setup or new character this tab holds. `flows`: the block comes from moves, setups, creations and running
+ *  work only (deletes, direction changes, item repairs), so stopped item drafts are skipped and running work is found on
+ *  any character, as it holds them all. Anything else (another tab's work, jobs alone) opens Activity. */
+export async function openPendingWork(
+	scope: { projectId?: string; slots?: readonly string[]; flows?: boolean } = {}
+) {
+	const { projectId, slots, flows } = scope;
+	const ours = (id: string) => !projectId || id === projectId;
+	const drafts = gens.filter(
+		(g) => !g.draft.acceptedAt && (!slots || slots.includes(g.input.slot))
+	);
+	const stoppedDraft = flows
+		? undefined
+		: (drafts.find((g) => g.phase === 'failed' && ours(g.draft.rigId)) ??
+			drafts.find((g) => g.phase === 'review' && ours(g.draft.rigId)));
+	const runningDraft = drafts.find((g) => g.phase === 'running' && (flows || ours(g.draft.rigId)));
+	const move = moving.spec && !moving.done ? moving.projectId : undefined;
+	const setup = settingUp.spec && !settingUp.done ? settingUp.spec.projectId : undefined;
+	const create = creates.find((run) => !run.projectId && run.error && !run.running);
+	if (stoppedDraft) return openDraft(stoppedDraft);
+	if (move !== undefined && moving.error && ours(move)) return openFlow('move', move);
+	if (setup !== undefined && settingUp.error && ours(setup)) return openFlow('setup', setup);
+	if (create && !projectId) return reviewFailedCreate(create.id);
+	if (runningDraft) return openDraft(runningDraft);
+	if (move !== undefined && !moving.error && (flows || ours(move))) return openFlow('move', move);
+	if (setup !== undefined && !settingUp.error && (flows || ours(setup)))
+		return openFlow('setup', setup);
+	ui.sheet = 'activity';
 }
 export async function acceptItemIssues(projectId: string, itemId: string, reviewed: Item) {
 	if (follower()) return;
@@ -3066,6 +3293,12 @@ export async function startCreate(input: CreateSpec, present = false, attemptId?
 				e
 			);
 			if (current()) run.error = error;
+			if (current() && (ui.sheet !== 'create' || createPresentation.id !== run.id))
+				toast(message('state.createFailedOpen', { name: spec.name }), {
+					tone: 'danger',
+					duration: 8000,
+					action: () => reviewFailedCreate(run.id)
+				});
 		}
 	} finally {
 		active = false;
@@ -3182,8 +3415,12 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 	].filter((s) => !itemId || s.items.includes(itemId));
 export async function startMove(projectId: string, spec: MoveSpec) {
 	if (hmrReloading) return;
+	if (relocating) await saving;
 	if (moving.repairReview) {
-		toast(message('repairReview.finishFirst'), { tone: 'warning' });
+		toast(message('repairReview.finishFirst'), {
+			tone: 'warning',
+			action: () => openFlow('move', moving.projectId)
+		});
 		return;
 	}
 	if (spec.reuseItemFrames && queue.role === 'follower') {
@@ -3191,7 +3428,10 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		return;
 	}
 	if (moveRunning) {
-		toast(message('state.anotherMoveIsStillBeingAddedSo'), { tone: 'warning' });
+		toast(message('state.anotherMoveIsStillBeingAddedSo'), {
+			tone: 'warning',
+			action: () => openFlow('move', moving.projectId)
+		});
 		return;
 	}
 	spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
@@ -3290,9 +3530,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (ui.sheet !== 'move')
 				toast(message('repairReview.ready'), {
 					tone: 'warning',
-					action: () => {
-						ui.sheet = 'move';
-					}
+					action: () => openFlow('move', projectId)
 				});
 			return;
 		}
@@ -3354,7 +3592,8 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (current() && ui.sheet !== 'move')
 				toast(message('state.moveNameFailedOpenMovesToTryAgain', { moveName }), {
 					tone: 'danger',
-					duration: 8000
+					duration: 8000,
+					action: () => openFlow('move', projectId)
 				}); // timed: the Moves panel keeps the failure, and a persistent error would hide later successes
 		}
 	} finally {
@@ -3541,6 +3780,20 @@ export async function resumeMove() {
 		>('projects', MOVE_KEY)
 		.catch(() => undefined);
 	if (!r?.spec || (moving.spec && !moving.done)) return;
+	// A move whose character is gone can never be opened to retry or dismiss. Moves queued behind it wait for a decision.
+	if (
+		r.projectId?.startsWith('rig-') &&
+		!r.queued?.length &&
+		!(await db.get('projects', r.projectId).catch(() => true))
+	) {
+		try {
+			await db.del('projects', MOVE_KEY);
+			console.warn('Removed saved move with no character to resume.');
+			return;
+		} catch (error) {
+			console.error('Could not remove a saved move with no character', error); // kept and shown as stopped
+		}
+	}
 	const { queued, ...record } = r;
 	moving.queued = queued ?? [];
 	moveRecord = record; // a halted move keeps its stored record while moves are queued behind it
@@ -3644,6 +3897,7 @@ export const settingUp = $state({
 const SETUP_KEY = 'studio-setup';
 let setupRunning = false,
 	setupResumed = false,
+	setupRecovering = false,
 	setupRevision = 0;
 /** A setup (perhaps one resumed from a closed tab) runs here, so another cannot start yet. */
 export const setupBusy = () => setupRunning;
@@ -3651,7 +3905,8 @@ export async function startSetup(spec: SetupSpec) {
 	if (hmrReloading) return;
 	if (setupRunning) {
 		toast(message('state.anotherRigSetupIsStillRunningSo'), {
-			tone: 'warning'
+			tone: 'warning',
+			action: () => openFlow('setup', settingUp.spec?.projectId ?? '')
 		});
 		return;
 	}
@@ -3693,6 +3948,12 @@ export async function startSetup(spec: SetupSpec) {
 				e
 			);
 			if (current()) settingUp.error = error;
+			if (current() && ui.sheet !== 'setup')
+				toast(message('state.setupFailedOpen'), {
+					tone: 'danger',
+					duration: 8000,
+					action: () => openFlow('setup', spec.projectId)
+				});
 		}
 	} finally {
 		if (revision === setupRevision) setupRunning = false;
@@ -3702,29 +3963,54 @@ export async function resumeSetup() {
 	if (hmrReloading || setupResumed || queue.role === 'follower') return;
 	setupResumed = true;
 	const revision = setupRevision;
-	const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
-	if (!rec?.spec || revision !== setupRevision || (settingUp.spec && !settingUp.done)) return;
-	if (rec.spec.projectId.startsWith('rig-')) {
-		const project = await db.get<StoredProject>('projects', rec.spec.projectId);
-		if (revision !== setupRevision) return;
-		if (!project) {
-			await db.del('projects', SETUP_KEY);
-			return;
+	const current = () => revision === setupRevision && queue.role !== 'follower';
+	setupRecovering = true;
+	try {
+		const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
+		if (!rec?.spec || !current() || (settingUp.spec && !settingUp.done)) return;
+		const { projectId } = rec.spec;
+		let needsReview = halted(rec);
+		try {
+			const missing =
+				typeof projectId !== 'string' ||
+				!projectId ||
+				(projectId.startsWith('rig-') && !(await db.get<StoredProject>('projects', projectId)));
+			if (!current()) return;
+			if (missing) {
+				await db.del('projects', SETUP_KEY);
+				console.warn('Removed saved setup with no character to resume.');
+				return;
+			}
+		} catch (error) {
+			console.error('Could not check or remove stale character setup', error);
+			needsReview = true;
 		}
+		if (!current()) return;
+		if (needsReview)
+			Object.assign(settingUp, {
+				spec: rec.spec,
+				progress: rec.progress ?? null,
+				error: restoredFlowError(rec, SETUP_STOPPED),
+				done: false,
+				warnings: []
+			});
+		else void startSetup(rec.spec);
+	} finally {
+		setupRecovering = false;
 	}
-	if (halted(rec))
-		Object.assign(settingUp, {
-			spec: rec.spec,
-			progress: rec.progress ?? null,
-			error: restoredFlowError(rec, SETUP_STOPPED),
-			done: false,
-			warnings: []
-		});
-	else void startSetup(rec.spec);
 }
 export async function dismissSetup() {
-	if (setupRunning) return;
+	if (setupRunning || (!settingUp.done && queue.role === 'follower')) return false;
 	setupRevision++;
-	Object.assign(settingUp, { spec: null, progress: null, error: '', done: false, warnings: [] });
-	await db.del('projects', SETUP_KEY);
+	setupRunning = true;
+	try {
+		if (queue.role !== 'follower') await db.del('projects', SETUP_KEY);
+		Object.assign(settingUp, { spec: null, progress: null, error: '', done: false, warnings: [] });
+		return true;
+	} catch (error) {
+		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });
+		return false;
+	} finally {
+		setupRunning = false;
+	}
 }

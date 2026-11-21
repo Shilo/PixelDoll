@@ -271,6 +271,7 @@
 		"titleShowThisFrame": "Diesen Frame anzeigen",
 		"checksFoundIssuesNoPaidRetryWas": "Bei der Prüfung sind Probleme aufgefallen. Es wurde kein kostenpflichtiger Neuversuch gestartet. Du kannst einen weiteren Versuch anfordern oder den Gegenstand unverändert übernehmen.",
 		"acceptAsIs": "Unverändert übernehmen",
+		"pendingWorkBusy": "Eine Animation oder Einrichtung läuft oder wurde gestoppt. Schließe sie ab oder verwirf sie, um diese Aktionen zu nutzen.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Übernimmt die aktuelle Grafik, ohne Credits zu verbrauchen. Die festgestellten Probleme bleiben in den Details vermerkt.",
 		"youAcceptedThisArtworkWithItsRecorded": "Du hast diese Grafik mit den festgehaltenen Qualitätshinweisen übernommen.",
 		"generateItemForMove": "Gegenstand für Animation generieren",
@@ -566,6 +567,11 @@
 		"workspaceActions": "Arbeitsbereich-Aktionen"
 	},
 	"wardrobe": {
+		"moveItemTo": "In Slot verschieben",
+		"dragItem": "{name} wird gezogen. Lege den Gegenstand in einem anderen Slot ab.",
+		"itemMoved": "{name} wurde nach {label} verschoben.",
+		"itemMoveBusy": "Schließe die zugehörige Generierung ab oder verwirf sie, bevor du den Gegenstand verschiebst.",
+		"itemMoveChanged": "Der Gegenstand oder Slot hat sich geändert. Versuche es erneut.",
 		"notShownInMove": "In dieser Bewegung nicht sichtbar",
 		"notShownInMoveNote": "Der Gegenstand wird getragen, hat aber in keiner Ansicht dieser Bewegung Bilder und bleibt deshalb unsichtbar.",
 		"randomLowerItem": "Zufälliger Gegenstand: {lower}",
@@ -824,6 +830,12 @@
 		"moveNameAdded": "{moveName} hinzugefügt",
 		"moveNameHasItemIssuesToReviewNo": "Bei Gegenständen für {moveName} gibt es Probleme zu prüfen. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} fehlgeschlagen. Öffne „Animationen“, um es erneut zu versuchen oder von vorn zu beginnen.",
+		"createFailedOpen": "{name} konnte nicht erstellt werden. Öffne es, um es erneut zu versuchen oder von vorn zu beginnen.",
+		"setupFailedOpen": "Die Charaktereinrichtung wurde gestoppt. Öffne sie, um es erneut zu versuchen oder von vorn zu beginnen.",
+		"stoppedWork": {
+			"one": "{count} Generierung wurde gestoppt. Öffne sie, um den Grund zu sehen, und versuche es erneut oder verwirf sie.",
+			"other": "{count} Generierungen wurden gestoppt. Öffne sie, um den Grund zu sehen, und versuche es erneut oder verwirf sie."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Der Vorgang hat sich geändert. Prüfe die Gelenke erneut.",
 		"thePendingJointChecksChangedReviewTheir": "Die ausstehenden Gelenkprüfungen haben sich geändert. Prüfe die Kosten erneut.",
 		"thisOperationChangedReviewTheBodyFrames": "Der Vorgang hat sich geändert. Prüfe die Frames des Grundkörpers erneut.",
@@ -1958,7 +1970,7 @@
 			"keepNeedsChecks": "Um diese Animation zu behalten, müssen für jeden Frame abgeschlossene Gelenkprüfungen im Zwischenspeicher vorliegen.",
 			"noFailedChecks": "Die zwischengespeicherten Frames haben keine fehlgeschlagenen Gelenkprüfungen, die sich wiederholen lassen.",
 			"paletteDrift": "Die Farbabweichung ist zu groß für eine kleine Palettenkorrektur. Die vorhandene Grafik bleibt erhalten.",
-			"describedFrames": "Beschriebene Animationen können mit 4, 8 oder 12 Frames generiert werden. Diese Animation hat {frames}.",
+			"moveAnimationFrames": "Das Modell und die Leinwandgröße unterstützen keine {frames} Frames. Wähle eine unterstützte Anzahl.",
 			"describeMove": "Beschreibe diese Animation, bevor du sie generierst.",
 			"partialSaved": "{reason} Die fertigen Ansichten wurden gespeichert ({views}).",
 			"partialSavedNewFrames": "{reason} Die fertigen Ansichten wurden gespeichert ({views}). „Neue Frames generieren“ fordert nur fehlende Frames an.",
@@ -1968,7 +1980,7 @@
 			"moveDirectionsChanged": "Die Blickrichtungen des Charakters haben sich geändert. Prüfe die aktuelle Schätzung für die Animation, bevor du es erneut versuchst. Es wurde keine Generierung angefordert.",
 			"reviewItemRedrawFirst": "Prüfe das Neuzeichnen des Gegenstands und die Schätzung vor der Generierung. Es wurde keine Anfrage gesendet.",
 			"chooseRepairTarget": "Wähle vor der Reparatur einen Gegenstand und eine Blickrichtung einer vorhandenen Animation. Es wurde keine Generierung angefordert.",
-			"describedFramesBlocked": "Beschriebene Animationen können mit 4, 8 oder 12 Frames generiert werden. Diese Animation hat {frames}. Es wurde keine Generierung angefordert.",
+			"moveAnimationFramesBlocked": "Das Modell und die Leinwandgröße unterstützen keine {frames} Frames. Es wurde keine Generierung angefordert.",
 			"describeMoveBlocked": "Beschreibe diese Animation, bevor du sie generierst. Es wurde keine Generierung angefordert.",
 			"chooseExistingMoveRepairing": "Wähle eine vorhandene Animation, bevor du ihre Ausrüstung reparierst."
 		},
@@ -2046,7 +2058,7 @@
 				"v3": { "label": "Standard (V3)", "help": "Ausgewogene Proportionen." },
 				"standard": {
 					"label": "Standard",
-					"help": "Zeichnet aus Text acht Ansichten anhand einer festen Vorlage."
+					"help": "Zeichnet acht Ansichten anhand einer Vorlage oder deines Sprites in Vorderansicht."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2126,7 +2138,7 @@
 			"sizeGuideReference": "Größenhilfe und Referenzbild",
 			"reference": {
 				"frontFacing": "Nutze ein Sprite in Vorderansicht.",
-				"standardTextOnly": "Standard verwendet nur Text. Entferne das Referenzbild oder wähle ein anderes Modell.",
+				"characterSprite": "Figuren-Sprite",
 				"concept": "Nutze eine Skizze oder einen Charakterentwurf.",
 				"style": "Nutze eine Illustration als Stilvorlage.",
 				"tooLarge": "Wähle ein Referenzbild mit höchstens {max} × {max} px.",
@@ -2246,6 +2258,27 @@
 		"describeMotion": "Beschreibe die Bewegung",
 		"motionOnly": "Beschreibe nur die Körperbewegung. Füge Waffen und Requisiten als Gegenstände hinzu.",
 		"orChoose": "Oder wähle eine Animation",
+		"motionModel": "Bewegungsmodell",
+		"motionModelHelp": "Skeleton v3 verwendet dieselben Posen für Körper und Ausrüstung. V3 und PixMiniMax zeichnen zuerst den Körper. Danach ermittelt PixelDoll die Posen für die Ausrüstung.",
+		"models": {
+			"skeletonV3": "Standard (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Frames",
+		"framesHelp": "Die Auswahl passt zu diesem Modell und der Leinwand des Charakters ({canvas} px). Die Standardoption behält PixelDolls voreingestellte Framezahl.",
+		"framesDefault": {
+			"one": "Standard ({count} Frame)",
+			"other": "Standard ({count} Frames)"
+		},
+		"framesValue": {
+			"one": "{count} Frame",
+			"other": "{count} Frames"
+		},
+		"framesKept": {
+			"one": "Beibehalten: {count} Frame",
+			"other": "Beibehalten: {count} Frames"
+		},
 		"redrawDirections": "Blickrichtungen zum Neuzeichnen",
 		"redrawHidesEquipment": "Wenn du diese Ansichten ersetzt, bleibt die Ausrüstung verborgen, bis neue Frames erstellt sind.",
 		"redrawMirrors": "Auch die gespiegelten Ansichten ändern sich: {directions}.",

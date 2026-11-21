@@ -268,6 +268,7 @@
 		"titleShowThisFrame": "Afficher cette image",
 		"checksFoundIssuesNoPaidRetryWas": "Les vérifications ont détecté des problèmes. Aucune nouvelle tentative payante n’a été lancée. Vous pouvez demander une autre tentative ou accepter cet objet tel quel.",
 		"acceptAsIs": "Accepter tel quel",
+		"pendingWorkBusy": "Une animation ou configuration est en cours ou arrêtée. Terminez-la ou abandonnez-la pour utiliser ces actions.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Conserve le visuel actuel sans dépenser de crédits. Les problèmes détectés restent indiqués dans les détails de l’objet.",
 		"youAcceptedThisArtworkWithItsRecorded": "Vous avez accepté ce visuel. Les remarques sur sa qualité restent enregistrées.",
 		"generateItemForMove": "Générer l’objet pour l’animation",
@@ -560,6 +561,11 @@
 		"workspaceActions": "Actions de l’espace de travail"
 	},
 	"wardrobe": {
+		"moveItemTo": "Déplacer vers un emplacement",
+		"dragItem": "Déplacement de {name}. Déposez-le dans un autre emplacement.",
+		"itemMoved": "{name} a été déplacé vers {label}.",
+		"itemMoveBusy": "Terminez ou abandonnez la génération associée avant de déplacer cet objet.",
+		"itemMoveChanged": "L’objet ou l’emplacement a changé. Réessayez.",
 		"notShownInMove": "Non affiché dans ce mouvement",
 		"notShownInMoveNote": "L’objet est porté, mais il reste invisible car il manque des images dans toutes les vues de ce mouvement.",
 		"randomLowerItem": "Choisir un objet au hasard : {lower}",
@@ -818,6 +824,12 @@
 		"moveNameAdded": "{moveName} ajoutée",
 		"moveNameHasItemIssuesToReviewNo": "Des objets de l’animation {moveName} doivent être vérifiés. Aucune nouvelle tentative payante n’a été lancée.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} a échoué. Ouvrez Animations pour réessayer ou recommencer.",
+		"createFailedOpen": "{name} n’a pas pu être créé. Ouvrez-le pour réessayer ou recommencer.",
+		"setupFailedOpen": "La configuration du personnage s’est arrêtée. Ouvrez-la pour réessayer ou recommencer.",
+		"stoppedWork": {
+			"one": "{count} génération s’est arrêtée. Ouvrez-la pour voir pourquoi, puis réessayez ou abandonnez-la.",
+			"other": "{count} générations se sont arrêtées. Ouvrez-les pour voir pourquoi, puis réessayez ou abandonnez-les."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Cette opération a changé. Vérifiez à nouveau les contrôles d’articulations.",
 		"thePendingJointChecksChangedReviewTheir": "Les contrôles d’articulations en attente ont changé. Vérifiez à nouveau leur coût.",
 		"thisOperationChangedReviewTheBodyFrames": "Cette opération a changé. Vérifiez à nouveau les images du corps.",
@@ -1956,7 +1968,7 @@
 			"keepNeedsChecks": "Garder cette animation nécessite des contrôles d’articulations en cache terminés pour chaque image.",
 			"noFailedChecks": "Les images en cache n’ont aucun contrôle d’articulations en échec à relancer.",
 			"paletteDrift": "Dérive des couleurs trop importante pour une petite réparation de palette. Le visuel existant a été conservé.",
-			"describedFrames": "Les animations décrites peuvent être générées avec 4, 8 ou 12 images. Cette animation en a {frames}.",
+			"moveAnimationFrames": "Ce modèle et cette taille de canevas ne prennent pas en charge {frames} images. Choisissez un nombre compatible.",
 			"describeMove": "Décrivez cette animation avant de la générer.",
 			"partialSaved": "{reason} Les vues terminées ont été enregistrées ({views}).",
 			"partialSavedNewFrames": "{reason} Les vues terminées ont été enregistrées ({views}). « Générer de nouvelles images » ne demande que les images manquantes.",
@@ -1966,7 +1978,7 @@
 			"moveDirectionsChanged": "Les directions du personnage ont changé. Consultez l’estimation actuelle de l’animation avant de réessayer. Aucune génération n’a été demandée.",
 			"reviewItemRedrawFirst": "Vérifiez le redessin de l’objet et son estimation avant de lancer la génération. Aucune demande n’a été envoyée.",
 			"chooseRepairTarget": "Avant de réparer, choisissez un objet et une direction d’une animation existante. Aucune génération n’a été demandée.",
-			"describedFramesBlocked": "Les animations décrites peuvent être générées avec 4, 8 ou 12 images. Cette animation en a {frames}. Aucune génération n’a été demandée.",
+			"moveAnimationFramesBlocked": "Ce modèle et cette taille de canevas ne prennent pas en charge {frames} images. Aucune génération n’a été demandée.",
 			"describeMoveBlocked": "Décrivez cette animation avant de la générer. Aucune génération n’a été demandée.",
 			"chooseExistingMoveRepairing": "Choisissez une animation existante avant de réparer son équipement."
 		},
@@ -2047,7 +2059,7 @@
 				},
 				"standard": {
 					"label": "Standard",
-					"help": "Dessine huit vues à partir du texte sur un gabarit fixe."
+					"help": "Dessine huit vues à partir d’un gabarit ou de votre sprite de face."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2127,7 +2139,7 @@
 			"sizeGuideReference": "Guide des tailles et référence",
 			"reference": {
 				"frontFacing": "Utilisez un sprite vu de face.",
-				"standardTextOnly": "Le modèle Standard utilise uniquement du texte. Retirez l’image de référence ou choisissez un autre modèle.",
+				"characterSprite": "Sprite du personnage",
 				"concept": "Utilisez un croquis ou un dessin du personnage.",
 				"style": "Utilisez une illustration comme référence de style.",
 				"tooLarge": "Choisissez une référence de {max} × {max} px maximum.",
@@ -2247,6 +2259,27 @@
 		"describeMotion": "Décrivez le mouvement",
 		"motionOnly": "Décrivez uniquement le mouvement du corps. Ajoutez les armes et accessoires comme objets.",
 		"orChoose": "Ou choisissez une animation",
+		"motionModel": "Modèle de mouvement",
+		"motionModelHelp": "Skeleton v3 utilise les mêmes poses pour le corps et l’équipement. V3 et PixMiniMax dessinent d’abord le corps, puis PixelDoll détecte les poses pour l’équipement.",
+		"models": {
+			"skeletonV3": "Par défaut (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Images",
+		"framesHelp": "Les choix correspondent à ce modèle et au canevas du personnage ({canvas} px). L'option par défaut garde le nombre d'images prédéfini de PixelDoll.",
+		"framesDefault": {
+			"one": "Par défaut ({count} image)",
+			"other": "Par défaut ({count} images)"
+		},
+		"framesValue": {
+			"one": "{count} image",
+			"other": "{count} images"
+		},
+		"framesKept": {
+			"one": "Conservé : {count} image",
+			"other": "Conservées : {count} images"
+		},
 		"redrawDirections": "Directions à redessiner",
 		"redrawHidesEquipment": "Le remplacement de ces vues masque l’équipement jusqu’à la création de nouvelles images.",
 		"redrawMirrors": "Les vues en miroir changent aussi : {directions}.",

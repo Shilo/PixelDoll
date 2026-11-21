@@ -205,6 +205,14 @@ This default lets users reject a design or skip unwanted moves before buying equ
 move can cost the same or more than the former combined initial plan, which could batch some short clips. No automatic
 animation, quality retry, or substitute static item is introduced.
 
+## Advanced move generation
+
+Keep Skeleton v3 and the move's default frame count on the ordinary Add a move path. Put the model and frame count in
+an Advanced accordion, like New character. Show only counts the chosen model accepts on the request canvas, rather
+than letting users type unsupported values. V3 and PixMiniMax are for users who want to keep those models' body pixels;
+estimate joints on the frozen frames so equipment can still use Skeleton v3. Joint editing and conversion of saved
+moves are separate work. A change to either option must refresh the paid estimate before submission.
+
 ## PWA (2026-11-02, supersedes D13)
 
 The production build is installable and supports local work offline. Development and agent servers never register a

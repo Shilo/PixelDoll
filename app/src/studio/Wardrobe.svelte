@@ -58,6 +58,8 @@
 		sharedKey,
 		addShared,
 		removeItem,
+		itemSlotTargets,
+		moveItemToSlot,
 		busySlots,
 		slotUseHere,
 		moveSlot,
@@ -699,7 +701,7 @@
 
 	// Dragging (slotDrag recognizes the gesture): the target is the header boundary nearest the pointer, measured on the
 	// sections' own layout rather than where sticky headers appear, and nothing moves until the drop.
-	type DragSource = { key: string; label: string; hidden: boolean; rail?: boolean };
+	type DragSource = { key: string; label: string; hidden: boolean; rail?: boolean; item?: Item };
 	const EDGE = 48,
 		MAX_SPEED = 14,
 		/** How far past the first or last shown slot a drop still counts. */
@@ -707,10 +709,36 @@
 		/** Half the gap between sections, where the drop line sits. */
 		GAP = 8;
 	let drag = $state<{ source: DragSource; line: number | null } | null>(null);
+	let itemDrop = $state('');
+	const itemTargets = $derived(
+		m && drag?.source.item ? itemSlotTargets(m, drag.source.item).map(({ key }) => key) : []
+	);
 	let armed = $state('');
+	let armedItem = $state('');
 	let pointer = $state({ x: 0, y: 0 });
 	let dragFrame = 0;
 	let dragPreview = $state<HTMLElement>();
+	function itemDropTarget() {
+		const hit = document.elementFromPoint(pointer.x, pointer.y);
+		const section = hit?.closest<HTMLElement>('section[data-own]');
+		const tab = hit?.closest<HTMLElement>('[data-rail][data-sortable]');
+		const key =
+			section && list?.contains(section)
+				? section.dataset.group
+				: tab && rail?.contains(tab)
+					? tab.dataset.rail
+					: undefined;
+		return key && itemTargets.includes(key) ? key : '';
+	}
+	async function moveTileFromMenu(id: string, target: string) {
+		const surface = list;
+		if (!(await moveItemToSlot(id, target, { showDestination: true })) || surface !== list) return;
+		await tick();
+		if (surface === list)
+			list
+				?.querySelector<HTMLElement>(`[data-tile="${CSS.escape(id)}"]`)
+				?.focus({ preventScroll: true });
+	}
 	/** Where a drop at the pointer would land: the shown index, and the drop line's offset in the list. */
 	function dropTarget(source: DragSource): { to: number; line: number } | null {
 		if (source.rail) {
@@ -773,7 +801,11 @@
 	}
 	function dragStep() {
 		if (!drag || !list) return;
-		const surface = drag.source.rail ? rail : list;
+		const surface =
+			drag.source.rail ||
+			(drag.source.item && rail?.contains(document.elementFromPoint(pointer.x, pointer.y)))
+				? rail
+				: list;
 		if (!surface) return;
 		const box = surface.getBoundingClientRect(),
 			{ x, y } = pointer;
@@ -787,27 +819,35 @@
 						: 0;
 			if (speed) surface.scrollTop += speed;
 		}
-		drag.line = dropTarget(drag.source)?.line ?? null;
+		if (drag.source.item) itemDrop = itemDropTarget();
+		else drag.line = dropTarget(drag.source)?.line ?? null;
 		dragFrame = requestAnimationFrame(dragStep);
 	}
 	function dragOptions(source: DragSource) {
 		return {
 			armed: (value: boolean) => {
+				if (source.item) {
+					armedItem = value ? source.item.id : '';
+					return;
+				}
 				if (value) armed = source.key;
 				else if (armed === source.key) armed = '';
 			},
 			start: () => {
 				armed = '';
 				closeSlotMenu();
+				if (source.item) document.getElementById('item-menu')?.hidePopover();
 				// Stop a smooth scroll still bringing a slot to the top; the drag scrolls the list from here.
 				list?.scrollTo({ top: list.scrollTop, behavior: 'instant' });
 				drag = { source, line: null };
 				void tick().then(() => {
 					if (drag) dragPreview?.showPopover();
 				});
-				announce = message(source.rail ? 'wardrobe.dragInRail' : 'wardrobe.dragInList', {
-					label: slotLabelMessage(m, source.key)
-				});
+				announce = source.item
+					? message('wardrobe.dragItem', { name: source.item.name })
+					: message(source.rail ? 'wardrobe.dragInRail' : 'wardrobe.dragInList', {
+							label: slotLabelMessage(m, source.key)
+						});
 				cancelAnimationFrame(dragFrame);
 				dragFrame = requestAnimationFrame(dragStep);
 			},
@@ -816,10 +856,17 @@
 			},
 			end: (commit: boolean) => {
 				cancelAnimationFrame(dragFrame);
-				const target = commit && drag ? dropTarget(drag.source) : null;
+				const itemTarget = commit && source.item && drag ? itemDropTarget() : '';
+				const target = commit && drag && !source.item ? dropTarget(drag.source) : null;
 				dragPreview?.hidePopover();
 				drag = null;
+				itemDrop = '';
 				armed = '';
+				if (source.item) {
+					if (itemTarget) void moveItemToSlot(source.item.id, itemTarget);
+					else announce = message('wardrobe.dragCanceled');
+					return;
+				}
 				if (!target) {
 					announce = commit
 						? message('wardrobe.slotUnmoved', { label: slotLabelMessage(m, source.key) })
@@ -863,10 +910,12 @@
 				>
 					<div
 						class="bu-section-head"
-						data-current={(!notShownCurrent && ui.group === s.key) || undefined}
+						data-current={(drag?.source.item
+							? itemDrop === s.key
+							: !notShownCurrent && ui.group === s.key) || undefined}
 						data-slot-head={!s.fromOthers || undefined}
 						data-armed={armed === s.key || undefined}
-						data-dragged={drag?.source.key === s.key || undefined}
+						data-dragged={(!drag?.source.item && drag?.source.key === s.key) || undefined}
 					>
 						{#if s.fromOthers}<GroupIcon group={s.key} size={16} />{/if}
 						<h3 class="bu-section-title" id="{sectionId(s.key)}-title" aria-label={s.label}>
@@ -960,10 +1009,26 @@
 								{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
 								{@const marks = marksOf(it)}
 								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
-								<div class="tile-wrap" role="none" {@attach contextMenu(openMenu)}>
+								<div
+									class="tile-wrap"
+									role="none"
+									{@attach (node) =>
+										untrack(() =>
+											slotDrag(node, {
+												...dragOptions({ key: s.key, label: it.name, hidden: false, item: it }),
+												menu: openMenu,
+												allowStart: (target) =>
+													target instanceof Element &&
+													!!target.closest('.item-tile') &&
+													!!m &&
+													itemSlotTargets(m, it).length > 0
+											})
+										)}
+								>
 									<button
 										class="bu-tile item-tile"
-										data-selected={ui.selected === it.id || undefined}
+										data-selected={ui.selected === it.id || armedItem === it.id || undefined}
+										data-item-armed={armedItem === it.id || undefined}
 										data-tile={it.id}
 										data-dim={marks.some((x) => x.kind === 'hidden') || undefined}
 										aria-pressed={on}
@@ -1259,11 +1324,21 @@
 			bind:this={dragPreview}
 			style:left="{pointer.x + 16}px"
 			style:--drag-x="{pointer.x + 16}px"
-			style:top="{Math.max(8, pointer.y - 64)}px"
+			style:top="{Math.max(8, pointer.y - (drag?.source.item ? 84 : 64))}px"
 			aria-hidden="true"
 		>
 			<div class="bu-popover-surface bu-floating slot-drag-label">
-				<GripVertical size={18} />{drag?.source.label}
+				{#if drag?.source.item}
+					<span class="drag-item-art"
+						><Thumb project={view.project} item={drag.source.item} box={48} /></span
+					>
+					<span class="drag-item-caption">
+						<span class="bu-tile-label">{drag.source.label}</span>
+						{#if itemDrop}<small>{displayMessage(slotLabelMessage(m, itemDrop))}</small>{/if}
+					</span>
+				{:else}
+					<GripVertical size={18} />{drag?.source.label}
+				{/if}
 			</div>
 		</div>
 		<!-- One shared slot menu, anchored to the header that opened it (like the item menu). -->
@@ -1365,6 +1440,7 @@
 					)
 				: undefined}
 			onremove={(id) => void remove(id)}
+			onmove={(id, target) => void moveTileFromMenu(id, target)}
 			bind:open={menuOpen}
 		/>
 		<!-- Navigation over the list's sections (not tabs): arrows move along it like the other rails (Studio.svelte). -->
@@ -1385,7 +1461,7 @@
 								popovertarget={!s.fromOthers ? 'slot-menu' : undefined}
 								data-sortable={!s.fromOthers || undefined}
 								data-armed={armed === s.key || undefined}
-								data-dragged={drag?.source.key === s.key || undefined}
+								data-dragged={(!drag?.source.item && drag?.source.key === s.key) || undefined}
 								data-filled={s.worn || undefined}
 								aria-current={!notShownCurrent && ui.group === s.key ? 'true' : undefined}
 								aria-label={s.worn ? t('wardrobe.equipped', { label: s.label }) : s.label}
@@ -1459,3 +1535,22 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	.item-tile[data-tile] {
+		user-select: none;
+		-webkit-touch-callout: none;
+	}
+
+	.drag-item-caption {
+		display: grid;
+		min-inline-size: 0;
+	}
+	.drag-item-art {
+		display: grid;
+		place-items: center;
+		inline-size: 48px;
+		block-size: 48px;
+		flex: none;
+	}
+</style>

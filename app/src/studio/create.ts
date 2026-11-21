@@ -24,7 +24,7 @@ import {
 	type Req,
 	type SubmitResponse
 } from '../lib/pixellab/routes.ts';
-import { bytesToBase64, decodePng, type Img } from '../lib/image/png.ts';
+import { base64ToBytes, bytesToBase64, decodePng, makeImg, type Img } from '../lib/image/png.ts';
 import type { ImageReference } from '../lib/image/reference.ts';
 import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
@@ -118,7 +118,9 @@ import {
 	MODEL_IDS,
 	OUTLINE_VALUES,
 	bodyErrors,
+	characterReference,
 	characterReferenceIssue,
+	costBody,
 	facingErrors,
 	modelOf,
 	sizeErrors,
@@ -128,6 +130,11 @@ import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
 import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, hasCompleteCells } from '../lib/dress/dress.ts';
 import { saveSplit } from '../lib/dress/project.ts';
+import {
+	defaultMoveFrameCount,
+	moveFrameCounts,
+	type MoveAnimationOptions
+} from './moveAnimationOptions.ts';
 import { cellImg } from '../lib/compose/compose.ts';
 import { errorMessage, LocalizedError, message, type Message } from '../lib/message.ts';
 import { localizedPlanRestriction } from '../lib/pixellab/plans.ts';
@@ -183,6 +190,7 @@ export function drawRequest(
 	if (spec.model === 'standard')
 		return routes.createCharacterStandard({
 			...common,
+			...(reference ? { directions: { south: png(reference.base64) } } : {}),
 			...(spec.outline ? { outline: spec.outline } : {}),
 			...(spec.detail
 				? { detail: spec.detail === 'highly detailed' ? 'high detail' : spec.detail }
@@ -243,24 +251,21 @@ export const labelViews = <T extends { label: string }>(
 /** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
  * and other moves are added later and priced by moveEstimate. */
 export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model' | 'reference'>) {
-	const n = spec.directions.filter((d) => !d.mirrorOf).length;
+	const n = spec.directions.filter((d) => !d.mirrorOf).length,
+		size = costBody(spec.size, spec.model);
 	// Pro Flash's first image (GET /pro-flash/cost, provisional, 2026-11-12): 5 gens to 96 px, 6 to 208 px, then 9; V3's
 	// costs 1. The eight rotations are priced alike.
 	if (spec.model === 'pro') {
-		const draw = proDrawGens(spec.size);
+		const draw = proDrawGens(size);
 		return { gens: draw.lo + 0.25, maxGens: +(draw.hi + 0.25 + n * EST).toFixed(2), minutes: 5 };
 	}
 	const source = !spec.model ? spec.reference : undefined;
-	const first = source
-		? 0
-		: spec.model !== 'pro-flash'
-			? 1
-			: spec.size <= 96
-				? 5
-				: spec.size <= 208
-					? 6
-					: 9;
-	const area = source ? source.width * source.height : spec.size * spec.size;
+	const first = source ? 0 : spec.model !== 'pro-flash' ? 1 : size <= 96 ? 5 : size <= 208 ? 6 : 9;
+	// An oversized reference cannot be created, so it must not inflate the price either.
+	const area = source
+		? Math.min(source.width, characterReference.v3.max) *
+			Math.min(source.height, characterReference.v3.max)
+		: size * size;
 	const gens =
 		spec.model === 'standard' ? 1.25 : +(first + 0.25 + Math.ceil((area * 8) / 65536)).toFixed(2);
 	// Missing managed rest joints may require one estimate per direction.
@@ -360,6 +365,25 @@ export async function run(
 	return r;
 }
 export const b64 = async (im: Img) => bytesToBase64(await encodePngBytes(im));
+
+async function padStandardReference(
+	reference: ImageReference,
+	size: number
+): Promise<ImageReference> {
+	if (reference.width === size && reference.height === size) return reference;
+	const source = await decodePng(base64ToBytes(reference.base64));
+	const canvas = makeImg(size, size);
+	const left = Math.floor((size - source.w) / 2);
+	const top = Math.floor((size - source.h) / 2);
+	for (let row = 0; row < source.h; row++) {
+		const start = row * source.w * 4;
+		canvas.data.set(
+			source.data.subarray(start, start + source.w * 4),
+			((top + row) * size + left) * 4
+		);
+	}
+	return { base64: await b64(canvas), width: size, height: size };
+}
 /** Result images of a record, in frame order (labels "south/3" or "3"; character rotations are labeled by direction). */
 async function imagesOf(
 	r: JobRec,
@@ -499,6 +523,7 @@ interface ClipJob {
 	action: string;
 	paletteRepair?: boolean;
 	authored?: boolean;
+	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number };
 }
 interface ClipOut {
 	frames: Img[];
@@ -518,19 +543,18 @@ export const bodyAction = (spec: Pick<MoveSpec, 'id' | 'action' | 'poseStyle'>) 
 				? ', empty hands, no weapon, no props, no effects'
 				: '');
 async function renderClip(j: ClipJob): Promise<ClipOut> {
-	const restB64 = await b64(j.rest),
-		recs: JobRec[] = [];
 	const r = await run(
-		rawClip({
-			first: restB64,
-			rest: j.restKps,
-			keypoints: j.keypoints,
-			description: j.looks,
-			action: j.action,
-			dir: j.dir,
-			seed: j.seed,
-			view: j.view
-		}),
+		j.native?.request ??
+			rawClip({
+				first: await b64(j.rest),
+				rest: j.restKps,
+				keypoints: j.keypoints,
+				description: j.looks,
+				action: j.action,
+				dir: j.dir,
+				seed: j.seed,
+				view: j.view
+			}),
 		`${j.name} · ${j.anim} ${j.dir}`,
 		'studio-rig',
 		false,
@@ -538,23 +562,27 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		j.signal,
 		j.activityScope
 	);
-	recs.push(r);
 	j.tick();
 	const outs = await imagesOf(r);
-	if (outs.length !== j.keypoints.length)
+	if (!j.native && outs.length !== j.keypoints.length)
 		throw new LocalizedError(
 			`${j.anim} ${j.dir}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.`,
 			'create.errors.pixellabReturnedWrongNumber',
 			{ move: j.anim, direction: j.dir }
 		);
-	const normalized = outs.map((o) => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
+	const nativeFrames =
+		j.native &&
+		normalizeNativeMoveFrames(r, outs, j.anim, j.dir, j.native.frames, j.rest, j.native.model);
+	const normalized = nativeFrames
+		? []
+		: outs.map((o) => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
 	if (normalized.some((n) => n.cutPx))
 		throw new LocalizedError(
 			`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame or reduce Body size before creating again.`,
 			'create.errors.animationExceedsPxFrame',
 			{ move: j.anim, direction: j.dir, w: j.rest.w }
 		);
-	const rawFrames = normalized.map((n) => n.img);
+	const rawFrames = nativeFrames ?? normalized.map((n) => n.img);
 	// Do not spend on joint measurements or another render when the returned artwork is empty.
 	if (rawFrames.some((f) => !opaqueBox(f)))
 		throw new LocalizedError(
@@ -584,7 +612,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		j.anim,
 		j.rest,
 		frames,
-		j.keypoints,
+		j.native ? undefined : j.keypoints,
 		measured,
 		j.authored ? undefined : { dir: j.dir, rest: j.restKps }
 	);
@@ -592,7 +620,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		frames,
 		measured,
 		qa,
-		recs,
+		recs: [r],
 		...('processing' in candidate ? { processing: candidate.processing } : {})
 	};
 }
@@ -602,7 +630,7 @@ const bodyClipQa = (
 	anim: string,
 	rest: Img,
 	frames: Img[],
-	requested: Keypoint[][],
+	requested: Keypoint[][] | undefined,
 	measured: (Keypoint[] | undefined)[],
 	facing?: { dir: string; rest: Keypoint[] }
 ) =>
@@ -617,10 +645,9 @@ const bodyClipQa = (
 		...(facing ? { facing } : {})
 	});
 /** Numerical body checks a partial or new targeted move must pass unless the user keeps the reviewed frames. */
-const failsBodyGate = (qa: ClipQa) =>
+const failsBodyGate = (qa: ClipQa, native = false) =>
 	qa.fails.length > 0 ||
-	qa.adherence === null ||
-	qa.adherence > RIG_GATES.adherence ||
+	(!native && (qa.adherence === null || qa.adherence > RIG_GATES.adherence)) ||
 	qa.feetDrift > RIG_GATES.silhouetteBottomDelta ||
 	qa.paletteFit < RIG_GATES.paletteFit ||
 	qa.border > RIG_GATES.border;
@@ -786,7 +813,8 @@ function normalizeMotionFrames(
 	label: string,
 	expected: number,
 	size: number,
-	standing?: Img
+	standing?: Img,
+	echo: 'optional-exact' | 'required-leading' | 'optional-leading' = 'optional-exact'
 ): Img[] {
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
@@ -795,17 +823,16 @@ function normalizeMotionFrames(
 			'create.errors.pixellabDroppedDirectionBusy',
 			{ label }
 		); // S4 truncation
-	const returned = r.jobs.reduce((count, job) => count + job.results.length, 0),
+	const returned = images.length,
 		mismatch = new LocalizedError(
 			`${label}: PixelLab returned ${returned} motion frames for ${expected} requested. No joint checks or body render were requested for this view.`,
 			'create.errors.pixellabReturnedMotionFrames',
 			{ label, returned, expected: expected }
 		);
-	// keep_first_frame: false should strip the start frame, but on 2026-11-08 pixminimax returned it as frame 0 of every
-	// described move (9 for 8): drop it only when it is pixel-identical to the standing view, else the count fails.
 	const startKept = returned === expected + 1 && !!standing;
-	if (returned !== expected && !startKept) throw mismatch;
-	const frames = images.map((image) => {
+	if ((returned !== expected && !startKept) || (echo === 'required-leading' && !startKept))
+		throw mismatch;
+	const normalizeFrame = (image: Img) => {
 		const normalized = normalize(image, size, size, 128, size);
 		if (normalized.cutPx)
 			throw new LocalizedError(
@@ -814,9 +841,9 @@ function normalizeMotionFrames(
 				{ label, size }
 			);
 		return normalized.img;
-	});
-	if (startKept) {
-		const first = frames.shift()!;
+	};
+	if (startKept && echo === 'optional-exact') {
+		const first = normalizeFrame(images[0]);
 		if (
 			first.w !== standing!.w ||
 			first.h !== standing!.h ||
@@ -824,6 +851,7 @@ function normalizeMotionFrames(
 		)
 			throw mismatch;
 	}
+	const frames = (startKept ? images.slice(1) : images).map(normalizeFrame);
 	if (frames.some((f) => !opaqueBox(f)))
 		throw new LocalizedError(
 			`${label}: PixelLab returned an empty motion frame`,
@@ -831,6 +859,27 @@ function normalizeMotionFrames(
 			{ label }
 		);
 	return frames;
+}
+
+function normalizeNativeMoveFrames(
+	record: JobRec,
+	outputs: { img: Img }[],
+	move: string,
+	dir: Direction,
+	count: number,
+	rest: Img,
+	model: 'v3' | 'pixminimax'
+): Img[] {
+	return normalizeMotionFrames(
+		record,
+		outputs.map((out) => out.img),
+		dir,
+		`${move} ${dir}`,
+		count,
+		rest.w,
+		rest,
+		model === 'pixminimax' ? 'required-leading' : 'optional-leading'
+	);
 }
 
 export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
@@ -972,8 +1021,12 @@ export async function createCharacter(
 		view = spec.view ?? 'low top-down';
 	// 1. Draw the eight rotations before the shared rig registration.
 	onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
+	const drawSpec =
+		spec.model === 'standard' && spec.reference
+			? { ...spec, reference: await padStandardReference(spec.reference, spec.size) }
+			: spec;
 	const base = await run(
-		drawRequest(spec, spec.seed),
+		drawRequest(drawSpec, spec.seed),
 		`${spec.name} · creating`,
 		'studio-base',
 		false,
@@ -1200,6 +1253,7 @@ export interface MoveSpec {
 	action?: string;
 	text?: string;
 	frames: number;
+	animation?: MoveAnimationOptions;
 	items: string[];
 	itemsOnly?: true;
 	seed: number;
@@ -1381,7 +1435,7 @@ interface CachedBodyClip {
 	dir: DirectionName;
 	rawHash: string;
 	rest: Img;
-	keypoints: Keypoint[][];
+	keypoints: Keypoint[][] | undefined;
 	frames: Img[];
 	facing?: { dir: string; rest: Keypoint[] };
 }
@@ -1471,8 +1525,9 @@ function recoveryScopeIssue(
 	const authored =
 		!spec.itemsOnly &&
 		!spec.itemMethod &&
-		(isAuthoredAction(spec.action) || (allowMotion && !bodyMoveIssue(m, spec))) &&
-		!!spec.dirs?.length;
+		(isAuthoredAction(spec.action) ||
+			((allowMotion || moveAnimationModel(spec) !== 'skeleton-v3') && !bodyMoveIssue(m, spec))) &&
+		(!!spec.dirs?.length || moveAnimationModel(spec) !== 'skeleton-v3');
 	if (!authored)
 		return new RecoveryUnavailable(
 			'Joint-check recovery needs the original authored body-repair settings.',
@@ -1496,7 +1551,12 @@ export async function reviewMoveRecovery(
 	projectId: string,
 	spec: MoveSpec
 ): Promise<MoveRecoveryReview> {
-	if (spec.itemsOnly || spec.itemMethod || !spec.dirs?.length) return {};
+	if (
+		spec.itemsOnly ||
+		spec.itemMethod ||
+		(!spec.dirs?.length && moveAnimationModel(spec) === 'skeleton-v3')
+	)
+		return {};
 	const context = await recoveryContext(projectId);
 	if (await publishedMoveRecovery(context.rec, spec)) return {};
 	if (recoveryScopeIssue(context.rec.manifest, spec, true)) return {};
@@ -1512,7 +1572,7 @@ export async function reviewMoveRecovery(
 	try {
 		const candidates: CachedBodyClip[] = [],
 			plan = await inspectMeasurementRecovery(context, inspection, true, candidates);
-		if (plan.checks && !isAuthoredAction(spec.action))
+		if (plan.checks && moveAnimationModel(spec) === 'skeleton-v3' && !isAuthoredAction(spec.action))
 			return unavailableOf([
 				new RecoveryUnavailable(
 					'Keeping this move requires completed cached joint checks for every frame.',
@@ -1532,7 +1592,7 @@ export async function reviewMoveRecovery(
 		let colorRepair: BodyPaletteRepairPlan | undefined;
 		const unavailable: RecoveryUnavailable[] = [];
 		try {
-			if (isAuthoredAction(spec.action))
+			if (moveAnimationModel(spec) === 'skeleton-v3' && isAuthoredAction(spec.action))
 				colorRepair = await inspectBodyPaletteRepair(context, inspection);
 		} catch (error) {
 			if (!(error instanceof RecoveryUnavailable)) throw error;
@@ -1583,7 +1643,11 @@ async function inspectKeptBody(
 			'create.errors.framesCannotKept',
 			{ direction: directionLabel(broken.dir), reasons: broken.qa.fails.join('; ') }
 		);
-	if (!clips.length || !clips.some((c) => failsBodyGate(c.qa))) return undefined;
+	if (
+		!clips.length ||
+		!clips.some((c) => failsBodyGate(c.qa, moveAnimationModel(spec) !== 'skeleton-v3'))
+	)
+		return undefined;
 	return {
 		qaHash: await keptBodyHash(plan.rigVersion, clips),
 		rigVersion: plan.rigVersion,
@@ -1658,7 +1722,9 @@ async function inspectMeasurementRecovery(
 ): Promise<MeasurementRecoveryPlan> {
 	const { rec, jobs } = context;
 	const rig = rec.manifest.rig,
-		rigVersion = moveRigVersion(rec);
+		rigVersion = moveRigVersion(rec),
+		model = moveAnimationModel(spec),
+		framesRequested = moveFrames(rec.manifest, spec);
 	const scopeIssue = recoveryScopeIssue(
 		rec.manifest,
 		spec,
@@ -1671,7 +1737,8 @@ async function inspectMeasurementRecovery(
 	const allowed = !reviewOnly && intent ? approvedCheckHashes(intent.checkHashes) : undefined;
 	if (
 		spec.bodyPaletteRepair &&
-		(spec.bodyPaletteRepair.version !== 'near-rest-v1' ||
+		(model !== 'skeleton-v3' ||
+			spec.bodyPaletteRepair.version !== 'near-rest-v1' ||
 			!spec.bodyPaletteRepair.id ||
 			spec.bodyPaletteRepair.rigVersion !== rigVersion)
 	)
@@ -1704,9 +1771,9 @@ async function inspectMeasurementRecovery(
 				{ direction: d }
 			);
 		const restImg = await context.read(rest.image.slice(7));
-		let keypoints: Keypoint[][];
+		let keypoints: Keypoint[][] | undefined;
 		const authored = isAuthoredAction(spec.action);
-		if (authored)
+		if (model === 'skeleton-v3' && authored)
 			keypoints = authoredPoses(
 				spec.action!,
 				fromApi(rest.keypoints, rig.cell),
@@ -1714,7 +1781,7 @@ async function inspectMeasurementRecovery(
 				rig.cell.w,
 				spec.poseStyle
 			).map((p) => armDepth(toApi(p, rig.cell), d));
-		else {
+		else if (model === 'skeleton-v3') {
 			const request = moveMotionRequest(rec, spec, d as Direction),
 				hash = (await requestIdentity(request)).requestHash,
 				record = jobs.find((job) => job.requestHash === hash && job.state === 'done');
@@ -1729,7 +1796,7 @@ async function inspectMeasurementRecovery(
 				(await imagesOf(record, context.read)).map((out) => out.img),
 				d as Direction,
 				`${spec.id} ${d} (motion)`,
-				moveFrames(rec.manifest, spec),
+				moveMotionFrames(rec.manifest, spec),
 				rig.cell.w,
 				restImg
 			);
@@ -1745,17 +1812,26 @@ async function inspectMeasurementRecovery(
 			keypoints = measured as Keypoint[][];
 			rawHashes.push(hash);
 		}
-		for (let attempt = 0; attempt < (spec.bodyPaletteRepair ? 1 : CLIP_ATTEMPTS); attempt++) {
-			const req = rawClip({
-				first: await context.encode(restImg),
-				rest: rest.keypoints,
-				keypoints,
-				description: rec.character!.looks,
-				action: bodyAction(spec),
-				dir: d,
-				seed: spec.seed + 101 + attempt * 7919,
-				view: rig.view
-			});
+		if (keypoints) keypoints = sampleMovePoses(keypoints, framesRequested, spec.action);
+		for (
+			let attempt = 0;
+			attempt < (spec.bodyPaletteRepair || model !== 'skeleton-v3' ? 1 : CLIP_ATTEMPTS);
+			attempt++
+		) {
+			const first = await context.encode(restImg);
+			const req =
+				model !== 'skeleton-v3'
+					? nativeMoveRequest(rec, spec, d, model, first)
+					: rawClip({
+							first,
+							rest: rest.keypoints,
+							keypoints: keypoints!,
+							description: rec.character!.looks,
+							action: bodyAction(spec),
+							dir: d,
+							seed: spec.seed + 101 + attempt * 7919,
+							view: rig.view
+						});
 			const rawHash = (await requestIdentity(req)).requestHash;
 			const raw = jobs.find((r) => r.requestHash === rawHash && r.state === 'done');
 			if (!raw) {
@@ -1768,21 +1844,27 @@ async function inspectMeasurementRecovery(
 				break;
 			}
 			const outputs = await imagesOf(raw, context.read);
-			if (outputs.length !== keypoints.length || outputs.some((o) => !o.img.w || !o.img.h))
+			if (
+				model === 'skeleton-v3' &&
+				(outputs.length !== framesRequested || outputs.some((o) => !o.img.w || !o.img.h))
+			)
 				throw new LocalizedError(
 					`${d}: the cached body render is incomplete.`,
 					'create.errors.cachedBodyRenderIncomplete',
 					{ direction: d }
 				);
 			rawHashes.push(rawHash);
-			const normalized = outputs.map((out) => context.normalize(out.img));
+			const nativeFrames =
+				model !== 'skeleton-v3' &&
+				normalizeNativeMoveFrames(raw, outputs, spec.id, d, framesRequested, restImg, model);
+			const normalized = nativeFrames ? [] : outputs.map((out) => context.normalize(out.img));
 			if (normalized.some((n) => n.cutPx || !opaqueBox(n.img)))
 				throw new LocalizedError(
 					`${d}: the cached body frames do not fit this character. No body was regenerated.`,
 					'create.errors.cachedBodyFramesDo',
 					{ direction: d }
 				);
-			const frames = normalized.map((n) => n.img);
+			const frames = nativeFrames || normalized.map((n) => n.img);
 			// Only the first render is ever published; a later seed is a legacy attempt, never a keep candidate.
 			if (!attempt && !spec.bodyPaletteRepair)
 				candidates?.push({
@@ -1791,10 +1873,12 @@ async function inspectMeasurementRecovery(
 					rest: restImg,
 					keypoints,
 					frames,
-					...(authored ? {} : { facing: { dir: d, rest: rest.keypoints } })
+					...(authored && model === 'skeleton-v3'
+						? {}
+						: { facing: { dir: d, rest: rest.keypoints } })
 				});
 			const candidate = spec.bodyPaletteRepair
-				? await paletteCandidate(spec.id, d, restImg, frames, keypoints, 0, context)
+				? await paletteCandidate(spec.id, d, restImg, frames, keypoints!, 0, context)
 				: { frames };
 			if ('processing' in candidate && candidate.processing) {
 				palette.directions.push(d);
@@ -1930,18 +2014,66 @@ export function missingItemMoves(
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const isAuthoredAction = (action?: string): action is string =>
 	!!action && Object.hasOwn(ACTIONS, action);
-export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) => {
+type MoveFrameSpec = Pick<MoveSpec, 'action' | 'frames' | 'animation'>;
+export const moveAnimationModel = (spec: MoveFrameSpec) =>
+	spec.action === 'ride' ? 'skeleton-v3' : (spec.animation?.model ?? 'skeleton-v3');
+export const moveFrames = (m: Manifest, s: MoveFrameSpec) => {
 	const dir = m.rig.directions.find((d) => !d.mirrorOf && m.rig.rest?.[d.id])?.id;
 	const r = dir && m.rig.rest?.[dir];
-	return s.action === 'walk'
-		? 8
-		: isAuthoredAction(s.action) && r && dir
-			? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length
-			: s.frames;
+	const preferred =
+		s.action === 'walk'
+			? 8
+			: isAuthoredAction(s.action) && r && dir
+				? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length
+				: s.frames;
+	if (s.action === 'ride') return preferred;
+	const model = moveAnimationModel(s);
+	return (
+		s.animation?.frameCount ??
+		(s.animation ? defaultMoveFrameCount(model, m.rig.cell.w, preferred) : preferred)
+	);
 };
+
+const verifiedPixminimaxSquareCosts: Partial<Record<number, readonly number[]>> = {
+	32: [1, 1, 1, 1, 1, 1, 1, 2, 2, 2],
+	48: [1, 1, 1, 2, 2, 2, 2, 3, 3, 4],
+	64: [1, 1, 2, 2, 3, 3, 4, 5, 5, 6],
+	65: [1, 1, 1, 1, 1, 1, 1, 2, 2, 2],
+	80: [1, 1, 1, 1, 1, 2, 2, 2, 2, 3],
+	96: [1, 1, 1, 2, 2, 2, 2, 3, 3, 4],
+	112: [1, 1, 2, 2, 2, 3, 3, 4, 4, 5],
+	128: [1, 1, 2, 2, 3, 3, 4, 5, 5, 6],
+	129: [1, 1, 1, 1, 1, 1, 1, 2, 2, 2],
+	144: [1, 1, 1, 1, 1, 1, 2, 2, 2, 2],
+	160: [1, 1, 1, 1, 1, 2, 2, 2, 2, 3],
+	192: [1, 1, 1, 2, 2, 2, 2, 3, 3, 4],
+	224: [1, 1, 2, 2, 2, 3, 3, 4, 4, 5],
+	256: [1, 1, 2, 2, 3, 3, 4, 5, 5, 6]
+};
+
+export function nativeMoveGens(
+	model: 'v3' | 'pixminimax',
+	cell: Manifest['rig']['cell'],
+	frames: number
+): number {
+	if (model === 'v3') return Math.ceil((cell.w * cell.h * frames) / 65_536);
+	return (
+		(cell.w === cell.h ? verifiedPixminimaxSquareCosts[cell.w]?.[frames / 4 - 1] : undefined) ?? 6
+	);
+}
+
+export function moveMotionFrames(m: Manifest, spec: MoveFrameSpec): number {
+	return spec.action === 'walk' ? 8 : Math.ceil(moveFrames(m, spec) / 4) * 4;
+}
+
+export function moveMotionGens(m: Manifest, spec: MoveFrameSpec): number {
+	return spec.action === 'walk'
+		? 3
+		: nativeMoveGens('pixminimax', m.rig.cell, moveMotionFrames(m, spec));
+}
 export function partialMoveFrameIssue(
 	m: Manifest,
-	spec: Pick<MoveSpec, 'id' | 'action' | 'frames'>,
+	spec: Pick<MoveSpec, 'id'> & MoveFrameSpec,
 	directionCount: number
 ): LocalizedError | undefined {
 	const existing = m.rig.animations.find((move) => move.id === spec.id);
@@ -1952,22 +2084,22 @@ export function partialMoveFrameIssue(
 			)
 		: undefined;
 }
-/** The described motion must fit both PixMiniMax and the single raw Skeleton v3 render. */
 export function bodyMoveIssue(
 	m: Manifest,
-	s: Pick<MoveSpec, 'action' | 'text' | 'frames'>,
+	s: MoveFrameSpec & Pick<MoveSpec, 'text'>,
 	blocked = false
 ): LocalizedError | undefined {
-	if (s.action === 'walk' || isAuthoredAction(s.action)) return undefined;
+	if (s.action === 'ride') return undefined;
 	const frames = moveFrames(m, s);
+	const model = moveAnimationModel(s);
 	const suffix = blocked ? ' No generation was requested.' : '';
-	if (![4, 8, 12].includes(frames))
+	if (!moveFrameCounts(model, m.rig.cell.w).includes(frames))
 		return new LocalizedError(
-			`Described moves can be generated with 4, 8 or 12 frames. This move has ${frames}.${suffix}`,
-			blocked ? 'create.errors.describedFramesBlocked' : 'create.errors.describedFrames',
+			`Choose a frame count supported by this animation model and canvas. This move has ${frames}.${suffix}`,
+			blocked ? 'create.errors.moveAnimationFramesBlocked' : 'create.errors.moveAnimationFrames',
 			{ frames }
 		);
-	return s.text?.trim()
+	return s.action === 'walk' || isAuthoredAction(s.action) || s.text?.trim()
 		? undefined
 		: new LocalizedError(
 				`Describe this move before generating it.${suffix}`,
@@ -1981,6 +2113,7 @@ export function moveEstimate(
 		| 'id'
 		| 'action'
 		| 'frames'
+		| 'animation'
 		| 'items'
 		| 'dirs'
 		| 'itemMethod'
@@ -1991,6 +2124,7 @@ export function moveEstimate(
 	>
 ) {
 	const n = moveFrames(m, s),
+		model = moveAnimationModel(s),
 		dirs = moveDirections(m, s.dirs).length,
 		poseRig = s.replace
 			? { ...m.rig, animations: m.rig.animations.filter((animation) => animation.id !== s.id) }
@@ -1999,9 +2133,13 @@ export function moveEstimate(
 			(s.itemsOnly || s.itemMethod === 'grid') && !s.replace
 				? 0
 				: dirs *
-					(poseCallGens(n) +
-						n * EST +
-						(s.action === 'walk' ? 3 + n * EST : isAuthoredAction(s.action) ? 0 : 1 + n * EST));
+					(n * EST +
+						(model !== 'skeleton-v3'
+							? nativeMoveGens(model, m.rig.cell, n)
+							: poseCallGens(n) +
+								(isAuthoredAction(s.action)
+									? 0
+									: moveMotionGens(m, s) + moveMotionFrames(m, s) * EST)));
 	const items =
 		s.itemMethod === 'grid'
 			? s.items.reduce((sum, id) => {
@@ -2171,7 +2309,7 @@ export function itemMoveOffer(
 }
 
 /**
- * Authored (raw skeleton-v3 with keypoints from the rest pose) or text (pixminimax motion source -> raw re-render) move, then
+ * Freeze a pose-first or text-rendered body move, then
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
  */
 export async function addMove(
@@ -2358,7 +2496,23 @@ export async function addMove(
 			)
 		};
 	});
-	const itemTotal = plans.reduce((n, p) => n + p.dirs.length, 0);
+	const itemTotal = plans.reduce((total, plan) => {
+		if (spec.itemMethod) return total + plan.dirs.length;
+		const item = fresh.rec.manifest.items.find((candidate) => candidate.id === plan.id)!;
+		return (
+			total +
+			itemPosePlan(
+				fresh.rec.manifest.rig,
+				{
+					...item,
+					slotConfig: requireSlot(fresh.rec.manifest, item.slot)
+				},
+				spec.id,
+				frames,
+				plan.dirs
+			).length
+		);
+	}, 0);
 	let posed = 0;
 	if (itemTotal) onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
 	const tick = () =>
@@ -2454,27 +2608,85 @@ export async function addMove(
 	};
 }
 
-function moveMotionRequest(rec: StoredProject, spec: MoveSpec, dir: Direction): Req {
+type MoveRequestSpec = Omit<MoveSpec, 'seed'> & { seed?: number };
+
+export function moveMotionRequest(
+	rec: Pick<StoredProject, 'manifest' | 'character'>,
+	spec: MoveRequestSpec,
+	dir: Direction
+): Req {
 	return routes.animateCharacter(
 		spec.action === 'walk'
 			? baseAnimation(
 					'skeleton-v3',
-					rec.character!.id,
+					rec.character?.id ?? '',
 					BASE_ANIMS.find((animation) => animation.name === 'walk')!,
 					[dir],
 					spec.seed
 				)
 			: {
-					character_id: rec.character!.id,
+					character_id: rec.character?.id ?? '',
 					mode: 'pixminimax',
-					action_description: `${spec.text?.trim()}, unarmed, no weapon, no props, no other people, no effects`,
-					frame_count: moveFrames(rec.manifest, spec),
+					action_description: `${spec.text?.trim().slice(0, 900)}, unarmed, no weapon, no props, no other people, no effects`,
+					frame_count: moveMotionFrames(rec.manifest, spec),
 					keep_first_frame: false,
 					animation_name: spec.id,
 					directions: [dir],
 					seed: spec.seed
 				}
 	);
+}
+
+export function nativeMoveRequest(
+	rec: Pick<StoredProject, 'manifest' | 'character'>,
+	spec: MoveRequestSpec,
+	dir: Direction,
+	model: 'v3' | 'pixminimax',
+	first: string
+): Req {
+	const motion = spec.text?.trim() || actionOf(spec.action ?? spec.id);
+	const guard = ', unarmed, no weapon, no props, no other people, no effects';
+	const body = {
+		first_frame: png(first),
+		frame_count: moveFrames(rec.manifest, spec),
+		...(spec.seed === undefined ? {} : { seed: spec.seed }),
+		no_background: true as const,
+		enhance_prompt: false as const
+	};
+	return model === 'v3'
+		? routes.animateWithTextV3({
+				...body,
+				action: `${motion.slice(0, 900)}${guard}, keep facing ${dir}`
+			})
+		: routes.animatePixminimax({
+				...body,
+				description: `${motion.slice(0, 900)}${guard}`,
+				subject_description: rec.character?.looks.trim().slice(0, 300) || 'the character',
+				initial_pose: 'standing upright with empty hands',
+				view: rec.manifest.rig.view ?? 'low top-down',
+				direction: dir
+			});
+}
+
+function sampleMovePoses(poses: Keypoint[][], frames: number, action?: string): Keypoint[][] {
+	if (poses.length === frames) return poses;
+	return Array.from({ length: frames }, (_, index) => {
+		if (action === 'death' && index === frames - 1) return poses[poses.length - 1];
+		const phase =
+				action === 'death'
+					? (index * (poses.length - 1)) / (frames - 1)
+					: (index * poses.length) / frames,
+			before = Math.floor(phase),
+			mix = phase - before;
+		const after = new Map(poses[(before + 1) % poses.length].map((point) => [point.label, point]));
+		return poses[before].map((point) => {
+			const next = after.get(point.label)!;
+			return {
+				...point,
+				...kp4(point.label, point.x + (next.x - point.x) * mix, point.y + (next.y - point.y) * mix)
+			};
+		});
+	});
 }
 
 async function addBodyClip(
@@ -2500,8 +2712,23 @@ async function addBodyClip(
 		affected = affectedMoveDirections(rig, dirs),
 		n = moveFrames(m, spec),
 		name = m.name;
-	const authored = isAuthoredAction(spec.action) ? spec.action : undefined;
-	const total = dirs.length * (1 + n + (authored ? 0 : 1 + n));
+	const model = moveAnimationModel(spec);
+	if (model !== 'skeleton-v3')
+		for (const direction of dirs) {
+			const rest = rig.rest?.[direction];
+			const image = rest && project.images.get(rest.image);
+			if (!rest || !hasAll(rest.keypoints) || image?.w !== rig.cell.w || image.h !== rig.cell.h)
+				throw new LocalizedError(
+					`${direction}: original standing artwork or joints are missing.`,
+					'create.errors.originalStandingArtworkJoints',
+					{ direction }
+				);
+		}
+	const authored =
+		model === 'skeleton-v3' && isAuthoredAction(spec.action) ? spec.action : undefined;
+	const total =
+		dirs.length *
+		(1 + n + (authored || model !== 'skeleton-v3' ? 0 : 1 + moveMotionFrames(m, spec)));
 	let done = 0;
 	const tick = () =>
 		onProgress({ step: 'animate', done: Math.min(total, ++done), total, recIds: [] });
@@ -2515,6 +2742,29 @@ async function addBodyClip(
 			};
 			const restKps = rig.rest![d]!.keypoints,
 				restImg = project.images.get(rig.rest![d]!.image)!;
+			if (model !== 'skeleton-v3') {
+				const out = await renderClip({
+					anim: spec.id,
+					dir: d,
+					rest: restImg,
+					restKps,
+					keypoints: [],
+					looks: rec.character!.looks,
+					seed: spec.seed,
+					name,
+					tick: checkedTick,
+					view: rig.view,
+					signal,
+					activityScope: spec.activityScope,
+					action: bodyAction(spec),
+					native: {
+						request: nativeMoveRequest(rec, spec, d, model, await b64(restImg)),
+						model,
+						frames: n
+					}
+				});
+				return { d, keypoints: out.measured as Keypoint[][], out };
+			}
 			let keypoints: Keypoint[][];
 			if (authored)
 				keypoints = authoredPoses(
@@ -2530,7 +2780,7 @@ async function addBodyClip(
 					d,
 					`${name} · ${spec.id} ${d} (motion)`,
 					checkedTick,
-					n,
+					moveMotionFrames(m, spec),
 					signal,
 					spec.activityScope,
 					rig.cell.w,
@@ -2539,6 +2789,7 @@ async function addBodyClip(
 				keypoints = result.keypoints;
 				extra[k] = [result.record];
 			}
+			keypoints = sampleMovePoses(keypoints, n, spec.action);
 			return {
 				d,
 				keypoints,
@@ -2582,12 +2833,24 @@ async function addBodyClip(
 		frig = fm.rig,
 		baseIt = fm.items.find((i) => i.id === frig.baseItem)!;
 	const old = frig.animations.find((a) => a.id === spec.id);
+	const frameMs = defaultMs(spec.id);
+	const referenceCount =
+		model === 'skeleton-v3' && (authored || spec.action === 'walk')
+			? moveFrames(m, { action: spec.action, frames: spec.frames })
+			: n;
+	const durationMs = referenceCount * frameMs;
 	const anim: RigAnimation = {
 		...old,
 		id: spec.id,
 		cells: n,
 		loop: old?.loop ?? true,
-		frames: old?.cells === n ? old.frames : playlist(n, defaultMs(spec.id)),
+		frames:
+			old?.cells === n
+				? old.frames
+				: playlist(n, frameMs).map(({ cell }) => ({
+						cell,
+						ms: Math.round(((cell + 1) * durationMs) / n) - Math.round((cell * durationMs) / n)
+					})),
 		sources: { ...old?.sources }
 	};
 	for (const d of affected) delete anim.sources![d];
@@ -2605,7 +2868,10 @@ async function addBodyClip(
 				'These body frames or their quality checks changed since review. Nothing was saved and no request was made. Review them again.',
 				'create.errors.bodyFramesTheirQuality'
 			);
-	} else if (spec.dirs && clips.some(({ out: { qa } }) => failsBodyGate(qa)))
+	} else if (
+		spec.dirs &&
+		clips.some(({ out: { qa } }) => failsBodyGate(qa, model !== 'skeleton-v3'))
+	)
 		throw old
 			? new LocalizedError(
 					'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.',
@@ -2628,15 +2894,17 @@ async function addBodyClip(
 			(r, j) => baseIt.provenance.push(provOf(r, j >= (extra[k]?.length ?? 0) ? produced : [])) - 1
 		);
 		const src: ClipSource = {
-			route: 'skeleton-v3',
+			route: model,
 			reference: frig.rest![c.d]!.image,
 			keypoints: c.keypoints,
 			motion:
-				spec.action === 'walk'
-					? 'managed-skeleton-v3:walking-8-frames'
-					: spec.action
-						? `authored:${spec.action}`
-						: `pixminimax:${spec.text}`,
+				model !== 'skeleton-v3'
+					? `${model}:${spec.text?.trim() || spec.action || spec.id}`
+					: spec.action === 'walk'
+						? 'managed-skeleton-v3:walking-8-frames'
+						: spec.action
+							? `authored:${spec.action}`
+							: `pixminimax:${spec.text}`,
 			measured: c.out.measured.map((x) => x ?? []),
 			...(c.out.processing ? { processing: c.out.processing } : {}),
 			provenance: idx

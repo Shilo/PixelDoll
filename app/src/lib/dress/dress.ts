@@ -25,7 +25,7 @@ import {
 	toHex,
 	variantRamp
 } from './palette.ts';
-import { isGarment, isShorts } from './regions.ts';
+import { isGarment, isNativeMoveDirection, isShorts } from './regions.ts';
 import { hiddenSlots } from '../compose/compose.ts';
 
 export const SWATCHES: Record<string, Hex> = {
@@ -45,9 +45,17 @@ export const SWATCHES: Record<string, Hex> = {
 
 export const SKIN_TONES: Hex[] = ['#5c3a21', '#8d5524', '#c68642', '#e0ac69', '#f1c27d', '#ffdbac'];
 
-export const itemImgs = (p: Project, it: Item): Img[] =>
+export const itemImgs = (p: Project, it: Item, skipNative = false): Img[] =>
 	it.layers
-		.flatMap((l) => Object.values(l.cells ?? {}).flatMap((d) => Object.values(d ?? {}).flat()))
+		.flatMap((layer) =>
+			Object.entries(layer.cells ?? {}).flatMap(([anim, dirs]) =>
+				Object.entries(dirs ?? {}).flatMap(([dir, cells]) =>
+					skipNative && isNativeMoveDirection(p.manifest.rig, anim, dir as DirectionName)
+						? []
+						: (cells ?? [])
+				)
+			)
+		)
 		.flatMap((h) => (h && p.images.get(h)) || []);
 
 // Material words (B7): from the item's description nouns, else its slot; the hue word is the last resort.
@@ -177,9 +185,9 @@ export function deriveMaterials(
 		const counts = colorCounts(itemImgs(p, it));
 		let ramps: Hex[][], names: string[];
 		if (it.regions === 'shirt-shorts') {
-			// B15: garment grays by region bit (lib/dress/regions.ts), the rest as usual (Skin)
+			const splitColors = colorCounts(itemImgs(p, it, true));
 			const by = (pick: (c: number) => boolean) =>
-				[...counts.keys()]
+				[...splitColors.keys()]
 					.filter((c) => pick(c) && !claimed.has(c))
 					.sort((x, y) => lab(x)[0] - lab(y)[0])
 					.map(toHex);
@@ -523,7 +531,7 @@ export function selfTest() {
 	// B15: a region-split base -> Shirt (even-blue garment grays), Shorts (odd), Skin (the rest)
 	const rb = {
 		manifest: {
-			rig: { baseItem: 'b' },
+			rig: { baseItem: 'b', directions: [], animations: [] },
 			materials: [],
 			items: [
 				{

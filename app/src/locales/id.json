@@ -259,6 +259,7 @@
 		"titleShowThisFrame": "Tampilkan frame ini",
 		"checksFoundIssuesNoPaidRetryWas": "Pemeriksaan menemukan masalah. Tidak ada percobaan ulang berbayar yang dimulai. Anda dapat meminta percobaan lain atau menerima item ini apa adanya.",
 		"acceptAsIs": "Terima apa adanya",
+		"pendingWorkBusy": "Ada animasi atau penyiapan yang sedang berjalan atau berhenti. Selesaikan atau buang untuk memakai tindakan ini.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Menerima gambar saat ini tanpa menggunakan kredit. Masalah yang ditemukan tetap tercatat di detail item.",
 		"youAcceptedThisArtworkWithItsRecorded": "Anda menerima gambar ini beserta catatan kualitasnya.",
 		"generateItemForMove": "Buat item untuk animasi",
@@ -540,6 +541,11 @@
 		"workspaceActions": "Tindakan ruang kerja"
 	},
 	"wardrobe": {
+		"moveItemTo": "Pindahkan ke slot",
+		"dragItem": "Menyeret {name}. Lepaskan di slot lain.",
+		"itemMoved": "{name} dipindahkan ke {label}.",
+		"itemMoveBusy": "Selesaikan atau buang generasi terkait sebelum memindahkan item ini.",
+		"itemMoveChanged": "Item atau slot berubah. Coba lagi.",
 		"notShownInMove": "Tidak terlihat dalam gerakan ini",
 		"notShownInMoveNote": "Item sedang dipakai, tetapi tidak terlihat karena tidak memiliki bingkai di semua tampilan gerakan ini.",
 		"randomLowerItem": "Acak item {lower}",
@@ -789,6 +795,11 @@
 		"moveNameAdded": "{moveName} ditambahkan",
 		"moveNameHasItemIssuesToReviewNo": "Ada masalah pada item di {moveName} yang perlu ditinjau. Tidak ada percobaan ulang berbayar yang dimulai.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} gagal. Buka Animasi untuk mencoba lagi atau mulai dari awal.",
+		"createFailedOpen": "{name} tidak dapat dibuat. Buka untuk mencoba lagi atau mulai dari awal.",
+		"setupFailedOpen": "Penyiapan karakter berhenti. Buka untuk mencoba lagi atau mulai dari awal.",
+		"stoppedWork": {
+			"other": "{count} pembuatan berhenti. Buka untuk melihat alasannya, lalu coba lagi atau buang."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Operasi ini berubah. Tinjau ulang pemeriksaan sendi.",
 		"thePendingJointChecksChangedReviewTheir": "Pemeriksaan sendi yang tertunda berubah. Tinjau ulang biayanya.",
 		"thisOperationChangedReviewTheBodyFrames": "Operasi ini berubah. Tinjau ulang frame tubuh.",
@@ -1870,7 +1881,7 @@
 			"keepNeedsChecks": "Untuk menyimpan animasi ini, setiap frame harus memiliki hasil pemeriksaan sendi yang sudah selesai di cache.",
 			"noFailedChecks": "Frame di cache tidak memiliki pemeriksaan sendi gagal yang bisa dicoba ulang.",
 			"paletteDrift": "Pergeseran warna terlalu besar untuk perbaikan kecil pada palet. Gambar yang ada tetap disimpan.",
-			"describedFrames": "Animasi berdasarkan deskripsi bisa dibuat dengan 4, 8, atau 12 frame. Animasi ini memiliki {frames} frame.",
+			"moveAnimationFrames": "Model dan ukuran kanvas ini tidak mendukung {frames} frame. Pilih jumlah frame yang didukung.",
 			"describeMove": "Deskripsikan animasi ini sebelum membuatnya.",
 			"partialSaved": "{reason} Tampilan yang selesai sudah disimpan ({views}).",
 			"partialSavedNewFrames": "{reason} Tampilan yang selesai sudah disimpan ({views}). Buat frame baru hanya meminta frame yang belum ada.",
@@ -1880,7 +1891,7 @@
 			"moveDirectionsChanged": "Arah karakter berubah. Tinjau estimasi terbaru untuk animasi ini sebelum mencoba lagi. Tidak ada permintaan pembuatan yang dikirim.",
 			"reviewItemRedrawFirst": "Tinjau penggambaran ulang item dan estimasinya sebelum membuatnya. Tidak ada permintaan yang dikirim.",
 			"chooseRepairTarget": "Sebelum memperbaiki, pilih satu item dan satu arah dari animasi yang sudah ada. Tidak ada permintaan pembuatan yang dikirim.",
-			"describedFramesBlocked": "Animasi berdasarkan deskripsi bisa dibuat dengan 4, 8, atau 12 frame. Animasi ini memiliki {frames} frame. Tidak ada generasi yang diminta.",
+			"moveAnimationFramesBlocked": "Model dan ukuran kanvas ini tidak mendukung {frames} frame. Tidak ada generasi yang diminta.",
 			"describeMoveBlocked": "Deskripsikan animasi ini sebelum membuatnya. Tidak ada generasi yang diminta.",
 			"chooseExistingMoveRepairing": "Pilih animasi yang sudah ada sebelum memperbaiki perlengkapannya."
 		},
@@ -1958,7 +1969,7 @@
 				"v3": { "label": "Bawaan (V3)", "help": "Proporsi seimbang." },
 				"standard": {
 					"label": "Standar",
-					"help": "Menggambar delapan tampilan dari teks dengan templat tetap."
+					"help": "Menggambar delapan tampilan menggunakan templat atau sprite yang menghadap ke depan."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2038,7 +2049,7 @@
 			"sizeGuideReference": "Panduan ukuran dan referensi",
 			"reference": {
 				"frontFacing": "Gunakan sprite yang menghadap ke depan.",
-				"standardTextOnly": "Standar hanya menggunakan teks. Hapus gambar referensi atau pilih model lain.",
+				"characterSprite": "Sprite karakter",
 				"concept": "Gunakan sketsa atau desain karakter.",
 				"style": "Gunakan ilustrasi sebagai acuan gaya.",
 				"tooLarge": "Pilih referensi berukuran maksimal {max} × {max} px.",
@@ -2148,6 +2159,24 @@
 		"describeMotion": "Deskripsikan gerakannya",
 		"motionOnly": "Jelaskan gerakan tubuh saja. Tambahkan senjata dan properti sebagai item.",
 		"orChoose": "Atau pilih animasi",
+		"motionModel": "Model gerakan",
+		"motionModelHelp": "Skeleton v3 memakai pose yang sama untuk tubuh dan perlengkapan. V3 dan PixMiniMax menggambar tubuh terlebih dahulu, lalu PixelDoll mendeteksi pose untuk perlengkapan.",
+		"models": {
+			"skeletonV3": "Bawaan (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Frame",
+		"framesHelp": "Pilihannya sesuai dengan model ini dan kanvas karakter ({canvas} px). Opsi default memakai jumlah frame bawaan PixelDoll.",
+		"framesDefault": {
+			"other": "Default ({count} frame)"
+		},
+		"framesValue": {
+			"other": "{count} frame"
+		},
+		"framesKept": {
+			"other": "Dipertahankan: {count} frame"
+		},
 		"redrawDirections": "Arah yang akan digambar ulang",
 		"redrawHidesEquipment": "Mengganti tampilan ini akan menyembunyikan perlengkapan sampai frame baru dibuat.",
 		"redrawMirrors": "Tampilan cermin juga berubah: {directions}.",

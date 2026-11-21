@@ -14,6 +14,7 @@
 		name,
 		kind,
 		locked = '',
+		onlocked,
 		ondownload,
 		onfixframes,
 		ondelete,
@@ -22,6 +23,8 @@
 		name: string;
 		kind: 'outfit' | 'move';
 		locked?: string;
+		/** Opens what causes the lock, when it can be shown. */
+		onlocked?: () => void;
 		ondownload: () => Promise<void>;
 		onfixframes?: () => void;
 		ondelete: () => void | Promise<void>;
@@ -80,6 +83,15 @@
 		/>
 	{/snippet}
 </RowActions>
+{#snippet viewLock()}
+	<button
+		class="bu-btn"
+		onclick={() => {
+			deleting = false;
+			onlocked?.();
+		}}>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
+	>
+{/snippet}
 {#if deleting}
 	<ConfirmDialog
 		title={t('common.deleteNamed', { name })}
@@ -87,6 +99,7 @@
 		{busy}
 		problem={displayMessage(problem)}
 		blocked={!!locked}
+		problemAction={locked && onlocked ? viewLock : undefined}
 		oncancel={() => {
 			deleting = false;
 			problem = '';

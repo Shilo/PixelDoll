@@ -54,7 +54,7 @@ export interface CreateCharacterV3 {
 export type CreateCharacterStandard = Pick<
 	CreateCharacterV3,
 	'description' | 'image_size' | 'view' | 'template_id' | 'seed' | 'outline' | 'detail'
->;
+> & { directions?: Partial<Record<Direction, B64Image>> };
 /** Pro Flash draws the south view, then V3 rotates it into 8 (S4: chibi style; rejects no_background and n_directions 4). */
 export interface CreateCharacterProFlash {
 	description: string;
@@ -199,7 +199,25 @@ export const routes = {
 	editAnimationV2: (b: EditAnimationV2) => post('/edit-animation-v2', b),
 	editImageSheet: (b: EditImageSheet) => post('/edit-images-v2', b),
 	animateWithSkeletonV3: (b: AnimateSkeletonV3) => post('/animate-with-skeleton-v3', b),
+	animateWithTextV3: (b: TextAnimation & { action: string }) => post('/animate-with-text-v3', b),
+	animatePixminimax: (
+		b: TextAnimation & {
+			description: string;
+			subject_description: string;
+			initial_pose: string;
+			view: 'low top-down' | 'high top-down' | 'side';
+			direction: Direction;
+		}
+	) => post('/animate-pixminimax', b),
 	inpaintV3: (b: InpaintV3) => post('/inpaint-v3', b)
+};
+
+type TextAnimation = {
+	first_frame: B64Image;
+	frame_count: number;
+	seed?: number;
+	no_background: true;
+	enhance_prompt: false;
 };
 
 // ---- responses ----

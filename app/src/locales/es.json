@@ -271,6 +271,7 @@
 		"titleShowThisFrame": "Mostrar este fotograma",
 		"checksFoundIssuesNoPaidRetryWas": "Las comprobaciones detectaron problemas. No se inició ningún reintento de pago. Puedes solicitar otro intento o aceptar el objeto tal cual.",
 		"acceptAsIs": "Aceptar tal cual",
+		"pendingWorkBusy": "Hay una animación o configuración en curso o detenida. Termínala o descártala para usar estas acciones.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Acepta el diseño actual sin gastar créditos. Los problemas detectados quedan en los detalles del objeto.",
 		"youAcceptedThisArtworkWithItsRecorded": "Aceptaste este diseño con las observaciones de calidad registradas.",
 		"generateItemForMove": "Generar objeto para la animación",
@@ -566,6 +567,11 @@
 		"workspaceActions": "Acciones del espacio de trabajo"
 	},
 	"wardrobe": {
+		"moveItemTo": "Mover a ranura",
+		"dragItem": "Estás arrastrando {name}. Suéltalo en otra ranura.",
+		"itemMoved": "{name} se movió a {label}.",
+		"itemMoveBusy": "Termina o descarta la generación relacionada antes de mover este objeto.",
+		"itemMoveChanged": "El objeto o la ranura cambió. Inténtalo de nuevo.",
 		"notShownInMove": "No se muestra en este movimiento",
 		"notShownInMoveNote": "El objeto está equipado, pero no se muestra porque le faltan fotogramas en todas las vistas de este movimiento.",
 		"randomLowerItem": "Objeto aleatorio de {lower}",
@@ -824,6 +830,12 @@
 		"moveNameAdded": "{moveName} agregada",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} tiene problemas de objetos que revisar. No se inició ningún reintento de pago.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} falló. Abre Animaciones para intentarlo de nuevo o empezar de cero.",
+		"createFailedOpen": "No se pudo crear {name}. Ábrelo para intentarlo de nuevo o empezar de cero.",
+		"setupFailedOpen": "La configuración del personaje se detuvo. Ábrela para intentarlo de nuevo o empezar de cero.",
+		"stoppedWork": {
+			"one": "Se detuvo {count} generación. Ábrela para ver el motivo y vuelve a intentarlo o descártala.",
+			"other": "Se detuvieron {count} generaciones. Ábrelas para ver el motivo y vuelve a intentarlo o descártalas."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Esta operación cambió. Revisa de nuevo las comprobaciones de articulaciones.",
 		"thePendingJointChecksChangedReviewTheir": "Las comprobaciones de articulaciones pendientes cambiaron. Revisa de nuevo su costo.",
 		"thisOperationChangedReviewTheBodyFrames": "Esta operación cambió. Revisa de nuevo los fotogramas del cuerpo.",
@@ -1958,7 +1970,7 @@
 			"keepNeedsChecks": "Conservar esta animación requiere comprobaciones de articulaciones en caché completadas para todos los fotogramas.",
 			"noFailedChecks": "Los fotogramas en caché no tienen comprobaciones de articulaciones fallidas que reintentar.",
 			"paletteDrift": "La variación de color es excesiva para una corrección menor de la paleta. Se conservaron las imágenes anteriores.",
-			"describedFrames": "Las animaciones descritas se pueden generar con 4, 8 o 12 fotogramas. Esta animación tiene {frames}.",
+			"moveAnimationFrames": "Este modelo y tamaño de lienzo no admiten {frames} fotogramas. Elige una cantidad compatible.",
 			"describeMove": "Describe esta animación antes de generarla.",
 			"partialSaved": "{reason} Se guardaron las vistas terminadas ({views}).",
 			"partialSavedNewFrames": "{reason} Se guardaron las vistas terminadas ({views}); Generar fotogramas nuevos solo pide las que faltan.",
@@ -1968,7 +1980,7 @@
 			"moveDirectionsChanged": "Las direcciones del personaje cambiaron. Revisa la estimación actual de la animación antes de volver a intentarlo. No se solicitó ninguna generación.",
 			"reviewItemRedrawFirst": "Revisa el redibujado del objeto y su estimación antes de generar. No se envió ninguna solicitud.",
 			"chooseRepairTarget": "Para reparar, elige un objeto y una dirección de una animación existente. No se solicitó ninguna generación.",
-			"describedFramesBlocked": "Las animaciones descritas se pueden generar con 4, 8 o 12 fotogramas. Esta animación tiene {frames}. No se solicitó ninguna generación.",
+			"moveAnimationFramesBlocked": "Este modelo y tamaño de lienzo no admiten {frames} fotogramas. No se solicitó ninguna generación.",
 			"describeMoveBlocked": "Describe esta animación antes de generarla. No se solicitó ninguna generación.",
 			"chooseExistingMoveRepairing": "Elige una animación existente antes de reparar su equipamiento."
 		},
@@ -2049,7 +2061,7 @@
 				},
 				"standard": {
 					"label": "Estándar",
-					"help": "Dibuja ocho vistas a partir del texto con una plantilla fija."
+					"help": "Dibuja ocho vistas a partir de una plantilla o de tu sprite visto de frente."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2129,7 +2141,7 @@
 			"sizeGuideReference": "Guía de tamaños y referencia",
 			"reference": {
 				"frontFacing": "Usa un sprite visto de frente.",
-				"standardTextOnly": "Estándar solo admite texto. Quita la imagen de referencia o elige otro modelo.",
+				"characterSprite": "Sprite del personaje",
 				"concept": "Usa un boceto o un diseño de personaje.",
 				"style": "Usa una ilustración como referencia de estilo.",
 				"tooLarge": "Elige una referencia de hasta {max} × {max} px.",
@@ -2249,6 +2261,27 @@
 		"describeMotion": "Describe el movimiento",
 		"motionOnly": "Describe solo el movimiento del cuerpo. Añade las armas y los accesorios como objetos.",
 		"orChoose": "O elige una animación",
+		"motionModel": "Modelo de movimiento",
+		"motionModelHelp": "Skeleton v3 usa las mismas poses para el cuerpo y el equipo. V3 y PixMiniMax dibujan primero el cuerpo. Después, PixelDoll detecta las poses para el equipo.",
+		"models": {
+			"skeletonV3": "Predeterminado (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Fotogramas",
+		"framesHelp": "Las opciones encajan con este modelo y el lienzo del personaje ({canvas} px). La opción predeterminada mantiene la cantidad de fotogramas predefinida de PixelDoll.",
+		"framesDefault": {
+			"one": "Predeterminado ({count} fotograma)",
+			"other": "Predeterminado ({count} fotogramas)"
+		},
+		"framesValue": {
+			"one": "{count} fotograma",
+			"other": "{count} fotogramas"
+		},
+		"framesKept": {
+			"one": "Se mantiene: {count} fotograma",
+			"other": "Se mantienen: {count} fotogramas"
+		},
 		"redrawDirections": "Direcciones que se redibujarán",
 		"redrawHidesEquipment": "Al reemplazar estas vistas, el equipo se oculta hasta que se creen nuevos fotogramas.",
 		"redrawMirrors": "También cambian las vistas reflejadas: {directions}.",

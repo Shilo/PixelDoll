@@ -730,6 +730,151 @@ async function openDemo(page: Page) {
 
 const step = (s: string) => console.log('ok', s);
 
+test('dev server: a saved item moves between slots by mouse, keyboard menu and touch', async ({
+	context,
+	page
+}, info) => {
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		await (await import(path)).copyDemo();
+	});
+	const tile = page.locator('[data-tile="hat_wizard"]');
+	const rail = (slot: string) => page.locator(`[data-rail="${slot}"]`);
+	const preview = page.locator('.slot-drag-preview');
+	const at = (slot: string) => page.locator(`section[data-group="${slot}"]`).locator(tile);
+	const center = async (element: Locator) => {
+		const box = (await element.boundingBox())!;
+		return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+	};
+
+	await equipmentGroup(page, 'Head');
+	await tile.scrollIntoViewIfNeeded();
+	await tile.click();
+	await expect(tile).toHaveAttribute('aria-pressed', 'true');
+	await rail('face_acc').scrollIntoViewIfNeeded();
+	const start = await center(tile);
+	const face = await center(rail('face_acc'));
+	await page.mouse.move(start.x, start.y);
+	await page.mouse.down();
+	await page.mouse.move(face.x, face.y, { steps: 6 });
+	await expect(preview.getByRole('img', { includeHidden: true })).toHaveCount(1);
+	await page.keyboard.press('Escape');
+	await page.mouse.up();
+	await expect(preview).not.toBeVisible();
+	await expect(at('head')).toHaveAttribute('aria-pressed', 'true');
+	const blocked = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const dbPath = '/src/lib/store/db.ts';
+		const { doc, flushSave, moveItemToSlot } = await import(statePath);
+		const db = await import(dbPath);
+		await flushSave();
+		const transaction = IDBDatabase.prototype.transaction;
+		IDBDatabase.prototype.transaction = function (stores, mode, options) {
+			if (stores === 'projects' && mode === 'readwrite') {
+				IDBDatabase.prototype.transaction = transaction;
+				transaction
+					.call(this, 'projects', 'readwrite')
+					.objectStore('projects')
+					.put(
+						{
+							id: 'studio-move',
+							projectId: doc.id,
+							spec: { id: 'cast', frames: 8, items: ['hat_wizard'], seed: 1 }
+						},
+						'studio-move'
+					);
+			}
+			return transaction.call(this, stores, mode, options);
+		};
+		try {
+			return await moveItemToSlot('hat_wizard', 'face_acc');
+		} finally {
+			IDBDatabase.prototype.transaction = transaction;
+			await db.del('projects', 'studio-move');
+		}
+	});
+	expect(blocked).toBe(false);
+	await expect(
+		page.getByText('Finish or discard the related generation before moving this item.')
+	).toBeVisible();
+	await expect(at('head')).toHaveAttribute('aria-pressed', 'true');
+	await page.mouse.move(start.x, start.y);
+	await page.mouse.down();
+	await page.mouse.move(face.x, face.y, { steps: 6 });
+	const list = page.locator('.equipment-scroll');
+	const currentSlot = page.locator('[data-rail][aria-current="true"]');
+	const beforeDrop = await list.evaluate((element) => element.scrollTop);
+	const slotBeforeDrop = await currentSlot.getAttribute('data-rail');
+	expect(slotBeforeDrop).not.toBe('face_acc');
+	await page.mouse.up();
+	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
+	await expect(currentSlot).toHaveAttribute('data-rail', slotBeforeDrop!);
+	expect(await list.evaluate((element) => element.scrollTop)).toBe(beforeDrop);
+
+	await at('face_acc').focus();
+	await page.keyboard.press('Shift+F10');
+	await page.getByRole('menuitem', { name: 'Move to slot' }).press('Enter');
+	await page.getByRole('menuitem', { name: 'Hair', exact: true }).press('Enter');
+	await expect(at('hair')).toHaveAttribute('aria-pressed', 'true');
+	await expect(at('hair')).toBeFocused();
+	await reloadStudio(page);
+	await expect(at('hair')).toHaveAttribute('aria-pressed', 'true');
+
+	await page.setViewportSize({ width: 390, height: 844 });
+	await equipmentGroup(page, 'Hair');
+	await tile.scrollIntoViewIfNeeded();
+	await rail('face_acc').scrollIntoViewIfNeeded();
+	const source = await center(tile),
+		target = await center(rail('face_acc'));
+	const session = await context.newCDPSession(page);
+	await session.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+	await page.clock.install();
+	await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [source] });
+	await page.clock.runFor(300);
+	await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [target] });
+	await expect(preview).toBeVisible();
+	await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
+	await reloadStudio(page);
+	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
+
+	// A stopped move holds the items it poses: clicking the busy notice opens that move.
+	await page.evaluate(async () => {
+		const path = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ path);
+		const s = (window as unknown as { __studio: { doc: { id: string } } }).__studio;
+		await db.put('projects', 'studio-move', {
+			id: 'studio-move',
+			status: 'failed',
+			error: 'Saved terminal failure',
+			progress: { step: 'animate', done: 1, total: 4, recIds: [] },
+			projectId: s.doc.id,
+			spec: { id: 'cast', action: 'cast', frames: 8, items: ['hat_wizard'], seed: 1 }
+		});
+	});
+	await reloadStudio(page);
+	// Work that stopped before this page loaded is announced once.
+	const stopped = page.locator('.toast .bu-notice', { hasText: '1 generation stopped' });
+	await stopped.getByRole('button', { name: 'Dismiss notification' }).click();
+	await expect(stopped).toBeHidden();
+	await at('face_acc').focus();
+	await page.keyboard.press('Shift+F10');
+	await page.getByRole('menuitem', { name: 'Move to slot' }).press('Enter');
+	await page.getByRole('menuitem', { name: 'Hair', exact: true }).press('Enter');
+	await page
+		.locator('.toast .bu-notice', { hasText: 'Finish or discard the related generation' })
+		.locator('.bu-notice-activate')
+		.click();
+	await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toContainText(
+		'Saved terminal failure'
+	);
+	await expect(at('face_acc')).toHaveCount(1);
+});
+
 test('studio demo: slots add, rename, show, hide and reorder without changing the drawing', async ({
 	context,
 	page
@@ -2710,6 +2855,29 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(move.getByRole('button', { name: /^Add move/ })).toBeDisabled();
 	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
 	await description.fill('jumping in place');
+	const advanced = move.locator('details.advanced');
+	await advanced.locator('summary').click();
+	const model = advanced.getByRole('combobox', { name: 'Motion model' });
+	const slider = advanced.getByRole('slider', { name: 'Frames' });
+	await expect(model).toHaveValue('skeleton-v3');
+	await expect(model.getByRole('option')).toHaveText(['Default (Skeleton V3)', 'PixMiniMax', 'V3']);
+	await slider.press('Home');
+	await expect(slider).toHaveAttribute('aria-valuetext', '3 frames');
+	await model.selectOption('pixminimax');
+	await slider.press('End');
+	await expect(slider).toHaveAttribute('aria-valuetext', '40 frames');
+	await slider.press('ArrowLeft');
+	await expect(slider).toHaveAttribute('aria-valuetext', '36 frames');
+	await slider.press('End');
+	await model.selectOption('v3');
+	await expect(slider).toHaveAttribute('aria-valuetext', '16 frames');
+	await slider.press('Home');
+	await slider.press('ArrowRight');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await advanced.getByRole('button', { name: 'Default (8 frames)', exact: true }).click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
+	await model.selectOption('skeleton-v3');
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked();
 	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).check();
 	await expect(move.getByRole('button', { name: /^Add Jumping in/ })).toContainText(
@@ -2735,6 +2903,10 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(description).toHaveValue('');
 	await expect(move.getByRole('button', { name: /^Add Cast/ })).toBeEnabled();
 	await expect(cast).toBeChecked();
+	// Presets offer the model and frame choices too; static Ride stays on its Skeleton v3 pose.
+	await expect(advanced).toHaveCount(1);
+	await choices.getByRole('radio', { name: /^Ride\b/ }).click();
+	await expect(advanced).toHaveCount(0);
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -4573,6 +4745,38 @@ test('reload restores failed create, move and setup for review without paid subm
 		await expect(dialog.locator('.steps-list .ring.spin')).toHaveCount(0);
 		await page.keyboard.press('Escape');
 	}
+	const damaged = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(/* @vite-ignore */ statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ dbPath);
+		const projectId = await state.copyDemo();
+		const project = await db.get('projects', projectId);
+		project.manifest.rig.rest = { south: { image: `sha256:${'f'.repeat(64)}` } };
+		await db.put('projects', projectId, project);
+		const setup = await db.get('projects', 'studio-setup');
+		await db.put('projects', 'studio-setup', { ...setup, spec: { ...setup.spec, projectId } });
+		return projectId as string;
+	});
+	await reloadStudio(page);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const state = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+		state.ui.sheet = 'activity';
+	});
+	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
+	await activity.getByRole('button', { name: /Open Character setup/ }).click();
+	await activity.getByRole('button', { name: 'Dismiss setup', exact: true }).click();
+	await expect(activity.getByText(/Character setup ·/)).toHaveCount(0);
+	await expect
+		.poll(() =>
+			page.evaluate(async (id) => {
+				const path = '/src/lib/store/db.ts',
+					db = await import(/* @vite-ignore */ path);
+				return [!!(await db.get('projects', id)), !!(await db.get('projects', 'studio-setup'))];
+			}, damaged)
+		)
+		.toEqual([true, false]);
 	await page.evaluate(async () => {
 		const path = '/src/lib/store/db.ts',
 			db = await import(/* @vite-ignore */ path);
@@ -5107,6 +5311,8 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		const custom = m.rig.animations.find((a: { id: string }) => a.id === 'walk');
 		custom.id = 'idle';
 		custom.sources.east.motion = 'pixminimax:idle, shift weight to the leading foot';
+		custom.sources.west.route = 'v3';
+		custom.sources.west.motion = 'v3:idle, shift weight to the leading foot';
 		for (const item of m.items)
 			for (const layer of item.layers)
 				if (layer.cells?.walk) {
@@ -5120,10 +5326,12 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	await page.getByRole('radio', { name: 'Cross punch · added', exact: true }).click();
-	await expect(sheet).toContainText(
-		'Described moves can be generated with 4, 8 or 12 frames. This move has 6.'
-	);
-	await expect(sheet.getByRole('button', { name: /^Replace Cross punch views/ })).toBeDisabled();
+	const replacePunch = sheet.getByRole('button', { name: /^Replace Cross punch views/ });
+	await expect(replacePunch).toBeDisabled();
+	await sheet
+		.getByRole('textbox', { name: 'Describe the replacement', exact: true })
+		.fill('Punch across the body');
+	await expect(replacePunch).toBeEnabled();
 	await sheet.getByRole('radio', { name: 'Idle · added', exact: true }).click();
 	const replace = sheet.getByRole('button', { name: /^Replace Idle views/ });
 	await expect(replace).toBeDisabled();
@@ -5157,17 +5365,26 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(sword).toHaveCount(0);
 	await expect(sheet).not.toContainText('if equipment runs');
 	await east.click();
-	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveCount(0);
-	await expect(replace).toBeDisabled();
-	await expect(replace).not.toContainText('Est.');
-	await expect(sheet).toContainText('A partial repair must keep the existing frame count.');
-	await expect(sheet.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(
-		0
-	);
-	await east.click();
 	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
 		'Step sideways and shift weight to the leading foot'
 	);
+	await expect(replace).toBeEnabled();
+	const advanced = sheet.locator('summary').filter({ hasText: 'Advanced' });
+	await expect(advanced).toContainText('V3');
+	await advanced.click();
+	await expect(sheet.getByRole('slider', { name: 'Frames', exact: true })).toHaveCount(0);
+	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
+	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
+	await expect(model).toHaveValue('v3');
+	await east.click();
+	await expect(model).toHaveValue('skeleton-v3');
+	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
+		'Step sideways and shift weight to the leading foot'
+	);
+	await model.selectOption('pixminimax');
+	await east.click();
+	await expect(model).toHaveValue('pixminimax');
+	await model.selectOption('skeleton-v3');
 	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');
@@ -6659,6 +6876,18 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		.getByRole('dialog', { name: 'Item review', exact: true })
 		.getByRole('button', { name: 'Done', exact: true })
 		.click();
+	// Activity lists the stopped draft that holds its slot and opens its review.
+	await page
+		.locator('.header-actions')
+		.getByRole('button', { name: 'Activity', exact: true })
+		.click();
+	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
+	await expect(activity.getByText('Needs attention', { exact: true })).toBeVisible();
+	await activity.getByRole('button', { name: /^Open Fresh retry price · / }).click();
+	await page
+		.getByRole('dialog', { name: 'Item review', exact: true })
+		.getByRole('button', { name: 'Done', exact: true })
+		.click();
 	await equipmentGroup(page, 'Off hand');
 	await expect(section(page, 'Off hand').locator('.gen')).toHaveCount(0);
 	await equipmentGroup(page, 'Main hand');
@@ -6944,8 +7173,12 @@ for (const kind of ['outfit', 'move'] as const) {
 		await expect(menu).toBeVisible();
 		await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 		await expect(menu.locator('hr')).toHaveCount(1);
-		// The first action takes focus: Fix frames, then Download ZIP.
-		await expect(menu.getByRole('menuitem', { name: /^Fix frames/ })).toBeFocused();
+		// The first action takes focus: moves start with Fix frames, outfits with Download ZIP.
+		await expect(
+			kind === 'outfit'
+				? menu.getByRole('menuitem', { name: 'Download ZIP', exact: true })
+				: menu.getByRole('menuitem', { name: /^Fix frames/ })
+		).toBeFocused();
 		await page.keyboard.press('Escape');
 		await expect(trigger).toBeFocused();
 		await choice.click({ button: 'right' });
@@ -7207,7 +7440,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expectAnchoredMenu(page);
 	await expect(more).toHaveAttribute('aria-expanded', 'true');
 	const items = itemMenu(page).getByRole('menuitem');
-	await expect(items.first()).toHaveAccessibleName('Rename...');
+	await expect(items.first()).toHaveAccessibleName('Details...');
 	await expect(items.first()).toBeFocused();
 	await expect(items.last()).toHaveAccessibleName('Delete item…');
 	const iconOffsets = await items.evaluateAll((rows) =>
@@ -7219,7 +7452,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(1)).toHaveAccessibleName('Details...');
+	await expect(items.nth(1)).toHaveAccessibleName('Rename...');
 	await expect(items.nth(1)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect.poll(() => menuOpen(page)).toBe(false);

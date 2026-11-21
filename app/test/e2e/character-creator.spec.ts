@@ -1561,6 +1561,56 @@ function offlineCreation(config: CreationCase) {
 	});
 }
 
+test('Standard creates from a south sprite and registers all views with V3', async ({
+	page,
+	context
+}) => {
+	const api = new CharacterApi();
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		await fulfill(route, await api.handle(request.method(), request.url(), request.postDataJSON()));
+	});
+	const sheet = await open(page);
+	await sheet
+		.getByRole('textbox', { name: 'Details', exact: true })
+		.fill('A front-facing explorer');
+	await sheet.locator('details.advanced > summary').click();
+	await sheet.getByRole('combobox', { name: 'Model', exact: true }).selectOption('standard');
+	await sheet.getByRole('spinbutton', { name: 'Body size', exact: true }).fill('48');
+	const sprite = makeImg(24, 32);
+	for (let row = 8; row < 28; row++)
+		for (let column = 8; column < 16; column++)
+			sprite.data.set([222, 80, 40, 255], (row * 24 + column) * 4);
+	await sheet.locator('input[type=file]').setInputFiles({
+		name: 'south.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(await encodePngBytes(sprite))
+	});
+	await expect(sheet.getByText('south.png', { exact: true })).toBeVisible();
+	await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
+	await connect(page);
+	await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible();
+	const draw = api.calls.find(
+		({ path }) => path === '/v2/create-character-with-8-directions'
+	)?.body;
+	expect(draw).toMatchObject({ mode: 'standard', image_size: { width: 48, height: 48 } });
+	expect(Object.keys(draw?.directions ?? {})).toEqual(['south']);
+	const south = draw?.directions;
+	if (!south || Array.isArray(south) || !south.south) throw new Error('Missing south sprite');
+	const padded = await decodePngBytes(Buffer.from(south.south.base64, 'base64'));
+	expect([padded.w, padded.h]).toEqual([48, 48]);
+	const expected = makeImg(48, 48);
+	for (let row = 0; row < sprite.h; row++)
+		expected.data.set(
+			sprite.data.subarray(row * 24 * 4, (row + 1) * 24 * 4),
+			((row + 8) * 48 + 12) * 4
+		);
+	expect(Buffer.from(padded.data)).toEqual(Buffer.from(expected.data));
+	expect(
+		api.calls.find(({ path }) => path === '/v2/create-character-v3')?.body?.direction_images
+	).toHaveProperty('north');
+});
+
 test('switching the model keeps Advanced open and base clothing shows both choices', async ({
 	page
 }) => {
@@ -1569,11 +1619,20 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	const model = sheet.getByRole('combobox', { name: 'Model', exact: true });
 	await expect(model.locator('option')).toHaveText([
 		'Default (V3)',
-		'Standard',
 		'Pro',
-		'Pro Flash'
+		'Pro Flash',
+		'Standard'
 	]);
 	const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
+	await model.selectOption('standard');
+	await expect(drop).toBeVisible();
+	await expect(drop).toBeEnabled();
+	await expect(sheet.getByText('Character sprite (optional)', { exact: true })).toBeVisible();
+	await expect(drop).toHaveAccessibleDescription(
+		/Use a front-facing sprite\. Max \d+ × \d+ px, 8 MB\./
+	);
+	await model.selectOption('v3');
+	await expect(drop).toBeEnabled();
 	const missedDrop = await sheet.evaluate((dialog) => {
 		const dataTransfer = new DataTransfer();
 		dataTransfer.items.add(new File(['unexpected'], 'missed.png', { type: 'image/png' }));
@@ -1607,27 +1666,30 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	});
 	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
 	await expect(attachment).toContainText('80 × 48 px');
+	const remove = sheet.getByRole('button', { name: 'Remove reference', exact: true });
+	await model.selectOption('standard');
+	const body = sheet.getByRole('spinbutton', { name: 'Body size', exact: true });
+	await expect(sheet.getByRole('button', { name: /^Create character/ })).toBeDisabled();
+	await body.fill('96');
+	await expect(attachment).toBeVisible();
+	await expect(attachment).toBeEnabled();
+	await expect(attachment).toContainText('guide.png');
+	await expect(remove).toBeEnabled();
+	await expect(sheet.getByRole('button', { name: /^Create character/ })).toBeEnabled();
 	await model.selectOption('pro');
+	await expect(attachment).toBeEnabled();
+	await expect(remove).toBeEnabled();
 	await expect(sheet.getByText(/sketch or character design/)).toBeVisible();
 	await model.selectOption('pro-flash');
 	await expect(sheet.getByText(/use artwork as a style guide/i)).toBeVisible();
 	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
-	await model.selectOption('standard');
-	await expect(sheet.getByRole('spinbutton', { name: 'Body size', exact: true })).toHaveAttribute(
-		'max',
-		'128'
-	);
-	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
-	await expect(sheet.getByRole('button', { name: /^Create character/ })).toBeDisabled();
-	await model.selectOption('pro-flash');
-	await sheet.getByRole('button', { name: 'Remove reference', exact: true }).click();
+	await remove.click();
 	await expect(drop).toBeFocused();
 	await model.selectOption('pro');
 	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');
 	await expect(sheet.getByRole('combobox', { name: 'Outline', exact: true })).toHaveCount(0);
 	// The model's limits (MODELS) drive the body field: a size V3 accepts survives switching to Pro, which explains and
 	// blocks it instead of clamping it.
-	const body = sheet.getByRole('spinbutton', { name: 'Body size', exact: true });
 	await model.selectOption('v3');
 	await body.fill('172');
 	await expect(body).not.toHaveAttribute('aria-invalid', 'true');

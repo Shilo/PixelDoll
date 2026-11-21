@@ -259,6 +259,7 @@
 		"titleShowThisFrame": "显示此帧",
 		"checksFoundIssuesNoPaidRetryWas": "检查发现问题。未启动付费重试。你可以请求另一次尝试，或按现状接受此装备。",
 		"acceptAsIs": "按现状接受",
+		"pendingWorkBusy": "有动作或设置正在运行或已停止。请完成或放弃它以使用这些操作。",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "按现状接受当前图像，不消耗点数。检测到的问题仍保留在详情中。",
 		"youAcceptedThisArtworkWithItsRecorded": "你已接受此图像及其记录的质量说明。",
 		"generateItemForMove": "为动作生成装备",
@@ -538,6 +539,11 @@
 		"workspaceActions": "工作区操作"
 	},
 	"wardrobe": {
+		"moveItemTo": "移至槽位",
+		"dragItem": "正在拖动{name}。请放到其他槽位。",
+		"itemMoved": "已将{name}移至{label}。",
+		"itemMoveBusy": "请先完成或丢弃相关生成，再移动此装备。",
+		"itemMoveChanged": "装备或槽位已变更。请重试。",
 		"notShownInMove": "此动作中不显示",
 		"notShownInMoveNote": "物品已穿戴，但此动作的所有朝向都缺少帧，因此不会显示。",
 		"randomLowerItem": "随机{lower}装备",
@@ -783,6 +789,9 @@
 		"moveNameAdded": "已添加{moveName}",
 		"moveNameHasItemIssuesToReviewNo": "{moveName}有装备问题需要检查。未启动付费重试。",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName}失败。请打开“动作”重试或重新开始。",
+		"createFailedOpen": "无法创建{name}。请打开以重试或重新开始。",
+		"setupFailedOpen": "角色设置已停止。请打开以重试或重新开始。",
+		"stoppedWork": { "other": "{count} 个生成已停止。请打开查看原因，然后重试或放弃。" },
 		"thisOperationChangedReviewTheJointChecks": "此操作已更改。请再次查看关节检查。",
 		"thePendingJointChecksChangedReviewTheir": "待处理的关节检查已更改。请再次检查其费用。",
 		"thisOperationChangedReviewTheBodyFrames": "此操作已更改。请再次检查身体帧。",
@@ -1854,7 +1863,7 @@
 			"keepNeedsChecks": "保留此动作需要每一帧都有已完成的缓存关节检查。",
 			"noFailedChecks": "缓存帧没有可重试的失败关节检查。",
 			"paletteDrift": "颜色偏移过大，无法进行小幅调色板修复。现有图像已保留。",
-			"describedFrames": "描述的动作可以用 4、8 或 12 帧生成。此动作有 {frames} 帧。",
+			"moveAnimationFrames": "此模型和画布尺寸不支持 {frames} 帧。请选择支持的帧数。",
 			"describeMove": "生成前请先描述此动作。",
 			"partialSaved": "{reason} 已保存完成的视图（{views}）。",
 			"partialSavedNewFrames": "{reason} 已保存完成的视图（{views}）；“生成新帧”只会请求缺失的帧。",
@@ -1864,7 +1873,7 @@
 			"moveDirectionsChanged": "角色的朝向已更改。请先查看此动作的最新费用预估，再重试。未发送生成请求。",
 			"reviewItemRedrawFirst": "生成前请先查看装备重绘的设置和费用预估。未发送请求。",
 			"chooseRepairTarget": "修复前，请选择一件装备和现有动作中的一个朝向。未发送生成请求。",
-			"describedFramesBlocked": "描述的动作可以用 4、8 或 12 帧生成。此动作有 {frames} 帧。 未发出生成请求。",
+			"moveAnimationFramesBlocked": "此模型和画布尺寸不支持 {frames} 帧。未发出生成请求。",
 			"describeMoveBlocked": "生成前请先描述此动作。 未发出生成请求。",
 			"chooseExistingMoveRepairing": "修复装备前，请先选择一个现有动作。"
 		},
@@ -1942,7 +1951,7 @@
 				"v3": { "label": "默认（V3）", "help": "均衡的比例。" },
 				"standard": {
 					"label": "标准",
-					"help": "根据文本使用固定模板绘制八个方向的视图。"
+					"help": "使用模板或你的正面精灵图绘制八个方向的视图。"
 				},
 				"pro": {
 					"label": "Pro",
@@ -2018,7 +2027,7 @@
 			"sizeGuideReference": "尺寸指南和参考图",
 			"reference": {
 				"frontFacing": "使用正面朝向的精灵图。",
-				"standardTextOnly": "标准模型仅使用文本。请移除参考图像或选择其他模型。",
+				"characterSprite": "角色精灵图",
 				"concept": "使用草图或角色设计图。",
 				"style": "使用美术图作为风格参考。",
 				"tooLarge": "请选择不超过 {max} × {max} 像素的参考图。",
@@ -2128,6 +2137,24 @@
 		"describeMotion": "描述动作",
 		"motionOnly": "只描述身体动作。武器和道具请通过装备添加。",
 		"orChoose": "或选择一个动作",
+		"motionModel": "运动模型",
+		"motionModelHelp": "Skeleton v3 为身体和装备使用相同的姿势。V3 和 PixMiniMax 会先绘制身体，再由 PixelDoll 检测装备所用的姿势。",
+		"models": {
+			"skeletonV3": "默认（Skeleton V3）",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "帧",
+		"framesHelp": "选项会随此模型和角色的画布（{canvas} px）变化。默认选项使用 PixelDoll 预设的帧数。",
+		"framesDefault": {
+			"other": "默认（{count} 帧）"
+		},
+		"framesValue": {
+			"other": "{count} 帧"
+		},
+		"framesKept": {
+			"other": "保留：{count} 帧"
+		},
 		"redrawDirections": "要重绘的朝向",
 		"redrawHidesEquipment": "替换这些视图后，装备会隐藏，直到生成新帧。",
 		"redrawMirrors": "镜像视图也会变更：{directions}。",

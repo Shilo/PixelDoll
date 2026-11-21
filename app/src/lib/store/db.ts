@@ -6,6 +6,9 @@ import { COPY_GENERATION_OFF, workspaceCopy } from './workspace-mode.ts';
 
 export type StoreName = 'projects' | 'blobs' | 'jobs';
 export const CREATE_DRAFT_PREFIX = 'studio-create:';
+// Bump when PixelLab request inputs change. Work saved with different inputs no longer matches its ledger records and would
+// resend paid calls, so it waits for review instead of resuming by itself.
+export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout (2026-11-07)
 const DB = 'pixeldoll',
 	VERSION = 1;
 
@@ -234,24 +237,43 @@ async function editIdleCharacter(
 		let error: unknown;
 		jobs.onsuccess = () => {
 			const busy = jobs.result.some((j) => ['queued', 'submitting', 'running'].includes(j.state));
+			// Running work could write any character back. Stopped work waits for the user and holds only its own character.
+			const holds = (r: {
+				status?: string;
+				requestText?: number;
+				projectId?: string;
+				spec?: { projectId?: string };
+				queued?: { projectId?: string }[];
+			}) =>
+				(r.status === 'running' && r.requestText === REQUEST_TEXT) || // older inputs wait for review
+				r.projectId === id ||
+				r.spec?.projectId === id ||
+				!!r.queued?.some((queued) => queued.projectId === id);
 			const work = records.result.some(
 				(r) =>
-					r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
-					r.id === 'studio-move' ||
-					r.id === 'studio-setup' ||
-					(r.id === 'studio-drafts' &&
+					((r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
+						r?.id === 'studio-move' ||
+						r?.id === 'studio-setup') &&
+						holds(r)) ||
+					(r?.id === 'studio-drafts' &&
 						r.gens?.some((g: { phase: string }) => g.phase === 'running'))
 			);
 			try {
 				if (busy || work)
-					throw action === 'replace body frames of'
+					throw action === 'delete'
 						? new LocalizedError(
-								'Wait for the current generation work to finish before fixing frames.',
-								'state.finishBeforeFixFrames'
+								'Finish or dismiss pending generation work before deleting a character.',
+								'state.finishBeforeCharacterRemoval'
 							)
-						: new Error(
-								`Finish or dismiss pending generation work before you ${action} a character.`
-							);
+						: action === 'replace body frames of'
+							? new LocalizedError(
+									'Wait for the current generation work to finish before fixing frames.',
+									'state.finishBeforeFixFrames'
+								)
+							: new LocalizedError(
+									'Finish or dismiss pending generation work before changing directions.',
+									'state.finishBeforeDirectionRemoval'
+								);
 				edit(projects, records.result);
 				for (const [hash, blob] of blobs ?? []) t.objectStore('blobs').put(blob, hash);
 			} catch (failure) {
@@ -311,17 +333,32 @@ export async function saveIdleCharacter(
 	);
 }
 
+type RelatedRecord = <R>(key: string) => R | undefined;
+
+export function update<T>(
+	s: StoreName,
+	key: string,
+	fn: (v: T | undefined, related: RelatedRecord) => T,
+	relatedKeys: readonly string[]
+): Promise<T>;
+export function update<T>(s: StoreName, key: string, fn: (v: T | undefined) => T): Promise<T>;
 /** Atomic read-modify-write: get + put in ONE readwrite transaction, so concurrent writers (another accept, autosave, another
  * tab) queue behind it instead of overwriting each other. `fn` must be synchronous: do async work (hashing, blob writes) first.
- * Throwing in `fn` aborts the transaction (nothing is written). */
+ * Related records in the same store can be read for conflict checks. Throwing in `fn` aborts without writing. */
 export async function update<T>(
 	s: StoreName,
 	key: string,
-	fn: (v: T | undefined) => T
+	fn: (v: T | undefined, related: RelatedRecord) => T,
+	relatedKeys: readonly string[] = []
 ): Promise<T> {
 	if (copy) {
 		if (s === 'jobs') throw new Error(COPY_GENERATION_OFF);
-		const result = fn(structuredClone(copy[s].get(key)) as T | undefined);
+		const records = copy[s];
+		const result = fn(structuredClone(records.get(key)) as T | undefined, <R>(related: string) =>
+			relatedKeys.includes(related)
+				? (structuredClone(records.get(related)) as R | undefined)
+				: undefined
+		);
 		copy[s].set(key, structuredClone(result));
 		return result;
 	}
@@ -329,17 +366,24 @@ export async function update<T>(
 	return new Promise((res, rej) => {
 		const t = db.transaction(s, 'readwrite'),
 			o = t.objectStore(s),
-			g = o.get(key);
+			g = o.get(key),
+			related = new Map(
+				[...new Set(relatedKeys)].map((relatedKey) => [relatedKey, o.get(relatedKey)])
+			);
 		let out: T, err: unknown;
-		g.onsuccess = () => {
+		const write = () => {
 			try {
-				out = fn(g.result as T | undefined);
+				out = fn(
+					g.result as T | undefined,
+					<R>(relatedKey: string) => related.get(relatedKey)?.result as R | undefined
+				);
 				o.put(out, key);
 			} catch (e) {
 				err = e;
 				t.abort();
 			}
 		};
+		(related.size ? [...related.values()].at(-1)! : g).onsuccess = write;
 		t.oncomplete = () => res(out);
 		t.onerror = t.onabort = () => rej(err ?? t.error);
 	});

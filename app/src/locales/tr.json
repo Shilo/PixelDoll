@@ -268,6 +268,7 @@
 		"titleShowThisFrame": "Bu kareyi gösterin",
 		"checksFoundIssuesNoPaidRetryWas": "Kontroller sorun buldu. Ücretli bir deneme başlatılmadı. Yeni bir deneme isteyebilir veya eşyayı olduğu gibi kabul edebilirsiniz.",
 		"acceptAsIs": "Olduğu gibi kabul edin",
+		"pendingWorkBusy": "Bir animasyon veya kurulum çalışıyor ya da durdu. Bu işlemleri kullanmak için tamamlayın veya atın.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Kredi harcamadan mevcut görseli kabul eder. Bulunan sorunlar eşya ayrıntılarında kalır.",
 		"youAcceptedThisArtworkWithItsRecorded": "Bu görseli kayıtlı kalite notlarıyla birlikte kabul ettiniz.",
 		"generateItemForMove": "Animasyon için eşya üretin",
@@ -563,6 +564,11 @@
 		"workspaceActions": "Çalışma alanı işlemleri"
 	},
 	"wardrobe": {
+		"moveItemTo": "Yuvaya taşı",
+		"dragItem": "{name} sürükleniyor. Başka bir yuvaya bırak.",
+		"itemMoved": "{name}, {label} yuvasına taşındı.",
+		"itemMoveBusy": "Bu eşyayı taşımadan önce ilgili üretimi tamamla veya iptal et.",
+		"itemMoveChanged": "Eşya veya yuva değişti. Tekrar dene.",
 		"notShownInMove": "Bu harekette görünmüyor",
 		"notShownInMoveNote": "Eşya takılı ancak bu hareketin hiçbir görünümünde kareleri olmadığı için görünmüyor.",
 		"randomLowerItem": "{lower} için rastgele eşya",
@@ -821,6 +827,12 @@
 		"moveNameAdded": "{moveName} eklendi",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} animasyonunda incelenecek eşya sorunları var. Ücretli bir deneme başlatılmadı.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} başarısız oldu. Tekrar denemek veya baştan başlamak için Animasyonlar bölümünü açın.",
+		"createFailedOpen": "{name} oluşturulamadı. Tekrar denemek veya baştan başlamak için açın.",
+		"setupFailedOpen": "Karakter kurulumu durdu. Tekrar denemek veya baştan başlamak için açın.",
+		"stoppedWork": {
+			"one": "{count} üretim durdu. Nedenini görmek için açın, ardından tekrar deneyin veya atın.",
+			"other": "{count} üretim durdu. Nedenini görmek için açın, ardından tekrar deneyin veya atın."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Bu işlem değişti. Eklem kontrollerini yeniden inceleyin.",
 		"thePendingJointChecksChangedReviewTheir": "Bekleyen eklem kontrolleri değişti. Ücretlerini yeniden inceleyin.",
 		"thisOperationChangedReviewTheBodyFrames": "Bu işlem değişti. Gövde karelerini yeniden inceleyin.",
@@ -1952,7 +1964,7 @@
 			"keepNeedsChecks": "Bu animasyonu saklamak için tüm karelerin önbellekte tamamlanmış eklem kontrolleri olmalı.",
 			"noFailedChecks": "Önbellekteki karelerde yeniden denenebilecek başarısız eklem kontrolü yok.",
 			"paletteDrift": "Renk sapması küçük bir palet onarımı için fazla. Mevcut görsel korundu.",
-			"describedFrames": "Tarifle üretilen animasyonlar 4, 8 veya 12 kare olabilir. Bu animasyonun {frames} karesi var.",
+			"moveAnimationFrames": "Bu model ve tuval boyutu {frames} kareyi desteklemiyor. Desteklenen bir kare sayısı seçin.",
 			"describeMove": "Bu animasyonu üretmeden önce tarif edin.",
 			"partialSaved": "{reason} Tamamlanan görünümler kaydedildi ({views}).",
 			"partialSavedNewFrames": "{reason} Tamamlanan görünümler kaydedildi ({views}). Yeni kareler üretin seçeneği yalnızca eksik kareleri ister.",
@@ -1962,7 +1974,7 @@
 			"moveDirectionsChanged": "Karakterin yönleri değişti. Yeniden denemeden önce animasyonun güncel tahminini inceleyin. Üretim isteği gönderilmedi.",
 			"reviewItemRedrawFirst": "Üretmeden önce eşyanın yeniden çizimini ve tahminini inceleyin. İstek gönderilmedi.",
 			"chooseRepairTarget": "Onarmadan önce bir eşya ve mevcut bir animasyondan bir yön seçin. Üretim isteği gönderilmedi.",
-			"describedFramesBlocked": "Tarifle üretilen animasyonlar 4, 8 veya 12 kare olabilir. Bu animasyonun {frames} karesi var. Üretim isteği gönderilmedi.",
+			"moveAnimationFramesBlocked": "Bu model ve tuval boyutu {frames} kareyi desteklemiyor. Üretim isteği gönderilmedi.",
 			"describeMoveBlocked": "Bu animasyonu üretmeden önce tarif edin. Üretim isteği gönderilmedi.",
 			"chooseExistingMoveRepairing": "Ekipmanını onarmadan önce mevcut bir animasyon seçin."
 		},
@@ -2040,7 +2052,7 @@
 				"v3": { "label": "Varsayılan (V3)", "help": "Dengeli oranlar." },
 				"standard": {
 					"label": "Standart",
-					"help": "Metinden sabit bir şablonla sekiz görünüm çizer."
+					"help": "Bir şablon veya öne bakan sprite’ınızı kullanarak sekiz görünüm çizer."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2120,7 +2132,7 @@
 			"sizeGuideReference": "Boyut kılavuzu ve referans",
 			"reference": {
 				"frontFacing": "Öne bakan bir sprite kullanın.",
-				"standardTextOnly": "Standart yalnızca metin kullanır. Referans görselini kaldırın veya başka bir model seçin.",
+				"characterSprite": "Karakter sprite’ı",
 				"concept": "Bir eskiz veya karakter tasarımı kullanın.",
 				"style": "Stil örneği olarak bir görsel kullanın.",
 				"tooLarge": "En fazla {max} × {max} piksel boyutunda bir referans seçin.",
@@ -2240,6 +2252,27 @@
 		"describeMotion": "Hareketi tarif edin",
 		"motionOnly": "Yalnızca gövdenin hareketini tarif edin. Silah ve aksesuarları eşya olarak ekleyin.",
 		"orChoose": "Veya bir animasyon seçin",
+		"motionModel": "Hareket modeli",
+		"motionModelHelp": "Skeleton v3, gövde ve ekipman için aynı pozları kullanır. V3 ve PixMiniMax önce gövdeyi çizer, ardından PixelDoll ekipman için pozları belirler.",
+		"models": {
+			"skeletonV3": "Varsayılan (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Kareler",
+		"framesHelp": "Seçenekler bu modele ve karakterin tuvaline ({canvas} px) uyar. Varsayılan seçenek PixelDoll'un hazır kare sayısını korur.",
+		"framesDefault": {
+			"one": "Varsayılan ({count} kare)",
+			"other": "Varsayılan ({count} kare)"
+		},
+		"framesValue": {
+			"one": "{count} kare",
+			"other": "{count} kare"
+		},
+		"framesKept": {
+			"one": "Korunur: {count} kare",
+			"other": "Korunur: {count} kare"
+		},
 		"redrawDirections": "Yeniden çizilecek yönler",
 		"redrawHidesEquipment": "Bu görünümler değiştirildiğinde, yeni kareler oluşturulana kadar ekipman gizlenir.",
 		"redrawMirrors": "Aynalanan görünümler de değişir: {directions}.",
