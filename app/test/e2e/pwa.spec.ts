@@ -1015,9 +1015,8 @@ for (const loading of ['stalled', 'failed'] as const) {
 			).toBeVisible();
 			await page.addInitScript((loading) => {
 				const original = IDBObjectStore.prototype.getAll;
-				let projectReads = 0;
 				IDBObjectStore.prototype.getAll = function (query, count) {
-					if (this.name === 'projects' && loading === 'failed' && ++projectReads > 1) {
+					if (this.name === 'projects' && loading === 'failed') {
 						throw new DOMException('Saved work read failed', 'UnknownError');
 					}
 					const result = original.call(this, query, count);
