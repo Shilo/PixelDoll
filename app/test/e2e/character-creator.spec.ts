@@ -44,7 +44,9 @@ async function open(page: Page, navigate = true) {
 	return page.getByRole('dialog', { name: 'New character', exact: true });
 }
 async function connect(page: Page) {
-	await page.getByLabel('API key', { exact: true }).fill('offline-fixture-not-a-real-key');
+	await page
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('offline-fixture-not-a-real-key');
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
 		.getByRole('button', { name: 'Connect', exact: true })

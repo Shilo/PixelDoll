@@ -13,7 +13,7 @@ Desktop customization controls sit together on the right. On phones, expand or c
 
 ## Connect your PixelLab key
 
-Open **More options → Connect PixelLab**, or the account entry in the character-name menu. Use **Start free trial** on the first open if you’re new to PixelLab. **Get a Secret key** opens your PixelLab account settings. Scroll to **Secret**, select the copy icon, then paste the key in PixelDoll and press **Connect**.
+Open **More options → Connect PixelLab**, or the account entry in the character-name menu. Use **Start free trial** on the first open if you’re new to PixelLab. **Get Secret API Key** opens your PixelLab account settings. Scroll to **Secret**, select the copy icon, then use the **Paste your Secret API key** field in PixelDoll and press **Connect**.
 
 - The key is only sent to PixelLab.
 - Each tab keeps its own key in memory. Closing that tab forgets it unless you check **Remember on this device**.

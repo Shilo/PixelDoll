@@ -68,7 +68,7 @@ for (const [width, height, touch] of [
 				{
 					name: 'Connect PixelLab',
 					open: () => openAccount(page),
-					field: 'API key',
+					field: 'Paste your Secret API key',
 					close: 'Not now'
 				},
 				{
@@ -181,7 +181,7 @@ test('intentional dialog dismissal respects nested API popovers and bare dialog 
 	await openStudio(page, '/');
 	await openAccount(page);
 	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	const input = dialog.getByRole('textbox', { name: 'API key', exact: true });
+	const input = dialog.getByRole('textbox', { name: 'Paste your Secret API key', exact: true });
 	await input.fill('unsaved nested dialog regression');
 	const outside = (await backdrop(dialog))!;
 	await dialog.getByRole('button', { name: 'Inspect API calls', exact: true }).click();

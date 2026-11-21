@@ -178,7 +178,9 @@ test('Free/Trial is a valid connection, and equipment shows Tier 1 required with
 	await expect(connect.getByRole('link', { name: /^PixelLab Tier 1 required/ })).toBeVisible();
 	await expect(connect.getByText('The free trial does not cover this action.')).toBeVisible();
 	await expect(connect.getByRole('link', { name: 'Start free trial' })).toBeVisible();
-	await connect.getByLabel('API key', { exact: true }).fill('offline-fixture-not-a-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('offline-fixture-not-a-key');
 	await connect.getByRole('checkbox', { name: 'Remember on this device' }).check();
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connect.getByRole('status')).toContainText('Your key is valid');
@@ -249,7 +251,9 @@ test('a Free/Trial connection resumes a permitted pending enhancement', async ({
 	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A patient elf');
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	await connect.getByLabel('API key', { exact: true }).fill('offline-fixture-not-a-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('offline-fixture-not-a-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
 	expect(posts).toEqual(['/v2/enhance-character-v3-prompt']);

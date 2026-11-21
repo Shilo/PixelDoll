@@ -39,18 +39,22 @@ test('PixelLab first-open help, account links, and return visits share the conne
 	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	const trial = dialog.getByRole('link', { name: 'Start free trial' });
 	await expect(trial).toBeVisible();
+	await expect(trial).toHaveCSS('justify-content', 'space-between');
 	await expect(dialog.getByText('PixelLab powers AI generation in PixelDoll.')).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(trial).toBeFocused();
 	await expect(trial).toHaveAttribute('href', 'https://www.pixellab.ai/signup');
 	await expect(trial).toHaveAttribute('target', '_blank');
 	await expect(dialog.getByText(/scroll to Secret, select Copy/)).toBeVisible();
-	const keyLink = dialog.getByRole('link', { name: 'Get a Secret key' });
+	const settingsLink = dialog.getByRole('link', { name: 'PixelLab account', exact: true });
+	await expect(settingsLink).toHaveAttribute('href', 'https://www.pixellab.ai/account');
+	await expect(settingsLink).toHaveAttribute('target', '_blank');
+	const keyLink = dialog.getByRole('link', { name: 'Get Secret API Key' });
 	await expect(keyLink).toHaveAttribute('href', 'https://www.pixellab.ai/account');
-	await expect(keyLink.getByText('Secret', { exact: true })).toHaveJSProperty('tagName', 'STRONG');
-	await expect(dialog.getByLabel('API key', { exact: true })).toHaveAttribute(
+	await expect(keyLink.locator('strong')).toHaveCount(0);
+	await expect(dialog.getByLabel('Paste your Secret API key', { exact: true })).toHaveAttribute(
 		'placeholder',
-		/^Paste your key: pixl_[a-f0-9]{32}$/
+		/^pixl_[a-f0-9]{32}$/
 	);
 	await expect(dialog.getByText('No account needed for the demo.')).toBeVisible();
 	expect(await page.evaluate((storageKey) => localStorage.getItem(storageKey), opened)).toBe('1');
@@ -109,7 +113,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 		.toBe('1');
 	await expect(account.getByText('58 / 100', { exact: true })).toBeVisible();
 	await expect(account.getByText('58% used')).toBeVisible();
-	await expect(account.getByLabel('API key', { exact: true })).toHaveCount(0);
+	await expect(account.getByLabel('Paste your Secret API key', { exact: true })).toHaveCount(0);
 	const external = account.getByRole('link', { name: 'Open PixelLab account' });
 	await expect(external).toHaveAttribute('href', 'https://www.pixellab.ai/account');
 	await expect(external).toHaveAttribute('target', '_blank');
@@ -188,14 +192,14 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	await openStudio(page, '/');
 	const openMore = () => page.getByRole('button', { name: 'More options', exact: true }).click();
 	const fillKey = async (dialog: ReturnType<typeof page.getByRole>, value: string) => {
-		await dialog.getByLabel('API key', { exact: true }).fill(value);
+		await dialog.getByLabel('Paste your Secret API key', { exact: true }).fill(value);
 		await dialog.getByRole('checkbox', { name: 'Remember on this device' }).check();
 	};
 	await openMore();
 	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	balanceStatus = 401;
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-invalid');
+	await connect.getByLabel('Paste your Secret API key', { exact: true }).fill('synthetic-invalid');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	const firstRetry = page.getByRole('dialog', { name: 'Reconnect PixelLab', exact: true });
 	await expect(firstRetry.getByRole('link', { name: 'Start free trial' })).toBeVisible();
@@ -226,17 +230,19 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	const replace = account.getByRole('button', { name: 'Replace key', exact: true });
 	await replace.click();
 	const replacement = page.getByRole('dialog', { name: 'Replace PixelLab key', exact: true });
-	await expect(replacement.getByLabel('API key', { exact: true })).toBeFocused();
+	await expect(replacement.getByLabel('Paste your Secret API key', { exact: true })).toBeFocused();
 	await fillKey(replacement, 'synthetic-replacement');
 	await replacement.getByRole('button', { name: 'Keep current key' }).click();
 	await expect(replace).toBeFocused();
 	await replace.click();
-	await expect(replacement.getByLabel('API key', { exact: true })).toHaveValue('');
+	await expect(replacement.getByLabel('Paste your Secret API key', { exact: true })).toHaveValue(
+		''
+	);
 	balanceStatus = 401;
 	await fillKey(replacement, 'synthetic-invalid');
 	await replacement.getByRole('button', { name: 'Replace key', exact: true }).click();
 	await expect(replacement.getByRole('status')).toContainText('Current key was not changed');
-	await expect(replacement.getByLabel('API key', { exact: true })).toBeFocused();
+	await expect(replacement.getByLabel('Paste your Secret API key', { exact: true })).toBeFocused();
 	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBe(key);
 	balanceStatus = 200;
 	await fillKey(replacement, 'synthetic-replacement');
@@ -251,7 +257,7 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	await refresh.click();
 	const reconnect = page.getByRole('dialog', { name: 'Reconnect PixelLab', exact: true });
 	await expect(reconnect.getByRole('status')).toContainText('didn’t accept this key');
-	await expect(reconnect.getByLabel('API key', { exact: true })).toBeFocused();
+	await expect(reconnect.getByLabel('Paste your Secret API key', { exact: true })).toBeFocused();
 	await reconnect.getByRole('button', { name: 'Not now', exact: true }).click();
 	await openMore();
 	await page.getByRole('button', { name: 'Reconnect PixelLab...', exact: true }).click();
@@ -262,7 +268,7 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	await openMore();
 	await usage.click();
 	await account.getByRole('button', { name: 'Forget key', exact: true }).click();
-	await expect(connect.getByLabel('API key', { exact: true })).toBeFocused();
+	await expect(connect.getByLabel('Paste your Secret API key', { exact: true })).toBeFocused();
 	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBeNull();
 });
 
@@ -272,7 +278,7 @@ test('a delayed replacement does not undo another tab’s Forget', async ({ page
 	await more.click();
 	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	await connect.getByLabel('API key', { exact: true }).fill(key);
+	await connect.getByLabel('Paste your Secret API key', { exact: true }).fill(key);
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connect).toBeHidden();
 	let received!: () => void, release!: () => void;
@@ -290,7 +296,9 @@ test('a delayed replacement does not undo another tab’s Forget', async ({ page
 	const account = page.getByRole('dialog', { name: 'PixelLab usage', exact: true });
 	await account.getByRole('button', { name: 'Replace key', exact: true }).click();
 	const replacement = page.getByRole('dialog', { name: 'Replace PixelLab key', exact: true });
-	await replacement.getByLabel('API key', { exact: true }).fill('synthetic-delayed');
+	await replacement
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-delayed');
 	await replacement.getByRole('checkbox', { name: 'Remember on this device' }).check();
 	await replacement.getByRole('button', { name: 'Replace key', exact: true }).click();
 	await waiting;
@@ -330,7 +338,7 @@ test('Forget in Reconnect discards the action waiting for a key', async ({ page 
 			return (await import(studioPath)).pendingConnectionMinimumTier();
 		})
 	).toBeNull();
-	await connect.getByLabel('API key', { exact: true }).fill(key);
+	await connect.getByLabel('Paste your Secret API key', { exact: true }).fill(key);
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connect).toBeHidden();
 	await expect(page.locator('[data-resumed-generation]')).toHaveCount(0);
@@ -349,7 +357,7 @@ for (const remembered of [true, false]) {
 		await page.locator('.project-btn').click();
 		await page.getByRole('menuitem', { name: 'Connect PixelLab…', exact: true }).click();
 		let dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-		await dialog.getByLabel('API key', { exact: true }).fill(key);
+		await dialog.getByLabel('Paste your Secret API key', { exact: true }).fill(key);
 		await dialog.getByRole('checkbox', { name: 'Remember on this device' }).setChecked(remembered);
 		await dialog.getByRole('button', { name: 'Connect', exact: true }).click();
 		await page.locator('.project-btn').click();

@@ -2435,7 +2435,9 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	// Connecting later must not start the character generation canceled above.
 	await openAccount(page);
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-manual-qa-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await page.locator('.project-btn').click();
 	await expect(page.getByRole('menuitem', { name: 'PixelLab account', exact: true })).toContainText(
@@ -2513,7 +2515,9 @@ test('closing Connect before its code loads still discards the pending action', 
 	// Connecting later must not start the character generation abandoned above.
 	await openAccount(page);
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-manual-qa-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0); // a revived action would open its progress sheet here
 	await page.locator('.project-btn').click();
@@ -2712,7 +2716,9 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
 			});
 			if (initial === 'old-only') {
 				await expect(dialog.getByRole('button', { name: 'Forget key' })).toHaveCount(0);
-				await expect(dialog.getByLabel('API key', { exact: true })).toHaveValue('');
+				await expect(dialog.getByLabel('Paste your Secret API key', { exact: true })).toHaveValue(
+					''
+				);
 				expect(requests).toBe(0);
 			} else {
 				await expect(dialog.getByText(/Connected and remembered/)).toBeVisible();
@@ -3881,7 +3887,9 @@ test('character retry preserves the direction plan and allocates a fresh publica
 			.getByRole('button', { name: /^Generate again/ })
 			.click();
 		const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-		await connect.getByLabel('API key', { exact: true }).fill('synthetic-retry-test-key');
+		await connect
+			.getByLabel('Paste your Secret API key', { exact: true })
+			.fill('synthetic-retry-test-key');
 		await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toContainText(
@@ -5523,7 +5531,9 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	});
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-targeted-repair-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-targeted-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
 	const scope = await page.evaluate(async () => {
@@ -5588,7 +5598,9 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	}, before);
 	await suggestion.click();
 	await review.getByRole('button', { name: /^Replace Walk views/ }).click();
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-reconnected-repair-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-reconnected-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
 	const confirmed = await page.evaluate(async () => {
@@ -5727,7 +5739,9 @@ test('partial missing gear and explicit item repair stay on the current move and
 	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-partial-repair-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-partial-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	let sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(sheet).toContainText('Scoped repair stopped before paid work');
@@ -6105,7 +6119,9 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 	await repair.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await oversizedItemFixture(page, fixture.itemId);
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-delayed-item-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-delayed-item-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Repair item frames', exact: true })).toContainText(
 		'review its current estimate'
@@ -6449,7 +6465,9 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 		};
 	});
 	await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click();
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-measurement-recovery-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-measurement-recovery-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Offline consent storage blocked');
 	const pending = await page.evaluate(async () => {
@@ -6726,7 +6744,9 @@ test('bounded body color correction discloses changed checks and equipment cost 
 		};
 	});
 	await action.click();
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-body-color-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-body-color-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Color consent storage blocked');
 	const consent = await page.evaluate(async () => {
@@ -6870,7 +6890,9 @@ test('standing-first items quote only standing and offer actual custom moves one
 	);
 	await pane.getByRole('button', { name: /^Make for Custom walk/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-progressive-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-progressive-key');
 	await page.evaluate(() => {
 		const put = IDBObjectStore.prototype.put;
 		IDBObjectStore.prototype.put = function (value, key) {

@@ -23,6 +23,7 @@
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { readSavedKey, SAVED_KEY } from '../lib/shared-auth.ts';
 
+	const accountUrl = 'https://www.pixellab.ai/account';
 	let key = $state('');
 	let remember = $state(false);
 	let savedKeyAvailable = $state(workspaceCopy && !!readSavedKey().trim());
@@ -239,7 +240,7 @@
 				>{t('connectSheet.forgetKey')}</button
 			>
 		</div>
-		<a class="small" href="https://www.pixellab.ai/account" target="_blank" rel="noreferrer"
+		<a class="small" href={accountUrl} target="_blank" rel="noreferrer"
 			>{t('connectSheet.openAccount')} <ExternalLink size={12} style="display:inline" /></a
 		>
 	{:else}
@@ -271,8 +272,13 @@
 					rel="noreferrer"
 					>{t('connectSheet.startFreeTrial')} <ExternalLink size={14} aria-hidden="true" /></a
 				>
+				{#snippet account()}
+					<a href={accountUrl} target="_blank" rel="noreferrer"
+						>{t('connectSheet.pixelLabAccount')}</a
+					>
+				{/snippet}
 				<p class="small bu-muted">
-					<RichMessage key="connectSheet.copyInstructions" slots={{ secret, copy }} />
+					<RichMessage key="connectSheet.copyInstructions" slots={{ account, secret, copy }} />
 				</p>
 			</div>
 		{/if}
@@ -294,7 +300,7 @@
 			}}
 		>
 			<label class="field">
-				<span class="label">{t('connectSheet.aPIKey')}</span>
+				<span class="label">{t('connectSheet.secretApiKey')}</span>
 				<input
 					class="bu-input input"
 					type="password"
@@ -302,9 +308,7 @@
 					bind:value={key}
 					autocomplete="off"
 					spellcheck="false"
-					placeholder={t('connectSheet.placeholderPasteYourKey', {
-						example: 'pixl_0123456789abcdef0123456789abcdef'
-					})}
+					placeholder="pixl_0123456789abcdef0123456789abcdef"
 				/>
 			</label>
 			{#if workspaceCopy}
@@ -336,10 +340,10 @@
 				<a
 					class="bu-action btn"
 					data-variant="outline"
-					href="https://www.pixellab.ai/account"
+					href={accountUrl}
 					target="_blank"
 					rel="noreferrer"
-					><span><RichMessage key="connectSheet.getSecretKey" slots={{ secret }} /></span>
+					>{t('connectSheet.getSecretKey')}
 					<ExternalLink size={14} aria-hidden="true" /></a
 				>
 				<span class="actions">
@@ -387,6 +391,8 @@
 	}
 	.trial-guide > a {
 		width: 100%;
+		justify-content: space-between;
+		text-align: start;
 	}
 	.copy-label {
 		display: inline-flex;
