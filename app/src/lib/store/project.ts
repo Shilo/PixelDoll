@@ -14,6 +14,7 @@ export interface StoredProject {
 	id: string;
 	savedAt: string;
 	creationSpec?: string; // internal creation-attempt fingerprint; never exported or used as clone identity
+	moveReviews?: Record<string, import('../../studio/replaceMove.ts').MoveCandidate>;
 	moveRecovery?: {
 		id: string;
 		originalRigVersion: string;

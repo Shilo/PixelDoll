@@ -1328,6 +1328,35 @@ dialog.sheet.bottom .foot-note {
 	text-align: center;
 }
 
+.recovery-actions,
+.recovery-options {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+}
+.recovery-actions {
+	width: 100%;
+	justify-content: space-between;
+}
+.recovery-options {
+	justify-content: flex-end;
+}
+.recovery-options .btn:not(.icon) {
+	flex: 0 1 auto;
+	height: auto;
+	min-height: var(--ctl-h);
+	padding: 6px 8px;
+	white-space: normal;
+	line-height: 1.25;
+}
+.recovery-options .cost {
+	white-space: nowrap;
+}
+dialog.sheet.bottom .sheet-foot .recovery-options .btn.primary {
+	width: auto;
+}
+
 .connect-hero {
 	display: flex;
 	gap: 14px;

@@ -674,7 +674,9 @@
 							route: it.route
 						})}
 					><RefreshCw size={14} />{openerLabel(
-						remakeOnly ? t('itemMenu.makeOneForName', { name: m.name }) : t('common.tryAgain')
+						remakeOnly
+							? t('itemMenu.makeOneForName', { name: m.name })
+							: t('itemMenu.createVariant')
 					)}<SurfaceChevron /></button
 				>
 			{/if}

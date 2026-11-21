@@ -449,7 +449,7 @@
 									})
 								)}
 							><RefreshCw size={16} aria-hidden="true" />{openerLabel(
-								remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.tryAgain')
+								remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.createVariant')
 							)}<SurfaceChevron /></button
 						>
 					{/if}
