@@ -1,6 +1,7 @@
 <script lang="ts">
 	// The turning start-pose preview shared by Create State and Add a move: the stored cell fills the box, the whole
 	// box plays and pauses the turn through every facing, and the frame stepper sits outside it.
+	import { tick } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import type { Img } from '../lib/image/png.ts';
 	import type { DirectionName } from '../lib/rig/rig.ts';
@@ -32,9 +33,10 @@
 	let previous = $state<HTMLButtonElement>();
 	let next = $state<HTMLButtonElement>();
 	// Reaching either end disables the pressed arrow, so focus moves to the other one instead of being lost.
-	function step(delta: number) {
+	async function step(delta: number) {
 		onstep(delta);
 		const at = frame + delta;
+		await tick();
 		if (at <= 0) next?.focus();
 		else if (at >= frames - 1) previous?.focus();
 	}

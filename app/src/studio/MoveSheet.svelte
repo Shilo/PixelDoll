@@ -175,13 +175,22 @@
 	);
 	const sourceFrames = $derived([...new Set(sourceClip?.frames.map(({ cell }) => cell) ?? [])]);
 	const startCell = $derived(sourceCell ?? (sourceClip && lastPlaybackCell(sourceClip)));
+	// Standing without a clip is the saved rest views themselves.
+	const restArt = (direction: DirectionName) => {
+		const hash = store.project?.manifest.rig.rest?.[direction]?.image;
+		return (hash && store.project?.images.get(hash)) || null;
+	};
 	// Every facing the start frame has, mirrored ones included, for the shared turning preview.
 	const startPreviews = $derived.by(() => {
 		const project = store.project;
 		const clip = sourceId ?? DEFAULT_MOVE;
-		if (!project || startCell === undefined) return [];
+		const rest = !sourceClip && clip === DEFAULT_MOVE;
+		if (!project || (startCell === undefined && !rest)) return [];
 		return project.manifest.rig.directions
-			.map(({ id }) => ({ direction: id, image: sourceThumbnail(clip, startCell, id) }))
+			.map(({ id }) => ({
+				direction: id,
+				image: rest ? restArt(id) : sourceThumbnail(clip, startCell!, id)
+			}))
 			.filter(({ image }) => image && opaqueBox(image))
 			.sort(
 				(left, right) => DIRECTIONS.indexOf(left.direction) - DIRECTIONS.indexOf(right.direction)
@@ -1838,7 +1847,10 @@
 					field={t('moveSheet.startFrom.label')}
 					valueLabel={startFrom?.replacement ? t('moveSheet.startFrom.savedSource') : undefined}
 					disabled={fitBusy}
-					thumbnail={(key) => store.project && bodyClipThumbnail(store.project, key, ui.dir)}
+					thumbnail={(key) =>
+						store.project &&
+						(bodyClipThumbnail(store.project, key, ui.dir) ??
+							(key === DEFAULT_MOVE ? restArt(ui.dir) : null))}
 					onselect={selectSource}
 				/>
 				{#if !startFrom?.replacement}
