@@ -20,17 +20,20 @@
 		compact = false,
 		bulk = false,
 		field,
+		valueLabel,
 		disabled = false,
 		thumbnail,
 		onselect
 	}: {
-		clips: ReturnType<typeof playbackClips>;
+		clips: readonly Pick<ReturnType<typeof playbackClips>[number], 'id' | 'key' | 'kind'>[];
 		moveRefs: readonly MoveRef[];
 		selected: string;
 		compact?: boolean;
 		bulk?: boolean;
 		/** A labeled full-width field trigger (Create State's Source) instead of the toolbar button. */
 		field?: string;
+		/** Trigger text when the current choice is none of the clips, such as a redraw's original start. */
+		valueLabel?: string;
 		disabled?: boolean;
 		/** Row artwork; the trigger itself never shows a thumbnail because its context already previews the choice. */
 		thumbnail?: (key: string) => Img | null;
@@ -40,7 +43,7 @@
 	const menuId = $props.id();
 	const states = $derived(clips.filter((clip) => clip.kind === 'state'));
 	const moves = $derived(clips.filter((clip) => clip.kind === 'move'));
-	const value = $derived(label(selected));
+	const value = $derived(valueLabel ?? label(selected));
 	const menuLabel = $derived(field ?? t(bulk ? 'share.clips' : 'common.move'));
 	let menu: HTMLDivElement;
 	let expanded = $state(false);

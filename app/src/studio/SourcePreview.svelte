@@ -29,6 +29,15 @@
 	} = $props();
 
 	const id = $props.id();
+	let previous = $state<HTMLButtonElement>();
+	let next = $state<HTMLButtonElement>();
+	// Reaching either end disables the pressed arrow, so focus moves to the other one instead of being lost.
+	function step(delta: number) {
+		onstep(delta);
+		const at = frame + delta;
+		if (at <= 0) next?.focus();
+		else if (at >= frames - 1) previous?.focus();
+	}
 	let facing = $state<DirectionName | null>(null);
 	let rotating = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
 	const canRotate = $derived(previews.length > 1);
@@ -88,7 +97,8 @@
 			type="button"
 			aria-label={t('stage.previousFrame')}
 			disabled={disabled || frame === 0}
-			onclick={() => onstep(-1)}><ChevronLeft size={20} /></button
+			bind:this={previous}
+			onclick={() => step(-1)}><ChevronLeft size={20} /></button
 		>
 		<strong aria-live="polite"
 			>{t('stage.framePosition', { frame: frame + 1, total: frames })}</strong
@@ -99,7 +109,8 @@
 			type="button"
 			aria-label={t('stage.nextFrame')}
 			disabled={disabled || frame >= frames - 1}
-			onclick={() => onstep(1)}><ChevronRight size={20} /></button
+			bind:this={next}
+			onclick={() => step(1)}><ChevronRight size={20} /></button
 		>
 	</div>
 {/if}

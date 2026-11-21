@@ -6324,9 +6324,38 @@ test('targeted move replacement names mirrored effects without offering a separa
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
 	await targetedRepairFixture(page, true);
+	// Walk remembers the pose it was generated from, so a redraw starts there by default.
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		const p = s.store.project,
+			rest = p.manifest.rig.rest.east;
+		const animations = p.manifest.rig.animations.map(
+			(clip: { id: string; sources?: { east?: object } }) =>
+				clip.id === 'walk'
+					? {
+							...clip,
+							sources: {
+								...clip.sources,
+								east: { ...clip.sources?.east, referenceKeypoints: rest.keypoints }
+							}
+						}
+					: clip
+		);
+		s.store.project = { ...p, manifest: { ...p.manifest, rig: { ...p.manifest.rig, animations } } };
+	});
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await page.getByRole('radio', { name: 'Walk · added', exact: true }).click();
+	// A redraw starts from its original frame, and Standing stays a real choice away from it.
+	const start = page.getByRole('button', { name: /^Start from: / });
+	await expect(start).toHaveAccessibleName('Start from: Original starting frame');
+	await start.click();
+	await page
+		.getByRole('menu', { name: 'Start from' })
+		.getByRole('menuitemradio', { name: 'Standing', exact: true })
+		.click();
+	await expect(start).toHaveAccessibleName('Start from: Standing');
 	const directions = page.getByRole('group', { name: 'Directions to redraw' });
 	await expect(directions.getByRole('button', { name: /West direction/ })).toHaveCount(0);
 	await expect(directions).toHaveAccessibleDescription(/Mirrored views also change: West/);

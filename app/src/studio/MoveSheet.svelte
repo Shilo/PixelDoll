@@ -167,6 +167,12 @@
 	const sourceClip = $derived(
 		sourceClips.find(({ key }) => key === (sourceId ?? DEFAULT_MOVE))?.clip
 	);
+	// Standing stays offered even when an import has rest views but no Standing clip.
+	const startClips = $derived(
+		sourceClips.some(({ key }) => key === DEFAULT_MOVE)
+			? sourceClips
+			: [{ id: 'standing', key: DEFAULT_MOVE, kind: 'state' as const }, ...sourceClips]
+	);
 	const sourceFrames = $derived([...new Set(sourceClip?.frames.map(({ cell }) => cell) ?? [])]);
 	const startCell = $derived(sourceCell ?? (sourceClip && lastPlaybackCell(sourceClip)));
 	// Every facing the start frame has, mirrored ones included, for the shared turning preview.
@@ -1826,17 +1832,16 @@
 		<div class="form move-form" class:redraw-form={replacing}>
 			<div class="move-start">
 				<PlaybackPicker
-					clips={sourceClips}
+					clips={startClips}
 					moveRefs={m?.rig.animations ?? []}
-					selected={sourceId ?? DEFAULT_MOVE}
+					selected={startFrom?.replacement ? '' : (sourceId ?? DEFAULT_MOVE)}
 					field={t('moveSheet.startFrom.label')}
+					valueLabel={startFrom?.replacement ? t('moveSheet.startFrom.savedSource') : undefined}
 					disabled={fitBusy}
 					thumbnail={(key) => store.project && bodyClipThumbnail(store.project, key, ui.dir)}
 					onselect={selectSource}
 				/>
-				{#if startFrom?.replacement}
-					<p class="faint small">{t('moveSheet.startFrom.savedSource')}</p>
-				{:else}
+				{#if !startFrom?.replacement}
 					<SourcePreview
 						previews={startPreviews}
 						source={nice(sourceId ?? DEFAULT_MOVE)}

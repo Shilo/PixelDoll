@@ -2768,6 +2768,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await previousStartFrame.click();
 	await previousStartFrame.click();
 	await expect(moveSheet.getByText('Frame 2 of 4', { exact: true })).toBeVisible();
+	// Reaching the first frame disables Previous, so focus moves to Next.
+	await previousStartFrame.click();
+	await expect(moveSheet.getByRole('button', { name: 'Next frame', exact: true })).toBeFocused();
 	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'More actions for Rest pose', exact: true }).click();
