@@ -735,6 +735,7 @@
 		"finishBeforeCharacterRemoval": "删除角色前，请完成或放弃待处理的生成任务。",
 		"finishBeforeMoveRemoval": "删除动作前，请完成或放弃待处理的生成任务。",
 		"finishBeforeDirectionRemoval": "更改朝向之前，请完成或放弃待处理的生成任务。",
+		"finishBeforeFixFrames": "修正帧之前，请等待当前生成任务完成。",
 		"couldNotRemoveCharactersSavedByAn": "无法移除由早期预览版本保存的角色：{reason}",
 		"couldNotReadYourSavedCharactersReason": "无法读取已保存的角色：{reason}",
 		"couldNotOpenThatCharacterError": "无法打开该角色：{error}",
@@ -1130,7 +1131,7 @@
 	},
 	"workspace": {
 		"activityTitle": "工作区活动",
-		"activityIntro": "随工作区一起保存，PixelDoll 版本为 {build}。PixelLab 已关闭，不会重新启动任何任务。",
+		"activityIntro": "随工作区一起保存，PixelDoll 版本为 {build}。ZIP 中的任务不会重新启动。",
 		"missing": { "other": "有 {count} 个图像文件缺失或无法读取。" },
 		"skippedCharacters": { "other": "已跳过的已保存角色：{count}。" },
 		"demoOutfit": "演示使用其默认套装设置。",
@@ -1161,7 +1162,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "此处 PixelLab 已关闭。关闭或重新加载此标签页时，对副本的任何更改都会被丢弃。",
+		"privacy": "打开副本时不会连接到 PixelLab。关闭或重新加载此标签页时，对副本的任何更改都会被丢弃。",
 		"chooseZip": "选择工作区 ZIP",
 		"opening": "正在打开…",
 		"release": "松开以打开",
@@ -1222,7 +1223,8 @@
 			"look": "需要检查",
 			"unfitted": "未适配",
 			"stale": "为另一个身体制作",
-			"demo": "演示"
+			"demo": "演示",
+			"edited": "已由你编辑"
 		},
 		"coverage": {
 			"oneMove": "缺少部分{move}帧",
@@ -2269,7 +2271,8 @@
 	},
 	"workspaceCopy": {
 		"title": "打开工作区副本",
-		"generationOff": "工作区副本中 PixelLab 已关闭。"
+		"tabOnlyKey": "连接仅在此标签页中有效，不会保存。",
+		"useSavedKey": "使用已保存的密钥"
 	},
 	"moveNames": { "default": "Default", "idle": "待机", "walk": "行走" },
 	"moveRemoval": {
@@ -2345,5 +2348,89 @@
 		"unreadable": "无法打开此图像。请选择其他文件。",
 		"noArtworkResized": "调整大小后没有可见画面。请选择其他图像。",
 		"noArtwork": "此图像没有可见画面。请选择其他文件。"
+	},
+	"fixFrames": {
+		"open": "修正帧",
+		"title": "修正帧",
+		"reviewTitle": "检查帧",
+		"target": "对象",
+		"body": "基础身体",
+		"move": "动作",
+		"gridLabel": "{name}在{move}中的帧",
+		"frameLabel": "{dir}，第 {n} 帧",
+		"editedByYou": "已手动编辑",
+		"mirrors": "镜像自{of}",
+		"hint": "下载 PNG，在 Aseprite、Pixelorama 或 Piskel 等任意像素编辑器中编辑，然后导入。保持其尺寸和 {w}×{h} 网格不变：每行是一个朝向，每列是一帧。颜色为原始颜色，因此重新上色仍然有效。",
+		"hintLayers": "下载 ZIP：其中每个图层对应一个 PNG。在 Aseprite、Pixelorama 或 Piskel 等任意像素编辑器中编辑，保持文件名、尺寸和 {w}×{h} 网格不变，然后导入 ZIP 或这些 PNG。颜色为原始颜色，因此重新上色仍然有效。",
+		"downloadPng": "下载 PNG",
+		"downloadZip": "下载 ZIP",
+		"import": "导入编辑后的 PNG",
+		"importFiles": "导入编辑后的文件",
+		"demoNote": "这是内置演示。编辑它的副本即可替换其中的帧。",
+		"restoring": "正在恢复…",
+		"beforeFrame": "之前，{dir} {n}",
+		"afterFrame": "之后，{dir} {n}",
+		"playing": "{move}，播放中",
+		"changedFrame": "{dir}，第 {n} 帧，已更改",
+		"editedFrame": "{dir}，第 {n} 帧，已手动编辑",
+		"reading": "正在读取…",
+		"release": "松开以导入",
+		"changedCount": {
+			"other": "已更改 {n} 帧"
+		},
+		"nothingChanged": "没有帧被更改。请编辑下载的 PNG，保存后再次导入。",
+		"replace": {
+			"other": "替换 {n} 帧"
+		},
+		"restore": {
+			"other": "恢复原始帧 · {n}"
+		},
+		"restoreTitle": {
+			"other": "要将 {n} 帧恢复为原始状态吗？"
+		},
+		"restoreAction": "恢复",
+		"restoreBody": "你替换过的{name}的每一帧都会恢复到编辑前的样子。",
+		"replaced": {
+			"other": "已替换{name}的 {count} 帧。"
+		},
+		"undo": "撤销",
+		"undone": {
+			"other": "已撤销 {count} 帧。"
+		},
+		"restored": {
+			"other": "已将 {count} 帧恢复为原始状态。"
+		},
+		"notes": {
+			"softAlpha": {
+				"other": "{n} 个半透明像素将变为完全不透明或完全透明。"
+			},
+			"newColors": {
+				"other": "{n} 种新颜色不会随重新上色而改变。"
+			},
+			"mirrored": "{dir}是{of}的镜像，因此其编辑未被使用。请编辑{of}，或在朝向中关闭镜像以单独编辑{dir}。",
+			"noBodyRow": "此动作没有{dir}的基础身体帧，因此该处的编辑未被使用。",
+			"missingLayer": "没有文件名以 -{layer}.png 结尾的文件，因此该图层保持不变。",
+			"ignored": {
+				"other": "已忽略其他 {n} 个文件。"
+			},
+			"fitted": "适配这些基础身体帧的装备仍保持穿戴：{names}。请在更改的帧上检查它们。",
+			"emptiedBody": "为空的基础身体帧制作新装备时，会跳过该帧。"
+		},
+		"errors": {
+			"size": "此 PNG 为 {got} px，但这些帧需要 {want} px。请保持原始尺寸和网格。",
+			"duplicateLayer": "有多个文件名以 -{layer}.png 结尾的文件。请为每个图层只选择一个文件。",
+			"noLayerMatch": "没有与这些帧匹配的 PNG。请使用下载的文件，并保留以 -fg 或 -bg 结尾的文件名。",
+			"noPng": "未找到 PNG。请选择你下载并编辑过的 PNG。",
+			"notEditable": "修正帧之前，请先复制此角色。",
+			"targetGone": "此装备或动作已不存在。",
+			"changed": "这些帧在你检查后已更改。请重新导入文件。",
+			"originalsMissing": "此角色副本中没有保存原始帧。",
+			"originalsUnusable": "此角色副本中的原始帧无法使用，因此未做任何更改。",
+			"nothingToRevert": "这些帧之后又被更改过，因此这里没有可撤销的内容。",
+			"badPng": "无法将此文件读取为 PNG。请重新保存为 PNG 后再导入。",
+			"resolveDrafts": "替换基础身体帧之前，请保留或丢弃此角色的装备草稿。",
+			"importFailed": "无法读取这些帧。请重试。",
+			"saveFailed": "无法保存这些帧。未做任何更改。请重试。"
+		}
 	}
 }

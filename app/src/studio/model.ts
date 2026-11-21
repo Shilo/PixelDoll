@@ -14,6 +14,7 @@ import type {
 import { GATES, isAction, ITEM_GRID_REGISTRATION_NOTICE, SLOTS } from '../lib/items/items.ts';
 import { coverageGaps, missingFrames } from '../lib/dress/dress.ts';
 import { DIRECTIONS, type Rig } from '../lib/rig/rig.ts';
+import { editedCount } from '../lib/frames/history.ts';
 import { message, type Message } from '../lib/message.ts';
 import type { Translate, WhisperKey, WhisperVars } from 'svelte-whisper';
 
@@ -268,7 +269,7 @@ export function itemNameFrom(desc: string): string {
 	return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
 }
 
-export type Health = 'clean' | 'accepted' | 'look' | 'unfitted' | 'stale' | 'demo';
+export type Health = 'clean' | 'accepted' | 'look' | 'unfitted' | 'stale' | 'demo' | 'edited';
 export function healthOf(m: Manifest, it: Item): Health {
 	if (it.baseHash !== m.rig.baseHash) return 'stale';
 	// A copy worn as drawn for another body, or a free re-fit with frames to check, whatever its source's checks said.
@@ -276,6 +277,8 @@ export function healthOf(m: Manifest, it: Item): Health {
 	if (it.refit?.length) return 'look';
 	if (it.qa?.status === 'fail' || it.qa?.status === 'warn') return 'look';
 	if (it.designWarnings?.length || it.qa?.status === 'accepted') return 'accepted';
+	// Checks never measured frames the user replaced (Fix frames), so they cannot claim a pass.
+	if (editedCount(m, it)) return 'edited';
 	if (!it.qa) return 'demo';
 	return it.qa.status === 'pass' ? 'clean' : 'look';
 }
@@ -285,7 +288,8 @@ export const HEALTH_LABEL: Record<Health, Message> = {
 	look: message('studioModel.health.look'),
 	unfitted: message('studioModel.health.unfitted'),
 	stale: message('studioModel.health.stale'),
-	demo: message('studioModel.health.demo')
+	demo: message('studioModel.health.demo'),
+	edited: message('studioModel.health.edited')
 };
 
 /** Frames an item lacks in moves its body has (dress.ts coverageGaps), where it would vanish: a short warning for its

@@ -300,6 +300,19 @@ It matches only small, unambiguous neutral color differences to that item's exis
 body pixels, existing palette colors, material ramps, saved recolors and quality warnings stay intact. Larger or ambiguous differences
 remain unchanged. This runs locally and makes no PixelLab call; export a backup before editing artwork.
 
+## Fix frames
+
+Any frame can be fixed by hand in your own pixel editor (Aseprite, Pixelorama, Piskel or similar). Open **Fix frames…**
+from an item's ⋮ menu or its **Item** sheet, or from a move's ⋮ menu in **Moves** for the body. Pick the body or an item
+and a move, then **Download PNG** (a ZIP with one PNG per layer for items drawn in front of and behind the body). Rows are
+directions and columns are frames; keep the size and grid, and the file names of a ZIP. The colors are the original
+colors, so Recolor keeps working. **Import edited PNG** shows what changed before anything is saved, then
+**Replace · Free** saves it. The toast offers **Undo**, and **Restore originals** puts every edited frame back later.
+
+A direction that mirrors another follows it: edit the source direction, or turn off mirroring in **Directions** to edit
+it on its own. Items fitted to the body stay worn after a body fix; check them on the changed frames. Checks are not run
+on edited frames, so the item shows **Edited by you**. This runs locally and makes no PixelLab call.
+
 ## Add a move
 
 Open the **Moves** tab → **Add a move**. Type a motion such as "jumping in place" or pick a preset such as **Idle**, **Walk**,
@@ -345,9 +358,20 @@ are not included. The ZIP does include artwork and saved prompts, so share it pr
 
 Choose **More options → Workspace... → Open workspace copy**, then drop the ZIP in the box or click the box to choose it. The
 `?workspace-copy` address opens a separate, temporary copy. You can inspect or change the copy
-without changing your own library. PixelLab is off and no jobs restart. Close or reload the tab to discard the copy and
-its edits. This is not a backup restore or merge. Export and open keep usable records and artwork when some data is
-damaged. The copy's Activity reports skipped records and missing artwork. Unreadable or unsupported ZIPs cannot be
+without changing your own library. PixelLab starts disconnected, and no jobs from the ZIP restart. To reproduce a PixelLab
+issue, choose **More options → Connect PixelLab** and enter your own key or select **Use saved key** if this browser
+already has a remembered PixelLab key for this site. Pages hosted at the same web address (origin) share that saved key.
+Either choice connects only this tab and does not change the saved
+key. You need to connect again each time you open or reload a copy. Any new generations use the account you connected.
+Choose **Forget key** in the copy to disconnect without changing your saved key.
+Forgetting your key in the main Studio also disconnects the copy. To test with another account, open a fresh copy
+so pending work cannot carry over to the other key.
+Wait for generations to finish and export any results you want to keep before closing or reloading. Leaving discards
+the copy, its edits, its jobs, and its key, but does not cancel or refund work submitted to PixelLab. If a tab closes
+mid-generation, check your PixelLab account before manually retrying: the original job may still count against your
+usage. Your browser may warn you before leaving while jobs are in progress. This is not a backup restore or merge.
+Export and open keep usable records and artwork when some data is damaged. **More options → Workspace activity** reports
+skipped records, missing artwork, and any diagnostics included in the ZIP. Unreadable or unsupported ZIPs cannot be
 opened. Workspace ZIPs are limited to 64 MB, 5,000 files, and additional artwork and record limits; for larger
 libraries, use individual character ZIPs. Uncommitted edits outside the current character are not included.
 

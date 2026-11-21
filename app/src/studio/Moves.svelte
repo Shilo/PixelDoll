@@ -11,7 +11,8 @@
 		isDemo,
 		moving,
 		blockedByWork,
-		openPendingWork
+		openPendingWork,
+		openFrames
 	} from './state.svelte.ts';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
@@ -63,6 +64,7 @@
 								})
 						: undefined}
 					ondownload={() => downloadMoveZip(a.id)}
+					onfixframes={() => openFrames('', a.id)}
 					ondelete={() => removeMove(a.id)}
 				>
 					<button

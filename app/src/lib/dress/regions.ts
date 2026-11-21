@@ -158,6 +158,26 @@ function fitLine(im: Img, line: BodyLine, votes: Map<number, [number, number]>):
 	return best;
 }
 
+/** Region marks for new frames of a split body (Fix frames): rig-wide votes from the stored frames, then each new frame
+ *  split on its own fitted line, like splitBase. Stored frames keep their pixels. Undefined for an unsplit body. */
+export function regionMarker(p: Project, anim: string) {
+	const base = p.manifest.items.find((i) => i.id === p.manifest.rig.baseItem);
+	if (base?.regions !== 'shirt-shorts') return undefined;
+	const pairs: [Img, Img][] = [];
+	for (const [a, dirs] of Object.entries(base.layers[0].cells ?? {}))
+		for (const [dir, cells] of Object.entries(dirs ?? {}) as [DirectionName, (Sha256 | null)[]][])
+			for (const [i, h] of cells.entries()) {
+				const im = h && p.images.get(h),
+					line = im && lineAt(p, a, dir, i, im);
+				if (im && line) pairs.push([im, splitCell(im, line)]);
+			}
+	const votes = tally(pairs);
+	return (dir: DirectionName, cell: number, im: Img): Img => {
+		const line = lineAt(p, anim, dir, cell, im);
+		return line ? splitCell(im, fitLine(im, line, votes)) : im;
+	};
+}
+
 /**
  * Split every base cell of `p` in place (Studio rigs: hip/neck anchor tracks; fixtures: guessLine; each line fitted by the
  * rig-wide color votes, fitLine), mark the base `regions: 'shirt-shorts'`, move baseHash (and the items made for the old

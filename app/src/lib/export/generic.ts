@@ -8,7 +8,7 @@ import { behaviorOf, SLOTS } from '../items/slots.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
 import { moveDirs, recolor, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame, tuckedId, variantCovers } from '../compose/compose.ts';
-import { validPaletteRepairs } from '../dress/item-palette.ts';
+import { validFrameEdits, validPaletteRepairs } from '../dress/item-palette.ts';
 import { resolvePreset } from '../runtime/paperdoll.js';
 import { bakedSheetPath, portablePathId } from './paths.ts';
 import { message, type Message } from '../message.ts';
@@ -114,6 +114,8 @@ export function validate(p: Project): string[] {
 			e.push(`${it.id}: invalid accepted appearance warnings`);
 		if (it.paletteRepairs !== undefined && !validPaletteRepairs(it.paletteRepairs))
 			e.push(`${it.id}: invalid local palette repair history`);
+		if (it.frameEdits !== undefined && !validFrameEdits(it.frameEdits))
+			e.push(`${it.id}: invalid local frame edit history`);
 		if (it.baseCut !== undefined && !validCut(m, it.baseCut))
 			e.push(`${it.id}: invalid hidden body pixels (baseCut)`);
 	}

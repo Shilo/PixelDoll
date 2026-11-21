@@ -17,9 +17,12 @@
 	import { ExternalLink, KeyRound, Check, RefreshCw } from './icons.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
+	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { readSavedKey, SAVED_KEY } from '../lib/shared-auth.ts';
 
 	let key = $state('');
 	let remember = $state(false);
+	let savedKeyAvailable = $state(workspaceCopy && !!readSavedKey().trim());
 	let checking = $state(false);
 	let refreshing = $state(false);
 	const refreshLabel = $derived(t(refreshing ? 'usage.refreshing' : 'activity.refreshBalance'));
@@ -50,7 +53,17 @@
 	const sharedOrigin =
 		location.hostname.endsWith('.github.io') &&
 		location.pathname.split('/').filter(Boolean).length > 0;
-	async function use(nextKey: string, save: boolean) {
+	function refreshSavedKey(event?: StorageEvent) {
+		if (workspaceCopy && (!event || event.key === null || event.key === SAVED_KEY))
+			savedKeyAvailable = !!readSavedKey().trim();
+	}
+	function useSavedKey() {
+		if (!workspaceCopy || checking || replacing) return;
+		const saved = readSavedKey().trim();
+		if (saved) void use(saved, false, true);
+		else refreshSavedKey();
+	}
+	async function use(nextKey: string, save: boolean, fromStorage = false) {
 		checking = true;
 		connectionFailed = false;
 		replacementError = undefined;
@@ -59,11 +72,24 @@
 			await confirmReplacement(nextKey, save);
 			return;
 		}
-		await setKey(nextKey, save, { activityScope, label: 'Connect PixelLab', background: false });
+		const activity = { activityScope, label: 'Connect PixelLab', background: false };
+		if (workspaceCopy) {
+			const isCurrent = () =>
+				!closed && ui.sheet === 'connect' && (!fromStorage || readSavedKey().trim() === nextKey);
+			try {
+				if (!(await replaceKey(nextKey, false, isCurrent, activity)))
+					replacementError = 'connectSheet.connectionChanged';
+			} catch (error) {
+				replacementError =
+					error instanceof ApiError && error.kind === 'auth'
+						? 'connectSheet.keyRejected'
+						: 'connectSheet.balanceError';
+			}
+		} else await setKey(nextKey, save, activity);
 		if (closed) return;
 		checking = false;
 		connectionFailed = !!app.balanceError && !app.keyRejected;
-		if (needsKey || app.balanceError) return;
+		if (needsKey || app.balanceError || replacementError) return;
 		limitedAccess =
 			accountTier(app.balance) === 0 &&
 			(pendingConnectionMinimumTier() === null ||
@@ -132,6 +158,8 @@
 		void focusKey();
 	}
 </script>
+
+<svelte:window onstorage={refreshSavedKey} onfocus={() => refreshSavedKey()} />
 
 <Sheet
 	{title}
@@ -247,14 +275,26 @@
 					placeholder={t('connectSheet.placeholderPasteYourKey')}
 				/>
 			</label>
-			<label class="toggle-row"
-				><span>{t('connectSheet.rememberOnThisDevice')}</span><input
-					class="switch"
-					type="checkbox"
-					bind:checked={remember}
-				/></label
-			>
-			{#if remember && sharedOrigin}<p class="notice warn small">
+			{#if workspaceCopy}
+				<p class="small bu-muted">{t('workspaceCopy.tabOnlyKey')}</p>
+				{#if savedKeyAvailable && !replacing}<div class="field-row">
+						<button
+							type="button"
+							class="bu-action btn sm"
+							data-variant="outline"
+							disabled={checking}
+							onclick={useSavedKey}>{t('workspaceCopy.useSavedKey')}</button
+						>
+					</div>{/if}
+			{:else}<label class="toggle-row"
+					><span>{t('connectSheet.rememberOnThisDevice')}</span><input
+						class="switch"
+						type="checkbox"
+						bind:checked={remember}
+					/></label
+				>
+			{/if}
+			{#if !workspaceCopy && remember && sharedOrigin}<p class="notice warn small">
 					{t('connectSheet.sharedOriginWarning', { host: location.host })}
 				</p>{/if}
 			<AffiliationNotice multiline />

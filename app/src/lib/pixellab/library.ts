@@ -1,7 +1,6 @@
 // Read-only character library. The ZIP endpoint is public; never send an account token to an artwork URL.
 import { api, API_BASE } from './client.ts';
 import { MAX_ZIP_BYTES } from '../store/zip.ts';
-import { COPY_GENERATION_OFF, workspaceCopy } from '../store/workspace-mode.ts';
 import { beginActivityCall, finishActivityCall, type ActivityContext } from './activity.ts';
 
 export interface LibraryCharacter {
@@ -63,7 +62,6 @@ export async function downloadCharacter(
 	signal?: AbortSignal,
 	context: ActivityContext = {}
 ): Promise<Uint8Array> {
-	if (workspaceCopy) throw new Error(COPY_GENERATION_OFF);
 	const safe = characterId(id);
 	const timeout = AbortSignal.timeout(120_000);
 	const url = `${API_BASE}/characters/${safe}/zip?states=${safe}`;

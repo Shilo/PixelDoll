@@ -763,6 +763,7 @@
 		"finishBeforeCharacterRemoval": "Finish or dismiss pending generation work before deleting a character.",
 		"finishBeforeMoveRemoval": "Finish or dismiss pending generation work before deleting a move.",
 		"finishBeforeDirectionRemoval": "Finish or dismiss pending generation work before changing directions.",
+		"finishBeforeFixFrames": "Wait for the current generation work to finish before fixing frames.",
 		"couldNotRemoveCharactersSavedByAn": "Could not remove characters saved by an earlier preview version: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Could not read your saved characters: {reason}",
 		"couldNotOpenThatCharacterError": "Could not open that character: {error}",
@@ -1181,7 +1182,7 @@
 	},
 	"workspace": {
 		"activityTitle": "Workspace activity",
-		"activityIntro": "Saved with the workspace from PixelDoll {build}. PixelLab is off and nothing will restart.",
+		"activityIntro": "Saved with the workspace from PixelDoll {build}. Jobs from the ZIP do not restart.",
 		"missing": {
 			"one": "{count} artwork file was missing or unreadable.",
 			"other": "{count} artwork files were missing or unreadable."
@@ -1218,7 +1219,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "PixelLab is off here. Any changes to the copy are discarded when you close or reload this tab.",
+		"privacy": "The copy starts disconnected from PixelLab. Any changes to the copy are discarded when you close or reload this tab.",
 		"chooseZip": "Choose workspace ZIP",
 		"opening": "Opening…",
 		"release": "Release to open",
@@ -1283,7 +1284,8 @@
 			"look": "Needs a look",
 			"unfitted": "Not fitted",
 			"stale": "Made for another body",
-			"demo": "Demo"
+			"demo": "Demo",
+			"edited": "Edited by you"
 		},
 		"coverage": {
 			"oneMove": "Missing some {move} frames",
@@ -2378,7 +2380,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Open workspace copy",
-		"generationOff": "PixelLab is off in workspace copies."
+		"tabOnlyKey": "This connection is only for this tab and is not saved.",
+		"useSavedKey": "Use saved key"
 	},
 	"moveNames": { "default": "Default", "idle": "Idle", "walk": "Walk" },
 	"moveRemoval": {
@@ -2454,5 +2457,99 @@
 		"unreadable": "This image could not be opened. Choose a different file.",
 		"noArtworkResized": "No visible artwork remains after resizing. Choose a different image.",
 		"noArtwork": "This image has no visible artwork. Choose a different file."
+	},
+	"fixFrames": {
+		"open": "Fix frames",
+		"title": "Fix frames",
+		"reviewTitle": "Review frames",
+		"target": "Frames of",
+		"body": "Body",
+		"move": "Move",
+		"gridLabel": "Frames of {name} in {move}",
+		"frameLabel": "{dir}, frame {n}",
+		"editedByYou": "Edited by you",
+		"mirrors": "Mirrors {of}",
+		"hint": "Download the PNG, edit it in any pixel editor such as Aseprite, Pixelorama or Piskel, then import it. Keep its size and its {w}×{h} grid: rows are directions, columns are frames. Colors are the original colors, so Recolor keeps working.",
+		"hintLayers": "Download the ZIP: it has one PNG per layer. Edit them in any pixel editor such as Aseprite, Pixelorama or Piskel, keep their names, size and {w}×{h} grid, then import the ZIP or the PNGs. Colors are the original colors, so Recolor keeps working.",
+		"downloadPng": "Download PNG",
+		"downloadZip": "Download ZIP",
+		"import": "Import edited PNG",
+		"importFiles": "Import edited files",
+		"demoNote": "This is the bundled demo. Edit a copy to replace its frames.",
+		"restoring": "Restoring…",
+		"beforeFrame": "Before, {dir} {n}",
+		"afterFrame": "After, {dir} {n}",
+		"playing": "{move}, playing",
+		"changedFrame": "{dir}, frame {n}, changed",
+		"editedFrame": "{dir}, frame {n}, edited by you",
+		"reading": "Reading…",
+		"release": "Release to import",
+		"changedCount": {
+			"one": "{n} frame changed",
+			"other": "{n} frames changed"
+		},
+		"nothingChanged": "No frames changed. Edit the downloaded PNG, save it and import it again.",
+		"replace": {
+			"one": "Replace {n} frame",
+			"other": "Replace {n} frames"
+		},
+		"restore": {
+			"one": "Restore original · {n}",
+			"other": "Restore originals · {n}"
+		},
+		"restoreTitle": {
+			"one": "Restore {n} original frame?",
+			"other": "Restore {n} original frames?"
+		},
+		"restoreAction": "Restore",
+		"restoreBody": "Every frame of {name} you replaced goes back to how it was before your edits.",
+		"replaced": {
+			"one": "Replaced {count} frame of {name}.",
+			"other": "Replaced {count} frames of {name}."
+		},
+		"undo": "Undo",
+		"undone": {
+			"one": "Undid {count} frame.",
+			"other": "Undid {count} frames."
+		},
+		"restored": {
+			"one": "Restored {count} original frame.",
+			"other": "Restored {count} original frames."
+		},
+		"notes": {
+			"softAlpha": {
+				"one": "{n} semi-transparent pixel will be made fully opaque or fully transparent.",
+				"other": "{n} semi-transparent pixels will be made fully opaque or fully transparent."
+			},
+			"newColors": {
+				"one": "{n} new color won't change with Recolor.",
+				"other": "{n} new colors won't change with Recolor."
+			},
+			"mirrored": "{dir} mirrors {of}, so its edits were not used. Edit {of}, or turn off mirroring in Directions to edit {dir} on its own.",
+			"noBodyRow": "This move has no {dir} body frames, so edits there were not used.",
+			"missingLayer": "No file ends in -{layer}.png, so that layer stays as it is.",
+			"ignored": {
+				"one": "{n} other file was ignored.",
+				"other": "{n} other files were ignored."
+			},
+			"fitted": "Items fitted to these body frames stay worn: {names}. Check them on the changed frames.",
+			"emptiedBody": "An empty body frame is skipped when new items are made for it."
+		},
+		"errors": {
+			"size": "This PNG is {got} px, but these frames need {want} px. Keep the original size and grid.",
+			"duplicateLayer": "More than one file ends in -{layer}.png. Choose one file per layer.",
+			"noLayerMatch": "No PNG matched these frames. Use the files from Download, keeping names that end in -fg or -bg.",
+			"noPng": "No PNG found. Choose the PNG you downloaded and edited.",
+			"notEditable": "Copy this character before fixing its frames.",
+			"targetGone": "This item or move no longer exists.",
+			"changed": "These frames changed since your review. Import the file again.",
+			"originalsMissing": "The original frames are not saved in this copy of the character.",
+			"originalsUnusable": "The original frames in this copy of the character cannot be used, so nothing was changed.",
+			"nothingToRevert": "These frames were changed again since, so there is nothing to undo here.",
+			"badPng": "This file could not be read as a PNG. Save it again as PNG and import it.",
+			"resolveDrafts": "Keep or dismiss this character’s item drafts before replacing body frames.",
+			"importFailed": "Could not read these frames. Try again.",
+			"saveFailed": "Could not save these frames. Nothing was changed. Try again."
+		}
 	}
 }

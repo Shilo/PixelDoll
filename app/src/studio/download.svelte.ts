@@ -23,14 +23,42 @@ export const editableData = (rec: StoredProject | undefined) =>
 			}
 		: undefined;
 
-export function saveZip(bytes: Uint8Array, filename: string) {
+export function saveFile(bytes: Uint8Array, filename: string, type: string) {
 	const a = document.createElement('a');
-	a.href = URL.createObjectURL(
-		new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/zip' })
-	);
+	a.href = URL.createObjectURL(new Blob([bytes as Uint8Array<ArrayBuffer>], { type }));
 	a.download = filename;
 	a.click();
 	setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+}
+export const saveZip = (bytes: Uint8Array, filename: string) =>
+	saveFile(bytes, filename, 'application/zip');
+
+/** Fix frames: the open character's frames of one item (or the body) and move, as stored (original colors): one PNG, or a
+ *  ZIP of one PNG per layer whose names say the layer. */
+export async function downloadFrames(itemId: string, anim: string) {
+	const p = store.project,
+		m = p?.manifest,
+		item = m?.items.find((i) => i.id === itemId);
+	if (!p || !m || !item) return;
+	try {
+		const [{ frameSheets, layerSuffix }, { encodePngBytes }, { zip }] = await Promise.all([
+			lazy(() => import('../lib/frames/fix.ts')),
+			lazy(() => import('../lib/image/pngraw.ts')),
+			lazy(() => import('../lib/store/zip.ts'))
+		]);
+		const stem = `${characterZipId(m)}-${item.id === m.rig.baseItem ? 'body' : itemExportId(item)}-${fileSlug(anim)}`;
+		const files = await Promise.all(
+			frameSheets(p, itemId, anim).map(async ({ layerId, image }) => ({
+				name: `${stem}${layerSuffix(item, layerId)}.png`,
+				data: await encodePngBytes(image)
+			}))
+		);
+		if (files.length === 1) saveFile(files[0].data, files[0].name, 'image/png');
+		else saveZip(await zip(files), `${stem}.zip`);
+	} catch (e) {
+		console.error('download frames', e);
+		toast(message('download.failedRetry', { label: item.name }), { tone: 'danger' });
+	}
 }
 
 /** The open character as it looks now, or another one as it was last saved. */

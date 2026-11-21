@@ -772,6 +772,7 @@
 		"finishBeforeCharacterRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du eine Figur löschst.",
 		"finishBeforeMoveRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du eine Animation löschst.",
 		"finishBeforeDirectionRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du die Blickrichtungen änderst.",
+		"finishBeforeFixFrames": "Warte, bis die laufenden Generierungen abgeschlossen sind, bevor du Frames korrigierst.",
 		"couldNotRemoveCharactersSavedByAn": "Figuren aus einer früheren Vorabversion konnten nicht entfernt werden: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Deine gespeicherten Figuren konnten nicht gelesen werden: {reason}",
 		"couldNotOpenThatCharacterError": "Diese Figur konnte nicht geöffnet werden: {error}",
@@ -1190,7 +1191,7 @@
 	},
 	"workspace": {
 		"activityTitle": "Arbeitsbereichsaktivität",
-		"activityIntro": "Mit dem Arbeitsbereich aus PixelDoll {build} gespeichert. PixelLab ist ausgeschaltet. Es wird nichts neu gestartet.",
+		"activityIntro": "Mit dem Arbeitsbereich aus PixelDoll {build} gespeichert. Aufträge aus der ZIP-Datei werden nicht neu gestartet.",
 		"missing": {
 			"one": "{count} Grafikdatei fehlte oder war nicht lesbar.",
 			"other": "{count} Grafikdateien fehlten oder waren nicht lesbar."
@@ -1227,7 +1228,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "PixelLab ist hier ausgeschaltet. Alle Änderungen an der Kopie werden verworfen, wenn du diesen Tab schließt oder neu lädst.",
+		"privacy": "Die Kopie startet ohne Verbindung zu PixelLab. Alle Änderungen an der Kopie werden verworfen, wenn du diesen Tab schließt oder neu lädst.",
 		"chooseZip": "Arbeitsbereichs-ZIP auswählen",
 		"opening": "Wird geöffnet…",
 		"release": "Zum Öffnen loslassen",
@@ -1292,7 +1293,8 @@
 			"look": "Bitte prüfen",
 			"unfitted": "Nicht angepasst",
 			"stale": "Für einen anderen Grundkörper erstellt",
-			"demo": "Demo"
+			"demo": "Demo",
+			"edited": "Von dir bearbeitet"
 		},
 		"coverage": {
 			"oneMove": "Einige Frames für {move} fehlen",
@@ -2393,7 +2395,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Arbeitsbereichskopie öffnen",
-		"generationOff": "In Arbeitsbereichskopien ist PixelLab ausgeschaltet."
+		"tabOnlyKey": "Diese Verbindung gilt nur für diesen Tab und wird nicht gespeichert.",
+		"useSavedKey": "Gespeicherten Schlüssel verwenden"
 	},
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen" },
 	"moveRemoval": {
@@ -2469,5 +2472,99 @@
 		"unreadable": "Dieses Bild konnte nicht geöffnet werden. Wähle eine andere Datei.",
 		"noArtworkResized": "Nach der Größenänderung ist keine sichtbare Grafik übrig. Wähle ein anderes Bild.",
 		"noArtwork": "Dieses Bild enthält keine sichtbare Grafik. Wähle eine andere Datei."
+	},
+	"fixFrames": {
+		"open": "Frames korrigieren",
+		"title": "Frames korrigieren",
+		"reviewTitle": "Frames prüfen",
+		"target": "Frames von",
+		"body": "Grundkörper",
+		"move": "Animation",
+		"gridLabel": "Frames von {name} in {move}",
+		"frameLabel": "{dir}, Frame {n}",
+		"editedByYou": "Von dir bearbeitet",
+		"mirrors": "Spiegelt {of}",
+		"hint": "Lade das PNG herunter, bearbeite es in einem beliebigen Pixel-Editor wie Aseprite, Pixelorama oder Piskel und importiere es dann. Behalte seine Größe und sein {w}×{h}-Raster bei: Zeilen sind Blickrichtungen, Spalten sind Frames. Die Farben sind die Originalfarben, daher funktioniert Umfärben weiterhin.",
+		"hintLayers": "Lade das ZIP herunter: Es enthält ein PNG pro Ebene. Bearbeite sie in einem beliebigen Pixel-Editor wie Aseprite, Pixelorama oder Piskel, behalte ihre Namen, ihre Größe und das {w}×{h}-Raster bei und importiere dann das ZIP oder die PNGs. Die Farben sind die Originalfarben, daher funktioniert Umfärben weiterhin.",
+		"downloadPng": "PNG herunterladen",
+		"downloadZip": "ZIP herunterladen",
+		"import": "Bearbeitetes PNG importieren",
+		"importFiles": "Bearbeitete Dateien importieren",
+		"demoNote": "Das ist die mitgelieferte Demo. Bearbeite eine Kopie, um ihre Frames zu ersetzen.",
+		"restoring": "Wird wiederhergestellt…",
+		"beforeFrame": "Vorher, {dir} {n}",
+		"afterFrame": "Nachher, {dir} {n}",
+		"playing": "{move}, läuft",
+		"changedFrame": "{dir}, Frame {n}, geändert",
+		"editedFrame": "{dir}, Frame {n}, von dir bearbeitet",
+		"reading": "Wird gelesen…",
+		"release": "Zum Importieren loslassen",
+		"changedCount": {
+			"one": "{n} Frame geändert",
+			"other": "{n} Frames geändert"
+		},
+		"nothingChanged": "Keine Frames geändert. Bearbeite das heruntergeladene PNG, speichere es und importiere es erneut.",
+		"replace": {
+			"one": "{n} Frame ersetzen",
+			"other": "{n} Frames ersetzen"
+		},
+		"restore": {
+			"one": "Original wiederherstellen · {n}",
+			"other": "Originale wiederherstellen · {n}"
+		},
+		"restoreTitle": {
+			"one": "{n} Original-Frame wiederherstellen?",
+			"other": "{n} Original-Frames wiederherstellen?"
+		},
+		"restoreAction": "Wiederherstellen",
+		"restoreBody": "Jeder ersetzte Frame von {name} wird wieder so, wie er vor deinen Änderungen war.",
+		"replaced": {
+			"one": "{count} Frame von {name} ersetzt.",
+			"other": "{count} Frames von {name} ersetzt."
+		},
+		"undo": "Rückgängig",
+		"undone": {
+			"one": "{count} Frame rückgängig gemacht.",
+			"other": "{count} Frames rückgängig gemacht."
+		},
+		"restored": {
+			"one": "{count} Original-Frame wiederhergestellt.",
+			"other": "{count} Original-Frames wiederhergestellt."
+		},
+		"notes": {
+			"softAlpha": {
+				"one": "{n} halbtransparentes Pixel wird vollständig deckend oder vollständig transparent.",
+				"other": "{n} halbtransparente Pixel werden vollständig deckend oder vollständig transparent."
+			},
+			"newColors": {
+				"one": "{n} neue Farbe ändert sich beim Umfärben nicht.",
+				"other": "{n} neue Farben ändern sich beim Umfärben nicht."
+			},
+			"mirrored": "{dir} spiegelt {of}, daher wurden die Änderungen dort nicht übernommen. Bearbeite {of} oder schalte die Spiegelung unter Blickrichtungen aus, um {dir} einzeln zu bearbeiten.",
+			"noBodyRow": "Diese Animation hat keine Grundkörper-Frames für {dir}, daher wurden die Änderungen dort nicht übernommen.",
+			"missingLayer": "Keine Datei endet auf -{layer}.png, daher bleibt diese Ebene unverändert.",
+			"ignored": {
+				"one": "{n} andere Datei wurde ignoriert.",
+				"other": "{n} andere Dateien wurden ignoriert."
+			},
+			"fitted": "An diese Grundkörper-Frames angepasste Gegenstände bleiben angelegt: {names}. Prüfe sie in den geänderten Frames.",
+			"emptiedBody": "Ein leerer Grundkörper-Frame wird übersprungen, wenn neue Gegenstände dafür erstellt werden."
+		},
+		"errors": {
+			"size": "Dieses PNG ist {got} px groß, aber diese Frames brauchen {want} px. Behalte die Originalgröße und das Raster bei.",
+			"duplicateLayer": "Mehr als eine Datei endet auf -{layer}.png. Wähle eine Datei pro Ebene.",
+			"noLayerMatch": "Kein PNG passt zu diesen Frames. Verwende die heruntergeladenen Dateien und behalte die Namen bei, die auf -fg oder -bg enden.",
+			"noPng": "Kein PNG gefunden. Wähle das PNG, das du heruntergeladen und bearbeitet hast.",
+			"notEditable": "Kopiere diese Figur, bevor du ihre Frames korrigierst.",
+			"targetGone": "Dieser Gegenstand oder diese Animation existiert nicht mehr.",
+			"changed": "Diese Frames haben sich seit deiner Prüfung geändert. Importiere die Datei erneut.",
+			"originalsMissing": "Die Original-Frames sind in dieser Kopie der Figur nicht gespeichert.",
+			"originalsUnusable": "Die Original-Frames in dieser Kopie der Figur können nicht verwendet werden, daher wurde nichts geändert.",
+			"nothingToRevert": "Diese Frames wurden seitdem erneut geändert, daher gibt es hier nichts rückgängig zu machen.",
+			"badPng": "Diese Datei konnte nicht als PNG gelesen werden. Speichere sie erneut als PNG und importiere sie.",
+			"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du Grundkörper-Frames ersetzt.",
+			"importFailed": "Diese Frames konnten nicht gelesen werden. Versuche es erneut.",
+			"saveFailed": "Diese Frames konnten nicht gespeichert werden. Es wurde nichts geändert. Versuche es erneut."
+		}
 	}
 }
