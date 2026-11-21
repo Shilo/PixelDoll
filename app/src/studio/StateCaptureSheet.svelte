@@ -14,6 +14,7 @@
 	import {
 		captureState,
 		stateCaptureId,
+		stateCaptureMoves,
 		stateCaptureNameIssue,
 		stateCaptureSource
 	} from './moveActions.svelte.ts';
@@ -21,15 +22,19 @@
 
 	const formId = $props.id();
 	const projectId = doc.id;
-	const moveId = ui.stateCaptureMove;
-	const initial = store.project && stateCaptureSource(store.project.manifest, moveId);
-	const moveName = displayMove(
-		moveId,
-		store.project?.manifest.rig.animations.map(({ id }) => id)
-	);
-	function suggestedName() {
+	const fixedSource = ui.stateCaptureMove;
+	const initialSource = fixedSource || stateCaptureMoves(store.project?.manifest)[0]?.id || '';
+	const initialSnapshot =
+		store.project && stateCaptureSource(store.project.manifest, initialSource);
+	let moveId = $state(initialSource);
+	let initial = $state.raw(initialSnapshot);
+	const clipIds = $derived(store.project?.manifest.rig.animations.map(({ id }) => id) ?? []);
+	const moveName = $derived(displayMove(moveId, clipIds));
+	const selectable = $derived(stateCaptureMoves(store.project?.manifest));
+	const noMoves = $derived(!fixedSource && !selectable.length);
+	function suggestedName(sourceId: string) {
 		const manifest = store.project?.manifest;
-		const root = stateCaptureId(moveId).slice(0, 48) || 'pose';
+		const root = stateCaptureId(sourceId).slice(0, 48) || 'pose';
 		let candidate = root + '-pose';
 		for (
 			let suffix = 2;
@@ -40,8 +45,8 @@
 			candidate = root + '-pose-' + suffix;
 		return moveLabel(candidate);
 	}
-	let name = $state(suggestedName());
-	let index = $state(Math.max(0, (initial?.move.frames.length ?? 1) - 1));
+	let name = $state(suggestedName(initialSource));
+	let index = $state(Math.max(0, (initialSnapshot?.move.frames.length ?? 1) - 1));
 	let facingIndex = $state(0);
 	let rotating = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
 	let busy = $state(false);
@@ -95,6 +100,18 @@
 		failure = '';
 	}
 
+	function chooseSource(id: string) {
+		if (!project || busy || doc.id !== projectId) return;
+		const wasSuggested = name === suggestedName(moveId);
+		moveId = id;
+		initial = stateCaptureSource(project.manifest, id);
+		index = Math.max(0, (initial?.move.frames.length ?? 1) - 1);
+		facingIndex = 0;
+		if (wasSuggested) name = suggestedName(id);
+		stale = false;
+		failure = '';
+	}
+
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		if (busy || changed || !ready || nameIssue || !source) return;
@@ -123,27 +140,49 @@
 >
 	<form id={formId} class="capture-form" onsubmit={save}>
 		<span class="sr" role="status">{busy ? t('stateCapture.saving') : ''}</span>
-		<p class="muted small capture-source">{beforeMove}<strong>{moveName}</strong>{afterMove}</p>
+		{#if fixedSource}
+			<p class="muted small capture-source">{beforeMove}<strong>{moveName}</strong>{afterMove}</p>
+		{:else if !noMoves}
+			<label class="field">
+				<span class="label">{t('moveSheet.startFrom.label')}</span>
+				<select
+					class="bu-input input"
+					value={moveId}
+					disabled={busy}
+					onchange={(event) => chooseSource(event.currentTarget.value)}
+				>
+					{#if !selectable.some(({ id }) => id === moveId)}
+						<option value={moveId} disabled>{moveName || t('common.unavailable')}</option>
+					{/if}
+					{#each selectable as { id } (id)}
+						<option value={id}>{displayMove(id, clipIds)}</option>
+					{/each}
+				</select>
+			</label>
+		{/if}
 		{#if !changed && total}
-			<div class="capture-nav">
-				<button
-					class="bu-action"
-					data-variant="quiet"
-					type="button"
-					aria-label={t('stage.previousFrame')}
-					disabled={busy || index === 0}
-					onclick={() => step(-1)}><ChevronLeft size={20} /></button
-				>
-				<strong aria-live="polite">{t('stage.framePosition', { frame: index + 1, total })}</strong>
-				<button
-					class="bu-action"
-					data-variant="quiet"
-					type="button"
-					aria-label={t('stage.nextFrame')}
-					disabled={busy || index >= total - 1}
-					onclick={() => step(1)}><ChevronRight size={20} /></button
-				>
-			</div>
+			{#if fixedSource || total > 1}
+				<div class="capture-nav">
+					<button
+						class="bu-action"
+						data-variant="quiet"
+						type="button"
+						aria-label={t('stage.previousFrame')}
+						disabled={busy || index === 0}
+						onclick={() => step(-1)}><ChevronLeft size={20} /></button
+					>
+					<strong aria-live="polite">{t('stage.framePosition', { frame: index + 1, total })}</strong
+					>
+					<button
+						class="bu-action"
+						data-variant="quiet"
+						type="button"
+						aria-label={t('stage.nextFrame')}
+						disabled={busy || index >= total - 1}
+						onclick={() => step(1)}><ChevronRight size={20} /></button
+					>
+				</div>
+			{/if}
 			{#if previews.length}
 				<div class="capture-preview">
 					<div class="capture-sprite" data-facing={preview?.id}>
@@ -168,20 +207,22 @@
 				</div>
 			{/if}
 		{/if}
-		<label class="field">
-			<span class="label">{t('stateCapture.name')}</span>
-			<input
-				class="bu-input input"
-				type="text"
-				bind:value={name}
-				disabled={busy}
-				maxlength="64"
-				aria-invalid={!!nameIssue}
-				onfocus={(event) => event.currentTarget.select()}
-				oninput={() => (failure = '')}
-			/>
-		</label>
-		{#if changed || !ready || nameIssue || failure}
+		{#if !noMoves}<label class="field">
+				<span class="label">{t('stateCapture.name')}</span>
+				<input
+					class="bu-input input"
+					type="text"
+					bind:value={name}
+					disabled={busy}
+					maxlength="64"
+					aria-invalid={!!nameIssue}
+					onfocus={(event) => event.currentTarget.select()}
+					oninput={() => (failure = '')}
+				/>
+			</label>{/if}
+		{#if noMoves}
+			<p class="muted small">{t('stateCapture.noMoves')}</p>
+		{:else if changed || !ready || nameIssue || failure}
 			<p class="notice bad small" role={nameIssue && !changed && ready ? undefined : 'status'}>
 				{changed
 					? t('stateCapture.concurrentEdit')
@@ -196,20 +237,22 @@
 		{/if}
 	</form>
 	{#snippet footer()}
-		<div class="capture-footer">
-			<p class="muted small">
-				<span>{t('stateCapture.noEquipment')}</span>
-				<span>{t('stateCapture.noCredits')}</span>
-			</p>
-			<button
-				class="bu-btn"
-				data-variant="primary"
-				type="submit"
-				form={formId}
-				disabled={busy || changed || !ready || !!nameIssue}
-				>{t(busy ? 'stateCapture.saving' : 'stateCapture.title')}</button
-			>
-		</div>
+		{#if !noMoves}
+			<div class="capture-footer">
+				<p class="muted small">
+					<span>{t('stateCapture.noEquipment')}</span>
+					<span>{t('stateCapture.noCredits')}</span>
+				</p>
+				<button
+					class="bu-btn"
+					data-variant="primary"
+					type="submit"
+					form={formId}
+					disabled={busy || changed || !ready || !!nameIssue}
+					>{t(busy ? 'stateCapture.saving' : 'stateCapture.title')}</button
+				>
+			</div>
+		{/if}
 	{/snippet}
 </Sheet>
 

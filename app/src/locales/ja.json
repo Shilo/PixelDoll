@@ -1758,6 +1758,7 @@
 		"adding": "追加中… {done}/{total}",
 		"waitingForFailed": "先に失敗したモーションへの対応待ち",
 		"add": "モーションを追加",
+		"addState": "ステートを追加",
 		"estimate": "約{gens}回分",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px、ピボット {x},{y}",
@@ -2348,6 +2349,7 @@
 	"moveNames": { "default": "立ちポーズ", "idle": "待機", "walk": "歩き" },
 	"stateCapture": {
 		"add": "フレームからステートを作成…",
+		"noMoves": "モーションを追加すると、そのフレームからステートを作成できます。",
 		"title": "ステートを作成",
 		"source": "{move} のフレームを選択",
 		"name": "ステート名",

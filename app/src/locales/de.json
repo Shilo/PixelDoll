@@ -1840,6 +1840,7 @@
 		"adding": "Wird hinzugefügt… {done}/{total}",
 		"waitingForFailed": "Wartet auf die fehlgeschlagene Animation",
 		"add": "Animation hinzufügen",
+		"addState": "Zustand hinzufügen",
 		"estimate": "Ca. {gens} Generierungen",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, Drehpunkt {x},{y}",
@@ -2440,6 +2441,7 @@
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen" },
 	"stateCapture": {
 		"add": "Zustand erstellen aus …",
+		"noMoves": "Füge eine Animation hinzu, um aus einem ihrer Frames einen Zustand zu erstellen.",
 		"title": "Zustand erstellen",
 		"source": "Wähle einen Frame aus {move}",
 		"name": "Zustandsname",

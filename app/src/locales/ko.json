@@ -1748,6 +1748,7 @@
 		"adding": "추가 중… {done}/{total}",
 		"waitingForFailed": "실패한 동작 기다리는 중",
 		"add": "동작 추가",
+		"addState": "상태 추가",
 		"estimate": "예상 생성 {gens}회",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, 피벗 {x},{y}",
@@ -2338,6 +2339,7 @@
 	"moveNames": { "default": "서 있기", "idle": "대기", "walk": "걷기" },
 	"stateCapture": {
 		"add": "프레임에서 상태 만들기…",
+		"noMoves": "동작을 추가하면 해당 프레임에서 상태를 만들 수 있어요.",
 		"title": "상태 만들기",
 		"source": "{move}에서 프레임 선택",
 		"name": "상태 이름",

@@ -1733,6 +1733,7 @@
 		"adding": "正在添加… {done}/{total}",
 		"waitingForFailed": "正在等待失败的动作",
 		"add": "添加动作",
+		"addState": "添加状态",
 		"estimate": "预计 {gens} 次生成",
 		"bodySize": "{w}×{h} 像素",
 		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
@@ -2319,6 +2320,7 @@
 	"moveNames": { "default": "站立", "idle": "待机", "walk": "行走" },
 	"stateCapture": {
 		"add": "从帧创建状态…",
+		"noMoves": "添加动作，即可从其中一帧创建状态。",
 		"title": "创建状态",
 		"source": "从 {move} 中选择一帧",
 		"name": "状态名称",

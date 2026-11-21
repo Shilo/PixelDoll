@@ -28,7 +28,7 @@
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { t } from 'svelte-whisper';
-	let { kind }: { kind: 'state' | 'move' } = $props();
+	let { kind, onaddstate }: { kind: 'state' | 'move'; onaddstate?: () => void } = $props();
 	const m = $derived(store.project?.manifest);
 	const playback = $derived(playbackClips(m?.rig.animations ?? []));
 	const clips = $derived(playback.filter((entry) => entry.kind === kind));
@@ -124,7 +124,55 @@
 					</button>
 				</SavedActions>
 			{/each}
+			{#if kind === 'move'}
+				{#if mine && moving.spec}
+					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+						><span
+							class="bu-ring ring"
+							class:spin={!moving.error && !moving.repairReview}
+							aria-hidden="true"
+						></span><span class="move-text"
+							><b>{nice(moving.spec.id)}</b><span class="muted small"
+								>{moving.repairReview
+									? moving.spec?.redrawItem
+										? t('moveSheet.review.redrawTitle')
+										: t('moveSheet.review.repairTitle')
+									: moving.error
+										? t('moves.failed')
+										: t('moves.adding', {
+												done: moving.progress?.done ?? 0,
+												total: moving.progress?.total ?? '?'
+											})}</span
+							></span
+						></button
+					>
+				{/if}
+				{#each queued as q, i (i)}
+					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+						><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
+							><b>{nice(q.spec.id)}</b><span class="muted small"
+								>{moving.repairReview
+									? t('moves.waitingForRepairReview')
+									: moving.error
+										? t('moves.waitingForFailed')
+										: t('generation.status.queued')}</span
+							></span
+						></button
+					>
+				{/each}
+			{/if}
 		</div>
+		{#if kind === 'move' && !isDemo()}<button
+				class="bu-action add-row cta"
+				data-variant="outline"
+				onclick={() => (ui.sheet = 'move')}
+				><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
+			>{:else if kind === 'state' && onaddstate}<button
+				class="bu-action add-row cta"
+				data-variant="outline"
+				onclick={onaddstate}
+				><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
+			>{/if}
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>
@@ -173,48 +221,12 @@
 				</dl>
 			</div>
 		</details>
-		{#if kind === 'move'}
-			{#if mine && moving.spec}
-				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-					><span
-						class="bu-ring ring"
-						class:spin={!moving.error && !moving.repairReview}
-						aria-hidden="true"
-					></span><span class="move-text"
-						><b>{nice(moving.spec.id)}</b><span class="muted small"
-							>{moving.repairReview
-								? moving.spec?.redrawItem
-									? t('moveSheet.review.redrawTitle')
-									: t('moveSheet.review.repairTitle')
-								: moving.error
-									? t('moves.failed')
-									: t('moves.adding', {
-											done: moving.progress?.done ?? 0,
-											total: moving.progress?.total ?? '?'
-										})}</span
-						></span
-					></button
-				>
-			{/if}
-			{#each queued as q, i (i)}
-				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-					><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
-						><b>{nice(q.spec.id)}</b><span class="muted small"
-							>{moving.repairReview
-								? t('moves.waitingForRepairReview')
-								: moving.error
-									? t('moves.waitingForFailed')
-									: t('generation.status.queued')}</span
-						></span
-					></button
-				>
-			{/each}
-			{#if !isDemo()}<button
-					class="bu-action add-row"
-					data-variant="outline"
-					onclick={() => (ui.sheet = 'move')}
-					><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
-				>{/if}
-		{/if}
 	{/if}
 </div>
+
+<style>
+	/* The list gap already separates the CTA from the rows above it. */
+	.cta {
+		margin-top: 0;
+	}
+</style>

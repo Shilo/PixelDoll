@@ -1854,6 +1854,7 @@
 		"adding": "Adicionando… {done}/{total}",
 		"waitingForFailed": "Aguardando a animação que falhou",
 		"add": "Adicionar animação",
+		"addState": "Adicionar estado",
 		"estimate": "Estimativa: {gens} gerações",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
@@ -2454,6 +2455,7 @@
 	"moveNames": { "default": "Em pé", "idle": "Repouso", "walk": "Caminhada" },
 	"stateCapture": {
 		"add": "Criar estado a partir de…",
+		"noMoves": "Adicione uma animação para criar um estado a partir de um de seus quadros.",
 		"title": "Criar estado",
 		"source": "Escolha um quadro de {move}",
 		"name": "Nome do estado",

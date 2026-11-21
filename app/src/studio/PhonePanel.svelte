@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Customization content for the desktop rail and the phone sheet: one tab at a time.
-	import { ui } from './state.svelte.ts';
+	import { isDemo, ui } from './state.svelte.ts';
 	import Wardrobe from './Wardrobe.svelte';
 	import ColorSections from './ColorSections.svelte';
 	import Moves from './Moves.svelte';
@@ -21,7 +21,15 @@
 		<ColorSections />
 	{:else}
 		<div class="equipment-scroll panel-list">
-			<Moves kind={ui.tab === 'states' ? 'state' : 'move'} />
+			<Moves
+				kind={ui.tab === 'states' ? 'state' : 'move'}
+				onaddstate={isDemo()
+					? undefined
+					: () => {
+							ui.stateCaptureMove = '';
+							ui.sheet = 'stateCapture';
+						}}
+			/>
 		</div>
 	{/if}
 </div>

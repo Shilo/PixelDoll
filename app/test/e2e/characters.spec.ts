@@ -2377,6 +2377,12 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		id: 'managed-parity-fixture',
 		looks: 'red hair, blue coat and boots'
 	});
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'Add a state...', exact: true }).click();
+	const emptyCapture = page.getByRole('dialog', { name: 'Create State', exact: true });
+	await expect(emptyCapture).toContainText('Add a Move to create a State from one of its frames.');
+	await expect(emptyCapture.getByRole('combobox')).toHaveCount(0);
+	await emptyCapture.getByRole('button', { name: 'Cancel', exact: true }).click();
 	expect(before.manifest.rig.rest?.west?.keypoints).toHaveLength(18);
 	expect(
 		(before.rigQa as { clips: Record<string, { adherence: number | null }> }).clips['default/south']
@@ -2524,6 +2530,13 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		);
 	}
 	await expect(page.getByText('Captured state', { exact: true })).toBeVisible();
+	await expect(
+		page.getByRole('tablist', { name: 'Customization panels', exact: true }).getByRole('tab', {
+			name: 'States',
+			exact: true
+		})
+	).toHaveAttribute('aria-selected', 'true');
+	await expect(page.locator('.clip-trigger')).toHaveAttribute('value', 'rest-pose');
 	const captured = await read();
 	const body = captured.manifest.items.find(({ id }) => id === captured.manifest.rig.baseItem)!;
 	const cells = body.layers[0].cells!;
@@ -2535,7 +2548,22 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	});
 	for (const direction of ['south', 'east', 'north', 'west'] as const)
 		expect(cells['rest-pose'][direction]).toEqual([cells.idle[direction]![chosenCell]]);
+	const panel = page.getByRole('tabpanel', { name: 'States', exact: true });
+	const addState = panel.getByRole('button', { name: 'Add a state...', exact: true });
+	await expect(panel.locator('.cta + details')).toBeVisible();
+	await addState.click();
+	const stateSource = createState.getByRole('combobox', { name: 'Start from', exact: true });
+	await expect(stateSource.locator('option', { hasText: 'Standing' })).toHaveCount(0);
+	await expect(stateSource.locator('option', { hasText: 'Rest pose' })).toHaveCount(0);
+	await expect(stateSource.locator('option:checked')).toHaveText('Idle');
+	await expect(createState.getByRole('img', { name: 'Idle preview', exact: true })).toBeVisible();
+	await expect(createState.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
+	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(addState).toBeFocused();
 	await equipmentMode(page, 'Moves');
+	await expect(
+		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.cta + details')
+	).toBeVisible();
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const moveSheet = page.getByRole('dialog', { name: 'Add a move' });
 	await moveSheet.getByText('Start from · Standing', { exact: true }).click();

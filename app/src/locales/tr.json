@@ -1834,6 +1834,7 @@
 		"adding": "Ekleniyor… {done}/{total}",
 		"waitingForFailed": "Başarısız animasyon bekleniyor",
 		"add": "Animasyon ekleyin",
+		"addState": "Durum ekleyin",
 		"estimate": "Tahmini {gens} üretim hakkı",
 		"bodySize": "{w}×{h} piksel",
 		"frameSize": "{w}×{h} piksel, pivot noktası {x},{y}",
@@ -2434,6 +2435,7 @@
 	"moveNames": { "default": "Ayakta", "idle": "Bekleme", "walk": "Yürüme" },
 	"stateCapture": {
 		"add": "Kareden durum oluştur…",
+		"noMoves": "Karelerinden biriyle durum oluşturmak için bir animasyon ekleyin.",
 		"title": "Durum oluştur",
 		"source": "{move} hareketinden bir kare seç",
 		"name": "Durum adı",

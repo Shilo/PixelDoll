@@ -1825,6 +1825,7 @@
 		"adding": "Adding… {done}/{total}",
 		"waitingForFailed": "Waiting for the failed move",
 		"add": "Add a move",
+		"addState": "Add a state",
 		"estimate": "Est. {gens} gens",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
@@ -2425,6 +2426,7 @@
 	"moveNames": { "default": "Standing", "idle": "Idle", "walk": "Walk" },
 	"stateCapture": {
 		"add": "Create State from…",
+		"noMoves": "Add a Move to create a State from one of its frames.",
 		"title": "Create State",
 		"source": "Choose a frame from {move}",
 		"name": "State name",

@@ -38,6 +38,18 @@ export function stateCaptureSource(manifest: Manifest, moveId: string) {
 	};
 }
 
+export function stateCaptureMoves(manifest: Manifest | undefined) {
+	if (!manifest) return [];
+	const { rig } = manifest;
+	const cells = manifest.items.find((item) => item.id === rig.baseItem)?.layers[0]?.cells;
+	return rig.animations.filter(
+		(clip) =>
+			clipKind(clip) === 'move' &&
+			clip.frames.length > 0 &&
+			rig.directions.some(({ id, mirrorOf }) => !mirrorOf && cells?.[clip.id]?.[id]?.some(Boolean))
+	);
+}
+
 export function stateCaptureId(name: string) {
 	return name
 		.normalize('NFKD')
@@ -186,6 +198,7 @@ export async function captureState(
 	) {
 		ui.anim = id;
 		ui.frame = 0;
+		ui.tab = 'states';
 		toast(message('stateCapture.saved'));
 	}
 }

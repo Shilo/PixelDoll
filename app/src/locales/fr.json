@@ -1838,6 +1838,7 @@
 		"adding": "Ajout… {done}/{total}",
 		"waitingForFailed": "En attente de la résolution de l’animation en échec",
 		"add": "Ajouter une animation",
+		"addState": "Ajouter un état",
 		"estimate": "Env. {gens} gén.",
 		"bodySize": "{w} × {h} px",
 		"frameSize": "{w} × {h} px, pivot {x},{y}",
@@ -2441,6 +2442,7 @@
 	"moveNames": { "default": "Debout", "idle": "Attente", "walk": "Marche" },
 	"stateCapture": {
 		"add": "Créer un état à partir de…",
+		"noMoves": "Ajoutez une animation pour créer un état à partir de l’une de ses images.",
 		"title": "Créer un état",
 		"source": "Choisissez une image de {move}",
 		"name": "Nom de l’état",

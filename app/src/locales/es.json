@@ -1840,6 +1840,7 @@
 		"adding": "Agregando… {done}/{total}",
 		"waitingForFailed": "En espera hasta resolver el fallo de la animación",
 		"add": "Agregar una animación",
+		"addState": "Agregar un estado",
 		"estimate": "Aprox. {gens} generaciones",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivote {x},{y}",
@@ -2447,6 +2448,7 @@
 	},
 	"stateCapture": {
 		"add": "Crear estado a partir de…",
+		"noMoves": "Agrega una animación para crear un estado a partir de uno de sus fotogramas.",
 		"title": "Crear estado",
 		"source": "Elige un fotograma de {move}",
 		"name": "Nombre del estado",
