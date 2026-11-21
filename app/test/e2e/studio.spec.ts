@@ -208,6 +208,14 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await about.press('Enter');
 	await expect(heading).toBeFocused();
 	await expect(heading).toHaveCSS('clip-path', 'none');
+	const compactHeader = settings.locator('.sheet-head');
+	const headerBounds = await compactHeader.boundingBox();
+	const titleBounds = await compactHeader.getByText('About', { exact: true }).boundingBox();
+	expect(headerBounds).not.toBeNull();
+	expect(titleBounds).not.toBeNull();
+	expect(
+		Math.abs(titleBounds!.x + titleBounds!.width / 2 - (headerBounds!.x + headerBounds!.width / 2))
+	).toBeLessThanOrEqual(1);
 	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
 		.baseURL!;
 	await page.goto(dev);
@@ -1532,6 +1540,9 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	await page.getByRole('button', { name: 'Appearance', exact: true }).click();
 	await page.getByRole('radio', { name: 'Light', exact: true }).check();
 	await expect(page.locator('[data-setting="theme"] .lucide-sun-moon')).toBeVisible();
+	await expect(page.getByRole('radiogroup', { name: 'Theme', exact: true })).toHaveClass(
+		/\bbu-segmented\b/
+	);
 	await expect(page.getByRole('radio', { name: 'Light', exact: true })).toBeChecked();
 	await page.getByRole('radio', { name: 'Light', exact: true }).press('ArrowLeft');
 	await expect(page.getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();
