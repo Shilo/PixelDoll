@@ -3368,9 +3368,9 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeDisabled();
 	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
 	await description.fill('jumping in place');
-	const advanced = move.locator('details.advanced');
-	await advanced.locator('summary').click();
-	const model = advanced.getByRole('combobox', { name: 'Motion model' });
+	const advanced = move.getByRole('button', { name: /^Advanced/ });
+	await advanced.click();
+	const model = move.getByRole('combobox', { name: 'Motion model' });
 	const slider = move.getByRole('slider', { name: 'Frames' });
 	await expect(model).toHaveValue('pixminimax');
 	await expect(model.getByRole('option')).toHaveText(['Default (PixMiniMax)', 'Skeleton V3', 'V3']);
@@ -5903,7 +5903,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		'Step sideways and shift weight to the leading foot'
 	);
 	await expect(replace).toBeEnabled();
-	const advanced = sheet.locator('summary').filter({ hasText: 'Advanced' });
+	const advanced = sheet.getByRole('button', { name: /^Advanced/ });
 	await expect(advanced).toContainText('V3');
 	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
 	await expect(
@@ -5954,7 +5954,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	const loop = add.getByRole('switch', { name: 'Loop', exact: true });
 	await expect(loop).not.toBeChecked();
 	await expect(add.getByRole('slider', { name: 'Frames', exact: true })).toBeVisible();
-	const addAdvanced = add.locator('summary').filter({ hasText: 'Advanced' });
+	const addAdvanced = add.getByRole('button', { name: /^Advanced/ });
 	const addModel = add.getByRole('combobox', { name: 'Motion model', exact: true });
 	if (!(await addModel.isVisible())) await addAdvanced.click();
 	await addModel.selectOption('v3');
@@ -6149,8 +6149,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		'Connect PixelLab'
 	);
 	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
-	if (!(await model.isVisible()))
-		await sheet.locator('summary').filter({ hasText: 'Advanced' }).click();
+	if (!(await model.isVisible())) await sheet.getByRole('button', { name: /^Advanced/ }).click();
 	await expect(
 		sheet.getByRole('group', { name: 'Start and end frames East', exact: true })
 	).toBeVisible();

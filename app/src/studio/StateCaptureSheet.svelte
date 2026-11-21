@@ -596,8 +596,6 @@
 				{:else if name.trim() !== moveLabel(id)}
 					<p class="muted small">{t('stateCapture.savedAs', { name: moveLabel(id) })}</p>
 				{/if}
-			</div>
-			<div class="state-panel state-edit">
 				<label class="bu-check edit-switch">
 					<span class="edit-copy">
 						<span>{t('stateCapture.changePose')}</span>
@@ -613,66 +611,66 @@
 						aria-describedby="{formId}-edit-hint"
 					/>
 				</label>
-				{#if editing}
-					<div class="edit-fields">
-						{#if !flashReference}
-							<label class="field">
-								<span class="label">{t('stateGeneration.description')}</span>
-								<textarea class="bu-input input" bind:value={description} rows={3} disabled={!!busy}
-								></textarea>
-							</label>
-						{/if}
-						<ReferenceField
-							bind:value={reference}
-							bind:loading={referenceLoading}
-							max={referenceMax}
-							hint={t(
-								model === 'pixen'
-									? 'stateGeneration.pixenReference'
-									: model === 'pro-flash'
-										? 'stateGeneration.flashReference'
-										: 'stateGeneration.reference'
-							)}
-							disabled={!!busy || model === 'pixen'}
-						/>
-						<details class="disclosure" bind:open={advancedOpen}>
-							<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
-							<label class="field">
-								<span class="label">{t('create.form.model')}</span>
-								<select
-									class="bu-input input"
-									bind:value={model}
-									disabled={!!busy || referenceLoading}
-								>
-									<option value="pro">{t('stateGeneration.defaultModel')}</option>
-									<option value="pro-flash">{t('create.form.models.proFlash.label')}</option>
-									<option value="pixen">V3 (Pixen)</option>
-								</select>
-							</label>
-						</details>
-						{#if quote}
-							{@const managed = quote.plan.endpoint === '/create-character-state'}
-							<div class="notice small" role="status">
-								<div>
-									{#if managed}
-										<p>
-											{t('stateGeneration.managed', { parent: quote.parentName || clipName(clip) })}
-										</p>
-									{:else}
-										<p>{t('stateGeneration.localOnly')}</p>
-									{/if}
-									{#if quote.plan.endpoint === '/transfer-outfit-v2'}<p>
-											{t('stateGeneration.transfer')}
-										</p>{/if}
-									{#if quote.plan.warnings.includes('sheet-quality-unverified')}<p>
-											{t('stateGeneration.sheetWarning')}
-										</p>{/if}
-								</div>
-							</div>
-						{/if}
-					</div>
-				{/if}
 			</div>
+			{#if editing}
+				<div class="state-panel state-edit">
+					{#if !flashReference}
+						<label class="field">
+							<span class="label">{t('stateGeneration.description')}</span>
+							<textarea class="bu-input input" bind:value={description} rows={3} disabled={!!busy}
+							></textarea>
+						</label>
+					{/if}
+					<ReferenceField
+						bind:value={reference}
+						bind:loading={referenceLoading}
+						max={referenceMax}
+						hint={t(
+							model === 'pixen'
+								? 'stateGeneration.pixenReference'
+								: model === 'pro-flash'
+									? 'stateGeneration.flashReference'
+									: 'stateGeneration.reference'
+						)}
+						disabled={!!busy || model === 'pixen'}
+					/>
+					<details class="disclosure" bind:open={advancedOpen}>
+						<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
+						<label class="field">
+							<span class="label">{t('create.form.model')}</span>
+							<select
+								class="bu-input input"
+								bind:value={model}
+								disabled={!!busy || referenceLoading}
+							>
+								<option value="pro">{t('stateGeneration.defaultModel')}</option>
+								<option value="pro-flash">{t('create.form.models.proFlash.label')}</option>
+								<option value="pixen">V3 (Pixen)</option>
+							</select>
+						</label>
+					</details>
+					{#if quote}
+						{@const managed = quote.plan.endpoint === '/create-character-state'}
+						<div class="notice small" role="status">
+							<div>
+								{#if managed}
+									<p>
+										{t('stateGeneration.managed', { parent: quote.parentName || clipName(clip) })}
+									</p>
+								{:else}
+									<p>{t('stateGeneration.localOnly')}</p>
+								{/if}
+								{#if quote.plan.endpoint === '/transfer-outfit-v2'}<p>
+										{t('stateGeneration.transfer')}
+									</p>{/if}
+								{#if quote.plan.warnings.includes('sheet-quality-unverified')}<p>
+										{t('stateGeneration.sheetWarning')}
+									</p>{/if}
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
 		</form>
 	{:else if !busy && (failure || canContinue)}
 		<div class="state-panel">
@@ -796,7 +794,7 @@
 		display: grid;
 		gap: 12px;
 	}
-	/* Editing on a centered sheet with room: source on the left, PixelLab options on the right. */
+	/* Editing on a centered sheet with room: the pose and its switch stay left, the edit opens a right column. */
 	@media (min-width: 760px) {
 		:global(dialog.state-capture-sheet.center.split) {
 			max-inline-size: 720px;
@@ -809,10 +807,6 @@
 		:global(dialog.center.split) .state-edit {
 			padding-inline-start: 24px;
 			border-inline-start: 1px solid var(--bu-line);
-		}
-		:global(dialog.center.split) .edit-switch {
-			padding-block-start: 0;
-			border-block-start: 0;
 		}
 	}
 	:global(dialog.state-capture-sheet.center.reviewing) {
@@ -842,10 +836,6 @@
 		display: grid;
 		gap: 2px;
 		min-inline-size: 0;
-	}
-	.edit-fields {
-		display: grid;
-		gap: 12px;
 	}
 	/* Like Move review: the pair beside the direction compass when the sheet has room, stacked otherwise. */
 	.state-panel:has(.review-preview) {

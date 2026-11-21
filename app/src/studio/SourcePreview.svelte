@@ -118,13 +118,13 @@
 {/if}
 
 <style>
-	/* The stored cell fills the preview: the box edge is the cell edge. */
+	/* The preview spans the form; the square stored cell sits centered on the stage color, which letterboxes it. */
 	.source-preview {
 		position: relative;
 		display: grid;
-		justify-self: center;
-		inline-size: min(100%, 280px, 36dvh);
-		aspect-ratio: 1;
+		place-items: center;
+		inline-size: 100%;
+		block-size: min(280px, 36dvh);
 		padding: 0;
 		overflow: hidden;
 		color: inherit;
@@ -141,8 +141,9 @@
 	}
 	.cell-frame {
 		display: grid;
-		inline-size: 100%;
 		block-size: 100%;
+		max-inline-size: 100%;
+		aspect-ratio: 1;
 	}
 	.cell-caption {
 		margin: -4px 0 0;

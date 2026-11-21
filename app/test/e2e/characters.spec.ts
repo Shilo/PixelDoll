@@ -2542,7 +2542,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await page.getByRole('radio', { name: 'Idle', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await move.locator('details.advanced summary').click();
+	await move.getByRole('button', { name: /^Advanced/ }).click();
 	await move
 		.getByRole('combobox', { name: 'Motion model', exact: true })
 		.selectOption('skeleton-v3');
@@ -2783,7 +2783,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await moveSheet.getByRole('radio', { name: 'Slash', exact: true }).click();
-	await moveSheet.locator('details.advanced summary').click();
+	await moveSheet.getByRole('button', { name: /^Advanced/ }).click();
 	await moveSheet.getByRole('combobox', { name: 'Motion model' }).selectOption('skeleton-v3');
 	await pickStart('Idle');
 	await previousStartFrame.click();
