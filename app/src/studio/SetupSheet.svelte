@@ -8,7 +8,8 @@
 	import { setupPlan, rigReady, type SetupPlan } from '../lib/rig/setup.ts';
 	import * as db from '../lib/store/db.ts';
 	import type { StoredProject } from '../lib/store/project.ts';
-	import { SETUP_STEPS } from './setup.ts';
+	import { SETUP_STEPS, setupRegistrationStuck } from './setup.ts';
+	import { freshSeed } from './characterConfig.ts';
 	import {
 		ui,
 		doc,
@@ -51,6 +52,22 @@
 			creates.some((run) => !run.projectId)
 	);
 	const ready = $derived(rigReady(rec));
+	// A registration that finished without a usable character replays as such: only a new seed (0.25 gen) can change it.
+	let stuck = $state(false);
+	$effect(() => {
+		const spec = mine && settingUp.error ? $state.snapshot(settingUp.spec) : null;
+		let current = true;
+		stuck = false;
+		if (spec)
+			void setupRegistrationStuck(spec)
+				.then((value) => {
+					if (current) stuck = value;
+				})
+				.catch((failure: unknown) => console.error('setup review', failure));
+		return () => {
+			current = false;
+		};
+	});
 	const step = $derived(SETUP_STEPS.findIndex((s) => s.id === settingUp.progress?.step));
 	const preview = $derived(plan?.rest.south ?? (plan && Object.values(plan.rest)[0]) ?? null);
 	$effect(() => {
@@ -212,8 +229,18 @@
 					class="bu-action btn primary"
 					data-variant="primary"
 					onclick={() =>
-						settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)))}
-					>{t('setup.resume')}</button
+						settingUp.spec &&
+						withKey(
+							() =>
+								void startSetup({
+									...$state.snapshot(settingUp.spec!),
+									...(stuck ? { seed: freshSeed() } : {})
+								})
+						)}
+					>{#if stuck}{t('setup.newRegistration')}
+						<span class="cost">{t('moves.estimate', { gens: formatNumber(0.25) })}</span>{:else}{t(
+							'setup.resume'
+						)}{/if}</button
 				></span
 			>
 		{:else if active}<span class="foot-note">{t('setup.keepWorking')}</span><button

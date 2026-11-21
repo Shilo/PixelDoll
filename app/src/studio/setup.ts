@@ -1,6 +1,6 @@
 // Paid setup is explicit, resumable through the same queue as creation, and commits only when every measurement exists.
-import { b64, joints, provOf, run, type Progress } from './create.ts';
-import { attachImportedRig, setupPlan } from '../lib/rig/setup.ts';
+import { b64, joints, latestOutcome, provOf, run, type Progress } from './create.ts';
+import { attachImportedRig, setupPlan, type SetupPlan } from '../lib/rig/setup.ts';
 import { DIRECTIONS, cellHash, retainPlaybackChoices, type Keypoint } from '../lib/rig/rig.ts';
 import { skeletonInput } from '../lib/rig/estimate.ts';
 import { png, routes } from '../lib/pixellab/routes.ts';
@@ -24,6 +24,46 @@ export const SETUP_STEPS = [
 	{ id: 'register', label: message('setup.steps.register') },
 	{ id: 'check', label: message('setup.steps.check') }
 ];
+
+/** The managed registration of the standing views. Its seed is the only input a new registration changes: the paid joint
+ *  checks are unseeded and stay reused. */
+async function registration(
+	project: Awaited<ReturnType<typeof loadProject>>['project'],
+	plan: SetupPlan,
+	spec: SetupSpec
+) {
+	const directions =
+		plan.registrationDirections === 8 ? DIRECTIONS : (['south', 'east', 'north', 'west'] as const);
+	const direction_images = Object.fromEntries(
+		await Promise.all(
+			directions.filter((d) => d !== 'south').map(async (d) => [d, png(await b64(plan.rest[d]!))])
+		)
+	);
+	return routes.createCharacterV3({
+		description: spec.looks.trim(),
+		reference_image: png(await b64(plan.rest.south!)),
+		direction_images,
+		n_directions: plan.registrationDirections,
+		view: project.manifest.rig.view,
+		template_id: 'mannequin',
+		no_background: true,
+		seed: spec.seed
+	});
+}
+/** API-free: true when this setup's registration already finished without a usable character (or stopped), so retrying the
+ *  same seed would only replay it. A new seed then buys one new registration (0.25 gen); every joint check is reused. */
+export async function setupRegistrationStuck(spec: SetupSpec): Promise<boolean> {
+	const { project } = await loadProject(spec.projectId);
+	if (project.manifest.rig.baseHash !== spec.baseHash || !spec.looks.trim()) return false;
+	const latest = await latestOutcome(
+		await registration(project, await setupPlan(project, spec.restAnim), spec)
+	);
+	return (
+		!!latest &&
+		(latest.state !== 'done' ||
+			!(latest.response as { character_id?: string } | undefined)?.character_id)
+	);
+}
 
 export async function setupCharacter(
 	spec: SetupSpec,
@@ -98,24 +138,8 @@ export async function setupCharacter(
 	if (failure) throw failure.error;
 	provenance.push(...observations);
 	progress({ step: 'register', done: 0, total: 1, recIds: [] });
-	const directions =
-		plan.registrationDirections === 8 ? DIRECTIONS : (['south', 'east', 'north', 'west'] as const);
-	const direction_images = Object.fromEntries(
-		await Promise.all(
-			directions.filter((d) => d !== 'south').map(async (d) => [d, png(await b64(plan.rest[d]!))])
-		)
-	);
 	const managed = await run(
-		routes.createCharacterV3({
-			description: spec.looks.trim(),
-			reference_image: png(await b64(plan.rest.south!)),
-			direction_images,
-			n_directions: plan.registrationDirections,
-			view: project.manifest.rig.view,
-			template_id: 'mannequin',
-			no_background: true,
-			seed: spec.seed
-		}),
+		await registration(project, plan, spec),
 		`${rec.manifest.name} · rig setup`,
 		'studio-setup',
 		false,
