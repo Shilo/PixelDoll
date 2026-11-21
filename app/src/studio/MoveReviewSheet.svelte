@@ -3,6 +3,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
+	import PromptLine from './PromptLine.svelte';
 	import Sprite from './Sprite.svelte';
 	import { ChevronLeft, ChevronRight, Pause, Play, Shirt } from './icons.ts';
 	import { displayDirection } from './displayDirection.ts';
@@ -460,6 +461,10 @@
 				/>
 			{/if}
 		</div>
+		<PromptLine
+			text={candidate.spec.text ??
+				moveTemplatePrompt(candidate.spec.action ?? id, !!candidate.spec.animation?.loop)}
+		/>
 		{#if !candidate.spec.replace && !hardFailure}
 			<p class="checkpoint-note muted small">
 				{t('moveSheet.checkpoint.reviewNote', { move: name })}

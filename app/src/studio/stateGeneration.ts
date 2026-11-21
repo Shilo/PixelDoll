@@ -57,6 +57,8 @@ import {
 export interface StateAttempt {
 	token: string;
 	id: string;
+	/** The instructions sent, shown again while the result is reviewed. */
+	description?: string;
 	source: StateSourceFrame;
 	sourceVersion: string;
 	plan: ReadyStatePlan & { cost: StateGenerationCost };
@@ -97,6 +99,7 @@ export interface PreparedState {
 export interface StateReview {
 	projectId: string;
 	id: string;
+	description?: string;
 	source: StateSourceFrame;
 	token: string;
 	sourceVersion: string;
@@ -448,6 +451,7 @@ async function readReview(
 		ungrounded,
 		projectId,
 		id: attempt.id,
+		description: attempt.description,
 		source: attempt.source,
 		token: attempt.token,
 		sourceVersion: attempt.sourceVersion,
@@ -477,6 +481,7 @@ async function generateState(prepared: PreparedState): Promise<StateReview> {
 	const attempt: StateAttempt = {
 		token: crypto.randomUUID(),
 		id,
+		description,
 		source: { ...sourceFrame },
 		sourceVersion: source.version,
 		plan: fresh.plan

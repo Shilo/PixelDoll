@@ -2122,11 +2122,34 @@
 				</div>
 				<div class="move-edit">
 					<div class="field">
-						<label class="label" for="move-description"
-							>{replacing
-								? t('moveSheet.describeReplacement')
-								: t('moveSheet.describeMotion')}</label
-						>
+						<div class="field-head">
+							<label class="label" for="move-description"
+								>{replacing
+									? t('moveSheet.describeReplacement')
+									: t('moveSheet.describeMotion')}</label
+							>
+							<button
+								type="button"
+								class="bu-action btn small enhance"
+								data-variant="outline"
+								aria-busy={enhancing}
+								disabled={enhancing ||
+									(!canUndoEnhance &&
+										(!app.key ||
+											app.keyRejected ||
+											!standingImage ||
+											!text.trim() ||
+											text.trim().length > 500))}
+								onclick={() => void enhanceMove()}
+							>
+								{#if canUndoEnhance}<Undo2 size={13} />{t('common.undo')}
+								{:else}<WandSparkles size={13} />{t(
+										enhancing ? 'create.form.enhancing' : 'create.form.enhance'
+									)}{#if !enhancing}<span class="cost"
+											>{t('moves.estimate', { gens: formatNumber(0.05) })}</span
+										>{/if}{/if}
+							</button>
+						</div>
 						<textarea
 							id="move-description"
 							class="bu-input input"
@@ -2139,26 +2162,6 @@
 						<p class="faint small" id="move-description-hint">
 							{t('moveSheet.motionOnly')}
 						</p>
-						<button
-							type="button"
-							class="bu-action"
-							data-variant="quiet"
-							disabled={enhancing ||
-								(!canUndoEnhance &&
-									(!app.key ||
-										app.keyRejected ||
-										!standingImage ||
-										!text.trim() ||
-										text.trim().length > 500))}
-							onclick={() => void enhanceMove()}
-						>
-							{#if canUndoEnhance}<Undo2 size={13} />{t('common.undo')}
-							{:else}<WandSparkles size={13} />{t(
-									enhancing ? 'create.form.enhancing' : 'create.form.enhance'
-								)}{#if !enhancing}<span class="cost"
-										>{t('moves.estimate', { gens: formatNumber(0.05) })}</span
-									>{/if}{/if}
-						</button>
 						{#if action}
 							<button
 								type="button"
@@ -2418,6 +2421,20 @@
 	}
 	.advanced-toggle[aria-expanded='true'] :global(svg) {
 		rotate: 180deg;
+	}
+	/* Enhance sits on the prompt's label row, styled as a button so it reads as an action. */
+	.field-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 4px 8px;
+	}
+	.enhance {
+		gap: 4px;
+		min-block-size: 32px;
+		padding-inline: 8px;
+		font-size: var(--fs-sm);
 	}
 	.frame-recovery-action {
 		align-self: flex-start;

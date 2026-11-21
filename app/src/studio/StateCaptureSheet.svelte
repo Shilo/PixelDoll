@@ -36,6 +36,7 @@
 	} from './moveActions.svelte.ts';
 	import ReferenceField from './ReferenceField.svelte';
 	import Sheet from './Sheet.svelte';
+	import PromptLine from './PromptLine.svelte';
 	import SourcePreview from './SourcePreview.svelte';
 	import Sprite from './Sprite.svelte';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
@@ -521,6 +522,7 @@
 					{/if}
 				</div>
 			{/if}
+			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
 			{#if !sourceCurrent}
 				<p class="notice warn small" role="status">{t('stateGeneration.sourceChanged')}</p>
 			{:else if Object.keys(review.ungrounded).length}
