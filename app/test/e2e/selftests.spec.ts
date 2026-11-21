@@ -891,7 +891,10 @@ for (const altered of [false, true])
 test('browser PNG and IndexedDB self-tests preserve every registered check', async ({ page }) => {
 	const errors: string[] = [];
 	page.on('pageerror', (error) => errors.push(error.message));
-	await page.addInitScript(() => localStorage.setItem('pixeldoll.agentKey', 'off'));
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.developerMode', '1');
+	});
 	await page.route('https://api.pixellab.ai/**', (route) => route.abort());
 	await page.goto('/#/selftest');
 	const result = page.getByTestId('selftest');

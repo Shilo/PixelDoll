@@ -3445,7 +3445,11 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	const disabledRedo = page.locator('.mobile-redo');
 	await expect(disabledRedo).toBeDisabled();
 	await noDisabledHover(page, disabledRedo);
-	await page.getByRole('button', { name: 'Inspect all API calls' }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Developer', exact: true }).click();
+	await settings.getByRole('switch', { name: 'Developer mode', exact: true }).check();
+	await settings.getByRole('button', { name: 'Inspect all API calls', exact: true }).click();
 	const disabledCopy = page.getByRole('button', { name: 'Copy all calls' });
 	await expect(disabledCopy).toBeDisabled();
 	await noDisabledHover(page, disabledCopy);

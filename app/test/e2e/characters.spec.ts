@@ -1480,6 +1480,7 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 	page,
 	context
 }, info) => {
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.developerMode', '1'));
 	const requests: string[] = [];
 	await context.route('https://api.pixellab.ai/**', (route) => {
 		requests.push(route.request().method());
@@ -1934,6 +1935,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	page,
 	context
 }) => {
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.developerMode', '1'));
 	const im = makeImg(48, 48);
 	for (let y = 12; y < 43; y++)
 		for (let x = 18; x < 30; x++) im.data.set([180, 120, 80, 255], (y * 48 + x) * 4);
@@ -2117,9 +2119,12 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
 	await dialog.getByRole('button', { name: 'Choose another character', exact: true }).click();
 	await dialog
-		.locator('.library-entry')
+		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
+	await page
+		.getByRole('combobox', { name: 'API call scope', exact: true })
+		.selectOption({ label: 'Preview Page two hero' });
 	await expect(page.locator('.peek-call')).toContainText(`/characters/${ID}/zip`);
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: /Page two hero/ }).click();

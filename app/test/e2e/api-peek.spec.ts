@@ -8,6 +8,8 @@ test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		if (!new URLSearchParams(location.search).has('developer-default'))
+			localStorage.setItem('pixeldoll.developerMode', '1');
 		// Exercise Copy without replacing the person's system clipboard.
 		Object.defineProperty(navigator, 'clipboard', {
 			configurable: true,
@@ -20,6 +22,42 @@ test.beforeEach(async ({ context }) => {
 	});
 });
 
+async function developerSettings(page: Page) {
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Developer', exact: true }).click();
+	return settings;
+}
+
+test('Developer mode defaults to off, persists, and closes an open inspector when disabled', async ({
+	page,
+	context
+}) => {
+	const path = '/?developer-default';
+	await openStudio(page, path);
+	const settings = await developerSettings(page);
+	const mode = settings.getByRole('switch', { name: 'Developer mode', exact: true });
+	const history = settings.getByRole('button', { name: 'Inspect all API calls', exact: true });
+	await expect(mode).not.toBeChecked();
+	await expect(history).toHaveCount(0);
+	await mode.check();
+	await expect(history).toBeVisible();
+	await page.reload();
+	await developerSettings(page);
+	await expect(mode).toBeChecked();
+	await history.click();
+	await expect(peek(page)).toBeVisible();
+	const other = await context.newPage();
+	await openStudio(other, path);
+	const otherSettings = await developerSettings(other);
+	await otherSettings.getByRole('switch', { name: 'Developer mode', exact: true }).uncheck();
+	await expect(peek(page)).toHaveCount(0);
+	await expect(history).toHaveCount(0);
+	await expect(mode).not.toBeChecked();
+	await other.close();
+});
+
 async function newCharacter(page: Page) {
 	await page.locator('.project-btn').click();
 	await page
@@ -30,16 +68,17 @@ async function newCharacter(page: Page) {
 	await expect(page.locator('dialog[open]')).toHaveAccessibleName('New character');
 }
 
-async function expectPeekBeforePrimary(page: Page) {
+async function expectSingleHeaderPeek(page: Page) {
 	const sheet = page.locator('dialog[open]');
-	const inspect = sheet.locator('.sheet-foot .api-peek-trigger');
+	const inspect = sheet.locator('.sheet-head .api-peek-trigger');
+	await expect(sheet.locator('.api-peek-trigger')).toHaveCount(1);
 	await expect(inspect).toHaveAttribute('title', 'PixelLab API calls');
 	await expect(inspect.locator('svg')).toHaveCount(1);
 	const icon = await inspect.boundingBox(),
 		primary = await sheet.locator('.sheet-foot .btn.primary').boundingBox();
 	expect(icon).not.toBeNull();
 	expect(primary).not.toBeNull();
-	expect(icon!.x + icon!.width).toBeLessThanOrEqual(primary!.x);
+	expect(icon!.y + icon!.height).toBeLessThanOrEqual(primary!.y);
 }
 
 test('request preview follows the current character draft and copying never submits it', async ({
@@ -54,12 +93,12 @@ test('request preview follows the current character draft and copying never subm
 	await openStudio(page, '/');
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await newCharacter(page);
-	await expectPeekBeforePrimary(page);
+	await expectSingleHeaderPeek(page);
 	const sheet = page.locator('dialog[open]');
 	const prompt = sheet.getByRole('textbox', { name: 'Details', exact: true });
 	await prompt.fill('a cheerful dwarf with freckles');
 	await sheet
-		.locator('.sheet-foot')
+		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
 	await expect(peek(page)).toBeVisible();
@@ -129,7 +168,7 @@ test('request preview follows the current character draft and copying never subm
 	await expect(peek(page)).toHaveCount(0);
 	await prompt.fill('a patient elf with silver hair');
 	await sheet
-		.locator('.sheet-foot')
+		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
 	await expect(peek(page)).toBeVisible();
@@ -143,6 +182,11 @@ test('request preview follows the current character draft and copying never subm
 	await updated.locator(':scope > summary').click();
 	await expect(updated).toContainText('a patient elf with silver hair');
 	await expect(updated).not.toContainText('a cheerful dwarf with freckles');
+	await peek(page)
+		.getByRole('combobox', { name: 'API call scope', exact: true })
+		.selectOption({ label: 'Enhance details' });
+	await expect(peek(page).locator('.peek-call')).toHaveCount(1);
+	await expect(peek(page).locator('.peek-call')).toContainText('/enhance-character-v3-prompt');
 	expect(requests).toEqual([]);
 });
 
@@ -211,8 +255,11 @@ test('a failed or policy-refused job shows its final status and error in the pee
 			);
 		}
 	});
-	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click();
+	await (
+		await developerSettings(page)
+	)
+		.getByRole('button', { name: 'Inspect all API calls', exact: true })
+		.click();
 	await peek(page).getByRole('button', { name: 'Show background calls', exact: true }).click();
 	for (const [job, text] of [
 		['stalled-job', 'Job failed: Generation failed (PixelLab code 3006)'],
@@ -273,8 +320,11 @@ test('automatic account checks remain inspectable without flooding the default g
 		const { api } = await import(path);
 		await api('offline-fixture-not-a-key', 'GET', '/balance');
 	});
-	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click();
+	await (
+		await developerSettings(page)
+	)
+		.getByRole('button', { name: 'Inspect all API calls', exact: true })
+		.click();
 	await expect(peek(page)).toBeVisible();
 	await expect(peek(page).locator('details summary').filter({ hasText: '/balance' })).toHaveCount(
 		0
@@ -393,8 +443,11 @@ test('recorded generation, automatic measurement and repair show full inputs and
 		},
 		{ body, image }
 	);
-	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click();
+	await (
+		await developerSettings(page)
+	)
+		.getByRole('button', { name: 'Inspect all API calls', exact: true })
+		.click();
 	const rows = peek(page).locator('.peek-call');
 	await expect(rows).toHaveCount(3); // Automatic paid work remains in the foreground list.
 	const skeleton = rows.filter({
@@ -479,8 +532,11 @@ test('a pending reported charge does not hide a separate terminal unknown cost',
 			usage: { type: 'generations', generations: 2 }
 		});
 	});
-	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click();
+	await (
+		await developerSettings(page)
+	)
+		.getByRole('button', { name: 'Inspect all API calls', exact: true })
+		.click();
 	const footer = peek(page).locator('footer');
 	await expect(footer).toContainText('2 gens');
 	await expect(footer).toContainText('1 unknown');
@@ -573,9 +629,8 @@ test('an action peek includes its shared balance check without another operation
 	const sheet = page.locator('dialog[open]');
 	await expect(sheet).toHaveAccessibleName('New character');
 	await sheet
-		.locator('.sheet-body')
+		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
-		.first()
 		.click();
 	const rows = peek(page).locator('.peek-call');
 	await expect(rows).toHaveCount(1);
@@ -663,8 +718,18 @@ test('mirrored saved requests show their payload and updated charge without send
 		await queue.sync();
 		ui.sheet = 'activity';
 	});
-	const row = page.locator('.act-group li').filter({ hasText: 'Mirrored character' });
-	await row.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
+	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
+	await activity
+		.locator('.sheet-head')
+		.getByRole('button', { name: 'Inspect API calls', exact: true })
+		.click();
+	const scope = peek(page).getByRole('combobox', { name: 'API call scope', exact: true });
+	if (await scope.count()) await scope.selectOption('job-result-mirrored-request');
+	await peek(page).getByRole('button', { name: 'Copy ID', exact: true }).click();
+	await expect(peek(page).getByRole('status')).toHaveText('ID copied');
+	expect(await page.evaluate(() => sessionStorage.getItem('api-peek-copy'))).toBe(
+		'mirrored-request'
+	);
 	await expect(peek(page).locator('.peek-call')).toHaveCount(1);
 	await expect(peek(page).locator('footer')).toContainText('2 gens');
 	await peek(page).locator('.peek-call > summary').click();
@@ -868,11 +933,13 @@ for (const sameUrl of [false, true])
 				}
 			}, firstSource)
 		).toBe(false);
-		const refreshPeek = page
-			.getByRole('button', { name: 'Refresh', exact: true })
-			.locator('..')
-			.getByRole('button', { name: 'Inspect API calls', exact: true });
-		await refreshPeek.click();
+		await page
+			.locator('.sheet-head')
+			.getByRole('button', { name: 'Inspect API calls', exact: true })
+			.click();
+		await peek(page)
+			.getByRole('combobox', { name: 'API call scope', exact: true })
+			.selectOption('library-refresh');
 		await peek(page).getByRole('button', { name: 'Show background calls', exact: true }).click();
 		await expect(
 			peek(page).locator('.peek-call > summary').filter({ hasText: 'preview-' })
@@ -954,12 +1021,12 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
 	await openStudio(page, '/');
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await newCharacter(page);
-	await expectPeekBeforePrimary(page);
+	await expectSingleHeaderPeek(page);
 	const sheet = page.locator('dialog[open]');
 	const prompt = sheet.getByRole('textbox', { name: 'Details', exact: true });
 	await prompt.fill('a tiny woodland ranger');
 	const inspect = sheet
-		.locator('.sheet-foot')
+		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true });
 	await inspect.click();
 	await expect(peek(page)).toBeVisible();
@@ -991,7 +1058,7 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
 		{ width: 844, height: 390 }
 	]) {
 		await page.setViewportSize(viewport);
-		await expectPeekBeforePrimary(page);
+		await expectSingleHeaderPeek(page);
 		await expect(async () => {
 			// the popover repositions on the next resize frame
 			const bounds = await peek(page).boundingBox();

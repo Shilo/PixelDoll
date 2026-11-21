@@ -441,7 +441,7 @@ test('all production extra categories, native menu focus, mode controls and Tab 
 	).toContain('blur');
 	await expect(
 		optionMenu.getByRole('button', { name: 'Inspect all API calls', exact: true })
-	).toHaveText('API calls');
+	).toHaveCount(0);
 	await page.keyboard.press('Escape');
 	await expect(optionMenu).not.toBeVisible();
 	await expect(options).toBeFocused();

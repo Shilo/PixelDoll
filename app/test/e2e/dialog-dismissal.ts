@@ -176,6 +176,7 @@ test('intentional dialog dismissal respects nested API popovers and bare dialog 
 }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.developerMode', '1');
 		localStorage.setItem('pixeldoll.welcomed', '1');
 	});
 	await openStudio(page, '/');

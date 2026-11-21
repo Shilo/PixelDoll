@@ -1255,7 +1255,7 @@ for (const viewport of [
 			await sheet
 				.locator('.prompt-actions > button')
 				.evaluateAll((elements) => elements.map((el) => el.getAttribute('aria-label')))
-		).toEqual(['Prompt help', 'Inspect API calls', 'Copy exact prompt', 'Enhance']);
+		).toEqual(['Prompt help', 'Copy exact prompt', 'Enhance']);
 		const toolbar = await sheet.locator('.editor-toolbar').evaluate((el) => {
 			const row = el.getBoundingClientRect();
 			return [...el.querySelectorAll('button')].every((button) => {
@@ -1321,7 +1321,7 @@ test('compact creator toolbar keeps wider fallback-font labels and actions reada
 				);
 			})
 		).toBe(true);
-		for (const label of ['Appearance help', 'Inspect API calls', 'Copy details', 'Enhance']) {
+		for (const label of ['Appearance help', 'Copy details', 'Enhance']) {
 			const button = sheet
 				.locator('.editor-toolbar')
 				.getByRole('button', { name: label, exact: true });

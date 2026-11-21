@@ -25,6 +25,7 @@ async function setup(page: Page) {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.developerMode', '1');
 		Object.defineProperty(navigator, 'clipboard', {
 			configurable: true,
 			value: { writeText: async (text: string) => sessionStorage.setItem('matrix-copy', text) }
@@ -110,7 +111,7 @@ async function setup(page: Page) {
  * for every facing plan is checked in test/unit/character-option-matrix.test.ts. */
 async function plannedCreation(page: Page, sheet: Locator) {
 	await sheet
-		.locator('.sheet-foot')
+		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
 	const peek = page.locator('[popover][aria-label="API calls"]:popover-open');

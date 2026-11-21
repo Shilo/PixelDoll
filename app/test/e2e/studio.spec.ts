@@ -4421,6 +4421,7 @@ test('an accepted item failure shows the reported charge and saved job without a
 	page,
 	context
 }, info) => {
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.developerMode', '1'));
 	const posts: string[] = [];
 	await context.route('https://api.pixellab.ai/**', async (route) => {
 		const request = route.request(),
@@ -4481,8 +4482,9 @@ test('an accepted item failure shows the reported charge and saved job without a
 	await expect(review).toContainText('PixelLab accepted the request but could not finish it.');
 	await expect(review).toContainText('PixelLab reported no charge for this attempt.');
 	await expect(review).toContainText('Try again starts a new paid attempt.');
-	await review
-		.locator('header')
+	await page
+		.getByRole('dialog', { name: 'Item review', exact: true })
+		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
 	const savedCall = page.locator('[aria-label="API calls"]:popover-open .peek-call');
@@ -6651,6 +6653,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 	page,
 	context
 }, info) => {
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.developerMode', '1'));
 	const posts: string[] = [];
 	await context.route('https://api.pixellab.ai/**', async (r) => {
 		if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance'))
@@ -6813,6 +6816,7 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 	page,
 	context
 }, info) => {
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.developerMode', '1'));
 	const requests: string[] = [];
 	await context.route('https://api.pixellab.ai/**', (r) => {
 		requests.push(r.request().method());
@@ -6888,11 +6892,15 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 	await expect(page.locator('.gen')).toHaveCount(1);
 	await expect(retry).toBeEnabled();
 	await expect(retry).toHaveText(`Try again Est. ${expected} gens`);
-	await panel
-		.locator('.actions .api-action')
+	await page
+		.getByRole('dialog', { name: 'Item review', exact: true })
+		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
 	const retryPeek = page.getByRole('dialog', { name: 'API calls', exact: true });
+	await retryPeek
+		.getByRole('combobox', { name: 'API call scope', exact: true })
+		.selectOption({ index: 1 });
 	await expect(retryPeek.getByText('Dress standing views', { exact: false })).toBeVisible();
 	await expect(retryPeek.getByText('Dress frozen frames', { exact: false })).toHaveCount(0);
 	await retryPeek.getByRole('button', { name: 'Close API calls', exact: true }).click();
