@@ -7,11 +7,20 @@
 	import DirectionCompass from './DirectionCompass.svelte';
 	import Help from './Help.svelte';
 	import Sprite from './Sprite.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
+	import ReferenceField from './ReferenceField.svelte';
+	import type { PickedReference } from '../lib/image/reference.ts';
+	import { base64ToBytes, decodePng } from '../lib/image/png.ts';
+	import PaidReview from './PaidReview.svelte';
 	import {
+		automaticMoveEnd,
 		defaultMoveFrameCount,
+		gaitTemplate,
 		moveFrameCounts,
+		templateLoops,
 		type MoveAnimationModel,
-		type MoveAnimationOptions
+		type MoveAnimationOptions,
+		type MoveFrameReferences
 	} from './moveAnimationOptions.ts';
 	import { onDestroy, untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -41,6 +50,11 @@
 		type StateJointFitQuote,
 		type StateJointFitReview
 	} from './stateJointFit.ts';
+	import { REPAIR_BATCH_MISALIGNED } from '../lib/items/items.ts';
+	import {
+		PaidStepError,
+		type PaidReview as PaidReviewData
+	} from '../lib/pixellab/paid-results.ts';
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
@@ -50,9 +64,13 @@
 		isV13,
 		reservedMove,
 		reviewMoveRecovery,
+		reviewMoveResults,
+		movePreflightWarnings,
 		skeletonMoveReview,
 		moveEstimate,
 		moveMinimumTier,
+		type MovePaidOption,
+		type MovePaidReview,
 		type MoveSpec,
 		type BodyPaletteRepairPlan,
 		type KeepBodyPlan,
@@ -72,6 +90,9 @@
 		retryMoveMeasurements,
 		resolveRepairReview,
 		dismissMove,
+		frameEditsBlocked,
+		adjustCharacter,
+		makeRoomFor,
 		toast,
 		openProject,
 		pendingMoves,
@@ -79,24 +100,26 @@
 	} from './state.svelte.ts';
 	import { bodyQualityNote, plainReasonMessage } from './model.ts';
 	import { displayMove } from './displayMove.ts';
-	import { moveCandidateInput } from './replaceMove.ts';
-	import { affectedMoveDirections } from './replaceMove.ts';
-	import { displayDirection as directionLabel } from './displayDirection.ts';
-	import { Check, ChevronRight, CircleAlert } from './icons.ts';
+	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
+	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
+	import { ANGLES } from './characterConfig.ts';
+	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert } from './icons.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
-	import { errorText, message, type Message } from '../lib/message.ts';
+	import { errorText, LocalizedError, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
-	// Re-read after a failure: a move saves its body and finished item views before failing, and Try again is priced from them.
+	// Re-read after a failure (a move saves its body and finished item views before failing, and Try again is priced from
+	// them) and after Frame size replaced the character.
 	$effect(() => {
 		const id = doc.id;
 		void moving.error;
+		void store.project;
 		void moving.done;
 		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
 	});
@@ -113,6 +136,7 @@
 			...new Set([
 				'idle',
 				'walk',
+				'run',
 				...AUTHORED,
 				...sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)
 			])
@@ -147,18 +171,31 @@
 	};
 	// Advanced starts open when a restored draft already changed something there, so no choice is hidden.
 	let advancedOpen = $state(
-		!!(
-			draft?.animation &&
-			(draft.animation.model !== DEFAULT_MODEL || draft.animation.frameCount !== undefined)
-		)
+		!!(draft?.frameReferences && Object.keys(draft.frameReferences).length) ||
+			(draft?.animation?.model !== undefined && draft.animation.model !== DEFAULT_MODEL)
 	);
 	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
 	let frameChoice = $state<number | undefined>(draft?.animation?.frameCount);
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? '');
+	let loopChoice = $state<boolean | undefined>(draft?.loop);
+	let frameReferences = $state<MoveFrameReferences<PickedReference>>(draft?.frameReferences ?? {});
+	let referenceDirection = $state<DirectionName>();
+	let frameTabWidths = $state<Partial<Record<DirectionName, number>>>({});
+	let frameLabelWidths = $state<Partial<Record<DirectionName, number>>>({});
+	let startLoading = $state(false);
+	let endLoading = $state(false);
+	let confirm = $state.raw<{ kind: 'start' | 'loop'; accept: () => void }>();
+	let loopChange = 0;
+	let customStartAcknowledged = false;
 	const replacing = $derived(replaceSelected && have.has(action));
 	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
+	const looping = $derived(
+		loopChoice ??
+			(replacing ? (savedMove?.moveLoop ?? savedMove?.loop) : undefined) ??
+			templateLoops(action)
+	);
 	const draftRegeneration = $derived.by(() => {
 		const reference = draft?.regeneration;
 		if (!reference || !Object.hasOwn(store.moveReviews, reference.id)) return;
@@ -265,6 +302,22 @@
 			await saveStateJointFit(review);
 		});
 	}
+	const showFullFrameDirections = $derived(
+		targetDirs.every((dir) => (frameLabelWidths[dir] ?? Infinity) <= (frameTabWidths[dir] ?? 0))
+	);
+	const frameDirection = $derived(
+		referenceDirection && targetDirs.includes(referenceDirection)
+			? referenceDirection
+			: targetDirs[0]
+	);
+	const frameReference = $derived(frameDirection ? frameReferences[frameDirection] : undefined);
+	// What a move starts from when no Start frame is uploaded: the chosen saved frame, else standing.
+	const sourceStart = (direction: DirectionName) =>
+		(startFrom?.views[direction] ?? m?.rig.rest?.[direction])?.image;
+	const standingImage = $derived.by(() => {
+		const hash = frameDirection && sourceStart(frameDirection);
+		return hash ? (store.project?.images.get(hash) ?? null) : null;
+	});
 	const affectedMirrors = $derived(
 		m
 			? affectedMoveDirections(m.rig, targetDirs)
@@ -275,7 +328,7 @@
 	);
 	const describingReplacement = $derived(
 		replacing &&
-			((action !== 'walk' && !isAuthoredAction(action)) ||
+			((!gaitTemplate(action) && !isAuthoredAction(action)) ||
 				targetDirs.some((dir) => {
 					const source = savedMove?.sources?.[dir];
 					if (source?.route === 'skeleton-v3') return !!source.motion?.startsWith('pixminimax:');
@@ -336,7 +389,37 @@
 	const animationOptions = $derived<MoveAnimationOptions | undefined>(
 		riding
 			? undefined
-			: { model, ...(chosenFrameCount === undefined ? {} : { frameCount: chosenFrameCount }) }
+			: {
+					model,
+					loop: looping,
+					...(chosenFrameCount === undefined ? {} : { frameCount: chosenFrameCount }),
+					...(Object.keys(frameReferences).length
+						? {
+								references: Object.fromEntries(
+									targetDirs.flatMap((direction) => {
+										const value = frameReferences[direction];
+										if (!value) return [];
+										const compact = (reference: PickedReference) => ({
+											width: reference.width,
+											height: reference.height,
+											base64: reference.base64
+										});
+										return [
+											[
+												direction,
+												{
+													...(value.start ? { start: compact(value.start) } : {}),
+													...(model !== 'skeleton-v3' && value.end !== undefined
+														? { end: value.end ? compact(value.end) : null }
+														: {})
+												}
+											]
+										];
+									})
+								)
+							}
+						: {})
+				}
 	);
 	// What the core resolves with no explicit count, so the Default label matches the price and the request.
 	const defaultFrames = $derived(
@@ -352,7 +435,13 @@
 	const advancedNote = $derived(
 		[
 			model === DEFAULT_MODEL ? '' : t(MODEL_TEXT[model]),
-			userFrameCount === undefined ? '' : t('moveSheet.framesValue', { count: userFrameCount })
+			targetDirs.some(
+				(direction) =>
+					frameReferences[direction]?.start ||
+					(model !== 'skeleton-v3' && frameReferences[direction]?.end)
+			)
+				? t('moveSheet.customFrames')
+				: ''
 		]
 			.filter(Boolean)
 			.join(' · ')
@@ -398,6 +487,17 @@
 			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
 		);
 	});
+	// App-side warnings never block a request PixelLab would take: Generate move anyway records them as accepted with the move.
+	const preflight = $derived(
+		m && store.project && id && !motionIssue
+			? movePreflightWarnings(store.project, {
+					...motion,
+					items: [],
+					seed: 0,
+					...(replacing ? { dirs: [...targetDirs] } : {})
+				})
+			: []
+	);
 	const formEstimate = $derived(
 		m &&
 			id &&
@@ -463,6 +563,8 @@
 			(moving.spec.itemMethod === 'grid'
 				? !!moving.spec.itemReview &&
 					!errorText(moving.error).startsWith(INVALID_ITEM_GRID) &&
+					// A misaligned batch replays as misaligned: only a re-roll of that batch can change it.
+					!errorText(moving.error).startsWith(REPAIR_BATCH_MISALIGNED) &&
 					!errorText(moving.error).startsWith(SAVED_FRAMES_UNAVAILABLE) &&
 					$queue.jobs.some(
 						(job) =>
@@ -508,7 +610,8 @@
 		)
 	);
 	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
-	const nice = (s: string) => displayMove(s, [...options, ...stateIds]);
+	const nice = (s: string) =>
+		displayMove(s, [...(m?.rig.animations ?? []), ...options, ...stateIds]);
 	const decimal = (n: number) =>
 		formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 	const usd = (n: number) =>
@@ -525,6 +628,13 @@
 	let colorRepair = $state<BodyPaletteRepairPlan | null>(null);
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
+	let paid = $state.raw<MovePaidReview | null>(null);
+	const errorInReview = $derived(
+		!!moving.error &&
+			!!paid?.views.some((view) =>
+				view.notes.some((note) => displayNestedMessage(note) === displayError(moving.error))
+			)
+	);
 	const hasFrameRecovery = $derived(
 		!!(savedItemFrames && !recoveryAccess.error) || !!(recovery || colorRepair || keep)
 	);
@@ -542,18 +652,20 @@
 		recovery = null;
 		colorRepair = null;
 		keep = null;
+		paid = null;
 		recoveryError = '';
 		recoveryUnavailable = [];
 		recoveryChecking = false;
 		if (mine && error && spec && !moving.done && spec.itemMethod !== 'grid') {
 			recoveryChecking = true;
-			void reviewMoveRecovery(projectId, spec)
-				.then((review) => {
+			void Promise.all([reviewMoveRecovery(projectId, spec), reviewMoveResults(projectId, spec)])
+				.then(([review, results]) => {
 					if (!current) return;
 					recovery = review.recovery ?? null;
 					colorRepair = review.colorRepair ?? null;
 					keep = review.keep ?? null;
 					recoveryUnavailable = review.unavailableMessages ?? [];
+					paid = results ?? null;
 				})
 				.catch((error: unknown) => {
 					if (current)
@@ -580,6 +692,100 @@
 				recoveryError = errorMessage(e);
 			});
 		}, recoveryTier);
+	}
+
+	// A new seed while a reviewed request is still at PixelLab would buy that view again before its result is known.
+	const paidRunning = $derived(!!paid?.views.some((view) => view.state === 'running'));
+	// An item repair stopped by a misaligned batch: its earlier batches are kept; only that batch is re-rolled.
+	const batchReview = $derived.by((): (PaidReviewData & { start: string }) | null => {
+		const error = moving.error,
+			spec = moving.spec;
+		if (!mine || !spec || !(error instanceof PaidStepError)) return null;
+		const step = error.paid.step;
+		if (!step.startsWith('grid-batch:')) return null;
+		const records = $queue.jobs.filter(
+			(job) => job.activityScope === spec.activityScope && job.state === 'done'
+		);
+		return {
+			start: step.slice('grid-batch:'.length),
+			views: [],
+			spent: +records.reduce((sum, job) => sum + job.gens, 0).toFixed(2),
+			recordIds: records.map((job) => job.id),
+			options: [
+				{
+					id: 'reroll-batch',
+					label: message('moveSheet.rerollBatch'),
+					detail: message('moveSheet.rerollBatchDetail'),
+					gens: error.paid.gens ?? 0,
+					paid: true,
+					primary: true
+				}
+			]
+		};
+	});
+	function rerollBatch() {
+		if (!moving.spec || !batchReview) return;
+		const projectId = moving.projectId,
+			spec = $state.snapshot(moving.spec),
+			start = batchReview.start;
+		withKey(() => {
+			void startMove(projectId, {
+				...spec,
+				reuseItemFrames: undefined,
+				gridReroll: {
+					...spec.gridReroll,
+					[start]: (spec.gridReroll?.[start] ?? 0) + 1 + Math.floor(Math.random() * 1_000_000)
+				}
+			});
+			ui.sheet = 'move';
+		}, recoveryTier);
+	}
+	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. Make room
+	 *  adjusts the frame first (free; this stopped move waits for it) and then continues the same move. */
+	function choosePaid(option: MovePaidOption) {
+		const projectId = moving.projectId,
+			spec = $state.snapshot(option.spec),
+			change = option.change && { ...option.change },
+			reviewed = option.reviewed && $state.snapshot(option.reviewed);
+		const go = () => {
+			ui.sheet = 'move';
+			void (async () => {
+				if (change) {
+					try {
+						await adjustCharacter(projectId, change, {
+							stoppedMove: true,
+							quiet: true,
+							expect: reviewed
+						});
+					} catch (error) {
+						// Changed since this review (another tab): the planned change and its price no longer apply.
+						recoveryError =
+							error instanceof LocalizedError &&
+							error.translation.key === 'adjustFrame.errors.changed'
+								? message('moveSheet.checkpoint.changed')
+								: errorMessage(error);
+						return;
+					}
+				}
+				await startMove(projectId, spec);
+			})();
+		};
+		if (option.paid) withKey(go, retryTier);
+		else go();
+	}
+	// Make room from the room warning: free; the form keeps every choice and its warnings are checked again.
+	let enlarging = $state(false);
+	let enlargeError = $state('');
+	async function room() {
+		enlarging = true;
+		enlargeError = '';
+		try {
+			await makeRoomFor(doc.id);
+		} catch (error) {
+			enlargeError = displayError(error);
+		} finally {
+			enlarging = false;
+		}
 	}
 
 	// Free and local: no key is needed because a kept body makes no PixelLab request.
@@ -618,6 +824,8 @@
 			dirs: [...selectedDirs],
 			poseStyle: 'visible-side-v1',
 			source: sourceSelection,
+			frameReferences: $state.snapshot(frameReferences),
+			loop: loopChoice,
 			animation:
 				!riding && (modelChoice !== undefined || userFrameCount !== undefined)
 					? { model, frameCount: userFrameCount }
@@ -630,6 +838,13 @@
 		const projectId = doc.id;
 		if (skeletonReview && moving.spec) {
 			const offer = skeletonReview;
+			if (
+				!customStartAcknowledged &&
+				Object.keys(offer.review.animation?.references ?? {}).length
+			) {
+				pickStart(go, 'skeleton-v3');
+				return;
+			}
 			const prior = moving.spec;
 			const replaceFailed = !!moving.error;
 			const confirm = async () => {
@@ -667,6 +882,14 @@
 			return;
 		}
 		if (!formEstimate || addAccess.error) return;
+		if (
+			model === 'skeleton-v3' &&
+			!customStartAcknowledged &&
+			targetDirs.some((direction) => frameReferences[direction]?.start)
+		) {
+			pickStart(go);
+			return;
+		}
 		const spec: MoveSpec = {
 			...motion,
 			items: [],
@@ -674,7 +897,8 @@
 			reviewRegeneration: regeneration,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
-			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] })
+			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] }),
+			...(preflight.length ? { acceptedWarnings: preflight.map((warning) => warning.id) } : {})
 		};
 		rememberMoveForm(projectId);
 		const estimate = formEstimate;
@@ -724,6 +948,10 @@
 		replaceSelected = replace;
 		text = '';
 		frameChoice = undefined;
+		loopChoice = undefined;
+		frameReferences = {};
+		customStartAcknowledged = false;
+		referenceDirection = undefined;
 		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
 			?.clips;
 		const flagged = availableDirs.filter((d) => clips?.[`${next}/${d}`]?.fails?.length);
@@ -737,6 +965,97 @@
 	function describeMove(value: string) {
 		chooseAction('');
 		text = value;
+	}
+	function changeFrame(
+		direction: DirectionName,
+		kind: 'start' | 'end',
+		value?: PickedReference | null
+	) {
+		const next = { ...frameReferences[direction], [kind]: value };
+		const references = { ...frameReferences };
+		if (next.start || next.end !== undefined) references[direction] = next;
+		else delete references[direction];
+		frameReferences = references;
+	}
+	function navigateFrameTabs(event: KeyboardEvent, direction: DirectionName) {
+		const index = targetDirs.indexOf(direction);
+		const last = targetDirs.length - 1;
+		const next =
+			event.key === 'Home'
+				? 0
+				: event.key === 'End'
+					? last
+					: event.key === 'ArrowLeft'
+						? (index + last) % targetDirs.length
+						: event.key === 'ArrowRight'
+							? (index + 1) % targetDirs.length
+							: -1;
+		if (next < 0) return;
+		event.preventDefault();
+		if (startLoading || endLoading) return;
+		referenceDirection = targetDirs[next];
+		document.getElementById(`${advancedId}-frame-${referenceDirection}`)?.focus();
+	}
+	async function changeLoop(enabled: boolean) {
+		const change = ++loopChange;
+		if (model === 'skeleton-v3' || riding) {
+			loopChoice = enabled;
+			return;
+		}
+		const draftFrames = frameReferences;
+		const draftModel = model;
+		const directions = targetDirs;
+		const isCurrent = () =>
+			change === loopChange &&
+			draftFrames === frameReferences &&
+			draftModel === model &&
+			directions === targetDirs;
+		const reset = () => {
+			if (!isCurrent()) return;
+			for (const direction of directions) changeFrame(direction, 'end');
+			loopChoice = enabled;
+		};
+		const changed = await Promise.all(
+			directions.map(async (direction) => {
+				const frames = draftFrames[direction];
+				if (!frames?.end || frames.end.base64 === frames.start?.base64) return false;
+				try {
+					const end = await decodePng(base64ToBytes(frames.end.base64));
+					const hash = sourceStart(direction);
+					const start = frames.start
+						? await decodePng(base64ToBytes(frames.start.base64))
+						: hash && store.project?.images.get(hash);
+					return (
+						!start ||
+						start.w !== end.w ||
+						start.h !== end.h ||
+						end.data.some(
+							(byte, index) =>
+								byte !== start.data[index] &&
+								(index % 4 === 3 || end.data[index - (index % 4) + 3] !== 0)
+						)
+					);
+				} catch {
+					return true;
+				}
+			})
+		);
+		if (!isCurrent()) return;
+		if (changed.some(Boolean)) confirm = { kind: 'loop', accept: reset };
+		else reset();
+	}
+	function pickStart(accept: () => void, forModel = model) {
+		if (forModel !== 'skeleton-v3' || customStartAcknowledged) {
+			accept();
+			return;
+		}
+		confirm = {
+			kind: 'start',
+			accept: () => {
+				customStartAcknowledged = true;
+				accept();
+			}
+		};
 	}
 	function leaveFailedMove(close: boolean) {
 		void dismissMove().catch((error) =>
@@ -794,7 +1113,7 @@
 						class="bu-action btn"
 						class:primary={!hasFrameRecovery}
 						data-variant={hasFrameRecovery ? 'outline' : 'primary'}
-						disabled={!!retryAccess.error || tierBlocked(retryTier)}
+						disabled={!!retryAccess.error || tierBlocked(retryTier) || paidRunning}
 						aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
 						onclick={() =>
 							moving.spec &&
@@ -804,6 +1123,7 @@
 									reuseItemFrames: undefined,
 									measurementRecovery: undefined,
 									bodyPaletteRepair: undefined,
+									attempt: undefined,
 									seed: 1 + Math.floor(Math.random() * 1_000_000)
 								});
 								ui.sheet = 'move';
@@ -862,6 +1182,8 @@
 				data-variant="primary"
 				disabled={fitBusy ||
 					!est ||
+					startLoading ||
+					endLoading ||
 					(!review && !!addAccess.error) ||
 					(!!settingUp.spec && !settingUp.done) ||
 					tierBlocked(requiredTier)}
@@ -875,7 +1197,9 @@
 								: 'moveSheet.submit.queue'
 							: replace
 								? 'moveSheet.submit.replaceViews'
-								: 'moveSheet.checkpoint.generate',
+								: !review && preflight.length
+									? 'moveSheet.checkpoint.generateAnyway'
+									: 'moveSheet.checkpoint.generate',
 						{ move: move ? nice(move) : t('moveSheet.submit.move') }
 					)}
 					{#if est}<span class="cost">
@@ -1000,6 +1324,9 @@
 				{t('common.directions')}: {skeletonReview.affected.map(directionLabel).join(', ')}
 			</p>
 			{#if review.text}<p class="small">{review.text}</p>{/if}
+			{#if review.approvedDirs?.some((dir) => moving.spec?.animation?.references?.[dir]?.end)}
+				<p class="small">{t('moveSheet.endFrame')}: {t('moveSheet.endUnavailable')}</p>
+			{/if}
 			{#if review.replace}<p class="notice small">
 					{t('moveSheet.redrawHidesEquipment')}
 					{t('moveSheet.redrawOtherMoves')}
@@ -1043,9 +1370,11 @@
 					</li>
 				{/each}
 			</ol>
-			{#if moving.error}<p class="notice bad small">
+			<!-- The paid review names each stopped view's reason under its frames; the summary shows only a reason it does not. -->
+			{#if moving.error && !errorInReview}<p class="notice bad small">
 					<CircleAlert size={14} />{displayError(moving.error)}
-				</p>
+				</p>{/if}
+			{#if moving.error}
 				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
 						{retryAccess.error || recoveryAccess.error}
 					</p>{/if}
@@ -1070,6 +1399,18 @@
 			{#if recoveryChecking}<p class="muted small" role="status">
 					{t('moveSheet.checkingCached')}
 				</p>{/if}
+			{#if batchReview && moving.spec}<PaidReview
+					review={batchReview}
+					name={nice(moving.spec.id)}
+					blocked={!!recoveryAccess.error || tierBlocked(recoveryTier)}
+					onchoose={rerollBatch}
+				/>{/if}
+			{#if paid && moving.spec && (paid.options.length || paid.views.some((view) => view.state !== 'ready'))}<PaidReview
+					review={paid}
+					name={nice(moving.spec.id)}
+					blocked={!!retryAccess.error || tierBlocked(retryTier)}
+					onchoose={choosePaid}
+				/>{/if}
 			{#if recoveryUnavailable.length}<p class="notice small">
 					{recoveryUnavailable.map(displayNestedMessage).join(' ')}
 				</p>{/if}
@@ -1427,83 +1768,279 @@
 						{/if}
 					</details>
 				{/if}
-				<details class="disclosure advanced" bind:open={advancedOpen}>
-					<summary
-						><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
-								class="faint advanced-note">{advancedNote}</span
-							>{/if}</summary
-					>
-					<div>
-						<div class="advanced-field">
-							<div class="advanced-label">
-								<label for={`${advancedId}-model`}>{t('moveSheet.motionModel')}</label>
-								<Help
-									iconOnly
-									title={t('moveSheet.motionModel')}
-									text={t('moveSheet.motionModelHelp')}
-								/>
-							</div>
-							<select
-								id={`${advancedId}-model`}
-								class="bu-input input"
-								value={model}
-								onchange={(e) => chooseModel(e.currentTarget.value as MoveAnimationModel)}
-								>{#each MODELS as option (option)}<option
-										value={option}
-										disabled={option !== model && !fitsKept(option)}>{t(MODEL_TEXT[option])}</option
-									>{/each}</select
-							>
+				<label class="bu-check loop-setting">
+					<span class="loop-copy">
+						<span>{t('moveSheet.loop')}</span>
+						<span id={`${advancedId}-loop-hint`} class="faint small">{t('moveSheet.loopHint')}</span
+						>
+					</span>
+					<input
+						class="bu-switch"
+						type="checkbox"
+						role="switch"
+						checked={looping}
+						aria-label={t('moveSheet.loop')}
+						aria-describedby={`${advancedId}-loop-hint`}
+						onchange={(event) => {
+							const enabled = event.currentTarget.checked;
+							event.currentTarget.checked = looping;
+							void changeLoop(enabled);
+						}}
+					/>
+				</label>
+				<div class="frame-settings">
+					<div class="advanced-field frames-field">
+						<div class="advanced-label">
+							{#if keptFrames === undefined && frameCounts.length}
+								<label for={`${advancedId}-frames`}>{t('moveSheet.frames')}</label>
+							{:else}
+								<span>{t('moveSheet.frames')}</span>
+							{/if}
+							<Help
+								iconOnly
+								title={t('moveSheet.frames')}
+								text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
+							/>
+							{#if keptFrames === undefined && frameCounts.length}
+								<button
+									type="button"
+									class="bu-action btn plain frame-default"
+									data-variant="quiet"
+									aria-disabled={userFrameCount === undefined}
+									onclick={() => (frameChoice = undefined)}
+									>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
+								>
+							{/if}
 						</div>
-						<div class="advanced-field frames-field">
-							<div class="advanced-label">
-								{#if keptFrames === undefined && frameCounts.length}
-									<label for={`${advancedId}-frames`}>{t('moveSheet.frames')}</label>
-								{:else}
-									<span>{t('moveSheet.frames')}</span>
-								{/if}
-								<Help
-									iconOnly
-									title={t('moveSheet.frames')}
-									text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
+						{#if keptFrames !== undefined}
+							<span class="faint">{t('moveSheet.framesKept', { count: keptFrames })}</span>
+						{:else if frameCounts.length}
+							<div class="frame-controls">
+								<input
+									id={`${advancedId}-frames`}
+									type="range"
+									aria-valuetext={t('moveSheet.framesValue', { count: shownFrames })}
+									min={0}
+									max={frameCounts.length - 1}
+									value={frameCounts.indexOf(shownFrames)}
+									oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
 								/>
-								{#if keptFrames === undefined && frameCounts.length}
-									<button
-										type="button"
-										class="bu-action btn plain frame-default"
-										data-variant="quiet"
-										aria-disabled={userFrameCount === undefined}
-										onclick={() => (frameChoice = undefined)}
-										>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
-									>
-								{/if}
+								<span class="frame-value">{t('moveSheet.framesValue', { count: shownFrames })}</span
+								>
 							</div>
-							{#if keptFrames !== undefined}
-								<span class="faint">{t('moveSheet.framesKept', { count: keptFrames })}</span>
-							{:else if frameCounts.length}
-								<div class="frame-controls">
-									<input
-										id={`${advancedId}-frames`}
-										type="range"
-										aria-valuetext={t('moveSheet.framesValue', { count: shownFrames })}
-										min={0}
-										max={frameCounts.length - 1}
-										value={frameCounts.indexOf(shownFrames)}
-										oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
+						{/if}
+					</div>
+					<details class="disclosure advanced" bind:open={advancedOpen}>
+						<summary
+							><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
+									class="faint advanced-note">{advancedNote}</span
+								>{/if}</summary
+						>
+						<div>
+							<div class="advanced-field">
+								<div class="advanced-label">
+									<label for={`${advancedId}-model`}>{t('moveSheet.motionModel')}</label>
+									<Help
+										iconOnly
+										title={t('moveSheet.motionModel')}
+										text={t('moveSheet.motionModelHelp')}
 									/>
-									<span class="frame-value"
-										>{t('moveSheet.framesValue', { count: shownFrames })}</span
+								</div>
+								<select
+									id={`${advancedId}-model`}
+									class="bu-input input"
+									value={model}
+									onchange={(event) => chooseModel(event.currentTarget.value as MoveAnimationModel)}
+								>
+									{#each MODELS as option (option)}<option
+											value={option}
+											disabled={option !== model && !fitsKept(option)}
+											>{t(MODEL_TEXT[option])}</option
+										>{/each}
+								</select>
+							</div>
+							{#if frameDirection && m}
+								{@const direction = frameDirection}
+								{@const size = { width: m.rig.cell.w, height: m.rig.cell.h }}
+								{@const startName = startFrom
+									? startFrom.replacement
+										? t('moveSheet.startFrom.savedSource')
+										: nice(startFrom.clip)
+									: t('moveSheet.standingFrame')}
+								{@const autoEnd =
+									frameReference?.end === undefined && automaticMoveEnd(action, looping)}
+								<div class="reference-heading">
+									<div class="advanced-label">
+										<span id={`${advancedId}-reference-title`}
+											>{t('moveSheet.referenceDirection')}</span
+										>
+										<Help
+											iconOnly
+											title={t('moveSheet.referenceDirection')}
+											text={t('moveSheet.referenceHelp')}
+										/>
+									</div>
+									{#if targetDirs.length === 1 || !showFullFrameDirections}
+										<span class="faint" id={`${advancedId}-reference-direction`}
+											>{directionLabel(direction)}</span
+										>
+									{/if}
+								</div>
+								{#if targetDirs.length > 1}
+									<div
+										class="frame-tabs"
+										class:many-directions={targetDirs.length > 5}
+										role="tablist"
+										aria-labelledby={`${advancedId}-reference-title`}
 									>
+										{#snippet directionArrow(option: DirectionName)}
+											<ArrowUp size={14} style="transform:rotate({ANGLES[option]}deg)" />
+										{/snippet}
+										{#each targetDirs as option (option)}
+											{@const name = directionLabel(option)}
+											{@const edited = !!(
+												frameReferences[option]?.start || frameReferences[option]?.end
+											)}
+											<button
+												type="button"
+												id={`${advancedId}-frame-${option}`}
+												class="bu-action"
+												data-variant="tab"
+												role="tab"
+												aria-selected={direction === option}
+												aria-controls={`${advancedId}-frame-panel`}
+												aria-disabled={startLoading || endLoading}
+												aria-label={edited
+													? t('moveSheet.referenceEdited', { direction: name })
+													: name}
+												tabindex={direction === option ? 0 : -1}
+												onclick={() => {
+													if (!startLoading && !endLoading) referenceDirection = option;
+												}}
+												onkeydown={(event) => navigateFrameTabs(event, option)}
+											>
+												<span class="bu-separator frame-tab-rule" aria-hidden="true"></span>
+												<span
+													class="frame-tab-content"
+													bind:clientWidth={frameTabWidths[option]}
+													aria-hidden="true"
+												>
+													{@render directionArrow(option)}
+													<span
+														>{showFullFrameDirections ? name : displayDirectionShort(option)}</span
+													>
+												</span>
+												<span class="frame-tab-measure" aria-hidden="true">
+													<span
+														class="frame-tab-content"
+														bind:offsetWidth={frameLabelWidths[option]}
+													>
+														{@render directionArrow(option)}
+														<span class="bu-tab-text" data-text={name}>{name}</span>
+													</span>
+												</span>
+												{#if edited}<Circle
+														class="bu-tile-check"
+														size={6}
+														fill="currentColor"
+														strokeWidth={0}
+														aria-hidden="true"
+													/>{/if}
+											</button>
+										{/each}
+									</div>
+								{/if}
+								<div
+									id={`${advancedId}-frame-panel`}
+									class="frame-panel"
+									role={targetDirs.length > 1 ? 'tabpanel' : 'group'}
+									aria-labelledby={targetDirs.length > 1
+										? `${advancedId}-frame-${direction}`
+										: `${advancedId}-reference-title ${advancedId}-reference-direction`}
+								>
+									{#key `${action}/${direction}/${model}`}
+										<div class="frame-references">
+											{#snippet standing()}<Sprite
+													img={standingImage}
+													k={1}
+													limit={36}
+													label={startName}
+												/>{/snippet}
+											{#snippet matching()}
+												{#if frameReference?.start}<img
+														class="matching-preview"
+														src={`data:image/png;base64,${frameReference.start.base64}`}
+														alt=""
+													/>{:else}{@render standing()}{/if}
+											{/snippet}
+											<ReferenceField
+												exactFrame
+												sideBySide
+												max={size}
+												label={t('moveSheet.startFrame')}
+												hint=""
+												caption={startName}
+												thumbnail={standing}
+												beforePick={pickStart}
+												bind:loading={startLoading}
+												bind:value={
+													() => frameReference?.start,
+													(value) => changeFrame(direction, 'start', value)
+												}
+											/>
+											<ReferenceField
+												exactFrame
+												sideBySide
+												max={size}
+												label={t('moveSheet.endFrame')}
+												hint=""
+												caption={t(
+													model === 'skeleton-v3'
+														? 'moveSheet.endUnavailable'
+														: autoEnd
+															? 'moveSheet.sameAsStart'
+															: 'moveSheet.noEndFrame'
+												)}
+												thumbnail={model !== 'skeleton-v3' && autoEnd ? matching : undefined}
+												disabled={model === 'skeleton-v3'}
+												bind:loading={endLoading}
+												removeLabel={t('moveSheet.removeEndFrame')}
+												bind:value={
+													() =>
+														model === 'skeleton-v3'
+															? undefined
+															: (frameReference?.end ?? undefined),
+													(value) => changeFrame(direction, 'end', value)
+												}
+												onremove={() => changeFrame(direction, 'end', null)}
+											/>
+										</div>
+									{/key}
+									<small class="faint">{t('moveSheet.referenceSize', size)}</small>
 								</div>
 							{/if}
 						</div>
-					</div>
-				</details>
+					</details>
+				</div>
 			{/if}
 			{#if reservedMove(id, replacing)}<p class="notice warn small">
 					<CircleAlert size={14} />{displayError(reservedMove(id, replacing))}
 				</p>{:else if motionIssue}<p class="notice warn small">
 					<CircleAlert size={14} />{displayError(motionIssue)}
-				</p>{:else if pendingIds.includes(id)}<p class="notice small">
+				</p>{:else if preflight.length}{#each preflight as warning (warning.id)}<p
+						class="notice warn small"
+					>
+						<CircleAlert size={14} />{displayError(warning)}
+					</p>
+					{#if warning.id === 'frame-room-move'}
+						<button
+							class="bu-action btn"
+							data-variant="outline"
+							disabled={enlarging || !!frameEditsBlocked(doc.id)}
+							onclick={() => void room()}>{t('moveSheet.makeRoom')}</button
+						>
+						{#if enlargeError}<p class="notice bad small" role="alert">{enlargeError}</p>{/if}
+					{/if}{/each}{:else if pendingIds.includes(id)}<p class="notice small">
 					<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
 				</p>{:else if busy}<p class="faint small">
 					{t('moveSheet.waitsForCurrent')}
@@ -1541,6 +2078,26 @@
 		</div>
 	{/if}
 </Sheet>
+
+{#if confirm}
+	<ConfirmDialog
+		title={t(confirm.kind === 'start' ? 'moveSheet.customStartTitle' : 'moveSheet.changeLoopTitle')}
+		action={t(
+			confirm.kind === 'start' ? 'moveSheet.customStartContinue' : 'moveSheet.changeLoopAccept'
+		)}
+		cancel={t(confirm.kind === 'start' ? 'moveSheet.customStartKeep' : 'common.cancel')}
+		oncancel={() => (confirm = undefined)}
+		onconfirm={() => {
+			const accept = confirm?.accept;
+			confirm = undefined;
+			accept?.();
+		}}
+	>
+		<p>
+			{t(confirm.kind === 'start' ? 'moveSheet.customStartWarning' : 'moveSheet.changeLoopWarning')}
+		</p>
+	</ConfirmDialog>
+{/if}
 
 <style>
 	.move-source-list .bu-action {
@@ -1607,8 +2164,17 @@
 		max-width: 192px;
 		min-width: 0;
 	}
-	.advanced {
-		margin-top: 4px;
+	.loop-setting {
+		justify-content: space-between;
+	}
+	.loop-copy {
+		display: grid;
+		gap: 2px;
+		min-width: 0;
+	}
+	.frame-settings {
+		display: grid;
+		gap: 2px;
 	}
 	.advanced > summary {
 		min-height: 36px;
@@ -1659,6 +2225,71 @@
 	.frames-field {
 		row-gap: 0;
 	}
+	.reference-heading {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 4px 12px;
+	}
+	.frame-tabs {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+		row-gap: 4px;
+	}
+	.frame-tabs button {
+		position: relative;
+		display: flex;
+		align-items: center;
+		min-height: 44px;
+		min-width: 0;
+		padding-inline: 4px;
+		font-size: var(--fs-sm);
+	}
+	.frame-tab-content {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 3px;
+		width: 100%;
+		min-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.frame-tab-content :global(svg) {
+		flex: none;
+	}
+	.frame-tab-rule {
+		position: absolute;
+		inset-inline: 0;
+		inset-block-end: calc(-1px - var(--bu-tab-stroke, 1px));
+	}
+	.frame-tab-measure {
+		position: absolute;
+		visibility: hidden;
+		inline-size: 0;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.frame-tab-measure .frame-tab-content {
+		width: max-content;
+	}
+	.frame-panel {
+		display: grid;
+		gap: 6px;
+		min-width: 0;
+	}
+	.frame-references {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+	}
+	.matching-preview {
+		width: 36px;
+		height: 36px;
+		object-fit: contain;
+		image-rendering: pixelated;
+	}
 	.frame-controls {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
@@ -1678,6 +2309,11 @@
 	}
 	.frame-value {
 		font-variant-numeric: tabular-nums;
+	}
+	@media (max-width: 459px) {
+		.frame-tabs.many-directions {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
 	}
 	@media (max-width: 599px), (max-height: 499px) {
 		.advanced-field .input {

@@ -184,12 +184,14 @@
 		open = e.newState === 'open';
 		if (!open) pickingSlot = false;
 		if (!open && !cancelling) cancelError = '';
-		// Open on the first command, not the header's Wear toggle.
+		// Open on the first command, not the header's Wear toggle. A focus already inside the menu is left alone: under
+		// load this frame can land after someone (or a keyboard-automation step) has already moved to another row.
 		popoverFocus(e, false);
 		if (open)
-			requestAnimationFrame(() =>
-				menu?.querySelector<HTMLElement>('[role=menuitem]')?.focus({ preventScroll: true })
-			);
+			requestAnimationFrame(() => {
+				if (!menu || menu.contains(document.activeElement)) return;
+				menu.querySelector<HTMLElement>('[role=menuitem]')?.focus({ preventScroll: true });
+			});
 	}}
 >
 	<PopoverArrow />
@@ -379,7 +381,7 @@
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
-							onclick={() => act(() => openRename(doc.id, it.id))}
+							onclick={() => act(() => openRename(doc.id, { itemId: it.id }))}
 						>
 							<Pencil size={16} aria-hidden="true" />{openerLabel(
 								t('toolbar.rename')

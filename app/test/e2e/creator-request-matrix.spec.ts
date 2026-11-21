@@ -57,7 +57,9 @@ async function setup(page: Page) {
 	await openStudio(page, '/');
 	await openAccount(page);
 	const connection = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	await connection.getByLabel('API key', { exact: true }).fill('offline-matrix-not-a-real-key');
+	await connection
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('offline-matrix-not-a-real-key');
 	await connection.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connection).toHaveCount(0);
 	await page.locator('.project-btn').click();

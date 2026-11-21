@@ -360,10 +360,14 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	const connect = copy.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	const useSavedKey = connect.getByRole('button', { name: 'Use saved key', exact: true });
 	await expect(useSavedKey).toBeVisible();
-	await expect(connect.getByLabel('API key', { exact: true })).toBeEmpty();
+	await expect(connect.getByRole('link', { name: 'Start free trial' })).toBeVisible();
+	expect(
+		await copy.evaluate(() => localStorage.getItem('pixeldoll.pixelLabConnectOpened'))
+	).toBeNull();
+	await expect(connect.getByLabel('Paste your Secret API key', { exact: true })).toBeEmpty();
 	expect(copyRequests).toEqual([]);
 	await expect(connect.getByRole('checkbox', { name: 'Remember on this device' })).toHaveCount(0);
-	await connect.getByLabel('API key', { exact: true }).fill(copyKey);
+	await connect.getByLabel('Paste your Secret API key', { exact: true }).fill(copyKey);
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connect).toBeHidden();
 	await expect(
@@ -410,11 +414,11 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await copy.getByRole('button', { name: 'More options', exact: true }).click();
 	await copy.getByRole('button', { name: /^PixelLab usage/ }).click();
 	await copy.getByRole('button', { name: 'Forget key', exact: true }).click();
-	await expect(connect.getByLabel('API key', { exact: true })).toBeEmpty();
+	await expect(connect.getByLabel('Paste your Secret API key', { exact: true })).toBeEmpty();
 	await expect(
 		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
 	).toBeVisible();
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	await expect(
 		await copy.evaluate(async (id) => {
 			const statePath = '/src/studio/state.svelte.ts';
@@ -478,9 +482,9 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	).toBeVisible();
 	await copy.getByRole('button', { name: 'More options', exact: true }).click();
 	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
-	await expect(connect.getByLabel('API key', { exact: true })).toBeVisible();
+	await expect(connect.getByLabel('Paste your Secret API key', { exact: true })).toBeVisible();
 	await expect(useSavedKey).toHaveCount(0);
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	await copy.reload();
 	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
 	await copy.goto(new URL('/?workspace-copy=', page.url()).href);
@@ -2198,8 +2202,9 @@ test('distinct imported IDs with identical pretty names remain distinguishable g
 			oldIds = m.rig.animations.map((a: { id: string }) => a.id);
 		const ids = ['jump-loop', 'jump--loop'],
 			hashes: Record<string, string> = {};
-		m.rig.animations.forEach((a: { id: string }, i: number) => {
+		m.rig.animations.forEach((a: { id: string; moveLoop?: boolean }, i: number) => {
 			a.id = ids[i];
+			if (i === 1) a.moveLoop = true;
 		});
 		for (const layer of m.items[0].layers) {
 			const cells = layer.cells;
@@ -2220,9 +2225,10 @@ test('distinct imported IDs with identical pretty names remain distinguishable g
 	const once = dialog.getByRole('checkbox', { name: 'Jump loop (jump-loop)', exact: true });
 	await once.check();
 	await expect(once).toBeEnabled();
-	await expect(
-		dialog.getByRole('checkbox', { name: 'Jump loop (jump--loop)', exact: true })
-	).not.toBeChecked();
+	const other = dialog.getByRole('checkbox', { name: /Jump loop \(jump--loop\)/ });
+	await expect(other).not.toBeChecked();
+	await other.check();
+	await expect(other).toBeEnabled();
 	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
 	await expect(dialog.locator('.export-summary dd').first()).toHaveText('Jump loop (jump-loop)');
 	expect(
@@ -2230,7 +2236,7 @@ test('distinct imported IDs with identical pretty names remain distinguishable g
 			const path = '/src/lib/store/export-settings.ts';
 			return (await import(path)).readExportSettings();
 		})
-	).toMatchObject({ playOnce: ['jump-loop'] });
+	).toMatchObject({ playOnce: ['jump--loop', 'jump-loop'] });
 });
 
 test('Export navigation and settings fit phones, landscape and both themes, including a character without saved outfits', async ({

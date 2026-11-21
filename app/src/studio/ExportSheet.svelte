@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
+	import { playbackClips } from '../lib/runtime/timeline.js';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { assetUrl } from '../lib/assets.ts';
@@ -176,7 +178,7 @@
 	let busy = $state(false);
 	let attempt = $state(0);
 	const m = $derived(store.project?.manifest);
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const moveRefs = $derived(m?.rig.animations ?? []);
 	const baked = $derived(preferences?.dressedCharacterSheets ?? true);
 	const catalog = $derived.by(() => {
 		if (!preferences || !ready) return { names: [], warningMessages: [] };
@@ -194,14 +196,24 @@
 	});
 	const names = $derived(catalog.names);
 	const once = $derived(preferences?.playOnce ?? []);
-	const playbackSummary = $derived(
-		!once.length
-			? t('common.none')
-			: once.length === names.length
-				? t('export.playback.all')
-				: once.map(animationLabel).join(', ')
+	const moveChoices = $derived(
+		new Map(
+			playbackClips(m?.rig.animations ?? []).map(({ id, clip }) => [id, clip.moveLoop] as const)
+		)
 	);
-	const outfits = $derived(m?.presets.filter((p) => p.id !== 'current') ?? []);
+	const playsOnce = (name: string) => {
+		const choice = moveChoices.get(name);
+		return choice === undefined ? once.includes(name) : !choice;
+	};
+	const catalogOnce = $derived(names.filter(playsOnce));
+	const playbackSummary = $derived(
+		!catalogOnce.length
+			? t('common.none')
+			: catalogOnce.length === names.length
+				? t('export.playback.all')
+				: catalogOnce.map(animationLabel).join(', ')
+	);
+	const outfits = $derived(m?.presets.filter((p) => p.id !== CURRENT_OUTFIT_ID) ?? []);
 	// RPG Maker sheets are always dressed composites, whatever the setting says
 	const rpg = $derived(engine === 'rpgmaker' || engine === 'rpgmakerxp');
 	// The walk an RPG Maker sheet steps through, chosen for this export only; the first eligible walk until one is picked
@@ -245,7 +257,7 @@
 				slotLabelMessage(m, (value as Extract<NoteTerm, { slot: unknown }>).slot)
 			);
 		if ('move' in value)
-			return displayMove((value as Extract<NoteTerm, { move: unknown }>).move, moveIds);
+			return displayMove((value as Extract<NoteTerm, { move: unknown }>).move, moveRefs);
 		if ('key' in value) return displayNote(value as Message);
 		return value;
 	}
@@ -660,12 +672,17 @@
 					</p>
 					<div class="export-moves">
 						{#each names as name (name)}
+							{@const choice = moveChoices.get(name)}
 							<label
 								class="bu-action bu-check export-move"
 								data-variant="field"
 								aria-disabled={saving}
 							>
-								<span>{animationLabel(name)}</span><input
+								<span
+									>{animationLabel(name)}{#if choice !== undefined}
+										<small class="muted">{t('export.settings.playbackSetInMove')}</small>
+									{/if}</span
+								><input
 									type="checkbox"
 									checked={once.includes(name)}
 									disabled={saving || !ready}
@@ -819,7 +836,7 @@
 							value={rpgWalk}
 							disabled={!ready}
 							onchange={(e) => (walkChoice = e.currentTarget.value)}
-							>{#each walks as a (a.id)}<option value={a.id}>{displayMove(a.id, moveIds)}</option
+							>{#each walks as a (a.id)}<option value={a.id}>{displayMove(a.id, moveRefs)}</option
 								>{/each}</select
 						></label
 					>{/if}
@@ -840,15 +857,15 @@
 				{/if}
 				{#if m && result?.kind === 'requested'}
 					{#if rpg}<p class="muted">
-							{m.presets.filter((x) => x.id !== 'current').length
+							{m.presets.filter((x) => x.id !== CURRENT_OUTFIT_ID).length
 								? t('export.summary.rpgOutfits', {
-										count: m.presets.filter((x) => x.id !== 'current').length
+										count: m.presets.filter((x) => x.id !== CURRENT_OUTFIT_ID).length
 									})
 								: t('export.summary.rpgCurrent')}
 						</p>{:else}
 						<p class="muted">
 							{t(
-								m.presets.filter((x) => x.id !== 'current').length
+								m.presets.filter((x) => x.id !== CURRENT_OUTFIT_ID).length
 									? 'export.summary.sheetsOutfits'
 									: 'export.summary.sheetsCurrent',
 								{
@@ -858,7 +875,7 @@
 									moves: t('export.count.moves', { count: m.rig.animations.length }),
 									items: t('export.count.items', { count: items.length }),
 									outfits: t('export.count.outfits', {
-										count: m.presets.filter((x) => x.id !== 'current').length
+										count: m.presets.filter((x) => x.id !== CURRENT_OUTFIT_ID).length
 									})
 								}
 							)}

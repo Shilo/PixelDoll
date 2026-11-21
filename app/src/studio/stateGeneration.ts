@@ -14,15 +14,25 @@ import {
 	baseHashOf,
 	cellHash,
 	storedCellHashes,
-	type DirectionName
+	type DirectionName,
+	type RigAnimation
 } from '../lib/rig/rig.ts';
 import * as db from '../lib/store/db.ts';
+import { assignNewClipExportId } from '../lib/store/identity.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { cellBlob, imagesOf, provOf, run } from './create.ts';
 import { stateCaptureNameIssue } from './moveActions.svelte.ts';
 import { sameClipName, withClipWriteLock } from './clipName.ts';
-import { doc, flushSave, openProject, pendingBodyMoveName, toast, ui } from './state.svelte.ts';
+import {
+	doc,
+	flushSave,
+	openProject,
+	pendingBodyMoveName,
+	syncStoredProject,
+	toast,
+	ui
+} from './state.svelte.ts';
 import { stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.ts';
 import {
 	localStateCost,
@@ -719,14 +729,16 @@ export async function saveState(review: StateReview): Promise<void> {
 		})
 	);
 	layer.cells[id] = Object.fromEntries(views);
-	rig.animations.push({
+	const clip: RigAnimation = {
 		id,
 		kind: 'state',
 		cells: 1,
 		loop: false,
 		frames: [{ cell: 0, ms: 100 }],
 		source: { endpoint: review.endpoint }
-	});
+	};
+	assignNewClipExportId(clip, rig.animations);
+	rig.animations.push(clip);
 	base.provenance = [...(base.provenance ?? []), ...review.provenance];
 	const previousHash = rig.baseHash;
 	rig.baseHash = await baseHashOf(rig, storedCellHashes(rig, layer.cells));
@@ -747,7 +759,7 @@ export async function saveState(review: StateReview): Promise<void> {
 		else if (current.managedStates) delete current.managedStates[id];
 		return { ...current, manifest, savedAt: new Date().toISOString() };
 	});
-	if (doc.id !== projectId) return;
+	if (doc.id !== projectId) return syncStoredProject(projectId);
 	await openProject(projectId, { quiet: true });
 	if (doc.id !== projectId) return;
 	ui.anim = id;

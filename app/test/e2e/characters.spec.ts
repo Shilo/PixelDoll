@@ -125,10 +125,10 @@ test.describe('first Studio render in French', () => {
 		await page.getByRole('button', { name: `${connectLabel}...`, exact: true }).click();
 		const connect = page.getByRole('dialog', { name: connectLabel, exact: true });
 		await expect(
-			connect.getByPlaceholder(french.connectSheet.placeholderPasteYourKey)
-		).toBeVisible();
+			connect.getByLabel(french.connectSheet.secretApiKey, { exact: true })
+		).toHaveAttribute('placeholder', /^pixl_[a-f0-9]{32}$/);
 		await expect(
-			connect.getByRole('button', { name: french.common.cancel, exact: true })
+			connect.getByRole('button', { name: french.connectSheet.notNow, exact: true })
 		).toBeVisible();
 	});
 });
@@ -279,7 +279,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(rows.filter({ hasText: 'Adventurer' })).toHaveAttribute('aria-pressed', 'true');
 	await expect(rows.locator('.character-counts')).toHaveText([
 		'4 directions · 2 moves · 6 items',
-		'4 directions · 3 moves · 6 items'
+		'4 directions · 1 state · 2 moves · 6 items'
 	]);
 	await page.locator('.customize-action').click();
 	await expect(page.locator('.name-text')).toHaveText('Adventurer (Demo)');
@@ -1091,6 +1091,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			'Details...',
 			'Rename...',
 			'Directions...',
+			'Adjust frame...',
 			'Download ZIP',
 			'Delete character...'
 		]);
@@ -1162,6 +1163,85 @@ test('character directions can be mirrored and unlinked on import and after savi
 		kept.getByRole('button', { name: 'South east direction', exact: true })
 	).toHaveAttribute('aria-pressed', 'false');
 	await expect(west).toHaveAttribute('aria-pressed', 'true');
+	await page.keyboard.press('Escape');
+	await expect(settings).toBeHidden();
+	// Adjust frame: move the mirrored character and resize its frame for free, saved across a reload and undone from its
+	// notice.
+	const openFrame = async () => {
+		await page.locator('.project-btn').click();
+		await page
+			.getByRole('button', { name: 'More actions for Direction test hero', exact: true })
+			.click();
+		await page
+			.getByRole('menu', { name: 'Actions for Direction test hero', exact: true })
+			.getByRole('menuitem', { name: 'Adjust frame...', exact: true })
+			.click();
+		return page.getByRole('dialog', { name: 'Adjust frame', exact: true });
+	};
+	// Saves made before export ids existed have none; loading fills a default, and saving must not read that as a change.
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve, reject) => {
+				const r = indexedDB.open('pixeldoll');
+				r.onerror = () => reject(r.error);
+				r.onsuccess = () => {
+					const db = r.result,
+						store = db.transaction('projects', 'readwrite').objectStore('projects'),
+						all = store.getAll();
+					all.onsuccess = () => {
+						const rec = all.result.find((p) => p?.manifest?.name === 'Direction test hero');
+						if (!rec) return reject(new Error('Direction test hero not stored'));
+						delete rec.manifest.exportId;
+						store.put(rec, rec.id).onsuccess = () => {
+							db.close();
+							resolve();
+						};
+					};
+				};
+			})
+	);
+	await reloadStudio(page);
+	let frame = await openFrame();
+	const size = frame.getByRole('spinbutton', { name: 'Frame size', exact: true });
+	const position = frame.getByRole('slider', { name: 'Character in its frame', exact: true });
+	await expect(size).toHaveValue('64');
+	await expect(position).toHaveAttribute('aria-valuetext', 'Not moved');
+	const save = frame.getByRole('button', { name: 'Save', exact: true });
+	await expect(save).toBeDisabled();
+	await frame.getByRole('button', { name: 'Make room', exact: true }).click();
+	await expect(frame.getByRole('status')).toContainText(
+		'This character already has room for moves.'
+	);
+	await frame.getByRole('button', { name: 'Up', exact: true }).click();
+	await frame.getByRole('button', { name: 'Up', exact: true }).click();
+	await expect(position).toHaveAttribute('aria-valuetext', 'Moved up 2 px');
+	await position.focus();
+	await page.keyboard.press('Shift+ArrowUp');
+	await page.keyboard.press('ArrowDown');
+	await expect(position).toHaveAttribute('aria-valuetext', 'Moved up 5 px');
+	await size.fill('81');
+	await expect(save).toBeDisabled();
+	// A typed size far past the limit is refused in text and never drawn (drawing it would freeze the page).
+	await size.fill('100000');
+	await expect(save).toBeDisabled();
+	await expect(frame).toContainText('Frame must be');
+	await size.fill('80');
+	await expect(frame).toContainText('Items copy exactly only between characters');
+	await save.click();
+	await expect(frame).toBeHidden();
+	const notice = page.locator('.toast');
+	await expect(notice).toContainText('Frame adjusted');
+	await expect(notice).toContainText('Moved up 5 px');
+	await reloadStudio(page);
+	frame = await openFrame();
+	await expect(size).toHaveValue('80');
+	await size.fill('64');
+	await save.click();
+	await expect(frame).toBeHidden();
+	await notice.getByRole('button', { name: /Frame adjusted/ }).click();
+	await expect(notice).toContainText('Frame change undone.');
+	frame = await openFrame();
+	await expect(size).toHaveValue('80');
 });
 
 test('browser Back respects an atomic import and closes sheets after it finishes', async ({
@@ -2111,7 +2191,9 @@ test('PixelLab library connection, pagination and direct import use only free re
 		.click();
 	await page.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
 	await page.getByRole('button', { name: 'Connect PixelLab to browse your characters' }).click();
-	await page.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key');
+	await page
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('test-only-not-a-real-key');
 	await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('button', { name: /Library hero 1 direction ·/ })).toBeVisible();
 	await expect(page.locator('.character-library .library-character')).toHaveCount(20);
@@ -2373,7 +2455,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(page.getByRole('dialog')).toContainText('0.35 gens estimated');
 	await expect(page.getByLabel('Existing appearance')).toHaveValue('red hair, blue coat and boots');
 	await page.getByRole('button', { name: /^Set up.*0.35 gens$/ }).click();
-	await page.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key');
+	await page
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('test-only-not-a-real-key');
 	await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('dialog')).toContainText(
 		'Ready. You can add equipment and moves fitted to this character.',
@@ -2423,7 +2507,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await newItem(page, 'Main hand');
 	await page.getByRole('radio', { name: 'Main hand', exact: true }).click();
 	await page.getByRole('dialog').getByText('Advanced', { exact: true }).click();
-	await expect(page.getByRole('dialog')).toContainText('96 px canvas');
+	// The import added room for moves (feet 4 px above a 64 px canvas edge: 64 -> 80), so held items pad to 112 px.
+	expect(before.manifest.rig.cell).toEqual({ w: 80, h: 80 });
+	await expect(page.getByRole('dialog')).toContainText('112 px canvas');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
@@ -2437,6 +2523,14 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
 	await expect(review).not.toBeVisible();
+	// The list row follows the saved move without a reload: the summary is not a stale copy from before the save.
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	await expect(
+		page
+			.locator('.cast-library .character-row')
+			.filter({ hasText: 'Rig parity fixture' })
+			.locator('.character-counts')
+	).toHaveText('4 directions · 1 state · 1 move · 0 items');
 	const after = await read(),
 		idle = after.manifest.rig.animations.find((a) => a.id === 'idle')!;
 	expect(after.manifest.items[0].layers[0].cells!.default).toEqual(
@@ -2646,7 +2740,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await frames.filter({ hasText: /^Frame 2$/ }).click();
 	await moveSheet.getByRole('button', { name: /^Generate move/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('test-only-not-a-real-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(review).toBeVisible({ timeout: 45_000 });
 	const pending = await read();
@@ -2708,7 +2804,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const jointPosts = () => posts.filter(({ path }) => path.endsWith('/estimate-skeleton')).length;
 	const beforeJointFit = jointPosts();
 	await moveSheet.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
-	await connect.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('test-only-not-a-real-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(moveSheet.getByText('Start from · Ready stance', { exact: true })).toBeVisible();
 	await moveSheet.getByRole('button', { name: 'Check joint fitting cost' }).click();
@@ -3326,21 +3424,61 @@ test('rename display names and export IDs without changing saved keys or calling
 	await page.getByRole('button', { name: `More options for ${target.name}`, exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
 	await rename('Rename item', 'Travel cap', 'travel_cap');
+	await equipmentMode(page, 'Outfits');
+	await page.getByRole('button', { name: 'More actions for Adventurer', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
+	await rename('Rename outfit', 'Knight', 'knight_set');
+	await expect(page.locator('.outfits')).toContainText('Knight');
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'More actions for Standing', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
+	const standing = page.getByRole('dialog', { name: 'Rename move', exact: true });
+	await standing.locator('summary').click();
+	// Games start from the standing move, so its export ID stays fixed.
+	await expect(standing.getByRole('textbox', { name: 'Export ID' })).toHaveAttribute('readonly');
+	await standing.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
+	await rename('Rename move', 'Stroll', 'stroll');
+	await expect(page.locator('.move-list')).toContainText('Stroll');
+	// Paid item requests confirm against the saved rig's JSON: a rename must leave both identical.
+	expect(
+		await page.evaluate(async (projectId) => {
+			const dbPath = '/src/lib/store/db.ts',
+				statePath = '/src/studio/state.svelte.ts',
+				db = await import(dbPath),
+				studio = await import(statePath);
+			const { manifest } = await db.get('projects', projectId);
+			return JSON.stringify(studio.store.project.manifest.rig) === JSON.stringify(manifest.rig);
+		}, target.projectId)
+	).toBe(true);
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('旅人');
+	await equipmentMode(page, 'Moves');
+	await expect(page.locator('.move-list')).toContainText('Stroll');
 	const saved = await page.evaluate(async ({ projectId, id }) => {
 		const path = '/src/lib/store/db.ts',
-			db = await import(path);
+			db = await import(path),
+			statePath = '/src/studio/state.svelte.ts',
+			studio = await import(statePath);
 		const { manifest } = await db.get('projects', projectId);
 		return {
 			alias: manifest.exportId,
-			item: manifest.items.find((entry: { id: string }) => entry.id === id)
+			item: manifest.items.find((entry: { id: string }) => entry.id === id),
+			move: manifest.rig.animations.find((entry: { id: string }) => entry.id === 'walk'),
+			outfits: studio.store.project.manifest.presets.map((outfit: { id: string; name: string }) => [
+				outfit.id,
+				outfit.name
+			])
 		};
 	}, target);
 	expect(saved).toMatchObject({
 		alias: 'travel_hero',
-		item: { id: target.id, name: 'Travel cap', exportId: 'travel_cap', prompt: target.prompt }
+		item: { id: target.id, name: 'Travel cap', exportId: 'travel_cap', prompt: target.prompt },
+		move: { id: 'walk', name: 'Stroll', exportId: 'stroll' }
 	});
+	expect(saved.outfits).toContainEqual(['knight_set', 'Knight']);
 	expect(requests).toBe(0);
 });
 

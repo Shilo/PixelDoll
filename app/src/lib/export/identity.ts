@@ -65,6 +65,7 @@ export function projectExportIdentity(project: Project): Project {
 	for (const [index, entry] of clips.entries()) {
 		manifest.rig.animations[index].id = entry.id;
 		manifest.rig.animations[index].kind = entry.kind;
+		delete manifest.rig.animations[index].exportId;
 	}
 	for (const anchor of Object.keys(manifest.rig.anchors ?? {}) as (keyof NonNullable<
 		Manifest['rig']['anchors']

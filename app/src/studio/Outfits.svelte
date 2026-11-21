@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
 	// Saved looks (presets) for the customization panel's Outfits tab.
-	import { store, doc, applyPreset, savePreset, deletePreset, sameOutfit } from './state.svelte.ts';
+	import {
+		store,
+		doc,
+		applyPreset,
+		savePreset,
+		deletePreset,
+		sameOutfit,
+		openRename
+	} from './state.svelte.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import { buildPresentation, southStill } from './experience/presentation.ts';
 	import OutfitThumb from './OutfitThumb.svelte';
@@ -55,6 +63,7 @@
 					<SavedActions
 						name={p.name}
 						kind="outfit"
+						onrename={() => openRename(doc.id, { outfitId: p.id })}
 						ondownload={() => downloadOutfitZip(p.id)}
 						ondelete={() => deletePreset(p.id)}
 					>

@@ -8,13 +8,14 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { Download, Grid2x2, Plus } from './icons.ts';
+	import { Download, Grid2x2, Pencil, Plus } from './icons.ts';
 	import { toast } from './state.svelte.ts';
 	let {
 		name,
 		kind,
 		locked = '',
 		onlocked,
+		onrename,
 		ondownload,
 		onfixframes,
 		oncapture,
@@ -26,6 +27,8 @@
 		locked?: string;
 		/** Opens what causes the lock, when it can be shown. */
 		onlocked?: () => void;
+		/** Opens the Rename sheet; absent where names cannot be saved (a demo's moves). */
+		onrename?: () => void;
 		ondownload: () => Promise<void>;
 		onfixframes?: () => void;
 		oncapture?: () => void;
@@ -52,6 +55,18 @@
 
 <RowActions {name} {children}>
 	{#snippet actions(close)}
+		{#if onrename}
+			<button
+				class="row"
+				role="menuitem"
+				onclick={() => {
+					close();
+					onrename();
+				}}
+				><Pencil size={16} aria-hidden="true" />{openerLabel(t('toolbar.rename'))}<SurfaceChevron
+				/></button
+			>
+		{/if}
 		{#if onfixframes}
 			<button
 				class="row"

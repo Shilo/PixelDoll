@@ -50,7 +50,7 @@
 	let viewportWidth = $state(innerWidth);
 	let viewportHeight = $state(innerHeight);
 	const clips = $derived(playbackClips(store.project?.manifest.rig.animations ?? []));
-	const moveIds = $derived(clips.map(({ key }) => key));
+	const moveRefs = $derived(store.project?.manifest.rig.animations ?? []);
 	let serial = 0;
 	let rememberedId = '';
 	const availability = $derived.by(() => {
@@ -120,7 +120,7 @@
 			.map(({ move, direction }) =>
 				english
 					? `${move.replaceAll('-', ' ')} ${directionLabel(direction)}`
-					: `${displayMove(move, moveIds)} ${displayDirection(direction)}`
+					: `${displayMove(move, moveRefs)} ${displayDirection(direction)}`
 			);
 		const more = missing.length - 3;
 		return t(more > 0 ? 'share.omittedMore' : 'share.omitted', {
@@ -218,7 +218,9 @@
 		if (!manifest || !doc.id || doc.loading) return;
 		const directions: string[] = manifest.rig.directions.map((entry) => entry.id);
 		const standing =
-			clips.find(({ id, kind }) => id === 'standing' && kind === 'state')?.key ?? moveIds[0] ?? '';
+			clips.find(({ id, kind }) => id === 'standing' && kind === 'state')?.key ??
+			clips[0]?.key ??
+			'';
 		const currentDirection = directions.includes(ui.dir) ? ui.dir : (directions[0] ?? 'south');
 		if (rememberedId !== doc.id) {
 			rememberedId = doc.id;
@@ -326,7 +328,7 @@
 		<div class="share-controls">
 			<PlaybackPicker
 				{clips}
-				{moveIds}
+				{moveRefs}
 				selected={move}
 				bulk
 				onselect={(clip) => {

@@ -78,8 +78,8 @@
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
 	const m = $derived(store.project?.manifest);
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const clips = $derived(playbackClips(m?.rig.animations ?? []));
+	const moveRefs = $derived(m?.rig.animations ?? []);
 	const selectedMove = $derived(m?.rig.animations.find((animation) => animation.id === ui.anim));
 	// A shown mount has its own gait, so Play/Pause stays useful even over a single-frame move.
 	const canPlay = $derived(
@@ -328,7 +328,7 @@
 					: experience.mode
 		]
 	);
-	async function pick(id: string, activate = true) {
+	async function pick(id: string, activate = true, side?: number) {
 		resetWheel();
 		if (doc.loading) return;
 		if (id === doc.id) {
@@ -337,7 +337,9 @@
 			const distance =
 				(list.findIndex((project) => project.id === id) - Math.max(0, index) + list.length) %
 				list.length;
-			castDirection = distance <= list.length / 2 ? 1 : -1;
+			// A clicked card turns the way its side suggests, like the arrows; the character list keeps the
+			// shorter route.
+			castDirection = Math.sign(side || 0) || (distance <= list.length / 2 ? 1 : -1);
 			await openProject(id);
 		}
 	}
@@ -777,7 +779,7 @@
 					{/if}
 					<PlaybackPicker
 						{clips}
-						{moveIds}
+						{moveRefs}
 						selected={ui.anim}
 						compact={g.compactPlayback}
 						onselect={(clip) => {
@@ -846,7 +848,7 @@
 							<div class="menu-surface bu-popover-surface bu-floating">
 								<p class="menu-sec">
 									{t('experience.missingFramesForMove', {
-										move: displayMove(missing.clip, moveIds),
+										move: displayMove(missing.clip, moveRefs),
 										direction: displayDirection(missing.direction)
 									})}
 								</p>

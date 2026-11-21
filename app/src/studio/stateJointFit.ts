@@ -25,7 +25,13 @@ import type { Manifest, Project, Provenance } from '../lib/store/manifest.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import { EST, measureJoints, measurementInput, provOf } from './create.ts';
 import { resolveMoveSource } from './moveSource.ts';
-import { directionEditsBlocked, doc, flushSave, openProject } from './state.svelte.ts';
+import {
+	directionEditsBlocked,
+	doc,
+	flushSave,
+	openProject,
+	syncStoredProject
+} from './state.svelte.ts';
 import type { ReadyStatePlan } from './stateGenerationTransport.ts';
 
 /** Saved State art from these endpoints is generated, not captured from a Move or imported. */
@@ -427,4 +433,5 @@ async function save(review: StateJointFitReview): Promise<void> {
 		return record;
 	});
 	if (doc.id === projectId) await openProject(projectId, { quiet: true });
+	else await syncStoredProject(projectId);
 }

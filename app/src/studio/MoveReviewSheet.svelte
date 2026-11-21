@@ -17,7 +17,11 @@
 		skeletonMoveReview
 	} from './create.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
-	import { moveCandidateHasStructuralFailure, moveCandidateInput } from './replaceMove.ts';
+	import {
+		moveCandidateHasStructuralFailure,
+		moveCandidateInput,
+		movePlaybackChanged
+	} from './replaceMove.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import {
 		doc,
@@ -35,6 +39,7 @@
 	import { displayError } from '../lib/i18n.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import type { Img } from '../lib/image/png.ts';
+	import type { ImageReference } from '../lib/image/reference.ts';
 	import type { DirectionName } from '../lib/rig/rig.ts';
 
 	const projectId = untrack(() => doc.id);
@@ -44,9 +49,7 @@
 	);
 	const project = $derived(doc.id === projectId ? store.project : null);
 	const manifest = $derived(project?.manifest);
-	const name = $derived(
-		displayMove(id, [...(manifest?.rig.animations.map((move) => move.id) ?? []), id])
-	);
+	const name = $derived(displayMove(id, [...(manifest?.rig.animations ?? []), id]));
 	const directions = $derived.by(() => {
 		if (!manifest || !candidate) return [];
 		return manifest.rig.directions.filter(
@@ -170,6 +173,13 @@
 	function regenerate(skeletonRetry?: typeof skeletonOffer) {
 		if (!candidate || blocked) return;
 		const { spec } = candidate;
+		const animation = skeletonRetry?.review.animation;
+		const saved = manifest?.rig.animations.find((move) => move.id === id);
+		const picked = (reference: ImageReference, kind: 'startFrame' | 'endFrame') => ({
+			...reference,
+			name: t(kind === 'startFrame' ? 'moveSheet.startFrame' : 'moveSheet.endFrame'),
+			previewBox: `0 0 ${reference.width} ${reference.height}`
+		});
 		formDrafts.move = {
 			projectId,
 			reopen: true,
@@ -185,7 +195,16 @@
 					: skeletonRetry && !spec.startFrom && spec.replace
 						? { clip: DEFAULT_MOVE }
 						: undefined,
-			animation: skeletonRetry?.review.animation ?? spec.animation
+			animation: animation ?? spec.animation,
+			loop: movePlaybackChanged(candidate.basePlayback, saved)
+				? (saved?.moveLoop ?? saved?.loop)
+				: (animation?.loop ?? spec.animation?.loop),
+			frameReferences: Object.fromEntries(
+				Object.entries(spec.animation?.references ?? {}).map(([dir, { start, end }]) => [
+					dir,
+					{ start: start && picked(start, 'startFrame'), end: end && picked(end, 'endFrame') }
+				])
+			)
 		};
 		ui.sheet = 'move';
 	}

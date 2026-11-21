@@ -45,6 +45,8 @@ Deliberate boundaries:
   selection rule. Editing never eagerly bakes every combination.
 - Preview playback intentionally loops, including authored once-only clips. Native Phaser playback
   honors the exported loop flag. Timeline policy is explicit, not silently changed by this refactor.
+  For generated moves with a saved Loop choice, export uses that choice; other moves use the global
+  Export preferences. Idle, Walk and Run start with Loop on in Add a move.
   The inspector's timer advances playlist entries for pause/step controls; it does not implement a
   second pixel compositor or equipment resolver.
 - Phaser texture loading, sprite placement and native frame events remain adapter responsibilities.

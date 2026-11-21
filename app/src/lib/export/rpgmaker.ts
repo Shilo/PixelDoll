@@ -211,7 +211,7 @@ export function rpgMakerFiles(
 	p: Project,
 	m: Manifest,
 	layout: RpgLayout,
-	walkId?: string
+	walkId?: string | { publicWalkId: string | null; sourceKeys: ReadonlyMap<string, string> }
 ): { files: OutFile[]; warnings: string[]; warningMessages: Map<string, Message> } {
 	const src = p.manifest,
 		{ rig } = src,
@@ -235,7 +235,10 @@ export function rpgMakerFiles(
 	const standing = rig.animations.find(
 		(a) => a.id === DEFAULT_MOVE || (a.id === 'standing' && a.kind === 'state')
 	);
-	const walk = walkMove(src, walkId);
+	const walk =
+		typeof walkId === 'object'
+			? rig.animations.find((a) => a.id === walkId.publicWalkId && a.kind !== 'state')
+			: walkMove(src, walkId);
 	if (!walk)
 		note(
 			'RPG Maker: no walk move, so the sheets stand still. Add a walk move to animate them.',
@@ -278,12 +281,13 @@ export function rpgMakerFiles(
 		)
 	);
 	const omitted = rig.animations.filter((a) => !shown.has(a.id)).map((a) => a.id);
+	const sourceKeys = typeof walkId === 'object' ? walkId.sourceKeys : undefined;
 	if (omitted.length)
 		note(
 			`RPG Maker: ${omitted.join(', ')} ${omitted.length === 1 ? 'is' : 'are'} left out; walking sheets hold only standing and walking frames.`,
 			message('export.warnings.rpgOmittedMoves', {
 				count: omitted.length,
-				moves: omitted.map((move): NoteTerm => ({ move }))
+				moves: omitted.map((move): NoteTerm => ({ move: sourceKeys?.get(move) ?? move }))
 			})
 		);
 	const stillRows = walk ? ROWS.filter((d) => !walkDirs.has(d)) : [];

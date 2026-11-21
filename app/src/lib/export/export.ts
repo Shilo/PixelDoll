@@ -16,11 +16,12 @@ import { godotFiles } from './godot.ts';
 import { phaserFiles } from './phaser.ts';
 import { unityFiles } from './unity.ts';
 import { gdevelopFiles } from './gdevelop.ts';
-import { rpgMakerFiles } from './rpgmaker.ts';
+import { rpgMakerFiles, walkMove } from './rpgmaker.ts';
 import { checkArchivePixels, projectEntries, type ImportedCharacter } from '../store/import.ts';
 import { reservedPathSegment } from './paths.ts';
 import { errorTranslation, message, type Message } from '../message.ts';
 import { checkExportIdentity } from '../store/identity.ts';
+import { playbackClips } from '../runtime/timeline.js';
 import { projectExportIdentity } from './identity.ts';
 
 export interface ExportOptions {
@@ -202,7 +203,12 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 	}
 	if (rpg) {
 		try {
-			const r = rpgMakerFiles(p, m, rpg, o.rpgWalk);
+			const walk = walkMove(src.manifest, o.rpgWalk);
+			const clips = playbackClips(src.manifest.rig.animations);
+			const r = rpgMakerFiles(p, m, rpg, {
+				publicWalkId: clips.find(({ key }) => key === walk?.id)?.id ?? null,
+				sourceKeys: new Map(clips.map(({ id, key }) => [id, key]))
+			});
 			files.push(...r.files);
 			warnings.push(...r.warnings);
 			for (const [text, display] of r.warningMessages) warningMessages.set(text, display);

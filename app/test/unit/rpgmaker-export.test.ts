@@ -397,6 +397,31 @@ test('the sheets step through the chosen walk, default to the first, and name ev
 	expect(vx('idle').row).toEqual([11, 200, 13]);
 });
 
+test('a walk exported under another ID still drives the steps', async () => {
+	const p = await project({ size: 32 });
+	const walk = p.manifest.rig.animations.find((move) => move.id === 'walk')!;
+	const punch = { ...walk, id: 'cross-punch' };
+	p.manifest.rig.animations.push(punch);
+	for (const item of p.manifest.items)
+		for (const layer of item.layers)
+			if (layer.cells?.walk) layer.cells[punch.id] = structuredClone(layer.cells.walk);
+	const plain = await exportFiles(p, { engines: ['rpgmaker'], baked: true });
+	walk.exportId = 'stroll';
+	punch.exportId = 'walk';
+	const renamed = await exportFiles(p, { engines: ['rpgmaker'], baked: true });
+	expect(renamed.errors).toEqual([]);
+	const omission = renamed.warnings.find((warning) => warning.includes('left out'))!;
+	expect(omission).toContain('RPG Maker: walk is left out');
+	expect(renamed.warningMessages?.get(omission)?.vars).toMatchObject({
+		moves: [{ move: 'cross-punch' }]
+	});
+	const sheets = (r: typeof plain) =>
+		r.entries.filter((e) => e.name.endsWith('.png') && !e.name.startsWith('cells/'));
+	expect(sheets(renamed).map((e) => [e.name, [...e.data]])).toEqual(
+		sheets(plain).map((e) => [e.name, [...e.data]])
+	);
+});
+
 test('refuses characters without front, side and back views', async () => {
 	const partial = await project({ dirs: ['south', 'north'] });
 	expect(() => run(partial)).toThrow(/^RPG Maker: .*no west, east view/);

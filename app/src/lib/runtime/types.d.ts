@@ -309,6 +309,7 @@ export interface ClipSource {
 	route: 'skeleton-v3' | 'pixminimax' | 'v3' | 'import';
 	reference: Sha256;
 	referenceKeypoints?: Keypoint[];
+
 	keypoints?: Keypoint[][]; // [cell][18]: the sequence sent to raw skeleton-v3; items are posed with exactly this
 	motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "pixminimax:<text>"
 	measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (QA, anchors)
@@ -326,13 +327,20 @@ export interface ClipSource {
 }
 
 export interface RigAnimation {
+	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
 	kind?: 'state' | 'move';
+	/** Display name the user gave the move; absent = derived from `id`. */
+	name?: string;
+	/** Game-facing ID in exports (`play(id)`); absent = `id`. */
+	exportId?: string;
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
 	cells: number;
-	/** Serialized playback metadata. Global Export preferences replace it on export copies; app previews and sharing always loop. */
+	/** Serialized playback metadata; app previews and sharing always loop. */
 	loop: boolean;
+	/** Explicit Add a move choice; omitted when global Export preferences supply the default. */
+	moveLoop?: boolean;
 	frames: { cell: number; ms: number }[];
 	source?: {
 		endpoint: string;
@@ -355,6 +363,12 @@ export interface Rig {
 	baseItem: string;
 	baseHash: Sha256;
 	pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
+	/** Export world unit (pixels per unit) kept when Frame size changed the cell; default: the cell width. */
+	pixelsPerUnit?: number;
+	/** Rows each direction's standing art sits below the view PixelLab registered for it (Adjust frame moved the character
+	 *  since): managed motion frames, drawn from the registered views, are placed this much lower. Absent = 0; reset by a new
+	 *  registration. */
+	artOffset?: Partial<Record<DirectionName, number>>;
 	rest?: Partial<Record<DirectionName, RestView>>; // original standing views, including unused views retained for account reconnection
 	anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }

@@ -26,5 +26,9 @@ export const formDrafts: {
 		source?: import('./moveSource.ts').MoveSourceSelection;
 		poseStyle?: 'visible-side-v1';
 		animation?: import('./moveAnimationOptions.ts').MoveAnimationOptions;
+		frameReferences?: import('./moveAnimationOptions.ts').MoveFrameReferences<
+			import('../lib/image/reference.ts').PickedReference
+		>;
+		loop?: boolean;
 	};
 } = {};

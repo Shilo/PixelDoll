@@ -14,6 +14,7 @@ export { default as Archive } from '@lucide/svelte/icons/archive';
 export { default as FileArchive } from '@lucide/svelte/icons/file-archive';
 export { default as Share2 } from '@lucide/svelte/icons/share-2';
 export { default as Compass } from '@lucide/svelte/icons/compass';
+export { default as Frame } from '@lucide/svelte/icons/frame';
 export { default as Clapperboard } from '@lucide/svelte/icons/clapperboard';
 export { default as Plus } from '@lucide/svelte/icons/plus';
 export { default as X } from '@lucide/svelte/icons/x';

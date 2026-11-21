@@ -1038,7 +1038,9 @@
 					} else if (missing) missing = null;
 				}
 				const notes = [
-					p.notice ? displayPresentationNotice(p.notice) : '',
+					p.notice
+						? displayPresentationNotice(p.notice, view.project?.manifest.rig.animations)
+						: '',
 					live && result?.hiddenItems.length
 						? t('worldStage.notice.equippedHidden', { count: result.hiddenItems.length })
 						: ''
@@ -1079,7 +1081,10 @@
 					const issues: [string, string][] = [];
 					for (const shown of [p, result])
 						if (shown?.issueKey && shown.notice && !noticed.has(shown.issueKey))
-							issues.push([shown.issueKey, displayPresentationNotice(shown.notice)]);
+							issues.push([
+								shown.issueKey,
+								displayPresentationNotice(shown.notice, view.project?.manifest.rig.animations)
+							]);
 					// An unresolved error can defer this batch; only consume warnings the toast accepts.
 					if (
 						issues.length &&
@@ -1140,7 +1145,13 @@
 						.filter((direction) => direction !== ui.dir)
 						.map((direction) => {
 							const entry = companion(a, direction, view.cell);
-							if (entry.result.notice) notes.push(displayPresentationNotice(entry.result.notice));
+							if (entry.result.notice)
+								notes.push(
+									displayPresentationNotice(
+										entry.result.notice,
+										view.project?.manifest.rig.animations
+									)
+								);
 							for (const text of displayLoadingItems(entry.result.loadingItems)) loadings.add(text);
 							const ground = origin(direction);
 							const actor = entry.canvas

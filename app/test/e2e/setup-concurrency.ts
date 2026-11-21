@@ -203,7 +203,9 @@ for (const tier of [3, 1] as const)
 				);
 			await setup.getByRole('button', { name: /^Set up.*4.35 gens$/ }).click();
 			const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-			await connect.getByLabel('API key', { exact: true }).fill('synthetic-setup-concurrency-key');
+			await connect
+				.getByLabel('Paste your Secret API key', { exact: true })
+				.fill('synthetic-setup-concurrency-key');
 			await connect.getByRole('checkbox', { name: 'Remember on this device', exact: true }).check();
 			await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 			await expect.poll(() => pending.size).toBe(limit);

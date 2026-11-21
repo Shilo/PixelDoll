@@ -17,7 +17,7 @@ import { expect, test, type BrowserContext, type Locator, type Page } from '@pla
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
-import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT, type Manifest } from '../../src/lib/store/manifest.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import './studio-thumbnails.ts';
@@ -1252,13 +1252,30 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 		const last = [...element.querySelectorAll<HTMLElement>('section[data-own]')].at(-1)!;
 		element.scrollTop = last.offsetTop - 40;
 	});
-	const lastHeader = (await page.locator('[data-slot-button="off_hand"]').boundingBox())!;
-	const notShown = (await page.locator('.not-shown-toggle').boundingBox())!;
-	await page.mouse.move(lastHeader.x + 20, lastHeader.y + 20);
-	await page.mouse.down();
-	await page.mouse.move(notShown.x + 20, notShown.y + 8, { steps: 6 });
-	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	const dragToNotShown = async (key: string) => {
+		const from = (await page.locator(`[data-slot-button="${key}"]`).boundingBox())!;
+		const to = (await page.locator('.not-shown-toggle').boundingBox())!;
+		await page.mouse.move(from.x + 20, from.y + 20);
+		await page.mouse.down();
+		await page.mouse.move(to.x + 20, to.y + 8, { steps: 6 });
+		await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	};
+	// An empty slot dropped on Not shown hides, like Hide slot in its menu.
+	await dragToNotShown('off_hand');
+	await expect(page.locator('.not-shown-toggle')).toHaveAttribute('data-current', 'true');
 	await page.mouse.up();
+	await expect.poll(keys).toEqual(original.filter((key) => key !== 'off_hand'));
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	// A slot with items is refused with the menu's reason.
+	await list.evaluate((element) => {
+		element.scrollTop =
+			element.querySelector<HTMLElement>('[data-group="main_hand"]')!.offsetTop - 40;
+	});
+	await dragToNotShown('main_hand');
+	await expect(page.locator('.not-shown-toggle')).not.toHaveAttribute('data-current');
+	await page.mouse.up();
+	await expect(page.locator('.toast')).toContainText('Only empty slots can be hidden.');
 	expect(await keys()).toEqual(original);
 	await list.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }));
 	const startHead = (await head.boundingBox())!;
@@ -2312,7 +2329,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	for (const shortcut of ['Control+Enter', 'Meta+Enter']) {
 		await prompt.press(shortcut);
 		await expect(connect).toBeVisible();
-		await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 		await newItem(page, 'Head');
 		await expect(prompt).toHaveValue('a leather hat\n');
 		await expect(attachment).toContainText(filename);
@@ -2376,7 +2393,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await item.getByRole('button', { name: /^Make/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await newItem(page, 'Head');
 	await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
@@ -2437,7 +2454,9 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	// Connecting later must not start the character generation canceled above.
 	await openAccount(page);
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-manual-qa-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await page.locator('.project-btn').click();
 	await expect(page.getByRole('menuitem', { name: 'PixelLab account', exact: true })).toContainText(
@@ -2515,7 +2534,9 @@ test('closing Connect before its code loads still discards the pending action', 
 	// Connecting later must not start the character generation abandoned above.
 	await openAccount(page);
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-manual-qa-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0); // a revived action would open its progress sheet here
 	await page.locator('.project-btn').click();
@@ -2714,7 +2735,9 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
 			});
 			if (initial === 'old-only') {
 				await expect(dialog.getByRole('button', { name: 'Forget key' })).toHaveCount(0);
-				await expect(dialog.getByLabel('API key', { exact: true })).toHaveValue('');
+				await expect(dialog.getByLabel('Paste your Secret API key', { exact: true })).toHaveValue(
+					''
+				);
 				expect(requests).toBe(0);
 			} else {
 				await expect(dialog.getByText(/Connected and remembered/)).toBeVisible();
@@ -2818,7 +2841,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await setup.getByRole('button', { name: /^Set up ·/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -2860,7 +2883,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	const advanced = move.locator('details.advanced');
 	await advanced.locator('summary').click();
 	const model = advanced.getByRole('combobox', { name: 'Motion model' });
-	const slider = advanced.getByRole('slider', { name: 'Frames' });
+	const slider = move.getByRole('slider', { name: 'Frames' });
 	await expect(model).toHaveValue('pixminimax');
 	await expect(model.getByRole('option')).toHaveText(['Default (PixMiniMax)', 'Skeleton V3', 'V3']);
 	await model.selectOption('skeleton-v3');
@@ -2877,11 +2900,17 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await slider.press('Home');
 	await slider.press('ArrowRight');
 	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
-	await advanced.getByRole('button', { name: 'Default (8 frames)', exact: true }).click();
+	await move.getByRole('button', { name: 'Default (8 frames)', exact: true }).click();
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await model.selectOption('skeleton-v3');
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
+	// The s2 body stands on its frame's last row: the move warns and offers free room first, keeping every choice.
+	await expect(move).toContainText('This move may step past the 64 px frame');
+	await move.getByRole('button', { name: 'Make room', exact: true }).click();
+	await expect(page.locator('.toast')).toContainText('Frame adjusted');
+	await expect(move).not.toContainText('This move may step past');
+	await expect(description).toHaveValue('jumping in place');
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toContainText(
 		/Est\. \d+ gens/
 	);
@@ -2893,7 +2922,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await move.getByRole('button', { name: /^Generate move/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
@@ -3490,7 +3519,7 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.locator('#experience-options')).toContainText('Other tab');
 	await page.keyboard.press('Escape');
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	create = await openCreate();
 	await expect(create.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'a cheerful copper clockwork scout'
@@ -3885,7 +3914,9 @@ test('character retry preserves the direction plan and allocates a fresh publica
 			.getByRole('button', { name: /^Generate again/ })
 			.click();
 		const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-		await connect.getByLabel('API key', { exact: true }).fill('synthetic-retry-test-key');
+		await connect
+			.getByLabel('Paste your Secret API key', { exact: true })
+			.fill('synthetic-retry-test-key');
 		await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toContainText(
@@ -5386,6 +5417,10 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(replace).toBeEnabled();
 	const advanced = sheet.locator('summary').filter({ hasText: 'Advanced' });
 	await expect(advanced).toContainText('V3');
+	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
+	await expect(
+		sheet.getByRole('combobox', { name: 'Motion model', exact: true })
+	).not.toBeVisible();
 	await advanced.click();
 	await expect(sheet.getByRole('slider', { name: 'Frames', exact: true })).toHaveCount(0);
 	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
@@ -5400,12 +5435,94 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await east.click();
 	await expect(model).toHaveValue('pixminimax');
 	await model.selectOption('skeleton-v3');
+	await expect(sheet.getByRole('button', { name: 'End frame', exact: true })).toBeDisabled();
+	const start = sheet.getByRole('button', { name: 'Start frame', exact: true });
+	await start.click();
+	const startWarning = page.getByRole('alertdialog', { name: 'Use a custom start frame?' });
+	await expect(startWarning).toBeVisible();
+	await startWarning.getByRole('button', { name: 'Keep default' }).click();
+	const transfer = await page.evaluateHandle(
+		(bytes) => {
+			const data = new DataTransfer();
+			data.items.add(new File([new Uint8Array(bytes)], 'start.png', { type: 'image/png' }));
+			return data;
+		},
+		Array.from(readFileSync('dev-fixtures/s4rig/walk_east_0.png'))
+	);
+	await start.dispatchEvent('drop', { dataTransfer: transfer });
+	await expect(startWarning).toBeVisible();
+	await expect(start).not.toContainText('start.png');
+	await startWarning.getByRole('button', { name: 'Continue', exact: true }).click();
+	await expect(start).toContainText('start.png');
 	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');
 	const add = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(add.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
 	await expect(add.getByText('Directions to redraw')).toHaveCount(0);
+	const loop = add.getByRole('switch', { name: 'Loop', exact: true });
+	await expect(loop).not.toBeChecked();
+	await expect(add.getByRole('slider', { name: 'Frames', exact: true })).toBeVisible();
+	const addAdvanced = add.locator('summary').filter({ hasText: 'Advanced' });
+	const addModel = add.getByRole('combobox', { name: 'Motion model', exact: true });
+	if (!(await addModel.isVisible())) await addAdvanced.click();
+	await addModel.selectOption('v3');
+	const frameTabs = add.getByRole('tablist', { name: 'Start and end frames', exact: true });
+	const directionTabs = frameTabs.getByRole('tab');
+	const firstDirection = directionTabs.first();
+	const lastDirection = directionTabs.last();
+	await firstDirection.click();
+	await loop.check();
+	const end = add.getByRole('button', { name: 'End frame', exact: true });
+	await expect(end).toContainText('Same as start');
+	const originalViewport = page.viewportSize()!;
+	await page.setViewportSize({ width: 320, height: 700 });
+	const frameHelp = add.getByRole('button', { name: 'Start and end frames', exact: true });
+	await frameHelp.click();
+	const frameTooltip = page.getByRole('tooltip').filter({ hasText: 'guide the opening pose' });
+	await expect(frameTooltip).toBeVisible();
+	await expect(frameTooltip).toContainText('make a loop smoother');
+	await frameHelp.press('Escape');
+	await expect(frameTooltip).toBeHidden();
+	await expect(add).toBeVisible();
+	await expect(frameTabs).toHaveCount(1);
+	await expect(directionTabs).toHaveCount(4);
+	for (const name of ['South', 'East', 'North', 'West']) {
+		await expect(frameTabs.getByRole('tab', { name, exact: true })).toHaveCount(1);
+	}
+	const frameCopy = end.locator('.reference-copy');
+	await expect(frameCopy).toBeVisible();
+	await expect
+		.poll(() =>
+			end.evaluate((tile) => {
+				const box = tile.getBoundingClientRect();
+				const copy = tile.querySelector('.reference-copy')!.getBoundingClientRect();
+				return copy.top >= box.top && copy.bottom <= box.bottom;
+			})
+		)
+		.toBe(true);
+	await page.setViewportSize(originalViewport);
+	await add.getByRole('button', { name: 'Remove end frame', exact: true }).click();
+	await expect(end).toContainText('No end frame');
+	const [endPicker] = await Promise.all([page.waitForEvent('filechooser'), end.click()]);
+	await endPicker.setFiles('dev-fixtures/s4rig/walk_east_1.png');
+	await expect(end).toContainText('walk_east_1.png');
+	await firstDirection.press('End');
+	await expect(lastDirection).toBeFocused();
+	await expect(lastDirection).toHaveAttribute('aria-selected', 'true');
+	await expect(end).toContainText('Same as start');
+	await lastDirection.press('Home');
+	await expect(firstDirection).toBeFocused();
+	await expect(end).toContainText('walk_east_1.png');
+	await loop.click();
+	const reset = page.getByRole('alertdialog', { name: 'Change Loop and reset end frames?' });
+	await reset.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(loop).toBeChecked();
+	await expect(end).toContainText('walk_east_1.png');
+	await loop.click();
+	await reset.getByRole('button', { name: 'Change Loop', exact: true }).click();
+	await expect(loop).not.toBeChecked();
+	await expect(end).toContainText('No end frame');
 });
 
 async function oversizedItemFixture(page: Page, itemId: string) {
@@ -5509,10 +5626,16 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 8 gens'
 	);
+	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
+	if (!(await model.isVisible()))
+		await sheet.locator('summary').filter({ hasText: 'Advanced' }).click();
+	await expect(
+		sheet.getByRole('group', { name: 'Start and end frames East', exact: true })
+	).toBeVisible();
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await expect(east).toHaveAttribute('aria-pressed', 'true');
@@ -5527,7 +5650,9 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	});
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-targeted-repair-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-targeted-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
 	const scope = await page.evaluate(async () => {
@@ -5554,7 +5679,14 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		for (const item of manifest.items)
 			if (item.id !== manifest.rig.baseItem && !state.moving.spec.items.includes(item.id))
 				for (const layer of item.layers) if (layer.cells?.walk) delete layer.cells.walk.east;
-		state.moving.spec = { ...state.moving.spec, animation: { model: 'pixminimax', frameCount: 8 } };
+		state.moving.spec = {
+			...state.moving.spec,
+			animation: {
+				model: 'pixminimax',
+				frameCount: 8,
+				references: { east: { end: { width: 64, height: 64, base64: 'unused-end' } } }
+			}
+		};
 		state.moving.error = new LocalizedError(
 			'Fixture QA failure',
 			'create.errors.replacementFailsQa'
@@ -5566,6 +5698,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	const review = page.getByRole('dialog', { name: 'Review Skeleton V3', exact: true });
 	await expect(review).toContainText('8 frames');
 	await expect(review).toContainText('Directions: East');
+	await expect(review).toContainText('End frame: Not available for this model');
 	await expect(review.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 8 gens'
@@ -5592,7 +5725,9 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	}, before);
 	await suggestion.click();
 	await review.getByRole('button', { name: /^Replace Walk views/ }).click();
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-reconnected-repair-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-reconnected-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
 	const confirmed = await page.evaluate(async () => {
@@ -5731,7 +5866,9 @@ test('partial missing gear and explicit item repair stay on the current move and
 	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-partial-repair-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-partial-repair-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	let sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(sheet).toContainText('Scoped repair stopped before paid work');
@@ -6109,7 +6246,9 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 	await repair.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await oversizedItemFixture(page, fixture.itemId);
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-delayed-item-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-delayed-item-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Repair item frames', exact: true })).toContainText(
 		'review its current estimate'
@@ -6430,7 +6569,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await expect(connect).toBeVisible();
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
@@ -6453,7 +6592,9 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 		};
 	});
 	await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click();
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-measurement-recovery-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-measurement-recovery-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Offline consent storage blocked');
 	const pending = await page.evaluate(async () => {
@@ -6714,7 +6855,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
 	await expect(sheet).toContainText('Existing body views are kept if a check still fails');
 	await action.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
@@ -6730,7 +6871,9 @@ test('bounded body color correction discloses changed checks and equipment cost 
 		};
 	});
 	await action.click();
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-body-color-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-body-color-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(sheet).toContainText('Color consent storage blocked');
 	const consent = await page.evaluate(async () => {
@@ -6868,7 +7011,9 @@ test('standing-first items quote only standing and offer actual custom moves one
 	);
 	await pane.getByRole('button', { name: /^Make for Custom walk/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	await connect.getByLabel('API key', { exact: true }).fill('synthetic-progressive-key');
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('synthetic-progressive-key');
 	await page.evaluate(() => {
 		const put = IDBObjectStore.prototype.put;
 		IDBObjectStore.prototype.put = function (value, key) {
@@ -6927,6 +7072,8 @@ test('move review gates item selection and shows live estimates without spending
 			const rec = await db.get('projects', s.doc.id);
 			const rig = rec.manifest.rig;
 			const base = rec.manifest.items.find((item: { id: string }) => item.id === rig.baseItem);
+			const animation = rig.animations.find((move: { id: string }) => move.id === 'walk');
+			animation.frames[0].ms = 137;
 			const cells = { ...base.layers[0].cells.walk };
 			delete cells.west;
 			rec.moveReviews = {
@@ -6938,11 +7085,12 @@ test('move review gates item selection and shows live estimates without spending
 						replace: true,
 						reviewBeforePublish: true,
 						items: [],
-						animation: { model: 'pixminimax', frameCount: 8 }
+						animation: { model: 'pixminimax', frameCount: 8, loop: false }
 					},
 					input: moveCandidateInput(rec, 'walk'),
 					dirs: ['east'],
-					animation: rig.animations.find((move: { id: string }) => move.id === 'walk'),
+					animation: structuredClone(animation),
+					basePlayback: { loop: animation.loop, moveLoop: animation.moveLoop },
 					cells,
 					provenance: [],
 					provenanceStart: base.provenance.length,
@@ -6955,8 +7103,21 @@ test('move review gates item selection and shows live estimates without spending
 					itemsBlocked: true
 				}
 			};
+			if (seed === 76) animation.loop = animation.moveLoop = true;
 			await db.put('projects', s.doc.id, rec);
 		}, seed);
+	const savedPlayback = () =>
+		page.evaluate(async () => {
+			const statePath = '/src/studio/state.svelte.ts';
+			const dbPath = '/src/lib/store/db.ts';
+			const { doc } = await import(statePath);
+			const { get } = await import(dbPath);
+			const rec = await get('projects', doc.id);
+			const { loop, moveLoop, frames } = rec.manifest.rig.animations.find(
+				(move: { id: string }) => move.id === 'walk'
+			);
+			return { loop, moveLoop, firstMs: frames[0].ms };
+		});
 	await seedReview(75);
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
@@ -6967,6 +7128,7 @@ test('move review gates item selection and shows live estimates without spending
 	await review.getByRole('button', { name: /^Review Skeleton V3.*Est\./ }).click();
 	const retry = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	await expect(retry.getByRole('combobox', { name: 'Motion model' })).toHaveValue('skeleton-v3');
+	await expect(retry.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
 	await expect(retry.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 8 gens'
 	);
@@ -6975,6 +7137,21 @@ test('move review gates item selection and shows live estimates without spending
 	await expect(review.getByRole('button', { name: 'Replace move', exact: true })).toBeEnabled();
 	await expect(review.getByRole('button', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await review.getByRole('button', { name: 'Later', exact: true }).click();
+	// A staged draft was drawn on this frame: Adjust frame waits for it instead of leaving it behind.
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const s = await import(path);
+		s.ui.frameProject = s.doc.id;
+		s.ui.sheet = 'adjustFrame';
+	});
+	const frame = page.getByRole('dialog', { name: 'Adjust frame', exact: true });
+	await expect(frame).toContainText(
+		'Save or discard the move waiting for review before adjusting the frame.'
+	);
+	await frame.getByRole('button', { name: 'Up', exact: true }).click();
+	await expect(frame.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+	await page.keyboard.press('Escape');
+	await expect(frame).toBeHidden();
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	const compass = review.getByRole('group', { name: 'Directions', exact: true });
 	const north = compass.getByRole('button', { name: 'North direction' });
@@ -7039,6 +7216,7 @@ test('move review gates item selection and shows live estimates without spending
 	const animate = picker.getByRole('button', { name: /^Animate (items|1 item)$/ });
 	await expect(item).toHaveAttribute('aria-pressed', 'false');
 	await expect(picker).toContainText('Est. 0 more gens');
+	expect(await savedPlayback()).toEqual({ loop: false, moveLoop: false, firstMs: 137 });
 	await expect(animate).toBeDisabled();
 	const price = Number((await item.innerText()).match(/(\d+) gens/)?.[1]);
 	expect(price).toBeGreaterThan(0);
@@ -7083,11 +7261,13 @@ test('move review gates item selection and shows live estimates without spending
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	await replace.click();
+	await expect(picker).toBeVisible();
+	expect(await savedPlayback()).toEqual({ loop: true, moveLoop: true, firstMs: 137 });
 	await item.click();
 	await animate.click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await seedReview(77);
 	await reloadStudio(page);
@@ -7096,6 +7276,7 @@ test('move review gates item selection and shows live estimates without spending
 	await walkReview.click();
 	await review.getByRole('button', { name: 'Regenerate…', exact: true }).click();
 	const replacement = page.getByRole('dialog', { name: 'Replace move views', exact: true });
+	await expect(replacement.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
 	await replacement.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await walkReview.click();
 	await review.getByRole('button', { name: 'Discard draft', exact: true }).click();
@@ -7108,9 +7289,165 @@ test('move review gates item selection and shows live estimates without spending
 	expect(staleRegeneration).toBeNull();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	expect(posts).toEqual([]);
+});
+
+test('reviewed move animates the chosen item and exports layered frames using offline artwork', async ({
+	page,
+	context
+}, info) => {
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	const posts: string[] = [];
+	let images: { type: string; base64: string }[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		const path = new URL(request.url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					credits: { type: 'usd', usd: 0 },
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
+				}
+			});
+		if (request.method() === 'POST') posts.push(path);
+		if (path === '/v2/animate-with-skeleton-v3')
+			return route.fulfill({ json: { background_job_id: 'offline-helmet' } });
+		if (path.endsWith('/offline-helmet'))
+			return route.fulfill({ json: { status: 'completed', last_response: { images } } });
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'offline-move-smoke-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page, true);
+	images = await page.evaluate(async () => {
+		const load = (path: string) => import(path);
+		const { doc } = await load('/src/studio/state.svelte.ts');
+		const { loadProject } = await load('/src/lib/store/project.ts');
+		const db = await load('/src/lib/store/db.ts');
+		const { cellHash } = await load('/src/lib/rig/rig.ts');
+		const { toChroma } = await load('/src/lib/image/chroma.ts');
+		const { encodePngBytes } = await load('/src/lib/image/pngraw.ts');
+		const { bytesToBase64 } = await load('/src/lib/image/png.ts');
+		const { moveCandidateInput } = await load('/src/studio/replaceMove.ts');
+		const { rec, project } = await loadProject(doc.id);
+		const { rig, items } = rec.manifest;
+		const body = items.find((item: { id: string }) => item.id === rig.baseItem);
+		const helmet = items.find((item: { id: string }) => item.id === 'helmet_steel');
+		const cells = { ...body.layers[0].cells.walk };
+		delete cells.west;
+		const artwork = cells.east.map((hash: string, index: number) => {
+			const mannequin = toChroma(project.images.get(hash), 'green');
+			const layer = project.images.get(helmet.layers[0].cells.walk.east[index]);
+			if (layer.w !== mannequin.w || layer.h !== mannequin.h)
+				throw new Error('Fixture sizes differ');
+			for (let offset = 0; offset < layer.data.length; offset += 4)
+				if (layer.data[offset + 3])
+					mannequin.data.set(layer.data.subarray(offset, offset + 4), offset);
+			return mannequin;
+		});
+		const dressing = await cellHash(artwork[0]);
+		await db.put('blobs', dressing.slice(7), new Blob([await encodePngBytes(artwork[0])]));
+		Object.assign(helmet, { route: 'skeleton-pose', key: 'green', dressed: { east: dressing } });
+		const animation = rig.animations.find((move: { id: string }) => move.id === 'walk');
+		const basePlayback = { loop: animation.loop, moveLoop: animation.moveLoop };
+		rec.moveReviews = {
+			walk: {
+				spec: {
+					id: 'walk',
+					seed: 812,
+					replace: true,
+					reviewBeforePublish: true,
+					items: [],
+					animation: { model: 'skeleton-v3', loop: false }
+				},
+				input: moveCandidateInput(rec, 'walk'),
+				dirs: ['east'],
+				animation,
+				basePlayback,
+				cells,
+				provenance: [],
+				provenanceStart: body.provenance.length,
+				anchors: {},
+				skeletons: {},
+				checks: {},
+				warnings: []
+			}
+		};
+		await db.put('projects', doc.id, rec);
+		return Promise.all(
+			artwork.map(async (frame: unknown) => ({
+				type: 'base64',
+				base64: bytesToBase64(await encodePngBytes(frame))
+			}))
+		);
+	});
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: /Walk Review move/ }).click();
+	await page.getByRole('button', { name: 'Replace move', exact: true }).click();
+	const items = page.getByRole('dialog', { name: 'Animate items' });
+	const helmet = items.getByRole('button', { name: /Steel helmet/i });
+	await expect(helmet).toHaveAttribute('aria-pressed', 'false');
+	expect(
+		await page.evaluate(async () => {
+			const statePath = '/src/studio/state.svelte.ts';
+			const dbPath = '/src/lib/store/db.ts';
+			const { doc } = await import(statePath);
+			const { get } = await import(dbPath);
+			const rec = await get('projects', doc.id);
+			return rec.manifest.rig.animations.find((move: { id: string }) => move.id === 'walk')
+				.moveLoop;
+		})
+	).toBe(false);
+	expect(posts).toEqual([]);
+	await helmet.click();
+	await items.getByRole('button', { name: 'Animate 1 item' }).click();
+	await page
+		.getByRole('dialog', { name: 'Add a move', exact: true })
+		.getByRole('button', { name: 'Done', exact: true })
+		.click({ timeout: 30_000 });
+	expect(posts).toEqual(['/v2/animate-with-skeleton-v3']);
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const sheet = page.getByRole('dialog', { name: 'Export', exact: true });
+	await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click();
+	const download = page.waitForEvent('download');
+	await sheet.getByRole('button', { name: /^Download ZIP/ }).click();
+	const entries = await unzip(new Uint8Array(readFileSync((await (await download).path())!)));
+	const manifestEntry = entries.get('manifest.json');
+	expect(manifestEntry).toBeDefined();
+	const manifest: Manifest = JSON.parse(new TextDecoder().decode(manifestEntry));
+	expect(manifest.rig.animations.find((move) => move.id === 'walk')).toMatchObject({
+		loop: false,
+		cells: 8
+	});
+	const exportedHelmet = manifest.items.find((item) => item.id === 'helmet_steel');
+	expect(exportedHelmet?.coverage).toEqual(
+		expect.arrayContaining(images.map((_, index) => `walk/east/${index}`))
+	);
+	const layer = exportedHelmet!.layers[0];
+	const helmetSheet = layer.sheets?.walk;
+	expect(helmetSheet).toBeDefined();
+	const spriteSheet = await decodePngBytes(entries.get(helmetSheet!)!);
+	const { w: cellWidth, h: cellHeight } = layer.cell ?? manifest.rig.cell;
+	const east = manifest.rig.directions.findIndex((direction) => direction.id === 'east');
+	for (let frame = 0; frame < 8; frame++) {
+		const hasPixels = Array.from({ length: cellHeight }, (_, row) => {
+			const offset = ((east * cellHeight + row) * spriteSheet.w + frame * cellWidth) * 4;
+			return spriteSheet.data.subarray(offset, offset + cellWidth * 4);
+		}).some((row) => row.some((value, index) => index % 4 === 3 && value > 0));
+		expect(hasPixels, `helmet east frame ${frame} has visible pixels`).toBe(true);
+	}
+	expect(errors).toEqual([]);
 });
 
 test('draft retry prices a fresh item plan rather than historical grid fallbacks and stops when pricing is unavailable', async ({
@@ -7477,12 +7814,8 @@ for (const kind of ['outfit', 'move'] as const) {
 		await expect(menu).toBeVisible();
 		await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 		await expect(menu.locator('hr')).toHaveCount(1);
-		// The first action takes focus: moves start with Fix frames, outfits with Download ZIP.
-		await expect(
-			kind === 'outfit'
-				? menu.getByRole('menuitem', { name: 'Download ZIP', exact: true })
-				: menu.getByRole('menuitem', { name: /^Fix frames/ })
-		).toBeFocused();
+		// The first action takes focus: Rename, as in character and item menus.
+		await expect(menu.getByRole('menuitem', { name: 'Rename...', exact: true })).toBeFocused();
 		await page.keyboard.press('Escape');
 		await expect(trigger).toBeFocused();
 		await choice.click({ button: 'right' });

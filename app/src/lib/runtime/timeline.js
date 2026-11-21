@@ -1,23 +1,24 @@
 /** @typedef {{cell: number, ms: number}} TimelineFrame */
 /** @typedef {import('./types.d.ts').RigAnimation} PlaybackClip */
 
-/** @param {PlaybackClip} clip @returns {'state' | 'move'} */
+/** @param {Pick<PlaybackClip, 'id' | 'kind'>} clip @returns {'state' | 'move'} */
 export function clipKind(clip) {
 	return clip.kind ?? (clip.id === 'default' ? 'state' : 'move');
 }
 
-/** @param {readonly PlaybackClip[]} clips */
+/** @template {Pick<PlaybackClip, 'id' | 'kind' | 'exportId'>} Clip @param {readonly Clip[]} clips */
 export function playbackClips(clips) {
-	const occupied = new Set(clips.map(({ id }) => id));
+	const hasDefault = clips.some(({ id }) => id === 'default');
+	const occupied = new Set(clips.map(({ id, exportId }) => exportId ?? id));
 	let displaced = 'standing-move';
-	while (occupied.has(displaced)) displaced += '-move';
+	for (let suffix = 2; occupied.has(displaced); suffix++) displaced = `standing-move_${suffix}`;
 	return clips.map((clip) => ({
 		id:
 			clip.id === 'default'
 				? 'standing'
-				: clip.id === 'standing' && occupied.has('default')
+				: clip.id === 'standing' && hasDefault && clip.exportId === undefined
 					? displaced
-					: clip.id,
+					: (clip.exportId ?? clip.id),
 		key: clip.id,
 		kind: clipKind(clip),
 		clip

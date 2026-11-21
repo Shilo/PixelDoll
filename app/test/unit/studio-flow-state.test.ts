@@ -5,6 +5,7 @@ import type { RepairReview } from '../../src/lib/items/run.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import type { Balance } from '../../src/lib/pixellab/routes.ts';
 import { message } from '../../src/lib/message.ts';
+import { characterFacts } from '../../src/studio/model.ts';
 import { readFileSync } from 'node:fs';
 import { equipmentFixture } from './equipment-fixture.ts';
 
@@ -142,6 +143,47 @@ test('canceling from a follower explains that generation has not stopped without
 	} finally {
 		queue.role = 'leader';
 	}
+});
+
+test('a move saved for another character refreshes its listed summary', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const fixture = await equipmentFixture();
+	const savedAt = '2026-11-21T10:00:00.000Z';
+	const manifest = {
+		...structuredClone(fixture.manifest),
+		name: 'Other',
+		rig: {
+			...fixture.manifest.rig,
+			animations: [
+				...fixture.manifest.rig.animations,
+				{ id: 'cast', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }
+			]
+		}
+	};
+	// The open character is not the one the move is for: its save must still reach the list row.
+	state.doc.id = 'rig-open';
+	state.store.projects = [
+		{ id: 'rig-open', name: 'Open', demo: false, dev: false, savedAt: '', look: '' },
+		{ id: 'rig-other', name: 'Stale', demo: false, dev: false, savedAt: '', look: '' }
+	];
+	mocks.get.mockImplementation(async (_store: string, id: string) =>
+		id === 'rig-other'
+			? { id, origin: 'studio', savedAt, manifest: structuredClone(manifest) }
+			: undefined
+	);
+	mocks.move.mockResolvedValue({ warnings: [], qualityDirs: [] });
+	await state.startMove('rig-other', {
+		id: 'cast',
+		action: 'cast',
+		frames: 1,
+		items: [],
+		seed: 1
+	});
+	expect(state.store.projects.find((entry) => entry.id === 'rig-other')).toMatchObject({
+		name: 'Other',
+		savedAt,
+		facts: characterFacts(manifest)
+	});
 });
 
 test('a failed review write leaves the paid candidate available and a cache-only recovery record', async () => {
@@ -357,6 +399,45 @@ test('discarding a failed creation cannot race a retry for the same draft', asyn
 	expect(s.creates).toHaveLength(0);
 	expect(s.ui.sheet).toBe('create');
 	expect(s.createPresentation.id).toBe('');
+});
+
+test('a new creation fixes its walk-room lift, and a resumed one keeps the lift its registration was sent with', async () => {
+	mocks.create.mockResolvedValue('rig-done');
+	const s = await import('../../src/studio/state.svelte.ts');
+	const spec = {
+		description: 'body',
+		name: 'Fixture',
+		seed: 1,
+		size: 96,
+		frame: 128,
+		directions: [{ id: 'south' as const }]
+	};
+	await s.startCreate(spec);
+	expect(mocks.create.mock.calls[0][0]).toMatchObject({ lift: 5 });
+	// A draft started before placement was lifted resumes with its stored spec: changing its pixels would re-buy registration.
+	await s.startCreate({ ...spec, projectId: 'rig-old' }, false, 'old-draft');
+	expect(mocks.create.mock.calls[1][0].lift).toBeUndefined();
+});
+
+test('a paid step failure keeps its review across a reload', async () => {
+	// A misaligned repair batch is re-rolled alone; after a reload only the full retry would remain, re-buying good batches.
+	const { PaidStepError } = await import('../../src/lib/pixellab/paid-results.ts');
+	const step = { step: 'grid-batch:4', failure: 'misaligned' as const, gens: 2.5 };
+	mocks.move.mockRejectedValueOnce(
+		new PaidStepError('Batch misaligned', 'itemRoute.errors.repairBatchMisaligned', undefined, step)
+	);
+	const first = await import('../../src/studio/state.svelte.ts');
+	await first.startMove('project', { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 });
+	const stored = mocks.put.mock.calls.findLast(
+		([, , record]) => (record as { status?: string }).status === 'failed'
+	)![2];
+	vi.resetModules();
+	const paid = await import('../../src/lib/pixellab/paid-results.ts');
+	const s = await import('../../src/studio/state.svelte.ts');
+	mocks.get.mockImplementation(async (_store, id) => (id === 'studio-move' ? stored : undefined));
+	await s.resumeMove();
+	expect(s.moving.error).toBeInstanceOf(paid.PaidStepError);
+	expect((s.moving.error as InstanceType<typeof paid.PaidStepError>).paid).toEqual(step);
 });
 
 test.each(['failed', 'running'] as const)(
@@ -1598,19 +1679,32 @@ describe('move queue', () => {
 		s.startupResumed();
 		await expect(s.prepareForUpdate()).resolves.toBeUndefined();
 
-		const read = pending<unknown>(),
+		const reading = pending<void>(),
+			read = pending<unknown>(),
 			write = pending<void>();
 		const saved = structuredClone(records.get(id));
-		mocks.get.mockReturnValueOnce(read.promise);
+		mocks.get.mockImplementationOnce(() => {
+			reading.resolve();
+			return read.promise;
+		});
 		mocks.put.mockReturnValueOnce(write.promise);
 		const update = s.prepareForUpdate();
-		await vi.waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(3));
+		await reading.promise;
 		const adding = s.queueMoves('project', [{ ...walk, id: 'run' }]);
 		read.resolve(saved);
 		await expect(update).rejects.toThrow('could not confirm');
 		write.resolve();
 		await adding;
 		expect(mocks.move).not.toHaveBeenCalled();
+	});
+
+	test('Adjust frame cannot invalidate a saved State generation attempt', async () => {
+		const s = await import('../../src/studio/state.svelte.ts');
+		s.doc.loading = false;
+		mocks.load.mockResolvedValueOnce({ rec: { stateGeneration: { token: 'paid-state' } } });
+		await expect(s.adjustCharacter('rig-project', { size: 96, dy: 0 })).rejects.toMatchObject({
+			translation: { key: 'adjustFrame.errors.statePending' }
+		});
 	});
 
 	test('a move queued while the last one finishes is started, not left waiting', async () => {

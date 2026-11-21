@@ -4,7 +4,9 @@ import { loadFixture } from '../../src/lib/compose/fixture.ts';
 import { cellImg, composeCell } from '../../src/lib/compose/compose.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { moveProject } from '../../src/lib/export/build.ts';
-import { makeImg } from '../../src/lib/image/png.ts';
+import { makeImg, type Img } from '../../src/lib/image/png.ts';
+import { normalize } from '../../src/lib/rig/normalize.ts';
+import { roomFrame, standingRoom } from '../../src/lib/rig/reframe.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { characterId, downloadCharacter, listCharacters } from '../../src/lib/pixellab/library.ts';
 import { planItem } from '../../src/lib/items/items.ts';
@@ -618,8 +620,16 @@ test('PixelLab keeps unequal direction lengths as separate sparse moves without 
 	);
 });
 
+// Imports add room for moves (lib/rig/reframe.ts roomFrame): the frame grows symmetrically around the source canvas, which
+// stays centered as PixelLab centers its own animation canvases. These sources reach every edge, so each gets the full room.
+const importFrame = (image: Img) => {
+	const canvas = Math.max(image.w, image.h);
+	const room = standingRoom([normalize(image, canvas, canvas, 128, canvas).img], canvas)!;
+	return Math.max(64, roomFrame(canvas, room));
+};
+
 test.each([80, 92, 96, 128, 160, 256])(
-	'PixelLab preserves every source pixel at %i px instead of forcing a 64 px frame',
+	'PixelLab preserves every source pixel at %i px with room for moves, never rescaled',
 	async (size) => {
 		const original = makeImg(size, size);
 		original.data.set([255, 30, 40, 255], 0);
@@ -629,12 +639,18 @@ test.each([80, 92, 96, 128, 160, 256])(
 			{ name: 'rotations/south.png', data: await encodePngBytes(original) }
 		]);
 		const imported = await readCharacterZip(bytes),
-			{ manifest } = imported.project;
-		expect(manifest.rig.cell).toEqual({ w: size, h: size });
-		expectPixels(
-			cellImg(imported.project, manifest.items[0].layers[0], 'default', 'south', 0),
-			original
-		);
+			{ manifest } = imported.project,
+			frame = importFrame(original);
+		expect(frame).toBe({ 80: 128, 92: 144, 96: 144, 128: 192, 160: 224, 256: 256 }[size]);
+		expect(manifest.rig.cell).toEqual({ w: frame, h: frame });
+		const cell = cellImg(imported.project, manifest.items[0].layers[0], 'default', 'south', 0)!,
+			p = (frame - size) / 2;
+		expect([...cell.data.slice((p * frame + p) * 4, (p * frame + p) * 4 + 4)]).toEqual([
+			255, 30, 40, 255
+		]);
+		const last = ((p + size - 1) * frame + p + size - 1) * 4;
+		expect([...cell.data.slice(last, last + 4)]).toEqual([40, 255, 30, 255]);
+		expect(cell.data.filter((value, index) => index % 4 === 3 && value)).toHaveLength(2);
 	}
 );
 
@@ -662,10 +678,14 @@ test.each([
 				{ name: 'rotations/south.png', data: await encodePngBytes(image) }
 			])
 		);
-		const size = Math.max(64, width, height),
-			canvas = Math.max(width, height);
+		const canvas = Math.max(width, height),
+			room = importFrame(image),
+			centered = room > Math.max(64, canvas),
+			size = centered ? room : Math.max(64, canvas);
 		const x = Math.floor((size - width) / 2),
-			y = Math.max(0, size - canvas - 4) + Math.floor((canvas - height) / 2);
+			y = centered
+				? Math.floor((size - height) / 2)
+				: Math.max(0, size - canvas - 4) + Math.floor((canvas - height) / 2);
 		const result = cellImg(
 			imported.project,
 			imported.project.manifest.items[0].layers[0],
@@ -683,6 +703,27 @@ test.each([
 	}
 );
 
+test('PixelLab leaves a roomy canvas at its size and keeps the 64 px floor for small ones', async () => {
+	// The user's 92 px export: feet on row 90 of 92 get room for a walk (92 -> 112), while a body with room keeps its canvas.
+	const body = (size: number, top: number, bottom: number) => {
+		const im = makeImg(size, size);
+		for (let y = top; y <= bottom; y++) im.data.set([90, 60, 40, 255], (y * size + size / 2) * 4);
+		return im;
+	};
+	const frameOf = async (im: Img) =>
+		(
+			await readCharacterZip(
+				await zip([
+					{ name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Room' })) },
+					{ name: 'rotations/south.png', data: await encodePngBytes(im) }
+				])
+			)
+		).project.manifest.rig.cell.w;
+	expect(await frameOf(body(92, 15, 90))).toBe(112);
+	expect(await frameOf(body(112, 25, 100))).toBe(112);
+	expect(await frameOf(body(48, 4, 44))).toBe(64);
+});
+
 test('PixelLab applies its disclosed alpha threshold and refuses wholly empty animation frames', async () => {
 	const image = makeImg(64, 64);
 	image.data.set([70, 80, 90, 127], 0);
@@ -693,10 +734,13 @@ test('PixelLab applies its disclosed alpha threshold and refuses wholly empty an
 		{ name: 'rotations/south.png', data: await encodePngBytes(image) }
 	];
 	const imported = await readCharacterZip(await zip(entries)),
-		layer = imported.project.manifest.items[0].layers[0];
-	expect([...cellImg(imported.project, layer, 'default', 'south', 0)!.data.slice(0, 12)]).toEqual([
-		0, 0, 0, 0, 80, 90, 100, 255, 90, 100, 110, 255
-	]);
+		layer = imported.project.manifest.items[0].layers[0],
+		frame = imported.project.manifest.rig.cell.w,
+		p = (frame - 64) / 2,
+		at = (p * frame + p) * 4;
+	expect([
+		...cellImg(imported.project, layer, 'default', 'south', 0)!.data.slice(at, at + 12)
+	]).toEqual([0, 0, 0, 0, 80, 90, 100, 255, 90, 100, 110, 255]);
 	expect(imported.warnings).toContain(
 		'Partially transparent edges were converted to pixel-art transparency.'
 	);

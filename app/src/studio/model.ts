@@ -13,7 +13,9 @@ import type {
 } from '../lib/store/manifest.ts';
 import { GATES, isAction, ITEM_GRID_REGISTRATION_NOTICE, SLOTS } from '../lib/items/items.ts';
 import { coverageGaps, missingFrames } from '../lib/dress/dress.ts';
-import { DIRECTIONS, type Rig } from '../lib/rig/rig.ts';
+import { DIRECTIONS, type Rig, type RigAnimation } from '../lib/rig/rig.ts';
+import { moveExportId } from '../lib/store/identity.ts';
+import { clipKind } from '../lib/runtime/timeline.js';
 import { editedCount } from '../lib/frames/history.ts';
 import { message, type Message } from '../lib/message.ts';
 import type { Translate, WhisperKey, WhisperVars } from 'svelte-whisper';
@@ -68,16 +70,20 @@ export function setupWarningNote(
 
 /** A character's shape at a glance: "64 px · 4 directions · 2 moves · 6 items". */
 export const pixelSize = ({ w, h }: { w: number; h: number }) => `${w}×${h} px`;
-export const characterFacts = (m: Manifest): { frame: string; counts: Message[] } => ({
-	frame: pixelSize(m.rig.cell),
-	counts: [
-		message('export.count.directions', { count: m.rig.directions.length }),
-		message('export.count.moves', { count: m.rig.animations.length }),
-		message('export.count.items', {
-			count: m.items.filter((item) => item.id !== m.rig.baseItem).length
-		})
-	]
-});
+export function characterFacts(m: Manifest): { frame: string; counts: Message[] } {
+	const states = m.rig.animations.filter((clip) => clipKind(clip) === 'state').length;
+	return {
+		frame: pixelSize(m.rig.cell),
+		counts: [
+			message('export.count.directions', { count: m.rig.directions.length }),
+			...(states ? [message('import.count.states', { count: states })] : []),
+			message('export.count.moves', { count: m.rig.animations.length - states }),
+			message('export.count.items', {
+				count: m.items.filter((item) => item.id !== m.rig.baseItem).length
+			})
+		]
+	};
+}
 /** One item alone in canonical draw order in one cell; mirrored directions flip their source. Oversize layers (v1.3.1,
  * e.g. 96 px held items) line up by pivot on the union of the item's layer frames. */
 export function itemCell(
@@ -219,15 +225,20 @@ export const looksOf = (desc: string, clothes: string | null = UNDERWEAR_CLOTHES
 
 export const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 /** Readable move names keep their stored IDs; colliding labels expose the IDs so every move remains selectable. */
-export function moveLabel(id: string, ids: readonly string[] = []): string {
+/** A move by internal ID, or the rig's move with the name and export ID the user gave it. */
+export type MoveRef = string | Pick<RigAnimation, 'id' | 'name' | 'exportId'>;
+export function moveLabel(id: string, moves: readonly MoveRef[] = []): string {
 	const readable = (value: string) => {
 		const text = value.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
 		return text ? text[0].toUpperCase() + text.slice(1) : '';
 	};
-	const label = readable(id);
-	// Valid animation IDs contain only lowercase letters, digits, underscores and hyphens, never parentheses.
-	return ids.some((other) => other !== id && readable(other) === label)
-		? `${label} (${id})`
+	const refs = moves.map((move) => (typeof move === 'string' ? { id: move } : move));
+	const labelOf = (move: Exclude<MoveRef, string>) => move.name ?? readable(move.id);
+	const self = refs.find((move) => move.id === id) ?? { id };
+	const label = labelOf(self);
+	// Valid export IDs contain only lowercase letters, digits, underscores and hyphens, never parentheses.
+	return refs.some((other) => other.id !== id && labelOf(other) === label)
+		? `${label} (${moveExportId(self, refs)})`
 		: label;
 }
 /** The noun of the description's first phrase: "a sturdy young dwarf with a friendly face" -> "Dwarf". */
@@ -299,10 +310,7 @@ export function missingFramesNote(m: Manifest, it: Item): Message | '' {
 	if (!moves.length) return '';
 	return moves.length === 1
 		? message('studioModel.coverage.oneMove', {
-				move: moveLabel(
-					moves[0],
-					m.rig.animations.map((animation) => animation.id)
-				)
+				move: moveLabel(moves[0], m.rig.animations)
 			})
 		: message('studioModel.coverage.severalMoves', { count: moves.length });
 }
@@ -549,8 +557,7 @@ export function unfitText(
 ): string {
 	// A copy saved by the release before notes were recorded holds `true`: it reads as one without notes.
 	const list: readonly UnfitNote[] = Array.isArray(notes) ? notes : [],
-		ids = m.rig.animations.map((a) => a.id),
-		move = (id = '') => moveLabel(id, ids),
+		move = (id = '') => moveLabel(id, m.rig.animations),
 		say = copy(translate);
 	const parts = list.map((note, index) => {
 		const target = move(note.anim);
@@ -599,7 +606,7 @@ export function refitNotes(
 ): { text: string; anim: string; dir: DirectionName; frame: number }[] {
 	const say = copy(translate),
 		from = it.copiedFrom?.name ?? say('another character', 'studioModel.anotherCharacter'),
-		ids = m.rig.animations.map((a) => a.id);
+		ids = m.rig.animations;
 	const check = {
 		angle: say(`the forearm points another way than on ${from}`, 'studioModel.refit.angle', {
 			from

@@ -1,6 +1,6 @@
 import { specSlot } from '../lib/items/slots.ts';
 // Offline explanations only. These never encode images, submit work or invent dependent payloads.
-import { routes, type Req } from '../lib/pixellab/routes.ts';
+import { png, routes, type Req } from '../lib/pixellab/routes.ts';
 import {
 	type CreateSpec,
 	type MoveSpec,
@@ -387,6 +387,21 @@ export function movePlan(
 			return [];
 		const authored = isAuthoredAction(spec.action);
 		for (const direction of generatedDirections) {
+			const customStart = spec.animation?.references?.[direction]?.start;
+			if (model === 'skeleton-v3' && customStart)
+				calls.push(
+					shown(
+						{
+							method: 'POST',
+							path: '/estimate-skeleton',
+							label: `Start frame · ${direction}`,
+							generations: 0.1,
+							body: { image: png('[uploaded start frame]') }
+						},
+						({ t, displayDirection }) =>
+							t('apiPeek.plan.startFrame', { direction: displayDirection(direction) })
+					)
+				);
 			if (model !== 'skeleton-v3' || !authored) {
 				const native = model !== 'skeleton-v3';
 				calls.push(
@@ -400,7 +415,8 @@ export function movePlan(
 										model,
 										spec.startFrom
 											? `[${spec.startFrom.clip}${spec.startFrom.cell === undefined ? '' : `, frame ${spec.startFrom.cell + 1}`} artwork]`
-											: '[standing artwork]'
+											: '[standing artwork]',
+										true
 									)
 								: moveMotionRequest(rec, spec, direction)),
 							label: `Create motion · ${direction}`,
@@ -450,7 +466,7 @@ export function movePlan(
 								...(spec.seed === undefined ? {} : { seed: spec.seed + 101 }),
 								no_background: true
 							},
-							note: `Known fields only. Adds ${spec.startFrom ? 'the selected starting frame as' : 'Standing as'} first_frame, first_frame_keypoints and ${authored ? 'locally authored' : 'generated motion'} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.`
+							note: `Known fields only. Adds ${customStart ? 'the uploaded start frame as' : spec.startFrom ? 'the selected starting frame as' : 'Standing as'} first_frame, first_frame_keypoints and ${authored ? 'locally authored' : 'generated motion'} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.`
 						},
 						({ t, displayDirection }) =>
 							t('apiPeek.plan.renderBody', {
@@ -458,16 +474,20 @@ export function movePlan(
 								direction: displayDirection(direction)
 							}),
 						({ t }) =>
-							`${t('moveSheet.startFrom.label')}: ${
-								spec.startFrom?.replacement
-									? t('moveSheet.startFrom.savedSource')
-									: spec.startFrom
-										? spec.startFrom.clip +
-											(spec.startFrom.cell === undefined
-												? ''
-												: ` (${t('moveSheet.startFrom.frame', { number: spec.startFrom.cell + 1 })})`)
-										: t('moveNames.default')
-							}. ${t('apiPeek.plan.renderBodyNote', {
+							`${
+								customStart
+									? ''
+									: `${t('moveSheet.startFrom.label')}: ${
+											spec.startFrom?.replacement
+												? t('moveSheet.startFrom.savedSource')
+												: spec.startFrom
+													? spec.startFrom.clip +
+														(spec.startFrom.cell === undefined
+															? ''
+															: ` (${t('moveSheet.startFrom.frame', { number: spec.startFrom.cell + 1 })})`)
+													: t('moveNames.default')
+										}. `
+							}${t('apiPeek.plan.renderBodyNote', {
 								source: t(
 									authored ? 'apiPeek.plan.locallyAuthored' : 'apiPeek.plan.generatedMotion'
 								)

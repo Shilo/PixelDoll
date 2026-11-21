@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "Bukan aplikasi resmi."
 	},
 	"characterActions": {
+		"adjustFrame": "Sesuaikan frame…",
 		"directions": "Arah…",
 		"demoDeleteLocked": "Karakter demo tidak dapat dihapus",
 		"labelDeleteCharacter": "Hapus karakter…"
@@ -165,16 +166,22 @@
 		"freePlanNotice": "Kunci Anda valid. Pembuatan perlengkapan memerlukan PixelLab Tier 1 atau lebih tinggi. Dengan paket Gratis/Uji coba, Anda dapat membuat karakter dan animasi tubuh, mengimpor, memasang perlengkapan, mewarnai ulang, serta mengekspor. Batas dan biaya generasi tetap berlaku.",
 		"sharedOriginWarning": "Salinan PixelDoll ini berjalan di folder {host}, situs yang juga dipakai proyek GitHub Pages lain. Halaman proyek tersebut dapat membaca kunci yang disimpan. Jangan aktifkan penyimpanan kunci di sini, atau buka PixelDoll dari alamat resminya sendiri.",
 		"titleConnectPixelLab": "Hubungkan PixelLab",
-		"generateCharactersAndEquipmentWithYourPixelLab": "Buat karakter dan perlengkapan dengan akun PixelLab Anda.",
-		"generationsComeFromYourPixelLabAccount": "Generasi dipotong dari jatah akun PixelLab Anda.",
+		"generationProvider": "PixelLab mendukung pembuatan konten AI di PixelDoll.",
+		"startFreeTrial": "Mulai uji coba gratis",
+		"trialNotEnough": "Uji coba gratis tidak mencakup tindakan ini.",
+		"copyInstructions": "Di pengaturan {account}, gulir ke {secret}, pilih {copy}, lalu tempel kuncinya di sini.",
+		"pixelLabAccount": "akun PixelLab",
+		"secretLabel": "Secret",
+		"copyKey": "Salin",
+		"demoNoAccount": "Demo tidak memerlukan akun.",
+		"notNow": "Nanti saja",
 		"sentOnlyToApiPixellabAi": "Hanya dikirim ke api.pixellab.ai.",
 		"forgetKey": "Lupakan kunci",
 		"viewPixelLabPlans": "Lihat paket PixelLab",
 		"continueWithLimitedAccess": "Lanjutkan dengan akses terbatas",
-		"aPIKey": "Kunci API",
-		"placeholderPasteYourKey": "Tempel kunci Anda",
+		"secretApiKey": "Tempel kunci API rahasia Anda",
 		"rememberOnThisDevice": "Ingat di perangkat ini",
-		"getAKey": "Dapatkan kunci",
+		"getSecretKey": "Dapatkan kunci API rahasia",
 		"checking": "Memeriksa…",
 		"connect": "Hubungkan"
 	},
@@ -399,14 +406,21 @@
 		"couldNotRename": "Tidak dapat mengganti nama: {reason}",
 		"titleRenameCharacter": "Ganti nama karakter",
 		"titleRenameItem": "Ganti nama item",
+		"titleRenameOutfit": "Ganti nama setelan",
+		"titleRenameMove": "Ganti nama animasi",
 		"displayName": "Nama tampilan",
 		"exportId": "ID ekspor",
 		"exportIdHelp": "Dipakai dalam berkas ekspor dan kode game. Jika Anda mengubahnya, perbarui game yang memakai ID lama.",
 		"invalidExportId": "Awali dengan huruf kecil atau angka. Gunakan hanya huruf kecil, angka, tanda hubung, atau garis bawah. Nama yang dicadangkan tidak diperbolehkan.",
 		"duplicateExportId": "Item lain memakai ID ekspor ini.",
+		"duplicateOutfitExportId": "Setelan lain memakai ID ekspor ini.",
+		"duplicateMoveExportId": "Animasi lain memakai ID ekspor ini.",
+		"defaultMoveExportId": "Game dimulai dari pose Berdiri, jadi ID ekspornya selalu standing.",
 		"characterIdConflict": "Karakter lain di ruang kerja ini memakai ID ekspor ini. Gunakan ID yang berbeda agar keduanya dapat dipakai dalam satu game.",
 		"invalidName": "Masukkan nama dengan 1 hingga 60 karakter.",
-		"itemMissing": "Item ini sudah tidak ada."
+		"itemMissing": "Item ini sudah tidak ada.",
+		"outfitMissing": "Setelan ini sudah tidak ada.",
+		"moveMissing": "Animasi ini sudah tidak ada."
 	},
 	"savedActions": {
 		"labelDeleteState": "Hapus varian",
@@ -594,7 +608,7 @@
 		"slotHidden": "{label} disembunyikan dan tercantum di bagian Tersembunyi.",
 		"slotShown": "{label} ditampilkan di posisi {position} dari {total}.",
 		"dragInRail": "Sedang menyeret {label}. Lepas di antara slot pada bilah navigasi; tekan Escape untuk membatalkan.",
-		"dragInList": "Sedang menyeret {label}. Lepas di antara slot dalam daftar; tekan Escape untuk membatalkan.",
+		"dragInList": "Sedang menyeret {label}. Lepas di antara slot dalam daftar, atau di Tersembunyi untuk menyembunyikannya; tekan Escape untuk membatalkan.",
 		"slotUnmoved": "{label} tetap di posisi semula.",
 		"dragCanceled": "Penyeretan dibatalkan.",
 		"heldBy": "Dipegang oleh {name} (dua tangan).",
@@ -708,6 +722,7 @@
 		"couldNotEnterFullScreenTryAgain": "Tidak dapat masuk ke layar penuh. Coba lagi atau gunakan kontrol layar penuh di browser Anda."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Selesaikan atau tutup pekerjaan pembuatan yang tertunda sebelum menyesuaikan frame.",
 		"couldNotCheckNamedFrames": "Tidak dapat memeriksa bingkai {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Tidak dapat memeriksa bingkai untuk {names}.",
 		"copyMissingOneMove": "Beberapa bingkai {move} hilang; item tidak terlihat dalam gerakan itu.",
@@ -812,7 +827,9 @@
 		"anotherRigSetupIsStillRunningSo": "Penyiapan rig lain masih berlangsung, jadi penyiapan ini belum dimulai. Pilihan Anda tetap tersimpan.",
 		"characterReadyForSkeletonPosedItemsAnd": "Karakter siap untuk item yang mengikuti pose kerangka dan animasi baru",
 		"couldNotCheckCopiedFrames": "Tidak dapat memeriksa frame item yang disalin: {reason}",
-		"couldNotReadSharedItems": "Tidak dapat membaca item dari karakter Anda yang lain: {reason}"
+		"couldNotReadSharedItems": "Tidak dapat membaca item dari karakter Anda yang lain: {reason}",
+		"finishedFramesChanged": "Frame yang selesai berubah. Tinjau item lagi. Tidak ada yang disimpan.",
+		"rerollPriceChanged": "Harga buat ulang berubah. Tinjau lagi. Tidak ada yang diminta."
 	},
 	"history": {
 		"wear": "Kenakan {name}",
@@ -823,6 +840,7 @@
 		"randomItem": "Acak item {name}",
 		"saveOutfit": "Simpan setelan",
 		"deleteOutfit": "Hapus setelan",
+		"renameOutfit": "Ganti nama setelan",
 		"show": "Tampilkan {name}",
 		"hide": "Sembunyikan {name}",
 		"oneHanded": "Satu tangan",
@@ -859,7 +877,8 @@
 			"reset": "Atur ulang pengaturan ekspor",
 			"loading": "Memuat pengaturan ekspor…",
 			"playOnce": "Putar animasi sekali",
-			"playOnceHint": "Animasi dengan nama yang dipilih diputar sekali di semua ekspor karakter.",
+			"playOnceHint": "Nilai bawaan ini berlaku di semua karakter kecuali animasi memiliki pengaturan Ulangi sendiri.",
+			"playbackSetInMove": "Diatur di animasi",
 			"dressed": "Sertakan sprite sheet karakter berperlengkapan",
 			"dressedHint": "Menambahkan sprite sheet PNG untuk penampilan saat ini dan setiap setelan tersimpan, dengan tubuh dan item yang dikenakan digabungkan. Lapisan terpisah selalu disertakan, kecuali pada sprite sheet RPG Maker yang selalu digabungkan.",
 			"format": "Format ekspor",
@@ -1082,6 +1101,7 @@
 		"imported": "{name} diimpor",
 		"untitledState": "Varian tanpa nama",
 		"warning": {
+			"noRoom": "Ruang untuk animasi tidak ditambahkan karena karakter ini memiliki terlalu banyak piksel gambar. Gunakan Sesuaikan frame setelah mengimpor untuk menambahkannya.",
 			"fixedBase": "Gambar yang diimpor menjadi dasar tetap: pakaian dan rambut yang sudah ada tidak dapat dihapus. Siapkan rig pose untuk memakai perlengkapan yang mengikuti pose kerangka dan menambahkan animasi baru.",
 			"frameCounts": "Jumlah frame “{move}” berbeda di setiap arah. Setiap arah diimpor sebagai animasi terpisah agar semua frame asli dan durasi tiap arah tetap utuh.",
 			"semiAlpha": "Tepi yang transparan sebagian diubah menjadi transparansi khas pixel art."
@@ -1240,7 +1260,8 @@
 		"failedRetry": "Tidak dapat mengunduh {label}. Coba lagi.",
 		"recoveryStarted": "Ekspor lengkap tidak tersedia. Pengunduhan PNG sumber dimulai.",
 		"startedNotes": "Pengunduhan dimulai. Lihat Catatan ekspor di dalam ZIP.",
-		"started": "Pengunduhan hasil ekspor dimulai."
+		"started": "Pengunduhan hasil ekspor dimulai.",
+		"paidStarted": "Unduhan hasil berbayar dimulai."
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}: pemeriksaan kualitas item perlu ditinjau. Tidak ada percobaan ulang berbayar yang dimulai.",
@@ -1554,6 +1575,7 @@
 			"singleInput": "Satu masukan diduplikat untuk memenuhi minimum dua frame pada API. Hanya frame pertama yang dikembalikan yang digunakan.",
 			"coverage": "Cakupan: {cells}.",
 			"createMotion": "Buat gerakan · {direction}",
+			"startFrame": "Periksa pose awal · {direction}",
 			"motionFrame": "{move} {direction} · frame gerakan {frame}",
 			"measureMotionNote": "Mengirim frame gerakan hasil generasi sebagai image (PNG base64), kecuali jika sudah diukur.",
 			"renderBody": "{move} {direction} · render tubuh",
@@ -1703,7 +1725,11 @@
 			"magenta": "magenta",
 			"blue": "biru terang",
 			"azure": "biru langit terang"
-		}
+		},
+		"rerollFailed": "Buat ulang panggilan yang gagal",
+		"rerollFailedDetail": "Hanya panggilan yang gagal, dan yang bergantung padanya, yang dibeli lagi. Panggilan lain yang selesai dipakai ulang.",
+		"keepFinished": "Simpan animasi yang selesai",
+		"keepFinishedDetail": "Menyimpan animasi yang semua frame-nya selesai. Sisanya tetap tercantum sebagai frame yang kurang, yang bisa Anda buat nanti."
 	},
 	"generationDetails": {
 		"copiedFrom": "dibayar sekali untuk {name}; disalin ke sini secara gratis",
@@ -1807,7 +1833,8 @@
 			"noCharacterId": "PixelLab tidak mengembalikan ID karakter terkelola. Gambar yang ada tidak berubah.",
 			"referenceChanged": "Referensi berdiri berubah selama penyiapan.",
 			"characterChanged": "Karakter berubah selama penyiapan. Pekerjaan karakter saat ini tetap disimpan."
-		}
+		},
+		"newRegistration": "Daftarkan ulang"
 	},
 	"create": {
 		"errors": {
@@ -1853,7 +1880,7 @@
 			"resultMissingStorage": "hasil {label} tidak ditemukan di penyimpanan",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab mengembalikan sendi pose berdiri yang tidak lengkap atau tidak valid. Animasi tidak dimulai dari sendi tersebut. Hasil yang ada tetap disimpan.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: jumlah frame dari PixelLab tidak sesuai. Tidak ada percobaan ulang berbayar yang dimulai. Tinjau Aktivitas sebelum meminta percobaan lain.",
-			"animationExceedsPxFrame": "{move} {direction}: animasi melebihi frame {w} px. Perbesar Frame atau perkecil Ukuran tubuh sebelum membuat ulang.",
+			"animationExceedsPxFrame": "{move} {direction}: frame tubuh tidak muat di frame {w} px. Frame tersebut disimpan untuk ditinjau; tidak ada yang disimpan ke karakter.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab mengembalikan frame kosong. Tidak ada percobaan ulang berbayar yang dimulai. Tinjau Aktivitas sebelum meminta percobaan lain.",
 			"validJointsWereFound": "{move} {direction}: tidak semua frame memiliki sendi yang valid. Gambar hasil generasi disimpan di Aktivitas. Penyiapan dihentikan tanpa menggambar ulang.",
 			"matchBodyColorsOnly": "{direction}: cocokkan warna tubuh hanya setelah semua pemeriksaan sendi awal selesai.",
@@ -1863,7 +1890,7 @@
 			"jointsFoundEveryFrame": "{label}: sendi tidak ditemukan di semua frame",
 			"pixellabDroppedDirectionBusy": "{label}: PixelLab melewatkan arah ini karena sibuk. Coba lagi.",
 			"pixellabReturnedMotionFrames": "{label}: PixelLab mengembalikan {returned} frame gerakan dari {expected} yang diminta. Tidak ada pemeriksaan sendi atau render tubuh yang diminta untuk tampilan ini.",
-			"motionExceedsPxFrame": "{label}: gerakan melebihi frame {size} px. Perbesar Frame atau perkecil Ukuran tubuh sebelum membuat ulang.",
+			"motionExceedsPxFrame": "{label}: gerakan tidak muat di frame {size} px. Frame-nya disimpan untuk ditinjau; tidak ada yang disimpan ke karakter.",
 			"pixellabReturnedEmptyMotion": "{label}: PixelLab mengembalikan frame gerakan kosong",
 			"pixellabReturnedView": "PixelLab tidak mengembalikan tampilan {direction}",
 			"viewDoesFitPx": "Tampilan {direction} tidak muat dalam frame {cell} px. Perbesar Frame atau perkecil Ukuran tubuh sebelum membuat ulang.",
@@ -1908,7 +1935,9 @@
 			"chooseRepairTarget": "Sebelum memperbaiki, pilih satu item dan satu arah dari animasi yang sudah ada. Tidak ada permintaan pembuatan yang dikirim.",
 			"moveAnimationFramesBlocked": "Model dan ukuran kanvas ini tidak mendukung {frames} frame. Tidak ada generasi yang diminta.",
 			"describeMoveBlocked": "Deskripsikan animasi ini sebelum membuatnya. Tidak ada generasi yang diminta.",
-			"chooseExistingMoveRepairing": "Pilih animasi yang sudah ada sebelum memperbaiki perlengkapannya."
+			"chooseExistingMoveRepairing": "Pilih animasi yang sudah ada sebelum memperbaiki perlengkapannya.",
+			"liftedJointsOutside": "{label}: gerakan yang dinaikkan masih punya sendi di luar frame {size} px. Tidak ada render tubuh yang diminta.",
+			"reviewChoiceInvalid": "Pilihan ini tidak lagi cocok dengan animasi. Tinjau lagi. Tidak ada permintaan yang dikirim."
 		},
 		"steps": {
 			"draw": "Menggambar karakter Anda",
@@ -1932,7 +1961,8 @@
 				"frameRange": "Ukuran frame harus {min}–256 piksel utuh.",
 				"seed": "Seed harus berupa bilangan bulat nonnegatif dalam rentang yang aman.",
 				"promptRequired": "Masukkan prompt karakter.",
-				"promptLength": "Panjang prompt lengkap maksimal 2.000 karakter."
+				"promptLength": "Panjang prompt lengkap maksimal 2.000 karakter.",
+				"frameRoom": "Frame {frame} px menyisakan ruang kurang dari {min} px di sekitar tubuh {body} px. Sebagian karakter mungkin tidak muat."
 			}
 		},
 		"form": {
@@ -2092,7 +2122,8 @@
 			"estimated": "Perkiraan {gens}",
 			"keepWorking": "Lanjut bekerja",
 			"costTitle": "Membuat tampilan berdiri dari semua arah. Tambahkan animasi diam, berjalan, dan lainnya setelah itu. Sendi pose berdiri yang tidak ditemukan mungkin menambah sedikit biaya",
-			"create": "Buat karakter"
+			"create": "Buat karakter",
+			"createAnyway": "Tetap buat"
 		}
 	},
 	"moveSheet": {
@@ -2106,12 +2137,39 @@
 			"route": "Metode ini dimulai dari pose berdiri. Pilih model animasi lain untuk menggunakan frame yang tersimpan.",
 			"stateTarget": "Varian tidak dapat diganti seperti animasi."
 		},
+		"loop": "Ulangi",
+		"loopHint": "Diulang secara bawaan di ekspor.",
+		"referenceDirection": "Frame awal dan akhir",
+		"referenceHelp": "Gunakan gambar awal sebagai panduan pose pertama. Jika didukung, gambar akhir memandu pose terakhir. Menggunakan gambar yang sama di kedua ujung dapat membuat pengulangan lebih mulus.",
+		"referenceEdited": "{direction} (frame khusus)",
+		"referenceSize": "Gunakan PNG transparan khusus tubuh berukuran {width} × {height}.",
+		"referenceInvalid": "Gunakan PNG {width} × {height} dengan gambar yang terlihat dan latar transparan.",
+		"referencePng": "Pilih gambar PNG.",
+		"referencePoseInvalid": "Tidak ada pose yang dapat dipakai di frame awal untuk {direction}.",
+		"startFrame": "Frame awal",
+		"endFrame": "Frame akhir",
+		"standingFrame": "Frame berdiri",
+		"sameAsStart": "Sama dengan awal",
+		"noEndFrame": "Tanpa frame akhir",
+		"endUnavailable": "Tidak tersedia untuk model ini",
+		"customFrames": "Frame khusus",
+		"customStartTitle": "Gunakan frame awal khusus?",
+		"customStartWarning": "Proses generasi menambahkan pemeriksaan pose berbayar untuk setiap awal khusus. Animasi bisa melompat dari frame ini, dan perlengkapan mungkin tidak sejajar.",
+		"customStartKeep": "Pertahankan bawaan",
+		"customStartContinue": "Lanjutkan",
+		"removeEndFrame": "Hapus frame akhir",
+		"changeLoopTitle": "Ubah Ulangi dan atur ulang frame akhir?",
+		"changeLoopWarning": "Ini mengganti frame akhir khusus animasi ini dengan pengaturan otomatis.",
+		"changeLoopAccept": "Ubah Ulangi",
+		"makeRoom": "Beri ruang",
+		"frameRoom": "Animasi ini bisa melewati frame {frame} px: karakter hanya punya {below} px di bawah kakinya. Beri ruang secara gratis dulu, atau tetap buat animasinya.",
 		"skeleton": {
 			"title": "Tinjau Skeleton V3",
 			"hint": "Skeleton V3 adalah opsi lain. Pemeriksaan kualitas masih bisa gagal.",
 			"back": "Kembali ke hasil"
 		},
 		"checkpoint": {
+			"generateAnyway": "Tetap buat animasi",
 			"generate": "Buat animasi",
 			"initialEstimate": "Sekitar {minutes} mnt · Tanpa item",
 			"review": "Tinjau animasi",
@@ -2262,7 +2320,9 @@
 			"currentFrame": "Frame saat ini {number}",
 			"redrawnFrame": "Frame yang digambar ulang {number}",
 			"repairedFrame": "Frame yang diperbaiki {number}"
-		}
+		},
+		"rerollBatch": "Buat ulang batch ini",
+		"rerollBatchDetail": "Batch sebelumnya tetap seperti semula. Perkiraan mencakup batch ini dan batch berikutnya yang belum dibeli."
 	},
 	"itemRoute": {
 		"errors": {
@@ -2346,7 +2406,7 @@
 		"tabOnlyKey": "Koneksi ini hanya berlaku di tab ini dan tidak disimpan.",
 		"useSavedKey": "Gunakan kunci tersimpan"
 	},
-	"moveNames": { "default": "Berdiri", "idle": "Diam", "walk": "Berjalan" },
+	"moveNames": { "default": "Berdiri", "idle": "Diam", "walk": "Berjalan", "run": "Berlari" },
 	"stateGeneration": {
 		"continueIntro": "Anda dapat menyelesaikan tampilan yang belum pernah dikirim. Tampilan yang sudah selesai akan disimpan.",
 		"continueAccount": "Hubungkan kembali dengan kunci PixelLab awal untuk melanjutkan status ini.",
@@ -2567,6 +2627,85 @@
 			"resolveDrafts": "Simpan atau buang draf item karakter ini sebelum mengganti frame tubuh dasar.",
 			"importFailed": "Tidak dapat membaca frame ini. Coba lagi.",
 			"saveFailed": "Tidak dapat menyimpan frame ini. Tidak ada yang diubah. Coba lagi."
+		}
+	},
+	"paidReview": {
+		"title": "Hasil berbayar",
+		"spent": "Sudah dibayar: {gens} gen. Hasil ini disimpan dan dipakai ulang.",
+		"free": "Gratis",
+		"download": "Unduh hasil berbayar",
+		"frame": "{view}, frame {number}",
+		"waiting": "Beberapa permintaan berbayar masih berjalan di PixelLab. Pilihan ini terbuka setelah selesai.",
+		"state": {
+			"ready": "Siap",
+			"pending": "Belum dibeli",
+			"failed": "Berhenti",
+			"running": "Masih berjalan di PixelLab"
+		}
+	},
+	"moveReview": {
+		"makeRoomDetail": "{change}, gratis. Gerakan yang sudah dibayar dipakai ulang; hanya langkah pada frame yang diubah yang dibeli.",
+		"makeRoomDetailRedraw": "{change}, gratis. Model ini menggambar dari frame berdiri, jadi gerakan digambar ulang pada frame yang diubah.",
+		"makeRoom": "Beri ruang dan lanjutkan",
+		"resume": "Lanjutkan dengan hasil berbayar",
+		"lift": "Lanjutkan, dinaikkan agar muat",
+		"liftAndReroll": "Naikkan agar muat, buat ulang {views}",
+		"liftDetail": "{views}: kaki naik hingga {px} px pada {frames} dari {total} frame gerakan agar gerakan muat di frame.",
+		"liftDetailReview": "{views}: kaki naik hingga {px} px pada {frames} dari {total} frame gerakan agar gerakan muat di frame. Ini melebihi pemeriksaan kaki {limit} px, jadi Anda meninjau frame tubuh sebelum menggantikan yang sekarang.",
+		"liftDetailWarned": "{views}: kaki naik hingga {px} px pada {frames} dari {total} frame gerakan agar gerakan muat di frame. Ini melebihi pemeriksaan kaki {limit} px, jadi animasi disimpan dengan peringatan kaki.",
+		"reroll": "Buat ulang {views}",
+		"rerollDetail": "Buat ulang hanya membeli percobaan baru untuk arah tersebut. Arah lain tetap memakai hasil berbayarnya.",
+		"pending": "Masih perlu dibeli: sekitar {gens} gen.",
+		"liftable": "Bisa dinaikkan agar muat: kaki naik hingga {px} px pada {frames} dari {total} frame.",
+		"notLiftable": "Menaikkan tidak cukup: gerakan terpotong di sisi atau di atas."
+	},
+	"createReview": {
+		"resume": "Lanjutkan dengan hasil berbayar",
+		"register": "Daftarkan ulang tampilan yang digambar",
+		"registerDetail": "Mempertahankan gambar berbayar dan membeli satu pendaftaran baru untuk tampilan yang sama."
+	},
+	"adjustFrame": {
+		"title": "Sesuaikan frame",
+		"intro": "Geser karakter ke atas atau ke bawah di dalam frame, atau ubah ukuran frame. Setiap item, animasi, dan frame ikut bergeser. Gratis dan tidak ada yang digambar ulang.",
+		"previewLabel": "Karakter di dalam frame",
+		"preview": "Tampilan {direction} dalam frame {size} px",
+		"keys": "Saat pratinjau difokuskan, tombol panah atas dan bawah menggeser karakter 1 px (dengan Shift, 4 px).",
+		"direction": "Arah",
+		"position": "Posisi",
+		"up": "Naik",
+		"down": "Turun",
+		"movedUp": "Naik {px} px",
+		"movedDown": "Turun {px} px",
+		"notMoved": "Tidak digeser",
+		"size": "Ukuran frame",
+		"smaller": "Frame lebih kecil",
+		"larger": "Frame lebih besar",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "Beri ruang",
+		"makeRoomHelp": "Menggeser karakter secukupnya agar ada ruang untuk berjalan, dan memperbesar frame hanya bila menggeser tidak cukup.",
+		"madeRoom": "Ruang dibuat. Periksa pratinjau, lalu simpan.",
+		"roomy": "Karakter ini sudah punya ruang untuk animasi.",
+		"short": "Animasi bisa melewati frame ini. Beri ruang bisa memperbaikinya secara gratis.",
+		"above96": "Di atas 96 px, item yang dipegang dan grid perbaikan lebih mahal.",
+		"above170": "Di atas 170 px, setiap item memakan 25 gens per panggilan pemakaian.",
+		"consequences": "Item hanya tersalin persis antar karakter dengan ukuran dan posisi frame yang sama. Ekspor tetap memakai skala dan titik asal dalam game yang sama; ekspor lagi untuk memakai perubahan.",
+		"loading": "Memuat frame…",
+		"saved": "Frame disesuaikan: {change}.",
+		"undone": "Perubahan frame dibatalkan.",
+		"errors": {
+			"reviewOpen": "Simpan atau buang animasi yang menunggu peninjauan sebelum menyesuaikan frame.",
+			"statePending": "Simpan atau buang status yang tertunda sebelum menyesuaikan frame.",
+			"missingArtwork": "Gambar tersimpan karakter ini hilang, jadi frame-nya tidak dapat diubah.",
+			"even": "Pilih ukuran frame yang berubah sebanyak jumlah piksel genap.",
+			"range": "Frame harus {min}–{max} px untuk karakter ini.",
+			"clipTop": "Ini memotong {px} px dari bagian atas karakter atau itemnya.",
+			"clipBottom": "Ini memotong {px} px dari bagian bawah karakter atau itemnya.",
+			"clipSides": "Ini memotong {px} px dari sisi karakter atau itemnya.",
+			"unchanged": "Ubah dulu ukuran atau posisi frame.",
+			"limit": "Bahkan frame {size} px tidak bisa memberi ruang animasi untuk karakter ini.",
+			"resolveDrafts": "Simpan atau tutup draf item karakter ini sebelum menyesuaikan frame.",
+			"changed": "Karakter ini berubah. Buka lagi Sesuaikan frame untuk meninjau versi terbaru.",
+			"undoFailed": "Perubahan frame tidak dapat dibatalkan."
 		}
 	}
 }

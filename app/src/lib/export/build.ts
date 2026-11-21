@@ -1,5 +1,7 @@
 // What the Export sheet and the ⋮ menus' Download ZIP export: a character with its current look and saved outfits, or
 // a single item on the base body. Pure; the Studio supplies the project, look and settings.
+import { CURRENT_OUTFIT_ID } from '../store/identity.ts';
+import { playbackClips } from '../runtime/timeline.js';
 import { exportZip, type ExportResult, type NoteTerm } from './export.ts';
 import { errorTranslation, message, type Message } from '../message.ts';
 import { storeVariants, variantOf } from '../dress/dress.ts';
@@ -29,7 +31,15 @@ export async function moveProject(project: Project, moveId: string): Promise<Pro
 		if (item.standing) ids.add(item.standing);
 		if (item.route === 'ea2-anchor' && item.anchorCell) ids.add(item.anchorCell.split('/')[0]);
 	}
-	return { ...project, manifest: await retainMoves(project.manifest, ids) };
+	const manifest = await retainMoves(project.manifest, ids);
+	const scoped = new Map(
+		playbackClips(manifest.rig.animations).map(({ key, clip, id }) => [key, { clip, id }])
+	);
+	for (const { key, id } of playbackClips(project.manifest.rig.animations)) {
+		const entry = scoped.get(key);
+		if (entry && entry.id !== id) entry.clip.exportId = id;
+	}
+	return { ...project, manifest };
 }
 
 export function outfitProject(
@@ -62,14 +72,14 @@ async function requestedExport(
 	}
 ): Promise<ExportResult & { zip: Uint8Array | null }> {
 	const current: Preset = {
-		id: o.look.id ?? 'current',
+		id: o.look.id ?? CURRENT_OUTFIT_ID,
 		name: o.look.name ?? 'Current look',
 		items: o.look.items,
 		variants: o.look.variants
 	};
 	const presets: Preset[] = [
 		current,
-		...p.manifest.presets.filter((x) => x.id !== 'current' && x.id !== current.id)
+		...p.manifest.presets.filter((x) => x.id !== CURRENT_OUTFIT_ID && x.id !== current.id)
 	];
 	const manifest = structuredClone({ ...p.manifest, presets }) as Manifest;
 	const warnings = new Set<string>(),

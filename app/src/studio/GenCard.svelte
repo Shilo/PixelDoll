@@ -4,6 +4,10 @@
 	import { bakedFrame, composeCell } from '../lib/compose/compose.ts';
 	import { live, queue } from '../lib/pixellab/queue.ts';
 	import {
+		draftMinimumTier,
+		failedCalls,
+		finishedPart,
+		rerollFailed,
 		failsOf,
 		gensOf,
 		usdOf,
@@ -33,10 +37,14 @@
 		store,
 		acceptGen,
 		discardGen,
+		rerollGen,
 		retryGen,
 		wearDraft,
 		type Gen
 	} from './state.svelte.ts';
+	import PaidReview from './PaidReview.svelte';
+	import type { PaidOption, PaidReview as PaidReviewData } from '../lib/pixellab/paid-results.ts';
+	import { message } from '../lib/message.ts';
 	import { CircleAlert, CircleCheck, ChevronRight, LoaderCircle, TriangleAlert } from './icons.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { draftPlan, draftQueueIds, itemPlan, type PeekCall } from './apiPlans.ts';
@@ -64,7 +72,6 @@
 	const anims = $derived(
 		prev?.manifest.rig.animations.filter((a) => g.draft.spec.anims.includes(a.id)) ?? []
 	);
-	const moveIds = $derived(anims.map((a) => a.id));
 	const anim = $derived(anims.find((a) => a.id === ui.anim) ?? anims[0]);
 	const dirs = $derived(
 		prev && anim
@@ -139,6 +146,71 @@
 			current = false;
 		};
 	});
+	// What a stopped draft already bought stays usable: re-roll only its failed calls, or keep the moves that finished.
+	let paid = $state.raw<(PaidReviewData & { calls: number[]; tier: number }) | null>(null);
+	$effect(() => {
+		const draft = $state.snapshot(g.draft),
+			result = res,
+			stopped = g.phase !== 'running';
+		void $queue.jobs.length;
+		let current = true;
+		paid = null;
+		if (stopped)
+			void loadProject(draft.rigId)
+				.then((ctx) => {
+					const rig = ctx.rec.manifest.rig,
+						calls = failedCalls(draft, result ?? null),
+						reroll = calls.length ? rerollFailed(draft, calls, rig) : undefined,
+						finished =
+							result && incompleteCoverage(draft, rig, result) && finishedPart(draft, rig, result);
+					const options: PaidOption[] = [
+						...(reroll
+							? [
+									{
+										id: 'reroll-calls' as const,
+										label: message('genCard.rerollFailed'),
+										detail: message('genCard.rerollFailedDetail'),
+										gens: reroll.gens,
+										paid: reroll.gens > 0,
+										primary: true
+									}
+								]
+							: []),
+						...(finished
+							? [
+									{
+										id: 'keep-finished' as const,
+										label: message('genCard.keepFinished'),
+										detail: message('genCard.keepFinishedDetail'),
+										gens: 0,
+										paid: false
+									}
+								]
+							: [])
+					];
+					if (current && options.length)
+						paid = {
+							views: [],
+							spent: +gensOf(draft, $queue.jobs).toFixed(2),
+							recordIds: draft.calls.flatMap((c) => (c.recId ? [c.recId] : [])),
+							options,
+							calls,
+							tier: reroll ? draftMinimumTier(reroll.draft, rig) : 0
+						};
+				})
+				.catch((error: unknown) => console.error('item review', error));
+		return () => {
+			current = false;
+		};
+	});
+	function choosePaid(option: PaidOption) {
+		if (!paid) return;
+		if (option.id === 'reroll-calls') rerollGen(g, paid.calls, option.gens, paid.tier);
+		else {
+			busy = true;
+			void acceptGen(g, false, true).finally(() => (busy = false));
+		}
+	}
 	let busy = $state(false);
 	async function accept() {
 		busy = true;
@@ -198,7 +270,7 @@
 					ui.anim = e.currentTarget.value;
 					ui.frame = 0;
 				}}
-				>{#each anims as a (a.id)}<option value={a.id}>{displayMove(a.id, moveIds)}</option
+				>{#each anims as a (a.id)}<option value={a.id}>{displayMove(a.id, anims)}</option
 					>{/each}</select
 			></label
 		>
@@ -289,6 +361,13 @@
 		{#if incomplete}<p class="notice warn small">
 				{t('genCard.incomplete')}
 			</p>{/if}
+		{#if paid}<PaidReview
+				review={paid}
+				name={g.input.name}
+				{busy}
+				blocked={retryBlocked}
+				onchoose={choosePaid}
+			/>{/if}
 	{:else if g.phase === 'failed'}
 		<p class="notice bad small">
 			<CircleAlert size={14} />{g.canceled
@@ -343,6 +422,13 @@
 				>
 			</div>
 		</div>
+		{#if paid}<PaidReview
+				review={paid}
+				name={g.input.name}
+				{busy}
+				blocked={retryBlocked}
+				onchoose={choosePaid}
+			/>{/if}
 	{/if}
 
 	{#if g.phase !== 'running'}<TierNotice

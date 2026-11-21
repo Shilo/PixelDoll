@@ -1,6 +1,6 @@
 // Generic export (manifest-spec §3, §5, §6.6): validation, the exported manifest.json, _stripN strips, baked composites,
 import type { Img } from '../image/png.ts';
-import { DIRECTIONS, validateRig } from '../rig/rig.ts';
+import { DIRECTIONS, exportUnit, validateRig } from '../rig/rig.ts';
 import { centeredMirrorFrame } from '../rig/mirror.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
 import { CURRENT_FORMAT } from '../store/manifest.ts';
@@ -464,7 +464,7 @@ export function exportManifest(
 		exportedAt: o.exportedAt ?? new Date().toISOString(),
 		layout: 'pixeldoll-sheets/1',
 		engines: o.engines,
-		pixelsPerUnit: o.pixelsPerUnit ?? m.rig.cell.w,
+		pixelsPerUnit: o.pixelsPerUnit ?? exportUnit(m.rig),
 		...(o.baked
 			? (({ w, h, x, y }) => ({
 					baked: m.presets.map((x) => x.id),

@@ -242,7 +242,7 @@ export const routes = {
 		b: TextAnimation & {
 			description: string;
 			subject_description: string;
-			initial_pose: string;
+			initial_pose?: string;
 			view: 'low top-down' | 'high top-down' | 'side';
 			direction: Direction;
 		}
@@ -252,6 +252,7 @@ export const routes = {
 
 type TextAnimation = {
 	first_frame: B64Image;
+	last_frame?: B64Image;
 	frame_count: number;
 	seed?: number;
 	no_background: true;

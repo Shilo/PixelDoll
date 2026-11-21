@@ -44,7 +44,9 @@ async function open(page: Page, navigate = true) {
 	return page.getByRole('dialog', { name: 'New character', exact: true });
 }
 async function connect(page: Page) {
-	await page.getByLabel('API key', { exact: true }).fill('offline-fixture-not-a-real-key');
+	await page
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('offline-fixture-not-a-real-key');
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
 		.getByRole('button', { name: 'Connect', exact: true })
@@ -938,7 +940,7 @@ test('canceling the connection discards the pending enhancement instead of charg
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await openAccount(page);
 	await connect(page);

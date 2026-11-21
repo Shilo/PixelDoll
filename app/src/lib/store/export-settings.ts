@@ -1,4 +1,5 @@
 import { validAnimationId } from '../rig/rig.ts';
+import { playbackClips } from '../runtime/timeline.js';
 import { message, type Message } from '../message.ts';
 import { EXPORT_ENGINES, type Engine, type Manifest } from './manifest.ts';
 import * as db from './db.ts';
@@ -136,8 +137,8 @@ export async function saveExportSetting(change: ExportSettingChange): Promise<Ex
 /** Apply only to an export copy. Imported metadata never changes the user's global preferences. */
 export function applyExportSettings(manifest: Manifest, settings: ExportSettings): void {
 	const names = new Set(checkedSettings(settings).playOnce);
-	for (const animation of manifest.rig.animations)
-		animation.loop = !names.has(animationName(animation.id));
+	for (const { id, clip } of playbackClips(manifest.rig.animations))
+		clip.loop = clip.moveLoop ?? !names.has(animationName(id));
 }
 
 /** Remembered names remain available after deleting or renaming the last character that used them. */
@@ -147,14 +148,12 @@ export function animationNames(manifests: readonly Manifest[], settings: ExportS
 		const invalid = `Character "${manifest?.name ?? 'Unknown'}" has invalid animation names in storage.`;
 		if (!manifest?.rig || !Array.isArray(manifest.rig.animations))
 			throw new InvalidAnimationNames(invalid);
-		for (const animation of manifest.rig.animations) {
-			if (
-				!animation ||
-				typeof animation.id !== 'string' ||
-				!validAnimationId(animation.id.trim().toLowerCase())
-			)
+		for (const animation of manifest.rig.animations)
+			if (typeof animation?.id !== 'string') throw new InvalidAnimationNames(invalid);
+		for (const { id } of playbackClips(manifest.rig.animations)) {
+			if (typeof id !== 'string' || !validAnimationId(id.trim().toLowerCase()))
 				throw new InvalidAnimationNames(invalid);
-			names.add(animationName(animation.id));
+			names.add(animationName(id));
 		}
 	}
 	return [...names].sort();

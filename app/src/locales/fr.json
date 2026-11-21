@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "Application non officielle."
 	},
 	"characterActions": {
+		"adjustFrame": "Ajuster le cadre…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Le personnage de la démo ne peut pas être supprimé",
 		"labelDeleteCharacter": "Supprimer le personnage…"
@@ -165,16 +166,22 @@
 		"freePlanNotice": "Votre clé est valide. Pour générer de l’équipement, il faut un forfait PixelLab Tier 1 ou supérieur. Avec Free/Trial, vous pouvez créer des personnages et des animations du corps, importer, habiller, recolorer et exporter. Les limites et les coûts de génération s’appliquent toujours.",
 		"sharedOriginWarning": "Cette copie de PixelDoll s’exécute dans un dossier de {host}, un site partagé avec d’autres projets GitHub Pages. N’importe laquelle de leurs pages pourrait lire une clé mémorisée. Laissez « Mémoriser » désactivé ici, ou utilisez PixelDoll depuis sa propre adresse.",
 		"titleConnectPixelLab": "Connecter PixelLab",
-		"generateCharactersAndEquipmentWithYourPixelLab": "Générez des personnages et de l’équipement avec votre compte PixelLab.",
-		"generationsComeFromYourPixelLabAccount": "Les générations sont décomptées de votre compte PixelLab.",
+		"generationProvider": "PixelLab permet de générer du contenu par IA dans PixelDoll.",
+		"startFreeTrial": "Démarrer l’essai gratuit",
+		"trialNotEnough": "L’essai gratuit ne couvre pas cette action.",
+		"copyInstructions": "Dans les paramètres de votre {account}, faites défiler jusqu’à {secret}, sélectionnez {copy}, puis collez la clé ici.",
+		"pixelLabAccount": "compte PixelLab",
+		"secretLabel": "Secret",
+		"copyKey": "Copier",
+		"demoNoAccount": "Aucun compte nécessaire pour la démo.",
+		"notNow": "Pas maintenant",
 		"sentOnlyToApiPixellabAi": "Envoyée uniquement à api.pixellab.ai.",
 		"forgetKey": "Oublier la clé",
 		"viewPixelLabPlans": "Voir les forfaits PixelLab",
 		"continueWithLimitedAccess": "Continuer avec un accès limité",
-		"aPIKey": "Clé API",
-		"placeholderPasteYourKey": "Collez votre clé",
+		"secretApiKey": "Collez votre clé API secrète",
 		"rememberOnThisDevice": "Mémoriser sur cet appareil",
-		"getAKey": "Obtenir une clé",
+		"getSecretKey": "Obtenir la clé API secrète",
 		"checking": "Vérification…",
 		"connect": "Connecter"
 	},
@@ -415,14 +422,21 @@
 		"couldNotRename": "Impossible de renommer : {reason}",
 		"titleRenameCharacter": "Renommer le personnage",
 		"titleRenameItem": "Renommer l’item",
+		"titleRenameOutfit": "Renommer la tenue",
+		"titleRenameMove": "Renommer l’animation",
 		"displayName": "Nom affiché",
 		"exportId": "ID d’export",
 		"exportIdHelp": "Utilisé dans les fichiers exportés et le code du jeu. Si vous le modifiez, mettez à jour les jeux qui utilisent l’ancien ID.",
 		"invalidExportId": "Commencez par une minuscule ou un chiffre. Utilisez uniquement des minuscules, des chiffres, des traits d’union ou des tirets bas. Les noms réservés sont interdits.",
 		"duplicateExportId": "Un autre item utilise cet ID d’export.",
+		"duplicateOutfitExportId": "Une autre tenue utilise cet ID d’export.",
+		"duplicateMoveExportId": "Une autre animation utilise cet ID d’export.",
+		"defaultMoveExportId": "Les jeux démarrent avec la pose Debout, son ID d’export est donc toujours standing.",
 		"characterIdConflict": "Un autre personnage de cet espace utilise cet ID d’exportation. Utilisez des ID différents pour inclure les deux dans le même jeu.",
 		"invalidName": "Saisissez un nom de 1 à 60 caractères.",
-		"itemMissing": "Cet item n’existe plus."
+		"itemMissing": "Cet item n’existe plus.",
+		"outfitMissing": "Cette tenue n’existe plus.",
+		"moveMissing": "Cette animation n’existe plus."
 	},
 	"savedActions": {
 		"labelDeleteState": "Supprimer l’état",
@@ -614,7 +628,7 @@
 		"slotHidden": "{label} n’est pas affiché. Il figure sous Non affichés.",
 		"slotShown": "{label} est affiché en position {position} sur {total}.",
 		"dragInRail": "Déplacement de {label}. Déposez-le entre deux emplacements dans la barre de navigation ; Échap pour annuler.",
-		"dragInList": "Déplacement de {label}. Déposez-le entre deux emplacements dans la liste ; Échap pour annuler.",
+		"dragInList": "Déplacement de {label}. Déposez-le entre deux emplacements dans la liste, ou sur Non affichés pour le masquer ; Échap pour annuler.",
 		"slotUnmoved": "{label} reste à sa place.",
 		"dragCanceled": "Déplacement annulé.",
 		"heldBy": "Occupé par {name} (à deux mains).",
@@ -734,6 +748,7 @@
 		"couldNotEnterFullScreenTryAgain": "Impossible de passer en plein écran. Réessayez ou utilisez la commande plein écran de votre navigateur."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Terminez ou ignorez la génération en attente avant d’ajuster le cadre.",
 		"couldNotCheckNamedFrames": "Impossible de vérifier les images de {names} : {reason}",
 		"couldNotCheckSeveralFrames": "Impossible de vérifier les images de {names}.",
 		"copyMissingOneMove": "Des images manquent pour {move} ; l’objet y reste masqué.",
@@ -842,7 +857,9 @@
 		"anotherRigSetupIsStillRunningSo": "Une autre configuration du rig est encore en cours, celle-ci n’a donc pas démarré. Vos choix sont conservés.",
 		"characterReadyForSkeletonPosedItemsAnd": "Personnage prêt à recevoir de l’équipement animé avec son squelette et de nouvelles animations",
 		"couldNotCheckCopiedFrames": "Impossible de vérifier les images des items copiés : {reason}",
-		"couldNotReadSharedItems": "Impossible de lire les objets de vos autres personnages : {reason}"
+		"couldNotReadSharedItems": "Impossible de lire les objets de vos autres personnages : {reason}",
+		"finishedFramesChanged": "Les images terminées ont changé. Vérifiez à nouveau l’objet. Rien n’a été enregistré.",
+		"rerollPriceChanged": "Le prix de la relance a changé. Vérifiez-le à nouveau. Rien n’a été demandé."
 	},
 	"history": {
 		"wear": "Porter {name}",
@@ -853,6 +870,7 @@
 		"randomItem": "Objet aléatoire : {name}",
 		"saveOutfit": "Enregistrement de la tenue",
 		"deleteOutfit": "Suppression de la tenue",
+		"renameOutfit": "Renommage de la tenue",
 		"show": "Afficher {name}",
 		"hide": "Masquer {name}",
 		"oneHanded": "À une main",
@@ -889,7 +907,8 @@
 			"reset": "Réinitialiser les réglages d’export",
 			"loading": "Chargement des réglages d’export…",
 			"playOnce": "Lire l’animation une seule fois",
-			"playOnceHint": "Les animations sélectionnées sont lues une seule fois dans tous les exports de personnages.",
+			"playOnceHint": "Ces valeurs par défaut s’appliquent à tous les personnages, sauf si une animation a son propre réglage de Boucle.",
+			"playbackSetInMove": "Défini dans l’animation",
 			"dressed": "Inclure les feuilles de sprites du personnage habillé",
 			"dressedHint": "Ajoute des feuilles de sprites PNG de votre look actuel et de chaque tenue enregistrée, avec le corps et les objets portés combinés. Les calques séparés sont toujours inclus, sauf dans les feuilles RPG Maker, qui sont toujours combinées.",
 			"format": "Format d’export",
@@ -1129,6 +1148,7 @@
 		"imported": "{name} importé",
 		"untitledState": "État sans titre",
 		"warning": {
+			"noRoom": "L’espace pour les animations n’a pas été ajouté, car ce personnage a trop de pixels d’image. Utilisez Ajuster le cadre après l’import pour l’ajouter.",
 			"fixedBase": "Le visuel importé devient le corps de base figé : il est impossible de retirer les vêtements et les cheveux déjà dessinés. Configurez le rig de pose pour animer l’équipement avec le squelette et ajouter de nouvelles animations.",
 			"frameCounts": "« {move} » a un nombre d’images différent selon la direction. Ses directions ont été importées comme animations distinctes pour conserver chaque image et la durée d’origine de chaque direction.",
 			"semiAlpha": "Les pixels partiellement transparents en bordure ont été convertis en pixels opaques ou transparents, comme en pixel art."
@@ -1291,7 +1311,8 @@
 		"failedRetry": "Impossible de télécharger {label}. Réessayez.",
 		"recoveryStarted": "Export complet indisponible. Téléchargement des PNG sources lancé.",
 		"startedNotes": "Téléchargement lancé. Consultez les notes d’export dans le ZIP.",
-		"started": "Téléchargement de l’export lancé."
+		"started": "Téléchargement de l’export lancé.",
+		"paidStarted": "Le téléchargement des résultats payés a commencé."
 	},
 	"studioModel": {
 		"itemQualityReview": "{name} : vérifiez les résultats des contrôles qualité de l’objet. Aucune nouvelle tentative payante n’a été lancée.",
@@ -1623,6 +1644,7 @@
 			"singleInput": "L’entrée unique est dupliquée pour respecter le minimum de deux images de l’API ; seule la première image renvoyée est utilisée.",
 			"coverage": "Couverture : {cells}.",
 			"createMotion": "Créer le mouvement · {direction}",
+			"startFrame": "Vérifier la pose de départ · {direction}",
 			"motionFrame": "{move} {direction} · image {frame} du mouvement",
 			"measureMotionNote": "Envoie l’image de mouvement générée comme image (PNG en base64), sauf si elle est déjà mesurée.",
 			"renderBody": "{move} {direction} · rendu du corps",
@@ -1785,7 +1807,11 @@
 			"magenta": "magenta",
 			"blue": "bleu vif",
 			"azure": "bleu azur vif"
-		}
+		},
+		"rerollFailed": "Relancer les appels échoués",
+		"rerollFailedDetail": "Seuls les appels échoués et ce qui en dépend sont rachetés. Tous les autres appels terminés sont réutilisés.",
+		"keepFinished": "Garder les animations terminées",
+		"keepFinishedDetail": "Enregistre les animations dont toutes les images sont terminées. Les autres restent listées comme images manquantes, à créer plus tard."
 	},
 	"generationDetails": {
 		"copiedFrom": "payé une fois pour {name} ; copié ici gratuitement",
@@ -1895,7 +1921,8 @@
 			"noCharacterId": "PixelLab n’a pas renvoyé d’ID de personnage géré. Les visuels existants sont inchangés.",
 			"referenceChanged": "Une référence debout a changé pendant la configuration.",
 			"characterChanged": "Le personnage a changé pendant la configuration. Son travail actuel a été conservé."
-		}
+		},
+		"newRegistration": "Réenregistrer"
 	},
 	"create": {
 		"errors": {
@@ -1941,7 +1968,7 @@
 			"resultMissingStorage": "résultat {label} absent du stockage",
 			"pixellabReturnedIncompleteInvalid": "{direction} : PixelLab a renvoyé des articulations debout incomplètes ou invalides. L’animation n’a pas été lancée à partir de ces articulations ; les résultats existants sont conservés.",
 			"pixellabReturnedWrongNumber": "{move} {direction} : PixelLab a renvoyé un nombre d’images incorrect. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
-			"animationExceedsPxFrame": "{move} {direction} : l’animation dépasse le cadre de {w} px. Augmentez la taille du cadre ou réduisez celle du corps avant de relancer la création.",
+			"animationExceedsPxFrame": "{move} {direction} : les images du corps ne tiennent pas dans le cadre de {w} px. Elles ont été conservées pour vérification ; rien n’a été enregistré.",
 			"pixellabReturnedEmptyFrames": "{move} {direction} : PixelLab a renvoyé des images vides. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
 			"validJointsWereFound": "{move} {direction} : certaines images n’ont pas d’articulations valides. Les images générées sont conservées dans « Activité » ; la configuration s’est arrêtée sans les redessiner.",
 			"matchBodyColorsOnly": "{direction} : harmonisez les couleurs du corps uniquement une fois tous les contrôles d’articulations d’origine terminés.",
@@ -1951,7 +1978,7 @@
 			"jointsFoundEveryFrame": "{label} : articulations introuvables sur certaines images",
 			"pixellabDroppedDirectionBusy": "{label} : PixelLab était occupé et n’a pas traité cette direction. Réessayez.",
 			"pixellabReturnedMotionFrames": "{label} : PixelLab a renvoyé {returned} images de mouvement pour {expected} demandées. Aucun contrôle d’articulations ni rendu du corps n’a été demandé pour cette vue.",
-			"motionExceedsPxFrame": "{label} : le mouvement dépasse le cadre de {size} px. Augmentez la taille du cadre ou réduisez celle du corps avant de relancer la création.",
+			"motionExceedsPxFrame": "{label} : le mouvement ne tient pas dans le cadre de {size} px. Ses images ont été conservées pour vérification ; rien n’a été enregistré.",
 			"pixellabReturnedEmptyMotion": "{label} : PixelLab a renvoyé une image de mouvement vide",
 			"pixellabReturnedView": "PixelLab n’a renvoyé aucune vue {direction}",
 			"viewDoesFitPx": "La vue {direction} ne tient pas dans le cadre de {cell} px. Augmentez la taille du cadre ou réduisez celle du corps avant de relancer la création.",
@@ -1996,7 +2023,9 @@
 			"chooseRepairTarget": "Avant de réparer, choisissez un objet et une direction d’une animation existante. Aucune génération n’a été demandée.",
 			"moveAnimationFramesBlocked": "Ce modèle et cette taille de canevas ne prennent pas en charge {frames} images. Aucune génération n’a été demandée.",
 			"describeMoveBlocked": "Décrivez cette animation avant de la générer. Aucune génération n’a été demandée.",
-			"chooseExistingMoveRepairing": "Choisissez une animation existante avant de réparer son équipement."
+			"chooseExistingMoveRepairing": "Choisissez une animation existante avant de réparer son équipement.",
+			"liftedJointsOutside": "{label} : le mouvement relevé a encore des articulations hors du cadre de {size} px. Aucun rendu du corps n’a été demandé.",
+			"reviewChoiceInvalid": "Ce choix ne correspond plus à l’animation. Vérifiez-le à nouveau. Aucune requête n’a été envoyée."
 		},
 		"steps": {
 			"draw": "Dessin de votre personnage",
@@ -2020,7 +2049,8 @@
 				"frameRange": "Le cadre doit être compris entre {min} et 256 pixels entiers.",
 				"seed": "La seed doit être un entier positif ou nul, dans la plage des entiers représentables sans perte de précision.",
 				"promptRequired": "Saisissez un prompt de personnage.",
-				"promptLength": "Le prompt complet doit faire 2 000 caractères au maximum."
+				"promptLength": "Le prompt complet doit faire 2 000 caractères au maximum.",
+				"frameRoom": "Un cadre de {frame} px laisse moins de place que {min} px autour d’un corps de {body} px. Certaines parties du personnage risquent de ne pas tenir."
 			}
 		},
 		"form": {
@@ -2186,7 +2216,8 @@
 			"estimated": "Estimation : {gens}",
 			"keepWorking": "Continuer à travailler",
 			"costTitle": "Inclut les vues debout dans toutes les directions. Ajoutez ensuite l’attente, la marche et d’autres animations. Trouver une articulation manquante dans une vue debout peut coûter un peu plus.",
-			"create": "Créer le personnage"
+			"create": "Créer le personnage",
+			"createAnyway": "Créer quand même"
 		}
 	},
 	"moveSheet": {
@@ -2200,12 +2231,39 @@
 			"route": "Cette méthode part de la pose debout. Choisissez un autre modèle d’animation pour utiliser une image enregistrée.",
 			"stateTarget": "Un état ne peut pas être remplacé comme une animation."
 		},
+		"loop": "Boucle",
+		"loopHint": "Répétée par défaut dans les exports.",
+		"referenceDirection": "Images de départ et de fin",
+		"referenceHelp": "L’image de départ guide la première pose. Si le modèle accepte une image de fin, celle-ci guide la dernière pose. Utiliser la même image aux deux extrémités peut rendre la boucle plus fluide.",
+		"referenceEdited": "{direction} (images personnalisées)",
+		"referenceSize": "Utilisez des PNG transparents du corps seul en {width} × {height}.",
+		"referenceInvalid": "Utilisez un PNG de {width} × {height} avec un visuel visible et un fond transparent.",
+		"referencePng": "Choisissez une image PNG.",
+		"referencePoseInvalid": "Aucune pose exploitable n’a été trouvée dans l’image de départ pour {direction}.",
+		"startFrame": "Image de départ",
+		"endFrame": "Image de fin",
+		"standingFrame": "Image debout",
+		"sameAsStart": "Identique au départ",
+		"noEndFrame": "Aucune image de fin",
+		"endUnavailable": "Indisponible pour ce modèle",
+		"customFrames": "Images personnalisées",
+		"customStartTitle": "Utiliser une image de départ personnalisée ?",
+		"customStartWarning": "La génération ajoute une vérification de pose payante par départ personnalisé. L’animation peut sauter depuis cette image et l’équipement risque de ne pas s’aligner.",
+		"customStartKeep": "Garder par défaut",
+		"customStartContinue": "Continuer",
+		"removeEndFrame": "Retirer l’image de fin",
+		"changeLoopTitle": "Modifier Boucle et réinitialiser les images de fin ?",
+		"changeLoopWarning": "Cela remplace les images de fin personnalisées de cette animation par les réglages automatiques.",
+		"changeLoopAccept": "Modifier Boucle",
+		"makeRoom": "Faire de la place",
+		"frameRoom": "Cette animation peut dépasser le cadre de {frame} px : le personnage a {below} px sous les pieds. Faites d’abord de la place gratuitement, ou générez l’animation quand même.",
 		"skeleton": {
 			"title": "Examiner Skeleton V3",
 			"hint": "Skeleton V3 est une autre option. Les contrôles qualité peuvent encore échouer.",
 			"back": "Retour aux résultats"
 		},
 		"checkpoint": {
+			"generateAnyway": "Générer l’animation quand même",
 			"generate": "Générer l’animation",
 			"initialEstimate": "Environ {minutes} min · Sans objets",
 			"review": "Vérifier l’animation",
@@ -2363,7 +2421,9 @@
 			"currentFrame": "Image actuelle {number}",
 			"redrawnFrame": "Image redessinée {number}",
 			"repairedFrame": "Image réparée {number}"
-		}
+		},
+		"rerollBatch": "Relancer ce lot",
+		"rerollBatchDetail": "Les lots précédents restent tels quels. L’estimation couvre ce lot et les suivants, qui n’ont pas encore été achetés."
 	},
 	"itemRoute": {
 		"errors": {
@@ -2447,7 +2507,7 @@
 		"tabOnlyKey": "Cette connexion est limitée à cet onglet et n’est pas enregistrée.",
 		"useSavedKey": "Utiliser la clé enregistrée"
 	},
-	"moveNames": { "default": "Debout", "idle": "Attente", "walk": "Marche" },
+	"moveNames": { "default": "Debout", "idle": "Attente", "walk": "Marche", "run": "Course" },
 	"stateGeneration": {
 		"continueIntro": "Vous pouvez terminer les vues qui n’ont jamais été envoyées. Les vues terminées seront conservées.",
 		"continueAccount": "Reconnectez-vous avec la clé PixelLab initiale pour reprendre cet état.",
@@ -2678,6 +2738,85 @@
 			"resolveDrafts": "Conservez ou rejetez les brouillons d’objets de ce personnage avant de remplacer des images du corps de base.",
 			"importFailed": "Impossible de lire ces images. Réessayez.",
 			"saveFailed": "Impossible d’enregistrer ces images. Rien n’a été modifié. Réessayez."
+		}
+	},
+	"paidReview": {
+		"title": "Résultats payés",
+		"spent": "Déjà payé : {gens} gens. Ces résultats sont conservés et réutilisés.",
+		"free": "Gratuit",
+		"download": "Télécharger les résultats payés",
+		"frame": "{view}, image {number}",
+		"waiting": "Certaines requêtes payantes sont encore en cours chez PixelLab. Ces choix se débloquent quand elles sont terminées.",
+		"state": {
+			"ready": "Prêt",
+			"pending": "Pas encore acheté",
+			"failed": "Arrêté",
+			"running": "Toujours en cours chez PixelLab"
+		}
+	},
+	"moveReview": {
+		"makeRoomDetail": "{change}, gratuitement. Le mouvement payé est réutilisé ; seules les étapes sur le cadre modifié sont achetées.",
+		"makeRoomDetailRedraw": "{change}, gratuitement. Ce modèle dessine à partir du cadre debout, donc le mouvement est redessiné sur le cadre modifié.",
+		"makeRoom": "Faire de la place et continuer",
+		"resume": "Continuer avec les résultats payés",
+		"lift": "Continuer, relevé pour tenir",
+		"liftAndReroll": "Relever pour tenir, relancer {views}",
+		"liftDetail": "{views} : les pieds montent jusqu’à {px} px dans {frames} images de mouvement sur {total} pour que le mouvement tienne dans le cadre.",
+		"liftDetailReview": "{views} : les pieds montent jusqu’à {px} px dans {frames} images de mouvement sur {total} pour que le mouvement tienne dans le cadre. C’est au-delà du contrôle des pieds de {limit} px, vous vérifierez donc les images du corps avant qu’elles remplacent les actuelles.",
+		"liftDetailWarned": "{views} : les pieds montent jusqu’à {px} px dans {frames} images de mouvement sur {total} pour que le mouvement tienne dans le cadre. C’est au-delà du contrôle des pieds de {limit} px, l’animation est donc enregistrée avec un avertissement sur les pieds.",
+		"reroll": "Relancer {views}",
+		"rerollDetail": "Une relance n’achète une nouvelle tentative que pour ces directions. Toutes les autres gardent leurs résultats payés.",
+		"pending": "Reste à acheter : environ {gens} gens.",
+		"liftable": "Peut être relevé pour tenir : les pieds montent jusqu’à {px} px dans {frames} images sur {total}.",
+		"notLiftable": "Relever ne suffit pas : le mouvement est coupé sur un côté ou en haut."
+	},
+	"createReview": {
+		"resume": "Continuer avec les résultats payés",
+		"register": "Réenregistrer les vues dessinées",
+		"registerDetail": "Conserve le dessin payé et achète un nouvel enregistrement des mêmes vues."
+	},
+	"adjustFrame": {
+		"title": "Ajuster le cadre",
+		"intro": "Déplacez le personnage vers le haut ou le bas dans son cadre, ou changez la taille du cadre. Chaque objet, animation et image suit. C’est gratuit et rien n’est redessiné.",
+		"previewLabel": "Personnage dans son cadre",
+		"preview": "Vue {direction} dans un cadre de {size} px",
+		"keys": "Quand l’aperçu a le focus, les flèches haut et bas déplacent le personnage de 1 px (avec Maj, 4 px).",
+		"direction": "Vue",
+		"position": "Position",
+		"up": "Haut",
+		"down": "Bas",
+		"movedUp": "Monté de {px} px",
+		"movedDown": "Descendu de {px} px",
+		"notMoved": "Non déplacé",
+		"size": "Taille du cadre",
+		"smaller": "Cadre plus petit",
+		"larger": "Cadre plus grand",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "Faire de la place",
+		"makeRoomHelp": "Déplace le personnage juste assez pour laisser de la place à la marche, et n’agrandit le cadre que si cela ne suffit pas.",
+		"madeRoom": "Place faite. Vérifiez l’aperçu, puis enregistrez.",
+		"roomy": "Ce personnage a déjà de la place pour les animations.",
+		"short": "Les animations peuvent dépasser ce cadre. Faire de la place le corrige gratuitement.",
+		"above96": "Au-delà de 96 px, les objets tenus et les grilles de réparation coûtent plus cher.",
+		"above170": "Au-delà de 170 px, chaque objet coûte 25 gens par appel d’habillage.",
+		"consequences": "Les objets ne se copient à l’identique qu’entre personnages de même taille et position de cadre. Les exports gardent la même échelle et la même origine en jeu ; exportez à nouveau pour utiliser le changement.",
+		"loading": "Chargement du cadre…",
+		"saved": "Cadre ajusté : {change}.",
+		"undone": "Modification du cadre annulée.",
+		"errors": {
+			"reviewOpen": "Enregistrez ou ignorez l’animation en attente de vérification avant d’ajuster le cadre.",
+			"statePending": "Enregistrez ou abandonnez l’état en attente avant d’ajuster le cadre.",
+			"missingArtwork": "Des illustrations enregistrées de ce personnage manquent, son cadre ne peut donc pas être modifié.",
+			"even": "Choisissez une taille de cadre qui change d’un nombre pair de pixels.",
+			"range": "Le cadre doit mesurer de {min} à {max} px pour ce personnage.",
+			"clipTop": "Cela coupe {px} px en haut du personnage ou de ses objets.",
+			"clipBottom": "Cela coupe {px} px en bas du personnage ou de ses objets.",
+			"clipSides": "Cela coupe {px} px sur les côtés du personnage ou de ses objets.",
+			"unchanged": "Changez d’abord la taille ou la position du cadre.",
+			"limit": "Même un cadre de {size} px ne laisse pas assez de place aux animations de ce personnage.",
+			"resolveDrafts": "Conservez ou ignorez les brouillons d’objets de ce personnage avant d’ajuster le cadre.",
+			"changed": "Ce personnage a changé. Rouvrez Ajuster le cadre pour vérifier la dernière version.",
+			"undoFailed": "Impossible d’annuler la modification du cadre."
 		}
 	}
 }

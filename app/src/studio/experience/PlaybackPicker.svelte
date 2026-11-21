@@ -2,6 +2,7 @@
 	import { t } from 'svelte-whisper';
 	import type { playbackClips } from '../../lib/runtime/timeline.js';
 	import { displayMove } from '../displayMove.ts';
+	import type { MoveRef } from '../model.ts';
 	import { Check, ChevronDown, PersonStanding } from '../icons.ts';
 	import { ALL_CLIPS, ALL_MOVES, ALL_STATES } from '../shareClips.ts';
 	import PopoverArrow from '../PopoverArrow.svelte';
@@ -9,14 +10,14 @@
 
 	let {
 		clips,
-		moveIds,
+		moveRefs,
 		selected,
 		compact = false,
 		bulk = false,
 		onselect
 	}: {
 		clips: ReturnType<typeof playbackClips>;
-		moveIds: readonly string[];
+		moveRefs: readonly MoveRef[];
 		selected: string;
 		compact?: boolean;
 		bulk?: boolean;
@@ -37,7 +38,7 @@
 			if (key === ALL_MOVES) return t('share.allMoves');
 			if (key === ALL_CLIPS) return t('share.allClips');
 		}
-		return displayMove(key, moveIds);
+		return displayMove(key, moveRefs);
 	}
 </script>
 
