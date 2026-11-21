@@ -1713,8 +1713,18 @@ test('an overflowing paid motion is reviewed from the cache with a priced lift a
 	expect(review.views.map((view) => view.state)).toEqual(['failed', 'ready']);
 	expect(review.views[0].frames).toHaveLength(8);
 	expect(review.recordIds).toContain('motion-east');
-	expect(review.options.map((option) => option.id)).toEqual(['lift', 'reroll']);
-	const [lift, reroll] = review.options;
+	expect(review.options.map((option) => option.id)).toEqual(['lift', 'enlarge-frame', 'reroll']);
+	const [lift, enlarge, reroll] = review.options;
+	// Enlarge frame keeps character.id, so both paid motions are reused from the cache; on the larger frame each view needs
+	// new motion checks, a body render and its checks. Nothing was requested to price it.
+	expect(enlarge).toMatchObject({
+		frame: 80,
+		paid: true,
+		primary: false,
+		spec: { seed: f.spec.seed }
+	});
+	expect(enlarge.spec.motionLift).toBeUndefined();
+	expect(enlarge.gens).toBeCloseTo(2 * (0.8 + 3 + 0.8));
 	expect(lift.spec).toMatchObject({ seed: f.spec.seed, motionLift: { east: Array(8).fill(2) } });
 	// Lifted frames are new joint checks; the body render and its checks follow. West is reused as is.
 	expect(lift.gens).toBeCloseTo(0.8 + 3 + 0.8);

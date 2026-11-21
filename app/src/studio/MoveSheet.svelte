@@ -69,6 +69,8 @@
 		retryMoveMeasurements,
 		resolveRepairReview,
 		dismissMove,
+		frameEditsBlocked,
+		resizeCharacter,
 		openProject,
 		pendingMoves,
 		withKey
@@ -90,10 +92,12 @@
 	const m = $derived(store.project?.manifest);
 	const hasSharedOffers = $derived(!sharedItemsHidden(doc.id) && shared.items.length > 0);
 	let rec = $state.raw<StoredProject | null>(null);
-	// Re-read after a failure: a move saves its body and finished item views before failing, and Try again is priced from them.
+	// Re-read after a failure (a move saves its body and finished item views before failing, and Try again is priced from
+	// them) and after Frame size replaced the character.
 	$effect(() => {
 		const id = doc.id;
 		void moving.error;
+		void store.project;
 		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
 	});
 	const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null));
@@ -260,8 +264,8 @@
 	});
 	// App-side warnings never block a request PixelLab would take: Add anyway records them as accepted with the move.
 	const preflight = $derived(
-		m && id && !motionIssue
-			? movePreflightWarnings(m, {
+		m && store.project && id && !motionIssue
+			? movePreflightWarnings(store.project, {
 					...motion,
 					items: [],
 					seed: 0,
@@ -478,16 +482,46 @@
 			ui.sheet = 'move';
 		}, recoveryTier);
 	}
-	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. */
+	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. Enlarge
+	 *  frame resizes the character first (free; this stopped move waits for it) and then continues the same move. */
 	function choosePaid(option: MovePaidOption) {
 		const projectId = moving.projectId,
-			spec = $state.snapshot(option.spec);
+			spec = $state.snapshot(option.spec),
+			frame = option.frame;
 		const go = () => {
-			void startMove(projectId, spec);
 			ui.sheet = 'move';
+			void (async () => {
+				if (frame) {
+					try {
+						await resizeCharacter(projectId, frame, { stoppedMove: true, quiet: true });
+					} catch (error) {
+						recoveryError = errorMessage(error);
+						return;
+					}
+				}
+				await startMove(projectId, spec);
+			})();
 		};
 		if (option.paid) withKey(go, retryTier);
 		else go();
+	}
+	// Enlarge frame from the room warning: free; the form keeps every choice and its warnings are checked again.
+	const enlargeSize = (warning: { id: string; translation: { vars?: unknown } }) => {
+		const size = (warning.translation.vars as { size?: unknown } | undefined)?.size;
+		return warning.id === 'frame-room-move' && typeof size === 'number' ? size : undefined;
+	};
+	let enlarging = $state(false);
+	let enlargeError = $state('');
+	async function enlarge(size: number) {
+		enlarging = true;
+		enlargeError = '';
+		try {
+			await resizeCharacter(doc.id, size);
+		} catch (error) {
+			enlargeError = displayError(error);
+		} finally {
+			enlarging = false;
+		}
 	}
 
 	// Free and local: no key is needed because a kept body makes no PixelLab request.
@@ -1144,7 +1178,18 @@
 						class="notice warn small"
 					>
 						<CircleAlert size={14} />{displayError(warning)}
-					</p>{/each}{:else if pendingIds.includes(id)}<p class="notice small">
+					</p>
+					{@const size = enlargeSize(warning)}
+					{#if size}
+						<button
+							class="bu-action btn"
+							data-variant="outline"
+							disabled={enlarging || !!frameEditsBlocked(doc.id)}
+							onclick={() => void enlarge(size)}
+							>{t('moveSheet.enlargeFrame', { size: formatNumber(size) })}</button
+						>
+						{#if enlargeError}<p class="notice bad small" role="alert">{enlargeError}</p>{/if}
+					{/if}{/each}{:else if pendingIds.includes(id)}<p class="notice small">
 					<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
 				</p>{:else if busy}<p class="faint small">
 					{t('moveSheet.waitsForCurrent')}

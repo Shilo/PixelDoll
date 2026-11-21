@@ -244,3 +244,17 @@ test('standing room is the union of the standing views', () => {
 	expect(standingRoom([makeImg(4, 4)], 4)).toBeUndefined();
 	expect(DEFAULT_MOVE).toBe('default');
 });
+
+test('a move from standing views that reach the frame edge warns and offers the free enlarged frame', async () => {
+	const { frameRoomWarning } = await import('../../src/studio/create.ts');
+	const { rec, project, history } = await character();
+	const spec = { id: 'walk-2', action: 'walk', frames: 8, items: [] as string[], seed: 1 };
+	// The s2 body stands on the frame's last row: a walk has nowhere to step.
+	const warning = frameRoomWarning(project, spec)!;
+	expect(warning.id).toBe('frame-room-move');
+	expect(warning.translation.vars).toMatchObject({ frame: 64, below: 0, size: 80 });
+	expect(frameRoomWarning(project, { ...spec, itemsOnly: true as const })).toBeUndefined();
+	const { record, newImages } = await reframeCharacter(rec, project.images, 80, read(history));
+	const resized = { manifest: record.manifest, images: new Map([...project.images, ...newImages]) };
+	expect(frameRoomWarning(resized, spec)).toBeUndefined();
+});

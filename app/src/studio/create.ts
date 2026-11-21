@@ -37,7 +37,15 @@ import type { ImageReference } from '../lib/image/reference.ts';
 import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
-import { loadProject, type StoredProject } from '../lib/store/project.ts';
+import { loadProject, readStoredImage, type StoredProject } from '../lib/store/project.ts';
+import {
+	frameMax,
+	reframeCharacter,
+	roomFrame,
+	roomShort,
+	standingRoom,
+	standingViews
+} from '../lib/rig/reframe.ts';
 import { defaultCharacterExportId, itemContent } from '../lib/store/identity.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { liftToFit, normalize, opaqueBox } from '../lib/rig/normalize.ts';
@@ -2573,13 +2581,10 @@ export async function addMove(
 			'Keeping reviewed body frames saves only the body. No request was made.',
 			'create.errors.keepingReviewedBodyFrames'
 		);
-	const { rec } = await loadProject(projectId);
+	const { rec, project: loaded } = await loadProject(projectId);
 	checkedReviewChoices(rec.manifest, spec);
 	if (!spec.itemsOnly) {
-		const warning = blockingIssues(
-			movePreflightWarnings(rec.manifest, spec),
-			spec.acceptedWarnings
-		)[0];
+		const warning = blockingIssues(movePreflightWarnings(loaded, spec), spec.acceptedWarnings)[0];
 		if (warning) throw warning;
 	}
 	const assertReview = (m: Manifest) => {
@@ -2950,9 +2955,29 @@ function sampleMovePoses(poses: Keypoint[][], frames: number, action?: string): 
 /** App-side checks that warn before a body move is bought. Each returns a PreflightWarning the user can explicitly generate
  *  past (MoveSheet shows it and offers Add anyway). Requests PixelLab would refuse, missing data and saved-data corruption
  *  stay hard stops instead: bodyMoveIssue, partialMoveFrameIssue, reservedMove and addMove's prerequisites. */
-export const MOVE_PREFLIGHT: ((m: Manifest, spec: MoveSpec) => PreflightWarning | undefined)[] = [];
-export const movePreflightWarnings = (m: Manifest, spec: MoveSpec): PreflightWarning[] =>
-	MOVE_PREFLIGHT.flatMap((check) => check(m, spec) ?? []);
+export const MOVE_PREFLIGHT: ((p: Project, spec: MoveSpec) => PreflightWarning | undefined)[] = [
+	frameRoomWarning
+];
+export const movePreflightWarnings = (p: Project, spec: MoveSpec): PreflightWarning[] =>
+	MOVE_PREFLIGHT.flatMap((check) => check(p, spec) ?? []);
+/** A body move from standing views with less room than a move reaches (lib/rig/reframe.ts moveReach) may step past the
+ *  frame and stop after paying. `size` is the frame Frame size would enlarge to for free (MoveSheet offers it); the user may
+ *  also add the move anyway. */
+export function frameRoomWarning(p: Project, spec: MoveSpec): PreflightWarning | undefined {
+	if (spec.itemsOnly) return undefined;
+	const m = p.manifest,
+		frame = m.rig.cell.w,
+		room = standingRoom(standingViews(m, p.images), frame);
+	if (!room || !roomShort(room)) return undefined;
+	const size = roomFrame(frame, room, frameMax(m));
+	if (size <= frame) return undefined;
+	return new PreflightWarning(
+		'frame-room-move',
+		`This move may step past the ${frame} px frame: the character has ${room.below} px below its feet. Enlarge the frame to ${size} px for free first, or add the move anyway.`,
+		'moveSheet.frameRoom',
+		{ frame, below: room.below, size }
+	);
+}
 
 interface BodyClipPlan {
 	rec: StoredProject;
@@ -3181,15 +3206,58 @@ async function motionLiftOf(plan: BodyClipPlan, record: JobRec): Promise<number[
 	return lifts.every((lift): lift is number => lift !== null) ? lifts : null;
 }
 
-/** Enlarge frame and continue: centered symmetric padding that keeps character.id, so every cached motion request stays
- *  reusable and only the checks and body renders on the larger frame are bought. Not offered until the Frame size action
- *  exists; it then returns the padded spec priced by a replay like the other options. */
-const enlargeFrameOption = (
-	_plan: BodyClipPlan,
-	_views: ReplayedView[]
-): MovePaidOption | undefined => undefined;
+/** Enlarge frame and continue: centered symmetric padding (Frame size) keeps character.id, so every cached motion request
+ *  stays reusable and only the checks and body renders on the larger frame are bought. The frame is the room rule's size
+ *  (lib/rig/reframe.ts), grown in 2 px steps until every overflowing motion that was bought fits; priced by a replay of the
+ *  resized character from the cache. Undefined when nothing overflowed or no frame up to the limit fits. */
+async function enlargeFrameOption(
+	plan: BodyClipPlan,
+	failed: ReplayedView[],
+	records: JobRec[],
+	dirs: Direction[],
+	primary: boolean
+): Promise<MovePaidOption | undefined> {
+	const overflowing = failed.filter((v) => v.error?.paid.failure === 'overflow');
+	if (!overflowing.length || overflowing.length !== failed.length) return undefined;
+	const { rec, project } = plan,
+		m = rec.manifest,
+		size = m.rig.cell.w,
+		max = frameMax(m);
+	const motions: Img[] = [];
+	for (const v of overflowing) {
+		const id = v.error!.paid.recordId,
+			source = id && records.concat(queue.snapshot().jobs).find((r) => r.id === id);
+		if (!source) return undefined;
+		motions.push(...(await imagesOf(source)).map((out) => out.img));
+	}
+	const room = standingRoom(standingViews(m, project.images), size);
+	let frame = Math.max(size + 2, room ? roomFrame(size, room, max) : size);
+	const fits = (f: number) => motions.every((img) => !normalize(img, f, f, 128, f).cutPx);
+	while (frame <= max && !fits(frame)) frame += 2;
+	if (frame > max) return undefined;
+	const { record, newImages } = await reframeCharacter(rec, project.images, frame, readStoredImage);
+	const next = bodyClipPlan(
+		record,
+		{ manifest: record.manifest, images: new Map([...project.images, ...newImages]) },
+		plan.spec
+	);
+	const views = await Promise.all(dirs.map((d) => replayView(next, d))),
+		gens = +views.reduce((sum, v) => sum + v.gens, 0).toFixed(2);
+	return {
+		id: 'enlarge-frame',
+		label: message('moveReview.enlarge', { size: frame }),
+		detail: message('moveReview.enlargeDetail', { from: size, size: frame }),
+		gens,
+		paid: gens > 0,
+		primary,
+		spec: plan.spec,
+		frame
+	};
+}
 export interface MovePaidOption extends PaidOption {
 	spec: MoveSpec;
+	/** `enlarge-frame`: the frame Frame size changes the character to (free) before the move continues with `spec`. */
+	frame?: number;
 }
 export interface MovePaidReview extends PaidReview {
 	options: MovePaidOption[];
@@ -3313,7 +3381,13 @@ export async function reviewMoveResults(
 			spec: candidate
 		});
 	}
-	const enlarge = enlargeFrameOption(plan, views);
+	const enlarge = await enlargeFrameOption(
+		plan,
+		failed,
+		records,
+		dirs,
+		!options.some((option) => option.primary)
+	);
 	if (enlarge) options.push(enlarge);
 	if (rerolled.length || lifted.length) {
 		// Re-rolling instead of lifting buys a new motion source for the overflowing views too.
