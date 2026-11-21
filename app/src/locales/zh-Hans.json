@@ -52,7 +52,6 @@
 			"done": "设置已重置。",
 			"failed": "无法保存这些默认设置：{sections}。"
 		},
-		"wardrobe": "共享衣橱装备",
 		"connection": "PixelLab",
 		"pixelLabWebsite": "访问 PixelLab",
 		"about": "关于",

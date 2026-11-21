@@ -501,24 +501,15 @@
 			><SurfaceChevron /></button
 		>
 		<LanguagePicker />
-		{#if doc.id}<MenuDisclosure
-				sectionKey="more-wardrobe-settings"
-				label={t('toolbar.wardrobeSettings')}
-			>
-				{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
-				{#snippet aside()}
-					{#if sharedItemsHidden(doc.id)}
-						<span class="row-aside wardrobe-status faint small">{t('toolbar.ownItemsOnly')}</span>
-					{/if}
-				{/snippet}
-				<WardrobeVisibility
-					scope="character"
-					onManage={() => {
-						closeOptions();
-						openSettings('wardrobe');
-					}}
-				/>
-			</MenuDisclosure>{/if}
+		<MenuDisclosure sectionKey="more-wardrobe-settings" label={t('toolbar.wardrobeSettings')}>
+			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
+			{#snippet aside()}
+				{#if sharedItemsHidden(doc.id)}
+					<span class="row-aside wardrobe-status faint small">{t('toolbar.ownItemsOnly')}</span>
+				{/if}
+			{/snippet}
+			<WardrobeVisibility />
+		</MenuDisclosure>
 		<hr />
 		{#if !workspaceCopy}
 			<LibraryBackupButton menu onbackup={downloadLibraryBackupWithFeedback} />

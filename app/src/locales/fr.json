@@ -52,7 +52,6 @@
 			"done": "Paramètres réinitialisés.",
 			"failed": "Impossible d’enregistrer ces réglages par défaut : {sections}."
 		},
-		"wardrobe": "Objets partagés de la garde-robe",
 		"connection": "PixelLab",
 		"pixelLabWebsite": "Visiter PixelLab",
 		"about": "À propos",

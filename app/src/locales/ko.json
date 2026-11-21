@@ -52,7 +52,6 @@
 			"done": "설정을 초기화했습니다.",
 			"failed": "다음 기본값을 저장하지 못했습니다: {sections}."
 		},
-		"wardrobe": "공유 아이템",
 		"connection": "PixelLab",
 		"pixelLabWebsite": "PixelLab 방문",
 		"about": "앱 정보",

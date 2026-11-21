@@ -241,21 +241,25 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await expect(savedHat).toHaveCount(0);
 	await openSettings();
 	const visibility = page.getByRole('group', { name: 'Hide shared items', exact: true });
-	await expect(visibility.locator('label')).toHaveText(['In all wardrobes', 'From demo character']);
+	const demoVisibilityLabels = [
+		'In all wardrobes',
+		"In Adventurer's wardrobe",
+		'From demo character'
+	];
+	await expect(visibility.locator('label')).toHaveText(demoVisibilityLabels);
 	await expect(hideAll).toBeChecked();
 	await expect(hideDemo).toBeDisabled();
+	await expect(hideInDemo).toBeDisabled();
 	await closeSettings();
 	await openCharacterVisibility();
+	await expect(visibility.locator('label')).toHaveText(demoVisibilityLabels);
 	await expect(hideInDemo).toBeChecked();
 	await expect(hideInDemo).toBeDisabled();
-	await visibility.getByRole('button', { name: 'Shared wardrobe items' }).click();
 	await hideAll.uncheck();
 	await expect(hideDemo).not.toBeChecked();
 	await expect(savedHat).toBeVisible();
 	await hideDemo.check();
 	await expect(savedHat).toBeVisible();
-	await closeSettings();
-	await openCharacterVisibility();
 	await expect(hideInDemo).toBeEnabled();
 	await expect(hideInDemo).not.toBeChecked();
 	await hideInDemo.check();
@@ -263,6 +267,8 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await expect(originalHelmet).toBeVisible();
 	await page.keyboard.press('Escape');
 	await openSettings();
+	await expect(hideInDemo).toBeChecked();
+	await expect(hideDemo).toBeChecked();
 	await hideAll.check();
 	await expect(hideDemo).toBeDisabled();
 	await hideAll.uncheck();
@@ -364,6 +370,12 @@ test('a shared custom category appears before adoption and stays after wearing a
 	const thisCharacter = visibility.getByRole('switch', {
 		name: /^Hide shared items in .+'s wardrobe/
 	});
+	const menuHideAll = visibility.getByRole('switch', {
+		name: 'Hide shared items in all wardrobes'
+	});
+	const menuHideDemo = visibility.getByRole('switch', {
+		name: 'Hide shared items from demo character'
+	});
 	const globalSettings = page.getByRole('dialog', { name: 'Settings' });
 	const allCharacters = globalSettings.getByRole('switch', {
 		name: 'Hide shared items in all wardrobes'
@@ -394,10 +406,16 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.keyboard.press('Enter');
 	await expect(settings).toHaveAttribute('aria-expanded', 'true');
 	await page.keyboard.press('Tab');
+	await expect(menuHideAll).toBeFocused();
+	await page.keyboard.press('Tab');
 	await expect(thisCharacter).toBeFocused();
 	await page.keyboard.press('Tab');
+	await expect(menuHideDemo).toBeFocused();
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('button', { name: 'Back up library', exact: true })).toBeFocused();
+	await page.keyboard.press('Tab');
 	await expect(page.getByRole('button', { name: 'Activity...', exact: true })).toBeFocused();
-	await page.keyboard.press('Shift+Tab');
+	for (let step = 0; step < 3; step++) await page.keyboard.press('Shift+Tab');
 	await expect(thisCharacter).toBeFocused();
 	await expect(thisCharacter).not.toBeChecked();
 	await page.keyboard.press('Space');
@@ -437,7 +455,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 		'Shared items are hidden in all wardrobes.'
 	);
 	await expect(sharedTiles).toHaveCount(0);
-	await expect(visibility.getByRole('button', { name: 'Shared wardrobe items' })).toBeVisible();
+	await expect(menuHideAll).toBeChecked();
 	await page.keyboard.press('Escape');
 	await pickCharacter('Stout');
 	await expect(sharedTiles).toHaveCount(0);
@@ -480,11 +498,8 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await settings.click();
 	await expect(thisCharacter).toBeChecked();
 	await expect(thisCharacter).toBeDisabled();
-	await visibility.getByRole('button', { name: 'Shared wardrobe items' }).click();
-	await expect(allCharacters).toBeChecked();
-	await allCharacters.uncheck();
-	await globalSettings.getByRole('button', { name: 'Close', exact: true }).click();
-	await openSettings();
+	await expect(menuHideAll).toBeChecked();
+	await menuHideAll.uncheck();
 	await expect(thisCharacter).toBeEnabled();
 	await expect(thisCharacter).not.toBeChecked();
 	await expect(sharedTiles.first()).toBeVisible();

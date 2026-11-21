@@ -15,15 +15,9 @@
 	} from './wardrobeVisibility.svelte.ts';
 
 	const headingId = $props.id();
-	let {
-		scope = 'all',
-		onManage
-	}: {
-		scope?: 'all' | 'global' | 'character';
-		onManage?: () => void;
-	} = $props();
+	let { settings = false }: { settings?: boolean } = $props();
 	const lockReasonId = `${headingId}-lock-reason`;
-	const name = $derived(doc.id ? characterName() : t('common.character'));
+	const name = $derived(characterName());
 	const hideAll = $derived(sharedItemsHiddenForAll());
 	const hideDemo = $derived(hideAll || !demoItemsShown());
 	const hideCurrent = $derived(sharedItemsHidden(doc.id));
@@ -38,6 +32,14 @@
 	{#snippet emphasis()}<strong>{t('sharedVisibility.allEmphasis')}</strong>{/snippet}
 	<span class="row-name"><RichMessage key="sharedVisibility.all" slots={{ all: emphasis }} /></span>
 {/snippet}
+{#snippet characterContent()}
+	<UserRound size={18} aria-hidden="true" />
+	{#snippet character()}<strong>{name}</strong>{/snippet}
+	<span class="character-wardrobe-label"
+		><RichMessage key="sharedVisibility.current" slots={{ name: character }} /></span
+	>
+	{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
+{/snippet}
 {#snippet demoContent()}
 	<LayoutTemplate size={18} aria-hidden="true" />
 	{#snippet emphasis()}<strong>{t('sharedVisibility.demoEmphasis')}</strong>{/snippet}
@@ -50,7 +52,7 @@
 	contents: import('svelte').Snippet,
 	attributes: import('svelte/elements').HTMLInputAttributes
 )}
-	{#if scope === 'global'}
+	{#if settings}
 		<SettingsItemToggle {...attributes}>{@render contents()}</SettingsItemToggle>
 	{:else}
 		<label class="row bu-check">
@@ -61,71 +63,56 @@
 {/snippet}
 
 <div role="group" aria-labelledby={headingId}>
-	{#if scope === 'global'}
+	{#if settings}
 		<h4 class="settings-label" id={headingId}>{t('sharedVisibility.heading')}</h4>
 	{:else}
 		<p class="menu-sec" id={headingId}>{t('sharedVisibility.heading')}</p>
 	{/if}
-	{#if hideAll && scope !== 'global'}<span id={lockReasonId} hidden
-			>{t('sharedVisibility.allOn')}</span
-		>{/if}
-	{#if scope !== 'character'}
-		{@render wardrobeToggle(allContent, {
-			'aria-label': t('sharedVisibility.hideAll'),
-			checked: hideAll,
-			defaultChecked: hideAll,
-			onchange: (event) => reportSave(setSharedItemsHiddenForAll(event.currentTarget.checked))
-		})}
-	{/if}
-	{#if scope !== 'global'}<label class="row bu-check">
-			<UserRound size={18} aria-hidden="true" />
-			{#snippet character()}<strong>{name}</strong>{/snippet}
-			<span class="row-name character-wardrobe-label"
-				><RichMessage key="sharedVisibility.current" slots={{ name: character }} /></span
-			>
-			{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
-			<input
-				class="bu-switch"
-				type="checkbox"
-				role="switch"
-				aria-label={t('sharedVisibility.hideCurrent', { name })}
-				aria-describedby={hideAll ? lockReasonId : undefined}
-				checked={hideCurrent}
-				defaultChecked={hideCurrent}
-				disabled={hideAll || !doc.id}
-				onchange={(event) =>
-					reportSave(setSharedItemsHiddenForCharacter(doc.id, event.currentTarget.checked))}
-			/>
-		</label>{/if}
-	{#if scope !== 'character'}
-		{@render wardrobeToggle(demoContent, {
-			'aria-label': t('sharedVisibility.hideDemo'),
+	{@render wardrobeToggle(allContent, {
+		'aria-label': t('sharedVisibility.hideAll'),
+		checked: hideAll,
+		defaultChecked: hideAll,
+		onchange: (event) => reportSave(setSharedItemsHiddenForAll(event.currentTarget.checked))
+	})}
+	{#if doc.id}
+		{@render wardrobeToggle(characterContent, {
+			'aria-label': t('sharedVisibility.hideCurrent', { name }),
 			'aria-describedby': hideAll ? lockReasonId : undefined,
-			checked: hideDemo,
-			defaultChecked: hideDemo,
+			checked: hideCurrent,
+			defaultChecked: hideCurrent,
 			disabled: hideAll,
-			onchange: (event) => {
-				reportSave(setDemoItemsShown(!event.currentTarget.checked));
-				if (store.project && !isDemo()) void refreshShared();
-			}
+			onchange: (event) =>
+				reportSave(setSharedItemsHiddenForCharacter(doc.id, event.currentTarget.checked))
 		})}
 	{/if}
-	{#if hideAll && scope === 'global'}
-		<p class="bu-muted settings-description" id={lockReasonId}>{t('sharedVisibility.allOn')}</p>
-	{:else if hideAll && onManage}
-		<p class="menu-sec">{t('sharedVisibility.allOn')}</p>
-		<button class="row bu-action" data-variant="quiet" onclick={onManage}
-			>{t('settings.wardrobe')}</button
-		>
+	{@render wardrobeToggle(demoContent, {
+		'aria-label': t('sharedVisibility.hideDemo'),
+		'aria-describedby': hideAll ? lockReasonId : undefined,
+		checked: hideDemo,
+		defaultChecked: hideDemo,
+		disabled: hideAll,
+		onchange: (event) => {
+			reportSave(setDemoItemsShown(!event.currentTarget.checked));
+			if (store.project && !isDemo()) void refreshShared();
+		}
+	})}
+	{#if hideAll}
+		<p class={settings ? 'bu-muted settings-description' : 'menu-sec'} id={lockReasonId}>
+			{t('sharedVisibility.allOn')}
+		</p>
 	{/if}
 </div>
 
 <style>
 	.character-wardrobe-label {
-		white-space: normal;
-		overflow-wrap: anywhere;
+		flex: 1;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
-	.row-name strong {
+	.row-name strong,
+	.character-wardrobe-label strong {
 		font-weight: 600;
 	}
 </style>

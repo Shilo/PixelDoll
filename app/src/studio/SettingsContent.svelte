@@ -377,7 +377,7 @@
 				<div data-setting="language" tabindex="-1"><LanguagePicker settings /></div>
 			{:else if active.id === 'wardrobe'}
 				<div data-setting="visibility" tabindex="-1">
-					<WardrobeVisibility scope="global" />
+					<WardrobeVisibility settings />
 				</div>
 			{:else if active.id === 'export'}
 				{@render exportSettings(targetEntry)}

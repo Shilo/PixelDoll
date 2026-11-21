@@ -52,7 +52,6 @@
 			"done": "Ajustes restablecidos.",
 			"failed": "No se pudieron guardar estos valores predeterminados: {sections}."
 		},
-		"wardrobe": "Objetos compartidos del armario",
 		"connection": "PixelLab",
 		"pixelLabWebsite": "Visitar PixelLab",
 		"about": "Acerca de",

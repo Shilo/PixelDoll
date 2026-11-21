@@ -52,7 +52,6 @@
 			"done": "Settings reset.",
 			"failed": "Could not save these defaults: {sections}."
 		},
-		"wardrobe": "Shared wardrobe items",
 		"connection": "PixelLab",
 		"pixelLabWebsite": "Visit PixelLab",
 		"about": "About",

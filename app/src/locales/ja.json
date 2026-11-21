@@ -52,7 +52,6 @@
 			"done": "設定をリセットしました。",
 			"failed": "次の既定値を保存できませんでした：{sections}。"
 		},
-		"wardrobe": "共有アイテム",
 		"connection": "PixelLab",
 		"pixelLabWebsite": "PixelLabのサイトを開く",
 		"about": "アプリについて",

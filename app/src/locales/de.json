@@ -52,7 +52,6 @@
 			"done": "Einstellungen zurückgesetzt.",
 			"failed": "Diese Standardwerte konnten nicht gespeichert werden: {sections}."
 		},
-		"wardrobe": "Geteilte Garderobenobjekte",
 		"connection": "PixelLab",
 		"pixelLabWebsite": "PixelLab besuchen",
 		"about": "Über PixelDoll",
