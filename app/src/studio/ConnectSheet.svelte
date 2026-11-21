@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t, type WhisperKey } from 'svelte-whisper';
-	import { onDestroy, tick } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
 	import { ApiError } from '../lib/pixellab/client.ts';
 	import Sheet from './Sheet.svelte';
@@ -10,16 +10,20 @@
 	import { balancePlan } from './apiPlans.ts';
 	import {
 		ui,
+		claimPixelLabConnectOpen,
 		connected,
 		clearPendingConnection,
 		pendingConnectionMinimumTier
 	} from './state.svelte.ts';
-	import { ExternalLink, KeyRound, Check, RefreshCw } from './icons.ts';
+	import { Copy, ExternalLink, RefreshCw, TriangleAlert } from './icons.ts';
+	import RichMessage from './RichMessage.svelte';
+	import NoticeLink from './NoticeLink.svelte';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { readSavedKey, SAVED_KEY } from '../lib/shared-auth.ts';
 
+	const accountUrl = 'https://www.pixellab.ai/account';
 	let key = $state('');
 	let remember = $state(false);
 	let savedKeyAvailable = $state(workspaceCopy && !!readSavedKey().trim());
@@ -30,6 +34,8 @@
 	let replacementError = $state<WhisperKey>();
 	let limitedAccess = $state(false);
 	let connectionFailed = $state(false);
+	let firstOpen = $state(false);
+	let guideIntro = $state<HTMLParagraphElement>();
 	let keyInput = $state<HTMLInputElement>();
 	let replaceButton = $state<HTMLButtonElement>();
 	const needsKey = $derived(!app.key || app.keyRejected);
@@ -46,6 +52,10 @@
 	let closed = false;
 	const activityScope = crypto.randomUUID();
 	let minimumTier = $state(pendingConnectionMinimumTier() ?? 0);
+	onMount(() => {
+		firstOpen = claimPixelLabConnectOpen() && showForm;
+		if (firstOpen) void tick().then(() => guideIntro?.focus());
+	});
 	onDestroy(() => {
 		closed = true;
 	});
@@ -163,7 +173,7 @@
 
 <Sheet
 	{title}
-	cancel={showForm ? 'common.cancel' : 'common.done'}
+	cancel={showForm ? (replacing ? 'common.cancel' : 'connectSheet.notNow') : 'common.done'}
 	onclose={() => (ui.sheet = null)}
 >
 	{#if !showForm}
@@ -230,22 +240,48 @@
 				>{t('connectSheet.forgetKey')}</button
 			>
 		</div>
-		<a class="small" href="https://www.pixellab.ai/account" target="_blank" rel="noreferrer"
+		<a class="small" href={accountUrl} target="_blank" rel="noreferrer"
 			>{t('connectSheet.openAccount')} <ExternalLink size={12} style="display:inline" /></a
 		>
 	{:else}
-		<div class="connect-hero">
-			<span class="key-badge" aria-hidden="true"><KeyRound size={22} /></span>
-			<div class="field">
-				<p style="font-weight:600">
-					{t('connectSheet.generateCharactersAndEquipmentWithYourPixelLab')}
+		{#snippet secret()}<strong>{t('connectSheet.secretLabel')}</strong>{/snippet}
+		{#snippet copy()}
+			<span class="copy-label"
+				><Copy size={14} aria-hidden="true" />{t('connectSheet.copyKey')}</span
+			>
+		{/snippet}
+		{#if needsKey && minimumTier > 0}
+			<NoticeLink
+				href="https://www.pixellab.ai/#pricing"
+				tone="warning"
+				label={`${t('tierNotice.requiredLink', { tier: minimumTier })} ${t('connectSheet.trialNotEnough')}`}
+			>
+				{#snippet indicator()}<TriangleAlert size={18} />{/snippet}
+				<strong>{t('tierNotice.requiredTitle', { tier: minimumTier })}</strong>
+				<span>{t('connectSheet.trialNotEnough')}</span>
+			</NoticeLink>
+		{/if}
+		{#if firstOpen && !replacing}
+			<div class="field trial-guide">
+				<p tabindex="-1" bind:this={guideIntro}>{t('connectSheet.generationProvider')}</p>
+				<a
+					class="bu-action btn"
+					data-variant={minimumTier > 0 || key.trim() || checking ? 'outline' : 'primary'}
+					href="https://www.pixellab.ai/signup"
+					target="_blank"
+					rel="noreferrer"
+					>{t('connectSheet.startFreeTrial')} <ExternalLink size={14} aria-hidden="true" /></a
+				>
+				{#snippet account()}
+					<a href={accountUrl} target="_blank" rel="noreferrer"
+						>{t('connectSheet.pixelLabAccount')}</a
+					>
+				{/snippet}
+				<p class="small bu-muted">
+					<RichMessage key="connectSheet.copyInstructions" slots={{ account, secret, copy }} />
 				</p>
-				<ul class="facts small">
-					<li><Check size={14} />{t('connectSheet.generationsComeFromYourPixelLabAccount')}</li>
-					<li><Check size={14} />{t('connectSheet.sentOnlyToApiPixellabAi')}</li>
-				</ul>
 			</div>
-		</div>
+		{/if}
 		<TierNotice {minimumTier} feature={t('connectSheet.thisGeneration')} />
 		{#if replacementError}
 			<p class="notice bad small" role="status">{t(replacementError)}</p>
@@ -264,7 +300,7 @@
 			}}
 		>
 			<label class="field">
-				<span class="label">{t('connectSheet.aPIKey')}</span>
+				<span class="label">{t('connectSheet.secretApiKey')}</span>
 				<input
 					class="bu-input input"
 					type="password"
@@ -272,7 +308,7 @@
 					bind:value={key}
 					autocomplete="off"
 					spellcheck="false"
-					placeholder={t('connectSheet.placeholderPasteYourKey')}
+					placeholder="pixl_0123456789abcdef0123456789abcdef"
 				/>
 			</label>
 			{#if workspaceCopy}
@@ -297,10 +333,18 @@
 			{#if !workspaceCopy && remember && sharedOrigin}<p class="notice warn small">
 					{t('connectSheet.sharedOriginWarning', { host: location.host })}
 				</p>{/if}
+			<p class="small bu-muted">{t('connectSheet.sentOnlyToApiPixellabAi')}</p>
+			<p class="small bu-muted">{t('connectSheet.demoNoAccount')}</p>
 			<AffiliationNotice multiline />
 			<div class="field-row">
-				<a class="small" href="https://pixellab.ai/account" target="_blank" rel="noreferrer"
-					>{t('connectSheet.getAKey')} <ExternalLink size={12} style="display:inline" /></a
+				<a
+					class="bu-action btn"
+					data-variant="outline"
+					href={accountUrl}
+					target="_blank"
+					rel="noreferrer"
+					>{t('connectSheet.getSecretKey')}
+					<ExternalLink size={14} aria-hidden="true" /></a
 				>
 				<span class="actions">
 					{#if app.keyRejected && !checking}<button
@@ -340,3 +384,20 @@
 		</form>
 	{/if}
 </Sheet>
+
+<style>
+	.trial-guide {
+		gap: 10px;
+	}
+	.trial-guide > a {
+		width: 100%;
+		justify-content: space-between;
+		text-align: start;
+	}
+	.copy-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		vertical-align: middle;
+	}
+</style>

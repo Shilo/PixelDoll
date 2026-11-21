@@ -124,10 +124,10 @@ test.describe('first Studio render in French', () => {
 		await page.getByRole('button', { name: `${connectLabel}...`, exact: true }).click();
 		const connect = page.getByRole('dialog', { name: connectLabel, exact: true });
 		await expect(
-			connect.getByPlaceholder(french.connectSheet.placeholderPasteYourKey)
-		).toBeVisible();
+			connect.getByLabel(french.connectSheet.secretApiKey, { exact: true })
+		).toHaveAttribute('placeholder', /^pixl_[a-f0-9]{32}$/);
 		await expect(
-			connect.getByRole('button', { name: french.common.cancel, exact: true })
+			connect.getByRole('button', { name: french.connectSheet.notNow, exact: true })
 		).toBeVisible();
 	});
 });
@@ -2139,7 +2139,9 @@ test('PixelLab library connection, pagination and direct import use only free re
 		.click();
 	await page.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
 	await page.getByRole('button', { name: 'Connect PixelLab to browse your characters' }).click();
-	await page.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key');
+	await page
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('test-only-not-a-real-key');
 	await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('button', { name: /Library hero 1 direction ·/ })).toBeVisible();
 	await expect(page.locator('.character-library .library-character')).toHaveCount(20);
@@ -2383,7 +2385,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(page.getByRole('dialog')).toContainText('0.35 gens estimated');
 	await expect(page.getByLabel('Existing appearance')).toHaveValue('red hair, blue coat and boots');
 	await page.getByRole('button', { name: /^Set up.*0.35 gens$/ }).click();
-	await page.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key');
+	await page
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('test-only-not-a-real-key');
 	await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(page.getByRole('dialog')).toContainText(
 		'Ready. You can add equipment and moves fitted to this character.',

@@ -184,9 +184,11 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 	await remember.press('Space');
 	await expect(remember).toBeChecked({ checked: initial });
 
-	await dialog.getByText('API key', { exact: true }).dblclick({ position: { x: 12, y: 8 } });
-	expect(await selected()).toMatch(/API|key/);
-	const key = dialog.getByLabel('API key', { exact: true });
+	await dialog
+		.getByText('Paste your Secret API key', { exact: true })
+		.dblclick({ position: { x: 12, y: 8 } });
+	expect(await selected()).toMatch(/^Paste\s*$/);
+	const key = dialog.getByLabel('Paste your Secret API key', { exact: true });
 	await key.fill('synthetic-key');
 	await key.press('ControlOrMeta+a');
 	expect(
