@@ -66,13 +66,22 @@ const BLOB_REFERENCE = /^(?:sha256:)?([0-9a-f]{64})$/;
 /** Every blob key a stored value mentions (as "<hex>" or "sha256:<hex>"), found by a conservative deep string scan: a
  *  request hash can match too, which only keeps a blob longer. */
 export function blobReferences(values: Iterable<unknown>, refs = new Set<string>()): Set<string> {
-	const scan = (v: unknown): void => {
-		if (typeof v === 'string') {
-			const m = BLOB_REFERENCE.exec(v);
-			if (m) refs.add(m[1]);
-		} else if (v && typeof v === 'object' && !(v instanceof Blob))
-			for (const x of Object.values(v)) scan(x);
-	};
-	for (const value of values) scan(value);
+	const seen = new WeakSet<object>();
+	for (const value of values) {
+		const pending = [value];
+		while (pending.length) {
+			const entry = pending.pop();
+			if (typeof entry === 'string') {
+				const match = BLOB_REFERENCE.exec(entry);
+				if (match) refs.add(match[1]);
+			} else if (entry && typeof entry === 'object' && !(entry instanceof Blob)) {
+				if (seen.has(entry) || ArrayBuffer.isView(entry)) continue;
+				seen.add(entry);
+				const children =
+					entry instanceof Map || entry instanceof Set ? entry : Object.values(entry);
+				for (const child of children) pending.push(child);
+			}
+		}
+	}
 	return refs;
 }

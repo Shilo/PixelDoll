@@ -5,5 +5,7 @@ import type { Draft } from './run.ts';
 
 const DRAFTS = 'm3-drafts';
 export const loadDrafts = async () =>
-	(await db.get<{ drafts: Draft[] }>('projects', DRAFTS))?.drafts ?? [];
+	((await db.get<{ drafts: Draft[] }>('projects', DRAFTS))?.drafts ?? []).filter((draft) =>
+		Array.isArray(draft?.calls)
+	);
 export const saveDrafts = (drafts: Draft[]) => db.put('projects', DRAFTS, { id: DRAFTS, drafts });
