@@ -1484,7 +1484,7 @@ test('library import uses GET only and never sends a key to the public ZIP', asy
 		expect(fetch.mock.calls[0][0]).toContain('/characters?limit=20&offset=20');
 		expect(fetch.mock.calls[0][1].method).toBe('GET');
 		expect(await downloadCharacter(id)).toEqual(new Uint8Array([1, 2, 3]));
-		expect(fetch.mock.calls[1][0]).toContain(`/zip?states=${id}`);
+		expect(fetch.mock.calls[1][0]).toBe(`https://api.pixellab.ai/v2/characters/${id}/zip`);
 		expect(fetch.mock.calls[1][1].headers).toBeUndefined();
 		expect(fetch.mock.calls[1][1].credentials).toBe('omit');
 		expect(fetch.mock.calls[1][1].cache).toBe('no-store');

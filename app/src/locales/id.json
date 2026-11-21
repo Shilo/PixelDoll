@@ -2314,10 +2314,7 @@
 	},
 	"moveNames": { "default": "Berdiri", "idle": "Diam", "walk": "Berjalan" },
 	"stateCapture": {
-		"source": "Animasi sumber",
 		"add": "Simpan pose akhir",
-		"saving": "Menyimpan varian…",
-		"hint": "Menyimpan pose akhir animasi tanpa perlengkapan. Tidak memerlukan kredit.",
 		"saved": "Varian tersimpan",
 		"blocked": "Tunggu hingga karakter selesai dimuat dan selesaikan pekerjaan yang tertunda sebelum menyimpan varian.",
 		"unavailable": "Animasi ini tidak memiliki frame akhir tubuh tersimpan yang bisa digunakan.",

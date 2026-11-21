@@ -168,9 +168,7 @@ export function characterZipPlan(value: string): PeekCall[] {
 		shown(
 			{
 				method: 'GET',
-				path: id
-					? `/characters/${id}/zip?states=${id}`
-					: '/characters/{character_id}/zip?states={character_id}',
+				path: id ? `/characters/${id}/zip` : '/characters/{character_id}/zip',
 				label: 'Download character ZIP',
 				note: 'Requires a valid character UUID or PixelLab creator link. Public download without an account token; no generations. The ZIP is inspected and saved locally.'
 			},

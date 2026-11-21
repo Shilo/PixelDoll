@@ -2423,10 +2423,7 @@
 		"walk": "Caminar"
 	},
 	"stateCapture": {
-		"source": "Animación de origen",
 		"add": "Capturar pose final",
-		"saving": "Guardando estado…",
-		"hint": "Guarda la pose final de la animación sin equipamiento. No consume créditos.",
 		"saved": "Estado capturado",
 		"blocked": "Espera a que se cargue el personaje y resuelve las tareas pendientes antes de capturar un estado.",
 		"unavailable": "Esta animación no tiene un fotograma final del cuerpo guardado que se pueda capturar.",

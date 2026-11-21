@@ -28,7 +28,9 @@ export interface CharacterImportState {
 	id: string;
 	name: string;
 	animations: number | null;
+	poseCompatible?: boolean;
 }
+type PoseSelection = readonly string[] | { exclude: readonly string[] };
 export interface ImportedCharacter {
 	format?: 'pixellab';
 	project: Project;
@@ -190,7 +192,7 @@ export async function readCharacterZip(
 	bytes: Uint8Array,
 	stateId?: string,
 	animationStateIds?: readonly string[] | 'all',
-	poseStateIds: readonly string[] = []
+	poseStateIds: PoseSelection = []
 ): Promise<ImportedCharacter> {
 	let files = await unzip(bytes);
 	// Downloads often wrap the character in one enclosing folder.
@@ -367,7 +369,7 @@ async function pixelLab(
 	files: Map<string, Uint8Array>,
 	stateId?: string,
 	animationStateIds?: readonly string[] | 'all',
-	poseStateIds: readonly string[] = []
+	poseStateIds: PoseSelection = []
 ): Promise<ImportedCharacter> {
 	const metadata = json(files, 'metadata.json');
 	if (!object(metadata))
@@ -575,9 +577,7 @@ async function pixelLab(
 					: animationStateIds === 'all'
 						? states.filter((s) => s.animations !== 0).map((s) => s.id)
 						: animationStateIds;
-			for (const id of new Set(poseStateIds)) {
-				if (id === stateId) continue;
-				const sibling = meta.states.find((state) => state.character.id === id);
+			const poseViews = (sibling: PixelLabState | undefined) => {
 				const siblingRotations = sibling?.frames?.rotations;
 				const incompatible = () =>
 					new LocalizedError(
@@ -592,16 +592,44 @@ async function pixelLab(
 					sibling.character.template_id !== selected.character.template_id
 				)
 					throw incompatible();
-				const views = rotations.map(({ dir, path }) => {
+				return rotations.map(({ dir, path }) => {
 					const alternate = siblingRotations[dir];
 					if (typeof alternate !== 'string') throw incompatible();
-					const baseSize = pngSize(required(files, path));
-					const poseSize = pngSize(required(files, alternate));
+					const baseBytes = files.get(path);
+					const poseBytes = files.get(alternate);
+					const baseSize = baseBytes && pngSize(baseBytes);
+					const poseSize = poseBytes && pngSize(poseBytes);
 					if (!baseSize || !poseSize || baseSize.w !== poseSize.w || baseSize.h !== poseSize.h)
 						throw incompatible();
 					return { dir, path: alternate };
 				});
-				poses.push({ name: sibling.character.name ?? 'state', rotations: views });
+			};
+			if ('exclude' in poseStateIds) {
+				for (const [index, sibling] of meta.states.entries()) {
+					const state = states[index];
+					if (state.id === stateId) continue;
+					let views: typeof rotations;
+					try {
+						views = poseViews(sibling);
+					} catch (error) {
+						if (
+							!(error instanceof LocalizedError) ||
+							error.translation.key !== 'import.poseMismatch'
+						)
+							throw error;
+						state.poseCompatible = false;
+						continue;
+					}
+					state.poseCompatible = true;
+					if (!poseStateIds.exclude.includes(state.id))
+						poses.push({ name: state.name, rotations: views });
+				}
+			} else {
+				for (const id of new Set(poseStateIds)) {
+					if (id === stateId) continue;
+					const sibling = meta.states.find((state) => state.character.id === id);
+					poses.push({ name: sibling?.character.name ?? 'state', rotations: poseViews(sibling) });
+				}
 			}
 			for (const id of requested)
 				if (!meta.states.some((s) => s.character.id === id))

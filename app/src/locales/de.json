@@ -2416,10 +2416,7 @@
 	},
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen" },
 	"stateCapture": {
-		"source": "Quellanimation",
 		"add": "Endpose speichern",
-		"saving": "Zustand wird gespeichert…",
-		"hint": "Speichert die Endpose der Animation ohne Ausrüstung. Das kostet keine Credits.",
 		"saved": "Zustand gespeichert",
 		"blocked": "Warte, bis der Charakter geladen ist, und schließe offene Arbeiten ab, bevor du einen Zustand speicherst.",
 		"unavailable": "Für diese Animation ist kein letzter Körperframe gespeichert, aus dem sich ein Zustand erstellen lässt.",

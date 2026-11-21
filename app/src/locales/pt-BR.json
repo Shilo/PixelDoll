@@ -2430,10 +2430,7 @@
 	},
 	"moveNames": { "default": "Em pé", "idle": "Repouso", "walk": "Caminhada" },
 	"stateCapture": {
-		"source": "Animação de origem",
 		"add": "Capturar pose final",
-		"saving": "Salvando estado…",
-		"hint": "Salva a pose final da animação sem equipamento. Não usa créditos.",
 		"saved": "Estado capturado",
 		"blocked": "Aguarde o carregamento do personagem e resolva as tarefas pendentes antes de capturar um estado.",
 		"unavailable": "Esta animação não tem um quadro final do corpo salvo para capturar.",

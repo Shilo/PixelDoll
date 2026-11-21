@@ -33,16 +33,7 @@
 	const m = $derived(store.project?.manifest);
 	const playback = $derived(playbackClips(m?.rig.animations ?? []));
 	const clips = $derived(playback.filter((entry) => entry.kind === kind));
-	const captureMoves = $derived(playback.filter((entry) => entry.kind === 'move'));
-	let captureChoice = $state<{ projectId: string; moveId: string }>();
 	let capturing = $state(false);
-	const captureMove = $derived(
-		(captureChoice?.projectId === doc.id &&
-			captureMoves.find((entry) => entry.key === captureChoice?.moveId)?.key) ||
-			captureMoves.find((entry) => entry.key === ui.anim)?.key ||
-			captureMoves[0]?.key ||
-			''
-	);
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const nice = (id: string) => displayMove(id, moveIds);
@@ -54,11 +45,11 @@
 	});
 	const thumbnails = $derived(assets && moveThumbnails(assets, view.items));
 
-	async function saveState() {
-		if (!captureMove || capturing) return;
+	async function saveState(moveId: string) {
+		if (capturing) return;
 		capturing = true;
 		try {
-			await captureState(captureMove);
+			await captureState(moveId);
 		} catch (error) {
 			toast(errorMessage(error), { tone: 'danger' });
 		} finally {
@@ -94,6 +85,7 @@
 						: undefined}
 					ondownload={() => downloadMoveZip(a.id)}
 					onfixframes={() => openFrames('', a.id)}
+					oncapture={kind === 'move' && !isDemo() ? () => void saveState(a.id) : undefined}
 					ondelete={() => removeMove(a.id)}
 				>
 					<button
@@ -128,34 +120,6 @@
 				</SavedActions>
 			{/each}
 		</div>
-		{#if kind === 'state' && !isDemo() && captureMoves.length}
-			<div class="move-list">
-				<label class="muted small">
-					{t('stateCapture.source')}
-					<select
-						class="bu-select"
-						value={captureMove}
-						disabled={capturing}
-						onchange={(event) => {
-							captureChoice = { projectId: doc.id, moveId: event.currentTarget.value };
-						}}
-					>
-						{#each captureMoves as { key } (key)}
-							<option value={key}>{nice(key)}</option>
-						{/each}
-					</select>
-				</label>
-				<button
-					class="bu-action add-row"
-					data-variant="outline"
-					disabled={capturing}
-					onclick={saveState}
-				>
-					<Plus size={16} />{capturing ? t('stateCapture.saving') : t('stateCapture.add')}
-				</button>
-				<span class="muted small">{t('stateCapture.hint')}</span>
-			</div>
-		{/if}
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>

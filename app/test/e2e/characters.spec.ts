@@ -929,22 +929,29 @@ test('device import includes sibling moves and preserves explicit selections whe
 		mimeType: 'application/zip',
 		buffer: Buffer.from(bytes)
 	});
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	const moves = dialog.getByRole('group', { name: 'Moves to import', exact: true }),
 		base = moves.getByRole('checkbox', { name: /^Base appearance/ }),
 		punch = moves.getByRole('checkbox', { name: /^Punch appearance/ });
+	const states = dialog.getByRole('group', { name: 'Also import as States', exact: true });
+	const punchState = states.getByRole('checkbox', { name: 'Punch appearance', exact: true });
+	await expect(punchState).toBeChecked();
+	await expect(
+		states.getByRole('checkbox', { name: 'Still appearance', exact: true })
+	).toBeChecked();
+	await punchState.uncheck();
 	await expect(moves).toContainText('Moves keep the appearance of their source state.');
 	await expect(base).toBeChecked();
 	await expect(base).toBeEnabled();
 	await expect(punch).toBeChecked();
 	await dialog.getByLabel('Character name', { exact: true }).fill('Keep my character name');
 	await punch.uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue(
 		'Keep my character name'
 	);
 	await punch.check();
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await dialog
 		.getByRole('combobox', { name: 'Standing pose state', exact: true })
 		.selectOption('punch-state');
@@ -955,26 +962,32 @@ test('device import includes sibling moves and preserves explicit selections whe
 		'Keep my character name'
 	);
 	await base.uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await dialog
 		.getByRole('combobox', { name: 'Standing pose state', exact: true })
 		.selectOption('still-state');
+	await expect(punchState).not.toBeChecked();
+	await expect(
+		states.getByRole('checkbox', { name: 'Base appearance', exact: true })
+	).toBeChecked();
 	await expect(base).not.toBeChecked();
 	await expect(punch).toBeChecked();
 	await expect(punch).toBeEnabled();
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await dialog
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
 		'Standing',
+		'Base appearance',
 		'Right punch'
 	]);
 	await page.keyboard.press('Escape');
 	await reloadStudio(page);
 	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
 		'Standing',
+		'Base appearance',
 		'Right punch'
 	]);
 });
@@ -1157,7 +1170,7 @@ test('browser Back respects an atomic import and closes sheets after it finishes
 		mimeType: 'application/zip',
 		buffer: Buffer.from(bytes)
 	});
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await dialog
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
@@ -1220,7 +1233,7 @@ test('standing state updates retain the preview, optional moves, edited names an
 		mimeType: 'application/zip',
 		buffer: Buffer.from(bytes)
 	});
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await name.fill(''); // An intentionally cleared name must not be overwritten during updates.
 	await page.evaluate(() => {
 		const control = window as unknown as {
@@ -1275,7 +1288,12 @@ test('standing state updates retain the preview, optional moves, edited names an
 		.getByRole('checkbox')
 		.all())
 		await checkbox.uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('1 move');
+	for (const checkbox of await dialog
+		.getByRole('group', { name: 'Also import as States' })
+		.getByRole('checkbox')
+		.all())
+		await checkbox.uncheck();
+	await expect(dialog.locator('.import-preview')).toContainText('0 moves');
 	await name.fill('Static rotations only');
 	await dialog
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
@@ -1308,7 +1326,7 @@ test('failed standing state updates retain the old preview but block saving unti
 		.getByRole('group', { name: 'Moves to import' })
 		.getByRole('checkbox', { name: /^Punch appearance/ })
 		.uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await dialog.getByLabel('Character name', { exact: true }).fill('Preserved through failure');
 	const bounds = await dialog.boundingBox();
 	const state = dialog.getByRole('combobox', { name: 'Standing pose state', exact: true });
@@ -1344,14 +1362,14 @@ test('a single-state import can exclude its own animation and retain static Defa
 		mimeType: 'application/zip',
 		buffer: Buffer.from(await multiStateImportZip(false, false, true))
 	});
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await expect(
 		dialog.getByRole('combobox', { name: 'Standing pose state', exact: true })
 	).toHaveCount(0);
 	const move = dialog.getByRole('group', { name: 'Moves to import' }).getByRole('checkbox');
 	await expect(move).toBeEnabled();
 	await move.uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('1 move');
+	await expect(dialog.locator('.import-preview')).toContainText('0 moves');
 	await expect(dialog.getByRole('img', { name: 'Character import preview' })).toBeVisible();
 	await expect(move).not.toBeChecked();
 	await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled();
@@ -1375,6 +1393,12 @@ test('an incompatible sibling move can be unchecked after the initial import err
 		buffer: Buffer.from(bytes)
 	});
 	await expect(dialog.getByRole('alert')).toContainText('Uncheck that state to continue');
+	const incompatible = dialog
+		.getByRole('group', { name: 'Also import as States' })
+		.getByRole('checkbox', { name: 'Punch appearance', exact: true });
+	await expect(incompatible).not.toBeChecked();
+	await expect(incompatible).toBeDisabled();
+	await expect(incompatible).toHaveAccessibleDescription(/Import it as a separate character/);
 	await expect(
 		dialog.getByRole('button', { name: 'Import character', exact: true })
 	).toBeDisabled();
@@ -1383,7 +1407,7 @@ test('an incompatible sibling move can be unchecked after the initial import err
 		.getByRole('checkbox', { name: /^Punch appearance/ })
 		.uncheck();
 	await expect(dialog.getByRole('alert')).toHaveCount(0);
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled();
 });
 
@@ -1415,12 +1439,12 @@ test('unreadable sibling move metadata stays visible and can be excluded from th
 	await expect(unreadable).toBeChecked();
 	await unreadable.uncheck();
 	await expect(dialog.getByRole('alert')).toHaveCount(0);
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await expect(unreadable).not.toBeChecked();
 	await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled();
 });
 
-test('PixelLab link import initially selects only the requested state and offers sibling moves', async ({
+test('PixelLab link import initially selects all compatible states and sibling moves', async ({
 	page,
 	context
 }) => {
@@ -1444,9 +1468,14 @@ test('PixelLab link import initially selects only the requested state and offers
 	const punch = dialog
 		.getByRole('group', { name: 'Moves to import' })
 		.getByRole('checkbox', { name: /^Punch appearance/ });
-	await expect(punch).not.toBeChecked();
-	await punch.check();
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	const punchState = dialog
+		.getByRole('group', { name: 'Also import as States' })
+		.getByRole('checkbox', { name: 'Punch appearance', exact: true });
+	await expect(punch).toBeChecked();
+	await expect(punchState).toBeChecked();
+	await punch.uncheck();
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
+	await expect(punchState).toBeChecked();
 	expect(requests).toEqual(['GET']);
 });
 
@@ -1503,13 +1532,13 @@ test('a canceled library error cannot affect a newly opened device ZIP preview',
 			mimeType: 'application/zip',
 			buffer: Buffer.from(bytes)
 		});
-		await expect(page.locator('.import-preview')).toContainText('3 moves');
+		await expect(page.locator('.import-preview')).toContainText('2 moves');
 	} finally {
 		release();
 	}
 	const device = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await expect(device.getByRole('alert')).toHaveCount(0);
-	await expect(device.locator('.import-preview')).toContainText('3 moves');
+	await expect(device.locator('.import-preview')).toContainText('2 moves');
 	await device.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await page.locator('.project-btn').click();
 	await page
@@ -2221,7 +2250,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(page.getByRole('alert')).toContainText('pending generation work');
 	expect(calls.every((c) => c.startsWith('GET '))).toBe(true);
-	expect(calls).toContain(`GET /v2/characters/${ID}/zip?states=${ID}`);
+	expect(calls).toContain(`GET /v2/characters/${ID}/zip`);
 });
 
 test('imported artwork gets the shared rig, weapon plan and new-move pipeline', async ({
@@ -2400,7 +2429,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(page.locator('.project-btn')).toContainText('Rig parity fixture');
 	const posted = posts.length;
 	await equipmentMode(page, 'States');
-	await page.getByRole('button', { name: 'Capture final pose', exact: true }).click();
+	await expect(page.getByRole('combobox', { name: 'Source move' })).toHaveCount(0);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Capture final pose', exact: true }).click();
 	await expect(page.getByText('Captured state', { exact: true })).toBeVisible();
 	const captured = await read();
 	const body = captured.manifest.items.find(({ id }) => id === captured.manifest.rig.baseItem)!;

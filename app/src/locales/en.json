@@ -2401,10 +2401,7 @@
 	},
 	"moveNames": { "default": "Standing", "idle": "Idle", "walk": "Walk" },
 	"stateCapture": {
-		"source": "Source move",
 		"add": "Capture final pose",
-		"saving": "Saving state…",
-		"hint": "Saves the move's final pose without equipment. No credits needed.",
 		"saved": "Captured state",
 		"blocked": "Wait for the character to load and resolve pending work before capturing a state.",
 		"unavailable": "This move has no saved final body frame to capture.",

@@ -180,7 +180,7 @@ test('read plans retain exact query values and public ZIP UUID normalization', (
 	expect(balancePlan()[0]).toMatchObject({ method: 'GET', path: '/balance' });
 	expect(libraryPlan(40)[0].path).toBe('/characters?limit=20&offset=40');
 	expect(characterZipPlan(`https://pixellab.ai/characters/${id}`)[0].path).toBe(
-		`/characters/${id}/zip?states=${id}`
+		`/characters/${id}/zip`
 	);
 	expect(characterZipPlan('invalid')[0].path).toContain('{character_id}');
 });

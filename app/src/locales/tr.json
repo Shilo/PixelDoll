@@ -2410,10 +2410,7 @@
 	},
 	"moveNames": { "default": "Ayakta", "idle": "Bekleme", "walk": "Yürüme" },
 	"stateCapture": {
-		"source": "Kaynak animasyon",
 		"add": "Son pozu kaydet",
-		"saving": "Durum kaydediliyor…",
-		"hint": "Animasyonun son pozunu ekipmansız kaydeder. Kredi gerekmez.",
 		"saved": "Durum kaydedildi",
 		"blocked": "Durumu kaydetmeden önce karakterin yüklenmesini bekleyin ve bekleyen işleri sonuçlandırın.",
 		"unavailable": "Bu animasyonun durum olarak kaydedilebilecek kayıtlı bir son gövde karesi yok.",

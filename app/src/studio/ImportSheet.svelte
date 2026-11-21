@@ -39,6 +39,7 @@
 	} from '../lib/store/import.ts';
 	import { MAX_ZIP_BYTES } from '../lib/store/zip.ts';
 	import { rigReady } from '../lib/rig/setup.ts';
+	import { clipKind } from '../lib/runtime/timeline.js';
 	import {
 		ui,
 		store,
@@ -99,7 +100,7 @@
 	let states = $state.raw<CharacterImportState[]>([]),
 		stateId = $state(''),
 		moveStates = $state.raw<string[]>([]),
-		poseStates = $state.raw<string[]>([]);
+		excludedPoses = $state.raw<string[]>([]);
 	let bytes: Uint8Array | null = null;
 	let name = $state(''),
 		id = $state(''),
@@ -189,7 +190,7 @@
 		states = [];
 		stateId = '';
 		moveStates = [];
-		poseStates = [];
+		excludedPoses = [];
 		drop.reset();
 	}
 	function close() {
@@ -245,7 +246,7 @@
 		bytes = data;
 		previewValid = false;
 		try {
-			const result = await readCharacterZip(data, selected, selection, poseStates);
+			const result = await readCharacterZip(data, selected, selection, { exclude: excludedPoses });
 			if (!alive) return;
 			if (prepared?.stateId !== result.stateId) {
 				directionChoices = null;
@@ -301,7 +302,8 @@
 			const selected = characterId(value);
 			await prepare(
 				await downloadCharacter(selected, reads.signal, { activityScope: zipScope(selected) }),
-				selected
+				selected,
+				'all'
 			);
 		} catch (e) {
 			if (alive) error = errorMessage(e);
@@ -316,7 +318,6 @@
 			states.some((s) => s.id === id && s.animations !== 0)
 		);
 		stateId = value;
-		poseStates = poseStates.filter((id) => id !== value);
 		error = '';
 		busy = true;
 		try {
@@ -343,7 +344,9 @@
 	}
 	async function changePose(id: string, include: boolean) {
 		if (!bytes || busy) return;
-		poseStates = include ? [...poseStates, id] : poseStates.filter((value) => value !== id);
+		excludedPoses = include
+			? excludedPoses.filter((value) => value !== id)
+			: [...excludedPoses, id];
 		error = '';
 		busy = true;
 		try {
@@ -442,12 +445,16 @@
 				<label class="check"
 					><input
 						type="checkbox"
-						checked={poseStates.includes(state.id)}
-						disabled={busy}
+						checked={state.poseCompatible === true && !excludedPoses.includes(state.id)}
+						disabled={busy || !state.poseCompatible}
+						aria-describedby={state.poseCompatible === false ? 'import-pose-mismatch' : undefined}
 						onchange={(event) => changePose(state.id, event.currentTarget.checked)}
 					/><span>{stateLabel(state)}</span></label
 				>
 			{/each}
+			{#if states.some((state) => state.poseCompatible === false)}
+				<p class="faint small" id="import-pose-mismatch">{t('import.poseMismatch')}</p>
+			{/if}
 		</section>
 	{/if}
 	{#if states.some((state) => state.animations !== 0)}
@@ -671,7 +678,9 @@
 					{t('import.previewSummary', {
 						directions: t('export.count.directions', { count: directions.length }),
 						moves: t('export.count.moves', {
-							count: prepared.project.manifest.rig.animations.length
+							count: prepared.project.manifest.rig.animations.filter(
+								(clip) => clipKind(clip) === 'move'
+							).length
 						}),
 						items: t('import.count.separateItems', {
 							count: prepared.project.manifest.items.filter((i) => i.slot !== 'body').length

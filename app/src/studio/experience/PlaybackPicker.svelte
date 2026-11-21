@@ -142,6 +142,14 @@
 		}
 		.two-columns .clip-groups {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 0;
+		}
+		.two-columns [role='group']:first-child {
+			padding-inline-end: 8px;
+		}
+		.two-columns [role='group'] + [role='group'] {
+			border-inline-start: 1px solid var(--bu-line);
+			padding-inline-start: 8px;
 		}
 	}
 	.clip-menu .clip-row {

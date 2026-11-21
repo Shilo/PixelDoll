@@ -1006,6 +1006,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 	const desktopMoves = (await moves.boundingBox())!;
 	expect(desktopMoves.x).toBeGreaterThan(desktopStates.x);
 	expect(desktopMoves.y).toBeCloseTo(desktopStates.y, 0);
+	await expect(moves).toHaveCSS('border-inline-start-width', '1px');
 	const active = picker.getByRole('menuitemradio', { checked: true });
 	await expect(active).toBeFocused();
 	await page.keyboard.press('ArrowDown');
@@ -1091,6 +1092,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 			const compactMoves = (await moves.boundingBox())!;
 			expect(compactMoves.x).toBeCloseTo(compactStates.x, 0);
 			expect(compactMoves.y).toBeGreaterThan(compactStates.y);
+			await expect(moves).toHaveCSS('border-inline-start-width', '0px');
 			const option = moves.getByRole('menuitemradio').last();
 			await expect(option).toBeVisible();
 			const bounds = await option.boundingBox();

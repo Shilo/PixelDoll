@@ -2417,10 +2417,7 @@
 	},
 	"moveNames": { "default": "Debout", "idle": "Attente", "walk": "Marche" },
 	"stateCapture": {
-		"source": "Animation source",
 		"add": "Capturer la pose finale",
-		"saving": "Enregistrement de l’état…",
-		"hint": "Enregistre la pose finale de l’animation sans équipement. Aucun crédit n’est nécessaire.",
 		"saved": "État capturé",
 		"blocked": "Attendez la fin du chargement du personnage et réglez les tâches en attente avant de capturer un état.",
 		"unavailable": "Cette animation n’a pas d’image finale du corps enregistrée à capturer.",

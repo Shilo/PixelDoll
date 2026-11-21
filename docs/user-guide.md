@@ -180,9 +180,9 @@ Supported ZIP layouts:
 | Current PixelDoll export      | Editable `project.json` and original `cells/` images, alongside any engine files. This is PixelDoll's documented open format.           |
 | Older PixelDoll engine export | PixelDoll `manifest.json` and its referenced spritesheets. An arbitrary game-engine ZIP without that manifest is not supported.         |
 
-These layouts may sit inside enclosing folders. Several candidate enclosing character folders are refused rather than guessed. For PixelLab's multiple states within one metadata file, choose the **Standing pose**. Local ZIPs initially include moves from every animated state; **Moves to import** lets you exclude versions you do not want. Moves keep their source state's appearance, including any clothes or hair. States containing only standing artwork add no invented animations. PixelLab link/library imports initially include only the requested state's moves, with the same optional state choices when the archive contains more.
+These layouts may sit inside enclosing folders. Several candidate enclosing character folders are refused rather than guessed. For a PixelLab character with multiple states, choose the **Standing pose**. Device ZIPs and PixelLab link or library imports select all available Moves and compatible States by default. Uncheck anything you don't want. Moves keep their source state's appearance, including any clothes or hair. States containing only standing artwork add no invented animations.
 
-Use **Also import as States** to bring in compatible sibling artwork as stills, independently of its Moves. Review the artwork before importing: baked-in equipment stays on the body and cannot be swapped like a PixelDoll item.
+**Also import as States** controls which compatible sibling artwork comes in as stills, independently of its Moves. Review the artwork before importing: baked-in equipment stays on the body and cannot be swapped like a PixelDoll item.
 
 Arbitrary PNG folders, unrelated JSON formats, standalone spritesheets and custom frame naming without compatible metadata are not supported. They would need an explicit frame-layout mapper so directions, pivots and animation order cannot be guessed incorrectly.
 
@@ -322,7 +322,7 @@ or **Slash** below the field. Typing deselects the preset; picking a preset clea
 
 **Start from** normally uses Standing. Pick a State to use its still, or a Move to use its last saved playback frame in each drawn facing. Open **Choose a frame** to pick a different frame by thumbnail. The selected frame must have artwork and measured joints in every requested facing. It is a generation reference, not a guarantee that the first generated frame will be pixel-identical. A redraw keeps its saved starting frame unless you select another source.
 
-In **States**, **Capture final pose** saves a Move's last playback frame as a local, body-only State without using credits. Equipment is fitted separately and never borrowed from Standing. Deleting a State removes its own frames and fits, not finished Moves that used it. Generic runtime exports include both States and Moves; engine formats limited to specific animations may omit additional States.
+In **Moves**, open a Move's **More actions** menu and choose **Capture final pose** to save its last playback frame as a local, body-only State without using credits. Equipment is fitted separately and never borrowed from Standing. Deleting a State removes its own frames and fits, not finished Moves that used it. Generic runtime exports include both States and Moves; engine formats limited to specific animations may omit additional States.
 Items you check under **Animate these items too** are made for the new move.
 Items are unchecked by default so you can approve the body motion before buying its equipment frames.
 Items you leave out stay hidden in that move until you make them. A worn item without frames for the current move shows

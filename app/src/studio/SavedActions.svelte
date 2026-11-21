@@ -8,7 +8,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { Download, Grid2x2 } from './icons.ts';
+	import { Download, Grid2x2, Plus } from './icons.ts';
 	import { toast } from './state.svelte.ts';
 	let {
 		name,
@@ -17,6 +17,7 @@
 		onlocked,
 		ondownload,
 		onfixframes,
+		oncapture,
 		ondelete,
 		children
 	}: {
@@ -27,6 +28,7 @@
 		onlocked?: () => void;
 		ondownload: () => Promise<void>;
 		onfixframes?: () => void;
+		oncapture?: () => void;
 		ondelete: () => void | Promise<void>;
 		children: Snippet;
 	} = $props();
@@ -58,6 +60,16 @@
 					close();
 					onfixframes();
 				}}><Grid2x2 size={16} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
+			>
+		{/if}
+		{#if oncapture}
+			<button
+				class="row"
+				role="menuitem"
+				onclick={() => {
+					close();
+					oncapture();
+				}}><Plus size={16} />{t('stateCapture.add')}</button
 			>
 		{/if}
 		<button
