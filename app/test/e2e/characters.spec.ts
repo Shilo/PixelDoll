@@ -63,19 +63,21 @@ test.describe('first Studio render in French', () => {
 		await page.keyboard.press('Escape');
 		await expect(draft).toBeHidden();
 		await page.getByRole('button', { name: label, exact: true }).click();
-		const wardrobeSettings = page.getByRole('button', {
-			name: french.toolbar.wardrobeSettings,
-			exact: true
-		});
-		await wardrobeSettings.click();
-		const filters = page.getByRole('group', { name: french.sharedVisibility.heading });
+		const settingsTitle = french.export.sheet.settings;
+		await page.getByRole('button', { name: `${settingsTitle}...`, exact: true }).click();
+		const settings = page.getByRole('dialog', { name: settingsTitle, exact: true });
+		await settings
+			.getByRole('button', { name: french.experience.tabWardrobe, exact: true })
+			.click();
+		const filters = settings.getByRole('group', { name: french.sharedVisibility.heading });
 		await expect(
 			filters.getByRole('switch', { name: french.sharedVisibility.hideAll, exact: true })
 		).toBeVisible();
 		await expect(filters.locator('.row-name strong').first()).toHaveText(
 			french.sharedVisibility.allEmphasis
 		);
-		await wardrobeSettings.click();
+		await settings.getByRole('button', { name: french.common.close, exact: true }).click();
+		await page.getByRole('button', { name: label, exact: true }).click();
 		const frenchPicker = page.getByRole('button', { name: french.language.label, exact: true });
 		await expect(frenchPicker).toHaveAccessibleDescription('Français');
 		await frenchPicker.click();
