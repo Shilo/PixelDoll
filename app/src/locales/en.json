@@ -2161,7 +2161,7 @@
 	"moveSheet": {
 		"loop": "Loop",
 		"loopHint": "Repeat by default in exports.",
-		"referenceDirection": "Frames by direction",
+		"referenceDirection": "Start and end frames",
 		"referenceEdited": "{direction} (custom frames)",
 		"referenceSize": "Use body-only {width} × {height} transparent PNGs.",
 		"referenceInvalid": "Use a {width} × {height} PNG with visible art and a transparent background.",

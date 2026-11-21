@@ -2081,7 +2081,7 @@
 	"moveSheet": {
 		"loop": "반복",
 		"loopHint": "내보내기에서 기본으로 반복해요.",
-		"referenceDirection": "방향별 프레임",
+		"referenceDirection": "시작 및 종료 프레임",
 		"referenceEdited": "{direction}(사용자 지정 프레임)",
 		"referenceSize": "몸체만 있는 {width} × {height} 투명 PNG를 사용하세요.",
 		"referenceInvalid": "보이는 그림과 투명 배경이 있는 {width} × {height} PNG를 사용하세요.",

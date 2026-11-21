@@ -2190,7 +2190,7 @@
 	"moveSheet": {
 		"loop": "Repetir",
 		"loopHint": "Repetida por padrão nas exportações.",
-		"referenceDirection": "Quadros por direção",
+		"referenceDirection": "Quadros inicial e final",
 		"referenceEdited": "{direction} (quadros personalizados)",
 		"referenceSize": "Use PNGs transparentes apenas do corpo com {width} × {height}.",
 		"referenceInvalid": "Use um PNG de {width} × {height} com arte visível e fundo transparente.",

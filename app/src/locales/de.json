@@ -2176,7 +2176,7 @@
 	"moveSheet": {
 		"loop": "Schleife",
 		"loopHint": "In Exporten standardmäßig wiederholen.",
-		"referenceDirection": "Frames nach Blickrichtung",
+		"referenceDirection": "Start- und End-Frames",
 		"referenceEdited": "{direction} (eigene Frames)",
 		"referenceSize": "Verwende transparente PNGs nur mit dem Körper in {width} × {height}.",
 		"referenceInvalid": "Verwende ein PNG mit sichtbarer Grafik und transparentem Hintergrund in {width} × {height}.",

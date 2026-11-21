@@ -2091,7 +2091,7 @@
 	"moveSheet": {
 		"loop": "ループ",
 		"loopHint": "エクスポートでは既定で繰り返します。",
-		"referenceDirection": "向きごとのフレーム",
+		"referenceDirection": "開始フレームと終了フレーム",
 		"referenceEdited": "{direction}（カスタムフレーム）",
 		"referenceSize": "体だけの透明PNG（{width} × {height}）を使用してください。",
 		"referenceInvalid": "見える絵と透明な背景がある {width} × {height} のPNGを使用してください。",

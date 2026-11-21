@@ -5421,7 +5421,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	const addModel = add.getByRole('combobox', { name: 'Motion model', exact: true });
 	if (!(await addModel.isVisible())) await addAdvanced.click();
 	await addModel.selectOption('v3');
-	const frameTabs = add.getByRole('tablist', { name: /Frames by direction/ });
+	const frameTabs = add.getByRole('tablist', { name: 'Start and end frames', exact: true });
 	const directionTabs = frameTabs.getByRole('tab');
 	const firstDirection = directionTabs.first();
 	const lastDirection = directionTabs.last();

@@ -2084,7 +2084,7 @@
 	"moveSheet": {
 		"loop": "Ulangi",
 		"loopHint": "Diulang secara bawaan di ekspor.",
-		"referenceDirection": "Frame per arah",
+		"referenceDirection": "Frame awal dan akhir",
 		"referenceEdited": "{direction} (frame khusus)",
 		"referenceSize": "Gunakan PNG transparan khusus tubuh berukuran {width} × {height}.",
 		"referenceInvalid": "Gunakan PNG {width} × {height} dengan gambar yang terlihat dan latar transparan.",

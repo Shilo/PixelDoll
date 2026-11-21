@@ -270,6 +270,9 @@
 	.move-frame {
 		align-content: start;
 	}
+	.move-frame .reference-label {
+		font-size: var(--fs-sm);
+	}
 	.reference-row {
 		display: flex;
 		align-items: stretch;

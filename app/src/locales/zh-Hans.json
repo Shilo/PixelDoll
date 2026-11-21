@@ -2062,7 +2062,7 @@
 	"moveSheet": {
 		"loop": "循环",
 		"loopHint": "默认在导出中重复播放。",
-		"referenceDirection": "各朝向的帧",
+		"referenceDirection": "起始帧和结束帧",
 		"referenceEdited": "{direction}（自定义帧）",
 		"referenceSize": "请使用仅含身体的 {width} × {height} 透明 PNG。",
 		"referenceInvalid": "请使用 {width} × {height}、含可见画面且背景透明的 PNG。",

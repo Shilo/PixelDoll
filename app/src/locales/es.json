@@ -2179,7 +2179,7 @@
 	"moveSheet": {
 		"loop": "Repetir",
 		"loopHint": "Se repite de forma predeterminada en las exportaciones.",
-		"referenceDirection": "Fotogramas por dirección",
+		"referenceDirection": "Fotogramas inicial y final",
 		"referenceEdited": "{direction} (fotogramas propios)",
 		"referenceSize": "Usa PNG transparentes solo del cuerpo de {width} × {height}.",
 		"referenceInvalid": "Usa un PNG de {width} × {height} con arte visible y fondo transparente.",

@@ -76,7 +76,7 @@
 	import { affectedMoveDirections } from './replaceMove.ts';
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
 	import { ANGLES } from './characterConfig.ts';
-	import { ArrowUp, Check, ChevronRight, CircleAlert } from './icons.ts';
+	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert } from './icons.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
@@ -132,6 +132,8 @@
 	let loopChoice = $state<boolean | undefined>(draft?.loop);
 	let frameReferences = $state<MoveFrameReferences<PickedReference>>(draft?.frameReferences ?? {});
 	let referenceDirection = $state<DirectionName>();
+	let frameTabWidths = $state<Partial<Record<DirectionName, number>>>({});
+	let frameLabelWidths = $state<Partial<Record<DirectionName, number>>>({});
 	let startLoading = $state(false);
 	let endLoading = $state(false);
 	let confirm = $state.raw<{ kind: 'start' | 'loop'; accept: () => void }>();
@@ -167,6 +169,9 @@
 	let selectedDirs = $state<DirectionName[]>(draft?.dirs ?? untrack(() => [...availableDirs]));
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
+	);
+	const showFullFrameDirections = $derived(
+		targetDirs.every((dir) => (frameLabelWidths[dir] ?? Infinity) <= (frameTabWidths[dir] ?? 0))
 	);
 	const frameDirection = $derived(
 		referenceDirection && targetDirs.includes(referenceDirection)
@@ -1238,17 +1243,25 @@
 								{@const autoEnd =
 									frameReference?.end === undefined && automaticMoveEnd(action, looping)}
 								<div class="reference-heading" id={`${advancedId}-reference-heading`}>
-									<strong>{t('moveSheet.referenceDirection')}</strong>
-									<span class="faint">{directionLabel(direction)}</span>
+									<span id={`${advancedId}-reference-title`}
+										>{t('moveSheet.referenceDirection')}</span
+									>
+									{#if targetDirs.length === 1 || !showFullFrameDirections}
+										<span class="faint">{directionLabel(direction)}</span>
+									{/if}
 								</div>
 								{#if targetDirs.length > 1}
 									<div
 										class="frame-tabs"
 										class:many-directions={targetDirs.length > 5}
 										role="tablist"
-										aria-labelledby={`${advancedId}-reference-heading`}
+										aria-labelledby={`${advancedId}-reference-title`}
 									>
+										{#snippet directionArrow(option: DirectionName)}
+											<ArrowUp size={14} style="transform:rotate({ANGLES[option]}deg)" />
+										{/snippet}
 										{#each targetDirs as option (option)}
+											{@const name = directionLabel(option)}
 											{@const edited = !!(
 												frameReferences[option]?.start || frameReferences[option]?.end
 											)}
@@ -1262,21 +1275,41 @@
 												aria-controls={`${advancedId}-frame-panel`}
 												aria-disabled={startLoading || endLoading}
 												aria-label={edited
-													? t('moveSheet.referenceEdited', { direction: directionLabel(option) })
-													: directionLabel(option)}
+													? t('moveSheet.referenceEdited', { direction: name })
+													: name}
 												tabindex={direction === option ? 0 : -1}
 												onclick={() => {
 													if (!startLoading && !endLoading) referenceDirection = option;
 												}}
 												onkeydown={(event) => navigateFrameTabs(event, option)}
 											>
-												<ArrowUp
-													size={16}
-													style="transform:rotate({ANGLES[option]}deg)"
+												<span class="bu-separator frame-tab-rule" aria-hidden="true"></span>
+												<span
+													class="frame-tab-content"
+													bind:clientWidth={frameTabWidths[option]}
 													aria-hidden="true"
-												/>
-												<span>{displayDirectionShort(option)}</span>
-												{#if edited}<Check size={10} class="frame-edited" aria-hidden="true" />{/if}
+												>
+													{@render directionArrow(option)}
+													<span
+														>{showFullFrameDirections ? name : displayDirectionShort(option)}</span
+													>
+												</span>
+												<span class="frame-tab-measure" aria-hidden="true">
+													<span
+														class="frame-tab-content"
+														bind:offsetWidth={frameLabelWidths[option]}
+													>
+														{@render directionArrow(option)}
+														<span class="bu-tab-text" data-text={name}>{name}</span>
+													</span>
+												</span>
+												{#if edited}<Circle
+														class="bu-tile-check"
+														size={6}
+														fill="currentColor"
+														strokeWidth={0}
+														aria-hidden="true"
+													/>{/if}
 											</button>
 										{/each}
 									</div>
@@ -1547,24 +1580,45 @@
 	}
 	.frame-tabs {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(46px, 1fr));
-		gap: 4px;
+		grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+		row-gap: 4px;
 	}
 	.frame-tabs button {
 		position: relative;
-		display: grid;
-		justify-items: center;
-		align-content: center;
-		gap: 2px;
+		display: flex;
+		align-items: center;
 		min-height: 44px;
 		min-width: 0;
 		padding-inline: 4px;
 		font-size: var(--fs-sm);
 	}
-	.frame-tabs :global(.frame-edited) {
+	.frame-tab-content {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 3px;
+		width: 100%;
+		min-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.frame-tab-content :global(svg) {
+		flex: none;
+	}
+	.frame-tab-rule {
 		position: absolute;
-		inset-block-start: 4px;
-		inset-inline-end: 4px;
+		inset-inline: 0;
+		inset-block-end: calc(-1px - var(--bu-tab-stroke, 1px));
+	}
+	.frame-tab-measure {
+		position: absolute;
+		visibility: hidden;
+		inline-size: 0;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.frame-tab-measure .frame-tab-content {
+		width: max-content;
 	}
 	.frame-panel {
 		display: grid;

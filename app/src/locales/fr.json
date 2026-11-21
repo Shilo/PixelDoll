@@ -2177,7 +2177,7 @@
 	"moveSheet": {
 		"loop": "Boucle",
 		"loopHint": "Répétée par défaut dans les exports.",
-		"referenceDirection": "Images par direction",
+		"referenceDirection": "Images de départ et de fin",
 		"referenceEdited": "{direction} (images personnalisées)",
 		"referenceSize": "Utilisez des PNG transparents du corps seul en {width} × {height}.",
 		"referenceInvalid": "Utilisez un PNG de {width} × {height} avec un visuel visible et un fond transparent.",
