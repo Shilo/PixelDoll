@@ -2801,7 +2801,12 @@
 		"sourceMissing": "Source indisponible",
 		"sourceChanged": "La source a changé après la génération : ce résultat ne peut pas être enregistré. Abandonnez-le et réessayez.",
 		"keepGrounded": "Aligner sur la source",
-		"groundedHint": "Pieds déplacés pour correspondre à la source. Désactivez pour annuler."
+		"groundedHint": "Pieds déplacés pour correspondre à la source. Désactivez pour annuler.",
+		"readyRow": "Prêt à vérifier",
+		"attentionRow": "Inachevé : touchez pour les options",
+		"background": "Vous pouvez continuer à travailler. Il apparaîtra dans États une fois prêt.",
+		"readyToReview": "Vous pouvez vérifier {name}.",
+		"failedOpen": "Impossible de générer {name}. Ouvrez États pour voir les options."
 	},
 	"stateJointFit": {
 		"busy": "La mesure des articulations est déjà en cours. Réessayez ensuite.",

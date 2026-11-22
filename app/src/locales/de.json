@@ -2801,7 +2801,12 @@
 		"sourceMissing": "Quelle nicht verfügbar",
 		"sourceChanged": "Die Quelle hat sich nach dem Generieren geändert, daher kann dieses Ergebnis nicht gespeichert werden. Verwirf es und versuche es erneut.",
 		"keepGrounded": "An Quelle ausrichten",
-		"groundedHint": "Füße an die Quelle angepasst. Zum Rückgängigmachen ausschalten."
+		"groundedHint": "Füße an die Quelle angepasst. Zum Rückgängigmachen ausschalten.",
+		"readyRow": "Bereit zur Prüfung",
+		"attentionRow": "Unvollständig: Tippe für Optionen",
+		"background": "Du kannst weiterarbeiten. Er erscheint unter „Zustände“, sobald er fertig ist.",
+		"readyToReview": "{name} ist bereit zur Prüfung.",
+		"failedOpen": "{name} konnte nicht generiert werden. Öffne „Zustände“, um die Optionen zu sehen."
 	},
 	"stateJointFit": {
 		"busy": "Die Gelenke werden bereits bestimmt. Versuche es danach erneut.",

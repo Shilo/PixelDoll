@@ -2961,7 +2961,15 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(newState.getByText('This State will be saved in PixelDoll only.')).toBeVisible();
 	expect(statePosts()).toHaveLength(0);
 	await generateState.click();
-	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
+	// Like a Move, the State generates in the background: the sheet closes and the States list tracks it.
+	await expect(newState).toBeHidden();
+	const pendingRow = page
+		.getByRole('tabpanel', { name: 'States', exact: true })
+		.getByRole('button', { name: /^Ready stance/ });
+	await expect(pendingRow).toContainText('Ready to review');
+	await pendingRow.click();
+	const stateReview = page.getByRole('dialog', { name: 'Ready stance', exact: true });
+	await expect(stateReview.getByText('Review Ready stance before saving.')).toBeVisible();
 	expect(statePosts()).toHaveLength(1);
 	expect(statePosts()[0]?.body).toMatchObject({
 		method: 'edit_with_text',
@@ -2969,18 +2977,21 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	});
 	const attempt = await read();
 	expect(attempt.manifest.rig.animations.some(({ id }) => id === 'ready-stance')).toBe(false);
-	expect(attempt.stateGeneration?.source).toEqual({ clip: 'idle', frame: 2 });
-	await createState.getByRole('button', { name: 'Close', exact: true }).click();
+	expect(Object.values(attempt.stateGenerations ?? {}).map(({ source }) => source)).toEqual([
+		{ clip: 'idle', frame: 2 }
+	]);
+	await stateReview.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'States');
-	await addState.click();
-	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
+	await pendingRow.click();
+	await expect(stateReview.getByText('Review Ready stance before saving.')).toBeVisible();
 	// Grounding is offered on by default; turned off, Save keeps the returned placement.
-	const ground = newState.getByRole('switch', { name: 'Align to source' });
+	const ground = stateReview.getByRole('switch', { name: 'Align to source' });
 	await expect(ground).toBeChecked();
 	await ground.uncheck();
-	await newState.getByRole('button', { name: 'Save', exact: true }).click();
+	await stateReview.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
+	await expect(pendingRow.filter({ hasText: 'Ready to review' })).toHaveCount(0);
 	await expect(page.locator('.clip-trigger[data-variant="quiet"]')).toHaveAttribute(
 		'value',
 		'ready-stance'
@@ -3177,7 +3188,13 @@ test('a managed State reloads its child without another submission', async ({
 	await expect(generate).toBeEnabled();
 	expect(posts).toHaveLength(0);
 	await generate.click();
-	const review = panel.getByText('Review Idle before saving.');
+	await expect(dialog).toBeHidden();
+	const row = page
+		.getByRole('tabpanel', { name: 'States', exact: true })
+		.getByRole('button', { name: /^Idle/ });
+	await row.click();
+	const reviewSheet = page.getByRole('dialog', { name: 'Idle', exact: true });
+	const review = reviewSheet.getByText('Review Idle before saving.');
 	await expect(review).toBeVisible();
 	expect(posts).toEqual([
 		expect.objectContaining({ character_id: parent, edit_description: 'Hold a potion' })
@@ -3193,12 +3210,12 @@ test('a managed State reloads its child without another submission', async ({
 	});
 	expect(labels).toEqual(['Idle']);
 	const postsBeforeReload = postPaths.slice();
-	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+	await reviewSheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'States');
-	await addState.click();
+	await row.click();
 	await expect(review).toBeVisible();
-	await panel.getByRole('button', { name: 'Save', exact: true }).click();
+	await reviewSheet.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
 	const stored = await page.evaluate(async (projectId) => {
 		const dbPath = '/src/lib/store/db.ts';
@@ -3300,9 +3317,10 @@ test('a State interrupted after its first batch sends only the unqueued views af
 			const db = await import(dbPath);
 			const record: StoredProject = await db.get('projects', projectId);
 			const jobs: { activityScope?: string; state: string }[] = await db.all('jobs');
-			const token = record.stateGeneration?.token;
+			const [attempt] = Object.values(record.stateGenerations ?? {});
+			const token = attempt?.token;
 			return {
-				attempt: record.stateGeneration,
+				attempt,
 				jobs: jobs.filter(
 					({ activityScope }) => token && activityScope?.startsWith(`state:${token}:`)
 				)
@@ -3324,6 +3342,14 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	await generate.click();
 	await polled;
 	expect(flashPosts()).toHaveLength(1);
+	const row = page
+		.getByRole('tabpanel', { name: 'States', exact: true })
+		.getByRole('button', { name: /^Torch ready/ });
+	await expect(row).toContainText('Generating State…');
+	// Nothing waits on it: another State can be started while this one runs.
+	await addState.click();
+	await expect(panel.getByRole('switch', { name: 'Edit this pose' })).toBeVisible();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	const interrupted = await stored();
 	const batches = interrupted.attempt!.plan.batches.length;
 	expect(batches).toBeGreaterThan(1);
@@ -3337,17 +3363,19 @@ test('a State interrupted after its first batch sends only the unqueued views af
 		.poll(async () => (await stored()).jobs.map(({ state }) => state), { timeout: 30_000 })
 		.toEqual(['done']);
 	await equipmentMode(page, 'States');
-	await addState.click();
-	await dialog.getByRole('button', { name: 'Check remaining cost', exact: true }).click();
+	await expect(row).toContainText('Unfinished: tap for options');
+	await row.click();
+	const review = page.getByRole('dialog', { name: 'Torch ready', exact: true });
+	await review.getByRole('button', { name: 'Check remaining cost', exact: true }).click();
 	await expect(
-		dialog.getByText(`Views kept: 1. Views to generate: ${batches - 1}.`, { exact: true })
+		review.getByText(`Views kept: 1. Views to generate: ${batches - 1}.`, { exact: true })
 	).toBeVisible();
 	expect(flashPosts()).toHaveLength(1);
-	await dialog.getByRole('button', { name: 'Generate remaining views', exact: true }).click();
-	await expect(panel.getByText('Review Torch ready before saving.')).toBeVisible();
+	await review.getByRole('button', { name: 'Generate remaining views', exact: true }).click();
+	await expect(review.getByText('Review Torch ready before saving.')).toBeVisible();
 	expect(flashPosts()).toHaveLength(batches);
 	expect(new Set(flashPosts().map(({ image }) => image.base64)).size).toBe(batches);
-	await panel.getByRole('button', { name: 'Save', exact: true }).click();
+	await review.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
 	const saved = await page.evaluate(async (projectId) => {
 		const dbPath = '/src/lib/store/db.ts';
@@ -3355,7 +3383,7 @@ test('a State interrupted after its first batch sends only the unqueued views af
 		const record: StoredProject = await db.get('projects', projectId);
 		const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
 		return {
-			attempt: record.stateGeneration,
+			attempts: record.stateGenerations ?? {},
 			views: await Promise.all(
 				Object.values(base.layers[0].cells!['torch-ready']).map(async (hashes) => {
 					const blob: Blob = await db.getBlob(hashes![0]!.slice(7));
@@ -3364,7 +3392,7 @@ test('a State interrupted after its first batch sends only the unqueued views af
 			)
 		};
 	}, projectId);
-	expect(saved.attempt).toBeUndefined();
+	expect(saved.attempts).toEqual({});
 	expect(saved.views).toHaveLength(batches);
 	const sent = await Promise.all(
 		flashPosts().map(async ({ image }) => decodePngBytes(Buffer.from(image.base64, 'base64')))

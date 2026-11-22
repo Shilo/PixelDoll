@@ -544,10 +544,12 @@ test('a new Move cannot take the normalized name of a State or a pending State',
 	const f = await fixture();
 	const rec = f.saved();
 	const spec = { id: 'cafe-cast', text: 'Café cast', action: undefined, replace: false };
-	rec.stateGeneration = { id: 'cafe_cast' } as NonNullable<typeof rec.stateGeneration>;
+	rec.stateGenerations = {
+		pending: { id: 'cafe_cast' } as NonNullable<typeof rec.stateGenerations>[string]
+	};
 	const taken = { translation: { key: 'stateCapture.takenName' } };
 	await expect(f.run(spec)).rejects.toMatchObject(taken);
-	delete rec.stateGeneration;
+	delete rec.stateGenerations;
 	rec.manifest.rig.animations.push({
 		id: 'cafe_cast',
 		kind: 'state',

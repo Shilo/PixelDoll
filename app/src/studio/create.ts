@@ -40,6 +40,7 @@ import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { loadProject, readStoredImage, type StoredProject } from '../lib/store/project.ts';
 import { sameClipName, withClipWriteLock } from './clipName.ts';
+import { stateAttempts } from './stateRecovery.ts';
 import {
 	frameChangeText,
 	frameFacts,
@@ -2892,7 +2893,7 @@ async function addMoveUnlocked(
 	if (
 		!spec.itemsOnly &&
 		!rec.manifest.rig.animations.some((clip) => clip.kind !== 'state' && clip.id === spec.id) &&
-		((rec.stateGeneration && sameClipName(rec.stateGeneration.id, spec.id)) ||
+		(stateAttempts(rec).some((attempt) => sameClipName(attempt.id, spec.id)) ||
 			rec.manifest.rig.animations.some(
 				(clip) => clip.kind === 'state' && sameClipName(clip.id, spec.id)
 			))

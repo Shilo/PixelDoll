@@ -2801,7 +2801,12 @@
 		"sourceMissing": "Source unavailable",
 		"sourceChanged": "The source changed after generating, so this result can’t be saved. Discard it and try again.",
 		"keepGrounded": "Align to source",
-		"groundedHint": "Feet moved to match the source. Turn off to undo."
+		"groundedHint": "Feet moved to match the source. Turn off to undo.",
+		"readyRow": "Ready to review",
+		"attentionRow": "Unfinished: tap for options",
+		"background": "You can keep working. It appears under States when it’s ready.",
+		"readyToReview": "{name} is ready to review.",
+		"failedOpen": "{name} could not be generated. Open States for options."
 	},
 	"stateJointFit": {
 		"busy": "Joint fitting is already in progress. Try again when it finishes.",

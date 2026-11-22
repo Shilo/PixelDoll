@@ -2801,7 +2801,12 @@
 		"sourceMissing": "Kaynak kullanılamıyor",
 		"sourceChanged": "Oluşturmadan sonra kaynak değişti, bu yüzden bu sonuç kaydedilemez. Atıp yeniden deneyin.",
 		"keepGrounded": "Kaynağa hizala",
-		"groundedHint": "Ayaklar kaynağa göre taşındı. Geri almak için kapatın."
+		"groundedHint": "Ayaklar kaynağa göre taşındı. Geri almak için kapatın.",
+		"readyRow": "İncelemeye hazır",
+		"attentionRow": "Tamamlanmadı: Seçenekler için dokunun",
+		"background": "Çalışmaya devam edebilirsiniz. Hazır olduğunda Durumlar bölümünde görünür.",
+		"readyToReview": "İncelemeye hazır: {name}.",
+		"failedOpen": "Oluşturulamadı: {name}. Seçenekleri görmek için Durumlar bölümünü açın."
 	},
 	"stateJointFit": {
 		"busy": "Eklem ölçümü zaten sürüyor. Tamamlandığında tekrar deneyin.",

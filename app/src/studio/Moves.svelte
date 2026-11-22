@@ -29,6 +29,10 @@
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { t } from 'svelte-whisper';
+	import { queue } from '../lib/pixellab/queue.ts';
+	import { moveLabel } from './model.ts';
+	import { openStateReview, stateRuns } from './stateJobs.svelte.ts';
+	import { stateAttemptStatus } from './stateRecovery.ts';
 	let { kind, onaddstate }: { kind: 'state' | 'move'; onaddstate?: () => void } = $props();
 	const m = $derived(store.project?.manifest);
 	const playback = $derived(playbackClips(m?.rig.animations ?? []));
@@ -48,6 +52,37 @@
 <div class="colors">
 	{#if m && view.project && thumbnails}
 		<div class="move-list">
+			{#each kind === 'state' ? Object.values(store.stateAttempts) : [] as attempt (attempt.token)}
+				{@const run = stateRuns[attempt.token]}
+				{@const status = run
+					? run.error
+						? 'attention'
+						: 'generating'
+					: stateAttemptStatus(attempt, $queue.jobs)}
+				<button
+					class="move-row bu-action"
+					data-variant="tile"
+					onclick={() => openStateReview(attempt.token)}
+				>
+					{#if status !== 'ready'}<span
+							class="bu-ring ring"
+							class:spin={status === 'generating'}
+							aria-hidden="true"
+						></span>{/if}
+					<span class="move-text"
+						><b>{moveLabel(attempt.id)}</b><span class="muted small"
+							>{t(
+								status === 'generating'
+									? 'stateGeneration.generating'
+									: status === 'ready'
+										? 'stateGeneration.readyRow'
+										: 'stateGeneration.attentionRow'
+							)}</span
+						></span
+					>
+					{#if status === 'ready'}<ChevronRight size={16} />{/if}
+				</button>
+			{/each}
 			{#each kind === 'move' ? Object.values(store.moveReviews) : [] as candidate (candidate.spec.id)}
 				<button
 					class="move-row bu-action"

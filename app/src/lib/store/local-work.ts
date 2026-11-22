@@ -29,7 +29,7 @@ export function selectLocalWork({ projects, jobs }: StoredWork) {
 		([key, value]) =>
 			key.startsWith('rig-') &&
 			!incompatibleKind(value) &&
-			(value as Partial<StoredProject> | undefined)?.stateGeneration
+			Object.keys((value as Partial<StoredProject> | undefined)?.stateGenerations ?? {}).length
 	);
 	if (pendingState || generationWork([...projects.values()], ledger, runningFlow))
 		throw new LocalizedError(

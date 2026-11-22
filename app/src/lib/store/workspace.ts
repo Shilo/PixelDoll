@@ -232,7 +232,7 @@ function recoverRecords(projects: Map<string, unknown>, omitted: Omitted, histor
 			const { id, manifest } = record;
 			if (!selects(key, value) || id !== key || !supportedFormat(manifest?.format))
 				throw new Error('Unsupported character record.');
-			delete record.stateGeneration;
+			delete record.stateGenerations;
 			manifestShape(manifest);
 			for (const [hash, frame] of artworkRefs(manifest, history)) add(hash, frame);
 			for (const [hash, frame] of local) found.set(hash, frame);

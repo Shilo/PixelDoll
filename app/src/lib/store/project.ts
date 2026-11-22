@@ -18,7 +18,8 @@ export interface StoredProject {
 	savedAt: string;
 	creationSpec?: string; // internal creation-attempt fingerprint; never exported or used as clone identity
 	moveReviews?: Record<string, import('../../studio/replaceMove.ts').MoveCandidate>;
-	stateGeneration?: import('../../studio/stateGeneration.ts').StateAttempt;
+	/** Unsaved State attempts by token. */
+	stateGenerations?: Record<string, import('../../studio/stateGeneration.ts').StateAttempt>;
 	managedStates?: Record<string, string>;
 	moveRecovery?: {
 		id: string;

@@ -19,6 +19,7 @@ import { deletedEntry, quotaError, type RecentlyDeleted } from '../lib/store/rec
 import { LocalizedError, message } from '../lib/message.ts';
 import { moveLabel } from './model.ts';
 import { clipNameId, sameClipName, withClipWriteLock } from './clipName.ts';
+import { stateAttempts } from './stateRecovery.ts';
 export { clipNameId as stateCaptureId } from './clipName.ts';
 import {
 	deletionBlocked,
@@ -152,7 +153,7 @@ async function captureStateUnlocked(
 	const nameIssue = stateCaptureNameIssue(manifest, id, Object.keys(snapshot.moveReviews ?? {}));
 	if (
 		nameIssue ||
-		(snapshot.stateGeneration && sameClipName(snapshot.stateGeneration.id, id)) ||
+		stateAttempts(snapshot).some((attempt) => sameClipName(attempt.id, id)) ||
 		(await pendingStateName(projectId, id))
 	)
 		throw new LocalizedError(

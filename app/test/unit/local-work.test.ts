@@ -103,7 +103,15 @@ test('refuses while a completed paid State attempt still awaits review', () => {
 		selectLocalWork(
 			library(
 				[['state-job', { id: 'state-job', state: 'done', tag: 'studio-state' }]],
-				[['rig-a', { ...character('rig-a'), stateGeneration: { token: 'state-attempt' } }]]
+				[
+					[
+						'rig-a',
+						{
+							...character('rig-a'),
+							stateGenerations: { 'state-attempt': { token: 'state-attempt' } }
+						}
+					]
+				]
 			)
 		)
 	).toThrow(

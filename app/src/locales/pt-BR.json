@@ -2810,7 +2810,12 @@
 		"sourceMissing": "Origem indisponível",
 		"sourceChanged": "A origem mudou depois da geração, então este resultado não pode ser salvo. Descarte e tente de novo.",
 		"keepGrounded": "Alinhar à origem",
-		"groundedHint": "Pés movidos para combinar com a origem. Desative para desfazer."
+		"groundedHint": "Pés movidos para combinar com a origem. Desative para desfazer.",
+		"readyRow": "Pronto para revisar",
+		"attentionRow": "Incompleto: toque para ver opções",
+		"background": "Você pode continuar trabalhando. Ele aparece em Estados quando estiver pronto.",
+		"readyToReview": "Você já pode revisar {name}.",
+		"failedOpen": "Não foi possível gerar {name}. Abra Estados para ver as opções."
 	},
 	"stateJointFit": {
 		"busy": "A medição das articulações já está em andamento. Tente novamente quando terminar.",

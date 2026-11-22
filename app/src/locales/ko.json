@@ -2731,7 +2731,12 @@
 		"sourceMissing": "원본을 표시할 수 없어요",
 		"sourceChanged": "생성 후 원본이 바뀌어서 이 결과를 저장할 수 없어요. 버리고 다시 시도하세요.",
 		"keepGrounded": "원본에 맞추기",
-		"groundedHint": "발 위치를 원본에 맞췄어요. 끄면 되돌려요."
+		"groundedHint": "발 위치를 원본에 맞췄어요. 끄면 되돌려요.",
+		"readyRow": "검토 준비됨",
+		"attentionRow": "미완료: 탭해 옵션 보기",
+		"background": "계속 작업할 수 있어요. 준비되면 상태 목록에 표시돼요.",
+		"readyToReview": "검토할 상태: {name}",
+		"failedOpen": "생성하지 못한 상태: {name}. 상태를 열어 옵션을 확인하세요."
 	},
 	"stateJointFit": {
 		"busy": "관절을 이미 측정 중입니다. 완료되면 다시 시도하세요.",

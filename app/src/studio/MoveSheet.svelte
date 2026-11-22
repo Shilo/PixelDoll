@@ -52,6 +52,7 @@
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
 	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
 	import { clipNameId, sameClipName } from './clipName.ts';
+	import { stateAttempts } from './stateRecovery.ts';
 	import {
 		isGeneratedState,
 		measureStateJoints,
@@ -573,7 +574,7 @@
 			(!replacing && have.has(id)) ||
 			(!have.has(id) &&
 				([...stateIds].some((stateId) => sameClipName(stateId, id)) ||
-					(rec?.stateGeneration && sameClipName(rec.stateGeneration.id, id))))
+					stateAttempts(rec).some((attempt) => sameClipName(attempt.id, id))))
 		)
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');

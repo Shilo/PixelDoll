@@ -2731,7 +2731,12 @@
 		"sourceMissing": "来源不可用",
 		"sourceChanged": "生成后来源已更改，因此无法保存此结果。请放弃后重试。",
 		"keepGrounded": "与来源对齐",
-		"groundedHint": "已将脚部对齐到来源。关闭即可撤销。"
+		"groundedHint": "已将脚部对齐到来源。关闭即可撤销。",
+		"readyRow": "可以检查了",
+		"attentionRow": "未完成：轻点查看选项",
+		"background": "你可以继续工作。完成后会显示在“状态”中。",
+		"readyToReview": "可以检查{name}了。",
+		"failedOpen": "无法生成{name}。打开“状态”以查看选项。"
 	},
 	"stateJointFit": {
 		"busy": "正在测量关节。请在测量完成后重试。",

@@ -129,17 +129,17 @@ test('a backup holds only saved Studio characters and restores them with their a
 			provenance: []
 		}
 	};
-	const stateGeneration = { token: 'pending-state' };
-	saved.projects.set('rig-a', { ...character, stateGeneration });
+	const stateGenerations = { 'pending-state': { token: 'pending-state' } };
+	saved.projects.set('rig-a', { ...character, stateGenerations });
 	const file = await exportBackup([]);
 	expect(file).toMatchObject({ characters: 1, hasOmissions: false });
 	const source = await readRestoreSource(file.bytes);
 	expect(source).toMatchObject({ kind: 'backup', build: 'test (abc)', unreadable: 0 });
 	expect([...source.characters.keys()]).toEqual(['rig-a']);
 	expect(source.characters.get('rig-a')!.creationSpec).toBeUndefined();
-	expect(source.characters.get('rig-a')!.stateGeneration).toBeUndefined();
+	expect(source.characters.get('rig-a')!.stateGenerations).toBeUndefined();
 	expect(source.blobs.has(reference)).toBe(true);
-	expect(restored('rig-a')).toMatchObject({ stateGeneration });
+	expect(restored('rig-a')).toMatchObject({ stateGenerations });
 	expect((await planRestore(source)).entries).toMatchObject([{ action: 'skip', match: 'rig-a' }]);
 
 	saved.projects = new Map([['rig-dev', { id: 'rig-dev', origin: 'dev' }]]);

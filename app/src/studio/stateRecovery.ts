@@ -1,5 +1,5 @@
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
-import { managedStateSubmitChildId, type JobRec } from '../lib/pixellab/queue.ts';
+import { live, managedStateSubmitChildId, type JobRec } from '../lib/pixellab/queue.ts';
 import type { StateAttempt } from './stateGeneration.ts';
 
 type RecoveryAttempt = {
@@ -59,4 +59,28 @@ export function stateContinuationBatches(
 	return batches?.missing.length && batches.missing.every((index) => unqueued.includes(index))
 		? batches
 		: null;
+}
+
+/** A character's unsaved State attempts, keyed by token so several can run at once. */
+export const stateAttempts = (
+	record: { stateGenerations?: Record<string, StateAttempt> } | null | undefined
+) => Object.values(record?.stateGenerations ?? {});
+
+/** `attention`: nothing is running and the results are incomplete, so it needs a continuation or a discard. */
+export type StateAttemptStatus = 'generating' | 'ready' | 'attention';
+
+export function stateAttemptStatus(
+	attempt: RecoveryAttempt & { source?: unknown },
+	ledger: readonly JobRec[]
+): StateAttemptStatus {
+	const scopes = new Set(
+		attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index))
+	);
+	if (
+		ledger.some(
+			(record) => record.activityScope && scopes.has(record.activityScope) && live(record)
+		)
+	)
+		return 'generating';
+	return attempt.source && stateRecoveryRecords(attempt, ledger) ? 'ready' : 'attention';
 }

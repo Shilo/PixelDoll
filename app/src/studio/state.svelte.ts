@@ -137,6 +137,7 @@ import {
 } from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
+import { stateAttempts } from './stateRecovery.ts';
 import {
 	activityStateMessage,
 	GENERATION_PHASES,
@@ -271,6 +272,7 @@ export type SheetId =
 	| 'move'
 	| 'moveReview'
 	| 'stateCapture'
+	| 'stateReview'
 	| 'rename'
 	| 'directions'
 	| 'importZip'
@@ -319,6 +321,7 @@ export const ui = $state({
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
 	stateCaptureMove: '',
+	stateReview: '', // token of the State attempt the review sheet shows
 	redrawMove: '',
 	moveFormOpen: false,
 	get sheet(): SheetId {
@@ -656,6 +659,7 @@ export interface ProjectRef {
 class Store {
 	project = $state.raw<Project | null>(null);
 	moveReviews = $state.raw<NonNullable<StoredProject['moveReviews']>>({});
+	stateAttempts = $state.raw<NonNullable<StoredProject['stateGenerations']>>({});
 	exportRecord = $state.raw<StoredProject>();
 	projects = $state.raw<ProjectRef[]>([]);
 	results = $state.raw<Record<string, ItemResult | null>>({});
@@ -907,6 +911,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		// Mounted, a character opens on its saved Riding pose (Mount settings).
 		if (switched) ui.anim = syncRiderPose(id, m, ui.anim);
 		store.moveReviews = r.record?.moveReviews ?? {};
+		store.stateAttempts = r.record?.stateGenerations ?? {};
 		store.exportRecord = r.record;
 		if (r.record) syncProjectRef(r.record);
 		// Another acceptance can supersede its reload. Retire worn drafts only when their saved items are published.
@@ -1414,7 +1419,7 @@ export async function adjustCharacter(
 		);
 	const reviewing = moveReviewHold(rec.moveReviews);
 	if (reviewing) throw reviewing;
-	if (rec.stateGeneration)
+	if (stateAttempts(rec).length)
 		throw new LocalizedError(
 			'Save or discard the pending State before adjusting the frame.',
 			'adjustFrame.errors.statePending'
@@ -3562,12 +3567,11 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 	);
 	const cutoff = Date.now() - maxAge;
 	const stateScopes = new Set(
-		projects.flatMap((value) => {
-			const attempt = (value as StoredProject)?.stateGeneration;
-			return attempt
-				? attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index))
-				: [];
-		})
+		projects.flatMap((value) =>
+			stateAttempts(value as StoredProject).flatMap((attempt) =>
+				attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index))
+			)
+		)
 	);
 	const jobs = await queue.clearFinished(
 		(r) =>

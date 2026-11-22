@@ -2801,7 +2801,12 @@
 		"sourceMissing": "Origen no disponible",
 		"sourceChanged": "El origen cambió después de generar, así que este resultado no se puede guardar. Descártalo e inténtalo de nuevo.",
 		"keepGrounded": "Alinear con el origen",
-		"groundedHint": "Pies movidos para coincidir con el origen. Desactívalo para deshacer."
+		"groundedHint": "Pies movidos para coincidir con el origen. Desactívalo para deshacer.",
+		"readyRow": "Listo para revisar",
+		"attentionRow": "Sin terminar: toca para ver opciones",
+		"background": "Puedes seguir trabajando. Aparecerá en Estados cuando esté listo.",
+		"readyToReview": "Puedes revisar {name}.",
+		"failedOpen": "No se pudo generar {name}. Abre Estados para ver las opciones."
 	},
 	"stateJointFit": {
 		"busy": "Ya se están midiendo las articulaciones. Vuelve a intentarlo cuando termine.",

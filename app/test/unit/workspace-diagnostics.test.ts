@@ -124,11 +124,13 @@ test('workspace exports and imports keep saved States but not their local paid a
 			materials: [],
 			presets: []
 		},
-		stateGeneration: { token: 'attempt', continuation: { credential: 'local-key-digest' } }
+		stateGenerations: {
+			attempt: { token: 'attempt', continuation: { credential: 'local-key-digest' } }
+		}
 	};
 	const imported = await readWorkspace(await archive(undefined, [[id, record]]));
 	expect(imported.projects.get(id)).toMatchObject({ manifest: record.manifest });
-	expect(imported.projects.get(id)).not.toHaveProperty('stateGeneration');
+	expect(imported.projects.get(id)).not.toHaveProperty('stateGenerations');
 
 	vi.mocked(readWorkspaceSnapshot).mockImplementationOnce(async (_select, references) => {
 		const projects = new Map([[id, structuredClone(record)]]);
@@ -141,7 +143,7 @@ test('workspace exports and imports keep saved States but not their local paid a
 		const { bytes } = await exportWorkspace(view, undefined, ['local-key-digest']);
 		const index = JSON.parse(new TextDecoder().decode((await unzip(bytes)).get('workspace.json')));
 		expect(index.projects).toMatchObject([[id, { manifest: record.manifest }]]);
-		expect(index.projects[0][1]).not.toHaveProperty('stateGeneration');
+		expect(index.projects[0][1]).not.toHaveProperty('stateGenerations');
 	} finally {
 		vi.unstubAllGlobals();
 	}
