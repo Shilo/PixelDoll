@@ -761,9 +761,10 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 	]);
 	// A copy is its own kind: it keeps its own icon, apart from an item still offered from another character.
 	await expect(worn.locator('.tile-status').first()).toHaveAttribute('data-kind', 'copied');
-	await expect(
-		sharedTile(others, 'Traveling wizard hat').locator('.tile-status').first()
-	).toHaveAttribute('data-kind', 'shared');
+	await expect(worn.locator('.tile-status').first().locator('svg')).toHaveClass(/lucide-copy/);
+	const offered = sharedTile(others, 'Traveling wizard hat').locator('.tile-status').first();
+	await expect(offered).toHaveAttribute('data-kind', 'shared');
+	await expect(offered.locator('svg')).toHaveClass(/lucide-users-round/);
 	await expect(others.locator('.shared-tile', { hasText: 'Stout helmet' })).toHaveCount(0);
 	await reloadStudio(page);
 	await equipmentGroup(page, 'Head');
