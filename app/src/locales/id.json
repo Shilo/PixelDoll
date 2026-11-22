@@ -1,4 +1,40 @@
 {
+	"recentlyDeleted": {
+		"title": "Baru saja dihapus",
+		"empty": "Tidak ada yang baru dihapus. Karakter, item, kategori, dan gerakan yang Anda hapus disimpan di sini selama 30 hari.",
+		"kept": "Disimpan 30 hari. Memulihkan mengembalikan persis apa yang dihapus.",
+		"deletedOn": "Dihapus {date}",
+		"restore": "Pulihkan",
+		"deleteForever": "Hapus permanen",
+		"deleteForeverNamed": "Hapus {name} permanen",
+		"confirmTitle": "Hapus {name} permanen?",
+		"confirmBody": "Gambar yang tersimpan juga dihapus dari perangkat ini. Ini tidak dapat dibatalkan.",
+		"confirmAction": "Hapus permanen",
+		"restored": "{name} dipulihkan",
+		"restoredAsCopy": "Dipulihkan sebagai {name}: karakter dengan ID itu sudah tersimpan.",
+		"restoredWithDrafts": {
+			"other": "{name} dipulihkan dengan {count} draf"
+		},
+		"restoredPartly": {
+			"other": "{name} dipulihkan. {count} tempat pakaian telah berubah, jadi dilewati di sana."
+		},
+		"kind": {
+			"character": "Karakter",
+			"items": "Item",
+			"category": "Kategori",
+			"move": "Gerakan",
+			"directions": "Arah"
+		},
+		"errors": {
+			"gone": "Item yang dihapus itu tidak lagi tersedia.",
+			"expired": "Item yang dihapus disimpan 30 hari. Yang ini sudah kedaluwarsa.",
+			"missingArtwork": "Sebagian gambar tersimpan untuk {name} tidak lagi ada di perangkat ini, jadi tidak dapat dipulihkan.",
+			"full": "Ruang browser habis, jadi tidak ada yang dihapus. Hapus permanen sesuatu di Baru saja dihapus, lalu coba lagi.",
+			"wrongKind": "Item yang dihapus itu milik sebuah karakter. Pulihkan karakternya lebih dulu.",
+			"movePresent": "Gerakan ini sudah ada pada karakter.",
+			"moveGeometry": "Ukuran bingkai atau arah karakter ini berubah sejak gerakan ini dihapus, jadi tidak bisa lagi sejajar."
+		}
+	},
 	"librarySettings": {
 		"title": "Pustaka",
 		"scope": "Cadangkan karakter tersimpan, karya seni, dan data arsip. Preferensi, draf, dan tugas tidak disertakan.",
@@ -854,6 +890,7 @@
 		"manageMovesInOtherTab": "Kelola animasi di tab PixelDoll lain, atau tutup tab itu terlebih dahulu.",
 		"manageCharactersInOtherTab": "Kelola karakter di tab PixelDoll lain, atau tutup tab itu terlebih dahulu.",
 		"finishBeforeCharacterRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum menghapus karakter.",
+		"finishBeforeRestore": "Selesaikan atau buang pekerjaan pembuatan yang tertunda sebelum memulihkan karakter ini.",
 		"finishBeforeMoveRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum menghapus animasi.",
 		"finishBeforeDirectionRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum mengubah arah.",
 		"finishBeforeFixFrames": "Tunggu hingga proses generasi yang sedang berjalan selesai sebelum memperbaiki frame.",

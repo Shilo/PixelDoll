@@ -21,9 +21,16 @@ vi.mock('../../src/studio/state.svelte.ts', () => ({
 	deletionBlocked: vi.fn(() => ''),
 	flushSave: vi.fn(),
 	openProject: vi.fn(),
+	refreshRecentlyDeleted: vi.fn(),
+	restoreDeleted: vi.fn(),
 	toast: vi.fn()
 }));
-vi.mock('../../src/lib/store/db.ts', () => ({ get: vi.fn(), update: vi.fn() }));
+vi.mock('../../src/lib/store/db.ts', () => ({
+	get: vi.fn(),
+	update: vi.fn(),
+	getBlob: vi.fn(),
+	all: vi.fn(async () => [])
+}));
 
 let record: StoredProject;
 beforeEach(async () => {

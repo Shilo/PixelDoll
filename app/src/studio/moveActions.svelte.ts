@@ -15,6 +15,7 @@ import type { Manifest } from '../lib/store/manifest.ts';
 import * as db from '../lib/store/db.ts';
 import { assignNewClipExportId } from '../lib/store/identity.ts';
 import type { StoredProject } from '../lib/store/project.ts';
+import { deletedEntry, keysToPrune, type RecentlyDeleted } from '../lib/store/recently-deleted.ts';
 import { LocalizedError, message } from '../lib/message.ts';
 import { moveLabel } from './model.ts';
 import { sameClipName, withClipWriteLock } from './clipName.ts';
@@ -30,6 +31,8 @@ import {
 	openProject,
 	syncStoredProject,
 	pendingBodyMoveName,
+	refreshRecentlyDeleted,
+	restoreDeleted,
 	toast
 } from './state.svelte.ts';
 
@@ -273,30 +276,57 @@ export async function removeMove(id: string) {
 		throw new LocalizedError('Keep at least one move on this character.', 'moveRemoval.keepOne');
 	const manifest = await retainMoves(snapshot.manifest, ids);
 	await flushSave();
-	await db.update<StoredProject>('projects', projectId, (record) => {
-		const changed = moveDeletionBlocked(id);
-		if (changed) throw changed;
-		if (doc.id !== projectId)
-			throw new LocalizedError(
-				'The selected character changed.',
-				'moveRemoval.selectedCharacterChanged'
-			);
-		if (!record)
-			throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
-		if (stableStringify(record.manifest) !== version)
-			throw new LocalizedError(
-				'This character changed before the move could be deleted. Try again.',
-				'moveRemoval.concurrentEdit'
-			);
-		record.manifest = manifest;
-		Object.assign(record, retainMoveMetadata(record, ids));
-		record.savedAt = new Date().toISOString();
-		return record;
-	});
+	const prune = await keysToPrune();
+	let kept: RecentlyDeleted | undefined;
+	await db.update<StoredProject>(
+		'projects',
+		projectId,
+		(record) => {
+			const changed = moveDeletionBlocked(id);
+			if (changed) throw changed;
+			if (doc.id !== projectId)
+				throw new LocalizedError(
+					'The selected character changed.',
+					'moveRemoval.selectedCharacterChanged'
+				);
+			if (!record)
+				throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
+			if (stableStringify(record.manifest) !== version)
+				throw new LocalizedError(
+					'This character changed before the move could be deleted. Try again.',
+					'moveRemoval.concurrentEdit'
+				);
+			record.manifest = manifest;
+			Object.assign(record, retainMoveMetadata(record, ids));
+			record.savedAt = new Date().toISOString();
+			return record;
+		},
+		[],
+		(previous) => {
+			if (!previous?.manifest.rig.animations.some((clip) => clip.id === id)) return undefined;
+			const entry = deletedEntry({
+				kind: 'move',
+				record: previous,
+				name: moveLabel(id),
+				context: previous.manifest.name,
+				scope: { moveId: id }
+			});
+			kept = entry;
+			return { key: entry.id, record: entry };
+		},
+		prune
+	);
+	await refreshRecentlyDeleted();
 	if (doc.id === projectId) await openProject(projectId);
-	toast(
+	const label =
 		removed && clipKind(removed) === 'state'
 			? message('state.removedName', { name: moveLabel(id) })
-			: message('moveRemoval.removed')
-	);
+			: message('moveRemoval.removed');
+	if (kept)
+		toast(label, {
+			duration: 10000,
+			actionLabel: message('common.undo'),
+			action: () => restoreDeleted(kept!.id)
+		});
+	else toast(label);
 }

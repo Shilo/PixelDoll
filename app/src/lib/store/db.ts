@@ -384,6 +384,17 @@ export function withoutCharacters(r: any, ids: Set<string>): Record<string, unkn
 	return kept.length === r[list].length ? undefined : { ...r, [list]: kept };
 }
 
+/** The drafts a character's deletion takes with it, each with the shared list it came from. */
+export function takenDrafts(r: any, id: string): { list: 'gens' | 'drafts'; entry: unknown }[] {
+	const list = r?.id === 'studio-drafts' ? 'gens' : r?.id === 'm3-drafts' ? 'drafts' : undefined;
+	if (!list) return [];
+	return r[list]
+		.filter(
+			(d: { rigId?: string; draft?: { rigId: string } }) => (d.draft?.rigId ?? d.rigId) === id
+		)
+		.map((entry: unknown) => ({ list, entry }));
+}
+
 type FlowRecord = {
 	status?: string;
 	requestText?: number;
@@ -416,9 +427,9 @@ export function generationWork(
 	);
 }
 type IdleAction =
-	'delete' | 'change directions for' | 'replace body frames of' | 'change the frame of';
+	'delete' | 'restore' | 'change directions for' | 'replace body frames of' | 'change the frame of';
 
-async function editIdleCharacter(
+export async function editIdleCharacter(
 	id: string,
 	action: IdleAction,
 	edit: (
@@ -473,20 +484,25 @@ async function editIdleCharacter(
 								'Finish or dismiss pending generation work before deleting a character.',
 								'state.finishBeforeCharacterRemoval'
 							)
-						: action === 'replace body frames of'
+						: action === 'restore'
 							? new LocalizedError(
-									'Wait for the current generation work to finish before fixing frames.',
-									'state.finishBeforeFixFrames'
+									'Finish or dismiss pending generation work before restoring this character.',
+									'state.finishBeforeRestore'
 								)
-							: action === 'change the frame of'
+							: action === 'replace body frames of'
 								? new LocalizedError(
-										'Finish or dismiss pending generation work before adjusting the frame.',
-										'state.finishBeforeFrameChange'
+										'Wait for the current generation work to finish before fixing frames.',
+										'state.finishBeforeFixFrames'
 									)
-								: new LocalizedError(
-										'Finish or dismiss pending generation work before changing directions.',
-										'state.finishBeforeDirectionRemoval'
-									);
+								: action === 'change the frame of'
+									? new LocalizedError(
+											'Finish or dismiss pending generation work before adjusting the frame.',
+											'state.finishBeforeFrameChange'
+										)
+									: new LocalizedError(
+											'Finish or dismiss pending generation work before changing directions.',
+											'state.finishBeforeDirectionRemoval'
+										);
 				edit(projects, records.result);
 				for (const [hash, blob] of blobs ?? []) t.objectStore('blobs').put(blob, hash);
 			} catch (failure) {
@@ -499,15 +515,35 @@ async function editIdleCharacter(
 	});
 }
 
-/** Delete a local character and its drafts atomically, refusing work that could later write it back. Shared blobs stay. */
-export async function deleteCharacter(id: string): Promise<void> {
+/** Delete a local character and its drafts atomically, refusing work that could later write it back. Shared blobs stay.
+ *  `keep` receives the record and drafts just before they are removed, and returns the recovery entry to write in the same
+ *  transaction: a delete is never left without one, and a refused entry writes deletes nothing. */
+export async function deleteCharacter<T>(
+	id: string,
+	keep?: (
+		record: StoredProject,
+		drafts: { list: 'gens' | 'drafts'; entry: unknown }[]
+	) => { key: string; entry: T; prune?: readonly string[] }
+): Promise<T | undefined> {
+	let kept: T | undefined;
 	await editIdleCharacter(id, 'delete', (projects, records) => {
+		const record = records.find((r) => r?.id === id) as StoredProject | undefined;
+		if (record && keep) {
+			const out = keep(
+				record,
+				records.flatMap((r) => takenDrafts(r, id))
+			);
+			projects.put(out.entry, out.key);
+			for (const gone of out.prune ?? []) if (gone !== out.key) projects.delete(gone);
+			kept = out.entry;
+		}
 		projects.delete(id);
-		for (const record of records) {
-			const change = withoutCharacters(record, new Set([id]));
-			if (change) projects.put(change, record.id);
+		for (const rec of records) {
+			const change = withoutCharacters(rec, new Set([id]));
+			if (change) projects.put(change, rec.id);
 		}
 	});
+	return kept;
 }
 
 /** Replace a whole character record while no generation work could write it back, refusing if it changed since `original`. */
@@ -576,7 +612,9 @@ export function update<T>(
 	key: string,
 	fn: (v: T | undefined, related: RelatedRecord) => T,
 	relatedKeys: readonly string[],
-	preserve?: PreserveRecord<T>
+	preserve?: PreserveRecord<T>,
+	/** Keys removed in the same transaction: a recovery entry a restore consumes, or entries a delete prunes. */
+	consume?: readonly string[]
 ): Promise<T>;
 export function update<T>(s: StoreName, key: string, fn: (v: T | undefined) => T): Promise<T>;
 /** Atomic read-modify-write: get + put in ONE readwrite transaction, so concurrent writers (another accept, autosave, another
@@ -587,7 +625,8 @@ export async function update<T>(
 	key: string,
 	fn: (v: T | undefined, related: RelatedRecord) => T,
 	relatedKeys: readonly string[] = [],
-	preserve?: PreserveRecord<T>
+	preserve?: PreserveRecord<T>,
+	consume: readonly string[] = []
 ): Promise<T> {
 	const archiveOf = (previous: T | undefined) => {
 		const archive = preserve?.(previous);
@@ -610,6 +649,7 @@ export async function update<T>(
 				throw new DOMException('Key already exists.', 'ConstraintError');
 			records.set(archived.key, saved);
 		}
+		for (const gone of consume) if (gone !== key) records.delete(gone);
 		records.set(key, next);
 		return result;
 	}
@@ -631,6 +671,7 @@ export async function update<T>(
 					<R>(relatedKey: string) => related.get(relatedKey)?.result as R | undefined
 				);
 				o.put(out, key);
+				for (const gone of consume) if (gone !== key) o.delete(gone);
 			} catch (e) {
 				err = e;
 				t.abort();

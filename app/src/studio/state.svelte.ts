@@ -11,6 +11,7 @@ import {
 	type Message
 } from '../lib/message.ts';
 import { SvelteSet } from 'svelte/reactivity';
+import { displayMessage } from '../lib/i18n.ts';
 import type { WhisperKey, WhisperVars } from 'svelte-whisper';
 import { PaidStepError, type PaidStep } from '../lib/pixellab/paid-results.ts';
 import {
@@ -54,6 +55,18 @@ import {
 	type StoredProject
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
+import {
+	deleteForever as discardDeleted,
+	deletedEntry,
+	keysToPrune,
+	listEntries,
+	pruneKeys,
+	readDeleted,
+	restoreCharacter,
+	restoreMoveEntry,
+	restoreParts,
+	type RecentlyDeleted
+} from '../lib/store/recently-deleted.ts';
 import { incompatibleKind } from '../lib/store/incompatible.ts';
 import { sameClipName } from './clipName.ts';
 import {
@@ -355,6 +368,13 @@ export function initUi() {
 				void refreshProjects();
 				return;
 			}
+			// A deletion or restore here: re-read the lists another tab changed. The entry and the record were written together,
+			// so this only has to show their new state.
+			if (data?.libraryChanged === true) {
+				void refreshProjects();
+				void refreshRecentlyDeleted();
+				return;
+			}
 			if (
 				!data ||
 				typeof data.projectId !== 'string' ||
@@ -435,7 +455,7 @@ let toastRemaining = 0,
 	toastStarted = 0;
 let toastRevision = 0,
 	toastActivating: number | null = null;
-const toastPauses = new Set<'pointer' | 'focus'>();
+const toastPauses = new Set<'pointer' | 'focus' | 'hidden'>();
 type ToastOptions = {
 	title?: string | Message;
 	pending?: boolean;
@@ -478,14 +498,14 @@ function armToast() {
 	toastStarted = Date.now();
 	toastT = setTimeout(dismissToast, toastRemaining);
 }
-export function pauseToast(reason: 'pointer' | 'focus') {
+export function pauseToast(reason: 'pointer' | 'focus' | 'hidden') {
 	if (toastT) {
 		stopToastTimer();
 		toastRemaining = Math.max(1, toastRemaining - (Date.now() - toastStarted));
 	}
 	toastPauses.add(reason);
 }
-export function resumeToast(reason: 'pointer' | 'focus') {
+export function resumeToast(reason: 'pointer' | 'focus' | 'hidden') {
 	toastPauses.delete(reason);
 	if (!toastT) armToast();
 }
@@ -601,6 +621,11 @@ class Store {
 	results = $state.raw<Record<string, ItemResult | null>>({});
 }
 export const store = new Store();
+/** Entries in Recently deleted, newest first: one per deletion, each restorable after a reload. */
+class DeletedList {
+	entries = $state.raw<RecentlyDeleted[]>([]);
+}
+export const deleted = new DeletedList();
 /** An undo or redo step: the dress state to go back to, and the slot definitions (JSON) right after the step, so applying
  *  it reverts only the step's own slot changes (mergeSlotEdits) and keeps slots changed since by other steps or tabs. */
 interface UndoStep {
@@ -1604,6 +1629,88 @@ export async function deleteLocalWorkAndReload(): Promise<void> {
 	location.reload();
 }
 
+/** Other tabs hear about a deletion or restore here: a broadcast is only a hint to re-read, the write itself decides. */
+function notifyLibraryChanged() {
+	identityChannel?.postMessage({ libraryChanged: true });
+}
+
+/** Read Recently deleted again, oldest entries past the cap or the 30 days removed. */
+export async function refreshRecentlyDeleted(): Promise<void> {
+	try {
+		const values = await db.all<unknown>('projects');
+		const stale = pruneKeys(values, Date.now(), 0);
+		await Promise.all(stale.map((key) => db.del('projects', key)));
+		deleted.entries = listEntries(
+			values.filter((value) => !stale.includes((value as { id?: string })?.id ?? '')),
+			Date.now()
+		);
+	} catch (error) {
+		console.error('recently deleted', error);
+		deleted.entries = [];
+	}
+}
+
+/** Put back exactly what one entry removed. A character comes back under its own key, or as a copy when that key is taken. */
+export async function restoreDeleted(id: string): Promise<void> {
+	try {
+		const entry =
+			deleted.entries.find((e) => e.id === id) ?? (await readDeleted()).find((e) => e.id === id);
+		if (!entry)
+			throw new LocalizedError(
+				'That deleted item is no longer available.',
+				'recentlyDeleted.errors.gone'
+			);
+		if (entry.kind === 'move') {
+			const out = await restoreMoveEntry(id);
+			await refreshRecentlyDeleted();
+			notifyLibraryChanged();
+			if (doc.id === out.projectId) await openProject(out.projectId);
+			toast(message('recentlyDeleted.restored', { name: out.name }), { tone: 'success' });
+			return;
+		}
+		if (entry.kind !== 'character') {
+			const out = await restoreParts(id);
+			await refreshRecentlyDeleted();
+			notifyLibraryChanged();
+			if (doc.id === out.projectId) await openProject(out.projectId);
+			toast(
+				message(out.skipped ? 'recentlyDeleted.restoredPartly' : 'recentlyDeleted.restored', {
+					name: out.name,
+					count: out.skipped
+				}),
+				{ tone: 'success' }
+			);
+			return;
+		}
+		const out = await restoreCharacter(id, {
+			copyName: (name) => displayMessage(message('librarySettings.restoredName', { name }))
+		});
+		await refreshProjects();
+		await refreshRecentlyDeleted();
+		notifyLibraryChanged();
+		toast(
+			message(
+				out.copied
+					? 'recentlyDeleted.restoredAsCopy'
+					: out.drafts
+						? 'recentlyDeleted.restoredWithDrafts'
+						: 'recentlyDeleted.restored',
+				{ name: out.name, count: out.drafts }
+			),
+			{ tone: 'success' }
+		);
+	} catch (error) {
+		toast(errorTranslation(error) ?? errorMessage(error), { tone: 'danger' });
+	}
+}
+
+/** Delete one entry for good. Its artwork goes with the next idle sweep, like every other delete. */
+export async function deleteDeletedForever(id: string): Promise<void> {
+	await discardDeleted(id);
+	await refreshRecentlyDeleted();
+	notifyLibraryChanged();
+}
+
 export async function removeProject(id = doc.id): Promise<void> {
 	const reason = deletionBlocked(id);
 	if (reason) throw reason;
@@ -1613,7 +1720,29 @@ export async function removeProject(id = doc.id): Promise<void> {
 			store.projects.find((p) => p.id === id)?.name ??
 			'Character';
 	await flushSave();
-	await db.deleteCharacter(id);
+	// Entries this deletion pushes past the cap go in its own transaction, so the list never outgrows it.
+	const prune = await keysToPrune();
+	let kept: RecentlyDeleted | undefined;
+	try {
+		kept = await db.deleteCharacter<RecentlyDeleted>(id, (record, drafts) => {
+			const entry = deletedEntry({
+				kind: 'character',
+				record,
+				name: record.manifest.name || name,
+				context: '',
+				scope: {},
+				drafts
+			});
+			return { key: entry.id, entry, prune };
+		});
+	} catch (error) {
+		if ((error as DOMException)?.name === 'QuotaExceededError')
+			throw new LocalizedError(
+				'Your browser is out of space, so nothing was deleted. Permanently delete something in Recently deleted, then try again.',
+				'recentlyDeleted.errors.full'
+			);
+		throw error;
+	}
 	const deletedDrafts = new Set(
 		gens.filter((g) => g.draft.rigId === id).map((g) => g.draft.spec.id)
 	);
@@ -1625,11 +1754,19 @@ export async function removeProject(id = doc.id): Promise<void> {
 	if (attempt) removeCreate(attempt);
 	if (moving.projectId === id) await dismissMove();
 	await refreshProjects();
+	await refreshRecentlyDeleted();
 	if (doc.id === id && request === openRequest) {
 		lsSet(K.last, null);
 		await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
 	}
-	toast(message('state.deletedNameFromThisDevice', { name }));
+	notifyLibraryChanged();
+	if (!kept) toast(message('state.deletedNameFromThisDevice', { name }));
+	else
+		toast(message('state.deletedNameFromThisDevice', { name: kept.name }), {
+			duration: 10000,
+			actionLabel: message('common.undo'),
+			action: () => restoreDeleted(kept!.id)
+		});
 }
 
 // ---- edits ----
@@ -1964,8 +2101,41 @@ export async function removeItem(itemId: string) {
 	const projectId = doc.id,
 		request = openRequest;
 	await flushSave();
-	await deleteItem(projectId, itemId);
-	toast(message('state.removedName', { name: it.name }));
+	const prune = await keysToPrune();
+	let kept: RecentlyDeleted | undefined;
+	try {
+		kept = await deleteItem<RecentlyDeleted>(
+			projectId,
+			itemId,
+			(rec) => {
+				const entry = deletedEntry({
+					kind: 'items',
+					record: rec,
+					name: it.name,
+					context: rec.manifest.name,
+					scope: { itemIds: [itemId] }
+				});
+				return { key: entry.id, entry, prune };
+			},
+			prune
+		);
+	} catch (error) {
+		if ((error as DOMException)?.name === 'QuotaExceededError')
+			throw new LocalizedError(
+				'Your browser is out of space, so nothing was deleted. Permanently delete something in Recently deleted, then try again.',
+				'recentlyDeleted.errors.full'
+			);
+		throw error;
+	}
+	await refreshRecentlyDeleted();
+	notifyLibraryChanged();
+	if (!kept) toast(message('state.removedName', { name: it.name }));
+	else
+		toast(message('state.removedName', { name: it.name }), {
+			duration: 10000,
+			actionLabel: message('common.undo'),
+			action: () => restoreDeleted(kept!.id)
+		});
 	if (doc.id === projectId && request === openRequest) await openProject(projectId);
 }
 
@@ -2618,6 +2788,7 @@ function drive() {
 		if (g.phase === 'running') void runGen(g);
 		else if (g.phase === 'review') void evalGen(g);
 	void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
+	void refreshRecentlyDeleted(); // and expired deletions, so an old entry never looks restorable
 }
 queue.subscribe((s) => {
 	characterJobsPending = !queue.idle();
@@ -3422,27 +3593,52 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 	}
 	if (isDemo()) return message('slotsSheet.demoDeleteLocked');
 	const definition = JSON.stringify(m.slots.find((s) => s.id === key));
+	const prune = await keysToPrune();
+	let kept: RecentlyDeleted | undefined;
 	try {
-		await deleteItems(projectId, owned, (rec) => {
-			if (JSON.stringify(rec.manifest.slots.find((s) => s.id === key)) !== definition)
-				throw new LocalizedError(
-					`${label} changed meanwhile. Review it again before deleting.`,
-					'state.labelChangedMeanwhileReviewItAgainBefore',
-					{ label }
-				);
-			if (rec.manifest.items.some((it) => it.slot === key))
-				throw new LocalizedError(
-					`${label} has new items. Review it again before deleting.`,
-					'state.labelHasNewItemsReviewItAgain',
-					{ label }
-				);
-			deleteCustom(rec.manifest, key);
-			if (rec.dress?.current) delete rec.dress.current.items[key];
-		});
+		kept = await deleteItems<RecentlyDeleted>(
+			projectId,
+			owned,
+			(rec) => {
+				if (JSON.stringify(rec.manifest.slots.find((s) => s.id === key)) !== definition)
+					throw new LocalizedError(
+						`${label} changed meanwhile. Review it again before deleting.`,
+						'state.labelChangedMeanwhileReviewItAgainBefore',
+						{ label }
+					);
+				if (rec.manifest.items.some((it) => it.slot === key))
+					throw new LocalizedError(
+						`${label} has new items. Review it again before deleting.`,
+						'state.labelHasNewItemsReviewItAgain',
+						{ label }
+					);
+				deleteCustom(rec.manifest, key);
+				if (rec.dress?.current) delete rec.dress.current.items[key];
+			},
+			(rec) => {
+				const entry = deletedEntry({
+					kind: 'category',
+					record: rec,
+					name: label,
+					context: rec.manifest.name,
+					scope: { itemIds: owned, slot: key }
+				});
+				return { key: entry.id, entry, prune };
+			},
+			prune
+		);
 	} catch (e) {
 		return message('state.reasonNothingDeleted', { reason: errorMessage(e) });
 	}
-	toast(message('state.categoryAndItemsDeleted', { label, count: owned.length }));
+	await refreshRecentlyDeleted();
+	notifyLibraryChanged();
+	if (kept)
+		toast(message('state.categoryAndItemsDeleted', { label, count: owned.length }), {
+			duration: 10000,
+			actionLabel: message('common.undo'),
+			action: () => restoreDeleted(kept!.id)
+		});
+	else toast(message('state.categoryAndItemsDeleted', { label, count: owned.length }));
 	// A full reopen, as after an item's Delete: undo steps may name the deleted category or items.
 	if (doc.id === projectId && request === openRequest) await openProject(projectId);
 	return '';

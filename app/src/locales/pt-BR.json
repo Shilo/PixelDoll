@@ -1,4 +1,42 @@
 {
+	"recentlyDeleted": {
+		"title": "Excluído recentemente",
+		"empty": "Nada excluído recentemente. Personagens, itens, categorias e movimentos que você excluir ficam aqui por 30 dias.",
+		"kept": "Guardado por 30 dias. Restaurar devolve exatamente o que foi excluído.",
+		"deletedOn": "Excluído em {date}",
+		"restore": "Restaurar",
+		"deleteForever": "Excluir para sempre",
+		"deleteForeverNamed": "Excluir {name} para sempre",
+		"confirmTitle": "Excluir {name} para sempre?",
+		"confirmBody": "As artes salvas também são removidas deste dispositivo. Isso não pode ser desfeito.",
+		"confirmAction": "Excluir para sempre",
+		"restored": "{name} restaurado",
+		"restoredAsCopy": "Restaurado como {name}: já havia um personagem salvo com esse ID.",
+		"restoredWithDrafts": {
+			"one": "Restaurado {name} com {count} rascunho",
+			"other": "Restaurado {name} com {count} rascunhos"
+		},
+		"restoredPartly": {
+			"one": "{name} restaurado. {count} roupa havia mudado, então ficou de fora.",
+			"other": "{name} restaurado. {count} posições de roupa haviam mudado, então ficou de fora delas."
+		},
+		"kind": {
+			"character": "Personagem",
+			"items": "Itens",
+			"category": "Categoria",
+			"move": "Movimento",
+			"directions": "Direções"
+		},
+		"errors": {
+			"gone": "Esse item excluído não está mais disponível.",
+			"expired": "Itens excluídos ficam guardados por 30 dias. Este expirou.",
+			"missingArtwork": "Parte da arte salva de {name} não está mais neste dispositivo, então não pode ser restaurada.",
+			"full": "O navegador está sem espaço, então nada foi excluído. Exclua algo para sempre em Excluído recentemente e tente de novo.",
+			"wrongKind": "Esse item excluído pertence a um personagem. Restaure o personagem primeiro.",
+			"movePresent": "Este movimento já está no personagem.",
+			"moveGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que este movimento foi excluído, então ele não se alinha mais."
+		}
+	},
 	"librarySettings": {
 		"title": "Biblioteca",
 		"scope": "Faça backup dos personagens salvos, das imagens e dos dados arquivados. Preferências, rascunhos e tarefas não são incluídos.",
@@ -889,6 +927,7 @@
 		"manageMovesInOtherTab": "Gerencie as animações na outra aba do PixelDoll ou feche essa aba primeiro.",
 		"manageCharactersInOtherTab": "Gerencie os personagens na outra aba do PixelDoll ou feche essa aba primeiro.",
 		"finishBeforeCharacterRemoval": "Conclua ou descarte as gerações pendentes antes de excluir um personagem.",
+		"finishBeforeRestore": "Conclua ou descarte o trabalho de geração pendente antes de restaurar este personagem.",
 		"finishBeforeMoveRemoval": "Conclua ou descarte as gerações pendentes antes de excluir uma animação.",
 		"finishBeforeDirectionRemoval": "Conclua ou descarte as gerações pendentes antes de alterar as direções.",
 		"finishBeforeFixFrames": "Aguarde a geração em andamento terminar antes de corrigir quadros.",

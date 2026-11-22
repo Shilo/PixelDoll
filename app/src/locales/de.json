@@ -1,4 +1,42 @@
 {
+	"recentlyDeleted": {
+		"title": "Zuletzt gelöscht",
+		"empty": "Nichts kürzlich gelöscht. Gelöschte Charaktere, Gegenstände, Kategorien und Bewegungen bleiben hier 30 Tage lang.",
+		"kept": "30 Tage lang aufbewahrt. Wiederherstellen legt genau das Gelöschte zurück.",
+		"deletedOn": "Gelöscht am {date}",
+		"restore": "Wiederherstellen",
+		"deleteForever": "Endgültig löschen",
+		"deleteForeverNamed": "{name} endgültig löschen",
+		"confirmTitle": "{name} endgültig löschen?",
+		"confirmBody": "Die gespeicherten Grafiken werden auch von diesem Gerät entfernt. Das lässt sich nicht rückgängig machen.",
+		"confirmAction": "Endgültig löschen",
+		"restored": "{name} wiederhergestellt",
+		"restoredAsCopy": "Als {name} wiederhergestellt: Ein Charakter mit dieser ID war bereits gespeichert.",
+		"restoredWithDrafts": {
+			"one": "{name} mit {count} Entwurf wiederhergestellt",
+			"other": "{name} mit {count} Entwürfen wiederhergestellt"
+		},
+		"restoredPartly": {
+			"one": "{name} wiederhergestellt. {count} Outfit hatte sich geändert, daher wurde es ausgelassen.",
+			"other": "{name} wiederhergestellt. {count} Outfit-Plätze hatten sich geändert, daher wurde es dort ausgelassen."
+		},
+		"kind": {
+			"character": "Charakter",
+			"items": "Gegenstände",
+			"category": "Kategorie",
+			"move": "Bewegung",
+			"directions": "Richtungen"
+		},
+		"errors": {
+			"gone": "Dieser gelöschte Eintrag ist nicht mehr verfügbar.",
+			"expired": "Gelöschte Einträge werden 30 Tage lang aufbewahrt. Dieser ist abgelaufen.",
+			"missingArtwork": "Einige gespeicherte Grafiken für {name} sind nicht mehr auf diesem Gerät und können nicht wiederhergestellt werden.",
+			"full": "Dem Browser geht der Speicher aus, daher wurde nichts gelöscht. Löschen Sie etwas in „Zuletzt gelöscht“ endgültig und versuchen Sie es erneut.",
+			"wrongKind": "Dieser gelöschte Eintrag gehört zu einem Charakter. Stellen Sie zuerst den Charakter wieder her.",
+			"movePresent": "Diese Bewegung ist bereits auf dem Charakter.",
+			"moveGeometry": "Framegröße oder Richtungen dieses Charakters haben sich seit dem Löschen dieser Bewegung geändert, daher passt sie nicht mehr."
+		}
+	},
 	"librarySettings": {
 		"title": "Bibliothek",
 		"scope": "Sichere gespeicherte Figuren, Grafiken und archivierte Daten. Einstellungen, Entwürfe und Aufträge sind nicht enthalten.",
@@ -887,6 +925,7 @@
 		"manageMovesInOtherTab": "Verwalte Animationen im anderen PixelDoll-Tab oder schließe ihn zuerst.",
 		"manageCharactersInOtherTab": "Verwalte Figuren im anderen PixelDoll-Tab oder schließe ihn zuerst.",
 		"finishBeforeCharacterRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du eine Figur löschst.",
+		"finishBeforeRestore": "Beenden oder verwerfen Sie laufende Generierungen, bevor Sie diesen Charakter wiederherstellen.",
 		"finishBeforeMoveRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du eine Animation löschst.",
 		"finishBeforeDirectionRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du die Blickrichtungen änderst.",
 		"finishBeforeFixFrames": "Warte, bis die laufenden Generierungen abgeschlossen sind, bevor du Frames korrigierst.",

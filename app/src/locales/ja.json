@@ -1,4 +1,40 @@
 {
+	"recentlyDeleted": {
+		"title": "最近削除したもの",
+		"empty": "最近削除したものはありません。削除したキャラクター、アイテム、カテゴリ、モーションはここに 30 日間残ります。",
+		"kept": "30 日間保管されます。復元すると削除した内容がそのまま戻ります。",
+		"deletedOn": "{date} に削除",
+		"restore": "復元",
+		"deleteForever": "完全に削除",
+		"deleteForeverNamed": "{name} を完全に削除",
+		"confirmTitle": "{name} を完全に削除しますか？",
+		"confirmBody": "保存された画像もこのデバイスから削除されます。元に戻せません。",
+		"confirmAction": "完全に削除",
+		"restored": "{name} を復元しました",
+		"restoredAsCopy": "{name} として復元しました。その ID のキャラクターがすでに保存されていました。",
+		"restoredWithDrafts": {
+			"other": "{name} を {count} 件の下書きとともに復元しました"
+		},
+		"restoredPartly": {
+			"other": "{name} を復元しました。変更された衣装の枠が {count} か所あったため、そこには戻していません。"
+		},
+		"kind": {
+			"character": "キャラクター",
+			"items": "アイテム",
+			"category": "カテゴリ",
+			"move": "モーション",
+			"directions": "向き"
+		},
+		"errors": {
+			"gone": "その削除された項目はもう利用できません。",
+			"expired": "削除した項目は 30 日間保管されます。これは期限切れです。",
+			"missingArtwork": "{name} の保存画像の一部がこのデバイスにないため、復元できません。",
+			"full": "ブラウザの空き容量が不足しているため、何も削除されませんでした。「最近削除したもの」で完全に削除してから、もう一度お試しください。",
+			"wrongKind": "その削除された項目はキャラクターに属しています。先にキャラクターを復元してください。",
+			"movePresent": "このモーションはすでにキャラクターにあります。",
+			"moveGeometry": "このモーションを削除した後にキャラクターのフレームサイズまたは向きが変わったため、位置合わせできません。"
+		}
+	},
 	"librarySettings": {
 		"title": "ライブラリ",
 		"scope": "保存したキャラクター、画像、アーカイブデータをバックアップします。設定、下書き、ジョブは含まれません。",
@@ -859,6 +895,7 @@
 		"manageMovesInOtherTab": "モーションは別のPixelDollタブで管理するか、先にそのタブを閉じてください。",
 		"manageCharactersInOtherTab": "キャラクターは別のPixelDollタブで管理するか、先にそのタブを閉じてください。",
 		"finishBeforeCharacterRemoval": "キャラクターを削除する前に、保留中の生成を完了するか破棄してください。",
+		"finishBeforeRestore": "このキャラクターを復元する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeMoveRemoval": "モーションを削除する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeDirectionRemoval": "向きを変更する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeFixFrames": "フレームを修正する前に、実行中の生成が終わるまでお待ちください。",

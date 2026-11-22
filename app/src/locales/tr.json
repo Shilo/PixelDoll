@@ -1,4 +1,42 @@
 {
+	"recentlyDeleted": {
+		"title": "Son silinenler",
+		"empty": "Son zamanlarda silinen bir şey yok. Sildiğiniz karakterler, öğeler, kategoriler ve hareketler 30 gün boyunca burada kalır.",
+		"kept": "30 gün saklanır. Geri yükleme, silineni tam olarak geri koyar.",
+		"deletedOn": "{date} tarihinde silindi",
+		"restore": "Geri yükle",
+		"deleteForever": "Kalıcı olarak sil",
+		"deleteForeverNamed": "{name} kalıcı olarak silinsin",
+		"confirmTitle": "{name} kalıcı olarak silinsin mi?",
+		"confirmBody": "Kayıtlı görselleri de bu cihazdan kaldırılır. Bu işlem geri alınamaz.",
+		"confirmAction": "Kalıcı olarak sil",
+		"restored": "{name} geri yüklendi",
+		"restoredAsCopy": "{name} olarak geri yüklendi: bu kimliğe sahip bir karakter zaten kayıtlıydı.",
+		"restoredWithDrafts": {
+			"one": "{name}, {count} taslakla geri yüklendi",
+			"other": "{name}, {count} taslakla geri yüklendi"
+		},
+		"restoredPartly": {
+			"one": "{name} geri yüklendi. {count} kıyafet değişmişti, bu yüzden dışarıda bırakıldı.",
+			"other": "{name} geri yüklendi. {count} kıyafet yeri değişmişti, bu yüzden bunların dışında bırakıldı."
+		},
+		"kind": {
+			"character": "Karakter",
+			"items": "Öğeler",
+			"category": "Kategori",
+			"move": "Hareket",
+			"directions": "Yönler"
+		},
+		"errors": {
+			"gone": "O silinen öğe artık kullanılamıyor.",
+			"expired": "Silinen öğeler 30 gün saklanır. Bunun süresi doldu.",
+			"missingArtwork": "{name} için kayıtlı görsellerin bir kısmı artık bu cihazda değil, bu yüzden geri yüklenemiyor.",
+			"full": "Tarayıcınızda yer kalmadı, bu yüzden hiçbir şey silinmedi. Son silinenler bölümünde bir şeyi kalıcı olarak silip yeniden deneyin.",
+			"wrongKind": "O silinen öğe bir karaktere ait. Önce karakteri geri yükleyin.",
+			"movePresent": "Bu hareket zaten karakterde.",
+			"moveGeometry": "Bu hareket silindikten sonra karakterin kare boyutu veya yönleri değişti, bu yüzden artık hizalanamıyor."
+		}
+	},
 	"librarySettings": {
 		"title": "Kitaplık",
 		"scope": "Kayıtlı karakterleri, görselleri ve arşivlenmiş verileri yedekleyin. Tercihler, taslaklar ve işler dahil edilmez.",
@@ -884,6 +922,7 @@
 		"manageMovesInOtherTab": "Animasyonları diğer PixelDoll sekmesinden yönetin veya önce o sekmeyi kapatın.",
 		"manageCharactersInOtherTab": "Karakterleri diğer PixelDoll sekmesinden yönetin veya önce o sekmeyi kapatın.",
 		"finishBeforeCharacterRemoval": "Karakteri silmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
+		"finishBeforeRestore": "Bu karakteri geri yüklemeden önce bekleyen üretim işini bitirin veya bırakın.",
 		"finishBeforeMoveRemoval": "Animasyonu silmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
 		"finishBeforeDirectionRemoval": "Yönleri değiştirmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
 		"finishBeforeFixFrames": "Kareleri düzeltmeden önce süren üretimlerin bitmesini bekleyin.",

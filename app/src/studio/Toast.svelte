@@ -27,6 +27,11 @@
 		if (host?.contains(document.activeElement)) restoreTrigger(focusFrom);
 	}
 	$effect(() => {
+		// A hidden tab stops the countdown: an Undo noticed on return is still there.
+		if (hidden) pauseToast('hidden');
+		else resumeToast('hidden');
+	});
+	$effect(() => {
 		// A dismissed host can disappear before pointerleave/focusout. New notices must not inherit that pause.
 		hovered = !!host?.matches(':hover');
 		focused = !!host?.contains(document.activeElement);
@@ -100,6 +105,7 @@
 	onDestroy(() => {
 		resumeToast('pointer');
 		resumeToast('focus');
+		resumeToast('hidden');
 	});
 </script>
 

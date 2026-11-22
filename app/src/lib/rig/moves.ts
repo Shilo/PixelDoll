@@ -2,6 +2,7 @@ import type { Manifest } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 import { retainItemQa } from '../items/qa-summary.ts';
 import { baseHashOf, storedCellHashes } from './rig.ts';
+import { stableStringify } from '../image/hash.ts';
 
 export async function retainMoves(manifest: Manifest, ids: ReadonlySet<string>): Promise<Manifest> {
 	const result = structuredClone(manifest);
@@ -32,6 +33,130 @@ export async function retainMoves(manifest: Manifest, ids: ReadonlySet<string>):
 	);
 	for (const item of result.items) if (item.baseHash === prior) item.baseHash = result.rig.baseHash;
 	return result;
+}
+
+/** The inverse of retainMoves and retainMoveMetadata for one deleted move: put its clip and every row scoped to it back,
+ *  but only where nothing newer holds that place. Refuses when the frames can no longer line up (the frame size or the
+ *  directions changed since), because pasting old frames onto a new rig is worse than not restoring. */
+export async function restoreMove(
+	record: Pick<StoredProject, 'manifest' | 'skeletons' | 'rigQa'>,
+	before: Pick<StoredProject, 'manifest' | 'skeletons' | 'rigQa'>,
+	moveId: string
+): Promise<'restored' | 'exists' | 'missing' | 'geometry'> {
+	const m = record.manifest,
+		b = before.manifest;
+	const clip = b.rig.animations.find((a) => a.id === moveId);
+	if (!clip) return 'missing';
+	if (m.rig.animations.some((a) => a.id === moveId)) return 'exists';
+	if (
+		m.rig.cell.w !== b.rig.cell.w ||
+		m.rig.cell.h !== b.rig.cell.h ||
+		stableStringify(m.rig.directions.map((d) => d.id)) !==
+			stableStringify(b.rig.directions.map((d) => d.id))
+	)
+		return 'geometry';
+	const at = b.rig.animations.findIndex((a) => a.id === moveId);
+	m.rig.animations.splice(Math.min(at, m.rig.animations.length), 0, structuredClone(clip));
+	// Anchors, which follow the clip's poses.
+	for (const [anchor, track] of Object.entries(b.rig.anchors ?? {})) {
+		const saved = track?.[moveId];
+		if (!saved) continue;
+		const tracks = (m.rig.anchors ??= {}) as Record<string, Record<string, unknown>>;
+		(tracks[anchor] ??= {})[moveId] = structuredClone(saved);
+	}
+	// Slot draw overrides for this move only.
+	for (const slot of m.slots) {
+		const was = b.slots.find((s) => s.id === slot.id);
+		const saved = (was?.zOverrides ?? []).filter((o) => o.anim === moveId);
+		if (!saved.length) continue;
+		const have = new Set((slot.zOverrides ?? []).map((o) => stableStringify(o)));
+		const add = saved.filter((o) => !have.has(stableStringify(o)));
+		if (add.length) slot.zOverrides = [...(slot.zOverrides ?? []), ...add];
+	}
+	for (const item of m.items) {
+		const was = b.items.find((i) => i.id === item.id);
+		if (!was) continue;
+		for (const [index, layer] of item.layers.entries()) {
+			const old = was.layers[index];
+			if (!old) continue;
+			for (const key of ['cells', 'sheets', 'sourceSheets'] as const) {
+				const saved = old[key]?.[moveId];
+				if (saved === undefined || layer[key]?.[moveId] !== undefined) continue;
+				const target = (layer[key] ??= {}) as Record<string, unknown>;
+				target[moveId] = structuredClone(saved);
+			}
+		}
+		const cut = was.baseCut?.[moveId];
+		if (cut !== undefined) {
+			item.baseCut ??= {};
+			if (item.baseCut[moveId] === undefined) item.baseCut[moveId] = structuredClone(cut);
+		}
+		for (const key of ['coverage', 'pending'] as const) {
+			const saved = (was[key] ?? []).filter((cell) => cell.split('/')[0] === moveId);
+			if (!saved.length) continue;
+			const have = new Set(item[key] ?? []);
+			item[key] = [...(item[key] ?? []), ...saved.filter((cell) => !have.has(cell))];
+		}
+		if (was.anchorCell?.startsWith(`${moveId}/`) && !item.anchorCell)
+			item.anchorCell = was.anchorCell;
+		const refits = (was.refit ?? []).filter((note) => note.anim === moveId);
+		if (refits.length) {
+			const have = new Set((item.refit ?? []).map((note) => stableStringify(note)));
+			item.refit = [
+				...(item.refit ?? []),
+				...refits.filter((note) => !have.has(stableStringify(note)))
+			];
+		}
+		if (was.standing === moveId && !item.standing) item.standing = moveId;
+		// QA: the move's own rows go back, and an item whose QA was dropped with the move takes it whole.
+		if (was.qa) {
+			const clips = Object.fromEntries(
+				Object.entries(was.qa.clips ?? {}).filter(([key]) => key.split('/')[0] === moveId)
+			);
+			const cells = Object.fromEntries(
+				Object.entries(was.qa.cells ?? {}).filter(([key]) => key.split('/')[0] === moveId)
+			);
+			if (Object.keys(clips).length || Object.keys(cells).length) {
+				if (!item.qa) item.qa = structuredClone(was.qa);
+				else {
+					item.qa.clips = { ...item.qa.clips, ...clips };
+					item.qa.cells = { ...item.qa.cells, ...cells };
+				}
+			}
+		}
+	}
+	// Pose and QA records kept beside the manifest.
+	if (record.skeletons) {
+		for (const [key, value] of Object.entries(before.skeletons ?? {}))
+			if (key.split('/')[0] === moveId && record.skeletons[key] === undefined)
+				record.skeletons[key] = structuredClone(value);
+	}
+	const wrote = before.rigQa as
+			{ clips?: Record<string, unknown>; warnings?: string[] } | undefined,
+		now = record.rigQa as { clips?: Record<string, unknown>; warnings?: string[] } | undefined;
+	const savedClips = Object.fromEntries(
+		Object.entries(wrote?.clips ?? {}).filter(([key]) => key.split('/')[0] === moveId)
+	);
+	const savedWarnings = (wrote?.warnings ?? []).filter(
+		(warning) => warning.startsWith(`${moveId}/`) || warning.startsWith(`${moveId} `)
+	);
+	if (Object.keys(savedClips).length || savedWarnings.length) {
+		if (!now) record.rigQa = structuredClone(before.rigQa);
+		else {
+			now.clips = { ...(now.clips ?? {}), ...savedClips };
+			now.warnings = [
+				...(now.warnings ?? []),
+				...savedWarnings.filter((warning) => !(now.warnings ?? []).includes(warning))
+			];
+		}
+	}
+	// The body hash retainMoves recomputed: the restored clip is part of it again.
+	const base = m.items.find((item) => item.id === m.rig.baseItem);
+	if (!base) return 'geometry';
+	const prior = m.rig.baseHash;
+	m.rig.baseHash = await baseHashOf(m.rig, storedCellHashes(m.rig, base.layers[0].cells));
+	for (const item of m.items) if (item.baseHash === prior) item.baseHash = m.rig.baseHash;
+	return 'restored';
 }
 
 export function retainMoveMetadata(

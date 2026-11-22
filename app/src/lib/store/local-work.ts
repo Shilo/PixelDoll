@@ -5,14 +5,17 @@ import { ITEM_TRIAL_TAG, MOTION_LAB_TAG } from '../pixellab/queue.ts';
 import { LocalizedError } from '../message.ts';
 import { deleteStoredWork, generationWork, runningFlow, type StoredWork } from './db.ts';
 import { CREATE_DRAFT_PREFIX, incompatibleKind } from './incompatible.ts';
+import { RECENTLY_DELETED_PREFIX } from './recently-deleted.ts';
 import type { StoredProject } from './project.ts';
 
 const WORK_KEYS = new Set(['studio-drafts', 'm3-drafts', 'studio-move', 'studio-setup']);
-/** Characters, the demo's and other saved outfits, item drafts, unfinished creations, moves and setup. */
+/** Characters, the demo's and other saved outfits, item drafts, unfinished creations, moves and setup. Recently deleted
+ *  entries are work too: their artwork must not survive "Delete local work" and come back from a restore. */
 const workKey = (key: string) =>
 	key.startsWith('rig-') ||
 	key.startsWith('dress-') ||
 	key.startsWith(CREATE_DRAFT_PREFIX) ||
+	key.startsWith(RECENTLY_DELETED_PREFIX) ||
 	WORK_KEYS.has(key);
 /** Research pages keep their own ledgers and budgets beside the Studio's. */
 const studioJob = (job: { tag?: unknown }) =>

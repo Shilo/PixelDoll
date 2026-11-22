@@ -1,4 +1,42 @@
 {
+	"recentlyDeleted": {
+		"title": "Recently deleted",
+		"empty": "Nothing deleted recently. Characters, items, categories, and moves you delete stay here for 30 days.",
+		"kept": "Kept for 30 days. Restoring puts back exactly what was removed.",
+		"deletedOn": "Deleted {date}",
+		"restore": "Restore",
+		"deleteForever": "Delete forever",
+		"deleteForeverNamed": "Delete {name} forever",
+		"confirmTitle": "Delete {name} forever?",
+		"confirmBody": "Its saved artwork is removed from this device too. This cannot be undone.",
+		"confirmAction": "Delete forever",
+		"restored": "Restored {name}",
+		"restoredAsCopy": "Restored as {name}: a character with that ID was already saved.",
+		"restoredWithDrafts": {
+			"one": "Restored {name} with {count} draft",
+			"other": "Restored {name} with {count} drafts"
+		},
+		"restoredPartly": {
+			"one": "Restored {name}. {count} outfit had changed, so it was left out.",
+			"other": "Restored {name}. {count} outfit places had changed, so it was left out of them."
+		},
+		"kind": {
+			"character": "Character",
+			"items": "Items",
+			"category": "Category",
+			"move": "Move",
+			"directions": "Directions"
+		},
+		"errors": {
+			"gone": "That deleted item is no longer available.",
+			"expired": "Deleted items are kept for 30 days. This one has expired.",
+			"missingArtwork": "Some saved artwork for {name} is no longer on this device, so it cannot be restored.",
+			"full": "Your browser is out of space, so nothing was deleted. Permanently delete something in Recently deleted, then try again.",
+			"wrongKind": "That deleted item belongs to a character. Restore the character first.",
+			"movePresent": "This move is already on the character.",
+			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up."
+		}
+	},
 	"librarySettings": {
 		"title": "Library",
 		"scope": "Back up saved characters, artwork, and archived data. Preferences, drafts, and jobs are not included.",
@@ -878,6 +916,7 @@
 		"manageMovesInOtherTab": "Manage moves in the other PixelDoll tab, or close it first.",
 		"manageCharactersInOtherTab": "Manage characters in the other PixelDoll tab, or close it first.",
 		"finishBeforeCharacterRemoval": "Finish or dismiss pending generation work before deleting a character.",
+		"finishBeforeRestore": "Finish or dismiss pending generation work before restoring this character.",
 		"finishBeforeMoveRemoval": "Finish or dismiss pending generation work before deleting a move.",
 		"finishBeforeDirectionRemoval": "Finish or dismiss pending generation work before changing directions.",
 		"finishBeforeFixFrames": "Wait for the current generation work to finish before fixing frames.",
