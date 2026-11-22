@@ -11,7 +11,8 @@ November 22, 2026. Research and design only; nothing in the app changed and no P
 | [review-opus.md](review-opus.md)                   | Opus 5.5 (medium)                | Design and function critique of mock-up v2                                                                |
 | [review-sol.md](review-sol.md)                     | GPT 6.2 Sol (medium)             | Design and function critique of mock-up v2                                                                |
 | [review-deepseek-run2.md](review-deepseek-run2.md) | DeepSeek v4.1 Flash (low)        | A second, independent accuracy run; adds a 512×256 repair grid note                                       |
-| [design/README-v3.md](design/README-v3.md)         | GPT 6.2 Sol (medium), Impeccable | **Current mock-up v3**: cash first, demo excluded, arithmetic                                             |
+| [design/README-v3.md](design/README-v3.md)         | GPT 6.2 Sol (medium), Impeccable | Mock-up v3: cash first, demo excluded, arithmetic                                                         |
+| [design/README-v4.md](design/README-v4.md)         | GPT 6.2 Sol (medium), Impeccable | **Current mock-up v4**: scope tabs, all main inputs at the top, retries from the character                |
 
 ## Round 2 review (mock-up v2)
 
@@ -31,12 +32,13 @@ Build it, but narrower and more honest than a free-form spreadsheet. It is feasi
 
 It cannot predict accepted artwork. Retries, repairs, fallback routes and provisional prices (Pro, Pro Flash, inpaint bands, some States) move real spend by 1.5x to 3x or more. So the calculator must show a first pass plus a labeled retry band, never one confident dollar figure.
 
-## What the calculator should be (v3, owner decisions)
+## What the calculator should be (v4, owner decisions)
 
 - **Place:** "Cost estimate…" in the character name menu in Customize, a lazy-loaded sheet beside the character (bottom sheet on phones).
-- **Cash first.** Headline in USD at the tier's list price, then the discount range and generations small: `$10.05` / `$9.21 to $10.05 · 2,094 gens`. USD per generation = monthly price / monthly generations. No currency conversion.
-- **Main view:** headline, Retries stepper (0 to 4 extra attempts per paid step, default 1), one Items stepper, Spent so far in USD (recorded gens × tier rate + USD credit charges), Details. Under 40 words.
-- **Details:** a receipt of setup, moves, items, States, plan and recorded usage; each row opens in place to edit (frame counts, each item's moves, directions, tier).
+- **Scope tabs:** [character name, truncated] / All characters / New. The character only seeds the values; everything is editable and Reset restores them. New starts from New character defaults for a character that does not exist yet (chosen over a blank "Custom"). All characters sums per-character totals; only Tier and Retries change there.
+- **Cash first.** Headline in USD at the tier's list price, then the discount range and generations small: `$15.07` / `$13.82 to $15.07 · 3,140 gens`, then `Spent $0.28 · 42 gens` (recorded gens × tier rate + USD credit charges). USD per generation = monthly price / monthly generations. No currency conversion.
+- **Main inputs at the top:** Tier (connected tier), Retries (extra attempts per paid step; this character's own redone / paid calls, else 2), Directions (arrow compass with mirror buttons like New character, no presets), Moves, Items, States steppers seeded from the character. No maximums; no progress bar.
+- **Details:** a receipt of setup, moves (with frames), items (with their moves), States and recorded usage; each row opens in place to edit.
 - **Tips:** at most two chips with the exact saving that apply the change. Only quality-safe changes: mirror the west side, limit a weapon to its moves, trim a move that stays at 8 frames or more, recolor instead of a new design.
 - **Demo excluded.** The bundled demo starts at $0. A copy of the demo (`rig-<demo base hash>`) counts nothing identical to the demo; new items, moves, fits of copied items to new moves, States and regenerated art are priced.
 - **Defaults** come from the active manifest and the connected tier; Free/Trial shows Tier 1 rates.
@@ -69,4 +71,4 @@ USD credits have endpoint-specific prices; recorded USD charges are added as rep
 ## Open questions
 
 1. Rebuild (what this character costs) or cost to finish (only missing coverage)? v3 shows rebuild; the demo-copy rule already prices only additions.
-2. Default retries: 1, or this character's own retry history once it has some?
+2. Whether all inputs at the top stay there or some move back into Details (v4 tries them all at the top).
