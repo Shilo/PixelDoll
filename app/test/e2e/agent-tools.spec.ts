@@ -257,7 +257,9 @@ test('agent tools: the person approves a budget in USD, sees what is left and ca
 			.toMatchObject({ tabRole: 'follower' });
 		const start = await bridge(page, 'create_character', creation);
 		expect(start).toMatchObject({ ok: true, data: { started: true, status: 'running' } });
-		started = start.data as typeof started;
+		// The receipt facts a replay must repeat; the budget is live tab state, not part of the receipt.
+		const { budget: _budget, ...receipt } = start.data as typeof started & { budget: unknown };
+		started = receipt;
 		expect(await bridge(follower, 'get_activity', { ids: [started.activityId] })).toMatchObject({
 			ok: true,
 			data: { matched: [{ activityId: started.activityId, outcome: 'running' }] }
