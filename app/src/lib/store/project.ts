@@ -10,6 +10,7 @@ import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.t
 import { supportedFormat } from './manifest.ts';
 import { putItem } from '../items/items.ts';
 import { defaultCharacterExportId, newItemExportId } from './identity.ts';
+import { stableStringify } from '../image/hash.ts';
 
 export interface StoredProject {
 	id: string;
@@ -252,10 +253,24 @@ export function restoreRemoved(
 	rec: DressedRecord,
 	before: DressedRecord,
 	scope: { itemIds: readonly string[]; slot?: string }
-): { items: number; outfits: number; skipped: number; worn: { slot: string; item: string }[] } {
+): {
+	items: number;
+	outfits: number;
+	skipped: number;
+	worn: { slot: string; item: string }[];
+	refused: 'geometry' | '';
+} {
 	const m = rec.manifest,
 		b = before.manifest,
 		wanted = scope.itemIds.filter((id) => b.items.some((it) => it.id === id));
+	// Frames saved at another frame size or direction set cannot line up with this character any more.
+	if (
+		m.rig.cell.w !== b.rig.cell.w ||
+		m.rig.cell.h !== b.rig.cell.h ||
+		stableStringify(m.rig.directions.map((d) => d.id)) !==
+			stableStringify(b.rig.directions.map((d) => d.id))
+	)
+		return { items: 0, outfits: 0, skipped: wanted.length, worn: [], refused: 'geometry' };
 	// The category first: its definition, its place in the ladder, and the references other categories had to it.
 	const categories = new Set<string>(
 		scope.slot ? [scope.slot] : wanted.map((id) => b.items.find((it) => it.id === id)!.slot)
@@ -265,7 +280,8 @@ export function restoreRemoved(
 		const from = b.slots.find((s) => s.id === key);
 		if (!from) continue;
 		const at = Math.min(b.slots.indexOf(from), m.slots.length);
-		m.slots.splice(at, 0, { ...structuredClone(from), wardrobeHidden: false });
+		// Its own visibility comes back as it was: a category that had items and was hidden stays hidden.
+		m.slots.splice(at, 0, structuredClone(from));
 	}
 	for (const slot of m.slots) {
 		const was = b.slots.find((s) => s.id === slot.id);
@@ -277,12 +293,29 @@ export function restoreRemoved(
 			if (back.length) slot[field] = [...(slot[field] ?? []), ...back];
 		}
 	}
+	// A category can also be hidden by an item, and the delete stripped those edges from the other items.
+	for (const item of m.items) {
+		const was = b.items.find((it) => it.id === item.id);
+		if (!was?.hides?.length) continue;
+		const back = was.hides.filter(
+			(key) => categories.has(key) && !(item.hides ?? []).includes(key)
+		);
+		if (back.length) item.hides = [...(item.hides ?? []), ...back];
+	}
 	// The items, at the place they held, with an export ID nothing here uses.
-	let items = 0;
+	let items = 0,
+		skipped = 0;
 	for (const id of wanted) {
 		const item = b.items.find((it) => it.id === id)!;
-		if (!m.slots.some((s) => s.id === item.slot)) continue;
-		if (m.items.some((it) => it.id === id)) continue;
+		if (!m.slots.some((s) => s.id === item.slot)) {
+			skipped++;
+			continue;
+		}
+		// Something already holds this ID: report it rather than pretend the item came back.
+		if (m.items.some((it) => it.id === id)) {
+			skipped++;
+			continue;
+		}
 		const copy = structuredClone(item);
 		if (copy.exportId && m.items.some((it) => it.exportId === copy.exportId))
 			copy.exportId = newItemExportId(m.items, id);
@@ -306,7 +339,6 @@ export function restoreRemoved(
 		nowCurrent = rec.dress?.current;
 	type Outfit = Pick<Preset, 'items' | 'variants'>;
 	let outfits = 0,
-		skipped = 0,
 		worn: { slot: string; item: string }[] = [];
 	const presets: [Outfit | undefined, Outfit | undefined][] = [
 		...m.presets.map((preset): [Outfit | undefined, Outfit] => [
@@ -320,14 +352,14 @@ export function restoreRemoved(
 		let changed = false;
 		for (const id of back) {
 			const item = m.items.find((it) => it.id === id)!;
+			// Only a slot this outfit actually wore comes back: an occupied one is a real conflict, and says so.
+			if (was?.items?.[item.slot] !== id) continue;
 			const held = now.items[item.slot];
 			if (held === id) continue;
-			// Another item wears this slot now: the restore leaves it, and says so.
 			if (held) {
 				skipped++;
 				continue;
 			}
-			if (was?.items?.[item.slot] !== id) continue;
 			now.items[item.slot] = id;
 			changed = true;
 			if (now === nowCurrent) worn.push({ slot: item.slot, item: id });
@@ -343,13 +375,13 @@ export function restoreRemoved(
 		if (changed) outfits++;
 	}
 	rec.savedAt = new Date().toISOString();
-	return { items, outfits, skipped, worn };
+	return { items, outfits, skipped, worn, refused: '' };
 }
 
 export async function deleteItem<T>(
 	id: string,
 	itemId: string,
-	keep?: (rec: DressedRecord) => KeptDeletion<T>,
+	keep?: (rec: DressedRecord) => KeptDeletion<T> | undefined,
 	prune?: readonly string[]
 ): Promise<T | undefined> {
 	let keptOut: T | undefined;
@@ -366,6 +398,7 @@ export async function deleteItem<T>(
 			? (previous) => {
 					if (!previous || itemId === previous.manifest.rig.baseItem) return undefined;
 					const out = keep(previous);
+					if (!out) return undefined;
 					keptOut = out.entry;
 					return kept(out);
 				}

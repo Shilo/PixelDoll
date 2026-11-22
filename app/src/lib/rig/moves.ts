@@ -3,6 +3,7 @@ import type { StoredProject } from '../store/project.ts';
 import { retainItemQa } from '../items/qa-summary.ts';
 import { baseHashOf, storedCellHashes } from './rig.ts';
 import { stableStringify } from '../image/hash.ts';
+import { assignNewClipExportId } from '../store/identity.ts';
 
 export async function retainMoves(manifest: Manifest, ids: ReadonlySet<string>): Promise<Manifest> {
 	const result = structuredClone(manifest);
@@ -42,7 +43,7 @@ export async function restoreMove(
 	record: Pick<StoredProject, 'manifest' | 'skeletons' | 'rigQa'>,
 	before: Pick<StoredProject, 'manifest' | 'skeletons' | 'rigQa'>,
 	moveId: string
-): Promise<'restored' | 'exists' | 'missing' | 'geometry'> {
+): Promise<'restored' | 'exists' | 'missing' | 'geometry' | 'itemsMissing'> {
 	const m = record.manifest,
 		b = before.manifest;
 	const clip = b.rig.animations.find((a) => a.id === moveId);
@@ -51,12 +52,26 @@ export async function restoreMove(
 	if (
 		m.rig.cell.w !== b.rig.cell.w ||
 		m.rig.cell.h !== b.rig.cell.h ||
-		stableStringify(m.rig.directions.map((d) => d.id)) !==
-			stableStringify(b.rig.directions.map((d) => d.id))
+		stableStringify(m.rig.directions) !== stableStringify(b.rig.directions)
 	)
 		return 'geometry';
+	// This move's rows for an item that is itself deleted cannot be placed: it must come back first, or they would be lost.
+	const owns = (item: (typeof b.items)[number]) =>
+		item.layers.some(
+			(layer) => layer.cells?.[moveId] || layer.sheets?.[moveId] || layer.sourceSheets?.[moveId]
+		) ||
+		!!item.baseCut?.[moveId] ||
+		item.standing === moveId ||
+		!!item.anchorCell?.startsWith(`${moveId}/`);
+	if (b.items.some((item) => owns(item) && !m.items.some((live) => live.id === item.id)))
+		return 'itemsMissing';
 	const at = b.rig.animations.findIndex((a) => a.id === moveId);
 	m.rig.animations.splice(Math.min(at, m.rig.animations.length), 0, structuredClone(clip));
+	// Two clips must not export under one ID: the restored one takes the next free suffix.
+	assignNewClipExportId(
+		m.rig.animations[Math.min(at, m.rig.animations.length - 1)],
+		m.rig.animations
+	);
 	// Anchors, which follow the clip's poses.
 	for (const [anchor, track] of Object.entries(b.rig.anchors ?? {})) {
 		const saved = track?.[moveId];
@@ -76,8 +91,9 @@ export async function restoreMove(
 	for (const item of m.items) {
 		const was = b.items.find((i) => i.id === item.id);
 		if (!was) continue;
-		for (const [index, layer] of item.layers.entries()) {
-			const old = was.layers[index];
+		for (const layer of item.layers) {
+			// Layers are matched by ID: a layer added since must not receive rows meant for another one.
+			const old = was.layers.find((entry) => entry.id === layer.id);
 			if (!old) continue;
 			for (const key of ['cells', 'sheets', 'sourceSheets'] as const) {
 				const saved = old[key]?.[moveId];
@@ -121,6 +137,16 @@ export async function restoreMove(
 				else {
 					item.qa.clips = { ...item.qa.clips, ...clips };
 					item.qa.cells = { ...item.qa.cells, ...cells };
+					const inherited = (was.qa.inherited?.clips ?? []).filter(
+						(key) => key.split('/')[0] === moveId
+					);
+					if (inherited.length)
+						item.qa.inherited = item.qa.inherited
+							? {
+									...item.qa.inherited,
+									clips: [...new Set([...item.qa.inherited.clips, ...inherited])]
+								}
+							: { ...was.qa.inherited!, clips: inherited };
 				}
 			}
 		}

@@ -147,6 +147,60 @@ test('a restored item brings its deleted category back, shown again', async () =
 	expect(rec.manifest.presets[0].items.head).toBe('hat');
 });
 
+test('an entry this version cannot read still expires instead of pinning its artwork forever', async () => {
+	const record = await stored();
+	const entry = deletedEntry({
+		kind: 'items',
+		record,
+		name: 'hat',
+		context: 'Fixture',
+		scope: { itemIds: ['hat'] }
+	});
+	const future = { ...entry, version: 99, deletedAt: new Date().toISOString() };
+	const old = {
+		...entry,
+		id: `${RECENTLY_DELETED_PREFIX}old`,
+		version: 99,
+		deletedAt: new Date(Date.now() - KEEP_MS - 1000).toISOString()
+	};
+	expect(readEntry(future)).toBeUndefined();
+	expect(pruneKeys([future])).toEqual([]);
+	expect(pruneKeys([old])).toEqual([old.id]);
+});
+
+test('restoring an item after the frame changed is refused and changes nothing', async () => {
+	const record = await stored();
+	const before: DressedRecord = {
+		...record,
+		manifest: structuredClone(record.manifest),
+		dress: outfit({ body: 'base', head: 'hat' })
+	};
+	const rec = withoutHat(structuredClone(before));
+	rec.manifest.rig.cell = { w: 128, h: 96 };
+	const result = restoreRemoved(rec, before, { itemIds: ['hat'] });
+	expect(result.refused).toBe('geometry');
+	expect(result.items).toBe(0);
+	expect(rec.manifest.items.some((item) => item.id === 'hat')).toBe(false);
+});
+
+test('a restored item brings back the hides edge another item had on its category', async () => {
+	const record = await stored();
+	const before: DressedRecord = {
+		...record,
+		manifest: structuredClone(record.manifest),
+		dress: outfit({ body: 'base' })
+	};
+	before.manifest.slots[1].wardrobeHidden = true;
+	before.manifest.items.find((item) => item.id === 'base')!.hides = ['head'];
+	const rec = withoutHat(structuredClone(before));
+	rec.manifest.slots = rec.manifest.slots.filter((slot) => slot.id !== 'head');
+	rec.manifest.items.find((item) => item.id === 'base')!.hides = [];
+	const result = restoreRemoved(rec, before, { itemIds: ['hat'] });
+	expect(result.items).toBe(1);
+	expect(rec.manifest.slots.find((slot) => slot.id === 'head')?.wardrobeHidden).toBe(true);
+	expect(rec.manifest.items.find((item) => item.id === 'base')?.hides).toEqual(['head']);
+});
+
 test('a deleted move comes back with its clip, item frames and pose records', async () => {
 	const project = await equipmentFixture();
 	const source = project.manifest;

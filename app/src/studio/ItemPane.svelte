@@ -874,7 +874,7 @@
 				const id = target.id;
 				confirmRemove = false;
 				void removeItem(id);
-			}}><p>{t('common.cannotUndo')}</p></ConfirmDialog
+			}}><p>{t('common.deleteRecoverable')}</p></ConfirmDialog
 		>
 	{/if}
 </Sheet>

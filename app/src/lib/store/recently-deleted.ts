@@ -18,7 +18,7 @@ export const KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 export const MAX_ENTRIES = 50;
 
 /** What was deleted. `character` removes a whole saved character; the rest are parts of one. */
-export type DeletedKind = 'character' | 'items' | 'category' | 'move' | 'directions';
+export type DeletedKind = 'character' | 'items' | 'category' | 'move';
 
 /** Exactly what was removed inside the character record. */
 export interface DeletedScope {
@@ -53,7 +53,7 @@ export interface RecentlyDeleted {
 	drafts?: DeletedDraft[];
 }
 
-const KIND_NAMES: readonly DeletedKind[] = ['character', 'items', 'category', 'move', 'directions'];
+const KIND_NAMES: readonly DeletedKind[] = ['character', 'items', 'category', 'move'];
 
 /** A character's lineage: the original it was restored from, or itself. */
 export const lineageOf = (record: StoredProject) => record.restoredFrom?.id ?? record.id;
@@ -79,9 +79,94 @@ export function deletedEntry(o: {
 		context: o.context,
 		deletedAt: new Date().toISOString(),
 		scope: o.scope,
-		before: structuredClone(o.record),
+		before:
+			o.kind === 'character' ? structuredClone(o.record) : trimBefore(o.record, o.kind, o.scope),
 		...(o.drafts?.length ? { drafts: structuredClone(o.drafts) } : {})
 	};
+}
+
+/** Keep only what this kind's inverse reads, so an entry does not pin the frame history of everything else on the
+ *  character (which Adjust frame and Fix frames replace, doubling storage for no restore value). */
+function trimBefore(record: StoredProject, kind: DeletedKind, scope: DeletedScope): StoredProject {
+	const trimmed = structuredClone(record),
+		m = trimmed.manifest,
+		ids = new Set(scope.itemIds ?? []);
+	if (kind === 'move') {
+		m.items = m.items.map((item) => {
+			const copy = structuredClone(item);
+			for (const layer of copy.layers)
+				for (const key of ['cells', 'sheets', 'sourceSheets'] as const) {
+					const only = layer[key]?.[scope.moveId!];
+					const target = (layer[key] ??= {}) as Record<string, unknown>;
+					for (const name of Object.keys(target)) delete target[name];
+					if (only !== undefined) target[scope.moveId!] = only;
+				}
+			copy.baseCut = copy.baseCut?.[scope.moveId!]
+				? { [scope.moveId!]: copy.baseCut[scope.moveId!] }
+				: undefined;
+			copy.coverage = copy.coverage?.filter((cell) => cell.split('/')[0] === scope.moveId);
+			copy.pending = copy.pending?.filter((cell) => cell.split('/')[0] === scope.moveId);
+			copy.refit = copy.refit?.filter((note) => note.anim === scope.moveId);
+			if (copy.anchorCell && copy.anchorCell.split('/')[0] !== scope.moveId) delete copy.anchorCell;
+			if (copy.standing !== scope.moveId) delete copy.standing;
+			if (copy.qa) {
+				copy.qa.clips = Object.fromEntries(
+					Object.entries(copy.qa.clips).filter(([key]) => key.split('/')[0] === scope.moveId)
+				);
+				copy.qa.cells = Object.fromEntries(
+					Object.entries(copy.qa.cells).filter(([key]) => key.split('/')[0] === scope.moveId)
+				);
+				if (copy.qa.inherited)
+					copy.qa.inherited.clips = copy.qa.inherited.clips.filter(
+						(key) => key.split('/')[0] === scope.moveId
+					);
+			}
+			delete copy.frameEdits;
+			delete copy.paletteRepairs;
+			return copy;
+		});
+		for (const slot of m.slots)
+			slot.zOverrides = slot.zOverrides?.filter(
+				(entry) => !entry.anim || entry.anim === scope.moveId
+			);
+		m.rig.animations = m.rig.animations.filter((clip) => clip.id === scope.moveId);
+		for (const track of Object.values(m.rig.anchors ?? {}))
+			for (const key of Object.keys(track)) if (key !== scope.moveId) delete track[key];
+		trimmed.skeletons = Object.fromEntries(
+			Object.entries(trimmed.skeletons ?? {}).filter(([key]) => key.split('/')[0] === scope.moveId)
+		);
+		const qa = trimmed.rigQa as
+			{ clips?: Record<string, unknown>; warnings?: string[] } | undefined;
+		if (qa) {
+			qa.clips = Object.fromEntries(
+				Object.entries(qa.clips ?? {}).filter(([key]) => key.split('/')[0] === scope.moveId)
+			);
+			qa.warnings = (qa.warnings ?? []).filter(
+				(warning) =>
+					warning.startsWith(`${scope.moveId}/`) || warning.startsWith(`${scope.moveId} `)
+			);
+		}
+	} else {
+		// The scoped items whole, the others as identity only: their `hides` and `clips` edges name the restored category,
+		// but their artwork is still live in the record and must not be pinned here.
+		m.items = m.items.map((item) =>
+			ids.has(item.id)
+				? structuredClone(item)
+				: {
+						...structuredClone(item),
+						layers: [],
+						coverage: undefined,
+						pending: undefined,
+						frameEdits: undefined,
+						paletteRepairs: undefined,
+						baseCut: undefined,
+						refit: undefined,
+						qa: undefined
+					}
+		);
+		m.materials = m.materials.filter((mat) => ids.has(mat.owner));
+	}
+	return trimmed;
 }
 
 /** An entry this version can restore, or undefined for anything else (an older or damaged record is still listed for
@@ -133,13 +218,35 @@ export function listEntries(values: readonly unknown[], now = Date.now()): Recen
 const readable = (values: readonly unknown[]) =>
 	values.map(readEntry).filter((e): e is RecentlyDeleted => !!e);
 
-/** Keys to remove before writing one more entry: expired ones, and the oldest while at the cap. Only entries this version
- *  can read are pruned; nothing else writes this prefix. */
+/** The key an entry claims, even when the rest of it is unreadable: a record this version cannot open must still expire,
+ *  or a format change would pin a whole library's artwork forever. */
+const claimedId = (value: unknown) => {
+	const id = (value as { id?: unknown })?.id;
+	return typeof id === 'string' && id.startsWith(RECENTLY_DELETED_PREFIX) ? id : undefined;
+};
+const claimedAt = (value: unknown) => {
+	const at = Date.parse((value as { deletedAt?: unknown })?.deletedAt as string);
+	return Number.isFinite(at) ? at : undefined;
+};
+
+/** Keys to remove before writing one more entry: expired ones (readable or not), the oldest while at the cap, and the
+ *  child entries of a character entry that goes, which could never be restored once their character is gone. */
 export function pruneKeys(values: readonly unknown[], now = Date.now(), room = 1): string[] {
 	const all = readable(values).sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
 	const kept = all.filter((e) => !expired(e, now)).slice(0, Math.max(0, MAX_ENTRIES - room));
 	const keep = new Set(kept.map((e) => e.id));
-	return all.filter((e) => !keep.has(e.id)).map((e) => e.id);
+	const doomed = all.filter((e) => !keep.has(e.id));
+	const gone = new Set(doomed.map((e) => e.id));
+	for (const value of values) {
+		const id = claimedId(value);
+		if (!id || keep.has(id)) continue;
+		const at = claimedAt(value);
+		if (at !== undefined && at + KEEP_MS <= now) gone.add(id);
+	}
+	// A child entry is useless without its character, so it leaves with it rather than lingering as an error.
+	const lineages = new Set(doomed.filter((e) => e.kind === 'character').map((e) => e.lineageId));
+	for (const e of all) if (e.kind !== 'character' && lineages.has(e.lineageId)) gone.add(e.id);
+	return [...gone];
 }
 
 export async function readDeleted(): Promise<RecentlyDeleted[]> {
@@ -151,10 +258,20 @@ export async function keysToPrune(): Promise<string[]> {
 	return pruneKeys(await db.all<unknown>('projects'));
 }
 
-/** Permanently delete one entry. Its artwork is released by the next idle sweep, which is where every delete leaves it. */
+/** Permanently delete one entry, with the child entries of a character (they could never be restored without it). Its
+ *  artwork is released by the next idle sweep, which is where every delete leaves it. */
 export async function deleteForever(id: string): Promise<void> {
 	if (!id.startsWith(RECENTLY_DELETED_PREFIX)) throw new Error('Not a recently deleted entry.');
-	await db.del('projects', id);
+	const values = await db.all<unknown>('projects');
+	const entry = readEntry(values.find((value) => claimedId(value) === id));
+	const doomed = new Set([id]);
+	if (entry?.kind === 'character')
+		for (const value of values) {
+			const child = readEntry(value);
+			if (child && child.kind !== 'character' && child.lineageId === entry.lineageId)
+				doomed.add(child.id);
+		}
+	await Promise.all([...doomed].map((key) => db.del('projects', key)));
 }
 
 /** How many of the entry's artwork files are no longer on this device, so the list can explain a blocked restore. */
@@ -238,6 +355,11 @@ export async function restoreParts(id: string): Promise<{
 				slot: e.scope.slot
 			});
 			out = { ...restored, name: e.name, projectId: e.projectId };
+			if (restored.refused === 'geometry')
+				throw new LocalizedError(
+					"This character's frame size or directions changed since this was deleted, so it can no longer line up.",
+					'recentlyDeleted.errors.partsGeometry'
+				);
 			return rec;
 		},
 		[id],
@@ -260,7 +382,7 @@ export async function restoreMoveEntry(id: string): Promise<{ name: string; proj
 	if (!live?.manifest)
 		throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
 	// The frame hash is work done outside the transaction; the write below refuses if the character changed meanwhile.
-	const version = stableStringify(live.manifest);
+	const version = stableStringify([live.manifest, live.skeletons ?? null, live.rigQa ?? null]);
 	const next = structuredClone(live);
 	const result = await restoreMove(next, entry.before, entry.scope.moveId);
 	if (result === 'exists')
@@ -269,6 +391,11 @@ export async function restoreMoveEntry(id: string): Promise<{ name: string; proj
 			'recentlyDeleted.errors.movePresent'
 		);
 	if (result === 'missing') throw gone(id);
+	if (result === 'itemsMissing')
+		throw new LocalizedError(
+			'One of this move’s items is deleted. Restore that item first, then this move.',
+			'recentlyDeleted.errors.moveItemsMissing'
+		);
 	if (result === 'geometry')
 		throw new LocalizedError(
 			"This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
@@ -280,7 +407,7 @@ export async function restoreMoveEntry(id: string): Promise<{ name: string; proj
 		(rec, related) => {
 			if (!rec?.manifest)
 				throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
-			if (stableStringify(rec.manifest) !== version)
+			if (stableStringify([rec.manifest, rec.skeletons ?? null, rec.rigQa ?? null]) !== version)
 				throw new LocalizedError(
 					'This character changed before the move could be restored. Try again.',
 					'moveRemoval.concurrentEdit'
@@ -344,11 +471,12 @@ export async function restoreCharacter(
 		record.savedAt = new Date().toISOString();
 		projects.put(record, next);
 		projects.delete(id);
-		// Child entries belong to the character's lineage: point them at where it lives now.
+		// Child entries belong to the character's lineage: point them at where it lives now, before record included, or
+		// readEntry would reject them against their new key and they would vanish from the list.
 		for (const r of records) {
 			const child = readEntry(r);
 			if (!child || child.kind === 'character' || child.projectId !== e.projectId) continue;
-			projects.put({ ...child, projectId: next }, child.id);
+			projects.put({ ...child, projectId: next, before: { ...child.before, id: next } }, child.id);
 		}
 		let drafts = 0;
 		if (e.drafts?.length) {

@@ -93,13 +93,14 @@
 	/** One deleted entry is being restored or removed for good. */
 	let deletedBusy = $state('');
 	let confirmingForever = $state<string>();
+	let foreverError = $state<Message | string>();
+	let deletedSection = $state<HTMLElement>();
 	const deletedHeading = `${heading}-deleted`;
 	const KIND_LABEL = {
 		character: 'recentlyDeleted.kind.character',
 		items: 'recentlyDeleted.kind.items',
 		category: 'recentlyDeleted.kind.category',
-		move: 'recentlyDeleted.kind.move',
-		directions: 'recentlyDeleted.kind.directions'
+		move: 'recentlyDeleted.kind.move'
 	} as const;
 	const deletedKindLabel = (kind: keyof typeof KIND_LABEL) => t(KIND_LABEL[kind]);
 	async function restoreEntry(id: string) {
@@ -109,19 +110,24 @@
 			await restoreDeleted(id);
 		} finally {
 			deletedBusy = '';
+			// The row that held focus is gone: keep the keyboard where the work happened.
+			await tick();
+			deletedSection?.focus();
 		}
 	}
 	async function removeEntryForever(id: string) {
 		if (deletedBusy) return;
 		deletedBusy = id;
-		error = undefined;
+		foreverError = undefined;
 		try {
 			await deleteDeletedForever(id);
 			confirmingForever = undefined;
 		} catch (cause) {
-			error = errorMessage(cause);
+			foreverError = errorMessage(cause);
 		} finally {
 			deletedBusy = '';
+			await tick();
+			deletedSection?.focus();
 		}
 	}
 
@@ -399,12 +405,21 @@
 	{/if}
 	{#if !preview}
 		<hr class="bu-separator" />
-		<section class="library-task" data-setting="recently-deleted" aria-labelledby={deletedHeading}>
+		<section
+			class="library-task"
+			data-setting="recently-deleted"
+			aria-labelledby={deletedHeading}
+			tabindex="-1"
+			bind:this={deletedSection}
+		>
 			<h4 class="settings-label" id={deletedHeading}>{t('recentlyDeleted.title')}</h4>
 			{#if !deleted.entries.length}
 				<p class="bu-muted settings-description">{t('recentlyDeleted.empty')}</p>
 			{:else}
 				<p class="bu-muted settings-description">{t('recentlyDeleted.kept')}</p>
+				{#if deletedBusy}<p class="bu-muted settings-description" role="status">
+						{t('common.preparing')}
+					</p>{/if}
 				<ul class="deleted-list">
 					{#each deleted.entries as entry (entry.id)}
 						<li class="deleted-row">
@@ -423,6 +438,7 @@
 									class="btn bu-action"
 									data-variant="outline"
 									disabled={busy || !!deletedBusy}
+									aria-label={t('recentlyDeleted.restoreNamed', { name: entry.name })}
 									onclick={() => void restoreEntry(entry.id)}>{t('recentlyDeleted.restore')}</button
 								>
 								<button
@@ -505,6 +521,7 @@
 				action={t('recentlyDeleted.confirmAction')}
 				busyAction={t('common.deleting')}
 				busy={!!deletedBusy}
+				problem={foreverError ? displayMessage(foreverError) : ''}
 				oncancel={() => (confirmingForever = undefined)}
 				onconfirm={() => void removeEntryForever(entry.id)}
 			>

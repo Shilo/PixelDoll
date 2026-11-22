@@ -9432,3 +9432,57 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	});
 	expect(fitted).toEqual({ stale: 0, worn: 'helmet_steel' });
 });
+
+test('a deleted item comes back from the notice, the history and the Library after a reload', async ({
+	page
+}) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(page, '/#/');
+	await newItem(page, 'Head');
+	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
+	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
+	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await pickItem(page, 'Red cape');
+	const tile = () =>
+		page.locator('.equipment-scroll .item-tile').getByText('Red cape', { exact: true });
+
+	async function deleteItem() {
+		const inspector = await selectedItemDetails(page);
+		await inspector.getByRole('button', { name: 'Delete item...', exact: true }).click();
+		const alert = page.getByRole('alertdialog', { name: /^Delete .+\?$/ });
+		await alert.getByRole('button', { name: 'Delete', exact: true }).click();
+		await expect(alert).toHaveCount(0);
+	}
+
+	// The notice takes it back.
+	await deleteItem();
+	await expect(tile()).toHaveCount(0);
+	const notice = page.locator('.bu-toast');
+	await expect(notice).toContainText('Removed Red cape');
+	await notice.getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(tile()).toHaveCount(1);
+
+	// The history takes it back too, without a reload.
+	await deleteItem();
+	await expect(tile()).toHaveCount(0);
+	await page.keyboard.press('Control+z');
+	await expect(tile()).toHaveCount(1);
+
+	// After a reload the notice and the history are gone; the Library still has it.
+	await deleteItem();
+	await expect(tile()).toHaveCount(0);
+	await reloadStudio(page);
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Library', exact: true }).click();
+	const recently = settings.getByRole('region', { name: 'Recently deleted', exact: true });
+	await expect(recently).toContainText('Red cape');
+	await recently.getByRole('button', { name: 'Restore Red cape', exact: true }).click();
+	await expect(page.getByText('Restored Red cape')).toBeVisible();
+	await settings.getByRole('button', { name: 'Back', exact: true }).click();
+	await expect(tile()).toHaveCount(1);
+});

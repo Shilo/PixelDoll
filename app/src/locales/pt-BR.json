@@ -2,9 +2,10 @@
 	"recentlyDeleted": {
 		"title": "Excluído recentemente",
 		"empty": "Nada excluído recentemente. Personagens, itens, categorias e movimentos que você excluir ficam aqui por 30 dias.",
-		"kept": "Guardado por 30 dias. Restaurar devolve exatamente o que foi excluído.",
+		"kept": "Guardado por 30 dias, até 50 entradas. Restaurar devolve exatamente o que foi excluído.",
 		"deletedOn": "Excluído em {date}",
 		"restore": "Restaurar",
+		"restoreNamed": "Restaurar {name}",
 		"deleteForever": "Excluir para sempre",
 		"deleteForeverNamed": "Excluir {name} para sempre",
 		"confirmTitle": "Excluir {name} para sempre?",
@@ -34,7 +35,9 @@
 			"full": "O navegador está sem espaço, então nada foi excluído. Exclua algo para sempre em Excluído recentemente e tente de novo.",
 			"wrongKind": "Esse item excluído pertence a um personagem. Restaure o personagem primeiro.",
 			"movePresent": "Este movimento já está no personagem.",
-			"moveGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que este movimento foi excluído, então ele não se alinha mais."
+			"moveGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que este movimento foi excluído, então ele não se alinha mais.",
+			"partsGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que isso foi excluído, então não se alinha mais.",
+			"moveItemsMissing": "Um dos itens deste movimento está excluído. Restaure o item primeiro e depois o movimento."
 		}
 	},
 	"librarySettings": {
@@ -140,7 +143,7 @@
 		"loadFailed": "Não foi possível carregar uma parte do PixelDoll. Recarregue a página para tentar novamente.",
 		"advanced": "Avançado",
 		"cancel": "Cancelar",
-		"cannotUndo": "Não é possível desfazer essa ação.",
+		"deleteRecoverable": "Ele vai para Excluído recentemente por 30 dias.",
 		"character": "Personagem",
 		"characters": "Personagens",
 		"close": "Fechar",
@@ -329,7 +332,7 @@
 		"viewPendingWork": "Ver trabalho pendente",
 		"character": "personagem",
 		"demo": "Não é possível excluir a demo incluída no app.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Os trajes e as alterações deste personagem serão removidos do dispositivo. Os itens copiados para outros personagens serão mantidos. Não é possível desfazer essa ação."
+		"itsOutfitsAndChangesAreRemovedFrom": "Suas roupas, itens e rascunhos não mantidos vão para Excluído recentemente por 30 dias. Itens copiados para outros personagens ficam."
 	},
 	"demoCopyRow": {
 		"editACopy": "Editar uma cópia",
@@ -578,7 +581,7 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Excluir estado",
-		"removeState": "Isso remove deste personagem o estado e os quadros dos itens ajustados a ele. As animações concluídas mantêm seus quadros e as imagens de origem salvas. Essa ação não pode ser desfeita.",
+		"removeState": "Isso remove o estado e seus quadros de itens ajustados deste personagem. Movimentos concluídos mantêm seus quadros e a arte de origem salva. Ele vai para Excluído recentemente por 30 dias.",
 		"labelDeleteMove": "Excluir animação…",
 		"labelDeleteOutfit": "Excluir traje",
 		"thisRemovesTheMoveFromTheBody": "Isso remove a animação do corpo e de todos os itens. Não é possível desfazer essa ação."

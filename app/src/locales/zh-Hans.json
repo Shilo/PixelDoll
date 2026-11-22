@@ -2,9 +2,10 @@
 	"recentlyDeleted": {
 		"title": "最近删除",
 		"empty": "最近没有删除任何内容。删除的角色、物品、分类和动作会在这里保留 30 天。",
-		"kept": "保留 30 天。恢复会原样放回删除的内容。",
+		"kept": "保留 30 天，最多 50 条。恢复会原样放回删除的内容。",
 		"deletedOn": "删除于 {date}",
 		"restore": "恢复",
+		"restoreNamed": "恢复 {name}",
 		"deleteForever": "永久删除",
 		"deleteForeverNamed": "永久删除 {name}",
 		"confirmTitle": "永久删除 {name}？",
@@ -32,7 +33,9 @@
 			"full": "浏览器空间不足，因此没有删除任何内容。请在“最近删除”中永久删除一些内容，然后重试。",
 			"wrongKind": "该已删除项目属于一个角色。请先恢复该角色。",
 			"movePresent": "该角色已经有这个动作。",
-			"moveGeometry": "删除此动作后，角色的帧尺寸或方向已更改，因此无法再对齐。"
+			"moveGeometry": "删除此动作后，角色的帧尺寸或方向已更改，因此无法再对齐。",
+			"partsGeometry": "删除后，角色的帧尺寸或方向已更改，因此无法再对齐。",
+			"moveItemsMissing": "此动作的一个物品已被删除。请先恢复该物品，再恢复此动作。"
 		}
 	},
 	"librarySettings": {
@@ -138,7 +141,7 @@
 		"loadFailed": "无法加载 PixelDoll 的部分内容。请重新加载页面后重试。",
 		"advanced": "高级",
 		"cancel": "取消",
-		"cannotUndo": "此操作无法撤销。",
+		"deleteRecoverable": "它会移到“最近删除”并保留 30 天。",
 		"character": "角色",
 		"characters": "角色",
 		"close": "关闭",
@@ -327,7 +330,7 @@
 		"viewPendingWork": "查看待处理工作",
 		"character": "角色",
 		"demo": "内置演示无法删除。",
-		"itsOutfitsAndChangesAreRemovedFrom": "其套装和更改将从此设备移除。复制到其他角色的装备会保留。此操作无法撤销。"
+		"itsOutfitsAndChangesAreRemovedFrom": "其服装、物品和未保留的草稿会移到“最近删除”并保留 30 天。复制到其他角色的物品会留在原处。"
 	},
 	"demoCopyRow": {
 		"editACopy": "编辑副本",
@@ -558,7 +561,7 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "删除状态",
-		"removeState": "这会从该角色中删除此状态及适配它的装备帧。已完成的动作会保留其帧和已保存的源图像。此操作无法撤消。",
+		"removeState": "这会从此角色移除该状态及其适配的物品帧。已完成的动作会保留其帧和已保存的源图像。它会移到“最近删除”并保留 30 天。",
 		"labelDeleteMove": "删除动作…",
 		"labelDeleteOutfit": "删除套装",
 		"thisRemovesTheMoveFromTheBody": "这会从身体和所有装备中移除此动作。此操作无法撤销。"

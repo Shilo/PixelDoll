@@ -373,6 +373,10 @@ export function initUi() {
 			if (data?.libraryChanged === true) {
 				void refreshProjects();
 				void refreshRecentlyDeleted();
+				// A restore or delete touched this character's record: re-read it quietly so a stale outfit or outfit list is
+				// never saved over it.
+				if (typeof data.projectId === 'string' && data.projectId === doc.id)
+					void openProject(data.projectId, { quiet: true });
 				return;
 			}
 			if (
@@ -456,7 +460,7 @@ let toastRemaining = 0,
 let toastRevision = 0,
 	toastActivating: number | null = null;
 const toastPauses = new Set<'pointer' | 'focus' | 'hidden'>();
-type ToastOptions = {
+export interface ToastOptions {
 	title?: string | Message;
 	pending?: boolean;
 	tone?: typeof ui.toastTone;
@@ -464,7 +468,7 @@ type ToastOptions = {
 	action?: () => void | Promise<void>;
 	/** Names the explicit button that runs `action`: without it, the whole notice stays the button. */
 	actionLabel?: string | Message;
-};
+}
 function stopToastTimer() {
 	clearTimeout(toastT);
 	toastT = undefined;
@@ -1647,9 +1651,10 @@ export async function deleteLocalWorkAndReload(): Promise<void> {
 	location.reload();
 }
 
-/** Other tabs hear about a deletion or restore here: a broadcast is only a hint to re-read, the write itself decides. */
-function notifyLibraryChanged() {
-	identityChannel?.postMessage({ libraryChanged: true });
+/** Other tabs hear about a deletion or restore here: a broadcast is only a hint to re-read, the write itself decides.
+ *  `projectId` names a character whose record changed, so a tab showing it refreshes instead of saving a stale copy. */
+function notifyLibraryChanged(projectId?: string) {
+	identityChannel?.postMessage({ libraryChanged: true, projectId });
 }
 
 /** Read Recently deleted again, oldest entries past the cap or the 30 days removed. */
@@ -1679,10 +1684,20 @@ export async function restoreDeleted(id: string): Promise<boolean> {
 				'That deleted item is no longer available.',
 				'recentlyDeleted.errors.gone'
 			);
+		// The live outfit and slot edits are newer than the record: save them before the restore reads and writes it.
+		await flushSave();
 		if (entry.kind === 'move') {
+			// The same work that blocks deleting a move can overwrite it while a restore lands.
+			const blocked = deletionBlocked(entry.projectId, 'move');
+			if (blocked) throw blocked;
+			if (gens.some((g) => g.draft.rigId === entry.projectId && !g.draft.acceptedAt))
+				throw new LocalizedError(
+					'Finish or discard this character’s item drafts before restoring a move.',
+					'moveRemoval.resolveDrafts'
+				);
 			const out = await restoreMoveEntry(id);
 			await refreshRecentlyDeleted();
-			notifyLibraryChanged();
+			notifyLibraryChanged(out.projectId);
 			if (doc.id === out.projectId) await openProject(out.projectId, { quiet: true });
 			toast(message('recentlyDeleted.restored', { name: out.name }), { tone: 'success' });
 			return true;
@@ -1690,7 +1705,7 @@ export async function restoreDeleted(id: string): Promise<boolean> {
 		if (entry.kind !== 'character') {
 			const out = await restoreParts(id);
 			await refreshRecentlyDeleted();
-			notifyLibraryChanged();
+			notifyLibraryChanged(out.projectId);
 			if (doc.id === out.projectId) {
 				await openProject(out.projectId, { quiet: true });
 				// A quiet open keeps the live outfit: wear what the restore put back, where nothing newer holds the slot.
@@ -1720,7 +1735,10 @@ export async function restoreDeleted(id: string): Promise<boolean> {
 		});
 		await refreshProjects();
 		await refreshRecentlyDeleted();
-		notifyLibraryChanged();
+		notifyLibraryChanged(out.id);
+		// Restored drafts are in the record; the list this tab would save next must know about them, or the next draft
+		// change writes the whole list back without them.
+		if (out.drafts) setGens(await readGens());
 		toast(
 			message(
 				out.copied
@@ -1739,11 +1757,12 @@ export async function restoreDeleted(id: string): Promise<boolean> {
 	}
 }
 
-/** Delete one entry for good. Its artwork goes with the next idle sweep, like every other delete. */
+/** Delete one entry for good. Its artwork goes with it when the queue is idle, which is when a sweep is safe. */
 export async function deleteDeletedForever(id: string): Promise<void> {
 	await discardDeleted(id);
 	await refreshRecentlyDeleted();
-	notifyLibraryChanged();
+	notifyLibraryChanged(id);
+	void cleanUp(0, true).catch((error) => console.error('cleanup after delete forever', error));
 }
 
 export async function removeProject(id = doc.id): Promise<void> {
@@ -1794,7 +1813,7 @@ export async function removeProject(id = doc.id): Promise<void> {
 		lsSet(K.last, null);
 		await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
 	}
-	notifyLibraryChanged();
+	notifyLibraryChanged(id);
 	if (!kept) toast(message('state.deletedNameFromThisDevice', { name }));
 	else
 		toast(message('state.deletedNameFromThisDevice', { name: kept.name }), {
@@ -2143,6 +2162,8 @@ export async function removeItem(itemId: string) {
 			projectId,
 			itemId,
 			(rec) => {
+				// Another tab may have deleted it already: nothing was removed, so nothing needs an entry.
+				if (!rec.manifest.items.some((item) => item.id === itemId)) return undefined;
 				const entry = deletedEntry({
 					kind: 'items',
 					record: rec,
@@ -2163,7 +2184,9 @@ export async function removeItem(itemId: string) {
 		throw error;
 	}
 	await refreshRecentlyDeleted();
-	notifyLibraryChanged();
+	notifyLibraryChanged(projectId);
+	// The deleted item cannot be inspected any more: close its pane first, so the notice that offers Undo is on screen.
+	if (ui.sheet === 'item' && ui.selected === itemId) ui.sheet = null;
 	if (!kept) toast(message('state.removedName', { name: it.name }));
 	else
 		toast(message('state.removedName', { name: it.name }), {
@@ -3676,7 +3699,7 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 		return message('state.reasonNothingDeleted', { reason: errorMessage(e) });
 	}
 	await refreshRecentlyDeleted();
-	notifyLibraryChanged();
+	notifyLibraryChanged(projectId);
 	if (kept)
 		toast(message('state.categoryAndItemsDeleted', { label, count: owned.length }), {
 			duration: 10000,

@@ -2,9 +2,10 @@
 	"recentlyDeleted": {
 		"title": "Eliminado recientemente",
 		"empty": "No hay nada eliminado recientemente. Los personajes, objetos, categorías y movimientos que elimines se guardan aquí 30 días.",
-		"kept": "Se guardan 30 días. Restaurar devuelve exactamente lo que se eliminó.",
+		"kept": "Se guardan 30 días, hasta 50 entradas. Restaurar devuelve exactamente lo que se eliminó.",
 		"deletedOn": "Eliminado el {date}",
 		"restore": "Restaurar",
+		"restoreNamed": "Restaurar {name}",
 		"deleteForever": "Eliminar para siempre",
 		"deleteForeverNamed": "Eliminar {name} para siempre",
 		"confirmTitle": "¿Eliminar {name} para siempre?",
@@ -34,7 +35,9 @@
 			"full": "El navegador se quedó sin espacio, así que no se eliminó nada. Elimina algo para siempre en Eliminado recientemente e inténtalo de nuevo.",
 			"wrongKind": "Ese elemento eliminado pertenece a un personaje. Restaura primero el personaje.",
 			"movePresent": "Este movimiento ya está en el personaje.",
-			"moveGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó este movimiento, así que ya no encaja."
+			"moveGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó este movimiento, así que ya no encaja.",
+			"partsGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó, así que ya no encaja.",
+			"moveItemsMissing": "Uno de los objetos de este movimiento está eliminado. Restaura primero el objeto y luego el movimiento."
 		}
 	},
 	"librarySettings": {
@@ -140,7 +143,7 @@
 		"loadFailed": "No se pudo cargar una parte de PixelDoll. Recarga la página para volver a intentarlo.",
 		"advanced": "Avanzado",
 		"cancel": "Cancelar",
-		"cannotUndo": "Esto no se puede deshacer.",
+		"deleteRecoverable": "Pasa a Eliminado recientemente durante 30 días.",
 		"character": "Personaje",
 		"characters": "Personajes",
 		"close": "Cerrar",
@@ -329,7 +332,7 @@
 		"viewPendingWork": "Ver trabajo pendiente",
 		"character": "personaje",
 		"demo": "La demo incluida no se puede eliminar.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Sus atuendos y cambios se eliminan de este dispositivo. Los objetos copiados a otros personajes se conservan. Esto no se puede deshacer."
+		"itsOutfitsAndChangesAreRemovedFrom": "Sus conjuntos, objetos y borradores sin guardar pasan a Eliminado recientemente durante 30 días. Los objetos copiados a otros personajes se quedan."
 	},
 	"demoCopyRow": {
 		"editACopy": "Editar una copia",
@@ -581,7 +584,7 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Eliminar estado",
-		"removeState": "Esto elimina el estado y los fotogramas de los objetos adaptados a él de este personaje. Las animaciones terminadas conservan sus fotogramas y las imágenes de origen guardadas. Esta acción no se puede deshacer.",
+		"removeState": "Esto quita el estado y sus fotogramas de objetos ajustados de este personaje. Los movimientos terminados conservan sus fotogramas y el arte de origen guardado. Pasa a Eliminado recientemente durante 30 días.",
 		"labelDeleteMove": "Eliminar animación…",
 		"labelDeleteOutfit": "Eliminar atuendo",
 		"thisRemovesTheMoveFromTheBody": "Esto quita la animación del cuerpo y de todos los objetos. Esto no se puede deshacer."

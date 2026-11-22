@@ -2,9 +2,10 @@
 	"recentlyDeleted": {
 		"title": "Baru saja dihapus",
 		"empty": "Tidak ada yang baru dihapus. Karakter, item, kategori, dan gerakan yang Anda hapus disimpan di sini selama 30 hari.",
-		"kept": "Disimpan 30 hari. Memulihkan mengembalikan persis apa yang dihapus.",
+		"kept": "Disimpan 30 hari, maksimal 50 entri. Memulihkan mengembalikan persis apa yang dihapus.",
 		"deletedOn": "Dihapus {date}",
 		"restore": "Pulihkan",
+		"restoreNamed": "Pulihkan {name}",
 		"deleteForever": "Hapus permanen",
 		"deleteForeverNamed": "Hapus {name} permanen",
 		"confirmTitle": "Hapus {name} permanen?",
@@ -32,7 +33,9 @@
 			"full": "Ruang browser habis, jadi tidak ada yang dihapus. Hapus permanen sesuatu di Baru saja dihapus, lalu coba lagi.",
 			"wrongKind": "Item yang dihapus itu milik sebuah karakter. Pulihkan karakternya lebih dulu.",
 			"movePresent": "Gerakan ini sudah ada pada karakter.",
-			"moveGeometry": "Ukuran bingkai atau arah karakter ini berubah sejak gerakan ini dihapus, jadi tidak bisa lagi sejajar."
+			"moveGeometry": "Ukuran bingkai atau arah karakter ini berubah sejak gerakan ini dihapus, jadi tidak bisa lagi sejajar.",
+			"partsGeometry": "Ukuran bingkai atau arah karakter ini berubah sejak ini dihapus, jadi tidak bisa lagi sejajar.",
+			"moveItemsMissing": "Salah satu item gerakan ini dihapus. Pulihkan item itu dulu, lalu gerakan ini."
 		}
 	},
 	"librarySettings": {
@@ -138,7 +141,7 @@
 		"loadFailed": "Sebagian PixelDoll tidak dapat dimuat. Muat ulang halaman untuk mencoba lagi.",
 		"advanced": "Lanjutan",
 		"cancel": "Batal",
-		"cannotUndo": "Tindakan ini tidak dapat diurungkan.",
+		"deleteRecoverable": "Ini dipindahkan ke Baru saja dihapus selama 30 hari.",
 		"character": "Karakter",
 		"characters": "Karakter",
 		"close": "Tutup",
@@ -327,7 +330,7 @@
 		"viewPendingWork": "Lihat pekerjaan tertunda",
 		"character": "karakter",
 		"demo": "Demo bawaan tidak dapat dihapus.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Setelan dan perubahannya dihapus dari perangkat ini. Item yang sudah disalin ke karakter lain tetap ada. Tindakan ini tidak dapat diurungkan."
+		"itsOutfitsAndChangesAreRemovedFrom": "Pakaian, item, dan draf yang tidak disimpan dipindahkan ke Baru saja dihapus selama 30 hari. Item yang disalin ke karakter lain tetap ada."
 	},
 	"demoCopyRow": {
 		"editACopy": "Edit salinan",
@@ -560,7 +563,7 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Hapus varian",
-		"removeState": "Varian ini dan frame item yang disesuaikan dengannya akan dihapus dari karakter ini. Animasi yang sudah selesai tetap menyimpan frame dan gambar sumbernya yang sudah tersimpan. Tindakan ini tidak dapat dibatalkan.",
+		"removeState": "Ini menghapus status dan bingkai item yang sudah dipaskan dari karakter ini. Gerakan yang sudah selesai tetap menyimpan bingkainya dan seni sumber tersimpan. Status ini dipindahkan ke Baru saja dihapus selama 30 hari.",
 		"labelDeleteMove": "Hapus animasi…",
 		"labelDeleteOutfit": "Hapus setelan",
 		"thisRemovesTheMoveFromTheBody": "Ini menghapus animasi dari tubuh dan semua item. Tindakan ini tidak dapat diurungkan."

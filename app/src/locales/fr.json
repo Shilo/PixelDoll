@@ -2,9 +2,10 @@
 	"recentlyDeleted": {
 		"title": "Supprimé récemment",
 		"empty": "Rien de supprimé récemment. Les personnages, objets, catégories et mouvements que vous supprimez restent ici 30 jours.",
-		"kept": "Conservé 30 jours. Restaurer remet exactement ce qui a été supprimé.",
+		"kept": "Conservé 30 jours, jusqu’à 50 entrées. Restaurer remet exactement ce qui a été supprimé.",
 		"deletedOn": "Supprimé le {date}",
 		"restore": "Restaurer",
+		"restoreNamed": "Restaurer {name}",
 		"deleteForever": "Supprimer définitivement",
 		"deleteForeverNamed": "Supprimer {name} définitivement",
 		"confirmTitle": "Supprimer {name} définitivement ?",
@@ -34,7 +35,9 @@
 			"full": "Votre navigateur est à court d'espace, rien n'a donc été supprimé. Supprimez définitivement un élément dans Supprimé récemment, puis réessayez.",
 			"wrongKind": "Cet élément supprimé appartient à un personnage. Restaurez d’abord le personnage.",
 			"movePresent": "Ce mouvement est déjà sur le personnage.",
-			"moveGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression de ce mouvement, il ne s'aligne donc plus."
+			"moveGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression de ce mouvement, il ne s'aligne donc plus.",
+			"partsGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression, cela ne s’aligne donc plus.",
+			"moveItemsMissing": "L’un des objets de ce mouvement est supprimé. Restaurez d’abord l’objet, puis le mouvement."
 		}
 	},
 	"librarySettings": {
@@ -140,7 +143,7 @@
 		"loadFailed": "Impossible de charger une partie de PixelDoll. Rechargez la page pour réessayer.",
 		"advanced": "Avancé",
 		"cancel": "Annuler",
-		"cannotUndo": "Cette action est irréversible.",
+		"deleteRecoverable": "Il passe dans Supprimé récemment pendant 30 jours.",
 		"character": "Personnage",
 		"characters": "Personnages",
 		"close": "Fermer",
@@ -329,7 +332,7 @@
 		"viewPendingWork": "Voir les travaux en attente",
 		"character": "ce personnage",
 		"demo": "La démo intégrée ne peut pas être supprimée.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Ses tenues et modifications sont supprimées de cet appareil. Les objets copiés sur d’autres personnages sont conservés. Cette action est irréversible."
+		"itsOutfitsAndChangesAreRemovedFrom": "Ses tenues, objets et brouillons non conservés passent dans Supprimé récemment pendant 30 jours. Les objets copiés vers d’autres personnages restent."
 	},
 	"demoCopyRow": {
 		"editACopy": "Modifier une copie",
@@ -578,7 +581,7 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Supprimer l’état",
-		"removeState": "Cette action supprime de ce personnage l’état et les images des objets adaptés à cet état. Les animations terminées conservent leurs images et les visuels sources enregistrés. Cette action est irréversible.",
+		"removeState": "Cela retire l’état et ses images d’objets ajustées de ce personnage. Les mouvements terminés gardent leurs images et leurs sources enregistrées. Il passe dans Supprimé récemment pendant 30 jours.",
 		"labelDeleteMove": "Supprimer l’animation…",
 		"labelDeleteOutfit": "Supprimer la tenue",
 		"thisRemovesTheMoveFromTheBody": "Cela supprime l’animation du corps et de tous les objets. Cette action est irréversible."

@@ -2,9 +2,10 @@
 	"recentlyDeleted": {
 		"title": "Recently deleted",
 		"empty": "Nothing deleted recently. Characters, items, categories, and moves you delete stay here for 30 days.",
-		"kept": "Kept for 30 days. Restoring puts back exactly what was removed.",
+		"kept": "Kept for 30 days, up to 50 entries. Restoring puts back exactly what was removed.",
 		"deletedOn": "Deleted {date}",
 		"restore": "Restore",
+		"restoreNamed": "Restore {name}",
 		"deleteForever": "Delete forever",
 		"deleteForeverNamed": "Delete {name} forever",
 		"confirmTitle": "Delete {name} forever?",
@@ -34,7 +35,9 @@
 			"full": "Your browser is out of space, so nothing was deleted. Permanently delete something in Recently deleted, then try again.",
 			"wrongKind": "That deleted item belongs to a character. Restore the character first.",
 			"movePresent": "This move is already on the character.",
-			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up."
+			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
+			"partsGeometry": "This character's frame size or directions changed since this was deleted, so it can no longer line up.",
+			"moveItemsMissing": "One of this move’s items is deleted. Restore that item first, then this move."
 		}
 	},
 	"librarySettings": {
@@ -140,7 +143,7 @@
 		"loadFailed": "Part of PixelDoll could not load. Reload to try again.",
 		"advanced": "Advanced",
 		"cancel": "Cancel",
-		"cannotUndo": "This can't be undone.",
+		"deleteRecoverable": "It moves to Recently deleted for 30 days.",
 		"character": "Character",
 		"characters": "Characters",
 		"close": "Close",
@@ -329,7 +332,7 @@
 		"viewPendingWork": "View pending work",
 		"character": "character",
 		"demo": "The bundled demo cannot be deleted.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits and changes are removed from this device. Items copied to other characters stay. This can't be undone."
+		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits, items and unkept drafts move to Recently deleted for 30 days. Items copied to other characters stay."
 	},
 	"demoCopyRow": {
 		"editACopy": "Edit a copy",
@@ -578,7 +581,7 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Delete State",
-		"removeState": "This removes the State and its fitted item frames from this character. Finished Moves keep their frames and any saved source artwork. This cannot be undone.",
+		"removeState": "This removes the State and its fitted item frames from this character. Finished Moves keep their frames and any saved source artwork. It moves to Recently deleted for 30 days.",
 		"labelDeleteMove": "Delete move…",
 		"labelDeleteOutfit": "Delete outfit",
 		"thisRemovesTheMoveFromTheBody": "This removes the move from the body and every item. This can't be undone."
