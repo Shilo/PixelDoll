@@ -21,6 +21,7 @@ vi.mock('../../src/studio/state.svelte.ts', () => ({
 	deletionBlocked: vi.fn(() => ''),
 	flushSave: vi.fn(),
 	openProject: vi.fn(),
+	keysToPruneAndForget: vi.fn(async () => []),
 	refreshRecentlyDeleted: vi.fn(),
 	restoreDeleted: vi.fn(),
 	toast: vi.fn()
