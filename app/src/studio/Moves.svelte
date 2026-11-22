@@ -31,8 +31,9 @@
 	import { t } from 'svelte-whisper';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { moveLabel } from './model.ts';
-	import { openStateReview, stateRuns } from './stateJobs.svelte.ts';
-	import { stateAttemptStatus } from './stateRecovery.ts';
+	import { openStateReview, stateProgress, stateStatusText } from './stateJobs.svelte.ts';
+	import type { StateAttempt } from './stateGeneration.ts';
+	import type { StateProgress } from './stateRecovery.ts';
 	let { kind, onaddstate }: { kind: 'state' | 'move'; onaddstate?: () => void } = $props();
 	const m = $derived(store.project?.manifest);
 	const playback = $derived(playbackClips(m?.rig.animations ?? []));
@@ -47,41 +48,40 @@
 		return view.project ? buildPresentation(view.project) : null;
 	});
 	const thumbnails = $derived(assets && moveThumbnails(assets, view.items));
+	const pendingStates = $derived(
+		kind === 'state'
+			? Object.values(store.stateAttempts).map((attempt) => ({
+					attempt,
+					progress: stateProgress(attempt, $queue.jobs)
+				}))
+			: []
+	);
 </script>
+
+{#snippet stateRow(attempt: StateAttempt, progress: StateProgress)}
+	<button
+		class="move-row bu-action"
+		data-variant="tile"
+		onclick={() => openStateReview(attempt.token)}
+	>
+		{#if progress.status !== 'ready'}<span
+				class="bu-ring ring"
+				class:spin={progress.status === 'generating'}
+				aria-hidden="true"
+			></span>{/if}
+		<span class="move-text"
+			><b>{moveLabel(attempt.id)}</b><span class="muted small">{stateStatusText(progress)}</span
+			></span
+		>
+		{#if progress.status !== 'generating'}<ChevronRight size={16} />{/if}
+	</button>
+{/snippet}
 
 <div class="colors">
 	{#if m && view.project && thumbnails}
 		<div class="move-list">
-			{#each kind === 'state' ? Object.values(store.stateAttempts) : [] as attempt (attempt.token)}
-				{@const run = stateRuns[attempt.token]}
-				{@const status = run
-					? run.error
-						? 'attention'
-						: 'generating'
-					: stateAttemptStatus(attempt, $queue.jobs)}
-				<button
-					class="move-row bu-action"
-					data-variant="tile"
-					onclick={() => openStateReview(attempt.token)}
-				>
-					{#if status !== 'ready'}<span
-							class="bu-ring ring"
-							class:spin={status === 'generating'}
-							aria-hidden="true"
-						></span>{/if}
-					<span class="move-text"
-						><b>{moveLabel(attempt.id)}</b><span class="muted small"
-							>{t(
-								status === 'generating'
-									? 'stateGeneration.generating'
-									: status === 'ready'
-										? 'stateGeneration.readyRow'
-										: 'stateGeneration.attentionRow'
-							)}</span
-						></span
-					>
-					{#if status === 'ready'}<ChevronRight size={16} />{/if}
-				</button>
+			{#each pendingStates.filter(({ progress }) => progress.status !== 'generating') as { attempt, progress } (attempt.token)}
+				{@render stateRow(attempt, progress)}
 			{/each}
 			{#each kind === 'move' ? Object.values(store.moveReviews) : [] as candidate (candidate.spec.id)}
 				<button
@@ -166,6 +166,10 @@
 						>
 					</button>
 				</SavedActions>
+			{/each}
+			<!-- Running States sit below the saved ones, like a Move being added. -->
+			{#each pendingStates.filter(({ progress }) => progress.status === 'generating') as { attempt, progress } (attempt.token)}
+				{@render stateRow(attempt, progress)}
 			{/each}
 			{#if kind === 'move'}
 				{#if mine && moving.spec}

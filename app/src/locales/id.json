@@ -2734,9 +2734,10 @@
 		"groundedHint": "Kaki dipindahkan agar sesuai sumber. Matikan untuk membatalkan.",
 		"readyRow": "Siap ditinjau",
 		"attentionRow": "Belum selesai: ketuk untuk melihat opsi",
-		"background": "Anda dapat terus bekerja. Hasilnya muncul di Keadaan saat sudah siap.",
+		"background": "Anda dapat menutup ini dan terus bekerja. Anda akan diberi tahu saat sudah siap.",
 		"readyToReview": "{name} siap ditinjau.",
-		"failedOpen": "{name} gagal dihasilkan. Buka Keadaan untuk melihat opsi."
+		"failedOpen": "{name} perlu perhatian. Buka untuk melihat alasannya.",
+		"generatingProgress": "Menghasilkan keadaan… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "Pengukuran sendi sedang berlangsung. Coba lagi setelah selesai.",

@@ -18,7 +18,6 @@
 	import Sprite from './Sprite.svelte';
 	import { doc, store, ui } from './state.svelte.ts';
 	import {
-		continueState,
 		discardState,
 		hasStateContinuation,
 		pendingState,
@@ -29,8 +28,13 @@
 	} from './stateGeneration.ts';
 	import { stateCostText } from './stateCost.ts';
 	import { stateGenerationSource } from './stateGenerationSource.ts';
-	import { refreshStateAttempts, stateRuns } from './stateJobs.svelte.ts';
-	import { stateAttemptStatus } from './stateRecovery.ts';
+	import {
+		continueStateRun,
+		refreshStateAttempts,
+		stateProgress,
+		stateRuns,
+		stateStatusText
+	} from './stateJobs.svelte.ts';
 
 	const formId = $props.id();
 	const projectId = doc.id;
@@ -43,23 +47,13 @@
 	const clipName = (id: string) => displayMove(id, clipIds);
 
 	const attempt = $derived(doc.id === projectId ? store.stateAttempts[token] : undefined);
-	const runError = $derived(stateRuns[token]?.error);
-	const status = $derived(
-		attempt &&
-			(token in stateRuns
-				? runError
-					? 'attention'
-					: 'generating'
-				: stateAttemptStatus(attempt, $queue.jobs))
-	);
+	const progress = $derived(attempt && stateProgress(attempt, $queue.jobs));
+	const status = $derived(progress?.status);
+	const runError = $derived(progress?.error);
 
-	let busy = $state<
-		| 'common.loading'
-		| 'stateGeneration.quoting'
-		| 'stateGeneration.generating'
-		| 'stateCapture.saving'
-		| null
-	>(null);
+	let busy = $state<'common.loading' | 'stateGeneration.quoting' | 'stateCapture.saving' | null>(
+		null
+	);
 	let failure = $state<Message | string>('');
 	let review = $state.raw<StateReview | null>(null);
 	let reviewFacing = $state<DirectionName | null>(null);
@@ -174,6 +168,8 @@
 			canContinue = false;
 			try {
 				review = await pendingState(projectId, token);
+				// Saved or discarded in another tab: refreshing the list closes this sheet.
+				if (!review) return void (await refreshStateAttempts(projectId));
 				reviewFacing = null;
 				keepGrounded = true;
 			} catch (cause) {
@@ -189,22 +185,15 @@
 		});
 	}
 
+	// Like the first run it carries on in the background: this sheet can close, and reloads the result when it settles.
 	function generateRemaining() {
 		const approved = continuation;
-		if (!approved) return;
+		if (!approved || !attempt || busy) return;
 		continuation = null;
-		void run('stateGeneration.generating', async () => {
-			try {
-				review = await continueState(approved);
-			} catch (cause) {
-				canContinue = await hasStateContinuation(projectId, token).catch(() => false);
-				throw cause;
-			}
-			delete stateRuns[token];
-			canContinue = false;
-			reviewFacing = null;
-			keepGrounded = true;
-		});
+		canContinue = false;
+		failure = '';
+		loadedFor = '';
+		continueStateRun(approved, attempt.id);
 	}
 
 	function save() {
@@ -335,7 +324,7 @@
 					>{/if}
 			</span>
 			<p role="status">
-				<span class="bu-ring spin" aria-hidden="true"></span>{t('stateGeneration.generating')}
+				<span class="bu-ring spin" aria-hidden="true"></span>{progress && stateStatusText(progress)}
 			</p>
 			<p class="muted small">{t('stateGeneration.background')}</p>
 			{#if attempt?.description?.trim()}<PromptLine text={attempt.description.trim()} />{/if}

@@ -2804,9 +2804,10 @@
 		"groundedHint": "Feet moved to match the source. Turn off to undo.",
 		"readyRow": "Ready to review",
 		"attentionRow": "Unfinished: tap for options",
-		"background": "You can keep working. It appears under States when it’s ready.",
+		"background": "You can close this and keep working. You’ll be notified when it’s ready.",
 		"readyToReview": "{name} is ready to review.",
-		"failedOpen": "{name} could not be generated. Open States for options."
+		"failedOpen": "{name} needs attention. Open it to see why.",
+		"generatingProgress": "Generating State… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "Joint fitting is already in progress. Try again when it finishes.",

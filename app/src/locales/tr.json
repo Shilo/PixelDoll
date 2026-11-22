@@ -2804,9 +2804,10 @@
 		"groundedHint": "Ayaklar kaynağa göre taşındı. Geri almak için kapatın.",
 		"readyRow": "İncelemeye hazır",
 		"attentionRow": "Tamamlanmadı: Seçenekler için dokunun",
-		"background": "Çalışmaya devam edebilirsiniz. Hazır olduğunda Durumlar bölümünde görünür.",
+		"background": "Bunu kapatıp çalışmaya devam edebilirsiniz. Hazır olduğunda size haber verilir.",
 		"readyToReview": "İncelemeye hazır: {name}.",
-		"failedOpen": "Oluşturulamadı: {name}. Seçenekleri görmek için Durumlar bölümünü açın."
+		"failedOpen": "İlgilenmeniz gerekiyor: {name}. Nedenini görmek için açın.",
+		"generatingProgress": "Durum oluşturuluyor… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "Eklem ölçümü zaten sürüyor. Tamamlandığında tekrar deneyin.",

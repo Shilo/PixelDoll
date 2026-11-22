@@ -2813,9 +2813,10 @@
 		"groundedHint": "Pés movidos para combinar com a origem. Desative para desfazer.",
 		"readyRow": "Pronto para revisar",
 		"attentionRow": "Incompleto: toque para ver opções",
-		"background": "Você pode continuar trabalhando. Ele aparece em Estados quando estiver pronto.",
+		"background": "Você pode fechar isto e continuar trabalhando. Avisaremos quando estiver pronto.",
 		"readyToReview": "Você já pode revisar {name}.",
-		"failedOpen": "Não foi possível gerar {name}. Abra Estados para ver as opções."
+		"failedOpen": "{name} precisa de atenção. Abra para ver o motivo.",
+		"generatingProgress": "Gerando estado… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "A medição das articulações já está em andamento. Tente novamente quando terminar.",

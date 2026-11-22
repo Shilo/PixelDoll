@@ -138,13 +138,9 @@
 		store.project && stateCaptureSource(store.project.manifest, startClip)?.version
 	);
 	let stale = $state(false);
-	let busy = $state<
-		| 'common.loading'
-		| 'stateGeneration.quoting'
-		| 'stateGeneration.generating'
-		| 'stateCapture.saving'
-		| null
-	>(null);
+	let busy = $state<'common.loading' | 'stateGeneration.generating' | 'stateCapture.saving' | null>(
+		null
+	);
 	let failure = $state<Message | string>('');
 	let quoted = $state.raw<{ prepared: PreparedState; draft: Omit<Draft, 'named'> } | null>(null);
 	// The edit is priced for free as the form settles; Generate State only enables once the shown price matches it.

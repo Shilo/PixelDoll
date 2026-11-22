@@ -1,4 +1,5 @@
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
+import type { Message } from '../lib/message.ts';
 import { live, managedStateSubmitChildId, type JobRec } from '../lib/pixellab/queue.ts';
 import type { StateAttempt } from './stateGeneration.ts';
 
@@ -83,4 +84,35 @@ export function stateAttemptStatus(
 	)
 		return 'generating';
 	return attempt.source && stateRecoveryRecords(attempt, ledger) ? 'ready' : 'attention';
+}
+
+export interface StateProgress {
+	status: StateAttemptStatus;
+	/** Batches with a finished job, of `total`. */
+	done: number;
+	total: number;
+	/** Why this tab's run failed, shown only while the jobs cannot be reviewed. */
+	error?: Message | string;
+}
+
+/** The saved jobs decide; this tab's run only adds what they cannot show: sending between batches, or why it failed. */
+export function stateProgressOf(
+	attempt: RecoveryAttempt & { source?: unknown },
+	ledger: readonly JobRec[],
+	run?: { error?: Message | string }
+): StateProgress {
+	const saved = stateAttemptStatus(attempt, ledger);
+	const status = run && !run.error && saved === 'attention' ? 'generating' : saved;
+	const done = attempt.plan.batches.filter((_, index) =>
+		ledger.some(
+			(record) =>
+				record.activityScope === stateBatchScope(attempt.token, index) && record.state === 'done'
+		)
+	).length;
+	return {
+		status,
+		done,
+		total: attempt.plan.batches.length,
+		...(status === 'attention' && run?.error && { error: run.error })
+	};
 }

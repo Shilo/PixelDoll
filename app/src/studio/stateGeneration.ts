@@ -690,7 +690,11 @@ async function submitStateBatches(
 				const ledger = pending && stateContinuationBatches(pending, await db.all<JobRec>('jobs'));
 				if (!ledger?.missing.includes(index)) throw changed();
 			}
-			// States run in the background, so the character may be edited or closed meanwhile; Save checks the source.
+			// States run in the background, so the character may be edited or closed meanwhile. Other edits are fine, but
+			// no further view is paid for once its source frame changed: Save would refuse the result.
+			const { project } = await loadProject(projectId);
+			if (stateGenerationSource(project, attempt.source)?.version !== attempt.sourceVersion)
+				throw changed();
 			const checked = (current: StoredProject | undefined) => {
 				controller.signal.throwIfAborted();
 				if (

@@ -2734,9 +2734,10 @@
 		"groundedHint": "已将脚部对齐到来源。关闭即可撤销。",
 		"readyRow": "可以检查了",
 		"attentionRow": "未完成：轻点查看选项",
-		"background": "你可以继续工作。完成后会显示在“状态”中。",
+		"background": "你可以关闭此窗口继续工作。完成后会通知你。",
 		"readyToReview": "可以检查{name}了。",
-		"failedOpen": "无法生成{name}。打开“状态”以查看选项。"
+		"failedOpen": "{name}需要处理。打开查看原因。",
+		"generatingProgress": "正在生成状态… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "正在测量关节。请在测量完成后重试。",

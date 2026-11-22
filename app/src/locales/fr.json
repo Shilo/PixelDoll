@@ -2804,9 +2804,10 @@
 		"groundedHint": "Pieds déplacés pour correspondre à la source. Désactivez pour annuler.",
 		"readyRow": "Prêt à vérifier",
 		"attentionRow": "Inachevé : touchez pour les options",
-		"background": "Vous pouvez continuer à travailler. Il apparaîtra dans États une fois prêt.",
+		"background": "Vous pouvez fermer cette fenêtre et continuer à travailler. Vous serez averti quand il sera prêt.",
 		"readyToReview": "Vous pouvez vérifier {name}.",
-		"failedOpen": "Impossible de générer {name}. Ouvrez États pour voir les options."
+		"failedOpen": "{name} demande votre attention. Ouvrez-le pour savoir pourquoi.",
+		"generatingProgress": "Génération de l’état… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "La mesure des articulations est déjà en cours. Réessayez ensuite.",

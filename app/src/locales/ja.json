@@ -2734,9 +2734,10 @@
 		"groundedHint": "足の位置を元に合わせました。オフで元に戻します。",
 		"readyRow": "確認できます",
 		"attentionRow": "未完了：タップして対処方法を表示",
-		"background": "このまま作業を続けられます。完成すると「ステート」に表示されます。",
+		"background": "閉じて作業を続けられます。完成したらお知らせします。",
 		"readyToReview": "{name}を確認できます。",
-		"failedOpen": "{name}を生成できませんでした。「ステート」を開いて対処方法を確認してください。"
+		"failedOpen": "{name}の確認が必要です。開いて理由を確認してください。",
+		"generatingProgress": "ステートを生成中… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "関節を計測中です。完了してからもう一度お試しください。",

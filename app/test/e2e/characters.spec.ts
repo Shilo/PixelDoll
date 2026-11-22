@@ -3372,6 +3372,11 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	).toBeVisible();
 	expect(flashPosts()).toHaveLength(1);
 	await review.getByRole('button', { name: 'Generate remaining views', exact: true }).click();
+	// The remaining views also send in the background: the sheet closes at once and the row reopens the result.
+	await review.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(review).toBeHidden();
+	await expect(row).toContainText('Ready to review');
+	await row.click();
 	await expect(review.getByText('Review Torch ready before saving.')).toBeVisible();
 	expect(flashPosts()).toHaveLength(batches);
 	expect(new Set(flashPosts().map(({ image }) => image.base64)).size).toBe(batches);
