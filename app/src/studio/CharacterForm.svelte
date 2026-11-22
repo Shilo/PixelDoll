@@ -173,7 +173,6 @@
 	const announcement = $derived(
 		promoted ? t('create.form.ownView', { direction: displayDirectionShort(promoted) }) : ''
 	);
-	let editorHelp: { show: () => Promise<void>; hide: () => void };
 	const editorHelpId = $props.id(),
 		bodyErrorId = `${editorHelpId}-body-error`;
 	const editorHelpText = $derived(
@@ -253,17 +252,6 @@
 				role="tablist"
 				tabindex="-1"
 				aria-label={t('create.form.promptEditor')}
-				aria-describedby={editorHelpId}
-				onpointerenter={(e) => {
-					if (e.pointerType === 'mouse') void editorHelp.show();
-				}}
-				onpointerleave={(e) => {
-					if (e.pointerType === 'mouse') editorHelp.hide();
-				}}
-				onfocusin={(e) => {
-					if ((e.target as HTMLElement).matches(':focus-visible')) void editorHelp.show();
-				}}
-				onfocusout={() => editorHelp.hide()}
 			>
 				<button
 					role="tab"
@@ -285,7 +273,6 @@
 				>
 			</div>
 			<Help
-				bind:this={editorHelp}
 				iconOnly
 				tooltipId={editorHelpId}
 				title={d.tab === 'appearance'

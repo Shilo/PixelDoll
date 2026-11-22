@@ -740,27 +740,48 @@ test('linked prompt is lossless, copy is exact, and keyboard tabs work', async (
 	await expect(prompt).toHaveValue(exact.replace('Build: Broad', 'Build: Rounded'));
 });
 
-test('editor help opens from either the toggle or help icon and follows the active tab', async ({
-	page
-}) => {
+test('editor help opens only from its help icon and follows the active tab', async ({ page }) => {
 	const sheet = await open(page),
-		toggle = sheet.getByRole('tablist', { name: 'Prompt editor', exact: true });
-	await toggle.hover();
-	await expect(sheet.getByRole('tooltip')).toContainText('Describe distinctive features');
-	await sheet.getByRole('button', { name: 'Appearance help', exact: true }).hover();
+		tabs = sheet.getByRole('tablist', { name: 'Prompt editor', exact: true }),
+		appearanceTab = sheet.getByRole('tab', { name: 'Appearance', exact: true }),
+		promptTab = sheet.getByRole('tab', { name: 'Prompt', exact: true }),
+		appearanceHelp = sheet.getByRole('button', { name: 'Appearance help', exact: true });
+	await expect(tabs).not.toHaveAttribute('aria-describedby');
+	for (const tab of [appearanceTab, promptTab]) {
+		await expect(tab).toHaveAccessibleDescription('');
+		await tab.hover();
+		await expect(sheet.getByRole('tooltip')).toHaveCount(0);
+	}
+	await appearanceTab.click();
+	await page.keyboard.press('Tab');
+	await expect(appearanceHelp).toBeFocused();
 	await expect(sheet.getByRole('tooltip')).toContainText('Describe distinctive features');
 	await page.keyboard.press('Escape');
 	await expect(sheet.getByRole('tooltip')).toHaveCount(0);
-	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
-	await toggle.hover();
+	await appearanceHelp.hover();
+	await expect(sheet.getByRole('tooltip')).toContainText('Describe distinctive features');
+	await expect(appearanceHelp).toHaveAccessibleDescription(/Describe distinctive features/);
+	await page.mouse.move(0, 0);
+	await expect(sheet.getByRole('tooltip')).toHaveCount(0);
+	await appearanceHelp.click();
+	await expect(sheet.getByRole('tooltip')).toContainText('Describe distinctive features');
+	await page.keyboard.press('Escape');
+	await expect(sheet.getByRole('tooltip')).toHaveCount(0);
+	await promptTab.click();
+	await expect(sheet.getByRole('tooltip')).toHaveCount(0);
+	const promptHelp = sheet.getByRole('button', { name: 'Prompt help', exact: true });
+	await promptHelp.hover();
 	await expect(sheet.getByRole('tooltip')).toContainText(
 		'This exact text is sent to the selected model'
 	);
-	await sheet.getByRole('button', { name: 'Prompt help', exact: true }).click();
+	await page.mouse.move(0, 0);
+	await expect(sheet.getByRole('tooltip')).toHaveCount(0);
+	await promptHelp.click();
 	await expect(sheet.getByRole('tooltip')).toContainText(
 		'This exact text is sent to the selected model'
 	);
 	await page.keyboard.press('Escape');
+	await expect(sheet.getByRole('tooltip')).toHaveCount(0);
 	await expect(sheet).toBeVisible();
 });
 
