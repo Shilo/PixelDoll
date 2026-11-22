@@ -1927,3 +1927,8 @@ dialog.sheet.bottom {
 	padding-top: 0;
 	border-top: 0;
 }
+
+/* Settings is the one centered sheet with a rail and a working panel; give the panel room. */
+dialog.sheet.center.settings-sheet {
+	width: min(640px, calc(100vw - 32px));
+}

@@ -5,8 +5,10 @@
 		Clapperboard,
 		Layers2,
 		PersonStanding,
+		RotateCcw,
 		Shirt,
 		Trash,
+		Trash2,
 		TriangleAlert,
 		UserRound
 	} from './icons.ts';
@@ -31,7 +33,7 @@
 
 	onMount(() => void refreshRecentlyDeleted());
 
-	/** A type icon stands in for artwork: decoding every entry's cells to draw a thumbnail would cost more than it gives. */
+	/** A bare type glyph stands in for artwork: decoding every entry's cells to draw a thumbnail would cost more than it gives. */
 	const KIND = {
 		character: { key: 'recentlyDeleted.kind.character', icon: UserRound },
 		item: { key: 'recentlyDeleted.kind.items', icon: Shirt },
@@ -111,34 +113,42 @@
 				{@const kind = KIND[kindOf(entry)]}
 				{@const Icon = kind.icon}
 				<li class="trash-row" class:trash-busy={busy === entry.id}>
-					<span class="trash-kind" aria-hidden="true"><Icon size={18} /></span>
+					<span class="trash-kind"><Icon size={18} aria-hidden="true" /></span>
 					<div class="trash-text">
 						<span class="trash-name">{entry.name}</span>
 						<span class="bu-muted trash-meta"
-							>{kindLabel(entry)}{entry.context ? ` · ${entry.context}` : ''} ·
-							{dateOf(entry.deletedAt)}</span
+							>{kindLabel(entry)}{entry.context ? ` · ${entry.context}` : ''}</span
+						>
+						<time class="bu-muted trash-date" datetime={entry.deletedAt}
+							>{dateOf(entry.deletedAt)}</time
 						>
 					</div>
 					<div class="trash-actions">
 						<button
 							type="button"
-							class="btn bu-action trash-restore"
-							data-variant="outline"
+							class="bu-btn trash-restore"
 							disabled={!!busy}
 							aria-label={t('recentlyDeleted.restoreNamed', { name: entry.name })}
+							title={t('recentlyDeleted.restoreNamed', { name: entry.name })}
 							onclick={() => void restoreEntry(entry.id)}
 						>
-							{busy === entry.id ? t('recentlyDeleted.restoring') : t('recentlyDeleted.restore')}
+							<RotateCcw size={18} aria-hidden="true" />
 						</button>
 						<button
 							type="button"
-							class="btn bu-action"
+							class="bu-btn"
 							data-variant="danger"
 							disabled={!!busy}
 							aria-label={t('recentlyDeleted.deleteForeverNamed', { name: entry.name })}
-							onclick={() => (confirming = entry.id)}>{t('recentlyDeleted.deleteForever')}</button
+							title={t('recentlyDeleted.deleteForeverNamed', { name: entry.name })}
+							onclick={() => (confirming = entry.id)}
 						>
+							<Trash2 size={18} aria-hidden="true" />
+						</button>
 					</div>
+					{#if busy === entry.id}
+						<span class="trash-status" role="status">{t('recentlyDeleted.restoring')}</span>
+					{/if}
 				</li>
 			{/each}
 		</ul>
@@ -185,40 +195,36 @@
 		list-style: none;
 	}
 	.trash-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 4px 12px;
+		position: relative;
+		display: grid;
+		grid-template-columns: 18px minmax(0, 1fr);
+		column-gap: 10px;
+		align-items: start;
 		min-height: 56px;
-		padding: 6px 8px;
+		padding: 8px;
+		margin-inline: -8px;
 		border-block-start: 1px solid var(--bu-line);
-		border-radius: 8px;
-		transition: background-color 120ms ease;
+		border-radius: var(--bu-radius-control, 8px);
 	}
 	.trash-row:first-child {
 		border-block-start: none;
 	}
 	.trash-row:hover,
 	.trash-row:has(:focus-visible) {
-		background: var(--bu-tile);
+		background: var(--bu-hover);
 	}
 	.trash-busy {
 		opacity: 0.55;
 	}
 	.trash-kind {
-		flex: none;
 		display: grid;
 		place-items: center;
-		inline-size: 32px;
-		block-size: 32px;
-		border-radius: 8px;
-		background: var(--bu-tile);
+		margin-block-start: 2px;
+		opacity: 0.65;
 	}
 	.trash-text {
-		flex: 1 1 120px;
-		min-inline-size: 0;
 		display: grid;
-		gap: 2px;
+		gap: 1px;
 		min-inline-size: 0;
 	}
 	.trash-name {
@@ -229,26 +235,59 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.trash-meta {
+	.trash-meta,
+	.trash-date {
 		font-size: 0.8125rem;
 		line-height: 1.35;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+	.trash-date {
+		font-variant-numeric: tabular-nums;
+		opacity: 0.85;
+	}
 	.trash-actions {
 		display: flex;
-		flex: 1 0 100%;
-		align-items: center;
-		justify-content: flex-end;
-		gap: 8px;
+		grid-column: 2;
+		justify-content: end;
+		gap: 4px;
+		margin-block-start: 4px;
 	}
-	.trash-actions .btn {
-		min-inline-size: 0;
-		height: auto;
-		min-height: 44px;
-		padding-block: 6px;
-		white-space: nowrap;
+	.trash-actions .bu-btn {
+		display: grid;
+		place-items: center;
+		inline-size: 44px;
+		block-size: 44px;
+		padding: 0;
+	}
+	/* A pointer device reveals the actions on the row it is working on; the text keeps its full width at rest. */
+	@media (hover: hover) and (pointer: fine) {
+		.trash-actions {
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-end: 4px;
+			transform: translateY(-50%);
+			margin-block-start: 0;
+			padding-inline: 4px;
+			border-radius: var(--bu-radius-control, 8px);
+			background: var(--bu-hover);
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 120ms ease;
+		}
+		.trash-row:hover .trash-actions,
+		.trash-row:focus-within .trash-actions {
+			opacity: 1;
+			pointer-events: auto;
+		}
+	}
+	.trash-status {
+		position: absolute;
+		inset-inline-end: 4px;
+		inset-block-end: -10px;
+		font-size: 0.75rem;
+		opacity: 0.8;
 	}
 	.trash-empty {
 		display: grid;
