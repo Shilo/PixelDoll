@@ -62,7 +62,9 @@
 		"autoSize": "Automático ({size} px)",
 		"frameMinimum": "Escolha Automático ou um tamanho de quadro personalizado de pelo menos {min} px.",
 		"custom": "Personalizado",
-		"description": "Salvo neste navegador. As janelas de criação ainda não usam estes valores.",
+		"description": "Salvo neste navegador. Aplica-se ao abrir uma nova janela de criação.",
+		"fallback": "A opção salva de {setting} não está disponível aqui. Será usado {value}.",
+		"autoFrames": "Automático ({count} quadros)",
 		"defaults": "Padrões de criação",
 		"readFailed": "Não foi possível ler as opções salvas. Redefina esta página para corrigi-las.",
 		"storageUnavailable": "O armazenamento do navegador está indisponível. Essas escolhas não podem ser salvas.",
@@ -2245,7 +2247,7 @@
 				"unique": "8 direções únicas"
 			},
 			"models": {
-				"v3": { "label": "Padrão (V3)", "help": "Proporções equilibradas." },
+				"v3": { "label": "V3", "help": "Proporções equilibradas." },
 				"standard": {
 					"label": "Padrão",
 					"help": "Desenha oito vistas usando um molde ou seu sprite de frente."
@@ -2524,7 +2526,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "Padrão (PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "Quadros",
 		"framesHelp": "As opções cabem neste modelo e na tela do personagem ({canvas} px). A opção padrão mantém a contagem de quadros predefinida do PixelDoll.",
@@ -2669,7 +2671,6 @@
 		"confirmDiscard": "Confirmar descarte",
 		"discardWarning": "Descartar não reembolsa gerações nem exclui o estado do PixelLab. Recomeçar pode cobrar todas as direções novamente.",
 		"locksUnavailable": "Use um navegador atualizado para gerar estados com segurança.",
-		"defaultModel": "Padrão (Pro)",
 		"flashReference": "O Pro Flash usa uma imagem de referência em vez de instruções escritas.",
 		"changed": "A origem ou a estimativa mudou. Consulte o custo novamente antes de gerar.",
 		"sourceUnavailable": "O quadro de origem precisa de arte salva em cada direção desenhada.",

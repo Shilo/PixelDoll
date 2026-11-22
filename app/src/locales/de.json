@@ -62,7 +62,9 @@
 		"autoSize": "Automatisch ({size} px)",
 		"frameMinimum": "Wähle Automatisch oder eine benutzerdefinierte Framegröße von mindestens {min} px.",
 		"custom": "Benutzerdefiniert",
-		"description": "In diesem Browser gespeichert. Die Erstellungsdialoge verwenden diese Werte noch nicht.",
+		"description": "In diesem Browser gespeichert. Gilt beim Öffnen eines neuen Erstellungsfensters.",
+		"fallback": "Die gespeicherte Einstellung „{setting}“ ist hier nicht verfügbar. Stattdessen wird „{value}“ verwendet.",
+		"autoFrames": "Automatisch ({count} Frames)",
 		"defaults": "Standardwerte für die Erstellung",
 		"readFailed": "Gespeicherte Einstellungen konnten nicht gelesen werden. Setze diese Seite zurück.",
 		"storageUnavailable": "Der Browserspeicher ist nicht verfügbar. Diese Einstellungen können nicht gespeichert werden.",
@@ -2231,7 +2233,7 @@
 				"unique": "8 eigene Ansichten"
 			},
 			"models": {
-				"v3": { "label": "Standard (V3)", "help": "Ausgewogene Proportionen." },
+				"v3": { "label": "V3", "help": "Ausgewogene Proportionen." },
 				"standard": {
 					"label": "Standard",
 					"help": "Zeichnet acht Ansichten anhand einer Vorlage oder deines Sprites in Vorderansicht."
@@ -2510,7 +2512,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "Standard (PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "Frames",
 		"framesHelp": "Die Auswahl passt zu diesem Modell und der Leinwand des Charakters ({canvas} px). Die Standardoption behält PixelDolls voreingestellte Framezahl.",
@@ -2655,7 +2657,6 @@
 		"confirmDiscard": "Verwerfen bestätigen",
 		"discardWarning": "Beim Verwerfen werden keine Generierungen erstattet und kein Zustand aus PixelLab gelöscht. Beim Neustart können erneut Kosten für alle Richtungen anfallen.",
 		"locksUnavailable": "Verwende einen aktuellen Browser, um Zustände sicher zu generieren.",
-		"defaultModel": "Standard (Pro)",
 		"flashReference": "Pro Flash nutzt ein Referenzbild anstelle einer Textanweisung.",
 		"changed": "Quelle oder Kostenschätzung haben sich geändert. Prüfe vor dem Generieren erneut die Kosten.",
 		"sourceUnavailable": "Für jede gezeichnete Blickrichtung muss der Quell-Frame gespeicherte Grafik haben.",

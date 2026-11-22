@@ -129,8 +129,8 @@ export const newItemSpec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> 
 /** The animation method a new item will use: the one chosen, else the rig's default. A chosen skeleton posing the rig
  *  cannot do is refused here, before anything is spent, rather than quietly replaced. */
 export function itemMethod(ctx: RigCtx, s: Omit<ItemSpec, 'id'>): Method {
-	const automatic = defaultMethod(ctx, s);
-	if (s.method === 'skel' && (automatic !== 'skel' || s.key === 'none'))
+	const automatic = s.key === 'none' ? 'anchor' : defaultMethod(ctx, s);
+	if (s.method === 'skel' && automatic !== 'skel')
 		throw new LocalizedError(
 			'Skeleton posing is not available for this item on this character. Choose Automatic.',
 			'itemRoute.errors.skeletonUnavailable'

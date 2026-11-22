@@ -211,7 +211,7 @@ animation, quality retry, or substitute static item is introduced.
 
 ## Advanced move generation
 
-Default new moves to PixMiniMax. Keep Skeleton V3 and V3 available in Advanced, with only frame counts supported by the
+Default new moves to Skeleton V3. Keep PixMiniMax and V3 available in Advanced, with only frame counts supported by the
 selected model and canvas. Ride uses its static Skeleton V3 pose; replacements prefer the saved route when compatible.
 Native routes estimate joints on the frozen frames so equipment can still use Skeleton V3. After a native quality
 failure, offer a priced, optional Skeleton V3 retry where compatible. Review the new body draft before saving; animating

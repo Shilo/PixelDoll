@@ -126,6 +126,12 @@
 	import { errorText, LocalizedError, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
+	import {
+		creationDefaults,
+		moveModels,
+		openingCreationSettings,
+		resolveMoveFramePreference
+	} from './creationSettings.ts';
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
@@ -154,7 +160,10 @@
 	const suggestions = $derived(
 		promptSuggestions('move').filter(({ action }) => !action || options.includes(action))
 	);
-	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
+	const redrawTarget = untrack(() => ui.redrawMove);
+	const draft =
+		!redrawTarget && formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
+	if (draft && !draft.regeneration) formDrafts.move = undefined;
 	let sourceId = $state<string | undefined>(draft?.source?.clip);
 	let sourceCell = $state<number | undefined>(draft?.source?.cell);
 	const sourceClip = $derived(
@@ -200,8 +209,8 @@
 	};
 	const reopen = draft?.reopen;
 	if (reopen) delete draft.reopen;
-	const DEFAULT_MODEL: MoveAnimationModel = 'pixminimax';
-	const MODELS: MoveAnimationModel[] = [DEFAULT_MODEL, 'skeleton-v3', 'v3'];
+	const redrawFallbackModel: MoveAnimationModel = 'pixminimax';
+	const preferences = !draft && !redrawTarget ? openingCreationSettings('moves') : undefined;
 	const advancedId = $props.id();
 	// Advanced is a second column on a centered sheet with room for two, and an accordion otherwise.
 	const roomy = new MediaQuery('min-width: 840px');
@@ -213,8 +222,9 @@
 	};
 	// Advanced starts open when a restored draft already changed something there, so no choice is hidden.
 	let advancedOpen = $state(
-		!!(draft?.frameReferences && Object.keys(draft.frameReferences).length) ||
-			(draft?.animation?.model !== undefined && draft.animation.model !== DEFAULT_MODEL)
+		draft?.advancedOpen ??
+			(!!(draft?.frameReferences && Object.keys(draft.frameReferences).length) ||
+				(draft?.animation?.model !== undefined && draft.animation.model !== redrawFallbackModel))
 	);
 	const showAdvanced = $derived(sideBySide && advancedOpen);
 	// The column opens beside the top of the form, away from the toggle, so bring its first control into view.
@@ -229,7 +239,11 @@
 		first?.focus();
 	}
 	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
-	let frameChoice = $state<number | undefined>(draft?.animation?.frameCount);
+	let frameChoice = $state<number | undefined>(
+		draft?.animation?.frameCount ??
+			(preferences?.frames === 'auto' ? undefined : preferences?.frames)
+	);
+	let usesSavedFrames = $state(draft?.usesSavedFrames ?? typeof preferences?.frames === 'number');
 	let action = $state(
 		draft?.action ?? untrack(() => suggestions.find((entry) => entry.action)?.action) ?? ''
 	);
@@ -397,30 +411,34 @@
 	);
 	const fitsKept = (option: MoveAnimationModel) =>
 		keptFrames === undefined || moveFrameCounts(option, canvas).includes(keptFrames);
+	const fitsSource = (option: MoveAnimationModel) =>
+		option !== 'skeleton-v3' || !startFrom || (!describing && isAuthoredAction(action));
 	const model = $derived.by(() => {
 		if (modelChoice && fitsKept(modelChoice)) return modelChoice;
-		if (!replacing) return DEFAULT_MODEL;
+		if (!replacing) return preferences?.model ?? creationDefaults.moves.model;
 		const preferred =
 			keptFrames ??
 			(m && moveFrames(m, { action: describing ? undefined : action, frames: baseFrames }));
 		const fitsPreferred = (option: MoveAnimationModel) =>
 			preferred !== undefined && moveFrameCounts(option, canvas).includes(preferred);
-		const fitsSource = (option: MoveAnimationModel) =>
-			option !== 'skeleton-v3' || !startFrom || (!describing && isAuthoredAction(action));
 		for (const dir of targetDirs) {
 			const route = savedMove?.sources?.[dir]?.route;
 			if (route && route !== 'import' && fitsSource(route) && fitsPreferred(route)) return route;
 		}
 		return fitsSource('skeleton-v3') && fitsPreferred('skeleton-v3')
 			? 'skeleton-v3'
-			: (MODELS.find((option) => fitsSource(option) && fitsPreferred(option)) ?? DEFAULT_MODEL);
+			: (moveModels.find((option) => fitsSource(option) && fitsPreferred(option)) ??
+					redrawFallbackModel);
 	});
 	// Model-valid counts for this character's actual canvas; the same object prices and submits the move.
 	const frameCounts = $derived(moveFrameCounts(model, canvas));
 	const userFrameCount = $derived(
-		keptFrames === undefined && frameChoice !== undefined && frameCounts.includes(frameChoice)
-			? frameChoice
+		keptFrames === undefined && (!replacing || !usesSavedFrames)
+			? resolveMoveFramePreference(model, frameChoice ?? 'auto', canvas)
 			: undefined
+	);
+	const frameFallback = $derived(
+		!replacing && usesSavedFrames && frameChoice !== undefined && userFrameCount === undefined
 	);
 	const chosenFrameCount = $derived(
 		keptFrames !== undefined && frameCounts.includes(keptFrames) ? keptFrames : userFrameCount
@@ -505,7 +523,7 @@
 	);
 	const advancedNote = $derived(
 		[
-			model === DEFAULT_MODEL ? '' : t(MODEL_TEXT[model]),
+			t(MODEL_TEXT[model]),
 			targetDirs.some(
 				(direction) =>
 					frameReferences[direction]?.start ||
@@ -901,6 +919,8 @@
 	function rememberMoveForm(projectId: string) {
 		formDrafts.move = {
 			projectId,
+			advancedOpen,
+			usesSavedFrames: usesSavedFrames && userFrameCount !== undefined,
 			regeneration,
 			skeletonRetry,
 			action,
@@ -911,10 +931,7 @@
 			source: sourceSelection,
 			frameReferences: $state.snapshot(frameReferences),
 			loop: loopChoice,
-			animation:
-				modelChoice !== undefined || userFrameCount !== undefined
-					? { model, frameCount: userFrameCount }
-					: undefined
+			animation: { model, frameCount: userFrameCount }
 		};
 	}
 
@@ -1061,7 +1078,7 @@
 		action = next;
 		replaceSelected = replace;
 		text = prompt;
-		frameChoice = undefined;
+		if (!usesSavedFrames) frameChoice = undefined;
 		loopChoice = undefined;
 		frameReferences = {};
 		customStartAcknowledged = false;
@@ -1076,7 +1093,6 @@
 		return flagged.length ? flagged : [...availableDirs];
 	}
 	// Redraw… on a saved move opens this sheet on that move.
-	const redrawTarget = untrack(() => ui.redrawMove);
 	if (redrawTarget) {
 		ui.redrawMove = '';
 		ui.moveFormOpen = true;
@@ -1115,6 +1131,7 @@
 	}
 	function chooseModel(next: MoveAnimationModel) {
 		modelChoice = next;
+		usesSavedFrames = false;
 		if (frameChoice !== undefined && keptFrames === undefined)
 			frameChoice = defaultMoveFrameCount(next, canvas, frameChoice);
 	}
@@ -1475,7 +1492,7 @@
 			value={model}
 			onchange={(event) => chooseModel(event.currentTarget.value as MoveAnimationModel)}
 		>
-			{#each MODELS as option (option)}<option
+			{#each moveModels as option (option)}<option
 					value={option}
 					disabled={option !== model && !fitsKept(option)}>{t(MODEL_TEXT[option])}</option
 				>{/each}
@@ -2011,6 +2028,14 @@
 	{:else}
 		<div class="form move-form" class:redraw-form={replacing} class:split={showAdvanced}>
 			<div class="move-main">
+				{#if frameFallback}
+					<p class="notice warn small" role="status">
+						{t('creationSettings.fallback', {
+							setting: t('moveSheet.frames'),
+							value: t('creationSettings.autoFrames', { count: defaultFrames })
+						})}
+					</p>
+				{/if}
 				<div class="move-start">
 					<PlaybackPicker
 						clips={startClips}
@@ -2216,8 +2241,10 @@
 										class="bu-action btn plain frame-default"
 										data-variant="quiet"
 										aria-disabled={userFrameCount === undefined}
-										onclick={() => (frameChoice = undefined)}
-										>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
+										onclick={() => {
+											usesSavedFrames = false;
+											frameChoice = undefined;
+										}}>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
 									>
 								{/if}
 							</div>
@@ -2232,7 +2259,10 @@
 										min={0}
 										max={frameCounts.length - 1}
 										value={frameCounts.indexOf(shownFrames)}
-										oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
+										oninput={(e) => {
+											usesSavedFrames = false;
+											frameChoice = frameCounts[e.currentTarget.valueAsNumber];
+										}}
 									/>
 									<span class="frame-value"
 										>{t('moveSheet.framesValue', { count: shownFrames })}</span

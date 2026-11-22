@@ -14,6 +14,7 @@
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
+	import { openingCreationSettings } from './creationSettings.ts';
 	import { itemNameFrom, mirroredHandsNote, namesOffHandItem } from './model.ts';
 	import {
 		baseClothesNote,
@@ -27,7 +28,7 @@
 	import { untrack } from 'svelte';
 	import { handSide } from '../lib/compose/compose.ts';
 	import { referenceKey } from '../lib/image/chroma.ts';
-	import { itemRoute, standingCoverage } from './itemRoute.ts';
+	import { itemMethod, itemRoute, newItemSpec } from './itemRoute.ts';
 	import {
 		ui,
 		doc,
@@ -40,7 +41,7 @@
 	} from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
 	import { SWATCHES } from '../lib/dress/dress.ts';
-	import { defaultMethod, type RigCtx } from '../lib/items/run.ts';
+	import type { RigCtx } from '../lib/items/run.ts';
 	import { padOf, type Method } from '../lib/items/items.ts';
 	import { rigReady } from '../lib/rig/setup.ts';
 	import { ChevronDown, ChevronRight, Info, Sparkles, TriangleAlert } from './icons.ts';
@@ -55,6 +56,7 @@
 		!ui.newItem.prompt
 			? formDrafts.item
 			: undefined;
+	if (draft) formDrafts.item = undefined;
 	const m = $derived(store.project?.manifest);
 	// Every category of this character is offered; Not shown ones come last and are shown once an item starts there.
 	const all = $derived(m ? categories(m) : []);
@@ -68,7 +70,13 @@
 	let prompt = $state(draft?.prompt ?? ui.newItem.prompt);
 	let color = $state(draft?.color ?? '');
 	let name = $state(draft?.name ?? ui.newItem.name);
-	let method = $state<Method | ''>(draft?.method ?? ui.newItem.method ?? '');
+	const savedMethod =
+		!draft && !ui.newItem.reuseMethod ? openingCreationSettings('items').method : 'auto';
+	const initialMethod =
+		draft?.method ?? ui.newItem.method ?? (savedMethod === 'auto' ? '' : savedMethod);
+	let method = $state<Method | ''>(initialMethod);
+	let changedMethod = $state(false);
+	let advancedOpen = $state(!!initialMethod);
 	let busy = $state(false);
 	let reference = $state(draft?.reference);
 	let referenceLoading = $state(false);
@@ -88,26 +96,40 @@
 					reference: { base64: reference.base64, width: reference.width, height: reference.height }
 				}
 			: {}),
-		...(reference?.keyCollisions ? { key: referenceKey(fullPrompt, reference.keyCollisions) } : {}),
-		...(method ? { method } : {})
+		...(reference?.keyCollisions ? { key: referenceKey(fullPrompt, reference.keyCollisions) } : {})
 	});
 	// the project record (skeletons decide the route); pixels are not needed for the plan
 	let rec = $state.raw<RigCtx['rec'] | null>(null);
 	$effect(() => {
 		if (!isDemo()) void db.get<RigCtx['rec']>('projects', doc.id).then((r) => (rec = r ?? null));
 	});
+	const context = $derived(m && rec ? ({ rec: { ...rec, manifest: m } } as RigCtx) : null);
+	const automatic = $derived.by(() => {
+		if (!context) return null;
+		try {
+			return itemMethod(context, newItemSpec(context, input));
+		} catch {
+			return null;
+		}
+	});
 	const planned = $derived.by(() => {
 		try {
-			return {
-				plan:
-					m && rec
-						? itemRoute.plan(m.rig, { rec: { ...rec, manifest: m } } as RigCtx, input)
-						: null,
-				error: ''
-			};
+			if (!context) return { plan: null, error: '', method, fallback: false };
+			const planFor = (choice: Method | '') =>
+				itemRoute.plan(context.rec.manifest.rig, context, {
+					...input,
+					...(choice ? { method: choice } : {})
+				});
+			if (!changedMethod && savedMethod === 'skel' && automatic === 'anchor')
+				return { plan: planFor('anchor'), error: '', method: 'anchor' as const, fallback: true };
+			return { plan: planFor(method), error: '', method, fallback: false };
 		} catch (e) {
-			return { plan: null, error: displayError(e) };
+			return { plan: null, error: displayError(e), method, fallback: false };
 		}
+	});
+	const plannedInput = $derived({
+		...input,
+		...(planned.method ? { method: planned.method } : {})
 	});
 	const plan = $derived(planned.plan);
 	const tierBlocked = $derived(
@@ -116,23 +138,17 @@
 	const canMake = $derived(
 		!!prompt.trim() && !busy && !referenceLoading && !!plan?.calls && !tierBlocked
 	);
-	// Advanced offers a method only when this character can use both; otherwise Automatic is the only one.
-	const automatic = $derived.by(() => {
-		if (!m || !rec) return null;
-		try {
-			const ctx = { rec: { ...rec, manifest: m } } as RigCtx;
-			return defaultMethod(ctx, standingCoverage(ctx));
-		} catch {
-			return null;
-		}
-	});
 	const METHODS: Record<Method, { label: WhisperKey; help: WhisperKey }> = {
 		skel: { label: 'generationDetails.method.skeletonPose', help: 'newItem.methods.skel.help' },
 		anchor: { label: 'generationDetails.method.frameEditing', help: 'newItem.methods.anchor.help' }
 	};
 	const referenceMax = $derived.by(() => {
 		if (!m) return { width: 256, height: 256 };
-		const pad = padOf(slotDef(m, slot) ?? slot, method || automatic || undefined, m.rig.cell);
+		const pad = padOf(
+			slotDef(m, slot) ?? slot,
+			planned.method || automatic || undefined,
+			m.rig.cell
+		);
 		return {
 			width: Math.min(256, m.rig.cell.w + 2 * pad),
 			height: Math.min(256, m.rig.cell.h + 2 * pad)
@@ -197,9 +213,9 @@
 			color,
 			name,
 			...(reference ? { reference } : {}),
-			...(method ? { method } : {})
+			...(planned.method ? { method: planned.method } : {})
 		};
-		const i = $state.snapshot(input);
+		const i = $state.snapshot(plannedInput);
 		const consent = plan
 			? { projectId: doc.id, gens: plan.gens, rig: JSON.stringify(m!.rig) }
 			: undefined;
@@ -250,7 +266,7 @@
 				{
 					scope: 'item-make',
 					label: t('newItem.makeLabel'),
-					plan: itemPlan(m && rec ? ({ rec: { ...rec, manifest: m } } as RigCtx) : null, input)
+					plan: itemPlan(context, plannedInput)
 				}
 			]}
 		/>
@@ -292,6 +308,14 @@
 					>{openerLabel(t('setup.title'))}<SurfaceChevron /></button
 				>
 			</p>{/if}
+		{#if planned.fallback}
+			<p class="notice warn small" role="status">
+				{t('creationSettings.fallback', {
+					setting: t('newItem.method'),
+					value: planned.method ? t(METHODS[planned.method].label) : t('creationSettings.automatic')
+				})}
+			</p>
+		{/if}
 		{#if planned.error}<p class="notice warn small" role="alert">
 				<TriangleAlert size={16} /><span>{planned.error}</span>
 			</p>{/if}
@@ -394,7 +418,7 @@
 			<p class="faint small">
 				{t('newItem.checksNote')}
 			</p>
-			<details class="disclosure" open={!!method}>
+			<details class="disclosure" bind:open={advancedOpen}>
 				<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
 				<div>
 					<label class="field"
@@ -404,20 +428,27 @@
 							placeholder={suggestedName || t('newItem.title')}
 						/></label
 					>
-					{#if automatic === 'skel'}
+					{#if automatic && (automatic === 'skel' || method === 'skel')}
 						<label class="field"
 							><span class="label small">{t('newItem.method')}</span>
 							<span class="select-wrap boxed"
-								><select class="bu-select select" bind:value={method}
+								><select
+									class="bu-select select"
+									value={planned.method}
+									onchange={(event) => {
+										changedMethod = true;
+										method = event.currentTarget.value as Method | '';
+									}}
 									><option value=""
 										>{t('newItem.automatic', { method: t(METHODS[automatic].label) })}</option
-									>{#each Object.entries(METHODS) as [id, x] (id)}<option value={id}
-											>{t(x.label)}</option
+									>{#each Object.entries(METHODS) as [id, x] (id)}<option
+											value={id}
+											disabled={id === 'skel' && automatic !== 'skel'}>{t(x.label)}</option
 										>{/each}</select
 								><ChevronDown size={12} /></span
 							>
 						</label>
-						<p class="faint small">{t(METHODS[method || automatic].help)}</p>
+						<p class="faint small">{t(METHODS[planned.method || automatic].help)}</p>
 					{/if}
 					{#if plan}<p class="faint small">
 							{plan.cell

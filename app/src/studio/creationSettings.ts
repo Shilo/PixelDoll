@@ -1,15 +1,21 @@
 import {
 	MODEL_IDS,
 	PRESETS,
+	BODY_SIZES,
+	autoFrame,
 	newCharacterDraft,
 	presetOf,
+	setPreset,
 	sizeErrors,
 	validBodySize,
+	writeNudeBase,
 	type CharacterModel
 } from './characterConfig.ts';
 import { moveFrameCounts, type MoveAnimationModel } from './moveAnimationOptions.ts';
 import type { StateGenerationModel } from './stateGenerationPlan.ts';
 import type { Method } from '../lib/items/items.ts';
+import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+import { planStateGeneration, type StateGenerationInput } from './stateGenerationPlan.ts';
 
 export const creationSections = ['characters', 'moves', 'states', 'items'] as const;
 export type CreationSection = (typeof creationSections)[number];
@@ -118,4 +124,47 @@ export function saveCreationSettings<Section extends CreationSection>(
 	if (!saved.valid || !validCreationSettings(section, values)) return false;
 	storage.setItem(creationSettingsKey(section), JSON.stringify(values));
 	return true;
+}
+
+export function openingCreationSettings<Section extends CreationSection>(section: Section) {
+	if (workspaceCopy) return creationDefaults[section];
+	try {
+		return readCreationSettings(localStorage, section).values;
+	} catch {
+		return creationDefaults[section];
+	}
+}
+
+export function characterDraftWithDefaults(values: CreationSettings['characters']) {
+	const draft = newCharacterDraft();
+	draft.model = values.model;
+	draft.body = values.body;
+	draft.bodyPreset = BODY_SIZES.some((size) => size === values.body) ? values.body : null;
+	draft.frame = values.frame === 'auto' ? autoFrame(values.body) : values.frame;
+	draft.auto = values.frame === 'auto';
+	setPreset(draft, values.directions);
+	if (values.clothing === 'none') writeNudeBase(draft, true);
+	return draft;
+}
+
+export function resolveMoveFramePreference(
+	model: MoveAnimationModel,
+	frames: CreationSettings['moves']['frames'],
+	canvas: number
+) {
+	return frames !== 'auto' && moveFrameCounts(model, canvas).includes(frames) ? frames : undefined;
+}
+
+export function resolveStateModelPreference(
+	model: StateGenerationModel,
+	source: Pick<StateGenerationInput, 'cellSize' | 'facingIds'> | undefined
+) {
+	if (
+		model === 'pixen' &&
+		source &&
+		planStateGeneration({ ...source, model }).kind === 'rejected' &&
+		planStateGeneration({ ...source, model: 'pro' }).kind === 'ready'
+	)
+		return 'pro';
+	return model;
 }

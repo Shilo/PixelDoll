@@ -438,7 +438,7 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('button', { name: 'Walk', exact: true }).click();
-	await chooseSkeletonMove(move);
+	await expect(move.getByRole('button', { name: /^Advanced/ })).toContainText('Skeleton V3');
 	await move.getByRole('button', { name: /^Generate / }).click();
 	await expect(move).not.toContainText('Queued next: Idle');
 	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
@@ -451,7 +451,7 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await expect(move.getByRole('button', { name: /^Queue Walk/ })).toBeDisabled();
 	await expect(move.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(0);
 	await move.getByRole('button', { name: 'Idle', exact: true }).click();
-	await chooseSkeletonMove(move);
+	await expect(move.getByRole('button', { name: /^Advanced/ })).toContainText('Skeleton V3');
 	await expect(move).toContainText('It waits for the move in progress, then runs by itself.');
 	await move.getByRole('button', { name: /^Queue Idle/ }).click();
 	await expect(move).toContainText('Queued next: Idle');
@@ -552,6 +552,38 @@ test('a failed required measurement stops the queued idle without paying for an 
 			})
 	);
 	expect(saved).toEqual([['default']]);
+});
+
+test('New character applies saved starting choices without writing back form edits', async ({
+	page
+}) => {
+	await openStudio(page, '/');
+	const key = 'pixeldoll.creation.characters';
+	const values = { model: 'pro', body: 68, frame: 112, directions: 'four', clothing: 'none' };
+	await page.evaluate(({ key, values }) => localStorage.setItem(key, JSON.stringify(values)), {
+		key,
+		values
+	});
+	const expectSaved = async () => {
+		const dialog = await open(page, false);
+		await expect(dialog.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('pro');
+		await expect(dialog.getByRole('spinbutton', { name: 'Body size' })).toHaveValue('68');
+		await expect(dialog.getByRole('spinbutton', { name: 'Frame size' })).toHaveValue('112');
+		await expect(dialog.getByRole('button', { name: 'Top-down 4', exact: true })).toHaveAttribute(
+			'aria-pressed',
+			'true'
+		);
+		await expect(dialog.getByRole('radio', { name: 'Nothing worn' })).toBeChecked();
+		return dialog;
+	};
+	const dialog = await expectSaved();
+	await dialog.getByRole('radio', { name: 'Underwear' }).click();
+	await dialog.getByRole('spinbutton', { name: 'Body size' }).fill('72');
+	await dialog.getByRole('combobox', { name: 'Model', exact: true }).selectOption('v3');
+	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expectSaved();
+	await page.reload();
+	await expectSaved();
 });
 
 test('visible size fields, auto frame, preset deselection and preview positions stay consistent', async ({
@@ -1740,12 +1772,7 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	const sheet = await open(page);
 	await sheet.locator('details.advanced > summary').click();
 	const model = sheet.getByRole('combobox', { name: 'Model', exact: true });
-	await expect(model.locator('option')).toHaveText([
-		'Default (V3)',
-		'Pro',
-		'Pro Flash',
-		'Standard'
-	]);
+	await expect(model.locator('option')).toHaveText(['V3', 'Pro', 'Pro Flash', 'Standard']);
 	const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
 	await model.selectOption('standard');
 	await expect(drop).toBeVisible();

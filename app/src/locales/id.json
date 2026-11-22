@@ -62,7 +62,9 @@
 		"autoSize": "Otomatis ({size} px)",
 		"frameMinimum": "Pilih Otomatis atau ukuran bingkai kustom minimal {min} px.",
 		"custom": "Kustom",
-		"description": "Disimpan di browser ini. Dialog pembuatan belum menggunakan nilai ini.",
+		"description": "Disimpan di browser ini dan diterapkan saat membuka jendela pembuatan baru.",
+		"fallback": "Pilihan tersimpan untuk {setting} tidak tersedia di sini. Menggunakan {value}.",
+		"autoFrames": "Otomatis ({count} bingkai)",
 		"defaults": "Default pembuatan",
 		"readFailed": "Pilihan tersimpan tidak dapat dibaca. Setel ulang halaman ini untuk memperbaikinya.",
 		"storageUnavailable": "Penyimpanan browser tidak tersedia. Pilihan ini tidak dapat disimpan.",
@@ -2141,7 +2143,7 @@
 				"unique": "8 arah unik"
 			},
 			"models": {
-				"v3": { "label": "Bawaan (V3)", "help": "Proporsi seimbang." },
+				"v3": { "label": "V3", "help": "Proporsi seimbang." },
 				"standard": {
 					"label": "Standar",
 					"help": "Menggambar delapan tampilan menggunakan templat atau sprite yang menghadap ke depan."
@@ -2413,7 +2415,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "Bawaan (PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "Frame",
 		"framesHelp": "Pilihannya sesuai dengan model ini dan kanvas karakter ({canvas} px). Opsi default memakai jumlah frame bawaan PixelDoll.",
@@ -2555,7 +2557,6 @@
 		"confirmDiscard": "Konfirmasi pembuangan",
 		"discardWarning": "Membuang tidak mengembalikan biaya generasi atau menghapus status dari PixelLab. Memulai lagi dapat mengenakan biaya untuk semua arah.",
 		"locksUnavailable": "Gunakan browser terbaru agar dapat membuat status dengan aman.",
-		"defaultModel": "Bawaan (Pro)",
 		"flashReference": "Pro Flash menggunakan gambar acuan alih-alih instruksi tertulis.",
 		"changed": "Sumber atau perkiraan berubah. Periksa lagi biaya sebelum menghasilkan keadaan.",
 		"sourceUnavailable": "Frame sumber memerlukan gambar tersimpan di setiap arah yang digambar.",

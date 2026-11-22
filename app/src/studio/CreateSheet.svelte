@@ -11,6 +11,7 @@
 	import { characterEnhanceInput } from './enhanceCharacter.ts';
 	import { createPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
+	import { characterDraftWithDefaults, openingCreationSettings } from './creationSettings.ts';
 	import Sprite from './Sprite.svelte';
 	import { composeCell } from '../lib/compose/compose.ts';
 	import { loadProject } from '../lib/store/project.ts';
@@ -52,7 +53,12 @@
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	const wardrobeMenuId = $props.id();
 	const policyDecline = /\b5000\b|policy/i;
-	let d = $state(formDrafts.character ?? newCharacterDraft());
+	let d = $state(
+		formDrafts.character ??
+			(createPresentation.id
+				? newCharacterDraft()
+				: characterDraftWithDefaults(openingCreationSettings('characters')))
+	);
 	formDrafts.character = undefined;
 	const creating = $derived(creates.find((run) => run.id === createPresentation.id));
 	let enhancing = $state(false);

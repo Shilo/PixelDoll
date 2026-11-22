@@ -62,7 +62,9 @@
 		"autoSize": "Automático ({size} px)",
 		"frameMinimum": "Elige Automático o un tamaño de fotograma personalizado de al menos {min} px.",
 		"custom": "Personalizado",
-		"description": "Se guarda en este navegador. Los diálogos de creación aún no usan estos valores.",
+		"description": "Se guardan en este navegador y se aplican al abrir una nueva ventana de creación.",
+		"fallback": "La opción guardada de {setting} no está disponible aquí. Se usará {value}.",
+		"autoFrames": "Automático ({count} fotogramas)",
 		"defaults": "Valores de creación",
 		"readFailed": "No se pudieron leer las opciones guardadas. Restablece esta página para repararlas.",
 		"storageUnavailable": "El almacenamiento del navegador no está disponible. No se pueden guardar estas opciones.",
@@ -2232,7 +2234,7 @@
 			},
 			"models": {
 				"v3": {
-					"label": "Predeterminado (V3)",
+					"label": "V3",
 					"help": "Proporciones equilibradas."
 				},
 				"standard": {
@@ -2513,7 +2515,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "Predeterminado (PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "Fotogramas",
 		"framesHelp": "Las opciones encajan con este modelo y el lienzo del personaje ({canvas} px). La opción predeterminada mantiene la cantidad de fotogramas predefinida de PixelDoll.",
@@ -2663,7 +2665,6 @@
 		"confirmDiscard": "Confirmar descarte",
 		"discardWarning": "Descartar no reembolsa las generaciones ni elimina el estado de PixelLab. Empezar de nuevo puede volver a cobrar todas las direcciones.",
 		"locksUnavailable": "Usa un navegador actualizado para generar estados de forma segura.",
-		"defaultModel": "Predeterminado (Pro)",
 		"flashReference": "Pro Flash usa una imagen de referencia en lugar de instrucciones escritas.",
 		"changed": "El origen o la estimación cambiaron. Consulta el coste de nuevo antes de generar.",
 		"sourceUnavailable": "El fotograma de origen necesita arte guardado en cada dirección dibujada.",

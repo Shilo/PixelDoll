@@ -315,6 +315,7 @@ export const ui = $state({
 	frameProject: '', // the character the Adjust frame sheet is for
 	details: '', // the character the Details sheet is for
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
+		reuseMethod?: boolean;
 		group: string;
 		slot: string;
 		prompt: string;
@@ -3255,8 +3256,13 @@ export function openNewItem(
 		slot: prefill?.slot ?? group,
 		prompt: prefill?.prompt ?? '',
 		name: prefill?.name ?? '',
+		reuseMethod: prefill?.route !== undefined,
 		// Trying an item again keeps the animation method it was made with.
-		...(prefill?.route === 'ea2-anchor' ? { method: 'anchor' as const } : {})
+		...(prefill?.route === 'ea2-anchor'
+			? { method: 'anchor' as const }
+			: prefill?.route === 'skeleton-pose'
+				? { method: 'skel' as const }
+				: {})
 	};
 	ui.sheet = 'newitem';
 }

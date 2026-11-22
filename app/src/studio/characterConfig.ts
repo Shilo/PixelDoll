@@ -172,7 +172,7 @@ export const BODY_STEP = 4;
  * a limit is a one-line edit. v3 is the default. Prices live in estimate() (create.ts). */
 export const MODELS: Record<CharacterModel, ModelLimits> = {
 	v3: {
-		label: 'Default (V3)',
+		label: 'V3',
 		help: 'Balanced proportions.',
 		body: { min: 32, max: 256 },
 		styleHints: true
