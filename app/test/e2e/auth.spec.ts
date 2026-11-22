@@ -181,7 +181,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	const settingsRow = page.getByRole('button', { name: 'Settings...', exact: true });
 	await expect(settingsRow).toHaveAttribute('aria-keyshortcuts', 'Control+, Meta+,');
-	await expect(settingsRow.getByText('Ctrl+,', { exact: true })).toBeVisible();
+	await expect(settingsRow.locator('.shortcut kbd')).toHaveText(['Ctrl', ',']);
 	await page.keyboard.press('Escape');
 	await page.keyboard.press('Control+Comma');
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
