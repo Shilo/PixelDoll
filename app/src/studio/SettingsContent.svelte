@@ -9,6 +9,7 @@
 	import { settingsAtDefaults, watchCreationSettings } from './settingsDefaults.svelte.ts';
 	import { isCreationSection } from './creationSettings.ts';
 	import CreationSettings from './CreationSettings.svelte';
+	import TrashSettings from './TrashSettings.svelte';
 	import {
 		Archive,
 		Clapperboard,
@@ -23,6 +24,7 @@
 		Shirt,
 		Sun,
 		SunMoon,
+		Trash,
 		UserRound
 	} from './icons.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
@@ -214,6 +216,12 @@
 			]
 		},
 		{
+			id: 'trash',
+			label: settingsLabels.trash,
+			icon: Trash,
+			entries: [{ id: 'trash', label: 'settings.trash', terms: ['recentlyDeleted.empty'] }]
+		},
+		{
 			id: 'developer',
 			label: settingsLabels.developer,
 			icon: CodeXml,
@@ -241,13 +249,14 @@
 	const available = sections.filter(
 		(section) =>
 			!workspaceCopy ||
-			(!isCreationSection(section.id) && !['pixellab', 'library', 'developer'].includes(section.id))
+			(!isCreationSection(section.id) &&
+				!['pixellab', 'library', 'trash', 'developer'].includes(section.id))
 	);
 	const groups: SettingsSection[][] = [
 		['pixellab'],
 		['general', 'wardrobe'],
 		['characters', 'moves', 'states', 'items'],
-		['export', 'library'],
+		['export', 'library', 'trash'],
 		['developer', 'about']
 	];
 	const navigation = groups
@@ -507,6 +516,8 @@
 				{@render exportSettings(targetEntry)}
 			{:else if active.id === 'library'}
 				<LibrarySettings bind:busy={libraryBusy} bind:reviewing={reviewingBackup} />
+			{:else if active.id === 'trash'}
+				<TrashSettings />
 			{:else if active.id === 'developer'}
 				<DeveloperSettings />
 			{:else if active.id === 'about'}

@@ -1,15 +1,15 @@
 {
 	"recentlyDeleted": {
-		"title": "Excluído recentemente",
-		"empty": "Nada excluído recentemente. Personagens, itens, categorias e movimentos que você excluir ficam aqui por 30 dias.",
-		"kept": "Guardado por 30 dias, até 50 entradas. Restaurar devolve exatamente o que foi excluído.",
-		"deletedOn": "Excluído em {date}",
+		"title": "Lixeira",
+		"empty": "Nada aqui. Personagens, itens, categorias, movimentos e estados que você mover para a lixeira ficam 30 dias.",
+		"kept": "Guardado por 30 dias, até 50 entradas.",
+		"deletedOn": "{date}",
 		"restore": "Restaurar",
 		"restoreNamed": "Restaurar {name}",
 		"deleteForever": "Excluir para sempre",
 		"deleteForeverNamed": "Excluir {name} para sempre",
 		"confirmTitle": "Excluir {name} para sempre?",
-		"confirmBody": "As artes salvas também são removidas deste dispositivo. Isso não pode ser desfeito.",
+		"confirmBody": "Some para sempre. Isso não pode ser desfeito.",
 		"confirmAction": "Excluir para sempre",
 		"restored": "{name} restaurado",
 		"restoredAsCopy": "Restaurado como {name}: já havia um personagem salvo com esse ID.",
@@ -23,21 +23,24 @@
 		},
 		"kind": {
 			"character": "Personagem",
-			"items": "Itens",
+			"items": "Item",
 			"category": "Categoria",
-			"move": "Movimento"
+			"move": "Movimento",
+			"state": "Estado"
 		},
 		"errors": {
-			"gone": "Esse item excluído não está mais disponível.",
-			"expired": "Itens excluídos ficam guardados por 30 dias. Este expirou.",
+			"gone": "Isso não está mais na lixeira.",
+			"expired": "Ficou 30 dias na lixeira e se foi.",
 			"missingArtwork": "Parte da arte salva de {name} não está mais neste dispositivo, então não pode ser restaurada.",
-			"full": "O navegador está sem espaço, então nada foi excluído. Exclua algo para sempre em Excluído recentemente; o espaço volta quando o trabalho atual terminar.",
+			"full": "O navegador está sem espaço, então nada foi movido. Exclua algo na lixeira para liberar espaço.",
 			"wrongKind": "Esse item excluído pertence a um personagem. Restaure o personagem primeiro.",
 			"movePresent": "Este movimento já está no personagem.",
 			"moveGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que este movimento foi excluído, então ele não se alinha mais.",
 			"partsGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que isso foi excluído, então não se alinha mais.",
 			"moveItemsMissing": "Um dos itens deste movimento está excluído. Restaure o item primeiro e depois o movimento."
-		}
+		},
+		"restoring": "Restaurando…",
+		"confirmBodyCharacter": "Tudo o mais excluído dele vai junto. Some para sempre; não pode ser desfeito."
 	},
 	"librarySettings": {
 		"title": "Biblioteca",
@@ -69,11 +72,11 @@
 			"deleteAll": "Excluir tudo",
 			"confirm": "Confirmar",
 			"section": "Excluir trabalho local",
-			"description": "Remove os personagens, roupas, rascunhos e o histórico de Atividade salvos neste dispositivo.",
+			"description": "Remove os personagens, roupas, rascunhos, a lixeira e a atividade deste dispositivo.",
 			"kept": "Dados arquivados, preferências, backups baixados e sua chave do PixelLab são mantidos.",
-			"action": "Excluir trabalho local",
+			"action": "Excluir dados locais…",
 			"title": "Excluir todo o trabalho local?",
-			"body": "Personagens, roupas, rascunhos e o histórico de Atividade deste dispositivo são excluídos permanentemente. Isso não pode ser desfeito. O PixelDoll será recarregado em seguida.",
+			"body": "Personagens, roupas, rascunhos, a lixeira e a atividade deste dispositivo são excluídos permanentemente. Isso não pode ser desfeito. O PixelDoll recarrega depois.",
 			"generating": "Conclua ou descarte o trabalho de geração pendente antes de excluir o trabalho local. Nada foi excluído.",
 			"uncertain": "Algumas chamadas ao PixelLab podem ter sido cobradas sem resultado. Revise e limpe-as primeiro em Atividade. Nada foi excluído.",
 			"otherTabs": "Feche as outras abas e janelas do PixelDoll e tente novamente. Nada foi excluído.",
@@ -122,7 +125,8 @@
 		"light": "Claro",
 		"search": "Buscar configurações",
 		"noResults": "Nenhuma configuração corresponde à sua busca.",
-		"all": "Todas as configurações"
+		"all": "Todas as configurações",
+		"trash": "Lixeira"
 	},
 	"developer": {
 		"title": "Desenvolvimento",
@@ -142,14 +146,14 @@
 		"loadFailed": "Não foi possível carregar uma parte do PixelDoll. Recarregue a página para tentar novamente.",
 		"advanced": "Avançado",
 		"cancel": "Cancelar",
-		"deleteRecoverable": "Ele vai para Excluído recentemente por 30 dias.",
+		"deleteRecoverable": "Sai do guarda-roupa. Você pode recuperar por 30 dias.",
 		"character": "Personagem",
 		"characters": "Personagens",
 		"close": "Fechar",
 		"copying": "Copiando…",
 		"cost": "Custo",
 		"delete": "Excluir",
-		"deleteNamed": "Excluir {name}?",
+		"deleteNamed": "Mover {name} para a lixeira?",
 		"deleting": "Excluindo…",
 		"details": "Detalhes",
 		"detailsMenu": "Detalhes…",
@@ -270,9 +274,11 @@
 		"adjustFrame": "Ajustar quadro…",
 		"directions": "Direções…",
 		"demoDeleteLocked": "Não é possível excluir o personagem da demo",
-		"labelDeleteCharacter": "Excluir personagem…"
+		"labelDeleteCharacter": "Mover para a lixeira…"
 	},
-	"characterName": { "demo": "(Demo)" },
+	"characterName": {
+		"demo": "(Demo)"
+	},
 	"colors": {
 		"follows": "Segue {name}",
 		"miColor": "Cor: {mi}",
@@ -331,7 +337,7 @@
 		"viewPendingWork": "Ver trabalho pendente",
 		"character": "personagem",
 		"demo": "Não é possível excluir a demo incluída no app.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Suas roupas, itens e rascunhos não mantidos vão para Excluído recentemente por 30 dias. Itens copiados para outros personagens ficam."
+		"itsOutfitsAndChangesAreRemovedFrom": "As roupas, itens e rascunhos não salvos vão junto; itens copiados para outros personagens ficam. Você pode recuperar por 30 dias."
 	},
 	"demoCopyRow": {
 		"editACopy": "Editar uma cópia",
@@ -341,7 +347,10 @@
 		"title": "Detalhes de {name}",
 		"notSaved": "Este personagem não está mais salvo.",
 		"withItems": "Com itens",
-		"itemCost": { "one": "{cost} · {n} item", "other": "{cost} · {n} itens" },
+		"itemCost": {
+			"one": "{cost} · {n} item",
+			"other": "{cost} · {n} itens"
+		},
 		"noGenerationDetailsWereSavedForThis": "Nenhum detalhe de geração foi salvo para este personagem."
 	},
 	"directionsSheet": {
@@ -388,7 +397,7 @@
 		"titleWearingTakeOff": "Equipado (tirar)",
 		"twoHanded": "Duas mãos",
 		"createVariant": "Criar uma variante…",
-		"labelDeleteItem": "Excluir item…",
+		"labelDeleteItem": "Mover para a lixeira…",
 		"titleCancelName": "Cancelar {name}?",
 		"generationsAlreadyUsedAreNotRefundedAnd": "As gerações já usadas não são reembolsadas, e ainda pode haver cobrança por solicitações já enviadas.",
 		"cancelSaveError": "Não foi possível salvar o cancelamento. Mantenha esta aba aberta e tente novamente.",
@@ -477,8 +486,14 @@
 		},
 		"colorMatchFree": "Os alertas de qualidade existentes são mantidos. Nenhuma solicitação é enviada ao PixelLab.",
 		"colorsMatched": "Cores ajustadas: {pixels} em {frames}.",
-		"pixels": { "one": "{n} pixel", "other": "{n} pixels" },
-		"frames": { "one": "{n} quadro", "other": "{n} quadros" },
+		"pixels": {
+			"one": "{n} pixel",
+			"other": "{n} pixels"
+		},
+		"frames": {
+			"one": "{n} quadro",
+			"other": "{n} quadros"
+		},
 		"onlyFacing": "Só na direção {direction}",
 		"hideWhenWorn": "Os itens marcados ficam ocultos enquanto {name} estiver equipado.",
 		"tuckNote": "Se {slots} não estiver marcado, ele fica por baixo deste item: só aparece o que passa da aba. Marque para capuzes e máscaras que cobrem o rosto todo.",
@@ -490,7 +505,10 @@
 			"accepted": "Aceito"
 		},
 		"areaStats": "Mín. de {ratio} da mediana · CV {cv}",
-		"handedness": { "ok": "OK", "switched": "Trocadas" },
+		"handedness": {
+			"ok": "OK",
+			"switched": "Trocadas"
+		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Atualiza este item na animação {move}, na direção {direction}. O corpo do personagem não muda.",
@@ -525,7 +543,9 @@
 		"importFromDevice": "Importar do dispositivo…",
 		"importFromPixelLab": "Importar do PixelLab…"
 	},
-	"noticeLink": { "opensInANewTab": "(abre em uma nova aba)" },
+	"noticeLink": {
+		"opensInANewTab": "(abre em uma nova aba)"
+	},
 	"outfits": {
 		"outfits": "Trajes",
 		"saveALookToSwitchBetweenOutfits": "Salve um visual para alternar entre trajes no seu jogo.",
@@ -579,11 +599,11 @@
 		"moveMissing": "Esta animação não existe mais."
 	},
 	"savedActions": {
-		"labelDeleteState": "Excluir estado",
-		"removeState": "Isso remove o estado e seus quadros de itens ajustados deste personagem. Movimentos concluídos mantêm seus quadros e a arte de origem salva. Ele vai para Excluído recentemente por 30 dias.",
-		"labelDeleteMove": "Excluir animação…",
+		"labelDeleteState": "Mover para a lixeira…",
+		"removeState": "O corpo e cada item perdem os quadros ajustados; movimentos concluídos mantêm os seus. Você pode recuperar o estado por 30 dias.",
+		"labelDeleteMove": "Mover para a lixeira…",
 		"labelDeleteOutfit": "Excluir traje",
-		"thisRemovesTheMoveFromTheBody": "Isso remove o movimento do corpo e de cada item. Ele vai para Excluído recentemente por 30 dias."
+		"thisRemovesTheMoveFromTheBody": "O corpo e cada item perdem seus quadros. Você pode recuperar o movimento por 30 dias."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Grátis: nunca gera de novo os itens já criados.",
@@ -591,7 +611,7 @@
 		"worksLike": "Funciona como",
 		"hand": "Mão",
 		"placeholderEGSmallAndShinyPinned": "Ex.: pequeno e brilhante, preso ao peito",
-		"deleteSlot": "Excluir espaço…",
+		"deleteSlot": "Mover para a lixeira…",
 		"titleAddSlot": "Adicionar espaço",
 		"createCustomSlot": "Criar espaço personalizado",
 		"slotName": "Nome do espaço",
@@ -599,7 +619,7 @@
 		"showLabel": "Mostrar {label}",
 		"createSlot": "Criar espaço",
 		"builtInSlots": "Espaços padrão",
-		"theSlotAndItsItemsAreDeleted": "A categoria e seus itens vão juntos para Excluído recentemente por 30 dias, e as roupas deixam de usá-los.",
+		"theSlotAndItsItemsAreDeleted": "Os itens vão junto e as roupas deixam de usá-los. Você pode recuperar por 30 dias.",
 		"undoBringsItBack": "Use Desfazer para trazer de volta.",
 		"labelAddedAtTheEndOfWardrobe": "{label}: novo espaço no fim do guarda-roupa.",
 		"valueShownAtTheEndOfWardrobe": "{value}: agora visível no fim do guarda-roupa.",
@@ -782,7 +802,11 @@
 		"slotLabel": "Espaço: {label}",
 		"equipped": "{label}, equipado",
 		"notFitted": "Não adaptado para este corpo",
-		"itemCount": { "0": "{n} itens", "one": "{n} item", "other": "{n} itens" },
+		"itemCount": {
+			"0": "{n} itens",
+			"one": "{n} item",
+			"other": "{n} itens"
+		},
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, equipado",
 		"generationTile": "{name}, {status}",
@@ -940,8 +964,8 @@
 		"couldNotSaveReason": "Não foi possível salvar: {reason}",
 		"pixelDollCouldNotConfirmThatYourInterrupted": "O PixelDoll não conseguiu confirmar se as gerações interrompidas foram salvas. Antes de atualizar, confira o personagem, o painel Animações ou o painel Configuração.",
 		"yourOutfitCouldNotBeSavedResolve": "Não foi possível salvar seu traje. Resolva o erro de armazenamento antes de atualizar.",
-		"deletedNameFromThisDevice": "{name} foi excluído deste dispositivo",
-		"removedName": "{name} foi removido",
+		"deletedNameFromThisDevice": "{name} movido para a lixeira",
+		"removedName": "{name} movido para a lixeira",
 		"nameChangedMeanwhileCheckItsTileAnd": "{name} mudou nesse meio-tempo. Confira seu cartão e tente novamente.",
 		"couldNotAddNameReason": "Não foi possível adicionar {name}: {reason}",
 		"fromHasNoMoreFramesOfName": "{from} não tem mais quadros de {name} para este personagem.",
@@ -980,8 +1004,8 @@
 		"labelChangedMeanwhileReviewItAgainBefore": "{label} mudou nesse meio-tempo. Revise novamente antes de excluir.",
 		"labelHasNewItemsReviewItAgain": "{label} tem novos itens. Revise novamente antes de excluir.",
 		"categoryAndItemsDeleted": {
-			"one": "{label} e seu {count} item foram excluídos",
-			"other": "{label} e seus {count} itens foram excluídos"
+			"one": "{label} e seu {count} item movidos para a lixeira",
+			"other": "{label} e seus {count} itens movidos para a lixeira"
 		},
 		"couldNotSaveFlowFailure": "{error} Não foi possível salvar essa falha neste dispositivo. Descarte esta operação antes de recarregar a página.",
 		"useSavedFramesInTheTabThat": "Use os quadros salvos na aba que está gerenciando as tarefas do PixelDoll.",
@@ -1068,7 +1092,10 @@
 			"versionLabel": "Versão do RPG Maker: {version}",
 			"walkMove": "Animação de caminhada"
 		},
-		"group": { "engines": "Engines e frameworks", "assets": "Recursos" },
+		"group": {
+			"engines": "Engines e frameworks",
+			"assets": "Recursos"
+		},
 		"target": {
 			"godot": {
 				"sub": "Cena + runtime",
@@ -1119,7 +1146,10 @@
 			"current": "Visual atual"
 		},
 		"count": {
-			"directions": { "one": "{count} direção", "other": "{count} direções" },
+			"directions": {
+				"one": "{count} direção",
+				"other": "{count} direções"
+			},
 			"moves": {
 				"0": "{count} animações",
 				"one": "{count} animação",
@@ -1130,7 +1160,10 @@
 				"one": "{count} item",
 				"other": "{count} itens"
 			},
-			"outfits": { "one": "{count} traje", "other": "{count} trajes" }
+			"outfits": {
+				"one": "{count} traje",
+				"other": "{count} trajes"
+			}
 		},
 		"summary": {
 			"rpgCurrent": "Inclui uma folha de caminhada para o visual atual.",
@@ -1152,7 +1185,10 @@
 			"technical": "Detalhes técnicos",
 			"currentSettings": "Configurações atuais",
 			"files": "Arquivos incluídos",
-			"fileCount": { "one": "{count} arquivo:", "other": "{count} arquivos:" }
+			"fileCount": {
+				"one": "{count} arquivo:",
+				"other": "{count} arquivos:"
+			}
 		},
 		"gaps": {
 			"dirs": "{move} só tem {directions}",
@@ -1166,7 +1202,9 @@
 			"canDownloadSources": "Como alternativa, você pode baixar os PNGs originais.",
 			"requestedWarnings": "Alertas da exportação solicitada, não da arte recuperada:"
 		},
-		"failure": { "noZip": "Nenhum ZIP está pronto para baixar." },
+		"failure": {
+			"noZip": "Nenhum ZIP está pronto para baixar."
+		},
 		"problem": {
 			"bodyMismatch": "Os quadros do corpo não correspondem mais a este personagem.",
 			"noVisibleFrames": "O corpo não tem quadros visíveis.",
@@ -1198,7 +1236,9 @@
 			"duplicatePath": "Caminho de exportação duplicado: {path}",
 			"sizeLimits": "O ZIP excede os limites de tamanho do PixelDoll."
 		},
-		"toast": { "artworkStarted": "Download da arte iniciado." },
+		"toast": {
+			"artworkStarted": "Download da arte iniciado."
+		},
 		"warnings": {
 			"missingMoves": "Algumas animações deste personagem não estão nas configurações.",
 			"missingOtherMoves": "Algumas animações de outro personagem não estão nas configurações.",
@@ -1264,7 +1304,10 @@
 		"untitledCharacter": "Personagem sem nome",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"states": { "one": "{count} estado", "other": "{count} estados" },
+			"states": {
+				"one": "{count} estado",
+				"other": "{count} estados"
+			},
 			"separateItems": {
 				"0": "{count} itens separados",
 				"one": "{count} item separado",
@@ -1930,7 +1973,11 @@
 		"session": "Nesta sessão: {cost}. Algumas animações são cobradas em dólares, não em gerações. O saldo acima é o total real.",
 		"clearFollower": "Limpe o histórico na aba do PixelDoll que está executando as tarefas",
 		"clear": "Limpar encerradas",
-		"ledger": { "job": "Tarefa", "endpoint": "Endpoint", "state": "Status" },
+		"ledger": {
+			"job": "Tarefa",
+			"endpoint": "Endpoint",
+			"state": "Status"
+		},
 		"attempt": "(tentativa {attempt})",
 		"planWait": {
 			"checking": "Verificando o plano do PixelLab antes de iniciar este fluxo.",
@@ -2032,11 +2079,18 @@
 			"selective": "Seletivo",
 			"none": "Nenhum"
 		},
-		"detail": { "low": "Baixo", "medium": "Médio", "high": "Alto" }
+		"detail": {
+			"low": "Baixo",
+			"medium": "Médio",
+			"high": "Alto"
+		}
 	},
 	"moves": {
 		"preview": "Prévia de {move}",
-		"frames": { "one": "{count} quadro", "other": "{count} quadros" },
+		"frames": {
+			"one": "{count} quadro",
+			"other": "{count} quadros"
+		},
 		"onlyDirection": "Só na direção {direction}",
 		"oneDirection": "Só uma",
 		"mirrorOf": "{direction} (espelho de {source})",
@@ -2271,7 +2325,10 @@
 				"unique": "8 direções únicas"
 			},
 			"models": {
-				"v3": { "label": "Padrão (V3)", "help": "Proporções equilibradas." },
+				"v3": {
+					"label": "Padrão (V3)",
+					"help": "Proporções equilibradas."
+				},
 				"standard": {
 					"label": "Padrão",
 					"help": "Desenha oito vistas usando um molde ou seu sprite de frente."
@@ -2285,8 +2342,12 @@
 					"help": "Estilo chibi, com cabeça grande e pernas curtas, por cerca de três vezes o custo."
 				}
 			},
-			"outlines": { "default": "Padrão (preto)" },
-			"details": { "default": "Padrão (médio)" },
+			"outlines": {
+				"default": "Padrão (preto)"
+			},
+			"details": {
+				"default": "Padrão (médio)"
+			},
 			"outlineNote": "contorno: {outline}",
 			"detailNote": "detalhamento: {detail}",
 			"ownView": "A direção {direction} agora usa arte própria.",
@@ -2680,7 +2741,12 @@
 		"tabOnlyKey": "Esta conexão vale apenas nesta aba e não é salva.",
 		"useSavedKey": "Usar chave salva"
 	},
-	"moveNames": { "default": "Em pé", "idle": "Repouso", "walk": "Caminhada", "run": "Corrida" },
+	"moveNames": {
+		"default": "Em pé",
+		"idle": "Repouso",
+		"walk": "Caminhada",
+		"run": "Corrida"
+	},
 	"stateGeneration": {
 		"continueIntro": "Você pode concluir as vistas que nunca foram enviadas. As vistas concluídas serão mantidas.",
 		"continueAccount": "Reconecte-se com a chave original do PixelLab para continuar este estado.",
@@ -2763,8 +2829,12 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Mais tarde" },
-	"toast": { "dismiss": "Dispensar notificação" },
+	"sheet": {
+		"later": "Mais tarde"
+	},
+	"toast": {
+		"dismiss": "Dispensar notificação"
+	},
 	"sharedVisibility": {
 		"allEmphasis": "todos",
 		"demo": "Do {demo}",

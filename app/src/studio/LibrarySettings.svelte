@@ -24,13 +24,9 @@
 		type RestorePlan
 	} from '../lib/store/backup.ts';
 	import {
-		deleteDeletedForever,
-		deleted,
 		deleteLocalWorkAndReload,
 		localWorkDeletionBlocked,
-		refreshRecentlyDeleted,
-		refreshRestoredLibrary,
-		restoreDeleted
+		refreshRestoredLibrary
 	} from './state.svelte.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { downloadLibraryBackup } from './downloadLibraryBackup.ts';
@@ -88,50 +84,7 @@
 			(downloads) => (archives = downloads),
 			(cause) => (error = errorMessage(cause))
 		);
-		void refreshRecentlyDeleted();
 	});
-	/** One deleted entry is being restored or removed for good. */
-	let deletedBusy = $state('');
-	let confirmingForever = $state<string>();
-	let foreverError = $state<Message | string>();
-	let deletedSection = $state<HTMLElement>();
-	const deletedHeading = `${heading}-deleted`;
-	const KIND_LABEL = {
-		character: 'recentlyDeleted.kind.character',
-		items: 'recentlyDeleted.kind.items',
-		category: 'recentlyDeleted.kind.category',
-		move: 'recentlyDeleted.kind.move'
-	} as const;
-	const deletedKindLabel = (kind: keyof typeof KIND_LABEL) => t(KIND_LABEL[kind]);
-	/** The app's language, not the browser's: a date should read the way the rest of the page does. */
-	const deletedOn = (iso: string) => new Date(iso).toLocaleDateString(getLocale());
-	async function restoreEntry(id: string) {
-		if (deletedBusy) return;
-		deletedBusy = id;
-		try {
-			await restoreDeleted(id);
-		} finally {
-			deletedBusy = '';
-			// The row that held focus is gone: keep the keyboard where the work happened.
-			await tick();
-			deletedSection?.focus();
-		}
-	}
-	async function removeEntryForever(id: string) {
-		if (deletedBusy) return;
-		deletedBusy = id;
-		foreverError = undefined;
-		try {
-			await deleteDeletedForever(id);
-			confirmingForever = undefined;
-		} catch (cause) {
-			foreverError = errorMessage(cause);
-		} finally {
-			deletedBusy = '';
-			await tick();
-			deletedSection?.focus();
-		}
-	}
 
 	async function perform(action: () => Promise<void>) {
 		if (busy) return;
@@ -405,81 +358,23 @@
 			</section>
 		{/if}
 	{/if}
-	{#if !preview}
-		<hr class="bu-separator" />
-		<section
-			class="library-task"
-			data-setting="recently-deleted"
-			aria-labelledby={deletedHeading}
-			tabindex="-1"
-			bind:this={deletedSection}
-		>
-			<h4 class="settings-label" id={deletedHeading}>{t('recentlyDeleted.title')}</h4>
-			{#if !deleted.entries.length}
-				<p class="bu-muted settings-description">{t('recentlyDeleted.empty')}</p>
-			{:else}
-				<p class="bu-muted settings-description">{t('recentlyDeleted.kept')}</p>
-				{#if deletedBusy}<p class="bu-muted settings-description" role="status">
-						{t('common.preparing')}
-					</p>{/if}
-				<ul class="deleted-list">
-					{#each deleted.entries as entry (entry.id)}
-						<li class="deleted-row">
-							<div class="deleted-text">
-								<span class="deleted-name">{entry.name}</span>
-								<span class="bu-muted deleted-context"
-									>{deletedKindLabel(entry.kind)}{entry.context ? ` · ${entry.context}` : ''} ·
-									{t('recentlyDeleted.deletedOn', {
-										date: deletedOn(entry.deletedAt)
-									})}</span
-								>
-							</div>
-							<div class="deleted-actions">
-								<button
-									type="button"
-									class="btn bu-action"
-									data-variant="outline"
-									disabled={busy || !!deletedBusy}
-									aria-label={t('recentlyDeleted.restoreNamed', { name: entry.name })}
-									onclick={() => void restoreEntry(entry.id)}>{t('recentlyDeleted.restore')}</button
-								>
-								<button
-									type="button"
-									class="btn bu-action"
-									data-variant="quiet"
-									disabled={busy || !!deletedBusy}
-									aria-label={t('recentlyDeleted.deleteForeverNamed', { name: entry.name })}
-									onclick={() => (confirmingForever = entry.id)}
-									>{t('recentlyDeleted.deleteForever')}</button
-								>
-							</div>
-						</li>
-					{/each}
-				</ul>
-			{/if}
-		</section>
-	{/if}
 	{#if !preview}<SettingsBackupCopy separated />{/if}
 	{#if !preview && !workspaceCopy}
 		<hr class="bu-separator" />
-		<details class="bu-details notice bad danger-zone" data-setting="delete-work">
-			<summary>{t('librarySettings.deleteWork.section')}</summary>
-			<div class="library-task">
-				<p class="bu-muted settings-description">{t('librarySettings.deleteWork.description')}</p>
-				<p class="bu-muted settings-description">{t('librarySettings.deleteWork.kept')}</p>
-				<button
-					type="button"
-					class="bu-btn delete-work"
-					data-variant="danger"
-					disabled={busy}
-					onclick={openDeleteConfirm}
-				>
-					<Trash size={16} aria-hidden="true" />
-					<span class="row-name">{openerLabel(t('librarySettings.deleteWork.action'))}</span>
-					<SurfaceChevron />
-				</button>
-			</div>
-		</details>
+		<section class="library-task" data-setting="delete-work">
+			<p class="bu-muted settings-description">{t('librarySettings.deleteWork.description')}</p>
+			<button
+				type="button"
+				class="bu-btn delete-work"
+				data-variant="danger"
+				disabled={busy}
+				onclick={openDeleteConfirm}
+			>
+				<Trash size={16} aria-hidden="true" />
+				<span class="row-name">{openerLabel(t('librarySettings.deleteWork.action'))}</span>
+				<SurfaceChevron />
+			</button>
+		</section>
 	{/if}
 	{#if confirmingDelete}
 		<ConfirmDialog
@@ -514,22 +409,6 @@
 					<TriangleAlert size={14} aria-hidden="true" />{displayMessage(deleteNote)}
 				</p>{/if}
 		</ConfirmDialog>
-	{/if}
-	{#if confirmingForever}
-		{@const entry = deleted.entries.find((e) => e.id === confirmingForever)}
-		{#if entry}
-			<ConfirmDialog
-				title={t('recentlyDeleted.confirmTitle', { name: entry.name })}
-				action={t('recentlyDeleted.confirmAction')}
-				busyAction={t('common.deleting')}
-				busy={!!deletedBusy}
-				problem={foreverError ? displayMessage(foreverError) : ''}
-				oncancel={() => (confirmingForever = undefined)}
-				onconfirm={() => void removeEntryForever(entry.id)}
-			>
-				<p>{t('recentlyDeleted.confirmBody')}</p>
-			</ConfirmDialog>
-		{/if}
 	{/if}
 	{#if busy}<p class="bu-muted settings-description" role="status">{t('common.preparing')}</p>{/if}
 	{#if error}<p class="notice bad small" role="alert">
@@ -583,13 +462,6 @@
 		margin: 0;
 		font-variant-numeric: tabular-nums;
 	}
-	.danger-zone {
-		display: block;
-		padding-block: 0;
-	}
-	.danger-zone summary {
-		color: var(--bu-danger);
-	}
 	.delete-work {
 		display: flex;
 		align-items: center;
@@ -613,42 +485,5 @@
 		min-height: var(--ctl-h);
 		padding-block: 8px;
 		white-space: normal;
-	}
-	.deleted-list {
-		display: grid;
-		gap: 8px;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-	.deleted-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		min-height: 44px;
-	}
-	.deleted-text {
-		display: grid;
-		gap: 2px;
-		min-inline-size: 0;
-	}
-	.deleted-name {
-		overflow-wrap: anywhere;
-	}
-	.deleted-context {
-		font-size: 0.875em;
-	}
-	.deleted-actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
-	.deleted-actions .btn {
-		min-inline-size: 0;
-		height: auto;
-		min-height: var(--ctl-h);
-		padding-block: 6px;
 	}
 </style>

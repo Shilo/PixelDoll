@@ -8,6 +8,7 @@ export type SettingsSection =
 	| 'export'
 	| 'pixellab'
 	| 'library'
+	| 'trash'
 	| 'developer'
 	| 'about'
 	| CreationSection;
@@ -22,6 +23,7 @@ export const settingsLabels = {
 	export: 'export.sheet.title',
 	pixellab: 'settings.connection',
 	library: 'librarySettings.title',
+	trash: 'settings.trash',
 	developer: 'developer.title',
 	about: 'settings.about'
 } satisfies Record<SettingsSection, WhisperKey>;

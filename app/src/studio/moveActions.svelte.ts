@@ -333,10 +333,7 @@ export async function removeMove(id: string) {
 		await openProject(projectId, { quiet: true });
 		if (kept) pushRecovery(message('history.deleteMove', { name: moveLabel(id) }), kept.id);
 	}
-	const label =
-		removed && clipKind(removed) === 'state'
-			? message('state.removedName', { name: moveLabel(id) })
-			: message('moveRemoval.removed');
+	const label = message('state.removedName', { name: moveLabel(id) });
 	if (kept)
 		toast(label, {
 			duration: 10000,

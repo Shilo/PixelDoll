@@ -463,13 +463,12 @@ test('Library deletes local work only after confirmation and offers a backup fir
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'Library', exact: true }).click();
-	const danger = settings.locator('details[data-setting="delete-work"]');
+	const danger = settings.locator('section[data-setting="delete-work"]');
 	await expect(
-		settings.locator('hr.bu-separator + details[data-setting="delete-work"]')
+		settings.locator('hr.bu-separator + section[data-setting="delete-work"]')
 	).toBeVisible();
 	const remove = danger.getByRole('button', { name: 'Delete local work...', exact: true });
-	await expect(remove).toBeHidden();
-	await danger.locator('summary').click();
+	await expect(remove).toBeVisible();
 	await remove.click();
 	const confirmation = page.getByRole('alertdialog', { name: 'Delete all local work?' });
 	const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
@@ -743,6 +742,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		'Wardrobe',
 		'Export',
 		'Library',
+		'Trash',
 		'Developer',
 		'About'
 	]) {
@@ -2638,8 +2638,8 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	}
 	await checkFrames();
 	// Delete asks in an alert over the details; Cancel keeps the item and the details open.
-	await inspector.getByRole('button', { name: 'Delete item...', exact: true }).click();
-	const deleteAlert = page.getByRole('alertdialog', { name: /^Delete .+\?$/ });
+	await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
+	const deleteAlert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect(deleteAlert).toHaveCount(0);
@@ -9451,8 +9451,8 @@ test('a deleted item comes back from the notice, the history and the Library aft
 
 	async function deleteItem() {
 		const inspector = await selectedItemDetails(page);
-		await inspector.getByRole('button', { name: 'Delete item...', exact: true }).click();
-		const alert = page.getByRole('alertdialog', { name: /^Delete .+\?$/ });
+		await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
+		const alert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 		await alert.getByRole('button', { name: 'Delete', exact: true }).click();
 		await expect(alert).toHaveCount(0);
 	}
@@ -9461,7 +9461,7 @@ test('a deleted item comes back from the notice, the history and the Library aft
 	await deleteItem();
 	await expect(tile()).toHaveCount(0);
 	const notice = page.locator('.bu-toast');
-	await expect(notice).toContainText('Removed Red cape');
+	await expect(notice).toContainText('Moved Red cape to Trash');
 	await notice.getByRole('button', { name: 'Undo', exact: true }).click();
 	await expect(tile()).toHaveCount(1);
 
@@ -9479,7 +9479,8 @@ test('a deleted item comes back from the notice, the history and the Library aft
 	await page.getByRole('button', { name: 'Settings', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'Library', exact: true }).click();
-	const recently = settings.getByRole('region', { name: 'Recently deleted', exact: true });
+	await settings.getByRole('button', { name: 'Trash', exact: true }).click();
+	const recently = settings.getByRole('region', { name: 'Trash', exact: true });
 	await expect(recently).toContainText('Red cape');
 	await recently.getByRole('button', { name: 'Restore Red cape', exact: true }).click();
 	await expect(page.getByText('Restored Red cape')).toBeVisible();

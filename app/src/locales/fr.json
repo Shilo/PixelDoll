@@ -1,15 +1,15 @@
 {
 	"recentlyDeleted": {
-		"title": "Supprimé récemment",
-		"empty": "Rien de supprimé récemment. Les personnages, objets, catégories et mouvements que vous supprimez restent ici 30 jours.",
-		"kept": "Conservé 30 jours, jusqu’à 50 entrées. Restaurer remet exactement ce qui a été supprimé.",
-		"deletedOn": "Supprimé le {date}",
+		"title": "Corbeille",
+		"empty": "Rien ici. Les personnages, objets, catégories, mouvements et états que vous déplacez vers la corbeille restent 30 jours.",
+		"kept": "Conservé 30 jours, jusqu’à 50 entrées.",
+		"deletedOn": "{date}",
 		"restore": "Restaurer",
 		"restoreNamed": "Restaurer {name}",
 		"deleteForever": "Supprimer définitivement",
 		"deleteForeverNamed": "Supprimer {name} définitivement",
 		"confirmTitle": "Supprimer {name} définitivement ?",
-		"confirmBody": "Ses images enregistrées sont aussi retirées de cet appareil. Cette action est irréversible.",
+		"confirmBody": "Il disparaît pour de bon. Action irréversible.",
 		"confirmAction": "Supprimer définitivement",
 		"restored": "{name} restauré",
 		"restoredAsCopy": "Restauré sous {name} : un personnage avec cet ID était déjà enregistré.",
@@ -23,21 +23,24 @@
 		},
 		"kind": {
 			"character": "Personnage",
-			"items": "Objets",
+			"items": "Objet",
 			"category": "Catégorie",
-			"move": "Mouvement"
+			"move": "Mouvement",
+			"state": "État"
 		},
 		"errors": {
-			"gone": "Cet élément supprimé n'est plus disponible.",
-			"expired": "Les éléments supprimés sont conservés 30 jours. Celui-ci a expiré.",
+			"gone": "Ce n’est plus dans la corbeille.",
+			"expired": "Resté 30 jours dans la corbeille, il est parti.",
 			"missingArtwork": "Une partie des images enregistrées de {name} n'est plus sur cet appareil, il ne peut donc pas être restauré.",
-			"full": "Votre navigateur est à court d’espace, rien n’a donc été supprimé. Supprimez définitivement un élément dans Supprimé récemment ; l’espace revient à la fin du travail en cours.",
+			"full": "Votre navigateur est à court d’espace, rien n’a donc été déplacé. Supprimez un élément dans la corbeille pour libérer de l’espace.",
 			"wrongKind": "Cet élément supprimé appartient à un personnage. Restaurez d’abord le personnage.",
 			"movePresent": "Ce mouvement est déjà sur le personnage.",
 			"moveGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression de ce mouvement, il ne s'aligne donc plus.",
 			"partsGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression, cela ne s’aligne donc plus.",
 			"moveItemsMissing": "L’un des objets de ce mouvement est supprimé. Restaurez d’abord l’objet, puis le mouvement."
-		}
+		},
+		"restoring": "Restauration…",
+		"confirmBodyCharacter": "Tout ce qui en a été supprimé part aussi. Disparition définitive, irréversible."
 	},
 	"librarySettings": {
 		"title": "Bibliothèque",
@@ -69,11 +72,11 @@
 			"deleteAll": "Tout supprimer",
 			"confirm": "Confirmer",
 			"section": "Supprimer le travail local",
-			"description": "Supprime les personnages, tenues, brouillons et l’historique d’Activité enregistrés sur cet appareil.",
+			"description": "Supprime les personnages, tenues, brouillons, la corbeille et l’activité de cet appareil.",
 			"kept": "Les données archivées, les préférences, les sauvegardes téléchargées et votre clé PixelLab sont conservées.",
-			"action": "Supprimer le travail local",
+			"action": "Supprimer les données locales…",
 			"title": "Supprimer tout le travail local ?",
-			"body": "Les personnages, tenues, brouillons et l’historique d’Activité de cet appareil sont supprimés définitivement. Cette action est irréversible. PixelDoll se recharge ensuite.",
+			"body": "Les personnages, tenues, brouillons, la corbeille et l’activité de cet appareil sont supprimés définitivement. Action irréversible. PixelDoll se recharge ensuite.",
 			"generating": "Terminez ou ignorez les générations en attente avant de supprimer le travail local. Rien n’a été supprimé.",
 			"uncertain": "Certains appels PixelLab ont peut-être été facturés sans résultat. Vérifiez-les et effacez-les d’abord dans Activité. Rien n’a été supprimé.",
 			"otherTabs": "Fermez les autres onglets et fenêtres PixelDoll, puis réessayez. Rien n’a été supprimé.",
@@ -122,7 +125,8 @@
 		"light": "Clair",
 		"search": "Rechercher dans les paramètres",
 		"noResults": "Aucun paramètre ne correspond à votre recherche.",
-		"all": "Tous les paramètres"
+		"all": "Tous les paramètres",
+		"trash": "Corbeille"
 	},
 	"developer": {
 		"title": "Développement",
@@ -142,14 +146,14 @@
 		"loadFailed": "Impossible de charger une partie de PixelDoll. Rechargez la page pour réessayer.",
 		"advanced": "Avancé",
 		"cancel": "Annuler",
-		"deleteRecoverable": "Il passe dans Supprimé récemment pendant 30 jours.",
+		"deleteRecoverable": "Il quitte la garde-robe. Vous pouvez le récupérer pendant 30 jours.",
 		"character": "Personnage",
 		"characters": "Personnages",
 		"close": "Fermer",
 		"copying": "Copie…",
 		"cost": "Coût",
 		"delete": "Supprimer",
-		"deleteNamed": "Supprimer {name} ?",
+		"deleteNamed": "Déplacer {name} vers la corbeille ?",
 		"deleting": "Suppression…",
 		"details": "Détails",
 		"detailsMenu": "Détails…",
@@ -270,9 +274,11 @@
 		"adjustFrame": "Ajuster le cadre…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Le personnage de la démo ne peut pas être supprimé",
-		"labelDeleteCharacter": "Supprimer le personnage…"
+		"labelDeleteCharacter": "Vers la corbeille…"
 	},
-	"characterName": { "demo": "(Démo)" },
+	"characterName": {
+		"demo": "(Démo)"
+	},
 	"colors": {
 		"follows": "Couleur liée : {name}",
 		"miColor": "Couleur : {mi}",
@@ -331,7 +337,7 @@
 		"viewPendingWork": "Voir les travaux en attente",
 		"character": "ce personnage",
 		"demo": "La démo intégrée ne peut pas être supprimée.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Ses tenues, objets et brouillons non conservés passent dans Supprimé récemment pendant 30 jours. Les objets copiés vers d’autres personnages restent."
+		"itsOutfitsAndChangesAreRemovedFrom": "Ses tenues, objets et brouillons non conservés partent aussi ; les objets copiés vers d’autres personnages restent. Vous pouvez tout récupérer pendant 30 jours."
 	},
 	"demoCopyRow": {
 		"editACopy": "Modifier une copie",
@@ -341,7 +347,10 @@
 		"title": "Détails de {name}",
 		"notSaved": "Ce personnage n’est plus enregistré.",
 		"withItems": "Avec les objets",
-		"itemCost": { "one": "{cost} · {n} objet", "other": "{cost} · {n} objets" },
+		"itemCost": {
+			"one": "{cost} · {n} objet",
+			"other": "{cost} · {n} objets"
+		},
 		"noGenerationDetailsWereSavedForThis": "Aucun détail de génération n’a été enregistré pour ce personnage."
 	},
 	"directionsSheet": {
@@ -388,7 +397,7 @@
 		"titleWearingTakeOff": "Porté (retirer)",
 		"twoHanded": "À deux mains",
 		"createVariant": "Créer une variante…",
-		"labelDeleteItem": "Supprimer l’objet…",
+		"labelDeleteItem": "Vers la corbeille…",
 		"titleCancelName": "Annuler la génération de « {name} » ?",
 		"generationsAlreadyUsedAreNotRefundedAnd": "Les générations déjà utilisées ne sont pas remboursées. Les requêtes déjà envoyées peuvent encore être facturées.",
 		"cancelSaveError": "Impossible d’enregistrer l’annulation. Gardez cet onglet ouvert et réessayez.",
@@ -477,8 +486,14 @@
 		},
 		"colorMatchFree": "Les avertissements de qualité existants sont conservés. Aucun appel à PixelLab n’est effectué.",
 		"colorsMatched": "Harmonisation terminée : {pixels} sur {frames}.",
-		"pixels": { "one": "{n} pixel", "other": "{n} pixels" },
-		"frames": { "one": "{n} image", "other": "{n} images" },
+		"pixels": {
+			"one": "{n} pixel",
+			"other": "{n} pixels"
+		},
+		"frames": {
+			"one": "{n} image",
+			"other": "{n} images"
+		},
 		"onlyFacing": "Uniquement en orientation {direction}",
 		"hideWhenWorn": "Les objets cochés sont masqués quand {name} est porté.",
 		"tuckNote": "Sans cocher les cases, les éléments de ces emplacements ({slots}) sont glissés sous l’objet : seule la partie qui dépasse sous le bord reste visible. Cochez les cases pour les masquer entièrement sous une capuche ou un masque intégral.",
@@ -490,7 +505,10 @@
 			"accepted": "accepté"
 		},
 		"areaStats": "min {ratio} de la médiane · CV {cv}",
-		"handedness": { "ok": "ok", "switched": "inversée" },
+		"handedness": {
+			"ok": "ok",
+			"switched": "inversée"
+		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Met à jour cet objet pour {move} (direction : {direction}). Le corps du personnage reste inchangé.",
@@ -525,7 +543,9 @@
 		"importFromDevice": "Importer depuis l’appareil…",
 		"importFromPixelLab": "Importer depuis PixelLab…"
 	},
-	"noticeLink": { "opensInANewTab": "(s’ouvre dans un nouvel onglet)" },
+	"noticeLink": {
+		"opensInANewTab": "(s’ouvre dans un nouvel onglet)"
+	},
 	"outfits": {
 		"outfits": "Tenues",
 		"saveALookToSwitchBetweenOutfits": "Enregistrez un look pour passer d’une tenue à l’autre dans votre jeu.",
@@ -579,11 +599,11 @@
 		"moveMissing": "Cette animation n’existe plus."
 	},
 	"savedActions": {
-		"labelDeleteState": "Supprimer l’état",
-		"removeState": "Cela retire l’état et ses images d’objets ajustées de ce personnage. Les mouvements terminés gardent leurs images et leurs sources enregistrées. Il passe dans Supprimé récemment pendant 30 jours.",
-		"labelDeleteMove": "Supprimer l’animation…",
+		"labelDeleteState": "Vers la corbeille…",
+		"removeState": "Le corps et chaque objet perdent leurs images ajustées ; les mouvements terminés gardent les leurs. Vous pouvez récupérer l’état pendant 30 jours.",
+		"labelDeleteMove": "Vers la corbeille…",
 		"labelDeleteOutfit": "Supprimer la tenue",
-		"thisRemovesTheMoveFromTheBody": "Cela retire le mouvement du corps et de chaque objet. Il passe dans Supprimé récemment pendant 30 jours."
+		"thisRemovesTheMoveFromTheBody": "Le corps et chaque objet perdent leurs images. Vous pouvez récupérer le mouvement pendant 30 jours."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratuit : ne régénère jamais les objets déjà créés.",
@@ -591,7 +611,7 @@
 		"worksLike": "Fonctionne comme",
 		"hand": "Main",
 		"placeholderEGSmallAndShinyPinned": "p. ex. petit et brillant, épinglé sur la poitrine",
-		"deleteSlot": "Supprimer l’emplacement…",
+		"deleteSlot": "Vers la corbeille…",
 		"titleAddSlot": "Ajouter un emplacement",
 		"createCustomSlot": "Créer un emplacement personnalisé",
 		"slotName": "Nom de l’emplacement",
@@ -599,7 +619,7 @@
 		"showLabel": "Afficher {label}",
 		"createSlot": "Créer l’emplacement",
 		"builtInSlots": "Emplacements intégrés",
-		"theSlotAndItsItemsAreDeleted": "La catégorie et ses objets passent ensemble dans Supprimé récemment pendant 30 jours, et les tenues ne les portent plus.",
+		"theSlotAndItsItemsAreDeleted": "Ses objets partent aussi et les tenues ne les portent plus. Vous pouvez tout récupérer pendant 30 jours.",
 		"undoBringsItBack": "Utilisez « Annuler » pour rétablir cet emplacement.",
 		"labelAddedAtTheEndOfWardrobe": "{label} ajouté à la fin de la Garde-robe.",
 		"valueShownAtTheEndOfWardrobe": "{value} affiché à la fin de la Garde-robe.",
@@ -704,8 +724,14 @@
 		"selectPromptToCopy": "Sélectionnez le prompt pour le copier",
 		"undoAction": "Annuler : {action}",
 		"redoAction": "Rétablir : {action}",
-		"generationsRemaining": { "one": "{n} gén.", "other": "{n} gén." },
-		"characterCount": { "one": "{n} personnage", "other": "{n} personnages" },
+		"generationsRemaining": {
+			"one": "{n} gén.",
+			"other": "{n} gén."
+		},
+		"characterCount": {
+			"one": "{n} personnage",
+			"other": "{n} personnages"
+		},
 		"version": "Version {version}",
 		"renameCharacter": "Renommer le personnage…",
 		"rename": "Renommer…",
@@ -774,7 +800,10 @@
 		"slotLabel": "Emplacement {label}",
 		"equipped": "{label}, équipé",
 		"notFitted": "Non ajusté à ce corps",
-		"itemCount": { "one": "{n} objet", "other": "{n} objets" },
+		"itemCount": {
+			"one": "{n} objet",
+			"other": "{n} objets"
+		},
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, porté",
 		"generationTile": "{name}, {status}",
@@ -932,8 +961,8 @@
 		"couldNotSaveReason": "Impossible d’enregistrer : {reason}",
 		"pixelDollCouldNotConfirmThatYourInterrupted": "PixelDoll n’a pas pu confirmer que votre génération interrompue a été enregistrée. Vérifiez-la dans le personnage ou dans les panneaux Animations ou Configuration avant de mettre à jour.",
 		"yourOutfitCouldNotBeSavedResolve": "Votre tenue n’a pas pu être enregistrée. Résolvez l’erreur de stockage avant de mettre à jour.",
-		"deletedNameFromThisDevice": "{name} supprimé de cet appareil",
-		"removedName": "{name} retiré",
+		"deletedNameFromThisDevice": "{name} déplacé vers la corbeille",
+		"removedName": "{name} déplacé vers la corbeille",
 		"nameChangedMeanwhileCheckItsTileAnd": "{name} a changé entre-temps. Vérifiez sa vignette et réessayez.",
 		"couldNotAddNameReason": "Impossible d’ajouter {name} : {reason}",
 		"fromHasNoMoreFramesOfName": "{from} n’a pas d’autres images de {name} pour ce personnage.",
@@ -972,8 +1001,8 @@
 		"labelChangedMeanwhileReviewItAgainBefore": "{label} a changé entre-temps. Vérifiez-le à nouveau avant de le supprimer.",
 		"labelHasNewItemsReviewItAgain": "{label} contient de nouveaux objets. Vérifiez-le à nouveau avant de le supprimer.",
 		"categoryAndItemsDeleted": {
-			"one": "Suppression de {label} et de ses objets ({count})",
-			"other": "{label} et ses {count} objets supprimés"
+			"one": "{label} et son {count} objet déplacés vers la corbeille",
+			"other": "{label} et ses {count} objets déplacés vers la corbeille"
 		},
 		"couldNotSaveFlowFailure": "{error} Impossible d’enregistrer cet échec sur cet appareil. Fermez cette opération avant de recharger.",
 		"useSavedFramesInTheTabThat": "Utilisez les images enregistrées dans l’onglet qui gère vos tâches PixelDoll.",
@@ -1060,7 +1089,10 @@
 			"versionLabel": "Version de RPG Maker : {version}",
 			"walkMove": "Animation de marche"
 		},
-		"group": { "engines": "Moteurs et frameworks", "assets": "Ressources" },
+		"group": {
+			"engines": "Moteurs et frameworks",
+			"assets": "Ressources"
+		},
 		"target": {
 			"godot": {
 				"sub": "Scène + runtime",
@@ -1115,9 +1147,18 @@
 				"one": "{count} direction",
 				"other": "{count} directions"
 			},
-			"moves": { "one": "{count} animation", "other": "{count} animations" },
-			"items": { "one": "{count} objet", "other": "{count} objets" },
-			"outfits": { "one": "{count} tenue", "other": "{count} tenues" }
+			"moves": {
+				"one": "{count} animation",
+				"other": "{count} animations"
+			},
+			"items": {
+				"one": "{count} objet",
+				"other": "{count} objets"
+			},
+			"outfits": {
+				"one": "{count} tenue",
+				"other": "{count} tenues"
+			}
 		},
 		"summary": {
 			"rpgCurrent": "Inclut une feuille de sprites de marche pour votre look actuel.",
@@ -1139,7 +1180,10 @@
 			"technical": "Détails techniques",
 			"currentSettings": "Réglages actuels",
 			"files": "Fichiers inclus",
-			"fileCount": { "one": "{count} fichier :", "other": "{count} fichiers :" }
+			"fileCount": {
+				"one": "{count} fichier :",
+				"other": "{count} fichiers :"
+			}
 		},
 		"gaps": {
 			"dirs": "{move} n’a que {directions}",
@@ -1153,7 +1197,9 @@
 			"canDownloadSources": "Vous pouvez plutôt télécharger les PNG sources.",
 			"requestedWarnings": "Avertissements sur l’export demandé, pas sur les visuels récupérés :"
 		},
-		"failure": { "noZip": "Aucun ZIP n’est prêt à être téléchargé." },
+		"failure": {
+			"noZip": "Aucun ZIP n’est prêt à être téléchargé."
+		},
 		"problem": {
 			"bodyMismatch": "Les images du corps ne correspondent plus à ce personnage.",
 			"noVisibleFrames": "Le corps n’a aucune image visible.",
@@ -1185,7 +1231,9 @@
 			"duplicatePath": "Chemin d’export en double : {path}",
 			"sizeLimits": "L’archive dépasse les limites de taille de PixelDoll."
 		},
-		"toast": { "artworkStarted": "Téléchargement des visuels lancé." },
+		"toast": {
+			"artworkStarted": "Téléchargement des visuels lancé."
+		},
 		"warnings": {
 			"missingMoves": "Certaines animations de ce personnage manquent dans les réglages.",
 			"missingOtherMoves": "Certaines animations d’un autre personnage manquent dans les réglages.",
@@ -1251,7 +1299,10 @@
 		"untitledCharacter": "Personnage sans titre",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"states": { "one": "{count} état", "other": "{count} états" },
+			"states": {
+				"one": "{count} état",
+				"other": "{count} états"
+			},
 			"separateItems": {
 				"one": "{count} objet séparé",
 				"other": "{count} objets séparés"
@@ -1737,7 +1788,10 @@
 		"retentionTotal": "Historique récent · Les appels plus anciens sont omis ; le total couvre cette liste. La copie inclut cette liste.",
 		"total": "Total",
 		"estimatedTotal": "Total estimé",
-		"calls": { "one": "{count} appel", "other": "{count} appels" },
+		"calls": {
+			"one": "{count} appel",
+			"other": "{count} appels"
+		},
 		"callsHidden": {
 			"one": "{count} appel · appels en arrière-plan masqués : {hidden}",
 			"other": "{count} appels · appels en arrière-plan masqués : {hidden}"
@@ -2016,11 +2070,18 @@
 			"selective": "Sélectif",
 			"none": "Aucun"
 		},
-		"detail": { "low": "Faible", "medium": "Moyen", "high": "Élevé" }
+		"detail": {
+			"low": "Faible",
+			"medium": "Moyen",
+			"high": "Élevé"
+		}
 	},
 	"moves": {
 		"preview": "Aperçu de {move}",
-		"frames": { "one": "{count} image", "other": "{count} images" },
+		"frames": {
+			"one": "{count} image",
+			"other": "{count} images"
+		},
 		"onlyDirection": "{direction} uniquement",
 		"oneDirection": "une seule",
 		"mirrorOf": "{direction} (miroir de la vue {source})",
@@ -2272,8 +2333,12 @@
 					"help": "Style chibi, avec une grande tête et des jambes courtes, pour environ trois fois le coût du modèle par défaut."
 				}
 			},
-			"outlines": { "default": "Par défaut (noir)" },
-			"details": { "default": "Par défaut (moyen)" },
+			"outlines": {
+				"default": "Par défaut (noir)"
+			},
+			"details": {
+				"default": "Par défaut (moyen)"
+			},
 			"outlineNote": "contour {outline}",
 			"detailNote": "détail {detail}",
 			"ownView": "{direction} utilise maintenant sa propre vue.",
@@ -2667,7 +2732,12 @@
 		"tabOnlyKey": "Cette connexion est limitée à cet onglet et n’est pas enregistrée.",
 		"useSavedKey": "Utiliser la clé enregistrée"
 	},
-	"moveNames": { "default": "Debout", "idle": "Attente", "walk": "Marche", "run": "Course" },
+	"moveNames": {
+		"default": "Debout",
+		"idle": "Attente",
+		"walk": "Marche",
+		"run": "Course"
+	},
 	"stateGeneration": {
 		"continueIntro": "Vous pouvez terminer les vues qui n’ont jamais été envoyées. Les vues terminées seront conservées.",
 		"continueAccount": "Reconnectez-vous avec la clé PixelLab initiale pour reprendre cet état.",
@@ -2750,8 +2820,12 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Plus tard" },
-	"toast": { "dismiss": "Fermer la notification" },
+	"sheet": {
+		"later": "Plus tard"
+	},
+	"toast": {
+		"dismiss": "Fermer la notification"
+	},
 	"sharedVisibility": {
 		"allEmphasis": "toutes",
 		"demo": "Du {demo}",
