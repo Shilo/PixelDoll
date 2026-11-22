@@ -4,7 +4,7 @@
 	import { t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import type { Manifest } from '../lib/store/manifest.ts';
-	import { popoverFocus } from './experience/focus.ts';
+	import { navigateMenu, popoverFocus } from './experience/focus.ts';
 	import GroupIcon from './GroupIcon.svelte';
 	import { Check, ChevronDown } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
@@ -78,6 +78,7 @@
 			requestAnimationFrame(() => {
 				if (menu.matches(':popover-open')) menu.hidePopover();
 			});
+		navigateMenu(menu, event);
 	}}
 >
 	<PopoverArrow />

@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { t } from 'svelte-whisper';
 	// Ready-made prompts as quiet pills right under a prompt box: no heading, the pill shape is the cue. Ideas only fill
 	// text, so they step aside once the user writes their own; templates that also apply settings stay, pressed while
@@ -55,8 +56,15 @@
 			>
 		{/each}
 		{#if visible.length < suggestions.length}
-			<button type="button" class="suggestion more" onclick={() => (all = true)}
-				>{t('common.more')}</button
+			<button
+				type="button"
+				class="suggestion more"
+				onclick={async (event) => {
+					const group = event.currentTarget.parentElement!;
+					all = true;
+					await tick();
+					group.querySelectorAll<HTMLButtonElement>('button')[limit]?.focus();
+				}}>{t('common.more')}</button
 			>
 		{/if}
 	</div>

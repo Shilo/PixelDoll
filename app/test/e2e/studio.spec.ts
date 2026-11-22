@@ -3416,7 +3416,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await description.focus();
 	await expect(cast).toHaveAttribute('aria-pressed', 'true');
 	await description.fill('cast with a wide overhead sweep');
-	await expect(move.getByRole('button', { name: /^Generate / })).toBeEnabled();
+	await expect(move.getByRole('button', { name: /^Generate Cast/ })).toBeEnabled();
 	// Pressing the applied template again lets the text stand as a custom move.
 	await cast.click();
 	await expect(applied).toHaveCount(0);

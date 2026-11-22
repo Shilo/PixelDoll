@@ -37,7 +37,9 @@
 		spellcheck,
 		class: className = '',
 		onkeydown,
-		keyshortcuts
+		keyshortcuts,
+		save,
+		restore
 	}: {
 		value: string;
 		onvalue: (value: string) => void;
@@ -66,10 +68,13 @@
 		class?: string;
 		onkeydown?: (event: KeyboardEvent) => void;
 		keyshortcuts?: string;
+		/** What Undo brings back, when that is more than this field's text (Details restores the whole prompt). */
+		save?: () => string;
+		restore?: (saved: string) => void;
 	} = $props();
 
 	let area: HTMLTextAreaElement;
-	let undo = $state<{ before: string; after: string }>();
+	let undo = $state<{ saved: string; after: string }>();
 	let copied = $state(false);
 	let copyTimer: ReturnType<typeof setTimeout> | undefined;
 	let abort: AbortController | undefined;
@@ -93,10 +98,12 @@
 	);
 
 	/** Restores the text from before the last enhancement. */
-	function restore() {
+	function undoEnhance() {
 		if (!undo) return;
-		onvalue(undo.before);
+		const { saved } = undo;
 		undo = undefined;
+		if (restore) restore(saved);
+		else onvalue(saved);
 	}
 
 	/** Runs Enhance. Callers use it to resume after connecting. */
@@ -108,13 +115,15 @@
 			return;
 		}
 		const before = value,
-			asked = spec;
+			saved = save ? save() : value,
+			asked = spec,
+			limit = maxOutput;
 		abort = new AbortController();
 		busy = true;
 		try {
 			const enhanced = await enhancePrompt(key, asked, text, maxOutput, abort.signal, activity);
 			if (abort.signal.aborted) return;
-			if (value !== before || spec !== asked || app.key !== key) {
+			if (value !== before || spec !== asked || maxOutput !== limit || app.key !== key) {
 				onmessage(message('create.form.settingsChanged'));
 				return;
 			}
@@ -123,12 +132,13 @@
 				onmessage(next);
 				return;
 			}
-			undo = { before, after: next };
+			undo = { saved, after: next };
 			onvalue(next);
 		} catch (error) {
 			if (!abort.signal.aborted) onmessage(enhanceErrorMessage(error));
 		} finally {
-			if (!abort.signal.aborted) busy = false;
+			// Always settle: a field unmounted mid-request still shares `busy` with its form.
+			busy = false;
 		}
 	}
 
@@ -202,7 +212,7 @@
 				aria-label={t('common.undo')}
 				title={t('create.form.undoTitle')}
 				disabled={disabled || busy}
-				onclick={restore}><Undo2 size={16} /></button
+				onclick={undoEnhance}><Undo2 size={16} /></button
 			>
 		{/if}
 		<button

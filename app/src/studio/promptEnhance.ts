@@ -93,16 +93,17 @@ export function enhanceRequest(
 
 // The animation enhancer always closes with camera and style directions for a moving shot. A still pose drops that
 // trailing run of sentences; anything else, including camera words earlier in the text, is kept as written.
-const BOILERPLATE =
-	/\b(camera|locked-off|shot|animation|throughout|pixel art aesthetic|perspective)\b/i;
-const MOTION_WORDS = /\b(camera|shot|animation)\b/i;
+const BOILERPLATE = [
+	/^static camera\b/i,
+	/^(completely )?locked-off shot\b/i,
+	/^maintain the (crisp|original|strict)\b.*\b(aesthetic|perspective|style)\b/i,
+	/\bthroughout the (entire )?(fluid )?animation\b/i
+];
 export function trimStaticBoilerplate(text: string): string {
 	const sentences = text.trim().match(/[^.!?]+[.!?]*\s*/g) ?? [];
 	let end = sentences.length;
-	while (end > 0 && BOILERPLATE.test(sentences[end - 1])) end--;
-	const dropped = sentences.slice(end);
-	if (!end || !dropped.some((sentence) => MOTION_WORDS.test(sentence))) return text;
-	return sentences.slice(0, end).join('').trim();
+	while (end > 0 && BOILERPLATE.some((pattern) => pattern.test(sentences[end - 1].trim()))) end--;
+	return end && end < sentences.length ? sentences.slice(0, end).join('').trim() : text;
 }
 
 const encode = async (image: EnhanceImage | undefined) =>

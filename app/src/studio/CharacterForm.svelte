@@ -310,6 +310,11 @@
 						copyLabel={t('create.form.copyDetails')}
 						value={d.details}
 						onvalue={details}
+						save={() => d.prompt}
+						restore={(saved) => {
+							edited();
+							readPrompt(d, saved);
+						}}
 						spec={detailsSpec}
 						accept={acceptDetails}
 						activity={{ scope: `${enhanceScope}:details`, label: 'Enhance character prompt' }}

@@ -1063,6 +1063,7 @@
 	const redrawTarget = untrack(() => ui.redrawMove);
 	if (redrawTarget) {
 		ui.redrawMove = '';
+		ui.moveFormOpen = true;
 		if (untrack(() => have.has(redrawTarget))) chooseAction(redrawTarget);
 	}
 	// The character's quality checks load after the sheet opens; pick the failed views once they arrive.
