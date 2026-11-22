@@ -186,7 +186,8 @@
 		"zoomIn": "Acercar",
 		"zoomOut": "Alejar",
 		"randomLook": "Look aleatorio",
-		"none": "Ninguna"
+		"none": "Ninguna",
+		"moveToTrash": "Mover a la papelera"
 	},
 	"pwa": {
 		"invalidRelease": "La descripción de la actualización no es válida.",
@@ -337,7 +338,7 @@
 		"viewPendingWork": "Ver trabajo pendiente",
 		"character": "personaje",
 		"demo": "La demo incluida no se puede eliminar.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Sus conjuntos, objetos y borradores sin guardar se van también; los objetos copiados a otros personajes se quedan. Puedes recuperarlo durante 30 días."
+		"itsOutfitsAndChangesAreRemovedFrom": "Sus conjuntos, objetos y borradores no conservados se van también; los objetos copiados a otros personajes se quedan. Puedes recuperar el personaje durante 30 días."
 	},
 	"demoCopyRow": {
 		"editACopy": "Editar una copia",
@@ -639,8 +640,9 @@
 			"one": "¿Eliminar {label} y su {n} objeto?",
 			"other": "¿Eliminar {label} y sus {n} objetos?"
 		},
-		"deleteTitle": "¿Eliminar {label}?",
-		"deleteExportNote": "Las exportaciones ya no incluirán su ranura “{slot}”, así que el código del juego que la nombre debe cambiar."
+		"deleteTitle": "¿Mover {label} a la papelera?",
+		"deleteExportNote": "Las exportaciones ya no incluirán su ranura “{slot}”, así que el código del juego que la nombre debe cambiar.",
+		"theSlotIsDeleted": "La categoría sale del armario. Puedes recuperarla durante 30 días."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, dirección: {facing}",

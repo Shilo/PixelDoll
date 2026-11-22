@@ -50,7 +50,7 @@
 	title={t('common.deleteNamed', {
 		name: store.projects.find((project) => project.id === id)?.name ?? t('deleteSheet.character')
 	})}
-	action={t('common.delete')}
+	action={t('common.moveToTrash')}
 	busyAction={t('common.deleting')}
 	{busy}
 	problem={error ? displayMessage(error) : displayError(reason)}

@@ -314,7 +314,7 @@ export async function removeMove(id: string) {
 				const entry = deletedEntry({
 					kind: 'move',
 					record: previous,
-					name: moveLabel(id),
+					name: removed?.name ?? moveLabel(id),
 					context: previous.manifest.name,
 					scope: { moveId: id }
 				});

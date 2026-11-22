@@ -72,7 +72,7 @@
 			"deleteAll": "Alles löschen",
 			"confirm": "Bestätigen",
 			"section": "Lokale Arbeit löschen",
-			"description": "Entfernt die Charaktere, Outfits, Entwürfe, den Papierkorb und den Verlauf auf diesem Gerät.",
+			"description": "Entfernt die Charaktere, Outfits, Entwürfe, den Papierkorb und die Aktivität auf diesem Gerät.",
 			"kept": "Archivierte Daten, Einstellungen, heruntergeladene Sicherungen und dein PixelLab-Schlüssel bleiben erhalten.",
 			"action": "Lokale Arbeit löschen…",
 			"title": "Alle lokale Arbeit löschen?",
@@ -186,7 +186,8 @@
 		"zoomIn": "Vergrößern",
 		"zoomOut": "Verkleinern",
 		"randomLook": "Zufallslook",
-		"none": "Keine"
+		"none": "Keine",
+		"moveToTrash": "In den Papierkorb"
 	},
 	"pwa": {
 		"invalidRelease": "Die Updatebeschreibung ist ungültig.",
@@ -337,7 +338,7 @@
 		"viewPendingWork": "Ausstehende Aufgaben ansehen",
 		"character": "Figur",
 		"demo": "Die mitgelieferte Demo kann nicht gelöscht werden.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Outfits, Gegenstände und nicht gespeicherte Entwürfe gehen mit; auf andere Charaktere kopierte Gegenstände bleiben. 30 Tage lang können Sie alles zurückholen."
+		"itsOutfitsAndChangesAreRemovedFrom": "Outfits, Gegenstände und nicht behaltene Entwürfe gehen mit; auf andere Charaktere kopierte Gegenstände bleiben. 30 Tage lang können Sie den Charakter zurückholen."
 	},
 	"demoCopyRow": {
 		"editACopy": "Kopie bearbeiten",
@@ -639,8 +640,9 @@
 			"one": "{label} und {n} zugehörigen Gegenstand löschen?",
 			"other": "{label} und {n} zugehörige Gegenstände löschen?"
 		},
-		"deleteTitle": "{label} löschen?",
-		"deleteExportNote": "Exporte enthalten den Ausrüstungsplatz „{slot}“ nicht mehr. Passe daher Spielcode an, der diesen Namen verwendet."
+		"deleteTitle": "{label} in den Papierkorb verschieben?",
+		"deleteExportNote": "Exporte enthalten den Ausrüstungsplatz „{slot}“ nicht mehr. Passe daher Spielcode an, der diesen Namen verwendet.",
+		"theSlotIsDeleted": "Die Kategorie verlässt die Garderobe. 30 Tage lang können Sie sie zurückholen."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, Blickrichtung: {facing}",

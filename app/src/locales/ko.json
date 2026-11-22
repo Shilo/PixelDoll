@@ -184,7 +184,8 @@
 		"zoomIn": "확대",
 		"zoomOut": "축소",
 		"randomLook": "무작위 룩",
-		"none": "없음"
+		"none": "없음",
+		"moveToTrash": "휴지통으로 이동"
 	},
 	"pwa": {
 		"invalidRelease": "업데이트 설명이 올바르지 않아요.",
@@ -622,8 +623,9 @@
 			"1": "{label} 항목과 그 아이템을 삭제할까요?",
 			"other": "{label} 항목과 아이템 {n}개를 삭제할까요?"
 		},
-		"deleteTitle": "{label} 삭제할까요?",
-		"deleteExportNote": "내보내기에 슬롯 “{slot}” 항목이 더 이상 포함되지 않아서, 그 이름을 쓰는 게임 코드도 바꿔야 해요."
+		"deleteTitle": "{label}을(를) 휴지통으로 이동할까요?",
+		"deleteExportNote": "내보내기에 슬롯 “{slot}” 항목이 더 이상 포함되지 않아서, 그 이름을 쓰는 게임 코드도 바꿔야 해요.",
+		"theSlotIsDeleted": "카테고리가 옷장에서 빠집니다. 30일 동안 되돌릴 수 있습니다."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, {facing} 방향",

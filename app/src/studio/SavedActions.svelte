@@ -124,7 +124,7 @@
 {#if deleting}
 	<ConfirmDialog
 		title={t('common.deleteNamed', { name })}
-		action={t('common.delete')}
+		action={t('common.moveToTrash')}
 		{busy}
 		problem={displayMessage(problem)}
 		blocked={!!locked}

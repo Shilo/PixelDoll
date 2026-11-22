@@ -186,7 +186,8 @@
 		"zoomIn": "Zoom in",
 		"zoomOut": "Zoom out",
 		"randomLook": "Random look",
-		"none": "None"
+		"none": "None",
+		"moveToTrash": "Move to Trash"
 	},
 	"pwa": {
 		"invalidRelease": "The update description is invalid.",
@@ -639,8 +640,9 @@
 			"one": "Delete {label} and its {n} item?",
 			"other": "Delete {label} and its {n} items?"
 		},
-		"deleteTitle": "Delete {label}?",
-		"deleteExportNote": "Exports will no longer include its slot “{slot}”, so game code that names it must change."
+		"deleteTitle": "Move {label} to Trash?",
+		"deleteExportNote": "Exports will no longer include its slot “{slot}”, so game code that names it must change.",
+		"theSlotIsDeleted": "It leaves the Wardrobe. You can bring it back for 30 days."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, facing {facing}",

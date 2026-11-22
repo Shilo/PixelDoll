@@ -3685,11 +3685,6 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 			: message('state.categoryNowHasNoItems', { label });
 	if (owned.some((id) => pendingMoves(projectId, id).length))
 		return message('state.categoryItemsGettingMoves', { label });
-	if (!owned.length) {
-		organize(message('history.deleteCategory', { name: label }), (x) => deleteCustom(x, key));
-		if (ui.group === key) ui.group = shownCategories(m, busySlots())[0]?.key ?? 'head';
-		return '';
-	}
 	if (isDemo()) return message('slotsSheet.demoDeleteLocked');
 	const definition = JSON.stringify(m.slots.find((s) => s.id === key));
 	const prune = await keysToPrune();
@@ -3733,16 +3728,21 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 	}
 	await refreshRecentlyDeleted();
 	notifyLibraryChanged(projectId);
+	const notice =
+		owned.length === 0
+			? message('state.removedName', { name: label })
+			: message('state.categoryAndItemsDeleted', { label, count: owned.length });
 	if (kept)
-		toast(message('state.categoryAndItemsDeleted', { label, count: owned.length }), {
+		toast(notice, {
 			duration: 10000,
 			actionLabel: message('common.undo'),
 			action: () => void restoreDeleted(kept!.id)
 		});
-	else toast(message('state.categoryAndItemsDeleted', { label, count: owned.length }));
+	else toast(notice);
 	if (doc.id === projectId && request === openRequest) {
 		// Quietly, so the delete stays undoable: the category's worn items leave the live outfit.
 		await openProject(projectId, { quiet: true });
+		if (ui.group === key) ui.group = shownCategories(m, busySlots())[0]?.key ?? 'head';
 		for (const id of owned) {
 			const item = m.items.find((it) => it.id === id);
 			if (!item) continue;

@@ -186,7 +186,8 @@
 		"zoomIn": "Zoomer",
 		"zoomOut": "Dézoomer",
 		"randomLook": "Look aléatoire",
-		"none": "Aucune"
+		"none": "Aucune",
+		"moveToTrash": "Vers la corbeille"
 	},
 	"pwa": {
 		"invalidRelease": "La description de la mise à jour est invalide.",
@@ -639,8 +640,9 @@
 			"one": "Supprimer {label} et son objet ({n}) ?",
 			"other": "Supprimer {label} et ses {n} objets ?"
 		},
-		"deleteTitle": "Supprimer {label} ?",
-		"deleteExportNote": "L’emplacement « {slot} » ne figurera plus dans les exports. Si le code de votre jeu y fait référence, vous devrez le modifier."
+		"deleteTitle": "Déplacer {label} vers la corbeille ?",
+		"deleteExportNote": "L’emplacement « {slot} » ne figurera plus dans les exports. Si le code de votre jeu y fait référence, vous devrez le modifier.",
+		"theSlotIsDeleted": "La catégorie quitte la garde-robe. Vous pouvez la récupérer pendant 30 jours."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, orientation {facing}",

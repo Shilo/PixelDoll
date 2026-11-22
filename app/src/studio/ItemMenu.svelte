@@ -486,7 +486,7 @@
 	{@const target = deleting}
 	<ConfirmDialog
 		title={t('common.deleteNamed', { name: target.name })}
-		action={t('common.delete')}
+		action={t('common.moveToTrash')}
 		oncancel={() => (deleting = null)}
 		onconfirm={() => {
 			const id = target.id;

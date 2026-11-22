@@ -358,13 +358,18 @@ test('character actions download and delete an unopened character without select
 	expect(download.suggestedFilename()).toBe(`${imported.project.manifest.exportId}.pixeldoll.zip`);
 	expect(imported.project.manifest.items.length).toBeGreaterThan(1);
 	await row.locator('.character-more').click({ button: 'right' });
-	await menu.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
-	await expect(page.getByRole('alertdialog', { name: 'Delete Disposable hero?' })).toBeVisible();
+	await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await expect(
+		page.getByRole('alertdialog', { name: 'Move Disposable hero to Trash?' })
+	).toBeVisible();
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await row.locator('.character-row').focus();
 	await page.keyboard.press('Shift+F10');
-	await menu.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
-	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
 	await expect(row).toHaveCount(0);
 	await expect(selected).toContainText('Adventurer');
 	expect(
@@ -1095,7 +1100,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			'Directions...',
 			'Adjust frame...',
 			'Download ZIP',
-			'Delete character...'
+			'Move to Trash...'
 		]);
 		await menu.getByRole('menuitem', { name: 'Directions...', exact: true }).click();
 	};
@@ -2088,17 +2093,17 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	);
 	await expect(currentCharacter.locator(':scope > svg')).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'More actions for Imported two' })).toBeVisible();
-	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	await expect(page.getByRole('alertdialog')).toContainText('Imported two');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Imported two');
 	// All characters created by this test are disposable fixtures in an isolated browser context.
 	for (const remaining of ['Imported one', 'Adventurer (demo)']) {
 		await page.locator('.project-btn').click();
-		await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 		await page
 			.getByRole('alertdialog')
-			.getByRole('button', { name: 'Delete', exact: true })
+			.getByRole('button', { name: 'Move to Trash', exact: true })
 			.click();
 		await expect(page.locator('.project-btn')).toContainText(remaining.replace(/ \(demo\)$/, ''), {
 			timeout: 30_000
@@ -2108,7 +2113,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	await expect(page.locator('.project-btn')).toContainText('Adventurer');
 	await page.locator('.project-btn').click();
 	// The demo keeps Delete in place, unavailable, and says why.
-	const demoDelete = page.getByRole('menuitem', { name: 'Delete character…', exact: true });
+	const demoDelete = page.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
 	await expect(demoDelete).toHaveAttribute('aria-disabled', 'true');
 	await expect(demoDelete).toHaveAccessibleDescription("Demo character can't be deleted");
 	await demoDelete.click({ force: true });
@@ -2324,7 +2329,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await expect(page.locator('.project-btn')).toContainText('Library hero');
 	await expect(page.locator('.world-loading')).toBeHidden();
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	// Queue state is persisted by the real application, and deletion must refuse in-flight paid work.
 	await page.evaluate(async () => {
 		await new Promise<void>((resolve, reject) => {
@@ -2349,7 +2354,10 @@ test('PixelLab library connection, pagination and direct import use only free re
 			};
 		});
 	});
-	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
 	await expect(page.getByRole('alert')).toContainText('pending generation work');
 	expect(calls.every((c) => c.startsWith('GET '))).toBe(true);
 	expect(calls).toContain(`GET /v2/characters/${ID}/zip`);
@@ -2729,8 +2737,11 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'More actions for Rest pose', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Delete State/ }).click();
-	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Move to Trash/ }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
 	await expect(page.getByText('Removed Rest pose', { exact: true })).toBeVisible();
 	const remaining = await read();
 	expect(remaining.manifest.rig.animations).toEqual(after.manifest.rig.animations);
@@ -3181,11 +3192,11 @@ test('a stopped move blocks deleting only its own character and opens from the b
 	const deletion = page.getByRole('alertdialog');
 	const remove = async () => {
 		await page.locator('.project-btn').click();
-		await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	};
 	// Another character's stopped move waits for its own review and does not lock this one.
 	await remove();
-	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
+	await deletion.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 	await expect(deletion).toBeHidden();
 	await expect(page.locator('.project-btn')).not.toContainText('Adventurer copy');
 	await page.evaluate(async () => {

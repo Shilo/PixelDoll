@@ -184,7 +184,8 @@
 		"zoomIn": "Perbesar",
 		"zoomOut": "Perkecil",
 		"randomLook": "Acak penampilan",
-		"none": "Tidak ada"
+		"none": "Tidak ada",
+		"moveToTrash": "Pindahkan ke tempat sampah"
 	},
 	"pwa": {
 		"invalidRelease": "Deskripsi pembaruan tidak valid.",
@@ -622,8 +623,9 @@
 			"1": "Hapus {label} dan itemnya?",
 			"other": "Hapus {label} dan {n} itemnya?"
 		},
-		"deleteTitle": "Hapus {label}?",
-		"deleteExportNote": "Hasil ekspor tidak akan lagi berisi slot “{slot}”. Kode game yang merujuk ke slot itu perlu diubah."
+		"deleteTitle": "Pindahkan {label} ke tempat sampah?",
+		"deleteExportNote": "Hasil ekspor tidak akan lagi berisi slot “{slot}”. Kode game yang merujuk ke slot itu perlu diubah.",
+		"theSlotIsDeleted": "Kategori keluar dari lemari. Anda bisa memulihkannya selama 30 hari."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, menghadap {facing}",

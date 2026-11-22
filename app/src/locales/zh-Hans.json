@@ -184,7 +184,8 @@
 		"zoomIn": "放大",
 		"zoomOut": "缩小",
 		"randomLook": "随机外观",
-		"none": "无"
+		"none": "无",
+		"moveToTrash": "移到回收站"
 	},
 	"pwa": {
 		"invalidRelease": "更新说明无效。",
@@ -622,8 +623,9 @@
 			"1": "删除{label}及其装备？",
 			"other": "删除{label}及其 {n} 件装备？"
 		},
-		"deleteTitle": "删除{label}？",
-		"deleteExportNote": "导出将不再包含其装备栏“{slot}”，因此按名称引用它的游戏代码需要修改。"
+		"deleteTitle": "将 {label} 移到回收站？",
+		"deleteExportNote": "导出将不再包含其装备栏“{slot}”，因此按名称引用它的游戏代码需要修改。",
+		"theSlotIsDeleted": "该分类会离开衣柜。30 天内可以恢复。"
 	},
 	"stage": {
 		"characterFacing": "{name}，{move}，朝向{facing}",

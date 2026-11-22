@@ -186,7 +186,8 @@
 		"zoomIn": "Yakınlaştırın",
 		"zoomOut": "Uzaklaştırın",
 		"randomLook": "Rastgele görünüm",
-		"none": "Hiçbiri"
+		"none": "Hiçbiri",
+		"moveToTrash": "Çöp kutusuna taşı"
 	},
 	"pwa": {
 		"invalidRelease": "Güncelleme açıklaması geçersiz.",
@@ -639,8 +640,9 @@
 			"one": "{label} yuvası ve içindeki {n} eşya silinsin mi?",
 			"other": "{label} yuvası ve içindeki {n} eşya silinsin mi?"
 		},
-		"deleteTitle": "Şu yuva silinsin mi: {label}?",
-		"deleteExportNote": "Dışa aktarımlarda artık “{slot}” yuvası yer almayacak. Oyun kodu bu adı kullanıyorsa kodu değiştirin."
+		"deleteTitle": "{label} çöp kutusuna taşınsın mı?",
+		"deleteExportNote": "Dışa aktarımlarda artık “{slot}” yuvası yer almayacak. Oyun kodu bu adı kullanıyorsa kodu değiştirin.",
+		"theSlotIsDeleted": "Kategori gardıroptan çıkar. 30 gün boyunca geri alabilirsiniz."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, yön: {facing}",

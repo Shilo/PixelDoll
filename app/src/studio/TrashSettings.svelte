@@ -19,6 +19,7 @@
 	let confirming = $state<string>();
 	let failure = $state<Message | string>();
 	let section = $state<HTMLElement>();
+	let emptyNote = $state<HTMLElement>();
 
 	onMount(() => void refreshRecentlyDeleted());
 	const KIND = {
@@ -44,45 +45,53 @@
 
 	async function restoreEntry(id: string) {
 		if (busy) return;
+		const at = deleted.entries.findIndex((entry) => entry.id === id);
 		busy = id;
 		try {
-			await restoreDeleted(id);
+			if (await restoreDeleted(id)) {
+				await tick();
+				afterRow(at);
+			}
 		} finally {
 			busy = '';
-			await tick();
-			focusAfterRow();
 		}
 	}
 
 	async function deleteForever(id: string) {
 		if (busy) return;
+		const at = deleted.entries.findIndex((entry) => entry.id === id);
 		busy = id;
 		failure = undefined;
 		try {
 			await deleteDeletedForever(id);
 			confirming = undefined;
+			await tick();
+			afterRow(at);
 		} catch (cause) {
+			// The dialog is still open: focus stays on its own controls.
 			failure = errorMessage(cause);
 		} finally {
 			busy = '';
-			await tick();
-			focusAfterRow();
 		}
 	}
 
-	/** Keep the keyboard where the work happened: the next row, else the previous, else the heading. */
-	function focusAfterRow() {
-		const buttons = [...(section?.querySelectorAll<HTMLButtonElement>('.trash-restore') ?? [])];
-		const next = buttons.find((button) => !button.disabled);
+	/** Keep the keyboard where the work happened: the row that took its place, else the one above, else the note. */
+	function afterRow(index: number) {
+		const buttons = [
+			...(section?.querySelectorAll<HTMLButtonElement>('.trash-restore') ?? [])
+		].filter((button) => !button.disabled);
+		const next = buttons[Math.min(index, buttons.length - 1)];
 		if (next) next.focus();
-		else section?.focus();
+		else emptyNote?.focus();
 	}
 </script>
 
 <div class="trash-settings" tabindex="-1" bind:this={section}>
 	<p class="bu-muted settings-description">{t('recentlyDeleted.kept')}</p>
 	{#if !deleted.entries.length}
-		<p class="bu-muted settings-description">{t('recentlyDeleted.empty')}</p>
+		<p class="bu-muted settings-description" tabindex="-1" bind:this={emptyNote}>
+			{t('recentlyDeleted.empty')}
+		</p>
 	{:else}
 		<ul class="trash-list">
 			{#each deleted.entries as entry (entry.id)}

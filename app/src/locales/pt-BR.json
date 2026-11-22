@@ -186,7 +186,8 @@
 		"zoomIn": "Aumentar zoom",
 		"zoomOut": "Reduzir zoom",
 		"randomLook": "Sortear visual",
-		"none": "Nenhuma"
+		"none": "Nenhuma",
+		"moveToTrash": "Mover para a lixeira"
 	},
 	"pwa": {
 		"invalidRelease": "A descrição da atualização é inválida.",
@@ -639,8 +640,9 @@
 			"one": "Excluir {label} e {n} item?",
 			"other": "Excluir {label} e seus {n} itens?"
 		},
-		"deleteTitle": "Excluir {label}?",
-		"deleteExportNote": "As exportações não incluirão mais o espaço “{slot}”. Você precisa alterar qualquer código do jogo que use esse nome."
+		"deleteTitle": "Mover {label} para a lixeira?",
+		"deleteExportNote": "As exportações não incluirão mais o espaço “{slot}”. Você precisa alterar qualquer código do jogo que use esse nome.",
+		"theSlotIsDeleted": "A categoria sai do guarda-roupa. Você pode recuperá-la por 30 dias."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, direção {facing}",

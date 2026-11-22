@@ -184,7 +184,8 @@
 		"zoomIn": "拡大",
 		"zoomOut": "縮小",
 		"randomLook": "ランダムな見た目",
-		"none": "なし"
+		"none": "なし",
+		"moveToTrash": "ゴミ箱に移動"
 	},
 	"pwa": {
 		"invalidRelease": "アップデートの情報が無効です。",
@@ -622,8 +623,9 @@
 			"1": "{label}とそのアイテムを削除しますか？",
 			"other": "{label}とそのアイテム{n}個を削除しますか？"
 		},
-		"deleteTitle": "{label}を削除しますか？",
-		"deleteExportNote": "エクスポートに装備スロット「{slot}」が含まれなくなるため、それを参照しているゲームのコードは変更が必要です。"
+		"deleteTitle": "{label} をゴミ箱に移動しますか？",
+		"deleteExportNote": "エクスポートに装備スロット「{slot}」が含まれなくなるため、それを参照しているゲームのコードは変更が必要です。",
+		"theSlotIsDeleted": "カテゴリはワードローブから外れます。30 日間は元に戻せます。"
 	},
 	"stage": {
 		"characterFacing": "{name}、{move}、{facing}向き",

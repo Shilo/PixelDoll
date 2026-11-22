@@ -462,7 +462,7 @@
 					n: formatNumber(deleteUse.items, { useGrouping: false })
 				})
 			: t('slotsSheet.deleteTitle', { label: deletingLabel })}
-		action={t('common.delete')}
+		action={t('common.moveToTrash')}
 		busyAction={t('common.deleting')}
 		busy={deleteBusy}
 		problem={displayNestedMessage(deleteProblem || deleteReason)}
@@ -471,7 +471,7 @@
 		onconfirm={() => void remove()}
 		><p>
 			{#if deleteUse.items}{t('slotsSheet.theSlotAndItsItemsAreDeleted')}{:else}{t(
-					'slotsSheet.undoBringsItBack'
+					'slotsSheet.theSlotIsDeleted'
 				)}{/if}
 			{t('slotsSheet.deleteExportNote', { slot: deleting })}
 		</p></ConfirmDialog
