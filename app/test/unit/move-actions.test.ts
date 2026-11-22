@@ -1,7 +1,13 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { equipmentFixture } from './equipment-fixture.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
-import { moveDeletionBlocked, removeMove } from '../../src/studio/moveActions.svelte.ts';
+import {
+	moveDeletionBlocked,
+	removeMove,
+	stateCaptureNameIssue,
+	stateId
+} from '../../src/studio/moveActions.svelte.ts';
+import { moveLabel } from '../../src/studio/model.ts';
 import { errorText, LocalizedError } from '../../src/lib/message.ts';
 import {
 	doc,
@@ -80,6 +86,42 @@ test('removing a State confirms the State name instead of calling it a Move', as
 	record.manifest.rig.animations[1].kind = 'state';
 	await removeMove('walk');
 	expect(toast).toHaveBeenCalledWith({ key: 'state.removedName', vars: { name: 'Walk' } });
+});
+
+test('a State may use a built-in move name the character lacks, never an existing clip name', () => {
+	const manifest = structuredClone(store.project!.manifest);
+	manifest.rig.animations = manifest.rig.animations.filter(({ id }) => id !== 'walk');
+	manifest.rig.animations.push({ ...manifest.rig.animations[0], id: 'default' });
+	const issue = (name: string, reviews: string[] = []) =>
+		stateCaptureNameIssue(manifest, stateId(name), reviews);
+	expect([stateId('Walk'), stateId('Idle'), stateId('Slash'), stateId('Wave')]).toEqual([
+		'state_walk',
+		'state_idle',
+		'state_slash',
+		'wave'
+	]);
+	// Lists that only know the id still show the typed name; Default and Standing never pose as the Standing clip.
+	expect(['state_walk', 'state_slash', 'state_standing'].map((id) => moveLabel(id))).toEqual([
+		'Walk',
+		'Slash',
+		'State standing'
+	]);
+	expect(['Walk', 'Idle', 'Slash', 'Wave'].map((name) => issue(name))).toEqual(
+		Array(4).fill(undefined)
+	);
+	const taken = 'stateCapture.takenName';
+	// The Standing clip's id is default, and a Move under review or already added keeps its name.
+	expect([issue('Standing'), issue('Default'), issue('Walk', ['walk'])]).toEqual([
+		taken,
+		taken,
+		taken
+	]);
+	manifest.rig.animations.find(({ id }) => id === 'default')!.name = 'Pose';
+	expect(issue('Pose')).toBe(taken);
+	manifest.rig.animations.push({ ...manifest.rig.animations[0], id: 'walk' });
+	expect(issue('Walk')).toBe(taken);
+	manifest.rig.animations.push({ ...manifest.rig.animations[0], id: 'wave', name: 'Hello' });
+	expect([issue('Hello'), issue('Wave')]).toEqual([taken, taken]);
 });
 
 test('move deletion protects the final move, demo, dependent standing designs, and paid drafts', async () => {

@@ -15,6 +15,7 @@ import { GATES, isAction, ITEM_GRID_REGISTRATION_NOTICE, SLOTS } from '../lib/it
 import { coverageGaps, missingFrames } from '../lib/dress/dress.ts';
 import { DIRECTIONS, type Rig, type RigAnimation } from '../lib/rig/rig.ts';
 import { moveExportId } from '../lib/store/identity.ts';
+import { stateClipName } from '../lib/rig/poses.ts';
 import { clipKind } from '../lib/runtime/timeline.js';
 import { editedCount } from '../lib/frames/history.ts';
 import { message, type Message } from '../lib/message.ts';
@@ -233,7 +234,8 @@ export function moveLabel(id: string, moves: readonly MoveRef[] = []): string {
 		return text ? text[0].toUpperCase() + text.slice(1) : '';
 	};
 	const refs = moves.map((move) => (typeof move === 'string' ? { id: move } : move));
-	const labelOf = (move: Exclude<MoveRef, string>) => move.name ?? readable(move.id);
+	const labelOf = (move: Exclude<MoveRef, string>) =>
+		move.name ?? stateClipName(move.id) ?? readable(move.id);
 	const self = refs.find((move) => move.id === id) ?? { id };
 	const label = labelOf(self);
 	// Valid export IDs contain only lowercase letters, digits, underscores and hyphens, never parentheses.

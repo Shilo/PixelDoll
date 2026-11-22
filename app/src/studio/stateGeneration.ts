@@ -22,17 +22,10 @@ import { assignNewClipExportId } from '../lib/store/identity.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { cellBlob, imagesOf, provOf, run } from './create.ts';
-import { stateCaptureNameIssue } from './moveActions.svelte.ts';
-import { sameClipName, withClipWriteLock } from './clipName.ts';
-import {
-	doc,
-	flushSave,
-	openProject,
-	pendingBodyMoveName,
-	syncStoredProject,
-	toast,
-	ui
-} from './state.svelte.ts';
+import { pendingStateName, stateCaptureNameIssue } from './moveActions.svelte.ts';
+import { stateClipName } from '../lib/rig/poses.ts';
+import { withClipWriteLock } from './clipName.ts';
+import { doc, flushSave, openProject, syncStoredProject, toast, ui } from './state.svelte.ts';
 import { stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.ts';
 import { groundToSource } from './stateGrounding.ts';
 import {
@@ -287,12 +280,8 @@ async function prepareStatePlan(
 		throw error('Check the State name and edit instructions.', 'invalidInput');
 	await flushSave();
 	const { rec, project } = await loadProject(projectId);
-	const issue = stateCaptureNameIssue(rec.manifest, id);
-	if (
-		issue ||
-		Object.keys(rec.moveReviews ?? {}).some((moveId) => sameClipName(moveId, id)) ||
-		(!continuationToken && (await pendingBodyMoveName(projectId, id)))
-	)
+	const issue = stateCaptureNameIssue(rec.manifest, id, Object.keys(rec.moveReviews ?? {}));
+	if (issue || (!continuationToken && (await pendingStateName(projectId, id))))
 		throw new LocalizedError('That State name is unavailable.', issue ?? 'stateCapture.takenName');
 	if (rec.stateGeneration?.token !== continuationToken) throw unfinished();
 	const source = stateGenerationSource(project, sourceFrame);
@@ -511,7 +500,7 @@ async function generateState(prepared: PreparedState): Promise<StateReview> {
 		if (
 			!current ||
 			current.stateGeneration ||
-			stableStringify(current.manifest) !== stableStringify(rec.manifest) ||
+			stableStringify(db.asLoaded(current)?.manifest) !== stableStringify(rec.manifest) ||
 			current.character?.id !== rec.character?.id ||
 			Object.hasOwn(current.moveReviews ?? {}, id)
 		)
@@ -669,7 +658,7 @@ async function submitStateBatches(
 				if (
 					getKeyRevision() !== keyRevision ||
 					current?.stateGeneration?.token !== attempt.token ||
-					stableStringify(current.manifest) !== stableStringify(rec.manifest) ||
+					stableStringify(db.asLoaded(current)?.manifest) !== stableStringify(rec.manifest) ||
 					current.character?.id !== rec.character?.id ||
 					Object.hasOwn(current.moveReviews ?? {}, attempt.id)
 				)
@@ -756,8 +745,7 @@ export async function saveState(review: StateReview, riding = false): Promise<vo
 	if (
 		rec.stateGeneration?.token !== review.token ||
 		stateGenerationSource(project, review.source)?.version !== review.sourceVersion ||
-		stateCaptureNameIssue(rec.manifest, id) ||
-		Object.hasOwn(rec.moveReviews ?? {}, id)
+		stateCaptureNameIssue(rec.manifest, id, Object.keys(rec.moveReviews ?? {}))
 	)
 		throw changed();
 	const manifest = structuredClone(rec.manifest);
@@ -774,8 +762,10 @@ export async function saveState(review: StateReview, riding = false): Promise<vo
 		})
 	);
 	layer.cells[id] = Object.fromEntries(views);
+	const name = stateClipName(id);
 	const clip: RigAnimation = {
 		id,
+		...(name && { name }),
 		kind: 'state',
 		cells: 1,
 		loop: false,
@@ -795,7 +785,7 @@ export async function saveState(review: StateReview, riding = false): Promise<vo
 		if (
 			!current ||
 			current.stateGeneration?.token !== review.token ||
-			stableStringify(current.manifest) !== stableStringify(rec.manifest) ||
+			stableStringify(db.asLoaded(current)?.manifest) !== stableStringify(rec.manifest) ||
 			Object.hasOwn(current.moveReviews ?? {}, id)
 		)
 			throw changed();

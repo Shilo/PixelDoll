@@ -3,7 +3,7 @@
 // (0 = +x, 90 = down). Tables are written for south/east; north mirrors south (a -> 180 - a): in a back view the right arm is
 // on the viewer's right. 8 directions (B15): south-east uses the south table, north-east the mirrored one (front / back 3/4
 // views keep the arm on the same side of the screen as south / north); only the pure side view uses the east table.
-import type { DirectionName, Keypoint } from './rig.ts';
+import { DEFAULT_MOVE, type DirectionName, type Keypoint } from './rig.ts';
 import { flipSkeleton } from './skeleton.ts';
 import type { Kp, Skeleton } from './skeleton.ts';
 
@@ -409,6 +409,27 @@ export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]
 };
 /** Moves the user can add (idle is part of every base). */
 export const AUTHORED = Object.keys(ACTIONS).filter((a) => a !== 'idle');
+
+// Move presets create these ids and Preview plays `walk` and `idle` by id, so a State never takes one. Typed names
+// never produce `_`, so a prefixed id is never mistaken for one typed as "State walk".
+const BUILT_IN_CLIPS = [DEFAULT_MOVE, 'standing', 'idle', 'walk', 'run', ...AUTHORED];
+const STATE_PREFIX = 'state_';
+/** The id of a State named `slug`: a built-in move's name keeps its label but moves to a prefixed id. */
+export const stateClipId = (slug: string) =>
+	BUILT_IN_CLIPS.includes(slug) ? STATE_PREFIX + slug : slug;
+/** The name a State id was made from: `walk` for `state_walk`, otherwise the id itself. */
+export function stateClipBase(id: string) {
+	const slug = id.startsWith(STATE_PREFIX) ? id.slice(STATE_PREFIX.length) : '';
+	return BUILT_IN_CLIPS.includes(slug) ? slug : id;
+}
+/** The label a prefixed State id stands for, or undefined when the id is its own label. Default and Standing stay
+ *  unnamed: the Standing clip already shows that label. */
+export function stateClipName(id: string) {
+	const slug = stateClipBase(id);
+	return slug === id || slug === DEFAULT_MOVE || slug === 'standing'
+		? undefined
+		: slug[0].toUpperCase() + slug.slice(1);
+}
 
 /** Use eastern action math on the actual western rest pose, reflecting coordinates without changing art or joint labels. */
 export function authoredPoses(

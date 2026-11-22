@@ -2832,7 +2832,7 @@
 		"noEquipment": "Ausrüstung bleibt zurück.",
 		"noCredits": "Keine Credits.",
 		"invalidName": "Gib einen Namen mit einem lateinischen Buchstaben oder einer Zahl ein.",
-		"takenName": "Dieser Name ist vergeben oder reserviert. Wähle einen anderen.",
+		"takenName": "Eine Animation oder ein Zustand dieses Charakters hat diesen Namen schon. Wähle einen anderen.",
 		"savedAs": "Gespeichert als {name}",
 		"saving": "Zustand wird gespeichert…",
 		"saved": "Zustand gespeichert",

@@ -2832,7 +2832,7 @@
 		"noEquipment": "Equipment isn’t copied.",
 		"noCredits": "No credits used.",
 		"invalidName": "Enter a name with a Latin letter or number.",
-		"takenName": "This name is taken or reserved. Choose another.",
+		"takenName": "A move or State on this character already has this name. Choose another.",
 		"savedAs": "Saved as {name}",
 		"saving": "Saving state…",
 		"saved": "Captured state",

@@ -421,7 +421,8 @@ async function save(review: StateJointFitReview): Promise<void> {
 		throw changed();
 	await db.update<StoredProject>('projects', projectId, (record) => {
 		assertSelected(projectId);
-		if (!record || stableStringify(record.manifest) !== manifestVersion) throw changed();
+		if (!record || stableStringify(db.asLoaded(record)?.manifest) !== manifestVersion)
+			throw changed();
 		// Applied inside the transaction so concurrent skeleton writes for other cells are kept.
 		const result = applyStateJointFit(record.manifest, record.skeletons, review);
 		for (const { direction } of review.views)

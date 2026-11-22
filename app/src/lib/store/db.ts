@@ -596,7 +596,7 @@ export async function saveIdleCharacter(
 }
 
 /** A stored record as loadProject returns it: callers compare their loaded copy, which gains a default export id. */
-function asLoaded(record: StoredProject | undefined): StoredProject | undefined {
+export function asLoaded(record: StoredProject | undefined): StoredProject | undefined {
 	if (!record?.manifest || record.manifest.exportId) return record;
 	return {
 		...record,

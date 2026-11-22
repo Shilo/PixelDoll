@@ -14,7 +14,7 @@ import {
 	type Sha256
 } from '../rig/rig.ts';
 import { normalize, opaqueBox, pivotOf } from '../rig/normalize.ts';
-import { AUTHORED } from '../rig/poses.ts';
+import { stateClipId, stateClipName } from '../rig/poses.ts';
 import { roomFrame, standingRoom } from '../rig/reframe.ts';
 import type { Manifest, Project } from './manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
@@ -916,12 +916,19 @@ async function pixelLab(
 			animations.push({ id, cells: move.count, loop: true, frames: playlist(move.count, 100) });
 		}
 		for (const pose of poses) {
-			let id = slug(pose.name).slice(0, 45);
-			if ([DEFAULT_MOVE, 'standing', 'idle', 'walk', ...AUTHORED].includes(id)) id = `state-${id}`;
+			let id = stateClipId(slug(pose.name).slice(0, 45));
+			const name = stateClipName(id);
 			while (animations.some((animation) => animation.id === id)) id += '-copy';
 			cells[id] = {};
 			for (const { dir, path } of pose.rotations) cells[id][dir] = [await put(path)];
-			animations.push({ id, kind: 'state', cells: 1, loop: false, frames: playlist(1, 150) });
+			animations.push({
+				id,
+				kind: 'state',
+				cells: 1,
+				loop: false,
+				frames: playlist(1, 150),
+				...(name && { name })
+			});
 		}
 		const rest = images.get(cells[restId][directions[0]]![0]!)!;
 		const view = meta.view ?? meta.character?.view ?? 'low top-down',
