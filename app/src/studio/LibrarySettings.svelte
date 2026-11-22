@@ -303,9 +303,6 @@
 			<LibraryBackupButton settings disabled={busy} onbackup={backup} />
 			<div class="backup-notes">
 				<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
-				<p class="bu-muted settings-description privacy">
-					<Lock size={14} aria-hidden="true" />{t('librarySettings.privacy')}
-				</p>
 			</div>
 		</section>
 		<hr class="bu-separator" />

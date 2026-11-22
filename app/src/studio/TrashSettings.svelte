@@ -39,7 +39,8 @@
 		return clip && clipKind(clip) === 'state' ? 'state' : 'move';
 	}
 	const kindLabel = (entry: RecentlyDeleted) => t(KIND[kindOf(entry)]);
-	const dateOf = (iso: string) => new Date(iso).toLocaleDateString(getLocale());
+	const dateOf = (iso: string) =>
+		new Date(iso).toLocaleDateString(getLocale(), { dateStyle: 'medium' });
 
 	async function restoreEntry(id: string) {
 		if (busy) return;
