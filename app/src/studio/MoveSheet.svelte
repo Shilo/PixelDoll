@@ -112,7 +112,7 @@
 		pendingMoves,
 		withKey
 	} from './state.svelte.ts';
-	import { bodyQualityNote, plainReasonMessage } from './model.ts';
+	import { bodyQualityNote, displayMoveJob, plainReasonMessage } from './model.ts';
 	import { displayMove } from './displayMove.ts';
 	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
@@ -724,6 +724,7 @@
 	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
 	const nice = (s: string) =>
 		displayMove(s, [...(m?.rig.animations ?? []), ...options, ...stateIds]);
+	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const decimal = (n: number) =>
 		formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 	const usd = (n: number) =>
@@ -1828,7 +1829,7 @@
 	{:else if progress}
 		<div class="form">
 			<p style="font-weight:600">
-				{nice(moving.spec!.id)}{moving.spec?.dirs
+				{jobName(moving.spec!)}{moving.spec?.dirs
 					? ` · ${moving.spec.dirs.map(directionLabel).join(', ')}`
 					: ''}
 			</p>
@@ -1899,7 +1900,7 @@
 				</p>{/if}
 			{#if ownQueued.length}<p class="muted small">
 					{t(moving.error ? 'moveSheet.queuedNextRetry' : 'moveSheet.queuedNext', {
-						moves: ownQueued.map((q) => nice(q.spec.id)).join(', ')
+						moves: ownQueued.map((q) => jobName(q.spec)).join(', ')
 					})}
 				</p>{/if}
 			{#if keep && moving.spec}

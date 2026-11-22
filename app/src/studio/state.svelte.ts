@@ -111,7 +111,14 @@ import type {
 	MoveSpec,
 	Progress
 } from './create.ts';
-import { characterFacts, missingMoves, notShownIn, pixelSize, uniqueBy } from './model.ts';
+import {
+	characterFacts,
+	displayMoveJob,
+	missingMoves,
+	notShownIn,
+	pixelSize,
+	uniqueBy
+} from './model.ts';
 import { displayDirectionInSentence } from './displayDirection.ts';
 import { displayMove } from './displayMove.ts';
 import {
@@ -4402,10 +4409,19 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		}
 		const reviewItem = result.reviewItems?.[0];
 		if (reviewItem)
-			toast(message('state.moveNameHasItemIssuesToReviewNo', { moveName }), {
-				tone: 'warning',
-				action: () => openItemReview(projectId, reviewItem, spec.id)
-			});
+			toast(
+				message('state.moveNameHasItemIssuesToReviewNo', {
+					moveName: displayMoveJob(
+						moveName,
+						{ items: [reviewItem], itemsOnly: true },
+						store.project?.manifest.items
+					)
+				}),
+				{
+					tone: 'warning',
+					action: () => openItemReview(projectId, reviewItem, spec.id)
+				}
+			);
 	} catch (e) {
 		if (current()) {
 			failed = true;

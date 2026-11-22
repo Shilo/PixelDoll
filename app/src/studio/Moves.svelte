@@ -18,6 +18,7 @@
 	} from './state.svelte.ts';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
+	import type { MoveSpec } from './create.ts';
 	import { displayError } from '../lib/i18n.ts';
 	import { STATE_CAPTURE_MODE } from '../lib/rig/setup.ts';
 	import { characterBodySize } from './experience/bounds.ts';
@@ -30,7 +31,7 @@
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { t } from 'svelte-whisper';
 	import { queue } from '../lib/pixellab/queue.ts';
-	import { moveLabel } from './model.ts';
+	import { displayMoveJob, moveLabel } from './model.ts';
 	import { openStateReview, stateProgress, stateStatusText } from './stateJobs.svelte.ts';
 	import type { StateAttempt } from './stateGeneration.ts';
 	import type { StateProgress } from './stateRecovery.ts';
@@ -41,6 +42,7 @@
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const nice = (id: string) => displayMove(id, moveRefs);
+	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
 	const assets = $derived.by(() => {
@@ -179,7 +181,7 @@
 							class:spin={!moving.error && !moving.repairReview}
 							aria-hidden="true"
 						></span><span class="move-text"
-							><b>{nice(moving.spec.id)}</b><span class="muted small"
+							><b>{jobName(moving.spec)}</b><span class="muted small"
 								>{moving.repairReview
 									? moving.spec?.redrawItem
 										? t('moveSheet.review.redrawTitle')
@@ -197,7 +199,7 @@
 				{#each queued as q, i (i)}
 					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
 						><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
-							><b>{nice(q.spec.id)}</b><span class="muted small"
+							><b>{jobName(q.spec)}</b><span class="muted small"
 								>{moving.repairReview
 									? t('moves.waitingForRepairReview')
 									: moving.error

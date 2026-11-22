@@ -6227,7 +6227,9 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 	}, itemId);
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Walk Failed: tap for details' }).click();
+	await page
+		.getByRole('button', { name: 'Walk · Steel longsword Failed: tap for details' })
+		.click();
 	const sheet = page.getByRole('dialog', { name: 'New move', exact: true });
 	await expect(sheet.getByRole('button', { name: /^Generate again/ })).toContainText(
 		'Est. 10 gens'

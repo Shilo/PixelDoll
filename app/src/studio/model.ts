@@ -243,6 +243,17 @@ export function moveLabel(id: string, moves: readonly MoveRef[] = []): string {
 		? `${label} (${moveExportId(self, refs)})`
 		: label;
 }
+
+/** A move job's name. Items-only jobs for one move queue one per item, so each names its items to stay distinct. */
+export function displayMoveJob(
+	move: string,
+	spec: { readonly items: readonly string[]; readonly itemsOnly?: boolean },
+	items: readonly { readonly id: string; readonly name: string }[] = []
+): string {
+	if (!spec.itemsOnly) return move;
+	const names = spec.items.flatMap((id) => items.find((item) => item.id === id)?.name ?? []);
+	return names.length ? `${move} · ${names.join(', ')}` : move;
+}
 /** The noun of the description's first phrase: "a sturdy young dwarf with a friendly face" -> "Dwarf". */
 // ponytail: last word before with/who/in/wearing/comma; a rename field is the real fix.
 export function nameFrom(desc: string): string {
