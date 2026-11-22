@@ -37,6 +37,12 @@ export function riderPoseOptions(manifest: Manifest | undefined): RiderPoseOptio
 		}));
 }
 
+/** A State other than Standing is drawn seated, so mounted leg cutting never applies to it. */
+export function legsKept(manifest: Manifest | undefined, clip: string | null) {
+	const animation = clip ? manifest?.rig.animations.find(({ id }) => id === clip) : undefined;
+	return !!animation && clipKind(animation) === 'state' && animation.id !== DEFAULT_MOVE;
+}
+
 /** The Riding pose for this character, if it is still one of its States. */
 export function activeRiderPose(projectId: string, manifest: Manifest | undefined) {
 	const chosen = experience.ridingPoses[projectId];

@@ -79,6 +79,7 @@
 	setting="hide-legs"
 	options={legOptions}
 	value={experience.mountLegs}
+	disabled={!!pose}
 	onselect={(value: MountLegMode) => saved(setMountLegs(value))}
 >
 	{#snippet icon()}<Footprints size={18} aria-hidden="true" />{/snippet}

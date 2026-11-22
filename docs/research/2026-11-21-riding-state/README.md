@@ -34,12 +34,23 @@ On the default Pro route, a three-facing State (10) costs more than a three-faci
 
 The spend was approved up to 15 generations, stopping at the first failed step. Both probes used the existing Pro Test character (64 px, East Standing), `/edit-image-pixen`, seed 4173, and one East image. The requests were built by Studio's `stateRequests` and sent through the Studio queue. They were a direct probe, not the Create State sheet. Each receipt reported 1 generation, with one attempt each.
 
-- **A (owner's candidate, now the template):** the text in `app/src/studio/stateTemplates.ts`.
+- **A (owner's candidate, the first template):** "Change only the pose. Show the same character sitting upright astride an invisible mount, with one leg on each side. Bend the knees and let the lower legs hang down at the sides, not forward like sitting in a chair. Keep the elbows relaxed and the empty hands slightly forward. Preserve the character’s design, proportions, pixel-art style, and facing. Draw only the rider. No mount, saddle, reins, or props."
 - **B (geometry only):** "Change only the pose and keep the exact same camera angle and facing direction as the input image. The same character sits upright with the legs apart, thighs angled down, knees bent, lower legs hanging straight down so the feet are under the hips. Elbows relaxed, empty hands held forward at waist height. Keep the character's design, proportions, pixel-art style and size. Only the character, transparent background."
 
 ![Source East, probe A, probe B](evidence/east-probes.png)
 
-Both failed in the same way. The East side view turned into a front view, and the pose reads as a wide squat or chair-sit, not astride. B's explicit camera-angle sentence did not help. Neither drew a mount, saddle or reins. This is one seed on one model, so it neither qualifies nor rules out the wording on Pro or Pro Flash. Following the approved stop rule, no South, Pro or full-set request was sent. Total spend: 2 generations.
+Both failed in the same way. The East side view turned into a front view, and the pose reads as a wide squat or chair-sit, not astride. B's explicit camera-angle sentence did not help. Neither drew a mount, saddle or reins. This is one seed on one model, so it neither qualifies nor rules out the wording on Pro or Pro Flash. Following the approved stop rule, no South, Pro or full-set request was sent.
+
+### Pro Flash follow-up
+
+With the owner's go-ahead to continue within the same 15-generation approval, two more East probes used `/edit-image-pro-flash` (text), the same character, seed and 64 px cell. The free quote was 5 generations per image; each receipt reported 5, with one attempt.
+
+- **C:** prompt A.
+- **D (now the template):** the text in `app/src/studio/stateTemplates.ts`, which names the side-view leg directly: near leg hanging almost straight down with the foot under the hip, hands forward as if holding reins.
+
+![Source East, probe C, probe D](evidence/east-pro-flash-probes.png)
+
+Pro Flash kept the East side view in both, unlike Pixen. C still bends both knees forward like sitting on a stool. D has an upright torso, the near leg down the side and hands forward, but the far leg is raised and bent forward, so it reads partly as a step. Neither drew a horse, saddle or reins. D is the better wording on this sample; one image per prompt does not qualify it, and front, back and diagonal views are untested. The remaining 3 generations could not buy another Pro Flash probe, so spending stopped. Total spend: 12 generations (2 Pixen, 10 Pro Flash).
 
 ## Verification
 
@@ -57,6 +68,6 @@ Both failed in the same way. The East side view turned into a front view, and th
 ## Not verified
 
 - A convincing astride still. The only riding art on stage is the old chair-sit East Ride frame.
-- The template on Pro or Pro Flash, and any front, back or diagonal view.
+- The template on Pro, and any front, back or diagonal view on any model.
 - Real mounts, gear on a riding State, and engine export of mounting.
-- Seat accuracy for generated States without a hip anchor.
+- Seat accuracy for generated States without a hip anchor or fitted joints (fitted States now sit on their measured hips).

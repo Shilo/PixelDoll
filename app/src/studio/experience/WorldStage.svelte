@@ -39,7 +39,7 @@
 	} from './mounts.ts';
 	import type { Img } from '../../lib/image/png.ts';
 	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
-	import { activeRiderPose } from './riderPose.ts';
+	import { activeRiderPose, legsKept } from './riderPose.ts';
 	import { mountPlacement } from './mountPlacement.ts';
 	import { imageCanvas } from './imageCanvas.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
@@ -110,9 +110,9 @@
 	const riderPose = $derived(
 		mountVisible ? activeRiderPose(doc.id, view.project?.manifest) : undefined
 	);
-	// A rider pose is drawn seated: cutting legs by standing or estimated joints would cut the wrong pixels.
+	// A State is drawn seated: cutting legs by standing or estimated joints would cut the wrong pixels.
 	const legMode = (clip: string | null) =>
-		riderPose && clip === riderPose ? 'none' : experience.mountLegs;
+		legsKept(view.project?.manifest, clip) ? 'none' : experience.mountLegs;
 	const previewMount = $derived.by(() => {
 		if (experience.mode !== 'preview' || !availability) return null;
 		return mountedPresentation(resolvePreview(availability, { clip: ui.anim, direction: ui.dir }));

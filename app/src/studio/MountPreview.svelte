@@ -19,7 +19,7 @@
 		resolveLive,
 		type PlaybackClock
 	} from './experience/presentation.ts';
-	import { activeRiderPose } from './experience/riderPose.ts';
+	import { activeRiderPose, legsKept } from './experience/riderPose.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import { Pause, Play } from './icons.ts';
 	import { openFixture } from '../lib/dress/project.ts';
@@ -103,7 +103,7 @@
 				const key = JSON.stringify([p.clip, p.direction, clock.cell]);
 				if (composed?.key !== key && place?.view && p.clip && p.direction) {
 					const result = renderPresentation(a, current.items, p, clock.cell);
-					const mode = p.clip === ridingPose ? 'none' : legs;
+					const mode = legsKept(current.project.manifest, p.clip) ? 'none' : legs;
 					composed = result.image
 						? {
 								key,

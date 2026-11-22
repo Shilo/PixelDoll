@@ -2829,9 +2829,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	// The Riding template fills editable instructions; Custom gives back what was typed.
 	const templates = newState.getByRole('radiogroup', { name: 'Start from' });
 	await templates.getByRole('radio', { name: 'Riding', exact: true }).click();
-	await expect(instructions).toHaveValue(
-		/^Change only the pose\. Show the same character sitting upright astride/
-	);
+	await expect(instructions).toHaveValue(/^Change only the pose\. Keep the same view and facing\./);
 	await templates.getByRole('radio', { name: 'Custom', exact: true }).click();
 	await expect(instructions).toHaveValue('Raise both hands');
 	await page.keyboard.press('ArrowRight');

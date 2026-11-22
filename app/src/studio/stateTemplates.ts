@@ -2,6 +2,6 @@
 // docs/research/2026-11-21-riding-state/README.md for how the riding wording was tested.
 export const STATE_TEMPLATES = {
 	riding:
-		'Change only the pose. Show the same character sitting upright astride an invisible mount, with one leg on each side. Bend the knees and let the lower legs hang down at the sides, not forward like sitting in a chair. Keep the elbows relaxed and the empty hands slightly forward. Preserve the character’s design, proportions, pixel-art style, and facing. Draw only the rider. No mount, saddle, reins, or props.'
+		"Change only the pose. Keep the same view and facing. The character sits upright astride an invisible horse: torso vertical, legs apart around the horse's sides, the near leg hangs almost straight down with the knee only slightly bent and the foot directly below the hip, toes forward. Elbows bent, empty hands forward at waist height as if holding reins. Preserve the character's design, proportions and pixel-art style. Draw only the character, no horse, saddle or reins."
 } as const;
 export type StateTemplate = keyof typeof STATE_TEMPLATES;

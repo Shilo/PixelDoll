@@ -328,8 +328,9 @@ export function sampleMountFrame(view: MountView, elapsedMs: number): number {
 }
 
 export interface RiderContact extends Point {
-	/** `hip` is the rig's estimated hip anchor, a candidate, not reviewed saddle contact. */
-	source: 'hip' | 'estimate';
+	/** `hip` is the rig's hip anchor and `joints` the clip's measured hips (a fitted State): candidates, not reviewed
+	 *  saddle contact. */
+	source: 'hip' | 'joints' | 'estimate';
 }
 /** Fraction of standing height above the feet used when no hip anchor exists. A disclosed estimate. */
 export const ESTIMATED_HIP = 0.45;
@@ -339,7 +340,7 @@ export const ESTIMATED_HIP = 0.45;
  * move's first cell, so the move's own motion is preserved rather than pinned at the hip.
  */
 export function riderContact(
-	rig: Pick<Rig, 'pivot' | 'anchors'>,
+	rig: Pick<Rig, 'pivot' | 'anchors'> & Partial<Pick<Rig, 'cell' | 'animations' | 'directions'>>,
 	frame: Pick<Frame, 'x' | 'y'>,
 	clip: string,
 	direction: DirectionName,
@@ -354,6 +355,22 @@ export function riderContact(
 			y: frame.y + hip[1] + 0.5 - rig.pivot.y,
 			source: 'hip'
 		};
+	// Measured joints are normalized to the cell; a mirrored facing reflects its drawn source's joints.
+	const mirror = rig.directions?.find(({ id }) => id === direction)?.mirrorOf;
+	const sources = rig.animations?.find(({ id }) => id === clip)?.sources;
+	const from = sources?.[direction] ? direction : mirror;
+	const joints = from && sources?.[from]?.measured?.[cell];
+	const hips = ['LEFT HIP', 'RIGHT HIP'].map((label) => joints?.find((p) => p.label === label));
+	if (rig.cell && hips.every((p) => p && [p.x, p.y].every(Number.isFinite))) {
+		const cellW = rig.cell.w;
+		const x = ((hips[0]!.x + hips[1]!.x) / 2) * cellW,
+			y = ((hips[0]!.y + hips[1]!.y) / 2) * rig.cell.h;
+		return {
+			x: frame.x - rig.pivot.x + (from === direction ? x : cellW - x),
+			y: frame.y - rig.pivot.y + y,
+			source: 'joints'
+		};
+	}
 	return { x: ground.x, y: ground.y - standingHeight * ESTIMATED_HIP, source: 'estimate' };
 }
 
