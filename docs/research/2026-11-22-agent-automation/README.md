@@ -107,3 +107,71 @@ open the item, step each of 32 frames and capture each (inferred: about 35 or mo
 - PixelLab originals and pre-extraction frames as evidence, for telling generation faults from extraction faults.
 - Live paid test of `create_character` and `create_item` within an approved budget; two-tab test.
 - Origin-trial token decision; ChatGPT site tools, DevTools MCP and mobile checks.
+
+## Iteration 2
+
+**Team.** Three leads worked in parallel: Opus 5.5 medium (Claude), Codex GPT-6.2 Sol medium through `codex exec`, and
+DeepSeek v4.1 Flash low through OpenCode.
+
+**Steps.**
+
+1. **Research.** Each lead independently re-checked the WebMCP spec and browsers, every client route, the alternatives
+   and the mobile situation rather than trusting iteration 1.
+2. **Critiques.** All three reviewed the shipped code adversarially (correctness, budget holes, evidence quality, tool
+   design, tests, docs accuracy) against one brief, without editing.
+3. **Plan.** The critiques merged into one plan with three tracks: tool core, evidence, moves.
+4. **Competing prototypes.** Isolated git worktrees held rival branches: core (Opus against Codex), evidence (Codex
+   against DeepSeek), moves (Opus only). Leads ran type checks and their own unit tests, not the end-to-end suite.
+5. **Judged picks.** An independent judge per track read the branches and chose a base, then listed ports and gaps.
+   - Core: Opus base. Its receipts, serialization and budget ledger were more complete; Codex's job-error policy and
+     immediate start ids were ported, and the judge's defects were fixed during integration.
+   - Evidence: Codex base, for the shared crop and the detached-pixel digest; DeepSeek's fit-all-sheets zoom, page cap,
+     digest boxes and device-pixel labels were ported. Its 4-connected parts, composite coverage and async re-encode
+     panel were rejected.
+   - Moves: Opus. Integration fixed its judge findings: acceptance receipt from the Studio, quote recheck before
+     reserving, a loop regression, the skeleton probe timeout, and accept and discard review tools.
+6. **Integration.** One branch per track merged in order; real agents reran against a production build.
+
+**Real-agent results** (production build, 127.0.0.1:5208, keyless: dry runs and reads only, no generations spent).
+
+| Client and model                      | Route                              | What it did                                                                                                          | Result                                                                                                                                     |
+| ------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Claude app built-in browser, Opus 5.5 | `window.pixeldoll`                 | 11 calls: overview, copy, open, inspect character, inspect item, set outfit, set color, undo, item dry run, activity | All read and edit calls ok; item dry run 10 generations, about $0.06; saw sheets and the digest; `add_move` refused on a demo copy         |
+| OpenCode 2.2.6 + DeepSeek v4.1 Flash  | Playwright MCP, native `webmcp_*`  | 25 native tools available, 16 page calls, two sheets read in one screenshot                                          | Read 12 frames with 2 to 8 px detached parts near the hilt; scarf dry run 10 generations, about $0.06; `add_move` needs a rigged character |
+| Codex CLI 0.167 + GPT-6.2 Sol         | Playwright MCP, `browser_evaluate` | 13 calls through `window.pixeldoll`; no mid-session tool reload                                                      | Matched the digest, saw the sheets; scarf dry run 10 generations, about $0.06; confirmed rig setup is disabled for a demo copy             |
+
+**Research corrections** (re-verified 2026-11-22).
+
+- Chrome's WebMCP trial was extended to M162, ending 2027-03-30, not M156.
+- Edge's trial runs to 2027-03-30. Brave Leo lists WebMCP in 1.102.2.
+- Firefox has an experimental implementation behind `dom.modelcontext.enabled`, not a standards position only.
+- WebKit states a position of oppose.
+- Gemini CLI ended individual account authentication in June 2026; Antigravity and enterprise paths remain.
+- ChatGPT Atlas was retired on 2026-08-09; the desktop app's site tools are the route now.
+- Claude web and mobile have a cloud browser beta, separate from the person's local library.
+- Android can be driven from a desktop through Chrome DevTools MCP over `adb`; iOS still has no route.
+
+## Iteration 3
+
+**Team.** Same three models. This round was audit only, then implementation in two isolated worktrees.
+
+**Steps.**
+
+1. **Three blind audits.** Each model re-verified the time-sensitive research and challenged every iteration 2 decision.
+   Two high findings led: queued agent work could submit under a replaced PixelLab account, and `accept_move` could
+   decide a candidate the agent never inspected.
+2. **Merged fixes.** Budget and receipts track: bind paid dispatch to a non-secret credential identity, return
+   `request_budget` immediately with a pending `activityId`, release unsent reservations after End, make targeted
+   activity reads return only matched records, and replay paid starts before UI guards. Evidence and moves track: crop
+   the item-alone sheet tight to the item, show one sheet at a time with End reachable, label shown and sheet scales,
+   encode PNG only when `imageData` is asked for, report `addMove` readiness with a reason, bind decisions to an
+   immutable `candidateId`, and return `equipmentToPose`.
+3. **Integration.** Both tracks merged; 25 tools now register. No new live agent run in this iteration.
+
+**Remaining limits.**
+
+- Accepting a move does not pose worn equipment onto it; the person does that in the Studio from each item.
+- A demo copy can never get moves: it lacks the standing views rig setup needs, and agents cannot start rig setup.
+- Paid starts are still untested live. Every agent run was keyless; only refusal, approval and End are covered, plus a
+  mocked admission path in the end-to-end suite.
+- ChatGPT site tools, Chrome DevTools MCP and the Android route were read from primary sources, not run.
