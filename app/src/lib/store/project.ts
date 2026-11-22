@@ -268,8 +268,8 @@ export function restoreRemoved(
 	if (
 		m.rig.cell.w !== b.rig.cell.w ||
 		m.rig.cell.h !== b.rig.cell.h ||
-		stableStringify(m.rig.directions.map((d) => d.id)) !==
-			stableStringify(b.rig.directions.map((d) => d.id))
+		stableStringify(m.rig.pivot) !== stableStringify(b.rig.pivot) ||
+		stableStringify(m.rig.directions) !== stableStringify(b.rig.directions)
 	)
 		return { items: 0, outfits: 0, skipped: wanted.length, worn: [], refused: 'geometry' };
 	// The category first: its definition, its place in the ladder, and the references other categories had to it.
@@ -324,6 +324,8 @@ export function restoreRemoved(
 		m.items.splice(Math.min(at, m.items.length), 0, copy);
 		// Frames for a move deleted since this item are dead weight: meet the moves the character still has.
 		retainItemMoves(copy, new Set(m.rig.animations.map((clip) => clip.id)));
+		// Fitted to this body, not the one it was deleted against: exports treat a stale hash as out of date.
+		copy.baseHash = m.rig.baseHash;
 		items++;
 	}
 	const back = new Set(wanted.filter((id) => m.items.some((it) => it.id === id)));

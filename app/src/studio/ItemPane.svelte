@@ -4,6 +4,7 @@
 	import { openerLabel } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { toast } from './state.svelte.ts';
 	import type { Message } from '../lib/message.ts';
 	import { displayDirectionInSentence, displayDirectionShort } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
@@ -873,7 +874,7 @@
 			onconfirm={() => {
 				const id = target.id;
 				confirmRemove = false;
-				void removeItem(id);
+				void removeItem(id).catch((error) => toast(errorMessage(error), { tone: 'danger' }));
 			}}><p>{t('common.deleteRecoverable')}</p></ConfirmDialog
 		>
 	{/if}

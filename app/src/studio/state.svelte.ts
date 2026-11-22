@@ -1709,6 +1709,7 @@ export async function refreshRecentlyDeleted(): Promise<void> {
 				const gone = readEntry(value);
 				if (gone) forgetPose(gone);
 			}
+		dropTrashSteps(stale);
 		await Promise.all(stale.map((key) => db.del('projects', key)));
 		deleted.entries = listEntries(
 			values.filter((value) => !stale.includes((value as { id?: string })?.id ?? '')),
@@ -1723,7 +1724,14 @@ export async function refreshRecentlyDeleted(): Promise<void> {
 
 /** Put back exactly what one entry removed. A character comes back under its own key, or as a copy when that key is taken.
  *  A reopened character is refreshed quietly, so the history behind this step stays usable. */
-export async function restoreDeleted(id: string): Promise<boolean> {
+/** Drop recovery steps that name entries which no longer exist: a restore through the toast or Trash, or a permanent delete. */
+function dropTrashSteps(keys: Iterable<string>) {
+	const gone = new Set(keys);
+	doc.undo = doc.undo.filter((step) => !step.trash || !gone.has(step.trash));
+	doc.redo = doc.redo.filter((step) => !step.trash || !gone.has(step.trash));
+}
+
+async function restoreDeletedEntry(id: string): Promise<boolean> {
 	try {
 		const entry =
 			deleted.entries.find((e) => e.id === id) ?? (await readDeleted()).find((e) => e.id === id);
@@ -1838,11 +1846,18 @@ export async function keysToPruneAndForget(): Promise<string[]> {
 	return keys;
 }
 
+export async function restoreDeleted(id: string): Promise<boolean> {
+	const restored = await restoreDeletedEntry(id);
+	if (restored) dropTrashSteps([id]);
+	return restored;
+}
+
 export async function deleteDeletedForever(id: string): Promise<void> {
 	// Forgetting the riding pose belongs here, not on the recoverable delete: a restore keeps it, a permanent one does not.
 	const entry = readEntry(await db.get<unknown>('projects', id).catch(() => undefined));
 	if (entry) forgetPose(entry);
 	await discardDeleted(id);
+	dropTrashSteps([id]);
 	await refreshRecentlyDeleted();
 	notifyLibraryChanged(id);
 	void cleanUp(0, true).catch((error) => console.error('cleanup after delete forever', error));

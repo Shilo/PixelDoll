@@ -90,6 +90,7 @@
 		try {
 			await deleteDeletedForever(id);
 			confirmDelete = undefined;
+			busy = '';
 			await tick();
 			afterRow(at);
 		} catch (cause) {
@@ -177,7 +178,10 @@
 						disabled={!!busy}
 						aria-label={t('recentlyDeleted.deleteForeverNamed', { name: entry.name })}
 						title={t('recentlyDeleted.deleteForeverNamed', { name: entry.name })}
-						onclick={() => (confirmDelete = entry.id)}
+						onclick={() => {
+							failure = undefined;
+							confirmDelete = entry.id;
+						}}
 					>
 						<Trash2 size={18} aria-hidden="true" />
 					</button>
@@ -202,7 +206,10 @@
 			busyAction={t('common.deleting')}
 			busy={!!busy}
 			problem={failure ? displayMessage(failure) : ''}
-			oncancel={() => (confirmDelete = undefined)}
+			oncancel={() => {
+				failure = undefined;
+				confirmDelete = undefined;
+			}}
 			onconfirm={() => void deleteForever(entry.id)}
 		>
 			<p>
