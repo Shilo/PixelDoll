@@ -112,13 +112,68 @@ describe('sync engine', () => {
 		expect(desktop.library.get(C)).toEqual(before);
 	});
 
-	it('T8 rebuilds a wiped cloud folder from local work', async () => {
+	it('T8 asks before rebuilding a wiped cloud folder, then rebuilds it from local work', async () => {
 		const { remote, desktop } = await pair();
 		remote.files.clear();
+		expect(await desktop.sync()).toBe('missing');
+		desktop.reload(); // also after the page loads again
+		expect(await desktop.sync()).toBe('missing');
+		await desktop.engine.rebuild();
 		expect(await desktop.sync()).toBe('synced');
 		const fresh = new Device(remote);
 		await fresh.sync();
 		expect(fresh.library.get(C)).toEqual(desktop.library.get(C));
+	});
+
+	it('re-uploads by itself when only its heads file is gone (an older copy of the folder came back)', async () => {
+		const { remote, desktop } = await pair();
+		for (const path of [...remote.files.keys()])
+			if (path.startsWith('devices/')) remote.files.delete(path);
+		expect(await desktop.sync()).toBe('synced');
+		expect([...remote.files.keys()].some((p) => p.startsWith('devices/'))).toBe(true);
+	});
+
+	it('a revision cut off by closing the tab is uploaded after the reload', async () => {
+		const { remote, desktop, phone } = await pair();
+		edit(desktop, (c) => c.manifest.items.push({ id: 'cape', name: 'cape', cells: [] }));
+		edit(desktop, (c) => (c.manifest.name = 'Closed mid-upload'));
+		const put = remote.put.bind(remote);
+		remote.put = (path, bytes) =>
+			path.startsWith('revs/') ? new Promise(() => {}) : put(path, bytes); // the tab closes here
+		void desktop.sync();
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		remote.put = put;
+		desktop.reload();
+		expect(await desktop.sync()).toBe('synced');
+		await phone.sync();
+		expect(phone.library.get(C).manifest.name).toBe('Closed mid-upload');
+	});
+
+	it('a device that stopped syncing costs nothing on later idle syncs', async () => {
+		const { remote, desktop, phone } = await pair();
+		const stale = new Device(remote);
+		await stale.sync(); // then never opened again
+		for (let i = 0; i < 3; i++) {
+			edit(phone, (c) => (c.manifest.name = `edit ${i}`));
+			await phone.sync();
+		}
+		await desktop.sync();
+		await desktop.sync();
+		remote.resetStats();
+		await desktop.sync();
+		expect(remote.stats.requests).toBe(1);
+		expect(desktop.library.get(C).manifest.name).toBe('edit 2');
+	});
+
+	it('a lagging listing that misses its own heads file triggers no re-upload', async () => {
+		const { remote, desktop } = await pair();
+		const list = remote.list.bind(remote);
+		remote.list = async (prefix) =>
+			(await list(prefix)).filter((e) => !e.path.startsWith('devices/'));
+		remote.resetStats();
+		expect(await desktop.sync()).toBe('synced');
+		remote.list = list;
+		expect(remote.stats.puts).toBe(0);
 	});
 
 	it('T9 pauses when the cloud is full and resumes when space returns', async () => {

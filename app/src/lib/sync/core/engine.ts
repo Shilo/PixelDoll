@@ -35,6 +35,9 @@ export interface Rev {
 	conflicts: ConflictNote[];
 	device: string;
 	at: number;
+	/** Known to be in the cloud (read from it, or uploaded): a revision made here without it is queued again, even if a
+	 *  closed tab lost the pending list it was in. */
+	up?: boolean;
 }
 
 /** What the engine needs from the app: its records as synced bodies, their artwork, and a safe way to write. */
@@ -62,6 +65,15 @@ export interface Library {
 	policy: MergePolicy;
 }
 
+/** One saved version of a character; `current` is the one this device shows now. */
+export interface Version {
+	id: string;
+	depth: number;
+	current: boolean;
+	at?: number;
+	deleted?: boolean;
+}
+
 export type Status =
 	'idle' | 'syncing' | 'synced' | 'conflict' | Exclude<SyncErrorCode, 'failed'> | 'failed';
 
@@ -70,6 +82,9 @@ interface RecordMeta {
 	/** Digest of the body and notes the base gave this device; a different digest now means a local change. */
 	digest: string | null;
 	conflicts: ConflictNote[];
+	/** Other devices' heads already merged into the base: skipped next time, so a device that stopped syncing costs no
+	 *  requests. */
+	seen?: string[];
 }
 interface State {
 	device: string;
@@ -86,6 +101,15 @@ interface State {
 	verifying: boolean;
 	/** The cloud folder vanished: nothing syncs until the user confirms a rebuild. */
 	missing?: boolean;
+	/** The provider account this state describes; another one is a provider switch and re-uploads everything. */
+	account?: string;
+}
+
+export interface EngineOptions {
+	/** False for a one-off import: read a folder into the library, write nothing to it. */
+	writes?: boolean;
+	/** Which provider account this is (provider and email): state from another one is a provider switch. */
+	account?: string;
 }
 
 const enc = new TextEncoder(),
@@ -117,6 +141,8 @@ const noteKey = (note: ConflictNote) => stableStringify([note.path, note.aRev, n
 const hex = /^[0-9a-f]{64}$/;
 const safeRecord = /^[a-z0-9-]{1,80}$/;
 
+const folderGone = () => new SyncError('missing', 'The cloud folder is gone.');
+
 export function newDevice(): string {
 	return crypto.randomUUID().replace(/-/g, '');
 }
@@ -136,9 +162,13 @@ export class Engine {
 		private store: SyncStore,
 		private remote: Provider,
 		private library: Library,
-		/** False for a one-off import: read a folder into the library, write nothing to it. */
-		private writes = true
-	) {}
+		options: EngineOptions = {}
+	) {
+		this.writes = options.writes ?? true;
+		this.account = options.account ?? '';
+	}
+	private writes: boolean;
+	private account: string;
 
 	async sync(): Promise<Status> {
 		this.status = 'syncing';
@@ -148,6 +178,8 @@ export class Engine {
 		try {
 			this.state = await this.load();
 			if (this.state.missing) return (this.status = 'missing');
+			if (this.writes && this.state.account !== undefined && this.state.account !== this.account)
+				this.forgetRemote();
 			this.remoteObjects = new Set(this.state.objects);
 			await this.checkFormat();
 			const heads = await this.pull();
@@ -210,16 +242,15 @@ export class Engine {
 	}
 
 	/** Earlier revisions of a character, newest first (the cloud listing plus what this device made). */
-	async history(
-		record: string
-	): Promise<{ id: string; depth: number; at?: number; deleted?: boolean }[]> {
+	async history(record: string): Promise<Version[]> {
 		this.state = await this.load();
 		const graph = await this.graph(record, true);
-		const out = new Map<string, { id: string; depth: number; at?: number; deleted?: boolean }>();
-		for (const [id, node] of graph) out.set(id, { id, depth: node.depth });
+		const current = this.state.records[record]?.base;
+		const out = new Map<string, Version>();
+		for (const [id, node] of graph) out.set(id, { id, depth: node.depth, current: id === current });
 		for (const id of this.state.pending) {
 			const rev = await this.store.get<Rev>('revs', id);
-			if (rev?.record === record) out.set(id, { id, depth: rev.depth });
+			if (rev?.record === record) out.set(id, { id, depth: rev.depth, current: id === current });
 		}
 		for (const entry of out.values()) {
 			const rev = await this.store.get<Rev>('revs', entry.id);
@@ -276,6 +307,13 @@ export class Engine {
 		];
 	}
 
+	private pushedHere() {
+		return (
+			this.state.account === this.account &&
+			!!this.state.devices[`devices/${this.state.device}.json`]
+		);
+	}
+
 	private async checkFormat() {
 		if (this.formatChecked) return;
 		const marker = await this.remote.get(MARKER);
@@ -288,8 +326,11 @@ export class Engine {
 			}
 			if (format !== FORMAT)
 				throw new SyncError('update', 'The cloud copy was made by a newer PixelDoll.');
-		} else if (this.writes)
+		} else if (this.writes) {
+			// This device wrote to this account before and the whole folder is gone (trashed or wiped): ask first.
+			if (this.pushedHere()) throw folderGone();
 			await this.remote.put(MARKER, enc.encode(JSON.stringify({ format: FORMAT })));
+		}
 		this.formatChecked = true;
 	}
 
@@ -300,9 +341,17 @@ export class Engine {
 			heads = new Map<string, Set<string>>();
 		const listed = await this.remote.list('devices/');
 		const mine = `devices/${state.device}.json`;
-		// Our own heads file vanished (a wiped or restored folder, a provider switch): re-upload what we have.
-		if (this.writes && state.devices[mine] && !listed.some((entry) => entry.path === mine))
+		// Our own heads file vanished: a whole folder gone asks first; otherwise (a restored older copy of the folder)
+		// re-upload what we have. A lagging listing is ruled out by reading the file itself.
+		if (
+			this.writes &&
+			state.devices[mine] &&
+			!listed.some((entry) => entry.path === mine) &&
+			!(await this.remote.get(mine))
+		) {
+			if (!(await this.remote.get(MARKER))) throw folderGone();
 			this.forgetRemote();
+		}
 		for (const entry of listed) {
 			let file = state.devices[entry.path];
 			if (!file || file.etag !== entry.etag) {
@@ -375,7 +424,7 @@ export class Engine {
 		if (rev.record !== record || (await revId(full)) !== id) return undefined;
 		if (!rev.deleted && this.library.check(body) === 'newer')
 			throw new SyncError('update', 'A character was saved by a newer PixelDoll.');
-		await this.store.put('revs', id, rev);
+		await this.store.put('revs', id, { ...rev, up: true });
 		return full;
 	}
 
@@ -470,7 +519,10 @@ export class Engine {
 		};
 		const id = await revId(fields);
 		const known = await this.store.get<Rev>('revs', id);
-		if (known) return { ...known, body: fields.body };
+		if (known) {
+			if (!known.up && !this.state.pending.includes(id)) this.state.pending.push(id);
+			return { ...known, body: fields.body };
+		}
 		const rev: Rev = {
 			...fields,
 			id,
@@ -525,7 +577,9 @@ export class Engine {
 			if (!safeRecord.test(record)) continue;
 			const meta = state.records[record] ?? { base: null, digest: null, conflicts: [] };
 			const candidates = new Map<string, Rev>();
+			const seen = new Set(meta.seen ?? []);
 			for (const id of remoteHeads.get(record) ?? []) {
+				if (seen.has(id)) continue;
 				const rev = await this.rev(record, id);
 				if (rev) candidates.set(id, rev);
 			}
@@ -568,10 +622,13 @@ export class Engine {
 				)
 					continue; // busy or changed meanwhile: merge it next time
 			}
+			// Every head was merged into the result, so each one is now an ancestor of the base.
+			const merged = [...(remoteHeads.get(record) ?? [])].filter((id) => id !== result.id);
 			state.records[record] = {
 				base: result.id,
 				digest: await digestOf(next, result.conflicts),
-				conflicts: result.conflicts
+				conflicts: result.conflicts,
+				...(merged.length ? { seen: merged } : {})
 			};
 		}
 	}
@@ -656,6 +713,7 @@ export class Engine {
 				}
 			for (const rev of pending) {
 				if (state.verifying && (await this.graph(rev.record)).has(rev.id)) {
+					await this.store.put('revs', rev.id, { ...rev, up: true });
 					state.pending = state.pending.filter((id) => id !== rev.id);
 					continue;
 				}
@@ -671,7 +729,9 @@ export class Engine {
 					this.remoteObjects.add(hash);
 				}
 				const name = [rev.depth, rev.id, ...rev.parents].join('.');
-				await this.remote.put(`revs/${rev.record}/${name}.json.gz`, await packJson(rev));
+				const { up: _up, ...file } = rev;
+				await this.remote.put(`revs/${rev.record}/${name}.json.gz`, await packJson(file));
+				await this.store.put('revs', rev.id, { ...rev, up: true });
 				state.pending = state.pending.filter((id) => id !== rev.id);
 				await this.save(); // an interrupted push resumes here
 			}
@@ -681,6 +741,7 @@ export class Engine {
 		for (const [record, meta] of Object.entries(state.records))
 			if (meta.base) heads[record] = meta.base;
 		const path = `devices/${state.device}.json`;
+		state.account = this.account;
 		if (stableStringify(state.devices[path]?.heads) === stableStringify(heads)) return;
 		const entry = await this.remote.put(
 			path,

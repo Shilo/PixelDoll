@@ -87,12 +87,19 @@ export class Device {
 	library = new MemLibrary();
 	store = new MemoryStore();
 	engine: Engine;
+	account = 'first';
 	constructor(public remote: Provider) {
-		this.engine = new Engine(this.store, remote, this.library);
+		this.engine = new Engine(this.store, remote, this.library, { account: this.account });
 	}
-	use(remote: Provider) {
+	/** Another provider account (a provider switch). */
+	use(remote: Provider, account = 'second') {
 		this.remote = remote;
-		this.engine = new Engine(this.store, remote, this.library);
+		this.account = account;
+		this.engine = new Engine(this.store, remote, this.library, { account });
+	}
+	/** The tab closed and the page loaded again: same stored state, a new engine. */
+	reload() {
+		this.engine = new Engine(this.store, this.remote, this.library, { account: this.account });
 	}
 	sync() {
 		return this.engine.sync();
@@ -101,7 +108,7 @@ export class Device {
 	clear() {
 		this.library = new MemLibrary();
 		this.store = new MemoryStore();
-		this.engine = new Engine(this.store, this.remote, this.library);
+		this.engine = new Engine(this.store, this.remote, this.library, { account: this.account });
 	}
 }
 
