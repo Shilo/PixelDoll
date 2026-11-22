@@ -3,7 +3,7 @@
 	import SettingsItemButton from './SettingsItemButton.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
-	import { formatNumber, t } from 'svelte-whisper';
+	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import { Archive, Lock, Trash, TriangleAlert, Upload } from './icons.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import DestructiveConfirmButton from './DestructiveConfirmButton.svelte';
@@ -103,6 +103,8 @@
 		move: 'recentlyDeleted.kind.move'
 	} as const;
 	const deletedKindLabel = (kind: keyof typeof KIND_LABEL) => t(KIND_LABEL[kind]);
+	/** The app's language, not the browser's: a date should read the way the rest of the page does. */
+	const deletedOn = (iso: string) => new Date(iso).toLocaleDateString(getLocale());
 	async function restoreEntry(id: string) {
 		if (deletedBusy) return;
 		deletedBusy = id;
@@ -428,7 +430,7 @@
 								<span class="bu-muted deleted-context"
 									>{deletedKindLabel(entry.kind)}{entry.context ? ` · ${entry.context}` : ''} ·
 									{t('recentlyDeleted.deletedOn', {
-										date: new Date(entry.deletedAt).toLocaleDateString()
+										date: deletedOn(entry.deletedAt)
 									})}</span
 								>
 							</div>
