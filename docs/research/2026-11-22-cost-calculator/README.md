@@ -2,14 +2,16 @@
 
 November 22, 2026. Research and design only; nothing in the app changed and no PixelLab request was sent. Board card: [Research and mock up a PixelLab cost calculator](https://github.com/users/Shilo/projects/7/views/1?pane=issue&itemId=313998475).
 
-| File                                           | Author                           | What it is                                                                                                |
-| ---------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| [cost-model.md](cost-model.md)                 | GPT 6.2 Sol (medium)             | Every paid step, its price rule and source line, a pure-function spec, defaults, dollars, worked examples |
-| [challenge-deepseek.md](challenge-deepseek.md) | DeepSeek v4.1 Flash (low)        | Adversarial review of the idea and three README formulas                                                  |
-| [design/](design/README.md)                    | GPT 6.2 Sol (medium), Impeccable | Interactive HTML mock-up, revised once after review                                                       |
-| [review-deepseek.md](review-deepseek.md)       | DeepSeek v4.1 Flash (low)        | Rule-by-rule accuracy check of cost-model.md against the code                                             |
-| [review-opus.md](review-opus.md)               | Opus 5.5 (medium)                | Design and function critique of mock-up v2                                                                |
-| [review-sol.md](review-sol.md)                 | GPT 6.2 Sol (medium)             | Design and function critique of mock-up v2                                                                |
+| File                                               | Author                           | What it is                                                                                                |
+| -------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [cost-model.md](cost-model.md)                     | GPT 6.2 Sol (medium)             | Every paid step, its price rule and source line, a pure-function spec, defaults, dollars, worked examples |
+| [challenge-deepseek.md](challenge-deepseek.md)     | DeepSeek v4.1 Flash (low)        | Adversarial review of the idea and three README formulas                                                  |
+| [design/](design/README.md)                        | GPT 6.2 Sol (medium), Impeccable | Interactive HTML mock-up, revised once after review                                                       |
+| [review-deepseek.md](review-deepseek.md)           | DeepSeek v4.1 Flash (low)        | Rule-by-rule accuracy check of cost-model.md against the code                                             |
+| [review-opus.md](review-opus.md)                   | Opus 5.5 (medium)                | Design and function critique of mock-up v2                                                                |
+| [review-sol.md](review-sol.md)                     | GPT 6.2 Sol (medium)             | Design and function critique of mock-up v2                                                                |
+| [review-deepseek-run2.md](review-deepseek-run2.md) | DeepSeek v4.1 Flash (low)        | A second, independent accuracy run; adds a 512×256 repair grid note                                       |
+| [design/README-v3.md](design/README-v3.md)         | GPT 6.2 Sol (medium), Impeccable | **Current mock-up v3**: cash first, demo excluded, arithmetic                                             |
 
 ## Round 2 review (mock-up v2)
 
@@ -29,13 +31,15 @@ Build it, but narrower and more honest than a free-form spreadsheet. It is feasi
 
 It cannot predict accepted artwork. Retries, repairs, fallback routes and provisional prices (Pro, Pro Flash, inpaint bands, some States) move real spend by 1.5x to 3x or more. So the calculator must show a first pass plus a labeled retry band, never one confident dollar figure.
 
-## What the calculator should be
+## What the calculator should be (v3, owner decisions)
 
-- **Place:** "Cost calculator…" in the character name menu in Customize, opened as a lazy-loaded sheet beside the character (bottom sheet on phones). It is character-scoped planning; Settings > PixelLab stays for the account.
-- **Main view:** first-pass gens and plan value, a bar showing the share of a plan month, a Retries switch (None / Some / Many = 1x / 1.5x / 2x sensitivity), "Spent so far" from Activity kept separate, scope switch This character / All characters, two steppers (worn items, held items).
-- **Details (progressive):** breakdown by setup, body moves, worn, held, States; direction layout (4/3, 8/5, 8/8 drawn); each move's frame count; each held item's move coverage; States (default 0); plan tier with editable price and allowance.
-- **Tips:** each one is a recomputation with one change, shown only when it saves something, with the exact saving (mirror west views, restrict a weapon to its moves, trim 16 frames to 12, recolor for 0).
-- **Defaults:** read from the active manifest (cell, directions and mirrors, moves and frame counts, items and slot class, held-item coverage, connected tier). Unknown creation model defaults to V3 and is labeled assumed.
+- **Place:** "Cost estimate…" in the character name menu in Customize, a lazy-loaded sheet beside the character (bottom sheet on phones).
+- **Cash first.** Headline in USD at the tier's list price, then the discount range and generations small: `$10.05` / `$9.21 to $10.05 · 2,094 gens`. USD per generation = monthly price / monthly generations. No currency conversion.
+- **Main view:** headline, Retries stepper (0 to 4 extra attempts per paid step, default 1), one Items stepper, Spent so far in USD (recorded gens × tier rate + USD credit charges), Details. Under 40 words.
+- **Details:** a receipt of setup, moves, items, States, plan and recorded usage; each row opens in place to edit (frame counts, each item's moves, directions, tier).
+- **Tips:** at most two chips with the exact saving that apply the change. Only quality-safe changes: mirror the west side, limit a weapon to its moves, trim a move that stays at 8 frames or more, recolor instead of a new design.
+- **Demo excluded.** The bundled demo starts at $0. A copy of the demo (`rig-<demo base hash>`) counts nothing identical to the demo; new items, moves, fits of copied items to new moves, States and regenerated art are priced.
+- **Defaults** come from the active manifest and the connected tier; Free/Trial shows Tier 1 rates.
 
 ## How to build it accurately
 
@@ -43,7 +47,7 @@ It cannot predict accepted artwork. Retries, repairs, fallback routes and provis
 2. **Pure pipeline:** `scenarioFromManifest(manifest, balance)` → `characterCost(scenario)` (setup, moves, items, States as priced lines with low/high and unknown flags) → `projectCost(characters, plan)` → `savings(scenario)` as diffs. All numbers stay decimal until display.
 3. **Parity tests:** for fixture projects, `characterCost` must equal the sum of the Studio planners' quotes; boundary cases at 3/12/15/16 frames, mirroring, 64 vs 96 px held padding, reference slots and grid tiers.
 4. **Lazy load** the sheet through the existing `Lazy.svelte` so no calculator code ships until it opens. Localize all copy.
-5. **Plan terms** in a dated table next to `PLAN_JOB_LIMITS`, editable in the UI.
+5. **Plan prices** as static data next to `PLAN_JOB_LIMITS` (PixelLab's API does not report them).
 
 ## Corrections found along the way
 
@@ -52,12 +56,17 @@ It cannot predict accepted artwork. Retries, repairs, fallback routes and provis
 - Joint checks are quoted at $0.00513 in USD credits (`create.ts:2330`), while the research uses $0.005 of Tier 3 plan value. Both are right on different bases; the calculator must never mix them in one total.
 - Sol's first mock-up invented a 50% repair allowance that was 57% of its total. The revision replaced it with the retry band.
 
-## Public plan prices (checked November 22, 2026)
+## Plan prices (confirmed by the owner, November 22, 2026)
 
-Tier 1 $12, Tier 2 $24, Tier 3 $50 a month, corroborated by several third-party listings. Tier 3's 10,000 gens is corroborated; Tier 1's 2,000 has one source; Tier 2's allowance was not verified. PixelLab's own pricing page loads by script and could not be read. USD credits have endpoint-specific prices, so there is no single dollars-per-gen rate for them.
+| Tier | List price | Lowest discounted price | Generations per month | USD per generation |
+| ---- | ---------: | ----------------------: | --------------------: | -----------------: |
+| 1    |        $12 |                      $9 |                 2,000 | $0.0045 to $0.0060 |
+| 2    |        $24 |                     $22 |                 5,000 | $0.0044 to $0.0048 |
+| 3    |        $50 |             no discount |                10,000 |            $0.0050 |
 
-## Decisions for the owner
+USD credits have endpoint-specific prices; recorded USD charges are added as reported.
 
-1. Placement: character name menu (recommended) or Settings.
-2. Lead with **rebuild** (what this character costs) or **cost to finish** (only missing coverage). Rebuild is simpler and is what the mock-up shows; cost to finish needs reliable gap detection and is a good second step.
-3. Whether to show dollars at all for unknown tiers, or generations only until a plan is chosen.
+## Open questions
+
+1. Rebuild (what this character costs) or cost to finish (only missing coverage)? v3 shows rebuild; the demo-copy rule already prices only additions.
+2. Default retries: 1, or this character's own retry history once it has some?
