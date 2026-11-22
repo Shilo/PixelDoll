@@ -613,7 +613,7 @@
 		"farLeg": "远侧腿",
 		"bothLegs": "双腿",
 		"riderPose": "骑乘姿势",
-		"riderPoseRide": "骑乘或站立",
+		"riderPoseRide": "自动",
 		"riderPoseIncomplete": "{name}（缺少{directions}）",
 		"otherTab": "另一个标签页",
 		"updateToVVersion": "更新到 v{version}",

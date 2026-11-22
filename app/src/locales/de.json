@@ -638,7 +638,7 @@
 		"farLeg": "Hinteres Bein",
 		"bothLegs": "Beide Beine",
 		"riderPose": "Reitpose",
-		"riderPoseRide": "Reiten oder Stehen",
+		"riderPoseRide": "Automatisch",
 		"riderPoseIncomplete": "{name} (ohne {directions})",
 		"otherTab": "Anderer Tab",
 		"updateToVVersion": "Auf v{version} aktualisieren",

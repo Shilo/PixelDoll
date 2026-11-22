@@ -615,7 +615,7 @@
 		"farLeg": "Kaki di sisi jauh",
 		"bothLegs": "Kedua kaki",
 		"riderPose": "Pose penunggang",
-		"riderPoseRide": "Menunggang atau Berdiri",
+		"riderPoseRide": "Otomatis",
 		"riderPoseIncomplete": "{name} (tanpa {directions})",
 		"otherTab": "Tab lain",
 		"updateToVVersion": "Perbarui ke v{version}",

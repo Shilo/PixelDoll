@@ -638,7 +638,7 @@
 		"farLeg": "Pierna lejana",
 		"bothLegs": "Ambas piernas",
 		"riderPose": "Pose de jinete",
-		"riderPoseRide": "Montar o De pie",
+		"riderPoseRide": "Automático",
 		"riderPoseIncomplete": "{name} (sin {directions})",
 		"otherTab": "Otra pestaña",
 		"updateToVVersion": "Actualizar a v{version}",

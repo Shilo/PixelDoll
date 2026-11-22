@@ -635,7 +635,7 @@
 		"farLeg": "Uzaktaki bacak",
 		"bothLegs": "İki bacak da",
 		"riderPose": "Binici pozu",
-		"riderPoseRide": "Binme veya Ayakta",
+		"riderPoseRide": "Otomatik",
 		"riderPoseIncomplete": "{name} ({directions} yok)",
 		"otherTab": "Diğer sekme",
 		"updateToVVersion": "v{version} sürümüne güncelleyin",

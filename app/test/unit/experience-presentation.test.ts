@@ -156,6 +156,36 @@ describe('production body presentation', () => {
 		});
 	});
 
+	test('riding picks the chosen State, then the Ride Move, the Riding State, Idle and Standing', () => {
+		const project = fixture(['east', 'south', 'north'], ['idle', 'ride', 'riding', 'sitting']);
+		for (const id of ['riding', 'sitting'])
+			Object.assign(
+				project.manifest.rig.animations.find((clip) => clip.id === id)!,
+				{
+					kind: 'state',
+					cells: 1,
+					loop: false,
+					frames: [{ cell: 0, ms: 100 }]
+				}
+			);
+		const body = project.manifest.items[0].layers[0].cells!;
+		body.ride = { east: [bodyHash, bodyHash] };
+		body.riding = { east: [bodyHash], south: [bodyHash] };
+		body.sitting = { east: [bodyHash] };
+		const a = buildPresentation(project);
+		const facing = (x: number, y: number, riderPose?: string) =>
+			resolveLive(a, { velocity: { x, y }, riding: true, riderPose }).clip;
+		// Automatic: Ride Move, then the Riding State, then Idle.
+		expect([facing(1, 0), facing(0, -1), facing(0, 1)]).toEqual(['ride', 'riding', 'idle']);
+		// A chosen State comes first and falls back through the same order.
+		expect([facing(1, 0, 'sitting'), facing(0, -1, 'sitting'), facing(0, 1, 'sitting')]).toEqual([
+			'sitting',
+			'riding',
+			'idle'
+		]);
+		expect(resolveLive(a, { velocity: { x: 0, y: -1 }, riding: true }).issue).toBeNull();
+	});
+
 	test('intentional E/W directions retain remembered vertical facing without missing-coverage warnings', () => {
 		const a = buildPresentation(fixture(['east', 'west']));
 		const east = resolveLive(a, { velocity: moving });

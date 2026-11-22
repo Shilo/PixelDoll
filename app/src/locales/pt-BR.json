@@ -635,7 +635,7 @@
 		"farLeg": "Perna mais distante",
 		"bothLegs": "As duas pernas",
 		"riderPose": "Pose de montaria",
-		"riderPoseRide": "Montar ou Em pé",
+		"riderPoseRide": "Automático",
 		"riderPoseIncomplete": "{name} (sem {directions})",
 		"otherTab": "Outra aba",
 		"updateToVVersion": "Atualizar para v{version}",

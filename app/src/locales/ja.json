@@ -618,7 +618,7 @@
 		"farLeg": "奥の脚",
 		"bothLegs": "両脚",
 		"riderPose": "騎乗ポーズ",
-		"riderPoseRide": "騎乗または立ち",
+		"riderPoseRide": "自動",
 		"riderPoseIncomplete": "{name}（{directions}なし）",
 		"otherTab": "別のタブ",
 		"updateToVVersion": "v{version}に更新",

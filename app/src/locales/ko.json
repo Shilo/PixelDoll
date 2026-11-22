@@ -618,7 +618,7 @@
 		"farLeg": "먼 쪽 다리",
 		"bothLegs": "양쪽 다리",
 		"riderPose": "탑승 포즈",
-		"riderPoseRide": "탑승 또는 서기",
+		"riderPoseRide": "자동",
 		"riderPoseIncomplete": "{name}({directions} 없음)",
 		"otherTab": "다른 탭",
 		"updateToVVersion": "v{version} 버전으로 업데이트",

@@ -635,7 +635,7 @@
 		"farLeg": "Jambe à l’arrière-plan",
 		"bothLegs": "Les deux jambes",
 		"riderPose": "Pose du cavalier",
-		"riderPoseRide": "Monter ou Debout",
+		"riderPoseRide": "Automatique",
 		"riderPoseIncomplete": "{name} (sans {directions})",
 		"otherTab": "Autre onglet",
 		"updateToVVersion": "Mettre à jour vers v{version}",
