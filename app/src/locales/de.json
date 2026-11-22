@@ -3187,5 +3187,14 @@
 			"other": "{n} Aufrufe ohne Preis"
 		}
 	},
-	"shortcut": { "control": "Strg" }
+	"shortcut": { "control": "Strg" },
+	"agentBudget": {
+		"title": "Darf der Agent Generierungen verwenden?",
+		"body": "Ein KI-Agent in diesem Tab möchte für seine Aufgabe bis zu {count} PixelLab-Generierungen (etwa {usd}) verwenden. Mehr kann er nur ausgeben, wenn er erneut fragt.",
+		"reason": "Begründung des Agenten",
+		"note": "Endet, wenn du den Tab schließt oder neu lädst.",
+		"allow": "Erlauben",
+		"deny": "Nicht erlauben"
+	},
+	"agentEvidence": { "title": "Agentenansicht: {subject}" }
 }

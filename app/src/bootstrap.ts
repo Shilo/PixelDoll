@@ -77,4 +77,13 @@ export async function launchStudio() {
 
 	mount(App, { target });
 	startup?.remove();
+	// Agent tools (WebMCP and window.pixeldoll) load after the Studio, off the startup path. A workspace copy is someone
+	// else's library, so agents get no tools there.
+	if (!workspaceCopy)
+		void import('./studio/automation/bridge.ts')
+			.then(({ installAutomation }) => {
+				const uninstall = installAutomation();
+				import.meta.hot?.dispose(uninstall);
+			})
+			.catch((error: unknown) => console.error('agent tools', error));
 }

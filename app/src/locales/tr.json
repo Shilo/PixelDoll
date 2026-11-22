@@ -3187,5 +3187,14 @@
 			"other": "Fiyatı bilinmeyen çağrı: {n}"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"agentBudget": {
+		"title": "Ajan üretim harcayabilsin mi?",
+		"body": "Bu sekmedeki bir yapay zekâ ajanı, görevi için en fazla {count} PixelLab üretimi (yaklaşık {usd}) kullanmak istiyor. Yeniden sormadan daha fazla harcayamaz.",
+		"reason": "Ajanın gerekçesi",
+		"note": "Sekmeyi kapattığınızda veya yenilediğinizde sona erer.",
+		"allow": "İzin ver",
+		"deny": "İzin verme"
+	},
+	"agentEvidence": { "title": "Ajan görünümü: {subject}" }
 }

@@ -3190,5 +3190,14 @@
 			"other": "{n} llamadas sin precio"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"agentBudget": {
+		"title": "¿Dejar que el agente gaste generaciones?",
+		"body": "Un agente de IA en esta pestaña pide usar hasta {count} generaciones de PixelLab (unos {usd}) para su tarea. No puede gastar más sin volver a preguntar.",
+		"reason": "Motivo del agente",
+		"note": "Termina al cerrar o recargar la pestaña.",
+		"allow": "Permitir",
+		"deny": "No permitir"
+	},
+	"agentEvidence": { "title": "Vista del agente: {subject}" }
 }

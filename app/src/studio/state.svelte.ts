@@ -2926,6 +2926,8 @@ let loading: Promise<void> | null = null,
 	mirrorAt = 0;
 let itemStarting = $state(0);
 let studioStartup = $state<'loading' | 'ready' | 'failed'>('loading');
+/** For agent tools, which must not act on a Studio that is still loading saved work. */
+export const studioStartupState = () => studioStartup;
 // A failed read rejects: an empty list would let the next save overwrite the stored drafts and cleanUp prune their records.
 const readGens = async () =>
 	uniqueBy(

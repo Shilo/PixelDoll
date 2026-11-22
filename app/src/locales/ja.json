@@ -3100,5 +3100,14 @@
 			"other": "料金不明の呼び出し{n}件"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"agentBudget": {
+		"title": "エージェントに生成を使わせますか？",
+		"body": "このタブのAIエージェントが、タスクのためにPixelLabの生成を最大{count}回（約{usd}）使う許可を求めています。これを超える場合は再度確認します。",
+		"reason": "エージェントの理由",
+		"note": "タブを閉じるか再読み込みすると終了します。",
+		"allow": "許可",
+		"deny": "許可しない"
+	},
+	"agentEvidence": { "title": "エージェントの表示：{subject}" }
 }

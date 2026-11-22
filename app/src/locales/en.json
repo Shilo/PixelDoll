@@ -3190,5 +3190,14 @@
 			"other": "{n} unpriced calls"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"agentBudget": {
+		"title": "Let the agent spend generations?",
+		"body": "An AI agent in this tab asks to use up to {count} PixelLab generations (about {usd}) for its task. It can't spend more without asking again.",
+		"reason": "The agent's reason",
+		"note": "This ends when you close or reload the tab.",
+		"allow": "Allow",
+		"deny": "Don't allow"
+	},
+	"agentEvidence": { "title": "Agent view: {subject}" }
 }

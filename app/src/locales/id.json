@@ -3100,5 +3100,14 @@
 			"other": "{n} panggilan tanpa harga"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"agentBudget": {
+		"title": "Izinkan agen memakai generasi?",
+		"body": "Agen AI di tab ini meminta izin memakai hingga {count} generasi PixelLab (sekitar {usd}) untuk tugasnya. Agen tidak dapat memakai lebih tanpa meminta lagi.",
+		"reason": "Alasan agen",
+		"note": "Berakhir saat Anda menutup atau memuat ulang tab.",
+		"allow": "Izinkan",
+		"deny": "Jangan izinkan"
+	},
+	"agentEvidence": { "title": "Tampilan agen: {subject}" }
 }

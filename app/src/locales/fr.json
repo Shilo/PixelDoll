@@ -3190,5 +3190,14 @@
 			"other": "{n} appels sans prix"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"agentBudget": {
+		"title": "Autoriser l’agent à utiliser des générations ?",
+		"body": "Un agent IA dans cet onglet demande à utiliser jusqu’à {count} générations PixelLab (environ {usd}) pour sa tâche. Il ne peut pas dépenser plus sans redemander.",
+		"reason": "Raison donnée par l’agent",
+		"note": "Prend fin quand vous fermez ou rechargez l’onglet.",
+		"allow": "Autoriser",
+		"deny": "Ne pas autoriser"
+	},
+	"agentEvidence": { "title": "Vue de l’agent : {subject}" }
 }
