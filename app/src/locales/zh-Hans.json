@@ -3101,6 +3101,10 @@
 		}
 	},
 	"shortcut": { "control": "Ctrl" },
+	"agentMoves": {
+		"quoteChanged": "动作的批准状态或费用估算已变更。请重新检查动作后再生成。",
+		"skeletonCheckFailed": "PixelLab 无法检查此角色的骨骼。请稍后重试。"
+	},
 	"agentBudget": {
 		"title": "允许代理使用生成次数吗？",
 		"body": "此标签页中的 AI 代理请求为其任务花费最多约 {usd}（{count} 次 PixelLab 生成）。超出部分必须再次请求。",

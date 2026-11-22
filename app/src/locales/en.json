@@ -3191,6 +3191,10 @@
 		}
 	},
 	"shortcut": { "control": "Ctrl" },
+	"agentMoves": {
+		"quoteChanged": "The move approval or its estimate changed. Review the move again before generating.",
+		"skeletonCheckFailed": "PixelLab could not check this character’s skeleton. Try again shortly."
+	},
 	"agentBudget": {
 		"title": "Let the agent spend generations?",
 		"body": "An AI agent in this tab asks to spend up to about {usd} ({count} PixelLab generations) on its task. It can't spend more without asking again.",

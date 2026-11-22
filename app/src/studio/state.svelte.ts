@@ -1290,6 +1290,7 @@ let characterJobsPending = $state(false),
 function workHolds(id: string, stoppedMove = false) {
 	return (
 		characterJobsPending ||
+		!!startingMove ||
 		moveReviewPublishing ||
 		gens.some((g) => g.phase === 'running') ||
 		settling.size > 0 ||
@@ -4202,7 +4203,8 @@ export const moving = $state({
 	resolvingRepair: false
 });
 const MOVE_KEY = 'studio-move';
-let moveRunning = $state(false),
+let startingMove = $state<QueuedMove | null>(null),
+	moveRunning = $state(false),
 	moveReviewPublishing = $state(false),
 	moveRevision = 0;
 /** The stored move record without its queue (null: the current move is finished or dismissed). */
@@ -4215,7 +4217,7 @@ function storeMove(record = moveRecord) {
 	moveRecord = record;
 	const write = moveWrites.then(() => {
 		const queued = $state.snapshot(moving.queued),
-			[next, ...rest] = queued;
+			[next, ...rest] = startingMove ? [$state.snapshot(startingMove), ...queued] : queued;
 		if (moveRecord) return db.put('projects', MOVE_KEY, { ...moveRecord, queued });
 		return next
 			? db.put('projects', MOVE_KEY, {
@@ -4231,12 +4233,59 @@ function storeMove(record = moveRecord) {
 	moveWrites = write.catch(() => {}); // ordering only: each caller handles its own write's error
 	return write;
 }
+type AgentMoveOutcome = 'running' | 'review' | 'saved' | 'discarded' | 'failed' | 'stopped';
+type AgentMoveWatch = {
+	projectId: string;
+	moveId: string;
+	reviewing?: boolean;
+	beforePaid: () => void;
+	settle: (outcome: AgentMoveOutcome, error?: unknown) => void;
+};
+const agentMoves = new Map<string, AgentMoveWatch>();
+
+function reportAgentMove(spec: MoveSpec, outcome: AgentMoveOutcome, error?: unknown) {
+	const id = spec.activityScope ?? '';
+	const watch = agentMoves.get(id);
+	if (!watch) return;
+	if (outcome === 'review') watch.reviewing = true;
+	else if (outcome !== 'running') agentMoves.delete(id);
+	watch.settle(outcome, error);
+}
+
+/** A synchronous acceptance receipt. After insertion into the queue, failures are reported through activity. */
+export function queueAgentMove(
+	projectId: string,
+	spec: MoveSpec,
+	beforeAdmission: () => void,
+	beforePaid: () => void,
+	settle: AgentMoveWatch['settle']
+): { id: string } | undefined {
+	if (
+		hmrReloading ||
+		moveReviewPublishing ||
+		moving.repairReview ||
+		(settingUp.spec && !settingUp.done) ||
+		pendingMoves(projectId).some(
+			(pending) => !pending.itemsOnly && sameClipName(pending.id, spec.id)
+		)
+	)
+		return;
+	beforeAdmission();
+	const queued = withActivityScope(spec, 'move');
+	const id = queued.activityScope!;
+	agentMoves.set(id, { projectId, moveId: spec.id, beforePaid, settle });
+	void queueMoves(projectId, [queued]).catch((error) => {
+		console.error('Could not persist the move queue', error);
+	});
+	return { id };
+}
+
 /** Queue moves behind the current one; start the first now when nothing is pending. A failed move holds the queue until it
  * is retried (the queue continues) or dismissed (the queue is dropped). */
 export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	if (hmrReloading || !specs.length) return;
 	moving.queued = [...moving.queued, ...specs.map((spec) => ({ projectId, spec }))];
-	if (moveRunning || (moving.spec && !moving.done)) {
+	if (startingMove || moveRunning || (moving.spec && !moving.done)) {
 		await storeMove();
 		return;
 	}
@@ -4271,6 +4320,7 @@ export async function saveReviewedMove(
 	moveReviewPublishing = true;
 	try {
 		const input = await (await createFlow()).resolveMoveCandidate(projectId, candidate, accept);
+		reportAgentMove(candidate.spec, accept ? 'saved' : 'discarded');
 		// Accepting a reviewed move saves the character even when another one is open here.
 		if (accept && !viewing(projectId)) await syncStoredProject(projectId);
 		return input;
@@ -4284,6 +4334,7 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 		...(moving.spec && (!moving.done || moveRunning) && moving.projectId === projectId
 			? [moving.spec]
 			: []),
+		...(startingMove?.projectId === projectId ? [startingMove.spec] : []),
 		...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)
 	].filter((s) => !itemId || s.items.includes(itemId));
 
@@ -4297,9 +4348,23 @@ export async function pendingBodyMoveName(projectId: string, id: string) {
 }
 
 export async function startMove(projectId: string, spec: MoveSpec) {
-	if (hmrReloading) return;
-	if (relocating) await saving;
+	if (hmrReloading || startingMove) {
+		reportAgentMove(spec, 'stopped');
+		return;
+	}
+	if (relocating) {
+		startingMove = { projectId, spec };
+		try {
+			await saving;
+		} catch (error) {
+			reportAgentMove(spec, 'failed', error);
+			throw error;
+		} finally {
+			startingMove = null;
+		}
+	}
 	if (moving.repairReview) {
+		reportAgentMove(spec, 'stopped');
 		toast(message('repairReview.finishFirst'), {
 			tone: 'warning',
 			action: () => openFlow('move', moving.projectId)
@@ -4311,6 +4376,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		return;
 	}
 	if (moveRunning || moveReviewPublishing) {
+		reportAgentMove(spec, 'stopped');
 		toast(message('state.anotherMoveIsStillBeingAddedSo'), {
 			tone: 'warning',
 			action: () => openFlow('move', moving.projectId)
@@ -4319,13 +4385,15 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 	}
 	spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
 	moveRunning = true;
+	reportAgentMove(spec, 'running');
 	const revision = ++moveRevision,
 		current = () =>
 			revision === moveRevision &&
 			moveRunning &&
 			(!spec.reuseItemFrames || queue.role !== 'follower');
 	const moveName = spec.id[0].toUpperCase() + spec.id.slice(1).replace(/-/g, ' ');
-	let failed = false;
+	let failed = false,
+		publishedReview = false;
 	Object.assign(moving, {
 		spec,
 		projectId,
@@ -4373,7 +4441,13 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 						throw error;
 					}
 				})
-			: await flow.addMove(projectId, spec, progress);
+			: await (() => {
+					// Only agent starts carry a paid-admission check; human starts keep the plain call.
+					const beforePaid = agentMoves.get(spec.activityScope ?? '')?.beforePaid;
+					return beforePaid
+						? flow.addMove(projectId, spec, progress, undefined, beforePaid)
+						: flow.addMove(projectId, spec, progress);
+				})();
 		if (!current()) return;
 		if (result.repairReview) {
 			const progress = $state.snapshot(moving.progress);
@@ -4419,6 +4493,21 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		moving.warnings = result.warnings;
 		moving.qualityDirs = result.qualityDirs ?? [];
 		moving.done = true;
+		if (result.moveReview) {
+			publishedReview = true;
+			for (const [scope, watch] of agentMoves) {
+				if (
+					scope !== spec.activityScope &&
+					watch.reviewing &&
+					watch.projectId === projectId &&
+					watch.moveId === result.moveReview
+				) {
+					agentMoves.delete(scope);
+					watch.settle('discarded');
+				}
+			}
+			reportAgentMove(spec, 'review');
+		}
 		await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
 		if (!current()) return;
 		if (result.moveReview) {
@@ -4467,6 +4556,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			} else await syncStoredProject(projectId);
 			toast(message('state.moveNameAdded', { moveName }));
 		}
+		if (!result.moveReview) reportAgentMove(spec, 'saved');
 		const reviewItem = result.reviewItems?.[0];
 		if (reviewItem)
 			toast(
@@ -4483,6 +4573,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 				}
 			);
 	} catch (e) {
+		if (!publishedReview) reportAgentMove(spec, 'failed', e);
 		if (current()) {
 			failed = true;
 			moving.error = e instanceof LocalizedError ? e : errorText(e);
@@ -4560,6 +4651,7 @@ export async function retryMoveMeasurements(
 	}
 	const next = {
 		...$state.snapshot(spec),
+		agentQuote: undefined,
 		measurementRecovery: {
 			id: crypto.randomUUID(),
 			recordIds: [...current.recordIds],
@@ -4605,6 +4697,7 @@ export async function keepMoveBody(projectId: string, spec: MoveSpec, reviewed: 
 		);
 	await startMove(projectId, {
 		...$state.snapshot(spec),
+		agentQuote: undefined,
 		items: [],
 		reviewBeforePublish: undefined,
 		reuseItemFrames: undefined,
@@ -4663,6 +4756,7 @@ export async function matchMoveBodyColors(
 	}
 	await startMove(projectId, {
 		...$state.snapshot(spec),
+		agentQuote: undefined,
 		measurementRecovery: undefined,
 		bodyPaletteRepair: {
 			id: crypto.randomUUID(),
@@ -4771,7 +4865,9 @@ export async function resolveRepairReview(useRepair: boolean) {
 }
 /** Drops the failed or finished move and the moves queued for the same character; other characters' queued moves go on. */
 export async function dismissMove() {
-	if (moveRunning) return;
+	if (startingMove || moveRunning) return;
+	for (const { projectId, spec } of moving.queued)
+		if (projectId === moving.projectId) reportAgentMove(spec, 'discarded');
 	moveRevision++;
 	const others = moving.queued.filter((q) => q.projectId !== moving.projectId);
 	Object.assign(moving, {

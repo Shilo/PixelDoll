@@ -255,7 +255,7 @@ const round = (n: number) => Math.round(n * 100) / 100;
  *  estimate (the most it can cost) before anything is sent, so the total can never pass what was approved. */
 export class BudgetLedger {
 	#approved = 0;
-	#spends: { what: string; generations: number }[] = [];
+	#spends: { what: string; generations: number; id?: symbol }[] = [];
 	#asking = false;
 	#denials = 0;
 	get reserved() {
@@ -267,7 +267,7 @@ export class BudgetLedger {
 			approved: this.#approved,
 			reserved,
 			remaining: round(this.#approved - reserved),
-			spends: this.#spends.map((s) => ({ ...s }))
+			spends: this.#spends.map(({ what, generations }) => ({ what, generations }))
 		};
 	}
 	approve(generations: number) {
@@ -275,9 +275,9 @@ export class BudgetLedger {
 		this.#approved = round(this.#approved + generations);
 	}
 	/** False, reserving nothing, when the remaining approval cannot cover it. */
-	reserve(what: string, generations: number): boolean {
+	reserve(what: string, generations: number, id?: symbol): boolean {
 		if (!(generations >= 0) || generations > this.snapshot().remaining + 1e-9) return false;
-		this.#spends.push({ what, generations });
+		this.#spends.push({ what, generations, id });
 		return true;
 	}
 	/** Asks the person for more generations with the question `open` shows (see answerWithin), one question at a time and
@@ -317,8 +317,10 @@ export class BudgetLedger {
 		this.#spends = [];
 	}
 	/** Return a reservation whose request was never sent (the start was refused before any call). */
-	release(what: string, generations: number) {
-		const i = this.#spends.findLastIndex((s) => s.what === what && s.generations === generations);
+	release(what: string, generations: number, id?: symbol) {
+		const i = this.#spends.findLastIndex(
+			(s) => s.id === id && s.what === what && s.generations === generations
+		);
 		if (i >= 0) this.#spends.splice(i, 1);
 	}
 }

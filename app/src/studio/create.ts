@@ -1547,6 +1547,8 @@ export interface MoveSpec {
 	gridReroll?: Record<string, number>;
 	replace?: boolean;
 	activityScope?: string;
+	/** Agent queue consent is valid only in its original tab, at the reviewed rig version and price. */
+	agentQuote?: { rigVersion: string; generations: number };
 	dirs?: DirectionName[];
 	approvedDirs?: DirectionName[];
 	itemMethod?: 'grid' | 'anchor';
@@ -1571,7 +1573,14 @@ export interface MoveSpec {
 	};
 }
 const recoverySpecHash = (spec: MoveSpec) =>
-	sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
+	sha256(
+		stableStringify({
+			...spec,
+			agentQuote: undefined,
+			measurementRecovery: undefined,
+			activityScope: undefined
+		})
+	);
 function approvedCheckHashes(value: unknown): Set<string> {
 	const invalid = () =>
 		new LocalizedError(
@@ -2668,9 +2677,10 @@ export function addMove(
 	projectId: string,
 	spec: MoveSpec,
 	onProgress?: (p: Progress) => void,
-	onReviewed?: () => Promise<void>
+	onReviewed?: () => Promise<void>,
+	beforePaid?: () => void
 ) {
-	const work = () => addMoveUnlocked(projectId, spec, onProgress, onReviewed);
+	const work = () => addMoveUnlocked(projectId, spec, onProgress, onReviewed, beforePaid);
 	return spec.itemsOnly ? work() : withClipWriteLock(projectId, spec.id, work);
 }
 
@@ -2678,7 +2688,8 @@ async function addMoveUnlocked(
 	projectId: string,
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void = () => {},
-	onReviewed: () => Promise<void> = async () => {}
+	onReviewed: () => Promise<void> = async () => {},
+	beforePaid?: () => void
 ): Promise<{
 	warnings: string[];
 	reviewItems?: string[];
@@ -2703,6 +2714,7 @@ async function addMoveUnlocked(
 			'create.errors.keepingReviewedBodyFrames'
 		);
 	const { rec, project: loaded } = await loadProject(projectId);
+	assertAgentMoveQuote(rec, spec, beforePaid);
 	checkedReviewChoices(rec.manifest, spec);
 	if (
 		!spec.itemsOnly &&
@@ -2848,7 +2860,7 @@ async function addMoveUnlocked(
 	const recovery =
 		intent && !published ? await measurementRecoveryPlan(projectId, spec) : undefined;
 	if (!published && (spec.replace || !existing)) {
-		const candidate = await addBodyClip(projectId, spec, onProgress, recovery);
+		const candidate = await addBodyClip(projectId, spec, onProgress, recovery, beforePaid);
 		if (candidate) return { warnings: candidate.warnings, moveReview: spec.id };
 	}
 	// Freeze durable garment-region colors before posing: this move's frames when the request draws its body (also one
@@ -3842,11 +3854,30 @@ export async function reviewMoveResults(
 	};
 }
 
+export const agentMoveQuoteChanged = () =>
+	new LocalizedError(
+		'The move approval or its estimate changed. Review the move again before generating.',
+		'agentMoves.quoteChanged'
+	);
+
+function assertAgentMoveQuote(rec: StoredProject, spec: MoveSpec, beforePaid?: () => void) {
+	const quote = spec.agentQuote;
+	if (!quote) return;
+	if (
+		!beforePaid ||
+		moveRigVersion(rec) !== quote.rigVersion ||
+		moveEstimate(rec.manifest, spec).gens > quote.generations
+	)
+		throw agentMoveQuoteChanged();
+	beforePaid();
+}
+
 async function addBodyClip(
 	projectId: string,
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void,
-	recovery?: MeasurementRecoveryPlan
+	recovery?: MeasurementRecoveryPlan,
+	beforePaid?: () => void
 ) {
 	const { rec, project } = await loadProject(projectId),
 		m = rec.manifest,
@@ -3915,6 +3946,7 @@ async function addBodyClip(
 		checkHashes: new Set(recovery.checkHashes),
 		tail: Promise.resolve()
 	};
+	assertAgentMoveQuote(rec, spec, beforePaid);
 	const startPoses =
 		model === 'skeleton-v3' && starts.size
 			? await parallelGeneration(

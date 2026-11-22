@@ -3101,6 +3101,10 @@
 		}
 	},
 	"shortcut": { "control": "Ctrl" },
+	"agentMoves": {
+		"quoteChanged": "モーションの承認または見積もりが変わりました。生成する前にもう一度確認してください。",
+		"skeletonCheckFailed": "PixelLab でこのキャラクターのスケルトンを確認できませんでした。少し待ってからもう一度お試しください。"
+	},
 	"agentBudget": {
 		"title": "エージェントに生成を使わせますか？",
 		"body": "このタブのAIエージェントが、タスクのために最大約{usd}（PixelLabの生成{count}回）を使う許可を求めています。これを超える場合は再度確認します。",

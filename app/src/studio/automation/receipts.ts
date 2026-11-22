@@ -1,10 +1,19 @@
 // What agents started in this tab, so they can always learn how it ended: a draft that saved itself or a creation that
 // finished leaves the Studio's running lists, and an agent must never guess (and pay again) because its id disappeared.
 // Memory only, like the budget: a reload starts an empty log (the Studio's Activity still lists resumed work).
+import { stableStringify } from '../../lib/image/hash.ts';
 import { AgentError } from './contract.ts';
 
 export type Outcome =
-	'running' | 'review' | 'saved' | 'created' | 'failed' | 'canceled' | 'discarded' | 'stopped';
+	| 'queued'
+	| 'running'
+	| 'review'
+	| 'saved'
+	| 'created'
+	| 'failed'
+	| 'canceled'
+	| 'discarded'
+	| 'stopped';
 const FINAL: readonly Outcome[] = [
 	'saved',
 	'created',
@@ -16,7 +25,8 @@ const FINAL: readonly Outcome[] = [
 export const isFinal = (outcome: Outcome) => FINAL.includes(outcome);
 
 export interface Receipt {
-	kind: 'character' | 'item';
+	kind: 'character' | 'item' | 'move';
+	moveId?: string;
 	/** Draft id for an item (also the saved item's id), creation id for a character (also the new character's id). */
 	id: string;
 	characterId: string;
@@ -64,7 +74,11 @@ export class ReceiptLog {
  *  undefined when the draft is gone and that is still unknown. */
 export function itemOutcome(
 	draft:
-		| { phase: 'running' | 'review' | 'failed'; canceled?: boolean; acceptedAt?: unknown }
+		| {
+				phase: 'queued' | 'running' | 'review' | 'failed';
+				canceled?: boolean;
+				acceptedAt?: unknown;
+		  }
 		| undefined,
 	saved?: boolean
 ): Outcome | undefined {
@@ -92,4 +106,12 @@ export function creationOutcome(o: {
 	if (o.exists) return 'created';
 	// Settled without a character or an error: this tab stopped running jobs (another tab took over, or a reload).
 	return o.finished ? 'stopped' : 'running';
+}
+
+export const receipts = new ReceiptLog();
+export const receiptView = ({ fingerprint: _fingerprint, ...rest }: Receipt) => rest;
+/** What a request was, for matching a repeated requestId: its arguments without dryRun and the id itself. */
+export function fingerprintOf(args: Record<string, unknown>) {
+	const { dryRun: _dryRun, requestId: _requestId, ...rest } = args;
+	return stableStringify(rest);
 }

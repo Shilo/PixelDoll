@@ -3101,6 +3101,10 @@
 		}
 	},
 	"shortcut": { "control": "Ctrl" },
+	"agentMoves": {
+		"quoteChanged": "Persetujuan atau estimasi gerakan berubah. Tinjau kembali gerakan sebelum membuatnya.",
+		"skeletonCheckFailed": "PixelLab tidak dapat memeriksa kerangka karakter ini. Coba lagi sebentar."
+	},
 	"agentBudget": {
 		"title": "Izinkan agen memakai generasi?",
 		"body": "Agen AI di tab ini meminta izin membelanjakan hingga sekitar {usd} ({count} generasi PixelLab) untuk tugasnya. Agen tidak dapat memakai lebih tanpa meminta lagi.",

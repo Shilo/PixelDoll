@@ -3188,6 +3188,10 @@
 		}
 	},
 	"shortcut": { "control": "Strg" },
+	"agentMoves": {
+		"quoteChanged": "Die Freigabe für die Bewegung oder ihre Kostenschätzung hat sich geändert. Prüfe die Bewegung erneut, bevor du sie generierst.",
+		"skeletonCheckFailed": "PixelLab konnte das Skelett dieser Figur nicht prüfen. Versuche es in Kürze erneut."
+	},
 	"agentBudget": {
 		"title": "Darf der Agent Generierungen verwenden?",
 		"body": "Ein KI-Agent in diesem Tab möchte für seine Aufgabe bis zu etwa {usd} ausgeben ({count} PixelLab-Generierungen). Mehr kann er nur ausgeben, wenn er erneut fragt.",

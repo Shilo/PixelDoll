@@ -80,6 +80,17 @@ test('a budget ends on End and clears for another account', () => {
 	expect(ledger.snapshot()).toEqual({ approved: 0, reserved: 0, remaining: 0, spends: [] });
 });
 
+test('a refused move can release only its own reservation', () => {
+	const ledger = new BudgetLedger();
+	const refused = Symbol();
+	ledger.approve(10);
+	expect(ledger.reserve('move walk', 5, refused)).toBe(true);
+	expect(ledger.reserve('move walk', 5, Symbol())).toBe(true);
+	ledger.release('move walk', 5, refused);
+	ledger.release('move walk', 5, refused);
+	expect(ledger.snapshot().spends).toEqual([{ what: 'move walk', generations: 5 }]);
+});
+
 test('calls run one at a time in arrival order, and a canceled waiting call never runs', async () => {
 	const line = serial(),
 		log: string[] = [];

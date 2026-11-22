@@ -62,11 +62,15 @@ Not tested here.
 | `set_outfit`, `set_color`                                  | Wear items or drafts, take slots off, recolor by exact palette ramp; undoable                                | Free |
 | `get_activity`, `wait_for_activity`                        | Drafts, creations and moves with progress; waits up to 110 s per call                                        | Free |
 | `accept_draft`, `discard_draft`                            | Save or throw away a finished item draft                                                                     | Free |
+| `accept_move`, `discard_move`                              | Save or discard a finished body move review                                                                  | Free |
 | `export_character`                                         | Downloads a ZIP for the user with the Export settings                                                        | Free |
 | `request_budget`                                           | Asks the user, in the page, to approve generations for the task                                              | Free |
 | `create_character`, `create_item`                          | Start paid generation; `dryRun` returns the price and checks only                                            | Paid |
+| `add_move`                                                 | Add a body animation or redraw views of a saved move; `dryRun` quotes the plan without opening the character | Paid |
 
-Adding moves, frame repairs and redraws are not tools yet: agents ask the user to use Add move or the item's repair menu.
+Use the ID returned by `add_move` to follow its receipt in `get_activity` or `wait_for_activity`.
+The result waits in move review before it becomes part of the character. Review it with the user before calling
+`accept_move` or `discard_move`. Item frame repairs still use the item's repair menu in the Studio.
 
 ## Safety
 

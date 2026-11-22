@@ -3191,6 +3191,10 @@
 		}
 	},
 	"shortcut": { "control": "Ctrl" },
+	"agentMoves": {
+		"quoteChanged": "L’autorisation du mouvement ou son estimation a changé. Vérifiez à nouveau le mouvement avant de le générer.",
+		"skeletonCheckFailed": "PixelLab n’a pas pu vérifier le squelette de ce personnage. Réessayez dans un instant."
+	},
 	"agentBudget": {
 		"title": "Autoriser l’agent à utiliser des générations ?",
 		"body": "Un agent IA dans cet onglet demande à dépenser jusqu’à environ {usd} ({count} générations PixelLab) pour sa tâche. Il ne peut pas dépenser plus sans redemander.",

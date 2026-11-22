@@ -3101,6 +3101,10 @@
 		}
 	},
 	"shortcut": { "control": "Ctrl" },
+	"agentMoves": {
+		"quoteChanged": "동작 승인 또는 예상 비용이 변경되었습니다. 생성하기 전에 동작을 다시 검토하세요.",
+		"skeletonCheckFailed": "PixelLab에서 이 캐릭터의 스켈레톤을 확인하지 못했습니다. 잠시 후 다시 시도하세요."
+	},
 	"agentBudget": {
 		"title": "에이전트가 생성을 사용하도록 허용할까요?",
 		"body": "이 탭의 AI 에이전트가 작업을 위해 최대 약 {usd}(PixelLab 생성 {count}회)를 쓰려고 해요. 더 사용하려면 다시 물어봐야 해요.",

@@ -3188,6 +3188,10 @@
 		}
 	},
 	"shortcut": { "control": "Ctrl" },
+	"agentMoves": {
+		"quoteChanged": "Hareketin onayı veya maliyet tahmini değişti. Oluşturmadan önce hareketi yeniden gözden geçirin.",
+		"skeletonCheckFailed": "PixelLab bu karakterin iskeletini kontrol edemedi. Biraz sonra tekrar deneyin."
+	},
 	"agentBudget": {
 		"title": "Ajan üretim harcayabilsin mi?",
 		"body": "Bu sekmedeki bir yapay zekâ ajanı, görevi için en fazla yaklaşık {usd} ({count} PixelLab üretimi) harcamak istiyor. Yeniden sormadan daha fazla harcayamaz.",

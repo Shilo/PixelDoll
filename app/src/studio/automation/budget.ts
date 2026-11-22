@@ -67,7 +67,8 @@ export async function withReservation<T>(
 	requireLeader();
 	syncCredential();
 	const reservedAt = epoch;
-	if (!ledger.reserve(what, generations))
+	const id = Symbol(what);
+	if (!ledger.reserve(what, generations, id))
 		throw new AgentError(
 			`This can cost up to ${generations} generations but only ${budget().remaining} remain. Call request_budget first.`,
 			'budget'
@@ -85,7 +86,7 @@ export async function withReservation<T>(
 	} catch (error) {
 		syncCredential();
 		if (reservedAt === epoch) {
-			ledger.release(what, generations);
+			ledger.release(what, generations, id);
 			changed();
 		}
 		throw error;
