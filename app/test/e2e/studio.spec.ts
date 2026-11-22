@@ -3770,18 +3770,35 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
-	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
 	await description.fill('A jump that starts low');
 	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await cast.click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
+	await move.getByRole('button', { name: /^Generate / }).click();
+	await page
+		.getByRole('dialog', { name: 'Connect PixelLab' })
+		.getByRole('button', { name: 'Not now', exact: true })
+		.click();
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await expect(cast).toHaveAttribute('aria-pressed', 'true');
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await cast.click();
 	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
 	await advanced.click();
 	await expect(model).toHaveValue('v3');
 	await model.selectOption('pixminimax');
+	await expect(move).toContainText(/Saved Frames is unavailable here.*Automatic \(8 frames\)/i);
+	await model.selectOption('v3');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await slider.press('Home');
+	await cast.click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '4 frames');
+	await model.selectOption('pixminimax');
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await description.fill('A jump that starts low');
 	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();

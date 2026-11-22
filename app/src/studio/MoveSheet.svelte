@@ -239,11 +239,12 @@
 		first?.focus();
 	}
 	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
-	let frameChoice = $state<number | undefined>(
-		draft?.animation?.frameCount ??
-			(preferences?.frames === 'auto' ? undefined : preferences?.frames)
+	const savedCustomFrames =
+		draft?.savedCustomFrames ??
+		(typeof preferences?.frames === 'number' ? preferences.frames : undefined);
+	let frameChoice = $state<number | null | undefined>(
+		draft?.frameChoice === undefined ? draft?.animation?.frameCount : draft.frameChoice
 	);
-	let usesSavedFrames = $state(draft?.usesSavedFrames ?? typeof preferences?.frames === 'number');
 	let action = $state(
 		draft?.action ?? untrack(() => suggestions.find((entry) => entry.action)?.action) ?? ''
 	);
@@ -432,13 +433,18 @@
 	});
 	// Model-valid counts for this character's actual canvas; the same object prices and submits the move.
 	const frameCounts = $derived(moveFrameCounts(model, canvas));
+	const usesSavedFrames = $derived(!replacing && describing && frameChoice === undefined);
 	const userFrameCount = $derived(
-		keptFrames === undefined && (!replacing || !usesSavedFrames)
-			? resolveMoveFramePreference(model, frameChoice ?? 'auto', canvas)
+		keptFrames === undefined
+			? resolveMoveFramePreference(
+					model,
+					(usesSavedFrames ? savedCustomFrames : frameChoice) ?? 'auto',
+					canvas
+				)
 			: undefined
 	);
 	const frameFallback = $derived(
-		!replacing && usesSavedFrames && frameChoice !== undefined && userFrameCount === undefined
+		usesSavedFrames && savedCustomFrames !== undefined && userFrameCount === undefined
 	);
 	const chosenFrameCount = $derived(
 		keptFrames !== undefined && frameCounts.includes(keptFrames) ? keptFrames : userFrameCount
@@ -920,7 +926,8 @@
 		formDrafts.move = {
 			projectId,
 			advancedOpen,
-			usesSavedFrames: usesSavedFrames && userFrameCount !== undefined,
+			savedCustomFrames,
+			frameChoice,
 			regeneration,
 			skeletonRetry,
 			action,
@@ -931,7 +938,7 @@
 			source: sourceSelection,
 			frameReferences: $state.snapshot(frameReferences),
 			loop: loopChoice,
-			animation: { model, frameCount: userFrameCount }
+			animation: { model }
 		};
 	}
 
@@ -1075,10 +1082,10 @@
 			text = savedPrompt || moveTemplatePrompt(next, looping);
 			return;
 		}
+		if (replace || replaceSelected) frameChoice = undefined;
 		action = next;
 		replaceSelected = replace;
 		text = prompt;
-		if (!usesSavedFrames) frameChoice = undefined;
 		loopChoice = undefined;
 		frameReferences = {};
 		customStartAcknowledged = false;
@@ -1131,8 +1138,7 @@
 	}
 	function chooseModel(next: MoveAnimationModel) {
 		modelChoice = next;
-		usesSavedFrames = false;
-		if (frameChoice !== undefined && keptFrames === undefined)
+		if (typeof frameChoice === 'number' && keptFrames === undefined)
 			frameChoice = defaultMoveFrameCount(next, canvas, frameChoice);
 	}
 	function changeFrame(
@@ -2241,10 +2247,8 @@
 										class="bu-action btn plain frame-default"
 										data-variant="quiet"
 										aria-disabled={userFrameCount === undefined}
-										onclick={() => {
-											usesSavedFrames = false;
-											frameChoice = undefined;
-										}}>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
+										onclick={() => (frameChoice = null)}
+										>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
 									>
 								{/if}
 							</div>
@@ -2259,10 +2263,7 @@
 										min={0}
 										max={frameCounts.length - 1}
 										value={frameCounts.indexOf(shownFrames)}
-										oninput={(e) => {
-											usesSavedFrames = false;
-											frameChoice = frameCounts[e.currentTarget.valueAsNumber];
-										}}
+										oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
 									/>
 									<span class="frame-value"
 										>{t('moveSheet.framesValue', { count: shownFrames })}</span
