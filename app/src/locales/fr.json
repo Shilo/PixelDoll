@@ -3210,6 +3210,14 @@
 		"missingCells": {
 			"one": "{count} cellule n’a pas d’image (hachurée)",
 			"other": "{count} cellules n’ont pas d’image (hachurées)"
-		}
+		},
+		"emptyCells": {
+			"one": "{count} image est vide (pointillés)",
+			"other": "{count} images sont vides (pointillés)"
+		},
+		"page": "Feuille {page} sur {pages}",
+		"previous": "Feuille précédente",
+		"next": "Feuille suivante",
+		"scale": "Affichée à {shown}×, feuille à {sheet}×"
 	}
 }

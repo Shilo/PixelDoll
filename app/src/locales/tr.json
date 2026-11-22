@@ -3207,6 +3207,14 @@
 		"missingCells": {
 			"one": "{count} hücrede kare yok (taranmış)",
 			"other": "{count} hücrede kare yok (taranmış)"
-		}
+		},
+		"emptyCells": {
+			"one": "{count} kare boş (kesikli)",
+			"other": "{count} kare boş (kesikli)"
+		},
+		"page": "Sayfa {page}/{pages}",
+		"previous": "Önceki sayfa",
+		"next": "Sonraki sayfa",
+		"scale": "Gösterilen {shown}×, sayfa {sheet}×"
 	}
 }

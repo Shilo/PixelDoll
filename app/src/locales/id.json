@@ -3119,6 +3119,13 @@
 		"title": "Tampilan agen: {subject}",
 		"missingCells": {
 			"other": "{count} sel tidak memiliki bingkai (bergaris)"
-		}
+		},
+		"emptyCells": {
+			"other": "{count} bingkai kosong (garis putus-putus)"
+		},
+		"page": "Lembar {page} dari {pages}",
+		"previous": "Lembar sebelumnya",
+		"next": "Lembar berikutnya",
+		"scale": "Ditampilkan {shown}×, lembar {sheet}×"
 	}
 }

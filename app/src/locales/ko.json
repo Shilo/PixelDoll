@@ -3119,6 +3119,13 @@
 		"title": "에이전트 보기: {subject}",
 		"missingCells": {
 			"other": "프레임이 없는 셀이 {count}개 있습니다 (빗금)"
-		}
+		},
+		"emptyCells": {
+			"other": "빈 프레임이 {count}개 있습니다 (점선)"
+		},
+		"page": "시트 {page}/{pages}",
+		"previous": "이전 시트",
+		"next": "다음 시트",
+		"scale": "표시 {shown}×, 시트 {sheet}×"
 	}
 }

@@ -3210,6 +3210,14 @@
 		"missingCells": {
 			"one": "{count} cell has no frame (hatched)",
 			"other": "{count} cells have no frame (hatched)"
-		}
+		},
+		"emptyCells": {
+			"one": "{count} frame is empty (dashed)",
+			"other": "{count} frames are empty (dashed)"
+		},
+		"page": "Sheet {page} of {pages}",
+		"previous": "Previous sheet",
+		"next": "Next sheet",
+		"scale": "Shown at {shown}×, sheet at {sheet}×"
 	}
 }

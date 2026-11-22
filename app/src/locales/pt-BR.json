@@ -3219,6 +3219,14 @@
 		"missingCells": {
 			"one": "{count} célula não tem quadro (hachurada)",
 			"other": "{count} células não têm quadro (hachuradas)"
-		}
+		},
+		"emptyCells": {
+			"one": "{count} quadro está vazio (tracejado)",
+			"other": "{count} quadros estão vazios (tracejados)"
+		},
+		"page": "Folha {page} de {pages}",
+		"previous": "Folha anterior",
+		"next": "Próxima folha",
+		"scale": "Exibida em {shown}×, folha em {sheet}×"
 	}
 }

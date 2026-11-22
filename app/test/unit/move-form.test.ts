@@ -184,6 +184,19 @@ test('template text follows a Loop change but typed text stays', () => {
 	expect(loopedText('limping walk', 'walk', true, false)).toBe('limping walk');
 });
 
+test('a template customized in Settings gains and loses the looping wording too', () => {
+	const tail = moveTemplatePrompt('walk', true).slice(moveTemplatePrompt('walk', false).length);
+	const custom = `heavy armored walk${tail}`;
+	expect(loopedText(custom, 'walk', true, false, custom)).toBe('heavy armored walk');
+	expect(loopedText('heavy armored walk', 'walk', false, true, custom)).toBe(custom);
+	// Customized without the wording, it gains it when the move loops.
+	expect(loopedText('stomp', 'walk', true, false, 'stomp')).toBe('stomp');
+	expect(loopedText('stomp', 'walk', false, true, 'stomp')).toBe(`stomp${tail}`);
+	// Typed text and templates whose wording does not follow Loop stay as they are.
+	expect(loopedText('limping walk', 'walk', true, false, custom)).toBe('limping walk');
+	expect(loopedText('big slash', 'slash', false, true, 'big slash')).toBe('big slash');
+});
+
 test('a pending Loop confirmation survives replanning with unchanged directions', async () => {
 	const m = await demo();
 	const form = choices({ text: 'Wave', model: 'v3' });

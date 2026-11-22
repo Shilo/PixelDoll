@@ -3207,6 +3207,14 @@
 		"missingCells": {
 			"one": "{count} Zelle hat kein Bild (schraffiert)",
 			"other": "{count} Zellen haben kein Bild (schraffiert)"
-		}
+		},
+		"emptyCells": {
+			"one": "{count} Bild ist leer (gestrichelt)",
+			"other": "{count} Bilder sind leer (gestrichelt)"
+		},
+		"page": "Blatt {page} von {pages}",
+		"previous": "Vorheriges Blatt",
+		"next": "Nächstes Blatt",
+		"scale": "Angezeigt mit {shown}×, Blatt mit {sheet}×"
 	}
 }

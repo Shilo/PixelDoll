@@ -3,16 +3,22 @@
 // are the sheet's. What the sheet offers beyond this (uploaded start or end frames, starting from a saved frame,
 // checkpoint retries) stays in the sheet.
 import { app, getKeyRevision } from '../../lib/app.svelte.ts';
-import { displayError, displayMessage } from '../../lib/i18n.ts';
+import { displayMessage } from '../../lib/i18n.ts';
+import { sha256, stableStringify } from '../../lib/image/hash.ts';
+import { setupPlan } from '../../lib/rig/setup.ts';
+import type { Project } from '../../lib/store/manifest.ts';
+import type { StoredProject } from '../../lib/store/project.ts';
 import { LocalizedError, message } from '../../lib/message.ts';
 import { timeoutFor } from '../../lib/pixellab/client.ts';
 import { queue } from '../../lib/pixellab/queue.ts';
 import { routes } from '../../lib/pixellab/routes.ts';
 import {
 	agentMoveQuoteChanged,
+	missingItemMoves,
 	moveMinimumTier,
 	movePreflightWarnings,
 	moveRigReady,
+	readMoveCandidateImages,
 	resolveMoveMotionSource,
 	type MoveSpec
 } from '../create.ts';
@@ -21,7 +27,11 @@ import { moveTemplatePrompt } from '../moveAnimationOptions.ts';
 import { moveModels, openingCreationSettings } from '../creationSettings.ts';
 import { promptSuggestionDefaults } from '../promptSuggestionDefaults.ts';
 import { promptSuggestions } from '../promptSuggestions.svelte.ts';
-import { moveRigVersion } from '../replaceMove.ts';
+import {
+	moveCandidateHasStructuralFailure,
+	moveRigVersion,
+	type MoveCandidate
+} from '../replaceMove.ts';
 import {
 	actionPrompt,
 	loopedText,
@@ -53,26 +63,142 @@ import { jobError } from './jobError.ts';
 import { paidPreflight, readSavedCharacter, ready, requestIdArg, str } from './toolSupport.ts';
 
 const ACTIONS = promptSuggestionDefaults.move.flatMap(({ action }) => (action ? [action] : []));
-const BUSY_KEYS = new Set(['moveSheet.alreadyQueued', 'moveSheet.checkpoint.ready']);
+const BUSY_KEYS = new Set([
+	'moveSheet.alreadyQueued',
+	'moveSheet.checkpoint.ready',
+	'moveSheet.checkpoint.changed',
+	'directionsSheet.waitForGeneration',
+	'state.manageMovesInOtherTab'
+]);
+// Agents read canonical English, whatever language the person uses.
 const refusal = (issue: LocalizedError) =>
-	new AgentError(displayError(issue), BUSY_KEYS.has(issue.translation.key) ? 'busy' : 'invalid');
+	new AgentError(issue.message, BUSY_KEYS.has(issue.translation.key) ? 'busy' : 'invalid');
 
-async function moveCharacter(characterId: unknown) {
+/** The character a move tool works on: the given id, else the open one. */
+async function moveTarget(characterId: unknown) {
 	await ready();
 	const projectId = typeof characterId === 'string' && characterId ? characterId : doc.id;
 	if (!projectId) throw new AgentError('No character is open.', 'not_ready');
 	if (projectId.startsWith('fixture:'))
-		throw new AgentError('The demo is read-only. Call copy_demo_character first.', 'unsupported');
+		throw new AgentError(
+			'The demo is read-only, and copies of it cannot get moves. Use a character made with create_character.',
+			'unsupported'
+		);
+	return projectId;
+}
+
+async function moveCharacter(projectId: string) {
 	const { project, record } = await readSavedCharacter(projectId);
 	if (!record) throw new AgentError('This character is not saved.', 'not_found');
-	return { projectId, project, record };
+	return { project, record };
+}
+
+export type MoveReadiness = {
+	canAdd: boolean;
+	/** Why not: needs_user when the person can fix it in the Studio, unsupported when nothing can. */
+	code: 'needs_user' | 'unsupported' | null;
+	reason: string | null;
+};
+
+/** Whether add_move can run on a character, and if not, why and what would fix it. Offline: rig setup is planned from the
+ *  saved frames, as the Studio's Rig setup does before it offers to run, and nothing is requested. */
+export async function moveReadiness(
+	project: Project,
+	record: Pick<StoredProject, 'manifest' | 'character'> | undefined,
+	demo = false
+): Promise<MoveReadiness> {
+	if (!demo && moveRigReady(record)) return { canAdd: true, code: null, reason: null };
+	let gens: number;
+	try {
+		gens = (await setupPlan(project)).gens;
+	} catch (error) {
+		const why = error instanceof Error ? error.message : 'Its body frames cannot be set up.';
+		return {
+			canAdd: false,
+			code: 'unsupported',
+			reason: `${demo ? 'The demo is read-only, and copies of it cannot get moves' : 'This character cannot get moves'}: ${why} Use a character made with create_character.`
+		};
+	}
+	if (demo)
+		return {
+			canAdd: false,
+			code: 'unsupported',
+			reason:
+				'The demo is read-only. A copy from copy_demo_character needs rig setup in the Studio before it can get moves.'
+		};
+	return {
+		canAdd: false,
+		code: 'needs_user',
+		reason: `This character needs a one-time rig setup before it can get moves: about ${gens} generations (about $${(Math.round(rateUsd(gens) * 100) / 100).toFixed(2)}). Ask the user to open Add move in the Studio and run Rig setup; it asks them to describe the character. Agents cannot start it.`
+	};
+}
+
+/** What identifies the artwork of a move review: its run, seed and frames. A new run or a redraw of the review changes it,
+ *  so a decision binds to the candidate the agent looked at. */
+async function candidateIdOf(candidate: MoveCandidate) {
+	const { seed, activityScope } = candidate.spec;
+	const hash = await sha256(stableStringify({ seed, activityScope, cells: candidate.cells }));
+	return hash.slice(0, 16);
+}
+
+/** A move review waiting for a decision, as agents see it. */
+export async function reviewOf(candidate: MoveCandidate) {
+	return {
+		moveId: candidate.spec.id,
+		candidateId: await candidateIdOf(candidate),
+		redraw: !!candidate.spec.replace,
+		directions: candidate.dirs,
+		frames: candidate.animation.cells,
+		canAccept: !moveCandidateHasStructuralFailure(candidate),
+		warnings: candidate.warnings,
+		checks: Object.fromEntries(
+			Object.entries(candidate.checks).map(([clip, qa]) => [
+				clip,
+				{
+					fails: qa.fails,
+					warnings: qa.warnings,
+					strayPx: qa.stray,
+					disconnectedPixels: qa.disconnectedPixels
+				}
+			])
+		)
+	};
+}
+
+/** The character's move review, or a refusal naming the ones that wait. */
+export function reviewFor(record: Pick<StoredProject, 'moveReviews'> | undefined, moveId: string) {
+	const reviews = record?.moveReviews ?? {};
+	if (Object.hasOwn(reviews, moveId)) return reviews[moveId];
+	throw new AgentError(
+		`No move review for "${moveId}". Waiting: ${Object.keys(reviews).join(', ') || 'none'}.`,
+		'not_found'
+	);
+}
+
+/** The project with a review's frames in place of the saved move, to draw them before anyone decides. */
+export async function withReview(project: Project, candidate: MoveCandidate): Promise<Project> {
+	const manifest = structuredClone(project.manifest),
+		rig = manifest.rig,
+		id = candidate.spec.id;
+	const at = rig.animations.findIndex((move) => move.id === id);
+	if (at >= 0) rig.animations[at] = candidate.animation;
+	else rig.animations.push(candidate.animation);
+	const base = manifest.items.find((item) => item.id === rig.baseItem);
+	if (base?.layers[0]) (base.layers[0].cells ??= {})[id] = candidate.cells;
+	let frames;
+	try {
+		frames = await readMoveCandidateImages(candidate);
+	} catch (error) {
+		throw error instanceof LocalizedError ? refusal(error) : error;
+	}
+	return { ...project, manifest, images: new Map([...project.images, ...frames]) };
 }
 
 export const addMoveTool: Tool = {
 	name: 'add_move',
 	title: 'Add move',
 	description:
-		'Paid. Add a move (animation) to the base body of an editable character, as Add move does: a template action, a described move, or a redraw of chosen directions of a saved move. A new move covers every drawn direction; equipment is not posed on it here. dryRun true returns the plan, warnings and price only. The move runs in the background. Follow the receipt with wait_for_activity, then review it before calling accept_move or discard_move.',
+		'Paid. Add a move (animation) to the base body of an editable character, as Add move does: a template action, a described move, or a redraw of chosen directions of a saved move. The character must be ready for moves (inspect_character addMove). A new move covers every drawn direction; equipment is not posed on it here. dryRun true returns the plan, warnings and price only. The move runs in the background. Follow the receipt with wait_for_activity, look at it with render_frames review true, then call accept_move or discard_move with its candidateId.',
 	inputSchema: {
 		type: 'object',
 		properties: {
@@ -120,17 +246,25 @@ export const addMoveTool: Tool = {
 	consequential: true,
 	untrusted: true,
 	async run(args, signal) {
-		const { projectId, project: p, record: rec } = await moveCharacter(args.characterId);
+		const projectId = await moveTarget(args.characterId);
+		// A repeated request answers from its receipt, whatever the character looks like now.
 		const fingerprint = fingerprintOf({ ...args, characterId: projectId });
 		const earlier = args.dryRun ? undefined : receipts.repeat('move', args.requestId, fingerprint);
-		if (earlier) return { data: { repeated: true, ...receiptView(earlier) } };
+		if (earlier)
+			return {
+				data: {
+					repeated: true,
+					started: true,
+					activityId: earlier.id,
+					status: earlier.outcome,
+					...receiptView(earlier)
+				}
+			};
+		const { project: p, record: rec } = await moveCharacter(projectId);
 		const m = p.manifest;
 		const rigVersion = moveRigVersion(rec);
-		if (!moveRigReady(rec))
-			throw new AgentError(
-				'This character is not set up for moves. Ask the user to open Add move in the Studio once.',
-				'needs_user'
-			);
+		const readiness = await moveReadiness(p, rec);
+		if (!readiness.canAdd) throw new AgentError(readiness.reason!, readiness.code!);
 		const action = args.action as string | undefined,
 			redraw = args.redraw as string | undefined,
 			prompt = (args.prompt as string | undefined)?.trim(),
@@ -198,7 +332,13 @@ export const addMoveTool: Tool = {
 		};
 		if (typeof args.loop === 'boolean') {
 			const was = planMoveForm(choices, context).looping;
-			choices.text = loopedText(choices.text, choices.action, was, args.loop);
+			choices.text = loopedText(
+				choices.text,
+				choices.action,
+				was,
+				args.loop,
+				templateText(choices.action)
+			);
 			choices.loop = args.loop;
 		}
 		if (prompt && choices.action) choices.text = prompt;
@@ -275,13 +415,13 @@ export const addMoveTool: Tool = {
 			approxUsd: Math.round(rateUsd(generations) * 100) / 100,
 			minutes: estimate.minutes,
 			minimumTier,
-			warnings: preflight.map((w) => ({ id: w.id, text: displayError(w) }))
+			warnings: preflight.map((w) => ({ id: w.id, text: w.message }))
 		};
 		if (args.dryRun || (preflight.length && !args.acceptWarnings))
 			return { data: { started: false, ...plan } };
 		const pending = await pendingBodyMoveName(projectId, form.id);
 		const latest = await readSavedCharacter(projectId);
-		const quoteChanged = () => new AgentError(displayError(agentMoveQuoteChanged()), 'busy');
+		const quoteChanged = () => new AgentError(agentMoveQuoteChanged().message, 'busy');
 		if (
 			!latest.record ||
 			moveRigVersion(latest.record) !== rigVersion ||
@@ -354,24 +494,32 @@ export const moveReviewTools: Tool[] = [true, false].map((accept): Tool => ({
 	name: accept ? 'accept_move' : 'discard_move',
 	title: accept ? 'Accept move review' : 'Discard move review',
 	description: accept
-		? 'Save a finished body move review to its character. Equipment posing is a separate step.'
-		: 'Discard a finished body move review. Generations already used stay spent.',
+		? 'Save the move review you looked at (render_frames review true) to its character. equipmentToPose lists items without frames on the new move: the user poses them from each item in the Studio.'
+		: 'Discard the move review you looked at. Generations already used stay spent.',
 	inputSchema: {
 		type: 'object',
 		properties: {
 			characterId: str('Character id from the activity receipt. Omit for the open character.'),
-			moveId: str('The move id reported by add_move.', 60)
+			moveId: str('The move id reported by add_move.', 60),
+			candidateId: str(
+				'The candidateId render_frames (review true) or inspect_character reported for the review you looked at.',
+				40
+			)
 		},
-		required: ['moveId']
+		required: ['moveId', 'candidateId']
 	},
 	consequential: true,
 	async run(args, signal) {
-		const { projectId, record } = await moveCharacter(args.characterId);
+		const projectId = await moveTarget(args.characterId);
+		const { record } = await moveCharacter(projectId);
 		const moveId = String(args.moveId);
-		const candidate = Object.hasOwn(record.moveReviews ?? {}, moveId)
-			? record.moveReviews![moveId]
-			: undefined;
-		if (!candidate) throw new AgentError('No finished review for this move.', 'not_found');
+		const candidate = reviewFor(record, moveId);
+		const { candidateId } = await reviewOf(candidate);
+		if (candidateId !== args.candidateId)
+			throw new AgentError(
+				`The review of "${moveId}" is now candidate ${candidateId}, not the one you looked at. Look at it with render_frames review true first.`,
+				'busy'
+			);
 		checkAbort(signal);
 		try {
 			await saveReviewedMove(projectId, candidate, accept);
@@ -382,6 +530,18 @@ export const moveReviewTools: Tool[] = [true, false].map((accept): Tool => ({
 			if (accept) await openProject(projectId, { quiet: true, stay: true });
 			else await refreshMoveReviews(projectId);
 		}
-		return { data: { characterId: projectId, moveId, outcome: accept ? 'saved' : 'discarded' } };
+		const data = { characterId: projectId, moveId, candidateId };
+		if (!accept) return { data: { ...data, outcome: 'discarded' } };
+		// Items the Studio can pose onto the new move: the person does that from each item (its missing moves).
+		const { project } = await moveCharacter(projectId);
+		const m = project.manifest;
+		const equipmentToPose = m.items
+			.filter(
+				(item) =>
+					item.id !== m.rig.baseItem &&
+					missingItemMoves(m, item.id, 0).some((move) => move.id === moveId)
+			)
+			.map((item) => item.id);
+		return { data: { ...data, outcome: 'saved', equipmentToPose } };
 	}
 }));
