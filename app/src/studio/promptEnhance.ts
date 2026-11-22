@@ -96,8 +96,7 @@ export function enhanceRequest(
 const BOILERPLATE = [
 	/^static camera\b/i,
 	/^(completely )?locked-off shot\b/i,
-	/^maintain the (crisp|original|strict)\b.*\b(aesthetic|perspective|style)\b/i,
-	/\bthroughout the (entire )?(fluid )?animation\b/i
+	/^maintain the (crisp|original|strict)\b.*\b(aesthetic|perspective|style)\b/i
 ];
 export function trimStaticBoilerplate(text: string): string {
 	const sentences = text.trim().match(/[^.!?]+[.!?]*\s*/g) ?? [];

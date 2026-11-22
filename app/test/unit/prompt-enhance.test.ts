@@ -108,6 +108,13 @@ describe('trimStaticBoilerplate', () => {
 			)
 		).toBe('Bend both knees. Turn the face toward the camera.');
 	});
+	it('keeps a pose sentence that only mentions the animation', () => {
+		expect(
+			trimStaticBoilerplate(
+				'Arms crossed. Keep the left hand open throughout the entire animation. Static camera, completely locked-off shot.'
+			)
+		).toBe('Arms crossed. Keep the left hand open throughout the entire animation.');
+	});
 	it('also drops the pixel-art style sentence, which only matters for animation', () => {
 		expect(trimStaticBoilerplate('Arms crossed. Maintain the crisp 2D pixel art aesthetic.')).toBe(
 			'Arms crossed.'
