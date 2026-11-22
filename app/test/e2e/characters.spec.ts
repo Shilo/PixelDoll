@@ -2839,6 +2839,37 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(enhanced[0].body).not.toHaveProperty('last_frame');
 	await newState.getByRole('button', { name: 'Undo', exact: true }).click();
 	await expect(instructions).toHaveValue('Raise both hands');
+	// With a reference, Enhance also sends it as the pose to move toward.
+	const pose = makeImg(32, 32);
+	for (let row = 4; row < 30; row++)
+		for (let column = 10; column < 22; column++)
+			pose.data.set([40, 90, 200, 255], (row * 32 + column) * 4);
+	await newState.locator('input[type=file]').setInputFiles({
+		name: 'pose.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(await encodePngBytes(pose))
+	});
+	await expect(newState.getByText('pose.png', { exact: true })).toBeVisible();
+	await newState.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await expect(instructions).toHaveValue('Lift both open hands to shoulder height, palms forward');
+	const withReference = posts.filter(({ path }) => path.endsWith('/enhance-animation-v3-prompt'));
+	expect(withReference).toHaveLength(2);
+	const sent = withReference[1].body as {
+		first_frame: { base64: string };
+		last_frame: { type: string; format: string; base64: string };
+	};
+	expect(sent).toMatchObject({ action: 'Raise both hands', engine: 'v3' });
+	expect(sent.last_frame).toMatchObject({ type: 'base64', format: 'png' });
+	expect(await decodePngBytes(Buffer.from(sent.last_frame.base64, 'base64'))).toMatchObject({
+		w: 32,
+		h: 32
+	});
+	expect(sent.first_frame.base64).toBe(
+		(enhanced[0].body as { first_frame: { base64: string } }).first_frame.base64
+	);
+	await newState.getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(instructions).toHaveValue('Raise both hands');
+	await newState.getByRole('button', { name: 'Remove reference', exact: true }).click();
 	const statePosts = () =>
 		posts.filter(
 			({ path }) => path.endsWith('/edit-images-v2') || path.endsWith('/create-character-state')

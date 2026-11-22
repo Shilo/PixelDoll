@@ -6085,7 +6085,12 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	context
 }, info) => {
 	const posts: string[] = [];
-	const enhancements: { action: string; engine: string; frame_count: number }[] = [];
+	const enhancements: {
+		action: string;
+		engine: string;
+		frame_count: number;
+		end: string;
+	}[] = [];
 	await context.route('https://api.pixellab.ai/**', async (r) => {
 		if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance'))
 			await r.fulfill({
@@ -6100,8 +6105,14 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		)
 			await r.fulfill({ status: 404, json: { detail: 'Not available on this account' } });
 		else if (new URL(r.request().url()).pathname.endsWith('/enhance-animation-v3-prompt')) {
-			const { action, engine, frame_count } = r.request().postDataJSON();
-			enhancements.push({ action, engine, frame_count });
+			const { action, engine, frame_count, first_frame, last_frame } = r.request().postDataJSON();
+			// Which end frame the enhancer saw: none, the start again (a loop), or another image.
+			const end = !last_frame
+				? 'none'
+				: last_frame.base64 === first_frame.base64
+					? 'start'
+					: 'other';
+			enhancements.push({ action, engine, frame_count, end });
 			await r.fulfill({ json: { enhanced_prompt: 'Swing each arm in time with the strides' } });
 		} else {
 			posts.push(r.request().method());
@@ -6184,7 +6195,10 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(prompt).toHaveValue('Swing each arm in time with the strides');
 	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
 	await expect(prompt).toHaveValue(originalPrompt);
-	expect(enhancements).toEqual([{ action: originalPrompt, engine: 'pixminimax', frame_count: 8 }]);
+	// This redraw uses Skeleton V3, which takes no end frame, so Enhance sees none either.
+	expect(enhancements).toEqual([
+		{ action: originalPrompt, engine: 'pixminimax', frame_count: 8, end: 'none' }
+	]);
 	await sheet.getByRole('button', { name: /^Replace Walk views.*Est\. 6 gens/ }).click();
 	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
 	const scope = await page.evaluate(async () => {
