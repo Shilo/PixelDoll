@@ -1,7 +1,7 @@
 {
 	"recentlyDeleted": {
-		"empty": "回收站是空的。你移到回收站的角色、物品、分类、动作和状态会保留 30 天。",
-		"kept": "保留 30 天，最多 50 条。",
+		"empty": "回收站是空的。你移到回收站的角色、物品、分类、动作和状态会保留 最多 30 天。",
+		"kept": "保留 最多 30 天，最多 50 条。",
 		"restoreNamed": "恢复 {name}",
 		"deleteForeverNamed": "永久删除 {name}",
 		"confirmTitle": "永久删除 {name}？",
@@ -24,7 +24,7 @@
 		},
 		"errors": {
 			"gone": "这已不在回收站中。",
-			"expired": "它在回收站保留了 30 天，现已消失。",
+			"expired": "它在回收站保留了 最多 30 天，现已消失。",
 			"missingArtwork": "{name} 的部分保存图像已不在本设备上，因此无法恢复。",
 			"full": "浏览器空间不足，因此没有移动任何内容。请在回收站中删除一些内容以释放空间。",
 			"wrongKind": "该已删除项目属于一个角色。请先恢复该角色。",
@@ -166,7 +166,7 @@
 		"loadFailed": "无法加载 PixelDoll 的部分内容。请重新加载页面后重试。",
 		"advanced": "高级",
 		"cancel": "取消",
-		"deleteRecoverable": "它会离开衣柜。30 天内可以恢复。",
+		"deleteRecoverable": "它会离开衣柜。最多 30 天内可以恢复。",
 		"character": "角色",
 		"characters": "角色",
 		"close": "关闭",
@@ -357,7 +357,7 @@
 		"viewPendingWork": "查看待处理工作",
 		"character": "角色",
 		"demo": "内置演示无法删除。",
-		"itsOutfitsAndChangesAreRemovedFrom": "其服装、物品和未保存的草稿也会一起移动；复制到其他角色的物品会留下。30 天内可以恢复。"
+		"itsOutfitsAndChangesAreRemovedFrom": "其服装、物品和未保存的草稿也会一起移动；复制到其他角色的物品会留下。最多 30 天内可以恢复。"
 	},
 	"demoCopyRow": {
 		"editACopy": "编辑副本",
@@ -606,10 +606,10 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "移到回收站…",
-		"removeState": "身体和每个物品都会失去适配的帧；已完成的动作会保留自己的帧。30 天内可以恢复。",
+		"removeState": "身体和每个物品都会失去适配的帧；已完成的动作会保留自己的帧。最多 30 天内可以恢复。",
 		"labelDeleteMove": "移到回收站…",
 		"labelDeleteOutfit": "删除套装",
-		"thisRemovesTheMoveFromTheBody": "身体和每个物品都会失去它的帧。30 天内可以恢复。"
+		"thisRemovesTheMoveFromTheBody": "身体和每个物品都会失去它的帧。最多 30 天内可以恢复。"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "免费：不会重新生成已制作的装备。",
@@ -625,7 +625,7 @@
 		"showLabel": "显示{label}",
 		"createSlot": "创建装备栏",
 		"builtInSlots": "内置装备栏",
-		"theSlotAndItsItemsAreDeleted": "其物品也会一起移动，服装不再穿着它们。30 天内可以恢复。",
+		"theSlotAndItsItemsAreDeleted": "其物品也会一起移动，服装不再穿着它们。最多 30 天内可以恢复。",
 		"labelAddedAtTheEndOfWardrobe": "{label}已添加到衣橱末尾。",
 		"valueShownAtTheEndOfWardrobe": "{value}显示在衣橱末尾。",
 		"demoDeleteLocked": "内置演示的装备无法删除。",
@@ -641,7 +641,7 @@
 		"alreadyHidden": "{label}已存在但未显示。",
 		"deleteTitle": "将 {label} 移到回收站？",
 		"deleteExportNote": "导出将不再包含其装备栏“{slot}”，因此按名称引用它的游戏代码需要修改。",
-		"theSlotIsDeleted": "该分类会离开衣柜。30 天内可以恢复。"
+		"theSlotIsDeleted": "该分类会离开衣柜。最多 30 天内可以恢复。"
 	},
 	"stage": {
 		"characterFacing": "{name}，{move}，朝向{facing}",

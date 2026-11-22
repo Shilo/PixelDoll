@@ -1,7 +1,7 @@
 {
 	"recentlyDeleted": {
-		"empty": "Rien ici. Les personnages, objets, catégories, mouvements et états que vous déplacez vers la corbeille restent 30 jours.",
-		"kept": "Conservé 30 jours, jusqu’à 50 entrées.",
+		"empty": "Rien ici. Les personnages, objets, catégories, mouvements et états que vous déplacez vers la corbeille restent jusqu’à 30 jours.",
+		"kept": "Conservé jusqu’à 30 jours, jusqu’à 50 entrées.",
 		"restoreNamed": "Restaurer {name}",
 		"deleteForeverNamed": "Supprimer {name} définitivement",
 		"confirmTitle": "Supprimer {name} définitivement ?",
@@ -26,7 +26,7 @@
 		},
 		"errors": {
 			"gone": "Ce n’est plus dans la corbeille.",
-			"expired": "Resté 30 jours dans la corbeille, il est parti.",
+			"expired": "Resté jusqu’à 30 jours dans la corbeille, il est parti.",
 			"missingArtwork": "Une partie des images enregistrées de {name} n'est plus sur cet appareil, il ne peut donc pas être restauré.",
 			"full": "Votre navigateur est à court d’espace, rien n’a donc été déplacé. Supprimez un élément dans la corbeille pour libérer de l’espace.",
 			"wrongKind": "Cet élément supprimé appartient à un personnage. Restaurez d’abord le personnage.",
@@ -169,7 +169,7 @@
 		"loadFailed": "Impossible de charger une partie de PixelDoll. Rechargez la page pour réessayer.",
 		"advanced": "Avancé",
 		"cancel": "Annuler",
-		"deleteRecoverable": "Il quitte la garde-robe. Vous pouvez le récupérer pendant 30 jours.",
+		"deleteRecoverable": "Il quitte la garde-robe. Vous pouvez le récupérer pendant jusqu’à 30 jours.",
 		"character": "Personnage",
 		"characters": "Personnages",
 		"close": "Fermer",
@@ -360,7 +360,7 @@
 		"viewPendingWork": "Voir les travaux en attente",
 		"character": "ce personnage",
 		"demo": "La démo intégrée ne peut pas être supprimée.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Ses tenues, objets et brouillons non conservés partent aussi ; les objets copiés vers d’autres personnages restent. Vous pouvez tout récupérer pendant 30 jours."
+		"itsOutfitsAndChangesAreRemovedFrom": "Ses tenues, objets et brouillons non conservés partent aussi ; les objets copiés vers d’autres personnages restent. Vous pouvez tout récupérer pendant jusqu’à 30 jours."
 	},
 	"demoCopyRow": {
 		"editACopy": "Modifier une copie",
@@ -623,10 +623,10 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Vers la corbeille…",
-		"removeState": "Le corps et chaque objet perdent leurs images ajustées ; les mouvements terminés gardent les leurs. Vous pouvez récupérer l’état pendant 30 jours.",
+		"removeState": "Le corps et chaque objet perdent leurs images ajustées ; les mouvements terminés gardent les leurs. Vous pouvez récupérer l’état pendant jusqu’à 30 jours.",
 		"labelDeleteMove": "Vers la corbeille…",
 		"labelDeleteOutfit": "Supprimer la tenue",
-		"thisRemovesTheMoveFromTheBody": "Le corps et chaque objet perdent leurs images. Vous pouvez récupérer le mouvement pendant 30 jours."
+		"thisRemovesTheMoveFromTheBody": "Le corps et chaque objet perdent leurs images. Vous pouvez récupérer le mouvement pendant jusqu’à 30 jours."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratuit : ne régénère jamais les objets déjà créés.",
@@ -642,7 +642,7 @@
 		"showLabel": "Afficher {label}",
 		"createSlot": "Créer l’emplacement",
 		"builtInSlots": "Emplacements intégrés",
-		"theSlotAndItsItemsAreDeleted": "Ses objets partent aussi et les tenues ne les portent plus. Vous pouvez tout récupérer pendant 30 jours.",
+		"theSlotAndItsItemsAreDeleted": "Ses objets partent aussi et les tenues ne les portent plus. Vous pouvez tout récupérer pendant jusqu’à 30 jours.",
 		"labelAddedAtTheEndOfWardrobe": "{label} ajouté à la fin de la Garde-robe.",
 		"valueShownAtTheEndOfWardrobe": "{value} affiché à la fin de la Garde-robe.",
 		"demoDeleteLocked": "Les objets de la démo intégrée ne peuvent pas être supprimés.",
@@ -658,7 +658,7 @@
 		"alreadyHidden": "{label} existe déjà mais n’est pas affiché.",
 		"deleteTitle": "Déplacer {label} vers la corbeille ?",
 		"deleteExportNote": "L’emplacement « {slot} » ne figurera plus dans les exports. Si le code de votre jeu y fait référence, vous devrez le modifier.",
-		"theSlotIsDeleted": "La catégorie quitte la garde-robe. Vous pouvez la récupérer pendant 30 jours."
+		"theSlotIsDeleted": "La catégorie quitte la garde-robe. Vous pouvez la récupérer pendant jusqu’à 30 jours."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, orientation {facing}",

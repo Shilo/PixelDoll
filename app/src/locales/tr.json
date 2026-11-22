@@ -1,7 +1,7 @@
 {
 	"recentlyDeleted": {
-		"empty": "Burada bir şey yok. Çöp kutusuna taşıdığınız karakterler, öğeler, kategoriler, hareketler ve durumlar 30 gün kalır.",
-		"kept": "30 gün, en fazla 50 kayıt saklanır.",
+		"empty": "Burada bir şey yok. Çöp kutusuna taşıdığınız karakterler, öğeler, kategoriler, hareketler ve durumlar en fazla 30 gün kalır.",
+		"kept": "en fazla 30 gün, en fazla 50 kayıt saklanır.",
 		"restoreNamed": "{name} geri yükle",
 		"deleteForeverNamed": "{name} kalıcı olarak silinsin",
 		"confirmTitle": "{name} kalıcı olarak silinsin mi?",
@@ -26,7 +26,7 @@
 		},
 		"errors": {
 			"gone": "Bu artık çöp kutusunda değil.",
-			"expired": "30 gün çöp kutusunda kaldı ve artık yok.",
+			"expired": "en fazla 30 gün çöp kutusunda kaldı ve artık yok.",
 			"missingArtwork": "{name} için kayıtlı görsellerin bir kısmı artık bu cihazda değil, bu yüzden geri yüklenemiyor.",
 			"full": "Tarayıcınızda yer kalmadı, bu yüzden hiçbir şey taşınmadı. Yer açmak için çöp kutusunda bir şey silin.",
 			"wrongKind": "O silinen öğe bir karaktere ait. Önce karakteri geri yükleyin.",
@@ -169,7 +169,7 @@
 		"loadFailed": "PixelDoll'un bir bölümü yüklenemedi. Yeniden denemek için sayfayı yenileyin.",
 		"advanced": "Gelişmiş",
 		"cancel": "İptal edin",
-		"deleteRecoverable": "Gardıroptan çıkar. 30 gün boyunca geri alabilirsiniz.",
+		"deleteRecoverable": "Gardıroptan çıkar. en fazla 30 gün boyunca geri alabilirsiniz.",
 		"character": "Karakter",
 		"characters": "Karakterler",
 		"close": "Kapatın",
@@ -360,7 +360,7 @@
 		"viewPendingWork": "Bekleyen işleri görüntüle",
 		"character": "karakter",
 		"demo": "Uygulamayla gelen demo silinemez.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Kıyafetleri, öğeleri ve saklanmamış taslakları da gider; diğer karakterlere kopyalanan öğeler kalır. 30 gün boyunca geri alabilirsiniz."
+		"itsOutfitsAndChangesAreRemovedFrom": "Kıyafetleri, öğeleri ve saklanmamış taslakları da gider; diğer karakterlere kopyalanan öğeler kalır. en fazla 30 gün boyunca geri alabilirsiniz."
 	},
 	"demoCopyRow": {
 		"editACopy": "Bir kopyasını düzenleyin",
@@ -623,10 +623,10 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Çöp kutusuna taşı…",
-		"removeState": "Gövde ve her öğe ayarlanmış karelerini kaybeder; bitmiş hareketler kendi karelerini korur. 30 gün boyunca geri alabilirsiniz.",
+		"removeState": "Gövde ve her öğe ayarlanmış karelerini kaybeder; bitmiş hareketler kendi karelerini korur. en fazla 30 gün boyunca geri alabilirsiniz.",
 		"labelDeleteMove": "Çöp kutusuna taşı…",
 		"labelDeleteOutfit": "Kıyafeti silin",
-		"thisRemovesTheMoveFromTheBody": "Gövde ve her öğe karelerini kaybeder. 30 gün boyunca geri alabilirsiniz."
+		"thisRemovesTheMoveFromTheBody": "Gövde ve her öğe karelerini kaybeder. en fazla 30 gün boyunca geri alabilirsiniz."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Ücretsiz: Daha önce yapılmış eşyalar yeniden üretilmez.",
@@ -642,7 +642,7 @@
 		"showLabel": "Şu yuvayı gösterin: {label}",
 		"createSlot": "Yuva oluşturun",
 		"builtInSlots": "Yerleşik yuvalar",
-		"theSlotAndItsItemsAreDeleted": "Öğeleri de gider ve kıyafetler artık onları giymez. 30 gün boyunca geri alabilirsiniz.",
+		"theSlotAndItsItemsAreDeleted": "Öğeleri de gider ve kıyafetler artık onları giymez. en fazla 30 gün boyunca geri alabilirsiniz.",
 		"labelAddedAtTheEndOfWardrobe": "{label}, Gardırop bölümünün sonuna eklendi.",
 		"valueShownAtTheEndOfWardrobe": "{value}, Gardırop bölümünün sonunda gösteriliyor.",
 		"demoDeleteLocked": "Uygulamayla gelen demonun eşyaları silinemez.",
@@ -658,7 +658,7 @@
 		"alreadyHidden": "{label} zaten var, ancak gösterilmiyor.",
 		"deleteTitle": "{label} çöp kutusuna taşınsın mı?",
 		"deleteExportNote": "Dışa aktarımlarda artık “{slot}” yuvası yer almayacak. Oyun kodu bu adı kullanıyorsa kodu değiştirin.",
-		"theSlotIsDeleted": "Kategori gardıroptan çıkar. 30 gün boyunca geri alabilirsiniz."
+		"theSlotIsDeleted": "Kategori gardıroptan çıkar. en fazla 30 gün boyunca geri alabilirsiniz."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, yön: {facing}",

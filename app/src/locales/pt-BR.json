@@ -1,7 +1,7 @@
 {
 	"recentlyDeleted": {
-		"empty": "Nada aqui. Personagens, itens, categorias, movimentos e estados que você mover para a lixeira ficam 30 dias.",
-		"kept": "Guardado por 30 dias, até 50 entradas.",
+		"empty": "Nada aqui. Personagens, itens, categorias, movimentos e estados que você mover para a lixeira ficam até 30 dias.",
+		"kept": "Guardado por até 30 dias, até 50 entradas.",
 		"restoreNamed": "Restaurar {name}",
 		"deleteForeverNamed": "Excluir {name} para sempre",
 		"confirmTitle": "Excluir {name} para sempre?",
@@ -26,7 +26,7 @@
 		},
 		"errors": {
 			"gone": "Isso não está mais na lixeira.",
-			"expired": "Ficou 30 dias na lixeira e se foi.",
+			"expired": "Ficou até 30 dias na lixeira e se foi.",
 			"missingArtwork": "Parte da arte salva de {name} não está mais neste dispositivo, então não pode ser restaurada.",
 			"full": "O navegador está sem espaço, então nada foi movido. Exclua algo na lixeira para liberar espaço.",
 			"wrongKind": "Esse item excluído pertence a um personagem. Restaure o personagem primeiro.",
@@ -169,7 +169,7 @@
 		"loadFailed": "Não foi possível carregar uma parte do PixelDoll. Recarregue a página para tentar novamente.",
 		"advanced": "Avançado",
 		"cancel": "Cancelar",
-		"deleteRecoverable": "Sai do guarda-roupa. Você pode recuperar por 30 dias.",
+		"deleteRecoverable": "Sai do guarda-roupa. Você pode recuperar por até 30 dias.",
 		"character": "Personagem",
 		"characters": "Personagens",
 		"close": "Fechar",
@@ -360,7 +360,7 @@
 		"viewPendingWork": "Ver trabalho pendente",
 		"character": "personagem",
 		"demo": "Não é possível excluir a demo incluída no app.",
-		"itsOutfitsAndChangesAreRemovedFrom": "As roupas, itens e rascunhos não salvos vão junto; itens copiados para outros personagens ficam. Você pode recuperar por 30 dias."
+		"itsOutfitsAndChangesAreRemovedFrom": "As roupas, itens e rascunhos não salvos vão junto; itens copiados para outros personagens ficam. Você pode recuperar por até 30 dias."
 	},
 	"demoCopyRow": {
 		"editACopy": "Editar uma cópia",
@@ -623,10 +623,10 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Mover para a lixeira…",
-		"removeState": "O corpo e cada item perdem os quadros ajustados; movimentos concluídos mantêm os seus. Você pode recuperar o estado por 30 dias.",
+		"removeState": "O corpo e cada item perdem os quadros ajustados; movimentos concluídos mantêm os seus. Você pode recuperar o estado por até 30 dias.",
 		"labelDeleteMove": "Mover para a lixeira…",
 		"labelDeleteOutfit": "Excluir traje",
-		"thisRemovesTheMoveFromTheBody": "O corpo e cada item perdem seus quadros. Você pode recuperar o movimento por 30 dias."
+		"thisRemovesTheMoveFromTheBody": "O corpo e cada item perdem seus quadros. Você pode recuperar o movimento por até 30 dias."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Grátis: nunca gera de novo os itens já criados.",
@@ -642,7 +642,7 @@
 		"showLabel": "Mostrar {label}",
 		"createSlot": "Criar espaço",
 		"builtInSlots": "Espaços padrão",
-		"theSlotAndItsItemsAreDeleted": "Os itens vão junto e as roupas deixam de usá-los. Você pode recuperar por 30 dias.",
+		"theSlotAndItsItemsAreDeleted": "Os itens vão junto e as roupas deixam de usá-los. Você pode recuperar por até 30 dias.",
 		"labelAddedAtTheEndOfWardrobe": "{label}: novo espaço no fim do guarda-roupa.",
 		"valueShownAtTheEndOfWardrobe": "{value}: agora visível no fim do guarda-roupa.",
 		"demoDeleteLocked": "Não é possível excluir itens da demo incluída no app.",
@@ -658,7 +658,7 @@
 		"alreadyHidden": "{label} já existe, mas está oculto.",
 		"deleteTitle": "Mover {label} para a lixeira?",
 		"deleteExportNote": "As exportações não incluirão mais o espaço “{slot}”. Você precisa alterar qualquer código do jogo que use esse nome.",
-		"theSlotIsDeleted": "A categoria sai do guarda-roupa. Você pode recuperá-la por 30 dias."
+		"theSlotIsDeleted": "A categoria sai do guarda-roupa. Você pode recuperá-la por até 30 dias."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, direção {facing}",

@@ -1,7 +1,7 @@
 {
 	"recentlyDeleted": {
-		"empty": "Aquí no hay nada. Los personajes, objetos, categorías, movimientos y estados que muevas a la papelera se guardan 30 días.",
-		"kept": "Se guarda 30 días, hasta 50 entradas.",
+		"empty": "Aquí no hay nada. Los personajes, objetos, categorías, movimientos y estados que muevas a la papelera se guardan hasta 30 días.",
+		"kept": "Se guarda hasta 30 días, hasta 50 entradas.",
 		"restoreNamed": "Restaurar {name}",
 		"deleteForeverNamed": "Eliminar {name} para siempre",
 		"confirmTitle": "¿Eliminar {name} para siempre?",
@@ -26,7 +26,7 @@
 		},
 		"errors": {
 			"gone": "Esto ya no está en la papelera.",
-			"expired": "Estuvo 30 días en la papelera y ya no está.",
+			"expired": "Estuvo hasta 30 días en la papelera y ya no está.",
 			"missingArtwork": "Parte del arte guardado de {name} ya no está en este dispositivo, así que no se puede restaurar.",
 			"full": "El navegador se quedó sin espacio, así que no se movió nada. Elimina algo en la papelera para liberar espacio.",
 			"wrongKind": "Ese elemento eliminado pertenece a un personaje. Restaura primero el personaje.",
@@ -169,7 +169,7 @@
 		"loadFailed": "No se pudo cargar una parte de PixelDoll. Recarga la página para volver a intentarlo.",
 		"advanced": "Avanzado",
 		"cancel": "Cancelar",
-		"deleteRecoverable": "Se quita del Armario. Puedes recuperarlo durante 30 días.",
+		"deleteRecoverable": "Se quita del Armario. Puedes recuperarlo durante hasta 30 días.",
 		"character": "Personaje",
 		"characters": "Personajes",
 		"close": "Cerrar",
@@ -360,7 +360,7 @@
 		"viewPendingWork": "Ver trabajo pendiente",
 		"character": "personaje",
 		"demo": "La demo incluida no se puede eliminar.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Sus conjuntos, objetos y borradores no conservados se van también; los objetos copiados a otros personajes se quedan. Puedes recuperar el personaje durante 30 días."
+		"itsOutfitsAndChangesAreRemovedFrom": "Sus conjuntos, objetos y borradores no conservados se van también; los objetos copiados a otros personajes se quedan. Puedes recuperar el personaje durante hasta 30 días."
 	},
 	"demoCopyRow": {
 		"editACopy": "Editar una copia",
@@ -623,10 +623,10 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Mover a la papelera…",
-		"removeState": "El cuerpo y cada objeto pierden sus fotogramas ajustados; los movimientos terminados conservan los suyos. Puedes recuperar el estado durante 30 días.",
+		"removeState": "El cuerpo y cada objeto pierden sus fotogramas ajustados; los movimientos terminados conservan los suyos. Puedes recuperar el estado durante hasta 30 días.",
 		"labelDeleteMove": "Mover a la papelera…",
 		"labelDeleteOutfit": "Eliminar atuendo",
-		"thisRemovesTheMoveFromTheBody": "El cuerpo y cada objeto pierden sus fotogramas. Puedes recuperar el movimiento durante 30 días."
+		"thisRemovesTheMoveFromTheBody": "El cuerpo y cada objeto pierden sus fotogramas. Puedes recuperar el movimiento durante hasta 30 días."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: nunca vuelve a generar objetos ya creados.",
@@ -642,7 +642,7 @@
 		"showLabel": "Mostrar {label}",
 		"createSlot": "Crear ranura",
 		"builtInSlots": "Ranuras integradas",
-		"theSlotAndItsItemsAreDeleted": "Sus objetos se van y los conjuntos dejan de llevarlos. Puedes recuperarlo durante 30 días.",
+		"theSlotAndItsItemsAreDeleted": "Sus objetos se van y los conjuntos dejan de llevarlos. Puedes recuperarlo durante hasta 30 días.",
 		"labelAddedAtTheEndOfWardrobe": "{label} se agregó al final del Armario.",
 		"valueShownAtTheEndOfWardrobe": "{value} se muestra al final del Armario.",
 		"demoDeleteLocked": "Los objetos de la demo incluida no se pueden eliminar.",
@@ -658,7 +658,7 @@
 		"alreadyHidden": "{label} ya existe pero no se muestra.",
 		"deleteTitle": "¿Mover {label} a la papelera?",
 		"deleteExportNote": "Las exportaciones ya no incluirán su ranura “{slot}”, así que el código del juego que la nombre debe cambiar.",
-		"theSlotIsDeleted": "La categoría sale del armario. Puedes recuperarla durante 30 días."
+		"theSlotIsDeleted": "La categoría sale del armario. Puedes recuperarla durante hasta 30 días."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, dirección: {facing}",

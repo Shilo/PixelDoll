@@ -1,7 +1,7 @@
 {
 	"recentlyDeleted": {
-		"empty": "Nothing here. Characters, items, categories, moves and states you move to Trash stay for 30 days.",
-		"kept": "Kept for 30 days, up to 50 entries.",
+		"empty": "Nothing here. Characters, items, categories, moves and states you move to Trash stay for up to 30 days.",
+		"kept": "Kept for up to 30 days, up to 50 entries.",
 		"restoreNamed": "Restore {name}",
 		"deleteForeverNamed": "Delete {name} forever",
 		"confirmTitle": "Delete {name} forever?",
@@ -26,7 +26,7 @@
 		},
 		"errors": {
 			"gone": "This is no longer in Trash.",
-			"expired": "This stayed in Trash for 30 days and is gone.",
+			"expired": "This stayed in Trash for up to 30 days and is gone.",
 			"missingArtwork": "Some saved artwork for {name} is no longer on this device, so it cannot be restored.",
 			"full": "Your browser is out of space, so nothing was moved to Trash. Delete something in Trash to free space.",
 			"wrongKind": "That item is in Trash with its character. Restore the character first.",
@@ -169,7 +169,7 @@
 		"loadFailed": "Part of PixelDoll could not load. Reload to try again.",
 		"advanced": "Advanced",
 		"cancel": "Cancel",
-		"deleteRecoverable": "It leaves your wardrobe. You can bring it back for 30 days.",
+		"deleteRecoverable": "It leaves your wardrobe. You can bring it back for up to 30 days.",
 		"character": "Character",
 		"characters": "Characters",
 		"close": "Close",
@@ -360,7 +360,7 @@
 		"viewPendingWork": "View pending work",
 		"character": "character",
 		"demo": "The bundled demo cannot be deleted.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits, items and unkept drafts go too; items copied to other characters stay. You can bring it back for 30 days."
+		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits, items and unkept drafts go too; items copied to other characters stay. You can bring it back for up to 30 days."
 	},
 	"demoCopyRow": {
 		"editACopy": "Edit a copy",
@@ -623,10 +623,10 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Move to Trash…",
-		"removeState": "The body and every item lose its fitted frames; finished moves keep theirs. You can bring it back for 30 days.",
+		"removeState": "The body and every item lose its fitted frames; finished moves keep theirs. You can bring it back for up to 30 days.",
 		"labelDeleteMove": "Move to Trash…",
 		"labelDeleteOutfit": "Delete outfit",
-		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for 30 days."
+		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for up to 30 days."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",
@@ -642,7 +642,7 @@
 		"showLabel": "Show {label}",
 		"createSlot": "Create slot",
 		"builtInSlots": "Built-in slots",
-		"theSlotAndItsItemsAreDeleted": "Its items go too and outfits stop wearing them. You can bring it back for 30 days.",
+		"theSlotAndItsItemsAreDeleted": "Its items go too and outfits stop wearing them. You can bring it back for up to 30 days.",
 		"labelAddedAtTheEndOfWardrobe": "{label} added at the end of Wardrobe.",
 		"valueShownAtTheEndOfWardrobe": "{value} shown at the end of Wardrobe.",
 		"demoDeleteLocked": "Items of the bundled demo can’t be deleted.",
@@ -658,7 +658,7 @@
 		"alreadyHidden": "{label} already exists but isn’t shown.",
 		"deleteTitle": "Move {label} to Trash?",
 		"deleteExportNote": "Exports will no longer include its slot “{slot}”, so game code that names it must change.",
-		"theSlotIsDeleted": "It leaves the Wardrobe. You can bring it back for 30 days."
+		"theSlotIsDeleted": "It leaves the Wardrobe. You can bring it back for up to 30 days."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, facing {facing}",

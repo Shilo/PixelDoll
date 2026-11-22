@@ -318,6 +318,19 @@ test('a deleted move comes back with its clip, item frames and pose records', as
 	expect(await restoreMove(record, before, 'walk')).toBe('exists');
 });
 
+test('a move waits for a deleted item that owns its frames', async () => {
+	const project = await equipmentFixture();
+	const source = project.manifest;
+	source.rig.animations.push({ ...source.rig.animations[0], id: 'walk' });
+	for (const item of source.items)
+		item.layers[0].cells!.walk = structuredClone(item.layers[0].cells!.rest);
+	const before = { manifest: structuredClone(source) };
+	const removed = await retainMoves(source, new Set(['rest']));
+	const record = { manifest: structuredClone(removed) };
+	record.manifest.items = record.manifest.items.filter((item) => item.id !== 'hat');
+	expect(await restoreMove(record, before, 'walk')).toBe('itemsMissing');
+});
+
 test('a move is refused when the character no longer fits its frames', async () => {
 	const project = await equipmentFixture();
 	const source = project.manifest;

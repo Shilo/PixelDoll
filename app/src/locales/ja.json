@@ -1,7 +1,7 @@
 {
 	"recentlyDeleted": {
-		"empty": "ゴミ箱は空です。ゴミ箱に移動したキャラクター、アイテム、カテゴリ、モーション、ステートは 30 日間残ります。",
-		"kept": "30 日間、最大 50 件まで保管されます。",
+		"empty": "ゴミ箱は空です。ゴミ箱に移動したキャラクター、アイテム、カテゴリ、モーション、ステートは 最大 30 日間残ります。",
+		"kept": "最大 30 日間、最大 50 件まで保管されます。",
 		"restoreNamed": "{name} を復元",
 		"deleteForeverNamed": "{name} を完全に削除",
 		"confirmTitle": "{name} を完全に削除しますか？",
@@ -24,7 +24,7 @@
 		},
 		"errors": {
 			"gone": "これはゴミ箱にありません。",
-			"expired": "ゴミ箱に 30 日間あったため、削除されました。",
+			"expired": "ゴミ箱に 最大 30 日間あったため、削除されました。",
 			"missingArtwork": "{name} の保存画像の一部がこのデバイスにないため、復元できません。",
 			"full": "ブラウザの空き容量が不足しているため、何も移動されませんでした。ゴミ箱の項目を削除して容量を空けてください。",
 			"wrongKind": "その削除された項目はキャラクターに属しています。先にキャラクターを復元してください。",
@@ -166,7 +166,7 @@
 		"loadFailed": "PixelDoll の一部を読み込めませんでした。ページを再読み込みして、もう一度お試しください。",
 		"advanced": "詳細設定",
 		"cancel": "キャンセル",
-		"deleteRecoverable": "ワードローブから外れます。30 日間は元に戻せます。",
+		"deleteRecoverable": "ワードローブから外れます。最大 30 日間は元に戻せます。",
 		"character": "キャラクター",
 		"characters": "キャラクター",
 		"close": "閉じる",
@@ -357,7 +357,7 @@
 		"viewPendingWork": "保留中の作業を表示",
 		"character": "キャラクター",
 		"demo": "同梱のデモは削除できません。",
-		"itsOutfitsAndChangesAreRemovedFrom": "衣装、アイテム、未保存の下書きも一緒に移動します。他のキャラクターにコピーしたアイテムは残ります。30 日間は元に戻せます。"
+		"itsOutfitsAndChangesAreRemovedFrom": "衣装、アイテム、未保存の下書きも一緒に移動します。他のキャラクターにコピーしたアイテムは残ります。最大 30 日間は元に戻せます。"
 	},
 	"demoCopyRow": {
 		"editACopy": "コピーを編集",
@@ -606,10 +606,10 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "ゴミ箱に移動…",
-		"removeState": "体とすべてのアイテムから調整済みフレームが外れます。完了したモーションのフレームは残ります。30 日間は元に戻せます。",
+		"removeState": "体とすべてのアイテムから調整済みフレームが外れます。完了したモーションのフレームは残ります。最大 30 日間は元に戻せます。",
 		"labelDeleteMove": "ゴミ箱に移動…",
 		"labelDeleteOutfit": "コーディネートを削除",
-		"thisRemovesTheMoveFromTheBody": "体とすべてのアイテムからフレームが外れます。30 日間は元に戻せます。"
+		"thisRemovesTheMoveFromTheBody": "体とすべてのアイテムからフレームが外れます。最大 30 日間は元に戻せます。"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "無料：作成済みのアイテムを再生成することはありません。",
@@ -625,7 +625,7 @@
 		"showLabel": "{label}を表示",
 		"createSlot": "装備スロットを作成",
 		"builtInSlots": "標準の装備スロット",
-		"theSlotAndItsItemsAreDeleted": "アイテムも一緒に移動し、衣装では着用されなくなります。30 日間は元に戻せます。",
+		"theSlotAndItsItemsAreDeleted": "アイテムも一緒に移動し、衣装では着用されなくなります。最大 30 日間は元に戻せます。",
 		"labelAddedAtTheEndOfWardrobe": "{label}をワードローブの最後に追加しました。",
 		"valueShownAtTheEndOfWardrobe": "{value}をワードローブの最後に表示しました。",
 		"demoDeleteLocked": "同梱のデモのアイテムは削除できません。",
@@ -641,7 +641,7 @@
 		"alreadyHidden": "{label}はすでにありますが、表示されていません。",
 		"deleteTitle": "{label} をゴミ箱に移動しますか？",
 		"deleteExportNote": "エクスポートに装備スロット「{slot}」が含まれなくなるため、それを参照しているゲームのコードは変更が必要です。",
-		"theSlotIsDeleted": "カテゴリはワードローブから外れます。30 日間は元に戻せます。"
+		"theSlotIsDeleted": "カテゴリはワードローブから外れます。最大 30 日間は元に戻せます。"
 	},
 	"stage": {
 		"characterFacing": "{name}、{move}、{facing}向き",

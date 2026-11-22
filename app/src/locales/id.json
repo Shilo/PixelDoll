@@ -1,7 +1,7 @@
 {
 	"recentlyDeleted": {
-		"empty": "Tempat sampah kosong. Karakter, item, kategori, gerakan, dan status yang Anda pindahkan ke sini disimpan 30 hari.",
-		"kept": "Disimpan 30 hari, maksimal 50 entri.",
+		"empty": "Tempat sampah kosong. Karakter, item, kategori, gerakan, dan status yang Anda pindahkan ke sini disimpan hingga 30 hari.",
+		"kept": "Disimpan hingga 30 hari, maksimal 50 entri.",
 		"restoreNamed": "Pulihkan {name}",
 		"deleteForeverNamed": "Hapus {name} permanen",
 		"confirmTitle": "Hapus {name} permanen?",
@@ -24,7 +24,7 @@
 		},
 		"errors": {
 			"gone": "Ini tidak lagi ada di tempat sampah.",
-			"expired": "Ini 30 hari di tempat sampah dan sekarang hilang.",
+			"expired": "Ini hingga 30 hari di tempat sampah dan sekarang hilang.",
 			"missingArtwork": "Sebagian gambar tersimpan untuk {name} tidak lagi ada di perangkat ini, jadi tidak dapat dipulihkan.",
 			"full": "Ruang browser habis, jadi tidak ada yang dipindahkan. Hapus sesuatu di tempat sampah untuk mengosongkan ruang.",
 			"wrongKind": "Item yang dihapus itu milik sebuah karakter. Pulihkan karakternya lebih dulu.",
@@ -166,7 +166,7 @@
 		"loadFailed": "Sebagian PixelDoll tidak dapat dimuat. Muat ulang halaman untuk mencoba lagi.",
 		"advanced": "Lanjutan",
 		"cancel": "Batal",
-		"deleteRecoverable": "Item keluar dari lemari. Anda bisa memulihkannya selama 30 hari.",
+		"deleteRecoverable": "Item keluar dari lemari. Anda bisa memulihkannya selama hingga 30 hari.",
 		"character": "Karakter",
 		"characters": "Karakter",
 		"close": "Tutup",
@@ -357,7 +357,7 @@
 		"viewPendingWork": "Lihat pekerjaan tertunda",
 		"character": "karakter",
 		"demo": "Demo bawaan tidak dapat dihapus.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Pakaian, item, dan draf yang tidak disimpan ikut pindah; item yang disalin ke karakter lain tetap ada. Anda bisa memulihkannya selama 30 hari."
+		"itsOutfitsAndChangesAreRemovedFrom": "Pakaian, item, dan draf yang tidak disimpan ikut pindah; item yang disalin ke karakter lain tetap ada. Anda bisa memulihkannya selama hingga 30 hari."
 	},
 	"demoCopyRow": {
 		"editACopy": "Edit salinan",
@@ -606,10 +606,10 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "Pindahkan ke tempat sampah…",
-		"removeState": "Tubuh dan setiap item kehilangan bingkai yang dipaskan; gerakan selesai tetap menyimpan bingkainya. Anda bisa memulihkan status selama 30 hari.",
+		"removeState": "Tubuh dan setiap item kehilangan bingkai yang dipaskan; gerakan selesai tetap menyimpan bingkainya. Anda bisa memulihkan status selama hingga 30 hari.",
 		"labelDeleteMove": "Pindahkan ke tempat sampah…",
 		"labelDeleteOutfit": "Hapus setelan",
-		"thisRemovesTheMoveFromTheBody": "Tubuh dan setiap item kehilangan bingkainya. Anda bisa memulihkan gerakan selama 30 hari."
+		"thisRemovesTheMoveFromTheBody": "Tubuh dan setiap item kehilangan bingkainya. Anda bisa memulihkan gerakan selama hingga 30 hari."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: item yang sudah dibuat tidak akan dibuat ulang.",
@@ -625,7 +625,7 @@
 		"showLabel": "Tampilkan {label}",
 		"createSlot": "Buat slot",
 		"builtInSlots": "Slot bawaan",
-		"theSlotAndItsItemsAreDeleted": "Itemnya ikut pindah dan pakaian tidak lagi memakainya. Anda bisa memulihkannya selama 30 hari.",
+		"theSlotAndItsItemsAreDeleted": "Itemnya ikut pindah dan pakaian tidak lagi memakainya. Anda bisa memulihkannya selama hingga 30 hari.",
 		"labelAddedAtTheEndOfWardrobe": "{label} ditambahkan di bagian bawah Lemari.",
 		"valueShownAtTheEndOfWardrobe": "{value} ditampilkan di bagian bawah Lemari.",
 		"demoDeleteLocked": "Item demo bawaan tidak dapat dihapus.",
@@ -641,7 +641,7 @@
 		"alreadyHidden": "{label} sudah ada, tetapi tersembunyi.",
 		"deleteTitle": "Pindahkan {label} ke tempat sampah?",
 		"deleteExportNote": "Hasil ekspor tidak akan lagi berisi slot “{slot}”. Kode game yang merujuk ke slot itu perlu diubah.",
-		"theSlotIsDeleted": "Kategori keluar dari lemari. Anda bisa memulihkannya selama 30 hari."
+		"theSlotIsDeleted": "Kategori keluar dari lemari. Anda bisa memulihkannya selama hingga 30 hari."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, menghadap {facing}",
