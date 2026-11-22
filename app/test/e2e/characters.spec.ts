@@ -2864,13 +2864,32 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await newState.getByRole('switch', { name: 'Edit this pose' }).check();
 	const instructions = newState.getByRole('textbox', { name: 'Instructions' });
 	// The Riding pose idea fills editable instructions and names the State for mounted riding.
-	await newState
-		.getByRole('group', { name: 'Pose ideas' })
-		.getByRole('button', { name: 'Riding', exact: true })
-		.click();
+	const ideas = newState.getByRole('group', { name: 'Pose ideas' });
+	const ridingIdea = ideas.getByRole('button', { name: 'Riding', exact: true });
+	const stateName = newState.getByRole('textbox', { name: 'State name' });
+	await ridingIdea.click();
 	await expect(instructions).toHaveValue(/^Change only the pose\. Keep the same view and facing\./);
-	await expect(newState.getByRole('textbox', { name: 'State name' })).toHaveValue('Riding');
-	await newState.getByRole('textbox', { name: 'State name' }).fill('Ready stance');
+	await expect(stateName).toHaveValue('Riding');
+	// Riding stays pressed through edits; pressing it again releases it and its suggested name.
+	await instructions.press('End');
+	await instructions.pressSequentially(' Hold a lance.');
+	await expect(ridingIdea).toHaveAttribute('aria-pressed', 'true');
+	await expect(stateName).toHaveValue('Riding');
+	await ridingIdea.click();
+	await expect(instructions).toHaveValue(/Hold a lance\.$/);
+	await expect(stateName).toHaveValue('Idle pose');
+	// The kept text is the user's own now, so the ideas step aside until the box is cleared.
+	await expect(ideas).toHaveCount(0);
+	await instructions.clear();
+	// Other ideas only fill text: pressed and naming the State while the text is theirs, released by any edit.
+	const armsCrossed = ideas.getByRole('button', { name: 'Arms crossed', exact: true });
+	await armsCrossed.click();
+	await expect(armsCrossed).toHaveAttribute('aria-pressed', 'true');
+	await expect(stateName).toHaveValue('Arms crossed');
+	await instructions.press('End');
+	await instructions.pressSequentially(' Smile.');
+	await expect(stateName).toHaveValue('Idle pose');
+	await stateName.fill('Ready stance');
 	await instructions.fill('Raise both hands');
 	// Enhance grounds the instructions in the chosen source frame, then Undo restores them.
 	await newState.getByRole('button', { name: 'Enhance', exact: true }).click();

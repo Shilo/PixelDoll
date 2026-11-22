@@ -3054,7 +3054,8 @@ test('New move opens on the customized template prompt, and an added suggestion 
 	// Its text names the template's own move, which must not count as a duplicate of it.
 	await expect(move.getByRole('button', { name: /^Generate / })).toBeEnabled();
 	await templates.getByRole('button', { name: 'Hop', exact: true }).click();
-	await expect(templates.getByRole('button', { pressed: true })).toHaveCount(0);
+	// No template applies; the added suggestion shows as pressed only because the text is its prompt.
+	await expect(templates.getByRole('button', { pressed: true })).toHaveText(['Hop']);
 	await expect(description).toHaveValue('hop in place');
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeVisible();
 });
