@@ -2841,7 +2841,7 @@
 		"noEquipment": "Equipamento não copiado.",
 		"noCredits": "Nenhum crédito usado.",
 		"invalidName": "Digite um nome com uma letra latina ou um número.",
-		"takenName": "Este nome está em uso ou é reservado. Escolha outro.",
+		"takenName": "Um movimento ou estado deste personagem já usa este nome. Escolha outro.",
 		"savedAs": "Salvo como {name}",
 		"saving": "Salvando estado…",
 		"saved": "Estado capturado",

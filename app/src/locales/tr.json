@@ -2832,7 +2832,7 @@
 		"noEquipment": "Ekipman kopyalanmaz.",
 		"noCredits": "Kredi kullanılmaz.",
 		"invalidName": "Latin harfi veya rakam içeren bir ad girin.",
-		"takenName": "Bu ad kullanılıyor veya ayrılmış. Başka bir ad seçin.",
+		"takenName": "Bu karakterin bir hareketi veya durumu bu adı zaten kullanıyor. Başka bir ad seçin.",
 		"savedAs": "{name} olarak kaydedilir",
 		"saving": "Durum kaydediliyor…",
 		"saved": "Durum kaydedildi",

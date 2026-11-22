@@ -2762,7 +2762,7 @@
 		"noEquipment": "Perlengkapan tidak disalin.",
 		"noCredits": "Tidak memakai kredit.",
 		"invalidName": "Masukkan nama dengan huruf Latin atau angka.",
-		"takenName": "Nama ini sudah dipakai atau dicadangkan. Pilih nama lain.",
+		"takenName": "Animasi atau status karakter ini sudah memakai nama ini. Pilih nama lain.",
 		"savedAs": "Disimpan sebagai {name}",
 		"saving": "Menyimpan varian…",
 		"saved": "Varian tersimpan",

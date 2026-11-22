@@ -2832,7 +2832,7 @@
 		"noEquipment": "Équipement non copié.",
 		"noCredits": "Aucun crédit utilisé.",
 		"invalidName": "Saisissez un nom contenant une lettre latine ou un chiffre.",
-		"takenName": "Ce nom est pris ou réservé. Choisissez-en un autre.",
+		"takenName": "Un mouvement ou un état de ce personnage porte déjà ce nom. Choisissez-en un autre.",
 		"savedAs": "Enregistré sous {name}",
 		"saving": "Enregistrement de l’état…",
 		"saved": "État capturé",

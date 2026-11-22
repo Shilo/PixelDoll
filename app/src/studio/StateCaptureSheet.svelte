@@ -40,6 +40,7 @@
 		stateCaptureId,
 		stateCaptureNameIssue,
 		stateCaptureSource,
+		stateId,
 		stateSourceClips
 	} from './moveActions.svelte.ts';
 	import ReferenceField from './ReferenceField.svelte';
@@ -96,13 +97,12 @@
 		const current = store.project?.manifest;
 		const root =
 			chosen ||
-			(stateCaptureId(sourceId === DEFAULT_MOVE ? 'standing' : sourceId).slice(0, 48) || 'state') +
-				'-pose';
+			(stateCaptureId(sourceId === DEFAULT_MOVE ? 'standing' : moveLabel(sourceId)).slice(0, 48) ||
+				'state') + '-pose';
 		let candidate = root;
 		for (
 			let suffix = 2;
-			current &&
-			(stateCaptureNameIssue(current, candidate) || Object.hasOwn(store.moveReviews, candidate));
+			current && stateCaptureNameIssue(current, candidate, Object.keys(store.moveReviews));
 			suffix++
 		)
 			candidate = root + '-' + suffix;
@@ -206,7 +206,7 @@
 			.sort((left, right) => DIRECTIONS.indexOf(left.id) - DIRECTIONS.indexOf(right.id))
 			.map(({ id }) => ({ direction: id, image: cellImg(project, body, clip, id, cell) ?? null }));
 	});
-	const id = $derived(stateCaptureId(name));
+	const id = $derived(stateId(name));
 	// PixelLab has no enhancer for edit instructions. The animation enhancer is the one that reads images: it grounds the
 	// text in the source frame and, with a reference, describes the change from the source pose toward it.
 	const enhanceSpec = $derived.by((): EnhanceSpec | null => {
@@ -217,9 +217,7 @@
 	});
 	const enhanceScope = `state-enhance:${projectId}:${crypto.randomUUID()}`;
 	const nameIssue = $derived(
-		project &&
-			(stateCaptureNameIssue(project.manifest, id) ??
-				(Object.hasOwn(store.moveReviews, id) ? 'stateCapture.takenName' : undefined))
+		project && stateCaptureNameIssue(project.manifest, id, Object.keys(store.moveReviews))
 	);
 	const connected = $derived(!!app.key && !app.keyRejected);
 	const flashReference = $derived(model === 'pro-flash' && !!reference);

@@ -470,10 +470,12 @@ test('PixelLab sibling States do not occupy Move preset IDs', async () => {
 	metadata.states[1].frames = { rotations: metadata.states[0].frames.rotations, animations: {} };
 	entries[0].data = enc.encode(JSON.stringify(metadata));
 	const imported = await readCharacterZip(await zip(entries), id, [id], ['second']);
-	expect(imported.project.manifest.rig.animations.map(({ id, kind }) => [id, kind])).toEqual([
-		['default', undefined],
-		['walking', undefined],
-		['state-idle', 'state']
+	expect(
+		imported.project.manifest.rig.animations.map(({ id, kind, name }) => [id, kind, name])
+	).toEqual([
+		['default', undefined, undefined],
+		['walking', undefined, undefined],
+		['state_idle', 'state', 'Idle']
 	]);
 });
 

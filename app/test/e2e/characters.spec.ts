@@ -3138,6 +3138,8 @@ test('a managed State reloads its child without another submission', async ({
 			const projectId = await studio.copyDemo();
 			const record: StoredProject = await db.get('projects', projectId);
 			record.character = { id: parent, looks: 'Demo test fixture' };
+			// Characters saved without an export id load with a default one; the freshness checks must not call that a change.
+			delete record.manifest.exportId;
 			await db.put('projects', projectId, record);
 			const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
 			const cells = base.layers[0].cells!.default;
@@ -3164,14 +3166,19 @@ test('a managed State reloads its child without another submission', async ({
 	const dialog = page.getByRole('dialog', { name: 'New State', exact: true });
 	const panel = dialog;
 	await panel.getByRole('switch', { name: 'Edit this pose' }).check();
-	await panel.getByRole('textbox', { name: 'State name' }).fill('Potion ready');
+	// A built-in move's name the character lacks is accepted and kept as the label, under an id the Idle move never uses.
+	await panel.getByRole('textbox', { name: 'State name' }).fill('Idle');
+	await expect(panel.getByRole('textbox', { name: 'State name' })).toHaveAttribute(
+		'aria-invalid',
+		'false'
+	);
 	await panel.getByRole('textbox', { name: 'Instructions' }).fill('Hold a potion');
 	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
 	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
 	await expect(generate).toBeVisible();
 	expect(posts).toHaveLength(0);
 	await generate.click();
-	const review = panel.getByText('Review Potion ready before saving.');
+	const review = panel.getByText('Review Idle before saving.');
 	await expect(review).toBeVisible();
 	expect(posts).toEqual([
 		expect.objectContaining({ character_id: parent, edit_description: 'Hold a potion' })
@@ -3189,15 +3196,17 @@ test('a managed State reloads its child without another submission', async ({
 		const db = await import(dbPath);
 		const record: StoredProject = await db.get('projects', projectId);
 		const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
-		const hash = base.layers[0].cells!['potion-ready'].south![0]!;
+		const hash = base.layers[0].cells!.state_idle.south![0]!;
 		const blob: Blob = await db.getBlob(hash.slice(7));
 		return {
-			child: record.managedStates?.['potion-ready'],
+			child: record.managedStates?.state_idle,
+			clip: record.manifest.rig.animations.find(({ id }) => id === 'state_idle'),
 			image: Array.from(new Uint8Array(await blob.arrayBuffer()))
 		};
 	}, result.projectId);
 	const image = await decodePngBytes(Uint8Array.from(stored.image));
 	expect(stored.child).toBe(child);
+	expect(stored.clip).toMatchObject({ name: 'Idle', kind: 'state' });
 	expect(Array.from(image.data.slice(markerOffset, markerOffset + 4))).toEqual(marker);
 	expect(postPaths).toEqual(postsBeforeReload);
 	expect(pageErrors).toEqual([]);

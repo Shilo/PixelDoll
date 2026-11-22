@@ -7,7 +7,7 @@ import {
 	storedCellHashes,
 	type RigAnimation
 } from '../lib/rig/rig.ts';
-import { AUTHORED, fromApi, hasAll } from '../lib/rig/poses.ts';
+import { fromApi, hasAll, stateClipBase, stateClipId, stateClipName } from '../lib/rig/poses.ts';
 import { STATE_CAPTURE_MODE } from '../lib/rig/setup.ts';
 import { flipSkeleton } from '../lib/rig/skeleton.ts';
 import { clipKind } from '../lib/runtime/timeline.js';
@@ -18,7 +18,7 @@ import type { StoredProject } from '../lib/store/project.ts';
 import { deletedEntry, quotaError, type RecentlyDeleted } from '../lib/store/recently-deleted.ts';
 import { LocalizedError, message } from '../lib/message.ts';
 import { moveLabel } from './model.ts';
-import { sameClipName, withClipWriteLock } from './clipName.ts';
+import { clipNameId, sameClipName, withClipWriteLock } from './clipName.ts';
 export { clipNameId as stateCaptureId } from './clipName.ts';
 import {
 	deletionBlocked,
@@ -66,15 +66,37 @@ export function stateSourceClips(manifest: Manifest | undefined) {
 	);
 }
 
-export function stateCaptureNameIssue(manifest: Manifest, id: string) {
+/** The clip id of a typed State name: built-in move names move to a prefixed id and keep their label. */
+export const stateId = (name: string) => stateClipId(clipNameId(name));
+
+/** Whether a State id or the name it was typed as matches `other`, a clip id or label. */
+const sameStateName = (id: string, other: string) =>
+	sameClipName(other, id) || sameClipName(other, stateClipBase(id));
+
+/** A name is free unless the character has a clip, or a Move under review (`reviews`), with that id or label. The
+ *  Standing clip's id is `default`, so both words are taken. */
+export function stateCaptureNameIssue(
+	manifest: Manifest,
+	id: string,
+	reviews: readonly string[] = []
+) {
 	if (!id) return 'stateCapture.invalidName';
+	const names = (clip: RigAnimation) =>
+		clip.id === DEFAULT_MOVE
+			? [DEFAULT_MOVE, 'standing', clip.name ?? DEFAULT_MOVE]
+			: [clip.id, clip.name ?? clip.id];
 	if (
-		[DEFAULT_MOVE, 'standing', 'walk', 'idle', ...AUTHORED].includes(id) ||
-		manifest.rig.animations.some((clip) => sameClipName(clip.id, id))
+		manifest.rig.animations.some((clip) => names(clip).some((name) => sameStateName(id, name))) ||
+		reviews.some((review) => sameStateName(id, review))
 	)
 		return 'stateCapture.takenName';
 	return undefined;
 }
+
+/** Whether a Move with this State's id or typed name is queued or running. */
+export const pendingStateName = async (projectId: string, id: string) =>
+	(await pendingBodyMoveName(projectId, id)) ||
+	(stateClipBase(id) !== id && (await pendingBodyMoveName(projectId, stateClipBase(id))));
 
 export function captureState(
 	projectId: string,
@@ -127,12 +149,11 @@ async function captureStateUnlocked(
 	const frame = move.frames[position];
 	if (!frame || !body.cells || !drawn.length) throw unavailable();
 	const { cell } = frame;
-	const nameIssue = stateCaptureNameIssue(manifest, id);
+	const nameIssue = stateCaptureNameIssue(manifest, id, Object.keys(snapshot.moveReviews ?? {}));
 	if (
 		nameIssue ||
 		(snapshot.stateGeneration && sameClipName(snapshot.stateGeneration.id, id)) ||
-		Object.keys(snapshot.moveReviews ?? {}).some((moveId) => sameClipName(moveId, id)) ||
-		(await pendingBodyMoveName(projectId, id))
+		(await pendingStateName(projectId, id))
 	)
 		throw new LocalizedError(
 			'Choose a different State name.',
@@ -167,8 +188,10 @@ async function captureStateUnlocked(
 			const point = track[moveId]?.[dir]?.[cell];
 			if (point && captured[mirrorOf ?? dir]) (track[id] ??= {})[dir] = [point];
 		}
+	const name = stateClipName(id);
 	const clip: RigAnimation = {
 		id,
+		...(name && { name }),
 		kind: 'state',
 		cells: 1,
 		loop: false,
@@ -326,7 +349,7 @@ export async function removeMove(id: string) {
 	if (doc.id === projectId) {
 		// Quietly: the deleted clip stays undoable from the history as well as the notice.
 		await openProject(projectId, { quiet: true });
-		if (kept) pushRecovery(message('history.deleteMove', { name: moveLabel(id) }), kept.id);
+		if (kept) pushRecovery(message('history.deleteMove', { name: displayName }), kept.id);
 	}
 	const label = message('state.removedName', { name: displayName });
 	if (kept)
