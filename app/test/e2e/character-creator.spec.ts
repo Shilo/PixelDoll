@@ -590,7 +590,12 @@ test('New character applies saved starting choices without writing back form edi
 	await dialog.getByRole('radio', { name: 'Underwear' }).click();
 	await dialog.getByRole('spinbutton', { name: 'Body size' }).fill('72');
 	await dialog.getByRole('combobox', { name: 'Model', exact: true }).selectOption('v3');
-	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Underwear writes the prompt's base body line, so leaving asks first.
+	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await expectSaved();
 	await page.reload();
 	await expectSaved();

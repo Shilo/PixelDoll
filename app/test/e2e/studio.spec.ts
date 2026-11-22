@@ -3843,7 +3843,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await move.getByRole('button', { name: /^Generate / }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Not now', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await expect(cast).toHaveAttribute('aria-pressed', 'true');
@@ -3860,18 +3860,22 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await cast.click();
 	await expect(slider).toHaveAttribute('aria-valuetext', '4 frames');
 	await model.selectOption('pixminimax');
-	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await move.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await description.fill('A jump that starts low');
 	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
-	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await move.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
 	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
 	if (!(await model.isVisible())) await advanced.click();
 	await expect(model).toHaveValue('skeleton-v3');
-	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await move.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'New State...', exact: true }).click();
 	const state = page.getByRole('dialog', { name: 'New State', exact: true });
