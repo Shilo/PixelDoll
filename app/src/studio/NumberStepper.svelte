@@ -99,28 +99,46 @@
 </div>
 
 <style>
+	/* One joined control: only its outer corners are rounded, and neighbors share a single border line. */
 	.stepper {
 		display: flex;
-		gap: 8px;
 		align-items: stretch;
 	}
 	.btn.icon {
+		position: relative;
 		min-height: 44px;
 		flex: 0 0 44px;
 		width: 44px;
 		padding: 0;
 		justify-content: center;
 	}
+	.btn.icon:first-child {
+		border-start-end-radius: 0;
+		border-end-end-radius: 0;
+	}
+	.btn.icon:last-child {
+		border-start-start-radius: 0;
+		border-end-start-radius: 0;
+	}
 	.number {
 		position: relative;
 		flex: 1 1 96px;
 		min-width: 0;
+		margin-inline: -1px;
 	}
 	.number input {
+		position: relative;
 		height: 100%;
+		border-radius: 0;
+		text-align: center;
 		font-variant-numeric: tabular-nums;
 		appearance: textfield;
 		-moz-appearance: textfield;
+	}
+	/* Keep the focused part's full outline above its neighbors. */
+	.btn.icon:focus-visible,
+	.number input:focus-visible {
+		z-index: 1;
 	}
 	.number:has(span) input {
 		padding-right: 33px;
