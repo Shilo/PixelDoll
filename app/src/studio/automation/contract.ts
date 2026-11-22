@@ -3,6 +3,8 @@
 import type { Evidence } from './evidence.ts';
 import type { Manifest } from '../../lib/store/manifest.ts';
 import { validEquipment } from '../../lib/runtime/paperdoll.js';
+import { LocalizedError } from '../../lib/message.ts';
+import { jobError } from './jobError.ts';
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export interface JsonSchema {
@@ -52,6 +54,7 @@ export class AgentError extends Error {
 			| 'budget'
 			| 'busy'
 			| 'canceled'
+			| 'failed'
 			| 'unsupported' = 'invalid'
 	) {
 		super(message);
@@ -63,6 +66,12 @@ export const FAILED =
 	'PixelDoll could not finish this call. Nothing paid was resent; check get_activity before trying again.';
 export function errorData(e: unknown): { error: string; code: AgentError['code'] | 'failed' } {
 	if (e instanceof AgentError) return { error: e.message, code: e.code };
+	if (e instanceof LocalizedError) {
+		const providerText =
+			e.translation.key === 'create.errors.requestStopped' ||
+			e.translation.key === 'create.errors.requestStoppedResume';
+		return { error: providerText ? (jobError(e) ?? FAILED) : e.message, code: 'failed' };
+	}
 	console.error('PixelDoll agent tool failed');
 	return { error: FAILED, code: 'failed' };
 }

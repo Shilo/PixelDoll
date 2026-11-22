@@ -70,11 +70,13 @@ vi.mock('../../src/lib/dress/project.ts', async (original) => ({
 }));
 
 vi.mock('../../src/lib/store/db.ts', async (original) => ({
+	asLoaded: (await original<typeof import('../../src/lib/store/db.ts')>()).asLoaded,
 	CREATE_DRAFT_PREFIX: (await original<typeof import('../../src/lib/store/db.ts')>())
 		.CREATE_DRAFT_PREFIX,
 	REQUEST_TEXT: (await original<typeof import('../../src/lib/store/db.ts')>()).REQUEST_TEXT,
 	withoutCharacters: (await original<typeof import('../../src/lib/store/db.ts')>())
 		.withoutCharacters,
+	getBlob: vi.fn(),
 	put: mocks.put,
 	get: mocks.get,
 	del: mocks.del,
@@ -95,11 +97,13 @@ vi.mock('svelte', async (original) => ({
 	},
 	unmount: async () => {}
 }));
-vi.mock('../../src/lib/pixellab/queue.ts', () => ({
+vi.mock('../../src/lib/pixellab/queue.ts', async (original) => ({
+	...(await original<typeof import('../../src/lib/pixellab/queue.ts')>()),
 	queue: {
 		role: 'leader',
 		snapshot: mocks.queueState,
 		subscribe: mocks.subscribe,
+		authorizeAgentActivity: () => () => false,
 		requestHandoff: mocks.handoff,
 		idle: () => true,
 		clearFinished: mocks.clear,
@@ -1442,11 +1446,14 @@ test('agent activity resolves queue and move IDs and rejects unknown IDs', async
 		generations: 1,
 		error: expect.stringMatching(/^credits:/)
 	};
-	await expect(
-		callTool('get_activity', { ids: ['job-a', 'move:rig-a/walk'] })
-	).resolves.toMatchObject({
-		data: { queue: [queueEntry], matched: [queueEntry, { id: 'move:rig-a/walk', done: true }] }
+	await expect(callTool('get_activity', {})).resolves.toMatchObject({
+		data: { queue: [queueEntry] }
 	});
+	const targeted = await callTool('get_activity', { ids: ['job-a', 'move:rig-a/walk'] });
+	expect(targeted).toMatchObject({
+		data: { matched: [queueEntry, { id: 'move:rig-a/walk', done: true }] }
+	});
+	expect(targeted.data).not.toHaveProperty('queue');
 	await expect(callTool('wait_for_activity', { ids: ['job-a'] })).resolves.toMatchObject({
 		data: { matched: [queueEntry], stillRunning: false, changed: false }
 	});
@@ -1469,12 +1476,29 @@ test('agent activity resolves queue and move IDs and rejects unknown IDs', async
 			],
 			counts: { running: 1 }
 		});
-		const waiting = callTool('wait_for_activity', { ids: ['job-a'], timeoutSeconds: 2 });
+		let returned = false;
+		const waiting = callTool('wait_for_activity', { ids: ['job-a'], timeoutSeconds: 2 }).then(
+			(result) => {
+				returned = true;
+				return result;
+			}
+		);
 		await vi.advanceTimersByTimeAsync(0);
+		const running = mocks.queueState();
+		mocks.queueState.mockReturnValue({
+			...running,
+			jobs: [{ ...running.jobs[0], gens: 1 }]
+		});
+		await vi.advanceTimersByTimeAsync(1000);
+		expect(returned).toBe(false);
 		mocks.queueState.mockReturnValue({ role: 'leader', jobs: [], counts: {} });
 		await vi.advanceTimersByTimeAsync(1000);
 		await expect(waiting).resolves.toMatchObject({
-			data: { matched: [{ id: 'job-a', outcome: 'not_found' }], changed: true, stillRunning: false }
+			data: {
+				matched: [{ activityId: 'job-a', outcome: 'not_found' }],
+				changed: true,
+				stillRunning: false
+			}
 		});
 	} finally {
 		vi.useRealTimers();
@@ -2572,7 +2596,12 @@ describe('accepted draft publication', () => {
 		const previous = { label: message('history.changeColor'), snap: '{}' };
 		s.doc.undo = [previous];
 		s.ui.frame = 3;
-		await expect(callTool('accept_draft', { draftId: 'new_hat' })).resolves.toMatchObject({
+		await expect(
+			callTool('accept_draft', { characterId: 'another-character', draftId: 'new_hat' })
+		).rejects.toMatchObject({ code: 'not_found' });
+		await expect(
+			callTool('accept_draft', { characterId: s.doc.id, draftId: 'new_hat' })
+		).resolves.toMatchObject({
 			data: { saved: true, itemId: 'new_hat' }
 		});
 		expect(s.doc.items.head).toBe('new_hat');
@@ -2821,9 +2850,15 @@ describe('optional review', () => {
 			id: 'helm0',
 			name: 'New helm'
 		});
-		mocks.update.mockImplementation(async (_store, _id, update) =>
-			update({ id: 'project', manifest: structuredClone(saved) })
-		);
+		const receiptsKey = 'studio-agent-receipts';
+		let receiptRecord: unknown;
+		mocks.update.mockImplementation(async (_store, id, update) => {
+			if (id === receiptsKey) {
+				receiptRecord = structuredClone(update(receiptRecord));
+				return receiptRecord;
+			}
+			return update({ id: 'project', manifest: structuredClone(saved) });
+		});
 		mocks.source.mockResolvedValue({
 			project: { manifest: saved, images: new Map() },
 			current: { items: { body: 'base' }, variants: {} }
@@ -2842,11 +2877,19 @@ describe('optional review', () => {
 		Object.assign(document, { createElement: () => ({ remove() {} }), body: { append() {} } });
 		const { callTool } = await import('../../src/studio/automation/tools.ts');
 		await callTool('request_budget', { generations: 10, purpose: 'Make a helm' });
-		await expect(
-			callTool('create_item', { name: 'New helm', slot: 'head', prompt: 'a new helm' })
-		).resolves.toMatchObject({ data: { started: true, draftId: 'helm0' } });
-		await expect(callTool('get_activity', { ids: ['helm0'] })).resolves.toMatchObject({
-			data: { matched: [{ id: 'helm0', outcome: 'running' }] }
+		const started = await callTool('create_item', {
+			name: 'New helm',
+			slot: 'head',
+			prompt: 'a new helm',
+			requestId: 'new-helm'
+		});
+		expect(started).toMatchObject({ data: { started: true, activityId: expect.any(String) } });
+		const { activityId } = started.data as { activityId: string };
+		expect(activityId).not.toBe('helm0');
+		await expect(callTool('get_activity', { ids: [activityId] })).resolves.toMatchObject({
+			data: {
+				matched: [{ activityId, draftId: 'helm0', characterId: 'project', outcome: 'running' }]
+			}
 		});
 		s.wearDraft('helm0');
 		done.resolve(clean);
@@ -2862,8 +2905,28 @@ describe('optional review', () => {
 		expect(s.ui).toMatchObject({ selected: 'helm0', frame: 3 });
 		s.doc.id = 'another-character';
 		s.store.project = null;
-		await expect(callTool('get_activity', { ids: ['helm0'] })).resolves.toMatchObject({
-			data: { itemDrafts: [], matched: [{ id: 'helm0', outcome: 'saved' }] }
+		mocks.get.mockImplementation(async (_store, id) =>
+			id === receiptsKey ? structuredClone(receiptRecord) : undefined
+		);
+		const activity = await callTool('get_activity', { ids: [activityId] });
+		expect(activity).toMatchObject({
+			data: {
+				matched: [{ activityId, draftId: 'helm0', characterId: 'project', outcome: 'saved' }]
+			}
+		});
+		expect(activity.data).not.toHaveProperty('itemDrafts');
+		expect(activity.data).not.toHaveProperty('queue');
+		vi.resetModules();
+		const reloaded = await import('../../src/studio/automation/tools.ts');
+		await expect(
+			reloaded.callTool('create_item', {
+				name: 'New helm',
+				slot: 'head',
+				prompt: 'a new helm',
+				requestId: 'new-helm'
+			})
+		).resolves.toMatchObject({
+			data: { started: true, repeated: true, activityId, characterId: 'project', status: 'saved' }
 		});
 	});
 

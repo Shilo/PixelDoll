@@ -3201,8 +3201,7 @@
 	},
 	"shortcut": { "control": "Ctrl" },
 	"agentMoves": {
-		"quoteChanged": "A aprovação do movimento ou a estimativa mudou. Revise o movimento novamente antes de gerá-lo.",
-		"skeletonCheckFailed": "O PixelLab não conseguiu verificar o esqueleto deste personagem. Tente novamente em instantes."
+		"quoteChanged": "A aprovação do movimento ou a estimativa mudou. Revise o movimento novamente antes de gerá-lo."
 	},
 	"agentBudget": {
 		"title": "Deixar o agente gastar gerações?",
@@ -3212,6 +3211,7 @@
 		"allow": "Permitir",
 		"deny": "Não permitir",
 		"left": "Orçamento do agente: restam {usd} ({count} gerações)",
+		"reserved": "Reservadas: {count}",
 		"end": "Encerrar"
 	},
 	"agentEvidence": {

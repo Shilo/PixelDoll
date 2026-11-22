@@ -3102,8 +3102,7 @@
 	},
 	"shortcut": { "control": "Ctrl" },
 	"agentMoves": {
-		"quoteChanged": "动作的批准状态或费用估算已变更。请重新检查动作后再生成。",
-		"skeletonCheckFailed": "PixelLab 无法检查此角色的骨骼。请稍后重试。"
+		"quoteChanged": "动作的批准状态或费用估算已变更。请重新检查动作后再生成。"
 	},
 	"agentBudget": {
 		"title": "允许代理使用生成次数吗？",
@@ -3113,6 +3112,7 @@
 		"allow": "允许",
 		"deny": "不允许",
 		"left": "代理预算：剩余 {usd}（{count} 次生成）",
+		"reserved": "已预留：{count} 次",
 		"end": "结束"
 	},
 	"agentEvidence": {

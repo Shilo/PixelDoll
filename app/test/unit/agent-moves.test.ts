@@ -10,6 +10,7 @@ const studio = vi.hoisted(() => ({
 	app: { key: 'test-key', keyRejected: false, balance: null },
 	keyRevision: 1,
 	readCharacter: vi.fn(),
+	readCharacterMetadata: vi.fn(),
 	openProject: vi.fn(),
 	pendingBodyMoveName: vi.fn(),
 	queueAgentMove: vi.fn<typeof queueAgentMove>(),
@@ -28,6 +29,9 @@ vi.mock('../../src/studio/state.svelte.ts', () => ({
 	pendingMoves: () => [],
 	queueAgentMove: studio.queueAgentMove,
 	readCharacter: studio.readCharacter,
+	readCharacterMetadata: studio.readCharacterMetadata,
+	readAgentReceipts: async () => [],
+	writeAgentReceipt: async () => true,
 	refreshMoveReviews: vi.fn(),
 	refreshProjects: vi.fn(),
 	saveReviewedMove: vi.fn(),
@@ -74,10 +78,16 @@ beforeEach(async () => {
 		await readFile(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8')
 	);
 	studio.readCharacter.mockImplementation(async () => saved());
+	studio.readCharacterMetadata.mockImplementation(async () => saved().r.record);
 	studio.pendingBodyMoveName.mockResolvedValue(false);
 	studio.probe.mockResolvedValue('managed');
 	studio.reserve.mockImplementation(async (_what, _gens, signal, start) =>
-		start(() => signal.throwIfAborted())
+		start(
+			() => signal.throwIfAborted(),
+			'agent:move-test',
+			() => {},
+			() => {}
+		)
 	);
 });
 
@@ -101,7 +111,7 @@ test.each(['rig', 'pending move', 'credential'])(
 			if (change === 'rig') {
 				const resized = structuredClone(manifest);
 				resized.rig.cell = { w: 128, h: 128 };
-				studio.readCharacter.mockResolvedValue(saved(resized));
+				studio.readCharacterMetadata.mockResolvedValue(saved(resized).r.record);
 			} else if (change === 'pending move') studio.pendingBodyMoveName.mockResolvedValue(true);
 			else studio.keyRevision++;
 			return 'managed';
@@ -116,7 +126,7 @@ test('the skeleton read combines caller cancellation and hides provider details'
 	studio.probe.mockRejectedValueOnce(new Error('private upstream details'));
 	await expect(call({}, controller.signal)).rejects.toMatchObject({
 		code: 'not_ready',
-		message: 'agentMoves.skeletonCheckFailed'
+		message: 'PixelLab could not check this character’s skeleton. Try again shortly.'
 	});
 	const probeSignal = studio.probe.mock.calls[0][2] as AbortSignal;
 	expect(probeSignal).not.toBe(controller.signal);
@@ -129,10 +139,10 @@ test('Studio acceptance is sufficient while the move is still waiting to start',
 	const requestId = 'queued-wave';
 	studio.queueAgentMove.mockImplementation((_id, _spec, check) => {
 		check();
-		return { id: requestId };
+		return { id: 'agent:move-test' };
 	});
 	expect(await call({ requestId })).toMatchObject({
-		data: { started: true, activityId: requestId, status: 'queued' }
+		data: { started: true, activityId: 'agent:move-test', status: 'queued' }
 	});
 	const [characterId, spec, , beforePaid, settle] = studio.queueAgentMove.mock.calls[0];
 	expect(characterId).toBe('rig-target');
@@ -143,7 +153,9 @@ test('Studio acceptance is sufficient while the move is still waiting to start',
 	settle('running');
 	settle('review');
 	settle('saved');
-	expect(receipts.get(requestId)?.outcome).toBe('saved');
-	expect(await call({ requestId })).toMatchObject({ data: { repeated: true, outcome: 'saved' } });
+	expect(receipts.get('agent:move-test')?.outcome).toBe('saved');
+	expect(await call({ requestId })).toMatchObject({
+		data: { started: true, repeated: true, activityId: 'agent:move-test', status: 'saved' }
+	});
 	expect(studio.reserve).toHaveBeenCalledTimes(1);
 });

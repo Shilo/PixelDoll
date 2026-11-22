@@ -3,10 +3,8 @@
 // are the sheet's. What the sheet offers beyond this (uploaded start or end frames, starting from a saved frame,
 // checkpoint retries) stays in the sheet.
 import { app, getKeyRevision } from '../../lib/app.svelte.ts';
-import { displayError, displayMessage } from '../../lib/i18n.ts';
-import { LocalizedError, message } from '../../lib/message.ts';
+import { LocalizedError } from '../../lib/message.ts';
 import { timeoutFor } from '../../lib/pixellab/client.ts';
-import { queue } from '../../lib/pixellab/queue.ts';
 import { routes } from '../../lib/pixellab/routes.ts';
 import {
 	agentMoveQuoteChanged,
@@ -43,19 +41,29 @@ import {
 	pendingBodyMoveName,
 	pendingMoves,
 	queueAgentMove,
+	readCharacterMetadata,
 	refreshMoveReviews,
 	saveReviewedMove
 } from '../state.svelte.ts';
 import { AgentError, checkAbort, type Tool } from './contract.ts';
 import { budget, rateUsd, withReservation } from './budget.ts';
-import { fingerprintOf, receipts, receiptView, type Outcome, type Receipt } from './receipts.ts';
+import { fingerprintOf, receipts, startView } from './receipts.ts';
 import { jobError } from './jobError.ts';
-import { paidPreflight, readSavedCharacter, ready, requestIdArg, str } from './toolSupport.ts';
+import {
+	forgetReceipt,
+	loadReceipts,
+	paidPreflight,
+	readSavedCharacter,
+	ready,
+	recordReceipt,
+	requestIdArg,
+	str
+} from './toolSupport.ts';
 
 const ACTIONS = promptSuggestionDefaults.move.flatMap(({ action }) => (action ? [action] : []));
 const BUSY_KEYS = new Set(['moveSheet.alreadyQueued', 'moveSheet.checkpoint.ready']);
 const refusal = (issue: LocalizedError) =>
-	new AgentError(displayError(issue), BUSY_KEYS.has(issue.translation.key) ? 'busy' : 'invalid');
+	new AgentError(issue.message, BUSY_KEYS.has(issue.translation.key) ? 'busy' : 'invalid');
 
 async function moveCharacter(characterId: unknown) {
 	await ready();
@@ -122,8 +130,9 @@ export const addMoveTool: Tool = {
 	async run(args, signal) {
 		const { projectId, project: p, record: rec } = await moveCharacter(args.characterId);
 		const fingerprint = fingerprintOf({ ...args, characterId: projectId });
+		if (!args.dryRun && args.requestId) await loadReceipts();
 		const earlier = args.dryRun ? undefined : receipts.repeat('move', args.requestId, fingerprint);
-		if (earlier) return { data: { repeated: true, ...receiptView(earlier) } };
+		if (earlier) return { data: startView(earlier, budget(), true) };
 		const m = p.manifest;
 		const rigVersion = moveRigVersion(rec);
 		if (!moveRigReady(rec))
@@ -231,7 +240,7 @@ export const addMoveTool: Tool = {
 			} catch {
 				checkAbort(signal);
 				throw new AgentError(
-					displayMessage(message('agentMoves.skeletonCheckFailed')),
+					'PixelLab could not check this character’s skeleton. Try again shortly.',
 					'not_ready'
 				);
 			}
@@ -275,17 +284,17 @@ export const addMoveTool: Tool = {
 			approxUsd: Math.round(rateUsd(generations) * 100) / 100,
 			minutes: estimate.minutes,
 			minimumTier,
-			warnings: preflight.map((w) => ({ id: w.id, text: displayError(w) }))
+			warnings: preflight.map((w) => ({ id: w.id, text: w.message }))
 		};
 		if (args.dryRun || (preflight.length && !args.acceptWarnings))
 			return { data: { started: false, ...plan } };
 		const pending = await pendingBodyMoveName(projectId, form.id);
-		const latest = await readSavedCharacter(projectId);
-		const quoteChanged = () => new AgentError(displayError(agentMoveQuoteChanged()), 'busy');
+		const latest = await readCharacterMetadata(projectId);
+		const quoteChanged = () => new AgentError(agentMoveQuoteChanged().message, 'busy');
 		if (
-			!latest.record ||
-			moveRigVersion(latest.record) !== rigVersion ||
-			Object.hasOwn(latest.record.moveReviews ?? {}, form.id) ||
+			!latest ||
+			moveRigVersion(latest) !== rigVersion ||
+			Object.hasOwn(latest.moveReviews ?? {}, form.id) ||
 			pending ||
 			getKeyRevision() !== credential
 		)
@@ -298,55 +307,49 @@ export const addMoveTool: Tool = {
 			}),
 			agentQuote: { rigVersion, generations }
 		};
-		let outcome: Outcome = 'queued';
-		let receipt: Receipt | undefined;
-		let failure: string | undefined;
-		const start = await withReservation(`move ${form.id}`, generations, signal, (check) => {
-			const accepted = queueAgentMove(
-				projectId,
-				spec,
-				check,
-				() => {
-					if (
-						getKeyRevision() !== credential ||
-						!app.key ||
-						app.keyRejected ||
-						queue.role === 'follower'
-					)
-						throw agentMoveQuoteChanged();
-				},
-				(next, error) => {
-					outcome = next;
-					failure = jobError(error) ?? undefined;
-					if (receipt) receipts.settle(receipt, next, failure);
-				}
-			);
-			if (!accepted) throw quoteChanged();
-			return accepted;
-		});
-		receipt = receipts.add({
-			kind: 'move',
-			id: start.id,
-			characterId: projectId,
-			moveId: form.id,
-			name: form.id,
-			...(typeof args.requestId === 'string' ? { requestId: args.requestId } : {}),
-			fingerprint,
+		const receipt = await withReservation(
+			`move ${form.id}`,
 			generations,
-			startedAt: new Date().toISOString(),
-			outcome,
-			...(failure ? { error: failure } : {})
-		});
-		return {
-			data: {
-				started: true,
-				activityId: receipt.id,
-				characterId: projectId,
-				status: receipt.outcome,
-				...plan,
-				budget: budget()
+			signal,
+			async (check, id, finish, stillApproved) => {
+				const r = await recordReceipt({
+					kind: 'move',
+					id,
+					characterId: projectId,
+					moveId: form.id,
+					name: form.id,
+					requestId: args.requestId as string | undefined,
+					fingerprint,
+					generations,
+					price: plan,
+					startedAt: new Date().toISOString(),
+					outcome: 'queued'
+				});
+				try {
+					const accepted = queueAgentMove(
+						projectId,
+						{ ...spec, activityScope: id },
+						check,
+						() => {
+							stillApproved();
+							if (getKeyRevision() !== credential || !app.key || app.keyRejected)
+								throw agentMoveQuoteChanged();
+						},
+						(next, error) => {
+							receipts.settle(r, next, jobError(error) ?? undefined);
+							if (next !== 'running') finish();
+							void recordReceipt(r).catch(() => console.error('Could not save the move receipt'));
+						}
+					);
+					if (!accepted) throw quoteChanged();
+					return r;
+				} catch (error) {
+					await forgetReceipt(r);
+					throw error;
+				}
 			}
-		};
+		);
+		return { data: startView(receipt, budget()) };
 	}
 };
 

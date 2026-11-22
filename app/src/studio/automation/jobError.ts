@@ -4,6 +4,8 @@ import { errorText } from '../../lib/message.ts';
 export function jobError(error: unknown): string | null {
 	if (!error) return null;
 	const text = errorText(error);
+	if (text.includes('The agent approval ended or the PixelLab connection changed.'))
+		return 'approval: The budget ended or the PixelLab connection changed. No further requests were sent.';
 	if (
 		/\b(?:insufficient (?:credits|generations|balance)|out of (?:credits|generations)|payment required|credits exhausted|402)\b/i.test(
 			text

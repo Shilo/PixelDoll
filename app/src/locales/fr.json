@@ -3192,8 +3192,7 @@
 	},
 	"shortcut": { "control": "Ctrl" },
 	"agentMoves": {
-		"quoteChanged": "L’autorisation du mouvement ou son estimation a changé. Vérifiez à nouveau le mouvement avant de le générer.",
-		"skeletonCheckFailed": "PixelLab n’a pas pu vérifier le squelette de ce personnage. Réessayez dans un instant."
+		"quoteChanged": "L’autorisation du mouvement ou son estimation a changé. Vérifiez à nouveau le mouvement avant de le générer."
 	},
 	"agentBudget": {
 		"title": "Autoriser l’agent à utiliser des générations ?",
@@ -3203,6 +3202,7 @@
 		"allow": "Autoriser",
 		"deny": "Ne pas autoriser",
 		"left": "Budget de l’agent : reste {usd} ({count} générations)",
+		"reserved": "Réservées : {count}",
 		"end": "Arrêter"
 	},
 	"agentEvidence": {

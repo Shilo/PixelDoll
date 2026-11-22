@@ -7,12 +7,17 @@
 
 {#if $budgetView.active}
 	<div class="agent-budget bu-floating" role="status">
-		<span
-			>{t('agentBudget.left', {
+		<span>
+			{t('agentBudget.left', {
 				usd: usdText(rateUsd($budgetView.remaining)),
 				count: formatNumber($budgetView.remaining, { maximumFractionDigits: 2 })
-			})}</span
-		>
+			})}
+			{#if $budgetView.reserved > 0}
+				· {t('agentBudget.reserved', {
+					count: formatNumber($budgetView.reserved, { maximumFractionDigits: 2 })
+				})}
+			{/if}
+		</span>
 		<button class="bu-btn" data-variant="ghost" onclick={endBudget}>{t('agentBudget.end')}</button>
 	</div>
 {/if}

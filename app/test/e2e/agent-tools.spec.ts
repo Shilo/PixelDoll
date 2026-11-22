@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { offlineLaunch } from '../no-live-api.ts';
+import { CharacterApi } from '../fixtures/character-api.ts';
 import { openStudio } from './immersive-helpers.ts';
 
 // Chromium's own WebMCP implementation (not a polyfill): the tools an agent discovers on the deployed page.
@@ -143,38 +144,92 @@ test('agent tools: the page bridge edits a free copy atomically and reads withou
 });
 
 test('agent tools: the person approves a budget in USD, sees what is left and can end it', async ({
-	page
+	page,
+	context
 }) => {
+	const api = new CharacterApi();
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		const response = await api.handle(request.method(), request.url(), request.postDataJSON());
+		await route.fulfill({
+			status: response.status,
+			headers: Object.fromEntries(response.headers),
+			body: Buffer.from(await response.arrayBuffer())
+		});
+	});
 	await page.addInitScript(() =>
 		localStorage.setItem('pixellabApiKey', 'fake-agent-test-key-no-network')
 	);
 	await openStudio(page, '/');
 	await expect.poll(() => page.evaluate(() => typeof window.pixeldoll)).toBe('object');
 	// A paid start without a budget is refused before anything is sent.
-	expect(
-		await bridge(page, 'create_character', {
-			details: 'a knight',
-			directions: 'four',
-			acceptWarnings: true
-		})
-	).toMatchObject({ ok: false, data: { code: 'budget' } });
+	const creation = {
+		details: 'a knight',
+		directions: 'four',
+		acceptWarnings: true,
+		requestId: 'knight-test'
+	};
+	expect(await bridge(page, 'create_character', creation)).toMatchObject({
+		ok: false,
+		data: { code: 'budget' }
+	});
+	expect(api.calls.filter(({ method }) => method === 'POST')).toHaveLength(0);
 
-	const asked = bridge(page, 'request_budget', { generations: 12, purpose: 'Finish the knight' });
+	const asked = await bridge(page, 'request_budget', {
+		generations: 12,
+		purpose: 'Finish the knight'
+	});
+	expect(asked).toMatchObject({ ok: true, data: { answer: 'pending' } });
+	const approvalId = (asked.data as { activityId: string }).activityId;
 	const dialog = page.getByRole('alertdialog', { name: 'Let the agent spend generations?' });
 	await expect(dialog).toContainText('up to about $');
 	await expect(dialog).toContainText('12 PixelLab generations');
 	await expect(dialog).toContainText('Finish the knight');
 	await dialog.getByRole('button', { name: 'Allow', exact: true }).click();
-	expect(await asked).toMatchObject({
+	expect(await bridge(page, 'get_activity', { ids: [approvalId] })).toMatchObject({
 		ok: true,
-		data: { allowed: true, budget: { approved: 12, remaining: 12 } }
+		data: {
+			matched: [{ activityId: approvalId, answer: 'allowed' }],
+			budget: { approved: 12, remaining: 12 }
+		}
 	});
 
 	const left = page.getByRole('status').filter({ hasText: 'Agent budget' });
 	await expect(left).toContainText('12 generations');
+	const start = await bridge(page, 'create_character', creation);
+	expect(start).toMatchObject({ ok: true, data: { started: true, status: 'running' } });
+	const started = start.data as { activityId: string; characterId: string; maxGenerations: number };
+	await expect
+		.poll(
+			async () =>
+				(
+					await bridge(page, 'get_activity', {
+						ids: [started.activityId]
+					})
+				).data
+		)
+		.toMatchObject({
+			matched: [
+				{ activityId: started.activityId, characterId: started.characterId, outcome: 'created' }
+			]
+		});
+	const posts = api.calls.filter(({ method }) => method === 'POST');
+	expect(posts.filter(({ path }) => path === '/v2/create-character-v3')).toHaveLength(2);
+	expect(await bridge(page, 'create_character', creation)).toMatchObject({
+		ok: true,
+		data: { ...started, repeated: true, status: 'created' }
+	});
+	expect(api.calls.filter(({ method }) => method === 'POST')).toEqual(posts);
 	await left.getByRole('button', { name: 'End' }).click();
 	await expect(left).toHaveCount(0);
 	expect(await bridge(page, 'get_activity')).toMatchObject({
 		data: { budget: { remaining: 0 } }
 	});
+	expect(
+		await bridge(page, 'create_character', { ...creation, requestId: 'after-end' })
+	).toMatchObject({
+		ok: false,
+		data: { code: 'budget' }
+	});
+	expect(api.calls.filter(({ method }) => method === 'POST')).toEqual(posts);
 });

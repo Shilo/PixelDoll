@@ -3102,8 +3102,7 @@
 	},
 	"shortcut": { "control": "Ctrl" },
 	"agentMoves": {
-		"quoteChanged": "Persetujuan atau estimasi gerakan berubah. Tinjau kembali gerakan sebelum membuatnya.",
-		"skeletonCheckFailed": "PixelLab tidak dapat memeriksa kerangka karakter ini. Coba lagi sebentar."
+		"quoteChanged": "Persetujuan atau estimasi gerakan berubah. Tinjau kembali gerakan sebelum membuatnya."
 	},
 	"agentBudget": {
 		"title": "Izinkan agen memakai generasi?",
@@ -3113,6 +3112,7 @@
 		"allow": "Izinkan",
 		"deny": "Jangan izinkan",
 		"left": "Anggaran agen: sisa {usd} ({count} generasi)",
+		"reserved": "Dicadangkan: {count}",
 		"end": "Akhiri"
 	},
 	"agentEvidence": {

@@ -374,7 +374,34 @@ function every(ms: number, fn: () => void): () => void {
 	};
 }
 
+export const isAgentActivity = (scope?: string): scope is `agent:${string}` =>
+	scope?.startsWith('agent:') ?? false;
+const sameAgentScope = (a?: string, b?: string) =>
+	(!isAgentActivity(a) && !isAgentActivity(b)) || a === b;
+export const AGENT_APPROVAL_ENDED =
+	'The agent approval ended or the PixelLab connection changed. No further requests were sent.';
+
 export class Queue {
+	private agentApprovals = new Map<string, { credential: number; sent: boolean }>();
+
+	/** The durable scope identifies a start. Only the approving tab has its live credential identity. */
+	authorizeAgentActivity(id: string) {
+		const approval = { credential: this.keyRevision, sent: false };
+		this.agentApprovals.set(id, approval);
+		return () => {
+			this.agentApprovals.delete(id);
+			return approval.sent;
+		};
+	}
+
+	private agentMaySend(r: Pick<JobRec, 'method' | 'activityScope'>) {
+		return (
+			r.method !== 'POST' ||
+			!isAgentActivity(r.activityScope) ||
+			(this.agentApprovals.get(r.activityScope)?.credential === this.keyRevision &&
+				this.role !== 'follower')
+		);
+	}
 	private recs = new Map<string, JobRec>();
 	private persisting = new Set<string>(); // first ledger write must commit before the scheduler may send
 	private busy = new Set<string>(); // rec ids / subjob ids with an op in flight
@@ -740,6 +767,7 @@ export class Queue {
 				[...this.recs.values()].find(
 					(x) =>
 						x.requestHash === r.requestHash &&
+						sameAgentScope(x.activityScope, r.activityScope) &&
 						(live(x) ||
 							(x.state === 'done' && (seededOf(x) || x.endpoint === '/estimate-skeleton')))
 				);
@@ -1077,7 +1105,14 @@ export class Queue {
 		// A resumed paid flow must never turn a terminal/unknown outcome into another submission. Explicit re-rolls change seed.
 		const resumeSafe = meta.resumeSafe ?? req.method === 'POST';
 		const matches = [...this.recs.values()]
-			.filter((r) => r.requestHash === requestHash)
+			.filter(
+				(r) =>
+					r.requestHash === requestHash &&
+					(sameAgentScope(r.activityScope, meta.activityScope) ||
+						r.state === 'done' ||
+						(!isAgentActivity(meta.activityScope) &&
+							(r.state === 'lost' || (r.state === 'running' && r.jobs.length > 0))))
+			)
 			.reverse()
 			.sort((a, b) => b.createdAt - a.createdAt);
 		// Retries and repeats of one request share its hash. Prefer useful newer work before considering an old failure.
@@ -1113,6 +1148,8 @@ export class Queue {
 			const terminal = matches.find((r) => !canReopenQueuedCancellation(r, meta.attempt));
 			if (terminal) return terminal;
 		}
+		if (!this.agentMaySend({ method: req.method, activityScope: meta.activityScope }))
+			throw new Error(AGENT_APPROVAL_ENDED);
 		const now = this.deps.now();
 		const rec: JobRec = {
 			id: meta.estimateRetry
@@ -1146,7 +1183,10 @@ export class Queue {
 				records = records.filter((r) => this.ownsRecord(r));
 				assertConnected(); // scope/session changes before the transaction inserts must leave no queued orphan
 				const current = records
-					.filter((r) => r.requestHash === requestHash)
+					.filter(
+						(r) =>
+							r.requestHash === requestHash && sameAgentScope(r.activityScope, meta.activityScope)
+					)
 					.reverse()
 					.sort((a, b) => b.createdAt - a.createdAt);
 				const useful = current.find(live) ?? current.find((r) => r.state === 'done');
@@ -1321,14 +1361,26 @@ export class Queue {
 		if (this.role !== 'follower')
 			for (const r of this.recs.values()) if (this.pollSubmitted(r)) await this.save(r);
 		const now = this.deps.now();
-		if (!(await this.network(now)) || disconnected()) return { ops: [] };
+		const online = await this.network(now);
+		if (disconnected()) return { ops: [] };
 		if (this.role === 'follower') return { ops: [] }; // the leader tab submits and polls
-		if (this.role === 'leader' && now - this.merged >= (this.chan ? FULL_SYNC_MS : SYNC_MS)) {
+		if (
+			online &&
+			this.role === 'leader' &&
+			now - this.merged >= (this.chan ? FULL_SYNC_MS : SYNC_MS)
+		) {
 			this.merged = now;
 			await this.merge();
 		}
 		if (disconnected()) return { ops: [] }; // a suspended tick cannot drive jobs after its lock/session was released
 		const ops: Promise<void>[] = [];
+		for (const r of this.recs.values()) {
+			if (r.state === 'queued' && !this.busy.has(r.id) && !this.agentMaySend(r)) {
+				r.error = AGENT_APPROVAL_ENDED;
+				ops.push(this.guard(r.id, () => this.cancel(r.id, true)));
+			}
+		}
+		if (!online) return { ops };
 		let capacity: Promise<void> | undefined;
 		if (
 			this.key &&
@@ -1338,7 +1390,7 @@ export class Queue {
 			now - this.capacityCheckedAt >= 60_000 &&
 			(await this.hasPreparedInputs())
 		) {
-			if (disconnected()) return { ops: [] };
+			if (disconnected()) return { ops };
 			const read = this.refreshCapacity();
 			this.capacityRead = read;
 			const refreshed = read.finally(() => {
@@ -1346,7 +1398,7 @@ export class Queue {
 			});
 			if (!this.capacityKnown) capacity = refreshed;
 		}
-		if (disconnected()) return { ops: [] };
+		if (disconnected()) return { ops };
 		if (
 			this.key &&
 			!this.paused &&
@@ -1461,14 +1513,16 @@ export class Queue {
 				Object.assign(r, {
 					state: 'canceled',
 					requestStarted: false,
-					error: 'Request stopped before sending. No API request was made.',
+					error: this.agentMaySend(r)
+						? 'Request stopped before sending. No API request was made.'
+						: AGENT_APPROVAL_ENDED,
 					finishedAt: this.deps.now(),
 					autoCanceledAttempts: this.cancellationAttempts(r.id)
 				});
 				this.submitScopes.delete(r.id);
 				await this.save(r);
 			};
-			if (canceled()) {
+			if (canceled() || !this.agentMaySend(r)) {
 				await cancelBeforeSend();
 				return;
 			}
@@ -1495,7 +1549,7 @@ export class Queue {
 				r.requestStarted = false;
 				throw new Error('request could not be saved; nothing was sent');
 			}
-			if (canceled()) {
+			if (canceled() || !this.agentMaySend(r)) {
 				await cancelBeforeSend();
 				return;
 			}
@@ -1509,6 +1563,8 @@ export class Queue {
 				return;
 			}
 			// Once invoked, HTTP may have left the browser. Scope cancellation never aborts it or changes uncertainty handling.
+			const approval = r.activityScope && this.agentApprovals.get(r.activityScope);
+			if (approval && r.method === 'POST') approval.sent = true;
 			r.submittedAt = this.deps.now();
 			const response = this.deps.api<SubmitResponse>(
 				key,

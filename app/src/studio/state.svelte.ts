@@ -142,7 +142,14 @@ import {
 	slotUseMessages,
 	type SlotUse
 } from './slots.ts';
-import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import {
+	AGENT_APPROVAL_ENDED,
+	isAgentActivity,
+	queue,
+	type JobRec
+} from '../lib/pixellab/queue.ts';
+import type { Receipt } from './automation/receipts.ts';
+import { jobError } from './automation/jobError.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import { stateAttempts } from './stateRecovery.ts';
 import {
@@ -845,6 +852,54 @@ export async function readCharacter(id: string) {
 	return prepareCharacter(await openSource(id));
 }
 
+/** Generation identity and saved state can be checked without loading any image blobs. */
+export async function readCharacterMetadata(id: string) {
+	return db.asLoaded(await db.get<StoredProject>('projects', id));
+}
+
+const AGENT_RECEIPTS = 'studio-agent-receipts';
+type AgentReceiptRecord = { id: string; receipts: Record<string, Receipt> };
+export async function readAgentReceipts() {
+	return Object.values(
+		(await db.get<AgentReceiptRecord>('projects', AGENT_RECEIPTS))?.receipts ?? {}
+	);
+}
+export async function writeAgentReceipt(id: string, receipt: Receipt | null) {
+	const saved = await db.update<AgentReceiptRecord>('projects', AGENT_RECEIPTS, (stored) => {
+		const receipts = stored?.receipts ?? {};
+		if (
+			receipt?.requestId &&
+			Object.values(receipts).some(
+				(other) =>
+					other.id !== id && other.kind === receipt.kind && other.requestId === receipt.requestId
+			)
+		)
+			return { id: AGENT_RECEIPTS, receipts };
+		if (receipt) receipts[id] = receipt;
+		else delete receipts[id];
+		return { id: AGENT_RECEIPTS, receipts };
+	});
+	return !receipt || !!saved?.receipts?.[id];
+}
+
+async function persistAgentOutcome(
+	id: string | undefined,
+	outcome: Receipt['outcome'],
+	error?: string
+) {
+	if (!isAgentActivity(id)) return;
+	try {
+		await db.update<AgentReceiptRecord>('projects', AGENT_RECEIPTS, (stored) => {
+			const receipts = stored?.receipts ?? {};
+			const receipt = receipts[id];
+			if (receipt) receipts[id] = { ...receipt, outcome, error };
+			return { id: AGENT_RECEIPTS, receipts };
+		});
+	} catch {
+		console.error('Could not save the agent activity outcome');
+	}
+}
+
 export async function readCharacterForExport(id: string) {
 	const r = await openSource(id, undefined, { allowMissingImages: true });
 	return r.missingImages ? r : (await prepareCharacter(r)).r;
@@ -1088,19 +1143,21 @@ function bump() {
  *  reachable after the thing is back. Redo is cleared rather than replaying a deletion. */
 export async function undo() {
 	const e = doc.undo.at(-1);
-	if (!e) return;
+	if (!e) return false;
 	if (e.trash) {
 		const trash = e.trash;
 		doc.undo = doc.undo.slice(0, -1);
 		doc.redo = [];
-		if (!(await restoreDeleted(trash))) doc.undo = [...doc.undo, e];
-		return;
+		const restored = await restoreDeleted(trash);
+		if (!restored) doc.undo = [...doc.undo, e];
+		return restored;
 	}
 	const back = snap();
 	const draftsBefore = e.drafts ? { drafts: { ...doc.drafts } } : {};
 	doc.undo = doc.undo.slice(0, -1);
 	restore($state.snapshot(e));
 	doc.redo = [...doc.redo, { label: e.label, snap: back, ...draftsBefore, from: slotsNow() }];
+	return true;
 }
 export function redo() {
 	const e = doc.redo.at(-1);
@@ -2920,6 +2977,7 @@ export interface Gen {
 	canceled?: boolean;
 	cancelSaveFailed?: boolean;
 	requestText?: number;
+	agentActivityId?: string;
 }
 export const gens = $state<Gen[]>([]);
 const GENS_KEY = 'studio-drafts'; // projects store, no `manifest` -> ignored by project listings
@@ -3081,6 +3139,11 @@ interface ItemAttemptConsent {
 	gens: number;
 	rig?: string;
 	beforeStart?: () => void;
+	agent?: {
+		activityId: string;
+		recordDraft: (draftId: string) => Promise<void>;
+		finish: () => void;
+	};
 	replaces?: { id: string; reviewed: string };
 }
 /** The new draft's id, or why nothing started (no request was sent; the reason was already shown to the person). */
@@ -3167,6 +3230,10 @@ async function startItemDraft(
 		status: GENERATION_PHASES.starting,
 		requestText: REQUEST_TEXT
 	});
+	const agent = consent?.agent;
+	if (agent) {
+		g.agentActivityId = g.draft.activityScope = agent.activityId;
+	}
 	const index = replaced ? gens.indexOf(replaced) : -1;
 	if (replaced) gens.splice(index, 1, g);
 	else gens.push(g);
@@ -3174,6 +3241,10 @@ async function startItemDraft(
 	ui.selected = `gen:${g.draft.spec.id}`;
 	ui.group = input.slot;
 	try {
+		if (agent) {
+			await agent.recordDraft(g.draft.spec.id);
+			consent?.beforeStart?.();
+		}
 		await saveGens();
 	} catch (error) {
 		const nextIndex = gens.indexOf(g);
@@ -3190,7 +3261,11 @@ async function startItemDraft(
 	}
 	if (replaced && doc.drafts[replaced.draft.spec.slot] === replaced.draft.spec.id)
 		delete doc.drafts[replaced.draft.spec.slot];
-	void runGen(g, ctx);
+	void runGen(g, ctx)
+		.finally(agent?.finish)
+		.catch((error: unknown) => {
+			console.error('Could not finish the item draft', error);
+		});
 	return { draftId: g.draft.spec.id };
 }
 async function runGen(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
@@ -3257,6 +3332,8 @@ async function runGenOnce(
 	}
 	takeOffGone();
 	await saveGens();
+	if (g.agentActivityId && g.phase === 'failed' && !g.canceled)
+		await persistAgentOutcome(g.agentActivityId, 'failed', jobError(g.error) ?? undefined);
 	if (g.phase === 'failed')
 		toast(message('state.nameCouldNotFinishNoPaidRetry', { name: g.input.name }), {
 			tone: 'danger',
@@ -3465,6 +3542,7 @@ export async function acceptGen(
 		if (part) g.draft.acceptedAt = part.acceptedAt;
 		const worn = doc.drafts[item.slot] === id;
 		await saveGens();
+		if (g.agentActivityId) await persistAgentOutcome(g.agentActivityId, 'saved');
 		// a draft saving itself never cancels the open of another character the user just started
 		if (auto || stay ? viewing(g.draft.rigId) : doc.id === g.draft.rigId) {
 			if (ui.selected === `gen:${id}`) ui.selected = item.id;
@@ -3516,6 +3594,7 @@ export async function cancelGen(g: Gen): Promise<boolean> {
 			'Canceled. Generations already used are not refunded. Requests already sent may still finish and charge. Review Activity for their outcomes.';
 		takeOffGone();
 		await saveGens();
+		if (g.agentActivityId) await persistAgentOutcome(g.agentActivityId, 'canceled');
 		cancellationRequested.delete(id);
 		return true;
 	} catch (error) {
@@ -3534,6 +3613,7 @@ export async function discardGen(g: Gen): Promise<boolean> {
 		ui.selected = '';
 		if (doc.drafts[g.draft.spec.slot] === id) delete doc.drafts[g.draft.spec.slot];
 		await saveGens();
+		if (g.agentActivityId) await persistAgentOutcome(g.agentActivityId, 'discarded');
 		return true;
 	} finally {
 		settling.delete(id);
@@ -3589,6 +3669,7 @@ export function rerollGen(g: Gen, calls: number[], reviewedGens: number, minimum
 				return;
 			}
 			Object.assign(g, { draft: next.draft, phase: 'running', status: '', error: undefined });
+			if (isAgentActivity(g.draft.activityScope)) delete g.draft.activityScope;
 			g.canceled = false;
 			await saveGens();
 			void runGen(g);
@@ -3996,9 +4077,10 @@ function withActivityScope<T extends { seed: number; activityScope?: string }>(
 	const prefix = `${kind}:${spec.seed}:`;
 	return {
 		...spec,
-		activityScope: spec.activityScope?.startsWith(prefix)
-			? spec.activityScope
-			: `${prefix}${crypto.randomUUID()}`
+		activityScope:
+			isAgentActivity(spec.activityScope) || spec.activityScope?.startsWith(prefix)
+				? spec.activityScope
+				: `${prefix}${crypto.randomUUID()}`
 	};
 }
 /** `views`: the standing views, shown while the rest of creation finishes (not persisted: a resume re-reads the cached draw). */
@@ -4045,6 +4127,8 @@ export function reviewFailedCreate(id: string) {
 }
 const canDriveCreate = () => !hmrReloading && queue.role !== 'follower';
 export async function startCreate(input: CreateSpec, present = false, attemptId?: string) {
+	if (present && isAgentActivity(input.activityScope))
+		input = { ...input, activityScope: undefined };
 	await launchCreate(input, present, attemptId)?.done;
 }
 /** Starts a creation without waiting for it: the attempt (its `spec.projectId` is the character it makes) and the run, which
@@ -4053,7 +4137,8 @@ export async function startCreate(input: CreateSpec, present = false, attemptId?
 export function launchCreate(
 	input: CreateSpec,
 	present = false,
-	attemptId?: string
+	attemptId?: string,
+	newProjectId?: string
 ): { attempt: CreateAttempt; done: Promise<void> } | null {
 	if (!canDriveCreate()) return null;
 	// A new creation fixes its placement now (absent when 0, like other defaults); a resumed one keeps the lift its
@@ -4063,7 +4148,7 @@ export function launchCreate(
 		{
 			...input,
 			lift: lift || undefined,
-			projectId: input.projectId ?? `rig-${crypto.randomUUID()}`
+			projectId: input.projectId ?? newProjectId ?? `rig-${crypto.randomUUID()}`
 		},
 		'create'
 	);
@@ -4082,6 +4167,7 @@ async function runCreate(run: CreateAttempt, spec: CreateSpec) {
 	let active = true;
 	const current = () => canDriveCreate() && active;
 	let callbacksDone = false;
+	let outcome: Receipt['outcome'] = 'stopped';
 	Object.assign(run, { spec, error: '', progress: null, views: [] });
 	try {
 		await db.put('projects', key, {
@@ -4101,6 +4187,7 @@ async function runCreate(run: CreateAttempt, spec: CreateSpec) {
 				if (current() && !callbacksDone) run.views = views;
 			}
 		);
+		outcome = 'created';
 		if (!current()) return;
 		callbacksDone = true;
 		const acknowledgments = await Promise.allSettled([
@@ -4121,6 +4208,7 @@ async function runCreate(run: CreateAttempt, spec: CreateSpec) {
 		else removeCreate(run);
 	} catch (e) {
 		if (current()) {
+			outcome = 'failed';
 			callbacksDone = true;
 			run.error = e instanceof LocalizedError ? e : errorText(e);
 			const error = await persistFlowFailure(
@@ -4138,7 +4226,12 @@ async function runCreate(run: CreateAttempt, spec: CreateSpec) {
 		}
 	} finally {
 		active = false;
-		run.running = false;
+		try {
+			if (isAgentActivity(spec.activityScope))
+				await persistAgentOutcome(spec.activityScope, outcome, jobError(run.error) ?? undefined);
+		} finally {
+			run.running = false;
+		}
 	}
 }
 let createRefresh = Promise.resolve(true);
@@ -4275,6 +4368,8 @@ export function queueAgentMove(
 	const id = queued.activityScope!;
 	agentMoves.set(id, { projectId, moveId: spec.id, beforePaid, settle });
 	void queueMoves(projectId, [queued]).catch((error) => {
+		moving.queued = moving.queued.filter((move) => move.spec.activityScope !== id);
+		reportAgentMove(queued, 'failed', error);
 		console.error('Could not persist the move queue', error);
 	});
 	return { id };
@@ -4321,6 +4416,8 @@ export async function saveReviewedMove(
 	try {
 		const input = await (await createFlow()).resolveMoveCandidate(projectId, candidate, accept);
 		reportAgentMove(candidate.spec, accept ? 'saved' : 'discarded');
+		if (isAgentActivity(candidate.spec.activityScope))
+			await persistAgentOutcome(candidate.spec.activityScope, accept ? 'saved' : 'discarded');
 		// Accepting a reviewed move saves the character even when another one is open here.
 		if (accept && !viewing(projectId)) await syncStoredProject(projectId);
 		return input;
@@ -4403,6 +4500,8 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		warnings: []
 	});
 	try {
+		const beforePaid = agentMoves.get(spec.activityScope ?? '')?.beforePaid;
+		beforePaid?.(); // a queued agent move can expire while it waits behind other work
 		if (spec.itemReview || spec.reviewedMoveItems) {
 			const { rec } = await loadProject(projectId);
 			if (!(await createFlow()).itemMoveReviewMatches(rec.manifest, spec)) {
@@ -4441,13 +4540,9 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 						throw error;
 					}
 				})
-			: await (() => {
-					// Only agent starts carry a paid-admission check; human starts keep the plain call.
-					const beforePaid = agentMoves.get(spec.activityScope ?? '')?.beforePaid;
-					return beforePaid
-						? flow.addMove(projectId, spec, progress, undefined, beforePaid)
-						: flow.addMove(projectId, spec, progress);
-				})();
+			: beforePaid
+				? await flow.addMove(projectId, spec, progress, undefined, beforePaid)
+				: await flow.addMove(projectId, spec, progress);
 		if (!current()) return;
 		if (result.repairReview) {
 			const progress = $state.snapshot(moving.progress);
@@ -4573,8 +4668,14 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 				}
 			);
 	} catch (e) {
-		if (!publishedReview) reportAgentMove(spec, 'failed', e);
-		if (current()) {
+		const approvalEnded = !!spec.agentQuote && errorText(e).includes(AGENT_APPROVAL_ENDED);
+		if (!publishedReview) reportAgentMove(spec, approvalEnded ? 'stopped' : 'failed', e);
+		if (approvalEnded && current()) {
+			moving.done = true;
+			moving.spec = null;
+			await storeMove(null);
+			toast(message('agentMoves.quoteChanged'), { tone: 'warning' });
+		} else if (current()) {
 			failed = true;
 			moving.error = e instanceof LocalizedError ? e : errorText(e);
 			const error = await persistFlowFailure(
@@ -4652,6 +4753,7 @@ export async function retryMoveMeasurements(
 	const next = {
 		...$state.snapshot(spec),
 		agentQuote: undefined,
+		activityScope: isAgentActivity(spec.activityScope) ? undefined : spec.activityScope,
 		measurementRecovery: {
 			id: crypto.randomUUID(),
 			recordIds: [...current.recordIds],
@@ -4698,6 +4800,7 @@ export async function keepMoveBody(projectId: string, spec: MoveSpec, reviewed: 
 	await startMove(projectId, {
 		...$state.snapshot(spec),
 		agentQuote: undefined,
+		activityScope: isAgentActivity(spec.activityScope) ? undefined : spec.activityScope,
 		items: [],
 		reviewBeforePublish: undefined,
 		reuseItemFrames: undefined,
@@ -4757,6 +4860,7 @@ export async function matchMoveBodyColors(
 	await startMove(projectId, {
 		...$state.snapshot(spec),
 		agentQuote: undefined,
+		activityScope: isAgentActivity(spec.activityScope) ? undefined : spec.activityScope,
 		measurementRecovery: undefined,
 		bodyPaletteRepair: {
 			id: crypto.randomUUID(),
@@ -4795,8 +4899,26 @@ export async function resumeMove() {
 		}
 	}
 	const { queued, ...record } = r;
-	moving.queued = queued ?? [];
+	moving.queued = (queued ?? []).filter((move) => !move.spec.agentQuote);
 	moveRecord = record; // a halted move keeps its stored record while moves are queued behind it
+	const stopped = (queued ?? []).filter((move) => !!move.spec.agentQuote);
+	if (r.spec.agentQuote && !halted(r)) stopped.push({ projectId: r.projectId, spec: r.spec });
+	if (stopped.length) {
+		await Promise.all(
+			stopped.map(({ spec }) =>
+				persistAgentOutcome(spec.activityScope, 'stopped', AGENT_APPROVAL_ENDED)
+			)
+		);
+		toast(message('agentMoves.quoteChanged'), { tone: 'warning' });
+		if (r.spec.agentQuote && !halted(r)) {
+			await storeMove(null);
+			const [next, ...rest] = moving.queued;
+			moving.queued = rest;
+			if (next) await startMove(next.projectId, next.spec);
+			return;
+		}
+		await storeMove();
+	}
 	let applied = false,
 		repairError: string | LocalizedError = '';
 	if (r.repairReview) {

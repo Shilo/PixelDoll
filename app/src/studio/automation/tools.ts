@@ -48,6 +48,7 @@ import {
 	moving,
 	openProject,
 	readCharacter,
+	readCharacterMetadata,
 	redo,
 	refreshProjects,
 	savePreset,
@@ -103,22 +104,27 @@ import {
 } from './contract.ts';
 export { AgentError } from './contract.ts';
 export type { Json, Tool, ToolResult } from './contract.ts';
-import { budget, requestBudget, rateUsd, withReservation } from './budget.ts';
+import { budget, budgetRequest, requestBudget, rateUsd, withReservation } from './budget.ts';
 import {
 	creationOutcome,
 	fingerprintOf,
 	isFinal,
 	itemOutcome,
 	receipts,
-	receiptView
+	receiptView,
+	startView,
+	type Receipt
 } from './receipts.ts';
 import { jobError } from './jobError.ts';
 import { addMoveTool, moveReviewTools } from './moves.ts';
 import {
+	forgetReceipt,
 	listed,
+	loadReceipts,
 	paidPreflight,
 	readSavedCharacter,
 	ready,
+	recordReceipt,
 	requestIdArg,
 	str
 } from './toolSupport.ts';
@@ -376,6 +382,26 @@ function itemSummary(p: Project, it: Item, outfit: Preset['items']) {
 const draftOutcome = ({ phase, canceled, draft }: Gen) =>
 	itemOutcome({ phase, canceled, acceptedAt: draft.acceptedAt }) ?? phase;
 
+const draftInput: JsonSchema = {
+	type: 'object',
+	required: ['characterId', 'draftId'],
+	properties: {
+		characterId: str('Character id from get_activity.'),
+		draftId: str('Draft id from get_activity.')
+	}
+};
+function draftOn(args: Record<string, unknown>) {
+	const draft = gens.find(
+		(g) => g.draft.rigId === args.characterId && g.draft.spec.id === args.draftId
+	);
+	if (!draft)
+		throw new AgentError(
+			`No draft "${String(args.draftId)}" on that character. Call get_activity.`,
+			'not_found'
+		);
+	return draft;
+}
+
 function draftSummary(g: Gen, jobs: JobRec[]) {
 	const result = store.results[g.draft.spec.id];
 	return {
@@ -399,158 +425,200 @@ function draftSummary(g: Gen, jobs: JobRec[]) {
 /** Character creations agents started, and whether each run has settled in this tab. */
 const creationRuns = new Map<string, { attempt: CreateAttempt; finished: boolean }>();
 
-/** Whether a draft that left the list is saved on its character; undefined when that cannot be read now. */
-async function holds(characterId: string, itemId: string): Promise<boolean | undefined> {
-	if (characterId === doc.id && store.project?.manifest.items.some((it) => it.id === itemId))
-		return true;
-	try {
-		const { r } = await readCharacter(characterId);
-		return r.project.manifest.items.some((it) => it.id === itemId);
-	} catch (e) {
-		console.error('agent receipt', e);
-		return undefined;
-	}
-}
-
-/** Brings every open receipt up to date with the Studio; a final outcome never changes. */
-async function settleReceipts() {
+/** Refresh the matching receipts from scoped draft and character metadata. */
+async function settleReceipts(ids: readonly string[] = []) {
+	await loadReceipts();
 	for (const r of receipts.all()) {
-		if (r.kind === 'move' || isFinal(r.outcome)) continue;
+		if (ids.length && !ids.includes(r.id)) continue;
+		if (r.kind === 'move') continue;
 		if (r.kind === 'character') {
+			if (r.outcome === 'created') continue;
 			const run = creationRuns.get(r.id);
-			if (!run) continue;
+			const attempt = run?.attempt ?? creates.find((c) => c.spec.activityScope === r.id);
+			const exists =
+				store.projects.some((p) => p.id === r.characterId) ||
+				!!(await readCharacterMetadata(r.characterId));
 			const outcome = creationOutcome({
-				running: run.attempt.running,
-				error: !!run.attempt.error,
-				finished: run.finished,
-				exists: store.projects.some((p) => p.id === r.characterId)
+				running: !!attempt?.running,
+				error: !!attempt?.error,
+				finished: run?.finished ?? !attempt?.running,
+				exists
 			});
 			receipts.settle(
 				r,
 				outcome,
-				outcome === 'failed' ? (jobError(run.attempt.error) ?? undefined) : undefined
+				outcome === 'failed' ? (jobError(attempt?.error) ?? undefined) : undefined,
+				outcome === 'created'
 			);
 			continue;
 		}
-		const g = gens.find((x) => x.draft.spec.id === r.id && x.draft.rigId === r.characterId);
-		const outcome = g ? draftOutcome(g) : itemOutcome(undefined, await holds(r.characterId, r.id));
+		if (r.outcome === 'saved' || r.outcome === 'discarded') continue;
+		const g = gens.find((x) => x.agentActivityId === r.id && x.draft.rigId === r.characterId);
+		const outcome = g
+			? draftOutcome(g)
+			: isFinal(r.outcome)
+				? r.outcome
+				: itemOutcome(
+						undefined,
+						(await readCharacterMetadata(r.characterId))?.manifest.items.some(
+							(it) => it.id === r.targetId
+						) ?? false
+					);
 		if (outcome)
 			receipts.settle(
 				r,
 				outcome,
-				outcome === 'failed' ? (jobError(g?.error) ?? undefined) : undefined
+				outcome === 'failed' ? (jobError(g?.error) ?? r.error) : undefined,
+				!!g && (r.outcome === 'failed' || r.outcome === 'canceled')
 			);
 	}
+}
+
+async function replayStart(kind: Receipt['kind'], args: Record<string, unknown>) {
+	if (args.dryRun || !args.requestId) return;
+	await loadReceipts();
+	const found = receipts.all().find((r) => r.kind === kind && r.requestId === args.requestId);
+	if (!found) return;
+	const fingerprint = fingerprintOf(
+		kind === 'character' ? args : { ...args, characterId: args.characterId ?? found.characterId }
+	);
+	const receipt = receipts.repeat(kind, args.requestId, fingerprint)!;
+	await settleReceipts([receipt.id]);
+	return { data: startView(receipt, budget(), true) };
 }
 const moveRunning = () => !!moving.spec && !moving.done && !moving.error;
 const moveActivityId = (projectId: string, move: string) => `move:${projectId}/${move}`;
 const activityIds: JsonSchema = {
 	type: 'array',
-	items: str('Receipt, draft, creation, character, move or queue id.'),
+	items: str('Activity id or queue id from a start or get_activity.'),
 	maxItems: 20
 };
 
 /** Running and finished work, from one queue snapshot. Call settleReceipts first. */
-function activity() {
+function activity(ids: readonly string[] = []) {
 	const s = queue.snapshot();
+	const matches = (...keys: (string | undefined)[]) =>
+		!ids.length || keys.some((key) => key !== undefined && ids.includes(key));
 	return {
 		tabRole: s.role,
 		paused: s.paused,
 		jobs: s.counts,
 		session: { generations: s.sessionGens, usd: s.sessionUsd, unpricedCalls: s.sessionUnknown },
-		agentWork: receipts.all().map(receiptView),
-		itemDrafts: gens.map((g) => draftSummary(g, s.jobs)),
-		characterCreations: creates.map((c) => ({
-			id: c.id,
-			name: c.spec.name,
-			running: c.running,
-			outcome: creationOutcome({
+		agentWork: receipts
+			.all()
+			.filter((r) => matches(r.id))
+			.map(receiptView),
+		itemDrafts: gens.filter((g) => matches(g.draft.spec.id)).map((g) => draftSummary(g, s.jobs)),
+		characterCreations: creates
+			.filter((c) => matches(c.id))
+			.map((c) => ({
+				id: c.id,
+				name: c.spec.name,
 				running: c.running,
-				error: !!c.error,
-				finished: !c.running,
-				exists: store.projects.some((p) => p.id === c.spec.projectId)
-			}),
-			step: c.progress?.step ?? null,
-			characterId: c.spec.projectId ?? null,
-			error: jobError(c.error)
-		})),
-		move: moving.spec
-			? {
-					id: moveActivityId(moving.projectId, moving.spec.id),
-					receiptId: (moving.spec.agentQuote && moving.spec.activityScope) || null,
-					characterId: moving.projectId,
-					move: moving.spec.id,
-					running: moveRunning(),
-					done: moving.done,
-					step: moving.progress?.step ?? null,
-					error: jobError(moving.error),
-					queued: moving.queued.map((q) => ({ characterId: q.projectId, move: q.spec.id }))
-				}
-			: null,
-		queuedMoves: moving.queued.map(({ projectId, spec }) => ({
-			id: moveActivityId(projectId, spec.id),
-			receiptId: (spec.agentQuote && spec.activityScope) || null,
-			characterId: projectId,
-			move: spec.id,
-			state: 'queued' as const
-		})),
-		queue: s.jobs.map(({ id, state, label, gens, usd, costUnknown, error, jobs }) => ({
-			id,
-			state,
-			label,
-			generations: gens,
-			usd,
-			costUnknown: !!costUnknown,
-			error: jobError(jobs.find((job) => job.error)?.error ?? error)
-		})),
+				outcome: creationOutcome({
+					running: c.running,
+					error: !!c.error,
+					finished: !c.running,
+					exists: store.projects.some((p) => p.id === c.spec.projectId)
+				}),
+				step: c.progress?.step ?? null,
+				characterId: c.spec.projectId ?? null,
+				error: jobError(c.error)
+			})),
+		move:
+			moving.spec &&
+			matches(moveActivityId(moving.projectId, moving.spec.id), moving.spec.activityScope)
+				? {
+						id: moveActivityId(moving.projectId, moving.spec.id),
+						activityId: (moving.spec.agentQuote && moving.spec.activityScope) || null,
+						characterId: moving.projectId,
+						move: moving.spec.id,
+						running: moveRunning(),
+						done: moving.done,
+						step: moving.progress?.step ?? null,
+						error: jobError(moving.error)
+					}
+				: null,
+		queuedMoves: moving.queued
+			.filter(({ projectId, spec }) =>
+				matches(moveActivityId(projectId, spec.id), spec.activityScope)
+			)
+			.map(({ projectId, spec }) => ({
+				id: moveActivityId(projectId, spec.id),
+				activityId: (spec.agentQuote && spec.activityScope) || null,
+				characterId: projectId,
+				move: spec.id,
+				state: 'queued' as const
+			})),
+		queue: s.jobs
+			.filter((r) => matches(r.id))
+			.map(({ id, state, label, gens, usd, costUnknown, error, jobs }) => ({
+				id,
+				state,
+				label,
+				generations: gens,
+				usd,
+				costUnknown: !!costUnknown,
+				error: jobError(jobs.find((job) => job.error)?.error ?? error)
+			})),
 		budget: budget()
 	};
 }
 
 type Activity = ReturnType<typeof activity>;
-function selectActivity(s: Activity, ids: string[], strict = true) {
-	const entries = [
+function activityEntries(s: Activity) {
+	return [
 		...s.queue,
 		...s.queuedMoves,
 		...(s.move ? [s.move] : []),
 		...s.characterCreations,
-		...s.itemDrafts
+		...s.itemDrafts,
+		...s.agentWork,
+		...(s.budget.request ? [s.budget.request] : [])
 	];
+}
+function selectActivity(s: Activity, ids: string[], strict = true) {
+	if (!ids.length) return activityEntries(s);
+	const entries = activityEntries(s);
 	return ids.map((id) => {
-		const receipt = s.agentWork.find(
-			(r) => r.id === id || (r.kind === 'character' && r.characterId === id)
-		);
 		const entry =
-			entries.find(
-				(x) =>
-					x.id === (receipt?.id ?? id) ||
-					('receiptId' in x && x.receiptId != null && x.receiptId === id)
-			) ?? s.characterCreations.find((c) => c.characterId === id);
-		if (receipt && isFinal(receipt.outcome)) return receipt;
-		if (receipt) return { ...entry, ...receipt };
+			s.agentWork.find((r) => r.activityId === id) ??
+			budgetRequest(id) ??
+			entries.find((x) => ('id' in x && x.id === id) || ('activityId' in x && x.activityId === id));
 		if (!entry && strict)
 			throw new AgentError(`No activity with id "${id}". Call get_activity.`, 'not_found');
-		return entry ?? { id, outcome: 'not_found' };
+		return entry ?? { activityId: id, outcome: 'not_found' };
 	});
 }
 
-function busyActivity(s: Activity, ids: string[]) {
-	const entries = ids.length
-		? selectActivity(s, ids, false)
-		: [
-				...s.agentWork,
-				...s.itemDrafts,
-				...s.characterCreations,
-				...s.queue,
-				...s.queuedMoves,
-				...(s.move ? [s.move] : [])
-			];
+function busyActivity(entries: ReturnType<typeof selectActivity>) {
 	return entries.some((entry) => {
 		if ('outcome' in entry) return entry.outcome === 'running' || entry.outcome === 'queued';
+		if ('answer' in entry) return entry.answer === 'pending';
 		if ('state' in entry) return ['queued', 'submitting', 'running'].includes(entry.state);
 		return 'running' in entry && entry.running;
 	});
 }
+
+function activityRevision(entries: ReturnType<typeof selectActivity>) {
+	return JSON.stringify(
+		entries.map((entry) => [
+			('activityId' in entry && entry.activityId) || ('id' in entry ? entry.id : null),
+			'outcome' in entry
+				? entry.outcome
+				: 'answer' in entry
+					? entry.answer
+					: 'state' in entry
+						? entry.state
+						: 'running' in entry
+							? entry.running
+							: null,
+			'error' in entry ? entry.error : null
+		])
+	);
+}
+
+const activityStatus = ({ tabRole, paused, budget }: Activity) => ({ tabRole, paused, budget });
 
 function pollDelay(ms: number, signal: AbortSignal) {
 	if (signal.aborted) return Promise.resolve();
@@ -584,14 +652,15 @@ Workflow:
    to see the standing views. open_character shows a character to the user. Outfit edits and create_item use the open character.
    Move tools can target a saved character by id without opening it.
 3. Paid work (create_character, create_item, add_move) spends the user's PixelLab generations. Call it with dryRun true for the price,
-   then request_budget once for the whole task; the user approves in the page and can end it at any time. Pass a requestId
+   then request_budget once for the whole task. Check its activityId for the user's answer before starting paid work.
+   The user can end the budget at any time. Pass a requestId
    of your own to paid calls: repeating it returns the first start instead of paying again. Never retry a paid call whose
    outcome you do not know: check get_activity instead.
-4. Paid starts return at once with an id. wait_for_activity (up to 110 s per call) or get_activity report each start's
-   outcome in agentWork: queued, running, review, saved, created, failed, canceled, discarded or stopped.
+4. Paid starts return an activityId. Pass it in ids to wait_for_activity (up to 110 s per call) or get_activity.
+   Outcomes are queued, running, review, saved, created, failed, canceled, discarded or stopped.
 5. A finished item draft without issues saves itself (outcome saved). One with issues waits in outcome "review":
-   inspect_item with its draft id shows QA and frames; accept_draft saves it, discard_draft throws it away, cancel_draft stops
-   a running one. Generations already used stay spent.
+   Use draftId and characterId to inspect_item, accept_draft, discard_draft, or cancel_draft.
+   Generations already used stay spent.
 6. inspect_character, inspect_item and render_frames make labeled contact sheets of real frames (rows = directions,
    columns = frames; one frame puts directions side by side) at whole-pixel scale and show them over the page until the
    next sheets or pixeldoll.hide(): take a screenshot to see them. All sheets of a call share one crop, scale and pivot
@@ -629,7 +698,6 @@ export const TOOLS: Tool[] = [
 		untrusted: true,
 		async run() {
 			await ready();
-			await settleReceipts();
 			return {
 				data: {
 					app: 'PixelDoll',
@@ -637,12 +705,8 @@ export const TOOLS: Tool[] = [
 					guide: GUIDE,
 					connection: connection(),
 					openCharacter: doc.id ? { id: doc.id, name: view.project?.manifest.name ?? '' } : null,
-					activity: activity(),
-					tools: TOOLS.map((t) => ({
-						name: t.name,
-						readOnly: !!t.readOnly,
-						consequential: !!t.consequential
-					}))
+					budget: budget(),
+					tabRole: queue.role
 				}
 			};
 		}
@@ -755,10 +819,10 @@ export const TOOLS: Tool[] = [
 			'Quality checks, cost and frames of one saved item or item draft of any character, without opening it: sheets of the item alone, worn on the base body and, when stored, its dressed source views (rows = directions, columns = frames; hatched cells have no frame). defects lists small detached parts of the item alone with boxes in uncropped frame pixels; some may be intentional.',
 		inputSchema: {
 			type: 'object',
-			required: ['itemId'],
 			properties: {
 				characterId: characterArg,
-				itemId: str('Item id (inspect_character) or draft id (get_activity).'),
+				itemId: str('Saved item id from inspect_character.'),
+				draftId: str('Draft id from get_activity. Requires characterId.'),
 				move: str('Move to show (default "default").'),
 				directions: { type: 'array', items: str('Direction id', 20), maxItems: 8 },
 				frames: {
@@ -775,18 +839,27 @@ export const TOOLS: Tool[] = [
 		untrusted: true,
 		async run(args) {
 			await ready();
-			const draft = gens.find((g) => g.draft.spec.id === args.itemId);
+			if (!!args.itemId === !!args.draftId)
+				throw new AgentError('Give one saved itemId or one draftId.');
+			if (args.draftId && !args.characterId) throw new AgentError('Give characterId with draftId.');
+			const itemId = args.draftId ?? args.itemId;
+			const draft = args.draftId ? draftOn(args) : undefined;
 			// A draft's frames are its own preview project: nothing to open or read.
 			const preview = draft ? store.results[draft.draft.spec.id]?.preview : null;
-			const c = preview ? null : await look(draft ? draft.draft.rigId : args.characterId);
+			if (draft && !preview)
+				throw new AgentError(
+					`Draft "${draft.draft.spec.id}" has no frames yet (phase ${draft.phase}).`,
+					'not_found'
+				);
+			const c = preview ? null : await look(args.characterId);
 			const p = preview ?? c!.project,
 				m = p.manifest;
-			const it = m.items.find((x) => x.id === args.itemId);
+			const it = m.items.find((x) => x.id === itemId);
 			if (!it)
 				throw new AgentError(
 					draft
-						? `Draft "${String(args.itemId)}" has no frames yet (phase ${draft.phase}).`
-						: `No item "${String(args.itemId)}" on character "${c!.id}".`,
+						? `Draft "${String(itemId)}" has no frames yet (phase ${draft.phase}).`
+						: `No item "${String(itemId)}" on character "${c!.id}".`,
 					'not_found'
 				);
 			const move = moveOf(p, args.move),
@@ -888,11 +961,11 @@ export const TOOLS: Tool[] = [
 		untrusted: true,
 		async run(args) {
 			await ready();
-			await settleReceipts();
-			const state = activity();
 			const ids = (args.ids as string[] | undefined) ?? [];
+			await settleReceipts(ids);
+			const state = activity(ids);
 			return {
-				data: { ...state, ...(ids.length ? { matched: selectActivity(state, ids) } : {}) } as Json
+				data: ids.length ? { ...activityStatus(state), matched: selectActivity(state, ids) } : state
 			};
 		}
 	},
@@ -914,24 +987,28 @@ export const TOOLS: Tool[] = [
 		async run(args, signal) {
 			await ready();
 			checkAbort(signal);
-			await settleReceipts();
 			const ids = (args.ids as string[] | undefined) ?? [];
-			let state = activity();
+			await settleReceipts(ids);
+			let state = activity(ids);
 			let matched = selectActivity(state, ids);
-			const before = JSON.stringify(ids.length ? matched : state);
+			const before = activityRevision(matched);
 			let changed = false;
 			const until = Date.now() + 1000 * Number(args.timeoutSeconds ?? 60);
-			while (!changed && busyActivity(state, ids) && Date.now() < until) {
+			while (!changed && busyActivity(matched) && Date.now() < until) {
 				await pollDelay(Math.min(1000, until - Date.now()), signal);
 				checkAbort(signal);
-				await settleReceipts();
-				state = activity();
+				await settleReceipts(ids);
+				state = activity(ids);
 				matched = selectActivity(state, ids, false);
-				changed = JSON.stringify(ids.length ? matched : state) !== before;
+				changed = activityRevision(matched) !== before;
 			}
 			checkAbort(signal);
 			return {
-				data: { ...state, matched, stillRunning: busyActivity(state, ids), changed } as Json
+				data: {
+					...(ids.length ? { ...activityStatus(state), matched } : state),
+					stillRunning: busyActivity(matched),
+					changed
+				}
 			};
 		}
 	},
@@ -947,10 +1024,11 @@ export const TOOLS: Tool[] = [
 		},
 		consequential: true,
 		untrusted: true,
-		async run(args) {
+		async run(args, signal) {
 			await ready();
 			const id = String(args.characterId);
 			await listed(id);
+			checkAbort(signal);
 			if (doc.id !== id) await openProject(id);
 			await ready();
 			if (doc.id !== id || doc.error)
@@ -1013,6 +1091,10 @@ export const TOOLS: Tool[] = [
 			const drafts = Object.entries(change.drafts).filter(
 				([slot, draftId]) => (doc.drafts[slot] ?? null) !== draftId
 			);
+			for (const [, draftId] of drafts) {
+				const g = gens.find((draft) => draft.draft.rigId === id && draft.draft.spec.id === draftId);
+				if (g) names.push(g.input.name);
+			}
 			const note =
 				edits.length || drafts.length
 					? commit(
@@ -1130,7 +1212,11 @@ export const TOOLS: Tool[] = [
 			await editing(args.characterId);
 			const step = doc.undo.at(-1);
 			if (!step) throw new AgentError('Nothing to undo.');
-			await undo();
+			if (!(await undo()))
+				throw new AgentError(
+					'PixelDoll could not restore the deleted work. Check the Studio.',
+					'failed'
+				);
 			return {
 				data: {
 					undone: displayMessage(step.label),
@@ -1166,7 +1252,7 @@ export const TOOLS: Tool[] = [
 		name: 'request_budget',
 		title: 'Request a generation budget',
 		description:
-			'Ask the user, in the page, to approve PixelLab generations for the whole task. Paid tools reserve their full estimate from it; nothing paid runs without it. Resolves when the user answers, after 5 minutes without an answer, or when the call is canceled. After two refusals in a page it is not shown again.',
+			'Ask the user to approve PixelLab generations in the page. Returns an activityId immediately. Check its answer in get_activity or wait_for_activity. The dialog stays open for up to five minutes. After two refusals in a page it is not shown again.',
 		inputSchema: {
 			type: 'object',
 			required: ['generations', 'purpose'],
@@ -1176,7 +1262,6 @@ export const TOOLS: Tool[] = [
 			}
 		},
 		consequential: true,
-		waits: true,
 		async run(args, signal) {
 			await ready();
 			if (!app.key || app.keyRejected)
@@ -1185,12 +1270,10 @@ export const TOOLS: Tool[] = [
 					'needs_user'
 				);
 			const generations = Number(args.generations);
-			const answer = await requestBudget(generations, String(args.purpose), signal);
+			const request = await requestBudget(generations, String(args.purpose), signal);
 			return {
 				data: {
-					allowed: answer === 'allowed',
-					answer,
-					approxUsd: Math.round(rateUsd(generations) * 100) / 100,
+					...request,
 					budget: budget()
 				}
 			};
@@ -1200,7 +1283,7 @@ export const TOOLS: Tool[] = [
 		name: 'create_character',
 		title: 'Create character',
 		description:
-			'Paid. Draw a new base body (Character V3) and register it in the chosen directions. dryRun true returns the estimate and validation only. Returns at once with the new character id (also the creation id); follow it with wait_for_activity.',
+			'Paid. Draw a new base body (Character V3) and register it in the chosen directions. dryRun true returns the estimate and validation only. Follow the returned activityId with wait_for_activity.',
 		inputSchema: {
 			type: 'object',
 			required: ['details'],
@@ -1237,12 +1320,10 @@ export const TOOLS: Tool[] = [
 		},
 		consequential: true,
 		async run(args, signal) {
+			const replay = await replayStart('character', args);
+			if (replay) return replay;
 			await ready();
 			const fingerprint = fingerprintOf(args);
-			const earlier = args.dryRun
-				? undefined
-				: receipts.repeat('character', args.requestId, fingerprint);
-			if (earlier) return { data: { repeated: true, ...(receiptView(earlier) as object) } as Json };
 			const d = newCharacterDraft();
 			setPreset(d, String(args.directions ?? 'eight'));
 			if (args.bodySize) d.body = Number(args.bodySize);
@@ -1279,54 +1360,61 @@ export const TOOLS: Tool[] = [
 				return { data: { started: false, errors, warnings, prompt: spec.description, ...price } };
 			paidPreflight(0);
 			const what = `create character ${spec.name}`;
-			const started = await withReservation(what, est.maxGens, signal, (check) => {
-				check();
-				const result = launchCreate(spec);
-				if (!result)
-					throw new AgentError(
-						'The creation did not start: this tab does not run generation jobs now. Check get_activity.',
-						'busy'
-					);
-				return result;
-			});
-			// Started: the reservation is never returned, whatever happens next.
-			const { attempt, done } = started;
-			const run = { attempt, finished: false };
-			creationRuns.set(attempt.id, run);
-			void done.then(
-				() => (run.finished = true),
-				(e: unknown) => {
-					run.finished = true;
-					console.error('agent creation', e);
+			const receipt = await withReservation(
+				what,
+				est.maxGens,
+				signal,
+				async (check, id, finish) => {
+					const characterId = `rig-${crypto.randomUUID()}`;
+					const r = await recordReceipt({
+						kind: 'character',
+						id,
+						targetId: characterId,
+						characterId,
+						name: spec.name,
+						requestId: args.requestId as string | undefined,
+						fingerprint,
+						generations: est.maxGens,
+						price,
+						startedAt: new Date().toISOString(),
+						outcome: 'running'
+					});
+					try {
+						check();
+						const started = launchCreate(
+							{ ...spec, activityScope: id },
+							false,
+							undefined,
+							characterId
+						);
+						if (!started)
+							throw new AgentError(
+								'The creation did not start: this tab does not run generation jobs now. Check get_activity.',
+								'busy'
+							);
+						const run = { attempt: started.attempt, finished: false };
+						creationRuns.set(id, run);
+						void started.done
+							.finally(() => {
+								run.finished = true;
+								finish();
+							})
+							.catch(() => console.error('Could not finish the agent creation'));
+						return r;
+					} catch (error) {
+						await forgetReceipt(r);
+						throw error;
+					}
 				}
 			);
-			const receipt = receipts.add({
-				kind: 'character',
-				id: attempt.id,
-				characterId: attempt.spec.projectId ?? attempt.id,
-				name: spec.name,
-				...(typeof args.requestId === 'string' ? { requestId: args.requestId } : {}),
-				fingerprint,
-				generations: est.maxGens,
-				startedAt: new Date().toISOString(),
-				outcome: 'running'
-			});
-			return {
-				data: {
-					started: true,
-					creationId: receipt.id,
-					characterId: receipt.characterId,
-					...price,
-					budget: budget()
-				}
-			};
+			return { data: startView(receipt, budget()) };
 		}
 	},
 	{
 		name: 'create_item',
 		title: 'Create item',
 		description:
-			'Paid. Generate an equipment layer (hair, headwear, clothing, boots, cape, weapon, ...) fitted to every move and direction of the open character (it must be editable). dryRun true returns the plan and price only. Returns a draft id at once; the draft saves itself when clean or waits in outcome "review".',
+			'Paid. Generate an equipment layer fitted to every move and direction of the open editable character. dryRun true returns the plan and price only. Follow the activityId for the draft id and outcome. Clean drafts save themselves.',
 		inputSchema: {
 			type: 'object',
 			required: ['slot', 'prompt'],
@@ -1341,12 +1429,10 @@ export const TOOLS: Tool[] = [
 		},
 		consequential: true,
 		async run(args, signal) {
+			const replay = await replayStart('item', args);
+			if (replay) return replay;
 			const { id, project } = await editing(args.characterId);
 			const fingerprint = fingerprintOf({ ...args, characterId: id });
-			const earlier = args.dryRun
-				? undefined
-				: receipts.repeat('item', args.requestId, fingerprint);
-			if (earlier) return { data: { repeated: true, ...(receiptView(earlier) as object) } as Json };
 			if (id.startsWith('fixture:'))
 				throw new AgentError(
 					'The demo is read-only. Call copy_demo_character, then open_character with the copy id.',
@@ -1393,48 +1479,60 @@ export const TOOLS: Tool[] = [
 			if (args.dryRun) return { data: { dryRun: true, ...price } };
 			paidPreflight(plan.minimumTier);
 			const what = `item ${input.name}`;
-			const start = await withReservation(what, plan.gens, signal, async (check) => {
-				const result = await startItem(input, {
-					projectId: id,
-					gens: plan.gens,
-					rig: JSON.stringify(ctx.rec.manifest.rig),
-					beforeStart: check
-				});
-				if ('draftId' in result) return result;
-				const [why, code] = ITEM_REFUSALS[result.refused];
-				throw new AgentError(`Nothing started: ${why}`, code);
-			});
-			// Started: the reservation is never returned, whatever happens next.
-			receipts.add({
-				kind: 'item',
-				id: start.draftId,
-				characterId: id,
-				name: input.name,
-				...(typeof args.requestId === 'string' ? { requestId: args.requestId } : {}),
-				fingerprint,
-				generations: plan.gens,
-				startedAt: new Date().toISOString(),
-				outcome: 'running'
-			});
-			return { data: { started: true, draftId: start.draftId, ...price, budget: budget() } };
+			const receipt = await withReservation(
+				what,
+				plan.gens,
+				signal,
+				async (check, activityId, finish) => {
+					let r: Receipt | undefined;
+					try {
+						const result = await startItem(input, {
+							projectId: id,
+							gens: plan.gens,
+							rig: JSON.stringify(ctx.rec.manifest.rig),
+							beforeStart: check,
+							agent: {
+								activityId,
+								finish,
+								recordDraft: async (draftId) => {
+									r = await recordReceipt({
+										kind: 'item',
+										id: activityId,
+										targetId: draftId,
+										characterId: id,
+										name: input.name,
+										requestId: args.requestId as string | undefined,
+										fingerprint,
+										generations: plan.gens,
+										price,
+										startedAt: new Date().toISOString(),
+										outcome: 'running'
+									});
+								}
+							}
+						});
+						if ('draftId' in result) return r!;
+						const [why, code] = ITEM_REFUSALS[result.refused];
+						throw new AgentError(`Nothing started: ${why}`, code);
+					} catch (error) {
+						if (r) await forgetReceipt(r);
+						throw error;
+					}
+				}
+			);
+			return { data: startView(receipt, budget()) };
 		}
 	},
 	{
 		name: 'accept_draft',
 		title: 'Accept item draft',
 		description:
-			'Save a finished item draft in outcome "review" to its character (worn when that character is open). Undoable as a deletion.',
-		inputSchema: {
-			type: 'object',
-			required: ['draftId'],
-			properties: { draftId: str('Draft id.') }
-		},
+			'Save a finished item draft in outcome "review" to its character (worn when that character is open).',
+		inputSchema: draftInput,
 		consequential: true,
 		async run(args) {
 			await ready();
-			const g = gens.find((x) => x.draft.spec.id === args.draftId);
-			if (!g)
-				throw new AgentError(`No draft "${String(args.draftId)}". Call get_activity.`, 'not_found');
+			const g = draftOn(args);
 			if (g.phase !== 'review' || g.draft.acceptedAt)
 				throw new AgentError(
 					`The draft is in outcome ${draftOutcome(g)}. Only a draft in review can be saved.`
@@ -1444,7 +1542,7 @@ export const TOOLS: Tool[] = [
 					'The draft was not saved (another tab runs the jobs, or it is already being saved).',
 					'busy'
 				);
-			const receipt = receipts.get(g.draft.spec.id);
+			const receipt = g.agentActivityId && receipts.get(g.agentActivityId);
 			if (receipt) receipts.settle(receipt, 'saved');
 			return { data: { saved: true, itemId: g.draft.spec.id, characterId: g.draft.rigId } };
 		}
@@ -1454,21 +1552,18 @@ export const TOOLS: Tool[] = [
 		title: 'Discard item draft',
 		description:
 			'Throw away an item draft that is not running. Its generations stay spent and cannot be recovered.',
-		inputSchema: {
-			type: 'object',
-			required: ['draftId'],
-			properties: { draftId: str('Draft id.') }
-		},
+		inputSchema: draftInput,
 		consequential: true,
-		async run(args) {
+		async run(args, signal) {
 			await ready();
-			const g = gens.find((x) => x.draft.spec.id === args.draftId);
-			if (!g)
-				throw new AgentError(`No draft "${String(args.draftId)}". Call get_activity.`, 'not_found');
+			const g = draftOn(args);
+			if (g.draft.acceptedAt)
+				throw new AgentError('This draft is already saved. Manage the saved item in the Studio.');
 			if (g.phase === 'running')
 				throw new AgentError('The draft is still running. Use cancel_draft to stop it.', 'busy');
+			checkAbort(signal);
 			if (!(await discardGen(g))) throw new AgentError('The draft was not discarded.', 'busy');
-			const receipt = receipts.get(g.draft.spec.id);
+			const receipt = g.agentActivityId && receipts.get(g.agentActivityId);
 			if (receipt) receipts.settle(receipt, 'discarded');
 			return { data: { discarded: true } };
 		}
@@ -1478,23 +1573,17 @@ export const TOOLS: Tool[] = [
 		title: 'Cancel a running item draft',
 		description:
 			'Stop a running item draft. Generations already used are not refunded, and requests already sent may still finish and charge.',
-		inputSchema: {
-			type: 'object',
-			required: ['draftId'],
-			properties: { draftId: str('Draft id.') }
-		},
+		inputSchema: draftInput,
 		consequential: true,
 		async run(args) {
 			await ready();
-			const g = gens.find((x) => x.draft.spec.id === args.draftId);
-			if (!g)
-				throw new AgentError(`No draft "${String(args.draftId)}". Call get_activity.`, 'not_found');
+			const g = draftOn(args);
 			if (g.phase !== 'running')
-				throw new AgentError(`The draft is not running (outcome ${draftOutcome(g)}).`);
+				throw new AgentError(`The draft is not running (outcome ${draftOutcome(g)}).`, 'not_ready');
 			if (queue.role === 'follower')
 				throw new AgentError('Cancel it in the PixelDoll tab that runs the jobs.', 'busy');
 			if (!(await cancelGen(g))) throw new AgentError('The draft was not canceled.', 'busy');
-			const receipt = receipts.get(g.draft.spec.id);
+			const receipt = g.agentActivityId && receipts.get(g.agentActivityId);
 			if (receipt) receipts.settle(receipt, 'canceled');
 			return { data: { canceled: true, error: jobError(g.error) } };
 		}
@@ -1506,14 +1595,20 @@ export const TOOLS: Tool[] = [
 			'Download any character as a ZIP for the user, with the engine and options chosen in Export settings, without opening it. The file goes to the user, not the agent. result: saved, recovery (artwork only), pending (already being prepared) or failed (the user was shown why).',
 		inputSchema: { type: 'object', properties: { characterId: characterArg } },
 		consequential: true,
-		async run(args) {
+		async run(args, signal) {
 			await ready();
 			const id =
 				typeof args.characterId === 'string' && args.characterId ? args.characterId : doc.id;
 			await listed(id);
+			checkAbort(signal);
 			const result = await downloadCharacterZip(id);
 			return {
-				data: { downloaded: result === 'saved' || result === 'recovery', result, characterId: id }
+				data: {
+					downloaded: result === 'saved',
+					recoveryZipDownloaded: result === 'recovery',
+					result,
+					characterId: id
+				}
 			};
 		}
 	},
@@ -1531,7 +1626,10 @@ export async function callTool(
 ): Promise<ToolResult> {
 	const tool = TOOLS.find((t) => t.name === name);
 	if (!tool)
-		throw new AgentError(`No tool "${name}". Call pixeldoll_overview for the list.`, 'not_found');
+		throw new AgentError(
+			`No tool "${name}". Use tool discovery or pixeldoll.tools() for the list.`,
+			'not_found'
+		);
 	const input = (args ?? {}) as Record<string, unknown>;
 	validate(tool.inputSchema, input);
 	return tool.waits ? tool.run(input, signal) : line(() => tool.run(input, signal), signal);

@@ -3189,8 +3189,7 @@
 	},
 	"shortcut": { "control": "Ctrl" },
 	"agentMoves": {
-		"quoteChanged": "Hareketin onayı veya maliyet tahmini değişti. Oluşturmadan önce hareketi yeniden gözden geçirin.",
-		"skeletonCheckFailed": "PixelLab bu karakterin iskeletini kontrol edemedi. Biraz sonra tekrar deneyin."
+		"quoteChanged": "Hareketin onayı veya maliyet tahmini değişti. Oluşturmadan önce hareketi yeniden gözden geçirin."
 	},
 	"agentBudget": {
 		"title": "Ajan üretim harcayabilsin mi?",
@@ -3200,6 +3199,7 @@
 		"allow": "İzin ver",
 		"deny": "İzin verme",
 		"left": "Ajan bütçesi: {usd} kaldı ({count} üretim)",
+		"reserved": "Ayrılan: {count}",
 		"end": "Bitir"
 	},
 	"agentEvidence": {

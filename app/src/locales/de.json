@@ -3189,8 +3189,7 @@
 	},
 	"shortcut": { "control": "Strg" },
 	"agentMoves": {
-		"quoteChanged": "Die Freigabe für die Bewegung oder ihre Kostenschätzung hat sich geändert. Prüfe die Bewegung erneut, bevor du sie generierst.",
-		"skeletonCheckFailed": "PixelLab konnte das Skelett dieser Figur nicht prüfen. Versuche es in Kürze erneut."
+		"quoteChanged": "Die Freigabe für die Bewegung oder ihre Kostenschätzung hat sich geändert. Prüfe die Bewegung erneut, bevor du sie generierst."
 	},
 	"agentBudget": {
 		"title": "Darf der Agent Generierungen verwenden?",
@@ -3200,6 +3199,7 @@
 		"allow": "Erlauben",
 		"deny": "Nicht erlauben",
 		"left": "Agentenbudget: noch {usd} ({count} Generierungen)",
+		"reserved": "Reserviert: {count}",
 		"end": "Beenden"
 	},
 	"agentEvidence": {

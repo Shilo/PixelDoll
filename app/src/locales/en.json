@@ -3192,8 +3192,7 @@
 	},
 	"shortcut": { "control": "Ctrl" },
 	"agentMoves": {
-		"quoteChanged": "The move approval or its estimate changed. Review the move again before generating.",
-		"skeletonCheckFailed": "PixelLab could not check this character’s skeleton. Try again shortly."
+		"quoteChanged": "The move approval or its estimate changed. Review the move again before generating."
 	},
 	"agentBudget": {
 		"title": "Let the agent spend generations?",
@@ -3203,6 +3202,7 @@
 		"allow": "Allow",
 		"deny": "Don't allow",
 		"left": "Agent budget: {usd} left ({count} generations)",
+		"reserved": "Reserved: {count}",
 		"end": "End"
 	},
 	"agentEvidence": {

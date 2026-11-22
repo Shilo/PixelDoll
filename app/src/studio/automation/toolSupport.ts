@@ -1,8 +1,43 @@
 import { app } from '../../lib/app.svelte.ts';
 import { tierDecision } from '../../lib/pixellab/plans.ts';
-import { doc, readCharacter, refreshProjects, store, studioStartupState } from '../state.svelte.ts';
+import {
+	doc,
+	readAgentReceipts,
+	readCharacter,
+	refreshProjects,
+	store,
+	studioStartupState,
+	writeAgentReceipt
+} from '../state.svelte.ts';
 import { AgentError, type JsonSchema } from './contract.ts';
 import { requireLeader } from './budget.ts';
+import { isFinal, receipts, type Receipt } from './receipts.ts';
+
+export async function loadReceipts() {
+	for (const receipt of await readAgentReceipts()) {
+		const local = receipts.get(receipt.id);
+		if (!local) receipts.add(receipt);
+		else if (
+			isFinal(receipt.outcome) &&
+			(!isFinal(local.outcome) || ['saved', 'created', 'discarded'].includes(receipt.outcome))
+		)
+			receipts.settle(local, receipt.outcome, receipt.error, true);
+	}
+}
+
+export async function recordReceipt(receipt: Receipt) {
+	if (!(await writeAgentReceipt(receipt.id, { ...receipt })))
+		throw new AgentError(
+			'This requestId already has a start. Repeat the call to get its receipt.',
+			'busy'
+		);
+	return receipts.add(receipt);
+}
+
+export async function forgetReceipt(receipt: Receipt) {
+	await writeAgentReceipt(receipt.id, null);
+	receipts.remove(receipt.id);
+}
 export const str = (description: string, maxLength = 200): JsonSchema => ({
 	type: 'string',
 	description,
@@ -24,7 +59,8 @@ export async function ready() {
 
 export async function listed(id: string) {
 	if (store.projects.some((p) => p.id === id)) return;
-	await refreshProjects();
+	if (!(await refreshProjects()))
+		throw new AgentError('PixelDoll could not read the saved characters.', 'not_ready');
 	if (!store.projects.some((p) => p.id === id))
 		throw new AgentError(`No character "${id}". Call list_characters.`, 'not_found');
 }

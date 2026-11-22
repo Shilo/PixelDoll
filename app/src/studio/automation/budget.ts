@@ -4,7 +4,7 @@
 import { mount, unmount } from 'svelte';
 import { readonly, writable } from 'svelte/store';
 import { app, getKeyRevision } from '../../lib/app.svelte.ts';
-import { queue } from '../../lib/pixellab/queue.ts';
+import { AGENT_APPROVAL_ENDED, queue } from '../../lib/pixellab/queue.ts';
 import { accountTier } from '../../lib/pixellab/plans.ts';
 import { planRate, usdOf } from '../costEstimate.ts';
 import { AgentError, BudgetLedger, checkAbort, type Answer, type BudgetState } from './contract.ts';
@@ -20,8 +20,22 @@ let keyRevision = getKeyRevision(),
 let epoch = 0;
 let active = false;
 let pending: AbortController | undefined;
-type BudgetView = BudgetState & { active: boolean };
-const snapshot = (): BudgetView => ({ ...ledger.snapshot(), active });
+export type BudgetRequest = {
+	activityId: string;
+	answer: Answer | 'pending' | 'failed';
+	generations: number;
+	approxUsd: number;
+};
+const requests = new Map<string, BudgetRequest>();
+let latestRequest: BudgetRequest | undefined;
+export const budgetRequest = (id: string) => requests.get(id);
+const reservations = new Set<() => void>();
+type BudgetView = BudgetState & { active: boolean; request: BudgetRequest | null };
+const snapshot = (): BudgetView => ({
+	...ledger.snapshot(),
+	active,
+	request: latestRequest ?? null
+});
 const summary = writable(snapshot());
 export const budgetView = readonly(summary);
 
@@ -32,6 +46,7 @@ function syncCredential() {
 		epoch++;
 		active = false;
 		pending?.abort();
+		for (const finish of reservations) finish();
 		ledger.clear();
 		summary.set(snapshot());
 	}
@@ -61,7 +76,12 @@ export async function withReservation<T>(
 	what: string,
 	generations: number,
 	signal: AbortSignal,
-	start: (check: () => void) => T | Promise<T>
+	start: (
+		check: () => void,
+		activityId: string,
+		finish: () => void,
+		stillApproved: () => void
+	) => T | Promise<T>
 ): Promise<T> {
 	checkAbort(signal);
 	requireLeader();
@@ -73,28 +93,36 @@ export async function withReservation<T>(
 			`This can cost up to ${generations} generations but only ${budget().remaining} remain. Call request_budget first.`,
 			'budget'
 		);
-	const check = () => {
+	const activityId = `agent:${crypto.randomUUID()}`;
+	const revoke = queue.authorizeAgentActivity(activityId);
+	const finish = () => {
+		if (!reservations.delete(finish)) return;
+		if (!revoke()) ledger.release(what, generations, id);
+		changed();
+	};
+	reservations.add(finish);
+	const stillApproved = () => {
 		syncCredential();
-		if (reservedAt !== epoch)
-			throw new AgentError('The approved budget ended before the work started.', 'budget');
-		checkAbort(signal);
+		if (reservedAt !== epoch || !reservations.has(finish))
+			throw new AgentError(AGENT_APPROVAL_ENDED, 'budget');
 		requireLeader();
+	};
+	const check = () => {
+		stillApproved();
+		checkAbort(signal);
 	};
 	try {
 		changed();
-		return await start(check);
+		return await start(check, activityId, finish, stillApproved);
 	} catch (error) {
-		syncCredential();
-		if (reservedAt === epoch) {
-			ledger.release(what, generations, id);
-			changed();
-		}
+		finish();
 		throw error;
 	}
 }
 /** The person's End: no further paid starts until a new approval. */
 export function endBudget() {
 	syncCredential();
+	for (const finish of reservations) finish();
 	ledger.end();
 	epoch++;
 	active = false;
@@ -104,8 +132,7 @@ export function endBudget() {
 
 /** USD at the account's plan price (list price of plan 1 while the tier is unknown). */
 export function rateUsd(generations: number): number {
-	const tier = accountTier(app.balance);
-	return usdOf(generations, planRate(tier !== null && tier >= 0 && tier <= 3 ? tier : 1));
+	return usdOf(generations, planRate(accountTier(app.balance) ?? 1));
 }
 
 /** Ask the person in the page to approve more generations for the agent (see BudgetLedger.request). */
@@ -113,16 +140,30 @@ export async function requestBudget(
 	generations: number,
 	purpose: string,
 	signal: AbortSignal
-): Promise<Answer> {
+): Promise<BudgetRequest> {
 	syncCredential();
 	requireLeader();
 	checkAbort(signal);
 	if (pending) throw new AgentError('A budget request is already waiting for the user.', 'busy');
 	const controller = new AbortController();
 	pending = controller;
-	const requestSignal = AbortSignal.any([signal, controller.signal]);
-	try {
-		const answer = await ledger.request(
+	const request: BudgetRequest = {
+		activityId: crypto.randomUUID(),
+		answer: 'pending',
+		generations,
+		approxUsd: Math.round(rateUsd(generations) * 100) / 100
+	};
+	let opened = false;
+	let answered = false;
+	const record = (answer: BudgetRequest['answer']) => {
+		const next = { ...request, answer };
+		requests.set(request.activityId, next);
+		latestRequest = next;
+		changed();
+		return next;
+	};
+	const completion = ledger
+		.request(
 			generations,
 			(answer) => {
 				const target = document.createElement('div');
@@ -130,8 +171,17 @@ export async function requestBudget(
 				try {
 					const dialog = mount(AgentBudgetDialog, {
 						target,
-						props: { generations, usd: rateUsd(generations), purpose, onanswer: answer }
+						props: {
+							generations,
+							usd: rateUsd(generations),
+							purpose,
+							onanswer: (allowed: boolean) => {
+								answered = true;
+								answer(allowed);
+							}
+						}
 					});
+					opened = true;
 					return () => {
 						void unmount(dialog);
 						target.remove();
@@ -141,25 +191,29 @@ export async function requestBudget(
 					throw error;
 				}
 			},
-			requestSignal,
+			controller.signal,
 			ASK_MS
-		);
-		syncCredential();
-		if (requestSignal.aborted) return 'canceled';
-		if (answer === 'allowed') {
-			try {
-				showIndicator();
-			} catch {
-				endBudget();
-				throw new AgentError('PixelDoll could not show the approved budget.', 'not_ready');
+		)
+		.then((answer) => {
+			syncCredential();
+			if (controller.signal.aborted) return record('canceled');
+			if (answer === 'allowed') {
+				try {
+					showIndicator();
+				} catch {
+					endBudget();
+					throw new AgentError('PixelDoll could not show the approved budget.', 'not_ready');
+				}
+				active = true;
 			}
-			active = true;
-		}
-		changed();
-		return answer;
-	} finally {
-		pending = undefined;
-	}
+			return record(answer);
+		})
+		.finally(() => {
+			pending = undefined;
+		});
+	if (!opened || answered) return completion;
+	void completion.catch(() => record('failed'));
+	return record('pending');
 }
 
 /** The small always-visible budget line with End, from the first approval on. */

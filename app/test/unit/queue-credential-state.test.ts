@@ -47,6 +47,57 @@ function fixture() {
 }
 const error = (status: number, body?: unknown) =>
 	new ApiError(status, classify(status, body), 'synthetic response', body);
+
+test.each(['replacement', 'reload'])('agent work cannot submit after %s', async (change) => {
+	const f = fixture();
+	const activityScope = 'agent:synthetic-activity';
+	const revoke = f.q.authorizeAgentActivity(activityScope);
+	const rec = await f.q.enqueue(
+		{ method: 'POST', path: '/estimate-skeleton', body: { seed: 5 } },
+		{ activityScope }
+	);
+	const queue = change === 'reload' ? new Queue(f.deps) : f.q;
+	if (change === 'reload') await queue.load();
+	queue.setKey(change === 'reload' ? 'synthetic-key' : 'replacement-key');
+	await queue.tick();
+	expect(queue.snapshot().jobs.find(({ id }) => id === rec.id)).toMatchObject({
+		state: 'canceled',
+		requestStarted: false
+	});
+	expect(f.calls()).toBe(0);
+	expect(revoke()).toBe(false);
+});
+
+test('replacing the approved credential during the dispatch write stops the POST', async () => {
+	const f = fixture();
+	const entered = deferred<void>();
+	const release = deferred<void>();
+	const q = new Queue({
+		...f.deps,
+		put: async (id, record) => {
+			if (record.state === 'submitting' && record.requestStarted) {
+				entered.resolve();
+				await release.promise;
+			}
+			await f.deps.put!(id, record);
+		}
+	});
+	q.setKey('synthetic-key');
+	const activityScope = 'agent:dispatch';
+	const revoke = q.authorizeAgentActivity(activityScope);
+	const rec = await q.enqueue(
+		{ method: 'POST', path: '/estimate-skeleton', body: { seed: 6 } },
+		{ activityScope }
+	);
+	const tick = q.tick();
+	await entered.promise;
+	q.setKey('replacement-key');
+	release.resolve();
+	await tick;
+	expect(rec).toMatchObject({ state: 'canceled', requestStarted: false });
+	expect(revoke()).toBe(false);
+	expect(f.calls()).toBe(0);
+});
 test.each([401, 402, 0])(
 	'old submit HTTP%i cannot pause a replacement credential, including same-key Forget/reconnect',
 	async (status) => {

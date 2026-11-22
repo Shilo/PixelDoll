@@ -3102,8 +3102,7 @@
 	},
 	"shortcut": { "control": "Ctrl" },
 	"agentMoves": {
-		"quoteChanged": "モーションの承認または見積もりが変わりました。生成する前にもう一度確認してください。",
-		"skeletonCheckFailed": "PixelLab でこのキャラクターのスケルトンを確認できませんでした。少し待ってからもう一度お試しください。"
+		"quoteChanged": "モーションの承認または見積もりが変わりました。生成する前にもう一度確認してください。"
 	},
 	"agentBudget": {
 		"title": "エージェントに生成を使わせますか？",
@@ -3113,6 +3112,7 @@
 		"allow": "許可",
 		"deny": "許可しない",
 		"left": "エージェントの予算：残り{usd}（生成{count}回）",
+		"reserved": "予約済み：{count}回",
 		"end": "終了"
 	},
 	"agentEvidence": {

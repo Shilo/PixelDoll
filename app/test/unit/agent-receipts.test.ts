@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import {
 	ReceiptLog,
 	creationOutcome,
+	fingerprintOf,
 	itemOutcome,
 	type Receipt
 } from '../../src/studio/automation/receipts.ts';
@@ -21,6 +22,7 @@ const started = (o: Partial<Receipt> = {}): Receipt => ({
 test('a character creation reports how it ended even after it leaves the running list', () => {
 	const running = { running: true, error: false, finished: false, exists: false };
 	expect(creationOutcome(running)).toBe('running');
+	expect(creationOutcome({ ...running, running: false })).toBe('running');
 	// The new character is listed before the run settles; it still counts as running until it does.
 	expect(creationOutcome({ ...running, exists: true })).toBe('running');
 	expect(creationOutcome({ running: false, error: false, finished: true, exists: true })).toBe(
@@ -29,10 +31,21 @@ test('a character creation reports how it ended even after it leaves the running
 	expect(creationOutcome({ running: false, error: true, finished: true, exists: false })).toBe(
 		'failed'
 	);
+	expect(creationOutcome({ running: false, error: true, finished: true, exists: true })).toBe(
+		'created'
+	);
 	// Settled with neither: this tab stopped running jobs. Never reported as failed, so nobody pays again for it.
 	expect(creationOutcome({ running: false, error: false, finished: true, exists: false })).toBe(
 		'stopped'
 	);
+});
+
+test('a request fingerprint ignores control fields and key order, and includes character scope', () => {
+	const args = { characterId: 'a', slot: 'head', prompt: 'A red hat' };
+	expect(fingerprintOf({ ...args, dryRun: true, requestId: 'first' })).toBe(
+		fingerprintOf({ prompt: args.prompt, slot: args.slot, characterId: 'a' })
+	);
+	expect(fingerprintOf({ ...args, characterId: 'b' })).not.toBe(fingerprintOf(args));
 });
 
 test('an item draft reports review, saved, failed, canceled or discarded', () => {

@@ -1,8 +1,7 @@
 // What agents started in this tab, so they can always learn how it ended: a draft that saved itself or a creation that
 // finished leaves the Studio's running lists, and an agent must never guess (and pay again) because its id disappeared.
-// Memory only, like the budget: a reload starts an empty log (the Studio's Activity still lists resumed work).
 import { stableStringify } from '../../lib/image/hash.ts';
-import { AgentError } from './contract.ts';
+import { AgentError, type Json } from './contract.ts';
 
 export type Outcome =
 	| 'queued'
@@ -27,8 +26,10 @@ export const isFinal = (outcome: Outcome) => FINAL.includes(outcome);
 export interface Receipt {
 	kind: 'character' | 'item' | 'move';
 	moveId?: string;
-	/** Draft id for an item (also the saved item's id), creation id for a character (also the new character's id). */
+	/** Opaque identity of this start, also the queue scope. */
 	id: string;
+	/** The Studio draft or creation id, which is separate from the activity identity. */
+	targetId?: string;
 	characterId: string;
 	name: string;
 	requestId?: string;
@@ -38,16 +39,22 @@ export interface Receipt {
 	startedAt: string;
 	outcome: Outcome;
 	error?: string;
+	price?: Record<string, Json>;
 }
 
 export class ReceiptLog {
 	#receipts: Receipt[] = [];
 	add(receipt: Receipt) {
-		this.#receipts.push(receipt);
+		const i = this.#receipts.findIndex((r) => r.id === receipt.id);
+		if (i < 0) this.#receipts.push(receipt);
+		else this.#receipts[i] = receipt;
 		return receipt;
 	}
 	get(id: string) {
 		return this.#receipts.find((r) => r.id === id);
+	}
+	remove(id: string) {
+		this.#receipts = this.#receipts.filter((r) => r.id !== id);
 	}
 	all(): readonly Receipt[] {
 		return this.#receipts;
@@ -62,11 +69,12 @@ export class ReceiptLog {
 			);
 		return earlier;
 	}
-	/** Records how it ended; a final outcome never changes again. */
-	settle(receipt: Receipt, outcome: Outcome, error?: string) {
-		if (isFinal(receipt.outcome)) return;
+	/** An observed Studio retry or a creation completed in another tab can advance a receipt. */
+	settle(receipt: Receipt, outcome: Outcome, error?: string, resumed = false) {
+		if (isFinal(receipt.outcome) && !resumed) return;
 		receipt.outcome = outcome;
 		if (error) receipt.error = error;
+		else delete receipt.error;
 	}
 }
 
@@ -102,14 +110,33 @@ export function creationOutcome(o: {
 	exists: boolean;
 }): Outcome {
 	if (o.running) return 'running';
-	if (o.error) return 'failed';
 	if (o.exists) return 'created';
+	if (o.error) return 'failed';
 	// Settled without a character or an error: this tab stopped running jobs (another tab took over, or a reload).
 	return o.finished ? 'stopped' : 'running';
 }
 
 export const receipts = new ReceiptLog();
-export const receiptView = ({ fingerprint: _fingerprint, ...rest }: Receipt) => rest;
+export const receiptView = ({
+	fingerprint: _fingerprint,
+	price: _price,
+	targetId,
+	id,
+	...rest
+}: Receipt) => ({
+	...rest,
+	activityId: id,
+	...(rest.kind === 'item' && targetId ? { draftId: targetId } : {})
+});
+export const startView = (r: Receipt, budget: Json, repeated = false) => ({
+	started: true,
+	activityId: r.id,
+	characterId: r.characterId,
+	status: r.outcome,
+	...r.price,
+	budget,
+	...(repeated ? { repeated: true } : {})
+});
 /** What a request was, for matching a repeated requestId: its arguments without dryRun and the id itself. */
 export function fingerprintOf(args: Record<string, unknown>) {
 	const { dryRun: _dryRun, requestId: _requestId, ...rest } = args;
