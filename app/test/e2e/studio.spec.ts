@@ -6495,9 +6495,29 @@ test('targeted move replacement names mirrored effects without offering a separa
 		);
 		s.store.project = { ...p, manifest: { ...p.manifest, rig: { ...p.manifest.rig, animations } } };
 	});
+	// Another move of this character is running: Redraw still opens its own form, not that move's progress.
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.moving.spec = { id: 'run' };
+		s.moving.projectId = s.doc.id;
+		s.moving.progress = { done: 1, total: 8 };
+	});
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
 	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	await expect(
+		page
+			.getByRole('dialog', { name: 'Redraw Walk', exact: true })
+			.getByRole('textbox', { name: 'Describe the replacement', exact: true })
+	).toBeVisible();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.moving.spec = null;
+		s.moving.projectId = '';
+		s.moving.progress = null;
+	});
 	// A redraw starts from its original frame, and Standing stays a real choice away from it.
 	const start = page.getByRole('button', { name: /^Start from: / });
 	await expect(start).toHaveAccessibleName('Start from: Original starting frame');

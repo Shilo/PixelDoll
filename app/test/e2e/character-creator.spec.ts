@@ -889,6 +889,35 @@ test('switching tabs while Enhance runs leaves the next field usable', async ({
 	release();
 });
 
+test('Undo after an Appearance enhancement restores the exact prompt, line order included', async ({
+	page,
+	context
+}) => {
+	const api = new CharacterApi();
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		if (new URL(request.url()).pathname === '/v2/enhance-character-v3-prompt')
+			await route.fulfill({ json: { enhanced_prompt: 'A calm face' } });
+		else
+			await fulfill(
+				route,
+				await api.handle(request.method(), request.url(), request.postDataJSON())
+			);
+	});
+	const sheet = await open(page);
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+	const exact = sheet.getByRole('textbox', { name: 'Exact prompt', exact: true });
+	// Prose on both sides of a trait line: Details alone would put both lines before the trait.
+	const original = 'A freckled face\nKind: Elf\nPointed ears';
+	await exact.fill(original);
+	await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click();
+	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await connect(page);
+	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+	await expect(exact).toHaveValue(original);
+});
+
 test('Appearance enhancement preserves coverage and changing base clothing clears stale Undo', async ({
 	page,
 	context
