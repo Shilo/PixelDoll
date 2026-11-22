@@ -41,6 +41,7 @@
 	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
 	import { activeRiderPose } from './riderPose.ts';
 	import { mountPlacement } from './mountPlacement.ts';
+	import { imageCanvas } from './imageCanvas.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
 	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
@@ -145,7 +146,7 @@
 	function mountedPresentation(p: Presentation) {
 		const project = view.project;
 		if (!mountVisible || !project) return null;
-		return mountPlacement(project, p, grounding ?? undefined);
+		return mountPlacement(project, p, grounding);
 	}
 	// How far any of the character's gear can reach: Preview's lineup sizes and spaces its facings by it.
 	const reach = $derived.by(() => {
@@ -581,21 +582,7 @@
 			}
 		>();
 		const mountCanvases = new WeakMap<Img, HTMLCanvasElement>();
-		const mountCanvas = (image: Img) => {
-			let c = mountCanvases.get(image);
-			if (!c) {
-				c = document.createElement('canvas');
-				c.width = image.w;
-				c.height = image.h;
-				c.getContext('2d')!.putImageData(
-					new ImageData(new Uint8ClampedArray(image.data), image.w, image.h),
-					0,
-					0
-				);
-				mountCanvases.set(image, c);
-			}
-			return c;
-		};
+		const mountCanvas = (image: Img) => imageCanvas(image, mountCanvases);
 		const prepareActor = (
 			available: NonNullable<typeof availability>,
 			presentation: Presentation,

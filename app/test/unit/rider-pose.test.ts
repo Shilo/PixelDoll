@@ -100,9 +100,9 @@ describe('rider pose', () => {
 		setRidingPose('b', 'half');
 		setRidingPose('b', '');
 		expect(readMountPreferences()).toEqual({ show: true, legs: 'both', poses: { a: 'riding' } });
-		expect(mountAtDefaults()).toBe(false);
-		resetMount();
-		expect(mountAtDefaults()).toBe(true);
+		expect(mountAtDefaults('a')).toBe(false);
+		resetMount(null);
+		expect(mountAtDefaults('a')).toBe(true);
 		expect(readMountPreferences()).toEqual({ show: false, legs: 'far', poses: {} });
 		// Unreadable or tampered data falls back to the defaults field by field.
 		store.set('pixeldoll.mount', '{"show":"yes","legs":"left","poses":{"a":7,"c":"riding"}}');
@@ -122,6 +122,26 @@ describe('rider pose', () => {
 		expect(readMountPreferences().poses).toEqual({ a: 'riding' });
 		forgetRidingPose('a');
 		expect(experience.ridingPoses).toEqual({});
+		// Reset this page clears the open character's pose only; Reset all clears every character's.
+		setRidingPose('a', 'riding');
+		setRidingPose('b', 'half');
+		resetMount('a');
+		expect(readMountPreferences().poses).toEqual({ b: 'half' });
+		expect(mountAtDefaults('a')).toBe(true);
+		resetMount(null);
+		expect(readMountPreferences().poses).toEqual({});
+		// A refused save still applies, and the next change builds on it rather than on older storage.
+		const setItem = (key: string, value: string) => void store.set(key, value);
+		vi.stubGlobal('localStorage', {
+			getItem: (key: string) => store.get(key) ?? null,
+			setItem: () => {
+				throw new Error('blocked');
+			}
+		});
+		expect(setShowMount(true)).toBe(false);
+		vi.stubGlobal('localStorage', { getItem: (key: string) => store.get(key) ?? null, setItem });
+		expect(setMountLegs('none')).toBe(true);
+		expect(readMountPreferences()).toMatchObject({ show: true, legs: 'none' });
 		vi.unstubAllGlobals();
 	});
 });

@@ -8,7 +8,7 @@ import {
 } from '../lib/store/export-settings.ts';
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { developerModeEnabled } from './developerMode.svelte.ts';
-import { mountAtDefaults } from './experience/riderPose.ts';
+import { mountAtDefaults, ridingPosesSaved } from './experience/riderPose.ts';
 import type { ResetScope } from './resetSettings.ts';
 import { doc, ui } from './state.svelte.ts';
 import {
@@ -72,13 +72,15 @@ const atDefaults = {
 	general: () => ui.theme === 'dark' && language.current === undefined,
 	wardrobe: () =>
 		!sharedItemsHiddenForAll() && !demoItemsShown() && !sharedItemsHiddenForCharacter(doc.id),
-	mount: mountAtDefaults,
+	mount: () => mountAtDefaults(doc.id),
 	export: () => exportDefaults === true,
 	developer: () => !developerModeEnabled()
 };
 
 export function settingsAtDefaults(scope: ResetScope) {
 	return scope === 'all'
-		? Object.values(atDefaults).every((check) => check()) && !hasHiddenCharacterWardrobes()
+		? Object.values(atDefaults).every((check) => check()) &&
+				!hasHiddenCharacterWardrobes() &&
+				!ridingPosesSaved()
 		: atDefaults[scope]();
 }

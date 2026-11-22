@@ -54,11 +54,15 @@ export function readMountPreferences(): MountPreferences {
  * Applies one change to what is saved now, not to this tab's snapshot, so another tab's choices survive. Returns the
  * result and whether the browser saved it; an unsaved change still applies for this session.
  */
-export function updateMountPreferences(change: (current: MountPreferences) => MountPreferences): {
+export function updateMountPreferences(
+	change: (current: MountPreferences) => MountPreferences,
+	/** What to build on instead of storage, when this tab holds choices storage refused. */
+	base?: MountPreferences
+): {
 	preferences: MountPreferences;
 	saved: boolean;
 } {
-	const preferences = change(readMountPreferences());
+	const preferences = change(base ?? readMountPreferences());
 	const text = JSON.stringify(preferences);
 	try {
 		if (workspaceCopy) copyPreferences.set(MOUNT_KEY, text);

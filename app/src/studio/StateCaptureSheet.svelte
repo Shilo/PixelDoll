@@ -14,7 +14,7 @@
 </script>
 
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import PromptField from './PromptField.svelte';
 	import { STATE_TEMPLATES, type StateTemplate } from './stateTemplates.ts';
@@ -276,6 +276,17 @@
 	}
 	// What the user had typed before a template replaced it; an unedited template gives it back on Custom.
 	let typed = '';
+	// Arrow keys move between the template radios, as in any radio group.
+	const TEMPLATE_ORDER = ['', 'riding'] as const;
+	function templateKeys(event: KeyboardEvent & { currentTarget: HTMLElement }) {
+		const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+		if (!step) return;
+		event.preventDefault();
+		const group = event.currentTarget;
+		const at = TEMPLATE_ORDER.indexOf(template);
+		chooseTemplate(TEMPLATE_ORDER[(at + step + TEMPLATE_ORDER.length) % TEMPLATE_ORDER.length]);
+		void tick().then(() => group.querySelector<HTMLElement>('[aria-checked="true"]')?.focus());
+	}
 	function chooseTemplate(next: StateTemplate | '') {
 		if (busy) return;
 		const untouched = !!template && description === STATE_TEMPLATES[template];
@@ -422,7 +433,8 @@
 		checkedPending = false;
 		void run('stateGeneration.generating', async () => {
 			try {
-				riding = template === 'riding';
+				// Pro Flash with a reference sends no instructions, so the template was not used.
+				riding = template === 'riding' && !flashReference;
 				review = await startState(prepared);
 			} catch (cause) {
 				canContinue = await hasStateContinuation(projectId).catch(() => false);
@@ -664,12 +676,19 @@
 					{#if !flashReference}
 						<div class="field">
 							<span class="label" id="{formId}-template">{t('stateGeneration.template')}</span>
-							<div class="chips" role="radiogroup" aria-labelledby="{formId}-template">
+							<div
+								class="chips"
+								role="radiogroup"
+								aria-labelledby="{formId}-template"
+								tabindex="-1"
+								onkeydown={templateKeys}
+							>
 								<button
 									type="button"
 									class="chip"
 									role="radio"
 									aria-checked={!template}
+									tabindex={template ? -1 : 0}
 									disabled={!!busy}
 									onclick={() => chooseTemplate('')}>{t('moveSheet.custom')}</button
 								>
@@ -678,6 +697,7 @@
 									class="chip"
 									role="radio"
 									aria-checked={template === 'riding'}
+									tabindex={template === 'riding' ? 0 : -1}
 									disabled={!!busy}
 									onclick={() => chooseTemplate('riding')}
 									>{t('stateGeneration.templates.riding')}</button

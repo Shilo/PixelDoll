@@ -21,14 +21,14 @@ Moves are animations and take the base verb: Idle, Walk, Run, Ride, Attack. Stat
 
 The original premise, that one still per facing is cheaper than a three-frame Ride, holds only for some models:
 
-| Route                                                                 |                                      Documented price | Source                                                                 |
-| --------------------------------------------------------------------- | ----------------------------------------------------: | ---------------------------------------------------------------------- |
-| Old skeleton Ride, per drawn facing at 64 px                          |                                       2.3 generations | [mount live results](../2026-11-16-mounts/live-results.md)             |
-| State, default Pro (`edit-images-v2`), one batch at 256 px or smaller | 10 generations, whether it carries one facing or five | `localStateCost` in `app/src/studio/stateGenerationPlan.ts`            |
-| State, Pixen                                                          |                                 1 generation per view | same                                                                   |
-| State, Pro Flash                                                      |                                about 5 to 6 per sheet | [State routing](../2026-11-18-pixeldoll-states/live-routing-matrix.md) |
+| Route                                                                 |                                                         Documented price | Source                                                                 |
+| --------------------------------------------------------------------- | -----------------------------------------------------------------------: | ---------------------------------------------------------------------- |
+| Old skeleton Ride, per drawn facing at 64 px                          |                                                          2.3 generations | [mount live results](../2026-11-16-mounts/live-results.md)             |
+| State, default Pro (`edit-images-v2`), one batch at 256 px or smaller |                    10 generations, whether it carries one facing or five | `localStateCost` in `app/src/studio/stateGenerationPlan.ts`            |
+| State, Pixen                                                          | 1 generation per packed sheet (all facings of a 64 px rig fit one sheet) | same                                                                   |
+| State, Pro Flash                                                      |                                                   about 5 to 6 per sheet | [State routing](../2026-11-18-pixeldoll-states/live-routing-matrix.md) |
 
-On the default Pro route, a three-facing State (10) costs more than a three-facing Ride (6.9). The case for a Riding State is a reviewed still, not savings, unless Pixen or Pro Flash qualifies.
+On the default Pro route, a three-facing State (10) costs more than a three-facing Ride (6.9); on Pixen it can cost 1. The case for a Riding State is a reviewed still, not savings, unless Pixen or Pro Flash qualifies.
 
 ## Live prompt probes
 

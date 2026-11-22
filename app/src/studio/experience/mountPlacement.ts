@@ -1,7 +1,7 @@
 // Where a presented rider sits on the test mount, shared by the stage and the Mount settings preview.
 import { bakedFrame } from '../../lib/compose/compose.ts';
 import type { Project } from '../../lib/store/manifest.ts';
-import { paintedFrame, previewBounds } from './bounds.ts';
+import { paintedFrame, type previewBounds } from './bounds.ts';
 import { mountView, riderContact, TEST_MOUNT } from './mounts.ts';
 import type { Presentation } from './presentation.ts';
 
@@ -9,7 +9,8 @@ import type { Presentation } from './presentation.ts';
 export function mountPlacement(
 	project: Project,
 	p: Presentation,
-	grounding: ReturnType<typeof previewBounds> = previewBounds(project)
+	/** previewBounds(project), which callers already hold. */
+	grounding: ReturnType<typeof previewBounds> | null
 ) {
 	if (p.kind === 'unavailable' || !p.direction || !p.clip) return null;
 	const frame = bakedFrame(project.manifest),

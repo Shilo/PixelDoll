@@ -2834,6 +2834,11 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	);
 	await templates.getByRole('radio', { name: 'Custom', exact: true }).click();
 	await expect(instructions).toHaveValue('Raise both hands');
+	await page.keyboard.press('ArrowRight');
+	await expect(templates.getByRole('radio', { name: 'Riding', exact: true })).toBeFocused();
+	await expect(instructions).toHaveValue(/^Change only the pose\./);
+	await page.keyboard.press('ArrowLeft');
+	await expect(instructions).toHaveValue('Raise both hands');
 	// Enhance grounds the instructions in the chosen source frame, then Undo restores them.
 	await newState.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await expect(instructions).toHaveValue('Lift both open hands to shoulder height, palms forward');

@@ -9,6 +9,7 @@
 	import { displayDirection } from './displayDirection.ts';
 	import { previewBounds } from './experience/bounds.ts';
 	import { hideMountedLegs, mountLegGeometry } from './experience/mountLegs.ts';
+	import { imageCanvas } from './experience/imageCanvas.ts';
 	import { mountPlacement } from './experience/mountPlacement.ts';
 	import { mountView, placeRider, sampleMountFrame, TEST_MOUNT } from './experience/mounts.ts';
 	import {
@@ -46,7 +47,7 @@
 			: demo && { id: DEMO, ...demo }
 	);
 	const availability = $derived(rider && buildPresentation(rider.project));
-	const grounding = $derived(rider && previewBounds(rider.project));
+	const grounding = $derived(rider ? previewBounds(rider.project) : null);
 	const pose = $derived(rider ? activeRiderPose(rider.id, rider.project.manifest) : undefined);
 	const riding = $derived(experience.testMount && !!rider);
 	// Mounted, the turn follows the rider's own facings; the mount alone shows all eight.
@@ -57,21 +58,6 @@
 	const standingHeight = $derived(grounding?.facings.get(shown)?.standingHeight ?? 48);
 
 	const canvases = new WeakMap<Img, HTMLCanvasElement>();
-	function source(image: Img) {
-		let c = canvases.get(image);
-		if (!c) {
-			c = document.createElement('canvas');
-			c.width = image.w;
-			c.height = image.h;
-			c.getContext('2d')!.putImageData(
-				new ImageData(new Uint8ClampedArray(image.data), image.w, image.h),
-				0,
-				0
-			);
-			canvases.set(image, c);
-		}
-		return c;
-	}
 
 	$effect(() => {
 		const target = canvas,
@@ -87,6 +73,8 @@
 		if (!target) return;
 		const g = target.getContext('2d')!;
 		let clock: PlaybackClock | undefined,
+			// The rider is composed only when its clip, facing or frame changes, not on every animation frame.
+			composed: { key: string; image: Img } | null = null,
 			elapsed = 0,
 			turned = 0,
 			last = performance.now(),
@@ -111,24 +99,35 @@
 					defaultDirection: direction
 				});
 				clock = advancePlayback(p, clock, dt);
-				const result = renderPresentation(a, current.items, p, clock.cell);
-				place = mountPlacement(current.project, p, grounding ?? undefined);
-				if (result.image && place?.view && p.clip && p.direction) {
-					const cut = hideMountedLegs(
-						result.image,
-						result.frame,
-						current.project.manifest.rig,
-						p.clip,
-						p.direction,
-						clock.cell,
-						p.clip === ridingPose ? 'none' : legs,
-						mountLegGeometry(current.project, p.clip, p.direction, clock.cell)
-					);
+				place = mountPlacement(current.project, p, grounding);
+				const key = JSON.stringify([p.clip, p.direction, clock.cell]);
+				if (composed?.key !== key && place?.view && p.clip && p.direction) {
+					const result = renderPresentation(a, current.items, p, clock.cell);
+					const mode = p.clip === ridingPose ? 'none' : legs;
+					composed = result.image
+						? {
+								key,
+								image: hideMountedLegs(
+									result.image,
+									result.frame,
+									current.project.manifest.rig,
+									p.clip,
+									p.direction,
+									clock.cell,
+									mode,
+									mode === 'none'
+										? undefined
+										: mountLegGeometry(current.project, p.clip, p.direction, clock.cell)
+								).image
+							}
+						: null;
+				}
+				if (composed && place?.view) {
 					const pose = place.view.frames[sampleMountFrame(place.view, elapsed)];
 					const at = placeRider(place.ground, place.contact, pose);
 					layers.push(
 						{ image: pose.back, x: at.mount.x, y: at.mount.y },
-						{ image: cut.image, x: at.rider.x, y: at.rider.y },
+						{ image: composed.image, x: at.rider.x, y: at.rider.y },
 						{ image: pose.front, x: at.mount.x, y: at.mount.y }
 					);
 				}
@@ -153,8 +152,8 @@
 				},
 				{ l: Infinity, t: Infinity, r: -Infinity, b: -Infinity }
 			);
-			const width = target.clientWidth * devicePixelRatio,
-				tall = target.clientHeight * devicePixelRatio;
+			const width = Math.round(target.clientWidth * devicePixelRatio),
+				tall = Math.round(target.clientHeight * devicePixelRatio);
 			if (target.width !== width || target.height !== tall) {
 				target.width = width;
 				target.height = tall;
@@ -170,7 +169,7 @@
 					top = Math.round((tall - (box.b - box.t) * scale) / 2) - box.t * scale;
 				g.imageSmoothingEnabled = false;
 				for (const l of layers) {
-					const image = 'data' in l.image ? source(l.image) : l.image;
+					const image = 'data' in l.image ? imageCanvas(l.image, canvases) : l.image;
 					g.drawImage(
 						image,
 						left + l.x * scale,
@@ -182,7 +181,8 @@
 			}
 			target.dataset.facing = direction;
 			target.dataset.rider = mounted && layers.length > 2 ? (current?.id ?? '') : '';
-			frameId = requestAnimationFrame(draw);
+			// Paused, the frame stays drawn; a settings change reruns this effect and draws once more.
+			if (running) frameId = requestAnimationFrame(draw);
 		};
 		frameId = requestAnimationFrame(draw);
 		return () => cancelAnimationFrame(frameId);

@@ -38,7 +38,7 @@ export async function resetSettings(scope: ResetScope): Promise<WhisperKey[]> {
 		if (!shared || !demo || !character) failures.push('experience.tabWardrobe');
 	}
 	if (scope === 'all' || scope === 'mount') {
-		const saved = resetMount();
+		const saved = resetMount(scope === 'all' ? null : doc.id);
 		applyRiderPose();
 		if (!saved) failures.push('settings.mount');
 	}

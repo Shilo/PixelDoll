@@ -68,9 +68,21 @@ function apply(preferences: MountPreferences) {
 	experience.mountLegs = preferences.legs;
 	experience.ridingPoses = preferences.poses;
 }
+// After a refused save, this tab's choices are newer than storage, so later changes build on them instead.
+let unsaved = false;
 /** Each setter returns false when the browser refused to save; the choice still applies for this session. */
 function update(change: (current: MountPreferences) => MountPreferences) {
-	const { preferences, saved } = updateMountPreferences(change);
+	const { preferences, saved } = updateMountPreferences(
+		change,
+		unsaved
+			? {
+					show: experience.testMount,
+					legs: experience.mountLegs,
+					poses: { ...experience.ridingPoses }
+				}
+			: undefined
+	);
+	unsaved = !saved;
 	apply(preferences);
 	return saved;
 }
@@ -90,17 +102,33 @@ export function forgetRidingPose(projectId: string, clip?: string) {
 	if (saved !== undefined && (clip === undefined || saved === clip)) setRidingPose(projectId, '');
 }
 
-export const mountAtDefaults = () =>
+/** Like Wardrobe, the page resets the open character's Riding pose; Reset all clears every character's. */
+export const mountAtDefaults = (projectId: string) =>
 	experience.testMount === MOUNT_DEFAULTS.show &&
 	experience.mountLegs === MOUNT_DEFAULTS.legs &&
-	!Object.keys(experience.ridingPoses).length;
-export const resetMount = () => update(() => ({ ...MOUNT_DEFAULTS, poses: {} }));
+	!experience.ridingPoses[projectId];
+export const ridingPosesSaved = () => Object.keys(experience.ridingPoses).length > 0;
+export function resetMount(projectId: string | null) {
+	return update((current) => {
+		const poses = { ...current.poses };
+		if (projectId === null) for (const id of Object.keys(poses)) delete poses[id];
+		else delete poses[projectId];
+		return { ...MOUNT_DEFAULTS, poses };
+	});
+}
 
-/** Another tab's mount choices apply here too. */
-export function watchMountPreferences() {
+/** Another tab's mount choices apply here too; `changed` then lets Preview follow them. */
+export function watchMountPreferences(changed: () => void) {
 	const sync = (event: StorageEvent) => {
-		if (event.storageArea === localStorage && (event.key === MOUNT_KEY || event.key === null))
-			apply(readMountPreferences());
+		if (event.key !== MOUNT_KEY && event.key !== null) return;
+		try {
+			if (event.storageArea !== localStorage) return;
+		} catch {
+			return;
+		}
+		apply(readMountPreferences());
+		unsaved = false;
+		changed();
 	};
 	addEventListener('storage', sync);
 	return () => removeEventListener('storage', sync);
