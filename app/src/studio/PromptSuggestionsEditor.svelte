@@ -131,6 +131,8 @@
 						value={suggestion.title}
 						disabled={unreadable}
 						onchange={(event) => edit(suggestion.id, 'title', event.currentTarget)}
+						onblur={(event) =>
+							error === 'save' && edit(suggestion.id, 'title', event.currentTarget)}
 					/>
 				</label>
 				<label
@@ -140,7 +142,9 @@
 						rows={2}
 						value={suggestion.prompt}
 						disabled={unreadable}
-						onchange={(event) => edit(suggestion.id, 'prompt', event.currentTarget)}></textarea>
+						onchange={(event) => edit(suggestion.id, 'prompt', event.currentTarget)}
+						onblur={(event) =>
+							error === 'save' && edit(suggestion.id, 'prompt', event.currentTarget)}></textarea>
 				</label>
 				<div class="actions">
 					{#each [[-1, ArrowUp, t('wardrobe.moveUp')], [1, ArrowDown, t('wardrobe.moveDown')]] as const as [offset, Icon, label] (offset)}

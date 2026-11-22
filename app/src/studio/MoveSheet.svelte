@@ -235,7 +235,10 @@
 	);
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? untrack(() => templateText(action)));
-	let templatePicked = $state(!!draft?.action);
+	// A template opened on its customized prompt counts as picked, as if its pill had been pressed.
+	let templatePicked = $state(
+		!!draft?.action || untrack(() => !!action && text !== moveTemplatePrompt(action))
+	);
 	let loopChoice = $state<boolean | undefined>(draft?.loop);
 	let frameReferences = $state<MoveFrameReferences<PickedReference>>(draft?.frameReferences ?? {});
 	let referenceDirection = $state<DirectionName>();
@@ -1051,7 +1054,8 @@
 		const clip = m?.rig.animations.find((entry) => entry.id === next);
 		const prompt = savedPrompt || moveTemplatePrompt(next, clip?.moveLoop ?? clip?.loop);
 		if (action === next && replaceSelected === replace) {
-			text = prompt;
+			// The same move keeps its Loop choice, so its text follows it.
+			text = savedPrompt || moveTemplatePrompt(next, looping);
 			return;
 		}
 		action = next;

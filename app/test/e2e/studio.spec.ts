@@ -3001,7 +3001,7 @@ test('New move opens on the customized template prompt, and an added suggestion 
 			'pixeldoll.promptSuggestions.v1',
 			JSON.stringify({
 				move: {
-					edits: Object.fromEntries(ids.map((id) => [id, { prompt: `${id} edited` }])),
+					edits: Object.fromEntries(ids.map((id) => [id, { prompt: `${id}, edited` }])),
 					added: [{ id: 'u_hop', title: 'Hop', prompt: 'hop in place' }]
 				}
 			})
@@ -3018,7 +3018,9 @@ test('New move opens on the customized template prompt, and an added suggestion 
 	const templates = move.getByRole('group', { name: 'Move templates', exact: true });
 	const description = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
 	await expect(templates.getByRole('button', { pressed: true })).toHaveCount(1);
-	await expect(description).toHaveValue(/^[a-z]+ edited$/);
+	await expect(description).toHaveValue(/^[a-z]+, edited$/);
+	// Its text names the template's own move, which must not count as a duplicate of it.
+	await expect(move.getByRole('button', { name: /^Generate / })).toBeEnabled();
 	await templates.getByRole('button', { name: 'Hop', exact: true }).click();
 	await expect(templates.getByRole('button', { pressed: true })).toHaveCount(0);
 	await expect(description).toHaveValue('hop in place');
