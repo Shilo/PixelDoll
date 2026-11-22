@@ -300,6 +300,7 @@
 		opacity: 0.85;
 	}
 	.trash-confirm {
+		color: var(--bu-success);
 		font-weight: 600;
 		opacity: 1;
 	}
