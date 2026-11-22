@@ -9,11 +9,12 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { ApiError } from '../lib/pixellab/client.ts';
 	import { characterEnhanceInput, enhanceCharacter } from './enhanceCharacter.ts';
-	import { Copy, Check, ChevronRight, WandSparkles, Undo2 } from './icons.ts';
+	import { Copy, Check, ChevronRight } from './icons.ts';
+	import EnhanceField from './EnhanceField.svelte';
 	import { displayDirectionShort } from './displayDirection.ts';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message as notice, type Message } from '../lib/message.ts';
-	import { t, type WhisperKey } from 'svelte-whisper';
+	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
 	import {
 		autoFrame,
 		BODY_SIZES,
@@ -172,6 +173,7 @@
 		promoted ? t('create.form.ownView', { direction: displayDirectionShort(promoted) }) : ''
 	);
 	const enhanceTarget = $derived(d.tab === 'appearance' ? 'details' : 'prompt');
+	const enhanceCost = $derived(t('moves.estimate', { gens: formatNumber(0.05) }));
 	let editorHelp: { show: () => Promise<void>; hide: () => void };
 	const editorHelpId = $props.id(),
 		bodyErrorId = `${editorHelpId}-body-error`;
@@ -363,33 +365,6 @@
 					onclick={() => copy(enhanceTarget)}
 					>{#if copied === enhanceTarget}<Check size={14} />{:else}<Copy size={14} />{/if}</button
 				>
-				<button
-					class="bu-action btn small enhance"
-					data-variant="outline"
-					aria-label={canUndo(enhanceTarget)
-						? t('common.undo')
-						: busy
-							? t('create.form.enhancing')
-							: t('create.form.enhance')}
-					aria-busy={busy}
-					title={canUndo(enhanceTarget)
-						? t('create.form.undoTitle')
-						: t('create.form.enhanceTitle')}
-					disabled={busy || (!canUndo(enhanceTarget) && !canEnhance(enhanceTarget))}
-					onclick={() => enhance(enhanceTarget)}
-				>
-					{#if canUndo(enhanceTarget)}<Undo2 size={13} />{:else}<WandSparkles size={13} />{/if}
-					<span class="enhance-label"
-						><span class="enhance-sizer" aria-hidden="true">{t('create.form.enhance')}</span><span
-							class="enhance-text"
-							>{canUndo(enhanceTarget)
-								? t('common.undo')
-								: busy
-									? t('create.form.enhancing')
-									: t('create.form.enhance')}</span
-						></span
-					>
-				</button>
 			</span>
 		</div>
 		{#if d.tab === 'appearance'}
@@ -400,14 +375,22 @@
 				class="editor-panel"
 			>
 				<div class="creator-field">
-					<textarea
-						class="bu-input input details-input"
-						aria-label={t('common.details')}
-						rows="3"
-						maxlength="2000"
-						value={d.details}
-						oninput={(e) => details(e.currentTarget.value)}
-						placeholder={t('create.form.detailsPlaceholder')}></textarea>
+					<EnhanceField
+						busy={busy && !canUndo('details')}
+						undo={canUndo('details')}
+						disabled={!canUndo('details') && !canEnhance('details')}
+						cost={enhanceCost}
+						onenhance={() => enhance('details')}
+					>
+						<textarea
+							class="bu-input input details-input"
+							aria-label={t('common.details')}
+							rows="3"
+							maxlength="2000"
+							value={d.details}
+							oninput={(e) => details(e.currentTarget.value)}
+							placeholder={t('create.form.detailsPlaceholder')}></textarea>
+					</EnhanceField>
 				</div>
 				{#each TRAIT_KEYS as key (key)}
 					<div class="trait-row">
@@ -455,16 +438,24 @@
 			</div>
 		{:else}
 			<div id="prompt-panel" role="tabpanel" aria-labelledby="prompt-tab" class="editor-panel">
-				<textarea
-					class="bu-input input exact-input"
-					aria-label={t('create.form.exactPrompt')}
-					value={d.prompt}
-					oninput={(e) => {
-						edited();
-						readPrompt(d, e.currentTarget.value);
-					}}
-					maxlength="2000"
-					spellcheck="false"></textarea>
+				<EnhanceField
+					busy={busy && !canUndo('prompt')}
+					undo={canUndo('prompt')}
+					disabled={!canUndo('prompt') && !canEnhance('prompt')}
+					cost={enhanceCost}
+					onenhance={() => enhance('prompt')}
+				>
+					<textarea
+						class="bu-input input exact-input"
+						aria-label={t('create.form.exactPrompt')}
+						value={d.prompt}
+						oninput={(e) => {
+							edited();
+							readPrompt(d, e.currentTarget.value);
+						}}
+						maxlength="2000"
+						spellcheck="false"></textarea>
+				</EnhanceField>
 			</div>
 		{/if}
 		{#if message}<p class="creator-message" role="status">{displayMessage(message)}</p>{/if}
@@ -721,26 +712,6 @@
 		flex-direction: column;
 		gap: 6px;
 	}
-	.enhance {
-		min-width: 78px;
-		gap: 4px;
-		padding-inline: 7px;
-		font-size: var(--fs-sm);
-	}
-	.enhance-label {
-		position: relative;
-	}
-	.enhance-sizer {
-		visibility: hidden;
-	}
-	.enhance-text {
-		position: absolute;
-		inset: 0;
-		text-align: center;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
 	.prompt-actions {
 		display: flex;
 		flex: none;
@@ -945,28 +916,6 @@
 		.prompt-excerpt {
 			font-size: 12px;
 			height: 54px;
-		}
-	}
-	@container (max-width:290px) {
-		.enhance-label {
-			display: none;
-		}
-		.editor-toolbar .enhance {
-			min-width: 44px;
-			width: 44px;
-			padding-inline: 0;
-		}
-	}
-	@media (pointer: coarse) {
-		@container (max-width:340px) {
-			.enhance-label {
-				display: none;
-			}
-			.editor-toolbar .enhance {
-				min-width: 44px;
-				width: 44px;
-				padding-inline: 0;
-			}
 		}
 	}
 	@media (pointer: coarse) {

@@ -13,15 +13,19 @@
 </script>
 
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
+	import { api } from '../lib/pixellab/client.ts';
+	import { png, routes, type EnhancedCharacterV3Prompt } from '../lib/pixellab/routes.ts';
+	import { b64 } from './create.ts';
+	import EnhanceField from './EnhanceField.svelte';
 	import { app, getKeyRevision } from '../lib/app.svelte.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { displayNestedMessage } from '../lib/i18n.ts';
 	import type { PickedReference } from '../lib/image/reference.ts';
-	import { errorMessage, LocalizedError, type Message } from '../lib/message.ts';
+	import { errorMessage, LocalizedError, message, type Message } from '../lib/message.ts';
 	import { DEFAULT_MOVE, DIRECTIONS, type DirectionName } from '../lib/rig/rig.ts';
 	import { moveLabel } from './model.ts';
 	import { displayDirection } from './displayDirection.ts';
@@ -44,7 +48,7 @@
 	import DirectionCompass from './DirectionCompass.svelte';
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 	import { bodyClipThumbnail } from './moveThumbnails.ts';
-	import { doc, openProject, store, ui, withKey } from './state.svelte.ts';
+	import { doc, openProject, store, toast, ui, withKey } from './state.svelte.ts';
 	import {
 		continueState,
 		discardState,
@@ -171,6 +175,75 @@
 			.map(({ id }) => ({ direction: id, image: cellImg(project, body, clip, id, cell) ?? null }));
 	});
 	const id = $derived(stateCaptureId(name));
+	// PixelLab has no enhancer for edit instructions. The animation enhancer is the one that reads images: it grounds the
+	// text in the source frame and, with a reference, describes the change from the source pose toward it.
+	let enhancing = $state(false);
+	let enhanced = $state<{ before: string; after: string }>();
+	const canUndoEnhance = $derived(!!enhanced && enhanced.after === description);
+	const enhanceSource = $derived(
+		(previews.find(({ direction }) => direction === ui.dir) ?? previews.find(({ image }) => image))
+			?.image ?? null
+	);
+	const enhanceLifetime = new AbortController();
+	onDestroy(() => enhanceLifetime.abort());
+	async function enhanceInstructions() {
+		if (enhanced && canUndoEnhance) {
+			description = enhanced.before;
+			enhanced = undefined;
+			return;
+		}
+		const before = description;
+		const action = before.trim();
+		const image = enhanceSource;
+		const picked = reference;
+		const chosenModel = model;
+		const key = app.key;
+		if (enhancing || !key || !image || !action || action.length > 500) return;
+		const current = () =>
+			!enhanceLifetime.signal.aborted &&
+			app.key === key &&
+			description === before &&
+			reference === picked &&
+			model === chosenModel;
+		enhancing = true;
+		try {
+			const request = routes.enhanceAnimationV3Prompt({
+				first_frame: png(await b64(image)),
+				...(picked ? { last_frame: png(picked.base64) } : {}),
+				action,
+				engine: 'v3',
+				// One target pose, not a sequence of frames.
+				frame_count: 1
+			});
+			if (!current()) return;
+			const result = await api<EnhancedCharacterV3Prompt>(
+				key,
+				request.method,
+				request.path,
+				request.body,
+				AbortSignal.any([enhanceLifetime.signal, AbortSignal.timeout(120_000)]),
+				{
+					activityScope: `state-enhance:${projectId}:${crypto.randomUUID()}`,
+					label: 'Enhance State instructions'
+				}
+			);
+			if (!current()) {
+				toast(message('create.form.settingsChanged'), { tone: 'warning' });
+				return;
+			}
+			const text = typeof result?.enhanced_prompt === 'string' ? result.enhanced_prompt.trim() : '';
+			if (!text || Array.from(text).length > (chosenModel === 'pixen' ? 500 : 2000)) {
+				toast(message('create.form.tooLong'), { tone: 'warning' });
+				return;
+			}
+			enhanced = { before, after: text };
+			description = text;
+		} catch (error) {
+			if (current()) toast(errorMessage(error), { tone: 'warning' });
+		} finally {
+			enhancing = false;
+		}
+	}
 	const nameIssue = $derived(
 		project &&
 			(stateCaptureNameIssue(project.manifest, id) ??
@@ -617,11 +690,31 @@
 			{#if editing}
 				<div class="state-panel state-edit">
 					{#if !flashReference}
-						<label class="field">
-							<span class="label">{t('stateGeneration.description')}</span>
-							<textarea class="bu-input input" bind:value={description} rows={3} disabled={!!busy}
-							></textarea>
-						</label>
+						<div class="field">
+							<label class="label" for="{formId}-instructions"
+								>{t('stateGeneration.description')}</label
+							>
+							<EnhanceField
+								busy={enhancing}
+								undo={canUndoEnhance}
+								disabled={!!busy ||
+									(!canUndoEnhance &&
+										(!app.key ||
+											app.keyRejected ||
+											!enhanceSource ||
+											!description.trim() ||
+											description.trim().length > 500))}
+								cost={t('moves.estimate', { gens: formatNumber(0.05) })}
+								onenhance={() => void enhanceInstructions()}
+							>
+								<textarea
+									id="{formId}-instructions"
+									class="bu-input input"
+									bind:value={description}
+									rows={3}
+									disabled={!!busy}></textarea>
+							</EnhanceField>
+						</div>
 					{/if}
 					<ReferenceField
 						bind:value={reference}

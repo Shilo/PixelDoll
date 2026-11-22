@@ -6178,7 +6178,9 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	expect(posts).toEqual([]);
 	const prompt = sheet.getByRole('textbox', { name: 'Describe the replacement', exact: true });
 	const originalPrompt = await prompt.inputValue();
-	await sheet.getByRole('button', { name: /^Enhance.*0\.05 gens/ }).click();
+	const enhance = sheet.getByRole('button', { name: 'Enhance', exact: true });
+	await expect(enhance).toHaveAccessibleDescription(/0\.05 gens/);
+	await enhance.click();
 	await expect(prompt).toHaveValue('Swing each arm in time with the strides');
 	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
 	await expect(prompt).toHaveValue(originalPrompt);

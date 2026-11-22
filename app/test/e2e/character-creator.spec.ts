@@ -403,11 +403,10 @@ test.describe('creation safety', () => {
 });
 
 async function chooseSkeletonMove(sheet: Locator) {
-	const advanced = sheet.locator('details.advanced');
-	if ((await advanced.getAttribute('open')) === null) await advanced.locator('summary').click();
-	await sheet
-		.getByRole('combobox', { name: 'Motion model', exact: true })
-		.selectOption('skeleton-v3');
+	// Advanced is a side column toggle on wide sheets.
+	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
+	if (!(await model.isVisible())) await sheet.getByRole('button', { name: /^Advanced/ }).click();
+	await model.selectOption('skeleton-v3');
 }
 
 test('Add a move queues behind the running move and runs it next', async ({ page, context }) => {
@@ -1284,7 +1283,7 @@ for (const viewport of [
 			await sheet
 				.locator('.prompt-actions > button')
 				.evaluateAll((elements) => elements.map((el) => el.getAttribute('aria-label')))
-		).toEqual(['Prompt help', 'Copy exact prompt', 'Enhance']);
+		).toEqual(['Prompt help', 'Copy exact prompt']);
 		const toolbar = await sheet.locator('.editor-toolbar').evaluate((el) => {
 			const row = el.getBoundingClientRect();
 			return [...el.querySelectorAll('button')].every((button) => {
@@ -1350,7 +1349,7 @@ test('compact creator toolbar keeps wider fallback-font labels and actions reada
 				);
 			})
 		).toBe(true);
-		for (const label of ['Appearance help', 'Copy details', 'Enhance']) {
+		for (const label of ['Appearance help', 'Copy details']) {
 			const button = sheet
 				.locator('.editor-toolbar')
 				.getByRole('button', { name: label, exact: true });
@@ -1359,6 +1358,11 @@ test('compact creator toolbar keeps wider fallback-font labels and actions reada
 			expect(rect!.x).toBeGreaterThanOrEqual(toolbar!.x);
 			expect(rect!.x + rect!.width).toBeLessThanOrEqual(toolbar!.x + toolbar!.width + 1);
 		}
+		// Enhance sits inside the details field's top-right corner.
+		const field = await sheet.getByRole('textbox', { name: 'Details', exact: true }).boundingBox();
+		const wand = await sheet.getByRole('button', { name: 'Enhance', exact: true }).boundingBox();
+		expect(wand!.x + wand!.width).toBeLessThanOrEqual(field!.x + field!.width);
+		expect(wand!.y).toBeGreaterThanOrEqual(field!.y);
 		await page.screenshot({ path: info.outputPath(`creator-toolbar-${width}.png`) });
 	}
 });

@@ -34,8 +34,9 @@
 	let next = $state<HTMLButtonElement>();
 	// Reaching either end disables the pressed arrow, so focus moves to the other one instead of being lost.
 	async function step(delta: number) {
-		onstep(delta);
+		// Read the position before stepping: the parent updates `frame` synchronously.
 		const at = frame + delta;
+		onstep(delta);
 		await tick();
 		if (at <= 0) next?.focus();
 		else if (at >= frames - 1) previous?.focus();

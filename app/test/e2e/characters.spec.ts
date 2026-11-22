@@ -2414,6 +2414,13 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		if (req.method() === 'POST') {
 			const body = req.postDataJSON() as Record<string, unknown>;
 			posts.push({ path, body });
+			if (path.endsWith('/enhance-animation-v3-prompt'))
+				return route.fulfill({
+					json: {
+						usage: { type: 'generations', generations: 0.05 },
+						enhanced_prompt: 'Lift both open hands to shoulder height, palms forward'
+					}
+				});
 			if (path.endsWith('/edit-images-v2')) {
 				// Like PixelLab's measured drift: the edited character comes back 3 px higher in its cell.
 				stateImages = await Promise.all(
@@ -2768,6 +2775,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await previousStartFrame.click();
 	await previousStartFrame.click();
 	await expect(moveSheet.getByText('Frame 2 of 4', { exact: true })).toBeVisible();
+	await expect(previousStartFrame).toBeFocused();
 	// Reaching the first frame disables Previous, so focus moves to Next.
 	await previousStartFrame.click();
 	await expect(moveSheet.getByRole('button', { name: 'Next frame', exact: true })).toBeFocused();
@@ -2816,7 +2824,21 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(newState.getByText('Frame 3 of 4', { exact: true })).toBeVisible();
 	await newState.getByRole('switch', { name: 'Edit this pose' }).check();
 	await newState.getByRole('textbox', { name: 'State name' }).fill('Ready stance');
-	await newState.getByRole('textbox', { name: 'Instructions' }).fill('Raise both hands');
+	const instructions = newState.getByRole('textbox', { name: 'Instructions' });
+	await instructions.fill('Raise both hands');
+	// Enhance grounds the instructions in the chosen source frame, then Undo restores them.
+	await newState.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await expect(instructions).toHaveValue('Lift both open hands to shoulder height, palms forward');
+	const enhanced = posts.filter(({ path }) => path.endsWith('/enhance-animation-v3-prompt'));
+	expect(enhanced).toHaveLength(1);
+	expect(enhanced[0].body).toMatchObject({
+		action: 'Raise both hands',
+		engine: 'v3',
+		first_frame: { type: 'base64', format: 'png' }
+	});
+	expect(enhanced[0].body).not.toHaveProperty('last_frame');
+	await newState.getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(instructions).toHaveValue('Raise both hands');
 	const statePosts = () =>
 		posts.filter(
 			({ path }) => path.endsWith('/edit-images-v2') || path.endsWith('/create-character-state')

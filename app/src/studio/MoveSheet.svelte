@@ -4,6 +4,7 @@
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
 	// re-rendered through raw skeleton-v3).
 	import { MediaQuery } from 'svelte/reactivity';
+	import EnhanceField from './EnhanceField.svelte';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import Help from './Help.svelte';
@@ -27,7 +28,7 @@
 		type MoveAnimationOptions,
 		type MoveFrameReferences
 	} from './moveAnimationOptions.ts';
-	import { onDestroy, untrack } from 'svelte';
+	import { onDestroy, tick, untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { movePlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
@@ -111,15 +112,7 @@
 	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
 	import { ANGLES } from './characterConfig.ts';
-	import {
-		ArrowUp,
-		Check,
-		ChevronRight,
-		Circle,
-		CircleAlert,
-		Undo2,
-		WandSparkles
-	} from './icons.ts';
+	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert } from './icons.ts';
 	import { api } from '../lib/pixellab/client.ts';
 	import { png, routes, type EnhancedCharacterV3Prompt } from '../lib/pixellab/routes.ts';
 	import type { Img } from '../lib/image/png.ts';
@@ -225,6 +218,17 @@
 			(draft?.animation?.model !== undefined && draft.animation.model !== DEFAULT_MODEL)
 	);
 	const showAdvanced = $derived(sideBySide && advancedOpen);
+	// The column opens beside the top of the form, away from the toggle, so bring its first control into view.
+	async function toggleAdvanced() {
+		advancedOpen = !advancedOpen;
+		if (!advancedOpen) return;
+		await tick();
+		const first = document
+			.getElementById(`${advancedId}-advanced`)
+			?.querySelector<HTMLElement>('select, input, button, [tabindex="0"]');
+		first?.scrollIntoView({ block: 'nearest' });
+		first?.focus();
+	}
 	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
 	let frameChoice = $state<number | undefined>(draft?.animation?.frameCount);
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
@@ -2122,43 +2126,33 @@
 				</div>
 				<div class="move-edit">
 					<div class="field">
-						<div class="field-head">
-							<label class="label" for="move-description"
-								>{replacing
-									? t('moveSheet.describeReplacement')
-									: t('moveSheet.describeMotion')}</label
-							>
-							<button
-								type="button"
-								class="bu-action btn small enhance"
-								data-variant="outline"
-								aria-busy={enhancing}
-								disabled={enhancing ||
-									(!canUndoEnhance &&
-										(!app.key ||
-											app.keyRejected ||
-											!standingImage ||
-											!text.trim() ||
-											text.trim().length > 500))}
-								onclick={() => void enhanceMove()}
-							>
-								{#if canUndoEnhance}<Undo2 size={13} />{t('common.undo')}
-								{:else}<WandSparkles size={13} />{t(
-										enhancing ? 'create.form.enhancing' : 'create.form.enhance'
-									)}{#if !enhancing}<span class="cost"
-											>{t('moves.estimate', { gens: formatNumber(0.05) })}</span
-										>{/if}{/if}
-							</button>
-						</div>
-						<textarea
-							id="move-description"
-							class="bu-input input"
-							value={text}
-							oninput={(event) => inputMotion(event.currentTarget.value)}
-							placeholder={t('moveSheet.describePlaceholder')}
-							aria-describedby="move-description-hint"
-							maxlength="900"
-							rows="3"></textarea>
+						<label class="label" for="move-description"
+							>{replacing
+								? t('moveSheet.describeReplacement')
+								: t('moveSheet.describeMotion')}</label
+						>
+						<EnhanceField
+							busy={enhancing}
+							undo={canUndoEnhance}
+							disabled={!canUndoEnhance &&
+								(!app.key ||
+									app.keyRejected ||
+									!standingImage ||
+									!text.trim() ||
+									text.trim().length > 500)}
+							cost={t('moves.estimate', { gens: formatNumber(0.05) })}
+							onenhance={() => void enhanceMove()}
+						>
+							<textarea
+								id="move-description"
+								class="bu-input input"
+								value={text}
+								oninput={(event) => inputMotion(event.currentTarget.value)}
+								placeholder={t('moveSheet.describePlaceholder')}
+								aria-describedby="move-description-hint"
+								maxlength="900"
+								rows="3"></textarea>
+						</EnhanceField>
 						<p class="faint small" id="move-description-hint">
 							{t('moveSheet.motionOnly')}
 						</p>
@@ -2284,7 +2278,7 @@
 								data-variant="quiet"
 								aria-expanded={advancedOpen}
 								aria-controls="{advancedId}-advanced"
-								onclick={() => (advancedOpen = !advancedOpen)}
+								onclick={() => void toggleAdvanced()}
 								><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
 										class="faint advanced-note">{advancedNote}</span
 									>{/if}</button
@@ -2363,8 +2357,11 @@
 						</details>{/if}
 				</div>
 			</div>
-			{#if showAdvanced}
-				<div class="move-advanced" id="{advancedId}-advanced">{@render advancedFields()}</div>
+			{#if sideBySide}
+				<!-- Closing only hides the column, so a frame still decoding there is not lost. -->
+				<div class="move-advanced" id="{advancedId}-advanced" hidden={!showAdvanced}>
+					{@render advancedFields()}
+				</div>
 			{/if}
 		</div>
 	{/if}
@@ -2410,6 +2407,9 @@
 		align-items: start;
 		column-gap: 24px;
 	}
+	.move-advanced[hidden] {
+		display: none;
+	}
 	.move-advanced {
 		padding-inline-start: 24px;
 		border-inline-start: 1px solid var(--bu-line);
@@ -2421,26 +2421,6 @@
 	}
 	.advanced-toggle[aria-expanded='true'] :global(svg) {
 		rotate: 180deg;
-	}
-	/* Enhance sits on the prompt's label row, styled as a button so it reads as an action. */
-	.field-head {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 4px 8px;
-	}
-	.enhance {
-		gap: 4px;
-		height: 30px;
-		padding-inline: 8px;
-		font-size: var(--fs-sm);
-	}
-	/* Still an easy tap on touch screens, without growing to a full control height. */
-	@media (pointer: coarse) {
-		.enhance {
-			height: 34px;
-		}
 	}
 	.frame-recovery-action {
 		align-self: flex-start;

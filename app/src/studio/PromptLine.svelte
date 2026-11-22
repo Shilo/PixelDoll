@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The prompt behind a result under review: one code line that scrolls sideways when long, and copies whole.
+	// The prompt behind a result under review: a code view up to four lines tall that scrolls when longer, and copies whole.
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { Check, Copy } from './icons.ts';
@@ -7,29 +7,22 @@
 
 	let { text }: { text: string } = $props();
 	let copied = $state(false);
-	// When the clipboard refuses, the whole prompt is shown so it can be selected by hand.
-	let expanded = $state(false);
 
 	async function copy() {
 		try {
 			await navigator.clipboard.writeText(text);
 			copied = true;
 		} catch {
-			expanded = true;
 			toast(message('toolbar.selectPromptToCopy'), { tone: 'warning' });
 		}
 	}
 </script>
 
 <div class="prompt-line">
-	<!-- A long prompt scrolls sideways, so keyboard users need to reach the scroller. -->
+	<!-- A long prompt scrolls inside the view, so keyboard users need to reach the scroller. -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-	<code
-		class="small prompt-text"
-		class:expanded
-		role="region"
-		aria-label={t('common.prompt')}
-		tabindex="0">{text}</code
+	<code class="small prompt-text" role="region" aria-label={t('common.prompt')} tabindex="0"
+		>{text}</code
 	>
 	<button
 		class="bu-action btn icon"
@@ -43,11 +36,11 @@
 </div>
 
 <style>
-	/* Set like a code block so it reads as the exact text that was sent, not as UI copy. */
+	/* Set like a code block so it reads as the entered prompt, not as interface copy. */
 	.prompt-line {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: center;
+		align-items: start;
 		gap: 4px;
 		min-inline-size: 0;
 		padding-inline-start: 10px;
@@ -56,17 +49,16 @@
 		border-radius: var(--r-ctl);
 	}
 	.prompt-text {
+		max-block-size: calc(4lh + 20px);
 		padding-block: 10px;
+		overflow-y: auto;
 		font-family: var(--font-mono);
+		line-height: 1.5;
 		color: var(--bu-text);
-		overflow-x: auto;
-		white-space: nowrap;
-		scrollbar-width: thin;
-	}
-	.prompt-text.expanded {
-		white-space: normal;
+		white-space: pre-wrap;
 		overflow-wrap: anywhere;
 		user-select: text;
+		scrollbar-width: thin;
 	}
 	.prompt-line button {
 		min-inline-size: 44px;
