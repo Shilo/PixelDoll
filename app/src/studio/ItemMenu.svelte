@@ -486,13 +486,13 @@
 	{@const target = deleting}
 	<ConfirmDialog
 		title={t('common.deleteNamed', { name: target.name })}
-		action={t('common.delete')}
+		action={t('common.moveToTrash')}
 		oncancel={() => (deleting = null)}
 		onconfirm={() => {
 			const id = target.id;
 			deleting = null;
 			onremove(id);
-		}}><p>{t('common.cannotUndo')}</p></ConfirmDialog
+		}}><p>{t('common.deleteRecoverable')}</p></ConfirmDialog
 	>
 {/if}
 <!-- A failed save keeps the alert open to show why, even though the generation has already stopped. -->

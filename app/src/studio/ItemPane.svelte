@@ -4,6 +4,7 @@
 	import { openerLabel } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { toast } from './state.svelte.ts';
 	import type { Message } from '../lib/message.ts';
 	import { displayDirectionInSentence, displayDirectionShort } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
@@ -324,7 +325,7 @@
 	}
 </script>
 
-<Sheet title={t('studio.titleItem')} cancel="common.done" onclose={() => (ui.sheet = null)}>
+<Sheet title={t('studio.titleItem')} onclose={() => (ui.sheet = null)}>
 	{#snippet developer()}
 		<ApiPeek
 			targets={[
@@ -863,13 +864,13 @@
 		{@const target = it}
 		<ConfirmDialog
 			title={t('common.deleteNamed', { name: target.name })}
-			action={t('common.delete')}
+			action={t('common.moveToTrash')}
 			oncancel={() => (confirmRemove = false)}
 			onconfirm={() => {
 				const id = target.id;
 				confirmRemove = false;
-				void removeItem(id);
-			}}><p>{t('common.cannotUndo')}</p></ConfirmDialog
+				void removeItem(id).catch((error) => toast(errorMessage(error), { tone: 'danger' }));
+			}}><p>{t('common.deleteRecoverable')}</p></ConfirmDialog
 		>
 	{/if}
 </Sheet>

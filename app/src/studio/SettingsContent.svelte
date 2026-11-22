@@ -9,6 +9,7 @@
 	import { settingsAtDefaults, watchCreationSettings } from './settingsDefaults.svelte.ts';
 	import { isCreationSection } from './creationSettings.ts';
 	import CreationSettings from './CreationSettings.svelte';
+	import TrashSettings from './TrashSettings.svelte';
 	import {
 		Archive,
 		Clapperboard,
@@ -24,6 +25,7 @@
 		Shirt,
 		Sun,
 		SunMoon,
+		Trash,
 		UserRound
 	} from './icons.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
@@ -231,6 +233,12 @@
 			]
 		},
 		{
+			id: 'trash',
+			label: settingsLabels.trash,
+			icon: Trash,
+			entries: [{ id: 'trash', label: 'settings.trash', terms: ['recentlyDeleted.empty'] }]
+		},
+		{
 			id: 'developer',
 			label: settingsLabels.developer,
 			icon: CodeXml,
@@ -258,13 +266,14 @@
 	const available = sections.filter(
 		(section) =>
 			!workspaceCopy ||
-			(!isCreationSection(section.id) && !['pixellab', 'library', 'developer'].includes(section.id))
+			(!isCreationSection(section.id) &&
+				!['pixellab', 'library', 'trash', 'developer'].includes(section.id))
 	);
 	const groups: SettingsSection[][] = [
 		['pixellab'],
 		['general', 'wardrobe', 'mount'],
 		['characters', 'moves', 'states', 'items'],
-		['export', 'library'],
+		['export', 'library', 'trash'],
 		['developer', 'about']
 	];
 	const navigation = groups
@@ -419,8 +428,16 @@
 						{/each}
 					{/each}
 				</nav>
-				{#if canReset && !active}
-					{@render compactReset('all')}
+				{#if canReset}
+					<div class="index-reset">
+						<hr class="bu-separator" />
+						<SettingsResetButton
+							scope="all"
+							labeled
+							disabled={busy}
+							onclick={() => (resetScope = 'all')}
+						/>
+					</div>
 				{/if}
 			</div>
 		{/if}
@@ -526,6 +543,8 @@
 				{@render exportSettings(targetEntry)}
 			{:else if active.id === 'library'}
 				<LibrarySettings bind:busy={libraryBusy} bind:reviewing={reviewingBackup} />
+			{:else if active.id === 'trash'}
+				<TrashSettings />
 			{:else if active.id === 'developer'}
 				<DeveloperSettings />
 			{:else if active.id === 'about'}
@@ -582,6 +601,11 @@
 	.compact-reset {
 		display: none;
 	}
+	.index-reset {
+		display: grid;
+		gap: 4px;
+		margin-top: 12px;
+	}
 	@media (max-width: 659px), (max-height: 519px) {
 		.settings-panel-heading {
 			display: contents;
@@ -598,8 +622,11 @@
 		display: grid;
 		gap: 8px;
 	}
-	:global(dialog.settings-sheet.center) {
-		height: min(540px, calc(100dvh - 32px));
+	/* Tall enough for the whole index, including Reset all at its end, so neither column scrolls away from the other on
+	   ordinary desktop windows. */
+	:global(dialog.sheet.settings-sheet.center) {
+		width: min(640px, calc(100vw - 32px));
+		height: min(720px, calc(100dvh - 32px));
 	}
 	:global(dialog.settings-sheet.bottom) {
 		height: 100dvh;
@@ -608,13 +635,6 @@
 	:global(dialog.settings-sheet.side) {
 		width: min(100%, 560px);
 		height: 100dvh;
-	}
-	:global(dialog.settings-sheet .sheet-head > .done) {
-		max-inline-size: 100%;
-		height: auto;
-		min-height: var(--ctl-h);
-		white-space: normal;
-		overflow-wrap: anywhere;
 	}
 	.settings-content,
 	.settings-index,

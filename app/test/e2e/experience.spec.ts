@@ -200,7 +200,7 @@ for (const theme of ['dark', 'light'] as const)
 				expect(nameInput.width).toBeGreaterThanOrEqual(nameField.width - 2);
 			}
 			await screenshot(page, `${size}-${theme}-create`);
-			await creator.getByRole('button', { name: 'Cancel', exact: true }).click();
+			await creator.getByRole('button', { name: 'Back', exact: true }).click();
 			await expect(creator).toHaveCount(0);
 			await page.locator('.customize-action').click();
 			await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
@@ -329,7 +329,7 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 	const details = page.getByRole('dialog', { name: 'Item', exact: true });
 	await expect(details).toContainText('Wizard hat');
 	await expect(details.getByRole('button', { name: 'Take off', exact: true })).toBeVisible();
-	await details.getByRole('button', { name: 'Done', exact: true }).click();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(hatOptions).toBeFocused();
 	await panels(page).getByRole('tab', { name: 'Colors', exact: true }).click();
 	const beforeColors = await actorPixels(page);
@@ -469,7 +469,12 @@ test('creator validation stays real; Cancel and Escape restore the native opener
 	await expect(create).toBeDisabled();
 	await creator.getByLabel('Body size', { exact: true }).fill('64');
 	await expect(create).toBeEnabled();
-	await creator.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Leaving the typed prompt asks first.
+	await creator.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await expect(opener).toBeFocused();
 	await page.keyboard.press('Enter');
 	await expect(creator).toBeVisible();
@@ -737,7 +742,7 @@ test('offline export and device import remain accessible production actions', as
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
 	await importer.click();
 	await expect(importSheet).toBeVisible();
-	await importSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await importSheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(importSheet).toHaveCount(0);
 	await expect(page.getByRole('heading', { name: 'Characters', exact: true })).toBeVisible();
 	await expect(world(page)).toHaveCount(0);

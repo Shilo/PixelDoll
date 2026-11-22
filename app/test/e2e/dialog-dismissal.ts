@@ -64,12 +64,14 @@ for (const [width, height, touch] of [
 				field?: string;
 				surface?: string;
 				close: string;
+				/** Typed text makes the close ask Discard changes? first. */
+				discards?: boolean;
 			}[] = [
 				{
 					name: 'Connect PixelLab',
 					open: () => openAccount(page),
 					field: 'Paste your Secret API key',
-					close: 'Not now'
+					close: 'Close'
 				},
 				{
 					name: 'Import from device',
@@ -83,7 +85,7 @@ for (const [width, height, touch] of [
 							.getByRole('menuitem', { name: 'Import from device...', exact: true })
 							.click();
 					},
-					close: 'Cancel'
+					close: 'Close'
 				},
 				{
 					name: 'New character',
@@ -98,18 +100,19 @@ for (const [width, height, touch] of [
 							.click();
 					},
 					field: 'Details',
-					close: 'Cancel'
+					close: 'Back',
+					discards: true
 				},
 				{
 					name: 'Export',
 					open: () => page.getByRole('button', { name: 'Export', exact: true }).click(),
-					close: 'Close export'
+					close: 'Close'
 				},
 				{
 					name: 'Inspect character',
 					open: () => inspectStage(page),
 					surface: '.inspection-stage canvas',
-					close: 'Done'
+					close: 'Close'
 				}
 			];
 			for (const entry of cases) {
@@ -155,6 +158,11 @@ for (const [width, height, touch] of [
 						.getByRole('dialog', { name: entry.name, exact: true })
 						.getByRole('button', { name: entry.close, exact: true })
 						.click();
+					if (entry.discards)
+						await page
+							.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+							.getByRole('button', { name: 'Discard', exact: true })
+							.click();
 					await expect(dialog).toHaveCount(0);
 				});
 			}

@@ -4,7 +4,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
-	import { Archive, Lock, Trash, TriangleAlert, Upload } from './icons.ts';
+	import { Archive, Trash, TriangleAlert, Upload } from './icons.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import DestructiveConfirmButton from './DestructiveConfirmButton.svelte';
 	import { openerLabel } from './openerLabel.ts';
@@ -303,9 +303,6 @@
 			<LibraryBackupButton settings disabled={busy} onbackup={backup} />
 			<div class="backup-notes">
 				<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
-				<p class="bu-muted settings-description privacy">
-					<Lock size={14} aria-hidden="true" />{t('librarySettings.privacy')}
-				</p>
 			</div>
 		</section>
 		<hr class="bu-separator" />
@@ -361,24 +358,20 @@
 	{#if !preview}<SettingsBackupCopy separated />{/if}
 	{#if !preview && !workspaceCopy}
 		<hr class="bu-separator" />
-		<details class="bu-details notice bad danger-zone" data-setting="delete-work">
-			<summary>{t('librarySettings.deleteWork.section')}</summary>
-			<div class="library-task">
-				<p class="bu-muted settings-description">{t('librarySettings.deleteWork.description')}</p>
-				<p class="bu-muted settings-description">{t('librarySettings.deleteWork.kept')}</p>
-				<button
-					type="button"
-					class="bu-btn delete-work"
-					data-variant="danger"
-					disabled={busy}
-					onclick={openDeleteConfirm}
-				>
-					<Trash size={16} aria-hidden="true" />
-					<span class="row-name">{openerLabel(t('librarySettings.deleteWork.action'))}</span>
-					<SurfaceChevron />
-				</button>
-			</div>
-		</details>
+		<section class="library-task" data-setting="delete-work">
+			<p class="bu-muted settings-description">{t('librarySettings.deleteWork.description')}</p>
+			<button
+				type="button"
+				class="bu-btn delete-work"
+				data-variant="danger"
+				disabled={busy}
+				onclick={openDeleteConfirm}
+			>
+				<Trash size={16} aria-hidden="true" />
+				<span class="row-name">{openerLabel(t('librarySettings.deleteWork.action'))}</span>
+				<SurfaceChevron />
+			</button>
+		</section>
 	{/if}
 	{#if confirmingDelete}
 		<ConfirmDialog
@@ -435,15 +428,6 @@
 		display: grid;
 		gap: 6px;
 	}
-	.privacy {
-		display: flex;
-		gap: 6px;
-		margin: 0;
-	}
-	.privacy :global(svg) {
-		flex: none;
-		margin-block-start: 3px;
-	}
 	.library-settings .notice {
 		margin: 0;
 	}
@@ -465,13 +449,6 @@
 	.restore-counts dd {
 		margin: 0;
 		font-variant-numeric: tabular-nums;
-	}
-	.danger-zone {
-		display: block;
-		padding-block: 0;
-	}
-	.danger-zone summary {
-		color: var(--bu-danger);
 	}
 	.delete-work {
 		display: flex;

@@ -269,10 +269,7 @@ test('installed shell includes valid icons and works offline after a cold naviga
 		await expect(
 			page.getByRole('dialog').getByRole('radio', { name: 'Unity', exact: true })
 		).toBeVisible();
-		await page
-			.getByRole('dialog')
-			.getByRole('button', { name: 'Close export', exact: true })
-			.click();
+		await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await page.getByRole('button', { name: 'Help...', exact: true }).click();
 		await page
@@ -354,7 +351,7 @@ test('an offline launch needs no optional languages and retains a language used 
 		await page.getByRole('button', { name: 'Neue Figur', exact: true }).first().click();
 		await page.getByRole('menuitem', { name: 'Neu erstellen...', exact: true }).click();
 		const creator = page.getByRole('dialog', { name: 'Neue Figur', exact: true });
-		await creator.getByRole('button', { name: 'Abbrechen', exact: true }).click();
+		await creator.getByRole('button', { name: 'Zurück', exact: true }).click();
 		await expect(creator).toBeHidden();
 		await context.setOffline(true);
 		await page.reload();
@@ -578,7 +575,15 @@ test('updates in an already-used tab require an explicit click, preserve its rel
 			.toBe(true);
 		await cdp.detach();
 		await context.setOffline(false);
-		await other.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+		// Leaving the typed form asks first.
+		await other
+			.getByRole('dialog', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Back', exact: true })
+			.click();
+		await other
+			.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+			.getByRole('button', { name: 'Discard', exact: true })
+			.click();
 		server.deploy(c);
 		const next = await discover(page, c);
 		expect(await controllerBuild(page)).toBe(b.release.build);
@@ -1751,7 +1756,7 @@ test('a persisted accepted generation blocks update without repeating or losing 
 			channel.close();
 		}, id);
 		await expect(
-			page.locator('.header-actions').getByRole('button', { name: 'Activity', exact: true })
+			page.locator('.experience-header [popovertarget="experience-options"][data-activity="busy"]')
 		).toBeVisible();
 		server.deploy(b);
 		await (await discover(page, b)).click();

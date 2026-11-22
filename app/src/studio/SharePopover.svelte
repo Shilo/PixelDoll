@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SurfaceHeader from './SurfaceHeader.svelte';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import Sprite from './Sprite.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
@@ -77,7 +78,8 @@
 	});
 	const previewFrames = $derived(planned.media ? sharePreviewFrames(planned.media) : []);
 	const image = $derived(previewFrames[index % previewFrames.length] ?? null);
-	const previewHeight = $derived(Math.max(72, Math.min(220, viewportHeight - 370)));
+	// The rest of the panel (header, controls, actions) takes about 420px.
+	const previewHeight = $derived(Math.max(72, Math.min(220, viewportHeight - 420)));
 	const previewWidth = $derived(
 		Math.min(360, viewportWidth - 16) - (viewportWidth <= 440 ? 14 : 18)
 	);
@@ -242,7 +244,8 @@
 		}
 	}
 	function toggle(event: ToggleEvent & { currentTarget: EventTarget & HTMLElement }) {
-		popoverFocus(event);
+		// Share starts on its move picker below, never on the header's X.
+		popoverFocus(event, false);
 		open = event.newState === 'open';
 		if (open) {
 			reconcileSelection();
@@ -313,6 +316,11 @@
 >
 	<PopoverArrow />
 	<div class="share-surface bu-popover bu-popover-surface bu-floating">
+		<SurfaceHeader
+			title={t('common.share')}
+			titleId="share-title"
+			onclose={() => popover.hidePopover()}
+		/>
 		<div
 			class="share-preview"
 			style:--share-preview-height="{previewHeight}px"

@@ -1319,7 +1319,12 @@ test('wheel, keys, middle click and native controls only change zoom where the s
 	await expect(name).toBeFocused();
 	expect(await wheel(dialog, { deltaY: 240 }), 'the dialog keeps its native wheel').toBe(false);
 	await expectAtFit(host, 'wheel over the dialog never zooms the scene');
-	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Leaving typed text asks first.
+	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 
 	// Preview: plain or modified wheel zooms; Shift and Alt stay native.
 	await page.locator('.customize-action').click();

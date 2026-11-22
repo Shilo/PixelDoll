@@ -1,8 +1,52 @@
 {
+	"recentlyDeleted": {
+		"empty": "Burada bir şey yok. Çöp kutusuna taşıdığınız karakterler, öğeler, kategoriler, hareketler ve durumlar en fazla 30 gün kalır.",
+		"kept": "en fazla 30 gün, en fazla 50 kayıt saklanır.",
+		"restoreNamed": "{name} geri yükle",
+		"deleteForeverNamed": "{name} kalıcı olarak silinsin",
+		"confirmTitle": "{name} kalıcı olarak silinsin mi?",
+		"confirmBody": "Tamamen gider. Bu geri alınamaz.",
+		"confirmAction": "Kalıcı olarak sil",
+		"restored": "{name} geri yüklendi",
+		"restoredAsCopy": "{name} olarak geri yüklendi: bu kimliğe sahip bir karakter zaten kayıtlıydı.",
+		"restoredWithDrafts": {
+			"one": "{name}, {count} taslakla geri yüklendi",
+			"other": "{name}, {count} taslakla geri yüklendi"
+		},
+		"restoredPartly": {
+			"one": "{name} geri yüklendi. {count} kıyafet değişmişti, bu yüzden dışarıda bırakıldı.",
+			"other": "{name} geri yüklendi. {count} kıyafet yeri değişmişti, bu yüzden bunların dışında bırakıldı."
+		},
+		"kind": {
+			"character": "Karakter",
+			"items": "Öğe",
+			"category": "Kategori",
+			"move": "Hareket",
+			"state": "Durum"
+		},
+		"errors": {
+			"gone": "Bu artık çöp kutusunda değil.",
+			"expired": "en fazla 30 gün çöp kutusunda kaldı ve artık yok.",
+			"missingArtwork": "{name} için kayıtlı görsellerin bir kısmı artık bu cihazda değil, bu yüzden geri yüklenemiyor.",
+			"full": "Tarayıcınızda yer kalmadı, bu yüzden hiçbir şey taşınmadı. Yer açmak için çöp kutusunda bir şey silin.",
+			"wrongKind": "O silinen öğe bir karaktere ait. Önce karakteri geri yükleyin.",
+			"movePresent": "Bu hareket zaten karakterde.",
+			"moveGeometry": "Bu hareket silindikten sonra karakterin kare boyutu veya yönleri değişti, bu yüzden artık hizalanamıyor.",
+			"partsGeometry": "Bu silindikten sonra karakterin kare boyutu veya yönleri değişti, bu yüzden artık hizalanamıyor.",
+			"moveItemsMissing": "Bu hareketin öğelerinden biri silinmiş. Önce o öğeyi, sonra bu hareketi geri yükleyin."
+		},
+		"restoring": "Geri yükleniyor…",
+		"confirmBodyCharacter": "Ondan silinen her şey de gider. Tamamen gider, geri alınamaz.",
+		"confirmRestore": "Geri yüklemek için tekrar basın",
+		"confirmRestoreNamed": "{name} geri yüklemek için tekrar basın",
+		"daysLeft": {
+			"one": "{count} gün kaldı",
+			"other": "{count} gün kaldı"
+		}
+	},
 	"librarySettings": {
 		"title": "Kitaplık",
 		"scope": "Kayıtlı karakterleri, görselleri ve arşivlenmiş verileri yedekleyin. Tercihler, taslaklar ve işler dahil edilmez.",
-		"privacy": "Yedekler görseller ve istemler içerebilir. Arşivlenmiş verileri paylaşmayın.",
 		"backup": "Kitaplığı yedekle",
 		"restoreFromBackup": "Yedekten geri yükle",
 		"review": "Yedeği incele",
@@ -28,12 +72,11 @@
 		"deleteWork": {
 			"deleteAll": "Tümünü sil",
 			"confirm": "Onayla",
-			"section": "Yerel çalışmayı sil",
-			"description": "Bu cihazda kayıtlı karakterleri, kıyafetleri, taslakları ve Etkinlik geçmişini kaldırır.",
+			"description": "Bu cihazdaki karakterleri, kıyafetleri, taslakları, çöp kutusunu ve etkinliği kaldırır.",
 			"kept": "Arşivlenmiş veriler, tercihler, indirilen yedekler ve PixelLab anahtarınız korunur.",
-			"action": "Yerel çalışmayı sil",
+			"action": "Yerel verileri sil…",
 			"title": "Tüm yerel çalışma silinsin mi?",
-			"body": "Bu cihazdaki karakterler, kıyafetler, taslaklar ve Etkinlik geçmişi kalıcı olarak silinir. Bu işlem geri alınamaz. PixelDoll ardından yeniden yüklenir.",
+			"body": "Bu cihazdaki karakterler, kıyafetler, taslaklar, çöp kutusu ve etkinlik kalıcı olarak silinir. Bu geri alınamaz. Ardından PixelDoll yeniden yüklenir.",
 			"generating": "Yerel çalışmayı silmeden önce bekleyen oluşturma işlerini tamamlayın veya kapatın. Hiçbir şey silinmedi.",
 			"uncertain": "Bazı PixelLab çağrıları sonuç vermeden ücretlendirilmiş olabilir. Önce Etkinlik bölümünde inceleyip temizleyin. Hiçbir şey silinmedi.",
 			"otherTabs": "Diğer PixelDoll sekmelerini ve pencerelerini kapatıp yeniden deneyin. Hiçbir şey silinmedi.",
@@ -99,7 +142,8 @@
 		"light": "Açık",
 		"search": "Ayarlarda ara",
 		"noResults": "Aramanızla eşleşen ayar bulunamadı.",
-		"all": "Tüm ayarlar"
+		"all": "Tüm ayarlar",
+		"trash": "Çöp kutusu"
 	},
 	"developer": {
 		"title": "Geliştirici",
@@ -116,17 +160,23 @@
 		"idCopyFailed": "Kimlik kopyalanamadı."
 	},
 	"common": {
+		"back": "Geri",
+		"backTo": "Geri dön: {place}",
+		"keepEditing": "Düzenlemeye devam edin",
+		"discardChangesTitle": "Değişiklikler atılsın mı?",
+		"discardChangesBody": "Burada yaptığınız değişiklikler kaybolacak.",
+		"keepsRunning": "Bunu kapatsanız da Etkinlik içinde devam eder.",
 		"loadFailed": "PixelDoll'un bir bölümü yüklenemedi. Yeniden denemek için sayfayı yenileyin.",
 		"advanced": "Gelişmiş",
 		"cancel": "İptal edin",
-		"cannotUndo": "Bu işlem geri alınamaz.",
+		"deleteRecoverable": "Gardıroptan çıkar. en fazla 30 gün boyunca geri alabilirsiniz.",
 		"character": "Karakter",
 		"characters": "Karakterler",
 		"close": "Kapatın",
 		"copying": "Kopyalanıyor…",
 		"cost": "Ücret",
 		"delete": "Silin",
-		"deleteNamed": "{name} silinsin mi?",
+		"deleteNamed": "{name} çöp kutusuna taşınsın mı?",
 		"deleting": "Siliniyor…",
 		"details": "Ayrıntılar",
 		"detailsMenu": "Ayrıntılar…",
@@ -136,7 +186,6 @@
 		"done": "Bitti",
 		"downloadZip": "ZIP indirin",
 		"free": "Ücretsiz",
-		"hide": "Gizleyin",
 		"loading": "Yükleniyor…",
 		"move": "Animasyon",
 		"name": "Ad",
@@ -159,7 +208,9 @@
 		"zoomIn": "Yakınlaştırın",
 		"zoomOut": "Uzaklaştırın",
 		"randomLook": "Rastgele görünüm",
-		"none": "Hiçbiri"
+		"none": "Hiçbiri",
+		"moveToTrash": "Çöp kutusuna taşı",
+		"movingToTrash": "Çöp kutusuna taşınıyor…"
 	},
 	"pwa": {
 		"invalidRelease": "Güncelleme açıklaması geçersiz.",
@@ -248,9 +299,11 @@
 		"adjustFrame": "Kareyi ayarla…",
 		"directions": "Yönler…",
 		"demoDeleteLocked": "Demo karakteri silinemez",
-		"labelDeleteCharacter": "Karakteri silin…"
+		"labelDeleteCharacter": "Çöp kutusuna taşı…"
 	},
-	"characterName": { "demo": "(Demo)" },
+	"characterName": {
+		"demo": "(Demo)"
+	},
 	"colors": {
 		"follows": "{name} rengini izler",
 		"miColor": "{mi} rengi",
@@ -291,7 +344,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Kopyala",
 		"demoNoAccount": "Demo için hesap gerekmez.",
-		"notNow": "Şimdi değil",
 		"sentOnlyToApiPixellabAi": "Yalnızca api.pixellab.ai adresine gönderilir.",
 		"forgetKey": "Anahtarı unutun",
 		"forgetTitle": "PixelLab anahtarı unutulsun mu?",
@@ -309,7 +361,7 @@
 		"viewPendingWork": "Bekleyen işleri görüntüle",
 		"character": "karakter",
 		"demo": "Uygulamayla gelen demo silinemez.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Karakterin kıyafetleri ve değişiklikleri bu cihazdan kaldırılır. Başka karakterlere kopyalanan eşyalar kalır. Bu işlem geri alınamaz."
+		"itsOutfitsAndChangesAreRemovedFrom": "Kıyafetleri, öğeleri ve saklanmamış taslakları da gider; diğer karakterlere kopyalanan öğeler kalır. en fazla 30 gün boyunca geri alabilirsiniz."
 	},
 	"demoCopyRow": {
 		"editACopy": "Bir kopyasını düzenleyin",
@@ -319,7 +371,10 @@
 		"title": "{name} ayrıntıları",
 		"notSaved": "Bu karakter artık kayıtlı değil.",
 		"withItems": "Eşyalarla birlikte",
-		"itemCost": { "one": "{cost} · {n} eşya", "other": "{cost} · {n} eşya" },
+		"itemCost": {
+			"one": "{cost} · {n} eşya",
+			"other": "{cost} · {n} eşya"
+		},
 		"noGenerationDetailsWereSavedForThis": "Bu karakterin üretim ayrıntıları kaydedilmemiş."
 	},
 	"directionsSheet": {
@@ -366,7 +421,7 @@
 		"titleWearingTakeOff": "Giyili (çıkarın)",
 		"twoHanded": "Çift elli",
 		"createVariant": "Varyant oluştur…",
-		"labelDeleteItem": "Eşyayı silin…",
+		"labelDeleteItem": "Çöp kutusuna taşı…",
 		"titleCancelName": "{name} iptal edilsin mi?",
 		"generationsAlreadyUsedAreNotRefundedAnd": "Kullanılmış üretim hakları iade edilmez. Gönderilmiş istekler yine de ücretlendirilebilir.",
 		"cancelSaveError": "İptal kaydedilemedi. Bu sekmeyi açık tutun ve tekrar deneyin.",
@@ -455,8 +510,14 @@
 		},
 		"colorMatchFree": "Mevcut kalite uyarıları korunur. PixelLab hizmetine istek gönderilmez.",
 		"colorsMatched": "{frames} için renk eşleştirmesi tamamlandı: {pixels}.",
-		"pixels": { "one": "{n} piksel", "other": "{n} piksel" },
-		"frames": { "one": "{n} kare", "other": "{n} kare" },
+		"pixels": {
+			"one": "{n} piksel",
+			"other": "{n} piksel"
+		},
+		"frames": {
+			"one": "{n} kare",
+			"other": "{n} kare"
+		},
 		"onlyFacing": "Yalnızca şu yöne bakarken: {direction}",
 		"hideWhenWorn": "{name} giyildiğinde işaretli eşyalar gizlenir.",
 		"tuckNote": "İşaretlenmemiş {slots} altta kalır; yalnızca siperliğin altından sarkan bölüm görünür. Kapüşonlar ve tam yüz maskeleri için bu seçeneği işaretleyin.",
@@ -468,7 +529,10 @@
 			"accepted": "kabul edildi"
 		},
 		"areaStats": "En az medyanın {ratio} kadarı · CV {cv}",
-		"handedness": { "ok": "uygun", "switched": "el değişmiş" },
+		"handedness": {
+			"ok": "uygun",
+			"switched": "el değişmiş"
+		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Bu eşyayı {move} animasyonunun {direction} yönü için günceller. Karakterin gövdesi değişmez.",
@@ -503,7 +567,9 @@
 		"importFromDevice": "Cihazdan içe aktarın…",
 		"importFromPixelLab": "PixelLab üzerinden içe aktarın…"
 	},
-	"noticeLink": { "opensInANewTab": "(yeni sekmede açılır)" },
+	"noticeLink": {
+		"opensInANewTab": "(yeni sekmede açılır)"
+	},
 	"outfits": {
 		"outfits": "Kıyafetler",
 		"saveALookToSwitchBetweenOutfits": "Oyununuzda farklı kıyafetler arasında geçiş yapmak için bir görünüm kaydedin.",
@@ -557,11 +623,11 @@
 		"moveMissing": "Bu animasyon artık mevcut değil."
 	},
 	"savedActions": {
-		"labelDeleteState": "Durumu sil",
-		"removeState": "Bu işlem, durumu ve bu duruma uyarlanmış eşya karelerini karakterden kaldırır. Tamamlanmış animasyonların kareleri ve kayıtlı kaynak görselleri korunur. Bu işlem geri alınamaz.",
-		"labelDeleteMove": "Animasyonu silin…",
+		"labelDeleteState": "Çöp kutusuna taşı…",
+		"removeState": "Gövde ve her öğe ayarlanmış karelerini kaybeder; bitmiş hareketler kendi karelerini korur. en fazla 30 gün boyunca geri alabilirsiniz.",
+		"labelDeleteMove": "Çöp kutusuna taşı…",
 		"labelDeleteOutfit": "Kıyafeti silin",
-		"thisRemovesTheMoveFromTheBody": "Animasyon gövdeden ve tüm eşyalardan kaldırılır. Bu işlem geri alınamaz."
+		"thisRemovesTheMoveFromTheBody": "Gövde ve her öğe karelerini kaybeder. en fazla 30 gün boyunca geri alabilirsiniz."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Ücretsiz: Daha önce yapılmış eşyalar yeniden üretilmez.",
@@ -569,7 +635,7 @@
 		"worksLike": "Davranış örneği",
 		"hand": "El",
 		"placeholderEGSmallAndShinyPinned": "Örn. küçük, parlak, göğse iliştirilmiş",
-		"deleteSlot": "Yuvayı silin…",
+		"deleteSlot": "Çöp kutusuna taşı…",
 		"titleAddSlot": "Yuva ekleyin",
 		"createCustomSlot": "Özel yuva oluşturun",
 		"slotName": "Yuva adı",
@@ -577,8 +643,7 @@
 		"showLabel": "Şu yuvayı gösterin: {label}",
 		"createSlot": "Yuva oluşturun",
 		"builtInSlots": "Yerleşik yuvalar",
-		"theSlotAndItsItemsAreDeleted": "Yuva ve içindeki eşyalar bu cihazdan birlikte silinir. Bu eşyalar artık kıyafetlerde kullanılmaz. Bu işlem geri alınamaz.",
-		"undoBringsItBack": "Geri alarak önceki hâline döndürebilirsiniz.",
+		"theSlotAndItsItemsAreDeleted": "Öğeleri de gider ve kıyafetler artık onları giymez. en fazla 30 gün boyunca geri alabilirsiniz.",
 		"labelAddedAtTheEndOfWardrobe": "{label}, Gardırop bölümünün sonuna eklendi.",
 		"valueShownAtTheEndOfWardrobe": "{value}, Gardırop bölümünün sonunda gösteriliyor.",
 		"demoDeleteLocked": "Uygulamayla gelen demonun eşyaları silinemez.",
@@ -592,13 +657,9 @@
 		"creativeHint": "Tasarım ipucu",
 		"hintNote": "Buradaki her yeni eşyanın açıklamasına eklenir. Daha önce yapılan eşyalar değişmez.",
 		"alreadyHidden": "{label} zaten var, ancak gösterilmiyor.",
-		"deleteWithItems": {
-			"1": "{label} yuvası ve içindeki eşya silinsin mi?",
-			"one": "{label} yuvası ve içindeki {n} eşya silinsin mi?",
-			"other": "{label} yuvası ve içindeki {n} eşya silinsin mi?"
-		},
-		"deleteTitle": "Şu yuva silinsin mi: {label}?",
-		"deleteExportNote": "Dışa aktarımlarda artık “{slot}” yuvası yer almayacak. Oyun kodu bu adı kullanıyorsa kodu değiştirin."
+		"deleteTitle": "{label} çöp kutusuna taşınsın mı?",
+		"deleteExportNote": "Dışa aktarımlarda artık “{slot}” yuvası yer almayacak. Oyun kodu bu adı kullanıyorsa kodu değiştirin.",
+		"theSlotIsDeleted": "Kategori gardıroptan çıkar. en fazla 30 gün boyunca geri alabilirsiniz."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, yön: {facing}",
@@ -652,6 +713,8 @@
 		"titleItemReview": "Eşya inceleme"
 	},
 	"toolbar": {
+		"activityRunning": "Etkinlik içinde çalışan işler var",
+		"activityAttention": "Etkinlik içindeki bir iş ilgi bekliyor",
 		"help": "Yardım",
 		"userGuide": "Kullanıcı kılavuzu",
 		"reportProblem": "Sorun bildir",
@@ -687,7 +750,10 @@
 			"one": "{n} üretim hakkı",
 			"other": "{n} üretim hakkı"
 		},
-		"characterCount": { "one": "{n} karakter", "other": "{n} karakter" },
+		"characterCount": {
+			"one": "{n} karakter",
+			"other": "{n} karakter"
+		},
 		"version": "Sürüm {version}",
 		"renameCharacter": "Karakteri yeniden adlandırın…",
 		"rename": "Yeniden adlandırın…",
@@ -756,7 +822,10 @@
 		"slotLabel": "{label} yuvası",
 		"equipped": "{label}, takılı",
 		"notFitted": "Bu gövdeye uyarlanmadı",
-		"itemCount": { "one": "{n} eşya", "other": "{n} eşya" },
+		"itemCount": {
+			"one": "{n} eşya",
+			"other": "{n} eşya"
+		},
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, giyili",
 		"generationTile": "{name}, {status}",
@@ -903,6 +972,7 @@
 		"manageMovesInOtherTab": "Animasyonları diğer PixelDoll sekmesinden yönetin veya önce o sekmeyi kapatın.",
 		"manageCharactersInOtherTab": "Karakterleri diğer PixelDoll sekmesinden yönetin veya önce o sekmeyi kapatın.",
 		"finishBeforeCharacterRemoval": "Karakteri silmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
+		"finishBeforeRestore": "Bu karakteri geri yüklemeden önce bekleyen üretim işini bitirin veya bırakın.",
 		"finishBeforeMoveRemoval": "Animasyonu silmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
 		"finishBeforeDirectionRemoval": "Yönleri değiştirmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
 		"finishBeforeFixFrames": "Kareleri düzeltmeden önce süren üretimlerin bitmesini bekleyin.",
@@ -913,8 +983,8 @@
 		"couldNotSaveReason": "Kaydedilemedi: {reason}",
 		"pixelDollCouldNotConfirmThatYourInterrupted": "PixelDoll, kesintiye uğrayan üretiminizin kaydedildiğini doğrulayamadı. Güncellemeden önce karakterde, Animasyonlar panelinde veya Kurulum panelinde inceleyin.",
 		"yourOutfitCouldNotBeSavedResolve": "Kıyafetiniz kaydedilemedi. Güncellemeden önce depolama sorununu çözün.",
-		"deletedNameFromThisDevice": "{name} bu cihazdan silindi",
-		"removedName": "{name} kaldırıldı",
+		"deletedNameFromThisDevice": "{name} çöp kutusuna taşındı",
+		"removedName": "{name} çöp kutusuna taşındı",
 		"nameChangedMeanwhileCheckItsTileAnd": "{name} bu sırada değişti. Kartını kontrol edip tekrar deneyin.",
 		"couldNotAddNameReason": "{name} eklenemedi: {reason}",
 		"fromHasNoMoreFramesOfName": "{from} karakterinde, {name} eşyasının bu karakter için kullanılabilecek başka karesi yok.",
@@ -953,8 +1023,8 @@
 		"labelChangedMeanwhileReviewItAgainBefore": "{label} bu sırada değişti. Silmeden önce yeniden inceleyin.",
 		"labelHasNewItemsReviewItAgain": "{label} içinde yeni eşyalar var. Silmeden önce yeniden inceleyin.",
 		"categoryAndItemsDeleted": {
-			"one": "{label} ve içindeki {count} eşya silindi",
-			"other": "{label} ve içindeki {count} eşya silindi"
+			"one": "{label} ve {count} öğe çöp kutusuna taşındı",
+			"other": "{label} ve {count} öğe çöp kutusuna taşındı"
 		},
 		"couldNotSaveFlowFailure": "{error} Bu hata bu cihaza kaydedilemedi. Sayfayı yeniden yüklemeden önce bu işlemi kapatın.",
 		"useSavedFramesInTheTabThat": "Kayıtlı kareleri PixelDoll işlerinizi yöneten sekmede kullanın.",
@@ -1000,14 +1070,15 @@
 		"moveCategory": "Taşıma: {name}",
 		"addCategory": "Kategori ekleme",
 		"changeCategory": "Değiştirme: {name}",
-		"deleteCategory": "Silme: {name}"
+		"deleteCategory": "Silme: {name}",
+		"deleteItem": "{name} silinsin",
+		"deleteMove": "{name} silinsin"
 	},
 	"export": {
 		"sheet": {
 			"title": "Dışa aktarım",
 			"back": "Geri",
 			"settings": "Ayarlar",
-			"close": "Dışa aktarımı kapatın",
 			"saving": "Ayarlar kaydediliyor…",
 			"unavailable": "Dışa aktarım kullanılamıyor",
 			"sourceOnly": "Yalnızca kaynak PNG dosyaları",
@@ -1039,7 +1110,10 @@
 			"versionLabel": "RPG Maker sürümü: {version}",
 			"walkMove": "Yürüme animasyonu"
 		},
-		"group": { "engines": "Motorlar ve çerçeveler", "assets": "Varlıklar" },
+		"group": {
+			"engines": "Motorlar ve çerçeveler",
+			"assets": "Varlıklar"
+		},
 		"target": {
 			"godot": {
 				"sub": "Sahne + çalışma zamanı",
@@ -1090,10 +1164,22 @@
 			"current": "Mevcut görünüm"
 		},
 		"count": {
-			"directions": { "one": "{count} yön", "other": "{count} yön" },
-			"moves": { "one": "{count} animasyon", "other": "{count} animasyon" },
-			"items": { "one": "{count} eşya", "other": "{count} eşya" },
-			"outfits": { "one": "{count} kıyafet", "other": "{count} kıyafet" }
+			"directions": {
+				"one": "{count} yön",
+				"other": "{count} yön"
+			},
+			"moves": {
+				"one": "{count} animasyon",
+				"other": "{count} animasyon"
+			},
+			"items": {
+				"one": "{count} eşya",
+				"other": "{count} eşya"
+			},
+			"outfits": {
+				"one": "{count} kıyafet",
+				"other": "{count} kıyafet"
+			}
 		},
 		"summary": {
 			"rpgCurrent": "Mevcut görünümünüz için bir yürüme sayfası içerir.",
@@ -1115,7 +1201,10 @@
 			"technical": "Teknik ayrıntılar",
 			"currentSettings": "Mevcut ayarlar",
 			"files": "Dahil edilen dosyalar",
-			"fileCount": { "one": "{count} dosya:", "other": "{count} dosya:" }
+			"fileCount": {
+				"one": "{count} dosya:",
+				"other": "{count} dosya:"
+			}
 		},
 		"gaps": {
 			"dirs": "{move} için yalnızca şu yönler var: {directions}",
@@ -1129,7 +1218,9 @@
 			"canDownloadSources": "Bunun yerine kaynak PNG dosyalarını indirebilirsiniz.",
 			"requestedWarnings": "İstenen dışa aktarımın uyarıları (kurtarılan görsellerin değil):"
 		},
-		"failure": { "noZip": "İndirmeye hazır ZIP yok." },
+		"failure": {
+			"noZip": "İndirmeye hazır ZIP yok."
+		},
 		"problem": {
 			"bodyMismatch": "Gövde kareleri artık bu karakterle eşleşmiyor.",
 			"noVisibleFrames": "Gövdede görünür kare yok.",
@@ -1161,7 +1252,9 @@
 			"duplicatePath": "Yinelenen dışa aktarım yolu: {path}",
 			"sizeLimits": "Arşiv PixelDoll boyut sınırlarını aşıyor."
 		},
-		"toast": { "artworkStarted": "Görseller indirilmeye başladı." },
+		"toast": {
+			"artworkStarted": "Görseller indirilmeye başladı."
+		},
 		"warnings": {
 			"missingMoves": "Karakterin bazı animasyonları ayarlarda bulunamadı.",
 			"missingOtherMoves": "Başka bir karakterin bazı animasyonları ayarlarda bulunamadı.",
@@ -1227,7 +1320,10 @@
 		"untitledCharacter": "Adsız karakter",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"states": { "one": "{count} durum", "other": "{count} durum" },
+			"states": {
+				"one": "{count} durum",
+				"other": "{count} durum"
+			},
 			"separateItems": {
 				"one": "{count} ayrı eşya",
 				"other": "{count} ayrı eşya"
@@ -1258,7 +1354,6 @@
 		"previewDirectionLabel": "Önizleme yönü",
 		"setupNext": "Ardından poz rig'ini kurun (önerilir)",
 		"setupNextHint": "İçe aktarma ücretsizdir. Rig kurulumu, başlamadan önce PixelLab üretim ücretini gösterir.",
-		"chooseAnother": "Başka bir karakter seçin",
 		"saving": "Yerel kopyanız kaydediliyor…",
 		"preparing": "Karakteriniz hazırlanıyor…",
 		"note": "Ücretsiz · Yeni bir yerel kopya kaydeder",
@@ -1713,7 +1808,10 @@
 		"retentionTotal": "Yakın geçmiş · Eski çağrılar listelenmez; toplam bu listeyi kapsar. Kopya bu listeyi içerir.",
 		"total": "Toplam",
 		"estimatedTotal": "Tahmini toplam",
-		"calls": { "one": "{count} çağrı", "other": "{count} çağrı" },
+		"calls": {
+			"one": "{count} çağrı",
+			"other": "{count} çağrı"
+		},
 		"callsHidden": {
 			"one": "{count} çağrı · {hidden} arka plan çağrısı gizli",
 			"other": "{count} çağrı · {hidden} arka plan çağrısı gizli"
@@ -1886,7 +1984,11 @@
 		"session": "Bu oturum: {cost}. Bazı animasyonlar üretim hakkı yerine dolar olarak ücretlendirilir. Yukarıdaki bakiye gerçek toplamı gösterir.",
 		"clearFollower": "İşleri çalıştıran PixelDoll sekmesinden temizleyin",
 		"clear": "Tamamlananları temizleyin",
-		"ledger": { "job": "İş", "endpoint": "Uç nokta", "state": "Durum" },
+		"ledger": {
+			"job": "İş",
+			"endpoint": "Uç nokta",
+			"state": "Durum"
+		},
 		"attempt": "(deneme {attempt})",
 		"planWait": {
 			"checking": "Bu iş akışını başlatmadan önce PixelLab planı kontrol ediliyor.",
@@ -1988,11 +2090,18 @@
 			"selective": "Seçici",
 			"none": "Yok"
 		},
-		"detail": { "low": "Düşük", "medium": "Orta", "high": "Yüksek" }
+		"detail": {
+			"low": "Düşük",
+			"medium": "Orta",
+			"high": "Yüksek"
+		}
 	},
 	"moves": {
 		"preview": "{move} önizlemesi",
-		"frames": { "one": "{count} kare", "other": "{count} kare" },
+		"frames": {
+			"one": "{count} kare",
+			"other": "{count} kare"
+		},
 		"onlyDirection": "Yalnızca {direction}",
 		"oneDirection": "Yalnızca bir yön",
 		"mirrorOf": "{direction} ({source} yönünün aynası)",
@@ -2228,7 +2337,10 @@
 				"unique": "8 özgün yön"
 			},
 			"models": {
-				"v3": { "label": "V3", "help": "Dengeli oranlar." },
+				"v3": {
+					"label": "V3",
+					"help": "Dengeli oranlar."
+				},
 				"standard": {
 					"label": "Standart",
 					"help": "Bir şablon veya öne bakan sprite’ınızı kullanarak sekiz görünüm çizer."
@@ -2242,8 +2354,12 @@
 					"help": "Büyük başlı ve kısa bacaklı Chibi tarzı; yaklaşık üç kat daha pahalıdır."
 				}
 			},
-			"outlines": { "default": "Varsayılan (siyah)" },
-			"details": { "default": "Varsayılan (orta)" },
+			"outlines": {
+				"default": "Varsayılan (siyah)"
+			},
+			"details": {
+				"default": "Varsayılan (orta)"
+			},
 			"outlineNote": "Dış çizgi: {outline}",
 			"detailNote": "Ayrıntı: {detail}",
 			"ownView": "{direction} artık kendi görünümünü kullanıyor.",
@@ -2348,7 +2464,6 @@
 			"retryLabel": "Karakteri yeniden oluşturun",
 			"editSetup": "Ayarları düzenle…",
 			"estimated": "Tahmini {gens}",
-			"keepWorking": "Çalışmaya devam edin",
 			"costTitle": "Her yönde ayakta duruş görünümü oluşturur. Bekleme, yürüme ve diğer animasyonları daha sonra ekleyin. Eksik bir ayakta duruş eklemi ücreti biraz artırabilir",
 			"create": "Karakteri oluşturun",
 			"createAnyway": "Yine de oluştur"
@@ -2435,7 +2550,6 @@
 		"reuseCached": "Önbellekteki kareleri yeniden kullanın",
 		"matchColors": "Gövde renklerini eşleştirin",
 		"keepFrames": "Kareleri saklayın",
-		"keepWorking": "Çalışmaya devam edebilirsiniz.",
 		"queueAnother": "Başka animasyonu kuyruğa alın",
 		"addLabel": "Animasyon ekleyin veya değiştirin",
 		"submit": {
@@ -2641,7 +2755,12 @@
 		"tabOnlyKey": "Bu bağlantı yalnızca bu sekme için geçerlidir ve kaydedilmez.",
 		"useSavedKey": "Kayıtlı anahtarı kullan"
 	},
-	"moveNames": { "default": "Ayakta", "idle": "Bekleme", "walk": "Yürüme", "run": "Koşma" },
+	"moveNames": {
+		"default": "Ayakta",
+		"idle": "Bekleme",
+		"walk": "Yürüme",
+		"run": "Koşma"
+	},
 	"stateGeneration": {
 		"continueIntro": "Hiç gönderilmemiş görünümleri tamamlayabilirsiniz. Tamamlanan görünümler korunur.",
 		"continueAccount": "Bu duruma devam etmek için ilk PixelLab anahtarınızla yeniden bağlanın.",
@@ -2670,10 +2789,10 @@
 		"reference": "Değişikliğe yön verecek bir görsel ekleyin.",
 		"pixenReference": "Pixen referans görseli kullanmaz. Görselinizi kullanmak için modeli değiştirin.",
 		"fixedCost": "Maliyet: {generations} üretim",
+		"fixedCostOne": "Maliyet: 1 üretim",
 		"managed": "PixelLab hesabınızda {parent} kaynaklı bir durum oluşturur.",
 		"transfer": "Referans görselin yalnızca stilini değil, görünüşünü de alır.",
 		"sheetWarning": "Birden çok görünüm tek sayfada düzenlenir. Kaydetmeden önce her görünümü kontrol edin.",
-		"checkCost": "Maliyeti kontrol et",
 		"costFirst": "Oluşturmadan önce maliyeti göreceksiniz.",
 		"quoting": "Maliyet kontrol ediliyor…",
 		"generate": "Durum oluştur",
@@ -2683,7 +2802,13 @@
 		"sourceMissing": "Kaynak kullanılamıyor",
 		"sourceChanged": "Oluşturmadan sonra kaynak değişti, bu yüzden bu sonuç kaydedilemez. Atıp yeniden deneyin.",
 		"keepGrounded": "Kaynağa hizala",
-		"groundedHint": "Ayaklar kaynağa göre taşındı. Geri almak için kapatın."
+		"groundedHint": "Ayaklar kaynağa göre taşındı. Geri almak için kapatın.",
+		"readyRow": "İncelemeye hazır",
+		"attentionRow": "Tamamlanmadı: Seçenekler için dokunun",
+		"background": "Bunu kapatıp çalışmaya devam edebilirsiniz. Hazır olduğunda size haber verilir.",
+		"readyToReview": "İncelemeye hazır: {name}.",
+		"failedOpen": "İlgilenmeniz gerekiyor: {name}. Nedenini görmek için açın.",
+		"generatingProgress": "Durum oluşturuluyor… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "Eklem ölçümü zaten sürüyor. Tamamlandığında tekrar deneyin.",
@@ -2714,7 +2839,7 @@
 		"noEquipment": "Ekipman kopyalanmaz.",
 		"noCredits": "Kredi kullanılmaz.",
 		"invalidName": "Latin harfi veya rakam içeren bir ad girin.",
-		"takenName": "Bu ad kullanılıyor veya ayrılmış. Başka bir ad seçin.",
+		"takenName": "Bu karakterin bir hareketi veya durumu bu adı zaten kullanıyor. Başka bir ad seçin.",
 		"savedAs": "{name} olarak kaydedilir",
 		"saving": "Durum kaydediliyor…",
 		"saved": "Durum kaydedildi",
@@ -2731,8 +2856,7 @@
 		"resolveDrafts": "Animasyonu silmeden önce bu karakterin eşya taslaklarını tamamlayın veya atın.",
 		"required": "Mevcut eşyaları yeni animasyonlara uyarlamak için bu ayakta duruş animasyonu gerekir.",
 		"selectedCharacterChanged": "Seçili karakter değişti.",
-		"concurrentEdit": "Animasyon silinemeden önce karakter değişti. Tekrar deneyin.",
-		"removed": "Animasyon kaldırıldı"
+		"concurrentEdit": "Animasyon silinemeden önce karakter değişti. Tekrar deneyin."
 	},
 	"sizePreview": {
 		"label": "Boyut kılavuzu: {frame} piksellik kare içinde {body} piksellik gövde tuvali",
@@ -2741,8 +2865,9 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Daha sonra" },
-	"toast": { "dismiss": "Bildirimi kapatın" },
+	"toast": {
+		"dismiss": "Bildirimi kapatın"
+	},
 	"sharedVisibility": {
 		"allEmphasis": "Tüm",
 		"demo": "{demo} kaynaklı",

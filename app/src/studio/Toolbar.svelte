@@ -1,43 +1,29 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import LanguagePicker from './LanguagePicker.svelte';
-	import { openSettings, SETTINGS_KEYS } from './settingsNavigation.svelte.ts';
-	import KeyShortcut, { ariaShortcut } from './KeyShortcut.svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { app } from '../lib/app.svelte.ts';
-	import { repository } from '../lib/repository.ts';
-	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { popoverFocus } from './experience/focus.ts';
+	import { openSettings } from './settingsNavigation.svelte.ts';
 	import { tick } from 'svelte';
 	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
 	import SharePopover from './SharePopover.svelte';
 	import CharacterActions from './CharacterActions.svelte';
 	import CharacterName from './CharacterName.svelte';
-	import DemoCopyRow from './DemoCopyRow.svelte';
 	import DeleteRow from './DeleteRow.svelte';
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
-	import MenuDisclosure from './MenuDisclosure.svelte';
-	import WardrobeVisibility from './WardrobeVisibility.svelte';
-	import FullscreenButton from './FullscreenButton.svelte';
-	import AffiliationNotice from './AffiliationNotice.svelte';
-	import LibraryBackupButton from './LibraryBackupButton.svelte';
-	import { downloadLibraryBackupWithFeedback } from './downloadLibraryBackup.ts';
-	import PixelLabUsage from './PixelLabUsage.svelte';
-	import { queue } from '../lib/pixellab/queue.ts';
-	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
+	import GlobalActions from './GlobalActions.svelte';
+	import MoreMenu from './MoreMenu.svelte';
+	import { historyText } from './historyText.ts';
+	import { activityStatus } from './activityStatus.svelte.ts';
 	import { characterFacts } from './model.ts';
-	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 	import {
 		ui,
 		doc,
 		store,
-		creates,
-		settingUp,
-		gens,
 		openProject,
 		openRename,
 		undo,
@@ -45,24 +31,13 @@
 		randomize,
 		refreshProjects,
 		characterName,
-		isDemo,
-		stoppedWork
+		isDemo
 	} from './state.svelte.ts';
 	import {
-		Archive,
-		CircleAlert,
 		ChevronDown,
 		ChevronLeft,
 		Download,
-		MonitorDown,
-		BookOpen,
-		Bug,
-		ExternalLink,
-		CircleHelp,
-		RefreshCw,
 		Share2,
-		Settings2,
-		Ellipsis,
 		KeyRound,
 		Redo2,
 		Undo2,
@@ -75,9 +50,7 @@
 		Eye,
 		Layers2,
 		Mountain,
-		Grid2x2,
-		PawPrint,
-		Shirt
+		PawPrint
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
@@ -131,29 +104,32 @@
 			copyFeedback = 'failed';
 		}
 	}
-	const active = $derived($queue.counts.running + $queue.counts.pending);
-	const busy = $derived(
-		active > 0 ||
-			gens.some((g) => g.phase === 'running') ||
-			creates.some((run) => run.running && !run.error) ||
-			(!!settingUp.spec && !settingUp.done && !settingUp.error)
-	);
-	const stopped = $derived(stoppedWork());
-	const undoLabel = $derived(doc.undo.at(-1)?.label);
-	const redoLabel = $derived(doc.redo.at(-1)?.label);
-	const undoText = $derived(
-		undoLabel && t('toolbar.undoAction', { action: displayMessage(undoLabel) })
-	);
-	const redoText = $derived(
-		redoLabel && t('toolbar.redoAction', { action: displayMessage(redoLabel) })
-	);
+	const active = $derived(activityStatus.active);
+	const undoText = $derived(historyText('undo'));
+	const redoText = $derived(historyText('redo'));
+	let undoButton = $state<HTMLButtonElement>(),
+		redoButton = $state<HTMLButtonElement>();
+	/** Steps history; a button whose stack just emptied hides, so its focus moves to the other one. */
+	async function step(action: () => void, other: HTMLButtonElement | undefined) {
+		const own = document.activeElement;
+		action();
+		await tick();
+		if (!(own instanceof HTMLButtonElement) || !own.disabled) return;
+		// The other one may live in More at this width; More then takes focus.
+		const next =
+			other && !other.disabled && other.checkVisibility()
+				? other
+				: document.querySelector<HTMLElement>(
+						'.experience-header [popovertarget="experience-options"]'
+					);
+		next?.focus({ preventScroll: true });
+	}
 	let menu: HTMLElement;
 	const close = () => menu?.hidePopover?.();
 	const pick = (id: string) => {
 		close();
 		if (id !== doc.id) void openProject(id);
 	};
-	const closeOptions = () => document.getElementById('experience-options')?.hidePopover();
 	const sheet = (s: typeof ui.sheet) => {
 		close();
 		ui.sheet = s;
@@ -267,6 +243,28 @@
 		{#if experience.screen === 'characters'}
 			<NewCharacterButton />
 		{:else}
+			<!-- Undo shows once there is something to undo, and Redo after it once there is something to redo. Each takes room
+			     only while usable (the owner's choice: no idle space, at the cost of Undo shifting when Redo appears). -->
+			<button
+				class="bu-action header-undo"
+				class:slot-gone={!undoText}
+				data-variant="quiet"
+				aria-label={undoText ?? t('common.undo')}
+				title={undoText ?? t('common.undo')}
+				disabled={!undoText}
+				bind:this={undoButton}
+				onclick={() => step(undo, redoButton)}><Undo2 size={18} /></button
+			>
+			<button
+				class="bu-action header-redo"
+				class:slot-gone={!redoText}
+				data-variant="quiet"
+				aria-label={redoText ?? t('common.redo')}
+				title={redoText ?? t('common.redo')}
+				disabled={!redoText}
+				bind:this={redoButton}
+				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
+			>
 			<button
 				class="bu-action test-mount-toggle"
 				data-variant="quiet"
@@ -288,22 +286,6 @@
 				onclick={randomize}><Dices size={18} /></button
 			>
 			<button
-				class="bu-action header-undo"
-				data-variant="quiet"
-				aria-label={undoText ?? t('common.undo')}
-				title={undoText ?? t('common.undo')}
-				disabled={!undoLabel}
-				onclick={undo}><Undo2 size={18} /></button
-			>
-			<button
-				class="bu-action header-redo"
-				data-variant="quiet"
-				aria-label={redoText ?? t('common.redo')}
-				title={redoText ?? t('common.redo')}
-				disabled={!redoLabel}
-				onclick={redo}><Redo2 size={18} /></button
-			>
-			<button
 				class="bu-action header-share"
 				data-variant="outline"
 				aria-label={t('toolbar.shareCharacter')}
@@ -323,260 +305,11 @@
 				/></button
 			>
 		{/if}
-		{#if busy}<button
-				class="bu-action"
-				data-variant="quiet"
-				aria-label={t('activity.title')}
-				title={t('activity.title')}
-				onclick={() => (ui.sheet = 'activity')}
-				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span></button
-			>{:else if stopped}<button
-				class="bu-action stopped-work"
-				data-variant="quiet"
-				aria-label={t('activity.title')}
-				title={t('generation.status.needsAttention')}
-				onclick={() => (ui.sheet = 'activity')}
-				><CircleAlert size={18} /><span class="num">{stopped}</span></button
-			>{/if}
-		<FullscreenButton />
-		<button
-			class="bu-action"
-			data-variant="quiet"
-			aria-label={t('toolbar.moreOptions')}
-			title={t('toolbar.moreOptions')}
-			data-popover-fallback="share-popover"
-			popovertarget="experience-options"><Ellipsis size={20} /></button
-		>
+		<GlobalActions />
 	</div>
 </header>
 <SharePopover />
-<div
-	id="experience-options"
-	class="menu options-menu bu-popover-anchor"
-	data-placement="bottom-end"
-	popover
-	ontoggle={(event) => popoverFocus(event)}
->
-	<PopoverArrow />
-	<div class="menu-surface bu-popover-surface bu-floating">
-		<button
-			class="row bu-action"
-			data-variant="quiet"
-			aria-haspopup="dialog"
-			onclick={() => {
-				closeOptions();
-				ui.sheet = 'connect';
-			}}
-		>
-			{#if app.key && !app.keyRejected}
-				<PixelLabUsage compact />
-			{:else}
-				<KeyRound size={18} />
-				<span class="row-name"
-					>{openerLabel(
-						t(app.keyRejected ? 'connectSheet.reconnect' : 'connectSheet.titleConnectPixelLab')
-					)}</span
-				>
-				<SurfaceChevron />
-			{/if}
-		</button>
-		<hr />
-		<!-- Character actions: demo editing and actions moved from the toolbar on smaller screens. -->
-		{#if experience.screen === 'studio'}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
-		{#if experience.screen === 'studio'}<button
-				class="row bu-action mobile-random"
-				data-variant="quiet"
-				disabled={!m}
-				onclick={() => {
-					closeOptions();
-					randomize();
-				}}><Dices size={18} /><span class="row-name">{t('common.randomLook')}</span></button
-			>{/if}
-		{#if experience.screen === 'studio'}<button
-				class="row bu-action mobile-undo"
-				data-variant="quiet"
-				disabled={!undoLabel}
-				onclick={() => {
-					closeOptions();
-					undo();
-				}}><Undo2 size={18} /><span class="row-name">{undoText ?? t('common.undo')}</span></button
-			>{/if}
-		{#if experience.screen === 'studio'}<button
-				class="row bu-action mobile-redo"
-				data-variant="quiet"
-				disabled={!redoLabel}
-				onclick={() => {
-					closeOptions();
-					redo();
-				}}><Redo2 size={18} /><span class="row-name">{redoText ?? t('common.redo')}</span></button
-			>{/if}
-		{#if experience.screen === 'studio'}<button
-				class="row bu-action mobile-share"
-				data-variant="quiet"
-				disabled={!m}
-				onclick={() => {
-					closeOptions();
-					document.getElementById('share-popover')?.showPopover();
-				}}
-				><Share2 size={18} /><span class="row-name">{openerLabel(t('common.share'))}</span
-				><SurfaceChevron /></button
-			>{/if}
-		<!-- Narrow phones move Inspect here from the playback bar so its controls keep full-size targets. -->
-		{#if experience.screen === 'studio' && experience.mode === 'preview'}<button
-				class="row bu-action mobile-inspect"
-				data-variant="quiet"
-				aria-label={t('experience.inspect')}
-				disabled={!m}
-				onclick={() => {
-					closeOptions();
-					ui.sheet = 'inspect';
-				}}
-				><Grid2x2 size={18} /><span class="row-name">{openerLabel(t('experience.inspect'))}</span
-				><SurfaceChevron /></button
-			>{/if}
-		{#if experience.screen === 'studio'}<hr
-				class={{ 'mobile-sep': !doc.id.startsWith('fixture:') }}
-			/>{/if}
-		<button
-			class="row bu-action"
-			data-variant="quiet"
-			aria-haspopup="dialog"
-			aria-keyshortcuts={ariaShortcut(SETTINGS_KEYS)}
-			onclick={() => {
-				closeOptions();
-				openSettings();
-			}}
-			><Settings2 size={18} aria-hidden="true" /><span class="row-name"
-				>{openerLabel(t('export.sheet.settings'))}</span
-			><KeyShortcut keys={SETTINGS_KEYS} class="row-aside faint small" /><SurfaceChevron /></button
-		>
-		<LanguagePicker />
-		<MenuDisclosure sectionKey="more-wardrobe-settings" label={t('toolbar.wardrobeSettings')}>
-			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
-			{#snippet aside()}
-				{#if sharedItemsHidden(doc.id)}
-					<span class="row-aside wardrobe-status faint small">{t('toolbar.ownItemsOnly')}</span>
-				{/if}
-			{/snippet}
-			<WardrobeVisibility />
-		</MenuDisclosure>
-		<hr />
-		{#if !workspaceCopy}
-			<LibraryBackupButton menu onbackup={downloadLibraryBackupWithFeedback} />
-		{/if}
-		<button
-			class="row bu-action"
-			data-variant="quiet"
-			onclick={() => {
-				closeOptions();
-				ui.sheet = 'activity';
-			}}
-			><Activity size={18} /><span class="row-name">{openerLabel(t('activity.title'))}</span
-			>{#if $queue.role === 'follower'}<span class="small">{t('toolbar.otherTab')}</span
-				>{/if}<SurfaceChevron /></button
-		>
-		{#if workspaceCopy}
-			<button
-				class="row bu-action"
-				data-variant="quiet"
-				aria-haspopup="dialog"
-				onclick={() => {
-					closeOptions();
-					ui.sheet = 'workspaceReport';
-				}}
-				><Archive size={18} /><span class="row-name"
-					>{openerLabel(t('workspace.activityTitle'))}</span
-				><SurfaceChevron /></button
-			>
-		{/if}
-		<!-- App actions: installation, updates, and help. -->
-		{#if import.meta.env.PROD && !$pwa.installed && ($pwa.installable || $pwa.installing)}
-			<button
-				class="row bu-action"
-				data-variant="quiet"
-				disabled={$pwa.installing}
-				onclick={() => {
-					void installApp();
-				}}
-				><MonitorDown size={18} /><span class="row-name">{t('pwaRuntime.installPixelDoll')}</span
-				></button
-			>
-		{/if}
-		{#if $pwa.available}<button
-				class="row bu-action"
-				data-variant="quiet"
-				disabled={!$pwa.ready}
-				onclick={requestUpdate}
-				><RefreshCw size={18} /><span class="row-name"
-					>{t('toolbar.updateToVVersion', { version: $pwa.available.version })}</span
-				></button
-			>{/if}
-		<button
-			class="row bu-action"
-			data-variant="quiet"
-			popovertarget="help-options"
-			aria-controls="help-options"
-		>
-			<CircleHelp size={18} aria-hidden="true" />
-			<span class="row-name">{openerLabel(t('toolbar.help'))}</span>
-			<SurfaceChevron />
-		</button>
-		<div
-			id="help-options"
-			class="menu bu-popover-anchor"
-			data-placement="bottom-end"
-			popover
-			role="group"
-			aria-label={t('toolbar.help')}
-			ontoggle={(event) => popoverFocus(event)}
-		>
-			<PopoverArrow />
-			<div class="menu-surface bu-popover-surface bu-floating">
-				<a
-					class="row bu-action"
-					data-variant="quiet"
-					href={`${repository}/blob/main/docs/user-guide.md`}
-					target="_blank"
-					rel="noopener"
-					onclick={closeOptions}
-					><BookOpen size={18} /><span class="row-name">{t('toolbar.userGuide')}</span><ExternalLink
-						size={16}
-						aria-hidden="true"
-					/></a
-				>
-				<a
-					class="row bu-action"
-					data-variant="quiet"
-					href={`${repository}/issues/new?template=problem-report.yml`}
-					target="_blank"
-					rel="noreferrer"
-					aria-labelledby="problem-report-label"
-					aria-describedby="problem-report-notice"
-					onclick={closeOptions}
-				>
-					<Bug size={18} aria-hidden="true" />
-					<span class="row-name">
-						<span id="problem-report-label">{t('toolbar.reportProblem')}</span>
-						<span id="problem-report-notice" class="row-reason bu-muted"
-							>{t('toolbar.reportProblemNotice')}</span
-						>
-					</span>
-					<ExternalLink size={16} aria-hidden="true" />
-				</a>
-				{#if import.meta.env.PROD && !workspaceCopy}
-					<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}>
-						<MonitorDown size={18} /><span class="row-name"
-							>{openerLabel(t('pwaRuntime.installationHelp'))}</span
-						>
-						<SurfaceChevron />
-					</button>
-				{/if}
-			</div>
-		</div>
-		<!-- Attribution footer: keep this below the app links. -->
-		<AffiliationNotice />
-	</div>
-</div>
+{#if ui.sheet !== 'create'}<MoreMenu />{/if}
 
 <div
 	id="project-menu"
@@ -694,12 +427,7 @@
 	.project-choices {
 		gap: 0;
 	}
-	.stopped-work {
-		color: var(--bu-danger);
-	}
-	@container (max-width: 300px) {
-		.wardrobe-status {
-			display: none;
-		}
+	.slot-gone {
+		display: none;
 	}
 </style>

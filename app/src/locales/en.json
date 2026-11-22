@@ -1,8 +1,52 @@
 {
+	"recentlyDeleted": {
+		"empty": "Nothing here. Characters, items, categories, moves and states you move to Trash stay for up to 30 days.",
+		"kept": "Kept for up to 30 days, up to 50 entries.",
+		"restoreNamed": "Restore {name}",
+		"deleteForeverNamed": "Delete {name} forever",
+		"confirmTitle": "Delete {name} forever?",
+		"confirmBody": "It is gone for good. This cannot be undone.",
+		"confirmAction": "Delete forever",
+		"restored": "Restored {name}",
+		"restoredAsCopy": "Restored as {name}: a character with that ID was already saved.",
+		"restoredWithDrafts": {
+			"one": "Restored {name} with {count} draft",
+			"other": "Restored {name} with {count} drafts"
+		},
+		"restoredPartly": {
+			"one": "Restored {name}. {count} outfit had changed, so it was left out.",
+			"other": "Restored {name}. {count} outfit places had changed, so it was left out of them."
+		},
+		"kind": {
+			"character": "Character",
+			"items": "Item",
+			"category": "Category",
+			"move": "Move",
+			"state": "State"
+		},
+		"errors": {
+			"gone": "This is no longer in Trash.",
+			"expired": "This stayed in Trash for up to 30 days and is gone.",
+			"missingArtwork": "Some saved artwork for {name} is no longer on this device, so it cannot be restored.",
+			"full": "Your browser is out of space, so nothing was moved to Trash. Delete something in Trash to free space.",
+			"wrongKind": "That item is in Trash with its character. Restore the character first.",
+			"movePresent": "This move is already on the character.",
+			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
+			"partsGeometry": "This character's frame size or directions changed since this was deleted, so it can no longer line up.",
+			"moveItemsMissing": "One of this move items is in Trash. Restore that item first, then this move."
+		},
+		"restoring": "Restoring…",
+		"confirmBodyCharacter": "Anything else deleted from it goes too. It is gone for good. This cannot be undone.",
+		"confirmRestore": "Press again to restore",
+		"confirmRestoreNamed": "Press again to restore {name}",
+		"daysLeft": {
+			"one": "{count} day left",
+			"other": "{count} days left"
+		}
+	},
 	"librarySettings": {
 		"title": "Library",
 		"scope": "Back up saved characters, artwork, and archived data. Preferences, drafts, and jobs are not included.",
-		"privacy": "Backups can contain artwork and prompts. Keep archived data private.",
 		"backup": "Back up library",
 		"restoreFromBackup": "Restore from backup",
 		"review": "Review backup",
@@ -28,12 +72,11 @@
 		"deleteWork": {
 			"deleteAll": "Delete all",
 			"confirm": "Confirm",
-			"section": "Delete local work",
-			"description": "Removes the characters, outfits, drafts and Activity history saved on this device.",
+			"description": "Removes the characters, outfits, drafts, Trash and Activity on this device.",
 			"kept": "Archived data, preferences, downloaded backups and your PixelLab key stay.",
-			"action": "Delete local work",
+			"action": "Delete local work…",
 			"title": "Delete all local work?",
-			"body": "Characters, outfits, drafts and Activity history on this device are deleted permanently. This cannot be undone. PixelDoll reloads afterward.",
+			"body": "Characters, outfits, drafts, Trash and Activity on this device are deleted permanently. This cannot be undone. PixelDoll reloads afterward.",
 			"generating": "Finish or dismiss pending generation work before deleting local work. Nothing was deleted.",
 			"uncertain": "Some PixelLab calls may have been charged without a result. Review and clear them in Activity first. Nothing was deleted.",
 			"otherTabs": "Close other PixelDoll tabs and windows, then try again. Nothing was deleted.",
@@ -99,7 +142,8 @@
 		"light": "Light",
 		"search": "Search settings",
 		"noResults": "No settings match your search.",
-		"all": "All settings"
+		"all": "All settings",
+		"trash": "Trash"
 	},
 	"developer": {
 		"title": "Developer",
@@ -116,17 +160,23 @@
 		"idCopyFailed": "Could not copy the ID."
 	},
 	"common": {
+		"back": "Back",
+		"backTo": "Back to {place}",
+		"keepEditing": "Keep editing",
+		"discardChangesTitle": "Discard changes?",
+		"discardChangesBody": "What you changed here will be lost.",
+		"keepsRunning": "Keeps running in Activity if you close this.",
 		"loadFailed": "Part of PixelDoll could not load. Reload to try again.",
 		"advanced": "Advanced",
 		"cancel": "Cancel",
-		"cannotUndo": "This can't be undone.",
+		"deleteRecoverable": "It leaves your wardrobe. You can bring it back for up to 30 days.",
 		"character": "Character",
 		"characters": "Characters",
 		"close": "Close",
 		"copying": "Copying…",
 		"cost": "Cost",
 		"delete": "Delete",
-		"deleteNamed": "Delete {name}?",
+		"deleteNamed": "Move {name} to Trash?",
 		"deleting": "Deleting…",
 		"details": "Details",
 		"detailsMenu": "Details…",
@@ -136,7 +186,6 @@
 		"done": "Done",
 		"downloadZip": "Download ZIP",
 		"free": "Free",
-		"hide": "Hide",
 		"loading": "Loading…",
 		"move": "Move",
 		"name": "Name",
@@ -159,7 +208,9 @@
 		"zoomIn": "Zoom in",
 		"zoomOut": "Zoom out",
 		"randomLook": "Random look",
-		"none": "None"
+		"none": "None",
+		"moveToTrash": "Move to Trash",
+		"movingToTrash": "Moving to Trash…"
 	},
 	"pwa": {
 		"invalidRelease": "The update description is invalid.",
@@ -248,9 +299,11 @@
 		"adjustFrame": "Adjust frame…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Demo character can't be deleted",
-		"labelDeleteCharacter": "Delete character…"
+		"labelDeleteCharacter": "Move to Trash…"
 	},
-	"characterName": { "demo": "(Demo)" },
+	"characterName": {
+		"demo": "(Demo)"
+	},
 	"colors": {
 		"follows": "Follows {name}",
 		"miColor": "{mi} color",
@@ -291,7 +344,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Copy",
 		"demoNoAccount": "No account needed for the demo.",
-		"notNow": "Not now",
 		"sentOnlyToApiPixellabAi": "Sent only to api.pixellab.ai.",
 		"forgetKey": "Forget key",
 		"forgetTitle": "Forget PixelLab key?",
@@ -309,7 +361,7 @@
 		"viewPendingWork": "View pending work",
 		"character": "character",
 		"demo": "The bundled demo cannot be deleted.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits and changes are removed from this device. Items copied to other characters stay. This can't be undone."
+		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits, items and unkept drafts go too; items copied to other characters stay. You can bring it back for up to 30 days."
 	},
 	"demoCopyRow": {
 		"editACopy": "Edit a copy",
@@ -319,7 +371,10 @@
 		"title": "{name} details",
 		"notSaved": "This character is no longer saved.",
 		"withItems": "With items",
-		"itemCost": { "one": "{cost} · {n} item", "other": "{cost} · {n} items" },
+		"itemCost": {
+			"one": "{cost} · {n} item",
+			"other": "{cost} · {n} items"
+		},
 		"noGenerationDetailsWereSavedForThis": "No generation details were saved for this character."
 	},
 	"directionsSheet": {
@@ -366,7 +421,7 @@
 		"titleWearingTakeOff": "Wearing (take off)",
 		"twoHanded": "Two-handed",
 		"createVariant": "Create a variant…",
-		"labelDeleteItem": "Delete item…",
+		"labelDeleteItem": "Move to Trash…",
 		"titleCancelName": "Cancel {name}?",
 		"generationsAlreadyUsedAreNotRefundedAnd": "Generations already used are not refunded, and requests already sent may still charge.",
 		"cancelSaveError": "Could not save cancellation. Keep this tab open and try again.",
@@ -455,8 +510,14 @@
 		},
 		"colorMatchFree": "Existing quality warnings are kept. No PixelLab call is made.",
 		"colorsMatched": "Matched {pixels} in {frames}.",
-		"pixels": { "one": "{n} pixel", "other": "{n} pixels" },
-		"frames": { "one": "{n} frame", "other": "{n} frames" },
+		"pixels": {
+			"one": "{n} pixel",
+			"other": "{n} pixels"
+		},
+		"frames": {
+			"one": "{n} frame",
+			"other": "{n} frames"
+		},
 		"onlyFacing": "Only when facing {direction}",
 		"hideWhenWorn": "Checked items are hidden while {name} is worn.",
 		"tuckNote": "Unchecked {slots} is tucked under it: only what hangs below the brim shows. Check it for hoods and full masks.",
@@ -468,7 +529,10 @@
 			"accepted": "accepted"
 		},
 		"areaStats": "min {ratio} of median · CV {cv}",
-		"handedness": { "ok": "ok", "switched": "switched" },
+		"handedness": {
+			"ok": "ok",
+			"switched": "switched"
+		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Updates this item for {move} facing {direction}. The character body stays unchanged.",
@@ -503,7 +567,9 @@
 		"importFromDevice": "Import from device…",
 		"importFromPixelLab": "Import from PixelLab…"
 	},
-	"noticeLink": { "opensInANewTab": "(opens in a new tab)" },
+	"noticeLink": {
+		"opensInANewTab": "(opens in a new tab)"
+	},
 	"outfits": {
 		"outfits": "Outfits",
 		"saveALookToSwitchBetweenOutfits": "Save a look to switch between outfits in your game.",
@@ -557,11 +623,11 @@
 		"moveMissing": "This move no longer exists."
 	},
 	"savedActions": {
-		"labelDeleteState": "Delete State",
-		"removeState": "This removes the State and its fitted item frames from this character. Finished Moves keep their frames and any saved source artwork. This cannot be undone.",
-		"labelDeleteMove": "Delete move…",
+		"labelDeleteState": "Move to Trash…",
+		"removeState": "The body and every item lose its fitted frames; finished moves keep theirs. You can bring it back for up to 30 days.",
+		"labelDeleteMove": "Move to Trash…",
 		"labelDeleteOutfit": "Delete outfit",
-		"thisRemovesTheMoveFromTheBody": "This removes the move from the body and every item. This can't be undone."
+		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for up to 30 days."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",
@@ -569,7 +635,7 @@
 		"worksLike": "Works like",
 		"hand": "Hand",
 		"placeholderEGSmallAndShinyPinned": "e.g. small and shiny, pinned to the chest",
-		"deleteSlot": "Delete slot…",
+		"deleteSlot": "Move to Trash…",
 		"titleAddSlot": "Add slot",
 		"createCustomSlot": "Create custom slot",
 		"slotName": "Slot name",
@@ -577,8 +643,7 @@
 		"showLabel": "Show {label}",
 		"createSlot": "Create slot",
 		"builtInSlots": "Built-in slots",
-		"theSlotAndItsItemsAreDeleted": "The slot and its items are deleted from this device together, and outfits stop wearing them. That can’t be undone.",
-		"undoBringsItBack": "Undo brings it back.",
+		"theSlotAndItsItemsAreDeleted": "Its items go too and outfits stop wearing them. You can bring it back for up to 30 days.",
 		"labelAddedAtTheEndOfWardrobe": "{label} added at the end of Wardrobe.",
 		"valueShownAtTheEndOfWardrobe": "{value} shown at the end of Wardrobe.",
 		"demoDeleteLocked": "Items of the bundled demo can’t be deleted.",
@@ -592,13 +657,9 @@
 		"creativeHint": "Creative hint",
 		"hintNote": "Added to each new item’s description here. Items already made stay as they are.",
 		"alreadyHidden": "{label} already exists but isn’t shown.",
-		"deleteWithItems": {
-			"1": "Delete {label} and its item?",
-			"one": "Delete {label} and its {n} item?",
-			"other": "Delete {label} and its {n} items?"
-		},
-		"deleteTitle": "Delete {label}?",
-		"deleteExportNote": "Exports will no longer include its slot “{slot}”, so game code that names it must change."
+		"deleteTitle": "Move {label} to Trash?",
+		"deleteExportNote": "Exports will no longer include its slot “{slot}”, so game code that names it must change.",
+		"theSlotIsDeleted": "It leaves the Wardrobe. You can bring it back for up to 30 days."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, facing {facing}",
@@ -631,7 +692,10 @@
 		"missingFrameViews": "{names} need frames for {move} facing {direction}",
 		"making": "Making…",
 		"makeIt": "Make it",
-		"estimate": { "one": "Est. {n} gen", "other": "Est. {n} gens" },
+		"estimate": {
+			"one": "Est. {n} gen",
+			"other": "Est. {n} gens"
+		},
 		"makingMissingFrames": "Making missing equipment frames",
 		"makeYourOwn": "Make your own",
 		"labelMakeMissingEquipmentFrames": "Make missing equipment frames",
@@ -649,6 +713,8 @@
 		"titleItemReview": "Item review"
 	},
 	"toolbar": {
+		"activityRunning": "Work is running in Activity",
+		"activityAttention": "Work in Activity needs attention",
 		"help": "Help",
 		"userGuide": "User guide",
 		"reportProblem": "Report a problem",
@@ -680,8 +746,14 @@
 		"selectPromptToCopy": "Select the prompt to copy it",
 		"undoAction": "Undo {action}",
 		"redoAction": "Redo {action}",
-		"generationsRemaining": { "one": "{n} gen", "other": "{n} gens" },
-		"characterCount": { "one": "{n} character", "other": "{n} characters" },
+		"generationsRemaining": {
+			"one": "{n} gen",
+			"other": "{n} gens"
+		},
+		"characterCount": {
+			"one": "{n} character",
+			"other": "{n} characters"
+		},
 		"version": "Version {version}",
 		"renameCharacter": "Rename character…",
 		"rename": "Rename…",
@@ -750,7 +822,10 @@
 		"slotLabel": "{label} slot",
 		"equipped": "{label}, equipped",
 		"notFitted": "Not fitted to this body",
-		"itemCount": { "one": "{n} item", "other": "{n} items" },
+		"itemCount": {
+			"one": "{n} item",
+			"other": "{n} items"
+		},
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, Wearing",
 		"generationTile": "{name}, {status}",
@@ -897,6 +972,7 @@
 		"manageMovesInOtherTab": "Manage moves in the other PixelDoll tab, or close it first.",
 		"manageCharactersInOtherTab": "Manage characters in the other PixelDoll tab, or close it first.",
 		"finishBeforeCharacterRemoval": "Finish or dismiss pending generation work before deleting a character.",
+		"finishBeforeRestore": "Finish or dismiss pending generation work before restoring this character.",
 		"finishBeforeMoveRemoval": "Finish or dismiss pending generation work before deleting a move.",
 		"finishBeforeDirectionRemoval": "Finish or dismiss pending generation work before changing directions.",
 		"finishBeforeFixFrames": "Wait for the current generation work to finish before fixing frames.",
@@ -907,8 +983,8 @@
 		"couldNotSaveReason": "Could not save: {reason}",
 		"pixelDollCouldNotConfirmThatYourInterrupted": "PixelDoll could not confirm that your interrupted generation work was saved. Review it in the character, Moves, or Setup panel before updating.",
 		"yourOutfitCouldNotBeSavedResolve": "Your outfit could not be saved. Resolve the storage error before updating.",
-		"deletedNameFromThisDevice": "Deleted {name} from this device",
-		"removedName": "Removed {name}",
+		"deletedNameFromThisDevice": "Moved {name} to Trash",
+		"removedName": "Moved {name} to Trash",
 		"nameChangedMeanwhileCheckItsTileAnd": "{name} changed meanwhile. Check its tile and try again.",
 		"couldNotAddNameReason": "Could not add {name}: {reason}",
 		"fromHasNoMoreFramesOfName": "{from} has no more frames of {name} for this character.",
@@ -947,8 +1023,8 @@
 		"labelChangedMeanwhileReviewItAgainBefore": "{label} changed meanwhile. Review it again before deleting.",
 		"labelHasNewItemsReviewItAgain": "{label} has new items. Review it again before deleting.",
 		"categoryAndItemsDeleted": {
-			"one": "Deleted {label} and its {count} item",
-			"other": "Deleted {label} and its {count} items"
+			"one": "Moved {label} and its {count} item to Trash",
+			"other": "Moved {label} and its {count} items to Trash"
 		},
 		"couldNotSaveFlowFailure": "{error} Could not save this failure on this device. Dismiss this operation before reloading.",
 		"useSavedFramesInTheTabThat": "Use saved frames in the tab that is managing your PixelDoll jobs.",
@@ -994,14 +1070,15 @@
 		"moveCategory": "Move {name}",
 		"addCategory": "Add category",
 		"changeCategory": "Change {name}",
-		"deleteCategory": "Delete {name}"
+		"deleteCategory": "Delete {name}",
+		"deleteItem": "Delete {name}",
+		"deleteMove": "Delete {name}"
 	},
 	"export": {
 		"sheet": {
 			"title": "Export",
 			"back": "Back",
 			"settings": "Settings",
-			"close": "Close export",
 			"saving": "Saving settings…",
 			"unavailable": "Export unavailable",
 			"sourceOnly": "Source PNGs only",
@@ -1033,7 +1110,10 @@
 			"versionLabel": "RPG Maker version: {version}",
 			"walkMove": "Walk move"
 		},
-		"group": { "engines": "Engines and frameworks", "assets": "Assets" },
+		"group": {
+			"engines": "Engines and frameworks",
+			"assets": "Assets"
+		},
 		"target": {
 			"godot": {
 				"sub": "Scene + runtime",
@@ -1088,9 +1168,18 @@
 				"one": "{count} direction",
 				"other": "{count} directions"
 			},
-			"moves": { "one": "{count} move", "other": "{count} moves" },
-			"items": { "one": "{count} item", "other": "{count} items" },
-			"outfits": { "one": "{count} outfit", "other": "{count} outfits" }
+			"moves": {
+				"one": "{count} move",
+				"other": "{count} moves"
+			},
+			"items": {
+				"one": "{count} item",
+				"other": "{count} items"
+			},
+			"outfits": {
+				"one": "{count} outfit",
+				"other": "{count} outfits"
+			}
 		},
 		"summary": {
 			"rpgCurrent": "Includes a walking sheet for your current look.",
@@ -1112,7 +1201,10 @@
 			"technical": "Technical details",
 			"currentSettings": "Current settings",
 			"files": "Files included",
-			"fileCount": { "one": "{count} file:", "other": "{count} files:" }
+			"fileCount": {
+				"one": "{count} file:",
+				"other": "{count} files:"
+			}
 		},
 		"gaps": {
 			"dirs": "{move} has {directions} only",
@@ -1126,7 +1218,9 @@
 			"canDownloadSources": "You can download the source PNGs instead.",
 			"requestedWarnings": "Warnings from the requested export (not the recovered artwork):"
 		},
-		"failure": { "noZip": "No ZIP is ready to download." },
+		"failure": {
+			"noZip": "No ZIP is ready to download."
+		},
 		"problem": {
 			"bodyMismatch": "The body frames no longer match this character.",
 			"noVisibleFrames": "The body has no visible frames.",
@@ -1158,7 +1252,9 @@
 			"duplicatePath": "Duplicate export path: {path}",
 			"sizeLimits": "The archive exceeds PixelDoll’s size limits."
 		},
-		"toast": { "artworkStarted": "Artwork download started." },
+		"toast": {
+			"artworkStarted": "Artwork download started."
+		},
 		"warnings": {
 			"missingMoves": "Some moves from this character are missing from settings.",
 			"missingOtherMoves": "Some moves from another character are missing from settings.",
@@ -1224,7 +1320,10 @@
 		"untitledCharacter": "Untitled character",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"states": { "one": "{count} state", "other": "{count} states" },
+			"states": {
+				"one": "{count} state",
+				"other": "{count} states"
+			},
 			"separateItems": {
 				"one": "{count} separate item",
 				"other": "{count} separate items"
@@ -1255,7 +1354,6 @@
 		"previewDirectionLabel": "Preview direction",
 		"setupNext": "Set up the pose rig next (recommended)",
 		"setupNextHint": "Import is free. Rig setup shows its PixelLab generation cost before you start.",
-		"chooseAnother": "Choose another character",
 		"saving": "Saving your local copy…",
 		"preparing": "Preparing your character…",
 		"note": "Free · saves a new local copy",
@@ -1669,7 +1767,10 @@
 		"partial": "{cost} + ?",
 		"estimate": "~{cost}",
 		"estimateVaries": "Estimate varies",
-		"copied": { "one": "Copied {count} call", "other": "Copied {count} calls" },
+		"copied": {
+			"one": "Copied {count} call",
+			"other": "Copied {count} calls"
+		},
 		"savedJson": "Saved calls as JSON",
 		"job": "Job{id} {state}",
 		"jobError": "Job{id} {state}: {error}",
@@ -1707,7 +1808,10 @@
 		"retentionTotal": "Recent history · Older calls omitted; total covers this list. Copy includes this list.",
 		"total": "Total",
 		"estimatedTotal": "Estimated total",
-		"calls": { "one": "{count} call", "other": "{count} calls" },
+		"calls": {
+			"one": "{count} call",
+			"other": "{count} calls"
+		},
 		"callsHidden": {
 			"one": "{count} call · {hidden} background hidden",
 			"other": "{count} calls · {hidden} background hidden"
@@ -1880,7 +1984,11 @@
 		"session": "This session: {cost}. Some moves are billed in dollars instead of gens; your balance above is the real total.",
 		"clearFollower": "Clear it in the PixelDoll tab that runs the jobs",
 		"clear": "Clear finished",
-		"ledger": { "job": "Job", "endpoint": "Endpoint", "state": "State" },
+		"ledger": {
+			"job": "Job",
+			"endpoint": "Endpoint",
+			"state": "State"
+		},
 		"attempt": "(try {attempt})",
 		"planWait": {
 			"checking": "Checking PixelLab plan before starting this workflow.",
@@ -1952,7 +2060,10 @@
 		"gens": "{value} gens",
 		"costUnknown": "cost unknown",
 		"copyJson": "Copy as JSON",
-		"unknownCount": { "one": "{count} unknown", "other": "{count} unknown" },
+		"unknownCount": {
+			"one": "{count} unknown",
+			"other": "{count} unknown"
+		},
 		"settings": {
 			"body": "Body",
 			"bodyPx": "{width} px",
@@ -1979,11 +2090,18 @@
 			"selective": "Selective",
 			"none": "None"
 		},
-		"detail": { "low": "Low", "medium": "Medium", "high": "High" }
+		"detail": {
+			"low": "Low",
+			"medium": "Medium",
+			"high": "High"
+		}
 	},
 	"moves": {
 		"preview": "{move} preview",
-		"frames": { "one": "{count} frame", "other": "{count} frames" },
+		"frames": {
+			"one": "{count} frame",
+			"other": "{count} frames"
+		},
 		"onlyDirection": "{direction} only",
 		"oneDirection": "one only",
 		"mirrorOf": "{direction} (mirror of {source})",
@@ -2219,7 +2337,10 @@
 				"unique": "Unique 8"
 			},
 			"models": {
-				"v3": { "label": "V3", "help": "Balanced proportions." },
+				"v3": {
+					"label": "V3",
+					"help": "Balanced proportions."
+				},
 				"standard": {
 					"label": "Standard",
 					"help": "Draws eight views using a template or your front-facing sprite."
@@ -2233,8 +2354,12 @@
 					"help": "A chibi style with a big head and short legs, at about three times the cost."
 				}
 			},
-			"outlines": { "default": "Default (black)" },
-			"details": { "default": "Default (medium)" },
+			"outlines": {
+				"default": "Default (black)"
+			},
+			"details": {
+				"default": "Default (medium)"
+			},
 			"outlineNote": "{outline} outline",
 			"detailNote": "{detail} detail",
 			"ownView": "{direction} now uses its own view.",
@@ -2339,7 +2464,6 @@
 			"retryLabel": "Create character again",
 			"editSetup": "Edit setup…",
 			"estimated": "Estimated {gens}",
-			"keepWorking": "Keep working",
 			"costTitle": "The standing views in every direction; add idle, walk and other moves afterward. A missing standing joint may cost a little more",
 			"create": "Create character",
 			"createAnyway": "Create anyway"
@@ -2426,7 +2550,6 @@
 		"reuseCached": "Reuse cached frames",
 		"matchColors": "Match body colors",
 		"keepFrames": "Keep frames",
-		"keepWorking": "You can keep working.",
 		"queueAnother": "Queue another move",
 		"addLabel": "Add or replace move",
 		"submit": {
@@ -2632,7 +2755,12 @@
 		"tabOnlyKey": "This connection is only for this tab and is not saved.",
 		"useSavedKey": "Use saved key"
 	},
-	"moveNames": { "default": "Standing", "idle": "Idle", "walk": "Walk", "run": "Run" },
+	"moveNames": {
+		"default": "Standing",
+		"idle": "Idle",
+		"walk": "Walk",
+		"run": "Run"
+	},
 	"stateGeneration": {
 		"continueIntro": "You can finish the views that were never sent. Completed views will be kept.",
 		"continueAccount": "Reconnect with the original PixelLab key to continue this State.",
@@ -2661,10 +2789,10 @@
 		"reference": "Add an image to guide the change.",
 		"pixenReference": "Pixen does not use reference images. Switch models to use your image.",
 		"fixedCost": "Cost: {generations} generations",
+		"fixedCostOne": "Cost: 1 generation",
 		"managed": "PixelLab creates a State from {parent} in your account.",
 		"transfer": "Uses the reference image’s appearance, not just its style.",
 		"sheetWarning": "Several views are edited on one sheet. Check each view before saving.",
-		"checkCost": "Check cost",
 		"costFirst": "You’ll see the cost before generating.",
 		"quoting": "Checking cost…",
 		"generate": "Generate State",
@@ -2674,7 +2802,13 @@
 		"sourceMissing": "Source unavailable",
 		"sourceChanged": "The source changed after generating, so this result can’t be saved. Discard it and try again.",
 		"keepGrounded": "Align to source",
-		"groundedHint": "Feet moved to match the source. Turn off to undo."
+		"groundedHint": "Feet moved to match the source. Turn off to undo.",
+		"readyRow": "Ready to review",
+		"attentionRow": "Unfinished: tap for options",
+		"background": "You can close this and keep working. You’ll be notified when it’s ready.",
+		"readyToReview": "{name} is ready to review.",
+		"failedOpen": "{name} needs attention. Open it to see why.",
+		"generatingProgress": "Generating State… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "Joint fitting is already in progress. Try again when it finishes.",
@@ -2705,7 +2839,7 @@
 		"noEquipment": "Equipment isn’t copied.",
 		"noCredits": "No credits used.",
 		"invalidName": "Enter a name with a Latin letter or number.",
-		"takenName": "This name is taken or reserved. Choose another.",
+		"takenName": "A move or State on this character already has this name. Choose another.",
 		"savedAs": "Saved as {name}",
 		"saving": "Saving state…",
 		"saved": "Captured state",
@@ -2722,8 +2856,7 @@
 		"resolveDrafts": "Finish or discard this character's item drafts before deleting a move.",
 		"required": "This standing move is needed to extend existing items to new moves.",
 		"selectedCharacterChanged": "The selected character changed.",
-		"concurrentEdit": "This character changed before the move could be deleted. Try again.",
-		"removed": "Removed move"
+		"concurrentEdit": "This character changed before the move could be deleted. Try again."
 	},
 	"sizePreview": {
 		"label": "Size guide: {body} pixel body canvas inside a {frame} pixel frame",
@@ -2732,8 +2865,9 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Later" },
-	"toast": { "dismiss": "Dismiss notification" },
+	"toast": {
+		"dismiss": "Dismiss notification"
+	},
 	"sharedVisibility": {
 		"allEmphasis": "all",
 		"demo": "From {demo}",

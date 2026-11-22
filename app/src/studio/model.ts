@@ -15,6 +15,7 @@ import { GATES, isAction, ITEM_GRID_REGISTRATION_NOTICE, SLOTS } from '../lib/it
 import { coverageGaps, missingFrames } from '../lib/dress/dress.ts';
 import { DIRECTIONS, type Rig, type RigAnimation } from '../lib/rig/rig.ts';
 import { moveExportId } from '../lib/store/identity.ts';
+import { stateClipName } from '../lib/rig/poses.ts';
 import { clipKind } from '../lib/runtime/timeline.js';
 import { editedCount } from '../lib/frames/history.ts';
 import { message, type Message } from '../lib/message.ts';
@@ -233,13 +234,25 @@ export function moveLabel(id: string, moves: readonly MoveRef[] = []): string {
 		return text ? text[0].toUpperCase() + text.slice(1) : '';
 	};
 	const refs = moves.map((move) => (typeof move === 'string' ? { id: move } : move));
-	const labelOf = (move: Exclude<MoveRef, string>) => move.name ?? readable(move.id);
+	const labelOf = (move: Exclude<MoveRef, string>) =>
+		move.name ?? stateClipName(move.id) ?? readable(move.id);
 	const self = refs.find((move) => move.id === id) ?? { id };
 	const label = labelOf(self);
 	// Valid export IDs contain only lowercase letters, digits, underscores and hyphens, never parentheses.
 	return refs.some((other) => other.id !== id && labelOf(other) === label)
 		? `${label} (${moveExportId(self, refs)})`
 		: label;
+}
+
+/** A move job's name. Items-only jobs for one move queue one per item, so each names its items to stay distinct. */
+export function displayMoveJob(
+	move: string,
+	spec: { readonly items: readonly string[]; readonly itemsOnly?: boolean },
+	items: readonly { readonly id: string; readonly name: string }[] = []
+): string {
+	if (!spec.itemsOnly) return move;
+	const names = spec.items.flatMap((id) => items.find((item) => item.id === id)?.name ?? []);
+	return names.length ? `${move} · ${names.join(', ')}` : move;
 }
 /** The noun of the description's first phrase: "a sturdy young dwarf with a friendly face" -> "Dwarf". */
 // ponytail: last word before with/who/in/wearing/comma; a rename field is the real fix.

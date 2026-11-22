@@ -61,7 +61,12 @@ test.describe('first Studio render in French', () => {
 		const name = draft.getByRole('textbox', { name: french.common.name, exact: true });
 		await name.fill('Draft hero');
 		await expect(name).toHaveValue('Draft hero');
+		// Escape with typed text asks first.
 		await page.keyboard.press('Escape');
+		await page
+			.getByRole('alertdialog', { name: french.common.discardChangesTitle, exact: true })
+			.getByRole('button', { name: french.common.discard, exact: true })
+			.click();
 		await expect(draft).toBeHidden();
 		await page.getByRole('button', { name: label, exact: true }).click();
 		const settingsTitle = french.export.sheet.settings;
@@ -130,7 +135,7 @@ test.describe('first Studio render in French', () => {
 			connect.getByLabel(french.connectSheet.secretApiKey, { exact: true })
 		).toHaveAttribute('placeholder', /^pixl_[a-f0-9]{32}$/);
 		await expect(
-			connect.getByRole('button', { name: french.connectSheet.notNow, exact: true })
+			connect.getByRole('button', { name: french.common.close, exact: true })
 		).toBeVisible();
 	});
 });
@@ -235,7 +240,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	const before = await amount.textContent();
 	await estimate.getByRole('button', { name: 'Increase Moves', exact: true }).click();
 	await expect(amount).not.toHaveText(before!);
-	await estimate.getByRole('button', { name: 'Done', exact: true }).click();
+	await estimate.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(estimate).toHaveCount(0);
 	await savedActions.click();
 	await page.keyboard.press('Escape');
@@ -369,13 +374,18 @@ test('character actions download and delete an unopened character without select
 	expect(download.suggestedFilename()).toBe(`${imported.project.manifest.exportId}.pixeldoll.zip`);
 	expect(imported.project.manifest.items.length).toBeGreaterThan(1);
 	await row.locator('.character-more').click({ button: 'right' });
-	await menu.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
-	await expect(page.getByRole('alertdialog', { name: 'Delete Disposable hero?' })).toBeVisible();
+	await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await expect(
+		page.getByRole('alertdialog', { name: 'Move Disposable hero to Trash?' })
+	).toBeVisible();
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await row.locator('.character-row').focus();
 	await page.keyboard.press('Shift+F10');
-	await menu.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
-	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
 	await expect(row).toHaveCount(0);
 	await expect(selected).toContainText('Adventurer');
 	expect(
@@ -476,7 +486,10 @@ test('both New character entry points offer separate import sources on desktop a
 				page.getByRole('dialog', { name: 'Import from device', exact: true })
 			).toBeVisible();
 			await expect(page.getByRole('tablist', { name: 'Import source' })).toHaveCount(0);
-			await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+			await page
+				.getByRole('dialog', { name: 'Import from device', exact: true })
+				.getByRole('button', { name: 'Close', exact: true })
+				.click();
 			await trigger.click();
 			await menu.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
 			await expect(
@@ -485,7 +498,10 @@ test('both New character entry points offer separate import sources on desktop a
 			await expect(
 				page.getByLabel('Direct import (connection optional)', { exact: true })
 			).toBeVisible();
-			await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+			await page
+				.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
+				.getByRole('button', { name: 'Close', exact: true })
+				.click();
 		}
 	}
 });
@@ -677,7 +693,7 @@ test('experimental native attack imports with warnings and exact frame stepping 
 		await expect(previous).toBeInViewport();
 		await expect(inspect.getByText('Frame 1 of 1', { exact: true })).toBeInViewport();
 	}
-	await inspect.getByRole('button', { name: 'Done', exact: true }).click();
+	await inspect.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.setViewportSize({ width: 1280, height: 720 });
 	const empty = page
 		.locator('.equipment-scroll')
@@ -691,7 +707,10 @@ test('experimental native attack imports with warnings and exact frame stepping 
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings', exact: true }).click();
 	await page.getByRole('checkbox', { name: 'Axe attack', exact: true }).check();
-	await page.getByRole('dialog').getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('dialog')
+		.getByRole('button', { name: 'Back to Export', exact: true })
+		.click();
 	const downloading = page.waitForEvent('download');
 	await page.getByRole('button', { name: /Download ZIP/ }).click();
 	const exported = await unzip(await readFile((await (await downloading).path())!)),
@@ -780,7 +799,12 @@ test('device import previews a dropped ZIP and offers a keyboard-accessible file
 		dialog.getByRole('img', { name: 'Character import preview', exact: true })
 	).toBeVisible();
 	await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue('Drop preview');
-	await dialog.getByRole('button', { name: 'Choose another character', exact: true }).click();
+	// Back drops the staged review, so it asks first.
+	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	const choosing = page.waitForEvent('filechooser');
 	await dialog.getByRole('button', { name: 'Choose ZIP', exact: true }).focus();
 	await page.keyboard.press('Enter');
@@ -899,7 +923,7 @@ test('device import ignores extra drops while reading and cancels without a late
 	await drop.dispatchEvent('drop', { dataTransfer: second });
 	await expect(drop).toContainText('Reading your ZIP…');
 	await expect(dialog.getByRole('alert')).toHaveCount(0);
-	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(dialog).toHaveCount(0);
 	await page.evaluate(() =>
 		(window as unknown as { releaseImportRead: () => void }).releaseImportRead()
@@ -1109,7 +1133,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			'Directions...',
 			'Adjust frame...',
 			'Download ZIP',
-			'Delete character...'
+			'Move to Trash...'
 		]);
 		await menu.getByRole('menuitem', { name: 'Directions...', exact: true }).click();
 	};
@@ -1303,10 +1327,10 @@ test('browser Back respects an atomic import and closes sheets after it finishes
 	});
 	try {
 		await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
-		await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeDisabled();
+		await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeDisabled();
 		await page.goBack();
 		await expect(dialog).toBeVisible();
-		await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeDisabled();
+		await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeDisabled();
 	} finally {
 		await page.evaluate(() => (window as unknown as { releaseImport: () => void }).releaseImport());
 	}
@@ -1627,7 +1651,7 @@ test('a canceled library error cannot affect a newly opened device ZIP preview',
 	const dialog = page.getByRole('dialog', { name: 'Import from PixelLab', exact: true });
 	await requested;
 	try {
-		await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		await page.locator('.project-btn').click();
 		await page
 			.locator('#project-menu')
@@ -1646,7 +1670,12 @@ test('a canceled library error cannot affect a newly opened device ZIP preview',
 	const device = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await expect(device.getByRole('alert')).toHaveCount(0);
 	await expect(device.locator('.import-preview')).toContainText('2 moves');
-	await device.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The staged review asks before it is dropped.
+	await device.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
@@ -1662,7 +1691,7 @@ test('import can be canceled before choosing a file and reopened', async ({ page
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	for (const close of ['Cancel', 'Escape']) {
+	for (const close of ['Close', 'Escape']) {
 		await page.locator('.project-btn').click();
 		await page
 			.locator('#project-menu')
@@ -1670,7 +1699,8 @@ test('import can be canceled before choosing a file and reopened', async ({ page
 			.click();
 		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 		await expect(page.getByRole('dialog')).toBeVisible();
-		if (close === 'Cancel') await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+		if (close === 'Close')
+			await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
 		else await page.keyboard.press('Escape');
 		await expect(page.getByRole('dialog')).toHaveCount(0);
 		await expect(page.locator('.project-btn')).toBeFocused();
@@ -1791,7 +1821,12 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 	await expect(api).not.toContainText('/inpaint-v3');
 	await expect(api).not.toContainText('/animate-with-skeleton-v3');
 	await api.getByRole('button', { name: 'Close API calls', exact: true }).click();
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The typed prompt asks before it is dropped.
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 
 	expect(planned.extensionGens).toBe(10);
 	expect(planned.extension).toHaveLength(1);
@@ -2035,7 +2070,7 @@ test('canceling a downloading import closes it and cannot reopen a late preview'
 		await expect(page.getByRole('dialog').getByRole('status')).toContainText(
 			'Preparing your character'
 		);
-		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
 		await expect(page.getByRole('dialog')).toHaveCount(0);
 	} finally {
 		finish();
@@ -2048,7 +2083,7 @@ test('canceling a downloading import closes it and cannot reopen a late preview'
 	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await expect(page.getByRole('dialog')).not.toContainText('PixelLab could not find');
 	await expect(page.getByRole('button', { name: 'Import character', exact: true })).toBeDisabled();
-	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer');
 	expect(calls).toEqual(['GET']);
 });
@@ -2102,17 +2137,17 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	);
 	await expect(currentCharacter.locator(':scope > svg')).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'More actions for Imported two' })).toBeVisible();
-	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	await expect(page.getByRole('alertdialog')).toContainText('Imported two');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Imported two');
 	// All characters created by this test are disposable fixtures in an isolated browser context.
 	for (const remaining of ['Imported one', 'Adventurer (demo)']) {
 		await page.locator('.project-btn').click();
-		await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 		await page
 			.getByRole('alertdialog')
-			.getByRole('button', { name: 'Delete', exact: true })
+			.getByRole('button', { name: 'Move to Trash', exact: true })
 			.click();
 		await expect(page.locator('.project-btn')).toContainText(remaining.replace(/ \(demo\)$/, ''), {
 			timeout: 30_000
@@ -2122,7 +2157,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	await expect(page.locator('.project-btn')).toContainText('Adventurer');
 	await page.locator('.project-btn').click();
 	// The demo keeps Delete in place, unavailable, and says why.
-	const demoDelete = page.getByRole('menuitem', { name: 'Delete character…', exact: true });
+	const demoDelete = page.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
 	await expect(demoDelete).toHaveAttribute('aria-disabled', 'true');
 	await expect(demoDelete).toHaveAccessibleDescription("Demo character can't be deleted");
 	await demoDelete.click({ force: true });
@@ -2320,7 +2355,12 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.getByRole('button', { name: 'Next page', exact: true }).click();
 	await page.getByRole('button', { name: /Page two hero/ }).click();
 	await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
-	await dialog.getByRole('button', { name: 'Choose another character', exact: true }).click();
+	// Back drops the staged review, so it asks first.
+	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await dialog
 		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
@@ -2338,7 +2378,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await expect(page.locator('.project-btn')).toContainText('Library hero');
 	await expect(page.locator('.world-loading')).toBeHidden();
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	// Queue state is persisted by the real application, and deletion must refuse in-flight paid work.
 	await page.evaluate(async () => {
 		await new Promise<void>((resolve, reject) => {
@@ -2363,7 +2403,10 @@ test('PixelLab library connection, pagination and direct import use only free re
 			};
 		});
 	});
-	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
 	await expect(page.getByRole('alert')).toContainText('pending generation work');
 	expect(calls.every((c) => c.startsWith('GET '))).toBe(true);
 	expect(calls).toContain(`GET /v2/characters/${ID}/zip`);
@@ -2544,7 +2587,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(
 		emptyCapture.getByRole('button', { name: 'Create State', exact: true })
 	).toBeEnabled();
-	await emptyCapture.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await emptyCapture.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(before.manifest.rig.rest?.west?.keypoints).toHaveLength(18);
 	expect(
 		(before.rigQa as { clips: Record<string, { adherence: number | null }> }).clips['default/south']
@@ -2560,7 +2603,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	// The import added room for moves (feet 4 px above a 64 px canvas edge: 64 -> 80), so held items pad to 112 px.
 	expect(before.manifest.rig.cell).toEqual({ w: 80, h: 80 });
 	await expect(page.getByRole('dialog')).toContainText('112 px canvas');
-	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await page.getByRole('button', { name: 'Idle', exact: true }).click();
@@ -2635,7 +2678,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	});
 	const createState = page.getByRole('dialog', { name: 'New State', exact: true });
 	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
-	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await createState.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(createState).not.toBeVisible();
 	await expect(
 		page.getByRole('button', { name: 'More actions for Idle', exact: true })
@@ -2676,7 +2719,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(
 		createState.getByRole('button', { name: 'Create State', exact: true })
 	).toBeEnabled();
-	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await createState.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
 	const nextFrame = createState.getByRole('button', { name: 'Next frame', exact: true });
@@ -2766,7 +2809,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBeFocused();
 	await expect(createState.getByLabel('State name', { exact: true })).toHaveValue('Idle pose');
 	await expect(createState.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
-	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await createState.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(addState).toBeFocused();
 	await equipmentMode(page, 'Moves');
 	await expect(
@@ -2795,12 +2838,18 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	// Reaching the first frame disables Previous, so focus moves to Next.
 	await previousStartFrame.click();
 	await expect(moveSheet.getByRole('button', { name: 'Next frame', exact: true })).toBeFocused();
-	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await moveSheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'More actions for Rest pose', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Delete State/ }).click();
-	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
-	await expect(page.getByText('Removed Rest pose', { exact: true })).toBeVisible();
+	await page.getByRole('menuitem', { name: /^Move to Trash/ }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
+	// A higher-priority notice can take the toast; the history step is the durable signal that it moved to Trash.
+	await expect(
+		page.getByRole('button', { name: 'Undo Delete Rest pose', exact: true })
+	).toBeVisible();
 	const remaining = await read();
 	expect(remaining.manifest.rig.animations).toEqual(after.manifest.rig.animations);
 	expect(posts).toHaveLength(posted);
@@ -2826,7 +2875,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await review.getByRole('button', { name: /^Regenerate/ }).click();
 	await expect(startFrom('Idle')).toBeVisible();
 	await expect(moveSheet.getByText('Frame 2 of 4', { exact: true })).toBeVisible();
-	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await moveSheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentMode(page, 'States');
 	await addState.click();
 	const newState = createState;
@@ -2916,15 +2965,23 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		posts.filter(
 			({ path }) => path.endsWith('/edit-images-v2') || path.endsWith('/create-character-state')
 		);
-	await newState.getByRole('button', { name: 'Check cost', exact: true }).click();
+	// The price arrives by itself; the one Generate State button enables once it is shown.
 	const generateState = newState.getByRole('button', { name: 'Generate State', exact: true });
-	await expect(generateState).toBeVisible();
+	await expect(generateState).toBeEnabled();
 	// Only the Generate State button approves a paid request, never Enter in a field.
 	await newState.getByRole('textbox', { name: 'State name' }).press('Enter');
 	await expect(newState.getByText('This State will be saved in PixelDoll only.')).toBeVisible();
 	expect(statePosts()).toHaveLength(0);
 	await generateState.click();
-	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
+	// Like a Move, the State generates in the background: the sheet closes and the States list tracks it.
+	await expect(newState).toBeHidden();
+	const pendingRow = page
+		.getByRole('tabpanel', { name: 'States', exact: true })
+		.getByRole('button', { name: /^Ready stance/ });
+	await expect(pendingRow).toContainText('Ready to review');
+	await pendingRow.click();
+	const stateReview = page.getByRole('dialog', { name: 'Ready stance', exact: true });
+	await expect(stateReview.getByText('Review Ready stance before saving.')).toBeVisible();
 	expect(statePosts()).toHaveLength(1);
 	expect(statePosts()[0]?.body).toMatchObject({
 		method: 'edit_with_text',
@@ -2932,18 +2989,21 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	});
 	const attempt = await read();
 	expect(attempt.manifest.rig.animations.some(({ id }) => id === 'ready-stance')).toBe(false);
-	expect(attempt.stateGeneration?.source).toEqual({ clip: 'idle', frame: 2 });
-	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	expect(Object.values(attempt.stateGenerations ?? {}).map(({ source }) => source)).toEqual([
+		{ clip: 'idle', frame: 2 }
+	]);
+	await stateReview.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'States');
-	await addState.click();
-	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
+	await pendingRow.click();
+	await expect(stateReview.getByText('Review Ready stance before saving.')).toBeVisible();
 	// Grounding is offered on by default; turned off, Save keeps the returned placement.
-	const ground = newState.getByRole('switch', { name: 'Align to source' });
+	const ground = stateReview.getByRole('switch', { name: 'Align to source' });
 	await expect(ground).toBeChecked();
 	await ground.uncheck();
-	await newState.getByRole('button', { name: 'Save', exact: true }).click();
+	await stateReview.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
+	await expect(pendingRow.filter({ hasText: 'Ready to review' })).toHaveCount(0);
 	await expect(page.locator('.clip-trigger[data-variant="quiet"]')).toHaveAttribute(
 		'value',
 		'ready-stance'
@@ -3101,6 +3161,8 @@ test('a managed State reloads its child without another submission', async ({
 			const projectId = await studio.copyDemo();
 			const record: StoredProject = await db.get('projects', projectId);
 			record.character = { id: parent, looks: 'Demo test fixture' };
+			// Characters saved without an export id load with a default one; the freshness checks must not call that a change.
+			delete record.manifest.exportId;
 			await db.put('projects', projectId, record);
 			const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
 			const cells = base.layers[0].cells!.default;
@@ -3127,40 +3189,62 @@ test('a managed State reloads its child without another submission', async ({
 	const dialog = page.getByRole('dialog', { name: 'New State', exact: true });
 	const panel = dialog;
 	await panel.getByRole('switch', { name: 'Edit this pose' }).check();
-	await panel.getByRole('textbox', { name: 'State name' }).fill('Potion ready');
+	// A built-in move's name the character lacks is accepted and kept as the label, under an id the Idle move never uses.
+	await panel.getByRole('textbox', { name: 'State name' }).fill('Idle');
+	await expect(panel.getByRole('textbox', { name: 'State name' })).toHaveAttribute(
+		'aria-invalid',
+		'false'
+	);
 	await panel.getByRole('textbox', { name: 'Instructions' }).fill('Hold a potion');
-	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
 	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
-	await expect(generate).toBeVisible();
+	await expect(generate).toBeEnabled();
 	expect(posts).toHaveLength(0);
 	await generate.click();
-	const review = panel.getByText('Review Potion ready before saving.');
+	await expect(dialog).toBeHidden();
+	const row = page
+		.getByRole('tabpanel', { name: 'States', exact: true })
+		.getByRole('button', { name: /^Idle/ });
+	await row.click();
+	const reviewSheet = page.getByRole('dialog', { name: 'Idle', exact: true });
+	const review = reviewSheet.getByText('Review Idle before saving.');
 	await expect(review).toBeVisible();
 	expect(posts).toEqual([
 		expect.objectContaining({ character_id: parent, edit_description: 'Hold a potion' })
 	]);
+	// Activity and failure notices name the job after the State, not its internal id.
+	const labels = await page.evaluate(async () => {
+		const queuePath = '/src/lib/pixellab/queue.ts';
+		const { queue } = await import(queuePath);
+		return queue
+			.snapshot()
+			.jobs.filter(({ tag }: { tag: string }) => tag === 'studio-state')
+			.map(({ label }: { label: string }) => label);
+	});
+	expect(labels).toEqual(['Idle']);
 	const postsBeforeReload = postPaths.slice();
-	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await reviewSheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'States');
-	await addState.click();
+	await row.click();
 	await expect(review).toBeVisible();
-	await panel.getByRole('button', { name: 'Save', exact: true }).click();
+	await reviewSheet.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
 	const stored = await page.evaluate(async (projectId) => {
 		const dbPath = '/src/lib/store/db.ts';
 		const db = await import(dbPath);
 		const record: StoredProject = await db.get('projects', projectId);
 		const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
-		const hash = base.layers[0].cells!['potion-ready'].south![0]!;
+		const hash = base.layers[0].cells!.state_idle.south![0]!;
 		const blob: Blob = await db.getBlob(hash.slice(7));
 		return {
-			child: record.managedStates?.['potion-ready'],
+			child: record.managedStates?.state_idle,
+			clip: record.manifest.rig.animations.find(({ id }) => id === 'state_idle'),
 			image: Array.from(new Uint8Array(await blob.arrayBuffer()))
 		};
 	}, result.projectId);
 	const image = await decodePngBytes(Uint8Array.from(stored.image));
 	expect(stored.child).toBe(child);
+	expect(stored.clip).toMatchObject({ name: 'Idle', kind: 'state' });
 	expect(Array.from(image.data.slice(markerOffset, markerOffset + 4))).toEqual(marker);
 	expect(postPaths).toEqual(postsBeforeReload);
 	expect(pageErrors).toEqual([]);
@@ -3245,9 +3329,10 @@ test('a State interrupted after its first batch sends only the unqueued views af
 			const db = await import(dbPath);
 			const record: StoredProject = await db.get('projects', projectId);
 			const jobs: { activityScope?: string; state: string }[] = await db.all('jobs');
-			const token = record.stateGeneration?.token;
+			const [attempt] = Object.values(record.stateGenerations ?? {});
+			const token = attempt?.token;
 			return {
-				attempt: record.stateGeneration,
+				attempt,
 				jobs: jobs.filter(
 					({ activityScope }) => token && activityScope?.startsWith(`state:${token}:`)
 				)
@@ -3264,10 +3349,19 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	await panel.getByRole('textbox', { name: 'Instructions' }).fill('Hold a torch');
 	await panel.getByText('Advanced', { exact: true }).click();
 	await panel.getByRole('combobox', { name: 'Model', exact: true }).selectOption('pro-flash');
-	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
-	await panel.getByRole('button', { name: 'Generate State', exact: true }).click();
+	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
+	await expect(generate).toBeEnabled();
+	await generate.click();
 	await polled;
 	expect(flashPosts()).toHaveLength(1);
+	const row = page
+		.getByRole('tabpanel', { name: 'States', exact: true })
+		.getByRole('button', { name: /^Torch ready/ });
+	await expect(row).toContainText('Generating State…');
+	// Nothing waits on it: another State can be started while this one runs.
+	await addState.click();
+	await expect(panel.getByRole('switch', { name: 'Edit this pose' })).toBeVisible();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	const interrupted = await stored();
 	const batches = interrupted.attempt!.plan.batches.length;
 	expect(batches).toBeGreaterThan(1);
@@ -3281,17 +3375,24 @@ test('a State interrupted after its first batch sends only the unqueued views af
 		.poll(async () => (await stored()).jobs.map(({ state }) => state), { timeout: 30_000 })
 		.toEqual(['done']);
 	await equipmentMode(page, 'States');
-	await addState.click();
-	await dialog.getByRole('button', { name: 'Check remaining cost', exact: true }).click();
+	await expect(row).toContainText('Unfinished: tap for options');
+	await row.click();
+	const review = page.getByRole('dialog', { name: 'Torch ready', exact: true });
+	await review.getByRole('button', { name: 'Check remaining cost', exact: true }).click();
 	await expect(
-		dialog.getByText(`Views kept: 1. Views to generate: ${batches - 1}.`, { exact: true })
+		review.getByText(`Views kept: 1. Views to generate: ${batches - 1}.`, { exact: true })
 	).toBeVisible();
 	expect(flashPosts()).toHaveLength(1);
-	await dialog.getByRole('button', { name: 'Generate remaining views', exact: true }).click();
-	await expect(panel.getByText('Review Torch ready before saving.')).toBeVisible();
+	await review.getByRole('button', { name: 'Generate remaining views', exact: true }).click();
+	// The remaining views also send in the background: the sheet closes at once and the row reopens the result.
+	await review.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(review).toBeHidden();
+	await expect(row).toContainText('Ready to review');
+	await row.click();
+	await expect(review.getByText('Review Torch ready before saving.')).toBeVisible();
 	expect(flashPosts()).toHaveLength(batches);
 	expect(new Set(flashPosts().map(({ image }) => image.base64)).size).toBe(batches);
-	await panel.getByRole('button', { name: 'Save', exact: true }).click();
+	await review.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
 	const saved = await page.evaluate(async (projectId) => {
 		const dbPath = '/src/lib/store/db.ts';
@@ -3299,7 +3400,7 @@ test('a State interrupted after its first batch sends only the unqueued views af
 		const record: StoredProject = await db.get('projects', projectId);
 		const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
 		return {
-			attempt: record.stateGeneration,
+			attempts: record.stateGenerations ?? {},
 			views: await Promise.all(
 				Object.values(base.layers[0].cells!['torch-ready']).map(async (hashes) => {
 					const blob: Blob = await db.getBlob(hashes![0]!.slice(7));
@@ -3308,7 +3409,7 @@ test('a State interrupted after its first batch sends only the unqueued views af
 			)
 		};
 	}, projectId);
-	expect(saved.attempt).toBeUndefined();
+	expect(saved.attempts).toEqual({});
 	expect(saved.views).toHaveLength(batches);
 	const sent = await Promise.all(
 		flashPosts().map(async ({ image }) => decodePngBytes(Buffer.from(image.base64, 'base64')))
@@ -3365,11 +3466,11 @@ test('a stopped move blocks deleting only its own character and opens from the b
 	const deletion = page.getByRole('alertdialog');
 	const remove = async () => {
 		await page.locator('.project-btn').click();
-		await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	};
 	// Another character's stopped move waits for its own review and does not lock this one.
 	await remove();
-	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
+	await deletion.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 	await expect(deletion).toBeHidden();
 	await expect(page.locator('.project-btn')).not.toContainText('Adventurer copy');
 	await page.evaluate(async () => {
@@ -3381,14 +3482,15 @@ test('a stopped move blocks deleting only its own character and opens from the b
 	});
 	await expect(page.locator('.project-btn')).toContainText('Pending hero');
 	await remove();
-	await expect(deletion.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
+	await expect(deletion.getByRole('button', { name: 'Move to Trash', exact: true })).toBeDisabled();
 	await deletion.getByRole('button', { name: 'View pending work' }).click();
 	const move = page.getByRole('dialog', { name: 'New move' });
 	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeVisible();
-	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Discarding the stopped move is what unlocks deleting its character.
+	await move.getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(move).toBeHidden();
 	await remove();
-	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
+	await deletion.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 	await expect(deletion).toBeHidden();
 	await expect(page.locator('.project-btn')).not.toContainText('Pending hero');
 });
@@ -3629,7 +3731,7 @@ test('rename display names and export IDs without changing saved keys or calling
 	await standing.locator('summary').click();
 	// Games start from the standing move, so its export ID stays fixed.
 	await expect(standing.getByRole('textbox', { name: 'Export ID' })).toHaveAttribute('readonly');
-	await standing.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await standing.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
@@ -3705,7 +3807,12 @@ test('rename storage failures leave the name visible and retryable', async ({
 		'Keep this name'
 	);
 	await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
-	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The edited name asks before it is dropped.
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 });
 
 test('item deletion finishing during navigation cannot reopen the old character', async ({

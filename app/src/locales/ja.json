@@ -1,8 +1,49 @@
 {
+	"recentlyDeleted": {
+		"empty": "ゴミ箱は空です。ゴミ箱に移動したキャラクター、アイテム、カテゴリ、モーション、ステートは 最大 30 日間残ります。",
+		"kept": "最大 30 日間、最大 50 件まで保管されます。",
+		"restoreNamed": "{name} を復元",
+		"deleteForeverNamed": "{name} を完全に削除",
+		"confirmTitle": "{name} を完全に削除しますか？",
+		"confirmBody": "完全に削除されます。元に戻せません。",
+		"confirmAction": "完全に削除",
+		"restored": "{name} を復元しました",
+		"restoredAsCopy": "{name} として復元しました。その ID のキャラクターがすでに保存されていました。",
+		"restoredWithDrafts": {
+			"other": "{name} を {count} 件の下書きとともに復元しました"
+		},
+		"restoredPartly": {
+			"other": "{name} を復元しました。変更された衣装の枠が {count} か所あったため、そこには戻していません。"
+		},
+		"kind": {
+			"character": "キャラクター",
+			"items": "アイテム",
+			"category": "カテゴリ",
+			"move": "モーション",
+			"state": "ステート"
+		},
+		"errors": {
+			"gone": "これはゴミ箱にありません。",
+			"expired": "ゴミ箱に 最大 30 日間あったため、削除されました。",
+			"missingArtwork": "{name} の保存画像の一部がこのデバイスにないため、復元できません。",
+			"full": "ブラウザの空き容量が不足しているため、何も移動されませんでした。ゴミ箱の項目を削除して容量を空けてください。",
+			"wrongKind": "その削除された項目はキャラクターに属しています。先にキャラクターを復元してください。",
+			"movePresent": "このモーションはすでにキャラクターにあります。",
+			"moveGeometry": "このモーションを削除した後にキャラクターのフレームサイズまたは向きが変わったため、位置合わせできません。",
+			"partsGeometry": "削除した後にキャラクターのフレームサイズまたは向きが変わったため、位置合わせできません。",
+			"moveItemsMissing": "このモーションのアイテムの 1 つが削除されています。先にそのアイテムを復元してから、このモーションを復元してください。"
+		},
+		"restoring": "復元中…",
+		"confirmBodyCharacter": "そこから削除したものも一緒に消えます。完全に削除され、元に戻せません。",
+		"confirmRestore": "もう一度押すと復元します",
+		"confirmRestoreNamed": "もう一度押すと {name} を復元します",
+		"daysLeft": {
+			"other": "残り {count} 日"
+		}
+	},
 	"librarySettings": {
 		"title": "ライブラリ",
 		"scope": "保存したキャラクター、画像、アーカイブデータをバックアップします。設定、下書き、ジョブは含まれません。",
-		"privacy": "バックアップには画像やプロンプトが含まれることがあります。アーカイブデータは共有しないでください。",
 		"backup": "ライブラリをバックアップ",
 		"restoreFromBackup": "バックアップから復元",
 		"review": "バックアップを確認",
@@ -28,12 +69,11 @@
 		"deleteWork": {
 			"deleteAll": "すべて削除",
 			"confirm": "確定",
-			"section": "ローカルの作業を削除",
-			"description": "このデバイスに保存されたキャラクター、衣装、下書き、アクティビティ履歴を削除します。",
+			"description": "このデバイスのキャラクター、衣装、下書き、ゴミ箱、アクティビティを削除します。",
 			"kept": "アーカイブ済みデータ、設定、ダウンロードしたバックアップ、PixelLab キーは残ります。",
-			"action": "ローカルの作業を削除",
+			"action": "ローカルデータを削除…",
 			"title": "ローカルの作業をすべて削除しますか？",
-			"body": "このデバイスのキャラクター、衣装、下書き、アクティビティ履歴が完全に削除されます。元に戻せません。削除後に PixelDoll を再読み込みします。",
+			"body": "このデバイスのキャラクター、衣装、下書き、ゴミ箱、アクティビティが完全に削除されます。元に戻せません。その後 PixelDoll が再読み込みします。",
 			"generating": "ローカルの作業を削除する前に、保留中の生成作業を完了するか破棄してください。何も削除されていません。",
 			"uncertain": "一部の PixelLab 呼び出しは結果なしで課金された可能性があります。先にアクティビティで確認して消去してください。何も削除されていません。",
 			"otherTabs": "ほかの PixelDoll のタブとウィンドウを閉じてから、もう一度お試しください。何も削除されていません。",
@@ -99,7 +139,8 @@
 		"light": "ライト",
 		"search": "設定を検索",
 		"noResults": "検索に一致する設定がありません。",
-		"all": "すべての設定"
+		"all": "すべての設定",
+		"trash": "ゴミ箱"
 	},
 	"developer": {
 		"title": "開発者",
@@ -116,17 +157,23 @@
 		"idCopyFailed": "ID をコピーできませんでした。"
 	},
 	"common": {
+		"back": "戻る",
+		"backTo": "{place}に戻る",
+		"keepEditing": "編集を続ける",
+		"discardChangesTitle": "変更を破棄しますか？",
+		"discardChangesBody": "ここでの変更は失われます。",
+		"keepsRunning": "閉じてもアクティビティで実行が続きます。",
 		"loadFailed": "PixelDoll の一部を読み込めませんでした。ページを再読み込みして、もう一度お試しください。",
 		"advanced": "詳細設定",
 		"cancel": "キャンセル",
-		"cannotUndo": "この操作は取り消せません。",
+		"deleteRecoverable": "ワードローブから外れます。最大 30 日間は元に戻せます。",
 		"character": "キャラクター",
 		"characters": "キャラクター",
 		"close": "閉じる",
 		"copying": "コピー中…",
 		"cost": "費用",
 		"delete": "削除",
-		"deleteNamed": "{name}を削除しますか？",
+		"deleteNamed": "{name} をゴミ箱に移動しますか？",
 		"deleting": "削除中…",
 		"details": "詳細",
 		"detailsMenu": "詳細…",
@@ -136,7 +183,6 @@
 		"done": "完了",
 		"downloadZip": "ZIPをダウンロード",
 		"free": "無料",
-		"hide": "隠す",
 		"loading": "読み込み中…",
 		"move": "モーション",
 		"name": "名前",
@@ -159,7 +205,9 @@
 		"zoomIn": "拡大",
 		"zoomOut": "縮小",
 		"randomLook": "ランダムな見た目",
-		"none": "なし"
+		"none": "なし",
+		"moveToTrash": "ゴミ箱に移動",
+		"movingToTrash": "ゴミ箱に移動中…"
 	},
 	"pwa": {
 		"invalidRelease": "アップデートの情報が無効です。",
@@ -248,9 +296,11 @@
 		"adjustFrame": "フレームを調整…",
 		"directions": "向き…",
 		"demoDeleteLocked": "デモのキャラクターは削除できません",
-		"labelDeleteCharacter": "キャラクターを削除…"
+		"labelDeleteCharacter": "ゴミ箱に移動…"
 	},
-	"characterName": { "demo": "（デモ）" },
+	"characterName": {
+		"demo": "（デモ）"
+	},
 	"colors": {
 		"follows": "{name}に連動",
 		"miColor": "{mi}の色",
@@ -291,7 +341,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "コピー",
 		"demoNoAccount": "デモにアカウントは不要です。",
-		"notNow": "今はしない",
 		"sentOnlyToApiPixellabAi": "api.pixellab.aiにのみ送信されます。",
 		"forgetKey": "キーを削除",
 		"forgetTitle": "PixelLab のキーを削除しますか？",
@@ -309,7 +358,7 @@
 		"viewPendingWork": "保留中の作業を表示",
 		"character": "キャラクター",
 		"demo": "同梱のデモは削除できません。",
-		"itsOutfitsAndChangesAreRemovedFrom": "このキャラクターのコーディネートと変更内容はこのデバイスから削除されます。他のキャラクターにコピーしたアイテムは残ります。この操作は取り消せません。"
+		"itsOutfitsAndChangesAreRemovedFrom": "衣装、アイテム、未保存の下書きも一緒に移動します。他のキャラクターにコピーしたアイテムは残ります。最大 30 日間は元に戻せます。"
 	},
 	"demoCopyRow": {
 		"editACopy": "コピーを編集",
@@ -319,12 +368,16 @@
 		"title": "{name}の詳細",
 		"notSaved": "このキャラクターは保存済みの一覧にありません。",
 		"withItems": "アイテムを含む",
-		"itemCost": { "other": "{cost}・アイテム{n}個" },
+		"itemCost": {
+			"other": "{cost}・アイテム{n}個"
+		},
 		"noGenerationDetailsWereSavedForThis": "このキャラクターの生成の詳細は保存されていません。"
 	},
 	"directionsSheet": {
 		"characterUnavailable": "この保存済みキャラクターは利用できなくなりました。",
-		"removed": { "other": "{count}方向を削除しました" },
+		"removed": {
+			"other": "{count}方向を削除しました"
+		},
 		"removeTitle": {
 			"1": "この向きを削除しますか？",
 			"other": "{n}方向を削除しますか？"
@@ -362,7 +415,7 @@
 		"titleWearingTakeOff": "装備中（外す）",
 		"twoHanded": "両手持ち",
 		"createVariant": "バリエーションを作成…",
-		"labelDeleteItem": "アイテムを削除…",
+		"labelDeleteItem": "ゴミ箱に移動…",
 		"titleCancelName": "{name}の生成をキャンセルしますか？",
 		"generationsAlreadyUsedAreNotRefundedAnd": "消費済みの生成回数は戻りません。送信済みのリクエストには、その後も料金が発生する場合があります。",
 		"cancelSaveError": "キャンセル状態を保存できませんでした。このタブを開いたまま、もう一度お試しください。",
@@ -446,8 +499,12 @@
 		},
 		"colorMatchFree": "既存の品質警告は残ります。PixelLabにリクエストは送信しません。",
 		"colorsMatched": "{frames}で{pixels}の色を合わせました。",
-		"pixels": { "other": "{n}ピクセル" },
-		"frames": { "other": "{n}フレーム" },
+		"pixels": {
+			"other": "{n}ピクセル"
+		},
+		"frames": {
+			"other": "{n}フレーム"
+		},
 		"onlyFacing": "{direction}向きのときのみ",
 		"hideWhenWorn": "チェックしたアイテムは、{name}の装備中は非表示になります。",
 		"tuckNote": "チェックを外したままの{slots}は、このアイテムの下に重なり、つばより下に出た部分だけが見えます。フードや顔全体を覆うマスクでは、チェックを入れて非表示にしてください。",
@@ -459,7 +516,10 @@
 			"accepted": "承認済み"
 		},
 		"areaStats": "最小：中央値の{ratio}・CV：{cv}",
-		"handedness": { "ok": "OK", "switched": "左右入れ替わり" },
+		"handedness": {
+			"ok": "OK",
+			"switched": "左右入れ替わり"
+		},
 		"minimum": "{value}（≥ {threshold}）",
 		"maximum": "{value}（≤ {threshold}）",
 		"updateNote": "{move}の{direction}向きで、このアイテムを更新します。キャラクターの素体は変わりません。",
@@ -490,7 +550,9 @@
 		"importFromDevice": "デバイスからインポート…",
 		"importFromPixelLab": "PixelLabからインポート…"
 	},
-	"noticeLink": { "opensInANewTab": "（新しいタブで開きます）" },
+	"noticeLink": {
+		"opensInANewTab": "（新しいタブで開きます）"
+	},
 	"outfits": {
 		"outfits": "コーディネート",
 		"saveALookToSwitchBetweenOutfits": "見た目を保存すると、ゲーム内でコーディネートを切り替えられます。",
@@ -544,11 +606,11 @@
 		"moveMissing": "このモーションは削除されました。"
 	},
 	"savedActions": {
-		"labelDeleteState": "ステートを削除",
-		"removeState": "このキャラクターから、ステートとそのステートに合わせたアイテムのフレームを削除します。完成したモーションのフレームや保存済みの元画像は残ります。この操作は取り消せません。",
-		"labelDeleteMove": "モーションを削除…",
+		"labelDeleteState": "ゴミ箱に移動…",
+		"removeState": "体とすべてのアイテムから調整済みフレームが外れます。完了したモーションのフレームは残ります。最大 30 日間は元に戻せます。",
+		"labelDeleteMove": "ゴミ箱に移動…",
 		"labelDeleteOutfit": "コーディネートを削除",
-		"thisRemovesTheMoveFromTheBody": "素体とすべてのアイテムからこのモーションを削除します。この操作は取り消せません。"
+		"thisRemovesTheMoveFromTheBody": "体とすべてのアイテムからフレームが外れます。最大 30 日間は元に戻せます。"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "無料：作成済みのアイテムを再生成することはありません。",
@@ -556,7 +618,7 @@
 		"worksLike": "基準にする装備スロット",
 		"hand": "手",
 		"placeholderEGSmallAndShinyPinned": "例：小さくて光沢があり、胸に留めてある",
-		"deleteSlot": "装備スロットを削除…",
+		"deleteSlot": "ゴミ箱に移動…",
 		"titleAddSlot": "装備スロットを追加",
 		"createCustomSlot": "カスタム装備スロットを作成",
 		"slotName": "装備スロット名",
@@ -564,8 +626,7 @@
 		"showLabel": "{label}を表示",
 		"createSlot": "装備スロットを作成",
 		"builtInSlots": "標準の装備スロット",
-		"theSlotAndItsItemsAreDeleted": "この装備スロットとそのアイテムはまとめてこのデバイスから削除され、コーディネートでも装備されなくなります。この操作は取り消せません。",
-		"undoBringsItBack": "元に戻すと復元できます。",
+		"theSlotAndItsItemsAreDeleted": "アイテムも一緒に移動し、衣装では着用されなくなります。最大 30 日間は元に戻せます。",
 		"labelAddedAtTheEndOfWardrobe": "{label}をワードローブの最後に追加しました。",
 		"valueShownAtTheEndOfWardrobe": "{value}をワードローブの最後に表示しました。",
 		"demoDeleteLocked": "同梱のデモのアイテムは削除できません。",
@@ -579,12 +640,9 @@
 		"creativeHint": "デザインのヒント",
 		"hintNote": "ここで作る新しいアイテムの説明に追加されます。作成済みのアイテムは変わりません。",
 		"alreadyHidden": "{label}はすでにありますが、表示されていません。",
-		"deleteWithItems": {
-			"1": "{label}とそのアイテムを削除しますか？",
-			"other": "{label}とそのアイテム{n}個を削除しますか？"
-		},
-		"deleteTitle": "{label}を削除しますか？",
-		"deleteExportNote": "エクスポートに装備スロット「{slot}」が含まれなくなるため、それを参照しているゲームのコードは変更が必要です。"
+		"deleteTitle": "{label} をゴミ箱に移動しますか？",
+		"deleteExportNote": "エクスポートに装備スロット「{slot}」が含まれなくなるため、それを参照しているゲームのコードは変更が必要です。",
+		"theSlotIsDeleted": "カテゴリはワードローブから外れます。最大 30 日間は元に戻せます。"
 	},
 	"stage": {
 		"characterFacing": "{name}、{move}、{facing}向き",
@@ -617,7 +675,9 @@
 		"missingFrameViews": "{names}には{direction}向きの{move}のフレームが必要です",
 		"making": "作成中…",
 		"makeIt": "作成する",
-		"estimate": { "other": "約{n}回の生成" },
+		"estimate": {
+			"other": "約{n}回の生成"
+		},
 		"makingMissingFrames": "不足している装備のフレームを作成中",
 		"makeYourOwn": "自分で作成",
 		"labelMakeMissingEquipmentFrames": "不足している装備のフレームを作成",
@@ -635,6 +695,8 @@
 		"titleItemReview": "アイテムの確認"
 	},
 	"toolbar": {
+		"activityRunning": "アクティビティで処理が実行中です",
+		"activityAttention": "アクティビティの処理に対応が必要です",
 		"help": "ヘルプ",
 		"userGuide": "ユーザーガイド",
 		"reportProblem": "問題を報告",
@@ -666,8 +728,12 @@
 		"selectPromptToCopy": "プロンプトを選択してコピーしてください",
 		"undoAction": "{action}を元に戻す",
 		"redoAction": "{action}をやり直す",
-		"generationsRemaining": { "other": "{n}回" },
-		"characterCount": { "other": "{n}体のキャラクター" },
+		"generationsRemaining": {
+			"other": "{n}回"
+		},
+		"characterCount": {
+			"other": "{n}体のキャラクター"
+		},
 		"version": "バージョン {version}",
 		"renameCharacter": "キャラクター名を変更…",
 		"rename": "名前を変更…",
@@ -736,7 +802,9 @@
 		"slotLabel": "{label}の装備スロット",
 		"equipped": "{label}、装備中",
 		"notFitted": "この素体に合わせていません",
-		"itemCount": { "other": "{n}個のアイテム" },
+		"itemCount": {
+			"other": "{n}個のアイテム"
+		},
 		"generationTileRunning": "{name}、{percent}、{status}",
 		"generationTileWearing": "{name}、{status}、装備中",
 		"generationTile": "{name}、{status}",
@@ -878,6 +946,7 @@
 		"manageMovesInOtherTab": "モーションは別のPixelDollタブで管理するか、先にそのタブを閉じてください。",
 		"manageCharactersInOtherTab": "キャラクターは別のPixelDollタブで管理するか、先にそのタブを閉じてください。",
 		"finishBeforeCharacterRemoval": "キャラクターを削除する前に、保留中の生成を完了するか破棄してください。",
+		"finishBeforeRestore": "このキャラクターを復元する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeMoveRemoval": "モーションを削除する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeDirectionRemoval": "向きを変更する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeFixFrames": "フレームを修正する前に、実行中の生成が終わるまでお待ちください。",
@@ -888,8 +957,8 @@
 		"couldNotSaveReason": "保存できませんでした：{reason}",
 		"pixelDollCouldNotConfirmThatYourInterrupted": "中断された生成が保存されたかどうかをPixelDollで確認できませんでした。更新する前に、キャラクター、モーション、またはセットアップのパネルで確認してください。",
 		"yourOutfitCouldNotBeSavedResolve": "コーディネートを保存できませんでした。更新する前にストレージのエラーを解決してください。",
-		"deletedNameFromThisDevice": "このデバイスから{name}を削除しました",
-		"removedName": "{name}を削除しました",
+		"deletedNameFromThisDevice": "{name} をゴミ箱に移動しました",
+		"removedName": "{name} をゴミ箱に移動しました",
 		"nameChangedMeanwhileCheckItsTileAnd": "確認中に{name}が変更されました。タイルを確認して、もう一度お試しください。",
 		"couldNotAddNameReason": "{name}を追加できませんでした：{reason}",
 		"fromHasNoMoreFramesOfName": "{from}には、このキャラクターに追加できる{name}のフレームがほかにありません。",
@@ -927,7 +996,7 @@
 		"labelChangedMeanwhileReviewItAgainBefore": "その間に{label}が変更されました。削除する前にもう一度確認してください。",
 		"labelHasNewItemsReviewItAgain": "{label}に新しいアイテムがあります。削除する前にもう一度確認してください。",
 		"categoryAndItemsDeleted": {
-			"other": "{label}とそのアイテム{count}個を削除しました"
+			"other": "{label} と {count} 件のアイテムをゴミ箱に移動しました"
 		},
 		"couldNotSaveFlowFailure": "このエラーをこのデバイスに保存できませんでした。再読み込みする前に、この操作を破棄してください。（{error}）",
 		"useSavedFramesInTheTabThat": "保存済みのフレームは、PixelDollのジョブを管理しているタブで使ってください。",
@@ -972,14 +1041,15 @@
 		"moveCategory": "{name}の移動",
 		"addCategory": "カテゴリーの追加",
 		"changeCategory": "{name}の変更",
-		"deleteCategory": "{name}の削除"
+		"deleteCategory": "{name}の削除",
+		"deleteItem": "{name} を削除",
+		"deleteMove": "{name} を削除"
 	},
 	"export": {
 		"sheet": {
 			"title": "エクスポート",
 			"back": "戻る",
 			"settings": "設定",
-			"close": "エクスポートを閉じる",
 			"saving": "設定を保存中…",
 			"unavailable": "エクスポートできません",
 			"sourceOnly": "元のPNGのみ",
@@ -1011,7 +1081,10 @@
 			"versionLabel": "RPG Makerのバージョン：{version}",
 			"walkMove": "歩きのモーション"
 		},
-		"group": { "engines": "エンジンとフレームワーク", "assets": "アセット" },
+		"group": {
+			"engines": "エンジンとフレームワーク",
+			"assets": "アセット"
+		},
 		"target": {
 			"godot": {
 				"sub": "シーン + ランタイム",
@@ -1062,10 +1135,18 @@
 			"current": "現在の見た目"
 		},
 		"count": {
-			"directions": { "other": "{count}方向" },
-			"moves": { "other": "{count}個のモーション" },
-			"items": { "other": "{count}個のアイテム" },
-			"outfits": { "other": "{count}個のコーディネート" }
+			"directions": {
+				"other": "{count}方向"
+			},
+			"moves": {
+				"other": "{count}個のモーション"
+			},
+			"items": {
+				"other": "{count}個のアイテム"
+			},
+			"outfits": {
+				"other": "{count}個のコーディネート"
+			}
 		},
 		"summary": {
 			"rpgCurrent": "現在の見た目の歩行シートを含みます。",
@@ -1086,7 +1167,9 @@
 			"technical": "技術的な詳細",
 			"currentSettings": "現在の設定",
 			"files": "含まれるファイル",
-			"fileCount": { "other": "{count}個のファイル：" }
+			"fileCount": {
+				"other": "{count}個のファイル："
+			}
 		},
 		"gaps": {
 			"dirs": "{move}には{directions}しかありません",
@@ -1099,7 +1182,9 @@
 			"canDownloadSources": "代わりに元のPNGをダウンロードできます。",
 			"requestedWarnings": "リクエストしたエクスポートの警告（復旧したアートワークのものではありません）："
 		},
-		"failure": { "noZip": "ダウンロードできるZIPはありません。" },
+		"failure": {
+			"noZip": "ダウンロードできるZIPはありません。"
+		},
 		"problem": {
 			"bodyMismatch": "体のフレームがこのキャラクターと一致しなくなりました。",
 			"noVisibleFrames": "体に表示できるフレームがありません。",
@@ -1130,7 +1215,9 @@
 			"duplicatePath": "エクスポートパスが重複しています：{path}",
 			"sizeLimits": "アーカイブがPixelDollのサイズ上限を超えています。"
 		},
-		"toast": { "artworkStarted": "アートワークのダウンロードを開始しました。" },
+		"toast": {
+			"artworkStarted": "アートワークのダウンロードを開始しました。"
+		},
 		"warnings": {
 			"missingMoves": "このキャラクターの一部のモーションが設定にありません。",
 			"missingOtherMoves": "別のキャラクターの一部のモーションが設定にありません。",
@@ -1138,7 +1225,9 @@
 			"staleItem": "{item}：素体と一致しなくなったため除外しました。",
 			"unfittedItem": "{item}：別の素体用に描いた状態のまま装備しており、このキャラクターには合わせていません。",
 			"noBodyFrames": "{move}：再生する体のフレームがありません。",
-			"emptyFrames": { "other": "{item}：{count}フレームが空のままです。" },
+			"emptyFrames": {
+				"other": "{item}：{count}フレームが空のままです。"
+			},
 			"missingEquipment": "{outfit}：不足している装備を除外しました（{slots}）。",
 			"bodyReferences": "見つからなかった体の参照画像は、編集用のコピーから除外しました。",
 			"itemReferences": "{item}：見つからなかった参照画像は、編集用のコピーから除外しました。",
@@ -1165,7 +1254,9 @@
 		"standingStateHint": "このステートの各向きの静止画像を使います。",
 		"movesTitle": "インポートするモーション",
 		"movesHint": "モーションは元のステートの見た目を引き継ぎます。不要なバージョンはチェックを外してください。",
-		"stateMoves": { "other": "{name}・{count}個のモーション" },
+		"stateMoves": {
+			"other": "{name}・{count}個のモーション"
+		},
 		"stateMovesUnreadable": "{name}・読み込めないモーション",
 		"dropArea": "キャラクターZIPのドロップエリア",
 		"reading": "ZIPを読み込み中…",
@@ -1188,8 +1279,12 @@
 		"untitledCharacter": "無題のキャラクター",
 		"libraryCounts": "{directions}・{moves}",
 		"count": {
-			"states": { "other": "ステート{count}個" },
-			"separateItems": { "other": "素体とは別のアイテム{count}個" }
+			"states": {
+				"other": "ステート{count}個"
+			},
+			"separateItems": {
+				"other": "素体とは別のアイテム{count}個"
+			}
 		},
 		"previousCharacterPage": "キャラクター一覧の前のページ",
 		"previousPage": "前のページ",
@@ -1216,7 +1311,6 @@
 		"previewDirectionLabel": "プレビューの向き",
 		"setupNext": "続けてポーズ用のリグをセットアップする（推奨）",
 		"setupNextHint": "インポートは無料です。リグのセットアップでは、開始前にPixelLabの生成コストが表示されます。",
-		"chooseAnother": "別のキャラクターを選ぶ",
 		"saving": "ローカルのコピーを保存中…",
 		"preparing": "キャラクターを準備中…",
 		"note": "無料・新しいローカルコピーを保存します",
@@ -1463,7 +1557,9 @@
 			"smudge": "このビューでは、{from}のデザインに灰色のにじみがあります",
 			"dark": "{from}のデザインに、他のビューにはない暗い部分があります",
 			"view": "{direction}向き",
-			"frames": { "other": "{direction}向きの{move}、フレーム{n}" },
+			"frames": {
+				"other": "{direction}向きの{move}、フレーム{n}"
+			},
 			"note": "{where}：{reasons}。"
 		},
 		"mirror": {
@@ -1531,8 +1627,12 @@
 			"nonemptyRemoval": "カテゴリーを削除する前に、そのアイテムを削除してください。"
 		},
 		"use": {
-			"making": { "other": "作成中のアイテム{count}個" },
-			"stopped": { "other": "停止した試行{count}件" }
+			"making": {
+				"other": "作成中のアイテム{count}個"
+			},
+			"stopped": {
+				"other": "停止した試行{count}件"
+			}
 		},
 		"busy": {
 			"hide": "{label}には{items}があります。非表示にできるのは空のカテゴリーだけです{stopped}。",
@@ -1616,7 +1716,9 @@
 		"partial": "{cost} + ?",
 		"estimate": "約{cost}",
 		"estimateVaries": "見積もりは変動します",
-		"copied": { "other": "{count}件の呼び出しをコピーしました" },
+		"copied": {
+			"other": "{count}件の呼び出しをコピーしました"
+		},
 		"savedJson": "呼び出しをJSONとして保存しました",
 		"job": "ジョブ{id} {state}",
 		"jobError": "ジョブ{id} {state}：{error}",
@@ -1654,7 +1756,9 @@
 		"retentionTotal": "最近の履歴・古い呼び出しは省略しています。合計はこのリストが対象です。コピーにはこのリストが含まれます。",
 		"total": "合計",
 		"estimatedTotal": "合計の見積もり",
-		"calls": { "other": "{count}件の呼び出し" },
+		"calls": {
+			"other": "{count}件の呼び出し"
+		},
 		"callsHidden": {
 			"other": "{count}件の呼び出し・バックグラウンド{hidden}件を非表示"
 		},
@@ -1697,12 +1801,16 @@
 			"registerPaddedNote": "判明しているフィールドのみ。{dependent}元の立ちポーズの画像を8方向すべて追加します。拡大・縮小せずに余白で{frame} pxに揃え、reference_imageとdirection_imagesに指定します。",
 			"readSkeletons": "立ちポーズのスケルトンを取得",
 			"readSkeletonsNote": "キャラクターIDは登録時に取得します。利用可能な場合はキャッシュを使います。立ちポーズの関節が不足している場合は、キャッシュのない立ち画像1枚につき0.1回分でPOST /estimate-skeletonを追加します。待機、歩き、その他のモーションは、あとでモーションから追加します。",
-			"dressFrozen": { "other": "固定したフレームに着せる・{count}フレーム" },
+			"dressFrozen": {
+				"other": "固定したフレームに着せる・{count}フレーム"
+			},
 			"dressFrozenNote": "インポートした関節の位置が信頼できないときに自動で使う方法です。変更しない素体のフレーム、編集可能な衣服のマスク、同じ向きの保護された立ちポーズの参照画像1枚を送信します。各バッチは予定どおり1回だけ実行します。品質チェック後の有料の再試行や修復は、ユーザーがリクエストしない限り行いません。",
 			"poseEquipment": "装備にポーズを付ける",
 			"dressStanding": "立ちポーズの画像に装備を描く",
 			"editPacked": "まとめたフレームを編集",
-			"actionFrames": { "other": "{action}・{count}フレーム" },
+			"actionFrames": {
+				"other": "{action}・{count}フレーム"
+			},
 			"itemPoseNote": "判明しているフィールドのみ。装備を着けた参照画像、保存済みのポーズをそのまま使ったデータ、外見、アクション、向き、シードを送信します。",
 			"itemEditNote": "判明しているフィールドのみ。フレームとimage_sizeは送信時に準備されます。",
 			"singleInput": "APIの最小フレーム数2を満たすため、単一の入力を複製します。返されたフレームのうち最初の1つだけを使用します。",
@@ -1769,8 +1877,12 @@
 			"duplicate": "2つのタブから送信されたリクエストです。{id}と重複しています。"
 		},
 		"clearFailed": "完了したジョブを消去できませんでした：{error}",
-		"jobCount": { "other": "完了したジョブ{count}件" },
-		"imageCount": { "other": "未使用の画像{count}枚" },
+		"jobCount": {
+			"other": "完了したジョブ{count}件"
+		},
+		"imageCount": {
+			"other": "未使用の画像{count}枚"
+		},
 		"cleared": "{jobs}を消去しました。下書きや、実行中のキャラクター作成・モーション生成で使用しているジョブは残しています。",
 		"clearedWithImages": "{jobs}と{images}を消去しました。下書きや、実行中のキャラクター作成・モーション生成で使用しているジョブは残しています。",
 		"findingJoints": "関節を検出中",
@@ -1788,7 +1900,9 @@
 		"title": "アクティビティ",
 		"refreshBalance": "残高を更新",
 		"resume": "再開",
-		"capacity": { "other": "同時に最大{count}件のジョブを実行できます。" },
+		"capacity": {
+			"other": "同時に最大{count}件のジョブを実行できます。"
+		},
 		"busy": "PixelLabが混み合っています。別のアプリで使用中の可能性があります。{seconds}秒待ってから再試行します。ジョブはキューに残ります。",
 		"follower": "別のタブで実行中です。キーは接続したタブにだけ保持されます。ジョブを実行しているタブでPixelLabに接続するか、そのタブを閉じてここで実行してください。",
 		"pausedAuth": "PixelLabがキーを受け付けませんでした。もう一度接続するまで、ジョブは待機します。",
@@ -1877,14 +1991,18 @@
 		"madeWith": "作成ツール",
 		"toolCalls": "{name} ×{count}",
 		"created": "作成日時",
-		"sent": { "other": "PixelLabに送信（プロンプト{count}件）" },
+		"sent": {
+			"other": "PixelLabに送信（プロンプト{count}件）"
+		},
 		"apiCalls": "API呼び出し（{count}）",
 		"rerolled": "再生成",
 		"seed": "シード {seed}",
 		"gens": "{value}回分",
 		"costUnknown": "費用不明",
 		"copyJson": "JSONとしてコピー",
-		"unknownCount": { "other": "不明{count}件" },
+		"unknownCount": {
+			"other": "不明{count}件"
+		},
 		"settings": {
 			"body": "素体",
 			"bodyPx": "{width} px",
@@ -1911,11 +2029,17 @@
 			"selective": "部分的",
 			"none": "なし"
 		},
-		"detail": { "low": "低", "medium": "中", "high": "高" }
+		"detail": {
+			"low": "低",
+			"medium": "中",
+			"high": "高"
+		}
 	},
 	"moves": {
 		"preview": "{move}のプレビュー",
-		"frames": { "other": "{count}フレーム" },
+		"frames": {
+			"other": "{count}フレーム"
+		},
 		"onlyDirection": "{direction}のみ",
 		"oneDirection": "1方向のみ",
 		"mirrorOf": "{direction}（{source}を反転）",
@@ -2151,7 +2275,10 @@
 				"unique": "個別8方向"
 			},
 			"models": {
-				"v3": { "label": "V3", "help": "バランスの取れた頭身です。" },
+				"v3": {
+					"label": "V3",
+					"help": "バランスの取れた頭身です。"
+				},
 				"standard": {
 					"label": "スタンダード",
 					"help": "テンプレートまたは正面を向いたスプライトを使って、8方向の画像を描きます。"
@@ -2165,8 +2292,12 @@
 					"help": "頭が大きく脚が短いちびキャラのスタイルで、費用は約3倍です。"
 				}
 			},
-			"outlines": { "default": "標準（黒）" },
-			"details": { "default": "標準（中）" },
+			"outlines": {
+				"default": "標準（黒）"
+			},
+			"details": {
+				"default": "標準（中）"
+			},
 			"outlineNote": "アウトライン：{outline}",
 			"detailNote": "ディテール：{detail}",
 			"ownView": "{direction}は独自のビューを使うようになりました。",
@@ -2257,7 +2388,9 @@
 			"resultLabel": "完了したキャラクター生成",
 			"ready": "{name}の準備ができました",
 			"resultFrame": "{name}、{move}、{direction}向き",
-			"qualityNotes": { "other": "品質メモ{count}件" },
+			"qualityNotes": {
+				"other": "品質メモ{count}件"
+			},
 			"progressLabel": "現在のキャラクター生成",
 			"standingFrame": "{direction}向きに立つ{name}",
 			"declined": "PixelLabがこの説明を拒否しました。別の言葉でお試しください。",
@@ -2268,7 +2401,6 @@
 			"retryLabel": "キャラクターをもう一度作成",
 			"editSetup": "設定を編集…",
 			"estimated": "見積もり：{gens}",
-			"keepWorking": "作業を続ける",
 			"costTitle": "全方向の立ちポーズを作成します。待機、歩き、その他のモーションはあとで追加できます。立ちポーズの関節が不足している場合は、費用が少し増えることがあります",
 			"create": "キャラクターを作成",
 			"createAnyway": "このまま作成"
@@ -2354,7 +2486,6 @@
 		"reuseCached": "キャッシュされたフレームを再利用",
 		"matchColors": "体の色を合わせる",
 		"keepFrames": "フレームを残す",
-		"keepWorking": "作業を続けられます。",
 		"queueAnother": "別のモーションをキューに追加",
 		"addLabel": "モーションを追加または置き換え",
 		"submit": {
@@ -2554,7 +2685,12 @@
 		"tabOnlyKey": "この接続はこのタブでのみ有効で、保存されません。",
 		"useSavedKey": "保存済みのキーを使う"
 	},
-	"moveNames": { "default": "立ちポーズ", "idle": "待機", "walk": "歩き", "run": "走り" },
+	"moveNames": {
+		"default": "立ちポーズ",
+		"idle": "待機",
+		"walk": "歩き",
+		"run": "走り"
+	},
 	"stateGeneration": {
 		"continueIntro": "まだ送信していない向きの画像を生成できます。完了した画像は保持されます。",
 		"continueAccount": "このステートを続けるには、元の PixelLab キーで再接続してください。",
@@ -2583,10 +2719,10 @@
 		"reference": "変更の参考になる画像を追加してください。",
 		"pixenReference": "Pixen は参照画像を使用しません。画像を使うにはモデルを切り替えてください。",
 		"fixedCost": "費用：{generations} ジェネレーション",
+		"fixedCostOne": "費用：1 ジェネレーション",
 		"managed": "PixelLab はアカウント内で {parent} をもとにステートを作成します。",
 		"transfer": "参照画像のスタイルだけでなく、見た目も取り入れます。",
 		"sheetWarning": "複数の向きを1枚のシートで編集します。保存前に各向きを確認してください。",
-		"checkCost": "費用を確認",
 		"costFirst": "生成する前に費用を確認できます。",
 		"quoting": "費用を確認中…",
 		"generate": "ステートを生成",
@@ -2596,7 +2732,13 @@
 		"sourceMissing": "元を表示できません",
 		"sourceChanged": "生成後に元が変更されたため、この結果は保存できません。破棄してやり直してください。",
 		"keepGrounded": "元に合わせる",
-		"groundedHint": "足の位置を元に合わせました。オフで元に戻します。"
+		"groundedHint": "足の位置を元に合わせました。オフで元に戻します。",
+		"readyRow": "確認できます",
+		"attentionRow": "未完了：タップして対処方法を表示",
+		"background": "閉じて作業を続けられます。完成したらお知らせします。",
+		"readyToReview": "{name}を確認できます。",
+		"failedOpen": "{name}の確認が必要です。開いて理由を確認してください。",
+		"generatingProgress": "ステートを生成中… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "関節を計測中です。完了してからもう一度お試しください。",
@@ -2627,7 +2769,7 @@
 		"noEquipment": "装備はコピーされません。",
 		"noCredits": "クレジットは消費されません。",
 		"invalidName": "ラテン文字または数字を含む名前を入力してください。",
-		"takenName": "この名前は使用済みか予約されています。別の名前を選んでください。",
+		"takenName": "このキャラクターのモーションかステートがすでにこの名前を使っています。別の名前を選んでください。",
 		"savedAs": "{name} として保存",
 		"saving": "ステートを保存中…",
 		"saved": "ステートを保存しました",
@@ -2644,8 +2786,7 @@
 		"resolveDrafts": "モーションを削除する前に、このキャラクターのアイテムの下書きを完了するか破棄してください。",
 		"required": "既存のアイテムを新しいモーションでも使えるようにするには、この立ちポーズのモーションが必要です。",
 		"selectedCharacterChanged": "選択したキャラクターが変更されました。",
-		"concurrentEdit": "モーションを削除する前に、このキャラクターが変更されました。もう一度お試しください。",
-		"removed": "モーションを削除しました"
+		"concurrentEdit": "モーションを削除する前に、このキャラクターが変更されました。もう一度お試しください。"
 	},
 	"sizePreview": {
 		"label": "サイズガイド：{frame}ピクセルのフレーム内に、{body}ピクセルの素体キャンバスがあります",
@@ -2654,8 +2795,9 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "あとで" },
-	"toast": { "dismiss": "通知を閉じる" },
+	"toast": {
+		"dismiss": "通知を閉じる"
+	},
 	"sharedVisibility": {
 		"allEmphasis": "すべての",
 		"demo": "{demo}から",

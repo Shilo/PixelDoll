@@ -15,8 +15,8 @@
 </script>
 
 <script lang="ts">
-	import { onMount, untrack } from 'svelte';
-	import { formatNumber, t } from 'svelte-whisper';
+	import { untrack } from 'svelte';
+	import { t } from 'svelte-whisper';
 	import PromptField from './PromptField.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
 	import { promptSuggestions } from './promptSuggestions.svelte.ts';
@@ -25,14 +25,12 @@
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import { app, getKeyRevision } from '../lib/app.svelte.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
-	import { flipH } from '../lib/rig/mirror.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { displayNestedMessage } from '../lib/i18n.ts';
 	import type { PickedReference } from '../lib/image/reference.ts';
 	import { errorMessage, LocalizedError, type Message } from '../lib/message.ts';
-	import { DEFAULT_MOVE, DIRECTIONS, type DirectionName } from '../lib/rig/rig.ts';
+	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { moveLabel } from './model.ts';
-	import { displayDirection } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
 	import { ChevronRight } from './icons.ts';
 	import {
@@ -40,33 +38,20 @@
 		stateCaptureId,
 		stateCaptureNameIssue,
 		stateCaptureSource,
+		stateId,
 		stateSourceClips
 	} from './moveActions.svelte.ts';
 	import ReferenceField from './ReferenceField.svelte';
 	import Sheet from './Sheet.svelte';
-	import PromptLine from './PromptLine.svelte';
 	import SourcePreview from './SourcePreview.svelte';
-	import Sprite from './Sprite.svelte';
-	import { croppedBacking } from './experience/thumbnails.svelte.ts';
-	import type { Img } from '../lib/image/png.ts';
-	import DirectionCompass from './DirectionCompass.svelte';
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 	import { bodyClipThumbnail } from './moveThumbnails.ts';
 	import { doc, openProject, store, ui, withKey } from './state.svelte.ts';
-	import {
-		continueState,
-		discardState,
-		hasStateContinuation,
-		pendingState,
-		prepareState,
-		quoteStateContinuation,
-		saveState,
-		startState,
-		type PreparedState,
-		type StateContinuationQuote,
-		type StateReview
-	} from './stateGeneration.ts';
-	import type { StateGenerationCost, StateGenerationModel } from './stateGenerationPlan.ts';
+	import { prepareState, type PreparedState } from './stateGeneration.ts';
+	import type { StateGenerationModel } from './stateGenerationPlan.ts';
+	import { stateCostText } from './stateCost.ts';
+	import { generateState } from './stateJobs.svelte.ts';
+	import { stateAttempts } from './stateRecovery.ts';
 	import { openingCreationSettings, resolveStateModelPreference } from './creationSettings.ts';
 	import { stateGenerationSource, type StateSourceFrame } from './stateGenerationSource.ts';
 
@@ -86,6 +71,11 @@
 	const lastFrame = (id: string) =>
 		Math.max(0, (manifest?.rig.animations.find((clip) => clip.id === id)?.frames.length ?? 1) - 1);
 
+	// Moves awaiting review and States still generating keep their names.
+	const reservedNames = () => [
+		...Object.keys(store.moveReviews),
+		...stateAttempts({ stateGenerations: store.stateAttempts }).map(({ id }) => id)
+	];
 	function initialClip() {
 		const sources = stateSourceClips(store.project?.manifest);
 		const has = (id: string) => sources.some((clip) => clip.id === id);
@@ -96,13 +86,12 @@
 		const current = store.project?.manifest;
 		const root =
 			chosen ||
-			(stateCaptureId(sourceId === DEFAULT_MOVE ? 'standing' : sourceId).slice(0, 48) || 'state') +
-				'-pose';
+			(stateCaptureId(sourceId === DEFAULT_MOVE ? 'standing' : moveLabel(sourceId)).slice(0, 48) ||
+				'state') + '-pose';
 		let candidate = root;
 		for (
 			let suffix = 2;
-			current &&
-			(stateCaptureNameIssue(current, candidate) || Object.hasOwn(store.moveReviews, candidate));
+			current && stateCaptureNameIssue(current, candidate, reservedNames());
 			suffix++
 		)
 			candidate = root + '-' + suffix;
@@ -120,8 +109,6 @@
 	// The Riding idea stays pressed through edits, like a move template, until it is pressed again, another pose is
 	// picked or the instructions are cleared. The instructions stay editable and are sent as shown.
 	let ridingIdea = $state(restored?.riding ?? false);
-	// Set when a State from the Riding idea was generated in this sheet, for the review checklist and the saved notice.
-	let riding = $state(false);
 	const savedModel = restored ? undefined : openingCreationSettings('states').model;
 	const initialModel =
 		restored?.model ??
@@ -151,43 +138,15 @@
 		store.project && stateCaptureSource(store.project.manifest, startClip)?.version
 	);
 	let stale = $state(false);
-	let busy = $state<
-		| 'common.loading'
-		| 'stateGeneration.quoting'
-		| 'stateGeneration.generating'
-		| 'stateCapture.saving'
-		| null
-	>(null);
+	let busy = $state<'common.loading' | 'stateGeneration.generating' | 'stateCapture.saving' | null>(
+		null
+	);
 	let failure = $state<Message | string>('');
-	let checkedPending = $state(false);
-	let review = $state.raw<StateReview | null>(null);
-	let reviewFacing = $state<DirectionName | null>(null);
-	let keepGrounded = $state(true);
-	// Grounded views by default; the user can keep PixelLab's placement, e.g. for a jump.
-	const reviewed = $derived.by(() => {
-		const current = review;
-		if (!current || keepGrounded) return current;
-		return {
-			...current,
-			views: current.views.map((view) => ({
-				...view,
-				image: current.ungrounded[view.direction] ?? view.image
-			}))
-		};
-	});
-	let reviewHeading = $state<HTMLElement>();
-	// The generate button disappears when its review arrives: move focus to the review once per result.
-	let focusedReview = '';
-	$effect(() => {
-		const token = review?.token;
-		if (!reviewHeading || !token || token === focusedReview) return;
-		focusedReview = token;
-		reviewHeading.focus();
-	});
-	let confirmDiscard = $state(false);
-	let canContinue = $state(false);
-	let continuation = $state.raw<StateContinuationQuote | null>(null);
 	let quoted = $state.raw<{ prepared: PreparedState; draft: Omit<Draft, 'named'> } | null>(null);
+	// The edit is priced for free as the form settles; Generate State only enables once the shown price matches it.
+	let pricing = $state(false);
+	let priceFailure = $state<Message | string>('');
+	let priceRetry = $state(0);
 
 	const source = $derived<StateSourceFrame>({ clip, frame });
 	const capture = $derived(manifest && stateCaptureSource(manifest, clip));
@@ -206,7 +165,7 @@
 			.sort((left, right) => DIRECTIONS.indexOf(left.id) - DIRECTIONS.indexOf(right.id))
 			.map(({ id }) => ({ direction: id, image: cellImg(project, body, clip, id, cell) ?? null }));
 	});
-	const id = $derived(stateCaptureId(name));
+	const id = $derived(stateId(name));
 	// PixelLab has no enhancer for edit instructions. The animation enhancer is the one that reads images: it grounds the
 	// text in the source frame and, with a reference, describes the change from the source pose toward it.
 	const enhanceSpec = $derived.by((): EnhanceSpec | null => {
@@ -217,9 +176,7 @@
 	});
 	const enhanceScope = `state-enhance:${projectId}:${crypto.randomUUID()}`;
 	const nameIssue = $derived(
-		project &&
-			(stateCaptureNameIssue(project.manifest, id) ??
-				(Object.hasOwn(store.moveReviews, id) ? 'stateCapture.takenName' : undefined))
+		project && stateCaptureNameIssue(project.manifest, id, reservedNames())
 	);
 	const connected = $derived(!!app.key && !app.keyRejected);
 	const flashReference = $derived(model === 'pro-flash' && !!reference);
@@ -242,53 +199,7 @@
 			? quoted.prepared
 			: null
 	);
-	const formReady = $derived(
-		checkedPending && sourceReady && !nameIssue && (!editing || editReady)
-	);
-	// Mounted riding uses the State saved as `riding`, whatever prompt made it.
-	const reviewRiding = $derived(riding || review?.id === RIDING_STATE);
-	const reviewSource = $derived(review && project && stateGenerationSource(project, review.source));
-	const sourceCurrent = $derived(!!review && reviewSource?.version === review.sourceVersion);
-	// Every facing the saved State will have: generated views plus the rig's mirrors of them.
-	const reviewViews = $derived.by(() => {
-		const current = reviewed;
-		if (!current || !project || !body) return [];
-		const generated = new Map(current.views.map(({ direction, image }) => [direction, image]));
-		const sent = new Map(
-			sourceCurrent
-				? (reviewSource?.views.map(({ direction, image }) => [direction, image]) ?? [])
-				: []
-		);
-		return project.manifest.rig.directions
-			.filter(({ id, mirrorOf }) => generated.has(id) || (mirrorOf && generated.has(mirrorOf)))
-			.sort((left, right) => DIRECTIONS.indexOf(left.id) - DIRECTIONS.indexOf(right.id))
-			.map(({ id, mirrorOf }) => ({
-				direction: id,
-				mirrorOf: generated.has(id) ? undefined : mirrorOf,
-				image: generated.get(id) ?? flipH(generated.get(mirrorOf!)!),
-				source: sent.get(id) ?? (mirrorOf && sent.has(mirrorOf) ? flipH(sent.get(mirrorOf)!) : null)
-			}));
-	});
-	// Starts on the Studio facing, else the first view in compass order.
-	const view = $derived(
-		reviewViews.find(({ direction }) => direction === reviewFacing) ??
-			reviewViews.find(({ direction }) => direction === ui.dir) ??
-			reviewViews[0]
-	);
-	const reviewMirrors = $derived(
-		Object.fromEntries(
-			reviewViews.flatMap(({ direction, mirrorOf }) => (mirrorOf ? [[direction, mirrorOf]] : []))
-		)
-	);
-	const discardable = $derived(
-		!checkedPending &&
-			(canContinue ||
-				(typeof failure !== 'string' &&
-					(failure.key === 'stateGeneration.unfinished' ||
-						failure.key === 'stateGeneration.invalidResult' ||
-						failure.key === 'stateGeneration.outdated')))
-	);
-
+	const formReady = $derived(sourceReady && !nameIssue && (!editing || editReady));
 	function chooseClip(next: string, reloading = false) {
 		if ((busy && !reloading) || !project) return;
 		clip = next;
@@ -354,42 +265,26 @@
 			await work();
 		} catch (error) {
 			failure = errorMessage(error);
-			// A saved source that changed or vanished elsewhere offers Reload source instead of retrying it.
-			if (
-				!review &&
-				typeof failure !== 'string' &&
-				(failure.key === 'stateGeneration.changed' ||
-					failure.key === 'stateGeneration.sourceUnavailable')
-			)
-				stale = true;
+			markStale(failure);
 		} finally {
 			busy = null;
 		}
 	}
-
-	function checkPending() {
-		confirmDiscard = false;
-		continuation = null;
-		return run('common.loading', async () => {
-			canContinue = false;
-			try {
-				review = await pendingState(projectId);
-				checkedPending = true;
-			} catch (cause) {
-				canContinue = await hasStateContinuation(projectId).catch(() => false);
-				if (!canContinue) throw cause;
-			}
-		});
+	// A saved source that changed or vanished elsewhere offers Reload source instead of retrying it.
+	function markStale(error: Message | string) {
+		if (
+			typeof error !== 'string' &&
+			(error.key === 'stateGeneration.changed' || error.key === 'stateGeneration.sourceUnavailable')
+		)
+			stale = true;
 	}
-	onMount(() => {
-		void checkPending();
-	});
 
 	function submit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!formReady || busy || review) return;
+		if (!formReady || busy) return;
 		if (!editing) return void createCopy();
-		if (!quote) checkCost();
+		// Enter never spends credits: only the Generate State button does.
+		if (!connected) connect();
 	}
 
 	function createCopy() {
@@ -409,7 +304,36 @@
 		});
 	}
 
-	function checkCost() {
+	function connect() {
+		// Published only when Connect succeeds, so a canceled Connect leaves no draft behind.
+		const saved = {
+			projectId,
+			source: { clip, frame },
+			name,
+			description,
+			riding: ridingIdea,
+			model,
+			reference,
+			named
+		};
+		withKey(() => {
+			if (doc.id !== projectId) return;
+			connectionDraft = saved;
+			ui.stateCaptureMove = '';
+			ui.sheet = 'stateCapture';
+		});
+	}
+
+	$effect(() => {
+		if (!editing || !connected || !formReady || busy || !views) return;
+		// Reprice after any change the quote depends on, once typing pauses.
+		void [clip, frame, name, description, model, reference, views.version, priceRetry];
+		const timer = setTimeout(() => void price(), 400);
+		return () => clearTimeout(timer);
+	});
+
+	let priceRequest = 0;
+	async function price() {
 		if (!views) return;
 		const draft = {
 			projectId,
@@ -421,19 +345,10 @@
 			reference
 		};
 		const version = views.version;
-		quoted = null;
-		if (!connected) {
-			// Published only when Connect succeeds, so a canceled Connect leaves no draft behind.
-			const saved = { ...draft, named };
-			withKey(() => {
-				if (doc.id !== projectId) return;
-				connectionDraft = saved;
-				ui.stateCaptureMove = '';
-				ui.sheet = 'stateCapture';
-			});
-			return;
-		}
-		void run('stateGeneration.quoting', async () => {
+		const request = ++priceRequest;
+		pricing = true;
+		priceFailure = '';
+		try {
 			const prepared = await prepareState(
 				projectId,
 				draft.source,
@@ -442,461 +357,255 @@
 				draft.model,
 				draft.model === 'pixen' ? undefined : draft.reference
 			);
+			if (request !== priceRequest) return;
 			if (prepared.sourceVersion !== version)
 				throw new LocalizedError(
 					'The source or quote changed. Check the cost again before generating.',
 					'stateGeneration.changed'
 				);
 			quoted = { prepared, draft };
-		});
+		} catch (error) {
+			if (request !== priceRequest) return;
+			priceFailure = errorMessage(error);
+			markStale(priceFailure);
+		} finally {
+			if (request === priceRequest) pricing = false;
+		}
 	}
 
 	function generate() {
-		if (!quote || !formReady || busy || review) return;
+		if (!quote || !formReady || busy) return;
 		const prepared = quote;
 		quoted = null;
-		checkedPending = false;
 		void run('stateGeneration.generating', async () => {
-			try {
-				// Pro Flash with a reference sends no instructions, so the Riding idea was not used.
-				riding = ridingIdea && !flashReference;
-				review = await startState(prepared);
-			} catch (cause) {
-				canContinue = await hasStateContinuation(projectId).catch(() => false);
-				// Nothing was saved or sent (a preflight check failed): return to the form and its draft.
-				if (!canContinue && (await pendingState(projectId).catch(() => true)) === null)
-					checkedPending = true;
-				throw cause;
-			}
-			checkedPending = true;
-			reviewFacing = null;
-			keepGrounded = true;
-		});
-	}
-
-	function checkContinuationCost() {
-		void run('stateGeneration.quoting', async () => {
-			continuation = await quoteStateContinuation(projectId);
-		});
-	}
-
-	function generateRemaining() {
-		const approved = continuation;
-		if (!approved) return;
-		continuation = null;
-		void run('stateGeneration.generating', async () => {
-			try {
-				review = await continueState(approved);
-			} catch (cause) {
-				canContinue = await hasStateContinuation(projectId).catch(() => false);
-				throw cause;
-			}
-			canContinue = false;
-			checkedPending = true;
-			reviewFacing = null;
-			keepGrounded = true;
-		});
-	}
-
-	function save() {
-		if (!reviewed) return;
-		const pending = reviewed;
-		void run('stateCapture.saving', async () => {
-			await saveState(pending, reviewRiding);
+			// Pro Flash with a reference sends no instructions, so the Riding idea was not used.
+			await generateState(prepared, ridingIdea && !flashReference);
+			// Like a Move, it carries on in the background: the States list shows it until it is reviewed.
+			ui.tab = 'states';
 			if (ui.sheet === 'stateCapture') ui.sheet = null;
-		});
-	}
-
-	function discard() {
-		if (!confirmDiscard) {
-			confirmDiscard = true;
-			return;
-		}
-		void run('common.loading', async () => {
-			await discardState(projectId);
-			confirmDiscard = false;
-			canContinue = false;
-			continuation = null;
-			review = null;
-			reviewFacing = null;
-			keepGrounded = true;
-			checkedPending = true;
 		});
 	}
 </script>
 
-{#snippet cell(image: Img | null, box: number, label: string)}
-	<Sprite img={image} k={image ? croppedBacking(box, image, ui.dpr) : 1} fitToBox checker {label} />
-{/snippet}
-
-{#snippet costLabel(cost: StateGenerationCost)}
-	{@const low = formatNumber(cost.minGenerations)}
-	{@const high = formatNumber(cost.maxGenerations)}
-	{cost.kind === 'fixed'
-		? t('stateGeneration.fixedCost', { generations: high })
-		: t('moves.estimate', { gens: low === high ? high : `${low}–${high}` })}
-{/snippet}
-
 <Sheet
 	title={t('moves.addState')}
-	className={['state-capture-sheet', review ? 'reviewing' : checkedPending && editing && 'split']
-		.filter(Boolean)
-		.join(' ')}
-	wide={!review && checkedPending && editing}
-	cancelDisabled={!!busy}
+	className={['state-capture-sheet', editing && 'split'].filter(Boolean).join(' ')}
+	wide={editing}
+	locked={!!busy}
 	onclose={() => (ui.sheet = null)}
-	footer={review || checkedPending
-		? footer
-		: !busy && (failure || canContinue)
-			? recoveryFooter
-			: undefined}
+	{footer}
 >
-	{#if review}
-		<div class="state-panel" aria-busy={!!busy}>
-			<h3 class="muted small review-heading" tabindex="-1" bind:this={reviewHeading}>
-				{t('stateGeneration.review', { name: moveLabel(review.id) })}
-			</h3>
-			{#if view}
-				{@const facingName = displayDirection(view.direction)}
-				{@const sourceName = clipName(review.source.clip)}
-				<div class="review-preview">
-					<div class="review-pair">
-						<figure>
-							<span class="review-stage">
-								{#if view.source}<span class="cell-frame"
-										>{@render cell(
-											view.source,
-											144,
-											t('stateCapture.preview', { source: sourceName, facing: facingName })
-										)}</span
-									>{:else}<span class="muted small">{t('stateGeneration.sourceMissing')}</span>{/if}
-							</span>
-							<figcaption>{sourceName}</figcaption>
-						</figure>
-						<figure>
-							<span class="review-stage"
-								><span class="cell-frame"
-									>{@render cell(
-										view.image,
-										144,
-										t('stateCapture.preview', {
-											source: t('stateGeneration.generated'),
-											facing: facingName
-										})
-									)}</span
-								></span
-							>
-							<figcaption>{t('stateGeneration.generated')}</figcaption>
-						</figure>
-					</div>
-					{#if reviewViews.length > 1}
-						<DirectionCompass
-							label={t('common.directions')}
-							available={reviewViews.map(({ direction }) => direction)}
-							selected={[view.direction]}
-							mirrors={reviewMirrors}
-							compact
-							preview
+	<form id={formId} class="state-form" onsubmit={submit} aria-busy={!!busy}>
+		<div class="state-panel state-main">
+			<PlaybackPicker
+				clips={pickerClips}
+				moveRefs={clipIds}
+				selected={clip}
+				field={t('stateCapture.source')}
+				disabled={!!busy}
+				thumbnail={(key) => project && bodyClipThumbnail(project, key, ui.dir)}
+				onselect={chooseClip}
+			/>
+			<SourcePreview
+				{previews}
+				source={clipName(clip)}
+				{frame}
+				frames={total}
+				disabled={!!busy}
+				onstep={step}
+			/>
+			{#if changed}
+				<div class="notice warn small source-changed" role="status">
+					<p>{t('stateCapture.concurrentEdit')}</p>
+					<button class="bu-btn" data-variant="outline" type="button" onclick={reloadSource}
+						>{t('stateCapture.reload')}</button
+					>
+				</div>
+			{:else if !views}
+				<p class="notice warn small" role="status">{t('stateCapture.unavailable')}</p>
+			{/if}
+			<label class="field">
+				<span class="label">{t('stateCapture.name')}</span>
+				<input
+					class="bu-input input"
+					type="text"
+					bind:value={name}
+					disabled={!!busy}
+					maxlength="64"
+					aria-invalid={!!nameIssue}
+					oninput={() => {
+						named = true;
+						failure = '';
+					}}
+				/>
+			</label>
+			{#if nameIssue}
+				<p class="notice warn small" role="status">{t(nameIssue)}</p>
+			{:else if name.trim() !== moveLabel(id)}
+				<p class="muted small">{t('stateCapture.savedAs', { name: moveLabel(id) })}</p>
+			{/if}
+			<label class="bu-check edit-switch">
+				<span class="edit-copy">
+					<span>{t('stateCapture.changePose')}</span>
+					<span id="{formId}-edit-hint" class="faint small">{t('stateCapture.changeHint')}</span>
+				</span>
+				<input
+					class="bu-switch"
+					type="checkbox"
+					role="switch"
+					bind:checked={editing}
+					disabled={!!busy}
+					aria-label={t('stateCapture.changePose')}
+					aria-describedby="{formId}-edit-hint"
+				/>
+			</label>
+		</div>
+		{#if editing}
+			<div class="state-panel state-edit">
+				{#if !flashReference}
+					<div class="field">
+						<label class="label" for="{formId}-instructions"
+							>{t('stateGeneration.description')}</label
+						>
+						<PromptField
+							id="{formId}-instructions"
+							value={description}
+							onvalue={describe}
+							spec={enhanceSpec}
+							activity={{ scope: enhanceScope, label: 'Enhance State instructions' }}
+							maxOutput={model === 'pixen' ? 500 : 2000}
+							enhanceDisabled={!!busy}
 							disabled={!!busy}
-							ontoggle={(option) => (reviewFacing = option)}
 						/>
-					{/if}
-				</div>
-			{/if}
-			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
-			{#if reviewRiding}<p class="muted small">{t('stateGeneration.ridingCheck')}</p>{/if}
-			{#if !sourceCurrent}
-				<p class="notice warn small" role="status">{t('stateGeneration.sourceChanged')}</p>
-			{:else if Object.keys(review.ungrounded).length}
-				<label class="bu-check review-ground">
-					<span class="edit-copy">
-						<span>{t('stateGeneration.keepGrounded')}</span>
-						<span id="{formId}-ground-hint" class="faint small"
-							>{t('stateGeneration.groundedHint')}</span
-						>
-					</span>
-					<input
-						class="bu-switch"
-						type="checkbox"
-						role="switch"
-						bind:checked={keepGrounded}
-						disabled={!!busy}
-						aria-label={t('stateGeneration.keepGrounded')}
-						aria-describedby="{formId}-ground-hint"
-					/>
-				</label>
-			{/if}
-			{#if confirmDiscard}<p class="notice warn small" role="status">
-					{t('stateGeneration.discardWarning')}
-				</p>{/if}
-		</div>
-	{:else if checkedPending}
-		<form id={formId} class="state-form" onsubmit={submit} aria-busy={!!busy}>
-			<div class="state-panel state-main">
-				<PlaybackPicker
-					clips={pickerClips}
-					moveRefs={clipIds}
-					selected={clip}
-					field={t('stateCapture.source')}
-					disabled={!!busy}
-					thumbnail={(key) => project && bodyClipThumbnail(project, key, ui.dir)}
-					onselect={chooseClip}
-				/>
-				<SourcePreview
-					{previews}
-					source={clipName(clip)}
-					{frame}
-					frames={total}
-					disabled={!!busy}
-					onstep={step}
-				/>
-				{#if changed}
-					<div class="notice warn small source-changed" role="status">
-						<p>{t('stateCapture.concurrentEdit')}</p>
-						<button class="bu-btn" data-variant="outline" type="button" onclick={reloadSource}
-							>{t('stateCapture.reload')}</button
-						>
+						<PromptSuggestions
+							label={t('stateCapture.poseIdeas')}
+							value={description}
+							suggestions={promptSuggestions('state.pose')}
+							active={ridingIdea ? RIDING_STATE : undefined}
+							onpick={pickIdea}
+						/>
 					</div>
-				{:else if !views}
-					<p class="notice warn small" role="status">{t('stateCapture.unavailable')}</p>
 				{/if}
-				<label class="field">
-					<span class="label">{t('stateCapture.name')}</span>
-					<input
-						class="bu-input input"
-						type="text"
-						bind:value={name}
-						disabled={!!busy}
-						maxlength="64"
-						aria-invalid={!!nameIssue}
-						oninput={() => {
-							named = true;
-							failure = '';
-						}}
-					/>
-				</label>
-				{#if nameIssue}
-					<p class="notice warn small" role="status">{t(nameIssue)}</p>
-				{:else if name.trim() !== moveLabel(id)}
-					<p class="muted small">{t('stateCapture.savedAs', { name: moveLabel(id) })}</p>
+				<ReferenceField
+					bind:value={reference}
+					bind:loading={referenceLoading}
+					max={referenceMax}
+					hint={t(
+						model === 'pixen'
+							? 'stateGeneration.pixenReference'
+							: model === 'pro-flash'
+								? 'stateGeneration.flashReference'
+								: 'stateGeneration.reference'
+					)}
+					disabled={!!busy || model === 'pixen'}
+				/>
+				{#if !modelEdited && savedModel !== undefined && initialModel !== savedModel}
+					<p class="notice warn small" role="status">
+						{t('creationSettings.fallback', {
+							setting: t('create.form.model'),
+							value: t('create.form.models.pro.label')
+						})}
+					</p>
 				{/if}
-				<label class="bu-check edit-switch">
-					<span class="edit-copy">
-						<span>{t('stateCapture.changePose')}</span>
-						<span id="{formId}-edit-hint" class="faint small">{t('stateCapture.changeHint')}</span>
-					</span>
-					<input
-						class="bu-switch"
-						type="checkbox"
-						role="switch"
-						bind:checked={editing}
-						disabled={!!busy}
-						aria-label={t('stateCapture.changePose')}
-						aria-describedby="{formId}-edit-hint"
-					/>
-				</label>
-			</div>
-			{#if editing}
-				<div class="state-panel state-edit">
-					{#if !flashReference}
-						<div class="field">
-							<label class="label" for="{formId}-instructions"
-								>{t('stateGeneration.description')}</label
-							>
-							<PromptField
-								id="{formId}-instructions"
-								value={description}
-								onvalue={describe}
-								spec={enhanceSpec}
-								activity={{ scope: enhanceScope, label: 'Enhance State instructions' }}
-								maxOutput={model === 'pixen' ? 500 : 2000}
-								enhanceDisabled={!!busy}
-								disabled={!!busy}
-							/>
-							<PromptSuggestions
-								label={t('stateCapture.poseIdeas')}
-								value={description}
-								suggestions={promptSuggestions('state.pose')}
-								active={ridingIdea ? RIDING_STATE : undefined}
-								onpick={pickIdea}
-							/>
-						</div>
-					{/if}
-					<ReferenceField
-						bind:value={reference}
-						bind:loading={referenceLoading}
-						max={referenceMax}
-						hint={t(
-							model === 'pixen'
-								? 'stateGeneration.pixenReference'
-								: model === 'pro-flash'
-									? 'stateGeneration.flashReference'
-									: 'stateGeneration.reference'
-						)}
-						disabled={!!busy || model === 'pixen'}
-					/>
-					{#if !modelEdited && savedModel !== undefined && initialModel !== savedModel}
-						<p class="notice warn small" role="status">
-							{t('creationSettings.fallback', {
-								setting: t('create.form.model'),
-								value: t('create.form.models.pro.label')
-							})}
-						</p>
-					{/if}
-					<details class="disclosure" bind:open={advancedOpen}>
-						<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
-						<label class="field">
-							<span class="label">{t('create.form.model')}</span>
-							<select
-								class="bu-input input"
-								value={model}
-								onchange={(event) => {
-									modelEdited = true;
-									model = event.currentTarget.value as StateGenerationModel;
-								}}
-								disabled={!!busy || referenceLoading}
-							>
-								<option value="pro">{t('create.form.models.pro.label')}</option>
-								<option value="pro-flash">{t('create.form.models.proFlash.label')}</option>
-								<option value="pixen">V3 (Pixen)</option>
-							</select>
-						</label>
-					</details>
-					{#if quote}
-						{@const managed = quote.plan.endpoint === '/create-character-state'}
-						<div class="notice small" role="status">
-							<div>
-								{#if managed}
-									<p>
-										{t('stateGeneration.managed', { parent: quote.parentName || clipName(clip) })}
-									</p>
-								{:else}
-									<p>{t('stateGeneration.localOnly')}</p>
-								{/if}
-								{#if quote.plan.endpoint === '/transfer-outfit-v2'}<p>
-										{t('stateGeneration.transfer')}
-									</p>{/if}
-								{#if quote.plan.warnings.includes('sheet-quality-unverified')}<p>
-										{t('stateGeneration.sheetWarning')}
-									</p>{/if}
-							</div>
-						</div>
-					{/if}
-				</div>
-			{/if}
-		</form>
-	{:else if !busy && (failure || canContinue)}
-		<div class="state-panel">
-			{#if canContinue}
-				<p>{t('stateGeneration.continueIntro')}</p>
-				{#if continuation}
-					{@const { keptViews, remainingViews, cost } = continuation}
+				<details class="disclosure" bind:open={advancedOpen}>
+					<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
+					<label class="field">
+						<span class="label">{t('create.form.model')}</span>
+						<select
+							class="bu-input input"
+							value={model}
+							onchange={(event) => {
+								modelEdited = true;
+								model = event.currentTarget.value as StateGenerationModel;
+							}}
+							disabled={!!busy || referenceLoading}
+						>
+							<option value="pro">{t('create.form.models.pro.label')}</option>
+							<option value="pro-flash">{t('create.form.models.proFlash.label')}</option>
+							<option value="pixen">V3 (Pixen)</option>
+						</select>
+					</label>
+				</details>
+				{#if quote}
+					{@const managed = quote.plan.endpoint === '/create-character-state'}
 					<div class="notice small" role="status">
-						<p>
-							{t('stateGeneration.continueViews', {
-								kept: formatNumber(keptViews),
-								remaining: formatNumber(remainingViews)
-							})}
-						</p>
-						<p>{t('stateGeneration.localOnly')}</p>
-						<strong>{@render costLabel(cost)}</strong>
+						<div>
+							{#if managed}
+								<p>
+									{t('stateGeneration.managed', { parent: quote.parentName || clipName(clip) })}
+								</p>
+							{:else}
+								<p>{t('stateGeneration.localOnly')}</p>
+							{/if}
+							{#if quote.plan.endpoint === '/transfer-outfit-v2'}<p>
+									{t('stateGeneration.transfer')}
+								</p>{/if}
+							{#if quote.plan.warnings.includes('sheet-quality-unverified')}<p>
+									{t('stateGeneration.sheetWarning')}
+								</p>{/if}
+						</div>
 					</div>
 				{/if}
-			{/if}
-			{#if confirmDiscard}<p class="notice warn small" role="status">
-					{t('stateGeneration.discardWarning')}
-				</p>{/if}
-		</div>
-	{/if}
+			</div>
+		{/if}
+	</form>
 	<p class="faint small" role="status">{busy ? t(busy) : ''}</p>
 	{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
+	{#if priceFailure && editing}<p class="notice bad small" role="alert">
+			{displayNestedMessage(priceFailure)}
+		</p>{/if}
 </Sheet>
 
 {#snippet footer()}
 	<div class="state-footer">
-		{#if review}
-			<p class="muted small">{t('stateCapture.noEquipment')}</p>
-			<div class="state-actions">
+		<p class="muted small">
+			{#if !editing}
+				<span>{t('stateCapture.noCredits')}</span>
+			{:else if quote}
+				<strong>{stateCostText(quote.plan.cost)}</strong>
+			{:else if pricing}
+				<span>{t('stateGeneration.quoting')}</span>
+			{:else}
+				<span>{t('stateGeneration.costFirst')}</span>
+			{/if}
+			<span>{t('stateCapture.noEquipment')}</span>
+		</p>
+		{#if editing && connected}
+			<!-- One meaning per button: it always generates, and waits for the price shown beside it. -->
+			{#if priceFailure && !quote && !pricing}
 				<button
-					type="button"
 					class="bu-btn"
 					data-variant="outline"
-					disabled={!!busy}
-					onclick={discard}
-					>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
-				>
-				<button
-					type="button"
-					class="bu-btn"
-					data-variant="primary"
-					disabled={!!busy || !sourceCurrent}
-					onclick={save}>{t('common.save')}</button
-				>
-			</div>
-		{:else}
-			<p class="muted small">
-				{#if !editing}
-					<span>{t('stateCapture.noCredits')}</span>
-				{:else if quote}
-					<strong>{@render costLabel(quote.plan.cost)}</strong>
-				{:else}
-					<span>{t('stateGeneration.costFirst')}</span>
-				{/if}
-				<span>{t('stateCapture.noEquipment')}</span>
-			</p>
-			{#if editing && quote}
-				<button
-					class="bu-btn"
-					data-variant="primary"
 					type="button"
 					disabled={!!busy || !formReady}
+					onclick={() => priceRetry++}>{t('common.tryAgain')}</button
+				>
+			{:else}
+				<button
+					class="bu-btn"
+					data-variant="primary"
+					type="button"
+					disabled={!!busy || !formReady || !quote}
 					onclick={generate}>{t('stateGeneration.generate')}</button
 				>
-			{:else}
-				<button
-					class="bu-btn"
-					data-variant="primary"
-					type="submit"
-					form={formId}
-					disabled={!!busy || !formReady}
-					>{t(
-						busy === 'stateCapture.saving'
-							? 'stateCapture.saving'
-							: !editing
-								? 'stateCapture.title'
-								: connected
-									? 'stateGeneration.checkCost'
-									: 'connectSheet.titleConnectPixelLab'
-					)}</button
-				>
 			{/if}
+		{:else}
+			<button
+				class="bu-btn"
+				data-variant="primary"
+				type="submit"
+				form={formId}
+				disabled={!!busy || !formReady}
+				>{t(
+					busy === 'stateCapture.saving'
+						? 'stateCapture.saving'
+						: !editing
+							? 'stateCapture.title'
+							: 'connectSheet.titleConnectPixelLab'
+				)}</button
+			>
 		{/if}
 	</div>
-{/snippet}
-
-{#snippet recoveryFooter()}
-	{#if !busy && (failure || canContinue)}
-		<div class="state-actions">
-			{#if discardable}
-				<button type="button" class="bu-btn" data-variant="outline" onclick={discard}
-					>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
-				>
-			{/if}
-			{#if continuation}
-				<button type="button" class="bu-btn" data-variant="primary" onclick={generateRemaining}
-					>{t('stateGeneration.generateRemaining')}</button
-				>
-			{:else if canContinue}
-				<button type="button" class="bu-btn" data-variant="primary" onclick={checkContinuationCost}
-					>{t('stateGeneration.checkRemainingCost')}</button
-				>
-			{:else}
-				<button type="button" class="bu-btn" data-variant="outline" onclick={checkPending}
-					>{t('common.tryAgain')}</button
-				>
-			{/if}
-		</div>
-	{/if}
 {/snippet}
 
 <style>
@@ -921,9 +630,6 @@
 			padding-inline-start: 24px;
 			border-inline-start: 1px solid var(--bu-line);
 		}
-	}
-	:global(dialog.state-capture-sheet.center.reviewing) {
-		max-inline-size: 560px;
 	}
 	.state-panel {
 		display: grid;
@@ -950,64 +656,6 @@
 		gap: 2px;
 		min-inline-size: 0;
 	}
-	/* Like Move review: the pair beside the direction compass when the sheet has room, stacked otherwise. */
-	.state-panel:has(.review-preview) {
-		container-type: inline-size;
-	}
-	.review-preview {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		justify-items: center;
-		gap: 8px;
-	}
-	.review-pair {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 8px;
-		inline-size: 100%;
-	}
-	.review-pair figure {
-		display: grid;
-		gap: 4px;
-		margin: 0;
-		min-inline-size: 0;
-	}
-	.review-stage {
-		display: grid;
-		place-items: center;
-		aspect-ratio: 1;
-		overflow: hidden;
-		text-align: center;
-		background: var(--stage);
-		border: 1px solid var(--bu-line);
-		border-radius: var(--r-ctl);
-	}
-	/* The stored cell fills its review box: the box edge is the cell edge. */
-	.cell-frame {
-		display: grid;
-		inline-size: 100%;
-		block-size: 100%;
-	}
-	.review-pair figcaption {
-		overflow-wrap: anywhere;
-		text-align: center;
-		font-size: 12px;
-		color: var(--bu-muted);
-	}
-	.review-heading {
-		margin: 0;
-		font-weight: 400;
-	}
-	.review-heading:focus:not(:focus-visible) {
-		outline: none;
-	}
-	@container (min-width: 480px) {
-		.review-preview {
-			grid-template-columns: minmax(0, 1fr) auto;
-			align-items: center;
-			gap: 16px;
-		}
-	}
 	.state-footer {
 		flex: 1;
 		min-inline-size: 0;
@@ -1020,11 +668,5 @@
 	.state-footer p strong {
 		display: block;
 		overflow-wrap: anywhere;
-	}
-	.state-actions {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: flex-end;
-		gap: 8px;
 	}
 </style>

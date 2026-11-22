@@ -1,6 +1,11 @@
 import { expect, test } from 'vitest';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
-import { stateContinuationBatches, stateRecoveryRecords } from '../../src/studio/stateRecovery.ts';
+import {
+	stateAttemptStatus,
+	stateProgressOf,
+	stateContinuationBatches,
+	stateRecoveryRecords
+} from '../../src/studio/stateRecovery.ts';
 
 const local = {
 	token: 'attempt',
@@ -92,4 +97,31 @@ test('recovers an expired managed poll only with a matching durable receipt', ()
 	expect(
 		stateRecoveryRecords({ ...managed, plan: { ...managed.plan, batches: [0, 1] } }, [record])
 	).toBeNull();
+});
+
+test('a State row reads generating, ready to review or needing attention from the job ledger', () => {
+	const attempt = { ...local, source: { clip: 'default', frame: 0 } };
+	expect(stateAttemptStatus(attempt, [job(0), job(1, { state: 'running' })])).toBe('generating');
+	expect(stateAttemptStatus(attempt, [job(0), job(1)])).toBe('ready');
+	expect(stateAttemptStatus(attempt, [job(0), job(1, { state: 'failed' })])).toBe('attention');
+	expect(stateAttemptStatus(attempt, [job(0)])).toBe('attention');
+	expect(stateAttemptStatus(local, [job(0), job(1)])).toBe('attention');
+});
+
+test('a failure in this tab never hides finished jobs, and a run between batches still reads as generating', () => {
+	const attempt = { ...local, source: { clip: 'default', frame: 0 } };
+	const error = 'Offline fixture: reading the result failed.';
+	expect(stateProgressOf(attempt, [job(0), job(1)], { error })).toEqual({
+		status: 'ready',
+		done: 2,
+		total: 2
+	});
+	expect(stateProgressOf(attempt, [job(0)], { error })).toEqual({
+		status: 'attention',
+		done: 1,
+		total: 2,
+		error
+	});
+	expect(stateProgressOf(attempt, [job(0)], {})).toMatchObject({ status: 'generating', done: 1 });
+	expect(stateProgressOf(attempt, [job(0)])).toMatchObject({ status: 'attention' });
 });

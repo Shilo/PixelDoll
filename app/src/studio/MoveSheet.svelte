@@ -52,6 +52,7 @@
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
 	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
 	import { clipNameId, sameClipName } from './clipName.ts';
+	import { stateAttempts } from './stateRecovery.ts';
 	import {
 		isGeneratedState,
 		measureStateJoints,
@@ -108,7 +109,7 @@
 		pendingMoves,
 		withKey
 	} from './state.svelte.ts';
-	import { bodyQualityNote, plainReasonMessage } from './model.ts';
+	import { bodyQualityNote, displayMoveJob, plainReasonMessage } from './model.ts';
 	import { displayMove } from './displayMove.ts';
 	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
@@ -247,6 +248,8 @@
 	);
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? untrack(() => templateText(action)));
+	// Only text the user typed counts as unsaved: a chosen template or a loaded move prompt does not.
+	let textTyped = $state(false);
 	// A template opened on its customized prompt counts as picked, as if its pill had been pressed.
 	let templatePicked = $state(
 		!!draft?.action || untrack(() => !!action && text !== moveTemplatePrompt(action))
@@ -568,7 +571,7 @@
 			(!replacing && have.has(id)) ||
 			(!have.has(id) &&
 				([...stateIds].some((stateId) => sameClipName(stateId, id)) ||
-					(rec?.stateGeneration && sameClipName(rec.stateGeneration.id, id))))
+					stateAttempts(rec).some((attempt) => sameClipName(attempt.id, id))))
 		)
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
@@ -718,6 +721,7 @@
 	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
 	const nice = (s: string) =>
 		displayMove(s, [...(m?.rig.animations ?? []), ...options, ...stateIds]);
+	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const decimal = (n: number) =>
 		formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 	const usd = (n: number) =>
@@ -1132,6 +1136,7 @@
 	function inputMotion(value: string) {
 		if (!templatePicked && !replacing && action) chooseAction('');
 		text = value;
+		textTyped = true;
 	}
 	function chooseModel(next: MoveAnimationModel) {
 		modelChoice = next;
@@ -1379,7 +1384,7 @@
 	{:else if progress && moving.error}
 		<div class="recovery-actions">
 			<button class="bu-action btn plain" data-variant="quiet" onclick={() => leaveFailedMove(true)}
-				>{t('common.cancel')}</button
+				>{t('common.discard')}</button
 			>
 			<div class="recovery-options">
 				{#if !moving.spec?.itemsOnly && ok}
@@ -1418,12 +1423,9 @@
 		</div>
 		<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
-		<span class="foot-note">{t('moveSheet.keepWorking')}</span>
+		<span class="foot-note" id="sheet-exit-note">{t('common.keepsRunning')}</span>
 		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = true)}
 			>{t('moveSheet.queueAnother')}</button
-		>
-		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}
-			>{t('common.hide')}</button
 		>
 	{:else if ok}
 		{@const review = skeletonReview?.review}
@@ -1431,11 +1433,6 @@
 		{@const replace = review ? review.replace : replacing}
 		{@const move = review?.id ?? id}
 		{@const needsConnection = !review && managedId && (!app.key || app.keyRejected)}
-		{#if review}<button
-				class="bu-action btn plain"
-				data-variant="quiet"
-				onclick={() => (reviewingSkeletonFor = null)}>{t('moveSheet.skeleton.back')}</button
-			>{/if}
 		{#if est && !needsConnection}
 			<span class="foot-note move-cost-note">
 				<span>
@@ -1669,8 +1666,16 @@
 				: (progress ? moving.spec?.replace : replacing)
 					? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
 					: t('moves.add')}
-	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
+	back={skeletonReview
+		? () => (reviewingSkeletonFor = null)
+		: mine && ui.moveFormOpen
+			? () => (ui.moveFormOpen = false)
+			: undefined}
 	onclose={() => (ui.sheet = null)}
+	exitNote={progress && !moving.done && !moving.error && !repairReview
+		? 'sheet-exit-note'
+		: undefined}
+	dirty={ok && !progress && !skeletonReview && !repairReview && textTyped && !!text.trim()}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
 	{#snippet developer()}
@@ -1821,7 +1826,7 @@
 	{:else if progress}
 		<div class="form">
 			<p style="font-weight:600">
-				{nice(moving.spec!.id)}{moving.spec?.dirs
+				{jobName(moving.spec!)}{moving.spec?.dirs
 					? ` · ${moving.spec.dirs.map(directionLabel).join(', ')}`
 					: ''}
 			</p>
@@ -1892,7 +1897,7 @@
 				</p>{/if}
 			{#if ownQueued.length}<p class="muted small">
 					{t(moving.error ? 'moveSheet.queuedNextRetry' : 'moveSheet.queuedNext', {
-						moves: ownQueued.map((q) => nice(q.spec.id)).join(', ')
+						moves: ownQueued.map((q) => jobName(q.spec)).join(', ')
 					})}
 				</p>{/if}
 			{#if keep && moving.spec}

@@ -211,8 +211,15 @@ for (const tier of [3, 1] as const)
 			await expect.poll(() => pending.size).toBe(limit);
 			expect(estimates).toBe(limit);
 			expect(registrations).toBe(0);
-			await setup.locator('.sheet-head').getByRole('button', { name: 'Hide', exact: true }).click();
-			await page.getByRole('button', { name: 'Activity', exact: true }).click();
+			await setup
+				.locator('.sheet-head')
+				.getByRole('button', { name: 'Close', exact: true })
+				.click();
+			await page.getByRole('button', { name: 'More options', exact: true }).click();
+			await page
+				.locator('#experience-options')
+				.getByRole('button', { name: /^Activity/ })
+				.click();
 			const activity = page.getByRole('dialog', { name: 'Activity', exact: true }),
 				stops = activity.getByRole('button', { name: 'Stop', exact: true });
 			await expect(stops).toHaveCount(limit);
@@ -241,7 +248,7 @@ for (const tier of [3, 1] as const)
 					)
 				).toBe(true);
 			}
-			await activity.getByRole('button', { name: 'Done', exact: true }).click();
+			await activity.getByRole('button', { name: 'Close', exact: true }).click();
 			await page.locator('.project-btn').click();
 			await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click();
 			await expect(setup.locator('.steps-list li.now')).toContainText('0/41');

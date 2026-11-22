@@ -9,6 +9,7 @@ export type SettingsSection =
 	| 'export'
 	| 'pixellab'
 	| 'library'
+	| 'trash'
 	| 'developer'
 	| 'about'
 	| CreationSection;
@@ -24,6 +25,7 @@ export const settingsLabels = {
 	export: 'export.sheet.title',
 	pixellab: 'settings.connection',
 	library: 'librarySettings.title',
+	trash: 'settings.trash',
 	developer: 'developer.title',
 	about: 'settings.about'
 } satisfies Record<SettingsSection, WhisperKey>;
@@ -65,21 +67,6 @@ export function openSettings(section: SettingsSection | null = null) {
 	settingsNavigation.fromExport = ui.sheet === 'export';
 	settingsNavigation.section = section;
 	ui.sheet = 'settings';
-}
-
-export function backFromSettings(): boolean {
-	if (
-		closeSettingsAccount() ||
-		closeSettingsActivity() ||
-		closeSettingsCost() ||
-		closeSettingsExport()
-	)
-		return true;
-	if (ui.sheet !== 'settings') return false;
-	if (settingsNavigation.fromExport) ui.sheet = 'export';
-	else if (settingsNavigation.section) settingsNavigation.section = null;
-	else return false;
-	return true;
 }
 
 export function openSettingsAccount(replace = false) {

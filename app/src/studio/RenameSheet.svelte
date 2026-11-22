@@ -123,7 +123,8 @@
 			: target.moveId
 				? t('renameSheet.titleRenameMove')
 				: t('renameSheet.titleRenameCharacter')}
-	cancelDisabled={busy}
+	locked={busy}
+	dirty={nameChanged || idChanged}
 	onclose={close}
 >
 	{#if missing}
@@ -182,7 +183,7 @@
 			data-variant="primary"
 			type="submit"
 			form="rename-identity-form"
-			disabled={!canSave}>{t('common.save')}</button
+			disabled={!canSave}>{busy ? t('directionsSheet.saving') : t('common.save')}</button
 		>
 	{/snippet}
 </Sheet>

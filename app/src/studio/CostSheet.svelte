@@ -18,7 +18,7 @@
 	import { displayMessage } from '../lib/i18n.ts';
 	import { displayMove } from './displayMove.ts';
 	import { currentCreationSettings } from './settingsDefaults.svelte.ts';
-	import { closeSettingsCost } from './settingsNavigation.svelte.ts';
+	import { closeSettingsCost, settingsNavigation } from './settingsNavigation.svelte.ts';
 	import { characterDraftWithDefaults } from './creationSettings.ts';
 	import { facingOf, toggleDirection, toggleMirror, type Mirrors } from './characterConfig.ts';
 	import {
@@ -297,10 +297,9 @@
 
 <Sheet
 	title={t('costSheet.title')}
-	cancel="common.done"
-	onclose={() => {
-		if (!closeSettingsCost()) ui.sheet = null;
-	}}
+	back={settingsNavigation.costOpen ? closeSettingsCost : undefined}
+	backTo={t('export.sheet.settings')}
+	onclose={() => (ui.sheet = null)}
 >
 	<div class="cost-sheet">
 		<div class="bu-segmented scope" role="radiogroup" aria-label={t('costSheet.scopeLabel')}>

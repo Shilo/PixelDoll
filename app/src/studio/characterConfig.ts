@@ -236,6 +236,16 @@ export function styleOf(d: Pick<CharacterDraft, 'model' | 'outline' | 'detail'>)
 }
 export const autoFrame = (body: number) =>
 	Math.min(256, 16 * Math.ceil((body + 2 * Math.min(16, Math.max(8, Math.ceil(body / 8)))) / 16));
+/** The draft holds typed text (name, details, prompt or seed) that leaving would lose, compared with the form it
+ * opened as (saved defaults can write the prompt's base body line). */
+export function draftTyped(
+	draft: CharacterDraft,
+	opening: CharacterDraft = newCharacterDraft()
+): boolean {
+	const text = (d: CharacterDraft) => [d.name, d.details, d.prompt, d.seed].join('\n');
+	return text(draft) !== text(opening);
+}
+
 export function newCharacterDraft(): CharacterDraft {
 	return {
 		name: '',

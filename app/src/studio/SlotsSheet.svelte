@@ -164,6 +164,7 @@
 	const handOfBehavior = (p: SlotProfile) =>
 		behaviorDef(p)?.anchor === 'hand_l' ? 'left' : 'right';
 	const heldChoice = $derived(behaviorDef(form.behavior)?.class === 'held');
+	let startForm = '';
 	// The form starts from the slot's saved settings once.
 	untrack(() => {
 		const def = m && edited && slotDef(m, edited.key);
@@ -176,7 +177,12 @@
 			hint: def.promptTemplate ?? ''
 		};
 		startAbove = form.above;
+		startForm = JSON.stringify({ ...form, above: '' });
 	});
+	// Unsaved edits ask before the sheet closes; Draws above counts only when it differs from what Save would keep.
+	const dirty = $derived(
+		!!edited && (JSON.stringify({ ...form, above: '' }) !== startForm || form.above !== startAbove)
+	);
 	/** An untouched Draws above follows a new behavior or hand: it shows the depth that change brings, which Save keeps. */
 	function followDepth() {
 		if (!m || !edited || !editedDef || form.above !== startAbove) return;
@@ -268,7 +274,7 @@
 {/snippet}
 
 {#if edited && editedDef}
-	<Sheet title={labelOf(edited.key)} onclose={close} footer={editFoot} cancelDisabled={saving}>
+	<Sheet title={labelOf(edited.key)} onclose={close} footer={editFoot} locked={saving} {dirty}>
 		<form
 			class="form"
 			onsubmit={(e) => {
@@ -455,15 +461,9 @@
 
 {#if deleting}
 	<ConfirmDialog
-		title={deleteUse.items
-			? t('slotsSheet.deleteWithItems', {
-					label: deletingLabel,
-					count: deleteUse.items,
-					n: formatNumber(deleteUse.items, { useGrouping: false })
-				})
-			: t('slotsSheet.deleteTitle', { label: deletingLabel })}
-		action={t('common.delete')}
-		busyAction={t('common.deleting')}
+		title={t('slotsSheet.deleteTitle', { label: deletingLabel })}
+		action={t('common.moveToTrash')}
+		busyAction={t('common.movingToTrash')}
 		busy={deleteBusy}
 		problem={displayNestedMessage(deleteProblem || deleteReason)}
 		blocked={!!deleteReason}
@@ -471,7 +471,7 @@
 		onconfirm={() => void remove()}
 		><p>
 			{#if deleteUse.items}{t('slotsSheet.theSlotAndItsItemsAreDeleted')}{:else}{t(
-					'slotsSheet.undoBringsItBack'
+					'slotsSheet.theSlotIsDeleted'
 				)}{/if}
 			{t('slotsSheet.deleteExportNote', { slot: deleting })}
 		</p></ConfirmDialog

@@ -1,7 +1,13 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { equipmentFixture } from './equipment-fixture.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
-import { moveDeletionBlocked, removeMove } from '../../src/studio/moveActions.svelte.ts';
+import {
+	moveDeletionBlocked,
+	removeMove,
+	stateCaptureNameIssue,
+	stateId
+} from '../../src/studio/moveActions.svelte.ts';
+import { moveLabel } from '../../src/studio/model.ts';
 import { errorText, LocalizedError } from '../../src/lib/message.ts';
 import {
 	doc,
@@ -21,9 +27,17 @@ vi.mock('../../src/studio/state.svelte.ts', () => ({
 	deletionBlocked: vi.fn(() => ''),
 	flushSave: vi.fn(),
 	openProject: vi.fn(),
+	keysToPruneAndForget: vi.fn(async () => []),
+	refreshRecentlyDeleted: vi.fn(),
+	restoreDeleted: vi.fn(),
 	toast: vi.fn()
 }));
-vi.mock('../../src/lib/store/db.ts', () => ({ get: vi.fn(), update: vi.fn() }));
+vi.mock('../../src/lib/store/db.ts', () => ({
+	get: vi.fn(),
+	update: vi.fn(),
+	getBlob: vi.fn(),
+	all: vi.fn(async () => [])
+}));
 vi.mock('../../src/studio/experience/riderPose.ts', () => ({ forgetRidingPose: vi.fn() }));
 
 let record: StoredProject;
@@ -65,13 +79,49 @@ test('removing a move saves rebased tracks and metadata, then reloads the select
 	expect(record.rigQa).toEqual({ clips: { 'rest/south': {} } });
 	expect(Object.keys(record.skeletons!)).toEqual(['rest/south/0']);
 	expect(record.savedAt).not.toBe('');
-	expect(openProject).toHaveBeenCalledWith('project');
+	expect(openProject).toHaveBeenCalledWith('project', { quiet: true });
 });
 
 test('removing a State confirms the State name instead of calling it a Move', async () => {
 	record.manifest.rig.animations[1].kind = 'state';
 	await removeMove('walk');
 	expect(toast).toHaveBeenCalledWith({ key: 'state.removedName', vars: { name: 'Walk' } });
+});
+
+test('a State may use a built-in move name the character lacks, never an existing clip name', () => {
+	const manifest = structuredClone(store.project!.manifest);
+	manifest.rig.animations = manifest.rig.animations.filter(({ id }) => id !== 'walk');
+	manifest.rig.animations.push({ ...manifest.rig.animations[0], id: 'default' });
+	const issue = (name: string, reviews: string[] = []) =>
+		stateCaptureNameIssue(manifest, stateId(name), reviews);
+	expect([stateId('Walk'), stateId('Idle'), stateId('Slash'), stateId('Wave')]).toEqual([
+		'state_walk',
+		'state_idle',
+		'state_slash',
+		'wave'
+	]);
+	// Lists that only know the id still show the typed name; Default and Standing never pose as the Standing clip.
+	expect(['state_walk', 'state_slash', 'state_standing'].map((id) => moveLabel(id))).toEqual([
+		'Walk',
+		'Slash',
+		'State standing'
+	]);
+	expect(['Walk', 'Idle', 'Slash', 'Wave'].map((name) => issue(name))).toEqual(
+		Array(4).fill(undefined)
+	);
+	const taken = 'stateCapture.takenName';
+	// The Standing clip's id is default, and a Move under review or already added keeps its name.
+	expect([issue('Standing'), issue('Default'), issue('Walk', ['walk'])]).toEqual([
+		taken,
+		taken,
+		taken
+	]);
+	manifest.rig.animations.find(({ id }) => id === 'default')!.name = 'Pose';
+	expect(issue('Pose')).toBe(taken);
+	manifest.rig.animations.push({ ...manifest.rig.animations[0], id: 'walk' });
+	expect(issue('Walk')).toBe(taken);
+	manifest.rig.animations.push({ ...manifest.rig.animations[0], id: 'wave', name: 'Hello' });
+	expect([issue('Hello'), issue('Wave')]).toEqual([taken, taken]);
 });
 
 test('move deletion protects the final move, demo, dependent standing designs, and paid drafts', async () => {

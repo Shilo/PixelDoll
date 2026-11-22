@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
@@ -8,7 +9,6 @@
 	// Export (M5): one engine at a time; the zip is built when the sheet opens so the button can name its size.
 	import Sheet from './Sheet.svelte';
 	import SettingsContent from './SettingsContent.svelte';
-	import SettingsHeader from './SettingsHeader.svelte';
 	import {
 		closeSettingsExport,
 		openSettings,
@@ -39,16 +39,7 @@
 	import type { DirectionName, Engine } from '../lib/store/manifest.ts';
 	import { ui, doc, store, toast } from './state.svelte.ts';
 	import { displayMove } from './displayMove.ts';
-	import {
-		Check,
-		ChevronDown,
-		ChevronLeft,
-		ChevronRight,
-		Download,
-		Settings2,
-		TriangleAlert,
-		X
-	} from './icons.ts';
+	import { Check, ChevronDown, ChevronRight, Download, Settings2, TriangleAlert } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { getLocale, t } from 'svelte-whisper';
@@ -169,6 +160,14 @@
 	);
 	const settings = $derived(ui.sheet === 'settings');
 	const returningToExport = $derived(settings && settingsNavigation.fromExport);
+	// Compact Settings shows one page at a time: a page other than Export's own steps back to the Settings index
+	// first, as standalone Settings does.
+	const compactSettings = new MediaQuery('(max-width: 659px), (max-height: 519px)');
+	const compactPane = $derived(
+		compactSettings.current &&
+			!!settingsNavigation.section &&
+			settingsNavigation.section !== 'export'
+	);
 	const viewingPreferences = $derived(
 		embedded || !settings || settingsNavigation.section === 'export'
 	);
@@ -201,7 +200,6 @@
 			row?.querySelector<HTMLElement>('input:not(:disabled), select:not(:disabled)') ?? row
 		)?.focus();
 	});
-	let navigation = $state<HTMLButtonElement>();
 	let result = $state.raw<{
 		zip: Uint8Array | null;
 		fileId?: string;
@@ -384,10 +382,14 @@
 		else openSettings('export');
 		await tick();
 		content?.closest('.sheet-body')?.scrollTo(0, 0);
-		navigation?.focus();
-	}
-	function close() {
-		if (!closeSettingsExport()) ui.sheet = null;
+		// Into Settings, focus lands on the page title; back in Export, on the Settings button it left from.
+		document
+			.querySelector<HTMLElement>(
+				ui.sheet === 'settings'
+					? 'dialog.export-sheet .sheet-title'
+					: 'dialog.export-sheet .sheet-start button'
+			)
+			?.focus();
 	}
 	async function changeSetting(input: HTMLInputElement, change: ExportSettingChange) {
 		return persistSettings(
@@ -410,7 +412,9 @@
 			(document.activeElement === document.body ||
 				document.activeElement === content?.closest('dialog'))
 		)
-			(navigation ?? content)?.focus({ preventScroll: true });
+			(
+				document.querySelector<HTMLElement>('dialog.export-sheet .sheet-start button') ?? content
+			)?.focus({ preventScroll: true });
 	}
 	async function persistSettings(
 		commit: () => Promise<ExportSettings>,
@@ -780,39 +784,21 @@
 	<Sheet
 		title={t(settings ? 'export.sheet.settings' : 'export.sheet.title')}
 		className="export-sheet"
-		onclose={close}
-		cancel="common.close"
-		cancelDisabled={settingsBusy}
+		onclose={() => (ui.sheet = null)}
+		locked={settingsBusy}
+		back={returningToExport
+			? compactPane
+				? () => (settingsNavigation.section = null)
+				: navigate
+			: settingsNavigation.exportOpen
+				? closeSettingsExport
+				: undefined}
+		backTo={t(returningToExport && !compactPane ? 'export.sheet.title' : 'export.sheet.settings')}
+		opener={settings
+			? undefined
+			: { label: t('export.sheet.settings'), icon: Settings2, onclick: navigate }}
 		footer={settings ? undefined : exportFooter}
 	>
-		{#snippet heading()}{#if settings}<SettingsHeader busy={settingsBusy} />{/if}{/snippet}
-		{#snippet leading()}
-			{#if !settings || returningToExport}
-				<button
-					class="bu-action btn plain link"
-					data-variant="quiet"
-					bind:this={navigation}
-					aria-label={t(settings ? 'export.sheet.back' : 'export.sheet.settings')}
-					disabled={settingsBusy}
-					onclick={navigate}
-				>
-					{#if settings}<ChevronLeft size={16} aria-hidden="true" /><span class="export-back-label"
-							>{t('export.sheet.back')}</span
-						>{:else}<Settings2 size={16} aria-hidden="true" />{openerLabel(
-							t('export.sheet.settings')
-						)}<SurfaceChevron />{/if}
-				</button>
-			{:else}<span></span>{/if}
-		{/snippet}
-		{#snippet trailing()}
-			<button
-				class="bu-action btn plain link done"
-				data-variant="quiet"
-				aria-label={t(settings && !returningToExport ? 'common.close' : 'export.sheet.close')}
-				disabled={settingsBusy}
-				onclick={close}><X size={18} aria-hidden="true" /></button
-			>
-		{/snippet}
 		{#key settings}
 			{#if settings}
 				<SettingsContent
@@ -1088,19 +1074,6 @@
 <style>
 	:global(dialog.export-sheet) {
 		height: min(680px, calc(100dvh - 32px));
-	}
-	:global(dialog.export-sheet .sheet-head) {
-		min-height: 44px;
-	}
-	.export-back-label {
-		min-inline-size: 0;
-		white-space: normal;
-		overflow-wrap: anywhere;
-	}
-	@media (max-width: 420px) {
-		.export-back-label {
-			display: none;
-		}
 	}
 	.export-page {
 		display: flex;

@@ -1,8 +1,52 @@
 {
+	"recentlyDeleted": {
+		"empty": "Aquí no hay nada. Los personajes, objetos, categorías, movimientos y estados que muevas a la papelera se guardan hasta 30 días.",
+		"kept": "Se guarda hasta 30 días, hasta 50 entradas.",
+		"restoreNamed": "Restaurar {name}",
+		"deleteForeverNamed": "Eliminar {name} para siempre",
+		"confirmTitle": "¿Eliminar {name} para siempre?",
+		"confirmBody": "Desaparece para siempre. Esto no se puede deshacer.",
+		"confirmAction": "Eliminar para siempre",
+		"restored": "{name} restaurado",
+		"restoredAsCopy": "Restaurado como {name}: ya había un personaje guardado con ese ID.",
+		"restoredWithDrafts": {
+			"one": "Se restauró {name} con {count} borrador",
+			"other": "Se restauró {name} con {count} borradores"
+		},
+		"restoredPartly": {
+			"one": "Se restauró {name}. {count} conjunto había cambiado, así que se omitió.",
+			"other": "Se restauró {name}. {count} huecos de conjuntos habían cambiado, así que se omitió en ellos."
+		},
+		"kind": {
+			"character": "Personaje",
+			"items": "Objeto",
+			"category": "Categoría",
+			"move": "Movimiento",
+			"state": "Estado"
+		},
+		"errors": {
+			"gone": "Esto ya no está en la papelera.",
+			"expired": "Estuvo hasta 30 días en la papelera y ya no está.",
+			"missingArtwork": "Parte del arte guardado de {name} ya no está en este dispositivo, así que no se puede restaurar.",
+			"full": "El navegador se quedó sin espacio, así que no se movió nada. Elimina algo en la papelera para liberar espacio.",
+			"wrongKind": "Ese elemento eliminado pertenece a un personaje. Restaura primero el personaje.",
+			"movePresent": "Este movimiento ya está en el personaje.",
+			"moveGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó este movimiento, así que ya no encaja.",
+			"partsGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó, así que ya no encaja.",
+			"moveItemsMissing": "Uno de los objetos de este movimiento está eliminado. Restaura primero el objeto y luego el movimiento."
+		},
+		"restoring": "Restaurando…",
+		"confirmBodyCharacter": "Lo demás eliminado de él se va también. Desaparece para siempre; no se puede deshacer.",
+		"confirmRestore": "Pulsa de nuevo para restaurar",
+		"confirmRestoreNamed": "Pulsa de nuevo para restaurar {name}",
+		"daysLeft": {
+			"one": "queda {count} día",
+			"other": "quedan {count} días"
+		}
+	},
 	"librarySettings": {
 		"title": "Biblioteca",
 		"scope": "Guarda una copia de los personajes, sus ilustraciones y los datos archivados. No se incluyen preferencias, borradores ni tareas.",
-		"privacy": "Las copias pueden contener imágenes e indicaciones. No compartas los datos archivados.",
 		"backup": "Hacer una copia de seguridad",
 		"restoreFromBackup": "Restaurar desde una copia de seguridad",
 		"review": "Revisar copia de seguridad",
@@ -28,12 +72,11 @@
 		"deleteWork": {
 			"deleteAll": "Eliminar todo",
 			"confirm": "Confirmar",
-			"section": "Eliminar el trabajo local",
-			"description": "Elimina los personajes, atuendos, borradores y el historial de Actividad guardados en este dispositivo.",
+			"description": "Elimina los personajes, conjuntos, borradores, la papelera y la actividad de este dispositivo.",
 			"kept": "Los datos archivados, las preferencias, las copias descargadas y tu clave de PixelLab se conservan.",
-			"action": "Eliminar el trabajo local",
+			"action": "Eliminar trabajo local…",
 			"title": "¿Eliminar todo el trabajo local?",
-			"body": "Los personajes, atuendos, borradores y el historial de Actividad de este dispositivo se eliminan de forma permanente. No se puede deshacer. PixelDoll se recargará después.",
+			"body": "Los personajes, conjuntos, borradores, la papelera y la actividad de este dispositivo se eliminan para siempre. Esto no se puede deshacer. PixelDoll se recarga después.",
 			"generating": "Termina o descarta el trabajo de generación pendiente antes de eliminar el trabajo local. No se eliminó nada.",
 			"uncertain": "Es posible que algunas llamadas a PixelLab se hayan cobrado sin resultado. Revísalas y bórralas primero en Actividad. No se eliminó nada.",
 			"otherTabs": "Cierra las demás pestañas y ventanas de PixelDoll e inténtalo de nuevo. No se eliminó nada.",
@@ -99,7 +142,8 @@
 		"light": "Claro",
 		"search": "Buscar ajustes",
 		"noResults": "No hay ajustes que coincidan con tu búsqueda.",
-		"all": "Todos los ajustes"
+		"all": "Todos los ajustes",
+		"trash": "Papelera"
 	},
 	"developer": {
 		"title": "Desarrollo",
@@ -116,17 +160,23 @@
 		"idCopyFailed": "No se pudo copiar el ID."
 	},
 	"common": {
+		"back": "Atrás",
+		"backTo": "Volver a {place}",
+		"keepEditing": "Seguir editando",
+		"discardChangesTitle": "¿Descartar los cambios?",
+		"discardChangesBody": "Se perderán los cambios que hiciste aquí.",
+		"keepsRunning": "Sigue en Actividad si cierras esto.",
 		"loadFailed": "No se pudo cargar una parte de PixelDoll. Recarga la página para volver a intentarlo.",
 		"advanced": "Avanzado",
 		"cancel": "Cancelar",
-		"cannotUndo": "Esto no se puede deshacer.",
+		"deleteRecoverable": "Se quita del Armario. Puedes recuperarlo durante hasta 30 días.",
 		"character": "Personaje",
 		"characters": "Personajes",
 		"close": "Cerrar",
 		"copying": "Copiando…",
 		"cost": "Costo",
 		"delete": "Eliminar",
-		"deleteNamed": "¿Eliminar {name}?",
+		"deleteNamed": "¿Mover {name} a la papelera?",
 		"deleting": "Eliminando…",
 		"details": "Detalles",
 		"detailsMenu": "Detalles…",
@@ -136,7 +186,6 @@
 		"done": "Listo",
 		"downloadZip": "Descargar ZIP",
 		"free": "Gratis",
-		"hide": "Ocultar",
 		"loading": "Cargando…",
 		"move": "Animación",
 		"name": "Nombre",
@@ -159,7 +208,9 @@
 		"zoomIn": "Acercar",
 		"zoomOut": "Alejar",
 		"randomLook": "Look aleatorio",
-		"none": "Ninguna"
+		"none": "Ninguna",
+		"moveToTrash": "Mover a la papelera",
+		"movingToTrash": "Moviendo a la papelera…"
 	},
 	"pwa": {
 		"invalidRelease": "La descripción de la actualización no es válida.",
@@ -248,9 +299,11 @@
 		"adjustFrame": "Ajustar marco…",
 		"directions": "Direcciones…",
 		"demoDeleteLocked": "El personaje de la demo no se puede eliminar",
-		"labelDeleteCharacter": "Eliminar personaje…"
+		"labelDeleteCharacter": "Mover a la papelera…"
 	},
-	"characterName": { "demo": "(Demo)" },
+	"characterName": {
+		"demo": "(Demo)"
+	},
 	"colors": {
 		"follows": "Usa el color de {name}",
 		"miColor": "Color de {mi}",
@@ -291,7 +344,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Copiar",
 		"demoNoAccount": "No necesitas una cuenta para la demo.",
-		"notNow": "Ahora no",
 		"sentOnlyToApiPixellabAi": "Solo se envía a api.pixellab.ai.",
 		"forgetKey": "Olvidar clave",
 		"forgetTitle": "¿Olvidar la clave de PixelLab?",
@@ -309,7 +361,7 @@
 		"viewPendingWork": "Ver trabajo pendiente",
 		"character": "personaje",
 		"demo": "La demo incluida no se puede eliminar.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Sus atuendos y cambios se eliminan de este dispositivo. Los objetos copiados a otros personajes se conservan. Esto no se puede deshacer."
+		"itsOutfitsAndChangesAreRemovedFrom": "Sus conjuntos, objetos y borradores no conservados se van también; los objetos copiados a otros personajes se quedan. Puedes recuperar el personaje durante hasta 30 días."
 	},
 	"demoCopyRow": {
 		"editACopy": "Editar una copia",
@@ -369,7 +421,7 @@
 		"titleWearingTakeOff": "Puesto (quitar)",
 		"twoHanded": "A dos manos",
 		"createVariant": "Crear una variante…",
-		"labelDeleteItem": "Eliminar objeto…",
+		"labelDeleteItem": "Mover a la papelera…",
 		"titleCancelName": "¿Cancelar {name}?",
 		"generationsAlreadyUsedAreNotRefundedAnd": "Las generaciones ya consumidas no se devuelven y las solicitudes ya enviadas todavía pueden generar cargos.",
 		"cancelSaveError": "No se pudo guardar la cancelación. Mantén esta pestaña abierta e inténtalo de nuevo.",
@@ -458,8 +510,14 @@
 		},
 		"colorMatchFree": "Se conservan las advertencias de calidad existentes. No se hace ninguna llamada a PixelLab.",
 		"colorsMatched": "Se igualaron {pixels} en {frames}.",
-		"pixels": { "one": "{n} píxel", "other": "{n} píxeles" },
-		"frames": { "one": "{n} fotograma", "other": "{n} fotogramas" },
+		"pixels": {
+			"one": "{n} píxel",
+			"other": "{n} píxeles"
+		},
+		"frames": {
+			"one": "{n} fotograma",
+			"other": "{n} fotogramas"
+		},
 		"onlyFacing": "Solo en dirección {direction}",
 		"hideWhenWorn": "Los objetos marcados se ocultan mientras se lleva {name}.",
 		"tuckNote": "Sin marcar, los objetos de estas ranuras ({slots}) quedan debajo: solo se ve lo que sobresale por debajo del ala. Márcalas para ocultarlos con capuchas y máscaras completas.",
@@ -471,7 +529,10 @@
 			"accepted": "aceptado"
 		},
 		"areaStats": "mín. {ratio} de la mediana · CV {cv}",
-		"handedness": { "ok": "correcto", "switched": "invertido" },
+		"handedness": {
+			"ok": "correcto",
+			"switched": "invertido"
+		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Actualiza este objeto en {move} en dirección {direction}. El cuerpo del personaje no cambia.",
@@ -506,7 +567,9 @@
 		"importFromDevice": "Importar desde el dispositivo…",
 		"importFromPixelLab": "Importar desde PixelLab…"
 	},
-	"noticeLink": { "opensInANewTab": "(se abre en una pestaña nueva)" },
+	"noticeLink": {
+		"opensInANewTab": "(se abre en una pestaña nueva)"
+	},
 	"outfits": {
 		"outfits": "Atuendos",
 		"saveALookToSwitchBetweenOutfits": "Guarda un look para cambiar entre atuendos en tu juego.",
@@ -560,11 +623,11 @@
 		"moveMissing": "Esta animación ya no existe."
 	},
 	"savedActions": {
-		"labelDeleteState": "Eliminar estado",
-		"removeState": "Esto elimina el estado y los fotogramas de los objetos adaptados a él de este personaje. Las animaciones terminadas conservan sus fotogramas y las imágenes de origen guardadas. Esta acción no se puede deshacer.",
-		"labelDeleteMove": "Eliminar animación…",
+		"labelDeleteState": "Mover a la papelera…",
+		"removeState": "El cuerpo y cada objeto pierden sus fotogramas ajustados; los movimientos terminados conservan los suyos. Puedes recuperar el estado durante hasta 30 días.",
+		"labelDeleteMove": "Mover a la papelera…",
 		"labelDeleteOutfit": "Eliminar atuendo",
-		"thisRemovesTheMoveFromTheBody": "Esto quita la animación del cuerpo y de todos los objetos. Esto no se puede deshacer."
+		"thisRemovesTheMoveFromTheBody": "El cuerpo y cada objeto pierden sus fotogramas. Puedes recuperar el movimiento durante hasta 30 días."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: nunca vuelve a generar objetos ya creados.",
@@ -572,7 +635,7 @@
 		"worksLike": "Funciona como",
 		"hand": "Mano",
 		"placeholderEGSmallAndShinyPinned": "p. ej., pequeño y brillante, prendido en el pecho",
-		"deleteSlot": "Eliminar ranura…",
+		"deleteSlot": "Mover a la papelera…",
 		"titleAddSlot": "Agregar ranura",
 		"createCustomSlot": "Crear ranura personalizada",
 		"slotName": "Nombre de la ranura",
@@ -580,8 +643,7 @@
 		"showLabel": "Mostrar {label}",
 		"createSlot": "Crear ranura",
 		"builtInSlots": "Ranuras integradas",
-		"theSlotAndItsItemsAreDeleted": "La ranura y sus objetos se eliminan juntos de este dispositivo, y los atuendos dejan de usarlos. Esto no se puede deshacer.",
-		"undoBringsItBack": "La opción Deshacer recupera la ranura.",
+		"theSlotAndItsItemsAreDeleted": "Sus objetos se van y los conjuntos dejan de llevarlos. Puedes recuperarlo durante hasta 30 días.",
 		"labelAddedAtTheEndOfWardrobe": "{label} se agregó al final del Armario.",
 		"valueShownAtTheEndOfWardrobe": "{value} se muestra al final del Armario.",
 		"demoDeleteLocked": "Los objetos de la demo incluida no se pueden eliminar.",
@@ -595,13 +657,9 @@
 		"creativeHint": "Pista creativa",
 		"hintNote": "Se agrega a la descripción de cada objeto nuevo de esta ranura. Los objetos ya creados se quedan como están.",
 		"alreadyHidden": "{label} ya existe pero no se muestra.",
-		"deleteWithItems": {
-			"1": "¿Eliminar {label} y su objeto?",
-			"one": "¿Eliminar {label} y su {n} objeto?",
-			"other": "¿Eliminar {label} y sus {n} objetos?"
-		},
-		"deleteTitle": "¿Eliminar {label}?",
-		"deleteExportNote": "Las exportaciones ya no incluirán su ranura “{slot}”, así que el código del juego que la nombre debe cambiar."
+		"deleteTitle": "¿Mover {label} a la papelera?",
+		"deleteExportNote": "Las exportaciones ya no incluirán su ranura “{slot}”, así que el código del juego que la nombre debe cambiar.",
+		"theSlotIsDeleted": "La categoría sale del armario. Puedes recuperarla durante hasta 30 días."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, dirección: {facing}",
@@ -655,6 +713,8 @@
 		"titleItemReview": "Revisión del objeto"
 	},
 	"toolbar": {
+		"activityRunning": "Hay trabajo en curso en Actividad",
+		"activityAttention": "Un trabajo en Actividad necesita atención",
 		"help": "Ayuda",
 		"userGuide": "Guía de usuario",
 		"reportProblem": "Informar de un problema",
@@ -690,7 +750,10 @@
 			"one": "{n} generación",
 			"other": "{n} generaciones"
 		},
-		"characterCount": { "one": "{n} personaje", "other": "{n} personajes" },
+		"characterCount": {
+			"one": "{n} personaje",
+			"other": "{n} personajes"
+		},
 		"version": "Versión {version}",
 		"renameCharacter": "Cambiar nombre del personaje…",
 		"rename": "Cambiar nombre…",
@@ -759,7 +822,10 @@
 		"slotLabel": "Ranura {label}",
 		"equipped": "{label}, equipado",
 		"notFitted": "No ajustado a este cuerpo",
-		"itemCount": { "one": "{n} objeto", "other": "{n} objetos" },
+		"itemCount": {
+			"one": "{n} objeto",
+			"other": "{n} objetos"
+		},
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, Puesto",
 		"generationTile": "{name}, {status}",
@@ -906,6 +972,7 @@
 		"manageMovesInOtherTab": "Gestiona las animaciones en la otra pestaña de PixelDoll, o ciérrala primero.",
 		"manageCharactersInOtherTab": "Gestiona los personajes en la otra pestaña de PixelDoll, o ciérrala primero.",
 		"finishBeforeCharacterRemoval": "Termina o descarta la generación pendiente antes de eliminar un personaje.",
+		"finishBeforeRestore": "Termina o descarta el trabajo de generación pendiente antes de restaurar este personaje.",
 		"finishBeforeMoveRemoval": "Termina o descarta la generación pendiente antes de eliminar una animación.",
 		"finishBeforeDirectionRemoval": "Termina o descarta la generación pendiente antes de cambiar las direcciones.",
 		"finishBeforeFixFrames": "Espera a que termine la generación en curso antes de corregir fotogramas.",
@@ -916,8 +983,8 @@
 		"couldNotSaveReason": "No se pudo guardar: {reason}",
 		"pixelDollCouldNotConfirmThatYourInterrupted": "PixelDoll no pudo confirmar que se guardó tu generación interrumpida. Revísala en el panel del personaje, Animaciones o Configuración antes de actualizar.",
 		"yourOutfitCouldNotBeSavedResolve": "No se pudo guardar tu atuendo. Resuelve el error de almacenamiento antes de actualizar.",
-		"deletedNameFromThisDevice": "Se eliminó {name} de este dispositivo",
-		"removedName": "Se quitó {name}",
+		"deletedNameFromThisDevice": "{name} movido a la papelera",
+		"removedName": "{name} movido a la papelera",
 		"nameChangedMeanwhileCheckItsTileAnd": "{name} cambió mientras tanto. Revisa su ficha e inténtalo de nuevo.",
 		"couldNotAddNameReason": "No se pudo agregar {name}: {reason}",
 		"fromHasNoMoreFramesOfName": "{from} no tiene más fotogramas de {name} para este personaje.",
@@ -956,8 +1023,8 @@
 		"labelChangedMeanwhileReviewItAgainBefore": "{label} cambió mientras tanto. Revísala de nuevo antes de eliminarla.",
 		"labelHasNewItemsReviewItAgain": "{label} tiene objetos nuevos. Revísala de nuevo antes de eliminarla.",
 		"categoryAndItemsDeleted": {
-			"one": "Se eliminó {label} y su {count} objeto",
-			"other": "Se eliminó {label} y sus {count} objetos"
+			"one": "{label} y su {count} objeto movidos a la papelera",
+			"other": "{label} y sus {count} objetos movidos a la papelera"
 		},
 		"couldNotSaveFlowFailure": "{error} No se pudo guardar este fallo en este dispositivo. Descarta esta operación antes de recargar.",
 		"useSavedFramesInTheTabThat": "Usa los fotogramas guardados en la pestaña que gestiona tus tareas de PixelDoll.",
@@ -1003,14 +1070,15 @@
 		"moveCategory": "Mover {name}",
 		"addCategory": "Agregar categoría",
 		"changeCategory": "Cambiar {name}",
-		"deleteCategory": "Eliminar {name}"
+		"deleteCategory": "Eliminar {name}",
+		"deleteItem": "Eliminar {name}",
+		"deleteMove": "Eliminar {name}"
 	},
 	"export": {
 		"sheet": {
 			"title": "Exportar",
 			"back": "Atrás",
 			"settings": "Ajustes",
-			"close": "Cerrar exportación",
 			"saving": "Guardando ajustes…",
 			"unavailable": "Exportación no disponible",
 			"sourceOnly": "Solo PNG de origen",
@@ -1042,7 +1110,10 @@
 			"versionLabel": "Versión de RPG Maker: {version}",
 			"walkMove": "Animación de caminar"
 		},
-		"group": { "engines": "Motores y frameworks", "assets": "Recursos" },
+		"group": {
+			"engines": "Motores y frameworks",
+			"assets": "Recursos"
+		},
 		"target": {
 			"godot": {
 				"sub": "Escena + runtime",
@@ -1097,9 +1168,18 @@
 				"one": "{count} dirección",
 				"other": "{count} direcciones"
 			},
-			"moves": { "one": "{count} animación", "other": "{count} animaciones" },
-			"items": { "one": "{count} objeto", "other": "{count} objetos" },
-			"outfits": { "one": "{count} atuendo", "other": "{count} atuendos" }
+			"moves": {
+				"one": "{count} animación",
+				"other": "{count} animaciones"
+			},
+			"items": {
+				"one": "{count} objeto",
+				"other": "{count} objetos"
+			},
+			"outfits": {
+				"one": "{count} atuendo",
+				"other": "{count} atuendos"
+			}
 		},
 		"summary": {
 			"rpgCurrent": "Incluye una hoja de caminata con tu look actual.",
@@ -1121,7 +1201,10 @@
 			"technical": "Detalles técnicos",
 			"currentSettings": "Ajustes actuales",
 			"files": "Archivos incluidos",
-			"fileCount": { "one": "{count} archivo:", "other": "{count} archivos:" }
+			"fileCount": {
+				"one": "{count} archivo:",
+				"other": "{count} archivos:"
+			}
 		},
 		"gaps": {
 			"dirs": "{move} solo tiene {directions}",
@@ -1135,7 +1218,9 @@
 			"canDownloadSources": "En su lugar, puedes descargar los PNG de origen.",
 			"requestedWarnings": "Advertencias de la exportación solicitada (no de las imágenes recuperadas):"
 		},
-		"failure": { "noZip": "No hay ningún ZIP listo para descargar." },
+		"failure": {
+			"noZip": "No hay ningún ZIP listo para descargar."
+		},
 		"problem": {
 			"bodyMismatch": "Los fotogramas del cuerpo ya no coinciden con este personaje.",
 			"noVisibleFrames": "El cuerpo no tiene fotogramas visibles.",
@@ -1167,7 +1252,9 @@
 			"duplicatePath": "Ruta de exportación duplicada: {path}",
 			"sizeLimits": "El archivo supera los límites de tamaño de PixelDoll."
 		},
-		"toast": { "artworkStarted": "Comenzó la descarga de las imágenes." },
+		"toast": {
+			"artworkStarted": "Comenzó la descarga de las imágenes."
+		},
 		"warnings": {
 			"missingMoves": "Faltan en los ajustes algunas animaciones de este personaje.",
 			"missingOtherMoves": "Faltan en los ajustes algunas animaciones de otro personaje.",
@@ -1233,7 +1320,10 @@
 		"untitledCharacter": "Personaje sin título",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"states": { "one": "{count} estado", "other": "{count} estados" },
+			"states": {
+				"one": "{count} estado",
+				"other": "{count} estados"
+			},
 			"separateItems": {
 				"one": "{count} objeto separado",
 				"other": "{count} objetos separados"
@@ -1264,7 +1354,6 @@
 		"previewDirectionLabel": "Dirección de la vista previa",
 		"setupNext": "Configurar el rig al terminar (recomendado)",
 		"setupNextHint": "Importar es gratis. La configuración del rig muestra su costo de generación en PixelLab antes de empezar.",
-		"chooseAnother": "Elegir otro personaje",
 		"saving": "Guardando tu copia local…",
 		"preparing": "Preparando tu personaje…",
 		"note": "Gratis · guarda una copia local nueva",
@@ -1719,7 +1808,10 @@
 		"retentionTotal": "Historial reciente · Se omiten las llamadas más antiguas; el total abarca esta lista. La copia incluye esta lista.",
 		"total": "Total",
 		"estimatedTotal": "Total estimado",
-		"calls": { "one": "{count} llamada", "other": "{count} llamadas" },
+		"calls": {
+			"one": "{count} llamada",
+			"other": "{count} llamadas"
+		},
 		"callsHidden": {
 			"one": "{count} llamada · Ocultas en segundo plano: {hidden}",
 			"other": "{count} llamadas · Ocultas en segundo plano: {hidden}"
@@ -1892,7 +1984,11 @@
 		"session": "Esta sesión: {cost}. Algunas animaciones se cobran en dólares en lugar de generaciones; tu saldo de arriba es el total real.",
 		"clearFollower": "Bórralas en la pestaña de PixelDoll que ejecuta las tareas",
 		"clear": "Borrar tareas terminadas",
-		"ledger": { "job": "Tarea", "endpoint": "Endpoint", "state": "Estado" },
+		"ledger": {
+			"job": "Tarea",
+			"endpoint": "Endpoint",
+			"state": "Estado"
+		},
 		"attempt": "(intento {attempt})",
 		"planWait": {
 			"checking": "Comprobando el plan de PixelLab antes de iniciar este flujo de trabajo.",
@@ -1994,11 +2090,18 @@
 			"selective": "Selectivo",
 			"none": "Ninguno"
 		},
-		"detail": { "low": "Bajo", "medium": "Medio", "high": "Alto" }
+		"detail": {
+			"low": "Bajo",
+			"medium": "Medio",
+			"high": "Alto"
+		}
 	},
 	"moves": {
 		"preview": "Vista previa de {move}",
-		"frames": { "one": "{count} fotograma", "other": "{count} fotogramas" },
+		"frames": {
+			"one": "{count} fotograma",
+			"other": "{count} fotogramas"
+		},
 		"onlyDirection": "Solo {direction}",
 		"oneDirection": "solo una",
 		"mirrorOf": "{direction} (reflejo de {source})",
@@ -2251,8 +2354,12 @@
 					"help": "Estilo chibi, con cabeza grande y piernas cortas. Cuesta aproximadamente el triple."
 				}
 			},
-			"outlines": { "default": "Predeterminado (negro)" },
-			"details": { "default": "Predeterminado (medio)" },
+			"outlines": {
+				"default": "Predeterminado (negro)"
+			},
+			"details": {
+				"default": "Predeterminado (medio)"
+			},
 			"outlineNote": "contorno {outline}",
 			"detailNote": "detalle {detail}",
 			"ownView": "{direction} ahora usa su propia vista.",
@@ -2357,7 +2464,6 @@
 			"retryLabel": "Volver a crear el personaje",
 			"editSetup": "Editar ajustes…",
 			"estimated": "Aprox. {gens}",
-			"keepWorking": "Seguir trabajando",
 			"costTitle": "Incluye la pose de pie en todas las direcciones. Agrega Reposo, Caminar y otras animaciones después. Si falta una articulación en la pose de pie, el costo puede subir un poco.",
 			"create": "Crear personaje",
 			"createAnyway": "Crear de todos modos"
@@ -2444,7 +2550,6 @@
 		"reuseCached": "Reutilizar fotogramas en caché",
 		"matchColors": "Igualar colores del cuerpo",
 		"keepFrames": "Conservar fotogramas",
-		"keepWorking": "Puedes seguir trabajando.",
 		"queueAnother": "Poner otra animación en cola",
 		"addLabel": "Agregar o reemplazar animación",
 		"submit": {
@@ -2684,10 +2789,10 @@
 		"reference": "Añade una imagen para guiar el cambio.",
 		"pixenReference": "Pixen no usa imágenes de referencia. Cambia de modelo para usar tu imagen.",
 		"fixedCost": "Coste: {generations} generaciones",
+		"fixedCostOne": "Coste: 1 generación",
 		"managed": "PixelLab crea un estado a partir de {parent} en tu cuenta.",
 		"transfer": "Usa la apariencia de la imagen de referencia, no solo su estilo.",
 		"sheetWarning": "Se editan varias vistas en una sola hoja. Revisa cada vista antes de guardar.",
-		"checkCost": "Consultar coste",
 		"costFirst": "Verás el coste antes de generar.",
 		"quoting": "Consultando coste…",
 		"generate": "Generar estado",
@@ -2697,7 +2802,13 @@
 		"sourceMissing": "Origen no disponible",
 		"sourceChanged": "El origen cambió después de generar, así que este resultado no se puede guardar. Descártalo e inténtalo de nuevo.",
 		"keepGrounded": "Alinear con el origen",
-		"groundedHint": "Pies movidos para coincidir con el origen. Desactívalo para deshacer."
+		"groundedHint": "Pies movidos para coincidir con el origen. Desactívalo para deshacer.",
+		"readyRow": "Listo para revisar",
+		"attentionRow": "Sin terminar: toca para ver opciones",
+		"background": "Puedes cerrar esto y seguir trabajando. Te avisaremos cuando esté listo.",
+		"readyToReview": "Puedes revisar {name}.",
+		"failedOpen": "{name} necesita tu atención. Ábrelo para ver por qué.",
+		"generatingProgress": "Generando estado… {done}/{total}"
 	},
 	"stateJointFit": {
 		"busy": "Ya se están midiendo las articulaciones. Vuelve a intentarlo cuando termine.",
@@ -2728,7 +2839,7 @@
 		"noEquipment": "No se copia el equipo.",
 		"noCredits": "No se gastan créditos.",
 		"invalidName": "Escribe un nombre con una letra latina o un número.",
-		"takenName": "Este nombre está en uso o reservado. Elige otro.",
+		"takenName": "Un movimiento o estado de este personaje ya tiene este nombre. Elige otro.",
 		"savedAs": "Se guardará como {name}",
 		"saving": "Guardando estado…",
 		"saved": "Estado capturado",
@@ -2745,8 +2856,7 @@
 		"resolveDrafts": "Termina o descarta los borradores de objetos de este personaje antes de eliminar una animación.",
 		"required": "La animación de la pose de pie es necesaria para añadir fotogramas de los objetos existentes a nuevas animaciones.",
 		"selectedCharacterChanged": "El personaje seleccionado cambió.",
-		"concurrentEdit": "Este personaje cambió antes de que se pudiera eliminar la animación. Inténtalo de nuevo.",
-		"removed": "Animación eliminada"
+		"concurrentEdit": "Este personaje cambió antes de que se pudiera eliminar la animación. Inténtalo de nuevo."
 	},
 	"sizePreview": {
 		"label": "Guía de tamaño: lienzo del cuerpo de {body} píxeles dentro de un marco de {frame} píxeles",
@@ -2755,8 +2865,9 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Más tarde" },
-	"toast": { "dismiss": "Descartar notificación" },
+	"toast": {
+		"dismiss": "Descartar notificación"
+	},
 	"sharedVisibility": {
 		"allEmphasis": "todos",
 		"demo": "Del {demo}",

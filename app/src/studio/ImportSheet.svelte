@@ -406,7 +406,10 @@
 <Sheet
 	title={source === 'device' ? t('import.titleDevice') : t('import.titlePixelLab')}
 	onclose={close}
-	cancelDisabled={saving}
+	locked={saving}
+	back={prepared && !busy ? reset : undefined}
+	backDiscards
+	dirty={!!prepared}
 	className={prepared
 		? 'import-sheet import-review'
 		: source === 'pixellab' && app.key && !app.keyRejected
@@ -784,9 +787,6 @@
 			<p class="faint small">
 				{t('import.setupNextHint')}
 			</p>{/if}
-		<button class="bu-action btn plain" data-variant="quiet" disabled={busy} onclick={reset}
-			>{t('import.chooseAnother')}</button
-		>
 	{/if}
 	{#if busy && (!prepared || saving)}<p class="muted" role="status">
 			{saving ? t('import.saving') : t('import.preparing')}
@@ -818,12 +818,6 @@
 	}
 	:global(.import-browse > .sheet-body > *) {
 		flex-shrink: 0;
-	}
-	:global(.import-sheet > .sheet-foot) {
-		justify-content: space-between;
-	}
-	:global(.import-sheet.side > .sheet-foot) {
-		justify-content: flex-end;
 	}
 	:global(.import-sheet.bottom .import-note),
 	:global(.import-sheet.side .import-note) {

@@ -8,11 +8,15 @@
 	import './experience/hoverActions.css';
 	import { rememberActivation } from './experience/focus.ts';
 	import {
-		backFromSettings,
+		closeSettingsAccount,
+		closeSettingsActivity,
+		closeSettingsCost,
+		closeSettingsExport,
 		isSettingsShortcut,
 		openSettings,
 		settingsNavigation
 	} from './settingsNavigation.svelte.ts';
+	import { alertOnTop, sheetBrowserBack } from './sheetExit.ts';
 	import { localDeveloperToolsEnabled } from './developerMode.svelte.ts';
 	import Experience from './experience/Experience.svelte';
 	import { onMount, untrack } from 'svelte';
@@ -76,6 +80,7 @@
 		move: () => import('./MoveSheet.svelte'),
 		moveReview: () => import('./MoveReviewSheet.svelte'),
 		stateCapture: () => import('./StateCaptureSheet.svelte'),
+		stateReview: () => import('./StateReviewSheet.svelte'),
 		importZip: () => import('./ImportSheet.svelte'),
 		importPixelLab: () => import('./ImportSheet.svelte'),
 		setup: () => import('./SetupSheet.svelte'),
@@ -228,13 +233,37 @@
 	});
 	const onpop = () => {
 		if (!sheetEntry) return;
-		// An atomic local save/publish has the same disabled-close rule for browser Back as for Cancel/Escape.
-		if (ui.sheetBusy || backFromSettings()) {
+		// An atomic local save/publish has the same disabled-close rule for browser Back as for its X and Escape.
+		if (ui.sheetBusy && !alertOnTop()) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			return;
 		}
+		// An open menu or picker answers Back first, as Escape does, before the sheet behind it.
+		const popup = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open')]
+			.filter((element) => element.getAttribute('popover') !== 'manual')
+			.at(-1);
+		if (popup) {
+			popup.hidePopover();
+			history.pushState({ pixeldollSheet: 1 }, '');
+			return;
+		}
+		// Otherwise Back takes the sheet's own Back (an inner pane) or its close request, which may ask first.
 		sheetEntry = false;
-		ui.sheet = null;
+		// A sheet still loading (lazy) has not claimed its exits yet: a Settings child still steps back to Settings.
+		if (
+			!sheetBrowserBack() &&
+			!(
+				closeSettingsAccount() ||
+				closeSettingsActivity() ||
+				closeSettingsCost() ||
+				closeSettingsExport()
+			)
+		)
+			ui.sheet = null;
+		if (ui.sheet) {
+			history.pushState({ pixeldollSheet: 1 }, '');
+			sheetEntry = true;
+		}
 	};
 
 	// balance after every settled job (like TopBar)
@@ -399,6 +428,7 @@
 	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'moveReview'}{#key ui.moveReview}<Lazy load={parts.moveReview} />{/key}{/if}
 	{#if ui.sheet === 'stateCapture'}<Lazy load={parts.stateCapture} />{/if}
+	{#if ui.sheet === 'stateReview'}{#key ui.stateReview}<Lazy load={parts.stateReview} />{/key}{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
 	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}
 	{#if ui.sheet === 'adjustFrame'}<Lazy load={parts.adjustFrame} id={ui.frameProject} />{/if}

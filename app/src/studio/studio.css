@@ -314,6 +314,10 @@ html[data-app='studio'] body {
 	color: var(--accent-text);
 	background: var(--accent-soft);
 }
+.badge.danger {
+	color: var(--bad);
+	background: color-mix(in srgb, var(--bad) 14%, transparent);
+}
 
 /* ---------- fields ---------- */
 .form {
@@ -1213,50 +1217,71 @@ dialog.sheet.side {
 dialog.sheet.side::backdrop {
 	background: color-mix(in srgb, var(--scrim) 50%, transparent);
 }
-.grabber {
-	width: 36px;
-	height: 5px;
-	border-radius: 3px;
-	background: var(--line-strong);
-	margin: 6px auto 0;
-	flex: none;
-}
+/* Fixed slots (docs/design/2026-11-21-app-bars/plan.md): equal side columns keep the title centered; the X never moves. */
 .sheet-head {
 	flex: none;
 	display: grid;
-	grid-template-columns: 1fr auto 1fr;
+	grid-template-columns: minmax(var(--ctl-h), 1fr) minmax(0, auto) minmax(var(--ctl-h), 1fr);
 	align-items: center;
-	padding: 8px 12px;
+	gap: 8px;
+	min-height: 56px;
+	padding: 6px 8px;
 	border-bottom: 1px solid var(--line);
 }
-.sheet-head.has-developer {
-	--sheet-side-min: 52px;
-	grid-template-columns: minmax(var(--sheet-side-min), 1fr) minmax(0, auto) minmax(
-			var(--sheet-side-min),
-			1fr
-		);
+.sheet-start,
+.sheet-end {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
 }
-.sheet-head.has-developer:has(.sheet-trailing > .done) {
-	--sheet-side-min: 96px;
+.sheet-end {
+	justify-content: end;
 }
-.sheet-head > .btn {
-	justify-self: start;
+.sheet-title {
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
-/* Text buttons in a sheet header (Done, Cancel) keep their compact label; an invisible box gives them a full 44 px
-   target without growing the header. */
-.sheet-head > .btn.link,
-.sheet-head > .sheet-trailing > .btn.link {
-	position: relative;
+.sheet-heading {
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
 }
-.sheet-head > .btn.link::after,
-.sheet-head > .sheet-trailing > .btn.link::after {
-	content: '';
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	width: max(100%, 44px);
-	height: max(100%, 44px);
-	transform: translate(-50%, -50%);
+/* Sheets open with focus on their title (tabindex -1, never a Tab stop), which needs no ring. */
+.sheet-title:focus {
+	outline: none;
+}
+/* Full 44px targets in every header, whatever the control height. */
+.btn.icon.surface-close {
+	flex: none;
+	width: 44px;
+	height: 44px;
+}
+.surface-back {
+	gap: 2px;
+	height: 44px;
+	min-width: 44px;
+	max-width: 100%;
+	padding-inline: 4px 10px;
+}
+.surface-back-label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+@media (max-width: 420px) {
+	.surface-back:not(.surface-opener) {
+		padding-inline: 0;
+		width: 44px;
+	}
+	/* An opener (Export's Settings) keeps its caption: it is the only route to that page. */
+	.surface-back:not(.surface-opener) .surface-back-label {
+		position: absolute;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
 }
 .sheet-title {
 	font-size: var(--fs-md);
@@ -1272,14 +1297,27 @@ dialog.sheet.side::backdrop {
 	flex-direction: column;
 	gap: 16px;
 }
+/* Note first, then up to two more actions, primary last. Actions that no longer fit on one row wrap onto their own
+   rows in the same order, so the primary stays last at every width and in every language. */
 .sheet-foot {
 	flex: none;
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
+	justify-content: flex-end;
+	gap: 8px 12px;
 	padding: 12px 20px 16px;
 	border-top: 1px solid var(--line);
+}
+.sheet-foot > .foot-note {
+	margin-inline-end: auto;
+}
+.sheet-foot > .foot-note:empty {
+	display: none;
+}
+/* A state with nothing to commit (running work, read-only results) shows no footer. */
+.sheet-foot:not(:has(*)) {
+	display: none;
 }
 .foot-note {
 	display: flex;
@@ -1289,49 +1327,25 @@ dialog.sheet.side::backdrop {
 	font-size: var(--fs-sm);
 }
 dialog.sheet.bottom .sheet-foot {
-	flex-direction: column-reverse;
-	align-items: stretch;
-}
-dialog.sheet.bottom .sheet-foot .btn.primary {
-	width: 100%;
-}
-dialog.sheet.bottom .sheet-foot .api-action > .btn.primary {
-	width: auto;
-	flex: 1;
-}
-dialog.sheet.bottom.character-sheet .sheet-foot {
-	flex-direction: row;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 8px;
 	padding-inline: 16px;
 }
-dialog.sheet.bottom.character-sheet .sheet-foot .api-action {
-	flex: 1;
-	justify-content: flex-end;
+dialog.sheet.bottom .sheet-foot > .foot-note {
+	flex-basis: 100%;
 }
-dialog.sheet.bottom.character-sheet .sheet-foot .creator-cost {
-	font-size: 11px;
+dialog.sheet.bottom .sheet-foot > :is(.btn, .bu-btn, .api-action) {
+	flex: 1 1 auto;
+}
+dialog.sheet.bottom .sheet-foot .btn {
+	white-space: normal;
+	height: auto;
+	min-height: var(--ctl-h);
+	line-height: 1.25;
+	padding-block: 8px;
+}
+dialog.sheet.bottom .sheet-foot .api-action > .btn.primary {
+	flex: 1;
 }
 @media (max-width: 599px), (max-height: 499px) {
-	.character-sheet:has(.character-name) .sheet-head {
-		grid-template-columns: auto minmax(0, 1fr);
-		gap: 8px;
-	}
-	.character-sheet:has(.character-name) .sheet-head > span:last-child {
-		display: none;
-	}
-	.character-sheet .character-name {
-		width: 100px;
-		flex: 1;
-		max-width: 160px;
-		font-size: 16px;
-		min-height: 40px;
-	}
-	.character-sheet .sheet-title {
-		white-space: nowrap;
-		font-size: 13px;
-	}
 	dialog.sheet.side.character-sheet {
 		width: min(100vw, 620px);
 	}
@@ -1783,11 +1797,6 @@ dialog.sheet.bottom .sheet-foot .recovery-options .btn.primary {
 }
 
 /* ---------- B10 (T1 UX fixes) ---------- */
-.sheet-head > .btn.done,
-.sheet-head > .sheet-trailing > .btn.done {
-	justify-self: end;
-	font-weight: 600;
-}
 .seg > button:disabled {
 	opacity: 0.35;
 	cursor: default;

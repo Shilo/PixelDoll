@@ -1537,7 +1537,10 @@ test('Clear finished waits for the stored drafts, so their records are kept', as
 
 test('Clear finished keeps all batches for pending State reviews, but not saved attempts', async () => {
 	mocks.all.mockResolvedValue([
-		{ id: 'rig-pending', stateGeneration: { token: 'pending', plan: { batches: [{}, {}] } } },
+		{
+			id: 'rig-pending',
+			stateGenerations: { pending: { token: 'pending', plan: { batches: [{}, {}] } } }
+		},
 		{ id: 'rig-saved' }
 	]);
 	const s = await import('../../src/studio/state.svelte.ts');
@@ -1710,7 +1713,9 @@ describe('move queue', () => {
 	test('Adjust frame cannot invalidate a saved State generation attempt', async () => {
 		const s = await import('../../src/studio/state.svelte.ts');
 		s.doc.loading = false;
-		mocks.load.mockResolvedValueOnce({ rec: { stateGeneration: { token: 'paid-state' } } });
+		mocks.load.mockResolvedValueOnce({
+			rec: { stateGenerations: { 'paid-state': { token: 'paid-state' } } }
+		});
 		await expect(s.adjustCharacter('rig-project', { size: 96, dy: 0 })).rejects.toMatchObject({
 			translation: { key: 'adjustFrame.errors.statePending' }
 		});

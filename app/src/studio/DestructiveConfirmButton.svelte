@@ -1,39 +1,31 @@
 <script lang="ts">
 	import { Trash } from './icons.ts';
+	import { ignoreKeyRepeat, TwoStepConfirm } from './twoStepConfirm.svelte.ts';
 	let {
 		label,
 		confirmLabel,
 		disabled,
 		onconfirm
 	}: { label: string; confirmLabel: string; disabled: boolean; onconfirm: () => void } = $props();
-	let armed = $state(false);
+	const confirm = new TwoStepConfirm({ ignoreRepeatClicks: true });
 
 	function activate(event: MouseEvent) {
-		if (disabled || event.detail > 1) return;
-		if (!armed) {
-			(event.currentTarget as HTMLButtonElement).focus({ preventScroll: true });
-			armed = true;
-			return;
-		}
-		armed = false;
-		onconfirm();
+		if (!disabled && confirm.press(true, event)) onconfirm();
 	}
 </script>
 
-<svelte:window onblur={() => (armed = false)} />
+<svelte:window onblur={() => confirm.disarm()} />
 <button
 	type="button"
 	class="bu-btn destructive-confirm"
 	data-variant="danger"
 	{disabled}
-	onblur={() => (armed = false)}
-	onkeydown={(event) => {
-		if (event.repeat && (event.key === 'Enter' || event.key === ' ')) event.preventDefault();
-	}}
+	onblur={() => confirm.disarm()}
+	onkeydown={ignoreKeyRepeat}
 	onclick={activate}
 >
 	<Trash size={16} aria-hidden="true" />
-	<span aria-live="polite">{armed && !disabled ? confirmLabel : label}</span>
+	<span aria-live="polite">{confirm.armed && !disabled ? confirmLabel : label}</span>
 </button>
 
 <style>

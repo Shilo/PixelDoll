@@ -69,7 +69,7 @@ export async function equipmentMode(
 ) {
 	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
 	if (await inspect.count())
-		await inspect.getByRole('button', { name: 'Done', exact: true }).click();
+		await inspect.getByRole('button', { name: 'Close', exact: true }).click();
 	await page
 		.getByRole('tablist', { name: 'Customization panels', exact: true })
 		.getByRole('tab', { name, exact: true })

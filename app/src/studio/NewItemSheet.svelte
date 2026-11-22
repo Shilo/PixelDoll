@@ -79,6 +79,15 @@
 	let advancedOpen = $state(!!initialMethod);
 	let busy = $state(false);
 	let reference = $state(draft?.reference);
+	// Typed text or a picked reference that closing would lose.
+	const typedAtStart = untrack(
+		() => `${prompt}
+${name}`
+	);
+	const dirty = $derived(
+		`${prompt}
+${name}` !== typedAtStart || reference !== draft?.reference
+	);
 	let referenceLoading = $state(false);
 	const profile = $derived(profileOf(m, group));
 	const suggestions = $derived(
@@ -257,6 +266,7 @@
 
 <Sheet
 	title={t('newItem.title')}
+	{dirty}
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() ? undefined : foot}
 >

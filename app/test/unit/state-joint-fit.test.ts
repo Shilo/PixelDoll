@@ -277,10 +277,11 @@ describe('State joint fit service', () => {
 			origin: 'studio',
 			manifest: structuredClone(project.manifest)
 		} as StoredProject;
-		vi.mocked(loadProject).mockImplementation(async () => ({
-			rec: structuredClone(record),
-			project: { ...project, manifest: structuredClone(record.manifest) }
-		}));
+		// Like the real loader, the loaded copy gains a default export id the stored record lacks.
+		vi.mocked(loadProject).mockImplementation(async () => {
+			const rec = structuredClone(db.asLoaded(record)!);
+			return { rec, project: { ...project, manifest: structuredClone(rec.manifest) } };
+		});
 		vi.mocked(db.update).mockImplementation(async (_store, _id, update) => {
 			record = update(structuredClone(record)) as StoredProject;
 			return record;

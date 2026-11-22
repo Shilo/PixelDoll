@@ -10,13 +10,16 @@ import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.t
 import { supportedFormat } from './manifest.ts';
 import { putItem } from '../items/items.ts';
 import { defaultCharacterExportId, newItemExportId } from './identity.ts';
+import { stableStringify } from '../image/hash.ts';
+import { retainItemMoves } from '../rig/moves.ts';
 
 export interface StoredProject {
 	id: string;
 	savedAt: string;
 	creationSpec?: string; // internal creation-attempt fingerprint; never exported or used as clone identity
 	moveReviews?: Record<string, import('../../studio/replaceMove.ts').MoveCandidate>;
-	stateGeneration?: import('../../studio/stateGeneration.ts').StateAttempt;
+	/** Unsaved State attempts by token. */
+	stateGenerations?: Record<string, import('../../studio/stateGeneration.ts').StateAttempt>;
 	managedStates?: Record<string, string>;
 	moveRecovery?: {
 		id: string;
@@ -238,29 +241,213 @@ function removeItems(rec: DressedRecord, itemIds: ReadonlySet<string>) {
 	rec.savedAt = new Date().toISOString();
 }
 
-export async function deleteItem(id: string, itemId: string): Promise<void> {
-	await db.update<DressedRecord>('projects', id, (rec) => {
-		if (!rec) throw new Error(`project ${id} not found`);
-		if (itemId !== rec.manifest.rig.baseItem) removeItems(rec, new Set([itemId]));
-		return rec;
-	});
+/** What a deletion keeps for a restore: the entry, and any old entries it pushes past the cap. */
+export type KeptDeletion<T> = { key: string; entry: T; prune?: readonly string[] };
+
+const kept = <T>(out: KeptDeletion<T> | undefined) =>
+	out && { key: out.key, record: out.entry as unknown };
+
+/** Put back items and their category from a record as it was before the delete. A category that is gone is restored
+ *  first (at its old place, shown again), so an item never comes back into nowhere. Materials, links, outfit entries and
+ *  color choices come back too, but only where nothing newer holds that spot: an outfit slot another item took is left
+ *  alone, and so is a color choice made since. Returns how many items and outfits came back. */
+export function restoreRemoved(
+	rec: DressedRecord,
+	before: DressedRecord,
+	scope: { itemIds: readonly string[]; slot?: string }
+): {
+	items: number;
+	outfits: number;
+	skipped: number;
+	worn: { slot: string; item: string }[];
+	refused: 'geometry' | '';
+} {
+	const m = rec.manifest,
+		b = before.manifest,
+		wanted = scope.itemIds.filter((id) => b.items.some((it) => it.id === id));
+	// Frames saved at another frame size or direction set cannot line up with this character any more.
+	if (
+		m.rig.cell.w !== b.rig.cell.w ||
+		m.rig.cell.h !== b.rig.cell.h ||
+		stableStringify(m.rig.pivot) !== stableStringify(b.rig.pivot) ||
+		stableStringify(m.rig.directions) !== stableStringify(b.rig.directions)
+	)
+		return { items: 0, outfits: 0, skipped: wanted.length, worn: [], refused: 'geometry' };
+	// The category first: its definition, its place in the ladder, and the references other categories had to it.
+	const categories = new Set<string>(
+		scope.slot ? [scope.slot] : wanted.map((id) => b.items.find((it) => it.id === id)!.slot)
+	);
+	for (const key of categories) {
+		if (m.slots.some((s) => s.id === key)) continue;
+		const from = b.slots.find((s) => s.id === key);
+		if (!from) continue;
+		const at = Math.min(b.slots.indexOf(from), m.slots.length);
+		// Its own visibility comes back as it was: a category that had items and was hidden stays hidden.
+		m.slots.splice(at, 0, structuredClone(from));
+	}
+	for (const slot of m.slots) {
+		const was = b.slots.find((s) => s.id === slot.id);
+		if (!was) continue;
+		for (const field of ['hides', 'clips'] as const) {
+			const back = (was[field] ?? []).filter(
+				(key) => categories.has(key) && !(slot[field] ?? []).includes(key)
+			);
+			if (back.length) slot[field] = [...(slot[field] ?? []), ...back];
+		}
+	}
+	// A category can also be hidden by an item, and the delete stripped those edges from the other items.
+	for (const item of m.items) {
+		const was = b.items.find((it) => it.id === item.id);
+		if (!was?.hides?.length) continue;
+		const back = was.hides.filter(
+			(key) => categories.has(key) && !(item.hides ?? []).includes(key)
+		);
+		if (back.length) item.hides = [...(item.hides ?? []), ...back];
+	}
+	// The items, at the place they held, with an export ID nothing here uses.
+	let items = 0,
+		skipped = 0;
+	for (const id of wanted) {
+		const item = b.items.find((it) => it.id === id)!;
+		if (!m.slots.some((s) => s.id === item.slot)) {
+			skipped++;
+			continue;
+		}
+		// Something already holds this ID: report it rather than pretend the item came back.
+		if (m.items.some((it) => it.id === id)) {
+			skipped++;
+			continue;
+		}
+		const copy = structuredClone(item);
+		if (copy.exportId && m.items.some((it) => it.exportId === copy.exportId))
+			copy.exportId = newItemExportId(m.items, id);
+		const at = b.items.findIndex((it) => it.id === id);
+		m.items.splice(Math.min(at, m.items.length), 0, copy);
+		// Frames for a move deleted since this item are dead weight: meet the moves the character still has.
+		retainItemMoves(copy, new Set(m.rig.animations.map((clip) => clip.id)));
+		// Fitted to this body, not the one it was deleted against: exports treat a stale hash as out of date.
+		copy.baseHash = m.rig.baseHash;
+		items++;
+	}
+	const back = new Set(wanted.filter((id) => m.items.some((it) => it.id === id)));
+	// Their materials, then the links between materials that still exist.
+	for (const mat of b.materials) {
+		if (!back.has(mat.owner) || m.materials.some((x) => x.id === mat.id)) continue;
+		m.materials.push(structuredClone(mat));
+	}
+	const present = new Set(m.materials.map((x) => x.id));
+	for (const mat of m.materials) {
+		const was = b.materials.find((x) => x.id === mat.id);
+		if (was?.linkTo && !mat.linkTo && present.has(was.linkTo)) mat.linkTo = was.linkTo;
+	}
+	// Outfits: only where the preset still exists and nothing newer holds that slot, and only color choices that are unset.
+	const wasCurrent = before.dress?.current,
+		nowCurrent = rec.dress?.current;
+	type Outfit = Pick<Preset, 'items' | 'variants'>;
+	let outfits = 0,
+		worn: { slot: string; item: string }[] = [];
+	const presets: [Outfit | undefined, Outfit | undefined][] = [
+		...m.presets.map((preset): [Outfit | undefined, Outfit] => [
+			b.presets.find((x) => x.id === preset.id),
+			preset
+		]),
+		[wasCurrent, nowCurrent]
+	];
+	for (const [was, now] of presets) {
+		if (!now) continue;
+		let changed = false;
+		for (const id of back) {
+			const item = m.items.find((it) => it.id === id)!;
+			// Only a slot this outfit actually wore comes back: an occupied one is a real conflict, and says so.
+			if (was?.items?.[item.slot] !== id) continue;
+			const held = now.items[item.slot];
+			if (held === id) continue;
+			if (held) {
+				skipped++;
+				continue;
+			}
+			now.items[item.slot] = id;
+			changed = true;
+			if (now === nowCurrent) worn.push({ slot: item.slot, item: id });
+		}
+		for (const mat of m.materials) {
+			if (!back.has(mat.owner) || now.variants[mat.id] != null) continue;
+			const variant = was?.variants[mat.id];
+			if (variant != null) {
+				now.variants[mat.id] = variant;
+				changed = true;
+			}
+		}
+		if (changed) outfits++;
+	}
+	rec.savedAt = new Date().toISOString();
+	return { items, outfits, skipped, worn, refused: '' };
+}
+
+export async function deleteItem<T>(
+	id: string,
+	itemId: string,
+	keep?: (rec: DressedRecord) => KeptDeletion<T> | undefined,
+	prune?: readonly string[]
+): Promise<T | undefined> {
+	let keptOut: T | undefined;
+	await db.update<DressedRecord>(
+		'projects',
+		id,
+		(rec) => {
+			if (!rec) throw new Error(`project ${id} not found`);
+			if (itemId !== rec.manifest.rig.baseItem) removeItems(rec, new Set([itemId]));
+			return rec;
+		},
+		[],
+		keep
+			? (previous) => {
+					if (!previous || itemId === previous.manifest.rig.baseItem) return undefined;
+					const out = keep(previous);
+					if (!out) return undefined;
+					keptOut = out.entry;
+					return kept(out);
+				}
+			: undefined,
+		prune
+	);
+	return keptOut;
 }
 
 /** Delete exactly these items and finish the change in one transaction: nothing is written unless every item is still saved
- *  (and none is the base) and `finish` accepts the record, so a refusal leaves every item in place. */
-export async function deleteItems(
+ *  (and none is the base) and `finish` accepts the record, so a refusal leaves every item in place. `keep` returns the
+ *  recovery entry, written in the same transaction. */
+export async function deleteItems<T>(
 	id: string,
 	itemIds: readonly string[],
-	finish: (rec: DressedRecord) => void
-): Promise<void> {
-	await db.update<DressedRecord>('projects', id, (rec) => {
-		if (!rec) throw new Error(`project ${id} not found`);
-		const m = rec.manifest,
-			saved = new Set(m.items.map((i) => i.id));
-		if (itemIds.some((i) => i === m.rig.baseItem || !saved.has(i)))
-			throw new Error('Its items changed meanwhile. Review it again before deleting.');
-		removeItems(rec, new Set(itemIds));
-		finish(rec);
-		return rec;
-	});
+	finish: (rec: DressedRecord) => void,
+	keep?: (rec: DressedRecord) => KeptDeletion<T>,
+	prune?: readonly string[]
+): Promise<T | undefined> {
+	let keptOut: T | undefined;
+	await db.update<DressedRecord>(
+		'projects',
+		id,
+		(rec) => {
+			if (!rec) throw new Error(`project ${id} not found`);
+			const m = rec.manifest,
+				saved = new Set(m.items.map((i) => i.id));
+			if (itemIds.some((i) => i === m.rig.baseItem || !saved.has(i)))
+				throw new Error('Its items changed meanwhile. Review it again before deleting.');
+			removeItems(rec, new Set(itemIds));
+			finish(rec);
+			return rec;
+		},
+		[],
+		keep
+			? (previous) => {
+					if (!previous) return undefined;
+					const out = keep(previous);
+					keptOut = out.entry;
+					return kept(out);
+				}
+			: undefined,
+		prune
+	);
+	return keptOut;
 }

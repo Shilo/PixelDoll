@@ -18,6 +18,7 @@
 	} from './state.svelte.ts';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
+	import type { MoveSpec } from './create.ts';
 	import { displayError } from '../lib/i18n.ts';
 	import { STATE_CAPTURE_MODE } from '../lib/rig/setup.ts';
 	import { characterBodySize } from './experience/bounds.ts';
@@ -29,6 +30,11 @@
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { t } from 'svelte-whisper';
+	import { queue } from '../lib/pixellab/queue.ts';
+	import { displayMoveJob, moveLabel } from './model.ts';
+	import { openStateReview, stateProgress, stateStatusText } from './stateJobs.svelte.ts';
+	import type { StateAttempt } from './stateGeneration.ts';
+	import type { StateProgress } from './stateRecovery.ts';
 	let { kind, onaddstate }: { kind: 'state' | 'move'; onaddstate?: () => void } = $props();
 	const m = $derived(store.project?.manifest);
 	const playback = $derived(playbackClips(m?.rig.animations ?? []));
@@ -36,6 +42,7 @@
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const nice = (id: string) => displayMove(id, moveRefs);
+	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
 	const assets = $derived.by(() => {
@@ -43,11 +50,41 @@
 		return view.project ? buildPresentation(view.project) : null;
 	});
 	const thumbnails = $derived(assets && moveThumbnails(assets, view.items));
+	const pendingStates = $derived(
+		kind === 'state'
+			? Object.values(store.stateAttempts).map((attempt) => ({
+					attempt,
+					progress: stateProgress(attempt, $queue.jobs)
+				}))
+			: []
+	);
 </script>
+
+{#snippet stateRow(attempt: StateAttempt, progress: StateProgress)}
+	<button
+		class="move-row bu-action"
+		data-variant="tile"
+		onclick={() => openStateReview(attempt.token)}
+	>
+		{#if progress.status !== 'ready'}<span
+				class="bu-ring ring"
+				class:spin={progress.status === 'generating'}
+				aria-hidden="true"
+			></span>{/if}
+		<span class="move-text"
+			><b>{moveLabel(attempt.id)}</b><span class="muted small">{stateStatusText(progress)}</span
+			></span
+		>
+		{#if progress.status !== 'generating'}<ChevronRight size={16} />{/if}
+	</button>
+{/snippet}
 
 <div class="colors">
 	{#if m && view.project && thumbnails}
 		<div class="move-list">
+			{#each pendingStates.filter(({ progress }) => progress.status !== 'generating') as { attempt, progress } (attempt.token)}
+				{@render stateRow(attempt, progress)}
+			{/each}
 			{#each kind === 'move' ? Object.values(store.moveReviews) : [] as candidate (candidate.spec.id)}
 				<button
 					class="move-row bu-action"
@@ -132,6 +169,10 @@
 					</button>
 				</SavedActions>
 			{/each}
+			<!-- Running States sit below the saved ones, like a Move being added. -->
+			{#each pendingStates.filter(({ progress }) => progress.status === 'generating') as { attempt, progress } (attempt.token)}
+				{@render stateRow(attempt, progress)}
+			{/each}
 			{#if kind === 'move'}
 				{#if mine && moving.spec}
 					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
@@ -140,7 +181,7 @@
 							class:spin={!moving.error && !moving.repairReview}
 							aria-hidden="true"
 						></span><span class="move-text"
-							><b>{nice(moving.spec.id)}</b><span class="muted small"
+							><b>{jobName(moving.spec)}</b><span class="muted small"
 								>{moving.repairReview
 									? moving.spec?.redrawItem
 										? t('moveSheet.review.redrawTitle')
@@ -158,7 +199,7 @@
 				{#each queued as q, i (i)}
 					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
 						><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
-							><b>{nice(q.spec.id)}</b><span class="muted small"
+							><b>{jobName(q.spec)}</b><span class="muted small"
 								>{moving.repairReview
 									? t('moves.waitingForRepairReview')
 									: moving.error

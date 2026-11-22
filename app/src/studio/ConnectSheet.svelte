@@ -186,10 +186,9 @@
 
 <Sheet
 	{title}
-	cancel={showForm ? (replacing ? 'common.cancel' : 'connectSheet.notNow') : 'common.done'}
-	onclose={() => {
-		if (!closeSettingsAccount()) ui.sheet = null;
-	}}
+	back={settingsNavigation.accountOpen ? closeSettingsAccount : undefined}
+	backTo={t('export.sheet.settings')}
+	onclose={() => (ui.sheet = null)}
 >
 	{#snippet developer()}
 		<ApiPeek

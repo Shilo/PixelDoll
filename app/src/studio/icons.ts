@@ -45,6 +45,7 @@ export { default as CircleCheck } from '@lucide/svelte/icons/circle-check';
 export { default as Circle } from '@lucide/svelte/icons/circle';
 export { default as Shuffle } from '@lucide/svelte/icons/shuffle';
 export { default as Trash } from '@lucide/svelte/icons/trash';
+export { default as Trash2 } from '@lucide/svelte/icons/trash-2';
 export { default as RefreshCw } from '@lucide/svelte/icons/refresh-cw';
 export { default as ExternalLink } from '@lucide/svelte/icons/external-link';
 export { default as PersonStanding } from '@lucide/svelte/icons/person-standing';

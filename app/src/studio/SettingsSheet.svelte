@@ -4,7 +4,7 @@
 	import Sheet from './Sheet.svelte';
 	import Lazy from './Lazy.svelte';
 	import SettingsContent from './SettingsContent.svelte';
-	import SettingsHeader from './SettingsHeader.svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import type { ResetScope } from './resetSettings.ts';
 	import { watchExportDefaults } from './settingsDefaults.svelte.ts';
@@ -22,20 +22,24 @@
 	const busy = $derived(saving || libraryBusy || reviewingBackup || resetScope !== null);
 	const canReset = $derived(!workspaceCopy && !settingsNavigation.fromExport);
 	$effect(() => (canReset ? watchExportDefaults() : undefined));
+	// Compact Settings drills into one page at a time, so a page steps back to the index; wide Settings shows both.
+	const compact = new MediaQuery('(max-width: 659px), (max-height: 519px)');
+	const back = $derived(
+		compact.current && settingsNavigation.section && !settingsNavigation.fromExport
+			? () => (settingsNavigation.section = null)
+			: undefined
+	);
 </script>
 
 <Sheet
 	title={t('export.sheet.settings')}
 	className="settings-sheet"
 	wide
-	cancel="common.close"
-	cancelDisabled={busy}
+	locked={busy}
+	{back}
+	backTo={t('export.sheet.settings')}
 	onclose={() => (ui.sheet = null)}
 >
-	{#snippet leading()}<SettingsHeader
-			{busy}
-			onreset={canReset ? () => (resetScope = 'all') : undefined}
-		/>{/snippet}
 	{#snippet heading()}{#if settingsNavigation.section}<span class="settings-page-title"
 				>{t(settingsLabels[settingsNavigation.section])}</span
 			>{/if}{/snippet}

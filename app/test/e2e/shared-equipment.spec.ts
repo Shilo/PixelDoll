@@ -290,23 +290,32 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await library.locator('.new-character-row').click();
 	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
-	const creatorSettings = creator.getByRole('button', { name: 'Wardrobe visibility', exact: true });
+	// The creator reaches Wardrobe visibility through its own More menu.
+	const creatorMore = creator.getByRole('button', { name: 'More options', exact: true });
 	await creator.getByRole('textbox', { name: 'Name', exact: true }).fill('Unfinished character');
-	await creatorSettings.click();
-	await expect(
-		creator.getByRole('group', { name: 'Hide shared items', exact: true })
-	).toBeInViewport({ ratio: 1 });
+	await creatorMore.click();
+	const creatorSettings = creator.getByRole('button', { name: /^Wardrobe visibility/ });
+	if ((await creatorSettings.getAttribute('aria-expanded')) === 'false')
+		await creatorSettings.click();
+	const creatorVisibility = creator.getByRole('group', { name: 'Hide shared items', exact: true });
+	await creatorVisibility.scrollIntoViewIfNeeded();
+	await expect(creatorVisibility).toBeInViewport({ ratio: 1 });
 	await expect(hideInDemo).toBeVisible();
 	await expect(hideDemo).toBeChecked();
 	await hideDemo.uncheck();
 	await hideAll.check();
 	await expect(hideDemo).toBeDisabled();
 	await page.keyboard.press('Escape');
-	await expect(creatorSettings).toBeFocused();
+	await expect(creatorMore).toBeFocused();
 	await expect(creator.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
 		'Unfinished character'
 	);
-	await creator.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Leaving typed text asks first.
+	await creator.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await expect(creator).toBeHidden();
 
 	await library.getByRole('button', { name: /^Adventurer copy\b/ }).click();
@@ -647,10 +656,10 @@ test('another character’s item on the same body is worn for free, survives rel
 	await page.getByRole('menuitemradio', { name: 'Twin', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Twin');
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	const confirm = page.getByRole('alertdialog');
-	await expect(confirm).toContainText('Items copied to other characters stay.');
-	await confirm.getByRole('button', { name: 'Delete', exact: true }).click();
+	await expect(confirm).toContainText('copied to other characters stay.');
+	await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 	await expect(confirm).toHaveCount(0);
 	await page.locator('.project-btn').click();
 	await expect(page.getByRole('menuitemradio', { name: 'Twin', exact: true })).toHaveCount(0);
@@ -715,7 +724,7 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 		'Giant helmet'
 	);
 	await expect(sheet.getByRole('button', { name: /^Make\b.*Est\. \d+ gens$/ })).toBeEnabled();
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	expect(requests.filter((r) => !r.startsWith('GET '))).toEqual([]);
 });

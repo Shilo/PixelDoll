@@ -22,18 +22,12 @@ import { assignNewClipExportId } from '../lib/store/identity.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { cellBlob, imagesOf, provOf, run } from './create.ts';
-import { stateCaptureNameIssue } from './moveActions.svelte.ts';
-import { sameClipName, withClipWriteLock } from './clipName.ts';
-import {
-	doc,
-	flushSave,
-	openProject,
-	pendingBodyMoveName,
-	syncStoredProject,
-	toast,
-	ui
-} from './state.svelte.ts';
-import { stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.ts';
+import { pendingStateName, stateCaptureNameIssue } from './moveActions.svelte.ts';
+import { stateClipName } from '../lib/rig/poses.ts';
+import { moveLabel } from './model.ts';
+import { withClipWriteLock } from './clipName.ts';
+import { doc, flushSave, openProject, syncStoredProject, toast, ui } from './state.svelte.ts';
+import { stateAttempts, stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.ts';
 import { groundToSource } from './stateGrounding.ts';
 import {
 	localStateCost,
@@ -62,6 +56,8 @@ export interface StateAttempt {
 	description?: string;
 	source: StateSourceFrame;
 	sourceVersion: string;
+	/** Made from the Riding pose idea, so the review checks it as a riding stance. */
+	riding?: boolean;
 	plan: ReadyStatePlan & { cost: StateGenerationCost };
 	continuation?: {
 		model: StateGenerationModel;
@@ -101,6 +97,7 @@ export interface StateReview {
 	projectId: string;
 	id: string;
 	description?: string;
+	riding?: boolean;
 	source: StateSourceFrame;
 	token: string;
 	sourceVersion: string;
@@ -136,14 +133,15 @@ const unfinished = () =>
 		'unfinished'
 	);
 
-const stateLockName = (projectId: string) => `pixeldoll-state:${projectId}`;
+// One lock per attempt, held while it sends or reads its requests, so no tab resends or discards it meanwhile.
+const stateLockName = (token: string) => `pixeldoll-state:${token}`;
 
-function withStateLock<T>(projectId: string, work: () => Promise<T>): Promise<T> {
+function withStateLock<T>(token: string, work: () => Promise<T>): Promise<T> {
 	if (!navigator.locks)
 		return Promise.reject(
 			error('This browser cannot lock paid State attempts.', 'locksUnavailable')
 		);
-	return navigator.locks.request(stateLockName(projectId), { ifAvailable: true }, (lock) => {
+	return navigator.locks.request(stateLockName(token), { ifAvailable: true }, (lock) => {
 		if (!lock) throw unfinished();
 		return work();
 	});
@@ -288,14 +286,14 @@ async function prepareStatePlan(
 		throw error('Check the State name and edit instructions.', 'invalidInput');
 	await flushSave();
 	const { rec, project } = await loadProject(projectId);
-	const issue = stateCaptureNameIssue(rec.manifest, id);
-	if (
-		issue ||
-		Object.keys(rec.moveReviews ?? {}).some((moveId) => sameClipName(moveId, id)) ||
-		(!continuationToken && (await pendingBodyMoveName(projectId, id)))
-	)
+	const others = stateAttempts(rec).filter(({ token }) => token !== continuationToken);
+	const issue = stateCaptureNameIssue(rec.manifest, id, [
+		...Object.keys(rec.moveReviews ?? {}),
+		...others.map((attempt) => attempt.id)
+	]);
+	if (issue || (!continuationToken && (await pendingStateName(projectId, id))))
 		throw new LocalizedError('That State name is unavailable.', issue ?? 'stateCapture.takenName');
-	if (rec.stateGeneration?.token !== continuationToken) throw unfinished();
+	if (continuationToken && !rec.stateGenerations?.[continuationToken]) throw unfinished();
 	const source = stateGenerationSource(project, sourceFrame);
 	if (!source) throw missing();
 	let managedParent;
@@ -448,6 +446,7 @@ async function readReview(
 		projectId,
 		id: attempt.id,
 		description: attempt.description,
+		...(attempt.riding && { riding: true }),
 		source: attempt.source,
 		token: attempt.token,
 		sourceVersion: attempt.sourceVersion,
@@ -456,13 +455,28 @@ async function readReview(
 	};
 }
 
-export function startState(prepared: PreparedState): Promise<StateReview> {
-	return withStateLock(prepared.projectId, () =>
-		withClipWriteLock(prepared.projectId, prepared.id, () => generateState(prepared))
-	);
+/** Resolves once the attempt is saved, so it is listed and survives a reload; `finished` settles when its views are back.
+ *  A failure before then, when nothing was sent, rejects instead. */
+export async function startState(
+	prepared: PreparedState,
+	riding = false
+): Promise<{ token: string; finished: Promise<StateReview> }> {
+	const token = crypto.randomUUID();
+	let started!: () => void;
+	const saved = new Promise<void>((resolve) => (started = resolve));
+	const finished = withStateLock(token, async () => {
+		// The saved attempt reserves its name, so the clip lock is only needed until it is written.
+		const { attempt, requests } = await withClipWriteLock(prepared.projectId, prepared.id, () =>
+			beginState(prepared, token, riding)
+		);
+		started();
+		return submitStateBatches(prepared.projectId, attempt, prepared.keyRevision, requests);
+	});
+	await Promise.race([saved, finished]);
+	return { token, finished };
 }
 
-async function generateState(prepared: PreparedState): Promise<StateReview> {
+async function beginState(prepared: PreparedState, token: string, riding: boolean) {
 	const { projectId, source: sourceFrame, id, description, model, reference } = prepared;
 	if (prepared.keyRevision !== getKeyRevision()) throw changed();
 	const fresh = await prepareState(projectId, sourceFrame, id, description, model, reference);
@@ -475,9 +489,10 @@ async function generateState(prepared: PreparedState): Promise<StateReview> {
 	const source = stateGenerationSource(project, sourceFrame);
 	if (source?.version !== fresh.sourceVersion) throw changed();
 	const attempt: StateAttempt = {
-		token: crypto.randomUUID(),
+		token,
 		id,
 		description,
+		...(riding && { riding }),
 		source: { ...sourceFrame },
 		sourceVersion: source.version,
 		plan: fresh.plan
@@ -506,15 +521,23 @@ async function generateState(prepared: PreparedState): Promise<StateReview> {
 	await db.updateCharacter<StoredProject>(projectId, blobs, (current) => {
 		if (
 			!current ||
-			current.stateGeneration ||
-			stableStringify(current.manifest) !== stableStringify(rec.manifest) ||
+			stableStringify(db.asLoaded(current)?.manifest) !== stableStringify(rec.manifest) ||
 			current.character?.id !== rec.character?.id ||
 			Object.hasOwn(current.moveReviews ?? {}, id)
 		)
 			throw changed();
-		return { ...current, stateGeneration: attempt };
+		// Another State started meanwhile, in this tab or another, may have taken the name.
+		if (
+			stateCaptureNameIssue(
+				rec.manifest,
+				id,
+				stateAttempts(current).map(({ id }) => id)
+			)
+		)
+			throw new LocalizedError('That State name is unavailable.', 'stateCapture.takenName');
+		return { ...current, stateGenerations: { ...current.stateGenerations, [token]: attempt } };
 	});
-	return submitStateBatches(projectId, rec, attempt, prepared.keyRevision, requests);
+	return { attempt, requests };
 }
 
 async function continuationCredential(token: string) {
@@ -525,11 +548,11 @@ async function continuationCredential(token: string) {
 const originalAccount = () =>
 	error('Reconnect the original PixelLab key to continue this State.', 'continueAccount');
 
-export async function hasStateContinuation(projectId: string) {
+export async function hasStateContinuation(projectId: string, token: string) {
 	if (workspaceCopy || !navigator.locks) return false;
-	return navigator.locks.request(stateLockName(projectId), { ifAvailable: true }, async (lock) => {
+	return navigator.locks.request(stateLockName(token), { ifAvailable: true }, async (lock) => {
 		if (!lock) return false;
-		const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGeneration;
+		const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGenerations?.[token];
 		return !!(attempt?.source && stateContinuationBatches(attempt, await db.all<JobRec>('jobs')));
 	});
 }
@@ -538,11 +561,11 @@ function withoutCost({ cost: _cost, ...plan }: StateAttempt['plan']) {
 	return stableStringify(plan);
 }
 
-async function prepareContinuation(projectId: string) {
+async function prepareContinuation(projectId: string, token: string) {
 	if (workspaceCopy) throw unfinished();
 	assertSelected(projectId);
 	const { rec, project } = await loadProject(projectId);
-	const attempt = rec.stateGeneration;
+	const attempt = rec.stateGenerations?.[token];
 	const saved = attempt?.continuation;
 	if (!attempt?.source || !saved || attempt.plan.endpoint === '/create-character-state')
 		throw unfinished();
@@ -617,14 +640,17 @@ async function prepareContinuation(projectId: string) {
 	return { quote, rec, source, reference, attempt, saved };
 }
 
-export function quoteStateContinuation(projectId: string) {
-	return withStateLock(projectId, async () => (await prepareContinuation(projectId)).quote);
+export function quoteStateContinuation(projectId: string, token: string) {
+	return withStateLock(token, async () => (await prepareContinuation(projectId, token)).quote);
 }
 
 export function continueState(approved: StateContinuationQuote): Promise<StateReview> {
-	return withStateLock(approved.projectId, async () => {
-		const { projectId } = approved;
-		const { quote, rec, source, reference, attempt, saved } = await prepareContinuation(projectId);
+	return withStateLock(approved.token, async () => {
+		const { projectId, token } = approved;
+		const { quote, source, reference, attempt, saved } = await prepareContinuation(
+			projectId,
+			token
+		);
 		if (stableStringify(approved) !== stableStringify(quote)) throw changed();
 		const requests = await stateRequests(
 			attempt.plan,
@@ -634,13 +660,12 @@ export function continueState(approved: StateContinuationQuote): Promise<StateRe
 			saved.seed,
 			reference
 		);
-		return submitStateBatches(projectId, rec, attempt, quote.keyRevision, requests, quote.missing);
+		return submitStateBatches(projectId, attempt, quote.keyRevision, requests, quote.missing);
 	});
 }
 
 async function submitStateBatches(
 	projectId: string,
-	rec: StoredProject,
 	attempt: StateAttempt,
 	keyRevision: number,
 	requests: Req[],
@@ -655,18 +680,22 @@ async function submitStateBatches(
 		for (const [index, request] of requests.entries()) {
 			if (remaining && !remaining.includes(index)) continue;
 			if (remaining) {
-				const pending = (await db.get<StoredProject>('projects', projectId))?.stateGeneration;
+				const pending = (await db.get<StoredProject>('projects', projectId))?.stateGenerations?.[
+					attempt.token
+				];
 				const ledger = pending && stateContinuationBatches(pending, await db.all<JobRec>('jobs'));
 				if (!ledger?.missing.includes(index)) throw changed();
 			}
+			// States run in the background, so the character may be edited or closed meanwhile. Other edits are fine, but
+			// no further view is paid for once its source frame changed: Save would refuse the result.
+			const { project } = await loadProject(projectId);
+			if (stateGenerationSource(project, attempt.source)?.version !== attempt.sourceVersion)
+				throw changed();
 			const checked = (current: StoredProject | undefined) => {
 				controller.signal.throwIfAborted();
-				assertSelected(projectId);
 				if (
 					getKeyRevision() !== keyRevision ||
-					current?.stateGeneration?.token !== attempt.token ||
-					stableStringify(current.manifest) !== stableStringify(rec.manifest) ||
-					current.character?.id !== rec.character?.id ||
+					!current?.stateGenerations?.[attempt.token] ||
 					Object.hasOwn(current.moveReviews ?? {}, attempt.id)
 				)
 					throw changed();
@@ -675,18 +704,18 @@ async function submitStateBatches(
 			if (attempt.continuation) {
 				await db.update<StoredProject>('projects', projectId, (stored) => {
 					const current = checked(stored);
-					const continuation = current.stateGeneration?.continuation;
+					const continuation = current.stateGenerations?.[attempt.token]?.continuation;
 					if (!continuation?.unqueued.includes(index)) throw changed();
 					continuation.unqueued = continuation.unqueued.filter((batch) => batch !== index);
 					return current;
 				});
 			} else checked(await db.get<StoredProject>('projects', projectId));
-			assertSelected(projectId);
 			if (getKeyRevision() !== keyRevision) throw changed();
 			submitted.push(
 				await run(
 					request,
-					attempt.id,
+					// Job labels reach Activity and failure notices, so they read as the State's name, not its id.
+					moveLabel(attempt.id),
 					'studio-state',
 					false,
 					true,
@@ -705,8 +734,8 @@ async function submitStateBatches(
 	}
 }
 
-export async function pendingState(projectId: string): Promise<StateReview | null> {
-	const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGeneration;
+export async function pendingState(projectId: string, token: string): Promise<StateReview | null> {
+	const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGenerations?.[token];
 	if (!attempt) return null;
 	if (!attempt.source) throw outdated();
 	const records = stateRecoveryRecords(attempt, await db.all<JobRec>('jobs'));
@@ -718,13 +747,13 @@ export async function pendingState(projectId: string): Promise<StateReview | nul
 	}
 }
 
-export function discardState(projectId: string): Promise<void> {
-	return withStateLock(projectId, () => clearStateAttempt(projectId));
+export function discardState(projectId: string, token: string): Promise<void> {
+	return withStateLock(token, () => clearStateAttempt(projectId, token));
 }
 
-async function clearStateAttempt(projectId: string): Promise<void> {
+async function clearStateAttempt(projectId: string, token: string): Promise<void> {
 	assertSelected(projectId);
-	const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGeneration;
+	const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGenerations?.[token];
 	if (!attempt) return;
 	const scopes = new Set(
 		attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index))
@@ -737,8 +766,8 @@ async function clearStateAttempt(projectId: string): Promise<void> {
 	)
 		throw unfinished();
 	await db.update<StoredProject>('projects', projectId, (record) => {
-		if (!record || record.stateGeneration?.token !== attempt.token) throw changed();
-		delete record.stateGeneration;
+		if (!record?.stateGenerations?.[token]) throw changed();
+		delete record.stateGenerations[token];
 		return record;
 	});
 }
@@ -750,10 +779,9 @@ export async function saveState(review: StateReview, riding = false): Promise<vo
 	await flushSave();
 	const { rec, project } = await loadProject(projectId);
 	if (
-		rec.stateGeneration?.token !== review.token ||
+		!rec.stateGenerations?.[review.token] ||
 		stateGenerationSource(project, review.source)?.version !== review.sourceVersion ||
-		stateCaptureNameIssue(rec.manifest, id) ||
-		Object.hasOwn(rec.moveReviews ?? {}, id)
+		stateCaptureNameIssue(rec.manifest, id, Object.keys(rec.moveReviews ?? {}))
 	)
 		throw changed();
 	const manifest = structuredClone(rec.manifest);
@@ -770,8 +798,10 @@ export async function saveState(review: StateReview, riding = false): Promise<vo
 		})
 	);
 	layer.cells[id] = Object.fromEntries(views);
+	const name = stateClipName(id);
 	const clip: RigAnimation = {
 		id,
+		...(name && { name }),
 		kind: 'state',
 		cells: 1,
 		loop: false,
@@ -789,13 +819,12 @@ export async function saveState(review: StateReview, riding = false): Promise<vo
 	await db.updateCharacter<StoredProject>(projectId, blobs, (current) => {
 		assertSelected(projectId);
 		if (
-			!current ||
-			current.stateGeneration?.token !== review.token ||
-			stableStringify(current.manifest) !== stableStringify(rec.manifest) ||
+			!current?.stateGenerations?.[review.token] ||
+			stableStringify(db.asLoaded(current)?.manifest) !== stableStringify(rec.manifest) ||
 			Object.hasOwn(current.moveReviews ?? {}, id)
 		)
 			throw changed();
-		delete current.stateGeneration;
+		delete current.stateGenerations[review.token];
 		if (review.childId) (current.managedStates ??= {})[id] = review.childId;
 		else if (current.managedStates) delete current.managedStates[id];
 		return { ...current, manifest, savedAt: new Date().toISOString() };

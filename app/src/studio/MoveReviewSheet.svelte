@@ -326,8 +326,7 @@
 
 <Sheet
 	title={t(itemsStep ? 'moveSheet.checkpoint.titleItems' : 'moveSheet.checkpoint.review')}
-	cancel={itemsStep ? 'common.done' : 'sheet.later'}
-	cancelDisabled={busy}
+	locked={busy}
 	className={itemsStep ? '' : 'move-review'}
 	onclose={() => (ui.sheet = null)}
 	footer={candidate ? foot : undefined}

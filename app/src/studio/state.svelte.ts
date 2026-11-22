@@ -11,6 +11,7 @@ import {
 	type Message
 } from '../lib/message.ts';
 import { SvelteSet } from 'svelte/reactivity';
+import { displayMessage } from '../lib/i18n.ts';
 import type { WhisperKey, WhisperVars } from 'svelte-whisper';
 import { PaidStepError, type PaidStep } from '../lib/pixellab/paid-results.ts';
 import {
@@ -54,6 +55,21 @@ import {
 	type StoredProject
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
+import {
+	deleteForever as discardDeleted,
+	deletedEntry,
+	keysToPrune,
+	listEntries,
+	pruneKeys,
+	readDeleted,
+	readEntry,
+	restoreCharacter,
+	restoreMoveEntry,
+	restoreParts,
+	draftCallIds,
+	quotaError,
+	type RecentlyDeleted
+} from '../lib/store/recently-deleted.ts';
 import { incompatibleKind } from '../lib/store/incompatible.ts';
 import { sameClipName } from './clipName.ts';
 import {
@@ -95,7 +111,14 @@ import type {
 	MoveSpec,
 	Progress
 } from './create.ts';
-import { characterFacts, missingMoves, notShownIn, pixelSize, uniqueBy } from './model.ts';
+import {
+	characterFacts,
+	displayMoveJob,
+	missingMoves,
+	notShownIn,
+	pixelSize,
+	uniqueBy
+} from './model.ts';
 import { displayDirectionInSentence } from './displayDirection.ts';
 import { displayMove } from './displayMove.ts';
 import {
@@ -121,6 +144,7 @@ import {
 } from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
+import { stateAttempts } from './stateRecovery.ts';
 import {
 	activityStateMessage,
 	GENERATION_PHASES,
@@ -255,6 +279,7 @@ export type SheetId =
 	| 'move'
 	| 'moveReview'
 	| 'stateCapture'
+	| 'stateReview'
 	| 'rename'
 	| 'directions'
 	| 'importZip'
@@ -279,6 +304,19 @@ const sizeNow = (): Size => {
 
 let panel = $state<SheetId>(null);
 export const createPresentation = $state({ id: '' });
+/** A sheet opened over New character (from More, Connect, Activity...) steps Back to it; its X leaves both. The
+ *  creator keeps its draft in formDrafts and the attempt it was presenting. */
+let creatorReturn = $state<{ attempt: string } | null>(null);
+export const canReturnToCreator = () => !!creatorReturn && panel !== 'create';
+// Effect teardowns read state from before the change that removed them, so New character's own cleanup checks this
+// plain copy instead.
+let leftCreatorForSheet = false;
+export const leavingCreatorForSheet = () => leftCreatorForSheet;
+export function returnToCreator() {
+	const attempt = creatorReturn?.attempt ?? '';
+	ui.sheet = 'create';
+	if (attempt && creates.some((run) => run.id === attempt)) createPresentation.id = attempt;
+}
 export const ui = $state({
 	size: sizeNow(),
 	dpr: devicePixelRatio || 1,
@@ -291,6 +329,7 @@ export const ui = $state({
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
 	stateCaptureMove: '',
+	stateReview: '', // token of the State attempt the review sheet shows
 	redrawMove: '',
 	moveFormOpen: false,
 	get sheet(): SheetId {
@@ -300,12 +339,18 @@ export const ui = $state({
 		if ((panel === 'create' || panel === 'moveReview') && next !== 'activity' && afterTakeOver)
 			cancelWaitingForTab();
 		if (panel === 'move' && next !== 'move') ui.moveFormOpen = false;
-		const id = createPresentation.id;
+		const id = createPresentation.id,
+			remembered = !next ? creatorReturn?.attempt : '';
+		if (panel === 'create' && next && next !== 'create') creatorReturn = { attempt: id };
+		else if (!next || next === 'create') creatorReturn = null;
+		leftCreatorForSheet = !!creatorReturn;
 		createPresentation.id = '';
-		if (id) {
-			const attempt = creates.find((run) => run.id === id);
-			if (attempt?.projectId) removeCreate(attempt);
-		}
+		// A finished attempt leaves with its screen, unless a sheet over New character can still step back to it.
+		for (const gone of new Set([id, remembered]))
+			if (gone && creatorReturn?.attempt !== gone) {
+				const attempt = creates.find((run) => run.id === gone);
+				if (attempt?.projectId) removeCreate(attempt);
+			}
 		panel = next;
 	},
 	renameTarget: null as ({ projectId: string } & RenameOf) | null,
@@ -358,6 +403,26 @@ export function initUi() {
 		channel.onmessage = ({ data }) => {
 			if (data?.libraryRestored === true) {
 				void refreshProjects();
+				return;
+			}
+			// A deletion or restore here: re-read the lists another tab changed. The entry and the record were written together,
+			// so this only has to show their new state.
+			if (data?.libraryChanged === true) {
+				void refreshProjects();
+				void refreshRecentlyDeleted();
+				// A restore or delete touched this character's record: re-read it quietly so a stale outfit or outfit list is
+				// never saved over it. If it is gone, switch away instead of reporting that it could not be opened.
+				if (typeof data.projectId === 'string' && data.projectId === doc.id)
+					void db
+						.get<StoredProject>('projects', data.projectId)
+						.catch(() => undefined)
+						.then(async (record) => {
+							if (record?.manifest) await openProject(data.projectId, { quiet: true });
+							else if (doc.id === data.projectId) {
+								await refreshProjects();
+								await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
+							}
+						});
 				return;
 			}
 			if (
@@ -440,8 +505,8 @@ let toastRemaining = 0,
 	toastStarted = 0;
 let toastRevision = 0,
 	toastActivating: number | null = null;
-const toastPauses = new Set<'pointer' | 'focus'>();
-type ToastOptions = {
+const toastPauses = new Set<'pointer' | 'focus' | 'hidden'>();
+export interface ToastOptions {
 	title?: string | Message;
 	pending?: boolean;
 	tone?: typeof ui.toastTone;
@@ -449,7 +514,7 @@ type ToastOptions = {
 	action?: () => void | Promise<void>;
 	/** Names the explicit button that runs `action`: without it, the whole notice stays the button. */
 	actionLabel?: string | Message;
-};
+}
 function stopToastTimer() {
 	clearTimeout(toastT);
 	toastT = undefined;
@@ -483,14 +548,14 @@ function armToast() {
 	toastStarted = Date.now();
 	toastT = setTimeout(dismissToast, toastRemaining);
 }
-export function pauseToast(reason: 'pointer' | 'focus') {
+export function pauseToast(reason: 'pointer' | 'focus' | 'hidden') {
 	if (toastT) {
 		stopToastTimer();
 		toastRemaining = Math.max(1, toastRemaining - (Date.now() - toastStarted));
 	}
 	toastPauses.add(reason);
 }
-export function resumeToast(reason: 'pointer' | 'focus') {
+export function resumeToast(reason: 'pointer' | 'focus' | 'hidden') {
 	toastPauses.delete(reason);
 	if (!toastT) armToast();
 }
@@ -576,7 +641,9 @@ export function withKey(fn: () => void, minimumTier = 0) {
 export function connected() {
 	const f = afterConnect;
 	afterConnect = null;
-	ui.sheet = null;
+	// Connected from New character's More: back to it, as its Back would.
+	if (canReturnToCreator()) returnToCreator();
+	else ui.sheet = null;
 	if (f && allowsTier(f.minimumTier)) f.run();
 }
 export const pendingConnectionMinimumTier = () => afterConnect?.minimumTier ?? null;
@@ -601,17 +668,28 @@ export interface ProjectRef {
 class Store {
 	project = $state.raw<Project | null>(null);
 	moveReviews = $state.raw<NonNullable<StoredProject['moveReviews']>>({});
+	stateAttempts = $state.raw<NonNullable<StoredProject['stateGenerations']>>({});
 	exportRecord = $state.raw<StoredProject>();
 	projects = $state.raw<ProjectRef[]>([]);
 	results = $state.raw<Record<string, ItemResult | null>>({});
 }
 export const store = new Store();
+/** Entries in Recently deleted, newest first: one per deletion, each restorable after a reload. */
+class DeletedList {
+	entries = $state.raw<RecentlyDeleted[]>([]);
+	/** Read once per session; deletes, restores and the Library panel refresh it after that. */
+	ready = false;
+}
+export const deleted = new DeletedList();
 /** An undo or redo step: the dress state to go back to, and the slot definitions (JSON) right after the step, so applying
  *  it reverts only the step's own slot changes (mergeSlotEdits) and keeps slots changed since by other steps or tabs. */
-interface UndoStep {
+export interface UndoStep {
 	label: Message;
-	snap: string;
+	/** The dress state to go back to. A delete step has none: it names its recovery entry instead. */
+	snap?: string;
 	from?: string;
+	/** A deleted entry Undo puts back exactly, instead of replaying a dress snapshot. */
+	trash?: string;
 }
 export const doc = $state({
 	id: '',
@@ -842,6 +920,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		// Mounted, a character opens on its saved Riding pose (Mount settings).
 		if (switched) ui.anim = syncRiderPose(id, m, ui.anim);
 		store.moveReviews = r.record?.moveReviews ?? {};
+		store.stateAttempts = r.record?.stateGenerations ?? {};
 		store.exportRecord = r.record;
 		if (r.record) syncProjectRef(r.record);
 		// Another acceptance can supersede its reload. Retire worn drafts only when their saved items are published.
@@ -927,7 +1006,7 @@ const slotsNow = () => JSON.stringify(store.project!.manifest.slots);
 /** Apply an undo or redo step. A slot the step removes stays while it holds items or item attempts (an attempt's own
  *  definition must not disappear under it), and the person is told. */
 function restore(e: UndoStep) {
-	const d = JSON.parse(e.snap) as DressState,
+	const d = JSON.parse(e.snap!) as DressState,
 		m = store.project!.manifest;
 	const keep = busySlots(m),
 		from = e.from ? (JSON.parse(e.from) as Slot[]) : m.slots,
@@ -992,9 +1071,18 @@ function bump() {
 	store.project = { ...p, manifest: { ...p.manifest } };
 	doc.rev++;
 }
-export function undo() {
+/** A delete is undone by its recovery entry, not by a dress snapshot: it is the last step, so every older step is only
+ *  reachable after the thing is back. Redo is cleared rather than replaying a deletion. */
+export async function undo() {
 	const e = doc.undo.at(-1);
 	if (!e) return;
+	if (e.trash) {
+		const trash = e.trash;
+		doc.undo = doc.undo.slice(0, -1);
+		doc.redo = [];
+		if (!(await restoreDeleted(trash))) doc.undo = [...doc.undo, e];
+		return;
+	}
 	const back = snap();
 	doc.undo = doc.undo.slice(0, -1);
 	restore($state.snapshot(e));
@@ -1002,11 +1090,17 @@ export function undo() {
 }
 export function redo() {
 	const e = doc.redo.at(-1);
-	if (!e) return;
+	if (!e?.snap) return;
 	const back = snap();
 	doc.redo = doc.redo.slice(0, -1);
 	restore($state.snapshot(e));
 	doc.undo = [...doc.undo, { label: e.label, snap: back, from: slotsNow() }];
+}
+/** Add a delete to the history: one step whose Undo restores exactly the entry the delete wrote. */
+export function pushRecovery(label: Message, trash: string) {
+	if (!store.project) return;
+	doc.redo = [];
+	doc.undo = [...doc.undo.slice(-99), { label, trash, from: slotsNow() }];
 }
 
 let saveT: ReturnType<typeof setTimeout> | undefined;
@@ -1334,7 +1428,7 @@ export async function adjustCharacter(
 		);
 	const reviewing = moveReviewHold(rec.moveReviews);
 	if (reviewing) throw reviewing;
-	if (rec.stateGeneration)
+	if (stateAttempts(rec).length)
 		throw new LocalizedError(
 			'Save or discard the pending State before adjusting the frame.',
 			'adjustFrame.errors.statePending'
@@ -1612,6 +1706,183 @@ export async function deleteLocalWorkAndReload(): Promise<void> {
 	location.reload();
 }
 
+/** Other tabs hear about a deletion or restore here: a broadcast is only a hint to re-read, the write itself decides.
+ *  `projectId` names a character whose record changed, so a tab showing it refreshes instead of saving a stale copy. */
+function notifyLibraryChanged(projectId?: string) {
+	identityChannel?.postMessage({ libraryChanged: true, projectId });
+}
+
+/** Read Recently deleted again, oldest entries past the cap or the 30 days removed. */
+export async function refreshRecentlyDeleted(): Promise<void> {
+	try {
+		const values = await db.all<unknown>('projects');
+		const stale = pruneKeys(values, Date.now(), 0);
+		// Pruning is permanent too: forget the pose of every entry that leaves.
+		for (const value of values)
+			if (stale.includes((value as { id?: string })?.id ?? '')) {
+				const gone = readEntry(value);
+				if (gone) forgetPose(gone);
+			}
+		dropTrashSteps(stale);
+		await Promise.all(stale.map((key) => db.del('projects', key)));
+		deleted.entries = listEntries(
+			values.filter((value) => !stale.includes((value as { id?: string })?.id ?? '')),
+			Date.now()
+		);
+		deleted.ready = true;
+	} catch (error) {
+		console.error('recently deleted', error);
+		deleted.entries = [];
+	}
+}
+
+/** Put back exactly what one entry removed. A character comes back under its own key, or as a copy when that key is taken.
+ *  A reopened character is refreshed quietly, so the history behind this step stays usable. */
+/** Drop recovery steps that name entries which no longer exist: a restore through the toast or Trash, or a permanent delete. */
+function dropTrashSteps(keys: Iterable<string>) {
+	const gone = new Set(keys);
+	doc.undo = doc.undo.filter((step) => !step.trash || !gone.has(step.trash));
+	doc.redo = doc.redo.filter((step) => !step.trash || !gone.has(step.trash));
+}
+
+async function restoreDeletedEntry(id: string): Promise<boolean> {
+	try {
+		const entry =
+			deleted.entries.find((e) => e.id === id) ?? (await readDeleted()).find((e) => e.id === id);
+		if (!entry)
+			throw new LocalizedError(
+				'That deleted item is no longer available.',
+				'recentlyDeleted.errors.gone'
+			);
+		// The live outfit and slot edits are newer than the record: save them before the restore reads and writes it.
+		await flushSave();
+		if (entry.kind !== 'character') {
+			// A child entry needs its character: say so by name when that character is waiting in the list.
+			const live = await db.get<StoredProject>('projects', entry.projectId).catch(() => undefined);
+			if (!live?.manifest) {
+				const parent = (await readDeleted()).find(
+					(e) => e.kind === 'character' && e.lineageId === entry.lineageId
+				);
+				throw parent
+					? new LocalizedError(
+							'That deleted item belongs to a character. Restore the character first.',
+							'recentlyDeleted.errors.wrongKind'
+						)
+					: new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
+			}
+		}
+		if (entry.kind === 'move') {
+			// The same work that blocks deleting a move can overwrite it while a restore lands.
+			const blocked = deletionBlocked(entry.projectId, 'move');
+			if (blocked) throw blocked;
+			if (gens.some((g) => g.draft.rigId === entry.projectId && !g.draft.acceptedAt))
+				throw new LocalizedError(
+					'Finish or discard this character’s item drafts before restoring a move.',
+					'moveRemoval.resolveDrafts'
+				);
+			const out = await restoreMoveEntry(id);
+			await refreshRecentlyDeleted();
+			notifyLibraryChanged(out.projectId);
+			if (doc.id === out.projectId) await openProject(out.projectId, { quiet: true });
+			toast(message('recentlyDeleted.restored', { name: out.name }), { tone: 'success' });
+			return true;
+		}
+		if (entry.kind !== 'character') {
+			const out = await restoreParts(id);
+			await refreshRecentlyDeleted();
+			notifyLibraryChanged(out.projectId);
+			if (doc.id === out.projectId) {
+				await openProject(out.projectId, { quiet: true });
+				// A quiet open keeps the live outfit: wear what the restore put back, where nothing newer holds the slot.
+				let changed = false;
+				for (const { slot, item } of out.worn)
+					if (!doc.items[slot]) {
+						doc.items[slot] = item;
+						delete doc.drafts[slot];
+						changed = true;
+					}
+				if (changed) {
+					bump();
+					save();
+				}
+			}
+			toast(
+				message(out.skipped ? 'recentlyDeleted.restoredPartly' : 'recentlyDeleted.restored', {
+					name: out.name,
+					count: out.skipped
+				}),
+				{ tone: 'success' }
+			);
+			return true;
+		}
+		const out = await restoreCharacter(id, {
+			copyName: (name) => displayMessage(message('librarySettings.restoredName', { name }))
+		});
+		await refreshProjects();
+		await refreshRecentlyDeleted();
+		notifyLibraryChanged(out.id);
+		// Restored drafts are in the record; the list this tab would save next must know about them, or the next draft
+		// change writes the whole list back without them.
+		if (out.drafts) {
+			// Keep the live objects for drafts already here: a running attempt must not be replaced under its own run.
+			const live = new Map(gens.map((g) => [g.draft.spec.id, g]));
+			setGens((await readGens()).map((g) => live.get(g.draft.spec.id) ?? g));
+		}
+		toast(
+			message(
+				out.copied
+					? 'recentlyDeleted.restoredAsCopy'
+					: out.drafts
+						? 'recentlyDeleted.restoredWithDrafts'
+						: 'recentlyDeleted.restored',
+				{ name: out.name, count: out.drafts }
+			),
+			{ tone: 'success' }
+		);
+		return true;
+	} catch (error) {
+		toast(errorTranslation(error) ?? errorMessage(error), { tone: 'danger' });
+		return false;
+	}
+}
+
+/** Delete one entry for good. Its artwork goes with it when the queue is idle, which is when a sweep is safe. */
+/** Keys a new entry pushes out, forgetting their riding poses first: these entries are removed by the delete's own transaction. */
+export async function keysToPruneAndForget(): Promise<string[]> {
+	const values = await db.all<unknown>('projects');
+	const keys = pruneKeys(values);
+	const gone = new Set(keys);
+	for (const value of values) {
+		if (!gone.has((value as { id?: string })?.id ?? '')) continue;
+		const entry = readEntry(value);
+		if (entry) forgetPose(entry);
+	}
+	return keys;
+}
+
+export async function restoreDeleted(id: string): Promise<boolean> {
+	const restored = await restoreDeletedEntry(id);
+	if (restored) dropTrashSteps([id]);
+	return restored;
+}
+
+export async function deleteDeletedForever(id: string): Promise<void> {
+	// Forgetting the riding pose belongs here, not on the recoverable delete: a restore keeps it, a permanent one does not.
+	const entry = readEntry(await db.get<unknown>('projects', id).catch(() => undefined));
+	if (entry) forgetPose(entry);
+	await discardDeleted(id);
+	dropTrashSteps([id]);
+	await refreshRecentlyDeleted();
+	notifyLibraryChanged(id);
+	void cleanUp(0, true).catch((error) => console.error('cleanup after delete forever', error));
+}
+
+/** Drop the Riding pose a permanently deleted thing held: a character's, or a State's own. */
+function forgetPose(entry: RecentlyDeleted) {
+	if (entry.kind === 'character') forgetRidingPose(entry.projectId);
+	else if (entry.scope.moveId) forgetRidingPose(entry.projectId, entry.scope.moveId);
+}
+
 export async function removeProject(id = doc.id): Promise<void> {
 	const reason = deletionBlocked(id);
 	if (reason) throw reason;
@@ -1621,8 +1892,25 @@ export async function removeProject(id = doc.id): Promise<void> {
 			store.projects.find((p) => p.id === id)?.name ??
 			'Character';
 	await flushSave();
-	await db.deleteCharacter(id);
-	forgetRidingPose(id);
+	// Entries this deletion pushes past the cap go in its own transaction, so the list never outgrows it.
+	const prune = await keysToPruneAndForget();
+	let kept: RecentlyDeleted | undefined;
+	try {
+		kept = await db.deleteCharacter<RecentlyDeleted>(id, (record, drafts) => {
+			const entry = deletedEntry({
+				kind: 'character',
+				record,
+				name: record.manifest.name || name,
+				context: '',
+				scope: {},
+				drafts
+			});
+			return { key: entry.id, entry, prune };
+		});
+	} catch (error) {
+		if ((error as DOMException)?.name === 'QuotaExceededError') throw quotaError();
+		throw error;
+	}
 	const deletedDrafts = new Set(
 		gens.filter((g) => g.draft.rigId === id).map((g) => g.draft.spec.id)
 	);
@@ -1634,11 +1922,19 @@ export async function removeProject(id = doc.id): Promise<void> {
 	if (attempt) removeCreate(attempt);
 	if (moving.projectId === id) await dismissMove();
 	await refreshProjects();
+	await refreshRecentlyDeleted();
 	if (doc.id === id && request === openRequest) {
 		lsSet(K.last, null);
 		await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
 	}
-	toast(message('state.deletedNameFromThisDevice', { name }));
+	notifyLibraryChanged(id);
+	if (!kept) toast(message('state.deletedNameFromThisDevice', { name }));
+	else
+		toast(message('state.deletedNameFromThisDevice', { name: kept.name }), {
+			duration: 10000,
+			actionLabel: message('common.undo'),
+			action: () => void restoreDeleted(kept!.id)
+		});
 }
 
 // ---- edits ----
@@ -1973,9 +2269,50 @@ export async function removeItem(itemId: string) {
 	const projectId = doc.id,
 		request = openRequest;
 	await flushSave();
-	await deleteItem(projectId, itemId);
-	toast(message('state.removedName', { name: it.name }));
-	if (doc.id === projectId && request === openRequest) await openProject(projectId);
+	const prune = await keysToPruneAndForget();
+	let kept: RecentlyDeleted | undefined;
+	try {
+		kept = await deleteItem<RecentlyDeleted>(
+			projectId,
+			itemId,
+			(rec) => {
+				// Another tab may have deleted it already: nothing was removed, so nothing needs an entry.
+				if (!rec.manifest.items.some((item) => item.id === itemId)) return undefined;
+				const entry = deletedEntry({
+					kind: 'items',
+					record: rec,
+					name: it.name,
+					context: rec.manifest.name,
+					scope: { itemIds: [itemId] }
+				});
+				return { key: entry.id, entry, prune };
+			},
+			prune
+		);
+	} catch (error) {
+		if ((error as DOMException)?.name === 'QuotaExceededError') throw quotaError();
+		throw error;
+	}
+	await refreshRecentlyDeleted();
+	notifyLibraryChanged(projectId);
+	// The deleted item cannot be inspected any more: close its pane first, so the notice that offers Undo is on screen.
+	if (ui.sheet === 'item' && ui.selected === itemId) ui.sheet = null;
+	if (!kept) toast(message('state.removedName', { name: it.name }));
+	else
+		toast(message('state.removedName', { name: it.name }), {
+			duration: 10000,
+			actionLabel: message('common.undo'),
+			action: () => void restoreDeleted(kept!.id)
+		});
+	if (doc.id === projectId && request === openRequest) {
+		// Quietly: the delete stays undoable, and only the slot it held is cleared from the live outfit.
+		await openProject(projectId, { quiet: true });
+		delete doc.drafts[it.slot];
+		if (doc.items[it.slot] === itemId) doc.items[it.slot] = null;
+		bump();
+		save();
+		if (kept) pushRecovery(message('history.deleteItem', { name: it.name }), kept.id);
+	}
 }
 
 let relocating = $state(false);
@@ -2067,6 +2404,8 @@ export async function moveItemToSlot(
 			if (relocateWornItem(doc.items, itemId, item.slot, targetId, { replace: true }))
 				delete doc.drafts[targetId];
 			for (const step of [...doc.undo, ...doc.redo]) {
+				// A delete step holds a recovery entry, not a dress snapshot: relocating an item cannot touch it.
+				if (!step.snap) continue;
 				const dress = JSON.parse(step.snap) as DressState;
 				for (const outfit of [...dress.presets, ...(dress.current ? [dress.current] : [])])
 					relocateWornItem(outfit.items, itemId, item.slot, targetId);
@@ -2627,6 +2966,7 @@ function drive() {
 		if (g.phase === 'running') void runGen(g);
 		else if (g.phase === 'review') void evalGen(g);
 	void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
+	if (!deleted.ready) void refreshRecentlyDeleted(); // once: expired deletions never look restorable
 }
 queue.subscribe((s) => {
 	characterJobsPending = !queue.idle();
@@ -3223,6 +3563,9 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 	await loadGens(); // before the drafts load, `gens` is empty and their records would look unreferenced
 	const drafts = [...gens.map((g) => g.draft), ...(await loadDrafts())];
 	const refs = new Set(drafts.flatMap((d) => d.calls.flatMap((c) => [c.recId, ...c.old])));
+	const projects = await db.all<unknown>('projects');
+	// A deleted character keeps its drafts in its entry: those paid results must survive until the entry goes.
+	for (const entry of listEntries(projects)) for (const id of draftCallIds(entry)) refs.add(id);
 	const flow = !!(
 		heldCreate() ||
 		moving.spec ||
@@ -3233,8 +3576,10 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 	);
 	const cutoff = Date.now() - maxAge;
 	const stateScopes = new Set(
-		(await db.all<StoredProject>('projects')).flatMap(({ stateGeneration: attempt }) =>
-			attempt ? attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index)) : []
+		projects.flatMap((value) =>
+			stateAttempts(value as StoredProject).flatMap((attempt) =>
+				attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index))
+			)
 		)
 	);
 	const jobs = await queue.clearFinished(
@@ -3429,36 +3774,75 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 			: message('state.categoryNowHasNoItems', { label });
 	if (owned.some((id) => pendingMoves(projectId, id).length))
 		return message('state.categoryItemsGettingMoves', { label });
-	if (!owned.length) {
-		organize(message('history.deleteCategory', { name: label }), (x) => deleteCustom(x, key));
-		if (ui.group === key) ui.group = shownCategories(m, busySlots())[0]?.key ?? 'head';
-		return '';
-	}
 	if (isDemo()) return message('slotsSheet.demoDeleteLocked');
 	const definition = JSON.stringify(m.slots.find((s) => s.id === key));
+	const prune = await keysToPruneAndForget();
+	let kept: RecentlyDeleted | undefined;
 	try {
-		await deleteItems(projectId, owned, (rec) => {
-			if (JSON.stringify(rec.manifest.slots.find((s) => s.id === key)) !== definition)
-				throw new LocalizedError(
-					`${label} changed meanwhile. Review it again before deleting.`,
-					'state.labelChangedMeanwhileReviewItAgainBefore',
-					{ label }
-				);
-			if (rec.manifest.items.some((it) => it.slot === key))
-				throw new LocalizedError(
-					`${label} has new items. Review it again before deleting.`,
-					'state.labelHasNewItemsReviewItAgain',
-					{ label }
-				);
-			deleteCustom(rec.manifest, key);
-			if (rec.dress?.current) delete rec.dress.current.items[key];
-		});
+		kept = await deleteItems<RecentlyDeleted>(
+			projectId,
+			owned,
+			(rec) => {
+				if (JSON.stringify(rec.manifest.slots.find((s) => s.id === key)) !== definition)
+					throw new LocalizedError(
+						`${label} changed meanwhile. Review it again before deleting.`,
+						'state.labelChangedMeanwhileReviewItAgainBefore',
+						{ label }
+					);
+				if (rec.manifest.items.some((it) => it.slot === key))
+					throw new LocalizedError(
+						`${label} has new items. Review it again before deleting.`,
+						'state.labelHasNewItemsReviewItAgain',
+						{ label }
+					);
+				deleteCustom(rec.manifest, key);
+				if (rec.dress?.current) delete rec.dress.current.items[key];
+			},
+			(rec) => {
+				const entry = deletedEntry({
+					kind: 'category',
+					record: rec,
+					name: label,
+					context: rec.manifest.name,
+					scope: { itemIds: owned, slot: key }
+				});
+				return { key: entry.id, entry, prune };
+			},
+			prune
+		);
 	} catch (e) {
+		if ((e as DOMException)?.name === 'QuotaExceededError')
+			return message('recentlyDeleted.errors.full');
 		return message('state.reasonNothingDeleted', { reason: errorMessage(e) });
 	}
-	toast(message('state.categoryAndItemsDeleted', { label, count: owned.length }));
-	// A full reopen, as after an item's Delete: undo steps may name the deleted category or items.
-	if (doc.id === projectId && request === openRequest) await openProject(projectId);
+	await refreshRecentlyDeleted();
+	notifyLibraryChanged(projectId);
+	const notice =
+		owned.length === 0
+			? message('state.removedName', { name: label })
+			: message('state.categoryAndItemsDeleted', { label, count: owned.length });
+	if (kept)
+		toast(notice, {
+			duration: 10000,
+			actionLabel: message('common.undo'),
+			action: () => void restoreDeleted(kept!.id)
+		});
+	else toast(notice);
+	if (doc.id === projectId && request === openRequest) {
+		// Quietly, so the delete stays undoable: the category's worn items leave the live outfit.
+		await openProject(projectId, { quiet: true });
+		if (ui.group === key)
+			ui.group = shownCategories(store.project!.manifest, busySlots())[0]?.key ?? 'head';
+		for (const id of owned) {
+			const item = m.items.find((it) => it.id === id);
+			if (!item) continue;
+			delete doc.drafts[item.slot];
+			if (doc.items[item.slot] === id) doc.items[item.slot] = null;
+		}
+		bump();
+		save();
+		if (kept) pushRecovery(message('history.deleteCategory', { name: label }), kept.id);
+	}
 	return '';
 }
 
@@ -3673,7 +4057,8 @@ export async function startCreate(input: CreateSpec, present = false, attemptId?
 						tone: 'danger'
 					}
 				);
-		if (createPresentation.id === run.id) run.projectId = id;
+		// A result also waits behind a sheet opened over New character, which steps back to it.
+		if (createPresentation.id === run.id || creatorReturn?.attempt === run.id) run.projectId = id;
 		else removeCreate(run);
 	} catch (e) {
 		if (current()) {
@@ -4026,10 +4411,19 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		}
 		const reviewItem = result.reviewItems?.[0];
 		if (reviewItem)
-			toast(message('state.moveNameHasItemIssuesToReviewNo', { moveName }), {
-				tone: 'warning',
-				action: () => openItemReview(projectId, reviewItem, spec.id)
-			});
+			toast(
+				message('state.moveNameHasItemIssuesToReviewNo', {
+					moveName: displayMoveJob(
+						moveName,
+						{ items: [reviewItem], itemsOnly: true },
+						store.project?.manifest.items
+					)
+				}),
+				{
+					tone: 'warning',
+					action: () => openItemReview(projectId, reviewItem, spec.id)
+				}
+			);
 	} catch (e) {
 		if (current()) {
 			failed = true;
