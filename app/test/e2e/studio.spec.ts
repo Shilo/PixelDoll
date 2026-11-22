@@ -3060,6 +3060,40 @@ test('New move opens on the customized template prompt, and an added suggestion 
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeVisible();
 });
 
+test('picking the opening gait template after turning Loop off keeps the template', async ({
+	page
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		// Run first, so the sheet opens on it without it being picked.
+		localStorage.setItem(
+			'pixeldoll.promptSuggestions.v1',
+			JSON.stringify({ move: { order: ['run', 'idle', 'walk', 'slash', 'hurt', 'death', 'cast'] } })
+		);
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
+	const run = move
+		.getByRole('group', { name: 'Move templates', exact: true })
+		.getByRole('button', { name: 'Run', exact: true });
+	const description = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
+	await expect(run).toHaveAttribute('aria-pressed', 'true');
+	await move.getByRole('switch', { name: 'Loop', exact: true }).uncheck();
+	await run.click();
+	// The text follows Loop off, so the move stays the Run template rather than a described move.
+	await expect(run).toHaveAttribute('aria-pressed', 'true');
+	await expect(description).toHaveValue('running');
+	await expect(move.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
+	await expect(move.getByRole('button', { name: /^Generate Run/ })).toBeVisible();
+});
+
 test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Return', async ({
 	page
 }) => {
