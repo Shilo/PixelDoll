@@ -62,7 +62,9 @@
 		"autoSize": "自動（{size} px）",
 		"frameMinimum": "「自動」または {min} px 以上のカスタムフレームサイズを選択してください。",
 		"custom": "カスタム",
-		"description": "このブラウザーに保存されます。作成ダイアログにはまだ反映されません。",
+		"description": "このブラウザーに保存され、新しい作成ウィンドウを開くときに適用されます。",
+		"fallback": "保存した「{setting}」はここでは使えません。「{value}」を使用します。",
+		"autoFrames": "自動（{count} フレーム）",
 		"defaults": "作成時の既定値",
 		"readFailed": "保存された設定を読み込めませんでした。このページをリセットしてください。",
 		"storageUnavailable": "ブラウザーのストレージを利用できないため、これらの設定は保存できません。",
@@ -2152,7 +2154,7 @@
 				"unique": "個別8方向"
 			},
 			"models": {
-				"v3": { "label": "標準（V3）", "help": "バランスの取れた頭身です。" },
+				"v3": { "label": "V3", "help": "バランスの取れた頭身です。" },
 				"standard": {
 					"label": "スタンダード",
 					"help": "テンプレートまたは正面を向いたスプライトを使って、8方向の画像を描きます。"
@@ -2422,7 +2424,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "標準（PixMiniMax）"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "フレーム",
 		"framesHelp": "選択肢はこのモデルとキャラクターのキャンバス（{canvas} px）に合わせて変わります。デフォルトでは PixelDoll のプリセットのフレーム数を使用します。",
@@ -2564,7 +2566,6 @@
 		"confirmDiscard": "破棄を確定",
 		"discardWarning": "破棄しても生成回数は払い戻されず、PixelLab のステートは削除されません。やり直すと全方向に再び料金がかかる場合があります。",
 		"locksUnavailable": "安全にステートを生成するには、最新のブラウザーをお使いください。",
-		"defaultModel": "デフォルト (Pro)",
 		"flashReference": "Pro Flash ではテキストの指示の代わりに参照画像を使用します。",
 		"changed": "元の画像か見積もりが変更されました。生成前に費用をもう一度確認してください。",
 		"sourceUnavailable": "元のフレームには、描かれたすべての向きの保存済みアートが必要です。",

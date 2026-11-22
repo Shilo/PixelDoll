@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+	characterDraftWithDefaults,
 	creationDefaults,
 	creationSettingsKey,
 	readCreationSettings,
+	resolveMoveFramePreference,
+	resolveStateModelPreference,
 	saveCreationSettings
 } from '../../src/studio/creationSettings.ts';
+import { isNudeBase, presetOf, styleOf } from '../../src/studio/characterConfig.ts';
 
 function memoryStorage() {
 	const entries = new Map<string, string>();
@@ -16,6 +20,49 @@ function memoryStorage() {
 }
 
 describe('creation preferences', () => {
+	it('seeds the character draft without changing request identity for baseline V3', () => {
+		const values = creationDefaults.characters;
+		const baseline = characterDraftWithDefaults(values);
+		expect(styleOf(baseline)).toEqual({});
+		expect(baseline).toMatchObject({ body: 64, bodyPreset: 64, frame: 80, auto: true });
+		const customized = characterDraftWithDefaults({
+			...values,
+			body: 68,
+			frame: 112,
+			directions: 'side',
+			model: 'pro',
+			clothing: 'none'
+		});
+		expect(customized).toMatchObject({
+			body: 68,
+			bodyPreset: null,
+			frame: 112,
+			auto: false,
+			view: 'side',
+			model: 'pro'
+		});
+		expect(presetOf(customized)).toBe('side');
+		expect(isNudeBase(customized)).toBe(true);
+	});
+
+	it('uses automatic frames when a saved count exceeds the actual canvas limit', () => {
+		expect(resolveMoveFramePreference('v3', 16, 64)).toBe(16);
+		expect(resolveMoveFramePreference('v3', 16, 256)).toBeUndefined();
+		expect(resolveMoveFramePreference('skeleton-v3', 3, 256)).toBe(3);
+		expect(resolveMoveFramePreference('skeleton-v3', 'auto', 256)).toBeUndefined();
+	});
+
+	it('falls back from Pixen only when the source is known and Pro supports it', () => {
+		const source = (size: number) => ({
+			cellSize: { width: size, height: size },
+			facingIds: ['south'] as const
+		});
+		expect(resolveStateModelPreference('pixen', source(256))).toBe('pixen');
+		expect(resolveStateModelPreference('pixen', source(288))).toBe('pro');
+		expect(resolveStateModelPreference('pixen', source(600))).toBe('pixen');
+		expect(resolveStateModelPreference('pro-flash', source(288))).toBe('pro-flash');
+	});
+
 	it('starts with the app defaults and keeps saved sections independent', () => {
 		const storage = memoryStorage();
 		expect(readCreationSettings(storage, 'characters')).toEqual({

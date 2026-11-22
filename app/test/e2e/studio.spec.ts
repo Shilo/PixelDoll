@@ -3066,11 +3066,13 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.creation.items', JSON.stringify({ method: 'skel' }));
 	});
 	await openStudio(page, '/#/');
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	const item = page.getByRole('dialog', { name: 'New item', exact: true });
+	await expect(item.getByRole('status').filter({ hasText: 'Using Frame editing' })).toBeVisible();
 	const prompt = item.getByRole('textbox', { name: 'What is it?', exact: true });
 	const make = item.getByRole('button', { name: /^Make/ });
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
@@ -3651,6 +3653,16 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	const vest =
 		m.items.find((i: { id: string }) => i.id === 'vest_leather') ??
 		m.items.find((i: { slot: string }) => i.slot === 'top_inner');
+	body.cells.default = Object.fromEntries(
+		Object.entries(m.rig.rest).map(([dir, rest]) => [dir, [(rest as { image: string }).image]])
+	);
+	m.rig.animations = m.rig.animations.filter((clip: { id: string }) => clip.id !== 'default');
+	m.rig.animations.unshift({
+		id: 'default',
+		cells: 1,
+		loop: true,
+		frames: [{ cell: 0, ms: 100 }]
+	});
 	vest.route = 'skeleton-pose';
 	vest.key = 'magenta';
 	vest.dressed = Object.fromEntries(
@@ -3733,8 +3745,8 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await advanced.click();
 	const model = move.getByRole('combobox', { name: 'Motion model' });
 	const slider = move.getByRole('slider', { name: 'Frames' });
-	await expect(model).toHaveValue('pixminimax');
-	await expect(model.getByRole('option')).toHaveText(['Default (PixMiniMax)', 'Skeleton V3', 'V3']);
+	await expect(model).toHaveValue('skeleton-v3');
+	await expect(model.getByRole('option')).toHaveText(['PixMiniMax', 'Skeleton V3', 'V3']);
 	await model.selectOption('skeleton-v3');
 	await slider.press('Home');
 	await expect(slider).toHaveAttribute('aria-valuetext', '3 frames');
@@ -3767,8 +3779,17 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
+	const defaultsTab = await context.newPage();
+	await defaultsTab.goto(page.url());
+	await defaultsTab.evaluate(() => {
+		localStorage.setItem('pixeldoll.creation.moves', JSON.stringify({ model: 'v3', frames: 6 }));
+		localStorage.setItem('pixeldoll.creation.states', JSON.stringify({ model: 'pixen' }));
+		localStorage.setItem('pixeldoll.creation.items', JSON.stringify({ method: 'anchor' }));
+	});
+	await defaultsTab.close();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await expect(description).toHaveValue('jumping in place');
+	await expect(model).toHaveValue('skeleton-v3');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
 	await expect(applied).toHaveCount(0);
 	await cast.click();
@@ -3780,6 +3801,63 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(templates.getByRole('button', { name: 'Ride', exact: true })).toHaveCount(0);
 	await move.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await description.fill('A jump that starts low');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await cast.click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
+	await move.getByRole('button', { name: /^Generate / }).click();
+	await page
+		.getByRole('dialog', { name: 'Connect PixelLab' })
+		.getByRole('button', { name: 'Not now', exact: true })
+		.click();
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await expect(cast).toHaveAttribute('aria-pressed', 'true');
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
+	await cast.click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await advanced.click();
+	await expect(model).toHaveValue('v3');
+	await model.selectOption('pixminimax');
+	await expect(move).toContainText(/Saved Frames is unavailable here.*Automatic \(8 frames\)/i);
+	await model.selectOption('v3');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await slider.press('Home');
+	await cast.click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '4 frames');
+	await model.selectOption('pixminimax');
+	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await description.fill('A jump that starts low');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	if (!(await model.isVisible())) await advanced.click();
+	await expect(model).toHaveValue('skeleton-v3');
+	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'New State...', exact: true }).click();
+	const state = page.getByRole('dialog', { name: 'New State', exact: true });
+	await state.getByRole('switch', { name: 'Edit this pose' }).check();
+	await expect(state.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('pixen');
+	await state.getByRole('combobox', { name: 'Model', exact: true }).selectOption('pro');
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'New State...', exact: true }).click();
+	await state.getByRole('switch', { name: 'Edit this pose' }).check();
+	await expect(state.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('pixen');
+	await page.keyboard.press('Escape');
+	await newItem(page, 'Head');
+	const item = page.getByRole('dialog', { name: 'New item', exact: true });
+	await expect(item.getByRole('combobox', { name: 'Animation method' })).toHaveValue('anchor');
+	await item.getByRole('combobox', { name: 'Animation method' }).selectOption('skel');
+	await page.keyboard.press('Escape');
+	await newItem(page, 'Head');
+	await expect(item.getByRole('combobox', { name: 'Animation method' })).toHaveValue('anchor');
+	await page.keyboard.press('Escape');
+	await equipmentMode(page, 'Moves');
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true }).click();
 	// Wait for the switch itself: clicking Add a move before the demo replaced the fixture raced the load (the old flake).

@@ -62,7 +62,9 @@
 		"autoSize": "Otomatik ({size} px)",
 		"frameMinimum": "Otomatik’i veya en az {min} px boyutunda özel bir kareyi seçin.",
 		"custom": "Özel",
-		"description": "Bu tarayıcıda kaydedilir. Oluşturma pencereleri henüz bu değerleri kullanmaz.",
+		"description": "Bu tarayıcıda kaydedilir. Yeni bir oluşturma penceresi açtığınızda uygulanır.",
+		"fallback": "Kaydedilen {setting} seçeneği burada kullanılamıyor. {value} kullanılacak.",
+		"autoFrames": "Otomatik ({count} kare)",
 		"defaults": "Oluşturma varsayılanları",
 		"readFailed": "Kayıtlı seçimler okunamadı. Düzeltmek için bu sayfayı sıfırlayın.",
 		"storageUnavailable": "Tarayıcı depolaması kullanılamıyor. Bu seçimler kaydedilemez.",
@@ -2229,7 +2231,7 @@
 				"unique": "8 özgün yön"
 			},
 			"models": {
-				"v3": { "label": "Varsayılan (V3)", "help": "Dengeli oranlar." },
+				"v3": { "label": "V3", "help": "Dengeli oranlar." },
 				"standard": {
 					"label": "Standart",
 					"help": "Bir şablon veya öne bakan sprite’ınızı kullanarak sekiz görünüm çizer."
@@ -2506,7 +2508,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "Varsayılan (PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "Kareler",
 		"framesHelp": "Seçenekler bu modele ve karakterin tuvaline ({canvas} px) uyar. Varsayılan seçenek PixelDoll'un hazır kare sayısını korur.",
@@ -2651,7 +2653,6 @@
 		"confirmDiscard": "Atmayı onayla",
 		"discardWarning": "Atmak üretim haklarını iade etmez veya durumu PixelLab’den silmez. Yeniden başlamak tüm yönler için tekrar ücretlendirebilir.",
 		"locksUnavailable": "Durumları güvenle oluşturmak için güncel bir tarayıcı kullanın.",
-		"defaultModel": "Varsayılan (Pro)",
 		"flashReference": "Pro Flash yazılı talimatlar yerine referans görseli kullanır.",
 		"changed": "Kaynak veya fiyat teklifi değişti. Oluşturmadan önce maliyeti tekrar kontrol edin.",
 		"sourceUnavailable": "Kaynak karede çizilen her yön için kayıtlı çizim olmalıdır.",

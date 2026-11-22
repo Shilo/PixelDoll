@@ -15,7 +15,7 @@
 </script>
 
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import PromptField from './PromptField.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
@@ -67,6 +67,7 @@
 		type StateReview
 	} from './stateGeneration.ts';
 	import type { StateGenerationCost, StateGenerationModel } from './stateGenerationPlan.ts';
+	import { openingCreationSettings, resolveStateModelPreference } from './creationSettings.ts';
 	import { stateGenerationSource, type StateSourceFrame } from './stateGenerationSource.ts';
 
 	const formId = $props.id();
@@ -121,8 +122,27 @@
 	let ridingIdea = $state(restored?.riding ?? false);
 	// Set when a State from the Riding idea was generated in this sheet, for the review checklist and the saved notice.
 	let riding = $state(false);
-	let model = $state<StateGenerationModel>(restored?.model ?? 'pro');
-	let advancedOpen = $state(!!restored && restored.model !== 'pro');
+	const savedModel = restored ? undefined : openingCreationSettings('states').model;
+	const initialModel =
+		restored?.model ??
+		untrack(() => {
+			const current = store.project;
+			const source = current && stateGenerationSource(current, { clip: startClip, frame });
+			return resolveStateModelPreference(
+				savedModel ?? 'pro',
+				source
+					? {
+							cellSize: source.size,
+							facingIds: source.views.map(({ direction }) => direction)
+						}
+					: undefined
+			);
+		});
+	let model = $state<StateGenerationModel>(initialModel);
+	let advancedOpen = $state(
+		initialModel !== 'pro' || (savedModel !== undefined && savedModel !== initialModel)
+	);
+	let modelEdited = $state(false);
 	let reference = $state.raw(restored?.reference);
 	let referenceLoading = $state(false);
 
@@ -715,16 +735,28 @@
 						)}
 						disabled={!!busy || model === 'pixen'}
 					/>
+					{#if !modelEdited && savedModel !== undefined && initialModel !== savedModel}
+						<p class="notice warn small" role="status">
+							{t('creationSettings.fallback', {
+								setting: t('create.form.model'),
+								value: t('create.form.models.pro.label')
+							})}
+						</p>
+					{/if}
 					<details class="disclosure" bind:open={advancedOpen}>
 						<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
 						<label class="field">
 							<span class="label">{t('create.form.model')}</span>
 							<select
 								class="bu-input input"
-								bind:value={model}
+								value={model}
+								onchange={(event) => {
+									modelEdited = true;
+									model = event.currentTarget.value as StateGenerationModel;
+								}}
 								disabled={!!busy || referenceLoading}
 							>
-								<option value="pro">{t('stateGeneration.defaultModel')}</option>
+								<option value="pro">{t('create.form.models.pro.label')}</option>
 								<option value="pro-flash">{t('create.form.models.proFlash.label')}</option>
 								<option value="pixen">V3 (Pixen)</option>
 							</select>

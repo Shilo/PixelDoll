@@ -62,7 +62,9 @@
 		"autoSize": "自动（{size} 像素）",
 		"frameMinimum": "请选择“自动”，或输入至少 {min} 像素的自定义帧尺寸。",
 		"custom": "自定义",
-		"description": "保存在此浏览器中。创建对话框暂不使用这些值。",
+		"description": "保存在此浏览器中，打开新的创建窗口时生效。",
+		"fallback": "保存的“{setting}”在此不可用，将使用“{value}”。",
+		"autoFrames": "自动（{count} 帧）",
 		"defaults": "创建默认值",
 		"readFailed": "无法读取已保存的选项。请重置此页面以修复。",
 		"storageUnavailable": "浏览器存储不可用，无法保存这些选项。",
@@ -2127,7 +2129,7 @@
 				"unique": "独立 8 向"
 			},
 			"models": {
-				"v3": { "label": "默认（V3）", "help": "均衡的比例。" },
+				"v3": { "label": "V3", "help": "均衡的比例。" },
 				"standard": {
 					"label": "标准",
 					"help": "使用模板或你的正面精灵图绘制八个方向的视图。"
@@ -2393,7 +2395,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "默认（PixMiniMax）"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "帧",
 		"framesHelp": "选项会随此模型和角色的画布（{canvas} px）变化。默认选项使用 PixelDoll 预设的帧数。",
@@ -2535,7 +2537,6 @@
 		"confirmDiscard": "确认舍弃",
 		"discardWarning": "舍弃不会退还生成次数，也不会从 PixelLab 删除状态。重新开始可能会再次收取所有方向的费用。",
 		"locksUnavailable": "请使用最新版本的浏览器安全地生成状态。",
-		"defaultModel": "默认 (Pro)",
 		"flashReference": "Pro Flash 使用参考图代替文字指令。",
 		"changed": "来源或报价已变更。请重新查看费用再生成。",
 		"sourceUnavailable": "源帧的每个已绘制朝向都需要已保存的美术图。",

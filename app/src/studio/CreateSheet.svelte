@@ -8,6 +8,7 @@
 	import { characterEnhanceInput } from './enhanceCharacter.ts';
 	import { createPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
+	import { characterDraftWithDefaults, openingCreationSettings } from './creationSettings.ts';
 	import Sprite from './Sprite.svelte';
 	import { composeCell } from '../lib/compose/compose.ts';
 	import { loadProject } from '../lib/store/project.ts';
@@ -50,7 +51,12 @@
 	import { PreflightWarning, errorText } from '../lib/message.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	const policyDecline = /\b5000\b|policy/i;
-	let d = $state(formDrafts.character ?? newCharacterDraft());
+	let d = $state(
+		formDrafts.character ??
+			(createPresentation.id
+				? newCharacterDraft()
+				: characterDraftWithDefaults(openingCreationSettings('characters')))
+	);
 	formDrafts.character = undefined;
 	// Typed text that leaving would lose, compared with a blank form so a draft restored from a sheet opened over this
 	// screen still counts; the choices around it keep their saved defaults.
