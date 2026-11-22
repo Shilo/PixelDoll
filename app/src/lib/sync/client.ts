@@ -129,6 +129,25 @@ export async function start() {
 	if (started) return;
 	started = true;
 	await finishSignIn();
+	// AI-agent automation only (`npm run dev:agent`): connect with a test account's token from the .env when a script set
+	// localStorage 'pixeldoll.agentSync' to google or dropbox. Statically false in every build.
+	if (import.meta.env.DEV && import.meta.env.MODE === 'agent' && !(await credentials())) {
+		let wanted: string | null = null;
+		try {
+			wanted = localStorage.getItem('pixeldoll.agentSync');
+		} catch {
+			// Optional storage unavailable: no agent connection.
+		}
+		if (wanted) {
+			const response = await fetch(
+				`/__dev/sync-credentials?provider=${encodeURIComponent(wanted)}`,
+				{
+					cache: 'no-store'
+				}
+			);
+			if (response.ok) await store.put('kv', 'credentials', await response.json());
+		}
+	}
 	const saved = await credentials();
 	if (!saved) {
 		hint(false);

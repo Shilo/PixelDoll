@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'"
+		/>
+		<meta name="referrer" content="no-referrer" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+		<title>PixelDoll privacy policy</title>
+		<meta name="description" content="What PixelDoll stores, where, and how to remove it." />
+		<style>
+			:root {
+				color-scheme: dark light;
+				--text: #e8e6e3;
+				--muted: #a8a49e;
+				--bg: #121214;
+				--link: #e0a96d;
+			}
+			@media (prefers-color-scheme: light) {
+				:root {
+					--text: #1d1b19;
+					--muted: #5c5853;
+					--bg: #faf8f5;
+					--link: #8a4f12;
+				}
+			}
+			body {
+				margin: 0;
+				background: var(--bg);
+				color: var(--text);
+				font:
+					1rem/1.6 system-ui,
+					sans-serif;
+			}
+			main {
+				max-width: 42rem;
+				margin: 0 auto;
+				padding: 2.5rem 1rem 4rem;
+			}
+			h1 {
+				font-size: 1.6rem;
+				line-height: 1.25;
+			}
+			h2 {
+				font-size: 1.15rem;
+				margin-top: 2rem;
+			}
+			p.meta {
+				color: var(--muted);
+			}
+			a {
+				color: var(--link);
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>PixelDoll privacy policy</h1>
+			<p class="meta">
+				Last updated November 22, 2026. Applies to the PixelDoll app at https://pixeldoll.app/.
+			</p>
+
+			<p>
+				PixelDoll is a free, open-source app that runs in your browser. It has no accounts, no
+				analytics, no ads and no tracking. The developer does not receive your characters, your
+				artwork or your PixelLab key.
+			</p>
+
+			<h2>What stays on your device</h2>
+			<p>
+				Your characters, artwork, settings and drafts are saved in your browser's storage on this
+				device. If you choose to remember your PixelLab key, it is saved there too. Clearing your
+				browser's data for pixeldoll.app, or Settings › Library › Delete local work, removes them.
+			</p>
+
+			<h2>PixelLab</h2>
+			<p>
+				When you generate artwork, your browser sends your request and your PixelLab key directly to
+				PixelLab (https://pixellab.ai). PixelLab's own terms and privacy policy apply to those
+				requests.
+			</p>
+
+			<h2>Cloud Save (optional)</h2>
+			<p>
+				If you connect Google Drive or Dropbox, PixelDoll copies your characters and their artwork
+				to a folder in your own account so you can restore them and use them on your other devices:
+				a "PixelDoll" folder in Google Drive, or "Apps/PixelDoll" in Dropbox. The files are ordinary
+				compressed JSON and ZIP files of PNG images that you can open without PixelDoll. Your
+				browser sends them directly to Google or Dropbox.
+			</p>
+			<ul>
+				<li>
+					<strong>Google Drive access:</strong> PixelDoll asks only for permission to see, edit,
+					create and delete the Drive files it creates itself (the drive.file scope), plus your
+					email address, which is shown next to the connection. It cannot see any other file in your
+					Drive.
+				</li>
+				<li>
+					<strong>Dropbox access:</strong> PixelDoll can read and write only its own app folder and
+					read your account's email address.
+				</li>
+				<li>
+					<strong>Sign-in tokens:</strong> the sign-in is kept in this browser's storage so you stay
+					connected. It is never shared with other devices or sent anywhere except to the provider.
+				</li>
+				<li>
+					<strong>Google sign-in helper:</strong> Google requires a server to finish and renew a
+					sign-in. PixelDoll uses a small stateless function on Cloudflare Workers that passes your
+					sign-in code or token to Google and returns Google's answer. It stores nothing and logs
+					nothing, and never sees your files. This follows the token-mediating backend pattern of
+					RFC 10017 (OAuth 2.0 for Browser-Based Applications).
+				</li>
+			</ul>
+			<p>
+				PixelDoll's use of information received from Google APIs adheres to the
+				<a href="https://developers.google.com/terms/api-services-user-data-policy"
+					>Google API Services User Data Policy</a
+				>, including the Limited Use requirements. Data from Google or Dropbox is used only to save
+				and sync your PixelDoll library, and is never transferred to anyone else or used for any
+				other purpose.
+			</p>
+
+			<h2>Stopping and deleting</h2>
+			<ul>
+				<li>
+					<strong>Disconnect this device</strong> removes the sign-in from this browser. The cloud
+					copy stays.
+				</li>
+				<li>
+					<strong>Disconnect everywhere</strong> (Google) withdraws PixelDoll's access for all your
+					devices. For Dropbox, remove PixelDoll under your account's connected apps.
+				</li>
+				<li>
+					<strong>Delete cloud copy</strong> permanently deletes the PixelDoll folder in your cloud
+					storage. Work saved on your devices stays.
+				</li>
+				<li>
+					You can also remove access at any time in your
+					<a href="https://myaccount.google.com/connections">Google Account</a> or
+					<a href="https://www.dropbox.com/account/connected_apps">Dropbox settings</a>, and delete
+					the folder yourself.
+				</li>
+			</ul>
+
+			<h2>Contact</h2>
+			<p>
+				PixelDoll is open source under the MIT license. Questions and reports:
+				<a href="https://github.com/Shilo/PixelDoll/issues">github.com/Shilo/PixelDoll/issues</a>.
+			</p>
+			<p><a href="./">Back to PixelDoll</a></p>
+		</main>
+	</body>
+</html>
