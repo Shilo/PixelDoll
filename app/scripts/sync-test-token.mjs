@@ -1,5 +1,6 @@
 // One-time owner helper: put a Cloud Save test account's refresh token into the repo-root .env, so agents can test real
-// providers (npm run dev:agent) without ever opening a sign-in page. Run from app/ with the dev:agent server running:
+// providers (npm run dev:agent) without ever opening a sign-in page. Run from app/ with NO server on port 5199 (the
+// browser then stops on an error page and the address keeps the code; a running app would consume it):
 //   node scripts/sync-test-token.mjs google    (or dropbox)
 // It prints a sign-in URL. Sign in with the SPARE test account, then paste the address the browser lands on
 // (http://localhost:5199/?code=...) here. The token is written to .env and never printed.
