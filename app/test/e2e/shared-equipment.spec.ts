@@ -759,6 +759,11 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 		'Copied from Stout for free.',
 		'Drawn for Stout’s body, so it may float, clip or leave gaps.'
 	]);
+	// A copy is its own kind: it keeps its own icon, apart from an item still offered from another character.
+	await expect(worn.locator('.tile-status').first()).toHaveAttribute('data-kind', 'copied');
+	await expect(
+		sharedTile(others, 'Traveling wizard hat').locator('.tile-status').first()
+	).toHaveAttribute('data-kind', 'shared');
 	await expect(others.locator('.shared-tile', { hasText: 'Stout helmet' })).toHaveCount(0);
 	await reloadStudio(page);
 	await equipmentGroup(page, 'Head');

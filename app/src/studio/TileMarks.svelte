@@ -1,8 +1,18 @@
 <script lang="ts" module>
-	import { Ban, Check, Clapperboard, EyeOff, Puzzle, TriangleAlert, UsersRound } from './icons.ts';
+	import {
+		Ban,
+		Check,
+		Clapperboard,
+		Copy,
+		EyeOff,
+		Puzzle,
+		TriangleAlert,
+		UsersRound
+	} from './icons.ts';
 
 	/** What a wardrobe tile's corner icons can say about an item; several can apply at once. */
-	type MarkKind = 'worn' | 'shared' | 'blocked' | 'unfitted' | 'check' | 'missing' | 'hidden';
+	type MarkKind =
+		'worn' | 'shared' | 'copied' | 'blocked' | 'unfitted' | 'check' | 'missing' | 'hidden';
 	export interface Mark {
 		kind: MarkKind;
 		/** A few words, for accessible names. */
@@ -11,10 +21,13 @@
 		text: string;
 	}
 	/** Each kind's icon and Bronze tone (worn uses the theme's accent check mark instead). Red is only for the one status that
-	 *  stops the tile wearing the item; amber asks for a look; grey only informs. */
+	 *  stops the tile wearing the item; amber asks for a look; grey only informs. `copied` and `shared` both say where an item
+	 *  came from, so they stay apart by icon: a copy is now an own item, an offer is still another character's. Bronze's tile
+	 *  status has no informational color beyond muted grey, so a new tone here would need a new bronze-ui release. */
 	const MARK: Record<MarkKind, { icon: typeof Check; tone: string }> = {
 		worn: { icon: Check, tone: '' },
 		shared: { icon: UsersRound, tone: 'hidden' },
+		copied: { icon: Copy, tone: 'hidden' },
 		blocked: { icon: Ban, tone: 'danger' },
 		unfitted: { icon: Puzzle, tone: 'warning' },
 		check: { icon: TriangleAlert, tone: 'warning' },
@@ -22,7 +35,16 @@
 		hidden: { icon: EyeOff, tone: 'hidden' }
 	};
 	/** Left to right, on the tile and in its ⋮ menu: worn, where it came from, then problems worst first. */
-	const ORDER: MarkKind[] = ['worn', 'shared', 'blocked', 'unfitted', 'check', 'missing', 'hidden'];
+	const ORDER: MarkKind[] = [
+		'worn',
+		'shared',
+		'copied',
+		'blocked',
+		'unfitted',
+		'check',
+		'missing',
+		'hidden'
+	];
 	export const sortMarks = (marks: (Mark | false | undefined | null | '')[]) =>
 		(marks.filter(Boolean) as Mark[]).sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
 </script>
@@ -36,6 +58,7 @@
 	{#if mark.kind === 'worn'}<span class="bu-tile-check" {title}><Icon /></span>{:else}<span
 			class="bu-tile-status tile-status"
 			data-tone={MARK[mark.kind].tone}
+			data-kind={mark.kind}
 			{title}><Icon size={14} /></span
 		>{/if}
 {/snippet}

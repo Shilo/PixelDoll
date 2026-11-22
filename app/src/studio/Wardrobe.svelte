@@ -167,7 +167,7 @@
 		return sortMarks([
 			doc.items[it.slot] === it.id && !doc.drafts[it.slot] && wornMark,
 			!!from && {
-				kind: 'shared',
+				kind: 'copied',
 				label: t('wardrobe.copiedFrom', { from }),
 				text: t('wardrobe.copiedFree', { from })
 			},
