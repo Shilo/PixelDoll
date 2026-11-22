@@ -2865,6 +2865,9 @@
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
+		"allowance": {
+			"other": "每月 {n} 次生成"
+		},
 		"retries": "重试次数",
 		"retriesDefault": "默认",
 		"decrease": "减少{name}",

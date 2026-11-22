@@ -2887,6 +2887,9 @@
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
+		"allowance": {
+			"other": "{n} generasi / bulan"
+		},
 		"retries": "Percobaan ulang",
 		"retriesDefault": "Bawaan",
 		"decrease": "Kurangi {name}",

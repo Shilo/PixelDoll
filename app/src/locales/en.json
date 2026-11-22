@@ -2983,6 +2983,10 @@
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
+		"allowance": {
+			"one": "{n} gen / month",
+			"other": "{n} gens / month"
+		},
 		"retries": "Retries",
 		"retriesDefault": "Default",
 		"decrease": "Decrease {name}",

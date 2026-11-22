@@ -2998,6 +2998,10 @@
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
+		"allowance": {
+			"one": "{n} Generierung / Monat",
+			"other": "{n} Generierungen / Monat"
+		},
 		"retries": "Wiederholungen",
 		"retriesDefault": "Standard",
 		"decrease": "{name} verringern",

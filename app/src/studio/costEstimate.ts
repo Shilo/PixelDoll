@@ -403,6 +403,11 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		};
 	};
 	// Added moves exist on the working rig, without frames, so anchored items can be planned on them.
+	const savedStanding =
+		original.rig.animations.find((a) => a.id === DEFAULT_MOVE)?.id ??
+		original.rig.animations.find((a) => a.cells === 1)?.id;
+	// A character without standing views (the bundled demo) still gets a one-frame pose to plan new item designs on.
+	const standing = savedStanding ?? 'cost-standing';
 	const rig: Rig = {
 		...original.rig,
 		directions: inputs.directions,
@@ -413,7 +418,18 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 				return index >= savedMoves ? [] : [editedFrames(index) ? synthetic(index) : a];
 			}),
 			...listed.filter((i) => i >= c.moves.length).map(synthetic),
-			...(typicalCount > 0 ? [synthetic(typicalIndex)] : [])
+			...(typicalCount > 0 ? [synthetic(typicalIndex)] : []),
+			...(savedStanding
+				? []
+				: [
+						{
+							id: standing,
+							kind: 'state' as const,
+							cells: 1,
+							loop: false,
+							frames: [{ cell: 0, ms: 100 }]
+						}
+					])
 		]
 	};
 	const m: Manifest = { ...original, rig };
@@ -452,10 +468,6 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 	// Items.
 	const genericSlot =
 		original.slots.find((slot) => slot.class === 'worn')?.id ?? requireSlot([], 'torso_inner').id;
-	const standing =
-		original.rig.animations.find((a) => a.id === DEFAULT_MOVE)?.id ??
-		original.rig.animations.find((a) => a.cells === 1)?.id ??
-		DEFAULT_MOVE;
 	const posable = canPose(rig, { anims: [standing], dirs: drawn, standing });
 	const methodOf = (item: Pick<Item, 'route'>): Method =>
 		item.route === 'ea2-anchor' || !posable ? 'anchor' : 'skel';
@@ -501,7 +513,10 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 					? planGens(
 							planAnchoredMove(
 								rig,
-								{ standing, dressed: Object.fromEntries(dirs.map((d) => [d, rig.baseHash])) },
+								{
+									standing,
+									dressed: Object.fromEntries(dirs.map((d) => [d, 'sha256:cost' as const]))
+								},
 								anim,
 								dirs
 							),
@@ -650,10 +665,27 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 /** Free / Trial, unknown and unnumbered accounts are estimated at Tier 1 rates. */
 export const pricedTier = (tier: number | null): PricedTier =>
 	tier === 2 || tier === 3 ? tier : 1;
-export const usdOf = (gens: number, tier: PricedTier, price: 'low' | 'list' = 'list') =>
-	(gens * PLAN_PRICES[tier][price]) / PLAN_PRICES[tier].generations;
-export const spentUsd = (spent: RecordedCost, tier: PricedTier) =>
-	usdOf(spent.generations, tier) + spent.usd;
+/** A plan's price over its monthly generations. */
+export interface Rate {
+	tier: PricedTier;
+	generations: number;
+}
+/** The picked tier's published allowance, or the connected account's own monthly total when it is on that tier. */
+export function planRate(
+	tier: number,
+	account?: { tier: number | null; generations: number }
+): Rate {
+	const priced = pricedTier(tier);
+	const own =
+		account && account.tier === tier && tier === priced && account.generations > 0
+			? account.generations
+			: undefined;
+	return { tier: priced, generations: own ?? PLAN_PRICES[priced].generations };
+}
+export const usdOf = (gens: number, rate: Rate, price: 'low' | 'list' = 'list') =>
+	(gens * PLAN_PRICES[rate.tier][price]) / rate.generations;
+export const spentUsd = (spent: RecordedCost, rate: Rate) =>
+	usdOf(spent.generations, rate) + spent.usd;
 
 // ---------- savings tips ----------
 export type Tip =
@@ -662,8 +694,8 @@ export type Tip =
 	| { kind: 'trim'; move: number; frames: number; saving: number; inputs: CostInputs };
 
 /** Up to two quality-safe changes with a real saving in cents at this tier, largest first. */
-export function savingTips(c: CostCharacter, inputs: CostInputs, tier: PricedTier): Tip[] {
-	const cents = (next: CostInputs) => Math.round(usdOf(characterCost(c, next).total, tier) * 100);
+export function savingTips(c: CostCharacter, inputs: CostInputs, rate: Rate): Tip[] {
+	const cents = (next: CostInputs) => Math.round(usdOf(characterCost(c, next).total, rate) * 100);
 	const now = cents(inputs);
 	const tips: Tip[] = [];
 	const saving = (next: CostInputs) => (now - cents(next)) / 100;

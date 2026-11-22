@@ -2884,6 +2884,9 @@
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
+		"allowance": {
+			"other": "월 생성 {n}회"
+		},
 		"retries": "재시도",
 		"retriesDefault": "기본값",
 		"decrease": "{name} 줄이기",

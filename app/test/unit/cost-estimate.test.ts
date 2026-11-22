@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
 	characterCost,
 	characterOf,
 	newCharacter,
+	planRate,
 	pricedTier,
 	savingTips,
 	seedInputs,
@@ -191,8 +193,8 @@ describe('cost estimate', () => {
 		expect(r.total).toBeCloseTo(1046.75);
 		// Two extra attempts on every paid step.
 		expect(characterCost(c, { ...inputs, retries: 2 }).total).toBeCloseTo(3140.25);
-		expect(usdOf(3140.25, 2)).toBeCloseTo(15.0732);
-		expect(usdOf(3140.25, 2, 'low')).toBeCloseTo(13.8171);
+		expect(usdOf(3140.25, planRate(2))).toBeCloseTo(15.0732);
+		expect(usdOf(3140.25, planRate(2), 'low')).toBeCloseTo(13.8171);
 	});
 
 	test('prices pose batches at 3, 12, 15 and 16 frames like itemPoseGens', () => {
@@ -357,8 +359,15 @@ describe('cost estimate', () => {
 		const spent = of(m).spent;
 		expect(spent.generations).toBeCloseTo(22.25);
 		expect(spent.replaced).toBe(1);
-		expect(spentUsd(spent, 2)).toBeCloseTo((22.25 * 24) / 5000 + 0.08);
+		expect(spentUsd(spent, planRate(2))).toBeCloseTo((22.25 * 24) / 5000 + 0.08);
 		expect([pricedTier(0), pricedTier(null), pricedTier(4), pricedTier(3)]).toEqual([1, 1, 1, 3]);
+		// The connected account's own allowance sets the rate only for its own tier.
+		const account = { tier: 2, generations: 20000 };
+		expect(planRate(2, account)).toEqual({ tier: 2, generations: 20000 });
+		expect(usdOf(1000, planRate(2, account))).toBeCloseTo(1.2);
+		expect(planRate(3, account)).toEqual({ tier: 3, generations: 10000 });
+		expect(planRate(2)).toEqual({ tier: 2, generations: 5000 });
+		expect(planRate(0, { tier: 0, generations: 40 })).toEqual({ tier: 1, generations: 2000 });
 	});
 
 	test('prices a new character from creation defaults', () => {
@@ -388,7 +397,7 @@ describe('cost estimate', () => {
 		});
 		const c = of(m);
 		const inputs = seedInputs(c);
-		const tips = savingTips(c, inputs, 2);
+		const tips = savingTips(c, inputs, planRate(2));
 		expect(tips.length).toBeLessThanOrEqual(2);
 		expect(tips.every((tip) => tip.saving > 0)).toBe(true);
 		const kinds = tips.map((tip) => tip.kind);
@@ -403,7 +412,7 @@ describe('cost estimate', () => {
 						d.id === 'west' ? { id: 'west' as DirectionName, mirrorOf: 'east' as DirectionName } : d
 					)
 				},
-				2
+				planRate(2)
 			)
 		];
 		const trim = all.find((tip) => tip.kind === 'trim');
@@ -411,5 +420,75 @@ describe('cost estimate', () => {
 		if (trim?.kind === 'trim') expect(trim.frames).toBeGreaterThanOrEqual(8);
 		for (const tip of tips)
 			expect(characterCost(c, tip.inputs).total).toBeLessThan(characterCost(c, inputs).total);
+	});
+
+	test('the bundled demo and a demo copy price changes without throwing', () => {
+		const fixture = JSON.parse(
+			readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8')
+		) as Manifest;
+		const copy = structuredClone(fixture);
+		copy.rig.animations.unshift({
+			id: DEFAULT_MOVE,
+			cells: 1,
+			loop: true,
+			frames: [{ cell: 0, ms: 100 }]
+		});
+		for (const c of [characterOf('fixture:s2', fixture, defaults), of(copy, 'rig-copy')]) {
+			const seed = seedInputs(c);
+			expect(characterCost(c, seed)).toMatchObject({ total: 0, toGo: 0 });
+			const changes: Partial<CostInputs>[] = [
+				{ moves: seed.moves + 1 },
+				{ moves: seed.moves + 3 },
+				{ items: seed.items + 1 },
+				{ states: seed.states + 1 },
+				{ directions: [...seed.directions.filter((d) => d.id !== 'west'), { id: 'west' }] },
+				{ frames: { 0: 12 } }
+			];
+			for (const change of changes) {
+				const r = characterCost(c, { ...seed, ...change });
+				expect(r.total).toBeGreaterThan(0);
+				expect(r.toGo).toBeCloseTo(r.total);
+			}
+			expect(characterCost(c, { ...seed, moves: 0, items: 0, states: 0 }).total).toBe(0);
+		}
+	});
+
+	test('never throws across a sweep of inputs', () => {
+		const fixture = JSON.parse(
+			readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8')
+		) as Manifest;
+		const own = manifest({
+			cell: 64,
+			directions: FOUR,
+			moves: [{ id: 'slash', cells: 8, motion: 'authored:slash' }],
+			items: [
+				{ id: 'coat' },
+				{ id: 'sword', slot: 'main_hand' },
+				{ id: 'cape', route: 'ea2-anchor' }
+			]
+		});
+		for (const c of [characterOf('fixture:s2', fixture, defaults), of(own)]) {
+			const seed = seedInputs(c);
+			const mirrored = seed.directions.map((d) =>
+				d.id === 'west' ? { id: d.id, ...(d.mirrorOf ? {} : { mirrorOf: 'east' as const }) } : d
+			);
+			for (let moves = 0; moves <= 8; moves++)
+				for (let extra = 0; extra <= 3; extra++)
+					for (const directions of [seed.directions, mirrored])
+						for (const frames of [undefined, 3, 12, 16]) {
+							const inputs = {
+								...seed,
+								moves,
+								items: seed.items + extra,
+								directions,
+								frames: frames === undefined || !moves ? {} : { [moves - 1]: frames }
+							};
+							const r = characterCost(c, inputs);
+							expect(Number.isFinite(r.total) && r.total >= 0).toBe(true);
+							expect(Number.isFinite(r.toGo) && r.toGo >= 0).toBe(true);
+							for (let i = 0; i < moves; i++) r.move(i);
+							for (let i = 0; i < inputs.items; i++) r.item(i);
+						}
+		}
 	});
 });

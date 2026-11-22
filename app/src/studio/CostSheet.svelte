@@ -25,7 +25,7 @@
 		characterOf,
 		covers,
 		newCharacter,
-		pricedTier,
+		planRate,
 		savingTips,
 		seedInputs,
 		spentUsd,
@@ -107,7 +107,13 @@
 		return tier !== null && tier >= 0 && tier <= 3 ? tier : 1;
 	})();
 	let tier = $state(initialTier);
-	const rate = $derived(pricedTier(tier));
+	// The connected account's own monthly generations set the rate when it is on the picked tier.
+	const account = $derived(
+		app.balance
+			? { tier: accountTier(app.balance), generations: app.balance.subscription.total }
+			: undefined
+	);
+	const rate = $derived(planRate(tier, account));
 	let edits = $state<Record<string, CostInputs>>({});
 	let allRetries = $state(DEFAULT_RETRIES);
 	const inputs = $derived(character ? (edits[character.id] ?? seedInputs(character)) : null);
@@ -123,14 +129,33 @@
 	};
 
 	// ---------- results ----------
-	const result = $derived<CostResult | null>(
-		character && inputs ? characterCost(character, inputs) : null
-	);
-	const allResults = $derived(
-		scope === 'all'
-			? roster.map((c) => ({ c, r: characterCost(c, { ...seedInputs(c), retries: allRetries }) }))
-			: []
-	);
+	// A pricing failure shows as an error with Reset, rather than leaving stale numbers on screen.
+	const priced = $derived.by(() => {
+		try {
+			const result = character && inputs ? characterCost(character, inputs) : null;
+			return {
+				result,
+				allResults:
+					scope === 'all'
+						? roster.map((c) => ({
+								c,
+								r: characterCost(c, { ...seedInputs(c), retries: allRetries })
+							}))
+						: [],
+				tips: scope === 'all' || !character || !inputs ? [] : savingTips(character, inputs, rate),
+				failure: ''
+			};
+		} catch (e) {
+			return {
+				result: null,
+				allResults: [],
+				tips: [] as Tip[],
+				failure: displayMessage(errorMessage(e))
+			};
+		}
+	});
+	const result = $derived<CostResult | null>(priced.result);
+	const allResults = $derived(priced.allResults);
 	const total = $derived(
 		scope === 'all' ? allResults.reduce((s, { r }) => s + r.total, 0) : (result?.total ?? 0)
 	);
@@ -151,9 +176,7 @@
 				)
 			: character?.spent
 	);
-	const tips = $derived<Tip[]>(
-		scope === 'all' || !character || !inputs ? [] : savingTips(character, inputs, rate)
-	);
+	const tips = $derived<Tip[]>(priced.tips);
 	const edited = $derived(
 		tier !== initialTier ||
 			(scope === 'all'
@@ -291,6 +314,10 @@
 		</div>
 
 		{#if error}<p class="notice bad small" role="alert">{error}</p>
+		{:else if priced.failure}<p class="notice bad small" role="alert">{priced.failure}</p>
+			<button type="button" class="bu-action btn plain reset" onclick={reset}
+				>{t('costSheet.reset')}</button
+			>
 		{:else if !character && scope !== 'all'}<p class="muted" role="status">
 				{t('costSheet.loading')}
 			</p>
@@ -309,7 +336,14 @@
 
 			<div class="controls">
 				<label class="control">
-					<span>{t('costSheet.tier')}</span>
+					<span
+						>{t('costSheet.tier')}<span class="faint small hint"
+							>{t('costSheet.allowance', {
+								count: rate.generations,
+								n: formatNumber(rate.generations)
+							})}</span
+						></span
+					>
 					<select
 						class="bu-input tier"
 						value={tier}
@@ -650,17 +684,10 @@
 		width: auto;
 		min-width: 130px;
 	}
+	/* Directions come last, below the counts, at every width. */
 	.inputs {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-start;
-		gap: 8px 24px;
-	}
-	.counts {
-		flex: 1 1 260px;
-	}
-	.directions {
-		flex: 0 1 auto;
+		display: grid;
+		gap: 8px;
 	}
 	.compass-label {
 		display: flex;

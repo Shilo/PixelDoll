@@ -3012,6 +3012,10 @@
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
+		"allowance": {
+			"one": "{n} geração / mês",
+			"other": "{n} gerações / mês"
+		},
 		"retries": "Novas tentativas",
 		"retriesDefault": "Padrão",
 		"decrease": "Diminuir {name}",

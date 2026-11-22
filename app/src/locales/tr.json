@@ -2992,6 +2992,10 @@
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
+		"allowance": {
+			"one": "Aylık üretim hakkı: {n}",
+			"other": "Aylık üretim hakkı: {n}"
+		},
 		"retries": "Yeniden denemeler",
 		"retriesDefault": "Varsayılan",
 		"decrease": "Azaltın: {name}",
