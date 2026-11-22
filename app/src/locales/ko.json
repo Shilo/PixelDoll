@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "휴지통이 비었습니다. 휴지통으로 이동한 캐릭터, 아이템, 카테고리, 모션, 상태는 30일 동안 남습니다.",
 		"kept": "30일 동안 최대 50개까지 보관됩니다.",
-		"restore": "복원",
 		"restoreNamed": "{name} 복원",
 		"deleteForever": "영구 삭제",
 		"deleteForeverNamed": "{name} 영구 삭제",
@@ -37,8 +36,8 @@
 		},
 		"restoring": "복원 중…",
 		"confirmBodyCharacter": "그 안에서 삭제한 것도 함께 사라집니다. 완전히 사라지며 되돌릴 수 없습니다.",
-		"restoreTitle": "{name}을(를) 복원할까요?",
-		"restoreBody": "삭제했을 때와 똑같은 상태로 돌아옵니다."
+		"confirmRestore": "한 번 더 누르면 복원됩니다",
+		"confirmRestoreNamed": "한 번 더 누르면 {name}을(를) 복원합니다"
 	},
 	"librarySettings": {
 		"title": "라이브러리",

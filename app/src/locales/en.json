@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "Nothing here. Characters, items, categories, moves and states you move to Trash stay for 30 days.",
 		"kept": "Kept for 30 days, up to 50 entries.",
-		"restore": "Restore",
 		"restoreNamed": "Restore {name}",
 		"deleteForever": "Delete forever",
 		"deleteForeverNamed": "Delete {name} forever",
@@ -39,8 +38,8 @@
 		},
 		"restoring": "Restoring…",
 		"confirmBodyCharacter": "Anything else deleted from it goes too. It is gone for good. This cannot be undone.",
-		"restoreTitle": "Restore {name}?",
-		"restoreBody": "It comes back exactly as it was deleted."
+		"confirmRestore": "Press again to restore",
+		"confirmRestoreNamed": "Press again to restore {name}"
 	},
 	"librarySettings": {
 		"title": "Library",

@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "Aquí no hay nada. Los personajes, objetos, categorías, movimientos y estados que muevas a la papelera se guardan 30 días.",
 		"kept": "Se guarda 30 días, hasta 50 entradas.",
-		"restore": "Restaurar",
 		"restoreNamed": "Restaurar {name}",
 		"deleteForever": "Eliminar para siempre",
 		"deleteForeverNamed": "Eliminar {name} para siempre",
@@ -39,8 +38,8 @@
 		},
 		"restoring": "Restaurando…",
 		"confirmBodyCharacter": "Lo demás eliminado de él se va también. Desaparece para siempre; no se puede deshacer.",
-		"restoreTitle": "¿Restaurar {name}?",
-		"restoreBody": "Vuelve exactamente como estaba al eliminarse."
+		"confirmRestore": "Pulsa de nuevo para restaurar",
+		"confirmRestoreNamed": "Pulsa de nuevo para restaurar {name}"
 	},
 	"librarySettings": {
 		"title": "Biblioteca",

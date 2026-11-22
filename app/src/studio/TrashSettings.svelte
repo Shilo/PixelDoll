@@ -5,6 +5,7 @@
 		Clapperboard,
 		Layers2,
 		PersonStanding,
+		RotateCcw,
 		Shirt,
 		Trash,
 		Trash2,
@@ -12,6 +13,7 @@
 		UserRound
 	} from './icons.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import { ignoreKeyRepeat, TwoStepConfirm } from './twoStepConfirm.svelte.ts';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
 	import { clipKind } from '../lib/runtime/timeline.js';
@@ -26,7 +28,8 @@
 	/** One entry being restored or deleted for good. */
 	let busy = $state('');
 	let confirmDelete = $state<string>();
-	let confirmRestore = $state<string>();
+	/** A row restores on its second press within a few seconds; the first only asks. */
+	const restoreConfirm = new TwoStepConfirm<string>({ expireMs: 4000 });
 	let failure = $state<Message | string>();
 	let section = $state<HTMLElement>();
 	let emptyNote = $state<HTMLElement>();
@@ -55,8 +58,13 @@
 	const dateOf = (iso: string) =>
 		new Date(iso).toLocaleDateString(getLocale(), { dateStyle: 'medium' });
 
+	const armedEntry = $derived(deleted.entries.find((e) => e.id === restoreConfirm.armed));
+
+	function pressRow(id: string, event: MouseEvent) {
+		if (!busy && restoreConfirm.press(id, event)) void restoreEntry(id);
+	}
+
 	async function restoreEntry(id: string) {
-		if (busy) return;
 		const at = deleted.entries.findIndex((entry) => entry.id === id);
 		busy = id;
 		try {
@@ -111,21 +119,40 @@
 		<ul class="trash-list">
 			{#each deleted.entries as entry (entry.id)}
 				{@const kind = KIND[kindOf(entry)]}
-				{@const Icon = kind.icon}
-				<li class="trash-row" class:trash-busy={busy === entry.id}>
+				{@const armed = restoreConfirm.armed === entry.id}
+				{@const Icon = armed ? RotateCcw : kind.icon}
+				<li class="trash-row">
 					<button
 						type="button"
-						class="trash-recover trash-restore"
+						class="bu-action trash-restore"
+						data-variant="outline"
+						data-active={armed ? '' : undefined}
 						disabled={!!busy}
-						aria-label={t('recentlyDeleted.restoreNamed', { name: entry.name })}
-						onclick={() => (confirmRestore = entry.id)}
+						aria-busy={busy === entry.id}
+						aria-label={t(
+							armed ? 'recentlyDeleted.confirmRestoreNamed' : 'recentlyDeleted.restoreNamed',
+							{ name: entry.name }
+						)}
+						onclick={(event) => pressRow(entry.id, event)}
+						onblur={() => armed && restoreConfirm.disarm()}
+						onkeydown={(event) => {
+							ignoreKeyRepeat(event);
+							if (armed && event.key === 'Escape') {
+								// Escape takes back the question, not the whole Settings sheet.
+								event.preventDefault();
+								event.stopPropagation();
+								restoreConfirm.disarm();
+							}
+						}}
 					>
 						<span class="trash-title">
 							<Icon size={18} aria-hidden="true" />
 							<span class="trash-name">{entry.name}</span>
 						</span>
-						<span class="bu-muted trash-meta"
-							>{kindLabel(entry)}{entry.context ? ` · ${entry.context}` : ''}</span
+						<span class="trash-meta" class:bu-muted={!armed}
+							>{#if busy === entry.id}{t('recentlyDeleted.restoring')}{:else if armed}{t(
+									'recentlyDeleted.confirmRestore'
+								)}{:else}{kindLabel(entry)}{entry.context ? ` · ${entry.context}` : ''}{/if}</span
 						>
 						<time class="bu-muted trash-date" datetime={entry.deletedAt}
 							>{dateOf(entry.deletedAt)}</time
@@ -133,7 +160,9 @@
 					</button>
 					<button
 						type="button"
-						class="trash-delete"
+						class="bu-btn trash-delete"
+						data-variant="danger"
+						data-icon
 						disabled={!!busy}
 						aria-label={t('recentlyDeleted.deleteForeverNamed', { name: entry.name })}
 						title={t('recentlyDeleted.deleteForeverNamed', { name: entry.name })}
@@ -141,12 +170,12 @@
 					>
 						<Trash2 size={18} aria-hidden="true" />
 					</button>
-					{#if busy === entry.id}
-						<span class="trash-status" role="status">{t('recentlyDeleted.restoring')}</span>
-					{/if}
 				</li>
 			{/each}
 		</ul>
+		<p class="bu-sr" aria-live="polite">
+			{#if armedEntry}{t('recentlyDeleted.confirmRestoreNamed', { name: armedEntry.name })}{/if}
+		</p>
 	{/if}
 	{#if failure}<p class="notice bad small" role="alert">
 			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(failure)}
@@ -176,23 +205,6 @@
 	{/if}
 {/if}
 
-{#if confirmRestore}
-	{@const entry = deleted.entries.find((e) => e.id === confirmRestore)}
-	{#if entry}
-		<ConfirmDialog
-			title={t('recentlyDeleted.restoreTitle', { name: entry.name })}
-			action={t('recentlyDeleted.restore')}
-			busyAction={t('recentlyDeleted.restoring')}
-			busy={!!busy}
-			problem={failure ? displayMessage(failure) : ''}
-			oncancel={() => (confirmRestore = undefined)}
-			onconfirm={() => void restoreEntry(entry.id)}
-		>
-			<p>{t('recentlyDeleted.restoreBody')}</p>
-		</ConfirmDialog>
-	{/if}
-{/if}
-
 <style>
 	.trash-settings {
 		display: grid;
@@ -202,45 +214,35 @@
 	}
 	.trash-list {
 		display: grid;
+		gap: 8px;
 		margin: 12px 0 0;
 		padding: 0;
 		list-style: none;
 	}
 	.trash-row {
-		position: relative;
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 44px;
-		align-items: stretch;
-		min-height: 56px;
-		margin-inline: -8px;
-		border-block-start: 1px solid var(--bu-line);
-		border-radius: var(--bu-radius-control, 8px);
-		overflow: hidden;
 	}
-	.trash-row:first-child {
-		border-block-start: none;
+	/* The delete button sits inside the row's surface, on top of it in the same grid cell. */
+	.trash-row > * {
+		grid-area: 1 / 1;
 	}
-	.trash-row:hover,
-	.trash-row:has(:focus-visible) {
-		background: var(--bu-hover);
-	}
-	.trash-busy {
-		opacity: 0.55;
-	}
-	/* The whole left side is the recovery target; the right edge is the permanent delete. */
-	.trash-recover {
+	.trash-restore {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		align-content: center;
 		justify-items: start;
-		gap: 1px;
+		gap: 2px;
 		min-inline-size: 0;
-		padding: 8px;
-		border: 0;
-		background: none;
-		color: inherit;
-		font: inherit;
+		min-block-size: 64px;
+		padding: 10px calc(44px + 20px) 10px 12px;
 		text-align: start;
-		cursor: pointer;
+	}
+	.trash-restore[data-active] {
+		border-color: var(--bu-accent);
+		background: var(--bu-selected);
+	}
+	.trash-restore[aria-busy='true'] {
+		cursor: progress;
 	}
 	.trash-title {
 		display: flex;
@@ -251,6 +253,8 @@
 	}
 	.trash-title > :global(svg) {
 		flex: none;
+	}
+	.trash-restore:not([data-active]) .trash-title > :global(svg) {
 		opacity: 0.65;
 	}
 	.trash-name {
@@ -275,25 +279,12 @@
 		opacity: 0.85;
 	}
 	.trash-delete {
-		display: grid;
-		place-items: center;
+		justify-self: end;
+		align-self: center;
+		margin-inline-end: 10px;
+		inline-size: var(--bu-control);
+		block-size: var(--bu-control);
 		padding: 0;
-		border: 0;
-		border-inline-start: 1px solid var(--bu-line);
-		background: color-mix(in srgb, var(--bu-danger) 14%, transparent);
-		color: var(--bu-danger);
-		cursor: pointer;
-	}
-	.trash-delete:hover,
-	.trash-delete:focus-visible {
-		background: color-mix(in srgb, var(--bu-danger) 26%, transparent);
-	}
-	.trash-status {
-		position: absolute;
-		inset-block-end: 2px;
-		inset-inline-start: 34px;
-		font-size: 0.75rem;
-		opacity: 0.8;
 	}
 	.trash-empty {
 		display: grid;

@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "回收站是空的。你移到回收站的角色、物品、分类、动作和状态会保留 30 天。",
 		"kept": "保留 30 天，最多 50 条。",
-		"restore": "恢复",
 		"restoreNamed": "恢复 {name}",
 		"deleteForever": "永久删除",
 		"deleteForeverNamed": "永久删除 {name}",
@@ -37,8 +36,8 @@
 		},
 		"restoring": "正在恢复…",
 		"confirmBodyCharacter": "从它那里删除的其他内容也会一起消失。彻底消失，无法撤销。",
-		"restoreTitle": "恢复 {name}？",
-		"restoreBody": "它会完全按删除时的状态恢复。"
+		"confirmRestore": "再按一次即可恢复",
+		"confirmRestoreNamed": "再按一次即可恢复 {name}"
 	},
 	"librarySettings": {
 		"title": "角色库",

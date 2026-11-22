@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "Nada aqui. Personagens, itens, categorias, movimentos e estados que você mover para a lixeira ficam 30 dias.",
 		"kept": "Guardado por 30 dias, até 50 entradas.",
-		"restore": "Restaurar",
 		"restoreNamed": "Restaurar {name}",
 		"deleteForever": "Excluir para sempre",
 		"deleteForeverNamed": "Excluir {name} para sempre",
@@ -39,8 +38,8 @@
 		},
 		"restoring": "Restaurando…",
 		"confirmBodyCharacter": "Tudo o mais excluído dele vai junto. Some para sempre; não pode ser desfeito.",
-		"restoreTitle": "Restaurar {name}?",
-		"restoreBody": "Volta exatamente como estava quando foi excluído."
+		"confirmRestore": "Pressione de novo para restaurar",
+		"confirmRestoreNamed": "Pressione de novo para restaurar {name}"
 	},
 	"librarySettings": {
 		"title": "Biblioteca",

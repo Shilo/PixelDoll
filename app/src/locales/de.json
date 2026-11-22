@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "Der Papierkorb ist leer. Charaktere, Gegenstände, Kategorien, Bewegungen und Zustände, die du in den Papierkorb verschiebst, bleiben 30 Tage lang hier.",
 		"kept": "30 Tage lang aufbewahrt, bis zu 50 Einträge.",
-		"restore": "Wiederherstellen",
 		"restoreNamed": "{name} wiederherstellen",
 		"deleteForever": "Endgültig löschen",
 		"deleteForeverNamed": "{name} endgültig löschen",
@@ -39,8 +38,8 @@
 		},
 		"restoring": "Wird wiederhergestellt…",
 		"confirmBodyCharacter": "Alles andere davon Gelöschte geht mit. Endgültig weg, nicht rückgängig zu machen.",
-		"restoreTitle": "{name} wiederherstellen?",
-		"restoreBody": "Es kommt genau so zurück, wie es gelöscht wurde."
+		"confirmRestore": "Zum Wiederherstellen erneut drücken",
+		"confirmRestoreNamed": "Zum Wiederherstellen von {name} erneut drücken"
 	},
 	"librarySettings": {
 		"title": "Bibliothek",

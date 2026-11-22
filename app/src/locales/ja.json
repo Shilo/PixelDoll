@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "ゴミ箱は空です。ゴミ箱に移動したキャラクター、アイテム、カテゴリ、モーション、ステートは 30 日間残ります。",
 		"kept": "30 日間、最大 50 件まで保管されます。",
-		"restore": "復元",
 		"restoreNamed": "{name} を復元",
 		"deleteForever": "完全に削除",
 		"deleteForeverNamed": "{name} を完全に削除",
@@ -37,8 +36,8 @@
 		},
 		"restoring": "復元中…",
 		"confirmBodyCharacter": "そこから削除したものも一緒に消えます。完全に削除され、元に戻せません。",
-		"restoreTitle": "{name} を復元しますか？",
-		"restoreBody": "削除したときと同じ状態に戻ります。"
+		"confirmRestore": "もう一度押すと復元します",
+		"confirmRestoreNamed": "もう一度押すと {name} を復元します"
 	},
 	"librarySettings": {
 		"title": "ライブラリ",

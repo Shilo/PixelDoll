@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "Rien ici. Les personnages, objets, catégories, mouvements et états que vous déplacez vers la corbeille restent 30 jours.",
 		"kept": "Conservé 30 jours, jusqu’à 50 entrées.",
-		"restore": "Restaurer",
 		"restoreNamed": "Restaurer {name}",
 		"deleteForever": "Supprimer définitivement",
 		"deleteForeverNamed": "Supprimer {name} définitivement",
@@ -39,8 +38,8 @@
 		},
 		"restoring": "Restauration…",
 		"confirmBodyCharacter": "Tout ce qui en a été supprimé part aussi. Disparition définitive, irréversible.",
-		"restoreTitle": "Restaurer {name} ?",
-		"restoreBody": "Il revient exactement tel qu’il a été supprimé."
+		"confirmRestore": "Appuyez à nouveau pour restaurer",
+		"confirmRestoreNamed": "Appuyez à nouveau pour restaurer {name}"
 	},
 	"librarySettings": {
 		"title": "Bibliothèque",

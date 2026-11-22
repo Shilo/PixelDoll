@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "Tempat sampah kosong. Karakter, item, kategori, gerakan, dan status yang Anda pindahkan ke sini disimpan 30 hari.",
 		"kept": "Disimpan 30 hari, maksimal 50 entri.",
-		"restore": "Pulihkan",
 		"restoreNamed": "Pulihkan {name}",
 		"deleteForever": "Hapus permanen",
 		"deleteForeverNamed": "Hapus {name} permanen",
@@ -37,8 +36,8 @@
 		},
 		"restoring": "Memulihkan…",
 		"confirmBodyCharacter": "Yang lain yang dihapus darinya ikut hilang. Hilang selamanya, tidak dapat dibatalkan.",
-		"restoreTitle": "Pulihkan {name}?",
-		"restoreBody": "Kembali persis seperti saat dihapus."
+		"confirmRestore": "Tekan lagi untuk memulihkan",
+		"confirmRestoreNamed": "Tekan lagi untuk memulihkan {name}"
 	},
 	"librarySettings": {
 		"title": "Pustaka",

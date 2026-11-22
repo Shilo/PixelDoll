@@ -2,7 +2,6 @@
 	"recentlyDeleted": {
 		"empty": "Burada bir şey yok. Çöp kutusuna taşıdığınız karakterler, öğeler, kategoriler, hareketler ve durumlar 30 gün kalır.",
 		"kept": "30 gün, en fazla 50 kayıt saklanır.",
-		"restore": "Geri yükle",
 		"restoreNamed": "{name} geri yükle",
 		"deleteForever": "Kalıcı olarak sil",
 		"deleteForeverNamed": "{name} kalıcı olarak silinsin",
@@ -39,8 +38,8 @@
 		},
 		"restoring": "Geri yükleniyor…",
 		"confirmBodyCharacter": "Ondan silinen her şey de gider. Tamamen gider, geri alınamaz.",
-		"restoreTitle": "{name} geri yüklensin mi?",
-		"restoreBody": "Silindiği haliyle aynen geri gelir."
+		"confirmRestore": "Geri yüklemek için tekrar basın",
+		"confirmRestoreNamed": "{name} geri yüklemek için tekrar basın"
 	},
 	"librarySettings": {
 		"title": "Kitaplık",
