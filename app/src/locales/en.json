@@ -39,7 +39,11 @@
 		"restoring": "Restoring…",
 		"confirmBodyCharacter": "Anything else deleted from it goes too. It is gone for good. This cannot be undone.",
 		"confirmRestore": "Press again to restore",
-		"confirmRestoreNamed": "Press again to restore {name}"
+		"confirmRestoreNamed": "Press again to restore {name}",
+		"daysLeft": {
+			"one": "{count} day left",
+			"other": "{count} days left"
+		}
 	},
 	"librarySettings": {
 		"title": "Library",

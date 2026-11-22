@@ -39,7 +39,11 @@
 		"restoring": "Geri yükleniyor…",
 		"confirmBodyCharacter": "Ondan silinen her şey de gider. Tamamen gider, geri alınamaz.",
 		"confirmRestore": "Geri yüklemek için tekrar basın",
-		"confirmRestoreNamed": "{name} geri yüklemek için tekrar basın"
+		"confirmRestoreNamed": "{name} geri yüklemek için tekrar basın",
+		"daysLeft": {
+			"one": "{count} gün kaldı",
+			"other": "{count} gün kaldı"
+		}
 	},
 	"librarySettings": {
 		"title": "Kitaplık",

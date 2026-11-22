@@ -39,7 +39,11 @@
 		"restoring": "Wird wiederhergestellt…",
 		"confirmBodyCharacter": "Alles andere davon Gelöschte geht mit. Endgültig weg, nicht rückgängig zu machen.",
 		"confirmRestore": "Zum Wiederherstellen erneut drücken",
-		"confirmRestoreNamed": "Zum Wiederherstellen von {name} erneut drücken"
+		"confirmRestoreNamed": "Zum Wiederherstellen von {name} erneut drücken",
+		"daysLeft": {
+			"one": "noch {count} Tag",
+			"other": "noch {count} Tage"
+		}
 	},
 	"librarySettings": {
 		"title": "Bibliothek",

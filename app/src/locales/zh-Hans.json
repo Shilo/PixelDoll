@@ -37,7 +37,10 @@
 		"restoring": "正在恢复…",
 		"confirmBodyCharacter": "从它那里删除的其他内容也会一起消失。彻底消失，无法撤销。",
 		"confirmRestore": "再按一次即可恢复",
-		"confirmRestoreNamed": "再按一次即可恢复 {name}"
+		"confirmRestoreNamed": "再按一次即可恢复 {name}",
+		"daysLeft": {
+			"other": "剩余 {count} 天"
+		}
 	},
 	"librarySettings": {
 		"title": "角色库",

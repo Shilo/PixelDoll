@@ -39,7 +39,11 @@
 		"restoring": "Restaurando…",
 		"confirmBodyCharacter": "Lo demás eliminado de él se va también. Desaparece para siempre; no se puede deshacer.",
 		"confirmRestore": "Pulsa de nuevo para restaurar",
-		"confirmRestoreNamed": "Pulsa de nuevo para restaurar {name}"
+		"confirmRestoreNamed": "Pulsa de nuevo para restaurar {name}",
+		"daysLeft": {
+			"one": "queda {count} día",
+			"other": "quedan {count} días"
+		}
 	},
 	"librarySettings": {
 		"title": "Biblioteca",

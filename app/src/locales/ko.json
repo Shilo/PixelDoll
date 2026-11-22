@@ -37,7 +37,10 @@
 		"restoring": "복원 중…",
 		"confirmBodyCharacter": "그 안에서 삭제한 것도 함께 사라집니다. 완전히 사라지며 되돌릴 수 없습니다.",
 		"confirmRestore": "한 번 더 누르면 복원됩니다",
-		"confirmRestoreNamed": "한 번 더 누르면 {name}을(를) 복원합니다"
+		"confirmRestoreNamed": "한 번 더 누르면 {name}을(를) 복원합니다",
+		"daysLeft": {
+			"other": "{count}일 남음"
+		}
 	},
 	"librarySettings": {
 		"title": "라이브러리",

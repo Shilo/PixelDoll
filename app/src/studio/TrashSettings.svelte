@@ -17,7 +17,7 @@
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
 	import { clipKind } from '../lib/runtime/timeline.js';
-	import type { RecentlyDeleted } from '../lib/store/recently-deleted.ts';
+	import { KEEP_MS, type RecentlyDeleted } from '../lib/store/recently-deleted.ts';
 	import {
 		deleted,
 		deleteDeletedForever,
@@ -57,6 +57,9 @@
 	const kindLabel = (entry: RecentlyDeleted) => t(KIND[kindOf(entry)].key);
 	const dateOf = (iso: string) =>
 		new Date(iso).toLocaleDateString(getLocale(), { dateStyle: 'medium' });
+	/** Whole days left, at least one: expired entries are already out of the list. */
+	const daysLeft = (iso: string) =>
+		Math.max(1, Math.ceil((Date.parse(iso) + KEEP_MS - Date.now()) / 86_400_000));
 
 	const armedEntry = $derived(deleted.entries.find((e) => e.id === restoreConfirm.armed));
 
@@ -149,14 +152,22 @@
 							<Icon size={18} aria-hidden="true" />
 							<span class="trash-name">{entry.name}</span>
 						</span>
-						<span class="trash-meta" class:bu-muted={!armed}
-							>{#if busy === entry.id}{t('recentlyDeleted.restoring')}{:else if armed}{t(
-									'recentlyDeleted.confirmRestore'
-								)}{:else}{kindLabel(entry)}{entry.context ? ` · ${entry.context}` : ''}{/if}</span
+						<span class="bu-muted trash-meta"
+							>{kindLabel(entry)}{entry.context ? ` · ${entry.context}` : ''}</span
 						>
-						<time class="bu-muted trash-date" datetime={entry.deletedAt}
-							>{dateOf(entry.deletedAt)}</time
-						>
+						{#if busy === entry.id}
+							<span class="trash-date trash-confirm" role="status"
+								>{t('recentlyDeleted.restoring')}</span
+							>
+						{:else if armed}
+							<span class="trash-date trash-confirm">{t('recentlyDeleted.confirmRestore')}</span>
+						{:else}
+							<time class="bu-muted trash-date" datetime={entry.deletedAt}
+								>{dateOf(entry.deletedAt)} · {t('recentlyDeleted.daysLeft', {
+									count: daysLeft(entry.deletedAt)
+								})}</time
+							>
+						{/if}
 					</button>
 					<button
 						type="button"
@@ -238,8 +249,8 @@
 		text-align: start;
 	}
 	.trash-restore[data-active] {
-		border-color: var(--bu-accent);
-		background: var(--bu-selected);
+		border-color: var(--bu-success);
+		background: color-mix(in srgb, var(--bu-success) 12%, transparent);
 	}
 	.trash-restore[aria-busy='true'] {
 		cursor: progress;
@@ -277,6 +288,9 @@
 	.trash-date {
 		font-variant-numeric: tabular-nums;
 		opacity: 0.85;
+	}
+	.trash-confirm {
+		font-weight: 500;
 	}
 	.trash-delete {
 		justify-self: end;

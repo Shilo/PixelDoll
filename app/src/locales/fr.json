@@ -39,7 +39,11 @@
 		"restoring": "Restauration…",
 		"confirmBodyCharacter": "Tout ce qui en a été supprimé part aussi. Disparition définitive, irréversible.",
 		"confirmRestore": "Appuyez à nouveau pour restaurer",
-		"confirmRestoreNamed": "Appuyez à nouveau pour restaurer {name}"
+		"confirmRestoreNamed": "Appuyez à nouveau pour restaurer {name}",
+		"daysLeft": {
+			"one": "reste {count} jour",
+			"other": "restent {count} jours"
+		}
 	},
 	"librarySettings": {
 		"title": "Bibliothèque",

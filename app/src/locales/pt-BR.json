@@ -39,7 +39,11 @@
 		"restoring": "Restaurando…",
 		"confirmBodyCharacter": "Tudo o mais excluído dele vai junto. Some para sempre; não pode ser desfeito.",
 		"confirmRestore": "Pressione de novo para restaurar",
-		"confirmRestoreNamed": "Pressione de novo para restaurar {name}"
+		"confirmRestoreNamed": "Pressione de novo para restaurar {name}",
+		"daysLeft": {
+			"one": "falta {count} dia",
+			"other": "faltam {count} dias"
+		}
 	},
 	"librarySettings": {
 		"title": "Biblioteca",

@@ -37,7 +37,10 @@
 		"restoring": "復元中…",
 		"confirmBodyCharacter": "そこから削除したものも一緒に消えます。完全に削除され、元に戻せません。",
 		"confirmRestore": "もう一度押すと復元します",
-		"confirmRestoreNamed": "もう一度押すと {name} を復元します"
+		"confirmRestoreNamed": "もう一度押すと {name} を復元します",
+		"daysLeft": {
+			"other": "残り {count} 日"
+		}
 	},
 	"librarySettings": {
 		"title": "ライブラリ",
