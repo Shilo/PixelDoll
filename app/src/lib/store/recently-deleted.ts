@@ -200,9 +200,14 @@ export const wrongKind = () =>
 		'recentlyDeleted.errors.wrongKind'
 	);
 
-export async function restoreParts(
-	id: string
-): Promise<{ items: number; outfits: number; skipped: number; name: string; projectId: string }> {
+export async function restoreParts(id: string): Promise<{
+	items: number;
+	outfits: number;
+	skipped: number;
+	worn: { slot: string; item: string }[];
+	name: string;
+	projectId: string;
+}> {
 	const entry = readEntry(await db.get<unknown>('projects', id));
 	if (!entry) throw gone(id);
 	if (entry.kind === 'character') throw wrongKind();
@@ -210,7 +215,14 @@ export async function restoreParts(
 	const away = await missingArtwork(entry);
 	if (away) throw missingArtworkError(entry.name, away);
 	let out:
-		| { items: number; outfits: number; skipped: number; name: string; projectId: string }
+		| {
+				items: number;
+				outfits: number;
+				skipped: number;
+				worn: { slot: string; item: string }[];
+				name: string;
+				projectId: string;
+		  }
 		| undefined;
 	await db.update<DressedRecord>(
 		'projects',

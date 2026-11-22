@@ -985,7 +985,9 @@
 		"moveCategory": "Pindahkan {name}",
 		"addCategory": "Tambah kategori",
 		"changeCategory": "Ubah {name}",
-		"deleteCategory": "Hapus {name}"
+		"deleteCategory": "Hapus {name}",
+		"deleteItem": "Hapus {name}",
+		"deleteMove": "Hapus {name}"
 	},
 	"export": {
 		"sheet": {

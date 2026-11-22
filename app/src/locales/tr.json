@@ -1020,7 +1020,9 @@
 		"moveCategory": "Taşıma: {name}",
 		"addCategory": "Kategori ekleme",
 		"changeCategory": "Değiştirme: {name}",
-		"deleteCategory": "Silme: {name}"
+		"deleteCategory": "Silme: {name}",
+		"deleteItem": "{name} silinsin",
+		"deleteMove": "{name} silinsin"
 	},
 	"export": {
 		"sheet": {

@@ -252,7 +252,7 @@ export function restoreRemoved(
 	rec: DressedRecord,
 	before: DressedRecord,
 	scope: { itemIds: readonly string[]; slot?: string }
-): { items: number; outfits: number; skipped: number } {
+): { items: number; outfits: number; skipped: number; worn: { slot: string; item: string }[] } {
 	const m = rec.manifest,
 		b = before.manifest,
 		wanted = scope.itemIds.filter((id) => b.items.some((it) => it.id === id));
@@ -306,7 +306,8 @@ export function restoreRemoved(
 		nowCurrent = rec.dress?.current;
 	type Outfit = Pick<Preset, 'items' | 'variants'>;
 	let outfits = 0,
-		skipped = 0;
+		skipped = 0,
+		worn: { slot: string; item: string }[] = [];
 	const presets: [Outfit | undefined, Outfit | undefined][] = [
 		...m.presets.map((preset): [Outfit | undefined, Outfit] => [
 			b.presets.find((x) => x.id === preset.id),
@@ -329,6 +330,7 @@ export function restoreRemoved(
 			if (was?.items?.[item.slot] !== id) continue;
 			now.items[item.slot] = id;
 			changed = true;
+			if (now === nowCurrent) worn.push({ slot: item.slot, item: id });
 		}
 		for (const mat of m.materials) {
 			if (!back.has(mat.owner) || now.variants[mat.id] != null) continue;
@@ -341,7 +343,7 @@ export function restoreRemoved(
 		if (changed) outfits++;
 	}
 	rec.savedAt = new Date().toISOString();
-	return { items, outfits, skipped };
+	return { items, outfits, skipped, worn };
 }
 
 export async function deleteItem<T>(

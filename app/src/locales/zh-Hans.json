@@ -977,7 +977,9 @@
 		"moveCategory": "移动{name}",
 		"addCategory": "添加类别",
 		"changeCategory": "更改{name}",
-		"deleteCategory": "删除{name}"
+		"deleteCategory": "删除{name}",
+		"deleteItem": "删除 {name}",
+		"deleteMove": "删除 {name}"
 	},
 	"export": {
 		"sheet": {

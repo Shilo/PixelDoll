@@ -1014,7 +1014,9 @@
 		"moveCategory": "Move {name}",
 		"addCategory": "Add category",
 		"changeCategory": "Change {name}",
-		"deleteCategory": "Delete {name}"
+		"deleteCategory": "Delete {name}",
+		"deleteItem": "Delete {name}",
+		"deleteMove": "Delete {name}"
 	},
 	"export": {
 		"sheet": {

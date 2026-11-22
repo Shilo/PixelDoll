@@ -31,6 +31,7 @@ import {
 	openProject,
 	syncStoredProject,
 	pendingBodyMoveName,
+	pushRecovery,
 	refreshRecentlyDeleted,
 	restoreDeleted,
 	toast
@@ -317,7 +318,11 @@ export async function removeMove(id: string) {
 		prune
 	);
 	await refreshRecentlyDeleted();
-	if (doc.id === projectId) await openProject(projectId);
+	if (doc.id === projectId) {
+		// Quietly: the deleted clip stays undoable from the history as well as the notice.
+		await openProject(projectId, { quiet: true });
+		if (kept) pushRecovery(message('history.deleteMove', { name: moveLabel(id) }), kept.id);
+	}
 	const label =
 		removed && clipKind(removed) === 'state'
 			? message('state.removedName', { name: moveLabel(id) })
@@ -326,7 +331,7 @@ export async function removeMove(id: string) {
 		toast(label, {
 			duration: 10000,
 			actionLabel: message('common.undo'),
-			action: () => restoreDeleted(kept!.id)
+			action: () => void restoreDeleted(kept!.id)
 		});
 	else toast(label);
 }

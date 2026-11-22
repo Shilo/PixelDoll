@@ -71,7 +71,7 @@ test('removing a move saves rebased tracks and metadata, then reloads the select
 	expect(record.rigQa).toEqual({ clips: { 'rest/south': {} } });
 	expect(Object.keys(record.skeletons!)).toEqual(['rest/south/0']);
 	expect(record.savedAt).not.toBe('');
-	expect(openProject).toHaveBeenCalledWith('project');
+	expect(openProject).toHaveBeenCalledWith('project', { quiet: true });
 });
 
 test('removing a State confirms the State name instead of calling it a Move', async () => {

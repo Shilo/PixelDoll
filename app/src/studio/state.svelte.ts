@@ -628,10 +628,13 @@ class DeletedList {
 export const deleted = new DeletedList();
 /** An undo or redo step: the dress state to go back to, and the slot definitions (JSON) right after the step, so applying
  *  it reverts only the step's own slot changes (mergeSlotEdits) and keeps slots changed since by other steps or tabs. */
-interface UndoStep {
+export interface UndoStep {
 	label: Message;
-	snap: string;
+	/** The dress state to go back to. A delete step has none: it names its recovery entry instead. */
+	snap?: string;
 	from?: string;
+	/** A deleted entry Undo puts back exactly, instead of replaying a dress snapshot. */
+	trash?: string;
 }
 export const doc = $state({
 	id: '',
@@ -944,7 +947,7 @@ const slotsNow = () => JSON.stringify(store.project!.manifest.slots);
 /** Apply an undo or redo step. A slot the step removes stays while it holds items or item attempts (an attempt's own
  *  definition must not disappear under it), and the person is told. */
 function restore(e: UndoStep) {
-	const d = JSON.parse(e.snap) as DressState,
+	const d = JSON.parse(e.snap!) as DressState,
 		m = store.project!.manifest;
 	const keep = busySlots(m),
 		from = e.from ? (JSON.parse(e.from) as Slot[]) : m.slots,
@@ -1009,9 +1012,18 @@ function bump() {
 	store.project = { ...p, manifest: { ...p.manifest } };
 	doc.rev++;
 }
-export function undo() {
+/** A delete is undone by its recovery entry, not by a dress snapshot: it is the last step, so every older step is only
+ *  reachable after the thing is back. Redo is cleared rather than replaying a deletion. */
+export async function undo() {
 	const e = doc.undo.at(-1);
 	if (!e) return;
+	if (e.trash) {
+		const trash = e.trash;
+		doc.undo = doc.undo.slice(0, -1);
+		doc.redo = [];
+		if (!(await restoreDeleted(trash))) doc.undo = [...doc.undo, e];
+		return;
+	}
 	const back = snap();
 	doc.undo = doc.undo.slice(0, -1);
 	restore($state.snapshot(e));
@@ -1019,11 +1031,17 @@ export function undo() {
 }
 export function redo() {
 	const e = doc.redo.at(-1);
-	if (!e) return;
+	if (!e?.snap) return;
 	const back = snap();
 	doc.redo = doc.redo.slice(0, -1);
 	restore($state.snapshot(e));
 	doc.undo = [...doc.undo, { label: e.label, snap: back, from: slotsNow() }];
+}
+/** Add a delete to the history: one step whose Undo restores exactly the entry the delete wrote. */
+export function pushRecovery(label: Message, trash: string) {
+	if (!store.project) return;
+	doc.redo = [];
+	doc.undo = [...doc.undo.slice(-99), { label, trash, from: slotsNow() }];
 }
 
 let saveT: ReturnType<typeof setTimeout> | undefined;
@@ -1650,8 +1668,9 @@ export async function refreshRecentlyDeleted(): Promise<void> {
 	}
 }
 
-/** Put back exactly what one entry removed. A character comes back under its own key, or as a copy when that key is taken. */
-export async function restoreDeleted(id: string): Promise<void> {
+/** Put back exactly what one entry removed. A character comes back under its own key, or as a copy when that key is taken.
+ *  A reopened character is refreshed quietly, so the history behind this step stays usable. */
+export async function restoreDeleted(id: string): Promise<boolean> {
 	try {
 		const entry =
 			deleted.entries.find((e) => e.id === id) ?? (await readDeleted()).find((e) => e.id === id);
@@ -1664,15 +1683,29 @@ export async function restoreDeleted(id: string): Promise<void> {
 			const out = await restoreMoveEntry(id);
 			await refreshRecentlyDeleted();
 			notifyLibraryChanged();
-			if (doc.id === out.projectId) await openProject(out.projectId);
+			if (doc.id === out.projectId) await openProject(out.projectId, { quiet: true });
 			toast(message('recentlyDeleted.restored', { name: out.name }), { tone: 'success' });
-			return;
+			return true;
 		}
 		if (entry.kind !== 'character') {
 			const out = await restoreParts(id);
 			await refreshRecentlyDeleted();
 			notifyLibraryChanged();
-			if (doc.id === out.projectId) await openProject(out.projectId);
+			if (doc.id === out.projectId) {
+				await openProject(out.projectId, { quiet: true });
+				// A quiet open keeps the live outfit: wear what the restore put back, where nothing newer holds the slot.
+				let changed = false;
+				for (const { slot, item } of out.worn)
+					if (!doc.items[slot]) {
+						doc.items[slot] = item;
+						delete doc.drafts[slot];
+						changed = true;
+					}
+				if (changed) {
+					bump();
+					save();
+				}
+			}
 			toast(
 				message(out.skipped ? 'recentlyDeleted.restoredPartly' : 'recentlyDeleted.restored', {
 					name: out.name,
@@ -1680,7 +1713,7 @@ export async function restoreDeleted(id: string): Promise<void> {
 				}),
 				{ tone: 'success' }
 			);
-			return;
+			return true;
 		}
 		const out = await restoreCharacter(id, {
 			copyName: (name) => displayMessage(message('librarySettings.restoredName', { name }))
@@ -1699,8 +1732,10 @@ export async function restoreDeleted(id: string): Promise<void> {
 			),
 			{ tone: 'success' }
 		);
+		return true;
 	} catch (error) {
 		toast(errorTranslation(error) ?? errorMessage(error), { tone: 'danger' });
+		return false;
 	}
 }
 
@@ -1765,7 +1800,7 @@ export async function removeProject(id = doc.id): Promise<void> {
 		toast(message('state.deletedNameFromThisDevice', { name: kept.name }), {
 			duration: 10000,
 			actionLabel: message('common.undo'),
-			action: () => restoreDeleted(kept!.id)
+			action: () => void restoreDeleted(kept!.id)
 		});
 }
 
@@ -2134,9 +2169,17 @@ export async function removeItem(itemId: string) {
 		toast(message('state.removedName', { name: it.name }), {
 			duration: 10000,
 			actionLabel: message('common.undo'),
-			action: () => restoreDeleted(kept!.id)
+			action: () => void restoreDeleted(kept!.id)
 		});
-	if (doc.id === projectId && request === openRequest) await openProject(projectId);
+	if (doc.id === projectId && request === openRequest) {
+		// Quietly: the delete stays undoable, and only the slot it held is cleared from the live outfit.
+		await openProject(projectId, { quiet: true });
+		delete doc.drafts[it.slot];
+		if (doc.items[it.slot] === itemId) doc.items[it.slot] = null;
+		bump();
+		save();
+		if (kept) pushRecovery(message('history.deleteItem', { name: it.name }), kept.id);
+	}
 }
 
 let relocating = $state(false);
@@ -2228,6 +2271,8 @@ export async function moveItemToSlot(
 			if (relocateWornItem(doc.items, itemId, item.slot, targetId, { replace: true }))
 				delete doc.drafts[targetId];
 			for (const step of [...doc.undo, ...doc.redo]) {
+				// A delete step holds a recovery entry, not a dress snapshot: relocating an item cannot touch it.
+				if (!step.snap) continue;
 				const dress = JSON.parse(step.snap) as DressState;
 				for (const outfit of [...dress.presets, ...(dress.current ? [dress.current] : [])])
 					relocateWornItem(outfit.items, itemId, item.slot, targetId);
@@ -3636,11 +3681,22 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 		toast(message('state.categoryAndItemsDeleted', { label, count: owned.length }), {
 			duration: 10000,
 			actionLabel: message('common.undo'),
-			action: () => restoreDeleted(kept!.id)
+			action: () => void restoreDeleted(kept!.id)
 		});
 	else toast(message('state.categoryAndItemsDeleted', { label, count: owned.length }));
-	// A full reopen, as after an item's Delete: undo steps may name the deleted category or items.
-	if (doc.id === projectId && request === openRequest) await openProject(projectId);
+	if (doc.id === projectId && request === openRequest) {
+		// Quietly, so the delete stays undoable: the category's worn items leave the live outfit.
+		await openProject(projectId, { quiet: true });
+		for (const id of owned) {
+			const item = m.items.find((it) => it.id === id);
+			if (!item) continue;
+			delete doc.drafts[item.slot];
+			if (doc.items[item.slot] === id) doc.items[item.slot] = null;
+		}
+		bump();
+		save();
+		if (kept) pushRecovery(message('history.deleteCategory', { name: label }), kept.id);
+	}
 	return '';
 }
 

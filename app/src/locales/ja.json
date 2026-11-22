@@ -990,7 +990,9 @@
 		"moveCategory": "{name}の移動",
 		"addCategory": "カテゴリーの追加",
 		"changeCategory": "{name}の変更",
-		"deleteCategory": "{name}の削除"
+		"deleteCategory": "{name}の削除",
+		"deleteItem": "{name} を削除",
+		"deleteMove": "{name} を削除"
 	},
 	"export": {
 		"sheet": {

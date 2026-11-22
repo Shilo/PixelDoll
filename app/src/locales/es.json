@@ -1023,7 +1023,9 @@
 		"moveCategory": "Mover {name}",
 		"addCategory": "Agregar categoría",
 		"changeCategory": "Cambiar {name}",
-		"deleteCategory": "Eliminar {name}"
+		"deleteCategory": "Eliminar {name}",
+		"deleteItem": "Eliminar {name}",
+		"deleteMove": "Eliminar {name}"
 	},
 	"export": {
 		"sheet": {
