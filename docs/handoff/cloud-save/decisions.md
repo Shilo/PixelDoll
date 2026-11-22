@@ -79,3 +79,24 @@ One entry per decision: date, question, options, evidence, decision, dissent, re
 ## 12. A fifth provider method, destroy() (2026-11-22)
 
 - **Decision:** "Delete cloud copy" needs one call to remove the root folder; listing and deleting thousands of files one by one would cost quota and time. `destroy()` is the only addition to list/get/put/del.
+
+## 13. Same item id added on two devices is a conflict (2026-11-22)
+
+- **Options:** the PoC kept both automatically under a derived id; or treat it as an ordinary conflict.
+- **Evidence:** a derived copy shares the original's export id and material ids, so the merged manifest fails its own checks and the merge falls back to whole-record notes anyway. The app already has an item-copy helper (`copyShell`) that makes clean copies.
+- **Decision:** a conflict like any other; "Keep both" in the conflict review makes the copy with `copyShell`. **Reversal:** users hit this often enough to want it automatic.
+
+## 14. Challenger review, round 1 (2026-11-22)
+
+Independent reviewer (code only, no Lead conclusions). Outcomes:
+
+| Finding                                                                                                                       | Severity | Outcome                                                                                                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A revision made just before the tab closed was never uploaded, while the heads file named it                                  | Critical | Fixed: revisions carry `up` once read from or written to the cloud; `make()` requeues one without it. Regression test fails without the fix.                                                                                                                                                                    |
+| A device that stopped syncing made every idle sync list revision folders (1 + N requests)                                     | Major    | Fixed: heads already merged into the base are remembered per character and skipped. Regression test fails without the fix.                                                                                                                                                                                      |
+| Resolve or Restore in a non-syncing tab raced the syncing tab's state                                                         | Major    | Fixed: every engine call runs under the Web Lock `pixeldoll-sync-state`.                                                                                                                                                                                                                                        |
+| A trashed Drive folder was rebuilt silently after a reload                                                                    | Major    | Fixed: a device that wrote to this account before and finds the format marker gone reports `missing` and waits for Rebuild. Only a missing heads file with the marker present re-uploads by itself, after reading the file to rule out a lagging listing. Provider or account switches re-upload by themselves. |
+| A remote delete hard-deleted locally and skipped Recently deleted; "Keep the other" on a whole-character delete did not stick | Major    | Fixed: a synced delete writes a Recently deleted entry in the same transaction, which also marks it as the user's delete.                                                                                                                                                                                       |
+| The user's own saves during a long sync waited for the 60 s timer                                                             | Minor    | Fixed: only writes made by sync's own apply are ignored.                                                                                                                                                                                                                                                        |
+
+UI review of the client (by the UI specialist): tabs not connected now listen for another tab's connect; import errors carry the engine's message instead of a status name; the version list marks the current version explicitly.
