@@ -264,7 +264,7 @@ test.describe('creation safety', () => {
 			});
 			state.ui.sheet = 'move';
 		});
-		const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
+		const sheet = page.getByRole('dialog', { name: 'New move', exact: true });
 		await expect(
 			sheet.getByText(
 				'Walk west: estimated arm-joint difference 2.7 px from requested pose; review',
@@ -434,8 +434,8 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 		.getByRole('button', { name: 'Start dressing up', exact: true })
 		.click({ timeout: 90_000 });
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
 	await chooseSkeletonMove(move);
@@ -513,8 +513,8 @@ test('a failed required measurement stops the queued idle without paying for an 
 	await expect(sheet.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await chooseSkeletonMove(move);
 	await move.getByRole('button', { name: /^Generate / }).click();
 	try {
@@ -1473,10 +1473,10 @@ function offlineCreation(config: CreationCase) {
 		await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await equipmentMode(page, 'Moves');
-		const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+		const move = page.getByRole('dialog', { name: 'New move', exact: true });
 		const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 		for (const name of ['Idle', 'Walk']) {
-			await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
+			await page.getByRole('button', { name: 'New move...', exact: true }).click();
 			await move.getByRole('radio', { name, exact: true }).click();
 			await chooseSkeletonMove(move);
 			await move.getByRole('button', { name: /^Generate / }).click();

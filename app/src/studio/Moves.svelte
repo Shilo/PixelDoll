@@ -86,6 +86,12 @@
 						: undefined}
 					onrename={isDemo() ? undefined : () => openRename(doc.id, { moveId: a.id })}
 					ondownload={() => downloadMoveZip(a.id)}
+					onredraw={kind === 'move' && !isDemo()
+						? () => {
+								ui.redrawMove = a.id;
+								ui.sheet = 'move';
+							}
+						: undefined}
 					onfixframes={() => openFrames('', a.id)}
 					oncapture={!isDemo()
 						? () => {

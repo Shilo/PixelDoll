@@ -152,7 +152,7 @@
 				...AUTHORED.filter((action) => action !== 'ride'),
 				...sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)
 			])
-		].filter((a) => !stateIds.has(a) && !reservedMove(a, have.has(a)))
+		].filter((a) => !stateIds.has(a) && !have.has(a) && !reservedMove(a))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let sourceId = $state<string | undefined>(draft?.source?.clip);
@@ -1054,11 +1054,28 @@
 		frameReferences = {};
 		customStartAcknowledged = false;
 		referenceDirection = undefined;
+		selectedDirs = redrawDirs(next);
+	}
+	// A redraw starts on the views that failed their checks, or every view when none did.
+	function redrawDirs(clip: string) {
 		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
 			?.clips;
-		const flagged = availableDirs.filter((d) => clips?.[`${next}/${d}`]?.fails?.length);
-		selectedDirs = flagged.length ? flagged : [...availableDirs];
+		const flagged = availableDirs.filter((d) => clips?.[`${clip}/${d}`]?.fails?.length);
+		return flagged.length ? flagged : [...availableDirs];
 	}
+	// Redraw… on a saved move opens this sheet on that move.
+	const redrawTarget = untrack(() => ui.redrawMove);
+	if (redrawTarget) {
+		ui.redrawMove = '';
+		if (untrack(() => have.has(redrawTarget))) chooseAction(redrawTarget);
+	}
+	// The character's quality checks load after the sheet opens; pick the failed views once they arrive.
+	let redrawChecks = !!redrawTarget;
+	$effect(() => {
+		if (!redrawChecks || !rec) return;
+		redrawChecks = false;
+		if (replacing) selectedDirs = untrack(() => redrawDirs(action));
+	});
 	function inputMotion(value: string) {
 		if (!templatePicked && !replacing && action) chooseAction('');
 		text = value;
@@ -1597,7 +1614,7 @@
 					? t('moveSheet.review.redrawProgress')
 					: t('moveSheet.titleRepair')
 				: (progress ? moving.spec?.replace : replacing)
-					? t('moveSheet.titleReplace')
+					? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
 					: t('moves.add')}
 	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
@@ -2065,28 +2082,30 @@
 					{/if}
 				</div>
 				<div class="move-edit">
-					<div class="field">
-						<span class="label" id="act">{t('common.move')}</span>
-						<div class="chips" role="radiogroup" aria-labelledby="act">
-							<button
-								class="chip"
-								role="radio"
-								aria-checked={!action}
-								tabindex={action && options.includes(action) ? -1 : 0}
-								onclick={() => chooseAction('')}>{t('moveSheet.custom')}</button
-							>
-							{#each options as a (a)}
+					<!-- A redraw keeps its saved move; choosing another one starts a new move instead. -->
+					{#if !replacing}
+						<div class="field">
+							<span class="label" id="act">{t('common.move')}</span>
+							<div class="chips" role="radiogroup" aria-labelledby="act">
 								<button
 									class="chip"
 									role="radio"
-									aria-checked={action === a}
-									tabindex={action === a ? 0 : -1}
-									onclick={() => chooseAction(a)}
-									>{have.has(a) ? t('moveSheet.redraw', { move: nice(a) }) : nice(a)}</button
+									aria-checked={!action}
+									tabindex={action && options.includes(action) ? -1 : 0}
+									onclick={() => chooseAction('')}>{t('moveSheet.custom')}</button
 								>
-							{/each}
+								{#each options as a (a)}
+									<button
+										class="chip"
+										role="radio"
+										aria-checked={action === a}
+										tabindex={action === a ? 0 : -1}
+										onclick={() => chooseAction(a)}>{nice(a)}</button
+									>
+								{/each}
+							</div>
 						</div>
-					</div>
+					{/if}
 					<div class="field">
 						<label class="label" for="move-description"
 							>{replacing

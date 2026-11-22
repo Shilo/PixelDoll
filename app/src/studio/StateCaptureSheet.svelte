@@ -468,7 +468,7 @@
 {/snippet}
 
 <Sheet
-	title={t('stateCapture.title')}
+	title={t('moves.addState')}
 	className={['state-capture-sheet', review ? 'reviewing' : checkedPending && editing && 'split']
 		.filter(Boolean)
 		.join(' ')}

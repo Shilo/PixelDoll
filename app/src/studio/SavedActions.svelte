@@ -8,7 +8,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { Download, Grid2x2, Pencil, Plus } from './icons.ts';
+	import { Download, Grid2x2, Pencil, Plus, RefreshCw } from './icons.ts';
 	import { toast } from './state.svelte.ts';
 	let {
 		name,
@@ -19,6 +19,7 @@
 		ondownload,
 		onfixframes,
 		oncapture,
+		onredraw,
 		ondelete,
 		children
 	}: {
@@ -32,6 +33,8 @@
 		ondownload: () => Promise<void>;
 		onfixframes?: () => void;
 		oncapture?: () => void;
+		/** Opens the move sheet to redraw this saved move. */
+		onredraw?: () => void;
 		ondelete: () => void | Promise<void>;
 		children: Snippet;
 	} = $props();
@@ -65,6 +68,16 @@
 				}}
 				><Pencil size={16} aria-hidden="true" />{openerLabel(t('toolbar.rename'))}<SurfaceChevron
 				/></button
+			>
+		{/if}
+		{#if onredraw}
+			<button
+				class="row"
+				role="menuitem"
+				onclick={() => {
+					close();
+					onredraw();
+				}}><RefreshCw size={16} />{openerLabel(t('moves.redraw'))}<SurfaceChevron /></button
 			>
 		{/if}
 		{#if onfixframes}
