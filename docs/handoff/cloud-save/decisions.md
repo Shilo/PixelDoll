@@ -100,3 +100,12 @@ Independent reviewer (code only, no Lead conclusions). Outcomes:
 | The user's own saves during a long sync waited for the 60 s timer                                                             | Minor    | Fixed: only writes made by sync's own apply are ignored.                                                                                                                                                                                                                                                        |
 
 UI review of the client (by the UI specialist): tabs not connected now listen for another tab's connect; import errors carry the engine's message instead of a status name; the version list marks the current version explicitly.
+
+## 15. Startup bundle budget (2026-11-22)
+
+- **Measured:** the entry chunk (`bootstrap-*.js`) is 403.23 KB gzipped against 401.15 KB on main at 53c0a4d57: +2.08 KB. The Cloud Save section's English copy accounts for about 1.2 KB of that, because the app always bundles English. The code part (startup check, Settings entry, attention dot, save trigger) is under the 2 KB budget. All sync code is in a separate `client-*.js` chunk (13 KB gzipped), plus `CloudSaveSettings-*.js` (4.9 KB gzipped). The dist guard fails a build whose startup chunks carry sync markers.
+- **Decision:** accept. The 0.08 KB over the literal budget is copy, not code. **Reversal:** the owner wants copy counted, then move the section's strings into a lazily loaded catalog.
+
+## 16. Spec name inside this worktree (2026-11-22)
+
+`npm run e2e -- cloud-save` in a worktree whose path contains "cloud-save" selects every spec (Playwright matches the filter against the full path). Use `npm run e2e -- e2e/cloud-save` here; in other checkouts the short name works.
