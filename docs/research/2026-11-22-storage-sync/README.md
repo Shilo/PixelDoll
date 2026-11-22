@@ -78,7 +78,7 @@ OAuth is required, and it is what gives users a one-click sign-in instead of cre
    - plus `http://localhost:5199` for agent testing
    - the redirect URI the agent gives you
 7. **Hand over the keys.** Give the agent the **client ID**, which is public. Put the **client secret** only into Cloudflare (step 9), never into the repo or chat.
-8. **Go public.** Publish the app to Production and submit brand verification (about 2-3 business days). Until it passes, users see "Google hasn't verified this app", and Testing mode logs everyone out after 7 days.
+8. **Go public.** Publish the app to Production and submit brand verification (about 2-3 business days). Testing mode logs everyone out after 7 days. Whether an unverified `drive.file` app shows Google's "unverified app" screen is disputed; verify it.
 9. **Set up Cloudflare.** Create a free account. Then deploy the token function the agent writes (one command), and store the secret with `wrangler secret put`. No card is needed.
 
 **Dropbox (later):**
