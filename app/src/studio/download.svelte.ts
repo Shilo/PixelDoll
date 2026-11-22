@@ -104,20 +104,23 @@ async function zipOf({ project, look, record }: DownloadSource) {
 }
 
 const pending = new Set<string>();
+/** What a download did: the ZIP was handed to the browser (`recovery`: only the artwork could be saved), the same ZIP was
+ *  already being prepared, or it failed (the person was told why). */
+export type DownloadResult = 'saved' | 'recovery' | 'pending' | 'failed';
 /** A second click while the same ZIP is being prepared does nothing. */
 async function download(
 	key: string,
 	label: string,
 	build: () => Promise<Awaited<ReturnType<typeof zipOf>> & { name: string }>
-) {
-	if (pending.has(key)) return;
+): Promise<DownloadResult> {
+	if (pending.has(key)) return 'pending';
 	pending.add(key);
 	toast(message('download.preparing', { label }), { pending: true });
 	try {
 		const { zip, name, recovery, hasNotes, problem } = await build();
 		if (!zip) {
 			toast(problem ?? message('download.failed', { label }), { tone: 'danger' });
-			return;
+			return 'failed';
 		}
 		saveZip(zip, recovery ? `${name}-recovered-artwork.zip` : `${name}.pixeldoll.zip`);
 		toast(
@@ -128,13 +131,18 @@ async function download(
 					: message('download.started'),
 			{ tone: recovery || hasNotes ? 'warning' : 'info' }
 		);
+		return recovery ? 'recovery' : 'saved';
 	} catch (e) {
 		console.error('download', e);
 		toast(message('download.failedRetry', { label }), { tone: 'danger' });
+		return 'failed';
 	} finally {
 		pending.delete(key);
 	}
 }
+
+/** The other downloads report through their toasts only. */
+const settled = (download: Promise<DownloadResult>) => download.then(() => undefined);
 
 export function downloadCharacterZip(projectId: string) {
 	const name = store.projects.find((p) => p.id === projectId)?.name ?? 'Character';
@@ -152,16 +160,18 @@ export function downloadItemZip(itemId: string) {
 	const projectId = doc.id,
 		it = store.project?.manifest.items.find((i) => i.id === itemId);
 	if (!it) return Promise.resolve();
-	return download(`item:${projectId}/${itemId}`, it.name, async () => {
-		const { project, look, record } = await source(projectId);
-		const { itemProject } = await lazy(() => import('../lib/export/build.ts'));
-		const selected = itemProject(project, itemId, look);
-		const item = project.manifest.items.find((entry) => entry.id === itemId)!;
-		return {
-			...(await zipOf({ ...selected, record })),
-			name: `${characterZipId(project.manifest)}-${itemExportId(item)}`
-		};
-	});
+	return settled(
+		download(`item:${projectId}/${itemId}`, it.name, async () => {
+			const { project, look, record } = await source(projectId);
+			const { itemProject } = await lazy(() => import('../lib/export/build.ts'));
+			const selected = itemProject(project, itemId, look);
+			const item = project.manifest.items.find((entry) => entry.id === itemId)!;
+			return {
+				...(await zipOf({ ...selected, record })),
+				name: `${characterZipId(project.manifest)}-${itemExportId(item)}`
+			};
+		})
+	);
 }
 
 export function downloadOutfitZip(outfitId: string) {
@@ -170,13 +180,15 @@ export function downloadOutfitZip(outfitId: string) {
 	if (!outfit) return Promise.resolve();
 	const project = { ...store.project!, manifest: structuredClone(store.project!.manifest) };
 	const record = store.exportRecord;
-	return download(`outfit:${projectId}/${outfitId}`, outfit.name, async () => {
-		const { outfitProject } = await lazy(() => import('../lib/export/build.ts'));
-		return {
-			...(await zipOf({ ...outfitProject(project, outfitId), record })),
-			name: `${characterZipId(project.manifest)}-${fileSlug(outfit.name)}`
-		};
-	});
+	return settled(
+		download(`outfit:${projectId}/${outfitId}`, outfit.name, async () => {
+			const { outfitProject } = await lazy(() => import('../lib/export/build.ts'));
+			return {
+				...(await zipOf({ ...outfitProject(project, outfitId), record })),
+				name: `${characterZipId(project.manifest)}-${fileSlug(outfit.name)}`
+			};
+		})
+	);
 }
 
 export function downloadMoveZip(moveId: string) {
@@ -184,18 +196,20 @@ export function downloadMoveZip(moveId: string) {
 	const moves = store.project?.manifest.rig.animations ?? [];
 	const label = moveLabel(moveId, moves);
 	const move = moves.find((entry) => entry.id === moveId);
-	return download(`move:${projectId}/${moveId}`, label, async () => {
-		const { project, look, record } = await source(projectId);
-		const { moveProject } = await lazy(() => import('../lib/export/build.ts'));
-		return {
-			...(await zipOf({
-				project: await moveProject(project, moveId),
-				look,
-				record
-			})),
-			name: `${characterZipId(project.manifest)}-${fileSlug(move ? moveExportId(move, moves) : moveId)}`
-		};
-	});
+	return settled(
+		download(`move:${projectId}/${moveId}`, label, async () => {
+			const { project, look, record } = await source(projectId);
+			const { moveProject } = await lazy(() => import('../lib/export/build.ts'));
+			return {
+				...(await zipOf({
+					project: await moveProject(project, moveId),
+					look,
+					record
+				})),
+				name: `${characterZipId(project.manifest)}-${fileSlug(move ? moveExportId(move, moves) : moveId)}`
+			};
+		})
+	);
 }
 
 /** The raw results of paid requests a flow could not finish with, as PixelLab returned them, with their sanitized requests. */

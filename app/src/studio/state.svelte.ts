@@ -1113,6 +1113,8 @@ export async function flushSave() {
 	if (pending) saving = saving.then(pending);
 	await saving;
 }
+/** After flushSave: whether every dress edit so far is saved (a failed save was already shown to the person). */
+export const dressSaved = () => edits === savedEdits;
 
 export async function prepareWorkspaceExport() {
 	await flushSave();
@@ -2065,7 +2067,8 @@ export function applyPreset(p: Preset) {
 		ui.frame = 0;
 	}
 }
-export function savePreset(name: string) {
+/** The new outfit's id. */
+export function savePreset(name: string): string {
 	const m = store.project!.manifest;
 	// Never replaces a saved outfit (a repeated or non-Latin name, a default name after a deletion); 'current' is the export's live look.
 	const base =
@@ -2085,6 +2088,7 @@ export function savePreset(name: string) {
 		};
 		m.presets = [...m.presets, pr];
 	});
+	return id;
 }
 export function deletePreset(id: string) {
 	const m = store.project!.manifest;
@@ -3059,24 +3063,33 @@ interface ItemAttemptConsent {
 	rig?: string;
 	replaces?: { id: string; reviewed: string };
 }
-export async function startItem(input: NewItemInput, consent?: ItemAttemptConsent) {
-	if (hmrReloading) return;
+/** The new draft's id, or why nothing started (no request was sent; the reason was already shown to the person). */
+export type ItemStart =
+	{ draftId: string } | { refused: 'reloading' | 'changed' | 'drafts' | 'price' | 'tier' };
+export async function startItem(
+	input: NewItemInput,
+	consent?: ItemAttemptConsent
+): Promise<ItemStart> {
+	if (hmrReloading) return { refused: 'reloading' };
 	if (relocating) {
 		const request = openRequest;
 		await saving;
 		if (request !== openRequest) {
 			toast(message('state.thisCharacterOrItemChangedReopenIt'), { tone: 'warning' });
-			return;
+			return { refused: 'changed' };
 		}
 	}
 	itemStarting++; // counted from the click, before the draft exists, so this tab keeps the jobs meanwhile
 	try {
-		await startItemDraft(input, consent);
+		return await startItemDraft(input, consent);
 	} finally {
 		itemStarting--;
 	}
 }
-async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent) {
+async function startItemDraft(
+	input: NewItemInput,
+	consent?: ItemAttemptConsent
+): Promise<ItemStart> {
 	const projectId = consent?.projectId ?? doc.id;
 	// Startup may still be reading the stored drafts: saving before they load would overwrite them.
 	try {
@@ -3085,7 +3098,7 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 		toast(message('state.savedItemDraftsCouldNotBeRead', { reason: errorMessage(e) }), {
 			tone: 'danger'
 		});
-		return;
+		return { refused: 'drafts' };
 	}
 	// A hidden category is shown before its first attempt, and a new custom category is saved before generation reads it.
 	if (doc.id === projectId) {
@@ -3112,16 +3125,16 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 		toast(message('state.thisCharacterOrItemChangedReopenIt'), {
 			tone: 'warning'
 		});
-		return;
+		return { refused: 'changed' };
 	}
 	const plan = route.plan(ctx.rec.manifest.rig, ctx, input);
 	if (consent && (!Number.isFinite(consent.gens) || plan.gens !== consent.gens)) {
 		toast(message('state.theAttemptPriceChangedReviewTheCurrent'), {
 			tone: 'warning'
 		});
-		return;
+		return { refused: 'price' };
 	}
-	if (!allowsTier(plan.minimumTier)) return;
+	if (!allowsTier(plan.minimumTier)) return { refused: 'tier' };
 	const taken = gens.map((g) => g.draft.spec.id); // read and claimed with no await between: concurrent starts get distinct ids
 	// The runner and the list must share a proxy so mutations persist and identity checks recognize this draft.
 	const g = $state<Gen>({
@@ -3155,6 +3168,7 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 	if (replaced && doc.drafts[replaced.draft.spec.slot] === replaced.draft.spec.id)
 		delete doc.drafts[replaced.draft.spec.slot];
 	void runGen(g, ctx);
+	return { draftId: g.draft.spec.id };
 }
 async function runGen(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
 	const id = g.draft.spec.id;
@@ -3958,7 +3972,7 @@ function withActivityScope<T extends { seed: number; activityScope?: string }>(
 	};
 }
 /** `views`: the standing views, shown while the rest of creation finishes (not persisted: a resume re-reads the cached draw). */
-interface CreateAttempt {
+export interface CreateAttempt {
 	id: string;
 	spec: CreateSpec;
 	running: boolean;
@@ -4001,7 +4015,17 @@ export function reviewFailedCreate(id: string) {
 }
 const canDriveCreate = () => !hmrReloading && queue.role !== 'follower';
 export async function startCreate(input: CreateSpec, present = false, attemptId?: string) {
-	if (!canDriveCreate()) return;
+	await launchCreate(input, present, attemptId)?.done;
+}
+/** Starts a creation without waiting for it: the attempt (its `spec.projectId` is the character it makes) and the run, which
+ *  settles when the creation finishes, fails or stops in this tab. Null when nothing started: this tab does not run jobs,
+ *  or the attempt is already running or finished. */
+export function launchCreate(
+	input: CreateSpec,
+	present = false,
+	attemptId?: string
+): { attempt: CreateAttempt; done: Promise<void> } | null {
+	if (!canDriveCreate()) return null;
 	// A new creation fixes its placement now (absent when 0, like other defaults); a resumed one keeps the lift its
 	// registration was sent with.
 	const lift = input.projectId || !input.frame ? input.lift : canvasLift(input.size, input.frame);
@@ -4015,12 +4039,15 @@ export async function startCreate(input: CreateSpec, present = false, attemptId?
 	);
 	const id = attemptId ?? spec.projectId;
 	const run = creates.find((attempt) => attempt.id === id) ?? addCreate(id, spec);
-	if (run.running || run.projectId) return;
+	if (run.running || run.projectId) return null;
 	if (present) {
 		ui.sheet = 'create';
 		createPresentation.id = run.id;
 	}
 	run.running = true;
+	return { attempt: run, done: runCreate(run, spec) };
+}
+async function runCreate(run: CreateAttempt, spec: CreateSpec) {
 	const key = createDraftKey(run.id);
 	let active = true;
 	const current = () => canDriveCreate() && active;
