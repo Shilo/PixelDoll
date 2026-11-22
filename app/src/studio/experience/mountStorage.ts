@@ -62,7 +62,10 @@ export function updateMountPreferences(
 	preferences: MountPreferences;
 	saved: boolean;
 } {
-	const preferences = change(base ?? readMountPreferences());
+	const current = base ?? readMountPreferences();
+	const preferences = change(current);
+	// Unchanged, nothing is written, so another tab's newer save is never overwritten with this read.
+	if (preferences === current) return { preferences, saved: !base };
 	const text = JSON.stringify(preferences);
 	try {
 		if (workspaceCopy) copyPreferences.set(MOUNT_KEY, text);
