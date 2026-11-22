@@ -7,8 +7,8 @@ import { decodePngBytes } from '../image/pngraw.ts';
 import { cellHash } from '../rig/rig.ts';
 import * as db from '../store/db.ts';
 import { checkExportIdentity } from '../store/identity.ts';
-import { manifestShape } from '../store/import.ts';
 import { blobReferences } from '../store/incompatible.ts';
+import { manifestShape } from '../store/import.ts';
 import { CURRENT_FORMAT, supportedFormat, type Manifest } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 import {
@@ -17,7 +17,7 @@ import {
 	RECENTLY_DELETED_PREFIX,
 	type RecentlyDeleted
 } from '../store/recently-deleted.ts';
-import { studioCharacter } from '../store/workspace.ts';
+import { artworkRefs, studioCharacter } from '../store/workspace.ts';
 import type { Library } from './core/engine.ts';
 import type { Path } from './core/merge.ts';
 import { studioHooks } from './connection.ts';
@@ -62,7 +62,19 @@ export const pixeldollLibrary: Library = {
 		}
 		return { bodies, deleted };
 	},
-	refs: (body) => [...blobReferences([body])],
+	// The artwork a character shows, the same set a backup carries: other hashes in a record (baseHash, provenance) name
+	// no stored image.
+	refs(body) {
+		const out = new Set<string>();
+		const manifest = (body as { manifest?: Manifest } | null)?.manifest;
+		// Conflict values (an item, a whole other version) are only uploaded: every hash in them that has a stored image.
+		if (!manifest) return [...blobReferences([body])];
+		for (const [hash] of artworkRefs(manifest, true)) {
+			const hex = typeof hash === 'string' && /^(?:sha256:)?([a-f0-9]{64})$/.exec(hash)?.[1];
+			if (hex) out.add(hex);
+		}
+		return [...out];
+	},
 	async blob(hash) {
 		const blob = await db.getBlob(hash);
 		return blob ? new Uint8Array(await blob.arrayBuffer()) : undefined;

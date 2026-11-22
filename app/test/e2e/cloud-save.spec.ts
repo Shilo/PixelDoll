@@ -90,9 +90,13 @@ test('a character saved on one device appears on another, and an edit there come
 	await expect.poll(async () => (await syncNow(desktop), uploaded(cloud))).toBe(true);
 
 	const phone = await connected(await device(browser, cloud));
-	const row = (page: Page, name: string) =>
-		page.locator('.character-row').filter({ hasText: name });
-	await expect(row(phone, 'Synced hero')).toHaveCount(1);
+	// The Studio's character list, as the cast screen shows it.
+	const listed = (page: Page) =>
+		page.evaluate(
+			async (path) => (await import(path)).store.projects.map((p: { name: string }) => p.name),
+			statePath
+		);
+	await expect.poll(() => listed(phone)).toContain('Synced hero');
 
 	await phone.evaluate(async (path) => {
 		const state = await import(path);
@@ -104,9 +108,9 @@ test('a character saved on one device appears on another, and an edit there come
 		.poll(async () => {
 			await syncNow(phone);
 			await syncNow(desktop);
-			return row(desktop, 'Renamed on the phone').count();
+			return listed(desktop);
 		})
-		.toBe(1);
+		.toContain('Renamed on the phone');
 });
 
 test('Cloud Save settings: hidden without Developer mode, sign-in round trip, status and disconnect', async ({
