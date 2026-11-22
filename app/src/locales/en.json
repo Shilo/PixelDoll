@@ -3036,6 +3036,7 @@
 		"someMoves": "{covered} of {n} moves",
 		"stateSetting": "{n} · {route}",
 		"flashAsPro": "Pro Flash priced as Pro",
+		"stateAssumed": "From your State settings",
 		"recordedUsage": "Recorded usage",
 		"savedArtworkOnly": "Saved artwork only",
 		"unpriced": {

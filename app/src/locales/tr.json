@@ -3045,6 +3045,7 @@
 		"someMoves": "Animasyon: {covered}/{n}",
 		"stateSetting": "{n} · {route}",
 		"flashAsPro": "Pro Flash, Pro olarak hesaplandı",
+		"stateAssumed": "Durum ayarlarınıza göre",
 		"recordedUsage": "Kayıtlı kullanım",
 		"savedArtworkOnly": "Yalnızca kayıtlı görseller",
 		"unpriced": {

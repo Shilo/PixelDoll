@@ -1,4 +1,4 @@
-import { handOf, requireSlot, specSlot, type SlotSource } from './slots.ts';
+import { handOf, requireSlot, specSlot } from './slots.ts';
 // Item runner (architecture §3): drafts -> calls through the queue -> extraction + QA from the ledger -> player review or accept.
 // UI-free; ui/M3.svelte and the Studio use this. A Draft is mutated in place (pass a Svelte $state proxy to get reactivity)
 // and persisted through the `persist` hook. Everything is re-derived from the job ledger, so reloads resume.
@@ -33,7 +33,7 @@ import type {
 import { composeCell, dropCut } from '../compose/compose.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
-import { paddedPoses, poseBatches, poseGensFor } from '../rig/clips.ts';
+import { paddedPoses, poseBatches } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
 import {
 	chromaLayer,

@@ -11,7 +11,7 @@ import type {
 	RigAnimation,
 	RigDirection
 } from '../lib/store/manifest.ts';
-import { LABELS } from '../lib/rig/poses.ts';
+import { LABELS, hasAll } from '../lib/rig/poses.ts';
 import { mirrorPartner } from '../lib/rig/mirror.ts';
 import {
 	canPose,
@@ -24,6 +24,7 @@ import {
 } from '../lib/items/items.ts';
 import { requireSlot } from '../lib/items/slots.ts';
 import { hasCompleteCells } from '../lib/dress/dress.ts';
+import { setupFrameHashes } from '../lib/rig/setup.ts';
 import {
 	creationCall,
 	ownProvenance,
@@ -50,12 +51,21 @@ import type { CharacterModel } from './characterConfig.ts';
 
 type BodySpec = Omit<Parameters<typeof moveEstimate>[1], 'items'>;
 
-/** A saved move. `spec` re-prices its body; `free` marks imported or bundled art that cost this character nothing. */
-export interface CostMove {
-	id: string;
+/** Drawn facings of a saved move made the same way. `free` marks imported or bundled art that cost nothing here. */
+export interface MovePart {
+	dirs: DirectionName[];
 	model: MoveAnimationModel | 'import';
 	spec: BodySpec;
 	free: boolean;
+}
+/** A saved move, priced facing by facing from how each was made. */
+export interface CostMove {
+	id: string;
+	/** The first facing's route: the default for facings the move does not have yet. */
+	model: MoveAnimationModel | 'import';
+	spec: BodySpec;
+	free: boolean;
+	parts: MovePart[];
 	/** Drawn directions that already have this move's frames. */
 	done: DirectionName[];
 }
@@ -68,6 +78,8 @@ export interface CostItem {
 }
 /** A State's route as saved: a local capture is free; Pro Flash has no offline price and is estimated as Pro. */
 export type StateRoute = StateGenerationModel | 'managed' | 'capture';
+/** The route added States take: the latest generated one, or the State settings when none is saved. */
+export type AddedStateRoute = { route: Exclude<StateRoute, 'capture'>; assumed: boolean };
 export interface CostCharacter {
 	id: string;
 	kind: 'character' | 'demo' | 'copy' | 'new';
@@ -76,7 +88,7 @@ export interface CostCharacter {
 	moves: CostMove[];
 	items: CostItem[];
 	states: StateRoute[];
-	addedState: StateGenerationModel;
+	addedState: AddedStateRoute;
 	moveModel: MoveAnimationModel;
 	spent: RecordedCost;
 }
@@ -115,44 +127,63 @@ const STATE_ROUTES: Record<string, StateRoute> = {
 	'/edit-image-pro-flash': 'pro-flash'
 };
 /** The bundled demo's records carry no request hash: the person never paid for them. */
+/** The bundled demo's records carry no request hash (every paid record has one), so art from the demo, and every
+ *  copy of it, keeps that record however much paid work is added later. */
 const bundled = (item: Pick<Item, 'provenance'> | undefined) =>
-	!!item?.provenance?.length && item.provenance.every((p) => !p.requestHash);
+	!!item?.provenance?.some((p) => !p.requestHash);
 const drawnOf = (directions: readonly RigDirection[]) =>
 	directions.filter((d) => !d.mirrorOf).map((d) => d.id);
 export const isMove = (a: RigAnimation) => a.kind !== 'state' && a.id !== DEFAULT_MOVE;
 
-/** How a saved move was made, as the spec the Moves sheet would send to make it again. */
+/** How each facing of a saved move was made, as the spec the Moves sheet would send to make it again. */
 function savedMove(m: Manifest, a: RigAnimation): CostMove {
 	const body = m.items.find((i) => i.id === m.rig.baseItem)!;
-	const base = body.layers[0];
 	const drawn = drawnOf(m.rig.directions);
-	const source = drawn.map((d) => a.sources?.[d]).find(Boolean);
-	const done = drawn.filter((d) => base?.cells?.[a.id]?.[d]?.some(Boolean));
+	const done = drawn.filter((d) => body.layers[0]?.cells?.[a.id]?.[d]?.some(Boolean));
 	const frames = a.cells;
-	const motion = source?.motion ?? '';
-	const authored = /^authored:(.+)$/.exec(motion)?.[1];
-	const model = source?.route ?? 'import';
-	const described = (model: MoveAnimationModel): BodySpec => ({
+	const part = (dir: DirectionName): MovePart => {
+		const source = a.sources?.[dir];
+		const motion = source?.motion ?? '';
+		const authored = /^authored:(.+)$/.exec(motion)?.[1];
+		const model = source?.route ?? 'import';
+		const described = (model: MoveAnimationModel): BodySpec => ({
+			id: a.id,
+			frames,
+			animation: { model, frameCount: frames },
+			...(model === 'skeleton-v3' ? { motionSource: 'standalone' as const } : {})
+		});
+		const spec: BodySpec =
+			model === 'import'
+				? described('skeleton-v3')
+				: model !== 'skeleton-v3'
+					? described(model)
+					: motion.startsWith('managed-skeleton-v3:walking')
+						? { id: a.id, action: 'walk', frames, animation: { model } }
+						: authored
+							? { id: a.id, action: authored, frames, animation: { model, frameCount: frames } }
+							: described(model);
+		// Imported art, and the demo's moves, whose records carry no request hash, cost this character nothing.
+		const paid = !!source?.provenance.some((i) => !!body.provenance?.[i]?.requestHash);
+		return { dirs: [dir], model, spec, free: model === 'import' || !paid };
+	};
+	const parts: MovePart[] = [];
+	for (const dir of drawn.filter((d) => a.sources?.[d])) {
+		const next = part(dir);
+		const same = parts.find(
+			(p) => p.free === next.free && JSON.stringify(p.spec) === JSON.stringify(next.spec)
+		);
+		if (same) same.dirs.push(dir);
+		else parts.push(next);
+	}
+	const first = parts[0] ?? part(drawn[0]);
+	return {
 		id: a.id,
-		frames,
-		animation: { model, frameCount: frames },
-		...(model === 'skeleton-v3' ? { motionSource: 'standalone' as const } : {})
-	});
-	const spec: BodySpec =
-		model === 'import'
-			? described('skeleton-v3')
-			: model !== 'skeleton-v3'
-				? described(model)
-				: motion.startsWith('managed-skeleton-v3:walking')
-					? { id: a.id, action: 'walk', frames, animation: { model } }
-					: authored
-						? { id: a.id, action: authored, frames, animation: { model, frameCount: frames } }
-						: described(model);
-	// Imported art, and the demo's moves, whose records carry no request hash, cost this character nothing.
-	const paid = drawn.some((d) =>
-		a.sources?.[d]?.provenance.some((i) => !!body.provenance?.[i]?.requestHash)
-	);
-	return { id: a.id, model, spec, free: model === 'import' || !paid, done };
+		model: first.model,
+		spec: first.spec,
+		free: parts.every((p) => p.free),
+		parts,
+		done
+	};
 }
 
 function stateRoute(a: RigAnimation): StateRoute {
@@ -169,9 +200,7 @@ export function characterOf(
 	const size = created?.params?.image_size;
 	const states = m.rig.animations.filter((a) => a.kind === 'state' && a.id !== DEFAULT_MOVE);
 	const routes = states.map(stateRoute);
-	const generated = routes.filter(
-		(r): r is StateGenerationModel => r !== 'capture' && r !== 'managed'
-	);
+	const generated = routes.filter((r): r is AddedStateRoute['route'] => r !== 'capture');
 	const kind = id.startsWith('fixture:') ? 'demo' : bundled(base) ? 'copy' : 'character';
 	return {
 		id,
@@ -197,7 +226,9 @@ export function characterOf(
 				inherited: !!item.copiedFrom || bundled(item)
 			})),
 		states: routes,
-		addedState: generated.at(-1) ?? defaults.stateModel,
+		addedState: generated.length
+			? { route: generated.at(-1)!, assumed: false }
+			: { route: defaults.stateModel, assumed: true },
 		moveModel: defaults.moveModel,
 		spent: recordedCost(ownProvenance(m).filter((p) => !!p.requestHash))
 	};
@@ -245,7 +276,7 @@ export function newCharacter(
 		moves: [],
 		items: [],
 		states: [],
-		addedState: defaults.stateModel,
+		addedState: { route: defaults.stateModel, assumed: true },
 		moveModel: defaults.moveModel,
 		spent: recordedCost([])
 	};
@@ -327,7 +358,7 @@ export interface CostResult {
 	setup: CostLine;
 	moves: CostLine;
 	items: CostLine;
-	states: CostLine & { route: StateGenerationModel; assumed: boolean };
+	states: CostLine & AddedStateRoute;
 	total: number;
 	toGo: number;
 	move: (index: number) => MoveRow;
@@ -436,8 +467,34 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 	const missing = (done: readonly DirectionName[]) => drawn.filter((d) => !done.includes(d));
 	const savedMoveAt = (index: number) =>
 		index < savedMoves && !editedFrames(index) ? c.moves[index] : undefined;
-	const body = (index: number, dirs: DirectionName[]) =>
-		dirs.length ? moveEstimate(m, { ...specAt(index), items: [], dirs }).body : 0;
+	const estimateBody = (spec: BodySpec, dirs: DirectionName[]) =>
+		dirs.length ? moveEstimate(m, { ...spec, items: [], dirs }).body : 0;
+	/** A kept saved move re-prices each facing by its own route; a new or re-timed one uses its single spec. */
+	const body = (index: number, dirs: DirectionName[], paidOnly = false) => {
+		const kept = savedMoveAt(index);
+		if (!kept) return estimateBody(specAt(index), dirs);
+		const known = kept.parts.flatMap((part) => part.dirs);
+		const byPart = kept.parts.reduce(
+			(sum, part) =>
+				sum +
+				(paidOnly && part.free
+					? 0
+					: estimateBody(
+							part.spec,
+							dirs.filter((d) => part.dirs.includes(d))
+						)),
+			0
+		);
+		return (
+			byPart +
+			(paidOnly
+				? 0
+				: estimateBody(
+						kept.spec,
+						dirs.filter((d) => !known.includes(d))
+					))
+		);
+	};
 
 	const moveRow = (index: number): MoveRow => {
 		const saved = index < c.moves.length ? c.moves[index] : undefined;
@@ -455,7 +512,7 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		}
 		const toGo = body(index, missing(bundledArt ? seeded : kept.done));
 		const done = drawn.filter((d) => (bundledArt ? seeded : kept.done).includes(d));
-		return { ...row, gens: (kept.free ? 0 : body(index, done)) + toGo, toGo };
+		return { ...row, gens: body(index, done, true) + toGo, toGo };
 	};
 	const typicalRow = typicalCount > 0 ? moveRow(typicalIndex) : undefined;
 	const movesLine = sumLines([
@@ -468,7 +525,19 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 	// Items.
 	const genericSlot =
 		original.slots.find((slot) => slot.class === 'worn')?.id ?? requireSlot([], 'torso_inner').id;
-	const posable = canPose(rig, { anims: [standing], dirs: drawn, standing });
+	// Rig setup (setupPlan): registration plus one joint check per distinct standing and body frame of the drawn views.
+	const setupCost =
+		0.25 +
+		EST *
+			setupFrameHashes(
+				{ ...original.rig, directions: inputs.directions },
+				original.items.find((i) => i.id === original.rig.baseItem)?.layers[0]
+			).size;
+	// New moves need the rig's standing joints. A character without them (the bundled demo, some imports) is set up first,
+	// after which items are posed on the skeleton like any other.
+	const jointsMissing = drawn.some((d) => !hasAll(original.rig.rest?.[d]?.keypoints));
+	const setupFirst = jointsMissing && movesLine.toGo > 0;
+	const posable = setupFirst || canPose(rig, { anims: [standing], dirs: drawn, standing });
 	const methodOf = (item: Pick<Item, 'route'>): Method =>
 		item.route === 'ea2-anchor' || !posable ? 'anchor' : 'skel';
 	const genericItem: Item = {
@@ -543,6 +612,9 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		// Fitting a saved item to more moves needs its own standing design in every drawn direction.
 		const canExtend =
 			!saved || (!!extendable(original, item.id) && drawn.every((d) => !!item.dressed?.[d]));
+		const typicalCovered =
+			coveredIn(coverage, suggestedEnd, inputs.moves) -
+			listed.filter((i) => i >= suggestedEnd && covers(coverage, i)).length;
 		let gens = 0,
 			toGo = 0;
 		for (const i of listed) {
@@ -552,24 +624,31 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 				? []
 				: bundledArt && saved.inherited
 					? drawn.filter((d) => seeded.includes(d))
-					: drawn.filter((d) => hasCompleteCells(original, item, move.id, d));
+					: drawn.filter((d) => seeded.includes(d) && hasCompleteCells(original, item, move.id, d));
 			const rest = fit(item, i, missing(done));
 			gens += (done.length && !saved?.inherited ? fit(item, i, done) : 0) + rest;
 			toGo += rest;
 		}
 		if (typicalCount > 0) {
-			const covered =
-				coveredIn(coverage, suggestedEnd, inputs.moves) -
-				listed.filter((i) => i >= suggestedEnd && covers(coverage, i)).length;
-			const each = fit(item, typicalIndex, drawn) * covered;
+			const each = fit(item, typicalIndex, drawn) * typicalCovered;
 			gens += each;
 			toGo += each;
 		}
-		const remake = !canExtend && toGo > 0;
-		const designGens = saved?.inherited && !remake ? 0 : design(item);
+		if (saved && !canExtend && toGo > 0) {
+			const fresh = { ...item, id: `${item.id}#remake`, route: undefined, dressed: undefined };
+			const remade =
+				design(fresh) +
+				listed
+					.filter((i) => covers(coverage, i))
+					.reduce((sum, i) => sum + fit(fresh, i, drawn), 0) +
+				(typicalCount > 0 ? fit(fresh, typicalIndex, drawn) * typicalCovered : 0);
+			// The old frames belong to the old design: the finished item is the remake alone.
+			return { ...base, remake: true, gens: remade, toGo: remade };
+		}
+		const designGens = saved?.inherited ? 0 : design(item);
 		gens += designGens;
-		if (!saved || remake) toGo += designGens;
-		return { ...base, remake, gens, toGo };
+		if (!saved) toGo += designGens;
+		return { ...base, remake: false, gens, toGo };
 	};
 	const addedItems = Math.max(0, inputs.items - c.items.length);
 	const narrowed = Object.keys(inputs.coverage)
@@ -598,36 +677,31 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		return route === 'pro' ? 0 : stateGens('pro');
 	};
 	const addedStates = Math.max(0, inputs.states - c.states.length);
-	const addedEach = free ? 0 : stateGens(c.addedState);
+	const addedEach = free ? 0 : stateGens(c.addedState.route);
 	const statesLine = sumLines([
 		...c.states
 			.slice(0, inputs.states)
-			.map((route) => ({ gens: free || bundledArt ? 0 : stateGens(route), toGo: 0 })),
+			.map((route) => ({ gens: free ? 0 : stateGens(route), toGo: 0 })),
 		{ gens: addedEach * addedStates, toGo: addedEach * addedStates }
 	]);
 
-	// Setup: a drawn character's creation price; imported art pays registration and one joint check per distinct frame.
-	let setupGens = 0;
-	if (!free && !bundledArt) {
-		if (c.setup.kind === 'draw')
-			setupGens = estimate({
-				directions: inputs.directions,
-				size: c.setup.size,
-				model: c.setup.model,
-				reference: undefined
-			}).maxGens;
-		else {
-			const baseLayer = original.items.find((i) => i.id === original.rig.baseItem)?.layers[0];
-			const frames = new Set<string>();
-			for (const d of drawn) frames.add(original.rig.rest?.[d]?.image ?? `missing:${d}`);
-			for (const move of c.moves.slice(0, savedMoves))
-				if (move.model === 'import')
-					for (const d of drawn)
-						for (const hash of baseLayer?.cells?.[move.id]?.[d] ?? []) if (hash) frames.add(hash);
-			setupGens = 0.25 + EST * frames.size;
-		}
-	}
-	const setupLine = { gens: setupGens, toGo: c.kind === 'new' ? setupGens : 0 };
+	// Setup: a drawn character's creation price, or imported art's rig setup; bundled art pays setup only to add moves.
+	const fromScratch =
+		c.setup.kind === 'draw'
+			? estimate({
+					directions: inputs.directions,
+					size: c.setup.size,
+					model: c.setup.model,
+					reference: undefined
+				}).maxGens
+			: setupCost;
+	const setupLine = free
+		? { gens: 0, toGo: 0 }
+		: c.kind === 'new'
+			? { gens: fromScratch, toGo: fromScratch }
+			: bundledArt
+				? { gens: setupFirst ? setupCost : 0, toGo: setupFirst ? setupCost : 0 }
+				: { gens: fromScratch, toGo: setupFirst ? setupCost : 0 };
 
 	const times = (line: CostLine): CostLine => ({
 		gens: line.gens * attempts,
@@ -642,8 +716,8 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		items,
 		states: {
 			...states,
-			route: c.addedState === 'pro-flash' ? 'pro' : c.addedState,
-			assumed: c.addedState === 'pro-flash'
+			route: c.addedState.route,
+			assumed: c.addedState.assumed
 		},
 		total: setup.gens + moves.gens + items.gens + states.gens,
 		toGo: setup.toGo + moves.toGo + items.toGo + states.toGo,
@@ -670,17 +744,10 @@ export interface Rate {
 	tier: PricedTier;
 	generations: number;
 }
-/** The picked tier's published allowance, or the connected account's own monthly total when it is on that tier. */
-export function planRate(
-	tier: number,
-	account?: { tier: number | null; generations: number }
-): Rate {
+/** The picked tier's published price over its published monthly generations. */
+export function planRate(tier: number): Rate {
 	const priced = pricedTier(tier);
-	const own =
-		account && account.tier === tier && tier === priced && account.generations > 0
-			? account.generations
-			: undefined;
-	return { tier: priced, generations: own ?? PLAN_PRICES[priced].generations };
+	return { tier: priced, generations: PLAN_PRICES[priced].generations };
 }
 export const usdOf = (gens: number, rate: Rate, price: 'low' | 'list' = 'list') =>
 	(gens * PLAN_PRICES[rate.tier][price]) / rate.generations;

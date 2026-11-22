@@ -2932,6 +2932,7 @@
 		"someMoves": "동작 {n}개 중 {covered}개",
 		"stateSetting": "{n} · {route}",
 		"flashAsPro": "Pro Flash는 Pro로 계산",
+		"stateAssumed": "상태 설정 기준",
 		"recordedUsage": "기록된 사용량",
 		"savedArtworkOnly": "저장된 아트만",
 		"unpriced": {

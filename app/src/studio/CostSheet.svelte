@@ -2,6 +2,7 @@
 	// Character ⋮ > Cost estimate: what a character costs when finished, what it has cost and what is left, in US dollars at
 	// a plan's published price. Every input starts from the saved character and can be changed to plan another; nothing is
 	// saved or sent. Prices come from costEstimate.ts, which uses the Studio's own quotes.
+	import { tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import Sheet from './Sheet.svelte';
 	import NumberStepper from './NumberStepper.svelte';
@@ -107,13 +108,7 @@
 		return tier !== null && tier >= 0 && tier <= 3 ? tier : 1;
 	})();
 	let tier = $state(initialTier);
-	// The connected account's own monthly generations set the rate when it is on the picked tier.
-	const account = $derived(
-		app.balance
-			? { tier: accountTier(app.balance), generations: app.balance.subscription.total }
-			: undefined
-	);
-	const rate = $derived(planRate(tier, account));
+	const rate = $derived(planRate(tier));
 	let edits = $state<Record<string, CostInputs>>({});
 	let allRetries = $state(DEFAULT_RETRIES);
 	const inputs = $derived(character ? (edits[character.id] ?? seedInputs(character)) : null);
@@ -123,10 +118,6 @@
 		update(next);
 		edits[character.id] = next;
 	}
-	/** A typed count applies once it is a whole number; a half-typed one is left alone. */
-	const whole = (value: number, apply: (count: number) => void) => {
-		if (Number.isInteger(value) && value >= 0) apply(value);
-	};
 
 	// ---------- results ----------
 	// A pricing failure shows as an error with Reset, rather than leaving stale numbers on screen.
@@ -234,7 +225,11 @@
 						n: formatNumber(moves)
 					});
 	const stateRoute = (route: string) =>
-		route === 'pixen' ? 'V3 (Pixen)' : t('create.form.models.pro.label');
+		route === 'pixen'
+			? 'V3 (Pixen)'
+			: route === 'pro-flash'
+				? t('create.form.models.proFlash.label')
+				: t('create.form.models.pro.label');
 	const tipText = (tip: Tip) =>
 		tip.kind === 'mirror'
 			? t('costSheet.tips.mirror')
@@ -369,11 +364,10 @@
 							labelledby="cost-retries"
 							decreaseLabel={t('costSheet.decrease', { name: t('costSheet.retries') })}
 							increaseLabel={t('costSheet.increase', { name: t('costSheet.retries') })}
-							onchange={(value) =>
-								whole(value, (count) => {
-									if (scope === 'all') allRetries = count;
-									else change((next) => (next.retries = count));
-								})}
+							onchange={(count) => {
+								if (scope === 'all') allRetries = count;
+								else change((next) => (next.retries = count));
+							}}
 						/>
 					</div>
 				</div>
@@ -391,8 +385,7 @@
 										labelledby="cost-{key}"
 										decreaseLabel={t('costSheet.decrease', { name: t(label) })}
 										increaseLabel={t('costSheet.increase', { name: t(label) })}
-										onchange={(value) =>
-											whole(value, (count) => change((next) => (next[key] = count)))}
+										onchange={(count) => change((next) => (next[key] = count))}
 									/>
 								</div>
 							</div>
@@ -426,12 +419,17 @@
 			{#if tips.length || edited}
 				<div class="actions">
 					{#each tips as tip (tipText(tip))}
+						{@const text = t('costSheet.tips.saving', {
+							tip: tipText(tip),
+							saving: usd(tip.saving)
+						})}
 						<button
 							type="button"
 							class="bu-action btn tip"
 							data-variant="outline"
+							title={text}
 							onclick={() => character && (edits[character.id] = tip.inputs)}
-							>{t('costSheet.tips.saving', { tip: tipText(tip), saving: usd(tip.saving) })}</button
+							><span class="tip-text">{text}</span></button
 						>
 					{/each}
 					{#if edited}<button type="button" class="bu-action btn plain reset" onclick={reset}
@@ -448,9 +446,14 @@
 							<button
 								type="button"
 								class="bu-action line link-row"
-								onclick={() => {
+								onclick={async () => {
 									selected = c.id;
 									choose('character');
+									// The row goes away with All: keep keyboard focus on the character's tab.
+									await tick();
+									document
+										.querySelector<HTMLInputElement>('input[name="cost-scope"][value="character"]')
+										?.focus();
 								}}
 								><span class="label">{nameOf(c.id)}</span><span class="cost num"
 									>{listUsd(r.total)}<span class="faint small">{gens(r.total)}</span></span
@@ -494,21 +497,19 @@
 												></span
 											>{@render cost(row.gens)}</summary
 										>
-										<label class="editor control">
-											<span>{t('costSheet.frames')}</span>
-											<select
-												class="bu-input frames"
-												value={row.frames}
-												onchange={(e) => {
-													const frames = Number(e.currentTarget.value);
-													change((next) => (next.frames[index] = frames));
-												}}
-											>
-												{#each result.frameChoices(index) as frames (frames)}<option value={frames}
-														>{formatNumber(frames)}</option
-													>{/each}
-											</select>
-										</label>
+										<div class="editor control">
+											<span id="cost-frames-{index}">{t('costSheet.frames')}</span>
+											<div class="count">
+												<NumberStepper
+													value={row.frames}
+													values={result.frameChoices(index)}
+													labelledby="cost-frames-{index}"
+													decreaseLabel={t('costSheet.decrease', { name: t('costSheet.frames') })}
+													increaseLabel={t('costSheet.increase', { name: t('costSheet.frames') })}
+													onchange={(frames) => change((next) => (next.frames[index] = frames))}
+												/>
+											</div>
+										</div>
 									</details>
 								{:else}<p class="faint small">{t('costSheet.noMoves')}</p>{/each}
 								{#if inputs.moves > moveLimit}<button
@@ -582,7 +583,8 @@
 											n: formatNumber(inputs.states),
 											route: stateRoute(result.states.route)
 										}),
-										result.states.assumed && t('costSheet.flashAsPro')
+										result.states.route === 'pro-flash' && t('costSheet.flashAsPro'),
+										result.states.assumed && t('costSheet.stateAssumed')
 									)}</span
 								></span
 							>{@render cost(result.states.gens)}
@@ -679,8 +681,7 @@
 	.count {
 		flex: 0 0 152px;
 	}
-	.tier,
-	.frames {
+	.tier {
 		width: auto;
 		min-width: 130px;
 	}
@@ -704,7 +705,14 @@
 	}
 	.tip {
 		min-height: 40px;
+		max-width: 100%;
+		min-width: 0;
 		color: var(--accent-text);
+	}
+	.tip-text {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 	}
 	.reset {
 		margin-inline-start: auto;

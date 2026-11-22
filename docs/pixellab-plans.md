@@ -18,7 +18,7 @@ Maintain endpoint restrictions and account concurrency in [`app/src/lib/pixellab
 
 ## Plan prices for cost estimates
 
-`PLAN_PRICES` holds the published monthly prices and generation allowances the cost estimate divides to get USD per generation. The owner confirmed them on 2026-11-22 from the [PixelLab pricing page](https://www.pixellab.ai/); `/balance` reports neither. Free / Trial, unknown and unnumbered accounts are estimated at Tier 1 rates. When the connected account is on the picked tier, its own monthly total from `/balance` (`subscription.total`) replaces the published allowance, because accounts can hold more than the catalog lists (a Tier 2 account reported 20,000 on 2026-11-22). USD credits are endpoint-specific and are added as PixelLab reported them.
+`PLAN_PRICES` holds the published monthly prices and generation allowances the cost estimate divides to get USD per generation. The owner confirmed them on 2026-11-22 from the [PixelLab pricing page](https://www.pixellab.ai/); `/balance` reports neither. Free / Trial costs $0 (40 fast generations, then 5 slower ones a day, storing up to 20), so it has no rate; it, unknown and unnumbered accounts are estimated at Tier 1 rates. Accounts can report a different monthly total in `/balance`; the estimate still uses the published plan. USD credits are endpoint-specific and are added as PixelLab reported them.
 
 | Tier | List price | Lowest discounted price | Generations per month | USD per generation |
 | ---- | ---------: | ----------------------: | --------------------: | -----------------: |

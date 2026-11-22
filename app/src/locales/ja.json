@@ -2942,6 +2942,7 @@
 		"someMoves": "{n}モーション中{covered}個",
 		"stateSetting": "{n}・{route}",
 		"flashAsPro": "Pro Flash は Pro として計算",
+		"stateAssumed": "ステートの設定から",
 		"recordedUsage": "記録された使用量",
 		"savedArtworkOnly": "保存済みのアートのみ",
 		"unpriced": {

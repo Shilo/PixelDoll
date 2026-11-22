@@ -239,6 +239,7 @@
 						min={facts.min}
 						max={facts.max}
 						step={2}
+						accept={Number.isFinite}
 						suffix="px"
 						disabled={busy}
 						labelledby="adjust-frame-size"

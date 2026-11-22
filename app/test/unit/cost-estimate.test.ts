@@ -14,7 +14,8 @@ import {
 } from '../../src/studio/costEstimate.ts';
 import { estimate, moveEstimate } from '../../src/studio/movePricing.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
-import { poseGensFor } from '../../src/lib/rig/clips.ts';
+import { poseCallGens, poseGensFor } from '../../src/lib/rig/clips.ts';
+import { padOf, planGens, planItem } from '../../src/lib/items/items.ts';
 import { DEFAULT_MOVE, type DirectionName, type RigDirection } from '../../src/lib/rig/rig.ts';
 import type { Item, Manifest, Provenance, Sha256 } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
@@ -147,6 +148,28 @@ function manifest(o: {
 		],
 		presets: []
 	};
+}
+/** The bundled demo as the Studio opens it: its sheets cut into hashed cells (one per frame), like openFixture. */
+function demoFixture(): Manifest {
+	const m = JSON.parse(
+		readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8')
+	) as Manifest;
+	let n = 1000;
+	const drawn = m.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
+	for (const item of m.items) {
+		const layer = item.layers[0];
+		layer.cells = {};
+		for (const a of m.rig.animations) {
+			layer.cells[a.id] = {};
+			for (const d of drawn)
+				layer.cells[a.id][d] = Array.from({ length: a.cells }, (_, i) =>
+					item.id === m.rig.baseItem || item.coverage?.includes(`${a.id}/${d}/${i}`)
+						? hash(n++)
+						: null
+				);
+		}
+	}
+	return m;
 }
 const defaults = { moveModel: 'skeleton-v3' as const, stateModel: 'pro' as const };
 const of = (m: Manifest, id = 'rig-test') => characterOf(id, m, defaults);
@@ -330,10 +353,11 @@ describe('cost estimate', () => {
 			expect(c.spent.generations).toBe(0);
 			const seed = firstPass(seedInputs(c));
 			expect(characterCost(c, seed)).toMatchObject({ total: 0, toGo: 0 });
-			// Changes from the saved character are priced, copied items fitted to a new move as remakes.
+			// Changes from the saved character are priced. A copied item on a new move is remade: a new design, fitted again
+			// to both moves.
 			const added = characterCost(c, { ...seed, moves: 2 });
 			expect(added.item(0)).toMatchObject({ remake: true, inherited: true });
-			expect(added.item(0).toGo).toBeCloseTo(10 + 4 * 3);
+			expect(added.item(0).toGo).toBeCloseTo(10 + 2 * 4 * 3);
 			expect(added.toGo).toBeCloseTo(added.total);
 			expect(characterCost(c, { ...seed, items: 2 }).toGo).toBeCloseTo(10 + 4 * 3);
 		}
@@ -361,13 +385,8 @@ describe('cost estimate', () => {
 		expect(spent.replaced).toBe(1);
 		expect(spentUsd(spent, planRate(2))).toBeCloseTo((22.25 * 24) / 5000 + 0.08);
 		expect([pricedTier(0), pricedTier(null), pricedTier(4), pricedTier(3)]).toEqual([1, 1, 1, 3]);
-		// The connected account's own allowance sets the rate only for its own tier.
-		const account = { tier: 2, generations: 20000 };
-		expect(planRate(2, account)).toEqual({ tier: 2, generations: 20000 });
-		expect(usdOf(1000, planRate(2, account))).toBeCloseTo(1.2);
-		expect(planRate(3, account)).toEqual({ tier: 3, generations: 10000 });
 		expect(planRate(2)).toEqual({ tier: 2, generations: 5000 });
-		expect(planRate(0, { tier: 0, generations: 40 })).toEqual({ tier: 1, generations: 2000 });
+		expect(planRate(0)).toEqual({ tier: 1, generations: 2000 });
 	});
 
 	test('prices a new character from creation defaults', () => {
@@ -423,9 +442,7 @@ describe('cost estimate', () => {
 	});
 
 	test('the bundled demo and a demo copy price changes without throwing', () => {
-		const fixture = JSON.parse(
-			readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8')
-		) as Manifest;
+		const fixture = demoFixture();
 		const copy = structuredClone(fixture);
 		copy.rig.animations.unshift({
 			id: DEFAULT_MOVE,
@@ -454,9 +471,7 @@ describe('cost estimate', () => {
 	});
 
 	test('never throws across a sweep of inputs', () => {
-		const fixture = JSON.parse(
-			readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8')
-		) as Manifest;
+		const fixture = demoFixture();
 		const own = manifest({
 			cell: 64,
 			directions: FOUR,
@@ -490,5 +505,154 @@ describe('cost estimate', () => {
 							for (let i = 0; i < inputs.items; i++) r.item(i);
 						}
 		}
+	});
+
+	test('the demo with an added Idle: setup, then a remade design fitted to every move', () => {
+		const m = demoFixture();
+		const c = characterOf('fixture:s2', m, defaults);
+		const r = characterCost(c, { ...seedInputs(c), moves: 3, retries: 0 });
+		expect(r.move(2)).toMatchObject({ id: 'idle', frames: 8, added: true });
+		// The demo has no standing joints, so a new move starts with rig setup (setupPlan): registration plus one joint
+		// check per distinct body frame in the three drawn views, 8 walk and 6 cross-punch frames each.
+		expect(r.setup.toGo).toBeCloseTo(0.25 + 0.1 * (3 * 8 + 3 * 6));
+		// Idle: an authored Skeleton V3 render (3) plus eight joint checks, in three views.
+		expect(r.moves.toGo).toBeCloseTo(3 * (poseCallGens(8) + 8 * 0.1));
+		for (let i = 0; i < c.items.length; i++) {
+			const item = c.items[i];
+			const slot = m.slots.find((s) => s.id === item.item.slot)!;
+			// The Studio's new-item planner: one dress call for three views at 64 px, or at 96 px for the held sword.
+			const pad = padOf(slot, 'skel', m.rig.cell);
+			const plan = planItem(
+				{
+					...m.rig,
+					rest: Object.fromEntries(
+						['south', 'east', 'north'].map((d) => [d, { image: hash(1), keypoints: joints() }])
+					)
+				},
+				{
+					anims: ['walk'],
+					dirs: ['south', 'east', 'north'],
+					method: 'skel',
+					key: 'green',
+					slot: slot.id,
+					slotConfig: slot
+				}
+			).filter((call) => call.kind === 'dress');
+			expect(planGens(plan, { w: 64 + 2 * pad, h: 64 + 2 * pad })).toBe(10);
+			// Then posed on each of the three moves in each view: 8, 6 and 8 frames are one 3-gen call.
+			expect(r.item(i)).toMatchObject({ remake: true, toGo: 10 + 3 * 3 * 3 });
+		}
+	});
+
+	test('a demo copy keeps its free baseline after paid work', () => {
+		const m = demoFixture();
+		m.rig.animations.unshift({
+			id: DEFAULT_MOVE,
+			cells: 1,
+			loop: true,
+			frames: [{ cell: 0, ms: 100 }]
+		});
+		m.rig.animations.push({
+			id: 'happy',
+			kind: 'state',
+			cells: 1,
+			loop: false,
+			frames: [{ cell: 0, ms: 100 }],
+			source: { endpoint: '/edit-image-pixen' }
+		});
+		m.items[0].provenance.push(call('/edit-image-pixen', 1));
+		const c = of(m, 'rig-copy');
+		expect(c.kind).toBe('copy');
+		expect(c.spent.generations).toBe(1);
+		const r = characterCost(c, firstPass(seedInputs(c)));
+		expect(r.setup.gens).toBe(0);
+		expect(r.toGo).toBe(0);
+		// The paid State is the only paid art on the copy.
+		expect(r.total).toBe(r.states.gens);
+		expect(r.states).toMatchObject({ route: 'pixen', assumed: false });
+	});
+
+	test('prices each facing of a saved move by its own route', () => {
+		const m = manifest({
+			cell: 64,
+			directions: FOUR,
+			moves: [{ id: 'slash', cells: 8, motion: 'authored:slash' }]
+		});
+		m.rig.animations[1].sources!.north = {
+			route: 'pixminimax',
+			reference: hash(2),
+			motion: 'pixminimax:slash',
+			provenance: [0]
+		};
+		const r = characterCost(of(m), firstPass(seedInputs(of(m))));
+		const authored = moveEstimate(m, {
+			id: 'slash',
+			action: 'slash',
+			frames: 8,
+			animation: { model: 'skeleton-v3', frameCount: 8 },
+			items: [],
+			dirs: ['south', 'east', 'west']
+		}).body;
+		const native = moveEstimate(m, {
+			id: 'slash',
+			frames: 8,
+			animation: { model: 'pixminimax', frameCount: 8 },
+			items: [],
+			dirs: ['north']
+		}).body;
+		expect(r.moves.gens).toBeCloseTo(authored + native);
+	});
+
+	test('a facing that was mirrored is not credited with the mirrored frames', () => {
+		const mirrored: RigDirection[] = [
+			{ id: 'south' },
+			{ id: 'east' },
+			{ id: 'north' },
+			{ id: 'west', mirrorOf: 'east' }
+		];
+		const m = manifest({
+			cell: 64,
+			directions: mirrored,
+			moves: [{ id: 'slash', cells: 8, motion: 'authored:slash' }],
+			items: [{ id: 'coat' }]
+		});
+		const coat = m.items[1];
+		coat.layers[0].cells = {
+			slash: Object.fromEntries(
+				['south', 'east', 'north'].map((d, i) => [
+					d,
+					Array.from({ length: 8 }, (_, f) => hash(300 + i * 10 + f))
+				])
+			)
+		};
+		coat.coverage = (['south', 'east', 'north'] as const).flatMap((d) =>
+			Array.from({ length: 8 }, (_, f) => `slash/${d}/${f}` as const)
+		);
+		coat.dressed!.west = hash(51);
+		const c = of(m);
+		expect(characterCost(c, firstPass(seedInputs(c))).item(0).toGo).toBe(0);
+		const unmirrored = { ...firstPass(seedInputs(c)), directions: FOUR };
+		// West is now drawn: its body and its coat fit are new work, though east's frames would mirror into it.
+		expect(characterCost(c, unmirrored).item(0).toGo).toBeCloseTo(poseGensFor(8));
+	});
+
+	test('added States keep a saved managed route', () => {
+		const m = manifest({ cell: 92, directions: FOUR });
+		m.rig.animations.push({
+			id: 'happy',
+			kind: 'state',
+			cells: 1,
+			loop: false,
+			frames: [{ cell: 0, ms: 100 }],
+			source: { endpoint: '/create-character-state' }
+		});
+		const c = of(m);
+		expect(c.addedState).toEqual({ route: 'managed', assumed: false });
+		const r = characterCost(c, { ...firstPass(seedInputs(c)), states: 2 });
+		expect(r.states.toGo).toBeCloseTo(15);
+		expect(of(manifest({ cell: 92, directions: FOUR })).addedState).toEqual({
+			route: 'pro',
+			assumed: true
+		});
 	});
 });

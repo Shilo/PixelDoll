@@ -3059,6 +3059,7 @@
 		"someMoves": "{covered} de {n} animaciones",
 		"stateSetting": "{n} · {route}",
 		"flashAsPro": "Pro Flash calculado como Pro",
+		"stateAssumed": "Según tu configuración de estados",
 		"recordedUsage": "Uso registrado",
 		"savedArtworkOnly": "Solo arte guardado",
 		"unpriced": {

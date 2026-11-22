@@ -19,7 +19,7 @@ import { fromApi, hasAll } from './poses.ts';
 import { flipH, mirrorPartner } from './mirror.ts';
 import { flipSkeleton, type Skeleton } from './skeleton.ts';
 import type { Img } from '../image/png.ts';
-import type { Project, Provenance } from '../store/manifest.ts';
+import type { Layer, Project, Provenance } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 
 export interface SetupPlan {
@@ -56,6 +56,31 @@ export function rigReady(
 	);
 }
 
+/** The move whose first frame stands in for a drawn view's missing saved original. */
+export const setupRestAnimation = (rig: Pick<Rig, 'animations'>, restAnim?: string) =>
+	restAnim
+		? rig.animations.find((a) => a.id === restAnim)
+		: (rig.animations.find((a) => /^(default|rest|idle|standing)$/.test(a.id)) ??
+			rig.animations[0]);
+/** The stored frames setup measures, by hash: each drawn view's saved original (else its standing frame) and every frame
+ *  of every move in the drawn views. setupPlan checks the pixels too; identical frames are measured once. */
+export function setupFrameHashes(
+	rig: Pick<Rig, 'animations' | 'directions' | 'rest'>,
+	layer: Pick<Layer, 'cells'> | undefined,
+	restAnim?: string
+): Set<string> {
+	const standing = setupRestAnimation(rig, restAnim);
+	const hashes = new Set<string>();
+	for (const { id, mirrorOf } of rig.directions) {
+		if (mirrorOf) continue;
+		const rest = rig.rest?.[id]?.image ?? (standing && layer?.cells?.[standing.id]?.[id]?.[0]);
+		if (rest) hashes.add(rest);
+		for (const a of rig.animations)
+			for (const hash of layer?.cells?.[a.id]?.[id] ?? []) if (hash) hashes.add(hash);
+	}
+	return hashes;
+}
+
 /** Preflight happens offline and before any spending. A source rest clip can be explicitly selected in the UI. */
 export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPlan> {
 	const m = p.manifest,
@@ -74,10 +99,7 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 		);
 	const base = m.items.find((i) => i.id === rig.baseItem)!;
 	if (base.layers.length !== 1) throw new Error('Rig setup needs a single frozen base-body layer.');
-	const a = restAnim
-		? rig.animations.find((a) => a.id === restAnim)
-		: (rig.animations.find((a) => /^(default|rest|idle|standing)$/.test(a.id)) ??
-			rig.animations[0]);
+	const a = setupRestAnimation(rig, restAnim);
 	if (!a) throw new Error('Choose a standing reference move.');
 	const rest: SetupPlan['rest'] = {},
 		frames: SetupPlan['frames'] = new Map();

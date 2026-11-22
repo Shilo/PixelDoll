@@ -2913,6 +2913,7 @@
 		"someMoves": "{n} 个动作中的 {covered} 个",
 		"stateSetting": "{n} · {route}",
 		"flashAsPro": "Pro Flash 按 Pro 计算",
+		"stateAssumed": "按你的状态设置",
 		"recordedUsage": "已记录用量",
 		"savedArtworkOnly": "仅已保存的美术",
 		"unpriced": {
