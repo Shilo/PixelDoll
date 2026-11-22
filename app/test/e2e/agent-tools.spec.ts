@@ -13,64 +13,53 @@ test.beforeEach(async ({ context }) => {
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort());
 });
 
-type Content = { type: string; text?: string; data?: string; mimeType?: string };
-const contentOf = (result: unknown) => result as { content: Content[]; isError?: boolean };
+type Result = {
+	ok: boolean;
+	isError?: boolean;
+	data: unknown;
+	images: { label: string; data?: string }[];
+	seeImages?: string;
+};
 declare global {
 	interface Window {
-		pixeldoll: {
-			call(
-				name: string,
-				args?: unknown
-			): Promise<{ ok: boolean; data: unknown; images: { label: string }[] }>;
-		};
+		pixeldoll: { call(name: string, args?: unknown): Promise<Result> };
 	}
 }
 const bridge = (page: Page, name: string, args?: unknown) =>
 	page.evaluate(([n, a]) => window.pixeldoll.call(n, a), [name, args] as const);
+const webmcp = async (page: Page, name: string, args: object) =>
+	(await page.webmcp.callTool(name, args)) as unknown as Result;
 
-test('agent tools: WebMCP lists the tools and returns JSON and real frame images', async ({
+test('agent tools: WebMCP lists the tools and returns plain results with sheets shown in the page', async ({
 	page
 }) => {
 	await openStudio(page, '/');
-	await expect.poll(async () => (await page.webmcp.tools()).length).toBeGreaterThan(15);
+	await expect.poll(async () => (await page.webmcp.tools()).length).toBeGreaterThan(20);
 	const tools = await page.webmcp.tools();
 	expect(tools.map((t) => t.name)).toContain('inspect_item');
 
-	const overview = contentOf(await page.webmcp.callTool('pixeldoll_overview', {}));
-	expect(JSON.parse(overview.content[0].text!).data.app).toBe('PixelDoll');
+	const overview = await webmcp(page, 'pixeldoll_overview', {});
+	expect(overview).toMatchObject({ ok: true, data: { app: 'PixelDoll' } });
 
-	// By default the sheets are shown in the page for a screenshot and the result stays small.
-	const shown = contentOf(
-		await page.webmcp.callTool('inspect_item', { itemId: 'sword_steel', move: 'walk' })
-	);
-	expect(shown.content).toHaveLength(1);
-	expect(JSON.parse(shown.content[0].text!).seeImages).toContain('screenshot');
+	// Sheets are shown in the page for a screenshot; WebMCP never carries base64, even when asked.
+	const shown = await webmcp(page, 'inspect_item', {
+		itemId: 'sword_steel',
+		move: 'walk',
+		imageData: true
+	});
+	expect(shown.seeImages).toContain('screenshot');
+	expect(shown.images).toHaveLength(2);
+	expect(shown.images[0].data).toBeUndefined();
 	await expect(page.locator('[data-agent-evidence] img')).toHaveCount(2);
 
-	const inspected = contentOf(
-		await page.webmcp.callTool('inspect_item', {
-			itemId: 'sword_steel',
-			move: 'walk',
-			imageData: true
-		})
-	);
-	expect(inspected.isError).toBeFalsy();
-	const images = inspected.content.filter((c) => c.type === 'image');
-	expect(images).toHaveLength(2);
-	expect(images[0].mimeType).toBe('image/png');
-	// A PNG of 4 directions x 8 frames, enlarged by whole pixels.
-	const png = Buffer.from(images[0].data!, 'base64');
-	expect(png.subarray(1, 4).toString()).toBe('PNG');
-	expect(png.readUInt32BE(16)).toBeGreaterThan(500);
-
-	// Agent errors come back as data the agent can act on, not as a bare OperationError.
-	const refused = contentOf(await page.webmcp.callTool('inspect_item', { itemId: 'nope' }));
-	expect(refused.isError).toBe(true);
-	expect(JSON.parse(refused.content[0].text!)).toMatchObject({ code: 'not_found' });
-	await expect(page.locator('[data-agent-evidence]')).toHaveCount(0);
+	// Errors come back as data the agent can act on, and the sheets stay for the screenshot.
+	const refused = await webmcp(page, 'inspect_item', { itemId: 'nope' });
+	expect(refused).toMatchObject({ ok: false, isError: true, data: { code: 'not_found' } });
+	await bridge(page, 'get_activity');
+	await expect(page.locator('[data-agent-evidence] img')).toHaveCount(2);
 });
 
-test('agent tools: the page bridge edits a free copy and spends only an approved budget', async ({
+test('agent tools: the page bridge edits a free copy atomically and reads without navigating', async ({
 	page
 }) => {
 	await openStudio(page, '/');
@@ -81,25 +70,76 @@ test('agent tools: the page bridge edits a free copy and spends only an approved
 	const id = (copy.data as { characterId: string }).characterId;
 
 	const off = await bridge(page, 'set_outfit', { characterId: id, takeOff: ['head'] });
-	expect(off).toMatchObject({ ok: true, data: { worn: { head: null } } });
+	expect(off).toMatchObject({ ok: true, data: { worn: { head: null }, saved: true } });
+	// One unknown id refuses the whole change: the sword stays on.
+	const worn = (off.data as { worn: Record<string, string | null> }).worn;
+	expect(
+		await bridge(page, 'set_outfit', { wear: ['nope'], takeOff: ['main_hand'] })
+	).toMatchObject({ ok: false, data: { code: 'not_found' } });
+	expect(
+		await bridge(page, 'render_frames', { move: 'walk', directions: ['south'] })
+	).toMatchObject({ ok: true, data: { characterId: id, outfit: { main_hand: worn.main_hand } } });
+
+	// Reading another character leaves the open one open; edits refuse to land on a character the user is not looking at.
+	const demo = await bridge(page, 'inspect_character', {
+		characterId: 'fixture:s2',
+		images: false
+	});
+	expect(demo).toMatchObject({ ok: true, data: { id: 'fixture:s2', open: false } });
+	expect(await bridge(page, 'get_activity')).toMatchObject({ ok: true });
+	expect(
+		await bridge(page, 'set_color', { characterId: 'fixture:s2', material: 'x' })
+	).toMatchObject({ ok: false, data: { code: 'invalid' } });
+	const sheet = await bridge(page, 'render_frames', {
+		characterId: 'fixture:s2',
+		move: 'walk',
+		directions: ['south'],
+		imageData: true
+	});
+	expect(sheet.images[0].data).toMatch(/^iVBOR/);
+	expect(await page.evaluate(() => window.pixeldoll.call('list_characters'))).toMatchObject({
+		data: { open: id }
+	});
 
 	const price = await bridge(page, 'create_item', {
 		slot: 'head',
-		prompt: 'red wizard hat',
+		prompt: 'red hat',
 		dryRun: true
 	});
 	expect(price.ok).toBe(true);
 	expect((price.data as { generations: number }).generations).toBeGreaterThan(0);
-	// Without a connected account nothing paid starts, and the agent is told to ask the user (never for the token).
-	expect(
-		await bridge(page, 'create_item', { slot: 'head', prompt: 'red wizard hat' })
-	).toMatchObject({ ok: false, data: { code: 'needs_user' } });
+	// Without a connected account nothing paid starts or is asked for; the agent asks the user (never for the token).
+	for (const [name, args] of [
+		['create_item', { slot: 'head', prompt: 'red hat' }],
+		['request_budget', { generations: 12, purpose: 'Finish the knight' }]
+	] as const)
+		expect(await bridge(page, name, args)).toMatchObject({
+			ok: false,
+			data: { code: 'needs_user' }
+		});
+});
 
-	const asked = page.evaluate(() =>
-		window.pixeldoll.call('request_budget', { generations: 12, purpose: 'Finish the knight' })
+test('agent tools: the person approves a budget in USD, sees what is left and can end it', async ({
+	page
+}) => {
+	await page.addInitScript(() =>
+		localStorage.setItem('pixellabApiKey', 'fake-agent-test-key-no-network')
 	);
+	await openStudio(page, '/');
+	await expect.poll(() => page.evaluate(() => typeof window.pixeldoll)).toBe('object');
+	// A paid start without a budget is refused before anything is sent.
+	expect(
+		await bridge(page, 'create_character', {
+			details: 'a knight',
+			directions: 'four',
+			acceptWarnings: true
+		})
+	).toMatchObject({ ok: false, data: { code: 'budget' } });
+
+	const asked = bridge(page, 'request_budget', { generations: 12, purpose: 'Finish the knight' });
 	const dialog = page.getByRole('alertdialog', { name: 'Let the agent spend generations?' });
-	await expect(dialog).toContainText('up to 12 PixelLab generations');
+	await expect(dialog).toContainText('up to about $');
+	await expect(dialog).toContainText('12 PixelLab generations');
 	await expect(dialog).toContainText('Finish the knight');
 	await dialog.getByRole('button', { name: 'Allow', exact: true }).click();
 	expect(await asked).toMatchObject({
@@ -107,7 +147,11 @@ test('agent tools: the page bridge edits a free copy and spends only an approved
 		data: { allowed: true, budget: { approved: 12, remaining: 12 } }
 	});
 
-	const sheet = await bridge(page, 'render_frames', { move: 'walk', directions: ['south'] });
-	expect(sheet.images[0]).toMatchObject({ label: expect.stringContaining('walk') });
-	await expect(page.locator('[data-agent-evidence] img')).toHaveCount(1);
+	const left = page.getByRole('status').filter({ hasText: 'Agent budget' });
+	await expect(left).toContainText('12 generations');
+	await left.getByRole('button', { name: 'End' }).click();
+	await expect(left).toHaveCount(0);
+	expect(await bridge(page, 'get_activity')).toMatchObject({
+		data: { budget: { remaining: 0 } }
+	});
 });

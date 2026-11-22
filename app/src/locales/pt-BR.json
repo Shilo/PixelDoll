@@ -3202,11 +3202,13 @@
 	"shortcut": { "control": "Ctrl" },
 	"agentBudget": {
 		"title": "Deixar o agente gastar gerações?",
-		"body": "Um agente de IA nesta aba pede para usar até {count} gerações do PixelLab (cerca de {usd}) na tarefa dele. Ele não pode gastar mais sem perguntar de novo.",
+		"body": "Um agente de IA nesta aba pede para gastar até cerca de {usd} ({count} gerações do PixelLab) na tarefa dele. Ele não pode gastar mais sem perguntar de novo.",
 		"reason": "Motivo do agente",
-		"note": "Termina quando você fecha ou recarrega a aba.",
+		"note": "Termina quando você toca em Encerrar, muda a conexão do PixelLab ou fecha ou recarrega a aba.",
 		"allow": "Permitir",
-		"deny": "Não permitir"
+		"deny": "Não permitir",
+		"left": "Orçamento do agente: restam {usd} ({count} gerações)",
+		"end": "Encerrar"
 	},
 	"agentEvidence": { "title": "Visão do agente: {subject}" }
 }

@@ -3103,11 +3103,13 @@
 	"shortcut": { "control": "Ctrl" },
 	"agentBudget": {
 		"title": "Izinkan agen memakai generasi?",
-		"body": "Agen AI di tab ini meminta izin memakai hingga {count} generasi PixelLab (sekitar {usd}) untuk tugasnya. Agen tidak dapat memakai lebih tanpa meminta lagi.",
+		"body": "Agen AI di tab ini meminta izin membelanjakan hingga sekitar {usd} ({count} generasi PixelLab) untuk tugasnya. Agen tidak dapat memakai lebih tanpa meminta lagi.",
 		"reason": "Alasan agen",
-		"note": "Berakhir saat Anda menutup atau memuat ulang tab.",
+		"note": "Berakhir saat Anda menekan Akhiri, mengubah koneksi PixelLab, atau menutup atau memuat ulang tab.",
 		"allow": "Izinkan",
-		"deny": "Jangan izinkan"
+		"deny": "Jangan izinkan",
+		"left": "Anggaran agen: sisa {usd} ({count} generasi)",
+		"end": "Akhiri"
 	},
 	"agentEvidence": { "title": "Tampilan agen: {subject}" }
 }

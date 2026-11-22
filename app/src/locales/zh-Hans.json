@@ -3103,11 +3103,13 @@
 	"shortcut": { "control": "Ctrl" },
 	"agentBudget": {
 		"title": "允许代理使用生成次数吗？",
-		"body": "此标签页中的 AI 代理请求为其任务使用最多 {count} 次 PixelLab 生成（约 {usd}）。超出部分必须再次请求。",
+		"body": "此标签页中的 AI 代理请求为其任务花费最多约 {usd}（{count} 次 PixelLab 生成）。超出部分必须再次请求。",
 		"reason": "代理给出的理由",
-		"note": "关闭或重新加载标签页后结束。",
+		"note": "点按“结束”、更改 PixelLab 连接，或关闭或重新加载标签页后结束。",
 		"allow": "允许",
-		"deny": "不允许"
+		"deny": "不允许",
+		"left": "代理预算：剩余 {usd}（{count} 次生成）",
+		"end": "结束"
 	},
 	"agentEvidence": { "title": "代理视图：{subject}" }
 }

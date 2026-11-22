@@ -3193,11 +3193,13 @@
 	"shortcut": { "control": "Ctrl" },
 	"agentBudget": {
 		"title": "¿Dejar que el agente gaste generaciones?",
-		"body": "Un agente de IA en esta pestaña pide usar hasta {count} generaciones de PixelLab (unos {usd}) para su tarea. No puede gastar más sin volver a preguntar.",
+		"body": "Un agente de IA en esta pestaña pide gastar hasta unos {usd} ({count} generaciones de PixelLab) en su tarea. No puede gastar más sin volver a preguntar.",
 		"reason": "Motivo del agente",
-		"note": "Termina al cerrar o recargar la pestaña.",
+		"note": "Termina al pulsar Terminar, cambiar la conexión de PixelLab o cerrar o recargar la pestaña.",
 		"allow": "Permitir",
-		"deny": "No permitir"
+		"deny": "No permitir",
+		"left": "Presupuesto del agente: quedan {usd} ({count} generaciones)",
+		"end": "Terminar"
 	},
 	"agentEvidence": { "title": "Vista del agente: {subject}" }
 }

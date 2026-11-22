@@ -3190,11 +3190,13 @@
 	"shortcut": { "control": "Ctrl" },
 	"agentBudget": {
 		"title": "Ajan üretim harcayabilsin mi?",
-		"body": "Bu sekmedeki bir yapay zekâ ajanı, görevi için en fazla {count} PixelLab üretimi (yaklaşık {usd}) kullanmak istiyor. Yeniden sormadan daha fazla harcayamaz.",
+		"body": "Bu sekmedeki bir yapay zekâ ajanı, görevi için en fazla yaklaşık {usd} ({count} PixelLab üretimi) harcamak istiyor. Yeniden sormadan daha fazla harcayamaz.",
 		"reason": "Ajanın gerekçesi",
-		"note": "Sekmeyi kapattığınızda veya yenilediğinizde sona erer.",
+		"note": "Bitir'e bastığınızda, PixelLab bağlantısını değiştirdiğinizde veya sekmeyi kapatıp yenilediğinizde sona erer.",
 		"allow": "İzin ver",
-		"deny": "İzin verme"
+		"deny": "İzin verme",
+		"left": "Ajan bütçesi: {usd} kaldı ({count} üretim)",
+		"end": "Bitir"
 	},
 	"agentEvidence": { "title": "Ajan görünümü: {subject}" }
 }

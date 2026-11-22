@@ -3190,11 +3190,13 @@
 	"shortcut": { "control": "Strg" },
 	"agentBudget": {
 		"title": "Darf der Agent Generierungen verwenden?",
-		"body": "Ein KI-Agent in diesem Tab möchte für seine Aufgabe bis zu {count} PixelLab-Generierungen (etwa {usd}) verwenden. Mehr kann er nur ausgeben, wenn er erneut fragt.",
+		"body": "Ein KI-Agent in diesem Tab möchte für seine Aufgabe bis zu etwa {usd} ausgeben ({count} PixelLab-Generierungen). Mehr kann er nur ausgeben, wenn er erneut fragt.",
 		"reason": "Begründung des Agenten",
-		"note": "Endet, wenn du den Tab schließt oder neu lädst.",
+		"note": "Endet, wenn du auf Beenden tippst, die PixelLab-Verbindung änderst oder den Tab schließt oder neu lädst.",
 		"allow": "Erlauben",
-		"deny": "Nicht erlauben"
+		"deny": "Nicht erlauben",
+		"left": "Agentenbudget: noch {usd} ({count} Generierungen)",
+		"end": "Beenden"
 	},
 	"agentEvidence": { "title": "Agentenansicht: {subject}" }
 }

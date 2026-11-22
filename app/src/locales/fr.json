@@ -3193,11 +3193,13 @@
 	"shortcut": { "control": "Ctrl" },
 	"agentBudget": {
 		"title": "Autoriser l’agent à utiliser des générations ?",
-		"body": "Un agent IA dans cet onglet demande à utiliser jusqu’à {count} générations PixelLab (environ {usd}) pour sa tâche. Il ne peut pas dépenser plus sans redemander.",
+		"body": "Un agent IA dans cet onglet demande à dépenser jusqu’à environ {usd} ({count} générations PixelLab) pour sa tâche. Il ne peut pas dépenser plus sans redemander.",
 		"reason": "Raison donnée par l’agent",
-		"note": "Prend fin quand vous fermez ou rechargez l’onglet.",
+		"note": "Prend fin quand vous touchez Arrêter, changez la connexion PixelLab, ou fermez ou rechargez l’onglet.",
 		"allow": "Autoriser",
-		"deny": "Ne pas autoriser"
+		"deny": "Ne pas autoriser",
+		"left": "Budget de l’agent : reste {usd} ({count} générations)",
+		"end": "Arrêter"
 	},
 	"agentEvidence": { "title": "Vue de l’agent : {subject}" }
 }

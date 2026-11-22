@@ -3103,11 +3103,13 @@
 	"shortcut": { "control": "Ctrl" },
 	"agentBudget": {
 		"title": "에이전트가 생성을 사용하도록 허용할까요?",
-		"body": "이 탭의 AI 에이전트가 작업을 위해 PixelLab 생성을 최대 {count}회(약 {usd}) 사용하려고 해요. 더 사용하려면 다시 물어봐야 해요.",
+		"body": "이 탭의 AI 에이전트가 작업을 위해 최대 약 {usd}(PixelLab 생성 {count}회)를 쓰려고 해요. 더 사용하려면 다시 물어봐야 해요.",
 		"reason": "에이전트가 밝힌 이유",
-		"note": "탭을 닫거나 새로고침하면 끝나요.",
+		"note": "종료를 누르거나, PixelLab 연결을 바꾸거나, 탭을 닫거나 새로고침하면 끝나요.",
 		"allow": "허용",
-		"deny": "허용 안 함"
+		"deny": "허용 안 함",
+		"left": "에이전트 예산: {usd} 남음(생성 {count}회)",
+		"end": "종료"
 	},
 	"agentEvidence": { "title": "에이전트 보기: {subject}" }
 }
