@@ -114,9 +114,14 @@ const sealedError = () =>
 		'Local work was deleted. Reload PixelDoll to continue.',
 		'librarySettings.deleteWork.sealed'
 	);
+/** Fires after a write that may change saved characters commits in this tab: Cloud Save syncs a few seconds later. */
+export const projectWrites = new EventTarget();
 function writable(database: IDBDatabase, stores: StoreName | StoreName[]) {
 	if (storage.sealed) throw sealedError();
-	return database.transaction(stores, 'readwrite');
+	const t = database.transaction(stores, 'readwrite');
+	if (stores.includes('projects'))
+		t.addEventListener('complete', () => projectWrites.dispatchEvent(new Event('write')));
+	return t;
 }
 
 async function tx<T>(

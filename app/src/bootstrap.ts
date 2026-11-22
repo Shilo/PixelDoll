@@ -6,6 +6,7 @@ import { askPersist } from './lib/store/db.ts';
 import { app, getKeyRevision, setKey } from './lib/app.svelte.ts';
 import { workspaceCopy } from './lib/store/workspace-mode.ts';
 import { setupI18n } from './lib/i18n.ts';
+import { startCloudSave } from './lib/sync/connection.ts';
 
 export async function launchStudio() {
 	askPersist();
@@ -77,4 +78,6 @@ export async function launchStudio() {
 
 	mount(App, { target });
 	startup?.remove();
+	// After first paint, and only for a connected device or a returning sign-in: sync code is never in the first load.
+	if (!workspaceCopy) requestAnimationFrame(() => setTimeout(startCloudSave));
 }

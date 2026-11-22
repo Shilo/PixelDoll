@@ -1,6 +1,7 @@
 // Sync's own local database, "pixeldoll-sync": kept apart from "pixeldoll", whose version is Delete local work's fence.
 // kv: this device's sync state and sign-in; revs: every revision this device has read or made (bodies hold item object
 // references); objects: item objects by content hash. Nothing here is ever synced, exported or broadcast.
+import { SYNC_DATABASE } from '../connection.ts';
 
 export type SyncStoreName = 'kv' | 'revs' | 'objects';
 
@@ -10,7 +11,6 @@ export interface SyncStore {
 	del(store: SyncStoreName, key: string): Promise<void>;
 }
 
-export const SYNC_DATABASE = 'pixeldoll-sync';
 const STORES: SyncStoreName[] = ['kv', 'revs', 'objects'];
 
 /** Tests and one-off imports: the same interface in memory. */
