@@ -2085,22 +2085,10 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	await expect(dialog).toHaveAccessibleName('Export');
 	// Back returns to Settings; Escape, like the X, would leave both.
 	await dialog.getByRole('button', { name: 'Back to Settings', exact: true }).click();
+	// Export opened from Settings shows Back to Settings where its own Settings opener would be: one way to the same page.
 	await expect(shortcut).toBeVisible();
 	await shortcut.click();
-	await expect(dialog).toHaveAccessibleName('Export');
-	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
-	await expect(dialog).toHaveAccessibleName('Settings');
-	await expect(dialog.getByRole('heading', { name: 'Export', exact: true })).toBeVisible();
-	await expect(
-		dialog.getByRole('checkbox', { name: 'Include dressed character sheets' })
-	).not.toBeChecked();
-	await dialog.getByRole('button', { name: 'Export Adventurer character...', exact: true }).click();
-	await expect(dialog).toHaveAccessibleName('Export');
-	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
-	await expect(dialog).toHaveAccessibleName('Settings');
-	await page.goBack();
-	await expect(dialog).toHaveAccessibleName('Export');
-	// Back returns to Settings; Escape, like the X, would leave both.
+	await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toHaveCount(0);
 	await dialog.getByRole('button', { name: 'Back to Settings', exact: true }).click();
 	await expect(shortcut).toBeVisible();
 });
@@ -2509,8 +2497,8 @@ test('Export navigation and settings fit phones, landscape and both themes, incl
 				settings = dialog.getByRole('button', { name: 'Settings', exact: true });
 			const closeBefore = await close.boundingBox(),
 				nav = await settings.boundingBox();
-			// The Settings opener is a body row below the header, clear of the X.
-			expect(nav!.y).toBeGreaterThanOrEqual(closeBefore!.y + closeBefore!.height);
+			// The Settings opener sits at the header's start, clear of the X at its end.
+			expect(nav!.x + nav!.width).toBeLessThan(closeBefore!.x);
 			await settings.click();
 			await expect(dialog.getByRole('group', { name: 'Play animation once' })).toBeVisible();
 			const closeAfter = await close.boundingBox();

@@ -26,6 +26,7 @@
 		backDiscards = false,
 		backTo: backPlace,
 		opener,
+		exitNote,
 		onclose,
 		locked = false,
 		dirty = false,
@@ -49,6 +50,8 @@
 		backDiscards?: boolean;
 		/** A sibling page this sheet opens (Export's Settings), in Back's place at the start. */
 		opener?: { label: string; icon: Component; onclick: () => void };
+		/** The id of a note about what leaving does (work that keeps running), read with the exit control. */
+		exitNote?: string;
 		/** The sheet Back returns to, when it is another sheet (names it "Back to …"). */
 		backTo?: string;
 		/** Leaves the sheet: the X, Escape, the backdrop and browser Back all ask for it. */
@@ -145,6 +148,7 @@
 		back={goBack ?? (screen ? requestClose : undefined)}
 		{opener}
 		titleAtStart={screen}
+		{exitNote}
 		backTo={backName}
 		{locked}
 		onclose={requestClose}

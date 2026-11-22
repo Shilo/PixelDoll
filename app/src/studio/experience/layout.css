@@ -1530,9 +1530,9 @@
 /* The form scrolls the whole height below the bar; the footer floats over its end (fading the content under it), and
    the form's last field can always scroll clear of it, so nothing is cut off mid-control. */
 .studio-app dialog.sheet.character-sheet .sheet-body {
-	padding: 4px 0 calc(var(--sheet-foot-height, 0px) + 12px) var(--creator-edge);
+	padding: 4px 0 calc(var(--sheet-foot-height, 0px) + 28px) var(--creator-edge);
 	scrollbar-gutter: auto;
-	scroll-padding-bottom: calc(var(--sheet-foot-height, 0px) + 12px);
+	scroll-padding-bottom: calc(var(--sheet-foot-height, 0px) + 28px);
 	justify-content: flex-start;
 }
 .studio-app dialog.sheet.character-sheet .sheet-foot {
@@ -1541,12 +1541,22 @@
 	bottom: 0;
 	padding: 12px var(--creator-edge) max(16px, env(safe-area-inset-bottom));
 	border: 0;
+	/* Solid behind the note and button so form text never reads through them (the cost note must stay legible);
+	   only a short strip above fades the content out. */
+	background: color-mix(in srgb, var(--bu-canvas) 94%, transparent);
+	pointer-events: none;
+}
+.studio-app dialog.sheet.character-sheet .sheet-foot::before {
+	content: '';
+	position: absolute;
+	inset-inline: 0;
+	bottom: 100%;
+	height: 24px;
 	background: linear-gradient(
 		to bottom,
 		transparent,
-		color-mix(in srgb, var(--bu-canvas) 88%, transparent) 40%
+		color-mix(in srgb, var(--bu-canvas) 94%, transparent)
 	);
-	pointer-events: none;
 }
 .studio-app dialog.sheet.character-sheet .sheet-foot > * {
 	pointer-events: auto;

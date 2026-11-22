@@ -14,6 +14,7 @@
 		backTo,
 		opener,
 		titleAtStart = false,
+		exitNote,
 		onclose,
 		locked = false,
 		titleElement = $bindable()
@@ -32,6 +33,8 @@
 		opener?: { label: string; icon: Component; onclick: () => void };
 		/** A full-window screen names itself beside Back, as the top bar names the open character. */
 		titleAtStart?: boolean;
+		/** The id of a note about what leaving does, read with the exit control (Back on a screen, else the X). */
+		exitNote?: string;
 		onclose?: () => void;
 		/** An atomic save is running: Back and the X wait for it. */
 		locked?: boolean;
@@ -45,10 +48,15 @@
 
 <header class="sheet-head">
 	<div class="sheet-start">
-		{#if back}<BackButton onclick={back} to={backTo} disabled={locked} />
+		{#if back}<BackButton
+				onclick={back}
+				to={backTo}
+				disabled={locked}
+				describedBy={end ? exitNote : undefined}
+			/>
 		{:else if opener}<button
 				type="button"
-				class="bu-action btn plain surface-back"
+				class="bu-action btn plain surface-back surface-opener"
 				data-variant="quiet"
 				disabled={locked}
 				onclick={opener.onclick}
@@ -67,6 +75,7 @@
 		{#if end}{@render end()}{:else if onclose}<CloseButton
 				onclick={onclose}
 				disabled={locked}
+				describedBy={exitNote}
 			/>{/if}
 	</div>
 </header>

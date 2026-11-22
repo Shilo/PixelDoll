@@ -227,6 +227,15 @@
 			history.pushState({ pixeldollSheet: 1 }, '');
 			return;
 		}
+		// An open menu or picker answers Back first, as Escape does, before the sheet behind it.
+		const popup = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open')]
+			.filter((element) => element.getAttribute('popover') !== 'manual')
+			.at(-1);
+		if (popup) {
+			popup.hidePopover();
+			history.pushState({ pixeldollSheet: 1 }, '');
+			return;
+		}
 		// Otherwise Back takes the sheet's own Back (an inner pane) or its close request, which may ask first.
 		sheetEntry = false;
 		if (!sheetBrowserBack()) ui.sheet = null;

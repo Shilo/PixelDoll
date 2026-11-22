@@ -5,8 +5,15 @@
 	let {
 		onclick,
 		disabled = false,
-		label
-	}: { onclick: () => void; disabled?: boolean; label?: string } = $props();
+		label,
+		describedBy
+	}: {
+		onclick: () => void;
+		disabled?: boolean;
+		label?: string;
+		/** A note about what leaving does (work that keeps running), read with the button's name. */
+		describedBy?: string;
+	} = $props();
 	const name = $derived(label ?? t('common.close'));
 </script>
 
@@ -15,6 +22,7 @@
 	class="bu-action btn plain icon surface-close"
 	data-variant="quiet"
 	aria-label={name}
+	aria-describedby={describedBy}
 	title={name}
 	{disabled}
 	{onclick}><X size={20} aria-hidden="true" /></button

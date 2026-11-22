@@ -115,7 +115,11 @@
 	}
 </script>
 
-<Sheet title={t('setup.title')} onclose={() => (ui.sheet = null)}>
+<Sheet
+	title={t('setup.title')}
+	exitNote={active ? 'sheet-exit-note' : undefined}
+	onclose={() => (ui.sheet = null)}
+>
 	{#snippet developer()}
 		<ApiPeek
 			targets={mine && settingUp.spec
@@ -231,7 +235,7 @@
 				{t('setup.busyElsewhere')}
 			</p>{/if}
 	{/if}
-	{#if active}<p class="muted small">{t('setup.keepWorking')}</p>{/if}
+	{#if active}<p class="muted small" id="sheet-exit-note">{t('setup.keepWorking')}</p>{/if}
 	{#snippet footer()}
 		{#if mine && settingUp.done}<button
 				class="bu-action btn primary"

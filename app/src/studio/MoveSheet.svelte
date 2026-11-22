@@ -1371,7 +1371,7 @@
 		</div>
 		<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
-		<span class="foot-note">{t('common.keepsRunning')}</span>
+		<span class="foot-note" id="sheet-exit-note">{t('common.keepsRunning')}</span>
 		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = true)}
 			>{t('moveSheet.queueAnother')}</button
 		>
@@ -1447,6 +1447,9 @@
 			? () => (ui.moveFormOpen = false)
 			: undefined}
 	onclose={() => (ui.sheet = null)}
+	exitNote={progress && !moving.done && !moving.error && !repairReview
+		? 'sheet-exit-note'
+		: undefined}
 	dirty={ok &&
 		!progress &&
 		!skeletonReview &&

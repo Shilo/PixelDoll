@@ -183,7 +183,7 @@
 			data-variant="primary"
 			type="submit"
 			form="rename-identity-form"
-			disabled={!canSave}>{t('common.save')}</button
+			disabled={!canSave}>{busy ? t('directionsSheet.saving') : t('common.save')}</button
 		>
 	{/snippet}
 </Sheet>

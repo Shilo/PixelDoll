@@ -208,6 +208,7 @@
 	title={t('create.sheet.title')}
 	onclose={() => (ui.sheet = null)}
 	dirty={!creating && typed}
+	exitNote={running ? 'sheet-exit-note' : undefined}
 	className="character-sheet"
 	screen
 	wide
@@ -422,7 +423,7 @@
 			</div>
 			<!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
 		{:else if running}
-			<span class="foot-note"
+			<span class="foot-note" id="sheet-exit-note"
 				>{t('create.sheet.estimated', { gens: gensRange })} · {t('common.keepsRunning')}</span
 			>
 		{:else}

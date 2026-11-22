@@ -1268,11 +1268,12 @@ dialog.sheet.side::backdrop {
 	text-overflow: ellipsis;
 }
 @media (max-width: 420px) {
-	.surface-back {
+	.surface-back:not(.surface-opener) {
 		padding-inline: 0;
 		width: 44px;
 	}
-	.surface-back-label {
+	/* An opener (Export's Settings) keeps its caption: it is the only route to that page. */
+	.surface-back:not(.surface-opener) .surface-back-label {
 		position: absolute;
 		clip-path: inset(50%);
 		white-space: nowrap;

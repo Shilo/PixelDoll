@@ -412,7 +412,9 @@
 			(document.activeElement === document.body ||
 				document.activeElement === content?.closest('dialog'))
 		)
-			content?.focus({ preventScroll: true });
+			(
+				document.querySelector<HTMLElement>('dialog.export-sheet .sheet-start button') ?? content
+			)?.focus({ preventScroll: true });
 	}
 	async function persistSettings(
 		commit: () => Promise<ExportSettings>,
