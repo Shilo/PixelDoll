@@ -6,6 +6,7 @@
 		name: string;
 		named: boolean;
 		description: string;
+		template: StateTemplate | '';
 		model: StateGenerationModel;
 		reference?: PickedReference;
 	};
@@ -16,6 +17,7 @@
 	import { onMount } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import PromptField from './PromptField.svelte';
+	import { STATE_TEMPLATES, type StateTemplate } from './stateTemplates.ts';
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import { app, getKeyRevision } from '../lib/app.svelte.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
@@ -85,17 +87,20 @@
 		if (ui.stateCaptureMove && has(ui.stateCaptureMove)) return ui.stateCaptureMove;
 		return has(DEFAULT_MOVE) ? DEFAULT_MOVE : (sources[0]?.id ?? DEFAULT_MOVE);
 	}
-	function suggestedName(sourceId: string) {
+	function suggestedName(sourceId: string, chosen: StateTemplate | '' = '') {
 		const current = store.project?.manifest;
-		const root = stateCaptureId(sourceId === DEFAULT_MOVE ? 'standing' : sourceId).slice(0, 48);
-		let candidate = (root || 'state') + '-pose';
+		const root =
+			chosen ||
+			(stateCaptureId(sourceId === DEFAULT_MOVE ? 'standing' : sourceId).slice(0, 48) || 'state') +
+				'-pose';
+		let candidate = root;
 		for (
 			let suffix = 2;
 			current &&
 			(stateCaptureNameIssue(current, candidate) || Object.hasOwn(store.moveReviews, candidate));
 			suffix++
 		)
-			candidate = (root || 'state') + '-pose-' + suffix;
+			candidate = root + '-' + suffix;
 		return moveLabel(candidate);
 	}
 
@@ -107,6 +112,10 @@
 	let named = $state(restored?.named ?? false);
 	let editing = $state(!!restored);
 	let description = $state(restored?.description ?? '');
+	// A template only fills the instructions; they stay editable and are sent as shown.
+	let template = $state<StateTemplate | ''>(restored?.template ?? '');
+	// Set when a riding-template State was generated in this sheet, for the review checklist and the saved notice.
+	let riding = $state(false);
 	let model = $state<StateGenerationModel>(restored?.model ?? 'pro');
 	let advancedOpen = $state(!!restored && restored.model !== 'pro');
 	let reference = $state.raw(restored?.reference);
@@ -211,6 +220,9 @@
 	const formReady = $derived(
 		checkedPending && sourceReady && !nameIssue && (!editing || editReady)
 	);
+	const reviewRiding = $derived(
+		riding || review?.description?.trim() === STATE_TEMPLATES.riding.trim()
+	);
 	const reviewSource = $derived(review && project && stateGenerationSource(project, review.source));
 	const sourceCurrent = $derived(!!review && reviewSource?.version === review.sourceVersion);
 	// Every facing the saved State will have: generated views plus the rig's mirrors of them.
@@ -260,7 +272,19 @@
 		pinned = stateCaptureSource(project.manifest, next)?.version;
 		stale = false;
 		failure = '';
-		if (!named) name = suggestedName(next);
+		if (!named) name = suggestedName(next, template);
+	}
+	// What the user had typed before a template replaced it; an unedited template gives it back on Custom.
+	let typed = '';
+	function chooseTemplate(next: StateTemplate | '') {
+		if (busy) return;
+		const untouched = !!template && description === STATE_TEMPLATES[template];
+		if (!untouched) typed = description;
+		if (next) description = STATE_TEMPLATES[next];
+		else if (untouched) description = typed;
+		template = next;
+		failure = '';
+		if (!named) name = suggestedName(clip, next);
 	}
 	// Reads the saved character again (paid quotes read storage), keeping the draft.
 	function reloadSource() {
@@ -351,7 +375,15 @@
 
 	function checkCost() {
 		if (!views) return;
-		const draft = { projectId, source: { clip, frame }, name, description, model, reference };
+		const draft = {
+			projectId,
+			source: { clip, frame },
+			name,
+			description,
+			template,
+			model,
+			reference
+		};
 		const version = views.version;
 		quoted = null;
 		if (!connected) {
@@ -390,6 +422,7 @@
 		checkedPending = false;
 		void run('stateGeneration.generating', async () => {
 			try {
+				riding = template === 'riding';
 				review = await startState(prepared);
 			} catch (cause) {
 				canContinue = await hasStateContinuation(projectId).catch(() => false);
@@ -432,7 +465,7 @@
 		if (!reviewed) return;
 		const pending = reviewed;
 		void run('stateCapture.saving', async () => {
-			await saveState(pending);
+			await saveState(pending, reviewRiding);
 			if (ui.sheet === 'stateCapture') ui.sheet = null;
 		});
 	}
@@ -534,6 +567,7 @@
 				</div>
 			{/if}
 			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
+			{#if reviewRiding}<p class="muted small">{t('stateGeneration.ridingCheck')}</p>{/if}
 			{#if !sourceCurrent}
 				<p class="notice warn small" role="status">{t('stateGeneration.sourceChanged')}</p>
 			{:else if Object.keys(review.ungrounded).length}
@@ -628,6 +662,28 @@
 			{#if editing}
 				<div class="state-panel state-edit">
 					{#if !flashReference}
+						<div class="field">
+							<span class="label" id="{formId}-template">{t('stateGeneration.template')}</span>
+							<div class="chips" role="radiogroup" aria-labelledby="{formId}-template">
+								<button
+									type="button"
+									class="chip"
+									role="radio"
+									aria-checked={!template}
+									disabled={!!busy}
+									onclick={() => chooseTemplate('')}>{t('moveSheet.custom')}</button
+								>
+								<button
+									type="button"
+									class="chip"
+									role="radio"
+									aria-checked={template === 'riding'}
+									disabled={!!busy}
+									onclick={() => chooseTemplate('riding')}
+									>{t('stateGeneration.templates.riding')}</button
+								>
+							</div>
+						</div>
 						<div class="field">
 							<label class="label" for="{formId}-instructions"
 								>{t('stateGeneration.description')}</label

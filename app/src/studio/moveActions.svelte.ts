@@ -16,6 +16,7 @@ import * as db from '../lib/store/db.ts';
 import { assignNewClipExportId } from '../lib/store/identity.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import { LocalizedError, message } from '../lib/message.ts';
+import { forgetRidingPose } from './experience/riderPose.ts';
 import { moveLabel } from './model.ts';
 import { sameClipName, withClipWriteLock } from './clipName.ts';
 export { clipNameId as stateCaptureId } from './clipName.ts';
@@ -290,6 +291,7 @@ export async function removeMove(id: string) {
 		record.savedAt = new Date().toISOString();
 		return record;
 	});
+	forgetRidingPose(projectId, id);
 	if (doc.id === projectId) await openProject(projectId);
 	toast(
 		removed && clipKind(removed) === 'state'

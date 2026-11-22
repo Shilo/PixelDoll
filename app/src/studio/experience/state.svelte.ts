@@ -2,12 +2,18 @@
 import { cancelStartupUpdate } from '../../lib/startup-update.ts';
 import { resolveZoom, type SceneCamera } from './zoom.ts';
 import type { MountLegMode } from './mountLegs.ts';
+import { readMountPreferences } from './mountStorage.ts';
 export type WorldMode = 'preview' | 'topdown' | 'side';
+const saved = readMountPreferences();
 export const experience = $state({
 	screen: 'characters' as 'characters' | 'studio',
 	mode: 'preview' as WorldMode,
-	testMount: false,
-	mountLegs: 'far' as MountLegMode,
+	testMount: saved.show,
+	mountLegs: saved.legs as MountLegMode,
+	/** The Riding pose per character ID; a character without one rides with Ride or Standing. */
+	ridingPoses: saved.poses,
+	/** The Preview selection a rider pose replaced, restored on dismount. */
+	riderPoseReplaced: null as { projectId: string; clip: string; pose: string } | null,
 	mountLegIssue: '',
 	presentation: 'animation' as string,
 	/** The chosen zoom in CSS px per art px, shared by all views; null shows each view's fit. */

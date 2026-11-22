@@ -14,6 +14,7 @@
 		Info,
 		KeyRound,
 		Moon,
+		PawPrint,
 		Settings2,
 		Shirt,
 		Sun,
@@ -26,6 +27,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
+	import MountSettings from './MountSettings.svelte';
 	import AboutSettings from './AboutSettings.svelte';
 	import PixelLabSettings from './PixelLabSettings.svelte';
 	import LibrarySettings from './LibrarySettings.svelte';
@@ -115,6 +117,20 @@
 			]
 		},
 		{
+			id: 'mount',
+			label: settingsLabels.mount,
+			icon: PawPrint,
+			entries: [
+				{ id: 'show-mount', label: 'toolbar.showMount' },
+				{ id: 'riding-pose', label: 'toolbar.riderPose', terms: ['toolbar.riderPoseRide'] },
+				{
+					id: 'hide-legs',
+					label: 'toolbar.hideLegs',
+					terms: ['toolbar.farLeg', 'toolbar.bothLegs']
+				}
+			]
+		},
+		{
 			id: 'export',
 			label: settingsLabels.export,
 			icon: Download,
@@ -172,7 +188,7 @@
 	);
 	const groups: SettingsSection[][] = [
 		['pixellab'],
-		['general', 'wardrobe'],
+		['general', 'wardrobe', 'mount'],
 		['export', 'library'],
 		['developer', 'about']
 	];
@@ -406,6 +422,8 @@
 				<div data-setting="visibility" tabindex="-1">
 					<WardrobeVisibility settings />
 				</div>
+			{:else if active.id === 'mount'}
+				<MountSettings />
 			{:else if active.id === 'export'}
 				{#if store.project?.manifest}
 					{@const name = characterName()}

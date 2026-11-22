@@ -131,6 +131,31 @@ describe('production body presentation', () => {
 		});
 	});
 
+	test('a rider pose holds its exact facing while riding and names a missing one instead of borrowing a neighbor', () => {
+		const project = fixture(['east', 'west', 'south'], ['walk', 'idle', 'ride', 'seated']);
+		const seated = project.manifest.rig.animations.find((clip) => clip.id === 'seated')!;
+		Object.assign(seated, { kind: 'state', cells: 1, loop: false, frames: [{ cell: 0, ms: 100 }] });
+		const body = project.manifest.items[0].layers[0].cells!;
+		body.seated = { east: [bodyHash] };
+		project.manifest.rig.directions = [
+			{ id: 'east' },
+			{ id: 'west', mirrorOf: 'east' },
+			{ id: 'south' }
+		];
+		const a = buildPresentation(project);
+		const ride = (x: number, y: number) =>
+			resolveLive(a, { velocity: { x, y }, riding: true, riderPose: 'seated' });
+		expect(ride(1, 0)).toMatchObject({ direction: 'east', clip: 'seated', issue: null });
+		expect(ride(-1, 0)).toMatchObject({ direction: 'west', clip: 'seated', issue: null });
+		const south = ride(0, -1);
+		expect(south).toMatchObject({ direction: 'south', clip: 'ride', requestedClip: 'seated' });
+		expect(south.notice).toMatchObject({ kind: 'missing-direction', move: 'seated' });
+		// Dismounted, the pose is ignored and walking resumes.
+		expect(resolveLive(a, { velocity: { x: 1, y: 0 }, riderPose: 'seated' })).toMatchObject({
+			clip: 'walk'
+		});
+	});
+
 	test('intentional E/W directions retain remembered vertical facing without missing-coverage warnings', () => {
 		const a = buildPresentation(fixture(['east', 'west']));
 		const east = resolveLive(a, { velocity: moving });

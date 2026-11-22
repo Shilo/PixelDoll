@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mount": "Monture",
+		"mountNotSaved": "Le réglage de la monture a changé, mais ce navigateur n’a pas pu l’enregistrer.",
 		"reset": {
 			"allAction": "Réinitialiser tous les paramètres",
 			"pageAction": "Réinitialiser cette page",
@@ -630,8 +632,9 @@
 		"hideLegs": "Masquer les jambes",
 		"farLeg": "Jambe à l’arrière-plan",
 		"bothLegs": "Les deux jambes",
-		"cutsBelowTheHipsHandsMayBe": "Coupe sous les hanches. Les mains peuvent être rognées et les objets pendants peuvent disparaître.",
-		"anApproximateCutoutMayHideClothingOr": "Découpe approximative. Peut masquer des vêtements ou laisser de petits fragments.",
+		"riderPose": "Pose du cavalier",
+		"riderPoseRide": "Monter ou Debout",
+		"riderPoseIncomplete": "{name} (sans {directions})",
 		"otherTab": "Autre onglet",
 		"updateToVVersion": "Mettre à jour vers v{version}",
 		"pixelLabAccount": "Compte PixelLab",
@@ -743,7 +746,7 @@
 		"importAnExistingCharacter": "Importer un personnage existant"
 	},
 	"experience": {
-		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture utilise l’animation Ride si elle existe, ou la pose debout sinon.",
+		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture utilise la pose du cavalier des réglages de la monture, sinon l’animation Ride si elle existe, sinon la pose debout.",
 		"movesOffWalking": "Choisissez les animations dans « Aperçu ». Ici, le personnage joue l’animation d’attente à l’arrêt et celle de marche quand il se déplace.",
 		"tabWardrobe": "Garde-robe",
 		"tabColors": "Couleurs",
@@ -2626,6 +2629,10 @@
 		"flashSizesUnavailable": "PixelLab n’a pas confirmé les tailles de modification de Pro Flash.",
 		"unsupported": "Ce modèle ne peut pas modifier ce canevas avec la référence choisie. Choisissez un autre modèle ou une autre référence.",
 		"saved": "État enregistré",
+		"savedRiding": "État enregistré. Choisissez-le comme pose du cavalier dans Réglages de la monture.",
+		"template": "Partir de",
+		"templates": { "riding": "À cheval" },
+		"ridingCheck": "Vérifiez chaque vue : buste droit, jambes écartées avec les pieds sous les hanches, sans monture, selle ni rênes dessinées.",
 		"description": "Instructions",
 		"reference": "Ajoutez une image pour guider la modification.",
 		"pixenReference": "Pixen n’utilise pas d’images de référence. Changez de modèle pour utiliser votre image.",

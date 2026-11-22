@@ -2,11 +2,12 @@ import { ui } from './state.svelte.ts';
 import type { WhisperKey } from 'svelte-whisper';
 
 export type SettingsSection =
-	'general' | 'wardrobe' | 'export' | 'pixellab' | 'library' | 'developer' | 'about';
+	'general' | 'wardrobe' | 'mount' | 'export' | 'pixellab' | 'library' | 'developer' | 'about';
 
 export const settingsLabels = {
 	general: 'settings.appearance',
 	wardrobe: 'experience.tabWardrobe',
+	mount: 'settings.mount',
 	export: 'export.sheet.title',
 	pixellab: 'settings.connection',
 	library: 'librarySettings.title',

@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mount": "Montaria",
+		"mountNotSaved": "A configuração de montaria mudou, mas este navegador não conseguiu salvá-la.",
 		"reset": {
 			"allAction": "Redefinir todas as configurações",
 			"pageAction": "Redefinir esta página",
@@ -630,8 +632,9 @@
 		"hideLegs": "Ocultar pernas",
 		"farLeg": "Perna mais distante",
 		"bothLegs": "As duas pernas",
-		"cutsBelowTheHipsHandsMayBe": "Recorta abaixo do quadril. As mãos podem ser cortadas, e itens pendurados podem sumir.",
-		"anApproximateCutoutMayHideClothingOr": "O recorte é aproximado. Pode ocultar roupas ou deixar pequenos fragmentos.",
+		"riderPose": "Pose de montaria",
+		"riderPoseRide": "Montar ou Em pé",
+		"riderPoseIncomplete": "{name} (sem {directions})",
 		"otherTab": "Outra aba",
 		"updateToVVersion": "Atualizar para v{version}",
 		"pixelLabAccount": "Conta do PixelLab",
@@ -751,7 +754,7 @@
 		"importAnExistingCharacter": "Importar um personagem existente"
 	},
 	"experience": {
-		"movesOffMounted": "Escolha as animações na Prévia. Ao se mover montado, o personagem usa a animação Ride, se houver, ou fica em uma pose parada.",
+		"movesOffMounted": "Escolha as animações na Prévia. Ao se mover montado, o personagem usa a pose de montaria das configurações da montaria; se não houver, a animação Ride, se existir, ou uma pose parada.",
 		"movesOffWalking": "Escolha as animações na Prévia. Aqui, o personagem usa a animação de repouso ou de caminhada.",
 		"tabWardrobe": "Guarda-roupa",
 		"tabColors": "Cores",
@@ -2639,6 +2642,10 @@
 		"flashSizesUnavailable": "O PixelLab não confirmou os tamanhos de edição do Pro Flash.",
 		"unsupported": "Este modelo não pode editar esta tela com a referência selecionada. Escolha outro modelo ou outra referência.",
 		"saved": "Estado salvo",
+		"savedRiding": "Estado salvo. Escolha-o como pose de montaria em Configurações da montaria.",
+		"template": "Começar com",
+		"templates": { "riding": "Montaria" },
+		"ridingCheck": "Confira cada vista: tronco ereto, pernas afastadas com os pés sob o quadril e sem montaria, sela ou rédeas desenhadas.",
 		"description": "Instruções",
 		"reference": "Adicione uma imagem para orientar a mudança.",
 		"pixenReference": "O Pixen não usa imagens de referência. Troque de modelo para usar sua imagem.",

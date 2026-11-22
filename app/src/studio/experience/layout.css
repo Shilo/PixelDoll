@@ -201,9 +201,6 @@
 .experience-header .view-modes svg {
 	display: none;
 }
-.mount-leg-select {
-	width: auto;
-}
 @media (max-width: 999px) {
 	.view-modes {
 		gap: 0;

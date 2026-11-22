@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mount": "乗り物",
+		"mountNotSaved": "乗り物の設定を変更しましたが、このブラウザーに保存できませんでした。",
 		"reset": {
 			"allAction": "すべての設定をリセット",
 			"pageAction": "このページをリセット",
@@ -613,8 +615,9 @@
 		"hideLegs": "脚を隠す",
 		"farLeg": "奥の脚",
 		"bothLegs": "両脚",
-		"cutsBelowTheHipsHandsMayBe": "腰より下を非表示にします。手が欠けたり、垂れ下がったアイテムが消えたりする場合があります。",
-		"anApproximateCutoutMayHideClothingOr": "簡易的な切り抜きです。服の一部が隠れたり、切り残しが出たりする場合があります。",
+		"riderPose": "騎乗ポーズ",
+		"riderPoseRide": "騎乗または立ち",
+		"riderPoseIncomplete": "{name}（{directions}なし）",
 		"otherTab": "別のタブ",
 		"updateToVVersion": "v{version}に更新",
 		"pixelLabAccount": "PixelLabアカウント",
@@ -726,7 +729,7 @@
 		"importAnExistingCharacter": "既存のキャラクターをインポート"
 	},
 	"experience": {
-		"movesOffMounted": "モーションはプレビューで選びます。騎乗中の移動では、Rideがあればそれを、なければ立ちポーズを使います。",
+		"movesOffMounted": "モーションはプレビューで選びます。騎乗中の移動では、乗り物の設定の騎乗ポーズを使い、なければRide、それもなければ立ちポーズを使います。",
 		"movesOffWalking": "モーションはプレビューで選びます。ここでは、止まると待機、移動すると歩きのモーションが再生されます。",
 		"tabWardrobe": "装備",
 		"tabColors": "カラー",
@@ -2532,6 +2535,10 @@
 		"flashSizesUnavailable": "PixelLab で Pro Flash の編集サイズを確認できませんでした。",
 		"unsupported": "このモデルでは、選んだ参照画像でこのキャンバスを編集できません。別のモデルか参照画像を選んでください。",
 		"saved": "ステートを保存しました",
+		"savedRiding": "ステートを保存しました。乗り物の設定で騎乗ポーズとして選べます。",
+		"template": "テンプレート",
+		"templates": { "riding": "騎乗" },
+		"ridingCheck": "すべての向きを確認してください：上半身がまっすぐ、脚が開き足が腰の下にあり、乗り物・鞍・手綱が描かれていないこと。",
 		"description": "指示",
 		"reference": "変更の参考になる画像を追加してください。",
 		"pixenReference": "Pixen は参照画像を使用しません。画像を使うにはモデルを切り替えてください。",

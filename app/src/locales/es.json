@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mount": "Montura",
+		"mountNotSaved": "El ajuste de montura cambió, pero este navegador no pudo guardarlo.",
 		"reset": {
 			"allAction": "Restablecer todos los ajustes",
 			"pageAction": "Restablecer esta página",
@@ -633,8 +635,9 @@
 		"hideLegs": "Ocultar piernas",
 		"farLeg": "Pierna lejana",
 		"bothLegs": "Ambas piernas",
-		"cutsBelowTheHipsHandsMayBe": "Corta por debajo de la cadera. Las manos pueden quedar recortadas y los objetos colgantes pueden desaparecer.",
-		"anApproximateCutoutMayHideClothingOr": "Un recorte aproximado. Puede ocultar ropa o dejar pequeños fragmentos.",
+		"riderPose": "Pose de jinete",
+		"riderPoseRide": "Montar o De pie",
+		"riderPoseIncomplete": "{name} (sin {directions})",
 		"otherTab": "Otra pestaña",
 		"updateToVVersion": "Actualizar a v{version}",
 		"pixelLabAccount": "Cuenta de PixelLab",
@@ -749,7 +752,7 @@
 		"importAnExistingCharacter": "Importa un personaje existente"
 	},
 	"experience": {
-		"movesOffMounted": "Las animaciones se eligen en Vista previa. Al moverte con montura, se reproduce Ride si está disponible; si no, se usa una pose de pie.",
+		"movesOffMounted": "Las animaciones se eligen en Vista previa. Al moverte con montura se usa la pose de jinete de los ajustes de montura; si no hay, Ride si está disponible; si no, una pose de pie.",
 		"movesOffWalking": "Las animaciones se eligen en Vista previa. Aquí, moverse reproduce Reposo o Caminar.",
 		"tabWardrobe": "Armario",
 		"tabColors": "Colores",
@@ -2633,6 +2636,10 @@
 		"flashSizesUnavailable": "PixelLab no confirmó los tamaños de edición de Pro Flash.",
 		"unsupported": "Este modelo no puede editar este lienzo con la referencia seleccionada. Elige otro modelo u otra referencia.",
 		"saved": "Estado guardado",
+		"savedRiding": "Estado guardado. Elígelo como pose de jinete en Ajustes de montura.",
+		"template": "Empezar con",
+		"templates": { "riding": "Montar" },
+		"ridingCheck": "Revisa cada vista: torso erguido, piernas separadas con los pies bajo la cadera y sin montura, silla ni riendas dibujadas.",
 		"description": "Instrucciones",
 		"reference": "Añade una imagen para guiar el cambio.",
 		"pixenReference": "Pixen no usa imágenes de referencia. Cambia de modelo para usar tu imagen.",

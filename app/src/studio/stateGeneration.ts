@@ -747,7 +747,8 @@ async function clearStateAttempt(projectId: string): Promise<void> {
 	});
 }
 
-export async function saveState(review: StateReview): Promise<void> {
+/** `riding`: saved from the Riding template, so the notice says where to use it. */
+export async function saveState(review: StateReview, riding = false): Promise<void> {
 	const { projectId, id } = review;
 	assertSelected(projectId);
 	await flushSave();
@@ -809,5 +810,5 @@ export async function saveState(review: StateReview): Promise<void> {
 	ui.anim = id;
 	ui.frame = 0;
 	ui.tab = 'states';
-	toast(message('stateGeneration.saved'));
+	toast(message(riding ? 'stateGeneration.savedRiding' : 'stateGeneration.saved'));
 }

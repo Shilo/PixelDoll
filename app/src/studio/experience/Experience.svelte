@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { applyRiderPose } from '../mountPreview.ts';
 	import SurfaceChevron from '../SurfaceChevron.svelte';
 	import { openerLabel } from '../openerLabel.ts';
 	import { formatNumber, t } from 'svelte-whisper';
@@ -411,8 +412,9 @@
 					experience.screen === 'characters' &&
 					!ui.sheet
 				) {
-					// Customize opens on the standing move, also for the character already shown.
+					// Customize opens on the standing move, also for the character already shown, or mounted on its Riding pose.
 					showStanding();
+					applyRiderPose();
 					enterCustomize();
 				}
 			}

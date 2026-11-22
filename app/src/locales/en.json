@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mount": "Mount",
+		"mountNotSaved": "Mount setting changed, but this browser could not save it.",
 		"reset": {
 			"allAction": "Reset all settings",
 			"pageAction": "Reset this page",
@@ -627,8 +629,9 @@
 		"hideLegs": "Hide legs",
 		"farLeg": "Far leg",
 		"bothLegs": "Both legs",
-		"cutsBelowTheHipsHandsMayBe": "Cuts below the hips. Hands may be clipped, and hanging items may disappear.",
-		"anApproximateCutoutMayHideClothingOr": "An approximate cutout. May hide clothing or leave small fragments.",
+		"riderPose": "Riding pose",
+		"riderPoseRide": "Riding or Standing",
+		"riderPoseIncomplete": "{name} (no {directions})",
 		"otherTab": "Other tab",
 		"updateToVVersion": "Update to v{version}",
 		"pixelLabAccount": "PixelLab account",
@@ -740,7 +743,7 @@
 		"importAnExistingCharacter": "Import an existing character"
 	},
 	"experience": {
-		"movesOffMounted": "Moves are picked in Preview. Mounted movement uses Ride when available, otherwise a standing pose.",
+		"movesOffMounted": "Moves are picked in Preview. Mounted movement uses the Riding pose from Mount settings, otherwise Ride when available, otherwise a standing pose.",
 		"movesOffWalking": "Moves are picked in Preview. Here, moving plays idle or walk.",
 		"tabWardrobe": "Wardrobe",
 		"tabColors": "Colors",
@@ -2610,6 +2613,10 @@
 		"flashSizesUnavailable": "PixelLab did not confirm Pro Flash edit sizes.",
 		"unsupported": "This model cannot edit this canvas with the selected reference. Choose another model or reference.",
 		"saved": "State saved",
+		"savedRiding": "State saved. Choose it as the Riding pose in Mount settings.",
+		"template": "Start from",
+		"templates": { "riding": "Riding" },
+		"ridingCheck": "Check every view: upright torso, legs apart with the feet under the hips, and no mount, saddle or reins drawn.",
 		"description": "Instructions",
 		"reference": "Add an image to guide the change.",
 		"pixenReference": "Pixen does not use reference images. Switch models to use your image.",

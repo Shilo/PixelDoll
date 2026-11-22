@@ -2826,6 +2826,14 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await newState.getByRole('textbox', { name: 'State name' }).fill('Ready stance');
 	const instructions = newState.getByRole('textbox', { name: 'Instructions' });
 	await instructions.fill('Raise both hands');
+	// The Riding template fills editable instructions; Custom gives back what was typed.
+	const templates = newState.getByRole('radiogroup', { name: 'Start from' });
+	await templates.getByRole('radio', { name: 'Riding', exact: true }).click();
+	await expect(instructions).toHaveValue(
+		/^Change only the pose\. Show the same character sitting upright astride/
+	);
+	await templates.getByRole('radio', { name: 'Custom', exact: true }).click();
+	await expect(instructions).toHaveValue('Raise both hands');
 	// Enhance grounds the instructions in the chosen source frame, then Undo restores them.
 	await newState.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await expect(instructions).toHaveValue('Lift both open hands to shoulder height, palms forward');

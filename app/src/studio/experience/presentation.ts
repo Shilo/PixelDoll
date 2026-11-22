@@ -442,6 +442,8 @@ export function resolveLive(
 		defaultDirection?: DirectionName;
 		deadZone?: number;
 		riding?: boolean;
+		/** A State chosen as the rider's pose; used only while riding, and only for the exact facing it covers. */
+		riderPose?: string;
 	}
 ): Presentation {
 	const velocity = unit(options.velocity, options.deadZone ?? 1e-6),
@@ -464,9 +466,10 @@ export function resolveLive(
 			)
 		: (retained ?? nearestDirection(a.directions, { x: 0, y: -1 }));
 	const ridingClip = a.animations.get('ride')?.has(intended!) ? 'ride' : 'idle';
+	const riderPose = options.riding ? options.riderPose : undefined;
 	const start = initial(
 		a,
-		options.riding ? ridingClip : moving ? 'walk' : 'idle',
+		riderPose || (options.riding ? ridingClip : moving ? 'walk' : 'idle'),
 		intended,
 		moving
 	);
@@ -503,6 +506,10 @@ export function resolveLive(
 				};
 		}
 	}
+	// The rider pose never borrows a neighboring facing: the rider would face away from the mount. A missing facing
+	// falls through to the usual riding art, and withIssue names the gap.
+	const pose = riderPose && intended ? a.animations.get(riderPose)?.get(intended) : undefined;
+	if (pose) return withIssue(a, animated(base, pose));
 	for (const clip of options.riding
 		? [ridingClip, DEFAULT_MOVE]
 		: moving

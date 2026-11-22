@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mount": "Binek",
+		"mountNotSaved": "Binek ayarı değişti ancak bu tarayıcı kaydedemedi.",
 		"reset": {
 			"allAction": "Tüm ayarları sıfırla",
 			"pageAction": "Bu sayfayı sıfırla",
@@ -630,8 +632,9 @@
 		"hideLegs": "Bacakları gizleyin",
 		"farLeg": "Uzaktaki bacak",
 		"bothLegs": "İki bacak da",
-		"cutsBelowTheHipsHandsMayBe": "Kalçanın altını keser. Eller kesilebilir, sarkan eşyalar kaybolabilir.",
-		"anApproximateCutoutMayHideClothingOr": "Kesim yaklaşık yapılır. Giysileri gizleyebilir veya küçük parçalar bırakabilir.",
+		"riderPose": "Binici pozu",
+		"riderPoseRide": "Binme veya Ayakta",
+		"riderPoseIncomplete": "{name} ({directions} yok)",
 		"otherTab": "Diğer sekme",
 		"updateToVVersion": "v{version} sürümüne güncelleyin",
 		"pixelLabAccount": "PixelLab hesabı",
@@ -746,7 +749,7 @@
 		"importAnExistingCharacter": "Mevcut bir karakteri içe aktarın"
 	},
 	"experience": {
-		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket için varsa Ride kullanılır, yoksa karakter ayakta durur.",
+		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket için binek ayarlarındaki Binici pozu kullanılır; yoksa varsa Ride, o da yoksa ayakta duruş.",
 		"movesOffWalking": "Animasyonlar Önizleme'de seçilir. Burada harekete göre bekleme veya yürüme animasyonu oynatılır.",
 		"tabWardrobe": "Gardırop",
 		"tabColors": "Renkler",
@@ -2619,6 +2622,10 @@
 		"flashSizesUnavailable": "PixelLab, Pro Flash düzenleme boyutlarını doğrulamadı.",
 		"unsupported": "Bu model, seçilen referansla bu tuvali düzenleyemez. Başka bir model veya referans seçin.",
 		"saved": "Durum kaydedildi",
+		"savedRiding": "Durum kaydedildi. Binek ayarlarında Binici pozu olarak seçin.",
+		"template": "Başlangıç",
+		"templates": { "riding": "Binme" },
+		"ridingCheck": "Her görünümü kontrol edin: dik gövde, ayaklar kalçanın altında olacak şekilde açık bacaklar ve çizilmiş binek, eyer veya dizgin yok.",
 		"description": "Talimatlar",
 		"reference": "Değişikliğe yön verecek bir görsel ekleyin.",
 		"pixenReference": "Pixen referans görseli kullanmaz. Görselinizi kullanmak için modeli değiştirin.",

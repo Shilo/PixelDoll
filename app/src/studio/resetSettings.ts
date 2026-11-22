@@ -2,6 +2,8 @@ import type { WhisperKey } from 'svelte-whisper';
 import { selectLanguage } from '../lib/i18n.ts';
 import { defaultExportSettings, resetExportSettings } from '../lib/store/export-settings.ts';
 import { setDeveloperMode } from './developerMode.svelte.ts';
+import { resetMount } from './experience/riderPose.ts';
+import { applyRiderPose } from './mountPreview.ts';
 import { noteExportSettings } from './settingsDefaults.svelte.ts';
 import { doc, isDemo, refreshShared, setTheme, store } from './state.svelte.ts';
 import {
@@ -12,7 +14,7 @@ import {
 	setSharedItemsHiddenForCharacter
 } from './wardrobeVisibility.svelte.ts';
 
-const resettableSections = ['general', 'wardrobe', 'export', 'developer'] as const;
+const resettableSections = ['general', 'wardrobe', 'mount', 'export', 'developer'] as const;
 type ResettableSection = (typeof resettableSections)[number];
 export type ResetScope = ResettableSection | 'all';
 
@@ -34,6 +36,11 @@ export async function resetSettings(scope: ResetScope): Promise<WhisperKey[]> {
 				: !doc.id || setSharedItemsHiddenForCharacter(doc.id, false);
 		if (refresh) await refreshShared();
 		if (!shared || !demo || !character) failures.push('experience.tabWardrobe');
+	}
+	if (scope === 'all' || scope === 'mount') {
+		const saved = resetMount();
+		applyRiderPose();
+		if (!saved) failures.push('settings.mount');
 	}
 	if ((scope === 'all' || scope === 'developer') && !setDeveloperMode(false))
 		failures.push('developer.title');

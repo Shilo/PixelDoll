@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mount": "坐骑",
+		"mountNotSaved": "坐骑设置已更改，但此浏览器无法保存。",
 		"reset": {
 			"allAction": "重置所有设置",
 			"pageAction": "重置此页面",
@@ -608,8 +610,9 @@
 		"hideLegs": "隐藏腿部",
 		"farLeg": "远侧腿",
 		"bothLegs": "双腿",
-		"cutsBelowTheHipsHandsMayBe": "从髋部以下裁切。手部可能被裁掉，垂挂的装备可能消失。",
-		"anApproximateCutoutMayHideClothingOr": "粗略裁切。可能遮住服装或留下小块碎片。",
+		"riderPose": "骑乘姿势",
+		"riderPoseRide": "骑乘或站立",
+		"riderPoseIncomplete": "{name}（缺少{directions}）",
 		"otherTab": "另一个标签页",
 		"updateToVVersion": "更新到 v{version}",
 		"pixelLabAccount": "PixelLab 账户",
@@ -721,7 +724,7 @@
 		"importAnExistingCharacter": "导入现有角色"
 	},
 	"experience": {
-		"movesOffMounted": "动作在预览中选择。骑乘移动会使用“Ride”，如果不可用则使用站立姿势。",
+		"movesOffMounted": "动作在预览中选择。骑乘移动会使用坐骑设置中的骑乘姿势；没有时使用“Ride”，再没有则使用站立姿势。",
 		"movesOffWalking": "动作在预览中选择。在此处移动会播放待机或行走。",
 		"tabWardrobe": "衣橱",
 		"tabColors": "颜色",
@@ -2503,6 +2506,10 @@
 		"flashSizesUnavailable": "PixelLab 未确认 Pro Flash 的编辑尺寸。",
 		"unsupported": "此模型无法使用所选参考图编辑此画布。请选择其他模型或参考图。",
 		"saved": "状态已保存",
+		"savedRiding": "状态已保存。可在坐骑设置中将其选为骑乘姿势。",
+		"template": "起始模板",
+		"templates": { "riding": "骑乘" },
+		"ridingCheck": "检查每个朝向：上身直立，双腿分开且脚在髋部下方，没有画出坐骑、马鞍或缰绳。",
 		"description": "指令",
 		"reference": "添加图片作为改动的参考。",
 		"pixenReference": "Pixen 不使用参考图。若要使用这张图片，请切换模型。",

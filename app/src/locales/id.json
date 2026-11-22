@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mount": "Tunggangan",
+		"mountNotSaved": "Pengaturan tunggangan berubah, tetapi browser ini tidak dapat menyimpannya.",
 		"reset": {
 			"allAction": "Atur ulang semua pengaturan",
 			"pageAction": "Atur ulang halaman ini",
@@ -610,8 +612,9 @@
 		"hideLegs": "Sembunyikan kaki",
 		"farLeg": "Kaki di sisi jauh",
 		"bothLegs": "Kedua kaki",
-		"cutsBelowTheHipsHandsMayBe": "Memotong bagian di bawah pinggul. Tangan bisa ikut terpotong dan item yang menjuntai bisa hilang.",
-		"anApproximateCutoutMayHideClothingOr": "Potongan ini hanya perkiraan. Pakaian bisa ikut tersembunyi atau menyisakan serpihan kecil.",
+		"riderPose": "Pose penunggang",
+		"riderPoseRide": "Menunggang atau Berdiri",
+		"riderPoseIncomplete": "{name} (tanpa {directions})",
 		"otherTab": "Tab lain",
 		"updateToVVersion": "Perbarui ke v{version}",
 		"pixelLabAccount": "Akun PixelLab",
@@ -723,7 +726,7 @@
 		"importAnExistingCharacter": "Impor karakter yang sudah ada"
 	},
 	"experience": {
-		"movesOffMounted": "Pilih animasi di Pratinjau. Saat tunggangan bergerak, animasi Menunggang diputar jika tersedia. Jika tidak, pose berdiri dipakai.",
+		"movesOffMounted": "Pilih animasi di Pratinjau. Saat tunggangan bergerak, Pose penunggang dari pengaturan tunggangan dipakai. Jika tidak ada, animasi Menunggang diputar bila tersedia, atau pose berdiri.",
 		"movesOffWalking": "Pilih animasi di Pratinjau. Di sini, karakter memakai animasi diam atau jalan saat Anda menggerakkannya.",
 		"tabWardrobe": "Lemari",
 		"tabColors": "Warna",
@@ -2525,6 +2528,10 @@
 		"flashSizesUnavailable": "PixelLab tidak mengonfirmasi ukuran pengeditan Pro Flash.",
 		"unsupported": "Model ini tidak dapat mengedit kanvas ini dengan acuan yang dipilih. Pilih model atau acuan lain.",
 		"saved": "Keadaan disimpan",
+		"savedRiding": "Keadaan disimpan. Pilih sebagai Pose penunggang di Pengaturan tunggangan.",
+		"template": "Mulai dari",
+		"templates": { "riding": "Menunggang" },
+		"ridingCheck": "Periksa setiap tampilan: badan tegak, kaki terbuka dengan telapak di bawah pinggul, dan tanpa tunggangan, pelana, atau tali kekang.",
 		"description": "Instruksi",
 		"reference": "Tambahkan gambar untuk memandu perubahan.",
 		"pixenReference": "Pixen tidak menggunakan gambar acuan. Ganti model untuk menggunakan gambar Anda.",

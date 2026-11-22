@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mount": "Reittier",
+		"mountNotSaved": "Reittier-Einstellung geändert, aber dieser Browser konnte sie nicht speichern.",
 		"reset": {
 			"allAction": "Alle Einstellungen zurücksetzen",
 			"pageAction": "Diese Seite zurücksetzen",
@@ -633,8 +635,9 @@
 		"hideLegs": "Beine ausblenden",
 		"farLeg": "Hinteres Bein",
 		"bothLegs": "Beide Beine",
-		"cutsBelowTheHipsHandsMayBe": "Schneidet unterhalb der Hüfte ab. Hände können angeschnitten sein und herabhängende Gegenstände können verschwinden.",
-		"anApproximateCutoutMayHideClothingOr": "Ungenauer Ausschnitt: Kleidung kann verdeckt werden, kleine Fragmente können sichtbar bleiben.",
+		"riderPose": "Reitpose",
+		"riderPoseRide": "Reiten oder Stehen",
+		"riderPoseIncomplete": "{name} (ohne {directions})",
 		"otherTab": "Anderer Tab",
 		"updateToVVersion": "Auf v{version} aktualisieren",
 		"pixelLabAccount": "PixelLab-Konto",
@@ -749,7 +752,7 @@
 		"importAnExistingCharacter": "Vorhandene Figur importieren"
 	},
 	"experience": {
-		"movesOffMounted": "Wähle Animationen in der Vorschau. Beim Reiten wird, falls vorhanden, die Reitanimation abgespielt, sonst die Standpose.",
+		"movesOffMounted": "Wähle Animationen in der Vorschau. Beim Reiten wird die Reitpose aus den Reittier-Einstellungen verwendet, sonst, falls vorhanden, die Reitanimation, sonst die Standpose.",
 		"movesOffWalking": "Wähle Animationen in der Vorschau. Hier wird je nach Bewegung die Idle- oder Gehanimation abgespielt.",
 		"tabWardrobe": "Garderobe",
 		"tabColors": "Farben",
@@ -2625,6 +2628,10 @@
 		"flashSizesUnavailable": "PixelLab hat die Bearbeitungsgrößen für Pro Flash nicht bestätigt.",
 		"unsupported": "Dieses Modell kann die Bildfläche mit der gewählten Referenz nicht bearbeiten. Wähle ein anderes Modell oder Bild.",
 		"saved": "Zustand gespeichert",
+		"savedRiding": "Zustand gespeichert. Wähle ihn in den Reittier-Einstellungen als Reitpose.",
+		"template": "Vorlage",
+		"templates": { "riding": "Reiten" },
+		"ridingCheck": "Prüfe jede Ansicht: aufrechter Oberkörper, gespreizte Beine mit den Füßen unter der Hüfte und kein Reittier, Sattel oder Zügel.",
 		"description": "Anweisungen",
 		"reference": "Füge ein Bild als Vorlage für die Änderung hinzu.",
 		"pixenReference": "Pixen nutzt keine Referenzbilder. Wechsle das Modell, um dein Bild zu verwenden.",

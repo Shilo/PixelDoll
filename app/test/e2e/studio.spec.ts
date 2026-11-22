@@ -779,6 +779,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		'PixelLab',
 		'Appearance',
 		'Wardrobe',
+		'Mount',
 		'Library',
 		'Export',
 		'Developer',
@@ -786,7 +787,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	]) {
 		await nav.getByRole('button', { name, exact: true }).click();
 		await fits(name);
-		const resettable = ['Appearance', 'Wardrobe', 'Export', 'Developer'].includes(name);
+		const resettable = ['Appearance', 'Wardrobe', 'Mount', 'Export', 'Developer'].includes(name);
 		await expect(header.getByRole('button', { name: /Reset|Forget PixelLab key/ })).toHaveCount(0);
 		await expect(compactResetAll).toHaveCount(0);
 		await expect(compactPageReset).toHaveCount(resettable ? 1 : 0);
