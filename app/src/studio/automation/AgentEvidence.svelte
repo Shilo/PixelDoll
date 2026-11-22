@@ -1,36 +1,71 @@
 <script lang="ts">
-	// What an agent is looking at, over the Studio: real frames at whole-pixel scale on a flat background, so a screenshot
-	// of the page shows the same pixels the tool measured.
 	import { t } from 'svelte-whisper';
 	import { X } from '../icons.ts';
+	import { claimSheetExit } from '../sheetExit.ts';
+	import { displayScale, paintSheet } from './evidence.ts';
 	import { hideEvidence, panel } from './panel.svelte.ts';
+
 	const id = $props.id();
-	let innerWidth = $state(0),
-		innerHeight = $state(0);
-	/** Shown pixels per artwork pixel: the largest whole number up to each sheet's own scale at which all sheets fit the
-	 *  viewport together, so one screenshot holds all of them and each artwork pixel stays an exact square. */
-	const fit = $derived.by(() => {
-		const images = panel.images,
-			width = Math.max(1, ...images.map((image) => image.width)),
-			height = images.reduce((sum, image) => sum + image.height, 0) || 1;
-		return Math.min((innerWidth - 32) / width, (innerHeight - 48 - 24 * images.length) / height);
-	});
-	const shownScale = (image: { scale: number }) =>
-		Math.max(1, Math.min(image.scale, Math.floor(image.scale * fit)));
+	let width = $state(0),
+		height = $state(0),
+		dpr = $state(window.devicePixelRatio);
+	const scale = $derived(
+		displayScale(
+			panel.images.map(({ page }) => page),
+			width * dpr,
+			(height - 28) * dpr
+		)
+	);
+
+	function openPanel(dialog: HTMLDialogElement) {
+		const opener = document.activeElement;
+		dialog.showModal();
+		const release = claimSheetExit({ close: hideEvidence });
+		// The native cancel event owns Escape while the Studio is behind the dialog.
+		const keepEscape = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') event.stopPropagation();
+		};
+		dialog.addEventListener('keydown', keepEscape);
+		let resolution: MediaQueryList;
+		function watchResolution() {
+			const ratio = window.devicePixelRatio;
+			dpr = ratio;
+			resolution = matchMedia(`(resolution: ${ratio}dppx)`);
+			resolution.addEventListener('change', watchResolution, { once: true });
+		}
+		watchResolution();
+		return () => {
+			dialog.removeEventListener('keydown', keepEscape);
+			resolution.removeEventListener('change', watchResolution);
+			release();
+			dialog.close();
+			if (
+				opener instanceof HTMLElement &&
+				opener.isConnected &&
+				!document.activeElement?.closest('dialog[open]')
+			)
+				opener.focus({ preventScroll: true });
+		};
+	}
 </script>
 
-<svelte:window
-	bind:innerWidth
-	bind:innerHeight
-	onkeydown={(e) => {
-		if (e.key === 'Escape' && panel.images.length) hideEvidence();
-	}}
-/>
-
 {#if panel.images.length}
-	<section class="agent-evidence" aria-labelledby="{id}-title" data-agent-evidence>
+	<dialog
+		class="agent-evidence bu-dialog-surface"
+		aria-labelledby="{id}-title"
+		data-agent-evidence
+		{@attach openPanel}
+		oncancel={(event) => {
+			event.preventDefault();
+			hideEvidence();
+		}}
+	>
 		<header>
-			<h2 id="{id}-title">{t('agentEvidence.title', { subject: panel.title })}</h2>
+			<h2 id="{id}-title">
+				{t('agentEvidence.title', {
+					subject: panel.images.length === 1 ? panel.title : panel.images[0].label
+				})}
+			</h2>
 			<button
 				class="bu-btn"
 				data-variant="ghost"
@@ -38,32 +73,43 @@
 				onclick={hideEvidence}><X size={18} aria-hidden="true" /></button
 			>
 		</header>
-		<div class="sheets">
-			{#each panel.images as image (image.label)}
-				{@const k = shownScale(image)}
-				<figure>
-					<figcaption>{image.label} · {k}×</figcaption>
-					<img
-						src="data:image/png;base64,{image.data}"
-						alt={image.label}
-						width={(image.width * k) / image.scale}
-						height={(image.height * k) / image.scale}
-					/>
-				</figure>
-			{/each}
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex (keyboard users need to scroll through the evidence) -->
+		<div class="sheets" bind:clientHeight={height} tabindex="0">
+			<div class="pages" bind:clientWidth={width}>
+				{#each panel.images as image (image)}
+					<figure>
+						<figcaption>{image.label} · {scale}×</figcaption>
+						<canvas
+							aria-hidden="true"
+							{@attach (canvas) => {
+								const size = paintSheet(canvas.getContext('2d')!, image.page, scale);
+								// One backing pixel per device pixel, including at fractional DPR.
+								canvas.style.width = `${size.width / dpr}px`;
+								canvas.style.height = `${size.height / dpr}px`;
+							}}
+						></canvas>
+					</figure>
+				{/each}
+			</div>
 		</div>
-	</section>
+	</dialog>
 {/if}
 
 <style>
 	.agent-evidence {
-		position: fixed;
 		inset: 0;
-		z-index: 2147483000;
+		box-sizing: border-box;
+		margin: 0;
+		width: 100%;
+		height: 100%;
+		max-width: none;
+		max-height: none;
+		padding: 0;
+		overflow: hidden;
+	}
+	.agent-evidence[open] {
 		display: flex;
 		flex-direction: column;
-		background: var(--bu-bg, #111);
-		color: var(--bu-text, #eee);
 	}
 	header {
 		display: flex;
@@ -80,7 +126,9 @@
 	}
 	.sheets {
 		flex: 1;
+		min-height: 0;
 		overflow: auto;
+		scrollbar-gutter: stable;
 		padding: 0 16px 16px;
 	}
 	figure {
@@ -89,11 +137,10 @@
 	figcaption {
 		margin-bottom: 4px;
 		font-size: 12px;
+		overflow-wrap: anywhere;
 	}
-	/* Nearest neighbor: a whole-pixel enlargement shown at a smaller whole-pixel factor keeps every artwork pixel square. */
-	img {
+	canvas {
 		display: block;
 		max-width: none;
-		image-rendering: pixelated;
 	}
 </style>

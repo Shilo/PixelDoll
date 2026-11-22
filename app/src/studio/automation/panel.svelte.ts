@@ -4,10 +4,16 @@ import { mount } from 'svelte';
 import type { Evidence } from './evidence.ts';
 import AgentEvidence from './AgentEvidence.svelte';
 
-export const panel = $state<{ title: string; images: Evidence[] }>({ title: '', images: [] });
+class EvidencePanel {
+	title = $state('');
+	images = $state.raw<Evidence[]>([]);
+}
+
+export const panel = new EvidencePanel();
 let mounted = false;
 
 export function showEvidence(title: string, images: Evidence[]) {
+	if (!images.length) return;
 	panel.title = title;
 	panel.images = images;
 	if (mounted) return;

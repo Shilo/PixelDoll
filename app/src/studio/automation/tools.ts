@@ -1,6 +1,7 @@
 // PixelDoll's automation core: application-level operations for AI agents, independent of how an agent connects (WebMCP,
 // page script, or a future adapter). Every tool calls the same Studio functions the buttons use, so validation, pricing,
 // the job queue's unknown-outcome rules, persistence and undo apply unchanged. Agents never get raw storage or the token.
+import { t } from 'svelte-whisper';
 import { PreflightWarning } from '../../lib/message.ts';
 import { app } from '../../lib/app.svelte.ts';
 import { queue } from '../../lib/pixellab/queue.ts';
@@ -12,8 +13,10 @@ import {
 	composeCell,
 	layerFrame,
 	over,
+	rigFrame,
 	type Frame
 } from '../../lib/compose/compose.ts';
+import { missingAt, missingFrames } from '../../lib/dress/dress.ts';
 import type { Item, Preset, Project } from '../../lib/store/manifest.ts';
 import type { StoredProject } from '../../lib/store/project.ts';
 import { generationDetails } from '../../lib/store/generation.ts';
@@ -63,7 +66,14 @@ import { categories } from '../slots.ts';
 import { healthOf } from '../model.ts';
 import { itemRoute } from '../itemRoute.ts';
 import { downloadCharacterZip } from '../download.svelte.ts';
-import { renderSheet, type Evidence } from './evidence.ts';
+import {
+	planEvidence,
+	renderSheet,
+	type EvidenceBackground,
+	type SheetCell,
+	type SheetSpec
+} from './evidence.ts';
+import { detachedPixels } from './defects.ts';
 import { AgentError, validate, type Json, type JsonSchema, type Tool } from './contract.ts';
 export { AgentError } from './contract.ts';
 export type { Json, Tool, ToolResult } from './contract.ts';
@@ -166,46 +176,103 @@ function itemOnly(
 }
 
 interface RenderOptions {
-	label: string;
 	move: string;
 	dirs: DirectionName[];
 	frames?: number[];
-	outfit: Preset['items'];
-	only?: Item;
 	scale: number;
+	background?: EvidenceBackground;
+	views: {
+		label: string;
+		kind: Exclude<SheetSpec['kind'], 'source'>;
+		outfit: Preset['items'];
+		only?: Item;
+	}[];
+	source?: Item;
 }
-async function frameSheet(p: Project, o: RenderOptions): Promise<Evidence> {
+const evidenceBackground = {
+	type: 'string',
+	enum: ['neutral', 'light', 'dark'],
+	description: 'Contact sheet background (default neutral).'
+} satisfies JsonSchema;
+
+async function frameSheet(p: Project, o: RenderOptions) {
+	const m = p.manifest;
 	const anim = moveOf(p, o.move),
-		frame = bakedFrame(p.manifest);
-	const cells = (o.frames?.length ? o.frames : [...Array(anim.cells).keys()]).filter(
-		(c) => c >= 0 && c < anim.cells
-	);
-	const image = (dir: DirectionName, cell: number): Img | null =>
-		o.only
-			? itemOnly(p, o.only, anim.id, dir, cell, frame)
-			: composeCell(p, o.outfit, anim.id, dir, cell, frame);
-	// One frame (the standing pose): directions side by side, so the sheet reads as a turnaround.
-	if (cells.length === 1)
-		return renderSheet({
-			label: o.label,
+		frame = bakedFrame(m);
+	const cells = o.frames?.length ? o.frames : [...Array(anim.cells).keys()];
+	for (const cell of cells)
+		if (!Number.isInteger(cell) || cell < 0 || cell >= anim.cells)
+			throw new AgentError(`Frame ${cell} is outside ${anim.id} (0 to ${anim.cells - 1}).`);
+	if (!cells.length) throw new AgentError(`Move "${anim.id}" has no frames.`, 'not_ready');
+	const base = m.items.find((it) => it.id === m.rig.baseItem);
+	const defects: ({
+		direction: DirectionName;
+		frame: number;
+	} & NonNullable<ReturnType<typeof detachedPixels>>)[] = [];
+	const pivot = { x: frame.x, y: frame.y };
+	const specs: SheetSpec[] = o.views.map(({ label, kind, only, outfit }, index) => {
+		const rows = o.dirs.map((dir) => {
+			const relevant = only
+				? [only]
+				: [...(base ? [base] : []), ...missingAt(m, outfit, anim.id, dir)];
+			const missing = new Set(relevant.flatMap((it) => missingFrames(m, it, anim.id, dir)));
+			return {
+				label: dir,
+				cells: cells.map((cell): SheetCell => {
+					const covered = (only || base) != null && !missing.has(cell);
+					const image = only
+						? itemOnly(p, only, anim.id, dir, cell, frame)
+						: composeCell(p, outfit, anim.id, dir, cell, frame);
+					if (index === 0 && image && covered) {
+						const detached = detachedPixels(image);
+						if (detached) defects.push({ direction: dir, frame: cell, ...detached });
+					}
+					return { image, covered };
+				})
+			};
+		});
+		// A single frame compares all views side by side.
+		return cells.length === 1
+			? {
+					label,
+					kind,
+					pivot,
+					columns: o.dirs,
+					rows: [{ label: String(cells[0]), cells: rows.map((row) => row.cells[0]) }]
+				}
+			: { label, kind, pivot, columns: cells.map(String), rows };
+	});
+	const source = o.source;
+	if (source && Object.values(source.dressed ?? {}).some(Boolean)) {
+		const rig = rigFrame(m.rig);
+		const nativeFrames = [rig, ...source.layers.map((l) => layerFrame(m.rig, l))];
+		specs.push({
+			label: `${source.name} · ${t('stateCapture.source')}`,
+			kind: 'source',
 			columns: o.dirs,
 			rows: [
 				{
-					label: `frame ${cells[0]}`,
-					cells: o.dirs.map((dir) => ({ image: image(dir, cells[0]) }))
+					label: '',
+					cells: o.dirs.map((dir) => {
+						const hash = source.dressed?.[dir];
+						const image = (hash && p.images.get(hash)) || null;
+						if (!image) return { image, covered: false };
+						const native = nativeFrames.find(({ w, h }) => w === image.w && h === image.h) ?? rig;
+						return {
+							image,
+							covered: true,
+							offset: { x: frame.x - native.x, y: frame.y - native.y }
+						};
+					})
 				}
-			],
-			scale: o.scale
+			]
 		});
-	return renderSheet({
-		label: o.label,
-		columns: cells.map((c) => `frame ${c}`),
-		rows: o.dirs.map((dir) => ({
-			label: dir,
-			cells: cells.map((c) => ({ image: image(dir, c) }))
-		})),
-		scale: o.scale
-	});
+	}
+	const pages = planEvidence(specs, frame, o.scale, o.background);
+	// Encode pages sequentially so a large selection does not allocate all canvases at once.
+	const images = [];
+	for (const { spec } of pages) images.push(await renderSheet(spec));
+	return { images, evidence: pages.map(({ meta }) => meta), defects };
 }
 
 function qaOf(it: Item) {
@@ -409,6 +476,7 @@ export const TOOLS: Tool[] = [
 				},
 				move: str('Move for the sheet (default "default", the standing pose).'),
 				scale: scaleArg,
+				background: evidenceBackground,
 				imageData: imageDataArg
 			}
 		},
@@ -447,21 +515,27 @@ export const TOOLS: Tool[] = [
 			};
 			if (args.images === false) return { data };
 			const move = moveOf(p, args.move);
-			const sheet = await frameSheet(p, {
-				label: `${m.name}: ${move.id}, current outfit`,
+			const { images, evidence, defects } = await frameSheet(p, {
 				move: move.id,
 				dirs: dirsOf(p, undefined),
-				outfit: view.items,
-				scale: Number(args.scale ?? 4)
+				scale: Number(args.scale ?? 4),
+				background: args.background as EvidenceBackground | undefined,
+				views: [
+					{
+						label: `${m.name}: ${move.id}, current outfit`,
+						kind: 'frames',
+						outfit: view.items
+					}
+				]
 			});
-			return { data, images: [sheet] };
+			return { data: { ...data, evidence, defects }, images };
 		}
 	},
 	{
 		name: 'inspect_item',
 		title: 'Inspect item or draft',
 		description:
-			'Quality checks, cost and frames of one saved item or item draft: a sheet of the item alone and one worn on the base body, rows = directions, columns = frames.',
+			'Quality checks, cost, and frame evidence for one item or draft: item alone, worn on the base body, and original dressed views when saved. Detached-pixel coordinates use the shared uncropped frame.',
 		inputSchema: {
 			type: 'object',
 			required: ['itemId'],
@@ -476,6 +550,7 @@ export const TOOLS: Tool[] = [
 					maxItems: 64
 				},
 				scale: scaleArg,
+				background: evidenceBackground,
 				imageData: imageDataArg
 			}
 		},
@@ -499,25 +574,22 @@ export const TOOLS: Tool[] = [
 				frames = args.frames as number[] | undefined,
 				scale = Number(args.scale ?? 4);
 			const base = { [m.slots.find((s) => s.class === 'base')?.id ?? 'body']: m.rig.baseItem };
-			const images = [
-				await frameSheet(p, {
-					label: `${it.name} alone: ${move.id}`,
-					move: move.id,
-					dirs,
-					frames,
-					outfit: {},
-					only: it,
-					scale
-				}),
-				await frameSheet(p, {
-					label: `${it.name} on the base body: ${move.id}`,
-					move: move.id,
-					dirs,
-					frames,
-					outfit: { ...base, [it.slot]: it.id },
-					scale
-				})
-			];
+			const { images, evidence, defects } = await frameSheet(p, {
+				move: move.id,
+				dirs,
+				frames,
+				scale,
+				background: args.background as EvidenceBackground | undefined,
+				views: [
+					{ label: `${it.name} alone: ${move.id}`, kind: 'item', outfit: {}, only: it },
+					{
+						label: `${it.name} on the base body: ${move.id}`,
+						kind: 'worn',
+						outfit: { ...base, [it.slot]: it.id }
+					}
+				],
+				source: it
+			});
 			return {
 				data: {
 					...(draft ? draftSummary(draft) : itemSummary(p, it)),
@@ -525,7 +597,9 @@ export const TOOLS: Tool[] = [
 					route: it.route ?? null,
 					qa: qaOf(it) as Json,
 					designWarnings: it.designWarnings ?? [],
-					frameEdits: it.frameEdits?.length ?? 0
+					frameEdits: it.frameEdits?.length ?? 0,
+					evidence,
+					defects
 				},
 				images
 			};
@@ -555,6 +629,7 @@ export const TOOLS: Tool[] = [
 					additionalProperties: true
 				},
 				scale: scaleArg,
+				background: evidenceBackground,
 				imageData: imageDataArg
 			}
 		},
@@ -568,18 +643,17 @@ export const TOOLS: Tool[] = [
 				outfit[slot] = id as string | null;
 			}
 			const move = moveOf(p, args.move);
+			const { images, evidence, defects } = await frameSheet(p, {
+				move: move.id,
+				dirs: dirsOf(p, args.directions),
+				frames: args.frames as number[] | undefined,
+				scale: Number(args.scale ?? 4),
+				background: args.background as EvidenceBackground | undefined,
+				views: [{ label: `${p.manifest.name}: ${move.id}`, kind: 'frames', outfit }]
+			});
 			return {
-				data: { move: move.id, outfit: outfit as Json },
-				images: [
-					await frameSheet(p, {
-						label: `${p.manifest.name}: ${move.id}`,
-						move: move.id,
-						dirs: dirsOf(p, args.directions),
-						frames: args.frames as number[] | undefined,
-						outfit,
-						scale: Number(args.scale ?? 4)
-					})
-				]
+				data: { move: move.id, outfit: outfit as Json, evidence, defects },
+				images
 			};
 		}
 	},
