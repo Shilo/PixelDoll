@@ -2846,6 +2846,12 @@
 		"resized": "Diubah ukurannya dari {fromWidth} × {fromHeight} menjadi {width} × {height} px.",
 		"limits": "Maksimal {width} × {height} px, {mb} MB."
 	},
+	"clipboard": {
+		"paste": "Tempel dari papan klip",
+		"noImage": "Papan klip tidak berisi gambar. Salin gambar terlebih dahulu.",
+		"denied": "Akses papan klip diblokir. Izinkan untuk situs ini, lalu coba lagi.",
+		"unreadable": "Papan klip tidak dapat dibaca."
+	},
 	"reference": {
 		"unsupported": "Pilih gambar PNG, JPEG, atau WebP.",
 		"tooLarge": "Pilih gambar yang tidak lebih besar dari {mb} MB.",

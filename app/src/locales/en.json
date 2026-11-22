@@ -2916,6 +2916,12 @@
 		"resized": "Resized from {fromWidth} × {fromHeight} to {width} × {height} px.",
 		"limits": "Max {width} × {height} px, {mb} MB."
 	},
+	"clipboard": {
+		"paste": "Paste from clipboard",
+		"noImage": "The clipboard has no image. Copy an image first.",
+		"denied": "Clipboard access was blocked. Allow it for this site, then try again.",
+		"unreadable": "The clipboard could not be read."
+	},
 	"reference": {
 		"unsupported": "Choose a PNG, JPEG, or WebP image.",
 		"tooLarge": "Choose an image no larger than {mb} MB.",

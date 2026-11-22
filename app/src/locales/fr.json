@@ -2916,6 +2916,12 @@
 		"resized": "Redimensionnée de {fromWidth} × {fromHeight} à {width} × {height} px.",
 		"limits": "{width} × {height} px max, {mb} Mo."
 	},
+	"clipboard": {
+		"paste": "Coller depuis le presse-papiers",
+		"noImage": "Le presse-papiers ne contient aucune image. Copiez d’abord une image.",
+		"denied": "L’accès au presse-papiers a été bloqué. Autorisez-le pour ce site, puis réessayez.",
+		"unreadable": "Impossible de lire le presse-papiers."
+	},
 	"reference": {
 		"unsupported": "Choisissez une image PNG, JPEG ou WebP.",
 		"tooLarge": "Choisissez une image de {mb} Mo maximum.",

@@ -2916,6 +2916,12 @@
 		"resized": "Von {fromWidth} × {fromHeight} auf {width} × {height} px verkleinert.",
 		"limits": "Max. {width} × {height} px, {mb} MB."
 	},
+	"clipboard": {
+		"paste": "Aus der Zwischenablage einfügen",
+		"noImage": "Die Zwischenablage enthält kein Bild. Kopiere zuerst ein Bild.",
+		"denied": "Der Zugriff auf die Zwischenablage wurde blockiert. Erlaube ihn für diese Seite und versuche es erneut.",
+		"unreadable": "Die Zwischenablage konnte nicht gelesen werden."
+	},
 	"reference": {
 		"unsupported": "Wähle ein Bild im PNG-, JPEG- oder WebP-Format.",
 		"tooLarge": "Wähle ein Bild mit höchstens {mb} MB.",

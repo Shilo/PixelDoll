@@ -2846,6 +2846,12 @@
 		"resized": "已从 {fromWidth} × {fromHeight} 调整为 {width} × {height} px。",
 		"limits": "最大 {width} × {height} px，{mb} MB。"
 	},
+	"clipboard": {
+		"paste": "从剪贴板粘贴",
+		"noImage": "剪贴板中没有图片。请先复制一张图片。",
+		"denied": "剪贴板访问被阻止。请为此网站允许访问，然后重试。",
+		"unreadable": "无法读取剪贴板。"
+	},
 	"reference": {
 		"unsupported": "请选择 PNG、JPEG 或 WebP 图像。",
 		"tooLarge": "请选择不超过 {mb} MB 的图像。",

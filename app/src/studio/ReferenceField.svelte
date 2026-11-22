@@ -8,10 +8,11 @@
 	import Upload from '@lucide/svelte/icons/upload';
 	import { onDestroy, type Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
-	import { errorMessage, message, type Message } from '../lib/message.ts';
+	import { errorMessage, errorTranslation, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { X } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
+	import PasteButton from './PasteButton.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 
 	let {
@@ -147,84 +148,100 @@
 			>{/if}</span
 	>
 	<div class="reference-row">
-		<button
-			type="button"
-			class={['drop', empty ? 'bu-tile bu-focus' : 'bu-action']}
-			bind:this={drop}
-			data-variant={empty ? 'empty' : dragging ? 'primary' : 'outline'}
-			aria-label={exactFrame && label
-				? label
-				: loading
-					? t('referenceField.openingLabel')
-					: value
-						? t('referenceField.chooseDifferent')
-						: t('referenceField.addImage')}
-			aria-describedby={exactFrame && !hint
-				? fileId
-				: value || exactFrame
-					? `${fileId} ${helpId}`
-					: helpId}
-			aria-disabled={disabled || loading}
-			popovertarget={picker && !disabled && !loading ? pickerId : undefined}
-			aria-haspopup={picker && !disabled ? 'dialog' : undefined}
-			title={exactFrame && !loading ? (value?.name ?? caption) : undefined}
-			onclick={() => {
-				if (picker) return;
-				pick(() => {
-					if (active) input.click();
-				});
-			}}
-			ondragover={(event) => {
-				if (!event.dataTransfer?.types.includes('Files')) return;
-				event.preventDefault();
-				dragging = !disabled && !loading;
-				event.dataTransfer.dropEffect = dragging ? 'copy' : 'none';
-			}}
-			ondragleave={() => (dragging = false)}
-			ondrop={(event) => {
-				if (!event.dataTransfer?.types.includes('Files')) return;
-				event.preventDefault();
-				dragging = false;
-				const files = Array.from(event.dataTransfer.files);
-				if (files.length)
+		<div class="drop-box">
+			<button
+				type="button"
+				class={['drop', empty ? 'bu-tile bu-focus' : 'bu-action']}
+				bind:this={drop}
+				data-variant={empty ? 'empty' : dragging ? 'primary' : 'outline'}
+				aria-label={exactFrame && label
+					? label
+					: loading
+						? t('referenceField.openingLabel')
+						: value
+							? t('referenceField.chooseDifferent')
+							: t('referenceField.addImage')}
+				aria-describedby={exactFrame && !hint
+					? fileId
+					: value || exactFrame
+						? `${fileId} ${helpId}`
+						: helpId}
+				aria-disabled={disabled || loading}
+				popovertarget={picker && !disabled && !loading ? pickerId : undefined}
+				aria-haspopup={picker && !disabled ? 'dialog' : undefined}
+				title={exactFrame && !loading ? (value?.name ?? caption) : undefined}
+				onclick={() => {
+					if (picker) return;
 					pick(() => {
-						if (active) void choose(files);
+						if (active) input.click();
 					});
-			}}
-		>
-			{#if value}
-				<svg class="reference-thumbnail" viewBox={value.previewBox} aria-hidden="true">
-					<image
-						href={`data:image/png;base64,${value.base64}`}
-						width={value.width}
-						height={value.height}
-					/>
-				</svg>
-			{:else if thumbnail}
-				{@render thumbnail()}
-			{:else if !disabled}
-				<Upload size={22} />
-			{/if}
-			<span class="reference-copy">
+				}}
+				ondragover={(event) => {
+					if (!event.dataTransfer?.types.includes('Files')) return;
+					event.preventDefault();
+					dragging = !disabled && !loading;
+					event.dataTransfer.dropEffect = dragging ? 'copy' : 'none';
+				}}
+				ondragleave={() => (dragging = false)}
+				ondrop={(event) => {
+					if (!event.dataTransfer?.types.includes('Files')) return;
+					event.preventDefault();
+					dragging = false;
+					const files = Array.from(event.dataTransfer.files);
+					if (files.length)
+						pick(() => {
+							if (active) void choose(files);
+						});
+				}}
+			>
 				{#if value}
-					<small class="reference-file" id={fileId}>
-						<span class="filename" title={value.name}>{value.name}</span>
-						<span class="faint dimensions"
-							>{t('share.resolution', { width: value.width, height: value.height })}</span
-						>
-					</small>
-				{:else if !exactFrame || !disabled}
-					<span class="reference-caption" id={fileId}
-						>{loading
-							? t('referenceField.opening')
-							: (caption ?? t('referenceField.addImage'))}</span
-					>
-					{#if !loading && !disabled}<small class="faint reference-drop-hint" aria-hidden="true"
-							>{t('referenceField.dropHint')}</small
-						>{/if}
+					<svg class="reference-thumbnail" viewBox={value.previewBox} aria-hidden="true">
+						<image
+							href={`data:image/png;base64,${value.base64}`}
+							width={value.width}
+							height={value.height}
+						/>
+					</svg>
+				{:else if thumbnail}
+					{@render thumbnail()}
+				{:else if !disabled}
+					<Upload size={22} />
 				{/if}
-			</span>
-		</button>
+				<span class="reference-copy">
+					{#if value}
+						<small class="reference-file" id={fileId}>
+							<span class="filename" title={value.name}>{value.name}</span>
+							<span class="faint dimensions"
+								>{t('share.resolution', { width: value.width, height: value.height })}</span
+							>
+						</small>
+					{:else if !exactFrame || !disabled}
+						<span class="reference-caption" id={fileId}
+							>{loading
+								? t('referenceField.opening')
+								: (caption ?? t('referenceField.addImage'))}</span
+						>
+						{#if !loading && !disabled}<small class="faint reference-drop-hint" aria-hidden="true"
+								>{t('referenceField.dropHint')}</small
+							>{/if}
+					{/if}
+				</span>
+			</button>
+			{#if !disabled}
+				<PasteButton
+					class="paste-corner"
+					disabled={loading}
+					onfiles={(files) =>
+						pick(() => {
+							if (active) void choose(files);
+						})}
+					onerror={(failure) => {
+						announcement = '';
+						error = errorTranslation(failure) ?? message('clipboard.unreadable');
+					}}
+				/>
+			{/if}
+		</div>
 		{#if picker && !disabled}
 			<div
 				id={pickerId}
@@ -330,6 +347,30 @@
 	.move-frame.side-by-side .reference-row {
 		position: relative;
 		block-size: 68px;
+	}
+	.drop-box {
+		position: relative;
+		display: flex;
+		flex: 1;
+		min-width: 0;
+		min-height: 0;
+	}
+	.drop-box :global(.paste-corner) {
+		position: absolute;
+		inset-block-start: 4px;
+		inset-inline-end: 4px;
+	}
+	.side-by-side .drop-box:has(:global(.paste-corner)) .drop {
+		padding-inline-end: 40px;
+	}
+	/* Move frames center Remove on the right edge, so Paste sits beside it. */
+	.move-frame .reference-row:has(.remove) :global(.paste-corner) {
+		inset-block-start: 50%;
+		inset-inline-end: 44px;
+		translate: 0 -50%;
+	}
+	.move-frame.side-by-side .reference-row:has(.remove) .drop-box:has(:global(.paste-corner)) .drop {
+		padding-inline-end: 80px;
 	}
 	.drop {
 		flex: 1;

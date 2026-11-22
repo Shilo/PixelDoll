@@ -678,6 +678,39 @@ test('appearance tooltips stay next to their trigger and inside the viewport', a
 	}
 });
 
+test('Paste attaches a clipboard image as the reference and explains an empty clipboard', async ({
+	page,
+	context
+}) => {
+	await context.addInitScript(() => {
+		navigator.clipboard.read = async () => {
+			if (sessionStorage.getItem('clipboard-text'))
+				return [new ClipboardItem({ 'text/plain': new Blob(['text'], { type: 'text/plain' }) })];
+			const canvas = document.createElement('canvas');
+			canvas.width = 12;
+			canvas.height = 20;
+			canvas.getContext('2d')!.fillRect(0, 0, 12, 20);
+			const png = await new Promise<Blob>((done) => canvas.toBlob((blob) => done(blob!)));
+			return [new ClipboardItem({ 'image/png': png })];
+		};
+	});
+	const sheet = await open(page);
+	const paste = sheet.getByRole('button', { name: 'Paste from clipboard', exact: true });
+	await page.evaluate(() => sessionStorage.setItem('clipboard-text', '1'));
+	await paste.click();
+	const empty = sheet.getByRole('alert').filter({ hasText: 'The clipboard has no image.' });
+	await expect(empty).toBeVisible();
+	await page.evaluate(() => sessionStorage.removeItem('clipboard-text'));
+	await paste.click();
+	const attachment = sheet.getByRole('button', {
+		name: 'Choose a different reference image',
+		exact: true
+	});
+	await expect(attachment).toHaveAccessibleDescription(/clipboard\.png/);
+	await expect(attachment.getByText('12 × 20 px', { exact: true })).toBeVisible();
+	await expect(empty).toHaveCount(0);
+});
+
 test('linked prompt is lossless, copy is exact, and keyboard tabs work', async ({ page }) => {
 	const sheet = await open(page);
 	const details = sheet.getByRole('textbox', { name: 'Details', exact: true });

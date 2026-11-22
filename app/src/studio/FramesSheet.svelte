@@ -6,6 +6,7 @@
 	import Sprite from './Sprite.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import DemoCopyRow from './DemoCopyRow.svelte';
+	import PasteButton from './PasteButton.svelte';
 	import { fileDrop, preventFileNavigation } from './fileDrop.ts';
 	import { displayDirection, displayDirectionShort } from './displayDirection.ts';
 	import { formatList } from './displayDirectionProblem.ts';
@@ -264,6 +265,14 @@
 							<option value={id}>{displayMove(id, moveRefs)}</option>
 						{/each}
 					</select>
+					{#if item.layers.length === 1}
+						<PasteButton
+							class="paste-end"
+							disabled={busy || demo || !!blocked}
+							onfiles={(files) => void importFiles(files)}
+							onerror={(e) => (error = e)}
+						/>
+					{/if}
 				</div>
 			{:else}
 				{#if isBody && prepared.fitted.length && prepared.plan.changed.length}
@@ -495,6 +504,10 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 8px;
+	}
+	.pickers :global(.paste-end) {
+		margin-inline-start: auto;
+		align-self: center;
 	}
 	.pickers select {
 		width: auto;

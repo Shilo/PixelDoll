@@ -2925,6 +2925,12 @@
 		"resized": "Redimensionada de {fromWidth} × {fromHeight} para {width} × {height} px.",
 		"limits": "Máximo de {width} × {height} px, {mb} MB."
 	},
+	"clipboard": {
+		"paste": "Colar da área de transferência",
+		"noImage": "A área de transferência não tem nenhuma imagem. Copie uma imagem primeiro.",
+		"denied": "O acesso à área de transferência foi bloqueado. Permita-o para este site e tente novamente.",
+		"unreadable": "Não foi possível ler a área de transferência."
+	},
 	"reference": {
 		"unsupported": "Escolha uma imagem PNG, JPEG ou WebP.",
 		"tooLarge": "Escolha uma imagem de até {mb} MB.",

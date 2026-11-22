@@ -6495,6 +6495,19 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 			})
 		)
 		.toBe(true);
+	// Paste sits beside Remove, inside the tile, without covering it.
+	const endPaste = (await end
+		.locator('xpath=..')
+		.getByRole('button', { name: 'Paste from clipboard', exact: true })
+		.boundingBox())!;
+	const endRemove = (await add
+		.getByRole('button', { name: 'Remove end frame', exact: true })
+		.boundingBox())!;
+	const endTile = (await end.boundingBox())!;
+	expect(endPaste.x + endPaste.width).toBeLessThanOrEqual(endRemove.x + 1);
+	expect(endPaste.x).toBeGreaterThanOrEqual(endTile.x);
+	expect(endPaste.y).toBeGreaterThanOrEqual(endTile.y);
+	expect(endPaste.y + endPaste.height).toBeLessThanOrEqual(endTile.y + endTile.height);
 	await page.setViewportSize(originalViewport);
 	await add.getByRole('button', { name: 'Remove end frame', exact: true }).click();
 	await expect(end).toContainText('No end frame');
@@ -9857,6 +9870,17 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 			buffer: Buffer.from(bytes)
 		});
 
+	// Paste imports the clipboard image like a chosen file.
+	await page.evaluate(() => {
+		navigator.clipboard.read = async () => {
+			const canvas = document.createElement('canvas');
+			canvas.width = canvas.height = 10;
+			const png = await new Promise<Blob>((done) => canvas.toBlob((blob) => done(blob!)));
+			return [new ClipboardItem({ 'image/png': png })];
+		};
+	});
+	await sheet.getByRole('button', { name: 'Paste from clipboard', exact: true }).click();
+	await expect(sheet.getByRole('alert')).toContainText('This PNG is 10×10 px');
 	await importPng(await encodePngBytes(makeImg(10, 10)));
 	await expect(sheet.getByRole('alert')).toContainText('need 512×256 px');
 

@@ -2916,6 +2916,12 @@
 		"resized": "{fromWidth} × {fromHeight} boyutundan {width} × {height} px boyutuna küçültüldü.",
 		"limits": "En fazla {width} × {height} px, {mb} MB."
 	},
+	"clipboard": {
+		"paste": "Panodan yapıştır",
+		"noImage": "Panoda görsel yok. Önce bir görsel kopyalayın.",
+		"denied": "Pano erişimi engellendi. Bu site için izin verin, sonra tekrar deneyin.",
+		"unreadable": "Pano okunamadı."
+	},
 	"reference": {
 		"unsupported": "PNG, JPEG veya WebP görseli seçin.",
 		"tooLarge": "En fazla {mb} MB boyutunda bir görsel seçin.",

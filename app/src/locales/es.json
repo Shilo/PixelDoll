@@ -2916,6 +2916,12 @@
 		"resized": "Se cambió el tamaño de {fromWidth} × {fromHeight} a {width} × {height} px.",
 		"limits": "Máximo {width} × {height} px, {mb} MB."
 	},
+	"clipboard": {
+		"paste": "Pegar desde el portapapeles",
+		"noImage": "El portapapeles no tiene ninguna imagen. Copia una imagen primero.",
+		"denied": "Se bloqueó el acceso al portapapeles. Permítelo para este sitio e inténtalo de nuevo.",
+		"unreadable": "No se pudo leer el portapapeles."
+	},
 	"reference": {
 		"unsupported": "Elige una imagen PNG, JPEG o WebP.",
 		"tooLarge": "Elige una imagen de {mb} MB como máximo.",

@@ -2846,6 +2846,12 @@
 		"resized": "{fromWidth} × {fromHeight} から {width} × {height} px に縮小しました。",
 		"limits": "最大 {width} × {height} px、{mb} MB。"
 	},
+	"clipboard": {
+		"paste": "クリップボードから貼り付け",
+		"noImage": "クリップボードに画像がありません。先に画像をコピーしてください。",
+		"denied": "クリップボードへのアクセスがブロックされました。このサイトで許可してから、もう一度お試しください。",
+		"unreadable": "クリップボードを読み取れませんでした。"
+	},
 	"reference": {
 		"unsupported": "PNG、JPEG、WebP の画像を選択してください。",
 		"tooLarge": "{mb} MB以下の画像を選択してください。",
