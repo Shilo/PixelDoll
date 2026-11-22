@@ -11,8 +11,7 @@
 	import { bodyQualityNote, thumbCell } from './model.ts';
 	import { croppedBacking, croppedThumbnail } from './experience/thumbnails.svelte.ts';
 	import {
-		itemMoveOffer,
-		missingItemMoves,
+		reviewedMoveEquipment,
 		moveMinimumTier,
 		readMoveCandidateImages,
 		skeletonMoveReview
@@ -108,22 +107,10 @@
 	);
 	const equipment = $derived.by(() => {
 		if (!acceptedInput || !project || !candidate || changed) return [];
-		return project.manifest.items
-			.filter((item) => item.id !== project.manifest.rig.baseItem)
-			.map((item) => {
-				const spec = missingItemMoves(project.manifest, item.id, candidate.spec.seed).find(
-					(move) => move.id === id
-				);
-				const dirs = spec?.dirs?.filter(
-					(dir) => candidate.dirs.includes(dir) && item.dressed?.[dir]
-				);
-				const offer =
-					spec && dirs?.length
-						? itemMoveOffer(project.manifest, [{ ...spec, dirs, reviewedMoveItems: true }])
-						: null;
-				const thumb = thumbCell(project, item);
-				return { item, image: thumb && croppedThumbnail(thumb), offer };
-			});
+		return reviewedMoveEquipment(project.manifest, candidate).map(({ item, offer }) => {
+			const thumb = thumbCell(project, item);
+			return { item, image: thumb && croppedThumbnail(thumb), offer };
+		});
 	});
 	const chosen = $derived(
 		equipment.filter(({ item, offer }) => offer?.specs.length && selected.includes(item.id))

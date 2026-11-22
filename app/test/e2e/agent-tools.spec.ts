@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { offlineLaunch } from '../no-live-api.ts';
 import { CharacterApi } from '../fixtures/character-api.ts';
 import { openStudio } from './immersive-helpers.ts';
@@ -23,7 +23,11 @@ type Result = {
 };
 declare global {
 	interface Window {
-		pixeldoll: { call(name: string, args?: unknown): Promise<Result>; hide(): void };
+		pixeldoll: {
+			call(name: string, args?: unknown): Promise<Result>;
+			hide(): void;
+			status(): unknown;
+		};
 	}
 }
 const bridge = (page: Page, name: string, args?: unknown) =>
@@ -31,12 +35,39 @@ const bridge = (page: Page, name: string, args?: unknown) =>
 const webmcp = async (page: Page, name: string, args: object) =>
 	(await page.webmcp.callTool(name, args)) as unknown as Result;
 
+async function mockPixelLab(
+	context: BrowserContext,
+	beforeRequest?: (path: string) => Promise<void> | void
+) {
+	const api = new CharacterApi();
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		await beforeRequest?.(new URL(request.url()).pathname);
+		const response = await api.handle(request.method(), request.url(), request.postDataJSON());
+		await route.fulfill({
+			status: response.status,
+			headers: Object.fromEntries(response.headers),
+			body: Buffer.from(await response.arrayBuffer())
+		});
+	});
+	await context.addInitScript(() =>
+		localStorage.setItem('pixellabApiKey', 'fake-agent-test-key-no-network')
+	);
+	return api;
+}
+
 test('agent tools: WebMCP lists the tools and returns plain results with sheets shown in the page', async ({
 	page
 }) => {
 	await openStudio(page, '/');
-	await expect.poll(async () => (await page.webmcp.tools()).length).toBeGreaterThan(20);
+	await expect
+		.poll(() => page.evaluate(() => window.pixeldoll.status()))
+		.toMatchObject({
+			tools: 25,
+			webmcp: { registered: 25, failed: [], state: 'done' }
+		});
 	const tools = await page.webmcp.tools();
+	expect(tools).toHaveLength(25);
 	expect(tools.map((t) => t.name)).toContain('inspect_item');
 
 	const overview = await webmcp(page, 'pixeldoll_overview', {});
@@ -88,7 +119,7 @@ test('agent tools: the page bridge edits a free copy atomically and reads withou
 	const id = (copy.data as { characterId: string }).characterId;
 	expect(copy).toMatchObject({
 		ok: true,
-		data: { open: false, next: { tool: 'open_character', args: { characterId: id } } }
+		data: { open: false }
 	});
 	expect(await bridge(page, 'pixeldoll_overview')).toMatchObject({
 		ok: true,
@@ -97,7 +128,21 @@ test('agent tools: the page bridge edits a free copy atomically and reads withou
 	expect(await bridge(page, 'open_character', { characterId: id })).toMatchObject({ ok: true });
 
 	const off = await bridge(page, 'set_outfit', { characterId: id, takeOff: ['head'] });
-	expect(off).toMatchObject({ ok: true, data: { worn: { head: null }, saved: true } });
+	expect(off).toMatchObject({
+		ok: true,
+		data: {
+			changed: true,
+			changes: [{ slot: 'head', from: 'helmet_steel', to: null }],
+			worn: { head: null },
+			saved: true
+		}
+	});
+	const noOp = await bridge(page, 'set_outfit', { characterId: id, takeOff: ['head'] });
+	expect(noOp).toMatchObject({
+		ok: true,
+		data: { changed: false, changes: [], unchanged: ['head'], worn: { head: null } }
+	});
+	expect(noOp.data).not.toHaveProperty('saved');
 	// One unknown id refuses the whole change: the sword stays on.
 	const worn = (off.data as { worn: Record<string, string | null> }).worn;
 	expect(
@@ -109,11 +154,10 @@ test('agent tools: the page bridge edits a free copy atomically and reads withou
 
 	// Reading another character leaves the open one open; edits refuse to land on a character the user is not looking at.
 	const demo = await bridge(page, 'inspect_character', {
-		characterId: 'fixture:s2',
-		images: false
+		characterId: 'fixture:s2'
 	});
 	expect(demo).toMatchObject({ ok: true, data: { id: 'fixture:s2', open: false } });
-	expect(await bridge(page, 'get_activity')).toMatchObject({ ok: true });
+	expect(demo.images).toHaveLength(0);
 	expect(
 		await bridge(page, 'set_color', { characterId: 'fixture:s2', material: 'x' })
 	).toMatchObject({ ok: false, data: { code: 'invalid' } });
@@ -124,6 +168,16 @@ test('agent tools: the page bridge edits a free copy atomically and reads withou
 		imageData: true
 	});
 	expect(sheet.images[0].data).toMatch(/^iVBOR/);
+	const removeSword = await bridge(page, 'set_outfit', { takeOff: ['main_hand'] });
+	expect(removeSword).toMatchObject({
+		ok: true,
+		data: {
+			changed: true,
+			changes: [{ slot: 'main_hand', from: worn.main_hand, to: null }],
+			alsoTookOff: [],
+			saved: true
+		}
+	});
 	expect(await page.evaluate(() => window.pixeldoll.call('list_characters'))).toMatchObject({
 		data: { open: id }
 	});
@@ -150,18 +204,13 @@ test('agent tools: the person approves a budget in USD, sees what is left and ca
 	page,
 	context
 }) => {
-	const api = new CharacterApi();
-	await context.route('https://*.pixellab.ai/**', async (route) => {
-		const request = route.request();
-		const response = await api.handle(request.method(), request.url(), request.postDataJSON());
-		await route.fulfill({
-			status: response.status,
-			headers: Object.fromEntries(response.headers),
-			body: Buffer.from(await response.arrayBuffer())
-		});
+	test.setTimeout(150_000);
+	let release!: () => void;
+	const blocked = new Promise<void>((resolve) => {
+		release = resolve;
 	});
-	await page.addInitScript(() =>
-		localStorage.setItem('pixellabApiKey', 'fake-agent-test-key-no-network')
+	const api = await mockPixelLab(context, (path) =>
+		path === '/v2/create-character-v3' ? blocked : undefined
 	);
 	await openStudio(page, '/');
 	await expect.poll(() => page.evaluate(() => typeof window.pixeldoll)).toBe('object');
@@ -185,7 +234,7 @@ test('agent tools: the person approves a budget in USD, sees what is left and ca
 	expect(asked).toMatchObject({ ok: true, data: { answer: 'pending' } });
 	const approvalId = (asked.data as { activityId: string }).activityId;
 	const dialog = page.getByRole('alertdialog', { name: 'Let the agent spend generations?' });
-	await expect(dialog).toContainText('up to about $');
+	await expect(dialog).toContainText('up to about $0.060');
 	await expect(dialog).toContainText('12 PixelLab generations');
 	await expect(dialog).toContainText('Finish the knight');
 	await dialog.getByRole('button', { name: 'Allow', exact: true }).click();
@@ -199,9 +248,24 @@ test('agent tools: the person approves a budget in USD, sees what is left and ca
 
 	const left = page.getByRole('status').filter({ hasText: 'Agent budget' });
 	await expect(left).toContainText('12 generations');
-	const start = await bridge(page, 'create_character', creation);
-	expect(start).toMatchObject({ ok: true, data: { started: true, status: 'running' } });
-	const started = start.data as { activityId: string; characterId: string; maxGenerations: number };
+	const follower = await context.newPage();
+	let started: { activityId: string; characterId: string; maxGenerations: number };
+	try {
+		await openStudio(follower, '/');
+		await expect
+			.poll(async () => (await bridge(follower, 'get_activity')).data)
+			.toMatchObject({ tabRole: 'follower' });
+		const start = await bridge(page, 'create_character', creation);
+		expect(start).toMatchObject({ ok: true, data: { started: true, status: 'running' } });
+		started = start.data as typeof started;
+		expect(await bridge(follower, 'get_activity', { ids: [started.activityId] })).toMatchObject({
+			ok: true,
+			data: { matched: [{ activityId: started.activityId, outcome: 'running' }] }
+		});
+	} finally {
+		release();
+		await follower.close();
+	}
 	await expect
 		.poll(
 			async () =>
@@ -209,7 +273,8 @@ test('agent tools: the person approves a budget in USD, sees what is left and ca
 					await bridge(page, 'get_activity', {
 						ids: [started.activityId]
 					})
-				).data
+				).data,
+			{ timeout: 120_000 }
 		)
 		.toMatchObject({
 			matched: [
@@ -247,6 +312,115 @@ test('agent tools: the person approves a budget in USD, sees what is left and ca
 	).toMatchObject({
 		ok: false,
 		data: { code: 'budget' }
+	});
+	expect(api.calls.filter(({ method }) => method === 'POST')).toEqual(posts);
+	await page.reload();
+	await expect.poll(() => page.evaluate(() => typeof window.pixeldoll)).toBe('object');
+	expect(await bridge(page, 'create_character', creation)).toMatchObject({
+		ok: true,
+		data: { ...started, repeated: true, status: 'created' }
+	});
+	expect(api.calls.filter(({ method }) => method === 'POST')).toEqual(posts);
+});
+
+test('agent tools: a mocked move survives reload and requires the rendered candidate to save', async ({
+	page,
+	context
+}) => {
+	test.setTimeout(270_000);
+	const api = await mockPixelLab(context);
+	await openStudio(page, '/');
+	expect(
+		await bridge(page, 'request_budget', { generations: 60, purpose: 'Draw a knight and a slash' })
+	).toMatchObject({ ok: true });
+	await page.getByRole('button', { name: 'Allow', exact: true }).click();
+	const creation = await bridge(page, 'create_character', {
+		details: 'a knight',
+		directions: 'four',
+		acceptWarnings: true
+	});
+	expect(creation).toMatchObject({ ok: true, data: { started: true } });
+	const { activityId: creationId, characterId } = creation.data as {
+		activityId: string;
+		characterId: string;
+	};
+	const activity = (id: string) => bridge(page, 'get_activity', { ids: [id] });
+	const waitForOutcome = (id: string, outcome: string) =>
+		expect
+			.poll(async () => (await activity(id)).data, { timeout: 120_000 })
+			.toMatchObject({ matched: [{ activityId: id, outcome }] });
+	await waitForOutcome(creationId, 'created');
+	expect(await bridge(page, 'open_character', { characterId })).toMatchObject({ ok: true });
+	const move = {
+		action: 'slash',
+		model: 'skeleton-v3',
+		acceptWarnings: true,
+		requestId: 'slash-on-knight'
+	};
+	const start = await bridge(page, 'add_move', move);
+	expect(start).toMatchObject({
+		ok: true,
+		data: { characterId, moveId: 'slash', status: 'queued' }
+	});
+	const { activityId } = start.data as { activityId: string };
+	await waitForOutcome(activityId, 'review');
+	expect((await activity(activityId)).data).toMatchObject({
+		matched: [{ charges: { knownGenerations: expect.any(Number), unresolvedCalls: 0 } }]
+	});
+	const posts = api.calls.filter(({ method }) => method === 'POST');
+	expect(posts.some(({ path }) => path === '/v2/animate-with-skeleton-v3')).toBe(true);
+	await page.reload();
+	await expect.poll(() => page.evaluate(() => typeof window.pixeldoll)).toBe('object');
+	await waitForOutcome(activityId, 'review');
+	expect(await bridge(page, 'add_move', move)).toMatchObject({
+		ok: true,
+		data: { repeated: true, activityId, characterId, status: 'review' }
+	});
+	const inspection = await bridge(page, 'inspect_character', { characterId });
+	const reviews = (inspection.data as { moveReviews: { moveId: string }[] }).moveReviews;
+	expect(reviews).toMatchObject([{ moveId: 'slash' }]);
+	expect(reviews[0]).not.toHaveProperty('candidateId');
+	expect(
+		await bridge(page, 'add_move', { ...move, characterId, requestId: 'another-slash' })
+	).toMatchObject({
+		ok: false,
+		data: { code: 'invalid', error: expect.stringContaining('accept_move or discard_move') }
+	});
+	const render = await bridge(page, 'render_frames', {
+		characterId,
+		move: 'slash',
+		review: true,
+		directions: ['south']
+	});
+	expect(render).toMatchObject({
+		ok: true,
+		data: {
+			review: {
+				canAccept: true,
+				playback: expect.arrayContaining([
+					expect.objectContaining({ cell: 0, ms: expect.any(Number) })
+				])
+			}
+		}
+	});
+	expect(render.images.length).toBeGreaterThan(0);
+	const {
+		review: { candidateId }
+	} = render.data as { review: { candidateId: string } };
+	const decision = { characterId, moveId: 'slash' };
+	expect(
+		await bridge(page, 'accept_move', { ...decision, candidateId: `stale-${candidateId}` })
+	).toMatchObject({ ok: false, data: { code: 'busy' } });
+	expect(await bridge(page, 'accept_move', { ...decision, candidateId })).toMatchObject({
+		ok: true,
+		data: { outcome: 'saved', equipmentToPose: [] }
+	});
+	await page.reload();
+	await expect.poll(() => page.evaluate(() => typeof window.pixeldoll)).toBe('object');
+	await waitForOutcome(activityId, 'saved');
+	expect((await bridge(page, 'inspect_character', { characterId })).data).toMatchObject({
+		moves: expect.arrayContaining([expect.objectContaining({ id: 'slash' })]),
+		moveReviews: []
 	});
 	expect(api.calls.filter(({ method }) => method === 'POST')).toEqual(posts);
 });

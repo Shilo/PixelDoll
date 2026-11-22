@@ -4,10 +4,12 @@ import {
 	addMoveTool,
 	moveReadiness,
 	moveReviewTools,
+	poseEquipmentTool,
 	reviewOf
 } from '../../src/studio/automation/moves.ts';
-import { receipts } from '../../src/studio/automation/receipts.ts';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
+import { LABELS } from '../../src/lib/rig/poses.ts';
+import { reviewedMoveEquipment } from '../../src/studio/create.ts';
 import type { SetupPlan } from '../../src/lib/rig/setup.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import type { MoveCandidate } from '../../src/studio/replaceMove.ts';
@@ -22,6 +24,7 @@ const studio = vi.hoisted(() => ({
 	openProject: vi.fn(),
 	pendingBodyMoveName: vi.fn(),
 	queueAgentMove: vi.fn<typeof queueAgentMove>(),
+	readAgentReceipts: vi.fn(),
 	probe: vi.fn(),
 	reserve: vi.fn(),
 	rigReady: vi.fn(),
@@ -41,7 +44,7 @@ vi.mock('../../src/studio/state.svelte.ts', () => ({
 	queueAgentMove: studio.queueAgentMove,
 	readCharacter: studio.readCharacter,
 	readCharacterMetadata: studio.readCharacterMetadata,
-	readAgentReceipts: async () => [],
+	readAgentReceipts: studio.readAgentReceipts,
 	writeAgentReceipt: async () => true,
 	refreshMoveReviews: vi.fn(),
 	refreshProjects: vi.fn(),
@@ -95,6 +98,7 @@ beforeEach(async () => {
 	studio.readCharacter.mockImplementation(async () => saved());
 	studio.readCharacterMetadata.mockImplementation(async () => saved().r.record);
 	studio.pendingBodyMoveName.mockResolvedValue(false);
+	studio.readAgentReceipts.mockResolvedValue([]);
 	studio.probe.mockResolvedValue('managed');
 	studio.reserve.mockImplementation(async (_what, _gens, signal, start) =>
 		start(
@@ -158,32 +162,121 @@ test('the skeleton read combines caller cancellation and hides provider details'
 	expect(studio.reserve).not.toHaveBeenCalled();
 });
 
-test('Studio acceptance is sufficient while the move is still waiting to start', async () => {
+test('a move replays its durable admission against the original open character', async () => {
 	const requestId = 'queued-wave';
-	studio.queueAgentMove.mockImplementation((_id, _spec, check) => {
+	studio.doc.id = 'rig-target';
+	studio.queueAgentMove.mockImplementation(async (_id, spec, check) => {
 		check();
+		studio.readAgentReceipts.mockResolvedValue([{ ...spec.agentAdmission, outcome: 'saved' }]);
 		return { id: 'agent:move-test' };
 	});
-	expect(await call({ requestId })).toMatchObject({
+	expect(await call({ requestId, characterId: undefined })).toMatchObject({
 		data: { started: true, activityId: 'agent:move-test', status: 'queued' }
 	});
-	const [characterId, spec, , beforePaid, settle] = studio.queueAgentMove.mock.calls[0];
+	const [characterId, spec, , beforePaid] = studio.queueAgentMove.mock.calls[0];
 	expect(characterId).toBe('rig-target');
 	expect(spec.agentQuote?.generations).toBeGreaterThan(0);
 	expect(beforePaid).not.toThrow();
 	studio.keyRevision++;
 	expect(beforePaid).toThrow();
-	settle('running');
-	settle('review');
-	settle('saved');
-	expect(receipts.get('agent:move-test')?.outcome).toBe('saved');
+	expect(spec.agentAdmission).toMatchObject({ id: 'agent:move-test', outcome: 'queued' });
 	// The receipt answers before the character is read again, even if it can no longer be read.
 	studio.readCharacter.mockReset();
-	expect(await call({ requestId })).toMatchObject({
+	studio.doc.id = 'fixture:s2';
+	expect(await call({ requestId, characterId: undefined })).toMatchObject({
 		data: { started: true, repeated: true, activityId: 'agent:move-test', status: 'saved' }
 	});
 	expect(studio.readCharacter).not.toHaveBeenCalled();
 	expect(studio.reserve).toHaveBeenCalledTimes(1);
+});
+
+test('an empty directions array quotes the same redraw as omitted directions', async () => {
+	const first = await call({ redraw: 'walk', dryRun: true });
+	expect(first.data).toMatchObject({
+		moveId: 'walk',
+		redraw: true,
+		directions: expect.arrayContaining(['south'])
+	});
+	expect(await call({ redraw: 'walk', directions: [], dryRun: true })).toEqual(first);
+});
+
+test('a waiting move review tells the agent how to decide before asking PixelLab', async () => {
+	const { r } = saved();
+	studio.readCharacter.mockResolvedValue({
+		r: { ...r, record: { ...r.record, moveReviews: { 'wave-hello': {} } } }
+	});
+	await expect(call()).rejects.toMatchObject({
+		code: 'invalid',
+		message: expect.stringContaining('accept_move or discard_move')
+	});
+	expect(studio.probe).not.toHaveBeenCalled();
+	expect(studio.reserve).not.toHaveBeenCalled();
+});
+
+test('equipment posing refuses an item without a Studio pose offer', async () => {
+	await expect(
+		poseEquipmentTool.run(
+			{ characterId: 'rig-target', itemId: 'sword_steel', moveId: 'walk' },
+			new AbortController().signal
+		)
+	).rejects.toMatchObject({ code: 'unsupported' });
+	expect(studio.reserve).not.toHaveBeenCalled();
+});
+
+test('an equipment pose uses the Studio offer, quote and paid reservation', async () => {
+	const project = await loadFixture((path) =>
+		readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))
+	);
+	manifest = project.manifest;
+	const rig = manifest.rig;
+	const walk = rig.animations.find(({ id }) => id === 'walk')!;
+	const base = manifest.items.find(({ id }) => id === rig.baseItem)!;
+	const hat = manifest.items.find(({ id }) => id === 'hat_wizard')!;
+	const reference = base.layers[0].cells!.walk.south![0]!;
+	const keypoints = LABELS.map((label) => ({ label, x: 0.5, y: 0.5 }));
+	rig.rest = { south: { image: reference, keypoints } };
+	walk.sources = {
+		south: {
+			route: 'skeleton-v3',
+			reference,
+			keypoints: Array(walk.cells).fill(keypoints),
+			provenance: []
+		}
+	};
+	hat.route = 'skeleton-pose';
+	hat.key = 'green';
+	hat.dressed = { south: reference };
+	hat.baseHash = rig.baseHash;
+	for (const layer of hat.layers) delete layer.cells?.walk?.south;
+	const offers = reviewedMoveEquipment(manifest, {
+		dirs: ['south'],
+		spec: { id: 'walk', seed: 1 }
+	} as MoveCandidate);
+	expect(offers.find(({ item }) => item.id === hat.id)?.offer?.gens).toBeGreaterThan(0);
+	expect(offers.find(({ item }) => item.id === 'sword_steel')?.offer).toBeNull();
+	studio.queueAgentMove.mockResolvedValue({ id: 'agent:move-test' });
+	const signal = new AbortController().signal;
+	const args = { characterId: 'rig-target', itemId: hat.id, moveId: walk.id };
+	const quote = await poseEquipmentTool.run({ ...args, dryRun: true }, signal);
+	expect(quote.data).toMatchObject({ started: false, directions: ['south'] });
+	const { generations } = quote.data as { generations: number };
+	expect(generations).toBeGreaterThan(0);
+	expect(studio.reserve).not.toHaveBeenCalled();
+	expect(await poseEquipmentTool.run(args, signal)).toMatchObject({
+		data: { started: true, generations, itemId: hat.id }
+	});
+	expect(studio.reserve).toHaveBeenCalledExactlyOnceWith(
+		'equipment walk',
+		generations,
+		signal,
+		expect.any(Function)
+	);
+	expect(studio.queueAgentMove.mock.calls[0][1]).toMatchObject({
+		itemsOnly: true,
+		items: [hat.id],
+		itemReview: { gens: expect.any(Number) },
+		agentQuote: { generations }
+	});
 });
 
 test('the real rig check tells a character that cannot get moves from one that needs setup', async () => {
@@ -213,6 +306,14 @@ test('the real rig check tells a character that cannot get moves from one that n
 		canAdd: false,
 		code: 'needs_user',
 		reason: expect.stringContaining('about 1.85 generations')
+	});
+	studio.setupPlan.mockClear().mockImplementation(async (_project, reference) => {
+		if (reference !== 'walk') throw new Error('Missing standing view');
+		return { gens: 2 } as SetupPlan;
+	});
+	expect(await moveReadiness(demo, { manifest: demo.manifest })).toMatchObject({
+		code: 'needs_user',
+		reason: expect.stringContaining('selecting "walk"')
 	});
 });
 

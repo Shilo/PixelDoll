@@ -20,21 +20,21 @@ let keyRevision = getKeyRevision(),
 let epoch = 0;
 let active = false;
 let pending: AbortController | undefined;
-export type BudgetRequest = {
+type BudgetRequest = {
 	activityId: string;
 	answer: Answer | 'pending' | 'failed';
 	generations: number;
 	approxUsd: number;
 };
 const requests = new Map<string, BudgetRequest>();
-let latestRequest: BudgetRequest | undefined;
+let latestRequestId: string | undefined;
 export const budgetRequest = (id: string) => requests.get(id);
 const reservations = new Set<() => void>();
 type BudgetView = BudgetState & { active: boolean; request: BudgetRequest | null };
 const snapshot = (): BudgetView => ({
 	...ledger.snapshot(),
 	active,
-	request: latestRequest ?? null
+	request: (latestRequestId && requests.get(latestRequestId)) || null
 });
 const summary = writable(snapshot());
 export const budgetView = readonly(summary);
@@ -119,7 +119,7 @@ export async function withReservation<T>(
 		throw error;
 	}
 }
-/** The person's End: no further paid starts until a new approval. */
+/** End revokes pending sends, including those belonging to already-admitted work. */
 export function endBudget() {
 	syncCredential();
 	for (const finish of reservations) finish();
@@ -145,9 +145,7 @@ export async function requestBudget(
 	syncCredential();
 	requireLeader();
 	checkAbort(signal);
-	if (pending) throw new AgentError('A budget request is already waiting for the user.', 'busy');
 	const controller = new AbortController();
-	pending = controller;
 	const request: BudgetRequest = {
 		activityId: crypto.randomUUID(),
 		answer: 'pending',
@@ -159,7 +157,7 @@ export async function requestBudget(
 	const record = (answer: BudgetRequest['answer']) => {
 		const next = { ...request, answer };
 		requests.set(request.activityId, next);
-		latestRequest = next;
+		latestRequestId = request.activityId;
 		changed();
 		return next;
 	};
@@ -167,6 +165,7 @@ export async function requestBudget(
 		.request(
 			generations,
 			(answer) => {
+				pending = controller;
 				const target = document.createElement('div');
 				document.body.append(target);
 				try {
@@ -210,7 +209,7 @@ export async function requestBudget(
 			return record(answer);
 		})
 		.finally(() => {
-			pending = undefined;
+			if (pending === controller) pending = undefined;
 		});
 	if (!opened || answered) return completion;
 	void completion.catch(() => record('failed'));

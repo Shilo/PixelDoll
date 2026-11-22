@@ -27,6 +27,13 @@ import { bodyMoveIssue, partialMoveFrameIssue, reservedMove, type MoveSpec } fro
 
 type FrameImage = { width: number; height: number; base64: string };
 
+export function moveTemplateText(
+	action: string,
+	suggestions: readonly { action?: string; prompt: string }[]
+) {
+	return suggestions.find((entry) => entry.action === action)?.prompt ?? moveTemplatePrompt(action);
+}
+
 /** What the person (or agent) chose in the form. */
 export interface MoveFormChoices<Image extends FrameImage = FrameImage> {
 	/** The template action ('' for a described move). */

@@ -1549,6 +1549,8 @@ export interface MoveSpec {
 	activityScope?: string;
 	/** Agent queue consent is valid only in its original tab, at the reviewed rig version and price. */
 	agentQuote?: { rigVersion: string; generations: number };
+	/** Stored with queued agent work so its receipt exists even if the tab closes during admission. */
+	agentAdmission?: import('./automation/receipts.ts').MoveAdmission;
 	dirs?: DirectionName[];
 	approvedDirs?: DirectionName[];
 	itemMethod?: 'grid' | 'anchor';
@@ -1577,6 +1579,7 @@ const recoverySpecHash = (spec: MoveSpec) =>
 		stableStringify({
 			...spec,
 			agentQuote: undefined,
+			agentAdmission: undefined,
 			measurementRecovery: undefined,
 			activityScope: undefined
 		})
@@ -2667,6 +2670,22 @@ export function itemMoveOffer(
 	} catch (error) {
 		return { specs: [], gens: null, error: errorMessage(error) };
 	}
+}
+
+export function reviewedMoveEquipment(m: Manifest, candidate: MoveCandidate) {
+	return m.items
+		.filter((item) => item.id !== m.rig.baseItem)
+		.map((item) => {
+			const spec = missingItemMoves(m, item.id, candidate.spec.seed).find(
+				(move) => move.id === candidate.spec.id
+			);
+			const dirs = spec?.dirs?.filter((dir) => candidate.dirs.includes(dir) && item.dressed?.[dir]);
+			const offer =
+				spec && dirs?.length
+					? itemMoveOffer(m, [{ ...spec, dirs, reviewedMoveItems: true }])
+					: null;
+			return { item, offer };
+		});
 }
 
 /**
@@ -4144,7 +4163,7 @@ async function addBodyClip(
 	const checks = Object.fromEntries(clips.map((clip) => [`${spec.id}/${clip.d}`, clip.out.qa]));
 	if (reviewBlobs) {
 		const candidate: MoveCandidate = {
-			spec,
+			spec: { ...spec, agentAdmission: undefined },
 			input: moveCandidateInput(rec, spec.id),
 			dirs,
 			animation: anim,
@@ -4172,8 +4191,11 @@ async function addBodyClip(
 						'The character changed before the review was saved.',
 						'moveSheet.checkpoint.changed'
 					);
-				if (spec.reviewRegeneration) currentMoveCandidate(current, spec.reviewRegeneration);
-				else if (Object.hasOwn(current.moveReviews ?? {}, spec.id)) throw changedMoveCandidate();
+				if (spec.reviewRegeneration) {
+					const previous = currentMoveCandidate(current, spec.reviewRegeneration);
+					if (previous.spec.activityScope !== spec.activityScope)
+						noteAgentMoveDecision(current, previous.spec, 'discarded');
+				} else if (Object.hasOwn(current.moveReviews ?? {}, spec.id)) throw changedMoveCandidate();
 				current.moveReviews = { ...current.moveReviews, [spec.id]: candidate };
 				return current;
 			},
@@ -4282,6 +4304,40 @@ function moveCandidateBlobGuard(cells: MoveCandidate['cells'], written: Map<stri
 	};
 }
 
+type AgentMoveDecisions = Record<string, 'saved' | 'discarded'>;
+type MoveDecisionRecord = StoredProject & { agentMoveDecisions?: AgentMoveDecisions };
+
+export function agentMoveDecision(record: MoveDecisionRecord | undefined, scope?: string) {
+	return scope ? record?.agentMoveDecisions?.[scope] : undefined;
+}
+
+export function agentEquipmentSaved(
+	record: StoredProject | undefined,
+	receipt: import('./automation/receipts.ts').Receipt
+) {
+	if (!record || !receipt.moveId || !receipt.directions?.length) return false;
+	const { manifest } = record;
+	const item = manifest.items.find(({ id }) => id === receipt.targetId);
+	return (
+		!!item &&
+		receipt.directions.every((dir) => hasCompleteCells(manifest, item, receipt.moveId!, dir))
+	);
+}
+
+function noteAgentMoveDecision(
+	record: MoveDecisionRecord,
+	spec: MoveSpec,
+	outcome: 'saved' | 'discarded'
+) {
+	const scope = spec.activityScope;
+	if (scope?.startsWith('agent:')) {
+		const decisions = Object.entries(record.agentMoveDecisions ?? {}).filter(
+			([id]) => id !== scope
+		);
+		record.agentMoveDecisions = Object.fromEntries([...decisions.slice(-199), [scope, outcome]]);
+	}
+}
+
 export async function resolveMoveCandidate(
 	projectId: string,
 	reviewed: MoveCandidate,
@@ -4291,7 +4347,8 @@ export async function resolveMoveCandidate(
 	if (!accept) {
 		await db.update<StoredProject>('projects', projectId, (current) => {
 			if (!current) throw changedMoveCandidate();
-			currentMoveCandidate(current, reviewed.spec);
+			const candidate = currentMoveCandidate(current, reviewed.spec);
+			noteAgentMoveDecision(current, candidate.spec, 'discarded');
 			delete current.moveReviews![id];
 			return current;
 		});
@@ -4383,6 +4440,7 @@ export async function resolveMoveCandidate(
 				],
 				clips: { ...qa.clips, ...candidate.checks }
 			};
+			noteAgentMoveDecision(current, candidate.spec, 'saved');
 			delete current.moveReviews![id];
 			current.savedAt = new Date().toISOString();
 			return current;

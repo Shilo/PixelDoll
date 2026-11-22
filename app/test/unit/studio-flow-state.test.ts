@@ -1,6 +1,7 @@
 /// <reference types="svelte" />
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { MoveSpec, Progress } from '../../src/studio/create.ts';
+import type { MoveAdmission, Receipt } from '../../src/studio/automation/receipts.ts';
 import type { RepairReview } from '../../src/lib/items/run.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import type { Balance } from '../../src/lib/pixellab/routes.ts';
@@ -37,7 +38,9 @@ const mocks = vi.hoisted(() => ({
 	queueState: vi.fn()
 }));
 const mockAccount = vi.hoisted(() => ({ key: '', balance: null as Balance | null, revision: 0 }));
-vi.mock('../../src/studio/create.ts', () => ({
+vi.mock('../../src/studio/create.ts', async (original) => ({
+	agentMoveDecision: (await original<typeof import('../../src/studio/create.ts')>())
+		.agentMoveDecision,
 	createCharacter: mocks.create,
 	addMove: mocks.move,
 	itemMoveReviewMatches: (manifest: Manifest, spec: MoveSpec) => {
@@ -1464,18 +1467,22 @@ test('agent activity resolves queue and move IDs and rejects unknown IDs', async
 		error: expect.stringMatching(/^credits:/)
 	};
 	await expect(callTool('get_activity', {})).resolves.toMatchObject({
-		data: { queue: [queueEntry] }
+		data: { queue: [queueEntry], truncated: false }
 	});
 	const targeted = await callTool('get_activity', { ids: ['job-a', 'move:rig-a/walk'] });
 	expect(targeted).toMatchObject({
 		data: { matched: [queueEntry, { id: 'move:rig-a/walk', done: true }] }
 	});
 	expect(targeted.data).not.toHaveProperty('queue');
-	await expect(callTool('wait_for_activity', { ids: ['job-a'] })).resolves.toMatchObject({
-		data: { matched: [queueEntry], stillRunning: false, changed: false }
-	});
-	for (const tool of ['get_activity', 'wait_for_activity'])
-		await expect(callTool(tool, { ids: ['missing'] })).rejects.toMatchObject({ code: 'not_found' });
+	await expect(callTool('get_activity', { ids: ['job-a'], waitSeconds: 2 })).resolves.toMatchObject(
+		{
+			data: { matched: [queueEntry], stillRunning: false, changed: false }
+		}
+	);
+	for (const waitSeconds of [0, 2])
+		await expect(callTool('get_activity', { ids: ['missing'], waitSeconds })).rejects.toMatchObject(
+			{ code: 'not_found' }
+		);
 
 	vi.useFakeTimers();
 	try {
@@ -1494,12 +1501,10 @@ test('agent activity resolves queue and move IDs and rejects unknown IDs', async
 			counts: { running: 1 }
 		});
 		let returned = false;
-		const waiting = callTool('wait_for_activity', { ids: ['job-a'], timeoutSeconds: 2 }).then(
-			(result) => {
-				returned = true;
-				return result;
-			}
-		);
+		const waiting = callTool('get_activity', { ids: ['job-a'], waitSeconds: 2 }).then((result) => {
+			returned = true;
+			return result;
+		});
 		await vi.advanceTimersByTimeAsync(0);
 		const running = mocks.queueState();
 		mocks.queueState.mockReturnValue({
@@ -1520,9 +1525,163 @@ test('agent activity resolves queue and move IDs and rejects unknown IDs', async
 	} finally {
 		vi.useRealTimers();
 	}
+	mocks.queueState.mockReturnValue({
+		role: 'leader',
+		counts: {},
+		jobs: Array.from({ length: 31 }, (_, i) => ({
+			id: `job-${i}`,
+			createdAt: i,
+			state: 'done',
+			label: 'Pose',
+			gens: 1,
+			usd: 0,
+			jobs: []
+		}))
+	});
+	const recent = (await callTool('get_activity', {})).data as {
+		queue: { id: string }[];
+		truncated: boolean;
+	};
+	expect(recent.truncated).toBe(true);
+	expect(recent.queue.map((entry) => entry.id)).toEqual(
+		Array.from({ length: 30 }, (_, i) => `job-${30 - i}`)
+	);
+	await expect(callTool('get_activity', { ids: ['job-0'] })).resolves.toMatchObject({
+		data: { matched: [{ id: 'job-0' }], truncated: false }
+	});
 });
 
-test('agent demo copy stays on the current character and offers an explicit open action', async () => {
+test('follower Activity uses durable receipts and scoped charges before local drafts mirror', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const { callTool } = await import('../../src/studio/automation/tools.ts');
+	s.startupResumed();
+	s.doc.loading = false;
+	const base = {
+		name: 'Fixture',
+		startedAt: new Date().toISOString(),
+		fingerprint: 'digest',
+		generations: 4,
+		outcome: 'running'
+	} as const;
+	const character: Receipt = {
+		...base,
+		id: 'agent:create',
+		kind: 'character',
+		characterId: 'rig-new'
+	};
+	const item: Receipt = {
+		...base,
+		id: 'agent:item',
+		kind: 'item',
+		characterId: 'rig-existing',
+		targetId: 'hat'
+	};
+	const move: Receipt = {
+		...base,
+		id: 'agent:move',
+		kind: 'move',
+		characterId: 'rig-existing',
+		moveId: 'wave',
+		outcome: 'queued'
+	};
+	const stored = new Map<string, unknown>([
+		...[character, item, move].map((r) => [`studio-agent-receipts:${r.id}`, r] as const),
+		['rig-existing', { id: 'rig-existing', manifest: fixtureManifest() }]
+	]);
+	mocks.get.mockImplementation(async (_store, key) => structuredClone(stored.get(key)));
+	mocks.queueState.mockReturnValue({
+		role: 'follower',
+		counts: {},
+		jobs: [
+			{
+				id: 'pose',
+				activityScope: item.id,
+				state: 'lost',
+				gens: 2,
+				usd: 0.03,
+				costUnknown: true,
+				jobs: []
+			},
+			{
+				id: 'other-tab-job',
+				activityScope: 'agent:other',
+				state: 'done',
+				gens: 10,
+				usd: 1,
+				jobs: []
+			}
+		]
+	});
+	const read = () => callTool('get_activity', { ids: [character.id, item.id, move.id] });
+	await expect(read()).resolves.toMatchObject({
+		data: {
+			tabRole: 'follower',
+			matched: [
+				{ activityId: character.id, outcome: 'running' },
+				{
+					activityId: item.id,
+					outcome: 'running',
+					charges: { knownGenerations: 2, knownUsd: 0.03, unresolvedCalls: 1 }
+				},
+				{ activityId: move.id, outcome: 'queued' }
+			],
+			queue: [{ id: 'pose', activityId: item.id }]
+		}
+	});
+	stored.set('rig-new', { id: 'rig-new', manifest: fixtureManifest() });
+	stored.set('studio-agent-receipts:agent:item', { ...item, outcome: 'discarded' });
+	stored.set('studio-agent-receipts:agent:move', { ...move, outcome: 'review' });
+	await expect(read()).resolves.toMatchObject({
+		data: { matched: [{ outcome: 'created' }, { outcome: 'discarded' }, { outcome: 'review' }] }
+	});
+});
+
+test('a reset tab settles a durable move admission without sending work again', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const receipt: MoveAdmission = {
+		id: 'agent:admitted',
+		kind: 'move',
+		characterId: 'rig-a',
+		moveId: 'walk',
+		name: 'Walk',
+		fingerprint: 'digest',
+		generations: 4,
+		startedAt: new Date().toISOString(),
+		outcome: 'queued'
+	};
+	const spec = {
+		...recoverySpec,
+		id: 'walk',
+		activityScope: receipt.id,
+		agentQuote: { rigVersion: 'rig', generations: 4 },
+		agentAdmission: receipt
+	};
+	const records = new Map<string, unknown>([
+		[
+			'studio-move',
+			{
+				spec,
+				projectId: 'rig-a',
+				status: 'running',
+				requestText: (await import('../../src/lib/store/db.ts')).REQUEST_TEXT
+			}
+		]
+	]);
+	mocks.get.mockImplementation(async (_store, key) => structuredClone(records.get(key)));
+	mocks.put.mockImplementation(async (_store, key, value) => {
+		records.set(key, structuredClone(value));
+	});
+	mocks.del.mockImplementation(async (_store, key) => {
+		records.delete(key);
+	});
+	expect(await s.readAgentReceipts([receipt.id])).toMatchObject([{ outcome: 'queued' }]);
+	await s.resumeMove();
+	expect(mocks.move).not.toHaveBeenCalled();
+	expect(records.has('studio-move')).toBe(false);
+	expect(await s.readAgentReceipts([receipt.id])).toMatchObject([{ outcome: 'stopped' }]);
+});
+
+test('agent demo copy stays on the current character', async () => {
 	const s = await import('../../src/studio/state.svelte.ts');
 	const { callTool, TOOLS } = await import('../../src/studio/automation/tools.ts');
 	const project = await equipmentFixture();
@@ -1535,8 +1694,7 @@ test('agent demo copy stays on the current character and offers an explicit open
 	await expect(callTool('copy_demo_character', {})).resolves.toMatchObject({
 		data: {
 			characterId: 'copied-demo',
-			open: false,
-			next: { tool: 'open_character', args: { characterId: 'copied-demo' } }
+			open: false
 		}
 	});
 	expect(s.doc.id).toBe('another-character');
@@ -2868,14 +3026,19 @@ describe('optional review', () => {
 			name: 'New helm'
 		});
 		const receiptsKey = 'studio-agent-receipts';
-		let receiptRecord: unknown;
-		mocks.update.mockImplementation(async (_store, id, update) => {
-			if (id === receiptsKey) {
-				receiptRecord = structuredClone(update(receiptRecord));
-				return receiptRecord;
+		const history = new Map<string, unknown>();
+		mocks.update.mockImplementation(async (_store, id, update, _related, preserve) => {
+			if (id.startsWith(receiptsKey)) {
+				const previous = history.get(id);
+				const record = preserve?.(previous);
+				const updated = structuredClone(update(previous));
+				if (record) history.set(record.key, structuredClone(record.record));
+				history.set(id, updated);
+				return updated;
 			}
 			return update({ id: 'project', manifest: structuredClone(saved) });
 		});
+		mocks.get.mockImplementation(async (_store, id) => structuredClone(history.get(id)));
 		mocks.source.mockResolvedValue({
 			project: { manifest: saved, images: new Map() },
 			current: { items: { body: 'base' }, variants: {} }
@@ -2922,9 +3085,6 @@ describe('optional review', () => {
 		expect(s.ui).toMatchObject({ selected: 'helm0', frame: 3 });
 		s.doc.id = 'another-character';
 		s.store.project = null;
-		mocks.get.mockImplementation(async (_store, id) =>
-			id === receiptsKey ? structuredClone(receiptRecord) : undefined
-		);
 		const activity = await callTool('get_activity', { ids: [activityId] });
 		expect(activity).toMatchObject({
 			data: {
