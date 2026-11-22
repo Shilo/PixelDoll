@@ -3,7 +3,6 @@
 		"empty": "Tempat sampah kosong. Karakter, item, kategori, gerakan, dan status yang Anda pindahkan ke sini disimpan 30 hari.",
 		"kept": "Disimpan 30 hari, maksimal 50 entri.",
 		"restoreNamed": "Pulihkan {name}",
-		"deleteForever": "Hapus permanen",
 		"deleteForeverNamed": "Hapus {name} permanen",
 		"confirmTitle": "Hapus {name} permanen?",
 		"confirmBody": "Hilang selamanya. Ini tidak dapat dibatalkan.",
@@ -627,7 +626,6 @@
 		"createSlot": "Buat slot",
 		"builtInSlots": "Slot bawaan",
 		"theSlotAndItsItemsAreDeleted": "Itemnya ikut pindah dan pakaian tidak lagi memakainya. Anda bisa memulihkannya selama 30 hari.",
-		"undoBringsItBack": "Pilih Urungkan untuk mengembalikannya.",
 		"labelAddedAtTheEndOfWardrobe": "{label} ditambahkan di bagian bawah Lemari.",
 		"valueShownAtTheEndOfWardrobe": "{value} ditampilkan di bagian bawah Lemari.",
 		"demoDeleteLocked": "Item demo bawaan tidak dapat dihapus.",
@@ -641,10 +639,6 @@
 		"creativeHint": "Petunjuk kreatif",
 		"hintNote": "Ditambahkan ke deskripsi setiap item baru di slot ini. Item yang sudah dibuat tidak berubah.",
 		"alreadyHidden": "{label} sudah ada, tetapi tersembunyi.",
-		"deleteWithItems": {
-			"1": "Hapus {label} dan itemnya?",
-			"other": "Hapus {label} dan {n} itemnya?"
-		},
 		"deleteTitle": "Pindahkan {label} ke tempat sampah?",
 		"deleteExportNote": "Hasil ekspor tidak akan lagi berisi slot “{slot}”. Kode game yang merujuk ke slot itu perlu diubah.",
 		"theSlotIsDeleted": "Kategori keluar dari lemari. Anda bisa memulihkannya selama 30 hari."
@@ -2785,8 +2779,7 @@
 		"resolveDrafts": "Selesaikan atau buang draf item karakter ini sebelum menghapus animasi.",
 		"required": "Animasi berdiri ini diperlukan untuk menambahkan item yang sudah ada ke animasi baru.",
 		"selectedCharacterChanged": "Karakter pilihan berubah.",
-		"concurrentEdit": "Karakter ini berubah sebelum animasi bisa dihapus. Coba lagi.",
-		"removed": "Animasi dihapus"
+		"concurrentEdit": "Karakter ini berubah sebelum animasi bisa dihapus. Coba lagi."
 	},
 	"sizePreview": {
 		"label": "Panduan ukuran: kanvas tubuh {body} piksel di dalam frame {frame} piksel",

@@ -3,7 +3,6 @@
 		"empty": "Burada bir şey yok. Çöp kutusuna taşıdığınız karakterler, öğeler, kategoriler, hareketler ve durumlar 30 gün kalır.",
 		"kept": "30 gün, en fazla 50 kayıt saklanır.",
 		"restoreNamed": "{name} geri yükle",
-		"deleteForever": "Kalıcı olarak sil",
 		"deleteForeverNamed": "{name} kalıcı olarak silinsin",
 		"confirmTitle": "{name} kalıcı olarak silinsin mi?",
 		"confirmBody": "Tamamen gider. Bu geri alınamaz.",
@@ -644,7 +643,6 @@
 		"createSlot": "Yuva oluşturun",
 		"builtInSlots": "Yerleşik yuvalar",
 		"theSlotAndItsItemsAreDeleted": "Öğeleri de gider ve kıyafetler artık onları giymez. 30 gün boyunca geri alabilirsiniz.",
-		"undoBringsItBack": "Geri alarak önceki hâline döndürebilirsiniz.",
 		"labelAddedAtTheEndOfWardrobe": "{label}, Gardırop bölümünün sonuna eklendi.",
 		"valueShownAtTheEndOfWardrobe": "{value}, Gardırop bölümünün sonunda gösteriliyor.",
 		"demoDeleteLocked": "Uygulamayla gelen demonun eşyaları silinemez.",
@@ -658,11 +656,6 @@
 		"creativeHint": "Tasarım ipucu",
 		"hintNote": "Buradaki her yeni eşyanın açıklamasına eklenir. Daha önce yapılan eşyalar değişmez.",
 		"alreadyHidden": "{label} zaten var, ancak gösterilmiyor.",
-		"deleteWithItems": {
-			"1": "{label} yuvası ve içindeki eşya silinsin mi?",
-			"one": "{label} yuvası ve içindeki {n} eşya silinsin mi?",
-			"other": "{label} yuvası ve içindeki {n} eşya silinsin mi?"
-		},
 		"deleteTitle": "{label} çöp kutusuna taşınsın mı?",
 		"deleteExportNote": "Dışa aktarımlarda artık “{slot}” yuvası yer almayacak. Oyun kodu bu adı kullanıyorsa kodu değiştirin.",
 		"theSlotIsDeleted": "Kategori gardıroptan çıkar. 30 gün boyunca geri alabilirsiniz."
@@ -2856,8 +2849,7 @@
 		"resolveDrafts": "Animasyonu silmeden önce bu karakterin eşya taslaklarını tamamlayın veya atın.",
 		"required": "Mevcut eşyaları yeni animasyonlara uyarlamak için bu ayakta duruş animasyonu gerekir.",
 		"selectedCharacterChanged": "Seçili karakter değişti.",
-		"concurrentEdit": "Animasyon silinemeden önce karakter değişti. Tekrar deneyin.",
-		"removed": "Animasyon kaldırıldı"
+		"concurrentEdit": "Animasyon silinemeden önce karakter değişti. Tekrar deneyin."
 	},
 	"sizePreview": {
 		"label": "Boyut kılavuzu: {frame} piksellik kare içinde {body} piksellik gövde tuvali",

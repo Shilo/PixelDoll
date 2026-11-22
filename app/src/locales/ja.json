@@ -3,7 +3,6 @@
 		"empty": "ゴミ箱は空です。ゴミ箱に移動したキャラクター、アイテム、カテゴリ、モーション、ステートは 30 日間残ります。",
 		"kept": "30 日間、最大 50 件まで保管されます。",
 		"restoreNamed": "{name} を復元",
-		"deleteForever": "完全に削除",
 		"deleteForeverNamed": "{name} を完全に削除",
 		"confirmTitle": "{name} を完全に削除しますか？",
 		"confirmBody": "完全に削除されます。元に戻せません。",
@@ -627,7 +626,6 @@
 		"createSlot": "装備スロットを作成",
 		"builtInSlots": "標準の装備スロット",
 		"theSlotAndItsItemsAreDeleted": "アイテムも一緒に移動し、衣装では着用されなくなります。30 日間は元に戻せます。",
-		"undoBringsItBack": "元に戻すと復元できます。",
 		"labelAddedAtTheEndOfWardrobe": "{label}をワードローブの最後に追加しました。",
 		"valueShownAtTheEndOfWardrobe": "{value}をワードローブの最後に表示しました。",
 		"demoDeleteLocked": "同梱のデモのアイテムは削除できません。",
@@ -641,10 +639,6 @@
 		"creativeHint": "デザインのヒント",
 		"hintNote": "ここで作る新しいアイテムの説明に追加されます。作成済みのアイテムは変わりません。",
 		"alreadyHidden": "{label}はすでにありますが、表示されていません。",
-		"deleteWithItems": {
-			"1": "{label}とそのアイテムを削除しますか？",
-			"other": "{label}とそのアイテム{n}個を削除しますか？"
-		},
 		"deleteTitle": "{label} をゴミ箱に移動しますか？",
 		"deleteExportNote": "エクスポートに装備スロット「{slot}」が含まれなくなるため、それを参照しているゲームのコードは変更が必要です。",
 		"theSlotIsDeleted": "カテゴリはワードローブから外れます。30 日間は元に戻せます。"
@@ -2785,8 +2779,7 @@
 		"resolveDrafts": "モーションを削除する前に、このキャラクターのアイテムの下書きを完了するか破棄してください。",
 		"required": "既存のアイテムを新しいモーションでも使えるようにするには、この立ちポーズのモーションが必要です。",
 		"selectedCharacterChanged": "選択したキャラクターが変更されました。",
-		"concurrentEdit": "モーションを削除する前に、このキャラクターが変更されました。もう一度お試しください。",
-		"removed": "モーションを削除しました"
+		"concurrentEdit": "モーションを削除する前に、このキャラクターが変更されました。もう一度お試しください。"
 	},
 	"sizePreview": {
 		"label": "サイズガイド：{frame}ピクセルのフレーム内に、{body}ピクセルの素体キャンバスがあります",

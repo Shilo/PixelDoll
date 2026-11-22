@@ -15,12 +15,7 @@ import type { Manifest } from '../lib/store/manifest.ts';
 import * as db from '../lib/store/db.ts';
 import { assignNewClipExportId } from '../lib/store/identity.ts';
 import type { StoredProject } from '../lib/store/project.ts';
-import {
-	deletedEntry,
-	keysToPrune,
-	quotaError,
-	type RecentlyDeleted
-} from '../lib/store/recently-deleted.ts';
+import { deletedEntry, quotaError, type RecentlyDeleted } from '../lib/store/recently-deleted.ts';
 import { LocalizedError, message } from '../lib/message.ts';
 import { moveLabel } from './model.ts';
 import { sameClipName, withClipWriteLock } from './clipName.ts';
@@ -37,6 +32,7 @@ import {
 	syncStoredProject,
 	pendingBodyMoveName,
 	pushRecovery,
+	keysToPruneAndForget,
 	refreshRecentlyDeleted,
 	restoreDeleted,
 	toast
@@ -281,7 +277,7 @@ export async function removeMove(id: string) {
 		throw new LocalizedError('Keep at least one move on this character.', 'moveRemoval.keepOne');
 	const manifest = await retainMoves(snapshot.manifest, ids);
 	await flushSave();
-	const prune = await keysToPrune();
+	const prune = await keysToPruneAndForget();
 	let kept: RecentlyDeleted | undefined;
 	try {
 		await db.update<StoredProject>(

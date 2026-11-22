@@ -1825,6 +1825,19 @@ export async function restoreDeleted(id: string): Promise<boolean> {
 }
 
 /** Delete one entry for good. Its artwork goes with it when the queue is idle, which is when a sweep is safe. */
+/** Keys a new entry pushes out, forgetting their riding poses first: these entries are removed by the delete's own transaction. */
+export async function keysToPruneAndForget(): Promise<string[]> {
+	const values = await db.all<unknown>('projects');
+	const keys = pruneKeys(values);
+	const gone = new Set(keys);
+	for (const value of values) {
+		if (!gone.has((value as { id?: string })?.id ?? '')) continue;
+		const entry = readEntry(value);
+		if (entry) forgetPose(entry);
+	}
+	return keys;
+}
+
 export async function deleteDeletedForever(id: string): Promise<void> {
 	// Forgetting the riding pose belongs here, not on the recoverable delete: a restore keeps it, a permanent one does not.
 	const entry = readEntry(await db.get<unknown>('projects', id).catch(() => undefined));
@@ -1851,7 +1864,7 @@ export async function removeProject(id = doc.id): Promise<void> {
 			'Character';
 	await flushSave();
 	// Entries this deletion pushes past the cap go in its own transaction, so the list never outgrows it.
-	const prune = await keysToPrune();
+	const prune = await keysToPruneAndForget();
 	let kept: RecentlyDeleted | undefined;
 	try {
 		kept = await db.deleteCharacter<RecentlyDeleted>(id, (record, drafts) => {
@@ -2227,7 +2240,7 @@ export async function removeItem(itemId: string) {
 	const projectId = doc.id,
 		request = openRequest;
 	await flushSave();
-	const prune = await keysToPrune();
+	const prune = await keysToPruneAndForget();
 	let kept: RecentlyDeleted | undefined;
 	try {
 		kept = await deleteItem<RecentlyDeleted>(
@@ -3735,7 +3748,7 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 		return message('state.categoryItemsGettingMoves', { label });
 	if (isDemo()) return message('slotsSheet.demoDeleteLocked');
 	const definition = JSON.stringify(m.slots.find((s) => s.id === key));
-	const prune = await keysToPrune();
+	const prune = await keysToPruneAndForget();
 	let kept: RecentlyDeleted | undefined;
 	try {
 		kept = await deleteItems<RecentlyDeleted>(
@@ -3790,7 +3803,8 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 	if (doc.id === projectId && request === openRequest) {
 		// Quietly, so the delete stays undoable: the category's worn items leave the live outfit.
 		await openProject(projectId, { quiet: true });
-		if (ui.group === key) ui.group = shownCategories(m, busySlots())[0]?.key ?? 'head';
+		if (ui.group === key)
+			ui.group = shownCategories(store.project!.manifest, busySlots())[0]?.key ?? 'head';
 		for (const id of owned) {
 			const item = m.items.find((it) => it.id === id);
 			if (!item) continue;

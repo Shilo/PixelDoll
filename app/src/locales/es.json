@@ -3,7 +3,6 @@
 		"empty": "Aquí no hay nada. Los personajes, objetos, categorías, movimientos y estados que muevas a la papelera se guardan 30 días.",
 		"kept": "Se guarda 30 días, hasta 50 entradas.",
 		"restoreNamed": "Restaurar {name}",
-		"deleteForever": "Eliminar para siempre",
 		"deleteForeverNamed": "Eliminar {name} para siempre",
 		"confirmTitle": "¿Eliminar {name} para siempre?",
 		"confirmBody": "Desaparece para siempre. Esto no se puede deshacer.",
@@ -644,7 +643,6 @@
 		"createSlot": "Crear ranura",
 		"builtInSlots": "Ranuras integradas",
 		"theSlotAndItsItemsAreDeleted": "Sus objetos se van y los conjuntos dejan de llevarlos. Puedes recuperarlo durante 30 días.",
-		"undoBringsItBack": "La opción Deshacer recupera la ranura.",
 		"labelAddedAtTheEndOfWardrobe": "{label} se agregó al final del Armario.",
 		"valueShownAtTheEndOfWardrobe": "{value} se muestra al final del Armario.",
 		"demoDeleteLocked": "Los objetos de la demo incluida no se pueden eliminar.",
@@ -658,11 +656,6 @@
 		"creativeHint": "Pista creativa",
 		"hintNote": "Se agrega a la descripción de cada objeto nuevo de esta ranura. Los objetos ya creados se quedan como están.",
 		"alreadyHidden": "{label} ya existe pero no se muestra.",
-		"deleteWithItems": {
-			"1": "¿Eliminar {label} y su objeto?",
-			"one": "¿Eliminar {label} y su {n} objeto?",
-			"other": "¿Eliminar {label} y sus {n} objetos?"
-		},
 		"deleteTitle": "¿Mover {label} a la papelera?",
 		"deleteExportNote": "Las exportaciones ya no incluirán su ranura “{slot}”, así que el código del juego que la nombre debe cambiar.",
 		"theSlotIsDeleted": "La categoría sale del armario. Puedes recuperarla durante 30 días."
@@ -2856,8 +2849,7 @@
 		"resolveDrafts": "Termina o descarta los borradores de objetos de este personaje antes de eliminar una animación.",
 		"required": "La animación de la pose de pie es necesaria para añadir fotogramas de los objetos existentes a nuevas animaciones.",
 		"selectedCharacterChanged": "El personaje seleccionado cambió.",
-		"concurrentEdit": "Este personaje cambió antes de que se pudiera eliminar la animación. Inténtalo de nuevo.",
-		"removed": "Animación eliminada"
+		"concurrentEdit": "Este personaje cambió antes de que se pudiera eliminar la animación. Inténtalo de nuevo."
 	},
 	"sizePreview": {
 		"label": "Guía de tamaño: lienzo del cuerpo de {body} píxeles dentro de un marco de {frame} píxeles",

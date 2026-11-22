@@ -3,7 +3,6 @@
 		"empty": "Nothing here. Characters, items, categories, moves and states you move to Trash stay for 30 days.",
 		"kept": "Kept for 30 days, up to 50 entries.",
 		"restoreNamed": "Restore {name}",
-		"deleteForever": "Delete forever",
 		"deleteForeverNamed": "Delete {name} forever",
 		"confirmTitle": "Delete {name} forever?",
 		"confirmBody": "It is gone for good. This cannot be undone.",
@@ -644,7 +643,6 @@
 		"createSlot": "Create slot",
 		"builtInSlots": "Built-in slots",
 		"theSlotAndItsItemsAreDeleted": "Its items go too and outfits stop wearing them. You can bring it back for 30 days.",
-		"undoBringsItBack": "Undo brings it back.",
 		"labelAddedAtTheEndOfWardrobe": "{label} added at the end of Wardrobe.",
 		"valueShownAtTheEndOfWardrobe": "{value} shown at the end of Wardrobe.",
 		"demoDeleteLocked": "Items of the bundled demo can’t be deleted.",
@@ -658,11 +656,6 @@
 		"creativeHint": "Creative hint",
 		"hintNote": "Added to each new item’s description here. Items already made stay as they are.",
 		"alreadyHidden": "{label} already exists but isn’t shown.",
-		"deleteWithItems": {
-			"1": "Delete {label} and its item?",
-			"one": "Delete {label} and its {n} item?",
-			"other": "Delete {label} and its {n} items?"
-		},
 		"deleteTitle": "Move {label} to Trash?",
 		"deleteExportNote": "Exports will no longer include its slot “{slot}”, so game code that names it must change.",
 		"theSlotIsDeleted": "It leaves the Wardrobe. You can bring it back for 30 days."
@@ -2856,8 +2849,7 @@
 		"resolveDrafts": "Finish or discard this character's item drafts before deleting a move.",
 		"required": "This standing move is needed to extend existing items to new moves.",
 		"selectedCharacterChanged": "The selected character changed.",
-		"concurrentEdit": "This character changed before the move could be deleted. Try again.",
-		"removed": "Removed move"
+		"concurrentEdit": "This character changed before the move could be deleted. Try again."
 	},
 	"sizePreview": {
 		"label": "Size guide: {body} pixel body canvas inside a {frame} pixel frame",

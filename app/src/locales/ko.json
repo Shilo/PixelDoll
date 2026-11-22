@@ -3,7 +3,6 @@
 		"empty": "휴지통이 비었습니다. 휴지통으로 이동한 캐릭터, 아이템, 카테고리, 모션, 상태는 30일 동안 남습니다.",
 		"kept": "30일 동안 최대 50개까지 보관됩니다.",
 		"restoreNamed": "{name} 복원",
-		"deleteForever": "영구 삭제",
 		"deleteForeverNamed": "{name} 영구 삭제",
 		"confirmTitle": "{name}을(를) 영구 삭제할까요?",
 		"confirmBody": "완전히 사라집니다. 되돌릴 수 없습니다.",
@@ -627,7 +626,6 @@
 		"createSlot": "슬롯 만들기",
 		"builtInSlots": "기본 슬롯",
 		"theSlotAndItsItemsAreDeleted": "아이템도 함께 이동하고 의상에서는 더 이상 착용하지 않습니다. 30일 동안 되돌릴 수 있습니다.",
-		"undoBringsItBack": "실행 취소하면 되돌아와요.",
 		"labelAddedAtTheEndOfWardrobe": "옷장 끝에 {label} 항목이 추가됐어요.",
 		"valueShownAtTheEndOfWardrobe": "옷장 끝에 {value} 항목이 표시돼요.",
 		"demoDeleteLocked": "함께 제공되는 데모의 아이템은 삭제할 수 없어요.",
@@ -641,10 +639,6 @@
 		"creativeHint": "창작 힌트",
 		"hintNote": "여기서 새 아이템 설명에 추가돼요. 이미 만든 아이템은 그대로예요.",
 		"alreadyHidden": "{label} 항목이 이미 있지만 표시되지 않아요.",
-		"deleteWithItems": {
-			"1": "{label} 항목과 그 아이템을 삭제할까요?",
-			"other": "{label} 항목과 아이템 {n}개를 삭제할까요?"
-		},
 		"deleteTitle": "{label}을(를) 휴지통으로 이동할까요?",
 		"deleteExportNote": "내보내기에 슬롯 “{slot}” 항목이 더 이상 포함되지 않아서, 그 이름을 쓰는 게임 코드도 바꿔야 해요.",
 		"theSlotIsDeleted": "카테고리가 옷장에서 빠집니다. 30일 동안 되돌릴 수 있습니다."
@@ -2785,8 +2779,7 @@
 		"resolveDrafts": "동작을 삭제하기 전에 이 캐릭터의 아이템 초안을 끝내거나 버리세요.",
 		"required": "기존 아이템을 새 동작으로 확장하려면 이 서 있는 동작이 필요해요.",
 		"selectedCharacterChanged": "선택한 캐릭터가 바뀌었어요.",
-		"concurrentEdit": "동작을 삭제하기 전에 이 캐릭터가 바뀌었어요. 다시 시도해 주세요.",
-		"removed": "동작 제거됨"
+		"concurrentEdit": "동작을 삭제하기 전에 이 캐릭터가 바뀌었어요. 다시 시도해 주세요."
 	},
 	"sizePreview": {
 		"label": "크기 가이드: {frame}픽셀 프레임 안의 {body}픽셀 몸체 캔버스",

@@ -3,7 +3,6 @@
 		"empty": "Der Papierkorb ist leer. Charaktere, Gegenstände, Kategorien, Bewegungen und Zustände, die du in den Papierkorb verschiebst, bleiben 30 Tage lang hier.",
 		"kept": "30 Tage lang aufbewahrt, bis zu 50 Einträge.",
 		"restoreNamed": "{name} wiederherstellen",
-		"deleteForever": "Endgültig löschen",
 		"deleteForeverNamed": "{name} endgültig löschen",
 		"confirmTitle": "{name} endgültig löschen?",
 		"confirmBody": "Endgültig weg. Das lässt sich nicht rückgängig machen.",
@@ -644,7 +643,6 @@
 		"createSlot": "Ausrüstungsplatz erstellen",
 		"builtInSlots": "Vorgegebene Ausrüstungsplätze",
 		"theSlotAndItsItemsAreDeleted": "Die Gegenstände gehen mit und Outfits tragen sie nicht mehr. 30 Tage lang kannst du alles zurückholen.",
-		"undoBringsItBack": "Mit „Rückgängig“ holst du ihn zurück.",
 		"labelAddedAtTheEndOfWardrobe": "{label} wurde am Ende der Garderobe hinzugefügt.",
 		"valueShownAtTheEndOfWardrobe": "{value} wird am Ende der Garderobe angezeigt.",
 		"demoDeleteLocked": "Gegenstände der mitgelieferten Demo können nicht gelöscht werden.",
@@ -658,11 +656,6 @@
 		"creativeHint": "Gestaltungshinweis",
 		"hintNote": "Wird hier zur Beschreibung jedes neuen Gegenstands hinzugefügt. Bereits erstellte Gegenstände bleiben unverändert.",
 		"alreadyHidden": "{label} ist bereits vorhanden, aber ausgeblendet.",
-		"deleteWithItems": {
-			"1": "{label} und den zugehörigen Gegenstand löschen?",
-			"one": "{label} und {n} zugehörigen Gegenstand löschen?",
-			"other": "{label} und {n} zugehörige Gegenstände löschen?"
-		},
 		"deleteTitle": "{label} in den Papierkorb verschieben?",
 		"deleteExportNote": "Exporte enthalten den Ausrüstungsplatz „{slot}“ nicht mehr. Passe daher Spielcode an, der diesen Namen verwendet.",
 		"theSlotIsDeleted": "Die Kategorie verlässt die Garderobe. 30 Tage lang kannst du sie zurückholen."
@@ -2856,8 +2849,7 @@
 		"resolveDrafts": "Schließe die Gegenstandsentwürfe dieser Figur ab oder verwirf sie, bevor du eine Animation löschst.",
 		"required": "Diese Standanimation wird benötigt, um vorhandene Gegenstände um neue Animationen zu erweitern.",
 		"selectedCharacterChanged": "Die ausgewählte Figur hat sich geändert.",
-		"concurrentEdit": "Diese Figur hat sich geändert, bevor die Animation gelöscht werden konnte. Versuch es noch einmal.",
-		"removed": "Animation entfernt"
+		"concurrentEdit": "Diese Figur hat sich geändert, bevor die Animation gelöscht werden konnte. Versuch es noch einmal."
 	},
 	"sizePreview": {
 		"label": "Größenübersicht: {body} px große Grundkörper-Zeichenfläche in einem {frame} px großen Frame",

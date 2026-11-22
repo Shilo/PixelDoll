@@ -3,7 +3,7 @@
 	import SettingsItemButton from './SettingsItemButton.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
-	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	import { formatNumber, t } from 'svelte-whisper';
 	import { Archive, Trash, TriangleAlert, Upload } from './icons.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import DestructiveConfirmButton from './DestructiveConfirmButton.svelte';

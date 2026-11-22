@@ -9923,7 +9923,7 @@ test('a deleted item comes back from the notice, the history and the Trash after
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
-	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	await pickItem(page, 'Red cape');
 	const tile = () =>
 		page.locator('.equipment-scroll .item-tile').getByText('Red cape', { exact: true });
@@ -9977,6 +9977,6 @@ test('a deleted item comes back from the notice, the history and the Trash after
 	await expect(asking).toBeFocused();
 	await page.keyboard.press('Enter');
 	await expect(page.getByText('Restored Red cape')).toBeVisible();
-	await settings.getByRole('button', { name: 'Back', exact: true }).click();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(tile()).toHaveCount(1);
 });

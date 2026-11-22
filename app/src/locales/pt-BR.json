@@ -3,7 +3,6 @@
 		"empty": "Nada aqui. Personagens, itens, categorias, movimentos e estados que você mover para a lixeira ficam 30 dias.",
 		"kept": "Guardado por 30 dias, até 50 entradas.",
 		"restoreNamed": "Restaurar {name}",
-		"deleteForever": "Excluir para sempre",
 		"deleteForeverNamed": "Excluir {name} para sempre",
 		"confirmTitle": "Excluir {name} para sempre?",
 		"confirmBody": "Some para sempre. Isso não pode ser desfeito.",
@@ -644,7 +643,6 @@
 		"createSlot": "Criar espaço",
 		"builtInSlots": "Espaços padrão",
 		"theSlotAndItsItemsAreDeleted": "Os itens vão junto e as roupas deixam de usá-los. Você pode recuperar por 30 dias.",
-		"undoBringsItBack": "Use Desfazer para trazer de volta.",
 		"labelAddedAtTheEndOfWardrobe": "{label}: novo espaço no fim do guarda-roupa.",
 		"valueShownAtTheEndOfWardrobe": "{value}: agora visível no fim do guarda-roupa.",
 		"demoDeleteLocked": "Não é possível excluir itens da demo incluída no app.",
@@ -658,11 +656,6 @@
 		"creativeHint": "Dica criativa",
 		"hintNote": "A dica entra na descrição de cada item novo deste espaço. Os itens existentes não mudam.",
 		"alreadyHidden": "{label} já existe, mas está oculto.",
-		"deleteWithItems": {
-			"1": "Excluir {label} e seu item?",
-			"one": "Excluir {label} e {n} item?",
-			"other": "Excluir {label} e seus {n} itens?"
-		},
 		"deleteTitle": "Mover {label} para a lixeira?",
 		"deleteExportNote": "As exportações não incluirão mais o espaço “{slot}”. Você precisa alterar qualquer código do jogo que use esse nome.",
 		"theSlotIsDeleted": "A categoria sai do guarda-roupa. Você pode recuperá-la por 30 dias."
@@ -2865,8 +2858,7 @@
 		"resolveDrafts": "Conclua ou descarte os rascunhos de itens deste personagem antes de excluir uma animação.",
 		"required": "Esta animação da pose em pé é necessária para reaproveitar os itens existentes em novas animações.",
 		"selectedCharacterChanged": "O personagem selecionado mudou.",
-		"concurrentEdit": "Este personagem mudou antes que a animação pudesse ser excluída. Tente novamente.",
-		"removed": "Animação removida"
+		"concurrentEdit": "Este personagem mudou antes que a animação pudesse ser excluída. Tente novamente."
 	},
 	"sizePreview": {
 		"label": "Guia de tamanho: área do corpo de {body} pixels dentro de um quadro de {frame} pixels",

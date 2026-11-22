@@ -3,7 +3,6 @@
 		"empty": "Rien ici. Les personnages, objets, catégories, mouvements et états que vous déplacez vers la corbeille restent 30 jours.",
 		"kept": "Conservé 30 jours, jusqu’à 50 entrées.",
 		"restoreNamed": "Restaurer {name}",
-		"deleteForever": "Supprimer définitivement",
 		"deleteForeverNamed": "Supprimer {name} définitivement",
 		"confirmTitle": "Supprimer {name} définitivement ?",
 		"confirmBody": "Il disparaît pour de bon. Action irréversible.",
@@ -644,7 +643,6 @@
 		"createSlot": "Créer l’emplacement",
 		"builtInSlots": "Emplacements intégrés",
 		"theSlotAndItsItemsAreDeleted": "Ses objets partent aussi et les tenues ne les portent plus. Vous pouvez tout récupérer pendant 30 jours.",
-		"undoBringsItBack": "Utilisez « Annuler » pour rétablir cet emplacement.",
 		"labelAddedAtTheEndOfWardrobe": "{label} ajouté à la fin de la Garde-robe.",
 		"valueShownAtTheEndOfWardrobe": "{value} affiché à la fin de la Garde-robe.",
 		"demoDeleteLocked": "Les objets de la démo intégrée ne peuvent pas être supprimés.",
@@ -658,11 +656,6 @@
 		"creativeHint": "Indication créative",
 		"hintNote": "Ajoutée à la description de chaque nouvel objet créé ici. Les objets déjà créés restent tels quels.",
 		"alreadyHidden": "{label} existe déjà mais n’est pas affiché.",
-		"deleteWithItems": {
-			"1": "Supprimer {label} et son objet ?",
-			"one": "Supprimer {label} et son objet ({n}) ?",
-			"other": "Supprimer {label} et ses {n} objets ?"
-		},
 		"deleteTitle": "Déplacer {label} vers la corbeille ?",
 		"deleteExportNote": "L’emplacement « {slot} » ne figurera plus dans les exports. Si le code de votre jeu y fait référence, vous devrez le modifier.",
 		"theSlotIsDeleted": "La catégorie quitte la garde-robe. Vous pouvez la récupérer pendant 30 jours."
@@ -2856,8 +2849,7 @@
 		"resolveDrafts": "Terminez ou abandonnez les brouillons d’objets de ce personnage avant de supprimer une animation.",
 		"required": "Ces vues debout sont nécessaires pour adapter les objets existants à de nouvelles animations.",
 		"selectedCharacterChanged": "Le personnage sélectionné a changé.",
-		"concurrentEdit": "Ce personnage a changé avant que l’animation puisse être supprimée. Réessayez.",
-		"removed": "Animation supprimée"
+		"concurrentEdit": "Ce personnage a changé avant que l’animation puisse être supprimée. Réessayez."
 	},
 	"sizePreview": {
 		"label": "Guide des tailles : zone du corps de {body} pixels dans un cadre de {frame} pixels",
