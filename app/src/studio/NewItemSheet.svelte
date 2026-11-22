@@ -3,6 +3,8 @@
 	import { openerLabel } from './openerLabel.ts';
 	import Sheet from './Sheet.svelte';
 	import PromptField from './PromptField.svelte';
+	import PromptSuggestions from './PromptSuggestions.svelte';
+	import SlotPicker from './SlotPicker.svelte';
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import ReferenceField from './ReferenceField.svelte';
 	import TierNotice from './TierNotice.svelte';
@@ -55,16 +57,12 @@
 			? formDrafts.item
 			: undefined;
 	const m = $derived(store.project?.manifest);
-	// Every category of this character is offered; Not shown ones sit behind More and are shown once an item starts there.
+	// Every category of this character is offered; Not shown ones come last and are shown once an item starts there.
 	const all = $derived(m ? categories(m) : []);
 	const shown = $derived(m ? shownCategories(m, busySlots(m)) : []);
 	const requested = draft?.group ?? ui.newItem.group;
 	let group = $state(
 		untrack(() => (all.some((c) => c.key === requested) ? requested : (shown[0]?.key ?? 'head')))
-	);
-	let more = $state(untrack(() => !shown.some((c) => c.key === group)));
-	const offered = $derived(
-		more ? all : all.filter((c) => c.key === group || shown.some((x) => x.key === c.key))
 	);
 	// One category is one slot.
 	const slot = $derived(group);
@@ -300,26 +298,15 @@
 				{t('newItem.standingFirst')}
 			</p>
 			<div class="field">
-				<span class="label" id="where">{t('newItem.where')}</span>
-				<div class="chips" role="radiogroup" aria-labelledby="where">
-					{#each offered as x (x.key)}
-						<button
-							class="chip"
-							role="radio"
-							aria-checked={group === x.key}
-							tabindex={group === x.key ? 0 : -1}
-							onclick={() => (group = x.key)}
-							><GroupIcon group={x.key} size={14} />{displayMessage(
-								slotLabelMessage(m, x.key)
-							)}</button
-						>
-					{/each}
-				</div>
-				{#if all.length > offered.length}<button
-						class="bu-action btn plain link small more-categories"
-						data-variant="quiet"
-						onclick={() => (more = true)}>{t('newItem.moreCategories')}</button
-					>{/if}
+				<SlotPicker
+					manifest={m}
+					categories={all}
+					{shown}
+					value={group}
+					label={t('newItem.where')}
+					disabled={busy}
+					onselect={(key) => (group = key)}
+				/>
 				{#if !shown.some((c) => c.key === group)}<p class="faint small">
 						{t('newItem.notShown')}
 					</p>{/if}
@@ -352,6 +339,16 @@
 					})}
 					maxlength={ITEM_PROMPT_MAX}
 				/>
+				<PromptSuggestions
+					label={t('newItem.ideas')}
+					value={prompt}
+					suggestions={g.ideas.map((idea) => ({
+						id: idea.label,
+						label: displayMessage(idea.caption),
+						prompt: idea.label
+					}))}
+					onpick={(idea) => (prompt = idea.prompt)}
+				/>
 			</div>
 			<p class="faint small" id="item-submit-hint">{t('newItem.shortcut')}</p>
 			<ReferenceField
@@ -370,13 +367,6 @@
 						onclick={() => (group = 'off_hand')}>{t('newItem.useOffHand')}</button
 					>
 				</p>{/if}
-			<div class="chips" aria-label={t('newItem.ideas')}>
-				{#each g.ideas as idea (idea.label)}
-					<button class="chip" onclick={() => (prompt = idea.label)}
-						>{displayMessage(idea.caption)}</button
-					>
-				{/each}
-			</div>
 			<div class="field">
 				<span class="label"
 					>{t('newItem.colorHint')} <span class="faint">{t('common.optional')}</span></span
@@ -452,9 +442,6 @@
 </Sheet>
 
 <style>
-	.more-categories {
-		justify-self: start;
-	}
 	.copy-demo {
 		display: inline-grid;
 	}

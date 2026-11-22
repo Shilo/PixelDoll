@@ -437,16 +437,20 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
-	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+	await move.getByRole('button', { name: 'Walk', exact: true }).click();
 	await chooseSkeletonMove(move);
 	await move.getByRole('button', { name: /^Generate / }).click();
 	await expect(move).not.toContainText('Queued next: Idle');
 	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
-	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+	// The form keeps Walk applied, so it says Walk is already queued.
+	await expect(move.getByRole('button', { name: 'Walk', exact: true })).toHaveAttribute(
+		'aria-pressed',
+		'true'
+	);
 	await expect(move).toContainText('Walk is already queued.');
 	await expect(move.getByRole('button', { name: /^Queue Walk/ })).toBeDisabled();
 	await expect(move.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(0);
-	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
+	await move.getByRole('button', { name: 'Idle', exact: true }).click();
 	await chooseSkeletonMove(move);
 	await expect(move).toContainText('It waits for the move in progress, then runs by itself.');
 	await move.getByRole('button', { name: /^Queue Idle/ }).click();
@@ -519,7 +523,7 @@ test('a failed required measurement stops the queued idle without paying for an 
 	await move.getByRole('button', { name: /^Generate / }).click();
 	try {
 		await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
-		await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+		await move.getByRole('button', { name: 'Walk', exact: true }).click();
 		await move.getByRole('button', { name: /^Queue Walk/ }).click();
 	} finally {
 		releaseMeasurement();
@@ -1477,7 +1481,7 @@ function offlineCreation(config: CreationCase) {
 		const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 		for (const name of ['Idle', 'Walk']) {
 			await page.getByRole('button', { name: 'New move...', exact: true }).click();
-			await move.getByRole('radio', { name, exact: true }).click();
+			await move.getByRole('button', { name, exact: true }).click();
 			await chooseSkeletonMove(move);
 			await move.getByRole('button', { name: /^Generate / }).click();
 			await review

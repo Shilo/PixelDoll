@@ -2539,7 +2539,11 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			.adherence
 	).toBeNull();
 	await newItem(page, 'Main hand');
-	await page.getByRole('radio', { name: 'Main hand', exact: true }).click();
+	await page.getByRole('button', { name: /^Where does it go\?: / }).click();
+	await page
+		.getByRole('menu', { name: 'Where does it go?' })
+		.getByRole('menuitemradio', { name: 'Main hand', exact: true })
+		.click();
 	await page.getByRole('dialog').getByText('Advanced', { exact: true }).click();
 	// The import added room for moves (feet 4 px above a 64 px canvas edge: 64 -> 80), so held items pad to 112 px.
 	expect(before.manifest.rig.cell).toEqual({ w: 80, h: 80 });
@@ -2547,7 +2551,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
-	await page.getByRole('radio', { name: 'Idle', exact: true }).click();
+	await page.getByRole('button', { name: 'Idle', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await move.getByRole('button', { name: /^Advanced/ }).click();
 	await move
@@ -2790,7 +2794,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(posts).toHaveLength(posted);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
-	await moveSheet.getByRole('radio', { name: 'Slash', exact: true }).click();
+	await moveSheet.getByRole('button', { name: 'Slash', exact: true }).click();
 	await moveSheet.getByRole('button', { name: /^Advanced/ }).click();
 	await moveSheet.getByRole('combobox', { name: 'Motion model' }).selectOption('skeleton-v3');
 	await pickStart('Idle');
@@ -2948,7 +2952,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(statePosts()).toHaveLength(1);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
-	await moveSheet.getByRole('radio', { name: 'Cast', exact: true }).click();
+	await moveSheet.getByRole('button', { name: 'Cast', exact: true }).click();
 	await pickStart('Ready stance');
 	const jointPosts = () => posts.filter(({ path }) => path.endsWith('/estimate-skeleton')).length;
 	const beforeJointFit = jointPosts();

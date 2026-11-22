@@ -11,6 +11,8 @@
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import { Copy, Check, ChevronRight } from './icons.ts';
 	import PromptField from './PromptField.svelte';
+	import PromptSuggestions from './PromptSuggestions.svelte';
+	import { LOOK_IDEAS } from './promptIdeas.ts';
 	import { displayDirectionShort } from './displayDirection.ts';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message as notice, type Message } from '../lib/message.ts';
@@ -317,6 +319,16 @@
 						onmessage={(note) => (message = note)}
 						maxlength={2000}
 						placeholder={t('create.form.detailsPlaceholder')}
+					/>
+					<PromptSuggestions
+						label={t('create.form.lookIdeas')}
+						value={d.details}
+						suggestions={LOOK_IDEAS.map((idea) => ({
+							id: idea.id,
+							label: t(idea.caption),
+							prompt: idea.prompt
+						}))}
+						onpick={(idea) => details(idea.prompt)}
 					/>
 				</div>
 				{#each TRAIT_KEYS as key (key)}

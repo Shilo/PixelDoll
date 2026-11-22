@@ -27,6 +27,7 @@ export interface Category {
 }
 
 /** Category copy by behavior profile, so a custom copy inherits its source's icon and examples. */
+// Ideas are ordered most commonly useful first: the first three show under the prompt.
 const COPY: Record<
 	Exclude<SlotProfile, 'body'>,
 	{ icon: string; ideas: { label: string; caption: WhisperKey }[] }
@@ -34,18 +35,18 @@ const COPY: Record<
 	head: {
 		icon: 'head',
 		ideas: [
-			{ label: 'wizard hat', caption: 'studioSlots.ideas.head.0' },
 			{ label: 'iron knight helmet', caption: 'studioSlots.ideas.head.1' },
-			{ label: 'golden crown', caption: 'studioSlots.ideas.head.2' },
-			{ label: 'hood', caption: 'studioSlots.ideas.head.3' }
+			{ label: 'hood', caption: 'studioSlots.ideas.head.3' },
+			{ label: 'wizard hat', caption: 'studioSlots.ideas.head.0' },
+			{ label: 'golden crown', caption: 'studioSlots.ideas.head.2' }
 		]
 	},
 	hair: {
 		icon: 'hair',
 		ideas: [
-			{ label: 'long braided hair', caption: 'studioSlots.ideas.hair.0' },
 			{ label: 'short spiky hair', caption: 'studioSlots.ideas.hair.1' },
-			{ label: 'ponytail', caption: 'studioSlots.ideas.hair.2' }
+			{ label: 'ponytail', caption: 'studioSlots.ideas.hair.2' },
+			{ label: 'long braided hair', caption: 'studioSlots.ideas.hair.0' }
 		]
 	},
 	face_acc: {
@@ -59,9 +60,9 @@ const COPY: Record<
 	torso_inner: {
 		icon: 'body',
 		ideas: [
+			{ label: 'blue tunic', caption: 'studioSlots.ideas.torso_inner.2' },
 			{ label: 'leather vest', caption: 'studioSlots.ideas.torso_inner.0' },
-			{ label: 'chainmail shirt', caption: 'studioSlots.ideas.torso_inner.1' },
-			{ label: 'blue tunic', caption: 'studioSlots.ideas.torso_inner.2' }
+			{ label: 'chainmail shirt', caption: 'studioSlots.ideas.torso_inner.1' }
 		]
 	},
 	arms: {
@@ -116,8 +117,8 @@ const COPY: Record<
 		icon: 'hair',
 		ideas: [
 			{ label: 'full beard', caption: 'studioSlots.ideas.facial_hair.0' },
-			{ label: 'handlebar mustache', caption: 'studioSlots.ideas.facial_hair.1' },
-			{ label: 'goatee', caption: 'studioSlots.ideas.facial_hair.2' }
+			{ label: 'goatee', caption: 'studioSlots.ideas.facial_hair.2' },
+			{ label: 'handlebar mustache', caption: 'studioSlots.ideas.facial_hair.1' }
 		]
 	},
 	torso_outer: {

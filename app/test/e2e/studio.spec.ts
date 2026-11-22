@@ -2742,7 +2742,22 @@ test('New item Enhance describes the item alone at its canvas size, then Undo re
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	const item = page.getByRole('dialog', { name: 'New item', exact: true });
 	const prompt = item.getByRole('textbox', { name: 'What is it?', exact: true });
+	// Ideas sit under the empty prompt, most common first; More shows the rest.
+	const ideas = item.getByRole('group', { name: 'Ideas', exact: true });
+	await expect(ideas.getByRole('button')).toHaveText([
+		'iron knight helmet',
+		'hood',
+		'wizard hat',
+		'More'
+	]);
+	await ideas.getByRole('button', { name: 'More', exact: true }).click();
+	await ideas.getByRole('button', { name: 'golden crown', exact: true }).click();
+	await expect(prompt).toHaveValue('golden crown');
+	// While the prompt holds an idea, the others stay to swap; typing your own hides them.
+	await ideas.getByRole('button', { name: 'hood', exact: true }).click();
+	await expect(prompt).toHaveValue('hood');
 	await prompt.fill('iron helmet');
+	await expect(ideas).toHaveCount(0);
 	await item.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await expect(prompt).toHaveValue('A battered iron helmet with a riveted brim');
 	expect(enhanced).toHaveLength(1);
@@ -2867,7 +2882,11 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await item.getByRole('button', { name: 'Remove reference', exact: true }).click();
 	await expect(drop).toBeFocused();
 	expect((await drop.boundingBox())!.height).toBeCloseTo(dropHeight);
-	await item.getByRole('radio', { name: 'Main hand', exact: true }).click();
+	await item.getByRole('button', { name: /^Where does it go\?: / }).click();
+	await page
+		.getByRole('menu', { name: 'Where does it go?' })
+		.getByRole('menuitemradio', { name: 'Main hand', exact: true })
+		.click();
 	await expect(drop).toHaveAccessibleDescription(/Max 64 × 64 px/);
 	const sword = makeImg(192, 64);
 	sword.data.fill(255);
@@ -2908,7 +2927,11 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	const item = page.getByRole('dialog', { name: 'New item', exact: true });
-	await item.getByRole('radio', { name: 'Main hand', exact: true }).click();
+	await item.getByRole('button', { name: /^Where does it go\?: / }).click();
+	await page
+		.getByRole('menu', { name: 'Where does it go?' })
+		.getByRole('menuitemradio', { name: 'Main hand', exact: true })
+		.click();
 	await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword');
 	await item.getByRole('radio', { name: 'azure', exact: true }).click();
 	await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/Est\. \d+ gens/);
@@ -2927,10 +2950,9 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
 		'a silver sword'
 	);
-	await expect(item.getByRole('radio', { name: 'Main hand', exact: true })).toHaveAttribute(
-		'aria-checked',
-		'true'
-	);
+	await expect(
+		item.getByRole('button', { name: 'Where does it go?: Main hand', exact: true })
+	).toBeVisible();
 	await expect(item.getByRole('radio', { name: 'azure', exact: true })).toHaveAttribute(
 		'aria-checked',
 		'true'
@@ -3384,34 +3406,36 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(page.getByRole('dialog', { name: 'New move', exact: true })).toBeVisible();
 	const move = page.getByRole('dialog', { name: /^(New move|Redraw .+)$/ });
 	const description = move.getByRole('textbox', { name: /^Describe the (motion|replacement)$/ });
-	const choices = move.getByRole('radiogroup', { name: 'Move', exact: true });
-	const cast = choices.getByRole('radio', { name: 'Cast', exact: true });
+	// Templates are suggestions under the prompt: pressed while applied.
+	const templates = move.getByRole('group', { name: 'Move templates', exact: true });
+	const cast = templates.getByRole('button', { name: 'Cast', exact: true });
+	const applied = templates.getByRole('button', { pressed: true });
 	await expect(description).toBeVisible();
-	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(1);
+	await expect(applied).toHaveCount(1);
 	await cast.click();
 	await description.focus();
-	await expect(cast).toBeChecked();
+	await expect(cast).toHaveAttribute('aria-pressed', 'true');
 	await description.fill('cast with a wide overhead sweep');
 	await expect(move.getByRole('button', { name: /^Generate / })).toBeEnabled();
-	await move.getByRole('radio', { name: 'Custom', exact: true }).click();
+	// Pressing the applied template again lets the text stand as a custom move.
+	await cast.click();
+	await expect(applied).toHaveCount(0);
+	await expect(description).toHaveValue('cast with a wide overhead sweep');
 	await description.fill('walk');
 	await expect(move.getByRole('button', { name: /^Generate / })).toBeDisabled();
 	await expect(move.getByText('Directions to redraw')).toHaveCount(0);
 	await expect(move).toContainText('Walk is already a move option.');
 	await description.fill('jumping in place');
-	await expect(choices.getByRole('radio', { name: 'Custom', exact: true })).toBeChecked();
-	// The move choice sits above the prompt, so it is one Shift+Tab back.
-	await description.press('Shift+Tab');
-	await expect(choices.getByRole('radio').first()).toBeFocused();
-	await expect(description).toHaveValue('jumping in place');
-	await page.keyboard.press('ArrowRight');
-	await expect(choices.getByRole('radio').nth(1)).toBeChecked();
-	await expect(description).not.toHaveValue('');
-	await move.getByRole('radio', { name: 'Custom', exact: true }).click();
+	await expect(applied).toHaveCount(0);
+	const first = templates.getByRole('button').first();
+	await first.press('Enter');
+	await expect(first).toHaveAttribute('aria-pressed', 'true');
+	await expect(description).not.toHaveValue('jumping in place');
+	await first.click();
 	await description.fill('jumping in place');
 	await description.clear();
 	await expect(move.getByRole('button', { name: /^Generate / })).toBeDisabled();
-	await expect(choices.getByRole('radio', { name: 'Custom', exact: true })).toBeChecked();
+	await expect(applied).toHaveCount(0);
 	await description.fill('jumping in place');
 	const advanced = move.getByRole('button', { name: /^Advanced/ });
 	await advanced.click();
@@ -3454,14 +3478,14 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await expect(description).toHaveValue('jumping in place');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
-	await expect(choices.getByRole('radio', { name: 'Custom', exact: true })).toBeChecked();
+	await expect(applied).toHaveCount(0);
 	await cast.click();
 	await expect(description).toBeEnabled();
 	await expect(description).toHaveValue('cast');
 	await expect(move.getByRole('button', { name: /^Generate / })).toBeEnabled();
-	await expect(cast).toBeChecked();
+	await expect(cast).toHaveAttribute('aria-pressed', 'true');
 	await expect(advanced).toHaveCount(1);
-	await expect(choices.getByRole('radio', { name: 'Ride', exact: true })).toHaveCount(0);
+	await expect(templates.getByRole('button', { name: 'Ride', exact: true })).toHaveCount(0);
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -5913,7 +5937,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await redraw('Cross punch');
 	const sheet = page.getByRole('dialog', { name: /^Redraw / });
 	await expect(sheet).toHaveAccessibleName('Redraw Cross punch');
-	await expect(sheet.getByRole('radiogroup', { name: 'Move', exact: true })).toHaveCount(0);
+	await expect(sheet.getByRole('group', { name: 'Move templates', exact: true })).toHaveCount(0);
 	const replacePunch = sheet.getByRole('button', { name: /^Replace Cross punch views/ });
 	await sheet.getByRole('textbox', { name: 'Describe the replacement', exact: true }).fill('');
 	await expect(replacePunch).toBeDisabled();
@@ -5996,9 +6020,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(start).toContainText('start.png');
 	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
-	await page.getByRole('radio', { name: 'Custom', exact: true }).click();
 	const custom = page.getByRole('textbox', { name: 'Describe the motion', exact: true });
-	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');
 	const add = page.getByRole('dialog', { name: 'New move', exact: true });
 	await expect(add.getByRole('button', { name: /^Generate / })).toBeEnabled();
@@ -6075,9 +6097,9 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await reset.getByRole('button', { name: 'Change Loop', exact: true }).click();
 	await expect(loop).not.toBeChecked();
 	await expect(end).toContainText('No end frame');
-	await expect(add.getByRole('radio', { name: 'Ride', exact: true })).toHaveCount(0);
+	await expect(add.getByRole('button', { name: 'Ride', exact: true })).toHaveCount(0);
 	for (const name of ['Walk', 'Run']) {
-		await add.getByRole('radio', { name, exact: true }).click();
+		await add.getByRole('button', { name, exact: true }).click();
 		await expect(custom).toHaveValue(/continuous even strides/);
 		await expect(loop).toBeChecked();
 		await expect(end).toContainText('Same as start');
@@ -9235,10 +9257,9 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 		.getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true })
 		.click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
-	await expect(sheet.getByRole('radio', { name: 'Off hand', exact: true })).toHaveAttribute(
-		'aria-checked',
-		'true'
-	);
+	await expect(
+		sheet.getByRole('button', { name: 'Where does it go?: Off hand', exact: true })
+	).toBeVisible();
 	const prompt = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			s = await import(statePath);

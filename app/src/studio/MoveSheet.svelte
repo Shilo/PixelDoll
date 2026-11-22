@@ -5,6 +5,7 @@
 	// re-rendered through raw skeleton-v3).
 	import { MediaQuery } from 'svelte/reactivity';
 	import PromptField from './PromptField.svelte';
+	import PromptSuggestions from './PromptSuggestions.svelte';
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
@@ -142,17 +143,12 @@
 		new Set(sourceClips.filter((a) => a.kind === 'state').map((a) => a.key))
 	);
 	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
+	const TEMPLATE_ORDER = ['idle', 'walk', 'run', 'slash', 'hurt', 'death', 'cast'];
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
-		[
-			...new Set([
-				'idle',
-				'walk',
-				'run',
-				...AUTHORED.filter((action) => action !== 'ride'),
-				...sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)
-			])
-		].filter((a) => !stateIds.has(a) && !have.has(a) && !reservedMove(a))
+		[...new Set([...TEMPLATE_ORDER, ...AUTHORED.filter((action) => action !== 'ride')])].filter(
+			(a) => !stateIds.has(a) && !have.has(a) && !reservedMove(a)
+		)
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let sourceId = $state<string | undefined>(draft?.source?.clip);
@@ -1076,6 +1072,14 @@
 		redrawChecks = false;
 		if (replacing) selectedDirs = untrack(() => redrawDirs(action));
 	});
+	// Picking the applied template again lets the text stand as a custom move, keeping what was typed. The template the
+	// sheet opened on was never picked, so pressing it just picks it.
+	function pickTemplate(template: string) {
+		if (action !== template || !templatePicked) return chooseAction(template);
+		const kept = text;
+		chooseAction('');
+		text = kept;
+	}
 	function inputMotion(value: string) {
 		if (!templatePicked && !replacing && action) chooseAction('');
 		text = value;
@@ -2082,30 +2086,6 @@
 					{/if}
 				</div>
 				<div class="move-edit">
-					<!-- A redraw keeps its saved move; choosing another one starts a new move instead. -->
-					{#if !replacing}
-						<div class="field">
-							<span class="label" id="act">{t('common.move')}</span>
-							<div class="chips" role="radiogroup" aria-labelledby="act">
-								<button
-									class="chip"
-									role="radio"
-									aria-checked={!action}
-									tabindex={action && options.includes(action) ? -1 : 0}
-									onclick={() => chooseAction('')}>{t('moveSheet.custom')}</button
-								>
-								{#each options as a (a)}
-									<button
-										class="chip"
-										role="radio"
-										aria-checked={action === a}
-										tabindex={action === a ? 0 : -1}
-										onclick={() => chooseAction(a)}>{nice(a)}</button
-									>
-								{/each}
-							</div>
-						</div>
-					{/if}
 					<div class="field">
 						<label class="label" for="move-description"
 							>{replacing
@@ -2123,6 +2103,21 @@
 							describedby="move-description-hint"
 							maxlength={900}
 						/>
+						<!-- A redraw keeps its saved move, so it offers no templates. -->
+						{#if !replacing}
+							<PromptSuggestions
+								label={t('moveSheet.templates')}
+								value={text}
+								active={action}
+								limit={Infinity}
+								suggestions={options.map((template) => ({
+									id: template,
+									label: nice(template),
+									prompt: moveTemplatePrompt(template)
+								}))}
+								onpick={(template) => pickTemplate(template.id)}
+							/>
+						{/if}
 						<p class="faint small" id="move-description-hint">
 							{t('moveSheet.motionOnly')}
 						</p>
