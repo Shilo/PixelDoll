@@ -252,3 +252,13 @@ infrastructure beyond the static GitHub Pages build.
 
 The remaining limits above are accepted for this milestone: no live paid run, no on-device mobile, and the unrun
 clients are documented rather than claimed.
+
+### Iteration 4 real-agent results (final build, keyless, 2026-11-22)
+
+| Client and model                    | Path                                                   | Calls                 | Result                                                                                                                              |
+| ----------------------------------- | ------------------------------------------------------ | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Claude app browser, Opus 5.5        | `window.pixeldoll`                                     | 11                    | All tools 0 to 57 ms; `inspect_character` metadata only; `set_outfit` no-op reported as `changed: false`                            |
+| Codex CLI 0.167, GPT-6.2 Sol        | Playwright MCP `browser_evaluate` + `window.pixeldoll` | 11 (18 browser calls) | Sheets legible at 2x; digest matched (12 of 32 frames, "may be intentional"); scarf 10 generations, about $0.06; move refusal clear |
+| OpenCode 2.2.6, DeepSeek v4.1 Flash | Playwright MCP                                         | 20 browser calls      | Sheets legible at 2x with ruler ticks; located the largest fragment (east frame 5, x 23, y 46); undo and outfit results clear       |
+
+No agent reported a confusing result that iteration 4 did not already address. Iterations stopped at the owner's cap of four.
