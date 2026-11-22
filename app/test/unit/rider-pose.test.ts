@@ -122,6 +122,15 @@ describe('rider pose', () => {
 		expect(readMountPreferences().poses).toEqual({ a: 'riding' });
 		forgetRidingPose('a');
 		expect(experience.ridingPoses).toEqual({});
+		// Another tab's newer pose survives removing the older State it replaced.
+		setRidingPose('b', 'old');
+		store.set(
+			'pixeldoll.mount',
+			JSON.stringify({ ...readMountPreferences(), poses: { b: 'new' } })
+		);
+		forgetRidingPose('b', 'old');
+		expect(readMountPreferences().poses).toEqual({ b: 'new' });
+		resetMount(null);
 		// Reset this page clears the open character's pose only; Reset all clears every character's.
 		setRidingPose('a', 'riding');
 		setRidingPose('b', 'half');

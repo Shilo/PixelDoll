@@ -105,8 +105,14 @@ export function setRidingPose(projectId: string, clip: string) {
 }
 /** Forget a removed State or character, so a later State with the same ID is not chosen by itself. */
 export function forgetRidingPose(projectId: string, clip?: string) {
-	const saved = experience.ridingPoses[projectId];
-	if (saved !== undefined && (clip === undefined || saved === clip)) setRidingPose(projectId, '');
+	// Checked against the same preferences it writes, so another tab's newer pose is never cleared.
+	update((current) => {
+		const saved = current.poses[projectId];
+		if (saved === undefined || (clip !== undefined && saved !== clip)) return current;
+		const poses = { ...current.poses };
+		delete poses[projectId];
+		return { ...current, poses };
+	});
 }
 
 /** Like Wardrobe, the page resets the open character's Riding pose; Reset all clears every character's. */

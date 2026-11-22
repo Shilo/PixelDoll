@@ -60,6 +60,7 @@
 	const canvases = new WeakMap<Img, HTMLCanvasElement>();
 	// Kept across play, pause and setting changes, so pausing freezes the current frame instead of restarting.
 	let clock: PlaybackClock | undefined,
+		clockRider = '',
 		elapsed = 0,
 		turned = 0;
 
@@ -76,6 +77,10 @@
 			turning = facings;
 		if (!target) return;
 		const g = target.getContext('2d')!;
+		if (current?.id !== clockRider) {
+			clock = undefined;
+			clockRider = current?.id ?? '';
+		}
 		// The rider is composed only when its clip, facing or frame changes, not on every animation frame.
 		let composed: { key: string; image: Img } | null = null,
 			last = performance.now(),
