@@ -650,6 +650,8 @@
 		"titleItemReview": "Item review"
 	},
 	"toolbar": {
+		"activityRunning": "Work is running in Activity",
+		"activityAttention": "Work in Activity needs attention",
 		"help": "Help",
 		"userGuide": "User guide",
 		"reportProblem": "Report a problem",

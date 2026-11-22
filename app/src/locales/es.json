@@ -656,6 +656,8 @@
 		"titleItemReview": "Revisión del objeto"
 	},
 	"toolbar": {
+		"activityRunning": "Hay trabajo en curso en Actividad",
+		"activityAttention": "Un trabajo en Actividad necesita atención",
 		"help": "Ayuda",
 		"userGuide": "Guía de usuario",
 		"reportProblem": "Informar de un problema",

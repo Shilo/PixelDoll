@@ -631,6 +631,8 @@
 		"titleItemReview": "装备检查"
 	},
 	"toolbar": {
+		"activityRunning": "“活动”中有任务正在运行",
+		"activityAttention": "“活动”中的任务需要处理",
 		"help": "帮助",
 		"userGuide": "用户指南",
 		"reportProblem": "报告问题",

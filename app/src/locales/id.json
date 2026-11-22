@@ -633,6 +633,8 @@
 		"titleItemReview": "Tinjau item"
 	},
 	"toolbar": {
+		"activityRunning": "Ada pekerjaan yang berjalan di Aktivitas",
+		"activityAttention": "Pekerjaan di Aktivitas perlu perhatian",
 		"help": "Bantuan",
 		"userGuide": "Panduan pengguna",
 		"reportProblem": "Laporkan masalah",

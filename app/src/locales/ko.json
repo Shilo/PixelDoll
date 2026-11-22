@@ -636,6 +636,8 @@
 		"titleItemReview": "아이템 검토"
 	},
 	"toolbar": {
+		"activityRunning": "활동에서 작업이 진행 중이에요",
+		"activityAttention": "활동의 작업을 확인해야 해요",
 		"help": "도움말",
 		"userGuide": "사용자 가이드",
 		"reportProblem": "문제 신고",

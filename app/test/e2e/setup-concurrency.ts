@@ -215,7 +215,11 @@ for (const tier of [3, 1] as const)
 				.locator('.sheet-head')
 				.getByRole('button', { name: 'Close', exact: true })
 				.click();
-			await page.getByRole('button', { name: 'Activity', exact: true }).click();
+			await page.getByRole('button', { name: 'More options', exact: true }).click();
+			await page
+				.locator('#experience-options')
+				.getByRole('button', { name: /^Activity/ })
+				.click();
 			const activity = page.getByRole('dialog', { name: 'Activity', exact: true }),
 				stops = activity.getByRole('button', { name: 'Stop', exact: true });
 			await expect(stops).toHaveCount(limit);

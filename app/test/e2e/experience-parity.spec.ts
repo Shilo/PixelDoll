@@ -463,8 +463,9 @@ test('full screen and view navigation stay separate while Activity is in the hea
 			input: { slot: 'head' }
 		});
 	});
+	// Running work marks More with a dot instead of adding a bar control.
 	await expect(
-		page.locator('.header-actions').getByRole('button', { name: 'Activity', exact: true })
+		page.locator('.experience-header [popovertarget="experience-options"][data-activity="busy"]')
 	).toBeVisible();
 	for (const width of [320, 360, 390, 760, 920, 1024, 1101, 1279, 1280, 1440]) {
 		await page.setViewportSize({ width, height: 900 });
@@ -759,11 +760,10 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(toggle).toHaveAttribute('aria-haspopup', 'dialog');
 	await expect(toggle.locator('.view-label')).toHaveCount(0);
 	await expect(page.locator('.view-modes .test-mount-toggle')).toHaveCount(0);
-	// Redo and Undo lead the trailing group (they come and go there without moving anything); Mount settings and
-	// Random look follow them.
+	// Undo and Redo lead the trailing group (shown only while usable); Mount settings and Random look follow them.
 	await expect(
 		page.locator(
-			'.header-actions > .header-redo + .header-undo + .test-mount-toggle + .header-random'
+			'.header-actions > .header-undo + .header-redo + .test-mount-toggle + .header-random'
 		)
 	).toHaveCount(1);
 	// The mount icon opens the Mount page of Settings directly.

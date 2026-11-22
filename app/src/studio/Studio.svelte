@@ -7,7 +7,12 @@
 	import './experience/layout.css';
 	import './experience/hoverActions.css';
 	import { rememberActivation } from './experience/focus.ts';
-	import { settingsNavigation } from './settingsNavigation.svelte.ts';
+	import {
+		closeSettingsAccount,
+		closeSettingsActivity,
+		closeSettingsExport,
+		settingsNavigation
+	} from './settingsNavigation.svelte.ts';
 	import { alertOnTop, sheetBrowserBack } from './sheetExit.ts';
 	import { localDeveloperToolsEnabled } from './developerMode.svelte.ts';
 	import Experience from './experience/Experience.svelte';
@@ -238,7 +243,12 @@
 		}
 		// Otherwise Back takes the sheet's own Back (an inner pane) or its close request, which may ask first.
 		sheetEntry = false;
-		if (!sheetBrowserBack()) ui.sheet = null;
+		// A sheet still loading (lazy) has not claimed its exits yet: a Settings child still steps back to Settings.
+		if (
+			!sheetBrowserBack() &&
+			!(closeSettingsAccount() || closeSettingsActivity() || closeSettingsExport())
+		)
+			ui.sheet = null;
 		if (ui.sheet) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			sheetEntry = true;

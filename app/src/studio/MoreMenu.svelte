@@ -5,7 +5,7 @@
 	import { openerLabel } from './openerLabel.ts';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import { openSettings } from './settingsNavigation.svelte.ts';
-	import { t } from 'svelte-whisper';
+	import { formatNumber, t } from 'svelte-whisper';
 	import { app } from '../lib/app.svelte.ts';
 	import { repository } from '../lib/repository.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
@@ -23,6 +23,7 @@
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 	import { historyText } from './historyText.ts';
+	import { activityStatus } from './activityStatus.svelte.ts';
 	import { ui, doc, store, undo, redo, randomize } from './state.svelte.ts';
 	import {
 		Archive,
@@ -172,6 +173,9 @@
 			}}
 			><Activity size={18} /><span class="row-name">{openerLabel(t('activity.title'))}</span
 			>{#if $queue.role === 'follower'}<span class="small">{t('toolbar.otherTab')}</span
+				>{/if}{#if activityStatus.active}<span class="badge accent"
+					>{formatNumber(activityStatus.active)}</span
+				>{:else if activityStatus.stopped}<span class="badge danger">{activityStatus.stopped}</span
 				>{/if}<SurfaceChevron /></button
 		>
 		{#if workspaceCopy}

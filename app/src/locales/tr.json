@@ -653,6 +653,8 @@
 		"titleItemReview": "Eşya inceleme"
 	},
 	"toolbar": {
+		"activityRunning": "Etkinlik içinde çalışan işler var",
+		"activityAttention": "Etkinlik içindeki bir iş ilgi bekliyor",
 		"help": "Yardım",
 		"userGuide": "Kullanıcı kılavuzu",
 		"reportProblem": "Sorun bildir",

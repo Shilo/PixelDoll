@@ -34,7 +34,6 @@
 		isDemo
 	} from './state.svelte.ts';
 	import {
-		CircleAlert,
 		ChevronDown,
 		ChevronLeft,
 		Download,
@@ -106,8 +105,6 @@
 		}
 	}
 	const active = $derived(activityStatus.active);
-	const busy = $derived(activityStatus.busy);
-	const stopped = $derived(activityStatus.stopped);
 	const undoText = $derived(historyText('undo'));
 	const redoText = $derived(historyText('redo'));
 	let undoButton = $state<HTMLButtonElement>(),
@@ -243,28 +240,21 @@
 		</div>
 	{/if}
 	<div class="header-actions">
-		<!-- The group is anchored at the end, so controls that come and go sit at its start: appearing or leaving never
-		     moves anything to their right. Activity shows only while work runs or needs attention. -->
-		{#if busy}<button
-				class="bu-action header-activity"
-				data-variant="quiet"
-				aria-label={t('activity.title')}
-				title={t('activity.title')}
-				onclick={() => (ui.sheet = 'activity')}
-				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span></button
-			>{:else if stopped}<button
-				class="bu-action header-activity stopped-work"
-				data-variant="quiet"
-				aria-label={t('activity.title')}
-				title={t('generation.status.needsAttention')}
-				onclick={() => (ui.sheet = 'activity')}
-				><CircleAlert size={18} /><span class="num">{stopped}</span></button
-			>{/if}
 		{#if experience.screen === 'characters'}
 			<NewCharacterButton />
 		{:else}
-			<!-- Redo sits before Undo and takes room only once it exists. Undo keeps its slot while Redo exists, so pressing
-			     Undo until its stack empties can never land on Redo. -->
+			<!-- Undo shows once there is something to undo, and Redo after it once there is something to redo. Each takes room
+			     only while usable (the owner's choice: no idle space, at the cost of Undo shifting when Redo appears). -->
+			<button
+				class="bu-action header-undo"
+				class:slot-gone={!undoText}
+				data-variant="quiet"
+				aria-label={undoText ?? t('common.undo')}
+				title={undoText ?? t('common.undo')}
+				disabled={!undoText}
+				bind:this={undoButton}
+				onclick={() => step(undo, redoButton)}><Undo2 size={18} /></button
+			>
 			<button
 				class="bu-action header-redo"
 				class:slot-gone={!redoText}
@@ -274,17 +264,6 @@
 				disabled={!redoText}
 				bind:this={redoButton}
 				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
-			>
-			<button
-				class="bu-action header-undo"
-				class:slot-empty={!undoText && redoText}
-				class:slot-gone={!undoText && !redoText}
-				data-variant="quiet"
-				aria-label={undoText ?? t('common.undo')}
-				title={undoText ?? t('common.undo')}
-				disabled={!undoText}
-				bind:this={undoButton}
-				onclick={() => step(undo, redoButton)}><Undo2 size={18} /></button
 			>
 			<button
 				class="bu-action test-mount-toggle"
@@ -447,13 +426,6 @@
 <style>
 	.project-choices {
 		gap: 0;
-	}
-	.stopped-work {
-		color: var(--bu-danger);
-	}
-	/* Undo's held slot while Redo exists; a slot that is gone takes no room. */
-	.slot-empty {
-		visibility: hidden;
 	}
 	.slot-gone {
 		display: none;

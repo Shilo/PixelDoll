@@ -273,10 +273,6 @@
 .phone-layout:not(.selection) .mobile-sep {
 	display: block !important;
 }
-/* Phones keep the name readable: Activity lives in More, which shows a dot while work runs or needs attention. */
-.phone-layout .header-activity {
-	display: none !important;
-}
 @media (max-width: 430px) {
 	.phone-layout .experience-header {
 		left: 8px;

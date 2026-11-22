@@ -653,6 +653,8 @@
 		"titleItemReview": "Vérification de l’objet"
 	},
 	"toolbar": {
+		"activityRunning": "Des tâches sont en cours dans Activité",
+		"activityAttention": "Une tâche dans Activité demande votre attention",
 		"help": "Aide",
 		"userGuide": "Guide d’utilisation",
 		"reportProblem": "Signaler un problème",

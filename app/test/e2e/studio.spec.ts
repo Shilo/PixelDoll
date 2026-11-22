@@ -2097,8 +2097,8 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	// pause playback so the stage is comparable
 	await page.getByRole('button', { name: 'Pause', exact: true }).click();
 	assert.equal(await pressed('Steel helmet'), 'true');
-	// Redo and Undo appear at the start of the end-anchored group, so history never moves Mount settings, Random look,
-	// Share, Export, Full screen or More.
+	// Undo and Redo appear at the start of the end-anchored group, only while usable, so history never moves Mount
+	// settings, Random look, Share, Export, Full screen or More.
 	const barX = () =>
 		page
 			.locator('.header-actions button:not(.header-undo, .header-redo)')
@@ -2132,13 +2132,9 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 		'tapping a worn item takes it off, tapping again wears it; Empty with nothing worn adds no undo step'
 	);
 
-	const undoX = await page.locator('.header-undo').evaluate((b) => b.getBoundingClientRect().x);
 	for (let i = 0; i < 3; i++) await page.getByRole('button', { name: /^Undo/ }).click();
-	// Emptied while Redo exists, Undo keeps its slot, so a further press there cannot land on Redo.
-	await expect(page.locator('.header-undo')).toHaveCSS('visibility', 'hidden');
-	expect(await page.locator('.header-undo').evaluate((b) => b.getBoundingClientRect().x)).toBe(
-		undoX
-	);
+	// An emptied Undo leaves the bar; Redo shows right of where it was.
+	await expect(page.locator('.header-undo')).toBeHidden();
 	await expect(page.locator('.header-redo')).toBeVisible();
 	assert.deepEqual(await barX(), emptyHistoryBar);
 	assert.equal(await pressed('Steel helmet'), 'true');
@@ -6249,7 +6245,12 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		.getByRole('textbox', { name: 'Describe the replacement', exact: true })
 		.fill('Punch across the body');
 	await expect(replacePunch).toBeEnabled();
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The typed replacement is unsaved, so closing asks first.
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await redraw('Idle');
 	await expect(sheet).toHaveAccessibleName('Redraw Idle');
 	const replace = sheet.getByRole('button', { name: /^Replace Idle views/ });
@@ -6322,7 +6323,12 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(start).not.toContainText('start.png');
 	await startWarning.getByRole('button', { name: 'Continue', exact: true }).click();
 	await expect(start).toContainText('start.png');
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The typed description is unsaved, so closing asks first.
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	const custom = page.getByRole('textbox', { name: 'Describe the motion', exact: true });
 	await custom.fill('jumping in place');
@@ -8498,10 +8504,14 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		.getByRole('dialog', { name: 'Item review', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
-	// Activity lists the stopped draft that holds its slot and opens its review.
+	// Activity (in More, which carries a warning dot) lists the stopped draft that holds its slot and opens its review.
+	await expect(
+		page.locator('.experience-header [popovertarget="experience-options"][data-activity="stopped"]')
+	).toBeVisible();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
-		.locator('.header-actions')
-		.getByRole('button', { name: 'Activity', exact: true })
+		.locator('#experience-options')
+		.getByRole('button', { name: /^Activity/ })
 		.click();
 	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
 	await expect(activity.getByText('Needs attention', { exact: true })).toBeVisible();

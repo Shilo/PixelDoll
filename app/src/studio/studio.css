@@ -314,6 +314,10 @@ html[data-app='studio'] body {
 	color: var(--accent-text);
 	background: var(--accent-soft);
 }
+.badge.danger {
+	color: var(--bad);
+	background: color-mix(in srgb, var(--bad) 14%, transparent);
+}
 
 /* ---------- fields ---------- */
 .form {

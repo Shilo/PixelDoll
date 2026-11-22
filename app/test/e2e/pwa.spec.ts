@@ -1756,7 +1756,7 @@ test('a persisted accepted generation blocks update without repeating or losing 
 			channel.close();
 		}, id);
 		await expect(
-			page.locator('.header-actions').getByRole('button', { name: 'Activity', exact: true })
+			page.locator('.experience-header [popovertarget="experience-options"][data-activity="busy"]')
 		).toBeVisible();
 		server.deploy(b);
 		await (await discover(page, b)).click();

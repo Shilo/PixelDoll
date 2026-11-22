@@ -636,6 +636,8 @@
 		"titleItemReview": "アイテムの確認"
 	},
 	"toolbar": {
+		"activityRunning": "アクティビティで処理が実行中です",
+		"activityAttention": "アクティビティの処理に対応が必要です",
 		"help": "ヘルプ",
 		"userGuide": "ユーザーガイド",
 		"reportProblem": "問題を報告",

@@ -656,6 +656,8 @@
 		"titleItemReview": "Gegenstand prüfen"
 	},
 	"toolbar": {
+		"activityRunning": "In Aktivität läuft Arbeit",
+		"activityAttention": "Arbeit in Aktivität braucht Aufmerksamkeit",
 		"help": "Hilfe",
 		"userGuide": "Benutzerhandbuch",
 		"reportProblem": "Problem melden",

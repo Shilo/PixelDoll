@@ -5,10 +5,12 @@
 	import FullscreenButton from './FullscreenButton.svelte';
 	import { Ellipsis } from './icons.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
-	// Work running or needing attention: bars without an Activity slot (phones, New character) mark More instead.
+	// Activity lives in More on every screen, so More carries its status: a dot while work runs, a warning dot when
+	// stopped work needs attention (which wins), and the same status for screen readers.
 	const activity = $derived(
-		activityStatus.busy ? 'busy' : activityStatus.stopped ? 'stopped' : undefined
+		activityStatus.stopped ? 'stopped' : activityStatus.busy ? 'busy' : undefined
 	);
+	const statusId = $props.id();
 </script>
 
 <span class="global-actions">
@@ -20,8 +22,12 @@
 		title={t('toolbar.moreOptions')}
 		data-popover-fallback="share-popover"
 		data-activity={activity}
+		aria-describedby={activity ? statusId : undefined}
 		popovertarget="experience-options"><Ellipsis size={20} /></button
 	>
+	{#if activity}<span id={statusId} class="sr"
+			>{t(activity === 'stopped' ? 'toolbar.activityAttention' : 'toolbar.activityRunning')}</span
+		>{/if}
 </span>
 
 <style>
@@ -39,10 +45,10 @@
 		min-height: 44px;
 		padding: 0;
 	}
-	:global(:is(.phone-layout, dialog.sheet)) [data-activity] {
+	[data-activity] {
 		position: relative;
 	}
-	:global(:is(.phone-layout, dialog.sheet)) [data-activity]::after {
+	[data-activity]::after {
 		content: '';
 		position: absolute;
 		top: 9px;

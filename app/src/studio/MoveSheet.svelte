@@ -235,7 +235,8 @@
 	);
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? untrack(() => templateText(action)));
-	const textAtStart = untrack(() => text);
+	// Only text the user typed counts as unsaved: a chosen template or a loaded move prompt does not.
+	let textTyped = $state(false);
 	// A template opened on its customized prompt counts as picked, as if its pill had been pressed.
 	let templatePicked = $state(
 		!!draft?.action || untrack(() => !!action && text !== moveTemplatePrompt(action))
@@ -1113,6 +1114,7 @@
 	function inputMotion(value: string) {
 		if (!templatePicked && !replacing && action) chooseAction('');
 		text = value;
+		textTyped = true;
 	}
 	function chooseModel(next: MoveAnimationModel) {
 		modelChoice = next;
@@ -1651,13 +1653,7 @@
 	exitNote={progress && !moving.done && !moving.error && !repairReview
 		? 'sheet-exit-note'
 		: undefined}
-	dirty={ok &&
-		!progress &&
-		!skeletonReview &&
-		!repairReview &&
-		!!text.trim() &&
-		text !== textAtStart &&
-		text !== templateText(action)}
+	dirty={ok && !progress && !skeletonReview && !repairReview && textTyped && !!text.trim()}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
 	{#snippet developer()}
