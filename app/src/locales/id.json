@@ -2875,7 +2875,7 @@
 		"loading": "Memuat karakter…",
 		"range": "{low} sampai {high} · {gens}",
 		"basis": {
-			"character": "Perkiraan total",
+			"character": "Proyeksi total",
 			"all": {
 				"other": "{n} karakter"
 			},
@@ -2883,7 +2883,7 @@
 			"demo": "Gambar demo gratis"
 		},
 		"tierOneRates": "{basis} · tarif Tier 1",
-		"spentToGo": "Terpakai {spent} · sisa {toGo}",
+		"spentToGo": "Saat ini ≈ {current} · Terpakai {spent} · sisa {toGo}",
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
@@ -2941,5 +2941,6 @@
 		"unpriced": {
 			"other": "{n} panggilan tanpa harga"
 		}
-	}
+	},
+	"shortcut": { "control": "Ctrl" }
 }

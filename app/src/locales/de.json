@@ -2985,7 +2985,7 @@
 		"loading": "Figuren werden geladen…",
 		"range": "{low} bis {high} · {gens}",
 		"basis": {
-			"character": "Geschätzte Summe",
+			"character": "Voraussichtliche Summe",
 			"all": {
 				"one": "{n} Figur",
 				"other": "{n} Figuren"
@@ -2994,7 +2994,7 @@
 			"demo": "Demo-Grafiken sind kostenlos"
 		},
 		"tierOneRates": "{basis} · Preise von Tier 1",
-		"spentToGo": "Ausgegeben {spent} · noch {toGo}",
+		"spentToGo": "Aktuell ≈ {current} · Ausgegeben {spent} · noch {toGo}",
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
@@ -3058,5 +3058,6 @@
 			"one": "{n} Aufruf ohne Preis",
 			"other": "{n} Aufrufe ohne Preis"
 		}
-	}
+	},
+	"shortcut": { "control": "Strg" }
 }

@@ -2872,7 +2872,7 @@
 		"loading": "캐릭터를 불러오는 중…",
 		"range": "{low}~{high} · {gens}",
 		"basis": {
-			"character": "예상 합계",
+			"character": "최종 예상 합계",
 			"all": {
 				"other": "캐릭터 {n}개"
 			},
@@ -2880,7 +2880,7 @@
 			"demo": "데모 아트는 무료"
 		},
 		"tierOneRates": "{basis} · Tier 1 요금",
-		"spentToGo": "사용 {spent} · 남은 비용 {toGo}",
+		"spentToGo": "현재 ≈ {current} · 사용 {spent} · 남은 비용 {toGo}",
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
@@ -2938,5 +2938,6 @@
 		"unpriced": {
 			"other": "요금 정보 없는 호출 {n}건"
 		}
-	}
+	},
+	"shortcut": { "control": "Ctrl" }
 }

@@ -12,6 +12,7 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier } from '../lib/pixellab/plans.ts';
 	import { listProjects } from '../lib/store/project.ts';
+	import { recordedCost } from '../lib/store/generation.ts';
 	import { openSource } from '../lib/dress/project.ts';
 	import { errorMessage } from '../lib/message.ts';
 	import { displayMessage } from '../lib/i18n.ts';
@@ -25,8 +26,10 @@
 		characterCost,
 		characterOf,
 		covers,
+		currentGens,
 		newCharacter,
 		planRate,
+		projectedUsd,
 		savingTips,
 		seedInputs,
 		spentUsd,
@@ -147,9 +150,6 @@
 	});
 	const result = $derived<CostResult | null>(priced.result);
 	const allResults = $derived(priced.allResults);
-	const total = $derived(
-		scope === 'all' ? allResults.reduce((s, { r }) => s + r.total, 0) : (result?.total ?? 0)
-	);
 	const toGo = $derived(
 		scope === 'all' ? allResults.reduce((s, { r }) => s + r.toGo, 0) : (result?.toGo ?? 0)
 	);
@@ -187,10 +187,20 @@
 	const gens = (value: number) =>
 		t('generationDetails.gens', { value: formatNumber(value, { maximumFractionDigits: 2 }) });
 	const listUsd = (value: number) => usd(usdOf(value, rate));
+	// The headline is the end cost: money really spent plus the estimated work still to go.
+	const paid = $derived(spent ?? recordedCost([]));
+	const projected = $derived(projectedUsd(paid, toGo, rate));
+	const current = $derived(
+		scope === 'all'
+			? allResults.reduce((s, { r }) => s + currentGens(r), 0)
+			: result
+				? currentGens(result)
+				: 0
+	);
 	const range = $derived.by(() => {
-		const low = usd(usdOf(total, rate, 'low')),
-			high = listUsd(total),
-			units = gens(Math.round(total));
+		const low = usd(projectedUsd(paid, toGo, rate, 'low')),
+			high = usd(projected),
+			units = gens(Math.round(paid.generations + toGo));
 		return low === high ? units : t('costSheet.range', { low, high, gens: units });
 	});
 	const basis = $derived.by(() => {
@@ -318,12 +328,13 @@
 			</p>
 		{:else}
 			<p class="readout" role="status" aria-atomic="true">
-				<strong class="amount num">{listUsd(total)}</strong>
+				<strong class="amount num">{usd(projected)}</strong>
 				<span class="faint small num">{range}</span>
 				<span class="faint small">{basis}</span>
-				{#if scope !== 'new' && spent}<span class="spent small num"
+				{#if scope !== 'new'}<span class="spent small num"
 						>{t('costSheet.spentToGo', {
-							spent: usd(spentUsd(spent, rate)),
+							current: listUsd(current),
+							spent: usd(spentUsd(paid, rate)),
 							toGo: listUsd(toGo)
 						})}</span
 					>{/if}
@@ -456,7 +467,9 @@
 										?.focus();
 								}}
 								><span class="label">{nameOf(c.id)}</span><span class="cost num"
-									>{listUsd(r.total)}<span class="faint small">{gens(r.total)}</span></span
+									>{usd(projectedUsd(c.spent, r.toGo, rate))}<span class="faint small"
+										>{gens(c.spent.generations + r.toGo)}</span
+									></span
 								><ChevronRight size={14} /></button
 							>
 						{/each}

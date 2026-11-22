@@ -2853,7 +2853,7 @@
 		"loading": "正在加载角色…",
 		"range": "{low} 至 {high} · {gens}",
 		"basis": {
-			"character": "预计总计",
+			"character": "预计最终总计",
 			"all": {
 				"other": "{n} 个角色"
 			},
@@ -2861,7 +2861,7 @@
 			"demo": "演示美术免费"
 		},
 		"tierOneRates": "{basis} · Tier 1 价格",
-		"spentToGo": "已花费 {spent} · 还需 {toGo}",
+		"spentToGo": "当前 ≈ {current} · 已花费 {spent} · 还需 {toGo}",
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
@@ -2919,5 +2919,6 @@
 		"unpriced": {
 			"other": "{n} 次调用价格未知"
 		}
-	}
+	},
+	"shortcut": { "control": "Ctrl" }
 }

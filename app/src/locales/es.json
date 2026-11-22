@@ -2993,7 +2993,7 @@
 		"loading": "Cargando personajes…",
 		"range": "{low} a {high} · {gens}",
 		"basis": {
-			"character": "Total estimado",
+			"character": "Total previsto",
 			"all": {
 				"one": "{n} personaje",
 				"other": "{n} personajes"
@@ -3002,7 +3002,7 @@
 			"demo": "El arte de la demo es gratis"
 		},
 		"tierOneRates": "{basis} · precios de Tier 1",
-		"spentToGo": "Gastado {spent} · faltan {toGo}",
+		"spentToGo": "Actual ≈ {current} · Gastado {spent} · faltan {toGo}",
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
@@ -3066,5 +3066,6 @@
 			"one": "{n} llamada sin precio",
 			"other": "{n} llamadas sin precio"
 		}
-	}
+	},
+	"shortcut": { "control": "Ctrl" }
 }

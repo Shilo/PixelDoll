@@ -2979,7 +2979,7 @@
 		"loading": "Karakterler yükleniyor…",
 		"range": "{low} ile {high} arası · {gens}",
 		"basis": {
-			"character": "Tahmini toplam",
+			"character": "Öngörülen toplam",
 			"all": {
 				"one": "Karakter: {n}",
 				"other": "Karakter: {n}"
@@ -2988,7 +2988,7 @@
 			"demo": "Demo görselleri ücretsizdir"
 		},
 		"tierOneRates": "{basis} · Tier 1 fiyatları",
-		"spentToGo": "Harcanan {spent} · kalan {toGo}",
+		"spentToGo": "Mevcut ≈ {current} · Harcanan {spent} · kalan {toGo}",
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
@@ -3052,5 +3052,6 @@
 			"one": "Fiyatı bilinmeyen çağrı: {n}",
 			"other": "Fiyatı bilinmeyen çağrı: {n}"
 		}
-	}
+	},
+	"shortcut": { "control": "Ctrl" }
 }

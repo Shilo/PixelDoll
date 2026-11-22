@@ -2986,7 +2986,7 @@
 		"loading": "Chargement des personnages…",
 		"range": "{low} à {high} · {gens}",
 		"basis": {
-			"character": "Total estimé",
+			"character": "Total prévu",
 			"all": {
 				"one": "{n} personnage",
 				"other": "{n} personnages"
@@ -2995,7 +2995,7 @@
 			"demo": "Les visuels de la démo sont gratuits"
 		},
 		"tierOneRates": "{basis} · tarifs Tier 1",
-		"spentToGo": "Dépensé {spent} · reste {toGo}",
+		"spentToGo": "Actuel ≈ {current} · Dépensé {spent} · reste {toGo}",
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
@@ -3059,5 +3059,6 @@
 			"one": "{n} appel sans prix",
 			"other": "{n} appels sans prix"
 		}
-	}
+	},
+	"shortcut": { "control": "Ctrl" }
 }

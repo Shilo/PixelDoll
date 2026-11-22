@@ -2970,7 +2970,7 @@
 		"loading": "Loading characters…",
 		"range": "{low} to {high} · {gens}",
 		"basis": {
-			"character": "Estimated total",
+			"character": "Projected total",
 			"all": {
 				"one": "{n} character",
 				"other": "{n} characters"
@@ -2979,7 +2979,7 @@
 			"demo": "Demo art is free"
 		},
 		"tierOneRates": "{basis} · Tier 1 rates",
-		"spentToGo": "Spent {spent} · {toGo} to go",
+		"spentToGo": "Current ≈ {current} · Spent {spent} · {toGo} to go",
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
@@ -3043,5 +3043,6 @@
 			"one": "{n} unpriced call",
 			"other": "{n} unpriced calls"
 		}
-	}
+	},
+	"shortcut": { "control": "Ctrl" }
 }

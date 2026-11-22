@@ -3,9 +3,11 @@ import { readFileSync } from 'node:fs';
 import {
 	characterCost,
 	characterOf,
+	currentGens,
 	newCharacter,
 	planRate,
 	pricedTier,
+	projectedUsd,
 	savingTips,
 	seedInputs,
 	spentUsd,
@@ -437,8 +439,37 @@ describe('cost estimate', () => {
 		const trim = all.find((tip) => tip.kind === 'trim');
 		expect(trim).toMatchObject({ move: 0 });
 		if (trim?.kind === 'trim') expect(trim.frames).toBeGreaterThanOrEqual(8);
+		// Only work still to go can get cheaper.
 		for (const tip of tips)
-			expect(characterCost(c, tip.inputs).total).toBeLessThan(characterCost(c, inputs).total);
+			expect(characterCost(c, tip.inputs).toGo).toBeLessThan(characterCost(c, inputs).toGo);
+	});
+
+	test('projects the end cost as money spent plus the work still to go', () => {
+		const rate = planRate(2);
+		const fresh = newCharacter(
+			{ body: 64, frame: 64, model: 'v3', directions: FOUR },
+			{ moveModel: 'skeleton-v3', stateModel: 'pro' }
+		);
+		const planned = characterCost(fresh, { ...seedInputs(fresh), moves: 2, items: 3 });
+		// Nothing exists yet: no current work, and the end cost is the whole estimate.
+		expect(currentGens(planned)).toBe(0);
+		expect(projectedUsd(fresh.spent, planned.toGo, rate)).toBeCloseTo(usdOf(planned.total, rate));
+
+		const m = manifest({
+			cell: 64,
+			directions: FOUR,
+			items: [{ id: 'a', extra: { provenance: [call('/edit-animation-v2', 10)] } }]
+		});
+		const c = of(m);
+		const r = characterCost(c, { ...seedInputs(c), moves: 1 });
+		// Current work is priced once, without retries; its real price is what was spent.
+		expect(currentGens(r)).toBeCloseTo((r.total - r.toGo) / r.attempts);
+		expect(projectedUsd(c.spent, r.toGo, rate)).toBeCloseTo(
+			spentUsd(c.spent, rate) + usdOf(r.toGo, rate)
+		);
+		expect(projectedUsd(c.spent, r.toGo, rate, 'low')).toBeLessThan(
+			projectedUsd(c.spent, r.toGo, rate)
+		);
 	});
 
 	test('the bundled demo and a demo copy price changes without throwing', () => {

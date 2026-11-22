@@ -753,6 +753,16 @@ export const usdOf = (gens: number, rate: Rate, price: 'low' | 'list' = 'list') 
 	(gens * PLAN_PRICES[rate.tier][price]) / rate.generations;
 export const spentUsd = (spent: RecordedCost, rate: Rate) =>
 	usdOf(spent.generations, rate) + spent.usd;
+/** The end cost: what was really spent plus the estimate of the work still to go. */
+export const projectedUsd = (
+	spent: RecordedCost,
+	toGo: number,
+	rate: Rate,
+	price: 'low' | 'list' = 'list'
+) => spentUsd(spent, rate) + usdOf(toGo, rate, price);
+/** A first-attempt price of the work the character already has; what it really cost, retries included, is in Spent. */
+export const currentGens = (r: Pick<CostResult, 'total' | 'toGo' | 'attempts'>) =>
+	(r.total - r.toGo) / r.attempts;
 
 // ---------- savings tips ----------
 export type Tip =
@@ -760,9 +770,10 @@ export type Tip =
 	| { kind: 'held'; item: number; moves: number[]; saving: number; inputs: CostInputs }
 	| { kind: 'trim'; move: number; frames: number; saving: number; inputs: CostInputs };
 
-/** Up to two quality-safe changes with a real saving in cents at this tier, largest first. */
+/** Up to two quality-safe changes with a real saving in cents at this tier, largest first. Only work still to go can
+ *  get cheaper: money already spent stays spent. */
 export function savingTips(c: CostCharacter, inputs: CostInputs, rate: Rate): Tip[] {
-	const cents = (next: CostInputs) => Math.round(usdOf(characterCost(c, next).total, rate) * 100);
+	const cents = (next: CostInputs) => Math.round(usdOf(characterCost(c, next).toGo, rate) * 100);
 	const now = cents(inputs);
 	const tips: Tip[] = [];
 	const saving = (next: CostInputs) => (now - cents(next)) / 100;

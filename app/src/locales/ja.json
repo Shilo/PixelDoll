@@ -2882,7 +2882,7 @@
 		"loading": "キャラクターを読み込んでいます…",
 		"range": "{low}〜{high}・{gens}",
 		"basis": {
-			"character": "見積もり合計",
+			"character": "予測合計",
 			"all": {
 				"other": "キャラクター{n}体"
 			},
@@ -2890,7 +2890,7 @@
 			"demo": "デモのアートは無料"
 		},
 		"tierOneRates": "{basis}・Tier 1 の料金",
-		"spentToGo": "使用済み {spent}・残り {toGo}",
+		"spentToGo": "現在 ≈ {current}・使用済み {spent}・残り {toGo}",
 		"tier": "Tier",
 		"tierFree": "Free / Trial",
 		"tierN": "Tier {n}",
@@ -2948,5 +2948,6 @@
 		"unpriced": {
 			"other": "料金不明の呼び出し{n}件"
 		}
-	}
+	},
+	"shortcut": { "control": "Ctrl" }
 }
