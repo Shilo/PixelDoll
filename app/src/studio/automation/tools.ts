@@ -69,6 +69,7 @@ export { AgentError } from './contract.ts';
 export type { Json, Tool, ToolResult } from './contract.ts';
 import { budget, release, requestBudget, reserve, rateUsd } from './budget.ts';
 import { MAX_BUDGET } from './contract.ts';
+import { moveTools } from './moves.ts';
 
 // ---------- shared reads ----------
 const str = (description: string, maxLength = 200): JsonSchema => ({
@@ -958,7 +959,8 @@ export const TOOLS: Tool[] = [
 			await downloadCharacterZip(doc.id);
 			return { data: { downloaded: true, characterId: doc.id } };
 		}
-	}
+	},
+	...moveTools({ character, paidPreflight, reserveOrRefuse })
 ];
 
 /** Run one tool by name with validated input. Errors the agent can act on come back as AgentError. */
