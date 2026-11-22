@@ -38,7 +38,9 @@
 			"moveItemsMissing": "Einer der Gegenstände dieser Bewegung ist gelöscht. Stellen Sie zuerst den Gegenstand wieder her, dann die Bewegung."
 		},
 		"restoring": "Wird wiederhergestellt…",
-		"confirmBodyCharacter": "Alles andere davon Gelöschte geht mit. Endgültig weg, nicht rückgängig zu machen."
+		"confirmBodyCharacter": "Alles andere davon Gelöschte geht mit. Endgültig weg, nicht rückgängig zu machen.",
+		"restoreTitle": "{name} wiederherstellen?",
+		"restoreBody": "Es kommt genau so zurück, wie es gelöscht wurde."
 	},
 	"librarySettings": {
 		"title": "Bibliothek",

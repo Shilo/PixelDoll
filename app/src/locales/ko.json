@@ -36,7 +36,9 @@
 			"moveItemsMissing": "이 모션의 아이템 중 하나가 삭제되었습니다. 먼저 그 아이템을 복원한 뒤 이 모션을 복원하세요."
 		},
 		"restoring": "복원 중…",
-		"confirmBodyCharacter": "그 안에서 삭제한 것도 함께 사라집니다. 완전히 사라지며 되돌릴 수 없습니다."
+		"confirmBodyCharacter": "그 안에서 삭제한 것도 함께 사라집니다. 완전히 사라지며 되돌릴 수 없습니다.",
+		"restoreTitle": "{name}을(를) 복원할까요?",
+		"restoreBody": "삭제했을 때와 똑같은 상태로 돌아옵니다."
 	},
 	"librarySettings": {
 		"title": "라이브러리",

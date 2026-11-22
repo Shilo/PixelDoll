@@ -36,7 +36,9 @@
 			"moveItemsMissing": "Salah satu item gerakan ini dihapus. Pulihkan item itu dulu, lalu gerakan ini."
 		},
 		"restoring": "Memulihkan…",
-		"confirmBodyCharacter": "Yang lain yang dihapus darinya ikut hilang. Hilang selamanya, tidak dapat dibatalkan."
+		"confirmBodyCharacter": "Yang lain yang dihapus darinya ikut hilang. Hilang selamanya, tidak dapat dibatalkan.",
+		"restoreTitle": "Pulihkan {name}?",
+		"restoreBody": "Kembali persis seperti saat dihapus."
 	},
 	"librarySettings": {
 		"title": "Pustaka",

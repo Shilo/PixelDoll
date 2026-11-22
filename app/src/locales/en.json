@@ -38,7 +38,9 @@
 			"moveItemsMissing": "One of this move items is in Trash. Restore that item first, then this move."
 		},
 		"restoring": "Restoring…",
-		"confirmBodyCharacter": "Anything else deleted from it goes too. It is gone for good. This cannot be undone."
+		"confirmBodyCharacter": "Anything else deleted from it goes too. It is gone for good. This cannot be undone.",
+		"restoreTitle": "Restore {name}?",
+		"restoreBody": "It comes back exactly as it was deleted."
 	},
 	"librarySettings": {
 		"title": "Library",

@@ -38,7 +38,9 @@
 			"moveItemsMissing": "L’un des objets de ce mouvement est supprimé. Restaurez d’abord l’objet, puis le mouvement."
 		},
 		"restoring": "Restauration…",
-		"confirmBodyCharacter": "Tout ce qui en a été supprimé part aussi. Disparition définitive, irréversible."
+		"confirmBodyCharacter": "Tout ce qui en a été supprimé part aussi. Disparition définitive, irréversible.",
+		"restoreTitle": "Restaurer {name} ?",
+		"restoreBody": "Il revient exactement tel qu’il a été supprimé."
 	},
 	"librarySettings": {
 		"title": "Bibliothèque",

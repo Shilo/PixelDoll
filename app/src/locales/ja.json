@@ -36,7 +36,9 @@
 			"moveItemsMissing": "このモーションのアイテムの 1 つが削除されています。先にそのアイテムを復元してから、このモーションを復元してください。"
 		},
 		"restoring": "復元中…",
-		"confirmBodyCharacter": "そこから削除したものも一緒に消えます。完全に削除され、元に戻せません。"
+		"confirmBodyCharacter": "そこから削除したものも一緒に消えます。完全に削除され、元に戻せません。",
+		"restoreTitle": "{name} を復元しますか？",
+		"restoreBody": "削除したときと同じ状態に戻ります。"
 	},
 	"librarySettings": {
 		"title": "ライブラリ",

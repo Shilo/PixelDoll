@@ -36,7 +36,9 @@
 			"moveItemsMissing": "此动作的一个物品已被删除。请先恢复该物品，再恢复此动作。"
 		},
 		"restoring": "正在恢复…",
-		"confirmBodyCharacter": "从它那里删除的其他内容也会一起消失。彻底消失，无法撤销。"
+		"confirmBodyCharacter": "从它那里删除的其他内容也会一起消失。彻底消失，无法撤销。",
+		"restoreTitle": "恢复 {name}？",
+		"restoreBody": "它会完全按删除时的状态恢复。"
 	},
 	"librarySettings": {
 		"title": "角色库",

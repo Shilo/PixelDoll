@@ -38,7 +38,9 @@
 			"moveItemsMissing": "Bu hareketin öğelerinden biri silinmiş. Önce o öğeyi, sonra bu hareketi geri yükleyin."
 		},
 		"restoring": "Geri yükleniyor…",
-		"confirmBodyCharacter": "Ondan silinen her şey de gider. Tamamen gider, geri alınamaz."
+		"confirmBodyCharacter": "Ondan silinen her şey de gider. Tamamen gider, geri alınamaz.",
+		"restoreTitle": "{name} geri yüklensin mi?",
+		"restoreBody": "Silindiği haliyle aynen geri gelir."
 	},
 	"librarySettings": {
 		"title": "Kitaplık",

@@ -38,7 +38,9 @@
 			"moveItemsMissing": "Uno de los objetos de este movimiento está eliminado. Restaura primero el objeto y luego el movimiento."
 		},
 		"restoring": "Restaurando…",
-		"confirmBodyCharacter": "Lo demás eliminado de él se va también. Desaparece para siempre; no se puede deshacer."
+		"confirmBodyCharacter": "Lo demás eliminado de él se va también. Desaparece para siempre; no se puede deshacer.",
+		"restoreTitle": "¿Restaurar {name}?",
+		"restoreBody": "Vuelve exactamente como estaba al eliminarse."
 	},
 	"librarySettings": {
 		"title": "Biblioteca",
