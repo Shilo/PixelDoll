@@ -1,7 +1,8 @@
 import { DIRECTIONS, type DirectionName, type RigDirection, type Rig } from '../lib/rig/rig.ts';
 import { mirrorPartner } from '../lib/rig/mirror.ts';
 export { PAIRS } from '../lib/rig/mirror.ts';
-import { BASE_BODY, UNDERWEAR_BODY, isBaseBody } from './model.ts';
+import { BASE_BODY, UNDERWEAR_BODY, isBaseBody, nameFrom } from './model.ts';
+import type { CreateSpec } from './create.ts';
 import { LocalizedError, PreflightWarning, message, type Message } from '../lib/message.ts';
 import {
 	referenceSizeError,
@@ -246,6 +247,29 @@ export function draftTyped(
 	return text(draft) !== text(opening);
 }
 
+/** The creation request a New character draft describes (seed 0 = not chosen yet). New character and the agent tools both
+ *  start from it, so both send the same request for the same choices. */
+export function draftSpec(d: CharacterDraft): CreateSpec {
+	const reference = d.reference;
+	return {
+		description: d.prompt,
+		...(reference
+			? {
+					reference: { base64: reference.base64, width: reference.width, height: reference.height }
+				}
+			: {}),
+		name:
+			d.name.trim() ||
+			(d.details ? nameFrom(d.details) : d.kind !== UNSET ? d.kind : 'My character'),
+		seed: d.seed ? Number(d.seed) : 0,
+		size: d.body || 0,
+		frame: d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame,
+		view: d.view,
+		directions: facingOf(d),
+		exactPrompt: true,
+		...styleOf(d)
+	};
+}
 export function newCharacterDraft(): CharacterDraft {
 	return {
 		name: '',

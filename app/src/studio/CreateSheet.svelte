@@ -25,15 +25,13 @@
 	import CharacterForm from './CharacterForm.svelte';
 	import {
 		CREATE_STEPS,
-		autoFrame,
 		draftErrors,
-		facingOf,
 		freshSeed,
 		newCharacterDraft,
 		draftTyped,
-		styleOf
+		draftSpec
 	} from './characterConfig.ts';
-	import { nameFrom, bodyQualityNote as plain } from './model.ts';
+	import { bodyQualityNote as plain } from './model.ts';
 	import {
 		ui,
 		creates,
@@ -68,7 +66,6 @@
 	const creating = $derived(creates.find((run) => run.id === createPresentation.id));
 	let enhancing = $state(false);
 	let referenceLoading = $state(false);
-	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
 	const issues = $derived(draftErrors(d));
 	// Fit warnings never block: Create becomes Create anyway, which records the accepted warnings with the attempt.
 	const accepted = $derived(
@@ -91,29 +88,7 @@
 			]
 		}))
 	);
-	const reference = $derived(d.reference);
-	const formSpec = $derived<CreateSpec>({
-		description: d.prompt,
-		...(reference
-			? {
-					reference: {
-						base64: reference.base64,
-						width: reference.width,
-						height: reference.height
-					}
-				}
-			: {}),
-		name:
-			d.name.trim() ||
-			(d.details ? nameFrom(d.details) : d.kind !== 'Not set' ? d.kind : 'My character'),
-		seed: d.seed ? Number(d.seed) : 0,
-		size: d.body || 0,
-		frame: frameSize,
-		view: d.view,
-		directions: facingOf(d),
-		exactPrompt: true,
-		...styleOf(d)
-	});
+	const formSpec = $derived<CreateSpec>(draftSpec(d));
 	const est = $derived(estimate(creating?.spec ?? formSpec));
 	const lo = $derived(Math.round(est.gens)),
 		hi = $derived(Math.ceil(est.maxGens / 5) * 5);
