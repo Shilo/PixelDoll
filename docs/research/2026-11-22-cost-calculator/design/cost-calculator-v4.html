@@ -218,8 +218,8 @@ details[open] > summary > svg { rotate: 0deg; }
 .studio-top { max-width: calc(100% - 70px); }
 #character-menu { max-width: 100%; }
 #character-name, .scope-name { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.scope { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px; margin-bottom: 16px; padding: 3px; border: 1px solid var(--bu-line); border-radius: var(--bu-radius-control); }
-.scope button { min-width: 0; min-height: 44px; padding-inline: 12px; }
+.scope { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; margin-bottom: 16px; padding: 3px; border: 1px solid var(--bu-line); border-radius: var(--bu-radius-control); }
+.scope button { min-width: 0; min-height: 44px; padding-inline: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .scope [aria-pressed=true], .compass [aria-pressed=true] { background: var(--bu-selected); color: var(--bu-accent); box-shadow: inset 0 0 0 1px var(--bu-accent); }
 .calculator-body { padding-top: 14px; }
 .readout { margin-bottom: 12px; }
@@ -229,7 +229,7 @@ details[open] > summary > svg { rotate: 0deg; }
 .stepper button { width: 36px; }
 .step-value { min-width: 0; min-height: 44px; width: 100%; padding: 0 2px; border: 0; background: transparent; color: inherit; font: inherit; font-size: 16px; appearance: textfield; }
 .step-value::-webkit-inner-spin-button, .step-value::-webkit-outer-spin-button { appearance: none; margin: 0; }
-.input-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; align-items: end; }
+.input-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 #counts { flex: 1 1 min-content; }
 #counts .step-row { gap: 6px; }
 .compass-label { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; margin-bottom: 4px; }
@@ -238,7 +238,7 @@ details[open] > summary > svg { rotate: 0deg; }
   --mirror-width: 28px;
   --paired-width: calc(var(--direction-width) + var(--mirror-width));
   display: grid;
-  grid-template-columns: var(--paired-width) var(--direction-width) var(--paired-width);
+  grid-template-columns: var(--paired-width) var(--direction-width) var(--direction-width);
   gap: 4px;
 }
 .direction-tile { display: flex; height: 44px; }
@@ -347,11 +347,11 @@ details[open] > summary > svg { rotate: 0deg; }
       </div>
       <div id="retry-control"></div>
       <div class="input-grid" id="character-controls">
+        <div id="counts"></div>
         <section aria-labelledby="directions-label">
           <div class="compass-label"><span id="directions-label">Directions</span> <span id="direction-count" class="setting"></span></div>
           <div id="compass" class="compass" role="group" aria-labelledby="directions-label"></div>
         </section>
-        <div id="counts"></div>
       </div>
 
       <div class="actions" id="actions" hidden>
@@ -707,7 +707,7 @@ for (const definition of compass) {
   });
   tile.append(facing);
   let mirror;
-  if (partner) {
+  if (partner && id.includes('W')) {
     mirror = button('', 'bu-action mirror');
     mirror.dataset.variant = 'field';
     mirror.innerHTML = icon('mirror-views');
@@ -719,8 +719,7 @@ for (const definition of compass) {
       views[partner] = true;
       update();
     });
-    if (id.includes('W')) tile.prepend(mirror);
-    else tile.append(mirror);
+    tile.prepend(mirror);
   }
   directionControls.set(id, { facing, mirror });
 }
