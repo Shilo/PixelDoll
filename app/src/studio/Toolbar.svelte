@@ -5,6 +5,7 @@
 	import { displayMessage } from '../lib/i18n.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { popoverFocus } from './experience/focus.ts';
+	import { openSettings } from './settingsNavigation.svelte.ts';
 	import { tick } from 'svelte';
 	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
@@ -56,7 +57,6 @@
 	const m = $derived(store.project?.manifest);
 	const facts = $derived(m && characterFacts(m));
 	const name = $derived(characterName());
-	let mountMenuOpen = $state(false);
 	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
 	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
 	const VIEWS = [
@@ -291,11 +291,11 @@
 				data-variant="quiet"
 				aria-label={t('toolbar.mountSettings')}
 				data-active={experience.testMount || undefined}
-				aria-expanded={mountMenuOpen}
+				aria-haspopup="dialog"
 				title={experience.testMount
 					? t('toolbar.titleMountSettingsMounted')
 					: t('toolbar.mountSettings')}
-				popovertarget="mount-options"
+				onclick={() => openSettings('mount')}
 				disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
 			>
 			<button
@@ -330,57 +330,6 @@
 	</div>
 </header>
 <SharePopover />
-{#if experience.screen === 'studio'}
-	<div
-		id="mount-options"
-		class="menu options-menu bu-popover-anchor"
-		data-placement="bottom-end"
-		popover
-		ontoggle={(event) => {
-			mountMenuOpen = event.newState === 'open';
-			popoverFocus(event);
-		}}
-	>
-		<PopoverArrow />
-		<div class="menu-surface bu-popover-surface bu-floating">
-			<div class="menu-prompt">
-				<p class="menu-sec">{t('toolbar.mountSettings')}</p>
-			</div>
-			<label class="row bu-check" for="show-mount"
-				><span class="row-name">{t('toolbar.showMount')}</span><input
-					id="show-mount"
-					class="bu-switch"
-					type="checkbox"
-					role="switch"
-					bind:checked={experience.testMount}
-				/></label
-			>
-			<div class="menu-prompt">
-				<label class="row" for="mount-legs"
-					><span class="row-name">{t('toolbar.hideLegs')}</span><select
-						id="mount-legs"
-						class="bu-input mount-leg-select"
-						bind:value={experience.mountLegs}
-						disabled={!experience.testMount}
-						aria-describedby="mount-legs-note"
-						><option value="none">{t('common.none')}</option><option value="far"
-							>{t('toolbar.farLeg')}</option
-						><option value="both">{t('toolbar.bothLegs')}</option></select
-					></label
-				>
-				<p id="mount-legs-note" class="menu-prompt-text faint small">
-					{#if experience.testMount && experience.mountLegIssue}
-						{experience.mountLegIssue}
-					{:else if experience.mountLegs === 'both'}
-						{t('toolbar.cutsBelowTheHipsHandsMayBe')}
-					{:else if experience.mountLegs === 'far'}
-						{t('toolbar.anApproximateCutoutMayHideClothingOr')}
-					{/if}
-				</p>
-			</div>
-		</div>
-	</div>
-{/if}
 {#if ui.sheet !== 'create'}<MoreMenu />{/if}
 
 <div

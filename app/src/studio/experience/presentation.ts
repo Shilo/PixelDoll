@@ -1,4 +1,4 @@
-import { sampleTimeline, timelineDuration } from '../../lib/runtime/timeline.js';
+import { clipKind, sampleTimeline, timelineDuration } from '../../lib/runtime/timeline.js';
 import {
 	bakedFrame,
 	composeCell,
@@ -28,6 +28,9 @@ import {
 	type Vector
 } from './movement.ts';
 
+/** The Move a mounted rider plays, and the State the Riding template creates. */
+export const RIDE_MOVE = 'ride',
+	RIDING_STATE = 'riding';
 export interface BodySequence {
 	clip: string;
 	direction: DirectionName;
@@ -442,6 +445,8 @@ export function resolveLive(
 		defaultDirection?: DirectionName;
 		deadZone?: number;
 		riding?: boolean;
+		/** A State chosen as the rider's pose; used only while riding, and only for the exact facing it covers. */
+		riderPose?: string;
 	}
 ): Presentation {
 	const velocity = unit(options.velocity, options.deadZone ?? 1e-6),
@@ -463,7 +468,21 @@ export function resolveLive(
 				saved
 			)
 		: (retained ?? nearestDirection(a.directions, { x: 0, y: -1 }));
-	const ridingClip = a.animations.get('ride')?.has(intended!) ? 'ride' : 'idle';
+	// Riding order: the chosen Riding pose, the Ride Move, the Riding State, then Idle and Standing. The first three
+	// show only for the exact facing, so the rider never faces away from the mount.
+	const riding = options.riding
+		? [
+				options.riderPose,
+				RIDE_MOVE,
+				a.project.manifest.rig.animations.some(
+					(clip) => clip.id === RIDING_STATE && clipKind(clip) === 'state'
+				)
+					? RIDING_STATE
+					: undefined
+			].filter((clip): clip is string => !!clip)
+		: [];
+	const ridingClip =
+		options.riderPose ?? riding.find((clip) => a.animations.get(clip)?.has(intended!)) ?? 'idle';
 	const start = initial(
 		a,
 		options.riding ? ridingClip : moving ? 'walk' : 'idle',
@@ -503,8 +522,13 @@ export function resolveLive(
 				};
 		}
 	}
+	// A chosen Riding pose missing this facing falls through the order, and withIssue names the gap.
+	for (const clip of riding) {
+		const sequence = intended ? a.animations.get(clip)?.get(intended) : undefined;
+		if (sequence) return withIssue(a, animated(base, sequence));
+	}
 	for (const clip of options.riding
-		? [ridingClip, DEFAULT_MOVE]
+		? ['idle', DEFAULT_MOVE]
 		: moving
 			? ['walk', 'idle', DEFAULT_MOVE]
 			: ['idle', DEFAULT_MOVE]) {
@@ -568,7 +592,8 @@ export function livePlaybackDelta(
 	travelRate = 1
 ): number {
 	const dt = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
-	if (presentation.requestedClip === 'ride' && presentation.clip === 'ride') {
+	// Ride follows travel whether it was asked for or reached as a riding fallback.
+	if (presentation.clip === RIDE_MOVE) {
 		return travelDelta(velocity, dt, travelRate);
 	}
 	if (

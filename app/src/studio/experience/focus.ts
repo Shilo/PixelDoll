@@ -190,3 +190,24 @@ export function popoverFocus(
 		}
 	}
 }
+
+/** Arrow keys, Home and End move focus between a menu's enabled radio rows. */
+export function navigateMenu(menu: HTMLElement, event: KeyboardEvent) {
+	const items = [
+		...menu.querySelectorAll<HTMLButtonElement>('[role=menuitemradio]:not(:disabled)')
+	];
+	const at = items.indexOf(document.activeElement as HTMLButtonElement);
+	const target =
+		event.key === 'ArrowDown'
+			? items[(at + 1) % items.length]
+			: event.key === 'ArrowUp'
+				? items[(at - 1 + items.length) % items.length]
+				: event.key === 'Home'
+					? items[0]
+					: event.key === 'End'
+						? items.at(-1)
+						: undefined;
+	if (!target) return;
+	event.preventDefault();
+	target.focus();
+}

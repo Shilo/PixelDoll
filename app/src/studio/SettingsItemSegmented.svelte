@@ -6,6 +6,7 @@
 		options,
 		value,
 		onselect,
+		disabled = false,
 		icon,
 		optionIcon
 	}: {
@@ -14,6 +15,7 @@
 		options: readonly { value: Value; label: string }[];
 		value: Value;
 		onselect: (value: Value) => void;
+		disabled?: boolean;
 		icon?: Snippet;
 		optionIcon?: Snippet<[Value]>;
 	} = $props();
@@ -30,6 +32,7 @@
 					name={group}
 					value={option.value}
 					checked={value === option.value}
+					{disabled}
 					onchange={() => onselect(option.value)}
 				/>
 				<span class="bu-segment-face">

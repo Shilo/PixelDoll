@@ -269,7 +269,7 @@ test.describe('creation safety', () => {
 			});
 			state.ui.sheet = 'move';
 		});
-		const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
+		const sheet = page.getByRole('dialog', { name: 'New move', exact: true });
 		await expect(
 			sheet.getByText(
 				'Walk west: estimated arm-joint difference 2.7 px from requested pose; review',
@@ -408,11 +408,10 @@ test.describe('creation safety', () => {
 });
 
 async function chooseSkeletonMove(sheet: Locator) {
-	const advanced = sheet.locator('details.advanced');
-	if ((await advanced.getAttribute('open')) === null) await advanced.locator('summary').click();
-	await sheet
-		.getByRole('combobox', { name: 'Motion model', exact: true })
-		.selectOption('skeleton-v3');
+	// Advanced is a side column toggle on wide sheets.
+	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
+	if (!(await model.isVisible())) await sheet.getByRole('button', { name: /^Advanced/ }).click();
+	await model.selectOption('skeleton-v3');
 }
 
 test('Add a move queues behind the running move and runs it next', async ({ page, context }) => {
@@ -440,19 +439,23 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 		.getByRole('button', { name: 'Start dressing up', exact: true })
 		.click({ timeout: 90_000 });
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
-	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+	await move.getByRole('button', { name: 'Walk', exact: true }).click();
 	await chooseSkeletonMove(move);
-	await move.getByRole('button', { name: /^Generate move/ }).click();
+	await move.getByRole('button', { name: /^Generate / }).click();
 	await expect(move).not.toContainText('Queued next: Idle');
 	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
-	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+	// The form keeps Walk applied, so it says Walk is already queued.
+	await expect(move.getByRole('button', { name: 'Walk', exact: true })).toHaveAttribute(
+		'aria-pressed',
+		'true'
+	);
 	await expect(move).toContainText('Walk is already queued.');
 	await expect(move.getByRole('button', { name: /^Queue Walk/ })).toBeDisabled();
 	await expect(move.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(0);
-	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
+	await move.getByRole('button', { name: 'Idle', exact: true }).click();
 	await chooseSkeletonMove(move);
 	await expect(move).toContainText('It waits for the move in progress, then runs by itself.');
 	await move.getByRole('button', { name: /^Queue Idle/ }).click();
@@ -524,13 +527,13 @@ test('a failed required measurement stops the queued idle without paying for an 
 	await expect(sheet.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await chooseSkeletonMove(move);
-	await move.getByRole('button', { name: /^Generate move/ }).click();
+	await move.getByRole('button', { name: /^Generate / }).click();
 	try {
 		await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
-		await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+		await move.getByRole('button', { name: 'Walk', exact: true }).click();
 		await move.getByRole('button', { name: /^Queue Walk/ }).click();
 	} finally {
 		releaseMeasurement();
@@ -750,7 +753,9 @@ test('V3 enhance connects once, preserves settings, undo restores exactly, and f
 	const enhanceWidth = (await sheet
 		.getByRole('button', { name: 'Enhance', exact: true })
 		.boundingBox())!.width;
-	const copyBefore = await sheet.locator('.editor-toolbar .copy').boundingBox();
+	const copyBefore = await sheet
+		.getByRole('button', { name: 'Copy exact prompt', exact: true })
+		.boundingBox();
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await connect(page);
 	sheet = page.getByRole('dialog', { name: 'New character', exact: true });
@@ -758,7 +763,9 @@ test('V3 enhance connects once, preserves settings, undo restores exactly, and f
 	expect(
 		(await sheet.getByRole('button', { name: 'Undo', exact: true }).boundingBox())!.width
 	).toBe(enhanceWidth);
-	expect(await sheet.locator('.editor-toolbar .copy').boundingBox()).toEqual(copyBefore);
+	expect(
+		await sheet.getByRole('button', { name: 'Copy exact prompt', exact: true }).boundingBox()
+	).toEqual(copyBefore);
 	const enhance = api.calls.filter((c) => c.path === '/v2/enhance-character-v3-prompt');
 	expect(enhance).toHaveLength(1);
 	expect(enhance[0].body).toMatchObject({
@@ -861,6 +868,64 @@ test('Appearance enhancement cannot clear selected hints with repeated clauses o
 		'Pointed ears'
 	);
 	await expect(sheet.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('Elf');
+});
+
+test('switching tabs while Enhance runs leaves the next field usable', async ({
+	page,
+	context
+}) => {
+	const api = new CharacterApi();
+	let release!: () => void;
+	const held = new Promise<void>((resolve) => (release = resolve));
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		if (new URL(request.url()).pathname === '/v2/enhance-character-v3-prompt') {
+			await held;
+			await route.fulfill({ json: { enhanced_prompt: 'A calm face' } }).catch(() => {});
+		} else
+			await fulfill(
+				route,
+				await api.handle(request.method(), request.url(), request.postDataJSON())
+			);
+	});
+	const sheet = await open(page);
+	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('Freckles');
+	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await connect(page);
+	await expect(sheet.getByRole('button', { name: /^Enhancing/ })).toBeVisible();
+	// Leaving the tab cancels the request; the form must not stay busy.
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+	await expect(sheet.getByRole('button', { name: 'Enhance', exact: true })).toBeEnabled();
+	release();
+});
+
+test('Undo after an Appearance enhancement restores the exact prompt, line order included', async ({
+	page,
+	context
+}) => {
+	const api = new CharacterApi();
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		if (new URL(request.url()).pathname === '/v2/enhance-character-v3-prompt')
+			await route.fulfill({ json: { enhanced_prompt: 'A calm face' } });
+		else
+			await fulfill(
+				route,
+				await api.handle(request.method(), request.url(), request.postDataJSON())
+			);
+	});
+	const sheet = await open(page);
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+	const exact = sheet.getByRole('textbox', { name: 'Exact prompt', exact: true });
+	// Prose on both sides of a trait line: Details alone would put both lines before the trait.
+	const original = 'A freckled face\nKind: Elf\nPointed ears';
+	await exact.fill(original);
+	await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click();
+	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await connect(page);
+	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+	await expect(exact).toHaveValue(original);
 });
 
 test('Appearance enhancement preserves coverage and changing base clothing clears stale Undo', async ({
@@ -1040,7 +1105,11 @@ for (const viewport of [
 			expect(preview.x).toBeCloseTo(box.x, 0);
 			expect(preview.width).toBeCloseTo(box.width, 0);
 			expect(preview.height).toBeCloseTo(preview.width, 0);
-			expect(tabs.x - (box.x + box.width)).toBeCloseTo(geometry.x - (tabs.x + tabs.width), 0);
+			// The appearance column sits evenly between the reference rail and the size controls.
+			const column = (await sheet
+				.getByRole('textbox', { name: 'Details', exact: true })
+				.boundingBox())!;
+			expect(column.x - (box.x + box.width)).toBeCloseTo(geometry.x - (column.x + column.width), 0);
 			expect(box.y).toBeGreaterThan(heading.y + heading.height);
 		} else {
 			await expect(guide).toBeVisible();
@@ -1299,7 +1368,7 @@ for (const viewport of [
 			await sheet
 				.locator('.prompt-actions > button')
 				.evaluateAll((elements) => elements.map((el) => el.getAttribute('aria-label')))
-		).toEqual(['Prompt help', 'Copy exact prompt', 'Enhance']);
+		).toEqual(['Copy exact prompt', 'Enhance']);
 		const toolbar = await sheet.locator('.editor-toolbar').evaluate((el) => {
 			const row = el.getBoundingClientRect();
 			return [...el.querySelectorAll('button')].every((button) => {
@@ -1365,7 +1434,7 @@ test('compact creator toolbar keeps wider fallback-font labels and actions reada
 				);
 			})
 		).toBe(true);
-		for (const label of ['Appearance help', 'Copy details', 'Enhance']) {
+		for (const label of ['Appearance help']) {
 			const button = sheet
 				.locator('.editor-toolbar')
 				.getByRole('button', { name: label, exact: true });
@@ -1374,6 +1443,11 @@ test('compact creator toolbar keeps wider fallback-font labels and actions reada
 			expect(rect!.x).toBeGreaterThanOrEqual(toolbar!.x);
 			expect(rect!.x + rect!.width).toBeLessThanOrEqual(toolbar!.x + toolbar!.width + 1);
 		}
+		// Enhance sits inside the details field's top-right corner.
+		const field = await sheet.getByRole('textbox', { name: 'Details', exact: true }).boundingBox();
+		const wand = await sheet.getByRole('button', { name: 'Enhance', exact: true }).boundingBox();
+		expect(wand!.x + wand!.width).toBeLessThanOrEqual(field!.x + field!.width);
+		expect(wand!.y).toBeGreaterThanOrEqual(field!.y);
 		await page.screenshot({ path: info.outputPath(`creator-toolbar-${width}.png`) });
 	}
 });
@@ -1479,13 +1553,13 @@ function offlineCreation(config: CreationCase) {
 			.getByRole('button', { name: 'Back', exact: true })
 			.click();
 		await equipmentMode(page, 'Moves');
-		const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+		const move = page.getByRole('dialog', { name: 'New move', exact: true });
 		const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 		for (const name of ['Idle', 'Walk']) {
-			await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-			await move.getByRole('radio', { name, exact: true }).click();
+			await page.getByRole('button', { name: 'New move...', exact: true }).click();
+			await move.getByRole('button', { name, exact: true }).click();
 			await chooseSkeletonMove(move);
-			await move.getByRole('button', { name: /^Generate move/ }).click();
+			await move.getByRole('button', { name: /^Generate / }).click();
 			await review
 				.getByRole('button', { name: 'Save move', exact: true })
 				.click({ timeout: 120_000 });

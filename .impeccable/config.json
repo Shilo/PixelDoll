@@ -39,6 +39,15 @@
         ],
         "createdAt": "2026-11-19T16:50:40.066Z",
         "reason": "agent triage: compatibility.ts is a TypeScript module with no markup; the flagged line is the generic type Promise<Img>"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "app/src/studio/experience/presentation.ts"
+        ],
+        "createdAt": "2026-11-22T01:26:33.586Z",
+        "reason": "agent: TypeScript Img type annotation on line 158, no HTML img tag"
       }
     ]
   }

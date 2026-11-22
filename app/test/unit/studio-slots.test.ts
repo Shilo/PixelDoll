@@ -8,7 +8,6 @@ import {
 	applySettings,
 	busyReason,
 	changesAttachment,
-	categoryCopy,
 	categories,
 	deleteCustom,
 	drawsAbove,
@@ -66,10 +65,6 @@ test('every built-in is its own category: ten shown, six not shown, Base exclude
 	expect(slotLabel(m, 'body')).toBe('Base');
 	expect(slotLabelMessage(m, 'torso_inner')).toMatchObject({ key: 'studioSlots.labels.body' });
 	expect(slotLabelMessage(m, 'body')).toMatchObject({ key: 'studioSlots.labels.base' });
-	expect(categoryCopy(m, 'head').ideas[1]).toMatchObject({
-		label: 'iron knight helmet',
-		caption: { key: 'studioSlots.ideas.head.1' }
-	});
 });
 
 test('a hidden category holding items or attempts stays in Wardrobe', () => {

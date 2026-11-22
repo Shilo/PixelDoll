@@ -16,6 +16,7 @@ import * as db from '../lib/store/db.ts';
 import { assignNewClipExportId } from '../lib/store/identity.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import { LocalizedError, message } from '../lib/message.ts';
+import { forgetRidingPose } from './experience/riderPose.ts';
 import { moveLabel } from './model.ts';
 import { sameClipName, withClipWriteLock } from './clipName.ts';
 export { clipNameId as stateCaptureId } from './clipName.ts';
@@ -33,9 +34,10 @@ import {
 	toast
 } from './state.svelte.ts';
 
+/** Any saved State or Move can be the source of a new State. */
 export function stateCaptureSource(manifest: Manifest, moveId: string) {
 	const { rig } = manifest;
-	const move = rig.animations.find((clip) => clip.id === moveId && clipKind(clip) === 'move');
+	const move = rig.animations.find((clip) => clip.id === moveId);
 	const body = manifest.items.find((item) => item.id === rig.baseItem)?.layers[0];
 	const cells = body?.cells?.[moveId];
 	if (!move || !body?.cells || !cells) return null;
@@ -49,13 +51,12 @@ export function stateCaptureSource(manifest: Manifest, moveId: string) {
 	};
 }
 
-export function stateCaptureMoves(manifest: Manifest | undefined) {
+export function stateSourceClips(manifest: Manifest | undefined) {
 	if (!manifest) return [];
 	const { rig } = manifest;
 	const cells = manifest.items.find((item) => item.id === rig.baseItem)?.layers[0]?.cells;
 	return rig.animations.filter(
 		(clip) =>
-			clipKind(clip) === 'move' &&
 			clip.frames.length > 0 &&
 			rig.directions.some(({ id, mirrorOf }) => !mirrorOf && cells?.[clip.id]?.[id]?.some(Boolean))
 	);
@@ -103,10 +104,7 @@ async function captureStateUnlocked(
 			);
 	};
 	const unavailable = () =>
-		new LocalizedError(
-			'This frame does not have all saved views for this move.',
-			'stateCapture.unavailable'
-		);
+		new LocalizedError('This frame is missing saved views.', 'stateCapture.unavailable');
 	check();
 	await flushSave();
 	const snapshot = await db.get<StoredProject>('projects', projectId);
@@ -140,7 +138,7 @@ async function captureStateUnlocked(
 	const sources: NonNullable<typeof move.sources> = {};
 	for (const { id: dir } of drawn) {
 		const hash = sourceCells[dir]?.[cell];
-		if (!hash) throw unavailable();
+		if (!hash) continue;
 		captured[dir] = [hash];
 		const source = move.sources?.[dir];
 		const measured = source?.measured?.[cell];
@@ -293,6 +291,7 @@ export async function removeMove(id: string) {
 		record.savedAt = new Date().toISOString();
 		return record;
 	});
+	forgetRidingPose(projectId, id);
 	if (doc.id === projectId) await openProject(projectId);
 	toast(
 		removed && clipKind(removed) === 'state'

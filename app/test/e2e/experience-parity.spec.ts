@@ -730,6 +730,16 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		animation.sources = {
 			east: { measured: Array.from({ length: animation.cells }, () => points) }
 		};
+		// A one-cell State drawn from Walk's first column stands in for a saved riding stance.
+		fixture.rig.animations.push({
+			id: 'riding',
+			kind: 'state',
+			cells: 1,
+			loop: false,
+			frames: [{ cell: 0, ms: 100 }]
+		});
+		const base = fixture.items.find((item: { id: string }) => item.id === fixture.rig.baseItem);
+		base.layers[0].sheets.riding = base.layers[0].sheets.walk;
 		await route.fulfill({ response, json: fixture });
 	});
 	await landing(page);
@@ -739,10 +749,14 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	const inactiveMountColor = await toggle.evaluate((element) => getComputedStyle(element).color);
 	const move = playbackPicker(page);
 	await selectPlaybackClip(page, 'cross-punch');
-	const moves = await (await openPlaybackPicker(page)).getByRole('menuitemradio').count();
+	const picker = await openPlaybackPicker(page);
+	const moves = await picker.getByRole('menuitemradio').count();
+	// Every row shows its clip's body art; the trigger itself stays text only.
+	await expect(picker.locator('.clip-art canvas')).toHaveCount(moves);
+	await expect(move.locator('canvas')).toHaveCount(0);
 	await page.keyboard.press('Escape');
 	await expect(toggle).toHaveAccessibleName('Mount settings');
-	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await expect(toggle).toHaveAttribute('aria-haspopup', 'dialog');
 	await expect(toggle.locator('.view-label')).toHaveCount(0);
 	await expect(page.locator('.view-modes .test-mount-toggle')).toHaveCount(0);
 	// Redo and Undo lead the trailing group (they come and go there without moving anything); Mount settings and
@@ -752,13 +766,42 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 			'.header-actions > .header-redo + .header-undo + .test-mount-toggle + .header-random'
 		)
 	).toHaveCount(1);
-	const mountMenu = page.locator('#mount-options');
+	// The mount icon opens the Mount page of Settings directly.
+	const mountMenu = page.getByRole('dialog', { name: 'Settings' });
 	const shown = mountMenu.getByRole('switch', { name: 'Show mount', exact: true });
+	const closeMount = async () => {
+		await page.keyboard.press('Escape');
+		await expect(mountMenu).toBeHidden();
+	};
 	await toggle.click();
-	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+	await expect(mountMenu.getByRole('heading', { name: 'Mount', exact: true })).toBeVisible();
 	await expect(shown).not.toBeChecked();
 	await expect(world(page)).not.toHaveAttribute('data-mount');
-	await expect(mountMenu.locator('label[for="mount-legs"]')).toHaveCSS('user-select', 'none');
+	// The page previews the mount on its own, turning; with Show mount on, the open character rides it.
+	const preview = mountMenu.locator('.mount-preview canvas');
+	const painted = () =>
+		preview.evaluate((canvas: HTMLCanvasElement) =>
+			canvas
+				.getContext('2d')!
+				.getImageData(0, 0, canvas.width, canvas.height)
+				.data.some((value, index) => index % 4 === 3 && value > 0)
+		);
+	await expect.poll(painted).toBe(true);
+	await expect(preview).toHaveAttribute('data-rider', '');
+	const firstFacing = await preview.getAttribute('data-facing');
+	await expect(preview).not.toHaveAttribute('data-facing', firstFacing!, { timeout: 5000 });
+	await shown.check();
+	await expect(preview).toHaveAttribute('data-rider', 'fixture:s2');
+	const playButton = mountMenu.getByRole('button', { name: 'Pause mount preview', exact: true });
+	await playButton.click();
+	await expect(
+		mountMenu.getByRole('button', { name: 'Play mount preview', exact: true })
+	).toBeVisible();
+	const pausedFacing = await preview.getAttribute('data-facing');
+	await page.waitForTimeout(1800);
+	await expect(preview).toHaveAttribute('data-facing', pausedFacing!);
+	await mountMenu.getByRole('button', { name: 'Play mount preview', exact: true }).click();
+	await shown.uncheck();
 	await shown.check();
 	await expect
 		.poll(() => toggle.evaluate((element) => getComputedStyle(element).color))
@@ -777,8 +820,10 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		'aria-label',
 		playing!
 	);
-	await page.keyboard.press('Escape');
+	await closeMount();
 	await expect(toggle).toBeFocused();
+	// Closing Settings removes the preview with its drawing loop.
+	await expect(page.locator('.mount-preview')).toHaveCount(0);
 	for (const direction of ['south', 'east', 'north', 'west']) {
 		await page.getByRole('button', { name: 'Face ' + direction, exact: true }).click();
 		await expect(world(page)).toHaveAttribute(
@@ -792,10 +837,9 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.getByRole('button', { name: 'Face east', exact: true }).click();
 	await selectPlaybackClip(page, 'walk');
 	await toggle.click();
-	await expect(shown).toBeFocused();
-	await expect(mountMenu).toContainText('Mount settings');
-	const legs = page.getByRole('combobox', { name: 'Hide legs', exact: true });
-	await expect(legs).toHaveValue('far');
+	const legs = mountMenu.getByRole('radiogroup', { name: 'Hide leg', exact: true });
+	const legMode = (name: string) => legs.getByRole('radio', { name, exact: true });
+	await expect(legMode('Far leg')).toBeChecked();
 	await expect(world(page)).toHaveAttribute('data-mount-legs', 'far');
 	await expect(world(page)).toHaveAttribute('data-mount-leg-source', 'measured');
 	await expect
@@ -811,32 +855,27 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 				(await world(page).getAttribute('data-lineup'))
 		)
 		.toBe(true);
-	await legs.focus();
-	await expect(legs).toBeFocused();
-	await page.keyboard.press('ArrowDown');
-	await expect
-		.poll(() => legs.evaluate((select) => select.contains(document.activeElement)))
-		.toBe(true);
+	// Arrow keys move between leg modes inside Settings without turning the character.
+	await legMode('Far leg').focus();
+	await page.keyboard.press('ArrowRight');
+	await expect(legMode('Both legs')).toBeChecked();
 	await expect(world(page)).toHaveAttribute('data-facing', 'east');
-	await page.keyboard.press('Escape');
-	await expect(legs).toBeFocused();
-	await legs.selectOption('both');
 	await expect(world(page)).toHaveAttribute('data-mount-legs', 'both');
-	await page.keyboard.press('Escape');
+	await closeMount();
 	await page.getByRole('button', { name: 'Face west', exact: true }).click();
 	await expect(world(page)).toHaveAttribute('data-mount-legs', 'both');
 	await expect(world(page)).toHaveAttribute('data-mount-leg-source', 'measured');
 	await toggle.click();
-	await legs.selectOption('far');
+	await legMode('Far leg').check();
 	await expect(world(page)).toHaveAttribute('data-mount-legs', 'far');
 	await expect(world(page)).toHaveAttribute('data-mount-leg-source', 'measured');
-	await legs.selectOption('both');
-	await page.keyboard.press('Escape');
+	await legMode('Both legs').check();
+	await closeMount();
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await expect(page.locator('.world-notes')).toContainText('Leg hiding unavailable');
 	await toggle.click();
-	await legs.selectOption('none');
-	await page.keyboard.press('Escape');
+	await legMode('None').check();
+	await closeMount();
 	await selectPlaybackClip(page, 'cross-punch');
 	await expect(
 		page.locator('.world-notes, .preview-note').filter({ hasText: 'Test only' })
@@ -859,7 +898,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		await expect(toggle).not.toHaveAttribute('data-active');
 		await expect(world(page)).not.toHaveAttribute('data-mount');
 		await shown.check();
-		await page.keyboard.press('Escape');
+		await closeMount();
 		await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle west \d+$/);
 	}
 	await page.getByRole('button', { name: 'Preview', exact: true }).click();
@@ -879,7 +918,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		expect(menuBounds!.x + menuBounds!.width).toBeLessThanOrEqual(viewport.width);
 		expect(menuBounds!.y).toBeGreaterThanOrEqual(0);
 		expect(menuBounds!.y + menuBounds!.height).toBeLessThanOrEqual(viewport.height);
-		await page.keyboard.press('Escape');
+		await closeMount();
 		await expect
 			.poll(() =>
 				page.evaluate(() => {
@@ -936,14 +975,60 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 				})
 			);
 	}
+	// A Riding pose holds a saved State on the mount in every view; dismounting gives Preview its selection back.
+	await page.setViewportSize({ width: 1920, height: 900 });
+	await toggle.click();
+	const riderPose = mountMenu.getByRole('combobox', { name: 'Riding pose', exact: true });
+	await expect(riderPose).toHaveValue('');
+	await riderPose.selectOption('riding');
+	await expect(move).toHaveAttribute('value', 'riding');
+	await expect(world(page)).toHaveAttribute('data-clip', 'riding');
+	await expect(world(page)).toHaveAttribute('data-mount-legs', 'none');
+	await closeMount();
+	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
+	await world(page).focus();
+	await page.keyboard.down('ArrowRight');
+	await expect(world(page)).toHaveAttribute('data-facing', 'east');
+	await expect(world(page)).toHaveAttribute('data-clip', 'riding');
+	await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle east \d+$/);
+	await page.keyboard.up('ArrowRight');
+	await page.getByRole('button', { name: 'Side-scroller', exact: true }).click();
+	await world(page).focus();
+	await page.keyboard.down('ArrowLeft');
+	await expect(world(page)).toHaveAttribute('data-facing', 'west');
+	await expect(world(page)).toHaveAttribute('data-clip', 'riding');
+	await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle west \d+$/);
+	await page.keyboard.up('ArrowLeft');
+	await page.getByRole('button', { name: 'Preview', exact: true }).click();
 	await toggle.click();
 	await shown.uncheck();
-	await page.keyboard.press('Escape');
+	await closeMount();
 	await expect(toggle).not.toHaveAttribute('data-active');
 	await expect(world(page)).not.toHaveAttribute('data-mount');
+	await expect(move).toHaveAttribute('value', 'cross-punch');
+	// Mount settings, including this character's Riding pose, survive a reload; Reset restores the defaults.
+	await page.reload();
 	await landing(page);
 	await page.keyboard.press('Enter');
-	await expect(toggle).toHaveAccessibleName('Mount settings');
+	// The fixture State above is injected per response, so check the saved choice itself after the reload.
+	const savedMount = () =>
+		page.evaluate(() => JSON.parse(localStorage.getItem('pixeldoll.mount') ?? 'null'));
+	expect(Object.values((await savedMount()).poses)).toEqual(['riding']);
+	await toggle.click();
+	await expect(shown).not.toBeChecked();
+	await expect(legMode('None')).toBeChecked();
+	await shown.check();
+	await page.reload();
+	await landing(page);
+	await page.keyboard.press('Enter');
+	await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle /);
+	await toggle.click();
+	await mountMenu.getByRole('button', { name: 'Reset this page' }).first().click();
+	await page.getByRole('alertdialog').getByRole('button', { name: 'Reset this page' }).click();
+	await expect(shown).not.toBeChecked();
+	await expect(legMode('Far leg')).toBeChecked();
+	expect(await savedMount()).toEqual({ show: false, legs: 'far', poses: {} });
+	await closeMount();
 	await expect(world(page)).not.toHaveAttribute('data-mount');
 });
 

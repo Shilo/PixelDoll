@@ -12,21 +12,31 @@ export interface StateGenerationSource {
 	views: { direction: DirectionName; hash: Sha256; image: Img }[];
 }
 
-export function stateGenerationSource(project: Project, id: string): StateGenerationSource | null {
+/** A saved frame a State starts from: any State or Move frame, by position in its frames. */
+export interface StateSourceFrame {
+	clip: string;
+	frame: number;
+}
+
+/** The drawn (non-mirrored) views of one saved frame; null when a drawn view is unusable. */
+export function stateGenerationSource(
+	project: Project,
+	{ clip: id, frame: position }: StateSourceFrame
+): StateGenerationSource | null {
 	const { rig } = project.manifest;
 	const clip = rig.animations.find((candidate) => candidate.id === id);
 	const layer = project.manifest.items.find((item) => item.id === rig.baseItem)?.layers[0];
 	const cells = layer?.cells?.[id];
-	const frame = clip?.frames[0];
-	if (!clip || clipKind(clip) !== 'state' || !cells || !frame || clip.frames.length !== 1)
-		return null;
+	const frame = clip?.frames[position];
+	if (!clip || !cells || !frame) return null;
 	const views: StateGenerationSource['views'] = [];
 	const size = { width: rig.cell.w, height: rig.cell.h };
 	for (const { id: direction, mirrorOf } of rig.directions) {
 		if (mirrorOf) continue;
 		const hash = cells[direction]?.[frame.cell];
-		const image = hash && project.images.get(hash);
-		if (!hash || !image || image.w !== size.width || image.h !== size.height || !opaqueBox(image))
+		if (!hash) continue;
+		const image = project.images.get(hash);
+		if (!image || image.w !== size.width || image.h !== size.height || !opaqueBox(image))
 			return null;
 		views.push({ direction, image, hash });
 	}
@@ -36,6 +46,8 @@ export function stateGenerationSource(project: Project, id: string): StateGenera
 		views,
 		version: stableStringify({
 			id,
+			kind: clipKind(clip),
+			frame: position,
 			cell: frame.cell,
 			base: rig.baseItem,
 			size,

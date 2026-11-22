@@ -152,6 +152,7 @@ import {
 	type FrameChange
 } from '../lib/rig/reframe.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
+import { forgetRidingPose, syncRiderPose } from './experience/riderPose.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -302,6 +303,7 @@ export const ui = $state({
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
 	stateCaptureMove: '',
+	redrawMove: '',
 	moveFormOpen: false,
 	get sheet(): SheetId {
 		return panel;
@@ -843,7 +845,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		}
 		// Another character starts on its standing move, whatever move the last one showed: it is the one every item is made
 		// for, so what is worn shows. Walk hides each item without walk frames, which reads as lost items.
-		if (id !== doc.id || !m.rig.animations.some((a) => a.id === ui.anim))
+		const switched = id !== doc.id;
+		if (switched || !m.rig.animations.some((a) => a.id === ui.anim))
 			ui.anim = (
 				m.rig.animations.find((a) => a.id === DEFAULT_MOVE) ??
 				m.rig.animations.find((a) => a.id === 'walk') ??
@@ -854,6 +857,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
+		// Mounted, a character opens on its saved Riding pose (Mount settings).
+		if (switched) ui.anim = syncRiderPose(id, m, ui.anim);
 		store.moveReviews = r.record?.moveReviews ?? {};
 		store.exportRecord = r.record;
 		if (r.record) syncProjectRef(r.record);
@@ -1635,6 +1640,7 @@ export async function removeProject(id = doc.id): Promise<void> {
 			'Character';
 	await flushSave();
 	await db.deleteCharacter(id);
+	forgetRidingPose(id);
 	const deletedDrafts = new Set(
 		gens.filter((g) => g.draft.rigId === id).map((g) => g.draft.spec.id)
 	);

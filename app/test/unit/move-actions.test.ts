@@ -24,6 +24,7 @@ vi.mock('../../src/studio/state.svelte.ts', () => ({
 	toast: vi.fn()
 }));
 vi.mock('../../src/lib/store/db.ts', () => ({ get: vi.fn(), update: vi.fn() }));
+vi.mock('../../src/studio/experience/riderPose.ts', () => ({ forgetRidingPose: vi.fn() }));
 
 let record: StoredProject;
 beforeEach(async () => {
