@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PromptSuggestion } from './promptSuggestions.ts';
 	// Ready-made prompts as quiet pills right under a prompt box: no heading, the pill shape is the cue. Ideas only fill
-	// text, so they step aside once the user writes their own; templates that also apply settings stay, pressed while
-	// applied.
+	// text: one shows as pressed while the text is exactly its prompt, and they step aside once the user writes their own.
+	// Templates that also apply settings stay, pressed while applied, through any edit.
 	let {
 		suggestions,
 		label,
@@ -15,7 +15,7 @@
 		label: string;
 		/** The prompt's current text. */
 		value: string;
-		/** The applied template's id. Set for templates (they stay visible and show as pressed); omit for ideas. */
+		/** The applied template's id. Set for templates (they stay visible, the applied one pressed); omit for ideas. */
 		active?: string;
 		onpick: (suggestion: PromptSuggestion) => void;
 	} = $props();
@@ -34,7 +34,9 @@
 			<button
 				type="button"
 				class="suggestion"
-				aria-pressed={suggestion.action ? active === suggestion.action : undefined}
+				aria-pressed={suggestion.action
+					? active === suggestion.action
+					: suggestion.prompt.trim() === text}
 				onclick={() => onpick(suggestion)}>{suggestion.title}</button
 			>
 		{/each}
