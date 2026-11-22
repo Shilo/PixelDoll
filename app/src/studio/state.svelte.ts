@@ -684,6 +684,7 @@ export const deleted = new DeletedList();
 /** An undo or redo step: the dress state to go back to, and the slot definitions (JSON) right after the step, so applying
  *  it reverts only the step's own slot changes (mergeSlotEdits) and keeps slots changed since by other steps or tabs. */
 export interface UndoStep {
+	drafts?: Record<string, string>;
 	label: Message;
 	/** The dress state to go back to. A delete step has none: it names its recovery entry instead. */
 	snap?: string;
@@ -701,8 +702,8 @@ export const doc = $state({
 	saved: 0,
 	undo: [] as UndoStep[],
 	redo: [] as UndoStep[],
-	/** Worn drafts, slot -> draft id: shown over the outfit, never in doc.items, so autosave, undo, outfits and exports never
-	 *  see a draft. Cleared when a saved item or None takes the slot, on discard and when another character opens. */
+	/** Worn drafts, slot -> draft id: previews outside autosave, saved outfits and exports.
+	 * Cleared when a saved item or None takes the slot, on discard and when another character opens. */
 	drafts: {} as Record<string, string>
 });
 export const isDemo = () => doc.id.startsWith('fixture:');
@@ -855,7 +856,11 @@ let openRequest = 0,
 export const openingProjectId = () => opening;
 /** keep.wear: equip that item (Keep it). keep.quiet: reload the open character in place (a draft saved itself): the view, the
  *  selection and undo stay, and the stage does not show loading. */
-export async function openProject(id: string, keep?: { wear?: string; quiet?: boolean }) {
+export async function openProject(
+	id: string,
+	keep?: { wear?: string; quiet?: boolean; stay?: boolean }
+) {
+	if (keep?.stay && !viewing(id)) return;
 	const request = ++openRequest,
 		quiet = !!keep?.quiet && id === doc.id,
 		seen = edits,
@@ -966,14 +971,14 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		}
 	} catch (e) {
 		if (request !== openRequest) return;
-		doc.error = errorText(e);
+		if (!keep?.stay) doc.error = errorText(e);
 		// The demo's own open clears doc.error: say why the requested character is not shown.
 		if (id !== DEMO) {
 			console.error('open', e);
 			toast(message('state.couldNotOpenThatCharacterError', { error: errorMessage(e) }), {
 				tone: 'danger'
 			});
-			return openProject(DEMO);
+			if (!keep?.stay) return openProject(DEMO);
 		}
 	} finally {
 		if (request === openRequest) {
@@ -1016,6 +1021,10 @@ function restore(e: UndoStep) {
 	applyDress(m, d);
 	doc.items = { ...d.current!.items };
 	doc.variants = { ...d.current!.variants };
+	if (e.drafts) {
+		doc.drafts = e.drafts;
+		takeOffGone();
+	}
 	bump();
 	save();
 	for (const s of kept)
@@ -1028,10 +1037,14 @@ function restore(e: UndoStep) {
 export function commit(
 	label: Message,
 	fn: () => void,
-	o: { keepHand?: string; quiet?: boolean } = {}
+	o: { keepHand?: string; quiet?: boolean; undoDrafts?: boolean } = {}
 ): Message | undefined {
 	if (!store.project) return;
-	const step = { label, snap: snap() };
+	const step = {
+		label,
+		snap: snap(),
+		...(o.undoDrafts ? { drafts: { ...doc.drafts } } : {})
+	};
 	doc.redo = [];
 	const before = { ...doc.items };
 	fn();
@@ -1084,17 +1097,19 @@ export async function undo() {
 		return;
 	}
 	const back = snap();
+	const draftsBefore = e.drafts ? { drafts: { ...doc.drafts } } : {};
 	doc.undo = doc.undo.slice(0, -1);
 	restore($state.snapshot(e));
-	doc.redo = [...doc.redo, { label: e.label, snap: back, from: slotsNow() }];
+	doc.redo = [...doc.redo, { label: e.label, snap: back, ...draftsBefore, from: slotsNow() }];
 }
 export function redo() {
 	const e = doc.redo.at(-1);
 	if (!e?.snap) return;
 	const back = snap();
+	const draftsBefore = e.drafts ? { drafts: { ...doc.drafts } } : {};
 	doc.redo = doc.redo.slice(0, -1);
 	restore($state.snapshot(e));
-	doc.undo = [...doc.undo, { label: e.label, snap: back, from: slotsNow() }];
+	doc.undo = [...doc.undo, { label: e.label, snap: back, ...draftsBefore, from: slotsNow() }];
 }
 /** Add a delete to the history: one step whose Undo restores exactly the entry the delete wrote. */
 export function pushRecovery(label: Message, trash: string) {
@@ -1113,12 +1128,14 @@ export async function flushSave() {
 	if (pending) saving = saving.then(pending);
 	await saving;
 }
-/** After flushSave: whether every dress edit so far is saved (a failed save was already shown to the person). */
-export const dressSaved = () => edits === savedEdits;
+/** Flush dress edits and report whether they all saved. A save failure is shown in the Studio. */
+export async function flushStudioEdits() {
+	await flushSave();
+	return edits === savedEdits;
+}
 
 export async function prepareWorkspaceExport() {
-	await flushSave();
-	if (edits !== savedEdits)
+	if (!(await flushStudioEdits()))
 		throw new LocalizedError(
 			'The latest changes could not be saved. Save them before exporting.',
 			'state.theLatestChangesCouldNotBeSaved'
@@ -2053,14 +2070,15 @@ export function randomize() {
 		{ keepHand: 'main_hand', quiet: true }
 	);
 }
-export function applyPreset(p: Preset) {
+export function applyPreset(p: Preset, clearDrafts = false) {
 	commit(
 		message('history.wear', { name: p.name }),
 		() => {
 			doc.items = { ...p.items };
 			doc.variants = { ...p.variants };
+			if (clearDrafts) doc.drafts = {};
 		},
-		{ keepHand: 'main_hand', quiet: true }
+		{ keepHand: 'main_hand', quiet: true, undoDrafts: clearDrafts }
 	);
 	if (store.project?.manifest.rig.animations.some((move) => move.id === DEFAULT_MOVE)) {
 		ui.anim = DEFAULT_MOVE;
@@ -2785,12 +2803,12 @@ export async function copyDemoAndAdd(entry: SharedItem) {
 
 /** The demo is a bundled fixture; items are generated into an editable copy in IndexedDB. Opens the copy unless the player
  *  opened another character meanwhile. */
-export async function copyDemo(): Promise<string> {
-	const project = store.project!, // the open character when asked, not after the pipeline loads
-		request = openRequest;
+export async function copyDemo(open = true): Promise<string> {
+	const request = openRequest;
+	const project = open ? store.project! : (await readCharacter(DEMO)).r.project;
 	const id = await (await createFlow()).saveCopy(project, 'Adventurer copy', 'walk');
 	await refreshProjects();
-	if (request === openRequest) await openProject(id);
+	if (open && request === openRequest) await openProject(id);
 	return id;
 }
 
@@ -3061,6 +3079,7 @@ interface ItemAttemptConsent {
 	projectId: string;
 	gens: number;
 	rig?: string;
+	beforeStart?: () => void;
 	replaces?: { id: string; reviewed: string };
 }
 /** The new draft's id, or why nothing started (no request was sent; the reason was already shown to the person). */
@@ -3100,6 +3119,7 @@ async function startItemDraft(
 		});
 		return { refused: 'drafts' };
 	}
+	consent?.beforeStart?.();
 	// A hidden category is shown before its first attempt, and a new custom category is saved before generation reads it.
 	if (doc.id === projectId) {
 		const shown = revealSlot(input.slot);
@@ -3112,6 +3132,7 @@ async function startItemDraft(
 	const replaced = consent?.replaces && gens.find((g) => g.draft.spec.id === consent.replaces!.id);
 	if (
 		doc.id !== projectId ||
+		(consent?.beforeStart && !viewing(projectId)) ||
 		(consent?.rig && JSON.stringify(ctx.rec.manifest.rig) !== consent.rig) ||
 		(consent?.replaces &&
 			(!replaced ||
@@ -3135,6 +3156,7 @@ async function startItemDraft(
 		return { refused: 'price' };
 	}
 	if (!allowsTier(plan.minimumTier)) return { refused: 'tier' };
+	consent?.beforeStart?.();
 	const taken = gens.map((g) => g.draft.spec.id); // read and claimed with no await between: concurrent starts get distinct ids
 	// The runner and the list must share a proxy so mutations persist and identity checks recognize this draft.
 	const g = $state<Gen>({
@@ -3410,7 +3432,12 @@ const drop = (g: Gen) => {
 };
 /** Keep it (or `auto`: a clean draft saving itself). Keep it wears the item; a saved draft keeps the slot it was worn in (same id)
  *  and reloads the open character in place. True when saved. */
-export async function acceptGen(g: Gen, auto = false, finished = false): Promise<boolean> {
+export async function acceptGen(
+	g: Gen,
+	auto = false,
+	finished = false,
+	stay = false
+): Promise<boolean> {
 	const id = g.draft.spec.id;
 	// A background auto-save never pops Activity open in a follower tab; the draft stays ready to review there.
 	if ((auto ? queue.role === 'follower' : follower()) || settling.has(id)) return false;
@@ -3438,11 +3465,13 @@ export async function acceptGen(g: Gen, auto = false, finished = false): Promise
 		const worn = doc.drafts[item.slot] === id;
 		await saveGens();
 		// a draft saving itself never cancels the open of another character the user just started
-		if (auto ? viewing(g.draft.rigId) : doc.id === g.draft.rigId) {
+		if (auto || stay ? viewing(g.draft.rigId) : doc.id === g.draft.rigId) {
 			if (ui.selected === `gen:${id}`) ui.selected = item.id;
 			await openProject(
 				doc.id,
-				auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id }
+				auto
+					? { quiet: true, ...(worn ? { wear: item.id } : {}) }
+					: { wear: item.id, quiet: stay, stay }
 			);
 		} else if (!viewing(g.draft.rigId)) void syncStoredProject(g.draft.rigId);
 		if (doc.id !== g.draft.rigId) {

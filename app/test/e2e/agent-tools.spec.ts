@@ -66,8 +66,16 @@ test('agent tools: the page bridge edits a free copy atomically and reads withou
 	await expect.poll(() => page.evaluate(() => typeof window.pixeldoll)).toBe('object');
 
 	const copy = await bridge(page, 'copy_demo_character');
-	expect(copy.ok).toBe(true);
 	const id = (copy.data as { characterId: string }).characterId;
+	expect(copy).toMatchObject({
+		ok: true,
+		data: { open: false, next: { tool: 'open_character', args: { characterId: id } } }
+	});
+	expect(await bridge(page, 'pixeldoll_overview')).toMatchObject({
+		ok: true,
+		data: { openCharacter: { id: 'fixture:s2' } }
+	});
+	expect(await bridge(page, 'open_character', { characterId: id })).toMatchObject({ ok: true });
 
 	const off = await bridge(page, 'set_outfit', { characterId: id, takeOff: ['head'] });
 	expect(off).toMatchObject({ ok: true, data: { worn: { head: null }, saved: true } });

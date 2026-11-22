@@ -2,11 +2,12 @@
 // reload or another tab starts with none, so a stale page can never keep spending. It ends when the person presses End,
 // and when the PixelLab connection changes: an approval is for one account's generations.
 import { mount, unmount } from 'svelte';
+import { readonly, writable } from 'svelte/store';
 import { app, getKeyRevision } from '../../lib/app.svelte.ts';
 import { queue } from '../../lib/pixellab/queue.ts';
 import { accountTier } from '../../lib/pixellab/plans.ts';
 import { planRate, usdOf } from '../costEstimate.ts';
-import { AgentError, BudgetLedger, type Answer, type BudgetState } from './contract.ts';
+import { AgentError, BudgetLedger, checkAbort, type Answer, type BudgetState } from './contract.ts';
 import AgentBudgetDialog from './AgentBudgetDialog.svelte';
 import AgentBudget from './AgentBudget.svelte';
 
@@ -16,45 +17,89 @@ export const ASK_MS = 5 * 60_000;
 const ledger = new BudgetLedger();
 let keyRevision = getKeyRevision(),
 	indicator = false;
-const listeners = new Set<(state: BudgetState) => void>();
+let epoch = 0;
+let active = false;
+let pending: AbortController | undefined;
+type BudgetView = BudgetState & { active: boolean };
+const snapshot = (): BudgetView => ({ ...ledger.snapshot(), active });
+const summary = writable(snapshot());
+export const budgetView = readonly(summary);
 
 /** A connection change since the approval clears it. */
-function current() {
+function syncCredential() {
 	if (keyRevision !== getKeyRevision()) {
 		keyRevision = getKeyRevision();
+		epoch++;
+		active = false;
+		pending?.abort();
 		ledger.clear();
+		summary.set(snapshot());
 	}
-	return ledger;
 }
 function changed() {
-	const state = current().snapshot();
-	for (const listener of listeners) listener(state);
-	if (state.approved > 0) showIndicator();
+	summary.set(snapshot());
 }
 
-export const budget = (): BudgetState => current().snapshot();
-export function reserve(what: string, generations: number) {
-	const ok = current().reserve(what, generations);
-	if (ok) changed();
-	return ok;
+const stopWatching = queue.subscribe(({ role }) => {
+	syncCredential();
+	if (role === 'follower') pending?.abort();
+});
+import.meta.hot?.dispose(stopWatching);
+
+export function budget(): BudgetView {
+	syncCredential();
+	return snapshot();
 }
-export function release(what: string, generations: number) {
-	current().release(what, generations);
-	changed();
+
+export function requireLeader() {
+	if (queue.role === 'follower')
+		throw new AgentError('Another PixelDoll tab runs generation jobs. Use that tab.', 'busy');
+}
+
+/** Recheck at Studio admission after asynchronous preparation. Refund only a start that was refused. */
+export async function withReservation<T>(
+	what: string,
+	generations: number,
+	signal: AbortSignal,
+	start: (check: () => void) => T | Promise<T>
+): Promise<T> {
+	checkAbort(signal);
+	requireLeader();
+	syncCredential();
+	const reservedAt = epoch;
+	if (!ledger.reserve(what, generations))
+		throw new AgentError(
+			`This can cost up to ${generations} generations but only ${budget().remaining} remain. Call request_budget first.`,
+			'budget'
+		);
+	const check = () => {
+		syncCredential();
+		if (reservedAt !== epoch)
+			throw new AgentError('The approved budget ended before the work started.', 'budget');
+		checkAbort(signal);
+		requireLeader();
+	};
+	try {
+		changed();
+		return await start(check);
+	} catch (error) {
+		syncCredential();
+		if (reservedAt === epoch) {
+			ledger.release(what, generations);
+			changed();
+		}
+		throw error;
+	}
 }
 /** The person's End: no further paid starts until a new approval. */
 export function endBudget() {
-	current().end();
+	syncCredential();
+	ledger.end();
+	epoch++;
+	active = false;
+	pending?.abort();
 	changed();
 }
-/** Calls `listener` now and with every change; returns how to stop. */
-export function watchBudget(listener: (state: BudgetState) => void) {
-	listeners.add(listener);
-	listener(budget());
-	return () => void listeners.delete(listener);
-}
-/** Clears the budget if the PixelLab connection changed since it was approved. */
-export const checkBudget = changed;
 
 /** USD at the account's plan price (list price of plan 1 while the tier is unknown). */
 export function rateUsd(generations: number): number {
@@ -68,37 +113,64 @@ export async function requestBudget(
 	purpose: string,
 	signal: AbortSignal
 ): Promise<Answer> {
-	if (queue.role === 'follower')
-		throw new AgentError(
-			'Another PixelDoll tab runs generation jobs. Ask for the budget in that tab.',
-			'busy'
+	syncCredential();
+	requireLeader();
+	checkAbort(signal);
+	if (pending) throw new AgentError('A budget request is already waiting for the user.', 'busy');
+	const controller = new AbortController();
+	pending = controller;
+	const requestSignal = AbortSignal.any([signal, controller.signal]);
+	try {
+		const answer = await ledger.request(
+			generations,
+			(answer) => {
+				const target = document.createElement('div');
+				document.body.append(target);
+				try {
+					const dialog = mount(AgentBudgetDialog, {
+						target,
+						props: { generations, usd: rateUsd(generations), purpose, onanswer: answer }
+					});
+					return () => {
+						void unmount(dialog);
+						target.remove();
+					};
+				} catch (error) {
+					target.remove();
+					throw error;
+				}
+			},
+			requestSignal,
+			ASK_MS
 		);
-	const answer = await current().request(
-		generations,
-		(answer) => {
-			const target = document.createElement('div');
-			document.body.append(target);
-			const dialog = mount(AgentBudgetDialog, {
-				target,
-				props: { generations, usd: rateUsd(generations), purpose, onanswer: answer }
-			});
-			return () => {
-				void unmount(dialog);
-				target.remove();
-			};
-		},
-		signal,
-		ASK_MS
-	);
-	changed();
-	return answer;
+		syncCredential();
+		if (requestSignal.aborted) return 'canceled';
+		if (answer === 'allowed') {
+			try {
+				showIndicator();
+			} catch {
+				endBudget();
+				throw new AgentError('PixelDoll could not show the approved budget.', 'not_ready');
+			}
+			active = true;
+		}
+		changed();
+		return answer;
+	} finally {
+		pending = undefined;
+	}
 }
 
 /** The small always-visible budget line with End, from the first approval on. */
 function showIndicator() {
 	if (indicator) return;
-	indicator = true;
 	const target = document.createElement('div');
 	document.body.append(target);
-	mount(AgentBudget, { target });
+	try {
+		mount(AgentBudget, { target });
+		indicator = true;
+	} catch (error) {
+		target.remove();
+		throw error;
+	}
 }

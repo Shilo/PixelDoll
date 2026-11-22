@@ -11,6 +11,7 @@ import { equipmentFixture } from './equipment-fixture.ts';
 
 const mocks = vi.hoisted(() => ({
 	create: vi.fn(),
+	saveCopy: vi.fn(),
 	move: vi.fn(),
 	moveReview: vi.fn(),
 	moveItems: vi.fn(),
@@ -32,9 +33,10 @@ const mocks = vi.hoisted(() => ({
 	handoff: vi.fn(),
 	all: vi.fn(),
 	cancelScoped: vi.fn(),
-	observe: vi.fn()
+	observe: vi.fn(),
+	queueState: vi.fn()
 }));
-const mockAccount = vi.hoisted(() => ({ key: '', balance: null as Balance | null }));
+const mockAccount = vi.hoisted(() => ({ key: '', balance: null as Balance | null, revision: 0 }));
 vi.mock('../../src/studio/create.ts', () => ({
 	createCharacter: mocks.create,
 	addMove: mocks.move,
@@ -49,7 +51,7 @@ vi.mock('../../src/studio/create.ts', () => ({
 		keep: await mocks.keep(...args)
 	}),
 	bodyPaletteRepairPlan: mocks.palette,
-	saveCopy: vi.fn()
+	saveCopy: mocks.saveCopy
 }));
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }));
 vi.mock('../../src/lib/items/run.ts', async (original) => ({
@@ -79,11 +81,24 @@ vi.mock('../../src/lib/store/db.ts', async (original) => ({
 	update: mocks.update,
 	all: mocks.all
 }));
-vi.mock('../../src/lib/app.svelte.ts', () => ({ app: mockAccount }));
+vi.mock('../../src/lib/app.svelte.ts', () => ({
+	app: mockAccount,
+	getKeyRevision: () => mockAccount.revision
+}));
+vi.mock('../../src/studio/automation/AgentBudgetDialog.svelte', () => ({ default: {} }));
+vi.mock('../../src/studio/automation/AgentBudget.svelte', () => ({ default: {} }));
+vi.mock('svelte', async (original) => ({
+	...(await original<typeof import('svelte')>()),
+	mount: (_component: unknown, options: { props?: { onanswer?: (allowed: boolean) => void } }) => {
+		options.props?.onanswer?.(true);
+		return {};
+	},
+	unmount: async () => {}
+}));
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({
 	queue: {
 		role: 'leader',
-		snapshot: () => ({ jobs: [] }),
+		snapshot: mocks.queueState,
 		subscribe: mocks.subscribe,
 		requestHandoff: mocks.handoff,
 		idle: () => true,
@@ -115,6 +130,7 @@ beforeEach(() => {
 	Object.values(mocks).forEach((m) => m.mockReset());
 	mockAccount.key = '';
 	mockAccount.balance = null;
+	mockAccount.revision = 0;
 	mocks.put.mockResolvedValue(undefined);
 	mocks.get.mockResolvedValue(undefined);
 	mocks.update.mockImplementation(async (store, key, change, _relatedKeys, preserve) => {
@@ -129,6 +145,8 @@ beforeEach(() => {
 	mocks.del.mockResolvedValue(undefined);
 	mocks.clear.mockResolvedValue(0);
 	mocks.all.mockResolvedValue([]);
+	mocks.subscribe.mockReturnValue(() => {});
+	mocks.queueState.mockReturnValue({ role: 'leader', jobs: [], counts: {} });
 	stubGlobals();
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -1395,6 +1413,152 @@ const fixtureManifest = () =>
 		readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8')
 	);
 
+test('agent activity resolves queue and move IDs and rejects unknown IDs', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const { callTool } = await import('../../src/studio/automation/tools.ts');
+	s.startupResumed();
+	s.doc.loading = false;
+	s.moving.projectId = 'rig-a';
+	s.moving.spec = { ...recoverySpec, id: 'walk' };
+	s.moving.done = true;
+	mocks.queueState.mockReturnValue({
+		role: 'leader',
+		jobs: [
+			{
+				id: 'job-a',
+				state: 'failed',
+				label: 'Pose',
+				gens: 1,
+				usd: 0.02,
+				jobs: [],
+				error: '402: insufficient credits at https://private.example/?key=abc'
+			}
+		],
+		counts: { failed: 1 }
+	});
+	const queueEntry = {
+		id: 'job-a',
+		state: 'failed',
+		generations: 1,
+		error: expect.stringMatching(/^credits:/)
+	};
+	await expect(
+		callTool('get_activity', { ids: ['job-a', 'move:rig-a/walk'] })
+	).resolves.toMatchObject({
+		data: { queue: [queueEntry], matched: [queueEntry, { id: 'move:rig-a/walk', done: true }] }
+	});
+	await expect(callTool('wait_for_activity', { ids: ['job-a'] })).resolves.toMatchObject({
+		data: { matched: [queueEntry], stillRunning: false, changed: false }
+	});
+	for (const tool of ['get_activity', 'wait_for_activity'])
+		await expect(callTool(tool, { ids: ['missing'] })).rejects.toMatchObject({ code: 'not_found' });
+
+	vi.useFakeTimers();
+	try {
+		mocks.queueState.mockReturnValue({
+			role: 'leader',
+			jobs: [
+				{
+					id: 'job-a',
+					state: 'running',
+					label: 'Pose',
+					gens: 0,
+					usd: 0,
+					jobs: []
+				}
+			],
+			counts: { running: 1 }
+		});
+		const waiting = callTool('wait_for_activity', { ids: ['job-a'], timeoutSeconds: 2 });
+		await vi.advanceTimersByTimeAsync(0);
+		mocks.queueState.mockReturnValue({ role: 'leader', jobs: [], counts: {} });
+		await vi.advanceTimersByTimeAsync(1000);
+		await expect(waiting).resolves.toMatchObject({
+			data: { matched: [{ id: 'job-a', outcome: 'not_found' }], changed: true, stillRunning: false }
+		});
+	} finally {
+		vi.useRealTimers();
+	}
+});
+
+test('agent demo copy stays on the current character and offers an explicit open action', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const { callTool, TOOLS } = await import('../../src/studio/automation/tools.ts');
+	const project = await equipmentFixture();
+	project.manifest.items[0].regions = 'shirt-shorts';
+	s.startupResumed();
+	s.doc.loading = false;
+	s.doc.id = 'another-character';
+	mocks.source.mockResolvedValue({ project });
+	mocks.saveCopy.mockResolvedValue('copied-demo');
+	await expect(callTool('copy_demo_character', {})).resolves.toMatchObject({
+		data: {
+			characterId: 'copied-demo',
+			open: false,
+			next: { tool: 'open_character', args: { characterId: 'copied-demo' } }
+		}
+	});
+	expect(s.doc.id).toBe('another-character');
+	expect(mocks.source.mock.calls.map(([id]) => id)).toEqual([s.DEMO]);
+	expect(mocks.saveCopy).toHaveBeenCalledWith(project, 'Adventurer copy', 'walk');
+	expect(TOOLS.find((tool) => tool.name === 'discard_draft')?.consequential).toBe(true);
+});
+
+test('agent outfit tools apply, save, undo and redo with the real Studio history', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const { callTool } = await import('../../src/studio/automation/tools.ts');
+	const project = await equipmentFixture();
+	s.startupResumed();
+	s.doc.loading = false;
+	s.doc.id = 'fixture:outfit';
+	s.store.project = project;
+	s.doc.items = { body: 'base', head: 'hat' };
+	s.gens.push({
+		phase: 'review',
+		input: { name: 'Draft hat', slot: 'head', prompt: 'a hat' },
+		draft: { spec: { id: 'draft-hat', slot: 'head' }, rigId: s.doc.id }
+	} as (typeof s.gens)[number]);
+	await expect(callTool('set_outfit', { wear: ['draft-hat', 'missing'] })).rejects.toMatchObject({
+		code: 'not_found'
+	});
+	expect(s.doc.undo).toHaveLength(0);
+	await expect(callTool('set_outfit', { wear: ['draft-hat'] })).resolves.toMatchObject({
+		data: { saved: true }
+	});
+	expect(s.doc.drafts).toEqual({ head: 'draft-hat' });
+	await callTool('undo', {});
+	expect(s.doc.drafts).toEqual({});
+	await callTool('redo', {});
+	expect(s.doc.drafts).toEqual({ head: 'draft-hat' });
+	const saved = await callTool('save_outfit', { name: 'Travel' });
+	const outfitId = (saved.data as { outfitId: string }).outfitId;
+	expect(s.store.project.manifest.presets.find((p) => p.id === outfitId)?.items.head).toBe('hat');
+	await expect(callTool('apply_outfit', { outfitId })).resolves.toMatchObject({
+		data: { saved: true, outfitId, clearedDrafts: 1 }
+	});
+	expect(s.doc.drafts).toEqual({});
+	await expect(callTool('undo', {})).resolves.toMatchObject({
+		data: { canRedo: true, saved: true }
+	});
+	expect(s.doc.drafts).toEqual({ head: 'draft-hat' });
+	await expect(callTool('redo', {})).resolves.toMatchObject({
+		data: { canRedo: false, saved: true }
+	});
+	expect(s.doc.drafts).toEqual({});
+	for (const variant of ['red', '#A0b0c0', 'tint:#123456'])
+		await expect(callTool('set_color', { material: 'hat', variant })).resolves.toMatchObject({
+			data: { variant }
+		});
+	for (const variant of ['constructor', 'tint:constructor', '#12345'])
+		await expect(callTool('set_color', { material: 'hat', variant })).rejects.toMatchObject({
+			code: 'invalid'
+		});
+	s.store.project.manifest.materials[1].linkTo = 'base';
+	await expect(callTool('set_color', { material: 'hat', variant: 'red' })).rejects.toThrow(
+		'Set that material instead'
+	);
+});
+
 test.each(['same character', 'another character', 'another selection'])(
 	'standing preview after draft persistence respects %s',
 	async (target) => {
@@ -2400,6 +2564,22 @@ describe('accepted draft publication', () => {
 		return { s, project, saved, drafts, accept };
 	}
 
+	test('agent draft acceptance saves and wears the item without resetting the view or history', async () => {
+		const { s } = await setup();
+		const { callTool } = await import('../../src/studio/automation/tools.ts');
+		s.startupResumed();
+		s.doc.loading = false;
+		const previous = { label: message('history.changeColor'), snap: '{}' };
+		s.doc.undo = [previous];
+		s.ui.frame = 3;
+		await expect(callTool('accept_draft', { draftId: 'new_hat' })).resolves.toMatchObject({
+			data: { saved: true, itemId: 'new_hat' }
+		});
+		expect(s.doc.items.head).toBe('new_hat');
+		expect(s.doc.undo).toEqual([previous]);
+		expect(s.ui.frame).toBe(3);
+	});
+
 	test.each([false, true])(
 		'superseded acceptance retains both worn drafts until their saved project is published (auto=%s)',
 		async (auto) => {
@@ -2537,6 +2717,53 @@ describe('optional review', () => {
 		vi.doUnmock('../../src/lib/dress/dress.ts');
 	});
 
+	test.each(['End', 'abort', 'credential change'] as const)(
+		'%s prevents an agent item from starting during the reservation window',
+		async (action) => {
+			const preparing = pending<void>();
+			const drafts = pending<undefined>();
+			const run = vi.fn(async () => clean);
+			routeMock(run);
+			const project = await equipmentFixture();
+			mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: project.manifest }, project });
+			mocks.get.mockImplementation(async (_store, key) => {
+				if (key === 'studio-drafts') {
+					preparing.resolve();
+					return drafts.promise;
+				}
+			});
+			const s = await import('../../src/studio/state.svelte.ts');
+			const { callTool } = await import('../../src/studio/automation/tools.ts');
+			const { budget, endBudget, requestBudget } =
+				await import('../../src/studio/automation/budget.ts');
+			Object.assign(document, { createElement: () => ({ remove() {} }), body: { append() {} } });
+			s.startupResumed();
+			s.doc.loading = false;
+			s.doc.id = 'project';
+			s.store.project = project;
+			mockAccount.key = 'synthetic-agent-key';
+			const controller = new AbortController();
+			await requestBudget(10, 'Make a hat', controller.signal);
+			const start = callTool('create_item', { slot: 'head', prompt: 'a helm' }, controller.signal);
+			const refused = expect(start).rejects.toMatchObject({
+				code: action === 'abort' ? 'canceled' : 'budget'
+			});
+			await preparing.promise;
+			expect(budget()).toMatchObject({ active: true, remaining: 0 });
+			if (action === 'End') endBudget();
+			if (action === 'abort') controller.abort();
+			if (action === 'credential change') mockAccount.revision++;
+			drafts.resolve(undefined);
+			await refused;
+			expect(s.gens).toHaveLength(0);
+			expect(run).not.toHaveBeenCalled();
+			expect(budget()).toMatchObject({
+				active: action === 'abort',
+				remaining: action === 'abort' ? 10 : 0
+			});
+		}
+	);
+
 	test('another draft cannot save cancellation as complete before its ledger writes commit', async () => {
 		const hooks: import('../../src/lib/items/run.ts').RunHooks[] = [];
 		routeMock((_draft, _ctx, hook) => {
@@ -2609,7 +2836,18 @@ describe('optional review', () => {
 		s.doc.undo = [{ label: earlierEdit, snap: '{}' }];
 		s.ui.anim = 'walk';
 		s.ui.frame = 3;
-		await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' });
+		s.startupResumed();
+		s.doc.loading = false;
+		mockAccount.key = 'synthetic-agent-key';
+		Object.assign(document, { createElement: () => ({ remove() {} }), body: { append() {} } });
+		const { callTool } = await import('../../src/studio/automation/tools.ts');
+		await callTool('request_budget', { generations: 10, purpose: 'Make a helm' });
+		await expect(
+			callTool('create_item', { name: 'New helm', slot: 'head', prompt: 'a new helm' })
+		).resolves.toMatchObject({ data: { started: true, draftId: 'helm0' } });
+		await expect(callTool('get_activity', { ids: ['helm0'] })).resolves.toMatchObject({
+			data: { matched: [{ id: 'helm0', outcome: 'running' }] }
+		});
 		s.wearDraft('helm0');
 		done.resolve(clean);
 		await vi.waitFor(() =>
@@ -2622,6 +2860,11 @@ describe('optional review', () => {
 		expect(s.store.project!.manifest).toBe(saved);
 		expect(s.doc.undo.map((u) => u.label)).toEqual([earlierEdit]);
 		expect(s.ui).toMatchObject({ selected: 'helm0', frame: 3 });
+		s.doc.id = 'another-character';
+		s.store.project = null;
+		await expect(callTool('get_activity', { ids: ['helm0'] })).resolves.toMatchObject({
+			data: { itemDrafts: [], matched: [{ id: 'helm0', outcome: 'saved' }] }
+		});
 	});
 
 	test('a saved item never queues paid poses on its own (missing moves are a priced offer)', async () => {

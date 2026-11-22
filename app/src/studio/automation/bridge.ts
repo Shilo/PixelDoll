@@ -7,7 +7,7 @@
 // measured 2026-11-22) and script results are text. So frame sheets are shown in the page, where every browser agent's
 // screenshot sees them; window.pixeldoll returns them as base64 only when the agent asks (imageData), WebMCP never.
 import { callTool, TOOLS, type Json, type Tool, type ToolResult } from './tools.ts';
-import { failure } from './contract.ts';
+import { errorData } from './contract.ts';
 import { hideEvidence, showEvidence } from './panel.svelte.ts';
 
 // ---------- results ----------
@@ -36,7 +36,7 @@ const SEE_IMAGES =
 const failed = (e: unknown) => ({
 	ok: false as const,
 	isError: true as const,
-	data: failure(e) as Json,
+	data: errorData(e) as Json,
 	images: []
 });
 
@@ -79,7 +79,7 @@ export function webmcpTool(tool: Tool): ModelContextTool {
 		name: tool.name,
 		title: tool.title,
 		description: tool.description,
-		inputSchema: tool.inputSchema,
+		inputSchema: structuredClone(tool.inputSchema),
 		annotations: {
 			readOnlyHint: !!tool.readOnly,
 			consequentialHint: !!tool.consequential,
@@ -146,7 +146,7 @@ export function installAutomation(): () => void {
 			TOOLS.map((t) => ({
 				name: t.name,
 				description: t.description,
-				inputSchema: t.inputSchema,
+				inputSchema: structuredClone(t.inputSchema),
 				readOnly: !!t.readOnly,
 				consequential: !!t.consequential,
 				untrusted: !!t.untrusted

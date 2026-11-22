@@ -4,13 +4,14 @@ import {
 	BudgetLedger,
 	FAILED,
 	MAX_BUDGET,
-	failure,
-	knownVariant,
+	errorData,
 	planOutfit,
 	serial,
 	validate,
 	type JsonSchema
 } from '../../src/studio/automation/contract.ts';
+import type { Manifest } from '../../src/lib/store/manifest.ts';
+import { jobError } from '../../src/studio/automation/jobError.ts';
 
 const schema: JsonSchema = {
 	type: 'object',
@@ -157,11 +158,11 @@ test('a budget question closes on an answer, a timeout or the agent giving up, a
 test('failures the agent cannot act on keep their raw text out of the result', () => {
 	const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
 	try {
-		expect(failure(new AgentError('No draft "x".', 'not_found'))).toEqual({
+		expect(errorData(new AgentError('No draft "x".', 'not_found'))).toEqual({
 			error: 'No draft "x".',
 			code: 'not_found'
 		});
-		expect(failure(new Error('HTTP 500 at /v2/secret-route?key=abc'))).toEqual({
+		expect(errorData(new Error('HTTP 500 at /v2/secret-route?key=abc'))).toEqual({
 			error: FAILED,
 			code: 'failed'
 		});
@@ -171,24 +172,59 @@ test('failures the agent cannot act on keep their raw text out of the result', (
 	}
 });
 
-test('colors accept stored variants, swatches, hex and tints, never inherited names', () => {
-	const swatches = { crimson: '#b02832' },
-		variants = { night: ['#000000'] };
-	for (const name of ['night', 'crimson', '#A0b0c0', 'tint:crimson', 'tint:#123456'])
-		expect(knownVariant(variants, name, swatches)).toBe(true);
-	for (const name of ['constructor', 'toString', 'tint:constructor', 'tint:', '#12345', 'blue'])
-		expect(knownVariant(variants, name, swatches)).toBe(false);
+test('failed dialog opening clears the timer and permits a new request without exposing the exception', async () => {
+	vi.useFakeTimers();
+	try {
+		const ledger = new BudgetLedger();
+		const signal = new AbortController().signal;
+		await expect(
+			ledger.request(
+				1,
+				() => {
+					throw new Error('private detail');
+				},
+				signal,
+				1000
+			)
+		).rejects.toMatchObject({ code: 'not_ready' });
+		expect(vi.getTimerCount()).toBe(0);
+		await expect(
+			ledger.request(
+				1,
+				(answer) => {
+					answer(true);
+					return () => {};
+				},
+				signal,
+				1000
+			)
+		).resolves.toBe('allowed');
+	} finally {
+		vi.useRealTimers();
+	}
+});
+
+test('generation errors report actionable reasons without copying provider text', () => {
+	expect(
+		jobError('POST https://api.example.com/?key=abc -> 402: insufficient credits, token abc')
+	).toMatch(/^credits: PixelLab needs more credits/);
+	expect(jobError('No usable frames, see https://private.example')).toMatch(/^quality:/);
+	expect(jobError('raw secret abc and https://private.example')).toBe(
+		'generation: See PixelDoll Activity for details before starting work again.'
+	);
 });
 
 test('an outfit change is checked as a whole before anything is applied', () => {
 	const base = {
-		slots: ['body', 'head', 'main_hand'],
-		baseSlot: 'body',
-		items: [
-			{ id: 'hat', slot: 'head' },
-			{ id: 'helm', slot: 'head' },
-			{ id: 'sword', slot: 'main_hand' }
-		],
+		manifest: {
+			rig: { baseItem: 'base' },
+			slots: [{ id: 'body', class: 'base' }, { id: 'head' }, { id: 'main_hand' }],
+			items: [
+				{ id: 'hat', slot: 'head' },
+				{ id: 'helm', slot: 'head' },
+				{ id: 'sword', slot: 'main_hand' }
+			]
+		} as Manifest,
 		drafts: [{ id: 'draft-crown', slot: 'head' }]
 	};
 	expect(planOutfit({ ...base, wear: ['sword', 'draft-crown'], takeOff: [] })).toEqual({

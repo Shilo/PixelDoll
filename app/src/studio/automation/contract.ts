@@ -1,6 +1,8 @@
 // The automation contract shared by every adapter: tool shape, input validation, agent-facing errors and the budget
 // ledger. No browser or Studio dependencies, so it is unit tested directly.
 import type { Evidence } from './evidence.ts';
+import type { Manifest } from '../../lib/store/manifest.ts';
+import { validEquipment } from '../../lib/runtime/paperdoll.js';
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export interface JsonSchema {
@@ -56,13 +58,17 @@ export class AgentError extends Error {
 	}
 }
 
-/** Shown for any failure that is not an AgentError: its raw text may carry request details, so it is logged, not returned. */
+/** Unexpected errors can contain request details. Log that the call failed without copying the error. */
 export const FAILED =
 	'PixelDoll could not finish this call. Nothing paid was resent; check get_activity before trying again.';
-export function failure(e: unknown): { error: string; code: AgentError['code'] | 'failed' } {
+export function errorData(e: unknown): { error: string; code: AgentError['code'] | 'failed' } {
 	if (e instanceof AgentError) return { error: e.message, code: e.code };
-	console.error('PixelDoll agent tool', e);
+	console.error('PixelDoll agent tool failed');
 	return { error: FAILED, code: 'failed' };
+}
+
+export function checkAbort(signal: AbortSignal) {
+	if (signal.aborted) throw new AgentError('The call was canceled.', 'canceled');
 }
 
 /** Runs tasks one at a time in call order, so two calls never interleave their reads and writes of the Studio. A task whose
@@ -87,36 +93,44 @@ export function answerWithin(
 	signal: AbortSignal,
 	ms: number
 ): Promise<Answer> {
-	return new Promise((resolve) => {
+	return new Promise((resolve, reject) => {
 		if (signal.aborted) return resolve('canceled');
 		let close: (() => void) | undefined,
 			settled = false;
-		const finish = (answer: Answer) => {
-			if (settled) return;
-			settled = true;
+		const clean = () => {
 			clearTimeout(timer);
 			signal.removeEventListener('abort', onAbort);
-			close?.();
-			resolve(answer);
+		};
+		let answer: Answer;
+		const finish = (next: Answer) => {
+			if (settled) return;
+			settled = true;
+			answer = next;
+			clean();
+			if (close) complete();
+		};
+		const refused = () =>
+			reject(new AgentError('PixelDoll could not show or close the budget dialog.', 'not_ready'));
+		const complete = () => {
+			try {
+				close?.();
+				resolve(answer);
+			} catch {
+				refused();
+			}
 		};
 		const onAbort = () => finish('canceled');
 		const timer = setTimeout(() => finish('timeout'), ms);
 		signal.addEventListener('abort', onAbort);
-		close = open((allowed) => finish(allowed ? 'allowed' : 'denied'));
-		if (settled) close(); // answered synchronously, before `close` existed
+		try {
+			close = open((allowed) => finish(allowed ? 'allowed' : 'denied'));
+			if (settled) complete(); // answered synchronously, before `close` existed
+		} catch {
+			settled = true;
+			clean();
+			refused();
+		}
 	});
-}
-
-/** A variant name a material can take: one it stores, a swatch, "#rrggbb", or "tint:" with a swatch or "#rrggbb". Own keys
- *  only: an inherited name such as "constructor" is never a variant or a swatch. */
-export function knownVariant(
-	variants: Record<string, unknown>,
-	name: string,
-	swatches: Record<string, unknown>
-): boolean {
-	if (Object.hasOwn(variants, name)) return true;
-	const key = name.startsWith('tint:') ? name.slice(5) : name;
-	return Object.hasOwn(swatches, key) || /^#[0-9a-f]{6}$/i.test(key);
 }
 
 /** What set_outfit changes, all checked before anything is applied: saved items by slot (null takes the slot off) and worn
@@ -126,15 +140,15 @@ export interface OutfitChange {
 	drafts: Record<string, string | null>;
 }
 export function planOutfit(o: {
-	slots: readonly string[];
-	baseSlot: string;
-	items: readonly { id: string; slot: string }[];
+	manifest: Manifest;
 	drafts: readonly { id: string; slot: string }[];
 	wear: readonly string[];
 	takeOff: readonly string[];
 }): OutfitChange {
+	const m = o.manifest;
 	const change: OutfitChange = { items: {}, drafts: {} },
 		claimed = new Map<string, string>();
+	const baseSlot = m.slots.find((slot) => slot.class === 'base')?.id ?? 'body';
 	const claim = (slot: string, by: string) => {
 		const other = claimed.get(slot);
 		if (other !== undefined && other !== by)
@@ -142,18 +156,23 @@ export function planOutfit(o: {
 		claimed.set(slot, by);
 	};
 	for (const slot of o.takeOff) {
-		if (!o.slots.includes(slot)) throw new AgentError(`No slot "${slot}".`, 'not_found');
-		if (slot === o.baseSlot) throw new AgentError('The base body cannot be taken off.');
+		if (!validEquipment(m, slot, null)) throw new AgentError(`No slot "${slot}".`, 'not_found');
+		if (slot === baseSlot) throw new AgentError('The base body cannot be taken off.');
 		claim(slot, `takeOff ${slot}`);
 		change.items[slot] = null;
 		change.drafts[slot] = null;
 	}
 	for (const id of o.wear) {
 		const draft = o.drafts.find((d) => d.id === id);
-		const item = draft ? undefined : o.items.find((it) => it.id === id);
-		if (!draft && !item)
+		const item = draft ? undefined : m.items.find((it) => it.id === id);
+		const slot = (draft ?? item)?.slot;
+		if (
+			!slot ||
+			id === m.rig.baseItem ||
+			slot === baseSlot ||
+			!validEquipment(m, slot, draft ? null : id)
+		)
 			throw new AgentError(`No item or draft "${id}" on this character.`, 'not_found');
-		const slot = (draft ?? item)!.slot;
 		claim(slot, id);
 		if (draft) change.drafts[slot] = id;
 		else {
@@ -280,6 +299,7 @@ export class BudgetLedger {
 		this.#asking = true;
 		try {
 			const answer = await answerWithin(open, signal, ms);
+			if (signal.aborted) return 'canceled';
 			if (answer === 'allowed') this.approve(generations);
 			if (answer === 'denied') this.#denials++;
 			return answer;
