@@ -86,20 +86,21 @@
 	const enhanceOff = $derived(
 		disabled ||
 			busy ||
-			(!canUndo &&
-				(enhanceDisabled ||
-					!text ||
-					(spec !== null && text.length > ENHANCE_INPUT_LIMIT[spec.kind]) ||
-					((!app.key || app.keyRejected) && !onconnect)))
+			enhanceDisabled ||
+			!text ||
+			(spec !== null && text.length > ENHANCE_INPUT_LIMIT[spec.kind]) ||
+			((!app.key || app.keyRejected) && !onconnect)
 	);
 
-	/** Runs Enhance, or Undo when the text is the last enhancement. Callers use it to resume after connecting. */
+	/** Restores the text from before the last enhancement. */
+	function restore() {
+		if (!undo) return;
+		onvalue(undo.before);
+		undo = undefined;
+	}
+
+	/** Runs Enhance. Callers use it to resume after connecting. */
 	export async function enhance() {
-		if (canUndo && undo) {
-			onvalue(undo.before);
-			undo = undefined;
-			return;
-		}
 		if (enhanceOff || !spec) return;
 		const key = app.key;
 		if (!key || app.keyRejected) {
@@ -192,6 +193,18 @@
 		{spellcheck}
 		{disabled}></textarea>
 	<div class="prompt-actions">
+		<!-- Undo appears first so Copy and Enhance never move. -->
+		{#if canUndo}
+			<button
+				class="bu-action"
+				data-variant="quiet"
+				type="button"
+				aria-label={t('common.undo')}
+				title={t('create.form.undoTitle')}
+				disabled={disabled || busy}
+				onclick={restore}><Undo2 size={16} /></button
+			>
+		{/if}
 		<button
 			class="bu-action"
 			data-variant="quiet"
@@ -207,17 +220,13 @@
 				class="bu-action enhance"
 				data-variant="quiet"
 				type="button"
-				aria-label={t(
-					canUndo ? 'common.undo' : busy ? 'create.form.enhancing' : 'create.form.enhance'
-				)}
-				title={canUndo ? t('create.form.undoTitle') : cost}
+				aria-label={t(busy ? 'create.form.enhancing' : 'create.form.enhance')}
+				title={cost}
 				aria-busy={busy}
 				disabled={enhanceOff}
 				onclick={() => void enhance()}
 			>
-				{#if busy}<LoaderCircle size={16} class="spin" />{:else if canUndo}<Undo2
-						size={16}
-					/>{:else}<WandSparkles size={16} />{/if}
+				{#if busy}<LoaderCircle size={16} class="spin" />{:else}<WandSparkles size={16} />{/if}
 			</button>
 		{/if}
 	</div>
