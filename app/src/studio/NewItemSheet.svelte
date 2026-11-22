@@ -2,6 +2,11 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import Sheet from './Sheet.svelte';
+	import PromptField from './PromptField.svelte';
+	import PromptSuggestions from './PromptSuggestions.svelte';
+	import { promptSuggestions } from './promptSuggestions.svelte.ts';
+	import SlotPicker from './SlotPicker.svelte';
+	import type { EnhanceSpec } from './promptEnhance.ts';
 	import ReferenceField from './ReferenceField.svelte';
 	import TierNotice from './TierNotice.svelte';
 	import { app } from '../lib/app.svelte.ts';
@@ -9,12 +14,10 @@
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
-	import GroupIcon from './GroupIcon.svelte';
 	import { itemNameFrom, mirroredHandsNote, namesOffHandItem } from './model.ts';
 	import {
 		baseClothesNote,
 		categories,
-		categoryCopy,
 		profileOf,
 		shownCategories,
 		slotDef,
@@ -53,16 +56,12 @@
 			? formDrafts.item
 			: undefined;
 	const m = $derived(store.project?.manifest);
-	// Every category of this character is offered; Not shown ones sit behind More and are shown once an item starts there.
+	// Every category of this character is offered; Not shown ones come last and are shown once an item starts there.
 	const all = $derived(m ? categories(m) : []);
 	const shown = $derived(m ? shownCategories(m, busySlots(m)) : []);
 	const requested = draft?.group ?? ui.newItem.group;
 	let group = $state(
 		untrack(() => (all.some((c) => c.key === requested) ? requested : (shown[0]?.key ?? 'head')))
-	);
-	let more = $state(untrack(() => !shown.some((c) => c.key === group)));
-	const offered = $derived(
-		more ? all : all.filter((c) => c.key === group || shown.some((x) => x.key === c.key))
 	);
 	// One category is one slot.
 	const slot = $derived(group);
@@ -73,7 +72,10 @@
 	let busy = $state(false);
 	let reference = $state(draft?.reference);
 	let referenceLoading = $state(false);
-	const g = $derived(categoryCopy(m, group));
+	const profile = $derived(profileOf(m, group));
+	const suggestions = $derived(
+		promptSuggestions(`item.${profile === 'body' ? 'accessory' : profile}`)
+	);
 	const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`);
 	const suggestedName = $derived(name.trim() || itemNameFrom(prompt));
 	const itemName = $derived(suggestedName || 'New item');
@@ -136,6 +138,15 @@
 			height: Math.min(256, m.rig.cell.h + 2 * pad)
 		};
 	});
+	// Items are drawn on their own transparent canvas, so Enhance describes them at that canvas size.
+	const ITEM_PROMPT_MAX = 600;
+	const enhanceSpec = $derived<EnhanceSpec>({
+		kind: 'item',
+		width: referenceMax.width,
+		height: referenceMax.height,
+		view: m?.rig.view
+	});
+	const enhanceScope = `item-enhance:${doc.id}:${crypto.randomUUID()}`;
 	// The hand a held category uses, from its own definition (a built-in that holds nothing yet uses its catalog default).
 	const side = $derived.by(() => {
 		const def = slotDef(m, group);
@@ -143,7 +154,7 @@
 	});
 	const offHandHint = $derived(group === 'main_hand' && namesOffHandItem(prompt));
 	const clothesNote = $derived(
-		m && profileOf(m, group) === 'underwear'
+		m && profile === 'underwear'
 			? baseClothesNote((rec as { character?: { looks?: string } } | null)?.character?.looks)
 			: ''
 	);
@@ -289,26 +300,15 @@
 				{t('newItem.standingFirst')}
 			</p>
 			<div class="field">
-				<span class="label" id="where">{t('newItem.where')}</span>
-				<div class="chips" role="radiogroup" aria-labelledby="where">
-					{#each offered as x (x.key)}
-						<button
-							class="chip"
-							role="radio"
-							aria-checked={group === x.key}
-							tabindex={group === x.key ? 0 : -1}
-							onclick={() => (group = x.key)}
-							><GroupIcon group={x.key} size={14} />{displayMessage(
-								slotLabelMessage(m, x.key)
-							)}</button
-						>
-					{/each}
-				</div>
-				{#if all.length > offered.length}<button
-						class="bu-action btn plain link small more-categories"
-						data-variant="quiet"
-						onclick={() => (more = true)}>{t('newItem.moreCategories')}</button
-					>{/if}
+				<SlotPicker
+					manifest={m}
+					categories={all}
+					{shown}
+					value={group}
+					label={t('newItem.where')}
+					disabled={busy}
+					onselect={(key) => (group = key)}
+				/>
 				{#if !shown.some((c) => c.key === group)}<p class="faint small">
 						{t('newItem.notShown')}
 					</p>{/if}
@@ -322,20 +322,32 @@
 				<!-- Always present and only filled while the hint shows: announced once, not on every keystroke. -->
 				<span class="sr" aria-live="polite">{offHandHint ? t('newItem.offHandHint') : ''}</span>
 			</div>
-			<label class="field">
-				<span class="label">{t('newItem.what')}</span>
-				<textarea
-					class="bu-input input"
-					rows="2"
-					bind:value={prompt}
+			<div class="field">
+				<label class="label" for="item-prompt">{t('newItem.what')}</label>
+				<PromptField
+					id="item-prompt"
+					value={prompt}
+					onvalue={(text) => (prompt = text)}
+					spec={enhanceSpec}
+					activity={{ scope: enhanceScope, label: 'Enhance item prompt' }}
+					maxOutput={ITEM_PROMPT_MAX}
+					enhanceDisabled={busy}
+					rows={2}
 					onkeydown={promptKeydown}
-					aria-keyshortcuts="Control+Enter Meta+Enter"
-					aria-describedby="item-submit-hint"
+					keyshortcuts="Control+Enter Meta+Enter"
+					describedby="item-submit-hint"
 					placeholder={t('newItem.placeholder', {
-						idea: g.ideas[0] ? displayMessage(g.ideas[0].caption) : t('newItem.defaultIdea')
+						idea: suggestions[0]?.title ?? t('newItem.defaultIdea')
 					})}
-					maxlength="300"></textarea>
-			</label>
+					maxlength={ITEM_PROMPT_MAX}
+				/>
+				<PromptSuggestions
+					label={t('newItem.ideas')}
+					value={prompt}
+					{suggestions}
+					onpick={(idea) => (prompt = idea.prompt)}
+				/>
+			</div>
 			<p class="faint small" id="item-submit-hint">{t('newItem.shortcut')}</p>
 			<ReferenceField
 				bind:value={reference}
@@ -353,13 +365,6 @@
 						onclick={() => (group = 'off_hand')}>{t('newItem.useOffHand')}</button
 					>
 				</p>{/if}
-			<div class="chips" aria-label={t('newItem.ideas')}>
-				{#each g.ideas as idea (idea.label)}
-					<button class="chip" onclick={() => (prompt = idea.label)}
-						>{displayMessage(idea.caption)}</button
-					>
-				{/each}
-			</div>
 			<div class="field">
 				<span class="label"
 					>{t('newItem.colorHint')} <span class="faint">{t('common.optional')}</span></span
@@ -435,9 +440,6 @@
 </Sheet>
 
 <style>
-	.more-categories {
-		justify-self: start;
-	}
 	.copy-demo {
 		display: inline-grid;
 	}

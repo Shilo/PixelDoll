@@ -86,6 +86,12 @@ export interface EnhancedCharacterV3Prompt {
 	enhanced_prompt: string;
 	usage?: Usage | null;
 }
+export interface EnhancePixenPrompt {
+	description: string;
+	image_size: Size;
+	view?: 'low top-down' | 'high top-down' | 'side';
+	no_background?: boolean;
+}
 export interface EnhanceAnimationV3Prompt {
 	first_frame: B64Image;
 	last_frame?: B64Image;
@@ -232,6 +238,7 @@ export const routes = {
 	createCharacterProFlash: (b: CreateCharacterProFlash) => post('/create-character-pro-flash', b),
 	enhanceCharacterV3Prompt: (b: EnhanceCharacterV3Prompt) =>
 		post('/enhance-character-v3-prompt', b),
+	enhancePixenPrompt: (b: EnhancePixenPrompt) => post('/enhance-pixen-prompt', b),
 	enhanceAnimationV3Prompt: (b: EnhanceAnimationV3Prompt) =>
 		post('/enhance-animation-v3-prompt', b),
 	animateCharacter: (b: CharacterAnimation) => post('/characters/animations', b),

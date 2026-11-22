@@ -31,6 +31,7 @@ vi.mock('../../src/lib/store/db.ts', () => ({
 	getBlob: vi.fn(),
 	all: vi.fn(async () => [])
 }));
+vi.mock('../../src/studio/experience/riderPose.ts', () => ({ forgetRidingPose: vi.fn() }));
 
 let record: StoredProject;
 beforeEach(async () => {

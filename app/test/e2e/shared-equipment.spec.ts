@@ -704,10 +704,9 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toBeFocused();
 	await menu.getByRole('menuitem', { name: /^Make one for Adventurer copy\.\.\./ }).click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
-	await expect(sheet.getByRole('radio', { name: 'Head', exact: true })).toHaveAttribute(
-		'aria-checked',
-		'true'
-	);
+	await expect(
+		sheet.getByRole('button', { name: 'Where does it go?: Head', exact: true })
+	).toBeVisible();
 	await expect(sheet.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
 		'a giant helmet'
 	);

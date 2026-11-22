@@ -3,6 +3,11 @@
 	import Studio from './studio/Studio.svelte';
 	import { workspaceCopy } from './lib/store/workspace-mode.ts';
 	import { localDeveloperToolsEnabled, watchDeveloperMode } from './studio/developerMode.svelte.ts';
+	import { watchMountPreferences } from './studio/experience/riderPose.ts';
+	import { applyRiderPose } from './studio/mountPreview.ts';
+	import { experience } from './studio/experience/state.svelte.ts';
+	import { doc } from './studio/state.svelte.ts';
+	import { watchPromptSuggestions } from './studio/promptSuggestions.svelte.ts';
 
 	// Dev-only harness pages (M1, M3-M5, #/selftest; some spend credits). Behind import.meta.env.DEV, so `vite build` drops them.
 	type Page = () => Promise<{ default: Component }>;
@@ -20,6 +25,17 @@
 	const current = () => location.hash.replace(/^#/, '') || '/';
 	let route = $state(import.meta.env.DEV ? current() : '/');
 	$effect(watchDeveloperMode);
+	// Preview follows another tab only when this character's mounting changed, not for unrelated mount settings.
+	$effect(() =>
+		watchMountPreferences((previous) => {
+			if (
+				previous.show !== experience.testMount ||
+				previous.poses[doc.id] !== experience.ridingPoses[doc.id]
+			)
+				applyRiderPose();
+		})
+	);
+	$effect(watchPromptSuggestions);
 	$effect(() => {
 		if (!import.meta.env.DEV || workspaceCopy || localDeveloperToolsEnabled() || route === '/')
 			return;

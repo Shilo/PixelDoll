@@ -229,6 +229,31 @@ describe('rider placement', () => {
 		});
 	});
 
+	test('a fitted State without a hip anchor sits on its measured hips, mirrored for a reflected facing', () => {
+		const hips = [
+			{ label: 'LEFT HIP', x: 0.25, y: 0.5 },
+			{ label: 'RIGHT HIP', x: 0.5, y: 0.5 }
+		];
+		const fitted = {
+			...rig,
+			cell: { w: 64, h: 64 },
+			directions: [{ id: 'east' as const }, { id: 'west' as const, mirrorOf: 'east' as const }],
+			animations: [
+				{ id: 'riding', cells: 1, loop: false, frames: [], sources: { east: { measured: [hips] } } }
+			]
+		} as unknown as Parameters<typeof riderContact>[0];
+		expect(riderContact(fitted, frame, 'riding', 'east', 0, ground, 50)).toEqual({
+			x: 40 - 32 + 24,
+			y: 70 - 64 + 32,
+			source: 'joints'
+		});
+		expect(riderContact(fitted, frame, 'riding', 'west', 0, ground, 50)).toEqual({
+			x: 40 - 32 + 40,
+			y: 70 - 64 + 32,
+			source: 'joints'
+		});
+	});
+
 	test('translates the whole rider by whole pixels and follows the seat bob only', () => {
 		for (const direction of DIRECTIONS) {
 			const v = view(TEST_MOUNT, direction);

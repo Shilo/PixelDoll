@@ -20,6 +20,9 @@
 		type CreationSettings
 	} from './creationSettings.ts';
 	import { displayError } from '../lib/i18n.ts';
+	import PromptSuggestionsEditor from './PromptSuggestionsEditor.svelte';
+	import type { SuggestionListKey } from './promptSuggestionDefaults.ts';
+	import { slotProfileLabelKeys } from './slots.ts';
 	import {
 		creationSettingsRevision,
 		currentCreationSettings,
@@ -51,6 +54,18 @@
 		anchor: 'generationDetails.method.frameEditing'
 	} as const;
 	const id = $props.id();
+	const itemProfiles = (
+		Object.keys(slotProfileLabelKeys) as (keyof typeof slotProfileLabelKeys)[]
+	).filter((profile) => profile !== 'body');
+	let itemProfile = $state<(typeof itemProfiles)[number]>('head');
+	const suggestionLists = {
+		characters: 'character.look',
+		moves: 'move',
+		states: 'state.pose'
+	} as const satisfies Record<Exclude<CreationSection, 'items'>, SuggestionListKey>;
+	const listKey = $derived(
+		section === 'items' ? (`item.${itemProfile}` as const) : suggestionLists[section]
+	);
 
 	function change<Section extends CreationSection>(
 		scope: Section,
@@ -319,6 +334,21 @@
 {#if error && valid && errorRevision === creationSettingsRevision()}<p class="note" role="alert">
 		{error}
 	</p>{/if}
+
+{#snippet profileSelect(fieldId: string)}
+	<select id={fieldId} class="bu-select select" bind:value={itemProfile}>
+		{#each itemProfiles as profile (profile)}
+			<option value={profile}>{t(slotProfileLabelKeys[profile])}</option>
+		{/each}
+	</select>
+{/snippet}
+
+{#if section === 'items'}
+	{@render field('suggestion-profile', 'wardrobe.slot', profileSelect)}
+{/if}
+{#key listKey}
+	<PromptSuggestionsEditor {listKey} />
+{/key}
 
 <style>
 	.note {

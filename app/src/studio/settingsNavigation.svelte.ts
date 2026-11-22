@@ -5,6 +5,7 @@ import type { CreationSection } from './creationSettings.ts';
 export type SettingsSection =
 	| 'general'
 	| 'wardrobe'
+	| 'mount'
 	| 'export'
 	| 'pixellab'
 	| 'library'
@@ -16,6 +17,7 @@ export type SettingsSection =
 export const settingsLabels = {
 	general: 'settings.appearance',
 	wardrobe: 'experience.tabWardrobe',
+	mount: 'settings.mount',
 	characters: 'creationSettings.character',
 	moves: 'creationSettings.move',
 	states: 'creationSettings.state',

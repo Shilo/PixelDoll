@@ -31,17 +31,17 @@
 	import { sceneZoom } from './sceneZoom.ts';
 	import { frameRecorder } from './paint.ts';
 	import {
-		TEST_MOUNT,
 		MOUNT_HEIGHT_REASON,
-		mountView,
 		mountedFrame,
 		placeRider,
-		riderContact,
 		sampleMountFrame,
 		type MountViewResult
 	} from './mounts.ts';
 	import type { Img } from '../../lib/image/png.ts';
 	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
+	import { activeRiderPose, legsKept } from './riderPose.ts';
+	import { mountPlacement } from './mountPlacement.ts';
+	import { imageCanvas } from './imageCanvas.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
 	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
@@ -107,6 +107,12 @@
 		return grounding?.body ?? (p ? paintedFrame(p, {}) : null);
 	});
 	const mountVisible = $derived(experience.testMount);
+	const riderPose = $derived(
+		mountVisible ? activeRiderPose(doc.id, view.project?.manifest) : undefined
+	);
+	// A State is drawn seated: cutting legs by standing or estimated joints would cut the wrong pixels.
+	const legMode = (clip: string | null) =>
+		legsKept(view.project?.manifest, clip) ? 'none' : experience.mountLegs;
 	const previewMount = $derived.by(() => {
 		if (experience.mode !== 'preview' || !availability) return null;
 		return mountedPresentation(resolvePreview(availability, { clip: ui.anim, direction: ui.dir }));
@@ -138,34 +144,9 @@
 			: failure.reason;
 	}
 	function mountedPresentation(p: Presentation) {
-		const project = view.project,
-			frame = drawingFrame;
-		if (
-			!mountVisible ||
-			!project ||
-			!frame ||
-			!bodyFrame ||
-			p.kind === 'unavailable' ||
-			!p.direction ||
-			!p.clip
-		)
-			return null;
-		const facing = grounding?.facings.get(p.direction);
-		const height = facing?.standingHeight ?? bodyFrame.h;
-		const result = mountView(TEST_MOUNT, p.direction, height);
-		if (!result.ok) return { view: null, failure: result, direction: p.direction } as const;
-		const ground = { x: frame.x + (facing?.x ?? 0), y: frame.y + (facing?.y ?? 0) };
-		const cell = p.kind === 'animation' ? (p.sequence?.frames[0]?.cell ?? p.cell) : p.cell;
-		const contact = riderContact(
-			project.manifest.rig,
-			frame,
-			p.clip,
-			p.direction,
-			cell,
-			ground,
-			height
-		);
-		return { view: result.view, ground, contact } as const;
+		const project = view.project;
+		if (!mountVisible || !project) return null;
+		return mountPlacement(project, p, grounding);
 	}
 	// How far any of the character's gear can reach: Preview's lineup sizes and spaces its facings by it.
 	const reach = $derived.by(() => {
@@ -601,21 +582,7 @@
 			}
 		>();
 		const mountCanvases = new WeakMap<Img, HTMLCanvasElement>();
-		const mountCanvas = (image: Img) => {
-			let c = mountCanvases.get(image);
-			if (!c) {
-				c = document.createElement('canvas');
-				c.width = image.w;
-				c.height = image.h;
-				c.getContext('2d')!.putImageData(
-					new ImageData(new Uint8ClampedArray(image.data), image.w, image.h),
-					0,
-					0
-				);
-				mountCanvases.set(image, c);
-			}
-			return c;
-		};
+		const mountCanvas = (image: Img) => imageCanvas(image, mountCanvases);
 		const prepareActor = (
 			available: NonNullable<typeof availability>,
 			presentation: Presentation,
@@ -632,7 +599,8 @@
 						? presentation.sequence!.frames.map((frame) => frame.cell)
 						: [presentation.cell];
 				const cell = cells.includes(requestedCell) ? requestedCell : cells[0];
-				const key = JSON.stringify([clip, cell, experience.mountLegs, result.frame]);
+				const mode = legMode(clip);
+				const key = JSON.stringify([clip, cell, mode, result.frame]);
 				const cached = legResults.get(direction);
 				if (
 					cached?.key === key &&
@@ -649,7 +617,7 @@
 						clip,
 						direction,
 						cell,
-						experience.mountLegs,
+						mode,
 						mountLegGeometry(available.project, clip, direction, cell)
 					);
 					legResults.set(direction, {
@@ -991,6 +959,7 @@
 					? resolveLive(a, {
 							velocity,
 							riding: mountVisible,
+							riderPose,
 							previous,
 							defaultDirection:
 								experience.mode === 'side'
@@ -1069,7 +1038,7 @@
 							(p.direction !== 'north' && p.direction !== 'south')
 						)
 							mountIssue = t('worldStage.notice.legsUnavailable');
-					} else host.dataset.mountLegs = experience.mountLegs;
+					} else host.dataset.mountLegs = legMode(p.clip);
 					if (legResult.source) host.dataset.mountLegSource = legResult.source;
 				}
 				const loadings = new Set(result ? displayLoadingItems(result.loadingItems) : []);
@@ -1266,6 +1235,7 @@
 					host.dataset.camera = `${camera.x.toFixed(2)},${camera.y.toFixed(2)}`;
 					host.dataset.presentation = p.kind;
 					host.dataset.facing = p.direction ?? '';
+					host.dataset.clip = p.clip ?? '';
 					host.dataset.lineup = facings.join(' ');
 				}
 				note = [...new Set(notes)].join(' · '); // each facing of the lineup can report the same thing

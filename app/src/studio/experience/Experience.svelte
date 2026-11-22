@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { applyRiderPose } from '../mountPreview.ts';
 	import SurfaceChevron from '../SurfaceChevron.svelte';
 	import { openerLabel } from '../openerLabel.ts';
 	import { formatNumber, t } from 'svelte-whisper';
@@ -17,6 +18,7 @@
 	import { CREATE_STEPS } from '../characterConfig.ts';
 	import CastCarousel from './CastCarousel.svelte';
 	import PlaybackPicker from './PlaybackPicker.svelte';
+	import { bodyClipThumbnail } from '../moveThumbnails.ts';
 	import ZoomControls from './ZoomControls.svelte';
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
 	import { sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
@@ -410,8 +412,9 @@
 					experience.screen === 'characters' &&
 					!ui.sheet
 				) {
-					// Customize opens on the standing move, also for the character already shown.
+					// Customize opens on the standing move, also for the character already shown, or mounted on its Riding pose.
 					showStanding();
+					applyRiderPose();
 					enterCustomize();
 				}
 			}
@@ -782,6 +785,7 @@
 						{moveRefs}
 						selected={ui.anim}
 						compact={g.compactPlayback}
+						thumbnail={(key) => store.project && bodyClipThumbnail(store.project, key, ui.dir)}
 						onselect={(clip) => {
 							ui.anim = clip;
 							ui.frame = 0;

@@ -62,6 +62,7 @@ import {
 	listEntries,
 	pruneKeys,
 	readDeleted,
+	readEntry,
 	restoreCharacter,
 	restoreMoveEntry,
 	restoreParts,
@@ -167,6 +168,7 @@ import {
 	type FrameChange
 } from '../lib/rig/reframe.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
+import { forgetRidingPose, syncRiderPose } from './experience/riderPose.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -304,6 +306,7 @@ export const ui = $state({
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
 	stateCaptureMove: '',
+	redrawMove: '',
 	moveFormOpen: false,
 	get sheet(): SheetId {
 		return panel;
@@ -867,7 +870,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		}
 		// Another character starts on its standing move, whatever move the last one showed: it is the one every item is made
 		// for, so what is worn shows. Walk hides each item without walk frames, which reads as lost items.
-		if (id !== doc.id || !m.rig.animations.some((a) => a.id === ui.anim))
+		const switched = id !== doc.id;
+		if (switched || !m.rig.animations.some((a) => a.id === ui.anim))
 			ui.anim = (
 				m.rig.animations.find((a) => a.id === DEFAULT_MOVE) ??
 				m.rig.animations.find((a) => a.id === 'walk') ??
@@ -878,6 +882,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
+		// Mounted, a character opens on its saved Riding pose (Mount settings).
+		if (switched) ui.anim = syncRiderPose(id, m, ui.anim);
 		store.moveReviews = r.record?.moveReviews ?? {};
 		store.exportRecord = r.record;
 		if (r.record) syncProjectRef(r.record);
@@ -1675,6 +1681,12 @@ export async function refreshRecentlyDeleted(): Promise<void> {
 	try {
 		const values = await db.all<unknown>('projects');
 		const stale = pruneKeys(values, Date.now(), 0);
+		// Pruning is permanent too: forget the pose of every entry that leaves.
+		for (const value of values)
+			if (stale.includes((value as { id?: string })?.id ?? '')) {
+				const gone = readEntry(value);
+				if (gone) forgetPose(gone);
+			}
 		await Promise.all(stale.map((key) => db.del('projects', key)));
 		deleted.entries = listEntries(
 			values.filter((value) => !stale.includes((value as { id?: string })?.id ?? '')),
@@ -1792,10 +1804,19 @@ export async function restoreDeleted(id: string): Promise<boolean> {
 
 /** Delete one entry for good. Its artwork goes with it when the queue is idle, which is when a sweep is safe. */
 export async function deleteDeletedForever(id: string): Promise<void> {
+	// Forgetting the riding pose belongs here, not on the recoverable delete: a restore keeps it, a permanent one does not.
+	const entry = readEntry(await db.get<unknown>('projects', id).catch(() => undefined));
+	if (entry) forgetPose(entry);
 	await discardDeleted(id);
 	await refreshRecentlyDeleted();
 	notifyLibraryChanged(id);
 	void cleanUp(0, true).catch((error) => console.error('cleanup after delete forever', error));
+}
+
+/** Drop the Riding pose a permanently deleted thing held: a character's, or a State's own. */
+function forgetPose(entry: RecentlyDeleted) {
+	if (entry.kind === 'character') forgetRidingPose(entry.projectId);
+	else if (entry.scope.moveId) forgetRidingPose(entry.projectId, entry.scope.moveId);
 }
 
 export async function removeProject(id = doc.id): Promise<void> {
