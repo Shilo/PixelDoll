@@ -22,6 +22,7 @@ const MARKERS = [
 	'devkey',
 	'pixeldoll.agentKey',
 	'pixeldoll.agentSync',
+	'pixeldoll.devSyncConfig',
 	'SYNC_TEST_REFRESH_TOKEN',
 	'sync-credentials',
 	'agent-badge',

@@ -12,3 +12,12 @@ export const SYNC_CONFIG = {
 
 /** Where both providers send the browser back after sign-in: the app root, which the service worker already serves. */
 export const redirectUri = () => new URL(import.meta.env.BASE_URL, location.origin).href;
+
+// Dev server only (end-to-end tests with fake providers): settings from localStorage 'pixeldoll.devSyncConfig'. Statically
+// removed from every build, so production always uses the values above.
+if (typeof import.meta.env !== 'undefined' && import.meta.env.DEV)
+	try {
+		Object.assign(SYNC_CONFIG, JSON.parse(localStorage.getItem('pixeldoll.devSyncConfig') ?? '{}'));
+	} catch {
+		// Storage blocked or malformed: the defaults stay.
+	}
