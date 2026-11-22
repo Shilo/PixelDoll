@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mountPreviewPlay": "Binek önizlemesini oynat",
+		"mountPreviewPause": "Binek önizlemesini duraklat",
 		"mount": "Binek",
 		"mountNotSaved": "Binek ayarı değişti ancak bu tarayıcı kaydedemedi.",
 		"reset": {

@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mountPreviewPlay": "Lire l’aperçu de la monture",
+		"mountPreviewPause": "Mettre en pause l’aperçu de la monture",
 		"mount": "Monture",
 		"mountNotSaved": "Le réglage de la monture a changé, mais ce navigateur n’a pas pu l’enregistrer.",
 		"reset": {

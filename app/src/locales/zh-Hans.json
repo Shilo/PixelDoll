@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mountPreviewPlay": "播放坐骑预览",
+		"mountPreviewPause": "暂停坐骑预览",
 		"mount": "坐骑",
 		"mountNotSaved": "坐骑设置已更改，但此浏览器无法保存。",
 		"reset": {

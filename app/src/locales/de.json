@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mountPreviewPlay": "Reittier-Vorschau abspielen",
+		"mountPreviewPause": "Reittier-Vorschau anhalten",
 		"mount": "Reittier",
 		"mountNotSaved": "Reittier-Einstellung geändert, aber dieser Browser konnte sie nicht speichern.",
 		"reset": {

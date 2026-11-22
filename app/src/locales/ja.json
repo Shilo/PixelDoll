@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mountPreviewPlay": "乗り物のプレビューを再生",
+		"mountPreviewPause": "乗り物のプレビューを一時停止",
 		"mount": "乗り物",
 		"mountNotSaved": "乗り物の設定を変更しましたが、このブラウザーに保存できませんでした。",
 		"reset": {

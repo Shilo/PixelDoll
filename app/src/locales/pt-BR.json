@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mountPreviewPlay": "Reproduzir prévia da montaria",
+		"mountPreviewPause": "Pausar prévia da montaria",
 		"mount": "Montaria",
 		"mountNotSaved": "A configuração de montaria mudou, mas este navegador não conseguiu salvá-la.",
 		"reset": {

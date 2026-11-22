@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mountPreviewPlay": "탈것 미리보기 재생",
+		"mountPreviewPause": "탈것 미리보기 일시 정지",
 		"mount": "탈것",
 		"mountNotSaved": "탈것 설정이 바뀌었지만 이 브라우저에 저장하지 못했어요.",
 		"reset": {

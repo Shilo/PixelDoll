@@ -768,6 +768,31 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(mountMenu.getByRole('heading', { name: 'Mount', exact: true })).toBeVisible();
 	await expect(shown).not.toBeChecked();
 	await expect(world(page)).not.toHaveAttribute('data-mount');
+	// The page previews the mount on its own, turning; with Show mount on, the open character rides it.
+	const preview = mountMenu.locator('.mount-preview canvas');
+	const painted = () =>
+		preview.evaluate((canvas: HTMLCanvasElement) =>
+			canvas
+				.getContext('2d')!
+				.getImageData(0, 0, canvas.width, canvas.height)
+				.data.some((value, index) => index % 4 === 3 && value > 0)
+		);
+	await expect.poll(painted).toBe(true);
+	await expect(preview).toHaveAttribute('data-rider', '');
+	const firstFacing = await preview.getAttribute('data-facing');
+	await expect(preview).not.toHaveAttribute('data-facing', firstFacing!, { timeout: 5000 });
+	await shown.check();
+	await expect(preview).toHaveAttribute('data-rider', 'fixture:s2');
+	const playButton = mountMenu.getByRole('button', { name: 'Pause mount preview', exact: true });
+	await playButton.click();
+	await expect(
+		mountMenu.getByRole('button', { name: 'Play mount preview', exact: true })
+	).toBeVisible();
+	const pausedFacing = await preview.getAttribute('data-facing');
+	await page.waitForTimeout(1800);
+	await expect(preview).toHaveAttribute('data-facing', pausedFacing!);
+	await mountMenu.getByRole('button', { name: 'Play mount preview', exact: true }).click();
+	await shown.uncheck();
 	await shown.check();
 	await expect
 		.poll(() => toggle.evaluate((element) => getComputedStyle(element).color))
@@ -788,6 +813,8 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	);
 	await closeMount();
 	await expect(toggle).toBeFocused();
+	// Closing Settings removes the preview with its drawing loop.
+	await expect(page.locator('.mount-preview')).toHaveCount(0);
 	for (const direction of ['south', 'east', 'north', 'west']) {
 		await page.getByRole('button', { name: 'Face ' + direction, exact: true }).click();
 		await expect(world(page)).toHaveAttribute(
@@ -801,7 +828,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.getByRole('button', { name: 'Face east', exact: true }).click();
 	await selectPlaybackClip(page, 'walk');
 	await toggle.click();
-	const legs = mountMenu.getByRole('radiogroup', { name: 'Hide legs', exact: true });
+	const legs = mountMenu.getByRole('radiogroup', { name: 'Hide leg', exact: true });
 	const legMode = (name: string) => legs.getByRole('radio', { name, exact: true });
 	await expect(legMode('Far leg')).toBeChecked();
 	await expect(world(page)).toHaveAttribute('data-mount-legs', 'far');

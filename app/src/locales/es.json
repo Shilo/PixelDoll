@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mountPreviewPlay": "Reproducir vista previa de la montura",
+		"mountPreviewPause": "Pausar vista previa de la montura",
 		"mount": "Montura",
 		"mountNotSaved": "El ajuste de montura cambió, pero este navegador no pudo guardarlo.",
 		"reset": {

@@ -31,18 +31,16 @@
 	import { sceneZoom } from './sceneZoom.ts';
 	import { frameRecorder } from './paint.ts';
 	import {
-		TEST_MOUNT,
 		MOUNT_HEIGHT_REASON,
-		mountView,
 		mountedFrame,
 		placeRider,
-		riderContact,
 		sampleMountFrame,
 		type MountViewResult
 	} from './mounts.ts';
 	import type { Img } from '../../lib/image/png.ts';
 	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
 	import { activeRiderPose } from './riderPose.ts';
+	import { mountPlacement } from './mountPlacement.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
 	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
@@ -145,34 +143,9 @@
 			: failure.reason;
 	}
 	function mountedPresentation(p: Presentation) {
-		const project = view.project,
-			frame = drawingFrame;
-		if (
-			!mountVisible ||
-			!project ||
-			!frame ||
-			!bodyFrame ||
-			p.kind === 'unavailable' ||
-			!p.direction ||
-			!p.clip
-		)
-			return null;
-		const facing = grounding?.facings.get(p.direction);
-		const height = facing?.standingHeight ?? bodyFrame.h;
-		const result = mountView(TEST_MOUNT, p.direction, height);
-		if (!result.ok) return { view: null, failure: result, direction: p.direction } as const;
-		const ground = { x: frame.x + (facing?.x ?? 0), y: frame.y + (facing?.y ?? 0) };
-		const cell = p.kind === 'animation' ? (p.sequence?.frames[0]?.cell ?? p.cell) : p.cell;
-		const contact = riderContact(
-			project.manifest.rig,
-			frame,
-			p.clip,
-			p.direction,
-			cell,
-			ground,
-			height
-		);
-		return { view: result.view, ground, contact } as const;
+		const project = view.project;
+		if (!mountVisible || !project) return null;
+		return mountPlacement(project, p, grounding ?? undefined);
 	}
 	// How far any of the character's gear can reach: Preview's lineup sizes and spaces its facings by it.
 	const reach = $derived.by(() => {

@@ -14,6 +14,7 @@
 	import type { MountLegMode } from './experience/mountLegs.ts';
 	import { Footprints, PawPrint, PersonStanding } from './icons.ts';
 	import { applyRiderPose } from './mountPreview.ts';
+	import MountPreview from './MountPreview.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
 	import SettingsItemToggle from './SettingsItemToggle.svelte';
 	import { doc, store, toast } from './state.svelte.ts';
@@ -34,6 +35,7 @@
 	}
 </script>
 
+<MountPreview />
 <SettingsItemToggle
 	setting="show-mount"
 	checked={experience.testMount}

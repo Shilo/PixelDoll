@@ -42,6 +42,8 @@
 		}
 	},
 	"settings": {
+		"mountPreviewPlay": "Putar pratinjau tunggangan",
+		"mountPreviewPause": "Jeda pratinjau tunggangan",
 		"mount": "Tunggangan",
 		"mountNotSaved": "Pengaturan tunggangan berubah, tetapi browser ini tidak dapat menyimpannya.",
 		"reset": {
