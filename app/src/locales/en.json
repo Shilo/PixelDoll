@@ -3088,5 +3088,83 @@
 			"changed": "This character changed. Reopen Adjust frame to review the latest version.",
 			"undoFailed": "The frame change could not be undone."
 		}
+	},
+	"cloudSave": {
+		"title": "Cloud Save",
+		"intro": "Back up your saves and keep them in sync across your devices, in your own Google Drive or Dropbox.",
+		"connectGoogle": "Connect Google Drive",
+		"connectDropbox": "Connect Dropbox",
+		"notConfigured": "This version of PixelDoll has no cloud sign-in set up yet.",
+		"canceled": "Sign-in canceled",
+		"noDriveAccess": "PixelDoll needs permission to keep its files in your Google Drive. Connect again and leave that permission checked.",
+		"attention": "Cloud Save needs your attention",
+		"status": {
+			"local": "Saved on this device",
+			"syncing": "Saving to the cloud…",
+			"synced": "Saved to the cloud",
+			"syncedJustNow": "Saved to the cloud just now",
+			"syncedAgo": "Saved to the cloud {time}",
+			"offline": "Offline, will save when back online",
+			"reconnect": "Reconnect to keep saving",
+			"conflict": "Needs your attention",
+			"cloudFull": "Cloud storage full",
+			"failed": "Couldn't save to the cloud",
+			"update": "Update PixelDoll on this device",
+			"missing": "The PixelDoll folder is gone from your cloud"
+		},
+		"retry": "Retry",
+		"reconnect": "Reconnect",
+		"rebuild": "Rebuild cloud copy",
+		"cloudFullHint": "Free up space in your cloud storage, then retry.",
+		"updateHint": "Your cloud copy was saved by a newer version of PixelDoll. Update to keep saving.",
+		"missingHint": "Rebuild it from the characters on this device, or disconnect.",
+		"disconnect": "Disconnect this device",
+		"disconnectHint": "This device stops saving to the cloud. Your cloud copy and other devices are not affected.",
+		"manageApps": "Manage connected apps",
+		"everywhere": {
+			"action": "Disconnect everywhere",
+			"title": "Disconnect every device?",
+			"body": "This signs PixelDoll out of Google Drive on every device. Your cloud copy stays, and each device must connect again to keep saving."
+		},
+		"delete": {
+			"action": "Delete cloud copy",
+			"description": "Permanently deletes the PixelDoll folder in your cloud.",
+			"title": "Delete the cloud copy?",
+			"body": "This permanently deletes the PixelDoll folder in your cloud for every device. This cannot be undone.",
+			"kept": "Your work on this device stays.",
+			"confirm": "Confirm"
+		},
+		"conflicts": {
+			"title": "Choose what to keep",
+			"hint": "These were changed on two devices at once.",
+			"whole": "The whole character",
+			"unnamed": "Unnamed character",
+			"keepThis": "Keep this one",
+			"keepOther": "Keep the other",
+			"keepBoth": "Keep both",
+			"failed": "This choice could not be saved right now. Try again in a moment."
+		},
+		"restore": {
+			"title": "Restore an earlier version",
+			"character": "Character",
+			"choose": "Choose a character",
+			"none": "No earlier versions yet.",
+			"unknownTime": "Unknown time",
+			"action": "Restore",
+			"confirmTitle": "Restore the version from {date}?",
+			"confirmBody": "Replaces the current version; the replaced one stays in the history.",
+			"done": "Version restored.",
+			"failed": "This version could not be restored right now. Try again in a moment."
+		},
+		"import": {
+			"title": "Import a downloaded copy",
+			"hint": "Choose the ZIP files you downloaded of the PixelDoll folder. Only characters missing on this device are added.",
+			"added": {
+				"one": "Added {count} character.",
+				"other": "Added {count} characters."
+			},
+			"none": "No new characters were found.",
+			"invalid": "These files are not a downloaded PixelDoll folder."
+		}
 	}
 }

@@ -43,9 +43,10 @@ export function deleteSyncData(): Promise<void> {
 	});
 }
 
-/** Set by the Studio: whether a character may be written now (it is not open with edits still waiting to be saved), and
- *  what to refresh after sync wrote characters. */
+/** Set by the Studio: whether a character may be written now (it is not open with edits still waiting to be saved), what
+ *  to refresh after sync wrote characters, and whether Cloud Save needs the user (a quiet cue on the Settings opener). */
 export const studioHooks = {
 	mayWrite: (_id: string) => true,
-	applied: (_ids: string[]) => {}
+	applied: (_ids: string[]) => {},
+	attention: (_needed: boolean) => {}
 };

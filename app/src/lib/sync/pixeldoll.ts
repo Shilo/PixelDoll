@@ -11,7 +11,12 @@ import { manifestShape } from '../store/import.ts';
 import { blobReferences } from '../store/incompatible.ts';
 import { CURRENT_FORMAT, supportedFormat, type Manifest } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
-import { RECENTLY_DELETED_PREFIX, type RecentlyDeleted } from '../store/recently-deleted.ts';
+import {
+	deletedEntry,
+	pruneKeys,
+	RECENTLY_DELETED_PREFIX,
+	type RecentlyDeleted
+} from '../store/recently-deleted.ts';
 import { studioCharacter } from '../store/workspace.ts';
 import type { Library } from './core/engine.ts';
 import type { Path } from './core/merge.ts';
@@ -86,6 +91,20 @@ export const pixeldollLibrary: Library = {
 					const now = current && studioCharacter(id, current) ? syncedBody(current) : undefined;
 					if (stableStringify(now) !== stableStringify(expected)) throw new Refused();
 					if (next === undefined) {
+						// Deleted on another device: keep it in Recently deleted here too, as a delete on this device would. The
+						// entry also makes the delete stick (read() reports it), so the cloud copy does not come back.
+						if (current) {
+							const entry = deletedEntry({
+								kind: 'character',
+								record: current,
+								name: current.manifest.name,
+								context: '',
+								scope: {},
+								drafts: records.flatMap((record) => db.takenDrafts(record, id))
+							});
+							for (const gone of pruneKeys(records)) projects.delete(gone);
+							projects.put(entry, entry.id);
+						}
 						projects.delete(id);
 						for (const record of records) {
 							const change = db.withoutCharacters(record, new Set([id]));

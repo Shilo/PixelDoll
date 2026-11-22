@@ -9,6 +9,7 @@ export type SettingsSection =
 	| 'export'
 	| 'pixellab'
 	| 'library'
+	| 'cloud'
 	| 'trash'
 	| 'developer'
 	| 'about'
@@ -25,6 +26,7 @@ export const settingsLabels = {
 	export: 'export.sheet.title',
 	pixellab: 'settings.connection',
 	library: 'librarySettings.title',
+	cloud: 'cloudSave.title',
 	trash: 'settings.trash',
 	developer: 'developer.title',
 	about: 'settings.about'

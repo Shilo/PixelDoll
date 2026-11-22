@@ -24,6 +24,7 @@
 	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 	import { historyText } from './historyText.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
+	import { cloudNeedsAttention } from './cloudAttention.svelte.ts';
 	import { ui, doc, store, undo, redo, randomize } from './state.svelte.ts';
 	import {
 		Archive,
@@ -148,7 +149,9 @@
 			}}
 			><Settings2 size={18} aria-hidden="true" /><span class="row-name"
 				>{openerLabel(t('export.sheet.settings'))}</span
-			><SurfaceChevron /></button
+			>{#if cloudNeedsAttention()}<span class="attention-dot" aria-hidden="true"></span><span
+					class="sr">{t('cloudSave.attention')}</span
+				>{/if}<SurfaceChevron /></button
 		>
 		<LanguagePicker />
 		<MenuDisclosure sectionKey="more-wardrobe-settings" label={t('toolbar.wardrobeSettings')}>
@@ -282,6 +285,13 @@
 </div>
 
 <style>
+	.attention-dot {
+		flex: none;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--bu-accent);
+	}
 	@container (max-width: 300px) {
 		.wardrobe-status {
 			display: none;

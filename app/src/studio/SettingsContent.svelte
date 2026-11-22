@@ -4,6 +4,8 @@
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { developerModeEnabled } from './developerMode.svelte.ts';
+	import Lazy from './Lazy.svelte';
 	import { getKeyRevision } from '../lib/app.svelte.ts';
 	import { isResettableSection, resetSettings, type ResetScope } from './resetSettings.ts';
 	import { settingsAtDefaults, watchCreationSettings } from './settingsDefaults.svelte.ts';
@@ -13,6 +15,7 @@
 	import {
 		Archive,
 		Clapperboard,
+		Cloud,
 		CodeXml,
 		Download,
 		Info,
@@ -232,6 +235,19 @@
 			]
 		},
 		{
+			id: 'cloud',
+			label: settingsLabels.cloud,
+			icon: Cloud,
+			entries: [
+				{
+					id: 'cloud-save',
+					label: 'cloudSave.title',
+					terms: ['cloudSave.restore.title', 'cloudSave.import.title'],
+					names: ['Google Drive', 'Dropbox']
+				}
+			]
+		},
+		{
 			id: 'trash',
 			label: settingsLabels.trash,
 			icon: Trash,
@@ -262,22 +278,29 @@
 		icon: typeof Settings2;
 		entries: { id: string; label: WhisperKey; terms?: WhisperKey[]; names?: readonly string[] }[];
 	}[];
-	const available = sections.filter(
-		(section) =>
-			!workspaceCopy ||
-			(!isCreationSection(section.id) &&
-				!['pixellab', 'library', 'trash', 'developer'].includes(section.id))
+	// Cloud Save shows only in Developer mode until release, and never in a workspace copy.
+	const available = $derived(
+		sections.filter(
+			(section) =>
+				(section.id !== 'cloud' || (!workspaceCopy && developerModeEnabled())) &&
+				(!workspaceCopy ||
+					(!isCreationSection(section.id) &&
+						!['pixellab', 'library', 'trash', 'developer'].includes(section.id)))
+		)
 	);
 	const groups: SettingsSection[][] = [
 		['pixellab'],
 		['general', 'wardrobe', 'mount'],
 		['characters', 'moves', 'states', 'items'],
-		['export', 'library', 'trash'],
+		['export', 'library', 'cloud', 'trash'],
 		['developer', 'about']
 	];
-	const navigation = groups
-		.map((group) => available.filter(({ id }) => group.includes(id)))
-		.filter((group) => group.length);
+	const navigation = $derived(
+		groups
+			.map((group) => available.filter(({ id }) => group.includes(id)))
+			.filter((group) => group.length)
+	);
+	const loadCloudSave = () => import('./CloudSaveSettings.svelte');
 	const canReset = $derived(!workspaceCopy && !settingsNavigation.fromExport);
 	const wide = new MediaQuery('(min-width: 660px) and (min-height: 520px)');
 	const active = $derived(
@@ -542,6 +565,10 @@
 				{@render exportSettings(targetEntry)}
 			{:else if active.id === 'library'}
 				<LibrarySettings bind:busy={libraryBusy} bind:reviewing={reviewingBackup} />
+			{:else if active.id === 'cloud'}
+				<div data-setting="cloud-save" tabindex="-1">
+					<Lazy load={loadCloudSave} sheet={false} />
+				</div>
 			{:else if active.id === 'trash'}
 				<TrashSettings />
 			{:else if active.id === 'developer'}

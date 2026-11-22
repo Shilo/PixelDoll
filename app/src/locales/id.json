@@ -3008,5 +3008,82 @@
 			"changed": "Karakter ini berubah. Buka lagi Sesuaikan frame untuk meninjau versi terbaru.",
 			"undoFailed": "Perubahan frame tidak dapat dibatalkan."
 		}
+	},
+	"cloudSave": {
+		"title": "Simpan di Cloud",
+		"intro": "Cadangkan simpanan Anda ke Google Drive atau Dropbox milik Anda sendiri dan jaga tetap sinkron di semua perangkat Anda.",
+		"connectGoogle": "Hubungkan Google Drive",
+		"connectDropbox": "Hubungkan Dropbox",
+		"notConfigured": "Versi PixelDoll ini belum memiliki pengaturan masuk ke cloud.",
+		"canceled": "Masuk dibatalkan",
+		"noDriveAccess": "PixelDoll memerlukan izin untuk menyimpan filenya di Google Drive Anda. Hubungkan lagi dan biarkan izin itu tetap dicentang.",
+		"attention": "Simpan di Cloud memerlukan perhatian Anda",
+		"status": {
+			"local": "Tersimpan di perangkat ini",
+			"syncing": "Menyimpan ke cloud…",
+			"synced": "Tersimpan di cloud",
+			"syncedJustNow": "Baru saja tersimpan di cloud",
+			"syncedAgo": "Tersimpan di cloud ({time})",
+			"offline": "Offline, akan disimpan saat kembali online",
+			"reconnect": "Hubungkan lagi agar tetap tersimpan",
+			"conflict": "Memerlukan perhatian Anda",
+			"cloudFull": "Penyimpanan cloud penuh",
+			"failed": "Tidak dapat menyimpan ke cloud",
+			"update": "Perbarui PixelDoll di perangkat ini",
+			"missing": "Folder PixelDoll tidak ada lagi di cloud Anda"
+		},
+		"retry": "Coba lagi",
+		"reconnect": "Hubungkan lagi",
+		"rebuild": "Bangun ulang salinan cloud",
+		"cloudFullHint": "Kosongkan ruang di penyimpanan cloud Anda, lalu coba lagi.",
+		"updateHint": "Salinan cloud Anda disimpan oleh versi PixelDoll yang lebih baru. Perbarui agar tetap bisa menyimpan.",
+		"missingHint": "Bangun ulang dari karakter di perangkat ini, atau putuskan sambungan.",
+		"disconnect": "Putuskan perangkat ini",
+		"disconnectHint": "Perangkat ini berhenti menyimpan ke cloud. Salinan cloud Anda dan perangkat lain tidak terpengaruh.",
+		"manageApps": "Kelola aplikasi terhubung",
+		"everywhere": {
+			"action": "Putuskan di semua perangkat",
+			"title": "Putuskan semua perangkat?",
+			"body": "Ini mengeluarkan PixelDoll dari Google Drive di semua perangkat. Salinan cloud Anda tetap ada, dan setiap perangkat harus terhubung lagi agar tetap bisa menyimpan."
+		},
+		"delete": {
+			"action": "Hapus salinan cloud",
+			"description": "Menghapus permanen folder PixelDoll di cloud Anda.",
+			"title": "Hapus salinan cloud?",
+			"body": "Ini menghapus permanen folder PixelDoll di cloud Anda untuk semua perangkat. Tindakan ini tidak dapat dibatalkan.",
+			"kept": "Pekerjaan Anda di perangkat ini tetap ada.",
+			"confirm": "Konfirmasi"
+		},
+		"conflicts": {
+			"title": "Pilih yang ingin disimpan",
+			"hint": "Ini diubah di dua perangkat secara bersamaan.",
+			"whole": "Seluruh karakter",
+			"unnamed": "Karakter tanpa nama",
+			"keepThis": "Simpan yang ini",
+			"keepOther": "Simpan yang lain",
+			"keepBoth": "Simpan keduanya",
+			"failed": "Pilihan ini tidak dapat disimpan sekarang. Coba lagi sebentar lagi."
+		},
+		"restore": {
+			"title": "Pulihkan versi sebelumnya",
+			"character": "Karakter",
+			"choose": "Pilih karakter",
+			"none": "Belum ada versi sebelumnya.",
+			"unknownTime": "Waktu tidak diketahui",
+			"action": "Pulihkan",
+			"confirmTitle": "Pulihkan versi dari {date}?",
+			"confirmBody": "Menggantikan versi saat ini; versi yang diganti tetap ada di riwayat.",
+			"done": "Versi dipulihkan.",
+			"failed": "Versi ini tidak dapat dipulihkan sekarang. Coba lagi sebentar lagi."
+		},
+		"import": {
+			"title": "Impor salinan yang diunduh",
+			"hint": "Pilih file ZIP folder PixelDoll yang Anda unduh. Hanya karakter yang belum ada di perangkat ini yang ditambahkan.",
+			"added": {
+				"other": "{count} karakter ditambahkan."
+			},
+			"none": "Tidak ada karakter baru yang ditemukan.",
+			"invalid": "File ini bukan folder PixelDoll yang diunduh."
+		}
 	}
 }

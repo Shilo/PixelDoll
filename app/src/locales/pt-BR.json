@@ -3097,5 +3097,83 @@
 			"changed": "Este personagem mudou. Abra Ajustar quadro de novo para revisar a versão mais recente.",
 			"undoFailed": "Não foi possível desfazer a mudança no quadro."
 		}
+	},
+	"cloudSave": {
+		"title": "Salvamento na nuvem",
+		"intro": "Faça backup dos seus salvamentos e mantenha-os sincronizados entre seus dispositivos, no seu próprio Google Drive ou Dropbox.",
+		"connectGoogle": "Conectar Google Drive",
+		"connectDropbox": "Conectar Dropbox",
+		"notConfigured": "Esta versão do PixelDoll ainda não tem login na nuvem configurado.",
+		"canceled": "Login cancelado",
+		"noDriveAccess": "O PixelDoll precisa de permissão para guardar os arquivos dele no seu Google Drive. Conecte de novo e deixe essa permissão marcada.",
+		"attention": "O salvamento na nuvem precisa da sua atenção",
+		"status": {
+			"local": "Salvo neste dispositivo",
+			"syncing": "Salvando na nuvem…",
+			"synced": "Salvo na nuvem",
+			"syncedJustNow": "Salvo na nuvem agora mesmo",
+			"syncedAgo": "Salvo na nuvem {time}",
+			"offline": "Offline; será salvo quando você voltar a ficar online",
+			"reconnect": "Conecte de novo para continuar salvando",
+			"conflict": "Precisa da sua atenção",
+			"cloudFull": "Armazenamento na nuvem cheio",
+			"failed": "Não foi possível salvar na nuvem",
+			"update": "Atualize o PixelDoll neste dispositivo",
+			"missing": "A pasta do PixelDoll sumiu da sua nuvem"
+		},
+		"retry": "Tentar de novo",
+		"reconnect": "Conectar de novo",
+		"rebuild": "Recriar cópia na nuvem",
+		"cloudFullHint": "Libere espaço no seu armazenamento na nuvem e tente de novo.",
+		"updateHint": "Sua cópia na nuvem foi salva por uma versão mais nova do PixelDoll. Atualize para continuar salvando.",
+		"missingHint": "Recrie a pasta com os personagens deste dispositivo ou desconecte.",
+		"disconnect": "Desconectar este dispositivo",
+		"disconnectHint": "Este dispositivo para de salvar na nuvem. Sua cópia na nuvem e os outros dispositivos não são afetados.",
+		"manageApps": "Gerenciar apps conectados",
+		"everywhere": {
+			"action": "Desconectar em todos",
+			"title": "Desconectar todos os dispositivos?",
+			"body": "Isso desconecta o PixelDoll do Google Drive em todos os dispositivos. Sua cópia na nuvem continua lá, e cada dispositivo precisa conectar de novo para continuar salvando."
+		},
+		"delete": {
+			"action": "Excluir cópia na nuvem",
+			"description": "Exclui permanentemente a pasta do PixelDoll na sua nuvem.",
+			"title": "Excluir a cópia na nuvem?",
+			"body": "Isso exclui permanentemente a pasta do PixelDoll na sua nuvem para todos os dispositivos. Não é possível desfazer.",
+			"kept": "Seu trabalho neste dispositivo continua aqui.",
+			"confirm": "Confirmar"
+		},
+		"conflicts": {
+			"title": "Escolha o que manter",
+			"hint": "Isso foi alterado em dois dispositivos ao mesmo tempo.",
+			"whole": "O personagem inteiro",
+			"unnamed": "Personagem sem nome",
+			"keepThis": "Manter este",
+			"keepOther": "Manter o outro",
+			"keepBoth": "Manter os dois",
+			"failed": "Não foi possível salvar esta escolha agora. Tente de novo em instantes."
+		},
+		"restore": {
+			"title": "Restaurar uma versão anterior",
+			"character": "Personagem",
+			"choose": "Escolha um personagem",
+			"none": "Ainda não há versões anteriores.",
+			"unknownTime": "Horário desconhecido",
+			"action": "Restaurar",
+			"confirmTitle": "Restaurar a versão de {date}?",
+			"confirmBody": "Substitui a versão atual; a substituída fica no histórico.",
+			"done": "Versão restaurada.",
+			"failed": "Não foi possível restaurar esta versão agora. Tente de novo em instantes."
+		},
+		"import": {
+			"title": "Importar uma cópia baixada",
+			"hint": "Escolha os arquivos ZIP que você baixou da pasta do PixelDoll. Só são adicionados os personagens que faltam neste dispositivo.",
+			"added": {
+				"one": "{count} personagem adicionado.",
+				"other": "{count} personagens adicionados."
+			},
+			"none": "Nenhum personagem novo foi encontrado.",
+			"invalid": "Estes arquivos não são uma pasta do PixelDoll baixada."
+		}
 	}
 }

@@ -88,3 +88,5 @@ export { default as CopyPlus } from '@lucide/svelte/icons/copy-plus';
 export { default as UsersRound } from '@lucide/svelte/icons/users-round';
 export { default as PawPrint } from '@lucide/svelte/icons/paw-print';
 export { default as Footprints } from '@lucide/svelte/icons/footprints';
+export { default as Cloud } from '@lucide/svelte/icons/cloud';
+export { default as Unplug } from '@lucide/svelte/icons/unplug';

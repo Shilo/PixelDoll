@@ -17,7 +17,7 @@ import { SimProvider } from './providers/sim.ts';
 import { SyncError, type Provider } from './providers/types.ts';
 import { unzip } from '../store/zip.ts';
 import { projectWrites } from '../store/db.ts';
-import { CONNECTED_HINT } from './connection.ts';
+import { CONNECTED_HINT, studioHooks } from './connection.ts';
 
 export interface CloudState {
 	provider?: SignInProvider;
@@ -51,8 +51,18 @@ export const cloudSave = {
 		return () => listeners.delete(listener);
 	}
 };
+/** Connected states the user has to act on. */
+const ATTENTION = new Set<CloudState['status']>([
+	'reconnect',
+	'conflict',
+	'cloud-full',
+	'failed',
+	'update',
+	'missing'
+]);
 function publish(next: Partial<CloudState>, broadcast = true) {
 	state = { ...state, ...next };
+	studioHooks.attention(!!state.provider && (ATTENTION.has(state.status) || state.conflicts > 0));
 	for (const listener of listeners) listener(state);
 	if (broadcast) channel?.postMessage({ state });
 }
@@ -62,7 +72,7 @@ let provider: Provider | undefined;
 let leader = false;
 let running: Promise<unknown> = Promise.resolve();
 let timer: ReturnType<typeof setTimeout> | undefined;
-let applying = false;
+let applying = 0;
 
 const credentials = () => store.get<Credentials>('kv', 'credentials');
 
@@ -80,9 +90,14 @@ function providerFor(c: Credentials): Provider {
 	return c.provider === 'google' ? new GoogleDrive(token) : new Dropbox(token);
 }
 
-/** Run engine work one at a time, in this tab. */
+/** Run engine work one at a time: in this tab, and across tabs (Resolve in one tab while another syncs), because
+ *  every engine call reads and rewrites the same stored state. */
 function serial<T>(work: () => Promise<T>): Promise<T> {
-	const next = running.then(work, work);
+	const locked = () =>
+		globalThis.navigator?.locks
+			? (navigator.locks.request('pixeldoll-sync-state', work) as Promise<T>)
+			: work();
+	const next = running.then(locked, locked);
 	running = next.catch(() => undefined);
 	return next;
 }
@@ -101,7 +116,6 @@ export function syncNow(): Promise<unknown> {
 	return serial(async () => {
 		if (!engine) return;
 		publish({ status: 'syncing' });
-		applying = true;
 		try {
 			const status = await engine.sync();
 			publish({
@@ -111,7 +125,6 @@ export function syncNow(): Promise<unknown> {
 			});
 			await refreshConflicts();
 		} finally {
-			applying = false;
 			schedule(INTERVAL_MS);
 		}
 	});
@@ -123,11 +136,42 @@ function schedule(ms: number) {
 		timer = setTimeout(() => void syncNow(), ms);
 }
 
+/** One syncing tab per browser: the lock passes to another tab when this one closes. */
+let leading = false;
+function lead() {
+	if (leading) return;
+	leading = true;
+	if (globalThis.navigator?.locks)
+		void navigator.locks.request('pixeldoll-sync', () => {
+			leader = true;
+			void syncNow();
+			return new Promise<void>(() => {});
+		});
+	else {
+		leader = true;
+		void syncNow();
+	}
+}
+
 let started = false;
 /** Called once per page: finishes a sign-in that just returned, then syncs if connected. */
 export async function start() {
 	if (started) return;
 	started = true;
+	// Listen first: a tab that is not connected still follows another tab that connects.
+	channel?.addEventListener('message', ({ data }) => {
+		if (data?.state && !leader) publish(data.state, false);
+		if (data?.request && leader) void syncNow();
+		if (data?.connected !== undefined) void reload();
+	});
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'visible') void syncNow();
+		else clearTimeout(timer);
+	});
+	addEventListener('online', () => void syncNow());
+	projectWrites.addEventListener('write', () => {
+		if (!applying) schedule(AFTER_SAVE_MS);
+	});
 	await finishSignIn();
 	// AI-agent automation only (`npm run dev:agent`): connect with a test account's token from the .env when a script set
 	// localStorage 'pixeldoll.agentSync' to google or dropbox. Statically false in every build.
@@ -154,35 +198,27 @@ export async function start() {
 		return;
 	}
 	await connectEngine(saved);
-	channel?.addEventListener('message', ({ data }) => {
-		if (data?.state && !leader) publish(data.state, false);
-		if (data?.request && leader) void syncNow();
-		if (data?.connected !== undefined) void reload();
-	});
-	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible') void syncNow();
-		else clearTimeout(timer);
-	});
-	addEventListener('online', () => void syncNow());
-	projectWrites.addEventListener('write', () => {
-		if (!applying) schedule(AFTER_SAVE_MS);
-	});
-	// One syncing tab per browser: the lock passes to another tab when this one closes.
-	if (globalThis.navigator?.locks)
-		void navigator.locks.request('pixeldoll-sync', () => {
-			leader = true;
-			void syncNow();
-			return new Promise<void>(() => {});
-		});
-	else {
-		leader = true;
-		void syncNow();
-	}
+	lead();
 }
+
+/** The library sync writes through: its own writes do not schedule another sync, the user's writes meanwhile do. */
+const library = {
+	...pixeldollLibrary,
+	async apply(...args: Parameters<typeof pixeldollLibrary.apply>) {
+		applying++;
+		try {
+			return await pixeldollLibrary.apply(...args);
+		} finally {
+			applying--;
+		}
+	}
+};
 
 async function connectEngine(saved: Credentials) {
 	provider = providerFor(saved);
-	engine = new Engine(store, provider, pixeldollLibrary);
+	engine = new Engine(store, provider, library, {
+		account: `${saved.provider}:${saved.email ?? ''}`
+	});
 	hint(true);
 	publish({ provider: saved.provider, email: saved.email, status: 'idle' }, false);
 	await refreshConflicts();
@@ -191,8 +227,10 @@ async function connectEngine(saved: Credentials) {
 /** Another tab connected or disconnected: follow it. */
 async function reload() {
 	const saved = await credentials();
-	if (saved) await connectEngine(saved);
-	else {
+	if (saved) {
+		await connectEngine(saved);
+		lead();
+	} else {
 		engine = provider = undefined;
 		hint(false);
 		publish({ provider: undefined, email: undefined, status: 'local', conflicts: 0 }, false);
@@ -281,6 +319,10 @@ export const resolve = (
 		return done;
 	});
 
+/** A character as it syncs now (device-local fields stripped), to build a resolved body from. */
+export const characterBody = async (record: string) =>
+	(await pixeldollLibrary.read()).bodies.get(record);
+
 export const versions = (record: string) =>
 	serial(async () => (engine ? engine.history(record) : []));
 
@@ -318,9 +360,11 @@ export async function importFolder(zips: Uint8Array[]): Promise<number> {
 			return done;
 		}
 	};
-	const status = await new Engine(new MemoryStore(), folder, counting, false).sync();
+	const reader = new Engine(new MemoryStore(), folder, counting, { writes: false });
+	const status = await reader.sync();
 	if (status !== 'synced' && status !== 'conflict')
-		throw new SyncError(status === 'update' ? 'update' : 'failed', status);
+		// The engine's own explanation, never the bare status name.
+		throw new SyncError(status === 'update' ? 'update' : 'failed', reader.error ?? status);
 	if (engine) schedule(AFTER_SAVE_MS);
 	return applied;
 }
