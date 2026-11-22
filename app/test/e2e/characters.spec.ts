@@ -2553,7 +2553,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await move
 		.getByRole('combobox', { name: 'Motion model', exact: true })
 		.selectOption('skeleton-v3');
-	await page.getByRole('button', { name: /^Generate move/ }).click();
+	await page.getByRole('button', { name: /^Generate / }).click();
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
 	await expect(review).not.toBeVisible();
@@ -2797,7 +2797,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await previousStartFrame.click();
 	await previousStartFrame.click();
 	await expect(moveSheet.getByText('Frame 2 of 4', { exact: true })).toBeVisible();
-	await moveSheet.getByRole('button', { name: /^Generate move/ }).click();
+	await moveSheet.getByRole('button', { name: /^Generate / }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await connect
 		.getByLabel('Paste your Secret API key', { exact: true })
@@ -2968,7 +2968,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(await savedSource()).toBeUndefined();
 	await saveJoints.click();
 	await expect.poll(async () => (await savedSource())?.south?.measured?.[0]?.length).toBe(18);
-	await expect(moveSheet.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
+	await expect(moveSheet.getByRole('button', { name: /^Generate / })).toBeEnabled();
 	expect(errors).toEqual([]);
 });
 

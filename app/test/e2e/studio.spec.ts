@@ -2710,6 +2710,50 @@ test('desktop resize keeps preview controls and customization reachable across p
 	}
 });
 
+test('New item Enhance describes the item alone at its canvas size, then Undo restores it', async ({
+	page,
+	context
+}) => {
+	const enhanced: Record<string, unknown>[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const path = new URL(route.request().url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					subscription: { type: 'generations', status: 'active', generations: 42, total: 100 },
+					credits: { usd: 1 }
+				}
+			});
+		if (path.endsWith('/enhance-pixen-prompt')) {
+			enhanced.push(route.request().postDataJSON());
+			return route.fulfill({
+				json: { enhanced_prompt: 'A battered iron helmet with a riveted brim' }
+			});
+		}
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key');
+	});
+	await openStudio(page, '/#/');
+	await newItem(page, 'Head');
+	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
+	const item = page.getByRole('dialog', { name: 'New item', exact: true });
+	const prompt = item.getByRole('textbox', { name: 'What is it?', exact: true });
+	await prompt.fill('iron helmet');
+	await item.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await expect(prompt).toHaveValue('A battered iron helmet with a riveted brim');
+	expect(enhanced).toHaveLength(1);
+	const body = enhanced[0] as { image_size: { width: number; height: number } };
+	expect(body).toMatchObject({ description: 'iron helmet', no_background: true });
+	expect(body.image_size.width % 4).toBe(0);
+	expect(body.image_size.height % 4).toBe(0);
+	await item.getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(prompt).toHaveValue('iron helmet');
+});
+
 test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Return', async ({
 	page
 }) => {
@@ -3340,7 +3384,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toBeVisible();
 	const move = page.getByRole('dialog', { name: /^(Add a move|Replace move views)$/ });
 	const description = move.getByRole('textbox', { name: /^Describe the (motion|replacement)$/ });
-	const choices = move.getByRole('radiogroup', { name: 'Or choose a move' });
+	const choices = move.getByRole('radiogroup', { name: 'Move', exact: true });
 	const cast = choices.getByRole('radio', { name: 'Cast', exact: true });
 	await expect(description).toBeVisible();
 	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(1);
@@ -3348,25 +3392,26 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await description.focus();
 	await expect(cast).toBeChecked();
 	await description.fill('cast with a wide overhead sweep');
-	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
-	await move.getByRole('button', { name: 'Describe a new move', exact: true }).click();
+	await expect(move.getByRole('button', { name: /^Generate / })).toBeEnabled();
+	await move.getByRole('radio', { name: 'Custom', exact: true }).click();
 	await description.fill('walk');
-	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeDisabled();
+	await expect(move.getByRole('button', { name: /^Generate / })).toBeDisabled();
 	await expect(move.getByText('Directions to redraw')).toHaveCount(0);
 	await expect(move).toContainText('Walk is already a move option.');
 	await description.fill('jumping in place');
-	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
-	await description.press('Tab');
+	await expect(choices.getByRole('radio', { name: 'Custom', exact: true })).toBeChecked();
+	// The move choice sits above the prompt, so it is one Shift+Tab back.
+	await description.press('Shift+Tab');
 	await expect(choices.getByRole('radio').first()).toBeFocused();
 	await expect(description).toHaveValue('jumping in place');
 	await page.keyboard.press('ArrowRight');
 	await expect(choices.getByRole('radio').nth(1)).toBeChecked();
 	await expect(description).not.toHaveValue('');
-	await move.getByRole('button', { name: 'Describe a new move', exact: true }).click();
+	await move.getByRole('radio', { name: 'Custom', exact: true }).click();
 	await description.fill('jumping in place');
 	await description.clear();
-	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeDisabled();
-	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
+	await expect(move.getByRole('button', { name: /^Generate / })).toBeDisabled();
+	await expect(choices.getByRole('radio', { name: 'Custom', exact: true })).toBeChecked();
 	await description.fill('jumping in place');
 	const advanced = move.getByRole('button', { name: /^Advanced/ });
 	await advanced.click();
@@ -3399,10 +3444,8 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(page.locator('.toast')).toContainText('Frame adjusted');
 	await expect(move).not.toContainText('This move may step past');
 	await expect(description).toHaveValue('jumping in place');
-	await expect(move.getByRole('button', { name: /^Generate move/ })).toContainText(
-		'Connect PixelLab'
-	);
-	await move.getByRole('button', { name: /^Generate move/ }).click();
+	await expect(move.getByRole('button', { name: /^Generate / })).toContainText('Connect PixelLab');
+	await move.getByRole('button', { name: /^Generate / }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
 		.getByRole('button', { name: 'Not now', exact: true })
@@ -3411,11 +3454,11 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await expect(description).toHaveValue('jumping in place');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
-	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
+	await expect(choices.getByRole('radio', { name: 'Custom', exact: true })).toBeChecked();
 	await cast.click();
 	await expect(description).toBeEnabled();
 	await expect(description).toHaveValue('cast');
-	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
+	await expect(move.getByRole('button', { name: /^Generate / })).toBeEnabled();
 	await expect(cast).toBeChecked();
 	await expect(advanced).toHaveCount(1);
 	await expect(choices.getByRole('radio', { name: 'Ride', exact: true })).toHaveCount(0);
@@ -5865,7 +5908,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
-	await page.getByRole('radio', { name: 'Cross punch · added', exact: true }).click();
+	await page.getByRole('radio', { name: 'Redraw Cross punch', exact: true }).click();
 	const replacePunch = sheet.getByRole('button', { name: /^Replace Cross punch views/ });
 	await sheet.getByRole('textbox', { name: 'Describe the replacement', exact: true }).fill('');
 	await expect(replacePunch).toBeDisabled();
@@ -5873,7 +5916,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		.getByRole('textbox', { name: 'Describe the replacement', exact: true })
 		.fill('Punch across the body');
 	await expect(replacePunch).toBeEnabled();
-	await sheet.getByRole('radio', { name: 'Idle · added', exact: true }).click();
+	await sheet.getByRole('radio', { name: 'Redraw Idle', exact: true }).click();
 	const replace = sheet.getByRole('button', { name: /^Replace Idle views/ });
 	await expect(
 		sheet.getByRole('textbox', { name: 'Describe the replacement', exact: true })
@@ -5944,12 +5987,12 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(start).not.toContainText('start.png');
 	await startWarning.getByRole('button', { name: 'Continue', exact: true }).click();
 	await expect(start).toContainText('start.png');
-	await sheet.getByRole('button', { name: 'Describe a new move', exact: true }).click();
+	await sheet.getByRole('radio', { name: 'Custom', exact: true }).click();
 	const custom = page.getByRole('textbox', { name: 'Describe the motion', exact: true });
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');
 	const add = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await expect(add.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
+	await expect(add.getByRole('button', { name: /^Generate / })).toBeEnabled();
 	await expect(add.getByText('Directions to redraw')).toHaveCount(0);
 	const loop = add.getByRole('switch', { name: 'Loop', exact: true });
 	await expect(loop).not.toBeChecked();
@@ -6132,7 +6175,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	const fixture = await targetedRepairFixture(page);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	await page.getByRole('radio', { name: 'Walk · added', exact: true }).click();
+	await page.getByRole('radio', { name: 'Redraw Walk', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
 	const east = directions.getByRole('button', { name: 'East direction', exact: true });
@@ -6361,7 +6404,7 @@ test('targeted move replacement names mirrored effects without offering a separa
 	});
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	await page.getByRole('radio', { name: 'Walk · added', exact: true }).click();
+	await page.getByRole('radio', { name: 'Redraw Walk', exact: true }).click();
 	// A redraw starts from its original frame, and Standing stays a real choice away from it.
 	const start = page.getByRole('button', { name: /^Start from: / });
 	await expect(start).toHaveAccessibleName('Start from: Original starting frame');
@@ -7637,7 +7680,7 @@ test('move review gates item selection and shows live estimates without spending
 	});
 	const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(sheet.getByRole('checkbox')).toHaveCount(0);
-	await expect(sheet.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
+	await expect(sheet.getByRole('button', { name: /^Generate / })).toBeEnabled();
 	const seedReview = (seed: number) =>
 		page.evaluate(async (seed) => {
 			const statePath = '/src/studio/state.svelte.ts';

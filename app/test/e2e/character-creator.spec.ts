@@ -439,7 +439,7 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
 	await chooseSkeletonMove(move);
-	await move.getByRole('button', { name: /^Generate move/ }).click();
+	await move.getByRole('button', { name: /^Generate / }).click();
 	await expect(move).not.toContainText('Queued next: Idle');
 	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
@@ -516,7 +516,7 @@ test('a failed required measurement stops the queued idle without paying for an 
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await chooseSkeletonMove(move);
-	await move.getByRole('button', { name: /^Generate move/ }).click();
+	await move.getByRole('button', { name: /^Generate / }).click();
 	try {
 		await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
 		await move.getByRole('radio', { name: 'Walk', exact: true }).click();
@@ -739,7 +739,9 @@ test('V3 enhance connects once, preserves settings, undo restores exactly, and f
 	const enhanceWidth = (await sheet
 		.getByRole('button', { name: 'Enhance', exact: true })
 		.boundingBox())!.width;
-	const copyBefore = await sheet.locator('.editor-toolbar .copy').boundingBox();
+	const copyBefore = await sheet
+		.getByRole('button', { name: 'Copy exact prompt', exact: true })
+		.boundingBox();
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await connect(page);
 	sheet = page.getByRole('dialog', { name: 'New character', exact: true });
@@ -747,7 +749,9 @@ test('V3 enhance connects once, preserves settings, undo restores exactly, and f
 	expect(
 		(await sheet.getByRole('button', { name: 'Undo', exact: true }).boundingBox())!.width
 	).toBe(enhanceWidth);
-	expect(await sheet.locator('.editor-toolbar .copy').boundingBox()).toEqual(copyBefore);
+	expect(
+		await sheet.getByRole('button', { name: 'Copy exact prompt', exact: true }).boundingBox()
+	).toEqual(copyBefore);
 	const enhance = api.calls.filter((c) => c.path === '/v2/enhance-character-v3-prompt');
 	expect(enhance).toHaveLength(1);
 	expect(enhance[0].body).toMatchObject({
@@ -1024,7 +1028,11 @@ for (const viewport of [
 			expect(preview.x).toBeCloseTo(box.x, 0);
 			expect(preview.width).toBeCloseTo(box.width, 0);
 			expect(preview.height).toBeCloseTo(preview.width, 0);
-			expect(tabs.x - (box.x + box.width)).toBeCloseTo(geometry.x - (tabs.x + tabs.width), 0);
+			// The appearance column sits evenly between the reference rail and the size controls.
+			const column = (await sheet
+				.getByRole('textbox', { name: 'Details', exact: true })
+				.boundingBox())!;
+			expect(column.x - (box.x + box.width)).toBeCloseTo(geometry.x - (column.x + column.width), 0);
 			expect(box.y).toBeGreaterThan(heading.y + heading.height);
 		} else {
 			await expect(guide).toBeVisible();
@@ -1283,7 +1291,7 @@ for (const viewport of [
 			await sheet
 				.locator('.prompt-actions > button')
 				.evaluateAll((elements) => elements.map((el) => el.getAttribute('aria-label')))
-		).toEqual(['Prompt help', 'Copy exact prompt']);
+		).toEqual(['Copy exact prompt', 'Enhance']);
 		const toolbar = await sheet.locator('.editor-toolbar').evaluate((el) => {
 			const row = el.getBoundingClientRect();
 			return [...el.querySelectorAll('button')].every((button) => {
@@ -1349,7 +1357,7 @@ test('compact creator toolbar keeps wider fallback-font labels and actions reada
 				);
 			})
 		).toBe(true);
-		for (const label of ['Appearance help', 'Copy details']) {
+		for (const label of ['Appearance help']) {
 			const button = sheet
 				.locator('.editor-toolbar')
 				.getByRole('button', { name: label, exact: true });
@@ -1471,7 +1479,7 @@ function offlineCreation(config: CreationCase) {
 			await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 			await move.getByRole('radio', { name, exact: true }).click();
 			await chooseSkeletonMove(move);
-			await move.getByRole('button', { name: /^Generate move/ }).click();
+			await move.getByRole('button', { name: /^Generate / }).click();
 			await review
 				.getByRole('button', { name: 'Save move', exact: true })
 				.click({ timeout: 120_000 });

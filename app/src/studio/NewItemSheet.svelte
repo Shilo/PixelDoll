@@ -2,6 +2,8 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import Sheet from './Sheet.svelte';
+	import PromptField from './PromptField.svelte';
+	import type { EnhanceSpec } from './promptEnhance.ts';
 	import ReferenceField from './ReferenceField.svelte';
 	import TierNotice from './TierNotice.svelte';
 	import { app } from '../lib/app.svelte.ts';
@@ -136,6 +138,15 @@
 			height: Math.min(256, m.rig.cell.h + 2 * pad)
 		};
 	});
+	// Items are drawn on their own transparent canvas, so Enhance describes them at that canvas size.
+	const ITEM_PROMPT_MAX = 600;
+	const enhanceSpec = $derived<EnhanceSpec>({
+		kind: 'item',
+		width: referenceMax.width,
+		height: referenceMax.height,
+		view: m?.rig.view
+	});
+	const enhanceScope = `item-enhance:${doc.id}:${crypto.randomUUID()}`;
 	// The hand a held category uses, from its own definition (a built-in that holds nothing yet uses its catalog default).
 	const side = $derived.by(() => {
 		const def = slotDef(m, group);
@@ -322,20 +333,26 @@
 				<!-- Always present and only filled while the hint shows: announced once, not on every keystroke. -->
 				<span class="sr" aria-live="polite">{offHandHint ? t('newItem.offHandHint') : ''}</span>
 			</div>
-			<label class="field">
-				<span class="label">{t('newItem.what')}</span>
-				<textarea
-					class="bu-input input"
-					rows="2"
-					bind:value={prompt}
+			<div class="field">
+				<label class="label" for="item-prompt">{t('newItem.what')}</label>
+				<PromptField
+					id="item-prompt"
+					value={prompt}
+					onvalue={(text) => (prompt = text)}
+					spec={enhanceSpec}
+					activity={{ scope: enhanceScope, label: 'Enhance item prompt' }}
+					maxOutput={ITEM_PROMPT_MAX}
+					enhanceDisabled={busy}
+					rows={2}
 					onkeydown={promptKeydown}
-					aria-keyshortcuts="Control+Enter Meta+Enter"
-					aria-describedby="item-submit-hint"
+					keyshortcuts="Control+Enter Meta+Enter"
+					describedby="item-submit-hint"
 					placeholder={t('newItem.placeholder', {
 						idea: g.ideas[0] ? displayMessage(g.ideas[0].caption) : t('newItem.defaultIdea')
 					})}
-					maxlength="300"></textarea>
-			</label>
+					maxlength={ITEM_PROMPT_MAX}
+				/>
+			</div>
 			<p class="faint small" id="item-submit-hint">{t('newItem.shortcut')}</p>
 			<ReferenceField
 				bind:value={reference}

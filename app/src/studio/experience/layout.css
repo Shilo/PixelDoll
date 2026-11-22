@@ -1545,7 +1545,6 @@
 	background: none;
 	padding: 0;
 	gap: 20px;
-	flex-basis: 100%;
 }
 .studio-app .character-sheet .creator-tabs button {
 	flex: 0 0 auto;
@@ -1555,13 +1554,6 @@
 }
 .studio-app .character-sheet .editor-toolbar {
 	gap: 12px;
-}
-.studio-app .character-sheet .prompt-actions {
-	width: 100%;
-	margin-left: 0;
-}
-.studio-app .character-sheet .enhance {
-	margin-left: auto;
 }
 .studio-app .character-sheet .trait-row {
 	display: flex;
@@ -1734,12 +1726,6 @@
 	.studio-app .character-sheet .facing {
 		order: 3;
 		max-width: none;
-	}
-	.studio-app .character-sheet .creator-tabs {
-		flex-basis: auto;
-	}
-	.studio-app .character-sheet .prompt-actions {
-		width: auto;
 	}
 	.studio-app .character-sheet .editor-toolbar {
 		gap: 8px;

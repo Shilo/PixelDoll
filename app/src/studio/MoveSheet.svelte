@@ -4,7 +4,8 @@
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
 	// re-rendered through raw skeleton-v3).
 	import { MediaQuery } from 'svelte/reactivity';
-	import EnhanceField from './EnhanceField.svelte';
+	import PromptField from './PromptField.svelte';
+	import type { EnhanceSpec } from './promptEnhance.ts';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import Help from './Help.svelte';
@@ -113,8 +114,6 @@
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
 	import { ANGLES } from './characterConfig.ts';
 	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert } from './icons.ts';
-	import { api } from '../lib/pixellab/client.ts';
-	import { png, routes, type EnhancedCharacterV3Prompt } from '../lib/pixellab/routes.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import { opaqueBox } from '../lib/rig/normalize.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -1115,88 +1114,28 @@
 			void pickSavedFrame(direction, kind, standingImage, t('moveSheet.sameAsStart'));
 		}
 	}
-	let enhancing = $state(false);
-	let enhanced = $state<{ before: string; after: string }>();
-	const canUndoEnhance = $derived(enhanced?.after === text);
-	async function enhanceMove() {
-		if (enhanced && canUndoEnhance) {
-			text = enhanced.before;
-			enhanced = undefined;
-			return;
-		}
-		const prompt = text;
-		const direction = frameDirection;
-		const project = store.project;
-		const references = frameReference;
-		const image = standingImage;
-		const selectedModel = model;
-		const frameCount = shownFrames;
-		const loop = looping;
-		const source = startFrom;
-		const key = app.key;
-		if (enhancing || !key || !direction || !image || !prompt.trim() || prompt.trim().length > 500)
-			return;
-		const current = () =>
-			!fitLifetime.signal.aborted &&
-			project === store.project &&
-			app.key === key &&
-			frameDirection === direction &&
-			prompt === text &&
-			model === selectedModel &&
-			frameCount === shownFrames &&
-			frameReference === references &&
-			looping === loop &&
-			startFrom === source;
-		enhancing = true;
-		try {
-			const first = references?.start?.base64 ?? (await b64(image));
-			if (!current()) return;
-			const end =
-				selectedModel === 'skeleton-v3'
+	// Enhance reads the frames this move would start (and, when the model takes one, end) on.
+	const enhanceSpec = $derived.by((): EnhanceSpec | null => {
+		const first = frameReference?.start?.base64 ?? standingImage;
+		if (!frameDirection || !first) return null;
+		return {
+			kind: 'motion',
+			first,
+			last:
+				model === 'skeleton-v3'
 					? undefined
 					: moveReferenceEnd(
-							references?.end === undefined ? undefined : { end: references.end?.base64 ?? null },
-							loop,
+							frameReference?.end === undefined
+								? undefined
+								: { end: frameReference.end?.base64 ?? null },
+							looping,
 							first
-						);
-			const request = routes.enhanceAnimationV3Prompt({
-				first_frame: png(first),
-				...(end ? { last_frame: png(end) } : {}),
-				action: prompt.trim(),
-				engine: selectedModel === 'skeleton-v3' ? 'pixminimax' : selectedModel,
-				frame_count: selectedModel === 'skeleton-v3' && m ? moveMotionFrames(m, motion) : frameCount
-			});
-			const result = await api<EnhancedCharacterV3Prompt>(
-				key,
-				request.method,
-				request.path,
-				request.body,
-				AbortSignal.any([fitLifetime.signal, AbortSignal.timeout(120_000)]),
-				{
-					activityScope: `move-enhance:${doc.id}:${crypto.randomUUID()}`,
-					label: 'Enhance animation prompt'
-				}
-			);
-			if (!current()) {
-				toast(message('create.form.settingsChanged'), { tone: 'warning' });
-				return;
-			}
-			if (
-				typeof result?.enhanced_prompt !== 'string' ||
-				!result.enhanced_prompt.trim() ||
-				result.enhanced_prompt.length > 900
-			) {
-				toast(message('create.form.tooLong'), { tone: 'warning' });
-				return;
-			}
-			enhanced = { before: prompt, after: result.enhanced_prompt };
-			text = result.enhanced_prompt;
-		} catch (error) {
-			if (current()) toast(errorMessage(error), { tone: 'warning' });
-		} finally {
-			enhancing = false;
-		}
-	}
+						),
+			engine: model === 'skeleton-v3' ? 'pixminimax' : model,
+			frameCount: model === 'skeleton-v3' && m ? moveMotionFrames(m, motion) : shownFrames
+		};
+	});
+	const enhanceScope = `move-enhance:${doc.id}:${crypto.randomUUID()}`;
 	function navigateFrameTabs(event: KeyboardEvent, direction: DirectionName) {
 		const index = targetDirs.indexOf(direction);
 		const last = targetDirs.length - 1;
@@ -1459,7 +1398,8 @@
 								: !review && preflight.length
 									? 'moveSheet.checkpoint.generateAnyway'
 									: 'moveSheet.checkpoint.generate',
-						{ move: move ? nice(move) : t('moveSheet.submit.move') }
+						// Names the move once one is chosen or under review; a custom prompt is just "move".
+						{ move: review || replace || action ? nice(move) : t('moveSheet.submit.move') }
 					)}
 					{#if needsConnection}<span class="cost">{t('toolbar.connectPixelLab2')}</span>
 					{:else if est}<span class="cost">
@@ -2126,61 +2066,47 @@
 				</div>
 				<div class="move-edit">
 					<div class="field">
-						<label class="label" for="move-description"
-							>{replacing
-								? t('moveSheet.describeReplacement')
-								: t('moveSheet.describeMotion')}</label
-						>
-						<EnhanceField
-							busy={enhancing}
-							undo={canUndoEnhance}
-							disabled={!canUndoEnhance &&
-								(!app.key ||
-									app.keyRejected ||
-									!standingImage ||
-									!text.trim() ||
-									text.trim().length > 500)}
-							cost={t('moves.estimate', { gens: formatNumber(0.05) })}
-							onenhance={() => void enhanceMove()}
-						>
-							<textarea
-								id="move-description"
-								class="bu-input input"
-								value={text}
-								oninput={(event) => inputMotion(event.currentTarget.value)}
-								placeholder={t('moveSheet.describePlaceholder')}
-								aria-describedby="move-description-hint"
-								maxlength="900"
-								rows="3"></textarea>
-						</EnhanceField>
-						<p class="faint small" id="move-description-hint">
-							{t('moveSheet.motionOnly')}
-						</p>
-						{#if action}
-							<button
-								type="button"
-								class="bu-action"
-								data-variant="quiet"
-								onclick={() => chooseAction('')}>{t('moveSheet.describeNew')}</button
-							>
-						{/if}
-					</div>
-					<div class="field">
-						<span class="label" id="act">{t('moveSheet.orChoose')}</span>
+						<span class="label" id="act">{t('common.move')}</span>
 						<div class="chips" role="radiogroup" aria-labelledby="act">
+							<button
+								class="chip"
+								role="radio"
+								aria-checked={!action}
+								tabindex={action && options.includes(action) ? -1 : 0}
+								onclick={() => chooseAction('')}>{t('moveSheet.custom')}</button
+							>
 							{#each options as a (a)}
 								<button
 									class="chip"
 									role="radio"
 									aria-checked={action === a}
-									tabindex={(options.includes(action) ? action : options[0]) === a ? 0 : -1}
+									tabindex={action === a ? 0 : -1}
 									onclick={() => chooseAction(a)}
-									>{#if have.has(a)}<Check size={12} />{/if}{have.has(a)
-										? t('moveSheet.added', { move: nice(a) })
-										: nice(a)}</button
+									>{have.has(a) ? t('moveSheet.redraw', { move: nice(a) }) : nice(a)}</button
 								>
 							{/each}
 						</div>
+					</div>
+					<div class="field">
+						<label class="label" for="move-description"
+							>{replacing
+								? t('moveSheet.describeReplacement')
+								: t('moveSheet.describeMotion')}</label
+						>
+						<PromptField
+							id="move-description"
+							value={text}
+							onvalue={inputMotion}
+							spec={enhanceSpec}
+							activity={{ scope: enhanceScope, label: 'Enhance animation prompt' }}
+							maxOutput={900}
+							placeholder={t('moveSheet.describePlaceholder')}
+							describedby="move-description-hint"
+							maxlength={900}
+						/>
+						<p class="faint small" id="move-description-hint">
+							{t('moveSheet.motionOnly')}
+						</p>
 					</div>
 					{#if replacing}
 						<div class="field">

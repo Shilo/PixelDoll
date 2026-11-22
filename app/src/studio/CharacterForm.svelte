@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { SegmentedControl } from '@shilo/bronze-ui/svelte';
 	import Help from './Help.svelte';
 	import ReferenceField from './ReferenceField.svelte';
@@ -7,14 +7,14 @@
 	import DirectionCompass from './DirectionCompass.svelte';
 	import DirectionPresets from './DirectionPresets.svelte';
 	import { app } from '../lib/app.svelte.ts';
-	import { ApiError } from '../lib/pixellab/client.ts';
-	import { characterEnhanceInput, enhanceCharacter } from './enhanceCharacter.ts';
+	import { characterEnhanceInput } from './enhanceCharacter.ts';
+	import type { EnhanceSpec } from './promptEnhance.ts';
 	import { Copy, Check, ChevronRight } from './icons.ts';
-	import EnhanceField from './EnhanceField.svelte';
+	import PromptField from './PromptField.svelte';
 	import { displayDirectionShort } from './displayDirection.ts';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message as notice, type Message } from '../lib/message.ts';
-	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
+	import { t, type WhisperKey } from 'svelte-whisper';
 	import {
 		autoFrame,
 		BODY_SIZES,
@@ -118,10 +118,9 @@
 		keys[value] ? t(keys[value]) : fallback;
 	let frameInput: HTMLInputElement;
 	let message = $state<Message | string>(''),
-		copied = $state<'details' | 'prompt' | null>(null);
-	let undo = $state<{ target: 'details' | 'prompt'; before: string; after: string } | null>(null);
-	let abort: AbortController | undefined;
-	let alive = true;
+		copied = $state(false);
+	let detailsField = $state<PromptField>();
+	let promptField = $state<PromptField>();
 	const frame = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
 	// Advanced starts open when a reopened draft already changed something there, so no choice is hidden.
 	// It is bound, not set once, so a re-render (a new summary note after a model change) never closes it.
@@ -172,27 +171,35 @@
 	const announcement = $derived(
 		promoted ? t('create.form.ownView', { direction: displayDirectionShort(promoted) }) : ''
 	);
-	const enhanceTarget = $derived(d.tab === 'appearance' ? 'details' : 'prompt');
-	const enhanceCost = $derived(t('moves.estimate', { gens: formatNumber(0.05) }));
 	let editorHelp: { show: () => Promise<void>; hide: () => void };
 	const editorHelpId = $props.id(),
 		bodyErrorId = `${editorHelpId}-body-error`;
 	const editorHelpText = $derived(
 		d.tab === 'appearance' ? t('create.form.appearanceHelp') : t('create.form.promptHelp')
 	);
-	const enhanceInput = () => characterEnhanceInput(d);
-	const canEnhance = (target: 'details' | 'prompt') =>
-		!busy &&
-		!referenceLoading &&
-		!!(target === 'details' ? d.details : d.prompt).trim() &&
-		validBodySize(d.body) &&
-		enhanceInput().description.length <= 2000;
-	const canUndo = (target: 'details' | 'prompt') =>
-		undo?.target === target && undo.after === d.prompt;
+	// Both fields enhance the whole appearance: Details sends the full prompt and keeps only the prose it gets back.
+	const promptSpec = $derived.by((): Extract<EnhanceSpec, { kind: 'character' }> => {
+		const { description: _description, ...input } = characterEnhanceInput(d);
+		return { kind: 'character', input };
+	});
+	const detailsSpec = $derived<EnhanceSpec>({ ...promptSpec, description: d.prompt });
+	const enhanceBlocked = $derived(
+		referenceLoading || !validBodySize(d.body) || d.prompt.length > 2000
+	);
+	function acceptDetails(enhanced: string): string | Message {
+		// The enhancer sees the whole appearance. Its prose improves Details; selected hints remain authoritative.
+		const parsed = { ...d };
+		readPrompt(parsed, enhanced);
+		for (const key of TRAIT_KEYS) writeTrait(parsed, key, UNSET);
+		if (!parsed.details.trim()) return notice('create.form.noDetails');
+		const candidate = { ...d };
+		writeDetails(candidate, parsed.details);
+		if (candidate.prompt.length > 2000) return notice('create.form.tooLong');
+		return parsed.details;
+	}
 	function edited() {
-		undo = null;
 		message = '';
-		copied = null;
+		copied = false;
 	}
 	function details(value: string) {
 		edited();
@@ -200,6 +207,7 @@
 	}
 	function trait(key: Trait, value: string) {
 		edited();
+		detailsField?.clearUndo();
 		writeTrait(d, key, value);
 	}
 	function tabKey(e: KeyboardEvent) {
@@ -215,91 +223,23 @@
 						: 'appearance';
 		document.getElementById(`${d.tab}-tab`)?.focus();
 	}
-	async function copy(target: 'details' | 'prompt') {
+	async function copyPrompt() {
 		try {
-			await navigator.clipboard.writeText(target === 'details' ? d.details : d.prompt);
-			copied = target;
+			await navigator.clipboard.writeText(d.prompt);
+			copied = true;
 			message = '';
 		} catch {
-			if (target === 'prompt') d.tab = 'prompt';
+			d.tab = 'prompt';
 			message = notice('create.form.selectToCopy');
 		}
 	}
-	async function enhance(target: 'details' | 'prompt') {
-		copied = null;
-		if (canUndo(target)) {
-			readPrompt(d, undo!.before);
-			undo = null;
-			message = '';
-			return;
-		}
-		if (!canEnhance(target)) return;
-		if (!app.key) {
-			onconnect(target);
-			return;
-		}
-		const input = enhanceInput(),
-			before = d.prompt;
-		abort = new AbortController();
-		busy = true;
-		message = '';
-		try {
-			const enhanced = await enhanceCharacter(
-				app.key,
-				input,
-				abort.signal,
-				`${enhanceScope}:${target}`
-			);
-			if (!alive) return;
-			if (d.prompt !== before || d.body !== input.image_size.width || d.view !== input.view) {
-				message = notice('create.form.settingsChanged');
-				return;
-			}
-			if (target === 'prompt') readPrompt(d, enhanced);
-			else {
-				// The enhancer sees the whole appearance. Its prose improves Details; selected hints remain authoritative.
-				const parsed = { ...d };
-				readPrompt(parsed, enhanced);
-				for (const key of TRAIT_KEYS) writeTrait(parsed, key, UNSET);
-				if (!parsed.details.trim()) {
-					message = notice('create.form.noDetails');
-					return;
-				}
-				const candidate = { ...d };
-				writeDetails(candidate, parsed.details);
-				if (candidate.prompt.length > 2000) {
-					message = notice('create.form.tooLong');
-					return;
-				}
-				writeDetails(d, parsed.details);
-			}
-			undo = { target, before, after: d.prompt };
-		} catch (e) {
-			if (alive)
-				message =
-					e instanceof ApiError
-						? e.status === 401
-							? notice('create.form.enhanceError.reconnect')
-							: e.status === 402
-								? notice('create.form.enhanceError.credits')
-								: e.status === 0
-									? notice('create.form.enhanceError.noAnswer')
-									: notice('create.form.enhanceError.failedApi')
-						: e instanceof Error
-							? errorMessage(e)
-							: notice('create.form.enhanceError.failed');
-		} finally {
-			if (alive) busy = false;
-		}
-	}
+	// Connecting from Enhance reopens the form; finish the enhancement that asked for the key.
 	onMount(() => {
 		const target = d.enhanceOnConnect;
 		delete d.enhanceOnConnect;
-		if (target && app.key) void enhance(target);
-		return () => {
-			alive = false;
-			abort?.abort();
-		};
+		if (!target || !app.key) return;
+		d.tab = target === 'details' ? 'appearance' : 'prompt';
+		void tick().then(() => (target === 'details' ? detailsField : promptField)?.enhance());
 	});
 </script>
 
@@ -342,30 +282,15 @@
 					onclick={() => (d.tab = 'prompt')}>{t('common.prompt')}</button
 				>
 			</div>
-			<span class="prompt-actions">
-				<Help
-					bind:this={editorHelp}
-					iconOnly
-					tooltipId={editorHelpId}
-					title={d.tab === 'appearance'
-						? t('create.form.appearanceHelpTitle')
-						: t('create.form.promptHelpTitle')}
-					text={editorHelpText}
-				/>
-
-				<button
-					class="bu-action btn icon copy"
-					data-variant="outline"
-					aria-label={d.tab === 'appearance'
-						? t('create.form.copyDetails')
-						: t('create.form.copyPrompt')}
-					title={d.tab === 'appearance'
-						? t('create.form.copyDetails')
-						: t('create.form.copyPrompt')}
-					onclick={() => copy(enhanceTarget)}
-					>{#if copied === enhanceTarget}<Check size={14} />{:else}<Copy size={14} />{/if}</button
-				>
-			</span>
+			<Help
+				bind:this={editorHelp}
+				iconOnly
+				tooltipId={editorHelpId}
+				title={d.tab === 'appearance'
+					? t('create.form.appearanceHelpTitle')
+					: t('create.form.promptHelpTitle')}
+				text={editorHelpText}
+			/>
 		</div>
 		{#if d.tab === 'appearance'}
 			<div
@@ -375,22 +300,24 @@
 				class="editor-panel"
 			>
 				<div class="creator-field">
-					<EnhanceField
-						busy={busy && !canUndo('details')}
-						undo={canUndo('details')}
-						disabled={!canUndo('details') && !canEnhance('details')}
-						cost={enhanceCost}
-						onenhance={() => enhance('details')}
-					>
-						<textarea
-							class="bu-input input details-input"
-							aria-label={t('common.details')}
-							rows="3"
-							maxlength="2000"
-							value={d.details}
-							oninput={(e) => details(e.currentTarget.value)}
-							placeholder={t('create.form.detailsPlaceholder')}></textarea>
-					</EnhanceField>
+					<PromptField
+						bind:this={detailsField}
+						bind:busy
+						class="details-input"
+						label={t('common.details')}
+						copyLabel={t('create.form.copyDetails')}
+						value={d.details}
+						onvalue={details}
+						spec={detailsSpec}
+						accept={acceptDetails}
+						activity={{ scope: `${enhanceScope}:details`, label: 'Enhance character prompt' }}
+						maxOutput={2000}
+						enhanceDisabled={enhanceBlocked}
+						onconnect={() => onconnect('details')}
+						onmessage={(note) => (message = note)}
+						maxlength={2000}
+						placeholder={t('create.form.detailsPlaceholder')}
+					/>
 				</div>
 				{#each TRAIT_KEYS as key (key)}
 					<div class="trait-row">
@@ -417,6 +344,7 @@
 						value={isNudeBase(d) ? 'none' : 'underwear'}
 						onchange={(selection) => {
 							edited();
+							detailsField?.clearUndo();
 							writeNudeBase(d, selection === 'none');
 						}}
 					/>
@@ -431,31 +359,33 @@
 						data-variant="outline"
 						title={t('create.form.copyPrompt')}
 						aria-label={t('create.form.copyPrompt')}
-						onclick={() => copy('prompt')}
-						>{#if copied === 'prompt'}<Check size={14} />{:else}<Copy size={14} />{/if}</button
+						onclick={copyPrompt}
+						>{#if copied}<Check size={14} />{:else}<Copy size={14} />{/if}</button
 					>
 				</div>
 			</div>
 		{:else}
 			<div id="prompt-panel" role="tabpanel" aria-labelledby="prompt-tab" class="editor-panel">
-				<EnhanceField
-					busy={busy && !canUndo('prompt')}
-					undo={canUndo('prompt')}
-					disabled={!canUndo('prompt') && !canEnhance('prompt')}
-					cost={enhanceCost}
-					onenhance={() => enhance('prompt')}
-				>
-					<textarea
-						class="bu-input input exact-input"
-						aria-label={t('create.form.exactPrompt')}
-						value={d.prompt}
-						oninput={(e) => {
-							edited();
-							readPrompt(d, e.currentTarget.value);
-						}}
-						maxlength="2000"
-						spellcheck="false"></textarea>
-				</EnhanceField>
+				<PromptField
+					bind:this={promptField}
+					bind:busy
+					class="exact-input"
+					label={t('create.form.exactPrompt')}
+					copyLabel={t('create.form.copyPrompt')}
+					value={d.prompt}
+					onvalue={(text) => {
+						edited();
+						readPrompt(d, text);
+					}}
+					spec={promptSpec}
+					activity={{ scope: `${enhanceScope}:prompt`, label: 'Enhance character prompt' }}
+					maxOutput={2000}
+					enhanceDisabled={enhanceBlocked}
+					onconnect={() => onconnect('prompt')}
+					onmessage={(note) => (message = note)}
+					maxlength={2000}
+					spellcheck={false}
+				/>
 			</div>
 		{/if}
 		{#if message}<p class="creator-message" role="status">{displayMessage(message)}</p>{/if}
@@ -681,15 +611,13 @@
 	}
 	.editor-toolbar {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
-		justify-content: space-between;
 		gap: 6px;
 		min-height: 36px;
 	}
 	.creator-tabs {
 		display: flex;
-		flex: 1 1 auto;
+		flex: 0 1 auto;
 		min-width: max-content;
 		gap: 3px;
 		padding: 3px;
@@ -712,14 +640,7 @@
 		flex-direction: column;
 		gap: 6px;
 	}
-	.prompt-actions {
-		display: flex;
-		flex: none;
-		align-items: center;
-		gap: 3px;
-		margin-inline-start: auto;
-	}
-	.details-input {
+	:global(.appearance .details-input) {
 		resize: vertical;
 		min-height: 82px;
 		max-height: 160px;
@@ -775,7 +696,7 @@
 		flex: none;
 		color: var(--text-3);
 	}
-	.exact-input {
+	:global(.appearance .exact-input) {
 		min-height: 302px;
 		resize: vertical;
 		line-height: 1.6;
@@ -910,7 +831,7 @@
 		.facing {
 			max-width: none;
 		}
-		.exact-input {
+		:global(.appearance .exact-input) {
 			min-height: 300px;
 		}
 		.prompt-excerpt {
@@ -925,8 +846,7 @@
 	}
 	@media (max-width: 599px), (max-height: 499px), (pointer: coarse) {
 		@container (max-width:400px) {
-			.editor-toolbar :global(.help-title.icon-only),
-			.editor-toolbar .copy {
+			.editor-toolbar :global(.help-title.icon-only) {
 				width: 32px;
 				min-width: 32px;
 			}
