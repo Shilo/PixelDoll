@@ -25,14 +25,13 @@
 			"character": "Personnage",
 			"items": "Objets",
 			"category": "Catégorie",
-			"move": "Mouvement",
-			"directions": "Directions"
+			"move": "Mouvement"
 		},
 		"errors": {
 			"gone": "Cet élément supprimé n'est plus disponible.",
 			"expired": "Les éléments supprimés sont conservés 30 jours. Celui-ci a expiré.",
 			"missingArtwork": "Une partie des images enregistrées de {name} n'est plus sur cet appareil, il ne peut donc pas être restauré.",
-			"full": "Votre navigateur est à court d'espace, rien n'a donc été supprimé. Supprimez définitivement un élément dans Supprimé récemment, puis réessayez.",
+			"full": "Votre navigateur est à court d’espace, rien n’a donc été supprimé. Supprimez définitivement un élément dans Supprimé récemment ; l’espace revient à la fin du travail en cours.",
 			"wrongKind": "Cet élément supprimé appartient à un personnage. Restaurez d’abord le personnage.",
 			"movePresent": "Ce mouvement est déjà sur le personnage.",
 			"moveGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression de ce mouvement, il ne s'aligne donc plus.",
@@ -584,7 +583,7 @@
 		"removeState": "Cela retire l’état et ses images d’objets ajustées de ce personnage. Les mouvements terminés gardent leurs images et leurs sources enregistrées. Il passe dans Supprimé récemment pendant 30 jours.",
 		"labelDeleteMove": "Supprimer l’animation…",
 		"labelDeleteOutfit": "Supprimer la tenue",
-		"thisRemovesTheMoveFromTheBody": "Cela supprime l’animation du corps et de tous les objets. Cette action est irréversible."
+		"thisRemovesTheMoveFromTheBody": "Cela retire le mouvement du corps et de chaque objet. Il passe dans Supprimé récemment pendant 30 jours."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratuit : ne régénère jamais les objets déjà créés.",
@@ -600,7 +599,7 @@
 		"showLabel": "Afficher {label}",
 		"createSlot": "Créer l’emplacement",
 		"builtInSlots": "Emplacements intégrés",
-		"theSlotAndItsItemsAreDeleted": "L’emplacement et ses objets sont supprimés de cet appareil. Les objets sont aussi retirés des tenues qui les utilisaient. Cette action est irréversible.",
+		"theSlotAndItsItemsAreDeleted": "La catégorie et ses objets passent ensemble dans Supprimé récemment pendant 30 jours, et les tenues ne les portent plus.",
 		"undoBringsItBack": "Utilisez « Annuler » pour rétablir cet emplacement.",
 		"labelAddedAtTheEndOfWardrobe": "{label} ajouté à la fin de la Garde-robe.",
 		"valueShownAtTheEndOfWardrobe": "{value} affiché à la fin de la Garde-robe.",

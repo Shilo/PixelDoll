@@ -1,9 +1,25 @@
 import type { Manifest } from '../store/manifest.ts';
+import type { Item } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 import { retainItemQa } from '../items/qa-summary.ts';
 import { baseHashOf, storedCellHashes } from './rig.ts';
 import { stableStringify } from '../image/hash.ts';
 import { assignNewClipExportId } from '../store/identity.ts';
+
+/** Drop every row of one item that belongs to a clip `ids` does not keep. A restored item uses this to meet the moves the
+ *  character still has, instead of bringing back frames for moves deleted since. */
+export function retainItemMoves(item: Item, ids: ReadonlySet<string>): void {
+	for (const layer of item.layers)
+		for (const key of ['cells', 'sheets', 'sourceSheets'] as const)
+			for (const id of Object.keys(layer[key] ?? {})) if (!ids.has(id)) delete layer[key]![id];
+	for (const id of Object.keys(item.baseCut ?? {})) if (!ids.has(id)) delete item.baseCut![id];
+	for (const key of ['coverage', 'pending'] as const)
+		if (item[key]) item[key] = item[key].filter((cell) => ids.has(cell.split('/')[0]));
+	if (item.anchorCell && !ids.has(item.anchorCell.split('/')[0])) delete item.anchorCell;
+	if (item.refit) item.refit = item.refit.filter((note) => ids.has(note.anim));
+	if (item.standing && !ids.has(item.standing)) delete item.standing;
+	retainItemQa(item, (key) => ids.has(key.split('/')[0]));
+}
 
 export async function retainMoves(manifest: Manifest, ids: ReadonlySet<string>): Promise<Manifest> {
 	const result = structuredClone(manifest);
@@ -13,18 +29,7 @@ export async function retainMoves(manifest: Manifest, ids: ReadonlySet<string>):
 	for (const slot of result.slots)
 		if (slot.zOverrides)
 			slot.zOverrides = slot.zOverrides.filter((entry) => !entry.anim || ids.has(entry.anim));
-	for (const item of result.items) {
-		for (const layer of item.layers)
-			for (const key of ['cells', 'sheets', 'sourceSheets'] as const)
-				for (const id of Object.keys(layer[key] ?? {})) if (!ids.has(id)) delete layer[key]![id];
-		for (const id of Object.keys(item.baseCut ?? {})) if (!ids.has(id)) delete item.baseCut![id];
-		for (const key of ['coverage', 'pending'] as const)
-			if (item[key]) item[key] = item[key].filter((cell) => ids.has(cell.split('/')[0]));
-		if (item.anchorCell && !ids.has(item.anchorCell.split('/')[0])) delete item.anchorCell;
-		if (item.refit) item.refit = item.refit.filter((note) => ids.has(note.anim));
-		if (item.standing && !ids.has(item.standing)) delete item.standing;
-		retainItemQa(item, (key) => ids.has(key.split('/')[0]));
-	}
+	for (const item of result.items) retainItemMoves(item, ids);
 	const base = result.items.find((item) => item.id === result.rig.baseItem);
 	if (!base) throw new Error('This character has no base body.');
 	const prior = result.rig.baseHash;

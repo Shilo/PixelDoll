@@ -23,14 +23,13 @@
 			"character": "캐릭터",
 			"items": "아이템",
 			"category": "카테고리",
-			"move": "모션",
-			"directions": "방향"
+			"move": "모션"
 		},
 		"errors": {
 			"gone": "삭제된 항목을 더 이상 사용할 수 없습니다.",
 			"expired": "삭제된 항목은 30일 동안 보관됩니다. 이 항목은 만료되었습니다.",
 			"missingArtwork": "{name}의 저장된 이미지 일부가 이 기기에 없어 복원할 수 없습니다.",
-			"full": "브라우저 공간이 부족하여 아무것도 삭제되지 않았습니다. 최근 삭제됨에서 항목을 영구 삭제한 뒤 다시 시도하세요.",
+			"full": "브라우저 공간이 부족하여 아무것도 삭제되지 않았습니다. 최근 삭제됨에서 영구 삭제하세요. 진행 중인 작업이 끝나면 공간이 돌아옵니다.",
 			"wrongKind": "삭제된 항목은 캐릭터에 속합니다. 먼저 캐릭터를 복원하세요.",
 			"movePresent": "이 모션은 이미 캐릭터에 있습니다.",
 			"moveGeometry": "이 모션을 삭제한 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
@@ -569,7 +568,7 @@
 		"removeState": "이 상태와 여기에 맞춘 아이템 프레임을 캐릭터에서 제거합니다. 완료된 모션의 프레임과 저장된 원본 이미지는 남습니다. 30일 동안 최근 삭제됨으로 이동합니다.",
 		"labelDeleteMove": "동작 삭제…",
 		"labelDeleteOutfit": "코디 삭제",
-		"thisRemovesTheMoveFromTheBody": "몸체와 모든 아이템에서 이 동작이 제거돼요. 되돌릴 수 없어요."
+		"thisRemovesTheMoveFromTheBody": "이 모션을 몸과 모든 아이템에서 제거합니다. 30일 동안 최근 삭제됨으로 이동합니다."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "무료: 이미 만든 아이템은 다시 생성하지 않아요.",
@@ -585,7 +584,7 @@
 		"showLabel": "{label} 표시",
 		"createSlot": "슬롯 만들기",
 		"builtInSlots": "기본 슬롯",
-		"theSlotAndItsItemsAreDeleted": "이 슬롯과 그 아이템이 이 기기에서 함께 삭제되고, 코디에서도 더 이상 착용하지 않아요. 되돌릴 수 없어요.",
+		"theSlotAndItsItemsAreDeleted": "카테고리와 그 아이템은 함께 30일 동안 최근 삭제됨으로 이동하며, 의상에서는 더 이상 착용되지 않습니다.",
 		"undoBringsItBack": "실행 취소하면 되돌아와요.",
 		"labelAddedAtTheEndOfWardrobe": "옷장 끝에 {label} 항목이 추가됐어요.",
 		"valueShownAtTheEndOfWardrobe": "옷장 끝에 {value} 항목이 표시돼요.",

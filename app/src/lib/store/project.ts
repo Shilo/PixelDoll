@@ -11,6 +11,7 @@ import { supportedFormat } from './manifest.ts';
 import { putItem } from '../items/items.ts';
 import { defaultCharacterExportId, newItemExportId } from './identity.ts';
 import { stableStringify } from '../image/hash.ts';
+import { retainItemMoves } from '../rig/moves.ts';
 
 export interface StoredProject {
 	id: string;
@@ -321,6 +322,8 @@ export function restoreRemoved(
 			copy.exportId = newItemExportId(m.items, id);
 		const at = b.items.findIndex((it) => it.id === id);
 		m.items.splice(Math.min(at, m.items.length), 0, copy);
+		// Frames for a move deleted since this item are dead weight: meet the moves the character still has.
+		retainItemMoves(copy, new Set(m.rig.animations.map((clip) => clip.id)));
 		items++;
 	}
 	const back = new Set(wanted.filter((id) => m.items.some((it) => it.id === id)));

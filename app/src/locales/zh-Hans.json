@@ -23,14 +23,13 @@
 			"character": "角色",
 			"items": "物品",
 			"category": "分类",
-			"move": "动作",
-			"directions": "方向"
+			"move": "动作"
 		},
 		"errors": {
 			"gone": "该已删除项目已不可用。",
 			"expired": "已删除项目保留 30 天。此项已过期。",
 			"missingArtwork": "{name} 的部分保存图像已不在本设备上，因此无法恢复。",
-			"full": "浏览器空间不足，因此没有删除任何内容。请在“最近删除”中永久删除一些内容，然后重试。",
+			"full": "浏览器空间不足，因此没有删除任何内容。请在“最近删除”中永久删除一些内容；当前工作完成后空间会释放。",
 			"wrongKind": "该已删除项目属于一个角色。请先恢复该角色。",
 			"movePresent": "该角色已经有这个动作。",
 			"moveGeometry": "删除此动作后，角色的帧尺寸或方向已更改，因此无法再对齐。",
@@ -564,7 +563,7 @@
 		"removeState": "这会从此角色移除该状态及其适配的物品帧。已完成的动作会保留其帧和已保存的源图像。它会移到“最近删除”并保留 30 天。",
 		"labelDeleteMove": "删除动作…",
 		"labelDeleteOutfit": "删除套装",
-		"thisRemovesTheMoveFromTheBody": "这会从身体和所有装备中移除此动作。此操作无法撤销。"
+		"thisRemovesTheMoveFromTheBody": "这会从身体和每个物品上移除该动作。它会移到“最近删除”并保留 30 天。"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "免费：不会重新生成已制作的装备。",
@@ -580,7 +579,7 @@
 		"showLabel": "显示{label}",
 		"createSlot": "创建装备栏",
 		"builtInSlots": "内置装备栏",
-		"theSlotAndItsItemsAreDeleted": "该装备栏及其装备将一起从此设备删除，套装也不再穿戴它们。此操作无法撤销。",
+		"theSlotAndItsItemsAreDeleted": "分类及其物品会一起移到“最近删除”并保留 30 天，服装也不再穿着它们。",
 		"undoBringsItBack": "撤销可将其恢复。",
 		"labelAddedAtTheEndOfWardrobe": "{label}已添加到衣橱末尾。",
 		"valueShownAtTheEndOfWardrobe": "{value}显示在衣橱末尾。",

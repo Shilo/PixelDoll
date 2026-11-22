@@ -25,14 +25,13 @@
 			"character": "Charakter",
 			"items": "Gegenstände",
 			"category": "Kategorie",
-			"move": "Bewegung",
-			"directions": "Richtungen"
+			"move": "Bewegung"
 		},
 		"errors": {
 			"gone": "Dieser gelöschte Eintrag ist nicht mehr verfügbar.",
 			"expired": "Gelöschte Einträge werden 30 Tage lang aufbewahrt. Dieser ist abgelaufen.",
 			"missingArtwork": "Einige gespeicherte Grafiken für {name} sind nicht mehr auf diesem Gerät und können nicht wiederhergestellt werden.",
-			"full": "Dem Browser geht der Speicher aus, daher wurde nichts gelöscht. Löschen Sie etwas in „Zuletzt gelöscht“ endgültig und versuchen Sie es erneut.",
+			"full": "Dem Browser geht der Speicher aus, daher wurde nichts gelöscht. Löschen Sie etwas in „Zuletzt gelöscht“ endgültig; Speicher wird frei, sobald die laufende Arbeit endet.",
 			"wrongKind": "Dieser gelöschte Eintrag gehört zu einem Charakter. Stellen Sie zuerst den Charakter wieder her.",
 			"movePresent": "Diese Bewegung ist bereits auf dem Charakter.",
 			"moveGeometry": "Framegröße oder Richtungen dieses Charakters haben sich seit dem Löschen dieser Bewegung geändert, daher passt sie nicht mehr.",
@@ -587,7 +586,7 @@
 		"removeState": "Entfernt den Zustand und seine angepassten Gegenstandsrahmen von diesem Charakter. Fertige Bewegungen behalten ihre Frames und gespeicherte Quellgrafiken. Er wandert für 30 Tage nach „Zuletzt gelöscht“.",
 		"labelDeleteMove": "Animation löschen…",
 		"labelDeleteOutfit": "Outfit löschen",
-		"thisRemovesTheMoveFromTheBody": "Dadurch wird die Animation vom Grundkörper und von allen Gegenständen entfernt. Das lässt sich nicht rückgängig machen."
+		"thisRemovesTheMoveFromTheBody": "Entfernt die Bewegung vom Körper und von jedem Gegenstand. Sie wandert für 30 Tage nach „Zuletzt gelöscht“."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Kostenlos: Bereits erstellte Gegenstände werden nie neu generiert.",
@@ -603,7 +602,7 @@
 		"showLabel": "{label} einblenden",
 		"createSlot": "Ausrüstungsplatz erstellen",
 		"builtInSlots": "Vorgegebene Ausrüstungsplätze",
-		"theSlotAndItsItemsAreDeleted": "Der Ausrüstungsplatz und alle zugehörigen Gegenstände werden von diesem Gerät gelöscht und aus den Outfits entfernt. Das lässt sich nicht rückgängig machen.",
+		"theSlotAndItsItemsAreDeleted": "Die Kategorie und ihre Gegenstände wandern gemeinsam für 30 Tage nach „Zuletzt gelöscht“, und Outfits tragen sie nicht mehr.",
 		"undoBringsItBack": "Mit „Rückgängig“ holst du ihn zurück.",
 		"labelAddedAtTheEndOfWardrobe": "{label} wurde am Ende der Garderobe hinzugefügt.",
 		"valueShownAtTheEndOfWardrobe": "{value} wird am Ende der Garderobe angezeigt.",

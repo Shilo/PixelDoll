@@ -25,14 +25,13 @@
 			"character": "Karakter",
 			"items": "Öğeler",
 			"category": "Kategori",
-			"move": "Hareket",
-			"directions": "Yönler"
+			"move": "Hareket"
 		},
 		"errors": {
 			"gone": "O silinen öğe artık kullanılamıyor.",
 			"expired": "Silinen öğeler 30 gün saklanır. Bunun süresi doldu.",
 			"missingArtwork": "{name} için kayıtlı görsellerin bir kısmı artık bu cihazda değil, bu yüzden geri yüklenemiyor.",
-			"full": "Tarayıcınızda yer kalmadı, bu yüzden hiçbir şey silinmedi. Son silinenler bölümünde bir şeyi kalıcı olarak silip yeniden deneyin.",
+			"full": "Tarayıcınızda yer kalmadı, bu yüzden hiçbir şey silinmedi. Son silinenler bölümünde bir şeyi kalıcı olarak silin; süren iş bitince yer açılır.",
 			"wrongKind": "O silinen öğe bir karaktere ait. Önce karakteri geri yükleyin.",
 			"movePresent": "Bu hareket zaten karakterde.",
 			"moveGeometry": "Bu hareket silindikten sonra karakterin kare boyutu veya yönleri değişti, bu yüzden artık hizalanamıyor.",
@@ -584,7 +583,7 @@
 		"removeState": "Bu durumu ve ona göre ayarlanmış öğe karelerini karakterden kaldırır. Tamamlanmış hareketler karelerini ve kayıtlı kaynak görsellerini korur. 30 gün boyunca Son silinenler bölümüne taşınır.",
 		"labelDeleteMove": "Animasyonu silin…",
 		"labelDeleteOutfit": "Kıyafeti silin",
-		"thisRemovesTheMoveFromTheBody": "Animasyon gövdeden ve tüm eşyalardan kaldırılır. Bu işlem geri alınamaz."
+		"thisRemovesTheMoveFromTheBody": "Bu hareketi gövdeden ve her öğeden kaldırır. 30 gün boyunca Son silinenler bölümüne taşınır."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Ücretsiz: Daha önce yapılmış eşyalar yeniden üretilmez.",
@@ -600,7 +599,7 @@
 		"showLabel": "Şu yuvayı gösterin: {label}",
 		"createSlot": "Yuva oluşturun",
 		"builtInSlots": "Yerleşik yuvalar",
-		"theSlotAndItsItemsAreDeleted": "Yuva ve içindeki eşyalar bu cihazdan birlikte silinir. Bu eşyalar artık kıyafetlerde kullanılmaz. Bu işlem geri alınamaz.",
+		"theSlotAndItsItemsAreDeleted": "Kategori ve öğeleri birlikte 30 gün boyunca Son silinenler bölümüne taşınır ve kıyafetler artık onları giymez.",
 		"undoBringsItBack": "Geri alarak önceki hâline döndürebilirsiniz.",
 		"labelAddedAtTheEndOfWardrobe": "{label}, Gardırop bölümünün sonuna eklendi.",
 		"valueShownAtTheEndOfWardrobe": "{value}, Gardırop bölümünün sonunda gösteriliyor.",

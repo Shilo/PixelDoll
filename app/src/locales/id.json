@@ -23,14 +23,13 @@
 			"character": "Karakter",
 			"items": "Item",
 			"category": "Kategori",
-			"move": "Gerakan",
-			"directions": "Arah"
+			"move": "Gerakan"
 		},
 		"errors": {
 			"gone": "Item yang dihapus itu tidak lagi tersedia.",
 			"expired": "Item yang dihapus disimpan 30 hari. Yang ini sudah kedaluwarsa.",
 			"missingArtwork": "Sebagian gambar tersimpan untuk {name} tidak lagi ada di perangkat ini, jadi tidak dapat dipulihkan.",
-			"full": "Ruang browser habis, jadi tidak ada yang dihapus. Hapus permanen sesuatu di Baru saja dihapus, lalu coba lagi.",
+			"full": "Ruang browser habis, jadi tidak ada yang dihapus. Hapus permanen sesuatu di Baru saja dihapus; ruang kembali setelah pekerjaan yang berjalan selesai.",
 			"wrongKind": "Item yang dihapus itu milik sebuah karakter. Pulihkan karakternya lebih dulu.",
 			"movePresent": "Gerakan ini sudah ada pada karakter.",
 			"moveGeometry": "Ukuran bingkai atau arah karakter ini berubah sejak gerakan ini dihapus, jadi tidak bisa lagi sejajar.",
@@ -566,7 +565,7 @@
 		"removeState": "Ini menghapus status dan bingkai item yang sudah dipaskan dari karakter ini. Gerakan yang sudah selesai tetap menyimpan bingkainya dan seni sumber tersimpan. Status ini dipindahkan ke Baru saja dihapus selama 30 hari.",
 		"labelDeleteMove": "Hapus animasi…",
 		"labelDeleteOutfit": "Hapus setelan",
-		"thisRemovesTheMoveFromTheBody": "Ini menghapus animasi dari tubuh dan semua item. Tindakan ini tidak dapat diurungkan."
+		"thisRemovesTheMoveFromTheBody": "Ini menghapus gerakan dari tubuh dan setiap item. Gerakan dipindahkan ke Baru saja dihapus selama 30 hari."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: item yang sudah dibuat tidak akan dibuat ulang.",
@@ -582,7 +581,7 @@
 		"showLabel": "Tampilkan {label}",
 		"createSlot": "Buat slot",
 		"builtInSlots": "Slot bawaan",
-		"theSlotAndItsItemsAreDeleted": "Slot dan itemnya dihapus dari perangkat ini sekaligus, dan setelan tidak lagi memakai item tersebut. Tindakan ini tidak dapat diurungkan.",
+		"theSlotAndItsItemsAreDeleted": "Kategori dan itemnya dipindahkan bersama ke Baru saja dihapus selama 30 hari, dan pakaian tidak lagi memakainya.",
 		"undoBringsItBack": "Pilih Urungkan untuk mengembalikannya.",
 		"labelAddedAtTheEndOfWardrobe": "{label} ditambahkan di bagian bawah Lemari.",
 		"valueShownAtTheEndOfWardrobe": "{value} ditampilkan di bagian bawah Lemari.",

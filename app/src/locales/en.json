@@ -25,14 +25,13 @@
 			"character": "Character",
 			"items": "Items",
 			"category": "Category",
-			"move": "Move",
-			"directions": "Directions"
+			"move": "Move"
 		},
 		"errors": {
 			"gone": "That deleted item is no longer available.",
 			"expired": "Deleted items are kept for 30 days. This one has expired.",
 			"missingArtwork": "Some saved artwork for {name} is no longer on this device, so it cannot be restored.",
-			"full": "Your browser is out of space, so nothing was deleted. Permanently delete something in Recently deleted, then try again.",
+			"full": "Your browser is out of space, so nothing was deleted. Permanently delete something in Recently deleted; space returns when current work finishes, so try again then.",
 			"wrongKind": "That deleted item belongs to a character. Restore the character first.",
 			"movePresent": "This move is already on the character.",
 			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
@@ -584,7 +583,7 @@
 		"removeState": "This removes the State and its fitted item frames from this character. Finished Moves keep their frames and any saved source artwork. It moves to Recently deleted for 30 days.",
 		"labelDeleteMove": "Delete move…",
 		"labelDeleteOutfit": "Delete outfit",
-		"thisRemovesTheMoveFromTheBody": "This removes the move from the body and every item. This can't be undone."
+		"thisRemovesTheMoveFromTheBody": "This removes the move from the body and every item. It moves to Recently deleted for 30 days."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",
@@ -600,7 +599,7 @@
 		"showLabel": "Show {label}",
 		"createSlot": "Create slot",
 		"builtInSlots": "Built-in slots",
-		"theSlotAndItsItemsAreDeleted": "The slot and its items are deleted from this device together, and outfits stop wearing them. That can’t be undone.",
+		"theSlotAndItsItemsAreDeleted": "The category and its items move to Recently deleted together for 30 days, and outfits stop wearing them.",
 		"undoBringsItBack": "Undo brings it back.",
 		"labelAddedAtTheEndOfWardrobe": "{label} added at the end of Wardrobe.",
 		"valueShownAtTheEndOfWardrobe": "{value} shown at the end of Wardrobe.",

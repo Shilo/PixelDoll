@@ -15,7 +15,12 @@ import type { Manifest } from '../lib/store/manifest.ts';
 import * as db from '../lib/store/db.ts';
 import { assignNewClipExportId } from '../lib/store/identity.ts';
 import type { StoredProject } from '../lib/store/project.ts';
-import { deletedEntry, keysToPrune, type RecentlyDeleted } from '../lib/store/recently-deleted.ts';
+import {
+	deletedEntry,
+	keysToPrune,
+	quotaError,
+	type RecentlyDeleted
+} from '../lib/store/recently-deleted.ts';
 import { LocalizedError, message } from '../lib/message.ts';
 import { moveLabel } from './model.ts';
 import { sameClipName, withClipWriteLock } from './clipName.ts';
@@ -279,44 +284,49 @@ export async function removeMove(id: string) {
 	await flushSave();
 	const prune = await keysToPrune();
 	let kept: RecentlyDeleted | undefined;
-	await db.update<StoredProject>(
-		'projects',
-		projectId,
-		(record) => {
-			const changed = moveDeletionBlocked(id);
-			if (changed) throw changed;
-			if (doc.id !== projectId)
-				throw new LocalizedError(
-					'The selected character changed.',
-					'moveRemoval.selectedCharacterChanged'
-				);
-			if (!record)
-				throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
-			if (stableStringify(record.manifest) !== version)
-				throw new LocalizedError(
-					'This character changed before the move could be deleted. Try again.',
-					'moveRemoval.concurrentEdit'
-				);
-			record.manifest = manifest;
-			Object.assign(record, retainMoveMetadata(record, ids));
-			record.savedAt = new Date().toISOString();
-			return record;
-		},
-		[],
-		(previous) => {
-			if (!previous?.manifest.rig.animations.some((clip) => clip.id === id)) return undefined;
-			const entry = deletedEntry({
-				kind: 'move',
-				record: previous,
-				name: moveLabel(id),
-				context: previous.manifest.name,
-				scope: { moveId: id }
-			});
-			kept = entry;
-			return { key: entry.id, record: entry };
-		},
-		prune
-	);
+	try {
+		await db.update<StoredProject>(
+			'projects',
+			projectId,
+			(record) => {
+				const changed = moveDeletionBlocked(id);
+				if (changed) throw changed;
+				if (doc.id !== projectId)
+					throw new LocalizedError(
+						'The selected character changed.',
+						'moveRemoval.selectedCharacterChanged'
+					);
+				if (!record)
+					throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
+				if (stableStringify(record.manifest) !== version)
+					throw new LocalizedError(
+						'This character changed before the move could be deleted. Try again.',
+						'moveRemoval.concurrentEdit'
+					);
+				record.manifest = manifest;
+				Object.assign(record, retainMoveMetadata(record, ids));
+				record.savedAt = new Date().toISOString();
+				return record;
+			},
+			[],
+			(previous) => {
+				if (!previous?.manifest.rig.animations.some((clip) => clip.id === id)) return undefined;
+				const entry = deletedEntry({
+					kind: 'move',
+					record: previous,
+					name: moveLabel(id),
+					context: previous.manifest.name,
+					scope: { moveId: id }
+				});
+				kept = entry;
+				return { key: entry.id, record: entry };
+			},
+			prune
+		);
+	} catch (error) {
+		if ((error as DOMException)?.name === 'QuotaExceededError') throw quotaError();
+		throw error;
+	}
 	await refreshRecentlyDeleted();
 	if (doc.id === projectId) {
 		// Quietly: the deleted clip stays undoable from the history as well as the notice.

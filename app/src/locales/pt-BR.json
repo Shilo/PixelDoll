@@ -25,14 +25,13 @@
 			"character": "Personagem",
 			"items": "Itens",
 			"category": "Categoria",
-			"move": "Movimento",
-			"directions": "Direções"
+			"move": "Movimento"
 		},
 		"errors": {
 			"gone": "Esse item excluído não está mais disponível.",
 			"expired": "Itens excluídos ficam guardados por 30 dias. Este expirou.",
 			"missingArtwork": "Parte da arte salva de {name} não está mais neste dispositivo, então não pode ser restaurada.",
-			"full": "O navegador está sem espaço, então nada foi excluído. Exclua algo para sempre em Excluído recentemente e tente de novo.",
+			"full": "O navegador está sem espaço, então nada foi excluído. Exclua algo para sempre em Excluído recentemente; o espaço volta quando o trabalho atual terminar.",
 			"wrongKind": "Esse item excluído pertence a um personagem. Restaure o personagem primeiro.",
 			"movePresent": "Este movimento já está no personagem.",
 			"moveGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que este movimento foi excluído, então ele não se alinha mais.",
@@ -584,7 +583,7 @@
 		"removeState": "Isso remove o estado e seus quadros de itens ajustados deste personagem. Movimentos concluídos mantêm seus quadros e a arte de origem salva. Ele vai para Excluído recentemente por 30 dias.",
 		"labelDeleteMove": "Excluir animação…",
 		"labelDeleteOutfit": "Excluir traje",
-		"thisRemovesTheMoveFromTheBody": "Isso remove a animação do corpo e de todos os itens. Não é possível desfazer essa ação."
+		"thisRemovesTheMoveFromTheBody": "Isso remove o movimento do corpo e de cada item. Ele vai para Excluído recentemente por 30 dias."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Grátis: nunca gera de novo os itens já criados.",
@@ -600,7 +599,7 @@
 		"showLabel": "Mostrar {label}",
 		"createSlot": "Criar espaço",
 		"builtInSlots": "Espaços padrão",
-		"theSlotAndItsItemsAreDeleted": "O espaço e seus itens serão excluídos deste dispositivo, e os trajes deixarão de usar esses itens. Não é possível desfazer essa ação.",
+		"theSlotAndItsItemsAreDeleted": "A categoria e seus itens vão juntos para Excluído recentemente por 30 dias, e as roupas deixam de usá-los.",
 		"undoBringsItBack": "Use Desfazer para trazer de volta.",
 		"labelAddedAtTheEndOfWardrobe": "{label}: novo espaço no fim do guarda-roupa.",
 		"valueShownAtTheEndOfWardrobe": "{value}: agora visível no fim do guarda-roupa.",

@@ -25,14 +25,13 @@
 			"character": "Personaje",
 			"items": "Objetos",
 			"category": "Categoría",
-			"move": "Movimiento",
-			"directions": "Direcciones"
+			"move": "Movimiento"
 		},
 		"errors": {
 			"gone": "Ese elemento eliminado ya no está disponible.",
 			"expired": "Los elementos eliminados se guardan 30 días. Este ha caducado.",
 			"missingArtwork": "Parte del arte guardado de {name} ya no está en este dispositivo, así que no se puede restaurar.",
-			"full": "El navegador se quedó sin espacio, así que no se eliminó nada. Elimina algo para siempre en Eliminado recientemente e inténtalo de nuevo.",
+			"full": "El navegador se quedó sin espacio, así que no se eliminó nada. Elimina algo para siempre en Eliminado recientemente; el espacio vuelve al terminar el trabajo en curso.",
 			"wrongKind": "Ese elemento eliminado pertenece a un personaje. Restaura primero el personaje.",
 			"movePresent": "Este movimiento ya está en el personaje.",
 			"moveGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó este movimiento, así que ya no encaja.",
@@ -587,7 +586,7 @@
 		"removeState": "Esto quita el estado y sus fotogramas de objetos ajustados de este personaje. Los movimientos terminados conservan sus fotogramas y el arte de origen guardado. Pasa a Eliminado recientemente durante 30 días.",
 		"labelDeleteMove": "Eliminar animación…",
 		"labelDeleteOutfit": "Eliminar atuendo",
-		"thisRemovesTheMoveFromTheBody": "Esto quita la animación del cuerpo y de todos los objetos. Esto no se puede deshacer."
+		"thisRemovesTheMoveFromTheBody": "Esto quita el movimiento del cuerpo y de cada objeto. Pasa a Eliminado recientemente durante 30 días."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: nunca vuelve a generar objetos ya creados.",
@@ -603,7 +602,7 @@
 		"showLabel": "Mostrar {label}",
 		"createSlot": "Crear ranura",
 		"builtInSlots": "Ranuras integradas",
-		"theSlotAndItsItemsAreDeleted": "La ranura y sus objetos se eliminan juntos de este dispositivo, y los atuendos dejan de usarlos. Esto no se puede deshacer.",
+		"theSlotAndItsItemsAreDeleted": "La categoría y sus objetos pasan juntos a Eliminado recientemente durante 30 días, y los conjuntos dejan de llevarlos.",
 		"undoBringsItBack": "La opción Deshacer recupera la ranura.",
 		"labelAddedAtTheEndOfWardrobe": "{label} se agregó al final del Armario.",
 		"valueShownAtTheEndOfWardrobe": "{value} se muestra al final del Armario.",

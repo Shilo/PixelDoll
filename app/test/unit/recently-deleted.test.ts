@@ -5,6 +5,7 @@ import {
 	MAX_ENTRIES,
 	RECENTLY_DELETED_PREFIX,
 	deletedEntry,
+	draftCallIds,
 	listEntries,
 	pruneKeys,
 	readEntry
@@ -199,6 +200,93 @@ test('a restored item brings back the hides edge another item had on its categor
 	expect(result.items).toBe(1);
 	expect(rec.manifest.slots.find((slot) => slot.id === 'head')?.wardrobeHidden).toBe(true);
 	expect(rec.manifest.items.find((item) => item.id === 'base')?.hides).toEqual(['head']);
+});
+
+test('a live material link into a deleted item is put back', async () => {
+	const record = await stored();
+	const before: DressedRecord = {
+		...record,
+		manifest: structuredClone(record.manifest),
+		dress: outfit({ body: 'base' })
+	};
+	before.manifest.materials.find((mat) => mat.id === 'base')!.linkTo = 'hat';
+	const rec = withoutHat(structuredClone(before));
+	rec.manifest.materials.find((mat) => mat.id === 'base')!.linkTo = undefined;
+	delete rec.manifest.materials.find((mat) => mat.id === 'base')!.linkTo;
+	const result = restoreRemoved(rec, before, { itemIds: ['hat'] });
+	expect(result.items).toBe(1);
+	expect(rec.manifest.materials.find((mat) => mat.id === 'base')?.linkTo).toBe('hat');
+});
+
+test('a restored item drops frames for a move deleted since', async () => {
+	const project = await equipmentFixture();
+	const record: StoredProject = {
+		id: 'rig-test',
+		savedAt: new Date().toISOString(),
+		manifest: project.manifest,
+		origin: 'studio'
+	};
+	const source = record.manifest;
+	source.rig.animations.push({ ...source.rig.animations[0], id: 'walk' });
+	for (const item of source.items)
+		item.layers[0].cells!.walk = structuredClone(item.layers[0].cells!.rest);
+	const before: DressedRecord = { ...record, manifest: structuredClone(source) };
+	const rec = withoutHat(structuredClone(before));
+	rec.manifest.rig.animations = rec.manifest.rig.animations.filter((clip) => clip.id !== 'walk');
+	const result = restoreRemoved(rec, before, { itemIds: ['hat'] });
+	expect(result.items).toBe(1);
+	expect(
+		rec.manifest.items.find((item) => item.id === 'hat')?.layers[0].cells?.walk
+	).toBeUndefined();
+});
+
+test('a child entry of a restored copy survives its original entry expiring', async () => {
+	const record = await stored();
+	const original = deletedEntry({
+		kind: 'character',
+		record,
+		name: 'Fixture',
+		context: '',
+		scope: {}
+	});
+	const expired = {
+		...original,
+		id: `${RECENTLY_DELETED_PREFIX}old`,
+		deletedAt: new Date(Date.now() - KEEP_MS - 1000).toISOString()
+	};
+	const child = {
+		...deletedEntry({
+			kind: 'items',
+			record,
+			name: 'hat',
+			context: 'Fixture copy',
+			scope: { itemIds: ['hat'] }
+		}),
+		id: `${RECENTLY_DELETED_PREFIX}child`,
+		projectId: 'rig-copy',
+		lineageId: original.lineageId,
+		before: { ...record, id: 'rig-copy' }
+	};
+	// The copy still exists, so its item entry must not be pruned with the original character entry.
+	expect(pruneKeys([expired, child])).toEqual([expired.id]);
+});
+
+test('a deleted draft keeps the ledger ids its results resolve to', async () => {
+	const record = await stored();
+	const entry = deletedEntry({
+		kind: 'character',
+		record,
+		name: 'Fixture',
+		context: '',
+		scope: {},
+		drafts: [
+			{
+				list: 'gens',
+				entry: { draft: { rigId: record.id, calls: [{ recId: 'job-1', old: ['job-0'] }] } }
+			}
+		]
+	});
+	expect(draftCallIds(entry).sort()).toEqual(['job-0', 'job-1']);
 });
 
 test('a deleted move comes back with its clip, item frames and pose records', async () => {

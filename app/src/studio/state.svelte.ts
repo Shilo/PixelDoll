@@ -65,6 +65,8 @@ import {
 	restoreCharacter,
 	restoreMoveEntry,
 	restoreParts,
+	draftCallIds,
+	quotaError,
 	type RecentlyDeleted
 } from '../lib/store/recently-deleted.ts';
 import { incompatibleKind } from '../lib/store/incompatible.ts';
@@ -374,9 +376,18 @@ export function initUi() {
 				void refreshProjects();
 				void refreshRecentlyDeleted();
 				// A restore or delete touched this character's record: re-read it quietly so a stale outfit or outfit list is
-				// never saved over it.
+				// never saved over it. If it is gone, switch away instead of reporting that it could not be opened.
 				if (typeof data.projectId === 'string' && data.projectId === doc.id)
-					void openProject(data.projectId, { quiet: true });
+					void db
+						.get<StoredProject>('projects', data.projectId)
+						.catch(() => undefined)
+						.then(async (record) => {
+							if (record?.manifest) await openProject(data.projectId, { quiet: true });
+							else if (doc.id === data.projectId) {
+								await refreshProjects();
+								await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
+							}
+						});
 				return;
 			}
 			if (
@@ -628,6 +639,8 @@ export const store = new Store();
 /** Entries in Recently deleted, newest first: one per deletion, each restorable after a reload. */
 class DeletedList {
 	entries = $state.raw<RecentlyDeleted[]>([]);
+	/** Read once per session; deletes, restores and the Library panel refresh it after that. */
+	ready = false;
 }
 export const deleted = new DeletedList();
 /** An undo or redo step: the dress state to go back to, and the slot definitions (JSON) right after the step, so applying
@@ -1667,6 +1680,7 @@ export async function refreshRecentlyDeleted(): Promise<void> {
 			values.filter((value) => !stale.includes((value as { id?: string })?.id ?? '')),
 			Date.now()
 		);
+		deleted.ready = true;
 	} catch (error) {
 		console.error('recently deleted', error);
 		deleted.entries = [];
@@ -1686,6 +1700,21 @@ export async function restoreDeleted(id: string): Promise<boolean> {
 			);
 		// The live outfit and slot edits are newer than the record: save them before the restore reads and writes it.
 		await flushSave();
+		if (entry.kind !== 'character') {
+			// A child entry needs its character: say so by name when that character is waiting in the list.
+			const live = await db.get<StoredProject>('projects', entry.projectId).catch(() => undefined);
+			if (!live?.manifest) {
+				const parent = (await readDeleted()).find(
+					(e) => e.kind === 'character' && e.lineageId === entry.lineageId
+				);
+				throw parent
+					? new LocalizedError(
+							'That deleted item belongs to a character. Restore the character first.',
+							'recentlyDeleted.errors.wrongKind'
+						)
+					: new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
+			}
+		}
 		if (entry.kind === 'move') {
 			// The same work that blocks deleting a move can overwrite it while a restore lands.
 			const blocked = deletionBlocked(entry.projectId, 'move');
@@ -1738,7 +1767,11 @@ export async function restoreDeleted(id: string): Promise<boolean> {
 		notifyLibraryChanged(out.id);
 		// Restored drafts are in the record; the list this tab would save next must know about them, or the next draft
 		// change writes the whole list back without them.
-		if (out.drafts) setGens(await readGens());
+		if (out.drafts) {
+			// Keep the live objects for drafts already here: a running attempt must not be replaced under its own run.
+			const live = new Map(gens.map((g) => [g.draft.spec.id, g]));
+			setGens((await readGens()).map((g) => live.get(g.draft.spec.id) ?? g));
+		}
 		toast(
 			message(
 				out.copied
@@ -1790,11 +1823,7 @@ export async function removeProject(id = doc.id): Promise<void> {
 			return { key: entry.id, entry, prune };
 		});
 	} catch (error) {
-		if ((error as DOMException)?.name === 'QuotaExceededError')
-			throw new LocalizedError(
-				'Your browser is out of space, so nothing was deleted. Permanently delete something in Recently deleted, then try again.',
-				'recentlyDeleted.errors.full'
-			);
+		if ((error as DOMException)?.name === 'QuotaExceededError') throw quotaError();
 		throw error;
 	}
 	const deletedDrafts = new Set(
@@ -2176,11 +2205,7 @@ export async function removeItem(itemId: string) {
 			prune
 		);
 	} catch (error) {
-		if ((error as DOMException)?.name === 'QuotaExceededError')
-			throw new LocalizedError(
-				'Your browser is out of space, so nothing was deleted. Permanently delete something in Recently deleted, then try again.',
-				'recentlyDeleted.errors.full'
-			);
+		if ((error as DOMException)?.name === 'QuotaExceededError') throw quotaError();
 		throw error;
 	}
 	await refreshRecentlyDeleted();
@@ -2856,7 +2881,7 @@ function drive() {
 		if (g.phase === 'running') void runGen(g);
 		else if (g.phase === 'review') void evalGen(g);
 	void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
-	void refreshRecentlyDeleted(); // and expired deletions, so an old entry never looks restorable
+	if (!deleted.ready) void refreshRecentlyDeleted(); // once: expired deletions never look restorable
 }
 queue.subscribe((s) => {
 	characterJobsPending = !queue.idle();
@@ -3453,6 +3478,9 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 	await loadGens(); // before the drafts load, `gens` is empty and their records would look unreferenced
 	const drafts = [...gens.map((g) => g.draft), ...(await loadDrafts())];
 	const refs = new Set(drafts.flatMap((d) => d.calls.flatMap((c) => [c.recId, ...c.old])));
+	const projects = await db.all<unknown>('projects');
+	// A deleted character keeps its drafts in its entry: those paid results must survive until the entry goes.
+	for (const entry of listEntries(projects)) for (const id of draftCallIds(entry)) refs.add(id);
 	const flow = !!(
 		heldCreate() ||
 		moving.spec ||
@@ -3463,9 +3491,12 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 	);
 	const cutoff = Date.now() - maxAge;
 	const stateScopes = new Set(
-		(await db.all<StoredProject>('projects')).flatMap(({ stateGeneration: attempt }) =>
-			attempt ? attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index)) : []
-		)
+		projects.flatMap((value) => {
+			const attempt = (value as StoredProject)?.stateGeneration;
+			return attempt
+				? attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index))
+				: [];
+		})
 	);
 	const jobs = await queue.clearFinished(
 		(r) =>
@@ -3696,6 +3727,8 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 			prune
 		);
 	} catch (e) {
+		if ((e as DOMException)?.name === 'QuotaExceededError')
+			return message('recentlyDeleted.errors.full');
 		return message('state.reasonNothingDeleted', { reason: errorMessage(e) });
 	}
 	await refreshRecentlyDeleted();

@@ -60,6 +60,28 @@ export const lineageOf = (record: StoredProject) => record.restoredFrom?.id ?? r
 
 export const entryKey = () => `${RECENTLY_DELETED_PREFIX}${crypto.randomUUID()}`;
 
+/** The ledger record ids a deleted character entry's drafts still need, so pruning never sweeps the paid results they
+ *  resolve to while the entry can still bring the drafts back. */
+export function draftCallIds(entry: RecentlyDeleted): string[] {
+	const out = new Set<string>();
+	const walk = (value: unknown, seen = new Set<object>()): void => {
+		if (!value || typeof value !== 'object' || seen.has(value)) return;
+		seen.add(value);
+		if (Array.isArray(value)) {
+			for (const item of value) walk(item, seen);
+			return;
+		}
+		for (const [key, child] of Object.entries(value)) {
+			if (key === 'recId' && typeof child === 'string') out.add(child);
+			else if (key === 'old' && Array.isArray(child)) {
+				for (const id of child) if (typeof id === 'string') out.add(id);
+			} else walk(child, seen);
+		}
+	};
+	for (const draft of entry.drafts ?? []) walk(draft.entry);
+	return [...out];
+}
+
 /** Build the entry for a deletion. `record` is the character exactly as it was before the delete. */
 export function deletedEntry(o: {
 	kind: DeletedKind;
@@ -164,7 +186,7 @@ function trimBefore(record: StoredProject, kind: DeletedKind, scope: DeletedScop
 						qa: undefined
 					}
 		);
-		m.materials = m.materials.filter((mat) => ids.has(mat.owner));
+		// Materials stay whole: a surviving material may link into one of these, and restore puts that link back.
 	}
 	return trimmed;
 }
@@ -243,9 +265,24 @@ export function pruneKeys(values: readonly unknown[], now = Date.now(), room = 1
 		const at = claimedAt(value);
 		if (at !== undefined && at + KEEP_MS <= now) gone.add(id);
 	}
-	// A child entry is useless without its character, so it leaves with it rather than lingering as an error.
-	const lineages = new Set(doomed.filter((e) => e.kind === 'character').map((e) => e.lineageId));
-	for (const e of all) if (e.kind !== 'character' && lineages.has(e.lineageId)) gone.add(e.id);
+	// A child entry is useless without the character it came from, so it leaves with it rather than lingering as an error.
+	// Only entries of the same saved character: a copy restored under a new key keeps its own children.
+	for (const e of all) {
+		if (e.kind === 'character') continue;
+		if (
+			doomed.some(
+				(d) => d.kind === 'character' && d.projectId === e.projectId && d.lineageId === e.lineageId
+			)
+		)
+			gone.add(e.id);
+	}
+	for (const value of values) {
+		const child = value as { kind?: unknown; projectId?: unknown };
+		if (child?.kind === 'character' || typeof child?.projectId !== 'string') continue;
+		const id = claimedId(value);
+		if (!id || keep.has(id)) continue;
+		if (doomed.some((d) => d.kind === 'character' && d.projectId === child.projectId)) gone.add(id);
+	}
 	return [...gone];
 }
 
@@ -268,8 +305,13 @@ export async function deleteForever(id: string): Promise<void> {
 	if (entry?.kind === 'character')
 		for (const value of values) {
 			const child = readEntry(value);
-			if (child && child.kind !== 'character' && child.lineageId === entry.lineageId)
-				doomed.add(child.id);
+			const loose = value as { kind?: unknown; projectId?: unknown };
+			const projectId = child?.projectId ?? loose?.projectId;
+			const kind = child?.kind ?? loose?.kind;
+			if (kind === 'character' || projectId !== entry.projectId) continue;
+			if (child && child.lineageId !== entry.lineageId) continue;
+			const childId = child?.id ?? claimedId(value);
+			if (childId && childId !== entry.id) doomed.add(childId);
 		}
 	await Promise.all([...doomed].map((key) => db.del('projects', key)));
 }

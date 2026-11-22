@@ -23,14 +23,13 @@
 			"character": "キャラクター",
 			"items": "アイテム",
 			"category": "カテゴリ",
-			"move": "モーション",
-			"directions": "向き"
+			"move": "モーション"
 		},
 		"errors": {
 			"gone": "その削除された項目はもう利用できません。",
 			"expired": "削除した項目は 30 日間保管されます。これは期限切れです。",
 			"missingArtwork": "{name} の保存画像の一部がこのデバイスにないため、復元できません。",
-			"full": "ブラウザの空き容量が不足しているため、何も削除されませんでした。「最近削除したもの」で完全に削除してから、もう一度お試しください。",
+			"full": "ブラウザの空き容量が不足しているため、何も削除されませんでした。「最近削除したもの」で完全に削除してください。進行中の作業が終わると容量が戻ります。",
 			"wrongKind": "その削除された項目はキャラクターに属しています。先にキャラクターを復元してください。",
 			"movePresent": "このモーションはすでにキャラクターにあります。",
 			"moveGeometry": "このモーションを削除した後にキャラクターのフレームサイズまたは向きが変わったため、位置合わせできません。",
@@ -569,7 +568,7 @@
 		"removeState": "このステートと、それに合わせたアイテムのフレームをキャラクターから削除します。完了したモーションのフレームと保存済みの元画像は残ります。30 日間「最近削除したもの」に移動します。",
 		"labelDeleteMove": "モーションを削除…",
 		"labelDeleteOutfit": "コーディネートを削除",
-		"thisRemovesTheMoveFromTheBody": "素体とすべてのアイテムからこのモーションを削除します。この操作は取り消せません。"
+		"thisRemovesTheMoveFromTheBody": "このモーションを体とすべてのアイテムから削除します。30 日間「最近削除したもの」に移動します。"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "無料：作成済みのアイテムを再生成することはありません。",
@@ -585,7 +584,7 @@
 		"showLabel": "{label}を表示",
 		"createSlot": "装備スロットを作成",
 		"builtInSlots": "標準の装備スロット",
-		"theSlotAndItsItemsAreDeleted": "この装備スロットとそのアイテムはまとめてこのデバイスから削除され、コーディネートでも装備されなくなります。この操作は取り消せません。",
+		"theSlotAndItsItemsAreDeleted": "カテゴリとそのアイテムは一緒に 30 日間「最近削除したもの」に移動し、衣装では着用されなくなります。",
 		"undoBringsItBack": "元に戻すと復元できます。",
 		"labelAddedAtTheEndOfWardrobe": "{label}をワードローブの最後に追加しました。",
 		"valueShownAtTheEndOfWardrobe": "{value}をワードローブの最後に表示しました。",
