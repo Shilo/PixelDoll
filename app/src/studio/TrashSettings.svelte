@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { getLocale, t } from 'svelte-whisper';
-	import { TriangleAlert } from './icons.ts';
+	import {
+		Clapperboard,
+		Layers2,
+		PersonStanding,
+		Shirt,
+		Trash,
+		TriangleAlert,
+		UserRound
+	} from './icons.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
@@ -22,12 +30,14 @@
 	let emptyNote = $state<HTMLElement>();
 
 	onMount(() => void refreshRecentlyDeleted());
+
+	/** A type icon stands in for artwork: decoding every entry's cells to draw a thumbnail would cost more than it gives. */
 	const KIND = {
-		character: 'recentlyDeleted.kind.character',
-		item: 'recentlyDeleted.kind.items',
-		category: 'recentlyDeleted.kind.category',
-		move: 'recentlyDeleted.kind.move',
-		state: 'recentlyDeleted.kind.state'
+		character: { key: 'recentlyDeleted.kind.character', icon: UserRound },
+		item: { key: 'recentlyDeleted.kind.items', icon: Shirt },
+		category: { key: 'recentlyDeleted.kind.category', icon: Layers2 },
+		move: { key: 'recentlyDeleted.kind.move', icon: Clapperboard },
+		state: { key: 'recentlyDeleted.kind.state', icon: PersonStanding }
 	} as const;
 	/** A State is a clip like a move; its row says what it was, not how it is stored. */
 	function kindOf(entry: RecentlyDeleted): keyof typeof KIND {
@@ -39,7 +49,7 @@
 		);
 		return clip && clipKind(clip) === 'state' ? 'state' : 'move';
 	}
-	const kindLabel = (entry: RecentlyDeleted) => t(KIND[kindOf(entry)]);
+	const kindLabel = (entry: RecentlyDeleted) => t(KIND[kindOf(entry)].key);
 	const dateOf = (iso: string) =>
 		new Date(iso).toLocaleDateString(getLocale(), { dateStyle: 'medium' });
 
@@ -91,13 +101,17 @@
 <div class="trash-settings" tabindex="-1" bind:this={section}>
 	<p class="bu-muted settings-description">{t('recentlyDeleted.kept')}</p>
 	{#if !deleted.entries.length}
-		<p class="bu-muted settings-description" tabindex="-1" bind:this={emptyNote}>
-			{t('recentlyDeleted.empty')}
-		</p>
+		<div class="trash-empty" tabindex="-1" bind:this={emptyNote}>
+			<Trash size={28} aria-hidden="true" />
+			<p class="bu-muted settings-description">{t('recentlyDeleted.empty')}</p>
+		</div>
 	{:else}
 		<ul class="trash-list">
 			{#each deleted.entries as entry (entry.id)}
-				<li class="trash-row">
+				{@const kind = KIND[kindOf(entry)]}
+				{@const Icon = kind.icon}
+				<li class="trash-row" class:trash-busy={busy === entry.id}>
+					<span class="trash-kind" aria-hidden="true"><Icon size={18} /></span>
 					<div class="trash-text">
 						<span class="trash-name">{entry.name}</span>
 						<span class="bu-muted trash-meta"
@@ -119,7 +133,7 @@
 						<button
 							type="button"
 							class="btn bu-action"
-							data-variant="quiet"
+							data-variant="danger"
 							disabled={!!busy}
 							aria-label={t('recentlyDeleted.deleteForeverNamed', { name: entry.name })}
 							onclick={() => (confirming = entry.id)}>{t('recentlyDeleted.deleteForever')}</button
@@ -160,15 +174,13 @@
 <style>
 	.trash-settings {
 		display: grid;
-		gap: 8px;
 	}
 	.trash-settings:focus {
 		outline: none;
 	}
 	.trash-list {
 		display: grid;
-		gap: 4px;
-		margin: 8px 0 0;
+		margin: 12px 0 0;
 		padding: 0;
 		list-style: none;
 	}
@@ -176,35 +188,79 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		min-height: 44px;
-		padding-block: 6px;
+		gap: 4px 12px;
+		min-height: 56px;
+		padding: 6px 8px;
 		border-block-start: 1px solid var(--bu-line);
+		border-radius: 8px;
+		transition: background-color 120ms ease;
 	}
 	.trash-row:first-child {
 		border-block-start: none;
 	}
+	.trash-row:hover,
+	.trash-row:has(:focus-visible) {
+		background: var(--bu-tile);
+	}
+	.trash-busy {
+		opacity: 0.55;
+	}
+	.trash-kind {
+		flex: none;
+		display: grid;
+		place-items: center;
+		inline-size: 32px;
+		block-size: 32px;
+		border-radius: 8px;
+		background: var(--bu-tile);
+	}
 	.trash-text {
+		flex: 1 1 120px;
+		min-inline-size: 0;
 		display: grid;
 		gap: 2px;
 		min-inline-size: 0;
 	}
 	.trash-name {
-		overflow-wrap: anywhere;
+		font-size: 0.9375rem;
+		font-weight: 500;
+		line-height: 1.35;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.trash-meta {
-		font-size: 0.875em;
+		font-size: 0.8125rem;
+		line-height: 1.35;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.trash-actions {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
+		flex: 1 0 100%;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
 	}
 	.trash-actions .btn {
 		min-inline-size: 0;
 		height: auto;
 		min-height: 44px;
 		padding-block: 6px;
+		white-space: nowrap;
+	}
+	.trash-empty {
+		display: grid;
+		justify-items: center;
+		gap: 10px;
+		padding-block: 32px;
+		text-align: center;
+	}
+	.trash-empty > :global(svg) {
+		opacity: 0.45;
+	}
+	.trash-empty:focus {
+		outline: none;
 	}
 </style>
