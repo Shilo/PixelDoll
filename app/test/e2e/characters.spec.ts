@@ -1104,6 +1104,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 		const menu = page.getByRole('menu', { name: 'Actions for Direction test hero', exact: true });
 		await expect(menu.getByRole('menuitem')).toHaveText([
 			'Details...',
+			'Cost estimate...',
 			'Rename...',
 			'Directions...',
 			'Adjust frame...',
