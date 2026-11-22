@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "非官方应用。"
 	},
 	"characterActions": {
+		"costEstimate": "费用估算…",
 		"adjustFrame": "调整帧…",
 		"directions": "朝向…",
 		"demoDeleteLocked": "演示角色无法删除",
@@ -2842,6 +2843,80 @@
 			"resolveDrafts": "调整帧前，请保留或放弃此角色的装备草稿。",
 			"changed": "此角色已更改。请重新打开“调整帧”查看最新版本。",
 			"undoFailed": "无法撤销帧更改。"
+		}
+	},
+	"costSheet": {
+		"title": "费用估算",
+		"scopeLabel": "估算范围",
+		"scopeAll": "全部",
+		"scopeNew": "新建",
+		"loading": "正在加载角色…",
+		"range": "{low} 至 {high} · {gens}",
+		"basis": {
+			"character": "整个角色，从零计算",
+			"copy": "你添加和更改的部分",
+			"demo": "内置演示",
+			"new": "新角色",
+			"all": {
+				"other": "{n} 个已保存角色"
+			}
+		},
+		"tierOneRates": "{basis} · Tier 1 价格",
+		"spentToGo": "已花费 {spent} · 还需 {toGo}",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "重试次数",
+		"retriesDefault": "默认",
+		"decrease": "减少{name}",
+		"increase": "增加{name}",
+		"moves": "动作",
+		"items": "装备",
+		"states": "状态",
+		"directionCount": {
+			"other": "{n} 个朝向 · 绘制 {drawn} 个"
+		},
+		"tips": {
+			"mirror": "镜像西侧",
+			"held": "{item} 仅用于 {moves}",
+			"trim": "{move} 改为 {frames} 帧",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "重置",
+		"details": "详情",
+		"demoLocked": "演示美术免费。编辑副本即可估算你添加的内容。",
+		"copyNote": "从演示或其他角色复制的美术在这里免费。",
+		"setup": "角色准备",
+		"setupNote": "{frame} px 画框 · 绘制 {drawn} 个视图",
+		"moveCount": {
+			"other": "{n} 个动作"
+		},
+		"itemCount": {
+			"other": "{n} 个设计"
+		},
+		"moveSetting": "{frames} 帧 · {model}",
+		"moveNumber": "动作 {n}",
+		"itemNumber": "装备 {n}",
+		"imported": "已导入",
+		"frames": "帧",
+		"noMoves": "没有动作",
+		"noItems": "没有装备",
+		"showMore": "显示更多",
+		"held": "手持",
+		"copiedRemade": "复制的：为新动作重新制作",
+		"remade": "为新动作重新制作",
+		"fitToMoves": "适配动作",
+		"standingOnly": "仅站立",
+		"allMoves": {
+			"other": "全部 {n} 个动作"
+		},
+		"someMoves": "{n} 个动作中的 {covered} 个",
+		"stateSetting": "{n} · {route}",
+		"flashAsPro": "Pro Flash 按 Pro 计算",
+		"recordedUsage": "已记录用量",
+		"savedArtworkOnly": "仅已保存的美术",
+		"unpriced": {
+			"other": "{n} 次调用价格未知"
 		}
 	}
 }

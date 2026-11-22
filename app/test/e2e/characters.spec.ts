@@ -227,6 +227,17 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(savedActions.locator('svg')).toHaveCount(1);
 	await savedActions.click();
 	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
+	// Cost estimate: opens from the character menu, prices the copy and follows an input change.
+	await page.getByRole('menuitem', { name: 'Cost estimate...', exact: true }).click();
+	const estimate = page.getByRole('dialog', { name: 'Cost estimate', exact: true });
+	const amount = estimate.locator('.amount');
+	await expect(amount).toHaveText(/^\$\d+\.\d\d$/);
+	const before = await amount.textContent();
+	await estimate.getByRole('button', { name: 'Increase Moves', exact: true }).click();
+	await expect(amount).not.toHaveText(before!);
+	await estimate.getByRole('button', { name: 'Done', exact: true }).click();
+	await expect(estimate).toHaveCount(0);
+	await savedActions.click();
 	await page.keyboard.press('Escape');
 	await page
 		.getByRole('button', { name: 'More actions for Adventurer (demo)', exact: true })

@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "Not an official app."
 	},
 	"characterActions": {
+		"costEstimate": "Cost estimate…",
 		"adjustFrame": "Adjust frame…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Demo character can't be deleted",
@@ -2959,6 +2960,86 @@
 			"resolveDrafts": "Keep or dismiss this character’s item drafts before adjusting the frame.",
 			"changed": "This character changed. Reopen Adjust frame to review the latest version.",
 			"undoFailed": "The frame change could not be undone."
+		}
+	},
+	"costSheet": {
+		"title": "Cost estimate",
+		"scopeLabel": "Estimate for",
+		"scopeAll": "All",
+		"scopeNew": "New",
+		"loading": "Loading characters…",
+		"range": "{low} to {high} · {gens}",
+		"basis": {
+			"character": "Whole character, priced from scratch",
+			"copy": "Your additions and changes",
+			"demo": "Bundled demo",
+			"new": "New character",
+			"all": {
+				"one": "{n} saved character",
+				"other": "{n} saved characters"
+			}
+		},
+		"tierOneRates": "{basis} · Tier 1 rates",
+		"spentToGo": "Spent {spent} · {toGo} to go",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "Retries",
+		"retriesDefault": "Default",
+		"decrease": "Decrease {name}",
+		"increase": "Increase {name}",
+		"moves": "Moves",
+		"items": "Items",
+		"states": "States",
+		"directionCount": {
+			"one": "{n} direction · {drawn} drawn",
+			"other": "{n} directions · {drawn} drawn"
+		},
+		"tips": {
+			"mirror": "Mirror west side",
+			"held": "{item} on {moves} only",
+			"trim": "{move} to {frames} frames",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "Reset",
+		"details": "Details",
+		"demoLocked": "Demo art is free. Edit a copy to estimate your additions.",
+		"copyNote": "Art copied from the demo or another character is free here.",
+		"setup": "Character setup",
+		"setupNote": "{frame} px frame · {drawn} drawn views",
+		"moveCount": {
+			"one": "{n} move",
+			"other": "{n} moves"
+		},
+		"itemCount": {
+			"one": "{n} design",
+			"other": "{n} designs"
+		},
+		"moveSetting": "{frames} frames · {model}",
+		"moveNumber": "Move {n}",
+		"itemNumber": "Item {n}",
+		"imported": "Imported",
+		"frames": "Frames",
+		"noMoves": "No moves",
+		"noItems": "No items",
+		"showMore": "Show more",
+		"held": "Held",
+		"copiedRemade": "Copied: remade for new moves",
+		"remade": "Remade for new moves",
+		"fitToMoves": "Fit to moves",
+		"standingOnly": "Standing only",
+		"allMoves": {
+			"one": "{n} move",
+			"other": "All {n} moves"
+		},
+		"someMoves": "{covered} of {n} moves",
+		"stateSetting": "{n} · {route}",
+		"flashAsPro": "Pro Flash priced as Pro",
+		"recordedUsage": "Recorded usage",
+		"savedArtworkOnly": "Saved artwork only",
+		"unpriced": {
+			"one": "{n} unpriced call",
+			"other": "{n} unpriced calls"
 		}
 	}
 }

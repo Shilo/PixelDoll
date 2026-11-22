@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "Keine offizielle App."
 	},
 	"characterActions": {
+		"costEstimate": "Kostenschätzung…",
 		"adjustFrame": "Frame anpassen…",
 		"directions": "Blickrichtungen…",
 		"demoDeleteLocked": "Die Demo-Figur kann nicht gelöscht werden",
@@ -2974,6 +2975,86 @@
 			"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du den Frame anpasst.",
 			"changed": "Diese Figur hat sich geändert. Öffne Frame anpassen erneut, um die neueste Version zu prüfen.",
 			"undoFailed": "Die Frame-Änderung konnte nicht rückgängig gemacht werden."
+		}
+	},
+	"costSheet": {
+		"title": "Kostenschätzung",
+		"scopeLabel": "Schätzung für",
+		"scopeAll": "Alle",
+		"scopeNew": "Neu",
+		"loading": "Figuren werden geladen…",
+		"range": "{low} bis {high} · {gens}",
+		"basis": {
+			"character": "Ganze Figur, von Grund auf berechnet",
+			"copy": "Deine Ergänzungen und Änderungen",
+			"demo": "Mitgelieferte Demo",
+			"new": "Neue Figur",
+			"all": {
+				"one": "{n} gespeicherte Figur",
+				"other": "{n} gespeicherte Figuren"
+			}
+		},
+		"tierOneRates": "{basis} · Preise von Tier 1",
+		"spentToGo": "Ausgegeben {spent} · noch {toGo}",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "Wiederholungen",
+		"retriesDefault": "Standard",
+		"decrease": "{name} verringern",
+		"increase": "{name} erhöhen",
+		"moves": "Animationen",
+		"items": "Gegenstände",
+		"states": "Zustände",
+		"directionCount": {
+			"one": "{n} Blickrichtung · {drawn} gezeichnet",
+			"other": "{n} Blickrichtungen · {drawn} gezeichnet"
+		},
+		"tips": {
+			"mirror": "Westseite spiegeln",
+			"held": "{item} nur bei {moves}",
+			"trim": "{move} auf {frames} Frames",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "Zurücksetzen",
+		"details": "Details",
+		"demoLocked": "Demo-Grafiken sind kostenlos. Bearbeite eine Kopie, um deine Ergänzungen zu schätzen.",
+		"copyNote": "Aus der Demo oder einer anderen Figur kopierte Grafiken sind hier kostenlos.",
+		"setup": "Figur einrichten",
+		"setupNote": "{frame}-px-Frame · {drawn} gezeichnete Ansichten",
+		"moveCount": {
+			"one": "{n} Animation",
+			"other": "{n} Animationen"
+		},
+		"itemCount": {
+			"one": "{n} Design",
+			"other": "{n} Designs"
+		},
+		"moveSetting": "{frames} Frames · {model}",
+		"moveNumber": "Animation {n}",
+		"itemNumber": "Gegenstand {n}",
+		"imported": "Importiert",
+		"frames": "Frames",
+		"noMoves": "Keine Animationen",
+		"noItems": "Keine Gegenstände",
+		"showMore": "Mehr anzeigen",
+		"held": "Gehalten",
+		"copiedRemade": "Kopiert: für neue Animationen neu erstellt",
+		"remade": "Für neue Animationen neu erstellt",
+		"fitToMoves": "An Animationen anpassen",
+		"standingOnly": "Nur Standpose",
+		"allMoves": {
+			"one": "{n} Animation",
+			"other": "Alle {n} Animationen"
+		},
+		"someMoves": "{covered} von {n} Animationen",
+		"stateSetting": "{n} · {route}",
+		"flashAsPro": "Pro Flash wie Pro berechnet",
+		"recordedUsage": "Erfasster Verbrauch",
+		"savedArtworkOnly": "Nur gespeicherte Grafiken",
+		"unpriced": {
+			"one": "{n} Aufruf ohne Preis",
+			"other": "{n} Aufrufe ohne Preis"
 		}
 	}
 }

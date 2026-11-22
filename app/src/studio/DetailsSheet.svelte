@@ -7,7 +7,7 @@
 	import { ui, doc, store } from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
 	import { openSource } from '../lib/dress/project.ts';
-	import { recordedCost } from '../lib/store/generation.ts';
+	import { ownItems, ownProvenance, recordedCost } from '../lib/store/generation.ts';
 	import { displayCost } from './displayCost.ts';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { LocalizedError, type Message } from '../lib/message.ts';
@@ -34,12 +34,10 @@
 	);
 	const base = $derived(m?.items.find((i) => i.id === m!.rig.baseItem));
 	// Items copied from another character were paid for there; counting them here would count them twice.
-	const items = $derived(
-		m?.items.filter((i) => i.id !== m!.rig.baseItem && !i.variantOf && !i.copiedFrom) ?? []
-	);
+	const items = $derived(m ? ownItems(m) : []);
 	const extra = $derived.by(() => {
 		if (!m || !items.length) return [];
-		const all = recordedCost([...(base?.provenance ?? []), ...items.flatMap((i) => i.provenance)]);
+		const all = recordedCost(ownProvenance(m));
 		return [
 			{
 				label: t('detailsSheet.withItems'),

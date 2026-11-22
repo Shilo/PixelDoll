@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "公式アプリではありません。"
 	},
 	"characterActions": {
+		"costEstimate": "コストの見積もり…",
 		"adjustFrame": "フレームを調整…",
 		"directions": "向き…",
 		"demoDeleteLocked": "デモのキャラクターは削除できません",
@@ -2871,6 +2872,80 @@
 			"resolveDrafts": "フレームを調整する前に、このキャラクターのアイテム下書きを保存するか破棄してください。",
 			"changed": "このキャラクターは変更されました。「フレームを調整」を開き直して最新の状態を確認してください。",
 			"undoFailed": "フレームの変更を元に戻せませんでした。"
+		}
+	},
+	"costSheet": {
+		"title": "コストの見積もり",
+		"scopeLabel": "見積もり対象",
+		"scopeAll": "すべて",
+		"scopeNew": "新規",
+		"loading": "キャラクターを読み込んでいます…",
+		"range": "{low}〜{high}・{gens}",
+		"basis": {
+			"character": "キャラクター全体をゼロから計算",
+			"copy": "追加・変更した分",
+			"demo": "同梱のデモ",
+			"new": "新しいキャラクター",
+			"all": {
+				"other": "保存済みキャラクター{n}体"
+			}
+		},
+		"tierOneRates": "{basis}・Tier 1 の料金",
+		"spentToGo": "使用済み {spent}・残り {toGo}",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "やり直し回数",
+		"retriesDefault": "既定",
+		"decrease": "{name}を減らす",
+		"increase": "{name}を増やす",
+		"moves": "モーション",
+		"items": "アイテム",
+		"states": "ステート",
+		"directionCount": {
+			"other": "{n}方向・{drawn}方向を描画"
+		},
+		"tips": {
+			"mirror": "西側を反転で作る",
+			"held": "{item}は{moves}のみ",
+			"trim": "{move}を{frames}フレームに",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "リセット",
+		"details": "詳細",
+		"demoLocked": "デモのアートは無料です。コピーを編集すると追加分を見積もれます。",
+		"copyNote": "デモや他のキャラクターからコピーしたアートは、ここでは無料です。",
+		"setup": "キャラクターの準備",
+		"setupNote": "{frame} px のフレーム・描画ビュー{drawn}個",
+		"moveCount": {
+			"other": "モーション{n}個"
+		},
+		"itemCount": {
+			"other": "デザイン{n}個"
+		},
+		"moveSetting": "{frames}フレーム・{model}",
+		"moveNumber": "モーション {n}",
+		"itemNumber": "アイテム {n}",
+		"imported": "インポート",
+		"frames": "フレーム",
+		"noMoves": "モーションはありません",
+		"noItems": "アイテムはありません",
+		"showMore": "さらに表示",
+		"held": "手持ち",
+		"copiedRemade": "コピー：新しいモーション用に作り直し",
+		"remade": "新しいモーション用に作り直し",
+		"fitToMoves": "合わせるモーション",
+		"standingOnly": "立ちポーズのみ",
+		"allMoves": {
+			"other": "全{n}モーション"
+		},
+		"someMoves": "{n}モーション中{covered}個",
+		"stateSetting": "{n}・{route}",
+		"flashAsPro": "Pro Flash は Pro として計算",
+		"recordedUsage": "記録された使用量",
+		"savedArtworkOnly": "保存済みのアートのみ",
+		"unpriced": {
+			"other": "料金不明の呼び出し{n}件"
 		}
 	}
 }

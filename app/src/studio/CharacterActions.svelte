@@ -5,7 +5,7 @@
 	import type { Snippet } from 'svelte';
 	import { openRename, ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { Compass, Download, Frame, Info, Pencil } from './icons.ts';
+	import { Calculator, Compass, Download, Frame, Info, Pencil } from './icons.ts';
 	import DeleteRow from './DeleteRow.svelte';
 	import RowActions from './RowActions.svelte';
 	import DemoCopyRow from './DemoCopyRow.svelte';
@@ -25,6 +25,21 @@
 				ui.details = id;
 				ui.sheet = 'details';
 			}}><Info size={16} />{openerLabel(t('common.detailsMenu'))}<SurfaceChevron /></button
+		>
+		<button
+			class="row"
+			role="menuitem"
+			onclick={() => {
+				close();
+				document
+					.querySelectorAll<HTMLElement>('[popover]:popover-open')
+					.forEach((popover) => popover.hidePopover());
+				ui.costProject = id;
+				ui.sheet = 'cost';
+			}}
+			><Calculator size={16} aria-hidden="true" />{openerLabel(
+				t('characterActions.costEstimate')
+			)}<SurfaceChevron /></button
 		>
 		{#if !id.startsWith('fixture:')}
 			<button

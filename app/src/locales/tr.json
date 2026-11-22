@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "Resmî bir uygulama değildir."
 	},
 	"characterActions": {
+		"costEstimate": "Maliyet tahmini…",
 		"adjustFrame": "Kareyi ayarla…",
 		"directions": "Yönler…",
 		"demoDeleteLocked": "Demo karakteri silinemez",
@@ -2968,6 +2969,86 @@
 			"resolveDrafts": "Kareyi ayarlamadan önce bu karakterin eşya taslaklarını saklayın veya kapatın.",
 			"changed": "Bu karakter değişti. En son sürümü incelemek için Kareyi ayarla’yı yeniden açın.",
 			"undoFailed": "Kare değişikliği geri alınamadı."
+		}
+	},
+	"costSheet": {
+		"title": "Maliyet tahmini",
+		"scopeLabel": "Tahmin kapsamı",
+		"scopeAll": "Tümü",
+		"scopeNew": "Yeni",
+		"loading": "Karakterler yükleniyor…",
+		"range": "{low} ile {high} arası · {gens}",
+		"basis": {
+			"character": "Karakterin tamamı, sıfırdan hesaplandı",
+			"copy": "Eklemeleriniz ve değişiklikleriniz",
+			"demo": "Hazır demo",
+			"new": "Yeni karakter",
+			"all": {
+				"one": "Kayıtlı karakter: {n}",
+				"other": "Kayıtlı karakter: {n}"
+			}
+		},
+		"tierOneRates": "{basis} · Tier 1 fiyatları",
+		"spentToGo": "Harcanan {spent} · kalan {toGo}",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "Yeniden denemeler",
+		"retriesDefault": "Varsayılan",
+		"decrease": "Azaltın: {name}",
+		"increase": "Artırın: {name}",
+		"moves": "Animasyonlar",
+		"items": "Eşyalar",
+		"states": "Durumlar",
+		"directionCount": {
+			"one": "Yön: {n} · çizilen: {drawn}",
+			"other": "Yön: {n} · çizilen: {drawn}"
+		},
+		"tips": {
+			"mirror": "Batı tarafını yansıtın",
+			"held": "{item}: yalnızca {moves}",
+			"trim": "{move}: {frames} kare",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "Sıfırlayın",
+		"details": "Ayrıntılar",
+		"demoLocked": "Demo görselleri ücretsizdir. Eklemelerinizi tahmin etmek için bir kopyayı düzenleyin.",
+		"copyNote": "Demodan veya başka bir karakterden kopyalanan görseller burada ücretsizdir.",
+		"setup": "Karakter kurulumu",
+		"setupNote": "Kare boyutu: {frame} px · çizilen görünüm: {drawn}",
+		"moveCount": {
+			"one": "Animasyon: {n}",
+			"other": "Animasyon: {n}"
+		},
+		"itemCount": {
+			"one": "Tasarım: {n}",
+			"other": "Tasarım: {n}"
+		},
+		"moveSetting": "Kare: {frames} · {model}",
+		"moveNumber": "Animasyon {n}",
+		"itemNumber": "Eşya {n}",
+		"imported": "İçe aktarıldı",
+		"frames": "Kareler",
+		"noMoves": "Animasyon yok",
+		"noItems": "Eşya yok",
+		"showMore": "Daha fazla gösterin",
+		"held": "Elde tutulan",
+		"copiedRemade": "Kopya: yeni animasyonlar için yeniden yapılır",
+		"remade": "Yeni animasyonlar için yeniden yapılır",
+		"fitToMoves": "Animasyonlara uydurun",
+		"standingOnly": "Yalnızca ayakta",
+		"allMoves": {
+			"one": "Animasyon: {n}",
+			"other": "Tüm animasyonlar: {n}"
+		},
+		"someMoves": "Animasyon: {covered}/{n}",
+		"stateSetting": "{n} · {route}",
+		"flashAsPro": "Pro Flash, Pro olarak hesaplandı",
+		"recordedUsage": "Kayıtlı kullanım",
+		"savedArtworkOnly": "Yalnızca kayıtlı görseller",
+		"unpriced": {
+			"one": "Fiyatı bilinmeyen çağrı: {n}",
+			"other": "Fiyatı bilinmeyen çağrı: {n}"
 		}
 	}
 }

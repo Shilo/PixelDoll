@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "No es una app oficial."
 	},
 	"characterActions": {
+		"costEstimate": "Estimación de costo…",
 		"adjustFrame": "Ajustar marco…",
 		"directions": "Direcciones…",
 		"demoDeleteLocked": "El personaje de la demo no se puede eliminar",
@@ -2982,6 +2983,86 @@
 			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de ajustar el marco.",
 			"changed": "Este personaje cambió. Vuelve a abrir Ajustar marco para revisar la versión más reciente.",
 			"undoFailed": "No se pudo deshacer el cambio del marco."
+		}
+	},
+	"costSheet": {
+		"title": "Estimación de costo",
+		"scopeLabel": "Estimar para",
+		"scopeAll": "Todos",
+		"scopeNew": "Nuevo",
+		"loading": "Cargando personajes…",
+		"range": "{low} a {high} · {gens}",
+		"basis": {
+			"character": "Personaje completo, calculado desde cero",
+			"copy": "Tus añadidos y cambios",
+			"demo": "Demo incluida",
+			"new": "Personaje nuevo",
+			"all": {
+				"one": "{n} personaje guardado",
+				"other": "{n} personajes guardados"
+			}
+		},
+		"tierOneRates": "{basis} · precios de Tier 1",
+		"spentToGo": "Gastado {spent} · faltan {toGo}",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "Reintentos",
+		"retriesDefault": "Predeterminado",
+		"decrease": "Reducir {name}",
+		"increase": "Aumentar {name}",
+		"moves": "Animaciones",
+		"items": "Objetos",
+		"states": "Estados",
+		"directionCount": {
+			"one": "{n} dirección · {drawn} dibujadas",
+			"other": "{n} direcciones · {drawn} dibujadas"
+		},
+		"tips": {
+			"mirror": "Reflejar el lado oeste",
+			"held": "{item} solo en {moves}",
+			"trim": "{move} a {frames} fotogramas",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "Restablecer",
+		"details": "Detalles",
+		"demoLocked": "El arte de la demo es gratis. Edita una copia para estimar tus añadidos.",
+		"copyNote": "El arte copiado de la demo o de otro personaje es gratis aquí.",
+		"setup": "Preparación del personaje",
+		"setupNote": "Marco de {frame} px · {drawn} vistas dibujadas",
+		"moveCount": {
+			"one": "{n} animación",
+			"other": "{n} animaciones"
+		},
+		"itemCount": {
+			"one": "{n} diseño",
+			"other": "{n} diseños"
+		},
+		"moveSetting": "{frames} fotogramas · {model}",
+		"moveNumber": "Animación {n}",
+		"itemNumber": "Objeto {n}",
+		"imported": "Importada",
+		"frames": "Fotogramas",
+		"noMoves": "Sin animaciones",
+		"noItems": "Sin objetos",
+		"showMore": "Mostrar más",
+		"held": "En la mano",
+		"copiedRemade": "Copiado: se rehace para animaciones nuevas",
+		"remade": "Se rehace para animaciones nuevas",
+		"fitToMoves": "Ajustar a las animaciones",
+		"standingOnly": "Solo de pie",
+		"allMoves": {
+			"one": "{n} animación",
+			"other": "Las {n} animaciones"
+		},
+		"someMoves": "{covered} de {n} animaciones",
+		"stateSetting": "{n} · {route}",
+		"flashAsPro": "Pro Flash calculado como Pro",
+		"recordedUsage": "Uso registrado",
+		"savedArtworkOnly": "Solo arte guardado",
+		"unpriced": {
+			"one": "{n} llamada sin precio",
+			"other": "{n} llamadas sin precio"
 		}
 	}
 }

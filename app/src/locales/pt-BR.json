@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "Este não é um app oficial."
 	},
 	"characterActions": {
+		"costEstimate": "Estimativa de custo…",
 		"adjustFrame": "Ajustar quadro…",
 		"directions": "Direções…",
 		"demoDeleteLocked": "Não é possível excluir o personagem da demo",
@@ -2988,6 +2989,86 @@
 			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de ajustar o quadro.",
 			"changed": "Este personagem mudou. Abra Ajustar quadro de novo para revisar a versão mais recente.",
 			"undoFailed": "Não foi possível desfazer a mudança no quadro."
+		}
+	},
+	"costSheet": {
+		"title": "Estimativa de custo",
+		"scopeLabel": "Estimar para",
+		"scopeAll": "Todos",
+		"scopeNew": "Novo",
+		"loading": "Carregando personagens…",
+		"range": "{low} a {high} · {gens}",
+		"basis": {
+			"character": "Personagem inteiro, calculado do zero",
+			"copy": "Suas adições e mudanças",
+			"demo": "Demo incluída",
+			"new": "Novo personagem",
+			"all": {
+				"one": "{n} personagem salvo",
+				"other": "{n} personagens salvos"
+			}
+		},
+		"tierOneRates": "{basis} · preços do Tier 1",
+		"spentToGo": "Gasto {spent} · faltam {toGo}",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "Novas tentativas",
+		"retriesDefault": "Padrão",
+		"decrease": "Diminuir {name}",
+		"increase": "Aumentar {name}",
+		"moves": "Animações",
+		"items": "Itens",
+		"states": "Estados",
+		"directionCount": {
+			"one": "{n} direção · {drawn} desenhadas",
+			"other": "{n} direções · {drawn} desenhadas"
+		},
+		"tips": {
+			"mirror": "Espelhar o lado oeste",
+			"held": "{item} só em {moves}",
+			"trim": "{move} com {frames} quadros",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "Restaurar",
+		"details": "Detalhes",
+		"demoLocked": "A arte da demo é grátis. Edite uma cópia para estimar suas adições.",
+		"copyNote": "A arte copiada da demo ou de outro personagem é grátis aqui.",
+		"setup": "Preparação do personagem",
+		"setupNote": "Quadro de {frame} px · {drawn} vistas desenhadas",
+		"moveCount": {
+			"one": "{n} animação",
+			"other": "{n} animações"
+		},
+		"itemCount": {
+			"one": "{n} design",
+			"other": "{n} designs"
+		},
+		"moveSetting": "{frames} quadros · {model}",
+		"moveNumber": "Animação {n}",
+		"itemNumber": "Item {n}",
+		"imported": "Importada",
+		"frames": "Quadros",
+		"noMoves": "Nenhuma animação",
+		"noItems": "Nenhum item",
+		"showMore": "Mostrar mais",
+		"held": "Na mão",
+		"copiedRemade": "Copiado: refeito para novas animações",
+		"remade": "Refeito para novas animações",
+		"fitToMoves": "Ajustar às animações",
+		"standingOnly": "Só em pé",
+		"allMoves": {
+			"one": "{n} animação",
+			"other": "Todas as {n} animações"
+		},
+		"someMoves": "{covered} de {n} animações",
+		"stateSetting": "{n} · {route}",
+		"flashAsPro": "Pro Flash calculado como Pro",
+		"recordedUsage": "Uso registrado",
+		"savedArtworkOnly": "Só arte salva",
+		"unpriced": {
+			"one": "{n} chamada sem preço",
+			"other": "{n} chamadas sem preço"
 		}
 	}
 }

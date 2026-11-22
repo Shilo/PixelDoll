@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "공식 앱이 아니에요."
 	},
 	"characterActions": {
+		"costEstimate": "비용 예상…",
 		"adjustFrame": "프레임 조정…",
 		"directions": "방향…",
 		"demoDeleteLocked": "데모 캐릭터는 삭제할 수 없어요",
@@ -2861,6 +2862,80 @@
 			"resolveDrafts": "프레임을 조정하기 전에 이 캐릭터의 아이템 초안을 유지하거나 버리세요.",
 			"changed": "이 캐릭터가 바뀌었어요. 프레임 조정을 다시 열어 최신 버전을 확인하세요.",
 			"undoFailed": "프레임 변경을 되돌리지 못했어요."
+		}
+	},
+	"costSheet": {
+		"title": "비용 예상",
+		"scopeLabel": "예상 대상",
+		"scopeAll": "전체",
+		"scopeNew": "새로 만들기",
+		"loading": "캐릭터를 불러오는 중…",
+		"range": "{low}~{high} · {gens}",
+		"basis": {
+			"character": "캐릭터 전체를 처음부터 계산",
+			"copy": "추가하고 바꾼 부분",
+			"demo": "기본 제공 데모",
+			"new": "새 캐릭터",
+			"all": {
+				"other": "저장된 캐릭터 {n}개"
+			}
+		},
+		"tierOneRates": "{basis} · Tier 1 요금",
+		"spentToGo": "사용 {spent} · 남은 비용 {toGo}",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "재시도",
+		"retriesDefault": "기본값",
+		"decrease": "{name} 줄이기",
+		"increase": "{name} 늘리기",
+		"moves": "동작",
+		"items": "아이템",
+		"states": "상태",
+		"directionCount": {
+			"other": "방향 {n}개 · {drawn}개 그림"
+		},
+		"tips": {
+			"mirror": "서쪽 방향 반전",
+			"held": "{item}: {moves}에만",
+			"trim": "{move}: {frames}프레임으로",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "초기화",
+		"details": "세부 정보",
+		"demoLocked": "데모 아트는 무료예요. 사본을 편집하면 추가 비용을 예상할 수 있어요.",
+		"copyNote": "데모나 다른 캐릭터에서 복사한 아트는 여기서 무료예요.",
+		"setup": "캐릭터 준비",
+		"setupNote": "{frame}px 프레임 · 그린 뷰 {drawn}개",
+		"moveCount": {
+			"other": "동작 {n}개"
+		},
+		"itemCount": {
+			"other": "디자인 {n}개"
+		},
+		"moveSetting": "{frames}프레임 · {model}",
+		"moveNumber": "동작 {n}",
+		"itemNumber": "아이템 {n}",
+		"imported": "가져옴",
+		"frames": "프레임",
+		"noMoves": "동작 없음",
+		"noItems": "아이템 없음",
+		"showMore": "더 보기",
+		"held": "손에 듦",
+		"copiedRemade": "복사됨: 새 동작용으로 다시 만듦",
+		"remade": "새 동작용으로 다시 만듦",
+		"fitToMoves": "맞출 동작",
+		"standingOnly": "서 있기만",
+		"allMoves": {
+			"other": "동작 {n}개 전체"
+		},
+		"someMoves": "동작 {n}개 중 {covered}개",
+		"stateSetting": "{n} · {route}",
+		"flashAsPro": "Pro Flash는 Pro로 계산",
+		"recordedUsage": "기록된 사용량",
+		"savedArtworkOnly": "저장된 아트만",
+		"unpriced": {
+			"other": "요금 정보 없는 호출 {n}건"
 		}
 	}
 }

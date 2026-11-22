@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "Bukan aplikasi resmi."
 	},
 	"characterActions": {
+		"costEstimate": "Perkiraan biaya…",
 		"adjustFrame": "Sesuaikan frame…",
 		"directions": "Arah…",
 		"demoDeleteLocked": "Karakter demo tidak dapat dihapus",
@@ -2864,6 +2865,80 @@
 			"resolveDrafts": "Simpan atau tutup draf item karakter ini sebelum menyesuaikan frame.",
 			"changed": "Karakter ini berubah. Buka lagi Sesuaikan frame untuk meninjau versi terbaru.",
 			"undoFailed": "Perubahan frame tidak dapat dibatalkan."
+		}
+	},
+	"costSheet": {
+		"title": "Perkiraan biaya",
+		"scopeLabel": "Perkiraan untuk",
+		"scopeAll": "Semua",
+		"scopeNew": "Baru",
+		"loading": "Memuat karakter…",
+		"range": "{low} sampai {high} · {gens}",
+		"basis": {
+			"character": "Seluruh karakter, dihitung dari awal",
+			"copy": "Tambahan dan perubahan Anda",
+			"demo": "Demo bawaan",
+			"new": "Karakter baru",
+			"all": {
+				"other": "{n} karakter tersimpan"
+			}
+		},
+		"tierOneRates": "{basis} · tarif Tier 1",
+		"spentToGo": "Terpakai {spent} · sisa {toGo}",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "Percobaan ulang",
+		"retriesDefault": "Bawaan",
+		"decrease": "Kurangi {name}",
+		"increase": "Tambah {name}",
+		"moves": "Animasi",
+		"items": "Item",
+		"states": "Keadaan",
+		"directionCount": {
+			"other": "{n} arah · {drawn} digambar"
+		},
+		"tips": {
+			"mirror": "Cerminkan sisi barat",
+			"held": "{item} hanya di {moves}",
+			"trim": "{move} menjadi {frames} frame",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "Atur ulang",
+		"details": "Detail",
+		"demoLocked": "Gambar demo gratis. Edit salinannya untuk memperkirakan tambahan Anda.",
+		"copyNote": "Gambar yang disalin dari demo atau karakter lain gratis di sini.",
+		"setup": "Penyiapan karakter",
+		"setupNote": "Frame {frame} px · {drawn} tampilan digambar",
+		"moveCount": {
+			"other": "{n} animasi"
+		},
+		"itemCount": {
+			"other": "{n} desain"
+		},
+		"moveSetting": "{frames} frame · {model}",
+		"moveNumber": "Animasi {n}",
+		"itemNumber": "Item {n}",
+		"imported": "Diimpor",
+		"frames": "Frame",
+		"noMoves": "Tidak ada animasi",
+		"noItems": "Tidak ada item",
+		"showMore": "Tampilkan lagi",
+		"held": "Dipegang",
+		"copiedRemade": "Disalin: dibuat ulang untuk animasi baru",
+		"remade": "Dibuat ulang untuk animasi baru",
+		"fitToMoves": "Sesuaikan dengan animasi",
+		"standingOnly": "Hanya berdiri",
+		"allMoves": {
+			"other": "Semua {n} animasi"
+		},
+		"someMoves": "{covered} dari {n} animasi",
+		"stateSetting": "{n} · {route}",
+		"flashAsPro": "Pro Flash dihitung sebagai Pro",
+		"recordedUsage": "Penggunaan tercatat",
+		"savedArtworkOnly": "Hanya gambar tersimpan",
+		"unpriced": {
+			"other": "{n} panggilan tanpa harga"
 		}
 	}
 }

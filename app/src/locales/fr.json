@@ -244,6 +244,7 @@
 		"notAnOfficialApp": "Application non officielle."
 	},
 	"characterActions": {
+		"costEstimate": "Estimation du coût…",
 		"adjustFrame": "Ajuster le cadre…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Le personnage de la démo ne peut pas être supprimé",
@@ -2975,6 +2976,86 @@
 			"resolveDrafts": "Conservez ou ignorez les brouillons d’objets de ce personnage avant d’ajuster le cadre.",
 			"changed": "Ce personnage a changé. Rouvrez Ajuster le cadre pour vérifier la dernière version.",
 			"undoFailed": "Impossible d’annuler la modification du cadre."
+		}
+	},
+	"costSheet": {
+		"title": "Estimation du coût",
+		"scopeLabel": "Estimer pour",
+		"scopeAll": "Tous",
+		"scopeNew": "Nouveau",
+		"loading": "Chargement des personnages…",
+		"range": "{low} à {high} · {gens}",
+		"basis": {
+			"character": "Personnage entier, calculé de zéro",
+			"copy": "Vos ajouts et modifications",
+			"demo": "Démo intégrée",
+			"new": "Nouveau personnage",
+			"all": {
+				"one": "{n} personnage enregistré",
+				"other": "{n} personnages enregistrés"
+			}
+		},
+		"tierOneRates": "{basis} · tarifs Tier 1",
+		"spentToGo": "Dépensé {spent} · reste {toGo}",
+		"tier": "Tier",
+		"tierFree": "Free / Trial",
+		"tierN": "Tier {n}",
+		"retries": "Nouvelles tentatives",
+		"retriesDefault": "Par défaut",
+		"decrease": "Diminuer : {name}",
+		"increase": "Augmenter : {name}",
+		"moves": "Animations",
+		"items": "Objets",
+		"states": "États",
+		"directionCount": {
+			"one": "{n} direction · {drawn} dessinée(s)",
+			"other": "{n} directions · {drawn} dessinées"
+		},
+		"tips": {
+			"mirror": "Refléter le côté ouest",
+			"held": "{item} seulement sur {moves}",
+			"trim": "{move} à {frames} images",
+			"saving": "{tip} −{saving}"
+		},
+		"reset": "Réinitialiser",
+		"details": "Détails",
+		"demoLocked": "Les visuels de la démo sont gratuits. Modifiez une copie pour estimer vos ajouts.",
+		"copyNote": "Les visuels copiés depuis la démo ou un autre personnage sont gratuits ici.",
+		"setup": "Préparation du personnage",
+		"setupNote": "Cadre de {frame} px · {drawn} vues dessinées",
+		"moveCount": {
+			"one": "{n} animation",
+			"other": "{n} animations"
+		},
+		"itemCount": {
+			"one": "{n} design",
+			"other": "{n} designs"
+		},
+		"moveSetting": "{frames} images · {model}",
+		"moveNumber": "Animation {n}",
+		"itemNumber": "Objet {n}",
+		"imported": "Importée",
+		"frames": "Images",
+		"noMoves": "Aucune animation",
+		"noItems": "Aucun objet",
+		"showMore": "Afficher plus",
+		"held": "Tenu",
+		"copiedRemade": "Copié : refait pour les nouvelles animations",
+		"remade": "Refait pour les nouvelles animations",
+		"fitToMoves": "Ajuster aux animations",
+		"standingOnly": "Debout uniquement",
+		"allMoves": {
+			"one": "{n} animation",
+			"other": "Les {n} animations"
+		},
+		"someMoves": "{covered} sur {n} animations",
+		"stateSetting": "{n} · {route}",
+		"flashAsPro": "Pro Flash calculé comme Pro",
+		"recordedUsage": "Utilisation enregistrée",
+		"savedArtworkOnly": "Visuels enregistrés uniquement",
+		"unpriced": {
+			"one": "{n} appel sans prix",
+			"other": "{n} appels sans prix"
 		}
 	}
 }

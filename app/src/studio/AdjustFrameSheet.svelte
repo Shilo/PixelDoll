@@ -22,7 +22,8 @@
 	import { DEFAULT_MOVE, type DirectionName } from '../lib/rig/rig.ts';
 	import { displayDirection } from './displayDirection.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { ArrowDown, ArrowUp, Download, Minus, Plus, WandSparkles } from './icons.ts';
+	import { ArrowDown, ArrowUp, Download, WandSparkles } from './icons.ts';
+	import NumberStepper from './NumberStepper.svelte';
 	import {
 		adjustCharacter,
 		blockedByWork,
@@ -136,10 +137,6 @@
 		const rows = event.shiftKey ? 4 : 1;
 		nudge(event.key === 'ArrowUp' ? -rows : rows);
 	}
-	function resize(by: number) {
-		size = Math.max(facts!.min, Math.min(facts!.max, size + by));
-		note = '';
-	}
 	function room() {
 		if (!facts) return;
 		const plan = makeRoom(facts);
@@ -237,35 +234,18 @@
 				</div>
 				<div class="control-row">
 					<span class="label" id="adjust-frame-size">{t('adjustFrame.size')}</span>
-					<div class="buttons">
-						<button
-							class="bu-action btn icon"
-							data-variant="outline"
-							aria-label={t('adjustFrame.smaller')}
-							disabled={busy || size - 2 < facts.min}
-							onclick={() => resize(-2)}><Minus size={16} /></button
-						>
-						<div class="pixel-input">
-							<input
-								class="bu-input input"
-								aria-labelledby="adjust-frame-size"
-								type="number"
-								min={facts.min}
-								max={facts.max}
-								step="2"
-								disabled={busy}
-								bind:value={size}
-								oninput={() => (note = '')}
-							/><span aria-hidden="true">px</span>
-						</div>
-						<button
-							class="bu-action btn icon"
-							data-variant="outline"
-							aria-label={t('adjustFrame.larger')}
-							disabled={busy || size + 2 > facts.max}
-							onclick={() => resize(2)}><Plus size={16} /></button
-						>
-					</div>
+					<NumberStepper
+						bind:value={size}
+						min={facts.min}
+						max={facts.max}
+						step={2}
+						suffix="px"
+						disabled={busy}
+						labelledby="adjust-frame-size"
+						decreaseLabel={t('adjustFrame.smaller')}
+						increaseLabel={t('adjustFrame.larger')}
+						onchange={() => (note = '')}
+					/>
 				</div>
 				{#if issue}<p class="notice warn small" role="status">{displayError(issue)}</p>
 				{:else if step}<p class="notice small">{t(STEP_TEXT[step])}</p>{/if}
@@ -349,12 +329,6 @@
 		min-height: 44px;
 		flex: 1 1 auto;
 	}
-	.buttons > .btn.icon {
-		flex: 0 0 44px;
-		width: 44px;
-		padding: 0;
-		justify-content: center;
-	}
 	.readout {
 		font-variant-numeric: tabular-nums;
 		color: var(--text-2);
@@ -362,30 +336,6 @@
 	.room {
 		min-height: 44px;
 		justify-self: start;
-	}
-	.pixel-input {
-		position: relative;
-		flex: 1 1 96px;
-		min-width: 0;
-	}
-	.pixel-input input {
-		height: 100%;
-		padding-right: 33px;
-		font-variant-numeric: tabular-nums;
-		appearance: textfield;
-		-moz-appearance: textfield;
-	}
-	.pixel-input input::-webkit-inner-spin-button {
-		-webkit-appearance: none;
-	}
-	.pixel-input > span {
-		position: absolute;
-		right: 10px;
-		top: 50%;
-		transform: translateY(-50%);
-		color: var(--text-3);
-		font-size: var(--fs-sm);
-		pointer-events: none;
 	}
 	@media (max-width: 760px) {
 		.adjust {

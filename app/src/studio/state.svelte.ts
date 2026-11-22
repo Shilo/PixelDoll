@@ -266,7 +266,8 @@ export type SheetId =
 	| 'workspaceReport'
 	| 'slots'
 	| 'frames'
-	| 'adjustFrame';
+	| 'adjustFrame'
+	| 'cost';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -313,6 +314,7 @@ export const ui = $state({
 	deleting: '', // the character the Delete sheet is for
 	directionProject: '',
 	frameProject: '', // the character the Adjust frame sheet is for
+	costProject: '', // the character the Cost estimate sheet opens on
 	details: '', // the character the Details sheet is for
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		reuseMethod?: boolean;

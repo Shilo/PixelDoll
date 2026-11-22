@@ -16,6 +16,16 @@ Maintain endpoint restrictions and account concurrency in [`app/src/lib/pixellab
 
 `accountTier` parses complete numeric tiers, including future tiers. Trial, none and expired statuses override stale paid labels. Unrecognized and unnumbered enterprise accounts stay unknown, not Free. A successful unknown account response remains server-authoritative. The reviewed provider contract includes expiry grace and enterprise/team access, but the app does not invent grace timestamps or numeric enterprise tiers from insufficient account data.
 
+## Plan prices for cost estimates
+
+`PLAN_PRICES` holds the published monthly prices and generation allowances the cost estimate divides to get USD per generation. The owner confirmed them on 2026-11-22 from the [PixelLab pricing page](https://www.pixellab.ai/); `/balance` reports neither. Free / Trial, unknown and unnumbered accounts are estimated at Tier 1 rates. USD credits are endpoint-specific and are added as PixelLab reported them.
+
+| Tier | List price | Lowest discounted price | Generations per month | USD per generation |
+| ---- | ---------: | ----------------------: | --------------------: | -----------------: |
+| 1    |        $12 |                      $9 |                 2,000 | $0.0045 to $0.0060 |
+| 2    |        $24 |                     $22 |                 5,000 | $0.0044 to $0.0048 |
+| 3    |        $50 |             no discount |                10,000 |            $0.0050 |
+
 ## Verified restriction matrix (2026-11-17)
 
 At the owner's request, an isolated reviewer checked the provider checkout and returned only endpoint access contract facts. No provider source, paths, snippets or implementation details were shared with the coordinating agent or stored here. These facts are **verified in the reviewed checkout, not live deployment verification**. No generation request was sent for this audit.

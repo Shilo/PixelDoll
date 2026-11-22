@@ -58,6 +58,14 @@ export interface RecordedCost {
 	/** Attempts later re-rolled; their cost is included. */
 	replaced: number;
 }
+/** Items a character made itself: not the base, an export-only variant, or a copy, whose calls the source character paid for. */
+export const ownItems = (m: Pick<Manifest, 'items' | 'rig'>) =>
+	m.items.filter((i) => i.id !== m.rig.baseItem && !i.variantOf && !i.copiedFrom);
+/** Every call recorded for a character's body and its own items. */
+export const ownProvenance = (m: Pick<Manifest, 'items' | 'rig'>): Provenance[] => [
+	...(m.items.find((i) => i.id === m.rig.baseItem)?.provenance ?? []),
+	...ownItems(m).flatMap((i) => i.provenance ?? [])
+];
 export function recordedCost(provenance: Provenance[]): RecordedCost {
 	const cost: RecordedCost = { generations: 0, usd: 0, unknown: 0, calls: 0, replaced: 0 };
 	for (const p of provenance) {

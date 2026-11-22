@@ -11,6 +11,15 @@ export const PLAN_JOB_LIMITS = {
 	unknown: 3
 } as const;
 
+/** Published monthly prices (USD) and generation allowances per tier, for cost estimates only; /balance reports neither.
+ *  `low` is the lowest advertised discounted price. Sources and date: docs/pixellab-plans.md. */
+export const PLAN_PRICES = {
+	1: { low: 9, list: 12, generations: 2000 },
+	2: { low: 22, list: 24, generations: 5000 },
+	3: { low: 50, list: 50, generations: 10000 }
+} as const;
+export type PricedTier = keyof typeof PLAN_PRICES;
+
 export const INPAINT_TIER_ONE_SIDE = 256;
 
 /** Local tier 0 means Free/Trial; it is not an API enum. Unknown/enterprise stays unknown. */
