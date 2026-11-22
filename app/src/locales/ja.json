@@ -103,7 +103,9 @@
 		"autoSize": "自動（{size} px）",
 		"frameMinimum": "「自動」または {min} px 以上のカスタムフレームサイズを選択してください。",
 		"custom": "カスタム",
-		"description": "このブラウザーに保存されます。作成ダイアログにはまだ反映されません。",
+		"description": "このブラウザーに保存され、新しい作成ウィンドウを開くときに適用されます。",
+		"fallback": "保存した「{setting}」はここでは使えません。「{value}」を使用します。",
+		"autoFrames": "自動（{count} フレーム）",
 		"defaults": "作成時の既定値",
 		"readFailed": "保存された設定を読み込めませんでした。このページをリセットしてください。",
 		"storageUnavailable": "ブラウザーのストレージを利用できないため、これらの設定は保存できません。",
@@ -156,6 +158,12 @@
 		"idCopyFailed": "ID をコピーできませんでした。"
 	},
 	"common": {
+		"back": "戻る",
+		"backTo": "{place}に戻る",
+		"keepEditing": "編集を続ける",
+		"discardChangesTitle": "変更を破棄しますか？",
+		"discardChangesBody": "ここでの変更は失われます。",
+		"keepsRunning": "閉じてもアクティビティで実行が続きます。",
 		"loadFailed": "PixelDoll の一部を読み込めませんでした。ページを再読み込みして、もう一度お試しください。",
 		"advanced": "詳細設定",
 		"cancel": "キャンセル",
@@ -176,7 +184,6 @@
 		"done": "完了",
 		"downloadZip": "ZIPをダウンロード",
 		"free": "無料",
-		"hide": "隠す",
 		"loading": "読み込み中…",
 		"move": "モーション",
 		"name": "名前",
@@ -334,7 +341,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "コピー",
 		"demoNoAccount": "デモにアカウントは不要です。",
-		"notNow": "今はしない",
 		"sentOnlyToApiPixellabAi": "api.pixellab.aiにのみ送信されます。",
 		"forgetKey": "キーを削除",
 		"forgetTitle": "PixelLab のキーを削除しますか？",
@@ -694,6 +700,8 @@
 		"titleItemReview": "アイテムの確認"
 	},
 	"toolbar": {
+		"activityRunning": "アクティビティで処理が実行中です",
+		"activityAttention": "アクティビティの処理に対応が必要です",
 		"help": "ヘルプ",
 		"userGuide": "ユーザーガイド",
 		"reportProblem": "問題を報告",
@@ -1047,7 +1055,6 @@
 			"title": "エクスポート",
 			"back": "戻る",
 			"settings": "設定",
-			"close": "エクスポートを閉じる",
 			"saving": "設定を保存中…",
 			"unavailable": "エクスポートできません",
 			"sourceOnly": "元のPNGのみ",
@@ -1309,7 +1316,6 @@
 		"previewDirectionLabel": "プレビューの向き",
 		"setupNext": "続けてポーズ用のリグをセットアップする（推奨）",
 		"setupNextHint": "インポートは無料です。リグのセットアップでは、開始前にPixelLabの生成コストが表示されます。",
-		"chooseAnother": "別のキャラクターを選ぶ",
 		"saving": "ローカルのコピーを保存中…",
 		"preparing": "キャラクターを準備中…",
 		"note": "無料・新しいローカルコピーを保存します",
@@ -2275,7 +2281,7 @@
 			},
 			"models": {
 				"v3": {
-					"label": "標準（V3）",
+					"label": "V3",
 					"help": "バランスの取れた頭身です。"
 				},
 				"standard": {
@@ -2400,7 +2406,6 @@
 			"retryLabel": "キャラクターをもう一度作成",
 			"editSetup": "設定を編集…",
 			"estimated": "見積もり：{gens}",
-			"keepWorking": "作業を続ける",
 			"costTitle": "全方向の立ちポーズを作成します。待機、歩き、その他のモーションはあとで追加できます。立ちポーズの関節が不足している場合は、費用が少し増えることがあります",
 			"create": "キャラクターを作成",
 			"createAnyway": "このまま作成"
@@ -2486,7 +2491,6 @@
 		"reuseCached": "キャッシュされたフレームを再利用",
 		"matchColors": "体の色を合わせる",
 		"keepFrames": "フレームを残す",
-		"keepWorking": "作業を続けられます。",
 		"queueAnother": "別のモーションをキューに追加",
 		"addLabel": "モーションを追加または置き換え",
 		"submit": {
@@ -2555,7 +2559,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "標準（PixMiniMax）"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "フレーム",
 		"framesHelp": "選択肢はこのモデルとキャラクターのキャンバス（{canvas} px）に合わせて変わります。デフォルトでは PixelDoll のプリセットのフレーム数を使用します。",
@@ -2702,7 +2706,6 @@
 		"confirmDiscard": "破棄を確定",
 		"discardWarning": "破棄しても生成回数は払い戻されず、PixelLab のステートは削除されません。やり直すと全方向に再び料金がかかる場合があります。",
 		"locksUnavailable": "安全にステートを生成するには、最新のブラウザーをお使いください。",
-		"defaultModel": "デフォルト (Pro)",
 		"flashReference": "Pro Flash ではテキストの指示の代わりに参照画像を使用します。",
 		"changed": "元の画像か見積もりが変更されました。生成前に費用をもう一度確認してください。",
 		"sourceUnavailable": "元のフレームには、描かれたすべての向きの保存済みアートが必要です。",
@@ -2791,9 +2794,6 @@
 		"frame": "フレーム：{measure}",
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
-	},
-	"sheet": {
-		"later": "あとで"
 	},
 	"toast": {
 		"dismiss": "通知を閉じる"

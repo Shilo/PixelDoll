@@ -126,6 +126,12 @@
 	import { errorText, LocalizedError, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
+	import {
+		creationDefaults,
+		moveModels,
+		openingCreationSettings,
+		resolveMoveFramePreference
+	} from './creationSettings.ts';
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
@@ -154,7 +160,10 @@
 	const suggestions = $derived(
 		promptSuggestions('move').filter(({ action }) => !action || options.includes(action))
 	);
-	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
+	const redrawTarget = untrack(() => ui.redrawMove);
+	const draft =
+		!redrawTarget && formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
+	if (draft && !draft.regeneration) formDrafts.move = undefined;
 	let sourceId = $state<string | undefined>(draft?.source?.clip);
 	let sourceCell = $state<number | undefined>(draft?.source?.cell);
 	const sourceClip = $derived(
@@ -200,8 +209,8 @@
 	};
 	const reopen = draft?.reopen;
 	if (reopen) delete draft.reopen;
-	const DEFAULT_MODEL: MoveAnimationModel = 'pixminimax';
-	const MODELS: MoveAnimationModel[] = [DEFAULT_MODEL, 'skeleton-v3', 'v3'];
+	const redrawFallbackModel: MoveAnimationModel = 'pixminimax';
+	const preferences = !draft && !redrawTarget ? openingCreationSettings('moves') : undefined;
 	const advancedId = $props.id();
 	// Advanced is a second column on a centered sheet with room for two, and an accordion otherwise.
 	const roomy = new MediaQuery('min-width: 840px');
@@ -213,8 +222,9 @@
 	};
 	// Advanced starts open when a restored draft already changed something there, so no choice is hidden.
 	let advancedOpen = $state(
-		!!(draft?.frameReferences && Object.keys(draft.frameReferences).length) ||
-			(draft?.animation?.model !== undefined && draft.animation.model !== DEFAULT_MODEL)
+		draft?.advancedOpen ??
+			(!!(draft?.frameReferences && Object.keys(draft.frameReferences).length) ||
+				(draft?.animation?.model !== undefined && draft.animation.model !== redrawFallbackModel))
 	);
 	const showAdvanced = $derived(sideBySide && advancedOpen);
 	// The column opens beside the top of the form, away from the toggle, so bring its first control into view.
@@ -229,12 +239,19 @@
 		first?.focus();
 	}
 	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
-	let frameChoice = $state<number | undefined>(draft?.animation?.frameCount);
+	const savedCustomFrames =
+		draft?.savedCustomFrames ??
+		(typeof preferences?.frames === 'number' ? preferences.frames : undefined);
+	let frameChoice = $state<number | null | undefined>(
+		draft?.frameChoice === undefined ? draft?.animation?.frameCount : draft.frameChoice
+	);
 	let action = $state(
 		draft?.action ?? untrack(() => suggestions.find((entry) => entry.action)?.action) ?? ''
 	);
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? untrack(() => templateText(action)));
+	// Only text the user typed counts as unsaved: a chosen template or a loaded move prompt does not.
+	let textTyped = $state(false);
 	// A template opened on its customized prompt counts as picked, as if its pill had been pressed.
 	let templatePicked = $state(
 		!!draft?.action || untrack(() => !!action && text !== moveTemplatePrompt(action))
@@ -397,30 +414,39 @@
 	);
 	const fitsKept = (option: MoveAnimationModel) =>
 		keptFrames === undefined || moveFrameCounts(option, canvas).includes(keptFrames);
+	const fitsSource = (option: MoveAnimationModel) =>
+		option !== 'skeleton-v3' || !startFrom || (!describing && isAuthoredAction(action));
 	const model = $derived.by(() => {
 		if (modelChoice && fitsKept(modelChoice)) return modelChoice;
-		if (!replacing) return DEFAULT_MODEL;
+		if (!replacing) return preferences?.model ?? creationDefaults.moves.model;
 		const preferred =
 			keptFrames ??
 			(m && moveFrames(m, { action: describing ? undefined : action, frames: baseFrames }));
 		const fitsPreferred = (option: MoveAnimationModel) =>
 			preferred !== undefined && moveFrameCounts(option, canvas).includes(preferred);
-		const fitsSource = (option: MoveAnimationModel) =>
-			option !== 'skeleton-v3' || !startFrom || (!describing && isAuthoredAction(action));
 		for (const dir of targetDirs) {
 			const route = savedMove?.sources?.[dir]?.route;
 			if (route && route !== 'import' && fitsSource(route) && fitsPreferred(route)) return route;
 		}
 		return fitsSource('skeleton-v3') && fitsPreferred('skeleton-v3')
 			? 'skeleton-v3'
-			: (MODELS.find((option) => fitsSource(option) && fitsPreferred(option)) ?? DEFAULT_MODEL);
+			: (moveModels.find((option) => fitsSource(option) && fitsPreferred(option)) ??
+					redrawFallbackModel);
 	});
 	// Model-valid counts for this character's actual canvas; the same object prices and submits the move.
 	const frameCounts = $derived(moveFrameCounts(model, canvas));
+	const usesSavedFrames = $derived(!replacing && describing && frameChoice === undefined);
 	const userFrameCount = $derived(
-		keptFrames === undefined && frameChoice !== undefined && frameCounts.includes(frameChoice)
-			? frameChoice
+		keptFrames === undefined
+			? resolveMoveFramePreference(
+					model,
+					(usesSavedFrames ? savedCustomFrames : frameChoice) ?? 'auto',
+					canvas
+				)
 			: undefined
+	);
+	const frameFallback = $derived(
+		usesSavedFrames && savedCustomFrames !== undefined && userFrameCount === undefined
 	);
 	const chosenFrameCount = $derived(
 		keptFrames !== undefined && frameCounts.includes(keptFrames) ? keptFrames : userFrameCount
@@ -505,7 +531,7 @@
 	);
 	const advancedNote = $derived(
 		[
-			model === DEFAULT_MODEL ? '' : t(MODEL_TEXT[model]),
+			t(MODEL_TEXT[model]),
 			targetDirs.some(
 				(direction) =>
 					frameReferences[direction]?.start ||
@@ -901,6 +927,9 @@
 	function rememberMoveForm(projectId: string) {
 		formDrafts.move = {
 			projectId,
+			advancedOpen,
+			savedCustomFrames,
+			frameChoice,
 			regeneration,
 			skeletonRetry,
 			action,
@@ -911,10 +940,7 @@
 			source: sourceSelection,
 			frameReferences: $state.snapshot(frameReferences),
 			loop: loopChoice,
-			animation:
-				modelChoice !== undefined || userFrameCount !== undefined
-					? { model, frameCount: userFrameCount }
-					: undefined
+			animation: { model }
 		};
 	}
 
@@ -1058,10 +1084,10 @@
 			text = savedPrompt || moveTemplatePrompt(next, looping);
 			return;
 		}
+		if (replace || replaceSelected) frameChoice = undefined;
 		action = next;
 		replaceSelected = replace;
 		text = prompt;
-		frameChoice = undefined;
 		loopChoice = undefined;
 		frameReferences = {};
 		customStartAcknowledged = false;
@@ -1076,7 +1102,6 @@
 		return flagged.length ? flagged : [...availableDirs];
 	}
 	// Redraw… on a saved move opens this sheet on that move.
-	const redrawTarget = untrack(() => ui.redrawMove);
 	if (redrawTarget) {
 		ui.redrawMove = '';
 		ui.moveFormOpen = true;
@@ -1112,10 +1137,11 @@
 	function inputMotion(value: string) {
 		if (!templatePicked && !replacing && action) chooseAction('');
 		text = value;
+		textTyped = true;
 	}
 	function chooseModel(next: MoveAnimationModel) {
 		modelChoice = next;
-		if (frameChoice !== undefined && keptFrames === undefined)
+		if (typeof frameChoice === 'number' && keptFrames === undefined)
 			frameChoice = defaultMoveFrameCount(next, canvas, frameChoice);
 	}
 	function changeFrame(
@@ -1359,7 +1385,7 @@
 	{:else if progress && moving.error}
 		<div class="recovery-actions">
 			<button class="bu-action btn plain" data-variant="quiet" onclick={() => leaveFailedMove(true)}
-				>{t('common.cancel')}</button
+				>{t('common.discard')}</button
 			>
 			<div class="recovery-options">
 				{#if !moving.spec?.itemsOnly && ok}
@@ -1398,12 +1424,9 @@
 		</div>
 		<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
-		<span class="foot-note">{t('moveSheet.keepWorking')}</span>
+		<span class="foot-note" id="sheet-exit-note">{t('common.keepsRunning')}</span>
 		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = true)}
 			>{t('moveSheet.queueAnother')}</button
-		>
-		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}
-			>{t('common.hide')}</button
 		>
 	{:else if ok}
 		{@const review = skeletonReview?.review}
@@ -1411,11 +1434,6 @@
 		{@const replace = review ? review.replace : replacing}
 		{@const move = review?.id ?? id}
 		{@const needsConnection = !review && managedId && (!app.key || app.keyRejected)}
-		{#if review}<button
-				class="bu-action btn plain"
-				data-variant="quiet"
-				onclick={() => (reviewingSkeletonFor = null)}>{t('moveSheet.skeleton.back')}</button
-			>{/if}
 		{#if est && !needsConnection}
 			<span class="foot-note move-cost-note">
 				<span>
@@ -1475,7 +1493,7 @@
 			value={model}
 			onchange={(event) => chooseModel(event.currentTarget.value as MoveAnimationModel)}
 		>
-			{#each MODELS as option (option)}<option
+			{#each moveModels as option (option)}<option
 					value={option}
 					disabled={option !== model && !fitsKept(option)}>{t(MODEL_TEXT[option])}</option
 				>{/each}
@@ -1649,8 +1667,16 @@
 				: (progress ? moving.spec?.replace : replacing)
 					? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
 					: t('moves.add')}
-	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
+	back={skeletonReview
+		? () => (reviewingSkeletonFor = null)
+		: mine && ui.moveFormOpen
+			? () => (ui.moveFormOpen = false)
+			: undefined}
 	onclose={() => (ui.sheet = null)}
+	exitNote={progress && !moving.done && !moving.error && !repairReview
+		? 'sheet-exit-note'
+		: undefined}
+	dirty={ok && !progress && !skeletonReview && !repairReview && textTyped && !!text.trim()}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
 	{#snippet developer()}
@@ -2011,6 +2037,14 @@
 	{:else}
 		<div class="form move-form" class:redraw-form={replacing} class:split={showAdvanced}>
 			<div class="move-main">
+				{#if frameFallback}
+					<p class="notice warn small" role="status">
+						{t('creationSettings.fallback', {
+							setting: t('moveSheet.frames'),
+							value: t('creationSettings.autoFrames', { count: defaultFrames })
+						})}
+					</p>
+				{/if}
 				<div class="move-start">
 					<PlaybackPicker
 						clips={startClips}
@@ -2216,7 +2250,7 @@
 										class="bu-action btn plain frame-default"
 										data-variant="quiet"
 										aria-disabled={userFrameCount === undefined}
-										onclick={() => (frameChoice = undefined)}
+										onclick={() => (frameChoice = null)}
 										>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
 									>
 								{/if}

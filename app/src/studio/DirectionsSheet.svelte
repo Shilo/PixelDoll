@@ -139,7 +139,12 @@
 	}
 </script>
 
-<Sheet title={t('common.directions')} cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
+<Sheet
+	title={t('common.directions')}
+	locked={busy}
+	dirty={changed}
+	onclose={() => (ui.sheet = null)}
+>
 	{#if record}
 		<p class="muted">
 			{t('directionsSheet.chooseWhichDirectionsToKeepForName', { name: record.manifest.name })}.

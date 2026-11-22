@@ -17,6 +17,9 @@ export const formDrafts: {
 	move?: {
 		projectId: string;
 		reopen?: true;
+		advancedOpen?: boolean;
+		savedCustomFrames?: number;
+		frameChoice?: number | null;
 		regeneration?: { id: string; seed: number; activityScope?: string };
 		skeletonRetry?: NonNullable<ReturnType<typeof import('./create.ts').skeletonMoveReview>>;
 		action: string;

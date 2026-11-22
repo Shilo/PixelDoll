@@ -53,11 +53,7 @@
 	});
 </script>
 
-<Sheet
-	title={t('detailsSheet.title', { name })}
-	cancel="common.done"
-	onclose={() => (ui.sheet = null)}
->
+<Sheet title={t('detailsSheet.title', { name })} onclose={() => (ui.sheet = null)}>
 	{#snippet developer()}
 		<ApiPeek copyId={m && !id.startsWith('fixture:') ? id : undefined} />
 	{/snippet}

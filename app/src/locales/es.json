@@ -106,7 +106,9 @@
 		"autoSize": "Automático ({size} px)",
 		"frameMinimum": "Elige Automático o un tamaño de fotograma personalizado de al menos {min} px.",
 		"custom": "Personalizado",
-		"description": "Se guarda en este navegador. Los diálogos de creación aún no usan estos valores.",
+		"description": "Se guardan en este navegador y se aplican al abrir una nueva ventana de creación.",
+		"fallback": "La opción guardada de {setting} no está disponible aquí. Se usará {value}.",
+		"autoFrames": "Automático ({count} fotogramas)",
 		"defaults": "Valores de creación",
 		"readFailed": "No se pudieron leer las opciones guardadas. Restablece esta página para repararlas.",
 		"storageUnavailable": "El almacenamiento del navegador no está disponible. No se pueden guardar estas opciones.",
@@ -159,6 +161,12 @@
 		"idCopyFailed": "No se pudo copiar el ID."
 	},
 	"common": {
+		"back": "Atrás",
+		"backTo": "Volver a {place}",
+		"keepEditing": "Seguir editando",
+		"discardChangesTitle": "¿Descartar los cambios?",
+		"discardChangesBody": "Se perderán los cambios que hiciste aquí.",
+		"keepsRunning": "Sigue en Actividad si cierras esto.",
 		"loadFailed": "No se pudo cargar una parte de PixelDoll. Recarga la página para volver a intentarlo.",
 		"advanced": "Avanzado",
 		"cancel": "Cancelar",
@@ -179,7 +187,6 @@
 		"done": "Listo",
 		"downloadZip": "Descargar ZIP",
 		"free": "Gratis",
-		"hide": "Ocultar",
 		"loading": "Cargando…",
 		"move": "Animación",
 		"name": "Nombre",
@@ -337,7 +344,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Copiar",
 		"demoNoAccount": "No necesitas una cuenta para la demo.",
-		"notNow": "Ahora no",
 		"sentOnlyToApiPixellabAi": "Solo se envía a api.pixellab.ai.",
 		"forgetKey": "Olvidar clave",
 		"forgetTitle": "¿Olvidar la clave de PixelLab?",
@@ -713,6 +719,8 @@
 		"titleItemReview": "Revisión del objeto"
 	},
 	"toolbar": {
+		"activityRunning": "Hay trabajo en curso en Actividad",
+		"activityAttention": "Un trabajo en Actividad necesita atención",
 		"help": "Ayuda",
 		"userGuide": "Guía de usuario",
 		"reportProblem": "Informar de un problema",
@@ -1077,7 +1085,6 @@
 			"title": "Exportar",
 			"back": "Atrás",
 			"settings": "Ajustes",
-			"close": "Cerrar exportación",
 			"saving": "Guardando ajustes…",
 			"unavailable": "Exportación no disponible",
 			"sourceOnly": "Solo PNG de origen",
@@ -1353,7 +1360,6 @@
 		"previewDirectionLabel": "Dirección de la vista previa",
 		"setupNext": "Configurar el rig al terminar (recomendado)",
 		"setupNextHint": "Importar es gratis. La configuración del rig muestra su costo de generación en PixelLab antes de empezar.",
-		"chooseAnother": "Elegir otro personaje",
 		"saving": "Guardando tu copia local…",
 		"preparing": "Preparando tu personaje…",
 		"note": "Gratis · guarda una copia local nueva",
@@ -2338,7 +2344,7 @@
 			},
 			"models": {
 				"v3": {
-					"label": "Predeterminado (V3)",
+					"label": "V3",
 					"help": "Proporciones equilibradas."
 				},
 				"standard": {
@@ -2464,7 +2470,6 @@
 			"retryLabel": "Volver a crear el personaje",
 			"editSetup": "Editar ajustes…",
 			"estimated": "Aprox. {gens}",
-			"keepWorking": "Seguir trabajando",
 			"costTitle": "Incluye la pose de pie en todas las direcciones. Agrega Reposo, Caminar y otras animaciones después. Si falta una articulación en la pose de pie, el costo puede subir un poco.",
 			"create": "Crear personaje",
 			"createAnyway": "Crear de todos modos"
@@ -2551,7 +2556,6 @@
 		"reuseCached": "Reutilizar fotogramas en caché",
 		"matchColors": "Igualar colores del cuerpo",
 		"keepFrames": "Conservar fotogramas",
-		"keepWorking": "Puedes seguir trabajando.",
 		"queueAnother": "Poner otra animación en cola",
 		"addLabel": "Agregar o reemplazar animación",
 		"submit": {
@@ -2623,7 +2627,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "Predeterminado (PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "Fotogramas",
 		"framesHelp": "Las opciones encajan con este modelo y el lienzo del personaje ({canvas} px). La opción predeterminada mantiene la cantidad de fotogramas predefinida de PixelDoll.",
@@ -2773,7 +2777,6 @@
 		"confirmDiscard": "Confirmar descarte",
 		"discardWarning": "Descartar no reembolsa las generaciones ni elimina el estado de PixelLab. Empezar de nuevo puede volver a cobrar todas las direcciones.",
 		"locksUnavailable": "Usa un navegador actualizado para generar estados de forma segura.",
-		"defaultModel": "Predeterminado (Pro)",
 		"flashReference": "Pro Flash usa una imagen de referencia en lugar de instrucciones escritas.",
 		"changed": "El origen o la estimación cambiaron. Consulta el coste de nuevo antes de generar.",
 		"sourceUnavailable": "El fotograma de origen necesita arte guardado en cada dirección dibujada.",
@@ -2862,9 +2865,6 @@
 		"frame": "Marco {measure}",
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
-	},
-	"sheet": {
-		"later": "Más tarde"
 	},
 	"toast": {
 		"dismiss": "Descartar notificación"

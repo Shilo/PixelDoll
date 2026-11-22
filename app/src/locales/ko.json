@@ -103,7 +103,9 @@
 		"autoSize": "자동 ({size} px)",
 		"frameMinimum": "자동 또는 {min} px 이상의 사용자 지정 프레임 크기를 선택하세요.",
 		"custom": "사용자 지정",
-		"description": "이 브라우저에 저장됩니다. 생성 대화상자에는 아직 적용되지 않습니다.",
+		"description": "이 브라우저에 저장되며 새 만들기 창을 열 때 적용됩니다.",
+		"fallback": "저장된 {setting} 설정을 여기서 사용할 수 없습니다. {value} 설정을 사용합니다.",
+		"autoFrames": "자동 ({count} 프레임)",
 		"defaults": "생성 기본값",
 		"readFailed": "저장된 값을 읽지 못했습니다. 이 페이지를 초기화해 주세요.",
 		"storageUnavailable": "브라우저 저장소를 사용할 수 없어 이 설정을 저장할 수 없습니다.",
@@ -156,6 +158,12 @@
 		"idCopyFailed": "ID를 복사하지 못했어요."
 	},
 	"common": {
+		"back": "뒤로",
+		"backTo": "돌아가기: {place}",
+		"keepEditing": "계속 편집",
+		"discardChangesTitle": "변경 사항을 버릴까요?",
+		"discardChangesBody": "여기서 바꾼 내용이 사라져요.",
+		"keepsRunning": "닫아도 활동에서 계속 진행돼요.",
 		"loadFailed": "PixelDoll의 일부를 불러오지 못했어요. 페이지를 새로고침하고 다시 시도하세요.",
 		"advanced": "고급",
 		"cancel": "취소",
@@ -176,7 +184,6 @@
 		"done": "완료",
 		"downloadZip": "ZIP 다운로드",
 		"free": "무료",
-		"hide": "숨기기",
 		"loading": "불러오는 중…",
 		"move": "동작",
 		"name": "이름",
@@ -334,7 +341,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "복사",
 		"demoNoAccount": "데모에는 계정이 필요 없어요.",
-		"notNow": "나중에",
 		"sentOnlyToApiPixellabAi": "api.pixellab.ai로만 전송돼요.",
 		"forgetKey": "키 잊기",
 		"forgetTitle": "PixelLab 키를 잊을까요?",
@@ -694,6 +700,8 @@
 		"titleItemReview": "아이템 검토"
 	},
 	"toolbar": {
+		"activityRunning": "활동에서 작업이 진행 중이에요",
+		"activityAttention": "활동의 작업을 확인해야 해요",
 		"help": "도움말",
 		"userGuide": "사용자 가이드",
 		"reportProblem": "문제 신고",
@@ -1047,7 +1055,6 @@
 			"title": "내보내기",
 			"back": "뒤로",
 			"settings": "설정",
-			"close": "내보내기 닫기",
 			"saving": "설정 저장 중…",
 			"unavailable": "내보내기 사용 불가",
 			"sourceOnly": "소스 PNG만",
@@ -1309,7 +1316,6 @@
 		"previewDirectionLabel": "미리보기 방향",
 		"setupNext": "다음으로 자세 리그 설정(권장)",
 		"setupNextHint": "가져오기는 무료예요. 리그 설정은 시작 전에 PixelLab 생성 비용을 보여 줘요.",
-		"chooseAnother": "다른 캐릭터 선택",
 		"saving": "로컬 사본 저장 중…",
 		"preparing": "캐릭터 준비 중…",
 		"note": "무료 · 새 로컬 사본 저장",
@@ -2275,7 +2281,7 @@
 			},
 			"models": {
 				"v3": {
-					"label": "기본(V3)",
+					"label": "V3",
 					"help": "균형 잡힌 비율."
 				},
 				"standard": {
@@ -2400,7 +2406,6 @@
 			"retryLabel": "캐릭터 다시 만들기",
 			"editSetup": "설정 편집…",
 			"estimated": "예상 {gens}",
-			"keepWorking": "계속 작업",
 			"costTitle": "모든 방향의 서 있는 뷰이며, 대기, 걷기 등 다른 동작은 나중에 추가해요. 서 있는 관절이 빠지면 비용이 조금 더 들 수 있어요",
 			"create": "캐릭터 만들기",
 			"createAnyway": "그래도 만들기"
@@ -2486,7 +2491,6 @@
 		"reuseCached": "캐시된 프레임 재사용",
 		"matchColors": "몸체 색상 맞추기",
 		"keepFrames": "프레임 유지",
-		"keepWorking": "계속 작업할 수 있어요.",
 		"queueAnother": "다른 동작 대기열에 추가",
 		"addLabel": "동작 추가 또는 교체",
 		"submit": {
@@ -2555,7 +2559,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "기본(PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "프레임",
 		"framesHelp": "선택지는 이 모델과 캐릭터의 캔버스({canvas} px)에 맞춰 달라져요. 기본 옵션은 PixelDoll의 기본 프레임 수를 사용해요.",
@@ -2702,7 +2706,6 @@
 		"confirmDiscard": "삭제 확인",
 		"discardWarning": "삭제해도 생성 횟수가 환불되거나 PixelLab의 상태가 삭제되지는 않아요. 다시 시작하면 모든 방향에 비용이 다시 들 수 있어요.",
 		"locksUnavailable": "상태를 안전하게 생성하려면 최신 브라우저를 사용해 주세요.",
-		"defaultModel": "기본값 (Pro)",
 		"flashReference": "Pro Flash는 텍스트 지시 대신 참고 이미지를 사용해요.",
 		"changed": "원본이나 견적이 바뀌었어요. 생성하기 전에 비용을 다시 확인해 주세요.",
 		"sourceUnavailable": "원본 프레임에는 그려진 모든 방향의 저장된 아트가 있어야 해요.",
@@ -2791,9 +2794,6 @@
 		"frame": "프레임 {measure}",
 		"bodyMeasure": "{size}px",
 		"frameMeasure": "{size} × {size}px"
-	},
-	"sheet": {
-		"later": "나중에"
 	},
 	"toast": {
 		"dismiss": "알림 닫기"

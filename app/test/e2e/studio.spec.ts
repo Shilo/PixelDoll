@@ -226,7 +226,7 @@ test('Settings About opens a page with build details and copies them', async ({ 
 		);
 	await page.setViewportSize({ width: 320, height: 568 });
 	await expect(source).toBeInViewport();
-	await settings.getByRole('button', { name: 'Settings', exact: true }).click();
+	await settings.getByRole('button', { name: 'Back to Settings', exact: true }).click();
 	await expect(about).toBeVisible();
 	await about.press('Enter');
 	await expect(heading).toBeFocused();
@@ -244,7 +244,9 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await page.goto(dev);
 	await page.setViewportSize({ width: 844, height: 390 });
 	await openSettings();
-	await expect(settings.getByRole('button', { name: 'Settings', exact: true })).toHaveCount(0);
+	await expect(settings.getByRole('button', { name: 'Back to Settings', exact: true })).toHaveCount(
+		0
+	);
 	await about.click();
 	await expect(settings.getByText(/^Version \d+\.\d+\.\d+-dev$/)).toBeVisible();
 	await expect(settings.getByText('Development', { exact: true })).toBeVisible();
@@ -648,7 +650,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 	await body.fill('66');
 	await body.press('Tab');
 	await expect(settings.getByRole('alert')).toContainText('4 px steps');
-	await settings.getByRole('button', { name: 'Reset settings', exact: true }).click();
+	await settings.getByRole('button', { name: 'Reset all settings...', exact: true }).click();
 	await page
 		.getByRole('alertdialog', { name: 'Reset all settings?' })
 		.getByRole('button', { name: 'Reset settings', exact: true })
@@ -747,7 +749,8 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	const nav = settings.getByRole('navigation', { name: 'Settings', exact: true });
 	const pageReset = settings.getByRole('button', { name: 'Reset this page', exact: true });
-	const resetAll = settings.getByRole('button', { name: 'Reset settings', exact: true });
+	// Reset all is the last row of the index at every size, never a header button.
+	const resetAll = settings.getByRole('button', { name: 'Reset all settings...', exact: true });
 	const search = settings.getByRole('searchbox', { name: 'Search settings', exact: true });
 	await expect(search).toBeFocused();
 	const focusInPanel = () =>
@@ -904,7 +907,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	}
 
 	await page.setViewportSize({ width: 320, height: 740 });
-	const back = settings.getByRole('button', { name: 'Settings', exact: true });
+	const back = settings.getByRole('button', { name: 'Back to Settings', exact: true });
 	const compactPageReset = settings.getByRole('button', {
 		name: 'Reset this page...',
 		exact: true
@@ -1020,8 +1023,9 @@ for (const [width, height] of [
 			const dialog = page.getByRole('dialog', { name: 'Export', exact: true });
 			await expect(dialog).toBeVisible();
 			await expect(notice).toHaveCount(0);
-			await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeFocused();
-			await dialog.getByRole('button', { name: 'Close export', exact: true })[gesture]();
+			// Sheets open on their title.
+			await expect(dialog.getByRole('heading', { name: 'Export', exact: true })).toBeFocused();
+			await dialog.getByRole('button', { name: 'Close', exact: true })[gesture]();
 			await expect(dialog).toHaveCount(0);
 		});
 	});
@@ -1565,6 +1569,12 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await menu.getByRole('menuitem', { name: 'Edit slot...', exact: true }).click();
 	const editor = page.getByRole('dialog', { name: 'Accessory', exact: true });
 	await editor.getByRole('textbox', { name: 'Name', exact: true }).fill('Brooch');
+	// Every way out of an edited sheet asks before losing the edit; Keep editing returns to it unchanged.
+	await editor.getByRole('button', { name: 'Close', exact: true }).click();
+	const discard = page.getByRole('alertdialog', { name: 'Discard changes?', exact: true });
+	await discard.getByRole('button', { name: 'Keep editing', exact: true }).click();
+	await expect(discard).toBeHidden();
+	await expect(editor.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Brooch');
 	await editor
 		.getByRole('combobox', { name: 'Draws above', exact: true })
 		.selectOption('torso_outer');
@@ -1623,7 +1633,7 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	}
 	await add.click();
 	await page.screenshot({ path: test.info().outputPath('add-slot-320-light.png') });
-	await addSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await addSheet.getByRole('button', { name: 'Close', exact: true }).click();
 	const disclosure = page.getByRole('button', { name: /^Not shown \d+$/ });
 	const hiddenShortcut = page.getByRole('button', { name: 'Not shown, 6 slots', exact: true });
 	const footer = page.locator('.slot-rail-footer');
@@ -2087,8 +2097,20 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	// pause playback so the stage is comparable
 	await page.getByRole('button', { name: 'Pause', exact: true }).click();
 	assert.equal(await pressed('Steel helmet'), 'true');
+	// Undo and Redo appear at the start of the end-anchored group, only while usable, so history never moves Mount
+	// settings, Random look, Share, Export, Full screen or More.
+	const barX = () =>
+		page
+			.locator('.header-actions button:not(.header-undo, .header-redo)')
+			.evaluateAll((buttons) => buttons.map((b) => Math.round(b.getBoundingClientRect().x)));
+	await expect(page.locator('.header-undo')).toBeHidden();
+	await expect(page.locator('.header-redo')).toBeHidden();
+	const emptyHistoryBar = await barX();
 	await page.locator('.equipment-scroll .item-tile', { hasText: 'Wizard hat' }).click();
 	assert.equal(await pressed('Wizard hat'), 'true');
+	await expect(page.locator('.header-undo')).toBeVisible();
+	await expect(page.locator('.header-redo')).toBeHidden();
+	assert.deepEqual(await barX(), emptyHistoryBar);
 	assert.equal(await pressed('Steel helmet'), 'false');
 	step('wear swaps the item in the slot');
 
@@ -2111,6 +2133,10 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	);
 
 	for (let i = 0; i < 3; i++) await page.getByRole('button', { name: /^Undo/ }).click();
+	// An emptied Undo leaves the bar; Redo shows right of where it was.
+	await expect(page.locator('.header-undo')).toBeHidden();
+	await expect(page.locator('.header-redo')).toBeVisible();
+	assert.deepEqual(await barX(), emptyHistoryBar);
 	assert.equal(await pressed('Steel helmet'), 'true');
 	await page.keyboard.press('Control+Shift+Z');
 	assert.equal(await pressed('Wizard hat'), 'true');
@@ -2167,7 +2193,7 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	step('keyboard: direction + all directions');
 	await page
 		.getByRole('dialog', { name: 'Inspect character', exact: true })
-		.getByRole('button', { name: 'Done', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
@@ -2371,7 +2397,7 @@ test('studio demo: move views offer only their directions, call out items withou
 	step('arrow keys move the direction segmented control');
 	await page
 		.getByRole('dialog', { name: 'Inspect character', exact: true })
-		.getByRole('button', { name: 'Done', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	finish();
 });
@@ -2434,8 +2460,10 @@ for (const [name, viewport] of [
 		test(`${name}: Outfits, Random look and Redo stay reachable`, async ({ context, page: p }) => {
 			const finish = await demoGuard(context);
 			await openDemo(p);
-			if (await p.locator('.header-redo').isVisible())
-				await expect(p.locator('.header-redo')).toBeVisible();
+			// Redo lives in the bar (shown once there is something to redo), except on phone layouts, where it moves
+			// into More.
+			if (!(await p.locator('.experience.phone-layout').count()))
+				await expect(p.locator('.header-redo')).toBeAttached();
 			else {
 				await p.getByRole('button', { name: 'More options', exact: true }).click();
 				await expect(
@@ -2638,7 +2666,10 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
-	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page
+		.getByRole('dialog', { name: 'New item', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
 	// The copy is another character, so it opens on its standing move: pick the animated one this test watches.
 	await selectPlaybackClip(page, 'walk');
 	await pickItem(page, 'Red cape');
@@ -2685,12 +2716,12 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.keyboard.press('Escape');
 	await expect(deleteAlert).toHaveCount(0);
 	await expect(inspector).toBeVisible();
-	await inspector.getByRole('button', { name: 'Done', exact: true }).click();
+	await inspector.getByRole('button', { name: 'Close', exact: true }).click();
 	await pickItem(page, 'Steel helmet');
 	inspector = await selectedItemDetails(page);
 	await expect(page.getByRole('alertdialog')).toHaveCount(0);
 
-	await inspector.getByRole('button', { name: 'Done', exact: true }).click();
+	await inspector.getByRole('button', { name: 'Close', exact: true }).click();
 
 	// Disposable layout fixture: duplicate stored east artwork into the extra directions, without generation.
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
@@ -2746,7 +2777,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	inspector = await selectedItemDetails(page);
 	await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8);
 	await checkFrames();
-	await inspector.getByRole('button', { name: 'Done', exact: true }).click();
+	await inspector.getByRole('button', { name: 'Close', exact: true }).click();
 	await inspectStage(page);
 	await page.getByRole('button', { name: 'All directions', exact: true }).click();
 	for (const viewport of [
@@ -2800,7 +2831,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.mouse.wheel(0, 2000);
 	await expect.poll(() => content.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
 	expect((await header.boundingBox())!.y).toBe(top);
-	await inspector.getByRole('button', { name: 'Done', exact: true }).click();
+	await inspector.getByRole('button', { name: 'Close', exact: true }).click();
 	await pickItem(page, 'Wizard hat');
 	await inspectStage(page);
 	await page.setViewportSize({ width: 390, height: 844 });
@@ -2854,7 +2885,7 @@ test('desktop resize keeps preview controls and customization reachable across p
 		await pickItem(page, 'Steel helmet');
 		const item = await selectedItemDetails(page);
 		await expect(item.locator('.insp-title')).toHaveText('Steel helmet');
-		await item.getByRole('button', { name: 'Done', exact: true }).click();
+		await item.getByRole('button', { name: 'Close', exact: true }).click();
 	}
 });
 
@@ -3023,9 +3054,44 @@ test('New move opens on the customized template prompt, and an added suggestion 
 	// Its text names the template's own move, which must not count as a duplicate of it.
 	await expect(move.getByRole('button', { name: /^Generate / })).toBeEnabled();
 	await templates.getByRole('button', { name: 'Hop', exact: true }).click();
-	await expect(templates.getByRole('button', { pressed: true })).toHaveCount(0);
+	// No template applies; the added suggestion shows as pressed only because the text is its prompt.
+	await expect(templates.getByRole('button', { pressed: true })).toHaveText(['Hop']);
 	await expect(description).toHaveValue('hop in place');
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeVisible();
+});
+
+test('picking the opening gait template after turning Loop off keeps the template', async ({
+	page
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		// Run first, so the sheet opens on it without it being picked.
+		localStorage.setItem(
+			'pixeldoll.promptSuggestions.v1',
+			JSON.stringify({ move: { order: ['run', 'idle', 'walk', 'slash', 'hurt', 'death', 'cast'] } })
+		);
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
+	const run = move
+		.getByRole('group', { name: 'Move templates', exact: true })
+		.getByRole('button', { name: 'Run', exact: true });
+	const description = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
+	await expect(run).toHaveAttribute('aria-pressed', 'true');
+	await move.getByRole('switch', { name: 'Loop', exact: true }).uncheck();
+	await run.click();
+	// The text follows Loop off, so the move stays the Run template rather than a described move.
+	await expect(run).toHaveAttribute('aria-pressed', 'true');
+	await expect(description).toHaveValue('running');
+	await expect(move.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
+	await expect(move.getByRole('button', { name: /^Generate Run/ })).toBeVisible();
 });
 
 test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Return', async ({
@@ -3034,11 +3100,13 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.creation.items', JSON.stringify({ method: 'skel' }));
 	});
 	await openStudio(page, '/#/');
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	const item = page.getByRole('dialog', { name: 'New item', exact: true });
+	await expect(item.getByRole('status').filter({ hasText: 'Using Frame editing' })).toBeVisible();
 	const prompt = item.getByRole('textbox', { name: 'What is it?', exact: true });
 	const make = item.getByRole('button', { name: /^Make/ });
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
@@ -3131,7 +3199,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	for (const shortcut of ['Control+Enter', 'Meta+Enter']) {
 		await prompt.press(shortcut);
 		await expect(connect).toBeVisible();
-		await connect.getByRole('button', { name: 'Not now', exact: true }).click();
+		await connect.getByRole('button', { name: 'Close', exact: true }).click();
 		await newItem(page, 'Head');
 		await expect(prompt).toHaveValue('a leather hat\n');
 		await expect(attachment).toContainText(filename);
@@ -3203,7 +3271,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await item.getByRole('button', { name: /^Make/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Not now', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await newItem(page, 'Head');
 	await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
@@ -3216,7 +3284,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 		'aria-checked',
 		'true'
 	);
-	await item.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await item.getByRole('button', { name: 'Close', exact: true }).click();
 
 	await page.locator('.project-btn').click();
 	await page
@@ -3234,13 +3302,9 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await character.getByRole('textbox', { name: 'Name', exact: true }).fill('Archer draft');
 	await character.getByRole('button', { name: /^Create/ }).click();
 	await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toBeVisible();
+	// Back from Connect returns to New character, which keeps every choice.
 	await page.goBack();
-	await page.locator('.project-btn').click();
-	await page
-		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
-		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toHaveCount(0);
 	await expect(character.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'a cheerful elf archer'
 	);
@@ -3258,7 +3322,12 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await expect(character.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
 		'Archer draft'
 	);
-	await character.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Leaving the typed draft asks first; Discard drops it with its pending creation.
+	await character.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 
 	// Connecting later must not start the character generation canceled above.
 	await openAccount(page);
@@ -3618,6 +3687,16 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	const vest =
 		m.items.find((i: { id: string }) => i.id === 'vest_leather') ??
 		m.items.find((i: { slot: string }) => i.slot === 'top_inner');
+	body.cells.default = Object.fromEntries(
+		Object.entries(m.rig.rest).map(([dir, rest]) => [dir, [(rest as { image: string }).image]])
+	);
+	m.rig.animations = m.rig.animations.filter((clip: { id: string }) => clip.id !== 'default');
+	m.rig.animations.unshift({
+		id: 'default',
+		cells: 1,
+		loop: true,
+		frames: [{ cell: 0, ms: 100 }]
+	});
 	vest.route = 'skeleton-pose';
 	vest.key = 'magenta';
 	vest.dressed = Object.fromEntries(
@@ -3650,7 +3729,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await setup.getByRole('button', { name: /^Set up ·/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Not now', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -3658,7 +3737,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(setup.getByRole('textbox', { name: /Existing appearance/ })).toHaveValue(
 		'Blue vest, bald, gray shorts'
 	);
-	await setup.getByRole('button', { name: 'Later', exact: true }).click();
+	await setup.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
@@ -3700,8 +3779,8 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await advanced.click();
 	const model = move.getByRole('combobox', { name: 'Motion model' });
 	const slider = move.getByRole('slider', { name: 'Frames' });
-	await expect(model).toHaveValue('pixminimax');
-	await expect(model.getByRole('option')).toHaveText(['Default (PixMiniMax)', 'Skeleton V3', 'V3']);
+	await expect(model).toHaveValue('skeleton-v3');
+	await expect(model.getByRole('option')).toHaveText(['PixMiniMax', 'Skeleton V3', 'V3']);
 	await model.selectOption('skeleton-v3');
 	await slider.press('Home');
 	await expect(slider).toHaveAttribute('aria-valuetext', '3 frames');
@@ -3731,11 +3810,20 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await move.getByRole('button', { name: /^Generate / }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Not now', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
+	const defaultsTab = await context.newPage();
+	await defaultsTab.goto(page.url());
+	await defaultsTab.evaluate(() => {
+		localStorage.setItem('pixeldoll.creation.moves', JSON.stringify({ model: 'v3', frames: 6 }));
+		localStorage.setItem('pixeldoll.creation.states', JSON.stringify({ model: 'pixen' }));
+		localStorage.setItem('pixeldoll.creation.items', JSON.stringify({ method: 'anchor' }));
+	});
+	await defaultsTab.close();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await expect(description).toHaveValue('jumping in place');
+	await expect(model).toHaveValue('skeleton-v3');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
 	await expect(applied).toHaveCount(0);
 	await cast.click();
@@ -3745,8 +3833,69 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(cast).toHaveAttribute('aria-pressed', 'true');
 	await expect(advanced).toHaveCount(1);
 	await expect(templates.getByRole('button', { name: 'Ride', exact: true })).toHaveCount(0);
-	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await move.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await description.fill('A jump that starts low');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await cast.click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
+	await move.getByRole('button', { name: /^Generate / }).click();
+	await page
+		.getByRole('dialog', { name: 'Connect PixelLab' })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await expect(cast).toHaveAttribute('aria-pressed', 'true');
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
+	await cast.click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await advanced.click();
+	await expect(model).toHaveValue('v3');
+	await model.selectOption('pixminimax');
+	await expect(move).toContainText(/Saved Frames is unavailable here.*Automatic \(8 frames\)/i);
+	await model.selectOption('v3');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await slider.press('Home');
+	await cast.click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '4 frames');
+	await model.selectOption('pixminimax');
+	await move.getByRole('button', { name: 'Close', exact: true }).click();
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await description.fill('A jump that starts low');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await move.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
+	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	if (!(await model.isVisible())) await advanced.click();
+	await expect(model).toHaveValue('skeleton-v3');
+	await move.getByRole('button', { name: 'Close', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'New State...', exact: true }).click();
+	const state = page.getByRole('dialog', { name: 'New State', exact: true });
+	await state.getByRole('switch', { name: 'Edit this pose' }).check();
+	await expect(state.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('pixen');
+	await state.getByRole('combobox', { name: 'Model', exact: true }).selectOption('pro');
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'New State...', exact: true }).click();
+	await state.getByRole('switch', { name: 'Edit this pose' }).check();
+	await expect(state.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('pixen');
+	await page.keyboard.press('Escape');
+	await newItem(page, 'Head');
+	const item = page.getByRole('dialog', { name: 'New item', exact: true });
+	await expect(item.getByRole('combobox', { name: 'Animation method' })).toHaveValue('anchor');
+	await item.getByRole('combobox', { name: 'Animation method' }).selectOption('skel');
+	await page.keyboard.press('Escape');
+	await newItem(page, 'Head');
+	await expect(item.getByRole('combobox', { name: 'Animation method' })).toHaveValue('anchor');
+	await page.keyboard.press('Escape');
+	await equipmentMode(page, 'Moves');
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true }).click();
 	// Wait for the switch itself: clicking Add a move before the demo replaced the fixture raced the load (the old flake).
@@ -3794,7 +3943,10 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 	await expect(engines.getByRole('radio', { name: /Unity/ })).toBeChecked();
 	await page.keyboard.press('Tab');
 	await expect(engines.getByRole('radio', { name: /Phaser/ })).not.toBeFocused();
-	await page.getByRole('button', { name: 'Close export', exact: true }).click();
+	await page
+		.getByRole('dialog', { name: 'Export', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
@@ -4217,9 +4369,10 @@ test('a click waiting on a busy first tab continues as soon as that tab is idle,
 		.getByRole('dialog', { name: 'Activity', exact: true })
 		.getByRole('button', { name: /Open New character.*Failed/ })
 		.click();
+	// The failed creation's footer Discard releases its jobs.
 	await page
 		.getByRole('dialog', { name: 'New character', exact: true })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
 		.click();
 	await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeHidden();
 	await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toBeVisible({
@@ -4238,14 +4391,18 @@ for (const dismissal of ['Back', 'Cancel request'] as const) {
 		if (dismissal === 'Back') await second.goBack();
 		else await activity.getByRole('button', { name: dismissal, exact: true }).click();
 		await expect(activity).toHaveCount(0);
-		await second.getByRole('button', { name: 'More options', exact: true }).click();
+		// Both routes step back to New character, where the click waited; its own More reopens Activity.
+		await second
+			.getByRole('dialog', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'More options', exact: true })
+			.click();
 		await second
 			.locator('#experience-options')
 			.getByRole('button', { name: /Activity/ })
 			.click();
 		await expect(activity).toBeVisible();
 		await expect(activity.getByRole('heading', { name: 'Waiting for another tab' })).toHaveCount(0);
-		await expect(activity.getByRole('button', { name: 'Done', exact: true })).toBeVisible();
+		await expect(activity.getByRole('button', { name: 'Close', exact: true })).toBeVisible();
 		await page.close(); // with Activity open again, as a user who only looks
 		await expect(activity).not.toContainText('Running in another tab', { timeout: 15000 });
 		await second.waitForTimeout(1000); // the takeover has resumed; nothing waits to run
@@ -4326,7 +4483,7 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.locator('#experience-options')).toContainText('Other tab');
 	await page.keyboard.press('Escape');
-	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
+	await connect.getByRole('button', { name: 'Close', exact: true }).click();
 	create = await openCreate();
 	await expect(create.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'a cheerful copper clockwork scout'
@@ -4934,7 +5091,7 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 	await expect(activity).toContainText(
 		'You’re offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs.'
 	);
-	await activity.getByRole('button', { name: 'Done', exact: true }).click();
+	await activity.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'More options for Waiting fixture', exact: true }).click();
 	await expect(menu).toContainText(/Paused while you are offline|Waiting for your PixelLab key/);
 	expect(posts).toEqual([]);
@@ -5698,7 +5855,8 @@ test('moves waiting behind another character’s failed move point to it', async
 	await sheet.getByRole('button', { name: 'Open Failed mover', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Failed mover');
 	// A paid retry discloses its estimate on the button itself, not only when saved frames exist.
-	const cancel = sheet.getByRole('button', { name: 'Cancel', exact: true });
+	// The failed move's footer: Discard, New move, then the paid retry last.
+	const cancel = sheet.getByRole('button', { name: 'Discard', exact: true });
 	const startNew = sheet.getByRole('button', { name: 'New move…', exact: true });
 	const retry = sheet.getByRole('button', { name: /^Generate again · Est\. [1-9]\d* gens$/ });
 	for (const viewport of [page.viewportSize()!, { width: 320, height: 568 }]) {
@@ -5894,7 +6052,7 @@ test('Export discloses saved item and body review flags without blocking analysi
 	await reloadStudio(page);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	if (await page.getByRole('dialog', { name: 'Item', exact: true }).count())
-		await page.getByRole('button', { name: 'Done', exact: true }).click();
+		await page.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Export', exact: true });
 	await expect(sheet.getByText(/Some artwork needs a check/)).toBeVisible();
@@ -6204,7 +6362,12 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		.getByRole('textbox', { name: 'Describe the replacement', exact: true })
 		.fill('Punch across the body');
 	await expect(replacePunch).toBeEnabled();
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The typed replacement is unsaved, so closing asks first.
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await redraw('Idle');
 	await expect(sheet).toHaveAccessibleName('Redraw Idle');
 	const replace = sheet.getByRole('button', { name: /^Replace Idle views/ });
@@ -6277,7 +6440,12 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(start).not.toContainText('start.png');
 	await startWarning.getByRole('button', { name: 'Continue', exact: true }).click();
 	await expect(start).toContainText('start.png');
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The typed description is unsaved, so closing asks first.
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	const custom = page.getByRole('textbox', { name: 'Describe the motion', exact: true });
 	await custom.fill('jumping in place');
@@ -6500,7 +6668,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Not now', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await expect(east).toHaveAttribute('aria-pressed', 'true');
@@ -6583,7 +6751,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 6 gens'
 	);
-	await review.getByRole('button', { name: 'Back to results' }).click();
+	await review.getByRole('button', { name: 'Back', exact: true }).click();
 	await expect(suggestion).toBeVisible();
 	const after = await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
@@ -6647,7 +6815,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 6 gens'
 	);
-	await review.getByRole('button', { name: 'Back to results' }).click();
+	await review.getByRole('button', { name: 'Back', exact: true }).click();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			state = await import(path);
@@ -6809,7 +6977,8 @@ test('partial missing gear and explicit item repair stay on the current move and
 	expect(poseScope).toMatchObject({ id: 'walk', dirs: ['west'], items: [fixture.itemId] });
 	expect(poseScope.replace).toBeUndefined();
 	expect(poseScope.itemMethod).toBeUndefined();
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The stopped repair's footer Discard leaves it, as Cancel did.
+	await sheet.getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(sheet).toBeHidden();
 	await selectedItemDetails(page);
 	const repair = page.getByRole('button', { name: /^Repair item/ });
@@ -6979,17 +7148,17 @@ test('paid item repair review survives reload and both decisions send no extra r
 	await expect(review.getByRole('img', { name: 'Repaired frame 1', exact: true })).toBeVisible();
 	await expect(review.getByRole('img', { name: 'Current frame 1', exact: true })).toBeVisible();
 	expect(await saved()).toEqual(before);
-	await review.getByRole('button', { name: 'Hide', exact: true }).click();
+	await review.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: /Review item repair/ }).click();
 	await review.getByRole('button', { name: 'Keep current', exact: true }).click();
-	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(await saved()).toEqual(before);
 	expect(posts).toEqual(['/v2/inpaint-v3']);
 	await openRepair();
 	await review.getByRole('button', { name: 'Use repaired frames', exact: true }).click();
-	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	const after = await saved();
 	expect(after.east).toEqual(before.east);
 	expect(after.west).not.toEqual(before.west);
@@ -7019,7 +7188,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 	).toBeVisible();
 	expect(await saved()).toEqual(after);
 	await redrawReview.getByRole('button', { name: 'Use redrawn frames', exact: true }).click();
-	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(await saved()).toMatchObject({ east: before.east, provenance: after.provenance + 1 });
 	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3', '/v2/edit-images-v2']);
 });
@@ -7122,7 +7291,7 @@ test('unsafe imported equipment prices its frozen route and unsupported held off
 	).toBeVisible();
 	await page
 		.getByRole('dialog', { name: 'Item', exact: true })
-		.getByRole('button', { name: 'Done', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await inspectStage(page);
 	await expect(
@@ -7427,7 +7596,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	await expect(sheet).toContainText(
 		'Could not check cached frames: Synthetic standing image storage failure'
 	);
-	await sheet.getByRole('button', { name: 'Hide', exact: true }).click();
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
@@ -7498,7 +7667,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await expect(connect).toBeVisible();
-	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
+	await connect.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
@@ -7538,7 +7707,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 		checkHashes: diagnosis.checkHashes
 	});
 	expect(pending.spec.measurementRecovery.id).toMatch(/^[a-f0-9-]{36}$/);
-	await sheet.getByRole('button', { name: 'Hide', exact: true }).click();
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 	const currentRig = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			s = await import(statePath),
@@ -7573,7 +7742,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toHaveCount(
 		0
 	);
-	await expect(sheet.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+	await expect(sheet.getByRole('button', { name: 'Discard', exact: true })).toBeVisible();
 	await expect(sheet).toContainText(
 		'Keep saves them as they are, body only, with no PixelLab request.'
 	);
@@ -7784,7 +7953,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
 	await expect(sheet).toContainText('Existing body views are kept if a check still fails');
 	await action.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
+	await connect.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
@@ -7913,7 +8082,12 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(peek.getByText('Dress standing views', { exact: false })).toBeVisible();
 	await expect(peek.getByText('Pose equipment', { exact: false })).toHaveCount(0);
 	await peek.getByRole('button', { name: 'Close API calls', exact: true }).click();
-	await newSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The typed prompt asks before it is dropped.
+	await newSheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	const coverage = page.getByRole('button', { name: /equipped items? needs? frames/ });
 	await selectPlaybackClip(page, 'default');
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
@@ -8062,11 +8236,11 @@ test('move review gates item selection and shows live estimates without spending
 	await expect(retry.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 6 gens'
 	);
-	await retry.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await retry.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	await expect(review.getByRole('button', { name: 'Replace move', exact: true })).toBeEnabled();
 	await expect(review.getByRole('button', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
-	await review.getByRole('button', { name: 'Later', exact: true }).click();
+	await review.getByRole('button', { name: 'Close', exact: true }).click();
 	// A staged draft was drawn on this frame: Adjust frame waits for it instead of leaving it behind.
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
@@ -8080,7 +8254,12 @@ test('move review gates item selection and shows live estimates without spending
 	);
 	await frame.getByRole('button', { name: 'Up', exact: true }).click();
 	await expect(frame.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+	// The nudge is an unsaved edit, so leaving asks first.
 	await page.keyboard.press('Escape');
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await expect(frame).toBeHidden();
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	const compass = review.getByRole('group', { name: 'Directions', exact: true });
@@ -8171,10 +8350,11 @@ test('move review gates item selection and shows live estimates without spending
 			const dialog = document.querySelector('dialog[open]')!;
 			const button = (name: string) =>
 				Array.from(dialog.querySelectorAll('button')).find(
-					(button) => button.textContent?.trim() === name
+					(button) =>
+						button.textContent?.trim() === name || button.getAttribute('aria-label') === name
 				)!;
 			button('Animate 1 item').click();
-			button('Done').click();
+			button('Close').click();
 			return { requests: [...requests], waiting: ui.waitingForTab };
 		} finally {
 			cancelWaitingForTab();
@@ -8197,7 +8377,7 @@ test('move review gates item selection and shows live estimates without spending
 	await animate.click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
-		.getByRole('button', { name: 'Not now', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await seedReview(77);
 	await reloadStudio(page);
@@ -8207,7 +8387,7 @@ test('move review gates item selection and shows live estimates without spending
 	await review.getByRole('button', { name: 'Regenerate…', exact: true }).click();
 	const replacement = page.getByRole('dialog', { name: /^Redraw / });
 	await expect(replacement.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
-	await replacement.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await replacement.getByRole('button', { name: 'Close', exact: true }).click();
 	await walkReview.click();
 	await review.getByRole('button', { name: 'Discard draft', exact: true }).click();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
@@ -8219,7 +8399,7 @@ test('move review gates item selection and shows live estimates without spending
 	expect(staleRegeneration).toBeNull();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
-		.getByRole('button', { name: 'Not now', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	expect(posts).toEqual([]);
 });
@@ -8439,19 +8619,23 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(0);
 	await page
 		.getByRole('dialog', { name: 'Item review', exact: true })
-		.getByRole('button', { name: 'Done', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
-	// Activity lists the stopped draft that holds its slot and opens its review.
+	// Activity (in More, which carries a warning dot) lists the stopped draft that holds its slot and opens its review.
+	await expect(
+		page.locator('.experience-header [popovertarget="experience-options"][data-activity="stopped"]')
+	).toBeVisible();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
-		.locator('.header-actions')
-		.getByRole('button', { name: 'Activity', exact: true })
+		.locator('#experience-options')
+		.getByRole('button', { name: /^Activity/ })
 		.click();
 	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
 	await expect(activity.getByText('Needs attention', { exact: true })).toBeVisible();
 	await activity.getByRole('button', { name: /^Open Fresh retry price · / }).click();
 	await page
 		.getByRole('dialog', { name: 'Item review', exact: true })
-		.getByRole('button', { name: 'Done', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await equipmentGroup(page, 'Off hand');
 	await expect(section(page, 'Off hand').locator('.gen')).toHaveCount(0);
@@ -8668,7 +8852,10 @@ async function editableCopy(page: Page) {
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
-	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page
+		.getByRole('dialog', { name: 'New item', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 const itemMenu = (page: Page) => page.locator('#item-menu');
@@ -9144,7 +9331,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await itemMenu(page).getByRole('menuitem', { name: 'Details...', exact: true }).click();
 	const details = page.getByRole('dialog', { name: 'Item', exact: true });
 	await expect(details.locator('.insp-title')).toHaveText('Steel helmet');
-	await details.getByRole('button', { name: 'Done', exact: true }).click();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(helmetMore).toBeFocused();
 
 	// Scrolling the ⋮ out of view closes the menu; focus stays on that ⋮, without scrolling back or jumping to the header.
@@ -9175,7 +9362,7 @@ test('tile status shows on the tile and in its name, and Recolor opens the item�
 		.getByRole('group', { name: 'When worn, hide', exact: true })
 		.getByRole('button', { name: 'Hair', exact: true })
 		.click();
-	await details.getByRole('button', { name: 'Done', exact: true }).click();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentGroup(page, 'Hair');
 	const hair = section(page, 'Hair').getByRole('button', {
 		name: 'Messy brown hair, hidden by another item',
@@ -9551,7 +9738,7 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(sheet.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
 		prompt
 	);
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 
 	// Enter toggles the switch like any menu item.
 	await expect(page.getByRole('dialog', { name: 'New item', exact: true })).toHaveCount(0);
@@ -9701,7 +9888,7 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Restore', exact: true }).click();
 	await expect(sheet.getByText('Restored 1 original frame.')).toBeVisible();
 	expect(await pixels('walk', 'helmet_steel')).toEqual(original);
-	await sheet.getByRole('button', { name: 'Done' }).click();
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk' }).click();

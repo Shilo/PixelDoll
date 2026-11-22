@@ -2193,7 +2193,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 	await inspect.getByRole('button', { name: 'Next frame', exact: true }).click();
 	await expect(inspect.getByText('Frame 3 of 8', { exact: true })).toBeVisible();
 	await expect.poll(studioPixel).toEqual([102, 25, 31, 255]);
-	await inspect.getByRole('button', { name: 'Done', exact: true }).click();
+	await inspect.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toContainText(
 		'Some artwork needs a check'

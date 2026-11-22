@@ -512,7 +512,7 @@ test('saved failed generation does not block either startup or manual updates wh
 		const pending = activity.getByRole('region', { name: 'Pending work' });
 		await expect(pending.getByText('New character · Saved failed character')).toBeVisible();
 		await expect(pending.getByText('Needs attention', { exact: true })).toBeVisible();
-		await activity.getByRole('button', { name: 'Done', exact: true }).click();
+		await activity.getByRole('button', { name: 'Close', exact: true }).click();
 
 		await stage(page, server, c);
 		const update = page.getByRole('button', { name: /^Update to v11\.8\.3/ }).first();

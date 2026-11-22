@@ -1,6 +1,6 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { closeSettingsActivity } from './settingsNavigation.svelte.ts';
+	import { closeSettingsActivity, settingsNavigation } from './settingsNavigation.svelte.ts';
 	import { openerLabel } from './openerLabel.ts';
 	import Sheet from './Sheet.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
@@ -28,7 +28,9 @@
 		openDraft,
 		openProject,
 		cleanUp,
-		toast
+		toast,
+		canReturnToCreator,
+		returnToCreator
 	} from './state.svelte.ts';
 	async function clear() {
 		let n: Awaited<ReturnType<typeof cleanUp>>;
@@ -137,10 +139,9 @@
 
 <Sheet
 	title={t('activity.title')}
-	cancel={ui.waitingForTab ? 'activity.cancelRequest' : 'common.done'}
-	onclose={() => {
-		if (!closeSettingsActivity()) ui.sheet = null;
-	}}
+	back={settingsNavigation.activityOpen ? closeSettingsActivity : undefined}
+	backTo={t('export.sheet.settings')}
+	onclose={() => (ui.sheet = null)}
 >
 	{#snippet developer()}
 		<ApiPeek
@@ -247,6 +248,14 @@
 				<div class="waiting-copy">
 					<h3>{t('activity.waitingTitle')}</h3>
 					<p>{t('activity.waitingBody')}</p>
+					<!-- Leaving Activity cancels the waiting click (Studio.svelte), so this leaves it the same way: back to
+					     New character when it waited there, so its draft stays. -->
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={() => (canReturnToCreator() ? returnToCreator() : (ui.sheet = null))}
+						>{t('activity.cancelRequest')}</button
+					>
 				</div>
 			</div>
 		{/if}

@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "ui\",system-ui,sans-serif",
+        "createdAt": "2026-11-22T02:18:51.294Z",
+        "reason": "Mockup uses PixelDoll's Bronze UI --bu-font stack (Segoe UI, system-ui) to match the app"
+      }
+    ]
+  }
+}

@@ -70,7 +70,8 @@ test('PixelLab first-open help, account links, and return visits share the conne
 	await expect(popup).toHaveURL('https://pixellab.ai/');
 	await expect(dialog).toBeVisible();
 	await popup.close();
-	await dialog.getByRole('button', { name: 'Not now', exact: true }).click();
+	// Back returns to Settings; the X would close both.
+	await dialog.getByRole('button', { name: 'Back to Settings', exact: true }).click();
 	await expect(settingsConnect).toBeVisible();
 	await openStudio(page, '/');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
@@ -83,7 +84,7 @@ test('PixelLab first-open help, account links, and return visits share the conne
 	await expect(trial).toHaveCount(0);
 	await expect(keyLink).toBeVisible();
 	await expect(dialog.getByText('No account needed for the demo.')).toBeVisible();
-	await expect(dialog.getByRole('button', { name: 'Not now', exact: true })).toBeVisible();
+	await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeVisible();
 });
 
 test('More keeps the original PixelLab usage meter and opens the local sheet', async ({ page }) => {
@@ -124,7 +125,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	const external = account.getByRole('link', { name: 'Open PixelLab account' });
 	await expect(external).toHaveAttribute('href', 'https://www.pixellab.ai/account');
 	await expect(external).toHaveAttribute('target', '_blank');
-	await account.getByRole('button', { name: 'Done', exact: true }).click();
+	await account.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeFocused();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Activity...', exact: true }).click();
@@ -148,7 +149,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	total = 50_000;
 	await activity.getByRole('button', { name: 'Refresh balance', exact: true }).click();
 	await expectInlineCredits(activity);
-	await activity.getByRole('button', { name: 'Done', exact: true }).click();
+	await activity.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	const fullCount = usage.getByText('50,000 / 50,000', { exact: true });
 	await expect(fullCount).toBeVisible();
@@ -176,7 +177,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await usage.click();
 	await expect(account.getByText('50,000 / 50,000', { exact: true })).toBeVisible();
 	await expectInlineCredits(account);
-	await account.getByRole('button', { name: 'Done', exact: true }).click();
+	await account.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
@@ -196,7 +197,8 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	const settingsActivity = settings.getByRole('button', { name: 'Activity...', exact: true });
 	await settingsActivity.click();
 	const activitySheet = page.getByRole('dialog', { name: 'Activity', exact: true });
-	await activitySheet.getByRole('button', { name: 'Done', exact: true }).click();
+	// Back returns to Settings and its opener; the X would close both.
+	await activitySheet.getByRole('button', { name: 'Back to Settings', exact: true }).click();
 	await expect(settingsActivity).toBeFocused();
 	await settingsActivity.click();
 	await page.goBack();
@@ -251,7 +253,7 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	await expect(account.getByRole('status')).toContainText('Couldn’t load usage');
 	await expect(refresh).toBeFocused();
 	await expect(account.locator('progress')).toHaveCount(0);
-	await account.getByRole('button', { name: 'Done', exact: true }).click();
+	await account.getByRole('button', { name: 'Close', exact: true }).click();
 	await openMore();
 	await expect(usage).toContainText('Usage unavailable');
 	await expect(usage.locator('progress')).toHaveCount(0);
@@ -290,7 +292,7 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	const reconnect = page.getByRole('dialog', { name: 'Reconnect PixelLab', exact: true });
 	await expect(reconnect.getByRole('status')).toContainText('didn’t accept this key');
 	await expect(reconnect.getByLabel('Paste your Secret API key', { exact: true })).toBeFocused();
-	await reconnect.getByRole('button', { name: 'Not now', exact: true }).click();
+	await reconnect.getByRole('button', { name: 'Close', exact: true }).click();
 	await openMore();
 	await page.getByRole('button', { name: 'Reconnect PixelLab...', exact: true }).click();
 	balanceStatus = 200;

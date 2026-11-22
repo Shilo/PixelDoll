@@ -574,7 +574,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await expect(
 		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
 	).toBeVisible();
-	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
+	await connect.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(
 		await copy.evaluate(async (id) => {
 			const statePath = '/src/studio/state.svelte.ts';
@@ -640,7 +640,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
 	await expect(connect.getByLabel('Paste your Secret API key', { exact: true })).toBeVisible();
 	await expect(useSavedKey).toHaveCount(0);
-	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
+	await connect.getByRole('button', { name: 'Close', exact: true }).click();
 	await copy.reload();
 	await expect(copy.getByRole('heading', { name: 'Open backup as a copy' })).toBeVisible();
 	await copy.goto(new URL('/?workspace-copy=', page.url()).href);
@@ -875,7 +875,7 @@ test('loading global preferences preserves native focus and permits settings nav
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await page.getByRole('button', { name: 'Close export' }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	await holdProjectTransaction(page, 'readonly');
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const dialog = page.getByRole('dialog');
@@ -887,11 +887,11 @@ test('loading global preferences preserves native focus and permits settings nav
 			)
 		)
 		.toBe(true);
-	await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeFocused();
+	await expect(dialog.getByRole('heading', { name: 'Export', exact: true })).toBeFocused();
 	await expect(dialog.getByRole('radio', { name: 'Godot', exact: true })).toBeDisabled();
 	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
-	const back = dialog.getByRole('button', { name: 'Back', exact: true });
-	await expect(back).toBeFocused();
+	const back = dialog.getByRole('button', { name: 'Back to Export', exact: true });
+	await expect(dialog.getByRole('heading', { name: 'Settings', exact: true })).toBeFocused();
 	await expect(dialog.getByRole('status')).toHaveText('Loading export settings…');
 	const dressed = dialog.getByRole('checkbox', {
 		name: 'Include dressed character sheets',
@@ -900,7 +900,8 @@ test('loading global preferences preserves native focus and permits settings nav
 	await expect(dressed).toBeDisabled();
 	await releaseProjectTransaction(page);
 	await expect(dressed).toBeEnabled();
-	await expect(back).toBeFocused();
+	await expect(back).toBeEnabled();
+	await expect(dialog.getByRole('heading', { name: 'Settings', exact: true })).toBeFocused();
 	await expect(dialog.getByRole('status')).toHaveCount(0);
 });
 
@@ -1017,7 +1018,7 @@ test('global Export choices survive a browser restart, character changes and dyn
 		await expect(dressed).toBeEnabled();
 		await dressed.uncheck();
 		await expect(dressed).toBeEnabled();
-		await dialog.getByRole('button', { name: 'Close export' }).click();
+		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		const identities = await page.evaluate(async () => {
 			const statePath = '/src/studio/state.svelte.ts',
 				importPath = '/src/lib/store/import.ts';
@@ -1048,7 +1049,7 @@ test('global Export choices survive a browser restart, character changes and dyn
 		).not.toBeChecked();
 		await dressed.check();
 		await expect(dressed).toBeEnabled();
-		await dialog.getByRole('button', { name: 'Close export' }).click();
+		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		await page.evaluate(async (ids) => {
 			const statePath = '/src/studio/state.svelte.ts',
 				dbPath = '/src/lib/store/db.ts',
@@ -1085,7 +1086,7 @@ test('global Export choices survive a browser restart, character changes and dyn
 			'Walk',
 			'Current look + saved outfits'
 		]);
-		await dialog.getByRole('button', { name: 'Close export' }).click();
+		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		await context.close(); // Close the actual browser process, retaining only its on-disk profile.
 		context = await launch();
 		page = context.pages()[0];
@@ -1102,7 +1103,7 @@ test('global Export choices survive a browser restart, character changes and dyn
 		await expect(
 			dialog.getByRole('checkbox', { name: 'Cross punch', exact: true })
 		).not.toBeChecked();
-		await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+		await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 		const button = dialog.getByRole('button', { name: /^Download ZIP/ });
 		await expect(button).toBeEnabled();
 		const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
@@ -1231,13 +1232,13 @@ test('global Export choices persist through demo reload, editable copying and ch
 	if (!initiallyDressed) await labelText.click();
 	await expect(dressed).not.toBeChecked();
 	await expect(dressed).toBeEnabled();
-	await dialog.getByRole('button', { name: 'Close export' }).click();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(() => location.reload());
 	await enterStudio(page);
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked();
 	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None']);
-	await dialog.getByRole('button', { name: 'Close export' }).click();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	const copy = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			createPath = '/src/studio/create.ts';
@@ -1252,8 +1253,8 @@ test('global Export choices persist through demo reload, editable copying and ch
 	await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked();
 	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None']);
 	await dialog.getByRole('radio', { name: 'Unity', exact: true }).check();
-	await expect(dialog.getByRole('button', { name: 'Close export' })).toBeEnabled();
-	await dialog.getByRole('button', { name: 'Close export' }).click();
+	await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeEnabled();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
@@ -1274,7 +1275,7 @@ test('global Export choices persist through demo reload, editable copying and ch
 	}, copy);
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked();
-	await dialog.getByRole('button', { name: 'Close export' }).click();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
@@ -1311,7 +1312,7 @@ test('two tabs merge independent Export saves and refresh on reactivation withou
 	});
 	await dressed.uncheck();
 	await expect(dressed).toBeEnabled();
-	await b.getByRole('button', { name: 'Back', exact: true }).click();
+	await b.getByRole('button', { name: 'Back to Export', exact: true }).click();
 	await expect(b.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked();
 	await a.getByRole('button', { name: 'Settings', exact: true }).click();
 	const walk = a.getByRole('checkbox', { name: 'Walk', exact: true });
@@ -1412,8 +1413,8 @@ test('pending export settings saves block conflicting actions and restore keyboa
 		)
 		.toBe(true);
 	await expect(input).toBeDisabled();
-	await expect(dialog.getByRole('button', { name: 'Back', exact: true })).toBeDisabled();
-	await expect(dialog.getByRole('button', { name: 'Close export' })).toBeDisabled();
+	await expect(dialog.getByRole('button', { name: 'Back to Export', exact: true })).toBeDisabled();
+	await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeDisabled();
 	await expect(
 		dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
 	).toBeDisabled();
@@ -1489,7 +1490,7 @@ test('an older ZIP finishing last cannot replace the latest engine and settings 
 	const walk = dialog.getByRole('checkbox', { name: 'Walk', exact: true });
 	await walk.check();
 	await expect(walk).toBeEnabled();
-	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 	await expect
 		.poll(() =>
 			page.evaluate(
@@ -1528,7 +1529,7 @@ test('Export takes the live current look and keeps a different saved outfit in t
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await page.getByRole('button', { name: 'Close export' }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	const sample = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			dbPath = '/src/lib/store/db.ts',
@@ -1624,7 +1625,7 @@ test('the UI exports the canonical JavaScript runtime with full dressed demo she
 	await dialog
 		.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
 		.check();
-	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 	const button = dialog.getByRole('button', { name: /^Download ZIP/ });
 	await expect(button).toBeEnabled();
 	const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
@@ -1649,7 +1650,7 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await page.getByRole('button', { name: 'Close export' }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	const original = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			dbPath = '/src/lib/store/db.ts';
@@ -1695,7 +1696,7 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 	});
 	await dressed.uncheck();
 	await expect(dressed).toBeEnabled();
-	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 	const playback = (animations: { id: string; loop: boolean }[]) =>
 		Object.fromEntries(animations.map((move) => [move.id, move.loop]));
 	const expected = { walk: false, 'cross-punch': true };
@@ -1865,7 +1866,7 @@ test('one-frame and hundred-animation characters keep exact summaries, readable 
 	);
 	const dialog = page.getByRole('dialog');
 	for (const count of [1, 100]) {
-		await dialog.getByRole('button', { name: 'Close export' }).click();
+		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		await page.evaluate(async (count) => {
 			const statePath = '/src/studio/state.svelte.ts',
 				dbPath = '/src/lib/store/db.ts',
@@ -1937,7 +1938,7 @@ test('one-frame and hundred-animation characters keep exact summaries, readable 
 			true
 		);
 		await page.screenshot({ path: info.outputPath(`export-${count}-animations.png`) });
-		await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+		await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 		await expect(summary).toHaveText(count === 1 ? 'All' : names.slice(1, -1).join(', '));
 		await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeVisible();
 		expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
@@ -1959,7 +1960,7 @@ test('Export settings persist explicit None, list and All choices, and toggle co
 		await expect(dialog.getByRole('heading', { name: 'Export', exact: true })).toBeVisible();
 	};
 	const back = async () => {
-		await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+		await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 		await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeFocused();
 	};
 	await openSettings();
@@ -1994,7 +1995,7 @@ test('Export settings persist explicit None, list and All choices, and toggle co
 	await expect(dressed).toBeEnabled();
 	await back();
 	await expect(summary).toHaveText(['All', 'None']);
-	await dialog.getByRole('button', { name: 'Close export' }).click();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(() => location.reload());
 	await enterStudio(page);
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
@@ -2066,7 +2067,7 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	await dressed.uncheck();
 	await expect(dressed).toBeEnabled();
 	await page.setViewportSize({ width: 667, height: 375 });
-	const up = settings.getByRole('button', { name: 'Settings', exact: true });
+	const up = settings.getByRole('button', { name: 'Back to Settings', exact: true });
 	await expect(up).toBeVisible();
 	await expect(dressed).toBeVisible();
 	await up.click();
@@ -2082,23 +2083,13 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	const shortcut = settings.getByRole('button', { name: 'Export Adventurer character...' });
 	await shortcut.click();
 	await expect(dialog).toHaveAccessibleName('Export');
-	await page.keyboard.press('Escape');
+	// Back returns to Settings; Escape, like the X, would leave both.
+	await dialog.getByRole('button', { name: 'Back to Settings', exact: true }).click();
+	// Export opened from Settings shows Back to Settings where its own Settings opener would be: one way to the same page.
 	await expect(shortcut).toBeVisible();
 	await shortcut.click();
-	await expect(dialog).toHaveAccessibleName('Export');
-	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
-	await expect(dialog).toHaveAccessibleName('Settings');
-	await expect(dialog.getByRole('heading', { name: 'Export', exact: true })).toBeVisible();
-	await expect(
-		dialog.getByRole('checkbox', { name: 'Include dressed character sheets' })
-	).not.toBeChecked();
-	await dialog.getByRole('button', { name: 'Export Adventurer character...', exact: true }).click();
-	await expect(dialog).toHaveAccessibleName('Export');
-	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
-	await expect(dialog).toHaveAccessibleName('Settings');
-	await page.goBack();
-	await expect(dialog).toHaveAccessibleName('Export');
-	await page.keyboard.press('Escape');
+	await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toHaveCount(0);
+	await dialog.getByRole('button', { name: 'Back to Settings', exact: true }).click();
 	await expect(shortcut).toBeVisible();
 });
 
@@ -2138,7 +2129,7 @@ test('Export settings show storage failures without changing the choice or trapp
 		if (checked) await expect(input).toBeChecked();
 		else await expect(input).not.toBeChecked();
 	}
-	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 	await expect(dialog.locator('.export-summary dd')).toHaveText(before);
 	const originalEngine = dialog.getByRole('radio', { name: 'PNG + JSON', exact: true });
 	await expect(originalEngine).toBeChecked();
@@ -2159,7 +2150,7 @@ test('Export settings show storage failures without changing the choice or trapp
 	await expect(originalEngine).toBeChecked();
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).not.toBeChecked();
 	await expect(dialog.locator('#export-description')).toContainText('PNG + JSON:');
-	await dialog.getByRole('button', { name: 'Close export' }).click();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(dialog).toHaveCount(0);
 });
 
@@ -2171,7 +2162,7 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 			page,
 			info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 		);
-		await page.getByRole('button', { name: 'Close export' }).click();
+		await page.getByRole('button', { name: 'Close', exact: true }).click();
 		const errors: string[] = [];
 		page.on('pageerror', (error) => errors.push(error.message));
 		await page.evaluate(
@@ -2230,13 +2221,13 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 				return (await db.all('projects')).filter((r: { id?: string }) => r.id?.startsWith('rig-'));
 			})
 		).toEqual(before);
-		await dialog.getByRole('button', { name: 'Close export' }).click();
+		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		await page.evaluate(() => location.reload());
 		await enterStudio(page);
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
 		await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled();
 		await expect(dialog.getByRole('alert')).toHaveCount(0);
-		await dialog.getByRole('button', { name: 'Close export' }).click();
+		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		await expect(dialog).toHaveCount(0);
 		expect(errors).toEqual([]);
 	});
@@ -2249,7 +2240,7 @@ for (const corruption of ['null-list', 'sparse-array'] as const)
 			page,
 			info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 		);
-		await page.getByRole('button', { name: 'Close export' }).click();
+		await page.getByRole('button', { name: 'Close', exact: true }).click();
 		const errors: string[] = [];
 		page.on('pageerror', (error) => errors.push(error.message));
 		await page.evaluate(
@@ -2275,7 +2266,7 @@ for (const corruption of ['null-list', 'sparse-array'] as const)
 		const walk = dialog.getByRole('checkbox', { name: 'Walk', exact: true });
 		await walk.check();
 		await expect(walk).toBeEnabled();
-		await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+		await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 		const button = dialog.getByRole('button', { name: /^Download ZIP/ });
 		await expect(button).toBeEnabled();
 		const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
@@ -2305,7 +2296,7 @@ test('invalid move names still allow artwork recovery and storage outages do not
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await page.getByRole('button', { name: 'Close export' }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(() => {
 		const get = IDBObjectStore.prototype.get;
 		IDBObjectStore.prototype.get = function (query) {
@@ -2321,7 +2312,7 @@ test('invalid move names still allow artwork recovery and storage outages do not
 	await expect(dialog.getByRole('alert')).toContainText('Could not load export settings');
 	await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0);
 	await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled();
-	await dialog.getByRole('button', { name: 'Close export' }).click();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
@@ -2336,7 +2327,7 @@ test('invalid move names still allow artwork recovery and storage outages do not
 	).toBeVisible();
 	await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0);
 	await expect(dialog.getByRole('button', { name: 'Download artwork ZIP' })).toBeEnabled();
-	await dialog.getByRole('button', { name: 'Close export' }).click();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 });
 
 test('quick download recovers working images from an unopened character with a missing image', async ({
@@ -2382,7 +2373,7 @@ test('reset preserves preferences already repaired elsewhere and waits for its c
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await page.getByRole('button', { name: 'Close export' }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async (key) => {
 		const path = '/src/lib/store/db.ts';
 		await (await import(path)).put('projects', key, {});
@@ -2408,7 +2399,7 @@ test('reset preserves preferences already repaired elsewhere and waits for its c
 		)
 		.toBe(true);
 	await expect(reset).toBeDisabled();
-	await expect(dialog.getByRole('button', { name: 'Close export' })).toBeDisabled();
+	await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeDisabled();
 	await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled();
 	await page.keyboard.press('Escape');
 	await expect(dialog).toBeVisible();
@@ -2427,7 +2418,7 @@ test('distinct imported IDs with identical pretty names remain distinguishable g
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await page.getByRole('button', { name: 'Close export' }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			dbPath = '/src/lib/store/db.ts',
@@ -2467,7 +2458,7 @@ test('distinct imported IDs with identical pretty names remain distinguishable g
 	await expect(other).not.toBeChecked();
 	await other.check();
 	await expect(other).toBeEnabled();
-	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 	await expect(dialog.locator('.export-summary dd').first()).toHaveText('Jump loop (jump-loop)');
 	expect(
 		await page.evaluate(async () => {
@@ -2484,7 +2475,7 @@ test('Export navigation and settings fit phones, landscape and both themes, incl
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await page.getByRole('button', { name: 'Close export' }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			state = await import(path),
@@ -2502,10 +2493,11 @@ test('Export navigation and settings fit phones, landscape and both themes, incl
 			await page.evaluate((theme) => (document.documentElement.dataset.theme = theme), theme);
 			await page.setViewportSize(viewport);
 			await expect(dialog).toHaveClass(viewport.width === 320 ? /\bbottom\b/ : /\bside\b/);
-			const close = dialog.getByRole('button', { name: 'Close export' }),
+			const close = dialog.getByRole('button', { name: 'Close', exact: true }),
 				settings = dialog.getByRole('button', { name: 'Settings', exact: true });
 			const closeBefore = await close.boundingBox(),
 				nav = await settings.boundingBox();
+			// The Settings opener sits at the header's start, clear of the X at its end.
 			expect(nav!.x + nav!.width).toBeLessThan(closeBefore!.x);
 			await settings.click();
 			await expect(dialog.getByRole('group', { name: 'Play animation once' })).toBeVisible();
@@ -2515,7 +2507,8 @@ test('Export navigation and settings fit phones, landscape and both themes, incl
 			expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
 				true
 			);
-			await expect(dialog.locator('[title]')).toHaveCount(0);
+			// Only the icon-only X carries a tooltip.
+			await expect(dialog.locator('[title]:not(.surface-close)')).toHaveCount(0);
 			await dialog
 				.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
 				.scrollIntoViewIfNeeded();
@@ -2525,10 +2518,10 @@ test('Export navigation and settings fit phones, landscape and both themes, incl
 			await page.screenshot({
 				path: info.outputPath(`export-settings-${theme}-${viewport.width}.png`)
 			});
-			await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+			await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 			await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeVisible();
 		}
-	await dialog.getByRole('button', { name: 'Close export' }).click();
+	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeFocused();
 });
 
@@ -3391,7 +3384,8 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	const gifBytes = await readFile((await gif.path())!);
 	expect(gif.suggestedFilename()).toMatch(/-walk-south\.gif$/);
 	expect(gifBytes.subarray(0, 6).toString()).toBe('GIF89a');
-	await expect(popover.locator('[title]')).toHaveCount(0);
+	// Only the icon-only X carries a tooltip.
+	await expect(popover.locator('[title]:not(.surface-close)')).toHaveCount(0);
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('3');
 	await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled();
 	await expect(popover.locator('.share-resolution')).toHaveText('192 × 192 px');
@@ -3919,7 +3913,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	await page.keyboard.press('Escape');
 	await expect(versionMenu).toBeHidden();
 	expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-	await page.getByRole('button', { name: 'Close export' }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(errors).toEqual([]);
 	expect(apiRequests).toEqual([]);
 });
@@ -3963,7 +3957,7 @@ test('RPG Maker walk choice updates the downloaded omissions note', async ({ pag
 	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
 	await expect(dialog).toHaveAccessibleName('Settings');
 	await expect(walk).toHaveCount(0);
-	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 	await expect(walk).toHaveValue('walk-sneak');
 	const [download] = await Promise.all([
 		page.waitForEvent('download'),

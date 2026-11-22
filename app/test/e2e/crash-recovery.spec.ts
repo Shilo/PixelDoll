@@ -51,7 +51,7 @@ test('Export choices survive abrupt browser termination and restart', async ({},
 		await expect(dressed).toBeEnabled();
 		await dressed.uncheck();
 		await expect(dressed).toBeEnabled();
-		await dialog.getByRole('button', { name: 'Close export' }).click();
+		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		await page.evaluate(() =>
 			addEventListener('pagehide', () => localStorage.setItem('crash-test:pagehide', 'yes'))
 		);

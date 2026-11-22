@@ -106,7 +106,9 @@
 		"autoSize": "Automatisch ({size} px)",
 		"frameMinimum": "Wähle Automatisch oder eine benutzerdefinierte Framegröße von mindestens {min} px.",
 		"custom": "Benutzerdefiniert",
-		"description": "In diesem Browser gespeichert. Die Erstellungsdialoge verwenden diese Werte noch nicht.",
+		"description": "In diesem Browser gespeichert. Gilt beim Öffnen eines neuen Erstellungsfensters.",
+		"fallback": "Die gespeicherte Einstellung „{setting}“ ist hier nicht verfügbar. Stattdessen wird „{value}“ verwendet.",
+		"autoFrames": "Automatisch ({count} Frames)",
 		"defaults": "Standardwerte für die Erstellung",
 		"readFailed": "Gespeicherte Einstellungen konnten nicht gelesen werden. Setze diese Seite zurück.",
 		"storageUnavailable": "Der Browserspeicher ist nicht verfügbar. Diese Einstellungen können nicht gespeichert werden.",
@@ -159,6 +161,12 @@
 		"idCopyFailed": "Die ID konnte nicht kopiert werden."
 	},
 	"common": {
+		"back": "Zurück",
+		"backTo": "Zurück zu {place}",
+		"keepEditing": "Weiter bearbeiten",
+		"discardChangesTitle": "Änderungen verwerfen?",
+		"discardChangesBody": "Deine Änderungen hier gehen verloren.",
+		"keepsRunning": "Läuft in Aktivität weiter, wenn du das schließt.",
 		"loadFailed": "Ein Teil von PixelDoll konnte nicht geladen werden. Lade die Seite neu und versuche es erneut.",
 		"advanced": "Erweitert",
 		"cancel": "Abbrechen",
@@ -179,7 +187,6 @@
 		"done": "Fertig",
 		"downloadZip": "ZIP herunterladen",
 		"free": "Kostenlos",
-		"hide": "Ausblenden",
 		"loading": "Wird geladen…",
 		"move": "Animation",
 		"name": "Name",
@@ -337,7 +344,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Kopieren",
 		"demoNoAccount": "Für die Demo brauchst du kein Konto.",
-		"notNow": "Jetzt nicht",
 		"sentOnlyToApiPixellabAi": "Der Schlüssel wird nur an api.pixellab.ai gesendet.",
 		"forgetKey": "Schlüssel entfernen",
 		"forgetTitle": "PixelLab-Schlüssel entfernen?",
@@ -713,6 +719,8 @@
 		"titleItemReview": "Gegenstand prüfen"
 	},
 	"toolbar": {
+		"activityRunning": "In Aktivität läuft Arbeit",
+		"activityAttention": "Arbeit in Aktivität braucht Aufmerksamkeit",
 		"help": "Hilfe",
 		"userGuide": "Benutzerhandbuch",
 		"reportProblem": "Problem melden",
@@ -1077,7 +1085,6 @@
 			"title": "Export",
 			"back": "Zurück",
 			"settings": "Einstellungen",
-			"close": "Export schließen",
 			"saving": "Einstellungen werden gespeichert…",
 			"unavailable": "Export nicht verfügbar",
 			"sourceOnly": "Nur Quell-PNGs",
@@ -1353,7 +1360,6 @@
 		"previewDirectionLabel": "Blickrichtung der Vorschau",
 		"setupNext": "Danach das Posen-Rig einrichten (empfohlen)",
 		"setupNextHint": "Der Import ist kostenlos. Vor der Rig-Einrichtung siehst du, wie viele PixelLab-Generierungen sie kostet.",
-		"chooseAnother": "Andere Figur auswählen",
 		"saving": "Deine lokale Kopie wird gespeichert…",
 		"preparing": "Deine Figur wird vorbereitet…",
 		"note": "Kostenlos · speichert eine neue lokale Kopie",
@@ -2338,7 +2344,7 @@
 			},
 			"models": {
 				"v3": {
-					"label": "Standard (V3)",
+					"label": "V3",
 					"help": "Ausgewogene Proportionen."
 				},
 				"standard": {
@@ -2464,7 +2470,6 @@
 			"retryLabel": "Figur erneut erstellen",
 			"editSetup": "Setup ändern…",
 			"estimated": "Geschätzt: {gens}",
-			"keepWorking": "Weiterarbeiten",
 			"costTitle": "Enthält die Standansichten in allen Blickrichtungen. Idle, Gehen und weitere Animationen fügst du danach hinzu. Ein fehlendes Gelenk in der Standpose kann etwas mehr kosten",
 			"create": "Figur erstellen",
 			"createAnyway": "Trotzdem erstellen"
@@ -2551,7 +2556,6 @@
 		"reuseCached": "Zwischengespeicherte Frames verwenden",
 		"matchColors": "Grundkörperfarben abgleichen",
 		"keepFrames": "Frames behalten",
-		"keepWorking": "Du kannst weiterarbeiten.",
 		"queueAnother": "Weitere Animation vormerken",
 		"addLabel": "Animation hinzufügen oder ersetzen",
 		"submit": {
@@ -2623,7 +2627,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "Standard (PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "Frames",
 		"framesHelp": "Die Auswahl passt zu diesem Modell und der Leinwand des Charakters ({canvas} px). Die Standardoption behält PixelDolls voreingestellte Framezahl.",
@@ -2773,7 +2777,6 @@
 		"confirmDiscard": "Verwerfen bestätigen",
 		"discardWarning": "Beim Verwerfen werden keine Generierungen erstattet und kein Zustand aus PixelLab gelöscht. Beim Neustart können erneut Kosten für alle Richtungen anfallen.",
 		"locksUnavailable": "Verwende einen aktuellen Browser, um Zustände sicher zu generieren.",
-		"defaultModel": "Standard (Pro)",
 		"flashReference": "Pro Flash nutzt ein Referenzbild anstelle einer Textanweisung.",
 		"changed": "Quelle oder Kostenschätzung haben sich geändert. Prüfe vor dem Generieren erneut die Kosten.",
 		"sourceUnavailable": "Für jede gezeichnete Blickrichtung muss der Quell-Frame gespeicherte Grafik haben.",
@@ -2862,9 +2865,6 @@
 		"frame": "Frame: {measure}",
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
-	},
-	"sheet": {
-		"later": "Später"
 	},
 	"toast": {
 		"dismiss": "Benachrichtigung schließen"

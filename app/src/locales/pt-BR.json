@@ -106,7 +106,9 @@
 		"autoSize": "Automático ({size} px)",
 		"frameMinimum": "Escolha Automático ou um tamanho de quadro personalizado de pelo menos {min} px.",
 		"custom": "Personalizado",
-		"description": "Salvo neste navegador. As janelas de criação ainda não usam estes valores.",
+		"description": "Salvo neste navegador. Aplica-se ao abrir uma nova janela de criação.",
+		"fallback": "A opção salva de {setting} não está disponível aqui. Será usado {value}.",
+		"autoFrames": "Automático ({count} quadros)",
 		"defaults": "Padrões de criação",
 		"readFailed": "Não foi possível ler as opções salvas. Redefina esta página para corrigi-las.",
 		"storageUnavailable": "O armazenamento do navegador está indisponível. Essas escolhas não podem ser salvas.",
@@ -159,6 +161,12 @@
 		"idCopyFailed": "Não foi possível copiar o ID."
 	},
 	"common": {
+		"back": "Voltar",
+		"backTo": "Voltar para {place}",
+		"keepEditing": "Continuar editando",
+		"discardChangesTitle": "Descartar alterações?",
+		"discardChangesBody": "As alterações feitas aqui serão perdidas.",
+		"keepsRunning": "Continua em Atividade se você fechar isto.",
 		"loadFailed": "Não foi possível carregar uma parte do PixelDoll. Recarregue a página para tentar novamente.",
 		"advanced": "Avançado",
 		"cancel": "Cancelar",
@@ -179,7 +187,6 @@
 		"done": "Concluir",
 		"downloadZip": "Baixar ZIP",
 		"free": "Grátis",
-		"hide": "Ocultar",
 		"loading": "Carregando…",
 		"move": "Animação",
 		"name": "Nome",
@@ -337,7 +344,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Copiar",
 		"demoNoAccount": "Você não precisa de conta para usar a demo.",
-		"notNow": "Agora não",
 		"sentOnlyToApiPixellabAi": "A chave é enviada apenas para api.pixellab.ai.",
 		"forgetKey": "Esquecer chave",
 		"forgetTitle": "Esquecer a chave do PixelLab?",
@@ -713,6 +719,8 @@
 		"titleItemReview": "Revisão de item"
 	},
 	"toolbar": {
+		"activityRunning": "Há trabalho em andamento em Atividade",
+		"activityAttention": "Um trabalho em Atividade precisa de atenção",
 		"help": "Ajuda",
 		"userGuide": "Guia do usuário",
 		"reportProblem": "Relatar um problema",
@@ -1080,7 +1088,6 @@
 			"title": "Exportar",
 			"back": "Voltar",
 			"settings": "Configurações",
-			"close": "Fechar exportação",
 			"saving": "Salvando configurações…",
 			"unavailable": "Exportação indisponível",
 			"sourceOnly": "Somente PNGs originais",
@@ -1359,7 +1366,6 @@
 		"previewDirectionLabel": "Direção da prévia",
 		"setupNext": "Configurar o rig de poses na próxima etapa (recomendado)",
 		"setupNextHint": "A importação é grátis. Antes de começar, a configuração do rig mostra o custo em gerações do PixelLab.",
-		"chooseAnother": "Escolher outro personagem",
 		"saving": "Salvando sua cópia local…",
 		"preparing": "Preparando seu personagem…",
 		"note": "Grátis · salva uma nova cópia local",
@@ -2347,7 +2353,7 @@
 			},
 			"models": {
 				"v3": {
-					"label": "Padrão (V3)",
+					"label": "V3",
 					"help": "Proporções equilibradas."
 				},
 				"standard": {
@@ -2473,7 +2479,6 @@
 			"retryLabel": "Criar personagem novamente",
 			"editSetup": "Editar configuração…",
 			"estimated": "Estimativa: {gens}",
-			"keepWorking": "Continuar trabalhando",
 			"costTitle": "Inclui as vistas da pose em pé em todas as direções. Adicione depois as animações de repouso, caminhada e outras. Articulações ausentes na pose em pé podem aumentar um pouco o custo",
 			"create": "Criar personagem",
 			"createAnyway": "Criar mesmo assim"
@@ -2560,7 +2565,6 @@
 		"reuseCached": "Reaproveitar quadros em cache",
 		"matchColors": "Ajustar cores do corpo",
 		"keepFrames": "Manter quadros",
-		"keepWorking": "Você pode continuar trabalhando.",
 		"queueAnother": "Colocar outra animação na fila",
 		"addLabel": "Adicionar ou substituir animação",
 		"submit": {
@@ -2632,7 +2636,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "Padrão (PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "Quadros",
 		"framesHelp": "As opções cabem neste modelo e na tela do personagem ({canvas} px). A opção padrão mantém a contagem de quadros predefinida do PixelDoll.",
@@ -2782,7 +2786,6 @@
 		"confirmDiscard": "Confirmar descarte",
 		"discardWarning": "Descartar não reembolsa gerações nem exclui o estado do PixelLab. Recomeçar pode cobrar todas as direções novamente.",
 		"locksUnavailable": "Use um navegador atualizado para gerar estados com segurança.",
-		"defaultModel": "Padrão (Pro)",
 		"flashReference": "O Pro Flash usa uma imagem de referência em vez de instruções escritas.",
 		"changed": "A origem ou a estimativa mudou. Consulte o custo novamente antes de gerar.",
 		"sourceUnavailable": "O quadro de origem precisa de arte salva em cada direção desenhada.",
@@ -2871,9 +2874,6 @@
 		"frame": "Quadro {measure}",
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
-	},
-	"sheet": {
-		"later": "Mais tarde"
 	},
 	"toast": {
 		"dismiss": "Dispensar notificação"

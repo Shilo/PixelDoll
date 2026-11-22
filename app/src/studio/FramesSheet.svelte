@@ -219,10 +219,12 @@
 
 <Sheet
 	title={prepared ? t('fixFrames.reviewTitle') : t('fixFrames.title')}
-	cancel={prepared ? 'common.cancel' : 'common.done'}
-	cancelDisabled={busy}
+	locked={busy}
 	wide
-	onclose={() => (prepared ? reset() : (ui.sheet = null))}
+	back={prepared ? reset : undefined}
+	backDiscards
+	dirty={!!prepared}
+	onclose={() => (ui.sheet = null)}
 >
 	{#if m && item && move && frame}
 		<div

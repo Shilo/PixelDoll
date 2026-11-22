@@ -133,7 +133,7 @@ test('account capacity, two-tab leadership, busy waiting and recovery work throu
 	await expect(page.locator('.act-group').filter({ hasText: 'Recent' })).not.toContainText(
 		'failed'
 	);
-	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.locator('#activity').click();
 	await expect(page.getByTestId('queue-capacity')).toHaveText('Up to 20 jobs at once.');
 	expect(errors).toEqual([]);

@@ -117,7 +117,7 @@
 
 <Sheet
 	title={t('setup.title')}
-	cancel={active || (mine && settingUp.error) ? 'common.hide' : 'sheet.later'}
+	exitNote={active ? 'sheet-exit-note' : undefined}
 	onclose={() => (ui.sheet = null)}
 >
 	{#snippet developer()}
@@ -235,6 +235,7 @@
 				{t('setup.busyElsewhere')}
 			</p>{/if}
 	{/if}
+	{#if active}<p class="muted small" id="sheet-exit-note">{t('setup.keepWorking')}</p>{/if}
 	{#snippet footer()}
 		{#if mine && settingUp.done}<button
 				class="bu-action btn primary"
@@ -252,7 +253,7 @@
 					data-variant="quiet"
 					onclick={async () => {
 						if ((await dismissSetup()) && ui.sheet === 'setup') ui.sheet = null;
-					}}>{t('common.cancel')}</button
+					}}>{t('common.discard')}</button
 				>
 				<div class="recovery-options">
 					<span class="api-action"
@@ -275,12 +276,8 @@
 					>
 				</div>
 			</div>
-		{:else if active}<span class="foot-note">{t('setup.keepWorking')}</span><button
-				class="bu-action btn"
-				data-variant="outline"
-				onclick={() => (ui.sheet = null)}>{t('common.hide')}</button
-			>
-		{:else}<span class="foot-note">{t('setup.pixelsUnchanged')}</span><span class="api-action"
+		{:else if !active}<span class="foot-note">{t('setup.pixelsUnchanged')}</span><span
+				class="api-action"
 				><button
 					class="bu-action btn primary"
 					data-variant="primary"

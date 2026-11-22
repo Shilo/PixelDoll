@@ -368,7 +368,7 @@ test('full screen includes the whole app and survives screen changes, dialogs an
 	await page.getByRole('button', { name: 'Activity...', exact: true }).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
 	expect(await rootIsFullscreen()).toBe(true);
-	await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
 	// Browser-owned exits (Escape, tab switching) update state without a click on our control.
 	await page.evaluate(() => document.exitFullscreen());
 	await expect(enter).toBeVisible();
@@ -463,8 +463,9 @@ test('full screen and view navigation stay separate while Activity is in the hea
 			input: { slot: 'head' }
 		});
 	});
+	// Running work marks More with a dot instead of adding a bar control.
 	await expect(
-		page.locator('.header-actions').getByRole('button', { name: 'Activity', exact: true })
+		page.locator('.experience-header [popovertarget="experience-options"][data-activity="busy"]')
 	).toBeVisible();
 	for (const width of [320, 360, 390, 760, 920, 1024, 1101, 1279, 1280, 1440]) {
 		await page.setViewportSize({ width, height: 900 });
@@ -627,7 +628,12 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	await name.fill('Keyboard draft');
 	await page.keyboard.press('ArrowLeft');
 	await expect(name).toBeFocused();
-	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Leaving typed text asks first.
+	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await expect(create).toBeFocused();
 	await expect(selection(page)).toBeVisible();
 	await page.locator('.customize-action').click();
@@ -754,9 +760,12 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(toggle).toHaveAttribute('aria-haspopup', 'dialog');
 	await expect(toggle.locator('.view-label')).toHaveCount(0);
 	await expect(page.locator('.view-modes .test-mount-toggle')).toHaveCount(0);
-	await expect(page.locator('.header-actions > .test-mount-toggle + .header-random')).toHaveCount(
-		1
-	);
+	// Undo and Redo lead the trailing group (shown only while usable); Mount settings and Random look follow them.
+	await expect(
+		page.locator(
+			'.header-actions > .header-undo + .header-redo + .test-mount-toggle + .header-random'
+		)
+	).toHaveCount(1);
 	// The mount icon opens the Mount page of Settings directly.
 	const mountMenu = page.getByRole('dialog', { name: 'Settings' });
 	const shown = mountMenu.getByRole('switch', { name: 'Show mount', exact: true });
@@ -3196,7 +3205,7 @@ test('short tab labels, the character name and sheet Done buttons keep 44 px tar
 	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
 	const done = page
 		.getByRole('dialog', { name: 'Inspect character', exact: true })
-		.getByRole('button', { name: 'Done', exact: true });
+		.getByRole('button', { name: 'Close', exact: true });
 	// The label stays compact; an invisible box answers presses 22 px around its center.
 	expect(
 		await done.evaluate((el) => {

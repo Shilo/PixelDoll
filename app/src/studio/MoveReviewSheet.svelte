@@ -13,6 +13,8 @@
 	import {
 		itemMoveOffer,
 		missingItemMoves,
+		moveAnimationModel,
+		moveFrames,
 		moveMinimumTier,
 		readMoveCandidateImages,
 		skeletonMoveReview
@@ -199,7 +201,11 @@
 					: skeletonRetry && !spec.startFrom && spec.replace
 						? { clip: DEFAULT_MOVE }
 						: undefined,
-			animation: animation ?? spec.animation,
+			animation: animation ??
+				spec.animation ?? {
+					model: moveAnimationModel(spec),
+					frameCount: manifest ? moveFrames(manifest, spec) : undefined
+				},
 			loop: movePlaybackChanged(candidate.basePlayback, saved)
 				? (saved?.moveLoop ?? saved?.loop)
 				: (animation?.loop ?? spec.animation?.loop),
@@ -321,8 +327,7 @@
 
 <Sheet
 	title={t(itemsStep ? 'moveSheet.checkpoint.titleItems' : 'moveSheet.checkpoint.review')}
-	cancel={itemsStep ? 'common.done' : 'sheet.later'}
-	cancelDisabled={busy}
+	locked={busy}
 	className={itemsStep ? '' : 'move-review'}
 	onclose={() => (ui.sheet = null)}
 	footer={candidate ? foot : undefined}

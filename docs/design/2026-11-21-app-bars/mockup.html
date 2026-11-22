@@ -1,0 +1,1141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>App Bars Mockup</title>
+    <style>
+      .m {
+        --canvas: #111317;
+        --surface: #202329;
+        --text: #f2eee6;
+        --muted: #b8b5ad;
+        --accent: #c9a66b;
+        --on-accent: #111317;
+        --danger: #f2a099;
+        --line: color-mix(in srgb, var(--muted) 27%, var(--surface));
+        --hover: color-mix(in srgb, var(--text) 8%, var(--surface));
+        --scrim: rgb(0 0 0 / 0.5);
+        --note: #8fd3ff;
+        font:
+          14px/1.4 "Segoe UI",
+          system-ui,
+          sans-serif;
+        color: var(--text);
+        display: grid;
+        gap: 28px;
+      }
+      .m.light {
+        --canvas: #eeeae2;
+        --surface: #faf7f0;
+        --text: #25282d;
+        --muted: #5e625f;
+        --accent: #76562f;
+        --on-accent: #fff;
+        --danger: #a3312f;
+        --scrim: rgb(0 0 0 / 0.34);
+        --note: #1d6fa5;
+      }
+      .m * {
+        box-sizing: border-box;
+      }
+      h2.sec {
+        margin: 0 0 4px;
+        font-size: 19px;
+        font-weight: 650;
+        letter-spacing: 0.01em;
+      }
+      p.lead {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .stage {
+        background: var(--canvas);
+        border-radius: 12px;
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+        overflow: hidden;
+        background-image: radial-gradient(
+          120% 80% at 50% 120%,
+          color-mix(in srgb, var(--accent) 16%, transparent),
+          transparent 60%
+        );
+      }
+      .cap {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 2px 0 -6px;
+      }
+      .ico {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex: none;
+      }
+      .b {
+        all: unset;
+        box-sizing: border-box;
+        min-width: 44px;
+        min-height: 44px;
+        text-align: center;
+        line-height: 1.2;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border-radius: 8px;
+        color: var(--text);
+        cursor: default;
+        padding: 0 10px;
+      }
+      .bar .b {
+        white-space: nowrap;
+      }
+      .b.i {
+        padding: 0;
+        width: 44px;
+      }
+      .b.ghost {
+        visibility: hidden;
+      }
+      .show-ghosts .b.ghost {
+        visibility: visible;
+        outline: 1.5px dashed color-mix(in srgb, var(--note) 70%, transparent);
+        outline-offset: -6px;
+        color: transparent;
+      }
+      .b.fill {
+        background: var(--accent);
+        color: var(--on-accent);
+        font-weight: 600;
+        padding: 0 16px;
+      }
+      .b.soft {
+        background: var(--hover);
+        padding: 0 16px;
+      }
+      .b.danger {
+        color: var(--danger);
+      }
+      .b.fill.danger {
+        background: var(--danger);
+        color: var(--canvas);
+      }
+      .b.dis {
+        opacity: 0.4;
+      }
+      /* top bar */
+      .bar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        min-height: 56px;
+        padding: 0 6px;
+      }
+      .bar .start,
+      .bar .end {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        min-width: 0;
+      }
+      .bar .end {
+        justify-content: end;
+      }
+      .bar .end .grp {
+        display: flex;
+        gap: 2px;
+      }
+      .bar .end .grp + .grp {
+        margin-inline-start: 6px;
+        padding-inline-start: 6px;
+        border-inline-start: 1px solid var(--line);
+      }
+      .pin {
+        border-radius: 10px;
+        box-shadow: inset 0 0 0 1.5px
+          color-mix(in srgb, var(--note) 70%, transparent);
+      }
+      .tabs {
+        display: flex;
+        background: color-mix(in srgb, var(--surface) 80%, transparent);
+        border-radius: 10px;
+        padding: 3px;
+      }
+      .tabs span {
+        padding: 7px 9px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .tabs span.on {
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: 0 1px 0 var(--line);
+      }
+      .name {
+        display: grid;
+        line-height: 1.2;
+        padding: 0 6px;
+      }
+      .name b {
+        font-weight: 600;
+      }
+      .name small {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .brand {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        font-weight: 650;
+        padding: 0 8px;
+      }
+      .ring {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid var(--line);
+        border-top-color: var(--accent);
+      }
+      /* surfaces */
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .sheet {
+        background: var(--surface);
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgb(0 0 0 / 0.3);
+        width: 340px;
+        display: grid;
+        overflow: hidden;
+      }
+      .sheet.phone {
+        width: 300px;
+        border-radius: 16px 16px 0 0;
+      }
+      .head {
+        display: grid;
+        grid-template-columns: minmax(44px, 1fr) auto minmax(44px, 1fr);
+        align-items: center;
+        padding: 6px;
+        border-bottom: 1px solid var(--line);
+        min-height: 56px;
+      }
+      .head .s {
+        display: flex;
+      }
+      .head .e {
+        display: flex;
+        justify-content: end;
+        gap: 2px;
+      }
+      .head h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        text-align: center;
+      }
+      .body {
+        padding: 14px 16px;
+        display: grid;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .field {
+        height: 36px;
+        border-radius: 8px;
+        background: var(--canvas);
+        border: 1px solid var(--line);
+      }
+      .field.tall {
+        height: 64px;
+      }
+      .lbl {
+        color: var(--text);
+        font-size: 12px;
+        margin-bottom: -6px;
+      }
+      .setrow {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--text);
+        min-height: 36px;
+      }
+      .sw {
+        width: 34px;
+        height: 20px;
+        border-radius: 10px;
+        background: var(--accent);
+        position: relative;
+      }
+      .sw::after {
+        content: "";
+        position: absolute;
+        right: 2px;
+        top: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--on-accent);
+      }
+      .foot {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-top: 1px solid var(--line);
+      }
+      .foot .note {
+        margin-inline-end: auto;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .phone .foot {
+        flex-wrap: wrap;
+      }
+      .phone .foot .note {
+        flex-basis: 100%;
+      }
+      .phone .foot .b {
+        flex: 1 1 0;
+      }
+      .foot.stack {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .foot.stack .b {
+        flex: none;
+        width: auto;
+      }
+      .foot.stack .note {
+        margin: 0 0 2px;
+        flex-basis: auto;
+      }
+      .progress {
+        height: 6px;
+        border-radius: 3px;
+        background: var(--line);
+        overflow: hidden;
+      }
+      .progress i {
+        display: block;
+        height: 100%;
+        width: 42%;
+        background: var(--accent);
+      }
+      .alert {
+        background: var(--surface);
+        border-radius: 14px;
+        width: 300px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgb(0 0 0 / 0.3);
+      }
+      .alert h3 {
+        margin: 0 0 6px;
+        font-size: 17px;
+      }
+      .alert p {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .alert .acts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .alert .acts .b {
+        width: 100%;
+      }
+      .toast {
+        background: var(--surface);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 4px 4px 14px;
+        width: 360px;
+        max-width: 100%;
+        box-shadow: 0 6px 20px rgb(0 0 0 / 0.3);
+      }
+      .toast span.msg {
+        flex: 1;
+      }
+      .menu {
+        background: var(--surface);
+        border-radius: 12px;
+        width: 200px;
+        padding: 6px;
+        box-shadow: 0 10px 30px rgb(0 0 0 / 0.3);
+      }
+      .menu div {
+        padding: 9px 10px;
+        border-radius: 8px;
+      }
+      .menu div:first-child {
+        background: var(--hover);
+      }
+      .menu hr {
+        border: 0;
+        border-top: 1px solid var(--line);
+        margin: 4px 0;
+      }
+      .menu .danger {
+        color: var(--danger);
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .legend i {
+        display: inline-block;
+        width: 18px;
+        height: 12px;
+        vertical-align: -1px;
+        margin-right: 5px;
+        border-radius: 3px;
+      }
+      .k-pin {
+        box-shadow: inset 0 0 0 1.5px var(--note);
+      }
+      .k-ghost {
+        outline: 1.5px dashed var(--note);
+        outline-offset: -2px;
+      }
+      .tag {
+        font-size: 11px;
+        color: var(--note);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+      table.rules {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13px;
+      }
+      table.rules td {
+        padding: 7px 8px;
+        border-top: 1px solid var(--line);
+        vertical-align: top;
+      }
+      table.rules td:first-child {
+        color: var(--muted);
+        width: 32%;
+      }
+      .phoneframe {
+        width: 300px;
+        background: var(--canvas);
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        display: grid;
+      }
+      .phoneframe .bar {
+        grid-template-columns: auto 1fr auto;
+        padding: 0 2px;
+      }
+      .scene {
+        height: 120px;
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .desks {
+        container-type: inline-size;
+      }
+      .desks > .bar {
+        min-width: 1220px;
+      }
+      @container (max-width: 1240px) {
+        .desks > .bar {
+          zoom: 0.56;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="x" viewBox="0 0 24 24">
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </symbol>
+      <symbol id="back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol>
+      <symbol id="undo" viewBox="0 0 24 24">
+        <path d="M9 14 4 9l5-5" />
+        <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+      </symbol>
+      <symbol id="redo" viewBox="0 0 24 24">
+        <path d="m15 14 5-5-5-5" />
+        <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
+      </symbol>
+      <symbol id="full" viewBox="0 0 24 24">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+        <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+        <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+        <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+      </symbol>
+      <symbol id="more" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="19" cy="12" r="1" />
+        <circle cx="5" cy="12" r="1" />
+      </symbol>
+      <symbol id="share" viewBox="0 0 24 24">
+        <path d="M12 3v12" />
+        <path d="m17 8-5-5-5 5" />
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      </symbol>
+      <symbol id="dl" viewBox="0 0 24 24">
+        <path d="M12 15V3" />
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <path d="m7 10 5 5 5-5" />
+      </symbol>
+      <symbol id="rand" viewBox="0 0 24 24">
+        <path d="m18 14 4 4-4 4" />
+        <path d="m18 2 4 4-4 4" />
+        <path d="M2 18h2a4 4 0 0 0 3.3-1.7l5.4-8.6A4 4 0 0 1 16 6h6" />
+        <path d="M2 6h2a4 4 0 0 1 3.6 2.2" />
+        <path d="M22 18h-6a4 4 0 0 1-3.3-1.8l-.4-.5" />
+      </symbol>
+      <symbol id="code" viewBox="0 0 24 24">
+        <path d="m16 18 6-6-6-6" />
+        <path d="m8 6-6 6 6 6" />
+      </symbol>
+      <symbol id="ok" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+        <path d="m9 12 2 2 4-4" />
+      </symbol>
+      <symbol id="person" viewBox="0 0 24 24">
+        <circle cx="12" cy="5" r="1" />
+        <path d="m9 20 3-6 3 6" />
+        <path d="m6 8 6 2 6-2" />
+        <path d="M12 10v4" />
+      </symbol>
+      <symbol id="plus" viewBox="0 0 24 24">
+        <path d="M5 12h14" />
+        <path d="M12 5v14" />
+      </symbol>
+    </svg>
+
+    <div class="m">
+      <section>
+        <h2 class="sec">1. Global top bar</h2>
+        <p class="lead">
+          Same trailing order on every screen. Full screen and More are always
+          last. Undo, Redo and Activity have reserved slots (dashed here) hidden
+          with <code>visibility: hidden</code> when empty or idle, so nothing
+          ever shifts.
+        </p>
+        <div class="stage show-ghosts desks">
+          <div class="legend">
+            <span><i class="k-pin"></i>Pinned on every screen</span
+            ><span><i class="k-ghost"></i>Hidden slot, still takes space</span>
+          </div>
+          <div class="cap">Customize, no history yet</div>
+          <div class="bar">
+            <div class="start">
+              <button class="b i">
+                <svg class="ico"><use href="#back" /></svg>
+              </button>
+              <div class="name">
+                <b>Adventurer</b><small>Body 21×45 · 4 directions</small>
+              </div>
+            </div>
+            <div class="tabs">
+              <span class="on">Preview</span><span>Top-down</span
+              ><span>Side-scroller</span>
+            </div>
+            <div class="end">
+              <div class="grp">
+                <button class="b i">
+                  <svg class="ico"><use href="#rand" /></svg>
+                </button>
+              </div>
+              <div class="grp">
+                <button class="b i ghost">
+                  <svg class="ico"><use href="#undo" /></svg></button
+                ><button class="b i ghost">
+                  <svg class="ico"><use href="#redo" /></svg>
+                </button>
+              </div>
+              <div class="grp">
+                <button class="b i">
+                  <svg class="ico"><use href="#share" /></svg></button
+                ><button class="b soft">
+                  <svg class="ico"><use href="#dl" /></svg>Export
+                </button>
+              </div>
+              <div class="grp">
+                <button class="b i ghost"><span class="ring"></span></button>
+              </div>
+              <div class="grp pin">
+                <button class="b i">
+                  <svg class="ico"><use href="#full" /></svg></button
+                ><button class="b i">
+                  <svg class="ico"><use href="#more" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="cap">
+            Customize, one undo step, a job running (Undo and Activity appear in
+            their reserved slots; nothing moves)
+          </div>
+          <div class="bar">
+            <div class="start">
+              <button class="b i">
+                <svg class="ico"><use href="#back" /></svg>
+              </button>
+              <div class="name">
+                <b>Adventurer</b><small>Body 21×45 · 4 directions</small>
+              </div>
+            </div>
+            <div class="tabs">
+              <span class="on">Preview</span><span>Top-down</span
+              ><span>Side-scroller</span>
+            </div>
+            <div class="end">
+              <div class="grp">
+                <button class="b i">
+                  <svg class="ico"><use href="#rand" /></svg>
+                </button>
+              </div>
+              <div class="grp">
+                <button class="b i">
+                  <svg class="ico"><use href="#undo" /></svg></button
+                ><button class="b i ghost">
+                  <svg class="ico"><use href="#redo" /></svg>
+                </button>
+              </div>
+              <div class="grp">
+                <button class="b i">
+                  <svg class="ico"><use href="#share" /></svg></button
+                ><button class="b soft">
+                  <svg class="ico"><use href="#dl" /></svg>Export
+                </button>
+              </div>
+              <div class="grp">
+                <button class="b i" title="Activity">
+                  <span class="ring"></span>
+                </button>
+              </div>
+              <div class="grp pin">
+                <button class="b i">
+                  <svg class="ico"><use href="#full" /></svg></button
+                ><button class="b i">
+                  <svg class="ico"><use href="#more" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="cap">Characters</div>
+          <div class="bar">
+            <div class="start">
+              <div class="brand">
+                <svg class="ico"><use href="#person" /></svg>PixelDoll
+              </div>
+              <span style="color: var(--muted)">Characters · 1</span>
+            </div>
+            <div></div>
+            <div class="end">
+              <div class="grp">
+                <button class="b soft">
+                  <svg class="ico"><use href="#plus" /></svg>New character...
+                </button>
+              </div>
+              <div class="grp pin">
+                <button class="b i">
+                  <svg class="ico"><use href="#full" /></svg></button
+                ><button class="b i">
+                  <svg class="ico"><use href="#more" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="cap">New character (now a screen, so the bar stays)</div>
+          <div class="bar">
+            <div class="start">
+              <button class="b">
+                <svg class="ico"><use href="#back" /></svg>Characters
+              </button>
+            </div>
+            <div style="font-weight: 600">New character</div>
+            <div class="end">
+              <div class="grp pin">
+                <button class="b i">
+                  <svg class="ico"><use href="#full" /></svg></button
+                ><button class="b i">
+                  <svg class="ico"><use href="#more" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                Phone, Customize (today's overflow kept: Undo, Redo, Share,
+                Random in More)
+              </div>
+              <div class="phoneframe">
+                <div class="bar">
+                  <div class="start">
+                    <button class="b i">
+                      <svg class="ico"><use href="#back" /></svg>
+                    </button>
+                    <div class="name"><b>Adventurer</b></div>
+                  </div>
+                  <div></div>
+                  <div class="end">
+                    <button class="b i">
+                      <svg class="ico"><use href="#dl" /></svg>
+                    </button>
+                    <div class="grp pin" style="display: flex">
+                      <button class="b i">
+                        <svg class="ico"><use href="#full" /></svg></button
+                      ><button class="b i">
+                        <svg class="ico"><use href="#more" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="scene">stage</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="sec">2. Sheet anatomy</h2>
+        <p class="lead">
+          X is always top-right. Back is only ever top-left, and only inside an
+          inner pane. One tools slot sits left of X. A footer exists only for a
+          commit: note at the start, secondary then primary at the end. No
+          Cancel, Close, Hide or Done in any footer.
+        </p>
+        <div class="stage">
+          <div class="row">
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Form</span> New item
+              </div>
+              <div class="sheet">
+                <div class="head">
+                  <div class="s"></div>
+                  <h3>New item</h3>
+                  <div class="e">
+                    <button class="b i">
+                      <svg class="ico"><use href="#code" /></svg></button
+                    ><button class="b i" title="Close">
+                      <svg class="ico"><use href="#x" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="body">
+                  <div class="lbl">Describe the item</div>
+                  <div class="field tall"></div>
+                  <div class="lbl">Slot</div>
+                  <div class="field"></div>
+                </div>
+                <div class="foot">
+                  <span class="note">About 40 generations</span
+                  ><button class="b fill">Make item</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Inner pane</span> Export, Settings
+              </div>
+              <div class="sheet">
+                <div class="head">
+                  <div class="s">
+                    <button class="b" style="padding: 0 8px 0 4px">
+                      <svg class="ico"><use href="#back" /></svg>Back
+                    </button>
+                  </div>
+                  <h3>Export settings</h3>
+                  <div class="e">
+                    <button class="b i">
+                      <svg class="ico"><use href="#x" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="body">
+                  <div class="setrow">
+                    Include dressed sheets<span class="sw"></span>
+                  </div>
+                  <div class="setrow">Default format<span>Godot</span></div>
+                  <div class="setrow">Play once<span>Attack, Hurt</span></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Live</span> Settings (changes apply at once,
+                so no footer)
+              </div>
+              <div class="sheet">
+                <div class="head">
+                  <div class="s"></div>
+                  <h3>Settings</h3>
+                  <div class="e">
+                    <button class="b i">
+                      <svg class="ico"><use href="#x" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="body">
+                  <div class="setrow">
+                    Light appearance<span class="sw"></span>
+                  </div>
+                  <div class="setrow">Language<span>English</span></div>
+                  <div class="setrow" style="justify-content: start">
+                    <span class="b danger" style="padding: 0"
+                      >Reset all settings...</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Running</span> Add move (no footer; X closes,
+                the job keeps going)
+              </div>
+              <div class="sheet">
+                <div class="head">
+                  <div class="s"></div>
+                  <h3>Add move</h3>
+                  <div class="e">
+                    <button class="b i">
+                      <svg class="ico"><use href="#x" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="body">
+                  <div style="color: var(--text)">Generating Attack · 42%</div>
+                  <div class="progress"><i></i></div>
+                  <div>
+                    About 2 minutes left. Keeps running in Activity if you close
+                    this.
+                  </div>
+                  <div>
+                    <span class="b soft" style="min-height: 36px"
+                      >Queue another move...</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Saving</span> Slot edit (X locked only while
+                it writes)
+              </div>
+              <div class="sheet">
+                <div class="head">
+                  <div class="s"></div>
+                  <h3>Headwear</h3>
+                  <div class="e">
+                    <button class="b i dis">
+                      <svg class="ico"><use href="#x" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="body">
+                  <div class="lbl">Name</div>
+                  <div class="field"></div>
+                </div>
+                <div class="foot">
+                  <button class="b fill dis">Saving...</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Phone</span> Bottom sheet, same anatomy
+              </div>
+              <div class="sheet phone">
+                <div class="head">
+                  <div class="s"></div>
+                  <h3>New item</h3>
+                  <div class="e">
+                    <button class="b i">
+                      <svg class="ico"><use href="#x" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="body">
+                  <div class="lbl">Describe the item</div>
+                  <div class="field tall"></div>
+                </div>
+                <div class="foot">
+                  <span class="note">About 40 generations</span
+                  ><button class="b">Try a sample</button
+                  ><button class="b fill">Make item</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="sec">3. Confirm, toast, popover, menu</h2>
+        <p class="lead">
+          The same end-is-commit order everywhere. Alerts have no X: their
+          Cancel is the safe exit and gets focus. Toasts and popover panels end
+          with the same X as sheets. Menus have no chrome.
+        </p>
+        <div class="stage">
+          <div class="row">
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Confirm</span>
+              </div>
+              <div class="alert">
+                <h3>Delete Adventurer?</h3>
+                <p>
+                  Its items and outfits are deleted too. This can't be undone.
+                </p>
+                <div class="acts">
+                  <button
+                    class="b soft"
+                    style="box-shadow: 0 0 0 2px var(--accent)"
+                  >
+                    Cancel</button
+                  ><button class="b fill danger">Delete</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Paid confirm</span>
+              </div>
+              <div class="alert">
+                <h3>Stop generating?</h3>
+                <p>Used generations are not refunded.</p>
+                <div class="acts">
+                  <button
+                    class="b soft"
+                    style="box-shadow: 0 0 0 2px var(--accent)"
+                  >
+                    Keep generating</button
+                  ><button class="b fill danger">Stop</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Unsaved input</span> X, Escape or Back on a
+                dirty form
+              </div>
+              <div class="alert">
+                <h3>Discard changes?</h3>
+                <p>Your new item description will be lost.</p>
+                <div class="acts">
+                  <button
+                    class="b soft"
+                    style="box-shadow: 0 0 0 2px var(--accent)"
+                  >
+                    Keep editing</button
+                  ><button class="b fill danger">Discard</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Narrow + long labels</span> 320 px, German:
+                stacks, same order
+              </div>
+              <div class="sheet phone" style="width: 280px">
+                <div class="head">
+                  <div class="s">
+                    <button class="b i">
+                      <svg class="ico"><use href="#back" /></svg>
+                    </button>
+                  </div>
+                  <h3>Frames</h3>
+                  <div class="e">
+                    <button class="b i">
+                      <svg class="ico"><use href="#x" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="foot stack">
+                  <span class="note">Kostenlos</span
+                  ><button class="b soft">Aktuelle behalten</button
+                  ><button class="b fill">Bearbeitete Frames ersetzen</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Popover panel</span> Share
+              </div>
+              <div class="sheet" style="width: 340px">
+                <div class="head">
+                  <div class="s"></div>
+                  <h3>Share</h3>
+                  <div class="e">
+                    <button class="b i">
+                      <svg class="ico"><use href="#x" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="body">
+                  <div class="field" style="height: 90px"></div>
+                </div>
+                <div class="foot">
+                  <span class="note"></span><button class="b">Copy PNG</button
+                  ><button class="b">Share to...</button
+                  ><button class="b fill">Download</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="cap" style="margin-bottom: 6px">
+                <span class="tag">Menu</span>
+              </div>
+              <div class="menu">
+                <div>Details...</div>
+                <div>Try again...</div>
+                <div>Download ZIP</div>
+                <hr />
+                <div class="danger">Delete item...</div>
+              </div>
+            </div>
+          </div>
+          <div class="cap"><span class="tag">Toast</span></div>
+          <div class="toast">
+            <svg class="ico" style="color: var(--accent)">
+              <use href="#ok" /></svg
+            ><span class="msg">Deleted Leather boots</span
+            ><button class="b" style="color: var(--accent); font-weight: 600">
+              Undo</button
+            ><button class="b i" title="Dismiss">
+              <svg class="ico"><use href="#x" /></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="sec">4. Light appearance</h2>
+        <div class="m light" style="gap: 0">
+          <div class="stage">
+            <div class="row">
+              <div class="sheet">
+                <div class="head">
+                  <div class="s">
+                    <button class="b" style="padding: 0 8px 0 4px">
+                      <svg class="ico"><use href="#back" /></svg>Back
+                    </button>
+                  </div>
+                  <h3>Fix frames</h3>
+                  <div class="e">
+                    <button class="b i">
+                      <svg class="ico"><use href="#x" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="body">
+                  <div class="field" style="height: 70px"></div>
+                  <div>3 frames will be replaced.</div>
+                </div>
+                <div class="foot">
+                  <span class="note">Free</span
+                  ><button class="b">Keep current</button
+                  ><button class="b fill">Replace frames</button>
+                </div>
+              </div>
+              <div class="alert">
+                <h3>Delete Leather boots?</h3>
+                <p>It is removed from every outfit.</p>
+                <div class="acts">
+                  <button
+                    class="b soft"
+                    style="box-shadow: 0 0 0 2px var(--accent)"
+                  >
+                    Cancel</button
+                  ><button class="b fill danger">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="sec">Rules at a glance</h2>
+        <table class="rules">
+          <tr>
+            <td>Way out</td>
+            <td>
+              X icon, top-right, on every sheet, popover panel and toast. Alerts
+              use Cancel instead.
+            </td>
+          </tr>
+          <tr>
+            <td>Back</td>
+            <td>Top-left, only in an inner pane. Never closes.</td>
+          </tr>
+          <tr>
+            <td>Footer</td>
+            <td>
+              Only for a commit. Note, then secondary, then primary last. Too
+              narrow: stacks in the same order.
+            </td>
+          </tr>
+          <tr>
+            <td>Retired labels</td>
+            <td>
+              Hide, Later, Not now, Done, Close and Cancel as sheet dismiss
+              buttons.
+            </td>
+          </tr>
+          <tr>
+            <td>Losing input</td>
+            <td>
+              X, Escape, backdrop and browser Back ask "Discard changes?" first.
+            </td>
+          </tr>
+          <tr>
+            <td>Running work</td>
+            <td>
+              X closes and the job keeps running in Activity; Stop lives on the
+              job.
+            </td>
+          </tr>
+          <tr>
+            <td>Top bar</td>
+            <td>
+              Full screen and More last everywhere; Undo, Redo and Activity hide
+              in reserved slots.
+            </td>
+          </tr>
+        </table>
+      </section>
+    </div>
+  </body>
+</html>

@@ -35,7 +35,7 @@
 <hr class="bu-separator" />
 <figure class="developer-preview">
 	<figcaption class="settings-label">{t('developer.preview')}</figcaption>
-	<div class="sheet-head has-developer example-sheet">
+	<div class="sheet-head example-sheet">
 		<span></span>
 		<strong class="sheet-title">{t('developer.exampleActivity')}</strong>
 		<ApiPeek

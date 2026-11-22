@@ -6,7 +6,7 @@
 		name: string;
 		named: boolean;
 		description: string;
-		/** The Riding pose idea was picked, so the State is named and reviewed as a riding stance. */
+		/** The Riding pose idea is pressed, so the State is named and reviewed as a riding stance. */
 		riding: boolean;
 		model: StateGenerationModel;
 		reference?: PickedReference;
@@ -15,7 +15,7 @@
 </script>
 
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import PromptField from './PromptField.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
@@ -67,6 +67,7 @@
 		type StateReview
 	} from './stateGeneration.ts';
 	import type { StateGenerationCost, StateGenerationModel } from './stateGenerationPlan.ts';
+	import { openingCreationSettings, resolveStateModelPreference } from './creationSettings.ts';
 	import { stateGenerationSource, type StateSourceFrame } from './stateGenerationSource.ts';
 
 	const formId = $props.id();
@@ -116,12 +117,32 @@
 	let named = $state(restored?.named ?? false);
 	let editing = $state(!!restored);
 	let description = $state(restored?.description ?? '');
-	// Picking the Riding idea only fills the instructions; they stay editable and are sent as shown.
+	// The Riding idea stays pressed through edits, like a move template, until it is pressed again, another pose is
+	// picked or the instructions are cleared. The instructions stay editable and are sent as shown.
 	let ridingIdea = $state(restored?.riding ?? false);
 	// Set when a State from the Riding idea was generated in this sheet, for the review checklist and the saved notice.
 	let riding = $state(false);
-	let model = $state<StateGenerationModel>(restored?.model ?? 'pro');
-	let advancedOpen = $state(!!restored && restored.model !== 'pro');
+	const savedModel = restored ? undefined : openingCreationSettings('states').model;
+	const initialModel =
+		restored?.model ??
+		untrack(() => {
+			const current = store.project;
+			const source = current && stateGenerationSource(current, { clip: startClip, frame });
+			return resolveStateModelPreference(
+				savedModel ?? 'pro',
+				source
+					? {
+							cellSize: source.size,
+							facingIds: source.views.map(({ direction }) => direction)
+						}
+					: undefined
+			);
+		});
+	let model = $state<StateGenerationModel>(initialModel);
+	let advancedOpen = $state(
+		initialModel !== 'pro' || (savedModel !== undefined && savedModel !== initialModel)
+	);
+	let modelEdited = $state(false);
 	let reference = $state.raw(restored?.reference);
 	let referenceLoading = $state(false);
 
@@ -224,13 +245,8 @@
 	const formReady = $derived(
 		checkedPending && sourceReady && !nameIssue && (!editing || editReady)
 	);
-	const reviewRiding = $derived(
-		riding ||
-			review?.description?.trim() ===
-				promptSuggestions('state.pose')
-					.find(({ action }) => action === RIDING_STATE)
-					?.prompt.trim()
-	);
+	// Mounted riding uses the State saved as `riding`, whatever prompt made it.
+	const reviewRiding = $derived(riding || review?.id === RIDING_STATE);
 	const reviewSource = $derived(review && project && stateGenerationSource(project, review.source));
 	const sourceCurrent = $derived(!!review && reviewSource?.version === review.sourceVersion);
 	// Every facing the saved State will have: generated views plus the rig's mirrors of them.
@@ -280,14 +296,31 @@
 		pinned = stateCaptureSource(project.manifest, next)?.version;
 		stale = false;
 		failure = '';
-		if (!named) name = suggestedName(next, ridingIdea ? RIDING_STATE : '');
+		if (!named) name = autoName(next);
+	}
+	// An untyped name follows the pressed idea: Riding keeps the id mounted riding looks for in every language; other
+	// ideas use their title, and the source's default name returns once none applies.
+	function autoName(sourceId: string) {
+		if (ridingIdea) return suggestedName(sourceId, RIDING_STATE);
+		const idea = promptSuggestions('state.pose').find(
+			({ action, prompt }) => !action && prompt.trim() === description.trim()
+		);
+		return suggestedName(sourceId, idea ? stateCaptureId(idea.title).slice(0, 48) : '');
 	}
 	function pickIdea(idea: PromptSuggestion) {
 		if (busy) return;
-		description = idea.prompt;
-		ridingIdea = idea.action === RIDING_STATE;
 		failure = '';
-		if (!named) name = suggestedName(clip, ridingIdea ? RIDING_STATE : '');
+		if (idea.action === RIDING_STATE && ridingIdea) ridingIdea = false;
+		else {
+			description = idea.prompt;
+			ridingIdea = idea.action === RIDING_STATE;
+		}
+		if (!named) name = autoName(clip);
+	}
+	function describe(text: string) {
+		description = text;
+		if (!text.trim()) ridingIdea = false;
+		if (!named) name = autoName(clip);
 	}
 	// Reads the saved character again (paid quotes read storage), keeping the draft.
 	function reloadSource() {
@@ -510,7 +543,7 @@
 		.filter(Boolean)
 		.join(' ')}
 	wide={!review && checkedPending && editing}
-	cancelDisabled={!!busy}
+	locked={!!busy}
 	onclose={() => (ui.sheet = null)}
 	footer={review || checkedPending
 		? footer
@@ -673,7 +706,7 @@
 							<PromptField
 								id="{formId}-instructions"
 								value={description}
-								onvalue={(text) => (description = text)}
+								onvalue={describe}
 								spec={enhanceSpec}
 								activity={{ scope: enhanceScope, label: 'Enhance State instructions' }}
 								maxOutput={model === 'pixen' ? 500 : 2000}
@@ -684,6 +717,7 @@
 								label={t('stateCapture.poseIdeas')}
 								value={description}
 								suggestions={promptSuggestions('state.pose')}
+								active={ridingIdea ? RIDING_STATE : undefined}
 								onpick={pickIdea}
 							/>
 						</div>
@@ -701,16 +735,28 @@
 						)}
 						disabled={!!busy || model === 'pixen'}
 					/>
+					{#if !modelEdited && savedModel !== undefined && initialModel !== savedModel}
+						<p class="notice warn small" role="status">
+							{t('creationSettings.fallback', {
+								setting: t('create.form.model'),
+								value: t('create.form.models.pro.label')
+							})}
+						</p>
+					{/if}
 					<details class="disclosure" bind:open={advancedOpen}>
 						<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
 						<label class="field">
 							<span class="label">{t('create.form.model')}</span>
 							<select
 								class="bu-input input"
-								bind:value={model}
+								value={model}
+								onchange={(event) => {
+									modelEdited = true;
+									model = event.currentTarget.value as StateGenerationModel;
+								}}
 								disabled={!!busy || referenceLoading}
 							>
-								<option value="pro">{t('stateGeneration.defaultModel')}</option>
+								<option value="pro">{t('create.form.models.pro.label')}</option>
 								<option value="pro-flash">{t('create.form.models.proFlash.label')}</option>
 								<option value="pixen">V3 (Pixen)</option>
 							</select>

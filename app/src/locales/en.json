@@ -106,7 +106,9 @@
 		"autoSize": "Automatic ({size} px)",
 		"frameMinimum": "Choose Automatic or a custom frame of at least {min} px.",
 		"custom": "Custom",
-		"description": "Saved in this browser. Creation dialogs do not use these values yet.",
+		"description": "Saved in this browser. Applies when you open a new creation window.",
+		"fallback": "Saved {setting} is unavailable here. Using {value}.",
+		"autoFrames": "Automatic ({count} frames)",
 		"defaults": "Creation defaults",
 		"readFailed": "Could not read the saved choices. Reset this page to repair them.",
 		"storageUnavailable": "Browser storage is unavailable. These choices cannot be saved.",
@@ -159,6 +161,12 @@
 		"idCopyFailed": "Could not copy the ID."
 	},
 	"common": {
+		"back": "Back",
+		"backTo": "Back to {place}",
+		"keepEditing": "Keep editing",
+		"discardChangesTitle": "Discard changes?",
+		"discardChangesBody": "What you changed here will be lost.",
+		"keepsRunning": "Keeps running in Activity if you close this.",
 		"loadFailed": "Part of PixelDoll could not load. Reload to try again.",
 		"advanced": "Advanced",
 		"cancel": "Cancel",
@@ -179,7 +187,6 @@
 		"done": "Done",
 		"downloadZip": "Download ZIP",
 		"free": "Free",
-		"hide": "Hide",
 		"loading": "Loading…",
 		"move": "Move",
 		"name": "Name",
@@ -337,7 +344,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Copy",
 		"demoNoAccount": "No account needed for the demo.",
-		"notNow": "Not now",
 		"sentOnlyToApiPixellabAi": "Sent only to api.pixellab.ai.",
 		"forgetKey": "Forget key",
 		"forgetTitle": "Forget PixelLab key?",
@@ -713,6 +719,8 @@
 		"titleItemReview": "Item review"
 	},
 	"toolbar": {
+		"activityRunning": "Work is running in Activity",
+		"activityAttention": "Work in Activity needs attention",
 		"help": "Help",
 		"userGuide": "User guide",
 		"reportProblem": "Report a problem",
@@ -1077,7 +1085,6 @@
 			"title": "Export",
 			"back": "Back",
 			"settings": "Settings",
-			"close": "Close export",
 			"saving": "Saving settings…",
 			"unavailable": "Export unavailable",
 			"sourceOnly": "Source PNGs only",
@@ -1353,7 +1360,6 @@
 		"previewDirectionLabel": "Preview direction",
 		"setupNext": "Set up the pose rig next (recommended)",
 		"setupNextHint": "Import is free. Rig setup shows its PixelLab generation cost before you start.",
-		"chooseAnother": "Choose another character",
 		"saving": "Saving your local copy…",
 		"preparing": "Preparing your character…",
 		"note": "Free · saves a new local copy",
@@ -2338,7 +2344,7 @@
 			},
 			"models": {
 				"v3": {
-					"label": "Default (V3)",
+					"label": "V3",
 					"help": "Balanced proportions."
 				},
 				"standard": {
@@ -2464,7 +2470,6 @@
 			"retryLabel": "Create character again",
 			"editSetup": "Edit setup…",
 			"estimated": "Estimated {gens}",
-			"keepWorking": "Keep working",
 			"costTitle": "The standing views in every direction; add idle, walk and other moves afterward. A missing standing joint may cost a little more",
 			"create": "Create character",
 			"createAnyway": "Create anyway"
@@ -2551,7 +2556,6 @@
 		"reuseCached": "Reuse cached frames",
 		"matchColors": "Match body colors",
 		"keepFrames": "Keep frames",
-		"keepWorking": "You can keep working.",
 		"queueAnother": "Queue another move",
 		"addLabel": "Add or replace move",
 		"submit": {
@@ -2623,7 +2627,7 @@
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "Default (PixMiniMax)"
+			"pixminimax": "PixMiniMax"
 		},
 		"frames": "Frames",
 		"framesHelp": "Choices fit this model and the character's {canvas} px canvas. The default keeps PixelDoll's preset frame count.",
@@ -2773,7 +2777,6 @@
 		"confirmDiscard": "Confirm discard",
 		"discardWarning": "Discarding does not refund generations or delete a State from PixelLab. Starting over may charge for every direction again.",
 		"locksUnavailable": "Use a current browser to safely generate States.",
-		"defaultModel": "Default (Pro)",
 		"flashReference": "Pro Flash uses a reference image instead of written instructions.",
 		"changed": "The source or quote changed. Check the cost again before generating.",
 		"sourceUnavailable": "The source frame needs saved artwork in every drawn direction.",
@@ -2862,9 +2865,6 @@
 		"frame": "Frame {measure}",
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
-	},
-	"sheet": {
-		"later": "Later"
 	},
 	"toast": {
 		"dismiss": "Dismiss notification"

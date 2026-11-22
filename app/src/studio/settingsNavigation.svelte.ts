@@ -62,15 +62,6 @@ export function openSettings(section: SettingsSection | null = null) {
 	ui.sheet = 'settings';
 }
 
-export function backFromSettings(): boolean {
-	if (closeSettingsAccount() || closeSettingsActivity() || closeSettingsExport()) return true;
-	if (ui.sheet !== 'settings') return false;
-	if (settingsNavigation.fromExport) ui.sheet = 'export';
-	else if (settingsNavigation.section) settingsNavigation.section = null;
-	else return false;
-	return true;
-}
-
 export function openSettingsAccount(replace = false) {
 	settingsNavigation.accountOpen = true;
 	settingsNavigation.accountReplace = replace;
