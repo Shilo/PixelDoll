@@ -37,7 +37,7 @@ Status: approved design (owner direction plus Sol and DeepSeek brainstorm, 2026-
    - **Each row:** a single-line Title input and a multi-line "Prompt (English)" input. Both always show the effective text, never a raw key or an empty default.
    - **Row actions:** Move up and Move down buttons (accessible, keeping focus on the moved row) and Delete.
    - **List actions:** Add suggestion, and Restore defaults for the current list.
-   - **On phones:** stack the title over the prompt, with the actions in a row below.
+   - **Layout:** the title shares its line with the row actions, and the prompt spans the full width below, at every width.
    - **Saving and Reset:** autosave valid edits. The creation page's Reset clears that page's suggestion lists, and General's Reset all clears them all; wire this into `resetSettings.ts` and `settingsDefaults.svelte.ts` the way main's creation settings do.
    - **Appearance:** use existing Bronze UI classes and the creation pages' existing layout; no new local appearance beyond layout.
 7. **Moves.**

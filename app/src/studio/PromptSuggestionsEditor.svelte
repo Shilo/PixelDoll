@@ -25,6 +25,8 @@
 	const defaults = $derived(defaultSuggestions(listKey));
 	const unreadable = $derived(suggestionStorageUnreadable());
 	let error = $state<'save' | 'prompt'>();
+	// The one field whose save failed: leaving it again retries, and no other field is saved unasked.
+	let unsaved = $state<string>();
 	let draft = $state<{ title: string; prompt: string }>();
 	let draftTitle = $state<HTMLInputElement>();
 	let addButton = $state<HTMLButtonElement>();
@@ -47,8 +49,11 @@
 			!defaults.some(({ id }) => id === suggestionId)
 		)
 			error = 'prompt';
-		else if (!save((list) => editSuggestion(list, defaults, suggestionId, field, input.value)))
+		else if (!save((list) => editSuggestion(list, defaults, suggestionId, field, input.value))) {
+			unsaved = `${suggestionId}:${field}`;
 			return; // Keep the unsaved text so the user can try again.
+		}
+		unsaved = undefined;
 		const effective = promptSuggestions(listKey).find(({ id }) => id === suggestionId);
 		if (effective) input.value = effective[field];
 	}
@@ -132,7 +137,8 @@
 						disabled={unreadable}
 						onchange={(event) => edit(suggestion.id, 'title', event.currentTarget)}
 						onblur={(event) =>
-							error === 'save' && edit(suggestion.id, 'title', event.currentTarget)}
+							unsaved === `${suggestion.id}:title` &&
+							edit(suggestion.id, 'title', event.currentTarget)}
 					/>
 				</label>
 				<label
@@ -144,7 +150,8 @@
 						disabled={unreadable}
 						onchange={(event) => edit(suggestion.id, 'prompt', event.currentTarget)}
 						onblur={(event) =>
-							error === 'save' && edit(suggestion.id, 'prompt', event.currentTarget)}></textarea>
+							unsaved === `${suggestion.id}:prompt` &&
+							edit(suggestion.id, 'prompt', event.currentTarget)}></textarea>
 				</label>
 				<div class="actions">
 					{#each [[-1, ArrowUp, t('wardrobe.moveUp')], [1, ArrowDown, t('wardrobe.moveDown')]] as const as [offset, Icon, label] (offset)}
@@ -243,11 +250,21 @@
 		padding: 0;
 		list-style: none;
 	}
+	/* The title shares its line with the row's actions; the prompt gets the full width below. */
 	.row {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
-		align-items: start;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas: 'title actions' 'prompt prompt';
 		gap: 8px;
+	}
+	.row > label:first-child {
+		grid-area: title;
+	}
+	.row > label:nth-child(2) {
+		grid-area: prompt;
+	}
+	.row > .actions {
+		grid-area: actions;
 	}
 	label {
 		display: grid;
@@ -264,10 +281,5 @@
 	}
 	.row .actions {
 		align-self: end;
-	}
-	@media (max-width: 600px) {
-		.row {
-			grid-template-columns: minmax(0, 1fr);
-		}
 	}
 </style>
