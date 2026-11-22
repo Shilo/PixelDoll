@@ -444,19 +444,7 @@
 								/>
 							</div>
 						</div>
-						{#if key === 'characters'}
-							<label class="control">
-								<span>{t('create.form.model')}</span>
-								<select
-									class="bu-input tier"
-									value={plan.model}
-									onchange={(e) => chooseModel(e.currentTarget.value as CharacterModel)}
-								>
-									{#each MODEL_IDS as model (model)}<option value={model}
-											>{MODELS[model].label}</option
-										>{/each}
-								</select>
-							</label>
+						{#if scope === 'new' && key === 'states'}
 							<div class="control">
 								<span id="cost-size"
 									>{t('create.form.bodySize')}<span class="faint small hint"
@@ -559,6 +547,19 @@
 									>{listUsd(result.toGo)}<span class="faint small">{gens(result.toGo)}</span></span
 								>
 							</div>{/if}
+						<!-- Model is an advanced choice in New character too, so the planner keeps it in Details. -->
+						{#if scope === 'new'}<label class="control">
+								<span>{t('create.form.model')}</span>
+								<select
+									class="bu-input tier"
+									value={plan.model}
+									onchange={(e) => chooseModel(e.currentTarget.value as CharacterModel)}
+								>
+									{#each MODEL_IDS as model (model)}<option value={model}
+											>{MODELS[model].label}</option
+										>{/each}
+								</select>
+							</label>{/if}
 						<div class="line">
 							<span class="label"
 								>{t('costSheet.setup')}<span class="faint small"
@@ -786,9 +787,10 @@
 	.count {
 		flex: 0 0 152px;
 	}
+	/* Selects share the steppers' width so every control lines up. */
 	.tier {
-		width: auto;
-		min-width: 130px;
+		flex: 0 0 152px;
+		width: 152px;
 	}
 	.compass-label {
 		display: flex;
