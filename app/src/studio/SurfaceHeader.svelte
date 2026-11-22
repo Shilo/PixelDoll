@@ -1,7 +1,7 @@
 <script lang="ts">
 	// The one header for sheets and popover panels (docs/design/2026-11-21-app-bars/plan.md): Back only at the start
 	// and only inside an inner pane, the centered title, icon tools, then the X at the end.
-	import type { Snippet } from 'svelte';
+	import type { Component, Snippet } from 'svelte';
 	import BackButton from './BackButton.svelte';
 	import CloseButton from './CloseButton.svelte';
 	let {
@@ -12,6 +12,8 @@
 		end,
 		back,
 		backTo,
+		opener,
+		titleAtStart = false,
 		onclose,
 		locked = false,
 		titleElement = $bindable()
@@ -26,6 +28,10 @@
 		end?: Snippet;
 		back?: () => void;
 		backTo?: string;
+		/** A sibling page the sheet can open (Export's Settings); Back takes its place inside that page. */
+		opener?: { label: string; icon: Component; onclick: () => void };
+		/** A full-window screen names itself beside Back, as the top bar names the open character. */
+		titleAtStart?: boolean;
 		onclose?: () => void;
 		/** An atomic save is running: Back and the X wait for it. */
 		locked?: boolean;
@@ -33,12 +39,27 @@
 	} = $props();
 </script>
 
+{#snippet titleHeading()}
+	<h2 id={titleId} class="sheet-title" tabindex="-1" bind:this={titleElement}>{title}</h2>
+{/snippet}
+
 <header class="sheet-head">
 	<div class="sheet-start">
-		{#if back}<BackButton onclick={back} to={backTo} disabled={locked} />{/if}
+		{#if back}<BackButton onclick={back} to={backTo} disabled={locked} />
+		{:else if opener}<button
+				type="button"
+				class="bu-action btn plain surface-back"
+				data-variant="quiet"
+				disabled={locked}
+				onclick={opener.onclick}
+				><opener.icon size={18} aria-hidden="true" /><span class="surface-back-label"
+					>{opener.label}</span
+				></button
+			>{/if}
+		{#if titleAtStart}{@render titleHeading()}{/if}
 	</div>
 	<div class="sheet-heading">
-		<h2 id={titleId} class="sheet-title" tabindex="-1" bind:this={titleElement}>{title}</h2>
+		{#if !titleAtStart}{@render titleHeading()}{/if}
 		{#if heading}{@render heading()}{/if}
 	</div>
 	<div class="sheet-end">

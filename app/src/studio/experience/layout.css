@@ -1436,6 +1436,8 @@
 /* The existing real creator becomes a full-screen work surface, retaining every
    validation, recovery, request preview and saving control. */
 .studio-app dialog.sheet.character-sheet {
+	--creator-edge: var(--scene-edge, 16px);
+	--creator-width: calc(100vw - 2 * var(--creator-edge));
 	width: 100vw;
 	height: 100dvh;
 	max-width: none;
@@ -1446,68 +1448,112 @@
 		linear-gradient(90deg, var(--bu-reading-start), var(--bu-reading-end)),
 		var(--creator-world) center/cover;
 }
-/* Its bar row sits exactly where the top bar it covers does: Back at the start, Full screen and More at the end. */
+/* Its bar is the top bar it covers: Back and the screen's name at the start (as Customize names the character),
+   the Name field in the middle, Full screen and More at the end. The form starts right below it. */
 .studio-app .character-sheet .sheet-head {
-	grid-template-columns: minmax(0, 1fr) auto;
-	grid-template-areas:
-		'start end'
-		'heading heading';
-	gap: 28px 12px;
-	padding: max(var(--scene-header-top, 12px), env(safe-area-inset-top)) var(--scene-edge, 16px) 20px;
+	grid-template-columns: minmax(0, 1fr) minmax(200px, 340px) minmax(0, 1fr);
+	grid-template-rows: var(--scene-header-row, 44px);
+	gap: 12px;
+	min-height: 0;
+	padding: max(var(--scene-header-top, 12px), env(safe-area-inset-top)) var(--creator-edge) 12px;
 	border: 0;
 }
-.studio-app .character-sheet .sheet-start {
-	grid-area: start;
-	min-height: var(--scene-header-row, 44px);
-}
-.studio-app .character-sheet .sheet-end {
-	grid-area: end;
+.studio-app .character-sheet :is(.sheet-start, .sheet-end) {
 	min-height: var(--scene-header-row, 44px);
 }
 .studio-app .character-sheet .surface-back {
+	width: 44px;
 	height: 44px;
+	padding: 0;
 }
-/* The top bar tightens to 8px edges on narrow phones (below); this bar follows it. */
-@media (max-width: 430px) {
-	.studio-app .character-sheet .sheet-head {
-		padding-inline: 8px;
-	}
-}
-.studio-app .character-sheet .sheet-heading {
-	grid-area: heading;
-	padding-inline: calc(40px - var(--scene-edge, 16px));
-	display: grid;
-	grid-template-columns: minmax(200px, 0.8fr) minmax(0, 3fr);
-	gap: 32px;
-	align-items: center;
-	text-align: left;
+/* Like the Characters arrow on Customize: the screen's name right beside it says where you are. */
+.studio-app .character-sheet .surface-back-label {
+	position: absolute;
+	clip-path: inset(50%);
+	white-space: nowrap;
 }
 .studio-app .character-sheet .sheet-title {
-	font: 400 clamp(28px, 2.3vw, 40px)/1.15 var(--bu-display);
-	text-align: left;
+	min-width: 0;
+	font: 400 20px/1.15 var(--bu-display);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
-.character-name-field {
-	display: grid;
-	gap: 6px;
-	width: min(100%, 340px);
-	color: var(--bu-muted);
-	font-size: 14px;
+.studio-app .character-sheet .sheet-heading {
+	display: block;
+}
+/* The field names itself (placeholder and accessible name), so the bar shows no separate label. */
+.character-name-field > span {
+	position: absolute;
+	clip-path: inset(50%);
+	white-space: nowrap;
 }
 .studio-app .character-sheet .character-name {
+	display: block;
 	width: 100%;
 	max-width: none;
 	min-height: 44px;
 	font-size: 16px;
 }
-.studio-app .character-sheet .sheet-body {
-	padding: 4px 40px 20px;
+/* On narrow screens, Name spans both bar columns and shares the form's outer edges. */
+@media (max-width: 760px) {
+	.studio-app .character-sheet .sheet-head {
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-rows: var(--scene-header-row, 44px) auto;
+		grid-template-areas:
+			'start end'
+			'heading heading';
+		row-gap: 8px;
+	}
+	.studio-app .character-sheet .sheet-start {
+		grid-area: start;
+	}
+	.studio-app .character-sheet .sheet-end {
+		grid-area: end;
+	}
+	.studio-app .character-sheet .sheet-heading {
+		grid-area: heading;
+	}
+}
+@media (max-width: 430px) {
+	.studio-app dialog.sheet.character-sheet {
+		--creator-edge: 8px;
+	}
+	.studio-app .character-sheet .sheet-title {
+		font-size: 18px;
+	}
+	/* A classic desktop scrollbar is wider than the phone bar's 8px inset. */
+	.studio-app .character-sheet .sheet-body {
+		scrollbar-width: none;
+	}
+}
+/* The form scrolls the whole height below the bar; the footer floats over its end (fading the content under it), and
+   the form's last field can always scroll clear of it, so nothing is cut off mid-control. */
+.studio-app dialog.sheet.character-sheet .sheet-body {
+	padding: 4px 0 calc(var(--sheet-foot-height, 0px) + 12px) var(--creator-edge);
+	scrollbar-gutter: auto;
+	scroll-padding-bottom: calc(var(--sheet-foot-height, 0px) + 12px);
 	justify-content: flex-start;
 }
-.studio-app .character-sheet .sheet-foot {
-	padding: 16px 40px 24px;
+.studio-app dialog.sheet.character-sheet .sheet-foot {
+	position: absolute;
+	inset-inline: 0;
+	bottom: 0;
+	padding: 12px var(--creator-edge) max(16px, env(safe-area-inset-bottom));
 	border: 0;
+	background: linear-gradient(
+		to bottom,
+		transparent,
+		color-mix(in srgb, var(--bu-canvas) 88%, transparent) 40%
+	);
+	pointer-events: none;
+}
+.studio-app dialog.sheet.character-sheet .sheet-foot > * {
+	pointer-events: auto;
 }
 .studio-app .character-sheet .creator-grid {
+	/* Keep the scrollbar within the outer inset instead of letting it shift the form. */
+	inline-size: var(--creator-width);
 	grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 1.1fr);
 	gap: 32px;
 }
@@ -1665,9 +1711,6 @@
 	line-clamp: 4;
 }
 @media (max-width: 1250px) {
-	.studio-app .character-sheet .sheet-heading {
-		grid-template-columns: 180px minmax(0, 1fr);
-	}
 	.studio-app .character-sheet .creator-grid {
 		grid-template-columns: 180px minmax(0, 1.1fr) minmax(0, 1fr);
 		gap: 24px;
@@ -1681,11 +1724,10 @@
 	}
 }
 @media (max-width: 1000px) {
-	.studio-app .character-sheet .sheet-heading {
-		grid-template-columns: 1fr 1fr;
-	}
 	.studio-app .character-sheet .creator-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+		/* Keep the right-hand sections together even when Appearance spans two rows. */
+		grid-template-rows: auto 1fr auto;
 	}
 	.studio-app .character-sheet .appearance {
 		grid-column: 1;
@@ -1708,30 +1750,7 @@
 		align-items: center;
 	}
 }
-@media (max-width: 760px) and (min-height: 541px) {
-	.studio-app .character-sheet .sheet-head {
-		row-gap: 12px;
-		padding-bottom: 12px;
-	}
-	.studio-app .character-sheet .sheet-heading {
-		padding-inline: calc(20px - var(--scene-edge, 16px));
-		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-		gap: 12px;
-	}
-	.studio-app .character-sheet .sheet-title {
-		font-size: 28px;
-	}
-	.character-name-field {
-		width: 100%;
-	}
-	.studio-app .character-sheet .sheet-body {
-		padding: 4px 20px 16px;
-	}
-	.studio-app .character-sheet .sheet-foot {
-		padding: 12px 20px max(16px, env(safe-area-inset-bottom));
-	}
+@media (max-width: 760px) and (min-height: 541px), (max-width: 599px) {
 	.studio-app .character-sheet .creator-grid {
 		display: flex;
 		flex-direction: column;
@@ -1766,14 +1785,10 @@
 }
 @media (max-height: 540px) and (min-width: 600px) {
 	.studio-app .character-sheet .sheet-head {
-		row-gap: 0;
 		padding-bottom: 8px;
 	}
-	.studio-app .character-sheet .sheet-body {
-		padding: 12px 20px;
-	}
-	.studio-app .character-sheet .sheet-foot {
-		padding: 10px 20px;
+	.studio-app dialog.sheet.character-sheet .sheet-foot {
+		padding-block: 10px max(10px, env(safe-area-inset-bottom));
 	}
 	.studio-app .character-sheet .creator-guide {
 		display: none;
@@ -1781,6 +1796,7 @@
 	.studio-app .character-sheet .creator-grid {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-rows: auto 1fr auto;
 	}
 	.studio-app .character-sheet .appearance {
 		grid-area: 1 / 1 / 3 / 2;
@@ -1793,15 +1809,5 @@
 	}
 	.studio-app .character-sheet .facing {
 		grid-column: 1/-1;
-	}
-}
-@media (max-height: 540px) and (max-width: 599px) {
-	.studio-app .character-sheet .facing {
-		max-width: none;
-	}
-}
-@media (max-width: 1100px) {
-	.character-sheet .sheet-body {
-		justify-content: flex-start;
 	}
 }

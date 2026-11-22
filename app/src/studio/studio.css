@@ -1341,17 +1341,6 @@ dialog.sheet.bottom .sheet-foot .api-action > .btn.primary {
 	flex: 1;
 }
 @media (max-width: 599px), (max-height: 499px) {
-	.character-sheet .character-name {
-		width: 100px;
-		flex: 1;
-		max-width: 160px;
-		font-size: 16px;
-		min-height: 40px;
-	}
-	.character-sheet .sheet-title {
-		white-space: nowrap;
-		font-size: 13px;
-	}
 	dialog.sheet.side.character-sheet {
 		width: min(100vw, 620px);
 	}

@@ -200,7 +200,6 @@
 			row?.querySelector<HTMLElement>('input:not(:disabled), select:not(:disabled)') ?? row
 		)?.focus();
 	});
-	let navigation = $state<HTMLButtonElement>();
 	let result = $state.raw<{
 		zip: Uint8Array | null;
 		fileId?: string;
@@ -383,10 +382,14 @@
 		else openSettings('export');
 		await tick();
 		content?.closest('.sheet-body')?.scrollTo(0, 0);
-		// Back to Export lands on the settings link it left from; into Settings, on the page title.
-		if (ui.sheet === 'settings')
-			document.querySelector<HTMLElement>('dialog.export-sheet .sheet-title')?.focus();
-		else navigation?.focus();
+		// Into Settings, focus lands on the page title; back in Export, on the Settings button it left from.
+		document
+			.querySelector<HTMLElement>(
+				ui.sheet === 'settings'
+					? 'dialog.export-sheet .sheet-title'
+					: 'dialog.export-sheet .sheet-start button'
+			)
+			?.focus();
 	}
 	async function changeSetting(input: HTMLInputElement, change: ExportSettingChange) {
 		return persistSettings(
@@ -409,7 +412,7 @@
 			(document.activeElement === document.body ||
 				document.activeElement === content?.closest('dialog'))
 		)
-			(navigation ?? content)?.focus({ preventScroll: true });
+			content?.focus({ preventScroll: true });
 	}
 	async function persistSettings(
 		commit: () => Promise<ExportSettings>,
@@ -789,6 +792,9 @@
 				? closeSettingsExport
 				: undefined}
 		backTo={t(returningToExport && !compactPane ? 'export.sheet.title' : 'export.sheet.settings')}
+		opener={settings
+			? undefined
+			: { label: t('export.sheet.settings'), icon: Settings2, onclick: navigate }}
 		footer={settings ? undefined : exportFooter}
 	>
 		{#key settings}
@@ -802,17 +808,6 @@
 				/>
 			{:else}
 				<div class="export-page" bind:this={content}>
-					<button
-						class="row bu-action export-settings-link"
-						data-variant="quiet"
-						aria-label={t('export.sheet.settings')}
-						bind:this={navigation}
-						disabled={settingsBusy}
-						onclick={navigate}
-						><Settings2 size={18} aria-hidden="true" /><span class="row-name"
-							>{openerLabel(t('export.sheet.settings'))}</span
-						><SurfaceChevron /></button
-					>
 					{@render preferencesStatus()}
 					<fieldset class="export-picker" aria-label={t('export.settings.format')}>
 						{#each GROUPS as group (group.id)}
@@ -1077,9 +1072,6 @@
 <style>
 	:global(dialog.export-sheet) {
 		height: min(680px, calc(100dvh - 32px));
-	}
-	.export-settings-link {
-		margin-block: -8px -4px;
 	}
 	.export-page {
 		display: flex;

@@ -100,3 +100,10 @@ Both implementation reviews ([sol-code-review.md](sol-code-review.md), [deepseek
 - State capture and Add slot do not ask before discarding; their input is a short name.
 - Final reviews ([opus-final-review.md](opus-final-review.md), [sol-final-review.md](sol-final-review.md)): a sheet over New character asks Discard changes? before its X drops the creator's typed draft; browser Back answers the topmost alert first; the X is a 44px target at every size. Kept on purpose: confirm alerts still cancel on a backdrop press (an earlier owner-approved card), narrow phones show Back as its chevron only (its accessible name keeps the destination), and running notes are not yet linked to the X with `aria-describedby`.
 - New character's wardrobe options moved into its own More menu (Wardrobe settings), the same place as on every other screen, rather than into the form.
+
+## Owner revisions (2026-11-21, after first review)
+
+- Top bar order, start to end: Activity (only while work runs or needs attention), Redo, Undo, Mount settings, Random look, Share, Export, Full screen, More. The group is end-anchored, so controls that come and go sit at its start and never move what is to their right. Redo takes room only once it exists; Undo keeps its slot (hidden) only while Redo exists, so pressing Undo until its stack empties cannot land on Redo. No idle gaps remain.
+- Export's Settings opener returns to the header's start slot (gear and "Settings", no chevron); inside Export settings that slot is Back. A start-slot opener for a sibling page is the one exception to "Back only at the start".
+- New character's bar: Back (arrow only) and the screen's name at the start, as Customize names the character; the Name field in the middle (its own row below 760px); Full screen and More at the end. The form starts right under the bar with the standard body spacing.
+- Settings on desktop grows to 720px tall so its whole index, ending with Reset all, fits without scrolling.

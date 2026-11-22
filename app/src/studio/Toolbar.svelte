@@ -243,9 +243,49 @@
 		</div>
 	{/if}
 	<div class="header-actions">
+		<!-- The group is anchored at the end, so controls that come and go sit at its start: appearing or leaving never
+		     moves anything to their right. Activity shows only while work runs or needs attention. -->
+		{#if busy}<button
+				class="bu-action header-activity"
+				data-variant="quiet"
+				aria-label={t('activity.title')}
+				title={t('activity.title')}
+				onclick={() => (ui.sheet = 'activity')}
+				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span></button
+			>{:else if stopped}<button
+				class="bu-action header-activity stopped-work"
+				data-variant="quiet"
+				aria-label={t('activity.title')}
+				title={t('generation.status.needsAttention')}
+				onclick={() => (ui.sheet = 'activity')}
+				><CircleAlert size={18} /><span class="num">{stopped}</span></button
+			>{/if}
 		{#if experience.screen === 'characters'}
 			<NewCharacterButton />
 		{:else}
+			<!-- Redo sits before Undo and takes room only once it exists. Undo keeps its slot while Redo exists, so pressing
+			     Undo until its stack empties can never land on Redo. -->
+			<button
+				class="bu-action header-redo"
+				class:slot-gone={!redoText}
+				data-variant="quiet"
+				aria-label={redoText ?? t('common.redo')}
+				title={redoText ?? t('common.redo')}
+				disabled={!redoText}
+				bind:this={redoButton}
+				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
+			>
+			<button
+				class="bu-action header-undo"
+				class:slot-empty={!undoText && redoText}
+				class:slot-gone={!undoText && !redoText}
+				data-variant="quiet"
+				aria-label={undoText ?? t('common.undo')}
+				title={undoText ?? t('common.undo')}
+				disabled={!undoText}
+				bind:this={undoButton}
+				onclick={() => step(undo, redoButton)}><Undo2 size={18} /></button
+			>
 			<button
 				class="bu-action test-mount-toggle"
 				data-variant="quiet"
@@ -257,27 +297,6 @@
 					: t('toolbar.mountSettings')}
 				popovertarget="mount-options"
 				disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
-			>
-			<!-- History keeps both slots: an empty stack hides its button without moving anything. -->
-			<button
-				class="bu-action header-undo"
-				class:slot-empty={!undoText}
-				data-variant="quiet"
-				aria-label={undoText ?? t('common.undo')}
-				title={undoText ?? t('common.undo')}
-				disabled={!undoText}
-				bind:this={undoButton}
-				onclick={() => step(undo, redoButton)}><Undo2 size={18} /></button
-			>
-			<button
-				class="bu-action header-redo"
-				class:slot-empty={!redoText}
-				data-variant="quiet"
-				aria-label={redoText ?? t('common.redo')}
-				title={redoText ?? t('common.redo')}
-				disabled={!redoText}
-				bind:this={redoButton}
-				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
 			>
 			<button
 				class="bu-action header-random"
@@ -307,25 +326,6 @@
 				/></button
 			>
 		{/if}
-		<!-- Activity keeps its slot too, so starting or finishing work never shifts the bar. -->
-		{#if !busy && stopped}<button
-				class="bu-action header-activity stopped-work"
-				data-variant="quiet"
-				aria-label={t('activity.title')}
-				title={t('generation.status.needsAttention')}
-				onclick={() => (ui.sheet = 'activity')}
-				><CircleAlert size={18} /><span class="num">{stopped}</span></button
-			>{:else}<button
-				class="bu-action header-activity"
-				class:slot-empty={!busy}
-				data-variant="quiet"
-				aria-label={t('activity.title')}
-				title={t('activity.title')}
-				disabled={!busy}
-				onclick={() => (ui.sheet = 'activity')}
-				><span class="bu-ring ring" class:spin={busy}></span><span class="num">{active || ''}</span
-				></button
-			>{/if}
 		<GlobalActions />
 	</div>
 </header>
@@ -502,12 +502,11 @@
 	.stopped-work {
 		color: var(--bu-danger);
 	}
-	/* An empty history stack or idle Activity keeps its slot, so nothing in the bar ever moves. */
+	/* Undo's held slot while Redo exists; a slot that is gone takes no room. */
 	.slot-empty {
 		visibility: hidden;
 	}
-	/* Room for the ring and a two-digit count, so a count appearing never widens the slot. */
-	.header-activity {
-		min-width: 64px;
+	.slot-gone {
+		display: none;
 	}
 </style>

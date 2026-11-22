@@ -3,7 +3,7 @@
 	// Fixed chrome (docs/design/2026-11-21-app-bars/plan.md): Back only at the start and only inside an inner pane, the
 	// centered title, header tools, then the X at the end. A footer exists only for a commit, primary action last.
 	import { openingTrigger, restoreTrigger } from './experience/focus.ts';
-	import type { Snippet } from 'svelte';
+	import type { Component, Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import { WORLDS } from './experience/config.ts';
 	import { ui, canReturnToCreator, returnToCreator } from './state.svelte.ts';
@@ -25,6 +25,7 @@
 		back,
 		backDiscards = false,
 		backTo: backPlace,
+		opener,
 		onclose,
 		locked = false,
 		dirty = false,
@@ -46,6 +47,8 @@
 		back?: () => void;
 		/** Back drops the pane's unsaved state (`dirty`), so it asks first like the X. */
 		backDiscards?: boolean;
+		/** A sibling page this sheet opens (Export's Settings), in Back's place at the start. */
+		opener?: { label: string; icon: Component; onclick: () => void };
 		/** The sheet Back returns to, when it is another sheet (names it "Back to …"). */
 		backTo?: string;
 		/** Leaves the sheet: the X, Escape, the backdrop and browser Back all ask for it. */
@@ -64,6 +67,8 @@
 	let titleElement = $state<HTMLHeadingElement>();
 	/** The exit waiting on Discard changes?. */
 	let discarding = $state<(() => void) | null>(null);
+	/** The footer's height, so a full-window screen's form can scroll clear of a footer floating over it. */
+	let footHeight = $state(0);
 	// The native `close` event from our own unmount fires after a replacement sheet is already set; ignore it.
 	let unmounting = false;
 	// Without an inner pane of its own, a sheet opened over New character steps back to it.
@@ -118,6 +123,7 @@
 
 <dialog
 	style:--creator-world="url('{WORLDS[ui.theme].backgrounds.creation}')"
+	style:--sheet-foot-height="{footHeight}px"
 	bind:this={dlg}
 	class="sheet {kind} {className}"
 	class:wide
@@ -137,6 +143,8 @@
 		bind:titleElement
 		{heading}
 		back={goBack ?? (screen ? requestClose : undefined)}
+		{opener}
+		titleAtStart={screen}
 		backTo={backName}
 		{locked}
 		onclose={requestClose}
@@ -148,7 +156,9 @@
 		{/snippet}
 	</SurfaceHeader>
 	<div class="sheet-body">{@render children()}</div>
-	{#if footer}<footer class="sheet-foot">{@render footer()}</footer>{/if}
+	{#if footer}<footer class="sheet-foot" bind:offsetHeight={footHeight}>
+			{@render footer()}
+		</footer>{/if}
 	<Toast />
 	{#if screen}<MoreMenu context="creator" />{/if}
 </dialog>

@@ -745,10 +745,11 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 	await expect(toggle.locator('.view-label')).toHaveCount(0);
 	await expect(page.locator('.view-modes .test-mount-toggle')).toHaveCount(0);
-	// Mount settings leads the trailing group: Undo, Redo and Random look follow it.
+	// Redo and Undo lead the trailing group (they come and go there without moving anything); Mount settings and
+	// Random look follow them.
 	await expect(
 		page.locator(
-			'.header-actions > .test-mount-toggle + .header-undo + .header-redo + .header-random'
+			'.header-actions > .header-redo + .header-undo + .test-mount-toggle + .header-random'
 		)
 	).toHaveCount(1);
 	const mountMenu = page.locator('#mount-options');

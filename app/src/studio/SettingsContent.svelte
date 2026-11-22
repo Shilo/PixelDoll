@@ -592,8 +592,10 @@
 		display: grid;
 		gap: 8px;
 	}
+	/* Tall enough for the whole index, including Reset all at its end, so neither column scrolls away from the other on
+	   ordinary desktop windows. */
 	:global(dialog.settings-sheet.center) {
-		height: min(540px, calc(100dvh - 32px));
+		height: min(720px, calc(100dvh - 32px));
 	}
 	:global(dialog.settings-sheet.bottom) {
 		height: 100dvh;

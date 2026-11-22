@@ -2056,18 +2056,19 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	// pause playback so the stage is comparable
 	await page.getByRole('button', { name: 'Pause', exact: true }).click();
 	assert.equal(await pressed('Steel helmet'), 'true');
-	// Empty history hides Undo and Redo in place: the first step shows Undo without moving any top-bar control.
+	// Redo and Undo appear at the start of the end-anchored group, so history never moves Mount settings, Random look,
+	// Share, Export, Full screen or More.
 	const barX = () =>
 		page
-			.locator('.header-actions button')
+			.locator('.header-actions button:not(.header-undo, .header-redo)')
 			.evaluateAll((buttons) => buttons.map((b) => Math.round(b.getBoundingClientRect().x)));
-	await expect(page.locator('.header-undo')).toHaveCSS('visibility', 'hidden');
-	await expect(page.locator('.header-redo')).toHaveCSS('visibility', 'hidden');
+	await expect(page.locator('.header-undo')).toBeHidden();
+	await expect(page.locator('.header-redo')).toBeHidden();
 	const emptyHistoryBar = await barX();
 	await page.locator('.equipment-scroll .item-tile', { hasText: 'Wizard hat' }).click();
 	assert.equal(await pressed('Wizard hat'), 'true');
-	await expect(page.locator('.header-undo')).toHaveCSS('visibility', 'visible');
-	await expect(page.locator('.header-redo')).toHaveCSS('visibility', 'hidden');
+	await expect(page.locator('.header-undo')).toBeVisible();
+	await expect(page.locator('.header-redo')).toBeHidden();
 	assert.deepEqual(await barX(), emptyHistoryBar);
 	assert.equal(await pressed('Steel helmet'), 'false');
 	step('wear swaps the item in the slot');
@@ -2090,7 +2091,15 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 		'tapping a worn item takes it off, tapping again wears it; Empty with nothing worn adds no undo step'
 	);
 
+	const undoX = await page.locator('.header-undo').evaluate((b) => b.getBoundingClientRect().x);
 	for (let i = 0; i < 3; i++) await page.getByRole('button', { name: /^Undo/ }).click();
+	// Emptied while Redo exists, Undo keeps its slot, so a further press there cannot land on Redo.
+	await expect(page.locator('.header-undo')).toHaveCSS('visibility', 'hidden');
+	expect(await page.locator('.header-undo').evaluate((b) => b.getBoundingClientRect().x)).toBe(
+		undoX
+	);
+	await expect(page.locator('.header-redo')).toBeVisible();
+	assert.deepEqual(await barX(), emptyHistoryBar);
 	assert.equal(await pressed('Steel helmet'), 'true');
 	await page.keyboard.press('Control+Shift+Z');
 	assert.equal(await pressed('Wizard hat'), 'true');
@@ -2414,11 +2423,10 @@ for (const [name, viewport] of [
 		test(`${name}: Outfits, Random look and Redo stay reachable`, async ({ context, page: p }) => {
 			const finish = await demoGuard(context);
 			await openDemo(p);
-			// An empty history keeps Redo's slot in the bar (hidden until there is something to redo); otherwise
-			// Redo moves into More.
-			const redoSlot = p.locator('.header-redo');
-			if (await redoSlot.evaluate((element) => getComputedStyle(element).display !== 'none'))
-				await expect(redoSlot).toBeAttached();
+			// Redo lives in the bar (shown once there is something to redo), except on phone layouts, where it moves
+			// into More.
+			if (!(await p.locator('.experience.phone-layout').count()))
+				await expect(p.locator('.header-redo')).toBeAttached();
 			else {
 				await p.getByRole('button', { name: 'More options', exact: true }).click();
 				await expect(
