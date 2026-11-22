@@ -10,7 +10,7 @@ Phases 0 and 2 to 8 are done. **Phase 9: stopped at the [owner checklist](owner-
 
 - `npm test`: 227 files, 3,262 passed, 5 skipped. Sync: 28 engine scenario tests including the 300-seed fuzz; provider contract suite for Sim, Google Drive and Dropbox fakes; auth; the token endpoint.
 - `npm run check`: clean. `npm run build` plus the dist guard: clean (no sync code in startup chunks).
-- `npm run e2e -- e2e/cloud-save`: 2 passed (two devices round trip; Settings sign-in round trip, status, disconnect, hidden without Developer mode).
+- `npm run e2e -- e2e/cloud-save`: 2 passed (two devices round trip; Settings sign-in round trip, status, disconnect).
 - Full e2e suite (`--all`, run twice by the spec-name quirk in decision 16): 424 passed. The failures were the cloud-save test before its fix and load flakes (studio touch-scroll, api-peek, character-creator, crash-recovery, Fix frames) that each passed when rerun alone.
 - Browser check of Settings › Cloud Save on the agent dev server: dark and light, phone (375 px) and desktop; not-configured message. The connected states are covered by the e2e test, not checked by eye.
 
@@ -32,7 +32,7 @@ Real Google Drive and Dropbox, CORS of Drive resumable uploads over 5 MB and Dro
 
 1. Put the client ID, app key and endpoint URL in `app/src/lib/sync/config.ts` and the endpoint origin in the CSP (`app/index.html`).
 2. Run the provider contract suite and two-browser sync against the real providers with the `.env` test tokens.
-3. Read the phone test notes, fix, and prepare the release that removes the Developer-mode gate.
+3. Read the phone test notes, fix, and prepare the final release.
 
 ## Open disagreements
 

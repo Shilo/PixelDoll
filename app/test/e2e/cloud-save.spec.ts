@@ -9,14 +9,13 @@ const baseURL = `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}`;
 
 const statePath = '/src/studio/state.svelte.ts';
 
-async function device(browser: Browser, cloud: DropboxFake, developer = true) {
+async function device(browser: Browser, cloud: DropboxFake) {
 	const context = await browser.newContext({ baseURL, viewport: { width: 1440, height: 900 } });
-	await context.addInitScript((developer) => {
+	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
 		localStorage.setItem('pixeldoll.devSyncConfig', JSON.stringify({ dropboxAppKey: 'test-app' }));
-		if (developer) localStorage.setItem('pixeldoll.developerMode', '1');
-	}, developer);
+	});
 	await context.route(/^https:\/\/(api|content)\.dropboxapi\.com\//, async (route) => {
 		const request = route.request();
 		if (new URL(request.url()).pathname === '/oauth2/token')
@@ -113,20 +112,8 @@ test('a character saved on one device appears on another, and an edit there come
 		.toContain('Renamed on the phone');
 });
 
-test('Cloud Save settings: hidden without Developer mode, sign-in round trip, status and disconnect', async ({
-	browser
-}) => {
+test('Cloud Save settings: sign-in round trip, status and disconnect', async ({ browser }) => {
 	const cloud = new DropboxFake();
-	const hidden = await (await device(browser, cloud, false)).newPage();
-	await openStudio(hidden, '/');
-	await hidden.getByRole('button', { name: 'More options', exact: true }).click();
-	await hidden.getByRole('button', { name: 'Settings...', exact: true }).click();
-	await expect(
-		hidden
-			.getByRole('dialog', { name: 'Settings', exact: true })
-			.getByRole('button', { name: 'Cloud Save' })
-	).toHaveCount(0);
-
 	const context = await device(browser, cloud);
 	// Dropbox's sign-in page: send the browser straight back with a code, as after Allow.
 	await context.route('https://www.dropbox.com/oauth2/authorize**', (route) => {

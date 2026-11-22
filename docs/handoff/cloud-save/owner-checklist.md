@@ -1,6 +1,6 @@
 # Cloud Save: owner checklist
 
-Everything the team could do without you is done, tested and committed on `feat/cloud-save`. Cloud Save is visible only in Developer mode. These steps need a person. Every value is filled in; copy, don't decide. Everything is free: attach no billing account and no card anywhere.
+Everything the team could do without you is done, tested and committed on `feat/cloud-save`. Cloud Save is visible to everyone; its Connect buttons say sign-in is not set up yet until steps 8, 9 and 13 are done. These steps need a person. Every value is filled in; copy, don't decide. Everything is free: attach no billing account and no card anywhere.
 
 When done, tell the team "checklist done" with the four values from steps 8, 9 and 13 (all public). Never paste a secret or a refresh token in chat.
 
@@ -8,7 +8,7 @@ When done, tell the team "checklist done" with the four values from steps 8, 9 a
 
 **0. Merge the release A pull request** into main (the team's PR for `feat/cloud-save`). It ships:
 
-- Cloud Save, hidden behind Developer mode
+- Cloud Save, visible to everyone (Connect says sign-in is not set up yet until the values below are in)
 - the privacy policy at https://pixeldoll.app/privacy.html, linked from the home page
 
 Google's brand review needs both live, and the phone tests need the code on pixeldoll.app.
@@ -112,7 +112,7 @@ node scripts/sync-test-token.mjs dropbox
 
 Each prints a sign-in URL: open it in a private window, sign in with the spare account, then paste the address the browser lands on (an error page at localhost:5199 is expected). The token goes into the repo-root `.env`, never on screen.
 
-**16. Phones** (on https://pixeldoll.app with Developer mode on in Settings › Developer):
+**16. Phones** (on https://pixeldoll.app, after the team ships the sign-in values):
 
 1. Install PixelDoll to the Home Screen on an iPhone (Share › Add to Home Screen), and on Android if available.
 2. In the installed app: Settings › Cloud Save › Connect Google Drive, sign in with the spare account. Note whether you came back to the installed app or ended up in Safari.
@@ -121,7 +121,7 @@ Each prints a sign-in URL: open it in a private window, sign in with the spare a
 5. Repeat 2 to 4 with Dropbox (disconnect Google first).
 6. Write what failed in `docs/handoff/cloud-save/phone-test.md`, or tell the team.
 
-**17. Merge** the fix rounds the team prepares from the phone tests, then the final release that removes the Developer-mode gate.
+**17. Merge** the fix rounds the team prepares from the phone tests, then the final release.
 
 ## Before the final release
 

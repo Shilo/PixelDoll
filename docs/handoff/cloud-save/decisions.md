@@ -109,3 +109,7 @@ UI review of the client (by the UI specialist): tabs not connected now listen fo
 ## 16. Spec name inside this worktree (2026-11-22)
 
 `npm run e2e -- cloud-save` in a worktree whose path contains "cloud-save" selects every spec (Playwright matches the filter against the full path). Use `npm run e2e -- e2e/cloud-save` here; in other checkouts the short name works.
+
+## 17. No Developer-mode gate (2026-11-22, owner)
+
+- **Decision (owner):** Cloud Save is not put behind Developer mode; plan section 5 "Hidden until release" is withdrawn. Until the sign-in values are registered, Connect shows "This version of PixelDoll has no cloud sign-in set up yet."

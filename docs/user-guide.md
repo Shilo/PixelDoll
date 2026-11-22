@@ -400,8 +400,7 @@ for larger libraries, export individual character ZIPs. Uncommitted edits outsid
 ## Cloud Save
 
 Cloud Save keeps a copy of your saved characters in your own Google Drive or Dropbox, and keeps your devices in sync. It
-is optional, and saving on your device works exactly the same with or without it. Until its release it appears only with
-**Developer mode** on.
+is optional, and saving on your device works exactly the same with or without it.
 
 1. Choose **Settings → Cloud Save → Connect Google Drive** (or **Connect Dropbox**).
 2. Sign in on Google's or Dropbox's own page and allow access. PixelDoll can use only its own folder: **PixelDoll** in

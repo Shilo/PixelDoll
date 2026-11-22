@@ -21,7 +21,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Cloud Save
 
-Cloud Save is visible only in Developer mode until its release (docs/handoff/cloud-save/).
+Cloud Save is visible to everyone. Until the owner registers the Google and Dropbox sign-ins
+(docs/handoff/cloud-save/owner-checklist.md), its Connect buttons say this version has no cloud sign-in set up yet.
 
 - **iPhone Home Screen sign-in is unproven.** The sign-in is a full-page redirect. Reports up to 2026 say it can land in
   Safari instead of the installed app. If it does, connect from Safari, or from the app after the owner's phone test

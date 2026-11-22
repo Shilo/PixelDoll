@@ -4,7 +4,6 @@
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
-	import { developerModeEnabled } from './developerMode.svelte.ts';
 	import Lazy from './Lazy.svelte';
 	import { getKeyRevision } from '../lib/app.svelte.ts';
 	import { isResettableSection, resetSettings, type ResetScope } from './resetSettings.ts';
@@ -278,15 +277,11 @@
 		icon: typeof Settings2;
 		entries: { id: string; label: WhisperKey; terms?: WhisperKey[]; names?: readonly string[] }[];
 	}[];
-	// Cloud Save shows only in Developer mode until release, and never in a workspace copy.
-	const available = $derived(
-		sections.filter(
-			(section) =>
-				(section.id !== 'cloud' || (!workspaceCopy && developerModeEnabled())) &&
-				(!workspaceCopy ||
-					(!isCreationSection(section.id) &&
-						!['pixellab', 'library', 'trash', 'developer'].includes(section.id)))
-		)
+	const available = sections.filter(
+		(section) =>
+			!workspaceCopy ||
+			(!isCreationSection(section.id) &&
+				!['pixellab', 'library', 'cloud', 'trash', 'developer'].includes(section.id))
 	);
 	const groups: SettingsSection[][] = [
 		['pixellab'],
@@ -295,11 +290,9 @@
 		['export', 'library', 'cloud', 'trash'],
 		['developer', 'about']
 	];
-	const navigation = $derived(
-		groups
-			.map((group) => available.filter(({ id }) => group.includes(id)))
-			.filter((group) => group.length)
-	);
+	const navigation = groups
+		.map((group) => available.filter(({ id }) => group.includes(id)))
+		.filter((group) => group.length);
 	const loadCloudSave = () => import('./CloudSaveSettings.svelte');
 	const canReset = $derived(!workspaceCopy && !settingsNavigation.fromExport);
 	const wide = new MediaQuery('(min-width: 660px) and (min-height: 520px)');
