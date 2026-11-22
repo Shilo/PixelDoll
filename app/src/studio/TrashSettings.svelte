@@ -248,9 +248,19 @@
 		padding: 10px calc(44px + 20px) 10px 12px;
 		text-align: start;
 	}
-	.trash-restore[data-active] {
-		border-color: var(--bu-success);
-		background: color-mix(in srgb, var(--bu-success) 12%, transparent);
+	/* Asking to restore is a question about a safe action, not a status: no hue, which would claim
+	   success or warning. The swapped glyph, the bold prompt and a brighter neutral edge carry it.
+	   This selector outranks Bronze's outline hover, so the row stays armed under the pointer. */
+	.trash-row
+		> .trash-restore[data-variant='outline'][data-active]:not(:disabled):not(
+			[aria-disabled='true']
+		) {
+		color: var(--bu-text);
+		border-color: color-mix(in srgb, var(--bu-text) 75%, var(--bu-surface));
+		background: var(--bu-hover);
+	}
+	.trash-restore[data-active] .trash-meta {
+		color: inherit;
 	}
 	.trash-restore[aria-busy='true'] {
 		cursor: progress;
@@ -290,7 +300,8 @@
 		opacity: 0.85;
 	}
 	.trash-confirm {
-		font-weight: 500;
+		font-weight: 600;
+		opacity: 1;
 	}
 	.trash-delete {
 		justify-self: end;

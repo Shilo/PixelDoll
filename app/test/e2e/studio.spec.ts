@@ -9774,7 +9774,21 @@ test('a deleted item comes back from the notice, the history and the Trash after
 	await settings.getByRole('button', { name: 'Trash', exact: true }).click();
 	const recently = settings.getByRole('region', { name: 'Trash', exact: true });
 	await expect(recently).toContainText('Red cape');
-	await recently.getByRole('button', { name: 'Restore Red cape', exact: true }).click();
+	// The first press only asks, in place; Escape takes the question back and a second press restores.
+	const row = recently.getByRole('button', { name: 'Restore Red cape', exact: true });
+	const asking = recently.getByRole('button', {
+		name: 'Press again to restore Red cape',
+		exact: true
+	});
+	await row.click();
+	await expect(asking).toBeFocused();
+	await expect(asking).toContainText('Press again to restore');
+	await page.keyboard.press('Escape');
+	await expect(row).toBeFocused();
+	await expect(settings).toBeVisible();
+	await page.keyboard.press('Enter');
+	await expect(asking).toBeFocused();
+	await page.keyboard.press('Enter');
 	await expect(page.getByText('Restored Red cape')).toBeVisible();
 	await settings.getByRole('button', { name: 'Back', exact: true }).click();
 	await expect(tile()).toHaveCount(1);
