@@ -38,6 +38,8 @@ export type SyncErrorCode =
 	| 'cloud-full'
 	/** The cloud copy was made by a newer PixelDoll (or is not a PixelDoll folder): update this device. */
 	| 'update'
+	/** The cloud folder this device used is gone (trashed by the user): ask before rebuilding it, never read it as deletes. */
+	| 'missing'
 	/** Anything else, with the provider's message. */
 	| 'failed';
 

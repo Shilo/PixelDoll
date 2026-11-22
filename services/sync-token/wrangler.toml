@@ -1,0 +1,23 @@
+# PixelDoll's stateless Google OAuth token endpoint (PLAN.md D31). See README.md for the deploy steps.
+# The client secret is never in this file: set it with `npx wrangler@4 secret put GOOGLE_CLIENT_SECRET`.
+name = "pixeldoll-sync-token"
+main = "worker.ts"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+# Nothing is logged: no request logs, no traces.
+[observability]
+enabled = false
+
+[vars]
+# Public by design (it appears in every Google sign-in URL); the owner fills it in.
+GOOGLE_CLIENT_ID = ""
+
+# Per-IP limit (WAF rate-limit rules need a Cloudflare zone, which workers.dev does not have).
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+
+[ratelimits.simple]
+limit = 30
+period = 60
