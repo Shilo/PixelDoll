@@ -37,10 +37,22 @@ test('agent tools: WebMCP lists the tools and returns JSON and real frame images
 	expect(tools.map((t) => t.name)).toContain('inspect_item');
 
 	const overview = contentOf(await page.webmcp.callTool('pixeldoll_overview', {}));
-	expect(JSON.parse(overview.content[0].text!).app).toBe('PixelDoll');
+	expect(JSON.parse(overview.content[0].text!).data.app).toBe('PixelDoll');
+
+	// By default the sheets are shown in the page for a screenshot and the result stays small.
+	const shown = contentOf(
+		await page.webmcp.callTool('inspect_item', { itemId: 'sword_steel', move: 'walk' })
+	);
+	expect(shown.content).toHaveLength(1);
+	expect(JSON.parse(shown.content[0].text!).seeImages).toContain('screenshot');
+	await expect(page.locator('[data-agent-evidence] img')).toHaveCount(2);
 
 	const inspected = contentOf(
-		await page.webmcp.callTool('inspect_item', { itemId: 'sword_steel', move: 'walk' })
+		await page.webmcp.callTool('inspect_item', {
+			itemId: 'sword_steel',
+			move: 'walk',
+			imageData: true
+		})
 	);
 	expect(inspected.isError).toBeFalsy();
 	const images = inspected.content.filter((c) => c.type === 'image');
@@ -55,6 +67,7 @@ test('agent tools: WebMCP lists the tools and returns JSON and real frame images
 	const refused = contentOf(await page.webmcp.callTool('inspect_item', { itemId: 'nope' }));
 	expect(refused.isError).toBe(true);
 	expect(JSON.parse(refused.content[0].text!)).toMatchObject({ code: 'not_found' });
+	await expect(page.locator('[data-agent-evidence]')).toHaveCount(0);
 });
 
 test('agent tools: the page bridge edits a free copy and spends only an approved budget', async ({

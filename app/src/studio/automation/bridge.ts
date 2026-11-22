@@ -1,16 +1,21 @@
 // Connection adapters over the one tool registry (tools.ts). Both are browser-native and need no server:
 // - WebMCP: tools registered on document.modelContext, discovered by WebMCP-capable agents (Playwright MCP, Chrome DevTools
-//   MCP, the ChatGPT app's browser) with images as MCP image content.
+//   MCP, the ChatGPT app's browser).
 // - window.pixeldoll: the same tools for agents that drive the page by script (Claude in Chrome, DevTools or Playwright
-//   evaluate, IDE browsers). Script results are text to them, so images are also shown in the page for a screenshot.
+//   evaluate, IDE browsers).
+// Neither channel reliably hands images to the model: WebMCP results are JSON strings (Playwright MCP passes them on as text,
+// measured 2026-11-22) and script results are text. So frame sheets are shown in the page, where every browser agent's
+// screenshot sees them, and come back as base64 only when the agent asks (imageData).
 import { AgentError, callTool, TOOLS, type Json, type Tool, type ToolResult } from './tools.ts';
 import { hideEvidence, showEvidence } from './panel.svelte.ts';
 
-const errorData = (e: unknown) =>
-	e instanceof AgentError
+/** What a failed call returns; like any call without sheets, it closes the previous ones. */
+const errorData = (e: unknown) => {
+	hideEvidence();
+	return e instanceof AgentError
 		? { error: e.message, code: e.code }
 		: { error: e instanceof Error ? e.message : String(e), code: 'failed' };
-
+};
 // ---------- WebMCP ----------
 interface ModelContextTool {
 	name: string;
@@ -31,21 +36,44 @@ export function modelContext(): ModelContext | null {
 	return d.modelContext ?? n.modelContext ?? null;
 }
 
-/** MCP-shaped result: a JSON text block, then each sheet as an image block. Failures are returned, not thrown: WebMCP turns
- *  a rejected promise into a bare OperationError and drops the reason the agent needs. */
-export async function webmcpResult(run: () => Promise<ToolResult>) {
+/** The result an agent receives: the tool's data plus a note on the sheets shown in the page, and the sheets as base64 PNG
+ *  only when asked. A call without sheets closes the previous ones. */
+export function present(result: ToolResult, imageData: boolean) {
+	const images = result.images ?? [];
+	if (images.length) showEvidence(images.map((image) => image.label).join(' | '), images);
+	else hideEvidence();
+	return {
+		data: result.data,
+		images: images.map(({ label, width, height, scale, data }) => ({
+			label,
+			width,
+			height,
+			scale,
+			...(imageData ? { data } : {})
+		})),
+		...(images.length && !imageData ? { seeImages: SEE_IMAGES } : {})
+	};
+}
+const SEE_IMAGES =
+	'The sheets are shown over the PixelDoll page now: take a screenshot of the page to see them (rows = directions, columns = frames, whole-pixel scale). Pass imageData true to get them as base64 PNG instead.';
+
+/** MCP-shaped result: one JSON text block, then image blocks when the agent asked for image data. Failures are returned, not
+ *  thrown: WebMCP turns a rejected promise into a bare OperationError and drops the reason the agent needs. */
+export async function webmcpResult(run: () => Promise<ToolResult>, imageData: boolean) {
 	try {
-		const result = await run();
+		const shown = present(await run(), imageData);
 		return {
 			content: [
-				{ type: 'text', text: JSON.stringify(result.data) },
-				...(result.images ?? []).flatMap((image) => [
-					{
-						type: 'text',
-						text: `${image.label} (${image.width}x${image.height}, ${image.scale}x per pixel)`
-					},
-					{ type: 'image', data: image.data, mimeType: 'image/png' }
-				])
+				{
+					type: 'text',
+					text: JSON.stringify({
+						...shown,
+						images: shown.images.map(({ data: _data, ...meta }) => meta)
+					})
+				},
+				...shown.images.flatMap((image) =>
+					image.data ? [{ type: 'image', data: image.data, mimeType: 'image/png' }] : []
+				)
 			]
 		};
 	} catch (e) {
@@ -61,8 +89,9 @@ export function webmcpTool(tool: Tool): ModelContextTool {
 		inputSchema: tool.inputSchema,
 		annotations: { readOnlyHint: !!tool.readOnly, consequentialHint: !!tool.consequential },
 		execute: (input, options) =>
-			webmcpResult(() =>
-				callTool(tool.name, input, options?.signal ?? new AbortController().signal)
+			webmcpResult(
+				() => callTool(tool.name, input, options?.signal ?? new AbortController().signal),
+				wantsImageData(input)
 			)
 	};
 }
@@ -83,48 +112,19 @@ async function registerWebMcp(signal: AbortSignal): Promise<number> {
 }
 
 // ---------- window.pixeldoll ----------
-export interface CallOptions {
-	/** Show the result's images in the page for a screenshot (default true when there are images). */
-	show?: boolean;
-	/** Also return the PNGs as base64 (large: only for agents that can decode them). */
-	includeImageData?: boolean;
-}
-export interface BridgeResult {
-	ok: boolean;
-	data: Json;
-	images: { label: string; width: number; height: number; scale: number; data?: string }[];
-	shownInPage: boolean;
-}
+const wantsImageData = (input: unknown) =>
+	!!input && typeof input === 'object' && (input as { imageData?: unknown }).imageData === true;
 
-export async function bridgeCall(
-	name: string,
-	args?: unknown,
-	options: CallOptions = {}
-): Promise<BridgeResult> {
+export async function bridgeCall(name: string, args?: unknown) {
 	try {
-		const result = await callTool(name, args);
-		const images = result.images ?? [];
-		const show = options.show ?? images.length > 0;
-		if (show && images.length) showEvidence(name, images);
-		return {
-			ok: true,
-			data: result.data,
-			images: images.map(({ label, width, height, scale, data }) => ({
-				label,
-				width,
-				height,
-				scale,
-				...(options.includeImageData ? { data } : {})
-			})),
-			shownInPage: show && images.length > 0
-		};
+		return { ok: true, ...present(await callTool(name, args), wantsImageData(args)) };
 	} catch (e) {
-		return { ok: false, data: errorData(e), images: [], shownInPage: false };
+		return { ok: false, data: errorData(e) as Json, images: [] };
 	}
 }
 
-const HELP = `PixelDoll agent API. await pixeldoll.call(name, args) returns {ok, data, images}. Images are drawn over the page:
-take a screenshot to see them, then pixeldoll.hide(). Start with await pixeldoll.call('pixeldoll_overview').
+const HELP = `PixelDoll agent API. await pixeldoll.call(name, args) returns {ok, data, images}. Frame sheets are drawn over the
+page: take a screenshot to see them; pixeldoll.hide() closes them. Start with await pixeldoll.call('pixeldoll_overview').
 pixeldoll.tools() lists every tool with its input schema. Paid tools need an approved budget (request_budget).`;
 
 export function installAutomation(): () => void {

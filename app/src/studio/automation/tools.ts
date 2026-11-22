@@ -79,6 +79,11 @@ const str = (description: string, maxLength = 200): JsonSchema => ({
 const characterArg = str(
 	'Character id from list_characters. Omit for the character open in the Studio. A different id opens that character.'
 );
+const imageDataArg: JsonSchema = {
+	type: 'boolean',
+	description:
+		'Also return the sheets as base64 PNG. Only for clients that show such images to the model; otherwise screenshot the page, where they are shown.'
+};
 const scaleArg: JsonSchema = {
 	type: 'integer',
 	minimum: 1,
@@ -332,8 +337,9 @@ Workflow:
 4. Paid starts return at once. Use wait_for_activity (up to 110 s per call) or get_activity to follow them.
 5. A finished item draft is in phase "review": inspect_item with its draft id shows QA and frames. accept_draft saves it,
    discard_draft throws it away (its generations stay spent).
-6. inspect_item and render_frames return labeled contact sheets (rows = directions, columns = frames) at whole-pixel scale.
-   Over page script, set show true and take a screenshot to see them; WebMCP returns them as images.
+6. inspect_character, inspect_item and render_frames make labeled contact sheets of real frames (rows = directions,
+   columns = frames) at whole-pixel scale and show them over the page: take a screenshot to see them. imageData true also
+   returns them as base64 PNG, for clients that show those to the model.
 7. set_outfit, set_color and accept_draft are undoable in the Studio (Undo). export_character downloads a ZIP for the user.
 Moves cannot be added by tools yet: ask the user to use Add move.`;
 
@@ -402,7 +408,8 @@ export const TOOLS: Tool[] = [
 					description: 'Include a sheet of the current outfit (default true).'
 				},
 				move: str('Move for the sheet (default "default", the standing pose).'),
-				scale: scaleArg
+				scale: scaleArg,
+				imageData: imageDataArg
 			}
 		},
 		readOnly: true,
@@ -468,7 +475,8 @@ export const TOOLS: Tool[] = [
 					items: { type: 'integer', minimum: 0, maximum: 63 },
 					maxItems: 64
 				},
-				scale: scaleArg
+				scale: scaleArg,
+				imageData: imageDataArg
 			}
 		},
 		readOnly: true,
@@ -546,7 +554,8 @@ export const TOOLS: Tool[] = [
 						'Slot -> item id (or null for nothing). Unlisted slots keep what is worn now.',
 					additionalProperties: true
 				},
-				scale: scaleArg
+				scale: scaleArg,
+				imageData: imageDataArg
 			}
 		},
 		readOnly: true,
