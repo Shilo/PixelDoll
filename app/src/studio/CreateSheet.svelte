@@ -51,16 +51,14 @@
 	import { PreflightWarning, errorText } from '../lib/message.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	const policyDecline = /\b5000\b|policy/i;
-	let d = $state(
-		formDrafts.character ??
-			(createPresentation.id
-				? newCharacterDraft()
-				: characterDraftWithDefaults(openingCreationSettings('characters')))
-	);
+	const opening = createPresentation.id
+		? newCharacterDraft()
+		: characterDraftWithDefaults(openingCreationSettings('characters'));
+	let d = $state(formDrafts.character ?? structuredClone(opening));
 	formDrafts.character = undefined;
-	// Typed text that leaving would lose, compared with a blank form so a draft restored from a sheet opened over this
-	// screen still counts; the choices around it keep their saved defaults.
-	const typed = $derived(draftTyped(d));
+	// Typed text that leaving would lose, compared with the form as it opens, so a draft restored from a sheet opened
+	// over this screen still counts; the choices around it keep their saved defaults.
+	const typed = $derived(draftTyped(d, opening));
 	// A sheet opened over this screen (More, Connect, Activity) steps back to it with the draft intact; its X leaves
 	// both and the draft waits for the next New character, as it does after canceling Connect.
 	$effect(() => () => {
