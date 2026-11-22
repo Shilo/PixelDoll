@@ -78,6 +78,5 @@ export async function launchStudio() {
 
 	mount(App, { target });
 	startup?.remove();
-	// After first paint, and only for a connected device or a returning sign-in: sync code is never in the first load.
-	if (!workspaceCopy) requestAnimationFrame(() => setTimeout(startCloudSave));
+	if (!workspaceCopy) startCloudSave();
 }

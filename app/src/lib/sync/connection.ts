@@ -19,12 +19,17 @@ function connectedHint() {
 const returningFromSignIn = (url: URL) =>
 	url.searchParams.has('state') && (url.searchParams.has('code') || url.searchParams.has('error'));
 
-/** After first paint: load and start Cloud Save when this device is connected or a sign-in is finishing. */
+/** Load and start Cloud Save after first paint, only when this device is connected or a sign-in is finishing: sync code
+ *  is never part of the first load. */
 export function startCloudSave() {
 	if (!connectedHint() && !returningFromSignIn(new URL(location.href))) return;
-	void import('./client.ts')
-		.then((client) => client.start())
-		.catch((error) => console.error('Cloud Save could not start', error));
+	requestAnimationFrame(() =>
+		setTimeout(() =>
+			import('./client.ts')
+				.then((client) => client.start())
+				.catch((error) => console.error('Cloud Save could not start', error))
+		)
+	);
 }
 
 /** Delete local work also removes this device's sign-in and sync state: the next connect starts like a new device. */
