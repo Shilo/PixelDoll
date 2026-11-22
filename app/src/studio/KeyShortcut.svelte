@@ -41,6 +41,11 @@
 		border-radius: 5px;
 		background: var(--bu-field);
 		font: inherit;
+		/* Full-contrast, semibold monospace labels like printed keycaps: every key gets a full-width cell, so thin keys
+		   such as "," stay readable. */
+		font-family: var(--bu-mono);
+		font-weight: 600;
+		color: var(--bu-text);
 		text-align: center;
 	}
 	/* Touch-first devices usually have no keyboard to press it with. */
