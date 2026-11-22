@@ -59,7 +59,7 @@
 	<button
 		type="button"
 		class="bu-action btn icon"
-		data-variant="outline"
+		data-variant="field"
 		aria-label={decreaseLabel}
 		disabled={disabled || previous === undefined}
 		onclick={() => previous !== undefined && commit(previous)}><Minus size={16} /></button
@@ -91,7 +91,7 @@
 	<button
 		type="button"
 		class="bu-action btn icon"
-		data-variant="outline"
+		data-variant="field"
 		aria-label={increaseLabel}
 		disabled={disabled || next === undefined}
 		onclick={() => next !== undefined && commit(next)}><Plus size={16} /></button
@@ -99,7 +99,8 @@
 </div>
 
 <style>
-	/* One joined control: only its outer corners are rounded, and neighbors share a single border line. */
+	/* One joined control: only its outer corners are rounded, and neighbors share a single border line. The buttons use
+	   Bronze's field variant so their border and fill match the text field's. */
 	.stepper {
 		display: flex;
 		align-items: stretch;
