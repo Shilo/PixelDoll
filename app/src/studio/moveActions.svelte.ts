@@ -275,6 +275,8 @@ export async function removeMove(id: string) {
 		throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
 	const version = stableStringify(snapshot.manifest);
 	const removed = snapshot.manifest.rig.animations.find((clip) => clip.id === id);
+	// Named before the clip leaves the manifest: afterwards the label falls back, and the toast would not match it.
+	const displayName = removed?.name || moveLabel(id);
 	const ids = new Set(
 		snapshot.manifest.rig.animations.map((move) => move.id).filter((move) => move !== id)
 	);
@@ -314,7 +316,7 @@ export async function removeMove(id: string) {
 				const entry = deletedEntry({
 					kind: 'move',
 					record: previous,
-					name: removed?.name ?? moveLabel(id),
+					name: displayName,
 					context: previous.manifest.name,
 					scope: { moveId: id }
 				});
@@ -333,7 +335,7 @@ export async function removeMove(id: string) {
 		await openProject(projectId, { quiet: true });
 		if (kept) pushRecovery(message('history.deleteMove', { name: moveLabel(id) }), kept.id);
 	}
-	const label = message('state.removedName', { name: moveLabel(id) });
+	const label = message('state.removedName', { name: displayName });
 	if (kept)
 		toast(label, {
 			duration: 10000,

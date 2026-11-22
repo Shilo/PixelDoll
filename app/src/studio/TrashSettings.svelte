@@ -48,7 +48,9 @@
 		const at = deleted.entries.findIndex((entry) => entry.id === id);
 		busy = id;
 		try {
-			if (await restoreDeleted(id)) {
+			const restored = await restoreDeleted(id);
+			busy = '';
+			if (restored) {
 				await tick();
 				afterRow(at);
 			}
@@ -202,7 +204,7 @@
 	.trash-actions .btn {
 		min-inline-size: 0;
 		height: auto;
-		min-height: var(--ctl-h);
+		min-height: 44px;
 		padding-block: 6px;
 	}
 </style>

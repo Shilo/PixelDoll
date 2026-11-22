@@ -2742,7 +2742,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		.getByRole('alertdialog')
 		.getByRole('button', { name: 'Move to Trash', exact: true })
 		.click();
-	await expect(page.getByText('Removed Rest pose', { exact: true })).toBeVisible();
+	// A higher-priority notice can take the toast; the history step is the durable signal that it moved to Trash.
+	await expect(
+		page.getByRole('button', { name: 'Undo Delete Rest pose', exact: true })
+	).toBeVisible();
 	const remaining = await read();
 	expect(remaining.manifest.rig.animations).toEqual(after.manifest.rig.animations);
 	expect(posts).toHaveLength(posted);
@@ -3208,14 +3211,14 @@ test('a stopped move blocks deleting only its own character and opens from the b
 	});
 	await expect(page.locator('.project-btn')).toContainText('Pending hero');
 	await remove();
-	await expect(deletion.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
+	await expect(deletion.getByRole('button', { name: 'Move to Trash', exact: true })).toBeDisabled();
 	await deletion.getByRole('button', { name: 'View pending work' }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move' });
 	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeVisible();
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(move).toBeHidden();
 	await remove();
-	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
+	await deletion.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 	await expect(deletion).toBeHidden();
 	await expect(page.locator('.project-btn')).not.toContainText('Pending hero');
 });

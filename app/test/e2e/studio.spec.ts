@@ -8537,7 +8537,7 @@ for (const kind of ['outfit', 'move'] as const) {
 			]);
 		await trigger.click();
 		if (kind === 'move') {
-			await menu.getByRole('menuitem', { name: 'Delete move…', exact: true }).click();
+			await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 			const confirm = page.getByRole('alertdialog', {
 				name: `Move ${name} to Trash?`,
 				exact: true
@@ -8546,7 +8546,7 @@ for (const kind of ['outfit', 'move'] as const) {
 			await page.keyboard.press('Escape');
 			await expect(row).toBeVisible();
 			await trigger.click();
-			await menu.getByRole('menuitem', { name: 'Delete move…', exact: true }).click();
+			await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 			await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 		} else {
 			await menu.getByRole('menuitem', { name: 'Delete outfit', exact: true }).click();
@@ -8568,7 +8568,7 @@ for (const kind of ['outfit', 'move'] as const) {
 					.last()
 					.getByRole('button', { name: /^More actions/ })
 					.click();
-				await page.getByRole('menuitem', { name: 'Delete move…', exact: true }).click();
+				await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 				await page
 					.getByRole('alertdialog')
 					.getByRole('button', { name: 'Move to Trash', exact: true })
@@ -8737,7 +8737,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	const items = itemMenu(page).getByRole('menuitem');
 	await expect(items.first()).toHaveAccessibleName('Details...');
 	await expect(items.first()).toBeFocused();
-	await expect(items.last()).toHaveAccessibleName('Delete item…');
+	await expect(items.last()).toHaveAccessibleName('Move to Trash…');
 	const iconOffsets = await items.evaluateAll((rows) =>
 		rows.map(
 			(row) =>
@@ -8838,7 +8838,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		const at = tiles.indexOf(tile as HTMLElement);
 		return (tiles[at + 1] ?? tiles[at - 1]).getAttribute('aria-label')!;
 	});
-	await deleteAlert.getByRole('button', { name: 'Delete', exact: true }).click();
+	await deleteAlert.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 	await expect(hat).toHaveCount(0);
 	await expect(grid.locator('.shared-tile', { hasText: 'Wizard hat' })).toHaveAccessibleName(
 		/^Wizard hat, free from Adventurer(,|$)/

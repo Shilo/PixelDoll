@@ -649,7 +649,7 @@ test('another character’s item on the same body is worn for free, survives rel
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	const confirm = page.getByRole('alertdialog');
-	await expect(confirm).toContainText('Items copied to other characters stay.');
+	await expect(confirm).toContainText('copied to other characters stay.');
 	await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 	await expect(confirm).toHaveCount(0);
 	await page.locator('.project-btn').click();
