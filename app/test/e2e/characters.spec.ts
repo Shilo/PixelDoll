@@ -2953,9 +2953,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		posts.filter(
 			({ path }) => path.endsWith('/edit-images-v2') || path.endsWith('/create-character-state')
 		);
-	await newState.getByRole('button', { name: 'Check cost', exact: true }).click();
+	// The price arrives by itself; the one Generate State button enables once it is shown.
 	const generateState = newState.getByRole('button', { name: 'Generate State', exact: true });
-	await expect(generateState).toBeVisible();
+	await expect(generateState).toBeEnabled();
 	// Only the Generate State button approves a paid request, never Enter in a field.
 	await newState.getByRole('textbox', { name: 'State name' }).press('Enter');
 	await expect(newState.getByText('This State will be saved in PixelDoll only.')).toBeVisible();
@@ -3173,9 +3173,8 @@ test('a managed State reloads its child without another submission', async ({
 		'false'
 	);
 	await panel.getByRole('textbox', { name: 'Instructions' }).fill('Hold a potion');
-	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
 	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
-	await expect(generate).toBeVisible();
+	await expect(generate).toBeEnabled();
 	expect(posts).toHaveLength(0);
 	await generate.click();
 	const review = panel.getByText('Review Idle before saving.');
@@ -3320,8 +3319,9 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	await panel.getByRole('textbox', { name: 'Instructions' }).fill('Hold a torch');
 	await panel.getByText('Advanced', { exact: true }).click();
 	await panel.getByRole('combobox', { name: 'Model', exact: true }).selectOption('pro-flash');
-	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
-	await panel.getByRole('button', { name: 'Generate State', exact: true }).click();
+	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
+	await expect(generate).toBeEnabled();
+	await generate.click();
 	await polled;
 	expect(flashPosts()).toHaveLength(1);
 	const interrupted = await stored();

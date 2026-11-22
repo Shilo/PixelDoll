@@ -188,6 +188,10 @@
 	let canContinue = $state(false);
 	let continuation = $state.raw<StateContinuationQuote | null>(null);
 	let quoted = $state.raw<{ prepared: PreparedState; draft: Omit<Draft, 'named'> } | null>(null);
+	// The edit is priced for free as the form settles; Generate State only enables once the shown price matches it.
+	let pricing = $state(false);
+	let priceFailure = $state<Message | string>('');
+	let priceRetry = $state(0);
 
 	const source = $derived<StateSourceFrame>({ clip, frame });
 	const capture = $derived(manifest && stateCaptureSource(manifest, clip));
@@ -352,17 +356,19 @@
 			await work();
 		} catch (error) {
 			failure = errorMessage(error);
-			// A saved source that changed or vanished elsewhere offers Reload source instead of retrying it.
-			if (
-				!review &&
-				typeof failure !== 'string' &&
-				(failure.key === 'stateGeneration.changed' ||
-					failure.key === 'stateGeneration.sourceUnavailable')
-			)
-				stale = true;
+			markStale(failure);
 		} finally {
 			busy = null;
 		}
+	}
+	// A saved source that changed or vanished elsewhere offers Reload source instead of retrying it.
+	function markStale(error: Message | string) {
+		if (
+			!review &&
+			typeof error !== 'string' &&
+			(error.key === 'stateGeneration.changed' || error.key === 'stateGeneration.sourceUnavailable')
+		)
+			stale = true;
 	}
 
 	function checkPending() {
@@ -387,7 +393,8 @@
 		event.preventDefault();
 		if (!formReady || busy || review) return;
 		if (!editing) return void createCopy();
-		if (!quote) checkCost();
+		// Enter never spends credits: only the Generate State button does.
+		if (!connected) connect();
 	}
 
 	function createCopy() {
@@ -407,7 +414,36 @@
 		});
 	}
 
-	function checkCost() {
+	function connect() {
+		// Published only when Connect succeeds, so a canceled Connect leaves no draft behind.
+		const saved = {
+			projectId,
+			source: { clip, frame },
+			name,
+			description,
+			riding: ridingIdea,
+			model,
+			reference,
+			named
+		};
+		withKey(() => {
+			if (doc.id !== projectId) return;
+			connectionDraft = saved;
+			ui.stateCaptureMove = '';
+			ui.sheet = 'stateCapture';
+		});
+	}
+
+	$effect(() => {
+		if (!editing || !connected || !formReady || busy || review || !views) return;
+		// Reprice after any change the quote depends on, once typing pauses.
+		void [clip, frame, name, description, model, reference, views.version, priceRetry];
+		const timer = setTimeout(() => void price(), 400);
+		return () => clearTimeout(timer);
+	});
+
+	let priceRequest = 0;
+	async function price() {
 		if (!views) return;
 		const draft = {
 			projectId,
@@ -419,19 +455,10 @@
 			reference
 		};
 		const version = views.version;
-		quoted = null;
-		if (!connected) {
-			// Published only when Connect succeeds, so a canceled Connect leaves no draft behind.
-			const saved = { ...draft, named };
-			withKey(() => {
-				if (doc.id !== projectId) return;
-				connectionDraft = saved;
-				ui.stateCaptureMove = '';
-				ui.sheet = 'stateCapture';
-			});
-			return;
-		}
-		void run('stateGeneration.quoting', async () => {
+		const request = ++priceRequest;
+		pricing = true;
+		priceFailure = '';
+		try {
 			const prepared = await prepareState(
 				projectId,
 				draft.source,
@@ -440,13 +467,20 @@
 				draft.model,
 				draft.model === 'pixen' ? undefined : draft.reference
 			);
+			if (request !== priceRequest) return;
 			if (prepared.sourceVersion !== version)
 				throw new LocalizedError(
 					'The source or quote changed. Check the cost again before generating.',
 					'stateGeneration.changed'
 				);
 			quoted = { prepared, draft };
-		});
+		} catch (error) {
+			if (request !== priceRequest) return;
+			priceFailure = errorMessage(error);
+			markStale(priceFailure);
+		} finally {
+			if (request === priceRequest) pricing = false;
+		}
 	}
 
 	function generate() {
@@ -531,7 +565,9 @@
 	{@const low = formatNumber(cost.minGenerations)}
 	{@const high = formatNumber(cost.maxGenerations)}
 	{cost.kind === 'fixed'
-		? t('stateGeneration.fixedCost', { generations: high })
+		? cost.maxGenerations === 1
+			? t('stateGeneration.fixedCostOne')
+			: t('stateGeneration.fixedCost', { generations: high })
 		: t('moves.estimate', { gens: low === high ? high : `${low}–${high}` })}
 {/snippet}
 
@@ -808,6 +844,9 @@
 	{/if}
 	<p class="faint small" role="status">{busy ? t(busy) : ''}</p>
 	{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
+	{#if priceFailure && editing && !review}<p class="notice bad small" role="alert">
+			{displayNestedMessage(priceFailure)}
+		</p>{/if}
 </Sheet>
 
 {#snippet footer()}
@@ -837,19 +876,32 @@
 					<span>{t('stateCapture.noCredits')}</span>
 				{:else if quote}
 					<strong>{@render costLabel(quote.plan.cost)}</strong>
+				{:else if pricing}
+					<span>{t('stateGeneration.quoting')}</span>
 				{:else}
 					<span>{t('stateGeneration.costFirst')}</span>
 				{/if}
 				<span>{t('stateCapture.noEquipment')}</span>
 			</p>
-			{#if editing && quote}
-				<button
-					class="bu-btn"
-					data-variant="primary"
-					type="button"
-					disabled={!!busy || !formReady}
-					onclick={generate}>{t('stateGeneration.generate')}</button
-				>
+			{#if editing && connected}
+				<!-- One meaning per button: it always generates, and waits for the price shown beside it. -->
+				{#if priceFailure && !quote && !pricing}
+					<button
+						class="bu-btn"
+						data-variant="outline"
+						type="button"
+						disabled={!!busy || !formReady}
+						onclick={() => priceRetry++}>{t('common.tryAgain')}</button
+					>
+				{:else}
+					<button
+						class="bu-btn"
+						data-variant="primary"
+						type="button"
+						disabled={!!busy || !formReady || !quote}
+						onclick={generate}>{t('stateGeneration.generate')}</button
+					>
+				{/if}
 			{:else}
 				<button
 					class="bu-btn"
@@ -862,9 +914,7 @@
 							? 'stateCapture.saving'
 							: !editing
 								? 'stateCapture.title'
-								: connected
-									? 'stateGeneration.checkCost'
-									: 'connectSheet.titleConnectPixelLab'
+								: 'connectSheet.titleConnectPixelLab'
 					)}</button
 				>
 			{/if}
