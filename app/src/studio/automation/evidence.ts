@@ -1,9 +1,10 @@
 // Visual evidence for agents: labeled contact sheets of real frames, enlarged by whole pixels only (no smoothing), so a model
 // sees the same pixels the Studio and exports use. One sheet answers what would otherwise take one call per frame.
 //
-// All sheets of one call share one crop, scale and pivot, so the item-alone, worn and source sheets line up. The PNGs for
-// tools are drawn at one canvas pixel per CSS pixel; the panel redraws the same pages at a whole number of device pixels per
-// artwork pixel, with labels, gaps and rulers sized by the device pixel ratio.
+// All sheets of one call share one scale. The worn, composite and source sheets also share one crop and pivot, so they line
+// up; an item-alone sheet gets its own tight crop, so a small held item is not lost in a whole-body frame (its rulers count
+// the same frame pixels). Sheets are drawn at one canvas pixel per CSS pixel; the panel draws them again at a whole number of
+// CSS pixels per artwork pixel and lets the browser enlarge them without smoothing. Pages become PNG only when a script asks.
 import { bytesToBase64, type Img } from '../../lib/image/png.ts';
 import { opaqueBox } from '../../lib/rig/normalize.ts';
 import { AgentError } from './contract.ts';
@@ -11,38 +12,36 @@ import { AgentError } from './contract.ts';
 type Point = { x: number; y: number };
 type Size = { w: number; h: number };
 type Crop = Point & Size;
-export type EvidenceBackground = 'neutral' | 'light' | 'dark';
 
 export interface SheetCell {
 	image: Img | null;
-	/** False draws the cell hatched: no frame exists there, which is not the same as a transparent frame. */
+	/** False draws the cell hatched and labeled "no frame": no frame exists there. A frame without one opaque pixel is
+	 *  drawn with a dashed outline and labeled "empty"; transparent pixels show the cell color. */
 	covered: boolean;
 	/** Top-left of the native image in the shared frame. */
 	offset?: Point;
+	/** Boxes outlined on the cell, in the image's own pixels: the detached parts the digest lists. */
+	marks?: Crop[];
 }
 
 export interface SheetSpec {
 	label: string;
 	kind: 'frames' | 'item' | 'worn' | 'source';
+	/** What rows and columns are, written in the sheet's corner ("direction", "frame"). */
+	axes: { rows: string; columns: string };
 	rows: { label: string; cells: SheetCell[] }[];
 	columns: string[];
 	pivot?: Point;
 }
 
-export type SheetPage = SheetSpec & {
-	crop: Crop;
-	background: EvidenceBackground;
-	scale: number;
-};
+export type SheetPage = SheetSpec & { crop: Crop; scale: number };
 
+/** One page of a call: its plan, drawn in the page and encoded as PNG only on request (encodeSheet). */
 export interface Evidence {
 	label: string;
-	/** PNG bytes, base64. */
-	data: string;
 	width: number;
 	height: number;
 	scale: number;
-	/** Native frames for a second render at the panel's device-pixel scale. */
 	page: SheetPage;
 }
 
@@ -50,21 +49,24 @@ export interface Evidence {
 export const MAX_SIDE = 1568;
 /** Pages one call may produce, so a review stays a handful of images. */
 export const MAX_SHEETS = 8;
-// Interface geometry in CSS pixels; the panel multiplies it by the device pixel ratio.
+// Interface geometry in CSS pixels.
 const GAP = 6,
 	ROW_LABEL = 96,
 	COLUMN_LABEL = 20,
 	MIN_COLUMN = 56,
 	MIN_ROW = 16;
 
-// Fixed evidence palettes keep the same contrast in the PNG and in the Studio.
-export const PALETTES = {
-	neutral: { sheet: '#6b6b6b', cell: '#5a5a5a', ink: '#f2f2f2', hatch: '#929292' },
-	light: { sheet: '#eeeeee', cell: '#ffffff', ink: '#222222', hatch: '#888888' },
-	dark: { sheet: '#242424', cell: '#161616', ink: '#f2f2f2', hatch: '#777777' }
+// One fixed, slightly violet mid-tone: unlike a neutral gray it is not mistaken for steel or shadow, and it keeps the same
+// contrast in the PNG and in the Studio. Marks use a color pixel art rarely uses at full strength.
+export const PALETTE = {
+	sheet: '#45405a',
+	cell: '#5b5573',
+	ink: '#f4f2fa',
+	hatch: '#9d96b8',
+	mark: '#ffe600'
 };
 
-function sharedCrop(sheets: SheetSpec[], frame: Size): Crop {
+function cropOf(sheets: SheetSpec[], frame: Size, withPivot: boolean): Crop {
 	let left = Infinity,
 		top = Infinity,
 		right = -Infinity,
@@ -83,37 +85,39 @@ function sharedCrop(sheets: SheetSpec[], frame: Size): Crop {
 			}
 	if (!Number.isFinite(left)) return { x: 0, y: 0, w: frame.w, h: frame.h };
 	// Include the pivot's pixel edge even if it lies outside the visible artwork.
-	for (const { pivot } of sheets) {
-		if (!pivot) continue;
-		left = Math.min(left, Math.floor(pivot.x));
-		top = Math.min(top, Math.floor(pivot.y));
-		right = Math.max(right, Math.ceil(pivot.x));
-		bottom = Math.max(bottom, Math.ceil(pivot.y));
-	}
+	if (withPivot)
+		for (const { pivot } of sheets) {
+			if (!pivot) continue;
+			left = Math.min(left, Math.floor(pivot.x));
+			top = Math.min(top, Math.floor(pivot.y));
+			right = Math.max(right, Math.ceil(pivot.x));
+			bottom = Math.max(bottom, Math.ceil(pivot.y));
+		}
 	return { x: left, y: top, w: right - left, h: bottom - top };
 }
 
-/** Canvas size of a page: artwork at `scale` canvas pixels per artwork pixel, interface geometry at `dpr`. */
-function sheetLayout(crop: Size, scale: number, columns: number, rows: number, dpr = 1) {
-	const u = (n: number) => Math.round(n * dpr);
+/** Each sheet's crop: one shared by every sheet but the item-alone ones, which share their own tight one. */
+function cropsOf(sheets: SheetSpec[], frame: Size): Crop[] {
+	const alone = sheets.filter((sheet) => sheet.kind === 'item'),
+		rest = sheets.filter((sheet) => sheet.kind !== 'item');
+	const aloneCrop = alone.length ? cropOf(alone, frame, false) : undefined,
+		restCrop = rest.length ? cropOf(rest, frame, true) : undefined;
+	return sheets.map((sheet) => (sheet.kind === 'item' ? aloneCrop! : restCrop!));
+}
+
+/** Canvas size of a page at `scale` canvas pixels per artwork pixel. */
+function sheetLayout(crop: Size, scale: number, columns: number, rows: number) {
 	const cw = crop.w * scale,
-		ch = crop.h * scale,
-		gap = u(GAP),
-		rowLabel = u(ROW_LABEL),
-		columnLabel = u(COLUMN_LABEL);
-	const colStride = Math.max(u(MIN_COLUMN), cw) + gap,
-		rowStride = Math.max(u(MIN_ROW), ch) + gap;
+		ch = crop.h * scale;
+	const colStride = Math.max(MIN_COLUMN, cw) + GAP,
+		rowStride = Math.max(MIN_ROW, ch) + GAP;
 	return {
-		u,
 		cw,
 		ch,
-		gap,
-		rowLabel,
-		columnLabel,
 		colStride,
 		rowStride,
-		width: rowLabel + gap + columns * colStride,
-		height: columnLabel + gap + rows * rowStride
+		width: ROW_LABEL + GAP + columns * colStride,
+		height: COLUMN_LABEL + GAP + rows * rowStride
 	};
 }
 
@@ -131,51 +135,56 @@ const pageCount = (sheet: SheetSpec, cap: ReturnType<typeof capacity>) =>
 
 /** Prefer every sheet on one page at a readable scale (2 or more), lowering the requested scale to get there; otherwise
  *  keep the largest scale at which the call stays within MAX_SHEETS pages. */
-function chooseScale(sheets: SheetSpec[], crop: Size, top: number) {
-	for (let scale = top; scale >= 2; scale--) {
-		const cap = capacity(crop, scale);
-		if (sheets.every((sheet) => pageCount(sheet, cap) === 1)) return scale;
-	}
-	for (let scale = top; scale >= 1; scale--) {
-		const cap = capacity(crop, scale);
-		if (sheets.reduce((n, sheet) => n + pageCount(sheet, cap), 0) <= MAX_SHEETS) return scale;
-	}
+function chooseScale(sheets: SheetSpec[], crops: Crop[], top: number) {
+	const pages = (scale: number) =>
+		sheets.map((sheet, i) => pageCount(sheet, capacity(crops[i], scale)));
+	for (let scale = top; scale >= 2; scale--) if (pages(scale).every((n) => n === 1)) return scale;
+	for (let scale = top; scale >= 1; scale--)
+		if (pages(scale).reduce((a, b) => a + b, 0) <= MAX_SHEETS) return scale;
 	throw new AgentError(
 		`These frames need more than ${MAX_SHEETS} sheets. Ask for fewer frames or directions.`,
 		'invalid'
 	);
 }
 
-/** Cells drawn hatched because no frame exists there. */
-export const uncoveredCells = (spec: Pick<SheetSpec, 'rows' | 'columns'>) =>
+const cellsWhere = (
+	spec: Pick<SheetSpec, 'rows' | 'columns'>,
+	test: (cell: SheetCell) => boolean
+) =>
 	spec.rows.flatMap((row) =>
 		row.cells.flatMap((cell, i) =>
-			cell.covered ? [] : [{ row: row.label, column: spec.columns[i] }]
+			test(cell) ? [{ row: row.label, column: spec.columns[i] }] : []
 		)
 	);
+const isEmpty = (cell: SheetCell) => cell.covered && (!cell.image || !opaqueBox(cell.image));
+/** Cells drawn hatched because no frame exists there. */
+export const uncoveredCells = (spec: Pick<SheetSpec, 'rows' | 'columns'>) =>
+	cellsWhere(spec, (cell) => !cell.covered);
+/** Cells whose frame exists but has no opaque pixel. */
+export const emptyCells = (spec: Pick<SheetSpec, 'rows' | 'columns'>) => cellsWhere(spec, isEmpty);
 
-export function planEvidence(
-	sheets: SheetSpec[],
-	frame: Size,
-	requestedScale: number,
-	background: EvidenceBackground = 'neutral'
-) {
-	const crop = sharedCrop(sheets, frame);
-	const maxScale = Math.floor(
-		Math.min(
-			(MAX_SIDE - ROW_LABEL - 2 * GAP) / crop.w,
-			(MAX_SIDE - COLUMN_LABEL - 2 * GAP) / crop.h
+export function planEvidence(sheets: SheetSpec[], frame: Size, requestedScale: number) {
+	const crops = cropsOf(sheets, frame);
+	const limits = crops.map((crop) => ({
+		crop,
+		scale: Math.floor(
+			Math.min(
+				(MAX_SIDE - ROW_LABEL - 2 * GAP) / crop.w,
+				(MAX_SIDE - COLUMN_LABEL - 2 * GAP) / crop.h
+			)
 		)
-	);
-	if (maxScale < 1)
+	}));
+	const tightest = limits.reduce((a, b) => (b.scale < a.scale ? b : a));
+	if (tightest.scale < 1)
 		throw new AgentError(
-			`A ${crop.w}x${crop.h} frame does not fit a ${MAX_SIDE} px sheet even at 1x.`,
+			`A ${tightest.crop.w}x${tightest.crop.h} frame does not fit a ${MAX_SIDE} px sheet even at 1x.`,
 			'unsupported'
 		);
-	const scale = chooseScale(sheets, crop, Math.min(requestedScale, maxScale));
-	const cap = capacity(crop, scale);
-	return sheets.flatMap((sheet) => {
-		const pages = pageCount(sheet, cap);
+	const scale = chooseScale(sheets, crops, Math.min(requestedScale, tightest.scale));
+	return sheets.flatMap((sheet, index) => {
+		const crop = crops[index],
+			cap = capacity(crop, scale),
+			pages = pageCount(sheet, cap);
 		const result = [];
 		for (let r = 0; r < sheet.rows.length; r += cap.rows)
 			for (let c = 0; c < sheet.columns.length; c += cap.columns) {
@@ -189,7 +198,6 @@ export function planEvidence(
 					})),
 					columns: sheet.columns.slice(c, c + cap.columns),
 					crop,
-					background,
 					scale
 				};
 				const uncovered = uncoveredCells(spec);
@@ -202,6 +210,8 @@ export function planEvidence(
 						kind: spec.kind,
 						page,
 						pages,
+						rowsAre: spec.axes.rows,
+						columnsAre: spec.axes.columns,
 						rows: spec.rows.map((row) => row.label),
 						columns: spec.columns,
 						width,
@@ -209,8 +219,12 @@ export function planEvidence(
 						scale,
 						crop,
 						pivot: spec.pivot ?? null,
-						background,
-						coverage: { total, covered: total - uncovered.length, uncovered }
+						coverage: {
+							total,
+							covered: total - uncovered.length,
+							uncovered,
+							empty: emptyCells(spec)
+						}
 					}
 				});
 			}
@@ -218,34 +232,25 @@ export function planEvidence(
 	});
 }
 
-/** The largest whole scale, at most the pages' own, at which all pages fit the area together, stacked, each with `chrome`
- *  CSS pixels for its caption. `width` and `height` are CSS pixels; the scale is in device pixels per artwork pixel. */
-export function fitScale(
-	pages: SheetPage[],
-	area: { width: number; height: number; dpr: number; chrome: number }
-) {
-	for (let scale = pages[0]?.scale ?? 1; scale > 1; scale--) {
-		let width = 0,
-			height = 0;
-		for (const page of pages) {
-			const size = sheetLayout(page.crop, scale, page.columns.length, page.rows.length, area.dpr);
-			width = Math.max(width, size.width / area.dpr);
-			height += size.height / area.dpr + area.chrome;
-		}
-		if (width <= area.width && height <= area.height) return scale;
+/** The largest whole number of CSS pixels per artwork pixel, at most the page's own scale, at which the page fits the area
+ *  (CSS pixels). The panel draws the page at that scale; labels keep their size. */
+export function fitScale(page: SheetPage, area: { width: number; height: number }) {
+	for (let scale = page.scale; scale > 1; scale--) {
+		const size = sheetLayout(page.crop, scale, page.columns.length, page.rows.length);
+		if (size.width <= area.width && size.height <= area.height) return scale;
 	}
 	return 1;
 }
 
 type SheetContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
-function hatch(g: SheetContext, x: number, y: number, w: number, h: number, step: number) {
+function hatch(g: SheetContext, x: number, y: number, w: number, h: number) {
 	g.save();
 	g.beginPath();
 	g.rect(x, y, w, h);
 	g.clip();
 	g.beginPath();
-	for (let i = -h; i < w; i += step) {
+	for (let i = -h; i < w; i += 8) {
 		g.moveTo(x + i, y + h);
 		g.lineTo(x + i + h, y);
 	}
@@ -253,44 +258,69 @@ function hatch(g: SheetContext, x: number, y: number, w: number, h: number, step
 	g.restore();
 }
 
-/** Draws one page at `scale` canvas pixels per artwork pixel, with interface geometry at `dpr`. */
-export function paintSheet(g: SheetContext, spec: SheetPage, scale: number, dpr = 1) {
-	const { crop, rows, columns, pivot } = spec;
-	const { u, width, height, cw, ch, gap, rowLabel, columnLabel, colStride, rowStride } =
-		sheetLayout(crop, scale, columns.length, rows.length, dpr);
-	const line = Math.max(1, Math.round(dpr));
+/** A small word on a cell ("no frame", "empty"), on a patch of the cell color so it stays readable over hatching. */
+function cellNote(g: SheetContext, text: string, x: number, y: number, w: number, h: number) {
+	if (w < 40 || h < 12) return;
+	const width = Math.min(w - 4, g.measureText(text).width + 6);
+	g.fillStyle = PALETTE.cell;
+	g.fillRect(x + (w - width) / 2, y + h / 2 - 6, width, 12);
+	g.fillStyle = PALETTE.ink;
+	g.textAlign = 'center';
+	g.fillText(text, x + w / 2, y + h / 2, w - 6);
+	g.textAlign = 'start';
+}
+
+/** Draws one page at `scale` canvas pixels per artwork pixel; interface geometry stays at one canvas pixel per CSS pixel. */
+export function paintSheet(g: SheetContext, spec: SheetPage, scale = spec.scale) {
+	const { crop, rows, columns, pivot, axes } = spec;
+	const { width, height, cw, ch, colStride, rowStride } = sheetLayout(
+		crop,
+		scale,
+		columns.length,
+		rows.length
+	);
 	g.canvas.width = width;
 	g.canvas.height = height;
 	const scratch = new OffscreenCanvas(1, 1),
 		source = scratch.getContext('2d')!;
-	const palette = PALETTES[spec.background];
 	g.imageSmoothingEnabled = false;
-	g.fillStyle = palette.sheet;
+	g.fillStyle = PALETTE.sheet;
 	g.fillRect(0, 0, width, height);
-	g.font = `${u(12)}px system-ui, sans-serif`;
 	g.textBaseline = 'middle';
-	g.lineWidth = line;
-	g.fillStyle = palette.ink;
+	g.lineWidth = 1;
+	g.fillStyle = PALETTE.ink;
+	// The corner names the axes: rows down, columns across.
+	g.font = '11px system-ui, sans-serif';
+	g.fillText(
+		[axes.rows && `${axes.rows} ↓`, axes.columns && `${axes.columns} →`].filter(Boolean).join('  '),
+		4,
+		COLUMN_LABEL / 2,
+		ROW_LABEL - 4
+	);
+	g.font = '12px system-ui, sans-serif';
 	columns.forEach((label, c) =>
-		g.fillText(label, rowLabel + gap + c * colStride, columnLabel / 2, colStride - gap)
+		g.fillText(label, ROW_LABEL + GAP + c * colStride, COLUMN_LABEL / 2, colStride - GAP)
 	);
 	for (const [r, row] of rows.entries()) {
-		const y = columnLabel + gap + r * rowStride;
-		g.fillStyle = palette.ink;
-		g.fillText(row.label, u(4), y + (rowStride - gap) / 2, rowLabel - u(8));
-		for (const [c, { image, covered, offset }] of row.cells.entries()) {
-			const x = rowLabel + gap + c * colStride;
-			g.fillStyle = palette.cell;
+		const y = COLUMN_LABEL + GAP + r * rowStride;
+		g.fillStyle = PALETTE.ink;
+		g.font = '12px system-ui, sans-serif';
+		g.fillText(row.label, 4, y + (rowStride - GAP) / 2, ROW_LABEL - 8);
+		g.font = '10px system-ui, sans-serif';
+		for (const [c, cell] of row.cells.entries()) {
+			const { image, covered, offset, marks } = cell;
+			const x = ROW_LABEL + GAP + c * colStride;
+			g.fillStyle = PALETTE.cell;
 			g.fillRect(x, y, cw, ch);
 			if (!covered) {
-				g.strokeStyle = palette.hatch;
-				hatch(g, x, y, cw, ch, u(8));
+				g.strokeStyle = PALETTE.hatch;
+				hatch(g, x, y, cw, ch);
 				// Keep the coverage marker visible even when a partial composite fills the cell.
-				g.fillStyle = palette.hatch;
-				g.fillRect(x, y + ch, cw, u(2));
+				g.fillStyle = PALETTE.hatch;
+				g.fillRect(x, y + ch, cw, 2);
 			}
+			const { x: ox, y: oy } = offset ?? { x: 0, y: 0 };
 			if (image) {
-				const { x: ox, y: oy } = offset ?? { x: 0, y: 0 };
 				const left = Math.max(0, crop.x - ox),
 					top = Math.max(0, crop.y - oy),
 					w = Math.min(image.w, crop.x + crop.w - ox) - left,
@@ -317,32 +347,44 @@ export function paintSheet(g: SheetContext, spec: SheetPage, scale: number, dpr 
 					);
 				}
 			}
-			// Rulers in the gap above and left of the cell: a tick every 8 artwork pixels, a longer one at the pivot. They stay
-			// clear of the coverage bar under the previous row.
-			g.fillStyle = palette.ink;
-			for (let col = Math.ceil(crop.x / 8) * 8; col <= crop.x + crop.w; col += 8)
-				g.fillRect(x + (col - crop.x) * scale, y - u(3), line, u(2));
-			for (let rw = Math.ceil(crop.y / 8) * 8; rw <= crop.y + crop.h; rw += 8)
-				g.fillRect(x - u(3), y + (rw - crop.y) * scale, u(2), line);
-			if (pivot) {
-				g.fillRect(x + Math.round((pivot.x - crop.x) * scale) - line, y - u(4), 3 * line, u(4));
-				g.fillRect(x - u(4), y + Math.round((pivot.y - crop.y) * scale) - line, u(4), 3 * line);
+			if (!covered) cellNote(g, 'no frame', x, y, cw, ch);
+			else if (isEmpty(cell)) {
+				g.save();
+				g.strokeStyle = PALETTE.hatch;
+				g.setLineDash([4, 3]);
+				g.strokeRect(x + 1.5, y + 1.5, cw - 3, ch - 3);
+				g.restore();
+				cellNote(g, 'empty', x, y, cw, ch);
 			}
+			// Detached parts, outlined one artwork pixel outside their box.
+			g.strokeStyle = PALETTE.mark;
+			for (const box of marks ?? [])
+				g.strokeRect(
+					x + (ox + box.x - 1 - crop.x) * scale + 0.5,
+					y + (oy + box.y - 1 - crop.y) * scale + 0.5,
+					(box.w + 2) * scale - 1,
+					(box.h + 2) * scale - 1
+				);
+			// Rulers in the gap above and left of the cell: a tick every 8 frame pixels, a longer one at the pivot. They stay
+			// clear of the coverage bar under the previous row.
+			g.fillStyle = PALETTE.ink;
+			for (let col = Math.ceil(crop.x / 8) * 8; col <= crop.x + crop.w; col += 8)
+				g.fillRect(x + (col - crop.x) * scale, y - 3, 1, 2);
+			for (let rw = Math.ceil(crop.y / 8) * 8; rw <= crop.y + crop.h; rw += 8)
+				g.fillRect(x - 3, y + (rw - crop.y) * scale, 2, 1);
+			if (pivot && pivot.x >= crop.x && pivot.x <= crop.x + crop.w)
+				g.fillRect(x + Math.round((pivot.x - crop.x) * scale) - 1, y - 4, 3, 4);
+			if (pivot && pivot.y >= crop.y && pivot.y <= crop.y + crop.h)
+				g.fillRect(x - 4, y + Math.round((pivot.y - crop.y) * scale) - 1, 4, 3);
 		}
 	}
 	return { width, height };
 }
 
-export async function renderSheet(page: SheetPage): Promise<Evidence> {
+/** A page as base64 PNG, for script clients that asked for image data. */
+export async function encodeSheet(page: SheetPage): Promise<string> {
 	const canvas = new OffscreenCanvas(1, 1);
-	const { width, height } = paintSheet(canvas.getContext('2d')!, page, page.scale);
+	paintSheet(canvas.getContext('2d')!, page);
 	const blob = await canvas.convertToBlob({ type: 'image/png' });
-	return {
-		label: page.label,
-		data: bytesToBase64(new Uint8Array(await blob.arrayBuffer())),
-		width,
-		height,
-		scale: page.scale,
-		page
-	};
+	return bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
 }

@@ -1,8 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { addMoveTool } from '../../src/studio/automation/moves.ts';
+import {
+	addMoveTool,
+	moveReadiness,
+	moveReviewTools,
+	reviewOf
+} from '../../src/studio/automation/moves.ts';
 import { receipts } from '../../src/studio/automation/receipts.ts';
+import { loadFixture } from '../../src/lib/compose/fixture.ts';
+import type { SetupPlan } from '../../src/lib/rig/setup.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
+import type { MoveCandidate } from '../../src/studio/replaceMove.ts';
 import type { queueAgentMove } from '../../src/studio/state.svelte.ts';
 
 const studio = vi.hoisted(() => ({
@@ -15,7 +23,10 @@ const studio = vi.hoisted(() => ({
 	pendingBodyMoveName: vi.fn(),
 	queueAgentMove: vi.fn<typeof queueAgentMove>(),
 	probe: vi.fn(),
-	reserve: vi.fn()
+	reserve: vi.fn(),
+	rigReady: vi.fn(),
+	setupPlan: vi.fn(),
+	saveReviewedMove: vi.fn()
 }));
 
 vi.mock('../../src/lib/app.svelte.ts', () => ({
@@ -34,7 +45,7 @@ vi.mock('../../src/studio/state.svelte.ts', () => ({
 	writeAgentReceipt: async () => true,
 	refreshMoveReviews: vi.fn(),
 	refreshProjects: vi.fn(),
-	saveReviewedMove: vi.fn(),
+	saveReviewedMove: studio.saveReviewedMove,
 	store: { projects: [{ id: 'rig-target' }] },
 	studioStartupState: () => 'ready'
 }));
@@ -49,9 +60,13 @@ vi.mock('../../src/studio/automation/budget.ts', () => ({
 	requireLeader: () => {},
 	withReservation: studio.reserve
 }));
+vi.mock('../../src/lib/rig/setup.ts', async (original) => ({
+	...(await original<typeof import('../../src/lib/rig/setup.ts')>()),
+	setupPlan: studio.setupPlan
+}));
 vi.mock('../../src/studio/create.ts', async (original) => ({
 	...(await original<typeof import('../../src/studio/create.ts')>()),
-	moveRigReady: () => true,
+	moveRigReady: studio.rigReady,
 	movePreflightWarnings: () => [],
 	resolveMoveMotionSource: studio.probe
 }));
@@ -88,6 +103,14 @@ beforeEach(async () => {
 			() => {},
 			() => {}
 		)
+	);
+	studio.rigReady.mockReturnValue(true);
+	studio.setupPlan.mockImplementation(
+		(
+			await vi.importActual<typeof import('../../src/lib/rig/setup.ts')>(
+				'../../src/lib/rig/setup.ts'
+			)
+		).setupPlan
 	);
 });
 
@@ -154,8 +177,72 @@ test('Studio acceptance is sufficient while the move is still waiting to start',
 	settle('review');
 	settle('saved');
 	expect(receipts.get('agent:move-test')?.outcome).toBe('saved');
+	// The receipt answers before the character is read again, even if it can no longer be read.
+	studio.readCharacter.mockReset();
 	expect(await call({ requestId })).toMatchObject({
 		data: { started: true, repeated: true, activityId: 'agent:move-test', status: 'saved' }
 	});
+	expect(studio.readCharacter).not.toHaveBeenCalled();
 	expect(studio.reserve).toHaveBeenCalledTimes(1);
+});
+
+test('the real rig check tells a character that cannot get moves from one that needs setup', async () => {
+	const { moveRigReady } = await vi.importActual<typeof import('../../src/studio/create.ts')>(
+		'../../src/studio/create.ts'
+	);
+	studio.rigReady.mockImplementation(moveRigReady);
+	const demo = await loadFixture((path) =>
+		readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))
+	);
+	// The demo keeps no saved standing views and mirrors west, so rig setup cannot run on it or its copies.
+	expect(await moveReadiness(demo, { manifest: demo.manifest })).toMatchObject({
+		canAdd: false,
+		code: 'unsupported',
+		reason: expect.stringContaining(
+			'cannot get moves: Rig setup needs saved original standing views'
+		)
+	});
+	expect(await moveReadiness(demo, undefined, true)).toMatchObject({
+		code: 'unsupported',
+		reason: expect.stringContaining('demo is read-only')
+	});
+	await expect(call()).rejects.toMatchObject({ code: 'unsupported' });
+	expect(studio.reserve).not.toHaveBeenCalled();
+	studio.setupPlan.mockResolvedValueOnce({ gens: 1.85 } as SetupPlan);
+	expect(await moveReadiness(demo, { manifest: demo.manifest })).toMatchObject({
+		canAdd: false,
+		code: 'needs_user',
+		reason: expect.stringContaining('about 1.85 generations')
+	});
+});
+
+test('a move decision binds to the candidate that was looked at', async () => {
+	const candidate = {
+		spec: { id: 'wave-hello', seed: 7, activityScope: 'run-1' },
+		cells: { south: ['sha256:a'] },
+		dirs: ['south'],
+		animation: { cells: 1 },
+		checks: {},
+		warnings: []
+	} as unknown as MoveCandidate;
+	studio.readCharacter.mockImplementation(async () => {
+		const { r } = saved();
+		return { r: { ...r, record: { ...r.record, moveReviews: { 'wave-hello': candidate } } } };
+	});
+	const { candidateId } = await reviewOf(candidate);
+	const [accept] = moveReviewTools;
+	const decide = (id: string) =>
+		accept.run(
+			{ characterId: 'rig-target', moveId: 'wave-hello', candidateId: id },
+			new AbortController().signal
+		);
+	await expect(decide('stale')).rejects.toMatchObject({ code: 'busy' });
+	expect(studio.saveReviewedMove).not.toHaveBeenCalled();
+	expect(await decide(candidateId)).toMatchObject({
+		data: { outcome: 'saved', candidateId, equipmentToPose: [] }
+	});
+	expect(studio.saveReviewedMove).toHaveBeenCalledExactlyOnceWith('rig-target', candidate, true);
+	// Redrawn frames are a new candidate.
+	const redrawn = { ...candidate, cells: { south: ['sha256:b'] } } as unknown as MoveCandidate;
+	expect((await reviewOf(redrawn)).candidateId).not.toBe(candidateId);
 });

@@ -3210,6 +3210,14 @@
 		"missingCells": {
 			"one": "{count} celda no tiene fotograma (tramada)",
 			"other": "{count} celdas no tienen fotograma (tramadas)"
-		}
+		},
+		"emptyCells": {
+			"one": "{count} fotograma está vacío (discontinuo)",
+			"other": "{count} fotogramas están vacíos (discontinuos)"
+		},
+		"page": "Hoja {page} de {pages}",
+		"previous": "Hoja anterior",
+		"next": "Hoja siguiente",
+		"scale": "Se muestra a {shown}×, hoja a {sheet}×"
 	}
 }

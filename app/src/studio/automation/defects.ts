@@ -39,7 +39,7 @@ const MAX_PART_SIZE = 8;
 const MAX_DETACHED = 6,
 	MAX_FRAMES = 16;
 export const DEFECT_NOTE =
-	'Small parts apart from the main art. A part may be intentional (an earring, a strand of hair, a spark): check it on the sheet before treating it as a stray.';
+	'Small parts apart from the main art, outlined in yellow on the sheet. A part may be intentional (an earring, a strand of hair, a spark): check it on the sheet before treating it as a stray.';
 
 function box(part: number[], w: number): Part {
 	let x0 = Infinity,

@@ -105,9 +105,22 @@ export function actionPrompt(m: Manifest | undefined, id: string, replace: boole
 	return { saved, prompt: saved || moveTemplatePrompt(id, clip?.moveLoop ?? clip?.loop) };
 }
 
-/** Template text follows a Loop change; a typed description stays as typed. */
-export const loopedText = (text: string, action: string, was: boolean, now: boolean) =>
-	text === moveTemplatePrompt(action, was) ? moveTemplatePrompt(action, now) : text;
+/** Template text follows a Loop change; a typed description stays as typed. `template` is the text the template opens
+ *  on, which Settings may have customized: it gains or loses the looping wording the way the built-in text does. */
+export function loopedText(
+	text: string,
+	action: string,
+	was: boolean,
+	now: boolean,
+	template = moveTemplatePrompt(action)
+) {
+	if (text === moveTemplatePrompt(action, was)) return moveTemplatePrompt(action, now);
+	const plain = moveTemplatePrompt(action, false),
+		tail = moveTemplatePrompt(action, true).slice(plain.length);
+	const base = tail && template.endsWith(tail) ? template.slice(0, -tail.length) : template;
+	const worded = (loop: boolean) => (loop ? base + tail : base);
+	return text === template || text === worded(was) ? worded(now) : text;
+}
 
 /** Everything the form derives from its choices, before the motion source is known. */
 export function planMoveForm<Image extends FrameImage>(

@@ -1081,7 +1081,7 @@
 	async function changeLoop(enabled: boolean) {
 		const change = ++loopChange;
 		const applyLoop = () => {
-			text = loopedText(text, action, looping, enabled);
+			text = loopedText(text, action, looping, enabled, templateText(action));
 			loopChoice = enabled;
 		};
 		if (model === 'skeleton-v3') {

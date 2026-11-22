@@ -3119,6 +3119,13 @@
 		"title": "代理视图：{subject}",
 		"missingCells": {
 			"other": "有 {count} 个单元格没有帧（斜线）"
-		}
+		},
+		"emptyCells": {
+			"other": "有 {count} 个帧为空（虚线）"
+		},
+		"page": "第 {page}/{pages} 张",
+		"previous": "上一张",
+		"next": "下一张",
+		"scale": "显示 {shown}×，原图 {sheet}×"
 	}
 }

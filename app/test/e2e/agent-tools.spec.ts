@@ -42,22 +42,25 @@ test('agent tools: WebMCP lists the tools and returns plain results with sheets 
 	const overview = await webmcp(page, 'pixeldoll_overview', {});
 	expect(overview).toMatchObject({ ok: true, data: { app: 'PixelDoll' } });
 
-	// Sheets are shown in the page for a screenshot; WebMCP never carries base64, even when asked.
-	const shown = await webmcp(page, 'inspect_item', {
-		itemId: 'sword_steel',
-		move: 'walk',
-		imageData: true
-	});
+	// Sheets are shown in the page, one at a time, for a screenshot; WebMCP never carries base64 and has no imageData.
+	expect(
+		await webmcp(page, 'inspect_item', { itemId: 'sword_steel', imageData: true })
+	).toMatchObject({ ok: false, data: { code: 'invalid' } });
+	const shown = await webmcp(page, 'inspect_item', { itemId: 'sword_steel', move: 'walk' });
 	expect(shown.seeImages).toContain('screenshot');
 	expect(shown.images).toHaveLength(2);
 	expect(shown.images[0].data).toBeUndefined();
-	await expect(page.locator('[data-agent-evidence] canvas')).toHaveCount(2);
+	await expect(page.locator('[data-agent-evidence] canvas')).toHaveCount(1);
+	const sheetPage = page.locator('[data-agent-evidence-page]');
+	await expect(sheetPage).toHaveText('Sheet 1 of 2');
+	await page.getByRole('button', { name: 'Next sheet' }).click();
+	await expect(sheetPage).toHaveText('Sheet 2 of 2');
 
 	// Errors come back as data the agent can act on, and the sheets stay for the screenshot.
 	const refused = await webmcp(page, 'inspect_item', { itemId: 'nope' });
 	expect(refused).toMatchObject({ ok: false, isError: true, data: { code: 'not_found' } });
 	await bridge(page, 'get_activity');
-	await expect(page.locator('[data-agent-evidence] canvas')).toHaveCount(2);
+	await expect(sheetPage).toHaveText('Sheet 2 of 2');
 
 	// The panel is a modal dialog over the Studio: a screenshot leaves it open, and Escape closes it alone, not the sheet
 	// under it.
@@ -220,7 +223,14 @@ test('agent tools: the person approves a budget in USD, sees what is left and ca
 		data: { ...started, repeated: true, status: 'created' }
 	});
 	expect(api.calls.filter(({ method }) => method === 'POST')).toEqual(posts);
-	await left.getByRole('button', { name: 'End' }).click();
+	// Sheets shown over the page keep End within reach.
+	await bridge(page, 'render_frames', {
+		characterId: 'fixture:s2',
+		move: 'walk',
+		directions: ['south']
+	});
+	const evidence = page.getByRole('dialog', { name: 'Agent view: Render frames' });
+	await evidence.getByRole('button', { name: 'End' }).click();
 	await expect(left).toHaveCount(0);
 	expect(await bridge(page, 'get_activity')).toMatchObject({
 		data: { budget: { remaining: 0 } }

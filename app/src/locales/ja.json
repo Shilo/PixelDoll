@@ -3119,6 +3119,13 @@
 		"title": "エージェントの表示：{subject}",
 		"missingCells": {
 			"other": "フレームのないセルが{count}個あります (斜線)"
-		}
+		},
+		"emptyCells": {
+			"other": "空のフレームが{count}個あります (破線)"
+		},
+		"page": "シート {page}/{pages}",
+		"previous": "前のシート",
+		"next": "次のシート",
+		"scale": "表示 {shown}×、シート {sheet}×"
 	}
 }
