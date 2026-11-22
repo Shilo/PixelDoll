@@ -41,6 +41,17 @@
 			"sealed": "Die lokale Arbeit wurde gelöscht. Lade PixelDoll neu, um fortzufahren."
 		}
 	},
+	"promptSuggestions": {
+		"heading": "Prompt-Vorschläge",
+		"title": "Titel",
+		"prompt": "Prompt (Englisch)",
+		"add": "Vorschlag hinzufügen",
+		"restore": "Standardvorschläge wiederherstellen",
+		"moveHelp": "Wenn du den Prompt einer Animationsvorlage änderst, wird die Animation anhand der Beschreibung erstellt.",
+		"readFailed": "Gespeicherte Vorschläge konnten nicht gelesen werden. Stelle die angezeigten Standardvorschläge wieder her, um das Problem zu beheben.",
+		"saveFailed": "Vorschläge konnten nicht gespeichert werden. Versuche es erneut.",
+		"promptRequired": "Gib einen Prompt ein, um diesen Vorschlag zu behalten."
+	},
 	"creationSettings": {
 		"character": "Figur",
 		"move": "Animation",
@@ -122,7 +133,6 @@
 		"hide": "Ausblenden",
 		"loading": "Wird geladen…",
 		"move": "Animation",
-		"more": "Mehr",
 		"name": "Name",
 		"new": "Neu",
 		"notRecorded": "Nicht erfasst",

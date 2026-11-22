@@ -41,6 +41,17 @@
 			"sealed": "O trabalho local foi excluído. Recarregue o PixelDoll para continuar."
 		}
 	},
+	"promptSuggestions": {
+		"heading": "Sugestões de prompt",
+		"title": "Título",
+		"prompt": "Prompt (em inglês)",
+		"add": "Adicionar sugestão",
+		"restore": "Restaurar padrões",
+		"moveHelp": "Se você editar o prompt de um modelo de animação, a animação será gerada a partir da descrição.",
+		"readFailed": "Não foi possível ler as sugestões salvas. As sugestões padrão são exibidas. Restaure os padrões para corrigir o problema.",
+		"saveFailed": "Não foi possível salvar as sugestões. Tente novamente.",
+		"promptRequired": "Digite um prompt para manter esta sugestão."
+	},
 	"creationSettings": {
 		"character": "Personagem",
 		"move": "Animação",
@@ -122,7 +133,6 @@
 		"hide": "Ocultar",
 		"loading": "Carregando…",
 		"move": "Animação",
-		"more": "Mais",
 		"name": "Nome",
 		"new": "Novo",
 		"notRecorded": "Não registrado",

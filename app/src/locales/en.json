@@ -41,6 +41,17 @@
 			"sealed": "Local work was deleted. Reload PixelDoll to continue."
 		}
 	},
+	"promptSuggestions": {
+		"heading": "Prompt suggestions",
+		"title": "Title",
+		"prompt": "Prompt (English)",
+		"add": "Add suggestion",
+		"restore": "Restore defaults",
+		"moveHelp": "Editing a move template’s prompt makes it a described move.",
+		"readFailed": "Could not read saved suggestions. Defaults are shown. Restore defaults to repair them.",
+		"saveFailed": "Could not save suggestions. Try again.",
+		"promptRequired": "Enter a prompt to keep this suggestion."
+	},
 	"creationSettings": {
 		"character": "Character",
 		"move": "Move",
@@ -122,7 +133,6 @@
 		"hide": "Hide",
 		"loading": "Loading…",
 		"move": "Move",
-		"more": "More",
 		"name": "Name",
 		"new": "New",
 		"notRecorded": "Not recorded",

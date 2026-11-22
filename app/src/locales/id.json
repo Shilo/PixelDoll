@@ -41,6 +41,17 @@
 			"sealed": "Pekerjaan lokal telah dihapus. Muat ulang PixelDoll untuk melanjutkan."
 		}
 	},
+	"promptSuggestions": {
+		"heading": "Saran prompt",
+		"title": "Judul",
+		"prompt": "Prompt (bahasa Inggris)",
+		"add": "Tambahkan saran",
+		"restore": "Pulihkan bawaan",
+		"moveHelp": "Jika prompt templat animasi diubah, animasi akan dibuat dari deskripsi tersebut.",
+		"readFailed": "Saran tersimpan tidak dapat dibaca. Saran bawaan ditampilkan. Pulihkan saran bawaan untuk memperbaikinya.",
+		"saveFailed": "Saran tidak dapat disimpan. Coba lagi.",
+		"promptRequired": "Masukkan prompt untuk mempertahankan saran ini."
+	},
 	"creationSettings": {
 		"character": "Karakter",
 		"move": "Animasi",
@@ -122,7 +133,6 @@
 		"hide": "Sembunyikan",
 		"loading": "Memuat…",
 		"move": "Animasi",
-		"more": "Lainnya",
 		"name": "Nama",
 		"new": "Baru",
 		"notRecorded": "Tidak tercatat",

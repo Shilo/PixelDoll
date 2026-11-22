@@ -4,6 +4,7 @@
 	import Sheet from './Sheet.svelte';
 	import PromptField from './PromptField.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
+	import { promptSuggestions } from './promptSuggestions.svelte.ts';
 	import SlotPicker from './SlotPicker.svelte';
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import ReferenceField from './ReferenceField.svelte';
@@ -17,7 +18,6 @@
 	import {
 		baseClothesNote,
 		categories,
-		categoryCopy,
 		profileOf,
 		shownCategories,
 		slotDef,
@@ -72,7 +72,10 @@
 	let busy = $state(false);
 	let reference = $state(draft?.reference);
 	let referenceLoading = $state(false);
-	const g = $derived(categoryCopy(m, group));
+	const profile = $derived(profileOf(m, group));
+	const suggestions = $derived(
+		promptSuggestions(`item.${profile === 'body' ? 'accessory' : profile}`)
+	);
 	const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`);
 	const suggestedName = $derived(name.trim() || itemNameFrom(prompt));
 	const itemName = $derived(suggestedName || 'New item');
@@ -151,7 +154,7 @@
 	});
 	const offHandHint = $derived(group === 'main_hand' && namesOffHandItem(prompt));
 	const clothesNote = $derived(
-		m && profileOf(m, group) === 'underwear'
+		m && profile === 'underwear'
 			? baseClothesNote((rec as { character?: { looks?: string } } | null)?.character?.looks)
 			: ''
 	);
@@ -334,18 +337,14 @@
 					keyshortcuts="Control+Enter Meta+Enter"
 					describedby="item-submit-hint"
 					placeholder={t('newItem.placeholder', {
-						idea: g.ideas[0] ? displayMessage(g.ideas[0].caption) : t('newItem.defaultIdea')
+						idea: suggestions[0]?.title ?? t('newItem.defaultIdea')
 					})}
 					maxlength={ITEM_PROMPT_MAX}
 				/>
 				<PromptSuggestions
 					label={t('newItem.ideas')}
 					value={prompt}
-					suggestions={g.ideas.map((idea) => ({
-						id: idea.label,
-						label: displayMessage(idea.caption),
-						prompt: idea.label
-					}))}
+					{suggestions}
 					onpick={(idea) => (prompt = idea.prompt)}
 				/>
 			</div>

@@ -41,6 +41,17 @@
 			"sealed": "本地作品已删除。请重新加载 PixelDoll 以继续。"
 		}
 	},
+	"promptSuggestions": {
+		"heading": "提示词建议",
+		"title": "标题",
+		"prompt": "提示词（英语）",
+		"add": "添加建议",
+		"restore": "恢复默认设置",
+		"moveHelp": "编辑动作模板的提示词后，将根据描述生成动作。",
+		"readFailed": "无法读取已保存的建议，当前显示默认建议。请恢复默认设置以修复。",
+		"saveFailed": "无法保存建议，请重试。",
+		"promptRequired": "请输入提示词以保留此建议。"
+	},
 	"creationSettings": {
 		"character": "角色",
 		"move": "动作",
@@ -122,7 +133,6 @@
 		"hide": "隐藏",
 		"loading": "加载中…",
 		"move": "动作",
-		"more": "更多",
 		"name": "名称",
 		"new": "新建",
 		"notRecorded": "未记录",

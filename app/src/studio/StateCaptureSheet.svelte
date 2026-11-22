@@ -17,7 +17,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import PromptField from './PromptField.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
-	import { POSE_IDEAS } from './promptIdeas.ts';
+	import { promptSuggestions } from './promptSuggestions.svelte.ts';
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import { app, getKeyRevision } from '../lib/app.svelte.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
@@ -647,11 +647,7 @@
 							<PromptSuggestions
 								label={t('stateCapture.poseIdeas')}
 								value={description}
-								suggestions={POSE_IDEAS.map((idea) => ({
-									id: idea.id,
-									label: t(idea.caption),
-									prompt: idea.prompt
-								}))}
+								suggestions={promptSuggestions('state.pose')}
 								onpick={(idea) => (description = idea.prompt)}
 							/>
 						</div>

@@ -41,6 +41,17 @@
 			"sealed": "로컬 작업이 삭제되었습니다. 계속하려면 PixelDoll을 다시 로드하세요."
 		}
 	},
+	"promptSuggestions": {
+		"heading": "프롬프트 제안",
+		"title": "제목",
+		"prompt": "프롬프트(영어)",
+		"add": "제안 추가",
+		"restore": "기본값 복원",
+		"moveHelp": "동작 템플릿의 프롬프트를 편집하면 설명을 바탕으로 동작을 생성합니다.",
+		"readFailed": "저장된 제안을 읽을 수 없어 기본 제안을 표시합니다. 문제를 해결하려면 기본값을 복원하세요.",
+		"saveFailed": "제안을 저장할 수 없습니다. 다시 시도하세요.",
+		"promptRequired": "이 제안을 유지하려면 프롬프트를 입력하세요."
+	},
 	"creationSettings": {
 		"character": "캐릭터",
 		"move": "동작",
@@ -122,7 +133,6 @@
 		"hide": "숨기기",
 		"loading": "불러오는 중…",
 		"move": "동작",
-		"more": "더 보기",
 		"name": "이름",
 		"new": "새로 만들기",
 		"notRecorded": "기록되지 않음",

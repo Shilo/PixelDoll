@@ -6,6 +6,9 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import PromptField from './PromptField.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
+	import { promptSuggestionDefaults } from './promptSuggestionDefaults.ts';
+	import { promptSuggestions } from './promptSuggestions.svelte.ts';
+	import type { PromptSuggestion } from './promptSuggestions.ts';
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
@@ -44,7 +47,6 @@
 		ITEM_MOVE_SAVE_CONFLICT,
 		SAVED_FRAMES_UNAVAILABLE
 	} from '../lib/items/run.ts';
-	import { AUTHORED } from '../lib/rig/poses.ts';
 	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
@@ -143,12 +145,14 @@
 		new Set(sourceClips.filter((a) => a.kind === 'state').map((a) => a.key))
 	);
 	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
-	const TEMPLATE_ORDER = ['idle', 'walk', 'run', 'slash', 'hurt', 'death', 'cast'];
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
-		[...new Set([...TEMPLATE_ORDER, ...AUTHORED.filter((action) => action !== 'ride')])].filter(
-			(a) => !stateIds.has(a) && !have.has(a) && !reservedMove(a)
+		promptSuggestionDefaults.move.flatMap(({ action }) =>
+			action && !stateIds.has(action) && !have.has(action) && !reservedMove(action) ? [action] : []
 		)
+	);
+	const suggestions = $derived(
+		promptSuggestions('move').filter(({ action }) => !action || options.includes(action))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let sourceId = $state<string | undefined>(draft?.source?.clip);
@@ -226,7 +230,9 @@
 	}
 	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
 	let frameChoice = $state<number | undefined>(draft?.animation?.frameCount);
-	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
+	let action = $state(
+		draft?.action ?? untrack(() => suggestions.find((entry) => entry.action)?.action) ?? ''
+	);
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? untrack(() => moveTemplatePrompt(action)));
 	let templatePicked = $state(!!draft?.action);
@@ -1075,8 +1081,13 @@
 	});
 	// Picking the applied template again lets the text stand as a custom move, keeping what was typed. The template the
 	// sheet opened on was never picked, so pressing it just picks it.
-	function pickTemplate(template: string) {
-		if (action !== template || !templatePicked) return chooseAction(template);
+	function pickSuggestion(suggestion: PromptSuggestion) {
+		const template = suggestion.action;
+		if (!template || action !== template || !templatePicked) {
+			chooseAction(template ?? '');
+			text = suggestion.prompt;
+			return;
+		}
 		const kept = text;
 		chooseAction('');
 		text = kept;
@@ -2115,13 +2126,8 @@
 								label={t('moveSheet.templates')}
 								value={text}
 								active={action}
-								limit={Infinity}
-								suggestions={options.map((template) => ({
-									id: template,
-									label: nice(template),
-									prompt: moveTemplatePrompt(template)
-								}))}
-								onpick={(template) => pickTemplate(template.id)}
+								{suggestions}
+								onpick={pickSuggestion}
 							/>
 						{/if}
 						<p class="faint small" id="move-description-hint">

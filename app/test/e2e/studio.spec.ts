@@ -578,6 +578,40 @@ test('Settings saves creation choices across reload and resets them by scope', a
 			await control.press('Tab');
 		} else await control.selectOption(value);
 	}
+	const suggestions = (tab = page) =>
+		sheet(tab).getByRole('region', { name: 'Prompt suggestions', exact: true });
+	const titles = (tab = page) =>
+		suggestions(tab).getByRole('textbox', { name: 'Title', exact: true });
+	const picker = settings.getByRole('combobox', { name: 'Slot', exact: true });
+	await picker.selectOption('hair');
+	await titles().first().fill('Short curls');
+	await titles().first().press('Tab');
+	await picker.selectOption('head');
+	const add = suggestions().getByRole('button', { name: 'Add suggestion', exact: true });
+	await add.click();
+	await expect(titles().last()).toBeFocused();
+	await expect(add).toBeDisabled();
+	await suggestions()
+		.getByRole('textbox', { name: 'Prompt (English)', exact: true })
+		.last()
+		.fill('Wide blue sun hat');
+	await add.click();
+	const rows = suggestions().locator('li');
+	await expect(titles().last()).toHaveValue('Wide blue sun hat');
+	await rows.last().getByRole('button', { name: 'Move up', exact: true }).click();
+	await expect(titles().nth(3)).toHaveValue('Wide blue sun hat');
+	await expect(rows.nth(3).locator(':focus')).toHaveCount(1);
+	await rows.first().getByRole('button', { name: 'Delete', exact: true }).click();
+	await expect(titles().first()).toHaveValue('hood');
+	await suggestions().getByRole('button', { name: 'Restore defaults', exact: true }).click();
+	await expect(titles().first()).toHaveValue('iron knight helmet');
+	await expect(titles()).toHaveCount(4);
+	await titles().first().fill('Saved helmet');
+	await titles().first().press('Tab');
+	await controlAt('Character', 'character-model');
+	await titles().first().fill('Saved look');
+	await titles().first().press('Tab');
+	await controlAt('Item', 'item-method');
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(settings).toHaveCount(0);
 	await openSettings();
@@ -590,6 +624,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 	await openStudio(second, '/#/');
 	await openSettings(second);
 	await assertChoices(true, second);
+	await expect(titles(second).first()).toHaveValue('Saved helmet');
 	await settings.getByRole('button', { name: 'Reset this page', exact: true }).click();
 	await page
 		.getByRole('alertdialog', { name: 'Reset Item settings?' })
@@ -599,8 +634,12 @@ test('Settings saves creation choices across reload and resets them by scope', a
 	await expect(sheet(second).getByRole('combobox', { name: 'Animation method' })).toHaveValue(
 		'auto'
 	);
+	await expect(titles(second).first()).toHaveValue('iron knight helmet');
+	await picker.selectOption('hair');
+	await expect(titles().first()).toHaveValue('short spiky hair');
 	await second.close();
 	await expect(await controlAt('Character', 'character-model')).toHaveValue('pro');
+	await expect(titles().first()).toHaveValue('Saved look');
 	const frame = await controlAt('Character', 'custom-frame');
 	await frame.fill('72');
 	await frame.press('Tab');
@@ -616,6 +655,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		.getByRole('button', { name: 'Reset settings', exact: true })
 		.click();
 	await expect(settings.getByRole('alert').filter({ hasText: '4 px steps' })).toHaveCount(0);
+	await expect(titles().first()).not.toHaveValue('Saved look');
 	await assertChoices(false);
 });
 
@@ -2845,22 +2885,34 @@ test('New item Enhance describes the item alone at its canvas size, then Undo re
 		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key');
 	});
 	await openStudio(page, '/#/');
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	const navigation = settings.getByRole('navigation', { name: 'Settings', exact: true });
+	await navigation.getByRole('button', { name: 'Item', exact: true }).click();
+	const suggestions = settings.getByRole('region', { name: 'Prompt suggestions', exact: true });
+	const crownTitle = suggestions.getByRole('textbox', { name: 'Title', exact: true }).last();
+	const crownPrompt = suggestions
+		.getByRole('textbox', { name: 'Prompt (English)', exact: true })
+		.last();
+	await crownTitle.fill('studioSlots.labels.head');
+	await crownPrompt.fill('a bright gold crown with blue gems');
+	await crownPrompt.press('Tab');
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	const item = page.getByRole('dialog', { name: 'New item', exact: true });
 	const prompt = item.getByRole('textbox', { name: 'What is it?', exact: true });
-	// Ideas sit under the empty prompt, most common first; More shows the rest.
+	// All suggestions are visible, and titles typed by the user are literal.
 	const ideas = item.getByRole('group', { name: 'Ideas', exact: true });
 	await expect(ideas.getByRole('button')).toHaveText([
 		'iron knight helmet',
 		'hood',
 		'wizard hat',
-		'More'
+		'studioSlots.labels.head'
 	]);
-	await ideas.getByRole('button', { name: 'More', exact: true }).press('Enter');
-	await expect(ideas.getByRole('button', { name: 'golden crown', exact: true })).toBeFocused();
-	await ideas.getByRole('button', { name: 'golden crown', exact: true }).click();
-	await expect(prompt).toHaveValue('golden crown');
+	await ideas.getByRole('button', { name: 'studioSlots.labels.head', exact: true }).click();
+	await expect(prompt).toHaveValue('a bright gold crown with blue gems');
 	// While the prompt holds an idea, the others stay to swap; typing your own hides them.
 	await ideas.getByRole('button', { name: 'hood', exact: true }).click();
 	await expect(prompt).toHaveValue('hood');

@@ -41,6 +41,17 @@
 			"sealed": "Se eliminó el trabajo local. Recarga PixelDoll para continuar."
 		}
 	},
+	"promptSuggestions": {
+		"heading": "Sugerencias de texto",
+		"title": "Título",
+		"prompt": "Texto (en inglés)",
+		"add": "Añadir sugerencia",
+		"restore": "Restaurar valores predeterminados",
+		"moveHelp": "Si editas el texto de una plantilla de animación, la animación se genera a partir de la descripción.",
+		"readFailed": "No se han podido leer las sugerencias guardadas. Se muestran las predeterminadas. Restáuralas para solucionar el problema.",
+		"saveFailed": "No se han podido guardar las sugerencias. Inténtalo de nuevo.",
+		"promptRequired": "Introduce un texto para conservar esta sugerencia."
+	},
 	"creationSettings": {
 		"character": "Personaje",
 		"move": "Animación",
@@ -122,7 +133,6 @@
 		"hide": "Ocultar",
 		"loading": "Cargando…",
 		"move": "Animación",
-		"more": "Más",
 		"name": "Nombre",
 		"new": "Nuevo",
 		"notRecorded": "No registrado",

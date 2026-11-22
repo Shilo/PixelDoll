@@ -41,6 +41,17 @@
 			"sealed": "Yerel çalışma silindi. Devam etmek için PixelDoll'u yeniden yükleyin."
 		}
 	},
+	"promptSuggestions": {
+		"heading": "Komut önerileri",
+		"title": "Başlık",
+		"prompt": "Komut (İngilizce)",
+		"add": "Öneri ekle",
+		"restore": "Varsayılanları geri yükle",
+		"moveHelp": "Bir animasyon şablonunun komutunu düzenlerseniz animasyon açıklamadan oluşturulur.",
+		"readFailed": "Kayıtlı öneriler okunamadı. Varsayılan öneriler gösteriliyor. Sorunu gidermek için varsayılanları geri yükleyin.",
+		"saveFailed": "Öneriler kaydedilemedi. Yeniden deneyin.",
+		"promptRequired": "Bu öneriyi tutmak için bir komut girin."
+	},
 	"creationSettings": {
 		"character": "Karakter",
 		"move": "Animasyon",
@@ -122,7 +133,6 @@
 		"hide": "Gizleyin",
 		"loading": "Yükleniyor…",
 		"move": "Animasyon",
-		"more": "Daha fazla",
 		"name": "Ad",
 		"new": "Yeni",
 		"notRecorded": "Kaydedilmedi",
