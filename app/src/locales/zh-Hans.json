@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "回收站",
 		"empty": "回收站是空的。你移到回收站的角色、物品、分类、动作和状态会保留 30 天。",
 		"kept": "保留 30 天，最多 50 条。",
-		"deletedOn": "{date}",
 		"restore": "恢复",
 		"restoreNamed": "恢复 {name}",
 		"deleteForever": "永久删除",
@@ -43,7 +41,6 @@
 	"librarySettings": {
 		"title": "角色库",
 		"scope": "备份已保存的角色、素材和归档数据。不包含偏好设置、草稿和任务。",
-		"privacy": "备份可能包含美术素材和提示词。请勿分享归档数据。",
 		"backup": "备份角色库",
 		"restoreFromBackup": "从备份恢复",
 		"review": "检查备份",
@@ -69,7 +66,6 @@
 		"deleteWork": {
 			"deleteAll": "全部删除",
 			"confirm": "确认",
-			"section": "删除本地作品",
 			"description": "删除此设备上的角色、服装、草稿、回收站和活动记录。",
 			"kept": "归档数据、偏好设置、已下载的备份和你的 PixelLab 密钥都会保留。",
 			"action": "删除本地数据…",
@@ -185,7 +181,8 @@
 		"zoomOut": "缩小",
 		"randomLook": "随机外观",
 		"none": "无",
-		"moveToTrash": "移到回收站"
+		"moveToTrash": "移到回收站",
+		"movingToTrash": "正在移到回收站…"
 	},
 	"pwa": {
 		"invalidRelease": "更新说明无效。",

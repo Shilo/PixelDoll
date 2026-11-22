@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "Tempat sampah",
 		"empty": "Tempat sampah kosong. Karakter, item, kategori, gerakan, dan status yang Anda pindahkan ke sini disimpan 30 hari.",
 		"kept": "Disimpan 30 hari, maksimal 50 entri.",
-		"deletedOn": "{date}",
 		"restore": "Pulihkan",
 		"restoreNamed": "Pulihkan {name}",
 		"deleteForever": "Hapus permanen",
@@ -43,7 +41,6 @@
 	"librarySettings": {
 		"title": "Pustaka",
 		"scope": "Cadangkan karakter tersimpan, karya seni, dan data arsip. Preferensi, draf, dan tugas tidak disertakan.",
-		"privacy": "Cadangan bisa berisi gambar dan prompt. Jangan bagikan data arsip.",
 		"backup": "Cadangkan pustaka",
 		"restoreFromBackup": "Pulihkan dari cadangan",
 		"review": "Tinjau cadangan",
@@ -69,7 +66,6 @@
 		"deleteWork": {
 			"deleteAll": "Hapus semua",
 			"confirm": "Konfirmasi",
-			"section": "Hapus pekerjaan lokal",
 			"description": "Menghapus karakter, pakaian, draf, tempat sampah, dan aktivitas di perangkat ini.",
 			"kept": "Data arsip, preferensi, cadangan yang diunduh, dan kunci PixelLab Anda tetap ada.",
 			"action": "Hapus data lokal…",
@@ -185,7 +181,8 @@
 		"zoomOut": "Perkecil",
 		"randomLook": "Acak penampilan",
 		"none": "Tidak ada",
-		"moveToTrash": "Pindahkan ke tempat sampah"
+		"moveToTrash": "Pindahkan ke tempat sampah",
+		"movingToTrash": "Memindahkan ke tempat sampah…"
 	},
 	"pwa": {
 		"invalidRelease": "Deskripsi pembaruan tidak valid.",

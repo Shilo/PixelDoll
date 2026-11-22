@@ -51,7 +51,7 @@
 		name: store.projects.find((project) => project.id === id)?.name ?? t('deleteSheet.character')
 	})}
 	action={t('common.moveToTrash')}
-	busyAction={t('common.deleting')}
+	busyAction={t('common.movingToTrash')}
 	{busy}
 	problem={error ? displayMessage(error) : displayError(reason)}
 	problemAction={blockedByWork(reason) ? viewPending : undefined}

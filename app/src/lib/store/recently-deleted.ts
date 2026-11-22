@@ -330,7 +330,7 @@ export async function missingArtwork(e: RecentlyDeleted): Promise<number> {
 }
 
 export const gone = (key: string) =>
-	new LocalizedError('That deleted item is no longer available.', 'recentlyDeleted.errors.gone', {
+	new LocalizedError('This is no longer in Trash.', 'recentlyDeleted.errors.gone', {
 		key
 	}) as LocalizedError & { key: string };
 

@@ -9436,7 +9436,7 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	expect(fitted).toEqual({ stale: 0, worn: 'helmet_steel' });
 });
 
-test('a deleted item comes back from the notice, the history and the Library after a reload', async ({
+test('a deleted item comes back from the notice, the history and the Trash after a reload', async ({
 	page
 }) => {
 	await page.addInitScript(() => {

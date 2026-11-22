@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "Çöp kutusu",
 		"empty": "Burada bir şey yok. Çöp kutusuna taşıdığınız karakterler, öğeler, kategoriler, hareketler ve durumlar 30 gün kalır.",
 		"kept": "30 gün, en fazla 50 kayıt saklanır.",
-		"deletedOn": "{date}",
 		"restore": "Geri yükle",
 		"restoreNamed": "{name} geri yükle",
 		"deleteForever": "Kalıcı olarak sil",
@@ -45,7 +43,6 @@
 	"librarySettings": {
 		"title": "Kitaplık",
 		"scope": "Kayıtlı karakterleri, görselleri ve arşivlenmiş verileri yedekleyin. Tercihler, taslaklar ve işler dahil edilmez.",
-		"privacy": "Yedekler görseller ve istemler içerebilir. Arşivlenmiş verileri paylaşmayın.",
 		"backup": "Kitaplığı yedekle",
 		"restoreFromBackup": "Yedekten geri yükle",
 		"review": "Yedeği incele",
@@ -71,7 +68,6 @@
 		"deleteWork": {
 			"deleteAll": "Tümünü sil",
 			"confirm": "Onayla",
-			"section": "Yerel çalışmayı sil",
 			"description": "Bu cihazdaki karakterleri, kıyafetleri, taslakları, çöp kutusunu ve etkinliği kaldırır.",
 			"kept": "Arşivlenmiş veriler, tercihler, indirilen yedekler ve PixelLab anahtarınız korunur.",
 			"action": "Yerel verileri sil…",
@@ -187,7 +183,8 @@
 		"zoomOut": "Uzaklaştırın",
 		"randomLook": "Rastgele görünüm",
 		"none": "Hiçbiri",
-		"moveToTrash": "Çöp kutusuna taşı"
+		"moveToTrash": "Çöp kutusuna taşı",
+		"movingToTrash": "Çöp kutusuna taşınıyor…"
 	},
 	"pwa": {
 		"invalidRelease": "Güncelleme açıklaması geçersiz.",

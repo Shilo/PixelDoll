@@ -455,15 +455,9 @@
 
 {#if deleting}
 	<ConfirmDialog
-		title={deleteUse.items
-			? t('slotsSheet.deleteWithItems', {
-					label: deletingLabel,
-					count: deleteUse.items,
-					n: formatNumber(deleteUse.items, { useGrouping: false })
-				})
-			: t('slotsSheet.deleteTitle', { label: deletingLabel })}
+		title={t('slotsSheet.deleteTitle', { label: deletingLabel })}
 		action={t('common.moveToTrash')}
-		busyAction={t('common.deleting')}
+		busyAction={t('common.movingToTrash')}
 		busy={deleteBusy}
 		problem={displayNestedMessage(deleteProblem || deleteReason)}
 		blocked={!!deleteReason}

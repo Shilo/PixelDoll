@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "Corbeille",
 		"empty": "Rien ici. Les personnages, objets, catégories, mouvements et états que vous déplacez vers la corbeille restent 30 jours.",
 		"kept": "Conservé 30 jours, jusqu’à 50 entrées.",
-		"deletedOn": "{date}",
 		"restore": "Restaurer",
 		"restoreNamed": "Restaurer {name}",
 		"deleteForever": "Supprimer définitivement",
@@ -45,7 +43,6 @@
 	"librarySettings": {
 		"title": "Bibliothèque",
 		"scope": "Sauvegardez les personnages enregistrés, leurs images et les données archivées. Les préférences, les brouillons et les tâches ne sont pas inclus.",
-		"privacy": "Les sauvegardes peuvent contenir des images et des instructions. Gardez les données archivées privées.",
 		"backup": "Sauvegarder la bibliothèque",
 		"restoreFromBackup": "Restaurer depuis une sauvegarde",
 		"review": "Vérifier la sauvegarde",
@@ -71,7 +68,6 @@
 		"deleteWork": {
 			"deleteAll": "Tout supprimer",
 			"confirm": "Confirmer",
-			"section": "Supprimer le travail local",
 			"description": "Supprime les personnages, tenues, brouillons, la corbeille et l’activité de cet appareil.",
 			"kept": "Les données archivées, les préférences, les sauvegardes téléchargées et votre clé PixelLab sont conservées.",
 			"action": "Supprimer les données locales…",
@@ -187,7 +183,8 @@
 		"zoomOut": "Dézoomer",
 		"randomLook": "Look aléatoire",
 		"none": "Aucune",
-		"moveToTrash": "Vers la corbeille"
+		"moveToTrash": "Vers la corbeille",
+		"movingToTrash": "Déplacement vers la corbeille…"
 	},
 	"pwa": {
 		"invalidRelease": "La description de la mise à jour est invalide.",

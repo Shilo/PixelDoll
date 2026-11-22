@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "Trash",
 		"empty": "Nothing here. Characters, items, categories, moves and states you move to Trash stay for 30 days.",
 		"kept": "Kept for 30 days, up to 50 entries.",
-		"deletedOn": "{date}",
 		"restore": "Restore",
 		"restoreNamed": "Restore {name}",
 		"deleteForever": "Delete forever",
@@ -33,11 +31,11 @@
 			"expired": "This stayed in Trash for 30 days and is gone.",
 			"missingArtwork": "Some saved artwork for {name} is no longer on this device, so it cannot be restored.",
 			"full": "Your browser is out of space, so nothing was moved to Trash. Delete something in Trash to free space.",
-			"wrongKind": "That deleted item belongs to a character. Restore the character first.",
+			"wrongKind": "That item is in Trash with its character. Restore the character first.",
 			"movePresent": "This move is already on the character.",
 			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
 			"partsGeometry": "This character's frame size or directions changed since this was deleted, so it can no longer line up.",
-			"moveItemsMissing": "One of this move’s items is deleted. Restore that item first, then this move."
+			"moveItemsMissing": "One of this move items is in Trash. Restore that item first, then this move."
 		},
 		"restoring": "Restoring…",
 		"confirmBodyCharacter": "Anything else deleted from it goes too. It is gone for good. This cannot be undone."
@@ -45,7 +43,6 @@
 	"librarySettings": {
 		"title": "Library",
 		"scope": "Back up saved characters, artwork, and archived data. Preferences, drafts, and jobs are not included.",
-		"privacy": "Backups can contain artwork and prompts. Keep archived data private.",
 		"backup": "Back up library",
 		"restoreFromBackup": "Restore from backup",
 		"review": "Review backup",
@@ -71,7 +68,6 @@
 		"deleteWork": {
 			"deleteAll": "Delete all",
 			"confirm": "Confirm",
-			"section": "Delete local work",
 			"description": "Removes the characters, outfits, drafts, Trash and Activity on this device.",
 			"kept": "Archived data, preferences, downloaded backups and your PixelLab key stay.",
 			"action": "Delete local work…",
@@ -187,7 +183,8 @@
 		"zoomOut": "Zoom out",
 		"randomLook": "Random look",
 		"none": "None",
-		"moveToTrash": "Move to Trash"
+		"moveToTrash": "Move to Trash",
+		"movingToTrash": "Moving to Trash…"
 	},
 	"pwa": {
 		"invalidRelease": "The update description is invalid.",
@@ -604,7 +601,7 @@
 		"removeState": "The body and every item lose its fitted frames; finished moves keep theirs. You can bring it back for 30 days.",
 		"labelDeleteMove": "Move to Trash…",
 		"labelDeleteOutfit": "Delete outfit",
-		"thisRemovesTheMoveFromTheBody": "The body and every item lose its frames. You can bring it back for 30 days."
+		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for 30 days."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",

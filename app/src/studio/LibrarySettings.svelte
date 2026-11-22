@@ -4,7 +4,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
-	import { Archive, Lock, Trash, TriangleAlert, Upload } from './icons.ts';
+	import { Archive, Trash, TriangleAlert, Upload } from './icons.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import DestructiveConfirmButton from './DestructiveConfirmButton.svelte';
 	import { openerLabel } from './openerLabel.ts';
@@ -427,15 +427,6 @@
 	.backup-notes {
 		display: grid;
 		gap: 6px;
-	}
-	.privacy {
-		display: flex;
-		gap: 6px;
-		margin: 0;
-	}
-	.privacy :global(svg) {
-		flex: none;
-		margin-block-start: 3px;
 	}
 	.library-settings .notice {
 		margin: 0;

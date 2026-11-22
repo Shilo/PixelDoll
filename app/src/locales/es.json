@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "Papelera",
 		"empty": "Aquí no hay nada. Los personajes, objetos, categorías, movimientos y estados que muevas a la papelera se guardan 30 días.",
 		"kept": "Se guarda 30 días, hasta 50 entradas.",
-		"deletedOn": "{date}",
 		"restore": "Restaurar",
 		"restoreNamed": "Restaurar {name}",
 		"deleteForever": "Eliminar para siempre",
@@ -45,7 +43,6 @@
 	"librarySettings": {
 		"title": "Biblioteca",
 		"scope": "Guarda una copia de los personajes, sus ilustraciones y los datos archivados. No se incluyen preferencias, borradores ni tareas.",
-		"privacy": "Las copias pueden contener imágenes e indicaciones. No compartas los datos archivados.",
 		"backup": "Hacer una copia de seguridad",
 		"restoreFromBackup": "Restaurar desde una copia de seguridad",
 		"review": "Revisar copia de seguridad",
@@ -71,7 +68,6 @@
 		"deleteWork": {
 			"deleteAll": "Eliminar todo",
 			"confirm": "Confirmar",
-			"section": "Eliminar el trabajo local",
 			"description": "Elimina los personajes, conjuntos, borradores, la papelera y la actividad de este dispositivo.",
 			"kept": "Los datos archivados, las preferencias, las copias descargadas y tu clave de PixelLab se conservan.",
 			"action": "Eliminar trabajo local…",
@@ -146,7 +142,7 @@
 		"loadFailed": "No se pudo cargar una parte de PixelDoll. Recarga la página para volver a intentarlo.",
 		"advanced": "Avanzado",
 		"cancel": "Cancelar",
-		"deleteRecoverable": "Sale del armario. Puedes recuperarlo durante 30 días.",
+		"deleteRecoverable": "Se quita del Armario. Puedes recuperarlo durante 30 días.",
 		"character": "Personaje",
 		"characters": "Personajes",
 		"close": "Cerrar",
@@ -187,7 +183,8 @@
 		"zoomOut": "Alejar",
 		"randomLook": "Look aleatorio",
 		"none": "Ninguna",
-		"moveToTrash": "Mover a la papelera"
+		"moveToTrash": "Mover a la papelera",
+		"movingToTrash": "Moviendo a la papelera…"
 	},
 	"pwa": {
 		"invalidRelease": "La descripción de la actualización no es válida.",

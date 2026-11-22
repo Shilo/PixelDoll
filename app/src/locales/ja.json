@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "ゴミ箱",
 		"empty": "ゴミ箱は空です。ゴミ箱に移動したキャラクター、アイテム、カテゴリ、モーション、ステートは 30 日間残ります。",
 		"kept": "30 日間、最大 50 件まで保管されます。",
-		"deletedOn": "{date}",
 		"restore": "復元",
 		"restoreNamed": "{name} を復元",
 		"deleteForever": "完全に削除",
@@ -43,7 +41,6 @@
 	"librarySettings": {
 		"title": "ライブラリ",
 		"scope": "保存したキャラクター、画像、アーカイブデータをバックアップします。設定、下書き、ジョブは含まれません。",
-		"privacy": "バックアップには画像やプロンプトが含まれることがあります。アーカイブデータは共有しないでください。",
 		"backup": "ライブラリをバックアップ",
 		"restoreFromBackup": "バックアップから復元",
 		"review": "バックアップを確認",
@@ -69,7 +66,6 @@
 		"deleteWork": {
 			"deleteAll": "すべて削除",
 			"confirm": "確定",
-			"section": "ローカルの作業を削除",
 			"description": "このデバイスのキャラクター、衣装、下書き、ゴミ箱、アクティビティを削除します。",
 			"kept": "アーカイブ済みデータ、設定、ダウンロードしたバックアップ、PixelLab キーは残ります。",
 			"action": "ローカルデータを削除…",
@@ -185,7 +181,8 @@
 		"zoomOut": "縮小",
 		"randomLook": "ランダムな見た目",
 		"none": "なし",
-		"moveToTrash": "ゴミ箱に移動"
+		"moveToTrash": "ゴミ箱に移動",
+		"movingToTrash": "ゴミ箱に移動中…"
 	},
 	"pwa": {
 		"invalidRelease": "アップデートの情報が無効です。",

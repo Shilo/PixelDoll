@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "Lixeira",
 		"empty": "Nada aqui. Personagens, itens, categorias, movimentos e estados que você mover para a lixeira ficam 30 dias.",
 		"kept": "Guardado por 30 dias, até 50 entradas.",
-		"deletedOn": "{date}",
 		"restore": "Restaurar",
 		"restoreNamed": "Restaurar {name}",
 		"deleteForever": "Excluir para sempre",
@@ -45,7 +43,6 @@
 	"librarySettings": {
 		"title": "Biblioteca",
 		"scope": "Faça backup dos personagens salvos, das imagens e dos dados arquivados. Preferências, rascunhos e tarefas não são incluídos.",
-		"privacy": "Backups podem conter artes e prompts. Não compartilhe dados arquivados.",
 		"backup": "Fazer backup da biblioteca",
 		"restoreFromBackup": "Restaurar de um backup",
 		"review": "Revisar backup",
@@ -71,7 +68,6 @@
 		"deleteWork": {
 			"deleteAll": "Excluir tudo",
 			"confirm": "Confirmar",
-			"section": "Excluir trabalho local",
 			"description": "Remove os personagens, roupas, rascunhos, a lixeira e a atividade deste dispositivo.",
 			"kept": "Dados arquivados, preferências, backups baixados e sua chave do PixelLab são mantidos.",
 			"action": "Excluir dados locais…",
@@ -187,7 +183,8 @@
 		"zoomOut": "Reduzir zoom",
 		"randomLook": "Sortear visual",
 		"none": "Nenhuma",
-		"moveToTrash": "Mover para a lixeira"
+		"moveToTrash": "Mover para a lixeira",
+		"movingToTrash": "Movendo para a lixeira…"
 	},
 	"pwa": {
 		"invalidRelease": "A descrição da atualização é inválida.",

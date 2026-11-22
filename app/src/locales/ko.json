@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "휴지통",
 		"empty": "휴지통이 비었습니다. 휴지통으로 이동한 캐릭터, 아이템, 카테고리, 모션, 상태는 30일 동안 남습니다.",
 		"kept": "30일 동안 최대 50개까지 보관됩니다.",
-		"deletedOn": "{date}",
 		"restore": "복원",
 		"restoreNamed": "{name} 복원",
 		"deleteForever": "영구 삭제",
@@ -43,7 +41,6 @@
 	"librarySettings": {
 		"title": "라이브러리",
 		"scope": "저장된 캐릭터, 이미지, 보관 데이터를 백업해요. 환경설정, 초안, 작업은 포함되지 않아요.",
-		"privacy": "백업에는 이미지와 프롬프트가 포함될 수 있습니다. 보관 데이터는 공유하지 마세요.",
 		"backup": "라이브러리 백업하기",
 		"restoreFromBackup": "백업에서 복원",
 		"review": "백업 검토",
@@ -69,7 +66,6 @@
 		"deleteWork": {
 			"deleteAll": "모두 삭제",
 			"confirm": "확인",
-			"section": "로컬 작업 삭제",
 			"description": "이 기기의 캐릭터, 의상, 초안, 휴지통, 활동 기록을 제거합니다.",
 			"kept": "보관된 데이터, 환경설정, 다운로드한 백업, PixelLab 키는 유지됩니다.",
 			"action": "로컬 데이터 삭제…",
@@ -185,7 +181,8 @@
 		"zoomOut": "축소",
 		"randomLook": "무작위 룩",
 		"none": "없음",
-		"moveToTrash": "휴지통으로 이동"
+		"moveToTrash": "휴지통으로 이동",
+		"movingToTrash": "휴지통으로 이동 중…"
 	},
 	"pwa": {
 		"invalidRelease": "업데이트 설명이 올바르지 않아요.",

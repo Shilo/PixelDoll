@@ -1,9 +1,7 @@
 {
 	"recentlyDeleted": {
-		"title": "Papierkorb",
-		"empty": "Der Papierkorb ist leer. Charaktere, Gegenstände, Kategorien, Bewegungen und Zustände bleiben hier 30 Tage lang.",
+		"empty": "Der Papierkorb ist leer. Charaktere, Gegenstände, Kategorien, Bewegungen und Zustände, die du in den Papierkorb verschiebst, bleiben 30 Tage lang hier.",
 		"kept": "30 Tage lang aufbewahrt, bis zu 50 Einträge.",
-		"deletedOn": "{date}",
 		"restore": "Wiederherstellen",
 		"restoreNamed": "{name} wiederherstellen",
 		"deleteForever": "Endgültig löschen",
@@ -32,7 +30,7 @@
 			"gone": "Das ist nicht mehr im Papierkorb.",
 			"expired": "Das lag 30 Tage im Papierkorb und ist jetzt weg.",
 			"missingArtwork": "Einige gespeicherte Grafiken für {name} sind nicht mehr auf diesem Gerät und können nicht wiederhergestellt werden.",
-			"full": "Dem Browser geht der Speicher aus, daher wurde nichts verschoben. Löschen Sie etwas im Papierkorb, um Platz zu schaffen.",
+			"full": "Dem Browser geht der Speicher aus, daher wurde nichts verschoben. Lösche etwas im Papierkorb, um Platz zu schaffen.",
 			"wrongKind": "Dieser gelöschte Eintrag gehört zu einem Charakter. Stellen Sie zuerst den Charakter wieder her.",
 			"movePresent": "Diese Bewegung ist bereits auf dem Charakter.",
 			"moveGeometry": "Framegröße oder Richtungen dieses Charakters haben sich seit dem Löschen dieser Bewegung geändert, daher passt sie nicht mehr.",
@@ -45,7 +43,6 @@
 	"librarySettings": {
 		"title": "Bibliothek",
 		"scope": "Sichere gespeicherte Figuren, Grafiken und archivierte Daten. Einstellungen, Entwürfe und Aufträge sind nicht enthalten.",
-		"privacy": "Sicherungen können Grafiken und Prompts enthalten. Gib archivierte Daten nicht weiter.",
 		"backup": "Bibliothek sichern",
 		"restoreFromBackup": "Aus Sicherung wiederherstellen",
 		"review": "Sicherung prüfen",
@@ -71,7 +68,6 @@
 		"deleteWork": {
 			"deleteAll": "Alles löschen",
 			"confirm": "Bestätigen",
-			"section": "Lokale Arbeit löschen",
 			"description": "Entfernt die Charaktere, Outfits, Entwürfe, den Papierkorb und die Aktivität auf diesem Gerät.",
 			"kept": "Archivierte Daten, Einstellungen, heruntergeladene Sicherungen und dein PixelLab-Schlüssel bleiben erhalten.",
 			"action": "Lokale Arbeit löschen…",
@@ -146,7 +142,7 @@
 		"loadFailed": "Ein Teil von PixelDoll konnte nicht geladen werden. Lade die Seite neu und versuche es erneut.",
 		"advanced": "Erweitert",
 		"cancel": "Abbrechen",
-		"deleteRecoverable": "Es verlässt die Garderobe. 30 Tage lang können Sie es zurückholen.",
+		"deleteRecoverable": "Es verlässt die Garderobe. 30 Tage lang kannst du es zurückholen.",
 		"character": "Figur",
 		"characters": "Figuren",
 		"close": "Schließen",
@@ -187,7 +183,8 @@
 		"zoomOut": "Verkleinern",
 		"randomLook": "Zufallslook",
 		"none": "Keine",
-		"moveToTrash": "In den Papierkorb"
+		"moveToTrash": "In den Papierkorb",
+		"movingToTrash": "Wird in den Papierkorb verschoben…"
 	},
 	"pwa": {
 		"invalidRelease": "Die Updatebeschreibung ist ungültig.",
@@ -338,7 +335,7 @@
 		"viewPendingWork": "Ausstehende Aufgaben ansehen",
 		"character": "Figur",
 		"demo": "Die mitgelieferte Demo kann nicht gelöscht werden.",
-		"itsOutfitsAndChangesAreRemovedFrom": "Outfits, Gegenstände und nicht behaltene Entwürfe gehen mit; auf andere Charaktere kopierte Gegenstände bleiben. 30 Tage lang können Sie den Charakter zurückholen."
+		"itsOutfitsAndChangesAreRemovedFrom": "Outfits, Gegenstände und nicht behaltene Entwürfe gehen mit; auf andere Charaktere kopierte Gegenstände bleiben. 30 Tage lang kannst du den Charakter zurückholen."
 	},
 	"demoCopyRow": {
 		"editACopy": "Kopie bearbeiten",
@@ -601,10 +598,10 @@
 	},
 	"savedActions": {
 		"labelDeleteState": "In den Papierkorb…",
-		"removeState": "Körper und jeder Gegenstand verlieren die angepassten Frames; fertige Bewegungen behalten ihre. 30 Tage lang können Sie den Zustand zurückholen.",
+		"removeState": "Körper und jeder Gegenstand verlieren die angepassten Frames; fertige Bewegungen behalten ihre. 30 Tage lang kannst du den Zustand zurückholen.",
 		"labelDeleteMove": "In den Papierkorb…",
 		"labelDeleteOutfit": "Outfit löschen",
-		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren seine Frames. 30 Tage lang können Sie die Bewegung zurückholen."
+		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren die Frames dieser Bewegung. 30 Tage lang kannst du sie zurückholen."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Kostenlos: Bereits erstellte Gegenstände werden nie neu generiert.",
@@ -620,7 +617,7 @@
 		"showLabel": "{label} einblenden",
 		"createSlot": "Ausrüstungsplatz erstellen",
 		"builtInSlots": "Vorgegebene Ausrüstungsplätze",
-		"theSlotAndItsItemsAreDeleted": "Die Gegenstände gehen mit und Outfits tragen sie nicht mehr. 30 Tage lang können Sie alles zurückholen.",
+		"theSlotAndItsItemsAreDeleted": "Die Gegenstände gehen mit und Outfits tragen sie nicht mehr. 30 Tage lang kannst du alles zurückholen.",
 		"undoBringsItBack": "Mit „Rückgängig“ holst du ihn zurück.",
 		"labelAddedAtTheEndOfWardrobe": "{label} wurde am Ende der Garderobe hinzugefügt.",
 		"valueShownAtTheEndOfWardrobe": "{value} wird am Ende der Garderobe angezeigt.",
@@ -642,7 +639,7 @@
 		},
 		"deleteTitle": "{label} in den Papierkorb verschieben?",
 		"deleteExportNote": "Exporte enthalten den Ausrüstungsplatz „{slot}“ nicht mehr. Passe daher Spielcode an, der diesen Namen verwendet.",
-		"theSlotIsDeleted": "Die Kategorie verlässt die Garderobe. 30 Tage lang können Sie sie zurückholen."
+		"theSlotIsDeleted": "Die Kategorie verlässt die Garderobe. 30 Tage lang kannst du sie zurückholen."
 	},
 	"stage": {
 		"characterFacing": "{name}, {move}, Blickrichtung: {facing}",
