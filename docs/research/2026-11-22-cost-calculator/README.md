@@ -7,6 +7,21 @@ November 22, 2026. Research and design only; nothing in the app changed and no P
 | [cost-model.md](cost-model.md)                 | GPT 6.2 Sol (medium)             | Every paid step, its price rule and source line, a pure-function spec, defaults, dollars, worked examples |
 | [challenge-deepseek.md](challenge-deepseek.md) | DeepSeek v4.1 Flash (low)        | Adversarial review of the idea and three README formulas                                                  |
 | [design/](design/README.md)                    | GPT 6.2 Sol (medium), Impeccable | Interactive HTML mock-up, revised once after review                                                       |
+| [review-deepseek.md](review-deepseek.md)       | DeepSeek v4.1 Flash (low)        | Rule-by-rule accuracy check of cost-model.md against the code                                             |
+| [review-opus.md](review-opus.md)               | Opus 5.5 (medium)                | Design and function critique of mock-up v2                                                                |
+| [review-sol.md](review-sol.md)                 | GPT 6.2 Sol (medium)             | Design and function critique of mock-up v2                                                                |
+
+## Round 2 review (mock-up v2)
+
+- **Accuracy:** every price rule checked out except one: an explicit Skeleton V3 start frame costs 0.1 on every first pass, cached or not. DeepSeek also listed 13 edge cases (walk forces 8 frames, automatic anchor route, State route gates, 0.25 registration counted twice if both presentations are summed) that only the real planners get right.
+- **Too much text:** both critics count about 120 words before Details. Target under 40: one fact per line, no pipeline notes, tips as chips such as `Mirror west −575`.
+- **Headline:** both critics lead with a rounded generation range, because dollars are a share of a subscription, not a cash charge, and the app's own quotes are in generations. There is no measured average to show. Dollars go on a second line when the plan is known.
+- **Retries:** None / Some / Many has no unit. Opus: an integer "retries per step" stepper (0 to 3), defaulting to this character's own history (`RecordedCost.replaced`). Sol: drop the global control and let users add extra attempts to a named step.
+- **Worn vs held:** merge into one Items stepper. Only a held item's first design costs more (padded canvas); fits cost the same and each item already has its own moves. v2 also mispriced a new held item at 20 gens with no moves.
+- **Remove:** scope switch, in-sheet theme toggle, typed plan price and allowance (`/balance` already reports them), long disclaimer. Spent so far should read item provenance, not Activity, which keeps only 2,500 calls.
+- **Details:** a receipt of rows (setting, gens) that open in place to edit, plus Assumptions and Activity links.
+
+The pre-review v2 mock-up is kept locally in `design/backup/` for comparison (not committed).
 
 ## Verdict
 
