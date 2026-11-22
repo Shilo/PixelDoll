@@ -6,7 +6,6 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import PromptField from './PromptField.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
-	import { promptSuggestionDefaults } from './promptSuggestionDefaults.ts';
 	import { promptSuggestions } from './promptSuggestions.svelte.ts';
 	import type { PromptSuggestion } from './promptSuggestions.ts';
 	import type { EnhanceSpec } from './promptEnhance.ts';
@@ -27,10 +26,7 @@
 		defaultMoveFrameCount,
 		moveTemplatePrompt,
 		moveReferenceEnd,
-		moveFrameCounts,
-		templateLoops,
 		type MoveAnimationModel,
-		type MoveAnimationOptions,
 		type MoveFrameReferences
 	} from './moveAnimationOptions.ts';
 	import { onDestroy, tick, untrack } from 'svelte';
@@ -49,10 +45,22 @@
 	} from '../lib/items/run.ts';
 	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
-	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
-	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
-	import { clipNameId, sameClipName } from './clipName.ts';
-	import { stateAttempts } from './stateRecovery.ts';
+	import { lastPlaybackCell } from '../lib/runtime/timeline.js';
+	import { moveSourceMatches } from './moveSource.ts';
+	import {
+		actionPrompt,
+		loopedText,
+		moveClipIds,
+		moveFormIssue,
+		moveFormMotion,
+		moveFormSpec,
+		moveFormStop,
+		moveRequestSpec,
+		moveSeed,
+		newMoveActions,
+		planMoveForm,
+		redrawDirections
+	} from './moveForm.ts';
 	import {
 		isGeneratedState,
 		measureStateJoints,
@@ -69,8 +77,6 @@
 	import {
 		MOVE_STEPS,
 		b64,
-		bodyMoveIssue,
-		partialMoveFrameIssue,
 		resolveMoveMotionSource,
 		moveRigReady,
 		reservedMove,
@@ -86,7 +92,7 @@
 		type KeepBodyPlan,
 		type MeasurementRecoveryPlan
 	} from './create.ts';
-	import { moveFrames, moveMotionFrames, isAuthoredAction, moveEstimate } from './movePricing.ts';
+	import { moveMotionFrames, moveEstimate } from './movePricing.ts';
 	import {
 		ui,
 		doc,
@@ -124,12 +130,7 @@
 	import { errorText, LocalizedError, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
-	import {
-		creationDefaults,
-		moveModels,
-		openingCreationSettings,
-		resolveMoveFramePreference
-	} from './creationSettings.ts';
+	import { creationDefaults, moveModels, openingCreationSettings } from './creationSettings.ts';
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
@@ -143,18 +144,12 @@
 		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
 	});
 	const ok = $derived(!!m && moveRigReady(rec ? { ...rec, manifest: m } : null));
-	const sourceClips = $derived(playbackClips(m?.rig.animations ?? []));
-	const have = $derived(new Set(sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)));
-	const stateIds = $derived(
-		new Set(sourceClips.filter((a) => a.kind === 'state').map((a) => a.key))
-	);
+	const clipIds = $derived(moveClipIds(m));
+	const sourceClips = $derived(clipIds.clips);
+	const have = $derived(clipIds.moves);
+	const stateIds = $derived(clipIds.states);
 	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
-	// Default is the standing views themselves: nothing to generate or replace.
-	const options = $derived(
-		promptSuggestionDefaults.move.flatMap(({ action }) =>
-			action && !stateIds.has(action) && !have.has(action) && !reservedMove(action) ? [action] : []
-		)
-	);
+	const options = $derived(newMoveActions(m));
 	const suggestions = $derived(
 		promptSuggestions('move').filter(({ action }) => !action || options.includes(action))
 	);
@@ -264,13 +259,6 @@
 	let confirm = $state.raw<{ kind: 'start' | 'loop'; accept: () => void }>();
 	let loopChange = 0;
 	let customStartAcknowledged = false;
-	const replacing = $derived(replaceSelected && have.has(action));
-	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
-	const looping = $derived(
-		loopChoice ??
-			(replacing ? (savedMove?.moveLoop ?? savedMove?.loop) : undefined) ??
-			templateLoops(action)
-	);
 	const draftRegeneration = $derived.by(() => {
 		const reference = draft?.regeneration;
 		if (!reference || !Object.hasOwn(store.moveReviews, reference.id)) return;
@@ -278,44 +266,50 @@
 		if (spec.seed === reference.seed && spec.activityScope === reference.activityScope)
 			return reference;
 	});
-	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
-	const freeMoveId = () => {
-		if (draftRegeneration && text.trim() === draft?.text?.trim()) return draftRegeneration.id;
-		let n = 1;
-		while (
-			have.has(`move-${n}`) ||
-			stateIds.has(`move-${n}`) ||
-			pendingIds.includes(`move-${n}`) ||
-			Object.hasOwn(store.moveReviews, `move-${n}`)
-		)
-			n++;
-		return `move-${n}`;
-	};
-	const id = $derived(
-		((replaceSelected || templatePicked || text.trim() === moveTemplatePrompt(action, looping)) &&
-			action) ||
-			(text.trim() &&
-				(clipNameId(text.trim().split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')).slice(0, 24) ||
-					freeMoveId()))
-	);
-	const availableDirs = $derived(
-		m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? []
-	);
-	let selectedDirs = $state<DirectionName[]>(draft?.dirs ?? untrack(() => [...availableDirs]));
-	const targetDirs = $derived(
-		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
+	let selectedDirs = $state<DirectionName[]>(
+		draft?.dirs ??
+			untrack(() => m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? [])
 	);
 	const sourceSelection = $derived(
 		sourceId === undefined ? undefined : { clip: sourceId, cell: sourceCell }
 	);
-	const explicitFrame = $derived(sourceSelection && sourceId !== DEFAULT_MOVE);
-	const startFrom = $derived(
-		m && explicitFrame && sourceSelection
-			? resolveMoveSource(m, sourceSelection, targetDirs)
-			: m && !sourceSelection && replacing
-				? savedReplacementSource(m, action, targetDirs)
-				: undefined
+	// Every choice below is derived by the shared form plan, which the add_move agent tool uses too.
+	const form = $derived(
+		planMoveForm(
+			{
+				action,
+				text,
+				replaceSelected,
+				templatePicked,
+				loop: loopChoice,
+				model: modelChoice,
+				frames: frameChoice,
+				savedFrames: savedCustomFrames,
+				preferredModel: preferences?.model ?? creationDefaults.moves.model,
+				dirs: selectedDirs,
+				source: sourceSelection,
+				references: frameReferences,
+				keepId:
+					draftRegeneration && text.trim() === draft?.text?.trim()
+						? draftRegeneration.id
+						: undefined,
+				skeletonRetry: !!draft?.skeletonRetry
+			},
+			{
+				manifest: m,
+				characterId: rec?.character?.id,
+				pending: pendingIds,
+				reviews: store.moveReviews
+			}
+		)
 	);
+	const replacing = $derived(form.replacing);
+	const savedMove = $derived(form.savedMove);
+	const looping = $derived(form.looping);
+	const id = $derived(form.id);
+	const availableDirs = $derived(form.availableDirs);
+	const targetDirs = $derived(form.targetDirs);
+	const startFrom = $derived(form.startFrom);
 	let fitBusy = $state(false);
 	let fitQuote = $state.raw<StateJointFitQuote | null>(null);
 	let fitReview = $state.raw<StateJointFitReview | null>(null);
@@ -402,95 +396,16 @@
 					.join(', ')
 			: ''
 	);
-	const describing = $derived(!action || text.trim() !== moveTemplatePrompt(action, looping));
-	const canvas = $derived(m?.rig.cell.w ?? 0);
-	// The frame count the core falls back to: a replaced clip's cells, otherwise PixelDoll's 8-frame preset.
-	const baseFrames = $derived(replacing ? (savedMove?.cells ?? 8) : 8);
-	// A partial replacement must keep the saved clip's cell count so redrawn views line up with the kept ones.
-	const keptFrames = $derived(
-		replacing && targetDirs.length !== availableDirs.length ? savedMove?.cells : undefined
-	);
-	const fitsKept = (option: MoveAnimationModel) =>
-		keptFrames === undefined || moveFrameCounts(option, canvas).includes(keptFrames);
-	const fitsSource = (option: MoveAnimationModel) =>
-		option !== 'skeleton-v3' || !startFrom || (!describing && isAuthoredAction(action));
-	const model = $derived.by(() => {
-		if (modelChoice && fitsKept(modelChoice)) return modelChoice;
-		if (!replacing) return preferences?.model ?? creationDefaults.moves.model;
-		const preferred =
-			keptFrames ??
-			(m && moveFrames(m, { action: describing ? undefined : action, frames: baseFrames }));
-		const fitsPreferred = (option: MoveAnimationModel) =>
-			preferred !== undefined && moveFrameCounts(option, canvas).includes(preferred);
-		for (const dir of targetDirs) {
-			const route = savedMove?.sources?.[dir]?.route;
-			if (route && route !== 'import' && fitsSource(route) && fitsPreferred(route)) return route;
-		}
-		return fitsSource('skeleton-v3') && fitsPreferred('skeleton-v3')
-			? 'skeleton-v3'
-			: (moveModels.find((option) => fitsSource(option) && fitsPreferred(option)) ??
-					redrawFallbackModel);
-	});
-	// Model-valid counts for this character's actual canvas; the same object prices and submits the move.
-	const frameCounts = $derived(moveFrameCounts(model, canvas));
-	const usesSavedFrames = $derived(!replacing && describing && frameChoice === undefined);
-	const userFrameCount = $derived(
-		keptFrames === undefined
-			? resolveMoveFramePreference(
-					model,
-					(usesSavedFrames ? savedCustomFrames : frameChoice) ?? 'auto',
-					canvas
-				)
-			: undefined
-	);
-	const frameFallback = $derived(
-		usesSavedFrames && savedCustomFrames !== undefined && userFrameCount === undefined
-	);
-	const chosenFrameCount = $derived(
-		keptFrames !== undefined && frameCounts.includes(keptFrames) ? keptFrames : userFrameCount
-	);
-	const animationOptions = $derived<MoveAnimationOptions>({
-		model,
-		loop: looping,
-		...(chosenFrameCount === undefined ? {} : { frameCount: chosenFrameCount }),
-		...(Object.keys(frameReferences).length
-			? {
-					references: Object.fromEntries(
-						targetDirs.flatMap((direction) => {
-							const value = frameReferences[direction];
-							if (!value) return [];
-							const compact = (reference: PickedReference) => ({
-								width: reference.width,
-								height: reference.height,
-								base64: reference.base64
-							});
-							return [
-								[
-									direction,
-									{
-										...(value.start ? { start: compact(value.start) } : {}),
-										...(model !== 'skeleton-v3' && value.end !== undefined
-											? { end: value.end ? compact(value.end) : null }
-											: {})
-									}
-								]
-							];
-						})
-					)
-				}
-			: {})
-	});
-	// What the core resolves with no explicit count, so the Default label matches the price and the request.
-	const defaultFrames = $derived(
-		m
-			? moveFrames(m, {
-					action: describing ? undefined : action,
-					frames: baseFrames,
-					animation: { model }
-				})
-			: baseFrames
-	);
-	const shownFrames = $derived(userFrameCount ?? defaultFrames);
+	const describing = $derived(form.describing);
+	const canvas = $derived(form.canvas);
+	const keptFrames = $derived(form.keptFrames);
+	const fitsKept = (option: MoveAnimationModel) => form.fitsKept(option);
+	const model = $derived(form.model);
+	const frameCounts = $derived(form.frameCounts);
+	const userFrameCount = $derived(form.userFrameCount);
+	const frameFallback = $derived(form.frameFallback);
+	const defaultFrames = $derived(form.defaultFrames);
+	const shownFrames = $derived(form.shownFrames);
 	let managedMotion = $state<{
 		id: string;
 		key: string;
@@ -498,15 +413,7 @@
 		error?: string;
 	}>();
 	let motionProbe = $state(0);
-	const managedId = $derived(
-		model === 'skeleton-v3' &&
-			(describing || !isAuthoredAction(action)) &&
-			!startFrom &&
-			!draft?.skeletonRetry &&
-			!targetDirs.some((direction) => frameReferences[direction]?.start)
-			? rec?.character?.id
-			: undefined
-	);
+	const managedId = $derived(form.managedId);
 	$effect(() => {
 		const id = managedId;
 		const key = app.key;
@@ -541,80 +448,49 @@
 			.filter(Boolean)
 			.join(' · ')
 	);
-	const motion = $derived({
-		id,
-		motionSource:
-			managedId && app.key && !app.keyRejected ? motionAccess?.source : ('standalone' as const),
-		action: describing ? undefined : action,
-		text: text.trim(),
-		frames: baseFrames,
-		replace: replacing,
-		animation: animationOptions,
-		startFrom
-	});
+	const motion = $derived(
+		moveFormMotion(
+			form,
+			managedId && app.key && !app.keyRejected ? motionAccess?.source : 'standalone'
+		)
+	);
 	const regeneration = $derived(draftRegeneration?.id === id ? draftRegeneration : undefined);
 	const skeletonRetry = draft?.skeletonRetry;
-	const motionIssue = $derived.by(() => {
-		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
-		if (Object.hasOwn(store.moveReviews, id) && !regeneration)
-			return t('moveSheet.checkpoint.ready', { move: nice(id) });
-		if (
-			describing &&
-			!templatePicked &&
-			!replacing &&
-			id &&
-			suggestions.some((entry) => entry.action === id)
-		)
-			return t('moveSheet.duplicateOption', { move: nice(id) });
-		if (!m || !id) return '';
-		if (
-			(!replacing && have.has(id)) ||
-			(!have.has(id) &&
-				([...stateIds].some((stateId) => sameClipName(stateId, id)) ||
-					stateAttempts(rec).some((attempt) => sameClipName(attempt.id, id))))
-		)
-			return t('moveSheet.duplicateOption', { move: nice(id) });
-		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
-		if (
-			skeletonRetry &&
-			(!regeneration ||
-				model !== 'skeleton-v3' ||
-				motion.action !== skeletonRetry.review.action ||
-				motion.text !==
-					(skeletonRetry.review.text ??
-						moveTemplatePrompt(
-							skeletonRetry.review.action ?? '',
-							!!skeletonRetry.review.animation?.loop
-						)) ||
-				stableStringify(targetDirs) !== stableStringify(skeletonRetry.review.approvedDirs) ||
-				stableStringify(startFrom) !== stableStringify(skeletonRetry.review.startFrom))
-		)
-			return t('moveSheet.checkpoint.changed');
-		return (
-			bodyMoveIssue(m, motion) ||
-			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
-		);
-	});
+	const motionIssue = $derived(
+		moveFormIssue(form, motion, {
+			manifest: m,
+			record: rec,
+			replaceSelected,
+			templatePicked,
+			reviews: store.moveReviews,
+			regenerating: !!regeneration,
+			offered: suggestions.flatMap((entry) => (entry.action ? [entry.action] : [])),
+			retryChanged: () =>
+				!!skeletonRetry &&
+				(!regeneration ||
+					model !== 'skeleton-v3' ||
+					motion.action !== skeletonRetry.review.action ||
+					motion.text !==
+						(skeletonRetry.review.text ??
+							moveTemplatePrompt(
+								skeletonRetry.review.action ?? '',
+								!!skeletonRetry.review.animation?.loop
+							)) ||
+					stableStringify(targetDirs) !== stableStringify(skeletonRetry.review.approvedDirs) ||
+					stableStringify(startFrom) !== stableStringify(skeletonRetry.review.startFrom)),
+			name: (move) => nice(move)
+		})
+	);
+	const formSpec = $derived(moveFormSpec(form, motion));
 	// App-side warnings never block a request PixelLab would take: Generate move anyway records them as accepted with the move.
 	const preflight = $derived(
-		m && store.project && id && !motionIssue
-			? movePreflightWarnings(store.project, {
-					...motion,
-					items: [],
-					seed: 0,
-					...(replacing ? { dirs: [...targetDirs] } : {})
-				})
-			: []
+		m && store.project && id && !motionIssue ? movePreflightWarnings(store.project, formSpec) : []
 	);
 	const formEstimate = $derived(
 		m &&
-			id &&
-			targetDirs.length &&
-			!reservedMove(id, replacing) &&
-			!motionIssue &&
-			(!managedId || !app.key || app.keyRejected || !!motionAccess?.source) &&
-			!pendingIds.includes(id)
-			? moveEstimate(m, { ...motion, items: [], dirs: targetDirs })
+			!moveFormStop(form, motionIssue, pendingIds, (move) => nice(move)) &&
+			(!managedId || !app.key || app.keyRejected || !!motionAccess?.source)
+			? moveEstimate(m, formSpec)
 			: null
 	);
 	const dirs = $derived(targetDirs.length);
@@ -628,17 +504,7 @@
 	const tierBlocked = (required: number) =>
 		tierDecision(app.balance, { required }).kind === 'required';
 	const addAccess = $derived(
-		specAccess(
-			m && id && targetDirs.length && !motionIssue
-				? {
-						...motion,
-						items: [],
-						poseStyle: 'visible-side-v1',
-						seed: 0,
-						...(replacing ? { dirs: [...targetDirs] } : {})
-					}
-				: undefined
-		)
+		specAccess(m && id && targetDirs.length && !motionIssue ? formSpec : undefined)
 	);
 	const addTier = $derived(addAccess.tier);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id);
@@ -1000,16 +866,11 @@
 			pickStart(go);
 			return;
 		}
-		const spec: MoveSpec = {
-			...motion,
-			items: [],
-			reviewBeforePublish: true,
-			reviewRegeneration: regeneration,
-			poseStyle: 'visible-side-v1' as const,
-			seed: 1 + Math.floor(Math.random() * 1_000_000),
-			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] }),
-			...(preflight.length ? { acceptedWarnings: preflight.map((warning) => warning.id) } : {})
-		};
+		const spec = moveRequestSpec(form, motion, {
+			seed: moveSeed(),
+			regeneration,
+			acceptedWarnings: preflight.map((warning) => warning.id)
+		});
 		rememberMoveForm(projectId);
 		const needsManagedQuote = !!managedId;
 		if (needsManagedQuote && (!app.key || app.keyRejected)) {
@@ -1068,16 +929,7 @@
 	function chooseAction(next: string) {
 		templatePicked = !!next;
 		const replace = have.has(next);
-		const nextText = replace
-			? m?.rig.animations.find((clip) => clip.id === next)?.sources
-			: undefined;
-		const savedPrompt =
-			nextText &&
-			Object.values(nextText)
-				.map((source) => source?.motion?.match(/^(?:v3|pixminimax):(.+)$/s)?.[1])
-				.find((prompt) => prompt && prompt !== next);
-		const clip = m?.rig.animations.find((entry) => entry.id === next);
-		const prompt = savedPrompt || moveTemplatePrompt(next, clip?.moveLoop ?? clip?.loop);
+		const { saved: savedPrompt, prompt } = actionPrompt(m, next, replace);
 		if (action === next && replaceSelected === replace) {
 			// The same move keeps its Loop choice, so its text follows it.
 			text = savedPrompt || moveTemplatePrompt(next, looping);
@@ -1094,12 +946,7 @@
 		selectedDirs = redrawDirs(next);
 	}
 	// A redraw starts on the views that failed their checks, or every view when none did.
-	function redrawDirs(clip: string) {
-		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
-			?.clips;
-		const flagged = availableDirs.filter((d) => clips?.[`${clip}/${d}`]?.fails?.length);
-		return flagged.length ? flagged : [...availableDirs];
-	}
+	const redrawDirs = (clip: string) => redrawDirections(rec?.rigQa, availableDirs, clip);
 	// Redraw… on a saved move opens this sheet on that move.
 	if (redrawTarget) {
 		ui.redrawMove = '';
@@ -1233,7 +1080,7 @@
 	async function changeLoop(enabled: boolean) {
 		const change = ++loopChange;
 		const applyLoop = () => {
-			if (text === moveTemplatePrompt(action, looping)) text = moveTemplatePrompt(action, enabled);
+			text = loopedText(text, action, looping, enabled);
 			loopChoice = enabled;
 		};
 		if (model === 'skeleton-v3') {
