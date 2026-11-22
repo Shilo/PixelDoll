@@ -512,6 +512,113 @@ test('Library deletes local work only after confirmation and offers a backup fir
 	expect(await saved()).toEqual({ ...original, character: false });
 });
 
+test('Settings saves creation choices across reload and resets them by scope', async ({ page }) => {
+	await page.setViewportSize({ width: 1280, height: 800 });
+	const sheet = (tab: Page) => tab.getByRole('dialog', { name: 'Settings', exact: true });
+	const openSettings = async (tab = page) => {
+		await tab.getByRole('button', { name: 'More options', exact: true }).click();
+		await tab.getByRole('button', { name: 'Settings...', exact: true }).click();
+	};
+	const choices = [
+		['Character', 'character-model', 'pro', 'v3', 'select'],
+		['Character', 'body-size', '68', '64', 'input'],
+		['Character', 'frame-size', 'custom', 'auto', 'select'],
+		['Character', 'custom-frame', '112', null, 'input'],
+		['Character', 'direction-presets', 'four', 'eight', 'select'],
+		['Character', 'base-clothing', 'none', 'underwear', 'select'],
+		['Move', 'move-model', 'v3', 'skeleton-v3', 'select'],
+		['Move', 'move-frames', '6', 'auto', 'select'],
+		['State', 'state-model', 'pixen', 'pro', 'select'],
+		['Item', 'item-method', 'anchor', 'auto', 'select']
+	] as const;
+	const controlAt = async (section: string, field: string, tab = page) => {
+		const settings = sheet(tab);
+		const sectionButton = settings
+			.getByRole('navigation', { name: 'Settings', exact: true })
+			.getByRole('button', { name: section, exact: true });
+		if ((await sectionButton.getAttribute('aria-current')) !== 'page') await sectionButton.click();
+		return settings.locator(`[data-setting="${field}"] :is(select, input)`);
+	};
+	const assertChoices = async (saved: boolean, tab = page) => {
+		for (const [section, field, value, initial] of choices) {
+			const control = await controlAt(section, field, tab);
+			const expected = saved ? value : initial;
+			if (expected === null) await expect(control).toHaveCount(0);
+			else await expect(control).toHaveValue(expected);
+		}
+	};
+	const settings = sheet(page);
+	await openStudio(page, '/#/');
+	await openSettings();
+	await controlAt('Character', 'character-model');
+	await expect(settings.locator('[data-setting] > label')).toHaveText([
+		'Model',
+		'Body size',
+		'Frame size',
+		'Direction',
+		'Base clothing'
+	]);
+	await controlAt('Move', 'move-model');
+	await expect(
+		settings.getByRole('combobox', { name: 'Frames', exact: true }).locator('option:checked')
+	).toHaveText('Automatic');
+	await expect(
+		settings.getByText(/Walking and custom moves usually start at 8 frames/)
+	).toBeVisible();
+	const itemMethod = await controlAt('Item', 'item-method');
+	await expect(itemMethod.locator('option:checked')).toHaveText('Automatic');
+	await expect(
+		settings.getByText('Uses Skeleton posing when supported. Otherwise, uses Frame editing.')
+	).toBeVisible();
+	await assertChoices(false);
+	for (const [section, field, value, , tag] of choices) {
+		const control = await controlAt(section, field);
+		if (tag === 'input') {
+			await control.fill(value);
+			await control.press('Tab');
+		} else await control.selectOption(value);
+	}
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(settings).toHaveCount(0);
+	await openSettings();
+	await assertChoices(true);
+	await page.reload();
+	await openSettings();
+	await assertChoices(true);
+	const second = await page.context().newPage();
+	await second.setViewportSize({ width: 1280, height: 800 });
+	await openStudio(second, '/#/');
+	await openSettings(second);
+	await assertChoices(true, second);
+	await settings.getByRole('button', { name: 'Reset this page', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Reset Item settings?' })
+		.getByRole('button', { name: 'Reset this page', exact: true })
+		.click();
+	await expect(settings.getByRole('combobox', { name: 'Animation method' })).toHaveValue('auto');
+	await expect(sheet(second).getByRole('combobox', { name: 'Animation method' })).toHaveValue(
+		'auto'
+	);
+	await second.close();
+	await expect(await controlAt('Character', 'character-model')).toHaveValue('pro');
+	const frame = await controlAt('Character', 'custom-frame');
+	await frame.fill('72');
+	await frame.press('Tab');
+	await expect(settings.getByRole('alert')).toHaveText(/Choose Automatic or a custom frame/);
+	await expect(frame).toHaveValue('112');
+	const body = settings.getByRole('spinbutton', { name: 'Body size' });
+	await body.fill('66');
+	await body.press('Tab');
+	await expect(settings.getByRole('alert')).toContainText('4 px steps');
+	await settings.getByRole('button', { name: 'Reset settings', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Reset all settings?' })
+		.getByRole('button', { name: 'Reset settings', exact: true })
+		.click();
+	await expect(settings.getByRole('alert').filter({ hasText: '4 px steps' })).toHaveCount(0);
+	await assertChoices(false);
+});
+
 test('Settings resets restore only their scope, keep work and the PixelLab key, and disable at defaults', async ({
 	page
 }, info) => {

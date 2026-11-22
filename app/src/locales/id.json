@@ -41,6 +41,25 @@
 			"sealed": "Pekerjaan lokal telah dihapus. Muat ulang PixelDoll untuk melanjutkan."
 		}
 	},
+	"creationSettings": {
+		"character": "Karakter",
+		"move": "Animasi",
+		"state": "Keadaan",
+		"item": "Item",
+		"automatic": "Otomatis",
+		"automaticFramesHelp": "Berjalan dan gerakan khusus biasanya dimulai dengan 8 bingkai. Templat dan penggantian dapat menggunakan jumlah yang berbeda.",
+		"autoSize": "Otomatis ({size} px)",
+		"frameMinimum": "Pilih Otomatis atau ukuran bingkai kustom minimal {min} px.",
+		"custom": "Kustom",
+		"description": "Disimpan di browser ini. Dialog pembuatan belum menggunakan nilai ini.",
+		"defaults": "Default pembuatan",
+		"readFailed": "Pilihan tersimpan tidak dapat dibaca. Setel ulang halaman ini untuk memperbaikinya.",
+		"storageUnavailable": "Penyimpanan browser tidak tersedia. Pilihan ini tidak dapat disimpan.",
+		"saveFailed": "Pilihan ini tidak dapat disimpan. Coba lagi.",
+		"incompatible": "Pilih Otomatis atau jumlah bingkai yang didukung model baru.",
+		"framesHelp": "Jumlah bingkai yang tersedia bergantung pada ukuran kanvas karakter.",
+		"methodHelp": "Menggunakan {pose} jika didukung. Jika tidak, menggunakan {edit}."
+	},
 	"settings": {
 		"reset": {
 			"allAction": "Atur ulang semua pengaturan",

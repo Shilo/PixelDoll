@@ -41,6 +41,25 @@
 			"sealed": "Se eliminó el trabajo local. Recarga PixelDoll para continuar."
 		}
 	},
+	"creationSettings": {
+		"character": "Personaje",
+		"move": "Animación",
+		"state": "Estado",
+		"item": "Objeto",
+		"automatic": "Automático",
+		"automaticFramesHelp": "Caminar y los movimientos personalizados suelen empezar con 8 fotogramas. Las plantillas y los reemplazos pueden usar otra cantidad.",
+		"autoSize": "Automático ({size} px)",
+		"frameMinimum": "Elige Automático o un tamaño de fotograma personalizado de al menos {min} px.",
+		"custom": "Personalizado",
+		"description": "Se guarda en este navegador. Los diálogos de creación aún no usan estos valores.",
+		"defaults": "Valores de creación",
+		"readFailed": "No se pudieron leer las opciones guardadas. Restablece esta página para repararlas.",
+		"storageUnavailable": "El almacenamiento del navegador no está disponible. No se pueden guardar estas opciones.",
+		"saveFailed": "No se pudo guardar esta opción. Inténtalo de nuevo.",
+		"incompatible": "Elige Automático o una cantidad de fotogramas compatible con el nuevo modelo.",
+		"framesHelp": "Las cantidades de fotogramas disponibles dependen del tamaño del lienzo del personaje.",
+		"methodHelp": "Usa {pose} si es compatible. De lo contrario, usa {edit}."
+	},
 	"settings": {
 		"reset": {
 			"allAction": "Restablecer todos los ajustes",
