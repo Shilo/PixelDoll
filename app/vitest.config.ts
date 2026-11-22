@@ -9,7 +9,7 @@ if (!process.env.GITHUB_ACTIONS && os.getPriority() < below) os.setPriority(belo
 export default defineConfig({
 	define: { __AGENT_API_BASE__: 'null' }, // as in every non-agent mode (vite.config.ts)
 	test: {
-		include: ['test/unit/**/*.test.ts'],
+		include: ['test/unit/**/*.test.ts', '../services/sync-token/**/*.test.ts'],
 		environment: 'node',
 		// Files run in parallel; each gets its own process (default forks pool + isolate), so module state never leaks across files.
 		// CI keeps Vitest's default (CPUs − 1 = 3 on a 4-vCPU runner). Locally half the threads measured faster than the default on

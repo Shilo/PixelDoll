@@ -91,6 +91,28 @@ function agentKey(envFile: string, apiBase: string | undefined): Plugin {
 				? html.replace("connect-src 'self'", `connect-src 'self' ${new URL(apiBase).origin}`)
 				: html,
 		configureServer(server) {
+			// Cloud Save provider tests: the test accounts' refresh tokens from the .env (docs/handoff/cloud-save/owner-checklist.md),
+			// so no agent ever opens a sign-in page. ?provider=google|dropbox; 404 when that token is not set.
+			server.middlewares.use('/__dev/sync-credentials', (req, res) => {
+				res.setHeader('cache-control', 'no-store');
+				const provider = new URL(req.url ?? '', 'http://x').searchParams.get('provider');
+				const name = {
+					google: 'GOOGLE_SYNC_TEST_REFRESH_TOKEN',
+					dropbox: 'DROPBOX_SYNC_TEST_REFRESH_TOKEN'
+				}[provider ?? ''];
+				if (!localSameOrigin(req) || !name) {
+					res.statusCode = 403;
+					return res.end();
+				}
+				const line = existsSync(envFile)
+					? readFileSync(envFile, 'utf8')
+							.split(/\r?\n/)
+							.find((entry) => entry.startsWith(`${name}=`))
+					: undefined;
+				const token = line?.slice(name.length + 1).trim();
+				res.statusCode = token ? 200 : 404;
+				res.end(token ? JSON.stringify({ provider, refreshToken: token }) : '');
+			});
 			server.middlewares.use('/__dev/pixellab-key', (req, res) => {
 				res.setHeader('cache-control', 'no-store');
 				if (!localSameOrigin(req)) {

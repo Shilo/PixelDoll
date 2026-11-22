@@ -4,7 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta
 			http-equiv="Content-Security-Policy"
-			content="default-src 'self'; script-src 'self'; worker-src 'self'; manifest-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.pixellab.ai; connect-src 'self' https://api.pixellab.ai https://backblaze.pixellab.ai https://supabase.pixellab.ai https://cdn.pixellab.ai; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'"
+			content="default-src 'self'; script-src 'self'; worker-src 'self'; manifest-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.pixellab.ai; connect-src 'self' https://api.pixellab.ai https://backblaze.pixellab.ai https://supabase.pixellab.ai https://cdn.pixellab.ai https://www.googleapis.com https://api.dropboxapi.com https://content.dropboxapi.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'"
 		/>
 		<meta name="referrer" content="no-referrer" />
 		<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
@@ -45,6 +45,7 @@
 			>
 				<h1 style="font-size: 1.4em">PixelDoll</h1>
 				<p role="status">Opening your workspace…</p>
+				<p style="font-size: 0.875em"><a href="./privacy.html">Privacy policy</a></p>
 			</main>
 		</div>
 		<script type="module" src="/src/main.ts"></script>

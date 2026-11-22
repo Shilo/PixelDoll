@@ -7,9 +7,9 @@ name: CI and Pages
 on:
   push:
     branches: ['**'] # GitHub ignores `paths` for tag pushes, so tags would run everything
-    paths: [app/**, .github/workflows/pages.yml]
+    paths: [app/**, services/**, .github/workflows/pages.yml]
   pull_request:
-    paths: [app/**, .github/workflows/pages.yml]
+    paths: [app/**, services/**, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:

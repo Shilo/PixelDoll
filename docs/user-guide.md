@@ -397,6 +397,27 @@ usage. Your browser may warn you before leaving while jobs are in progress. This
 Unreadable ZIPs cannot be opened. Backups are limited to 64 MB, 5,000 files, and additional artwork and record limits;
 for larger libraries, export individual character ZIPs. Uncommitted edits outside the current character are not included.
 
+## Cloud Save
+
+Cloud Save keeps a copy of your saved characters in your own Google Drive or Dropbox, and keeps your devices in sync. It
+is optional, and saving on your device works exactly the same with or without it.
+
+1. Choose **Settings → Cloud Save → Connect Google Drive** (or **Connect Dropbox**).
+2. Sign in on Google's or Dropbox's own page and allow access. PixelDoll can use only its own folder: **PixelDoll** in
+   Google Drive, or **Apps/PixelDoll** in Dropbox.
+3. Back in PixelDoll, your library uploads by itself. On another device, connect the same account and it downloads.
+
+After that, changes save to the cloud a few seconds after you make them, when you open PixelDoll, and every minute while
+it is open. Offline work waits and uploads when you are back online. If the same item was changed on two devices, the
+section shows **Needs your attention**: pick **Keep this one**, **Keep the other** or **Keep both**. A delete never wins
+over an edit made elsewhere. **Restore an earlier version** brings back any earlier save of a character.
+
+**Disconnect this device** stops syncing here and keeps the cloud copy. **Disconnect everywhere** (Google) signs every
+device out. **Delete cloud copy** permanently deletes the cloud folder; work on your devices stays. If you ever lose
+access to the connection, download the PixelDoll folder from your cloud storage and use **Import a downloaded copy**.
+Drafts, PixelLab keys, settings and the generation history stay on each device. See the
+[privacy policy](https://pixeldoll.app/privacy.html).
+
 ## Export
 
 Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines and frameworks** lists Godot, Unity,

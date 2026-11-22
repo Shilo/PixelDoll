@@ -3088,5 +3088,83 @@
 			"changed": "Diese Figur hat sich geändert. Öffne Frame anpassen erneut, um die neueste Version zu prüfen.",
 			"undoFailed": "Die Frame-Änderung konnte nicht rückgängig gemacht werden."
 		}
+	},
+	"cloudSave": {
+		"title": "Cloud-Speicherung",
+		"intro": "Sichere deine Spielstände und halte sie auf all deinen Geräten synchron, in deinem eigenen Google Drive oder Dropbox.",
+		"connectGoogle": "Google Drive verbinden",
+		"connectDropbox": "Dropbox verbinden",
+		"notConfigured": "In dieser Version von PixelDoll ist die Cloud-Anmeldung noch nicht eingerichtet.",
+		"canceled": "Anmeldung abgebrochen",
+		"noDriveAccess": "PixelDoll braucht die Berechtigung, seine Dateien in deinem Google Drive abzulegen. Verbinde erneut und lass diese Berechtigung aktiviert.",
+		"attention": "Cloud-Speicherung braucht deine Aufmerksamkeit",
+		"status": {
+			"local": "Auf diesem Gerät gespeichert",
+			"syncing": "Wird in der Cloud gespeichert…",
+			"synced": "In der Cloud gespeichert",
+			"syncedJustNow": "Gerade eben in der Cloud gespeichert",
+			"syncedAgo": "In der Cloud gespeichert ({time})",
+			"offline": "Offline, wird gespeichert, sobald du wieder online bist",
+			"reconnect": "Verbinde erneut, um weiter zu speichern",
+			"conflict": "Braucht deine Aufmerksamkeit",
+			"cloudFull": "Cloud-Speicher voll",
+			"failed": "Speichern in der Cloud fehlgeschlagen",
+			"update": "Aktualisiere PixelDoll auf diesem Gerät",
+			"missing": "Der PixelDoll-Ordner fehlt in deiner Cloud"
+		},
+		"retry": "Erneut versuchen",
+		"reconnect": "Erneut verbinden",
+		"rebuild": "Cloud-Kopie neu aufbauen",
+		"cloudFullHint": "Gib Platz in deinem Cloud-Speicher frei und versuche es dann erneut.",
+		"updateHint": "Deine Cloud-Kopie wurde von einer neueren PixelDoll-Version gespeichert. Aktualisiere, um weiter zu speichern.",
+		"missingHint": "Baue sie aus den Figuren auf diesem Gerät neu auf oder trenne die Verbindung.",
+		"disconnect": "Dieses Gerät trennen",
+		"disconnectHint": "Dieses Gerät speichert nicht mehr in der Cloud. Deine Cloud-Kopie und andere Geräte bleiben unverändert.",
+		"manageApps": "Verbundene Apps verwalten",
+		"everywhere": {
+			"action": "Überall trennen",
+			"title": "Alle Geräte trennen?",
+			"body": "Damit wird PixelDoll auf allen Geräten von Google Drive abgemeldet. Deine Cloud-Kopie bleibt erhalten, und jedes Gerät muss sich erneut verbinden, um weiter zu speichern."
+		},
+		"delete": {
+			"action": "Cloud-Kopie löschen",
+			"description": "Löscht den PixelDoll-Ordner in deiner Cloud dauerhaft.",
+			"title": "Cloud-Kopie löschen?",
+			"body": "Damit wird der PixelDoll-Ordner in deiner Cloud für alle Geräte dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden.",
+			"kept": "Deine Arbeit auf diesem Gerät bleibt erhalten.",
+			"confirm": "Bestätigen"
+		},
+		"conflicts": {
+			"title": "Wähle, was du behältst",
+			"hint": "Das wurde auf zwei Geräten gleichzeitig geändert.",
+			"whole": "Die ganze Figur",
+			"unnamed": "Unbenannte Figur",
+			"keepThis": "Diese behalten",
+			"keepOther": "Die andere behalten",
+			"keepBoth": "Beide behalten",
+			"failed": "Diese Auswahl konnte gerade nicht gespeichert werden. Versuche es gleich noch einmal."
+		},
+		"restore": {
+			"title": "Frühere Version wiederherstellen",
+			"character": "Figur",
+			"choose": "Figur auswählen",
+			"none": "Noch keine früheren Versionen.",
+			"unknownTime": "Unbekannte Zeit",
+			"action": "Wiederherstellen",
+			"confirmTitle": "Version vom {date} wiederherstellen?",
+			"confirmBody": "Ersetzt die aktuelle Version; die ersetzte bleibt im Verlauf.",
+			"done": "Version wiederhergestellt.",
+			"failed": "Diese Version konnte gerade nicht wiederhergestellt werden. Versuche es gleich noch einmal."
+		},
+		"import": {
+			"title": "Heruntergeladene Kopie importieren",
+			"hint": "Wähle die ZIP-Dateien, die du vom PixelDoll-Ordner heruntergeladen hast. Nur Figuren, die auf diesem Gerät fehlen, werden hinzugefügt.",
+			"added": {
+				"one": "{count} Figur hinzugefügt.",
+				"other": "{count} Figuren hinzugefügt."
+			},
+			"none": "Keine neuen Figuren gefunden.",
+			"invalid": "Diese Dateien sind kein heruntergeladener PixelDoll-Ordner."
+		}
 	}
 }

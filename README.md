@@ -22,7 +22,7 @@ consistent, layered, slot-based paperdoll: one base body, N directions, M moves,
 grid and pivot.
 
 Client-side only (Svelte 5 + Vite 8 + TypeScript, no backend). The browser calls the PixelLab REST v2 API directly with your own
-key.
+key. The one server piece is optional Cloud Save's stateless Google sign-in helper, which stores nothing (PLAN.md D31).
 
 The immersive Studio and its design prototype use [Bronze UI](https://github.com/Shilo/bronze-ui), our MIT theme with native light/dark modes ([component showcase](https://shilo.github.io/bronze-ui/)). It is a versioned dependency in `app/package.json`; application layout and gameplay stay local. The [production design contract](docs/design/production-experience.md) documents the integration.
 
@@ -53,7 +53,7 @@ npm run dev        # http://localhost:5173
 ```
 
 Open `#/` for character selection; the bundled demo needs no key. Choose **Customize** to dress it or try **Top-down** and **Side-scroller** movement. To generate, open **More options → Connect PixelLab** and paste a key from
-<https://pixellab.ai/account>. It stays in memory unless you check *Remember on this device*, and is only sent to
+<https://pixellab.ai/account>. It stays in memory unless you check _Remember on this device_, and is only sent to
 `api.pixellab.ai`. `npm run dev` handles the key exactly like the deployed site: there is no key file, endpoint or button.
 
 Remembered keys use `localStorage['pixellabApiKey']`, shared with every app on the same origin. `https://pixeldoll.app/`
@@ -111,16 +111,16 @@ target, on your device, for free. Each zip contains `README.txt` (quick start), 
 move; rows = directions, columns = frames) and, optionally, `baked/` (finished characters per outfit). RPG Maker zips hold
 only their walking sheets, `README.txt` and the editable copy.
 
-| Target | In the zip | Import |
-|---|---|---|
-| Godot 4 | `godot/Paperdoll.tscn`, `.gd`, SpriteFrames `.tres` | Copy the folder into the project, instance `godot/Paperdoll.tscn`; `play_anim(anim, dir)`, `equip(slot, item_id)`. See `godot/README.txt`. |
-| Unity 6 | Editor importer + `unity/pixeldoll_unity.json` | Copy under `Assets/`; the importer builds sliced sheets, clips, a controller and a prefab in `unity/Generated/`. See `unity/README.txt`. |
-| Phaser 3.80+ / 4 | `phaser/PaperdollContainer.js` + TexturePacker-hash atlases | Copy into your assets, `loadPaperdoll(scene, dir)` then `new Paperdoll(...)`; serve over http. See `phaser/README.txt`. |
-| GDevelop | `gdevelop/game.json`, registered Sprite frames and an embedded controller event | Open the native project and Preview, or copy its Sprite objects and controller event into an existing project. See `gdevelop/README.txt`. |
-| RPG Maker MZ, MV, VX Ace, VX | `$<character>.png` walking sheet per outfit (3 × 4) | Copy into `img/characters` (MZ, MV) or `Graphics/Characters` (VX Ace, VX) and pick it as a character image. |
-| RPG Maker XP, Pokémon Essentials | `<character>.png` walking sheet per outfit (4 × 4) | Copy into `Graphics/Characters`. |
-| Aseprite | `aseprite/<character>.aseprite`: layered file, move/direction tags, frame timing and pivot slice | Open in Aseprite 1.3+; colors and visibility match the exported current look. |
-| PNG + JSON | `generic/` strips per layer, move and direction | Any engine: one sprite per layer, same grid and pivot, one clock. See `generic/README.txt`. |
+| Target                           | In the zip                                                                                       | Import                                                                                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Godot 4                          | `godot/Paperdoll.tscn`, `.gd`, SpriteFrames `.tres`                                              | Copy the folder into the project, instance `godot/Paperdoll.tscn`; `play_anim(anim, dir)`, `equip(slot, item_id)`. See `godot/README.txt`. |
+| Unity 6                          | Editor importer + `unity/pixeldoll_unity.json`                                                   | Copy under `Assets/`; the importer builds sliced sheets, clips, a controller and a prefab in `unity/Generated/`. See `unity/README.txt`.   |
+| Phaser 3.80+ / 4                 | `phaser/PaperdollContainer.js` + TexturePacker-hash atlases                                      | Copy into your assets, `loadPaperdoll(scene, dir)` then `new Paperdoll(...)`; serve over http. See `phaser/README.txt`.                    |
+| GDevelop                         | `gdevelop/game.json`, registered Sprite frames and an embedded controller event                  | Open the native project and Preview, or copy its Sprite objects and controller event into an existing project. See `gdevelop/README.txt`.  |
+| RPG Maker MZ, MV, VX Ace, VX     | `$<character>.png` walking sheet per outfit (3 × 4)                                              | Copy into `img/characters` (MZ, MV) or `Graphics/Characters` (VX Ace, VX) and pick it as a character image.                                |
+| RPG Maker XP, Pokémon Essentials | `<character>.png` walking sheet per outfit (4 × 4)                                               | Copy into `Graphics/Characters`.                                                                                                           |
+| Aseprite                         | `aseprite/<character>.aseprite`: layered file, move/direction tags, frame timing and pivot slice | Open in Aseprite 1.3+; colors and visibility match the exported current look.                                                              |
+| PNG + JSON                       | `generic/` strips per layer, move and direction                                                  | Any engine: one sprite per layer, same grid and pivot, one clock. See `generic/README.txt`.                                                |
 
 GameMaker is deferred by user decision until a modern runtime is available for native compile/render verification.
 Unreal support is possible through Paper2D plus a dedicated importer/component, but is not currently implemented.
@@ -158,11 +158,11 @@ run work here. The Connect sheet warns when "Remember" is turned on at a `*.gith
 
 ## Repo layout
 
-| Path | What |
-|---|---|
-| `app/` | The Studio (Svelte 5 + Vite 8 + TS). `src/studio/` UI, `src/lib/` pipeline (pixellab, rig, items, dress, compose, export, store), `src/ui/` M1–M5 harnesses, `public/fixtures/s2/` demo data, `dev-fixtures/` dev-server-only fixtures, `scripts/` selftest, e2e, screenshots, fixture builders. |
-| `spikes/` | Node spikes S1–S5 against the live API (`spikes/api/*.mjs`). |
-| `docs/` | Research, spikes, architecture, manifest spec, design, test reports. Start at [docs/README.md](docs/README.md). `docs/media/` holds the README images. |
+| Path      | What                                                                                                                                                                                                                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app/`    | The Studio (Svelte 5 + Vite 8 + TS). `src/studio/` UI, `src/lib/` pipeline (pixellab, rig, items, dress, compose, export, store), `src/ui/` M1–M5 harnesses, `public/fixtures/s2/` demo data, `dev-fixtures/` dev-server-only fixtures, `scripts/` selftest, e2e, screenshots, fixture builders. |
+| `spikes/` | Node spikes S1–S5 against the live API (`spikes/api/*.mjs`).                                                                                                                                                                                                                                     |
+| `docs/`   | Research, spikes, architecture, manifest spec, design, test reports. Start at [docs/README.md](docs/README.md). `docs/media/` holds the README images.                                                                                                                                           |
 
 Evidence media (spike outputs `spikes/api/out/`, test screenshots `docs/testing/img/`, design screenshots
 `docs/design/screenshots/`) and the D2 mockup app `design-mockups/` are no longer tracked on `main`. They live at commit

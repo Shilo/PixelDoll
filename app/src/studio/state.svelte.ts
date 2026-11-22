@@ -145,6 +145,7 @@ import {
 } from './generationStatus.ts';
 import { copyPreferences, workspaceCopy, workspaceKeys as K } from '../lib/store/workspace-mode.ts';
 import { deleteLocalWork } from '../lib/store/local-work.ts';
+import { deleteSyncData, studioHooks } from '../lib/sync/connection.ts';
 import type { SetupSpec } from './setup.ts';
 import {
 	forgetFits,
@@ -381,6 +382,25 @@ let waitingNotice: ReturnType<typeof setTimeout> | undefined;
 const HANDOFF_GRACE_MS = 1500;
 let identityChannel: BroadcastChannel | undefined;
 
+/** A deletion, restore or Cloud Save write changed the library: re-read the lists. When it touched the open character's
+ *  record, re-read it quietly so a stale outfit or outfit list is never saved over it; if it is gone, switch away instead
+ *  of reporting that it could not be opened. */
+function libraryChangedHere(projectId?: string) {
+	void refreshProjects();
+	void refreshRecentlyDeleted();
+	if (projectId && projectId === doc.id)
+		void db
+			.get<StoredProject>('projects', projectId)
+			.catch(() => undefined)
+			.then(async (record) => {
+				if (record?.manifest) await openProject(projectId, { quiet: true });
+				else if (doc.id === projectId) {
+					await refreshProjects();
+					await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
+				}
+			});
+}
+
 export function initUi() {
 	const channel =
 		!workspaceCopy && typeof BroadcastChannel !== 'undefined'
@@ -396,21 +416,7 @@ export function initUi() {
 			// A deletion or restore here: re-read the lists another tab changed. The entry and the record were written together,
 			// so this only has to show their new state.
 			if (data?.libraryChanged === true) {
-				void refreshProjects();
-				void refreshRecentlyDeleted();
-				// A restore or delete touched this character's record: re-read it quietly so a stale outfit or outfit list is
-				// never saved over it. If it is gone, switch away instead of reporting that it could not be opened.
-				if (typeof data.projectId === 'string' && data.projectId === doc.id)
-					void db
-						.get<StoredProject>('projects', data.projectId)
-						.catch(() => undefined)
-						.then(async (record) => {
-							if (record?.manifest) await openProject(data.projectId, { quiet: true });
-							else if (doc.id === data.projectId) {
-								await refreshProjects();
-								await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
-							}
-						});
+				libraryChangedHere(typeof data.projectId === 'string' ? data.projectId : undefined);
 				return;
 			}
 			if (
@@ -1676,6 +1682,7 @@ export async function deleteLocalWorkAndReload(): Promise<void> {
 	await flushSave();
 	blocked();
 	await deleteLocalWork();
+	await deleteSyncData();
 	// Stop resumes and unload snapshots: the deleted work must not come back from this tab's memory.
 	hmrReloading = true;
 	clearTimeout(saveT);
@@ -1697,6 +1704,16 @@ export async function deleteLocalWorkAndReload(): Promise<void> {
 function notifyLibraryChanged(projectId?: string) {
 	identityChannel?.postMessage({ libraryChanged: true, projectId });
 }
+
+/** Cloud Save writes a character only while it is not open here with edits still waiting to be saved, and then this tab
+ *  and the others re-read it like a restore from another tab. */
+studioHooks.mayWrite = (id) => doc.id !== id || (!pendingSave && edits === savedEdits);
+studioHooks.applied = (ids) => {
+	for (const projectId of ids) {
+		notifyLibraryChanged(projectId);
+		libraryChangedHere(projectId);
+	}
+};
 
 /** Read Recently deleted again, oldest entries past the cap or the 30 days removed. */
 export async function refreshRecentlyDeleted(): Promise<void> {

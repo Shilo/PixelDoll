@@ -3088,5 +3088,83 @@
 			"changed": "Este personaje cambió. Vuelve a abrir Ajustar marco para revisar la versión más reciente.",
 			"undoFailed": "No se pudo deshacer el cambio del marco."
 		}
+	},
+	"cloudSave": {
+		"title": "Guardado en la nube",
+		"intro": "Haz copia de seguridad de tus partidas y mantenlas sincronizadas entre tus dispositivos, en tu propio Google Drive o Dropbox.",
+		"connectGoogle": "Conectar Google Drive",
+		"connectDropbox": "Conectar Dropbox",
+		"notConfigured": "Esta versión de PixelDoll aún no tiene configurado el inicio de sesión en la nube.",
+		"canceled": "Inicio de sesión cancelado",
+		"noDriveAccess": "PixelDoll necesita permiso para guardar sus archivos en tu Google Drive. Vuelve a conectar y deja ese permiso marcado.",
+		"attention": "El guardado en la nube necesita tu atención",
+		"status": {
+			"local": "Guardado en este dispositivo",
+			"syncing": "Guardando en la nube…",
+			"synced": "Guardado en la nube",
+			"syncedJustNow": "Guardado en la nube hace un momento",
+			"syncedAgo": "Guardado en la nube {time}",
+			"offline": "Sin conexión; se guardará al volver a estar en línea",
+			"reconnect": "Vuelve a conectar para seguir guardando",
+			"conflict": "Necesita tu atención",
+			"cloudFull": "Almacenamiento en la nube lleno",
+			"failed": "No se pudo guardar en la nube",
+			"update": "Actualiza PixelDoll en este dispositivo",
+			"missing": "La carpeta de PixelDoll ya no está en tu nube"
+		},
+		"retry": "Reintentar",
+		"reconnect": "Volver a conectar",
+		"rebuild": "Reconstruir copia en la nube",
+		"cloudFullHint": "Libera espacio en tu almacenamiento en la nube y vuelve a intentarlo.",
+		"updateHint": "Tu copia en la nube se guardó con una versión más reciente de PixelDoll. Actualiza para seguir guardando.",
+		"missingHint": "Reconstrúyela a partir de los personajes de este dispositivo, o desconecta.",
+		"disconnect": "Desconectar este dispositivo",
+		"disconnectHint": "Este dispositivo deja de guardar en la nube. Tu copia en la nube y los demás dispositivos no se ven afectados.",
+		"manageApps": "Administrar apps conectadas",
+		"everywhere": {
+			"action": "Desconectar en todas partes",
+			"title": "¿Desconectar todos los dispositivos?",
+			"body": "Esto cierra la sesión de PixelDoll en Google Drive en todos los dispositivos. Tu copia en la nube se conserva y cada dispositivo deberá volver a conectarse para seguir guardando."
+		},
+		"delete": {
+			"action": "Eliminar copia en la nube",
+			"description": "Elimina para siempre la carpeta de PixelDoll de tu nube.",
+			"title": "¿Eliminar la copia en la nube?",
+			"body": "Esto elimina para siempre la carpeta de PixelDoll de tu nube en todos los dispositivos. No se puede deshacer.",
+			"kept": "Tu trabajo en este dispositivo se conserva.",
+			"confirm": "Confirmar"
+		},
+		"conflicts": {
+			"title": "Elige qué conservar",
+			"hint": "Esto se cambió en dos dispositivos a la vez.",
+			"whole": "El personaje completo",
+			"unnamed": "Personaje sin nombre",
+			"keepThis": "Conservar este",
+			"keepOther": "Conservar el otro",
+			"keepBoth": "Conservar ambos",
+			"failed": "No se pudo guardar esta elección ahora. Inténtalo de nuevo en un momento."
+		},
+		"restore": {
+			"title": "Restaurar una versión anterior",
+			"character": "Personaje",
+			"choose": "Elige un personaje",
+			"none": "Aún no hay versiones anteriores.",
+			"unknownTime": "Hora desconocida",
+			"action": "Restaurar",
+			"confirmTitle": "¿Restaurar la versión del {date}?",
+			"confirmBody": "Reemplaza la versión actual; la reemplazada se queda en el historial.",
+			"done": "Versión restaurada.",
+			"failed": "No se pudo restaurar esta versión ahora. Inténtalo de nuevo en un momento."
+		},
+		"import": {
+			"title": "Importar una copia descargada",
+			"hint": "Elige los archivos ZIP que descargaste de la carpeta de PixelDoll. Solo se añaden los personajes que faltan en este dispositivo.",
+			"added": {
+				"one": "Se añadió {count} personaje.",
+				"other": "Se añadieron {count} personajes."
+			},
+			"none": "No se encontraron personajes nuevos.",
+			"invalid": "Estos archivos no son una carpeta de PixelDoll descargada."
+		}
 	}
 }

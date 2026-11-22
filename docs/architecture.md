@@ -24,18 +24,20 @@ Evidence tags: **[S1]–[S4]** live spikes, **[M1]–[M5]** mockup reports, **[R
    waits for an optional Keep it / Try again / Discard review [D26, supersedes D7's mandatory review].
 4. **Correct engine output**: Godot 4.7 and Phaser 3.80/3.90/4.1 render pixel-identical to PixelDoll's compositor ([current evidence](testing/cross-engine-api-contract-2026-11-12.md));
    Unity has native Editor, standalone player and GPU checks ([evidence](testing/cross-engine-api-contract-2026-11-12.md)).
-5. **Fully client-side** on GitHub Pages; the browser calls `https://api.pixellab.ai/v2` with the user's key [D1].
+5. **Fully client-side** on GitHub Pages; the browser calls `https://api.pixellab.ai/v2` with the user's key [D1]. Optional
+   Cloud Save adds one stateless Google token endpoint (services/sync-token) and talks to Google Drive and Dropbox directly
+   [D31]; see [architecture/cloud-save.md](architecture/cloud-save.md).
 
-**Non-goals (v1)**: layers from character states; body-shape axis (one base per project, items bound by `baseHash`); bones/IK at runtime (skeletons are a *generation* tool, not an export feature); semi-transparent VFX; backend.
+**Non-goals (v1)**: layers from character states; body-shape axis (one base per project, items bound by `baseHash`); bones/IK at runtime (skeletons are a _generation_ tool, not an export feature); semi-transparent VFX; backend.
 
 ## 2. Allowed models [D8, S4]
 
-| Purpose | Allowed | Banned |
-|---|---|---|
-| Create characters | `create-character-v3` (default), `create-character-pro` (closer prompt adherence, 32–168 px), `create-character-pro-flash` (chibi styles only) | 4/8-direction standard routes |
-| Animate | `skeleton-v3` (raw `/animate-with-skeleton-v3`, managed `mode: "skeleton-v3"`), `pixminimax`, `v3` (managed or raw text) | `mode: "template"`, `mode: "pro"`, legacy `/animate-with-skeleton` |
-| Skeleton | `estimate-skeleton` | — |
-| Edit (Pro allowed for editing) | `edit-animation-v2`, `inpaint-v3` (best); `transfer-outfit-v2` (reference-image dressing: concept-image items, experimental until their spike passes); `edit-images-v2` only for explicit reviewed item redraw [D29]; Pro Flash / Pixen only for drafts | `edit-images-v2` for automatic layers (shifts in [S4]) |
+| Purpose                        | Allowed                                                                                                                                                                                                                                                 | Banned                                                             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Create characters              | `create-character-v3` (default), `create-character-pro` (closer prompt adherence, 32–168 px), `create-character-pro-flash` (chibi styles only)                                                                                                          | 4/8-direction standard routes                                      |
+| Animate                        | `skeleton-v3` (raw `/animate-with-skeleton-v3`, managed `mode: "skeleton-v3"`), `pixminimax`, `v3` (managed or raw text)                                                                                                                                | `mode: "template"`, `mode: "pro"`, legacy `/animate-with-skeleton` |
+| Skeleton                       | `estimate-skeleton`                                                                                                                                                                                                                                     | —                                                                  |
+| Edit (Pro allowed for editing) | `edit-animation-v2`, `inpaint-v3` (best); `transfer-outfit-v2` (reference-image dressing: concept-image items, experimental until their spike passes); `edit-images-v2` only for explicit reviewed item redraw [D29]; Pro Flash / Pixen only for drafts | `edit-images-v2` for automatic layers (shifts in [S4])             |
 
 ---
 
@@ -45,27 +47,27 @@ The rig is a set of **clips**. Every clip-direction is stored as **frozen frames
 sequence + the route** that produced it. Generation is **not bit-repeatable** (same request + seed: 86 % identical px raw,
 49–60 % managed [S3]), so base frames are **never regenerated**: everything is stored.
 
-| Property | Decision | Evidence |
-|---|---|---|
-| Cell | Square frame sized by the creator: default **80×80** around a 64 px body (body presets 48/64/96/128 px or custom; auto frame or manual, up to 256 px). Legacy rigs: 64×64 around 48 px. | Legacy 64 px cell: Pro editors fit 16 frames at ≤64 px [S1]. |
-| Base character | `create-character-v3` text at the chosen body size (default **64 px**; legacy rigs **48 px**), bare (`BASE_CLOTHES`: "with plain bare skin everywhere, nothing worn", bald, barefoot; round 5: the former gray t-shirt showed through items, "underwear" drew briefs or a topless body, shorter wordings drew briefs on men, and "nude" is avoided; [bare-skin wording](research/bare-skin-base-wording-2026-10-25.md)), older rigs clothed (plain gray t-shirt + gray shorts), rotations **padded into the frame (legacy 48→64: x+8, y+12, 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
-| Rest views | The padded drawn rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
-| Directions | New forms default to the **Top-down 8** preset: five drawn views plus western flips. Other presets (Top-down 4, Diagonal 4, Side-scroller 2, Unique 8) and per-direction mirror toggles choose which views are drawn; Unique 8 preserves original western rotations. The initial text-only v3 request retains default eight rotations; the reference import registers all eight original views (`n_directions: 8`). An in-flight creation saved before explicit direction plans is not resumed. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
-| Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalized 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
-| Clips | New Studio characters start with **`default`** only: one standing frame per direction (the rest view, source `imported-rest`) [D26]. **Add a move** generates one preset or described move at a time, including `idle` (4) and `walk` (8). Older rigs were created with idle and walk. Playlist `frames[{cell, ms}]`. | [S3, S4, Studio create] |
-| Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of `idle/south/0`, else the first move's south cell (`default/south/0`, the standing south view, on new characters; moves added later keep it). Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
-| Frozen frame | Binary alpha; every component kept and detached ones reported for review (skeleton-v3 adds detached motion-smear FX on 7/15 clips; §3.2); SHA-256 per cell; `baseHash` over all cells. | [S3] |
+| Property       | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Evidence                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| Cell           | Square frame sized by the creator: default **80×80** around a 64 px body (body presets 48/64/96/128 px or custom; auto frame or manual, up to 256 px). Legacy rigs: 64×64 around 48 px.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Legacy 64 px cell: Pro editors fit 16 frames at ≤64 px [S1]. |
+| Base character | `create-character-v3` text at the chosen body size (default **64 px**; legacy rigs **48 px**), bare (`BASE_CLOTHES`: "with plain bare skin everywhere, nothing worn", bald, barefoot; round 5: the former gray t-shirt showed through items, "underwear" drew briefs or a topless body, shorter wordings drew briefs on men, and "nude" is avoided; [bare-skin wording](research/bare-skin-base-wording-2026-10-25.md)), older rigs clothed (plain gray t-shirt + gray shorts), rotations **padded into the frame (legacy 48→64: x+8, y+12, 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4]                                             |
+| Rest views     | The padded drawn rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [S3]                                                         |
+| Directions     | New forms default to the **Top-down 8** preset: five drawn views plus western flips. Other presets (Top-down 4, Diagonal 4, Side-scroller 2, Unique 8) and per-direction mirror toggles choose which views are drawn; Unique 8 preserves original western rotations. The initial text-only v3 request retains default eight rotations; the reference import registers all eight original views (`n_directions: 8`). An in-flight creation saved before explicit direction plans is not resumed. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels.                                                                                                                    | [M2, S3, B15, professional audit]                            |
+| Keypoints      | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalized 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [S3, M2]                                                     |
+| Clips          | New Studio characters start with **`default`** only: one standing frame per direction (the rest view, source `imported-rest`) [D26]. **Add a move** generates one preset or described move at a time, including `idle` (4) and `walk` (8). Older rigs were created with idle and walk. Playlist `frames[{cell, ms}]`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | [S3, S4, Studio create]                                      |
+| Pivot          | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of `idle/south/0`, else the first move's south cell (`default/south/0`, the standing south view, on new characters; moves added later keep it). Lunges and death may leave it (QA tolerance per clip).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [M2, S4]                                                     |
+| Frozen frame   | Binary alpha; every component kept and detached ones reported for review (skeleton-v3 adds detached motion-smear FX on 7/15 clips; §3.2); SHA-256 per cell; `baseHash` over all cells.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [S3]                                                         |
 
 ### 3.1 Clip routes
 
-| Clip kind | Route (default) | Keypoint source | Cost per direction |
-|---|---|---|---|
-| Locomotion (walk, run, idle) | managed `skeleton-v3` on the rest character (template motion) → `estimate-skeleton` every frame → **re-render through raw `/animate-with-skeleton-v3`** with that sequence on the rest view | estimated from the managed render | 3 (managed) + 0.1/frame + 3 (raw) |
-| Actions (slash, cast, hurt, death, block…) | raw `/animate-with-skeleton-v3` | **authored** from the rest pose (`setArm`, `rotate`, `shift` presets; north mirrors south angles; free preview) | 3 (≤8 frames), 4 (≤15) |
-| Text fallback (no keypoints wanted) | managed `pixminimax` for walk/run/idle, `v3` for hurt/death; `keep_first_frame: false` | estimated after the fact (QA/anchors only) | 1 |
-| Imported frames | as given | `estimate-skeleton` | 0.1/frame |
+| Clip kind                                  | Route (default)                                                                                                                                                                             | Keypoint source                                                                                                 | Cost per direction                |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Locomotion (walk, run, idle)               | managed `skeleton-v3` on the rest character (template motion) → `estimate-skeleton` every frame → **re-render through raw `/animate-with-skeleton-v3`** with that sequence on the rest view | estimated from the managed render                                                                               | 3 (managed) + 0.1/frame + 3 (raw) |
+| Actions (slash, cast, hurt, death, block…) | raw `/animate-with-skeleton-v3`                                                                                                                                                             | **authored** from the rest pose (`setArm`, `rotate`, `shift` presets; north mirrors south angles; free preview) | 3 (≤8 frames), 4 (≤15)            |
+| Text fallback (no keypoints wanted)        | managed `pixminimax` for walk/run/idle, `v3` for hurt/death; `keep_first_frame: false`                                                                                                      | estimated after the fact (QA/anchors only)                                                                      | 1                                 |
+| Imported frames                            | as given                                                                                                                                                                                    | `estimate-skeleton`                                                                                             | 0.1/frame                         |
 
-**Why every skeleton clip ends in raw v3:** posing a *different* first frame with the **same** keypoint sequence gives
+**Why every skeleton clip ends in raw v3:** posing a _different_ first frame with the **same** keypoint sequence gives
 pixel-aligned frames (chroma mannequin vs base IoU 0.988 S / 0.977 E, best shift 0,0; dressed keyframe only 0.7–1.4 % of key
 pixels outside the base, independent of seed). Managed skeleton-v3 is looser (3–6 % outside) [S3]. So base and items must be
 rendered by the same raw request shape. Managed skeleton-v3 is only a **motion source**. **Template mode is banned** [D8].
@@ -209,15 +211,15 @@ change. Only corrected PNGs need new actual measurements. Existing pose, palette
 
 ### 4.3 Superseded or rejected
 
-| Route | Status |
-|---|---|
-| S2 chroma `edit-animation-v2` over all cells as the primary route | Superseded by §4.1; `edit-animation-v2` is now the **dressing** call (one frame per drawn view) and the cape fallback. |
-| S1 local diff on skin composites | Fallback only for items colliding with both keys; always human-reviewed. |
-| Template animations, rigid propagation | Banned / superseded (posing gives the consistency propagation was buying). |
-| `transfer-outfit-v2` as the per-clip design lock | Superseded, not banned: anchor-cell `edit-animation-v2` held the design closer (palette distance 9–10 vs 34) and kept the sword's shape (area CV 0.04 vs 0.27–0.39) [S2 X4]. Allowed for reference-image dressing; run the same chroma gates. Concept-image items use the anchored edit-animation-v2 route instead: blind-judged against transfer, no winner and more hard fails on transfer ([round 2](research/generation-quality-round2-2026-10-25.md) arm E). |
-| Per-cell masked inpaint, Pro Flash reference per cell | Design flicker [S1, S4]. |
-| Animating a dressed keyframe with pixminimax/v3 | Misaligned body (IoU 0.65–0.84) [S4]. |
-| `edit-images-v2`, Pro Flash grids, Pixen | Shifts / key loss / faces drawn into layers [S4]. `edit-images-v2` is only an explicit, reviewed alternative [D29]. Pixen = 1-gen draft preview only. |
+| Route                                                             | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S2 chroma `edit-animation-v2` over all cells as the primary route | Superseded by §4.1; `edit-animation-v2` is now the **dressing** call (one frame per drawn view) and the cape fallback.                                                                                                                                                                                                                                                                                                                                            |
+| S1 local diff on skin composites                                  | Fallback only for items colliding with both keys; always human-reviewed.                                                                                                                                                                                                                                                                                                                                                                                          |
+| Template animations, rigid propagation                            | Banned / superseded (posing gives the consistency propagation was buying).                                                                                                                                                                                                                                                                                                                                                                                        |
+| `transfer-outfit-v2` as the per-clip design lock                  | Superseded, not banned: anchor-cell `edit-animation-v2` held the design closer (palette distance 9–10 vs 34) and kept the sword's shape (area CV 0.04 vs 0.27–0.39) [S2 X4]. Allowed for reference-image dressing; run the same chroma gates. Concept-image items use the anchored edit-animation-v2 route instead: blind-judged against transfer, no winner and more hard fails on transfer ([round 2](research/generation-quality-round2-2026-10-25.md) arm E). |
+| Per-cell masked inpaint, Pro Flash reference per cell             | Design flicker [S1, S4].                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Animating a dressed keyframe with pixminimax/v3                   | Misaligned body (IoU 0.65–0.84) [S4].                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `edit-images-v2`, Pro Flash grids, Pixen                          | Shifts / key loss / faces drawn into layers [S4]. `edit-images-v2` is only an explicit, reviewed alternative [D29]. Pixen = 1-gen draft preview only.                                                                                                                                                                                                                                                                                                             |
 
 ### 4.4 Chroma extraction (unchanged from S2)
 
@@ -238,7 +240,8 @@ Why green and not cyan or blue as the default (D27), with every measurement and 
 [chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
 
 **Round 3 cleanup rules** ([round 3](research/generation-quality-round3-2026-10-25.md)).
-- *Despill*: a key-tinted px first loses the key excess (the key channel down to the next one; azure in its rotated frame),
+
+- _Despill_: a key-tinted px first loses the key excess (the key channel down to the next one; azure in its rotated frame),
   then snaps to the nearest clean item color within 40 (Chebyshev RGB); a px left near-gray only snaps to near-gray colors. With
   none that near, the old luminance rule decides, except for a lightly tinted px de-spilled to near-gray (steel stays gray; a
   fold drawn in the key's darkest shade still becomes the item's dark color). The luminance-only snap turned blue-gray steel on
@@ -247,12 +250,12 @@ Why green and not cyan or blue as the default (D27), with every measurement and 
   cycle), unless the despilled result is near-gray. Only spill is touched: a tinted px that is saturated (S >= 0.35), very dark
   or next to a bright px extraction removed (a removed dark outline leaves no light spill). Steel is drawn blue-gray on every mannequin (S up to 0.35 on green), the azure key's own
   hue, so an excess-only test flattened 1,356 of 1,577 azure helm px to gray (2026-11-10 keys 3 review).
-- *Hidden body px* (`Item.baseCut`): PixelLab erases the ear tips under a hood or great helm wider than the head, and layers can
+- _Hidden body px_ (`Item.baseCut`): PixelLab erases the ear tips under a hood or great helm wider than the head, and layers can
   only add px. The dressed keyframe decides where an item may hide body px (erased, above the neck + 3 rows, touching the item
   and the body's edge, ≥ 3 px components, ≤ 4 % of the body; never held items or in-place edit cells); each posed frame hides its own erased px only
   inside that region, moved with the head (posed frames draw legs and hands 1–3 px off, so they never cut on their own). G2
   counts hidden px as covered; the compositor clears them while the item is worn; exports bake `"<base>~<item>"`.
-- *Grip fill* (`closeGrip`, held items): the stand-in's hand covers the grip and the posed hand sits 1–3 px from the body's own,
+- _Grip fill_ (`closeGrip`, held items): the stand-in's hand covers the grip and the posed hand sits 1–3 px from the body's own,
   so a 2 px morphological closing fills the px the stand-in covered where the body has none, with the nearest item color.
 
 **Why a color key and not a pixel diff.** The obvious approach is to record the body before generation and keep only the pixels
@@ -273,20 +276,20 @@ that changed. It was the first route (S1) and is still the fallback (`image/diff
 
 ### 4.5 Item QA (per item over all cells)
 
-| Gate | Pass |
-|---|---|
-| Key kept | ≥ 0.97, or ≤ 8 body px lost (a cape covering the back leaves ~126 body px; T3) |
-| Key outside base alpha | ≤ 0.05 (`skeleton-pose`), ≤ 0.02 (anchor/diff route evaluation); current `GATES` and caller-selected limits govern |
-| Registration | best integer shift = 0 on every frame |
-| Area | each cell ≥ 50 % of the clip median; CV ≤ max(0.15, 2 × the CV of the body band it covers) (T3: trousers walk E) |
-| Design lock | palette distance to the dressed keyframe ≤ 15 |
-| Grip side (held) | Requested wrist keypoints, or tracked hand anchors as fallback. A frame votes only within 6 px of a wrist and with a > 2 px side margin; at least half the clip's frames must decide. A decided opposite-hand clip fails (G8). Each missing-position, unclear-side or no-contact clip retains a review warning; silhouette proximity is not anatomical proof. |
-| Shape (held, locomotion) | G9 principal-axis turn relative to the forearm ≤ 30° when keypoints and a reliable axis exist. The axis is signed (pointed from the gripping wrist toward the item's centroid, so a blade reversed in the hand reads as a 180° turn) when, in both frames, the item reaches at least 10 px, its centroid lies at least a quarter of that reach from the wrist and within 45° of the axis; otherwise the unsigned axis decides; otherwise adjacent-frame aligned IoU ≥ 0.3. With keypoints, pairs containing a mask below 6 pixels retain the minimum-sample skip. Near-round masks (normalized covariance eigenvalue gap < 0.2) use IoU because a one-pixel silhouette change can swap their axis by 90°. |
-| Hanging, waving, hidden (held) | Review notes instead of failures, each only with physical evidence (2026-11-07): G9 when the item hangs below the hand along a near-vertical axis and turns in the frame by at most half the forearm's own turn (a lantern, censer or flail head); G5 when the px within half the reach of the wrist stay within 25 % and every frame keeps 70 % of the largest reach (a banner's pole or a torch's handle with a moving cloth or flame); G4 when the clip passes the same body-occlusion test as G5. An empty frame, a lost tip, counter-rotation and a strapped shield that fails to turn still fail. |
-| Locomotion or action | G5, G9 and G11-G14 apply to locomotion only; G15 also judges the authored slash for items drawn over the body. A clip is an action when its stored joints (measured, else requested; hip-relative, mirror-tolerant) show motion no idle, walk or run reaches: a joint 0.6 body heights from standing, a wrist risen 0.45, or 40 degrees more lean. Otherwise the move id's whole words decide (idle, walk, run, jog, sprint, stroll, march, trot and their forms are locomotion); unknown names stay actions. Motion size alone cannot separate runs from attacks (2026-11-07). |
-| Anchor spread (head items) | layer centroid − head keypoint ≤ 3 px in front/back views |
-| Framing review | border contact is reported for review; it cannot prove unseen pixels were cropped and does not trigger a G7 retry |
-| Stray px | removed and logged |
+| Gate                           | Pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Key kept                       | ≥ 0.97, or ≤ 8 body px lost (a cape covering the back leaves ~126 body px; T3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Key outside base alpha         | ≤ 0.05 (`skeleton-pose`), ≤ 0.02 (anchor/diff route evaluation); current `GATES` and caller-selected limits govern                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Registration                   | best integer shift = 0 on every frame                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Area                           | each cell ≥ 50 % of the clip median; CV ≤ max(0.15, 2 × the CV of the body band it covers) (T3: trousers walk E)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Design lock                    | palette distance to the dressed keyframe ≤ 15                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Grip side (held)               | Requested wrist keypoints, or tracked hand anchors as fallback. A frame votes only within 6 px of a wrist and with a > 2 px side margin; at least half the clip's frames must decide. A decided opposite-hand clip fails (G8). Each missing-position, unclear-side or no-contact clip retains a review warning; silhouette proximity is not anatomical proof.                                                                                                                                                                                                                                                                                                                                             |
+| Shape (held, locomotion)       | G9 principal-axis turn relative to the forearm ≤ 30° when keypoints and a reliable axis exist. The axis is signed (pointed from the gripping wrist toward the item's centroid, so a blade reversed in the hand reads as a 180° turn) when, in both frames, the item reaches at least 10 px, its centroid lies at least a quarter of that reach from the wrist and within 45° of the axis; otherwise the unsigned axis decides; otherwise adjacent-frame aligned IoU ≥ 0.3. With keypoints, pairs containing a mask below 6 pixels retain the minimum-sample skip. Near-round masks (normalized covariance eigenvalue gap < 0.2) use IoU because a one-pixel silhouette change can swap their axis by 90°. |
+| Hanging, waving, hidden (held) | Review notes instead of failures, each only with physical evidence (2026-11-07): G9 when the item hangs below the hand along a near-vertical axis and turns in the frame by at most half the forearm's own turn (a lantern, censer or flail head); G5 when the px within half the reach of the wrist stay within 25 % and every frame keeps 70 % of the largest reach (a banner's pole or a torch's handle with a moving cloth or flame); G4 when the clip passes the same body-occlusion test as G5. An empty frame, a lost tip, counter-rotation and a strapped shield that fails to turn still fail.                                                                                                   |
+| Locomotion or action           | G5, G9 and G11-G14 apply to locomotion only; G15 also judges the authored slash for items drawn over the body. A clip is an action when its stored joints (measured, else requested; hip-relative, mirror-tolerant) show motion no idle, walk or run reaches: a joint 0.6 body heights from standing, a wrist risen 0.45, or 40 degrees more lean. Otherwise the move id's whole words decide (idle, walk, run, jog, sprint, stroll, march, trot and their forms are locomotion); unknown names stay actions. Motion size alone cannot separate runs from attacks (2026-11-07).                                                                                                                           |
+| Anchor spread (head items)     | layer centroid − head keypoint ≤ 3 px in front/back views                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Framing review                 | border contact is reported for review; it cannot prove unseen pixels were cropped and does not trigger a G7 retry                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Stray px                       | removed and logged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 For posed held items with wrist tracks, G5/G9 failures may be inconclusive because the body hides part of the item.
 Compare masks in wrist coordinates: missing pixels can be hidden only inside the other frame's frozen body silhouette
@@ -397,25 +400,25 @@ Underwear each accept one universal garment or coordinated set; extra independen
 Blank custom names use Accessory and default to worn/neck at z55, above basic clothing and below Outerwear.
 See the [slot implementation contract](design/2026-11-16-slot-system/plan.md) for the shown and not-shown defaults.
 
-| Slot | Class | Anchor | fg z | bg z | Default hides |
-|---|---|---|---|---|---|
-| `body` | base | — | 10 | — | — |
-| `underwear` | worn | hip | 15 | none | none |
-| `feet` | worn | foot | 20 | — | — |
-| `legs` | worn | hip | 30 | — | — |
-| `torso_inner` | worn | neck | 40 | — | — |
-| `waist` | worn | hip | 50 | — | — |
-| `torso_outer` | worn | neck | 60 | — | — |
-| `shoulders` | worn | neck | 65 | — | — |
-| `arms` | worn | hand | 70 | — | — |
-| `neck` | worn | neck | 80 | — | — |
-| `back` | worn | neck | 90 | 4 | — |
-| `facial_hair` | head | head | 100 | — | — |
-| `hair` | head | head | 110 | 3 (5 via `zOverrides`: over the cape's bg, T3) | — |
-| `face_acc` | head | head | 120 | — | — |
-| `head` | head | head | 130 | — | none; tucks `hair` under it (`clips`, B14); a hood checks hide hair (`item.hides`) |
-| `off_hand` | held | hand_l | 140 | 2 (5 in S/E/W) | — |
-| `main_hand` | held | hand_r | 150 | 1 (5 in S/E/W) | — |
+| Slot          | Class | Anchor | fg z | bg z                                           | Default hides                                                                      |
+| ------------- | ----- | ------ | ---- | ---------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `body`        | base  | —      | 10   | —                                              | —                                                                                  |
+| `underwear`   | worn  | hip    | 15   | none                                           | none                                                                               |
+| `feet`        | worn  | foot   | 20   | —                                              | —                                                                                  |
+| `legs`        | worn  | hip    | 30   | —                                              | —                                                                                  |
+| `torso_inner` | worn  | neck   | 40   | —                                              | —                                                                                  |
+| `waist`       | worn  | hip    | 50   | —                                              | —                                                                                  |
+| `torso_outer` | worn  | neck   | 60   | —                                              | —                                                                                  |
+| `shoulders`   | worn  | neck   | 65   | —                                              | —                                                                                  |
+| `arms`        | worn  | hand   | 70   | —                                              | —                                                                                  |
+| `neck`        | worn  | neck   | 80   | —                                              | —                                                                                  |
+| `back`        | worn  | neck   | 90   | 4                                              | —                                                                                  |
+| `facial_hair` | head  | head   | 100  | —                                              | —                                                                                  |
+| `hair`        | head  | head   | 110  | 3 (5 via `zOverrides`: over the cape's bg, T3) | —                                                                                  |
+| `face_acc`    | head  | head   | 120  | —                                              | —                                                                                  |
+| `head`        | head  | head   | 130  | —                                              | none; tucks `hair` under it (`clips`, B14); a hood checks hide hair (`item.hides`) |
+| `off_hand`    | held  | hand_l | 140  | 2 (5 in S/E/W)                                 | —                                                                                  |
+| `main_hand`   | held  | hand_r | 150  | 1 (5 in S/E/W)                                 | —                                                                                  |
 
 - Held bg layers (blade outside the silhouette) sit **above** `back.bg`, otherwise the cape hides 44–60 blade px in south
   walk; the ladder ships `zOverrides` `{layer: bg, z: 5}` for south/east/west on both hand slots (bg z 1/2 from behind, so the
@@ -485,14 +488,14 @@ integer zoom. Theming ("Paper" look) deferred. The shipped Studio has since move
 
 ## 9. Modules (`app/src/lib`)
 
-| Module | Status / change for v1.3 |
-|---|---|
-| `pixellab/` (client, routes, queue) | built [M1]; add raw/managed skeleton-v3, pixminimax, `create-character-v3` import, `res.directions` check, re-poll policy |
-| `store/` (manifest, db, zip, project) | built; manifest gains `Clip` sources (§manifest-spec) |
-| `image/` (png, pngraw, hash, chroma, diff) | built; body connectivity observations, item grip and registration checks |
+| Module                                            | Status / change for v1.3                                                                                                                                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pixellab/` (client, routes, queue)               | built [M1]; add raw/managed skeleton-v3, pixminimax, `create-character-v3` import, `res.directions` check, re-poll policy                                                                              |
+| `store/` (manifest, db, zip, project)             | built; manifest gains `Clip` sources (§manifest-spec)                                                                                                                                                  |
+| `image/` (png, pngraw, hash, chroma, diff)        | built; body connectivity observations, item grip and registration checks                                                                                                                               |
 | `rig/` (rig, normalize, mirror, skeleton, freeze) | built for template frames [M2]; **update**: rest-view import, clip routes, pose presets (`setArm`/`rotate`/`shift`, port of `spikes/api/lib/skel.mjs`), canvas re-centering 68/80/96 → 64, rig QA §3.2 |
-| `items/` (items, run) | update to `skeleton-pose` (dress + pose) and `inpaint-grid` routes |
-| `dress/`, `compose/`, `export/` | built [M4, M5] |
+| `items/` (items, run)                             | update to `skeleton-pose` (dress + pose) and `inpaint-grid` routes                                                                                                                                     |
+| `dress/`, `compose/`, `export/`                   | built [M4, M5]                                                                                                                                                                                         |
 
 ## 10. Historical cost model (gens; 3 generated dirs; idle, walk, slash, hurt)
 
@@ -501,41 +504,41 @@ new-character estimate: Studio now authors idle, starts with the Default move on
 policy-specific baseline/retry estimates appear in the creation UI and [handedness scope](research/handedness-implementation-scope-2026-10-22.md).
 USD billing and unknown charges prevent treating any estimate as an account spending cap.
 
-| Step | Gens |
-|---|---|
-| Base `create-character-v3` 48 + rest import | 2.25 |
-| Locomotion idle + walk (managed 3 + raw 3) × 3 dirs | 36 |
-| Actions slash + hurt (raw 3) × 3 dirs | 18 |
-| `estimate-skeleton` (managed frames + re-estimate of every raw frame) | ≈ 11 |
-| **Base total** | **≈ 67** |
-| Item, `skeleton-pose` | ≈ 46 |
-| Item, `inpaint-grid` | ≈ 60 |
-| 10-item character | ≈ 530 |
+| Step                                                                  | Gens     |
+| --------------------------------------------------------------------- | -------- |
+| Base `create-character-v3` 48 + rest import                           | 2.25     |
+| Locomotion idle + walk (managed 3 + raw 3) × 3 dirs                   | 36       |
+| Actions slash + hurt (raw 3) × 3 dirs                                 | 18       |
+| `estimate-skeleton` (managed frames + re-estimate of every raw frame) | ≈ 11     |
+| **Base total**                                                        | **≈ 67** |
+| Item, `skeleton-pose`                                                 | ≈ 46     |
+| Item, `inpaint-grid`                                                  | ≈ 60     |
+| 10-item character                                                     | ≈ 530    |
 
 ## 11. Risks
 
-| Risk | Mitigation |
-|---|---|
-| Non-deterministic generation | Store everything; never regenerate base frames; items reference stored frames and keypoints. |
-| Motion-smear FX, specks | Body components are preserved and reported for review; item extraction retains its slot-specific cleanup. |
-| Pose not followed / wrong hand | Adherence + `gripSide` gates; re-roll; author an armed variant. |
-| North action frames lose back items (cape) | QA re-roll; `inpaint-grid` fallback. |
-| Side-view grip ambiguity | Retain ambiguity warnings and visually inspect grips and trajectories in every direction. |
+| Risk                                                    | Mitigation                                                                                                                                                                                       |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Non-deterministic generation                            | Store everything; never regenerate base frames; items reference stored frames and keypoints.                                                                                                     |
+| Motion-smear FX, specks                                 | Body components are preserved and reported for review; item extraction retains its slot-specific cleanup.                                                                                        |
+| Pose not followed / wrong hand                          | Adherence + `gripSide` gates; re-roll; author an armed variant.                                                                                                                                  |
+| North action frames lose back items (cape)              | QA re-roll; `inpaint-grid` fallback.                                                                                                                                                             |
+| Side-view grip ambiguity                                | Retain ambiguity warnings and visually inspect grips and trajectories in every direction.                                                                                                        |
 | Mirrored west swaps the weapon hand and one-sided items | New characters default to Top-down 8, which mirrors the west views; Unique 8 or turning off a view's mirror gives independent views. An item-only toggle cannot repair a flipped attacking body. |
-| Pose presets tuned for one body | Free preview before paying; per-body check. |
-| Server failures / silent direction drop | Poll known jobs; never automatically resend unknown paid outcomes. Require the exact requested direction set before publication. |
-| Small figure (48 base) | Product call (D4: 56 px optional). |
-| Native engine drift | Follow the [runtime contract](architecture/javascript-runtime.md) and rerun generated native controllers, not compilation alone. |
+| Pose presets tuned for one body                         | Free preview before paying; per-body check.                                                                                                                                                      |
+| Server failures / silent direction drop                 | Poll known jobs; never automatically resend unknown paid outcomes. Require the exact requested direction set before publication.                                                                 |
+| Small figure (48 base)                                  | Product call (D4: 56 px optional).                                                                                                                                                               |
+| Native engine drift                                     | Follow the [runtime contract](architecture/javascript-runtime.md) and rerun generated native controllers, not compilation alone.                                                                 |
 
 ## 12. Mockups
 
-| # | Mockup | Status |
-|---|---|---|
-| M1 | Key + queue | built |
-| M2 | Rig freeze | built on template frames; **rebuild for skeleton-v3 clips** (rest import, presets, raw re-render, rig QA) |
-| M3 | Item lab | build on `skeleton-pose` + `inpaint-grid` with the §4.5 gates |
-| M4 | Dress-up | built |
-| M5 | Export round-trip | built (Godot + Phaser pixel-identical) |
+| #   | Mockup            | Status                                                                                                    |
+| --- | ----------------- | --------------------------------------------------------------------------------------------------------- |
+| M1  | Key + queue       | built                                                                                                     |
+| M2  | Rig freeze        | built on template frames; **rebuild for skeleton-v3 clips** (rest import, presets, raw re-render, rig QA) |
+| M3  | Item lab          | build on `skeleton-pose` + `inpaint-grid` with the §4.5 gates                                             |
+| M4  | Dress-up          | built                                                                                                     |
+| M5  | Export round-trip | built (Godot + Phaser pixel-identical)                                                                    |
 
 ## 13. Decisions
 
@@ -545,10 +548,10 @@ USD billing and unknown charges prevent treating any estimate as an account spen
 
 **Open**
 
-| # | Question | Criterion | Default |
-|---|---|---|---|
-| O7 | Palette: 3-step key ramp to free item colors | colors per item, key kept | 5-step ramp |
-| O11 | Face-context items (hair, glasses) and worn items (chest, cape) on `skeleton-pose` over a full 3-dir × 4-clip set | §4.5 pass rate vs `inpaint-grid` | `skeleton-pose` |
-| O13 | Held items in mirrored west | Per character: mirrored views flip the hand, independent views (Unique 8 or a view's mirror off) keep it; generated grips still require QA. | Top-down 8 (mirrored west) |
-| O14 | Base scale 48 vs 56 | headroom vs figure size | 48 |
-| O15 | Dressing with `inpaint-v3` (192×64 row) instead of `edit-animation-v2` | §4.5 after posing | `edit-animation-v2` |
+| #   | Question                                                                                                          | Criterion                                                                                                                                   | Default                    |
+| --- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| O7  | Palette: 3-step key ramp to free item colors                                                                      | colors per item, key kept                                                                                                                   | 5-step ramp                |
+| O11 | Face-context items (hair, glasses) and worn items (chest, cape) on `skeleton-pose` over a full 3-dir × 4-clip set | §4.5 pass rate vs `inpaint-grid`                                                                                                            | `skeleton-pose`            |
+| O13 | Held items in mirrored west                                                                                       | Per character: mirrored views flip the hand, independent views (Unique 8 or a view's mirror off) keep it; generated grips still require QA. | Top-down 8 (mirrored west) |
+| O14 | Base scale 48 vs 56                                                                                               | headroom vs figure size                                                                                                                     | 48                         |
+| O15 | Dressing with `inpaint-v3` (192×64 row) instead of `edit-animation-v2`                                            | §4.5 after posing                                                                                                                           | `edit-animation-v2`        |

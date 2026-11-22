@@ -21,12 +21,17 @@ const MARKERS = [
 	'DEV_API_KEY',
 	'devkey',
 	'pixeldoll.agentKey',
+	'pixeldoll.agentSync',
+	'pixeldoll.devSyncConfig',
+	'SYNC_TEST_REFRESH_TOKEN',
+	'sync-credentials',
 	'agent-badge',
 	'sourceMappingURL',
 	'#/selftest',
 	'#/dev',
 	'Verifying the PixelDoll update'
 ];
+const SYNC_CODE = ['pixeldoll-sync/1', 'googleapis.com', 'dropboxapi.com', 'code_challenge'];
 const DEV_UI = ['data-local-developer-rigs', '8-dir held dress: every direction dressed once'];
 const bad = [];
 let startupPolicies = 0;
@@ -42,6 +47,13 @@ for (const rel of readdirSync(dist, { recursive: true })) {
 		const text = readFileSync(file, 'latin1');
 		if (MARKERS.some((m) => text.includes(m))) bad.push(`${file}: dev or agent-key marker`);
 		if (DEV_UI.some((m) => text.includes(m))) bad.push(`${file}: developer UI or self-test`);
+		// Cloud Save loads only by dynamic import (lib/sync/connection.ts): startup code never carries the engine, adapters or
+		// sign-in.
+		if (
+			/^(?:bootstrap|index)-.*\.js$/.test(name) &&
+			SYNC_CODE.some((marker) => text.includes(marker))
+		)
+			bad.push(`${file}: Cloud Save code in the startup bundle`);
 		if (name.startsWith('startup-update-') && name.endsWith('.js')) {
 			if (text.includes('pixeldoll.startupUpdate:')) startupPolicies++;
 			const imports = [...text.matchAll(/\b(?:from|import)\s*["'`]([^"'`]+)["'`]/g)].map(

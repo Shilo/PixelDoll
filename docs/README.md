@@ -54,6 +54,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
+- [Local-first storage, cloud backup and cross-device sync](research/2026-11-22-storage-sync/README.md): repository assessment, library and provider comparisons, and a recommended design. The design keeps immutable content-addressed revisions and artwork packs in the user's own Dropbox or Drive folder, plus one heads file per device, with no server and no compare-and-swap. It includes a cross-reviewed proof of concept with 33 passing simulated sync tests and benchmarks. No production change; real-provider and phone tests are pending.
 - [Animation model default audit](research/2026-11-19-animation-model-audit.md) records a data-only 216-frame archival screen and the matched live protocol for Skeleton V3, PixMiniMax, and Text V3.
 - [PixelLab Character Creator states and animations](research/2026-11-18-character-creator-states.md) describes the website workflow, public endpoint lifecycle, and how PixelDoll currently imports and uses standing references.
 - [PixelDoll state authoring study](research/2026-11-18-pixeldoll-states/README.md) proposes reusable poses, shared playback, state-derived move generation and independent removal. It includes an interactive layout comparison and runtime probe.

@@ -26,7 +26,7 @@ PixelLab returns one composited image per call and has no layers. PixelDoll turn
 
 ## Operating Context
 
-- Hosted on GitHub Pages at https://pixeldoll.app/ and installable as a PWA. The browser calls the PixelLab REST v2 API directly; there is no backend.
+- Hosted on GitHub Pages at https://pixeldoll.app/ and installable as a PWA. The browser calls the PixelLab REST v2 API directly; there is no backend except optional Cloud Save's stateless Google sign-in helper (D31), which stores and logs nothing.
 - Core journey: choose a character (or the bundled demo), customize it (Preview, Top-down and Side-scroller views), dress and recolor in the Wardrobe, add moves, review item quality, then Export or Share.
 - Generations cost the user real PixelLab credits. Costs, retries and fallbacks are disclosed at the point of decision and paid requests are never resent automatically.
 - Users take the output into their own engine; exports must render pixel-identical to PixelDoll's compositor (verified in Godot, Phaser and Aseprite).
@@ -67,7 +67,7 @@ PixelLab returns one composited image per call and has no layers. PixelDoll turn
 2. Simplicity first: strong defaults and progressive disclosure so dressing, previewing and exporting work without pipeline knowledge (docs/usability-principles.md).
 3. Respect the user's money: paid generations are explicit, disclosed and never silently retried; prefer free offline work.
 4. The character is the hero: the interface frames the sprite art and never competes with or alters it.
-5. Open and client-only: no backend, the user's own token, MIT source and engine-neutral exports.
+5. Open and client-only: no backend beyond Cloud Save's stateless sign-in helper, the user's own token, MIT source and engine-neutral exports.
 
 ## Accessibility & Inclusion
 

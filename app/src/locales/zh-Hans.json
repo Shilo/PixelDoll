@@ -3008,5 +3008,82 @@
 			"changed": "此角色已更改。请重新打开“调整帧”查看最新版本。",
 			"undoFailed": "无法撤销帧更改。"
 		}
+	},
+	"cloudSave": {
+		"title": "云存档",
+		"intro": "将存档备份到你自己的 Google Drive 或 Dropbox，并在所有设备间保持同步。",
+		"connectGoogle": "连接 Google Drive",
+		"connectDropbox": "连接 Dropbox",
+		"notConfigured": "此版本的 PixelDoll 尚未设置云端登录。",
+		"canceled": "已取消登录",
+		"noDriveAccess": "PixelDoll 需要权限才能将文件存放在你的 Google Drive 中。请重新连接，并保持勾选该权限。",
+		"attention": "云存档需要你处理",
+		"status": {
+			"local": "已保存在此设备",
+			"syncing": "正在保存到云端…",
+			"synced": "已保存到云端",
+			"syncedJustNow": "刚刚已保存到云端",
+			"syncedAgo": "已保存到云端（{time}）",
+			"offline": "处于离线状态，恢复联网后会保存",
+			"reconnect": "重新连接以继续保存",
+			"conflict": "需要你处理",
+			"cloudFull": "云存储空间已满",
+			"failed": "无法保存到云端",
+			"update": "请在此设备上更新 PixelDoll",
+			"missing": "云端的 PixelDoll 文件夹已不存在"
+		},
+		"retry": "重试",
+		"reconnect": "重新连接",
+		"rebuild": "重建云端副本",
+		"cloudFullHint": "请释放云存储空间，然后重试。",
+		"updateHint": "你的云端副本由更新版本的 PixelDoll 保存。请更新以继续保存。",
+		"missingHint": "请用此设备上的角色重建，或断开连接。",
+		"disconnect": "断开此设备",
+		"disconnectHint": "此设备将停止保存到云端。你的云端副本和其他设备不受影响。",
+		"manageApps": "管理已连接的应用",
+		"everywhere": {
+			"action": "在所有设备上断开",
+			"title": "要断开所有设备吗？",
+			"body": "这会在所有设备上让 PixelDoll 退出 Google Drive。云端副本会保留，每台设备都需要重新连接才能继续保存。"
+		},
+		"delete": {
+			"action": "删除云端副本",
+			"description": "永久删除你云端中的 PixelDoll 文件夹。",
+			"title": "要删除云端副本吗？",
+			"body": "这会为所有设备永久删除你云端中的 PixelDoll 文件夹。此操作无法撤销。",
+			"kept": "此设备上的作品会保留。",
+			"confirm": "确认"
+		},
+		"conflicts": {
+			"title": "选择要保留的内容",
+			"hint": "这些内容在两台设备上同时被更改。",
+			"whole": "整个角色",
+			"unnamed": "未命名角色",
+			"keepThis": "保留这个",
+			"keepOther": "保留另一个",
+			"keepBoth": "两个都保留",
+			"failed": "暂时无法保存此选择。请稍后再试。"
+		},
+		"restore": {
+			"title": "恢复早期版本",
+			"character": "角色",
+			"choose": "选择角色",
+			"none": "还没有早期版本。",
+			"unknownTime": "时间未知",
+			"action": "恢复",
+			"confirmTitle": "要恢复 {date} 的版本吗？",
+			"confirmBody": "会替换当前版本；被替换的版本会保留在历史记录中。",
+			"done": "已恢复版本。",
+			"failed": "暂时无法恢复此版本。请稍后再试。"
+		},
+		"import": {
+			"title": "导入已下载的副本",
+			"hint": "选择你下载的 PixelDoll 文件夹 ZIP 文件。只会添加此设备上没有的角色。",
+			"added": {
+				"other": "已添加 {count} 个角色。"
+			},
+			"none": "未找到新角色。",
+			"invalid": "这些文件不是已下载的 PixelDoll 文件夹。"
+		}
 	}
 }

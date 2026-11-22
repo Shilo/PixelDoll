@@ -5,12 +5,18 @@
 	import FullscreenButton from './FullscreenButton.svelte';
 	import { Ellipsis } from './icons.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
+	import { cloudNeedsAttention } from './cloudAttention.svelte.ts';
 	// Activity lives in More on every screen, so More carries its status: a dot while work runs, a warning dot when
 	// stopped work needs attention (which wins), and the same status for screen readers.
 	const activity = $derived(
 		activityStatus.stopped ? 'stopped' : activityStatus.busy ? 'busy' : undefined
 	);
 	const statusId = $props.id();
+	// Settings (in More) holds Cloud Save, so More also carries its cue when it needs the user.
+	const cloud = $derived(cloudNeedsAttention());
+	const describedBy = $derived(
+		[activity && statusId, cloud && `${statusId}-cloud`].filter(Boolean).join(' ') || undefined
+	);
 </script>
 
 <span class="global-actions">
@@ -22,12 +28,14 @@
 		title={t('toolbar.moreOptions')}
 		data-popover-fallback="share-popover"
 		data-activity={activity}
-		aria-describedby={activity ? statusId : undefined}
+		data-cloud={cloud || undefined}
+		aria-describedby={describedBy}
 		popovertarget="experience-options"><Ellipsis size={20} /></button
 	>
 	{#if activity}<span id={statusId} class="sr"
 			>{t(activity === 'stopped' ? 'toolbar.activityAttention' : 'toolbar.activityRunning')}</span
 		>{/if}
+	{#if cloud}<span id="{statusId}-cloud" class="sr">{t('cloudSave.attention')}</span>{/if}
 </span>
 
 <style>
@@ -45,10 +53,11 @@
 		min-height: 44px;
 		padding: 0;
 	}
-	[data-activity] {
+	[data-activity],
+	[data-cloud] {
 		position: relative;
 	}
-	[data-activity]::after {
+	:is([data-activity], [data-cloud])::after {
 		content: '';
 		position: absolute;
 		top: 9px;

@@ -63,7 +63,8 @@ export default defineConfig({
 				'experience-parity.spec.ts',
 				'scene-zoom.spec.ts',
 				'pwa.spec.ts',
-				'pwa-startup.spec.ts'
+				'pwa-startup.spec.ts',
+				'cloud-save.spec.ts'
 			],
 			use: { baseURL, viewport: { width: 1440, height: 900 }, acceptDownloads: true }
 		},

@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 
 // What ships: the site is built from app/ only, plus the workflow that builds it. Written exactly as the `paths` filters in
 // .github/workflows/pages.yml (test/unit/version.test.ts checks). Only ever add paths: removing one lowers the version.
-export const SHIPPED = ['app/**', '.github/workflows/pages.yml'];
+export const SHIPPED = ['app/**', 'services/**', '.github/workflows/pages.yml'];
 
 /** The commit count as major.minor.patch: patch 0-99, minor 0-9, major unbounded (1234 -> 1.2.34). */
 export const formatVersion = (n: number) =>

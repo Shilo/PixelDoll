@@ -17,6 +17,7 @@ vi.mock('../../src/lib/pixellab/queue.ts', () => ({
 	queue: { connect: vi.fn(), disconnect: vi.fn() }
 }));
 vi.mock('../../src/lib/store/db.ts', () => ({ askPersist: vi.fn() }));
+vi.mock('../../src/lib/sync/connection.ts', () => ({ startCloudSave: vi.fn() }));
 
 function deferred<T>() {
 	let resolve!: (value: T) => void;

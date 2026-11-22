@@ -3088,5 +3088,83 @@
 			"changed": "Bu karakter değişti. En son sürümü incelemek için Kareyi ayarla’yı yeniden açın.",
 			"undoFailed": "Kare değişikliği geri alınamadı."
 		}
+	},
+	"cloudSave": {
+		"title": "Bulut Kaydı",
+		"intro": "Kayıtlarınızı kendi Google Drive veya Dropbox hesabınıza yedekleyin ve tüm cihazlarınızda eşitleyin.",
+		"connectGoogle": "Google Drive bağla",
+		"connectDropbox": "Dropbox bağla",
+		"notConfigured": "PixelDoll’un bu sürümünde bulut girişi henüz ayarlanmadı.",
+		"canceled": "Giriş iptal edildi",
+		"noDriveAccess": "PixelDoll, dosyalarını Google Drive’ınızda tutmak için izin istiyor. Yeniden bağlanın ve bu izni işaretli bırakın.",
+		"attention": "Bulut Kaydı ilginizi bekliyor",
+		"status": {
+			"local": "Bu cihaza kaydedildi",
+			"syncing": "Buluta kaydediliyor…",
+			"synced": "Buluta kaydedildi",
+			"syncedJustNow": "Az önce buluta kaydedildi",
+			"syncedAgo": "Buluta kaydedildi ({time})",
+			"offline": "Çevrimdışı, tekrar çevrimiçi olunca kaydedilecek",
+			"reconnect": "Kaydetmeye devam etmek için yeniden bağlanın",
+			"conflict": "İlginizi bekliyor",
+			"cloudFull": "Bulut depolama dolu",
+			"failed": "Buluta kaydedilemedi",
+			"update": "Bu cihazda PixelDoll’u güncelleyin",
+			"missing": "PixelDoll klasörü bulutunuzda artık yok"
+		},
+		"retry": "Yeniden dene",
+		"reconnect": "Yeniden bağlan",
+		"rebuild": "Bulut kopyasını yeniden oluştur",
+		"cloudFullHint": "Bulut depolamanızda yer açın, sonra yeniden deneyin.",
+		"updateHint": "Bulut kopyanız PixelDoll’un daha yeni bir sürümüyle kaydedildi. Kaydetmeye devam etmek için güncelleyin.",
+		"missingHint": "Klasörü bu cihazdaki karakterlerden yeniden oluşturun veya bağlantıyı kesin.",
+		"disconnect": "Bu cihazın bağlantısını kes",
+		"disconnectHint": "Bu cihaz buluta kaydetmeyi bırakır. Bulut kopyanız ve diğer cihazlar etkilenmez.",
+		"manageApps": "Bağlı uygulamaları yönet",
+		"everywhere": {
+			"action": "Her yerde bağlantıyı kes",
+			"title": "Tüm cihazların bağlantısı kesilsin mi?",
+			"body": "Bu, PixelDoll’un tüm cihazlarda Google Drive oturumunu kapatır. Bulut kopyanız kalır; her cihazın kaydetmeye devam etmek için yeniden bağlanması gerekir."
+		},
+		"delete": {
+			"action": "Bulut kopyasını sil",
+			"description": "Bulutunuzdaki PixelDoll klasörünü kalıcı olarak siler.",
+			"title": "Bulut kopyası silinsin mi?",
+			"body": "Bu, bulutunuzdaki PixelDoll klasörünü tüm cihazlar için kalıcı olarak siler. Bu işlem geri alınamaz.",
+			"kept": "Bu cihazdaki çalışmalarınız kalır.",
+			"confirm": "Onayla"
+		},
+		"conflicts": {
+			"title": "Neyin kalacağını seçin",
+			"hint": "Bunlar aynı anda iki cihazda değiştirildi.",
+			"whole": "Karakterin tamamı",
+			"unnamed": "Adsız karakter",
+			"keepThis": "Bunu tut",
+			"keepOther": "Diğerini tut",
+			"keepBoth": "İkisini de tut",
+			"failed": "Bu seçim şu anda kaydedilemedi. Birazdan yeniden deneyin."
+		},
+		"restore": {
+			"title": "Önceki bir sürümü geri yükle",
+			"character": "Karakter",
+			"choose": "Bir karakter seçin",
+			"none": "Henüz önceki sürüm yok.",
+			"unknownTime": "Bilinmeyen zaman",
+			"action": "Geri yükle",
+			"confirmTitle": "Bu sürüm geri yüklensin mi? ({date})",
+			"confirmBody": "Geçerli sürümün yerini alır; değiştirilen sürüm geçmişte kalır.",
+			"done": "Sürüm geri yüklendi.",
+			"failed": "Bu sürüm şu anda geri yüklenemedi. Birazdan yeniden deneyin."
+		},
+		"import": {
+			"title": "İndirilmiş bir kopyayı içe aktar",
+			"hint": "PixelDoll klasöründen indirdiğiniz ZIP dosyalarını seçin. Yalnızca bu cihazda olmayan karakterler eklenir.",
+			"added": {
+				"one": "{count} karakter eklendi.",
+				"other": "{count} karakter eklendi."
+			},
+			"none": "Yeni karakter bulunamadı.",
+			"invalid": "Bu dosyalar indirilmiş bir PixelDoll klasörü değil."
+		}
 	}
 }
