@@ -2788,6 +2788,10 @@
 		"selectedCharacterChanged": "선택한 캐릭터가 바뀌었어요.",
 		"concurrentEdit": "동작을 삭제하기 전에 이 캐릭터가 바뀌었어요. 다시 시도해 주세요."
 	},
+	"characterFacts": {
+		"body": "{measure} 몸체",
+		"frame": "{measure} 프레임"
+	},
 	"sizePreview": {
 		"label": "크기 가이드: {frame}픽셀 프레임 안의 {body}픽셀 몸체 캔버스",
 		"body": "몸체 {measure}",

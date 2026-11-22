@@ -2788,6 +2788,10 @@
 		"selectedCharacterChanged": "所选角色已更改。",
 		"concurrentEdit": "删除动作前此角色已更改。请重试。"
 	},
+	"characterFacts": {
+		"body": "{measure} 身体",
+		"frame": "{measure} 帧"
+	},
 	"sizePreview": {
 		"label": "尺寸指南：{frame} 像素帧内的 {body} 像素身体画布",
 		"body": "身体 {measure}",

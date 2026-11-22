@@ -2858,6 +2858,10 @@
 		"selectedCharacterChanged": "The selected character changed.",
 		"concurrentEdit": "This character changed before the move could be deleted. Try again."
 	},
+	"characterFacts": {
+		"body": "{measure} body",
+		"frame": "{measure} frame"
+	},
 	"sizePreview": {
 		"label": "Size guide: {body} pixel body canvas inside a {frame} pixel frame",
 		"body": "Body {measure}",

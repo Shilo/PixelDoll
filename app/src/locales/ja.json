@@ -2788,6 +2788,10 @@
 		"selectedCharacterChanged": "選択したキャラクターが変更されました。",
 		"concurrentEdit": "モーションを削除する前に、このキャラクターが変更されました。もう一度お試しください。"
 	},
+	"characterFacts": {
+		"body": "{measure} の素体",
+		"frame": "{measure} のフレーム"
+	},
 	"sizePreview": {
 		"label": "サイズガイド：{frame}ピクセルのフレーム内に、{body}ピクセルの素体キャンバスがあります",
 		"body": "素体：{measure}",

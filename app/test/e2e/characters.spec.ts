@@ -282,7 +282,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(rows.filter({ hasText: 'Saved hero' })).toHaveAttribute('aria-pressed', 'true');
 	await expect(
 		rows.filter({ hasText: 'Adventurer' }).locator('.character-sizes > span')
-	).toHaveText([/^Body \d+×\d+ px$/, '· Frame 64×64 px']);
+	).toHaveText([/^\d+×\d+ px body$/, '· 64×64 px frame']);
 	await expect(rows.filter({ hasText: 'Adventurer' }).locator('.character-counts')).toHaveText(
 		'4 directions · 2 moves · 6 items'
 	);
@@ -322,7 +322,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await page.locator('.customize-action').click();
 	await expect(page.locator('.name-text')).toHaveText('Adventurer (Demo)');
 	await expect(page.locator('.name-facts')).toHaveText(
-		'Frame 64×64 px · 4 directions · 2 moves · 6 items'
+		'64×64 px frame · 4 directions · 2 moves · 6 items'
 	);
 	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
 	const moveDetails = page.locator('.colors details').filter({ hasText: 'pivot' });

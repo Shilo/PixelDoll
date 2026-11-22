@@ -2858,6 +2858,10 @@
 		"selectedCharacterChanged": "Die ausgewählte Figur hat sich geändert.",
 		"concurrentEdit": "Diese Figur hat sich geändert, bevor die Animation gelöscht werden konnte. Versuch es noch einmal."
 	},
+	"characterFacts": {
+		"body": "{measure} Grundkörper",
+		"frame": "{measure} Frame"
+	},
 	"sizePreview": {
 		"label": "Größenübersicht: {body} px große Grundkörper-Zeichenfläche in einem {frame} px großen Frame",
 		"body": "Grundkörper: {measure}",

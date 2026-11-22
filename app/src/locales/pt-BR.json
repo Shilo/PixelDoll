@@ -2867,6 +2867,10 @@
 		"selectedCharacterChanged": "O personagem selecionado mudou.",
 		"concurrentEdit": "Este personagem mudou antes que a animação pudesse ser excluída. Tente novamente."
 	},
+	"characterFacts": {
+		"body": "{measure} de corpo",
+		"frame": "{measure} de quadro"
+	},
 	"sizePreview": {
 		"label": "Guia de tamanho: área do corpo de {body} pixels dentro de um quadro de {frame} pixels",
 		"body": "Corpo {measure}",

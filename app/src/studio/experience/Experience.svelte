@@ -686,7 +686,7 @@
 							<strong>{spec.name}</strong>
 							<small class="character-sizes">
 								{#if spec.frame}<span
-										>{t('sizePreview.frame', {
+										>{t('characterFacts.frame', {
 											measure: pixelSize({ w: spec.frame, h: spec.frame })
 										})} ·</span
 									>{/if}
@@ -727,10 +727,10 @@
 								><strong><CharacterName id={p.id} name={p.name} /></strong>{#if facts}
 									<small class="character-sizes">
 										{#if still?.bodySize}<span
-												>{t('sizePreview.body', { measure: pixelSize(still.bodySize) })}</span
+												>{t('characterFacts.body', { measure: pixelSize(still.bodySize) })}</span
 											>{/if}
 										<span
-											>{still?.bodySize ? '· ' : ''}{t('sizePreview.frame', {
+											>{still?.bodySize ? '· ' : ''}{t('characterFacts.frame', {
 												measure: facts.frame
 											})}</span
 										>

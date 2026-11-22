@@ -2858,6 +2858,10 @@
 		"selectedCharacterChanged": "Seçili karakter değişti.",
 		"concurrentEdit": "Animasyon silinemeden önce karakter değişti. Tekrar deneyin."
 	},
+	"characterFacts": {
+		"body": "{measure} gövde",
+		"frame": "{measure} kare"
+	},
 	"sizePreview": {
 		"label": "Boyut kılavuzu: {frame} piksellik kare içinde {body} piksellik gövde tuvali",
 		"body": "Gövde: {measure}",

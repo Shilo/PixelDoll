@@ -2788,6 +2788,10 @@
 		"selectedCharacterChanged": "Karakter pilihan berubah.",
 		"concurrentEdit": "Karakter ini berubah sebelum animasi bisa dihapus. Coba lagi."
 	},
+	"characterFacts": {
+		"body": "{measure} tubuh",
+		"frame": "{measure} frame"
+	},
 	"sizePreview": {
 		"label": "Panduan ukuran: kanvas tubuh {body} piksel di dalam frame {frame} piksel",
 		"body": "Tubuh {measure}",

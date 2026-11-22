@@ -120,7 +120,7 @@ test('four overlapping creations keep independent rows and only the uninterrupte
 		}
 		await expect.poll(() => [...waiting].sort(), { timeout: 60_000 }).toEqual([1, 2, 3, 4]);
 		expect(await library.locator('.pending-character').count()).toBe(4);
-		await expect(row(1)).toContainText(/Frame \d+×\d+ px/);
+		await expect(row(1)).toContainText(/\d+×\d+ px frame/);
 		await expect(row(1)).toContainText('2 directions');
 		await expect(
 			library.getByRole('progressbar', { name: /Run 1/, includeHidden: true })

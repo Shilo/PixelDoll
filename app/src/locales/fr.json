@@ -2858,6 +2858,10 @@
 		"selectedCharacterChanged": "Le personnage sélectionné a changé.",
 		"concurrentEdit": "Ce personnage a changé avant que l’animation puisse être supprimée. Réessayez."
 	},
+	"characterFacts": {
+		"body": "{measure} de corps",
+		"frame": "{measure} de cadre"
+	},
 	"sizePreview": {
 		"label": "Guide des tailles : zone du corps de {body} pixels dans un cadre de {frame} pixels",
 		"body": "Corps {measure}",

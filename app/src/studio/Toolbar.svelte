@@ -194,7 +194,7 @@
 					><span class="name-text"><CharacterName id={doc.id} {name} /></span>
 					<ChevronDown size={16} aria-hidden="true" /></span
 				>{#if facts}<span class="name-facts"
-						>{t('sizePreview.frame', { measure: facts.frame })} · {facts.counts
+						>{t('characterFacts.frame', { measure: facts.frame })} · {facts.counts
 							.map(displayMessage)
 							.join(' · ')}</span
 					>{/if}</button

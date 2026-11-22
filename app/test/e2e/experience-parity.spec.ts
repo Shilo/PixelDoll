@@ -257,7 +257,7 @@ test('character list thumbnails and New stay left-aligned and sizes fit', async 
 			const rows = page.locator('.character-rows :is(.character-row, .new-character-row)');
 			await expect(rows).toHaveCount(2);
 			const sizes = rows.first().locator('.character-sizes');
-			await expect(sizes.locator('span')).toHaveText([/^Body \d+×\d+ px$/, '· Frame 64×64 px']);
+			await expect(sizes.locator('span')).toHaveText([/^\d+×\d+ px body$/, '· 64×64 px frame']);
 			const overflow = await sizes.evaluate((node) => {
 				const bounds = node.getBoundingClientRect();
 				const column = node.parentElement!.getBoundingClientRect();
