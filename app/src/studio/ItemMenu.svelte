@@ -16,7 +16,7 @@
 	import DeleteRow from './DeleteRow.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { popoverFocus } from './experience/focus.ts';
-	import { extendable } from './create.ts';
+	import { extendable } from './movePricing.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import { twoHanded } from '../lib/compose/compose.ts';
 	import type { generationStatus } from './generationStatus.ts';

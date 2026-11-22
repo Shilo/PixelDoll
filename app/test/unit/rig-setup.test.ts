@@ -16,11 +16,10 @@ import { DIRECTIONS, cellHash, type Keypoint } from '../../src/lib/rig/rig.ts';
 import { flipSkeleton } from '../../src/lib/rig/skeleton.ts';
 import { flipH, planDirections } from '../../src/lib/rig/mirror.ts';
 import { paddedPoses, poseBatches, rawClip } from '../../src/lib/rig/clips.ts';
-import { itemRoute, padOf, planItem } from '../../src/lib/items/items.ts';
+import { itemRoute, padOf, planItem, posable } from '../../src/lib/items/items.ts';
 import { baseCell, defaultMethod } from '../../src/lib/items/run.ts';
 import { coverage } from '../../src/studio/itemRoute.ts';
 import { Queue, type JobRec } from '../../src/lib/pixellab/queue.ts';
-import { posable } from '../../src/lib/items/run.ts';
 
 const pose = (dx = 0): Keypoint[] =>
 	LABELS.map((label, i) => ({

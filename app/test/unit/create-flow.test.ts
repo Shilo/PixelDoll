@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { estimate, parallelGeneration, run } from '../../src/studio/create.ts';
+import { parallelGeneration, run } from '../../src/studio/create.ts';
+import { estimate } from '../../src/studio/movePricing.ts';
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts';
 import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
 

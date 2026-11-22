@@ -37,6 +37,7 @@ import { stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.
 import { groundToSource } from './stateGrounding.ts';
 import {
 	localStateCost,
+	managedStateCost,
 	planStateGeneration,
 	type StateGenerationCost,
 	type StateGenerationModel
@@ -334,15 +335,10 @@ async function prepareStatePlan(
 			'unsupported'
 		);
 	}
-	const side = Math.max(source.size.width, source.size.height);
 	const cost =
 		candidate.cost ??
 		(candidate.endpoint === '/create-character-state'
-			? ({
-					kind: 'estimate',
-					minGenerations: 10,
-					maxGenerations: side <= 70 ? 10 : side <= 93 ? 15 : 25
-				} as const)
+			? managedStateCost(source.size)
 			: await flashCost(candidate));
 	await refreshBalance();
 	if (app.keyRejected || app.balanceError)

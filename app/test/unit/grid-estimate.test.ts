@@ -8,7 +8,7 @@ import {
 } from '../../src/lib/items/items.ts';
 import { requestTier } from '../../src/lib/pixellab/plans.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
-import { moveEstimate } from '../../src/studio/create.ts';
+import { moveEstimate } from '../../src/studio/movePricing.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 
 test.each([

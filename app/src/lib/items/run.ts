@@ -1613,27 +1613,6 @@ export async function acceptItem(
 }
 
 // ---------- new clips on accepted items (architecture §4.1: "adding a clip later = one pose call per item-direction") ----------
-/** Accepted skeleton-pose items with standing designs for the requested independently drawn views. */
-export const posable = (m: Manifest, dirs: readonly DirectionName[] = []) =>
-	m.items.filter(
-		(i) =>
-			i.slot !== 'body' &&
-			i.route === 'skeleton-pose' &&
-			i.key &&
-			i.dressed &&
-			i.baseHash === m.rig.baseHash &&
-			dirs.every((dir) => !!i.dressed?.[dir])
-	);
-export const anchorable = (m: Manifest) =>
-	m.items.filter(
-		(i) =>
-			i.slot !== 'body' &&
-			i.route === 'ea2-anchor' &&
-			i.standing &&
-			i.key &&
-			i.dressed &&
-			i.baseHash === m.rig.baseHash
-	);
 
 /** Reuse the bought standing design on selected frozen frames, without requiring a skeleton or redrawing the body. */
 export async function animateAnchoredItem(
@@ -1778,33 +1757,6 @@ export async function animateAnchoredItem(
 	);
 	dirs.forEach(onCall);
 	if (missed.length) throw new PartialMoveError(detail, dirs);
-}
-/** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions. */
-export const poseGens = (n: number, cells: number, dirs: number) => n * dirs * poseGensFor(cells);
-/** The complete requested posing plan; additional attempts require a new player request. */
-export function itemPoseGens(
-	rig: Rig,
-	item: Item,
-	anim: string,
-	frames: number,
-	dirs: DirectionName[],
-	slots?: SlotSource
-): number {
-	const cell = item.layers[0]?.cell ?? rig.cell;
-	return itemPosePlan(
-		rig,
-		{ ...item, slotConfig: requireSlot(slots ?? [], item.slot) },
-		anim,
-		frames,
-		dirs
-	).reduce(
-		(sum, call) =>
-			sum +
-			(call.kind === 'grid'
-				? repairGridLayout(cell, call.cells.length, 1).gens
-				: poseGensFor(call.cells.length)),
-		0
-	);
 }
 const seedOf = (s: string) =>
 	1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);

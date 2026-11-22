@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { createCharacter, estimate } from '../../src/studio/create.ts';
+import { createCharacter } from '../../src/studio/create.ts';
+import { estimate } from '../../src/studio/movePricing.ts';
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts';
 import * as db from '../../src/lib/store/db.ts';
 import { DIRECTIONS, type DirectionName, type Rig } from '../../src/lib/rig/rig.ts';

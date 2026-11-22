@@ -18,12 +18,12 @@
 	import type { Project } from '../lib/store/manifest.ts';
 	import type { ClipQa } from '../lib/rig/clips.ts';
 	import {
-		estimate,
 		reviewCreateResults,
 		type CreatePaidOption,
 		type CreatePaidReview,
 		type CreateSpec
 	} from './create.ts';
+	import { estimate } from './movePricing.ts';
 	import PaidReview from './PaidReview.svelte';
 	import CharacterForm from './CharacterForm.svelte';
 	import {

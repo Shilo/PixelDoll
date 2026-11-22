@@ -6,6 +6,7 @@ import {
 	requireSlot,
 	slotOf,
 	specSlot,
+	type SlotSource,
 	type SlotRef
 } from './slots.ts';
 export { SLOTS, slotOf, slotLadder } from './slots.ts';
@@ -51,6 +52,7 @@ import {
 	paddedPoses,
 	poseBatches,
 	poseCallGens,
+	poseGensFor,
 	rawClip
 } from '../rig/clips.ts';
 import type {
@@ -802,6 +804,56 @@ export function itemPosePlan(
 			);
 			return { kind: frozenGrid(rig, item, cells) ? 'grid' : 'pose', cells };
 		})
+	);
+}
+
+/** Accepted skeleton-pose items with standing designs for the requested independently drawn views. */
+export const posable = (m: Manifest, dirs: readonly DirectionName[] = []) =>
+	m.items.filter(
+		(i) =>
+			i.slot !== 'body' &&
+			i.route === 'skeleton-pose' &&
+			i.key &&
+			i.dressed &&
+			i.baseHash === m.rig.baseHash &&
+			dirs.every((dir) => !!i.dressed?.[dir])
+	);
+export const anchorable = (m: Manifest) =>
+	m.items.filter(
+		(i) =>
+			i.slot !== 'body' &&
+			i.route === 'ea2-anchor' &&
+			i.standing &&
+			i.key &&
+			i.dressed &&
+			i.baseHash === m.rig.baseHash
+	);
+
+/** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions. */
+export const poseGens = (n: number, cells: number, dirs: number) => n * dirs * poseGensFor(cells);
+/** The complete requested posing plan; additional attempts require a new player request. */
+export function itemPoseGens(
+	rig: Rig,
+	item: Pick<Item, 'slot' | 'key' | 'layers'>,
+	anim: string,
+	frames: number,
+	dirs: DirectionName[],
+	slots?: SlotSource
+): number {
+	const cell = item.layers[0]?.cell ?? rig.cell;
+	return itemPosePlan(
+		rig,
+		{ ...item, slotConfig: requireSlot(slots ?? [], item.slot) },
+		anim,
+		frames,
+		dirs
+	).reduce(
+		(sum, call) =>
+			sum +
+			(call.kind === 'grid'
+				? repairGridLayout(cell, call.cells.length, 1).gens
+				: poseGensFor(call.cells.length)),
+		0
 	);
 }
 

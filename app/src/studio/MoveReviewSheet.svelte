@@ -13,12 +13,11 @@
 	import {
 		itemMoveOffer,
 		missingItemMoves,
-		moveAnimationModel,
-		moveFrames,
 		moveMinimumTier,
 		readMoveCandidateImages,
 		skeletonMoveReview
 	} from './create.ts';
+	import { moveAnimationModel, moveFrames } from './movePricing.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { moveTemplatePrompt } from './moveAnimationOptions.ts';
 	import {

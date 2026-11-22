@@ -23,7 +23,8 @@ import { clipKind } from '../lib/runtime/timeline.js';
 import * as db from '../lib/store/db.ts';
 import type { Manifest, Project, Provenance } from '../lib/store/manifest.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
-import { EST, measureJoints, measurementInput, provOf } from './create.ts';
+import { measureJoints, measurementInput, provOf } from './create.ts';
+import { EST } from './movePricing.ts';
 import { resolveMoveSource } from './moveSource.ts';
 import {
 	directionEditsBlocked,

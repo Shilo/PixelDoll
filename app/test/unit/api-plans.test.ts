@@ -10,7 +10,8 @@ import {
 	movePlan,
 	setupPeekPlan
 } from '../../src/studio/apiPlans.ts';
-import { bodyAction, estimate, moveEstimate, moveFrames } from '../../src/studio/create.ts';
+import { bodyAction } from '../../src/studio/create.ts';
+import { estimate, moveEstimate, moveFrames } from '../../src/studio/movePricing.ts';
 import { basePrompt } from '../../src/studio/model.ts';
 import { itemRoute } from '../../src/studio/itemRoute.ts';
 import type { Draft, RigCtx } from '../../src/lib/items/run.ts';

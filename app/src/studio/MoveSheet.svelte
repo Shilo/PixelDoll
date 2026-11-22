@@ -69,10 +69,7 @@
 		MOVE_STEPS,
 		b64,
 		bodyMoveIssue,
-		moveFrames,
-		moveMotionFrames,
 		partialMoveFrameIssue,
-		isAuthoredAction,
 		resolveMoveMotionSource,
 		moveRigReady,
 		reservedMove,
@@ -80,7 +77,6 @@
 		reviewMoveResults,
 		movePreflightWarnings,
 		skeletonMoveReview,
-		moveEstimate,
 		moveMinimumTier,
 		type MovePaidOption,
 		type MovePaidReview,
@@ -89,6 +85,7 @@
 		type KeepBodyPlan,
 		type MeasurementRecoveryPlan
 	} from './create.ts';
+	import { moveFrames, moveMotionFrames, isAuthoredAction, moveEstimate } from './movePricing.ts';
 	import {
 		ui,
 		doc,

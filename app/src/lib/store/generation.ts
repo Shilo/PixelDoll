@@ -162,6 +162,9 @@ const CREATORS = [
 	'/create-character-pro',
 	'/create-character-pro-flash'
 ];
+/** The call that drew a created character, absent for imported art (registration-only calls send direction images). */
+export const creationCall = (base: Pick<Item, 'provenance'>) =>
+	base.provenance?.find((p) => CREATORS.includes(p.endpoint) && !p.params?.direction_images);
 /** The summary for one item; the base body describes the character's creation. */
 export function generationDetails(m: Manifest, it: Item): GenerationDetails {
 	const prov = it.provenance ?? [];
@@ -183,7 +186,7 @@ export function generationDetails(m: Manifest, it: Item): GenerationDetails {
 			});
 	};
 	if (it.id === m.rig.baseItem) {
-		const created = prov.find((p) => CREATORS.includes(p.endpoint) && !p.params?.direction_images);
+		const created = creationCall(it);
 		const size = created?.params?.image_size as { width?: number; height?: number } | undefined;
 		const fromSprite =
 			created?.endpoint === '/create-character-v3' && created.params?.reference_image;

@@ -1,6 +1,7 @@
 // Advanced creation options (model, outline, detail, item method) and the generation details read from provenance.
 import { expect, test } from 'vitest';
-import { createCharacter, drawRequest, estimate, labelViews } from '../../src/studio/create.ts';
+import { createCharacter, drawRequest, labelViews } from '../../src/studio/create.ts';
+import { estimate } from '../../src/studio/movePricing.ts';
 import { createPlan, itemPlan } from '../../src/studio/apiPlans.ts';
 import { itemRoute } from '../../src/studio/itemRoute.ts';
 import {

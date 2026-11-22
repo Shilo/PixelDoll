@@ -6,7 +6,8 @@
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
-	import { extendable, itemMoveOffer, missingItemMoves, moveMinimumTier } from './create.ts';
+	import { itemMoveOffer, missingItemMoves, moveMinimumTier } from './create.ts';
+	import { extendable } from './movePricing.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import {

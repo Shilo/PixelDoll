@@ -8,21 +8,16 @@ import { hasAll, LABELS } from '../../src/lib/rig/poses.ts';
 import type { DirectionName, Keypoint, Rig } from '../../src/lib/rig/rig.ts';
 import type { Item } from '../../src/lib/store/manifest.ts';
 import {
-	itemPoseGens,
 	draftMinimumTier,
 	newDraft,
 	runItem,
 	type Draft,
 	type RigCtx
 } from '../../src/lib/items/run.ts';
-import { itemPlanMinimumTier, planGens } from '../../src/lib/items/items.ts';
+import { itemPlanMinimumTier, itemPoseGens, planGens } from '../../src/lib/items/items.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
-import {
-	itemMoveOffer,
-	moveEstimate,
-	moveMinimumTier,
-	reviewItemMove
-} from '../../src/studio/create.ts';
+import { itemMoveOffer, moveMinimumTier, reviewItemMove } from '../../src/studio/create.ts';
+import { moveEstimate } from '../../src/studio/movePricing.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
 

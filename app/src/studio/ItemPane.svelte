@@ -16,13 +16,8 @@
 		restorableViews,
 		type ItemPaletteRepairPlan
 	} from '../lib/items/run.ts';
-	import {
-		extendable,
-		missingItemMoves,
-		itemMoveOffer,
-		moveMinimumTier,
-		type MoveSpec
-	} from './create.ts';
+	import { missingItemMoves, itemMoveOffer, moveMinimumTier, type MoveSpec } from './create.ts';
+	import { extendable } from './movePricing.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';

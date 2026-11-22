@@ -2,13 +2,12 @@ import { afterEach, expect, test, vi } from 'vitest';
 import {
 	bodyAction,
 	createCharacter,
-	estimate,
 	missingItemMoves,
-	moveEstimate,
 	reservedMove,
 	type CreateSpec,
 	type MoveSpec
 } from '../../src/studio/create.ts';
+import { estimate, moveEstimate } from '../../src/studio/movePricing.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
 import { coverage } from '../../src/studio/itemRoute.ts';
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts';

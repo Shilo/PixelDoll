@@ -141,6 +141,16 @@ function estimate(jobs: number, min: number, max = min): StateGenerationCost {
 	return { kind: 'estimate', minGenerations: min * jobs, maxGenerations: max * jobs };
 }
 
+/** The managed Pro State quote: one request for the whole parent, whatever its facing count. */
+export function managedStateCost(cellSize: Readonly<Size>): StateGenerationCost {
+	const side = longest(cellSize);
+	return {
+		kind: 'estimate',
+		minGenerations: 10,
+		maxGenerations: side <= 70 ? 10 : side <= 93 ? 15 : 25
+	};
+}
+
 export function localStateCost(
 	endpoint: LocalStateRoute['endpoint'],
 	cellSize: Readonly<Size>,
