@@ -3099,8 +3099,13 @@
 	"costSheet": {
 		"title": "Maliyet tahmini",
 		"scopeLabel": "Tahmin kapsamı",
-		"scopeAll": "Tümü",
-		"scopeNew": "Yeni",
+		"scopeAll": "Tüm karakterler",
+		"scopePlan": "Plan",
+		"characters": "Karakterler",
+		"resetEstimate": "Tahmini sıfırla",
+		"perCharacter": "{n} karakterin her biri",
+		"frameHint": "Kare boyutu: {n} px",
+		"ownItems": "Her karakter kendi uyarlanmış eşyalarını alır",
 		"loading": "Karakterler yükleniyor…",
 		"range": "{low} ile {high} arası · {gens}",
 		"basis": {
@@ -3109,7 +3114,7 @@
 				"one": "Karakter: {n}",
 				"other": "Karakter: {n}"
 			},
-			"new": "Yeni karakter",
+			"plan": { "one": "{n} yeni karakter için tahmin", "other": "{n} yeni karakter için tahmin" },
 			"demo": "Demo görselleri ücretsizdir"
 		},
 		"tierOneRates": "{basis} · Tier 1 fiyatları",
@@ -3122,7 +3127,6 @@
 			"other": "Aylık üretim hakkı: {n}"
 		},
 		"retries": "Yeniden denemeler",
-		"retriesDefault": "Varsayılan",
 		"decrease": "Azaltın: {name}",
 		"increase": "Artırın: {name}",
 		"moves": "Animasyonlar",
@@ -3138,7 +3142,6 @@
 			"trim": "{move}: {frames} kare",
 			"saving": "{tip} −{saving}"
 		},
-		"reset": "Sıfırlayın",
 		"details": "Ayrıntılar",
 		"setup": "Karakter kurulumu",
 		"setupNote": "Kare boyutu: {frame} px · çizilen görünüm: {drawn}",

@@ -3019,8 +3019,13 @@
 	"costSheet": {
 		"title": "비용 예상",
 		"scopeLabel": "예상 대상",
-		"scopeAll": "전체",
-		"scopeNew": "새로 만들기",
+		"scopeAll": "모든 캐릭터",
+		"scopePlan": "계획",
+		"characters": "캐릭터",
+		"resetEstimate": "예상 초기화",
+		"perCharacter": "{n}명 각각",
+		"frameHint": "{n}px 프레임",
+		"ownItems": "캐릭터마다 맞춤 아이템이 따로 필요합니다",
 		"loading": "캐릭터를 불러오는 중…",
 		"range": "{low}~{high} · {gens}",
 		"basis": {
@@ -3028,7 +3033,7 @@
 			"all": {
 				"other": "캐릭터 {n}개"
 			},
-			"new": "새 캐릭터",
+			"plan": { "other": "새 캐릭터 {n}명 예상" },
 			"demo": "데모 아트는 무료"
 		},
 		"tierOneRates": "{basis} · Tier 1 요금",
@@ -3040,7 +3045,6 @@
 			"other": "월 생성 {n}회"
 		},
 		"retries": "재시도",
-		"retriesDefault": "기본값",
 		"decrease": "{name} 줄이기",
 		"increase": "{name} 늘리기",
 		"moves": "동작",
@@ -3055,7 +3059,6 @@
 			"trim": "{move}: {frames}프레임으로",
 			"saving": "{tip} −{saving}"
 		},
-		"reset": "초기화",
 		"details": "세부 정보",
 		"setup": "캐릭터 준비",
 		"setupNote": "{frame}px 프레임 · 그린 뷰 {drawn}개",

@@ -7,7 +7,7 @@
 	import Sheet from './Sheet.svelte';
 	import NumberStepper from './NumberStepper.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
-	import { ChevronRight } from './icons.ts';
+	import { ChevronRight, RotateCcw } from './icons.ts';
 	import { ui, doc, store } from './state.svelte.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier } from '../lib/pixellab/plans.ts';
@@ -20,7 +20,17 @@
 	import { currentCreationSettings } from './settingsDefaults.svelte.ts';
 	import { closeSettingsCost, settingsNavigation } from './settingsNavigation.svelte.ts';
 	import { characterDraftWithDefaults } from './creationSettings.ts';
-	import { facingOf, toggleDirection, toggleMirror, type Mirrors } from './characterConfig.ts';
+	import {
+		autoFrame,
+		BODY_STEP,
+		facingOf,
+		MODEL_IDS,
+		MODELS,
+		toggleDirection,
+		toggleMirror,
+		type CharacterModel,
+		type Mirrors
+	} from './characterConfig.ts';
 	import {
 		DEFAULT_RETRIES,
 		characterCost,
@@ -43,6 +53,8 @@
 	import type { WhisperKey } from 'svelte-whisper';
 
 	const PAGE = 16;
+	/** A practical ceiling for typed counts, so the steppers always step; far above any real project. */
+	const MAX_COUNT = 9999;
 	const WEST: DirectionName[] = ['north-west', 'west', 'south-west'];
 	const MODEL_TEXT: Record<string, WhisperKey> = {
 		'skeleton-v3': 'moveSheet.models.skeletonV3',
@@ -83,19 +95,36 @@
 			error = displayMessage(errorMessage(e));
 		}
 	})();
-	const fresh = () => {
-		const settings = characterDraftWithDefaults(currentCreationSettings('characters').values);
-		return newCharacter(
+	// ---------- the planner's character ----------
+	// Starts from the New character defaults; its model and body size can change like the creator's (the frame then
+	// follows the body, as the creator's Auto frame does).
+	const creation = characterDraftWithDefaults(currentCreationSettings('characters').values);
+	const seedPlan = {
+		model: (creation.model ?? 'v3') as CharacterModel,
+		body: creation.body ?? 64,
+		frame: creation.frame ?? 80
+	};
+	let plan = $state({ model: seedPlan.model, body: seedPlan.body });
+	const planFrame = $derived(plan.body === seedPlan.body ? seedPlan.frame : autoFrame(plan.body));
+	const bodySizes = $derived.by(() => {
+		const { min, max } = MODELS[plan.model].body;
+		return Array.from({ length: (max - min) / BODY_STEP + 1 }, (_, i) => min + i * BODY_STEP);
+	});
+	function chooseModel(model: CharacterModel) {
+		const sizes = MODELS[model].body;
+		plan = { model, body: Math.min(sizes.max, Math.max(sizes.min, plan.body)) };
+	}
+	const created = $derived(
+		newCharacter(
 			{
-				body: settings.body ?? 64,
-				frame: settings.frame ?? 80,
-				model: settings.model,
-				directions: facingOf(settings)
+				body: plan.body,
+				frame: planFrame,
+				model: plan.model,
+				directions: facingOf(creation)
 			},
 			defaults()
-		);
-	};
-	const created = fresh();
+		)
+	);
 	let scope = $state<'character' | 'all' | 'new'>('character');
 	const character = $derived(
 		scope === 'new'
@@ -150,8 +179,10 @@
 	});
 	const result = $derived<CostResult | null>(priced.result);
 	const allResults = $derived(priced.allResults);
+	// The planner budgets several identical characters: one is priced, then multiplied.
+	const planned = $derived(scope === 'new' ? (inputs?.characters ?? 1) : 1);
 	const toGo = $derived(
-		scope === 'all' ? allResults.reduce((s, { r }) => s + r.toGo, 0) : (result?.toGo ?? 0)
+		scope === 'all' ? allResults.reduce((s, { r }) => s + r.toGo, 0) : (result?.toGo ?? 0) * planned
 	);
 	const spent = $derived(
 		scope === 'all'
@@ -170,6 +201,7 @@
 	const tips = $derived<Tip[]>(priced.tips);
 	const edited = $derived(
 		tier !== initialTier ||
+			(scope === 'new' && (plan.model !== seedPlan.model || plan.body !== seedPlan.body)) ||
 			(scope === 'all'
 				? allRetries !== DEFAULT_RETRIES
 				: !!character &&
@@ -180,6 +212,7 @@
 		tier = initialTier;
 		if (scope === 'all') allRetries = DEFAULT_RETRIES;
 		else if (character) delete edits[character.id];
+		if (scope === 'new') plan = { model: seedPlan.model, body: seedPlan.body };
 	}
 
 	// ---------- formatting ----------
@@ -208,7 +241,7 @@
 			scope === 'all'
 				? t('costSheet.basis.all', { count: roster.length, n: formatNumber(roster.length) })
 				: scope === 'new'
-					? t('costSheet.basis.new')
+					? t('costSheet.basis.plan', { count: planned, n: formatNumber(planned) })
 					: character?.kind === 'demo' || character?.kind === 'copy'
 						? t('costSheet.basis.demo')
 						: t('costSheet.basis.character');
@@ -288,11 +321,16 @@
 			if (next.coverage[item].all && !next.coverage[item].except.length) delete next.coverage[item];
 		});
 	}
-	const counts = [
-		{ key: 'moves', label: 'costSheet.moves' },
-		{ key: 'items', label: 'costSheet.items' },
-		{ key: 'states', label: 'costSheet.states' }
-	] as const satisfies readonly { key: keyof CostInputs; label: WhisperKey }[];
+	const PER_CHARACTER = [
+		{ key: 'moves', label: 'costSheet.moves', min: 0 },
+		{ key: 'items', label: 'costSheet.items', min: 0 },
+		{ key: 'states', label: 'costSheet.states', min: 0 }
+	] as const satisfies readonly { key: keyof CostInputs; label: WhisperKey; min: number }[];
+	const counts = $derived(
+		scope === 'new'
+			? [{ key: 'characters', label: 'costSheet.characters', min: 1 } as const, ...PER_CHARACTER]
+			: PER_CHARACTER
+	);
 </script>
 
 <Sheet
@@ -303,7 +341,7 @@
 >
 	<div class="cost-sheet">
 		<div class="bu-segmented scope" role="radiogroup" aria-label={t('costSheet.scopeLabel')}>
-			{#each [{ value: 'character', label: nameOf(selected) }, { value: 'all', label: t('costSheet.scopeAll') }, { value: 'new', label: t('costSheet.scopeNew') }] as const as option (option.value)}
+			{#each [{ value: 'character', label: nameOf(selected) }, { value: 'all', label: t('costSheet.scopeAll') }, { value: 'new', label: t('costSheet.scopePlan') }] as const as option (option.value)}
 				<label class="bu-segment" title={option.label}>
 					<input
 						type="radio"
@@ -312,32 +350,46 @@
 						checked={scope === option.value}
 						onchange={() => choose(option.value)}
 					/>
-					<span class="bu-segment-face"><span class="scope-name">{option.label}</span></span>
+					<span class="bu-segment-face"
+						><span class={['scope-name', { wraps: option.value !== 'character' }]}
+							>{option.label}</span
+						></span
+					>
 				</label>
 			{/each}
 		</div>
 
 		{#if error}<p class="notice bad small" role="alert">{error}</p>
-		{:else if priced.failure}<p class="notice bad small" role="alert">{priced.failure}</p>
-			<button type="button" class="bu-action btn plain reset" onclick={reset}
-				>{t('costSheet.reset')}</button
-			>
 		{:else if !character && scope !== 'all'}<p class="muted" role="status">
 				{t('costSheet.loading')}
 			</p>
 		{:else}
-			<p class="readout" role="status" aria-atomic="true">
-				<strong class="amount num">{usd(projected)}</strong>
-				<span class="faint small num">{range}</span>
-				<span class="faint small">{basis}</span>
-				{#if scope !== 'new'}<span class="spent small num"
-						>{t('costSheet.spentToGo', {
-							current: listUsd(current),
-							spent: usd(spentUsd(paid, rate)),
-							toGo: listUsd(toGo)
-						})}</span
-					>{/if}
-			</p>
+			<!-- Reset keeps one place and stays mounted through a pricing error and its recovery. -->
+			<div class="headline">
+				{#if priced.failure}<p class="notice bad small" role="alert">{priced.failure}</p>
+				{:else}<p class="readout" role="status" aria-atomic="true">
+						<strong class="amount num">{usd(projected)}</strong>
+						<span class="faint small num">{range}</span>
+						<span class="faint small">{basis}</span>
+						{#if scope !== 'new'}<span class="spent small num"
+								>{t('costSheet.spentToGo', {
+									current: listUsd(current),
+									spent: usd(spentUsd(paid, rate)),
+									toGo: listUsd(toGo)
+								})}</span
+							>{/if}
+					</p>{/if}
+				<!-- Always in place, so changing an input never moves the page; disabled until something differs. -->
+				<button
+					type="button"
+					class="bu-action btn plain icon reset"
+					data-variant="quiet"
+					aria-label={t('costSheet.resetEstimate')}
+					title={t('costSheet.resetEstimate')}
+					aria-disabled={!edited}
+					onclick={() => edited && reset()}><RotateCcw size={18} aria-hidden="true" /></button
+				>
+			</div>
 
 			<div class="controls">
 				<label class="control">
@@ -361,16 +413,11 @@
 					</select>
 				</label>
 				<div class="control">
-					<span id="cost-retries"
-						>{t(
-							'costSheet.retries'
-						)}{#if (scope === 'all' ? allRetries : inputs?.retries) === DEFAULT_RETRIES}<span
-								class="faint small hint">{t('costSheet.retriesDefault')}</span
-							>{/if}</span
-					>
+					<span id="cost-retries">{t('costSheet.retries')}</span>
 					<div class="count">
 						<NumberStepper
 							value={scope === 'all' ? allRetries : (inputs?.retries ?? DEFAULT_RETRIES)}
+							max={MAX_COUNT}
 							labelledby="cost-retries"
 							decreaseLabel={t('costSheet.decrease', { name: t('costSheet.retries') })}
 							increaseLabel={t('costSheet.increase', { name: t('costSheet.retries') })}
@@ -381,52 +428,84 @@
 						/>
 					</div>
 				</div>
-			</div>
-
-			{#if scope !== 'all' && inputs && result}
-				<div class="inputs">
-					<div class="counts">
-						{#each counts as { key, label } (key)}
+				{#if scope !== 'all' && inputs && result}
+					{#each counts as { key, label, min } (key)}
+						<div class="control">
+							<span id="cost-{key}">{t(label)}</span>
+							<div class="count">
+								<NumberStepper
+									value={inputs[key]}
+									{min}
+									max={MAX_COUNT}
+									labelledby="cost-{key}"
+									decreaseLabel={t('costSheet.decrease', { name: t(label) })}
+									increaseLabel={t('costSheet.increase', { name: t(label) })}
+									onchange={(count) => change((next) => (next[key] = count))}
+								/>
+							</div>
+						</div>
+						{#if key === 'characters'}
+							<label class="control">
+								<span>{t('create.form.model')}</span>
+								<select
+									class="bu-input tier"
+									value={plan.model}
+									onchange={(e) => chooseModel(e.currentTarget.value as CharacterModel)}
+								>
+									{#each MODEL_IDS as model (model)}<option value={model}
+											>{MODELS[model].label}</option
+										>{/each}
+								</select>
+							</label>
 							<div class="control">
-								<span id="cost-{key}">{t(label)}</span>
+								<span id="cost-size"
+									>{t('create.form.bodySize')}<span class="faint small hint"
+										>{t('costSheet.frameHint', { n: formatNumber(planFrame) })}</span
+									></span
+								>
 								<div class="count">
 									<NumberStepper
-										value={inputs[key]}
-										labelledby="cost-{key}"
-										decreaseLabel={t('costSheet.decrease', { name: t(label) })}
-										increaseLabel={t('costSheet.increase', { name: t(label) })}
-										onchange={(count) => change((next) => (next[key] = count))}
+										value={plan.body}
+										values={bodySizes}
+										suffix="px"
+										labelledby="cost-size"
+										decreaseLabel={t('costSheet.decrease', { name: t('create.form.bodySize') })}
+										increaseLabel={t('costSheet.increase', { name: t('create.form.bodySize') })}
+										onchange={(body) => (plan.body = body)}
 									/>
 								</div>
 							</div>
-						{/each}
-					</div>
-					<section class="directions" aria-labelledby="cost-directions">
-						<p class="compass-label">
-							<span id="cost-directions">{t('common.directions')}</span>
-							<span class="faint small"
-								>{t('costSheet.directionCount', {
-									count: inputs.directions.length,
-									n: formatNumber(inputs.directions.length),
-									drawn: formatNumber(result.drawn.length)
-								})}</span
-							>
-						</p>
-						<DirectionCompass
-							label={t('common.directions')}
-							selected={draft.selected}
-							mirrors={draft.mirrors}
-							mirrorTargets={WEST}
-							shortLabels
-							compact
-							ontoggle={(dir) => editDirections((d) => void toggleDirection(d, dir))}
-							onmirror={(dir) => editDirections((d) => toggleMirror(d, dir))}
-						/>
-					</section>
-				</div>
+						{/if}
+					{/each}
+				{/if}
+			</div>
+
+			{#if scope !== 'all' && inputs && result}
+				<section class="directions" aria-labelledby="cost-directions">
+					<p class="compass-label">
+						<span id="cost-directions">{t('common.directions')}</span>
+						<span class="faint small"
+							>{t('costSheet.directionCount', {
+								count: inputs.directions.length,
+								n: formatNumber(inputs.directions.length),
+								drawn: formatNumber(result.drawn.length)
+							})}</span
+						>
+					</p>
+					<DirectionCompass
+						label={t('common.directions')}
+						selected={draft.selected}
+						mirrors={draft.mirrors}
+						mirrorTargets={WEST}
+						shortLabels
+						compact
+						ontoggle={(dir) => editDirections((d) => void toggleDirection(d, dir))}
+						onmirror={(dir) => editDirections((d) => toggleMirror(d, dir))}
+					/>
+				</section>
 			{/if}
 
-			{#if tips.length || edited}
+			{#if tips.length}
 				<div class="actions">
 					{#each tips as tip (tipText(tip))}
 						{@const text = t('costSheet.tips.saving', {
@@ -442,9 +521,6 @@
 							><span class="tip-text">{text}</span></button
 						>
 					{/each}
-					{#if edited}<button type="button" class="bu-action btn plain reset" onclick={reset}
-							>{t('costSheet.reset')}</button
-						>{/if}
 				</div>
 			{/if}
 
@@ -474,6 +550,15 @@
 						{/each}
 						{@render recorded()}
 					{:else if result && inputs && character}
+						{#if scope === 'new' && planned > 1}<div class="line">
+								<span class="label"
+									>{t('costSheet.perCharacter', { n: formatNumber(planned) })}<span
+										class="faint small">{t('costSheet.ownItems')}</span
+									></span
+								><span class="cost num"
+									>{listUsd(result.toGo)}<span class="faint small">{gens(result.toGo)}</span></span
+								>
+							</div>{/if}
 						<div class="line">
 							<span class="label"
 								>{t('costSheet.setup')}<span class="faint small"
@@ -650,11 +735,20 @@
 		min-height: 40px;
 		min-width: 0;
 	}
+	/* A character's name stays on one line and ends in an ellipsis; the fixed tab names may wrap to two tight lines in
+	   longer languages rather than being cut off. */
 	.scope-name {
 		display: block;
 		overflow: hidden;
 		white-space: nowrap;
 		text-overflow: ellipsis;
+	}
+	.scope-name.wraps {
+		overflow: visible;
+		white-space: normal;
+		line-height: 1.1;
+		text-align: center;
+		overflow-wrap: anywhere;
 	}
 	.readout {
 		display: grid;
@@ -672,8 +766,7 @@
 		margin-top: 4px;
 		color: var(--text-2);
 	}
-	.controls,
-	.counts {
+	.controls {
 		display: grid;
 		gap: 4px;
 	}
@@ -696,11 +789,6 @@
 	.tier {
 		width: auto;
 		min-width: 130px;
-	}
-	/* Directions come last, below the counts, at every width. */
-	.inputs {
-		display: grid;
-		gap: 8px;
 	}
 	.compass-label {
 		display: flex;
@@ -726,8 +814,16 @@
 		white-space: nowrap;
 		text-overflow: ellipsis;
 	}
+	.headline {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: start;
+		gap: 8px;
+	}
 	.reset {
-		margin-inline-start: auto;
+		width: 44px;
+		height: 44px;
+		margin-inline-end: -10px;
 	}
 	.details > summary {
 		min-height: var(--ctl-h);

@@ -3099,8 +3099,13 @@
 	"costSheet": {
 		"title": "Cost estimate",
 		"scopeLabel": "Estimate for",
-		"scopeAll": "All",
-		"scopeNew": "New",
+		"scopeAll": "All characters",
+		"scopePlan": "Plan",
+		"characters": "Characters",
+		"resetEstimate": "Reset estimate",
+		"perCharacter": "Each of {n} characters",
+		"frameHint": "{n} px frame",
+		"ownItems": "Each character gets its own fitted items",
 		"loading": "Loading characters…",
 		"range": "{low} to {high} · {gens}",
 		"basis": {
@@ -3109,7 +3114,10 @@
 				"one": "{n} character",
 				"other": "{n} characters"
 			},
-			"new": "New character",
+			"plan": {
+				"one": "Estimate for {n} new character",
+				"other": "Estimate for {n} new characters"
+			},
 			"demo": "Demo art is free"
 		},
 		"tierOneRates": "{basis} · Tier 1 rates",
@@ -3122,7 +3130,6 @@
 			"other": "{n} gens / month"
 		},
 		"retries": "Retries",
-		"retriesDefault": "Default",
 		"decrease": "Decrease {name}",
 		"increase": "Increase {name}",
 		"moves": "Moves",
@@ -3138,7 +3145,6 @@
 			"trim": "{move} to {frames} frames",
 			"saving": "{tip} −{saving}"
 		},
-		"reset": "Reset",
 		"details": "Details",
 		"setup": "Character setup",
 		"setupNote": "{frame} px frame · {drawn} drawn views",

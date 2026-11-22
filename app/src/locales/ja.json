@@ -3019,8 +3019,13 @@
 	"costSheet": {
 		"title": "コストの見積もり",
 		"scopeLabel": "見積もり対象",
-		"scopeAll": "すべて",
-		"scopeNew": "新規",
+		"scopeAll": "全キャラクター",
+		"scopePlan": "計画",
+		"characters": "キャラクター",
+		"resetEstimate": "見積もりをリセット",
+		"perCharacter": "{n}体それぞれ",
+		"frameHint": "{n} px のフレーム",
+		"ownItems": "各キャラクターに専用の調整済みアイテムが必要です",
 		"loading": "キャラクターを読み込んでいます…",
 		"range": "{low}〜{high}・{gens}",
 		"basis": {
@@ -3028,7 +3033,7 @@
 			"all": {
 				"other": "キャラクター{n}体"
 			},
-			"new": "新しいキャラクター",
+			"plan": { "other": "新しいキャラクター{n}体の見積もり" },
 			"demo": "デモのアートは無料"
 		},
 		"tierOneRates": "{basis}・Tier 1 の料金",
@@ -3040,7 +3045,6 @@
 			"other": "月{n}回分"
 		},
 		"retries": "やり直し回数",
-		"retriesDefault": "既定",
 		"decrease": "{name}を減らす",
 		"increase": "{name}を増やす",
 		"moves": "モーション",
@@ -3055,7 +3059,6 @@
 			"trim": "{move}を{frames}フレームに",
 			"saving": "{tip} −{saving}"
 		},
-		"reset": "リセット",
 		"details": "詳細",
 		"setup": "キャラクターの準備",
 		"setupNote": "{frame} px のフレーム・描画ビュー{drawn}個",

@@ -3099,8 +3099,13 @@
 	"costSheet": {
 		"title": "Kostenschätzung",
 		"scopeLabel": "Schätzung für",
-		"scopeAll": "Alle",
-		"scopeNew": "Neu",
+		"scopeAll": "Alle Figuren",
+		"scopePlan": "Plan",
+		"characters": "Figuren",
+		"resetEstimate": "Schätzung zurücksetzen",
+		"perCharacter": "Jede der {n} Figuren",
+		"frameHint": "{n}-px-Frame",
+		"ownItems": "Jede Figur bekommt eigene angepasste Gegenstände",
 		"loading": "Figuren werden geladen…",
 		"range": "{low} bis {high} · {gens}",
 		"basis": {
@@ -3109,7 +3114,7 @@
 				"one": "{n} Figur",
 				"other": "{n} Figuren"
 			},
-			"new": "Neue Figur",
+			"plan": { "one": "Schätzung für {n} neue Figur", "other": "Schätzung für {n} neue Figuren" },
 			"demo": "Demo-Grafiken sind kostenlos"
 		},
 		"tierOneRates": "{basis} · Preise von Tier 1",
@@ -3122,7 +3127,6 @@
 			"other": "{n} Generierungen / Monat"
 		},
 		"retries": "Wiederholungen",
-		"retriesDefault": "Standard",
 		"decrease": "{name} verringern",
 		"increase": "{name} erhöhen",
 		"moves": "Animationen",
@@ -3138,7 +3142,6 @@
 			"trim": "{move} auf {frames} Frames",
 			"saving": "{tip} −{saving}"
 		},
-		"reset": "Zurücksetzen",
 		"details": "Details",
 		"setup": "Figur einrichten",
 		"setupNote": "{frame}-px-Frame · {drawn} gezeichnete Ansichten",

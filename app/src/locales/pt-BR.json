@@ -3108,8 +3108,13 @@
 	"costSheet": {
 		"title": "Estimativa de custo",
 		"scopeLabel": "Estimar para",
-		"scopeAll": "Todos",
-		"scopeNew": "Novo",
+		"scopeAll": "Todos os personagens",
+		"scopePlan": "Plano",
+		"characters": "Personagens",
+		"resetEstimate": "Redefinir estimativa",
+		"perCharacter": "Cada um dos {n} personagens",
+		"frameHint": "Quadro de {n} px",
+		"ownItems": "Cada personagem recebe seus próprios itens ajustados",
 		"loading": "Carregando personagens…",
 		"range": "{low} a {high} · {gens}",
 		"basis": {
@@ -3118,7 +3123,10 @@
 				"one": "{n} personagem",
 				"other": "{n} personagens"
 			},
-			"new": "Novo personagem",
+			"plan": {
+				"one": "Estimativa para {n} personagem novo",
+				"other": "Estimativa para {n} personagens novos"
+			},
 			"demo": "A arte da demo é grátis"
 		},
 		"tierOneRates": "{basis} · preços do Tier 1",
@@ -3131,7 +3139,6 @@
 			"other": "{n} gerações / mês"
 		},
 		"retries": "Novas tentativas",
-		"retriesDefault": "Padrão",
 		"decrease": "Diminuir {name}",
 		"increase": "Aumentar {name}",
 		"moves": "Animações",
@@ -3147,7 +3154,6 @@
 			"trim": "{move} com {frames} quadros",
 			"saving": "{tip} −{saving}"
 		},
-		"reset": "Restaurar",
 		"details": "Detalhes",
 		"setup": "Preparação do personagem",
 		"setupNote": "Quadro de {frame} px · {drawn} vistas desenhadas",

@@ -240,6 +240,26 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	const before = await amount.textContent();
 	await estimate.getByRole('button', { name: 'Increase Moves', exact: true }).click();
 	await expect(amount).not.toHaveText(before!);
+	// Reset stays in place: it only turns inactive once the inputs match the character again.
+	const reset = estimate.getByRole('button', { name: 'Reset estimate', exact: true });
+	await reset.click();
+	await expect(amount).toHaveText(before!);
+	await expect(reset).toHaveAttribute('aria-disabled', 'true');
+	// Plan budgets several characters: three cost three times one.
+	await estimate.getByRole('radio', { name: 'Plan', exact: true }).check();
+	await expect(estimate.getByText('Estimate for 1 new character', { exact: true })).toBeVisible();
+	const cents = async () => Math.round(Number((await amount.textContent())!.slice(1)) * 100);
+	await estimate.getByRole('button', { name: 'Increase Moves', exact: true }).click();
+	const one = await cents();
+	await estimate.getByRole('button', { name: 'Increase Characters', exact: true }).click();
+	await estimate.getByRole('button', { name: 'Increase Characters', exact: true }).click();
+	await expect(estimate.getByText('Estimate for 3 new characters', { exact: true })).toBeVisible();
+	expect(Math.abs((await cents()) - 3 * one)).toBeLessThanOrEqual(2);
+	// A much bigger planned character crosses the item design price bands (a 160 px frame).
+	const three = await cents();
+	await estimate.locator('input[aria-labelledby="cost-size"]').fill('128');
+	await expect(estimate.getByText('160 px frame', { exact: true })).toBeVisible();
+	await expect.poll(cents).toBeGreaterThan(three);
 	await estimate.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(estimate).toHaveCount(0);
 	await savedActions.click();

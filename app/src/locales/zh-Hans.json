@@ -3019,8 +3019,13 @@
 	"costSheet": {
 		"title": "费用估算",
 		"scopeLabel": "估算范围",
-		"scopeAll": "全部",
-		"scopeNew": "新建",
+		"scopeAll": "全部角色",
+		"scopePlan": "规划",
+		"characters": "角色",
+		"resetEstimate": "重置估算",
+		"perCharacter": "{n} 个角色中的每一个",
+		"frameHint": "{n} px 画框",
+		"ownItems": "每个角色都需要自己的适配物品",
 		"loading": "正在加载角色…",
 		"range": "{low} 至 {high} · {gens}",
 		"basis": {
@@ -3028,7 +3033,7 @@
 			"all": {
 				"other": "{n} 个角色"
 			},
-			"new": "新角色",
+			"plan": { "other": "{n} 个新角色的估算" },
 			"demo": "演示美术免费"
 		},
 		"tierOneRates": "{basis} · Tier 1 价格",
@@ -3040,7 +3045,6 @@
 			"other": "每月 {n} 次生成"
 		},
 		"retries": "重试次数",
-		"retriesDefault": "默认",
 		"decrease": "减少{name}",
 		"increase": "增加{name}",
 		"moves": "动作",
@@ -3055,7 +3059,6 @@
 			"trim": "{move} 改为 {frames} 帧",
 			"saving": "{tip} −{saving}"
 		},
-		"reset": "重置",
 		"details": "详情",
 		"setup": "角色准备",
 		"setupNote": "{frame} px 画框 · 绘制 {drawn} 个视图",

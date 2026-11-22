@@ -98,6 +98,9 @@ export interface Coverage {
 	except: number[];
 }
 export interface CostInputs {
+	/** How many characters like this one a plan budgets (only the planner changes it). Each gets its own fitted items:
+	 *  copied items cannot be fitted to new moves. */
+	characters: number;
 	directions: RigDirection[];
 	moves: number;
 	items: number;
@@ -284,6 +287,7 @@ export function newCharacter(
 
 export function seedInputs(c: CostCharacter): CostInputs {
 	return {
+		characters: 1,
 		directions: c.manifest.rig.directions.map((d) => ({ ...d })),
 		moves: c.moves.length,
 		items: c.items.length,
@@ -773,7 +777,9 @@ export type Tip =
 /** Up to two quality-safe changes with a real saving in cents at this tier, largest first. Only work still to go can
  *  get cheaper: money already spent stays spent. */
 export function savingTips(c: CostCharacter, inputs: CostInputs, rate: Rate): Tip[] {
-	const cents = (next: CostInputs) => Math.round(usdOf(characterCost(c, next).toGo, rate) * 100);
+	// Priced for every planned character before rounding, so a saving too small to show on one still counts on many.
+	const cents = (next: CostInputs) =>
+		Math.round(usdOf(characterCost(c, next).toGo * next.characters, rate) * 100);
 	const now = cents(inputs);
 	const tips: Tip[] = [];
 	const saving = (next: CostInputs) => (now - cents(next)) / 100;
