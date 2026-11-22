@@ -998,7 +998,7 @@ test('device import includes sibling moves and preserves explicit selections whe
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Right punch', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
-	const capture = page.getByRole('dialog', { name: 'Create State', exact: true });
+	const capture = page.getByRole('dialog', { name: 'New State', exact: true });
 	await expect(
 		capture.getByRole('button', { name: 'Source: Right punch', exact: true })
 	).toBeVisible();
@@ -2518,8 +2518,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		looks: 'red hair, blue coat and boots'
 	});
 	await equipmentMode(page, 'States');
-	await page.getByRole('button', { name: 'Add a state...', exact: true }).click();
-	const emptyCapture = page.getByRole('dialog', { name: 'Create State', exact: true });
+	await page.getByRole('button', { name: 'New State...', exact: true }).click();
+	const emptyCapture = page.getByRole('dialog', { name: 'New State', exact: true });
 	await emptyCapture.getByRole('button', { name: 'Source: Standing', exact: true }).click();
 	await expect(page.getByRole('menu', { name: 'Source' }).getByRole('menuitemradio')).toHaveText([
 		'Standing'
@@ -2539,16 +2539,20 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			.adherence
 	).toBeNull();
 	await newItem(page, 'Main hand');
-	await page.getByRole('radio', { name: 'Main hand', exact: true }).click();
+	await page.getByRole('button', { name: /^Where does it go\?: / }).click();
+	await page
+		.getByRole('menu', { name: 'Where does it go?' })
+		.getByRole('menuitemradio', { name: 'Main hand', exact: true })
+		.click();
 	await page.getByRole('dialog').getByText('Advanced', { exact: true }).click();
 	// The import added room for moves (feet 4 px above a 64 px canvas edge: 64 -> 80), so held items pad to 112 px.
 	expect(before.manifest.rig.cell).toEqual({ w: 80, h: 80 });
 	await expect(page.getByRole('dialog')).toContainText('112 px canvas');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	await page.getByRole('radio', { name: 'Idle', exact: true }).click();
-	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'Idle', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await move.getByRole('button', { name: /^Advanced/ }).click();
 	await move
 		.getByRole('combobox', { name: 'Motion model', exact: true })
@@ -2617,7 +2621,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			release();
 		};
 	});
-	const createState = page.getByRole('dialog', { name: 'Create State', exact: true });
+	const createState = page.getByRole('dialog', { name: 'New State', exact: true });
 	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
 	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(createState).not.toBeVisible();
@@ -2724,7 +2728,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	for (const direction of ['south', 'east', 'north', 'west'] as const)
 		expect(cells['rest-pose'][direction]).toEqual([cells.idle[direction]![chosenCell]]);
 	const panel = page.getByRole('tabpanel', { name: 'States', exact: true });
-	const addState = panel.getByRole('button', { name: 'Add a state...', exact: true });
+	const addState = panel.getByRole('button', { name: 'New State...', exact: true });
 	await expect(panel.locator('.cta + details')).toBeVisible();
 	await addState.click();
 	await createState.getByRole('button', { name: 'Source: Standing', exact: true }).click();
@@ -2756,8 +2760,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(
 		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.cta + details')
 	).toBeVisible();
-	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	const moveSheet = page.getByRole('dialog', { name: 'Add a move' });
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const moveSheet = page.getByRole('dialog', { name: 'New move' });
 	// Add a move picks its start pose with the same Source picker and turning preview as Create State.
 	const startFrom = (name: string) =>
 		moveSheet.getByRole('button', { name: `Start from: ${name}`, exact: true });
@@ -2789,8 +2793,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(remaining.manifest.rig.animations).toEqual(after.manifest.rig.animations);
 	expect(posts).toHaveLength(posted);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	await moveSheet.getByRole('radio', { name: 'Slash', exact: true }).click();
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await moveSheet.getByRole('button', { name: 'Slash', exact: true }).click();
 	await moveSheet.getByRole('button', { name: /^Advanced/ }).click();
 	await moveSheet.getByRole('combobox', { name: 'Motion model' }).selectOption('skeleton-v3');
 	await pickStart('Idle');
@@ -2823,20 +2827,16 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await newState.getByRole('button', { name: 'Previous frame', exact: true }).click();
 	await expect(newState.getByText('Frame 3 of 4', { exact: true })).toBeVisible();
 	await newState.getByRole('switch', { name: 'Edit this pose' }).check();
-	await newState.getByRole('textbox', { name: 'State name' }).fill('Ready stance');
 	const instructions = newState.getByRole('textbox', { name: 'Instructions' });
-	await instructions.fill('Raise both hands');
-	// The Riding template fills editable instructions; Custom gives back what was typed.
-	const templates = newState.getByRole('radiogroup', { name: 'Start from' });
-	await templates.getByRole('radio', { name: 'Riding', exact: true }).click();
+	// The Riding pose idea fills editable instructions and names the State for mounted riding.
+	await newState
+		.getByRole('group', { name: 'Pose ideas' })
+		.getByRole('button', { name: 'Riding', exact: true })
+		.click();
 	await expect(instructions).toHaveValue(/^Change only the pose\. Keep the same view and facing\./);
-	await templates.getByRole('radio', { name: 'Custom', exact: true }).click();
-	await expect(instructions).toHaveValue('Raise both hands');
-	await page.keyboard.press('ArrowRight');
-	await expect(templates.getByRole('radio', { name: 'Riding', exact: true })).toBeFocused();
-	await expect(instructions).toHaveValue(/^Change only the pose\./);
-	await page.keyboard.press('ArrowLeft');
-	await expect(instructions).toHaveValue('Raise both hands');
+	await expect(newState.getByRole('textbox', { name: 'State name' })).toHaveValue('Riding');
+	await newState.getByRole('textbox', { name: 'State name' }).fill('Ready stance');
+	await instructions.fill('Raise both hands');
 	// Enhance grounds the instructions in the chosen source frame, then Undo restores them.
 	await newState.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await expect(instructions).toHaveValue('Lift both open hands to shoulder height, palms forward');
@@ -2958,8 +2958,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(bottoms[1]).toBe(bottoms[0] - 3);
 	expect(statePosts()).toHaveLength(1);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
-	await moveSheet.getByRole('radio', { name: 'Cast', exact: true }).click();
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await moveSheet.getByRole('button', { name: 'Cast', exact: true }).click();
 	await pickStart('Ready stance');
 	const jointPosts = () => posts.filter(({ path }) => path.endsWith('/estimate-skeleton')).length;
 	const beforeJointFit = jointPosts();
@@ -3091,9 +3091,9 @@ test('a managed State reloads its child without another submission', async ({
 	);
 	images = result.images;
 	await equipmentMode(page, 'States');
-	const addState = page.getByRole('button', { name: 'Add a state...', exact: true });
+	const addState = page.getByRole('button', { name: 'New State...', exact: true });
 	await addState.click();
-	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
+	const dialog = page.getByRole('dialog', { name: 'New State', exact: true });
 	const panel = dialog;
 	await panel.getByRole('switch', { name: 'Edit this pose' }).check();
 	await panel.getByRole('textbox', { name: 'State name' }).fill('Potion ready');
@@ -3224,9 +3224,9 @@ test('a State interrupted after its first batch sends only the unqueued views af
 		}, projectId);
 	const flashPosts = () => posts.filter(({ path }) => path.endsWith('/edit-image-pro-flash'));
 	await equipmentMode(page, 'States');
-	const addState = page.getByRole('button', { name: 'Add a state...', exact: true });
+	const addState = page.getByRole('button', { name: 'New State...', exact: true });
 	await addState.click();
-	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
+	const dialog = page.getByRole('dialog', { name: 'New State', exact: true });
 	const panel = dialog;
 	await panel.getByRole('switch', { name: 'Edit this pose' }).check();
 	await panel.getByRole('textbox', { name: 'State name' }).fill('Torch ready');
@@ -3352,7 +3352,7 @@ test('a stopped move blocks deleting only its own character and opens from the b
 	await remove();
 	await expect(deletion.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
 	await deletion.getByRole('button', { name: 'View pending work' }).click();
-	const move = page.getByRole('dialog', { name: 'Add a move' });
+	const move = page.getByRole('dialog', { name: 'New move' });
 	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeVisible();
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(move).toBeHidden();

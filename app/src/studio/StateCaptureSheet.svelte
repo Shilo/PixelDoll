@@ -6,7 +6,8 @@
 		name: string;
 		named: boolean;
 		description: string;
-		template: StateTemplate | '';
+		/** The Riding pose idea was picked, so the State is named and reviewed as a riding stance. */
+		riding: boolean;
 		model: StateGenerationModel;
 		reference?: PickedReference;
 	};
@@ -14,10 +15,13 @@
 </script>
 
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import PromptField from './PromptField.svelte';
-	import { STATE_TEMPLATES, type StateTemplate } from './stateTemplates.ts';
+	import PromptSuggestions from './PromptSuggestions.svelte';
+	import { promptSuggestions } from './promptSuggestions.svelte.ts';
+	import type { PromptSuggestion } from './promptSuggestions.ts';
+	import { RIDING_STATE } from './experience/presentation.ts';
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import { app, getKeyRevision } from '../lib/app.svelte.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
@@ -87,7 +91,7 @@
 		if (ui.stateCaptureMove && has(ui.stateCaptureMove)) return ui.stateCaptureMove;
 		return has(DEFAULT_MOVE) ? DEFAULT_MOVE : (sources[0]?.id ?? DEFAULT_MOVE);
 	}
-	function suggestedName(sourceId: string, chosen: StateTemplate | '' = '') {
+	function suggestedName(sourceId: string, chosen = '') {
 		const current = store.project?.manifest;
 		const root =
 			chosen ||
@@ -112,9 +116,9 @@
 	let named = $state(restored?.named ?? false);
 	let editing = $state(!!restored);
 	let description = $state(restored?.description ?? '');
-	// A template only fills the instructions; they stay editable and are sent as shown.
-	let template = $state<StateTemplate | ''>(restored?.template ?? '');
-	// Set when a riding-template State was generated in this sheet, for the review checklist and the saved notice.
+	// Picking the Riding idea only fills the instructions; they stay editable and are sent as shown.
+	let ridingIdea = $state(restored?.riding ?? false);
+	// Set when a State from the Riding idea was generated in this sheet, for the review checklist and the saved notice.
 	let riding = $state(false);
 	let model = $state<StateGenerationModel>(restored?.model ?? 'pro');
 	let advancedOpen = $state(!!restored && restored.model !== 'pro');
@@ -221,7 +225,11 @@
 		checkedPending && sourceReady && !nameIssue && (!editing || editReady)
 	);
 	const reviewRiding = $derived(
-		riding || review?.description?.trim() === STATE_TEMPLATES.riding.trim()
+		riding ||
+			review?.description?.trim() ===
+				promptSuggestions('state.pose')
+					.find(({ action }) => action === RIDING_STATE)
+					?.prompt.trim()
 	);
 	const reviewSource = $derived(review && project && stateGenerationSource(project, review.source));
 	const sourceCurrent = $derived(!!review && reviewSource?.version === review.sourceVersion);
@@ -272,30 +280,14 @@
 		pinned = stateCaptureSource(project.manifest, next)?.version;
 		stale = false;
 		failure = '';
-		if (!named) name = suggestedName(next, template);
+		if (!named) name = suggestedName(next, ridingIdea ? RIDING_STATE : '');
 	}
-	// What the user had typed before a template replaced it; an unedited template gives it back on Custom.
-	let typed = '';
-	// Arrow keys move between the template radios, as in any radio group.
-	const TEMPLATE_ORDER = ['', 'riding'] as const;
-	function templateKeys(event: KeyboardEvent & { currentTarget: HTMLElement }) {
-		const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
-		if (!step) return;
-		event.preventDefault();
-		const group = event.currentTarget;
-		const at = TEMPLATE_ORDER.indexOf(template);
-		chooseTemplate(TEMPLATE_ORDER[(at + step + TEMPLATE_ORDER.length) % TEMPLATE_ORDER.length]);
-		void tick().then(() => group.querySelector<HTMLElement>('[aria-checked="true"]')?.focus());
-	}
-	function chooseTemplate(next: StateTemplate | '') {
+	function pickIdea(idea: PromptSuggestion) {
 		if (busy) return;
-		const untouched = !!template && description === STATE_TEMPLATES[template];
-		if (!untouched) typed = description;
-		if (next) description = STATE_TEMPLATES[next];
-		else if (untouched) description = typed;
-		template = next;
+		description = idea.prompt;
+		ridingIdea = idea.action === RIDING_STATE;
 		failure = '';
-		if (!named) name = suggestedName(clip, next);
+		if (!named) name = suggestedName(clip, ridingIdea ? RIDING_STATE : '');
 	}
 	// Reads the saved character again (paid quotes read storage), keeping the draft.
 	function reloadSource() {
@@ -391,7 +383,7 @@
 			source: { clip, frame },
 			name,
 			description,
-			template,
+			riding: ridingIdea,
 			model,
 			reference
 		};
@@ -433,8 +425,8 @@
 		checkedPending = false;
 		void run('stateGeneration.generating', async () => {
 			try {
-				// Pro Flash with a reference sends no instructions, so the template was not used.
-				riding = template === 'riding' && !flashReference;
+				// Pro Flash with a reference sends no instructions, so the Riding idea was not used.
+				riding = ridingIdea && !flashReference;
 				review = await startState(prepared);
 			} catch (cause) {
 				canContinue = await hasStateContinuation(projectId).catch(() => false);
@@ -513,7 +505,7 @@
 {/snippet}
 
 <Sheet
-	title={t('stateCapture.title')}
+	title={t('moves.addState')}
 	className={['state-capture-sheet', review ? 'reviewing' : checkedPending && editing && 'split']
 		.filter(Boolean)
 		.join(' ')}
@@ -675,36 +667,6 @@
 				<div class="state-panel state-edit">
 					{#if !flashReference}
 						<div class="field">
-							<span class="label" id="{formId}-template">{t('stateGeneration.template')}</span>
-							<div
-								class="chips"
-								role="radiogroup"
-								aria-labelledby="{formId}-template"
-								tabindex="-1"
-								onkeydown={templateKeys}
-							>
-								<button
-									type="button"
-									class="chip"
-									role="radio"
-									aria-checked={!template}
-									tabindex={template ? -1 : 0}
-									disabled={!!busy}
-									onclick={() => chooseTemplate('')}>{t('moveSheet.custom')}</button
-								>
-								<button
-									type="button"
-									class="chip"
-									role="radio"
-									aria-checked={template === 'riding'}
-									tabindex={template === 'riding' ? 0 : -1}
-									disabled={!!busy}
-									onclick={() => chooseTemplate('riding')}
-									>{t('stateGeneration.templates.riding')}</button
-								>
-							</div>
-						</div>
-						<div class="field">
 							<label class="label" for="{formId}-instructions"
 								>{t('stateGeneration.description')}</label
 							>
@@ -717,6 +679,12 @@
 								maxOutput={model === 'pixen' ? 500 : 2000}
 								enhanceDisabled={!!busy}
 								disabled={!!busy}
+							/>
+							<PromptSuggestions
+								label={t('stateCapture.poseIdeas')}
+								value={description}
+								suggestions={promptSuggestions('state.pose')}
+								onpick={pickIdea}
 							/>
 						</div>
 					{/if}

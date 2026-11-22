@@ -17,6 +17,7 @@ import {
 	type CreationSection
 } from './creationSettings.ts';
 import type { ResetScope } from './resetSettings.ts';
+import { suggestionSectionAtDefaults } from './promptSuggestions.svelte.ts';
 import { doc, ui } from './state.svelte.ts';
 import {
 	demoItemsShown,
@@ -65,8 +66,9 @@ export function watchCreationSettings() {
 
 function creationAtDefaults(section: CreationSection) {
 	const current = currentCreationSettings(section);
-	if ('unavailable' in current) return true;
+	if ('unavailable' in current) return suggestionSectionAtDefaults(section);
 	return (
+		suggestionSectionAtDefaults(section) &&
 		current.valid &&
 		Object.entries(creationDefaults[section]).every(
 			([key, value]) => (current.values as Record<string, unknown>)[key] === value

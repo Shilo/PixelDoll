@@ -290,6 +290,7 @@ export const ui = $state({
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
 	stateCaptureMove: '',
+	redrawMove: '',
 	moveFormOpen: false,
 	get sheet(): SheetId {
 		return panel;

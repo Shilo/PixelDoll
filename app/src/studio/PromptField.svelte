@@ -18,6 +18,7 @@
 	let {
 		value,
 		onvalue,
+		onreplace = onvalue,
 		spec = null,
 		activity,
 		maxOutput,
@@ -37,10 +38,15 @@
 		spellcheck,
 		class: className = '',
 		onkeydown,
-		keyshortcuts
+		keyshortcuts,
+		save,
+		restore
 	}: {
 		value: string;
+		/** Typed text. */
 		onvalue: (value: string) => void;
+		/** Text Enhance or Undo puts in, when the caller treats that differently from typing. Defaults to onvalue. */
+		onreplace?: (value: string) => void;
 		/** The enhancer to run; null leaves only Copy. */
 		spec?: EnhanceSpec | null;
 		activity: { scope: string; label: string };
@@ -66,10 +72,13 @@
 		class?: string;
 		onkeydown?: (event: KeyboardEvent) => void;
 		keyshortcuts?: string;
+		/** What Undo brings back, when that is more than this field's text (Details restores the whole prompt). */
+		save?: () => string;
+		restore?: (saved: string) => void;
 	} = $props();
 
 	let area: HTMLTextAreaElement;
-	let undo = $state<{ before: string; after: string }>();
+	let undo = $state<{ saved: string; after: string; afterSaved?: string }>();
 	let copied = $state(false);
 	let copyTimer: ReturnType<typeof setTimeout> | undefined;
 	let abort: AbortController | undefined;
@@ -78,7 +87,7 @@
 		clearTimeout(copyTimer);
 	});
 
-	const canUndo = $derived(!!undo && undo.after === value);
+	const canUndo = $derived(!!undo && undo.after === value && (!save || save() === undo.afterSaved));
 	const text = $derived(value.trim());
 	const cost = $derived(
 		`${t('create.form.enhance')} · ${t('moves.estimate', { gens: formatNumber(0.05) })}`
@@ -86,20 +95,25 @@
 	const enhanceOff = $derived(
 		disabled ||
 			busy ||
-			(!canUndo &&
-				(enhanceDisabled ||
-					!text ||
-					(spec !== null && text.length > ENHANCE_INPUT_LIMIT[spec.kind]) ||
-					((!app.key || app.keyRejected) && !onconnect)))
+			enhanceDisabled ||
+			!text ||
+			(spec !== null && text.length > ENHANCE_INPUT_LIMIT[spec.kind]) ||
+			((!app.key || app.keyRejected) && !onconnect)
 	);
 
-	/** Runs Enhance, or Undo when the text is the last enhancement. Callers use it to resume after connecting. */
+	/** Restores the text from before the last enhancement. */
+	function undoEnhance() {
+		if (!undo) return;
+		const { saved } = undo;
+		undo = undefined;
+		if (restore) restore(saved);
+		else onreplace(saved);
+		// The Undo button leaves with this click; keep the keyboard in the field it changed.
+		area.focus();
+	}
+
+	/** Runs Enhance. Callers use it to resume after connecting. */
 	export async function enhance() {
-		if (canUndo && undo) {
-			onvalue(undo.before);
-			undo = undefined;
-			return;
-		}
 		if (enhanceOff || !spec) return;
 		const key = app.key;
 		if (!key || app.keyRejected) {
@@ -107,13 +121,15 @@
 			return;
 		}
 		const before = value,
-			asked = spec;
+			saved = save ? save() : value,
+			asked = spec,
+			limit = maxOutput;
 		abort = new AbortController();
 		busy = true;
 		try {
 			const enhanced = await enhancePrompt(key, asked, text, maxOutput, abort.signal, activity);
 			if (abort.signal.aborted) return;
-			if (value !== before || spec !== asked || app.key !== key) {
+			if (value !== before || spec !== asked || maxOutput !== limit || app.key !== key) {
 				onmessage(message('create.form.settingsChanged'));
 				return;
 			}
@@ -122,12 +138,13 @@
 				onmessage(next);
 				return;
 			}
-			undo = { before, after: next };
-			onvalue(next);
+			onreplace(next);
+			undo = { saved, after: next, afterSaved: save?.() };
 		} catch (error) {
 			if (!abort.signal.aborted) onmessage(enhanceErrorMessage(error));
 		} finally {
-			if (!abort.signal.aborted) busy = false;
+			// Always settle: a field unmounted mid-request still shares `busy` with its form.
+			busy = false;
 		}
 	}
 
@@ -192,6 +209,18 @@
 		{spellcheck}
 		{disabled}></textarea>
 	<div class="prompt-actions">
+		<!-- Undo appears first so Copy and Enhance never move. -->
+		{#if canUndo}
+			<button
+				class="bu-action"
+				data-variant="quiet"
+				type="button"
+				aria-label={t('common.undo')}
+				title={t('create.form.undoTitle')}
+				disabled={disabled || busy}
+				onclick={undoEnhance}><Undo2 size={16} /></button
+			>
+		{/if}
 		<button
 			class="bu-action"
 			data-variant="quiet"
@@ -207,17 +236,13 @@
 				class="bu-action enhance"
 				data-variant="quiet"
 				type="button"
-				aria-label={t(
-					canUndo ? 'common.undo' : busy ? 'create.form.enhancing' : 'create.form.enhance'
-				)}
-				title={canUndo ? t('create.form.undoTitle') : cost}
+				aria-label={t(busy ? 'create.form.enhancing' : 'create.form.enhance')}
+				title={cost}
 				aria-busy={busy}
 				disabled={enhanceOff}
 				onclick={() => void enhance()}
 			>
-				{#if busy}<LoaderCircle size={16} class="spin" />{:else if canUndo}<Undo2
-						size={16}
-					/>{:else}<WandSparkles size={16} />{/if}
+				{#if busy}<LoaderCircle size={16} class="spin" />{:else}<WandSparkles size={16} />{/if}
 			</button>
 		{/if}
 	</div>

@@ -11,6 +11,8 @@
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import { Copy, Check, ChevronRight } from './icons.ts';
 	import PromptField from './PromptField.svelte';
+	import PromptSuggestions from './PromptSuggestions.svelte';
+	import { promptSuggestions } from './promptSuggestions.svelte.ts';
 	import { displayDirectionShort } from './displayDirection.ts';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message as notice, type Message } from '../lib/message.ts';
@@ -308,6 +310,11 @@
 						copyLabel={t('create.form.copyDetails')}
 						value={d.details}
 						onvalue={details}
+						save={() => d.prompt}
+						restore={(saved) => {
+							edited();
+							readPrompt(d, saved);
+						}}
 						spec={detailsSpec}
 						accept={acceptDetails}
 						activity={{ scope: `${enhanceScope}:details`, label: 'Enhance character prompt' }}
@@ -317,6 +324,12 @@
 						onmessage={(note) => (message = note)}
 						maxlength={2000}
 						placeholder={t('create.form.detailsPlaceholder')}
+					/>
+					<PromptSuggestions
+						label={t('create.form.lookIdeas')}
+						value={d.details}
+						suggestions={promptSuggestions('character.look')}
+						onpick={(idea) => details(idea.prompt)}
 					/>
 				</div>
 				{#each TRAIT_KEYS as key (key)}

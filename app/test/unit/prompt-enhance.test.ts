@@ -101,9 +101,24 @@ describe('trimStaticBoilerplate', () => {
 		const text = 'A camera-facing pose with the fist held high. The chin is raised.';
 		expect(trimStaticBoilerplate(text)).toBe(text);
 	});
-	it('never trims a style-only ending that mentions no camera or animation', () => {
-		const text = 'Arms crossed. Maintain the crisp 2D pixel art aesthetic.';
-		expect(trimStaticBoilerplate(text)).toBe(text);
+	it('keeps pose sentences that mention the camera, even right before the ending', () => {
+		expect(
+			trimStaticBoilerplate(
+				'Bend both knees. Turn the face toward the camera. Static camera, completely locked-off shot.'
+			)
+		).toBe('Bend both knees. Turn the face toward the camera.');
+	});
+	it('keeps a pose sentence that only mentions the animation', () => {
+		expect(
+			trimStaticBoilerplate(
+				'Arms crossed. Keep the left hand open throughout the entire animation. Static camera, completely locked-off shot.'
+			)
+		).toBe('Arms crossed. Keep the left hand open throughout the entire animation.');
+	});
+	it('also drops the pixel-art style sentence, which only matters for animation', () => {
+		expect(trimStaticBoilerplate('Arms crossed. Maintain the crisp 2D pixel art aesthetic.')).toBe(
+			'Arms crossed.'
+		);
 	});
 	it('keeps the text when it is nothing but the ending', () => {
 		expect(trimStaticBoilerplate(ENDING)).toBe(ENDING);

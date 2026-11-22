@@ -26,146 +26,24 @@ export interface Category {
 	order: number;
 }
 
-/** Category copy by behavior profile, so a custom copy inherits its source's icon and examples. */
-const COPY: Record<
-	Exclude<SlotProfile, 'body'>,
-	{ icon: string; ideas: { label: string; caption: WhisperKey }[] }
-> = {
-	head: {
-		icon: 'head',
-		ideas: [
-			{ label: 'wizard hat', caption: 'studioSlots.ideas.head.0' },
-			{ label: 'iron knight helmet', caption: 'studioSlots.ideas.head.1' },
-			{ label: 'golden crown', caption: 'studioSlots.ideas.head.2' },
-			{ label: 'hood', caption: 'studioSlots.ideas.head.3' }
-		]
-	},
-	hair: {
-		icon: 'hair',
-		ideas: [
-			{ label: 'long braided hair', caption: 'studioSlots.ideas.hair.0' },
-			{ label: 'short spiky hair', caption: 'studioSlots.ideas.hair.1' },
-			{ label: 'ponytail', caption: 'studioSlots.ideas.hair.2' }
-		]
-	},
-	face_acc: {
-		icon: 'face',
-		ideas: [
-			{ label: 'round glasses', caption: 'studioSlots.ideas.face_acc.0' },
-			{ label: 'eye patch', caption: 'studioSlots.ideas.face_acc.1' },
-			{ label: 'bandit mask', caption: 'studioSlots.ideas.face_acc.2' }
-		]
-	},
-	torso_inner: {
-		icon: 'body',
-		ideas: [
-			{ label: 'leather vest', caption: 'studioSlots.ideas.torso_inner.0' },
-			{ label: 'chainmail shirt', caption: 'studioSlots.ideas.torso_inner.1' },
-			{ label: 'blue tunic', caption: 'studioSlots.ideas.torso_inner.2' }
-		]
-	},
-	arms: {
-		icon: 'hands',
-		ideas: [
-			{ label: 'leather gloves', caption: 'studioSlots.ideas.arms.0' },
-			{ label: 'iron gauntlets', caption: 'studioSlots.ideas.arms.1' },
-			{ label: 'cloth wraps', caption: 'studioSlots.ideas.arms.2' }
-		]
-	},
-	legs: {
-		icon: 'legs',
-		ideas: [
-			{ label: 'brown trousers', caption: 'studioSlots.ideas.legs.0' },
-			{ label: 'plate greaves', caption: 'studioSlots.ideas.legs.1' },
-			{ label: 'pleated skirt', caption: 'studioSlots.ideas.legs.2' }
-		]
-	},
-	feet: {
-		icon: 'feet',
-		ideas: [
-			{ label: 'leather boots', caption: 'studioSlots.ideas.feet.0' },
-			{ label: 'sandals', caption: 'studioSlots.ideas.feet.1' },
-			{ label: 'iron sabatons', caption: 'studioSlots.ideas.feet.2' }
-		]
-	},
-	back: {
-		icon: 'back',
-		ideas: [
-			{ label: 'red cape', caption: 'studioSlots.ideas.back.0' },
-			{ label: 'travel backpack', caption: 'studioSlots.ideas.back.1' },
-			{ label: 'quiver of arrows', caption: 'studioSlots.ideas.back.2' }
-		]
-	},
-	main_hand: {
-		icon: 'main_hand',
-		ideas: [
-			{ label: 'steel sword', caption: 'studioSlots.ideas.main_hand.0' },
-			{ label: 'wooden staff', caption: 'studioSlots.ideas.main_hand.1' },
-			{ label: 'battle axe', caption: 'studioSlots.ideas.main_hand.2' }
-		]
-	},
-	off_hand: {
-		icon: 'off_hand',
-		ideas: [
-			{ label: 'round shield', caption: 'studioSlots.ideas.off_hand.0' },
-			{ label: 'iron lantern', caption: 'studioSlots.ideas.off_hand.1' },
-			{ label: 'wooden longbow', caption: 'studioSlots.ideas.off_hand.2' }
-		]
-	},
-	facial_hair: {
-		icon: 'hair',
-		ideas: [
-			{ label: 'full beard', caption: 'studioSlots.ideas.facial_hair.0' },
-			{ label: 'handlebar mustache', caption: 'studioSlots.ideas.facial_hair.1' },
-			{ label: 'goatee', caption: 'studioSlots.ideas.facial_hair.2' }
-		]
-	},
-	torso_outer: {
-		icon: 'body',
-		ideas: [
-			{ label: 'steel plate armor', caption: 'studioSlots.ideas.torso_outer.0' },
-			{ label: 'hooded robe', caption: 'studioSlots.ideas.torso_outer.1' },
-			{ label: 'long coat', caption: 'studioSlots.ideas.torso_outer.2' }
-		]
-	},
-	underwear: {
-		icon: 'legs',
-		ideas: [
-			{ label: 'plain white underwear set', caption: 'studioSlots.ideas.underwear.0' },
-			{ label: 'striped swimsuit', caption: 'studioSlots.ideas.underwear.1' }
-		]
-	},
-	waist: {
-		icon: 'legs',
-		ideas: [
-			{ label: 'leather belt', caption: 'studioSlots.ideas.waist.0' },
-			{ label: 'red sash', caption: 'studioSlots.ideas.waist.1' },
-			{ label: 'belt pouch', caption: 'studioSlots.ideas.waist.2' }
-		]
-	},
-	neck: {
-		icon: 'body',
-		ideas: [
-			{ label: 'gold amulet', caption: 'studioSlots.ideas.neck.0' },
-			{ label: 'wool scarf', caption: 'studioSlots.ideas.neck.1' },
-			{ label: 'bead necklace', caption: 'studioSlots.ideas.neck.2' }
-		]
-	},
-	shoulders: {
-		icon: 'body',
-		ideas: [
-			{ label: 'steel pauldrons', caption: 'studioSlots.ideas.shoulders.0' },
-			{ label: 'fur mantle', caption: 'studioSlots.ideas.shoulders.1' }
-		]
-	},
-	accessory: {
-		icon: 'accessory',
-		ideas: [
-			{ label: 'brass brooch', caption: 'studioSlots.ideas.accessory.0' },
-			{ label: 'ribbon bow', caption: 'studioSlots.ideas.accessory.1' },
-			{ label: 'charm pouch', caption: 'studioSlots.ideas.accessory.2' }
-		]
-	}
+const PROFILE_ICONS: Record<Exclude<SlotProfile, 'body'>, string> = {
+	head: 'head',
+	hair: 'hair',
+	face_acc: 'face',
+	torso_inner: 'body',
+	arms: 'hands',
+	legs: 'legs',
+	feet: 'feet',
+	back: 'back',
+	main_hand: 'main_hand',
+	off_hand: 'off_hand',
+	facial_hair: 'hair',
+	torso_outer: 'body',
+	underwear: 'legs',
+	waist: 'legs',
+	neck: 'body',
+	shoulders: 'body',
+	accessory: 'accessory'
 };
 
 const BUILTIN = new Map(SLOTS.map((s) => [s.id, s]));
@@ -185,7 +63,7 @@ export function slotLabel(m: Pick<Manifest, 'slots'> | undefined, key: string): 
 	return slotDef(m, key)?.label ?? BUILTIN.get(key)?.label ?? key;
 }
 
-const slotLabelKeys = {
+export const slotProfileLabelKeys = {
 	body: 'studioSlots.labels.base',
 	head: 'studioSlots.labels.head',
 	hair: 'studioSlots.labels.hair',
@@ -212,24 +90,12 @@ export function slotLabelMessage(
 ): Message | string {
 	const label = slotLabel(m, key);
 	if (key === BASE_KEY || BUILTIN.get(key)?.label === label)
-		return message(slotLabelKeys[key as SlotProfile]);
+		return message(slotProfileLabelKeys[key as SlotProfile]);
 	return label;
 }
 export const iconOf = (m: Pick<Manifest, 'slots'> | undefined, key: string) => {
 	const p = profileOf(m, key);
-	return p === 'body' ? 'body' : COPY[p].icon;
-};
-export const categoryCopy = (m: Pick<Manifest, 'slots'> | undefined, key: string) => {
-	const p = profileOf(m, key);
-	const profile = p === 'body' ? 'accessory' : p;
-	const { icon, ideas } = COPY[profile];
-	return {
-		icon,
-		ideas: ideas.map(({ label, caption }) => ({
-			label,
-			caption: message(caption)
-		}))
-	};
+	return p === 'body' ? 'body' : PROFILE_ICONS[p];
 };
 
 const defaultOrder = (key: string) => {

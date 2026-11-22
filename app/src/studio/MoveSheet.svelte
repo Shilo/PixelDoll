@@ -5,6 +5,10 @@
 	// re-rendered through raw skeleton-v3).
 	import { MediaQuery } from 'svelte/reactivity';
 	import PromptField from './PromptField.svelte';
+	import PromptSuggestions from './PromptSuggestions.svelte';
+	import { promptSuggestionDefaults } from './promptSuggestionDefaults.ts';
+	import { promptSuggestions } from './promptSuggestions.svelte.ts';
+	import type { PromptSuggestion } from './promptSuggestions.ts';
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
@@ -43,7 +47,6 @@
 		ITEM_MOVE_SAVE_CONFLICT,
 		SAVED_FRAMES_UNAVAILABLE
 	} from '../lib/items/run.ts';
-	import { AUTHORED } from '../lib/rig/poses.ts';
 	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
@@ -144,15 +147,12 @@
 	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
-		[
-			...new Set([
-				'idle',
-				'walk',
-				'run',
-				...AUTHORED.filter((action) => action !== 'ride'),
-				...sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)
-			])
-		].filter((a) => !stateIds.has(a) && !reservedMove(a, have.has(a)))
+		promptSuggestionDefaults.move.flatMap(({ action }) =>
+			action && !stateIds.has(action) && !have.has(action) && !reservedMove(action) ? [action] : []
+		)
+	);
+	const suggestions = $derived(
+		promptSuggestions('move').filter(({ action }) => !action || options.includes(action))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let sourceId = $state<string | undefined>(draft?.source?.clip);
@@ -230,10 +230,15 @@
 	}
 	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
 	let frameChoice = $state<number | undefined>(draft?.animation?.frameCount);
-	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
+	let action = $state(
+		draft?.action ?? untrack(() => suggestions.find((entry) => entry.action)?.action) ?? ''
+	);
 	let replaceSelected = $state(draft?.replace ?? false);
-	let text = $state(draft?.text ?? untrack(() => moveTemplatePrompt(action)));
-	let templatePicked = $state(!!draft?.action);
+	let text = $state(draft?.text ?? untrack(() => templateText(action)));
+	// A template opened on its customized prompt counts as picked, as if its pill had been pressed.
+	let templatePicked = $state(
+		!!draft?.action || untrack(() => !!action && text !== moveTemplatePrompt(action))
+	);
 	let loopChoice = $state<boolean | undefined>(draft?.loop);
 	let frameReferences = $state<MoveFrameReferences<PickedReference>>(draft?.frameReferences ?? {});
 	let referenceDirection = $state<DirectionName>();
@@ -529,7 +534,13 @@
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
 		if (Object.hasOwn(store.moveReviews, id) && !regeneration)
 			return t('moveSheet.checkpoint.ready', { move: nice(id) });
-		if (describing && !templatePicked && !replacing && id && options.includes(id))
+		if (
+			describing &&
+			!templatePicked &&
+			!replacing &&
+			id &&
+			suggestions.some((entry) => entry.action === id)
+		)
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (!m || !id) return '';
 		if (
@@ -1043,7 +1054,8 @@
 		const clip = m?.rig.animations.find((entry) => entry.id === next);
 		const prompt = savedPrompt || moveTemplatePrompt(next, clip?.moveLoop ?? clip?.loop);
 		if (action === next && replaceSelected === replace) {
-			text = prompt;
+			// The same move keeps its Loop choice, so its text follows it.
+			text = savedPrompt || moveTemplatePrompt(next, looping);
 			return;
 		}
 		action = next;
@@ -1054,10 +1066,48 @@
 		frameReferences = {};
 		customStartAcknowledged = false;
 		referenceDirection = undefined;
+		selectedDirs = redrawDirs(next);
+	}
+	// A redraw starts on the views that failed their checks, or every view when none did.
+	function redrawDirs(clip: string) {
 		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
 			?.clips;
-		const flagged = availableDirs.filter((d) => clips?.[`${next}/${d}`]?.fails?.length);
-		selectedDirs = flagged.length ? flagged : [...availableDirs];
+		const flagged = availableDirs.filter((d) => clips?.[`${clip}/${d}`]?.fails?.length);
+		return flagged.length ? flagged : [...availableDirs];
+	}
+	// Redraw… on a saved move opens this sheet on that move.
+	const redrawTarget = untrack(() => ui.redrawMove);
+	if (redrawTarget) {
+		ui.redrawMove = '';
+		ui.moveFormOpen = true;
+		if (untrack(() => have.has(redrawTarget))) chooseAction(redrawTarget);
+	}
+	// The character's quality checks load after the sheet opens; pick the failed views once they arrive.
+	let redrawChecks = !!redrawTarget;
+	$effect(() => {
+		if (!redrawChecks || !rec) return;
+		redrawChecks = false;
+		if (replacing) selectedDirs = untrack(() => redrawDirs(action));
+	});
+	// Picking the applied template again lets the text stand as a custom move, keeping what was typed. The template the
+	// sheet opened on was never picked, so pressing it just picks it.
+	function pickSuggestion(suggestion: PromptSuggestion) {
+		const template = suggestion.action;
+		if (!template || action !== template || !templatePicked) {
+			chooseAction(template ?? '');
+			// An unedited template keeps the text chooseAction gave it, which follows the move's loop choice.
+			if (!template || suggestion.prompt !== moveTemplatePrompt(template)) text = suggestion.prompt;
+			return;
+		}
+		const kept = text;
+		chooseAction('');
+		text = kept;
+	}
+	// The template's text as the user customized it in Settings.
+	function templateText(template: string) {
+		return (
+			suggestions.find((entry) => entry.action === template)?.prompt ?? moveTemplatePrompt(template)
+		);
 	}
 	function inputMotion(value: string) {
 		if (!templatePicked && !replacing && action) chooseAction('');
@@ -1597,7 +1647,7 @@
 					? t('moveSheet.review.redrawProgress')
 					: t('moveSheet.titleRepair')
 				: (progress ? moving.spec?.replace : replacing)
-					? t('moveSheet.titleReplace')
+					? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
 					: t('moves.add')}
 	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
@@ -2066,28 +2116,6 @@
 				</div>
 				<div class="move-edit">
 					<div class="field">
-						<span class="label" id="act">{t('common.move')}</span>
-						<div class="chips" role="radiogroup" aria-labelledby="act">
-							<button
-								class="chip"
-								role="radio"
-								aria-checked={!action}
-								tabindex={action && options.includes(action) ? -1 : 0}
-								onclick={() => chooseAction('')}>{t('moveSheet.custom')}</button
-							>
-							{#each options as a (a)}
-								<button
-									class="chip"
-									role="radio"
-									aria-checked={action === a}
-									tabindex={action === a ? 0 : -1}
-									onclick={() => chooseAction(a)}
-									>{have.has(a) ? t('moveSheet.redraw', { move: nice(a) }) : nice(a)}</button
-								>
-							{/each}
-						</div>
-					</div>
-					<div class="field">
 						<label class="label" for="move-description"
 							>{replacing
 								? t('moveSheet.describeReplacement')
@@ -2097,6 +2125,11 @@
 							id="move-description"
 							value={text}
 							onvalue={inputMotion}
+							onreplace={(motion) => {
+								// Enhancing the template the sheet opened on keeps it, like picking it would.
+								if (action) templatePicked = true;
+								text = motion;
+							}}
 							spec={enhanceSpec}
 							activity={{ scope: enhanceScope, label: 'Enhance animation prompt' }}
 							maxOutput={900}
@@ -2104,6 +2137,16 @@
 							describedby="move-description-hint"
 							maxlength={900}
 						/>
+						<!-- A redraw keeps its saved move, so it offers no templates. -->
+						{#if !replacing}
+							<PromptSuggestions
+								label={t('moveSheet.templates')}
+								value={text}
+								active={action}
+								{suggestions}
+								onpick={pickSuggestion}
+							/>
+						{/if}
 						<p class="faint small" id="move-description-hint">
 							{t('moveSheet.motionOnly')}
 						</p>

@@ -10,6 +10,7 @@ import {
 	noteExportSettings
 } from './settingsDefaults.svelte.ts';
 import { creationSections, creationSettingsKey, isCreationSection } from './creationSettings.ts';
+import { resetAllSuggestions, resetSuggestionSection } from './promptSuggestions.svelte.ts';
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { settingsLabels } from './settingsNavigation.svelte.ts';
 import { doc, isDemo, refreshShared, setTheme, store } from './state.svelte.ts';
@@ -48,6 +49,11 @@ export async function resetSettings(scope: ResetScope): Promise<WhisperKey[]> {
 		}
 	}
 	if (!workspaceCopy && sections.length) noteCreationSettings();
+	if (!workspaceCopy) {
+		if (scope === 'all' && !resetAllSuggestions()) failures.push('promptSuggestions.heading');
+		else if (isCreationSection(scope) && !resetSuggestionSection(scope))
+			failures.push('promptSuggestions.heading');
+	}
 	if ((scope === 'all' || scope === 'general') && !setTheme('dark'))
 		failures.push('settings.theme');
 	if (scope === 'all' || scope === 'wardrobe') {

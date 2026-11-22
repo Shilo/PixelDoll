@@ -10,7 +10,7 @@
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import Sprite from '../Sprite.svelte';
 	import { ui } from '../state.svelte.ts';
-	import { popoverFocus } from './focus.ts';
+	import { navigateMenu, popoverFocus } from './focus.ts';
 	import { croppedBacking, croppedThumbnail } from './thumbnails.svelte.ts';
 
 	let {
@@ -55,27 +55,6 @@
 			if (key === ALL_CLIPS) return t('share.allClips');
 		}
 		return displayMove(key, moveRefs);
-	}
-
-	// Arrow keys, Home and End move between enabled rows across both groups.
-	function navigate(event: KeyboardEvent) {
-		const items = [
-			...menu.querySelectorAll<HTMLButtonElement>('[role=menuitemradio]:not(:disabled)')
-		];
-		const at = items.indexOf(document.activeElement as HTMLButtonElement);
-		const target =
-			event.key === 'ArrowDown'
-				? items[(at + 1) % items.length]
-				: event.key === 'ArrowUp'
-					? items[(at - 1 + items.length) % items.length]
-					: event.key === 'Home'
-						? items[0]
-						: event.key === 'End'
-							? items.at(-1)
-							: undefined;
-		if (!target) return;
-		event.preventDefault();
-		target.focus();
 	}
 </script>
 
@@ -139,7 +118,7 @@
 				if (menu.matches(':popover-open')) menu.hidePopover();
 			});
 		}
-		navigate(event);
+		navigateMenu(menu, event);
 	}}
 >
 	<PopoverArrow />

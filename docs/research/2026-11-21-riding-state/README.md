@@ -2,11 +2,11 @@
 
 November 21, 2026. Tracking: [Ride a mount with a saved Riding State](https://github.com/users/Shilo/projects/7/views/1?pane=issue&itemId=313789238).
 
-A saved State can be the rider's pose on the Studio test mount. Create State offers an editable **Riding** template. The template prompt is **not qualified**: both live probes below failed.
+A saved State can be the rider's pose on the Studio test mount. Create State offers an editable **Riding** pose idea. Its prompt is **not qualified**: both live probes below failed.
 
 ## Behavior
 
-- **Create State:** with **Edit this pose** on, **Start from** offers Custom or Riding. Riding fills the instructions with the template text, which stays editable. An untouched name becomes Riding. The review shows a checklist under the prompt. A riding save says where to use the State.
+- **Create State:** with **Edit this pose** on, the pose ideas under the prompt include **Riding** (a prompt suggestion, editable like the others). Picking it fills the instructions, which stay editable, and an untouched name becomes Riding. The review shows a checklist under the prompt. A riding save says where to use the State.
 - **Mount settings:** the paw icon opens the **Mount** page of Settings: a preview, Show mount, **Riding pose** and Hide leg, with no explanatory text. The preview always shows the mount walking and turning; with Show mount on, the open character (or the demo) rides it with the current settings. Clicking it pauses or plays, and it is removed when Settings closes. Riding pose lists every saved State except Standing. A State missing any rig facing, mirrors resolved, is listed but disabled with its missing facings named. Riding order: the chosen State (when one is picked), the Ride Move, the Riding State, the Idle Move, then the Standing State. The first three show only for the exact facing; the default, Automatic, starts at the Ride Move. All three persist in this browser (`pixeldoll.mount`); the Riding pose is saved per character. Reset this page restores the defaults.
 - **Preview:** mounting with a Riding pose selects that State, and so does opening or customizing a character while mounted. Picking another move while mounted is respected; Top-down and Side-scroller keep the pose. Dismounting restores the earlier selection unless the user changed it in the meantime.
 - **Top-down and Side-scroller:** while mounted, the rider follows the riding order for the exact facing and follows the mount seat. It is never turned to a neighboring facing. If a chosen State is missing the facing, the next in order shows, with the existing missing-direction note and toast. The rider is not silently swapped.
@@ -46,7 +46,7 @@ Both failed in the same way. The East side view turned into a front view, and th
 With the owner's go-ahead to continue within the same 15-generation approval, two more East probes used `/edit-image-pro-flash` (text), the same character, seed and 64 px cell. The free quote was 5 generations per image; each receipt reported 5, with one attempt.
 
 - **C:** prompt A.
-- **D (now the template):** the text in `app/src/studio/stateTemplates.ts`, which names the side-view leg directly: near leg hanging almost straight down with the foot under the hip, hands forward as if holding reins.
+- **D (now the template):** the `riding` entry of `state.pose` in `app/src/studio/promptSuggestionDefaults.ts`, which names the side-view leg directly: near leg hanging almost straight down with the foot under the hip, hands forward as if holding reins.
 
 ![Source East, probe C, probe D](evidence/east-pro-flash-probes.png)
 
