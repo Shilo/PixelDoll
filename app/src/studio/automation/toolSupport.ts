@@ -2,27 +2,78 @@ import { app } from '../../lib/app.svelte.ts';
 import { tierDecision } from '../../lib/pixellab/plans.ts';
 import {
 	doc,
+	readAgentDrafts,
 	readAgentReceipts,
 	readCharacter,
+	readCharacterMetadata,
 	refreshProjects,
 	store,
 	studioStartupState,
-	writeAgentReceipt
+	writeAgentReceipt,
+	type Gen
 } from '../state.svelte.ts';
+import { agentEquipmentSaved, agentMoveDecision } from '../create.ts';
 import { AgentError, type JsonSchema } from './contract.ts';
-import { requireLeader } from './budget.ts';
-import { isFinal, receipts, type Receipt } from './receipts.ts';
+import { budget, requireLeader } from './budget.ts';
+import {
+	fingerprintOf,
+	isFinal,
+	itemOutcome,
+	receipts,
+	startView,
+	type Receipt
+} from './receipts.ts';
+import { jobError } from './jobError.ts';
 
-export async function loadReceipts() {
-	for (const receipt of await readAgentReceipts()) {
-		const local = receipts.get(receipt.id);
-		if (!local) receipts.add(receipt);
-		else if (
-			isFinal(receipt.outcome) &&
-			(!isFinal(local.outcome) || ['saved', 'created', 'discarded'].includes(receipt.outcome))
-		)
-			receipts.settle(local, receipt.outcome, receipt.error, true);
-	}
+export const draftOutcome = ({ phase, canceled, draft }: Gen) =>
+	itemOutcome({ phase, canceled, acceptedAt: draft.acceptedAt }) ?? phase;
+
+/** Absence from a tab's lists is never proof that paid work ended. */
+export async function loadReceipts(
+	ids: readonly string[] = [],
+	request?: Pick<Receipt, 'kind' | 'requestId'>
+) {
+	const loaded = (await readAgentReceipts(ids, request)).map((receipt) =>
+		receipts.refresh(receipt)
+	);
+	receipts.prune();
+	const active = loaded.filter((r) => !isFinal(r.outcome));
+	const drafts = active.some((r) => r.kind === 'item') ? await readAgentDrafts() : undefined;
+	const records = new Map<string, ReturnType<typeof readCharacterMetadata>>();
+	await Promise.all(
+		active.map(async (r) => {
+			let metadata = records.get(r.characterId);
+			if (!metadata) records.set(r.characterId, (metadata = readCharacterMetadata(r.characterId)));
+			const project = await metadata;
+			if (r.kind === 'character') {
+				if (project) receipts.settle(r, 'created');
+			} else if (r.kind === 'move') {
+				const decision = agentMoveDecision(project, r.id);
+				const candidate = r.moveId && project?.moveReviews?.[r.moveId];
+				if (decision) receipts.settle(r, decision);
+				else if (candidate && candidate.spec.activityScope === r.id) receipts.settle(r, 'review');
+			} else if (r.kind === 'equipment') {
+				if (agentEquipmentSaved(project, r)) receipts.settle(r, 'saved');
+			} else {
+				const draft = drafts?.get(r.id);
+				const outcome = project?.manifest.items.some((item) => item.id === r.targetId)
+					? 'saved'
+					: draft && draftOutcome(draft);
+				if (outcome) receipts.settle(r, outcome, jobError(draft?.error) ?? undefined);
+			}
+		})
+	);
+	return loaded;
+}
+
+export async function replayStart(kind: Receipt['kind'], args: Record<string, unknown>) {
+	if (args.dryRun || typeof args.requestId !== 'string' || !args.requestId) return;
+	const [found] = await loadReceipts([], { kind, requestId: args.requestId });
+	if (!found) return;
+	const fingerprint = await fingerprintOf(
+		kind === 'character' ? args : { ...args, characterId: args.characterId || found.characterId }
+	);
+	return { data: startView(receipts.repeat(kind, args.requestId, fingerprint)!, budget(), true) };
 }
 
 export async function recordReceipt(receipt: Receipt) {
@@ -44,7 +95,7 @@ export const str = (description: string, maxLength = 200): JsonSchema => ({
 	maxLength
 });
 export const requestIdArg = str(
-	'Optional id you choose for this paid request. Repeating a call with the same requestId returns the first start instead of paying again.',
+	'Optional id you choose for this paid request. While its receipt is retained, repeating the id returns the first start instead of paying again.',
 	100
 );
 

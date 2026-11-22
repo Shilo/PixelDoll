@@ -12,6 +12,7 @@ import {
 } from '../../src/studio/automation/budget.ts';
 
 const fixture = vi.hoisted(() => ({
+	revision: 0,
 	balance: null as Balance | null,
 	sent: false,
 	answer: undefined as ((allowed: boolean) => void) | undefined,
@@ -19,7 +20,7 @@ const fixture = vi.hoisted(() => ({
 }));
 vi.mock('../../src/lib/app.svelte.ts', () => ({
 	app: fixture,
-	getKeyRevision: () => 0
+	getKeyRevision: () => fixture.revision
 }));
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({
 	AGENT_APPROVAL_ENDED: 'Approval ended',
@@ -93,6 +94,22 @@ test('End revokes admitted but unsent work and closes a pending top-up', async (
 	fixture.answer!(true); // a click after the dialog closed cannot grant anything
 	await vi.waitFor(() => expect(budgetRequest(activityId)?.answer).toBe('canceled'));
 	expect(budget()).toMatchObject({ reserved: before, remaining: 0, active: false });
+});
+
+test('switching PixelLab accounts revokes the budget and cancels its unanswered top-up', async () => {
+	await approve(10);
+	const stillApproved = await withReservation(
+		'move',
+		4,
+		signal(),
+		(_check, _id, _finish, check) => check
+	);
+	const { activityId } = await requestBudget(2, 'More moves', signal());
+	fixture.revision++;
+	expect(stillApproved).toThrow(expect.objectContaining({ code: 'budget' }));
+	fixture.answer!(true);
+	await vi.waitFor(() => expect(budgetRequest(activityId)?.answer).toBe('canceled'));
+	expect(budget()).toMatchObject({ approved: 0, reserved: 0, remaining: 0, active: false });
 });
 
 test('a pending request outlives caller abort and records the later answer', async () => {

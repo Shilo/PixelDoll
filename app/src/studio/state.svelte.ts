@@ -148,7 +148,7 @@ import {
 	queue,
 	type JobRec
 } from '../lib/pixellab/queue.ts';
-import type { Receipt } from './automation/receipts.ts';
+import { retainedReceipts, type Receipt } from './automation/receipts.ts';
 import { jobError } from './automation/jobError.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import { stateAttempts } from './stateRecovery.ts';
@@ -858,43 +858,123 @@ export async function readCharacterMetadata(id: string) {
 }
 
 const AGENT_RECEIPTS = 'studio-agent-receipts';
-type AgentReceiptRecord = { id: string; receipts: Record<string, Receipt> };
-export async function readAgentReceipts() {
-	return Object.values(
-		(await db.get<AgentReceiptRecord>('projects', AGENT_RECEIPTS))?.receipts ?? {}
+type ReceiptIndexEntry = Pick<Receipt, 'id' | 'kind' | 'requestId' | 'startedAt'>;
+type AgentReceiptIndex = { id: string; entries: ReceiptIndexEntry[] };
+const agentReceiptKey = (id: string) => `${AGENT_RECEIPTS}:${id}`;
+
+export async function readAgentReceipts(
+	ids: readonly string[] = [],
+	request?: Pick<Receipt, 'kind' | 'requestId'>
+) {
+	// The move queue holds admissions until history has them. Read it first when discovering receipt IDs.
+	const admissions = ids.length ? undefined : await readStoredMoves();
+	const keys = ids.length
+		? ids
+		: retainedReceipts((await db.get<AgentReceiptIndex>('projects', AGENT_RECEIPTS))?.entries ?? [])
+				.filter(
+					(entry) =>
+						!request || (entry.kind === request.kind && entry.requestId === request.requestId)
+				)
+				.map(({ id }) => id);
+	const records = await Promise.all(
+		keys.filter(isAgentActivity).map((id) => db.get<Receipt>('projects', agentReceiptKey(id)))
 	);
-}
-export async function writeAgentReceipt(id: string, receipt: Receipt | null) {
-	const saved = await db.update<AgentReceiptRecord>('projects', AGENT_RECEIPTS, (stored) => {
-		const receipts = stored?.receipts ?? {};
+	const history = new Map(
+		records.flatMap((receipt) => (receipt ? [[receipt.id, receipt] as const] : []))
+	);
+	if (ids.length && ids.every((id) => !isAgentActivity(id) || history.has(id)))
+		return retainedReceipts([...history.values()]);
+	const { move, queued } = admissions ?? (await readStoredMoves());
+	for (const { spec } of [...(move ? [move] : []), ...queued]) {
+		const receipt = spec.agentAdmission;
 		if (
-			receipt?.requestId &&
-			Object.values(receipts).some(
-				(other) =>
-					other.id !== id && other.kind === receipt.kind && other.requestId === receipt.requestId
-			)
-		)
-			return { id: AGENT_RECEIPTS, receipts };
-		if (receipt) receipts[id] = receipt;
-		else delete receipts[id];
-		return { id: AGENT_RECEIPTS, receipts };
-	});
-	return !receipt || !!saved?.receipts?.[id];
+			receipt &&
+			(!ids.length || ids.includes(receipt.id)) &&
+			!history.has(receipt.id) &&
+			(!request || (receipt.kind === request.kind && receipt.requestId === request.requestId))
+		) {
+			// A move can advance from the queue to history while Activity is reading.
+			const updated = await db.get<Receipt>('projects', agentReceiptKey(receipt.id));
+			history.set(receipt.id, updated ?? receipt);
+		}
+	}
+	for (const id of ids.filter(isAgentActivity)) {
+		if (history.has(id)) continue;
+		const updated = await db.get<Receipt>('projects', agentReceiptKey(id));
+		if (updated) history.set(id, updated);
+	}
+	return retainedReceipts([...history.values()]);
+}
+
+export async function writeAgentReceipt(id: string, receipt: Receipt | null) {
+	const key = agentReceiptKey(id);
+	const conflict = new Error('Request already has an activity receipt');
+	let expired: ReceiptIndexEntry[] = [];
+	try {
+		await db.update<AgentReceiptIndex>(
+			'projects',
+			AGENT_RECEIPTS,
+			(stored) => {
+				const before = stored?.entries ?? [];
+				const live = retainedReceipts(before).filter((entry) => entry.id !== id);
+				if (
+					receipt?.requestId &&
+					live.some((entry) => entry.kind === receipt.kind && entry.requestId === receipt.requestId)
+				)
+					throw conflict;
+				const entries = retainedReceipts(
+					receipt
+						? [
+								{
+									id,
+									kind: receipt.kind,
+									requestId: receipt.requestId,
+									startedAt: receipt.startedAt
+								},
+								...live
+							]
+						: live
+				);
+				const keep = new Set(entries.map((entry) => entry.id));
+				if (receipt && !keep.has(id)) throw conflict;
+				expired = before.filter((entry) => entry.id !== id && !keep.has(entry.id));
+				return { id: AGENT_RECEIPTS, entries };
+			},
+			[],
+			receipt ? () => ({ key, record: receipt }) : undefined,
+			receipt ? [] : [key]
+		);
+	} catch (error) {
+		if (error === conflict) return false;
+		throw error;
+	}
+	await Promise.all(expired.map((entry) => db.del('projects', agentReceiptKey(entry.id)))).catch(
+		(error) => console.error('Could not prune agent receipts', error)
+	);
+	return true;
 }
 
 async function persistAgentOutcome(
 	id: string | undefined,
 	outcome: Receipt['outcome'],
-	error?: string
+	error?: string,
+	admission?: Receipt
 ) {
 	if (!isAgentActivity(id)) return;
 	try {
-		await db.update<AgentReceiptRecord>('projects', AGENT_RECEIPTS, (stored) => {
-			const receipts = stored?.receipts ?? {};
-			const receipt = receipts[id];
-			if (receipt) receipts[id] = { ...receipt, outcome, error };
-			return { id: AGENT_RECEIPTS, receipts };
-		});
+		const key = agentReceiptKey(id);
+		const stored = await db.get<Receipt>('projects', key);
+		if (stored) {
+			const pruned = new Error('Agent receipt expired');
+			await db
+				.update<Receipt>('projects', key, (current) => {
+					if (!current) throw pruned;
+					return { ...current, outcome, error };
+				})
+				.catch((failure) => {
+					if (failure !== pruned) throw failure;
+				});
+		} else if (admission) await writeAgentReceipt(id, { ...admission, outcome, error });
 	} catch {
 		console.error('Could not save the agent activity outcome');
 	}
@@ -1092,7 +1172,7 @@ function restore(e: UndoStep) {
 export function commit(
 	label: Message,
 	fn: () => void,
-	o: { keepHand?: string; quiet?: boolean; undoDrafts?: boolean } = {}
+	o: { keepHand?: string; quiet?: boolean; undoDrafts?: boolean; skipUnchanged?: boolean } = {}
 ): Message | undefined {
 	if (!store.project) return;
 	const step = {
@@ -1100,10 +1180,8 @@ export function commit(
 		snap: snap(),
 		...(o.undoDrafts ? { drafts: { ...doc.drafts } } : {})
 	};
-	doc.redo = [];
 	const before = { ...doc.items };
 	fn();
-	doc.undo = [...doc.undo.slice(-99), { ...step, from: slotsNow() }];
 	const changed = Object.keys(doc.items).filter(
 		(s) =>
 			handSide(store.project!.manifest, s) &&
@@ -1129,6 +1207,14 @@ export function commit(
 	// a saved item put on or taken off a slot replaces the draft worn there
 	for (const slot of Object.keys(doc.drafts))
 		if ((doc.items[slot] ?? null) !== (before[slot] ?? null)) delete doc.drafts[slot];
+	if (
+		o.skipUnchanged &&
+		step.snap === snap() &&
+		stableStringify(step.drafts) === stableStringify(doc.drafts)
+	)
+		return note;
+	doc.redo = [];
+	doc.undo = [...doc.undo.slice(-99), { ...step, from: slotsNow() }];
 	bump();
 	save();
 	return note;
@@ -3015,6 +3101,12 @@ const readGens = async () =>
 		(await db.get<{ gens: Gen[] }>('projects', GENS_KEY))?.gens ?? [],
 		(g) => g.draft.spec.id
 	);
+/** Read persisted drafts by their paid start, independent of follower mirroring. */
+export async function readAgentDrafts() {
+	return new Map(
+		(await readGens()).filter((g) => g.agentActivityId).map((g) => [g.agentActivityId!, g])
+	);
+}
 /** The ONLY way the list is replaced: one entry per draft id (already-persisted duplicates heal on the next save). Synchronous,
  * so no caller can splice with a length read before an await (the B13 regression that doubled every draft). */
 function setGens(list: Gen[]) {
@@ -4281,6 +4373,12 @@ export async function discardCreate(id: string) {
 
 // ---------- add a move (one at a time, FIFO; resumable like create) ----------
 type QueuedMove = { projectId: string; spec: MoveSpec };
+type StoredMove = FlowDraft<MoveSpec> &
+	QueuedMove & { queued?: QueuedMove[]; repairReview?: RepairReview };
+async function readStoredMoves() {
+	const record = await db.get<StoredMove>('projects', MOVE_KEY);
+	return { move: record?.spec ? record : undefined, queued: record?.queued ?? [] };
+}
 /** `queued`: moves waiting for the current one. Persisted with it, so closing the sheet or reloading keeps the order. */
 export const moving = $state({
 	spec: null as MoveSpec | null,
@@ -4328,50 +4426,53 @@ function storeMove(record = moveRecord) {
 }
 type AgentMoveOutcome = 'running' | 'review' | 'saved' | 'discarded' | 'failed' | 'stopped';
 type AgentMoveWatch = {
-	projectId: string;
-	moveId: string;
-	reviewing?: boolean;
 	beforePaid: () => void;
-	settle: (outcome: AgentMoveOutcome, error?: unknown) => void;
+	finish: () => void;
 };
 const agentMoves = new Map<string, AgentMoveWatch>();
 
-function reportAgentMove(spec: MoveSpec, outcome: AgentMoveOutcome, error?: unknown) {
-	const id = spec.activityScope ?? '';
-	const watch = agentMoves.get(id);
-	if (!watch) return;
-	if (outcome === 'review') watch.reviewing = true;
-	else if (outcome !== 'running') agentMoves.delete(id);
-	watch.settle(outcome, error);
+async function reportAgentMove(spec: MoveSpec, outcome: AgentMoveOutcome, error?: unknown) {
+	const id = spec.activityScope;
+	if (!isAgentActivity(id)) return;
+	if (outcome !== 'running') {
+		agentMoves.get(id)?.finish();
+		agentMoves.delete(id);
+	}
+	await persistAgentOutcome(id, outcome, jobError(error) ?? undefined, spec.agentAdmission);
 }
 
-/** A synchronous acceptance receipt. After insertion into the queue, failures are reported through activity. */
-export function queueAgentMove(
+/** The admission and its receipt are saved in the same queue record before any paid work can start. */
+export async function queueAgentMove(
 	projectId: string,
 	spec: MoveSpec,
 	beforeAdmission: () => void,
 	beforePaid: () => void,
-	settle: AgentMoveWatch['settle']
-): { id: string } | undefined {
+	finish: AgentMoveWatch['finish']
+) {
 	if (
 		hmrReloading ||
 		moveReviewPublishing ||
 		moving.repairReview ||
 		(settingUp.spec && !settingUp.done) ||
 		pendingMoves(projectId).some(
-			(pending) => !pending.itemsOnly && sameClipName(pending.id, spec.id)
+			(pending) =>
+				sameClipName(pending.id, spec.id) &&
+				(!pending.itemsOnly ||
+					!spec.itemsOnly ||
+					pending.items.some((item) => spec.items.includes(item)))
 		)
 	)
 		return;
 	beforeAdmission();
-	const queued = withActivityScope(spec, 'move');
-	const id = queued.activityScope!;
-	agentMoves.set(id, { projectId, moveId: spec.id, beforePaid, settle });
-	void queueMoves(projectId, [queued]).catch((error) => {
+	const id = spec.activityScope!;
+	agentMoves.set(id, { beforePaid, finish });
+	try {
+		await queueMoves(projectId, [spec]);
+	} catch (error) {
 		moving.queued = moving.queued.filter((move) => move.spec.activityScope !== id);
-		reportAgentMove(queued, 'failed', error);
-		console.error('Could not persist the move queue', error);
-	});
+		agentMoves.delete(id);
+		throw error;
+	}
 	return { id };
 }
 
@@ -4380,13 +4481,18 @@ export function queueAgentMove(
 export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	if (hmrReloading || !specs.length) return;
 	moving.queued = [...moving.queued, ...specs.map((spec) => ({ projectId, spec }))];
+	const agentAdmission = specs.some((spec) => spec.agentAdmission);
+	if (agentAdmission) await storeMove();
 	if (startingMove || moveRunning || (moving.spec && !moving.done)) {
-		await storeMove();
+		if (!agentAdmission) await storeMove();
 		return;
 	}
 	const [next, ...rest] = moving.queued;
+	if (!next) return;
 	moving.queued = rest;
-	await startMove(next.projectId, next.spec);
+	const run = startMove(next.projectId, next.spec);
+	if (agentAdmission) void run.catch((error) => console.error('Agent move', error));
+	else await run;
 }
 
 export async function refreshMoveReviews(projectId: string) {
@@ -4415,9 +4521,7 @@ export async function saveReviewedMove(
 	moveReviewPublishing = true;
 	try {
 		const input = await (await createFlow()).resolveMoveCandidate(projectId, candidate, accept);
-		reportAgentMove(candidate.spec, accept ? 'saved' : 'discarded');
-		if (isAgentActivity(candidate.spec.activityScope))
-			await persistAgentOutcome(candidate.spec.activityScope, accept ? 'saved' : 'discarded');
+		await reportAgentMove(candidate.spec, accept ? 'saved' : 'discarded');
 		// Accepting a reviewed move saves the character even when another one is open here.
 		if (accept && !viewing(projectId)) await syncStoredProject(projectId);
 		return input;
@@ -4438,15 +4542,15 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 export async function pendingBodyMoveName(projectId: string, id: string) {
 	const matches = (spec: MoveSpec) => !spec.itemsOnly && sameClipName(spec.id, id);
 	if (pendingMoves(projectId).some(matches)) return true;
-	const saved = await db.get<QueuedMove & { queued?: QueuedMove[] }>('projects', MOVE_KEY);
-	return [saved, ...(saved?.queued ?? [])].some(
+	const { move, queued } = await readStoredMoves();
+	return [move, ...queued].some(
 		(move) => move?.projectId === projectId && !!move.spec && matches(move.spec)
 	);
 }
 
 export async function startMove(projectId: string, spec: MoveSpec) {
 	if (hmrReloading || startingMove) {
-		reportAgentMove(spec, 'stopped');
+		await reportAgentMove(spec, 'stopped');
 		return;
 	}
 	if (relocating) {
@@ -4454,14 +4558,14 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		try {
 			await saving;
 		} catch (error) {
-			reportAgentMove(spec, 'failed', error);
+			await reportAgentMove(spec, 'failed', error);
 			throw error;
 		} finally {
 			startingMove = null;
 		}
 	}
 	if (moving.repairReview) {
-		reportAgentMove(spec, 'stopped');
+		await reportAgentMove(spec, 'stopped');
 		toast(message('repairReview.finishFirst'), {
 			tone: 'warning',
 			action: () => openFlow('move', moving.projectId)
@@ -4473,7 +4577,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		return;
 	}
 	if (moveRunning || moveReviewPublishing) {
-		reportAgentMove(spec, 'stopped');
+		await reportAgentMove(spec, 'stopped');
 		toast(message('state.anotherMoveIsStillBeingAddedSo'), {
 			tone: 'warning',
 			action: () => openFlow('move', moving.projectId)
@@ -4482,7 +4586,6 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 	}
 	spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
 	moveRunning = true;
-	reportAgentMove(spec, 'running');
 	const revision = ++moveRevision,
 		current = () =>
 			revision === moveRevision &&
@@ -4500,6 +4603,11 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		warnings: []
 	});
 	try {
+		const record = { id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT };
+		if (spec.agentAdmission) {
+			await storeMove(record);
+			await reportAgentMove(spec, 'running');
+		}
 		const beforePaid = agentMoves.get(spec.activityScope ?? '')?.beforePaid;
 		beforePaid?.(); // a queued agent move can expire while it waits behind other work
 		if (spec.itemReview || spec.reviewedMoveItems) {
@@ -4511,35 +4619,35 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 				);
 			}
 		}
-		await storeMove({
-			id: MOVE_KEY,
-			spec,
-			projectId,
-			status: 'running',
-			requestText: REQUEST_TEXT
-		});
+		if (!spec.agentAdmission) await storeMove(record);
 		const flow = await createFlow(),
 			progress = (p: Progress) => {
 				if (current() && !failed) moving.progress = p;
 			},
 			reviewedItems = spec.itemReview;
 		const result = reviewedItems
-			? await flow.addMove(projectId, spec, progress, async () => {
-					// The pipeline mutates its raw spec. Clear the reactive copy too, including any cached property read by the sheet.
-					if (current() && moving.spec) delete moving.spec.itemReview;
-					try {
-						await storeMove({
-							id: MOVE_KEY,
-							spec,
-							projectId,
-							status: 'running',
-							requestText: REQUEST_TEXT
-						});
-					} catch (error) {
-						if (current() && moving.spec) moving.spec.itemReview = reviewedItems;
-						throw error;
-					}
-				})
+			? await flow.addMove(
+					projectId,
+					spec,
+					progress,
+					async () => {
+						// The pipeline mutates its raw spec. Clear the reactive copy too, including any cached property read by the sheet.
+						if (current() && moving.spec) delete moving.spec.itemReview;
+						try {
+							await storeMove({
+								id: MOVE_KEY,
+								spec,
+								projectId,
+								status: 'running',
+								requestText: REQUEST_TEXT
+							});
+						} catch (error) {
+							if (current() && moving.spec) moving.spec.itemReview = reviewedItems;
+							throw error;
+						}
+					},
+					beforePaid
+				)
 			: beforePaid
 				? await flow.addMove(projectId, spec, progress, undefined, beforePaid)
 				: await flow.addMove(projectId, spec, progress);
@@ -4590,19 +4698,9 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		moving.done = true;
 		if (result.moveReview) {
 			publishedReview = true;
-			for (const [scope, watch] of agentMoves) {
-				if (
-					scope !== spec.activityScope &&
-					watch.reviewing &&
-					watch.projectId === projectId &&
-					watch.moveId === result.moveReview
-				) {
-					agentMoves.delete(scope);
-					watch.settle('discarded');
-				}
-			}
-			reportAgentMove(spec, 'review');
+			await reportAgentMove(spec, 'review');
 		}
+		if (!result.moveReview) await reportAgentMove(spec, 'saved');
 		await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
 		if (!current()) return;
 		if (result.moveReview) {
@@ -4651,7 +4749,6 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			} else await syncStoredProject(projectId);
 			toast(message('state.moveNameAdded', { moveName }));
 		}
-		if (!result.moveReview) reportAgentMove(spec, 'saved');
 		const reviewItem = result.reviewItems?.[0];
 		if (reviewItem)
 			toast(
@@ -4669,7 +4766,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			);
 	} catch (e) {
 		const approvalEnded = !!spec.agentQuote && errorText(e).includes(AGENT_APPROVAL_ENDED);
-		if (!publishedReview) reportAgentMove(spec, approvalEnded ? 'stopped' : 'failed', e);
+		if (!publishedReview) await reportAgentMove(spec, approvalEnded ? 'stopped' : 'failed', e);
 		if (approvalEnded && current()) {
 			moving.done = true;
 			moving.spec = null;
@@ -4753,6 +4850,7 @@ export async function retryMoveMeasurements(
 	const next = {
 		...$state.snapshot(spec),
 		agentQuote: undefined,
+		agentAdmission: undefined,
 		activityScope: isAgentActivity(spec.activityScope) ? undefined : spec.activityScope,
 		measurementRecovery: {
 			id: crypto.randomUUID(),
@@ -4800,6 +4898,7 @@ export async function keepMoveBody(projectId: string, spec: MoveSpec, reviewed: 
 	await startMove(projectId, {
 		...$state.snapshot(spec),
 		agentQuote: undefined,
+		agentAdmission: undefined,
 		activityScope: isAgentActivity(spec.activityScope) ? undefined : spec.activityScope,
 		items: [],
 		reviewBeforePublish: undefined,
@@ -4860,6 +4959,7 @@ export async function matchMoveBodyColors(
 	await startMove(projectId, {
 		...$state.snapshot(spec),
 		agentQuote: undefined,
+		agentAdmission: undefined,
 		activityScope: isAgentActivity(spec.activityScope) ? undefined : spec.activityScope,
 		measurementRecovery: undefined,
 		bodyPaletteRepair: {
@@ -4874,19 +4974,15 @@ let moveResumed = false;
 export async function resumeMove() {
 	if (hmrReloading || moveResumed || queue.role === 'follower') return;
 	moveResumed = true;
-	const r = await db
-		.get<
-			FlowDraft<MoveSpec> & {
-				projectId: string;
-				queued?: QueuedMove[];
-				repairReview?: RepairReview;
-			}
-		>('projects', MOVE_KEY)
-		.catch(() => undefined);
+	const { move: r } = await readStoredMoves().catch((error) => {
+		console.error('Could not restore the move queue', error);
+		return { move: undefined };
+	});
 	if (!r?.spec || (moving.spec && !moving.done)) return;
 	// A move whose character is gone can never be opened to retry or dismiss. Moves queued behind it wait for a decision.
 	if (
 		r.projectId?.startsWith('rig-') &&
+		!r.spec.agentQuote &&
 		!r.queued?.length &&
 		!(await db.get('projects', r.projectId).catch(() => true))
 	) {
@@ -4905,9 +5001,22 @@ export async function resumeMove() {
 	if (r.spec.agentQuote && !halted(r)) stopped.push({ projectId: r.projectId, spec: r.spec });
 	if (stopped.length) {
 		await Promise.all(
-			stopped.map(({ spec }) =>
-				persistAgentOutcome(spec.activityScope, 'stopped', AGENT_APPROVAL_ENDED)
-			)
+			stopped.map(async ({ spec, projectId }) => {
+				const character = await readCharacterMetadata(projectId);
+				const flow = await createFlow();
+				const decided = flow.agentMoveDecision(character, spec.activityScope);
+				const review = character?.moveReviews?.[spec.id];
+				if (decided) await reportAgentMove(spec, decided);
+				else if (
+					spec.itemsOnly &&
+					spec.agentAdmission &&
+					flow.agentEquipmentSaved(character, spec.agentAdmission)
+				)
+					await reportAgentMove(spec, 'saved');
+				else if (review && review.spec.activityScope === spec.activityScope)
+					await reportAgentMove(spec, 'review');
+				else await reportAgentMove(spec, 'stopped', AGENT_APPROVAL_ENDED);
+			})
 		);
 		toast(message('agentMoves.quoteChanged'), { tone: 'warning' });
 		if (r.spec.agentQuote && !halted(r)) {
@@ -4989,7 +5098,7 @@ export async function resolveRepairReview(useRepair: boolean) {
 export async function dismissMove() {
 	if (startingMove || moveRunning) return;
 	for (const { projectId, spec } of moving.queued)
-		if (projectId === moving.projectId) reportAgentMove(spec, 'discarded');
+		if (projectId === moving.projectId) await reportAgentMove(spec, 'discarded');
 	moveRevision++;
 	const others = moving.queued.filter((q) => q.projectId !== moving.projectId);
 	Object.assign(moving, {

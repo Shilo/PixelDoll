@@ -4,6 +4,7 @@ import {
 	creationOutcome,
 	fingerprintOf,
 	itemOutcome,
+	retainedReceipts,
 	type Receipt
 } from '../../src/studio/automation/receipts.ts';
 
@@ -40,12 +41,26 @@ test('a character creation reports how it ended even after it leaves the running
 	);
 });
 
-test('a request fingerprint ignores control fields and key order, and includes character scope', () => {
+test('a request fingerprint stores a digest and ignores control fields and key order', async () => {
 	const args = { characterId: 'a', slot: 'head', prompt: 'A red hat' };
-	expect(fingerprintOf({ ...args, dryRun: true, requestId: 'first' })).toBe(
-		fingerprintOf({ prompt: args.prompt, slot: args.slot, characterId: 'a' })
+	const fingerprint = await fingerprintOf({ ...args, dryRun: true, requestId: 'first' });
+	expect(fingerprint).toMatch(/^[a-f0-9]{64}$/);
+	expect(fingerprint).toBe(
+		await fingerprintOf({ prompt: args.prompt, slot: args.slot, characterId: 'a' })
 	);
-	expect(fingerprintOf({ ...args, characterId: 'b' })).not.toBe(fingerprintOf(args));
+	expect(await fingerprintOf({ ...args, characterId: 'b' })).not.toBe(fingerprint);
+});
+
+test('receipt history keeps the newest 200 starts within 30 days', () => {
+	const now = Date.parse('2026-11-22T00:00:00.000Z');
+	const fresh = Array.from({ length: 201 }, (_, i) =>
+		started({ id: String(i), startedAt: new Date(now - i).toISOString() })
+	);
+	const expired = started({ id: 'expired', startedAt: '2026-10-01T00:00:00.000Z' });
+	expect(retainedReceipts([expired, ...fresh], now).map((r) => r.id)).toEqual(
+		fresh.slice(0, 200).map((r) => r.id)
+	);
+	expect(retainedReceipts([expired, fresh[0]], now)).toEqual([fresh[0]]);
 });
 
 test('an item draft reports review, saved, failed, canceled or discarded', () => {

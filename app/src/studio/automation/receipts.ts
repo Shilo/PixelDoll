@@ -1,6 +1,7 @@
 // What agents started in this tab, so they can always learn how it ended: a draft that saved itself or a creation that
 // finished leaves the Studio's running lists, and an agent must never guess (and pay again) because its id disappeared.
-import { stableStringify } from '../../lib/image/hash.ts';
+import { sha256, stableStringify } from '../../lib/image/hash.ts';
+import type { DirectionName } from '../../lib/rig/rig.ts';
 import { AgentError, type Json } from './contract.ts';
 
 export type Outcome =
@@ -22,14 +23,18 @@ const FINAL: readonly Outcome[] = [
 	'stopped'
 ];
 export const isFinal = (outcome: Outcome) => FINAL.includes(outcome);
+export const ACTIVITY_LIMIT = 30;
+const RECEIPT_LIMIT = 200;
+const RECEIPT_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface Receipt {
-	kind: 'character' | 'item' | 'move';
+	kind: 'character' | 'item' | 'move' | 'equipment';
 	moveId?: string;
 	/** Opaque identity of this start, also the queue scope. */
 	id: string;
 	/** The Studio draft or creation id, which is separate from the activity identity. */
 	targetId?: string;
+	directions?: DirectionName[];
 	characterId: string;
 	name: string;
 	requestId?: string;
@@ -40,6 +45,23 @@ export interface Receipt {
 	outcome: Outcome;
 	error?: string;
 	price?: Record<string, Json>;
+}
+
+export type MoveAdmission = Omit<Receipt, 'price'> & {
+	price?: Record<
+		string,
+		string | number | boolean | null | string[] | number[] | { id: string; text: string }[]
+	>;
+};
+
+export function retainedReceipts<T extends Pick<Receipt, 'startedAt'>>(
+	list: readonly T[],
+	now = Date.now()
+) {
+	return list
+		.filter((r) => now - Date.parse(r.startedAt) <= RECEIPT_AGE_MS)
+		.sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+		.slice(0, RECEIPT_LIMIT);
 }
 
 export class ReceiptLog {
@@ -56,8 +78,17 @@ export class ReceiptLog {
 	remove(id: string) {
 		this.#receipts = this.#receipts.filter((r) => r.id !== id);
 	}
-	all(): readonly Receipt[] {
-		return this.#receipts;
+	refresh(receipt: Receipt) {
+		const local = this.get(receipt.id);
+		if (!local) return this.add(receipt);
+		const advances =
+			isFinal(receipt.outcome) ||
+			(!isFinal(local.outcome) && (receipt.outcome === 'review' || local.outcome === 'queued'));
+		if (advances) this.settle(local, receipt.outcome, receipt.error, true);
+		return local;
+	}
+	prune() {
+		this.#receipts = retainedReceipts(this.#receipts);
 	}
 	/** The earlier start of the same request, for retries that must not pay twice. */
 	repeat(kind: Receipt['kind'], requestId: unknown, fingerprint: string) {
@@ -126,7 +157,8 @@ export const receiptView = ({
 }: Receipt) => ({
 	...rest,
 	activityId: id,
-	...(rest.kind === 'item' && targetId ? { draftId: targetId } : {})
+	...(rest.kind === 'item' && targetId ? { draftId: targetId } : {}),
+	...(rest.kind === 'equipment' && targetId ? { itemId: targetId } : {})
 });
 export const startView = (r: Receipt, budget: Json, repeated = false) => ({
 	started: true,
@@ -140,5 +172,5 @@ export const startView = (r: Receipt, budget: Json, repeated = false) => ({
 /** What a request was, for matching a repeated requestId: its arguments without dryRun and the id itself. */
 export function fingerprintOf(args: Record<string, unknown>) {
 	const { dryRun: _dryRun, requestId: _requestId, ...rest } = args;
-	return stableStringify(rest);
+	return sha256(stableStringify(rest));
 }
