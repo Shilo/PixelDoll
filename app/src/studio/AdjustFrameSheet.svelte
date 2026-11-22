@@ -169,7 +169,13 @@
 	}
 </script>
 
-<Sheet title={t('adjustFrame.title')} wide cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
+<Sheet
+	title={t('adjustFrame.title')}
+	wide
+	locked={busy}
+	dirty={!!facts && (size !== current || dy !== 0)}
+	onclose={() => (ui.sheet = null)}
+>
 	{#if loaded && m && facts}
 		<p class="muted">{t('adjustFrame.intro')}</p>
 		<div class="adjust">

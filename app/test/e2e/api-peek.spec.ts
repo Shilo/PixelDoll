@@ -126,7 +126,7 @@ async function newCharacter(page: Page) {
 
 async function expectSingleHeaderPeek(page: Page) {
 	const sheet = page.locator('dialog[open]');
-	const inspect = sheet.locator('.sheet-trailing > .api-peek-trigger:first-child');
+	const inspect = sheet.locator('.sheet-end > .api-peek-trigger:first-child');
 	await expect(sheet.locator('.api-peek-trigger')).toHaveCount(1);
 	await expect(inspect).toHaveAttribute('title', 'PixelLab API calls');
 	await expect(inspect.locator('svg')).toHaveCount(1);
@@ -1049,7 +1049,7 @@ for (const sameUrl of [false, true])
 		);
 		await page
 			.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
-			.getByRole('button', { name: 'Cancel', exact: true })
+			.getByRole('button', { name: 'Close', exact: true })
 			.click();
 		expect(
 			await page.evaluate(async (url) => {
@@ -1156,7 +1156,12 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
 	await peek(page).getByRole('button', { name: 'Close API calls', exact: true }).click();
 	await expect(prompt).toHaveValue('a tiny woodland ranger');
 	await expect(page.locator('dialog[open]')).toHaveCount(1);
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Leaving the typed draft asks first.
+	await sheet.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
 	expect(requests).toEqual([]);
 });

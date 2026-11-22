@@ -99,6 +99,12 @@
 		"idCopyFailed": "ID tidak dapat disalin."
 	},
 	"common": {
+		"back": "Kembali",
+		"backTo": "Kembali ke {place}",
+		"keepEditing": "Lanjutkan mengedit",
+		"discardChangesTitle": "Buang perubahan?",
+		"discardChangesBody": "Perubahan yang Anda buat di sini akan hilang.",
+		"keepsRunning": "Tetap berjalan di Aktivitas jika Anda menutup ini.",
 		"loadFailed": "Sebagian PixelDoll tidak dapat dimuat. Muat ulang halaman untuk mencoba lagi.",
 		"advanced": "Lanjutan",
 		"cancel": "Batal",
@@ -119,7 +125,6 @@
 		"done": "Selesai",
 		"downloadZip": "Unduh ZIP",
 		"free": "Gratis",
-		"hide": "Sembunyikan",
 		"loading": "Memuat…",
 		"move": "Animasi",
 		"name": "Nama",
@@ -273,7 +278,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Salin",
 		"demoNoAccount": "Demo tidak memerlukan akun.",
-		"notNow": "Nanti saja",
 		"sentOnlyToApiPixellabAi": "Hanya dikirim ke api.pixellab.ai.",
 		"forgetKey": "Lupakan kunci",
 		"forgetTitle": "Lupakan kunci PixelLab?",
@@ -955,7 +959,6 @@
 			"title": "Ekspor",
 			"back": "Kembali",
 			"settings": "Pengaturan",
-			"close": "Tutup ekspor",
 			"saving": "Menyimpan pengaturan…",
 			"unavailable": "Ekspor tidak tersedia",
 			"sourceOnly": "Hanya PNG sumber",
@@ -1192,7 +1195,6 @@
 		"previewDirectionLabel": "Arah pratinjau",
 		"setupNext": "Siapkan rig pose setelah ini (disarankan)",
 		"setupNextHint": "Impor gratis. Biaya generasi PixelLab untuk menyiapkan rig ditampilkan sebelum Anda mulai.",
-		"chooseAnother": "Pilih karakter lain",
 		"saving": "Menyimpan salinan lokal Anda…",
 		"preparing": "Menyiapkan karakter Anda…",
 		"note": "Gratis · Menyimpan salinan lokal baru",
@@ -2233,7 +2235,6 @@
 			"retryLabel": "Buat ulang karakter",
 			"editSetup": "Ubah pengaturan…",
 			"estimated": "Perkiraan {gens}",
-			"keepWorking": "Lanjut bekerja",
 			"costTitle": "Membuat tampilan berdiri dari semua arah. Tambahkan animasi diam, berjalan, dan lainnya setelah itu. Sendi pose berdiri yang tidak ditemukan mungkin menambah sedikit biaya",
 			"create": "Buat karakter",
 			"createAnyway": "Tetap buat"
@@ -2320,7 +2321,6 @@
 		"reuseCached": "Pakai ulang frame di cache",
 		"matchColors": "Cocokkan warna tubuh",
 		"keepFrames": "Simpan frame",
-		"keepWorking": "Anda bisa terus bekerja.",
 		"queueAnother": "Antrekan animasi lain",
 		"addLabel": "Tambah atau ganti animasi",
 		"submit": {
@@ -2606,7 +2606,6 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Nanti" },
 	"toast": { "dismiss": "Tutup notifikasi" },
 	"sharedVisibility": {
 		"allEmphasis": "semua",

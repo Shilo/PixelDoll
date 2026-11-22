@@ -112,7 +112,7 @@ test('four overlapping creations keep independent rows and only the uninterrupte
 			if (seed === 1) await connect(page);
 			await expect(sheet.getByText(`Run ${seed}`, { exact: true })).toBeVisible();
 			if (seed < 4) {
-				await sheet.getByRole('button', { name: 'Hide', exact: true }).click();
+				await sheet.getByRole('button', { name: 'Back', exact: true }).click();
 				if (seed === 1) await page.getByRole('button', { name: 'Characters', exact: true }).click();
 				await expect(row(seed).getByRole('progressbar')).toBeVisible();
 				await expect(row(seed).getByRole('button')).toHaveCount(0);
@@ -132,7 +132,7 @@ test('four overlapping creations keep independent rows and only the uninterrupte
 		gates.get(4)!.resolve();
 		await expect(ready).toBeVisible();
 		await expect(sheet).toContainText('Run 4 is ready');
-		await sheet.getByRole('button', { name: 'Close', exact: true }).first().click();
+		await sheet.getByRole('button', { name: 'Back', exact: true }).click();
 		await open(page, false);
 		await expect(name).toHaveValue('');
 		await details.fill('A draft that should remain open');
@@ -140,7 +140,12 @@ test('four overlapping creations keep independent rows and only the uninterrupte
 		for (const seed of [1, 2, 3, 4]) await expect(saved(seed)).toHaveCount(1);
 		await expect(details).toHaveValue('A draft that should remain open');
 		await expect(ready).toHaveCount(0);
-		await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+		// Leaving typed text asks first.
+		await sheet.getByRole('button', { name: 'Back', exact: true }).click();
+		await page
+			.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+			.getByRole('button', { name: 'Discard', exact: true })
+			.click();
 		await open(page, false);
 		await expect(details).toHaveValue('');
 		const posts = api.calls.filter((call) => call.path === '/v2/create-character-v3');
@@ -464,7 +469,12 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 		timeout: 120_000
 	});
 	await expect(draft).toHaveValue('jump softly');
-	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The typed move prompt asks before it is dropped.
+	await move.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await equipmentMode(page, 'States');
 	await expect(page.getByRole('button', { name: /Idle Review move/ })).toHaveCount(0);
 	await equipmentMode(page, 'Moves');
@@ -919,7 +929,12 @@ test('late enhancement cannot overwrite edits or reopen a closed form', async ({
 	);
 	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('[slow] another elf');
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Leaving typed text asks first.
+	await sheet.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await expect
 		.poll(() => api.calls.filter((c) => c.path === '/v2/enhance-character-v3-prompt').length)
@@ -940,7 +955,7 @@ test('canceling the connection discards the pending enhancement instead of charg
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Not now', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await openAccount(page);
 	await connect(page);
@@ -1459,7 +1474,10 @@ function offlineCreation(config: CreationCase) {
 			.click();
 		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
-		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await page
+			.getByRole('dialog', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Back', exact: true })
+			.click();
 		await equipmentMode(page, 'Moves');
 		const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
 		const review = page.getByRole('dialog', { name: 'Review move', exact: true });
@@ -1811,7 +1829,12 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	await expect(sheet.locator('.reference > small').filter({ hasText: 'Resized from' })).toHaveCount(
 		0
 	);
-	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// Leaving typed text asks first.
+	await sheet.getByRole('button', { name: 'Back', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
+		.click();
 	await open(page, false);
 	await expect(drop).toBeVisible();
 	await expect(sheet.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('');

@@ -277,6 +277,19 @@ const sizeNow = (): Size => {
 
 let panel = $state<SheetId>(null);
 export const createPresentation = $state({ id: '' });
+/** A sheet opened over New character (from More, Connect, Activity...) steps Back to it; its X leaves both. The
+ *  creator keeps its draft in formDrafts and the attempt it was presenting. */
+let creatorReturn = $state<{ attempt: string } | null>(null);
+export const canReturnToCreator = () => !!creatorReturn && panel !== 'create';
+// Effect teardowns read state from before the change that removed them, so New character's own cleanup checks this
+// plain copy instead.
+let leftCreatorForSheet = false;
+export const leavingCreatorForSheet = () => leftCreatorForSheet;
+export function returnToCreator() {
+	const attempt = creatorReturn?.attempt ?? '';
+	ui.sheet = 'create';
+	if (attempt && creates.some((run) => run.id === attempt)) createPresentation.id = attempt;
+}
 export const ui = $state({
 	size: sizeNow(),
 	dpr: devicePixelRatio || 1,
@@ -297,12 +310,18 @@ export const ui = $state({
 		if ((panel === 'create' || panel === 'moveReview') && next !== 'activity' && afterTakeOver)
 			cancelWaitingForTab();
 		if (panel === 'move' && next !== 'move') ui.moveFormOpen = false;
-		const id = createPresentation.id;
+		const id = createPresentation.id,
+			remembered = !next ? creatorReturn?.attempt : '';
+		if (panel === 'create' && next && next !== 'create') creatorReturn = { attempt: id };
+		else if (!next || next === 'create') creatorReturn = null;
+		leftCreatorForSheet = !!creatorReturn;
 		createPresentation.id = '';
-		if (id) {
-			const attempt = creates.find((run) => run.id === id);
-			if (attempt?.projectId) removeCreate(attempt);
-		}
+		// A finished attempt leaves with its screen, unless a sheet over New character can still step back to it.
+		for (const gone of new Set([id, remembered]))
+			if (gone && creatorReturn?.attempt !== gone) {
+				const attempt = creates.find((run) => run.id === gone);
+				if (attempt?.projectId) removeCreate(attempt);
+			}
 		panel = next;
 	},
 	renameTarget: null as ({ projectId: string } & RenameOf) | null,
@@ -571,7 +590,9 @@ export function withKey(fn: () => void, minimumTier = 0) {
 export function connected() {
 	const f = afterConnect;
 	afterConnect = null;
-	ui.sheet = null;
+	// Connected from New character's More: back to it, as its Back would.
+	if (canReturnToCreator()) returnToCreator();
+	else ui.sheet = null;
 	if (f && allowsTier(f.minimumTier)) f.run();
 }
 export const pendingConnectionMinimumTier = () => afterConnect?.minimumTier ?? null;
@@ -3659,7 +3680,8 @@ export async function startCreate(input: CreateSpec, present = false, attemptId?
 						tone: 'danger'
 					}
 				);
-		if (createPresentation.id === run.id) run.projectId = id;
+		// A result also waits behind a sheet opened over New character, which steps back to it.
+		if (createPresentation.id === run.id || creatorReturn?.attempt === run.id) run.projectId = id;
 		else removeCreate(run);
 	} catch (e) {
 		if (current()) {

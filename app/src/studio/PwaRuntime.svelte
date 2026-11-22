@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SurfaceHeader from './SurfaceHeader.svelte';
 	import { t } from 'svelte-whisper';
 	import { ExternalLink } from './icons.ts';
 	import { onMount, tick } from 'svelte';
@@ -49,6 +50,8 @@
 		await tick();
 		if (mode !== next) return;
 		dialog.showModal();
+		// Like every sheet, start on the title rather than the X.
+		dialog.querySelector<HTMLElement>('.sheet-title')?.focus({ preventScroll: true });
 		if (next === 'update') {
 			const reason = updateBlocked();
 			if (reason) {
@@ -180,21 +183,18 @@
 	}}
 >
 	{#if mode}
-		<header class="sheet-head">
-			<span></span>
-			<h2 id="pwa-dialog-title" class="sheet-title">
-				{mode === 'install'
-					? t('pwaRuntime.installationHelp')
-					: busy
-						? t('pwaRuntime.updatingPixelDoll')
-						: updateUrl
-							? t('pwaRuntime.updateReady')
-							: t('pwaRuntime.updatePaused')}
-			</h2>
-			<button class="bu-action" data-variant="quiet" disabled={busy} onclick={close}
-				>{t('common.close')}</button
-			>
-		</header>
+		<SurfaceHeader
+			title={mode === 'install'
+				? t('pwaRuntime.installationHelp')
+				: busy
+					? t('pwaRuntime.updatingPixelDoll')
+					: updateUrl
+						? t('pwaRuntime.updateReady')
+						: t('pwaRuntime.updatePaused')}
+			titleId="pwa-dialog-title"
+			locked={busy}
+			onclose={close}
+		/>
 		<div class="sheet-body" id="pwa-dialog-description">
 			{#if mode === 'install'}
 				{#if $pwa.installError}<p role="alert">{displayNestedMessage($pwa.installError)}</p>{/if}
@@ -260,12 +260,6 @@
 <style>
 	.pwa-dialog {
 		max-width: min(32rem, calc(100vw - 32px));
-	}
-	.pwa-dialog .sheet-head {
-		grid-template-columns: 1fr auto 1fr;
-	}
-	.pwa-dialog .sheet-head button {
-		justify-self: end;
 	}
 	.pwa-dialog .sheet-body {
 		display: grid;

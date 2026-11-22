@@ -17,7 +17,7 @@
 	const close = () => (ui.sheet = null);
 </script>
 
-<Sheet title={t('workspace.activityTitle')} cancel="common.done" onclose={close}>
+<Sheet title={t('workspace.activityTitle')} onclose={close}>
 	<p class="muted">{t('workspace.activityIntro', { build: workspaceInfo?.build ?? '' })}</p>
 	{#if workspaceInfo?.missing.length}
 		<p class="notice warn">

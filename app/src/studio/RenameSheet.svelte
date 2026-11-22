@@ -123,7 +123,8 @@
 			: target.moveId
 				? t('renameSheet.titleRenameMove')
 				: t('renameSheet.titleRenameCharacter')}
-	cancelDisabled={busy}
+	locked={busy}
+	dirty={nameChanged || idChanged}
 	onclose={close}
 >
 	{#if missing}

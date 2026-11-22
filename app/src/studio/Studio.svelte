@@ -7,7 +7,8 @@
 	import './experience/layout.css';
 	import './experience/hoverActions.css';
 	import { rememberActivation } from './experience/focus.ts';
-	import { backFromSettings, settingsNavigation } from './settingsNavigation.svelte.ts';
+	import { settingsNavigation } from './settingsNavigation.svelte.ts';
+	import { alertOnTop, sheetBrowserBack } from './sheetExit.ts';
 	import { localDeveloperToolsEnabled } from './developerMode.svelte.ts';
 	import Experience from './experience/Experience.svelte';
 	import { onMount, untrack } from 'svelte';
@@ -221,13 +222,18 @@
 	});
 	const onpop = () => {
 		if (!sheetEntry) return;
-		// An atomic local save/publish has the same disabled-close rule for browser Back as for Cancel/Escape.
-		if (ui.sheetBusy || backFromSettings()) {
+		// An atomic local save/publish has the same disabled-close rule for browser Back as for its X and Escape.
+		if (ui.sheetBusy && !alertOnTop()) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			return;
 		}
+		// Otherwise Back takes the sheet's own Back (an inner pane) or its close request, which may ask first.
 		sheetEntry = false;
-		ui.sheet = null;
+		if (!sheetBrowserBack()) ui.sheet = null;
+		if (ui.sheet) {
+			history.pushState({ pixeldollSheet: 1 }, '');
+			sheetEntry = true;
+		}
 	};
 
 	// balance after every settled job (like TopBar)

@@ -313,11 +313,16 @@
 		const root = document.documentElement.style;
 		root.setProperty('--scene-banner-bottom', `${bottom}px`);
 		root.setProperty('--scene-edge', `${g.edge}px`);
+		// The New character screen lines its own bar up with this one (Full screen and More stay put).
+		root.setProperty('--scene-header-top', `${g.top}px`);
+		root.setProperty('--scene-header-row', `${g.row}px`);
 	});
 	onMount(() => () => {
 		const root = document.documentElement.style;
 		root.removeProperty('--scene-banner-bottom');
 		root.removeProperty('--scene-edge');
+		root.removeProperty('--scene-header-top');
+		root.removeProperty('--scene-header-row');
 	});
 	const background = $derived(
 		WORLDS[ui.theme].backgrounds[

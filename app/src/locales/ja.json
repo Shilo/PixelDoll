@@ -99,6 +99,12 @@
 		"idCopyFailed": "ID をコピーできませんでした。"
 	},
 	"common": {
+		"back": "戻る",
+		"backTo": "{place}に戻る",
+		"keepEditing": "編集を続ける",
+		"discardChangesTitle": "変更を破棄しますか？",
+		"discardChangesBody": "ここでの変更は失われます。",
+		"keepsRunning": "閉じてもアクティビティで実行が続きます。",
 		"loadFailed": "PixelDoll の一部を読み込めませんでした。ページを再読み込みして、もう一度お試しください。",
 		"advanced": "詳細設定",
 		"cancel": "キャンセル",
@@ -119,7 +125,6 @@
 		"done": "完了",
 		"downloadZip": "ZIPをダウンロード",
 		"free": "無料",
-		"hide": "隠す",
 		"loading": "読み込み中…",
 		"move": "モーション",
 		"name": "名前",
@@ -273,7 +278,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "コピー",
 		"demoNoAccount": "デモにアカウントは不要です。",
-		"notNow": "今はしない",
 		"sentOnlyToApiPixellabAi": "api.pixellab.aiにのみ送信されます。",
 		"forgetKey": "キーを削除",
 		"forgetTitle": "PixelLab のキーを削除しますか？",
@@ -960,7 +964,6 @@
 			"title": "エクスポート",
 			"back": "戻る",
 			"settings": "設定",
-			"close": "エクスポートを閉じる",
 			"saving": "設定を保存中…",
 			"unavailable": "エクスポートできません",
 			"sourceOnly": "元のPNGのみ",
@@ -1197,7 +1200,6 @@
 		"previewDirectionLabel": "プレビューの向き",
 		"setupNext": "続けてポーズ用のリグをセットアップする（推奨）",
 		"setupNextHint": "インポートは無料です。リグのセットアップでは、開始前にPixelLabの生成コストが表示されます。",
-		"chooseAnother": "別のキャラクターを選ぶ",
 		"saving": "ローカルのコピーを保存中…",
 		"preparing": "キャラクターを準備中…",
 		"note": "無料・新しいローカルコピーを保存します",
@@ -2240,7 +2242,6 @@
 			"retryLabel": "キャラクターをもう一度作成",
 			"editSetup": "設定を編集…",
 			"estimated": "見積もり：{gens}",
-			"keepWorking": "作業を続ける",
 			"costTitle": "全方向の立ちポーズを作成します。待機、歩き、その他のモーションはあとで追加できます。立ちポーズの関節が不足している場合は、費用が少し増えることがあります",
 			"create": "キャラクターを作成",
 			"createAnyway": "このまま作成"
@@ -2327,7 +2328,6 @@
 		"reuseCached": "キャッシュされたフレームを再利用",
 		"matchColors": "体の色を合わせる",
 		"keepFrames": "フレームを残す",
-		"keepWorking": "作業を続けられます。",
 		"queueAnother": "別のモーションをキューに追加",
 		"addLabel": "モーションを追加または置き換え",
 		"submit": {
@@ -2613,7 +2613,6 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "あとで" },
 	"toast": { "dismiss": "通知を閉じる" },
 	"sharedVisibility": {
 		"allEmphasis": "すべての",

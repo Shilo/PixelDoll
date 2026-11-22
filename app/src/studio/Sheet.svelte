@@ -1,69 +1,115 @@
 <script lang="ts">
-	// One sheet at a time (HIG): centered on desktop, bottom sheet with a grabber on phones, trailing panel in phone landscape.
+	// One sheet at a time (HIG): centered on desktop, bottom sheet on phones, trailing panel in phone landscape.
+	// Fixed chrome (docs/design/2026-11-21-app-bars/plan.md): Back only at the start and only inside an inner pane, the
+	// centered title, header tools, then the X at the end. A footer exists only for a commit, primary action last.
 	import { openingTrigger, restoreTrigger } from './experience/focus.ts';
 	import type { Snippet } from 'svelte';
+	import { t } from 'svelte-whisper';
 	import { WORLDS } from './experience/config.ts';
-	import { ui } from './state.svelte.ts';
+	import { ui, canReturnToCreator, returnToCreator } from './state.svelte.ts';
 	import Toast from './Toast.svelte';
 	import { developerModeEnabled } from './developerMode.svelte.ts';
 	import { backdropDismiss } from './backdropDismiss.ts';
-	import { t, type WhisperKey } from 'svelte-whisper';
+	import { claimSheetExit } from './sheetExit.ts';
+	import SurfaceHeader from './SurfaceHeader.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
+	import GlobalActions from './GlobalActions.svelte';
+	import MoreMenu from './MoreMenu.svelte';
 	let {
 		title,
 		children,
 		footer,
 		heading,
+		tools: ownTools,
 		developer,
-		leading,
-		trailing,
+		back,
+		backDiscards = false,
+		backTo: backPlace,
 		onclose,
-		cancel = 'common.cancel',
-		cancelDisabled = false,
+		locked = false,
+		dirty = false,
 		wide = false,
+		screen = false,
 		className = ''
 	}: {
 		title: string;
 		children: Snippet;
+		/** Note first, then actions with the primary last. */
 		footer?: Snippet;
+		/** Inline content beside the title, such as a Name field or a page title. */
 		heading?: Snippet;
+		/** Icon buttons just before the X. */
+		tools?: Snippet;
+		/** Developer-mode tools, shown before the other tools. */
 		developer?: Snippet;
-		leading?: Snippet;
-		trailing?: Snippet;
+		/** Steps back to the previous pane; present only inside an inner pane. */
+		back?: () => void;
+		/** Back drops the pane's unsaved state (`dirty`), so it asks first like the X. */
+		backDiscards?: boolean;
+		/** The sheet Back returns to, when it is another sheet (names it "Back to …"). */
+		backTo?: string;
+		/** Leaves the sheet: the X, Escape, the backdrop and browser Back all ask for it. */
 		onclose: () => void;
-		cancel?: WhisperKey;
-		cancelDisabled?: boolean;
+		/** An atomic save is running: no exit until it settles. */
+		locked?: boolean;
+		/** Leaving now would lose input, so the close request asks first. */
+		dirty?: boolean;
 		wide?: boolean;
+		/** A full-window screen (New character): its bar matches the top bar it covers, Back at the start and Full
+		 *  screen and More at the end, instead of the X. */
+		screen?: boolean;
 		className?: string;
 	} = $props();
 	let dlg: HTMLDialogElement;
+	let titleElement = $state<HTMLHeadingElement>();
+	/** The exit waiting on Discard changes?. */
+	let discarding = $state<(() => void) | null>(null);
 	// The native `close` event from our own unmount fires after a replacement sheet is already set; ignore it.
 	let unmounting = false;
+	// Without an inner pane of its own, a sheet opened over New character steps back to it.
+	const backTo = $derived(back ?? (canReturnToCreator() ? returnToCreator : undefined));
+	const backName = $derived(back ? backPlace : backTo ? t('create.sheet.title') : undefined);
+	function guarded(exit: () => void) {
+		if (locked || discarding) return;
+		if (dirty) discarding = exit;
+		else exit();
+	}
+	const requestClose = () => guarded(onclose);
+	const goBack = $derived(backTo && backDiscards ? () => guarded(backTo as () => void) : backTo);
 	$effect(() => {
-		ui.sheetBusy = cancelDisabled;
+		ui.sheetBusy = locked;
 		return () => {
 			ui.sheetBusy = false;
 		};
 	});
+	$effect(() =>
+		claimSheetExit({
+			get back() {
+				return goBack && !locked ? goBack : undefined;
+			},
+			close: requestClose
+		})
+	);
 	$effect(() => {
-		// focus goes back to what opened the sheet (a menu item -> its menu button); text sheets start in their first field
+		// focus goes back to what opened the sheet (a menu item -> its menu button); text sheets start in their first
+		// field on fine pointers, every other sheet on its title so neither Back nor the X is the starting point
 		const from = openingTrigger(),
 			pop = from?.closest<HTMLElement>('[popover]');
 		const opener = pop ? document.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`) : from;
 		dlg.showModal();
-		if (matchMedia('(pointer: fine)').matches)
-			dlg
-				.querySelector<HTMLElement>(
-					':is(.sheet-heading, .sheet-body) :is(textarea, input:is([type=text], [type=password], :not([type])))'
-				)
-				?.focus();
+		const field =
+			matchMedia('(pointer: fine)').matches &&
+			dlg.querySelector<HTMLElement>(
+				':is(.sheet-heading, .sheet-body) :is(textarea, input:is([type=text], [type=password], :not([type])))'
+			);
+		if (field) field.focus();
+		else titleElement?.focus({ preventScroll: true });
 		return () => {
 			unmounting = true;
 			dlg.close();
 			restoreTrigger(opener);
 		};
 	});
-	// HIG: Done/Close confirm and sit trailing; Cancel/Hide sit leading
-	const cancelTrailing = $derived(cancel === 'common.done' || cancel === 'common.close');
 	const showDeveloper = $derived(!!developer && developerModeEnabled());
 	const kind = $derived(
 		ui.size === 'compact' ? 'bottom' : ui.size === 'landscape' ? 'side' : 'center'
@@ -77,72 +123,50 @@
 	class:wide
 	aria-labelledby="sheet-title"
 	onclose={() => {
-		if (!unmounting && !cancelDisabled) onclose();
+		if (!unmounting && !locked) onclose();
 	}}
 	oncancel={(e) => {
 		e.preventDefault();
-		if (!cancelDisabled) onclose();
+		requestClose();
 	}}
-	use:backdropDismiss={() => {
-		if (!cancelDisabled) onclose();
-	}}
+	use:backdropDismiss={requestClose}
 >
-	{#if kind === 'bottom'}<div class="grabber" aria-hidden="true"></div>{/if}
-	<header class="sheet-head" class:has-developer={showDeveloper}>
-		{#if leading}{@render leading()}{:else if cancelTrailing}<span></span>{:else}<button
-				class="bu-action btn plain link"
-				data-variant="quiet"
-				disabled={cancelDisabled}
-				onclick={onclose}>{t(cancel)}</button
-			>{/if}
-		<div class="sheet-heading">
-			<h2 id="sheet-title" class="sheet-title">{title}</h2>
-			{#if heading}{@render heading()}{/if}
-		</div>
-		{#snippet endAction()}
-			{#if trailing}{@render trailing()}{:else if cancelTrailing}<button
-					class="bu-action btn plain link done"
-					data-variant="quiet"
-					disabled={cancelDisabled}
-					onclick={onclose}>{t(cancel)}</button
-				>{/if}
+	<SurfaceHeader
+		{title}
+		titleId="sheet-title"
+		bind:titleElement
+		{heading}
+		back={goBack ?? (screen ? requestClose : undefined)}
+		backTo={backName}
+		{locked}
+		onclose={requestClose}
+		end={screen ? globalActions : undefined}
+	>
+		{#snippet tools()}
+			{#if showDeveloper}{@render developer?.()}{/if}
+			{@render ownTools?.()}
 		{/snippet}
-		{#if showDeveloper}
-			<div class="sheet-trailing">
-				{@render developer?.()}
-				{@render endAction()}
-			</div>
-		{:else if trailing || cancelTrailing}
-			{@render endAction()}
-		{:else}
-			<span></span>
-		{/if}
-	</header>
+	</SurfaceHeader>
 	<div class="sheet-body">{@render children()}</div>
 	{#if footer}<footer class="sheet-foot">{@render footer()}</footer>{/if}
 	<Toast />
+	{#if screen}<MoreMenu context="creator" />{/if}
 </dialog>
 
-<style>
-	.sheet-head:not(.has-developer) {
-		grid-template-columns: minmax(52px, 1fr) minmax(0, auto) minmax(52px, 1fr);
-	}
-	.sheet-trailing {
-		display: flex;
-		align-items: center;
-		justify-content: end;
-		gap: 4px;
-		min-inline-size: 0;
-	}
-	.sheet-title {
-		min-width: 0;
-		overflow-wrap: anywhere;
-	}
-	.sheet-heading {
-		min-width: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 12px;
-	}
-</style>
+{#snippet globalActions()}<GlobalActions />{/snippet}
+
+{#if discarding}
+	<ConfirmDialog
+		title={t('common.discardChangesTitle')}
+		action={t('common.discard')}
+		cancel={t('common.keepEditing')}
+		oncancel={() => (discarding = null)}
+		onconfirm={() => {
+			const exit = discarding;
+			discarding = null;
+			exit?.();
+		}}
+	>
+		<p>{t('common.discardChangesBody')}</p>
+	</ConfirmDialog>
+{/if}

@@ -98,7 +98,6 @@
 
 <Sheet
 	title={t('studio.titleInspectCharacter')}
-	cancel="common.done"
 	onclose={() => (ui.sheet = null)}
 	className="inspection-sheet"
 	wide

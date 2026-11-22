@@ -151,7 +151,7 @@
 <Sheet
 	title={t('stateCapture.title')}
 	className="state-capture-sheet"
-	cancelDisabled={locked}
+	{locked}
 	onclose={() => (ui.sheet = null)}
 	footer={tab === 'move' ? moveFooter : undefined}
 >

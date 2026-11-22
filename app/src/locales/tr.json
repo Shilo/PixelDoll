@@ -99,6 +99,12 @@
 		"idCopyFailed": "Kimlik kopyalanamadı."
 	},
 	"common": {
+		"back": "Geri",
+		"backTo": "Geri dön: {place}",
+		"keepEditing": "Düzenlemeye devam edin",
+		"discardChangesTitle": "Değişiklikler atılsın mı?",
+		"discardChangesBody": "Burada yaptığınız değişiklikler kaybolacak.",
+		"keepsRunning": "Bunu kapatsanız da Etkinlik içinde devam eder.",
 		"loadFailed": "PixelDoll'un bir bölümü yüklenemedi. Yeniden denemek için sayfayı yenileyin.",
 		"advanced": "Gelişmiş",
 		"cancel": "İptal edin",
@@ -119,7 +125,6 @@
 		"done": "Bitti",
 		"downloadZip": "ZIP indirin",
 		"free": "Ücretsiz",
-		"hide": "Gizleyin",
 		"loading": "Yükleniyor…",
 		"move": "Animasyon",
 		"name": "Ad",
@@ -273,7 +278,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Kopyala",
 		"demoNoAccount": "Demo için hesap gerekmez.",
-		"notNow": "Şimdi değil",
 		"sentOnlyToApiPixellabAi": "Yalnızca api.pixellab.ai adresine gönderilir.",
 		"forgetKey": "Anahtarı unutun",
 		"forgetTitle": "PixelLab anahtarı unutulsun mu?",
@@ -988,7 +992,6 @@
 			"title": "Dışa aktarım",
 			"back": "Geri",
 			"settings": "Ayarlar",
-			"close": "Dışa aktarımı kapatın",
 			"saving": "Ayarlar kaydediliyor…",
 			"unavailable": "Dışa aktarım kullanılamıyor",
 			"sourceOnly": "Yalnızca kaynak PNG dosyaları",
@@ -1239,7 +1242,6 @@
 		"previewDirectionLabel": "Önizleme yönü",
 		"setupNext": "Ardından poz rig'ini kurun (önerilir)",
 		"setupNextHint": "İçe aktarma ücretsizdir. Rig kurulumu, başlamadan önce PixelLab üretim ücretini gösterir.",
-		"chooseAnother": "Başka bir karakter seçin",
 		"saving": "Yerel kopyanız kaydediliyor…",
 		"preparing": "Karakteriniz hazırlanıyor…",
 		"note": "Ücretsiz · Yeni bir yerel kopya kaydeder",
@@ -2320,7 +2322,6 @@
 			"retryLabel": "Karakteri yeniden oluşturun",
 			"editSetup": "Ayarları düzenle…",
 			"estimated": "Tahmini {gens}",
-			"keepWorking": "Çalışmaya devam edin",
 			"costTitle": "Her yönde ayakta duruş görünümü oluşturur. Bekleme, yürüme ve diğer animasyonları daha sonra ekleyin. Eksik bir ayakta duruş eklemi ücreti biraz artırabilir",
 			"create": "Karakteri oluşturun",
 			"createAnyway": "Yine de oluştur"
@@ -2408,7 +2409,6 @@
 		"reuseCached": "Önbellekteki kareleri yeniden kullanın",
 		"matchColors": "Gövde renklerini eşleştirin",
 		"keepFrames": "Kareleri saklayın",
-		"keepWorking": "Çalışmaya devam edebilirsiniz.",
 		"queueAnother": "Başka animasyonu kuyruğa alın",
 		"addLabel": "Animasyon ekleyin veya değiştirin",
 		"submit": {
@@ -2700,7 +2700,6 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Daha sonra" },
 	"toast": { "dismiss": "Bildirimi kapatın" },
 	"sharedVisibility": {
 		"allEmphasis": "Tüm",

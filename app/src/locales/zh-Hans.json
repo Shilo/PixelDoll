@@ -99,6 +99,12 @@
 		"idCopyFailed": "无法复制 ID。"
 	},
 	"common": {
+		"back": "返回",
+		"backTo": "返回{place}",
+		"keepEditing": "继续编辑",
+		"discardChangesTitle": "放弃更改？",
+		"discardChangesBody": "此处的更改将丢失。",
+		"keepsRunning": "关闭后仍会在“活动”中继续。",
 		"loadFailed": "无法加载 PixelDoll 的部分内容。请重新加载页面后重试。",
 		"advanced": "高级",
 		"cancel": "取消",
@@ -119,7 +125,6 @@
 		"done": "完成",
 		"downloadZip": "下载 ZIP",
 		"free": "免费",
-		"hide": "隐藏",
 		"loading": "加载中…",
 		"move": "动作",
 		"name": "名称",
@@ -273,7 +278,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "复制",
 		"demoNoAccount": "试用演示无需账户。",
-		"notNow": "暂不连接",
 		"sentOnlyToApiPixellabAi": "仅发送至 api.pixellab.ai。",
 		"forgetKey": "忘记密钥",
 		"forgetTitle": "忘记 PixelLab 密钥？",
@@ -947,7 +951,6 @@
 			"title": "导出",
 			"back": "返回",
 			"settings": "设置",
-			"close": "关闭导出",
 			"saving": "正在保存设置…",
 			"unavailable": "导出不可用",
 			"sourceOnly": "仅源 PNG",
@@ -1184,7 +1187,6 @@
 		"previewDirectionLabel": "预览朝向",
 		"setupNext": "接下来设置姿势绑定结构（推荐）",
 		"setupNextHint": "导入免费。绑定结构设置会在开始前显示其 PixelLab 生成费用。",
-		"chooseAnother": "选择另一个角色",
 		"saving": "正在保存本地副本…",
 		"preparing": "正在准备你的角色…",
 		"note": "免费 · 保存新的本地副本",
@@ -2211,7 +2213,6 @@
 			"retryLabel": "再次创建角色",
 			"editSetup": "编辑设置…",
 			"estimated": "预计 {gens}",
-			"keepWorking": "继续工作",
 			"costTitle": "每个朝向的站立视图；之后可添加待机、行走和其他动作。缺少站立关节可能会略微增加费用",
 			"create": "创建角色",
 			"createAnyway": "仍然创建"
@@ -2298,7 +2299,6 @@
 		"reuseCached": "复用缓存帧",
 		"matchColors": "匹配身体颜色",
 		"keepFrames": "保留帧",
-		"keepWorking": "你可以继续工作。",
 		"queueAnother": "再排一个动作",
 		"addLabel": "添加或替换动作",
 		"submit": {
@@ -2584,7 +2584,6 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "稍后" },
 	"toast": { "dismiss": "关闭通知" },
 	"sharedVisibility": {
 		"allEmphasis": "所有",

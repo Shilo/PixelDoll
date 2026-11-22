@@ -99,6 +99,12 @@
 		"idCopyFailed": "No se pudo copiar el ID."
 	},
 	"common": {
+		"back": "Atrás",
+		"backTo": "Volver a {place}",
+		"keepEditing": "Seguir editando",
+		"discardChangesTitle": "¿Descartar los cambios?",
+		"discardChangesBody": "Se perderán los cambios que hiciste aquí.",
+		"keepsRunning": "Sigue en Actividad si cierras esto.",
 		"loadFailed": "No se pudo cargar una parte de PixelDoll. Recarga la página para volver a intentarlo.",
 		"advanced": "Avanzado",
 		"cancel": "Cancelar",
@@ -119,7 +125,6 @@
 		"done": "Listo",
 		"downloadZip": "Descargar ZIP",
 		"free": "Gratis",
-		"hide": "Ocultar",
 		"loading": "Cargando…",
 		"move": "Animación",
 		"name": "Nombre",
@@ -273,7 +278,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Copiar",
 		"demoNoAccount": "No necesitas una cuenta para la demo.",
-		"notNow": "Ahora no",
 		"sentOnlyToApiPixellabAi": "Solo se envía a api.pixellab.ai.",
 		"forgetKey": "Olvidar clave",
 		"forgetTitle": "¿Olvidar la clave de PixelLab?",
@@ -991,7 +995,6 @@
 			"title": "Exportar",
 			"back": "Atrás",
 			"settings": "Ajustes",
-			"close": "Cerrar exportación",
 			"saving": "Guardando ajustes…",
 			"unavailable": "Exportación no disponible",
 			"sourceOnly": "Solo PNG de origen",
@@ -1245,7 +1248,6 @@
 		"previewDirectionLabel": "Dirección de la vista previa",
 		"setupNext": "Configurar el rig al terminar (recomendado)",
 		"setupNextHint": "Importar es gratis. La configuración del rig muestra su costo de generación en PixelLab antes de empezar.",
-		"chooseAnother": "Elegir otro personaje",
 		"saving": "Guardando tu copia local…",
 		"preparing": "Preparando tu personaje…",
 		"note": "Gratis · guarda una copia local nueva",
@@ -2329,7 +2331,6 @@
 			"retryLabel": "Volver a crear el personaje",
 			"editSetup": "Editar ajustes…",
 			"estimated": "Aprox. {gens}",
-			"keepWorking": "Seguir trabajando",
 			"costTitle": "Incluye la pose de pie en todas las direcciones. Agrega Reposo, Caminar y otras animaciones después. Si falta una articulación en la pose de pie, el costo puede subir un poco.",
 			"create": "Crear personaje",
 			"createAnyway": "Crear de todos modos"
@@ -2417,7 +2418,6 @@
 		"reuseCached": "Reutilizar fotogramas en caché",
 		"matchColors": "Igualar colores del cuerpo",
 		"keepFrames": "Conservar fotogramas",
-		"keepWorking": "Puedes seguir trabajando.",
 		"queueAnother": "Poner otra animación en cola",
 		"addLabel": "Agregar o reemplazar animación",
 		"submit": {
@@ -2714,7 +2714,6 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Más tarde" },
 	"toast": { "dismiss": "Descartar notificación" },
 	"sharedVisibility": {
 		"allEmphasis": "todos",

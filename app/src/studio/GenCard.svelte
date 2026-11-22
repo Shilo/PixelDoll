@@ -228,7 +228,7 @@
 	const usd = usdText;
 </script>
 
-<Sheet title={t('studio.titleItemReview')} cancel="common.done" onclose={() => (ui.sheet = null)}>
+<Sheet title={t('studio.titleItemReview')} onclose={() => (ui.sheet = null)}>
 	{#snippet developer()}
 		<ApiPeek
 			targets={[

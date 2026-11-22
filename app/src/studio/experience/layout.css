@@ -276,6 +276,10 @@
 .phone-layout:not(.selection) .mobile-sep {
 	display: block !important;
 }
+/* Phones keep the name readable: Activity lives in More, which shows a dot while work runs or needs attention. */
+.phone-layout .header-activity {
+	display: none !important;
+}
 @media (max-width: 430px) {
 	.phone-layout .experience-header {
 		left: 8px;
@@ -1442,22 +1446,36 @@
 		linear-gradient(90deg, var(--bu-reading-start), var(--bu-reading-end)),
 		var(--creator-world) center/cover;
 }
-.studio-app .character-sheet .grabber {
-	display: none;
-}
+/* Its bar row sits exactly where the top bar it covers does: Back at the start, Full screen and More at the end. */
 .studio-app .character-sheet .sheet-head {
-	display: block;
-	padding: 96px 40px 20px;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-areas:
+		'start end'
+		'heading heading';
+	gap: 28px 12px;
+	padding: max(var(--scene-header-top, 12px), env(safe-area-inset-top)) var(--scene-edge, 16px) 20px;
 	border: 0;
 }
-.studio-app .character-sheet .sheet-head > .btn {
-	position: absolute;
-	top: 28px;
-	right: 40px;
-	min-height: 50px;
-	font-size: 16px;
+.studio-app .character-sheet .sheet-start {
+	grid-area: start;
+	min-height: var(--scene-header-row, 44px);
+}
+.studio-app .character-sheet .sheet-end {
+	grid-area: end;
+	min-height: var(--scene-header-row, 44px);
+}
+.studio-app .character-sheet .surface-back {
+	height: 44px;
+}
+/* The top bar tightens to 8px edges on narrow phones (below); this bar follows it. */
+@media (max-width: 430px) {
+	.studio-app .character-sheet .sheet-head {
+		padding-inline: 8px;
+	}
 }
 .studio-app .character-sheet .sheet-heading {
+	grid-area: heading;
+	padding-inline: calc(40px - var(--scene-edge, 16px));
 	display: grid;
 	grid-template-columns: minmax(200px, 0.8fr) minmax(0, 3fr);
 	gap: 32px;
@@ -1692,13 +1710,11 @@
 }
 @media (max-width: 760px) and (min-height: 541px) {
 	.studio-app .character-sheet .sheet-head {
-		padding: 64px 20px 12px;
-	}
-	.studio-app .character-sheet .sheet-head > .btn {
-		top: 12px;
-		right: 20px;
+		row-gap: 12px;
+		padding-bottom: 12px;
 	}
 	.studio-app .character-sheet .sheet-heading {
+		padding-inline: calc(20px - var(--scene-edge, 16px));
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
@@ -1750,7 +1766,8 @@
 }
 @media (max-height: 540px) and (min-width: 600px) {
 	.studio-app .character-sheet .sheet-head {
-		padding: 52px 20px 12px;
+		row-gap: 0;
+		padding-bottom: 8px;
 	}
 	.studio-app .character-sheet .sheet-body {
 		padding: 12px 20px;
@@ -1776,10 +1793,6 @@
 	}
 	.studio-app .character-sheet .facing {
 		grid-column: 1/-1;
-	}
-	.studio-app .character-sheet .sheet-head > .btn {
-		top: 8px;
-		right: 20px;
 	}
 }
 @media (max-height: 540px) and (max-width: 599px) {

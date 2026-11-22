@@ -99,6 +99,12 @@
 		"idCopyFailed": "Impossible de copier l’identifiant."
 	},
 	"common": {
+		"back": "Retour",
+		"backTo": "Retour à {place}",
+		"keepEditing": "Continuer à modifier",
+		"discardChangesTitle": "Abandonner les modifications ?",
+		"discardChangesBody": "Les modifications apportées ici seront perdues.",
+		"keepsRunning": "Continue dans Activité si vous fermez cette fenêtre.",
 		"loadFailed": "Impossible de charger une partie de PixelDoll. Rechargez la page pour réessayer.",
 		"advanced": "Avancé",
 		"cancel": "Annuler",
@@ -119,7 +125,6 @@
 		"done": "Terminé",
 		"downloadZip": "Télécharger le ZIP",
 		"free": "Gratuit",
-		"hide": "Masquer",
 		"loading": "Chargement…",
 		"move": "Animation",
 		"name": "Nom",
@@ -273,7 +278,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Copier",
 		"demoNoAccount": "Aucun compte nécessaire pour la démo.",
-		"notNow": "Pas maintenant",
 		"sentOnlyToApiPixellabAi": "Envoyée uniquement à api.pixellab.ai.",
 		"forgetKey": "Oublier la clé",
 		"forgetTitle": "Oublier la clé PixelLab ?",
@@ -985,7 +989,6 @@
 			"title": "Export",
 			"back": "Retour",
 			"settings": "Réglages",
-			"close": "Fermer la fenêtre d’export",
 			"saving": "Enregistrement des réglages…",
 			"unavailable": "Export indisponible",
 			"sourceOnly": "PNG sources uniquement",
@@ -1239,7 +1242,6 @@
 		"previewDirectionLabel": "Direction de l’aperçu",
 		"setupNext": "Configurer ensuite le rig de pose (recommandé)",
 		"setupNextHint": "L’import est gratuit. Le coût de la configuration du rig, en générations PixelLab, est affiché avant de lancer cette étape.",
-		"chooseAnother": "Choisir un autre personnage",
 		"saving": "Enregistrement de votre copie locale…",
 		"preparing": "Préparation de votre personnage…",
 		"note": "Gratuit · enregistre une nouvelle copie locale",
@@ -2327,7 +2329,6 @@
 			"retryLabel": "Recréer le personnage",
 			"editSetup": "Modifier les réglages…",
 			"estimated": "Estimation : {gens}",
-			"keepWorking": "Continuer à travailler",
 			"costTitle": "Inclut les vues debout dans toutes les directions. Ajoutez ensuite l’attente, la marche et d’autres animations. Trouver une articulation manquante dans une vue debout peut coûter un peu plus.",
 			"create": "Créer le personnage",
 			"createAnyway": "Créer quand même"
@@ -2415,7 +2416,6 @@
 		"reuseCached": "Réutiliser les images en cache",
 		"matchColors": "Harmoniser les couleurs du corps",
 		"keepFrames": "Garder les images",
-		"keepWorking": "Vous pouvez continuer à travailler.",
 		"queueAnother": "Mettre une autre animation en file d’attente",
 		"addLabel": "Ajouter ou remplacer une animation",
 		"submit": {
@@ -2707,7 +2707,6 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Plus tard" },
 	"toast": { "dismiss": "Fermer la notification" },
 	"sharedVisibility": {
 		"allEmphasis": "toutes",

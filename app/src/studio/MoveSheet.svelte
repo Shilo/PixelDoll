@@ -195,6 +195,7 @@
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? untrack(() => moveTemplatePrompt(action)));
+	const textAtStart = untrack(() => text);
 	let templatePicked = $state(!!draft?.action);
 	let loopChoice = $state<boolean | undefined>(draft?.loop);
 	let frameReferences = $state<MoveFrameReferences<PickedReference>>(draft?.frameReferences ?? {});
@@ -1331,7 +1332,7 @@
 	{:else if progress && moving.error}
 		<div class="recovery-actions">
 			<button class="bu-action btn plain" data-variant="quiet" onclick={() => leaveFailedMove(true)}
-				>{t('common.cancel')}</button
+				>{t('common.discard')}</button
 			>
 			<div class="recovery-options">
 				{#if !moving.spec?.itemsOnly && ok}
@@ -1370,12 +1371,9 @@
 		</div>
 		<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
-		<span class="foot-note">{t('moveSheet.keepWorking')}</span>
+		<span class="foot-note">{t('common.keepsRunning')}</span>
 		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = true)}
 			>{t('moveSheet.queueAnother')}</button
-		>
-		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}
-			>{t('common.hide')}</button
 		>
 	{:else if ok}
 		{@const review = skeletonReview?.review}
@@ -1383,11 +1381,6 @@
 		{@const replace = review ? review.replace : replacing}
 		{@const move = review?.id ?? id}
 		{@const needsConnection = !review && managedId && (!app.key || app.keyRejected)}
-		{#if review}<button
-				class="bu-action btn plain"
-				data-variant="quiet"
-				onclick={() => (reviewingSkeletonFor = null)}>{t('moveSheet.skeleton.back')}</button
-			>{/if}
 		{#if est && !needsConnection}
 			<span class="foot-note move-cost-note">
 				<span>
@@ -1448,8 +1441,19 @@
 				: (progress ? moving.spec?.replace : replacing)
 					? t('moveSheet.titleReplace')
 					: t('moves.add')}
-	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
+	back={skeletonReview
+		? () => (reviewingSkeletonFor = null)
+		: mine && ui.moveFormOpen
+			? () => (ui.moveFormOpen = false)
+			: undefined}
 	onclose={() => (ui.sheet = null)}
+	dirty={ok &&
+		!progress &&
+		!skeletonReview &&
+		!repairReview &&
+		!!text.trim() &&
+		text !== textAtStart &&
+		text !== moveTemplatePrompt(action)}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
 	{#snippet developer()}

@@ -5,6 +5,7 @@
 	import { t } from 'svelte-whisper';
 	import { TriangleAlert } from './icons.ts';
 	import { backdropDismiss } from './backdropDismiss.ts';
+	import { claimSheetExit } from './sheetExit.ts';
 	let {
 		title,
 		action,
@@ -42,6 +43,8 @@
 	function dismiss() {
 		if (!busy) oncancel();
 	}
+	// Browser Back answers the alert first, with its safe choice.
+	$effect(() => claimSheetExit({ alert: true, close: dismiss }));
 	$effect(() => {
 		const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		dialog.showModal();
@@ -121,13 +124,20 @@
 	.problem-action {
 		margin-top: 8px;
 	}
+	/* The safe choice first, the named action last, as in every sheet footer; labels too long to share a row stack
+	   in the same order. */
 	.confirm-actions {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
+		display: flex;
+		flex-wrap: wrap;
 		gap: 8px;
 		margin-top: 20px;
 	}
-	.confirm-actions button {
+	.confirm-actions > :global(*) {
+		flex: 1 1 calc(50% - 4px);
+	}
+	.confirm-actions :global(button) {
 		min-height: 44px;
+		height: auto;
+		white-space: normal;
 	}
 </style>

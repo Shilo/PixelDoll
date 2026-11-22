@@ -99,6 +99,12 @@
 		"idCopyFailed": "Não foi possível copiar o ID."
 	},
 	"common": {
+		"back": "Voltar",
+		"backTo": "Voltar para {place}",
+		"keepEditing": "Continuar editando",
+		"discardChangesTitle": "Descartar alterações?",
+		"discardChangesBody": "As alterações feitas aqui serão perdidas.",
+		"keepsRunning": "Continua em Atividade se você fechar isto.",
 		"loadFailed": "Não foi possível carregar uma parte do PixelDoll. Recarregue a página para tentar novamente.",
 		"advanced": "Avançado",
 		"cancel": "Cancelar",
@@ -119,7 +125,6 @@
 		"done": "Concluir",
 		"downloadZip": "Baixar ZIP",
 		"free": "Grátis",
-		"hide": "Ocultar",
 		"loading": "Carregando…",
 		"move": "Animação",
 		"name": "Nome",
@@ -273,7 +278,6 @@
 		"secretLabel": "Secret",
 		"copyKey": "Copiar",
 		"demoNoAccount": "Você não precisa de conta para usar a demo.",
-		"notNow": "Agora não",
 		"sentOnlyToApiPixellabAi": "A chave é enviada apenas para api.pixellab.ai.",
 		"forgetKey": "Esquecer chave",
 		"forgetTitle": "Esquecer a chave do PixelLab?",
@@ -993,7 +997,6 @@
 			"title": "Exportar",
 			"back": "Voltar",
 			"settings": "Configurações",
-			"close": "Fechar exportação",
 			"saving": "Salvando configurações…",
 			"unavailable": "Exportação indisponível",
 			"sourceOnly": "Somente PNGs originais",
@@ -1253,7 +1256,6 @@
 		"previewDirectionLabel": "Direção da prévia",
 		"setupNext": "Configurar o rig de poses na próxima etapa (recomendado)",
 		"setupNextHint": "A importação é grátis. Antes de começar, a configuração do rig mostra o custo em gerações do PixelLab.",
-		"chooseAnother": "Escolher outro personagem",
 		"saving": "Salvando sua cópia local…",
 		"preparing": "Preparando seu personagem…",
 		"note": "Grátis · salva uma nova cópia local",
@@ -2340,7 +2342,6 @@
 			"retryLabel": "Criar personagem novamente",
 			"editSetup": "Editar configuração…",
 			"estimated": "Estimativa: {gens}",
-			"keepWorking": "Continuar trabalhando",
 			"costTitle": "Inclui as vistas da pose em pé em todas as direções. Adicione depois as animações de repouso, caminhada e outras. Articulações ausentes na pose em pé podem aumentar um pouco o custo",
 			"create": "Criar personagem",
 			"createAnyway": "Criar mesmo assim"
@@ -2428,7 +2429,6 @@
 		"reuseCached": "Reaproveitar quadros em cache",
 		"matchColors": "Ajustar cores do corpo",
 		"keepFrames": "Manter quadros",
-		"keepWorking": "Você pode continuar trabalhando.",
 		"queueAnother": "Colocar outra animação na fila",
 		"addLabel": "Adicionar ou substituir animação",
 		"submit": {
@@ -2720,7 +2720,6 @@
 		"bodyMeasure": "{size} px",
 		"frameMeasure": "{size} × {size} px"
 	},
-	"sheet": { "later": "Mais tarde" },
 	"toast": { "dismiss": "Dispensar notificação" },
 	"sharedVisibility": {
 		"allEmphasis": "todos",

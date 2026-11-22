@@ -4,6 +4,10 @@
 	padding: 9px;
 	box-sizing: border-box;
 }
+/* The shared sheet header, edge to edge above the preview. */
+.share-surface > .sheet-head {
+	margin: -9px -9px 9px;
+}
 .share-preview {
 	height: var(--share-preview-height, 122px);
 	display: flex;
@@ -122,6 +126,9 @@
 @media (max-width: 440px) {
 	.share-popover .share-surface {
 		padding: 7px;
+	}
+	.share-surface > .sheet-head {
+		margin: -7px -7px 7px;
 	}
 	.share-controls {
 		gap: 4px;

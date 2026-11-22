@@ -402,8 +402,16 @@
 						{/each}
 					{/each}
 				</nav>
-				{#if canReset && !active}
-					{@render compactReset('all')}
+				{#if canReset}
+					<div class="index-reset">
+						<hr class="bu-separator" />
+						<SettingsResetButton
+							scope="all"
+							labeled
+							disabled={busy}
+							onclick={() => (resetScope = 'all')}
+						/>
+					</div>
 				{/if}
 			</div>
 		{/if}
@@ -563,6 +571,11 @@
 	.compact-reset {
 		display: none;
 	}
+	.index-reset {
+		display: grid;
+		gap: 4px;
+		margin-top: 12px;
+	}
 	@media (max-width: 659px), (max-height: 519px) {
 		.settings-panel-heading {
 			display: contents;
@@ -589,13 +602,6 @@
 	:global(dialog.settings-sheet.side) {
 		width: min(100%, 560px);
 		height: 100dvh;
-	}
-	:global(dialog.settings-sheet .sheet-head > .done) {
-		max-inline-size: 100%;
-		height: auto;
-		min-height: var(--ctl-h);
-		white-space: normal;
-		overflow-wrap: anywhere;
 	}
 	.settings-content,
 	.settings-index,

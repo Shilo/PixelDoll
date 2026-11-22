@@ -329,7 +329,7 @@
 	}
 </script>
 
-<Sheet title={t('studio.titleItem')} cancel="common.done" onclose={() => (ui.sheet = null)}>
+<Sheet title={t('studio.titleItem')} onclose={() => (ui.sheet = null)}>
 	{#snippet developer()}
 		<ApiPeek
 			targets={[

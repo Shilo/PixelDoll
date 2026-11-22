@@ -1,8 +1,5 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
-	import WardrobeVisibility from './WardrobeVisibility.svelte';
-	import PopoverArrow from './PopoverArrow.svelte';
-	import { popoverFocus } from './experience/focus.ts';
 	import TierNotice from './TierNotice.svelte';
 	import { GENERATION_RECOMMENDATION } from '../lib/pixellab/plans.ts';
 	import { customize } from './experience/state.svelte.ts';
@@ -32,6 +29,7 @@
 		facingOf,
 		freshSeed,
 		newCharacterDraft,
+		draftTyped,
 		styleOf
 	} from './characterConfig.ts';
 	import { nameFrom, bodyQualityNote as plain } from './model.ts';
@@ -42,18 +40,27 @@
 		startCreate,
 		discardCreate,
 		openProject,
-		withKey
+		withKey,
+		leavingCreatorForSheet
 	} from './state.svelte.ts';
-	import { Check, CircleAlert, Shirt, TriangleAlert } from './icons.ts';
+	import { Check, CircleAlert, TriangleAlert } from './icons.ts';
 	import { displayDirection, displayDirectionInSentence } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayError, displayMessage } from '../lib/i18n.ts';
 	import { PreflightWarning, errorText } from '../lib/message.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
-	const wardrobeMenuId = $props.id();
 	const policyDecline = /\b5000\b|policy/i;
 	let d = $state(formDrafts.character ?? newCharacterDraft());
 	formDrafts.character = undefined;
+	// Typed text that leaving would lose, compared with a blank form so a draft restored from a sheet opened over this
+	// screen still counts; the choices around it keep their saved defaults.
+	const typed = $derived(draftTyped(d));
+	// A sheet opened over this screen (More, Connect, Activity) steps back to it with the draft intact; its X leaves
+	// both and the draft waits for the next New character, as it does after canceling Connect.
+	$effect(() => () => {
+		if (leavingCreatorForSheet() && !formDrafts.character)
+			formDrafts.character = $state.snapshot(d);
+	});
 	const creating = $derived(creates.find((run) => run.id === createPresentation.id));
 	let enhancing = $state(false);
 	let referenceLoading = $state(false);
@@ -199,9 +206,10 @@
 
 <Sheet
 	title={t('create.sheet.title')}
-	cancel={creating?.projectId ? 'common.close' : creating ? 'common.hide' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
+	dirty={!creating && typed}
 	className="character-sheet"
+	screen
 	wide
 >
 	{#snippet developer()}
@@ -254,32 +262,6 @@
 					maxlength="80"
 				/></label
 			>{/if}{/snippet}
-	{#snippet trailing()}
-		<button
-			class="bu-action btn creation-wardrobe"
-			data-variant="quiet"
-			aria-label={t('toolbar.wardrobeSettings')}
-			title={t('toolbar.wardrobeSettings')}
-			popovertarget={wardrobeMenuId}><Shirt size={18} aria-hidden="true" /></button
-		>
-		{#if creating?.projectId && !running}
-			<button
-				class="bu-action btn plain link done"
-				data-variant="quiet"
-				onclick={() => (ui.sheet = null)}>{t('common.close')}</button
-			>
-		{/if}
-		<div
-			id={wardrobeMenuId}
-			class="menu options-menu bu-popover-anchor"
-			data-placement="bottom-start"
-			popover
-			ontoggle={popoverFocus}
-		>
-			<PopoverArrow />
-			<div class="menu-surface bu-popover-surface bu-floating"><WardrobeVisibility /></div>
-		</div>
-	{/snippet}
 	{#if creating?.projectId}
 		<div class="create-review">
 			<h3 style="font-size:var(--fs-title)">
@@ -407,7 +389,7 @@
 							!createPresentation.id
 						)
 							ui.sheet = null;
-					}}>{t('common.cancel')}</button
+					}}>{t('common.discard')}</button
 				>
 				<div class="recovery-options">
 					<button
@@ -440,9 +422,8 @@
 			</div>
 			<!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
 		{:else if running}
-			<span class="foot-note">{t('create.sheet.estimated', { gens: gensRange })}</span>
-			<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}
-				>{t('create.sheet.keepWorking')}</button
+			<span class="foot-note"
+				>{t('create.sheet.estimated', { gens: gensRange })} · {t('common.keepsRunning')}</span
 			>
 		{:else}
 			<span class="foot-note creator-cost" title={t('create.sheet.costTitle')}>~{gensRange}</span>
@@ -460,40 +441,6 @@
 </Sheet>
 
 <style>
-	:global(.studio-app .character-sheet) :global(.sheet-trailing) {
-		position: absolute;
-		right: 40px;
-		top: 28px;
-		min-height: 50px;
-	}
-	:global(.studio-app .character-sheet .sheet-head.has-developer > .btn) {
-		left: 40px;
-		right: auto;
-	}
-	:global(.studio-app .character-sheet) .btn.creation-wardrobe {
-		left: 40px;
-		right: auto;
-	}
-	:global(.studio-app .character-sheet .sheet-trailing) .btn.creation-wardrobe {
-		position: static;
-	}
-	@media (max-width: 760px) and (min-height: 541px), (max-height: 540px) and (min-width: 600px) {
-		:global(.studio-app .character-sheet) :global(.sheet-trailing) {
-			right: 20px;
-			top: 8px;
-		}
-		:global(.studio-app .character-sheet .sheet-head.has-developer > .btn) {
-			left: 20px;
-		}
-		:global(.studio-app .character-sheet) .btn.creation-wardrobe {
-			left: 20px;
-		}
-	}
-	@media (max-width: 760px) and (min-height: 541px) {
-		:global(.studio-app .character-sheet) :global(.sheet-trailing) {
-			top: 12px;
-		}
-	}
 	.quality-notes {
 		width: 100%;
 		text-align: left;
