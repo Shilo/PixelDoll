@@ -39,10 +39,14 @@
 	} = $props();
 	const fullName = (direction: DirectionName) =>
 		getLocale() === 'en' ? directionLabel(direction) : displayDirection(direction);
+	// When only western views can mirror, the east column has no mirror buttons and needs no room for them.
+	const westOnly = $derived(
+		!!onmirror && !!mirrorTargets && mirrorTargets.every((dir) => dir.includes('west'))
+	);
 </script>
 
 <div
-	class={['compass', { 'with-mirrors': !!onmirror, compact }]}
+	class={['compass', { 'with-mirrors': !!onmirror, 'west-only': westOnly, compact }]}
 	role="group"
 	aria-label={label}
 	aria-describedby={describedBy}
@@ -128,6 +132,12 @@
 		grid-template-columns: minmax(0, calc(56px + var(--mirror-width))) minmax(0, 56px) minmax(
 				0,
 				calc(56px + var(--mirror-width))
+			);
+	}
+	.with-mirrors.west-only {
+		grid-template-columns: minmax(0, calc(56px + var(--mirror-width))) minmax(0, 56px) minmax(
+				0,
+				56px
 			);
 	}
 	.direction-tile {

@@ -472,7 +472,7 @@
 				<section class="directions" aria-labelledby="cost-directions">
 					<p class="compass-label">
 						<span id="cost-directions">{t('common.directions')}</span>
-						<span class="faint small"
+						<span class="faint small hint"
 							>{t('costSheet.directionCount', {
 								count: inputs.directions.length,
 								n: formatNumber(inputs.directions.length),
@@ -792,12 +792,22 @@
 		flex: 0 0 152px;
 		width: 152px;
 	}
-	.compass-label {
+	/* Like the rows above: the title and its count on the left, the compass right-aligned with the steppers. */
+	.directions {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 0 6px;
-		margin: 0 0 2px;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 8px 12px;
+	}
+	.compass-label {
+		display: grid;
+		margin: 0;
+		padding-top: 6px;
+	}
+	/* Stays at the right edge even when a narrow sheet wraps it below the title. */
+	.directions > :global(:last-child) {
+		margin-inline-start: auto;
 	}
 	.actions {
 		display: flex;
