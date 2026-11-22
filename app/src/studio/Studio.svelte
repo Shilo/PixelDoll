@@ -7,7 +7,12 @@
 	import './experience/layout.css';
 	import './experience/hoverActions.css';
 	import { rememberActivation } from './experience/focus.ts';
-	import { backFromSettings, settingsNavigation } from './settingsNavigation.svelte.ts';
+	import {
+		backFromSettings,
+		isSettingsShortcut,
+		openSettings,
+		settingsNavigation
+	} from './settingsNavigation.svelte.ts';
 	import { localDeveloperToolsEnabled } from './developerMode.svelte.ts';
 	import Experience from './experience/Experience.svelte';
 	import { onMount, untrack } from 'svelte';
@@ -272,6 +277,12 @@
 	});
 
 	function onkey(e: KeyboardEvent) {
+		// Like other apps, the settings shortcut works from anywhere, including text fields and other sheets.
+		if (isSettingsShortcut(e)) {
+			e.preventDefault();
+			if (ui.sheet !== 'settings') openSettings();
+			return;
+		}
 		const t = e.target as HTMLElement;
 		// T2: arrow keys (Home/End) move between the options of a segmented control, tab list, radio group or a [data-arrows]
 		// rail (selection follows focus, WAI-ARIA) and between the rows of a menu (focus only)

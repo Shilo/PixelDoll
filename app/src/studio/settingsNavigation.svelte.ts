@@ -55,6 +55,11 @@ export function takeSettingsReturnFocus() {
 	return entry;
 }
 
+/** Ctrl+, or Command+, the usual settings shortcut on every platform; "Mod" is Command on Apple devices. */
+export const SETTINGS_KEYS = ['Mod', ','] as const;
+export const isSettingsShortcut = (e: KeyboardEvent) =>
+	(e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key === ',';
+
 export function openSettings(section: SettingsSection | null = null) {
 	returnFocus = undefined;
 	settingsNavigation.fromExport = ui.sheet === 'export';

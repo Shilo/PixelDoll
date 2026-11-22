@@ -177,8 +177,13 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await expect(account.getByText('50,000 / 50,000', { exact: true })).toBeVisible();
 	await expectInlineCredits(account);
 	await account.getByRole('button', { name: 'Done', exact: true }).click();
+	// Settings shows its shortcut in More, and Ctrl+, opens it.
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settingsRow = page.getByRole('button', { name: 'Settings...', exact: true });
+	await expect(settingsRow).toHaveAttribute('aria-keyshortcuts', 'Control+, Meta+,');
+	await expect(settingsRow.getByText('Ctrl+,', { exact: true })).toBeVisible();
+	await page.keyboard.press('Escape');
+	await page.keyboard.press('Control+Comma');
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await expect(settings.locator('.settings-content')).toHaveCSS(
 		'background-color',

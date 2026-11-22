@@ -2,7 +2,8 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import LanguagePicker from './LanguagePicker.svelte';
-	import { openSettings } from './settingsNavigation.svelte.ts';
+	import { openSettings, SETTINGS_KEYS } from './settingsNavigation.svelte.ts';
+	import KeyShortcut, { ariaShortcut } from './KeyShortcut.svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -440,13 +441,14 @@
 			class="row bu-action"
 			data-variant="quiet"
 			aria-haspopup="dialog"
+			aria-keyshortcuts={ariaShortcut(SETTINGS_KEYS)}
 			onclick={() => {
 				closeOptions();
 				openSettings();
 			}}
 			><Settings2 size={18} aria-hidden="true" /><span class="row-name"
 				>{openerLabel(t('export.sheet.settings'))}</span
-			><SurfaceChevron /></button
+			><KeyShortcut keys={SETTINGS_KEYS} class="row-aside faint small" /><SurfaceChevron /></button
 		>
 		<LanguagePicker />
 		<MenuDisclosure sectionKey="more-wardrobe-settings" label={t('toolbar.wardrobeSettings')}>
