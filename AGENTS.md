@@ -47,6 +47,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Studio UI: app/src/studio/
 - Localize new or changed user-facing text via [app/src/locales/](app/src/locales/); don’t hardcode it.
 - Dev-only pages: app/src/ui/
+- Agent tools: app/src/studio/automation/ (one registry, WebMCP and window.pixeldoll adapters); expose new operations there through Studio functions, never storage (docs/agent-integration.md)
 - Demo fixture: app/public/fixtures/s2/
 - Chroma keys (colors, order, mannequin style, despill) were chosen by paid A/B tests; read docs/research/2026-11-09-paperdoll-video-review/chroma-key.md before changing them, and change them only after a paired live test beats them
 
@@ -91,6 +92,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
   - credential changes (remembered token, Forget, canceled Connect) run auth and studio -g "remembered key|Connect"
   - early theme (app/public/appearance.js) runs experience-parity
   - modules registered in src/lib/selftests.ts run in selftests
+  - agent tools (src/studio/automation/) run agent-tools
 - Before adding an end-to-end, slow or timing-sensitive test, or changing test configs or CI shards, read docs/testing/test-performance.md.
 - experience.spec.ts (screenshot captures) runs only when asked, with playwright.experience.config.ts against an already served build; it bypasses the queue, so first check that no end-to-end run is active.
 

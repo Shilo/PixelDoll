@@ -5,6 +5,8 @@ format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Open work:
 
 The [shared JavaScript runtime and cross-engine API contract](architecture/javascript-runtime.md) documents canonical application/JavaScript behavior, native-port responsibilities and required parity checks. The [cross-engine audit](testing/cross-engine-api-contract-2026-11-12.md) records the challenged fixes and verification.
 
+AI agents can operate PixelDoll through page tools (WebMCP and `window.pixeldoll`): [setup and safety](agent-integration.md), [research, tests and decision](research/2026-11-22-agent-automation/README.md).
+
 For a new agent-led research and implementation cycle, invoke the [repeatable paper-doll improvement workflow](handoff/paperdoll-improvement-cycle.md). It covers repository review, online discovery, local source and tool experiments, independent challenge, live PixelLab testing, and verified improvements.
 
 **Evidence media lives at commit [1f95029](https://github.com/Shilo/PixelDoll/tree/1f950291f90d43f5c6f27572445664f757f5716e).** Spike outputs (`spikes/api/out/`), test

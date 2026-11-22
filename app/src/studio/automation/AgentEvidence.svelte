@@ -7,17 +7,16 @@
 	const id = $props.id();
 	let innerWidth = $state(0),
 		innerHeight = $state(0);
-	/** Shown pixels per artwork pixel: the largest whole number up to the sheet's own scale at which every sheet fits the
+	/** Shown pixels per artwork pixel: the largest whole number up to each sheet's own scale at which all sheets fit the
 	 *  viewport together, so one screenshot holds all of them and each artwork pixel stays an exact square. */
-	const shownScale = (image: { width: number; height: number; scale: number }) => {
-		const n = panel.images.length,
-			w = innerWidth - 32,
-			h = (innerHeight - 48) / n - 24;
-		return Math.max(
-			1,
-			Math.min(image.scale, Math.floor(image.scale * Math.min(w / image.width, h / image.height)))
-		);
-	};
+	const fit = $derived.by(() => {
+		const images = panel.images,
+			width = Math.max(1, ...images.map((image) => image.width)),
+			height = images.reduce((sum, image) => sum + image.height, 0) || 1;
+		return Math.min((innerWidth - 32) / width, (innerHeight - 48 - 24 * images.length) / height);
+	});
+	const shownScale = (image: { scale: number }) =>
+		Math.max(1, Math.min(image.scale, Math.floor(image.scale * fit)));
 </script>
 
 <svelte:window
