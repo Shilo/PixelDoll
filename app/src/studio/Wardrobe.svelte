@@ -136,14 +136,13 @@
 			hidden: doc.items[it.slot] === it.id && hidden.has(it.slot),
 			// Worn, but the move Preview shows has no frame of it in any view: its tile is pressed while the stage shows
 			// nothing, and a tap to bring it back would take it off.
-			unseen:
-				!!m &&
-				experience.mode === 'preview' &&
-				doc.items[it.slot] === it.id &&
-				!doc.drafts[it.slot] &&
-				notShownIn(m, it, ui.anim)
+			unseen: doc.items[it.slot] === it.id && !doc.drafts[it.slot] && offMove(it)
 		};
 	}
+	/** Preview's move has no frame of the item in any view, so the stage would not show it there: its tile dims, worn
+	 * or not, so a move's usable items can be scanned at a glance. */
+	const offMove = (it: NonNullable<typeof m>['items'][number]) =>
+		!!m && experience.mode === 'preview' && notShownIn(m, it, ui.anim);
 	const wornMark: Mark = $derived({
 		kind: 'worn',
 		label: t('wardrobe.wearing'),
@@ -192,15 +191,15 @@
 					}
 		]);
 	}
-	/** An accessible tile name: the item, then what its icons say (a worn tile says so with aria-pressed). */
-	const tileName = (name: string, marks: Mark[]) =>
+	/** An accessible tile name: the item, then what its icons say (a worn tile says so with aria-pressed), then any
+	 * status shown only by dimming. */
+	const tileName = (name: string, marks: Mark[], extra?: string) =>
 		formatList([
 			name,
-			...marks
-				.filter((mark) => mark.kind !== 'worn')
-				.map((mark) =>
-					getLocale() === 'en' ? mark.label[0].toLowerCase() + mark.label.slice(1) : mark.label
-				)
+			...[
+				...marks.filter((mark) => mark.kind !== 'worn').map((mark) => mark.label),
+				...(extra ? [extra] : [])
+			].map((label) => (getLocale() === 'en' ? label[0].toLowerCase() + label.slice(1) : label))
 		]);
 	/** Stands for the Empty tile, which has no data-tile key, when picking where focus lands after a removal. */
 	const EMPTY = 'empty';
@@ -1047,6 +1046,8 @@
 							{#each s.items as it (it.id)}
 								{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
 								{@const marks = marksOf(it)}
+								{@const shownHidden = marks.some((x) => x.kind === 'hidden')}
+								{@const away = !shownHidden && offMove(it)}
 								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
 								<div
 									class="tile-wrap hover-actions"
@@ -1069,9 +1070,13 @@
 										data-selected={ui.selected === it.id || armedItem === it.id || undefined}
 										data-item-armed={armedItem === it.id || undefined}
 										data-tile={it.id}
-										data-dim={marks.some((x) => x.kind === 'hidden') || undefined}
+										data-dim={shownHidden || away || undefined}
 										aria-pressed={on}
-										aria-label={tileName(it.name, marks)}
+										aria-label={tileName(
+											it.name,
+											marks,
+											away ? t('wardrobe.notShownInMove') : undefined
+										)}
 										onclick={() => wear(it.id)}
 									>
 										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(it.id)}

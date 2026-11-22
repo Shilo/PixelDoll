@@ -932,12 +932,19 @@ test('a copy missing frames its source item has copies them for free into the sa
 	await selectPlaybackClip(page, 'walk');
 	await expect(worn).toHaveAccessibleName(/not shown in this move/);
 	await expect(worn).toHaveAttribute('data-dim');
+	const eye = worn.locator('.tile-status[title^="Wearing it, but it is missing frames"]');
+	await expect(eye).toHaveCount(1);
+	// Taken off, it still dims and says so in Walk, so a move's usable items can be scanned, but only a worn item gets
+	// the eye icon.
+	await worn.click();
+	await expect(worn).toHaveAttribute('aria-pressed', 'false');
+	await expect(playbackPicker(page)).toHaveAttribute('value', 'walk');
+	await expect(worn).toHaveAccessibleName(/not shown in this move/);
+	await expect(worn).toHaveAttribute('data-dim');
+	await expect(eye).toHaveCount(0);
 	await selectPlaybackClip(page, 'default');
-	await page
-		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
-		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
-		.and(ownTile(page))
-		.click();
+	await expect(worn).not.toHaveAttribute('data-dim');
+	await expect(worn).not.toHaveAccessibleName(/not shown in this move/);
 	const details = await selectedItemDetails(page);
 	const copy = details.getByRole('button', { name: 'Copy from Twin · Free', exact: true });
 	await expect(copy).toBeVisible();
