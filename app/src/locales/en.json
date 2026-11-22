@@ -3202,19 +3202,42 @@
 		"allow": "Allow",
 		"deny": "Don't allow",
 		"left": "Agent budget: {usd} left ({count} generations)",
-		"reserved": "Reserved: {count}",
+		"reserved": "{count} generations reserved",
 		"end": "End"
 	},
 	"agentEvidence": {
 		"title": "Agent view: {subject}",
+		"tools": {
+			"inspectCharacter": "Inspect character",
+			"inspectItem": "Inspect item or draft",
+			"renderFrames": "Render frames"
+		},
+		"sheets": {
+			"outfit": "{name}: {move}, current outfit",
+			"alone": "{name} alone: {move}",
+			"worn": "{name} on the base body: {move}",
+			"source": "{name} source (dressed views)",
+			"review": "{name}: {move} review"
+		},
+		"axis": {
+			"direction": "direction",
+			"frame": "frame"
+		},
+		"noFrame": "no frame",
+		"empty": "empty",
 		"missingCells": {
 			"one": "{count} cell has no frame (hatched)",
 			"other": "{count} cells have no frame (hatched)"
+		},
+		"partialCells": {
+			"one": "{count} frame lacks a worn item (bar under the cell)",
+			"other": "{count} frames lack a worn item (bar under the cell)"
 		},
 		"emptyCells": {
 			"one": "{count} frame is empty (dashed)",
 			"other": "{count} frames are empty (dashed)"
 		},
+		"clipped": "Larger than the window: scroll to see all of it",
 		"page": "Sheet {page} of {pages}",
 		"previous": "Previous sheet",
 		"next": "Next sheet",

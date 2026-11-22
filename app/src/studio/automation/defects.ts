@@ -57,43 +57,65 @@ function box(part: number[], w: number): Part {
 	return { size: part.length, x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 
-/** Null when the frame is one piece, empty, or has no part small enough to look like a stray. */
-export function frameDefects(direction: string, frame: number, image: Img): FrameDefects | null {
-	const parts = components(maskOf(image), image.w, image.h)
+/** The frame's small parts: all of them (to outline on the sheet) and the capped listing for the digest. */
+function findDefects(direction: string, frame: number, image: Img) {
+	const [main, ...rest] = components(maskOf(image), image.w, image.h)
 		.map((part) => box(part, image.w))
 		.sort((a, b) => b.size - a.size || a.y - b.y || a.x - b.x);
-	const [main] = parts;
-	if (!main) return null;
-	const detached = parts.filter((part) => part.size <= MAX_PART_SIZE && part.size < main.size);
-	if (!detached.length) return null;
-	return {
+	// Every part but the largest counts, even one as large as it.
+	const parts = rest.filter((part) => part.size <= MAX_PART_SIZE);
+	if (!main || !parts.length) return null;
+	const listed: FrameDefects = {
 		direction,
 		frame,
 		main,
-		detached: detached.slice(0, MAX_DETACHED),
-		detachedCount: detached.length
+		detached: parts.slice(0, MAX_DETACHED),
+		detachedCount: parts.length
 	};
+	return { parts, listed };
 }
 
-/** What an agent should look at; frames that are one piece are left out so the digest stays small. */
-export function defectDigest(frames: readonly EvidenceFrame[]) {
-	const digest = {
-		framesChecked: frames.length,
-		/** "east frame 3": covered frames with no opaque pixel. */
-		emptyFrames: [] as string[],
-		frames: [] as FrameDefects[],
-		/** Frames with small parts beyond the listed ones. */
-		moreFrames: 0
-	};
-	for (const { direction, frame, image } of frames) {
+/** Null when the frame is one piece, empty, or has no part small enough to look like a stray. */
+export const frameDefects = (direction: string, frame: number, image: Img): FrameDefects | null =>
+	findDefects(direction, frame, image)?.listed ?? null;
+
+/** Builds the digest one frame at a time, so a call never has to hold every frame it checks. */
+export class DefectDigest {
+	#checked = 0;
+	#empty: string[] = [];
+	#frames: FrameDefects[] = [];
+	#more = 0;
+
+	/** Checks one frame and returns all of its small parts, to outline on the sheet even past the digest's caps. */
+	add({ direction, frame, image }: EvidenceFrame): Part[] {
+		this.#checked++;
 		if (!image || !opaqueBox(image)) {
-			digest.emptyFrames.push(`${direction} frame ${frame}`);
-			continue;
+			this.#empty.push(`${direction} frame ${frame}`);
+			return [];
 		}
-		const found = frameDefects(direction, frame, image);
-		if (!found) continue;
-		if (digest.frames.length < MAX_FRAMES) digest.frames.push(found);
-		else digest.moreFrames++;
+		const found = findDefects(direction, frame, image);
+		if (!found) return [];
+		if (this.#frames.length < MAX_FRAMES) this.#frames.push(found.listed);
+		else this.#more++;
+		return found.parts;
 	}
-	return digest.frames.length ? { ...digest, note: DEFECT_NOTE } : digest;
+
+	/** What an agent should look at; frames that are one piece are left out so the digest stays small. */
+	result() {
+		const digest = {
+			framesChecked: this.#checked,
+			/** "east frame 3": covered frames with no opaque pixel. */
+			emptyFrames: [...this.#empty],
+			frames: [...this.#frames],
+			/** Frames with small parts beyond the listed ones. */
+			moreFrames: this.#more
+		};
+		return digest.frames.length ? { ...digest, note: DEFECT_NOTE } : digest;
+	}
+}
+
+export function defectDigest(frames: Iterable<EvidenceFrame>) {
+	const digest = new DefectDigest();
+	for (const frame of frames) digest.add(frame);
+	return digest.result();
 }

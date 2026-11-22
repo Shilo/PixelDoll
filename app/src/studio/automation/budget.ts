@@ -141,6 +141,7 @@ export async function requestBudget(
 	purpose: string,
 	signal: AbortSignal
 ): Promise<BudgetRequest> {
+	framedRefusal();
 	syncCredential();
 	requireLeader();
 	checkAbort(signal);
@@ -219,13 +220,44 @@ export async function requestBudget(
 /** The small always-visible budget line with End, from the first approval on. */
 function showIndicator() {
 	if (indicator) return;
-	const target = document.createElement('div');
-	document.body.append(target);
+	framedRefusal();
+	// A modal dialog makes everything outside it inert, so the line moves into whichever modal dialog is on top (a Studio
+	// sheet, a confirmation, the evidence panel) and back out when it closes: End stays within reach. It is fixed to the
+	// window, so it shows in the same place wherever it lives. Not a popover: the Studio reads an open popover as an open
+	// menu (backdrop clicks, Escape, wheel zoom).
+	const host = document.createElement('div');
+	const modals: HTMLDialogElement[] = [];
+	const place = (records: MutationRecord[] = []) => {
+		for (const { type, target } of records)
+			if (type === 'attributes' && target instanceof HTMLDialogElement && !modals.includes(target))
+				modals.push(target);
+		for (let i = modals.length - 1; i >= 0; i--)
+			if (!modals[i].isConnected || !modals[i].matches(':modal')) modals.splice(i, 1);
+		const parent = modals.at(-1) ?? document.body;
+		if (host.parentElement !== parent) parent.append(host);
+	};
+	modals.push(...document.querySelectorAll('dialog'));
 	try {
-		mount(AgentBudget, { target });
+		place();
+		mount(AgentBudget, { target: host });
+		new MutationObserver(place).observe(document.body, {
+			subtree: true,
+			childList: true,
+			attributeFilter: ['open']
+		});
 		indicator = true;
 	} catch (error) {
-		target.remove();
+		host.remove();
 		throw error;
 	}
+}
+
+/** A page framed by another site never shows agent approval controls (clickjacking); main.ts also keeps the Studio out
+ *  of frames. */
+function framedRefusal() {
+	if (window.top !== window)
+		throw new AgentError(
+			'PixelDoll runs inside a frame here. Open it in its own tab.',
+			'not_ready'
+		);
 }

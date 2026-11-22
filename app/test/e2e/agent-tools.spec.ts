@@ -223,14 +223,21 @@ test('agent tools: the person approves a budget in USD, sees what is left and ca
 		data: { ...started, repeated: true, status: 'created' }
 	});
 	expect(api.calls.filter(({ method }) => method === 'POST')).toEqual(posts);
-	// Sheets shown over the page keep End within reach.
+	// Modal dialogs make the rest of the page inert, so the budget line moves into whichever one is on top: the agent's
+	// sheets, then an ordinary Studio sheet, where End stops the agent's unsent work.
 	await bridge(page, 'render_frames', {
 		characterId: 'fixture:s2',
 		move: 'walk',
 		directions: ['south']
 	});
 	const evidence = page.getByRole('dialog', { name: 'Agent view: Render frames' });
-	await evidence.getByRole('button', { name: 'End' }).click();
+	await expect(evidence.getByRole('button', { name: 'End' })).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(evidence).toHaveCount(0);
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const studioSheet = page.getByRole('dialog');
+	await expect(studioSheet).toHaveCount(1);
+	await studioSheet.getByRole('button', { name: 'End' }).click();
 	await expect(left).toHaveCount(0);
 	expect(await bridge(page, 'get_activity')).toMatchObject({
 		data: { budget: { remaining: 0 } }

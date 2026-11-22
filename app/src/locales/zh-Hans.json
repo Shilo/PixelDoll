@@ -3117,12 +3117,34 @@
 	},
 	"agentEvidence": {
 		"title": "代理视图：{subject}",
+		"tools": {
+			"inspectCharacter": "检查角色",
+			"inspectItem": "检查装备或草稿",
+			"renderFrames": "显示帧"
+		},
+		"sheets": {
+			"outfit": "{name}：{move}，当前套装",
+			"alone": "仅{name}：{move}",
+			"worn": "基础身体上的{name}：{move}",
+			"source": "{name}：源图（穿戴视图）",
+			"review": "{name}：{move}审核"
+		},
+		"axis": {
+			"direction": "朝向",
+			"frame": "帧"
+		},
+		"noFrame": "无帧",
+		"empty": "空",
 		"missingCells": {
 			"other": "有 {count} 个单元格没有帧（斜线）"
+		},
+		"partialCells": {
+			"other": "有 {count} 个帧缺少已穿戴的装备（单元格下方的横条）"
 		},
 		"emptyCells": {
 			"other": "有 {count} 个帧为空（虚线）"
 		},
+		"clipped": "大于窗口：滚动查看全部",
 		"page": "第 {page}/{pages} 张",
 		"previous": "上一张",
 		"next": "下一张",

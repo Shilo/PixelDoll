@@ -3117,12 +3117,34 @@
 	},
 	"agentEvidence": {
 		"title": "エージェントの表示：{subject}",
+		"tools": {
+			"inspectCharacter": "キャラクターを確認",
+			"inspectItem": "アイテムまたは下書きを確認",
+			"renderFrames": "フレームを表示"
+		},
+		"sheets": {
+			"outfit": "{name}：{move}、現在のコーディネート",
+			"alone": "{name}のみ：{move}",
+			"worn": "素体に着けた{name}：{move}",
+			"source": "{name}：元画像（着せたビュー）",
+			"review": "{name}：{move}のレビュー"
+		},
+		"axis": {
+			"direction": "向き",
+			"frame": "フレーム"
+		},
+		"noFrame": "フレームなし",
+		"empty": "空",
 		"missingCells": {
 			"other": "フレームのないセルが{count}個あります (斜線)"
+		},
+		"partialCells": {
+			"other": "着けているアイテムが欠けたフレームが{count}個あります (セル下のバー)"
 		},
 		"emptyCells": {
 			"other": "空のフレームが{count}個あります (破線)"
 		},
+		"clipped": "ウィンドウより大きいため、スクロールして全体を確認してください",
 		"page": "シート {page}/{pages}",
 		"previous": "前のシート",
 		"next": "次のシート",

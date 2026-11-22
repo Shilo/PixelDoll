@@ -3202,19 +3202,42 @@
 		"allow": "Permitir",
 		"deny": "No permitir",
 		"left": "Presupuesto del agente: quedan {usd} ({count} generaciones)",
-		"reserved": "Reservadas: {count}",
+		"reserved": "{count} generaciones reservadas",
 		"end": "Terminar"
 	},
 	"agentEvidence": {
 		"title": "Vista del agente: {subject}",
+		"tools": {
+			"inspectCharacter": "Inspeccionar personaje",
+			"inspectItem": "Inspeccionar objeto o borrador",
+			"renderFrames": "Mostrar fotogramas"
+		},
+		"sheets": {
+			"outfit": "{name}: {move}, atuendo actual",
+			"alone": "{name} solo: {move}",
+			"worn": "{name} sobre el cuerpo base: {move}",
+			"source": "{name}: origen (vistas vestidas)",
+			"review": "{name}: revisión de {move}"
+		},
+		"axis": {
+			"direction": "dirección",
+			"frame": "fotograma"
+		},
+		"noFrame": "sin fotograma",
+		"empty": "vacío",
 		"missingCells": {
 			"one": "{count} celda no tiene fotograma (tramada)",
 			"other": "{count} celdas no tienen fotograma (tramadas)"
+		},
+		"partialCells": {
+			"one": "A {count} fotograma le falta un objeto puesto (barra bajo la celda)",
+			"other": "A {count} fotogramas les falta un objeto puesto (barra bajo la celda)"
 		},
 		"emptyCells": {
 			"one": "{count} fotograma está vacío (discontinuo)",
 			"other": "{count} fotogramas están vacíos (discontinuos)"
 		},
+		"clipped": "Es más grande que la ventana: desplázate para verla entera",
 		"page": "Hoja {page} de {pages}",
 		"previous": "Hoja anterior",
 		"next": "Hoja siguiente",

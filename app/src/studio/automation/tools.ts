@@ -3,6 +3,7 @@
 // the job queue's unknown-outcome rules, persistence and undo apply unchanged. Agents never get raw storage or the token.
 // Calls run one at a time (waits excepted), so two agents or two calls never interleave their edits. Reading tools never
 // change what the person sees; only open_character switches characters.
+import { t } from 'svelte-whisper';
 import { LocalizedError, PreflightWarning, message } from '../../lib/message.ts';
 import { app } from '../../lib/app.svelte.ts';
 import { displayMessage } from '../../lib/i18n.ts';
@@ -10,22 +11,17 @@ import { queue } from '../../lib/pixellab/queue.ts';
 import { accountTier } from '../../lib/pixellab/plans.ts';
 import { makeImg, type Img } from '../../lib/image/png.ts';
 import {
-	bakedFrame,
+	equipped,
 	cellImg,
 	composeCell,
 	layerFrame,
 	over,
 	settleHands,
+	unionFrame,
 	rigFrame,
 	type Frame
 } from '../../lib/compose/compose.ts';
-import {
-	SWATCHES,
-	missingAt,
-	missingFrames,
-	recolor,
-	variantRampOf
-} from '../../lib/dress/dress.ts';
+import { SWATCHES, recolor, variantRampOf } from '../../lib/dress/dress.ts';
 import type { Item, Preset, Project } from '../../lib/store/manifest.ts';
 import { loadProject, type StoredProject } from '../../lib/store/project.ts';
 import * as db from '../../lib/store/db.ts';
@@ -82,8 +78,16 @@ import { categories } from '../slots.ts';
 import { healthOf } from '../model.ts';
 import { itemRoute } from '../itemRoute.ts';
 import { downloadCharacterZip } from '../download.svelte.ts';
-import { MAX_SHEETS, planEvidence, type SheetCell, type SheetSpec } from './evidence.ts';
-import { defectDigest, type EvidenceFrame } from './defects.ts';
+import {
+	MAX_SHEETS,
+	checkWork,
+	coverageOf,
+	drawnCell,
+	planEvidence,
+	type SheetCell,
+	type SheetSpec
+} from './evidence.ts';
+import { DefectDigest } from './defects.ts';
 import {
 	AgentError,
 	MAX_BUDGET,
@@ -194,7 +198,14 @@ async function renderReview(args: Record<string, unknown>): Promise<ToolResult> 
 		dirs: dirsOf(p, args.directions),
 		frames: args.frames as number[] | undefined,
 		scale: Number(args.scale ?? 4),
-		views: [{ label: `${p.manifest.name}: ${move} review`, kind: 'frames', outfit: baseOutfit(p) }]
+		views: [
+			{
+				label: `${p.manifest.name}: ${move} review`,
+				shown: t('agentEvidence.sheets.review', { name: p.manifest.name, move }),
+				kind: 'frames',
+				outfit: baseOutfit(p)
+			}
+		]
 	});
 	return {
 		data: { characterId: id, move, review: await reviewOf(candidate), evidence, defects },
@@ -202,13 +213,20 @@ async function renderReview(args: Record<string, unknown>): Promise<ToolResult> 
 	};
 }
 
-/** Whether moves can be added, and the move reviews waiting for a decision, from the saved record. */
+/** Whether moves can be added, and the move reviews waiting for a decision, from the saved record. A review here has no
+ *  candidateId: an agent gets that only from render_frames with review true, so it decides only on frames it looked at. */
 async function moveFacts(c: Look) {
 	const demo = c.id.startsWith('fixture:');
 	const record = demo ? undefined : await db.get<StoredProject>('projects', c.id);
 	return {
 		addMove: await moveReadiness(c.project, record, demo),
-		moveReviews: await Promise.all(Object.values(record?.moveReviews ?? {}).map(reviewOf))
+		moveReviews: await Promise.all(
+			Object.values(record?.moveReviews ?? {}).map(async (candidate) => {
+				const { candidateId, ...review } = await reviewOf(candidate);
+				void candidateId;
+				return review;
+			})
+		)
 	};
 }
 
@@ -285,6 +303,8 @@ interface RenderOptions {
 	scale: number;
 	views: {
 		label: string;
+		/** The label in the person's language, for the panel. */
+		shown?: string;
 		kind: Exclude<SheetSpec['kind'], 'source'>;
 		outfit: Preset['items'];
 		only?: Item;
@@ -292,39 +312,53 @@ interface RenderOptions {
 	source?: Item;
 }
 
+/** The frame every view of a call shares: the rig frame and the layers its views can draw, so unworn equipment with a large
+ *  padding does not enlarge every composed frame. */
+function sharedFrame(m: Project['manifest'], o: RenderOptions): Frame {
+	const items = new Set<Item>(o.source ? [o.source] : []);
+	for (const { only, outfit } of o.views) {
+		if (only) {
+			items.add(only);
+			continue;
+		}
+		const on = new Set(equipped(m, outfit).map((it) => it.id));
+		for (const it of m.items)
+			if (on.has(it.id) || (it.variantOf && on.has(it.variantOf))) items.add(it);
+	}
+	return unionFrame([
+		rigFrame(m.rig),
+		...[...items].flatMap((it) => it.layers.map((l) => layerFrame(m.rig, l)))
+	]);
+}
+
 function frameSheet(p: Project, o: RenderOptions) {
 	const m = p.manifest;
 	const anim = moveOf(p, o.move),
-		frame = bakedFrame(m);
+		frame = sharedFrame(m, o);
 	const cells = [...new Set(o.frames?.length ? o.frames : Array(anim.cells).keys())];
 	for (const cell of cells)
 		if (!Number.isInteger(cell) || cell < 0 || cell >= anim.cells)
 			throw new AgentError(`Frame ${cell} is outside ${anim.id} (0 to ${anim.cells - 1}).`);
 	if (!cells.length) throw new AgentError(`Move "${anim.id}" has no frames.`, 'not_ready');
-	const base = m.items.find((it) => it.id === m.rig.baseItem);
+	checkWork(o.views.length * o.dirs.length * cells.length, frame);
 	// The first view is the one checked for detached pixels (the item alone, or the composite); its cells outline them.
-	const checked: EvidenceFrame[] = [];
-	const checkedCells = new Map<string, SheetCell>();
+	// Each frame is composed once here to measure and check it, then again only when its page is painted.
+	const digest = new DefectDigest();
 	const pivot = { x: frame.x, y: frame.y };
-	const specs: SheetSpec[] = o.views.map(({ label, kind, only, outfit }, index) => {
+	const specs: SheetSpec[] = o.views.map(({ label, shown, kind, only, outfit }, index) => {
 		const rows = o.dirs.map((dir) => {
-			const relevant = only
-				? [only]
-				: [...(base ? [base] : []), ...missingAt(m, outfit, anim.id, dir)];
-			const missing = new Set(relevant.flatMap((it) => missingFrames(m, it, anim.id, dir)));
+			const coverage = coverageOf(m, { only, outfit }, anim.id, dir);
 			return {
 				label: dir,
 				cells: cells.map((cell): SheetCell => {
-					const covered = (only || base) != null && !missing.has(cell);
-					const image = only
-						? itemOnly(p, only, anim.id, dir, cell, frame)
-						: composeCell(p, outfit, anim.id, dir, cell, frame);
-					const sheetCell: SheetCell = { image, covered };
-					if (index === 0 && covered) {
-						checked.push({ direction: dir, frame: cell, image });
-						checkedCells.set(`${dir}/${cell}`, sheetCell);
-					}
-					return sheetCell;
+					const draw = only
+						? () => itemOnly(p, only, anim.id, dir, cell, frame)
+						: () => composeCell(p, outfit, anim.id, dir, cell, frame);
+					const fields = coverage(cell);
+					const image = draw();
+					const marks =
+						index === 0 && fields.covered ? digest.add({ direction: dir, frame: cell, image }) : [];
+					return drawnCell(draw, image, { ...fields, ...(marks.length ? { marks } : {}) });
 				})
 			};
 		});
@@ -332,6 +366,7 @@ function frameSheet(p: Project, o: RenderOptions) {
 		return cells.length === 1
 			? {
 					label,
+					shown,
 					kind,
 					pivot,
 					axes: { rows: 'frame', columns: 'direction' },
@@ -340,6 +375,7 @@ function frameSheet(p: Project, o: RenderOptions) {
 				}
 			: {
 					label,
+					shown,
 					kind,
 					pivot,
 					axes: { rows: 'direction', columns: 'frame' },
@@ -355,6 +391,7 @@ function frameSheet(p: Project, o: RenderOptions) {
 		const nativeFrames = [rig, ...source.layers.map((l) => layerFrame(m.rig, l))];
 		specs.push({
 			label: `${source.name} source (dressed views)`,
+			shown: t('agentEvidence.sheets.source', { name: source.name }),
 			kind: 'source',
 			axes: { rows: '', columns: 'direction' },
 			columns: dressed,
@@ -375,11 +412,6 @@ function frameSheet(p: Project, o: RenderOptions) {
 			]
 		});
 	}
-	const defects = defectDigest(checked);
-	for (const found of defects.frames) {
-		const cell = checkedCells.get(`${found.direction}/${found.frame}`);
-		if (cell) cell.marks = found.detached;
-	}
 	const pages = planEvidence(specs, frame, o.scale);
 	return {
 		images: pages.map(({ spec, meta }) => ({
@@ -390,7 +422,7 @@ function frameSheet(p: Project, o: RenderOptions) {
 			page: spec
 		})),
 		evidence: pages.map(({ meta }) => meta),
-		defects: defects as unknown as Json
+		defects: digest.result() as unknown as Json
 	};
 }
 
@@ -798,14 +830,14 @@ export const TOOLS: Tool[] = [
 		name: 'inspect_character',
 		title: 'Inspect character',
 		description:
-			'Rig facts, directions, moves, whether moves can be added (addMove), move reviews waiting for a decision, slots, items with quality and cost, colors with their variants and swatches, outfits and drafts of any character, without opening it. With images, a sheet of its current outfit in every direction (hatched cells have no frame) with a detached-pixel digest.',
+			'Rig facts, directions, moves, whether moves can be added (addMove), move reviews waiting for a decision, slots, items with quality and cost, colors with their variants and swatches, outfits and drafts of any character, without opening it. With images true, also a sheet of its current outfit in every direction with a detached-pixel digest; render_frames shows chosen moves, directions and frames.',
 		inputSchema: {
 			type: 'object',
 			properties: {
 				characterId: characterArg,
 				images: {
 					type: 'boolean',
-					description: 'Include a sheet of the current outfit (default true).'
+					description: 'Also show a sheet of the current outfit in every direction (default false).'
 				},
 				move: str('Move for the sheet (default "default", the standing pose).'),
 				scale: scaleArg
@@ -852,7 +884,7 @@ export const TOOLS: Tool[] = [
 				drafts: gens.filter((g) => g.draft.rigId === c.id).map((g) => draftSummary(g, jobs)),
 				...(await moveFacts(c))
 			};
-			if (args.images === false) return { data: data as Json };
+			if (args.images !== true) return { data: data as Json };
 			const move = moveOf(p, args.move);
 			const { images, evidence, defects } = frameSheet(p, {
 				move: move.id,
@@ -861,6 +893,7 @@ export const TOOLS: Tool[] = [
 				views: [
 					{
 						label: `${m.name}: ${move.id}, current outfit`,
+						shown: t('agentEvidence.sheets.outfit', { name: m.name, move: move.id }),
 						kind: 'frames',
 						outfit: c.outfit
 					}
@@ -932,9 +965,16 @@ export const TOOLS: Tool[] = [
 				frames,
 				scale,
 				views: [
-					{ label: `${it.name} alone: ${move.id}`, kind: 'item', outfit: {}, only: it },
+					{
+						label: `${it.name} alone: ${move.id}`,
+						shown: t('agentEvidence.sheets.alone', { name: it.name, move: move.id }),
+						kind: 'item',
+						outfit: {},
+						only: it
+					},
 					{
 						label: `${it.name} on the base body: ${move.id}`,
+						shown: t('agentEvidence.sheets.worn', { name: it.name, move: move.id }),
 						kind: 'worn',
 						outfit: { ...baseOutfit(p), [it.slot]: it.id }
 					}
@@ -988,6 +1028,7 @@ export const TOOLS: Tool[] = [
 			}
 		},
 		readOnly: true,
+		untrusted: true,
 		async run(args) {
 			if (args.review === true) return renderReview(args);
 			const c = await look(args.characterId),
@@ -1083,7 +1124,6 @@ export const TOOLS: Tool[] = [
 			required: ['characterId'],
 			properties: { characterId: str('Character id from list_characters.') }
 		},
-		consequential: true,
 		untrusted: true,
 		async run(args, signal) {
 			await ready();
@@ -1106,7 +1146,6 @@ export const TOOLS: Tool[] = [
 		description:
 			'Free: save an editable copy of the demo Adventurer (with its walk) to dress, recolor and add items to. The copy cannot get moves (add_move); it lacks the saved standing views rig setup needs. The result tells you how to open it.',
 		inputSchema: { type: 'object', properties: {} },
-		consequential: true,
 		async run() {
 			await ready();
 			const id = await copyDemo(false);
@@ -1132,6 +1171,7 @@ export const TOOLS: Tool[] = [
 				takeOff: { type: 'array', items: str('Slot id', 60), maxItems: 30 }
 			}
 		},
+		untrusted: true,
 		async run(args) {
 			const { id, project } = await editing(args.characterId),
 				m = project.manifest;
@@ -1322,7 +1362,6 @@ export const TOOLS: Tool[] = [
 				purpose: str('One sentence the user sees: what the generations are for.', 300)
 			}
 		},
-		consequential: true,
 		async run(args, signal) {
 			await ready();
 			if (!app.key || app.keyRejected)

@@ -9,24 +9,30 @@
 import { callTool, TOOLS, type Json, type Tool, type ToolResult } from './tools.ts';
 import { errorData } from './contract.ts';
 import { encodeSheet } from './evidence.ts';
-import { hideEvidence, showEvidence } from './panel.svelte.ts';
+import { hideEvidence, plannedFit, showEvidence } from './panel.svelte.ts';
 
 // ---------- results ----------
 /** What every call returns, on both channels. Sheets stay in the page until new sheets replace them or hide() closes them:
- *  a status call or a failure in between must not take away what the agent is about to screenshot. `title` names the call
+ *  a status call or a failure in between must not take away what the agent is about to screenshot. `tool` names the call
  *  in the panel. Sheets are encoded as PNG only when the caller asked for image data. */
-export async function present(result: ToolResult, imageData: boolean, title: string) {
+export async function present(result: ToolResult, imageData: boolean, tool: string) {
 	const images = result.images ?? [];
-	if (images.length) showEvidence(title, images);
+	if (images.length) showEvidence(tool, images);
 	// Base64 for the whole call stays within MAX_IMAGE_DATA; sheets past it are only shown in the page.
-	let room = MAX_IMAGE_DATA,
-		omitted = 0;
+	let room = imageData ? MAX_IMAGE_DATA : 0,
+		omitted = 0,
+		scroll = 0;
 	const sheets = [];
-	for (const { label, width, height, scale, page } of images) {
-		const sheet = { label, width, height, scale };
-		const data = imageData ? await encodeSheet(page) : undefined;
-		if (data !== undefined && data.length > room) omitted++;
+	for (const image of images) {
+		const { label, width, height, scale, page } = image;
+		const shown = plannedFit(image);
+		if (shown.clipped) scroll++;
+		const sheet = { label, width, height, scale, shownScale: shown.shown };
+		// Once the room is spent, the rest are not encoded at all.
+		const data = room > 0 ? await encodeSheet(page) : undefined;
 		if (data === undefined || data.length > room) {
+			if (imageData) omitted++;
+			if (data !== undefined) room = 0;
 			sheets.push(sheet);
 			continue;
 		}
@@ -38,6 +44,11 @@ export async function present(result: ToolResult, imageData: boolean, title: str
 		data: result.data,
 		images: sheets,
 		...(images.length && (!imageData || omitted) ? { seeImages: SEE_IMAGES } : {}),
+		...(scroll
+			? {
+					scrollImages: `${scroll} sheet(s) are larger than the panel in this window even at 1x: scroll the sheet area (or use the arrow keys there) to see all of each, or ask for fewer frames or directions.`
+				}
+			: {}),
 		...(omitted
 			? {
 					imageDataOmitted: `${omitted} sheet(s) left out of imageData to keep the result under ${MAX_IMAGE_DATA / 1024 / 1024} MB of base64. Screenshot the page, or ask for fewer frames or directions.`
@@ -48,7 +59,7 @@ export async function present(result: ToolResult, imageData: boolean, title: str
 /** Base64 characters one result may carry. */
 const MAX_IMAGE_DATA = 4 * 1024 * 1024;
 const SEE_IMAGES =
-	"The sheets are shown over the PixelDoll page now, one at a time: take a screenshot of the page to see the first, and press the panel's Next sheet button (or the right arrow key) for each other one. Each sheet names its rows and columns in its corner, and its caption gives the scale shown on screen and the sheet's own scale. They stay until the next sheets or pixeldoll.hide().";
+	"The sheets are shown over the PixelDoll page now, one at a time: take a screenshot of the page to see the first, and press the panel's Next sheet button for each other one. Each sheet names its rows and columns in its corner, and its caption gives the scale shown on screen and the sheet's own scale. They stay until the next sheets or pixeldoll.hide().";
 
 /** A failure as data: WebMCP turns a thrown error into a bare OperationError and drops the reason the agent needs. */
 const failed = (e: unknown) => ({
@@ -65,11 +76,7 @@ export async function respond(
 	imageData: boolean
 ) {
 	try {
-		return await present(
-			await callTool(name, args, signal),
-			imageData,
-			TOOLS.find((tool) => tool.name === name)?.title ?? name
-		);
+		return await present(await callTool(name, args, signal), imageData, name);
 	} catch (e) {
 		return failed(e);
 	}

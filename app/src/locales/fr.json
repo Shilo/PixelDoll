@@ -3202,19 +3202,42 @@
 		"allow": "Autoriser",
 		"deny": "Ne pas autoriser",
 		"left": "Budget de l’agent : reste {usd} ({count} générations)",
-		"reserved": "Réservées : {count}",
+		"reserved": "{count} générations réservées",
 		"end": "Arrêter"
 	},
 	"agentEvidence": {
 		"title": "Vue de l’agent : {subject}",
+		"tools": {
+			"inspectCharacter": "Inspecter le personnage",
+			"inspectItem": "Inspecter l’objet ou le brouillon",
+			"renderFrames": "Afficher les images"
+		},
+		"sheets": {
+			"outfit": "{name} : {move}, tenue actuelle",
+			"alone": "{name} seul : {move}",
+			"worn": "{name} sur le corps de base : {move}",
+			"source": "{name} : source (vues habillées)",
+			"review": "{name} : révision de {move}"
+		},
+		"axis": {
+			"direction": "direction",
+			"frame": "image"
+		},
+		"noFrame": "aucune image",
+		"empty": "vide",
 		"missingCells": {
 			"one": "{count} cellule n’a pas d’image (hachurée)",
 			"other": "{count} cellules n’ont pas d’image (hachurées)"
+		},
+		"partialCells": {
+			"one": "{count} image n’a pas un objet porté (barre sous la cellule)",
+			"other": "{count} images n’ont pas un objet porté (barre sous la cellule)"
 		},
 		"emptyCells": {
 			"one": "{count} image est vide (pointillés)",
 			"other": "{count} images sont vides (pointillés)"
 		},
+		"clipped": "Plus grande que la fenêtre : faites défiler pour tout voir",
 		"page": "Feuille {page} sur {pages}",
 		"previous": "Feuille précédente",
 		"next": "Feuille suivante",

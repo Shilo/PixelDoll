@@ -41,10 +41,20 @@ vi.mock('svelte', async (original) => ({
 }));
 
 beforeEach(() => {
+	const page: { top?: unknown } = {};
+	page.top = page;
+	vi.stubGlobal('window', page);
 	vi.stubGlobal('document', {
 		createElement: () => ({ remove() {} }),
+		querySelectorAll: () => [],
 		body: { append() {} }
 	});
+	vi.stubGlobal(
+		'MutationObserver',
+		class {
+			observe() {}
+		}
+	);
 	fixture.sent = false;
 	fixture.answer = undefined;
 	fixture.unmount.mockClear();
@@ -135,4 +145,12 @@ test.each([
 		? { ...accountBalance, subscription: { ...accountBalance.subscription!, plan } }
 		: null;
 	expect(rateUsd(2000)).toBe(usd);
+});
+
+test('a page framed by another site never asks for a budget', async () => {
+	vi.stubGlobal('window', { top: {} });
+	await expect(requestBudget(3, 'Paint a cloak', signal())).rejects.toMatchObject({
+		code: 'not_ready'
+	});
+	expect(fixture.answer).toBeUndefined();
 });

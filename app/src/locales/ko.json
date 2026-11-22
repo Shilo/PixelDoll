@@ -3117,12 +3117,34 @@
 	},
 	"agentEvidence": {
 		"title": "에이전트 보기: {subject}",
+		"tools": {
+			"inspectCharacter": "캐릭터 확인",
+			"inspectItem": "아이템 또는 초안 확인",
+			"renderFrames": "프레임 표시"
+		},
+		"sheets": {
+			"outfit": "{name}: {move}, 현재 코디",
+			"alone": "{name}만: {move}",
+			"worn": "기본 몸체에 착용한 {name}: {move}",
+			"source": "{name}: 원본(착용 뷰)",
+			"review": "{name}: {move} 검토"
+		},
+		"axis": {
+			"direction": "방향",
+			"frame": "프레임"
+		},
+		"noFrame": "프레임 없음",
+		"empty": "비어 있음",
 		"missingCells": {
 			"other": "프레임이 없는 셀이 {count}개 있습니다 (빗금)"
+		},
+		"partialCells": {
+			"other": "착용 아이템이 빠진 프레임이 {count}개 있어요 (셀 아래 막대)"
 		},
 		"emptyCells": {
 			"other": "빈 프레임이 {count}개 있습니다 (점선)"
 		},
+		"clipped": "창보다 커요. 스크롤해서 전체를 확인하세요",
 		"page": "시트 {page}/{pages}",
 		"previous": "이전 시트",
 		"next": "다음 시트",

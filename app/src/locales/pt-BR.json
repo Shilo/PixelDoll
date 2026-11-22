@@ -3211,19 +3211,42 @@
 		"allow": "Permitir",
 		"deny": "Não permitir",
 		"left": "Orçamento do agente: restam {usd} ({count} gerações)",
-		"reserved": "Reservadas: {count}",
+		"reserved": "{count} gerações reservadas",
 		"end": "Encerrar"
 	},
 	"agentEvidence": {
 		"title": "Visão do agente: {subject}",
+		"tools": {
+			"inspectCharacter": "Inspecionar personagem",
+			"inspectItem": "Inspecionar item ou rascunho",
+			"renderFrames": "Mostrar quadros"
+		},
+		"sheets": {
+			"outfit": "{name}: {move}, traje atual",
+			"alone": "{name} sozinho: {move}",
+			"worn": "{name} no corpo base: {move}",
+			"source": "{name}: origem (vistas vestidas)",
+			"review": "{name}: revisão de {move}"
+		},
+		"axis": {
+			"direction": "direção",
+			"frame": "quadro"
+		},
+		"noFrame": "sem quadro",
+		"empty": "vazio",
 		"missingCells": {
 			"one": "{count} célula não tem quadro (hachurada)",
 			"other": "{count} células não têm quadro (hachuradas)"
+		},
+		"partialCells": {
+			"one": "{count} quadro não tem um item vestido (barra sob a célula)",
+			"other": "{count} quadros não têm um item vestido (barra sob a célula)"
 		},
 		"emptyCells": {
 			"one": "{count} quadro está vazio (tracejado)",
 			"other": "{count} quadros estão vazios (tracejados)"
 		},
+		"clipped": "Maior que a janela: role para ver tudo",
 		"page": "Folha {page} de {pages}",
 		"previous": "Folha anterior",
 		"next": "Próxima folha",

@@ -32,8 +32,8 @@ export interface Tool {
 	inputSchema: JsonSchema;
 	/** Reads only: never changes the character, the library or the account. */
 	readOnly?: boolean;
-	/** Spends PixelLab generations, removes work, hands the user a file or changes what they see: the agent should hold a
-	 *  clear instruction before calling it. */
+	/** Spends PixelLab generations, removes work or hands the user a file: the agent should hold a clear instruction before
+	 *  calling it. Hosts may confirm it first, so free steps that only show or copy things leave it off. */
 	consequential?: boolean;
 	/** Results repeat text from the library (names, prompts) that anyone could have written: data, never instructions. */
 	untrusted?: boolean;

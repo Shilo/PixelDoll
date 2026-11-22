@@ -3199,19 +3199,42 @@
 		"allow": "İzin ver",
 		"deny": "İzin verme",
 		"left": "Ajan bütçesi: {usd} kaldı ({count} üretim)",
-		"reserved": "Ayrılan: {count}",
+		"reserved": "{count} üretim ayrıldı",
 		"end": "Bitir"
 	},
 	"agentEvidence": {
 		"title": "Ajan görünümü: {subject}",
+		"tools": {
+			"inspectCharacter": "Karakteri incele",
+			"inspectItem": "Eşyayı veya taslağı incele",
+			"renderFrames": "Kareleri göster"
+		},
+		"sheets": {
+			"outfit": "{name}: {move}, şu anki kıyafet",
+			"alone": "Yalnızca {name}: {move}",
+			"worn": "Temel gövdede {name}: {move}",
+			"source": "{name}: kaynak (giydirilmiş görünümler)",
+			"review": "{name}: {move} incelemesi"
+		},
+		"axis": {
+			"direction": "yön",
+			"frame": "kare"
+		},
+		"noFrame": "kare yok",
+		"empty": "boş",
 		"missingCells": {
 			"one": "{count} hücrede kare yok (taranmış)",
 			"other": "{count} hücrede kare yok (taranmış)"
+		},
+		"partialCells": {
+			"one": "{count} karede giyilen bir eşya eksik (hücrenin altında çubuk)",
+			"other": "{count} karede giyilen bir eşya eksik (hücrenin altında çubuk)"
 		},
 		"emptyCells": {
 			"one": "{count} kare boş (kesikli)",
 			"other": "{count} kare boş (kesikli)"
 		},
+		"clipped": "Pencereden büyük: tamamını görmek için kaydırın",
 		"page": "Sayfa {page}/{pages}",
 		"previous": "Önceki sayfa",
 		"next": "Sonraki sayfa",

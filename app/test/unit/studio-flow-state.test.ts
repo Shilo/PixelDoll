@@ -123,6 +123,23 @@ function stubGlobals() {
 	vi.stubGlobal('matchMedia', () => ({ matches: false }));
 	vi.stubGlobal('document', { querySelector: () => null });
 }
+/** The DOM the agent budget mounts its dialog and indicator into: a top-level page (not framed) with a body. */
+function stubAgentPage() {
+	const page: { top?: unknown } = {};
+	page.top = page;
+	vi.stubGlobal('window', page);
+	vi.stubGlobal(
+		'MutationObserver',
+		class {
+			observe() {}
+		}
+	);
+	Object.assign(document, {
+		createElement: () => ({ remove() {} }),
+		querySelectorAll: () => [],
+		body: { append() {} }
+	});
+}
 // Build the module graph once outside any test's timeout; each test's fresh import after resetModules is then fast.
 beforeAll(async () => {
 	stubGlobals();
@@ -2765,7 +2782,7 @@ describe('optional review', () => {
 			const { callTool } = await import('../../src/studio/automation/tools.ts');
 			const { budget, endBudget, requestBudget } =
 				await import('../../src/studio/automation/budget.ts');
-			Object.assign(document, { createElement: () => ({ remove() {} }), body: { append() {} } });
+			stubAgentPage();
 			s.startupResumed();
 			s.doc.loading = false;
 			s.doc.id = 'project';
@@ -2874,7 +2891,7 @@ describe('optional review', () => {
 		s.startupResumed();
 		s.doc.loading = false;
 		mockAccount.key = 'synthetic-agent-key';
-		Object.assign(document, { createElement: () => ({ remove() {} }), body: { append() {} } });
+		stubAgentPage();
 		const { callTool } = await import('../../src/studio/automation/tools.ts');
 		await callTool('request_budget', { generations: 10, purpose: 'Make a helm' });
 		const started = await callTool('create_item', {

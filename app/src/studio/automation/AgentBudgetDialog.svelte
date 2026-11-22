@@ -11,7 +11,7 @@
 	}: {
 		generations: number;
 		usd: number;
-		/** The agent's own words: shown as a quote, never as the app's. */
+		/** The agent's own words (at most 300 characters, checked by the tool schema): shown as a quote, never as the app's. */
 		purpose: string;
 		onanswer: (allowed: boolean) => void;
 	} = $props();
@@ -34,7 +34,7 @@
 	{#if purpose.trim()}
 		<p class="purpose">
 			<span class="label">{t('agentBudget.reason')}</span>
-			<q>{purpose.trim().slice(0, 300)}</q>
+			<q>{purpose.trim()}</q>
 		</p>
 	{/if}
 	<p class="note">{t('agentBudget.note')}</p>

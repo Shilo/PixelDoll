@@ -1,37 +1,61 @@
 <script lang="ts">
-	import { t } from 'svelte-whisper';
+	import { formatNumber, t } from 'svelte-whisper';
+	import { devicePixelRatio } from 'svelte/reactivity/window';
 	import { ChevronLeft, ChevronRight, X } from '../icons.ts';
 	import { claimSheetExit } from '../sheetExit.ts';
-	import AgentBudget from './AgentBudget.svelte';
 	import { budgetView } from './budget.ts';
-	import { PALETTE, emptyCells, fitScale, paintSheet, uncoveredCells } from './evidence.ts';
-	import { hideEvidence, panel, turnEvidence } from './panel.svelte.ts';
+	import {
+		PALETTE,
+		emptyCells,
+		fitSheet,
+		paintSheet,
+		partialCells,
+		uncoveredCells,
+		type SheetText
+	} from './evidence.ts';
+	import { hideEvidence, panel, sheetArea, turnEvidence } from './panel.svelte.ts';
 
 	const id = $props.id();
 	let width = $state(0),
 		height = $state(0);
+	let scroller = $state<HTMLDivElement>();
 	const image = $derived(panel.images[panel.index]);
-	// CSS pixels per artwork pixel: the largest whole scale, up to the sheet's own, at which this one sheet fits.
-	// 32 px side padding; 16 px bottom padding and 24 px for the caption.
-	const scale = $derived(
-		image ? fitScale(image.page, { width: width - 32, height: height - 40 }) : 1
-	);
+	const dpr = $derived(devicePixelRatio.current ?? 1);
+	// Whole device pixels per artwork pixel: the largest, up to the sheet's own scale, at which this one sheet fits.
+	const fit = $derived(image ? fitSheet(image.page, sheetArea({ width, height }), dpr) : null);
 	const uncovered = $derived(image ? uncoveredCells(image.page) : []);
 	const empty = $derived(image ? emptyCells(image.page) : []);
+	const partial = $derived(image ? partialCells(image.page) : []);
 	const cellList = (cells: { row: string; column: string }[]) =>
 		cells.map((cell) => `${cell.row} ${cell.column}`).join(', ');
+	const titles: Record<string, () => string> = {
+		inspect_character: () => t('agentEvidence.tools.inspectCharacter'),
+		inspect_item: () => t('agentEvidence.tools.inspectItem'),
+		render_frames: () => t('agentEvidence.tools.renderFrames')
+	};
+	const axes: Record<string, () => string> = {
+		direction: () => t('agentEvidence.axis.direction'),
+		frame: () => t('agentEvidence.axis.frame')
+	};
+	const text = (): SheetText => ({
+		noFrame: t('agentEvidence.noFrame'),
+		empty: t('agentEvidence.empty'),
+		axis: (name) => axes[name]?.() ?? name
+	});
+
+	// Each sheet starts at its top left, wherever the last one was scrolled.
+	$effect(() => {
+		void image;
+		scroller?.scrollTo(0, 0);
+	});
 
 	function openPanel(dialog: HTMLDialogElement) {
 		const opener = document.activeElement;
 		dialog.showModal();
 		const release = claimSheetExit({ close: hideEvidence });
-		// The native cancel event owns Escape while the Studio is behind the dialog; arrows turn the sheets.
+		// The native cancel event owns Escape while the Studio is behind the dialog.
 		const keys = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') event.stopPropagation();
-			else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-				event.preventDefault();
-				turnEvidence(event.key === 'ArrowLeft' ? -1 : 1);
-			}
 		};
 		dialog.addEventListener('keydown', keys);
 		return () => {
@@ -46,9 +70,16 @@
 				opener.focus({ preventScroll: true });
 		};
 	}
+
+	/** Arrow keys turn sheets only on the pager, so they still scroll a sheet larger than the window. */
+	function pagerKeys(event: KeyboardEvent) {
+		if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+		event.preventDefault();
+		turnEvidence(event.key === 'ArrowLeft' ? -1 : 1);
+	}
 </script>
 
-{#if image}
+{#if image && fit}
 	<dialog
 		class="agent-evidence bu-dialog-surface"
 		aria-labelledby="{id}-title"
@@ -59,14 +90,14 @@
 			hideEvidence();
 		}}
 	>
-		<!-- The modal dialog makes the page behind it inert, so the budget and its End control come along. -->
-		<AgentBudget />
+		<!-- The budget line with End moves into whichever modal dialog is on top (budget.ts), this one included. -->
 		<header class:budget={$budgetView.active}>
 			<h2 id="{id}-title">
-				{t('agentEvidence.title', { subject: panel.title })}
+				{t('agentEvidence.title', { subject: titles[panel.tool]?.() ?? panel.tool })}
 			</h2>
 			{#if panel.images.length > 1}
-				<div class="pager">
+				<!-- svelte-ignore a11y_no_static_element_interactions (arrow keys on the pager's own buttons) -->
+				<div class="pager" onkeydown={pagerKeys}>
 					<button
 						class="bu-btn"
 						data-variant="ghost"
@@ -94,6 +125,7 @@
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex (keyboard users need to scroll through the evidence) -->
 		<div
 			class="sheets"
+			bind:this={scroller}
 			bind:clientWidth={width}
 			bind:clientHeight={height}
 			tabindex="0"
@@ -102,11 +134,24 @@
 		>
 			<figure>
 				<figcaption>
-					<span>{image.label}</span>
-					<span>{t('agentEvidence.scale', { shown: scale, sheet: image.scale })}</span>
+					<span>{image.page.shown ?? image.label}</span>
+					<span
+						>{t('agentEvidence.scale', {
+							shown: formatNumber(fit.shown, { maximumFractionDigits: 2 }),
+							sheet: image.scale
+						})}</span
+					>
+					{#if fit.clipped}
+						<span data-agent-evidence-clipped>{t('agentEvidence.clipped')}</span>
+					{/if}
 					{#if uncovered.length}
 						<span title={cellList(uncovered)}>
 							{t('agentEvidence.missingCells', { count: uncovered.length })}
+						</span>
+					{/if}
+					{#if partial.length}
+						<span title={cellList(partial)}>
+							{t('agentEvidence.partialCells', { count: partial.length })}
 						</span>
 					{/if}
 					{#if empty.length}
@@ -118,7 +163,14 @@
 				<canvas
 					aria-hidden="true"
 					{@attach (canvas) => {
-						paintSheet(canvas.getContext('2d')!, image.page, scale);
+						const size = paintSheet(canvas.getContext('2d')!, image.page, {
+							scale: fit.pixels,
+							ui: dpr,
+							text: text()
+						});
+						// Device pixels drawn one to one: each artwork pixel is a whole number of them at any ratio.
+						canvas.style.width = `${size.width / dpr}px`;
+						canvas.style.height = `${size.height / dpr}px`;
 					}}
 				></canvas>
 			</figure>
@@ -187,7 +239,7 @@
 	canvas {
 		display: block;
 		max-width: none;
-		/* Drawn at whole CSS pixels per artwork pixel; the browser enlarges it to device pixels without smoothing. */
+		/* Drawn in whole device pixels per artwork pixel; pixelated keeps edges hard if the browser rescales it anyway. */
 		image-rendering: pixelated;
 	}
 </style>

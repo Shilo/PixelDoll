@@ -3,29 +3,43 @@
 //
 // All sheets of one call share one scale. The worn, composite and source sheets also share one crop and pivot, so they line
 // up; an item-alone sheet gets its own tight crop, so a small held item is not lost in a whole-body frame (its rulers count
-// the same frame pixels). Sheets are drawn at one canvas pixel per CSS pixel; the panel draws them again at a whole number of
-// CSS pixels per artwork pixel and lets the browser enlarge them without smoothing. Pages become PNG only when a script asks.
+// the same frame pixels). A cell may hold a function that draws its frame: the call measures each frame once and draws it
+// again only when a page is painted, so it never holds every frame at once. The panel paints a page at a whole number of
+// device pixels per artwork pixel, so every artwork pixel keeps one size at fractional device pixel ratios. Pages become PNG
+// only when a script asks.
 import { bytesToBase64, type Img } from '../../lib/image/png.ts';
-import { opaqueBox } from '../../lib/rig/normalize.ts';
+import { opaqueBox, type Box } from '../../lib/rig/normalize.ts';
+import { missingAt, missingFrames } from '../../lib/dress/dress.ts';
+import type { DirectionName, Item, Manifest, Preset } from '../../lib/store/manifest.ts';
 import { AgentError } from './contract.ts';
 
 type Point = { x: number; y: number };
 type Size = { w: number; h: number };
 type Crop = Point & Size;
+/** A drawn frame's size and opaque box (null: no opaque pixel). */
+type Measured = Size & { box: Box | null };
 
 export interface SheetCell {
-	image: Img | null;
+	/** The frame, or a function that draws it each time its page is painted (with `measured`). */
+	image: Img | null | (() => Img | null);
+	/** Size and opaque box of the drawn frame, measured when the call was planned; null when nothing was drawn. */
+	measured?: Measured | null;
 	/** False draws the cell hatched and labeled "no frame": no frame exists there. A frame without one opaque pixel is
 	 *  drawn with a dashed outline and labeled "empty"; transparent pixels show the cell color. */
 	covered: boolean;
+	/** Ids of worn items with no layer in this frame: it is drawn without them and marked by a bar under the cell. */
+	missing?: string[];
 	/** Top-left of the native image in the shared frame. */
 	offset?: Point;
-	/** Boxes outlined on the cell, in the image's own pixels: the detached parts the digest lists. */
+	/** Boxes outlined on the cell, in the image's own pixels: the detached parts the digest found. */
 	marks?: Crop[];
 }
 
 export interface SheetSpec {
+	/** Stable English label for tool results. */
 	label: string;
+	/** The label in the person's language, for the panel (default: label). */
+	shown?: string;
 	kind: 'frames' | 'item' | 'worn' | 'source';
 	/** What rows and columns are, written in the sheet's corner ("direction", "frame"). */
 	axes: { rows: string; columns: string };
@@ -49,22 +63,89 @@ export interface Evidence {
 export const MAX_SIDE = 1568;
 /** Pages one call may produce, so a review stays a handful of images. */
 export const MAX_SHEETS = 8;
-// Interface geometry in CSS pixels.
+/** Frame pixels one call may compose (frames times frame area), checked before anything is composed. */
+export const MAX_WORK = 24 * 1024 * 1024;
+const FEWER =
+	'Ask for fewer frames or directions (inspect_item and render_frames take frames and directions).';
+// Interface geometry in CSS pixels. The column label band holds two lines in its corner: the axis of the rows, then of the
+// columns.
 const GAP = 6,
 	ROW_LABEL = 96,
-	COLUMN_LABEL = 20,
+	COLUMN_LABEL = 32,
 	MIN_COLUMN = 56,
 	MIN_ROW = 16;
 
 // One fixed, slightly violet mid-tone: unlike a neutral gray it is not mistaken for steel or shadow, and it keeps the same
-// contrast in the PNG and in the Studio. Marks use a color pixel art rarely uses at full strength.
+// contrast in the PNG and in the Studio. Marks use a color pixel art rarely uses at full strength, edged in near black so
+// they also stand out on yellow art.
 export const PALETTE = {
 	sheet: '#45405a',
 	cell: '#5b5573',
 	ink: '#f4f2fa',
 	hatch: '#9d96b8',
-	mark: '#ffe600'
+	mark: '#ffe600',
+	markEdge: '#17141f'
 };
+
+/** Words drawn on a sheet. Tool results and their PNGs keep English; the panel passes the person's language. */
+export interface SheetText {
+	noFrame: string;
+	empty: string;
+	axis: (name: string) => string;
+}
+const ENGLISH: SheetText = { noFrame: 'no frame', empty: 'empty', axis: (name) => name };
+
+const measureOf = (cell: SheetCell): Measured | null =>
+	typeof cell.image === 'function'
+		? (cell.measured ?? null)
+		: cell.image && { w: cell.image.w, h: cell.image.h, box: opaqueBox(cell.image) };
+const pixelsOf = (cell: SheetCell) =>
+	typeof cell.image === 'function' ? cell.image() : cell.image;
+
+/** A cell drawn on demand, measured from its first drawing (which the caller may check, then drop). */
+export const drawnCell = (
+	draw: () => Img | null,
+	first: Img | null,
+	fields: Omit<SheetCell, 'image' | 'measured'>
+): SheetCell => ({
+	...fields,
+	image: draw,
+	measured: first && { w: first.w, h: first.h, box: opaqueBox(first) }
+});
+
+/** Which cells of one view and direction have a frame. The item alone has none where the item has none. A composite has
+ *  one wherever the body has one: worn items without that frame are listed for the cell (`missing`) instead, since the
+ *  frame is still drawn without them. */
+export function coverageOf(
+	m: Manifest,
+	view: { only?: Item; outfit: Preset['items'] },
+	anim: string,
+	dir: DirectionName
+): (cell: number) => Pick<SheetCell, 'covered' | 'missing'> {
+	if (view.only) {
+		const gaps = new Set(missingFrames(m, view.only, anim, dir));
+		return (cell) => ({ covered: !gaps.has(cell) });
+	}
+	const base = m.items.find((it) => it.id === m.rig.baseItem);
+	const body = new Set(base ? missingFrames(m, base, anim, dir) : []);
+	const worn = missingAt(m, view.outfit, anim, dir).map((it) => ({
+		id: it.id,
+		gaps: new Set(missingFrames(m, it, anim, dir))
+	}));
+	return (cell) => {
+		const missing = worn.filter(({ gaps }) => gaps.has(cell)).map(({ id }) => id);
+		return { covered: !!base && !body.has(cell), ...(missing.length ? { missing } : {}) };
+	};
+}
+
+/** Refuses a call that would compose more than MAX_WORK frame pixels, before anything is composed. */
+export function checkWork(frames: number, frame: Size) {
+	if (frames * frame.w * frame.h > MAX_WORK)
+		throw new AgentError(
+			`${frames} frames of ${frame.w}x${frame.h} px are too many for one call. ${FEWER}`,
+			'invalid'
+		);
+}
 
 function cropOf(sheets: SheetSpec[], frame: Size, withPivot: boolean): Crop {
 	let left = Infinity,
@@ -73,15 +154,15 @@ function cropOf(sheets: SheetSpec[], frame: Size, withPivot: boolean): Crop {
 		bottom = -Infinity;
 	for (const sheet of sheets)
 		for (const row of sheet.rows)
-			for (const { image, offset } of row.cells) {
-				if (!image) continue;
-				const box = opaqueBox(image);
-				if (!box) continue;
-				const { x, y } = offset ?? { x: 0, y: 0 };
+			for (const cell of row.cells) {
+				const measured = measureOf(cell);
+				if (!measured?.box) continue;
+				const { box } = measured;
+				const { x, y } = cell.offset ?? { x: 0, y: 0 };
 				left = Math.min(left, x + Math.max(0, box.x0 - 1));
 				top = Math.min(top, y + Math.max(0, box.y0 - 1));
-				right = Math.max(right, x + Math.min(image.w, box.x1 + 2));
-				bottom = Math.max(bottom, y + Math.min(image.h, box.y1 + 2));
+				right = Math.max(right, x + Math.min(measured.w, box.x1 + 2));
+				bottom = Math.max(bottom, y + Math.min(measured.h, box.y1 + 2));
 			}
 	if (!Number.isFinite(left)) return { x: 0, y: 0, w: frame.w, h: frame.h };
 	// Include the pivot's pixel edge even if it lies outside the visible artwork.
@@ -105,19 +186,25 @@ function cropsOf(sheets: SheetSpec[], frame: Size): Crop[] {
 	return sheets.map((sheet) => (sheet.kind === 'item' ? aloneCrop! : restCrop!));
 }
 
-/** Canvas size of a page at `scale` canvas pixels per artwork pixel. */
-function sheetLayout(crop: Size, scale: number, columns: number, rows: number) {
+/** Canvas size of a page at `scale` canvas pixels per artwork pixel and `ui` canvas pixels per CSS pixel of interface. */
+function sheetLayout(crop: Size, scale: number, columns: number, rows: number, ui = 1) {
+	const gap = Math.round(GAP * ui),
+		rowLabel = Math.round(ROW_LABEL * ui),
+		columnLabel = Math.round(COLUMN_LABEL * ui);
 	const cw = crop.w * scale,
 		ch = crop.h * scale;
-	const colStride = Math.max(MIN_COLUMN, cw) + GAP,
-		rowStride = Math.max(MIN_ROW, ch) + GAP;
+	const colStride = Math.max(Math.round(MIN_COLUMN * ui), cw) + gap,
+		rowStride = Math.max(Math.round(MIN_ROW * ui), ch) + gap;
 	return {
+		gap,
+		rowLabel,
+		columnLabel,
 		cw,
 		ch,
 		colStride,
 		rowStride,
-		width: ROW_LABEL + GAP + columns * colStride,
-		height: COLUMN_LABEL + GAP + rows * rowStride
+		width: rowLabel + gap + columns * colStride,
+		height: columnLabel + gap + rows * rowStride
 	};
 }
 
@@ -141,10 +228,7 @@ function chooseScale(sheets: SheetSpec[], crops: Crop[], top: number) {
 	for (let scale = top; scale >= 2; scale--) if (pages(scale).every((n) => n === 1)) return scale;
 	for (let scale = top; scale >= 1; scale--)
 		if (pages(scale).reduce((a, b) => a + b, 0) <= MAX_SHEETS) return scale;
-	throw new AgentError(
-		`These frames need more than ${MAX_SHEETS} sheets. Ask for fewer frames or directions.`,
-		'invalid'
-	);
+	throw new AgentError(`These frames need more than ${MAX_SHEETS} sheets. ${FEWER}`, 'invalid');
 }
 
 const cellsWhere = (
@@ -156,12 +240,23 @@ const cellsWhere = (
 			test(cell) ? [{ row: row.label, column: spec.columns[i] }] : []
 		)
 	);
-const isEmpty = (cell: SheetCell) => cell.covered && (!cell.image || !opaqueBox(cell.image));
+const isEmpty = (cell: SheetCell) => cell.covered && !measureOf(cell)?.box;
+const isPartial = (cell: SheetCell) => cell.covered && !!cell.missing?.length;
 /** Cells drawn hatched because no frame exists there. */
 export const uncoveredCells = (spec: Pick<SheetSpec, 'rows' | 'columns'>) =>
 	cellsWhere(spec, (cell) => !cell.covered);
 /** Cells whose frame exists but has no opaque pixel. */
 export const emptyCells = (spec: Pick<SheetSpec, 'rows' | 'columns'>) => cellsWhere(spec, isEmpty);
+/** Drawn cells that lack some worn items' layers. */
+export const partialCells = (spec: Pick<SheetSpec, 'rows' | 'columns'>) =>
+	cellsWhere(spec, isPartial);
+/** partialCells with the ids of the items each one lacks. */
+const missingItems = (spec: Pick<SheetSpec, 'rows' | 'columns'>) =>
+	spec.rows.flatMap((row) =>
+		row.cells.flatMap((cell, i) =>
+			isPartial(cell) ? [{ row: row.label, column: spec.columns[i], items: cell.missing! }] : []
+		)
+	);
 
 export function planEvidence(sheets: SheetSpec[], frame: Size, requestedScale: number) {
 	const crops = cropsOf(sheets, frame);
@@ -189,9 +284,11 @@ export function planEvidence(sheets: SheetSpec[], frame: Size, requestedScale: n
 		for (let r = 0; r < sheet.rows.length; r += cap.rows)
 			for (let c = 0; c < sheet.columns.length; c += cap.columns) {
 				const page: number = result.length + 1;
+				const part = (label: string) => (pages === 1 ? label : `${label} (${page}/${pages})`);
 				const spec: SheetPage = {
 					...sheet,
-					label: pages === 1 ? sheet.label : `${sheet.label} (${page}/${pages})`,
+					label: part(sheet.label),
+					shown: sheet.shown === undefined ? undefined : part(sheet.shown),
 					rows: sheet.rows.slice(r, r + cap.rows).map((row) => ({
 						label: row.label,
 						cells: row.cells.slice(c, c + cap.columns)
@@ -223,7 +320,8 @@ export function planEvidence(sheets: SheetSpec[], frame: Size, requestedScale: n
 							total,
 							covered: total - uncovered.length,
 							uncovered,
-							empty: emptyCells(spec)
+							empty: emptyCells(spec),
+							missingItems: missingItems(spec)
 						}
 					}
 				});
@@ -232,25 +330,29 @@ export function planEvidence(sheets: SheetSpec[], frame: Size, requestedScale: n
 	});
 }
 
-/** The largest whole number of CSS pixels per artwork pixel, at most the page's own scale, at which the page fits the area
- *  (CSS pixels). The panel draws the page at that scale; labels keep their size. */
-export function fitScale(page: SheetPage, area: { width: number; height: number }) {
-	for (let scale = page.scale; scale > 1; scale--) {
-		const size = sheetLayout(page.crop, scale, page.columns.length, page.rows.length);
-		if (size.width <= area.width && size.height <= area.height) return scale;
-	}
-	return 1;
+/** How the panel shows a page in `area` (CSS pixels) on a screen with `dpr` device pixels per CSS pixel. `pixels` is canvas
+ *  (device) pixels per artwork pixel: the largest whole number up to the page's own scale at which the page fits, but not
+ *  below about one CSS pixel. `shown` is that in CSS pixels, and `clipped` says the page is larger than the area even then. */
+export function fitSheet(page: SheetPage, area: { width: number; height: number }, dpr = 1) {
+	const least = Math.max(1, Math.round(dpr));
+	const fits = (pixels: number) => {
+		const size = sheetLayout(page.crop, pixels, page.columns.length, page.rows.length, dpr);
+		return size.width <= area.width * dpr && size.height <= area.height * dpr;
+	};
+	let pixels = Math.max(least, Math.floor(page.scale * dpr));
+	while (pixels > least && !fits(pixels)) pixels--;
+	return { pixels, shown: pixels / dpr, clipped: !fits(pixels) };
 }
 
 type SheetContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
-function hatch(g: SheetContext, x: number, y: number, w: number, h: number) {
+function hatch(g: SheetContext, x: number, y: number, w: number, h: number, step: number) {
 	g.save();
 	g.beginPath();
 	g.rect(x, y, w, h);
 	g.clip();
 	g.beginPath();
-	for (let i = -h; i < w; i += 8) {
+	for (let i = -h; i < w; i += step) {
 		g.moveTo(x + i, y + h);
 		g.lineTo(x + i + h, y);
 	}
@@ -258,27 +360,31 @@ function hatch(g: SheetContext, x: number, y: number, w: number, h: number) {
 	g.restore();
 }
 
-/** A small word on a cell ("no frame", "empty"), on a patch of the cell color so it stays readable over hatching. */
-function cellNote(g: SheetContext, text: string, x: number, y: number, w: number, h: number) {
-	if (w < 40 || h < 12) return;
-	const width = Math.min(w - 4, g.measureText(text).width + 6);
-	g.fillStyle = PALETTE.cell;
-	g.fillRect(x + (w - width) / 2, y + h / 2 - 6, width, 12);
-	g.fillStyle = PALETTE.ink;
-	g.textAlign = 'center';
-	g.fillText(text, x + w / 2, y + h / 2, w - 6);
-	g.textAlign = 'start';
+export interface PaintOptions {
+	/** Canvas pixels per artwork pixel (default: the page's scale). */
+	scale?: number;
+	/** Canvas pixels per CSS pixel of labels, gaps and lines (default 1). */
+	ui?: number;
+	text?: SheetText;
 }
 
-/** Draws one page at `scale` canvas pixels per artwork pixel; interface geometry stays at one canvas pixel per CSS pixel. */
-export function paintSheet(g: SheetContext, spec: SheetPage, scale = spec.scale) {
+/** Draws one page; the canvas takes the page's size. */
+export function paintSheet(
+	g: SheetContext,
+	spec: SheetPage,
+	{ scale = spec.scale, ui = 1, text = ENGLISH }: PaintOptions = {}
+) {
 	const { crop, rows, columns, pivot, axes } = spec;
-	const { width, height, cw, ch, colStride, rowStride } = sheetLayout(
+	const { width, height, cw, ch, colStride, rowStride, gap, rowLabel, columnLabel } = sheetLayout(
 		crop,
 		scale,
 		columns.length,
-		rows.length
+		rows.length,
+		ui
 	);
+	const u = (n: number) => Math.round(n * ui),
+		line = Math.max(1, u(1));
+	const font = (size: number) => `${u(size)}px system-ui, sans-serif`;
 	g.canvas.width = width;
 	g.canvas.height = height;
 	const scratch = new OffscreenCanvas(1, 1),
@@ -287,39 +393,51 @@ export function paintSheet(g: SheetContext, spec: SheetPage, scale = spec.scale)
 	g.fillStyle = PALETTE.sheet;
 	g.fillRect(0, 0, width, height);
 	g.textBaseline = 'middle';
-	g.lineWidth = 1;
+	g.lineWidth = line;
 	g.fillStyle = PALETTE.ink;
-	// The corner names the axes: rows down, columns across.
-	g.font = '11px system-ui, sans-serif';
-	g.fillText(
-		[axes.rows && `${axes.rows} ↓`, axes.columns && `${axes.columns} →`].filter(Boolean).join('  '),
-		4,
-		COLUMN_LABEL / 2,
-		ROW_LABEL - 4
-	);
-	g.font = '12px system-ui, sans-serif';
+	// The corner names the axes on two lines: rows (down), then columns (across) beside the column labels.
+	const upper = Math.round(columnLabel * 0.3),
+		lower = Math.round(columnLabel * 0.72);
+	g.font = font(11);
+	if (axes.rows) g.fillText(`${text.axis(axes.rows)} ↓`, u(4), upper, rowLabel - u(6));
+	if (axes.columns) g.fillText(`${text.axis(axes.columns)} →`, u(4), lower, rowLabel - u(6));
+	g.font = font(12);
 	columns.forEach((label, c) =>
-		g.fillText(label, ROW_LABEL + GAP + c * colStride, COLUMN_LABEL / 2, colStride - GAP)
+		g.fillText(label, rowLabel + gap + c * colStride, lower, colStride - gap)
 	);
-	for (const [r, row] of rows.entries()) {
-		const y = COLUMN_LABEL + GAP + r * rowStride;
+	/** A small word on a cell ("no frame", "empty"), on a patch of the cell color so it stays readable over hatching. */
+	const cellNote = (note: string, x: number, y: number) => {
+		if (cw < u(40) || ch < u(12)) return;
+		const w = Math.min(cw - u(4), g.measureText(note).width + u(6));
+		g.fillStyle = PALETTE.cell;
+		g.fillRect(x + (cw - w) / 2, y + ch / 2 - u(6), w, u(12));
 		g.fillStyle = PALETTE.ink;
-		g.font = '12px system-ui, sans-serif';
-		g.fillText(row.label, 4, y + (rowStride - GAP) / 2, ROW_LABEL - 8);
-		g.font = '10px system-ui, sans-serif';
+		g.textAlign = 'center';
+		g.fillText(note, x + cw / 2, y + ch / 2, cw - u(6));
+		g.textAlign = 'start';
+	};
+	for (const [r, row] of rows.entries()) {
+		const y = columnLabel + gap + r * rowStride;
+		g.fillStyle = PALETTE.ink;
+		g.font = font(12);
+		g.fillText(row.label, u(4), y + (rowStride - gap) / 2, rowLabel - u(8));
+		g.font = font(10);
 		for (const [c, cell] of row.cells.entries()) {
-			const { image, covered, offset, marks } = cell;
-			const x = ROW_LABEL + GAP + c * colStride;
+			const { covered, offset, marks } = cell;
+			const x = rowLabel + gap + c * colStride;
 			g.fillStyle = PALETTE.cell;
 			g.fillRect(x, y, cw, ch);
 			if (!covered) {
 				g.strokeStyle = PALETTE.hatch;
-				hatch(g, x, y, cw, ch);
-				// Keep the coverage marker visible even when a partial composite fills the cell.
+				hatch(g, x, y, cw, ch, u(8));
+			}
+			// A bar under the cell marks a missing frame, or a frame drawn without some worn items, even when art fills it.
+			if (!covered || isPartial(cell)) {
 				g.fillStyle = PALETTE.hatch;
-				g.fillRect(x, y + ch, cw, 2);
+				g.fillRect(x, y + ch, cw, u(2));
 			}
 			const { x: ox, y: oy } = offset ?? { x: 0, y: 0 };
+			const image = pixelsOf(cell);
 			if (image) {
 				const left = Math.max(0, crop.x - ox),
 					top = Math.max(0, crop.y - oy),
@@ -347,35 +465,44 @@ export function paintSheet(g: SheetContext, spec: SheetPage, scale = spec.scale)
 					);
 				}
 			}
-			if (!covered) cellNote(g, 'no frame', x, y, cw, ch);
+			if (!covered) cellNote(text.noFrame, x, y);
 			else if (isEmpty(cell)) {
 				g.save();
 				g.strokeStyle = PALETTE.hatch;
-				g.setLineDash([4, 3]);
-				g.strokeRect(x + 1.5, y + 1.5, cw - 3, ch - 3);
+				g.setLineDash([u(4), u(3)]);
+				g.strokeRect(x + line * 1.5, y + line * 1.5, cw - line * 3, ch - line * 3);
 				g.restore();
-				cellNote(g, 'empty', x, y, cw, ch);
+				cellNote(text.empty, x, y);
 			}
-			// Detached parts, outlined one artwork pixel outside their box.
-			g.strokeStyle = PALETTE.mark;
-			for (const box of marks ?? [])
-				g.strokeRect(
-					x + (ox + box.x - 1 - crop.x) * scale + 0.5,
-					y + (oy + box.y - 1 - crop.y) * scale + 0.5,
-					(box.w + 2) * scale - 1,
-					(box.h + 2) * scale - 1
-				);
+			// Detached parts, outlined one artwork pixel outside their box: yellow, edged in near black, kept within the cell.
+			if (marks?.length) {
+				g.save();
+				g.beginPath();
+				g.rect(x, y, cw, ch);
+				g.clip();
+				for (const box of marks) {
+					const bx = x + (ox + box.x - 1 - crop.x) * scale,
+						by = y + (oy + box.y - 1 - crop.y) * scale,
+						bw = (box.w + 2) * scale,
+						bh = (box.h + 2) * scale;
+					g.strokeStyle = PALETTE.markEdge;
+					g.strokeRect(bx - line / 2, by - line / 2, bw + line, bh + line);
+					g.strokeStyle = PALETTE.mark;
+					g.strokeRect(bx + line / 2, by + line / 2, bw - line, bh - line);
+				}
+				g.restore();
+			}
 			// Rulers in the gap above and left of the cell: a tick every 8 frame pixels, a longer one at the pivot. They stay
 			// clear of the coverage bar under the previous row.
 			g.fillStyle = PALETTE.ink;
 			for (let col = Math.ceil(crop.x / 8) * 8; col <= crop.x + crop.w; col += 8)
-				g.fillRect(x + (col - crop.x) * scale, y - 3, 1, 2);
+				g.fillRect(x + (col - crop.x) * scale, y - u(3), line, u(2));
 			for (let rw = Math.ceil(crop.y / 8) * 8; rw <= crop.y + crop.h; rw += 8)
-				g.fillRect(x - 3, y + (rw - crop.y) * scale, 2, 1);
+				g.fillRect(x - u(3), y + (rw - crop.y) * scale, u(2), line);
 			if (pivot && pivot.x >= crop.x && pivot.x <= crop.x + crop.w)
-				g.fillRect(x + Math.round((pivot.x - crop.x) * scale) - 1, y - 4, 3, 4);
+				g.fillRect(x + Math.round((pivot.x - crop.x) * scale) - line, y - u(4), 3 * line, u(4));
 			if (pivot && pivot.y >= crop.y && pivot.y <= crop.y + crop.h)
-				g.fillRect(x - 4, y + Math.round((pivot.y - crop.y) * scale) - 1, 4, 3);
+				g.fillRect(x - u(4), y + Math.round((pivot.y - crop.y) * scale) - line, u(4), 3 * line);
 		}
 	}
 	return { width, height };

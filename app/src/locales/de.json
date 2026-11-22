@@ -3199,19 +3199,42 @@
 		"allow": "Erlauben",
 		"deny": "Nicht erlauben",
 		"left": "Agentenbudget: noch {usd} ({count} Generierungen)",
-		"reserved": "Reserviert: {count}",
+		"reserved": "{count} Generierungen reserviert",
 		"end": "Beenden"
 	},
 	"agentEvidence": {
 		"title": "Agentenansicht: {subject}",
+		"tools": {
+			"inspectCharacter": "Figur prüfen",
+			"inspectItem": "Gegenstand oder Entwurf prüfen",
+			"renderFrames": "Frames anzeigen"
+		},
+		"sheets": {
+			"outfit": "{name}: {move}, aktuelles Outfit",
+			"alone": "{name} allein: {move}",
+			"worn": "{name} am Grundkörper: {move}",
+			"source": "{name}: Vorlage (angezogene Ansichten)",
+			"review": "{name}: Prüfung von {move}"
+		},
+		"axis": {
+			"direction": "Blickrichtung",
+			"frame": "Frame"
+		},
+		"noFrame": "kein Frame",
+		"empty": "leer",
 		"missingCells": {
 			"one": "{count} Zelle hat kein Bild (schraffiert)",
 			"other": "{count} Zellen haben kein Bild (schraffiert)"
+		},
+		"partialCells": {
+			"one": "{count} Frame fehlt ein getragener Gegenstand (Balken unter der Zelle)",
+			"other": "{count} Frames fehlt ein getragener Gegenstand (Balken unter der Zelle)"
 		},
 		"emptyCells": {
 			"one": "{count} Bild ist leer (gestrichelt)",
 			"other": "{count} Bilder sind leer (gestrichelt)"
 		},
+		"clipped": "Größer als das Fenster: scrolle, um alles zu sehen",
 		"page": "Blatt {page} von {pages}",
 		"previous": "Vorheriges Blatt",
 		"next": "Nächstes Blatt",

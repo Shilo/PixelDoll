@@ -5,12 +5,16 @@ import { loadFixture } from '../../src/lib/compose/fixture.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import {
 	emptyCells,
-	fitScale,
+	checkWork,
+	coverageOf,
+	drawnCell,
+	fitSheet,
+	MAX_WORK,
 	MAX_SIDE,
 	planEvidence,
 	type SheetSpec
 } from '../../src/studio/automation/evidence.ts';
-import { defectDigest, frameDefects } from '../../src/studio/automation/defects.ts';
+import { DefectDigest, defectDigest, frameDefects } from '../../src/studio/automation/defects.ts';
 import { AgentError } from '../../src/studio/automation/contract.ts';
 
 function image(w: number, h: number, points: [number, number][]) {
@@ -105,7 +109,7 @@ describe('agent evidence', () => {
 		expect(() => planEvidence(big, { w: 144, h: 144 }, 4)).toThrow(AgentError);
 	});
 
-	it('caps enlargement for a single large cell, then fits the one page shown at a whole CSS-pixel scale', () => {
+	it('caps enlargement for a single large cell, then fits the one page shown at whole device pixels', () => {
 		const spec: SheetSpec = {
 			label: 'Frame',
 			kind: 'frames',
@@ -115,11 +119,30 @@ describe('agent evidence', () => {
 		};
 		const [{ spec: page, meta }] = planEvidence([spec], { w: 512, h: 512 }, 16);
 		expect(meta.scale).toBe(2);
-		// 1132 x 1056 at scale 2: row labels and gaps keep their size.
-		expect([meta.width, meta.height]).toEqual([1132, 1056]);
-		expect(fitScale(page, { width: 1200, height: 1100 })).toBe(2);
-		expect(fitScale(page, { width: 1100, height: 1100 })).toBe(1);
-		expect(fitScale(page, { width: 200, height: 200 })).toBe(1);
+		// 1132 x 1068 at scale 2: row labels and gaps keep their size (the column label band holds two lines).
+		expect([meta.width, meta.height]).toEqual([1132, 1068]);
+		expect(fitSheet(page, { width: 1200, height: 1100 })).toEqual({
+			pixels: 2,
+			shown: 2,
+			clipped: false
+		});
+		expect(fitSheet(page, { width: 1100, height: 1100 })).toEqual({
+			pixels: 1,
+			shown: 1,
+			clipped: false
+		});
+		// Too small even at 1x: the panel says it scrolls.
+		expect(fitSheet(page, { width: 200, height: 200 })).toEqual({
+			pixels: 1,
+			shown: 1,
+			clipped: true
+		});
+		// At 1.5 device pixels per CSS pixel each artwork pixel is 3 device pixels, never an uneven 1.5 or 2.25.
+		expect(fitSheet(page, { width: 1200, height: 1100 }, 1.5)).toEqual({
+			pixels: 3,
+			shown: 2,
+			clipped: false
+		});
 	});
 
 	it('tells an empty frame from a missing one', () => {
@@ -145,7 +168,8 @@ describe('agent evidence', () => {
 			total: 3,
 			covered: 2,
 			uncovered: [{ row: 'east', column: '2' }],
-			empty: [{ row: 'east', column: '1' }]
+			empty: [{ row: 'east', column: '1' }],
+			missingItems: []
 		});
 	});
 
@@ -194,7 +218,9 @@ describe('detached-pixel evidence', () => {
 		const boots = image(24, 16, [...block(4, 10, 3, 4), ...block(14, 10, 3, 4)]);
 		const sword = image(24, 24, [...block(10, 0, 2, 12), ...block(9, 13, 4, 3)]);
 		const earrings = image(24, 16, [...block(4, 8, 2, 2), ...block(16, 8, 2, 2)]);
-		for (const im of [boots, sword, earrings]) expect(frameDefects('south', 0, im)).toBeNull();
+		for (const im of [boots, sword]) expect(frameDefects('south', 0, im)).toBeNull();
+		// Two parts of one tiny size cannot tell the art from a stray, so one is listed; the note says it may be intended.
+		expect(frameDefects('south', 0, earrings)?.detachedCount).toBe(1);
 		const worn = image(24, 16, [
 			...block(6, 2, 10, 10),
 			...block(3, 8, 2, 2),
@@ -241,5 +267,89 @@ describe('detached-pixel evidence', () => {
 				new Set(left.map(({ x, y, w, h }) => `${east.w - x - w}/${y}/${w}/${h}`))
 			);
 		}
+	});
+});
+
+describe('bounded evidence', () => {
+	it('plans from measured frames without drawing them, and draws them only on demand', () => {
+		let draws = 0;
+		const draw = () => {
+			draws++;
+			return image(20, 20, [[10, 5]]);
+		};
+		const cell = drawnCell(draw, draw(), { covered: true });
+		const blank = drawnCell(() => makeImg(20, 20), makeImg(20, 20), { covered: true });
+		const spec: SheetSpec = {
+			label: 'Walk',
+			kind: 'frames',
+			axes,
+			columns: ['0', '1'],
+			rows: [{ label: 'east', cells: [cell, blank] }]
+		};
+		const [{ meta, spec: page }] = planEvidence([spec], { w: 20, h: 20 }, 4);
+		expect(draws).toBe(1);
+		expect(meta.crop).toEqual({ x: 9, y: 4, w: 3, h: 3 });
+		expect(meta.coverage.empty).toEqual([{ row: 'east', column: '1' }]);
+		expect(typeof page.rows[0].cells[0].image).toBe('function');
+	});
+
+	it('refuses a call that would compose too many frame pixels before composing any', () => {
+		expect(() => checkWork(8 * 40 * 2, { w: 256, h: 256 })).toThrow(
+			expect.objectContaining({ code: 'invalid' })
+		);
+		expect(() => checkWork(Math.floor(MAX_WORK / (96 * 96)), { w: 96, h: 96 })).not.toThrow();
+	});
+
+	it('draws a composite wherever the body has a frame and lists the worn items it lacks', async () => {
+		const p = await loadFixture((path) =>
+			readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))
+		);
+		const m = p.manifest;
+		const sword = m.items.find((item) => item.id === 'sword_steel')!;
+		const gap = { ...sword, coverage: sword.coverage!.filter((key) => key !== 'walk/east/2') };
+		const manifest = { ...m, items: m.items.map((item) => (item === sword ? gap : item)) };
+		const outfit = { [sword.slot]: sword.id };
+		const composite = coverageOf(manifest, { outfit }, 'walk', 'east');
+		expect(composite(2)).toEqual({ covered: true, missing: ['sword_steel'] });
+		expect(composite(1)).toEqual({ covered: true });
+		expect(coverageOf(manifest, { only: gap, outfit: {} }, 'walk', 'east')(2)).toEqual({
+			covered: false
+		});
+		const spec: SheetSpec = {
+			label: 'Walk',
+			kind: 'frames',
+			axes,
+			columns: ['1', '2'],
+			rows: [{ label: 'east', cells: [1, 2].map((n) => ({ image: null, ...composite(n) })) }]
+		};
+		const [{ meta }] = planEvidence([spec], { w: 8, h: 8 }, 4);
+		expect(meta.coverage).toMatchObject({
+			covered: 2,
+			uncovered: [],
+			missingItems: [{ row: 'east', column: '2', items: ['sword_steel'] }]
+		});
+	});
+});
+
+describe('detached parts beyond the digest', () => {
+	it('counts a part as large as the main one, and outlines every part past the listing caps', () => {
+		expect(
+			frameDefects(
+				'east',
+				0,
+				image(8, 8, [
+					[1, 1],
+					[5, 5]
+				])
+			)?.detached
+		).toEqual([{ size: 1, x: 5, y: 5, w: 1, h: 1 }]);
+		const strays = [8, 10, 12].flatMap((x) => [8, 10, 12].map((y) => [x, y] as [number, number]));
+		const noisy = image(16, 16, [...block(0, 0, 4, 4), ...strays.slice(0, 8)]);
+		const digest = new DefectDigest();
+		const outlined = Array.from({ length: 17 }, (_, frame) =>
+			digest.add({ direction: 'east', frame, image: noisy })
+		);
+		expect(outlined.every((parts) => parts.length === 8)).toBe(true);
+		expect(digest.result()).toMatchObject({ moreFrames: 1, framesChecked: 17 });
 	});
 });

@@ -3112,17 +3112,39 @@
 		"allow": "Izinkan",
 		"deny": "Jangan izinkan",
 		"left": "Anggaran agen: sisa {usd} ({count} generasi)",
-		"reserved": "Dicadangkan: {count}",
+		"reserved": "{count} generasi dicadangkan",
 		"end": "Akhiri"
 	},
 	"agentEvidence": {
 		"title": "Tampilan agen: {subject}",
+		"tools": {
+			"inspectCharacter": "Periksa karakter",
+			"inspectItem": "Periksa item atau draf",
+			"renderFrames": "Tampilkan frame"
+		},
+		"sheets": {
+			"outfit": "{name}: {move}, setelan saat ini",
+			"alone": "{name} saja: {move}",
+			"worn": "{name} pada tubuh dasar: {move}",
+			"source": "{name}: sumber (tampilan berpakaian)",
+			"review": "{name}: tinjauan {move}"
+		},
+		"axis": {
+			"direction": "arah",
+			"frame": "frame"
+		},
+		"noFrame": "tanpa frame",
+		"empty": "kosong",
 		"missingCells": {
 			"other": "{count} sel tidak memiliki bingkai (bergaris)"
+		},
+		"partialCells": {
+			"other": "{count} frame tidak memiliki item yang dipakai (garis di bawah sel)"
 		},
 		"emptyCells": {
 			"other": "{count} bingkai kosong (garis putus-putus)"
 		},
+		"clipped": "Lebih besar dari jendela: gulir untuk melihat semuanya",
 		"page": "Lembar {page} dari {pages}",
 		"previous": "Lembar sebelumnya",
 		"next": "Lembar berikutnya",
