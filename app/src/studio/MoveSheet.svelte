@@ -234,7 +234,7 @@
 		draft?.action ?? untrack(() => suggestions.find((entry) => entry.action)?.action) ?? ''
 	);
 	let replaceSelected = $state(draft?.replace ?? false);
-	let text = $state(draft?.text ?? untrack(() => moveTemplatePrompt(action)));
+	let text = $state(draft?.text ?? untrack(() => templateText(action)));
 	let templatePicked = $state(!!draft?.action);
 	let loopChoice = $state<boolean | undefined>(draft?.loop);
 	let frameReferences = $state<MoveFrameReferences<PickedReference>>(draft?.frameReferences ?? {});
@@ -531,7 +531,13 @@
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
 		if (Object.hasOwn(store.moveReviews, id) && !regeneration)
 			return t('moveSheet.checkpoint.ready', { move: nice(id) });
-		if (describing && !templatePicked && !replacing && id && options.includes(id))
+		if (
+			describing &&
+			!templatePicked &&
+			!replacing &&
+			id &&
+			suggestions.some((entry) => entry.action === id)
+		)
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (!m || !id) return '';
 		if (
@@ -1085,12 +1091,19 @@
 		const template = suggestion.action;
 		if (!template || action !== template || !templatePicked) {
 			chooseAction(template ?? '');
-			text = suggestion.prompt;
+			// An unedited template keeps the text chooseAction gave it, which follows the move's loop choice.
+			if (!template || suggestion.prompt !== moveTemplatePrompt(template)) text = suggestion.prompt;
 			return;
 		}
 		const kept = text;
 		chooseAction('');
 		text = kept;
+	}
+	// The template's text as the user customized it in Settings.
+	function templateText(template: string) {
+		return (
+			suggestions.find((entry) => entry.action === template)?.prompt ?? moveTemplatePrompt(template)
+		);
 	}
 	function inputMotion(value: string) {
 		if (!templatePicked && !replacing && action) chooseAction('');

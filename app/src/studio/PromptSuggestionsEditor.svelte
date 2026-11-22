@@ -47,7 +47,8 @@
 			!defaults.some(({ id }) => id === suggestionId)
 		)
 			error = 'prompt';
-		else save((list) => editSuggestion(list, defaults, suggestionId, field, input.value));
+		else if (!save((list) => editSuggestion(list, defaults, suggestionId, field, input.value)))
+			return; // Keep the unsaved text so the user can try again.
 		const effective = promptSuggestions(listKey).find(({ id }) => id === suggestionId);
 		if (effective) input.value = effective[field];
 	}
@@ -146,7 +147,8 @@
 						<button
 							type="button"
 							class="bu-btn"
-							data-variant="ghost"
+							data-variant="quiet"
+							data-icon
 							aria-label={label}
 							title={label}
 							disabled={unreadable || index + offset < 0 || index + offset >= suggestions.length}
@@ -158,7 +160,8 @@
 					<button
 						type="button"
 						class="bu-btn"
-						data-variant="ghost"
+						data-variant="quiet"
+						data-icon
 						aria-label={t('common.delete')}
 						title={t('common.delete')}
 						disabled={unreadable}
@@ -192,7 +195,7 @@
 			>
 				{t('promptSuggestions.add')}
 			</button>
-			<button type="button" class="bu-btn" data-variant="ghost" onclick={cancelAdd}
+			<button type="button" class="bu-btn" data-variant="quiet" onclick={cancelAdd}
 				>{t('common.cancel')}</button
 			>
 		{:else}
@@ -209,7 +212,7 @@
 		<button
 			type="button"
 			class="bu-btn"
-			data-variant="ghost"
+			data-variant="quiet"
 			disabled={suggestionListAtDefaults(listKey)}
 			onclick={restore}
 		>

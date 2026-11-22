@@ -76,7 +76,12 @@ export function effectiveSuggestions(
 		.filter(({ id }) => !list?.removed?.includes(id))
 		.map((entry) => {
 			const edit = list?.edits?.[entry.id];
-			return { ...entry, title: edit?.title ?? entry.title, prompt: edit?.prompt ?? entry.prompt };
+			// Empty means the default, even when storage holds an empty field it never writes itself.
+			return {
+				...entry,
+				title: edit?.title?.trim() || entry.title,
+				prompt: edit?.prompt?.trim() || entry.prompt
+			};
 		});
 	const added = (list?.added ?? []).map(({ id, title, prompt }) => ({
 		id,

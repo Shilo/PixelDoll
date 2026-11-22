@@ -101,3 +101,10 @@ test('corrupt storage is distinguishable from empty storage', () => {
 		move: { removed: ['walk'] }
 	});
 });
+
+test('blank stored fields still show the defaults', () => {
+	const list = parseSuggestionStorage(
+		JSON.stringify({ move: { edits: { alpha: { title: '', prompt: '  ' } } } })
+	)!.move;
+	expect(effectiveSuggestions(defaults, list)[0]).toEqual(defaults[0]);
+});

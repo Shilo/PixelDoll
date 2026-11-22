@@ -2990,6 +2990,41 @@ test('Enhance keeps the template a new move opened with, and its settings', asyn
 	).toBeVisible();
 });
 
+test('New move opens on the customized template prompt, and an added suggestion is a custom move', async ({
+	page
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		const ids = ['idle', 'walk', 'run', 'slash', 'hurt', 'death', 'cast'];
+		localStorage.setItem(
+			'pixeldoll.promptSuggestions.v1',
+			JSON.stringify({
+				move: {
+					edits: Object.fromEntries(ids.map((id) => [id, { prompt: `${id} edited` }])),
+					added: [{ id: 'u_hop', title: 'Hop', prompt: 'hop in place' }]
+				}
+			})
+		);
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
+	const templates = move.getByRole('group', { name: 'Move templates', exact: true });
+	const description = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
+	await expect(templates.getByRole('button', { pressed: true })).toHaveCount(1);
+	await expect(description).toHaveValue(/^[a-z]+ edited$/);
+	await templates.getByRole('button', { name: 'Hop', exact: true }).click();
+	await expect(templates.getByRole('button', { pressed: true })).toHaveCount(0);
+	await expect(description).toHaveValue('hop in place');
+	await expect(move.getByRole('button', { name: /^Generate move/ })).toBeVisible();
+});
+
 test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Return', async ({
 	page
 }) => {

@@ -76,6 +76,7 @@ export const promptSuggestionDefaults: Record<SuggestionListKey, readonly Sugges
 			prompt: 'Raise one hand beside the head, palm out.'
 		}
 	],
+	// Ride stays out: the Move sheet never offers it as a template.
 	move: [
 		move('idle', 'moveNames.idle'),
 		move('walk', 'moveNames.walk'),
