@@ -3183,6 +3183,16 @@ test('a managed State reloads its child without another submission', async ({
 	expect(posts).toEqual([
 		expect.objectContaining({ character_id: parent, edit_description: 'Hold a potion' })
 	]);
+	// Activity and failure notices name the job after the State, not its internal id.
+	const labels = await page.evaluate(async () => {
+		const queuePath = '/src/lib/pixellab/queue.ts';
+		const { queue } = await import(queuePath);
+		return queue
+			.snapshot()
+			.jobs.filter(({ tag }: { tag: string }) => tag === 'studio-state')
+			.map(({ label }: { label: string }) => label);
+	});
+	expect(labels).toEqual(['Idle']);
 	const postsBeforeReload = postPaths.slice();
 	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);

@@ -24,6 +24,7 @@ import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { cellBlob, imagesOf, provOf, run } from './create.ts';
 import { pendingStateName, stateCaptureNameIssue } from './moveActions.svelte.ts';
 import { stateClipName } from '../lib/rig/poses.ts';
+import { moveLabel } from './model.ts';
 import { withClipWriteLock } from './clipName.ts';
 import { doc, flushSave, openProject, syncStoredProject, toast, ui } from './state.svelte.ts';
 import { stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.ts';
@@ -679,7 +680,8 @@ async function submitStateBatches(
 			submitted.push(
 				await run(
 					request,
-					attempt.id,
+					// Job labels reach Activity and failure notices, so they read as the State's name, not its id.
+					moveLabel(attempt.id),
 					'studio-state',
 					false,
 					true,
