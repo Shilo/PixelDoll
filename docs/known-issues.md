@@ -19,6 +19,28 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   until reload; a reload or a new tab then loads normally. No PixelDoll worker code runs in that window, and a person
   reopening by hand is far slower. The end-to-end test waits for activation before reopening (2026-11-10 stress runs).
 
+## Cloud Save
+
+Cloud Save is visible only in Developer mode until its release (docs/handoff/cloud-save/).
+
+- **iPhone Home Screen sign-in is unproven.** The sign-in is a full-page redirect. Reports up to 2026 say it can land in
+  Safari instead of the installed app. If it does, connect from Safari, or from the app after the owner's phone test
+  settles a fallback.
+- **Merges are per item.** Different items, outfits and moves edited on two devices merge. Two different changes to the
+  same item keep one live and the other in a conflict note (Keep this one, Keep the other, Keep both); frames are never
+  mixed.
+- **A character deleted and then removed from Recently deleted before the next sync comes back from the cloud.** Sync
+  reads a delete from its Recently deleted entry, so nothing else (eviction, Delete local work) can delete cloud copies.
+- **Old revisions and artwork are never pruned in v1.** Each change adds about 15 KB per changed item. Retention is built
+  only if real libraries need it.
+- **Import a downloaded copy adds only characters this device lacks,** and reads ZIPs up to 64 MB and 5,000 files each.
+- **A trashed Google Drive folder** is detected only while the page that used it stays open; after a reload PixelDoll
+  creates a new folder and uploads this device's library again. Nothing is deleted either way.
+- **If the Google sign-in helper is down or over its free daily limit,** Google Drive sync pauses with Reconnect-style
+  status after real failures; local work and Dropbox are unaffected.
+- **Losing the Google OAuth client** (suspension or recreation) leaves the files in Drive but invisible to a new client
+  under `drive.file`. Download the folder from Drive and use Import a downloaded copy.
+
 ## PixelLab credits and API
 
 - **Credits are real money.** Query the balance before paid work. Creating a character costs about 2–5 gens up to a

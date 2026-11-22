@@ -60,7 +60,11 @@ export async function authorized(
 			refreshed = refresh = true;
 			continue;
 		}
-		const own = await classify?.(response.clone());
+		const copy = classify && response.clone();
+		const own = copy && (await classify(copy));
+		// Canceling one branch of a cloned body settles only once the other is canceled or read too, so awaiting either
+		// alone hangs; release the copy without waiting and let the original's cancel or read settle both.
+		if (copy && !copy.bodyUsed) void copy.body?.cancel();
 		if (own instanceof SyncError) throw own;
 		if (own === 'retry' || response.status === 429 || response.status >= 500) {
 			if (attempt + 1 >= ATTEMPTS)
