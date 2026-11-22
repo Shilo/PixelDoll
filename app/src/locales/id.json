@@ -3111,5 +3111,10 @@
 		"left": "Anggaran agen: sisa {usd} ({count} generasi)",
 		"end": "Akhiri"
 	},
-	"agentEvidence": { "title": "Tampilan agen: {subject}" }
+	"agentEvidence": {
+		"title": "Tampilan agen: {subject}",
+		"missingCells": {
+			"other": "{count} sel tidak memiliki bingkai (bergaris)"
+		}
+	}
 }

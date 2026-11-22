@@ -3111,5 +3111,10 @@
 		"left": "代理预算：剩余 {usd}（{count} 次生成）",
 		"end": "结束"
 	},
-	"agentEvidence": { "title": "代理视图：{subject}" }
+	"agentEvidence": {
+		"title": "代理视图：{subject}",
+		"missingCells": {
+			"other": "有 {count} 个单元格没有帧（斜线）"
+		}
+	}
 }

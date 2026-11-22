@@ -12,10 +12,23 @@ import { hideEvidence, showEvidence } from './panel.svelte.ts';
 
 // ---------- results ----------
 /** What every call returns, on both channels. Sheets stay in the page until new sheets replace them or hide() closes them:
- *  a status call or a failure in between must not take away what the agent is about to screenshot. */
-export function present(result: ToolResult, imageData: boolean) {
+ *  a status call or a failure in between must not take away what the agent is about to screenshot. `title` names the call
+ *  in the panel. */
+export function present(result: ToolResult, imageData: boolean, title: string) {
 	const images = result.images ?? [];
-	if (images.length) showEvidence(images.map((image) => image.label).join(' | '), images);
+	if (images.length) showEvidence(title, images);
+	// Base64 for the whole call stays within MAX_IMAGE_DATA; sheets past it are only shown in the page.
+	let room = MAX_IMAGE_DATA,
+		omitted = 0;
+	const withData = (data: string) => {
+		if (!imageData) return {};
+		if (data.length > room) {
+			omitted++;
+			return {};
+		}
+		room -= data.length;
+		return { data };
+	};
 	return {
 		ok: true as const,
 		data: result.data,
@@ -24,11 +37,18 @@ export function present(result: ToolResult, imageData: boolean) {
 			width,
 			height,
 			scale,
-			...(imageData ? { data } : {})
+			...withData(data)
 		})),
-		...(images.length && !imageData ? { seeImages: SEE_IMAGES } : {})
+		...(images.length && (!imageData || omitted) ? { seeImages: SEE_IMAGES } : {}),
+		...(omitted
+			? {
+					imageDataOmitted: `${omitted} sheet(s) left out of imageData to keep the result under ${MAX_IMAGE_DATA / 1024 / 1024} MB of base64. Screenshot the page, or ask for fewer frames or directions.`
+				}
+			: {})
 	};
 }
+/** Base64 characters one result may carry. */
+const MAX_IMAGE_DATA = 4 * 1024 * 1024;
 const SEE_IMAGES =
 	'The sheets are shown over the PixelDoll page now: take a screenshot of the page to see them (rows = directions, columns = frames, whole-pixel scale). They stay until the next sheets or pixeldoll.hide().';
 
@@ -47,7 +67,11 @@ export async function respond(
 	imageData: boolean
 ) {
 	try {
-		return present(await callTool(name, args, signal), imageData);
+		return present(
+			await callTool(name, args, signal),
+			imageData,
+			TOOLS.find((tool) => tool.name === name)?.title ?? name
+		);
 	} catch (e) {
 		return failed(e);
 	}

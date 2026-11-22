@@ -3111,5 +3111,10 @@
 		"left": "에이전트 예산: {usd} 남음(생성 {count}회)",
 		"end": "종료"
 	},
-	"agentEvidence": { "title": "에이전트 보기: {subject}" }
+	"agentEvidence": {
+		"title": "에이전트 보기: {subject}",
+		"missingCells": {
+			"other": "프레임이 없는 셀이 {count}개 있습니다 (빗금)"
+		}
+	}
 }

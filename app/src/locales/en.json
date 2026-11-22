@@ -3201,5 +3201,11 @@
 		"left": "Agent budget: {usd} left ({count} generations)",
 		"end": "End"
 	},
-	"agentEvidence": { "title": "Agent view: {subject}" }
+	"agentEvidence": {
+		"title": "Agent view: {subject}",
+		"missingCells": {
+			"one": "{count} cell has no frame (hatched)",
+			"other": "{count} cells have no frame (hatched)"
+		}
+	}
 }

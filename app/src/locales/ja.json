@@ -3111,5 +3111,10 @@
 		"left": "エージェントの予算：残り{usd}（生成{count}回）",
 		"end": "終了"
 	},
-	"agentEvidence": { "title": "エージェントの表示：{subject}" }
+	"agentEvidence": {
+		"title": "エージェントの表示：{subject}",
+		"missingCells": {
+			"other": "フレームのないセルが{count}個あります (斜線)"
+		}
+	}
 }

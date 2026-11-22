@@ -3210,5 +3210,11 @@
 		"left": "Orçamento do agente: restam {usd} ({count} gerações)",
 		"end": "Encerrar"
 	},
-	"agentEvidence": { "title": "Visão do agente: {subject}" }
+	"agentEvidence": {
+		"title": "Visão do agente: {subject}",
+		"missingCells": {
+			"one": "{count} célula não tem quadro (hachurada)",
+			"other": "{count} células não têm quadro (hachuradas)"
+		}
+	}
 }

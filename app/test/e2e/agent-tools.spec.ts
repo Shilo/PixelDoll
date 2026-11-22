@@ -22,7 +22,7 @@ type Result = {
 };
 declare global {
 	interface Window {
-		pixeldoll: { call(name: string, args?: unknown): Promise<Result> };
+		pixeldoll: { call(name: string, args?: unknown): Promise<Result>; hide(): void };
 	}
 }
 const bridge = (page: Page, name: string, args?: unknown) =>
@@ -50,13 +50,28 @@ test('agent tools: WebMCP lists the tools and returns plain results with sheets 
 	expect(shown.seeImages).toContain('screenshot');
 	expect(shown.images).toHaveLength(2);
 	expect(shown.images[0].data).toBeUndefined();
-	await expect(page.locator('[data-agent-evidence] img')).toHaveCount(2);
+	await expect(page.locator('[data-agent-evidence] canvas')).toHaveCount(2);
 
 	// Errors come back as data the agent can act on, and the sheets stay for the screenshot.
 	const refused = await webmcp(page, 'inspect_item', { itemId: 'nope' });
 	expect(refused).toMatchObject({ ok: false, isError: true, data: { code: 'not_found' } });
 	await bridge(page, 'get_activity');
-	await expect(page.locator('[data-agent-evidence] img')).toHaveCount(2);
+	await expect(page.locator('[data-agent-evidence] canvas')).toHaveCount(2);
+
+	// The panel is a modal dialog over the Studio: a screenshot leaves it open, and Escape closes it alone, not the sheet
+	// under it.
+	await page.evaluate(() => window.pixeldoll.hide());
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const studioSheet = page.getByRole('dialog');
+	await expect(studioSheet).toHaveCount(1);
+	await webmcp(page, 'render_frames', { move: 'walk', directions: ['south'] });
+	const evidence = page.getByRole('dialog', { name: 'Agent view: Render frames' });
+	await expect(evidence).toBeVisible();
+	await page.screenshot();
+	await expect(evidence).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(evidence).toHaveCount(0);
+	await expect(studioSheet).toHaveCount(1);
 });
 
 test('agent tools: the page bridge edits a free copy atomically and reads without navigating', async ({

@@ -3201,5 +3201,11 @@
 		"left": "Budget de l’agent : reste {usd} ({count} générations)",
 		"end": "Arrêter"
 	},
-	"agentEvidence": { "title": "Vue de l’agent : {subject}" }
+	"agentEvidence": {
+		"title": "Vue de l’agent : {subject}",
+		"missingCells": {
+			"one": "{count} cellule n’a pas d’image (hachurée)",
+			"other": "{count} cellules n’ont pas d’image (hachurées)"
+		}
+	}
 }

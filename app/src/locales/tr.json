@@ -3198,5 +3198,11 @@
 		"left": "Ajan bütçesi: {usd} kaldı ({count} üretim)",
 		"end": "Bitir"
 	},
-	"agentEvidence": { "title": "Ajan görünümü: {subject}" }
+	"agentEvidence": {
+		"title": "Ajan görünümü: {subject}",
+		"missingCells": {
+			"one": "{count} hücrede kare yok (taranmış)",
+			"other": "{count} hücrede kare yok (taranmış)"
+		}
+	}
 }

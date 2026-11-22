@@ -3198,5 +3198,11 @@
 		"left": "Agentenbudget: noch {usd} ({count} Generierungen)",
 		"end": "Beenden"
 	},
-	"agentEvidence": { "title": "Agentenansicht: {subject}" }
+	"agentEvidence": {
+		"title": "Agentenansicht: {subject}",
+		"missingCells": {
+			"one": "{count} Zelle hat kein Bild (schraffiert)",
+			"other": "{count} Zellen haben kein Bild (schraffiert)"
+		}
+	}
 }

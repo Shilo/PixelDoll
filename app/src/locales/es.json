@@ -3201,5 +3201,11 @@
 		"left": "Presupuesto del agente: quedan {usd} ({count} generaciones)",
 		"end": "Terminar"
 	},
-	"agentEvidence": { "title": "Vista del agente: {subject}" }
+	"agentEvidence": {
+		"title": "Vista del agente: {subject}",
+		"missingCells": {
+			"one": "{count} celda no tiene fotograma (tramada)",
+			"other": "{count} celdas no tienen fotograma (tramadas)"
+		}
+	}
 }
