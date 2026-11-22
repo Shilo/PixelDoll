@@ -4,13 +4,114 @@ Research date: 2026-11-22. Board card: [Add cloud sync storage such as Google Dr
 
 ## Answer in one paragraph
 
-No existing library fits. PixelDoll should keep IndexedDB as the only working copy, and add a small sync engine of its own over the user's own cloud folder: Dropbox first, Google Drive second, OneDrive only if asked for. Remote files are of two kinds. Most are immutable and named by their content: artwork packs, item objects, and one small revision file per character save. The rest are one small "heads" file per device, written only by that device. Because no file is ever written by two devices, the design needs no compare-and-swap. Google Drive has none, so this matters. A lagging listing, a duplicate file or an interrupted upload can only delay a sync, never corrupt one. Concurrent edits merge three ways against their common ancestor:
+No existing library fits. PixelDoll should keep IndexedDB as the only working copy, and add a small sync engine of its own over the user's own cloud folder: Google Drive first (through one stateless sign-in endpoint; see the update below), Dropbox second, OneDrive only if asked for. Remote files are of two kinds. Most are immutable and named by their content: artwork packs, item objects, and one small revision file per character save. The rest are one small "heads" file per device, written only by that device. Because no file is ever written by two devices, the design needs no compare-and-swap. Google Drive has none, so this matters. A lagging listing, a duplicate file or an interrupted upload can only delay a sync, never corrupt one. Concurrent edits merge three ways against their common ancestor:
 - Different items merge.
 - Different frames merge.
 - The same field edited on two devices keeps both values and is flagged.
 - A delete never beats an edit.
 
 A runnable proof of concept passes all twelve scenarios in the handoff, plus corruption, lagging listings, eviction, long catch-ups, storage growth and a 300-run randomized three-device test ([poc/](poc/), 33 tests). It is simulated: no real provider, phone or browser was tested (see [G](#g-proof-of-concept-results)). Developer cost stays at $0 at 10,000 users, with one watch item: Google's planned Drive API charges, which packing keeps far away.
+
+## Update after the owner's review (same day)
+
+The owner wants Google Drive as the main provider, and won't accept signing in every visit or every hour. A second round of reviewers checked sign-in, terms of service, no-OAuth options, a separate library and hosting, then an adversarial reviewer attacked the combined plan ([notes/R2-*](notes/), [notes/R3-*](notes/)). Changes to the plan:
+
+**Google Drive first, through one tiny token endpoint.** A pure static page cannot stay signed in to Drive within Google's rules ([R2-google-auth](notes/R2-google-auth.md)):
+- Google gives browser apps 1-hour tokens and no refresh token.
+- Renewing needs a popup on a click, and on iPhone Home Screen apps that popup often never returns.
+- Shipping the client secret in the page, or using the TV-style device flow, breaks Google policy.
+
+The fix is a ~30-line stateless function on a free host, such as Cloudflare's `workers.dev`:
+- It holds the Google client secret and only exchanges the sign-in code and refreshes tokens.
+- It stores nothing. The refresh token stays in the browser's IndexedDB, and all files go browser to Google directly.
+- It is Google's own designed route: its code-model docs do the exchange on a backend. RFC 10017 lists a "token-mediating backend" as acceptable, and diagrams.net does the same ([R2-relay-terms](notes/R2-relay-terms.md)).
+
+Cost: about 40,000 requests a day at 10,000 users, against a free limit of 100,000. It does conflict with AGENTS.md "never add a backend", so that rule needs the owner's amendment. If the function goes down, Google sync pauses within about an hour, and local work and the Drive files are unaffected.
+
+**Token in IndexedDB, not a cookie.** A cookie on a subdomain would need DNS moved from Porkbun to Cloudflare, and Safari caps such cookies at 7 days ([R3-hosting](notes/R3-hosting.md)).
+
+**Dropbox second,** as the provider that needs no PixelDoll infrastructure at all. **OneDrive** only if asked for.
+
+**OAuth is necessary.** Without it no phone can sync automatically ([R2-no-oauth](notes/R2-no-oauth.md)). Registering costs nothing, but brings ongoing upkeep:
+- **Google:** Production status and brand verification (about 2-3 days; needs a privacy policy page).
+- **Dropbox:** a free review after 50 users.
+
+**Adopted from the adversarial review** ([R3-adversary](notes/R3-adversary.md)):
+1. A **1-2 day sign-in spike gates the build:**
+   - real iPhone Home Screen, Android and desktop round trips for Google (throwaway endpoint) and Dropbox
+   - whether a second browser sees the same `drive.file` folder
+   - what revoking does to other devices
+2. **Recovery if the Google app registration is lost or suspended:** under `drive.file` the files stay in the user's Drive but become invisible to a new registration. So add a Google Picker re-link and "import a downloaded copy of the sync folder".
+3. **Google token details:**
+   - request `prompt=consent` on each new device so it gets its own refresh token
+   - offer "Disconnect this device" separately from "Disconnect everywhere"
+   - publish to Production, since Testing tokens die after 7 days
+   - handle tokens left unused for 6 months and the 100-token cap
+4. **Find the real root folder by an `appProperties` tag, not its name.** Adopt the oldest when two devices raced to create it. Treat a trashed folder as "rebuild?", never as "delete everything". Show the account email.
+5. **Drop the desktop folder-backup idea.** Under `drive.file` it carries nothing over to Drive sync, and it only helps desktop Chrome and Edge. Lift the backup ZIP's 64 MiB and 5,000-entry caps instead.
+6. **Merge at item level in v1.** Concurrent edits to one item become a keep-both conflict. Frame-level merging, which the PoC proves possible, waits until mixed clips can be re-checked automatically.
+
+**The library stays in this repo** ([R2-library-repo](notes/R2-library-repo.md)):
+- About 85% of the PoC is general, but there is one user and no proven demand.
+- A separate repo would add a release-and-bump loop to every sync fix, like bronze-ui, and freeze the cloud format early.
+- Build it as a self-contained folder (`core/`, `providers/`, `auth/`) with no imports from the Studio.
+- Extract it when a second app needs it, someone outside asks for it, or it has been stable with real users for a couple of months.
+
+**Owner decision (2026-11-22):** the stateless token endpoint is approved. AGENTS.md now allows it as the only server piece (PLAN.md D31).
+
+### What the owner sets up (one time, free)
+
+OAuth is required, and it is what gives users a one-click sign-in instead of creating and pasting keys.
+
+**Google Drive:**
+1. **Create the Google project.** Sign in at [console.cloud.google.com](https://console.cloud.google.com/) and create a project named PixelDoll. Don't add a billing account: with none attached, there is nothing to charge (expected, not verified: over-quota calls would fail instead).
+2. **Enable the API.** Turn on the Google Drive API.
+3. **Set up the consent screen** (Google Auth Platform > Branding):
+   - app name PixelDoll, support email, logo
+   - home page https://pixeldoll.app/
+   - privacy policy page (the agent writes it; it ships with the app)
+   - authorized domain pixeldoll.app
+4. **Prove the domain.** Verify pixeldoll.app in [Google Search Console](https://search.google.com/search-console) with a TXT record at Porkbun.
+5. **Add the permission.** Under Data Access, add only the `drive.file` scope (non-sensitive: no security review).
+6. **Create the Web client.** Create an OAuth client of type "Web application":
+   - JavaScript origin https://pixeldoll.app
+   - plus `http://localhost:5199` for agent testing
+   - the redirect URI the agent gives you
+7. **Hand over the keys.** Give the agent the **client ID**, which is public. Put the **client secret** only into Cloudflare (step 9), never into the repo or chat.
+8. **Go public.** Publish the app to Production and submit brand verification (about 2-3 business days). Until it passes, users see "Google hasn't verified this app", and Testing mode logs everyone out after 7 days.
+9. **Set up Cloudflare.** Create a free account. Then deploy the token function the agent writes (one command), and store the secret with `wrangler secret put`. No card is needed.
+
+**Dropbox (later):**
+1. **Create the app.** At [dropbox.com/developers/apps](https://www.dropbox.com/developers/apps): Scoped access, **App folder**, named PixelDoll.
+2. **Configure it.** Add the redirect URI and allow PKCE. Dropbox needs no secret and no server.
+3. **Hand over the key.** Give the agent the **App key**, which is public.
+4. **At 50 connected users,** submit the free production review within 2 weeks.
+
+**Testing:** have a spare Google account and a spare Dropbox account ready, so sync tests never touch your own files. Then run the 1-2 day sign-in spike on your iPhone (Home Screen app), an Android phone if available, and desktop. An agent can drive the desktop part. On phones you tap through sign-in yourself.
+
+### What users do
+
+**Google Drive:**
+1. **Connect.** Settings > Sync > **Connect Google Drive**.
+2. **Choose an account.** Google's own page opens; the user picks their account.
+3. **Allow access.** Google shows: "PixelDoll wants to see, edit, create and delete only the specific Google Drive files you use with this app." The user taps **Continue**.
+4. **Done.** Back in PixelDoll, a `PixelDoll` folder appears in their Drive and syncing starts.
+5. **On another device:** the same three taps with the same account, and the library downloads.
+
+**Dropbox:**
+1. **Connect.** Settings > Sync > **Connect Dropbox**.
+2. **Sign in.** The user signs in on Dropbox's page, which asks to let PixelDoll access "its own folder" (`Apps/PixelDoll`). The user taps **Allow**.
+3. **Done.** Syncing starts.
+
+No keys, no copying and no pasting. A user signs in again only if they:
+- disconnect
+- revoke access in their Google or Dropbox account
+- don't use PixelDoll on that device for 6 months (Google)
+- clear the browser's data
+
+The sign-in spike confirms this on an iPhone Home Screen app before any of it is built.
+
+The sections below are the original report. Where they say "Dropbox first", the plan above replaces them.
 
 Contents: [A Repository](#a-repository-assessment) · [B Libraries](#b-library-comparison) · [C Providers](#c-cloud-provider-comparison) · [D Protocol](#d-protocol-and-synchronization-strategy) · [E Architecture](#e-proposed-architecture) · [F Cost](#f-cost-analysis) · [G Proof of concept](#g-proof-of-concept-results) · [H Roadmap](#h-implementation-roadmap) · [I Recommendation](#i-final-recommendation) · [Disagreements](#unresolved-disagreements) · [Decisions for the owner](#decisions-for-the-owner) · [Notes](#how-this-was-researched)
 
@@ -482,7 +583,8 @@ Estimated size: engine 800-1,500 lines with tests, plus 150-350 lines per adapte
 1. **Which provider first: Dropbox (lead, A3 providers, C challenger) or Google Drive (B independent lead).**
    - For Drive: the largest free tier, and most users already have Google.
    - Against Drive: no refresh token from a static page, so sync needs a tap every hour; no conditional writes; and the only developer-billing exposure.
-   - Resolution: Dropbox first for automatic sync; Drive second. Settle with a real-device sign-in test of both before building.
+   - Original resolution: Dropbox first for automatic sync; Drive second.
+   - Revised after the owner's review: Google Drive first through one stateless token endpoint, which removes the hourly sign-in, with Dropbox second. A real-device sign-in spike for both comes before building. See the update at the top.
 2. **History in the sync format (lead) versus per-device head files overwritten in place with no history (B, A4).**
    - Overwriting stores less, and gets about 30 days of history from the provider's own file versioning.
    - Revisions give restore-any-version on every provider and simpler N-device merges, but need pruning.
@@ -494,18 +596,15 @@ Estimated size: engine 800-1,500 lines with tests, plus 150-350 lines per adapte
 4. **Packing in v1 (lead, A3, C) versus later (B).** Settled: the benchmark (77,000 versus 86 requests per restore) and Drive's per-request units changed B's position.
 5. **Per-key version stamps at save time (A4) versus diffing against a base at sync time (lead, B).** Settled: A4 withdrew save-time stamps.
 
-The one disagreement left open is **the first provider** (item 1).
+Item 1 was the last open disagreement. It is now resolved in favor of Google Drive first, conditional on the token endpoint.
 
 Cross-review: [notes/cross-review.md](notes/cross-review.md).
 
 ## Decisions for the owner
 
-1. **First provider:** Dropbox (recommended) or Google Drive.
-2. **Cloud token storage:**
-   - Option 1: keep a Dropbox refresh token on the device (IndexedDB `pixeldoll-sync`, plaintext like the PixelLab key, never synced or broadcast) so sync stays automatic.
-   - Option 2: session-only tokens, signing in again on each visit.
-   - The repo's credential policy (docs/shared-token-security.md) covers only the PixelLab key, so this needs its own call.
-3. **OAuth app registration** for Dropbox (and later Google and Microsoft): developer accounts and test accounts are the owner's to create. Real-provider tests are blocked until then.
+1. **Amend the "never add a backend" rule:** approved 2026-11-22 (AGENTS.md, PLAN.md D31).
+2. **Token storage:** decided. Refresh tokens stay on the device in IndexedDB, unencrypted like the PixelLab key, and are never synced or broadcast. The owner rejected signing in every visit.
+3. **OAuth app registration** for Google, and later Dropbox: a Google Cloud project with a Web client and published consent screen, a Dropbox app, and spare test accounts. Only the owner can create these. They are free, and the sign-in spike is blocked until they exist.
 4. **Stable ids migration:** under the no-backward-compatibility rule, old characters could simply be re-saved with random item ids, or the conversion could happen at first sync.
 
 ## How this was researched

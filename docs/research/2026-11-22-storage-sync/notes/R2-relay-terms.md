@@ -1,0 +1,34 @@
+# R2: Token-exchange relay for Google Drive (terms and risk)
+
+Verified (fetched 2026-11-22): Google OAuth policies page; Google OAuth2 overview; GIS code model guide; API Services User Data Policy; IETF RFC 10017 (browser-based apps BCP); Cloudflare Workers limits page; Google implicit-flow page.
+Unverified (from memory, not fetched): drive.file scope classification and verification thresholds, Workers paid pricing, Cloudflare master ToS wording, Netlify/Vercel/Deno terms.
+
+## 1. Sanctioned?
+- Google's policies page says nothing about relays/proxies. It requires: protect the client secret like a password, never commit it to public repos, never send tokens in plaintext, store tokens encrypted at rest, revoke/delete tokens when no longer needed.
+- Google's own GIS code model REQUIRES a backend: "On your backend server, you exchange an authorization code for refresh tokens". Google's overview: a JavaScript app needs no secret, a web-server app does. So a server holding the secret is Google's documented design, not a workaround.
+- RFC 10017 (Aug 2026, BCP): three patterns. BFF (strongest, tokens never reach browser), token-mediating backend (confidential client does code flow + refresh, hands access token to browser), pure browser client. Token-mediating is explicitly a recognized pattern, "between" BFF and browser-only. Refresh tokens in the browser are allowed only if rotated or sender-constrained, with lifetime limits. Google does neither rotation nor sender-constraint, so refresh token in the browser is a bearer secret = the weaker end.
+- Google does not require refresh tokens to stay server-side in any text I found. (Unverified negative.)
+- Your proposed design (refresh token stored in browser, relay refreshes) is a variant: the relay is confidential-client, but the refresh token lives in the browser. Allowed by neither text explicitly; RFC says token-mediating backend should itself keep the refresh token. Safer variant: store the refresh token encrypted in a HttpOnly cookie on the relay domain, but that makes the relay stateful-ish (cookie only, still no DB) and needs a same-site/CORS story from pixeldoll.app.
+
+## 2. Policy consequences
+- Policy compliance: tokens at rest in localStorage are plaintext, which conflicts with "store encrypted tokens at rest" in spirit. A cookie-held, relay-encrypted token (AES-GCM with a Worker secret) satisfies it.
+- Data policy: relay sees tokens in transit, so it is a "service provider/agent"; must be disclosed in the privacy policy, and use must stay limited to the user-facing feature. No file content passes through it.
+- Verification: drive.file is, to my knowledge, a non-sensitive scope, so no scope security assessment, but a public app still needs a published privacy policy, homepage, and brand verification; unverified apps are capped at 100 users and show a warning. Testing-status projects expire refresh tokens after 7 days (verified), so you must publish to production. Reviewers would see the relay only if you disclose it; it is not prohibited.
+- Verified token facts: refresh tokens die after 6 months unused, on revocation, and max 100 per user per client ID (oldest silently invalidated: multiple browsers/devices beyond 100 are not a concern, but re-consents churn).
+
+## 3. Real risks
+- Secret leak: lets an attacker impersonate the app in code exchange only if they also have a user's code or refresh token; mostly enables phishing under PixelDoll's name and quota abuse. Mitigation: rotate in Cloud Console, Worker secrets (not repo). Moderate, recoverable.
+- Relay abuse: it refreshes only tokens issued to PixelDoll's client ID, so an attacker needs a stolen refresh token. Others cannot use it as a free proxy. Add Origin check, no open CORS, rate limit per IP (Cloudflare rate limiting/WAF free rules).
+- XSS: biggest real risk. Plaintext refresh token in localStorage is stolen by any XSS or malicious same-origin app (note PixelDoll already shares origin with other apps via the PixelLab key, and drive.file limits blast radius to files the app created). Scope drive.file keeps damage small (only PixelDoll-created files).
+- Outage: sync pauses when access token expires (1h); local work is unaffected if the app is local-first. Tokens stay valid; resumes when the relay is back.
+- Free tier (verified): Workers Free = 100,000 requests/day, 10 ms CPU, 50 subrequests, error 1027 beyond. A refresh is one Worker request with one subrequest, well under 10 ms CPU (network wait is not CPU).
+- Cost: refresh about once per active hour per user (plus 1 per sign-in). 100 users x ~4 h/day = ~400/day; 1,000 users = ~4,000/day; 10,000 users = ~40,000/day. All inside the free 100k/day. Even 10x heavier is OK. Beyond that, paid ($5/month, 10M requests, unverified). DoS: attacker flooding the endpoint could exhaust the 100k/day and pause sync for everyone; mitigate with WAF rate rules, and a cheap reject of malformed requests (still counts as a request).
+- Host ToS: Cloudflare terms page fetched did not cover Workers; I did not find a prohibition on auth relays (unverified). Token exchange is an ordinary use.
+
+## 4. Alternatives
+- GIS token model (implicit-style, no backend): silent renewal needs a Google session in the browser and third-party cookie/popup allowances; works with prompt:'' but can show popups or fail in Safari/Firefox/private modes. No refresh token at all, zero server. Google marks implicit flow as legacy-only for SPAs but the GIS token model is the supported no-backend path. Sync reliability is lower ("permanent sign-in" not achievable).
+- Dropbox and OneDrive/Microsoft: issue refresh tokens to public SPA clients with PKCE (no secret). Microsoft restricts SPA refresh token lifetime to 24 h and rotates; Dropbox PKCE gives refresh tokens (verify). No relay needed, but not Google, which the owner ranks first.
+- Pure local export/import file or File System Access API: no OAuth at all.
+
+## 5. Verdict
+Legitimate, not a ToS workaround. Google's own code model requires a backend with the secret; RFC 10017 names the token-mediating backend. The owner's feeling that it works around terms is unfounded on the policy side. What is real is an architectural conflict with the project rule "never add a backend" (a Worker is a backend, so it needs a rule change, stated explicitly) and a security weakness: a plaintext, non-rotating bearer refresh token in localStorage. Recommended if pursued: relay encrypts the refresh token into an HttpOnly Secure cookie (no storage, still stateless), drive.file only, strict Origin allowlist, WAF rate limit, disclosed in privacy policy, production publishing status. Adversarially against: adds an operational dependency and a secret to maintain for a free app; the no-relay GIS token model gives "good enough" sync with zero secrets at the cost of occasional re-prompts. Adversarially for: without it, "permanently signed in" to Google is impossible.
