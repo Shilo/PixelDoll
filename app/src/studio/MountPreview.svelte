@@ -58,6 +58,10 @@
 	const standingHeight = $derived(grounding?.facings.get(shown)?.standingHeight ?? 48);
 
 	const canvases = new WeakMap<Img, HTMLCanvasElement>();
+	// Kept across play, pause and setting changes, so pausing freezes the current frame instead of restarting.
+	let clock: PlaybackClock | undefined,
+		elapsed = 0,
+		turned = 0;
 
 	$effect(() => {
 		const target = canvas,
@@ -72,11 +76,8 @@
 			turning = facings;
 		if (!target) return;
 		const g = target.getContext('2d')!;
-		let clock: PlaybackClock | undefined,
-			// The rider is composed only when its clip, facing or frame changes, not on every animation frame.
-			composed: { key: string; image: Img } | null = null,
-			elapsed = 0,
-			turned = 0,
+		// The rider is composed only when its clip, facing or frame changes, not on every animation frame.
+		let composed: { key: string; image: Img } | null = null,
 			last = performance.now(),
 			frameId = 0;
 		const draw = (now: number) => {
@@ -185,7 +186,17 @@
 			if (running) frameId = requestAnimationFrame(draw);
 		};
 		frameId = requestAnimationFrame(draw);
-		return () => cancelAnimationFrame(frameId);
+		// A paused preview redraws once when its box changes size, so the pixel scale stays whole.
+		const resized = new ResizeObserver(() => {
+			if (running) return;
+			cancelAnimationFrame(frameId);
+			frameId = requestAnimationFrame(draw);
+		});
+		resized.observe(target);
+		return () => {
+			cancelAnimationFrame(frameId);
+			resized.disconnect();
+		};
 	});
 </script>
 

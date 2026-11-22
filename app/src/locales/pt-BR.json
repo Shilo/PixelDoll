@@ -775,7 +775,7 @@
 		"importAnExistingCharacter": "Importar um personagem existente"
 	},
 	"experience": {
-		"movesOffMounted": "Escolha as animações na Prévia. Ao se mover montado, o personagem usa a pose de montaria das configurações da montaria; se não houver, a animação Ride, se existir, ou uma pose parada.",
+		"movesOffMounted": "Escolha as animações na Prévia. Ao se mover montado, o personagem segue a pose de montaria das configurações da montaria.",
 		"movesOffWalking": "Escolha as animações na Prévia. Aqui, o personagem usa a animação de repouso ou de caminhada.",
 		"tabWardrobe": "Guarda-roupa",
 		"tabColors": "Cores",

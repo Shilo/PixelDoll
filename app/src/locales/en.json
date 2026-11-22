@@ -764,7 +764,7 @@
 		"importAnExistingCharacter": "Import an existing character"
 	},
 	"experience": {
-		"movesOffMounted": "Moves are picked in Preview. Mounted movement uses the Riding pose from Mount settings, otherwise Ride when available, otherwise a standing pose.",
+		"movesOffMounted": "Moves are picked in Preview. Mounted movement follows the Riding pose in Mount settings.",
 		"movesOffWalking": "Moves are picked in Preview. Here, moving plays idle or walk.",
 		"tabWardrobe": "Wardrobe",
 		"tabColors": "Colors",

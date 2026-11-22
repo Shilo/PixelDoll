@@ -4,6 +4,7 @@ import { clipKind } from '../../lib/runtime/timeline.js';
 import { DEFAULT_MOVE, type DirectionName } from '../../lib/rig/rig.ts';
 import type { Manifest } from '../../lib/store/manifest.ts';
 import type { MountLegMode } from './mountLegs.ts';
+import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
 import {
 	MOUNT_DEFAULTS,
 	MOUNT_KEY,
@@ -104,7 +105,7 @@ export function setRidingPose(projectId: string, clip: string) {
 }
 /** Forget a removed State or character, so a later State with the same ID is not chosen by itself. */
 export function forgetRidingPose(projectId: string, clip?: string) {
-	const saved = readMountPreferences().poses[projectId];
+	const saved = experience.ridingPoses[projectId];
 	if (saved !== undefined && (clip === undefined || saved === clip)) setRidingPose(projectId, '');
 }
 
@@ -123,8 +124,9 @@ export function resetMount(projectId: string | null) {
 	});
 }
 
-/** Another tab's mount choices apply here too; `changed` then lets Preview follow them. */
-export function watchMountPreferences(changed: () => void) {
+/** Another tab's mount choices apply here too; `changed` gets what they replaced, so Preview can follow them. */
+export function watchMountPreferences(changed: (previous: MountPreferences) => void) {
+	if (workspaceCopy) return () => {};
 	const sync = (event: StorageEvent) => {
 		if (event.key !== MOUNT_KEY && event.key !== null) return;
 		try {
@@ -132,9 +134,14 @@ export function watchMountPreferences(changed: () => void) {
 		} catch {
 			return;
 		}
+		const previous = {
+			show: experience.testMount,
+			legs: experience.mountLegs,
+			poses: experience.ridingPoses
+		};
 		apply(readMountPreferences());
 		unsaved = false;
-		changed();
+		changed(previous);
 	};
 	addEventListener('storage', sync);
 	return () => removeEventListener('storage', sync);

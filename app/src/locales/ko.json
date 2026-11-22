@@ -750,7 +750,7 @@
 		"importAnExistingCharacter": "기존 캐릭터 가져오기"
 	},
 	"experience": {
-		"movesOffMounted": "동작은 미리보기에서 선택해요. 탑승 이동은 탈것 설정의 탑승 포즈를 쓰고, 없으면 탑승 동작을, 그것도 없으면 서 있는 자세를 사용해요.",
+		"movesOffMounted": "동작은 미리보기에서 선택해요. 탑승 이동은 탈것 설정의 탑승 포즈를 따라요.",
 		"movesOffWalking": "동작은 미리보기에서 선택해요. 여기서 이동하면 대기 또는 걷기 동작이 재생돼요.",
 		"tabWardrobe": "옷장",
 		"tabColors": "색상",

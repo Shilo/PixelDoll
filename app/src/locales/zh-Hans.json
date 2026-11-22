@@ -745,7 +745,7 @@
 		"importAnExistingCharacter": "导入现有角色"
 	},
 	"experience": {
-		"movesOffMounted": "动作在预览中选择。骑乘移动会使用坐骑设置中的骑乘姿势；没有时使用“Ride”，再没有则使用站立姿势。",
+		"movesOffMounted": "动作在预览中选择。骑乘移动会遵循坐骑设置中的骑乘姿势。",
 		"movesOffWalking": "动作在预览中选择。在此处移动会播放待机或行走。",
 		"tabWardrobe": "衣橱",
 		"tabColors": "颜色",

@@ -592,7 +592,8 @@ export function livePlaybackDelta(
 	travelRate = 1
 ): number {
 	const dt = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
-	if (presentation.requestedClip === RIDE_MOVE && presentation.clip === RIDE_MOVE) {
+	// Ride follows travel whether it was asked for or reached as a riding fallback.
+	if (presentation.clip === RIDE_MOVE) {
 		return travelDelta(velocity, dt, travelRate);
 	}
 	if (

@@ -750,7 +750,7 @@
 		"importAnExistingCharacter": "既存のキャラクターをインポート"
 	},
 	"experience": {
-		"movesOffMounted": "モーションはプレビューで選びます。騎乗中の移動では、乗り物の設定の騎乗ポーズを使い、なければRide、それもなければ立ちポーズを使います。",
+		"movesOffMounted": "モーションはプレビューで選びます。騎乗中の移動は、乗り物の設定の騎乗ポーズに従います。",
 		"movesOffWalking": "モーションはプレビューで選びます。ここでは、止まると待機、移動すると歩きのモーションが再生されます。",
 		"tabWardrobe": "装備",
 		"tabColors": "カラー",

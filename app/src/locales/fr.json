@@ -767,7 +767,7 @@
 		"importAnExistingCharacter": "Importer un personnage existant"
 	},
 	"experience": {
-		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture utilise la pose du cavalier des réglages de la monture, sinon l’animation Ride si elle existe, sinon la pose debout.",
+		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture suit la pose du cavalier des réglages de la monture.",
 		"movesOffWalking": "Choisissez les animations dans « Aperçu ». Ici, le personnage joue l’animation d’attente à l’arrêt et celle de marche quand il se déplace.",
 		"tabWardrobe": "Garde-robe",
 		"tabColors": "Couleurs",

@@ -139,6 +139,10 @@ describe('rider pose', () => {
 			}
 		});
 		expect(setShowMount(true)).toBe(false);
+		// A pose chosen while saving fails is still forgotten when its State is removed.
+		setRidingPose('c', 'gone');
+		forgetRidingPose('c', 'gone');
+		expect(experience.ridingPoses.c).toBeUndefined();
 		vi.stubGlobal('localStorage', { getItem: (key: string) => store.get(key) ?? null, setItem });
 		expect(setMountLegs('none')).toBe(true);
 		expect(readMountPreferences()).toMatchObject({ show: true, legs: 'none' });

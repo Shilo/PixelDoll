@@ -773,7 +773,7 @@
 		"importAnExistingCharacter": "Importa un personaje existente"
 	},
 	"experience": {
-		"movesOffMounted": "Las animaciones se eligen en Vista previa. Al moverte con montura se usa la pose de jinete de los ajustes de montura; si no hay, Ride si está disponible; si no, una pose de pie.",
+		"movesOffMounted": "Las animaciones se eligen en Vista previa. Al moverte con montura se sigue la pose de jinete de los ajustes de montura.",
 		"movesOffWalking": "Las animaciones se eligen en Vista previa. Aquí, moverse reproduce Reposo o Caminar.",
 		"tabWardrobe": "Armario",
 		"tabColors": "Colores",

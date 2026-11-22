@@ -747,7 +747,7 @@
 		"importAnExistingCharacter": "Impor karakter yang sudah ada"
 	},
 	"experience": {
-		"movesOffMounted": "Pilih animasi di Pratinjau. Saat tunggangan bergerak, Pose penunggang dari pengaturan tunggangan dipakai. Jika tidak ada, animasi Menunggang diputar bila tersedia, atau pose berdiri.",
+		"movesOffMounted": "Pilih animasi di Pratinjau. Saat menunggang, gerakan mengikuti Pose penunggang di pengaturan tunggangan.",
 		"movesOffWalking": "Pilih animasi di Pratinjau. Di sini, karakter memakai animasi diam atau jalan saat Anda menggerakkannya.",
 		"tabWardrobe": "Lemari",
 		"tabColors": "Warna",

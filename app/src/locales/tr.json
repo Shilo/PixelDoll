@@ -770,7 +770,7 @@
 		"importAnExistingCharacter": "Mevcut bir karakteri içe aktarın"
 	},
 	"experience": {
-		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket için binek ayarlarındaki Binici pozu kullanılır; yoksa varsa Ride, o da yoksa ayakta duruş.",
+		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket, binek ayarlarındaki Binici pozunu izler.",
 		"movesOffWalking": "Animasyonlar Önizleme'de seçilir. Burada harekete göre bekleme veya yürüme animasyonu oynatılır.",
 		"tabWardrobe": "Gardırop",
 		"tabColors": "Renkler",

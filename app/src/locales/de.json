@@ -773,7 +773,7 @@
 		"importAnExistingCharacter": "Vorhandene Figur importieren"
 	},
 	"experience": {
-		"movesOffMounted": "Wähle Animationen in der Vorschau. Beim Reiten wird die Reitpose aus den Reittier-Einstellungen verwendet, sonst, falls vorhanden, die Reitanimation, sonst die Standpose.",
+		"movesOffMounted": "Wähle Animationen in der Vorschau. Beim Reiten gilt die Reitpose aus den Reittier-Einstellungen.",
 		"movesOffWalking": "Wähle Animationen in der Vorschau. Hier wird je nach Bewegung die Idle- oder Gehanimation abgespielt.",
 		"tabWardrobe": "Garderobe",
 		"tabColors": "Farben",

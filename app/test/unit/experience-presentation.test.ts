@@ -150,6 +150,8 @@ describe('production body presentation', () => {
 		const south = ride(0, -1);
 		expect(south).toMatchObject({ direction: 'south', clip: 'ride', requestedClip: 'seated' });
 		expect(south.notice).toMatchObject({ kind: 'missing-direction', move: 'seated' });
+		// Ride reached as a fallback still follows travel: it stands still when the rider does.
+		expect(livePlaybackDelta(south, { x: 0, y: 0 }, 100)).toBe(0);
 		// Dismounted, the pose is ignored and walking resumes.
 		expect(resolveLive(a, { velocity: { x: 1, y: 0 }, riderPose: 'seated' })).toMatchObject({
 			clip: 'walk'
