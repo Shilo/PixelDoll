@@ -2970,14 +2970,13 @@
 		"loading": "Loading characters…",
 		"range": "{low} to {high} · {gens}",
 		"basis": {
-			"character": "Whole character, priced from scratch",
-			"copy": "Your additions and changes",
-			"demo": "Bundled demo",
-			"new": "New character",
+			"character": "Estimated total",
 			"all": {
-				"one": "{n} saved character",
-				"other": "{n} saved characters"
-			}
+				"one": "{n} character",
+				"other": "{n} characters"
+			},
+			"new": "New character",
+			"demo": "Demo art is free"
 		},
 		"tierOneRates": "{basis} · Tier 1 rates",
 		"spentToGo": "Spent {spent} · {toGo} to go",
@@ -3003,8 +3002,6 @@
 		},
 		"reset": "Reset",
 		"details": "Details",
-		"demoLocked": "Demo art is free. Edit a copy to estimate your additions.",
-		"copyNote": "Art copied from the demo or another character is free here.",
 		"setup": "Character setup",
 		"setupNote": "{frame} px frame · {drawn} drawn views",
 		"moveCount": {

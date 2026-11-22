@@ -2875,13 +2875,12 @@
 		"loading": "Memuat karakter…",
 		"range": "{low} sampai {high} · {gens}",
 		"basis": {
-			"character": "Seluruh karakter, dihitung dari awal",
-			"copy": "Tambahan dan perubahan Anda",
-			"demo": "Demo bawaan",
-			"new": "Karakter baru",
+			"character": "Perkiraan total",
 			"all": {
-				"other": "{n} karakter tersimpan"
-			}
+				"other": "{n} karakter"
+			},
+			"new": "Karakter baru",
+			"demo": "Gambar demo gratis"
 		},
 		"tierOneRates": "{basis} · tarif Tier 1",
 		"spentToGo": "Terpakai {spent} · sisa {toGo}",
@@ -2906,8 +2905,6 @@
 		},
 		"reset": "Atur ulang",
 		"details": "Detail",
-		"demoLocked": "Gambar demo gratis. Edit salinannya untuk memperkirakan tambahan Anda.",
-		"copyNote": "Gambar yang disalin dari demo atau karakter lain gratis di sini.",
 		"setup": "Penyiapan karakter",
 		"setupNote": "Frame {frame} px · {drawn} tampilan digambar",
 		"moveCount": {

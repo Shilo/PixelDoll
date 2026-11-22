@@ -2882,13 +2882,12 @@
 		"loading": "キャラクターを読み込んでいます…",
 		"range": "{low}〜{high}・{gens}",
 		"basis": {
-			"character": "キャラクター全体をゼロから計算",
-			"copy": "追加・変更した分",
-			"demo": "同梱のデモ",
-			"new": "新しいキャラクター",
+			"character": "見積もり合計",
 			"all": {
-				"other": "保存済みキャラクター{n}体"
-			}
+				"other": "キャラクター{n}体"
+			},
+			"new": "新しいキャラクター",
+			"demo": "デモのアートは無料"
 		},
 		"tierOneRates": "{basis}・Tier 1 の料金",
 		"spentToGo": "使用済み {spent}・残り {toGo}",
@@ -2913,8 +2912,6 @@
 		},
 		"reset": "リセット",
 		"details": "詳細",
-		"demoLocked": "デモのアートは無料です。コピーを編集すると追加分を見積もれます。",
-		"copyNote": "デモや他のキャラクターからコピーしたアートは、ここでは無料です。",
 		"setup": "キャラクターの準備",
 		"setupNote": "{frame} px のフレーム・描画ビュー{drawn}個",
 		"moveCount": {

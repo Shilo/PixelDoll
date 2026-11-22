@@ -2872,13 +2872,12 @@
 		"loading": "캐릭터를 불러오는 중…",
 		"range": "{low}~{high} · {gens}",
 		"basis": {
-			"character": "캐릭터 전체를 처음부터 계산",
-			"copy": "추가하고 바꾼 부분",
-			"demo": "기본 제공 데모",
-			"new": "새 캐릭터",
+			"character": "예상 합계",
 			"all": {
-				"other": "저장된 캐릭터 {n}개"
-			}
+				"other": "캐릭터 {n}개"
+			},
+			"new": "새 캐릭터",
+			"demo": "데모 아트는 무료"
 		},
 		"tierOneRates": "{basis} · Tier 1 요금",
 		"spentToGo": "사용 {spent} · 남은 비용 {toGo}",
@@ -2903,8 +2902,6 @@
 		},
 		"reset": "초기화",
 		"details": "세부 정보",
-		"demoLocked": "데모 아트는 무료예요. 사본을 편집하면 추가 비용을 예상할 수 있어요.",
-		"copyNote": "데모나 다른 캐릭터에서 복사한 아트는 여기서 무료예요.",
 		"setup": "캐릭터 준비",
 		"setupNote": "{frame}px 프레임 · 그린 뷰 {drawn}개",
 		"moveCount": {

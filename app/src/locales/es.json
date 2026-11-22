@@ -2993,14 +2993,13 @@
 		"loading": "Cargando personajes…",
 		"range": "{low} a {high} · {gens}",
 		"basis": {
-			"character": "Personaje completo, calculado desde cero",
-			"copy": "Tus añadidos y cambios",
-			"demo": "Demo incluida",
-			"new": "Personaje nuevo",
+			"character": "Total estimado",
 			"all": {
-				"one": "{n} personaje guardado",
-				"other": "{n} personajes guardados"
-			}
+				"one": "{n} personaje",
+				"other": "{n} personajes"
+			},
+			"new": "Personaje nuevo",
+			"demo": "El arte de la demo es gratis"
 		},
 		"tierOneRates": "{basis} · precios de Tier 1",
 		"spentToGo": "Gastado {spent} · faltan {toGo}",
@@ -3026,8 +3025,6 @@
 		},
 		"reset": "Restablecer",
 		"details": "Detalles",
-		"demoLocked": "El arte de la demo es gratis. Edita una copia para estimar tus añadidos.",
-		"copyNote": "El arte copiado de la demo o de otro personaje es gratis aquí.",
 		"setup": "Preparación del personaje",
 		"setupNote": "Marco de {frame} px · {drawn} vistas dibujadas",
 		"moveCount": {

@@ -88,6 +88,7 @@
 						'connectSheet.forgetKey'
 					]
 				},
+				{ id: 'cost-estimate', label: 'costSheet.title' },
 				{ id: 'recent-activity', label: 'activity.title' },
 				{ id: 'pixellab-website', label: 'settings.pixelLabWebsite' }
 			]

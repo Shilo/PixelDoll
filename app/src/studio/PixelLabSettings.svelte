@@ -8,11 +8,23 @@
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { jobLabel, jobStateText } from './activityLabels.ts';
 	import { clearPendingConnection } from './state.svelte.ts';
-	import { Activity, Compass, ExternalLink, KeyRound, LogOut, RefreshCw } from './icons.ts';
+	import {
+		Activity,
+		Calculator,
+		Compass,
+		ExternalLink,
+		KeyRound,
+		LogOut,
+		RefreshCw
+	} from './icons.ts';
 	import { openerLabel } from './openerLabel.ts';
 	import PixelLabUsage from './PixelLabUsage.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { openSettingsAccount, openSettingsActivity } from './settingsNavigation.svelte.ts';
+	import {
+		openSettingsAccount,
+		openSettingsActivity,
+		openSettingsCost
+	} from './settingsNavigation.svelte.ts';
 	let { forgetRevision = $bindable(-1) }: { forgetRevision: number } = $props();
 
 	const recentJobs = $derived(
@@ -91,6 +103,13 @@
 			</SettingsItemButton>
 		{/if}
 	</div>
+</div>
+<div data-setting="cost-estimate">
+	<SettingsItemButton onclick={openSettingsCost}>
+		<Calculator size={18} aria-hidden="true" />
+		<span class="row-name">{openerLabel(t('costSheet.title'))}</span>
+		<SurfaceChevron />
+	</SettingsItemButton>
 </div>
 <SettingsItemButton
 	data-setting="pixellab-website"

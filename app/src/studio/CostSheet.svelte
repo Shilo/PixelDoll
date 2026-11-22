@@ -2,7 +2,6 @@
 	// Character ⋮ > Cost estimate: what a character costs when finished, what it has cost and what is left, in US dollars at
 	// a plan's published price. Every input starts from the saved character and can be changed to plan another; nothing is
 	// saved or sent. Prices come from costEstimate.ts, which uses the Studio's own quotes.
-	import { untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import Sheet from './Sheet.svelte';
 	import NumberStepper from './NumberStepper.svelte';
@@ -17,6 +16,7 @@
 	import { displayMessage } from '../lib/i18n.ts';
 	import { displayMove } from './displayMove.ts';
 	import { currentCreationSettings } from './settingsDefaults.svelte.ts';
+	import { closeSettingsCost } from './settingsNavigation.svelte.ts';
 	import { characterDraftWithDefaults } from './creationSettings.ts';
 	import { facingOf, toggleDirection, toggleMirror, type Mirrors } from './characterConfig.ts';
 	import {
@@ -38,7 +38,6 @@
 	import type { DirectionName, Manifest } from '../lib/store/manifest.ts';
 	import type { WhisperKey } from 'svelte-whisper';
 
-	let { id }: { id: string } = $props();
 	const PAGE = 16;
 	const WEST: DirectionName[] = ['north-west', 'west', 'south-west'];
 	const MODEL_TEXT: Record<string, WhisperKey> = {
@@ -55,7 +54,9 @@
 	});
 
 	// ---------- characters ----------
-	let selected = $state(untrack(() => id));
+	// Opened from a character menu, or from Settings for the open character.
+	const id = ui.costProject || doc.id;
+	let selected = $state(id);
 	let roster = $state.raw<CostCharacter[]>([]);
 	let opened = $state.raw<CostCharacter | null>(null);
 	let error = $state('');
@@ -73,10 +74,7 @@
 					defaults()
 				)
 			);
-			const first = untrack(() => id);
-			opened =
-				roster.find((c) => c.id === first) ??
-				characterOf(first, await manifestOf(first), defaults());
+			opened = roster.find((c) => c.id === id) ?? characterOf(id, await manifestOf(id), defaults());
 		} catch (e) {
 			error = displayMessage(errorMessage(e));
 		}
@@ -125,7 +123,6 @@
 	};
 
 	// ---------- results ----------
-	const locked = $derived(scope !== 'all' && character?.kind === 'demo');
 	const result = $derived<CostResult | null>(
 		character && inputs ? characterCost(character, inputs) : null
 	);
@@ -155,7 +152,7 @@
 			: character?.spent
 	);
 	const tips = $derived<Tip[]>(
-		scope === 'all' || locked || !character || !inputs ? [] : savingTips(character, inputs, rate)
+		scope === 'all' || !character || !inputs ? [] : savingTips(character, inputs, rate)
 	);
 	const edited = $derived(
 		tier !== initialTier ||
@@ -188,13 +185,13 @@
 				? t('costSheet.basis.all', { count: roster.length, n: formatNumber(roster.length) })
 				: scope === 'new'
 					? t('costSheet.basis.new')
-					: character?.kind === 'demo'
+					: character?.kind === 'demo' || character?.kind === 'copy'
 						? t('costSheet.basis.demo')
-						: character?.kind === 'copy'
-							? t('costSheet.basis.copy')
-							: t('costSheet.basis.character');
+						: t('costSheet.basis.character');
 		return tier === 0 ? t('costSheet.tierOneRates', { basis: text }) : text;
 	});
+	/** Short facts shown together under a row name. */
+	const notes = (...parts: (string | false)[]) => parts.filter(Boolean).join(' · ');
 	const moveName = (index: number) => {
 		const id = result!.move(index).id;
 		return id.startsWith('cost-move')
@@ -270,7 +267,13 @@
 	] as const satisfies readonly { key: keyof CostInputs; label: WhisperKey }[];
 </script>
 
-<Sheet title={t('costSheet.title')} cancel="common.done" onclose={() => (ui.sheet = null)}>
+<Sheet
+	title={t('costSheet.title')}
+	cancel="common.done"
+	onclose={() => {
+		if (!closeSettingsCost()) ui.sheet = null;
+	}}
+>
 	<div class="cost-sheet">
 		<div class="bu-segmented scope" role="radiogroup" aria-label={t('costSheet.scopeLabel')}>
 			{#each [{ value: 'character', label: nameOf(selected) }, { value: 'all', label: t('costSheet.scopeAll') }, { value: 'new', label: t('costSheet.scopeNew') }] as const as option (option.value)}
@@ -318,33 +321,31 @@
 							>{/each}
 					</select>
 				</label>
-				{#if !locked}
-					<div class="control">
-						<span id="cost-retries"
-							>{t(
-								'costSheet.retries'
-							)}{#if (scope === 'all' ? allRetries : inputs?.retries) === DEFAULT_RETRIES}<span
-									class="faint small hint">{t('costSheet.retriesDefault')}</span
-								>{/if}</span
-						>
-						<div class="count">
-							<NumberStepper
-								value={scope === 'all' ? allRetries : (inputs?.retries ?? DEFAULT_RETRIES)}
-								labelledby="cost-retries"
-								decreaseLabel={t('costSheet.decrease', { name: t('costSheet.retries') })}
-								increaseLabel={t('costSheet.increase', { name: t('costSheet.retries') })}
-								onchange={(value) =>
-									whole(value, (count) => {
-										if (scope === 'all') allRetries = count;
-										else change((next) => (next.retries = count));
-									})}
-							/>
-						</div>
+				<div class="control">
+					<span id="cost-retries"
+						>{t(
+							'costSheet.retries'
+						)}{#if (scope === 'all' ? allRetries : inputs?.retries) === DEFAULT_RETRIES}<span
+								class="faint small hint">{t('costSheet.retriesDefault')}</span
+							>{/if}</span
+					>
+					<div class="count">
+						<NumberStepper
+							value={scope === 'all' ? allRetries : (inputs?.retries ?? DEFAULT_RETRIES)}
+							labelledby="cost-retries"
+							decreaseLabel={t('costSheet.decrease', { name: t('costSheet.retries') })}
+							increaseLabel={t('costSheet.increase', { name: t('costSheet.retries') })}
+							onchange={(value) =>
+								whole(value, (count) => {
+									if (scope === 'all') allRetries = count;
+									else change((next) => (next.retries = count));
+								})}
+						/>
 					</div>
-				{/if}
+				</div>
 			</div>
 
-			{#if scope !== 'all' && !locked && inputs && result}
+			{#if scope !== 'all' && inputs && result}
 				<div class="inputs">
 					<div class="counts">
 						{#each counts as { key, label } (key)}
@@ -424,10 +425,6 @@
 						{/each}
 						{@render recorded()}
 					{:else if result && inputs && character}
-						{#if character.kind === 'demo'}<p class="muted small">{t('costSheet.demoLocked')}</p>
-						{:else if character.kind === 'copy'}<p class="muted small">
-								{t('costSheet.copyNote')}
-							</p>{/if}
 						<div class="line">
 							<span class="label"
 								>{t('costSheet.setup')}<span class="faint small"
@@ -506,11 +503,12 @@
 										<summary class="line"
 											><span class="label"
 												>{itemName(index)}<span class="faint small"
-													>{coverageText(row.covered, inputs.moves)}{#if row.held}
-														· {t('costSheet.held')}{/if}{#if row.remake}
-														· {row.inherited
-															? t('costSheet.copiedRemade')
-															: t('costSheet.remade')}{/if}</span
+													>{notes(
+														coverageText(row.covered, inputs.moves),
+														row.held && t('costSheet.held'),
+														row.remake &&
+															t(row.inherited ? 'costSheet.copiedRemade' : 'costSheet.remade')
+													)}</span
 												></span
 											>{@render cost(row.gens)}</summary
 										>
@@ -544,12 +542,14 @@
 						<div class="line">
 							<span class="label"
 								>{t('costSheet.states')}<span class="faint small"
-									>{t('costSheet.stateSetting', {
-										count: inputs.states,
-										n: formatNumber(inputs.states),
-										route: stateRoute(result.states.route)
-									})}{#if result.states.assumed}
-										· {t('costSheet.flashAsPro')}{/if}</span
+									>{notes(
+										t('costSheet.stateSetting', {
+											count: inputs.states,
+											n: formatNumber(inputs.states),
+											route: stateRoute(result.states.route)
+										}),
+										result.states.assumed && t('costSheet.flashAsPro')
+									)}</span
 								></span
 							>{@render cost(result.states.gens)}
 						</div>
@@ -570,11 +570,11 @@
 		<div class="line">
 			<span class="label"
 				>{t('costSheet.recordedUsage')}<span class="faint small"
-					>{t('costSheet.savedArtworkOnly')}{#if spent.unknown}
-						· {t('costSheet.unpriced', {
-							count: spent.unknown,
-							n: formatNumber(spent.unknown)
-						})}{/if}</span
+					>{notes(
+						t('costSheet.savedArtworkOnly'),
+						!!spent.unknown &&
+							t('costSheet.unpriced', { count: spent.unknown, n: formatNumber(spent.unknown) })
+					)}</span
 				></span
 			>
 			<span class="cost num"

@@ -2979,14 +2979,13 @@
 		"loading": "Karakterler yükleniyor…",
 		"range": "{low} ile {high} arası · {gens}",
 		"basis": {
-			"character": "Karakterin tamamı, sıfırdan hesaplandı",
-			"copy": "Eklemeleriniz ve değişiklikleriniz",
-			"demo": "Hazır demo",
-			"new": "Yeni karakter",
+			"character": "Tahmini toplam",
 			"all": {
-				"one": "Kayıtlı karakter: {n}",
-				"other": "Kayıtlı karakter: {n}"
-			}
+				"one": "Karakter: {n}",
+				"other": "Karakter: {n}"
+			},
+			"new": "Yeni karakter",
+			"demo": "Demo görselleri ücretsizdir"
 		},
 		"tierOneRates": "{basis} · Tier 1 fiyatları",
 		"spentToGo": "Harcanan {spent} · kalan {toGo}",
@@ -3012,8 +3011,6 @@
 		},
 		"reset": "Sıfırlayın",
 		"details": "Ayrıntılar",
-		"demoLocked": "Demo görselleri ücretsizdir. Eklemelerinizi tahmin etmek için bir kopyayı düzenleyin.",
-		"copyNote": "Demodan veya başka bir karakterden kopyalanan görseller burada ücretsizdir.",
 		"setup": "Karakter kurulumu",
 		"setupNote": "Kare boyutu: {frame} px · çizilen görünüm: {drawn}",
 		"moveCount": {

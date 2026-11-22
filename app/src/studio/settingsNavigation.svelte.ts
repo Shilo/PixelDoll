@@ -1,4 +1,4 @@
-import { ui } from './state.svelte.ts';
+import { doc, ui } from './state.svelte.ts';
 import type { WhisperKey } from 'svelte-whisper';
 import type { CreationSection } from './creationSettings.ts';
 
@@ -35,6 +35,7 @@ export const settingsNavigation = $state<{
 	/** Account opens straight into Replace key and returns to Settings when it ends. */
 	accountReplace: boolean;
 	activityOpen: boolean;
+	costOpen: boolean;
 	exportOpen: boolean;
 }>({
 	section: null,
@@ -42,10 +43,11 @@ export const settingsNavigation = $state<{
 	accountOpen: false,
 	accountReplace: false,
 	activityOpen: false,
+	costOpen: false,
 	exportOpen: false
 });
 
-let returnFocus: 'connection' | 'recent-activity' | undefined;
+let returnFocus: 'connection' | 'recent-activity' | 'cost-estimate' | undefined;
 
 export function takeSettingsReturnFocus() {
 	const entry = returnFocus;
@@ -61,7 +63,13 @@ export function openSettings(section: SettingsSection | null = null) {
 }
 
 export function backFromSettings(): boolean {
-	if (closeSettingsAccount() || closeSettingsActivity() || closeSettingsExport()) return true;
+	if (
+		closeSettingsAccount() ||
+		closeSettingsActivity() ||
+		closeSettingsCost() ||
+		closeSettingsExport()
+	)
+		return true;
 	if (ui.sheet !== 'settings') return false;
 	if (settingsNavigation.fromExport) ui.sheet = 'export';
 	else if (settingsNavigation.section) settingsNavigation.section = null;
@@ -94,6 +102,22 @@ export function closeSettingsActivity(): boolean {
 	settingsNavigation.activityOpen = false;
 	settingsNavigation.section = 'pixellab';
 	returnFocus = 'recent-activity';
+	ui.sheet = 'settings';
+	return true;
+}
+
+/** Cost estimate for the open character, returning to Settings when it closes. */
+export function openSettingsCost() {
+	settingsNavigation.costOpen = true;
+	ui.costProject = doc.id;
+	ui.sheet = 'cost';
+}
+
+export function closeSettingsCost(): boolean {
+	if (ui.sheet !== 'cost' || !settingsNavigation.costOpen) return false;
+	settingsNavigation.costOpen = false;
+	settingsNavigation.section = 'pixellab';
+	returnFocus = 'cost-estimate';
 	ui.sheet = 'settings';
 	return true;
 }

@@ -2853,13 +2853,12 @@
 		"loading": "正在加载角色…",
 		"range": "{low} 至 {high} · {gens}",
 		"basis": {
-			"character": "整个角色，从零计算",
-			"copy": "你添加和更改的部分",
-			"demo": "内置演示",
-			"new": "新角色",
+			"character": "预计总计",
 			"all": {
-				"other": "{n} 个已保存角色"
-			}
+				"other": "{n} 个角色"
+			},
+			"new": "新角色",
+			"demo": "演示美术免费"
 		},
 		"tierOneRates": "{basis} · Tier 1 价格",
 		"spentToGo": "已花费 {spent} · 还需 {toGo}",
@@ -2884,8 +2883,6 @@
 		},
 		"reset": "重置",
 		"details": "详情",
-		"demoLocked": "演示美术免费。编辑副本即可估算你添加的内容。",
-		"copyNote": "从演示或其他角色复制的美术在这里免费。",
 		"setup": "角色准备",
 		"setupNote": "{frame} px 画框 · 绘制 {drawn} 个视图",
 		"moveCount": {

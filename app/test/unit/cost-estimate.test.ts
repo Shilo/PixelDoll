@@ -74,7 +74,7 @@ function manifest(o: {
 		loop: true,
 		frames: Array.from({ length: cells }, (_, cell) => ({ cell, ms: 100 })),
 		sources: Object.fromEntries(
-			drawn.map((d) => [d, { route, reference: hash(2), motion, provenance: [] }])
+			drawn.map((d) => [d, { route, reference: hash(2), motion, provenance: [0] }])
 		)
 	});
 	const moves = o.moves ?? [];
@@ -303,25 +303,38 @@ describe('cost estimate', () => {
 		expect(next.item(0)).toMatchObject({ remake: false });
 		expect(next.item(0).toGo).toBeCloseTo(4 * 3);
 
+		// The demo's items have no standing design to extend, and its walk lacks a north view: that is where the demo stops, not work to finish.
+		const bundledHash = { requestHash: '' as Sha256 };
 		const demoCopy = manifest({
 			cell: 64,
 			directions: FOUR,
-			base: [call('/create-character-v3', 0, { requestHash: '' as Sha256 })],
+			moves: [{ id: 'walk', cells: 8 }],
+			base: [call('/create-character-v3', 0, bundledHash)],
 			items: [
 				{
 					id: 'vest',
-					extra: { provenance: [call('/edit-animation-v2', 10, { requestHash: '' as Sha256 })] }
+					route: undefined,
+					extra: {
+						dressed: undefined,
+						provenance: [call('/edit-animation-v2', 10, bundledHash)]
+					}
 				}
 			]
 		});
-		const copy = of(demoCopy);
-		expect(copy.kind).toBe('copy');
-		expect(copy.spent.generations).toBe(0);
-		expect(characterCost(copy, firstPass(seedInputs(copy))).total).toBe(0);
-		const demo = characterOf('fixture:s2', demoCopy, defaults);
-		expect(characterCost(demo, { ...firstPass(seedInputs(demo)), moves: 3, items: 4 }).total).toBe(
-			0
-		);
+		delete demoCopy.items[0].layers[0].cells!.walk.north;
+		for (const kind of ['copy', 'demo'] as const) {
+			const c = kind === 'copy' ? of(demoCopy) : characterOf('fixture:s2', demoCopy, defaults);
+			expect(c.kind).toBe(kind);
+			expect(c.spent.generations).toBe(0);
+			const seed = firstPass(seedInputs(c));
+			expect(characterCost(c, seed)).toMatchObject({ total: 0, toGo: 0 });
+			// Changes from the saved character are priced, copied items fitted to a new move as remakes.
+			const added = characterCost(c, { ...seed, moves: 2 });
+			expect(added.item(0)).toMatchObject({ remake: true, inherited: true });
+			expect(added.item(0).toGo).toBeCloseTo(10 + 4 * 3);
+			expect(added.toGo).toBeCloseTo(added.total);
+			expect(characterCost(c, { ...seed, items: 2 }).toGo).toBeCloseTo(10 + 4 * 3);
+		}
 	});
 
 	test('records spending with re-rolls and USD, at the tier list rate', () => {

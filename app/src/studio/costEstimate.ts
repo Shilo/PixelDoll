@@ -123,7 +123,8 @@ export const isMove = (a: RigAnimation) => a.kind !== 'state' && a.id !== DEFAUL
 
 /** How a saved move was made, as the spec the Moves sheet would send to make it again. */
 function savedMove(m: Manifest, a: RigAnimation): CostMove {
-	const base = m.items.find((i) => i.id === m.rig.baseItem)!.layers[0];
+	const body = m.items.find((i) => i.id === m.rig.baseItem)!;
+	const base = body.layers[0];
 	const drawn = drawnOf(m.rig.directions);
 	const source = drawn.map((d) => a.sources?.[d]).find(Boolean);
 	const done = drawn.filter((d) => base?.cells?.[a.id]?.[d]?.some(Boolean));
@@ -147,7 +148,11 @@ function savedMove(m: Manifest, a: RigAnimation): CostMove {
 					: authored
 						? { id: a.id, action: authored, frames, animation: { model, frameCount: frames } }
 						: described(model);
-	return { id: a.id, model, spec, free: model === 'import' || !source, done };
+	// Imported art, and the demo's moves, whose records carry no request hash, cost this character nothing.
+	const paid = drawn.some((d) =>
+		a.sources?.[d]?.provenance.some((i) => !!body.provenance?.[i]?.requestHash)
+	);
+	return { id: a.id, model, spec, free: model === 'import' || !paid, done };
 }
 
 function stateRoute(a: RigAnimation): StateRoute {
@@ -348,7 +353,10 @@ export const coveredCount = (coverage: Coverage | undefined, moves: number) =>
 export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult {
 	const attempts = 1 + inputs.retries;
 	const drawn = drawnOf(inputs.directions);
-	const free = c.kind === 'demo' || !drawn.length;
+	const free = !drawn.length;
+	// Demo art is the starting point, not work to finish: only changes from the saved character are priced.
+	const bundledArt = c.kind === 'demo' || c.kind === 'copy';
+	const seeded = drawnOf(c.manifest.rig.directions);
 	const original = c.manifest;
 	const added = addedMoves(c);
 	const savedMoves = Math.min(inputs.moves, c.moves.length);
@@ -429,8 +437,8 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 			const gens = body(index, drawn);
 			return { ...row, gens, toGo: gens };
 		}
-		const toGo = body(index, missing(kept.done));
-		const done = drawn.filter((d) => kept.done.includes(d));
+		const toGo = body(index, missing(bundledArt ? seeded : kept.done));
+		const done = drawn.filter((d) => (bundledArt ? seeded : kept.done).includes(d));
 		return { ...row, gens: (kept.free ? 0 : body(index, done)) + toGo, toGo };
 	};
 	const typicalRow = typicalCount > 0 ? moveRow(typicalIndex) : undefined;
@@ -525,7 +533,11 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		for (const i of listed) {
 			if (!covers(coverage, i)) continue;
 			const move = saved && savedMoveAt(i);
-			const done = move ? drawn.filter((d) => hasCompleteCells(original, item, move.id, d)) : [];
+			const done = !move
+				? []
+				: bundledArt && saved.inherited
+					? drawn.filter((d) => seeded.includes(d))
+					: drawn.filter((d) => hasCompleteCells(original, item, move.id, d));
 			const rest = fit(item, i, missing(done));
 			gens += (done.length && !saved?.inherited ? fit(item, i, done) : 0) + rest;
 			toGo += rest;
@@ -575,13 +587,13 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 	const statesLine = sumLines([
 		...c.states
 			.slice(0, inputs.states)
-			.map((route) => ({ gens: free || c.kind === 'copy' ? 0 : stateGens(route), toGo: 0 })),
+			.map((route) => ({ gens: free || bundledArt ? 0 : stateGens(route), toGo: 0 })),
 		{ gens: addedEach * addedStates, toGo: addedEach * addedStates }
 	]);
 
 	// Setup: a drawn character's creation price; imported art pays registration and one joint check per distinct frame.
 	let setupGens = 0;
-	if (!free && c.kind !== 'copy') {
+	if (!free && !bundledArt) {
 		if (c.setup.kind === 'draw')
 			setupGens = estimate({
 				directions: inputs.directions,
@@ -651,7 +663,6 @@ export type Tip =
 
 /** Up to two quality-safe changes with a real saving in cents at this tier, largest first. */
 export function savingTips(c: CostCharacter, inputs: CostInputs, tier: PricedTier): Tip[] {
-	if (c.kind === 'demo') return [];
 	const cents = (next: CostInputs) => Math.round(usdOf(characterCost(c, next).total, tier) * 100);
 	const now = cents(inputs);
 	const tips: Tip[] = [];

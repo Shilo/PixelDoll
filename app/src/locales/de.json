@@ -2985,14 +2985,13 @@
 		"loading": "Figuren werden geladen…",
 		"range": "{low} bis {high} · {gens}",
 		"basis": {
-			"character": "Ganze Figur, von Grund auf berechnet",
-			"copy": "Deine Ergänzungen und Änderungen",
-			"demo": "Mitgelieferte Demo",
-			"new": "Neue Figur",
+			"character": "Geschätzte Summe",
 			"all": {
-				"one": "{n} gespeicherte Figur",
-				"other": "{n} gespeicherte Figuren"
-			}
+				"one": "{n} Figur",
+				"other": "{n} Figuren"
+			},
+			"new": "Neue Figur",
+			"demo": "Demo-Grafiken sind kostenlos"
 		},
 		"tierOneRates": "{basis} · Preise von Tier 1",
 		"spentToGo": "Ausgegeben {spent} · noch {toGo}",
@@ -3018,8 +3017,6 @@
 		},
 		"reset": "Zurücksetzen",
 		"details": "Details",
-		"demoLocked": "Demo-Grafiken sind kostenlos. Bearbeite eine Kopie, um deine Ergänzungen zu schätzen.",
-		"copyNote": "Aus der Demo oder einer anderen Figur kopierte Grafiken sind hier kostenlos.",
 		"setup": "Figur einrichten",
 		"setupNote": "{frame}-px-Frame · {drawn} gezeichnete Ansichten",
 		"moveCount": {

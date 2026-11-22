@@ -2986,14 +2986,13 @@
 		"loading": "Chargement des personnages…",
 		"range": "{low} à {high} · {gens}",
 		"basis": {
-			"character": "Personnage entier, calculé de zéro",
-			"copy": "Vos ajouts et modifications",
-			"demo": "Démo intégrée",
-			"new": "Nouveau personnage",
+			"character": "Total estimé",
 			"all": {
-				"one": "{n} personnage enregistré",
-				"other": "{n} personnages enregistrés"
-			}
+				"one": "{n} personnage",
+				"other": "{n} personnages"
+			},
+			"new": "Nouveau personnage",
+			"demo": "Les visuels de la démo sont gratuits"
 		},
 		"tierOneRates": "{basis} · tarifs Tier 1",
 		"spentToGo": "Dépensé {spent} · reste {toGo}",
@@ -3019,8 +3018,6 @@
 		},
 		"reset": "Réinitialiser",
 		"details": "Détails",
-		"demoLocked": "Les visuels de la démo sont gratuits. Modifiez une copie pour estimer vos ajouts.",
-		"copyNote": "Les visuels copiés depuis la démo ou un autre personnage sont gratuits ici.",
 		"setup": "Préparation du personnage",
 		"setupNote": "Cadre de {frame} px · {drawn} vues dessinées",
 		"moveCount": {

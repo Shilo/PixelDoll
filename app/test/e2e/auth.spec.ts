@@ -201,6 +201,13 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await settingsActivity.click();
 	await page.goBack();
 	await expect(settingsActivity).toBeFocused();
+	// Cost estimate opens for the open character and returns to Settings.
+	const settingsCost = settings.getByRole('button', { name: 'Cost estimate...', exact: true });
+	await settingsCost.click();
+	const costSheet = page.getByRole('dialog', { name: 'Cost estimate', exact: true });
+	await expect(costSheet.locator('.amount')).toHaveText(/^\$\d+\.\d\d$/);
+	await costSheet.getByRole('button', { name: 'Done', exact: true }).click();
+	await expect(settingsCost).toBeFocused();
 });
 
 test('PixelLab usage recovers from errors, replaces a key, reconnects, and forgets locally', async ({
