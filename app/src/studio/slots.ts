@@ -26,8 +26,8 @@ export interface Category {
 	order: number;
 }
 
-/** Category copy by behavior profile, so a custom copy inherits its source's icon and examples. */
 // Ideas are ordered most commonly useful first: the first three show under the prompt.
+/** Category copy by behavior profile, so a custom copy inherits its source's icon and examples. */
 const COPY: Record<
 	Exclude<SlotProfile, 'body'>,
 	{ icon: string; ideas: { label: string; caption: WhisperKey }[] }

@@ -2097,6 +2097,11 @@
 							id="move-description"
 							value={text}
 							onvalue={inputMotion}
+							onreplace={(motion) => {
+								// Enhancing the template the sheet opened on keeps it, like picking it would.
+								if (action) templatePicked = true;
+								text = motion;
+							}}
 							spec={enhanceSpec}
 							activity={{ scope: enhanceScope, label: 'Enhance animation prompt' }}
 							maxOutput={900}

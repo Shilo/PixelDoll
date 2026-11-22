@@ -18,6 +18,7 @@
 	let {
 		value,
 		onvalue,
+		onreplace = onvalue,
 		spec = null,
 		activity,
 		maxOutput,
@@ -42,7 +43,10 @@
 		restore
 	}: {
 		value: string;
+		/** Typed text. */
 		onvalue: (value: string) => void;
+		/** Text Enhance or Undo puts in, when the caller treats that differently from typing. Defaults to onvalue. */
+		onreplace?: (value: string) => void;
 		/** The enhancer to run; null leaves only Copy. */
 		spec?: EnhanceSpec | null;
 		activity: { scope: string; label: string };
@@ -74,7 +78,7 @@
 	} = $props();
 
 	let area: HTMLTextAreaElement;
-	let undo = $state<{ saved: string; after: string }>();
+	let undo = $state<{ saved: string; after: string; afterSaved?: string }>();
 	let copied = $state(false);
 	let copyTimer: ReturnType<typeof setTimeout> | undefined;
 	let abort: AbortController | undefined;
@@ -83,7 +87,7 @@
 		clearTimeout(copyTimer);
 	});
 
-	const canUndo = $derived(!!undo && undo.after === value);
+	const canUndo = $derived(!!undo && undo.after === value && (!save || save() === undo.afterSaved));
 	const text = $derived(value.trim());
 	const cost = $derived(
 		`${t('create.form.enhance')} · ${t('moves.estimate', { gens: formatNumber(0.05) })}`
@@ -103,7 +107,9 @@
 		const { saved } = undo;
 		undo = undefined;
 		if (restore) restore(saved);
-		else onvalue(saved);
+		else onreplace(saved);
+		// The Undo button leaves with this click; keep the keyboard in the field it changed.
+		area.focus();
 	}
 
 	/** Runs Enhance. Callers use it to resume after connecting. */
@@ -132,8 +138,8 @@
 				onmessage(next);
 				return;
 			}
-			undo = { saved, after: next };
-			onvalue(next);
+			onreplace(next);
+			undo = { saved, after: next, afterSaved: save?.() };
 		} catch (error) {
 			if (!abort.signal.aborted) onmessage(enhanceErrorMessage(error));
 		} finally {

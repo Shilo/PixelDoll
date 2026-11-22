@@ -119,7 +119,8 @@ export async function enhancePrompt(
 	activity: { scope: string; label: string }
 ): Promise<string> {
 	const first = 'first' in spec ? await encode(spec.first) : undefined;
-	const last = 'last' in spec ? await encode(spec.last) : undefined;
+	const last =
+		'last' in spec ? (spec.last === spec.first ? first : await encode(spec.last)) : undefined;
 	const request = enhanceRequest(spec, text, { first, last });
 	const result = await api<EnhancedCharacterV3Prompt>(
 		key,

@@ -77,7 +77,9 @@
 				onclick={() => {
 					close();
 					onredraw();
-				}}><RefreshCw size={16} />{openerLabel(t('moves.redraw'))}<SurfaceChevron /></button
+				}}
+				><RefreshCw size={16} aria-hidden="true" />{openerLabel(t('moves.redraw'))}<SurfaceChevron
+				/></button
 			>
 		{/if}
 		{#if onfixframes}

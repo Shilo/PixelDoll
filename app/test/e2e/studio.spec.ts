@@ -2750,7 +2750,8 @@ test('New item Enhance describes the item alone at its canvas size, then Undo re
 		'wizard hat',
 		'More'
 	]);
-	await ideas.getByRole('button', { name: 'More', exact: true }).click();
+	await ideas.getByRole('button', { name: 'More', exact: true }).press('Enter');
+	await expect(ideas.getByRole('button', { name: 'golden crown', exact: true })).toBeFocused();
 	await ideas.getByRole('button', { name: 'golden crown', exact: true }).click();
 	await expect(prompt).toHaveValue('golden crown');
 	// While the prompt holds an idea, the others stay to swap; typing your own hides them.
@@ -2767,6 +2768,67 @@ test('New item Enhance describes the item alone at its canvas size, then Undo re
 	expect(body.image_size.height % 4).toBe(0);
 	await item.getByRole('button', { name: 'Undo', exact: true }).click();
 	await expect(prompt).toHaveValue('iron helmet');
+	await expect(prompt).toBeFocused();
+	const slot = item.getByRole('button', { name: /^Where does it go\?: / });
+	await expect(slot).toHaveAccessibleName('Where does it go?: Head');
+	await slot.press('Enter');
+	const slots = page.getByRole('menu', { name: 'Where does it go?' });
+	await expect(slots.getByRole('menuitemradio', { name: 'Head', exact: true })).toBeFocused();
+	await page.keyboard.press('ArrowDown');
+	await page.keyboard.press('Enter');
+	await expect(slot).not.toHaveAccessibleName('Where does it go?: Head');
+});
+
+test('Enhance keeps the template a new move opened with, and its settings', async ({
+	page,
+	context
+}, info) => {
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const path = new URL(route.request().url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					subscription: { type: 'generations', status: 'active', generations: 42, total: 100 },
+					credits: { usd: 1 }
+				}
+			});
+		if (path.endsWith('/enhance-animation-v3-prompt'))
+			return route.fulfill({
+				json: { enhanced_prompt: 'Sway gently, weight shifting side to side' }
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
+	const applied = move
+		.getByRole('group', { name: 'Move templates', exact: true })
+		.getByRole('button', { pressed: true });
+	await expect(applied).toHaveCount(1);
+	const template = (await applied.textContent())!.trim();
+	const loop = move.getByRole('switch', { name: 'Loop', exact: true });
+	const looping = await loop.isChecked();
+	await loop.click();
+	await move.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await expect(move.getByRole('textbox', { name: 'Describe the motion', exact: true })).toHaveValue(
+		'Sway gently, weight shifting side to side'
+	);
+	// Enhancing is not typing: the opened template and the Loop change both stay.
+	await expect(applied).toHaveText(template);
+	await expect(loop).toBeChecked({ checked: !looping });
+	await expect(
+		move.getByRole('button', { name: new RegExp(`^Generate ${template}`) })
+	).toBeVisible();
 });
 
 test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Return', async ({

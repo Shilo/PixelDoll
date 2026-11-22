@@ -108,7 +108,7 @@
 	}
 	@media (pointer: coarse) {
 		.suggestion {
-			min-block-size: 36px;
+			min-block-size: 44px;
 			padding: 0 12px;
 		}
 	}

@@ -108,6 +108,11 @@ describe('trimStaticBoilerplate', () => {
 			)
 		).toBe('Bend both knees. Turn the face toward the camera.');
 	});
+	it('also drops the pixel-art style sentence, which only matters for animation', () => {
+		expect(trimStaticBoilerplate('Arms crossed. Maintain the crisp 2D pixel art aesthetic.')).toBe(
+			'Arms crossed.'
+		);
+	});
 	it('keeps the text when it is nothing but the ending', () => {
 		expect(trimStaticBoilerplate(ENDING)).toBe(ENDING);
 	});

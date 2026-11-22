@@ -13,7 +13,6 @@
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
-	import GroupIcon from './GroupIcon.svelte';
 	import { itemNameFrom, mirroredHandsNote, namesOffHandItem } from './model.ts';
 	import {
 		baseClothesNote,

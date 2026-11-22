@@ -860,6 +860,35 @@ test('Appearance enhancement cannot clear selected hints with repeated clauses o
 	await expect(sheet.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('Elf');
 });
 
+test('switching tabs while Enhance runs leaves the next field usable', async ({
+	page,
+	context
+}) => {
+	const api = new CharacterApi();
+	let release!: () => void;
+	const held = new Promise<void>((resolve) => (release = resolve));
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		if (new URL(request.url()).pathname === '/v2/enhance-character-v3-prompt') {
+			await held;
+			await route.fulfill({ json: { enhanced_prompt: 'A calm face' } }).catch(() => {});
+		} else
+			await fulfill(
+				route,
+				await api.handle(request.method(), request.url(), request.postDataJSON())
+			);
+	});
+	const sheet = await open(page);
+	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('Freckles');
+	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await connect(page);
+	await expect(sheet.getByRole('button', { name: /^Enhancing/ })).toBeVisible();
+	// Leaving the tab cancels the request; the form must not stay busy.
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+	await expect(sheet.getByRole('button', { name: 'Enhance', exact: true })).toBeEnabled();
+	release();
+});
+
 test('Appearance enhancement preserves coverage and changing base clothing clears stale Undo', async ({
 	page,
 	context
