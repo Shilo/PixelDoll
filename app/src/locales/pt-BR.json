@@ -41,6 +41,25 @@
 			"sealed": "O trabalho local foi excluído. Recarregue o PixelDoll para continuar."
 		}
 	},
+	"creationSettings": {
+		"character": "Personagem",
+		"move": "Animação",
+		"state": "Estado",
+		"item": "Item",
+		"automatic": "Automático",
+		"automaticFramesHelp": "Caminhadas e movimentos personalizados geralmente começam com 8 quadros. Predefinições e substituições podem usar outra quantidade.",
+		"autoSize": "Automático ({size} px)",
+		"frameMinimum": "Escolha Automático ou um tamanho de quadro personalizado de pelo menos {min} px.",
+		"custom": "Personalizado",
+		"description": "Salvo neste navegador. As janelas de criação ainda não usam estes valores.",
+		"defaults": "Padrões de criação",
+		"readFailed": "Não foi possível ler as opções salvas. Redefina esta página para corrigi-las.",
+		"storageUnavailable": "O armazenamento do navegador está indisponível. Essas escolhas não podem ser salvas.",
+		"saveFailed": "Não foi possível salvar esta opção. Tente novamente.",
+		"incompatible": "Escolha Automático ou uma quantidade de quadros compatível com o novo modelo.",
+		"framesHelp": "As quantidades de quadros disponíveis dependem do tamanho da tela do personagem.",
+		"methodHelp": "Usa {pose} quando houver suporte. Caso contrário, usa {edit}."
+	},
 	"settings": {
 		"mountPreviewPlay": "Reproduzir prévia da montaria",
 		"mountPreviewPause": "Pausar prévia da montaria",

@@ -41,6 +41,25 @@
 			"sealed": "ローカルの作業を削除しました。続けるには PixelDoll を再読み込みしてください。"
 		}
 	},
+	"creationSettings": {
+		"character": "キャラクター",
+		"move": "モーション",
+		"state": "ステート",
+		"item": "アイテム",
+		"automatic": "自動",
+		"automaticFramesHelp": "歩行とカスタムモーションは通常8フレームから始まります。テンプレートや置き換えではフレーム数が異なることがあります。",
+		"autoSize": "自動（{size} px）",
+		"frameMinimum": "「自動」または {min} px 以上のカスタムフレームサイズを選択してください。",
+		"custom": "カスタム",
+		"description": "このブラウザーに保存されます。作成ダイアログにはまだ反映されません。",
+		"defaults": "作成時の既定値",
+		"readFailed": "保存された設定を読み込めませんでした。このページをリセットしてください。",
+		"storageUnavailable": "ブラウザーのストレージを利用できないため、これらの設定は保存できません。",
+		"saveFailed": "この設定を保存できませんでした。もう一度お試しください。",
+		"incompatible": "フレーム数を自動にするか、新しいモデルが対応する数を選択してください。",
+		"framesHelp": "選べるフレーム数はキャラクターのキャンバスサイズによって異なります。",
+		"methodHelp": "対応している場合は「{pose}」、それ以外の場合は「{edit}」を使用します。"
+	},
 	"settings": {
 		"mountPreviewPlay": "乗り物のプレビューを再生",
 		"mountPreviewPause": "乗り物のプレビューを一時停止",

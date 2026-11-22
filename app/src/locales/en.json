@@ -41,6 +41,25 @@
 			"sealed": "Local work was deleted. Reload PixelDoll to continue."
 		}
 	},
+	"creationSettings": {
+		"character": "Character",
+		"move": "Move",
+		"state": "State",
+		"item": "Item",
+		"automatic": "Automatic",
+		"automaticFramesHelp": "Walking and custom moves usually start at 8 frames. Templates and replacements can use a different count.",
+		"autoSize": "Automatic ({size} px)",
+		"frameMinimum": "Choose Automatic or a custom frame of at least {min} px.",
+		"custom": "Custom",
+		"description": "Saved in this browser. Creation dialogs do not use these values yet.",
+		"defaults": "Creation defaults",
+		"readFailed": "Could not read the saved choices. Reset this page to repair them.",
+		"storageUnavailable": "Browser storage is unavailable. These choices cannot be saved.",
+		"saveFailed": "Could not save this choice. Try again.",
+		"incompatible": "Set Frames to Automatic or choose a count supported by the new model.",
+		"framesHelp": "Available frame counts depend on the character canvas size.",
+		"methodHelp": "Uses {pose} when supported. Otherwise, uses {edit}."
+	},
 	"settings": {
 		"mountPreviewPlay": "Play mount preview",
 		"mountPreviewPause": "Pause mount preview",

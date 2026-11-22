@@ -4,7 +4,14 @@ import { defaultExportSettings, resetExportSettings } from '../lib/store/export-
 import { setDeveloperMode } from './developerMode.svelte.ts';
 import { resetMount } from './experience/riderPose.ts';
 import { applyRiderPose } from './mountPreview.ts';
-import { noteExportSettings } from './settingsDefaults.svelte.ts';
+import {
+	getCreationSettings,
+	noteCreationSettings,
+	noteExportSettings
+} from './settingsDefaults.svelte.ts';
+import { creationSections, creationSettingsKey, isCreationSection } from './creationSettings.ts';
+import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+import { settingsLabels } from './settingsNavigation.svelte.ts';
 import { doc, isDemo, refreshShared, setTheme, store } from './state.svelte.ts';
 import {
 	demoItemsShown,
@@ -14,7 +21,14 @@ import {
 	setSharedItemsHiddenForCharacter
 } from './wardrobeVisibility.svelte.ts';
 
-const resettableSections = ['general', 'wardrobe', 'mount', 'export', 'developer'] as const;
+const resettableSections = [
+	'general',
+	'wardrobe',
+	'mount',
+	'export',
+	'developer',
+	...creationSections
+] as const;
 type ResettableSection = (typeof resettableSections)[number];
 export type ResetScope = ResettableSection | 'all';
 
@@ -24,6 +38,16 @@ export function isResettableSection(section: string | null): section is Resettab
 
 export async function resetSettings(scope: ResetScope): Promise<WhisperKey[]> {
 	const failures: WhisperKey[] = [];
+	const sections = scope === 'all' ? creationSections : isCreationSection(scope) ? [scope] : [];
+	for (const section of workspaceCopy ? [] : sections) {
+		if ('unavailable' in getCreationSettings(section)) continue;
+		try {
+			localStorage.removeItem(creationSettingsKey(section));
+		} catch {
+			failures.push(settingsLabels[section]);
+		}
+	}
+	if (!workspaceCopy && sections.length) noteCreationSettings();
 	if ((scope === 'all' || scope === 'general') && !setTheme('dark'))
 		failures.push('settings.theme');
 	if (scope === 'all' || scope === 'wardrobe') {

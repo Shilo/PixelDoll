@@ -41,6 +41,25 @@
 			"sealed": "Le travail local a été supprimé. Rechargez PixelDoll pour continuer."
 		}
 	},
+	"creationSettings": {
+		"character": "Personnage",
+		"move": "Animation",
+		"state": "État",
+		"item": "Objet",
+		"automatic": "Automatique",
+		"automaticFramesHelp": "La marche et les mouvements personnalisés commencent généralement avec 8 images. Les modèles et les remplacements peuvent en utiliser un autre nombre.",
+		"autoSize": "Automatique ({size} px)",
+		"frameMinimum": "Choisissez Automatique ou une taille d’image personnalisée d’au moins {min} px.",
+		"custom": "Personnalisé",
+		"description": "Enregistré dans ce navigateur. Les fenêtres de création n’utilisent pas encore ces valeurs.",
+		"defaults": "Valeurs de création",
+		"readFailed": "Impossible de lire les choix enregistrés. Réinitialisez cette page pour les réparer.",
+		"storageUnavailable": "Le stockage du navigateur est indisponible. Ces choix ne peuvent pas être enregistrés.",
+		"saveFailed": "Impossible d’enregistrer ce choix. Réessayez.",
+		"incompatible": "Choisissez Automatique ou un nombre d’images compatible avec le nouveau modèle.",
+		"framesHelp": "Le nombre d’images disponible dépend de la taille du canevas du personnage.",
+		"methodHelp": "Utilise {pose} si possible. Sinon, utilise {edit}."
+	},
 	"settings": {
 		"mountPreviewPlay": "Lire l’aperçu de la monture",
 		"mountPreviewPause": "Mettre en pause l’aperçu de la monture",

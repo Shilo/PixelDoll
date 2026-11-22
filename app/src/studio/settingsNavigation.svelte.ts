@@ -1,13 +1,26 @@
 import { ui } from './state.svelte.ts';
 import type { WhisperKey } from 'svelte-whisper';
+import type { CreationSection } from './creationSettings.ts';
 
 export type SettingsSection =
-	'general' | 'wardrobe' | 'mount' | 'export' | 'pixellab' | 'library' | 'developer' | 'about';
+	| 'general'
+	| 'wardrobe'
+	| 'mount'
+	| 'export'
+	| 'pixellab'
+	| 'library'
+	| 'developer'
+	| 'about'
+	| CreationSection;
 
 export const settingsLabels = {
 	general: 'settings.appearance',
 	wardrobe: 'experience.tabWardrobe',
 	mount: 'settings.mount',
+	characters: 'creationSettings.character',
+	moves: 'creationSettings.move',
+	states: 'creationSettings.state',
+	items: 'creationSettings.item',
 	export: 'export.sheet.title',
 	pixellab: 'settings.connection',
 	library: 'librarySettings.title',

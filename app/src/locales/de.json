@@ -41,6 +41,25 @@
 			"sealed": "Die lokale Arbeit wurde gelöscht. Lade PixelDoll neu, um fortzufahren."
 		}
 	},
+	"creationSettings": {
+		"character": "Figur",
+		"move": "Animation",
+		"state": "Zustand",
+		"item": "Gegenstand",
+		"automatic": "Automatisch",
+		"automaticFramesHelp": "Gehen und eigene Bewegungen beginnen normalerweise mit 8 Frames. Vorlagen und ersetzte Bewegungen können eine andere Anzahl verwenden.",
+		"autoSize": "Automatisch ({size} px)",
+		"frameMinimum": "Wähle Automatisch oder eine benutzerdefinierte Framegröße von mindestens {min} px.",
+		"custom": "Benutzerdefiniert",
+		"description": "In diesem Browser gespeichert. Die Erstellungsdialoge verwenden diese Werte noch nicht.",
+		"defaults": "Standardwerte für die Erstellung",
+		"readFailed": "Gespeicherte Einstellungen konnten nicht gelesen werden. Setze diese Seite zurück.",
+		"storageUnavailable": "Der Browserspeicher ist nicht verfügbar. Diese Einstellungen können nicht gespeichert werden.",
+		"saveFailed": "Die Auswahl konnte nicht gespeichert werden. Versuche es erneut.",
+		"incompatible": "Wähle für die Frames Automatisch oder eine Anzahl, die das neue Modell unterstützt.",
+		"framesHelp": "Die verfügbaren Frame-Anzahlen hängen von der Leinwandgröße der Figur ab.",
+		"methodHelp": "Verwendet {pose}, wenn unterstützt. Andernfalls wird {edit} verwendet."
+	},
 	"settings": {
 		"mountPreviewPlay": "Reittier-Vorschau abspielen",
 		"mountPreviewPause": "Reittier-Vorschau anhalten",

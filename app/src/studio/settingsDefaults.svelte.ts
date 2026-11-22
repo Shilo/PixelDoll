@@ -9,6 +9,13 @@ import {
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { developerModeEnabled } from './developerMode.svelte.ts';
 import { mountAtDefaults, ridingPosesSaved } from './experience/riderPose.ts';
+import {
+	creationDefaults,
+	creationSections,
+	creationSettingsKey,
+	readCreationSettings,
+	type CreationSection
+} from './creationSettings.ts';
 import type { ResetScope } from './resetSettings.ts';
 import { doc, ui } from './state.svelte.ts';
 import {
@@ -22,6 +29,50 @@ const language = fromStore(languagePreference);
 // Unknown until read; an unreadable record counts as changed so Reset stays available to repair it.
 let exportDefaults = $state<boolean | null>(null);
 let exportPagesShown = 0;
+
+export function getCreationSettings<Section extends CreationSection>(section: Section) {
+	try {
+		return readCreationSettings(localStorage, section);
+	} catch {
+		return { values: creationDefaults[section], valid: false, unavailable: true } as const;
+	}
+}
+
+let creationRevision = $state(0);
+export const creationSettingsRevision = () => creationRevision;
+export function noteCreationSettings() {
+	creationRevision++;
+}
+
+export function currentCreationSettings<Section extends CreationSection>(section: Section) {
+	void creationRevision;
+	return getCreationSettings(section);
+}
+
+export function watchCreationSettings() {
+	if (workspaceCopy) return () => {};
+	noteCreationSettings();
+	const onStorage = (event: StorageEvent) => {
+		if (
+			event.key === null ||
+			creationSections.some((section) => creationSettingsKey(section) === event.key)
+		)
+			noteCreationSettings();
+	};
+	window.addEventListener('storage', onStorage);
+	return () => window.removeEventListener('storage', onStorage);
+}
+
+function creationAtDefaults(section: CreationSection) {
+	const current = currentCreationSettings(section);
+	if ('unavailable' in current) return true;
+	return (
+		current.valid &&
+		Object.entries(creationDefaults[section]).every(
+			([key, value]) => (current.values as Record<string, unknown>)[key] === value
+		)
+	);
+}
 
 function isDefaultExport(settings: ExportSettings) {
 	const defaults = defaultExportSettings();
@@ -74,7 +125,11 @@ const atDefaults = {
 		!sharedItemsHiddenForAll() && !demoItemsShown() && !sharedItemsHiddenForCharacter(doc.id),
 	mount: () => mountAtDefaults(doc.id),
 	export: () => exportDefaults === true,
-	developer: () => !developerModeEnabled()
+	developer: () => !developerModeEnabled(),
+	characters: () => creationAtDefaults('characters'),
+	moves: () => creationAtDefaults('moves'),
+	states: () => creationAtDefaults('states'),
+	items: () => creationAtDefaults('items')
 };
 
 export function settingsAtDefaults(scope: ResetScope) {
