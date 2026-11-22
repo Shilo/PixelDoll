@@ -89,7 +89,7 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
 
 ## Decisions log
 
-- D1 (2026-10-20): Browser calls PixelLab REST v2 directly with the user's token (CORS verified). No backend, ever.
+- D1 (2026-10-20): Browser calls PixelLab REST v2 directly with the user's token (CORS verified). No backend, ever (except D31's stateless OAuth token endpoint).
 - D2 (2026-10-20): ~~Same-canvas edit + local diff extraction~~ — superseded by D3; the diff extractor is a fallback only.
 - D3 (2026-10-21): Item layers come from a chroma mannequin (recolored frozen base) extracted by color key (S2).
 - D4 (2026-10-21): Base generated at 48 px and padded to a 64 px cell (never rescaled); 56 px is an option.
@@ -188,6 +188,12 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   `edit-image-pixen` for explicit, quoted, reviewed State creation. Preserve D29 for equipment. Prefer a verified
   managed parent for the default text edit; local Pro uses `edit-images-v2`, or a compatible batch route chosen before
   submission. Never silently drop a reference, switch an explicit model, or resend an accepted or uncertain paid job.
+- D31 (2026-11-22, user): narrows D1's "no backend" for cloud sync. Google gives browser-only apps 1-hour tokens and
+  no refresh token, so Drive sync may use one stateless OAuth token endpoint (a free-tier serverless function). It
+  holds the Google client secret and only exchanges codes and refreshes tokens. It stores and logs nothing (it sees
+  refresh tokens only in transit); refresh tokens persist on the device only, and files go browser to provider
+  directly. Everything else stays client-side. When it ships, update the "no backend" statements in PRODUCT.md,
+  README.md and docs/architecture.md. Rationale and limits: docs/research/2026-11-22-storage-sync/README.md.
 
 ## Progressive equipment generation (2026-11-03)
 

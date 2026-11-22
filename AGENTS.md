@@ -110,7 +110,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Never weaken, skip or delete a test or assertion, or change its expected values, just to make it pass; if the test itself is wrong, fix it and say why.
 - Delete code your change makes dead; no commented-out code. Comments explain why, not what changed.
 - Report what you verified, what failed and what you skipped; never claim a check you did not run.
-- Keep the app client-only; never add a backend.
+- Keep the app client-side: PixelLab calls go browser-direct with the user's own token, and no server stores user data, artwork, tokens or logs. The sole exception is a stateless OAuth endpoint that only exchanges codes and refreshes cloud sync tokens (PLAN.md D31); add no other server code, route or analytics.
 - Use only the allowed PixelLab models above, and check docs/research/pixellab/ (pixellab-openapi-v2.json) before calling an endpoint.
 - PixelLab credits are real money: spend only when the task needs generations, never auto-resend paid requests, and prefer offline checks on stored frames.
 - Never print, log, screenshot or commit a PixelLab token or the .env file.
