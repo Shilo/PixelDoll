@@ -97,6 +97,23 @@ folder.
 On Drive and Dropbox these requests cost the owner nothing. The ideas mainly save battery, data and provider rate
 limits. They would matter for cost only on a hosted server.
 
+### Collaboration without first-party hosting
+
+Collaboration is still possible when every file lives in an account the users own. The owner's servers then never
+store images.
+
+| Option                               | How it works                                                                                                                                                          | Cost and catch                                                                                                                                                                                                                                         |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Shared GitHub repo (recommended)** | The team shares one library repo; GitHub controls who can read or edit. Batched commits; teammates see changes within about a minute through the client's own checks. | Free for the owner. The only server piece is the D31 token Worker, which stores nothing. Details in [section 3](#3-github).                                                                                                                            |
+| Shared Dropbox folder                | Teammates add one shared folder to their Dropbox.                                                                                                                     | $0, with a free production review at 50 users. The app needs full-Dropbox access instead of an app folder, because app folders cannot be shared.                                                                                                       |
+| Shared Google Drive folder           | One teammate shares a folder with the others.                                                                                                                         | The current `drive.file` access cannot see files teammates add. Broader access is a restricted scope that needs a paid yearly security assessment. A Picker workaround reportedly does not cover files created by others (forum evidence, unverified). |
+| Shared OneDrive folder               | Same idea as Drive.                                                                                                                                                   | Likely needs broader Microsoft Graph access. Unverified.                                                                                                                                                                                               |
+| Live peer-to-peer (WebRTC)           | Browsers connect directly and send changes to each other.                                                                                                             | Both teammates must be online at once. It needs a small signaling server, and a TURN relay on some networks passes images through in transit. More complex; only worth it for true live editing.                                                       |
+| Manual sharing                       | Send a backup ZIP; the teammate imports it (import adds only missing characters).                                                                                     | Works today, with zero setup, but it is not automatic.                                                                                                                                                                                                 |
+
+**Suggestion:** use GitHub for teams. Keep Drive and Dropbox for personal backup and device sync. Revisit shared
+Dropbox or Drive folders only if teams ask for them and accept the broader access.
+
 ## 1. Name: Cloud Sync
 
 - "Cloud Save" suggests the cloud holds your work. In PixelDoll the device holds it, and the cloud is a synced copy.
