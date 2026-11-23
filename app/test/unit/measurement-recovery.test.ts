@@ -1992,6 +1992,7 @@ test('a new move with a stopped view can save only its finished views, free, wit
 		addMove('rig-recover', {
 			...save.spec,
 			finishedViews: undefined,
+			reviewedReceipts: undefined,
 			reviewBeforePublish: undefined
 		})
 	).rejects.toThrow('every independently drawn direction');
@@ -2082,7 +2083,21 @@ test('a finished render whose joint check stopped is kept free without poses; th
 	expect(review.views.map((view) => view.state)).toEqual(['ready', 'failed']);
 	const keep = review.options.find((option) => option.id === 'keep-unposed')!;
 	expect(keep).toMatchObject({ gens: 0, paid: false });
+	expect(keep.spec.reviewedReceipts).toEqual(expect.arrayContaining(['raw-east', 'raw-west']));
 	const posts = f.posts();
+	// Bound to the reviewed receipts: a different record of the same request is not what was reviewed.
+	const raw = f.records.get('raw-east')!;
+	f.records.delete('raw-east');
+	f.records.set('raw-east-other', {
+		...raw,
+		id: 'raw-east-other',
+		createdAt: raw.createdAt + 1000
+	});
+	await f.q.sync();
+	await expect(addMove('rig-recover', keep.spec)).rejects.toThrow('no longer saved');
+	f.records.delete('raw-east-other');
+	f.records.set('raw-east', raw);
+	await f.q.sync();
 	await addMove('rig-recover', keep.spec);
 	expect(f.posts()).toBe(posts);
 	const saved = f.saved(),
@@ -2090,6 +2105,33 @@ test('a finished render whose joint check stopped is kept free without poses; th
 	expect(idle.sources!.west).toBeUndefined();
 	expect(idle.sources!.east?.keypoints).toHaveLength(idle.cells);
 	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['idle/west']);
+});
+
+test('a replay settles every frame check before pricing, so a stopped check never hides an unbought sibling', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	// West frame 5's check was lost; frame 8, checked after it, was never checked at all.
+	// Frame 6's check also stopped, after reporting its charge.
+	const stopped = f.records.get('old-4')!.requestHash,
+		charged = f.records.get('old-5')!.requestHash,
+		unbought = f.records.get('old-7')!.requestHash,
+		chargedIds: string[] = [];
+	for (const record of [...f.records.values()]) {
+		if (record.requestHash === stopped) f.records.set(record.id, { ...record, state: 'lost' });
+		if (record.requestHash === charged) {
+			f.records.set(record.id, { ...record, state: 'failed', gens: 0.1 });
+			chargedIds.push(record.id);
+		}
+		if (record.requestHash === unbought) f.records.delete(record.id);
+	}
+	await f.q.sync();
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	// Every sibling receipt is counted, also those met after the first stop.
+	expect(review.recordIds.some((id) => chargedIds.includes(id))).toBe(true);
+	expect(review.spentUnknown).toBe(true);
+	// The unbought check is priced, so keeping is not free and is not offered as such.
+	expect(review.views[1]).toMatchObject({ state: 'failed' });
+	expect(review.options.find((option) => option.id === 'keep-unposed')).toBeUndefined();
 });
 
 test('a body move stopped after every view was bought resumes free with the same seed', async () => {
