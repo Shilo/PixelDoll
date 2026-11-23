@@ -1024,6 +1024,7 @@
 		"nameCouldNotFinishNoPaidRetry": "No se completó la generación de {name}. No se inició ningún reintento de pago. Abre su revisión para intentarlo de nuevo.",
 		"nameHasIssuesToReviewNoPaid": "{name} tiene problemas que revisar. No se inició ningún reintento de pago.",
 		"nameAcceptedAsIs": "{name} aceptado tal cual",
+		"nameKeptWithout": "{name} conservado sin {moves}. Seguirá oculto ahí hasta que se creen esos fotogramas.",
 		"nameSaved": "{name} guardado",
 		"nameAdded": "{name} agregado",
 		"cancelThisItemInTheTabThat": "Cancela la generación en la pestaña que está creando el objeto. Esta pestaña no ha detenido la generación.",
@@ -1565,6 +1566,7 @@
 		},
 		"coverage": {
 			"oneMove": "Faltan algunos fotogramas de {move}",
+			"notMade": "Aún no creado para {move}",
 			"severalMoves": "Faltan fotogramas en {count} animaciones"
 		},
 		"qa": {
@@ -1961,6 +1963,11 @@
 		"cleared": "Se borraron {jobs}. Se conservan las tareas que aún usan tus borradores o una creación o animación en curso.",
 		"clearedWithImages": "Se borraron {jobs} y {images}. Se conservan las tareas que aún usan tus borradores o una creación o animación en curso.",
 		"findingJoints": "Buscando articulaciones",
+		"titleSetup": "{name}: configuración del personaje",
+		"titleRegistering": "{name}: preparando las vistas",
+		"titleDrawing": "{name}: dibujando el personaje",
+		"titleMoveMotion": "{name}: movimiento de {move}, {direction}",
+		"titleMoveView": "{name}: {move}, {direction}",
 		"state": {
 			"queued": "en cola",
 			"submitting": "enviando",
@@ -1996,7 +2003,6 @@
 		"retryIn": "reintento en {seconds} s",
 		"needsKey": "necesita tu clave",
 		"recent": "Recientes",
-		"lostDetail": "Estado desconocido: puede que se haya ejecutado. Revisa pixellab.ai",
 		"tierHint": "El flujo de trabajo requiere PixelLab Tier {tier} o superior. Revisa tu plan y tu saldo antes de reintentar. Una tarea fallida por sí sola no confirma un problema con el plan.",
 		"session": "Esta sesión: {cost}. Algunas animaciones se cobran en dólares en lugar de generaciones; tu saldo de arriba es el total real.",
 		"clearFollower": "Bórralas en la pestaña de PixelDoll que ejecuta las tareas",
@@ -2135,7 +2141,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivote {x},{y}",
 		"waitingForRepairReview": "Esperando la revisión de los fotogramas del objeto",
-		"needsRedo": "No se encontraron articulaciones: vuelve a crearla para animar objetos en ella"
+		"needsRedo": "No se encontraron articulaciones: redibújala para animar objetos en ella"
 	},
 	"setup": {
 		"warnings": {
@@ -2177,7 +2183,7 @@
 			"bodyChanged": "El cuerpo cambió desde que empezó la configuración. Vuelve a iniciarla con los fotogramas actuales.",
 			"looksRequired": "Primero describe la apariencia existente del personaje.",
 			"noFrames": "No hay fotogramas del cuerpo disponibles para configurar el rig. El arte existente no cambia.",
-			"jointsMissing": "PixelLab no pudo encontrar las 18 articulaciones válidas en un fotograma del cuerpo. Las imágenes existentes no cambian. Vuelve a conectar PixelLab o elige una referencia más clara de la pose de pie y reanuda la configuración.",
+			"jointsMissing": "PixelLab no pudo encontrar las 18 articulaciones válidas en un fotograma de pie. Las imágenes existentes no cambian. Vuelve a dibujar ese fotograma en Corregir fotogramas o elige una vista de pie más clara y luego reanuda la configuración.",
 			"noCharacterId": "PixelLab no devolvió un ID de personaje gestionado. El arte existente no cambia.",
 			"referenceChanged": "Una referencia de pie cambió durante la configuración.",
 			"characterChanged": "El personaje cambió durante la configuración. Se conservó su trabajo actual.",
@@ -2237,7 +2243,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab devolvió una cantidad incorrecta de fotogramas. No se inició ningún reintento de pago. Revisa Actividad antes de pedir otro intento.",
 			"animationExceedsPxFrame": "{move} {direction}: los fotogramas del cuerpo no caben en el marco de {w} px. Se guardaron para revisarlos; no se guardó nada en el personaje.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab devolvió fotogramas vacíos. No se inició ningún reintento de pago. Revisa Actividad antes de pedir otro intento.",
-			"validJointsWereFound": "{move} {direction}: no se encontraron articulaciones válidas en todos los fotogramas. Las imágenes generadas se conservan en Actividad; la configuración se detuvo sin volver a dibujarlas.",
+			"validJointsWereFound": "{move} {direction}: no se encontraron articulaciones válidas en todos los fotogramas. Las imágenes generadas se conservan en Actividad; la animación se detuvo sin volver a dibujarlas.",
 			"matchBodyColorsOnly": "{direction}: iguala los colores del cuerpo solo cuando hayan terminado todas las comprobaciones de articulaciones originales.",
 			"colorMatchingCannotRepair": "{direction}: igualar colores no puede reparar fallos de pose, de pies o de bordes.",
 			"colorDriftOutsideBounded": "{direction}: la variación de color supera lo que se puede reparar con la paleta de referencia.",
@@ -3084,7 +3090,7 @@
 		"liftDetailWarned": "{views}: los pies suben hasta {px} px en {frames} de {total} fotogramas de movimiento para que el movimiento quepa en el marco. Supera la comprobación de pies de {limit} px, así que la animación se guarda con un aviso sobre los pies.",
 		"reroll": "Volver a generar {views}",
 		"rerollDetail": "Volver a generar compra un intento nuevo solo para esas direcciones. Las demás conservan sus resultados pagados.",
-		"keepUnposedDetail": "Guarda los fotogramas del cuerpo tal como están. No se encontraron articulaciones en algunos fotogramas, así que no se pueden ajustar objetos a esta animación hasta que la vuelvas a crear.",
+		"keepUnposedDetail": "Guarda los fotogramas del cuerpo tal como están. No se encontraron articulaciones en algunos fotogramas, así que no se pueden ajustar objetos a esta animación hasta que la redibujes.",
 		"keepUnposed": "Conservar sin ajustar objetos",
 		"pending": "Por comprar: unos {gens} gens.",
 		"liftable": "Se puede elevar para que quepa: los pies suben hasta {px} px en {frames} de {total} fotogramas.",
@@ -3235,6 +3241,7 @@
 	"report": {
 		"action": "Informar",
 		"actionLabel": "Informar de este problema",
+		"actionLabelFor": "Informar de este problema: {name}",
 		"title": "Informar de este problema",
 		"intro": "Se abre una incidencia pública en GitHub solo con el texto de abajo. No incluye imágenes, prompts, nombres ni claves. La publicas con tu cuenta de GitHub.",
 		"preview": "Vista previa del informe",
@@ -3286,9 +3293,9 @@
 			"offline": "Revisa tu conexión y vuelve a intentarlo.",
 			"declined": "Cambia la descripción y vuelve a intentarlo.",
 			"unexpected": "Infórmalo para que se pueda corregir. Lo que ya se pagó sigue en Actividad.",
-			"uncertain": "Revisa Actividad antes de volver a intentarlo: un intento nuevo podría cobrar otra vez.",
+			"uncertain": "Puede que se haya ejecutado y cobrado. Revisa pixellab.ai antes de volver a intentarlo.",
 			"poses": "Configura primero sus poses y luego crea el equipo.",
-			"method": "Elige Automático y vuelve a intentarlo.",
+			"method": "Vuelve a crear el objeto y elige Automático en Método de animación.",
 			"quote": "Vuelve a intentarlo en un momento o elige otro modelo.",
 			"browser": "Usa un navegador actual para continuar.",
 			"exportId": "Elige otro ID de exportación.",

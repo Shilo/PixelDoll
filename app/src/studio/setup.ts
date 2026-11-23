@@ -1,11 +1,20 @@
 // Paid setup is explicit, resumable through the same queue as creation, and commits only when every measurement exists.
-import { b64, joints, latestOutcome, provOf, run, type Progress } from './create.ts';
+import {
+	FINDING_JOINTS,
+	b64,
+	joints,
+	latestOutcome,
+	provOf,
+	run,
+	type Progress
+} from './create.ts';
 import { attachImportedRig, setupPlan, type SetupPlan } from '../lib/rig/setup.ts';
 import { DEFAULT_MOVE, DIRECTIONS, cellHash, type Keypoint, type Sha256 } from '../lib/rig/rig.ts';
 import { retainMoveChoices } from '../lib/store/identity.ts';
 import { skeletonInput } from '../lib/rig/estimate.ts';
 import { png, routes } from '../lib/pixellab/routes.ts';
 import { PLAN_JOB_LIMITS } from '../lib/pixellab/plans.ts';
+import { queue, requestIdentity } from '../lib/pixellab/queue.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import type { Provenance } from '../lib/store/manifest.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
@@ -55,6 +64,26 @@ async function registration(
 		no_background: true,
 		seed: spec.seed
 	});
+}
+/** API-free: what resuming this stopped setup still buys, priced from the request cache: a joint check for each frame with
+ *  no completed check, and the registration when it has none. Completed requests are reused, never bought again. */
+export async function setupResumeGens(spec: SetupSpec): Promise<number> {
+	const { project } = await loadProject(spec.projectId);
+	const plan = await setupPlan(project, spec.restAnim, moveWordsOf(project)),
+		done = new Set(
+			queue
+				.snapshot()
+				.jobs.filter((job) => job.state === 'done')
+				.map((job) => job.requestHash)
+		);
+	let gens = 0;
+	for (const image of plan.frames.values()) {
+		const check = routes.estimateSkeleton(png(await b64(skeletonInput(image).image)));
+		if (!done.has((await requestIdentity(check)).requestHash)) gens += 0.1;
+	}
+	if (!done.has((await requestIdentity(await registration(project, plan, spec))).requestHash))
+		gens += 0.25;
+	return +gens.toFixed(2);
 }
 /** API-free: true when this setup's registration already finished without a usable character (or stopped), so retrying the
  *  same seed would only replay it. A new seed then buys one new registration (0.25 gen); every joint check is reused. */
@@ -125,7 +154,7 @@ export async function setupCharacter(
 						const k = await joints(im, true, undefined, spec.activityScope);
 						if (!k && (standingViews.has(im) || standingHashes.has(hash)))
 							throw new LocalizedError(
-								'PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.',
+								'PixelLab could not find all 18 valid joints on a standing frame. Existing artwork is unchanged; redraw that frame in Fix frames or choose a clearer standing view, then resume setup.',
 								'setup.errors.jointsMissing'
 							);
 						if (failure) return;
@@ -134,7 +163,7 @@ export async function setupCharacter(
 						observations[index] = provOf(
 							await run(
 								request,
-								'Finding joints',
+								FINDING_JOINTS,
 								'm2-skel',
 								true,
 								true,
@@ -158,7 +187,10 @@ export async function setupCharacter(
 	progress({ step: 'register', done: 0, total: 1, recIds: [] });
 	const managed = await run(
 		await registration(project, plan, spec),
-		`${rec.manifest.name} · rig setup`,
+		{
+			text: `${rec.manifest.name} · rig setup`,
+			title: message('activity.titleSetup', { name: rec.manifest.name })
+		},
 		'studio-setup',
 		false,
 		true,

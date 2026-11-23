@@ -15,7 +15,7 @@
 	import { SLOTS, slotLadder } from '../lib/items/items.ts';
 	import {
 		gapMoves,
-		keepableWithout,
+		keepWithoutRefusal,
 		itemPaletteRepairPlan,
 		restorableViews,
 		type ItemPaletteRepairPlan
@@ -33,6 +33,7 @@
 	import {
 		HEALTH_LABEL,
 		healthOf,
+		itemAcceptWaits,
 		itemPreviewFrames,
 		plainReasonMessage,
 		qaReasonMessages,
@@ -179,6 +180,8 @@
 	const repairBusy = $derived(
 		(!!moving.spec && !moving.done) || (!!settingUp.spec && !settingUp.done)
 	);
+	// Free local accepts wait only for work on this character that involves this item (itemAcceptWaits).
+	const acceptWaits = $derived(!!it && itemAcceptWaits(it.id, doc.id, moving, settingUp));
 	function repairFrames(offer: typeof repairOffer, tier: number) {
 		if (!offer?.specs[0]) return;
 		const projectId = doc.id,
@@ -314,7 +317,7 @@
 	// The moves an item with checks to accept is missing frames in: it can be kept without them, never with partial frames.
 	const keepWithout = $derived(m && it ? gapMoves(m, it) : []);
 	// Never without the move the item is designed or anchored from: those gaps take the paid redraw.
-	const canKeepWithout = $derived(!!it && keepableWithout(it, keepWithout));
+	const keepRefusal = $derived(m && it ? keepWithoutRefusal(m, it, keepWithout) : undefined);
 	async function acceptIssues(withoutGaps = false) {
 		if (!it || acceptingIssues) return;
 		const projectId = doc.id,
@@ -472,15 +475,18 @@
 					)}{#if !isDemo()}{' '}{t('itemPane.remakeToFit', { name: m.name })}{/if}
 				</p>{/if}
 			<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
-			{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && (!gaps.length || canKeepWithout)}
+			{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail')}
 				<div class="field">
 					<p class="notice warn small">
 						{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
 					</p>
-					{#if gaps.length}<button
+					{#if gaps.length && keepRefusal}
+						<!-- Says why it cannot be kept as it is: the missing frames are the way on, offered below. -->
+						<p class="small">{displayMessage(errorMessage(keepRefusal))}</p>
+					{:else if gaps.length}<button
 							class="bu-action btn"
 							data-variant="outline"
-							disabled={acceptingIssues || repairBusy}
+							disabled={acceptingIssues || acceptWaits}
 							onclick={() => acceptIssues(true)}>{t('itemPane.keepWithoutMoves')}</button
 						>
 						<p class="faint small">
@@ -491,7 +497,7 @@
 					{:else}<button
 							class="bu-action btn"
 							data-variant="outline"
-							disabled={acceptingIssues || repairBusy}
+							disabled={acceptingIssues || acceptWaits}
 							onclick={() => acceptIssues()}>{t('itemPane.acceptAsIs')}</button
 						>
 						<p class="faint small">

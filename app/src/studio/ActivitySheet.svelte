@@ -14,7 +14,7 @@
 	import { queueErrorMessage } from './generationStatus.ts';
 	import { usdText } from './displayCost.ts';
 	import { formatNumber, t } from 'svelte-whisper';
-	import ReportButton from './ReportButton.svelte';
+	import ProblemNotice from './ProblemNotice.svelte';
 	import { jobProblem } from './report.svelte.ts';
 	import { recordProblemKind } from './problemSummary.ts';
 	import { displayMove } from './displayMove.ts';
@@ -436,27 +436,26 @@
 									style="color:var(--ok)"
 								/>{:else}<CircleAlert size={16} style="color:var(--bad)" />{/if}
 							<span class="act-main"
-								><b>{nice(r)}</b><span class="muted small"
-									>{r.state === 'done'
-										? r.finishedAt && r.submittedAt
-											? mins(r.finishedAt - r.submittedAt)
-											: t('activity.state.done')
-										: r.state === 'lost'
-											? t('activity.lostDetail')
-											: stateText(r.state)}</span
-								>
+								><b>{nice(r)}</b>
 								{#if r.state === 'failed' || r.state === 'lost'}
-									{#if r.error}<span class="small"
-											>{t(`problem.title.${recordProblemKind(r)}`)}</span
-										>
-										<details class="small act-error">
-											<summary>{t('problem.details')}</summary>{errorText(r)}
-										</details>{/if}
+									<!-- The problem's own title says what happened, so the state word is not repeated above it. -->
+									<ProblemNotice
+										error={errorText(r)}
+										kind={recordProblemKind(r)}
+										name={nice(r)}
+										alert={false}
+										report={{ area: 'Activity', ...jobProblem(r) }}
+									/>
 									{#if requestTier(r) > 0}<span class="muted small">
 											{t('activity.tierHint', { tier: formatNumber(requestTier(r)) })}
 										</span>{/if}
-									<ReportButton area="Activity" {...jobProblem(r)} />
-								{/if}
+								{:else}<span class="muted small"
+										>{r.state === 'done'
+											? r.finishedAt && r.submittedAt
+												? mins(r.finishedAt - r.submittedAt)
+												: t('activity.state.done')
+											: stateText(r.state)}</span
+									>{/if}
 							</span>
 							<span class="act-meta num muted">{cost(r)}</span>
 						</li>

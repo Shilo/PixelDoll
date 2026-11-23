@@ -1494,7 +1494,18 @@ test('a new move whose body frames lack joints is kept body only, without poses,
 			: measuring(req, ...rest)
 	);
 	const move = { id: 'calm', action: 'idle', replace: false, dirs: undefined };
-	await expect(f.run(move)).rejects.toThrow('valid joints were not found on every frame');
+	const stopped = (await f.run(move).catch((error: unknown) => error)) as PaidStepError;
+	expect(stopped.message).toContain('valid joints were not found on every frame');
+	// Users read the move and view by name in their language, never the internal ids, and the move (not setup) stopped.
+	expect(stopped.translation.vars).toMatchObject({
+		move: 'Calm',
+		direction: { key: expect.stringMatching(/^direction/) }
+	});
+	expect(stopped.message).not.toContain('setup stopped');
+	const render = f.enqueue.mock.calls.find(([r]) => r.path === '/animate-with-skeleton-v3')!;
+	expect(render[1]).toMatchObject({
+		title: { key: 'activity.titleMoveView', vars: { move: 'Calm', name: 'Test' } }
+	});
 	expect(f.saved().manifest.rig.animations.map((a) => a.id)).toEqual(['idle']);
 	const renders = () =>
 		f.enqueue.mock.calls.filter(([r]) => r.path === '/animate-with-skeleton-v3').length;

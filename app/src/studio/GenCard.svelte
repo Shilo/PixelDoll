@@ -28,9 +28,11 @@
 	import { slotLabelMessage } from './slots.ts';
 	import { displayMessage, displayNestedMessage } from '../lib/i18n.ts';
 	import ProblemNotice from './ProblemNotice.svelte';
+	import { paidRetryLeads } from './problemSummary.ts';
 	import {
 		generationCallOutcome,
 		generationErrorMessage,
+		generationProblemKind,
 		generationLogMessage
 	} from './generationStatus.ts';
 	import {
@@ -69,6 +71,15 @@
 	const error = $derived(
 		displayNestedMessage(generationErrorMessage(g, $queue.jobs, outcomeFormatters) ?? '')
 	);
+	const failure = $derived(
+		policy
+			? message('genCard.declined')
+			: (generationErrorMessage(g, $queue.jobs, outcomeFormatters) ??
+					message('generation.outcome.noFrames'))
+	);
+	const kind = $derived(policy ? 'declined' : generationProblemKind(g, $queue.jobs, failure));
+	// A bug, a choice to change first, a repeat decline or a possible charge: the paid retry is offered, never promoted.
+	const retryLeads = $derived(paidRetryLeads(kind));
 	const unsettledCost = $derived(
 		draftQueueIds(g.draft).some((id) => !$queue.jobs.some((job) => job.id === id && !live(job)))
 	);
@@ -387,10 +398,8 @@
 					<CircleAlert size={14} />{t('genCard.canceledDetail')}
 				</p>
 			{:else}<ProblemNotice
-					error={policy
-						? message('genCard.declined')
-						: (generationErrorMessage(g, $queue.jobs, outcomeFormatters) ??
-							message('generation.outcome.noFrames'))}
+					error={failure}
+					{kind}
 					detail={policy
 						? message('genCard.declined')
 						: providerFailed
@@ -436,8 +445,9 @@
 				<div class="recovery-options">
 					<span class="api-action"
 						><button
-							class="bu-action btn primary"
-							data-variant="primary"
+							class="bu-action btn"
+							class:primary={retryLeads}
+							data-variant={retryLeads ? 'primary' : 'outline'}
 							onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
 							disabled={busy || retryGens === null || retryBlocked}
 							aria-describedby={retryBlocked ? tierNoticeId : undefined}

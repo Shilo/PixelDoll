@@ -1027,6 +1027,7 @@
 		"nameCouldNotFinishNoPaidRetry": "A geração de {name} não foi concluída. Nenhuma nova tentativa paga foi iniciada. Abra a revisão do item para tentar novamente.",
 		"nameHasIssuesToReviewNoPaid": "Há problemas para revisar em {name}. Nenhuma nova tentativa paga foi iniciada.",
 		"nameAcceptedAsIs": "{name}: aceito como está",
+		"nameKeptWithout": "{name} mantido sem {moves}. Ele fica oculto ali até esses quadros serem criados.",
 		"nameSaved": "{name}: salvo",
 		"nameAdded": "{name}: adicionado",
 		"cancelThisItemInTheTabThat": "Cancele este item na aba que está gerando. Esta aba não interrompeu a geração.",
@@ -1571,6 +1572,7 @@
 		},
 		"coverage": {
 			"oneMove": "Faltam alguns quadros de {move}",
+			"notMade": "Ainda não feito para {move}",
 			"severalMoves": "Faltam quadros em {count} animações"
 		},
 		"qa": {
@@ -1970,6 +1972,11 @@
 		"cleared": "Remoção concluída: {jobs}. Foram mantidas as tarefas ainda usadas por rascunhos ou pela criação de um personagem ou de uma animação em andamento.",
 		"clearedWithImages": "Remoção concluída: {jobs} e {images}. Foram mantidas as tarefas ainda usadas por rascunhos ou pela criação de um personagem ou de uma animação em andamento.",
 		"findingJoints": "Detectando articulações",
+		"titleSetup": "{name}: configuração do personagem",
+		"titleRegistering": "{name}: preparando as vistas",
+		"titleDrawing": "{name}: desenhando o personagem",
+		"titleMoveMotion": "{name}: movimento de {move}, {direction}",
+		"titleMoveView": "{name}: {move}, {direction}",
 		"state": {
 			"queued": "na fila",
 			"submitting": "enviando",
@@ -2005,7 +2012,6 @@
 		"retryIn": "nova tentativa em {seconds} s",
 		"needsKey": "precisa da sua chave",
 		"recent": "Recentes",
-		"lostDetail": "status desconhecido: pode ter sido executada. Confira em pixellab.ai",
 		"tierHint": "Este fluxo requer o plano Tier {tier} ou superior do PixelLab. Confira seu plano e saldo antes de tentar novamente. Uma tarefa com falha não confirma, por si só, que há um problema no plano.",
 		"session": "Nesta sessão: {cost}. Algumas animações são cobradas em dólares, não em gerações. O saldo acima é o total real.",
 		"clearFollower": "Limpe o histórico na aba do PixelDoll que está executando as tarefas",
@@ -2144,7 +2150,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
 		"waitingForRepairReview": "Aguardando a revisão dos quadros do item",
-		"needsRedo": "Articulações não encontradas: crie de novo para animar itens nela"
+		"needsRedo": "Articulações não encontradas: redesenhe para animar itens nela"
 	},
 	"setup": {
 		"warnings": {
@@ -2186,7 +2192,7 @@
 			"bodyChanged": "O corpo mudou desde o início da configuração. Reinicie a configuração com os quadros atuais.",
 			"looksRequired": "Primeiro, descreva a aparência atual do personagem.",
 			"noFrames": "Não há quadros do corpo disponíveis para configurar o rig. A arte existente não mudou.",
-			"jointsMissing": "O PixelLab não conseguiu encontrar as 18 articulações válidas em um quadro do corpo. A arte existente não mudou. Reconecte-se ou escolha uma referência mais clara da pose em pé e retome.",
+			"jointsMissing": "O PixelLab não conseguiu encontrar as 18 articulações válidas em um quadro em pé. A arte existente não mudou. Redesenhe esse quadro em Corrigir quadros ou escolha uma vista em pé mais clara e então retome a configuração.",
 			"noCharacterId": "O PixelLab não retornou um ID de personagem gerenciado. A arte existente não mudou.",
 			"referenceChanged": "Uma referência da pose em pé mudou durante a configuração.",
 			"characterChanged": "O personagem mudou durante a configuração. O trabalho atual foi mantido.",
@@ -2246,7 +2252,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction}: o PixelLab retornou a quantidade errada de quadros. Nenhuma nova tentativa paga foi iniciada. Confira a Atividade antes de solicitar outra tentativa.",
 			"animationExceedsPxFrame": "{move} {direction}: os quadros do corpo não cabem no quadro de {w} px. Eles foram mantidos para revisão; nada foi salvo.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: o PixelLab retornou quadros vazios. Nenhuma nova tentativa paga foi iniciada. Confira a Atividade antes de solicitar outra tentativa.",
-			"validJointsWereFound": "{move} {direction}: não foi possível encontrar articulações válidas em todos os quadros. As imagens geradas ficam na Atividade. A configuração parou sem redesenhá-las.",
+			"validJointsWereFound": "{move} {direction}: não foi possível encontrar articulações válidas em todos os quadros. As imagens geradas ficam na Atividade. A animação parou sem redesenhá-las.",
 			"matchBodyColorsOnly": "{direction}: ajuste as cores do corpo só depois que todas as verificações de articulações originais terminarem.",
 			"colorMatchingCannotRepair": "{direction}: o ajuste de cores não corrige problemas de pose, pés ou borda.",
 			"colorDriftOutsideBounded": "{direction}: o desvio de cor ultrapassa os limites de correção pela paleta de referência.",
@@ -3093,7 +3099,7 @@
 		"liftDetailWarned": "{views}: os pés sobem até {px} px em {frames} de {total} quadros de movimento para o movimento caber no quadro. Isso passa da verificação de pés de {limit} px, então a animação é salva com um aviso sobre os pés.",
 		"reroll": "Gerar {views} de novo",
 		"rerollDetail": "Gerar de novo compra uma nova tentativa só para essas direções. Todas as outras mantêm seus resultados pagos.",
-		"keepUnposedDetail": "Salva os quadros do corpo como estão. Não foram encontradas articulações em alguns quadros, então não dá para ajustar itens a esta animação até você criá-la de novo.",
+		"keepUnposedDetail": "Salva os quadros do corpo como estão. Não foram encontradas articulações em alguns quadros, então não dá para ajustar itens a esta animação até você redesenhá-la.",
 		"keepUnposed": "Manter sem ajustar itens",
 		"pending": "Ainda a comprar: cerca de {gens} gens.",
 		"liftable": "Pode ser elevado para caber: os pés sobem até {px} px em {frames} de {total} quadros.",
@@ -3244,6 +3250,7 @@
 	"report": {
 		"action": "Relatar",
 		"actionLabel": "Relatar este problema",
+		"actionLabelFor": "Relatar este problema: {name}",
 		"title": "Relatar este problema",
 		"intro": "Isso abre uma issue pública no GitHub só com o texto abaixo. Não inclui imagens, prompts, nomes nem chaves. Você publica com sua conta do GitHub.",
 		"preview": "Prévia do relatório",
@@ -3295,9 +3302,9 @@
 			"offline": "Verifique sua conexão e tente novamente.",
 			"declined": "Altere a descrição e tente novamente.",
 			"unexpected": "Relate o problema para que ele seja corrigido. O que já foi pago continua em Atividade.",
-			"uncertain": "Confira Atividade antes de tentar de novo: uma nova tentativa pode cobrar outra vez.",
+			"uncertain": "Ela pode ter sido executada e cobrada. Confira pixellab.ai antes de tentar de novo.",
 			"poses": "Configure as poses primeiro e depois crie o equipamento.",
-			"method": "Escolha Automático e tente novamente.",
+			"method": "Crie o item de novo e escolha Automático em Método de animação.",
 			"quote": "Tente novamente em instantes ou escolha outro modelo.",
 			"browser": "Use um navegador atual para continuar.",
 			"exportId": "Escolha outro ID de exportação.",

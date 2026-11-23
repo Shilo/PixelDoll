@@ -388,9 +388,15 @@ export async function parallelGeneration<T>(
 	);
 }
 
+/** A request's English label (the ledger and reports), optionally with the title Activity shows in the user's words. */
+export type JobLabel = string | { text: string; title: Message };
+export const FINDING_JOINTS: JobLabel = {
+	text: 'Finding joints',
+	title: message('activity.findingJoints')
+};
 export async function run(
 	req: Req,
-	label: string,
+	jobLabel: JobLabel,
 	tag: string,
 	cache = false,
 	resumeSafe = req.method === 'POST',
@@ -399,6 +405,7 @@ export async function run(
 	approval?: { attempt: number; quotedEstimate: { reuseOnly: boolean; changed: () => never } }
 ): Promise<JobRec> {
 	signal?.throwIfAborted();
+	const label = typeof jobLabel === 'string' ? jobLabel : jobLabel.text;
 	const dry = signal && dryRuns.get(signal);
 	if (dry) return dryRecord(req, label, dry);
 	const recovery = signal ? measurementRecoveries.get(signal) : undefined;
@@ -424,6 +431,7 @@ export async function run(
 	}
 	const rec = await queue.enqueue(req, {
 		label,
+		...(typeof jobLabel === 'string' ? {} : { title: jobLabel.title }),
 		tag,
 		cache,
 		resumeSafe,
@@ -514,7 +522,7 @@ export function managedRestKeypoints(
 			new LocalizedError(
 				`${d}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.`,
 				'create.errors.pixellabReturnedIncompleteInvalid',
-				{ direction: d }
+				{ direction: viewName(d) }
 			);
 		if (!refs || typeof refs !== 'object' || Array.isArray(refs)) throw invalid();
 		if (!Object.hasOwn(refs, d)) continue; // a wholly absent reference retains the bounded estimate fallback
@@ -546,7 +554,7 @@ export async function measureJoints(
 	const input = skeletonInput(im);
 	const record = await run(
 		routes.estimateSkeleton(png(await b64(input.image))),
-		'Finding joints',
+		FINDING_JOINTS,
 		'm2-skel',
 		true,
 		resumeSafe,
@@ -638,7 +646,8 @@ interface ClipJob {
 	/** Rows each motion frame was lifted by with the user's consent; disclosed with the clip's checks. */
 	lifts?: readonly number[];
 	/** keepUnposed: frames without measured joints are kept (and fail their joint checks) instead of stopping the view. */
-	unposed?: boolean;
+	unposed?: boolean; /** The move and view in the user's words, for messages. */
+	words: ViewWords;
 }
 interface ClipOut {
 	frames: Img[];
@@ -670,7 +679,10 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 				seed: j.seed,
 				view: j.view
 			}),
-		`${j.name} · ${j.anim} ${j.dir}`,
+		{
+			text: `${j.name} · ${j.anim} ${j.dir}`,
+			title: message('activity.titleMoveView', { name: j.name, ...j.words })
+		},
 		'studio-rig',
 		false,
 		true,
@@ -684,7 +696,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		throw new PaidStepError(
 			`${j.anim} ${j.dir}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.`,
 			'create.errors.pixellabReturnedWrongNumber',
-			{ move: j.anim, direction: j.dir },
+			j.words,
 			rejected('frame-count')
 		);
 	const nativeFrames =
@@ -706,7 +718,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		throw new PaidStepError(
 			`${j.anim} ${j.dir}: the body frames do not fit the ${j.rest.w} px frame. They were kept for review; nothing was saved.`,
 			'create.errors.animationExceedsPxFrame',
-			{ move: j.anim, direction: j.dir, w: j.rest.w },
+			{ ...j.words, w: j.rest.w },
 			rejected('overflow')
 		);
 	const rawFrames = nativeFrames ?? normalized.map((n) => n.img);
@@ -715,7 +727,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		throw new PaidStepError(
 			`${j.anim} ${j.dir}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.`,
 			'create.errors.pixellabReturnedEmptyFrames',
-			{ move: j.anim, direction: j.dir },
+			j.words,
 			rejected('empty')
 		);
 	const candidate = j.paletteRepair
@@ -734,9 +746,9 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('render-joints', dryJoints.running);
 	if (!j.unposed && measured.some((k) => !hasAll(k)))
 		throw new PaidStepError(
-			`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`,
+			`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; the move stopped without redrawing them.`,
 			'create.errors.validJointsWereFound',
-			{ move: j.anim, direction: j.dir },
+			j.words,
 			rejected('joints')
 		);
 	const qa = bodyClipQa(
@@ -912,7 +924,8 @@ async function paletteCandidate(
 async function motion(
 	req: Req,
 	dir: Direction,
-	label: string,
+	/** The request's English label (`text`, also in English messages) and its Activity title. */
+	jobLabel: { text: string; title: Message },
 	words: ViewWords,
 	tick: () => void,
 	expected: number,
@@ -929,7 +942,8 @@ async function motion(
 	motionEcho?: ClipSource['motionEcho'];
 	motionBridged?: number[];
 }> {
-	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
+	const label = jobLabel.text;
+	const r = await run(req, jobLabel, 'studio-rig', false, true, signal, activityScope);
 	tick();
 	const { frames, motionEcho } = await normalizeMotionFrames(
 		r,
@@ -1170,11 +1184,11 @@ export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidR
 		const view = drawn.find((x) => x.label === d),
 			placed = view && drawnView(spec, view.img, cell);
 		const problem = !placed
-			? message('create.errors.pixellabReturnedView', { direction: d })
+			? message('create.errors.pixellabReturnedView', { direction: viewName(d) })
 			: placed.cutPx
-				? message('create.errors.viewDoesFitPx', { direction: d, cell })
+				? message('create.errors.viewDoesFitPx', { direction: viewName(d), cell })
 				: !opaqueBox(placed.img)
-					? message('create.errors.pixellabReturnedEmptyView', { direction: d })
+					? message('create.errors.pixellabReturnedEmptyView', { direction: viewName(d) })
 					: undefined;
 		return {
 			label: viewName(d),
@@ -1404,7 +1418,10 @@ export async function createCharacter(
 			: spec;
 	const base = await run(
 		drawRequest(drawSpec, spec.seed),
-		`${spec.name} · creating`,
+		{
+			text: `${spec.name} · creating`,
+			title: message('activity.titleDrawing', { name: spec.name })
+		},
 		'studio-base',
 		false,
 		true,
@@ -1425,7 +1442,7 @@ export async function createCharacter(
 			throw new PaidStepError(
 				`PixelLab returned no ${d} view`,
 				'create.errors.pixellabReturnedView',
-				{ direction: d },
+				{ direction: viewName(d) },
 				drew('frame-count')
 			);
 		const n = drawnView(spec, r.img, cell);
@@ -1433,7 +1450,7 @@ export async function createCharacter(
 			throw new PaidStepError(
 				`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`,
 				'create.errors.viewDoesFitPx',
-				{ direction: d, cell },
+				{ direction: viewName(d), cell },
 				drew('overflow')
 			);
 		const top = opaqueBox(n.img)?.y0 ?? cell;
@@ -1441,7 +1458,7 @@ export async function createCharacter(
 			throw new PaidStepError(
 				`PixelLab returned an empty ${d} view.`,
 				'create.errors.pixellabReturnedEmptyView',
-				{ direction: d },
+				{ direction: viewName(d) },
 				drew('empty')
 			);
 		if (top < HEADROOM_MIN)
@@ -1473,7 +1490,10 @@ export async function createCharacter(
 			no_background: true,
 			seed: spec.registrationSeed ?? spec.seed
 		}),
-		`${spec.name} · rest views`,
+		{
+			text: `${spec.name} · rest views`,
+			title: message('activity.titleRegistering', { name: spec.name })
+		},
 		'studio-base',
 		false,
 		true,
@@ -1490,7 +1510,10 @@ export async function createCharacter(
 		);
 	const ch = await run(
 		routes.getCharacter(charId),
-		`${spec.name} · skeleton`,
+		{
+			text: `${spec.name} · skeleton`,
+			title: message('activity.titleRegistering', { name: spec.name })
+		},
 		'studio-base',
 		true,
 		false,
@@ -1513,7 +1536,7 @@ export async function createCharacter(
 			throw new PaidStepError(
 				`no valid joints found on the ${d} view`,
 				'create.errors.validJointsFoundView',
-				{ direction: d },
+				{ direction: viewName(d) },
 				{ step: 'register', failure: 'joints', recordId: imp.id }
 			);
 		restKps[d] = kps!;
@@ -2026,7 +2049,7 @@ async function inspectKeptBody(
 				throw new RecoveryUnavailable(
 					`${directionLabel(c.dir)}: some frames have no valid measured joints, so they cannot be kept.`,
 					'create.errors.someFramesValidMeasured',
-					{ direction: directionLabel(c.dir) }
+					{ direction: viewName(c.dir) }
 				);
 			return {
 				...c,
@@ -2039,7 +2062,7 @@ async function inspectKeptBody(
 		throw new RecoveryUnavailable(
 			`${directionLabel(broken.dir)}: ${broken.qa.fails.join('; ')}. These frames cannot be kept.`,
 			'create.errors.framesCannotKept',
-			{ direction: directionLabel(broken.dir), reasons: broken.qa.fails.join('; ') }
+			{ direction: viewName(broken.dir), reasons: broken.qa.fails.join('; ') }
 		);
 	if (
 		!clips.length ||
@@ -2166,7 +2189,7 @@ async function inspectMeasurementRecovery(
 			throw new LocalizedError(
 				`${d}: original standing artwork or joints are missing.`,
 				'create.errors.originalStandingArtworkJoints',
-				{ direction: d }
+				{ direction: viewName(d) }
 			);
 		const restImg = await context.read(rest.image.slice(7));
 		const start = await moveReferenceImage(spec.animation?.references?.[d], 'start', rig.cell);
@@ -2198,7 +2221,7 @@ async function inspectMeasurementRecovery(
 				throw new RecoveryUnavailable(
 					`${d}: the original completed motion is unavailable. No request was made.`,
 					'create.errors.originalCompletedMotionUnavailable',
-					{ direction: d }
+					{ direction: viewName(d) }
 				);
 			const { frames } = await normalizeMotionFrames(
 				record,
@@ -2223,7 +2246,7 @@ async function inspectMeasurementRecovery(
 				throw new RecoveryUnavailable(
 					`${d}: the original motion has no valid completed joint checks for every frame. No request was made.`,
 					'create.errors.originalMotionValidCompleted',
-					{ direction: d }
+					{ direction: viewName(d) }
 				);
 			keypoints = measured;
 			rawHashes.push(hash);
@@ -2259,7 +2282,7 @@ async function inspectMeasurementRecovery(
 					throw new RecoveryUnavailable(
 						`${d}: the original completed body render is unavailable. No body was regenerated.`,
 						'create.errors.originalCompletedBodyRender',
-						{ direction: d }
+						{ direction: viewName(d) }
 					);
 				break;
 			}
@@ -2271,7 +2294,7 @@ async function inspectMeasurementRecovery(
 				throw new LocalizedError(
 					`${d}: the cached body render is incomplete.`,
 					'create.errors.cachedBodyRenderIncomplete',
-					{ direction: d }
+					{ direction: viewName(d) }
 				);
 			rawHashes.push(rawHash);
 			const nativeFrames =
@@ -2291,7 +2314,7 @@ async function inspectMeasurementRecovery(
 				throw new LocalizedError(
 					`${d}: the cached body frames do not fit this character. No body was regenerated.`,
 					'create.errors.cachedBodyFramesDo',
-					{ direction: d }
+					{ direction: viewName(d) }
 				);
 			const frames = nativeFrames || normalized.map((n) => n.img);
 			// Only the first render is ever published; a later seed is a legacy attempt, never a keep candidate.
@@ -3444,6 +3467,7 @@ async function bodyClip(
 			activityScope: spec.activityScope,
 			action: bodyAction(spec),
 			unposed: !!spec.keepUnposed,
+			words: viewWords(m, spec.id, d),
 			native: {
 				request: nativeMoveRequest(rec, spec, d, model, await b64(restImg)),
 				model,
@@ -3476,7 +3500,10 @@ async function bodyClip(
 		const result = await motion(
 			request,
 			d,
-			`${m.name} · ${spec.id} ${d} (motion)`,
+			{
+				text: `${m.name} · ${spec.id} ${d} (motion)`,
+				title: message('activity.titleMoveMotion', { name: m.name, ...viewWords(m, spec.id, d) })
+			},
 			viewWords(m, spec.id, d),
 			tick,
 			moveMotionFrames(m, spec),
@@ -3521,7 +3548,8 @@ async function bodyClip(
 			action: bodyAction(spec),
 			paletteRepair: !!spec.bodyPaletteRepair,
 			lifts: spec.motionLift?.[d],
-			unposed: !!spec.keepUnposed
+			unposed: !!spec.keepUnposed,
+			words: viewWords(m, spec.id, d)
 		})
 	};
 }

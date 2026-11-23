@@ -108,6 +108,11 @@ export function problemKind(error: unknown): ProblemKind | undefined {
 	return 'unexpected';
 }
 
+/** Whether a paid try again is the way on that leads. Not for a bug (Report it), a choice the user must change first, a
+ *  decline that would repeat, or a request that may already have charged. */
+export const paidRetryLeads = (kind: ProblemKind | undefined) =>
+	kind !== 'unexpected' && kind !== 'method' && kind !== 'declined' && kind !== 'uncertain';
+
 /** A request Activity lists as failed or lost, by what is known of it: a lost request may have charged; a refusal says why. */
 export function recordProblemKind(
 	record: Pick<JobRec, 'jobs' | 'state' | 'errorKind'>

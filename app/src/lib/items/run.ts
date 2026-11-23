@@ -32,6 +32,7 @@ import type {
 } from '../store/manifest.ts';
 import { composeCell, dropCut } from '../compose/compose.ts';
 import { retainItemMoves } from '../rig/moves.ts';
+import { standingMove } from '../equipment/refit.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
@@ -2288,14 +2289,35 @@ const keepsFramesWithout = (item: Item, moves: readonly string[]) =>
 			([move, dirs]) => !moves.includes(move) && Object.keys(dirs).length > 0
 		)
 	);
-/** Whether an item can be kept without these moves: never without the standing move it is designed and posed from, or the
- *  move of its anchor frame, which every other move is drawn from, and never when no frames would be left. Those gaps
- *  need the paid redraw instead. */
-export const keepableWithout = (item: Item, moves: readonly string[]) =>
-	!!moves.length &&
-	!(item.standing && moves.includes(item.standing)) &&
-	!(item.anchorCell && moves.includes(item.anchorCell.split('/')[0])) &&
-	keepsFramesWithout(item, moves);
+/** Why an item cannot be kept without these moves, in the user's words, or undefined when it can: never without the
+ *  standing move it is designed and posed from (the rig's standing move when the item names none), or the move of its
+ *  anchor frame, which every other move is drawn from, and never when no frames would be left. Those gaps need the paid
+ *  redraw instead. */
+export function keepWithoutRefusal(
+	m: Manifest,
+	item: Item,
+	moves: readonly string[]
+): LocalizedError | undefined {
+	const designed = item.standing ?? standingMove(m, m.rig.directions[0]?.id ?? 'south');
+	if (
+		moves.length &&
+		!(designed && moves.includes(designed)) &&
+		!(item.anchorCell && moves.includes(item.anchorCell.split('/')[0])) &&
+		keepsFramesWithout(item, moves)
+	)
+		return undefined;
+	return keepsFramesWithout(item, moves)
+		? new LocalizedError(
+				'This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.',
+				'itemRoute.errors.keepWithoutStanding'
+			)
+		: new LocalizedError(
+				'This item has no complete move to keep. Make the missing frames instead.',
+				'itemRoute.errors.keepWithoutNothingLeft'
+			);
+}
+export const keepableWithout = (m: Manifest, item: Item, moves: readonly string[]) =>
+	!keepWithoutRefusal(m, item, moves);
 /** The item without these moves (retainItemMoves: frames, coverage, pending cells, hidden body pixels, refit notes and
  *  checks, with the summary recomputed), so it is hidden there and listed as missing, to make later at its own price.
  *  Nothing is added or redrawn. */
@@ -2332,16 +2354,8 @@ export async function acceptItemReview(
 	) {
 		throw itemReviewChangedError();
 	}
-	if (keepWithout && !keepableWithout(item, keepWithout))
-		throw keepsFramesWithout(item, keepWithout)
-			? new LocalizedError(
-					'This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.',
-					'itemRoute.errors.keepWithoutStanding'
-				)
-			: new LocalizedError(
-					'This item has no complete move to keep. Make the missing frames instead.',
-					'itemRoute.errors.keepWithoutNothingLeft'
-				);
+	const refusal = keepWithout && keepWithoutRefusal(ctx.rec.manifest, item, keepWithout);
+	if (refusal) throw refusal;
 	const kept = keepWithout?.length ? withoutMoves(ctx.rec.manifest, item, keepWithout) : item;
 	const accepted = { ...kept, qa: { ...acceptQa(kept.qa!), status: 'accepted' as const } };
 	await saveItem(projectId, accepted, new Map(), [], (current) => {

@@ -1024,6 +1024,7 @@
 		"nameCouldNotFinishNoPaidRetry": "{name} tamamlanamadı. Ücretli bir deneme başlatılmadı. Tekrar denemek için inceleme ekranını açın.",
 		"nameHasIssuesToReviewNoPaid": "{name} için incelenecek sorunlar var. Ücretli bir deneme başlatılmadı.",
 		"nameAcceptedAsIs": "{name} olduğu gibi kabul edildi",
+		"nameKeptWithout": "{name}, {moves} olmadan tutuldu. O kareler oluşturulana kadar orada gizli kalır.",
 		"nameSaved": "{name} kaydedildi",
 		"nameAdded": "{name} eklendi",
 		"cancelThisItemInTheTabThat": "Bu eşyayı üretimin yapıldığı sekmeden iptal edin. Bu sekme üretimi durdurmadı.",
@@ -1565,6 +1566,7 @@
 		},
 		"coverage": {
 			"oneMove": "{move} animasyonunun bazı kareleri eksik",
+			"notMade": "{move} için henüz oluşturulmadı",
 			"severalMoves": "{count} animasyonda eksik kare var"
 		},
 		"qa": {
@@ -1961,6 +1963,11 @@
 		"cleared": "Temizlendi: {jobs}. Taslaklarınızın veya devam eden karakter ya da animasyon üretiminin kullandığı işler korunur.",
 		"clearedWithImages": "Temizlendi: {jobs} ve {images}. Taslaklarınızın veya devam eden karakter ya da animasyon üretiminin kullandığı işler korunur.",
 		"findingJoints": "Eklemler bulunuyor",
+		"titleSetup": "{name}: karakter kurulumu",
+		"titleRegistering": "{name}: görünümler hazırlanıyor",
+		"titleDrawing": "{name}: karakter çiziliyor",
+		"titleMoveMotion": "{name}: {move} hareketi, {direction}",
+		"titleMoveView": "{name}: {move}, {direction}",
 		"state": {
 			"queued": "kuyrukta",
 			"submitting": "gönderiliyor",
@@ -1996,7 +2003,6 @@
 		"retryIn": "{seconds} sn sonra tekrar denenecek",
 		"needsKey": "anahtarınız gerekiyor",
 		"recent": "Son işler",
-		"lostDetail": "sonuç bilinmiyor: Çalışmış olabilir. pixellab.ai adresini kontrol edin",
 		"tierHint": "Bu iş akışı için PixelLab Tier {tier} veya üzeri gerekir. Tekrar denemeden önce planınızı ve bakiyenizi kontrol edin. Bir işin başarısız olması tek başına plan sorunu olduğunu göstermez.",
 		"session": "Bu oturum: {cost}. Bazı animasyonlar üretim hakkı yerine dolar olarak ücretlendirilir. Yukarıdaki bakiye gerçek toplamı gösterir.",
 		"clearFollower": "İşleri çalıştıran PixelDoll sekmesinden temizleyin",
@@ -2135,7 +2141,7 @@
 		"bodySize": "{w}×{h} piksel",
 		"frameSize": "{w}×{h} piksel, pivot noktası {x},{y}",
 		"waitingForRepairReview": "Eşya karelerinin incelenmesi bekleniyor",
-		"needsRedo": "Eklemler bulunamadı: üzerinde eşya canlandırmak için yeniden oluşturun"
+		"needsRedo": "Eklemler bulunamadı: üzerinde eşya canlandırmak için yeniden çizin"
 	},
 	"setup": {
 		"warnings": {
@@ -2177,7 +2183,7 @@
 			"bodyChanged": "Kurulum başladıktan sonra gövde değişti. Mevcut kareler için kurulumu yeniden başlatın.",
 			"looksRequired": "Önce karakterin mevcut görünümünü tarif edin.",
 			"noFrames": "Rig kurulumu için gövde karesi yok. Mevcut görsel değişmedi.",
-			"jointsMissing": "PixelLab, bir gövde karesinde 18 geçerli eklemin tümünü bulamadı. Mevcut görsel değişmedi. Yeniden bağlanın veya daha net bir ayakta duruş referansı seçip devam edin.",
+			"jointsMissing": "PixelLab, ayakta duran bir karede 18 geçerli eklemin tümünü bulamadı. Mevcut görsel değişmedi. O kareyi Kareleri düzeltin bölümünde yeniden çizin veya daha net bir ayakta duruş görünümü seçin, ardından kuruluma devam edin.",
 			"noCharacterId": "PixelLab yönetilen bir karakter kimliği döndürmedi. Mevcut görsel değişmedi.",
 			"referenceChanged": "Bir ayakta duruş referansı kurulum sırasında değişti.",
 			"characterChanged": "Karakter kurulum sırasında değişti. Mevcut çalışması korundu.",
@@ -2237,7 +2243,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab yanlış sayıda kare döndürdü. Ücretli yeniden deneme başlatılmadı. Yeni deneme istemeden önce Etkinlik bölümünü inceleyin.",
 			"animationExceedsPxFrame": "{move} {direction}: Gövde kareleri {w} px kareye sığmıyor. İnceleme için saklandılar; hiçbir şey kaydedilmedi.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab boş kareler döndürdü. Ücretli yeniden deneme başlatılmadı. Yeni deneme istemeden önce Etkinlik bölümünü inceleyin.",
-			"validJointsWereFound": "{move} {direction}: Her karede geçerli eklemler bulunamadı. Üretilen görseller Etkinlik bölümünde korundu; kurulum yeniden çizim yapmadan durdu.",
+			"validJointsWereFound": "{move} {direction}: Her karede geçerli eklemler bulunamadı. Üretilen görseller Etkinlik bölümünde korundu; animasyon yeniden çizim yapmadan durdu.",
 			"matchBodyColorsOnly": "{direction}: Gövde renklerini ancak özgün eklem kontrollerinin tümü tamamlandıktan sonra eşleştirin.",
 			"colorMatchingCannotRepair": "{direction}: Renk eşleştirme, poz, ayak veya kenar sorunlarını onaramaz.",
 			"colorDriftOutsideBounded": "{direction}: Renk sapması, referans paletiyle yapılabilen sınırlı onarımın dışında.",
@@ -3084,7 +3090,7 @@
 		"liftDetailWarned": "{views}: Hareketin kareye sığması için ayaklar {total} hareket karesinin {frames} tanesinde en fazla {px} px yükselir. Bu, {limit} px ayak denetiminin üzerinde olduğundan animasyon bir ayak uyarısıyla kaydedilir.",
 		"reroll": "Yeniden oluştur: {views}",
 		"rerollDetail": "Yeniden oluşturma yalnızca bu yönler için yeni bir deneme satın alır. Diğer tüm yönler ücretli sonuçlarını korur.",
-		"keepUnposedDetail": "Gövde karelerini olduğu gibi kaydeder. Bazı karelerde eklemler bulunamadı, bu yüzden siz yeniden oluşturana kadar bu animasyona eşya uydurulamaz.",
+		"keepUnposedDetail": "Gövde karelerini olduğu gibi kaydeder. Bazı karelerde eklemler bulunamadı, bu yüzden siz yeniden çizene kadar bu animasyona eşya uydurulamaz.",
 		"keepUnposed": "Eşya uydurmadan tut",
 		"pending": "Satın alınacak: yaklaşık {gens} gen.",
 		"liftable": "Sığması için yükseltilebilir: Ayaklar {total} karenin {frames} tanesinde en fazla {px} px yükselir.",
@@ -3232,6 +3238,7 @@
 	"report": {
 		"action": "Bildir",
 		"actionLabel": "Bu sorunu bildir",
+		"actionLabelFor": "Bu sorunu bildir: {name}",
 		"title": "Bu sorunu bildir",
 		"intro": "Yalnızca aşağıdaki metni içeren herkese açık bir GitHub kaydı açar. Görsel, istem, ad veya anahtar eklenmez. Kendi GitHub hesabınızla gönderin.",
 		"preview": "Bildirim önizlemesi",
@@ -3283,9 +3290,9 @@
 			"offline": "Bağlantınızı kontrol edin, sonra yeniden deneyin.",
 			"declined": "Açıklamayı değiştirin, sonra yeniden deneyin.",
 			"unexpected": "Düzeltilebilmesi için bildirin. Önceden ödenen her şey Etkinlik’te kalır.",
-			"uncertain": "Yeniden denemeden önce Etkinlik bölümünü kontrol edin: yeni bir deneme yeniden ücretlendirilebilir.",
+			"uncertain": "Çalışmış ve ücretlendirilmiş olabilir. Yeniden denemeden önce pixellab.ai adresini kontrol edin.",
 			"poses": "Önce duruşlarını kurun, sonra ekipmanı oluşturun.",
-			"method": "Otomatik'i seçin, sonra yeniden deneyin.",
+			"method": "Eşyayı yeniden oluşturun ve Animasyon yöntemi için Otomatik'i seçin.",
 			"quote": "Biraz sonra yeniden deneyin veya başka bir model seçin.",
 			"browser": "Devam etmek için güncel bir tarayıcı kullanın.",
 			"exportId": "Farklı bir dışa aktarma kimliği seçin.",

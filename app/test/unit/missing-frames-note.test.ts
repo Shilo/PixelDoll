@@ -27,3 +27,21 @@ test('missing frames read as one short warning for the tile and menu', async () 
 		)
 	).toEqual({ key: 'studioModel.coverage.oneMove', vars: { move: 'Walk' } });
 });
+
+test('an item with no frames at all in a move says it was not made for it, not that some frames are missing', async () => {
+	const { manifest: m } = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url)))
+	);
+	const walkOnly = {
+			...m,
+			rig: { ...m.rig, animations: m.rig.animations.filter((a) => a.id === 'walk') }
+		},
+		hat = structuredClone(m.items.find((i) => i.id === 'hat_wizard')!);
+	// As Keep without moves leaves it: every walk frame dropped.
+	for (const layer of hat.layers) delete layer.cells?.walk;
+	expect(missingFramesNote(walkOnly, hat)).toEqual({
+		key: 'studioModel.coverage.notMade',
+		vars: { move: 'Walk' }
+	});
+});

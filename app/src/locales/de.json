@@ -1024,6 +1024,7 @@
 		"nameCouldNotFinishNoPaidRetry": "{name} konnte nicht fertiggestellt werden. Es wurde kein kostenpflichtiger Neuversuch gestartet. Öffne die Prüfung, um es erneut zu versuchen.",
 		"nameHasIssuesToReviewNoPaid": "Bei {name} gibt es Probleme zu prüfen. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
 		"nameAcceptedAsIs": "{name} unverändert übernommen",
+		"nameKeptWithout": "{name} ohne {moves} behalten. Dort bleibt es ausgeblendet, bis diese Frames erstellt sind.",
 		"nameSaved": "{name} gespeichert",
 		"nameAdded": "{name} hinzugefügt",
 		"cancelThisItemInTheTabThat": "Brich den Gegenstand in dem Tab ab, in dem er generiert wird. Dieser Tab hat die Generierung nicht gestoppt.",
@@ -1565,6 +1566,7 @@
 		},
 		"coverage": {
 			"oneMove": "Einige Frames für {move} fehlen",
+			"notMade": "Noch nicht für {move} erstellt",
 			"severalMoves": "Fehlende Frames in {count} Animationen"
 		},
 		"qa": {
@@ -1961,6 +1963,11 @@
 		"cleared": "Entfernt: {jobs}. Aufträge, die noch für Entwürfe, Figurenerstellung oder Animationen benötigt werden, bleiben erhalten.",
 		"clearedWithImages": "Entfernt: {jobs} und {images}. Aufträge, die noch für Entwürfe, Figurenerstellung oder Animationen benötigt werden, bleiben erhalten.",
 		"findingJoints": "Gelenke werden gesucht",
+		"titleSetup": "{name}: Figur einrichten",
+		"titleRegistering": "{name}: Ansichten werden vorbereitet",
+		"titleDrawing": "{name}: Figur wird gezeichnet",
+		"titleMoveMotion": "{name}: Bewegung für {move}, {direction}",
+		"titleMoveView": "{name}: {move}, {direction}",
 		"state": {
 			"queued": "in Warteschlange",
 			"submitting": "wird gesendet",
@@ -1996,7 +2003,6 @@
 		"retryIn": "erneuter Versuch in {seconds} s",
 		"needsKey": "braucht deinen Schlüssel",
 		"recent": "Letzte Aufträge",
-		"lostDetail": "unbekannt: möglicherweise ausgeführt, prüfe pixellab.ai",
 		"tierHint": "Dieser Ablauf braucht mindestens PixelLab Tier {tier}. Prüfe vor einem neuen Versuch Tarif und Kontostand. Ein fehlgeschlagener Auftrag allein bedeutet nicht, dass es am Tarif liegt.",
 		"session": "Diese Sitzung: {cost}. Einige Animationen werden in US-Dollar statt in Generierungen abgerechnet. Maßgeblich ist der Kontostand oben.",
 		"clearFollower": "Entferne die Einträge in dem PixelDoll-Tab, in dem die Aufträge laufen",
@@ -2135,7 +2141,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, Drehpunkt {x},{y}",
 		"waitingForRepairReview": "Warten auf die Prüfung der Gegenstandsframes",
-		"needsRedo": "Gelenke nicht gefunden: erstelle sie erneut, um Gegenstände darauf zu animieren"
+		"needsRedo": "Gelenke nicht gefunden: neu zeichnen, um Gegenstände darauf zu animieren"
 	},
 	"setup": {
 		"warnings": {
@@ -2177,7 +2183,7 @@
 			"bodyChanged": "Der Grundkörper hat sich seit Beginn der Einrichtung geändert. Starte die Einrichtung für die aktuellen Frames neu.",
 			"looksRequired": "Beschreibe zuerst das vorhandene Aussehen der Figur.",
 			"noFrames": "Es gibt keine Grundkörperframes für die Rig-Einrichtung. Vorhandene Grafiken bleiben unverändert.",
-			"jointsMissing": "PixelLab konnte in einem Grundkörperframe nicht alle 18 gültigen Gelenke finden. Vorhandene Grafiken bleiben unverändert. Stelle die Verbindung wieder her oder wähle eine eindeutigere Standreferenz und setze die Einrichtung fort.",
+			"jointsMissing": "PixelLab konnte in einem Standframe nicht alle 18 gültigen Gelenke finden. Vorhandene Grafiken bleiben unverändert. Zeichne diesen Frame unter „Frames korrigieren“ neu oder wähle eine eindeutigere Standansicht und setze die Einrichtung dann fort.",
 			"noCharacterId": "PixelLab hat keine verwaltete Figuren-ID zurückgegeben. Vorhandene Grafiken bleiben unverändert.",
 			"referenceChanged": "Eine Standreferenz hat sich während der Einrichtung geändert.",
 			"characterChanged": "Die Figur hat sich während der Einrichtung geändert. Der aktuelle Stand der Figur bleibt erhalten.",
@@ -2237,7 +2243,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab hat die falsche Anzahl an Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
 			"animationExceedsPxFrame": "{move} {direction}: Die Körper-Frames passen nicht in den {w} px großen Frame. Sie wurden zur Prüfung behalten; nichts wurde gespeichert.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab hat leere Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
-			"validJointsWereFound": "{move} {direction}: Es wurden nicht in jedem Frame gültige Gelenke gefunden. Die generierten Bilder bleiben unter „Aktivität“ erhalten. Die Einrichtung wurde beendet, ohne sie neu zu zeichnen.",
+			"validJointsWereFound": "{move} {direction}: Es wurden nicht in jedem Frame gültige Gelenke gefunden. Die generierten Bilder bleiben unter „Aktivität“ erhalten. Die Animation wurde beendet, ohne sie neu zu zeichnen.",
 			"matchBodyColorsOnly": "{direction}: Gleiche die Grundkörperfarben erst ab, wenn alle ursprünglichen Gelenkprüfungen abgeschlossen sind.",
 			"colorMatchingCannotRepair": "{direction}: Der Farbabgleich kann keine Fehler an Posen, Füßen oder Rändern beheben.",
 			"colorDriftOutsideBounded": "{direction}: Die Farbabweichung ist zu groß für die begrenzte Korrektur anhand der Referenzpalette.",
@@ -3084,7 +3090,7 @@
 		"liftDetailWarned": "{views}: Die Füße heben sich um bis zu {px} px in {frames} von {total} Bewegungs-Frames, damit die Bewegung in den Frame passt. Das liegt über der Fußprüfung von {limit} px, daher wird die Animation mit einem Fuß-Hinweis gespeichert.",
 		"reroll": "{views} neu würfeln",
 		"rerollDetail": "Neu würfeln kauft nur für diese Blickrichtungen einen neuen Versuch. Alle anderen behalten ihre bezahlten Ergebnisse.",
-		"keepUnposedDetail": "Speichert die Körper-Frames so, wie sie sind. Auf einigen Frames wurden keine Gelenke gefunden, daher können Gegenstände erst angepasst werden, wenn du die Animation erneut erstellst.",
+		"keepUnposedDetail": "Speichert die Körper-Frames so, wie sie sind. Auf einigen Frames wurden keine Gelenke gefunden, daher können Gegenstände erst angepasst werden, wenn du die Animation neu zeichnest.",
 		"keepUnposed": "Ohne Gegenstände behalten",
 		"pending": "Noch zu kaufen: etwa {gens} Gens.",
 		"liftable": "Kann angehoben werden: Die Füße heben sich um bis zu {px} px in {frames} von {total} Frames.",
@@ -3232,6 +3238,7 @@
 	"report": {
 		"action": "Melden",
 		"actionLabel": "Dieses Problem melden",
+		"actionLabelFor": "Dieses Problem melden: {name}",
 		"title": "Dieses Problem melden",
 		"intro": "Öffnet ein öffentliches GitHub-Issue nur mit dem Text unten. Bilder, Prompts, Namen und Schlüssel sind nicht enthalten. Du veröffentlichst es mit deinem GitHub-Konto.",
 		"preview": "Vorschau der Meldung",
@@ -3283,9 +3290,9 @@
 			"offline": "Prüfe deine Verbindung und versuch es dann erneut.",
 			"declined": "Ändere die Beschreibung und versuch es dann erneut.",
 			"unexpected": "Melde es, damit es behoben werden kann. Bereits Bezahltes bleibt unter „Aktivität“.",
-			"uncertain": "Prüfe „Aktivität“, bevor du es erneut versuchst: Ein neuer Versuch könnte erneut kosten.",
+			"uncertain": "Sie wurde vielleicht ausgeführt und berechnet. Prüfe pixellab.ai, bevor du es erneut versuchst.",
 			"poses": "Richte zuerst ihre Posen ein und erstelle dann die Ausrüstung.",
-			"method": "Wähle „Automatisch“ und versuch es dann erneut.",
+			"method": "Erstelle den Gegenstand erneut und wähle bei „Animationsmethode“ die Option „Automatisch“.",
 			"quote": "Versuch es gleich noch einmal oder wähle ein anderes Modell.",
 			"browser": "Verwende einen aktuellen Browser, um fortzufahren.",
 			"exportId": "Wähle eine andere Export-ID.",

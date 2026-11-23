@@ -1024,6 +1024,7 @@
 		"nameCouldNotFinishNoPaidRetry": "La génération de {name} n’a pas abouti. Aucune nouvelle tentative payante n’a été lancée. Ouvrez le panneau de vérification de l’objet pour réessayer.",
 		"nameHasIssuesToReviewNoPaid": "{name} a des problèmes à vérifier. Aucune nouvelle tentative payante n’a été lancée.",
 		"nameAcceptedAsIs": "{name} accepté tel quel",
+		"nameKeptWithout": "{name} gardé sans {moves}. Il reste masqué là jusqu’à ce que ces images soient créées.",
 		"nameSaved": "{name} enregistré",
 		"nameAdded": "{name} ajouté",
 		"cancelThisItemInTheTabThat": "Annulez la génération depuis l’onglet qui crée cet objet. Cet onglet n’a pas arrêté la génération.",
@@ -1565,6 +1566,7 @@
 		},
 		"coverage": {
 			"oneMove": "Il manque des images pour {move}",
+			"notMade": "Pas encore créé pour {move}",
 			"severalMoves": "Images manquantes dans {count} animations"
 		},
 		"qa": {
@@ -1961,6 +1963,11 @@
 		"cleared": "Effacé : {jobs}. Les tâches encore utilisées par vos brouillons, une création ou une animation en cours sont conservées.",
 		"clearedWithImages": "Effacé : {jobs} et {images}. Les tâches encore utilisées par vos brouillons, une création ou une animation en cours sont conservées.",
 		"findingJoints": "Recherche des articulations",
+		"titleSetup": "{name} : configuration du personnage",
+		"titleRegistering": "{name} : préparation des vues",
+		"titleDrawing": "{name} : dessin du personnage",
+		"titleMoveMotion": "{name} : mouvement de {move}, {direction}",
+		"titleMoveView": "{name} : {move}, {direction}",
 		"state": {
 			"queued": "en file d’attente",
 			"submitting": "envoi en cours",
@@ -1996,7 +2003,6 @@
 		"retryIn": "nouvel essai dans {seconds} s",
 		"needsKey": "nécessite votre clé",
 		"recent": "Récent",
-		"lostDetail": "issue inconnue : la tâche a peut-être été exécutée. Vérifiez sur pixellab.ai",
 		"tierHint": "Cette opération nécessite un forfait PixelLab Tier {tier} ou supérieur. Vérifiez votre forfait et votre solde avant de réessayer. Une tâche en échec ne suffit pas à établir un problème de forfait.",
 		"session": "Cette session : {cost}. Certaines animations sont facturées en dollars américains plutôt qu’en générations. Le solde affiché ci-dessus fait foi.",
 		"clearFollower": "Effacez-les dans l’onglet PixelDoll qui exécute les tâches",
@@ -2135,7 +2141,7 @@
 		"bodySize": "{w} × {h} px",
 		"frameSize": "{w} × {h} px, pivot {x},{y}",
 		"waitingForRepairReview": "En attente de la vérification des images de l’objet",
-		"needsRedo": "Articulations introuvables : recréez-la pour y animer des objets"
+		"needsRedo": "Articulations introuvables : redessinez-la pour y animer des objets"
 	},
 	"setup": {
 		"warnings": {
@@ -2177,7 +2183,7 @@
 			"bodyChanged": "Le corps a changé depuis le début de la configuration. Relancez la configuration pour les images actuelles.",
 			"looksRequired": "Décrivez d’abord l’apparence existante du personnage.",
 			"noFrames": "Aucune image du corps n’est disponible pour la configuration du rig. Les visuels existants sont inchangés.",
-			"jointsMissing": "PixelLab n’a pas trouvé les 18 articulations valides sur une image du corps. Les visuels existants sont inchangés ; reconnectez-vous ou choisissez une référence debout plus claire, puis reprenez.",
+			"jointsMissing": "PixelLab n’a pas trouvé les 18 articulations valides sur une image debout. Les visuels existants sont inchangés ; redessinez cette image dans Corriger les images ou choisissez une vue debout plus claire, puis reprenez la configuration.",
 			"noCharacterId": "PixelLab n’a pas renvoyé d’ID de personnage géré. Les visuels existants sont inchangés.",
 			"referenceChanged": "Une référence debout a changé pendant la configuration.",
 			"characterChanged": "Le personnage a changé pendant la configuration. Son travail actuel a été conservé.",
@@ -2237,7 +2243,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction} : PixelLab a renvoyé un nombre d’images incorrect. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
 			"animationExceedsPxFrame": "{move} {direction} : les images du corps ne tiennent pas dans le cadre de {w} px. Elles ont été conservées pour vérification ; rien n’a été enregistré.",
 			"pixellabReturnedEmptyFrames": "{move} {direction} : PixelLab a renvoyé des images vides. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
-			"validJointsWereFound": "{move} {direction} : certaines images n’ont pas d’articulations valides. Les images générées sont conservées dans « Activité » ; la configuration s’est arrêtée sans les redessiner.",
+			"validJointsWereFound": "{move} {direction} : certaines images n’ont pas d’articulations valides. Les images générées sont conservées dans « Activité » ; l’animation s’est arrêtée sans les redessiner.",
 			"matchBodyColorsOnly": "{direction} : harmonisez les couleurs du corps uniquement une fois tous les contrôles d’articulations d’origine terminés.",
 			"colorMatchingCannotRepair": "{direction} : l’harmonisation des couleurs ne corrige pas les problèmes de pose, de pieds ou de bordure.",
 			"colorDriftOutsideBounded": "{direction} : l’écart de couleurs est trop important pour être corrigé avec la palette de référence.",
@@ -3084,7 +3090,7 @@
 		"liftDetailWarned": "{views} : les pieds montent jusqu’à {px} px dans {frames} images de mouvement sur {total} pour que le mouvement tienne dans le cadre. C’est au-delà du contrôle des pieds de {limit} px, l’animation est donc enregistrée avec un avertissement sur les pieds.",
 		"reroll": "Relancer {views}",
 		"rerollDetail": "Une relance n’achète une nouvelle tentative que pour ces directions. Toutes les autres gardent leurs résultats payés.",
-		"keepUnposedDetail": "Enregistre les images du corps telles quelles. Des articulations manquent sur certaines images : aucun objet ne pourra être ajusté à cette animation avant que vous la recréiez.",
+		"keepUnposedDetail": "Enregistre les images du corps telles quelles. Des articulations manquent sur certaines images : aucun objet ne pourra être ajusté à cette animation avant que vous la redessiniez.",
 		"keepUnposed": "Garder sans ajuster d’objets",
 		"pending": "Reste à acheter : environ {gens} gens.",
 		"liftable": "Peut être relevé pour tenir : les pieds montent jusqu’à {px} px dans {frames} images sur {total}.",
@@ -3235,6 +3241,7 @@
 	"report": {
 		"action": "Signaler",
 		"actionLabel": "Signaler ce problème",
+		"actionLabelFor": "Signaler ce problème : {name}",
 		"title": "Signaler ce problème",
 		"intro": "Ouvre un ticket public sur GitHub contenant uniquement le texte ci-dessous. Aucune image, aucun prompt, nom ou clé n’est inclus. Vous le publiez avec votre compte GitHub.",
 		"preview": "Aperçu du signalement",
@@ -3286,9 +3293,9 @@
 			"offline": "Vérifiez votre connexion, puis réessayez.",
 			"declined": "Modifiez la description, puis réessayez.",
 			"unexpected": "Signalez-le pour qu’il soit corrigé. Ce qui a déjà été payé reste dans Activité.",
-			"uncertain": "Consultez Activité avant de réessayer : une nouvelle tentative pourrait être facturée à nouveau.",
+			"uncertain": "Elle a peut-être été exécutée et facturée. Vérifiez pixellab.ai avant de réessayer.",
 			"poses": "Configurez d’abord ses poses, puis créez l’équipement.",
-			"method": "Choisissez Automatique, puis réessayez.",
+			"method": "Recréez l’objet et choisissez Automatique pour Méthode d’animation.",
 			"quote": "Réessayez dans un instant ou choisissez un autre modèle.",
 			"browser": "Utilisez un navigateur récent pour continuer.",
 			"exportId": "Choisissez un autre ID d’export.",

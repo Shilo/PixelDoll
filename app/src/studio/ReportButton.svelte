@@ -2,14 +2,15 @@
 	// The unobtrusive Report action any failure surface can add: a quiet link-sized button that opens the report preview.
 	import { t } from 'svelte-whisper';
 	import { reportProblem, type Problem } from './report.svelte.ts';
-	const problem: Problem = $props();
+	// `name`: what failed, in the user's words, so each Report in a list has its own accessible name.
+	const { name, ...problem }: Problem & { name?: string } = $props();
 </script>
 
 <button
 	type="button"
 	class="bu-action btn link small report-problem"
 	data-variant="quiet"
-	aria-label={t('report.actionLabel')}
+	aria-label={name ? t('report.actionLabelFor', { name }) : t('report.actionLabel')}
 	onclick={() => reportProblem({ ...problem })}>{t('report.action')}</button
 >
 

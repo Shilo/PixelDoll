@@ -3374,7 +3374,15 @@ export async function acceptItemIssues(
 	await (await itemRun()).acceptItemReview(projectId, itemId, reviewed, keepWithout);
 	if (viewing(projectId)) await openProject(projectId, { quiet: true });
 	else await syncStoredProject(projectId);
-	toast(message('state.nameAcceptedAsIs', { name: reviewed.name }));
+	const moves = store.project?.manifest.rig.animations ?? [];
+	toast(
+		keepWithout?.length
+			? message('state.nameKeptWithout', {
+					name: reviewed.name,
+					moves: keepWithout.map((id) => displayMove(id, moves)).join(', ')
+				})
+			: message('state.nameAcceptedAsIs', { name: reviewed.name })
+	);
 }
 async function openItemReview(projectId: string, itemId: string, anim?: string) {
 	await openProject(projectId);

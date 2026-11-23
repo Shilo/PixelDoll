@@ -8,7 +8,7 @@
 	import { setupPlan, rigReady, type SetupPlan } from '../lib/rig/setup.ts';
 	import * as db from '../lib/store/db.ts';
 	import type { StoredProject } from '../lib/store/project.ts';
-	import { SETUP_STEPS, setupRegistrationStuck } from './setup.ts';
+	import { SETUP_STEPS, setupRegistrationStuck, setupResumeGens } from './setup.ts';
 	import { freshSeed } from './characterConfig.ts';
 	import {
 		ui,
@@ -55,16 +55,25 @@
 	const ready = $derived(rigReady(rec));
 	// A registration that finished without a usable character replays as such: only a new seed (0.25 gen) can change it.
 	let stuck = $state(false);
+	// Resuming reuses every completed request; this is what it still buys, shown on the button before it is pressed.
+	let resumeGens = $state<number | null>(null);
 	$effect(() => {
 		const spec = mine && settingUp.error ? $state.snapshot(settingUp.spec) : null;
 		let current = true;
 		stuck = false;
-		if (spec)
+		resumeGens = null;
+		if (spec) {
 			void setupRegistrationStuck(spec)
 				.then((value) => {
 					if (current) stuck = value;
 				})
 				.catch((failure: unknown) => console.error('setup review', failure));
+			void setupResumeGens(spec)
+				.then((value) => {
+					if (current) resumeGens = value;
+				})
+				.catch((failure: unknown) => console.error('setup price', failure));
+		}
 		return () => {
 			current = false;
 		};
@@ -283,7 +292,12 @@
 								)}
 							>{#if stuck}{t('setup.newRegistration')}
 								<span class="cost">{t('moves.estimate', { gens: formatNumber(0.25) })}</span
-								>{:else}{t('setup.resume')}{/if}</button
+								>{:else}{t('setup.resume')}
+								<span class="cost"
+									>{t('moves.estimate', {
+										gens: resumeGens === null ? '–' : formatNumber(resumeGens)
+									})}</span
+								>{/if}</button
 						></span
 					>
 				</div>

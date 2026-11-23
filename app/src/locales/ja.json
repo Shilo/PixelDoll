@@ -995,6 +995,7 @@
 		"nameCouldNotFinishNoPaidRetry": "{name}を完了できませんでした。有料の再試行は開始していません。確認画面を開いてやり直してください。",
 		"nameHasIssuesToReviewNoPaid": "{name}に確認が必要な問題があります。有料の再試行は開始していません。",
 		"nameAcceptedAsIs": "{name}をそのまま承認しました",
+		"nameKeptWithout": "{name}を{moves}なしで残しました。それらのフレームを作成するまで、そこでは表示されません。",
 		"nameSaved": "{name}を保存しました",
 		"nameAdded": "{name}を追加しました",
 		"cancelThisItemInTheTabThat": "このアイテムは、生成しているタブでキャンセルしてください。このタブでは生成を停止していません。",
@@ -1516,6 +1517,7 @@
 		},
 		"coverage": {
 			"oneMove": "{move}のフレームが一部不足しています",
+			"notMade": "{move}用はまだ作成されていません",
 			"severalMoves": "{count}個のモーションでフレームが不足しています"
 		},
 		"qa": {
@@ -1901,6 +1903,11 @@
 		"cleared": "{jobs}を消去しました。下書きや、実行中のキャラクター作成・モーション生成で使用しているジョブは残しています。",
 		"clearedWithImages": "{jobs}と{images}を消去しました。下書きや、実行中のキャラクター作成・モーション生成で使用しているジョブは残しています。",
 		"findingJoints": "関節を検出中",
+		"titleSetup": "{name}：キャラクターのセットアップ",
+		"titleRegistering": "{name}：向きを準備",
+		"titleDrawing": "{name}：キャラクターを描画",
+		"titleMoveMotion": "{name}：{move}の動き、{direction}",
+		"titleMoveView": "{name}：{move}、{direction}",
 		"state": {
 			"queued": "待機中",
 			"submitting": "送信中",
@@ -1935,7 +1942,6 @@
 		"retryIn": "{seconds}秒後に再試行",
 		"needsKey": "キーが必要です",
 		"recent": "最近のジョブ",
-		"lostDetail": "不明：実行された可能性があります。pixellab.aiで確認してください",
 		"tierHint": "このワークフローにはPixelLabのTier {tier}以上が必要です。再試行する前にプランと残高を確認してください。ジョブの失敗だけでは、プランの問題とは限りません。",
 		"session": "このセッション：{cost}。モーションによっては生成回数ではなくドル建てで請求されます。実際の合計は上の残高で確認してください。",
 		"clearFollower": "ジョブを実行しているPixelDollのタブで消去してください",
@@ -2071,7 +2077,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px、ピボット {x},{y}",
 		"waitingForRepairReview": "装備フレームの確認待ち",
-		"needsRedo": "関節が見つかりません。アイテムを動かすにはもう一度作成してください"
+		"needsRedo": "関節が見つかりません。アイテムを動かすには描き直してください"
 	},
 	"setup": {
 		"warnings": {
@@ -2113,7 +2119,7 @@
 			"bodyChanged": "セットアップの開始後に体が変更されました。現在のフレームでセットアップをやり直してください。",
 			"looksRequired": "先にキャラクターの現在の外見を説明してください。",
 			"noFrames": "リグのセットアップに使える体のフレームがありません。既存のアートワークは変わりません。",
-			"jointsMissing": "PixelLabが素体のフレームから有効な関節を18個すべて検出できませんでした。既存のアートワークは変わりません。再接続するか、立ちポーズがよりはっきり見える参照画像を選んで再開してください。",
+			"jointsMissing": "PixelLabが立ちポーズのフレームから有効な関節を18個すべて検出できませんでした。既存のアートワークは変わりません。「フレームを修正」でそのフレームを描き直すか、よりはっきりした立ちポーズの向きを選んでから、セットアップを再開してください。",
 			"noCharacterId": "PixelLabから管理用のキャラクターIDが返されませんでした。既存のアートワークは変わりません。",
 			"referenceChanged": "セットアップ中に立ちの参照画像が変更されました。",
 			"characterChanged": "セットアップ中にキャラクターが変更されました。現在の作業は残しています。",
@@ -2173,7 +2179,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLabから返されたフレーム数が正しくありません。有料の再試行は開始していません。もう一度リクエストする前にアクティビティを確認してください。",
 			"animationExceedsPxFrame": "{move} {direction}：体のフレームが{w} pxのフレームに収まりません。確認用に保持されています。何も保存されていません。",
 			"pixellabReturnedEmptyFrames": "{move} {direction}：PixelLabから空のフレームが返されました。有料の再試行は開始していません。もう一度リクエストする前にアクティビティを確認してください。",
-			"validJointsWereFound": "{move}の{direction}向き：有効な関節が見つからなかったフレームがあります。生成した画像はアクティビティに残っています。セットアップは、画像を描き直さずに停止しました。",
+			"validJointsWereFound": "{move}の{direction}向き：有効な関節が見つからなかったフレームがあります。生成した画像はアクティビティに残っています。モーションは、画像を描き直さずに停止しました。",
 			"matchBodyColorsOnly": "{direction}：体の色を合わせるのは、元の関節チェックがすべて完了してからにしてください。",
 			"colorMatchingCannotRepair": "{direction}：色合わせでは、ポーズ、足元、フレームの端に関する問題は修復できません。",
 			"colorDriftOutsideBounded": "{direction}：色のずれが、参照パレットで修復できる範囲を超えています。",
@@ -3002,7 +3008,7 @@
 		"liftDetailWarned": "{views}：モーションをフレームに収めるため、{total}枚中{frames}枚のモーションフレームで足が最大{px} px上がります。{limit} pxの足チェックを超えるため、モーションは足の警告付きで保存されます。",
 		"reroll": "{views}を再生成",
 		"rerollDetail": "再生成では、その向きだけ新しい試行を購入します。ほかの向きは支払い済みの結果をそのまま使います。",
-		"keepUnposedDetail": "体のフレームをそのまま保存します。一部のフレームで関節が見つからなかったため、もう一度作成するまでこのモーションにはアイテムを合わせられません。",
+		"keepUnposedDetail": "体のフレームをそのまま保存します。一部のフレームで関節が見つからなかったため、描き直すまでこのモーションにはアイテムを合わせられません。",
 		"keepUnposed": "アイテムを合わせずに残す",
 		"pending": "未購入：約{gens} gen。",
 		"liftable": "持ち上げて収められます：{total}枚中{frames}枚で足が最大{px} px上がります。",
@@ -3143,6 +3149,7 @@
 	"report": {
 		"action": "報告",
 		"actionLabel": "この問題を報告",
+		"actionLabelFor": "この問題を報告: {name}",
 		"title": "この問題を報告",
 		"intro": "下のテキストだけを含む公開の GitHub Issue を開きます。画像、プロンプト、名前、キーは含まれません。投稿はご自身の GitHub アカウントで行います。",
 		"preview": "レポートのプレビュー",
@@ -3194,9 +3201,9 @@
 			"offline": "接続を確認してから、もう一度お試しください。",
 			"declined": "説明を変えてから、もう一度お試しください。",
 			"unexpected": "修正できるよう報告してください。支払い済みのものはアクティビティに残ります。",
-			"uncertain": "もう一度試す前にアクティビティを確認してください。新しい試行で再び課金される可能性があります。",
+			"uncertain": "実行されて課金された可能性があります。もう一度試す前に pixellab.ai を確認してください。",
 			"poses": "先にポーズを設定してから、装備を作成してください。",
-			"method": "「自動」を選んでから、もう一度お試しください。",
+			"method": "アイテムをもう一度作成し、「アニメーションの方式」で「自動」を選んでください。",
 			"quote": "少し待ってからもう一度試すか、別のモデルを選んでください。",
 			"browser": "続けるには最新のブラウザを使ってください。",
 			"exportId": "別のエクスポートIDを選んでください。",

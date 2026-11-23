@@ -319,6 +319,27 @@ export function itemNameFrom(desc: string): string {
 	return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
 }
 
+/** Whether the free Accept as is and Keep without moves of an item wait for other work: a move or setup still running on
+ *  its character, or a stopped move whose review involves the item. A move stopped elsewhere or for other items never
+ *  blocks them (acceptItemReview still refuses a change that happened meanwhile). */
+export function itemAcceptWaits(
+	item: string,
+	character: string,
+	move: {
+		spec: { items: readonly string[] } | null;
+		projectId: string;
+		done: boolean;
+		error: unknown;
+	},
+	setup: { spec: { projectId: string } | null; done: boolean; error: unknown }
+): boolean {
+	const moveHere = !!move.spec && !move.done && move.projectId === character;
+	return (
+		(moveHere && (!move.error || move.spec!.items.includes(item))) ||
+		(!!setup.spec && !setup.done && !setup.error && setup.spec.projectId === character)
+	);
+}
+
 export type Health = 'clean' | 'accepted' | 'look' | 'unfitted' | 'stale' | 'demo' | 'edited';
 export function healthOf(m: Manifest, it: Item): Health {
 	if (it.baseHash !== m.rig.baseHash) return 'stale';
@@ -347,11 +368,15 @@ export const HEALTH_LABEL: Record<Health, Message> = {
 export function missingFramesNote(m: Manifest, it: Item): Message | '' {
 	const moves = missingMoves(m, it);
 	if (!moves.length) return '';
-	return moves.length === 1
-		? message('studioModel.coverage.oneMove', {
-				move: moveLabel(moves[0], m.rig.animations)
-			})
-		: message('studioModel.coverage.severalMoves', { count: moves.length });
+	if (moves.length > 1)
+		return message('studioModel.coverage.severalMoves', { count: moves.length });
+	// No frame at all in that move (kept without it, or made before it existed) is not "some" frames missing.
+	const none = !it.layers.some((layer) =>
+		Object.values(layer.cells?.[moves[0]] ?? {}).some((frames) => frames?.some(Boolean))
+	);
+	return message(none ? 'studioModel.coverage.notMade' : 'studioModel.coverage.oneMove', {
+		move: moveLabel(moves[0], m.rig.animations)
+	});
 }
 /** No view of `anim` has every frame of the item, so the stage shows none of it there (an incomplete view is hidden whole). */
 export const notShownIn = (m: Manifest, it: Item, anim: string): boolean =>

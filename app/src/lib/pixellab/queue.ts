@@ -78,6 +78,8 @@ export interface SubJob {
 export interface JobRec {
 	id: string;
 	label: string;
+	/** The row title users read in Activity, localized when shown; `label` stays the English text for the ledger and reports. */
+	title?: Message;
 	tag?: string;
 	activityScope?: string;
 	method: Req['method'];
@@ -1105,6 +1107,7 @@ export class Queue {
 		req: Req,
 		meta: {
 			label?: string;
+			title?: Message;
 			tag?: string;
 			activityScope?: string;
 			minimumTier?: number;
@@ -1188,6 +1191,7 @@ export class Queue {
 				? { estimateRecovery: { id: meta.estimateRetry.id, ...(retryOf ? { retryOf } : {}) } }
 				: {}),
 			label: meta.label ?? req.path,
+			...(meta.title ? { title: meta.title } : {}),
 			tag: meta.tag,
 			activityScope: meta.activityScope,
 			minimumTier: meta.minimumTier,

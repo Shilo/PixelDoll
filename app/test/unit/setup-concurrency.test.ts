@@ -8,7 +8,15 @@ import type { SetupPlan } from '../../src/lib/rig/setup.ts';
 import type { Keypoint, Sha256 } from '../../src/lib/rig/rig.ts';
 import type { Project, Provenance } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
-import { setupCharacter, setupRegistrationStuck, type SetupSpec } from '../../src/studio/setup.ts';
+import {
+	setupCharacter,
+	setupRegistrationStuck,
+	setupResumeGens,
+	type SetupSpec
+} from '../../src/studio/setup.ts';
+import { queue, requestIdentity } from '../../src/lib/pixellab/queue.ts';
+import { png, routes } from '../../src/lib/pixellab/routes.ts';
+import { skeletonInput } from '../../src/lib/rig/estimate.ts';
 import type { Progress } from '../../src/studio/create.ts';
 import { equipmentFixture } from './equipment-fixture.ts';
 
@@ -24,6 +32,7 @@ const mocks = vi.hoisted(() => ({
 	update: vi.fn()
 }));
 vi.mock('../../src/studio/create.ts', () => ({
+	FINDING_JOINTS: 'Finding joints',
 	joints: mocks.joints,
 	run: mocks.run,
 	b64: mocks.b64,
@@ -35,7 +44,16 @@ vi.mock('../../src/lib/rig/setup.ts', () => ({
 	setupPlan: mocks.plan,
 	attachImportedRig: mocks.attach
 }));
-vi.mock('../../src/lib/store/db.ts', () => ({ updateCharacter: mocks.update }));
+vi.mock('../../src/lib/store/db.ts', () => ({
+	updateCharacter: mocks.update,
+	// The shared queue only reads its store when used; Resume setup's price reads its snapshot.
+	getBlob: vi.fn(),
+	putBlob: vi.fn(),
+	all: vi.fn(async () => []),
+	get: vi.fn(),
+	put: vi.fn(),
+	del: vi.fn()
+}));
 
 const windowSize = Math.max(...Object.values(PLAN_JOB_LIMITS));
 const frameId = (image: Img) => image.data[0] + 256 * image.data[1];
@@ -329,4 +347,20 @@ test('a registration that finished without a character needs a new seed; any oth
 	mocks.outcome.mockResolvedValue(undefined);
 	await expect(setupRegistrationStuck(f.spec)).resolves.toBe(false);
 	expect(mocks.run).not.toHaveBeenCalled();
+});
+
+test('Resume setup is priced from the request cache: completed checks and registration are never bought again', async () => {
+	const f = await fixture(4),
+		encoded = (image: Img) => Buffer.from(`frame-${frameId(image)}`).toString('base64');
+	mocks.b64.mockImplementation(async (image: Img) => encoded(image));
+	expect(await setupResumeGens(f.spec)).toBe(0.65);
+	// One frame's joint check already completed: only the other three and the registration remain.
+	const [first] = f.plan.frames.values();
+	const check = routes.estimateSkeleton(png(encoded(skeletonInput(first).image)));
+	const { requestHash } = await requestIdentity(check);
+	vi.spyOn(queue, 'snapshot').mockReturnValue({
+		...queue.snapshot(),
+		jobs: [{ requestHash, state: 'done' } as JobRec]
+	});
+	expect(await setupResumeGens(f.spec)).toBe(0.55);
 });
