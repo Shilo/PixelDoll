@@ -45,6 +45,9 @@ What keeps the owner out of hosting:
   - The provider hosts the files and handles abuse under its own terms.
 - **The D31 token Worker stays as it is.** It only passes sign-in tokens through and stores nothing.
 
+The owner leans toward only user-owned destinations (Google Drive, Dropbox, GitHub, OneDrive and similar) for this
+reason.
+
 ### No change ping for now
 
 Nobody is known to collaborate yet. The client already checks for changes by itself (on open, on return to the tab,
