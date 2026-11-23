@@ -963,6 +963,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Conclua ou descarte o trabalho de geração pendente antes de ajustar o quadro.",
+		"finishBeforeMoveImport": "Conclua ou dispense as gerações pendentes antes de importar movimentos.",
 		"couldNotCheckNamedFrames": "Não foi possível verificar os quadros de {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Não foi possível verificar os quadros de {names}.",
 		"copyMissingOneMove": "Faltam quadros em {move}; o item fica oculto nela.",
@@ -3329,6 +3330,49 @@
 			"browser": "Use um navegador atual para continuar.",
 			"exportId": "Escolha outro ID de exportação.",
 			"busy": "Aguarde um momento e tente novamente."
+		}
+	},
+	"moveImport": {
+		"title": "Importar animações",
+		"importMoves": "Importar animações",
+		"importStates": "Importar estados",
+		"dropArea": "Área para soltar o ZIP do PixelDoll",
+		"drop": "Solte um ZIP do PixelDoll aqui",
+		"intro": "O ZIP de um movimento, um backup ou um personagem compartilhado. Grátis quando foi feito para este personagem.",
+		"zip": "ZIP do PixelDoll",
+		"editHint": "Para mudar os quadros de um movimento em outro editor, use Corrigir quadros.",
+		"fit": {
+			"same": "Feito para este personagem. Os quadros encaixam como estão.",
+			"shifted": "Feito para este personagem antes de Ajustar quadro. Os quadros são deslocados para encaixar.",
+			"near": {
+				"one": "Feito para este personagem, mas a pose em pé difere em {count} pixel. Confira os quadros depois de importar.",
+				"other": "Feito para este personagem, mas a pose em pé difere em {count} pixels. Confira os quadros depois de importar."
+			},
+			"directions": "Feito com outras direções, então os quadros não servem aqui. O movimento ainda pode redesenhar este personagem.",
+			"body": "Feito para outro corpo, então os quadros não servem aqui. O movimento ainda pode redesenhar este personagem."
+		},
+		"empty": "Este ZIP não tem movimentos nem estados além de Em pé.",
+		"move": "Animação",
+		"state": "Estado",
+		"row": {
+			"add": "Novo",
+			"copy": "Nome em uso: ambos mantidos como {name}",
+			"present": "Já está neste personagem",
+			"motion": "Pode redesenhar este personagem com esse movimento",
+			"unavailable": "Nenhum movimento salvo para reutilizar",
+			"stateUnavailable": "Estados precisam do mesmo corpo",
+			"items": "Com {items}",
+			"left": "Sem {items} (não está neste personagem)",
+			"missing": "Ainda não está nesta animação: {items}"
+		},
+		"useMotion": "Redesenhar como {move}",
+		"free": "Grátis. Sem gerações.",
+		"import": "Importar",
+		"importing": "Importando…",
+		"imported": "{names} importado.",
+		"errors": {
+			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de importar movimentos.",
+			"changed": "Este personagem mudou. Escolha o ZIP de novo para revisar a versão mais recente."
 		}
 	}
 }

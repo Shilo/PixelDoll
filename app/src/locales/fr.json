@@ -960,6 +960,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Terminez ou ignorez la génération en attente avant d’ajuster le cadre.",
+		"finishBeforeMoveImport": "Terminez ou ignorez les générations en attente avant d’importer des mouvements.",
 		"couldNotCheckNamedFrames": "Impossible de vérifier les images de {names} : {reason}",
 		"couldNotCheckSeveralFrames": "Impossible de vérifier les images de {names}.",
 		"copyMissingOneMove": "Des images manquent pour {move} ; l’objet y reste masqué.",
@@ -3320,6 +3321,49 @@
 			"browser": "Utilisez un navigateur récent pour continuer.",
 			"exportId": "Choisissez un autre ID d’export.",
 			"busy": "Patientez un instant, puis réessayez."
+		}
+	},
+	"moveImport": {
+		"title": "Importer des animations",
+		"importMoves": "Importer des animations",
+		"importStates": "Importer des états",
+		"dropArea": "Zone de dépôt du ZIP PixelDoll",
+		"drop": "Déposez un ZIP PixelDoll ici",
+		"intro": "Le ZIP d’un mouvement, une sauvegarde ou un personnage partagé. Gratuit s’il a été créé pour ce personnage.",
+		"zip": "ZIP PixelDoll",
+		"editHint": "Pour modifier les images d’un mouvement dans un autre éditeur, utilisez plutôt Corriger les images.",
+		"fit": {
+			"same": "Créé pour ce personnage. Ses images s’adaptent telles quelles.",
+			"shifted": "Créé pour ce personnage avant Ajuster le cadre. Ses images sont décalées pour s’adapter.",
+			"near": {
+				"one": "Créé pour ce personnage, mais sa pose debout diffère de {count} pixel. Vérifiez les images après l’import.",
+				"other": "Créé pour ce personnage, mais sa pose debout diffère de {count} pixels. Vérifiez les images après l’import."
+			},
+			"directions": "Créé avec d’autres directions, ses images ne peuvent donc pas servir ici. Le mouvement peut quand même redessiner ce personnage.",
+			"body": "Créé pour un autre corps, ses images ne peuvent donc pas servir ici. Le mouvement peut quand même redessiner ce personnage."
+		},
+		"empty": "Ce ZIP ne contient aucun mouvement ni état en dehors de Debout.",
+		"move": "Animation",
+		"state": "État",
+		"row": {
+			"add": "Nouveau",
+			"copy": "Nom déjà utilisé : les deux sont gardés sous {name}",
+			"present": "Déjà sur ce personnage",
+			"motion": "Peut redessiner ce personnage avec son mouvement",
+			"unavailable": "Aucun mouvement enregistré à réutiliser",
+			"stateUnavailable": "Les états nécessitent le même corps",
+			"items": "Avec {items}",
+			"left": "Sans {items} (absent de ce personnage)",
+			"missing": "Pas encore sur cette animation : {items}"
+		},
+		"useMotion": "Redessiner en {move}",
+		"free": "Gratuit. Aucune génération.",
+		"import": "Importer",
+		"importing": "Import en cours…",
+		"imported": "Importé : {names}.",
+		"errors": {
+			"resolveDrafts": "Gardez ou ignorez les brouillons d’objets de ce personnage avant d’importer des mouvements.",
+			"changed": "Ce personnage a changé. Choisissez à nouveau le ZIP pour vérifier la dernière version."
 		}
 	}
 }

@@ -2215,6 +2215,62 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	expect(requests).toEqual([]);
 });
 
+test('Import moves brings a deleted move back free from the character ZIP', async ({
+	page,
+	context
+}) => {
+	const requests: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		requests.push(route.request().method());
+		await route.abort();
+	});
+	await openStudio(page, '/');
+	await expect(page.locator('.world-actors').first()).toBeVisible();
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const download = page.waitForEvent('download');
+	await page.getByRole('button', { name: /Download ZIP/ }).click();
+	const bytes = await readFile((await (await download).path())!);
+	await page.locator('.project-btn').click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page
+		.getByLabel('Character ZIP', { exact: true })
+		.setInputFiles({ name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes });
+	await page.getByLabel('Character name', { exact: true }).fill('Move owner');
+	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('button', { name: 'Import character', exact: true }).click();
+	await expect(page.locator('.project-btn')).toContainText('Move owner', { timeout: 30_000 });
+	await equipmentMode(page, 'Moves');
+	const punch = page.locator('.move-list .move-row').filter({ hasText: 'Cross punch' });
+	await punch.click({ button: 'right' });
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
+	await expect(punch).toHaveCount(0);
+	await page.getByRole('button', { name: 'Import moves...', exact: true }).click();
+	const sheet = page.getByRole('dialog', { name: 'Import moves', exact: true });
+	await sheet
+		.getByLabel('PixelDoll ZIP', { exact: true })
+		.setInputFiles({ name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes });
+	await expect(sheet.getByRole('status')).toHaveText(
+		'Made for this character. Its frames fit as they are.'
+	);
+	await expect(sheet.getByRole('checkbox', { name: 'Cross punch', exact: true })).toBeChecked();
+	await expect(sheet).toContainText('Already on this character');
+	await sheet.getByRole('button', { name: 'Import', exact: true }).click();
+	await expect(sheet).toBeHidden({ timeout: 30_000 });
+	await expect(punch).toHaveCount(1);
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await expect(punch).toHaveCount(1);
+	expect(requests).toEqual([]);
+});
+
 test('PixelLab library connection, pagination and direct import use only free reads', async ({
 	page,
 	context

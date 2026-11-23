@@ -960,6 +960,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Finish or dismiss pending generation work before adjusting the frame.",
+		"finishBeforeMoveImport": "Finish or dismiss pending generation work before importing moves.",
 		"couldNotCheckNamedFrames": "Could not check frames for {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Could not check frames for {names}.",
 		"copyMissingOneMove": "Missing some {move} frames; it hides there.",
@@ -3320,6 +3321,49 @@
 			"browser": "Use a current browser to continue.",
 			"exportId": "Choose a different Export ID.",
 			"busy": "Wait a moment, then try again."
+		}
+	},
+	"moveImport": {
+		"title": "Import moves",
+		"importMoves": "Import moves",
+		"importStates": "Import States",
+		"dropArea": "PixelDoll ZIP drop area",
+		"drop": "Drop a PixelDoll ZIP here",
+		"intro": "A move’s Download ZIP, a backup or a shared character. Free when it was made for this character.",
+		"zip": "PixelDoll ZIP",
+		"editHint": "To change a move’s frames in another editor, use Fix frames instead.",
+		"fit": {
+			"same": "Made for this character. Its frames fit as they are.",
+			"shifted": "Made for this character before Adjust frame. Its frames move to fit.",
+			"near": {
+				"one": "Made for this character, but its Standing differs by {count} pixel. Check the frames after importing.",
+				"other": "Made for this character, but its Standing differs by {count} pixels. Check the frames after importing."
+			},
+			"directions": "Made with other directions, so its frames can’t be used here. A move’s motion can still redraw this character.",
+			"body": "Made for a different body, so its frames can’t be used here. A move’s motion can still redraw this character."
+		},
+		"empty": "This ZIP has no moves or States besides Standing.",
+		"move": "Move",
+		"state": "State",
+		"row": {
+			"add": "New",
+			"copy": "Name in use: kept both as {name}",
+			"present": "Already on this character",
+			"motion": "Can redraw this character in its motion",
+			"unavailable": "No saved motion to reuse",
+			"stateUnavailable": "States need the same body",
+			"items": "With {items}",
+			"left": "Without {items} (not on this character)",
+			"missing": "Not on this move yet: {items}"
+		},
+		"useMotion": "Redraw as {move}",
+		"free": "Free. No generations.",
+		"import": "Import",
+		"importing": "Importing…",
+		"imported": "Imported {names}.",
+		"errors": {
+			"resolveDrafts": "Keep or dismiss this character’s item drafts before importing moves.",
+			"changed": "This character changed. Choose the ZIP again to review the latest version."
 		}
 	}
 }

@@ -933,6 +933,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Selesaikan atau tutup pekerjaan pembuatan yang tertunda sebelum menyesuaikan frame.",
+		"finishBeforeMoveImport": "Selesaikan atau tutup pekerjaan generasi yang tertunda sebelum mengimpor gerakan.",
 		"couldNotCheckNamedFrames": "Tidak dapat memeriksa bingkai {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Tidak dapat memeriksa bingkai untuk {names}.",
 		"copyMissingOneMove": "Beberapa bingkai {move} hilang; item tidak terlihat dalam gerakan itu.",
@@ -3228,6 +3229,48 @@
 			"browser": "Gunakan browser terbaru untuk melanjutkan.",
 			"exportId": "Pilih ID Ekspor lain.",
 			"busy": "Tunggu sebentar, lalu coba lagi."
+		}
+	},
+	"moveImport": {
+		"title": "Impor animasi",
+		"importMoves": "Impor animasi",
+		"importStates": "Impor status",
+		"dropArea": "Area lepas ZIP PixelDoll",
+		"drop": "Lepaskan ZIP PixelDoll di sini",
+		"intro": "ZIP unduhan gerakan, cadangan, atau karakter yang dibagikan. Gratis jika dibuat untuk karakter ini.",
+		"zip": "ZIP PixelDoll",
+		"editHint": "Untuk mengubah frame gerakan di editor lain, gunakan Perbaiki frame.",
+		"fit": {
+			"same": "Dibuat untuk karakter ini. Frame-nya pas apa adanya.",
+			"shifted": "Dibuat untuk karakter ini sebelum Sesuaikan frame. Frame-nya digeser agar pas.",
+			"near": {
+				"other": "Dibuat untuk karakter ini, tetapi pose berdirinya berbeda {count} piksel. Periksa frame setelah mengimpor."
+			},
+			"directions": "Dibuat dengan arah lain, jadi frame-nya tidak bisa dipakai di sini. Gerakannya tetap bisa menggambar ulang karakter ini.",
+			"body": "Dibuat untuk tubuh lain, jadi frame-nya tidak bisa dipakai di sini. Gerakannya tetap bisa menggambar ulang karakter ini."
+		},
+		"empty": "ZIP ini tidak berisi animasi atau status selain Berdiri.",
+		"move": "Animasi",
+		"state": "Status",
+		"row": {
+			"add": "Baru",
+			"copy": "Nama sudah dipakai: keduanya disimpan sebagai {name}",
+			"present": "Sudah ada di karakter ini",
+			"motion": "Bisa menggambar ulang karakter ini dengan gerakannya",
+			"unavailable": "Tidak ada gerakan tersimpan untuk dipakai ulang",
+			"stateUnavailable": "Status memerlukan tubuh yang sama",
+			"items": "Dengan {items}",
+			"left": "Tanpa {items} (tidak ada di karakter ini)",
+			"missing": "Belum ada di animasi ini: {items}"
+		},
+		"useMotion": "Gambar ulang sebagai {move}",
+		"free": "Gratis. Tanpa generasi.",
+		"import": "Impor",
+		"importing": "Mengimpor…",
+		"imported": "{names} diimpor.",
+		"errors": {
+			"resolveDrafts": "Simpan atau buang draf item karakter ini sebelum mengimpor gerakan.",
+			"changed": "Karakter ini berubah. Pilih ZIP lagi untuk meninjau versi terbaru."
 		}
 	}
 }

@@ -38,6 +38,7 @@ const AREAS: Record<NonNullable<SheetId>, string> = {
 	directions: 'Directions',
 	importZip: 'Import from device',
 	importPixelLab: 'Import from PixelLab',
+	importMoves: 'Import moves',
 	delete: 'Delete',
 	details: 'Character details',
 	setup: 'Rig setup',

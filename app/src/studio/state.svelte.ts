@@ -162,6 +162,7 @@ import { onceShown, type Problem } from '../lib/report/report.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
+import type { MoveImportPlan } from '../lib/rig/moveImport.ts';
 import { DEFAULT_MOVE, type Sha256 } from '../lib/rig/rig.ts';
 import {
 	canvasLift,
@@ -280,6 +281,7 @@ export type SheetId =
 	| 'directions'
 	| 'importZip'
 	| 'importPixelLab'
+	| 'importMoves'
 	| 'delete'
 	| 'details'
 	| 'setup'
@@ -1305,7 +1307,9 @@ const WORK_BLOCKS = new Set([
 	'directionsSheet.resolveDrafts',
 	'moveRemoval.resolveDrafts',
 	'state.finishBeforeFrameChange',
-	'adjustFrame.errors.resolveDrafts'
+	'adjustFrame.errors.resolveDrafts',
+	'state.finishBeforeMoveImport',
+	'moveImport.errors.resolveDrafts'
 ]);
 export const blockedByWork = (reason: LocalizedError | '') =>
 	!!reason && WORK_BLOCKS.has(reason.translation.key);
@@ -1343,7 +1347,12 @@ function workHolds(id: string, stoppedMove = false) {
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(
 	action:
-		'delete' | 'delete move' | 'change directions for' | 'fix frames of' | 'change the frame of',
+		| 'delete'
+		| 'delete move'
+		| 'change directions for'
+		| 'fix frames of'
+		| 'change the frame of'
+		| 'import moves into',
 	id: string,
 	stoppedMove = false
 ): LocalizedError | '' {
@@ -1380,10 +1389,15 @@ function characterEditBlocked(
 								'Finish or dismiss pending generation work before adjusting the frame.',
 								'state.finishBeforeFrameChange'
 							)
-						: new LocalizedError(
-								'Finish or dismiss pending generation work before changing directions.',
-								'state.finishBeforeDirectionRemoval'
-							);
+						: action === 'import moves into'
+							? new LocalizedError(
+									'Finish or dismiss pending generation work before importing moves.',
+									'state.finishBeforeMoveImport'
+								)
+							: new LocalizedError(
+									'Finish or dismiss pending generation work before changing directions.',
+									'state.finishBeforeDirectionRemoval'
+								);
 	return '';
 }
 
@@ -1525,6 +1539,63 @@ export async function makeRoomFor(id: string): Promise<void> {
 	if (plan.size === rec.manifest.rig.cell.w && !plan.dy)
 		throw new LocalizedError('This character already has room for moves.', 'adjustFrame.roomy');
 	await adjustCharacter(id, plan);
+}
+/** Why moves cannot be imported into this character now, or ''. */
+export function moveImportBlocked(id: string): LocalizedError | '' {
+	if (!id.startsWith('rig-'))
+		return new LocalizedError('Only saved characters can be edited.', 'directionsSheet.savedOnly');
+	return (
+		characterEditBlocked('import moves into', id) ||
+		(!generationSettled()
+			? new LocalizedError(
+					'Wait for the current generation work to finish.',
+					'directionsSheet.waitForGeneration'
+				)
+			: '') ||
+		(gens.some((gen) => gen.draft.rigId === id && !gen.draft.acceptedAt)
+			? new LocalizedError(
+					'Keep or dismiss this character’s item drafts before importing moves.',
+					'moveImport.errors.resolveDrafts'
+				)
+			: '')
+	);
+}
+/** Import moves and States from a reviewed ZIP plan (lib/rig/moveImport.ts), free, onto the version the review showed. */
+export async function importMoves(
+	id: string,
+	plan: MoveImportPlan,
+	ids: readonly string[],
+	expect: StoredProject
+): Promise<{ id: string; kind: 'move' | 'state' }[]> {
+	const blocked = () => {
+		const reason = moveImportBlocked(id);
+		if (reason) throw reason;
+	};
+	blocked();
+	await flushSave();
+	const { rec, project } = await loadProject(id);
+	if (stableStringify(expect) !== stableStringify(rec))
+		throw new LocalizedError(
+			'This character changed. Choose the ZIP again to review the latest version.',
+			'moveImport.errors.changed'
+		);
+	const { applyMoveImport } = await lazy(() => import('../lib/rig/moveImport.ts'));
+	const { record, images, added } = await applyMoveImport(
+		{ record: rec, images: project.images },
+		plan,
+		ids
+	);
+	const blobs = await pngBlobs(images);
+	blocked();
+	await db.saveIdleCharacter(
+		rec,
+		{ ...rec, ...record, savedAt: new Date().toISOString() },
+		blobs,
+		'import moves into'
+	);
+	notifyLibraryChanged(id);
+	await refreshCharacterDirections(id);
+	return added;
 }
 /** Put back the record a change replaced, if nothing changed it since; its images are stored again in case cleanup ran. */
 async function undoAdjust(

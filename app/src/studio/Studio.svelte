@@ -82,6 +82,7 @@
 		move: () => import('./MoveSheet.svelte'),
 		moveReview: () => import('./MoveReviewSheet.svelte'),
 		stateCapture: () => import('./StateCaptureSheet.svelte'),
+		importMoves: () => import('./ImportMovesSheet.svelte'),
 		stateReview: () => import('./StateReviewSheet.svelte'),
 		importZip: () => import('./ImportSheet.svelte'),
 		importPixelLab: () => import('./ImportSheet.svelte'),
@@ -430,6 +431,7 @@
 	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'moveReview'}{#key ui.moveReview}<Lazy load={parts.moveReview} />{/key}{/if}
 	{#if ui.sheet === 'stateCapture'}<Lazy load={parts.stateCapture} />{/if}
+	{#if ui.sheet === 'importMoves' && store.project}<Lazy load={parts.importMoves} />{/if}
 	{#if ui.sheet === 'stateReview'}{#key ui.stateReview}<Lazy load={parts.stateReview} />{/key}{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
 	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}
