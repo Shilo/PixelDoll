@@ -3298,7 +3298,7 @@
 			"overflow": "Wähle Anheben oder einen größeren Frame, falls angeboten, oder versuch es erneut.",
 			"empty": "Deine bezahlten Ergebnisse bleiben unter „Aktivität“. Versuch es mit einem neuen Versuch erneut.",
 			"dropped": "Warte einen Moment und versuch es dann erneut.",
-			"joints": "Bereits Bezahltes bleibt unter „Aktivität“. Starte einen neuen Versuch oder beginne mit einer deutlicheren Standpose.",
+			"joints": "Bereits Bezahltes bleibt unter „Aktivität“. Behalte die Frames ohne Gegenstände anzupassen, wenn das angeboten wird, oder beginne mit einer deutlicheren Standpose.",
 			"stopped": "Sie wurde nicht erneut gesendet. Sieh dir das Ergebnis an, bevor du neu beginnst.",
 			"quality": "Prüfe die Ergebnisse und behalte sie dann oder versuch es erneut.",
 			"changed": "Prüfe es erneut, bevor du weitermachst.",

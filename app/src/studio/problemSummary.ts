@@ -129,9 +129,11 @@ export function problemKind(error: unknown): ProblemKind | undefined {
 }
 
 /** Whether a paid try again is the way on that leads. Not for a bug (Report it), a choice the user must change first, a
- *  decline that would repeat, a request that may already have charged, or an account to fix first (credits, token). */
+ *  decline that would repeat, a request that may already have charged, an account to fix first (credits, token), or missing
+ *  joints, where a free Keep may be offered and a joint check repeats the same answer on the same frames. */
 export const paidRetryLeads = (kind: ProblemKind | undefined) =>
 	kind !== 'unexpected' &&
+	kind !== 'joints' &&
 	kind !== 'stated' &&
 	kind !== 'method' &&
 	kind !== 'declined' &&

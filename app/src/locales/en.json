@@ -3301,7 +3301,7 @@
 			"overflow": "Choose a lift or a larger frame if one is offered, or try again.",
 			"empty": "Your paid results stay in Activity. Try again with a new attempt.",
 			"dropped": "Wait a moment, then try again.",
-			"joints": "Anything paid stays in Activity. Try a new attempt, or start from a clearer standing pose.",
+			"joints": "Anything paid stays in Activity. Keep the frames without fitting items if that is offered, or start from a clearer standing pose.",
 			"stopped": "It was not sent again. Look at what it returned before starting again.",
 			"quality": "Review the results, then keep them or try again.",
 			"changed": "Review it again before continuing.",

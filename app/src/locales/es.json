@@ -3301,7 +3301,7 @@
 			"overflow": "Elige subirlo o un marco más grande si se ofrece, o vuelve a intentarlo.",
 			"empty": "Tus resultados pagados siguen en Actividad. Vuelve a intentarlo con un intento nuevo.",
 			"dropped": "Espera un momento y vuelve a intentarlo.",
-			"joints": "Lo pagado sigue en Actividad. Haz un intento nuevo o parte de una pose de pie más clara.",
+			"joints": "Lo pagado sigue en Actividad. Conserva los fotogramas sin ajustar objetos si se ofrece, o parte de una pose de pie más clara.",
 			"stopped": "No se volvió a enviar. Revisa lo que devolvió antes de empezar de nuevo.",
 			"quality": "Revisa los resultados y luego consérvalos o vuelve a intentarlo.",
 			"changed": "Vuelve a revisarlo antes de continuar.",
