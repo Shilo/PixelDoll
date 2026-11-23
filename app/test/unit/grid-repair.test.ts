@@ -599,6 +599,12 @@ test.each(['geometry', 'lost'] as const)(
 		expect(f.save).not.toHaveBeenCalled();
 	}
 );
+test('a lost repair request says it may have charged', async () => {
+	const f = await fixture('lost');
+	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123)).rejects.toMatchObject({
+		translation: { key: 'itemRoute.errors.requestLost' }
+	});
+});
 test('concurrent rig edits reject inside the atomic publication guard', async () => {
 	const f = await fixture('race');
 	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123)).rejects.toThrow('changed while');

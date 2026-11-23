@@ -2743,6 +2743,8 @@
 			"poseFramesMalformed": "PixelLab, {item} için eksik veya bozuk kareler döndürdü. Otomatik yeniden deneme yapılmadı.",
 			"poseFrameSize": "PixelLab, {item} için yanlış boyutta kareler döndürdü. Otomatik yeniden deneme yapılmadı.",
 			"gridStopped": "{item} onarım isteği tamamlanmadı ({state}). Yeniden gönderilmedi.",
+			"poseStopped": "{item} poz isteği tamamlanmadı ({state}). Yeniden gönderilmedi.",
+			"requestLost": "{item} isteği kayboldu, bu yüzden çalışıp ücretlendirilmiş olabilir. Yeniden gönderilmedi.",
 			"noUsableFrames": "PixelLab, {item} için kullanılabilir kare döndürmedi.",
 			"layersMismatch": "Ekipman katmanları bu ekipman yuvasıyla eşleşmiyor. Üretim isteği gönderilmedi.",
 			"reviewChanged": "Bu öğe veya denetimleri değişti. Mevcut görseli kabul etmeden önce öğeyi yeniden açın.",

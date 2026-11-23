@@ -2752,6 +2752,8 @@
 			"poseFramesMalformed": "O PixelLab retornou quadros faltando ou com defeito para {item}. Nenhuma nova tentativa automática foi feita.",
 			"poseFrameSize": "O PixelLab retornou quadros do tamanho errado para {item}. Nenhuma nova tentativa automática foi feita.",
 			"gridStopped": "A solicitação de reparo de {item} não terminou ({state}). Ela não foi enviada de novo.",
+			"poseStopped": "A solicitação de pose de {item} não terminou ({state}). Ela não foi enviada de novo.",
+			"requestLost": "A solicitação de {item} se perdeu, então pode ter sido executada e cobrada. Ela não foi enviada de novo.",
 			"noUsableFrames": "O PixelLab não retornou quadros utilizáveis para {item}.",
 			"layersMismatch": "As camadas do equipamento não correspondem a este espaço. Nenhuma geração foi solicitada.",
 			"reviewChanged": "Este item ou suas verificações mudaram. Abra-o novamente antes de aceitar a arte atual.",

@@ -100,7 +100,10 @@ const KEYS: Readonly<Record<string, ProblemKind>> = {
 	'generation.outcome.noFrames': 'empty',
 	'itemRoute.errors.noUsableFrames': 'empty',
 	'itemRoute.errors.gridStopped': 'stopped',
+	'itemRoute.errors.poseStopped': 'stopped',
+	'itemRoute.errors.requestLost': 'uncertain',
 	'itemRoute.errors.poseFramesMalformed': 'frame-count',
+	'itemRoute.errors.poseFrameSize': 'frame-count',
 	'generation.outcome.standingFrames': 'frame-count',
 	'genCard.declined': 'declined',
 	'create.sheet.declined': 'declined'

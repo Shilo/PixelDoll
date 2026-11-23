@@ -1959,6 +1959,20 @@ export class PartialMoveError extends Error {
 	}
 }
 
+/** A paid item request that ended without results; a lost one may still have run and charged. */
+function requestStopped(
+	item: Item,
+	r: JobRec,
+	text: string,
+	key: 'itemRoute.errors.poseStopped' | 'itemRoute.errors.gridStopped'
+) {
+	return r.state === 'lost'
+		? new LocalizedError(text, 'itemRoute.errors.requestLost', { item: item.name })
+		: new LocalizedError(text, key, {
+				item: item.name,
+				state: message(`activity.state.${r.state}`)
+			});
+}
 export const SAVED_FRAMES_UNAVAILABLE =
 	'Completed frames matching the current body and equipment are unavailable. No generation was requested.';
 export const INVALID_ITEM_GRID = 'PixelLab returned an unusable item grid.';
@@ -2097,7 +2111,12 @@ export async function poseItemClip(
 				const r = terminal(rec) ? rec : await settled(rec.id);
 				onCall();
 				if (r.state !== 'done')
-					throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
+					throw requestStopped(
+						item,
+						r,
+						`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`,
+						'itemRoute.errors.poseStopped'
+					);
 				const outputs = outputsOf(r);
 				if (outputs.length !== Math.max(3, cells.length))
 					throw new LocalizedError(
@@ -2723,10 +2742,11 @@ async function gridItemClip(
 	);
 	const r = terminal(rec) ? rec : await settled(rec.id);
 	if (r.state !== 'done')
-		throw new LocalizedError(
+		throw requestStopped(
+			item,
+			r,
 			`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`,
-			'itemRoute.errors.gridStopped',
-			{ item: item.name, state: message(`activity.state.${r.state}`) }
+			'itemRoute.errors.gridStopped'
 		);
 	if (outputsOf(r).length !== 1)
 		throw new LocalizedError(

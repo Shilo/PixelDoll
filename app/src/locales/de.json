@@ -2743,6 +2743,8 @@
 			"poseFramesMalformed": "PixelLab hat für {item} fehlende oder fehlerhafte Frames zurückgegeben. Es wurde kein automatischer neuer Versuch gestartet.",
 			"poseFrameSize": "PixelLab hat für {item} Frames in der falschen Größe zurückgegeben. Es wurde kein automatischer neuer Versuch gestartet.",
 			"gridStopped": "Die Reparaturanfrage für {item} wurde nicht abgeschlossen ({state}). Sie wurde nicht erneut gesendet.",
+			"poseStopped": "Die Posing-Anfrage für {item} wurde nicht abgeschlossen ({state}). Sie wurde nicht erneut gesendet.",
+			"requestLost": "Die Anfrage für {item} ging verloren, sie wurde also eventuell ausgeführt und berechnet. Sie wurde nicht erneut gesendet.",
 			"noUsableFrames": "PixelLab hat für {item} keine brauchbaren Frames zurückgegeben.",
 			"layersMismatch": "Die Ausrüstungsebenen passen nicht zu diesem Ausrüstungsplatz. Es wurde keine Generierung angefordert.",
 			"reviewChanged": "Dieser Gegenstand oder seine Prüfungen haben sich geändert. Öffne ihn erneut, bevor du seine aktuelle Grafik akzeptierst.",

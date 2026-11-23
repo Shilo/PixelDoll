@@ -2671,6 +2671,8 @@
 			"poseFramesMalformed": "PixelLab 返回的 {item} 帧缺失或损坏。没有自动重试。",
 			"poseFrameSize": "PixelLab 返回的 {item} 帧尺寸不对。没有自动重试。",
 			"gridStopped": "{item} 的修复请求没有完成（{state}）。没有再次发送。",
+			"poseStopped": "{item} 的姿势请求没有完成（{state}）。没有再次发送。",
+			"requestLost": "{item} 的请求丢失了，可能已经运行并扣费。没有再次发送。",
 			"noUsableFrames": "PixelLab 没有返回 {item} 可用的帧。",
 			"layersMismatch": "装备图层与此装备栏不匹配。未请求生成。",
 			"reviewChanged": "此装备或其检查结果已更改。请重新打开装备，再接受当前图像。",
