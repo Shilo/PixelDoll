@@ -251,7 +251,7 @@ const lsSet = (k: string, v: string | null) => {
 	}
 };
 export const DEMO = 'fixture:s2';
-export const DEMO_NAME = 'Adventurer';
+const DEMO_NAME = 'Adventurer';
 
 const pixelLabConnectOpened = 'pixeldoll.pixelLabConnectOpened';
 let pixelLabConnectOpenedInTab = false;
@@ -840,7 +840,7 @@ async function prepareCharacter(r: Awaited<ReturnType<typeof openSource>>) {
 }
 
 /** A saved character as the Studio shows it, read without opening it. */
-export async function readCharacter(id: string) {
+async function readCharacter(id: string) {
 	return prepareCharacter(await openSource(id));
 }
 
@@ -1256,7 +1256,7 @@ const WORK_BLOCKS = new Set([
 ]);
 export const blockedByWork = (reason: LocalizedError | '') =>
 	!!reason && WORK_BLOCKS.has(reason.translation.key);
-export const DELETE_GENERATION_BLOCK = new LocalizedError(
+const DELETE_GENERATION_BLOCK = new LocalizedError(
 	'Finish or dismiss pending generation work before deleting a character.',
 	'state.finishBeforeCharacterRemoval'
 );
@@ -2731,7 +2731,7 @@ export async function restoreFromDesign(itemId: string) {
 /** Free: the demo never changes, so copy it (or open the copy made before) and add the item there, fitted to the copy afresh
  *  (the copy gains a standing move). An item the copy already has is worn instead. The tiles stay busy throughout, and
  *  nothing more happens once the player opens another character. */
-export async function copyDemoAndAdd(entry: SharedItem) {
+async function copyDemoAndAdd(entry: SharedItem) {
 	if (!isDemo() || shared.adding) return;
 	shared.adding = sharedKey(entry);
 	try {
@@ -3255,7 +3255,7 @@ export async function openDraft(g: Gen) {
 	ui.selected = `gen:${g.draft.spec.id}`;
 }
 /** Opens a character's move or setup panel, which shows its progress or failure and how to retry or dismiss it. */
-export async function openFlow(sheet: 'move' | 'setup', projectId: string) {
+async function openFlow(sheet: 'move' | 'setup', projectId: string) {
 	if (projectId && doc.id !== projectId) await openProject(projectId);
 	if (!projectId || doc.id === projectId) ui.sheet = sheet;
 }
@@ -3678,7 +3678,7 @@ function organize(label: Message, edit: (m: SlotEdit) => void) {
 }
 /** Show a Not shown category again, at the end of the Wardrobe. Returns what to announce, or '' when already shown. No undo
  *  step: generation and fitting call it as a side effect of putting work there. */
-export function revealSlot(key: string): Message | undefined {
+function revealSlot(key: string): Message | undefined {
 	const m = store.project?.manifest;
 	if (!m || key === BASE_KEY) return;
 	const c = categories(m).find((x) => x.key === key);
@@ -4618,6 +4618,8 @@ let moveResumed = false;
 export async function resumeMove() {
 	if (hmrReloading || moveResumed || queue.role === 'follower') return;
 	moveResumed = true;
+	// An unreadable record is not an empty one: fail startup or takeover and let a later attempt read it again, so a new move
+	// never overwrites a stopped one and its paid-failure review.
 	const r = await db
 		.get<
 			FlowDraft<MoveSpec> & {
@@ -4626,7 +4628,10 @@ export async function resumeMove() {
 				repairReview?: RepairReview;
 			}
 		>('projects', MOVE_KEY)
-		.catch(() => undefined);
+		.catch((error: unknown) => {
+			moveResumed = false;
+			throw error;
+		});
 	if (!r?.spec || (moving.spec && !moving.done)) return;
 	// A move whose character is gone can never be opened to retry or dismiss. Moves queued behind it wait for a decision.
 	if (
@@ -4816,7 +4821,13 @@ export async function resumeSetup() {
 	const current = () => revision === setupRevision && queue.role !== 'follower';
 	setupRecovering = true;
 	try {
-		const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
+		// As in resumeMove: a failed read fails startup or takeover instead of reading as no saved setup.
+		const rec = await db
+			.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY)
+			.catch((error: unknown) => {
+				setupResumed = false;
+				throw error;
+			});
 		if (!rec?.spec || !current() || (settingUp.spec && !settingUp.done)) return;
 		const { projectId } = rec.spec;
 		let needsReview = halted(rec);

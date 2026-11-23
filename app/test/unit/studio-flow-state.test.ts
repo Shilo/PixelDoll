@@ -489,6 +489,22 @@ test.each(['read the character', 'remove the stale setup'])(
 	}
 );
 
+test.each(['move', 'setup'] as const)(
+	'an unreadable saved %s fails its resume instead of reading as nothing saved, and is read again later',
+	async (kind) => {
+		const state = await import('../../src/studio/state.svelte.ts');
+		const resume = kind === 'move' ? state.resumeMove : state.resumeSetup;
+		const failure = new Error('IndexedDB unavailable');
+		mocks.get.mockRejectedValueOnce(failure);
+		await expect(resume()).rejects.toBe(failure);
+		await resume();
+		expect(mocks.get.mock.calls).toEqual([
+			['projects', `studio-${kind}`],
+			['projects', `studio-${kind}`]
+		]);
+	}
+);
+
 test('setup recovery never deletes a draft after handing off during the character read', async () => {
 	const state = await import('../../src/studio/state.svelte.ts');
 	const { queue } = await import('../../src/lib/pixellab/queue.ts');
