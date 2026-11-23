@@ -2930,7 +2930,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		expect(cells['rest-pose'][direction]).toEqual([cells.idle[direction]![chosenCell]]);
 	const panel = page.getByRole('tabpanel', { name: 'States', exact: true });
 	const addState = panel.getByRole('button', { name: 'New State...', exact: true });
-	await expect(panel.locator('.cta + details')).toBeVisible();
+	await expect(panel.locator('.add-line + details')).toBeVisible();
 	await addState.click();
 	await createState.getByRole('button', { name: 'Source: Standing', exact: true }).click();
 	const sources = page.getByRole('menu', { name: 'Source' });
@@ -2958,7 +2958,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(addState).toBeFocused();
 	await equipmentMode(page, 'Moves');
 	await expect(
-		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.cta + details')
+		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.add-line + details')
 	).toBeVisible();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	const moveSheet = page.getByRole('dialog', { name: 'New move' });
