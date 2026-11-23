@@ -169,20 +169,63 @@ export interface ItemResult {
 const structuralReason = (why: string) => /(?:^|;\s*)G1\b/.test(why);
 export const hasStructuralFailure = (r: Pick<ItemResult, 'g1'>) =>
 	[...r.g1.values()].some(structuralReason);
+/** The draft's planned cells of these moves without a verified frame, or undefined when the rig lost one of the moves. */
+function missingCells(
+	d: Draft,
+	rig: Rig,
+	r: Pick<ItemResult, 'cells'>,
+	anims = d.spec.anims
+): string[] | undefined {
+	const covered = new Set(r.cells.map((c) => c.key)),
+		missing: string[] = [];
+	for (const anim of anims) {
+		const clip = rig.animations.find((a) => a.id === anim);
+		if (!clip) return undefined;
+		for (const dir of d.spec.clipDirs?.[anim] ?? d.spec.dirs)
+			for (let i = 0; i < clip.cells; i++)
+				if (!covered.has(`${anim}/${dir}/${i}`)) missing.push(`${anim}/${dir}/${i}`);
+	}
+	return missing;
+}
 /** Standing checks may stop before animation: review must not offer to save incomplete coverage. */
 export function incompleteCoverage(d: Draft, rig: Rig, r: Pick<ItemResult, 'cells'>): boolean {
-	const covered = new Set(r.cells.map((c) => c.key));
-	return d.spec.anims.some((anim) => {
-		const clip = rig.animations.find((a) => a.id === anim);
-		return (
-			!clip ||
-			(d.spec.clipDirs?.[anim] ?? d.spec.dirs).some((dir) =>
-				Array.from({ length: clip.cells }, (_, i) => `${anim}/${dir}/${i}`).some(
-					(key) => !covered.has(key)
-				)
-			)
-		);
-	});
+	const missing = missingCells(d, rig, r);
+	return !missing || missing.length > 0;
+}
+/** The standing move the draft is designed from (the first move when it names none). */
+const draftStanding = (d: Draft) => d.spec.standing ?? d.spec.anims[0];
+/** The planned views missing frames when the draft can be kept from its available frames, else undefined: its design call
+ *  and every frame of the standing move it is designed from must be intact, since later frames are made from them. */
+export function availableGaps(
+	d: Draft,
+	rig: Rig,
+	r: Pick<ItemResult, 'cells' | 'g1' | 'qa'>
+): { anim: string; dir: DirectionName; missing: number; total: number }[] | undefined {
+	const missing = missingCells(d, rig, r);
+	if (
+		!r.qa ||
+		!missing ||
+		structuralReason(r.g1.get(0) ?? '') ||
+		recOf(d.calls[0]?.recId)?.state !== 'done' ||
+		missingCells(d, rig, r, [draftStanding(d)])?.length !== 0
+	)
+		return undefined;
+	const gaps = new Map<
+		string,
+		{ anim: string; dir: DirectionName; missing: number; total: number }
+	>();
+	for (const key of missing) {
+		const [anim, dir] = key.split('/') as [string, DirectionName];
+		const gap = gaps.get(`${anim}/${dir}`) ?? {
+			anim,
+			dir,
+			missing: 0,
+			total: rig.animations.find((a) => a.id === anim)!.cells
+		};
+		gap.missing++;
+		gaps.set(`${anim}/${dir}`, gap);
+	}
+	return [...gaps.values()];
 }
 /** A frozen rig opened with store/project.ts loadProject(). */
 export interface RigCtx {
@@ -329,13 +372,13 @@ const keyframeOf = (calls: CallState[], dir: DirectionName) => {
 	const k = calls.findIndex((c) => c.kind === 'dress' && c.cells.includes(restKey(dir)));
 	return k < 0 ? undefined : new Map(chunkOuts(calls, k, recOf)).get(restKey(dir));
 };
-const dressedRefs = (d: Draft) =>
-	Promise.all(
-		[...dressedOf(d.calls)].map(async ([k, o]) => ({
-			dir: k.split('/')[1] as DirectionName,
-			im: await img(o.sha)
-		}))
-	);
+/** Call k's outputs by cell when it finished and its labels prove each frame's cell (a pose call's in request order). */
+const identifiedCells = (d: Draft, k: number): [string, { sha: string }][] => {
+	const c = d.calls[k],
+		r = recOf(c.recId),
+		o = r?.state === 'done' ? identifiedOutputs(k, c, r) : undefined;
+	return o ? c.cells.map((key, i) => [key, o[i]]) : [];
+};
 /** Generations spent on a draft, re-rolls included. */
 const draftRecords = (d: Draft) => [
 	...new Set(d.calls.flatMap((c) => [c.recId, ...c.old]).filter((id): id is string => !!id))
@@ -839,7 +882,7 @@ export function finishedPart(d: Draft, rig: Rig, r: ItemResult): Draft | undefin
 			)
 		);
 	});
-	const standing = d.spec.standing ?? d.spec.anims[0];
+	const standing = draftStanding(d);
 	if (!complete.includes(standing) || complete.length === d.spec.anims.length) return undefined;
 	const inside = (cell: string) => complete.includes(cell.split('/')[0]);
 	return {
@@ -1256,11 +1299,12 @@ export async function evaluateItem(
 				)
 			).slice(0, c.cells.length);
 		}
+		// Labels prove each frame's cell, so a malformed frame drops only itself; the call stays G1 for review and re-roll.
 		for (const [i, key] of c.cells.entries()) {
 			const im = await img(o[i].sha);
 			if (im.w !== W || im.h !== H) {
 				g1.set(k, `G1 output ${im.w}x${im.h}`);
-				break;
+				continue;
 			}
 			(c.kind === 'dress' ? dressOuts : outs).push({
 				k,
@@ -1383,8 +1427,7 @@ export async function evaluateItem(
 					.join('; ')
 			);
 		}
-	const run = (useCc?: boolean) =>
-		outs.filter((o) => !structuralReason(g1.get(o.k) ?? '')).map((o) => ex(o, useCc));
+	const run = (useCc?: boolean) => outs.map((o) => ex(o, useCc));
 	let cells = run();
 	if (route === 'none' && cells.length) {
 		// per-item novel_cc decision (S1): novel2 lost > 25 % of the area over all cells
@@ -1581,12 +1624,19 @@ const toProv = (r: JobRec, c: CallState): Provenance => ({
 	createdAt: new Date(r.submittedAt ?? r.createdAt).toISOString(),
 	produced: [...c.cells] as Provenance['produced']
 });
-/** A draft's receipts: its current calls in call order (CellQa.provenance indexes them), then the done attempts that
- *  re-rolls replaced, each with its own seed, so a saved item's recorded cost includes them. */
-function draftProvenance(d: Draft): Provenance[] {
-	const current = d.calls.map((c) => toProv(recOf(c.recId)!, c));
-	const used = new Set(d.calls.map((c) => c.recId));
-	const replaced = [...new Set(d.calls.flatMap((c) => c.old))]
+/** A draft's receipts: its finished current calls in call order (`index` maps a call to the entry CellQa.provenance names),
+ *  then the attempts that re-rolls replaced, each with its own seed, so a saved item's recorded cost includes them. A call
+ *  that never finished (a kept draft's missing frames) counts like a replaced attempt. */
+function draftProvenance(d: Draft): { provenance: Provenance[]; index: Map<number, number> } {
+	const index = new Map<number, number>();
+	const current = d.calls.flatMap((c, k) => {
+		const r = recOf(c.recId);
+		if (r?.state !== 'done') return [];
+		index.set(k, index.size);
+		return [toProv(r, c)];
+	});
+	const used = new Set(d.calls.flatMap((c) => (recOf(c.recId)?.state === 'done' ? [c.recId] : [])));
+	const replaced = [...new Set(d.calls.flatMap((c) => [...c.old, ...(c.recId ? [c.recId] : [])]))]
 		.filter((id) => !used.has(id))
 		.map(recOf)
 		// A failed or canceled attempt counts only when PixelLab reported what it billed.
@@ -1598,7 +1648,7 @@ function draftProvenance(d: Draft): Provenance[] {
 				replaced: true
 			};
 		});
-	return [...current, ...replaced];
+	return { provenance: [...current, ...replaced], index };
 }
 /** The body cells (what baseHash covers) of `anims`, comparable across records. */
 const bodyCells = (m: Manifest, anims: string[]) =>
@@ -1606,60 +1656,100 @@ const bodyCells = (m: Manifest, anims: string[]) =>
 		m.rig.directions.map((d) => d.id),
 		anims.map((a) => m.items.find((i) => i.id === m.rig.baseItem)?.layers[0].cells?.[a] ?? null)
 	]);
-/** Write the item (layers + cell blobs + provenance + QA) into the rig's project record. A non-pass QA becomes "accepted". */
+/** Write the item (layers + cell blobs + provenance + QA) into the rig's project record. A non-pass QA becomes "accepted".
+ *  With `available`, a stopped draft is kept from its verified frames only (availableGaps); the rest stay missing coverage. */
 export async function acceptItem(
 	d: Draft,
 	savedCtx: RigCtx,
-	res?: ItemResult
+	res?: ItemResult,
+	available = false
 ): Promise<{ item: Item; cells: number }> {
-	const ctx = draftContext(d, savedCtx);
+	const ctx = draftContext(d, savedCtx),
+		rig = ctx.rec.manifest.rig;
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	const r = res ?? (await evaluateItem(d, savedCtx));
-	if (hasStructuralFailure(r))
-		throw new Error(
-			`${d.spec.id}: a batch has missing or malformed frames. Try again before keeping this item.`
-		);
-	if (incompleteCoverage(d, ctx.rec.manifest.rig, r))
-		throw new Error(
-			`${d.spec.id}: a batch has missing or malformed frames. Try again before keeping this item.`
-		);
-	if (!r.qa || d.calls.some((c) => recOf(c.recId)?.state !== 'done'))
-		throw new Error(`${d.spec.id}: not all calls are done`);
+	if (available) {
+		if (!availableGaps(d, rig, r)) throw keepWithoutStandingError();
+		if (d.calls.some((c) => c.recId && !terminal(recOf(c.recId))))
+			throw new Error(`${d.spec.id}: not all calls are done`);
+	} else {
+		if (hasStructuralFailure(r) || incompleteCoverage(d, rig, r))
+			throw new Error(
+				`${d.spec.id}: a batch has missing or malformed frames. Try again before keeping this item.`
+			);
+		if (d.calls.some((c) => recOf(c.recId)?.state !== 'done'))
+			throw new Error(`${d.spec.id}: not all calls are done`);
+	}
+	if (!r.qa) throw new Error(`${d.spec.id}: not all calls are done`);
+	const pad = padOf(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method, rig.cell);
+	const { provenance, index } = draftProvenance(d);
 	const qa = acceptQa(r.qa.qa);
+	for (const cell of Object.values(qa.cells))
+		if (cell.provenance !== undefined) cell.provenance = index.get(cell.provenance);
+	// Missing frames are not a passing check.
+	if (available) qa.status = 'accepted';
 	const dress = d.calls[0].kind === 'dress',
 		dressed: Partial<Record<DirectionName, Img>> = {};
-	if (dress) for (const r of await dressedRefs(d)) dressed[r.dir] = r.im;
+	// Keyframes are kept only where their cell and frame size are proven: a kept draft can lack some.
+	const keepDressed = async (k: number, kept: (key: string) => boolean) => {
+		for (const [key, out] of identifiedCells(d, k)) {
+			if (!kept(key)) continue;
+			const im = await img(out.sha);
+			if (im.w === rig.cell.w + 2 * pad && im.h === rig.cell.h + 2 * pad)
+				dressed[key.split('/')[1] as DirectionName] = im;
+		}
+	};
+	if (dress) {
+		for (const [k, c] of d.calls.entries())
+			if (c.kind === 'dress') await keepDressed(k, () => true);
+	}
 	// Preserve the original chroma outputs before setup too. Later skeleton estimates can reuse them only if the
 	// selected standing body frames still exactly match the registered references.
 	else if (d.spec.standing && d.spec.key !== 'none')
-		for (const [k] of d.calls.entries()) {
-			for (const [key, out] of chunkOuts(d.calls, k, recOf))
-				if (key.startsWith(`${d.spec.standing}/`))
-					dressed[key.split('/')[1] as DirectionName] = await img(out.sha);
-		}
-	const provenance = draftProvenance(d);
+		for (const k of d.calls.keys())
+			await keepDressed(k, (key) => key.startsWith(`${d.spec.standing}/`));
+	// A kept draft saves only the moves and views it has frames in; the others stay missing coverage like any gap.
+	const covered = [...new Set(r.cells.map((c) => c.key))];
+	const has = (anim: string, dir?: string) =>
+		covered.some((key) => key.startsWith(dir ? `${anim}/${dir}/` : `${anim}/`));
+	const keptAnims = available ? d.spec.anims.filter((anim) => has(anim)) : d.spec.anims;
+	const spec = available
+		? {
+				...d.spec,
+				anims: keptAnims,
+				clipDirs: Object.fromEntries(
+					keptAnims.map((anim) => [
+						anim,
+						(d.spec.clipDirs?.[anim] ?? d.spec.dirs).filter((dir) => has(anim, dir))
+					])
+				)
+			}
+		: d.spec;
 	const { item, images } = await buildItem({
 		spec: JSON.parse(
-			JSON.stringify({ ...d.spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) })
+			JSON.stringify({ ...spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) })
 		) as ItemSpec,
-		rig: ctx.rec.manifest.rig,
-		cells: r.cells,
+		rig,
+		// A cut hides body pixels under the item, so a kept draft has none where it has no item pixels.
+		cells: available ? r.cells.map((c) => (c.area ? c : { ...c, cut: undefined })) : r.cells,
 		route: d.spec.key,
 		qa,
 		...(Object.keys(dressed).length ? { dressed } : {}),
-		pad: padOf(
-			requireSlot(ctx.rec.manifest, d.spec.slot),
-			d.spec.method,
-			ctx.rec.manifest.rig.cell
-		),
+		pad,
 		provenance,
 		anchorCell: d.calls.length > 1 ? d.calls[0].cells[0] : undefined
 	});
 	// Accepted keyframe issues, and the dark-patch review notes, stay with the saved item (2026-11-07 session counter-review F2).
+	// Malformed frames are not design issues: a kept draft lists them as missing coverage instead.
 	const darkNotes = r.qa.warnings.filter((why) => why.startsWith('D1 '));
 	const designWarnings = [
-		...new Set([...[...r.g1.values()].flatMap((why) => why.split(/;\s*/)), ...darkNotes])
+		...new Set([
+			...[...r.g1.values()]
+				.flatMap((why) => why.split(/;\s*/))
+				.filter((why) => !structuralReason(why)),
+			...darkNotes
+		])
 	];
 	if (designWarnings.length) {
 		item.designWarnings = designWarnings;
@@ -1830,7 +1920,7 @@ export async function animateAnchoredItem(
 		anim,
 		dirs,
 		cells,
-		draftProvenance(finished),
+		draftProvenance(finished).provenance,
 		result.qa,
 		0,
 		needsMaterials ? materials : undefined
@@ -2353,14 +2443,17 @@ export function keepWithoutRefusal(
 	)
 		return undefined;
 	return keepsFramesWithout(item, moves)
-		? new LocalizedError(
-				'This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.',
-				'itemRoute.errors.keepWithoutStanding'
-			)
+		? keepWithoutStandingError()
 		: new LocalizedError(
 				'This item has no complete move to keep. Make the missing frames instead.',
 				'itemRoute.errors.keepWithoutNothingLeft'
 			);
+}
+function keepWithoutStandingError() {
+	return new LocalizedError(
+		'This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.',
+		'itemRoute.errors.keepWithoutStanding'
+	);
 }
 export const keepableWithout = (m: Manifest, item: Item, moves: readonly string[]) =>
 	!keepWithoutRefusal(m, item, moves);

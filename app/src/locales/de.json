@@ -2079,7 +2079,10 @@
 		"rerollFailed": "Fehlgeschlagene Aufrufe neu würfeln",
 		"rerollFailedDetail": "Nur die fehlgeschlagenen Aufrufe und was von ihnen abhängt werden neu gekauft. Alle anderen fertigen Aufrufe werden wiederverwendet.",
 		"keepFinished": "Fertige Animationen behalten",
-		"keepFinishedDetail": "Speichert die Animationen, deren Frames alle fertig sind. Die anderen bleiben als fehlende Frames aufgeführt, die du später erstellen kannst."
+		"keepFinishedDetail": "Speichert die Animationen, deren Frames alle fertig sind. Die anderen bleiben als fehlende Frames aufgeführt, die du später erstellen kannst.",
+		"keepAvailable": "Verfügbare Frames behalten",
+		"keepAvailableDetail": "Speichert alle Frames, die zurückgekommen sind. Es fehlen: {views}. Sie bleiben als fehlende Frames aufgeführt, die du später erstellen kannst.",
+		"missingFrames": "{move} {direction} ({missing} von {total} Frames)"
 	},
 	"generationDetails": {
 		"copiedFrom": "einmal für {name} bezahlt, hierher kostenlos kopiert",

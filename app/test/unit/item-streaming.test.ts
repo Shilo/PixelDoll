@@ -11,6 +11,7 @@ import * as db from '../../src/lib/store/db.ts';
 import { anchorChunks, itemQa, padImg, slotOf, type CellOut } from '../../src/lib/items/items.ts';
 import {
 	rerollCall,
+	evaluateItem,
 	runItem,
 	type Draft,
 	type ItemResult,
@@ -449,6 +450,30 @@ test('a malformed design call buys no later call even when its anchor cell is in
 	const result = await run;
 	expect(result?.g1.get(0)).toContain('G1');
 	expect(q.order.map((o) => o.path)).toEqual(['/edit-animation-v2', '/edit-animation-v2']);
+});
+
+test('a wrong-size pose frame leaves verified neighbors at their original indices', async () => {
+	const { ctx, d, dressed } = await fixture();
+	for (const [k, c] of d.calls.entries()) {
+		const id = `sparse-${k}`;
+		q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec);
+		c.recId = id;
+		await land(
+			id,
+			c.kind === 'dress'
+				? [dressed, dressed]
+				: k === 2
+					? [dressed, makeImg(8, 8), dressed, dressed]
+					: Array(4).fill(dressed)
+		);
+	}
+	const result = await evaluateItem(d, ctx);
+	expect(result.g1.get(2)).toContain('G1');
+	expect(result.cells.map((c) => c.key).filter((key) => key.includes('/south/'))).toEqual([
+		'walk/south/0',
+		'walk/south/2',
+		'walk/south/3'
+	]);
 });
 
 test.each([null, 'Needs PixelLab Tier 2 or higher. No request sent.'])(

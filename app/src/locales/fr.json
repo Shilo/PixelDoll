@@ -2079,7 +2079,10 @@
 		"rerollFailed": "Relancer les appels échoués",
 		"rerollFailedDetail": "Seuls les appels échoués et ce qui en dépend sont rachetés. Tous les autres appels terminés sont réutilisés.",
 		"keepFinished": "Garder les animations terminées",
-		"keepFinishedDetail": "Enregistre les animations dont toutes les images sont terminées. Les autres restent listées comme images manquantes, à créer plus tard."
+		"keepFinishedDetail": "Enregistre les animations dont toutes les images sont terminées. Les autres restent listées comme images manquantes, à créer plus tard.",
+		"keepAvailable": "Garder les images disponibles",
+		"keepAvailableDetail": "Enregistre toutes les images reçues. Manquantes : {views}. Elles restent listées comme images manquantes, à créer plus tard.",
+		"missingFrames": "{move} {direction} ({missing} sur {total} images)"
 	},
 	"generationDetails": {
 		"copiedFrom": "payé une fois pour {name} ; copié ici gratuitement",

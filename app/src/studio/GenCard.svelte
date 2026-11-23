@@ -5,6 +5,7 @@
 	import { bakedFrame, composeCell } from '../lib/compose/compose.ts';
 	import { live, queue } from '../lib/pixellab/queue.ts';
 	import {
+		availableGaps,
 		draftMinimumTier,
 		failedCalls,
 		finishedPart,
@@ -23,7 +24,8 @@
 	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import Sprite from './Sprite.svelte';
-	import { plainReasonMessage } from './model.ts';
+	import { moveName, plainReasonMessage } from './model.ts';
+	import { directionNames } from './directionKeys.ts';
 	import { displayMove } from './displayMove.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import { displayMessage, displayNestedMessage } from '../lib/i18n.ts';
@@ -163,7 +165,7 @@
 			current = false;
 		};
 	});
-	// What a stopped draft already bought stays usable: re-roll only its failed calls, or keep the moves that finished.
+	// What a stopped draft already bought stays usable: re-roll only its failed calls, or keep the frames that finished.
 	let paid = $state.raw<(PaidReviewData & { calls: number[]; tier: number }) | null>(null);
 	// Re-rolling the failed calls at the same price as generating again is one choice: only the review's button is shown.
 	const sameRetry = $derived(
@@ -183,7 +185,15 @@
 						calls = failedCalls(draft, result ?? null),
 						reroll = calls.length ? rerollFailed(draft, calls, rig) : undefined,
 						finished =
-							result && incompleteCoverage(draft, rig, result) && finishedPart(draft, rig, result);
+							result && incompleteCoverage(draft, rig, result) && finishedPart(draft, rig, result),
+						gaps = result ? availableGaps(draft, rig, result) : undefined,
+						// Keeping the available frames is offered when it keeps more than the finished moves would.
+						available =
+							!!gaps?.length &&
+							(!finished ||
+								!!result?.cells.some(
+									(cell) => !finished.spec.anims.includes(cell.key.split('/')[0])
+								));
 					const options: PaidOption[] = [
 						...(reroll
 							? [
@@ -203,17 +213,36 @@
 									}
 								]
 							: []),
-						...(finished
+						...(available
 							? [
 									{
-										id: 'keep-finished' as const,
-										label: message('genCard.keepFinished'),
-										detail: message('genCard.keepFinishedDetail'),
+										id: 'keep-available' as const,
+										label: message('genCard.keepAvailable'),
+										detail: message('genCard.keepAvailableDetail', {
+											views: gaps!.map((gap) =>
+												message('genCard.missingFrames', {
+													move: moveName(gap.anim, rig.animations),
+													direction: message(directionNames[gap.dir]),
+													missing: gap.missing,
+													total: gap.total
+												})
+											)
+										}),
 										gens: 0,
 										paid: false
 									}
 								]
-							: [])
+							: finished
+								? [
+										{
+											id: 'keep-finished' as const,
+											label: message('genCard.keepFinished'),
+											detail: message('genCard.keepFinishedDetail'),
+											gens: 0,
+											paid: false
+										}
+									]
+								: [])
 					];
 					if (current && options.length)
 						paid = {
@@ -236,7 +265,9 @@
 		if (option.id === 'reroll-calls') rerollGen(g, paid.calls, option.gens, paid.tier);
 		else {
 			busy = true;
-			void acceptGen(g, false, true).finally(() => (busy = false));
+			void acceptGen(g, false, option.id === 'keep-available' ? 'available' : 'finished').finally(
+				() => (busy = false)
+			);
 		}
 	}
 	let busy = $state(false);

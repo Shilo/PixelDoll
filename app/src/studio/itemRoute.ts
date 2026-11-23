@@ -56,8 +56,8 @@ export interface ItemRoute {
 	draft(ctx: RigCtx, input: NewItemInput, taken: string[]): Draft;
 	/** Generate each planned batch once and run QA. Resumable from the ledger without quality retries. */
 	run(d: Draft, ctx: RigCtx, hooks: RunHooks): Promise<ItemResult | null>;
-	/** Write the accepted item into the project record. */
-	accept(d: Draft, ctx: RigCtx, res?: ItemResult): Promise<Item>;
+	/** Write the accepted item into the project record; `available` keeps a stopped draft's verified frames only. */
+	accept(d: Draft, ctx: RigCtx, res?: ItemResult, available?: boolean): Promise<Item>;
 	spent(d: Draft): number;
 }
 
@@ -163,7 +163,7 @@ export const chromaEdit: ItemRoute = {
 		return newDraft(ctx, { ...s, method: itemMethod(ctx, s) }, taken);
 	},
 	run: (d, ctx, hooks) => runItem(d, ctx, hooks),
-	accept: async (d, ctx, res) => (await acceptItem(d, ctx, res)).item,
+	accept: async (d, ctx, res, available) => (await acceptItem(d, ctx, res, available)).item,
 	spent: (d) => gensOf(d)
 };
 

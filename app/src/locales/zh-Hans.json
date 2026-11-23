@@ -2018,7 +2018,10 @@
 		"rerollFailed": "重新生成失败的调用",
 		"rerollFailedDetail": "只重新购买失败的调用及依赖它们的内容。其他已完成的调用会重复使用。",
 		"keepFinished": "保留已完成的动作",
-		"keepFinishedDetail": "保存所有帧都已完成的动作。其余动作仍列为缺少帧，之后可以再制作。"
+		"keepFinishedDetail": "保存所有帧都已完成的动作。其余动作仍列为缺少帧，之后可以再制作。",
+		"keepAvailable": "保留已返回的帧",
+		"keepAvailableDetail": "保存所有已返回的帧。缺少：{views}。它们仍列为缺少帧，之后可以再制作。",
+		"missingFrames": "{move} {direction}（{total} 帧中缺 {missing} 帧）"
 	},
 	"generationDetails": {
 		"copiedFrom": "已为{name}付费一次；此处免费复制",

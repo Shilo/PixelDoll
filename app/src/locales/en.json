@@ -2079,7 +2079,10 @@
 		"rerollFailed": "Re-roll failed calls",
 		"rerollFailedDetail": "Only the calls that failed are bought again, with whatever depends on them. Every other finished call is reused.",
 		"keepFinished": "Keep finished moves",
-		"keepFinishedDetail": "Saves the moves whose frames all finished. The others stay listed as missing frames, which you can make later."
+		"keepFinishedDetail": "Saves the moves whose frames all finished. The others stay listed as missing frames, which you can make later.",
+		"keepAvailable": "Keep available frames",
+		"keepAvailableDetail": "Saves every frame that came back. Missing: {views}. They stay listed as missing frames, which you can make later.",
+		"missingFrames": "{move} {direction} ({missing} of {total} frames)"
 	},
 	"generationDetails": {
 		"copiedFrom": "paid once for {name}; copied here for free",

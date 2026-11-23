@@ -2018,7 +2018,10 @@
 		"rerollFailed": "Buat ulang panggilan yang gagal",
 		"rerollFailedDetail": "Hanya panggilan yang gagal, dan yang bergantung padanya, yang dibeli lagi. Panggilan lain yang selesai dipakai ulang.",
 		"keepFinished": "Simpan animasi yang selesai",
-		"keepFinishedDetail": "Menyimpan animasi yang semua frame-nya selesai. Sisanya tetap tercantum sebagai frame yang kurang, yang bisa Anda buat nanti."
+		"keepFinishedDetail": "Menyimpan animasi yang semua frame-nya selesai. Sisanya tetap tercantum sebagai frame yang kurang, yang bisa Anda buat nanti.",
+		"keepAvailable": "Simpan frame yang tersedia",
+		"keepAvailableDetail": "Menyimpan semua frame yang sudah kembali. Yang kurang: {views}. Frame tersebut tetap tercantum sebagai frame yang kurang, yang bisa Anda buat nanti.",
+		"missingFrames": "{move} {direction} ({missing} dari {total} frame)"
 	},
 	"generationDetails": {
 		"copiedFrom": "dibayar sekali untuk {name}; disalin ke sini secara gratis",

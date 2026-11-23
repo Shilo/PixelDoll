@@ -2079,7 +2079,10 @@
 		"rerollFailed": "Volver a generar las llamadas fallidas",
 		"rerollFailedDetail": "Solo se vuelven a comprar las llamadas que fallaron y lo que depende de ellas. Las demás llamadas terminadas se reutilizan.",
 		"keepFinished": "Conservar las animaciones terminadas",
-		"keepFinishedDetail": "Guarda las animaciones con todos sus fotogramas terminados. Las demás quedan como fotogramas faltantes, que puedes crear más tarde."
+		"keepFinishedDetail": "Guarda las animaciones con todos sus fotogramas terminados. Las demás quedan como fotogramas faltantes, que puedes crear más tarde.",
+		"keepAvailable": "Conservar los fotogramas disponibles",
+		"keepAvailableDetail": "Guarda todos los fotogramas que llegaron. Faltan: {views}. Quedan como fotogramas faltantes, que puedes crear más tarde.",
+		"missingFrames": "{move} {direction} ({missing} de {total} fotogramas)"
 	},
 	"generationDetails": {
 		"copiedFrom": "pagado una vez para {name}; copiado aquí gratis",

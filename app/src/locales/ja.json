@@ -2018,7 +2018,10 @@
 		"rerollFailed": "失敗した呼び出しを再生成",
 		"rerollFailedDetail": "失敗した呼び出しと、それに依存するものだけを再購入します。ほかの完了した呼び出しは再利用します。",
 		"keepFinished": "完成したモーションを保持",
-		"keepFinishedDetail": "すべてのフレームが完成したモーションを保存します。ほかは不足フレームとして残り、あとで作成できます。"
+		"keepFinishedDetail": "すべてのフレームが完成したモーションを保存します。ほかは不足フレームとして残り、あとで作成できます。",
+		"keepAvailable": "届いたフレームを保持",
+		"keepAvailableDetail": "届いたフレームをすべて保存します。不足: {views}。不足フレームとして残り、あとで作成できます。",
+		"missingFrames": "{move} {direction}（{total} フレーム中 {missing} 不足）"
 	},
 	"generationDetails": {
 		"copiedFrom": "{name}用に作成したときに一度だけ費用がかかり、ここへのコピーは無料です",

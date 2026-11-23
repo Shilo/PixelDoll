@@ -2079,7 +2079,10 @@
 		"rerollFailed": "Başarısız çağrıları yeniden oluştur",
 		"rerollFailedDetail": "Yalnızca başarısız çağrılar ve onlara bağlı olanlar yeniden satın alınır. Biten diğer tüm çağrılar yeniden kullanılır.",
 		"keepFinished": "Biten animasyonları sakla",
-		"keepFinishedDetail": "Tüm kareleri biten animasyonları kaydeder. Diğerleri eksik kareler olarak listelenir ve daha sonra oluşturulabilir."
+		"keepFinishedDetail": "Tüm kareleri biten animasyonları kaydeder. Diğerleri eksik kareler olarak listelenir ve daha sonra oluşturulabilir.",
+		"keepAvailable": "Gelen kareleri sakla",
+		"keepAvailableDetail": "Gelen tüm kareleri kaydeder. Eksik: {views}. Bunlar eksik kareler olarak listelenir ve daha sonra oluşturulabilir.",
+		"missingFrames": "{move} {direction} ({total} kareden {missing} tanesi eksik)"
 	},
 	"generationDetails": {
 		"copiedFrom": "{name} için bir kez ücret ödendi; buraya ücretsiz kopyalandı",

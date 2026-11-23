@@ -2018,7 +2018,10 @@
 		"rerollFailed": "실패한 호출 다시 생성",
 		"rerollFailedDetail": "실패한 호출과 그에 의존하는 것만 다시 구매해요. 완료된 다른 호출은 다시 사용해요.",
 		"keepFinished": "완료된 동작 보관",
-		"keepFinishedDetail": "모든 프레임이 완료된 동작을 저장해요. 나머지는 누락된 프레임으로 남고 나중에 만들 수 있어요."
+		"keepFinishedDetail": "모든 프레임이 완료된 동작을 저장해요. 나머지는 누락된 프레임으로 남고 나중에 만들 수 있어요.",
+		"keepAvailable": "받은 프레임 보관",
+		"keepAvailableDetail": "받은 프레임을 모두 저장해요. 누락: {views}. 누락된 프레임으로 남고 나중에 만들 수 있어요.",
+		"missingFrames": "{move} {direction} ({total}개 중 {missing}개 프레임 누락)"
 	},
 	"generationDetails": {
 		"copiedFrom": "{name} 캐릭터에서 한 번 결제했고, 여기에는 무료로 복사했어요",

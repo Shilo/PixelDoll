@@ -3485,30 +3485,40 @@ const drop = (g: Gen) => {
 };
 /** Keep it (or `auto`: a clean draft saving itself). Keep it wears the item; a saved draft keeps the slot it was worn in (same id)
  *  and reloads the open character in place. True when saved. */
-export async function acceptGen(g: Gen, auto = false, finished = false): Promise<boolean> {
+export async function acceptGen(
+	g: Gen,
+	auto = false,
+	keep?: 'finished' | 'available'
+): Promise<boolean> {
 	const id = g.draft.spec.id;
 	// A background auto-save never pops Activity open in a follower tab; the draft stays ready to review there.
 	if ((auto ? queue.role === 'follower' : follower()) || settling.has(id)) return false;
 	settling.add(id);
 	try {
 		const ctx = await loadProject(g.draft.rigId);
-		// `finished`: keep only the moves that completed (re-evaluated from their records); the rest stay missing coverage.
+		// `finished`: keep only the moves that completed (re-evaluated from their records); `available`: keep every verified
+		// frame. The rest stay missing coverage.
 		const part =
-			finished && store.results[id]
+			keep === 'finished' && store.results[id]
 				? (await itemRun()).finishedPart(
 						$state.snapshot(g.draft) as Draft,
 						ctx.rec.manifest.rig,
 						store.results[id]!
 					)
 				: undefined;
-		if (finished && !part)
+		if (keep === 'finished' && !part)
 			throw new LocalizedError(
 				'The finished frames changed. Review the item again. Nothing was saved.',
 				'state.finishedFramesChanged'
 			);
 		const item = await (
 			await itemFlow()
-		).accept(part ?? g.draft, ctx, part ? undefined : (store.results[id] ?? undefined));
+		).accept(
+			part ?? g.draft,
+			ctx,
+			part ? undefined : (store.results[id] ?? undefined),
+			keep === 'available'
+		);
 		if (part) g.draft.acceptedAt = part.acceptedAt;
 		const worn = doc.drafts[item.slot] === id;
 		await saveGens();

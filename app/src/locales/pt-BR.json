@@ -2088,7 +2088,10 @@
 		"rerollFailed": "Gerar as chamadas com falha de novo",
 		"rerollFailedDetail": "Só as chamadas com falha, e o que depende delas, são compradas de novo. Todas as outras chamadas concluídas são reutilizadas.",
 		"keepFinished": "Manter as animações concluídas",
-		"keepFinishedDetail": "Salva as animações com todos os quadros concluídos. As outras continuam listadas como quadros faltando, que você pode criar depois."
+		"keepFinishedDetail": "Salva as animações com todos os quadros concluídos. As outras continuam listadas como quadros faltando, que você pode criar depois.",
+		"keepAvailable": "Manter os quadros disponíveis",
+		"keepAvailableDetail": "Salva todos os quadros que voltaram. Faltando: {views}. Eles continuam listados como quadros faltando, que você pode criar depois.",
+		"missingFrames": "{move} {direction} ({missing} de {total} quadros)"
 	},
 	"generationDetails": {
 		"copiedFrom": "pago uma vez para {name}; cópia gratuita aqui",
