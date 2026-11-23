@@ -378,3 +378,34 @@ test('free queues hold a restricted workflow before its first paid call, allow o
 	expect(posts).toEqual(['/estimate-skeleton', '/create-character-v3']);
 	expect(store.get(blocked.id)).toMatchObject({ state: 'done', waitingForPlan: undefined });
 });
+test('a plan hold never writes over a cancel another tab saved, so the canceled request is never sent', async () => {
+	const store = new Map<string, JobRec>(),
+		posts: string[] = [];
+	const q = new Queue({
+		locks: null,
+		now: () => 1000,
+		online: () => true,
+		all: async () => [...store.values()],
+		put: async (id, rec) => {
+			store.set(id, structuredClone(rec));
+		},
+		api: async <T>(_key: string, method: string, path: string): Promise<T> => {
+			if (method === 'GET') return balance('Free trial', 'trial') as T;
+			posts.push(path);
+			return {} as T;
+		}
+	});
+	q.setKey('offline-fixture');
+	q.setBalance(balance('Free trial', 'trial'), q.key);
+	const held = await q.enqueue(
+		{ method: 'POST', path: '/create-character-v3', body: { seed: 1 } },
+		{ minimumTier: 1 }
+	);
+	store.set(held.id, { ...structuredClone(store.get(held.id)!), state: 'canceled' });
+	await q.tick();
+	expect(store.get(held.id)?.state).toBe('canceled');
+	q.setBalance(balance('Tier 1: Pixel Apprentice'), q.key);
+	await q.tick();
+	expect(posts).toEqual([]);
+	expect(q.snapshot().jobs.find((r) => r.id === held.id)?.state).toBe('canceled');
+});

@@ -1368,7 +1368,16 @@ export class Queue {
 				if (restriction) {
 					if (r.waitingForPlan !== restriction) {
 						r.waitingForPlan = restriction;
-						ops.push(this.guard(r.id, () => this.save(r)));
+						// Like submit: another tab's durable cancel (or receipt) wins over this display-only hold.
+						ops.push(
+							this.guard(r.id, async () => {
+								const stored = await this.saveIf(r, queuedWithoutJobs);
+								if (stored) {
+									this.recs.set(r.id, stored);
+									this.emit();
+								}
+							})
+						);
 					}
 					continue; // Hold restricted work; allowed requests and accepted-job polling continue.
 				}
