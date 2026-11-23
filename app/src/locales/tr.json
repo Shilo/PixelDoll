@@ -48,6 +48,10 @@
 	"librarySettings": {
 		"title": "Kitaplık",
 		"scope": "Kayıtlı karakterleri, görselleri ve arşivlenmiş verileri yedekleyin. Tercihler, taslaklar ve işler dahil edilmez.",
+		"debugDetails": "Hata ayıklama ayrıntılarını ekle",
+		"debugDetailsHint": "Sorunların teşhis edilebilmesi için her yedeğe hata günlüklerini, istek geçmişini, taslakları, işleri ve uygulama durumunu ekler. Bu sekmedeki hatalar eklenir ve bundan sonra hatalar yeniden yüklemeler ve sekmeler arasında da saklanır. PixelLab anahtarınız asla eklenmez.",
+		"scopeDebug": "Kayıtlı karakterleri, çizimleri, arşivlenmiş verileri ve hata ayıklama ayrıntılarını yedekle.",
+		"debugNotSaved": "Tarayıcı bu ayarı kaydedemedi.",
 		"backup": "Kitaplığı yedekle",
 		"restoreFromBackup": "Yedekten geri yükle",
 		"review": "Yedeği incele",

@@ -207,6 +207,53 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 			.characters.map(([key]: [string, unknown]) => key)
 			.sort()
 	).toEqual([sample.id, sample.otherId].sort());
+	// Developer mode offers debugging details: the next backup adds debug/ with the lost job, never the key.
+	const debugToggle = exportDialog.getByRole('switch', { name: 'Include debugging details' });
+	await expect(debugToggle).toBeHidden();
+	await page.evaluate(async () => {
+		const modePath = '/src/studio/developerMode.svelte.ts';
+		(await import(modePath)).setDeveloperMode(true);
+	});
+	await debugToggle.check();
+	await expect(
+		exportDialog.getByText(
+			'Back up saved characters, artwork, archived data, and debugging details.',
+			{ exact: true }
+		)
+	).toBeVisible();
+	const waitDebug = page.waitForEvent('download');
+	await backUp.click();
+	const debugDownload = await waitDebug;
+	expect(debugDownload.suggestedFilename()).toMatch(/\.debug\.backup\.zip$/);
+	const debugZip = await unzip(await readFile((await debugDownload.path())!));
+	for (const name of [
+		'README.txt',
+		'index.json',
+		'environment.json',
+		'state.json',
+		'log.json',
+		'activity.json',
+		'jobs.json',
+		'records.json',
+		'storage.json',
+		'artwork.json'
+	])
+		expect(debugZip.has(`debug/${name}`), name).toBe(true);
+	const debugText = [...debugZip]
+		.filter(([name]) => name.startsWith('debug/') && !name.startsWith('debug/blobs/'))
+		.map(([, data]) => new TextDecoder().decode(data))
+		.join('\n');
+	expect(debugText).not.toContain('fake-workspace-test-key-no-network');
+	expect(debugText).toContain('/edit-animation-v2');
+	expect(
+		JSON.parse(new TextDecoder().decode(debugZip.get('debug/storage.json'))).local.pixellabApiKey
+	).toBe('[redacted]');
+	await debugToggle.uncheck();
+	await page.evaluate(async () => {
+		const modePath = '/src/studio/developerMode.svelte.ts';
+		(await import(modePath)).setDeveloperMode(false);
+	});
+	await expect(debugToggle).toBeHidden();
 	const recipientContext = await browser.newContext({ viewport: { width: 360, height: 740 } });
 	try {
 		await recipientContext.route('https://*.pixellab.ai/**', (route) => route.abort());

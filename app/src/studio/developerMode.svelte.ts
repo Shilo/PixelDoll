@@ -1,6 +1,5 @@
+import { DEVELOPER_MODE_KEY as key } from '../lib/debug/flags.ts';
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
-
-const key = 'pixeldoll.developerMode';
 
 function read() {
 	try {

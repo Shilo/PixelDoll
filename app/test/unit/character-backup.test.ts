@@ -6,6 +6,7 @@ import {
 	exportBackup,
 	listArchiveDownloads,
 	planRestore,
+	readBackupCopy,
 	readRestoreSource,
 	RestoreChangedError,
 	restoreCharacters
@@ -470,4 +471,20 @@ test('a workspace ZIP restores only its characters, and a key in a saved field b
 		manifest: { ...character.manifest, name: 'secret-key' }
 	});
 	await expect(backup()).rejects.toThrow('PixelLab key');
+});
+
+test('a debugging backup carries its debug folder, and restore and Open as a copy ignore it', async () => {
+	const debug = [
+		{ name: 'debug/log.json', data: new TextEncoder().encode('[]') },
+		{ name: `debug/blobs/${'f'.repeat(64)}`, data: new Uint8Array([1, 2, 3]) }
+	];
+	const file = await exportBackup([], debug);
+	expect([...(await unzip(file.bytes)).keys()]).toEqual(
+		expect.arrayContaining(['debug/log.json', `debug/blobs/${'f'.repeat(64)}`])
+	);
+	const source = await readRestoreSource(file.bytes);
+	expect([...source.characters.keys()]).toEqual(['rig-a']);
+	expect(source.unreadable).toBe(0);
+	const copy = await readBackupCopy(file.bytes);
+	expect([...copy.projects.keys()]).toEqual(['rig-a']);
 });

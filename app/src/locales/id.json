@@ -45,6 +45,10 @@
 	"librarySettings": {
 		"title": "Pustaka",
 		"scope": "Cadangkan karakter tersimpan, karya seni, dan data arsip. Preferensi, draf, dan tugas tidak disertakan.",
+		"debugDetails": "Sertakan detail debugging",
+		"debugDetailsHint": "Menambahkan log error, riwayat permintaan, draf, pekerjaan, dan status aplikasi ke setiap cadangan agar masalah bisa didiagnosis. Error dari tab ini disertakan, dan mulai sekarang error juga disimpan antar-muat ulang dan antar-tab. Kunci PixelLab Anda tidak pernah disertakan.",
+		"scopeDebug": "Cadangkan karakter, artwork, data arsip, dan detail debugging.",
+		"debugNotSaved": "Browser tidak dapat menyimpan pengaturan ini.",
 		"backup": "Cadangkan pustaka",
 		"restoreFromBackup": "Pulihkan dari cadangan",
 		"review": "Tinjau cadangan",

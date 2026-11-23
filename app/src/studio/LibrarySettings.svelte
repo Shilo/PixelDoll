@@ -1,6 +1,9 @@
 <script lang="ts">
 	import SettingsBackupCopy from './SettingsBackupCopy.svelte';
 	import SettingsItemButton from './SettingsItemButton.svelte';
+	import SettingsItemToggle from './SettingsItemToggle.svelte';
+	import { DEBUG_BACKUP_KEY, readFlag } from '../lib/debug/flags.ts';
+	import { developerModeEnabled } from './developerMode.svelte.ts';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
@@ -82,6 +85,7 @@
 	const additions = $derived(preview ? preview.add + preview.copies : 0);
 	const heading = $props.id();
 	const dropHint = `${heading}-drop`;
+	const debugHint = `${heading}-debug`;
 	const keys = () => [app.key, readSavedKey()];
 	const today = () => new Date().toISOString().slice(0, 10);
 	onMount(() => {
@@ -102,6 +106,33 @@
 			error = errorMessage(cause);
 		} finally {
 			busy = false;
+		}
+	}
+
+	// Developer mode only: backups then carry a debug/ folder (lib/debug/bundle.ts) for whoever helps with a problem.
+	let debugDetails = $state(readFlag(DEBUG_BACKUP_KEY));
+	const debugging = $derived(developerModeEnabled() && !workspaceCopy);
+	// Another tab may switch it: the backup reads the saved value, so the switch must show it.
+	$effect(() => {
+		const sync = (event: StorageEvent) => {
+			if (
+				event.storageArea === localStorage &&
+				(event.key === DEBUG_BACKUP_KEY || event.key === null)
+			)
+				debugDetails = readFlag(DEBUG_BACKUP_KEY);
+		};
+		addEventListener('storage', sync);
+		return () => removeEventListener('storage', sync);
+	});
+	function setDebugDetails(on: boolean) {
+		debugDetails = on;
+		try {
+			if (on) localStorage.setItem(DEBUG_BACKUP_KEY, '1');
+			else localStorage.removeItem(DEBUG_BACKUP_KEY);
+		} catch (cause) {
+			console.warn('debug details setting', cause);
+			debugDetails = readFlag(DEBUG_BACKUP_KEY);
+			error = message('librarySettings.debugNotSaved');
 		}
 	}
 
@@ -312,8 +343,24 @@
 		<section class="library-task">
 			<LibraryBackupButton settings disabled={busy} onbackup={backup} />
 			<div class="backup-notes">
-				<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
+				<p class="bu-muted settings-description">
+					{t(debugging && debugDetails ? 'librarySettings.scopeDebug' : 'librarySettings.scope')}
+				</p>
 			</div>
+			{#if debugging}
+				<SettingsItemToggle
+					setting="debug-details"
+					aria-describedby={debugHint}
+					checked={debugDetails}
+					disabled={busy}
+					onchange={(event) => setDebugDetails(event.currentTarget.checked)}
+				>
+					<span class="row-name">{t('librarySettings.debugDetails')}</span>
+				</SettingsItemToggle>
+				<p class="bu-muted settings-description" id={debugHint}>
+					{t('librarySettings.debugDetailsHint')}
+				</p>
+			{/if}
 		</section>
 		<hr class="bu-separator" />
 		<section class="library-task">
