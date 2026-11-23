@@ -4517,7 +4517,16 @@ async function addBodyClip(
 				Object.entries(skeletons).filter(([key]) => key.startsWith(`${spec.id}/`))
 			),
 			checks,
-			warnings
+			warnings,
+			...(intent
+				? {
+						moveRecovery: {
+							id: intent.id,
+							originalRigVersion: intent.rigVersion,
+							specHash: receiptSpecHash!
+						}
+					}
+				: {})
 		};
 		await db.updateCharacter<StoredProject>(
 			projectId,
@@ -4718,6 +4727,11 @@ export async function resolveMoveCandidate(
 				manifest.rig.animations.find((animation) => animation.id === id)
 			);
 			manifest.rig = rig;
+			if (candidate.moveRecovery)
+				current.moveRecovery = {
+					...candidate.moveRecovery,
+					bodyRigVersion: moveRigVersion(current)
+				};
 			Object.assign(currentBase, {
 				provenance: base.provenance,
 				layers: base.layers,

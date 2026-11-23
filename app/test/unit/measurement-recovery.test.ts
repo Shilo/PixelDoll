@@ -7,6 +7,7 @@ import {
 	measurementRecoveryPlan,
 	moveMotionRequest,
 	parallelGeneration,
+	resolveMoveCandidate,
 	reviewMoveRecovery,
 	reviewMoveResults,
 	run,
@@ -2011,6 +2012,31 @@ test('a direct run is refused up front while the same move waits in review, and 
 	);
 	expect(f.enqueue.mock.calls).toHaveLength(calls);
 	expect(f.posts()).toBe(posts);
+});
+
+test('a staged recovery result carries its receipt through reload and Save', async () => {
+	const f = await fixture('feet');
+	await f.finishOriginalChecks();
+	const spec = await f.recovery();
+	// Staged frames land in storage with the draft, as the real transaction writes them.
+	const stage = vi.mocked(db.updateCharacter).getMockImplementation()!;
+	vi.mocked(db.updateCharacter).mockImplementation(async (id, blobs, change, guard) => {
+		for (const [sha, blob] of blobs) f.blobs.set(sha, blob);
+		return stage(id, blobs, change, guard);
+	});
+	await expect(addMove('rig-recover', spec)).resolves.toMatchObject({ moveReview: 'idle' });
+	// Stored with the draft (a reload reads it back), never published before Save.
+	const draft = structuredClone(f.saved().moveReviews!.idle!);
+	expect(draft.moveRecovery).toMatchObject({ id: 'explicit-review' });
+	expect(f.saved().moveRecovery).toBeUndefined();
+	await resolveMoveCandidate('rig-recover', draft, true);
+	const saved = f.saved();
+	expect(saved.moveRecovery).toMatchObject({
+		id: 'explicit-review',
+		originalRigVersion: spec.measurementRecovery!.rigVersion
+	});
+	// The published receipt matches this recovery, so it is not offered or charged again.
+	expect(await reviewMoveRecovery('rig-recover', spec)).toEqual({});
 });
 
 test('a body move stopped after every view was bought resumes free with the same seed', async () => {
