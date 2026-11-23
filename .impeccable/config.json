@@ -48,6 +48,15 @@
         ],
         "createdAt": "2026-11-22T01:26:33.586Z",
         "reason": "agent: TypeScript Img type annotation on line 158, no HTML img tag"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "app/src/lib/items/run.ts"
+        ],
+        "createdAt": "2026-11-23T20:13:42.569Z",
+        "reason": "agent: false positive, run.ts L1141 is a TypeScript function named img() that decodes stored frames, not an <img> tag"
       }
     ]
   }
