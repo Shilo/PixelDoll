@@ -31,7 +31,8 @@ import {
 	stateAttempts,
 	stateContinuationBatches,
 	stateRecoveryRecords,
-	stateReviewBatches
+	stateReviewBatches,
+	stateReviewReceipts
 } from './stateRecovery.ts';
 import { groundToSource } from './stateGrounding.ts';
 import {
@@ -117,6 +118,8 @@ export interface StateReview {
 	canceled: DirectionName[];
 	/** Of `missing`: facings of batches never sent because an earlier batch stopped the run; a continuation can buy them. */
 	unmade: DirectionName[];
+	/** The batch receipts this review was read from (stateReviewReceipts), checked again before saving without `unmade`. */
+	receipts?: string;
 	/** As returned, for facings that came back off the source's ground and were moved onto it in `views`. */
 	ungrounded: Partial<Record<DirectionName, Img>>;
 	provenance: ReturnType<typeof provOf>[];
@@ -882,7 +885,8 @@ export async function pendingState(
 	const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGenerations?.[token];
 	if (!attempt) return null;
 	if (!attempt.source) throw outdated();
-	const ready = stateReviewBatches(attempt, await db.all<JobRec>('jobs'));
+	const ledger = await db.all<JobRec>('jobs');
+	const ready = stateReviewBatches(attempt, ledger);
 	if (!ready) throw unfinished();
 	// Batches never sent are reviewed without only once no tab is still sending them.
 	if (ready.unmade.length && !(await stateLockFree(token))) throw unfinished();
@@ -900,7 +904,12 @@ export async function pendingState(
 			known
 		);
 		const unmade = ready.unmade.flatMap((index) => attempt.plan.batches[index].facingIds);
-		return { ...review, missing: [...review.missing, ...unmade], unmade };
+		return {
+			...review,
+			missing: [...review.missing, ...unmade],
+			unmade,
+			receipts: stateReviewReceipts(attempt, ledger)
+		};
 	} catch (cause) {
 		// Known causes (no key to recover the views, a PixelLab error) say what to do; only unreadable results are invalid.
 		if (cause instanceof LocalizedError || cause instanceof ApiError) throw cause;
@@ -935,8 +944,19 @@ async function clearStateAttempt(projectId: string, token: string): Promise<void
 
 /** `riding`: saved from the Riding template, so the notice says where to use it. */
 export async function saveState(review: StateReview, riding = false): Promise<void> {
-	// With views never sent, no tab may be sending them while this save gives them up.
-	if (review.unmade.length) return withStateLock(review.token, () => publishState(review, riding));
+	// With views never sent, no tab may be sending them while this save gives them up, and none may have bought them since
+	// this review was read: saving the older subset would delete those paid views with the attempt.
+	if (review.unmade.length)
+		return withStateLock(review.token, async () => {
+			const attempt = (await db.get<StoredProject>('projects', review.projectId))
+				?.stateGenerations?.[review.token];
+			if (attempt && stateReviewReceipts(attempt, await db.all<JobRec>('jobs')) !== review.receipts)
+				throw error(
+					'New views finished for this State. Review it again before saving. Nothing was saved or charged.',
+					'newViews'
+				);
+			return publishState(review, riding);
+		});
 	return publishState(review, riding);
 }
 

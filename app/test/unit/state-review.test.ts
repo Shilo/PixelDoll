@@ -359,5 +359,28 @@ test('a local State whose second batch stopped before the third was sent can sti
 	expect(review?.missing).toEqual(['east', 'north']);
 	// North was verified never sent: it can be quoted separately, unlike the failed east batch.
 	expect(review?.unmade).toEqual(['north']);
+
+	const { saveState } = await import('../../src/studio/stateGeneration.ts');
+	// Unchanged receipts pass the check (this fixture has no open character, so the save stops there).
+	await expect(saveState(review!)).rejects.toMatchObject({
+		translation: { key: 'stateGeneration.changed' }
+	});
+	// Another tab then bought north and it finished: this older review cannot save over it.
+	pngs.set('north-result', figure());
+	stored.jobs.push(
+		record(2, {
+			jobs: [
+				{
+					id: 'north-result',
+					status: 'completed',
+					done: true,
+					results: [{ label: '0', sha: 'north-result' }]
+				}
+			]
+		})
+	);
+	await expect(saveState(review!)).rejects.toMatchObject({
+		translation: { key: 'stateGeneration.newViews' }
+	});
 	vi.unstubAllGlobals();
 });

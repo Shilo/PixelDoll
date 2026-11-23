@@ -2848,6 +2848,7 @@
 		"unfetchedViews": "La vue pour {directions} n’a pas pu être téléchargée. Réessayez d’abord : si vous enregistrez sans elle, elle ne pourra plus être récupérée.",
 		"canceledViews": "La vue pour {directions} a été annulée avant d’être créée. Si vous enregistrez maintenant, elle ne sera pas créée.",
 		"unmadeViews": "La vue pour {directions} n’a pas été créée, car une requête précédente s’est arrêtée. Vérifiez le coût pour la créer, ou enregistrez sans elle.",
+		"newViews": "De nouvelles vues de ce State sont terminées. Vérifiez-le à nouveau avant d’enregistrer. Rien n’a été enregistré ni facturé.",
 		"saveWithout": "Enregistrer sans elles",
 		"unfinished": "Les résultats sont incomplets ou indisponibles. Consultez l’activité. Aucune demande n’a été renvoyée.",
 		"outdated": "Cet état inachevé a été commencé avec une version antérieure de PixelDoll. Abandonnez-le pour recommencer.",

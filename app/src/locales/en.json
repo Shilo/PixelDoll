@@ -2848,6 +2848,7 @@
 		"unfetchedViews": "The view facing {directions} could not be downloaded. Try again first: once you save without it, it can’t be fetched later.",
 		"canceledViews": "The view facing {directions} was canceled before it was made. If you save now, it won’t be made.",
 		"unmadeViews": "The view facing {directions} was not made because an earlier request stopped. Check the cost of making it, or save without it.",
+		"newViews": "New views finished for this State. Review it again before saving. Nothing was saved or charged.",
 		"saveWithout": "Save without them",
 		"unfinished": "This attempt has unfinished or unavailable results. Check Activity. No request was resent.",
 		"outdated": "This unfinished State was started by an older version of PixelDoll. Discard it to start again.",
