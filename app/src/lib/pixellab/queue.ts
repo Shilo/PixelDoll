@@ -455,6 +455,10 @@ export class Queue {
 	private listeners = new Set<(s: QueueSnapshot) => void>();
 	private timer: (() => void) | null = null;
 	private ticking = false;
+	/** Finished jobs whose valid results could not be saved yet, by job id (see poll). */
+	private held = new Map<string, Job>();
+	/** Records whose latest save failed: saved again every tick until it lands, so a settled result is never only in memory. */
+	private unsavedRecords = new Set<string>();
 	/** Followers' stops waiting for the leading tab's answer, by reply id. */
 	private stopReplies = new Map<string, (ok: boolean) => void>();
 	// Order of the latest storage outcomes (reads and writes apart): the storage notice lifts only once a later read and a
@@ -649,7 +653,13 @@ export class Queue {
 			} satisfies Msg);
 	}
 	private async save(r: JobRec) {
-		await this.deps.put(r.id, r);
+		try {
+			await this.deps.put(r.id, r);
+		} catch (e) {
+			this.unsavedRecords.add(r.id);
+			throw e;
+		}
+		this.unsavedRecords.delete(r.id);
 		this.chan?.postMessage({ rec: r.id } satisfies Msg); // other tabs read just this record
 		this.emit();
 		this.requestLeadership();
@@ -1566,6 +1576,11 @@ export class Queue {
 				if (this.throttled) break; // one probe at a time until external tools release capacity
 			}
 		}
+		for (const id of this.unsavedRecords) {
+			const r = this.recs.get(id);
+			if (!r) this.unsavedRecords.delete(id);
+			else if (!this.busy.has(id)) ops.push(this.guard(id, () => this.save(r)));
+		}
 		if (this.key && this.paused !== 'auth')
 			for (const r of this.recs.values()) {
 				if (r.state !== 'running') continue;
@@ -1816,38 +1831,43 @@ export class Queue {
 		if (!key || !currentCredential()) return;
 		s.lastPoll = this.deps.now();
 		let job: Job;
-		try {
-			job = await this.deps.api<Job>(
-				key,
-				'GET',
-				`/background-jobs/${encodeURIComponent(s.id)}`,
-				undefined,
-				undefined,
-				{
-					queueId: r.id,
-					queueTag: r.tag,
-					activityScope: r.activityScope,
-					label: r.label,
-					background: true
-				}
-			);
-		} catch (e) {
-			if (!(e instanceof ApiError)) throw e;
-			if (e.kind === 'auth') {
-				s.error = e.message;
-				if (currentCredential()) this.paused = 'auth';
-			} else if (isNetwork(e)) {
-				s.error = e.message;
-				if (currentCredential()) this.goOffline();
-			} // B15
-			else if (e.kind === 'notfound' && this.deps.now() - (r.submittedAt ?? 0) > LOST_AFTER_MS) {
-				s.done = true;
-				s.status = 'lost';
-				s.error = 'job not found (auto-deleted before results were saved; cost may be spent)';
-				this.settle(r);
-			} else s.error = e.message; // transient: poll again in 5 s, never resubmit
-			return this.save(r);
-		}
+		// A finished job whose valid results this device failed to save is kept in memory and saved again from here, so a
+		// result PixelLab later expires is not lost while storage recovers.
+		const held = this.held.get(s.id);
+		if (held) job = held;
+		else
+			try {
+				job = await this.deps.api<Job>(
+					key,
+					'GET',
+					`/background-jobs/${encodeURIComponent(s.id)}`,
+					undefined,
+					undefined,
+					{
+						queueId: r.id,
+						queueTag: r.tag,
+						activityScope: r.activityScope,
+						label: r.label,
+						background: true
+					}
+				);
+			} catch (e) {
+				if (!(e instanceof ApiError)) throw e;
+				if (e.kind === 'auth') {
+					s.error = e.message;
+					if (currentCredential()) this.paused = 'auth';
+				} else if (isNetwork(e)) {
+					s.error = e.message;
+					if (currentCredential()) this.goOffline();
+				} // B15
+				else if (e.kind === 'notfound' && this.deps.now() - (r.submittedAt ?? 0) > LOST_AFTER_MS) {
+					s.done = true;
+					s.status = 'lost';
+					s.error = 'job not found (auto-deleted before results were saved; cost may be spent)';
+					this.settle(r);
+				} else s.error = e.message; // transient: poll again in 5 s, never resubmit
+				return this.save(r);
+			}
 		const lr = job.last_response;
 		s.status = job.status;
 		s.progress = lr?.progress;
@@ -1889,12 +1909,15 @@ export class Queue {
 						);
 			} catch (e) {
 				if (e instanceof ResultNotStored) {
-					// This device could not save a valid result: keep the job open, so a later poll reads the finished job again
-					// and saves it (blobs are content addressed, so a second save is the same blob). Storage is paused meanwhile.
+					// This device could not save a valid result: keep the job open and its answer in memory, so a later poll saves it
+					// again without asking PixelLab (blobs are content addressed, so a second save is the same blob). Storage is
+					// paused meanwhile.
 					s.results = [];
 					s.lastPoll = this.deps.now();
+					this.held.set(s.id, job);
 					throw e;
 				}
+				this.held.delete(s.id);
 				Object.assign(s, {
 					done: true,
 					status: 'failed',
@@ -1904,6 +1927,7 @@ export class Queue {
 				this.settle(r);
 				return this.save(r);
 			}
+			this.held.delete(s.id);
 			s.remoteDone = true;
 			s.pendingUrls = ims.filter((im) => im.url).map((im) => ({ label: im.label, url: im.url! }));
 			await this.save(r); // inline images are safe now; URLs are persisted for download
