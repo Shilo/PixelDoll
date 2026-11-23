@@ -321,3 +321,31 @@ test('a result this device could not save survives PixelLab deleting the job, an
 	});
 	expect(gets).toBe(1);
 });
+
+test('a waiter does not take a settled result until its record is stored', async () => {
+	let ledgerBroken = false;
+	const stored = new Map<string, JobRec>();
+	const { q, run } = fixture({
+		// Fails underneath the queue's own storage tracking, as a real IndexedDB write would.
+		put: async (k, r) => {
+			if (ledgerBroken && r.state === 'done') throw new Error('IndexedDB unavailable');
+			stored.set(k, structuredClone(r));
+		},
+		get: async (k) => structuredClone(stored.get(k)),
+		all: async () => [...stored.values()].map((r) => structuredClone(r)),
+		fetchBytes: async () =>
+			encodePngBytes({ w: 1, h: 1, data: new Uint8ClampedArray([1, 2, 3, 255]) })
+	});
+	const record = await q.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } });
+	let settled: JobRec | undefined;
+	void q.settled(record.id).then((r) => (settled = r));
+	ledgerBroken = true;
+	await run(12);
+	expect(q.snapshot().paused).toBe('storage'); // the failed write was announced
+	expect(q.snapshot().jobs.find((r) => r.id === record.id)?.state).toBe('done'); // finished in this tab
+	expect(settled).toBeUndefined(); // but nothing depends on it before it is stored
+	ledgerBroken = false;
+	await run(6);
+	expect(stored.get(record.id)?.state).toBe('done');
+	expect(settled?.state).toBe('done');
+});

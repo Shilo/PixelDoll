@@ -658,12 +658,10 @@ export class Queue {
 			} satisfies Msg);
 	}
 	private async save(r: JobRec) {
-		try {
-			await this.deps.put(r.id, r);
-		} catch (e) {
-			this.unsavedRecords.add(r.id);
-			throw e;
-		}
+		// Marked before writing: a waiter must never take a settled record that is not stored yet (another notice can emit
+		// while the write is pending or failing).
+		this.unsavedRecords.add(r.id);
+		await this.deps.put(r.id, r);
 		this.unsavedRecords.delete(r.id);
 		this.chan?.postMessage({ rec: r.id } satisfies Msg); // other tabs read just this record
 		this.emit();
@@ -696,7 +694,8 @@ export class Queue {
 			};
 			const un = this.subscribe((s) => {
 				const r = s.jobs.find((j) => j.id === id);
-				if (!done && r && !live(r)) {
+				// Only a stored outcome counts: a dependent step never advances on a result that reload would not see.
+				if (!done && r && !live(r) && !this.unsavedRecords.has(id)) {
 					done = true;
 					signal?.removeEventListener('abort', abort);
 					res(r);
