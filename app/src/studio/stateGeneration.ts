@@ -106,6 +106,10 @@ export interface StateReview {
 	views: { direction: DirectionName; image: Img }[];
 	/** Drawn facings PixelLab returned blank, failed or unreadable: the State is saved without them and their mirrors. */
 	missing: DirectionName[];
+	/** Of `missing`: facings whose download failed, which may still come back on Try again. */
+	unfetched: DirectionName[];
+	/** Of `missing`: facings of a batch canceled before it was made. */
+	canceled: DirectionName[];
 	/** As returned, for facings that came back off the source's ground and were moved onto it in `views`. */
 	ungrounded: Partial<Record<DirectionName, Img>>;
 	provenance: ReturnType<typeof provOf>[];
@@ -463,7 +467,9 @@ async function childViews(attempt: StateAttempt, record: JobRec) {
 		inventory?.count !== attempt.plan.remoteFacingCount
 	)
 		throw invalidResult();
-	// Each facing on its own: a missing, unreadable or blank one is named in review instead of costing the rest.
+	// Each facing on its own: a missing, unreadable or blank one is named in review instead of costing the rest. One that
+	// could not be downloaded is named apart: it may still download on Try again, and is lost once the State is saved.
+	const unfetched: DirectionName[] = [];
 	const read = await Promise.all(
 		attempt.plan.batches[0].facingIds.map(async (direction) => {
 			const url = inventory.rotations[direction];
@@ -471,7 +477,8 @@ async function childViews(attempt: StateAttempt, record: JobRec) {
 			const image = await readRotation(url).then(
 				(image) => image,
 				(cause: unknown) => {
-					console.warn(`The ${direction} State view could not be read.`, cause);
+					console.warn(`The ${direction} State view could not be downloaded.`, cause);
+					unfetched.push(direction);
 					return null;
 				}
 			);
@@ -480,7 +487,7 @@ async function childViews(attempt: StateAttempt, record: JobRec) {
 				: null;
 		})
 	);
-	return { childId, views: read.filter((view) => view !== null) };
+	return { childId, views: read.filter((view) => view !== null), unfetched };
 }
 
 async function readReview(
@@ -489,7 +496,11 @@ async function readReview(
 	records: JobRec[]
 ): Promise<StateReview> {
 	const plan = attempt.plan;
-	const result: { childId?: string; views: StateReview['views'] } =
+	const result: {
+		childId?: string;
+		views: StateReview['views'];
+		unfetched?: DirectionName[];
+	} =
 		plan.endpoint === '/create-character-state'
 			? await childViews(attempt, records[0])
 			: {
@@ -518,6 +529,13 @@ async function readReview(
 	const missing = plan.batches
 		.flatMap(({ facingIds }) => facingIds)
 		.filter((direction) => !drawn.has(direction));
+	const unfetched = missing.filter((direction) => result.unfetched?.includes(direction));
+	// Canceled batches were never made; saving says so rather than dropping them unnoticed.
+	const canceled = records.flatMap((record, index) =>
+		plan.endpoint !== '/create-character-state' && record.state === 'canceled'
+			? plan.batches[index].facingIds
+			: []
+	);
 	const ungrounded: StateReview['ungrounded'] = {};
 	// Managed results stay exactly as PixelLab stored them; local edits are offered back on the source's ground.
 	if (plan.endpoint !== '/create-character-state') {
@@ -533,8 +551,11 @@ async function readReview(
 			});
 	}
 	return {
-		...result,
+		childId: result.childId,
+		views: result.views,
 		missing,
+		unfetched,
+		canceled,
 		ungrounded,
 		projectId,
 		id: attempt.id,

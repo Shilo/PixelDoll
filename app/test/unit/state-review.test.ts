@@ -217,5 +217,41 @@ test('a local State keeps the finished batch when a sibling batch failed or came
 	const review = await pendingState('rig-state', 'attempt');
 	expect(review?.views.map(({ direction }) => direction)).toEqual(['south']);
 	expect(review?.missing).toEqual(['east', 'north']);
+	expect(review?.canceled).toEqual([]);
+	// A canceled batch is named apart, so saving says those views will not be made.
+	stored.jobs[1] = record(1, { state: 'canceled' });
+	expect((await pendingState('rig-state', 'attempt'))?.canceled).toEqual(['east']);
+	vi.unstubAllGlobals();
+});
+
+test('a managed facing that could not be downloaded is told apart from one that came back blank', async () => {
+	app.key = 'key';
+	pngs.set('south', figure());
+	pngs.set('north', figure(64, false));
+	pngs.set('west', figure());
+	remote.detail = {
+		id: 'child',
+		status: 'completed',
+		size: { width: 64, height: 64 },
+		directions: 4,
+		rotation_urls: {
+			south: 'https://example.test/south',
+			east: 'https://example.test/east',
+			north: 'https://example.test/north',
+			west: 'https://example.test/west'
+		}
+	};
+	vi.stubGlobal('fetch', async (url: URL) =>
+		url.pathname === '/east'
+			? Promise.reject(new TypeError('Offline fixture'))
+			: new Response(url.pathname.slice(1))
+	);
+	const pendingState = await lostManagedState();
+	const review = await pendingState('rig-state', 'attempt');
+	expect(review?.views.map(({ direction }) => direction)).toEqual(['south', 'west']);
+	expect(review?.missing).toEqual(['east', 'north']);
+	// East may still download on Try again; north came back blank.
+	expect(review?.unfetched).toEqual(['east']);
+	expect(review?.canceled).toEqual([]);
 	vi.unstubAllGlobals();
 });
