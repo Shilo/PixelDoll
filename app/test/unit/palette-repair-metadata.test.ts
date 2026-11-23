@@ -3,6 +3,7 @@ import { validate } from '../../src/lib/export/generic.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts';
+import { artworkRefs } from '../../src/lib/store/workspace.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import type { ItemPaletteRepair, Project } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
@@ -53,13 +54,40 @@ async function project(): Promise<Project> {
 		}
 	};
 }
-test('historical edits survive editable ZIP after moves/materials/source blobs are removed', async () => {
+test('history naming removed moves and materials stays valid, and an editable ZIP leaves out its images', async () => {
 	const p = await project();
 	p.manifest.items[0].paletteRepairs = [lineage()];
 	expect(validate(p)).toEqual([]);
 	const imported = await readCharacterZip(await zip(await projectEntries(p)));
-	expect(imported.project.manifest.items[0].paletteRepairs).toEqual([lineage()]);
+	// The ZIP carries only shown artwork, and Adjust frame reads every history image, so the copy drops what it lacks.
+	expect(imported.project.manifest.items[0].paletteRepairs).toEqual([]);
 	expect(imported.project.images.size).toBe(1);
+});
+test('an editable ZIP imports without Undo history whose images it lacks', async () => {
+	const p = await project();
+	const shown = [...p.images.keys()][0] as typeof before;
+	const edit = (id: string, from: typeof before | null) => ({
+		version: 'frames-v1' as const,
+		id,
+		anim: 'idle',
+		frames: [
+			{
+				dir: 'south' as const,
+				cell: 0,
+				layers: [{ id: 'main' as const, before: from, after: shown }],
+				cut: { before: null, after: null }
+			}
+		]
+	});
+	// A loaded project holds only shown artwork, so the export carries this history without the snapshot it names.
+	p.manifest.items[0].frameEdits = [edit('lost', before), edit('kept', null)];
+	p.manifest.items[0].paletteRepairs = [lineage()];
+	const imported = await readCharacterZip(await zip(await projectEntries(p)));
+	const item = imported.project.manifest.items[0];
+	expect(item.frameEdits?.map((e) => e.id)).toEqual(['kept']);
+	expect(item.paletteRepairs).toEqual([]);
+	for (const [hash] of artworkRefs(imported.project.manifest))
+		expect(imported.project.images.has(hash as string)).toBe(true);
 });
 test('legacy projects and empty optional history remain compatible', async () => {
 	const p = await project();
