@@ -86,11 +86,12 @@
 		reviewHeading.focus();
 	});
 	// Views that came back blank or failed; ones that could not be downloaded or were canceled have their own notice.
-	const blankViews = $derived(
-		review?.missing.filter(
-			(direction) => !review.unfetched.includes(direction) && !review.canceled.includes(direction)
-		) ?? []
-	);
+	const blankViews = $derived.by(() => {
+		const current = review;
+		if (!current) return [];
+		const named = new Set([...current.unfetched, ...current.canceled]);
+		return current.missing.filter((direction) => !named.has(direction));
+	});
 	// Saving now gives up views that could still be fetched or made, so the choice says so.
 	const withoutViews = $derived(
 		!!review && (review.unfetched.length > 0 || review.canceled.length > 0)
