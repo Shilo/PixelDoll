@@ -185,6 +185,29 @@ test('a move with an unmeasured frame is skipped and marked to make again; the r
 	};
 	expect(rigReady({ ...rec, rigQa: result.rigQa })).toBe(true);
 	expect(rigReady(rec)).toBe(false); // without the mark, an unposed move still blocks
+	// pivot and anchors come from the measured standing move; the skipped move has none
+	const neck = result.manifest.rig.anchors?.neck;
+	expect(neck?.[plan.restAnim]).toBeDefined();
+	expect(neck?.blink?.south).toHaveLength(2);
+	expect(neck?.walk).toBeUndefined();
+});
+
+test('an unmeasured frame of the standing move stops setup instead of skipping it', async () => {
+	const project = await source(),
+		odd = makeImg(64, 64);
+	for (let y = 12; y < 60; y++)
+		for (let x = 26; x < 38; x++) odd.data.set([170, 90, 80, 255], (y * 64 + x) * 4);
+	const oddHash = await cellHash(odd);
+	project.images.set(oddHash, odd);
+	project.manifest.items[0].layers[0].cells!.walk.south![3] = oddHash;
+	// walk is the standing move here, so its unmeasured frame cannot be skipped
+	const plan = { ...(await setupPlan(project)), restAnim: 'walk' };
+	const measurements = new Map(
+		[...plan.frames].filter(([hash]) => hash !== oddHash).map(([hash]) => [hash, pose()])
+	);
+	await expect(attachImportedRig(project, plan, measurements, [])).rejects.toMatchObject({
+		translation: { key: 'setup.errors.jointsMissing' }
+	});
 });
 
 test('setup refuses missing or invalid measurements and rejects unsupported input before spending', async () => {

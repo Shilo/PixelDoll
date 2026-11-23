@@ -252,10 +252,12 @@ export async function attachImportedRig(
 		redo: string[] = [];
 	for (const a of rig.animations) {
 		const views = rig.directions.filter((d) => !d.mirrorOf);
+		// The standing move (pivot, rest views, anchors) and Default are never skipped: get() stops setup there instead.
 		let skip = false;
-		for (const d of views)
-			for (let i = 0; i < a.cells && !skip; i++)
-				skip = await unmeasured(cellImg(p, base.layers[0], a.id, d.id, i) ?? undefined);
+		if (a.id !== plan.restAnim && a.id !== DEFAULT_MOVE)
+			for (const d of views)
+				for (let i = 0; i < a.cells && !skip; i++)
+					skip = await unmeasured(cellImg(p, base.layers[0], a.id, d.id, i) ?? undefined);
 		if (skip) {
 			delete a.sources;
 			redo.push(a.id);

@@ -1,7 +1,7 @@
 // Paid setup is explicit, resumable through the same queue as creation, and commits only when every measurement exists.
 import { b64, joints, latestOutcome, provOf, run, type Progress } from './create.ts';
 import { attachImportedRig, setupPlan, type SetupPlan } from '../lib/rig/setup.ts';
-import { DIRECTIONS, cellHash, type Keypoint } from '../lib/rig/rig.ts';
+import { DEFAULT_MOVE, DIRECTIONS, cellHash, type Keypoint, type Sha256 } from '../lib/rig/rig.ts';
 import { retainMoveChoices } from '../lib/store/identity.ts';
 import { skeletonInput } from '../lib/rig/estimate.ts';
 import { png, routes } from '../lib/pixellab/routes.ts';
@@ -93,11 +93,18 @@ export async function setupCharacter(
 	progress({ step: 'joints', done, total: plan.frames.size, recIds: [] });
 	const frames = [...plan.frames],
 		observations: Provenance[] = new Array(frames.length),
-		// A standing view without joints stops setup; any other frame only skips its move (attachImportedRig).
+		// A frame of a standing view, the standing move or Default without joints stops setup; any other frame only skips its
+		// move (attachImportedRig).
 		standingViews = new Set(Object.values(plan.rest)),
-		standingHashes = new Set(
-			await Promise.all(Object.values(plan.rest).map((im) => cellHash(im!)))
-		);
+		layer = project.manifest.items.find((i) => i.id === project.manifest.rig.baseItem)?.layers[0],
+		standingHashes = new Set<string>([
+			...(await Promise.all(Object.values(plan.rest).map((im) => cellHash(im!)))),
+			...[plan.restAnim, DEFAULT_MOVE].flatMap((move) =>
+				Object.values(layer?.cells?.[move] ?? {}).flatMap((cells) =>
+					(cells ?? []).filter((hash): hash is Sha256 => !!hash)
+				)
+			)
+		]);
 	let next = 0,
 		failure: { error: unknown } | undefined;
 	// Bound prepared work by the largest supported plan; the shared queue applies the actual account and busy-account limits.
