@@ -586,3 +586,77 @@ test('a Stop that failed here settles once another tab stores it', async () => {
 	await (q as unknown as { pull(id: string): Promise<void> }).pull(record.id);
 	await vi.waitFor(() => expect(settled?.state).toBe('canceled'));
 });
+
+test('a storage probe that lands goes straight on: it never writes queued back over submitting', async () => {
+	let broken = true,
+		posts = 0;
+	const stored = new Map<string, JobRec>();
+	const history: string[] = [];
+	const { q, run } = fixture({
+		put: async (k, r) => {
+			history.push(r.state);
+			stored.set(k, structuredClone(r));
+		},
+		get: async (k) => structuredClone(stored.get(k)),
+		all: async () => [...stored.values()].map((r) => structuredClone(r)),
+		transition: async (k, next) => {
+			if (broken) throw new Error('IndexedDB unavailable');
+			const out = next(structuredClone(stored.get(k)));
+			if (out) {
+				history.push(out.state);
+				stored.set(k, structuredClone(out));
+			}
+			return out ?? stored.get(k);
+		},
+		api: async <T>(_key: string, method: string, endpoint: string): Promise<T> => {
+			if (endpoint === '/balance') return {} as T;
+			if (method === 'POST') {
+				posts++;
+				return { background_job_id: 'j' } as T;
+			}
+			return { id: 'j', status: 'processing', created_at: '' } as T;
+		}
+	});
+	await q.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } });
+	await run(3);
+	broken = false;
+	history.length = 0;
+	await run(6);
+	expect(posts).toBe(1);
+	expect(history.slice(0, 2)).toEqual(['submitting', 'submitting']); // claimed, then marked started: no rollback
+});
+
+test('an automatic cancel stored by another tab does not settle an explicit Stop; Try again makes the Stop stick', async () => {
+	let broken = false;
+	const stored = new Map<string, JobRec>();
+	const { q } = fixture({
+		put: async (k, r) => void stored.set(k, structuredClone(r)),
+		get: async (k) => structuredClone(stored.get(k)),
+		all: async () => [...stored.values()].map((r) => structuredClone(r)),
+		transition: async (k, next) => {
+			if (broken) throw new Error('IndexedDB unavailable');
+			const out = next(structuredClone(stored.get(k)));
+			if (out) stored.set(k, structuredClone(out));
+			return out ?? stored.get(k);
+		}
+	});
+	const record = await q.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } });
+	broken = true;
+	await expect(q.cancel(record.id)).rejects.toThrow('IndexedDB unavailable');
+	let settled: JobRec | undefined;
+	void q.settled(record.id).then((r) => (settled = r));
+	stored.set(record.id, {
+		...stored.get(record.id)!,
+		state: 'canceled',
+		autoCanceledAttempts: [1],
+		finishedAt: 1
+	} as JobRec);
+	(q as unknown as { role: string }).role = 'leader';
+	await (q as unknown as { pull(id: string): Promise<void> }).pull(record.id);
+	await new Promise((resolve) => setTimeout(resolve, 20));
+	expect(settled).toBeUndefined(); // not the user's Stop
+	broken = false;
+	await q.retryCancelSave(record.id);
+	await vi.waitFor(() => expect(settled?.state).toBe('canceled'));
+	expect(stored.get(record.id)?.autoCanceledAttempts).toBeUndefined(); // can never be reopened
+});
