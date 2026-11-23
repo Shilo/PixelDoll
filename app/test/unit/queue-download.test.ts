@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { bytesToBase64 } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import {
@@ -231,4 +231,42 @@ test('a valid inline result this device cannot save stays open and is saved once
 	await run(12);
 	expect(store.get(record.id)?.state).toBe('done');
 	expect(store.get(record.id)?.jobs[0].results).toMatchObject([{ sha: 'output', w: 1, h: 1 }]);
+});
+
+test('a result save that keeps failing holds the storage notice even while small record saves work', async () => {
+	vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+	let blobs = 0,
+		broken = true;
+	const { q, store } = fixture({
+		now: () => Date.now(),
+		fetchBytes: async () =>
+			encodePngBytes({ w: 1, h: 1, data: new Uint8ClampedArray([1, 2, 3, 255]) }),
+		putBlob: async () => {
+			blobs++;
+			if (broken) throw new Error('QuotaExceededError');
+			return 'output';
+		}
+	});
+	try {
+		const record = await q.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } });
+		q.start();
+		await vi.waitFor(async () => {
+			await vi.advanceTimersByTimeAsync(1_000);
+			expect(blobs).toBeGreaterThan(1);
+		});
+		const tried = blobs;
+		await vi.advanceTimersByTimeAsync(3_000);
+		expect(blobs - tried).toBeLessThanOrEqual(1); // backs off instead of fetching again every tick
+		expect(q.snapshot().paused).toBe('storage'); // record saves alone do not prove results can be saved
+		broken = false;
+		await vi.waitFor(async () => {
+			await vi.advanceTimersByTimeAsync(1_000);
+			expect(store.get(record.id)?.state).toBe('done');
+		});
+		await vi.advanceTimersByTimeAsync(1_000);
+		expect(q.snapshot().paused).toBeNull();
+	} finally {
+		q.stop();
+		vi.useRealTimers();
+	}
 });

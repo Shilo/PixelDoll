@@ -100,6 +100,14 @@ const KEYS: Readonly<Record<string, ProblemKind>> = {
 	'generation.outcome.noFrames': 'empty',
 	'generation.outcome.standingFrames': 'frame-count',
 	'genCard.declined': 'declined',
+	// Internal checks that only a bug can fail: Report it.
+	'create.errors.rigValid': 'unexpected',
+	'create.errors.standingViewsDoFit': 'unexpected',
+	'create.errors.completedJointCheckInvalid': 'unexpected',
+	'create.errors.creationAttemptSavedFingerprint': 'unexpected',
+	'create.errors.jointCheckRecoveryIntent': 'unexpected',
+	'create.errors.bodyColorRepairIntent': 'unexpected',
+	'create.errors.reviewedJointCheckHashes': 'unexpected',
 	'create.sheet.declined': 'declined'
 };
 

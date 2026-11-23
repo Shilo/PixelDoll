@@ -70,7 +70,9 @@
 			action: () =>
 				queue.retryCancelSave(id).catch((error: unknown) => {
 					console.error('cancel', error);
-					cancelNotSaved(id);
+					// A stop PixelLab did not confirm is not a failed save: say so instead of offering to save it again.
+					if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger' });
+					else cancelNotSaved(id);
 				})
 		});
 	}

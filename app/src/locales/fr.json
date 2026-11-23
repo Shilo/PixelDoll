@@ -2034,7 +2034,7 @@
 		"waitingTitle": "En attente d’un autre onglet",
 		"waitingBody": "Votre génération n’a pas encore démarré. Gardez Activité ouverte et PixelDoll continuera ici dès que l’autre onglet sera prêt.",
 		"stopInRunningTab": "Arrêtez cette tâche depuis l’onglet qui l’exécute.",
-		"stopNoAnswer": "L’onglet qui exécute cette tâche n’a pas répondu. Arrêtez-la depuis cet onglet, ou rechargez cet onglet et réessayez.",
+		"stopNoAnswer": "L’onglet qui exécute cette tâche n’a pas encore confirmé l’arrêt. Consultez l’Activité dans un instant ; si elle tourne encore, arrêtez-la depuis cet onglet.",
 		"stopNotConfirmed": "PixelLab n’a pas confirmé l’arrêt : la tâche peut encore s’exécuter et être facturée. Consultez l’Activité.",
 		"pausedStorage": "Les tâches enregistrées n’ont pas pu être lues ni enregistrées, donc rien de nouveau n’est envoyé. Reprenez pour réessayer.",
 		"cancelSaveFailed": "L’annulation n’a pas pu être enregistrée. Cet onglet n’enverra pas la requête, mais un autre onglet ou un rechargement pourrait l’envoyer."

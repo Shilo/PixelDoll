@@ -68,6 +68,7 @@ export interface SubJob {
 	eta?: number;
 	lastPoll?: number;
 	tries?: number; // failed result downloads (backoff, give up after MAX_TRIES)
+	unsaved?: number; // in memory: valid results this device failed to save, retried with backoff (never gives up)
 	pendingUrls?: { label: string; url: string }[];
 	results: Result[];
 	error?: string;
@@ -463,6 +464,9 @@ export class Queue {
 	private readBad = 0;
 	private writeOk = 0;
 	private writeBad = 0;
+	// Results are blobs: a small record save can succeed while a large blob save still fails (quota), so blobs count apart.
+	private blobOk = 0;
+	private blobBad = 0;
 	private disconnected = false;
 	private capacityProbe: object | null = null;
 	private capacityRead: Promise<void> | null = null;
@@ -563,25 +567,27 @@ export class Queue {
 			};
 		}
 		const track =
-			<A extends unknown[], R>(op: (...args: A) => Promise<R>, write: boolean) =>
+			<A extends unknown[], R>(op: (...args: A) => Promise<R>, kind: 'read' | 'write' | 'blob') =>
 			async (...args: A): Promise<R> => {
 				try {
 					const out = await op(...args);
-					if (write) this.writeOk = ++this.storageSeq;
+					if (kind === 'write') this.writeOk = ++this.storageSeq;
+					else if (kind === 'blob') this.blobOk = ++this.storageSeq;
 					else this.readOk = ++this.storageSeq;
 					return out;
 				} catch (e) {
-					if (write) this.writeBad = ++this.storageSeq;
+					if (kind === 'write') this.writeBad = ++this.storageSeq;
+					else if (kind === 'blob') this.blobBad = ++this.storageSeq;
 					else this.readBad = ++this.storageSeq;
 					this.storageFailed();
 					throw e;
 				}
 			};
-		this.deps.put = track(this.deps.put, true);
-		this.deps.transition = track(this.deps.transition, true);
-		this.deps.putBlob = track(this.deps.putBlob, true);
-		this.deps.all = track(this.deps.all, false);
-		this.deps.get = track(this.deps.get, false);
+		this.deps.put = track(this.deps.put, 'write');
+		this.deps.transition = track(this.deps.transition, 'write');
+		this.deps.putBlob = track(this.deps.putBlob, 'blob');
+		this.deps.all = track(this.deps.all, 'read');
+		this.deps.get = track(this.deps.get, 'read');
 		const { all, get } = this.deps;
 		const owns = (r: JobRec) => this.ownsRecord(r);
 		// Every stored row is read through readableRecord: one damaged row must never stop the queue.
@@ -1008,12 +1014,13 @@ export class Queue {
 		this.timer ??= every(1000, () =>
 			this.tick().then(
 				() => {
-					// Storage works again once both a read and a write succeeded after the last failure of each (sending still
-					// saves first, so nothing went out unsaved meanwhile).
+					// Storage works again once a read, a record save and a result save each succeeded after their last failure
+					// (sending still saves first, so nothing went out unsaved meanwhile).
 					if (
 						this.paused === 'storage' &&
 						(!this.readBad || this.readOk > this.readBad) &&
-						(!this.writeBad || this.writeOk > this.writeBad)
+						(!this.writeBad || this.writeOk > this.writeBad) &&
+						(!this.blobBad || this.blobOk > this.blobBad)
 					)
 						this.resume();
 				},
@@ -1565,7 +1572,10 @@ export class Queue {
 				for (const s of r.jobs) {
 					if (s.done || this.busy.has(s.id)) continue;
 					if (s.remoteDone) {
-						if (!s.tries || now - (s.lastPoll ?? 0) >= backoff(s.tries))
+						if (
+							!(s.tries || s.unsaved) ||
+							now - (s.lastPoll ?? 0) >= backoff((s.tries ?? 0) + (s.unsaved ?? 0))
+						)
 							ops.push(this.guard(s.id, () => this.download(r, s)));
 					} else if (!s.lastPoll || now - s.lastPoll >= POLL_MS)
 						ops.push(this.guard(s.id, () => this.poll(r, s)));
@@ -1943,13 +1953,18 @@ export class Queue {
 					})
 				);
 				s.pendingUrls.shift();
+				delete s.unsaved;
 				await this.save(r);
 			}
 		} catch (e) {
 			// storage CDN error or bad bytes: back off (tick), give up after MAX_TRIES with the URLs kept (R6 P2-9)
 			s.lastPoll = this.deps.now();
-			// This device failing to save is not a failed download: retry without counting it (storage is paused meanwhile).
-			if (e instanceof ResultNotStored) throw e;
+			// This device failing to save is not a failed download: retry with its own backoff, never giving up (storage is
+			// paused meanwhile).
+			if (e instanceof ResultNotStored) {
+				s.unsaved = (s.unsaved ?? 0) + 1;
+				throw e;
+			}
 			if (!this.deps.online()) {
 				this.goOffline();
 				return this.save(r);
@@ -2030,7 +2045,7 @@ export class Queue {
 			});
 			if (answer === undefined)
 				throw new LocalizedError(
-					'The tab running this job did not answer. Stop it in that tab, or reload this tab and try again.',
+					'The tab running this job has not confirmed the stop yet. Check Activity in a moment; if it is still running, stop it in that tab.',
 					'activity.stopNoAnswer'
 				);
 			if (!answer)
