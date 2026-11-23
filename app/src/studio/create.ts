@@ -327,7 +327,12 @@ interface DryRun {
 	running: boolean;
 	/** A request the stopped flow canceled before sending was never bought; a continuation on a new attempt sends it. */
 	reopensCanceled?: boolean;
+	/** Stopped records the replay met: a lost one may have charged without reporting it. */
+	stopped?: JobRec[];
 }
+/** Whether any of these records may have charged more than it reported (the paid review's spentUnknown). */
+const costUnknown = (records: readonly JobRec[]) =>
+	records.some((r) => !!r.costUnknown || r.state === 'lost');
 const dryRuns = new WeakMap<AbortSignal, DryRun>();
 /** The finished record a resume-safe run of `req` would return (done, or stopped and replayed), never one still running. */
 export async function latestOutcome(req: Req): Promise<JobRec | undefined> {
@@ -355,7 +360,8 @@ async function dryRecord(req: Req, label: string, dry: DryRun): Promise<JobRec> 
 		? matches.find((r) => !reopenableCancellation(r)) // the real run's rule, without its attempt number
 		: matches[0];
 	// A resume-safe request replays its stopped record instead of sending again, so only a new seed can buy another.
-	if (stopped)
+	if (stopped) {
+		(dry.stopped ??= []).push(stopped);
 		throw new PaidStepError(
 			`${label}: ${stopped.state}. Generation stopped without resending.`,
 			'create.errors.requestStoppedResume',
@@ -365,6 +371,7 @@ async function dryRecord(req: Req, label: string, dry: DryRun): Promise<JobRec> 
 			},
 			{ step: req.path, failure: 'stopped', recordId: stopped.id }
 		);
+	}
 	throw new Unpaid(req.path);
 }
 export async function parallelGeneration<T>(
@@ -1252,7 +1259,13 @@ export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidR
 		});
 	} else if (paid?.step === 'draw' && paid.failure === 'overflow')
 		options.push(...(await placementOptions(spec, drawn, base)));
-	return { views, spent: spentGens(dry.records), recordIds: dry.records.map((r) => r.id), options };
+	return {
+		views,
+		spent: spentGens(dry.records),
+		...(costUnknown([...dry.records, ...(dry.stopped ?? [])]) ? { spentUnknown: true } : {}),
+		recordIds: dry.records.map((r) => r.id),
+		options
+	};
 }
 /** A creation replayed from the request cache only: the records it reused, and why it stopped (undefined: it completed). */
 async function replayCreate(spec: CreateSpec): Promise<{ dry: DryRun; outcome: unknown }> {
@@ -3691,6 +3704,8 @@ interface ReplayedView {
 	state: 'ready' | 'pending' | 'running' | 'failed';
 	gens: number;
 	records: JobRec[];
+	/** Stopped records this view met (DryRun.stopped). */
+	stopped: JobRec[];
 	error?: PaidStepError;
 	clip?: Awaited<ReturnType<typeof bodyClip>>;
 }
@@ -3725,17 +3740,25 @@ async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedVie
 				? await bodyStartPose(image, d, plan.spec, scope.signal)
 				: undefined;
 		const clip = await bodyClip(plan, d, scope.signal, () => {}, image, start);
-		return { d, state: 'ready', gens: 0, records: dry.records, clip };
+		return { d, state: 'ready', gens: 0, records: dry.records, stopped: dry.stopped ?? [], clip };
 	} catch (error) {
 		if (error instanceof Unpaid)
 			return {
 				d,
 				state: error.running ? 'running' : 'pending',
 				gens: priced(unpaidGens(plan, error)),
-				records: dry.records
+				records: dry.records,
+				stopped: dry.stopped ?? []
 			};
 		if (error instanceof PaidStepError)
-			return { d, state: 'failed', gens: priced(0), records: dry.records, error };
+			return {
+				d,
+				state: 'failed',
+				gens: priced(0),
+				records: dry.records,
+				stopped: dry.stopped ?? [],
+				error
+			};
 		throw error;
 	}
 }
@@ -4104,6 +4127,9 @@ export async function reviewMoveResults(
 			]
 		})),
 		spent: spentGens(records),
+		...(costUnknown([...records, ...views.flatMap((v) => v.stopped)])
+			? { spentUnknown: true }
+			: {}),
 		recordIds: records.map((r) => r.id),
 		options
 	};

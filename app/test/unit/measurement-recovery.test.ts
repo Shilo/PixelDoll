@@ -1939,6 +1939,14 @@ test('a view the stopped attempt canceled before sending is unbought, and contin
 	expect(resume.spec.attempt).not.toBe(f.spec.seed);
 });
 
+test('a move review whose joint check was lost says its spent total is only a known part', async () => {
+	const f = await fixture(false, 'walk');
+	const lost = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(lost.spentUnknown).toBe(true);
+	await f.finishOriginalChecks();
+	expect((await reviewMoveResults('rig-recover', f.spec))!.spentUnknown).toBeUndefined();
+});
+
 test('a body move stopped after every view was bought resumes free with the same seed', async () => {
 	const f = await fixture(false, 'walk');
 	await f.finishOriginalChecks();
