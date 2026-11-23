@@ -2714,6 +2714,7 @@
 			"invalidItemGridLayout": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Das Sheet hat ein falsches Frame-Layout. Die vorhandene Grafik bleibt erhalten.",
 			"savedFramesUnavailable": "Fertige Frames, die zum aktuellen Grundkörper und zur Ausrüstung passen, sind nicht verfügbar. Es wurde keine Generierung angefordert.",
 			"itemMoveSaveConflict": "Diese Figur oder dieser Gegenstand hat sich geändert, während die Frames generiert wurden. Die vorhandenen Grafiken wurden behalten; fertige Frames bleiben unter „Aktivität“.",
+			"keepWithoutStanding": "Diesem Gegenstand fehlen Frames in der Animation, aus der er entworfen ist, daher kann er nicht ohne sie behalten werden. Erstelle stattdessen die fehlenden Frames.",
 			"savedFrameMissing": "Ein gespeicherter Frame dieses Gegenstands fehlt im Speicher."
 		}
 	},

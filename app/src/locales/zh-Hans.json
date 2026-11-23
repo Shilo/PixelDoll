@@ -2644,6 +2644,7 @@
 			"invalidItemGridLayout": "PixelLab 返回了无法使用的装备网格。图集的帧布局错误。现有图像已保留。",
 			"savedFramesUnavailable": "没有与当前基础身体和装备匹配的已完成帧。未请求任何生成。",
 			"itemMoveSaveConflict": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。",
+			"keepWithoutStanding": "此装备在其设计所依据的动作中缺少帧，因此不能不含该动作而保留。请改为制作缺少的帧。",
 			"savedFrameMissing": "此装备的一个已保存帧在存储中缺失。"
 		}
 	},

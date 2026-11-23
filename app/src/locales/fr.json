@@ -2714,6 +2714,7 @@
 			"invalidItemGridLayout": "PixelLab a renvoyé une grille d’objet inutilisable. La feuille a une disposition d’images incorrecte. Le visuel existant a été conservé.",
 			"savedFramesUnavailable": "Aucune image terminée ne correspond au corps et à l’équipement actuels. Aucune génération n’a été demandée.",
 			"itemMoveSaveConflict": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité.",
+			"keepWithoutStanding": "Il manque des images à cet objet dans l’animation dont il est conçu, il ne peut donc pas être gardé sans elle. Créez plutôt les images manquantes.",
 			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage."
 		}
 	},

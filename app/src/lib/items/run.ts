@@ -31,6 +31,7 @@ import type {
 	Slot
 } from '../store/manifest.ts';
 import { composeCell, dropCut } from '../compose/compose.ts';
+import { retainItemMoves } from '../rig/moves.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
@@ -2275,20 +2276,21 @@ export async function applyRepairReview(projectId: string, review: RepairReview)
 export const gapMoves = (m: Manifest, item: Item) => [
 	...new Set(coverageGaps(m, item).map((gap) => gap.split('/')[0]))
 ];
-/** The item without these moves: their frames, coverage, hidden body pixels and checks are dropped, so it is hidden there
- *  and listed as missing, to make later at its own price. Nothing is added or redrawn. */
-function withoutMoves(item: Item, moves: readonly string[]): Item {
-	const out = structuredClone(item),
-		gone = (key: string) => moves.includes(key.split('/')[0]);
-	for (const layer of out.layers) for (const move of moves) delete layer.cells?.[move];
-	if (out.coverage) out.coverage = out.coverage.filter((key) => !gone(key));
-	for (const move of moves) delete out.baseCut?.[move];
-	if (out.qa) {
-		out.qa.cells = Object.fromEntries(
-			Object.entries(out.qa.cells).filter(([key]) => !gone(key))
-		) as typeof out.qa.cells;
-		out.qa.clips = Object.fromEntries(Object.entries(out.qa.clips).filter(([key]) => !gone(key)));
-	}
+/** Whether an item can be kept without these moves: never without the standing move it is designed and posed from, or the
+ *  move of its anchor frame, which every other move is drawn from. Those gaps need the paid redraw instead. */
+export const keepableWithout = (item: Item, moves: readonly string[]) =>
+	!!moves.length &&
+	!(item.standing && moves.includes(item.standing)) &&
+	!(item.anchorCell && moves.includes(item.anchorCell.split('/')[0]));
+/** The item without these moves (retainItemMoves: frames, coverage, pending cells, hidden body pixels, refit notes and
+ *  checks, with the summary recomputed), so it is hidden there and listed as missing, to make later at its own price.
+ *  Nothing is added or redrawn. */
+function withoutMoves(m: Manifest, item: Item, moves: readonly string[]): Item {
+	const out = structuredClone(item);
+	retainItemMoves(
+		out,
+		new Set(m.rig.animations.map((move) => move.id).filter((id) => !moves.includes(id)))
+	);
 	return out;
 }
 /** Accept a saved item's reviewed checks as they are. With `keepWithout`, the moves it is missing frames in (exactly the
@@ -2316,7 +2318,13 @@ export async function acceptItemReview(
 	) {
 		throw itemReviewChangedError();
 	}
-	const kept = keepWithout?.length ? withoutMoves(item, keepWithout) : item;
+	if (keepWithout && !keepableWithout(item, keepWithout))
+		throw new LocalizedError(
+			'This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.',
+			'itemRoute.errors.keepWithoutStanding'
+		);
+	const kept = keepWithout?.length ? withoutMoves(ctx.rec.manifest, item, keepWithout) : item;
+	if (!kept.qa) throw itemReviewChangedError(); // nothing would be left to keep
 	const accepted = { ...kept, qa: { ...acceptQa(kept.qa!), status: 'accepted' as const } };
 	await saveItem(projectId, accepted, new Map(), [], (current) => {
 		const currentItem = current.manifest.items.find((i) => i.id === itemId);

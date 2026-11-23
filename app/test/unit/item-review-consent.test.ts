@@ -190,6 +190,8 @@ test('an item with missing moves is kept without them: only its complete moves s
 	hat.coverage = ['walk/south/0', 'idle/south/0'];
 	hat.qa!.clips['idle/south'] = { ...hat.qa!.clips['walk/south'] };
 	hat.qa!.cells['idle/south/0'] = { route: 'posed', area: 3 };
+	hat.pending = ['idle/south/1'];
+	hat.qa!.inherited = { clips: ['walk/south', 'idle/south'] };
 	const reviewed = structuredClone(hat);
 	// consent covers exactly the reviewed gaps
 	await expect(acceptItemReview('character', hat.id, reviewed, ['walk'])).rejects.toMatchObject({
@@ -201,6 +203,32 @@ test('an item with missing moves is kept without them: only its complete moves s
 	expect(Object.keys(state.saved!.qa!.clips)).toEqual(['walk/south']);
 	expect(state.saved!.qa!.cells['idle/south/0']).toBeUndefined();
 	expect(state.saved!.qa!.status).toBe('accepted');
+	// every row scoped to the dropped move goes (retainItemMoves), including pending cells and inherited checks
+	expect(state.saved!.pending).toEqual([]);
+	expect(state.saved!.qa!.inherited?.clips).toEqual(['walk/south']);
 	expect(state.imageWrites).toBe(0);
 	expect(state.enqueue).not.toHaveBeenCalled();
 });
+
+test.each(['standing', 'anchor'] as const)(
+	'an item missing frames in its %s move is never kept without it: only the paid redraw remains',
+	async (kind) => {
+		const m = state.record!.manifest,
+			hat = m.items[0];
+		m.rig.animations = [{ id: 'idle', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }];
+		m.items.push({
+			...structuredClone(hat),
+			id: 'base',
+			slot: 'body',
+			layers: [{ id: 'main', role: 'fg', z: 0, cells: { idle: { south: ['sha256:b1'] } } }]
+		});
+		hat.coverage = [];
+		if (kind === 'standing') hat.standing = 'idle';
+		else hat.anchorCell = 'idle/south/0';
+		const reviewed = structuredClone(hat);
+		await expect(acceptItemReview('character', hat.id, reviewed, ['idle'])).rejects.toMatchObject({
+			translation: { key: 'itemRoute.errors.keepWithoutStanding' }
+		});
+		expect(state.saved).toBeNull();
+	}
+);

@@ -15,6 +15,7 @@
 	import { SLOTS, slotLadder } from '../lib/items/items.ts';
 	import {
 		gapMoves,
+		keepableWithout,
 		itemPaletteRepairPlan,
 		restorableViews,
 		type ItemPaletteRepairPlan
@@ -312,6 +313,8 @@
 	let acceptanceError = $state<Message | string>('');
 	// The moves an item with checks to accept is missing frames in: it can be kept without them, never with partial frames.
 	const keepWithout = $derived(m && it ? gapMoves(m, it) : []);
+	// Never without the move the item is designed or anchored from: those gaps take the paid redraw.
+	const canKeepWithout = $derived(!!it && keepableWithout(it, keepWithout));
 	async function acceptIssues(withoutGaps = false) {
 		if (!it || acceptingIssues) return;
 		const projectId = doc.id,
@@ -469,7 +472,7 @@
 					)}{#if !isDemo()}{' '}{t('itemPane.remakeToFit', { name: m.name })}{/if}
 				</p>{/if}
 			<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
-			{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail')}
+			{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && (!gaps.length || canKeepWithout)}
 				<div class="field">
 					<p class="notice warn small">
 						{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
