@@ -258,3 +258,48 @@ test('a Free/Trial connection resumes a permitted pending enhancement', async ({
 	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
 	expect(posts).toEqual(['/v2/enhance-character-v3-prompt']);
 });
+
+test('a stop from a second tab says PixelLab did not confirm it when the running tab’s stop is refused', async ({
+	page,
+	context
+}) => {
+	const network: string[] = [],
+		errors: string[] = [];
+	// Second safety barrier: the fixture answers PixelLab in the page, so nothing may reach the network.
+	await context.route('https://api.pixellab.ai/**', (route) => {
+		network.push(route.request().url());
+		return route.abort();
+	});
+	await page.goto('/test/fixtures/concurrency.html');
+	await expect(page.locator('#stats')).toContainText('leader');
+	const second = await context.newPage();
+	for (const tab of [page, second]) tab.on('pageerror', (e) => errors.push(e.message));
+	await second.goto('/test/fixtures/concurrency.html');
+	await expect(second.locator('#stats')).toContainText('follower');
+	await second.locator('#enqueue').click();
+	await expect(page.locator('#stats')).toContainText('20 remote', { timeout: 35_000 });
+	// The leader's stop request is refused, so PixelLab never confirms it.
+	const deletes = await page.evaluateHandle(() => {
+		const sent: string[] = [],
+			fixtureFetch = window.fetch;
+		window.fetch = (input, init) => {
+			if (init?.method !== 'DELETE') return fixtureFetch(input, init);
+			sent.push(String(input));
+			return Promise.resolve(Response.json({ detail: 'Fixture refusal' }, { status: 500 }));
+		};
+		return sent;
+	});
+	const generating = second.locator('.act-group').filter({ hasText: 'Generating' });
+	const stop = generating.getByRole('button', { name: 'Stop', exact: true }).first();
+	await expect(stop).toBeEnabled();
+	await stop.click();
+	await expect(
+		second.getByText(
+			'PixelLab did not confirm the stop, so it may still run and charge. Check Activity.',
+			{ exact: true }
+		)
+	).toBeVisible();
+	expect(await deletes.evaluate((sent) => sent.length)).toBeGreaterThan(0);
+	expect(network).toEqual([]);
+	expect(errors).toEqual([]);
+});
