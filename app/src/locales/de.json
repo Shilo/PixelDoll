@@ -3088,6 +3088,7 @@
 		"download": "Bezahlte Ergebnisse herunterladen",
 		"frame": "{view} Frame {number}",
 		"waiting": "Einige bezahlte Anfragen laufen noch bei PixelLab. Diese Optionen werden freigegeben, sobald sie fertig sind.",
+		"loadFailed": "Deine bezahlten Ergebnisse konnten nicht gelesen werden, daher sind die Möglichkeiten, sie weiterzuverwenden, ausgeblendet. Es ist nichts verloren gegangen.",
 		"state": {
 			"ready": "Fertig",
 			"pending": "Noch nicht gekauft",

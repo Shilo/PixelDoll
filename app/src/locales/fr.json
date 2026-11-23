@@ -3088,6 +3088,7 @@
 		"download": "Télécharger les résultats payés",
 		"frame": "{view}, image {number}",
 		"waiting": "Certaines requêtes payantes sont encore en cours chez PixelLab. Ces choix se débloquent quand elles sont terminées.",
+		"loadFailed": "Vos résultats payés n’ont pas pu être lus, donc les façons de les réutiliser sont masquées. Rien n’a été perdu.",
 		"state": {
 			"ready": "Prêt",
 			"pending": "Pas encore acheté",

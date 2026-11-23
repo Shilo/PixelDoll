@@ -3006,6 +3006,7 @@
 		"download": "下载付费结果",
 		"frame": "{view}，第 {number} 帧",
 		"waiting": "部分付费请求仍在 PixelLab 处理中。完成后即可使用这些选项。",
+		"loadFailed": "无法读取你已付费的结果，因此重新使用它们的选项已隐藏。没有丢失任何内容。",
 		"state": {
 			"ready": "就绪",
 			"pending": "尚未购买",

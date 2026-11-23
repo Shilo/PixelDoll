@@ -3097,6 +3097,7 @@
 		"download": "Baixar resultados pagos",
 		"frame": "{view}, quadro {number}",
 		"waiting": "Algumas solicitações pagas ainda estão em andamento no PixelLab. Estas opções são liberadas quando terminarem.",
+		"loadFailed": "Não foi possível ler seus resultados pagos, então as formas de reutilizá-los estão ocultas. Nada foi perdido.",
 		"state": {
 			"ready": "Pronto",
 			"pending": "Ainda não comprado",

@@ -3088,6 +3088,7 @@
 		"download": "Ücretli sonuçları indir",
 		"frame": "{view}, kare {number}",
 		"waiting": "Bazı ücretli istekler PixelLab'de hâlâ işleniyor. Bu seçenekler bitince açılır.",
+		"loadFailed": "Ücretli sonuçlarınız okunamadı, bu yüzden onları yeniden kullanma seçenekleri gizlendi. Hiçbir şey kaybolmadı.",
 		"state": {
 			"ready": "Hazır",
 			"pending": "Henüz satın alınmadı",

@@ -3088,6 +3088,7 @@
 		"download": "Download paid results",
 		"frame": "{view} frame {number}",
 		"waiting": "Some paid requests are still running at PixelLab. These choices unlock when they finish.",
+		"loadFailed": "Your paid results could not be read, so the ways to reuse them are hidden. Nothing was lost.",
 		"state": {
 			"ready": "Ready",
 			"pending": "Not bought yet",

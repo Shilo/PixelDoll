@@ -3006,6 +3006,7 @@
 		"download": "Unduh hasil berbayar",
 		"frame": "{view}, frame {number}",
 		"waiting": "Beberapa permintaan berbayar masih berjalan di PixelLab. Pilihan ini terbuka setelah selesai.",
+		"loadFailed": "Hasil berbayar kamu tidak dapat dibaca, jadi cara untuk memakainya lagi disembunyikan. Tidak ada yang hilang.",
 		"state": {
 			"ready": "Siap",
 			"pending": "Belum dibeli",

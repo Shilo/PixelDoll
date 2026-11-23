@@ -3088,6 +3088,7 @@
 		"download": "Descargar resultados pagados",
 		"frame": "{view}, fotograma {number}",
 		"waiting": "Algunas solicitudes pagadas siguen en curso en PixelLab. Estas opciones se activan cuando terminen.",
+		"loadFailed": "No se pudieron leer tus resultados pagados, así que las formas de reutilizarlos están ocultas. No se perdió nada.",
 		"state": {
 			"ready": "Listo",
 			"pending": "Aún no comprado",

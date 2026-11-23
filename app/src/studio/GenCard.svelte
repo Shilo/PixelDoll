@@ -167,6 +167,9 @@
 	});
 	// What a stopped draft already bought stays usable: re-roll only its failed calls, or keep the frames that finished.
 	let paid = $state.raw<(PaidReviewData & { calls: number[]; tier: number }) | null>(null);
+	// Reading the paid results failed: the ways on stay one free Try again away instead of silently disappearing.
+	let paidUnread = $state(false),
+		paidReads = $state(0);
 	// Re-rolling the failed calls at the same price as generating again is one choice: only the review's button is shown.
 	const sameRetry = $derived(
 		!!paid?.options.some((option) => option.id === 'reroll-calls' && option.gens === retryGens)
@@ -176,8 +179,10 @@
 			result = res,
 			stopped = g.phase !== 'running';
 		void $queue.jobs.length;
+		void paidReads;
 		let current = true;
 		paid = null;
+		paidUnread = false;
 		if (stopped)
 			void loadProject(draft.rigId)
 				.then((ctx) => {
@@ -255,7 +260,10 @@
 							tier: reroll ? draftMinimumTier(reroll.draft, rig) : 0
 						};
 				})
-				.catch((error: unknown) => console.error('item review', error));
+				.catch((error: unknown) => {
+					console.error('item review', error);
+					if (current) paidUnread = true;
+				});
 		return () => {
 			current = false;
 		};
@@ -513,7 +521,14 @@
 				busy={busy || settlingGen(g.draft.spec.id)}
 				blocked={retryBlocked}
 				onchoose={choosePaid}
-			/>{/if}
+			/>{:else if paidUnread && (g.phase === 'review' || g.phase === 'failed')}<p
+				class="notice warn small"
+			>
+				{t('paidReview.loadFailed')}
+			</p>
+			<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
+				>{t('common.tryAgain')}</button
+			>{/if}
 		{#if g.phase !== 'running'}<TierNotice
 				id={tierNoticeId}
 				minimumTier={retryTier}
