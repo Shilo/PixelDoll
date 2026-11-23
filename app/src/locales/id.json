@@ -1517,6 +1517,7 @@
 		"itemQualityReview": "{name}: pemeriksaan kualitas item perlu ditinjau. Tidak ada percobaan ulang berbayar yang dimulai.",
 		"bodyQuality": "{move} {direction}: {reason}",
 		"bridgedJoints": "sendi pada frame gerakan {frame} dari {total} diperkirakan dari frame di sebelahnya",
+		"shortFrames": "PixelLab mengirim {count} frame, bukan {expected}, jadi frame pertama atau terakhir mungkin berbeda",
 		"health": {
 			"clean": "Lolos pemeriksaan",
 			"accepted": "Diterima",

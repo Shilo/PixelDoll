@@ -648,8 +648,8 @@ interface ClipJob {
 	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number; words: ViewWords };
 	/** Rows each motion frame was lifted by with the user's consent; disclosed with the clip's checks. */
 	lifts?: readonly number[];
-	/** Motion frames whose joints were inferred from their neighbors (motionJoints); disclosed with the clip's checks. */
-	bridged?: Bridged;
+	/** What the clip's frames may not show as asked (an inferred pose, a missing echo); disclosed with its checks. */
+	notes?: FrameNotes;
 	/** keepUnposed: frames without measured joints are kept (and fail their joint checks) instead of stopping the view. */
 	unposed?: boolean; /** The move and view in the user's words, for messages. */
 	words: ViewWords;
@@ -726,7 +726,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 			{ ...j.words, w: j.rest.w },
 			rejected('overflow')
 		);
-	const rawFrames = nativeFrames ?? normalized.map((n) => n.img);
+	const rawFrames = nativeFrames ? nativeFrames.frames : normalized.map((n) => n.img);
 	// Do not spend on joint measurements or another render when the returned artwork is empty.
 	if (rawFrames.some((f) => !opaqueBox(f)))
 		throw new PaidStepError(
@@ -764,7 +764,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		measured,
 		j.authored ? undefined : { dir: j.dir, rest: j.restKps },
 		j.lifts,
-		j.bridged
+		nativeFrames ? { of: nativeFrames.frames.length, short: nativeFrames.short } : j.notes
 	);
 	return {
 		frames,
@@ -784,7 +784,7 @@ const bodyClipQa = (
 	measured: (Keypoint[] | undefined)[],
 	facing?: { dir: string; rest: Keypoint[] },
 	lifts?: readonly number[],
-	bridged?: Bridged
+	notes?: FrameNotes
 ) => {
 	const qa = clipQa({
 		anim,
@@ -799,14 +799,19 @@ const bodyClipQa = (
 	const lifted = lifts?.filter(Boolean) ?? [];
 	if (lifted.length)
 		qa.warnings.push(liftNote(rest.w, Math.max(...lifted), lifted.length, lifts!.length));
-	for (const frame of bridged?.frames ?? []) qa.warnings.push(bridgeNote(frame, bridged!.of));
+	if (notes?.short) qa.warnings.push(shortNote(notes.of));
+	for (const frame of notes?.bridged ?? []) qa.warnings.push(bridgeNote(frame, notes!.of));
 	return qa;
 };
-/** Motion frames (0-based) whose joints were inferred from their measured neighbors, of `of` motion frames. */
-type Bridged = { frames: readonly number[]; of: number };
+/** Disclosures of `of` frames: `bridged` motion frames (0-based) whose joints were inferred from their measured neighbors,
+ *  and `short` when PixelLab sent the frames without the start frame it documents sending first. */
+type FrameNotes = { of: number; bridged?: readonly number[]; short?: true };
 /** The one inferred pose is always disclosed (studioModel.bridgedJoints reads this wording). */
-export const bridgeNote = (frame: number, of: number) =>
+const bridgeNote = (frame: number, of: number) =>
 	`joints of motion frame ${frame + 1} of ${of} were inferred from its neighbors`;
+/** Exactly N frames for N + 1 cannot say whether the start echo or the last frame was left out (studioModel.shortFrames). */
+const shortNote = (of: number) =>
+	`PixelLab sent ${of} frames instead of ${of + 1}, so the first or last frame may differ`;
 /** The disclosure a body made from a lifted motion keeps with its checks (rigQa), in the words of the consent. */
 const liftNote = (size: number, px: number, frames: number, of: number) =>
 	`motion lifted to fit the ${size} px frame: feet rise up to ${px} px in ${frames} of ${of} frames`;
@@ -954,11 +959,12 @@ async function motion(
 	record: JobRec;
 	motionEcho?: ClipSource['motionEcho'];
 	motionBridged?: number[];
+	short?: true;
 }> {
 	const label = jobLabel.text;
 	const r = await run(req, jobLabel, 'studio-rig', false, true, signal, activityScope);
 	tick();
-	const { frames, motionEcho } = await normalizeMotionFrames(
+	const { frames, motionEcho, short } = await normalizeMotionFrames(
 		r,
 		(await imagesOf(r)).map((out) => out.img),
 		dir,
@@ -1007,7 +1013,8 @@ async function motion(
 		keypoints: filled,
 		record: r,
 		...(motionEcho ? { motionEcho } : {}),
-		...(motionBridged.length ? { motionBridged } : {})
+		...(motionBridged.length ? { motionBridged } : {}),
+		...(short ? { short } : {})
 	};
 }
 /** Measured motion joints, with at most one interior frame that has none filled halfway between its measured neighbors.
@@ -1063,7 +1070,7 @@ async function normalizeMotionFrames(
 	step = 'motion',
 	/** Rows our standing art sits below the registered view (artMapping): managed motion only, never native moves. */
 	below = 0
-): Promise<{ frames: Img[]; motionEcho?: ClipSource['motionEcho'] }> {
+): Promise<{ frames: Img[]; motionEcho?: ClipSource['motionEcho']; short?: true }> {
 	const rejected = (failure: PaidFailure) => ({ step, failure, recordId: r.id });
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
@@ -1081,8 +1088,10 @@ async function normalizeMotionFrames(
 			rejected('frame-count')
 		);
 	const startKept = returned === expected + 1 && !!standing;
-	if ((returned !== expected && !startKept) || (echo === 'required-leading' && !startKept))
-		throw mismatch;
+	if (returned !== expected && !startKept) throw mismatch;
+	// Exactly N for a documented N + 1 is ambiguous (echo or last frame left out), never a reason to lose a paid result: the
+	// frames are used in returned order and the ambiguity is disclosed. Any other count still stops; nothing is truncated.
+	const short = echo === 'required-leading' && !startKept ? (true as const) : undefined;
 	const normalizeFrame = (image: Img, lift = 0) => {
 		const normalized = normalize(image, size, size, 128, size, lift - below);
 		if (normalized.cutPx)
@@ -1111,7 +1120,7 @@ async function normalizeMotionFrames(
 			rejected('empty')
 		);
 	// Evidence of what a motion source's dropped frame was, recorded with the clip; it never decides anything.
-	if (!startKept || step !== 'motion') return { frames };
+	if (!startKept || step !== 'motion') return { frames, ...(short ? { short } : {}) };
 	const echoed = normalize(images[0], size, size, 128, size, -below).img;
 	return { frames, motionEcho: { maskIoU: maskIoU(echoed, standing!) } };
 }
@@ -1125,8 +1134,8 @@ async function normalizeNativeMoveFrames(
 	count: number,
 	rest: Img,
 	model: 'v3' | 'pixminimax'
-): Promise<Img[]> {
-	const { frames } = await normalizeMotionFrames(
+): Promise<{ frames: Img[]; short?: true }> {
+	return normalizeMotionFrames(
 		record,
 		outputs.map((out) => out.img),
 		dir,
@@ -1139,7 +1148,6 @@ async function normalizeNativeMoveFrames(
 		undefined,
 		'render'
 	);
-	return frames;
 }
 
 export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
@@ -1880,7 +1888,7 @@ interface CachedBodyClip {
 	frames: Img[];
 	facing?: { dir: string; rest: Keypoint[] };
 	lifts?: readonly number[];
-	bridged?: Bridged;
+	notes?: FrameNotes;
 }
 /** An expected eligibility limit, distinct from a failed storage read or malformed PNG. */
 class RecoveryUnavailable extends LocalizedError {}
@@ -2078,16 +2086,7 @@ async function inspectKeptBody(
 				);
 			return {
 				...c,
-				qa: bodyClipQa(
-					spec.id,
-					c.rest,
-					c.frames,
-					c.keypoints,
-					measured,
-					c.facing,
-					c.lifts,
-					c.bridged
-				)
+				qa: bodyClipQa(spec.id, c.rest, c.frames, c.keypoints, measured, c.facing, c.lifts, c.notes)
 			};
 		})
 	);
@@ -2236,7 +2235,7 @@ async function inspectMeasurementRecovery(
 				'Cached body reuse requires completed joint checks.',
 				'create.errors.cachedBodyReuseRequires'
 			);
-		let keypoints: Keypoint[][] | undefined, bridged: Bridged | undefined;
+		let keypoints: Keypoint[][] | undefined, notes: FrameNotes | undefined;
 		const authored = isAuthoredAction(spec.action);
 		if (model === 'skeleton-v3' && authored)
 			keypoints = authoredPoses(
@@ -2257,7 +2256,7 @@ async function inspectMeasurementRecovery(
 					'create.errors.originalCompletedMotionUnavailable',
 					{ direction: viewName(d) }
 				);
-			const { frames } = await normalizeMotionFrames(
+			const { frames, short } = await normalizeMotionFrames(
 				record,
 				(await imagesOf(record, context.read)).map((out) => out.img),
 				d as Direction,
@@ -2286,7 +2285,12 @@ async function inspectMeasurementRecovery(
 				? motionJoints(checks.map((check) => check.points))
 				: undefined;
 			const gaps = checks.flatMap((check, i) => (hasAll(check.points) ? [] : [i]));
-			if (gaps.length) bridged = { frames: gaps, of: frames.length };
+			if (gaps.length || short)
+				notes = {
+					of: frames.length,
+					...(gaps.length ? { bridged: gaps } : {}),
+					...(short ? { short } : {})
+				};
 			if (!measured)
 				throw new RecoveryUnavailable(
 					`${d}: the original motion has no valid completed joint checks for every frame. No request was made.`,
@@ -2361,7 +2365,8 @@ async function inspectMeasurementRecovery(
 					'create.errors.cachedBodyFramesDo',
 					{ direction: viewName(d) }
 				);
-			const frames = nativeFrames || normalized.map((n) => n.img);
+			const frames = nativeFrames ? nativeFrames.frames : normalized.map((n) => n.img);
+			if (nativeFrames && nativeFrames.short) notes = { of: frames.length, short: true };
 			// Only the first render is ever published; a later seed is a legacy attempt, never a keep candidate.
 			if (!attempt && !spec.bodyPaletteRepair)
 				candidates?.push({
@@ -2371,7 +2376,7 @@ async function inspectMeasurementRecovery(
 					keypoints,
 					frames,
 					...(spec.motionLift?.[d] ? { lifts: spec.motionLift[d] } : {}),
-					...(bridged ? { bridged } : {}),
+					...(notes ? { notes } : {}),
 					...(authored && model === 'skeleton-v3'
 						? {}
 						: { facing: { dir: d, rest: rest.keypoints } })
@@ -3536,7 +3541,8 @@ async function bodyClip(
 	let keypoints: Keypoint[][],
 		source: JobRec | undefined,
 		motionEcho: ClipSource['motionEcho'],
-		motionBridged: number[] | undefined;
+		motionBridged: number[] | undefined,
+		notes: FrameNotes | undefined;
 	if (authored)
 		keypoints = authoredPoses(
 			authored,
@@ -3575,6 +3581,12 @@ async function bodyClip(
 		source = result.record;
 		motionEcho = result.motionEcho;
 		motionBridged = result.motionBridged;
+		if (motionBridged || result.short)
+			notes = {
+				of: moveMotionFrames(m, spec),
+				...(motionBridged ? { bridged: motionBridged } : {}),
+				...(result.short ? { short: result.short } : {})
+			};
 	}
 	keypoints = movePoseEndpoints(
 		sampleMovePoses(keypoints, n, spec.action, spec.animation?.loop),
@@ -3604,9 +3616,7 @@ async function bodyClip(
 			action: bodyAction(spec),
 			paletteRepair: !!spec.bodyPaletteRepair,
 			lifts: spec.motionLift?.[d],
-			...(motionBridged
-				? { bridged: { frames: motionBridged, of: moveMotionFrames(m, spec) } }
-				: {}),
+			...(notes ? { notes } : {}),
 			unposed: !!spec.keepUnposed,
 			words: viewWords(m, spec.id, d)
 		})

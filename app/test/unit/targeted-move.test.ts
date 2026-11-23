@@ -487,13 +487,26 @@ test.each(['none', 'redrawn'] as const)(
 	}
 );
 
-test('native PixMiniMax rejects a missing leading frame before buying any joint checks', async () => {
+// Deliberately flipped (soft gates, R4): exactly N frames for PixMiniMax's documented N + 1 used to throw the paid move away.
+// Whether the echo or the last frame was left out is unknowable, so the frames are kept in returned order and disclosed.
+test('native PixMiniMax keeps exactly N frames in returned order and discloses the missing leading frame', async () => {
 	const f = await fixture(false, 'none');
-	await expect(f.run({ animation: { model: 'pixminimax' } })).rejects.toThrow(
-		'PixelLab returned 4 motion frames for 4 requested'
+	await f.run({ animation: { model: 'pixminimax' } });
+	const east = f.saved().manifest.items[0].layers[0].cells!.idle!.east!;
+	const standing = f.images.values().next().value!;
+	// the fixture returns outputs reversed; the labels put them back in order 0..3
+	expect(east).toEqual(
+		await Promise.all(
+			[185, 186, 187, 188].map((shade) => {
+				const frame = structuredClone(standing);
+				frame.data[(10 * 64 + 25) * 4] = shade;
+				return cellHash(frame);
+			})
+		)
 	);
-	expect(f.enqueue).toHaveBeenCalledOnce();
-	expect(f.saved()).toEqual(f.original);
+	expect((f.saved().rigQa as { warnings: string[] }).warnings).toContain(
+		'idle/east: PixelLab sent 4 frames instead of 5, so the first or last frame may differ'
+	);
 });
 
 // Deliberately changed (soft gates): a targeted replacement that misses only numerical body checks used to throw and keep
@@ -1241,6 +1254,15 @@ test('the inferred-joints note is shown in the reader’s language', () => {
 			translate
 		)
 	).toBe('Idle east: studioModel.bridgedJoints 3/4');
+	expect(
+		bodyQualityNote(
+			'idle/east: PixelLab sent 4 frames instead of 5, so the first or last frame may differ',
+			((key: string, vars: Record<string, unknown> = {}) =>
+				key === 'studioModel.bodyQuality'
+					? `${vars.reason}`
+					: `${key} ${vars.count}/${vars.expected}`) as Parameters<typeof bodyQualityNote>[1]
+		)
+	).toBe('studioModel.shortFrames 4/5');
 });
 
 test('a managed motion with one unmeasured interior frame still renders the body', async () => {

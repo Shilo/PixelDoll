@@ -1566,6 +1566,7 @@
 		"itemQualityReview": "{name}: Eşya kalite kontrollerinin incelenmesi gerekiyor. Ücretli yeniden deneme başlatılmadı.",
 		"bodyQuality": "{move} {direction}: {reason}",
 		"bridgedJoints": "{total} hareket karesinden {frame}. karenin eklemleri komşu karelerden çıkarıldı",
+		"shortFrames": "PixelLab {expected} yerine {count} kare gönderdi, bu yüzden ilk veya son kare farklı olabilir",
 		"health": {
 			"clean": "Sorunsuz",
 			"accepted": "Kabul edildi",

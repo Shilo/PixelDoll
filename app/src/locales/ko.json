@@ -1517,6 +1517,7 @@
 		"itemQualityReview": "{name}: 아이템 품질 검사 결과를 확인해야 해요. 유료 재시도는 시작되지 않았어요.",
 		"bodyQuality": "{move} {direction}: {reason}",
 		"bridgedJoints": "모션 프레임 {frame}/{total}의 관절은 앞뒤 프레임에서 추정했습니다",
+		"shortFrames": "PixelLab이 {expected}개가 아닌 {count}개 프레임을 보내서 첫 프레임이나 마지막 프레임이 다를 수 있습니다",
 		"health": {
 			"clean": "정상",
 			"accepted": "수락됨",

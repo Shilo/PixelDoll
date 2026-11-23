@@ -54,6 +54,15 @@ function bodyReason(reason: string, translate?: Translate): string {
 			frame: Number(bridged[1]),
 			total: Number(bridged[2])
 		});
+	const short =
+		/^PixelLab sent (\d+) frames instead of (\d+), so the first or last frame may differ$/.exec(
+			reason
+		);
+	if (short)
+		return copy(translate)(reason, 'studioModel.shortFrames', {
+			count: Number(short[1]),
+			expected: Number(short[2])
+		});
 	return reason;
 }
 

@@ -1566,6 +1566,7 @@
 		"itemQualityReview": "{name}: hay que revisar los controles de calidad del objeto. No se inició ningún reintento de pago.",
 		"bodyQuality": "{move} {direction}: {reason}",
 		"bridgedJoints": "las articulaciones del fotograma de movimiento {frame} de {total} se dedujeron de los fotogramas vecinos",
+		"shortFrames": "PixelLab envió {count} fotogramas en lugar de {expected}, así que el primero o el último pueden ser distintos",
 		"health": {
 			"clean": "Sin problemas",
 			"accepted": "Aceptado",

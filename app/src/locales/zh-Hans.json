@@ -1517,6 +1517,7 @@
 		"itemQualityReview": "{name}：装备质量检查需要复核。未启动付费重试。",
 		"bodyQuality": "{move} {direction}：{reason}",
 		"bridgedJoints": "动作帧 {frame}/{total} 的关节根据相邻帧推断得出",
+		"shortFrames": "PixelLab 发送了 {count} 帧而不是 {expected} 帧，因此第一帧或最后一帧可能不同",
 		"health": {
 			"clean": "良好",
 			"accepted": "已接受",

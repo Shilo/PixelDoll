@@ -1572,6 +1572,7 @@
 		"itemQualityReview": "{name}: revise os resultados das verificações de qualidade do item. Nenhuma nova tentativa paga foi iniciada.",
 		"bodyQuality": "{move} na direção {direction}: {reason}",
 		"bridgedJoints": "as articulações do quadro de movimento {frame} de {total} foram inferidas dos quadros vizinhos",
+		"shortFrames": "o PixelLab enviou {count} quadros em vez de {expected}, então o primeiro ou o último quadro pode ser diferente",
 		"health": {
 			"clean": "Sem problemas",
 			"accepted": "Aceito",

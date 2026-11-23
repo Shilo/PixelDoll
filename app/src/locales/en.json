@@ -1566,6 +1566,7 @@
 		"itemQualityReview": "{name}: item quality checks need review. No paid retry was started.",
 		"bodyQuality": "{move} {direction}: {reason}",
 		"bridgedJoints": "joints of motion frame {frame} of {total} were inferred from the frames next to it",
+		"shortFrames": "PixelLab sent {count} frames instead of {expected}, so the first or last frame may differ",
 		"health": {
 			"clean": "Clean",
 			"accepted": "Accepted",

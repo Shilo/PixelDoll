@@ -1566,6 +1566,7 @@
 		"itemQualityReview": "{name}: Prüfe die Ergebnisse der Qualitätskontrolle für diesen Gegenstand. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
 		"bodyQuality": "{move} {direction}: {reason}",
 		"bridgedJoints": "die Gelenke von Bewegungsbild {frame} von {total} wurden aus den Nachbarbildern abgeleitet",
+		"shortFrames": "PixelLab hat {count} statt {expected} Bilder gesendet, daher kann das erste oder letzte Bild abweichen",
 		"health": {
 			"clean": "In Ordnung",
 			"accepted": "Akzeptiert",
