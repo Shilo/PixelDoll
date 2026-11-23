@@ -21,6 +21,7 @@ import { flipSkeleton, type Skeleton } from './skeleton.ts';
 import type { Img } from '../image/png.ts';
 import type { Layer, Project, Provenance } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
+import { LocalizedError } from '../message.ts';
 
 export interface SetupPlan {
 	restAnim: string;
@@ -33,19 +34,29 @@ export interface SetupPlan {
 }
 export const STATE_CAPTURE_MODE = 'state-capture';
 
+/** Moves rig setup skipped because a frame had no valid joints: kept as drawn, marked to make again (rigQa.redo). */
+export const setupRedoMoves = (rec?: Pick<StoredProject, 'rigQa'> | null): string[] => {
+	const redo = (rec?.rigQa as { redo?: unknown } | undefined)?.redo;
+	return Array.isArray(redo) ? redo.filter((id): id is string => typeof id === 'string') : [];
+};
+
 export function rigReady(
-	rec?: Pick<StoredProject, 'manifest' | 'character'> | null,
+	rec?:
+		(Pick<StoredProject, 'manifest' | 'character'> & Partial<Pick<StoredProject, 'rigQa'>>) | null,
 	requireRegistration = true
 ): boolean {
 	const r = rec?.manifest.rig;
 	if (!r || (requireRegistration && (!rec.character?.id || !rec.character.looks?.trim())))
 		return false;
-	const base = rec.manifest.items.find((i) => i.id === r.baseItem)?.layers[0];
+	const base = rec.manifest.items.find((i) => i.id === r.baseItem)?.layers[0],
+		redo = setupRedoMoves(rec);
 	return (
 		!!base &&
 		r.directions.every((d) => d.mirrorOf || hasAll(r.rest?.[d.id]?.keypoints)) &&
 		r.animations.every((a) => {
 			if (a.kind === 'state' && a.id !== DEFAULT_MOVE) return true;
+			// A move setup skipped waits to be made again; the rest of the rig is ready without it.
+			if (redo.includes(a.id) && !a.sources) return true;
 			return r.directions.every((d) => {
 				if (d.mirrorOf || !base.cells?.[a.id]?.[d.id]?.some(Boolean)) return true;
 				if (matchesStanding(r, a, d.id, base.cells?.[a.id]?.[d.id]?.[0])) return true;
@@ -92,15 +103,24 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 		rig.cell.w < 32 ||
 		rig.cell.w > 256
 	)
-		throw new Error('Rig setup needs a square frame of 32–256 whole pixels.');
+		throw new LocalizedError(
+			'Rig setup needs a square frame of 32–256 whole pixels.',
+			'setup.errors.squareFrame'
+		);
 	if (rig.template && rig.template !== 'mannequin')
-		throw new Error(
-			'Rig setup currently supports humanoid characters. This character uses a different body template.'
+		throw new LocalizedError(
+			'Rig setup currently supports humanoid characters. This character uses a different body template.',
+			'setup.errors.humanoidOnly'
 		);
 	const base = m.items.find((i) => i.id === rig.baseItem)!;
-	if (base.layers.length !== 1) throw new Error('Rig setup needs a single frozen base-body layer.');
+	if (base.layers.length !== 1)
+		throw new LocalizedError(
+			'Rig setup needs a single frozen base-body layer.',
+			'setup.errors.singleBaseLayer'
+		);
 	const a = setupRestAnimation(rig, restAnim);
-	if (!a) throw new Error('Choose a standing reference move.');
+	if (!a)
+		throw new LocalizedError('Choose a standing reference move.', 'setup.errors.chooseReference');
 	const rest: SetupPlan['rest'] = {},
 		frames: SetupPlan['frames'] = new Map();
 	for (const d of DIRECTIONS) {
@@ -113,7 +133,11 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 		const existing = rest[d.id];
 		const im = existing || cellImg(p, base.layers[0], a.id, d.id, 0);
 		if (!im || !opaqueBox(im))
-			throw new Error(`${a.id} has no ${d.id} standing reference. Choose a move with every view.`);
+			throw new LocalizedError(
+				`${a.id} has no ${d.id} standing reference. Choose a move with every view.`,
+				'setup.errors.noStandingReference',
+				{ move: a.id }
+			);
 		const top = opaqueBox(im)!.y0;
 		if (top < HEADROOM_MIN)
 			warnings.push(
@@ -139,8 +163,9 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 	const required =
 		registrationDirections === 8 ? DIRECTIONS : (['south', 'east', 'north', 'west'] as const);
 	if (required.some((d) => !rest[d]))
-		throw new Error(
-			'Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.'
+		throw new LocalizedError(
+			'Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.',
+			'setup.errors.needsStandingViews'
 		);
 	for (const a of rig.animations)
 		for (const d of rig.directions.filter((d) => !d.mirrorOf)) {
@@ -149,7 +174,11 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 			);
 			if (!cells.some((im) => im && opaqueBox(im))) continue; // genuine sparse clip
 			if (cells.some((im) => !im || !opaqueBox(im)))
-				throw new Error(`${a.id}/${d.id} contains an empty body frame.`);
+				throw new LocalizedError(
+					`${a.id}/${d.id} contains an empty body frame.`,
+					'setup.errors.emptyBodyFrame',
+					{ move: a.id }
+				);
 			for (const im of cells as Img[]) frames.set(await cellHash(im), im);
 		}
 	for (const it of m.items.filter((i) => i.slot !== 'body' && !i.dressed))
@@ -171,7 +200,8 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 	};
 }
 
-/** Assemble real measurements; imported originals have no requested pose to score against. */
+/** Assemble real measurements; imported originals have no requested pose to score against. A move with a frame that has no
+ *  valid joints is skipped (left without poses and listed in rigQa.redo); the standing views must all be measured. */
 export async function attachImportedRig(
 	p: Project,
 	plan: SetupPlan,
@@ -194,11 +224,14 @@ export async function attachImportedRig(
 		const hash = await cellHash(im),
 			k = measured.get(hash);
 		if (!hasAll(k))
-			throw new Error(
-				'PixelLab could not find valid joints on every body frame. The existing character was left unchanged.'
+			throw new LocalizedError(
+				'PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.',
+				'setup.errors.jointsMissing'
 			);
 		return { hash, keypoints: k! };
 	};
+	const unmeasured = async (im: Img | undefined) =>
+		!!im && !hasAll(measured.get(await cellHash(im)));
 	rig.rest = { ...rig.rest };
 	for (const d of rig.directions.filter((d) => !d.mirrorOf)) {
 		const im = plan.rest[d.id]!,
@@ -215,8 +248,22 @@ export async function attachImportedRig(
 	};
 	const byHash: Record<string, Skeleton> = {},
 		clips: Record<string, ReturnType<typeof clipQa>> = {},
-		warnings = [...plan.warnings];
+		warnings = [...plan.warnings],
+		redo: string[] = [];
 	for (const a of rig.animations) {
+		const views = rig.directions.filter((d) => !d.mirrorOf);
+		let skip = false;
+		for (const d of views)
+			for (let i = 0; i < a.cells && !skip; i++)
+				skip = await unmeasured(cellImg(p, base.layers[0], a.id, d.id, i) ?? undefined);
+		if (skip) {
+			delete a.sources;
+			redo.push(a.id);
+			warnings.push(
+				`${a.id} was skipped: PixelLab could not find valid joints on one of its frames. Make it again to animate items on it.`
+			);
+			continue;
+		}
 		a.sources = {};
 		for (const d of rig.directions.filter((d) => !d.mirrorOf)) {
 			const frames = Array.from({ length: a.cells }, (_, i) =>
@@ -295,7 +342,8 @@ export async function attachImportedRig(
 			warnings,
 			pivotFrom: built.pivotFrom,
 			clips,
-			tracks: tracks.stats.map(({ points: _, ...t }) => t)
+			tracks: tracks.stats.map(({ points: _, ...t }) => t),
+			...(redo.length ? { redo } : {})
 		}
 	};
 }

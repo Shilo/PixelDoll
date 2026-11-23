@@ -2137,7 +2137,8 @@
 	"setup": {
 		"warnings": {
 			"headroom": "Na direção {direction}, sobram {count} px acima da cabeça. Penteados altos ou chapéus podem precisar de um quadro maior.",
-			"keptFrames": "Os quadros atuais de {name} serão mantidos. Recrie o item depois de configurar o rig para que ele acompanhe os movimentos do personagem nas próximas animações."
+			"keptFrames": "Os quadros atuais de {name} serão mantidos. Recrie o item depois de configurar o rig para que ele acompanhe os movimentos do personagem nas próximas animações.",
+			"moveSkipped": "{move} foi ignorada: o PixelLab não encontrou articulações válidas em um dos quadros. Crie-a novamente para animar itens nela."
 		},
 		"title": "Configurar personagem",
 		"rigSetup": "Configuração do rig",
@@ -2176,7 +2177,14 @@
 			"jointsMissing": "O PixelLab não conseguiu encontrar as 18 articulações válidas em um quadro do corpo. A arte existente não mudou. Reconecte-se ou escolha uma referência mais clara da pose em pé e retome.",
 			"noCharacterId": "O PixelLab não retornou um ID de personagem gerenciado. A arte existente não mudou.",
 			"referenceChanged": "Uma referência da pose em pé mudou durante a configuração.",
-			"characterChanged": "O personagem mudou durante a configuração. O trabalho atual foi mantido."
+			"characterChanged": "O personagem mudou durante a configuração. O trabalho atual foi mantido.",
+			"squareFrame": "A configuração do rig precisa de um quadro quadrado de 32 a 256 pixels inteiros.",
+			"humanoidOnly": "A configuração do rig só oferece suporte a personagens humanoides por enquanto. Este personagem usa outro modelo de corpo.",
+			"singleBaseLayer": "A configuração do rig precisa de uma única camada fixa do corpo base.",
+			"chooseReference": "Escolha uma animação de referência em pé.",
+			"noStandingReference": "{move} não tem uma vista em pé para cada direção. Escolha uma animação com todas as vistas.",
+			"needsStandingViews": "A configuração do rig precisa das vistas em pé originais salvas ou das quatro direções cardeais. Importe primeiro as rotações que faltam.",
+			"emptyBodyFrame": "{move} tem um quadro do corpo vazio. Corrija ou exclua essa animação e configure novamente."
 		},
 		"newRegistration": "Registrar de novo"
 	},

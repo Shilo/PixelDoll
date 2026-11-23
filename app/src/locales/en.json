@@ -2128,7 +2128,8 @@
 	"setup": {
 		"warnings": {
 			"headroom": "{direction} leaves {count} px above the head; tall hair or hats may need a larger frame.",
-			"keptFrames": "{name} keeps its existing frames. Make it again after setup to animate it onto future moves."
+			"keptFrames": "{name} keeps its existing frames. Make it again after setup to animate it onto future moves.",
+			"moveSkipped": "{move} was skipped: PixelLab could not find valid joints on one of its frames. Make it again to animate items on it."
 		},
 		"title": "Set up character",
 		"rigSetup": "Rig setup",
@@ -2167,7 +2168,14 @@
 			"jointsMissing": "PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.",
 			"noCharacterId": "PixelLab did not return a managed character ID. Existing artwork is unchanged.",
 			"referenceChanged": "A standing reference changed during setup.",
-			"characterChanged": "The character changed during setup. Its current work has been kept."
+			"characterChanged": "The character changed during setup. Its current work has been kept.",
+			"squareFrame": "Rig setup needs a square frame of 32–256 whole pixels.",
+			"humanoidOnly": "Rig setup currently supports humanoid characters. This character uses a different body template.",
+			"singleBaseLayer": "Rig setup needs a single frozen base-body layer.",
+			"chooseReference": "Choose a standing reference move.",
+			"noStandingReference": "{move} has no standing view for every direction. Choose a move with every view.",
+			"needsStandingViews": "Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.",
+			"emptyBodyFrame": "{move} has an empty body frame. Fix or delete that move, then set up again."
 		},
 		"newRegistration": "Register again"
 	},

@@ -66,6 +66,11 @@ export function setupWarningNote(
 			warning
 		);
 	if (kept) return copy(translate)(warning, 'setup.warnings.keptFrames', { name: kept[1] });
+	const skipped =
+		/^(.+) was skipped: PixelLab could not find valid joints on one of its frames\. Make it again to animate items on it\.$/.exec(
+			warning
+		);
+	if (skipped) return copy(translate)(warning, 'setup.warnings.moveSkipped', { move: skipped[1] });
 	return bodyQualityNote(warning, translate, displayDirection);
 }
 

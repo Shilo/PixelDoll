@@ -2066,7 +2066,8 @@
 	"setup": {
 		"warnings": {
 			"headroom": "Arah {direction} menyisakan {count} px di atas kepala; tatanan rambut yang tinggi atau topi mungkin memerlukan ukuran frame yang lebih besar.",
-			"keptFrames": "{name} mempertahankan frame yang sudah ada. Buat lagi setelah penyiapan agar item ini ikut dianimasikan pada animasi berikutnya."
+			"keptFrames": "{name} mempertahankan frame yang sudah ada. Buat lagi setelah penyiapan agar item ini ikut dianimasikan pada animasi berikutnya.",
+			"moveSkipped": "{move} dilewati: PixelLab tidak menemukan sendi yang valid pada salah satu frame-nya. Buat lagi untuk menganimasikan item padanya."
 		},
 		"title": "Siapkan karakter",
 		"rigSetup": "Penyiapan rig",
@@ -2105,7 +2106,14 @@
 			"jointsMissing": "PixelLab tidak dapat menemukan ke-18 sendi yang valid pada salah satu frame tubuh. Gambar yang ada tidak berubah. Hubungkan kembali atau pilih referensi berdiri yang lebih jelas, lalu lanjutkan.",
 			"noCharacterId": "PixelLab tidak mengembalikan ID karakter terkelola. Gambar yang ada tidak berubah.",
 			"referenceChanged": "Referensi berdiri berubah selama penyiapan.",
-			"characterChanged": "Karakter berubah selama penyiapan. Pekerjaan karakter saat ini tetap disimpan."
+			"characterChanged": "Karakter berubah selama penyiapan. Pekerjaan karakter saat ini tetap disimpan.",
+			"squareFrame": "Penyiapan rig memerlukan frame persegi 32–256 piksel bulat.",
+			"humanoidOnly": "Penyiapan rig saat ini hanya mendukung karakter humanoid. Karakter ini memakai templat tubuh lain.",
+			"singleBaseLayer": "Penyiapan rig memerlukan satu lapisan tubuh dasar yang tetap.",
+			"chooseReference": "Pilih animasi referensi berdiri.",
+			"noStandingReference": "{move} tidak memiliki tampilan berdiri untuk setiap arah. Pilih animasi dengan semua tampilan.",
+			"needsStandingViews": "Penyiapan rig memerlukan tampilan berdiri asli yang tersimpan atau keempat arah utama. Impor rotasi yang hilang terlebih dahulu.",
+			"emptyBodyFrame": "{move} memiliki frame tubuh yang kosong. Perbaiki atau hapus animasi itu, lalu siapkan lagi."
 		},
 		"newRegistration": "Daftarkan ulang"
 	},

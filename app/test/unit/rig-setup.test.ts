@@ -156,6 +156,37 @@ test('setup attaches measured poses, anchors, independent QA and provenance with
 	);
 });
 
+test('a move with an unmeasured frame is skipped and marked to make again; the rest of the rig is ready', async () => {
+	const project = await source(),
+		base = project.manifest.items[0].layers[0],
+		odd = makeImg(64, 64);
+	for (let y = 12; y < 60; y++)
+		for (let x = 26; x < 38; x++) odd.data.set([170, 90, 80, 255], (y * 64 + x) * 4);
+	const oddHash = await cellHash(odd);
+	project.images.set(oddHash, odd);
+	base.cells!.walk.south![3] = oddHash;
+	const plan = await setupPlan(project);
+	// PixelLab found no joints on the walk's odd frame only
+	const measurements = new Map(
+		[...plan.frames].filter(([hash]) => hash !== oddHash).map(([hash]) => [hash, pose()])
+	);
+	const result = await attachImportedRig(project, plan, measurements, []);
+	const walk = result.manifest.rig.animations.find((a) => a.id === 'walk')!,
+		blink = result.manifest.rig.animations.find((a) => a.id === 'blink')!;
+	expect(walk.sources).toBeUndefined();
+	expect(blink.sources?.south?.keypoints).toHaveLength(2);
+	expect(result.rigQa).toMatchObject({ redo: ['walk'] });
+	expect((result.rigQa as { warnings: string[] }).warnings).toContain(
+		'walk was skipped: PixelLab could not find valid joints on one of its frames. Make it again to animate items on it.'
+	);
+	const rec = {
+		manifest: result.manifest,
+		character: { id: 'managed-fixture', looks: 'red hair' }
+	};
+	expect(rigReady({ ...rec, rigQa: result.rigQa })).toBe(true);
+	expect(rigReady(rec)).toBe(false); // without the mark, an unposed move still blocks
+});
+
 test('setup refuses missing or invalid measurements and rejects unsupported input before spending', async () => {
 	const p = await source(),
 		plan = await setupPlan(p);
@@ -165,6 +196,10 @@ test('setup refuses missing or invalid measurements and rejects unsupported inpu
 	expect(hasAll(bad)).toBe(false);
 	p.manifest.rig.template = 'cat';
 	await expect(setupPlan(p)).rejects.toThrow('humanoid');
+	// preconditions are translated stops, not raw English
+	await expect(setupPlan(p)).rejects.toMatchObject({
+		translation: { key: 'setup.errors.humanoidOnly' }
+	});
 	p.manifest.rig.template = 'mannequin';
 	p.manifest.rig.directions.pop();
 	await expect(setupPlan(p)).rejects.toThrow('cardinal views');

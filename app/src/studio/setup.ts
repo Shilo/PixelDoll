@@ -92,7 +92,12 @@ export async function setupCharacter(
 	let done = 0;
 	progress({ step: 'joints', done, total: plan.frames.size, recIds: [] });
 	const frames = [...plan.frames],
-		observations: Provenance[] = new Array(frames.length);
+		observations: Provenance[] = new Array(frames.length),
+		// A standing view without joints stops setup; any other frame only skips its move (attachImportedRig).
+		standingViews = new Set(Object.values(plan.rest)),
+		standingHashes = new Set(
+			await Promise.all(Object.values(plan.rest).map((im) => cellHash(im!)))
+		);
 	let next = 0,
 		failure: { error: unknown } | undefined;
 	// Bound prepared work by the largest supported plan; the shared queue applies the actual account and busy-account limits.
@@ -106,7 +111,7 @@ export async function setupCharacter(
 						[hash, im] = frames[index];
 					try {
 						const k = await joints(im, true, undefined, spec.activityScope);
-						if (!k)
+						if (!k && (standingViews.has(im) || standingHashes.has(hash)))
 							throw new LocalizedError(
 								'PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.',
 								'setup.errors.jointsMissing'
@@ -126,7 +131,7 @@ export async function setupCharacter(
 							)
 						);
 						if (failure) return;
-						measured.set(hash, k);
+						if (k) measured.set(hash, k);
 						progress({ step: 'joints', done: ++done, total: plan.frames.size, recIds: [] });
 					} catch (error) {
 						failure ??= { error };

@@ -2128,7 +2128,8 @@
 	"setup": {
 		"warnings": {
 			"headroom": "In Blickrichtung {direction} bleiben {count} px über dem Kopf. Hohe Frisuren oder Hüte brauchen möglicherweise einen größeren Frame.",
-			"keptFrames": "Die vorhandenen Frames von {name} bleiben erhalten. Erstelle den Gegenstand nach der Einrichtung des Rigs neu, damit er auch in künftigen Animationen mit der Figur mitbewegt werden kann."
+			"keptFrames": "Die vorhandenen Frames von {name} bleiben erhalten. Erstelle den Gegenstand nach der Einrichtung des Rigs neu, damit er auch in künftigen Animationen mit der Figur mitbewegt werden kann.",
+			"moveSkipped": "{move} wurde übersprungen: PixelLab hat auf einem ihrer Frames keine gültigen Gelenke gefunden. Erstelle sie erneut, um Gegenstände darauf zu animieren."
 		},
 		"title": "Figur einrichten",
 		"rigSetup": "Rig einrichten",
@@ -2167,7 +2168,14 @@
 			"jointsMissing": "PixelLab konnte in einem Grundkörperframe nicht alle 18 gültigen Gelenke finden. Vorhandene Grafiken bleiben unverändert. Stelle die Verbindung wieder her oder wähle eine eindeutigere Standreferenz und setze die Einrichtung fort.",
 			"noCharacterId": "PixelLab hat keine verwaltete Figuren-ID zurückgegeben. Vorhandene Grafiken bleiben unverändert.",
 			"referenceChanged": "Eine Standreferenz hat sich während der Einrichtung geändert.",
-			"characterChanged": "Die Figur hat sich während der Einrichtung geändert. Der aktuelle Stand der Figur bleibt erhalten."
+			"characterChanged": "Die Figur hat sich während der Einrichtung geändert. Der aktuelle Stand der Figur bleibt erhalten.",
+			"squareFrame": "Die Rig-Einrichtung braucht einen quadratischen Frame mit 32–256 ganzen Pixeln.",
+			"humanoidOnly": "Die Rig-Einrichtung unterstützt derzeit humanoide Figuren. Diese Figur nutzt eine andere Körpervorlage.",
+			"singleBaseLayer": "Die Rig-Einrichtung braucht eine einzige feste Ebene für den Grundkörper.",
+			"chooseReference": "Wähle eine Animation als Standreferenz.",
+			"noStandingReference": "{move} hat nicht für jede Blickrichtung eine Standansicht. Wähle eine Animation mit allen Ansichten.",
+			"needsStandingViews": "Die Rig-Einrichtung braucht gespeicherte Original-Standansichten oder alle vier Hauptrichtungen. Importiere zuerst die fehlenden Drehungen.",
+			"emptyBodyFrame": "{move} hat einen leeren Körper-Frame. Korrigiere oder lösche diese Animation und richte dann erneut ein."
 		},
 		"newRegistration": "Neu registrieren"
 	},

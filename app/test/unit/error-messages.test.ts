@@ -39,7 +39,7 @@ test('user-facing failure strings use plain words, never internal labels or jarg
 
 /** Plain `throw new Error(` reaches users as untranslated English. New failures use LocalizedError; this count only falls.
  *  Lower it when a change removes some. Developer pages (src/ui/) and the generated runtime transport are not counted. */
-const PLAIN_ERROR_LIMIT = 278;
+const PLAIN_ERROR_LIMIT = 270;
 
 function sources(dir: string): string[] {
 	return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

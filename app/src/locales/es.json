@@ -2128,7 +2128,8 @@
 	"setup": {
 		"warnings": {
 			"headroom": "En la dirección {direction} quedan {count} px sobre la cabeza; los peinados altos o los sombreros pueden necesitar un marco más grande.",
-			"keptFrames": "{name} conserva sus fotogramas actuales. Vuelve a crearlo después de la configuración para animarlo en futuras animaciones."
+			"keptFrames": "{name} conserva sus fotogramas actuales. Vuelve a crearlo después de la configuración para animarlo en futuras animaciones.",
+			"moveSkipped": "Se omitió {move}: PixelLab no encontró articulaciones válidas en uno de sus fotogramas. Vuelve a crearla para animar objetos en ella."
 		},
 		"title": "Configurar personaje",
 		"rigSetup": "Configuración del rig",
@@ -2167,7 +2168,14 @@
 			"jointsMissing": "PixelLab no pudo encontrar las 18 articulaciones válidas en un fotograma del cuerpo. Las imágenes existentes no cambian. Vuelve a conectar PixelLab o elige una referencia más clara de la pose de pie y reanuda la configuración.",
 			"noCharacterId": "PixelLab no devolvió un ID de personaje gestionado. El arte existente no cambia.",
 			"referenceChanged": "Una referencia de pie cambió durante la configuración.",
-			"characterChanged": "El personaje cambió durante la configuración. Se conservó su trabajo actual."
+			"characterChanged": "El personaje cambió durante la configuración. Se conservó su trabajo actual.",
+			"squareFrame": "La configuración del rig necesita un marco cuadrado de 32 a 256 píxeles enteros.",
+			"humanoidOnly": "La configuración del rig solo admite personajes humanoides por ahora. Este personaje usa otra plantilla de cuerpo.",
+			"singleBaseLayer": "La configuración del rig necesita una sola capa fija del cuerpo base.",
+			"chooseReference": "Elige una animación de referencia de pie.",
+			"noStandingReference": "{move} no tiene una vista de pie para cada dirección. Elige una animación con todas las vistas.",
+			"needsStandingViews": "La configuración del rig necesita las vistas de pie originales guardadas o las cuatro direcciones cardinales. Importa primero las rotaciones que faltan.",
+			"emptyBodyFrame": "{move} tiene un fotograma del cuerpo vacío. Corrige o elimina esa animación y vuelve a configurar."
 		},
 		"newRegistration": "Registrar de nuevo"
 	},

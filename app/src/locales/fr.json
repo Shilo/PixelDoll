@@ -2128,7 +2128,8 @@
 	"setup": {
 		"warnings": {
 			"headroom": "Dans la direction {direction}, il reste {count} px au-dessus de la tête ; une coiffure haute ou un chapeau peut nécessiter un cadre plus grand.",
-			"keptFrames": "Les images existantes de {name} sont conservées. Recréez cet objet après la configuration du rig pour pouvoir l’intégrer aux prochaines animations."
+			"keptFrames": "Les images existantes de {name} sont conservées. Recréez cet objet après la configuration du rig pour pouvoir l’intégrer aux prochaines animations.",
+			"moveSkipped": "{move} a été ignorée : PixelLab n’a pas trouvé d’articulations valides sur l’une de ses images. Recréez-la pour y animer des objets."
 		},
 		"title": "Configurer le personnage",
 		"rigSetup": "Configuration du rig",
@@ -2167,7 +2168,14 @@
 			"jointsMissing": "PixelLab n’a pas trouvé les 18 articulations valides sur une image du corps. Les visuels existants sont inchangés ; reconnectez-vous ou choisissez une référence debout plus claire, puis reprenez.",
 			"noCharacterId": "PixelLab n’a pas renvoyé d’ID de personnage géré. Les visuels existants sont inchangés.",
 			"referenceChanged": "Une référence debout a changé pendant la configuration.",
-			"characterChanged": "Le personnage a changé pendant la configuration. Son travail actuel a été conservé."
+			"characterChanged": "Le personnage a changé pendant la configuration. Son travail actuel a été conservé.",
+			"squareFrame": "La configuration du rig nécessite un cadre carré de 32 à 256 pixels entiers.",
+			"humanoidOnly": "La configuration du rig ne prend en charge que les personnages humanoïdes pour l’instant. Ce personnage utilise un autre modèle de corps.",
+			"singleBaseLayer": "La configuration du rig nécessite un seul calque figé pour le corps de base.",
+			"chooseReference": "Choisissez une animation de référence debout.",
+			"noStandingReference": "{move} n’a pas de vue debout pour chaque direction. Choisissez une animation avec toutes les vues.",
+			"needsStandingViews": "La configuration du rig nécessite les vues debout d’origine enregistrées ou les quatre directions cardinales. Importez d’abord les rotations manquantes.",
+			"emptyBodyFrame": "{move} contient une image du corps vide. Corrigez ou supprimez cette animation, puis relancez la configuration."
 		},
 		"newRegistration": "Réenregistrer"
 	},
