@@ -6893,7 +6893,7 @@ test('a new move whose one view stopped saves its finished views for free and en
 	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
 	await expect(review).toBeHidden();
 	// Saving offers equipment for the new move as a separate priced step; closing it buys nothing.
-	const animate = page.getByRole('dialog', { name: 'Animate items', exact: true });
+	const animate = page.getByRole('dialog', { name: 'Generate items', exact: true });
 	await animate.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(posts.length).toBe(sent);
 	const saved = await page.evaluate(async () => {
@@ -7011,7 +7011,7 @@ test('a view kept without poses names the move and view to make again before equ
 		)
 		.toEqual({ redo: ['idle/west'], posed: ['south', 'east', 'north'] });
 	expect(posts.length).toBe(sent);
-	const animate = page.getByRole('dialog', { name: 'Animate items', exact: true });
+	const animate = page.getByRole('dialog', { name: 'Generate items', exact: true });
 	if (await animate.isVisible())
 		await animate.getByRole('button', { name: 'Close', exact: true }).click();
 	if (await sheet.isVisible())
