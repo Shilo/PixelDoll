@@ -68,7 +68,14 @@
 		"archivedSaved": "Os dados arquivados foram mantidos para baixar depois.",
 		"changed": "Sua biblioteca mudou. Confira os totais atualizados antes de restaurar.",
 		"restoredName": "{name} (cópia restaurada)",
-		"incomplete": "Algumas artes estão ausentes ou são inválidas. Nada foi restaurado.",
+		"incomplete": {
+			"one": "{count} personagem está sem artes e será ignorado.",
+			"other": "{count} personagens estão sem artes e serão ignorados."
+		},
+		"trimmedHistory": {
+			"one": "{count} personagem será restaurado sem parte do histórico de desfazer, que falta neste arquivo.",
+			"other": "{count} personagens serão restaurados sem parte do histórico de desfazer, que falta neste arquivo."
+		},
 		"backupOmissions": "O backup foi baixado, mas alguns personagens ou imagens estão ausentes.",
 		"deleteWork": {
 			"deleteAll": "Excluir tudo",

@@ -150,8 +150,7 @@ export async function exportBackup(keys: readonly string[]) {
 				...(omitted && { omitted: omitted.characters })
 			} satisfies BackupIndex
 		],
-		archives.files,
-		true
+		archives.files
 	);
 	return { bytes, hasOmissions: hasOmissions || archives.hasOmissions, characters: records };
 }
@@ -166,6 +165,9 @@ export interface RestoreSource {
 	blobs: Map<string, Blob>;
 	/** Characters the file left out or that failed validation here. */
 	unreadable: number;
+	/** Characters read without Undo history the file lacks or that was malformed. History is never drawn or exported, so they
+	 *  are otherwise whole. */
+	trimmed: number;
 	archives?: ArchivePack[];
 	missing?: string[];
 }
@@ -184,6 +186,7 @@ export async function readRestoreSource(
 			characters: new Map(),
 			blobs: new Map(),
 			unreadable: 0,
+			trimmed: 0,
 			archives: [
 				{ id: `${retainedPrefix}${await sha256(bytes)}`, data: bytes.slice(), count: counts.total }
 			]
@@ -206,7 +209,8 @@ async function readRestoreFiles(
 				[...workspace.projects].filter(([key, value]) => studioCharacter(key, value))
 			) as Map<string, StoredProject>,
 			blobs: workspace.blobs,
-			unreadable: workspace.omitted?.characters ?? 0
+			unreadable: workspace.omitted?.characters ?? 0,
+			trimmed: workspace.trimmed ?? 0
 		};
 	}
 	if (!json)
@@ -239,15 +243,14 @@ async function readRestoreFiles(
 		archives.push({ id: `${retainedPrefix}${digest}`, data: data.slice(), count: counts.total });
 		files.delete(path);
 	}
-	const { projects, blobs, missing } = await readArchiveFiles(
+	const { projects, blobs, missing, trimmed } = await readArchiveFiles(
 		files,
 		indexPath,
 		index.characters,
 		index.missing,
 		counts,
 		(key) => key.startsWith('rig-'),
-		backupErrors,
-		true
+		backupErrors
 	);
 	return {
 		kind: 'backup',
@@ -256,6 +259,7 @@ async function readRestoreFiles(
 		blobs,
 		missing,
 		unreadable: counts.characters,
+		trimmed,
 		...(archives.length && { archives })
 	};
 }
@@ -286,8 +290,8 @@ export async function readBackupCopy(bytes: Uint8Array): Promise<WorkspaceArchiv
 	};
 }
 
-/** What describes the character itself: not where or when it was saved, what it wears right now, internal receipts or where
- *  it was restored from. */
+/** What describes the character itself: not where or when it was saved, what it wears right now, internal receipts, where it
+ *  was restored from or its Undo history (which an archive may lack). */
 function canonical(record: StoredProject & { dress?: unknown }) {
 	const {
 		id: _id,
@@ -300,7 +304,10 @@ function canonical(record: StoredProject & { dress?: unknown }) {
 		origin: _origin,
 		...content
 	} = record;
-	return stableStringify(content);
+	const items = content.manifest.items.map(
+		({ frameEdits: _frameEdits, paletteRepairs: _paletteRepairs, ...item }) => item
+	);
+	return stableStringify({ ...content, manifest: { ...content.manifest, items } });
 }
 
 /** Equal for two characters with the same content, whatever their IDs. */
@@ -314,9 +321,9 @@ const stateKey = (record: unknown) =>
 		: 'unsupported';
 
 const hexHash = /^(?:sha256:)?([a-f0-9]{64})$/;
-const refsOf = (record: StoredProject, history: boolean) => [
+const refsOf = (record: StoredProject) => [
 	...new Set(
-		[...artworkRefs(record.manifest, history)].flatMap(([hash]) => {
+		[...artworkRefs(record.manifest)].flatMap(([hash]) => {
 			const hex = typeof hash === 'string' && hexHash.exec(hash)?.[1];
 			return hex ? [hex] : [];
 		})
@@ -338,12 +345,14 @@ export interface RestoreEntry {
 export type RestoreWarning =
 	/** Characters the file left out or that failed validation: the rest can still be restored. */
 	| { code: 'unreadable'; count: number }
+	/** Characters restored without Undo history the file lacks. */
+	| { code: 'trimmedHistory'; count: number }
 	/** `copies` were restored from character `id` before and differ from this file's version now (edited since, or restored
 	 *  from another version): restoring adds another copy instead of skipping it, which the person should know first. */
 	| { code: 'editedRestore'; id: string; copies: string[] };
 
-/** A character that cannot be restored: `count` artwork files it references are neither in the file nor saved here. Any
- *  blocker stops the whole restore. */
+/** A character that cannot be restored: `count` artwork files it shows are neither in the file nor saved here. It is skipped;
+ *  the other characters still restore. */
 export type RestoreBlocker = { code: 'missingArtwork'; id: string; count: number };
 
 export interface RestorePlan {
@@ -364,7 +373,7 @@ export async function planRestore(source: RestoreSource): Promise<RestorePlan> {
 			id,
 			record,
 			fingerprint: await characterFingerprint(record),
-			refs: refsOf(record, source.kind === 'backup')
+			refs: refsOf(record)
 		}))
 	);
 	const borrowed = [
@@ -388,6 +397,7 @@ export async function planRestore(source: RestoreSource): Promise<RestorePlan> {
 	}
 	const plan: RestorePlan = { source, entries: [], warnings: [], blockers: [], basis };
 	if (source.unreadable) plan.warnings.push({ code: 'unreadable', count: source.unreadable });
+	if (source.trimmed) plan.warnings.push({ code: 'trimmedHistory', count: source.trimmed });
 	for (const { id, record, fingerprint, refs } of characters) {
 		basis.refs.set(id, refs);
 		const entry = { id, name: record.manifest.name, fingerprint };
@@ -439,13 +449,12 @@ export interface RestoreResult {
 }
 
 /** Add a plan's add and copy entries and the artwork they need in one transaction: all of them or, on any failure such as a
- *  full disk, none. Nothing saved is overwritten or removed. Refuses a plan with blockers, and throws RestoreChangedError when
+ *  full disk, none. Blocked entries are skipped, and nothing saved is overwritten or removed. Throws RestoreChangedError when
  *  saved characters changed since the plan. */
 export async function restoreCharacters(
 	plan: RestorePlan,
 	options?: { keepArchived: boolean; keys: readonly string[]; copyName: (name: string) => string }
 ): Promise<RestoreResult> {
-	if (plan.blockers.length) throw new Error('A restore plan with blockers cannot be written.');
 	const { source, basis } = plan;
 	const writes = plan.entries.filter(({ action }) => action === 'add' || action === 'copy');
 	const opaque = new Map<string, ArchivePack>();

@@ -68,7 +68,14 @@
 		"archivedSaved": "Arşivlenmiş veriler daha sonra indirmek için saklandı.",
 		"changed": "Kitaplığınız değişti. Geri yüklemeden önce güncel sayıları inceleyin.",
 		"restoredName": "{name} (geri yüklenen kopya)",
-		"incomplete": "Bazı görseller eksik veya geçersiz. Hiçbir şey geri yüklenmedi.",
+		"incomplete": {
+			"one": "Görselleri eksik olduğu için atlanacak karakter sayısı: {count}.",
+			"other": "Görselleri eksik olduğu için atlanacak karakter sayısı: {count}."
+		},
+		"trimmedHistory": {
+			"one": "Bu dosyada eksik olan geri alma geçmişinin bir kısmı olmadan geri yüklenecek karakter sayısı: {count}.",
+			"other": "Bu dosyada eksik olan geri alma geçmişinin bir kısmı olmadan geri yüklenecek karakter sayısı: {count}."
+		},
 		"backupOmissions": "Yedek indirildi ancak bazı karakterler veya görseller eksik.",
 		"deleteWork": {
 			"deleteAll": "Tümünü sil",

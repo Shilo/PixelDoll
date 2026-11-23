@@ -65,7 +65,12 @@
 		"archivedSaved": "已保留归档数据，可日后下载。",
 		"changed": "角色库已有变动。请在恢复前确认更新后的数量。",
 		"restoredName": "{name}（恢复的副本）",
-		"incomplete": "部分美术素材缺失或无效。未恢复任何内容。",
+		"incomplete": {
+			"other": "{count} 个角色缺少美术素材，将被跳过。"
+		},
+		"trimmedHistory": {
+			"other": "{count} 个角色将在不含部分撤销历史的情况下恢复，此文件缺少这些历史。"
+		},
 		"backupOmissions": "备份已下载，但缺少部分角色或图像。",
 		"deleteWork": {
 			"deleteAll": "全部删除",

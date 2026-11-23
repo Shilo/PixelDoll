@@ -319,7 +319,7 @@ export async function deleteForever(id: string): Promise<void> {
 /** How many of the entry's artwork files are no longer on this device, so the list can explain a blocked restore. */
 export async function missingArtwork(e: RecentlyDeleted): Promise<number> {
 	const hexes = new Set<string>();
-	for (const [hash] of artworkRefs(e.before.manifest, true)) {
+	for (const [hash] of artworkRefs(e.before.manifest)) {
 		const hex =
 			typeof hash === 'string' ? /^(?:sha256:)?([0-9a-f]{64})$/.exec(hash)?.[1] : undefined;
 		if (hex) hexes.add(hex);

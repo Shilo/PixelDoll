@@ -41,6 +41,8 @@
 		skip: number;
 		edited: number;
 		archived: number;
+		blocked: number;
+		trimmed: number;
 		warning?: Message;
 	};
 
@@ -66,6 +68,8 @@
 			skip: plan.entries.filter((entry) => entry.action === 'skip').length,
 			edited: plan.warnings.filter((warning) => warning.code === 'editedRestore').length,
 			archived: plan.source.archives?.reduce((count, pack) => count + pack.count, 0) ?? 0,
+			blocked: plan.blockers.length,
+			trimmed: plan.source.trimmed,
 			warning: plan.source.unreadable
 				? message('workspace.skippedCharacters', { count: plan.source.unreadable })
 				: undefined
@@ -189,7 +193,7 @@
 
 	async function leaveReview(save: boolean) {
 		const reviewed = plan;
-		if (save && reviewed && !reviewed.blockers.length) {
+		if (save && reviewed) {
 			await perform(async () => {
 				try {
 					const result = await restoreCharacters(reviewed, {
@@ -262,11 +266,16 @@
 			{#if preview.warning}<p class="notice warn small">
 					<TriangleAlert size={14} aria-hidden="true" />{displayMessage(preview.warning)}
 				</p>{/if}
-			{#if plan?.blockers.length}<p class="notice bad small" role="alert">
+			{#if preview.blocked}<p class="notice bad small" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />
-					{t('librarySettings.incomplete')}<ReportButton
-						message={message('librarySettings.incomplete')}
+					{t('librarySettings.incomplete', { count: preview.blocked })}<ReportButton
+						message={message('librarySettings.incomplete', { count: preview.blocked })}
 					/>
+				</p>{/if}
+			{#if preview.trimmed}<p class="notice warn small">
+					<TriangleAlert size={14} aria-hidden="true" />{t('librarySettings.trimmedHistory', {
+						count: preview.trimmed
+					})}
 				</p>{/if}
 			{#if preview.archived}
 				<label class="check">
@@ -293,9 +302,7 @@
 					type="button"
 					class="btn primary bu-action"
 					data-variant="primary"
-					disabled={busy ||
-						!!plan?.blockers.length ||
-						(!additions && !(preview.archived && keepArchived))}
+					disabled={busy || (!additions && !(preview.archived && keepArchived))}
 					onclick={() => leaveReview(true)}
 					>{t(additions ? 'librarySettings.restore' : 'common.save')}</button
 				>

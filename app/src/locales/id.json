@@ -65,7 +65,12 @@
 		"archivedSaved": "Data arsip disimpan agar bisa diunduh nanti.",
 		"changed": "Pustaka Anda berubah. Periksa jumlah terbaru sebelum memulihkan.",
 		"restoredName": "{name} (salinan hasil pemulihan)",
-		"incomplete": "Sebagian gambar hilang atau tidak valid. Tidak ada yang dipulihkan.",
+		"incomplete": {
+			"other": "{count} karakter kekurangan gambar dan akan dilewati."
+		},
+		"trimmedHistory": {
+			"other": "{count} karakter akan dipulihkan tanpa sebagian riwayat urungkan yang tidak ada di file ini."
+		},
 		"backupOmissions": "Cadangan telah diunduh, tetapi beberapa karakter atau gambar tidak disertakan.",
 		"deleteWork": {
 			"deleteAll": "Hapus semua",

@@ -65,7 +65,12 @@
 		"archivedSaved": "나중에 다운로드할 수 있도록 보관된 데이터를 유지했어요.",
 		"changed": "라이브러리가 변경되었어요. 복원하기 전에 업데이트된 개수를 확인해 주세요.",
 		"restoredName": "{name} (복원한 사본)",
-		"incomplete": "일부 이미지가 없거나 유효하지 않아요. 복원된 항목은 없어요.",
+		"incomplete": {
+			"other": "이미지가 없는 캐릭터 {count}개는 건너뛰어요."
+		},
+		"trimmedHistory": {
+			"other": "캐릭터 {count}개는 이 파일에 없는 실행 취소 기록 일부 없이 복원돼요."
+		},
 		"backupOmissions": "백업을 다운로드했습니다. 일부 캐릭터나 이미지가 누락되었습니다.",
 		"deleteWork": {
 			"deleteAll": "모두 삭제",
