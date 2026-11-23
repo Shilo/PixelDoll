@@ -57,6 +57,9 @@ export interface ClipSource {
 		rawInputHashes: Sha256[];
 		inputHashes: Sha256[];
 	};
+	/** Motion sources only: PixelLab sent the start frame back first and it was dropped by position, with the IoU of its
+	 *  opaque silhouette against the standing the motion started from (evidence only, never a gate). */
+	motionEcho?: { maskIoU: number };
 	provenance: number[]; // indexes into the base item's provenance
 }
 export interface RigAnimation {

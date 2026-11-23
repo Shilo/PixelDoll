@@ -56,6 +56,7 @@ import {
 import { defaultCharacterExportId, itemContent, retainMoveChoices } from '../lib/store/identity.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { liftToFit, normalize, opaqueBox } from '../lib/rig/normalize.ts';
+import { maskIoU } from '../lib/image/similarity.ts';
 import { flipH } from '../lib/rig/mirror.ts';
 import {
 	ANCHORS,
@@ -81,7 +82,6 @@ import {
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { LABELS, armDepth, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
-import { standingHistory } from '../lib/frames/history.ts';
 import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import {
 	RIG_GATES,
@@ -916,12 +916,11 @@ async function motion(
 	standing?: Img,
 	lifts?: readonly number[],
 	below = 0,
-	echo: 'optional-exact' | 'required-leading' = 'optional-exact',
-	echoes?: ReadonlySet<Sha256>
-): Promise<{ keypoints: Keypoint[][]; record: JobRec }> {
+	echo: MotionEchoRule = 'optional-exact'
+): Promise<{ keypoints: Keypoint[][]; record: JobRec; motionEcho?: ClipSource['motionEcho'] }> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
-	const frames = await normalizeMotionFrames(
+	const { frames, motionEcho } = await normalizeMotionFrames(
 		r,
 		(await imagesOf(r)).map((out) => out.img),
 		dir,
@@ -932,8 +931,7 @@ async function motion(
 		echo,
 		lifts,
 		'motion',
-		below,
-		echoes
+		below
 	);
 	const kps = await Promise.all(
 		frames.map(async (f) => {
@@ -963,7 +961,7 @@ async function motion(
 			{ label, size },
 			{ step: 'motion', failure: 'overflow', recordId: r.id }
 		);
-	return { keypoints: kps as Keypoint[][], record: r };
+	return { keypoints: kps as Keypoint[][], record: r, ...(motionEcho ? { motionEcho } : {}) };
 }
 
 /** The one placement of managed motion frames (live, cached replay, standing echo, lift and Make room): PixelLab draws them
@@ -971,12 +969,18 @@ async function motion(
  *  moved our art since that registration. Native V3/PixMiniMax moves start from our own art and take no offset. */
 export const artMapping = (rig: Pick<Manifest['rig'], 'artOffset'>, dir: DirectionName) =>
 	rig.artOffset?.[dir] ?? 0;
-/** Earlier standing views managed motion may send back first: Fix frames changes only our Standing, while PixelLab keeps
- *  echoing the one it registered, so every standing the body's edit history recorded for `dir` also counts as the echo. */
-function heldStandings(m: Manifest, dir: DirectionName): ReadonlySet<Sha256> {
-	const base = m.items.find((item) => item.id === m.rig.baseItem);
-	return new Set([...(base ? standingHistory(base, dir) : [])].filter((hash) => hash !== null));
-}
+/** Whether a returned frame 0 may be PixelLab's start frame sent back. `required-leading`: raw pixminimax documents
+ *  frame_count + 1 frames with the input first. `optional-leading`: one extra frame is dropped by position, as managed
+ *  pixminimax sends the standing it registered first despite `keep_first_frame: false` (known issues) and that view need
+ *  not match ours (Fix frames, Adjust frame, an outfit drawn at creation). `optional-exact`: the managed skeleton-v3 walk
+ *  template sends no such flag, so an extra frame counts only when it is exactly our standing view. */
+type MotionEchoRule = 'optional-exact' | 'required-leading' | 'optional-leading';
+const motionEchoRule = (spec: Pick<MoveSpec, 'motionSource'>, request: Req): MotionEchoRule =>
+	spec.motionSource === 'standalone'
+		? 'required-leading'
+		: (request.body as { keep_first_frame?: boolean } | undefined)?.keep_first_frame === false
+			? 'optional-leading'
+			: 'optional-exact';
 async function normalizeMotionFrames(
 	r: JobRec,
 	images: Img[],
@@ -985,14 +989,12 @@ async function normalizeMotionFrames(
 	expected: number,
 	size: number,
 	standing?: Img,
-	echo: 'optional-exact' | 'required-leading' | 'optional-leading' = 'optional-exact',
+	echo: MotionEchoRule = 'optional-exact',
 	lifts?: readonly number[],
 	step = 'motion',
 	/** Rows our standing art sits below the registered view (artMapping): managed motion only, never native moves. */
-	below = 0,
-	/** Earlier standing views an `optional-exact` echo may also match (heldStandings). */
-	echoes?: ReadonlySet<Sha256>
-): Promise<Img[]> {
+	below = 0
+): Promise<{ frames: Img[]; motionEcho?: ClipSource['motionEcho'] }> {
 	const rejected = (failure: PaidFailure) => ({ step, failure, recordId: r.id });
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
@@ -1028,7 +1030,7 @@ async function normalizeMotionFrames(
 		if (
 			first.w !== standing!.w ||
 			first.h !== standing!.h ||
-			(first.data.some((v, i) => v !== standing!.data[i]) && !echoes?.has(await cellHash(first)))
+			first.data.some((v, i) => v !== standing!.data[i])
 		)
 			throw mismatch;
 	}
@@ -1042,7 +1044,10 @@ async function normalizeMotionFrames(
 			{ label },
 			rejected('empty')
 		);
-	return frames;
+	// Evidence of what a motion source's dropped frame was, recorded with the clip; it never decides anything.
+	if (!startKept || step !== 'motion') return { frames };
+	const echoed = normalize(images[0], size, size, 128, size, -below).img;
+	return { frames, motionEcho: { maskIoU: maskIoU(echoed, standing!) } };
 }
 
 async function normalizeNativeMoveFrames(
@@ -1054,7 +1059,7 @@ async function normalizeNativeMoveFrames(
 	rest: Img,
 	model: 'v3' | 'pixminimax'
 ): Promise<Img[]> {
-	return normalizeMotionFrames(
+	const { frames } = await normalizeMotionFrames(
 		record,
 		outputs.map((out) => out.img),
 		dir,
@@ -1066,6 +1071,7 @@ async function normalizeNativeMoveFrames(
 		undefined,
 		'render'
 	);
+	return frames;
 }
 
 export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
@@ -2097,7 +2103,7 @@ async function inspectMeasurementRecovery(
 					'create.errors.originalCompletedMotionUnavailable',
 					{ direction: d }
 				);
-			const frames = await normalizeMotionFrames(
+			const { frames } = await normalizeMotionFrames(
 				record,
 				(await imagesOf(record, context.read)).map((out) => out.img),
 				d as Direction,
@@ -2105,11 +2111,10 @@ async function inspectMeasurementRecovery(
 				moveMotionFrames(rec.manifest, spec),
 				rig.cell.w,
 				motionStart,
-				spec.motionSource === 'standalone' ? 'required-leading' : 'optional-exact',
+				motionEchoRule(spec, request),
 				spec.motionLift?.[d],
 				'motion',
-				spec.motionSource === 'standalone' ? 0 : artMapping(rig, d),
-				heldStandings(rec.manifest, d)
+				spec.motionSource === 'standalone' ? 0 : artMapping(rig, d)
 			);
 			const measured = await Promise.all(
 				frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
@@ -3317,7 +3322,13 @@ async function bodyClip(
 	tick: () => void,
 	startImage?: Img,
 	start?: ClipJob['start']
-): Promise<{ d: Direction; keypoints: Keypoint[][]; out: ClipOut; motion?: JobRec }> {
+): Promise<{
+	d: Direction;
+	keypoints: Keypoint[][];
+	out: ClipOut;
+	motion?: JobRec;
+	motionEcho?: ClipSource['motionEcho'];
+}> {
 	const { rec, project, spec, model, authored, n } = plan,
 		m = rec.manifest,
 		rig = m.rig;
@@ -3348,7 +3359,7 @@ async function bodyClip(
 		});
 		return { d, keypoints: out.measured as Keypoint[][], out };
 	}
-	let keypoints: Keypoint[][], source: JobRec | undefined;
+	let keypoints: Keypoint[][], source: JobRec | undefined, motionEcho: ClipSource['motionEcho'];
 	if (authored)
 		keypoints = authoredPoses(
 			authored,
@@ -3359,13 +3370,14 @@ async function bodyClip(
 		).map((p) => armDepth(toApi(p, rig.cell), d));
 	else {
 		const motionStart = startImage ?? restImg;
+		const request = moveMotionRequest(
+			rec,
+			spec,
+			d,
+			spec.motionSource === 'standalone' ? await b64(motionStart) : undefined
+		);
 		const result = await motion(
-			moveMotionRequest(
-				rec,
-				spec,
-				d,
-				spec.motionSource === 'standalone' ? await b64(motionStart) : undefined
-			),
+			request,
 			d,
 			`${m.name} · ${spec.id} ${d} (motion)`,
 			tick,
@@ -3376,11 +3388,11 @@ async function bodyClip(
 			motionStart,
 			spec.motionLift?.[d],
 			spec.motionSource === 'standalone' ? 0 : artMapping(rig, d),
-			spec.motionSource === 'standalone' ? 'required-leading' : 'optional-exact',
-			heldStandings(m, d)
+			motionEchoRule(spec, request)
 		);
 		keypoints = result.keypoints;
 		source = result.record;
+		motionEcho = result.motionEcho;
 	}
 	keypoints = movePoseEndpoints(
 		sampleMovePoses(keypoints, n, spec.action, spec.animation?.loop),
@@ -3390,6 +3402,7 @@ async function bodyClip(
 		d,
 		keypoints,
 		...(source ? { motion: source } : {}),
+		...(motionEcho ? { motionEcho } : {}),
 		out: await renderClip({
 			anim: spec.id,
 			dir: d,
@@ -4056,6 +4069,7 @@ async function addBodyClip(
 							: `pixminimax:${spec.text?.trim() || spec.action || spec.id}`,
 			measured: c.out.measured.map((x) => x ?? []),
 			...(c.out.processing ? { processing: c.out.processing } : {}),
+			...(c.motionEcho ? { motionEcho: c.motionEcho } : {}),
 			provenance: idx
 		};
 		anim.sources![c.d] = src;

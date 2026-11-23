@@ -5,6 +5,7 @@ import {
 	b64,
 	bodyPaletteRepairPlan,
 	measurementRecoveryPlan,
+	moveMotionRequest,
 	parallelGeneration,
 	reviewMoveRecovery,
 	reviewMoveResults,
@@ -36,12 +37,14 @@ import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
 async function fixture(
 	palette: boolean | 'partial' | 'broad' | 'feet' = false,
-	motionRoute?: 'text' | 'walk'
+	/** `managed-walk`: a described walk on the managed character whose motion sent back a standing view first that is not ours
+	 *  (an outfit the registered view had), the shape of the 2026-11-23 report. */
+	motionRoute?: 'text' | 'walk' | 'managed-walk'
 ) {
 	// 'feet' raises every generated silhouette 2 px: a warning-only body, like a seated pose, with no color drift.
 	const feet = palette === 'feet';
 	if (feet) palette = false;
-	const count = motionRoute === 'walk' ? 8 : 4;
+	const count = motionRoute === 'walk' || motionRoute === 'managed-walk' ? 8 : 4;
 	const im = makeImg(64, 64);
 	for (let y = 10; y < 60; y++)
 		for (let x = 25; x < 39; x++) im.data.set([180, 140, 120, 255], (y * 64 + x) * 4);
@@ -141,8 +144,14 @@ async function fixture(
 	);
 	const spec: MoveSpec = {
 		id: 'idle',
-		action: motionRoute === 'text' ? undefined : (motionRoute ?? 'idle'),
+		action:
+			motionRoute === 'text'
+				? undefined
+				: motionRoute === 'managed-walk'
+					? 'walk'
+					: (motionRoute ?? 'idle'),
 		...(motionRoute === 'text' ? { text: 'wave slowly' } : {}),
+		...(motionRoute === 'managed-walk' ? { motionSource: 'managed' as const } : {}),
 		frames: count,
 		items: [],
 		seed: 23,
@@ -210,6 +219,15 @@ async function fixture(
 		if (motionRoute) {
 			const motionResults = [];
 			if (motionRoute === 'text') motionResults.push({ label: '0', sha: hash.slice(7) });
+			if (motionRoute === 'managed-walk') {
+				const outfit = structuredClone(im);
+				for (let y = 20; y < 30; y++)
+					for (let x = 22; x < 42; x++) outfit.data.set([40, 90, 160, 255], (y * 64 + x) * 4);
+				const bytes = await encodePngBytes(outfit),
+					sha = await sha256(bytes);
+				blobs.set(sha, new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+				motionResults.push({ label: '0', sha });
+			}
 			for (let index = 0; index < count; index++) {
 				const frame = structuredClone(im);
 				frame.data[(10 * 64 + 26) * 4] = 200 + di * 8 + index;
@@ -235,20 +253,23 @@ async function fixture(
 					usd: 0
 				});
 			}
-			const request = routes.animateCharacter(
-				motionRoute === 'walk'
-					? baseAnimation('skeleton-v3', 'managed', BASE_ANIMS[1], [d], spec.seed)
-					: {
-							character_id: 'managed',
-							mode: 'pixminimax',
-							action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`,
-							frame_count: count,
-							keep_first_frame: false,
-							animation_name: spec.id,
-							directions: [d],
-							seed: spec.seed
-						}
-			);
+			const request =
+				motionRoute === 'managed-walk'
+					? moveMotionRequest(saved, spec, d)
+					: routes.animateCharacter(
+							motionRoute === 'walk'
+								? baseAnimation('skeleton-v3', 'managed', BASE_ANIMS[1], [d], spec.seed)
+								: {
+										character_id: 'managed',
+										mode: 'pixminimax',
+										action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`,
+										frame_count: count,
+										keep_first_frame: false,
+										animation_name: spec.id,
+										directions: [d],
+										seed: spec.seed
+									}
+						);
 			records.set('motion-' + d, {
 				id: 'motion-' + d,
 				label: 'motion ' + d,
@@ -1868,4 +1889,26 @@ test('a body move stopped after every view was bought resumes free with the same
 	expect(review.views.map((view) => view.state)).toEqual(['ready', 'ready']);
 	expect(review.options).toMatchObject([{ id: 'resume', gens: 0, paid: false }]);
 	expect(review.options[0].spec.seed).toBe(f.spec.seed);
+});
+
+test('a managed walk whose paid motion sent back a standing that is not ours resumes free from the cache', async () => {
+	// 9 frames for 8 with frame 0 PixelLab's registered standing in an outfit ours lacks, and no Fix frames history: before
+	// the echo was dropped by position, every view failed on the frame count and the review offered a paid re-roll that had
+	// to fail the same way.
+	const f = await fixture(false, 'managed-walk');
+	await f.finishOriginalChecks();
+	const posts = f.posts();
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(review.views.map((view) => view.state)).toEqual(['ready', 'ready']);
+	expect(review.options).toMatchObject([{ id: 'resume', gens: 0, paid: false }]);
+	expect(f.enqueue).not.toHaveBeenCalled();
+	expect(f.posts()).toBe(posts);
+	// The cached-recovery inspection reads the same paid motion records and accepts them the same way: a warning-only body
+	// of that shape is offered as a free Keep instead of failing on the frame count.
+	const warned = await fixture('feet', 'managed-walk');
+	await warned.finishOriginalChecks();
+	const recovery = await reviewMoveRecovery('rig-recover', warned.spec);
+	expect(recovery.unavailable).toBeUndefined();
+	expect(recovery.keep?.directions.map((view) => view.dir)).toEqual(['east', 'west']);
+	expect(warned.enqueue).not.toHaveBeenCalled();
 });
