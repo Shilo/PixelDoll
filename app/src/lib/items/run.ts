@@ -1040,10 +1040,13 @@ export async function runItem(
 							: []
 					)
 			);
+			// Re-rolling a malformed design call drops every later call (rerollCall), so buy none of them yet.
+			const designReady = !structuralReason(design.g1.get(0) ?? '');
 			status(`calls ${nd + 1}–${d.calls.length}`);
 			const stopped = await Promise.all(
 				d.calls.slice(nd).map(async (c, i) => {
 					const k = i + nd;
+					if (!c.recId && !designReady) return true;
 					if (!anchoredCallReady(c, k)) return true;
 					if (c.kind === 'pose' || c.kind === 'grid') {
 						const dir = c.cells[0].split('/')[1] as DirectionName;

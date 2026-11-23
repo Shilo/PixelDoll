@@ -103,12 +103,11 @@ const call = (path: string, dir?: string) =>
 	q.order.find((o) => o.path === path && (!dir || o.label.includes(`/${dir}`)));
 
 // 16 px body in two drawn views; a 4-frame walk with stored keypoints; the item is a gray band across the chest.
-async function fixture() {
+async function fixture(dirs: DirectionName[] = ['south', 'east']) {
 	const body = makeImg(16, 16);
 	for (let y = 3; y < 16; y++)
 		for (let x = 5; x < 11; x++) body.data.set([200, 150, 120, 255], (y * 16 + x) * 4);
 	const h = await cellHash(body),
-		dirs: DirectionName[] = ['south', 'east'],
 		points = LABELS.map((label) => ({ label, x: 0.5, y: label === 'NECK' ? 0.3 : 0.6 }));
 	const manifest: Manifest = {
 		format: CURRENT_FORMAT,
@@ -437,6 +436,19 @@ test('only the calls that need a malformed standing design are skipped', async (
 	expect(result?.g1.get(1)).toContain('G1');
 	expect(result?.cells.map((c) => c.key)).toEqual([0, 1, 2, 3].map((i) => `walk/south/${i}`));
 	expect(q.order).toHaveLength(3);
+});
+
+test('a malformed design call buys no later call even when its anchor cell is intact', async () => {
+	const { ctx, d, dressed } = await fixture(['south', 'east', 'north']);
+	d.calls[0].cells = ['rest/south/0', 'rest/north/0'];
+	const run = runItem(d, ctx);
+	await vi.waitFor(() => expect(q.order).toHaveLength(1));
+	await land(q.order[0].id, [dressed, makeImg(8, 8)]); // The north standing frame is malformed.
+	await vi.waitFor(() => expect(q.order).toHaveLength(2));
+	await land(q.order[1].id, [dressed, dressed]);
+	const result = await run;
+	expect(result?.g1.get(0)).toContain('G1');
+	expect(q.order.map((o) => o.path)).toEqual(['/edit-animation-v2', '/edit-animation-v2']);
 });
 
 test.each([null, 'Needs PixelLab Tier 2 or higher. No request sent.'])(
