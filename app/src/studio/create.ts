@@ -84,13 +84,14 @@ import {
 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { LABELS, armDepth, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
-import { rigReady, setupRedoMoves } from '../lib/rig/setup.ts';
+import { redoAfterSave, rigReady, setupRedoMoves, unposedView } from '../lib/rig/setup.ts';
 import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import {
 	RIG_GATES,
 	actionOf,
 	bodyComponents,
 	clipQa,
+	MISSING_JOINTS,
 	poseCallGens,
 	rawClip,
 	type ClipQa
@@ -327,7 +328,12 @@ interface DryRun {
 	running: boolean;
 	/** A request the stopped flow canceled before sending was never bought; a continuation on a new attempt sends it. */
 	reopensCanceled?: boolean;
+	/** Stopped records the replay met: a lost one may have charged without reporting it. */
+	stopped?: JobRec[];
 }
+/** Whether any of these records may have charged more than it reported (the paid review's spentUnknown). */
+const costUnknown = (records: readonly JobRec[]) =>
+	records.some((r) => !!r.costUnknown || r.state === 'lost');
 const dryRuns = new WeakMap<AbortSignal, DryRun>();
 /** The finished record a resume-safe run of `req` would return (done, or stopped and replayed), never one still running. */
 export async function latestOutcome(req: Req): Promise<JobRec | undefined> {
@@ -355,7 +361,8 @@ async function dryRecord(req: Req, label: string, dry: DryRun): Promise<JobRec> 
 		? matches.find((r) => !reopenableCancellation(r)) // the real run's rule, without its attempt number
 		: matches[0];
 	// A resume-safe request replays its stopped record instead of sending again, so only a new seed can buy another.
-	if (stopped)
+	if (stopped) {
+		(dry.stopped ??= []).push(stopped);
 		throw new PaidStepError(
 			`${label}: ${stopped.state}. Generation stopped without resending.`,
 			'create.errors.requestStoppedResume',
@@ -365,6 +372,7 @@ async function dryRecord(req: Req, label: string, dry: DryRun): Promise<JobRec> 
 			},
 			{ step: req.path, failure: 'stopped', recordId: stopped.id }
 		);
+	}
 	throw new Unpaid(req.path);
 }
 export async function parallelGeneration<T>(
@@ -512,38 +520,39 @@ export function checkedKeypoints(raw: unknown): Keypoint[] | undefined {
 		return kp4(label, p.x, p.y);
 	});
 }
-/** Check all present managed references before any missing-reference estimates or paid animations begin. */
+/** Managed standing joints for the drawn views. A view whose reference is absent, incomplete or invalid is listed in
+ *  `unusable` and takes the same bounded estimate as an absent one: the paid draw is never lost to a malformed reference,
+ *  and nothing is clamped or invented from it. */
 export function managedRestKeypoints(
 	refs: unknown,
 	directions: readonly DirectionName[]
-): Partial<Record<DirectionName, Keypoint[]>> {
-	const out: Partial<Record<DirectionName, Keypoint[]>> = {};
-	if (refs == null) return out; // optional/untyped containers can be unavailable, not malformed coordinates
+): { poses: Partial<Record<DirectionName, Keypoint[]>>; unusable: DirectionName[] } {
+	const poses: Partial<Record<DirectionName, Keypoint[]>> = {},
+		unusable: DirectionName[] = [];
+	if (refs == null) return { poses, unusable }; // optional/untyped containers can be unavailable, not malformed coordinates
+	const record = (value: unknown): value is Record<string, unknown> =>
+		!!value && typeof value === 'object' && !Array.isArray(value);
 	for (const d of directions) {
-		const invalid = () =>
-			new LocalizedError(
-				`${d}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.`,
-				'create.errors.pixellabReturnedIncompleteInvalid',
-				{ direction: viewName(d) }
-			);
-		if (!refs || typeof refs !== 'object' || Array.isArray(refs)) throw invalid();
-		if (!Object.hasOwn(refs, d)) continue; // a wholly absent reference retains the bounded estimate fallback
-		const ref = (refs as Record<string, unknown>)[d];
-		if (ref == null) continue;
-		if (!ref || typeof ref !== 'object' || Array.isArray(ref)) throw invalid();
-		const raw = (ref as { keypoints?: unknown }).keypoints;
+		if (!record(refs)) {
+			unusable.push(d);
+			continue;
+		}
+		const ref = Object.hasOwn(refs, d) ? refs[d] : undefined;
+		if (ref == null) continue; // a wholly absent reference
+		const raw = record(ref) ? ref.keypoints : ref;
 		if (raw == null) continue;
-		if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw invalid();
-		const points = checkedKeypoints(
-			LABELS.map((label) => {
-				const p = (raw as Record<string, { x?: unknown; y?: unknown } | null>)[label];
-				return { label, x: p?.x, y: p?.y };
-			})
-		);
-		if (!points) throw invalid();
-		out[d] = points;
+		const points = record(raw)
+			? checkedKeypoints(
+					LABELS.map((label) => {
+						const p = raw[label] as { x?: unknown; y?: unknown } | null | undefined;
+						return { label, x: p?.x, y: p?.y };
+					})
+				)
+			: undefined;
+		if (points && record(ref)) poses[d] = points;
+		else unusable.push(d);
 	}
-	return out;
+	return { poses, unusable };
 }
 /** One estimate-skeleton check with its record for provenance; keypoints are undefined when the response is invalid. */
 export async function measureJoints(
@@ -647,6 +656,8 @@ interface ClipJob {
 	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number; words: ViewWords };
 	/** Rows each motion frame was lifted by with the user's consent; disclosed with the clip's checks. */
 	lifts?: readonly number[];
+	/** What the clip's frames may not show as asked (an inferred pose, a missing echo); disclosed with its checks. */
+	notes?: FrameNotes;
 	/** keepUnposed: frames without measured joints are kept (and fail their joint checks) instead of stopping the view. */
 	unposed?: boolean; /** The move and view in the user's words, for messages. */
 	words: ViewWords;
@@ -723,7 +734,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 			{ ...j.words, w: j.rest.w },
 			rejected('overflow')
 		);
-	const rawFrames = nativeFrames ?? normalized.map((n) => n.img);
+	const rawFrames = nativeFrames ? nativeFrames.frames : normalized.map((n) => n.img);
 	// Do not spend on joint measurements or another render when the returned artwork is empty.
 	if (rawFrames.some((f) => !opaqueBox(f)))
 		throw new PaidStepError(
@@ -760,7 +771,8 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		j.native ? undefined : j.keypoints,
 		measured,
 		j.authored ? undefined : { dir: j.dir, rest: j.restKps },
-		j.lifts
+		j.lifts,
+		nativeFrames ? { of: nativeFrames.frames.length, short: nativeFrames.short } : j.notes
 	);
 	return {
 		frames,
@@ -779,7 +791,8 @@ const bodyClipQa = (
 	requested: Keypoint[][] | undefined,
 	measured: (Keypoint[] | undefined)[],
 	facing?: { dir: string; rest: Keypoint[] },
-	lifts?: readonly number[]
+	lifts?: readonly number[],
+	notes?: FrameNotes
 ) => {
 	const qa = clipQa({
 		anim,
@@ -794,8 +807,19 @@ const bodyClipQa = (
 	const lifted = lifts?.filter(Boolean) ?? [];
 	if (lifted.length)
 		qa.warnings.push(liftNote(rest.w, Math.max(...lifted), lifted.length, lifts!.length));
+	if (notes?.short) qa.warnings.push(shortNote(notes.of));
+	for (const frame of notes?.bridged ?? []) qa.warnings.push(bridgeNote(frame, notes!.of));
 	return qa;
 };
+/** Disclosures of `of` frames: `bridged` motion frames (0-based) whose joints were inferred from their measured neighbors,
+ *  and `short` when PixelLab sent the frames without the start frame it documents sending first. */
+type FrameNotes = { of: number; bridged?: readonly number[]; short?: true };
+/** The one inferred pose is always disclosed (studioModel.bridgedJoints reads this wording). */
+const bridgeNote = (frame: number, of: number) =>
+	`joints of motion frame ${frame + 1} of ${of} were inferred from its neighbors`;
+/** Exactly N frames for N + 1 cannot say whether the start echo or the last frame was left out (studioModel.shortFrames). */
+const shortNote = (of: number) =>
+	`PixelLab sent ${of} frames instead of ${of + 1}, so the first or last frame may differ`;
 /** The disclosure a body made from a lifted motion keeps with its checks (rigQa), in the words of the consent. */
 const liftNote = (size: number, px: number, frames: number, of: number) =>
 	`motion lifted to fit the ${size} px frame: feet rise up to ${px} px in ${frames} of ${of} frames`;
@@ -943,11 +967,12 @@ async function motion(
 	record: JobRec;
 	motionEcho?: ClipSource['motionEcho'];
 	motionBridged?: number[];
+	short?: true;
 }> {
 	const label = jobLabel.text;
 	const r = await run(req, jobLabel, 'studio-rig', false, true, signal, activityScope);
 	tick();
-	const { frames, motionEcho } = await normalizeMotionFrames(
+	const { frames, motionEcho, short } = await normalizeMotionFrames(
 		r,
 		(await imagesOf(r)).map((out) => out.img),
 		dir,
@@ -963,7 +988,8 @@ async function motion(
 	);
 	const kps = await Promise.all(
 		frames.map(async (f) => {
-			const k = await joints(f, true, signal, activityScope);
+			// An empty frame has no joints to measure; it is bridged from its neighbors or the view stops below.
+			const k = opaqueBox(f) ? await joints(f, true, signal, activityScope) : undefined;
 			tick();
 			return k;
 		})
@@ -995,7 +1021,8 @@ async function motion(
 		keypoints: filled,
 		record: r,
 		...(motionEcho ? { motionEcho } : {}),
-		...(motionBridged.length ? { motionBridged } : {})
+		...(motionBridged.length ? { motionBridged } : {}),
+		...(short ? { short } : {})
 	};
 }
 /** Measured motion joints, with at most one interior frame that has none filled halfway between its measured neighbors.
@@ -1051,7 +1078,7 @@ async function normalizeMotionFrames(
 	step = 'motion',
 	/** Rows our standing art sits below the registered view (artMapping): managed motion only, never native moves. */
 	below = 0
-): Promise<{ frames: Img[]; motionEcho?: ClipSource['motionEcho'] }> {
+): Promise<{ frames: Img[]; motionEcho?: ClipSource['motionEcho']; short?: true }> {
 	const rejected = (failure: PaidFailure) => ({ step, failure, recordId: r.id });
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
@@ -1069,8 +1096,10 @@ async function normalizeMotionFrames(
 			rejected('frame-count')
 		);
 	const startKept = returned === expected + 1 && !!standing;
-	if ((returned !== expected && !startKept) || (echo === 'required-leading' && !startKept))
-		throw mismatch;
+	if (returned !== expected && !startKept) throw mismatch;
+	// Exactly N for a documented N + 1 is ambiguous (echo or last frame left out), never a reason to lose a paid result: the
+	// frames are used in returned order and the ambiguity is disclosed. Any other count still stops; nothing is truncated.
+	const short = echo === 'required-leading' && !startKept ? (true as const) : undefined;
 	const normalizeFrame = (image: Img, lift = 0) => {
 		const normalized = normalize(image, size, size, 128, size, lift - below);
 		if (normalized.cutPx)
@@ -1085,7 +1114,13 @@ async function normalizeMotionFrames(
 	const frames = (startKept ? images.slice(1) : images).map((image, i) =>
 		normalizeFrame(image, lifts?.[i])
 	);
-	if (frames.some((f) => !opaqueBox(f)))
+	// One empty interior motion frame is bridged like a joint gap (motionJoints): motion frames only shape the requested
+	// poses and are never published. An empty end frame, more than one, or any empty body frame stops the view.
+	const empty = frames.flatMap((f, i) => (opaqueBox(f) ? [] : [i]));
+	if (
+		empty.length &&
+		(step !== 'motion' || empty.length > 1 || empty[0] === 0 || empty[0] === frames.length - 1)
+	)
 		throw new PaidStepError(
 			`${label}: PixelLab returned an empty motion frame`,
 			'create.errors.pixellabReturnedEmptyMotion',
@@ -1093,7 +1128,7 @@ async function normalizeMotionFrames(
 			rejected('empty')
 		);
 	// Evidence of what a motion source's dropped frame was, recorded with the clip; it never decides anything.
-	if (!startKept || step !== 'motion') return { frames };
+	if (!startKept || step !== 'motion') return { frames, ...(short ? { short } : {}) };
 	const echoed = normalize(images[0], size, size, 128, size, -below).img;
 	return { frames, motionEcho: { maskIoU: maskIoU(echoed, standing!) } };
 }
@@ -1107,8 +1142,8 @@ async function normalizeNativeMoveFrames(
 	count: number,
 	rest: Img,
 	model: 'v3' | 'pixminimax'
-): Promise<Img[]> {
-	const { frames } = await normalizeMotionFrames(
+): Promise<{ frames: Img[]; short?: true }> {
+	return normalizeMotionFrames(
 		record,
 		outputs.map((out) => out.img),
 		dir,
@@ -1121,7 +1156,6 @@ async function normalizeNativeMoveFrames(
 		undefined,
 		'render'
 	);
-	return frames;
 }
 
 export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
@@ -1226,7 +1260,13 @@ export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidR
 		});
 	} else if (paid?.step === 'draw' && paid.failure === 'overflow')
 		options.push(...(await placementOptions(spec, drawn, base)));
-	return { views, spent: spentGens(dry.records), recordIds: dry.records.map((r) => r.id), options };
+	return {
+		views,
+		spent: spentGens(dry.records),
+		...(costUnknown([...dry.records, ...(dry.stopped ?? [])]) ? { spentUnknown: true } : {}),
+		recordIds: dry.records.map((r) => r.id),
+		options
+	};
 }
 /** A creation replayed from the request cache only: the records it reused, and why it stopped (undefined: it completed). */
 async function replayCreate(spec: CreateSpec): Promise<{ dry: DryRun; outcome: unknown }> {
@@ -1531,8 +1571,12 @@ export async function createCharacter(
 	)?.skeletons?.['2d_references'];
 	const restKps = {} as Record<DirectionName, Keypoint[]>,
 		managed = managedRestKeypoints(refs, DIRS);
+	for (const d of managed.unusable)
+		restWarnings.push(
+			`${d}: PixelLab returned incomplete or invalid standing joints; they were estimated from the drawn view`
+		);
 	for (const d of DIRS) {
-		const kps = managed[d] ?? (await joints(rest[d], true, signal, spec.activityScope)); // only absent references use the existing bounded estimate fallback
+		const kps = managed.poses[d] ?? (await joints(rest[d], true, signal, spec.activityScope)); // absent or unusable references take the bounded estimate fallback
 		if (signal && dryRuns.get(signal)?.unmeasured) continue;
 		if (!hasAll(kps))
 			throw new PaidStepError(
@@ -1674,10 +1718,13 @@ export interface MoveSpec {
 	seed: number;
 	/** Per-view seed salts chosen in a paid-result review: only that view's failed step is bought again. */
 	reroll?: Partial<Record<DirectionName, { motion?: number; render?: number }>>;
-	/** Consent from a paid-result review to save a new move whose body frames came back without measured joints on some
-	 *  frames: body only, with no poses (no sources, skeletons or anchors) and listed in rigQa.redo, to make again before
-	 *  items can be fitted to it. Joints are never invented. */
+	/** Consent from a paid-result review to save the cached body frames of views that came back without measured joints on
+	 *  some frames: body only, and those views without poses (no sources, skeletons or anchors) and listed in rigQa.redo, to
+	 *  make again before items can be fitted there. Views with measured joints keep their poses. Joints are never invented. */
 	keepUnposed?: true;
+	/** Consent from a paid-result review to save a new move with only its finished views (`dirs`): the other views stopped,
+	 *  are listed in the review, and can be made later as a partial replacement at the same frame count. */
+	finishedViews?: true;
 	/** The attempt a reviewed continuation runs as (default: the seed). A new one reopens requests the stopped attempt
 	 *  canceled before sending (queue autoCanceledAttempts), so they are sent instead of replayed as stopped. */
 	attempt?: number;
@@ -1858,6 +1905,7 @@ interface CachedBodyClip {
 	frames: Img[];
 	facing?: { dir: string; rest: Keypoint[] };
 	lifts?: readonly number[];
+	notes?: FrameNotes;
 }
 /** An expected eligibility limit, distinct from a failed storage read or malformed PNG. */
 class RecoveryUnavailable extends LocalizedError {}
@@ -2055,7 +2103,7 @@ async function inspectKeptBody(
 				);
 			return {
 				...c,
-				qa: bodyClipQa(spec.id, c.rest, c.frames, c.keypoints, measured, c.facing, c.lifts)
+				qa: bodyClipQa(spec.id, c.rest, c.frames, c.keypoints, measured, c.facing, c.lifts, c.notes)
 			};
 		})
 	);
@@ -2204,7 +2252,7 @@ async function inspectMeasurementRecovery(
 				'Cached body reuse requires completed joint checks.',
 				'create.errors.cachedBodyReuseRequires'
 			);
-		let keypoints: Keypoint[][] | undefined;
+		let keypoints: Keypoint[][] | undefined, notes: FrameNotes | undefined;
 		const authored = isAuthoredAction(spec.action);
 		if (model === 'skeleton-v3' && authored)
 			keypoints = authoredPoses(
@@ -2225,7 +2273,7 @@ async function inspectMeasurementRecovery(
 					'create.errors.originalCompletedMotionUnavailable',
 					{ direction: viewName(d) }
 				);
-			const { frames } = await normalizeMotionFrames(
+			const { frames, short } = await normalizeMotionFrames(
 				record,
 				(await imagesOf(record, context.read)).map((out) => out.img),
 				d as Direction,
@@ -2239,11 +2287,27 @@ async function inspectMeasurementRecovery(
 				'motion',
 				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d)
 			);
-			const measured = motionJoints(
-				await Promise.all(
-					frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
-				)
+			// Only a check that completed with invalid joints may be bridged; a lost, stopped or unsent one is unknown.
+			const checks = await Promise.all(
+				frames.map(async (frame) => {
+					if (!opaqueBox(frame)) return { done: true, points: undefined }; // never measured: nothing to wait for
+					const measurement = await context.measurement(frame);
+					return {
+						done: jobs.some((r) => r.requestHash === measurement.hash && r.state === 'done'),
+						points: cachedJoints(jobs, measurement, frame)
+					};
+				})
 			);
+			const measured = checks.every((check) => check.done)
+				? motionJoints(checks.map((check) => check.points))
+				: undefined;
+			const gaps = checks.flatMap((check, i) => (hasAll(check.points) ? [] : [i]));
+			if (gaps.length || short)
+				notes = {
+					of: frames.length,
+					...(gaps.length ? { bridged: gaps } : {}),
+					...(short ? { short } : {})
+				};
 			if (!measured)
 				throw new RecoveryUnavailable(
 					`${d}: the original motion has no valid completed joint checks for every frame. No request was made.`,
@@ -2318,7 +2382,8 @@ async function inspectMeasurementRecovery(
 					'create.errors.cachedBodyFramesDo',
 					{ direction: viewName(d) }
 				);
-			const frames = nativeFrames || normalized.map((n) => n.img);
+			const frames = nativeFrames ? nativeFrames.frames : normalized.map((n) => n.img);
+			if (nativeFrames && nativeFrames.short) notes = { of: frames.length, short: true };
 			// Only the first render is ever published; a later seed is a legacy attempt, never a keep candidate.
 			if (!attempt && !spec.bodyPaletteRepair)
 				candidates?.push({
@@ -2328,6 +2393,7 @@ async function inspectMeasurementRecovery(
 					keypoints,
 					frames,
 					...(spec.motionLift?.[d] ? { lifts: spec.motionLift[d] } : {}),
+					...(notes ? { notes } : {}),
 					...(authored && model === 'skeleton-v3'
 						? {}
 						: { facing: { dir: d, rest: rest.keypoints } })
@@ -2504,6 +2570,21 @@ export function bodyMoveIssue(
 				`Describe this move before generating it.${suffix}`,
 				blocked ? 'create.errors.describeMoveBlocked' : 'create.errors.describeMove'
 			);
+}
+/** Equipment cannot be fitted where a move was kept without poses; making the move again there is the way on. */
+function unposedMoveIssue(
+	m: Manifest,
+	move: string,
+	dirs: readonly DirectionName[],
+	redo: readonly string[]
+): LocalizedError | undefined {
+	const anim = m.rig.animations.find((a) => a.id === move);
+	return anim && dirs.some((dir) => unposedView(redo, anim, dir))
+		? new LocalizedError(
+				'This move was kept without poses in a chosen view. Make the move again there before fitting equipment. No generation was requested.',
+				'create.errors.moveKeptUnposed'
+			)
+		: undefined;
 }
 const replacementBodyQa = () =>
 	new LocalizedError(
@@ -2933,9 +3014,12 @@ async function addMoveUnlocked(
 					)
 			)
 		)
-			throw new LocalizedError(
-				'This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.',
-				'create.errors.moveItemMissingStored'
+			throw (
+				unposedMoveIssue(rec.manifest, spec.id, dirs, setupRedoMoves(rec)) ??
+				new LocalizedError(
+					'This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.',
+					'create.errors.moveItemMissingStored'
+				)
 			);
 	} else if (!(spec.itemsOnly ? rigReady(rec) : moveRigReady(rec)))
 		throw new LocalizedError(
@@ -2957,7 +3041,7 @@ async function addMoveUnlocked(
 			'A State cannot be replaced as a Move.',
 			'moveSheet.startFrom.stateTarget'
 		);
-	if (!existing && dirs.length !== genDirs(rec.manifest).length)
+	if (!existing && !spec.finishedViews && dirs.length !== genDirs(rec.manifest).length)
 		throw new LocalizedError(
 			'A new move needs every independently drawn direction.',
 			'create.errors.newMoveNeedsEvery'
@@ -3157,8 +3241,11 @@ async function addMoveUnlocked(
 	const qualityDirs = dirs.filter((dir) => {
 		const clip = `${spec.id}/${dir}`;
 		return (
+			// Frames the user chose to keep despite their numbers are not offered a paid redraw right after Keep.
 			(!published &&
 				(spec.replace || !existing) &&
+				!spec.measurementRecovery?.keep &&
+				!spec.keepUnposed &&
 				clipQa[clip] &&
 				failsBodyGate(clipQa[clip], true)) ||
 			plans.some(
@@ -3489,7 +3576,8 @@ async function bodyClip(
 	let keypoints: Keypoint[][],
 		source: JobRec | undefined,
 		motionEcho: ClipSource['motionEcho'],
-		motionBridged: number[] | undefined;
+		motionBridged: number[] | undefined,
+		notes: FrameNotes | undefined;
 	if (authored)
 		keypoints = authoredPoses(
 			authored,
@@ -3528,6 +3616,12 @@ async function bodyClip(
 		source = result.record;
 		motionEcho = result.motionEcho;
 		motionBridged = result.motionBridged;
+		if (motionBridged || result.short)
+			notes = {
+				of: moveMotionFrames(m, spec),
+				...(motionBridged ? { bridged: motionBridged } : {}),
+				...(result.short ? { short: result.short } : {})
+			};
 	}
 	keypoints = movePoseEndpoints(
 		sampleMovePoses(keypoints, n, spec.action, spec.animation?.loop),
@@ -3557,6 +3651,7 @@ async function bodyClip(
 			action: bodyAction(spec),
 			paletteRepair: !!spec.bodyPaletteRepair,
 			lifts: spec.motionLift?.[d],
+			...(notes ? { notes } : {}),
 			unposed: !!spec.keepUnposed,
 			words: viewWords(m, spec.id, d)
 		})
@@ -3574,16 +3669,27 @@ function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 		!!value && typeof value === 'object' && !Array.isArray(value)
 			? Object.entries(value as Record<string, unknown>)
 			: undefined;
-	// Kept without poses only as a new, body-only move: never over existing directions or with equipment.
+	// Kept without poses only as body frames: never with equipment, and over an existing move only as its replacement.
 	if (
 		spec.keepUnposed !== undefined &&
 		(spec.keepUnposed !== true ||
-			spec.replace ||
-			spec.dirs?.length ||
 			spec.items.length ||
 			spec.itemsOnly ||
 			spec.itemMethod ||
 			spec.reviewBeforePublish ||
+			(!spec.replace && m.rig.animations.some((a) => a.id === spec.id)))
+	)
+		throw invalid();
+	// Finished views only of a new, body-only move: some drawn views, never an existing move or equipment.
+	if (
+		spec.finishedViews !== undefined &&
+		(spec.finishedViews !== true ||
+			spec.replace ||
+			!spec.dirs?.length ||
+			spec.dirs.some((dir) => !views.includes(dir)) ||
+			spec.items.length ||
+			spec.itemsOnly ||
+			spec.itemMethod ||
 			m.rig.animations.some((a) => a.id === spec.id))
 	)
 		throw invalid();
@@ -3631,19 +3737,21 @@ interface ReplayedView {
 	state: 'ready' | 'pending' | 'running' | 'failed';
 	gens: number;
 	records: JobRec[];
+	/** Stopped records this view met (DryRun.stopped). */
+	stopped: JobRec[];
 	error?: PaidStepError;
 	clip?: Awaited<ReturnType<typeof bodyClip>>;
 }
-/** A new move whose stopped views only lack measured joints on their body frames can still be kept: body only and without
- *  poses, so items are fitted after it is made again. Decided by the typed failure, never by text. */
-export const keepableUnposed = (
-	spec: Pick<MoveSpec, 'replace' | 'dirs'>,
-	failed: readonly Pick<ReplayedView, 'error'>[]
-) =>
-	!spec.replace &&
-	!spec.dirs?.length &&
-	failed.length > 0 &&
-	failed.every((v) => v.error?.paid.failure === 'joints' && v.error.paid.step === 'render');
+/** A move (new, replaced or some views) whose stopped views only lack measured joints on their body frames can be kept
+ *  free: body only, those views without poses, so items are fitted there after they are made again. Every other view must
+ *  already be finished, so keeping never buys more work. Decided by the typed failure, never by text. */
+export const keepableUnposed = (views: readonly Pick<ReplayedView, 'state' | 'error'>[]) =>
+	views.some((v) => v.state === 'failed') &&
+	views.every(
+		(v) =>
+			v.state === 'ready' ||
+			(v.state === 'failed' && v.error?.paid.failure === 'joints' && v.error.paid.step === 'render')
+	);
 async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedView> {
 	const scope = new AbortController(),
 		dry: DryRun = {
@@ -3665,17 +3773,25 @@ async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedVie
 				? await bodyStartPose(image, d, plan.spec, scope.signal)
 				: undefined;
 		const clip = await bodyClip(plan, d, scope.signal, () => {}, image, start);
-		return { d, state: 'ready', gens: 0, records: dry.records, clip };
+		return { d, state: 'ready', gens: 0, records: dry.records, stopped: dry.stopped ?? [], clip };
 	} catch (error) {
 		if (error instanceof Unpaid)
 			return {
 				d,
 				state: error.running ? 'running' : 'pending',
 				gens: priced(unpaidGens(plan, error)),
-				records: dry.records
+				records: dry.records,
+				stopped: dry.stopped ?? []
 			};
 		if (error instanceof PaidStepError)
-			return { d, state: 'failed', gens: priced(0), records: dry.records, error };
+			return {
+				d,
+				state: 'failed',
+				gens: priced(0),
+				records: dry.records,
+				stopped: dry.stopped ?? [],
+				error
+			};
 		throw error;
 	}
 }
@@ -3894,12 +4010,9 @@ export async function reviewMoveResults(
 	const total = (views: ReplayedView[]) => +views.reduce((sum, v) => sum + v.gens, 0).toFixed(2);
 	const views = await replay(plan.spec);
 	const records = [...new Map(views.flatMap((v) => v.records).map((r) => [r.id, r])).values()];
-	const gated = !!spec.dirs?.length || !!spec.motionLift;
-	const failed = views.filter(
-		(v) =>
-			v.state === 'failed' ||
-			(gated && v.clip && failsBodyGate(v.clip.out.qa, plan.model !== 'skeleton-v3'))
-	);
+	// A view that completed and misses only numerical body checks is not failed: every way on lands in the staged review,
+	// where keeping it is free, so it never prices a re-roll.
+	const failed = views.filter((v) => v.state === 'failed');
 	const options: MovePaidOption[] = [];
 	// Lift every overflowing motion that a vertical lift can fit; anything else that stopped is re-rolled at its own step.
 	const lifts: NonNullable<MoveSpec['motionLift']> = {},
@@ -4005,20 +4118,46 @@ export async function reviewMoveResults(
 			spec: candidate
 		});
 	}
-	if (keepableUnposed(spec, failed)) {
+	if (keepableUnposed(views)) {
 		const candidate = resumeSpec(plan.spec, {
 			keepUnposed: true,
 			reviewBeforePublish: undefined
 		});
-		const gens = total(await replay(candidate));
-		options.push({
-			id: 'keep-unposed',
-			label: message('moveReview.keepUnposed'),
-			detail: message('moveReview.keepUnposedDetail'),
-			gens,
-			paid: gens > 0,
-			spec: candidate
+		// Free by construction: every view is a cached completed render. A replay that would buy anything is no Keep.
+		if (!total(await replay(candidate)))
+			options.push({
+				id: 'keep-unposed',
+				label: message('moveReview.keepUnposed'),
+				detail: message('moveReview.keepUnposedDetail'),
+				gens: 0,
+				paid: false,
+				spec: candidate
+			});
+	}
+	// A new move whose other views stopped can still be saved with the views that finished, for free and in the staged review;
+	// nothing is requested again, and the views left out are named.
+	const finished = views.filter((v) => v.state === 'ready').map((v) => v.d);
+	if (!spec.replace && finished.length && finished.length < views.length) {
+		const candidate = resumeSpec(plan.spec, {
+			finishedViews: true,
+			dirs: finished,
+			approvedDirs: finished
 		});
+		const kept = await Promise.all(
+			finished.map((d) => replayView({ ...plan, spec: candidate }, d))
+		);
+		if (!total(kept))
+			options.push({
+				id: 'keep-finished',
+				label: message('moveReview.saveFinished'),
+				detail: message('moveReview.saveFinishedDetail', {
+					views: names(finished),
+					missing: names(dirs.filter((d) => !finished.includes(d)))
+				}),
+				gens: 0,
+				paid: false,
+				spec: candidate
+			});
 	}
 	// What each view bought: the output a step rejected, as PixelLab returned it.
 	const shown = await Promise.all(
@@ -4047,6 +4186,9 @@ export async function reviewMoveResults(
 			]
 		})),
 		spent: spentGens(records),
+		...(costUnknown([...records, ...views.flatMap((v) => v.stopped)])
+			? { spentUnknown: true }
+			: {}),
 		recordIds: records.map((r) => r.id),
 		options
 	};
@@ -4198,6 +4340,15 @@ async function addBodyClip(
 	};
 	for (const d of affected) delete anim.sources![d];
 	const keep = spec.measurementRecovery?.keep;
+	let staged = !!spec.reviewBeforePublish;
+	// Kept without poses: only the views whose frames lack measured joints; no frame's joints are invented, so those views
+	// wait to be made again before items fit them, and every other view keeps its poses.
+	const unposedDirs = spec.keepUnposed
+		? clips.filter((c) => c.out.measured.some((k) => !hasAll(k))).map((c) => c.d)
+		: [];
+	const structural = clips.some((c) =>
+		c.out.qa.fails.some((f) => !(unposedDirs.includes(c.d) && f === MISSING_JOINTS))
+	);
 	if (keep) {
 		// Consent covers only the reviewed frames and checks, recomputed here from the cached render that was replayed.
 		const kept = clips.map((c) => ({
@@ -4211,21 +4362,26 @@ async function addBodyClip(
 				'These body frames or their quality checks changed since review. Nothing was saved and no request was made. Review them again.',
 				'create.errors.bodyFramesTheirQuality'
 			);
+	} else if (spec.keepUnposed) {
+		// The user kept these reviewed frames as they are; only their missing joints are accepted.
+		if (structural) throw old ? replacementBodyQa() : newMoveBodyQa();
 	} else if (
 		!spec.reviewBeforePublish &&
 		spec.dirs &&
 		clips.some(({ out: { qa } }) => failsBodyGate(qa, model !== 'skeleton-v3'))
-	)
-		throw old ? replacementBodyQa() : newMoveBodyQa();
-	// Saved without poses: no frame's joints are invented, so the whole move waits to be made again before items fit it.
-	const unposed = !!spec.keepUnposed && clips.some((c) => c.out.measured.some((k) => !hasAll(k)));
+	) {
+		// A structural failure (missing joints, a broken frame) cannot be kept; a view that misses only the numerical body
+		// checks was paid for, so it goes to the staged review where Save or Discard is the user's free choice.
+		if (structural) throw old ? replacementBodyQa() : newMoveBodyQa();
+		staged = true;
+	}
 	const layer = baseIt.layers[0],
 		cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = {
 			...baseIt.layers[0].cells?.[spec.id]
 		};
 	const skeletons = (fresh.skeletons ??= {}),
 		warnings: string[] = [];
-	const reviewBlobs = spec.reviewBeforePublish ? new Map<string, Blob>() : null;
+	const reviewBlobs = staged ? new Map<string, Blob>() : null;
 	const writeCell = async (hash: Sha256, image: Img) => {
 		if (reviewBlobs) reviewBlobs.set(hash.slice(7), await cellBlob(image));
 		else await putCell(hash, image);
@@ -4257,7 +4413,8 @@ async function addBodyClip(
 			...(c.motionBridged ? { motionBridged: c.motionBridged } : {}),
 			provenance: idx
 		};
-		anim.sources![c.d] = src;
+		const unposed = unposedDirs.includes(c.d);
+		if (!unposed) anim.sources![c.d] = src;
 		cellMap[c.d] = await Promise.all(
 			c.out.frames.map(async (f, i) => {
 				const h = await cellHash(f);
@@ -4283,9 +4440,10 @@ async function addBodyClip(
 			})
 		);
 	}
-	if (unposed) delete anim.sources;
-	// anchors for the new clip straight from the measured keypoints (no patch tracking: the clip is posed, not redrawn)
-	for (const id of unposed ? [] : ANCHORS) {
+	if (!Object.keys(anim.sources!).length) delete anim.sources;
+	// anchors for the new clip straight from the measured keypoints (no patch tracking: the clip is posed, not redrawn); an
+	// unposed view (and its mirror) has no skeletons, so it gets no anchors
+	for (const id of ANCHORS) {
 		const pts = (d: DirectionName) =>
 			Array.from({ length: n }, (_, i) => {
 				const s = skeletons[cellKey(spec.id, d, i)];
@@ -4327,7 +4485,16 @@ async function addBodyClip(
 	const checks = Object.fromEntries(clips.map((clip) => [`${spec.id}/${clip.d}`, clip.out.qa]));
 	if (reviewBlobs) {
 		const candidate: MoveCandidate = {
-			spec,
+			// A staged numbers-only result is body only, like every review: equipment is a separate priced choice after Save.
+			spec: spec.reviewBeforePublish
+				? spec
+				: {
+						...spec,
+						items: [],
+						itemReview: undefined,
+						reviewedMoveItems: undefined,
+						reviewBeforePublish: true
+					},
 			input: moveCandidateInput(rec, spec.id),
 			dirs,
 			animation: anim,
@@ -4371,7 +4538,9 @@ async function addBodyClip(
 			...warnings
 		],
 		clips: { ...qa.clips, ...checks },
-		...(unposed ? { redo: [...new Set([...setupRedoMoves(fresh), spec.id])] } : {})
+		...(setupRedoMoves(fresh).length || unposedDirs.length
+			? { redo: redoAfterSave(setupRedoMoves(fresh), spec.id, dirs, unposedDirs) }
+			: {})
 	};
 	// R6 P1-5: `fresh` was read before ~30 cell writes; graft only what this clip changed onto the CURRENT record in one
 	// transaction, so an item accepted or an outfit autosaved meanwhile survives.
@@ -4565,7 +4734,10 @@ export async function resolveMoveCandidate(
 					),
 					...candidate.warnings
 				],
-				clips: { ...qa.clips, ...candidate.checks }
+				clips: { ...qa.clips, ...candidate.checks },
+				...(setupRedoMoves(current).length
+					? { redo: redoAfterSave(setupRedoMoves(current), id, candidate.dirs) }
+					: {})
 			};
 			delete current.moveReviews![id];
 			current.savedAt = new Date().toISOString();

@@ -38,7 +38,10 @@ test.each([null, '0.5', NaN, Infinity, -Infinity, -0.00004, 1.00004, 32])(
 		expect(checkedKeypoints(raw)).toBeUndefined();
 		const ref = reference();
 		(ref.keypoints[LABELS[0]] as { x: unknown }).x = bad;
-		expect(() => managedRestKeypoints({ east: ref }, ['south', 'east'])).toThrow('east');
+		expect(managedRestKeypoints({ east: ref }, ['south', 'east'])).toEqual({
+			poses: {},
+			unusable: ['east']
+		});
 	}
 );
 
@@ -54,14 +57,23 @@ test.each([
 	}
 );
 
-test('wholly absent managed references keep the explicit fallback, present incomplete references fail preflight', () => {
-	expect(managedRestKeypoints(undefined, ['south', 'east'])).toEqual({});
-	expect(managedRestKeypoints(null, ['south', 'east'])).toEqual({});
+// Deliberately changed (soft gates): an incomplete or invalid managed reference used to stop creation after the paid draw.
+// It now takes the same bounded estimate as an absent one and is listed as unusable for a note; nothing is clamped from it.
+test('absent managed references keep the fallback and unusable ones join it, listed for a note', () => {
+	const none = { poses: {}, unusable: [] };
+	expect(managedRestKeypoints(undefined, ['south', 'east'])).toEqual(none);
+	expect(managedRestKeypoints(null, ['south', 'east'])).toEqual(none);
 	for (const unavailable of [null, undefined, {}, { keypoints: null }, { keypoints: undefined }])
-		expect(managedRestKeypoints({ east: unavailable }, ['south', 'east'])).toEqual({});
+		expect(managedRestKeypoints({ east: unavailable }, ['south', 'east'])).toEqual(none);
 	for (const root of ['bad', []])
-		expect(() => managedRestKeypoints(root, ['south', 'east'])).toThrow('south');
-	expect(managedRestKeypoints({ east: reference() }, ['south', 'east']).south).toBeUndefined();
+		expect(managedRestKeypoints(root, ['south', 'east'])).toEqual({
+			poses: {},
+			unusable: ['south', 'east']
+		});
+	const good = managedRestKeypoints({ east: reference() }, ['south', 'east']);
+	expect(good.poses.south).toBeUndefined();
+	expect(good.poses.east?.map((p) => p.label)).toEqual(LABELS);
+	expect(good.unusable).toEqual([]);
 	for (const ref of [
 		'bad',
 		[],
@@ -70,10 +82,15 @@ test('wholly absent managed references keep the explicit fallback, present incom
 		{ keypoints: 'bad' },
 		reference(valid().slice(1))
 	])
-		expect(() => managedRestKeypoints({ east: ref }, ['south', 'east'])).toThrow('east');
+		expect(managedRestKeypoints({ east: ref }, ['south', 'east'])).toEqual({
+			poses: {},
+			unusable: ['east']
+		});
 	const malformedJoint = reference();
 	(malformedJoint.keypoints as Record<string, unknown>)['RIGHT ARM'] = null;
-	expect(() => managedRestKeypoints({ east: malformedJoint }, ['south', 'east'])).toThrow('east');
+	expect(managedRestKeypoints({ east: malformedJoint }, ['south', 'east']).unusable).toEqual([
+		'east'
+	]);
 });
 
 test('joints validates actual raw API output before rounding a just-outside coordinate into range', async () => {
@@ -88,7 +105,7 @@ test('joints validates actual raw API output before rounding a just-outside coor
 });
 
 test.each(['bad-east', 'missing-south', 'null-skeletons', 'null-references'] as const)(
-	'present references are checked before the bounded missing-view fallback: %s',
+	'absent and unusable references take the bounded estimate fallback: %s',
 	async (mode) => {
 		const invalidEast = mode === 'bad-east';
 		vi.spyOn(db, 'get').mockResolvedValue(undefined);
@@ -101,7 +118,8 @@ test.each(['bad-east', 'missing-south', 'null-skeletons', 'null-references'] as 
 		vi.spyOn(db, 'getBlob').mockResolvedValue(blob);
 		const east = reference();
 		if (invalidEast) east.keypoints['RIGHT ARM'].x = 1.00004;
-		const refs = { east, north: reference(), west: reference() }; // south is absent but must not trigger an estimate before east is checked
+		const refs = { east, north: reference(), west: reference() }; // south is absent
+		let estimates = 0;
 		const skeletons =
 			mode === 'null-skeletons'
 				? null
@@ -124,8 +142,9 @@ test.each(['bad-east', 'missing-south', 'null-skeletons', 'null-references'] as 
 			if (req.path === '/characters/managed-fixture')
 				return { state: 'done', response: { skeletons }, jobs: [] } as unknown as JobRec;
 			if (req.path === '/estimate-skeleton') {
+				// The first estimate (south) lands, except in missing-south; a later one does not, so its view stops.
 				const raw = valid();
-				raw[0].x = 1.00004;
+				if (mode === 'missing-south' || estimates++) raw[0].x = 1.00004;
 				return { state: 'done', response: { keypoints: raw }, jobs: [] } as unknown as JobRec;
 			}
 			throw new Error('Unexpected paid request after bad managed joints');
@@ -139,12 +158,15 @@ test.each(['bad-east', 'missing-south', 'null-skeletons', 'null-references'] as 
 				directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }],
 				projectId: 'rig-rest-validation'
 			})
-		).rejects.toThrow(invalidEast ? 'east' : 'south');
+		).rejects.toThrow(mode === 'missing-south' ? 'south' : 'east');
+		// Only the drawn views without usable managed joints are estimated: south, then east when its reference is unusable
+		// or the container is empty. A landed estimate is used; one that does not land keeps the register recovery.
 		expect(enqueue.mock.calls.map(([r]) => r.path)).toEqual([
 			'/create-character-v3',
 			'/create-character-v3',
 			'/characters/managed-fixture',
-			...(!invalidEast ? ['/estimate-skeleton'] : [])
+			'/estimate-skeleton',
+			...(mode === 'missing-south' ? [] : ['/estimate-skeleton'])
 		]);
 	}
 );

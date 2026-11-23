@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import {
 	addMove,
+	type MoveSpec,
 	b64,
 	bodyMoveIssue,
 	keepableUnposed,
@@ -38,6 +39,8 @@ import ja from '../../src/locales/ja.json';
 import { displayError, displayNestedMessage, errorMessage } from '../../src/lib/i18n.ts';
 import { generationErrorMessage } from '../../src/studio/generationStatus.ts';
 import type { Gen } from '../../src/studio/state.svelte.ts';
+import { bodyQualityNote } from '../../src/studio/model.ts';
+import { redoAfterSave, rigReady, unposedView } from '../../src/lib/rig/setup.ts';
 // The i18n runtime needs the Svelte compiler; Japanese stands in for it here, as a key lookup with {name} variables.
 vi.mock('svelte-whisper', () => ({
 	getLocale: () => 'ja',
@@ -485,16 +488,31 @@ test.each(['none', 'redrawn'] as const)(
 	}
 );
 
-test('native PixMiniMax rejects a missing leading frame before buying any joint checks', async () => {
+// Deliberately flipped (soft gates, R4): exactly N frames for PixMiniMax's documented N + 1 used to throw the paid move away.
+// Whether the echo or the last frame was left out is unknowable, so the frames are kept in returned order and disclosed.
+test('native PixMiniMax keeps exactly N frames in returned order and discloses the missing leading frame', async () => {
 	const f = await fixture(false, 'none');
-	await expect(f.run({ animation: { model: 'pixminimax' } })).rejects.toThrow(
-		'PixelLab returned 4 motion frames for 4 requested'
+	await f.run({ animation: { model: 'pixminimax' } });
+	const east = f.saved().manifest.items[0].layers[0].cells!.idle!.east!;
+	const standing = f.images.values().next().value!;
+	// the fixture returns outputs reversed; the labels put them back in order 0..3
+	expect(east).toEqual(
+		await Promise.all(
+			[185, 186, 187, 188].map((shade) => {
+				const frame = structuredClone(standing);
+				frame.data[(10 * 64 + 25) * 4] = shade;
+				return cellHash(frame);
+			})
+		)
 	);
-	expect(f.enqueue).toHaveBeenCalledOnce();
-	expect(f.saved()).toEqual(f.original);
+	expect((f.saved().rigQa as { warnings: string[] }).warnings).toContain(
+		'idle/east: PixelLab sent 4 frames instead of 5, so the first or last frame may differ'
+	);
 });
 
-test('a native quality failure offers a priced body draft retry without buying equipment', async () => {
+// Deliberately changed (soft gates): a targeted replacement that misses only numerical body checks used to throw and keep
+// nothing. It is now staged for a free Save or Discard, body only; the priced Skeleton retry is offered from that draft.
+test('a native quality failure stages a free body review and offers a priced body draft retry without buying equipment', async () => {
 	const f = await fixture(false, 'bad-palette', true);
 	const spec = {
 		id: 'idle',
@@ -506,13 +524,11 @@ test('a native quality failure offers a priced body draft retry without buying e
 		dirs: ['east'] as DirectionName[],
 		animation: { model: 'pixminimax' as const, frameCount: 4 }
 	};
-	const result = await f.run(spec).then(
-		() => null,
-		(error: unknown) => error
-	);
-	expect(result).toBeInstanceOf(Error);
-	expect(f.saved()).toEqual(f.original);
-	const offer = skeletonMoveReview(f.saved(), spec, result, []);
+	await expect(f.run(spec)).resolves.toMatchObject({ moveReview: 'idle' });
+	expect(f.saved().manifest).toEqual(f.original.manifest);
+	const draft = f.saved().moveReviews!.idle!;
+	expect(draft.spec).toMatchObject({ items: [], reviewBeforePublish: true });
+	const offer = skeletonMoveReview(f.saved(), draft.spec, undefined, [], draft);
 	expect(offer).toMatchObject({
 		review: {
 			dirs: ['east'],
@@ -528,15 +544,16 @@ test('a native quality failure offers a priced body draft retry without buying e
 	const withFrames = skeletonMoveReview(
 		f.saved(),
 		{
-			...spec,
+			...draft.spec,
 			animation: {
 				...spec.animation,
 				loop: false,
 				references: { east: { start, end }, south: { start } }
 			}
 		},
-		result,
-		[]
+		undefined,
+		[],
+		draft
 	);
 	expect(withFrames?.review.animation).toEqual({
 		model: 'skeleton-v3',
@@ -549,14 +566,24 @@ test('a native quality failure offers a priced body draft retry without buying e
 		skeletonMoveReview(f.saved(), spec, new Error('Standing reference is missing'), [])
 	).toBeUndefined();
 	expect(
-		skeletonMoveReview(f.saved(), { ...spec, animation: { model: 'skeleton-v3' } }, result, [])
+		skeletonMoveReview(
+			f.saved(),
+			{ ...draft.spec, animation: { model: 'skeleton-v3' } },
+			undefined,
+			[],
+			draft
+		)
 	).toBeUndefined();
-	await expect(f.run({ ...offer!.review, seed: 24 })).resolves.toMatchObject({
-		moveReview: 'idle'
-	});
+	await expect(
+		f.run({ ...offer!.review, seed: 24, reviewRegeneration: { id: 'idle', seed: 23 } })
+	).resolves.toMatchObject({ moveReview: 'idle' });
 	const saved = f.saved();
 	expect(saved.manifest).toEqual(f.original.manifest);
-	expect(saved.moveReviews?.idle?.spec).toMatchObject({ items: [], reviewBeforePublish: true });
+	expect(saved.moveReviews?.idle?.spec).toMatchObject({
+		items: [],
+		reviewBeforePublish: true,
+		seed: 24
+	});
 });
 
 test('a new Move cannot take the normalized name of a State or a pending State', async () => {
@@ -708,34 +735,31 @@ test('Skeleton retry keeps the exact authored start and omits stale or incompati
 		animation: { model: 'pixminimax' as const, frameCount: 4 },
 		startFrom: resolveMoveSource(f.original.manifest, { clip: 'idle', cell: 3 }, ['south', 'east'])!
 	};
-	const result = await f.run(spec).catch((error: unknown) => error);
-	expect(result).toBeInstanceOf(Error);
-	const offer = skeletonMoveReview(f.saved(), spec, result, []);
+	await expect(f.run(spec)).resolves.toMatchObject({ moveReview: 'idle' });
+	const draft = f.saved().moveReviews!.idle!;
+	const retry = (record = f.saved(), change: Partial<MoveSpec> = {}) =>
+		skeletonMoveReview(record, { ...draft.spec, ...change }, undefined, [], draft);
+	const offer = retry();
 	expect(offer?.review.startFrom).toEqual(spec.startFrom);
 	expect(offer?.review.approvedDirs).toEqual(spec.dirs);
 	// Deliberately flipped (2026-11-23): a described retry from a saved frame used to get no offer, because the managed
 	// character's motion always starts from Standing. It now takes the standalone PixMiniMax route at the same price.
-	const described = skeletonMoveReview(
-		f.saved(),
-		{ ...spec, action: undefined, text: 'Hold still' },
-		result,
-		[]
-	);
+	const described = retry(f.saved(), { action: undefined, text: 'Hold still' });
 	expect(described?.review.startFrom).toEqual(spec.startFrom);
 	expect(moveMotionRequest(f.saved(), described!.review, 'east').path).toBe('/animate-pixminimax');
 	const changed = structuredClone(f.saved());
 	const east = changed.manifest.rig.animations[0].sources!.east!;
 	east.measured![3] = east.measured![3].map((joint) => ({ ...joint, x: joint.x + 0.01 }));
-	expect(skeletonMoveReview(changed, spec, result, [])).toBeUndefined();
+	expect(retry(changed)).toBeUndefined();
 	const missing = structuredClone(f.saved());
 	delete missing.manifest.items[0].layers[0].cells!.idle.east;
-	expect(skeletonMoveReview(missing, spec, result, [])).toBeUndefined();
+	expect(retry(missing)).toBeUndefined();
 	const resized = structuredClone(f.saved());
 	resized.manifest.rig.pivot.x++;
-	expect(skeletonMoveReview(resized, spec, result, [])).toBeUndefined();
-	await expect(f.run({ ...offer!.review, seed: 24 })).resolves.toMatchObject({
-		moveReview: 'idle'
-	});
+	expect(retry(resized)).toBeUndefined();
+	await expect(
+		f.run({ ...offer!.review, seed: 24, reviewRegeneration: { id: 'idle', seed: 23 } })
+	).resolves.toMatchObject({ moveReview: 'idle' });
 	expect(f.saved().manifest).toEqual(f.original.manifest);
 	expect(f.saved().moveReviews?.idle?.spec.startFrom).toEqual(spec.startFrom);
 });
@@ -955,12 +979,17 @@ test('regeneration keeps explicit play-once preferences, including choices chang
 		['cast', false]
 	]);
 });
-test('failed genuine measurements cannot publish a targeted replacement or invalidate prior equipment', async () => {
+// Deliberately changed (soft gates): numerical misses used to throw away the paid replacement; they now stage it for review.
+test('numerical misses stage a targeted replacement for review without publishing it or invalidating prior equipment', async () => {
 	const f = await fixture(true);
-	await expect(f.run()).rejects.toThrow('still fails body-pose');
+	await expect(f.run()).resolves.toMatchObject({ moveReview: 'idle' });
 	expect(f.put).not.toHaveBeenCalled();
 	expect(f.update).not.toHaveBeenCalled();
-	expect(f.saved()).toEqual(f.original);
+	expect(f.saved().manifest).toEqual(f.original.manifest);
+	const draft = f.saved().moveReviews!.idle!;
+	expect(draft.dirs).toEqual(['east']);
+	expect(draft.checks['idle/east'].fails).toEqual([]);
+	expect(draft.checks['idle/east'].adherence).toBeGreaterThan(0);
 });
 test('invalid subset, new partial move and changed partial frame count are rejected before spending', async () => {
 	for (const change of [
@@ -1215,6 +1244,28 @@ test('one interior motion frame without joints is bridged from its measured neig
 	expect(motionJoints([a, undefined, undefined, c])).toBeUndefined();
 });
 
+test('the inferred-joints note is shown in the reader’s language', () => {
+	const translate = ((key: string, vars: Record<string, unknown> = {}) =>
+		key === 'studioModel.bodyQuality'
+			? `${vars.move} ${vars.direction}: ${vars.reason}`
+			: `${key} ${vars.frame}/${vars.total}`) as Parameters<typeof bodyQualityNote>[1];
+	expect(
+		bodyQualityNote(
+			'idle/east: joints of motion frame 3 of 4 were inferred from its neighbors',
+			translate
+		)
+	).toBe('Idle east: studioModel.bridgedJoints 3/4');
+	expect(
+		bodyQualityNote(
+			'idle/east: PixelLab sent 4 frames instead of 5, so the first or last frame may differ',
+			((key: string, vars: Record<string, unknown> = {}) =>
+				key === 'studioModel.bodyQuality'
+					? `${vars.reason}`
+					: `${key} ${vars.count}/${vars.expected}`) as Parameters<typeof bodyQualityNote>[1]
+		)
+	).toBe('studioModel.shortFrames 4/5');
+});
+
 test('a managed motion with one unmeasured interior frame still renders the body', async () => {
 	const f = await fixture(),
 		standing = (await projects.loadProject('rig-target')).project.images.values().next().value!,
@@ -1257,9 +1308,65 @@ test('a managed motion with one unmeasured interior frame still renders the body
 	expect(f.enqueue.mock.calls.map(([r]) => r.path)).toContain('/animate-with-skeleton-v3');
 	const source = f.saved().manifest.rig.animations[0].sources?.east;
 	expect(source?.motion).toBe('pixminimax:step softly');
-	// recorded as evidence with the clip: the third motion frame was bridged
+	// recorded as evidence with the clip: the third motion frame was bridged, and disclosed with its checks
 	expect(source?.motionBridged).toEqual([2]);
+	expect((f.saved().rigQa as { warnings: string[] }).warnings).toContain(
+		'idle/east: joints of motion frame 3 of 4 were inferred from its neighbors'
+	);
 });
+
+test.each([
+	[2, true],
+	[1, false],
+	[4, false]
+] as const)(
+	'an empty managed motion frame at position %i is bridged only when it is interior (%s)',
+	async (blank, bridged) => {
+		const f = await fixture(),
+			standing = (await projects.loadProject('rig-target')).project.images.values().next().value!,
+			// the standing echo first, then four motion frames; frame `blank` (1-based after the echo) is transparent
+			images = [standing, 11, 12, 13, 14].map((shade, i) => {
+				if (typeof shade !== 'number') return shade;
+				const im = i === blank ? makeImg(64, 64) : structuredClone(standing);
+				if (i !== blank) im.data[(30 * 64 + 30) * 4] = shade;
+				return im;
+			}),
+			blobs = new Map<string, Blob>();
+		for (const [i, im] of images.entries())
+			blobs.set(`m${i}`, new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>]));
+		const stored = vi.mocked(db.getBlob).getMockImplementation()!;
+		vi.mocked(db.getBlob).mockImplementation(async (h) => blobs.get(h) ?? stored(h));
+		const rendered = f.enqueue.getMockImplementation()!;
+		f.enqueue.mockImplementation(async (req, ...rest) =>
+			req.path === '/characters/animations'
+				? ({
+						id: 'motion',
+						state: 'done',
+						endpoint: req.path,
+						params: {},
+						createdAt: 0,
+						jobs: [{ results: images.map((_, i) => ({ label: `east/${i}`, sha: `m${i}` })) }]
+					} as unknown as JobRec)
+				: rendered(req, ...rest)
+		);
+		const result = await f
+			.run({ text: 'step softly', action: 'quiet-step', frames: 4 })
+			.catch((e: Error) => e);
+		const paths = f.enqueue.mock.calls.map(([r]) => r.path);
+		if (!bridged) {
+			expect(String(result)).toContain('empty motion frame');
+			expect(paths).not.toContain('/estimate-skeleton');
+			return;
+		}
+		// the empty frame is never measured: three motion checks, then the body render
+		const render = paths.indexOf('/animate-with-skeleton-v3');
+		expect(paths.slice(0, render).filter((p) => p === '/estimate-skeleton')).toHaveLength(3);
+		expect(f.saved().manifest.rig.animations[0].sources?.east?.motionBridged).toEqual([1]);
+		expect((f.saved().rigQa as { warnings: string[] }).warnings).toContain(
+			'idle/east: joints of motion frame 2 of 4 were inferred from its neighbors'
+		);
+	}
+);
 
 // Both managed routes drop one leading frame by position, so a Standing Fix frames replaced never stops them.
 test.each([
@@ -1519,32 +1626,111 @@ test('a new move whose body frames lack joints is kept body only, without poses,
 	expect(Object.keys(saved.manifest.items[0].layers[0].cells!.calm!)).toHaveLength(4);
 	expect(Object.keys(saved.skeletons ?? {}).filter((key) => key.startsWith('calm/'))).toEqual([]);
 	expect(saved.manifest.rig.anchors?.hand_r?.calm).toBeUndefined();
-	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['calm']);
-	// Only a new, body-only move can be kept this way: never over existing directions or with equipment.
-	for (const change of [
-		{ replace: true, id: 'idle', dirs: ['east'] },
-		{ items: ['hat'] },
-		{ reviewBeforePublish: true }
-	])
+	// Each view without poses is listed on its own (soft gates: views, not whole moves), and the rig stays ready.
+	expect((saved.rigQa as { redo?: string[] }).redo).toEqual([
+		'calm/south',
+		'calm/east',
+		'calm/north',
+		'calm/west'
+	]);
+	expect(rigReady(saved)).toBe(true);
+	// Kept as body frames only: never with equipment, and never as a staged review.
+	for (const change of [{ items: ['hat'] }, { reviewBeforePublish: true }])
 		await expect(f.run({ ...move, id: 'still', keepUnposed: true, ...change })).rejects.toThrow(
 			'This review choice no longer matches the move'
 		);
 });
 
-test('only a new move stopped by missing body joints in every failed view offers the unposed keep', () => {
+// Deliberately changed (soft gates): the unposed keep used to be offered only for a new whole move. It is now offered for
+// replacements and some views too, and only when every other view is already finished, so keeping never buys more work.
+test('the unposed keep is offered only when stopped views lack body joints and every other view is finished', () => {
 	const stop = (failure: 'joints' | 'overflow', step = 'render') => ({
+		state: 'failed' as const,
 		error: new PaidStepError('x', 'create.errors.validJointsWereFound', undefined, {
 			step,
 			failure
 		})
 	});
-	const added = { replace: false };
-	expect(keepableUnposed(added, [stop('joints'), stop('joints')])).toBe(true);
-	expect(keepableUnposed(added, [])).toBe(false);
-	expect(keepableUnposed(added, [stop('joints'), stop('overflow')])).toBe(false);
+	const ready = { state: 'ready' as const };
+	expect(keepableUnposed([stop('joints'), stop('joints')])).toBe(true);
+	expect(keepableUnposed([stop('joints'), ready])).toBe(true);
+	expect(keepableUnposed([])).toBe(false);
+	expect(keepableUnposed([ready])).toBe(false);
+	expect(keepableUnposed([stop('joints'), stop('overflow')])).toBe(false);
 	// Motion joints mean no body was drawn: there is nothing to keep.
-	expect(keepableUnposed(added, [stop('joints', 'motion')])).toBe(false);
-	expect(keepableUnposed(added, [{ error: undefined }])).toBe(false);
-	expect(keepableUnposed({ replace: true }, [stop('joints')])).toBe(false);
-	expect(keepableUnposed({ dirs: ['east'] }, [stop('joints')])).toBe(false);
+	expect(keepableUnposed([stop('joints', 'motion')])).toBe(false);
+	expect(keepableUnposed([{ state: 'failed' }])).toBe(false);
+	// A view still to buy or still at PixelLab would make the free keep pay for more work.
+	expect(keepableUnposed([stop('joints'), { state: 'pending' }])).toBe(false);
+	expect(keepableUnposed([stop('joints'), { state: 'running' }])).toBe(false);
+});
+
+test('one replaced view kept without poses loses only its own poses and fitted equipment', async () => {
+	const f = await fixture();
+	const measuring = f.enqueue.getMockImplementation()!;
+	f.enqueue.mockImplementation(async (req, ...rest) =>
+		req.path === '/estimate-skeleton'
+			? ({
+					id: 'joints',
+					state: 'done',
+					response: { keypoints: [] },
+					jobs: []
+				} as unknown as JobRec)
+			: measuring(req, ...rest)
+	);
+	await expect(f.run()).rejects.toThrow('valid joints were not found on every frame');
+	expect(f.saved()).toEqual(f.original);
+	await f.run({ keepUnposed: true });
+	const saved = f.saved(),
+		before = f.original,
+		idle = saved.manifest.rig.animations[0];
+	expect(Object.keys(idle.sources!).sort()).toEqual(['north', 'south', 'west']);
+	expect(saved.skeletons!['idle/east/0']).toBeUndefined();
+	expect(saved.manifest.rig.anchors!.hand_r!.idle!.east).toBeUndefined();
+	expect(saved.manifest.items[1].layers[0].cells!.idle!.east).toBeUndefined();
+	for (const d of ['south', 'north', 'west'] as const) {
+		expect(idle.sources![d]).toEqual(before.manifest.rig.animations[0].sources![d]);
+		expect(saved.skeletons![`idle/${d}/0`]).toEqual(before.skeletons![`idle/${d}/0`]);
+		expect(saved.manifest.rig.anchors!.hand_r!.idle![d]).toEqual(
+			before.manifest.rig.anchors!.hand_r!.idle![d]
+		);
+		expect(saved.manifest.items[1].layers[0].cells!.idle![d]).toEqual(
+			before.manifest.items[1].layers[0].cells!.idle![d]
+		);
+	}
+	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['idle/east']);
+	expect(rigReady(saved)).toBe(true);
+	// Equipment waits there with a plain next step: make the move again, not set up its poses.
+	await expect(
+		f.run({ items: ['hat'], itemsOnly: true, replace: undefined, keepUnposed: undefined })
+	).rejects.toThrow('Make the move again there');
+});
+
+test('redoing one view of a move kept without poses leaves the rest of the rig ready', async () => {
+	const f = await fixture();
+	const unposed = f.saved();
+	delete unposed.manifest.rig.animations[0].sources;
+	delete unposed.manifest.rig.anchors;
+	unposed.skeletons = {};
+	(unposed.rigQa as { redo?: string[] }).redo = ['idle'];
+	expect(rigReady(unposed)).toBe(true);
+	await f.run();
+	const saved = f.saved();
+	expect(Object.keys(saved.manifest.rig.animations[0].sources!)).toEqual(['east']);
+	// south, north and west are still without poses and listed: the rig stays ready, items wait there
+	expect(rigReady(saved)).toBe(true);
+});
+
+test('unposed views are listed per view and leave the list once they are saved again', () => {
+	expect(redoAfterSave(['walk', 'idle/east'], 'idle', ['east'])).toEqual(['walk']);
+	expect(redoAfterSave(['walk'], 'idle', ['east', 'south'], ['south'])).toEqual([
+		'walk',
+		'idle/south'
+	]);
+	const idle = { id: 'idle', sources: { east: {} as never } };
+	// A view with poses is never unposed; an unlisted view without poses (an import not set up yet) is not either.
+	expect(unposedView(['idle'], idle, 'east')).toBe(false);
+	expect(unposedView(['idle'], idle, 'south')).toBe(true);
+	expect(unposedView(['idle/south'], idle, 'south')).toBe(true);
+	expect(unposedView([], idle, 'south')).toBe(false);
 });

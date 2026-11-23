@@ -9,6 +9,7 @@ import {
 	type DirectionName,
 	type Keypoint,
 	type Rig,
+	type RigAnimation,
 	type Sha256
 } from './rig.ts';
 import { HEADROOM_MIN, anchorTracks, type Built } from './freeze.ts';
@@ -34,12 +35,31 @@ export interface SetupPlan {
 }
 export const STATE_CAPTURE_MODE = 'state-capture';
 
-/** Moves kept as drawn without poses because a frame had no valid joints (skipped by rig setup, or a new move kept
- *  without fitting items): marked to make again (rigQa.redo). */
+/** Moves and views kept as drawn without poses because a frame had no valid joints, marked to make again (rigQa.redo): a
+ *  move id when rig setup skipped the whole move, or "move/direction" for one view kept without fitting items. */
 export const setupRedoMoves = (rec?: Pick<StoredProject, 'rigQa'> | null): string[] => {
 	const redo = (rec?.rigQa as { redo?: unknown } | undefined)?.redo;
 	return Array.isArray(redo) ? redo.filter((id): id is string => typeof id === 'string') : [];
 };
+/** A view kept without poses: listed in rigQa.redo (by move or by view) and without poses. Equipment is not fitted there
+ *  yet; an imported character that was never set up is never listed, so it still needs setup. */
+export const unposedView = (
+	redo: readonly string[],
+	anim: Pick<RigAnimation, 'id' | 'sources'>,
+	dir: DirectionName
+) => !anim.sources?.[dir] && (redo.includes(anim.id) || redo.includes(`${anim.id}/${dir}`));
+/** rigQa.redo after a move's `saved` views were published: its `unposed` views are listed, the other saved views not. */
+export const redoAfterSave = (
+	redo: readonly string[],
+	move: string,
+	saved: readonly DirectionName[],
+	unposed: readonly DirectionName[] = []
+): string[] => [
+	...new Set([
+		...redo.filter((entry) => !saved.some((dir) => entry === `${move}/${dir}`)),
+		...unposed.map((dir) => `${move}/${dir}`)
+	])
+];
 
 export function rigReady(
 	rec?:
@@ -56,10 +76,10 @@ export function rigReady(
 		r.directions.every((d) => d.mirrorOf || hasAll(r.rest?.[d.id]?.keypoints)) &&
 		r.animations.every((a) => {
 			if (a.kind === 'state' && a.id !== DEFAULT_MOVE) return true;
-			// A move setup skipped waits to be made again; the rest of the rig is ready without it.
-			if (redo.includes(a.id) && !a.sources) return true;
 			return r.directions.every((d) => {
 				if (d.mirrorOf || !base.cells?.[a.id]?.[d.id]?.some(Boolean)) return true;
+				// A view kept without poses waits to be made again; the rest of the rig is ready without it.
+				if (unposedView(redo, a, d.id)) return true;
 				if (matchesStanding(r, a, d.id, base.cells?.[a.id]?.[d.id]?.[0])) return true;
 				const poses = a.sources?.[d.id]?.keypoints;
 				return poses?.length === a.cells && poses.every(hasAll);
