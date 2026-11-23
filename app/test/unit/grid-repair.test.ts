@@ -329,13 +329,30 @@ test('Tier 1 splits a 96px facing and saves eight ordered frames once with per-b
 	);
 });
 
-test('Tier 1 stops after an unknown second batch without publishing or resending', async () => {
+test('Tier 1 offers the finished batch after an unknown second batch, keeping current art without resending', async () => {
+	// The lost batch used to throw away the finished, paid first batch; its frames now reach review on their own.
 	const f = await fixture('lost-second');
-	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123, true)).rejects.toThrow(
-		'unknown test response'
-	);
+	const before = structuredClone(f.item);
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
 	expect(f.enqueue).toHaveBeenCalledTimes(2);
 	expect(f.save).not.toHaveBeenCalled();
+	expect(result.saved).toBe(false);
+	expect(result.review?.kept).toEqual([3, 4, 5, 6, 7]);
+	expect(result.review?.replacement).toHaveLength(8);
+	await applyRepairReview(f.ctx.rec.id, result.review!);
+	expect(f.enqueue).toHaveBeenCalledTimes(2);
+	const west = f.saved()!.layers[0].cells!.slash!.west!,
+		old = before.layers[0].cells!.slash!.west!;
+	expect(west).toHaveLength(8);
+	expect(west.slice(3)).toEqual(old.slice(3));
+	expect(west.slice(0, 3)).not.toEqual(old.slice(0, 3));
+	expect(f.saved()!.baseCut?.slash?.west?.slice(3)).toEqual(before.baseCut?.slash?.west?.slice(3));
+	expect(Object.keys(f.saved()!.qa!.cells).filter((key) => key.startsWith('slash/west/'))).toEqual([
+		'slash/west/0',
+		'slash/west/1',
+		'slash/west/2'
+	]);
+	expect(f.saved()!.qa!.cells['slash/west/0'].provenance).toBe(before.provenance.length);
 });
 
 test('Tier 1 does not publish a facing with a visibly different batch palette', async () => {

@@ -23,6 +23,7 @@ import { loadProject, saveItem, type StoredProject } from '../store/project.ts';
 import { itemContent, itemExportIdTaken } from '../store/identity.ts';
 import type {
 	CellKey,
+	CellQa,
 	Item,
 	Manifest,
 	Material,
@@ -2201,7 +2202,9 @@ async function prepareClip(
 	q: QaResult,
 	pad: number,
 	/** Frames taken from artwork an earlier call already paid for: the item's record of that call, by frame. */
-	reused?: ReadonlyMap<string, number>
+	reused?: ReadonlyMap<string, number>,
+	/** Frames a stopped repair did not replace: they keep their current art, cut and checks. */
+	kept: ReadonlySet<string> = new Set()
 ) {
 	const { rig } = ctx.rec.manifest,
 		key = item.key!;
@@ -2209,7 +2212,9 @@ async function prepareClip(
 		originalItem = clipArtwork(item);
 	const count = rig.animations.find((a) => a.id === anim)?.cells;
 	const expected = new Set(
-		dirs.flatMap((d) => Array.from({ length: count ?? 0 }, (_, i) => `${anim}/${d}/${i}`))
+		dirs
+			.flatMap((d) => Array.from({ length: count ?? 0 }, (_, i) => `${anim}/${d}/${i}`))
+			.filter((k) => !kept.has(k))
 	);
 	if (
 		!count ||
@@ -2242,20 +2247,39 @@ async function prepareClip(
 			...built.item.coverage!
 		])
 	];
+	// A kept frame takes its current entry; every other frame of the replaced directions takes the new one.
+	const merge = <T>(row: (T | null)[] | undefined, old: (T | null)[] | undefined, d: string) =>
+		(row ?? Array<T | null>(count).fill(null)).map((entry, i) =>
+			kept.has(`${anim}/${d}/${i}`) ? (old?.[i] ?? null) : entry
+		);
 	out.layers.forEach((l, j) => {
-		l.cells = { ...l.cells, [anim]: { ...l.cells?.[anim], ...built.item.layers[j].cells![anim] } };
+		const rows = built.item.layers[j].cells![anim];
+		l.cells = {
+			...l.cells,
+			[anim]: {
+				...l.cells?.[anim],
+				...Object.fromEntries(
+					Object.entries(rows).map(([d, row]) => [
+						d,
+						merge(row, item.layers[j].cells?.[anim]?.[d as DirectionName], d)
+					])
+				)
+			}
+		};
 	});
 	dropCut(out, anim, dirs); // replaced directions take their new cut, never a stale one
 	for (const d of dirs) {
-		const c = built.item.baseCut?.[anim]?.[d];
-		if (c) ((out.baseCut ??= {})[anim] ??= {})[d] = c;
+		const c = kept.size
+			? merge(built.item.baseCut?.[anim]?.[d], item.baseCut?.[anim]?.[d], d)
+			: built.item.baseCut?.[anim]?.[d];
+		if (c?.some((entry) => entry)) ((out.baseCut ??= {})[anim] ??= {})[d] = c;
 	}
 	// Per-direction call numbers are local to this move; records arrive in completion order (and may be grid fallbacks).
 	// Resolve the selected record by its produced keys, then offset into the item's full provenance history.
 	const source = new Map(
 		prov.flatMap((p, i) => p.produced.map((k) => [k, item.provenance.length + i] as const))
 	);
-	const qaCells = Object.fromEntries(
+	const qaCells: Record<string, CellQa> = Object.fromEntries(
 		Object.entries(q.qa.cells).map(([k, c]) => {
 			const provenance = source.get(k as keyof typeof q.qa.cells) ?? reused?.get(k);
 			if (provenance == null) throw new Error(`No source record for ${k}`);
@@ -2263,9 +2287,24 @@ async function prepareClip(
 		})
 	);
 	out.provenance = [...out.provenance, ...prov];
-	out.qa = mergeQa(item, q.qa, qaCells);
+	// Kept frames keep their checks, and their direction is no better than it was, since its summary covers only new frames.
+	for (const k of kept) {
+		const old = item.qa?.cells[k as CellKey];
+		if (old) qaCells[k] = old;
+	}
+	const next = structuredClone(q.qa);
+	if (kept.size)
+		for (const d of dirs) {
+			const before = item.qa?.clips[`${anim}/${d}`]?.status,
+				clip = next.clips[`${anim}/${d}`];
+			if (before && STATUS_ORDER.indexOf(before) > STATUS_ORDER.indexOf(clip.status))
+				clip.status = before;
+		}
+	out.qa = mergeQa(item, next, qaCells);
 	return { out, images: built.images, originalItem, version, ladder: slotLadder(rig) };
 }
+/** QA statuses from best to worst. */
+const STATUS_ORDER = ['pass', 'accepted', 'warn', 'fail'];
 
 type PreparedClip = Awaited<ReturnType<typeof prepareClip>>;
 export type RepairReview = {
@@ -2273,6 +2312,8 @@ export type RepairReview = {
 	findings: string[];
 	current: Img[];
 	replacement: Img[];
+	/** Frame indices a stopped batch left with their current art, when the finished batches are offered alone. */
+	kept?: number[];
 };
 
 async function publishClip(
@@ -2807,22 +2848,33 @@ export async function regridClip(
 	const cells: CellOut[] = [],
 		provenance: Provenance[] = [],
 		registrationFindings: string[] = [];
+	let stopped: number | undefined;
 	for (const [index, request] of requests.entries()) {
-		const result = await gridItemClip(
-			ctx,
-			item,
-			anim,
-			dir,
-			index,
-			keys,
-			cuts,
-			request.seed,
-			request.cells,
-			activityScope,
-			savedOnly,
-			request,
-			title
-		);
+		let result: Awaited<ReturnType<typeof gridItemClip>>;
+		try {
+			result = await gridItemClip(
+				ctx,
+				item,
+				anim,
+				dir,
+				index,
+				keys,
+				cuts,
+				request.seed,
+				request.cells,
+				activityScope,
+				savedOnly,
+				request,
+				title
+			);
+		} catch (error) {
+			// The finished batches are paid and verified, so they stay usable; the frames of this batch and of the batches
+			// not bought yet keep their current art. Nothing more is bought after a failure.
+			if (!cells.length) throw error;
+			console.error('item repair batch', error);
+			stopped = index;
+			break;
+		}
 		if ('blocked' in result)
 			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
 		// A shifted batch is flagged G10 (itemQa) and lands in the review with the rest of the approved, already priced
@@ -2850,8 +2902,20 @@ export async function regridClip(
 				qa.qa.clips[`${anim}/${dir}`].status = 'fail';
 			}
 		}
-	const clip = await prepareClip(ctx, item, anim, [dir], cells, provenance, qa, pad);
-	if (!redraw && !qa.failCalls.size) {
+	const kept = stopped === undefined ? [] : requests.slice(stopped).flatMap((r) => r.cells);
+	const clip = await prepareClip(
+		ctx,
+		item,
+		anim,
+		[dir],
+		cells,
+		provenance,
+		qa,
+		pad,
+		undefined,
+		new Set(kept)
+	);
+	if (!redraw && !qa.failCalls.size && !kept.length) {
 		await publishClip(ctx.rec.id, clip);
 		return { qa, saved: true, cells };
 	}
@@ -2882,7 +2946,8 @@ export async function regridClip(
 			clip,
 			findings: [...new Set([...registrationFindings, ...[...qa.failCalls.values()].flat()])],
 			current: previews(project),
-			replacement: previews(repaired)
+			replacement: previews(repaired),
+			...(kept.length ? { kept: kept.map((k) => Number(k.split('/')[2])) } : {})
 		}
 	};
 }

@@ -1382,9 +1382,13 @@
 			onclick={() => void resolveRepairReview(true)}
 			>{moving.repairApplied
 				? t('moveSheet.review.finish')
-				: moving.spec?.redrawItem
-					? t('moveSheet.review.useRedrawn')
-					: t('moveSheet.review.useRepaired')}</button
+				: repairReview.kept
+					? moving.spec?.redrawItem
+						? t('moveSheet.review.useFinishedRedraws')
+						: t('moveSheet.review.useFinishedRepairs')
+					: moving.spec?.redrawItem
+						? t('moveSheet.review.useRedrawn')
+						: t('moveSheet.review.useRepaired')}</button
 		>
 	{:else if progress && moving.error}
 		<div class="recovery-actions">
@@ -1758,6 +1762,13 @@
 							: t('moveSheet.review.redrawReady')
 						: t('moveSheet.review.repairIssues')}
 					{t('moveSheet.review.noCost')}
+				</p>{/if}
+			{#if repairReview.kept && !moving.repairApplied}<p class="notice warn small">
+					{displayNestedMessage(
+						message('moveSheet.review.stopped', {
+							frames: repairReview.kept.map((index) => formatNumber(index + 1))
+						})
+					)}
 				</p>{/if}
 			<div class="repair-pairs">
 				{#each repairReview.replacement as frame, index (index)}
