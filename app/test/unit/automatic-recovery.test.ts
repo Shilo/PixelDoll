@@ -1430,7 +1430,10 @@ test('a long move keeps the finished batch of a direction when its later batch f
 		++calls === 2
 			? []
 			: Array((req.body as { keypoints: unknown[] }).keypoints.length).fill(f.missing);
-	await expect(poseItemClip(f.ctx, f.item, 'walking')).rejects.toThrow();
+	await expect(poseItemClip(f.ctx, f.item, 'walking')).rejects.toMatchObject({
+		savedDirs: [],
+		savedFrames: [{ dir: 'south', frames: Array.from({ length: 9 }, (_, i) => i) }]
+	});
 	expect(ledger.requests).toHaveLength(2);
 	const saved = ledger.project!.manifest.items.find((i) => i.id === f.item.id)!;
 	const row = saved.layers[0].cells!.walking!.south!;

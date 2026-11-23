@@ -497,6 +497,23 @@ test('an unreadable pose frame leaves its readable neighbors and is named on its
 	]);
 });
 
+test('a storage read failure stops the check instead of becoming a keepable gap', async () => {
+	const { ctx, d, dressed } = await fixture();
+	for (const [k, c] of d.calls.entries()) {
+		const id = `storage-${k}`;
+		q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec);
+		c.recId = id;
+		await land(id, c.kind === 'dress' ? [dressed, dressed] : Array(4).fill(dressed));
+	}
+	const results = q.recs.get('storage-2')!.jobs[0].results!;
+	results[1] = { ...results[1], sha: 'sha-unreachable' };
+	vi.mocked(db.getBlob).mockImplementation(async (sha) => {
+		if (sha === 'sha-unreachable') throw new Error('IndexedDB read failed');
+		return blobs.get(sha);
+	});
+	await expect(evaluateItem(d, ctx)).rejects.toThrow('IndexedDB read failed');
+});
+
 test.each([null, 'Needs PixelLab Tier 2 or higher. No request sent.'])(
 	'cached failing poses never create an automatic grid regardless of plan restriction %s',
 	async (blocked) => {

@@ -146,6 +146,34 @@ test('a partly failed item move names the saved views and says Try again request
 	});
 });
 
+test('a facing saved only in part names its frame ranges and says Try again redraws it in full', async () => {
+	const { PartialMoveError } = await import('../../src/lib/items/run.ts');
+	const { manifest, spec } = await fixture(),
+		offer = itemMoveOffer(manifest, [spec]);
+	const shared = state.pose;
+	state.pose = vi.fn(async () => {
+		throw new PartialMoveError(
+			'Hat valid_custom south: lost.',
+			[],
+			[{ dir: 'south', frames: [0, 1, 2, 3, 4, 5, 6, 7, 8] }]
+		);
+	});
+	try {
+		const error = (await addMove('rig-scoped-readiness', offer.specs[0]).catch(
+			(e: Error) => e
+		)) as LocalizedError;
+		expect(error.message).toBe(
+			'Hat valid_custom south: lost. The finished frames were saved (South frames 1–9). Generating again redraws every frame of the views that are not complete, at the price it shows.'
+		);
+		expect(error.translation).toMatchObject({
+			key: 'create.errors.partialSavedRedraw',
+			vars: { views: [{ key: 'create.errors.savedFrameRange', vars: { frames: '1–9' } }] }
+		});
+	} finally {
+		state.pose = shared;
+	}
+});
+
 test('saved-frame recovery passes through to posing and never covers a body clip or a replace', async () => {
 	const { manifest, spec } = await fixture(),
 		offer = itemMoveOffer(manifest, [spec]);

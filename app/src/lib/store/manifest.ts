@@ -240,6 +240,7 @@ export interface CellQa {
 	offset?: [number, number];
 	repaired?: boolean; // held (S5): item lost by the pose, dressed keyframe pasted at the wrist move
 	snappedPct?: number; // no palette snap yet
+	jointReview?: true; // posed on imported joints that look reversed or stretched (counted in jointReviewFrames)
 }
 export interface Layer {
 	id: 'main' | 'fg' | 'bg';

@@ -635,13 +635,6 @@ const gridable = (spec: { slot: string; slotConfig?: Slot; key?: ItemSpec['key']
 	!!spec.key && spec.key !== 'none' && specSlot(spec).class !== 'held';
 
 /** A frame this draft saved earlier; a pruned or lost one says so instead of failing on an undefined blob. */
-const savedFrameMissing = (error: unknown) =>
-	error instanceof LocalizedError && error.translation.key === 'itemRoute.errors.savedFrameMissing';
-/** A returned frame that cannot be decoded is that frame's failure; missing bytes stay a storage error for the whole item. */
-const unreadable = (error: unknown) => {
-	if (savedFrameMissing(error)) throw error;
-	return errorText(error);
-};
 async function storedFrame(sha: string): Promise<Blob> {
 	const blob = await db.getBlob(sha);
 	if (!blob)
@@ -1139,12 +1132,23 @@ export async function runItem(
 // ---------- extraction + QA (re-derived from the ledger) ----------
 const decoded = new Map<string, Img>();
 async function img(sha: string) {
-	let im = decoded.get(sha);
-	if (!im) {
-		im = binaryAlpha(await decodePng(await storedFrame(sha)));
-		decoded.set(sha, im);
-	}
+	const im = await decodedFrame(sha);
+	if (im instanceof Error) throw im;
 	return im;
+}
+/** A frame's image, or the decode error that makes it that frame's own failure. The storage read stays outside: a failed or
+ *  missing read stops the whole check (its free Try again), never a gap the user could keep. */
+async function decodedFrame(sha: string): Promise<Img | Error> {
+	const cached = decoded.get(sha);
+	if (cached) return cached;
+	const blob = await storedFrame(sha);
+	try {
+		const im = binaryAlpha(await decodePng(blob));
+		decoded.set(sha, im);
+		return im;
+	} catch (error) {
+		return error instanceof Error ? error : new Error(String(error));
+	}
 }
 /** Decode this submitted request's mask bytes or its saved record; do not reconstruct permissions during extraction. */
 async function inpaintStencils(
@@ -1276,10 +1280,11 @@ export async function evaluateItem(
 				g1.set(k, `G1 ${(error as Error).message}`);
 				continue;
 			}
-			const g = await img(outputs[0].sha).catch((error: unknown) => {
-				g1.set(k, `G1 repair grid unreadable: ${unreadable(error)}`);
-			});
-			if (!g) continue;
+			const g = await decodedFrame(outputs[0].sha);
+			if (g instanceof Error) {
+				g1.set(k, `G1 repair grid unreadable: ${g.message}`);
+				continue;
+			}
 			if (g.w !== masks.size.width || g.h !== masks.size.height) {
 				g1.set(k, 'G1 repair grid does not match its submitted frame layout');
 				continue;
@@ -1320,11 +1325,14 @@ export async function evaluateItem(
 		// A frame that cannot be decoded is named with its own reason, like a wrong size. A standing frame it hides still
 		// blocks keeping the draft (availableGaps).
 		for (const [i, key] of c.cells.entries()) {
-			const im = await img(o[i].sha).catch((error: unknown) => {
-				const why = `G1 frame ${key} unreadable: ${unreadable(error)}`;
-				g1.set(k, [g1.get(k), why].filter(Boolean).join('; '));
-			});
-			if (!im) continue;
+			const im = await decodedFrame(o[i].sha);
+			if (im instanceof Error) {
+				g1.set(
+					k,
+					[g1.get(k), `G1 frame ${key} unreadable: ${im.message}`].filter(Boolean).join('; ')
+				);
+				continue;
+			}
 			if (im.w !== W || im.h !== H) {
 				g1.set(k, `G1 output ${im.w}x${im.h}`);
 				continue;
@@ -1885,38 +1893,46 @@ export async function animateAnchoredItem(
 		? await evaluateItem(draft, ctx, standingPalettes)
 		: await runItem(draft, ctx, { standingPalettes });
 	// Views that finished are paid for: publish them even when another view failed, so a retry buys only the missing ones.
-	const failedDirs = new Set<DirectionName>();
-	if (whole)
-		for (const k of failedCalls(draft, whole))
-			failedDirs.add(draft.calls[k].reference!.cell.split('/')[1] as DirectionName);
-	for (const dir of dirs)
-		if (
-			!whole?.qa ||
-			draft.calls.some(
-				(c) => c.reference!.cell.split('/')[1] === dir && recOf(c.recId)?.state !== 'done'
-			)
-		)
-			failedDirs.add(dir);
+	// Each call is anchored on the standing design alone, so a view's finished calls are kept when a later one failed.
+	const failedCallSet = new Set(whole ? failedCalls(draft, whole) : draft.calls.keys());
+	const dirOfCall = (c: CallState) => c.reference!.cell.split('/')[1] as DirectionName;
+	const good = (c: CallState, k: number) =>
+		!!whole?.qa && !failedCallSet.has(k) && recOf(c.recId)?.state === 'done';
+	const failedDirs = new Set(
+		dirs.filter((dir) => draft.calls.some((c, k) => dirOfCall(c) === dir && !good(c, k)))
+	);
 	const doneDirs = dirs.filter((dir) => !failedDirs.has(dir));
+	const partialDirs = [...failedDirs].filter((dir) =>
+		draft.calls.some((c, k) => dirOfCall(c) === dir && good(c, k))
+	);
+	const kept = new Set(
+		draft.calls.flatMap((c, k) =>
+			partialDirs.includes(dirOfCall(c)) && !good(c, k) ? c.cells : []
+		)
+	);
 	const detail =
 		draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.';
 	const detailError = () =>
 		typeof detail === 'string'
 			? (localizedAutomaticRepairError(detail) ?? new Error(detail))
 			: loggedError(detail);
-	if (!doneDirs.length) throw detailError();
+	const savedDirs = [...doneDirs, ...partialDirs];
+	if (!savedDirs.length) throw detailError();
 	const finished: Draft = {
 		...draft,
-		spec: { ...draft.spec, dirs: doneDirs },
-		calls: draft.calls.filter((c) =>
-			doneDirs.includes(c.reference!.cell.split('/')[1] as DirectionName)
-		)
+		spec: { ...draft.spec, dirs: savedDirs },
+		calls: draft.calls.filter((c, k) => savedDirs.includes(dirOfCall(c)) && good(c, k))
 	};
 	const result =
 		doneDirs.length === dirs.length ? whole : await evaluateItem(finished, ctx, standingPalettes);
-	if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(finished, rig, result))
+	const covered = new Set(result?.cells.map((c) => c.key));
+	if (
+		!result?.qa ||
+		hasStructuralFailure(result) ||
+		finished.calls.some((c) => c.cells.some((key) => !covered.has(key)))
+	)
 		throw detailError();
-	dirs = doneDirs;
+	dirs = savedDirs;
 	const missed = [...failedDirs];
 	let materials = ctx.rec.manifest.materials.filter(
 		(m) => m.owner === item.id && item.materials.includes(m.id)
@@ -1959,10 +1975,22 @@ export async function animateAnchoredItem(
 		draftProvenance(finished).provenance,
 		result.qa,
 		0,
-		needsMaterials ? materials : undefined
+		needsMaterials ? materials : undefined,
+		kept
 	);
 	dirs.forEach(onCall);
-	if (missed.length) throw new PartialMoveError(detailError(), dirs);
+	if (missed.length)
+		throw new PartialMoveError(
+			detailError(),
+			doneDirs,
+			partialDirs.map((dir) => ({
+				dir,
+				frames: finished.calls
+					.filter((c) => dirOfCall(c) === dir)
+					.flatMap((c) => c.cells.map((key) => Number(key.split('/')[2])))
+					.sort((a, b) => a - b)
+			}))
+		);
 }
 const seedOf = (s: string) =>
 	1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
@@ -1972,7 +2000,9 @@ export class PartialMoveError extends Error {
 	constructor(
 		/** Why the other views stopped; a LocalizedError keeps its translation. */
 		readonly reason: string | Error,
-		readonly savedDirs: DirectionName[]
+		readonly savedDirs: DirectionName[],
+		/** Directions saved only in part: the frames their finished batches made. The rest stay missing. */
+		readonly savedFrames: { dir: DirectionName; frames: number[] }[] = []
 	) {
 		super(`${errorText(reason)} The finished views were saved.`);
 	}
@@ -1990,6 +2020,7 @@ function discloseJoints(
 	q.warnings.push(...poseFitIssues(rig, calls));
 	for (const key of cells) {
 		const clip = q.qa.clips[key.split('/').slice(0, 2).join('/')];
+		q.qa.cells[key as CellKey].jointReview = true;
 		if (!clip) continue;
 		clip.jointReviewFrames = (clip.jointReviewFrames ?? 0) + 1;
 		if (clip.status === 'pass') clip.status = 'warn';
@@ -2269,7 +2300,17 @@ export async function poseItemClip(
 	if (failures.length)
 		throw new PartialMoveError(
 			failures[0] instanceof Error ? failures[0] : String(failures[0]),
-			doneDirs
+			doneDirs,
+			perDir.flatMap((r, i) =>
+				r.status === 'fulfilled' && r.value.kept.length
+					? [
+							{
+								dir: dirs[i],
+								frames: r.value.collected.map((c) => Number(c.key.split('/')[2]))
+							}
+						]
+					: []
+			)
 		);
 	return q;
 }
@@ -2408,6 +2449,12 @@ async function prepareClip(
 				clip = next.clips[`${anim}/${d}`];
 			if (before && STATUS_ORDER.indexOf(before) > STATUS_ORDER.indexOf(clip.status))
 				clip.status = before;
+			// The count covers kept and new frames alike, from each frame's own finding.
+			const joints = Object.entries(qaCells).filter(
+				([key, cell]) => key.startsWith(`${anim}/${d}/`) && cell.jointReview
+			).length;
+			if (joints) clip.jointReviewFrames = joints;
+			else delete clip.jointReviewFrames;
 		}
 	out.qa = mergeQa(item, next, qaCells);
 	return { out, images: built.images, originalItem, version, ladder: slotLadder(rig) };
@@ -2423,6 +2470,8 @@ export type RepairReview = {
 	replacement: Img[];
 	/** Frame indices a stopped batch left with their current art, when the finished batches are offered alone. */
 	kept?: number[];
+	/** Why that batch stopped (a failed request or the plan refusing it), shown with the review. */
+	stoppedBy?: Message | string;
 };
 
 async function publishClip(
@@ -2962,7 +3011,7 @@ export async function regridClip(
 	const cells: CellOut[] = [],
 		provenance: Provenance[] = [],
 		registrationFindings: string[] = [];
-	let stopped: number | undefined;
+	let stopped: number | undefined, stoppedBy: Message | string | undefined;
 	for (const [index, request] of requests.entries()) {
 		let result: Awaited<ReturnType<typeof gridItemClip>>;
 		try {
@@ -2987,6 +3036,7 @@ export async function regridClip(
 			if (!cells.length) throw error;
 			console.error('item repair batch', error);
 			stopped = index;
+			stoppedBy = errorMessage(error);
 			break;
 		}
 		if ('blocked' in result) {
@@ -2995,6 +3045,7 @@ export async function regridClip(
 			if (!cells.length) throw refused;
 			console.error('item repair batch', refused);
 			stopped = index;
+			stoppedBy = errorMessage(refused);
 			break;
 		}
 		// A shifted batch is flagged G10 (itemQa) and lands in the review with the rest of the approved, already priced
@@ -3067,7 +3118,9 @@ export async function regridClip(
 			findings: [...new Set([...registrationFindings, ...[...qa.failCalls.values()].flat()])],
 			current: previews(project),
 			replacement: previews(repaired),
-			...(kept.length ? { kept: kept.map((k) => Number(k.split('/')[2])) } : {})
+			...(kept.length
+				? { kept: kept.map((k) => Number(k.split('/')[2])), stoppedBy: stoppedBy! }
+				: {})
 		}
 	};
 }
