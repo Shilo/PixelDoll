@@ -302,13 +302,18 @@
 		});
 		return stopWatching;
 	});
+	// Wide Settings scrolls the page itself; compact Settings scrolls the sheet body.
+	function scrollToTop() {
+		panel.scrollTo(0, 0);
+		panel.closest('.sheet-body')?.scrollTo(0, 0);
+	}
 	let previousSection: SettingsSection | null = null;
 	$effect(() => {
 		const section = settingsNavigation.section;
 		if (previousSection && !section) {
 			query = '';
 			void tick().then(() => {
-				panel.closest('.sheet-body')?.scrollTo(0, 0);
+				scrollToTop();
 				search.focus({ preventScroll: true });
 			});
 		}
@@ -345,7 +350,7 @@
 		targetEntry = entry;
 		settingsNavigation.section = section;
 		await tick();
-		panel.closest('.sheet-body')?.scrollTo(0, 0);
+		scrollToTop();
 		if (!section) {
 			search.focus({ preventScroll: true });
 			return;
@@ -407,40 +412,38 @@
 			bind:this={search}
 			bind:value={query}
 		/>
-		{#if !query.trim()}
-			<div class="settings-links">
-				<nav aria-label={t('export.sheet.settings')}>
-					{#each navigation as group, index (group)}
-						{#if index}<hr class="bu-separator" />{/if}
-						{#each group as section (section.id)}
-							<button
-								class="row bu-action"
-								data-variant="quiet"
-								data-active={active?.id === section.id}
-								aria-current={active?.id === section.id ? 'page' : undefined}
-								disabled={busy}
-								onclick={() => show(section.id)}
-							>
-								<section.icon size={18} aria-hidden="true" />
-								<span class="row-name">{t(section.label)}</span>
-								<SurfaceChevron />
-							</button>
-						{/each}
-					{/each}
-				</nav>
-				{#if canReset}
-					<div class="index-reset">
-						<hr class="bu-separator" />
-						<SettingsResetButton
-							scope="all"
-							labeled
+		<div class="settings-links">
+			<nav aria-label={t('export.sheet.settings')}>
+				{#each navigation as group, index (group)}
+					{#if index}<hr class="bu-separator" />{/if}
+					{#each group as section (section.id)}
+						<button
+							class="row bu-action"
+							data-variant="quiet"
+							data-active={active?.id === section.id}
+							aria-current={active?.id === section.id ? 'page' : undefined}
 							disabled={busy}
-							onclick={() => (resetScope = 'all')}
-						/>
-					</div>
-				{/if}
-			</div>
-		{/if}
+							onclick={() => show(section.id)}
+						>
+							<section.icon size={18} aria-hidden="true" />
+							<span class="row-name">{t(section.label)}</span>
+							<SurfaceChevron />
+						</button>
+					{/each}
+				{/each}
+			</nav>
+			{#if canReset}
+				<div class="index-reset">
+					<hr class="bu-separator" />
+					<SettingsResetButton
+						scope="all"
+						labeled
+						disabled={busy}
+						onclick={() => (resetScope = 'all')}
+					/>
+				</div>
+			{/if}
+		</div>
 	</div>
 	<section
 		class="settings-panel"
@@ -622,8 +625,6 @@
 		display: grid;
 		gap: 8px;
 	}
-	/* Tall enough for the whole index, including Reset all at its end, so neither column scrolls away from the other on
-	   ordinary desktop windows. */
 	:global(dialog.sheet.settings-sheet.center) {
 		width: min(640px, calc(100vw - 32px));
 		height: min(720px, calc(100dvh - 32px));
@@ -698,7 +699,8 @@
 	.search-result small {
 		display: block;
 	}
-	.detail:not(.searching) .settings-links {
+	.detail .settings-links,
+	.searching .settings-links {
 		display: none;
 	}
 	@media (max-width: 659px), (max-height: 519px) {
@@ -711,13 +713,49 @@
 		}
 	}
 	@media (min-width: 660px) and (min-height: 520px) {
+		/* Two columns scroll on their own, so a long page never carries the index away. The page adds no height of its
+		   own, so the centered dialog grows to fit the whole index and stops at the window's sheet margin; a modal dialog is
+		   inset on every side, so auto would stretch it. */
+		:global(dialog.sheet.settings-sheet.center) {
+			height: fit-content;
+		}
+		:global(.sheet-body:has(> .settings-content)) {
+			padding: 0;
+			overflow: hidden;
+			scrollbar-gutter: auto;
+		}
+		.settings-content {
+			flex: 1 1 auto;
+			min-block-size: 0;
+			grid-template-rows: minmax(0, 1fr);
+		}
 		.detail,
 		.searching {
-			grid-template-columns: minmax(248px, 1fr) minmax(0, 1.8fr);
-			gap: 24px;
+			grid-template-columns: minmax(280px, 1fr) minmax(0, 1.8fr);
+			gap: 0;
 		}
-		.fills-activity {
-			grid-template-rows: minmax(0, 1fr);
+		/* The padding the body gave up keeps focus rings clear of each column's clipping edge. */
+		.settings-index,
+		.settings-panel {
+			overflow: auto;
+			overscroll-behavior: contain;
+			padding-block: 18px;
+		}
+		.settings-index {
+			padding-inline: 20px 12px;
+		}
+		.settings-panel {
+			contain: size;
+			padding-inline: 12px 20px;
+			scrollbar-gutter: stable;
+		}
+		/* Search keeps the index in place, unseen, so the dialog does not shrink while typing. */
+		.searching .settings-index {
+			overflow: hidden;
+		}
+		.searching .settings-links {
+			display: block;
+			visibility: hidden;
 		}
 		.detail:not(.searching) .settings-links {
 			display: block;

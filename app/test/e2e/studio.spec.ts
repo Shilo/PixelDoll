@@ -191,10 +191,13 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await expect(settings.getByText(/^Dress up your 2D game characters/)).toBeVisible();
 	const commit = settings.getByRole('button', { name: /^View commit [a-f0-9]{7}$/i });
 	const copy = settings.getByRole('button', { name: 'Copy details', exact: true });
-	const panelBounds = await settings.locator('.settings-panel').boundingBox();
+	const panelWidth = await settings.locator('.settings-panel').evaluate((panel) => {
+		const style = getComputedStyle(panel);
+		return panel.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+	});
 	for (const action of [source, commit, copy]) {
 		await expect(action).toHaveCSS('border-top-style', 'solid');
-		expect((await action.boundingBox())?.width).toBeCloseTo(panelBounds!.width, 0);
+		expect((await action.boundingBox())?.width).toBeCloseTo(panelWidth, 0);
 	}
 	const opened = await page.evaluateHandle(() => {
 		const calls: string[][] = [];
@@ -796,7 +799,15 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		await expect
 			.poll(
 				() =>
-					settings.locator('.sheet-body').evaluate((body) => body.scrollWidth - body.clientWidth),
+					settings
+						.locator('.sheet-body, .settings-panel')
+						.evaluateAll((panes) =>
+							Math.max(
+								...panes
+									.filter((pane) => getComputedStyle(pane).overflowX !== 'visible')
+									.map((pane) => pane.scrollWidth - pane.clientWidth)
+							)
+						),
 				{ message: `${section} must fit the Settings pane` }
 			)
 			.toBe(0);
@@ -808,7 +819,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		['Appearance', 'general']
 	] as const;
 
-	// Every page keeps one header and panel heading size, whether or not it has a Reset.
+	// Every page keeps one dialog, header and panel heading size, whether or not it has a Reset.
 	await page.setViewportSize({ width: 660, height: 600 });
 	const sizes = new Set<string>();
 	for (const name of [
@@ -832,9 +843,20 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		await expect(pageReset).toHaveCount(resettable ? 1 : 0);
 		if (resettable) await expect(pageReset).toBeEnabled();
 		await expect(resetAll).toBeEnabled();
-		sizes.add(`${await height('.sheet-head')}/${await height('.settings-panel-heading')}`);
+		sizes.add(
+			`${await settings.evaluate((dialog) => dialog.getBoundingClientRect().height)}/${await height('.sheet-head')}/${await height('.settings-panel-heading')}`
+		);
 	}
 	expect([...sizes]).toHaveLength(1);
+	// A long page scrolls on its own and leaves the index in place.
+	await nav.getByRole('button', { name: 'Move', exact: true }).click();
+	const navTop = () => nav.evaluate((element) => element.getBoundingClientRect().top);
+	const indexTop = await navTop();
+	const panelScroll = await settings
+		.locator('.settings-panel')
+		.evaluate((panel) => (panel.scrollTo(0, panel.scrollHeight), panel.scrollTop));
+	expect(panelScroll).toBeGreaterThan(0);
+	expect(await navTop()).toBe(indexTop);
 	await page.setViewportSize({ width: 1280, height: 800 });
 
 	// Each page Reset changes only its own preferences, then stays in place but disabled.
