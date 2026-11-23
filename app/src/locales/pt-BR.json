@@ -2586,7 +2586,7 @@
 			"queueReplacement": "Enfileirar substituição de vistas de {move}"
 		},
 		"titleRepair": "Reparar quadros do item",
-		"heldBy": "{move} falhou em {character}, então as novas animações ficam em espera. Abra a tentativa para ver as opções.",
+		"heldBy": "{move} falhou em {character}. As novas animações esperam até você tentar de novo ou descartá-la lá, para que os resultados pagos continuem recuperáveis. Abra para ver as opções.",
 		"open": "Abrir {character}",
 		"progressLabel": "Geração de animação atual",
 		"retryFeature": "Gerando esta animação novamente",

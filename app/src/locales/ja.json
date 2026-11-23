@@ -2513,7 +2513,7 @@
 			"queueReplacement": "「{move}」の差し替えをキューに追加"
 		},
 		"titleRepair": "アイテムのフレームを修復",
-		"heldBy": "{character}の{move}に失敗したため、新しいモーションは待機中です。試行を開いて対処方法を確認してください。",
+		"heldBy": "{character}の{move}に失敗しました。支払い済みの結果を復旧できるよう、そこで再試行するか破棄するまで新しいモーションは待機します。開いて選択肢を確認してください。",
 		"open": "{character}を開く",
 		"progressLabel": "現在のモーション生成",
 		"retryFeature": "このモーションをもう一度生成",

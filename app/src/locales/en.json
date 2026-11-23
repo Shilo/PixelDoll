@@ -2577,7 +2577,7 @@
 			"queueReplacement": "Queue replacement: {move} views"
 		},
 		"titleRepair": "Repair item frames",
-		"heldBy": "{move} failed on {character}, so new moves wait. Open it for recovery options.",
+		"heldBy": "{move} failed on {character}. New moves wait until you retry or discard it there, so its paid results stay recoverable. Open it for the options.",
 		"open": "Open {character}",
 		"progressLabel": "Current move generation",
 		"retryFeature": "Generating this move again",

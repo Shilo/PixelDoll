@@ -2577,7 +2577,7 @@
 			"queueReplacement": "Ansichten für {move} zum Ersetzen einreihen"
 		},
 		"titleRepair": "Gegenstandsframes reparieren",
-		"heldBy": "{move} ist bei {character} fehlgeschlagen. Neue Animationen warten. Öffne den Versuch, um die Optionen zu sehen.",
+		"heldBy": "{move} ist bei {character} fehlgeschlagen. Neue Animationen warten, bis du den Versuch dort wiederholst oder verwirfst, damit seine bezahlten Ergebnisse wiederherstellbar bleiben. Öffne ihn, um die Optionen zu sehen.",
 		"open": "{character} öffnen",
 		"progressLabel": "Laufende Animationsgenerierung",
 		"retryFeature": "Diese Animation neu generieren",

@@ -2513,7 +2513,7 @@
 			"queueReplacement": "将 {move} 的视图替换加入队列"
 		},
 		"titleRepair": "修复装备帧",
-		"heldBy": "{character}的{move}失败，新动作需要等待。打开该尝试以查看恢复选项。",
+		"heldBy": "{character}的{move}失败了。为了让已付费的结果仍可恢复，新动作会等到你在那里重试或放弃它。打开即可查看选项。",
 		"open": "打开{character}",
 		"progressLabel": "当前动作生成",
 		"retryFeature": "再次生成此动作",

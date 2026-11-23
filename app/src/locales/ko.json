@@ -2513,7 +2513,7 @@
 			"queueReplacement": "선택한 뷰 교체를 대기열에 추가: {move}"
 		},
 		"titleRepair": "아이템 프레임 복구",
-		"heldBy": "{character}의 {move} 작업이 실패해 새 애니메이션이 대기 중이에요. 시도를 열어 복구 옵션을 확인하세요.",
+		"heldBy": "{character}의 {move} 작업이 실패했어요. 결제된 결과를 복구할 수 있도록, 그곳에서 다시 시도하거나 삭제할 때까지 새 애니메이션은 기다려요. 열어서 옵션을 확인하세요.",
 		"open": "{character} 열기",
 		"progressLabel": "현재 동작 생성",
 		"retryFeature": "이 동작 다시 생성",

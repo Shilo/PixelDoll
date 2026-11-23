@@ -2577,7 +2577,7 @@
 			"queueReplacement": "Görünüm değiştirmeyi sıraya al: {move}"
 		},
 		"titleRepair": "Eşya karelerini onarın",
-		"heldBy": "{character} karakterinde {move} başarısız oldu, bu yüzden yeni animasyonlar bekliyor. Seçenekleri görmek için denemeyi açın.",
+		"heldBy": "{character} karakterinde {move} başarısız oldu. Ücretli sonuçları kurtarılabilir kalsın diye, orada yeniden deneyene veya atana kadar yeni animasyonlar bekler. Seçenekleri görmek için açın.",
 		"open": "Şu karakteri açın: {character}",
 		"progressLabel": "Devam eden animasyon üretimi",
 		"retryFeature": "Bu animasyonu yeniden üretme",

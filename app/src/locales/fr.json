@@ -2577,7 +2577,7 @@
 			"queueReplacement": "Mettre en file d’attente le remplacement des vues de {move}"
 		},
 		"titleRepair": "Réparer les images de l’objet",
-		"heldBy": "Échec de {move} pour {character}. Les nouvelles animations attendent. Ouvrez la tentative pour voir les options.",
+		"heldBy": "Échec de {move} pour {character}. Les nouvelles animations attendent que vous le relanciez ou l’abandonniez là-bas, afin que ses résultats payés restent récupérables. Ouvrez-le pour voir les options.",
 		"open": "Ouvrir {character}",
 		"progressLabel": "Génération de l’animation en cours",
 		"retryFeature": "Nouvelle génération de cette animation",

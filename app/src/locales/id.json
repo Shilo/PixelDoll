@@ -2513,7 +2513,7 @@
 			"queueReplacement": "Antrekan penggantian tampilan: {move}"
 		},
 		"titleRepair": "Perbaiki frame item",
-		"heldBy": "{move} gagal pada {character}, sehingga animasi baru harus menunggu. Buka percobaan untuk melihat opsi.",
+		"heldBy": "{move} gagal pada {character}. Animasi baru menunggu sampai Anda mencoba lagi atau membuangnya di sana, agar hasil berbayarnya tetap dapat dipulihkan. Buka untuk melihat opsinya.",
 		"open": "Buka {character}",
 		"progressLabel": "Pembuatan animasi saat ini",
 		"retryFeature": "Membuat ulang animasi ini",

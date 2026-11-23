@@ -2577,7 +2577,7 @@
 			"queueReplacement": "Poner en cola el reemplazo de las vistas de {move}"
 		},
 		"titleRepair": "Reparar fotogramas del objeto",
-		"heldBy": "Falló {move} en {character}, así que las animaciones nuevas quedan en espera. Abre el intento para ver las opciones.",
+		"heldBy": "Falló {move} en {character}. Las animaciones nuevas esperan hasta que lo reintentes o lo descartes allí, para que sus resultados pagados sigan recuperables. Ábrelo para ver las opciones.",
 		"open": "Abrir {character}",
 		"progressLabel": "Generación de animación en curso",
 		"retryFeature": "Volver a generar esta animación",

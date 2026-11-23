@@ -5882,7 +5882,7 @@ test('moves waiting behind another character’s failed move point to it', async
 	await page.getByRole('button', { name: /^Jump Waiting for the failed move/ }).click();
 	const sheet = page.getByRole('dialog', { name: 'New move', exact: true });
 	await expect(sheet).toContainText(
-		'Cast failed on Failed mover, so new moves wait. Open it for recovery options.'
+		'Cast failed on Failed mover. New moves wait until you retry or discard it there, so its paid results stay recoverable. Open it for the options.'
 	);
 	await sheet.getByRole('button', { name: 'Open Failed mover', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Failed mover');
