@@ -888,6 +888,10 @@ test('device import validates dropped files and picker files before previewing',
 	await expect(picker).toHaveValue('');
 	await picker.setInputFiles(file);
 	await expect(dialog.getByRole('alert')).toBeVisible();
+	// A file that fails to import can be reported; the wrong choices of file above cannot (their exact text has no Report).
+	await expect(
+		dialog.getByRole('alert').getByRole('button', { name: 'Report this problem', exact: true })
+	).toBeVisible();
 	await expect(
 		dialog.getByRole('button', { name: 'Import character', exact: true })
 	).toBeDisabled();

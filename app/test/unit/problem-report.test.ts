@@ -7,6 +7,7 @@ import {
 	buildReport,
 	endpointPath,
 	MAX_URL_LENGTH,
+	onceShown,
 	osOf,
 	reportText,
 	reportUrl,
@@ -101,13 +102,30 @@ test('environment names only browser and OS families', () => {
 	expect(osOf(CHROME_WINDOWS)).toBe('Windows');
 });
 
-test('englishMessage keeps text variables as placeholders and fills numbers and nested messages', () => {
+describe('onceShown', () => {
+	test('shows each distinct error once, and retries one that could not be shown', () => {
+		const shown: unknown[] = [];
+		let room = false;
+		const report = onceShown((error) => room && shown.push(error) > 0);
+		const busy = new TypeError('a');
+		report(busy); // another notice holds the place
+		expect(shown).toEqual([]);
+		room = true;
+		report(busy);
+		report(new TypeError('a'));
+		report(new TypeError('b'));
+		report(Object.assign(new Error('stop'), { name: 'AbortError' }));
+		expect(shown.map((e) => (e as Error).message)).toEqual(['a', 'b']);
+	});
+});
+
+test('englishMessage hides text variables and fills numbers and nested messages', () => {
 	expect(englishMessage(message('recentlyDeleted.restoreNamed', { name: 'Secret Knight' }))).toBe(
-		'Restore {name}'
+		'Restore ...'
 	);
 	expect(
 		englishMessage(message('recentlyDeleted.restoredWithDrafts', { name: 'X', count: 1 }))
-	).toBe('Restored {name} with 1 draft');
+	).toBe('Restored ... with 1 draft');
 	expect(englishMessage({ key: 'nope.missing' } as unknown as Message)).toBeUndefined();
 });
 
@@ -127,13 +145,13 @@ describe('buildReport', () => {
 			},
 			context
 		);
-		expect(report.title).toBe('Add a move: Could not save: {reason}');
+		expect(report.title).toBe('Add a move: Could not save: ...');
 		expect(report.details).toBe(
 			[
 				'Area: Add a move',
 				'Kind: error',
 				'Message key: state.couldNotSaveReason',
-				'Message: Could not save: {reason}',
+				'Message: Could not save: ...',
 				'Error: ApiError',
 				'Error kind: invalid',
 				'HTTP status: 422',
@@ -189,8 +207,48 @@ describe('buildReport', () => {
 		const query = new URL(url).searchParams;
 		expect(query.get('template')).toBe('problem-report.yml');
 		expect(query.get('title')).toBe(report.title);
-		for (const field of ['problem', 'steps', 'environment', 'details'] as const)
+		for (const field of ['problem', 'environment', 'details'] as const)
 			expect(query.get(field)).toBe(report[field]);
+	});
+
+	test('only app message keys and error-shaped names are reported', () => {
+		const report = buildReport(
+			{
+				message: { key: `made.up.${SECRETS.jobId}` } as unknown as Message,
+				error: Object.assign(new Error('x'), { name: 'Knight helmet' })
+			},
+			context
+		);
+		expect(report.details).not.toContain('Message key');
+		expect(report.details).toContain('Error: Error');
+		expect(
+			buildReport({ error: new DOMException('x', 'QuotaExceededError') }, context).details
+		).toContain('Error: QuotaExceededError');
+	});
+
+	test('an uncaught error is titled by its name and area, and Steps to reproduce is left to the person', () => {
+		const report = buildReport(
+			{
+				area: 'Characters',
+				message: message('report.unexpected'),
+				error: new TypeError('x'),
+				tone: 'warning',
+				uncaught: true
+			},
+			context
+		);
+		expect(report.title).toBe('Unexpected TypeError in Characters');
+		expect(report.problem).toBe(
+			'PixelDoll hit an unexpected TypeError in Characters that nothing handled.'
+		);
+		expect(reportText(report)).not.toContain('Steps to reproduce');
+		expect(new URL(reportUrl(report)).searchParams.has('steps')).toBe(false);
+	});
+
+	test('the URL encodes spaces as %20, never +', () => {
+		const url = reportUrl(buildReport({ area: 'Add a move', summary: 'a + b c' }, context));
+		expect(url).toContain('title=Add%20a%20move%3A%20a%20%2B%20b%20c');
+		expect(url.split('?')[1]).not.toContain('+');
 	});
 
 	test('an overlong summary shrinks until the URL fits', () => {

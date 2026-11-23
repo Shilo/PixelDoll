@@ -38,6 +38,8 @@ export interface Problem {
 	error?: unknown;
 	tone?: ProblemTone;
 	facts?: ProblemFacts;
+	/** Caught by the global handlers: the report is titled by the error, not by the generic notice. */
+	uncaught?: boolean;
 }
 
 export interface ReportEnvironment {
@@ -64,11 +66,11 @@ export interface ReportContext {
 	uptime?: number;
 }
 
-/** The issue form fields, in the order of .github/ISSUE_TEMPLATE/problem-report.yml. */
+/** The issue form fields PixelDoll fills, in the order of .github/ISSUE_TEMPLATE/problem-report.yml. Steps to reproduce
+ *  stays empty for the person: PixelDoll cannot know them, and filler would read as if they wrote it. */
 export interface ProblemReport {
 	title: string;
 	problem: string;
-	steps: string;
 	environment: string;
 	details: string;
 }
@@ -76,7 +78,7 @@ export interface ProblemReport {
 export const ISSUE_TEMPLATE = 'problem-report.yml';
 /** GitHub and browsers accept far longer URLs; staying well under 8 KB keeps every proxy and browser safe. */
 export const MAX_URL_LENGTH = 7000;
-const LIMITS = { title: 120, problem: 700, steps: 300, environment: 300, details: 1500 } as const;
+const LIMITS = { title: 120, problem: 700, environment: 300, details: 1500 } as const;
 
 // ---------- sanitizer ----------
 
@@ -172,6 +174,10 @@ const count = (value: unknown, max = 1e6) =>
 		? value
 		: undefined;
 const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+/** Error class and DOMException names; anything else (a name a script made up) is reported as Error. */
+const ERROR_NAME = /^[A-Z][A-Za-z]{0,40}(?:Error|Exception)$/;
+const errorName = (value: unknown) =>
+	typeof value === 'string' && ERROR_NAME.test(value) ? value : 'Error';
 
 interface ErrorFacts {
 	name?: string;
@@ -201,7 +207,7 @@ export function errorFacts(error: unknown): ErrorFacts {
 	const out: ErrorFacts = {};
 	if (e.translation && typeof e.translation.key === 'string') out.message = e.translation;
 	const api = typeof e.status === 'number' && typeof e.kind === 'string';
-	out.name = api ? 'ApiError' : word(e.name);
+	out.name = api ? 'ApiError' : errorName(e.name);
 	if (api) {
 		out.kind = word(e.kind);
 		out.status = count(e.status, 999) || undefined; // 0 and -1 mean no response
@@ -215,6 +221,18 @@ export function errorFacts(error: unknown): ErrorFacts {
 		}
 	}
 	return out;
+}
+
+/** Shows each distinct uncaught error once. `show` returns whether it showed: an error that could not be shown yet
+ *  (another notice holds the place) is not remembered, so its next occurrence can show. */
+export function onceShown(show: (error: unknown) => boolean): (error: unknown) => void {
+	const shown = new Set<string>();
+	return (error) => {
+		const e = error as { name?: unknown; message?: unknown } | null | undefined;
+		if (e?.name === 'AbortError') return;
+		const signature = `${String(e?.name)}:${String(e?.message ?? error)}`;
+		if (!shown.has(signature) && show(error)) shown.add(signature);
+	};
 }
 
 /** The status in a saved "METHOD /path -> 422: ..." queue error. */
@@ -324,12 +342,12 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 	const facts = problem.facts ?? {},
 		fromError = errorFacts(problem.error);
 	const shown = problem.message ?? fromError.message;
+	// A key is reported only when it is one of the app's own English messages.
+	const english = (shown && context.english?.(shown)) || undefined;
 	const area = word(problem.area) ?? 'PixelDoll';
 	const kind = problem.tone === 'warning' ? 'warning' : 'error';
-	const text =
-		(shown && context.english?.(shown)) ||
-		problem.summary ||
-		(fromError.name ? `Unexpected ${fromError.name}` : 'Unexpected problem');
+	const unexpected = `Unexpected ${fromError.name ?? 'problem'}`;
+	const text = english || problem.summary || unexpected;
 	const endpoint = endpointPath(facts.endpoint ?? '') ?? fromError.endpoint;
 	const method = METHODS.has(facts.method ?? '') ? facts.method : fromError.method;
 	const seconds = count(facts.seconds);
@@ -337,7 +355,7 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 	const lines: [string, string | number | undefined][] = [
 		['Area', area],
 		['Kind', kind],
-		['Message key', shown?.key],
+		['Message key', english && shown?.key],
 		['Message', text],
 		['Error', fromError.name],
 		['Error kind', fromError.kind],
@@ -357,23 +375,33 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 		.map(([label, value]) => `${label}: ${value}`)
 		.join('\n');
 	return fit({
-		title: sanitize(`${area}: ${text}`, LIMITS.title),
-		problem: sanitize(`PixelDoll showed this ${kind} in ${area}:\n\n${text}`, LIMITS.problem),
-		steps: sanitize(
-			`It happened while using ${area}. This report was filled in by PixelDoll.`,
-			LIMITS.steps
+		title: sanitize(
+			problem.uncaught ? `${unexpected} in ${area}` : `${area}: ${text}`,
+			LIMITS.title
+		),
+		problem: sanitize(
+			problem.uncaught
+				? `PixelDoll hit an u${unexpected.slice(1)} in ${area} that nothing handled.`
+				: `PixelDoll showed this ${kind} in ${area}:\n\n${text}`,
+			LIMITS.problem
 		),
 		environment: sanitize(environmentLine(context.env), LIMITS.environment),
 		details: sanitize(details, LIMITS.details)
 	});
 }
 
-const FIELDS = ['problem', 'steps', 'environment', 'details'] as const;
+const FIELDS = ['problem', 'environment', 'details'] as const;
 
-/** GitHub's issue form, prefilled through its query parameters. */
+/** GitHub's issue form, prefilled through its query parameters. encodeURIComponent writes spaces as %20, so nothing
+ *  depends on GitHub reading "+" as a space. */
 export function reportUrl(report: ProblemReport): string {
-	const query = new URLSearchParams({ template: ISSUE_TEMPLATE, title: report.title });
-	for (const field of FIELDS) query.set(field, report[field]);
+	const query = [
+		['template', ISSUE_TEMPLATE],
+		['title', report.title],
+		...FIELDS.map((field) => [field, report[field]])
+	]
+		.map(([name, value]) => `${name}=${encodeURIComponent(value)}`)
+		.join('&');
 	return `${repository}/issues/new?${query}`;
 }
 
@@ -397,9 +425,6 @@ export function reportText(report: ProblemReport): string {
 		'',
 		'What happened?',
 		report.problem,
-		'',
-		'Steps to reproduce',
-		report.steps,
 		'',
 		'PixelDoll version, browser, and device',
 		report.environment,

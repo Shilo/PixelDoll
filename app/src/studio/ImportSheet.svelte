@@ -61,7 +61,7 @@
 	import { t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
-	import { LocalizedError, message, type Message } from '../lib/message.ts';
+	import { errorTranslation, LocalizedError, message, type Message } from '../lib/message.ts';
 
 	let { source }: { source: 'device' | 'pixellab' } = $props();
 	let prepared = $state.raw<ImportedCharacter | null>(null);
@@ -115,6 +115,18 @@
 		listed = $state(false),
 		previewRevision = $state(0),
 		libraryError = $state<Message | string>('');
+	// The error behind `error`, for Report. A wrong choice of file is the person's to fix, so it has none.
+	let cause = $state.raw<unknown>();
+	const FILE_CHOICE = new Set([
+		'import.error.chooseZipFile',
+		'import.error.oneAtATime',
+		'import.error.chooseZip',
+		'zip.tooLarge'
+	]);
+	function fail(e: unknown) {
+		error = e === undefined ? '' : errorMessage(e);
+		cause = FILE_CHOICE.has(errorTranslation(e)?.key ?? '') ? undefined : e;
+	}
 	let alive = true;
 	let fileInput = $state<HTMLInputElement>();
 	let dragging = $state(false);
@@ -122,7 +134,8 @@
 		() => busy,
 		(active) => (dragging = active),
 		(files) => {
-			if (!files.length) error = message('import.error.chooseZipFile');
+			if (!files.length)
+				fail(new LocalizedError('Choose a ZIP file, not a folder.', 'import.error.chooseZipFile'));
 			else void importFiles(files);
 		}
 	);
@@ -186,7 +199,7 @@
 		previewValid = false;
 		nameInitialized = false;
 		bytes = null;
-		error = '';
+		fail(undefined);
 		name = '';
 		states = [];
 		stateId = '';
@@ -284,7 +297,7 @@
 			const data = new Uint8Array(await file.arrayBuffer());
 			if (alive) await prepare(data, undefined, 'all');
 		} catch (e) {
-			if (alive) error = errorMessage(e);
+			if (alive) fail(e);
 		} finally {
 			if (alive) busy = false;
 		}
@@ -307,7 +320,7 @@
 				'all'
 			);
 		} catch (e) {
-			if (alive) error = errorMessage(e);
+			if (alive) fail(e);
 		} finally {
 			if (alive) busy = false;
 		}
@@ -319,12 +332,12 @@
 			states.some((s) => s.id === id && s.animations !== 0)
 		);
 		stateId = value;
-		error = '';
+		fail(undefined);
 		busy = true;
 		try {
 			await prepare(data, value, selected);
 		} catch (e) {
-			if (alive) error = errorMessage(e);
+			if (alive) fail(e);
 		} finally {
 			if (alive) busy = false;
 		}
@@ -333,12 +346,12 @@
 		if (!bytes || busy) return;
 		const data = bytes;
 		moveStates = include ? [...moveStates, id] : moveStates.filter((value) => value !== id);
-		error = '';
+		fail(undefined);
 		busy = true;
 		try {
 			await prepare(data, stateId, moveStates);
 		} catch (e) {
-			if (alive) error = errorMessage(e);
+			if (alive) fail(e);
 		} finally {
 			if (alive) busy = false;
 		}
@@ -348,12 +361,12 @@
 		excludedPoses = include
 			? excludedPoses.filter((value) => value !== id)
 			: [...excludedPoses, id];
-		error = '';
+		fail(undefined);
 		busy = true;
 		try {
 			await prepare(bytes, stateId, moveStates);
 		} catch (e) {
-			if (alive) error = errorMessage(e);
+			if (alive) fail(e);
 		} finally {
 			if (alive) busy = false;
 		}
@@ -362,7 +375,7 @@
 		if (!prepared || !previewValid || busy || directionError) return;
 		busy = true;
 		saving = true;
-		error = '';
+		fail(undefined);
 		try {
 			let imported = prepared;
 			if (directionChoices) {
@@ -392,7 +405,7 @@
 				toast(message('renameSheet.characterIdConflict'), { tone: 'warning', report: false });
 			else toast(message('import.imported', { name: name.trim() }));
 		} catch (e) {
-			if (alive) error = errorMessage(e);
+			if (alive) fail(e);
 		} finally {
 			if (alive) {
 				busy = false;
@@ -797,7 +810,8 @@
 			{saving ? t('import.saving') : t('import.preparing')}
 		</p>{/if}
 	{#if error}<p class="notice bad small" role="alert">
-			<TriangleAlert size={16} /><span>{displayDirectionProblem(error)}</span>
+			<TriangleAlert size={16} /><span>{displayDirectionProblem(error)}</span
+			>{#if cause !== undefined}<ReportButton error={cause} />{/if}
 		</p>{/if}
 	{#snippet footer()}
 		<span class="foot-note import-note">{t('import.note')}</span>

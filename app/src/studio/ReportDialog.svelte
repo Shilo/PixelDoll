@@ -46,7 +46,6 @@
 	class="report-dialog bu-dialog-surface"
 	aria-labelledby="{id}-title"
 	aria-describedby="{id}-body"
-	data-testid="report-dialog"
 	onkeydown={(e) => e.stopPropagation()}
 	oncancel={(e) => {
 		e.preventDefault();
@@ -55,35 +54,49 @@
 >
 	<h2 id="{id}-title">{t('report.title')}</h2>
 	<p id="{id}-body" class="report-intro">{t('report.intro')}</p>
+	<!-- Focusable so keyboard users can scroll a long report. -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-	<pre class="report-preview" tabindex="0" aria-label={t('report.preview')}>{text}</pre>
+	<pre
+		class="report-preview"
+		role="region"
+		tabindex="0"
+		aria-label={t('report.preview')}>{text}</pre>
 	{#if copied === 'failed'}<p class="notice warn small" role="alert">
 			{t('report.copyFailed')}
 		</p>{/if}
+	<p class="bu-sr" role="status" aria-live="polite">
+		{copied === 'done' ? t('report.copied') : ''}
+	</p>
+	<!-- Whole buttons wrap, never their labels; the last (primary) one then fills its own row. -->
 	<div class="report-actions">
 		<button bind:this={cancel} class="bu-btn" onclick={closeReport}>{t('common.cancel')}</button>
 		<button class="bu-btn" onclick={copy}
 			>{t(copied === 'done' ? 'report.copied' : 'report.copy')}</button
 		>
-		<a
-			class="bu-btn"
-			data-variant="primary"
-			href={url}
-			target="_blank"
-			rel="noreferrer"
-			onclick={() => queueMicrotask(closeReport)}
-			>{t('report.open')}<ExternalLink size={16} aria-hidden="true" /></a
+		<!-- It stays open: a blocked popup would otherwise lose the report. -->
+		<a class="bu-btn" data-variant="primary" href={url} target="_blank" rel="noreferrer"
+			>{t('report.open')}<ExternalLink size={16} aria-hidden="true" /><span class="bu-sr">
+				{t('noticeLink.opensInANewTab')}</span
+			></a
 		>
 	</div>
 </dialog>
 
 <style>
 	.report-dialog {
-		width: min(440px, calc(100vw - 32px));
+		width: min(520px, calc(100vw - 32px));
 		max-height: calc(100dvh - 32px);
 		margin: auto;
 		padding: 20px;
-		overflow: auto;
+		overflow: hidden;
+	}
+	/* A column whose preview gives up height first, so the actions stay in view on short screens. */
+	.report-dialog[open] {
+		display: flex;
+		flex-direction: column;
+	}
+	.report-dialog > :not(.report-preview) {
+		flex: none;
 	}
 	.report-dialog::backdrop {
 		background: var(--bu-scrim);
@@ -101,7 +114,9 @@
 		text-align: center;
 	}
 	.report-preview {
-		max-height: min(40dvh, 320px);
+		flex: 0 1 auto;
+		min-height: 0;
+		max-height: 320px;
 		margin: 0;
 		padding: 10px 12px;
 		overflow: auto;
@@ -123,10 +138,10 @@
 		margin-top: 16px;
 	}
 	.report-actions > * {
-		flex: 1 1 calc(33% - 6px);
+		flex: 1 0 auto;
 		min-height: 44px;
 		height: auto;
-		white-space: normal;
+		white-space: nowrap;
 		gap: 6px;
 		text-decoration: none;
 	}

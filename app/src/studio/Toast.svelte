@@ -153,7 +153,9 @@
 				tone={ui.toastTone}
 				indicator={ui.toastPending ? pendingIndicator : undefined}
 				live
-				onactivate={typeof ui.toast !== 'function' && !ui.toastActionLabel ? activate : undefined}
+				onactivate={typeof ui.toast !== 'function' && !ui.toastActionLabel && !ui.toastProblem
+					? activate
+					: undefined}
 				ondismiss={dismiss}
 			>
 				{#if typeof ui.toast === 'function'}{@render ui.toast()}{:else if Array.isArray(ui.toast)}{ui.toast

@@ -163,7 +163,7 @@ import {
 import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
 import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
-import type { Problem } from '../lib/report/report.ts';
+import { onceShown, type Problem } from '../lib/report/report.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
@@ -530,8 +530,9 @@ export interface ToastOptions {
 	actionLabel?: string | Message;
 	/** The error behind a danger or warning notice: its report names the error and any PixelLab status and endpoint. */
 	error?: unknown;
-	/** false: expected guidance (a plan limit, a busy tab), or a notice that opens a failure view with its own Report. */
-	report?: false;
+	/** false: expected guidance (a plan limit, a busy tab). 'uncaught': the error reached the global handlers. A notice
+	 *  whose whole surface opens a failure view (an action without a label) never has Report: that view has its own. */
+	report?: false | 'uncaught';
 }
 const firstMessage = (value: unknown): Message | undefined =>
 	Array.isArray(value)
@@ -539,15 +540,18 @@ const firstMessage = (value: unknown): Message | undefined =>
 		: value && typeof value === 'object' && typeof (value as Message).key === 'string'
 			? (value as Message)
 			: undefined;
-/** Something failed that no surface handled: a warning with a Report action, once per distinct error. */
-const unexpectedErrors = new Set<string>();
-export function unexpectedError(error: unknown) {
-	if ((error as Error | undefined)?.name === 'AbortError') return;
-	const signature = `${(error as Error | undefined)?.name}:${(error as Error | undefined)?.message ?? String(error)}`;
-	if (unexpectedErrors.has(signature)) return;
-	unexpectedErrors.add(signature);
-	toast(message('report.unexpected'), { tone: 'warning', duration: 10000, error });
-}
+/** Something failed that no surface handled: a warning with a Report action, once per distinct error. It never
+ *  replaces a notice the person may still act on (Undo, Try again, a pending step). */
+export const unexpectedError = onceShown(
+	(error) =>
+		!(ui.toast && (ui.toastAction || ui.toastPending || typeof ui.toast === 'function')) &&
+		toast(message('report.unexpected'), {
+			tone: 'warning',
+			duration: 10000,
+			error,
+			report: 'uncaught'
+		})
+);
 function stopToastTimer() {
 	clearTimeout(toastT);
 	toastT = undefined;
@@ -610,11 +614,14 @@ export function toast(
 	ui.toastAction = o.action ?? null;
 	ui.toastActionLabel = o.actionLabel ?? '';
 	ui.toastProblem =
-		(o.tone === 'danger' || o.tone === 'warning') && o.report !== false
+		(o.tone === 'danger' || o.tone === 'warning') &&
+		o.report !== false &&
+		!(o.action && !o.actionLabel)
 			? {
 					message: firstMessage(s) ?? firstMessage(o.title),
 					error: o.error,
-					tone: o.tone === 'danger' ? 'error' : 'warning'
+					tone: o.tone === 'danger' ? 'error' : 'warning',
+					uncaught: o.report === 'uncaught'
 				}
 			: null;
 	toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000);
