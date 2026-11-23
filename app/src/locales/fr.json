@@ -2560,7 +2560,6 @@
 			"tier": "Votre forfait PixelLab ne prend pas en charge certains objets sélectionnés."
 		},
 		"thatCharacter": "ce personnage",
-		"heldWaiting": "{move} a échoué pour ce personnage. Ses options de récupération reviendront ici quand l’animation en cours sera terminée.",
 		"recoveryCheckFailed": "Impossible de vérifier les images en cache : {error}",
 		"retryLabel": "Générer à nouveau l’animation",
 		"newSetup": "Nouvelle animation…",
@@ -2578,6 +2577,7 @@
 			"queueReplacement": "Mettre en file d’attente le remplacement des vues de {move}"
 		},
 		"titleRepair": "Réparer les images de l’objet",
+		"heldBy": "Échec de {move} pour {character}. Les nouvelles animations attendent. Ouvrez la tentative pour voir les options.",
 		"open": "Ouvrir {character}",
 		"progressLabel": "Génération de l’animation en cours",
 		"retryFeature": "Nouvelle génération de cette animation",

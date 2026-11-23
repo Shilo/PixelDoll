@@ -2560,7 +2560,6 @@
 			"tier": "PixelLab planınız seçilen bazı eşyaları desteklemiyor."
 		},
 		"thatCharacter": "söz konusu karakter",
-		"heldWaiting": "{move} bu karakterde başarısız oldu. Kurtarma seçenekleri, geçerli animasyon bitince burada yeniden görünür.",
 		"recoveryCheckFailed": "Önbellekteki kareler kontrol edilemedi: {error}",
 		"retryLabel": "Animasyonu yeniden üretin",
 		"newSetup": "Yeni animasyon…",
@@ -2578,6 +2577,7 @@
 			"queueReplacement": "Görünüm değiştirmeyi sıraya al: {move}"
 		},
 		"titleRepair": "Eşya karelerini onarın",
+		"heldBy": "{character} karakterinde {move} başarısız oldu, bu yüzden yeni animasyonlar bekliyor. Seçenekleri görmek için denemeyi açın.",
 		"open": "Şu karakteri açın: {character}",
 		"progressLabel": "Devam eden animasyon üretimi",
 		"retryFeature": "Bu animasyonu yeniden üretme",

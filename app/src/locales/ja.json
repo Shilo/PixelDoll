@@ -2496,7 +2496,6 @@
 			"tier": "ご利用のPixelLabプランでは、選択した一部のアイテムに対応していません。"
 		},
 		"thatCharacter": "そのキャラクター",
-		"heldWaiting": "このキャラクターの{move}が失敗しました。現在のモーションが終わると、ここに復旧の選択肢が戻ります。",
 		"recoveryCheckFailed": "キャッシュされたフレームを確認できませんでした：{error}",
 		"retryLabel": "モーションをもう一度生成",
 		"newSetup": "新規モーション…",
@@ -2514,6 +2513,7 @@
 			"queueReplacement": "「{move}」の差し替えをキューに追加"
 		},
 		"titleRepair": "アイテムのフレームを修復",
+		"heldBy": "{character}の{move}に失敗したため、新しいモーションは待機中です。試行を開いて対処方法を確認してください。",
 		"open": "{character}を開く",
 		"progressLabel": "現在のモーション生成",
 		"retryFeature": "このモーションをもう一度生成",

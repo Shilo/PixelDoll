@@ -25,7 +25,6 @@
 		creates,
 		reviewFailedCreate,
 		moving,
-		heldMoves,
 		settingUp,
 		dismissSetup,
 		gens,
@@ -99,8 +98,7 @@
 			movingPending ||
 			setupPending ||
 			generatingItems.length ||
-			moving.queued.length ||
-			heldMoves.length
+			moving.queued.length
 	);
 	const characterName = (id: string) =>
 		store.projects.find((project) => project.id === id)?.name ?? t('common.character');
@@ -237,13 +235,6 @@
 							() => void openWork('move', moving.projectId)
 						)}
 					{/if}
-					{#each heldMoves as held (held.projectId)}
-						{@render workRow(
-							`${moveName(held.projectId, held.spec.id)} · ${characterName(held.projectId)}`,
-							t('generation.status.needsAttention'),
-							() => void openWork('move', held.projectId)
-						)}
-					{/each}
 					{#if setupPending}
 						{@render workRow(
 							`${t('activity.characterSetup')} · ${characterName(setupPending.projectId)}`,

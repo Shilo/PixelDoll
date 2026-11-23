@@ -468,38 +468,6 @@ test('any translated move failure keeps its code across a reload, so recovery ne
 	expect(message.errorTranslation(s.moving.error)?.vars).toEqual({ n: 1 });
 });
 
-test('a failed move holds only its own character: another character’s move sets it aside and it comes back', async () => {
-	const { LocalizedError: Thrown } = await import('../../src/lib/message.ts');
-	mocks.move.mockRejectedValueOnce(new Thrown('Cast stopped.', 'create.errors.newMoveFailsQa'));
-	mocks.move.mockResolvedValueOnce({ warnings: [] });
-	const s = await import('../../src/studio/state.svelte.ts');
-	await s.startMove('rig-a', { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 });
-	expect(s.moving).toMatchObject({ projectId: 'rig-a', done: false });
-	expect(s.moving.error).toBeTruthy();
-	// another character's move starts at once instead of waiting behind the failure
-	await s.startMove('rig-b', { id: 'jump', action: 'jump', frames: 8, items: [], seed: 1 });
-	expect(mocks.move).toHaveBeenLastCalledWith(
-		'rig-b',
-		expect.objectContaining({ id: 'jump' }),
-		expect.any(Function)
-	);
-	expect(s.heldMoves.map((held) => held.projectId)).toEqual(['rig-a']);
-	expect(
-		mocks.put.mock.calls.some(
-			([, key, record]) =>
-				key === 'studio-move-held' &&
-				(record as { held: { projectId: string }[] }).held[0].projectId === 'rig-a'
-		)
-	).toBe(true);
-	// the held failure comes back, with its translated reason, for its own character's recovery options
-	await s.restoreHeldMove('rig-a');
-	expect(s.heldMoves).toEqual([]);
-	expect(s.moving).toMatchObject({ projectId: 'rig-a', done: false });
-	expect((s.moving.error as InstanceType<typeof Thrown>).translation.key).toBe(
-		'create.errors.newMoveFailsQa'
-	);
-});
-
 test.each(['failed', 'running'] as const)(
 	'clears %s rig setup work for a missing character without reopening or restarting it',
 	async (status) => {
@@ -549,11 +517,9 @@ test.each(['move', 'setup'] as const)(
 		mocks.get.mockRejectedValueOnce(failure);
 		await expect(resume()).rejects.toBe(failure);
 		await resume();
-		// a move's resume also reads the failed moves set aside for their own characters
 		expect(mocks.get.mock.calls).toEqual([
 			['projects', `studio-${kind}`],
-			['projects', `studio-${kind}`],
-			...(kind === 'move' ? [['projects', 'studio-move-held']] : [])
+			['projects', `studio-${kind}`]
 		]);
 	}
 );

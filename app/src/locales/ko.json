@@ -2496,7 +2496,6 @@
 			"tier": "현재 PixelLab 요금제에서 선택한 일부 아이템을 지원하지 않아요."
 		},
 		"thatCharacter": "해당 캐릭터",
-		"heldWaiting": "이 캐릭터의 {move}이(가) 실패했어요. 현재 동작이 끝나면 복구 옵션이 여기에 다시 나타나요.",
 		"recoveryCheckFailed": "캐시된 프레임을 확인하지 못했어요: {error}",
 		"retryLabel": "동작 다시 생성",
 		"newSetup": "새 애니메이션…",
@@ -2514,6 +2513,7 @@
 			"queueReplacement": "선택한 뷰 교체를 대기열에 추가: {move}"
 		},
 		"titleRepair": "아이템 프레임 복구",
+		"heldBy": "{character}의 {move} 작업이 실패해 새 애니메이션이 대기 중이에요. 시도를 열어 복구 옵션을 확인하세요.",
 		"open": "{character} 열기",
 		"progressLabel": "현재 동작 생성",
 		"retryFeature": "이 동작 다시 생성",

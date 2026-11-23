@@ -2560,7 +2560,6 @@
 			"tier": "Your PixelLab plan does not support some selected items."
 		},
 		"thatCharacter": "that character",
-		"heldWaiting": "{move} failed on this character. Its recovery options come back here when the current move finishes.",
 		"recoveryCheckFailed": "Could not check cached frames: {error}",
 		"retryLabel": "Generate move again",
 		"newSetup": "New move…",
@@ -2578,6 +2577,7 @@
 			"queueReplacement": "Queue replacement: {move} views"
 		},
 		"titleRepair": "Repair item frames",
+		"heldBy": "{move} failed on {character}, so new moves wait. Open it for recovery options.",
 		"open": "Open {character}",
 		"progressLabel": "Current move generation",
 		"retryFeature": "Generating this move again",

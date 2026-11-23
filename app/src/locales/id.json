@@ -2496,7 +2496,6 @@
 			"tier": "Paket PixelLab Anda tidak mendukung beberapa item yang dipilih."
 		},
 		"thatCharacter": "karakter tersebut",
-		"heldWaiting": "{move} gagal pada karakter ini. Opsi pemulihannya akan kembali di sini setelah animasi saat ini selesai.",
 		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",
 		"retryLabel": "Buat ulang animasi",
 		"newSetup": "Animasi baru…",
@@ -2514,6 +2513,7 @@
 			"queueReplacement": "Antrekan penggantian tampilan: {move}"
 		},
 		"titleRepair": "Perbaiki frame item",
+		"heldBy": "{move} gagal pada {character}, sehingga animasi baru harus menunggu. Buka percobaan untuk melihat opsi.",
 		"open": "Buka {character}",
 		"progressLabel": "Pembuatan animasi saat ini",
 		"retryFeature": "Membuat ulang animasi ini",

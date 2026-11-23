@@ -4300,75 +4300,10 @@ function storeMove(record = moveRecord) {
 	moveWrites = write.catch(() => {}); // ordering only: each caller handles its own write's error
 	return write;
 }
-/** A character's failed move, set aside while another character's move runs: a failure holds only its own character. */
-type HeldMove = FlowDraft<MoveSpec> & { projectId: string; queued?: QueuedMove[] };
-export const heldMoves = $state<HeldMove[]>([]);
-const HELD_MOVES_KEY = 'studio-move-held'; // projects store, no `manifest` -> ignored by project listings
-const storeHeldMoves = () =>
-	heldMoves.length
-		? db.put('projects', HELD_MOVES_KEY, {
-				id: HELD_MOVES_KEY,
-				held: $state.snapshot(heldMoves)
-			})
-		: db.del('projects', HELD_MOVES_KEY);
-/** Sets the current failed move aside (with its character's queued moves) so another character's move can run. */
-async function setAsideFailedMove(projectId: string) {
-	if (
-		moveRunning ||
-		!moveRecord ||
-		!moving.spec ||
-		!moving.error ||
-		moving.done ||
-		moving.repairReview ||
-		moving.projectId === projectId
-	)
-		return;
-	const owner = moving.projectId,
-		held = {
-			...(structuredClone(moveRecord) as HeldMove),
-			queued: $state.snapshot(moving.queued).filter((q) => q.projectId === owner)
-		};
-	heldMoves.splice(0, heldMoves.length, ...heldMoves.filter((h) => h.projectId !== owner), held);
-	await storeHeldMoves();
-	moveRevision++;
-	Object.assign(moving, {
-		spec: null,
-		projectId: '',
-		progress: null,
-		error: '',
-		done: false,
-		warnings: [],
-		queued: moving.queued.filter((q) => q.projectId !== owner)
-	});
-	await storeMove(null);
-}
-/** Brings a character's set-aside failed move back as the current move when no other move is running or failing. */
-export async function restoreHeldMove(projectId: string) {
-	const held = heldMoves.find((h) => h.projectId === projectId);
-	if (!held || moveRunning || hmrReloading || queue.role === 'follower') return;
-	if (moving.spec && !moving.done) await setAsideFailedMove(projectId);
-	if (moveRunning || (moving.spec && !moving.done)) return;
-	const { queued = [], ...record } = held;
-	heldMoves.splice(heldMoves.indexOf(held), 1);
-	moving.queued = [...queued, ...moving.queued];
-	await storeMove(record);
-	await storeHeldMoves();
-	Object.assign(moving, {
-		spec: record.spec,
-		projectId,
-		progress: record.progress ?? null,
-		error: restoredFlowError(record, STOPPED),
-		done: false,
-		warnings: [],
-		repairReview: null,
-		repairApplied: false
-	});
-}
-/** Queue moves behind the current one; start the first now when nothing is pending. A failed move holds its own character's
- * queue until it is retried or dismissed; another character's moves set it aside and go on. */
+/** Queue moves behind the current one; start the first now when nothing is pending. A failed move holds the queue until it
+ * is retried (the queue continues) or dismissed (the queue is dropped). */
 export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	if (hmrReloading || !specs.length) return;
-	await setAsideFailedMove(projectId);
 	moving.queued = [...moving.queued, ...specs.map((spec) => ({ projectId, spec }))];
 	if (moveRunning || (moving.spec && !moving.done)) {
 		await storeMove();
@@ -4445,7 +4380,6 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		toast(message('state.useSavedFramesInTheTabThat'), { tone: 'warning', report: false });
 		return;
 	}
-	await setAsideFailedMove(projectId);
 	if (moveRunning || moveReviewPublishing) {
 		toast(message('state.anotherMoveIsStillBeingAddedSo'), {
 			tone: 'warning',
@@ -4829,8 +4763,6 @@ export async function resumeMove() {
 			moveResumed = false;
 			throw error;
 		});
-	const held = await db.get<{ held?: HeldMove[] }>('projects', HELD_MOVES_KEY);
-	heldMoves.splice(0, heldMoves.length, ...(held?.held ?? []));
 	if (!r?.spec || (moving.spec && !moving.done)) return;
 	// A move whose character is gone can never be opened to retry or dismiss. Moves queued behind it wait for a decision.
 	if (
@@ -4858,7 +4790,7 @@ export async function resumeMove() {
 			repairError = error instanceof LocalizedError ? error : errorText(error);
 		}
 	}
-	if (halted(r)) {
+	if (halted(r))
 		Object.assign(moving, {
 			spec: r.spec,
 			projectId: r.projectId,
@@ -4869,13 +4801,7 @@ export async function resumeMove() {
 			done: false,
 			warnings: []
 		});
-		// Another character's moves queued behind a failure go on; the failure is set aside for its own character.
-		const other = moving.queued.find((q) => q.projectId !== r.projectId);
-		if (other && !r.repairReview) {
-			moving.queued = moving.queued.filter((q) => q !== other);
-			void startMove(other.projectId, other.spec);
-		}
-	} else void startMove(r.projectId, r.spec);
+	else void startMove(r.projectId, r.spec);
 }
 
 export async function resolveRepairReview(useRepair: boolean) {
