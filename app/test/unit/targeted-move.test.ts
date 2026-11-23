@@ -1099,7 +1099,10 @@ test('a valid custom description includes motion costs and wrong provider cardin
 });
 
 test('managed motion drops one extra leading motion frame by position on described moves and the walk template', async () => {
-	const motionWith = async (first: 'standing' | 'other', change: Record<string, unknown> = {}) => {
+	const motionWith = async (
+		first: 'standing' | 'other' | 'none' | 'two',
+		change: Record<string, unknown> = {}
+	) => {
 		const count = change.action === 'walk' ? 8 : 4;
 		const f = await fixture(),
 			standing = (await projects.loadProject('rig-target')).project.images.values().next().value!,
@@ -1113,7 +1116,7 @@ test('managed motion drops one extra leading motion frame by position on describ
 		for (let y = 20; y < 30; y++)
 			for (let x = 22; x < 42; x++) outfit.data.set([40, 90, 160, 255], (y * 64 + x) * 4);
 		const images = [
-				first === 'standing' ? standing : outfit,
+				...{ standing: [standing], other: [outfit], none: [], two: [outfit, outfit] }[first],
 				...Array.from({ length: count }, (_, i) => frame(11 + i))
 			],
 			blobs = new Map<string, Blob>();
@@ -1179,6 +1182,19 @@ test('managed motion drops one extra leading motion frame by position on describ
 	expect(String(walk.error)).not.toContain('motion frames for');
 	expect(walk.measured).toBe(8);
 	expect(walk.echo?.maskIoU).toBeLessThan(1);
+	// Only exactly one extra frame is dropped: the requested count keeps every frame, and any other count still stops.
+	const walkMove = {
+		action: 'walk',
+		text: undefined,
+		animation: { model: 'skeleton-v3', frameCount: 4 }
+	};
+	const exact = await motionWith('none', walkMove);
+	expect(String(exact.error)).not.toContain('motion frames for');
+	expect(exact.measured).toBe(8);
+	expect(exact.echo).toBeUndefined();
+	const two = await motionWith('two', walkMove);
+	expect(String(two.error)).toContain('PixelLab returned 10 motion frames for 8 requested');
+	expect(two.measured).toBe(0);
 });
 
 test('one interior motion frame without joints is bridged from its measured neighbors, never from requested poses', () => {

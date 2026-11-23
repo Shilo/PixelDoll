@@ -3663,8 +3663,8 @@ const viewWords = (m: Manifest, move: string, d: DirectionName): ViewWords => ({
 	direction: viewName(d)
 });
 const salt = (previous = 0) => previous + 1 + Math.floor(Math.random() * 1_000_000);
-/** The motion frames of a returned source: one extra leading frame is the start frame sent back (normalizeMotionFrames drops
- *  it or stops on it), so it never asks for a lift or room. */
+/** The motion frames of a returned source: one extra leading frame is the start frame sent back, which normalizeMotionFrames
+ *  drops by position, so it never asks for a lift or room. */
 const motionFramesOf = (images: Img[], expected: number) =>
 	images.length === expected + 1 ? images.slice(1) : images;
 /** Rows each returned motion frame needs to fit the cell, or null when lifting cannot fit one (cut at a side or the top). */
