@@ -2571,6 +2571,11 @@ export function bodyMoveIssue(
 				blocked ? 'create.errors.describeMoveBlocked' : 'create.errors.describeMove'
 			);
 }
+/** The drawn (not mirrored) views a move has frames in. */
+const drawnViews = (
+	rig: Pick<Rig, 'directions'>,
+	cells: Partial<Record<DirectionName, (Sha256 | null)[]>> | undefined
+) => rig.directions.filter((d) => !d.mirrorOf && cells?.[d.id]?.some(Boolean)).map((d) => d.id);
 /** Equipment cannot be fitted where a move was kept without poses; making the move again there is the way on. */
 function unposedMoveIssue(
 	m: Manifest,
@@ -4554,7 +4559,9 @@ async function addBodyClip(
 		],
 		clips: { ...qa.clips, ...checks },
 		...(setupRedoMoves(fresh).length || unposedDirs.length
-			? { redo: redoAfterSave(setupRedoMoves(fresh), spec.id, dirs, unposedDirs) }
+			? {
+					redo: redoAfterSave(setupRedoMoves(fresh), anim, drawnViews(frig, cellMap), unposedDirs)
+				}
 			: {})
 	};
 	// R6 P1-5: `fresh` was read before ~30 cell writes; graft only what this clip changed onto the CURRENT record in one
@@ -4756,7 +4763,13 @@ export async function resolveMoveCandidate(
 				],
 				clips: { ...qa.clips, ...candidate.checks },
 				...(setupRedoMoves(current).length
-					? { redo: redoAfterSave(setupRedoMoves(current), id, candidate.dirs) }
+					? {
+							redo: redoAfterSave(
+								setupRedoMoves(current),
+								next,
+								drawnViews(rig, base.layers[0].cells?.[id])
+							)
+						}
 					: {})
 			};
 			delete current.moveReviews![id];

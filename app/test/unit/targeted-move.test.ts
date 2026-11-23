@@ -1719,14 +1719,32 @@ test('redoing one view of a move kept without poses leaves the rest of the rig r
 	expect(Object.keys(saved.manifest.rig.animations[0].sources!)).toEqual(['east']);
 	// south, north and west are still without poses and listed: the rig stays ready, items wait there
 	expect(rigReady(saved)).toBe(true);
+	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['idle']);
+	// Repairing the other views one at a time clears the list once every view has poses again, as read back after reload.
+	for (const dir of ['south', 'north'] as const) await f.run({ dirs: [dir] });
+	expect((f.saved().rigQa as { redo?: string[] }).redo).toEqual(['idle']);
+	await f.run({ dirs: ['west'] });
+	const reloaded = (await projects.loadProject('rig-target')).rec;
+	expect((reloaded.rigQa as { redo?: string[] }).redo).toEqual([]);
+	expect(rigReady(reloaded)).toBe(true);
 });
 
-test('unposed views are listed per view and leave the list once they are saved again', () => {
-	expect(redoAfterSave(['walk', 'idle/east'], 'idle', ['east'])).toEqual(['walk']);
-	expect(redoAfterSave(['walk'], 'idle', ['east', 'south'], ['south'])).toEqual([
-		'walk',
-		'idle/south'
-	]);
+test('unposed views are listed per view and leave the list once they have poses again', () => {
+	const posed = { id: 'idle', sources: { east: {} as never, south: {} as never } };
+	expect(redoAfterSave(['walk', 'idle/east'], posed, ['east', 'south'])).toEqual(['walk']);
+	// a whole-move entry stays until every view with frames has poses
+	expect(
+		redoAfterSave(['idle'], { id: 'idle', sources: { east: {} as never } }, ['east', 'south'])
+	).toEqual(['idle']);
+	expect(redoAfterSave(['idle'], posed, ['east', 'south'])).toEqual([]);
+	expect(
+		redoAfterSave(
+			['walk'],
+			{ id: 'idle', sources: { east: {} as never } },
+			['east', 'south'],
+			['south']
+		)
+	).toEqual(['walk', 'idle/south']);
 	const idle = { id: 'idle', sources: { east: {} as never } };
 	// A view with poses is never unposed; an unlisted view without poses (an import not set up yet) is not either.
 	expect(unposedView(['idle'], idle, 'east')).toBe(false);
