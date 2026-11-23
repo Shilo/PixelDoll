@@ -42,7 +42,8 @@
 		"daysLeft": {
 			"one": "{count} day left",
 			"other": "{count} days left"
-		}
+		},
+		"loadFailed": "Trash couldn’t be loaded. The list may be out of date."
 	},
 	"librarySettings": {
 		"title": "Library",
@@ -1049,7 +1050,9 @@
 		"couldNotCheckCopiedFrames": "Could not check frames for copied items: {reason}",
 		"couldNotReadSharedItems": "Could not read items from your other characters: {reason}",
 		"finishedFramesChanged": "The finished frames changed. Review the item again. Nothing was saved.",
-		"rerollPriceChanged": "The re-roll price changed. Review it again. Nothing was requested."
+		"rerollPriceChanged": "The re-roll price changed. Review it again. Nothing was requested.",
+		"characterRereadFailed": "This character changed in another tab and couldn’t be read again. Reopen it before making changes.",
+		"demoOutfitsUnread": "The demo’s saved outfits couldn’t be loaded, so changes to it aren’t saved. Reload to try again."
 	},
 	"history": {
 		"wear": "Wear {name}",
@@ -1365,7 +1368,8 @@
 			"noRoom": "Room for moves was not added because this character has too many image pixels. Use Adjust frame after importing to add it.",
 			"fixedBase": "Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.",
 			"frameCounts": "“{move}” has different frame counts by direction. Its directions were imported as separate moves to keep every original frame and direction length.",
-			"semiAlpha": "Partially transparent edges were converted to pixel-art transparency."
+			"semiAlpha": "Partially transparent edges were converted to pixel-art transparency.",
+			"detailsDropped": "Some saved character details were damaged and were left out. Set up its pose rig again if needed."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1586,7 +1590,8 @@
 			},
 			"noRepairGrid": "No repair grid for {move} ({direction}): {reason}; the best try was kept",
 			"heldLoop": "The held item changes shape or angle when a move loops",
-			"registrationShift": "PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame."
+			"registrationShift": "PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame.",
+			"bodyUnmeasured": "The item covers almost all of the body, so it could not be checked; make sure it is not a redrawn body"
 		},
 		"anotherCharacter": "another character",
 		"unfit": {
@@ -1997,7 +2002,10 @@
 		},
 		"cancelRequest": "Cancel request",
 		"waitingTitle": "Waiting for another tab",
-		"waitingBody": "Your generation hasn’t started. Keep Activity open and PixelDoll will continue here when the other tab is ready."
+		"waitingBody": "Your generation hasn’t started. Keep Activity open and PixelDoll will continue here when the other tab is ready.",
+		"stopInRunningTab": "Stop this job in the tab that is running it.",
+		"pausedStorage": "Saved jobs couldn’t be read or saved, so nothing new is sent. Resume to try again.",
+		"cancelSaveFailed": "The cancel couldn’t be saved. This tab won’t send the request, but another tab or a reload could."
 	},
 	"genCard": {
 		"retryKey": "Generate again uses a {color} background, measured from this design's colors",
@@ -2693,7 +2701,8 @@
 			"paletteReviewChanged": "This item or its colors changed. Review the color match again.",
 			"paletteSaveChanged": "This item, body or material changed. Existing colors were kept; review again.",
 			"invalidItemGridSheet": "PixelLab returned an unusable item grid. Expected exactly one sheet. Existing artwork was kept.",
-			"invalidItemGridLayout": "PixelLab returned an unusable item grid. The sheet has the wrong frame layout. Existing artwork was kept."
+			"invalidItemGridLayout": "PixelLab returned an unusable item grid. The sheet has the wrong frame layout. Existing artwork was kept.",
+			"savedFrameMissing": "A saved frame of this item is missing from storage."
 		}
 	},
 	"newItem": {

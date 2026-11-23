@@ -39,7 +39,8 @@
 		"confirmRestoreNamed": "Tekan lagi untuk memulihkan {name}",
 		"daysLeft": {
 			"other": "tersisa {count} hari"
-		}
+		},
+		"loadFailed": "Tempat sampah tidak dapat dimuat. Daftarnya mungkin tidak terbaru."
 	},
 	"librarySettings": {
 		"title": "Pustaka",
@@ -1020,7 +1021,9 @@
 		"couldNotCheckCopiedFrames": "Tidak dapat memeriksa frame item yang disalin: {reason}",
 		"couldNotReadSharedItems": "Tidak dapat membaca item dari karakter Anda yang lain: {reason}",
 		"finishedFramesChanged": "Frame yang selesai berubah. Tinjau item lagi. Tidak ada yang disimpan.",
-		"rerollPriceChanged": "Harga buat ulang berubah. Tinjau lagi. Tidak ada yang diminta."
+		"rerollPriceChanged": "Harga buat ulang berubah. Tinjau lagi. Tidak ada yang diminta.",
+		"characterRereadFailed": "Karakter ini berubah di tab lain dan tidak dapat dibaca ulang. Buka kembali sebelum membuat perubahan.",
+		"demoOutfitsUnread": "Setelan tersimpan untuk demo tidak dapat dimuat, jadi perubahannya tidak disimpan. Muat ulang halaman untuk mencoba lagi."
 	},
 	"history": {
 		"wear": "Kenakan {name}",
@@ -1322,7 +1325,8 @@
 			"noRoom": "Ruang untuk animasi tidak ditambahkan karena karakter ini memiliki terlalu banyak piksel gambar. Gunakan Sesuaikan frame setelah mengimpor untuk menambahkannya.",
 			"fixedBase": "Gambar yang diimpor menjadi dasar tetap: pakaian dan rambut yang sudah ada tidak dapat dihapus. Siapkan rig pose untuk memakai perlengkapan yang mengikuti pose kerangka dan menambahkan animasi baru.",
 			"frameCounts": "Jumlah frame “{move}” berbeda di setiap arah. Setiap arah diimpor sebagai animasi terpisah agar semua frame asli dan durasi tiap arah tetap utuh.",
-			"semiAlpha": "Tepi yang transparan sebagian diubah menjadi transparansi khas pixel art."
+			"semiAlpha": "Tepi yang transparan sebagian diubah menjadi transparansi khas pixel art.",
+			"detailsDropped": "Beberapa detail karakter yang tersimpan rusak dan tidak disertakan. Siapkan rig pose-nya lagi jika perlu."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1538,7 +1542,8 @@
 			},
 			"noRepairGrid": "Tidak ada kisi perbaikan untuk {move} ({direction}): {reason}. Hasil terbaik dipertahankan",
 			"heldLoop": "Bentuk atau sudut item yang dipegang berubah saat animasi berulang",
-			"registrationShift": "PixelLab mengembalikan tepi transparan dan mungkin menggeser lembar gambar. Periksa apakah item sejajar di setiap frame."
+			"registrationShift": "PixelLab mengembalikan tepi transparan dan mungkin menggeser lembar gambar. Periksa apakah item sejajar di setiap frame.",
+			"bodyUnmeasured": "Item ini menutupi hampir seluruh tubuh sehingga tidak dapat diperiksa. Pastikan ini bukan tubuh yang digambar ulang"
 		},
 		"anotherCharacter": "karakter lain",
 		"unfit": {
@@ -1938,7 +1943,10 @@
 		},
 		"cancelRequest": "Batalkan permintaan",
 		"waitingTitle": "Menunggu tab lain",
-		"waitingBody": "Pembuatan Anda belum dimulai. Biarkan Aktivitas tetap terbuka dan PixelDoll akan melanjutkan di sini saat tab lain siap."
+		"waitingBody": "Pembuatan Anda belum dimulai. Biarkan Aktivitas tetap terbuka dan PixelDoll akan melanjutkan di sini saat tab lain siap.",
+		"stopInRunningTab": "Hentikan pekerjaan ini di tab yang sedang menjalankannya.",
+		"pausedStorage": "Pekerjaan yang tersimpan tidak dapat dibaca atau disimpan, jadi tidak ada yang baru dikirim. Lanjutkan untuk mencoba lagi.",
+		"cancelSaveFailed": "Pembatalan tidak dapat disimpan. Tab ini tidak akan mengirim permintaan, tetapi tab lain atau memuat ulang halaman bisa mengirimnya."
 	},
 	"genCard": {
 		"retryKey": "Percobaan ulang memakai latar belakang {color}, berdasarkan pengukuran warna desain ini",
@@ -2623,7 +2631,8 @@
 			"paletteReviewChanged": "Item ini atau warnanya berubah. Tinjau kembali pencocokan warna.",
 			"paletteSaveChanged": "Item, tubuh, atau material berubah. Warna yang ada tetap dipertahankan. Tinjau kembali pencocokan warna.",
 			"invalidItemGridSheet": "PixelLab mengembalikan kisi item yang tidak bisa digunakan. Seharusnya hanya ada satu lembar. Gambar yang ada tetap disimpan.",
-			"invalidItemGridLayout": "PixelLab mengembalikan kisi item yang tidak bisa digunakan. Lembar memiliki tata letak frame yang salah. Gambar yang ada tetap disimpan."
+			"invalidItemGridLayout": "PixelLab mengembalikan kisi item yang tidak bisa digunakan. Lembar memiliki tata letak frame yang salah. Gambar yang ada tetap disimpan.",
+			"savedFrameMissing": "Sebuah frame tersimpan dari item ini tidak ada di penyimpanan."
 		}
 	},
 	"newItem": {

@@ -42,7 +42,8 @@
 		"daysLeft": {
 			"one": "noch {count} Tag",
 			"other": "noch {count} Tage"
-		}
+		},
+		"loadFailed": "Der Papierkorb konnte nicht geladen werden. Die Liste ist möglicherweise nicht aktuell."
 	},
 	"librarySettings": {
 		"title": "Bibliothek",
@@ -1049,7 +1050,9 @@
 		"couldNotCheckCopiedFrames": "Die Frames kopierter Gegenstände konnten nicht geprüft werden: {reason}",
 		"couldNotReadSharedItems": "Gegenstände deiner anderen Figuren konnten nicht gelesen werden: {reason}",
 		"finishedFramesChanged": "Die fertigen Frames haben sich geändert. Prüfe den Gegenstand erneut. Nichts wurde gespeichert.",
-		"rerollPriceChanged": "Der Preis für das Neu-Würfeln hat sich geändert. Prüfe ihn erneut. Es wurde nichts angefordert."
+		"rerollPriceChanged": "Der Preis für das Neu-Würfeln hat sich geändert. Prüfe ihn erneut. Es wurde nichts angefordert.",
+		"characterRereadFailed": "Diese Figur wurde in einem anderen Tab geändert und konnte nicht neu gelesen werden. Öffne sie erneut, bevor du etwas änderst.",
+		"demoOutfitsUnread": "Die gespeicherten Outfits der Demo konnten nicht geladen werden, deshalb werden Änderungen daran nicht gespeichert. Lade die Seite neu, um es erneut zu versuchen."
 	},
 	"history": {
 		"wear": "{name} anlegen",
@@ -1365,7 +1368,8 @@
 			"noRoom": "Platz für Animationen wurde nicht hinzugefügt, weil diese Figur zu viele Bildpixel hat. Nutze nach dem Import Frame anpassen, um ihn hinzuzufügen.",
 			"fixedBase": "Importierte Grafiken bilden den festen Grundkörper: Vorhandene Kleidung und Haare können nicht entfernt werden. Richte das Posen-Rig ein, um Ausrüstung per Skelett zu animieren und neue Animationen hinzuzufügen.",
 			"frameCounts": "„{move}“ hat je nach Blickrichtung unterschiedlich viele Frames. Die Blickrichtungen wurden als separate Animationen importiert, damit alle Originalframes und die jeweilige Länge erhalten bleiben.",
-			"semiAlpha": "Teiltransparente Kanten wurden in harte Pixelgrafik-Transparenz umgewandelt."
+			"semiAlpha": "Teiltransparente Kanten wurden in harte Pixelgrafik-Transparenz umgewandelt.",
+			"detailsDropped": "Einige gespeicherte Angaben zur Figur waren beschädigt und wurden ausgelassen. Richte bei Bedarf ihr Posen-Rig erneut ein."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1586,7 +1590,8 @@
 			},
 			"noRepairGrid": "Kein Reparaturraster für {move} ({direction}): {reason}. Der beste Versuch wurde behalten",
 			"heldLoop": "Form oder Winkel des gehaltenen Gegenstands ändern sich am Übergang der Animationsschleife",
-			"registrationShift": "PixelLab hat einen transparenten Rand geliefert und das Sheet möglicherweise verschoben. Prüfe, ob der Gegenstand in jedem Frame ausgerichtet ist."
+			"registrationShift": "PixelLab hat einen transparenten Rand geliefert und das Sheet möglicherweise verschoben. Prüfe, ob der Gegenstand in jedem Frame ausgerichtet ist.",
+			"bodyUnmeasured": "Der Gegenstand verdeckt fast den ganzen Körper und konnte daher nicht geprüft werden. Achte darauf, dass er kein neu gezeichneter Körper ist"
 		},
 		"anotherCharacter": "eine andere Figur",
 		"unfit": {
@@ -1997,7 +2002,10 @@
 		},
 		"cancelRequest": "Anfrage abbrechen",
 		"waitingTitle": "Warten auf einen anderen Tab",
-		"waitingBody": "Deine Generierung hat noch nicht begonnen. Lass Aktivität geöffnet; PixelDoll macht hier weiter, sobald der andere Tab bereit ist."
+		"waitingBody": "Deine Generierung hat noch nicht begonnen. Lass Aktivität geöffnet; PixelDoll macht hier weiter, sobald der andere Tab bereit ist.",
+		"stopInRunningTab": "Stoppe diesen Auftrag in dem Tab, in dem er läuft.",
+		"pausedStorage": "Gespeicherte Aufträge konnten nicht gelesen oder gespeichert werden, deshalb wird nichts Neues gesendet. Setze fort, um es erneut zu versuchen.",
+		"cancelSaveFailed": "Der Abbruch konnte nicht gespeichert werden. Dieser Tab sendet die Anfrage nicht, ein anderer Tab oder ein Neuladen aber schon."
 	},
 	"genCard": {
 		"retryKey": "Beim neuen Versuch wird die Hintergrundfarbe {color} verwendet. Sie wurde anhand der Farben dieses Designs bestimmt",
@@ -2693,7 +2701,8 @@
 			"paletteReviewChanged": "Dieser Gegenstand oder seine Farben haben sich geändert. Prüfe die Farbanpassung erneut.",
 			"paletteSaveChanged": "Der Gegenstand, der Körper oder das Material hat sich geändert. Die vorhandenen Farben wurden beibehalten. Prüfe die Farbanpassung erneut.",
 			"invalidItemGridSheet": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Erwartet war genau ein Sheet. Die vorhandene Grafik bleibt erhalten.",
-			"invalidItemGridLayout": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Das Sheet hat ein falsches Frame-Layout. Die vorhandene Grafik bleibt erhalten."
+			"invalidItemGridLayout": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Das Sheet hat ein falsches Frame-Layout. Die vorhandene Grafik bleibt erhalten.",
+			"savedFrameMissing": "Ein gespeicherter Frame dieses Gegenstands fehlt im Speicher."
 		}
 	},
 	"newItem": {

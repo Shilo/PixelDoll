@@ -51,6 +51,26 @@
 		);
 	}
 	import { ChevronRight, CircleAlert, CircleCheck, RefreshCw } from './icons.ts';
+	import { LocalizedError } from '../lib/message.ts';
+	/** A cancel whose save fails stays canceled in this tab (nothing is sent from here); say so and offer to save it again. */
+	function cancelRecord(id: string) {
+		queue.cancel(id).catch((error: unknown) => {
+			console.error('cancel', error);
+			if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger' });
+			else cancelNotSaved(id);
+		});
+	}
+	function cancelNotSaved(id: string) {
+		toast(t('activity.cancelSaveFailed'), {
+			tone: 'danger',
+			actionLabel: t('common.tryAgain'),
+			action: () =>
+				queue.retryCancelSave(id).catch((error: unknown) => {
+					console.error('cancel', error);
+					cancelNotSaved(id);
+				})
+		});
+	}
 
 	let now = $state(Date.now());
 	const balanceScope = crypto.randomUUID();
@@ -303,7 +323,9 @@
 					? t('activity.pausedAuth')
 					: $queue.paused === 'offline'
 						? t('activity.pausedOffline')
-						: t('activity.pausedCredits')}
+						: $queue.paused === 'storage'
+							? t('activity.pausedStorage')
+							: t('activity.pausedCredits')}
 				{#if $queue.paused !== 'offline'}<span class="api-action"
 						><button
 							class="bu-action btn sm"
@@ -358,7 +380,7 @@
 										aria-describedby={r.state === 'submitting'
 											? 'activity-submitting-stop'
 											: undefined}
-										onclick={() => queue.cancel(r.id)}>{t('activity.stop')}</button
+										onclick={() => cancelRecord(r.id)}>{t('activity.stop')}</button
 									></span
 								></span
 							>
@@ -392,7 +414,7 @@
 								><button
 									class="bu-action btn link small"
 									data-variant="quiet"
-									onclick={() => queue.cancel(r.id)}>{t('common.cancel')}</button
+									onclick={() => cancelRecord(r.id)}>{t('common.cancel')}</button
 								></span
 							>
 						</li>

@@ -1842,9 +1842,12 @@ test('a view the stopped attempt canceled before sending is unbought, and contin
 		jobs: jobs.map((record) =>
 			record.id === 'raw-west'
 				? {
+						// canceled before it was sent: no send time and no job receipt, as the queue records it
 						...record,
 						state: 'canceled',
 						requestStarted: false,
+						submittedAt: undefined,
+						jobs: [],
 						autoCanceledAttempts: [f.spec.seed]
 					}
 				: record

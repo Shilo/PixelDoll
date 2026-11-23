@@ -1,5 +1,13 @@
-import { expect, test } from 'vitest';
-import { Queue, requestIdentity, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts';
+import { expect, test, vi } from 'vitest';
+import { ApiError } from '../../src/lib/pixellab/client.ts';
+import {
+	canReopenQueuedCancellation,
+	Queue,
+	reopenableCancellation,
+	requestIdentity,
+	type Deps,
+	type JobRec
+} from '../../src/lib/pixellab/queue.ts';
 import { accountBalance } from './account-fixture.ts';
 
 const request = { method: 'POST' as const, path: '/animate-with-skeleton-v3', body: { seed: 17 } };
@@ -204,4 +212,96 @@ test('a fresh joint quote cannot replace a durable lost check invisible to its t
 	await follower.tick();
 	expect(f.calls).toHaveLength(0);
 	expect(f.records.size).toBe(1);
+});
+
+/** One tab whose storage and PixelLab answers a test can break. */
+function failing(leading = false) {
+	const records = new Map<string, JobRec>();
+	const fail = { put: false, all: false, post: undefined as ApiError | undefined };
+	let now = 1000;
+	const posts: string[] = [];
+	const q = new Queue({
+		// leading: the only tab, granted the leader lock at once (a leader re-reads the shared ledger)
+		locks: leading
+			? ({
+					request: (async (
+						_name: string,
+						_options: LockOptions,
+						granted: LockGrantedCallback<unknown>
+					) => granted({ name: 'queue', mode: 'exclusive' })) as LockManager['request']
+				} as Pick<LockManager, 'request'>)
+			: null,
+		channel: `studio-${crypto.randomUUID()}`,
+		online: () => true,
+		now: () => now,
+		put: async (id, r) => {
+			if (fail.put) throw new Error('IndexedDB unavailable');
+			records.set(id, structuredClone(r));
+		},
+		get: async (id) => structuredClone(records.get(id)),
+		all: async () => {
+			if (fail.all) throw new Error('IndexedDB unavailable');
+			return [...records.values()].map((r) => structuredClone(r));
+		},
+		api: async <T>(_key: string, method: string, path: string): Promise<T> => {
+			if (path === '/balance') return accountBalance as T;
+			if (method === 'POST') {
+				posts.push(path);
+				if (fail.post) throw fail.post;
+				return { background_job_id: 'accepted-job' } as T;
+			}
+			return { id: 'accepted-job', status: 'processing' } as T;
+		}
+	});
+	q.setKey('synthetic-key');
+	return { q, records, fail, posts, advance: (ms: number) => void (now += ms) };
+}
+
+test('a request PixelLab refused as busy is unsent again, so an aborted flow can reopen it', async () => {
+	const f = failing();
+	f.fail.post = new ApiError(429, 'retry', 'Concurrency limit reached');
+	const scope = new AbortController();
+	const rec = await f.q.enqueue(request, { tag: 'studio-move', signal: scope.signal, attempt: 1 });
+	await f.q.tick();
+	expect(f.posts).toEqual([request.path]);
+	expect(f.records.get(rec.id)).toMatchObject({ state: 'queued', requestStarted: false });
+	expect(f.records.get(rec.id)?.submittedAt).toBeUndefined();
+	scope.abort();
+	await vi.waitFor(() => expect(f.records.get(rec.id)?.state).toBe('canceled'));
+	const canceled = f.records.get(rec.id)!;
+	expect(reopenableCancellation(canceled)).toBe(true);
+	expect(canReopenQueuedCancellation(canceled, 2)).toBe(true);
+});
+
+test('a cancel whose save fails stays canceled in this tab and can be saved again', async () => {
+	const f = failing();
+	const rec = await f.q.enqueue(request, { tag: 'studio-move' });
+	f.fail.put = true;
+	await expect(f.q.cancel(rec.id)).rejects.toThrow('IndexedDB unavailable');
+	expect(f.q.snapshot().jobs.find((r) => r.id === rec.id)?.state).toBe('canceled');
+	expect(f.records.get(rec.id)?.state).toBe('queued');
+	await f.q.tick();
+	expect(f.posts).toEqual([]); // this tab never sends it meanwhile
+	f.fail.put = false;
+	await f.q.retryCancelSave(rec.id);
+	expect(f.records.get(rec.id)?.state).toBe('canceled');
+});
+
+test('a ledger that cannot be read pauses the queue visibly until the user resumes', async () => {
+	vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+	const f = failing(true);
+	try {
+		await f.q.connect();
+		expect(f.q.role).toBe('leader');
+		f.fail.all = true;
+		f.advance(60_000); // due for its periodic full read of the shared ledger
+		await vi.advanceTimersByTimeAsync(2_000);
+		expect(f.q.snapshot().paused).toBe('storage');
+		f.fail.all = false;
+		f.q.resume();
+		expect(f.q.snapshot().paused).toBeNull();
+	} finally {
+		f.q.disconnect();
+		vi.useRealTimers();
+	}
 });

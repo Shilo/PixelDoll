@@ -42,7 +42,8 @@
 		"daysLeft": {
 			"one": "falta {count} dia",
 			"other": "faltam {count} dias"
-		}
+		},
+		"loadFailed": "Não foi possível carregar a lixeira. A lista pode estar desatualizada."
 	},
 	"librarySettings": {
 		"title": "Biblioteca",
@@ -1052,7 +1053,9 @@
 		"couldNotCheckCopiedFrames": "Não foi possível verificar os quadros dos itens copiados: {reason}",
 		"couldNotReadSharedItems": "Não foi possível ler os itens dos seus outros personagens: {reason}",
 		"finishedFramesChanged": "Os quadros concluídos mudaram. Revise o item de novo. Nada foi salvo.",
-		"rerollPriceChanged": "O preço de gerar de novo mudou. Revise de novo. Nada foi solicitado."
+		"rerollPriceChanged": "O preço de gerar de novo mudou. Revise de novo. Nada foi solicitado.",
+		"characterRereadFailed": "Este personagem mudou em outra aba e não pôde ser lido de novo. Abra-o novamente antes de fazer alterações.",
+		"demoOutfitsUnread": "Não foi possível carregar os trajes salvos da demo, então as alterações nela não são salvas. Recarregue a página para tentar de novo."
 	},
 	"history": {
 		"wear": "Equipar {name}",
@@ -1371,7 +1374,8 @@
 			"noRoom": "Não foi adicionado espaço para animações porque este personagem tem pixels de imagem demais. Use Ajustar quadro depois de importar para adicioná-lo.",
 			"fixedBase": "A arte importada vira a base fixa: as roupas e os cabelos existentes não podem ser removidos. Configure o rig de poses para usar equipamentos animados pelo esqueleto e adicionar novas animações.",
 			"frameCounts": "“{move}” tem quantidades diferentes de quadros em cada direção. As direções foram importadas como animações separadas para preservar todos os quadros originais e a duração de cada direção.",
-			"semiAlpha": "As bordas parcialmente transparentes foram convertidas para transparência de pixel art."
+			"semiAlpha": "As bordas parcialmente transparentes foram convertidas para transparência de pixel art.",
+			"detailsDropped": "Alguns dados salvos do personagem estavam danificados e foram deixados de fora. Configure o rig de poses de novo, se precisar."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1592,7 +1596,8 @@
 			},
 			"noRepairGrid": "Não há grade de reparo para {move} ({direction}): {reason}. A melhor tentativa foi mantida",
 			"heldLoop": "O item de mão muda de forma ou ângulo quando a animação volta ao início",
-			"registrationShift": "O PixelLab retornou uma borda transparente e pode ter deslocado a folha. Confira se o item se alinha em todos os quadros."
+			"registrationShift": "O PixelLab retornou uma borda transparente e pode ter deslocado a folha. Confira se o item se alinha em todos os quadros.",
+			"bodyUnmeasured": "O item cobre quase todo o corpo, então não pôde ser verificado. Confira se não é um corpo redesenhado"
 		},
 		"anotherCharacter": "outro personagem",
 		"unfit": {
@@ -2006,7 +2011,10 @@
 		},
 		"cancelRequest": "Cancelar solicitação",
 		"waitingTitle": "Aguardando outra aba",
-		"waitingBody": "Sua geração ainda não começou. Mantenha o Atividade aberto e o PixelDoll continuará aqui quando a outra aba estiver pronta."
+		"waitingBody": "Sua geração ainda não começou. Mantenha o Atividade aberto e o PixelDoll continuará aqui quando a outra aba estiver pronta.",
+		"stopInRunningTab": "Interrompa esta tarefa na aba que a está executando.",
+		"pausedStorage": "Não foi possível ler ou salvar as tarefas salvas, então nada novo é enviado. Retome para tentar de novo.",
+		"cancelSaveFailed": "Não foi possível salvar o cancelamento. Esta aba não vai enviar a solicitação, mas outra aba ou um recarregamento pode enviar."
 	},
 	"genCard": {
 		"retryKey": "A nova tentativa usa um fundo {color}, escolhido com base nas cores deste visual",
@@ -2702,7 +2710,8 @@
 			"paletteReviewChanged": "Este item ou suas cores mudaram. Revise a correspondência de cores novamente.",
 			"paletteSaveChanged": "O item, o corpo ou o material mudou. As cores existentes foram mantidas. Revise a correspondência novamente.",
 			"invalidItemGridSheet": "O PixelLab retornou uma grade de item inutilizável. Era esperada exatamente uma folha. A arte existente foi mantida.",
-			"invalidItemGridLayout": "O PixelLab retornou uma grade de item inutilizável. A folha tem o layout de quadros errado. A arte existente foi mantida."
+			"invalidItemGridLayout": "O PixelLab retornou uma grade de item inutilizável. A folha tem o layout de quadros errado. A arte existente foi mantida.",
+			"savedFrameMissing": "Um quadro salvo deste item está faltando no armazenamento."
 		}
 	},
 	"newItem": {

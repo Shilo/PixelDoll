@@ -141,7 +141,9 @@ export function generationStatus(
 						? message('activity.pausedAuth')
 						: paused === 'credits'
 							? message('activity.pausedCredits')
-							: message('generation.status.pausedQueue', { reason: paused }),
+							: paused === 'storage'
+								? message('activity.pausedStorage')
+								: message('generation.status.pausedQueue', { reason: paused }),
 			attention: true
 		};
 	if (

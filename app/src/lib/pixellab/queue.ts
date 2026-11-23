@@ -45,7 +45,7 @@ import {
 } from './activity.ts';
 
 import { workspaceCopy } from '../store/workspace-mode.ts';
-import { message, type Message } from '../message.ts';
+import { LocalizedError, message, type Message } from '../message.ts';
 
 export type RecState =
 	'queued' | 'submitting' | 'running' | 'done' | 'failed' | 'canceled' | 'lost';
@@ -187,7 +187,7 @@ export type Role = 'solo' | 'leader' | 'follower';
 export interface QueueSnapshot {
 	jobs: JobRec[];
 	role: Role;
-	paused: null | 'auth' | 'credits' | 'offline'; // offline (B15): browser offline or a request got no answer; nothing is sent
+	paused: null | 'auth' | 'credits' | 'offline' | 'storage'; // offline (B15): browser offline or a request got no answer; storage: the ledger could not be read or saved; nothing is sent
 	concurrency: number;
 	current: number;
 	capacityPlan: string | null;
@@ -259,6 +259,8 @@ type Msg = {
 	sync?: boolean;
 	capacity?: CapacityState;
 	capacitySync?: boolean;
+	/** A follower asks the leader, which owns the submitted jobs and their credential, to stop this record. */
+	stop?: string;
 };
 
 export const backoff = (attempt: number, rnd = Math.random()) =>
@@ -332,16 +334,23 @@ export function retryableEstimate(r: JobRec): boolean {
 	);
 }
 
-export function canReopenQueuedCancellation(record: JobRec, attempt?: number): boolean {
+/** An automatically canceled record that never left the browser; a later flow attempt may reopen it. */
+export function reopenableCancellation(record: JobRec): boolean {
 	return (
 		record.state === 'canceled' &&
 		record.requestStarted !== true &&
 		record.submittedAt == null &&
 		!record.jobs.length &&
+		!!record.autoCanceledAttempts?.length
+	);
+}
+
+export function canReopenQueuedCancellation(record: JobRec, attempt?: number): boolean {
+	return (
+		reopenableCancellation(record) &&
 		attempt !== undefined &&
 		Number.isSafeInteger(attempt) &&
-		!!record.autoCanceledAttempts?.length &&
-		!record.autoCanceledAttempts.includes(attempt)
+		!record.autoCanceledAttempts!.includes(attempt)
 	);
 }
 
@@ -611,7 +620,7 @@ export class Queue {
 					!this.key &&
 					!this.busy.size
 				)
-					void this.connect();
+					this.stepBack(); // a follower from the start: never act as leader while reconnecting
 				// Another tab has a click waiting: step back (rejoin as follower) when nothing here is in flight.
 				if (
 					m.handoff === true &&
@@ -625,10 +634,18 @@ export class Queue {
 				if (typeof m.rec === 'string') void this.pull(m.rec);
 				if (m.sync && this.role === 'follower') void this.sync();
 				if (m.capacity && this.role === 'follower') {
-					Object.assign(this, m.capacity);
+					// Only the published capacity fields; a message never sets the key, role or records.
+					const { concurrency, current, capacityPlan, capacityRetryAt } = m.capacity;
+					if (Number.isFinite(concurrency)) this.concurrency = concurrency;
+					if (Number.isFinite(current)) this.current = current;
+					if (capacityPlan === null || typeof capacityPlan === 'string')
+						this.capacityPlan = capacityPlan;
+					if (Number.isFinite(capacityRetryAt)) this.capacityRetryAt = capacityRetryAt;
 					this.emit();
 					this.requestLeadership();
 				}
+				if (typeof m.stop === 'string' && this.role === 'leader')
+					void this.cancel(m.stop).catch((e) => console.error('queue', e));
 				if (m.capacitySync && this.role === 'leader') this.emit();
 			};
 		}
@@ -878,7 +895,16 @@ export class Queue {
 		});
 	}
 	start() {
-		this.timer ??= every(1000, () => void this.tick());
+		this.timer ??= every(1000, () =>
+			this.tick().catch((e) => {
+				// The ledger could not be read or saved: send nothing more until the user resumes.
+				console.error('queue', e);
+				if (!this.paused) {
+					this.paused = 'storage';
+					this.emit();
+				}
+			})
+		);
 	}
 	stop() {
 		this.timer?.();
@@ -1225,7 +1251,8 @@ export class Queue {
 			if (this.flowAborted(id)) {
 				const r = this.recs.get(id);
 				if (r?.state === 'queued') r.autoCanceledAttempts = this.cancellationAttempts(id);
-				void this.cancel(id, true).catch(() => {});
+				// A failed save keeps the record canceled in this tab (nothing is sent from here); cancelAbortedScope retries it.
+				void this.cancel(id, true).catch((e) => console.error('queue', e));
 			}
 		};
 		if (signal.aborted) abort();
@@ -1617,6 +1644,15 @@ export class Queue {
 				r.state = 'failed';
 				r.finishedAt = this.deps.now();
 			}
+			// A documented refusal proves nothing was sent, so the requeued record is unsent again and an aborted flow can
+			// reopen it (canReopenQueuedCancellation) instead of being stuck behind a canceled, "started" record.
+			if (
+				r.state === 'queued' &&
+				(r.method !== 'POST' || paidRequestRejected(r.endpoint, err.status, err.body))
+			) {
+				r.requestStarted = false;
+				delete r.submittedAt;
+			}
 		}
 		if (r.state !== 'queued') this.submitScopes.delete(r.id);
 		await this.save(r);
@@ -1828,27 +1864,17 @@ export class Queue {
 		if (!r || (queuedOnly && r.state !== 'queued')) return;
 		if (!queuedOnly) delete r.autoCanceledAttempts; // an explicit user cancellation is never reopened by recovery
 		if (this.role === 'follower' && r.state === 'running') {
-			// the leader's next poll sees the cancel; never write its record
-			for (const s of r.jobs.filter((s) => !s.done))
-				await this.deps
-					.api(
-						this.key,
-						'DELETE',
-						`/background-jobs/${encodeURIComponent(s.id)}`,
-						undefined,
-						undefined,
-						{
-							queueId: r.id,
-							queueTag: r.tag,
-							activityScope: r.activityScope,
-							label: `Stop ${r.label}`,
-							background: false
-						}
-					)
-					.catch(() => {});
+			// The leader owns the job and the key that started it; never write its record or stop it with this tab's key.
+			if (!this.chan)
+				throw new LocalizedError(
+					'Stop this job in the tab that is running it.',
+					'activity.stopInRunningTab'
+				);
+			this.chan.postMessage({ stop: id } satisfies Msg);
 			return;
 		}
 		if (r.state === 'queued') {
+			// Canceled in memory first: if the save fails this tab still never sends it, and the caller reports the failure.
 			r.state = 'canceled';
 			r.finishedAt = this.deps.now();
 			// another tab may already have persisted `submitting` or a job receipt: never overwrite it with a stale cancel
@@ -1888,6 +1914,20 @@ export class Queue {
 			this.settle(r);
 		}
 		await this.save(r);
+	}
+	/** Save again a queued-only cancel whose save failed; meanwhile it stays canceled in this tab. Another tab's submission or
+	 *  receipt still wins: it is adopted and, when running, stopped like any running cancel. */
+	async retryCancelSave(id: string) {
+		const r = this.recs.get(id);
+		if (r?.state !== 'canceled') return;
+		const stored = await this.saveIf(r, queuedWithoutJobs);
+		if (!stored) {
+			this.submitScopes.delete(id);
+			return;
+		}
+		this.recs.set(id, stored);
+		this.emit();
+		if (stored.state === 'running') await this.cancel(id);
 	}
 	/** Leader/solo: delete finished records unless `keep` says something still needs them (drafts re-read their calls, resumable
 	 * creates/moves re-attach through the request cache: R6 P1-2). Returns the number deleted. */

@@ -39,7 +39,8 @@
 		"confirmRestoreNamed": "한 번 더 누르면 {name}을(를) 복원합니다",
 		"daysLeft": {
 			"other": "{count}일 남음"
-		}
+		},
+		"loadFailed": "휴지통을 불러오지 못했어요. 목록이 최신이 아닐 수 있어요."
 	},
 	"librarySettings": {
 		"title": "라이브러리",
@@ -1020,7 +1021,9 @@
 		"couldNotCheckCopiedFrames": "복사한 아이템의 프레임을 확인하지 못했어요: {reason}",
 		"couldNotReadSharedItems": "다른 캐릭터의 아이템을 읽지 못했어요: {reason}",
 		"finishedFramesChanged": "완료된 프레임이 바뀌었어요. 아이템을 다시 검토하세요. 저장된 것은 없어요.",
-		"rerollPriceChanged": "다시 생성 가격이 바뀌었어요. 다시 검토하세요. 요청한 것은 없어요."
+		"rerollPriceChanged": "다시 생성 가격이 바뀌었어요. 다시 검토하세요. 요청한 것은 없어요.",
+		"characterRereadFailed": "이 캐릭터가 다른 탭에서 바뀌었는데 다시 읽지 못했어요. 바꾸기 전에 다시 열어 주세요.",
+		"demoOutfitsUnread": "데모의 저장된 코디를 불러오지 못해 변경 사항이 저장되지 않아요. 새로고침해서 다시 시도하세요."
 	},
 	"history": {
 		"wear": "{name} 착용",
@@ -1322,7 +1325,8 @@
 			"noRoom": "이 캐릭터는 이미지 픽셀이 너무 많아 동작용 공간을 추가하지 않았어요. 가져온 뒤 프레임 조정에서 추가하세요.",
 			"fixedBase": "가져온 아트워크는 고정 기본 몸체예요. 기존 옷과 머리카락은 제거할 수 없어요. 스켈레톤 자세 장비와 새 동작을 쓰려면 자세 리그를 설정하세요.",
 			"frameCounts": "“{move}” 동작은 방향마다 프레임 수가 달라요. 모든 원본 프레임과 방향 길이를 유지하려고 방향을 별도 동작으로 가져왔어요.",
-			"semiAlpha": "부분적으로 투명한 가장자리를 픽셀 아트 투명도로 변환했어요."
+			"semiAlpha": "부분적으로 투명한 가장자리를 픽셀 아트 투명도로 변환했어요.",
+			"detailsDropped": "저장된 캐릭터 정보 일부가 손상되어 제외했어요. 필요하면 자세 리그를 다시 설정하세요."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1538,7 +1542,8 @@
 			},
 			"noRepairGrid": "{move}({direction})의 복구 그리드가 없어요: {reason}. 가장 좋은 시도를 유지했어요",
 			"heldLoop": "동작이 반복될 때 든 아이템의 모양이나 각도가 바뀌어요",
-			"registrationShift": "PixelLab이 투명한 가장자리를 포함한 결과를 반환해 시트가 밀렸을 수 있어요. 모든 프레임에서 아이템이 정렬되는지 확인하세요."
+			"registrationShift": "PixelLab이 투명한 가장자리를 포함한 결과를 반환해 시트가 밀렸을 수 있어요. 모든 프레임에서 아이템이 정렬되는지 확인하세요.",
+			"bodyUnmeasured": "아이템이 몸 거의 전체를 덮어 확인할 수 없었어요. 다시 그려진 몸이 아닌지 확인하세요"
 		},
 		"anotherCharacter": "다른 캐릭터",
 		"unfit": {
@@ -1938,7 +1943,10 @@
 		},
 		"cancelRequest": "요청 취소",
 		"waitingTitle": "다른 탭을 기다리는 중",
-		"waitingBody": "생성이 아직 시작되지 않았어요. 활동을 열어 두면 다른 탭이 준비되는 대로 여기서 계속돼요."
+		"waitingBody": "생성이 아직 시작되지 않았어요. 활동을 열어 두면 다른 탭이 준비되는 대로 여기서 계속돼요.",
+		"stopInRunningTab": "이 작업을 실행 중인 탭에서 중지해 주세요.",
+		"pausedStorage": "저장된 작업을 읽거나 저장할 수 없어 새 요청을 보내지 않아요. 재개하면 다시 시도해요.",
+		"cancelSaveFailed": "취소를 저장할 수 없었어요. 이 탭은 요청을 보내지 않지만, 다른 탭이나 새로고침 후에는 보내질 수 있어요."
 	},
 	"genCard": {
 		"retryKey": "다시 생성에는 이 디자인의 색상에서 측정한 {color} 배경을 사용해요",
@@ -2623,7 +2631,8 @@
 			"paletteReviewChanged": "이 아이템이나 색상이 변경됐어요. 색상 맞추기를 다시 검토하세요.",
 			"paletteSaveChanged": "아이템, 몸체 또는 재질이 변경됐어요. 기존 색상은 그대로 유지했어요. 색상 맞추기를 다시 검토하세요.",
 			"invalidItemGridSheet": "PixelLab이 사용할 수 없는 아이템 그리드를 반환했어요. 시트는 정확히 하나여야 해요. 기존 아트워크는 유지했어요.",
-			"invalidItemGridLayout": "PixelLab이 사용할 수 없는 아이템 그리드를 반환했어요. 시트의 프레임 배치가 잘못됐어요. 기존 아트워크는 유지했어요."
+			"invalidItemGridLayout": "PixelLab이 사용할 수 없는 아이템 그리드를 반환했어요. 시트의 프레임 배치가 잘못됐어요. 기존 아트워크는 유지했어요.",
+			"savedFrameMissing": "이 아이템의 저장된 프레임이 저장소에 없어요."
 		}
 	},
 	"newItem": {

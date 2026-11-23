@@ -42,7 +42,8 @@
 		"daysLeft": {
 			"one": "{count} gün kaldı",
 			"other": "{count} gün kaldı"
-		}
+		},
+		"loadFailed": "Çöp kutusu yüklenemedi. Liste güncel olmayabilir."
 	},
 	"librarySettings": {
 		"title": "Kitaplık",
@@ -1049,7 +1050,9 @@
 		"couldNotCheckCopiedFrames": "Kopyalanan eşyaların kareleri kontrol edilemedi: {reason}",
 		"couldNotReadSharedItems": "Diğer karakterlerinizin eşyaları okunamadı: {reason}",
 		"finishedFramesChanged": "Biten kareler değişti. Eşyayı yeniden inceleyin. Hiçbir şey kaydedilmedi.",
-		"rerollPriceChanged": "Yeniden oluşturma fiyatı değişti. Yeniden inceleyin. Hiçbir şey istenmedi."
+		"rerollPriceChanged": "Yeniden oluşturma fiyatı değişti. Yeniden inceleyin. Hiçbir şey istenmedi.",
+		"characterRereadFailed": "Bu karakter başka bir sekmede değişti ve yeniden okunamadı. Değişiklik yapmadan önce yeniden açın.",
+		"demoOutfitsUnread": "Demonun kayıtlı kıyafetleri yüklenemedi, bu yüzden üzerindeki değişiklikler kaydedilmiyor. Yeniden denemek için sayfayı yenileyin."
 	},
 	"history": {
 		"wear": "Giydirme: {name}",
@@ -1365,7 +1368,8 @@
 			"noRoom": "Bu karakterde çok fazla görüntü pikseli olduğu için animasyon alanı eklenmedi. Eklemek için içe aktardıktan sonra Kareyi ayarla’yı kullanın.",
 			"fixedBase": "İçe aktarılan görsel sabit temel gövdedir: Mevcut giysiler ve saç kaldırılamaz. İskelete göre pozlanan ekipmanları kullanmak ve yeni animasyonlar eklemek için poz rig'ini kurun.",
 			"frameCounts": "“{move}” animasyonunda yönlere göre kare sayısı değişiyor. Özgün karelerin tümünü ve her yönün uzunluğunu korumak için yönler ayrı animasyonlar olarak içe aktarıldı.",
-			"semiAlpha": "Kısmen şeffaf kenarlar piksel sanatına uygun şeffaflığa dönüştürüldü."
+			"semiAlpha": "Kısmen şeffaf kenarlar piksel sanatına uygun şeffaflığa dönüştürüldü.",
+			"detailsDropped": "Kayıtlı bazı karakter bilgileri bozuktu ve dahil edilmedi. Gerekirse poz rig’ini yeniden kurun."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1586,7 +1590,8 @@
 			},
 			"noRepairGrid": "{move} ({direction}) için onarım ızgarası yok: {reason}; en iyi deneme korundu",
 			"heldLoop": "Animasyon döngüye girdiğinde eldeki eşyanın şekli veya açısı değişiyor",
-			"registrationShift": "PixelLab saydam bir kenar döndürdü ve sayfayı kaydırmış olabilir. Eşyanın her karede hizalandığını kontrol edin."
+			"registrationShift": "PixelLab saydam bir kenar döndürdü ve sayfayı kaydırmış olabilir. Eşyanın her karede hizalandığını kontrol edin.",
+			"bodyUnmeasured": "Eşya gövdenin neredeyse tamamını kaplıyor, bu yüzden kontrol edilemedi. Yeniden çizilmiş bir gövde olmadığından emin olun"
 		},
 		"anotherCharacter": "başka bir karakter",
 		"unfit": {
@@ -1997,7 +2002,10 @@
 		},
 		"cancelRequest": "İsteği iptal et",
 		"waitingTitle": "Başka bir sekme bekleniyor",
-		"waitingBody": "Üretiminiz henüz başlamadı. Etkinlik’i açık tutun; diğer sekme hazır olduğunda PixelDoll burada devam eder."
+		"waitingBody": "Üretiminiz henüz başlamadı. Etkinlik’i açık tutun; diğer sekme hazır olduğunda PixelDoll burada devam eder.",
+		"stopInRunningTab": "Bu işi, çalıştığı sekmeden durdurun.",
+		"pausedStorage": "Kayıtlı işler okunamadı veya kaydedilemedi, bu yüzden yeni bir şey gönderilmiyor. Yeniden denemek için devam edin.",
+		"cancelSaveFailed": "İptal kaydedilemedi. Bu sekme isteği göndermeyecek, ancak başka bir sekme veya sayfayı yenilemek gönderebilir."
 	},
 	"genCard": {
 		"retryKey": "Yeniden deneme, tasarımın renklerine göre belirlenen {color} bir arka plan kullanır",
@@ -2693,7 +2701,8 @@
 			"paletteReviewChanged": "Bu öğe veya renkleri değişti. Renk eşlemesini yeniden inceleyin.",
 			"paletteSaveChanged": "Öğe, gövde veya malzeme değişti. Mevcut renkler korundu. Renk eşlemesini yeniden inceleyin.",
 			"invalidItemGridSheet": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Tam olarak bir sayfa bekleniyordu. Mevcut görsel korundu.",
-			"invalidItemGridLayout": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Sayfanın kare düzeni yanlış. Mevcut görsel korundu."
+			"invalidItemGridLayout": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Sayfanın kare düzeni yanlış. Mevcut görsel korundu.",
+			"savedFrameMissing": "Bu eşyanın kayıtlı bir karesi depolamada yok."
 		}
 	},
 	"newItem": {

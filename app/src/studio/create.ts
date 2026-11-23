@@ -8,6 +8,7 @@
 import {
 	live,
 	queue,
+	reopenableCancellation,
 	requestIdentity,
 	retryableEstimate,
 	type EstimateRetryIntent,
@@ -343,7 +344,7 @@ async function dryRecord(req: Req, label: string, dry: DryRun): Promise<JobRec> 
 	}
 	if (matches.some(live)) throw new Unpaid(req.path, true);
 	const stopped = dry.reopensCanceled
-		? matches.find((r) => !(r.state === 'canceled' && r.autoCanceledAttempts?.length))
+		? matches.find((r) => !reopenableCancellation(r)) // the real run's rule, without its attempt number
 		: matches[0];
 	// A resume-safe request replays its stopped record instead of sending again, so only a new seed can buy another.
 	if (stopped)
@@ -2490,7 +2491,9 @@ export function skeletonMoveReview(
 		const tier = moveMinimumTier(manifest, review);
 		if (Number.isFinite(estimate.gens) && estimate.gens > 0)
 			return { review, estimate, tier, affected, input };
-	} catch {
+	} catch (error) {
+		// Expected refusals (changed directions, missing frames) only withhold the offer; anything else is a bug to see.
+		if (!(error instanceof LocalizedError)) console.error('skeleton move offer', error);
 		return undefined;
 	}
 }

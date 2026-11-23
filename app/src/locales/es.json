@@ -42,7 +42,8 @@
 		"daysLeft": {
 			"one": "queda {count} día",
 			"other": "quedan {count} días"
-		}
+		},
+		"loadFailed": "No se pudo cargar la papelera. Es posible que la lista no esté actualizada."
 	},
 	"librarySettings": {
 		"title": "Biblioteca",
@@ -1049,7 +1050,9 @@
 		"couldNotCheckCopiedFrames": "No se pudieron comprobar los fotogramas de los objetos copiados: {reason}",
 		"couldNotReadSharedItems": "No se pudieron leer los objetos de tus otros personajes: {reason}",
 		"finishedFramesChanged": "Los fotogramas terminados cambiaron. Revisa el objeto de nuevo. No se guardó nada.",
-		"rerollPriceChanged": "El precio de volver a generar cambió. Revísalo de nuevo. No se pidió nada."
+		"rerollPriceChanged": "El precio de volver a generar cambió. Revísalo de nuevo. No se pidió nada.",
+		"characterRereadFailed": "Este personaje cambió en otra pestaña y no se pudo volver a leer. Vuelve a abrirlo antes de hacer cambios.",
+		"demoOutfitsUnread": "No se pudieron cargar los atuendos guardados de la demo, así que sus cambios no se guardan. Recarga la página para volver a intentarlo."
 	},
 	"history": {
 		"wear": "Poner {name}",
@@ -1365,7 +1368,8 @@
 			"noRoom": "No se añadió espacio para animaciones porque este personaje tiene demasiados píxeles de imagen. Usa Ajustar marco después de importar para añadirlo.",
 			"fixedBase": "Las imágenes importadas forman la base fija: no puedes quitar la ropa ni el pelo que ya aparecen. Configura el rig para añadir animaciones y adaptar el equipamiento a las poses del esqueleto.",
 			"frameCounts": "“{move}” tiene distinta cantidad de fotogramas según la dirección. Sus direcciones se importaron como animaciones separadas para conservar todos los fotogramas originales y la duración de cada dirección.",
-			"semiAlpha": "Los bordes semitransparentes se convirtieron a transparencia de pixel art."
+			"semiAlpha": "Los bordes semitransparentes se convirtieron a transparencia de pixel art.",
+			"detailsDropped": "Algunos datos guardados del personaje estaban dañados y se omitieron. Vuelve a configurar su rig de pose si hace falta."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1586,7 +1590,8 @@
 			},
 			"noRepairGrid": "No hay cuadrícula de reparación para {move} ({direction}): {reason}; se conservó el mejor intento",
 			"heldLoop": "El objeto sostenido cambia de forma o de ángulo cuando la animación se repite",
-			"registrationShift": "PixelLab devolvió un borde transparente y puede que haya desplazado la hoja. Comprueba que el objeto se alinee en todos los fotogramas."
+			"registrationShift": "PixelLab devolvió un borde transparente y puede que haya desplazado la hoja. Comprueba que el objeto se alinee en todos los fotogramas.",
+			"bodyUnmeasured": "El objeto cubre casi todo el cuerpo, así que no se pudo comprobar. Asegúrate de que no sea un cuerpo redibujado"
 		},
 		"anotherCharacter": "otro personaje",
 		"unfit": {
@@ -1997,7 +2002,10 @@
 		},
 		"cancelRequest": "Cancelar solicitud",
 		"waitingTitle": "Esperando otra pestaña",
-		"waitingBody": "Tu generación aún no ha empezado. Deja Actividad abierta y PixelDoll continuará aquí cuando la otra pestaña esté lista."
+		"waitingBody": "Tu generación aún no ha empezado. Deja Actividad abierta y PixelDoll continuará aquí cuando la otra pestaña esté lista.",
+		"stopInRunningTab": "Detén esta tarea en la pestaña que la está ejecutando.",
+		"pausedStorage": "No se pudieron leer ni guardar las tareas guardadas, así que no se envía nada nuevo. Reanuda para volver a intentarlo.",
+		"cancelSaveFailed": "No se pudo guardar la cancelación. Esta pestaña no enviará la solicitud, pero otra pestaña o una recarga sí podrían enviarla."
 	},
 	"genCard": {
 		"retryKey": "Al reintentar se usa un fondo {color}, elegido a partir de mediciones de los colores del diseño.",
@@ -2693,7 +2701,8 @@
 			"paletteReviewChanged": "Este objeto o sus colores han cambiado. Vuelve a revisar el ajuste de colores.",
 			"paletteSaveChanged": "El objeto, el cuerpo o el material ha cambiado. Se conservaron los colores existentes. Vuelve a revisar el ajuste.",
 			"invalidItemGridSheet": "PixelLab devolvió una cuadrícula de objeto inutilizable. Se esperaba una sola hoja. Se conservaron las imágenes anteriores.",
-			"invalidItemGridLayout": "PixelLab devolvió una cuadrícula de objeto inutilizable. La hoja tiene un diseño de fotogramas incorrecto. Se conservaron las imágenes anteriores."
+			"invalidItemGridLayout": "PixelLab devolvió una cuadrícula de objeto inutilizable. La hoja tiene un diseño de fotogramas incorrecto. Se conservaron las imágenes anteriores.",
+			"savedFrameMissing": "Falta en el almacenamiento un fotograma guardado de este objeto."
 		}
 	},
 	"newItem": {

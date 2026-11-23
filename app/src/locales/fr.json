@@ -42,7 +42,8 @@
 		"daysLeft": {
 			"one": "reste {count} jour",
 			"other": "restent {count} jours"
-		}
+		},
+		"loadFailed": "Impossible de charger la corbeille. La liste n’est peut-être pas à jour."
 	},
 	"librarySettings": {
 		"title": "Bibliothèque",
@@ -1049,7 +1050,9 @@
 		"couldNotCheckCopiedFrames": "Impossible de vérifier les images des items copiés : {reason}",
 		"couldNotReadSharedItems": "Impossible de lire les objets de vos autres personnages : {reason}",
 		"finishedFramesChanged": "Les images terminées ont changé. Vérifiez à nouveau l’objet. Rien n’a été enregistré.",
-		"rerollPriceChanged": "Le prix de la relance a changé. Vérifiez-le à nouveau. Rien n’a été demandé."
+		"rerollPriceChanged": "Le prix de la relance a changé. Vérifiez-le à nouveau. Rien n’a été demandé.",
+		"characterRereadFailed": "Ce personnage a été modifié dans un autre onglet et n’a pas pu être relu. Rouvrez-le avant de faire des modifications.",
+		"demoOutfitsUnread": "Impossible de charger les tenues enregistrées de la démo, donc ses modifications ne sont pas enregistrées. Rechargez la page pour réessayer."
 	},
 	"history": {
 		"wear": "Porter {name}",
@@ -1365,7 +1368,8 @@
 			"noRoom": "L’espace pour les animations n’a pas été ajouté, car ce personnage a trop de pixels d’image. Utilisez Ajuster le cadre après l’import pour l’ajouter.",
 			"fixedBase": "Le visuel importé devient le corps de base figé : il est impossible de retirer les vêtements et les cheveux déjà dessinés. Configurez le rig de pose pour animer l’équipement avec le squelette et ajouter de nouvelles animations.",
 			"frameCounts": "« {move} » a un nombre d’images différent selon la direction. Ses directions ont été importées comme animations distinctes pour conserver chaque image et la durée d’origine de chaque direction.",
-			"semiAlpha": "Les pixels partiellement transparents en bordure ont été convertis en pixels opaques ou transparents, comme en pixel art."
+			"semiAlpha": "Les pixels partiellement transparents en bordure ont été convertis en pixels opaques ou transparents, comme en pixel art.",
+			"detailsDropped": "Certaines informations enregistrées du personnage étaient endommagées et ont été ignorées. Configurez de nouveau son rig de pose si nécessaire."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1586,7 +1590,8 @@
 			},
 			"noRepairGrid": "Aucune grille de réparation pour {move} ({direction}) : {reason} ; le meilleur essai a été conservé",
 			"heldLoop": "L’objet tenu change de forme ou d’angle quand une animation boucle",
-			"registrationShift": "PixelLab a renvoyé un bord transparent et a peut-être décalé la feuille. Vérifiez que l’objet est bien aligné sur chaque image."
+			"registrationShift": "PixelLab a renvoyé un bord transparent et a peut-être décalé la feuille. Vérifiez que l’objet est bien aligné sur chaque image.",
+			"bodyUnmeasured": "L’objet couvre presque tout le corps et n’a donc pas pu être vérifié. Assurez-vous qu’il ne s’agit pas d’un corps redessiné"
 		},
 		"anotherCharacter": "un autre personnage",
 		"unfit": {
@@ -1997,7 +2002,10 @@
 		},
 		"cancelRequest": "Annuler la requête",
 		"waitingTitle": "En attente d’un autre onglet",
-		"waitingBody": "Votre génération n’a pas encore démarré. Gardez Activité ouverte et PixelDoll continuera ici dès que l’autre onglet sera prêt."
+		"waitingBody": "Votre génération n’a pas encore démarré. Gardez Activité ouverte et PixelDoll continuera ici dès que l’autre onglet sera prêt.",
+		"stopInRunningTab": "Arrêtez cette tâche depuis l’onglet qui l’exécute.",
+		"pausedStorage": "Les tâches enregistrées n’ont pas pu être lues ni enregistrées, donc rien de nouveau n’est envoyé. Reprenez pour réessayer.",
+		"cancelSaveFailed": "L’annulation n’a pas pu être enregistrée. Cet onglet n’enverra pas la requête, mais un autre onglet ou un rechargement pourrait l’envoyer."
 	},
 	"genCard": {
 		"retryKey": "La nouvelle tentative utilise un fond {color}, choisi d’après les couleurs de ce visuel",
@@ -2693,7 +2701,8 @@
 			"paletteReviewChanged": "Cet équipement ou ses couleurs ont changé. Vérifiez de nouveau la mise en correspondance des couleurs.",
 			"paletteSaveChanged": "Cet équipement, le corps ou le matériau a changé. Les couleurs existantes ont été conservées. Vérifiez de nouveau la mise en correspondance.",
 			"invalidItemGridSheet": "PixelLab a renvoyé une grille d’objet inutilisable. Une seule feuille était attendue. Le visuel existant a été conservé.",
-			"invalidItemGridLayout": "PixelLab a renvoyé une grille d’objet inutilisable. La feuille a une disposition d’images incorrecte. Le visuel existant a été conservé."
+			"invalidItemGridLayout": "PixelLab a renvoyé une grille d’objet inutilisable. La feuille a une disposition d’images incorrecte. Le visuel existant a été conservé.",
+			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage."
 		}
 	},
 	"newItem": {

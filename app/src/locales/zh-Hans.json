@@ -39,7 +39,8 @@
 		"confirmRestoreNamed": "再按一次即可恢复 {name}",
 		"daysLeft": {
 			"other": "剩余 {count} 天"
-		}
+		},
+		"loadFailed": "无法加载回收站。列表可能不是最新的。"
 	},
 	"librarySettings": {
 		"title": "角色库",
@@ -1020,7 +1021,9 @@
 		"couldNotCheckCopiedFrames": "无法检查已复制装备的帧：{reason}",
 		"couldNotReadSharedItems": "无法读取其他角色的装备：{reason}",
 		"finishedFramesChanged": "已完成的帧有变化。请重新查看装备。未保存任何内容。",
-		"rerollPriceChanged": "重新生成的价格有变化。请重新查看。未请求任何内容。"
+		"rerollPriceChanged": "重新生成的价格有变化。请重新查看。未请求任何内容。",
+		"characterRereadFailed": "此角色已在其他标签页中更改，且无法重新读取。请先重新打开它，再进行更改。",
+		"demoOutfitsUnread": "无法加载演示角色已保存的套装，因此对它的更改不会被保存。请重新加载页面后重试。"
 	},
 	"history": {
 		"wear": "穿戴{name}",
@@ -1322,7 +1325,8 @@
 			"noRoom": "由于此角色的图像像素过多，未添加动作空间。导入后可使用“调整帧”添加。",
 			"fixedBase": "导入的图像是固定基础身体：现有衣服和头发无法移除。设置其姿势绑定结构，以使用骨架姿态装备并添加新动作。",
 			"frameCounts": "“{move}”各朝向的帧数不同。其朝向已作为独立动作导入，以保留每个原始帧和朝向长度。",
-			"semiAlpha": "部分透明的边缘已转换为像素画透明。"
+			"semiAlpha": "部分透明的边缘已转换为像素画透明。",
+			"detailsDropped": "部分已保存的角色信息已损坏，已被略过。如有需要，请重新设置其姿势绑定结构。"
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1538,7 +1542,8 @@
 			},
 			"noRepairGrid": "{move}（{direction}）没有修复网格：{reason}；已保留最佳尝试",
 			"heldLoop": "动作循环时，手持装备会改变形状或角度",
-			"registrationShift": "PixelLab 返回了透明边缘，可能移动了图集。请检查装备在每一帧中是否对齐。"
+			"registrationShift": "PixelLab 返回了透明边缘，可能移动了图集。请检查装备在每一帧中是否对齐。",
+			"bodyUnmeasured": "装备几乎覆盖了整个身体，因此无法检查。请确认它不是重新绘制的身体"
 		},
 		"anotherCharacter": "另一个角色",
 		"unfit": {
@@ -1938,7 +1943,10 @@
 		},
 		"cancelRequest": "取消请求",
 		"waitingTitle": "正在等待另一个标签页",
-		"waitingBody": "你的生成尚未开始。请保持“活动”打开，另一个标签页就绪后 PixelDoll 会在这里继续。"
+		"waitingBody": "你的生成尚未开始。请保持“活动”打开，另一个标签页就绪后 PixelDoll 会在这里继续。",
+		"stopInRunningTab": "请在运行此任务的标签页中停止它。",
+		"pausedStorage": "无法读取或保存已保存的任务，因此不会发送新的请求。点击继续以重试。",
+		"cancelSaveFailed": "无法保存取消操作。此标签页不会发送该请求，但其他标签页或重新加载后可能会发送。"
 	},
 	"genCard": {
 		"retryKey": "重新生成会使用从本设计颜色测得的{color}背景",
@@ -2623,7 +2631,8 @@
 			"paletteReviewChanged": "此装备或其颜色已更改。请重新检查配色。",
 			"paletteSaveChanged": "装备、身体或材质已更改。现有颜色已保留。请重新检查配色。",
 			"invalidItemGridSheet": "PixelLab 返回了无法使用的装备网格。应只有一张图集。现有图像已保留。",
-			"invalidItemGridLayout": "PixelLab 返回了无法使用的装备网格。图集的帧布局错误。现有图像已保留。"
+			"invalidItemGridLayout": "PixelLab 返回了无法使用的装备网格。图集的帧布局错误。现有图像已保留。",
+			"savedFrameMissing": "此装备的一个已保存帧在存储中缺失。"
 		}
 	},
 	"newItem": {
