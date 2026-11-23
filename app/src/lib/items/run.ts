@@ -2089,8 +2089,10 @@ export async function poseItemClip(
 					throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
 				const outputs = outputsOf(r);
 				if (outputs.length !== Math.max(3, cells.length))
-					throw new Error(
-						`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames. No automatic retry was made.`
+					throw new LocalizedError(
+						`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames. No automatic retry was made.`,
+						'itemRoute.errors.poseFramesMalformed',
+						{ item: item.name }
 					);
 				const outs = unrotate(
 					outputs,
@@ -2098,8 +2100,10 @@ export async function poseItemClip(
 				).slice(0, cells.length);
 				const images = await Promise.all(outs.map((o) => img(o.sha)));
 				if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad))
-					throw new Error(
-						`${item.name} ${anim} ${dir}: PixelLab returned the wrong frame size. No automatic retry was made.`
+					throw new LocalizedError(
+						`${item.name} ${anim} ${dir}: PixelLab returned the wrong frame size. No automatic retry was made.`,
+						'itemRoute.errors.poseFrameSize',
+						{ item: item.name }
 					);
 				const candidate = cells.map((c, i) =>
 					extractCell({
@@ -2135,7 +2139,12 @@ export async function poseItemClip(
 		cells = done.flatMap((r) => r.collected),
 		prov = done.flatMap((r) => r.prov);
 	if (failures.length && !cells.length) throw failures[0];
-	if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
+	if (!cells.length)
+		throw new LocalizedError(
+			`${item.name}: PixelLab returned no usable ${anim} frames`,
+			'itemRoute.errors.noUsableFrames',
+			{ item: item.name }
+		);
 	const q = withH4(
 		itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad, hidden),
 		slot,
@@ -2703,7 +2712,11 @@ async function gridItemClip(
 	);
 	const r = terminal(rec) ? rec : await settled(rec.id);
 	if (r.state !== 'done')
-		throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
+		throw new LocalizedError(
+			`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`,
+			'itemRoute.errors.gridStopped',
+			{ item: item.name, state: message(`activity.state.${r.state}`) }
+		);
 	if (outputsOf(r).length !== 1)
 		throw new LocalizedError(
 			`${INVALID_ITEM_GRID} Expected exactly one sheet. Existing artwork was kept.`,
