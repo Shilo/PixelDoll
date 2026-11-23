@@ -660,3 +660,52 @@ test('an automatic cancel stored by another tab does not settle an explicit Stop
 	await vi.waitFor(() => expect(settled?.state).toBe('canceled'));
 	expect(stored.get(record.id)?.autoCanceledAttempts).toBeUndefined(); // can never be reopened
 });
+
+test('a follower keeps its failed explicit Stop over an automatic cancel, and a stored explicit Stop settles an automatic one', async () => {
+	let broken = false;
+	const stored = new Map<string, JobRec>();
+	const { q } = fixture({
+		put: async (k, r) => void stored.set(k, structuredClone(r)),
+		get: async (k) => structuredClone(stored.get(k)),
+		all: async () => [...stored.values()].map((r) => structuredClone(r)),
+		transition: async (k, next) => {
+			if (broken) throw new Error('IndexedDB unavailable');
+			const out = next(structuredClone(stored.get(k)));
+			if (out) stored.set(k, structuredClone(out));
+			return out ?? stored.get(k);
+		}
+	});
+	const inner = q as unknown as {
+		role: string;
+		pull(id: string): Promise<void>;
+		recs: Map<string, JobRec>;
+	};
+	const record = await q.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } });
+	broken = true;
+	await expect(q.cancel(record.id)).rejects.toThrow('IndexedDB unavailable');
+	inner.role = 'follower';
+	const auto = {
+		...stored.get(record.id)!,
+		state: 'canceled',
+		autoCanceledAttempts: [1]
+	} as JobRec;
+	stored.set(record.id, auto);
+	await inner.pull(record.id);
+	await q.sync();
+	expect(inner.recs.get(record.id)?.autoCanceledAttempts).toBeUndefined(); // still this tab's explicit Stop
+	broken = false;
+	await q.retryCancelSave(record.id);
+	expect(stored.get(record.id)?.autoCanceledAttempts).toBeUndefined();
+
+	// The other way round: this (leading) tab's automatic cancel failed, another tab stored an explicit Stop.
+	const second = await q.enqueue({ method: 'POST', path: '/x', body: { seed: 2 } });
+	inner.role = 'leader';
+	broken = true;
+	await expect(q.cancel(second.id, true)).rejects.toThrow('IndexedDB unavailable');
+	inner.recs.get(second.id)!.autoCanceledAttempts = [1];
+	let settled: JobRec | undefined;
+	void q.settled(second.id).then((r) => (settled = r));
+	stored.set(second.id, { ...stored.get(second.id)!, state: 'canceled', finishedAt: 1 });
+	await inner.pull(second.id);
+	await vi.waitFor(() => expect(settled?.state).toBe('canceled'));
+});

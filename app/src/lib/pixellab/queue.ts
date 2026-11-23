@@ -899,8 +899,16 @@ export class Queue {
 	}
 	/** Follower: replace the mirror with the stored ledger. */
 	async sync() {
-		this.recs = new Map((await this.deps.all()).map((r) => [r.id, r]));
-		for (const [id, entry] of this.writes) if (!entry.pending) this.writes.delete(id); // the stored row is authoritative
+		const before = this.recs;
+		this.recs = new Map(
+			(await this.deps.all()).map((r) => {
+				const mine = before.get(r.id);
+				return [r.id, mine && this.keepsExplicitStop(mine, r) ? mine : r];
+			})
+		);
+		// The stored row is authoritative, except an explicit Stop of ours still waiting for its Try again.
+		for (const [id, entry] of this.writes)
+			if (!entry.pending && this.recs.get(id) !== before.get(id)) this.writes.delete(id);
 		this.emit();
 	}
 	/** Inspect mirrored/persisted submissions without making requests or eagerly decoding every saved input. */
@@ -917,11 +925,26 @@ export class Queue {
 	private wasRequested(r: JobRec) {
 		return r.attempts > 0 && r.requestStarted !== false && !/nothing was sent/i.test(r.error ?? '');
 	}
+	/** This tab's explicit Stop failed to save and the stored row is only an automatic cancel: keep the Stop (and its failed
+	 *  write) so its Try again can replace the cancel, which could otherwise be reopened later. */
+	private keepsExplicitStop(mine: JobRec | undefined, stored: JobRec) {
+		const entry = this.writes.get(stored.id);
+		return (
+			!!mine &&
+			!!entry?.failed &&
+			!entry.pending &&
+			mine.state === 'canceled' &&
+			!mine.autoCanceledAttempts &&
+			stored.state === 'canceled' &&
+			!!stored.autoCanceledAttempts
+		);
+	}
 	/** One record another tab saved: a follower mirrors it, the leader adopts it. */
 	private async pull(id: string) {
 		const r = await this.deps.get(id);
 		if (!r) return;
 		if (this.role === 'follower') {
+			if (this.keepsExplicitStop(this.recs.get(id), r)) return;
 			this.recs.set(id, r);
 			if (!this.writes.get(id)?.pending) this.writes.delete(id); // the stored row is authoritative
 			this.emit();
@@ -969,8 +992,9 @@ export class Queue {
 			!entry.pending &&
 			!live(r) &&
 			r.state === mine.state &&
-			// An automatic cancel stored by another tab is not this tab's explicit Stop (it could be reopened later).
-			!r.autoCanceledAttempts === !mine.autoCanceledAttempts
+			// A stored explicit Stop settles any local cancel; a stored automatic cancel settles only a local automatic one
+			// (it could be reopened later, which an explicit Stop never is).
+			(!r.autoCanceledAttempts || !!mine.autoCanceledAttempts)
 		) {
 			this.recs.set(r.id, r);
 			this.writes.delete(r.id);
@@ -1673,7 +1697,7 @@ export class Queue {
 				ops.push(
 					this.guard(r.id, async () => {
 						try {
-							await this.submit(r, !!probe);
+							await this.submit(r, !!probe, probingStorage);
 						} finally {
 							if (probe && this.capacityProbe === probe) this.capacityProbe = null;
 						}
@@ -1722,7 +1746,7 @@ export class Queue {
 		}
 	}
 
-	private async submit(r: JobRec, probe: boolean) {
+	private async submit(r: JobRec, probe: boolean, storageProbe = false) {
 		if (this.pollSubmitted(r)) {
 			await this.save(r);
 			return;
@@ -1793,15 +1817,16 @@ export class Queue {
 				await cancelBeforeSend();
 				return;
 			}
-			// A storage pause no longer holds a request whose own conditional write just landed (storage is proven for it, and
-			// result saves are not failing): rolling it back to queued could leave `submitting` stored if the tab closes.
-			const storageProven =
-				this.paused === 'storage' && (!this.blobBad || this.blobOk > this.blobBad);
+			// A storage pause no longer holds the storage probe whose own conditional write just landed (storage is proven for
+			// it): rolling it back to queued could leave `submitting` stored if the tab closes. Read at every check, so any
+			// other pause, or result saves failing meanwhile, still holds it.
+			const storageProven = () =>
+				storageProbe && this.paused === 'storage' && (!this.blobBad || this.blobOk > this.blobBad);
 			const held = () =>
 				credentialRevision !== this.keyRevision ||
 				key !== this.key ||
 				this.disconnected ||
-				(this.paused && !storageProven) ||
+				(this.paused && !storageProven()) ||
 				this.deps.now() < this.capacityRetryAt ||
 				this.planWait(r);
 			if (held()) {
