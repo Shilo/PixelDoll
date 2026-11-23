@@ -1998,6 +1998,7 @@ function discloseJoints(
 	q.warnings.push(...poseFitIssues(rig, calls));
 	for (const key of cells) {
 		const clip = q.qa.clips[key.split('/').slice(0, 2).join('/')];
+		q.qa.cells[key as CellKey].jointReview = true;
 		if (!clip) continue;
 		clip.jointReviewFrames = (clip.jointReviewFrames ?? 0) + 1;
 		if (clip.status === 'pass') clip.status = 'warn';
@@ -2416,6 +2417,12 @@ async function prepareClip(
 				clip = next.clips[`${anim}/${d}`];
 			if (before && STATUS_ORDER.indexOf(before) > STATUS_ORDER.indexOf(clip.status))
 				clip.status = before;
+			// The count covers kept and new frames alike, from each frame's own finding.
+			const joints = Object.entries(qaCells).filter(
+				([key, cell]) => key.startsWith(`${anim}/${d}/`) && cell.jointReview
+			).length;
+			if (joints) clip.jointReviewFrames = joints;
+			else delete clip.jointReviewFrames;
 		}
 	out.qa = mergeQa(item, next, qaCells);
 	return { out, images: built.images, originalItem, version, ladder: slotLadder(rig) };

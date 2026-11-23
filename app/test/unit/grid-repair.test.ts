@@ -355,6 +355,30 @@ test('Tier 1 offers the finished batch after an unknown second batch, keeping cu
 	expect(f.saved()!.qa!.cells['slash/west/0'].provenance).toBe(before.provenance.length);
 });
 
+test('a partial repair keeps the joint finding of a frame it did not replace', async () => {
+	const f = await fixture('lost-second');
+	const summary = {
+		minKeyKept: 1,
+		maxKeyOutside: 0,
+		minAreaRatio: 1,
+		maxAreaCV: 0,
+		maxPaletteDist: 0,
+		clipPx: 0
+	};
+	f.item.qa = {
+		...summary,
+		status: 'warn',
+		rerolls: 0,
+		jointReviewFrames: 1,
+		cells: { 'slash/west/5': { route: 'posed', area: 10, jointReview: true } },
+		clips: { 'slash/west': { ...summary, status: 'warn', jointReviewFrames: 1 } }
+	};
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
+	expect(result.review?.kept).toContain(5);
+	expect(result.review?.clip.out.qa?.clips['slash/west']?.jointReviewFrames).toBe(1);
+	expect(result.review?.clip.out.qa?.jointReviewFrames).toBe(1);
+});
+
 test('Tier 1 offers the finished batch when the plan stops allowing a later one', async () => {
 	const f = await fixture();
 	let checks = 0;
