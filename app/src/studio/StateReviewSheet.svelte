@@ -185,7 +185,8 @@
 		return run('common.loading', async () => {
 			canContinue = false;
 			try {
-				review = await pendingState(projectId, token);
+				// Try again keeps the views already downloaded for this attempt.
+				review = await pendingState(projectId, token, review ?? undefined);
 				// Saved or discarded in another tab: refreshing the list closes this sheet.
 				if (!review) return void (await refreshStateAttempts(projectId));
 				reviewFacing = null;

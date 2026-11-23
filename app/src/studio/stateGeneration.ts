@@ -443,7 +443,8 @@ async function prepareStatePlan(
 	};
 }
 
-async function childViews(attempt: StateAttempt, record: JobRec) {
+/** `known`: views this review already read from the same child; a retry keeps them and fetches only the rest. */
+async function childViews(attempt: StateAttempt, record: JobRec, known?: StateReview) {
 	const childId = managedStateSubmitChildId(record);
 	if (
 		!childId ||
@@ -472,6 +473,11 @@ async function childViews(attempt: StateAttempt, record: JobRec) {
 	const unfetched: DirectionName[] = [];
 	const read = await Promise.all(
 		attempt.plan.batches[0].facingIds.map(async (direction) => {
+			const kept =
+				known?.token === attempt.token && known.childId === childId
+					? known.views.find((view) => view.direction === direction)
+					: undefined;
+			if (kept) return kept;
 			const url = inventory.rotations[direction];
 			if (typeof url !== 'string' || !url.trim()) return null;
 			const image = await readRotation(url).then(
@@ -493,7 +499,8 @@ async function childViews(attempt: StateAttempt, record: JobRec) {
 async function readReview(
 	projectId: string,
 	attempt: StateAttempt,
-	records: JobRec[]
+	records: JobRec[],
+	known?: StateReview
 ): Promise<StateReview> {
 	const plan = attempt.plan;
 	const result: {
@@ -502,7 +509,7 @@ async function readReview(
 		unfetched?: DirectionName[];
 	} =
 		plan.endpoint === '/create-character-state'
-			? await childViews(attempt, records[0])
+			? await childViews(attempt, records[0], known)
 			: {
 					views: (
 						await Promise.all(
@@ -850,14 +857,19 @@ async function submitStateBatches(
 	}
 }
 
-export async function pendingState(projectId: string, token: string): Promise<StateReview | null> {
+/** `known`: the review shown before Try again, whose downloaded views are kept. */
+export async function pendingState(
+	projectId: string,
+	token: string,
+	known?: StateReview
+): Promise<StateReview | null> {
 	const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGenerations?.[token];
 	if (!attempt) return null;
 	if (!attempt.source) throw outdated();
 	const records = stateRecoveryRecords(attempt, await db.all<JobRec>('jobs'));
 	if (!records) throw unfinished();
 	try {
-		return await readReview(projectId, attempt, records);
+		return await readReview(projectId, attempt, records, known);
 	} catch (cause) {
 		// Known causes (no key to recover the views, a PixelLab error) say what to do; only unreadable results are invalid.
 		if (cause instanceof LocalizedError || cause instanceof ApiError) throw cause;
