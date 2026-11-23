@@ -11,6 +11,7 @@
 import {
 	api as realApi,
 	ApiError,
+	type ErrorKind,
 	jobErrorCode,
 	jobFailureText,
 	isNetwork,
@@ -97,6 +98,8 @@ export interface JobRec {
 	response?: unknown; // submit response, long strings stripped
 	jobs: SubJob[];
 	error?: string;
+	/** The class of the last API error (client.ts classify): Activity says what a refusal means without reading its text. */
+	errorKind?: ErrorKind;
 	estimateRecovery?: { id: string; retryOf?: string }; // explicit, persisted measurement-only retry; original unknown record is retained
 	autoCanceledAttempts?: number[]; // known automatic pre-submit cancellation; only a distinct explicit attempt may reopen
 	gens: number; // reported charges only; with costUnknown they are a known part, never the whole cost
@@ -1594,6 +1597,7 @@ export class Queue {
 			const currentCredential = credentialRevision === this.keyRevision;
 			if (err.message === 'no API key set') r.requestStarted = false; // client guard rejected before fetch
 			r.error = err.message;
+			r.errorKind = err.kind;
 			// refused before any job existed; B15 live: a 500 "Failed to start any animation jobs" (busy account) said so in words
 			if (r.method === 'POST' && hasJobEvidence(err.body)) {
 				// Accepted-job evidence outranks every error classification, including auth/credits that normally wait for reconnection.

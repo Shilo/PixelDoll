@@ -3155,13 +3155,21 @@
 			"misaligned": "部分新帧没有对齐",
 			"quality": "新帧未通过质量检查",
 			"changed": "处理期间有内容发生了变化",
-			"missing": "部分已保存的结果不可用",
+			"missing": "部分已保存的结果不在此设备上",
 			"plan": "你的 PixelLab 套餐不包含此功能",
 			"credits": "你的 PixelLab 账户积分已用完",
 			"key": "PixelLab 未接受你的令牌",
 			"offline": "无法连接 PixelLab",
 			"declined": "PixelLab 拒绝了此请求",
-			"unexpected": "出现了问题"
+			"unexpected": "出现了问题",
+			"uncertain": "一个已付费的结果可能已丢失",
+			"poses": "此动作还没有用于装备的姿势",
+			"method": "此装备无法在此角色上摆出姿势",
+			"quote": "PixelLab 未确认价格",
+			"browser": "此浏览器无法安全地完成此操作",
+			"exportId": "另一个角色使用了此导出 ID",
+			"busy": "PixelLab 正忙",
+			"invalid": "PixelLab 拒绝了此请求"
 		},
 		"next": {
 			"frame-count": "已付费的结果都已保留。请先查看，然后继续或重试。",
@@ -3173,13 +3181,21 @@
 			"misaligned": "只重新生成偏移的部分，或保留现有图像。",
 			"quality": "请查看结果，然后保留或重试。",
 			"changed": "继续前请重新查看。",
-			"missing": "你的其他作品都已保留。请重试以生成缺少的部分。",
+			"missing": "重新制作前，请在“活动”中查看仍保存的内容。",
 			"plan": "请在 PixelLab 升级套餐，或选择套餐包含的选项。",
 			"credits": "请在 PixelLab 添加积分后重试。",
 			"key": "请使用有效的令牌重新连接 PixelLab。",
 			"offline": "请检查网络连接后重试。",
 			"declined": "请修改描述后重试。",
-			"unexpected": "请报告问题以便修复。已付费的结果仍在“活动”中。"
+			"unexpected": "请报告问题以便修复。已付费的结果仍在“活动”中。",
+			"uncertain": "重试前请先查看“活动”：新的尝试可能会再次收费。",
+			"poses": "请先设置其姿势，然后再制作装备。",
+			"method": "请选择“自动”后重试。",
+			"quote": "请稍后重试，或选择其他模型。",
+			"browser": "请使用最新的浏览器继续。",
+			"exportId": "请选择其他导出 ID。",
+			"busy": "请稍等片刻后重试。",
+			"invalid": "请更改请求设置后重试。"
 		}
 	}
 }

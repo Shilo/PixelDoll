@@ -1,6 +1,6 @@
 <script lang="ts">
 	// A failure notice in plain words: a short title and one next step by the failure's kind, with the detailed text one
-	// tap away under Details, beside Report. A failure whose own message is already plain shows just that message.
+	// tap away under Details, beside Report. An unexpected failure keeps its detailed text in view.
 	import { CircleAlert } from './icons.ts';
 	import { t } from 'svelte-whisper';
 	import { displayNestedMessage } from '../lib/i18n.ts';
@@ -46,10 +46,12 @@
 				<strong>{t(`problem.title.${kind}`)}</strong>
 				{t(`problem.next.${kind}`)}<ReportButton {...reported} />
 			</p>
-			<details class="problem-details">
-				<summary>{t('problem.details')}</summary>
-				<p>{shown}</p>
-			</details>
+			<!-- An unexpected failure has no known next step beyond Report, so its own words stay in view. -->
+			{#if kind === 'unexpected'}<p>{shown}</p>
+			{:else}<details class="problem-details">
+					<summary>{t('problem.details')}</summary>
+					<p>{shown}</p>
+				</details>{/if}
 		{:else}
 			<p>{shown}<ReportButton {...reported} /></p>
 		{/if}

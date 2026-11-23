@@ -3245,13 +3245,21 @@
 			"misaligned": "Certaines nouvelles images sont mal alignées",
 			"quality": "Les nouvelles images n’ont pas passé les contrôles de qualité",
 			"changed": "Quelque chose a changé pendant le travail",
-			"missing": "Certains résultats enregistrés ne sont pas disponibles",
+			"missing": "Certains résultats enregistrés ne sont pas sur cet appareil",
 			"plan": "Votre offre PixelLab n’inclut pas cette fonction",
 			"credits": "Votre compte PixelLab n’a plus de crédits",
 			"key": "PixelLab n’a pas accepté votre jeton",
 			"offline": "Impossible de joindre PixelLab",
 			"declined": "PixelLab a refusé cette requête",
-			"unexpected": "Un problème est survenu"
+			"unexpected": "Un problème est survenu",
+			"uncertain": "Un résultat payé est peut-être perdu",
+			"poses": "Cette animation n’a pas encore de poses pour l’équipement",
+			"method": "Cet objet ne peut pas être posé sur ce personnage",
+			"quote": "PixelLab n’a pas confirmé le prix",
+			"browser": "Ce navigateur ne peut pas le faire en toute sécurité",
+			"exportId": "Un autre personnage utilise cet ID d’export",
+			"busy": "PixelLab est occupé",
+			"invalid": "PixelLab a refusé cette requête"
 		},
 		"next": {
 			"frame-count": "Vos résultats payés sont conservés. Vérifiez-les, puis continuez ou réessayez.",
@@ -3263,13 +3271,21 @@
 			"misaligned": "Régénérez seulement la partie décalée ou gardez les images actuelles.",
 			"quality": "Vérifiez les résultats, puis gardez-les ou réessayez.",
 			"changed": "Vérifiez de nouveau avant de continuer.",
-			"missing": "Le reste de votre travail est conservé. Réessayez pour créer la partie manquante.",
+			"missing": "Consultez Activité pour voir ce qui est encore enregistré avant de le recréer.",
 			"plan": "Passez à une offre supérieure sur PixelLab ou choisissez une option incluse dans votre offre.",
 			"credits": "Ajoutez des crédits sur PixelLab, puis réessayez.",
 			"key": "Reconnectez PixelLab avec un jeton valide.",
 			"offline": "Vérifiez votre connexion, puis réessayez.",
 			"declined": "Modifiez la description, puis réessayez.",
-			"unexpected": "Signalez-le pour qu’il soit corrigé. Vos résultats payés restent dans Activité."
+			"unexpected": "Signalez-le pour qu’il soit corrigé. Vos résultats payés restent dans Activité.",
+			"uncertain": "Consultez Activité avant de réessayer : une nouvelle tentative pourrait être facturée à nouveau.",
+			"poses": "Configurez d’abord ses poses, puis créez l’équipement.",
+			"method": "Choisissez Automatique, puis réessayez.",
+			"quote": "Réessayez dans un instant ou choisissez un autre modèle.",
+			"browser": "Utilisez un navigateur récent pour continuer.",
+			"exportId": "Choisissez un autre ID d’export.",
+			"busy": "Patientez un instant, puis réessayez.",
+			"invalid": "Modifiez les réglages de la requête, puis réessayez."
 		}
 	}
 }

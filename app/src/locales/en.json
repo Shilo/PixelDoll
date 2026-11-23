@@ -3245,13 +3245,21 @@
 			"misaligned": "Some new frames do not line up",
 			"quality": "The new frames did not pass the quality checks",
 			"changed": "Something changed while this was working",
-			"missing": "Some saved results are not available",
+			"missing": "Some saved results are not on this device",
 			"plan": "Your PixelLab plan does not include this",
 			"credits": "Your PixelLab account is out of credits",
 			"key": "PixelLab did not accept your token",
 			"offline": "PixelLab could not be reached",
 			"declined": "PixelLab declined this request",
-			"unexpected": "Something went wrong"
+			"unexpected": "Something went wrong",
+			"uncertain": "A paid result may be lost",
+			"poses": "This move has no poses for equipment yet",
+			"method": "This item cannot be posed on this character",
+			"quote": "PixelLab did not confirm the price",
+			"browser": "This browser cannot do this safely",
+			"exportId": "Another character uses this Export ID",
+			"busy": "PixelLab is busy",
+			"invalid": "PixelLab refused this request"
 		},
 		"next": {
 			"frame-count": "Your paid results are kept. Review them, then continue or try again.",
@@ -3263,13 +3271,21 @@
 			"misaligned": "Re-roll only the part that is off, or keep the artwork you have.",
 			"quality": "Review the results, then keep them or try again.",
 			"changed": "Review it again before continuing.",
-			"missing": "Your other work is kept. Try again to make the missing part.",
+			"missing": "Check Activity for what is still saved before making it again.",
 			"plan": "Upgrade your plan on PixelLab, or choose an option your plan includes.",
 			"credits": "Add credits on PixelLab, then try again.",
 			"key": "Connect PixelLab again with a valid token.",
 			"offline": "Check your connection, then try again.",
 			"declined": "Change the description, then try again.",
-			"unexpected": "Report it so it can be fixed. Your paid results stay in Activity."
+			"unexpected": "Report it so it can be fixed. Your paid results stay in Activity.",
+			"uncertain": "Check Activity before trying again: a new attempt could charge again.",
+			"poses": "Set up its poses first, then make the equipment.",
+			"method": "Choose Automatic, then try again.",
+			"quote": "Try again in a moment, or choose another model.",
+			"browser": "Use a current browser to continue.",
+			"exportId": "Choose a different Export ID.",
+			"busy": "Wait a moment, then try again.",
+			"invalid": "Change the request settings, then try again."
 		}
 	}
 }

@@ -3242,13 +3242,21 @@
 			"misaligned": "Bazı yeni kareler hizalı değil",
 			"quality": "Yeni kareler kalite kontrollerini geçemedi",
 			"changed": "İşlem sürerken bir şey değişti",
-			"missing": "Kayıtlı bazı sonuçlar kullanılamıyor",
+			"missing": "Kayıtlı bazı sonuçlar bu cihazda yok",
 			"plan": "PixelLab planınız bunu içermiyor",
 			"credits": "PixelLab hesabınızın kredisi bitti",
 			"key": "PixelLab belirtecinizi kabul etmedi",
 			"offline": "PixelLab'e ulaşılamadı",
 			"declined": "PixelLab bu isteği reddetti",
-			"unexpected": "Bir sorun oluştu"
+			"unexpected": "Bir sorun oluştu",
+			"uncertain": "Ücretli bir sonuç kaybolmuş olabilir",
+			"poses": "Bu animasyonun henüz ekipman için duruşları yok",
+			"method": "Bu eşya bu karaktere poz verilemiyor",
+			"quote": "PixelLab fiyatı onaylamadı",
+			"browser": "Bu tarayıcı bunu güvenli şekilde yapamıyor",
+			"exportId": "Başka bir karakter bu dışa aktarma kimliğini kullanıyor",
+			"busy": "PixelLab meşgul",
+			"invalid": "PixelLab bu isteği reddetti"
 		},
 		"next": {
 			"frame-count": "Ücretli sonuçlarınız korundu. İnceleyin, sonra devam edin veya yeniden deneyin.",
@@ -3260,13 +3268,21 @@
 			"misaligned": "Yalnızca kayan kısmı yeniden oluşturun veya mevcut çizimleri tutun.",
 			"quality": "Sonuçları inceleyin, sonra tutun veya yeniden deneyin.",
 			"changed": "Devam etmeden önce yeniden inceleyin.",
-			"missing": "Diğer çalışmalarınız korundu. Eksik kısmı oluşturmak için yeniden deneyin.",
+			"missing": "Yeniden oluşturmadan önce hâlâ kayıtlı olanları Etkinlik bölümünde kontrol edin.",
 			"plan": "PixelLab'de planınızı yükseltin veya planınızın içerdiği bir seçeneği seçin.",
 			"credits": "PixelLab'de kredi ekleyin, sonra yeniden deneyin.",
 			"key": "PixelLab'i geçerli bir belirteçle yeniden bağlayın.",
 			"offline": "Bağlantınızı kontrol edin, sonra yeniden deneyin.",
 			"declined": "Açıklamayı değiştirin, sonra yeniden deneyin.",
-			"unexpected": "Düzeltilebilmesi için bildirin. Ücretli sonuçlarınız Etkinlik bölümünde duruyor."
+			"unexpected": "Düzeltilebilmesi için bildirin. Ücretli sonuçlarınız Etkinlik bölümünde duruyor.",
+			"uncertain": "Yeniden denemeden önce Etkinlik bölümünü kontrol edin: yeni bir deneme yeniden ücretlendirilebilir.",
+			"poses": "Önce duruşlarını kurun, sonra ekipmanı oluşturun.",
+			"method": "Otomatik'i seçin, sonra yeniden deneyin.",
+			"quote": "Biraz sonra yeniden deneyin veya başka bir model seçin.",
+			"browser": "Devam etmek için güncel bir tarayıcı kullanın.",
+			"exportId": "Farklı bir dışa aktarma kimliği seçin.",
+			"busy": "Biraz bekleyin, sonra yeniden deneyin.",
+			"invalid": "İstek ayarlarını değiştirin, sonra yeniden deneyin."
 		}
 	}
 }

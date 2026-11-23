@@ -3254,13 +3254,21 @@
 			"misaligned": "Alguns quadros novos não estão alinhados",
 			"quality": "Os novos quadros não passaram nas verificações de qualidade",
 			"changed": "Algo mudou durante o processo",
-			"missing": "Alguns resultados salvos não estão disponíveis",
+			"missing": "Alguns resultados salvos não estão neste dispositivo",
 			"plan": "Seu plano do PixelLab não inclui isto",
 			"credits": "Sua conta do PixelLab ficou sem créditos",
 			"key": "O PixelLab não aceitou seu token",
 			"offline": "Não foi possível acessar o PixelLab",
 			"declined": "O PixelLab recusou esta solicitação",
-			"unexpected": "Algo deu errado"
+			"unexpected": "Algo deu errado",
+			"uncertain": "Um resultado pago pode ter se perdido",
+			"poses": "Esta animação ainda não tem poses para equipamentos",
+			"method": "Este item não pode ser posicionado neste personagem",
+			"quote": "O PixelLab não confirmou o preço",
+			"browser": "Este navegador não consegue fazer isso com segurança",
+			"exportId": "Outro personagem usa este ID de exportação",
+			"busy": "O PixelLab está ocupado",
+			"invalid": "O PixelLab recusou esta solicitação"
 		},
 		"next": {
 			"frame-count": "Seus resultados pagos foram mantidos. Revise-os e depois continue ou tente novamente.",
@@ -3272,13 +3280,21 @@
 			"misaligned": "Gere novamente só a parte desalinhada ou mantenha a arte que você tem.",
 			"quality": "Revise os resultados e depois mantenha-os ou tente novamente.",
 			"changed": "Revise de novo antes de continuar.",
-			"missing": "O resto do seu trabalho foi mantido. Tente novamente para criar a parte que falta.",
+			"missing": "Veja em Atividade o que ainda está salvo antes de criar de novo.",
 			"plan": "Faça upgrade do plano no PixelLab ou escolha uma opção que seu plano inclua.",
 			"credits": "Adicione créditos no PixelLab e tente novamente.",
 			"key": "Conecte o PixelLab novamente com um token válido.",
 			"offline": "Verifique sua conexão e tente novamente.",
 			"declined": "Altere a descrição e tente novamente.",
-			"unexpected": "Relate o problema para que ele seja corrigido. Seus resultados pagos continuam em Atividade."
+			"unexpected": "Relate o problema para que ele seja corrigido. Seus resultados pagos continuam em Atividade.",
+			"uncertain": "Confira Atividade antes de tentar de novo: uma nova tentativa pode cobrar outra vez.",
+			"poses": "Configure as poses primeiro e depois crie o equipamento.",
+			"method": "Escolha Automático e tente novamente.",
+			"quote": "Tente novamente em instantes ou escolha outro modelo.",
+			"browser": "Use um navegador atual para continuar.",
+			"exportId": "Escolha outro ID de exportação.",
+			"busy": "Aguarde um momento e tente novamente.",
+			"invalid": "Altere as configurações da solicitação e tente novamente."
 		}
 	}
 }

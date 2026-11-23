@@ -3242,13 +3242,21 @@
 			"misaligned": "Einige neue Frames sind nicht richtig ausgerichtet",
 			"quality": "Die neuen Frames haben die Qualitätsprüfung nicht bestanden",
 			"changed": "Während der Arbeit hat sich etwas geändert",
-			"missing": "Einige gespeicherte Ergebnisse sind nicht verfügbar",
+			"missing": "Einige gespeicherte Ergebnisse sind nicht auf diesem Gerät",
 			"plan": "Dein PixelLab-Tarif enthält das nicht",
 			"credits": "Dein PixelLab-Konto hat kein Guthaben mehr",
 			"key": "PixelLab hat dein Token nicht akzeptiert",
 			"offline": "PixelLab war nicht erreichbar",
 			"declined": "PixelLab hat diese Anfrage abgelehnt",
-			"unexpected": "Etwas ist schiefgelaufen"
+			"unexpected": "Etwas ist schiefgelaufen",
+			"uncertain": "Ein bezahltes Ergebnis ist möglicherweise verloren",
+			"poses": "Diese Animation hat noch keine Posen für Ausrüstung",
+			"method": "Dieser Gegenstand kann bei dieser Figur nicht posiert werden",
+			"quote": "PixelLab hat den Preis nicht bestätigt",
+			"browser": "Dieser Browser kann das nicht sicher ausführen",
+			"exportId": "Eine andere Figur verwendet diese Export-ID",
+			"busy": "PixelLab ist ausgelastet",
+			"invalid": "PixelLab hat diese Anfrage abgelehnt"
 		},
 		"next": {
 			"frame-count": "Deine bezahlten Ergebnisse bleiben erhalten. Prüfe sie und mach dann weiter oder versuch es erneut.",
@@ -3260,13 +3268,21 @@
 			"misaligned": "Generiere nur den verschobenen Teil neu oder behalte die vorhandenen Grafiken.",
 			"quality": "Prüfe die Ergebnisse und behalte sie dann oder versuch es erneut.",
 			"changed": "Prüfe es erneut, bevor du weitermachst.",
-			"missing": "Deine übrige Arbeit bleibt erhalten. Versuch es erneut, um den fehlenden Teil zu erstellen.",
+			"missing": "Sieh unter „Aktivität“ nach, was noch gespeichert ist, bevor du es neu erstellst.",
 			"plan": "Wechsle bei PixelLab zu einem höheren Tarif oder wähle eine Option, die dein Tarif enthält.",
 			"credits": "Lade bei PixelLab Guthaben auf und versuch es dann erneut.",
 			"key": "Verbinde PixelLab erneut mit einem gültigen Token.",
 			"offline": "Prüfe deine Verbindung und versuch es dann erneut.",
 			"declined": "Ändere die Beschreibung und versuch es dann erneut.",
-			"unexpected": "Melde es, damit es behoben werden kann. Deine bezahlten Ergebnisse bleiben unter „Aktivität“."
+			"unexpected": "Melde es, damit es behoben werden kann. Deine bezahlten Ergebnisse bleiben unter „Aktivität“.",
+			"uncertain": "Prüfe „Aktivität“, bevor du es erneut versuchst: Ein neuer Versuch könnte erneut kosten.",
+			"poses": "Richte zuerst ihre Posen ein und erstelle dann die Ausrüstung.",
+			"method": "Wähle „Automatisch“ und versuch es dann erneut.",
+			"quote": "Versuch es gleich noch einmal oder wähle ein anderes Modell.",
+			"browser": "Verwende einen aktuellen Browser, um fortzufahren.",
+			"exportId": "Wähle eine andere Export-ID.",
+			"busy": "Warte einen Moment und versuch es dann erneut.",
+			"invalid": "Ändere die Einstellungen der Anfrage und versuch es dann erneut."
 		}
 	}
 }

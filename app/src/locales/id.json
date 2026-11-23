@@ -3155,13 +3155,21 @@
 			"misaligned": "Beberapa frame baru tidak sejajar",
 			"quality": "Frame baru tidak lolos pemeriksaan kualitas",
 			"changed": "Ada yang berubah saat proses berjalan",
-			"missing": "Beberapa hasil tersimpan tidak tersedia",
+			"missing": "Beberapa hasil tersimpan tidak ada di perangkat ini",
 			"plan": "Paket PixelLab Anda tidak mencakup ini",
 			"credits": "Kredit akun PixelLab Anda habis",
 			"key": "PixelLab tidak menerima token Anda",
 			"offline": "PixelLab tidak dapat dihubungi",
 			"declined": "PixelLab menolak permintaan ini",
-			"unexpected": "Terjadi kesalahan"
+			"unexpected": "Terjadi kesalahan",
+			"uncertain": "Hasil berbayar mungkin hilang",
+			"poses": "Animasi ini belum memiliki pose untuk perlengkapan",
+			"method": "Item ini tidak dapat dipasang pada karakter ini",
+			"quote": "PixelLab tidak mengonfirmasi harganya",
+			"browser": "Browser ini tidak dapat melakukannya dengan aman",
+			"exportId": "Karakter lain memakai ID Ekspor ini",
+			"busy": "PixelLab sedang sibuk",
+			"invalid": "PixelLab menolak permintaan ini"
 		},
 		"next": {
 			"frame-count": "Hasil berbayar Anda tetap disimpan. Tinjau, lalu lanjutkan atau coba lagi.",
@@ -3173,13 +3181,21 @@
 			"misaligned": "Buat ulang hanya bagian yang bergeser, atau simpan gambar yang sudah ada.",
 			"quality": "Tinjau hasilnya, lalu simpan atau coba lagi.",
 			"changed": "Tinjau lagi sebelum melanjutkan.",
-			"missing": "Pekerjaan Anda yang lain tetap disimpan. Coba lagi untuk membuat bagian yang hilang.",
+			"missing": "Periksa Aktivitas untuk melihat apa yang masih tersimpan sebelum membuatnya lagi.",
 			"plan": "Tingkatkan paket Anda di PixelLab, atau pilih opsi yang tercakup dalam paket Anda.",
 			"credits": "Tambahkan kredit di PixelLab, lalu coba lagi.",
 			"key": "Hubungkan PixelLab lagi dengan token yang valid.",
 			"offline": "Periksa koneksi Anda, lalu coba lagi.",
 			"declined": "Ubah deskripsinya, lalu coba lagi.",
-			"unexpected": "Laporkan agar bisa diperbaiki. Hasil berbayar Anda tetap ada di Aktivitas."
+			"unexpected": "Laporkan agar bisa diperbaiki. Hasil berbayar Anda tetap ada di Aktivitas.",
+			"uncertain": "Periksa Aktivitas sebelum mencoba lagi: percobaan baru bisa dikenai biaya lagi.",
+			"poses": "Siapkan posenya terlebih dahulu, lalu buat perlengkapannya.",
+			"method": "Pilih Otomatis, lalu coba lagi.",
+			"quote": "Coba lagi sebentar lagi, atau pilih model lain.",
+			"browser": "Gunakan browser terbaru untuk melanjutkan.",
+			"exportId": "Pilih ID Ekspor lain.",
+			"busy": "Tunggu sebentar, lalu coba lagi.",
+			"invalid": "Ubah pengaturan permintaan, lalu coba lagi."
 		}
 	}
 }

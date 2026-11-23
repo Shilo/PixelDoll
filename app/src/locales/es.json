@@ -3245,13 +3245,21 @@
 			"misaligned": "Algunos fotogramas nuevos no están alineados",
 			"quality": "Los fotogramas nuevos no pasaron los controles de calidad",
 			"changed": "Algo cambió mientras se trabajaba",
-			"missing": "Algunos resultados guardados no están disponibles",
+			"missing": "Algunos resultados guardados no están en este dispositivo",
 			"plan": "Tu plan de PixelLab no incluye esto",
 			"credits": "Tu cuenta de PixelLab se quedó sin créditos",
 			"key": "PixelLab no aceptó tu token",
 			"offline": "No se pudo contactar con PixelLab",
 			"declined": "PixelLab rechazó esta solicitud",
-			"unexpected": "Algo salió mal"
+			"unexpected": "Algo salió mal",
+			"uncertain": "Puede que se haya perdido un resultado pagado",
+			"poses": "Esta animación aún no tiene poses para el equipo",
+			"method": "Este objeto no se puede posar en este personaje",
+			"quote": "PixelLab no confirmó el precio",
+			"browser": "Este navegador no puede hacerlo de forma segura",
+			"exportId": "Otro personaje usa este ID de exportación",
+			"busy": "PixelLab está ocupado",
+			"invalid": "PixelLab rechazó esta solicitud"
 		},
 		"next": {
 			"frame-count": "Tus resultados pagados se conservan. Revísalos y luego continúa o vuelve a intentarlo.",
@@ -3263,13 +3271,21 @@
 			"misaligned": "Vuelve a generar solo la parte desalineada o conserva el arte que tienes.",
 			"quality": "Revisa los resultados y luego consérvalos o vuelve a intentarlo.",
 			"changed": "Vuelve a revisarlo antes de continuar.",
-			"missing": "El resto de tu trabajo se conserva. Vuelve a intentarlo para crear la parte que falta.",
+			"missing": "Revisa en Actividad lo que sigue guardado antes de volver a crearlo.",
 			"plan": "Mejora tu plan en PixelLab o elige una opción que incluya tu plan.",
 			"credits": "Añade créditos en PixelLab y vuelve a intentarlo.",
 			"key": "Vuelve a conectar PixelLab con un token válido.",
 			"offline": "Revisa tu conexión y vuelve a intentarlo.",
 			"declined": "Cambia la descripción y vuelve a intentarlo.",
-			"unexpected": "Infórmalo para que se pueda corregir. Tus resultados pagados siguen en Actividad."
+			"unexpected": "Infórmalo para que se pueda corregir. Tus resultados pagados siguen en Actividad.",
+			"uncertain": "Revisa Actividad antes de volver a intentarlo: un intento nuevo podría cobrar otra vez.",
+			"poses": "Configura primero sus poses y luego crea el equipo.",
+			"method": "Elige Automático y vuelve a intentarlo.",
+			"quote": "Vuelve a intentarlo en un momento o elige otro modelo.",
+			"browser": "Usa un navegador actual para continuar.",
+			"exportId": "Elige otro ID de exportación.",
+			"busy": "Espera un momento y vuelve a intentarlo.",
+			"invalid": "Cambia los ajustes de la solicitud y vuelve a intentarlo."
 		}
 	}
 }

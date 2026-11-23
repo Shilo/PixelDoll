@@ -42,6 +42,8 @@ for (const status of [0, 500, 422])
 			initial = f.make();
 		const old = await initial.enqueue(request);
 		await initial.tick();
+		// the stored record keeps the class of the error, so Activity can say what a refusal means without its text
+		expect(f.records.get(old.id)?.errorKind).toBe(status === 422 ? 'invalid' : 'retry');
 		const resumed = f.make();
 		await resumed.load();
 		expect((await resumed.enqueue(request)).id).toBe(old.id);
