@@ -2181,6 +2181,7 @@
 		"saveDescription": "Açıklamayı kaydet",
 		"descriptionSaved": "Açıklama kaydedildi. Yeni animasyonlar bunu kullanır.",
 		"estimate": "{frames} benzersiz gövde karesi · Tahmini {gens} üretim hakkı. Hesabı bağlamak için gereken {connection} üretim hakkı dahildir. Eşleşen kayıtlı ölçümler yeniden kullanılır.",
+		"reconnectEstimate": "Yeniden bağlanmak tüm pozları, eşya uyumlarını ve kareleri olduğu gibi korur. Hesap bağlantısı için tahmini {gens} üretim hakkı.",
 		"busyElsewhere": "Kuruluma başlamadan önce diğer karakter işlemini bitirin.",
 		"resumeRigSetup": "Rig kurulumuna devam edin",
 		"dismiss": "Kurulumu kapatın",

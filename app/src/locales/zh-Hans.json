@@ -2117,6 +2117,7 @@
 		"saveDescription": "保存描述",
 		"descriptionSaved": "描述已保存。新动作会使用它。",
 		"estimate": "{frames} 个唯一身体帧 · 预计 {gens} 次生成。包含一笔 {connection} 次生成的账户连接费用。匹配的已保存测量会被复用。",
+		"reconnectEstimate": "重新连接会保留所有姿势、装备贴合和帧。账户连接预计使用 {gens} 次生成。",
 		"busyElsewhere": "请先完成另一个角色操作，再开始设置。",
 		"resumeRigSetup": "继续绑定结构设置",
 		"dismiss": "放弃设置",

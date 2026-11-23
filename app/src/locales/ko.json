@@ -2117,6 +2117,7 @@
 		"saveDescription": "설명 저장",
 		"descriptionSaved": "설명을 저장했어요. 새 동작에 사용돼요.",
 		"estimate": "고유 몸체 프레임 {frames}개 · 예상 생성 {gens}회. 계정 연결 비용(생성 {connection}회)이 포함돼요. 일치하는 저장 측정값은 재사용해요.",
+		"reconnectEstimate": "다시 연결해도 모든 포즈, 아이템 맞춤, 프레임은 그대로 유지돼요. 계정 연결에 약 {gens}회 생성이 들어요.",
 		"busyElsewhere": "설정을 시작하기 전에 다른 캐릭터 작업을 끝내세요.",
 		"resumeRigSetup": "리그 설정 재개",
 		"dismiss": "설정 버리기",

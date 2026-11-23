@@ -2631,11 +2631,31 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await setup.getByRole('button', { name: 'Save description', exact: true }).click();
 	await expect(setup).toContainText('Description saved. New moves use it.');
 	await expect(setup.getByRole('button', { name: 'Save description', exact: true })).toBeDisabled();
-	await setup.getByRole('button', { name: 'Close', exact: true }).click();
 	expect((await read()).character).toEqual({
 		id: 'managed-parity-fixture',
 		looks: 'bald, gray tunic, bare feet'
 	});
+	// Setting up a rigged character again only reconnects it: no joint check, and every pose, anchor and skeleton stays.
+	const rigged = await read(),
+		checks = posts.filter((p) => p.path.endsWith('/estimate-skeleton')).length;
+	await expect(setup).toContainText(
+		'Reconnecting keeps every pose, item fit and frame as they are. 0.25 gens estimated'
+	);
+	await setup.getByRole('button', { name: /^Set up.*0.25 gens$/ }).click();
+	await expect(setup).toContainText(
+		'Ready. You can add equipment and moves fitted to this character.',
+		{ timeout: 30_000 }
+	);
+	await setup.getByRole('button', { name: 'Start dressing up' }).click();
+	const reconnected = await read();
+	expect(posts.filter((p) => p.path.endsWith('/estimate-skeleton'))).toHaveLength(checks);
+	expect(posts.filter((p) => p.path.endsWith('/create-character-v3'))).toHaveLength(2);
+	expect(posts.findLast((p) => p.path.endsWith('/create-character-v3'))!.body.description).toBe(
+		'bald, gray tunic, bare feet'
+	);
+	expect(reconnected.manifest.rig).toEqual(rigged.manifest.rig);
+	expect(reconnected.skeletons).toEqual(rigged.skeletons);
+	expect(reconnected.rigQa).toEqual(rigged.rigQa);
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'New State...', exact: true }).click();
 	const emptyCapture = page.getByRole('dialog', { name: 'New State', exact: true });
@@ -2714,7 +2734,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		'west'
 	]);
 	expect(registration.description).toBe('red hair, blue coat and boots');
-	expect(posts.filter((p) => p.path.endsWith('/create-character-v3'))).toHaveLength(1);
+	expect(posts.filter((p) => p.path.endsWith('/create-character-v3'))).toHaveLength(2);
 	expect(posts.filter((p) => p.path.endsWith('/animate-with-skeleton-v3'))).toHaveLength(4);
 	expect(
 		posts

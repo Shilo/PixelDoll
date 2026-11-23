@@ -2181,6 +2181,7 @@
 		"saveDescription": "Enregistrer la description",
 		"descriptionSaved": "Description enregistrée. Les nouvelles animations l’utilisent.",
 		"estimate": "Images distinctes du corps : {frames} · estimation : {gens} gén., dont {connection} gén. pour associer les vues debout au compte. Les mesures enregistrées correspondantes sont réutilisées.",
+		"reconnectEstimate": "La reconnexion conserve toutes les poses, tous les ajustements d’objets et toutes les images. Environ {gens} générations pour la connexion du compte.",
 		"busyElsewhere": "Terminez l’autre opération sur le personnage avant de lancer la configuration.",
 		"resumeRigSetup": "Reprendre la configuration du rig",
 		"dismiss": "Ignorer la configuration",

@@ -2181,6 +2181,7 @@
 		"saveDescription": "Guardar descripción",
 		"descriptionSaved": "Descripción guardada. Las animaciones nuevas la usan.",
 		"estimate": "{frames} fotogramas únicos del cuerpo · costo estimado: {gens} generaciones. Incluye {connection} generaciones para vincular la cuenta. Se reutilizan las mediciones guardadas que coincidan.",
+		"reconnectEstimate": "Al volver a conectar, todas las poses, ajustes de objetos y fotogramas se mantienen igual. Costo estimado: {gens} generaciones por la conexión de la cuenta.",
 		"busyElsewhere": "Termina la otra operación del personaje antes de iniciar la configuración.",
 		"resumeRigSetup": "Reanudar configuración del rig",
 		"dismiss": "Descartar configuración",

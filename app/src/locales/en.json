@@ -2181,6 +2181,7 @@
 		"saveDescription": "Save description",
 		"descriptionSaved": "Description saved. New moves use it.",
 		"estimate": "{frames} unique body frames · {gens} gens estimated. Includes a {connection}-gen account connection. Matching saved measurements are reused.",
+		"reconnectEstimate": "Reconnecting keeps every pose, item fit and frame as they are. {gens} gens estimated, for the account connection.",
 		"busyElsewhere": "Finish the other character operation before starting setup.",
 		"resumeRigSetup": "Resume rig setup",
 		"dismiss": "Dismiss setup",

@@ -42,7 +42,9 @@ vi.mock('../../src/studio/create.ts', () => ({
 vi.mock('../../src/lib/store/project.ts', () => ({ loadProject: mocks.load }));
 vi.mock('../../src/lib/rig/setup.ts', () => ({
 	setupPlan: mocks.plan,
-	attachImportedRig: mocks.attach
+	attachImportedRig: mocks.attach,
+	// These characters are unmeasured, so setup measures every frame.
+	rigReady: () => false
 }));
 vi.mock('../../src/lib/store/db.ts', () => ({
 	updateCharacter: mocks.update,
@@ -91,7 +93,8 @@ async function fixture(count: number) {
 		fixedRest: false,
 		registrationDirections: 4,
 		gens: 0.25 + count / 10,
-		warnings: []
+		warnings: [],
+		reconnect: false
 	};
 	let saved: StoredProject = {
 		id: 'rig-setup-test',

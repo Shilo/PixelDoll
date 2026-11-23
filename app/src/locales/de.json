@@ -2181,6 +2181,7 @@
 		"saveDescription": "Beschreibung speichern",
 		"descriptionSaved": "Beschreibung gespeichert. Neue Animationen verwenden sie.",
 		"estimate": "{frames} unterschiedliche Grundkörperframes · ca. {gens} Generierungen, einschließlich {connection} Generierungen für die Kontoverbindung. Passende gespeicherte Messwerte werden wiederverwendet.",
+		"reconnectEstimate": "Beim erneuten Verbinden bleiben alle Posen, Gegenstandspassungen und Frames unverändert. Ca. {gens} Generierungen für die Kontoverbindung.",
 		"busyElsewhere": "Schließe den anderen Figurenvorgang ab, bevor du die Einrichtung startest.",
 		"resumeRigSetup": "Rig-Einrichtung fortsetzen",
 		"dismiss": "Einrichtung verwerfen",

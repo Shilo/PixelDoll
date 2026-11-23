@@ -2117,6 +2117,7 @@
 		"saveDescription": "Simpan deskripsi",
 		"descriptionSaved": "Deskripsi disimpan. Animasi baru akan memakainya.",
 		"estimate": "{frames} frame tubuh unik · perkiraan {gens} generasi. Termasuk {connection} generasi untuk menghubungkan akun. Pengukuran tersimpan yang cocok dipakai ulang.",
+		"reconnectEstimate": "Menghubungkan ulang mempertahankan semua pose, kecocokan item, dan frame apa adanya. Perkiraan {gens} generasi untuk koneksi akun.",
 		"busyElsewhere": "Selesaikan operasi karakter lain sebelum memulai penyiapan.",
 		"resumeRigSetup": "Lanjutkan penyiapan rig",
 		"dismiss": "Singkirkan penyiapan",

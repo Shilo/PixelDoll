@@ -134,13 +134,27 @@
 			selected = restAnim,
 			id = doc.id;
 		let stale = false;
-		if (p)
-			void setupPlan(p, selected || undefined, (move) =>
-				moveName(move, p.manifest.rig.animations)
-			).then(
-				(p) => {
-					if (!stale) {
-						plan = p;
+		void db
+			.get<StoredProject>('projects', id)
+			.then((r) => {
+				if (stale) return;
+				rec = r ?? null;
+				saved = r?.character?.looks;
+				if (saved && !typed) looks = saved;
+				// A rig that already holds its poses is only connected again (savedSetupPlan).
+				return p
+					? setupPlan(
+							p,
+							selected || undefined,
+							(move) => moveName(move, p.manifest.rig.animations),
+							rigReady(r, false)
+						)
+					: null;
+			})
+			.then(
+				(next) => {
+					if (!stale && next) {
+						plan = next;
 						error = '';
 					}
 				},
@@ -151,12 +165,6 @@
 					}
 				}
 			);
-		void db.get<StoredProject>('projects', id).then((r) => {
-			if (stale) return;
-			rec = r ?? null;
-			saved = r?.character?.looks;
-			if (saved && !typed) looks = saved;
-		});
 		return () => {
 			stale = true;
 		};
@@ -253,9 +261,10 @@
 		{#if ready}<p class="notice ok small">
 				<Check size={16} />{t('setup.alreadyRigged')}
 			</p>{/if}
-		<p class="muted">
-			{t('setup.intro')}
-		</p>
+		<!-- A reconnect finds no joints: the rig it keeps is explained by the ready note above. -->
+		{#if !plan?.reconnect}<p class="muted">
+				{t('setup.intro')}
+			</p>{/if}
 		<p class="faint small">
 			{m?.rig.view
 				? t('setup.cameraSaved', { view: camera ? displayMessage(camera) : m.rig.view })
@@ -294,7 +303,12 @@
 		{#if savedNote}<p class="notice ok small" role="status">
 				<Check size={16} />{t('setup.descriptionSaved')}
 			</p>{/if}
-		{#if plan}<p class="faint small">
+		{#if plan?.reconnect}<p class="faint small">
+				{t('setup.reconnectEstimate', {
+					gens: formatNumber(shownGens ?? plan.gens, { maximumFractionDigits: 2 })
+				})}
+			</p>
+		{:else if plan}<p class="faint small">
 				{t('setup.estimate', {
 					frames: formatNumber(plan.frames.size),
 					gens: formatNumber(shownGens ?? plan.gens, { maximumFractionDigits: 2 }),
