@@ -735,7 +735,7 @@
 		"bothLegs": "İki bacak da",
 		"riderPose": "Binici pozu",
 		"riderPoseRide": "Otomatik",
-		"riderPoseIncomplete": "{name} ({directions} yok)",
+		"riderPoseMissing": "{directions} yok",
 		"otherTab": "Diğer sekme",
 		"updateToVVersion": "v{version} sürümüne güncelleyin",
 		"pixelLabAccount": "PixelLab hesabı",

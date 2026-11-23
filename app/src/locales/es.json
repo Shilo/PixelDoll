@@ -735,7 +735,7 @@
 		"bothLegs": "Ambas piernas",
 		"riderPose": "Pose de jinete",
 		"riderPoseRide": "Automático",
-		"riderPoseIncomplete": "{name} (sin {directions})",
+		"riderPoseMissing": "Sin {directions}",
 		"otherTab": "Otra pestaña",
 		"updateToVVersion": "Actualizar a v{version}",
 		"pixelLabAccount": "Cuenta de PixelLab",

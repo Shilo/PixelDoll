@@ -1042,16 +1042,16 @@ test('device import includes sibling moves and preserves explicit selections whe
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
+		'Right punch',
 		'Standing',
-		'Base appearance',
-		'Right punch'
+		'Base appearance'
 	]);
 	await page.keyboard.press('Escape');
 	await reloadStudio(page);
 	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
+		'Right punch',
 		'Standing',
-		'Base appearance',
-		'Right punch'
+		'Base appearance'
 	]);
 	await page.keyboard.press('Escape');
 	await equipmentMode(page, 'Moves');
@@ -2818,15 +2818,14 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(
 		sources.getByRole('menuitemradio', { name: 'Standing', exact: true })
 	).toHaveAttribute('aria-checked', 'true');
-	// Keyboard: End moves from the checked Standing to the last source, Enter picks it.
+	// Keyboard: End reaches the last source, Home returns to the first (Idle), and Enter picks it.
 	await expect(sources.getByRole('menuitemradio', { name: 'Standing', exact: true })).toBeFocused();
 	await page.keyboard.press('End');
-	await expect(sources.getByRole('menuitemradio', { name: 'Idle', exact: true })).toBeFocused();
-	await page.keyboard.press('ArrowUp');
 	await expect(
 		sources.getByRole('menuitemradio', { name: 'Rest pose', exact: true })
 	).toBeFocused();
-	await page.keyboard.press('ArrowDown');
+	await page.keyboard.press('Home');
+	await expect(sources.getByRole('menuitemradio', { name: 'Idle', exact: true })).toBeFocused();
 	await page.keyboard.press('Enter');
 	await expect(
 		createState.getByRole('button', { name: 'Source: Idle', exact: true })

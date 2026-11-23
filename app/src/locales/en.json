@@ -735,7 +735,7 @@
 		"bothLegs": "Both legs",
 		"riderPose": "Riding pose",
 		"riderPoseRide": "Automatic",
-		"riderPoseIncomplete": "{name} (no {directions})",
+		"riderPoseMissing": "No {directions}",
 		"otherTab": "Other tab",
 		"updateToVVersion": "Update to v{version}",
 		"pixelLabAccount": "PixelLab account",

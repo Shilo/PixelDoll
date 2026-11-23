@@ -1,29 +1,45 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
+	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { displayDirectionInSentence } from './displayDirection.ts';
-	import { displayMove } from './displayMove.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import {
 		activeRiderPose,
+		legsKept,
 		riderPoseOptions,
 		setMountLegs,
 		setRidingPose,
 		setShowMount
 	} from './experience/riderPose.ts';
 	import type { MountLegMode } from './experience/mountLegs.ts';
+	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 	import { Footprints, PawPrint, PersonStanding } from './icons.ts';
 	import { applyRiderPose } from './mountPreview.ts';
+	import { bodyClipThumbnail } from './moveThumbnails.ts';
 	import MountPreview from './MountPreview.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
 	import SettingsItemToggle from './SettingsItemToggle.svelte';
-	import { doc, store, toast } from './state.svelte.ts';
+	import { doc, store, toast, ui } from './state.svelte.ts';
 
-	const id = $props.id();
 	const manifest = $derived(store.project?.manifest);
 	const moves = $derived(manifest?.rig.animations ?? []);
+	const clips = $derived(playbackClips(moves).filter((clip) => clip.key !== DEFAULT_MOVE));
 	const poses = $derived(riderPoseOptions(manifest));
 	const pose = $derived(activeRiderPose(doc.id, manifest));
+	const unavailable = $derived(
+		new Map(
+			poses
+				.filter((option) => option.missing.length)
+				.map((option) => [
+					option.id,
+					t('toolbar.riderPoseMissing', {
+						directions: option.missing.map(displayDirectionInSentence).join(', ')
+					})
+				])
+		)
+	);
 	const legOptions = $derived([
 		{ value: 'none', label: t('common.none') },
 		{ value: 'far', label: t('toolbar.farLeg') },
@@ -32,6 +48,11 @@
 
 	function saved(ok: boolean) {
 		if (!ok) toast(message('settings.mountNotSaved'), { tone: 'warning' });
+	}
+	function choosePose(clip: string) {
+		if (!doc.id) return;
+		saved(setRidingPose(doc.id, clip));
+		applyRiderPose();
 	}
 </script>
 
@@ -48,38 +69,27 @@
 	<span class="row-name">{t('toolbar.showMount')}</span>
 </SettingsItemToggle>
 {#if doc.id}
-	<label class="row riding-pose" data-setting="riding-pose" for="{id}-pose">
+	<div class="row riding-pose" data-setting="riding-pose">
 		<PersonStanding size={18} aria-hidden="true" />
 		<span class="row-name">{t('toolbar.riderPose')}</span>
-		<select
-			id="{id}-pose"
-			class="bu-input input"
-			value={pose ?? ''}
-			onchange={(event) => {
-				saved(setRidingPose(doc.id, event.currentTarget.value));
-				applyRiderPose();
-			}}
-		>
-			<option value="">{t('toolbar.riderPoseRide')}</option>
-			{#each poses as option (option.id)}
-				<option value={option.id} disabled={option.missing.length > 0}
-					>{option.missing.length
-						? t('toolbar.riderPoseIncomplete', {
-								name: displayMove(option.id, moves),
-								directions: option.missing.map(displayDirectionInSentence).join(', ')
-							})
-						: displayMove(option.id, moves)}</option
-				>
-			{/each}
-		</select>
-	</label>
+		<PlaybackPicker
+			{clips}
+			moveRefs={moves}
+			selected={pose ?? ''}
+			label={t('toolbar.riderPose')}
+			automatic={t('toolbar.riderPoseRide')}
+			{unavailable}
+			thumbnail={(key) => store.project && bodyClipThumbnail(store.project, key, ui.dir)}
+			onselect={choosePose}
+		/>
+	</div>
 {/if}
 <SettingsItemSegmented
 	label={t('toolbar.hideLegs')}
 	setting="hide-legs"
 	options={legOptions}
 	value={experience.mountLegs}
-	disabled={!!pose}
+	disabled={legsKept(manifest, pose ?? null)}
 	onselect={(value: MountLegMode) => saved(setMountLegs(value))}
 >
 	{#snippet icon()}<Footprints size={18} aria-hidden="true" />{/snippet}
@@ -89,15 +99,8 @@
 {/if}
 
 <style>
-	.riding-pose {
-		inline-size: 100%;
+	.riding-pose :global(.clip-trigger) {
 		min-height: 44px;
-		padding-inline: 0;
-		gap: 10px;
-	}
-	.riding-pose select {
-		inline-size: auto;
-		max-inline-size: 15rem;
-		margin-inline-start: auto;
+		padding-inline: 8px;
 	}
 </style>

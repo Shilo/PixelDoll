@@ -735,7 +735,7 @@
 		"bothLegs": "As duas pernas",
 		"riderPose": "Pose de montaria",
 		"riderPoseRide": "Automático",
-		"riderPoseIncomplete": "{name} (sem {directions})",
+		"riderPoseMissing": "Sem {directions}",
 		"otherTab": "Outra aba",
 		"updateToVVersion": "Atualizar para v{version}",
 		"pixelLabAccount": "Conta do PixelLab",

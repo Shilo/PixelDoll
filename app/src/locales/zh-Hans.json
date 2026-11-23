@@ -717,7 +717,7 @@
 		"bothLegs": "双腿",
 		"riderPose": "骑乘姿势",
 		"riderPoseRide": "自动",
-		"riderPoseIncomplete": "{name}（缺少{directions}）",
+		"riderPoseMissing": "缺少{directions}",
 		"otherTab": "另一个标签页",
 		"updateToVVersion": "更新到 v{version}",
 		"pixelLabAccount": "PixelLab 账户",

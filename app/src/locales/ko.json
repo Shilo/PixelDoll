@@ -717,7 +717,7 @@
 		"bothLegs": "양쪽 다리",
 		"riderPose": "탑승 포즈",
 		"riderPoseRide": "자동",
-		"riderPoseIncomplete": "{name}({directions} 없음)",
+		"riderPoseMissing": "{directions} 없음",
 		"otherTab": "다른 탭",
 		"updateToVVersion": "v{version} 버전으로 업데이트",
 		"pixelLabAccount": "PixelLab 계정",

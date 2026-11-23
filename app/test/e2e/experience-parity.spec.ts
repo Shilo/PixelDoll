@@ -991,15 +991,47 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 				})
 			);
 	}
-	// A Riding pose holds a saved State on the mount in every view; dismounting gives Preview its selection back.
+	// A Riding pose holds a saved State or Move on the mount in every view; dismounting gives Preview its selection back.
 	await page.setViewportSize({ width: 1920, height: 900 });
 	await toggle.click();
-	const riderPose = mountMenu.getByRole('combobox', { name: 'Riding pose', exact: true });
-	await expect(riderPose).toHaveValue('');
-	await riderPose.selectOption('riding');
+	const riderPose = mountMenu.getByRole('button', { name: /^Riding pose:/ });
+	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
+	await riderPose.click();
+	const poseMenu = page.getByRole('menu', { name: 'Riding pose', exact: true });
+	await expect(poseMenu).toBeVisible();
+	await expect(
+		poseMenu.getByRole('menuitemradio', { name: 'Automatic', exact: true })
+	).toBeChecked();
+	// Moves sit left of States in the shared picker, and both are available as the pose.
+	const poseMoves = poseMenu.getByRole('group', { name: 'Moves', exact: true });
+	const poseStates = poseMenu.getByRole('group', { name: 'States', exact: true });
+	expect((await poseMoves.boundingBox())!.x).toBeLessThan((await poseStates.boundingBox())!.x);
+	await poseMenu.locator('[value="riding"]').click();
+	await expect(riderPose).toHaveAttribute('value', 'riding');
 	await expect(move).toHaveAttribute('value', 'riding');
 	await expect(world(page)).toHaveAttribute('data-clip', 'riding');
 	await expect(world(page)).toHaveAttribute('data-mount-legs', 'none');
+	await expect(legMode('Far leg')).toBeDisabled();
+	// A Move is a Riding pose too: it plays while mounted and keeps the Hide leg setting.
+	await riderPose.click();
+	await poseMenu.locator('[value="walk"]').click();
+	await expect(riderPose).toHaveAttribute('value', 'walk');
+	await expect(world(page)).toHaveAttribute('data-clip', 'walk');
+	await expect(legMode('Far leg')).toBeEnabled();
+	await legMode('Far leg').check();
+	// The live views follow the Move pose too, not just Preview's selection.
+	await closeMount();
+	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
+	await world(page).focus();
+	await page.keyboard.down('ArrowRight');
+	await expect(world(page)).toHaveAttribute('data-clip', 'walk');
+	await expect(world(page)).toHaveAttribute('data-mount-legs', 'far');
+	await page.keyboard.up('ArrowRight');
+	await page.getByRole('button', { name: 'Preview', exact: true }).click();
+	await toggle.click();
+	await legMode('None').check();
+	await riderPose.click();
+	await poseMenu.locator('[value="riding"]').click();
 	await closeMount();
 	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
 	await world(page).focus();
@@ -1043,6 +1075,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Reset this page' }).click();
 	await expect(shown).not.toBeChecked();
 	await expect(legMode('Far leg')).toBeChecked();
+	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
 	expect(await savedMount()).toEqual({ show: false, legs: 'far', poses: {} });
 	await closeMount();
 	await expect(world(page)).not.toHaveAttribute('data-mount');
@@ -1106,10 +1139,10 @@ test('imported move names remain readable, distinct and contained in Preview and
 	const picker = page.getByRole('menu', { name: 'Move', exact: true });
 	await expect(picker).toBeVisible();
 	await expect(picker.getByRole('menuitemradio')).toHaveText([
-		'Standing',
 		'Right punch (right_punch)',
 		'Right punch (right-punch)',
-		longLabel
+		longLabel,
+		'Standing'
 	]);
 	const states = picker.getByRole('group', { name: 'States', exact: true });
 	const moves = picker.getByRole('group', { name: 'Moves', exact: true });
@@ -1117,9 +1150,9 @@ test('imported move names remain readable, distinct and contained in Preview and
 	await expect(moves.getByRole('menuitemradio')).toHaveCount(3);
 	const desktopStates = (await states.boundingBox())!;
 	const desktopMoves = (await moves.boundingBox())!;
-	expect(desktopMoves.x).toBeGreaterThan(desktopStates.x);
+	expect(desktopMoves.x).toBeLessThan(desktopStates.x);
 	expect(desktopMoves.y).toBeCloseTo(desktopStates.y, 0);
-	await expect(moves).toHaveCSS('border-inline-start-width', '1px');
+	await expect(states).toHaveCSS('border-inline-start-width', '1px');
 	const active = picker.getByRole('menuitemradio', { checked: true });
 	await expect(active).toBeFocused();
 	await page.keyboard.press('ArrowDown');
@@ -1204,8 +1237,8 @@ test('imported move names remain readable, distinct and contained in Preview and
 			const compactStates = (await states.boundingBox())!;
 			const compactMoves = (await moves.boundingBox())!;
 			expect(compactMoves.x).toBeCloseTo(compactStates.x, 0);
-			expect(compactMoves.y).toBeGreaterThan(compactStates.y);
-			await expect(moves).toHaveCSS('border-inline-start-width', '0px');
+			expect(compactMoves.y).toBeLessThan(compactStates.y);
+			await expect(states).toHaveCSS('border-inline-start-width', '0px');
 			const option = moves.getByRole('menuitemradio').last();
 			await expect(option).toBeVisible();
 			const bounds = await option.boundingBox();

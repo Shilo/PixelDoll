@@ -717,7 +717,7 @@
 		"bothLegs": "両脚",
 		"riderPose": "騎乗ポーズ",
 		"riderPoseRide": "自動",
-		"riderPoseIncomplete": "{name}（{directions}なし）",
+		"riderPoseMissing": "{directions}なし",
 		"otherTab": "別のタブ",
 		"updateToVVersion": "v{version}に更新",
 		"pixelLabAccount": "PixelLabアカウント",

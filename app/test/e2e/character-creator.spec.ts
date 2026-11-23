@@ -1665,11 +1665,11 @@ function offlineCreation(config: CreationCase) {
 		await shareMove.click();
 		const shareMenu = share.getByRole('menu', { name: 'States and moves', exact: true });
 		await expect(shareMenu.getByRole('menuitemradio')).toHaveText([
-			'All states',
-			'Standing',
 			'All moves',
 			'Idle',
 			'Walk',
+			'All states',
+			'Standing',
 			'Everything'
 		]);
 		await shareMenu.getByRole('menuitemradio', { name: 'Standing', exact: true }).click();

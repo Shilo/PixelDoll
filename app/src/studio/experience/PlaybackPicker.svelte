@@ -20,6 +20,9 @@
 		compact = false,
 		bulk = false,
 		field,
+		label,
+		automatic,
+		unavailable,
 		valueLabel,
 		disabled = false,
 		thumbnail,
@@ -32,6 +35,12 @@
 		bulk?: boolean;
 		/** A labeled full-width field trigger (Create State's Source) instead of the toolbar button. */
 		field?: string;
+		/** Accessible name for the quiet trigger when the surrounding row already shows the visible label. */
+		label?: string;
+		/** A row that clears the choice, such as Mount's Automatic (no Riding pose). */
+		automatic?: string;
+		/** Keys that cannot be chosen, with the reason shown under the row name. */
+		unavailable?: ReadonlyMap<string, string>;
 		/** Trigger text when the current choice is none of the clips, such as a redraw's original start. */
 		valueLabel?: string;
 		disabled?: boolean;
@@ -43,12 +52,14 @@
 	const menuId = $props.id();
 	const states = $derived(clips.filter((clip) => clip.kind === 'state'));
 	const moves = $derived(clips.filter((clip) => clip.kind === 'move'));
-	const value = $derived(valueLabel ?? label(selected));
-	const menuLabel = $derived(field ?? t(bulk ? 'share.clips' : 'common.move'));
+	const value = $derived(
+		valueLabel ?? (selected === '' && automatic ? automatic : clipLabel(selected))
+	);
+	const menuLabel = $derived(label ?? field ?? t(bulk ? 'share.clips' : 'common.move'));
 	let menu: HTMLDivElement;
 	let expanded = $state(false);
 
-	function label(key: string) {
+	function clipLabel(key: string) {
 		if (bulk) {
 			if (key === ALL_STATES) return t('share.allStates');
 			if (key === ALL_MOVES) return t('share.allMoves');
@@ -63,11 +74,11 @@
 		type="button"
 		class={['clip-trigger bu-action', { compact }]}
 		data-variant={bulk || field ? 'field' : 'quiet'}
-		aria-label={bulk || field ? `${menuLabel}: ${value}` : undefined}
+		aria-label={bulk || field || label ? `${menuLabel}: ${value}` : undefined}
 		aria-haspopup="menu"
 		aria-expanded={expanded}
 		popovertarget={menuId}
-		disabled={disabled || !clips.length}
+		disabled={disabled || (!clips.length && !automatic)}
 		title={bulk || field ? undefined : value}
 		value={selected}
 		onkeydown={(event) => {
@@ -77,8 +88,8 @@
 			}
 		}}
 	>
-		{#if bulk}<PersonStanding size={16} aria-hidden="true" />{:else if !field}<span class="sr"
-				>{menuLabel}:</span
+		{#if bulk}<PersonStanding size={16} aria-hidden="true" />{:else if !field && !label}<span
+				class="sr">{menuLabel}:</span
 			>{/if}
 		<span class="clip-value">{value}</span>
 		<ChevronDown size={field ? 16 : 14} aria-hidden="true" />
@@ -123,9 +134,13 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
+		{#if automatic}
+			{@render option('', false, automatic)}
+			<hr class="bu-separator" />
+		{/if}
 		<div class="clip-groups">
-			{@render group(t('experience.tabStates'), states, ALL_STATES)}
 			{@render group(t('experience.tabMoves'), moves, ALL_MOVES)}
+			{@render group(t('experience.tabStates'), states, ALL_STATES)}
 		</div>
 		{#if bulk && clips.length}
 			<hr class="bu-separator" />
@@ -146,8 +161,9 @@
 	{/if}
 {/snippet}
 
-{#snippet option(key: string, disabled = false)}
+{#snippet option(key: string, disabled = false, name?: string)}
 	{@const scope = key === ALL_STATES || key === ALL_MOVES || key === ALL_CLIPS}
+	{@const reason = unavailable?.get(key)}
 	<button
 		type="button"
 		class="row clip-row bu-action"
@@ -156,8 +172,12 @@
 		aria-checked={selected === key}
 		value={key}
 		{disabled}
+		aria-disabled={reason ? 'true' : undefined}
+		aria-label={reason ? `${name ?? clipLabel(key)}: ${reason}` : undefined}
+		title={reason}
 		tabindex={-1}
 		onclick={() => {
+			if (reason) return;
 			if (selected !== key) onselect(key);
 			menu.hidePopover();
 		}}
@@ -180,7 +200,9 @@
 				{/if}
 			</span>
 		{/if}
-		<span class="clip-name">{label(key)}</span>
+		<span class="clip-name"
+			>{name ?? clipLabel(key)}{#if reason}<span class="clip-note">{reason}</span>{/if}</span
+		>
 		{#if selected === key}<Check size={16} aria-hidden="true" />{/if}
 	</button>
 {/snippet}
@@ -228,6 +250,11 @@
 	.clip-name {
 		flex: 1;
 		min-width: 0;
+	}
+	.clip-note {
+		display: block;
+		font-size: var(--fs-sm);
+		color: var(--bu-muted);
 	}
 	.clip-trigger :global(svg),
 	.clip-row :global(svg) {
