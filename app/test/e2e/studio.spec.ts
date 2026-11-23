@@ -7730,7 +7730,11 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	await expect(sheet).toContainText(
 		'Wait for the current joint checks to finish before recovering them.'
 	);
-	await expect(sheet.getByRole('status')).toHaveCount(0);
+	// Deliberately changed (soft gates): the queued sibling check is still live, so the paid-result review holds its choices
+	// and says so, even though another check of that view was lost.
+	await expect(sheet.getByRole('status')).toHaveText(
+		'Some paid requests are still running at PixelLab. These choices unlock when they finish.'
+	);
 	await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toHaveCount(
 		0
 	);
