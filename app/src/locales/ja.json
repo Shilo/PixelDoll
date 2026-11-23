@@ -684,7 +684,7 @@
 		"making": "作成中…",
 		"makeIt": "作成する",
 		"estimate": {
-			"other": "約{n}回の生成"
+			"other": "~{n}回の生成"
 		},
 		"makingMissingFrames": "不足している装備のフレームを作成中",
 		"makeYourOwn": "自分で作成",
@@ -2065,7 +2065,7 @@
 		"add": "新しいモーション",
 		"redraw": "描き直す",
 		"addState": "新しいステート",
-		"estimate": "約{gens}回分",
+		"estimate": "~{gens}回分",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px、ピボット {x},{y}",
 		"waitingForRepairReview": "装備フレームの確認待ち",
@@ -2488,7 +2488,7 @@
 			"discardDraft": "下書きを破棄",
 			"titleItems": "アイテムを動かす",
 			"chooseFor": "{move}に合わせて動かすアイテムを選択してください。",
-			"total": "追加で約{gens}回の生成",
+			"total": "追加で~{gens}回の生成",
 			"selected": "選択済み",
 			"animateCount": {
 				"other": "アイテム{n}個を動かす"
@@ -2745,8 +2745,8 @@
 		"description": "指示",
 		"reference": "変更の参考になる画像を追加してください。",
 		"pixenReference": "Pixen は参照画像を使用しません。画像を使うにはモデルを切り替えてください。",
-		"fixedCost": "費用：{generations} ジェネレーション",
-		"fixedCostOne": "費用：1 ジェネレーション",
+		"fixedCost": "{generations}回分",
+		"fixedCostOne": "1回分",
 		"managed": "PixelLab はアカウント内で {parent} をもとにステートを作成します。",
 		"transfer": "参照画像のスタイルだけでなく、見た目も取り入れます。",
 		"sheetWarning": "複数の向きを1枚のシートで編集します。保存前に各向きを確認してください。",

@@ -1836,7 +1836,7 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 	expect(planned.gens).toBe(10);
 	await expect(sheet.getByRole('alert')).toHaveCount(0);
 	await expect(
-		sheet.getByRole('button', { name: `Make · Est. ${planned.gens} gens`, exact: true })
+		sheet.getByRole('button', { name: `Make · ~${planned.gens} gens`, exact: true })
 	).toBeEnabled();
 	await sheet.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
 	const api = page.getByRole('dialog', { name: 'API calls', exact: true });
@@ -1857,7 +1857,7 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 	expect(planned.extension[0]).toMatchObject({ path: '/inpaint-v3', generations: 10 });
 	await pickItem(page, 'Leather vest');
 	const pane = await selectedItemDetails(page);
-	await expect(pane.getByRole('button', { name: /^Make for Walk/ })).toContainText('Est. 10 gens');
+	await expect(pane.getByRole('button', { name: /^Make for Walk/ })).toContainText('~10 gens');
 	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
 	const frozen = api.locator('.peek-call').filter({ hasText: planned.extension[0].label });
 	await expect(frozen).toHaveCount(1);
@@ -3441,9 +3441,10 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	// The open list quotes every model; the closed field keeps only the chosen name, and the footer shows the same price.
 	const model = panel.getByRole('combobox', { name: 'Model', exact: true });
 	await model.click();
-	const listed = model.getByRole('option', { name: /^Pro Flash Est\. \d+ gens$/ });
+	const listed = model.getByRole('option', { name: /^Pro Flash ~\d+ gens$/ });
 	const price = (await listed.locator('.model-cost').textContent())!;
-	await expect(model.getByRole('option', { name: /^V3 \(Pixen\) Cost: / })).toBeVisible();
+	// Exact and estimated prices share one unit.
+	await expect(model.getByRole('option', { name: /^V3 \(Pixen\) \d+ gens?$/ })).toBeVisible();
 	await listed.click();
 	await expect(model).toHaveValue('pro-flash');
 	await expect(model.getByRole('button')).toHaveText('Pro Flash');

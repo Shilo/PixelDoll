@@ -684,7 +684,7 @@
 		"making": "Membuat…",
 		"makeIt": "Buat",
 		"estimate": {
-			"other": "Perkiraan {n} generasi"
+			"other": "~{n} generasi"
 		},
 		"makingMissingFrames": "Membuat frame perlengkapan yang belum ada",
 		"makeYourOwn": "Buat sendiri",
@@ -2065,7 +2065,7 @@
 		"add": "Animasi baru",
 		"redraw": "Gambar ulang",
 		"addState": "Status baru",
-		"estimate": "Perkiraan {gens} generasi",
+		"estimate": "~{gens} generasi",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, titik pivot {x},{y}",
 		"waitingForRepairReview": "Menunggu tinjauan frame item",
@@ -2488,7 +2488,7 @@
 			"discardDraft": "Buang draf",
 			"titleItems": "Animasikan item",
 			"chooseFor": "Pilih item yang ingin dianimasikan untuk {move}.",
-			"total": "Perkiraan {gens} generasi tambahan",
+			"total": "~{gens} generasi tambahan",
 			"selected": "Dipilih",
 			"animateCount": {
 				"other": "Animasikan {n} item"
@@ -2745,8 +2745,8 @@
 		"description": "Instruksi",
 		"reference": "Tambahkan gambar untuk memandu perubahan.",
 		"pixenReference": "Pixen tidak menggunakan gambar acuan. Ganti model untuk menggunakan gambar Anda.",
-		"fixedCost": "Biaya: {generations} generasi",
-		"fixedCostOne": "Biaya: 1 generasi",
+		"fixedCost": "{generations} generasi",
+		"fixedCostOne": "1 generasi",
 		"managed": "PixelLab membuat keadaan dari {parent} di akun Anda.",
 		"transfer": "Memakai tampilan gambar referensi, bukan hanya gayanya.",
 		"sheetWarning": "Beberapa tampilan diedit dalam satu lembar. Periksa setiap tampilan sebelum menyimpan.",

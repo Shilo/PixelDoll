@@ -472,7 +472,7 @@
 		><button
 			class="bu-btn"
 			disabled={busy || stillIdle || !prepared || !originalAvailable || !connected || !!usage.error}
-			onclick={() => action(() => submit(false))}>Generate south + east · Est. 8 gens</button
+			onclick={() => action(() => submit(false))}>Generate south + east · ~8 gens</button
 		><button class="bu-btn" disabled={busy || !prepared} onclick={() => action(previewPilot)}
 			>Inspect completed action</button
 		>
@@ -517,8 +517,7 @@
 			!review.trim() ||
 			!connected ||
 			!!usage.error}
-		onclick={() => action(() => submit(true))}
-		>Add remaining six to same motion · Est. 24 gens</button
+		onclick={() => action(() => submit(true))}>Add remaining six to same motion · ~24 gens</button
 	>
 	<ul>
 		{#each session.calls as call}<li>

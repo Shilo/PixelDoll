@@ -684,7 +684,7 @@
 		"making": "만드는 중…",
 		"makeIt": "만들기",
 		"estimate": {
-			"other": "예상 생성 {n}회"
+			"other": "생성 ~{n}회"
 		},
 		"makingMissingFrames": "빠진 장비 프레임 만드는 중",
 		"makeYourOwn": "직접 만들기",
@@ -2065,7 +2065,7 @@
 		"add": "새 동작",
 		"redraw": "다시 그리기",
 		"addState": "새 상태",
-		"estimate": "예상 생성 {gens}회",
+		"estimate": "생성 ~{gens}회",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, 피벗 {x},{y}",
 		"waitingForRepairReview": "아이템 프레임 검토 대기 중",
@@ -2488,7 +2488,7 @@
 			"discardDraft": "초안 버리기",
 			"titleItems": "아이템 애니메이션",
 			"chooseFor": "동작에 맞춰 움직일 아이템을 선택하세요: {move}",
-			"total": "예상 추가 생성 {gens}회",
+			"total": "추가 생성 ~{gens}회",
 			"selected": "선택됨",
 			"animateCount": {
 				"other": "아이템 {n}개 애니메이션 만들기"
@@ -2745,8 +2745,8 @@
 		"description": "지시사항",
 		"reference": "변경에 참고할 이미지를 추가해 주세요.",
 		"pixenReference": "Pixen은 참고 이미지를 사용하지 않아요. 이미지를 사용하려면 모델을 바꿔 주세요.",
-		"fixedCost": "비용: {generations}회 생성",
-		"fixedCostOne": "비용: 1회 생성",
+		"fixedCost": "생성 {generations}회",
+		"fixedCostOne": "생성 1회",
 		"managed": "PixelLab 계정에서 {parent} 기반의 상태를 만들어요.",
 		"transfer": "참조 이미지의 스타일뿐 아니라 모습까지 가져와요.",
 		"sheetWarning": "여러 방향을 한 시트에서 편집해요. 저장하기 전에 각 방향을 확인해 주세요.",

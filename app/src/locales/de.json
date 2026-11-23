@@ -703,8 +703,8 @@
 		"making": "Wird erstellt…",
 		"makeIt": "Erstellen",
 		"estimate": {
-			"one": "Ca. {n} Generierung",
-			"other": "Ca. {n} Generierungen"
+			"one": "~{n} Generierung",
+			"other": "~{n} Generierungen"
 		},
 		"makingMissingFrames": "Fehlende Ausrüstungsframes werden erstellt",
 		"makeYourOwn": "Selbst erstellen",
@@ -2129,7 +2129,7 @@
 		"add": "Neue Animation",
 		"redraw": "Neu zeichnen",
 		"addState": "Neuer Zustand",
-		"estimate": "Ca. {gens} Generierungen",
+		"estimate": "~{gens} Generierungen",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, Drehpunkt {x},{y}",
 		"waitingForRepairReview": "Warten auf die Prüfung der Gegenstandsframes",
@@ -2553,7 +2553,7 @@
 			"discardDraft": "Entwurf verwerfen",
 			"titleItems": "Gegenstände animieren",
 			"chooseFor": "Wähle Gegenstände für {move} aus.",
-			"total": "Ca. {gens} weitere Generierungen",
+			"total": "~{gens} weitere Generierungen",
 			"selected": "Ausgewählt",
 			"animateCount": {
 				"one": "{n} Gegenstand animieren",
@@ -2817,8 +2817,8 @@
 		"description": "Anweisungen",
 		"reference": "Füge ein Bild als Vorlage für die Änderung hinzu.",
 		"pixenReference": "Pixen nutzt keine Referenzbilder. Wechsle das Modell, um dein Bild zu verwenden.",
-		"fixedCost": "Kosten: {generations} Generationen",
-		"fixedCostOne": "Kosten: 1 Generation",
+		"fixedCost": "{generations} Generierungen",
+		"fixedCostOne": "1 Generierung",
 		"managed": "PixelLab erstellt aus {parent} einen Zustand in deinem Konto.",
 		"transfer": "Übernimmt das Aussehen des Referenzbilds, nicht nur seinen Stil.",
 		"sheetWarning": "Mehrere Ansichten werden auf einem Blatt bearbeitet. Prüfe jede Ansicht vor dem Speichern.",

@@ -703,8 +703,8 @@
 		"making": "Üretiliyor…",
 		"makeIt": "Üretin",
 		"estimate": {
-			"one": "Tahmini {n} üretim hakkı",
-			"other": "Tahmini {n} üretim hakkı"
+			"one": "~{n} üretim hakkı",
+			"other": "~{n} üretim hakkı"
 		},
 		"makingMissingFrames": "Eksik ekipman kareleri üretiliyor",
 		"makeYourOwn": "Kendinizinkini oluşturun",
@@ -2129,7 +2129,7 @@
 		"add": "Yeni animasyon",
 		"redraw": "Yeniden çiz",
 		"addState": "Yeni durum",
-		"estimate": "Tahmini {gens} üretim hakkı",
+		"estimate": "~{gens} üretim hakkı",
 		"bodySize": "{w}×{h} piksel",
 		"frameSize": "{w}×{h} piksel, pivot noktası {x},{y}",
 		"waitingForRepairReview": "Eşya karelerinin incelenmesi bekleniyor",
@@ -2553,7 +2553,7 @@
 			"discardDraft": "Taslağı sil",
 			"titleItems": "Eşyaları canlandır",
 			"chooseFor": "Şu animasyon için canlandırılacak eşyaları seçin: {move}.",
-			"total": "Yaklaşık {gens} ek üretim",
+			"total": "~{gens} ek üretim",
 			"selected": "Seçili",
 			"animateCount": {
 				"one": "{n} eşyayı canlandır",
@@ -2817,8 +2817,8 @@
 		"description": "Talimatlar",
 		"reference": "Değişikliğe yön verecek bir görsel ekleyin.",
 		"pixenReference": "Pixen referans görseli kullanmaz. Görselinizi kullanmak için modeli değiştirin.",
-		"fixedCost": "Maliyet: {generations} üretim",
-		"fixedCostOne": "Maliyet: 1 üretim",
+		"fixedCost": "{generations} üretim hakkı",
+		"fixedCostOne": "1 üretim hakkı",
 		"managed": "PixelLab hesabınızda {parent} kaynaklı bir durum oluşturur.",
 		"transfer": "Referans görselin yalnızca stilini değil, görünüşünü de alır.",
 		"sheetWarning": "Birden çok görünüm tek sayfada düzenlenir. Kaydetmeden önce her görünümü kontrol edin.",

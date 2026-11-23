@@ -703,8 +703,8 @@
 		"making": "Gerando…",
 		"makeIt": "Gerar",
 		"estimate": {
-			"one": "Estimativa: {n} geração",
-			"other": "Estimativa: {n} gerações"
+			"one": "~{n} geração",
+			"other": "~{n} gerações"
 		},
 		"makingMissingFrames": "Gerando os quadros de equipamento que faltam",
 		"makeYourOwn": "Criar o seu",
@@ -2138,7 +2138,7 @@
 		"add": "Nova animação",
 		"redraw": "Redesenhar",
 		"addState": "Novo estado",
-		"estimate": "Estimativa: {gens} gerações",
+		"estimate": "~{gens} gerações",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
 		"waitingForRepairReview": "Aguardando a revisão dos quadros do item",
@@ -2562,7 +2562,7 @@
 			"discardDraft": "Descartar rascunho",
 			"titleItems": "Animar itens",
 			"chooseFor": "Escolha os itens que você quer animar em {move}.",
-			"total": "Cerca de {gens} gerações a mais",
+			"total": "~{gens} gerações a mais",
 			"selected": "Selecionado",
 			"animateCount": {
 				"one": "Animar {n} item",
@@ -2826,8 +2826,8 @@
 		"description": "Instruções",
 		"reference": "Adicione uma imagem para orientar a mudança.",
 		"pixenReference": "O Pixen não usa imagens de referência. Troque de modelo para usar sua imagem.",
-		"fixedCost": "Custo: {generations} gerações",
-		"fixedCostOne": "Custo: 1 geração",
+		"fixedCost": "{generations} gerações",
+		"fixedCostOne": "1 geração",
 		"managed": "O PixelLab cria um estado a partir de {parent} na sua conta.",
 		"transfer": "Usa a aparência da imagem de referência, não só o estilo.",
 		"sheetWarning": "Várias vistas são editadas em uma única folha. Confira cada vista antes de salvar.",

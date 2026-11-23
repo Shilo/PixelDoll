@@ -703,8 +703,8 @@
 		"making": "Création…",
 		"makeIt": "Générer les images",
 		"estimate": {
-			"one": "Env. {n} génération",
-			"other": "Env. {n} générations"
+			"one": "~{n} génération",
+			"other": "~{n} générations"
 		},
 		"makingMissingFrames": "Création des images d’équipement manquantes",
 		"makeYourOwn": "Créer le vôtre",
@@ -2129,7 +2129,7 @@
 		"add": "Nouvelle animation",
 		"redraw": "Redessiner",
 		"addState": "Nouvel état",
-		"estimate": "Env. {gens} gén.",
+		"estimate": "~{gens} gén.",
 		"bodySize": "{w} × {h} px",
 		"frameSize": "{w} × {h} px, pivot {x},{y}",
 		"waitingForRepairReview": "En attente de la vérification des images de l’objet",
@@ -2553,7 +2553,7 @@
 			"discardDraft": "Supprimer le brouillon",
 			"titleItems": "Animer des objets",
 			"chooseFor": "Choisissez les objets à animer pour {move}.",
-			"total": "Environ {gens} générations de plus",
+			"total": "~{gens} générations de plus",
 			"selected": "Sélectionné",
 			"animateCount": {
 				"one": "Animer {n} objet",
@@ -2817,8 +2817,8 @@
 		"description": "Instructions",
 		"reference": "Ajoutez une image pour guider la modification.",
 		"pixenReference": "Pixen n’utilise pas d’images de référence. Changez de modèle pour utiliser votre image.",
-		"fixedCost": "Coût : {generations} générations",
-		"fixedCostOne": "Coût : 1 génération",
+		"fixedCost": "{generations} gén.",
+		"fixedCostOne": "1 gén.",
 		"managed": "PixelLab crée un état à partir de {parent} dans votre compte.",
 		"transfer": "Reprend l’apparence de l’image de référence, pas seulement son style.",
 		"sheetWarning": "Plusieurs vues sont modifiées sur une seule planche. Vérifiez chaque vue avant d’enregistrer.",

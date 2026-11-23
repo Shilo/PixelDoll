@@ -684,7 +684,7 @@
 		"making": "正在制作…",
 		"makeIt": "制作",
 		"estimate": {
-			"other": "预计 {n} 次生成"
+			"other": "~{n} 次生成"
 		},
 		"makingMissingFrames": "正在制作缺失的装备帧",
 		"makeYourOwn": "自己制作",
@@ -2065,7 +2065,7 @@
 		"add": "新建动作",
 		"redraw": "重绘",
 		"addState": "新建状态",
-		"estimate": "预计 {gens} 次生成",
+		"estimate": "~{gens} 次生成",
 		"bodySize": "{w}×{h} 像素",
 		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
 		"waitingForRepairReview": "等待检查装备帧",
@@ -2488,7 +2488,7 @@
 			"discardDraft": "丢弃草稿",
 			"titleItems": "制作装备动画",
 			"chooseFor": "请选择要随{move}播放的装备。",
-			"total": "预计再生成 {gens} 次",
+			"total": "再生成 ~{gens} 次",
 			"selected": "已选",
 			"animateCount": {
 				"other": "为 {n} 件装备生成动画"
@@ -2745,8 +2745,8 @@
 		"description": "指令",
 		"reference": "添加图片作为改动的参考。",
 		"pixenReference": "Pixen 不使用参考图。若要使用这张图片，请切换模型。",
-		"fixedCost": "费用：{generations} 次生成",
-		"fixedCostOne": "费用：1 次生成",
+		"fixedCost": "{generations} 次生成",
+		"fixedCostOne": "1 次生成",
 		"managed": "PixelLab 会在你的账户中基于 {parent} 创建一个状态。",
 		"transfer": "采用参考图的外观，而不只是风格。",
 		"sheetWarning": "多个朝向会在同一张图中编辑。保存前请检查每个朝向。",

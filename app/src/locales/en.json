@@ -703,8 +703,8 @@
 		"making": "Making…",
 		"makeIt": "Make it",
 		"estimate": {
-			"one": "Est. {n} gen",
-			"other": "Est. {n} gens"
+			"one": "~{n} gen",
+			"other": "~{n} gens"
 		},
 		"makingMissingFrames": "Making missing equipment frames",
 		"makeYourOwn": "Make your own",
@@ -2129,7 +2129,7 @@
 		"add": "New move",
 		"redraw": "Redraw",
 		"addState": "New State",
-		"estimate": "Est. {gens} gens",
+		"estimate": "~{gens} gens",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
 		"waitingForRepairReview": "Waiting for item frame review",
@@ -2553,7 +2553,7 @@
 			"discardDraft": "Discard draft",
 			"titleItems": "Animate items",
 			"chooseFor": "Choose items to animate for {move}.",
-			"total": "Est. {gens} more gens",
+			"total": "~{gens} more gens",
 			"selected": "Selected",
 			"animateCount": {
 				"one": "Animate {n} item",
@@ -2817,8 +2817,8 @@
 		"description": "Instructions",
 		"reference": "Add an image to guide the change.",
 		"pixenReference": "Pixen does not use reference images. Switch models to use your image.",
-		"fixedCost": "Cost: {generations} generations",
-		"fixedCostOne": "Cost: 1 generation",
+		"fixedCost": "{generations} gens",
+		"fixedCostOne": "1 gen",
 		"managed": "PixelLab creates a State from {parent} in your account.",
 		"transfer": "Uses the reference image’s appearance, not just its style.",
 		"sheetWarning": "Several views are edited on one sheet. Check each view before saving.",

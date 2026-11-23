@@ -3257,7 +3257,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 		await newItem(page, 'Head');
 		await expect(prompt).toHaveValue('a leather hat\n');
 		await expect(attachment).toContainText(filename);
-		await expect(make).toContainText(/Est\. \d+ gens/);
+		await expect(make).toContainText(/~\d+ gens/);
 	}
 	await page.setViewportSize({ width: 844, height: 390 });
 	await item.getByRole('button', { name: 'Remove reference', exact: true }).click();
@@ -3315,7 +3315,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 		.click();
 	await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword');
 	await item.getByRole('radio', { name: 'azure', exact: true }).click();
-	await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/Est\. \d+ gens/);
+	await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/~\d+ gens/);
 	await expect(
 		item.getByText(
 			'Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request. PixelLab may bill dollars and queue time varies.',
@@ -3837,7 +3837,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(model.getByRole('option')).toHaveText(['PixMiniMax', 'Skeleton V3', 'V3']);
 	// The open list prices each model; the closed field keeps only the chosen name, and Generate shows the same price.
 	await model.click();
-	const listed = model.getByRole('option', { name: /^PixMiniMax Est\. \d+ gens$/ });
+	const listed = model.getByRole('option', { name: /^PixMiniMax ~\d+ gens$/ });
 	const price = (await listed.locator('.model-cost').textContent())!;
 	await listed.click();
 	await expect(model).toHaveValue('pixminimax');
@@ -4096,7 +4096,7 @@ test('draft review can inspect every generated move and only its available views
 	});
 	await reviewSelectedDraft(page);
 	const review = page.locator('.gen');
-	await expect(review.getByRole('button', { name: /^Generate again/ })).toContainText('Est.');
+	await expect(review.getByRole('button', { name: /^Generate again/ })).toContainText('~');
 	await expect(
 		review.getByText(
 			'Generate again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.',
@@ -5919,7 +5919,7 @@ test('moves waiting behind another character’s failed move point to it', async
 	// The failed move's footer: Discard, New move, then the paid retry last.
 	const cancel = sheet.getByRole('button', { name: 'Discard', exact: true });
 	const startNew = sheet.getByRole('button', { name: 'New move…', exact: true });
-	const retry = sheet.getByRole('button', { name: /^Generate again · Est\. [1-9]\d* gens$/ });
+	const retry = sheet.getByRole('button', { name: /^Generate again · ~[1-9]\d* gens$/ });
 	for (const viewport of [page.viewportSize()!, { width: 320, height: 568 }]) {
 		await page.setViewportSize(viewport);
 		await expect(retry).toBeVisible();
@@ -6326,9 +6326,7 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 		.getByRole('button', { name: 'Walk · Steel longsword Failed: tap for details' })
 		.click();
 	const sheet = page.getByRole('dialog', { name: 'New move', exact: true });
-	await expect(sheet.getByRole('button', { name: /^Generate again/ })).toContainText(
-		'Est. 10 gens'
-	);
+	await expect(sheet.getByRole('button', { name: /^Generate again/ })).toContainText('~10 gens');
 	await sheet.getByRole('button', { name: 'Use saved frames', exact: true }).click();
 	await expect(sheet).toContainText(
 		'Completed frames matching the current body and equipment are unavailable. No generation was requested.'
@@ -6810,7 +6808,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	expect(enhancements).toEqual([
 		{ action: originalPrompt, engine: 'pixminimax', frame_count: 8, end: 'none' }
 	]);
-	await sheet.getByRole('button', { name: /^Replace Walk views.*Est\. 6 gens/ }).click();
+	await sheet.getByRole('button', { name: /^Replace Walk views.*~6 gens/ }).click();
 	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
 	const scope = await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
@@ -6851,7 +6849,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		);
 		return JSON.stringify(manifest);
 	});
-	await expect(suggestion).toContainText('Est. 6 gens');
+	await expect(suggestion).toContainText('~6 gens');
 	await suggestion.click();
 	const review = page.getByRole('dialog', { name: 'Review Skeleton V3', exact: true });
 	await expect(review).toContainText('8 frames');
@@ -6859,7 +6857,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(review).toContainText('End frame: Not available for this model');
 	await expect(review.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 6 gens'
+		'~6 gens'
 	);
 	await review.getByRole('button', { name: 'Back', exact: true }).click();
 	await expect(suggestion).toBeVisible();
@@ -6923,7 +6921,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await completed.getByRole('button', { name: /^Review Skeleton V3/ }).click();
 	await expect(review).toContainText('Directions: East');
 	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 6 gens'
+		'~6 gens'
 	);
 	await review.getByRole('button', { name: 'Back', exact: true }).click();
 	await page.evaluate(async () => {
@@ -7068,7 +7066,7 @@ test('partial missing gear and explicit item repair stay on the current move and
 	}, fixture.itemId);
 	await inspectStage(page);
 	const make = page.locator('.stage-note').getByRole('button', { name: /^Make it/ });
-	await expect(make).toContainText('Est. 3 gens');
+	await expect(make).toContainText('~3 gens');
 	await expect(make).not.toContainText('...');
 	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
@@ -7123,8 +7121,8 @@ test('partial missing gear and explicit item repair stay on the current move and
 			await simulateRepairPlan(tier);
 			await expect(repair).toBeEnabled();
 			await expect(redraw).toBeEnabled();
-			await expect(redraw).toContainText(`Est. ${redrawGens} gens`);
-			await expect(repair).toContainText(`Est. ${gens} gens`);
+			await expect(redraw).toContainText(`~${redrawGens} gens`);
+			await expect(repair).toContainText(`~${gens} gens`);
 			await expect(page.locator('#item-repair-tier')).toHaveCount(0);
 			const requests = page.getByText('This repair uses 3 PixelLab generation requests.', {
 				exact: false
@@ -7377,10 +7375,10 @@ test('unsafe imported equipment prices its frozen route and unsupported held off
 	}, fixture.itemId);
 	await inspectStage(page);
 	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toContainText(
-		'Est. 10 gens'
+		'~10 gens'
 	);
 	await selectedItemDetails(page);
-	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('Est. 10 gens');
+	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('~10 gens');
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path),
@@ -7450,7 +7448,7 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 	}, fixture.itemId);
 	await selectedItemDetails(page);
 	const repair = page.getByRole('button', { name: /^Repair item/ });
-	await expect(repair).toContainText('Est. 10 gens');
+	await expect(repair).toContainText('~10 gens');
 	await repair.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await oversizedItemFixture(page, fixture.itemId);
@@ -8098,7 +8096,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
 	).toBe(true);
 	expect(consent.bodyPaletteRepair.id).toMatch(/^[a-f0-9-]{36}$/);
 	expect(consent.measurementRecovery).toBeUndefined();
-	await sheet.getByRole('button', { name: /^Generate again · Est\. [1-9]\d* gens$/ }).click();
+	await sheet.getByRole('button', { name: /^Generate again · ~[1-9]\d* gens$/ }).click();
 	await expect
 		.poll(() =>
 			page.evaluate(async () => {
@@ -8221,7 +8219,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(moves.locator('option')).toHaveText(['Custom walk', 'Custom cross punch']);
 	await moves.selectOption('custom_walk');
 	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).toContainText(
-		'Est. 12 gens'
+		'~12 gens'
 	);
 	await pane.getByRole('button', { name: /^Make for Custom walk/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
@@ -8339,13 +8337,11 @@ test('move review gates item selection and shows live estimates without spending
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await review.getByText('Quality notes', { exact: true }).click();
 	await expect(review.getByText(/silhouette bottom differs up to 4 px/)).toBeVisible();
-	await review.getByRole('button', { name: /^Review Skeleton V3.*Est\./ }).click();
+	await review.getByRole('button', { name: /^Review Skeleton V3.*~/ }).click();
 	const retry = page.getByRole('dialog', { name: /^Redraw / });
 	await expect(retry.getByRole('combobox', { name: 'Motion model' })).toHaveValue('skeleton-v3');
 	await expect(retry.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
-	await expect(retry.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
-		'Est. 6 gens'
-	);
+	await expect(retry.getByRole('button', { name: /^Replace Walk views/ })).toContainText('~6 gens');
 	await retry.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	await expect(review.getByRole('button', { name: 'Replace move', exact: true })).toBeEnabled();
@@ -8434,7 +8430,7 @@ test('move review gates item selection and shows live estimates without spending
 	const item = picker.getByRole('button', { name: new RegExp(fixture.itemName) });
 	const animate = picker.getByRole('button', { name: /^Animate (items|1 item)$/ });
 	await expect(item).toHaveAttribute('aria-pressed', 'false');
-	await expect(picker).toContainText('Est. 0 more gens');
+	await expect(picker).toContainText('~0 more gens');
 	expect(await savedPlayback()).toEqual({ loop: false, moveLoop: false, firstMs: 137 });
 	await expect(animate).toBeDisabled();
 	const price = Number((await item.innerText()).match(/(\d+) gens/)?.[1]);
@@ -8443,7 +8439,7 @@ test('move review gates item selection and shows live estimates without spending
 	await item.press('Space');
 	await expect(item).toHaveAttribute('aria-pressed', 'true');
 	await expect(animate).toHaveAccessibleName('Animate 1 item');
-	await expect(picker).toContainText(`Est. ${price} more gens`);
+	await expect(picker).toContainText(`~${price} more gens`);
 	await item.click();
 	await expect(animate).toBeDisabled();
 	await item.click();
@@ -8753,7 +8749,7 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 	await reviewSelectedDraft(page);
 	await expect(page.locator('.gen')).toHaveCount(1);
 	await expect(retry).toBeEnabled();
-	await expect(retry).toHaveText(`Generate again Est. ${expected} gens`);
+	await expect(retry).toHaveText(`Generate again ~${expected} gens`);
 	await page
 		.getByRole('dialog', { name: 'Item review', exact: true })
 		.locator('.sheet-head')
@@ -8778,7 +8774,7 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 			rerolls: 2
 		});
 	});
-	await expect(retry).toHaveText(`Generate again Est. ${expected} gens`);
+	await expect(retry).toHaveText(`Generate again ~${expected} gens`);
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);

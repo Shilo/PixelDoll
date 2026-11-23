@@ -724,7 +724,7 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	await expect(sheet.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
 		'Giant helmet'
 	);
-	await expect(sheet.getByRole('button', { name: /^Make\b.*Est\. \d+ gens$/ })).toBeEnabled();
+	await expect(sheet.getByRole('button', { name: /^Make\b.*~\d+ gens$/ })).toBeEnabled();
 	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	expect(requests.filter((r) => !r.startsWith('GET '))).toEqual([]);

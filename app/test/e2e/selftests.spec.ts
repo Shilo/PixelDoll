@@ -1291,7 +1291,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 		freePreparation
 	);
 	await expect(
-		starter.getByRole('button', { name: 'Generate south + east · Est. 8 gens', exact: true })
+		starter.getByRole('button', { name: 'Generate south + east · ~8 gens', exact: true })
 	).toBeDisabled();
 	const pinned = await page.evaluate(async () => {
 		const starterPath = '/src/ui/motion-lab/starter-pack.ts',
@@ -1608,7 +1608,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 		starter.getByRole('button', { name: 'Prepare native source', exact: true })
 	).toBeDisabled();
 	await expect(
-		starter.getByRole('button', { name: 'Generate south + east · Est. 8 gens', exact: true })
+		starter.getByRole('button', { name: 'Generate south + east · ~8 gens', exact: true })
 	).toBeDisabled();
 	await starter
 		.getByRole('button', { name: 'Load complete three-action pack', exact: true })
@@ -1656,7 +1656,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 				starter.getByRole('spinbutton', { name: 'Motion X', exact: true })
 			).toBeDisabled();
 			await expect(
-				starter.getByRole('button', { name: 'Generate south + east · Est. 8 gens', exact: true })
+				starter.getByRole('button', { name: 'Generate south + east · ~8 gens', exact: true })
 			).toBeDisabled();
 		}
 		for (const [d, direction] of directions.entries()) {
