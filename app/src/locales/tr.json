@@ -3072,7 +3072,7 @@
 		"lift": "Sığdırmak için yükselt",
 		"liftDetail": "Ücretli çizimi korur, her görünümü {size} px karede {px} px yükseltir ve aynı görünümler için yeni bir kayıt satın alır.",
 		"largerFrame": "{size} px kare kullan",
-		"largerFrameDetail": "Ücretli çizimi korur, aynı görünümleri {size} px kareye yerleştirir ve yeni bir kayıt satın alır."
+		"largerFrameDetail": "Ücretli çizimi korur, aynı görünümleri {size} px kareye yerleştirir ve yeni bir kayıt satın alır. Daha büyük bir karede sonradan yapılan animasyonlar ve eşyalar daha pahalı olabilir."
 	},
 	"adjustFrame": {
 		"title": "Kareyi ayarla",

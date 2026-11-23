@@ -2992,7 +2992,7 @@
 		"lift": "Naikkan agar muat",
 		"liftDetail": "Mempertahankan gambar berbayar, menaikkan setiap tampilan {px} px dalam frame {size} px dan membeli satu pendaftaran baru untuk tampilan yang sama.",
 		"largerFrame": "Gunakan frame {size} px",
-		"largerFrameDetail": "Mempertahankan gambar berbayar, menempatkan tampilan yang sama dalam frame {size} px dan membeli satu pendaftaran baru."
+		"largerFrameDetail": "Mempertahankan gambar berbayar, menempatkan tampilan yang sama dalam frame {size} px dan membeli satu pendaftaran baru. Animasi dan item yang dibuat nanti dalam frame yang lebih besar bisa lebih mahal."
 	},
 	"adjustFrame": {
 		"title": "Sesuaikan frame",

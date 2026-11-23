@@ -3081,7 +3081,7 @@
 		"lift": "Subir para caber",
 		"liftDetail": "Mantém o desenho pago, sobe cada vista {px} px no quadro de {size} px e compra um novo registro das mesmas vistas.",
 		"largerFrame": "Usar um quadro de {size} px",
-		"largerFrameDetail": "Mantém o desenho pago, coloca as mesmas vistas em um quadro de {size} px e compra um novo registro."
+		"largerFrameDetail": "Mantém o desenho pago, coloca as mesmas vistas em um quadro de {size} px e compra um novo registro. Animações e itens feitos depois em um quadro maior podem custar mais."
 	},
 	"adjustFrame": {
 		"title": "Ajustar quadro",

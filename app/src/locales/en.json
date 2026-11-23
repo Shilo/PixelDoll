@@ -3072,7 +3072,7 @@
 		"lift": "Raise to fit",
 		"liftDetail": "Keeps the paid drawing, raises every view {px} px in its {size} px frame and buys one new registration of the same views.",
 		"largerFrame": "Use a {size} px frame",
-		"largerFrameDetail": "Keeps the paid drawing, places the same views in a {size} px frame and buys one new registration."
+		"largerFrameDetail": "Keeps the paid drawing, places the same views in a {size} px frame and buys one new registration. Moves and items made later in a larger frame may cost more."
 	},
 	"adjustFrame": {
 		"title": "Adjust frame",

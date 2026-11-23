@@ -3072,7 +3072,7 @@
 		"lift": "Subir para que quepa",
 		"liftDetail": "Conserva el dibujo pagado, sube cada vista {px} px en su marco de {size} px y compra un registro nuevo de las mismas vistas.",
 		"largerFrame": "Usar un marco de {size} px",
-		"largerFrameDetail": "Conserva el dibujo pagado, coloca las mismas vistas en un marco de {size} px y compra un registro nuevo."
+		"largerFrameDetail": "Conserva el dibujo pagado, coloca las mismas vistas en un marco de {size} px y compra un registro nuevo. Las animaciones y objetos que hagas después en un marco más grande pueden costar más."
 	},
 	"adjustFrame": {
 		"title": "Ajustar marco",

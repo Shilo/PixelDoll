@@ -3072,7 +3072,7 @@
 		"lift": "Remonter pour faire tenir",
 		"liftDetail": "Conserve le dessin payé, remonte chaque vue de {px} px dans son cadre de {size} px et achète un nouvel enregistrement des mêmes vues.",
 		"largerFrame": "Utiliser un cadre de {size} px",
-		"largerFrameDetail": "Conserve le dessin payé, place les mêmes vues dans un cadre de {size} px et achète un nouvel enregistrement."
+		"largerFrameDetail": "Conserve le dessin payé, place les mêmes vues dans un cadre de {size} px et achète un nouvel enregistrement. Les animations et objets créés ensuite dans un cadre plus grand peuvent coûter plus cher."
 	},
 	"adjustFrame": {
 		"title": "Ajuster le cadre",
