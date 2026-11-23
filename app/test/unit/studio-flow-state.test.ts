@@ -4,6 +4,7 @@ import type { MoveSpec, Progress } from '../../src/studio/create.ts';
 import type { RepairReview } from '../../src/lib/items/run.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import type { Balance } from '../../src/lib/pixellab/routes.ts';
+import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import { message } from '../../src/lib/message.ts';
 import { characterFacts } from '../../src/studio/model.ts';
 import { readFileSync } from 'node:fs';
@@ -34,6 +35,7 @@ const mocks = vi.hoisted(() => ({
 	cancelScoped: vi.fn(),
 	observe: vi.fn()
 }));
+const ledger = vi.hoisted(() => ({ jobs: [] as JobRec[] }));
 const mockAccount = vi.hoisted(() => ({ key: '', balance: null as Balance | null }));
 vi.mock('../../src/studio/create.ts', () => ({
 	createCharacter: mocks.create,
@@ -81,9 +83,10 @@ vi.mock('../../src/lib/store/db.ts', async (original) => ({
 }));
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: mockAccount }));
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({
+	live: (r?: JobRec) => !!r && ['queued', 'submitting', 'running'].includes(r.state),
 	queue: {
 		role: 'leader',
-		snapshot: () => ({ jobs: [] }),
+		snapshot: () => ({ jobs: ledger.jobs }),
 		subscribe: mocks.subscribe,
 		requestHandoff: mocks.handoff,
 		idle: () => true,
@@ -739,6 +742,24 @@ const recoverySpec = {
 	dirs: ['east', 'west'] as import('../../src/lib/store/manifest.ts').DirectionName[],
 	poseStyle: 'visible-side-v1' as const
 };
+
+test('a fresh attempt of a failed move waits while one of its requests is still at PixelLab', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const failed = { ...recoverySpec, activityScope: 'move:2438:attempt' };
+	Object.assign(s.moving, { projectId: 'project', spec: failed, error: 'stopped', done: false });
+	ledger.jobs = [{ id: 'render', state: 'running', activityScope: failed.activityScope } as JobRec];
+	await s.startMove('project', { ...failed, seed: 99 });
+	// Nothing new is bought and the failed move stays as it was.
+	expect(mocks.move).not.toHaveBeenCalled();
+	expect(s.moving.spec).toBe(failed);
+	expect(s.ui.toast).toMatchObject({ key: 'state.moveStillAtPixelLab' });
+	// Once that request has an outcome, the fresh attempt starts.
+	ledger.jobs = [{ id: 'render', state: 'done', activityScope: failed.activityScope } as JobRec];
+	mocks.move.mockResolvedValue({ warnings: [] });
+	await s.startMove('project', { ...failed, seed: 99 });
+	expect(mocks.move).toHaveBeenCalledOnce();
+	ledger.jobs = [];
+});
 
 test('explicit joint-check recovery preserves the body identity and persists one reviewed intent before work', async () => {
 	const persisted = pending<void>();

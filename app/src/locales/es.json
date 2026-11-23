@@ -1052,6 +1052,7 @@
 		"couldNotSaveFlowFailure": "{error} No se pudo guardar este fallo en este dispositivo. Descarta esta operación antes de recargar.",
 		"useSavedFramesInTheTabThat": "Usa los fotogramas guardados en la pestaña que gestiona tus tareas de PixelDoll.",
 		"anotherMoveIsStillBeingAddedSo": "Todavía se está agregando otra animación, así que esta no empezó. Inténtalo de nuevo cuando termine.",
+		"moveStillAtPixelLab": "Una solicitud de este movimiento sigue en PixelLab, así que no se inició un nuevo intento y no se cobró nada. Espera a que termine en Actividad y luego revisa el movimiento.",
 		"moveNameAdded": "{moveName} agregada",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} tiene problemas de objetos que revisar. No se inició ningún reintento de pago.",
 		"moveFailedOpen": "{moveName} falló. Abre Animaciones para ver las opciones.",

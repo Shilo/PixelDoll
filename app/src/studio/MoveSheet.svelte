@@ -791,6 +791,9 @@
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
 	let paid = $state.raw<MovePaidReview | null>(null);
+	/** The paid-result review of a stopped move has not loaded yet (or failed to): whether a request is still at PixelLab is
+	 *  unknown, so Generate again waits for it. */
+	let paidLoading = $state(false);
 	// The same stop by its code and values, never by comparing displayed text.
 	const errorInReview = $derived(
 		!!moving.error &&
@@ -816,11 +819,13 @@
 		colorRepair = null;
 		keep = null;
 		paid = null;
+		paidLoading = false;
 		recoveryError = '';
 		recoveryUnavailable = [];
 		recoveryChecking = false;
 		if (mine && error && spec && !moving.done && spec.itemMethod !== 'grid') {
 			recoveryChecking = true;
+			paidLoading = true;
 			void Promise.all([reviewMoveRecovery(projectId, spec), reviewMoveResults(projectId, spec)])
 				.then(([review, results]) => {
 					if (!current) return;
@@ -829,6 +834,7 @@
 					keep = review.keep ?? null;
 					recoveryUnavailable = review.unavailableMessages ?? [];
 					paid = results ?? null;
+					paidLoading = false;
 				})
 				.catch((error: unknown) => {
 					if (current)
@@ -858,7 +864,9 @@
 	}
 
 	// A new seed while a reviewed request is still at PixelLab would buy that view again before its result is known.
-	const paidRunning = $derived(!!paid?.views.some((view) => view.state === 'running'));
+	const paidRunning = $derived(
+		paidLoading || !!paid?.views.some((view) => view.state === 'running')
+	);
 	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. Make room
 	 *  adjusts the frame first (free; this stopped move waits for it) and then continues the same move. */
 	function choosePaid(option: MovePaidOption) {

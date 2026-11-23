@@ -1052,6 +1052,7 @@
 		"couldNotSaveFlowFailure": "{error} Could not save this failure on this device. Dismiss this operation before reloading.",
 		"useSavedFramesInTheTabThat": "Use saved frames in the tab that is managing your PixelDoll jobs.",
 		"anotherMoveIsStillBeingAddedSo": "Another move is still being added, so this one did not start. Try again when it finishes.",
+		"moveStillAtPixelLab": "A request of this move is still at PixelLab, so a new attempt did not start and nothing was charged. Wait for it to finish in Activity, then review the move.",
 		"moveNameAdded": "{moveName} added",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} has item issues to review. No paid retry was started.",
 		"moveFailedOpen": "{moveName} failed. Open Moves for recovery options.",

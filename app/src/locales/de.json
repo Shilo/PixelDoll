@@ -1052,6 +1052,7 @@
 		"couldNotSaveFlowFailure": "{error} Dieser Fehler konnte nicht auf diesem Gerät gespeichert werden. Verwirf den Vorgang, bevor du die Seite neu lädst.",
 		"useSavedFramesInTheTabThat": "Verwende gespeicherte Frames in dem Tab, der deine PixelDoll-Aufträge verwaltet.",
 		"anotherMoveIsStillBeingAddedSo": "Eine andere Animation wird noch hinzugefügt. Diese wurde deshalb nicht gestartet. Versuch es erneut, sobald die andere fertig ist.",
+		"moveStillAtPixelLab": "Eine Anfrage dieser Bewegung läuft noch bei PixelLab, daher wurde kein neuer Versuch gestartet und nichts berechnet. Warte unter „Aktivität“, bis sie fertig ist, und prüfe dann die Bewegung.",
 		"moveNameAdded": "{moveName} hinzugefügt",
 		"moveNameHasItemIssuesToReviewNo": "Bei Gegenständen für {moveName} gibt es Probleme zu prüfen. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
 		"moveFailedOpen": "{moveName} fehlgeschlagen. Öffne „Animationen“, um die Optionen zu sehen.",

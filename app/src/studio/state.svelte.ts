@@ -137,7 +137,7 @@ import {
 	slotUseMessages,
 	type SlotUse
 } from './slots.ts';
-import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import { live, queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import { stateAttempts } from './stateRecovery.ts';
 import {
@@ -4408,6 +4408,22 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			tone: 'warning',
 			report: false,
 			action: () => openFlow('move', moving.projectId)
+		});
+		return;
+	}
+	// A fresh attempt (a new seed) of the move on screen would buy its views again while one of its earlier requests is still
+	// at PixelLab, in this tab or another, before its outcome is known. Read from the shared ledger at click time.
+	const prior = moving.projectId === projectId ? moving.spec : null;
+	if (
+		prior?.activityScope &&
+		prior.id === spec.id &&
+		prior.seed !== spec.seed &&
+		queue.snapshot().jobs.some((r) => r.activityScope === prior.activityScope && live(r))
+	) {
+		toast(message('state.moveStillAtPixelLab'), {
+			tone: 'warning',
+			report: false,
+			action: () => openFlow('move', projectId)
 		});
 		return;
 	}

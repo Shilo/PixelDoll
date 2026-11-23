@@ -1052,6 +1052,7 @@
 		"couldNotSaveFlowFailure": "{error} Bu hata bu cihaza kaydedilemedi. Sayfayı yeniden yüklemeden önce bu işlemi kapatın.",
 		"useSavedFramesInTheTabThat": "Kayıtlı kareleri PixelDoll işlerinizi yöneten sekmede kullanın.",
 		"anotherMoveIsStillBeingAddedSo": "Başka bir animasyon hâlâ ekleniyor, bu nedenle bu animasyon başlatılmadı. Bittiğinde tekrar deneyin.",
+		"moveStillAtPixelLab": "Bu hareketin bir isteği hâlâ PixelLab’de, bu yüzden yeni deneme başlamadı ve ücret alınmadı. Etkinlik’te bitmesini bekleyin, ardından hareketi inceleyin.",
 		"moveNameAdded": "{moveName} eklendi",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} animasyonunda incelenecek eşya sorunları var. Ücretli bir deneme başlatılmadı.",
 		"moveFailedOpen": "{moveName} başarısız oldu. Seçenekleri görmek için Animasyonlar bölümünü açın.",
