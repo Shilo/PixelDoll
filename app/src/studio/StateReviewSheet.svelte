@@ -85,6 +85,17 @@
 		focusedReview = current;
 		reviewHeading.focus();
 	});
+	// Views that came back blank or failed; ones that could not be downloaded or were canceled have their own notice.
+	const blankViews = $derived.by(() => {
+		const current = review;
+		if (!current) return [];
+		const named = new Set([...current.unfetched, ...current.canceled]);
+		return current.missing.filter((direction) => !named.has(direction));
+	});
+	// Saving now gives up views that could still be fetched or made, so the choice says so.
+	const withoutViews = $derived(
+		!!review && (review.unfetched.length > 0 || review.canceled.length > 0)
+	);
 	// Mounted riding uses the State saved as `riding`, whatever prompt made it.
 	const reviewRiding = $derived(!!review?.riding || review?.id === RIDING_STATE);
 	const reviewSource = $derived(review && project && stateGenerationSource(project, review.source));
@@ -289,9 +300,17 @@
 					{/if}
 				</div>
 			{/if}
-			{#if review.missing.length}<p class="notice warn small" role="status">
-					{t('stateGeneration.missingViews', {
-						directions: displayDirectionList(review.missing)
+			{#if blankViews.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.missingViews', { directions: displayDirectionList(blankViews) })}
+				</p>{/if}
+			{#if review.unfetched.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.unfetchedViews', {
+						directions: displayDirectionList(review.unfetched)
+					})}
+				</p>{/if}
+			{#if review.canceled.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.canceledViews', {
+						directions: displayDirectionList(review.canceled)
 					})}
 				</p>{/if}
 			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
@@ -385,20 +404,20 @@
 				onclick={discard}
 				>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 			>
-			<!-- Reading again is free: a view whose download failed may come back. -->
+			<!-- Reading again is free: a view whose download failed may come back, so it leads while one did. -->
 			{#if review?.missing.length}<button
 					type="button"
 					class="bu-btn"
-					data-variant="outline"
+					data-variant={review.unfetched.length ? 'primary' : 'outline'}
 					disabled={!!busy}
 					onclick={load}>{t('common.tryAgain')}</button
 				>{/if}
 			<button
 				type="button"
 				class="bu-btn"
-				data-variant="primary"
+				data-variant={review?.unfetched.length ? 'outline' : 'primary'}
 				disabled={!!busy || !sourceFits}
-				onclick={save}>{t('common.save')}</button
+				onclick={save}>{t(withoutViews ? 'stateGeneration.saveWithout' : 'common.save')}</button
 			>
 		</div>
 	</div>
