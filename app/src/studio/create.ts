@@ -2920,6 +2920,12 @@ async function addMoveUnlocked(
 		);
 	const { rec, project: loaded } = await loadProject(projectId);
 	checkedReviewChoices(rec.manifest, spec);
+	// A staged review of this move decides first: a direct run would buy frames that could not be saved beside it.
+	if (!spec.itemsOnly && !spec.reviewBeforePublish && Object.hasOwn(rec.moveReviews ?? {}, spec.id))
+		throw new LocalizedError(
+			'This move has frames waiting in its review. Save or discard them first. No request was made.',
+			'moveSheet.checkpoint.reviewWaiting'
+		);
 	if (
 		!spec.itemsOnly &&
 		!rec.manifest.rig.animations.some((clip) => clip.kind !== 'state' && clip.id === spec.id) &&

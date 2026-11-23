@@ -2519,6 +2519,7 @@
 			"unavailable": "不可用",
 			"findings": "质量提示",
 			"hardFailure": "请重新生成此动作后再保存。",
+			"reviewWaiting": "这个动作有等待检查的帧。请先保存或放弃它们。未发送任何请求。",
 			"beforeItems": "制作装备动画前，请先检查动作。",
 			"changed": "角色或动作已更改。请重新打开检查界面。",
 			"missingFrames": "已检查的帧不再可用。",

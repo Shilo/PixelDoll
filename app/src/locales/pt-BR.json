@@ -2594,6 +2594,7 @@
 			"unavailable": "Indisponível",
 			"findings": "Notas de qualidade",
 			"hardFailure": "Gere esta animação novamente antes de salvá-la.",
+			"reviewWaiting": "Este movimento tem quadros esperando revisão. Salve ou descarte-os primeiro. Nenhuma solicitação foi feita.",
 			"beforeItems": "Revise a animação antes de animar itens.",
 			"changed": "O personagem ou a animação mudou. Abra a revisão novamente.",
 			"missingFrames": "Os quadros revisados não estão mais disponíveis.",

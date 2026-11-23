@@ -2585,6 +2585,7 @@
 			"unavailable": "Kullanılamıyor",
 			"findings": "Kalite notları",
 			"hardFailure": "Kaydetmeden önce bu animasyonu yeniden oluştur.",
+			"reviewWaiting": "Bu hareketin incelemenizi bekleyen kareleri var. Önce onları kaydedin ya da atın. Hiçbir istek gönderilmedi.",
 			"beforeItems": "Eşyaları canlandırmadan önce animasyonu inceleyin.",
 			"changed": "Karakter veya animasyon değişti. Devam etmeden önce incelemeyi yeniden açın.",
 			"missingFrames": "İncelenen kareler artık kullanılamıyor.",

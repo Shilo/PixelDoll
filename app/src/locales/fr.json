@@ -2585,6 +2585,7 @@
 			"unavailable": "Non disponible",
 			"findings": "Notes de qualité",
 			"hardFailure": "Régénérez cette animation avant de l’enregistrer.",
+			"reviewWaiting": "Des images de ce mouvement attendent votre vérification. Enregistrez-les ou abandonnez-les d’abord. Aucune requête n’a été envoyée.",
 			"beforeItems": "Vérifiez l’animation avant d’animer des objets.",
 			"changed": "Le personnage ou l’animation a changé. Rouvrez la vérification.",
 			"missingFrames": "Les images vérifiées ne sont plus disponibles.",

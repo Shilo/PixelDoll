@@ -2585,6 +2585,7 @@
 			"unavailable": "Nicht verfügbar",
 			"findings": "Qualitätshinweise",
 			"hardFailure": "Generiere diese Animation neu, bevor du sie speicherst.",
+			"reviewWaiting": "Für diese Bewegung warten Frames auf deine Prüfung. Speichere oder verwirf sie zuerst. Es wurde keine Anfrage gesendet.",
 			"beforeItems": "Prüfe die Animation, bevor du Gegenstände animierst.",
 			"changed": "Charakter oder Animation wurden geändert. Öffne die Prüfung erneut.",
 			"missingFrames": "Die geprüften Frames sind nicht mehr verfügbar.",

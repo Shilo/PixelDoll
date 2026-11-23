@@ -2519,6 +2519,7 @@
 			"unavailable": "Tidak tersedia",
 			"findings": "Catatan kualitas",
 			"hardFailure": "Buat ulang animasi ini sebelum menyimpannya.",
+			"reviewWaiting": "Gerakan ini punya frame yang menunggu ditinjau. Simpan atau buang dulu. Tidak ada permintaan yang dikirim.",
 			"beforeItems": "Tinjau animasi sebelum menganimasikan item.",
 			"changed": "Karakter atau animasi berubah. Buka kembali tinjauan sebelum melanjutkan.",
 			"missingFrames": "Frame yang telah ditinjau tidak lagi tersedia.",

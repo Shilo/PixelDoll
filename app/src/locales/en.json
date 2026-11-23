@@ -2585,6 +2585,7 @@
 			"unavailable": "Not available",
 			"findings": "Quality notes",
 			"hardFailure": "Regenerate this move before saving it.",
+			"reviewWaiting": "This move has frames waiting in its review. Save or discard them first. No request was made.",
 			"beforeItems": "Review the move before animating items.",
 			"changed": "The character or move changed. Reopen the review before continuing.",
 			"missingFrames": "The reviewed frames are no longer available.",

@@ -1979,7 +1979,8 @@ test('a new move with a stopped view can save only its finished views, free, wit
 	const draft = f.saved().moveReviews!.idle!;
 	expect(draft.dirs).toEqual(['east']);
 	expect(Object.keys(draft.cells)).toEqual(['east']);
-	// Without that consent a new move still needs every drawn view.
+	// Without that consent a new move still needs every drawn view (checked once the draft is discarded).
+	delete f.saved().moveReviews;
 	await expect(
 		addMove('rig-recover', {
 			...save.spec,
@@ -1987,6 +1988,29 @@ test('a new move with a stopped view can save only its finished views, free, wit
 			reviewBeforePublish: undefined
 		})
 	).rejects.toThrow('every independently drawn direction');
+});
+
+test('a direct run is refused up front while the same move waits in review, and a failed staging write stays free to resume', async () => {
+	const f = await fixture('feet', 'walk');
+	await f.finishOriginalChecks();
+	// The staging write fails once after the paid render (a draft landed from another tab, or storage refused it).
+	vi.mocked(db.updateCharacter).mockRejectedValueOnce(new Error('Synthetic staging failure'));
+	await expect(addMove('rig-recover', f.spec)).rejects.toThrow('Synthetic staging failure');
+	expect(f.saved().moveReviews).toBeUndefined();
+	// The paid frames stay in the ledger: the review resumes from the cache for free into the staged review.
+	const posts = f.posts(),
+		review = (await reviewMoveResults('rig-recover', f.spec))!;
+	const resume = review.options.find((option) => option.id === 'resume')!;
+	expect(resume).toMatchObject({ gens: 0, paid: false });
+	await expect(addMove('rig-recover', resume.spec)).resolves.toMatchObject({ moveReview: 'idle' });
+	expect(f.posts()).toBe(posts);
+	// With that draft waiting, a direct run of the move is refused before anything is sent.
+	const calls = f.enqueue.mock.calls.length;
+	await expect(addMove('rig-recover', { ...f.spec, seed: f.spec.seed + 1 })).rejects.toThrow(
+		'waiting in its review'
+	);
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
+	expect(f.posts()).toBe(posts);
 });
 
 test('a body move stopped after every view was bought resumes free with the same seed', async () => {

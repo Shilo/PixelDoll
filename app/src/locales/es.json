@@ -2585,6 +2585,7 @@
 			"unavailable": "No disponible",
 			"findings": "Notas de calidad",
 			"hardFailure": "Vuelve a generar esta animación antes de guardarla.",
+			"reviewWaiting": "Este movimiento tiene fotogramas esperando tu revisión. Guárdalos o descártalos primero. No se envió ninguna solicitud.",
 			"beforeItems": "Revisa la animación antes de animar objetos.",
 			"changed": "El personaje o la animación ha cambiado. Vuelve a abrir la revisión.",
 			"missingFrames": "Los fotogramas revisados ya no están disponibles.",
