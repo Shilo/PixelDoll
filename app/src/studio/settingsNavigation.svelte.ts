@@ -62,10 +62,11 @@ export const SETTINGS_KEYS = ['Mod', ','] as const;
 export const isSettingsShortcut = (e: KeyboardEvent) =>
 	(e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key === ',';
 
-export function openSettings(section: SettingsSection | null = null) {
+/** Without a section, Settings reopens on the page last shown; kept in memory only, so a reload starts at the index. */
+export function openSettings(section?: SettingsSection) {
 	returnFocus = undefined;
 	settingsNavigation.fromExport = ui.sheet === 'export';
-	settingsNavigation.section = section;
+	if (section) settingsNavigation.section = section;
 	ui.sheet = 'settings';
 }
 
