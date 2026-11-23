@@ -39,6 +39,7 @@ import {
 import {
 	managedStateRotations,
 	stateGenerationSource,
+	stateSourceFits,
 	verifyManagedStateParent,
 	type ManagedStateDetail,
 	type StateSourceFrame
@@ -782,7 +783,8 @@ export async function saveState(review: StateReview, riding = false): Promise<vo
 	const { rec, project } = await loadProject(projectId);
 	if (
 		!rec.stateGenerations?.[review.token] ||
-		stateGenerationSource(project, review.source)?.version !== review.sourceVersion ||
+		// A changed source frame is disclosed in review, not a reason to throw away a paid result that still lines up.
+		!stateSourceFits(project, review.sourceVersion) ||
 		stateCaptureNameIssue(rec.manifest, id, Object.keys(rec.moveReviews ?? {}))
 	)
 		throw changed();

@@ -3,6 +3,7 @@ import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import type { Req } from '../../src/lib/pixellab/routes.ts';
 import type { Item, Manifest } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
+import type { LocalizedError } from '../../src/lib/message.ts';
 import { base64ToBytes, makeImg, type Img } from '../../src/lib/image/png.ts';
 import { sha256 } from '../../src/lib/image/hash.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -1333,6 +1334,10 @@ test('a failed direction plus a save conflict keeps the conflict first, so free 
 	const error = await poseItemClip(f.ctx, f.item, 'walking').catch((e: Error) => e);
 	expect((error as Error).message.startsWith(ITEM_MOVE_SAVE_CONFLICT)).toBe(true);
 	expect((error as Error).message).toMatch(/malformed/);
+	// the translated stop keeps both: the conflict's code (free recovery routes on it) and the other view's reason
+	const translation = (error as LocalizedError).translation;
+	expect(translation.key).toBe('itemRoute.errors.itemMoveSaveConflictAlso');
+	expect((translation.vars as { reason?: unknown } | undefined)?.reason).toBeTruthy();
 });
 
 test('saved frames reattach completed pose requests without sending one, and refuse when none match', async () => {

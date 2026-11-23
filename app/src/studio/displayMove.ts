@@ -1,12 +1,5 @@
-import { t, type WhisperKey } from 'svelte-whisper';
-import { moveLabel, type MoveRef } from './model.ts';
-
-const labels: Readonly<Record<string, WhisperKey>> = {
-	default: 'moveNames.default',
-	idle: 'moveNames.idle',
-	walk: 'moveNames.walk',
-	run: 'moveNames.run'
-};
+import { t } from 'svelte-whisper';
+import { moveLabel, moveName, type MoveRef } from './model.ts';
 
 /** The move's name in the active language: a name the user gave it stays as typed. */
 export function displayMove(id: string, moves: readonly MoveRef[] = []): string {
@@ -21,5 +14,6 @@ export function displayMove(id: string, moves: readonly MoveRef[] = []): string 
 		label === moveLabel(id)
 	)
 		return `${label} (${id})`;
-	return !named && Object.hasOwn(labels, id) && label === moveLabel(id) ? t(labels[id]) : label;
+	const name = moveName(id, moves);
+	return typeof name === 'string' ? name : t(name.key);
 }

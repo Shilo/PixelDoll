@@ -2,6 +2,9 @@ import { afterEach, expect, test, vi } from 'vitest';
 import {
 	addMove,
 	b64,
+	bodyMoveIssue,
+	keepableUnposed,
+	motionJoints,
 	moveMotionRequest,
 	nativeMoveRequest,
 	reviewItemMove,
@@ -26,9 +29,23 @@ import * as projects from '../../src/lib/store/project.ts';
 import { decodePng, makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
+import { PaidStepError } from '../../src/lib/pixellab/paid-results.ts';
+import { skeletonInput } from '../../src/lib/rig/estimate.ts';
 import { cellHash, type Keypoint, type DirectionName } from '../../src/lib/rig/rig.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import ja from '../../src/locales/ja.json';
+import { displayError, displayNestedMessage, errorMessage } from '../../src/lib/i18n.ts';
+import { generationErrorMessage } from '../../src/studio/generationStatus.ts';
+import type { Gen } from '../../src/studio/state.svelte.ts';
+// The i18n runtime needs the Svelte compiler; Japanese stands in for it here, as a key lookup with {name} variables.
+vi.mock('svelte-whisper', () => ({
+	getLocale: () => 'ja',
+	t: (key: string, vars: Record<string, unknown> = {}) =>
+		String(
+			key.split('.').reduce<unknown>((at, part) => (at as Record<string, unknown>)?.[part], ja)
+		).replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name]))
+}));
 afterEach(() => vi.restoreAllMocks());
 
 test('managed ownership decides the quoted source without sending any generation', async () => {
@@ -649,6 +666,35 @@ test('an authored Skeleton move from a fitted generated State poses the State ar
 		expect(body).toMatchObject({ first_frame: first, first_frame_keypoints: joints });
 });
 
+test('a described Skeleton move from a saved frame on a managed character routes standalone at the same price', async () => {
+	const f = await fixture();
+	const m = f.original.manifest;
+	const startFrom = resolveMoveSource(m, { clip: 'idle', cell: 3 }, ['east'])!;
+	for (const action of [undefined, 'walk']) {
+		const spec = {
+			id: 'idle',
+			action,
+			text: 'Step softly',
+			frames: 4,
+			items: [],
+			replace: true,
+			dirs: ['east' as const],
+			animation: { model: 'skeleton-v3' as const, frameCount: 4 },
+			motionSource: action ? undefined : ('managed' as const),
+			startFrom
+		};
+		expect(bodyMoveIssue(m, spec)).toBeUndefined();
+		const request = moveMotionRequest(f.original, spec, 'east', 'saved-frame');
+		expect(request).toMatchObject({
+			path: '/animate-pixminimax',
+			body: { first_frame: png('saved-frame'), frame_count: 4 }
+		});
+		expect(moveEstimate(m, spec)).toEqual(
+			moveEstimate(m, { ...spec, motionSource: 'standalone' as const })
+		);
+	}
+});
+
 test('Skeleton retry keeps the exact authored start and omits stale or incompatible starts', async () => {
 	const f = await fixture(false, 'bad-palette');
 	const spec = {
@@ -667,9 +713,16 @@ test('Skeleton retry keeps the exact authored start and omits stale or incompati
 	const offer = skeletonMoveReview(f.saved(), spec, result, []);
 	expect(offer?.review.startFrom).toEqual(spec.startFrom);
 	expect(offer?.review.approvedDirs).toEqual(spec.dirs);
-	expect(
-		skeletonMoveReview(f.saved(), { ...spec, action: undefined, text: 'Hold still' }, result, [])
-	).toBeUndefined();
+	// Deliberately flipped (2026-11-23): a described retry from a saved frame used to get no offer, because the managed
+	// character's motion always starts from Standing. It now takes the standalone PixMiniMax route at the same price.
+	const described = skeletonMoveReview(
+		f.saved(),
+		{ ...spec, action: undefined, text: 'Hold still' },
+		result,
+		[]
+	);
+	expect(described?.review.startFrom).toEqual(spec.startFrom);
+	expect(moveMotionRequest(f.saved(), described!.review, 'east').path).toBe('/animate-pixminimax');
 	const changed = structuredClone(f.saved());
 	const east = changed.manifest.rig.animations[0].sources!.east!;
 	east.measured![3] = east.measured![3].map((joint) => ({ ...joint, x: joint.x + 0.01 }));
@@ -1022,10 +1075,37 @@ test('a valid custom description includes motion costs and wrong provider cardin
 		}
 	});
 	expect(f.put).not.toHaveBeenCalled();
+	// The stop names the move and view in the user's words and language, never the internal request label, and an item
+	// card shows the stored Message the same way.
+	f.enqueue.mockResolvedValueOnce({ state: 'done', jobs: [{ results: [] }] } as unknown as JobRec);
+	const error = await f.run(spec).catch((e: unknown) => e);
+	const shown = displayError(error);
+	expect(shown).toBe(
+		ja.create.errors.pixellabReturnedMotionFrames
+			.replace('{move}', ja.moveNames.idle)
+			.replace('{direction}', ja.directionNames.east)
+			.replace('{expected}', '4')
+			.replace('{returned}', '0')
+	);
+	expect(shown).not.toMatch(/Test ·|\(motion\)|idle east/);
+	const gen = {
+		canceled: false,
+		error: errorMessage(error),
+		draft: { calls: [] }
+	} as unknown as Gen;
+	const card = generationErrorMessage(gen, [], {
+		render: displayNestedMessage,
+		formatNumber: String
+	});
+	expect(displayNestedMessage(card!)).toBe(shown);
 });
 
-test('an extra motion frame is accepted only when it is the unstripped standing view', async () => {
-	const motionWith = async (first: 'standing' | 'other') => {
+test('managed motion drops one extra leading motion frame by position on described moves and the walk template', async () => {
+	const motionWith = async (
+		first: 'standing' | 'other' | 'none' | 'two',
+		change: Record<string, unknown> = {}
+	) => {
+		const count = change.action === 'walk' ? 8 : 4;
 		const f = await fixture(),
 			standing = (await projects.loadProject('rig-target')).project.images.values().next().value!,
 			frame = (shade: number) => {
@@ -1033,22 +1113,31 @@ test('an extra motion frame is accepted only when it is the unstripped standing 
 				im.data[(30 * 64 + 30) * 4] = shade; // inside the body: a distinct motion frame
 				return im;
 			},
-			images = [
-				first === 'standing' ? standing : frame(7),
-				frame(11),
-				frame(12),
-				frame(13),
-				frame(14)
+			// "other": PixelLab's registered standing drawn with an outfit ours does not have (the 2026-11-23 report)
+			outfit = structuredClone(standing);
+		for (let y = 20; y < 30; y++)
+			for (let x = 22; x < 42; x++) outfit.data.set([40, 90, 160, 255], (y * 64 + x) * 4);
+		const images = [
+				...{ standing: [standing], other: [outfit], none: [], two: [outfit, outfit] }[first],
+				...Array.from({ length: count }, (_, i) => frame(11 + i))
 			],
 			blobs = new Map<string, Blob>();
 		for (const [i, im] of images.entries())
 			blobs.set(`m${i}`, new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>]));
-		vi.spyOn(db, 'getBlob').mockImplementation(async (h) => blobs.get(h));
+		const stored = vi.mocked(db.getBlob).getMockImplementation()!;
+		vi.mocked(db.getBlob).mockImplementation(async (h) => blobs.get(h) ?? stored(h));
 		const results = images.map((_, i) => ({ label: `east/${i}`, sha: `m${i}` }));
 		const joints = LABELS.map((label, i) => ({ label, x: 0.3 + i * 0.01, y: 0.3 + i * 0.015 }));
-		f.enqueue.mockResolvedValueOnce({ state: 'done', jobs: [{ results }] } as unknown as JobRec);
-		// one joint answer per expected motion frame; a fifth check would fall through to the fixture and fail
-		for (let i = 0; i < 4; i++)
+		f.enqueue.mockResolvedValueOnce({
+			id: 'motion',
+			state: 'done',
+			endpoint: '/characters/animations',
+			params: {},
+			createdAt: 0,
+			jobs: [{ results }]
+		} as unknown as JobRec);
+		// one joint answer per expected motion frame; another check would fall through to the fixture and fail
+		for (let i = 0; i < count; i++)
 			f.enqueue.mockResolvedValueOnce({
 				state: 'done',
 				response: { keypoints: joints },
@@ -1056,82 +1145,189 @@ test('an extra motion frame is accepted only when it is the unstripped standing 
 			} as unknown as JobRec);
 		const before = f.enqueue.mock.calls.length;
 		const error = await f
-			.run({ text: 'step softly', action: 'quiet-step', frames: 4 })
+			.run({ text: 'step softly', action: 'quiet-step', frames: 4, ...change })
 			.catch((e: Error) => e);
+		const after = f.enqueue.mock.calls.slice(before).map(([r]) => r.path),
+			render = after.indexOf('/animate-with-skeleton-v3');
 		return {
 			error,
-			measured: f.enqueue.mock.calls.slice(before).filter(([r]) => r.path === '/estimate-skeleton')
-				.length
+			// motion joint checks only: those sent before the body render
+			measured: after
+				.slice(0, render < 0 ? undefined : render)
+				.filter((p) => p === '/estimate-skeleton').length,
+			echo: f.saved().manifest.rig.animations.find((a) => a.id === 'idle')?.sources?.east
+				?.motionEcho
 		};
 	};
-	// 5 for 4 with the standing view first: that frame is dropped and exactly the 4 motion frames are measured
+	// 5 for 4 with our standing view first: that frame is dropped and exactly the 4 motion frames are measured
 	const kept = await motionWith('standing');
 	expect(String(kept.error)).not.toContain('motion frames for');
 	expect(kept.measured).toBe(4);
-	// any other extra frame still fails before joint checks
+	expect(kept.echo).toEqual({ maskIoU: 1 });
+	// Deliberately flipped (2026-11-23): this case used to fail before joint checks. Managed pixminimax sends the standing
+	// PixelLab registered first despite keep_first_frame: false, and that view need not match ours (a Standing changed
+	// without Fix frames history, an outfit drawn at creation), so the paid motion was a dead end that a re-roll repeated.
+	// The extra leading frame is now dropped by position; its silhouette overlap is recorded as evidence, never a gate.
 	const odd = await motionWith('other');
-	expect(String(odd.error)).toContain('PixelLab returned 5 motion frames for 4 requested');
-	expect(odd.measured).toBe(0);
+	expect(String(odd.error)).not.toContain('motion frames for');
+	expect(odd.measured).toBe(4);
+	expect(odd.echo?.maskIoU).toBeGreaterThan(0.5);
+	expect(odd.echo?.maskIoU).toBeLessThan(1);
+	// Deliberately flipped (phase D): the managed skeleton-v3 walk template, which sends no keep_first_frame flag, used to
+	// count an extra leading frame only when it matched our standing pixel for pixel, so a registered standing that differs
+	// from ours left the paid motion a dead end. It is now dropped by position too, with the same evidence recorded.
+	const walk = await motionWith('other', {
+		action: 'walk',
+		text: undefined,
+		animation: { model: 'skeleton-v3', frameCount: 4 }
+	});
+	expect(String(walk.error)).not.toContain('motion frames for');
+	expect(walk.measured).toBe(8);
+	expect(walk.echo?.maskIoU).toBeLessThan(1);
+	// Only exactly one extra frame is dropped: the requested count keeps every frame, and any other count still stops.
+	const walkMove = {
+		action: 'walk',
+		text: undefined,
+		animation: { model: 'skeleton-v3', frameCount: 4 }
+	};
+	const exact = await motionWith('none', walkMove);
+	expect(String(exact.error)).not.toContain('motion frames for');
+	expect(exact.measured).toBe(8);
+	expect(exact.echo).toBeUndefined();
+	const two = await motionWith('two', walkMove);
+	expect(String(two.error)).toContain('PixelLab returned 10 motion frames for 8 requested');
+	expect(two.measured).toBe(0);
 });
 
-test('managed motion drops the registered standing echo after Fix frames replaced the Standing', async () => {
+test('one interior motion frame without joints is bridged from its measured neighbors, never from requested poses', () => {
+	const pose = (x: number) => LABELS.map((label, i) => ({ label, x, y: 0.2 + i * 0.01 }));
+	const [a, c] = [pose(0.3), pose(0.5)];
+	expect(motionJoints([a, a, a])).toEqual([a, a, a]);
+	const bridged = motionJoints([a, undefined, c, c])!;
+	expect(bridged.map((points) => points[0].x)).toEqual([0.3, 0.4, 0.5, 0.5]);
+	expect(bridged[1].map((p) => p.label)).toEqual(LABELS);
+	expect(bridged[1][3].y).toBeCloseTo(0.23);
+	// An incomplete measurement counts as missing; an end frame, two frames, or a gap next to another gap still fail.
+	expect(motionJoints([a, a.slice(1), c])![1][0].x).toBe(0.4);
+	expect(motionJoints([undefined, a, c])).toBeUndefined();
+	expect(motionJoints([a, c, undefined])).toBeUndefined();
+	expect(motionJoints([a, undefined, c, undefined, c])).toBeUndefined();
+	expect(motionJoints([a, undefined, undefined, c])).toBeUndefined();
+});
+
+test('a managed motion with one unmeasured interior frame still renders the body', async () => {
 	const f = await fixture(),
-		registered = f.images.values().next().value!,
-		original = await cellHash(registered),
-		edited = structuredClone(registered),
-		frame = (shade: number) => {
-			const im = structuredClone(registered);
+		standing = (await projects.loadProject('rig-target')).project.images.values().next().value!,
+		images = [standing, 11, 12, 13, 14].map((shade) => {
+			if (typeof shade !== 'number') return shade;
+			const im = structuredClone(standing);
 			im.data[(30 * 64 + 30) * 4] = shade;
 			return im;
-		};
-	edited.data[(40 * 64 + 30) * 4] = 7; // our Standing now differs from the one PixelLab registered
-	const editedHash = await cellHash(edited);
-	f.images.set(editedHash, edited);
-	const body = f.saved().manifest.items[0];
-	f.saved().manifest.rig.rest!.east!.image = editedHash;
-	body.layers[0].cells!.default = { east: [editedHash] };
-	body.frameEdits = [
-		{
-			version: 'frames-v1',
-			id: 'standing-fix',
-			anim: 'default',
-			frames: [
-				{
-					dir: 'east',
-					cell: 0,
-					layers: [{ id: 'main', before: original, after: editedHash }],
-					cut: { before: null, after: null },
-					rest: original
-				}
-			]
-		}
-	];
-	// PixelLab sends back the standing it registered, then the 4 motion frames
-	const images = [registered, frame(11), frame(12), frame(13), frame(14)],
+		}),
 		blobs = new Map<string, Blob>();
 	for (const [i, im] of images.entries())
 		blobs.set(`m${i}`, new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>]));
-	vi.spyOn(db, 'getBlob').mockImplementation(async (h) => blobs.get(h));
+	const stored = vi.mocked(db.getBlob).getMockImplementation()!;
+	vi.mocked(db.getBlob).mockImplementation(async (h) => blobs.get(h) ?? stored(h));
 	const joints = LABELS.map((label, i) => ({ label, x: 0.3 + i * 0.01, y: 0.3 + i * 0.015 }));
-	f.enqueue.mockResolvedValueOnce({
-		state: 'done',
-		jobs: [{ results: images.map((_, i) => ({ label: `east/${i}`, sha: `m${i}` })) }]
-	} as unknown as JobRec);
-	for (let i = 0; i < 4; i++)
+	// The checks run concurrently, so the unmeasured frame (the third motion frame) is picked by its image, not call order.
+	const unmeasured = await b64(skeletonInput(images[3]).image),
+		rendered = f.enqueue.getMockImplementation()!;
+	let motionChecks = 0;
+	f.enqueue.mockImplementation(async (req, ...rest) => {
+		if (req.path === '/characters/animations')
+			return {
+				id: 'motion',
+				state: 'done',
+				endpoint: req.path,
+				params: {},
+				createdAt: 0,
+				jobs: [{ results: images.map((_, i) => ({ label: `east/${i}`, sha: `m${i}` })) }]
+			} as unknown as JobRec;
+		if (req.path !== '/estimate-skeleton' || motionChecks >= 4) return rendered(req, ...rest);
+		motionChecks++;
+		const image = (req.body as { image: { base64: string } }).image.base64;
+		return {
+			state: 'done',
+			response: { keypoints: image === unmeasured ? [] : joints },
+			jobs: []
+		} as unknown as JobRec;
+	});
+	await f.run({ text: 'step softly', action: 'quiet-step', frames: 4 });
+	expect(f.enqueue.mock.calls.map(([r]) => r.path)).toContain('/animate-with-skeleton-v3');
+	const source = f.saved().manifest.rig.animations[0].sources?.east;
+	expect(source?.motion).toBe('pixminimax:step softly');
+	// recorded as evidence with the clip: the third motion frame was bridged
+	expect(source?.motionBridged).toEqual([2]);
+});
+
+// Both managed routes drop one leading frame by position, so a Standing Fix frames replaced never stops them.
+test.each([
+	['described', 4, { text: 'step softly', action: 'quiet-step', frames: 4 }],
+	[
+		'walk template',
+		8,
+		{ action: 'walk', frames: 4, animation: { model: 'skeleton-v3', frameCount: 4 } }
+	]
+] as const)(
+	'managed %s motion drops the registered standing echo after Fix frames replaced the Standing',
+	async (_, count, change) => {
+		const f = await fixture(),
+			registered = f.images.values().next().value!,
+			original = await cellHash(registered),
+			edited = structuredClone(registered),
+			frame = (shade: number) => {
+				const im = structuredClone(registered);
+				im.data[(30 * 64 + 30) * 4] = shade;
+				return im;
+			};
+		edited.data[(40 * 64 + 30) * 4] = 7; // our Standing now differs from the one PixelLab registered
+		const editedHash = await cellHash(edited);
+		f.images.set(editedHash, edited);
+		const body = f.saved().manifest.items[0];
+		f.saved().manifest.rig.rest!.east!.image = editedHash;
+		body.layers[0].cells!.default = { east: [editedHash] };
+		body.frameEdits = [
+			{
+				version: 'frames-v1',
+				id: 'standing-fix',
+				anim: 'default',
+				frames: [
+					{
+						dir: 'east',
+						cell: 0,
+						layers: [{ id: 'main', before: original, after: editedHash }],
+						cut: { before: null, after: null },
+						rest: original
+					}
+				]
+			}
+		];
+		// PixelLab sends back the standing it registered, then the 4 motion frames
+		const images = [registered, ...Array.from({ length: count }, (_, i) => frame(11 + i))],
+			blobs = new Map<string, Blob>();
+		for (const [i, im] of images.entries())
+			blobs.set(`m${i}`, new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>]));
+		vi.spyOn(db, 'getBlob').mockImplementation(async (h) => blobs.get(h));
+		const joints = LABELS.map((label, i) => ({ label, x: 0.3 + i * 0.01, y: 0.3 + i * 0.015 }));
 		f.enqueue.mockResolvedValueOnce({
 			state: 'done',
-			response: { keypoints: joints },
-			jobs: []
+			jobs: [{ results: images.map((_, i) => ({ label: `east/${i}`, sha: `m${i}` })) }]
 		} as unknown as JobRec);
-	const before = f.enqueue.mock.calls.length;
-	const error = await f
-		.run({ text: 'step softly', action: 'quiet-step', frames: 4 })
-		.catch((e: Error) => e);
-	expect(String(error)).not.toContain('motion frames for');
-	expect(
-		f.enqueue.mock.calls.slice(before).filter(([r]) => r.path === '/estimate-skeleton')
-	).toHaveLength(4);
-});
+		for (let i = 0; i < count; i++)
+			f.enqueue.mockResolvedValueOnce({
+				state: 'done',
+				response: { keypoints: joints },
+				jobs: []
+			} as unknown as JobRec);
+		const before = f.enqueue.mock.calls.length;
+		const error = await f.run(change).catch((e: Error) => e);
+		expect(String(error)).not.toContain('motion frames for');
+		expect(
+			f.enqueue.mock.calls.slice(before).filter(([r]) => r.path === '/estimate-skeleton')
+		).toHaveLength(count);
+	}
+);
 
 test('item review binds artwork and cost while unrelated queued clips and playback choices can change', async () => {
 	const f = await fixture(),
@@ -1281,4 +1477,63 @@ test('artwork replaced during durable consumption cannot enter the subsequent re
 	);
 	expect(consumed).toHaveBeenCalledOnce();
 	expect(f.enqueue).not.toHaveBeenCalled();
+});
+
+test('a new move whose body frames lack joints is kept body only, without poses, and marked to make again', async () => {
+	const f = await fixture();
+	const measuring = f.enqueue.getMockImplementation()!;
+	// PixelLab finds no joints on the rendered body frames; nothing stands in for them.
+	f.enqueue.mockImplementation(async (req, ...rest) =>
+		req.path === '/estimate-skeleton'
+			? ({
+					id: 'joints',
+					state: 'done',
+					response: { keypoints: [] },
+					jobs: []
+				} as unknown as JobRec)
+			: measuring(req, ...rest)
+	);
+	const move = { id: 'calm', action: 'idle', replace: false, dirs: undefined };
+	await expect(f.run(move)).rejects.toThrow('valid joints were not found on every frame');
+	expect(f.saved().manifest.rig.animations.map((a) => a.id)).toEqual(['idle']);
+	const renders = () =>
+		f.enqueue.mock.calls.filter(([r]) => r.path === '/animate-with-skeleton-v3').length;
+	const before = renders();
+	await f.run({ ...move, keepUnposed: true });
+	// The same four views are rendered again here only because this fixture has no request cache; no other step is bought.
+	expect(renders() - before).toBe(4);
+	const saved = f.saved(),
+		calm = saved.manifest.rig.animations.find((a) => a.id === 'calm')!;
+	expect(calm.sources).toBeUndefined();
+	expect(Object.keys(saved.manifest.items[0].layers[0].cells!.calm!)).toHaveLength(4);
+	expect(Object.keys(saved.skeletons ?? {}).filter((key) => key.startsWith('calm/'))).toEqual([]);
+	expect(saved.manifest.rig.anchors?.hand_r?.calm).toBeUndefined();
+	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['calm']);
+	// Only a new, body-only move can be kept this way: never over existing directions or with equipment.
+	for (const change of [
+		{ replace: true, id: 'idle', dirs: ['east'] },
+		{ items: ['hat'] },
+		{ reviewBeforePublish: true }
+	])
+		await expect(f.run({ ...move, id: 'still', keepUnposed: true, ...change })).rejects.toThrow(
+			'This review choice no longer matches the move'
+		);
+});
+
+test('only a new move stopped by missing body joints in every failed view offers the unposed keep', () => {
+	const stop = (failure: 'joints' | 'overflow', step = 'render') => ({
+		error: new PaidStepError('x', 'create.errors.validJointsWereFound', undefined, {
+			step,
+			failure
+		})
+	});
+	const added = { replace: false };
+	expect(keepableUnposed(added, [stop('joints'), stop('joints')])).toBe(true);
+	expect(keepableUnposed(added, [])).toBe(false);
+	expect(keepableUnposed(added, [stop('joints'), stop('overflow')])).toBe(false);
+	// Motion joints mean no body was drawn: there is nothing to keep.
+	expect(keepableUnposed(added, [stop('joints', 'motion')])).toBe(false);
+	expect(keepableUnposed(added, [{ error: undefined }])).toBe(false);
+	expect(keepableUnposed({ replace: true }, [stop('joints')])).toBe(false);
+	expect(keepableUnposed({ dirs: ['east'] }, [stop('joints')])).toBe(false);
 });

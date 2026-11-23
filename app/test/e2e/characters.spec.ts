@@ -3021,6 +3021,73 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'States');
 	await pendingRow.click();
 	await expect(stateReview.getByText('Review Ready stance before saving.')).toBeVisible();
+	// The source frame changing after generating (as Fix frames would) only warns: the paid State still lines up, so Save stays.
+	const write = (record: StoredProject) =>
+		page.evaluate(
+			(stored) =>
+				new Promise<void>((resolve, reject) => {
+					const request = indexedDB.open('pixeldoll');
+					request.onerror = () => reject(request.error);
+					request.onsuccess = () => {
+						const database = request.result;
+						const transaction = database.transaction('projects', 'readwrite');
+						transaction.objectStore('projects').put(stored, stored.id);
+						transaction.onabort = () => {
+							database.close();
+							reject(transaction.error);
+						};
+						transaction.oncomplete = () => {
+							database.close();
+							resolve();
+						};
+					};
+				}),
+			record
+		);
+	const unchanged = await read(),
+		edited = structuredClone(unchanged),
+		editedIdle = edited.manifest.rig.animations.find(({ id }) => id === 'idle')!,
+		editedSouth = edited.manifest.items.find(({ id }) => id === edited.manifest.rig.baseItem)!
+			.layers[0].cells!.idle.south!,
+		editedCell = editedIdle.frames[2].cell,
+		redrawn = `sha256:${'e'.repeat(64)}` as const;
+	// Every body frame of this fixture is one image, so the redrawn source frame is a copy of it under a new name.
+	await page.evaluate(
+		([from, to]) =>
+			new Promise<void>((resolve, reject) => {
+				const request = indexedDB.open('pixeldoll');
+				request.onerror = () => reject(request.error);
+				request.onsuccess = () => {
+					const database = request.result,
+						blobs = database.transaction('blobs', 'readwrite').objectStore('blobs'),
+						got = blobs.get(from);
+					got.onsuccess = () => blobs.put(got.result, to);
+					blobs.transaction.oncomplete = () => {
+						database.close();
+						resolve();
+					};
+					blobs.transaction.onabort = () => reject(blobs.transaction.error);
+				};
+			}),
+		[editedSouth[editedCell]!.slice(7), redrawn.slice(7)]
+	);
+	editedSouth[editedCell] = redrawn;
+	await write(edited);
+	await reloadStudio(page);
+	await equipmentMode(page, 'States');
+	await pendingRow.click();
+	await expect(
+		stateReview.getByText('The frame this State started from changed after generating.', {
+			exact: false
+		})
+	).toBeVisible();
+	await expect(stateReview.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+	await stateReview.getByRole('button', { name: 'Close', exact: true }).click();
+	await write(unchanged);
+	await reloadStudio(page);
+	await equipmentMode(page, 'States');
+	await pendingRow.click();
+	await expect(stateReview.getByText('Review Ready stance before saving.')).toBeVisible();
 	// Grounding is offered on by default; turned off, Save keeps the returned placement.
 	const ground = stateReview.getByRole('switch', { name: 'Align to source' });
 	await expect(ground).toBeChecked();

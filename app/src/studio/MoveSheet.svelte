@@ -42,11 +42,6 @@
 	import type { StoredProject } from '../lib/store/project.ts';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
-	import {
-		INVALID_ITEM_GRID,
-		ITEM_MOVE_SAVE_CONFLICT,
-		SAVED_FRAMES_UNAVAILABLE
-	} from '../lib/items/run.ts';
 	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
@@ -61,11 +56,6 @@
 		type StateJointFitQuote,
 		type StateJointFitReview
 	} from './stateJointFit.ts';
-	import { REPAIR_BATCH_MISALIGNED } from '../lib/items/items.ts';
-	import {
-		PaidStepError,
-		type PaidReview as PaidReviewData
-	} from '../lib/pixellab/paid-results.ts';
 	import {
 		MOVE_STEPS,
 		b64,
@@ -121,10 +111,18 @@
 	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
-	import { errorText, LocalizedError, message, type Message } from '../lib/message.ts';
+	import {
+		errorKey,
+		errorTranslation,
+		LocalizedError,
+		message,
+		sameMessage,
+		type Message
+	} from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
+	import ProblemNotice from './ProblemNotice.svelte';
 	import {
 		creationDefaults,
 		moveModels,
@@ -672,17 +670,22 @@
 			!moving.spec.replace &&
 			(moving.spec.itemMethod === 'grid'
 				? !!moving.spec.itemReview &&
-					!errorText(moving.error).startsWith(INVALID_ITEM_GRID) &&
-					// A misaligned batch replays as misaligned: only a re-roll of that batch can change it.
-					!errorText(moving.error).startsWith(REPAIR_BATCH_MISALIGNED) &&
-					!errorText(moving.error).startsWith(SAVED_FRAMES_UNAVAILABLE) &&
+					!(
+						[
+							'itemRoute.errors.invalidItemGridSheet',
+							'itemRoute.errors.invalidItemGridLayout',
+							'itemRoute.errors.savedFramesUnavailable'
+						] as const
+					).some((key) => key === errorKey(moving.error)) &&
 					$queue.jobs.some(
 						(job) =>
 							job.activityScope === moving.spec?.activityScope &&
 							job.endpoint === (moving.spec?.redrawItem ? '/edit-images-v2' : '/inpaint-v3') &&
 							job.state === 'done'
 					)
-				: !moving.spec.itemReview && errorText(moving.error).startsWith(ITEM_MOVE_SAVE_CONFLICT))
+				: !moving.spec.itemReview &&
+					(errorKey(moving.error) === 'itemRoute.errors.itemMoveSaveConflict' ||
+						errorKey(moving.error) === 'itemRoute.errors.itemMoveSaveConflictAlso'))
 	);
 	const retrySpec = $derived<MoveSpec | undefined>(
 		moving.spec
@@ -740,10 +743,11 @@
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
 	let paid = $state.raw<MovePaidReview | null>(null);
+	// The same stop by its code and values, never by comparing displayed text.
 	const errorInReview = $derived(
 		!!moving.error &&
 			!!paid?.views.some((view) =>
-				view.notes.some((note) => displayNestedMessage(note) === displayError(moving.error))
+				view.notes.some((note) => sameMessage(note, errorTranslation(moving.error)))
 			)
 	);
 	const hasFrameRecovery = $derived(
@@ -807,50 +811,6 @@
 
 	// A new seed while a reviewed request is still at PixelLab would buy that view again before its result is known.
 	const paidRunning = $derived(!!paid?.views.some((view) => view.state === 'running'));
-	// An item repair stopped by a misaligned batch: its earlier batches are kept; only that batch is re-rolled.
-	const batchReview = $derived.by((): (PaidReviewData & { start: string }) | null => {
-		const error = moving.error,
-			spec = moving.spec;
-		if (!mine || !spec || !(error instanceof PaidStepError)) return null;
-		const step = error.paid.step;
-		if (!step.startsWith('grid-batch:')) return null;
-		const records = $queue.jobs.filter(
-			(job) => job.activityScope === spec.activityScope && job.state === 'done'
-		);
-		return {
-			start: step.slice('grid-batch:'.length),
-			views: [],
-			spent: +records.reduce((sum, job) => sum + job.gens, 0).toFixed(2),
-			recordIds: records.map((job) => job.id),
-			options: [
-				{
-					id: 'reroll-batch',
-					label: message('moveSheet.rerollBatch'),
-					detail: message('moveSheet.rerollBatchDetail'),
-					gens: error.paid.gens ?? 0,
-					paid: true,
-					primary: true
-				}
-			]
-		};
-	});
-	function rerollBatch() {
-		if (!moving.spec || !batchReview) return;
-		const projectId = moving.projectId,
-			spec = $state.snapshot(moving.spec),
-			start = batchReview.start;
-		withKey(() => {
-			void startMove(projectId, {
-				...spec,
-				reuseItemFrames: undefined,
-				gridReroll: {
-					...spec.gridReroll,
-					[start]: (spec.gridReroll?.[start] ?? 0) + 1 + Math.floor(Math.random() * 1_000_000)
-				}
-			});
-			ui.sheet = 'move';
-		}, recoveryTier);
-	}
 	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. Make room
 	 *  adjusts the frame first (free; this stopped move waits for it) and then continues the same move. */
 	function choosePaid(option: MovePaidOption) {
@@ -1794,9 +1754,7 @@
 							</li>{/each}
 					</ul>
 				</details>{/if}
-			{#if moving.error}<p class="notice bad small" role="alert">
-					{displayError(moving.error)}<ReportButton error={moving.error} />
-				</p>{/if}
+			{#if moving.error}<ProblemNotice error={moving.error} />{/if}
 			{#if queue.role === 'follower'}<p class="notice small">
 					{moving.spec.redrawItem
 						? t('moveSheet.review.redrawInManagingTab')
@@ -1860,9 +1818,7 @@
 				{/each}
 			</ol>
 			<!-- The paid review names each stopped view's reason under its frames; the summary shows only a reason it does not. -->
-			{#if moving.error && !errorInReview}<p class="notice bad small">
-					<CircleAlert size={14} />{displayError(moving.error)}<ReportButton error={moving.error} />
-				</p>{/if}
+			{#if moving.error && !errorInReview}<ProblemNotice error={moving.error} />{/if}
 			{#if moving.error}
 				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
 						{retryAccess.error || recoveryAccess.error}
@@ -1888,12 +1844,6 @@
 			{#if recoveryChecking}<p class="muted small" role="status">
 					{t('moveSheet.checkingCached')}
 				</p>{/if}
-			{#if batchReview && moving.spec}<PaidReview
-					review={batchReview}
-					name={nice(moving.spec.id)}
-					blocked={!!recoveryAccess.error || tierBlocked(recoveryTier)}
-					onchoose={rerollBatch}
-				/>{/if}
 			{#if paid && moving.spec && (paid.options.length || paid.views.some((view) => view.state !== 'ready'))}<PaidReview
 					review={paid}
 					name={nice(moving.spec.id)}
@@ -2008,11 +1958,7 @@
 						onclick={matchColors}>{t('moveSheet.matchColors')}</button
 					>{/if}
 			{/if}
-			{#if recoveryError}<p class="notice bad small">
-					<CircleAlert size={14} />{displayNestedMessage(recoveryError)}<ReportButton
-						error={recoveryError}
-					/>
-				</p>{/if}
+			{#if recoveryError}<ProblemNotice error={recoveryError} />{/if}
 			{#each moving.warnings as warning (warning)}<p class="notice warn small">
 					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 				</p>{/each}

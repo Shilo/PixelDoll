@@ -453,6 +453,8 @@
 		"acceptAsIs": "Accept as is",
 		"pendingWorkBusy": "A move or setup is running or stopped. Finish or dismiss it to use these actions.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Accepts the current artwork without spending credits. The detected issues remain in its details.",
+		"keepWithoutMoves": "Keep without those moves",
+		"keepWithoutMovesDetail": "Keeps the item from its complete moves without spending credits. It is hidden in {moves}, which stay listed as missing so you can make them later at their own price.",
 		"youAcceptedThisArtworkWithItsRecorded": "You accepted this artwork with its recorded quality notes.",
 		"generateItemForMove": "Generate item for move",
 		"labelMakeNameForMissingName": "Make {name} for {missingName}",
@@ -1734,7 +1736,8 @@
 			"canceled": "Canceled. Generations already used are not refunded. Requests already sent may still finish and charge. Review Activity for their outcomes.",
 			"stopped": "Generation stopped. Review Activity before trying again.",
 			"setupStopped": "Setup stopped. Review Activity before trying again.",
-			"noFrames": "PixelLab did not return usable frames."
+			"noFrames": "PixelLab did not return usable frames.",
+			"notSavedAutomatically": "Not saved automatically: {reason}"
 		},
 		"status": {
 			"starting": "Starting",
@@ -2122,12 +2125,14 @@
 		"estimate": "Est. {gens} gens",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
-		"waitingForRepairReview": "Waiting for item frame review"
+		"waitingForRepairReview": "Waiting for item frame review",
+		"needsRedo": "Joints not found: make it again to animate items on it"
 	},
 	"setup": {
 		"warnings": {
 			"headroom": "{direction} leaves {count} px above the head; tall hair or hats may need a larger frame.",
-			"keptFrames": "{name} keeps its existing frames. Make it again after setup to animate it onto future moves."
+			"keptFrames": "{name} keeps its existing frames. Make it again after setup to animate it onto future moves.",
+			"moveSkipped": "{move} was skipped: PixelLab could not find valid joints on one of its frames. Make it again to animate items on it."
 		},
 		"title": "Set up character",
 		"rigSetup": "Rig setup",
@@ -2166,7 +2171,14 @@
 			"jointsMissing": "PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.",
 			"noCharacterId": "PixelLab did not return a managed character ID. Existing artwork is unchanged.",
 			"referenceChanged": "A standing reference changed during setup.",
-			"characterChanged": "The character changed during setup. Its current work has been kept."
+			"characterChanged": "The character changed during setup. Its current work has been kept.",
+			"squareFrame": "Rig setup needs a square frame of 32–256 whole pixels.",
+			"humanoidOnly": "Rig setup currently supports humanoid characters. This character uses a different body template.",
+			"singleBaseLayer": "Rig setup needs a single frozen base-body layer.",
+			"chooseReference": "Choose a standing reference move.",
+			"noStandingReference": "{move} has no standing view for every direction. Choose a move with every view.",
+			"needsStandingViews": "Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.",
+			"emptyBodyFrame": "{move} has an empty body frame. Fix or delete that move, then set up again."
 		},
 		"newRegistration": "Register again"
 	},
@@ -2211,7 +2223,7 @@
 			"bodyFramesTheirQuality": "These body frames or their quality checks changed since review. Nothing was saved and no request was made. Review them again.",
 			"characterChangedAnotherTab2": "This character changed in another tab before the move could be saved. Reopen it before trying again.",
 			"demoStandingReferenceMissing": "The demo standing reference is missing.",
-			"resultMissingStorage": "result {label} missing in storage",
+			"resultMissingStorage": "A paid result is missing from this browser's storage.",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.",
 			"animationExceedsPxFrame": "{move} {direction}: the body frames do not fit the {w} px frame. They were kept for review; nothing was saved.",
@@ -2221,11 +2233,11 @@
 			"colorMatchingCannotRepair": "{direction}: color matching cannot repair pose, feet or border failures.",
 			"colorDriftOutsideBounded": "{direction}: the color drift is outside the bounded reference-palette repair.",
 			"boundedColorMatchingStill": "{direction}: bounded color matching still fails the palette quality check. No new joint checks were started.",
-			"jointsFoundEveryFrame": "{label}: joints not found on every frame",
-			"pixellabDroppedDirectionBusy": "{label}: PixelLab dropped the direction (busy). Try again.",
-			"pixellabReturnedMotionFrames": "{label}: PixelLab returned {returned} motion frames for {expected} requested. No joint checks or body render were requested for this view.",
-			"motionExceedsPxFrame": "{label}: the motion does not fit the {size} px frame. Its frames were kept for review; nothing was saved.",
-			"pixellabReturnedEmptyMotion": "{label}: PixelLab returned an empty motion frame",
+			"jointsFoundEveryFrame": "{move} {direction}: joints not found on every frame",
+			"pixellabDroppedDirectionBusy": "{move} {direction}: PixelLab dropped the direction (busy). Try again.",
+			"pixellabReturnedMotionFrames": "{move} {direction}: PixelLab returned {returned} motion frames for {expected} requested. No joint checks or body render were requested for this view.",
+			"motionExceedsPxFrame": "{move} {direction}: the motion does not fit the {size} px frame. Its frames were kept for review; nothing was saved.",
+			"pixellabReturnedEmptyMotion": "{move} {direction}: PixelLab returned an empty motion frame",
 			"pixellabReturnedView": "PixelLab returned no {direction} view",
 			"viewDoesFitPx": "The {direction} view does not fit the {cell} px frame. Increase Frame or reduce Body size before creating again.",
 			"pixellabReturnedEmptyView": "PixelLab returned an empty {direction} view.",
@@ -2242,8 +2254,8 @@
 			"cachedBodyRenderIncomplete": "{direction}: the cached body render is incomplete.",
 			"cachedBodyFramesDo": "{direction}: the cached body frames do not fit this character. No body was regenerated.",
 			"demoStandingBodyFacing": "The demo has no standing body facing {id}.",
-			"requestStopped": "{label}: {state}{error}",
-			"requestStoppedResume": "{label}: {state}{error}. Generation stopped without resending. Review this request in Activity before starting again.",
+			"requestStopped": "A PixelLab request ended as {state}{error}.",
+			"requestStoppedResume": "A PixelLab request ended as {state}{error}. Generation stopped without resending. Review this request in Activity before starting again.",
 			"promptLength": "Enter a prompt of 1–2,000 characters.",
 			"invalidSeed": "Invalid seed.",
 			"invalidCamera": "Invalid camera.",
@@ -2270,7 +2282,7 @@
 			"moveAnimationFramesBlocked": "This model and canvas don’t support {frames} frames. No generation was requested.",
 			"describeMoveBlocked": "Describe this move before generating it. No generation was requested.",
 			"chooseExistingMoveRepairing": "Choose an existing move before repairing its equipment.",
-			"liftedJointsOutside": "{label}: the lifted motion still has joints outside the {size} px frame. No body render was requested.",
+			"liftedJointsOutside": "{move} {direction}: the lifted motion still has joints outside the {size} px frame. No body render was requested.",
 			"reviewChoiceInvalid": "This review choice no longer matches the move. Review it again. No request was made."
 		},
 		"steps": {
@@ -2484,7 +2496,6 @@
 			"frame": "Frame {number}",
 			"unavailable": "This frame needs body artwork and measured joints for every selected facing.",
 			"changed": "The selected starting frame changed. Choose the source again. No generation was requested.",
-			"route": "This route starts from Standing. Choose a different animation model to use a saved frame.",
 			"stateTarget": "A State cannot be replaced as a Move."
 		},
 		"loop": "Loop",
@@ -2567,7 +2578,7 @@
 			"queueReplacement": "Queue replacement: {move} views"
 		},
 		"titleRepair": "Repair item frames",
-		"heldBy": "{move} failed on {character}, so new moves wait. Open it for recovery options.",
+		"heldBy": "{move} failed on {character}. New moves wait until you retry or discard it there, so its paid results stay recoverable. Open it for the options.",
 		"open": "Open {character}",
 		"progressLabel": "Current move generation",
 		"retryFeature": "Generating this move again",
@@ -2677,9 +2688,7 @@
 			"currentFrame": "Current frame {number}",
 			"redrawnFrame": "Redrawn frame {number}",
 			"repairedFrame": "Repaired frame {number}"
-		},
-		"rerollBatch": "Re-roll this batch",
-		"rerollBatchDetail": "The earlier batches stay as they are. The estimate covers this batch and the ones after it, which were not bought yet."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2696,12 +2705,16 @@
 			"incompleteReferenceFrames": "PixelLab returned incomplete reference or standing frames. No dependent request was sent.",
 			"standingFrameSize": "PixelLab returned a standing frame of the wrong size. No dependent request was sent.",
 			"layersMismatch": "Equipment layers do not match this slot. No generation was requested.",
-			"repairBatchMisaligned": "A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.",
 			"reviewChanged": "This item or its checks changed. Reopen it before accepting its current artwork.",
 			"paletteReviewChanged": "This item or its colors changed. Review the color match again.",
 			"paletteSaveChanged": "This item, body or material changed. Existing colors were kept; review again.",
 			"invalidItemGridSheet": "PixelLab returned an unusable item grid. Expected exactly one sheet. Existing artwork was kept.",
 			"invalidItemGridLayout": "PixelLab returned an unusable item grid. The sheet has the wrong frame layout. Existing artwork was kept.",
+			"savedFramesUnavailable": "Completed frames matching the current body and equipment are unavailable. No generation was requested.",
+			"itemMoveSaveConflict": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity.",
+			"itemMoveSaveConflictAlso": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity. Another view also stopped: {reason}",
+			"keepWithoutStanding": "This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.",
+			"keepWithoutNothingLeft": "This item has no complete move to keep. Make the missing frames instead.",
 			"savedFrameMissing": "A saved frame of this item is missing from storage."
 		}
 	},
@@ -2809,7 +2822,8 @@
 		"review": "Review {name} before saving.",
 		"generated": "Generated",
 		"sourceMissing": "Source unavailable",
-		"sourceChanged": "The source changed after generating, so this result can’t be saved. Discard it and try again.",
+		"sourceChanged": "The character’s frame size, pivot or views changed after generating, so this result would not line up. Discard it and try again.",
+		"sourceChangedKeep": "The frame this State started from changed after generating. You can still save it as it is, or discard it and try again.",
 		"keepGrounded": "Align to source",
 		"groundedHint": "Feet moved to match the source. Turn off to undo.",
 		"readyRow": "Ready to review",
@@ -3061,6 +3075,8 @@
 		"liftDetailWarned": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame. This is above the {limit} px feet check, so the move is saved with a feet warning.",
 		"reroll": "Re-roll {views}",
 		"rerollDetail": "A re-roll buys a new attempt only for those views. Every other view keeps its paid results.",
+		"keepUnposedDetail": "Saves the body frames as they are. Joints were not found on some frames, so items can’t be fitted to this move until you make it again.",
+		"keepUnposed": "Keep without fitting items",
 		"pending": "Still to buy: about {gens} gens.",
 		"liftable": "Can be lifted to fit: feet rise up to {px} px in {frames} of {total} frames.",
 		"notLiftable": "Lifting cannot fit this motion: it is cut at a side or at the top."
@@ -3068,7 +3084,11 @@
 	"createReview": {
 		"resume": "Continue with paid results",
 		"register": "Register the drawn views again",
-		"registerDetail": "Keeps the paid drawing and buys one new registration of the same views."
+		"registerDetail": "Keeps the paid drawing and buys one new registration of the same views.",
+		"lift": "Raise to fit",
+		"liftDetail": "Keeps the paid drawing, raises every view {px} px in its {size} px frame and buys one new registration of the same views.",
+		"largerFrame": "Use a {size} px frame",
+		"largerFrameDetail": "Keeps the paid drawing, places the same views in a {size} px frame and buys one new registration. Moves and items made later in a larger frame may cost more."
 	},
 	"adjustFrame": {
 		"title": "Adjust frame",
@@ -3214,5 +3234,56 @@
 		"copyFailed": "Could not copy. Select the text above and copy it instead.",
 		"open": "Open on GitHub",
 		"unexpected": "Something went wrong. If it keeps happening, please report it."
+	},
+	"problem": {
+		"details": "Details",
+		"title": {
+			"frame-count": "PixelLab sent back an unexpected number of frames",
+			"overflow": "Part of the character went past the frame",
+			"empty": "PixelLab sent back empty frames",
+			"dropped": "PixelLab was busy and skipped a view",
+			"joints": "Joints could not be found on some frames",
+			"stopped": "A paid request did not finish",
+			"quality": "The new frames did not pass the quality checks",
+			"changed": "Something changed while this was working",
+			"missing": "Some saved results are not on this device",
+			"plan": "Your PixelLab plan does not include this",
+			"credits": "Your PixelLab account is out of credits",
+			"key": "PixelLab did not accept your token",
+			"offline": "PixelLab could not be reached",
+			"declined": "PixelLab declined this request",
+			"unexpected": "Something went wrong",
+			"uncertain": "A paid result may be lost",
+			"poses": "This move has no poses for equipment yet",
+			"method": "This item cannot be posed on this character",
+			"quote": "PixelLab did not confirm the price",
+			"browser": "This browser cannot do this safely",
+			"exportId": "Another character uses this Export ID",
+			"busy": "PixelLab is busy"
+		},
+		"next": {
+			"frame-count": "Your paid results are kept. Review them, then continue or try again.",
+			"overflow": "Choose a lift or a larger frame if one is offered, or try again.",
+			"empty": "Your paid results stay in Activity. Try again with a new attempt.",
+			"dropped": "Wait a moment, then try again.",
+			"joints": "Anything paid stays in Activity. Try a new attempt, or start from a clearer standing pose.",
+			"stopped": "Check Activity to see what happened before starting again.",
+			"quality": "Review the results, then keep them or try again.",
+			"changed": "Review it again before continuing.",
+			"missing": "Check Activity for what is still saved before making it again.",
+			"plan": "Upgrade your plan on PixelLab, or choose an option your plan includes.",
+			"credits": "Add credits on PixelLab, then try again.",
+			"key": "Connect PixelLab again with a valid token.",
+			"offline": "Check your connection, then try again.",
+			"declined": "Change the description, then try again.",
+			"unexpected": "Report it so it can be fixed. Anything already paid for stays in Activity.",
+			"uncertain": "Check Activity before trying again: a new attempt could charge again.",
+			"poses": "Set up its poses first, then make the equipment.",
+			"method": "Choose Automatic, then try again.",
+			"quote": "Try again in a moment, or choose another model.",
+			"browser": "Use a current browser to continue.",
+			"exportId": "Choose a different Export ID.",
+			"busy": "Wait a moment, then try again."
+		}
 	}
 }

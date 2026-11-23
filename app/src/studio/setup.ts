@@ -1,7 +1,7 @@
 // Paid setup is explicit, resumable through the same queue as creation, and commits only when every measurement exists.
 import { b64, joints, latestOutcome, provOf, run, type Progress } from './create.ts';
 import { attachImportedRig, setupPlan, type SetupPlan } from '../lib/rig/setup.ts';
-import { DIRECTIONS, cellHash, type Keypoint } from '../lib/rig/rig.ts';
+import { DEFAULT_MOVE, DIRECTIONS, cellHash, type Keypoint, type Sha256 } from '../lib/rig/rig.ts';
 import { retainMoveChoices } from '../lib/store/identity.ts';
 import { skeletonInput } from '../lib/rig/estimate.ts';
 import { png, routes } from '../lib/pixellab/routes.ts';
@@ -11,6 +11,11 @@ import type { Provenance } from '../lib/store/manifest.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { LocalizedError, message } from '../lib/message.ts';
+import { moveName, type MoveRef } from './model.ts';
+
+/** Move names in the user's words for setup's messages. */
+const moveWordsOf = (project: { manifest: { rig: { animations: MoveRef[] } } }) => (id: string) =>
+	moveName(id, project.manifest.rig.animations);
 
 export interface SetupSpec {
 	projectId: string;
@@ -57,7 +62,7 @@ export async function setupRegistrationStuck(spec: SetupSpec): Promise<boolean> 
 	const { project } = await loadProject(spec.projectId);
 	if (project.manifest.rig.baseHash !== spec.baseHash || !spec.looks.trim()) return false;
 	const latest = await latestOutcome(
-		await registration(project, await setupPlan(project, spec.restAnim), spec)
+		await registration(project, await setupPlan(project, spec.restAnim, moveWordsOf(project)), spec)
 	);
 	return (
 		!!latest &&
@@ -81,7 +86,7 @@ export async function setupCharacter(
 			'Describe the character’s existing appearance first.',
 			'setup.errors.looksRequired'
 		);
-	const plan = await setupPlan(project, spec.restAnim),
+	const plan = await setupPlan(project, spec.restAnim, moveWordsOf(project)),
 		measured = new Map<string, Keypoint[]>(),
 		provenance: Provenance[] = [];
 	if (!plan.frames.size)
@@ -92,7 +97,19 @@ export async function setupCharacter(
 	let done = 0;
 	progress({ step: 'joints', done, total: plan.frames.size, recIds: [] });
 	const frames = [...plan.frames],
-		observations: Provenance[] = new Array(frames.length);
+		observations: Provenance[] = new Array(frames.length),
+		// A frame of a standing view, the standing move or Default without joints stops setup; any other frame only skips its
+		// move (attachImportedRig).
+		standingViews = new Set(Object.values(plan.rest)),
+		layer = project.manifest.items.find((i) => i.id === project.manifest.rig.baseItem)?.layers[0],
+		standingHashes = new Set<string>([
+			...(await Promise.all(Object.values(plan.rest).map((im) => cellHash(im!)))),
+			...[plan.restAnim, DEFAULT_MOVE].flatMap((move) =>
+				Object.values(layer?.cells?.[move] ?? {}).flatMap((cells) =>
+					(cells ?? []).filter((hash): hash is Sha256 => !!hash)
+				)
+			)
+		]);
 	let next = 0,
 		failure: { error: unknown } | undefined;
 	// Bound prepared work by the largest supported plan; the shared queue applies the actual account and busy-account limits.
@@ -106,7 +123,7 @@ export async function setupCharacter(
 						[hash, im] = frames[index];
 					try {
 						const k = await joints(im, true, undefined, spec.activityScope);
-						if (!k)
+						if (!k && (standingViews.has(im) || standingHashes.has(hash)))
 							throw new LocalizedError(
 								'PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.',
 								'setup.errors.jointsMissing'
@@ -126,7 +143,7 @@ export async function setupCharacter(
 							)
 						);
 						if (failure) return;
-						measured.set(hash, k);
+						if (k) measured.set(hash, k);
 						progress({ step: 'joints', done: ++done, total: plan.frames.size, recIds: [] });
 					} catch (error) {
 						failure ??= { error };

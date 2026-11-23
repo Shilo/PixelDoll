@@ -5844,8 +5844,7 @@ test('reload restores failed create, move and setup for review without paid subm
 		const record = await db.get('projects', 'studio-move');
 		await db.put('projects', 'studio-move', {
 			...record,
-			error:
-				'A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.'
+			error: 'The review could not be saved. Use saved frames to recover it without another charge.'
 		});
 		localStorage.setItem('pixeldoll.locale', 'fr');
 	});
@@ -5856,7 +5855,7 @@ test('reload restores failed create, move and setup for review without paid subm
 		(window as unknown as { __studio: { ui: { sheet: string } } }).__studio.ui.sheet = 'move';
 	});
 	await expect(page.getByRole('dialog')).toContainText(
-		'Un lot de réparation a renvoyé des images décalées. Les lots restants ont été arrêtés et le visuel existant a été conservé.'
+		'La vérification n’a pas pu être enregistrée. Utilisez les images enregistrées pour la récupérer sans frais supplémentaires.'
 	);
 	expect(posts).toEqual([]);
 });
@@ -5904,7 +5903,7 @@ test('moves waiting behind another character’s failed move point to it', async
 	await page.getByRole('button', { name: /^Jump Waiting for the failed move/ }).click();
 	const sheet = page.getByRole('dialog', { name: 'New move', exact: true });
 	await expect(sheet).toContainText(
-		'Cast failed on Failed mover, so new moves wait. Open it for recovery options.'
+		'Cast failed on Failed mover. New moves wait until you retry or discard it there, so its paid results stay recoverable. Open it for the options.'
 	);
 	await sheet.getByRole('button', { name: 'Open Failed mover', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Failed mover');
@@ -5930,6 +5929,38 @@ test('moves waiting behind another character’s failed move point to it', async
 	await expect(sheet.getByRole('textbox', { name: 'Describe the motion' })).toBeVisible();
 	await expect(sheet.getByText('Cast stopped')).toHaveCount(0);
 	await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toHaveCount(0);
+});
+
+test('a move rig setup skipped is marked in the Moves list to make again', async ({
+	page
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(/* @vite-ignore */ path),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ dbPath);
+		const rec = await db.get('projects', s.doc.id),
+			walk = rec.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk');
+		delete walk.sources;
+		rec.rigQa = { ...rec.rigQa, redo: ['walk'] };
+		await db.put('projects', s.doc.id, rec);
+	});
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await expect(
+		page.getByRole('button', {
+			name: /^Walk .*Joints not found: make it again to animate items on it/
+		})
+	).toBeVisible();
 });
 
 test('Activity shows plan-derived capacity without a manual override or network request', async ({
@@ -6266,6 +6297,8 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 			projectId: s.doc.id,
 			status: 'failed',
 			error: run.ITEM_MOVE_SAVE_CONFLICT,
+			// recovery routes on the stored code, never on the English text
+			message: { key: 'itemRoute.errors.itemMoveSaveConflict' },
 			requestText: s.REQUEST_TEXT,
 			progress: { step: 'items', done: 0, total: 1, recIds: [] },
 			spec: {

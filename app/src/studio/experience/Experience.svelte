@@ -3,7 +3,7 @@
 	import SurfaceChevron from '../SurfaceChevron.svelte';
 	import { openerLabel } from '../openerLabel.ts';
 	import { formatNumber, t } from 'svelte-whisper';
-	import { displayMessage } from '../../lib/i18n.ts';
+	import { displayMessage, displayNestedMessage } from '../../lib/i18n.ts';
 	import { message } from '../../lib/message.ts';
 	import { onMount, tick, untrack } from 'svelte';
 	import Toolbar from '../Toolbar.svelte';
@@ -906,7 +906,7 @@
 			<PhonePanel />
 		</aside>
 	{/if}
-	{#if doc.error}<p class="experience-error" role="alert">{doc.error}</p>{/if}
+	{#if doc.error}<p class="experience-error" role="alert">{displayNestedMessage(doc.error)}</p>{/if}
 </div>
 
 <style>

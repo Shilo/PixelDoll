@@ -445,6 +445,8 @@
 		"acceptAsIs": "このまま承認",
 		"pendingWorkBusy": "モーションまたはセットアップが実行中か停止しています。これらの操作を使うには、完了するか破棄してください。",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "クレジットを消費せずに現在のアートワークを承認します。検出された問題は詳細に残ります。",
+		"keepWithoutMoves": "そのモーションなしで残す",
+		"keepWithoutMovesDetail": "クレジットを使わずに、そろっているモーションだけでアイテムを残します。{moves}では非表示になり、後で個別の価格で作れるよう不足として表示されたままになります。",
 		"youAcceptedThisArtworkWithItsRecorded": "記録された品質メモとともに、このアートワークを承認しました。",
 		"generateItemForMove": "モーション用のアイテムを生成",
 		"labelMakeNameForMissingName": "{missingName}用の{name}を作成",
@@ -1683,7 +1685,8 @@
 			"canceled": "キャンセルしました。消費済みの生成回数は戻りません。送信済みのリクエストは完了し、料金が発生する場合があります。結果はアクティビティで確認してください。",
 			"stopped": "生成を停止しました。再試行する前にアクティビティを確認してください。",
 			"setupStopped": "セットアップを停止しました。再試行する前にアクティビティを確認してください。",
-			"noFrames": "PixelLabから使用できるフレームが返されませんでした。"
+			"noFrames": "PixelLabから使用できるフレームが返されませんでした。",
+			"notSavedAutomatically": "自動保存されませんでした：{reason}"
 		},
 		"status": {
 			"starting": "開始中",
@@ -2060,12 +2063,14 @@
 		"estimate": "約{gens}回分",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px、ピボット {x},{y}",
-		"waitingForRepairReview": "装備フレームの確認待ち"
+		"waitingForRepairReview": "装備フレームの確認待ち",
+		"needsRedo": "関節が見つかりません。アイテムを動かすにはもう一度作成してください"
 	},
 	"setup": {
 		"warnings": {
 			"headroom": "{direction}向きでは頭上の余白が{count} pxです。高さのある髪型や帽子には、より大きなフレームが必要な場合があります。",
-			"keptFrames": "{name}の既存のフレームはそのまま残ります。今後追加するモーションでも動くようにするには、セットアップ後に作り直してください。"
+			"keptFrames": "{name}の既存のフレームはそのまま残ります。今後追加するモーションでも動くようにするには、セットアップ後に作り直してください。",
+			"moveSkipped": "{move}はスキップされました。PixelLabがそのフレームの1つで有効な関節を見つけられませんでした。アイテムを動かすには、もう一度作成してください。"
 		},
 		"title": "キャラクターを設定",
 		"rigSetup": "リグのセットアップ",
@@ -2104,7 +2109,14 @@
 			"jointsMissing": "PixelLabが素体のフレームから有効な関節を18個すべて検出できませんでした。既存のアートワークは変わりません。再接続するか、立ちポーズがよりはっきり見える参照画像を選んで再開してください。",
 			"noCharacterId": "PixelLabから管理用のキャラクターIDが返されませんでした。既存のアートワークは変わりません。",
 			"referenceChanged": "セットアップ中に立ちの参照画像が変更されました。",
-			"characterChanged": "セットアップ中にキャラクターが変更されました。現在の作業は残しています。"
+			"characterChanged": "セットアップ中にキャラクターが変更されました。現在の作業は残しています。",
+			"squareFrame": "リグのセットアップには、32〜256の整数ピクセルの正方形フレームが必要です。",
+			"humanoidOnly": "リグのセットアップは現在、人型キャラクターのみに対応しています。このキャラクターは別の体のテンプレートを使っています。",
+			"singleBaseLayer": "リグのセットアップには、固定された素体レイヤーが1枚だけ必要です。",
+			"chooseReference": "立ちポーズの参照にするモーションを選んでください。",
+			"noStandingReference": "{move}にはすべての向きの立ちポーズがありません。すべての向きがあるモーションを選んでください。",
+			"needsStandingViews": "リグのセットアップには、保存された元の立ちポーズか、東西南北の4方向すべてが必要です。足りない向きを先に読み込んでください。",
+			"emptyBodyFrame": "{move}に空の素体フレームがあります。そのモーションを修正または削除してから、もう一度セットアップしてください。"
 		},
 		"newRegistration": "もう一度登録"
 	},
@@ -2149,7 +2161,7 @@
 			"bodyFramesTheirQuality": "確認後に、これらの体のフレームまたは品質チェックが変更されました。何も保存しておらず、リクエストも送信していません。もう一度確認してください。",
 			"characterChangedAnotherTab2": "モーションを保存する前に、別のタブでこのキャラクターが変更されました。やり直す前に開き直してください。",
 			"demoStandingReferenceMissing": "デモの立ちの参照画像が見つかりません。",
-			"resultMissingStorage": "結果{label}がストレージにありません",
+			"resultMissingStorage": "支払い済みの結果がこのブラウザのストレージにありません。",
 			"pixellabReturnedIncompleteInvalid": "{direction}：PixelLabが返した立ちポーズの関節データが不完全か無効です。この関節データによるアニメーション生成は開始していません。既存の結果は残しています。",
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLabから返されたフレーム数が正しくありません。有料の再試行は開始していません。もう一度リクエストする前にアクティビティを確認してください。",
 			"animationExceedsPxFrame": "{move} {direction}：体のフレームが{w} pxのフレームに収まりません。確認用に保持されています。何も保存されていません。",
@@ -2159,11 +2171,11 @@
 			"colorMatchingCannotRepair": "{direction}：色合わせでは、ポーズ、足元、フレームの端に関する問題は修復できません。",
 			"colorDriftOutsideBounded": "{direction}：色のずれが、参照パレットで修復できる範囲を超えています。",
 			"boundedColorMatchingStill": "{direction}：範囲内で色を合わせても、パレットの品質チェックに合格しません。新しい関節チェックは開始していません。",
-			"jointsFoundEveryFrame": "{label}：関節が見つからなかったフレームがあります",
-			"pixellabDroppedDirectionBusy": "{label}：PixelLabの混雑により、この向きの処理は完了しませんでした。もう一度お試しください。",
-			"pixellabReturnedMotionFrames": "{label}：{expected}フレームをリクエストしましたが、PixelLabから返されたモーションのフレームは{returned}フレームでした。このビューでは関節チェックも体の描画もリクエストしていません。",
-			"motionExceedsPxFrame": "{label}：モーションが{size} pxのフレームに収まりません。フレームは確認用に保持されています。何も保存されていません。",
-			"pixellabReturnedEmptyMotion": "{label}：PixelLabから空のモーションのフレームが返されました",
+			"jointsFoundEveryFrame": "{move} {direction}：関節が見つからなかったフレームがあります",
+			"pixellabDroppedDirectionBusy": "{move} {direction}：PixelLabの混雑により、この向きの処理は完了しませんでした。もう一度お試しください。",
+			"pixellabReturnedMotionFrames": "{move} {direction}：{expected}フレームをリクエストしましたが、PixelLabから返されたモーションのフレームは{returned}フレームでした。このビューでは関節チェックも体の描画もリクエストしていません。",
+			"motionExceedsPxFrame": "{move} {direction}：モーションが{size} pxのフレームに収まりません。フレームは確認用に保持されています。何も保存されていません。",
+			"pixellabReturnedEmptyMotion": "{move} {direction}：PixelLabから空のモーションのフレームが返されました",
 			"pixellabReturnedView": "PixelLabから{direction}のビューが返されませんでした",
 			"viewDoesFitPx": "{direction}のビューが{cell} pxのフレームに収まりません。もう一度作成する前に、フレームを大きくするか体のサイズを小さくしてください。",
 			"pixellabReturnedEmptyView": "PixelLabから空の{direction}のビューが返されました。",
@@ -2180,8 +2192,8 @@
 			"cachedBodyRenderIncomplete": "{direction}：キャッシュされた体の描画が不完全です。",
 			"cachedBodyFramesDo": "{direction}：キャッシュされた体のフレームがこのキャラクターに合いません。体は再生成していません。",
 			"demoStandingBodyFacing": "デモには{id}向きの立ちポーズの素体画像がありません。",
-			"requestStopped": "{label}：{state}{error}",
-			"requestStoppedResume": "{label}：{state}{error}。再送信せずに生成を停止しました。もう一度始める前に、アクティビティでこのリクエストを確認してください。",
+			"requestStopped": "PixelLabへのリクエストが「{state}」で終了しました{error}。",
+			"requestStoppedResume": "PixelLabへのリクエストが「{state}」で終了しました{error}。再送信せずに生成を停止しました。もう一度始める前に、アクティビティでこのリクエストを確認してください。",
 			"promptLength": "プロンプトは1～2,000文字で入力してください。",
 			"invalidSeed": "シードが無効です。",
 			"invalidCamera": "カメラが無効です。",
@@ -2208,7 +2220,7 @@
 			"moveAnimationFramesBlocked": "このモデルとキャンバスサイズでは{frames}フレームに対応していません。生成リクエストは送信されていません。",
 			"describeMoveBlocked": "生成する前に、このモーションを説明してください。 生成リクエストは送信されていません。",
 			"chooseExistingMoveRepairing": "装備を修復する前に、既存のモーションを選んでください。",
-			"liftedJointsOutside": "{label}：持ち上げたモーションに、まだ{size} pxのフレーム外の関節があります。体の描画はリクエストしていません。",
+			"liftedJointsOutside": "{move} {direction}：持ち上げたモーションに、まだ{size} pxのフレーム外の関節があります。体の描画はリクエストしていません。",
 			"reviewChoiceInvalid": "この選択はもうモーションと一致しません。もう一度確認してください。リクエストは送信していません。"
 		},
 		"steps": {
@@ -2421,7 +2433,6 @@
 			"frame": "フレーム{number}",
 			"unavailable": "このフレームを使うには、選択したすべての向きに素体画像と計測済みの関節位置が必要です。",
 			"changed": "選択した開始フレームが変更されました。開始元を選び直してください。生成はリクエストされていません。",
-			"route": "この方法は立ちポーズから始まります。保存済みフレームを使うには、別のアニメーションモデルを選んでください。",
 			"stateTarget": "ステートをモーションとして置き換えることはできません。"
 		},
 		"loop": "ループ",
@@ -2503,7 +2514,7 @@
 			"queueReplacement": "「{move}」の差し替えをキューに追加"
 		},
 		"titleRepair": "アイテムのフレームを修復",
-		"heldBy": "{character}の{move}に失敗したため、新しいモーションは待機中です。試行を開いて対処方法を確認してください。",
+		"heldBy": "{character}の{move}に失敗しました。支払い済みの結果を復旧できるよう、そこで再試行するか破棄するまで新しいモーションは待機します。開いて選択肢を確認してください。",
 		"open": "{character}を開く",
 		"progressLabel": "現在のモーション生成",
 		"retryFeature": "このモーションをもう一度生成",
@@ -2607,9 +2618,7 @@
 			"currentFrame": "現在のフレーム {number}",
 			"redrawnFrame": "描き直したフレーム {number}",
 			"repairedFrame": "修復したフレーム {number}"
-		},
-		"rerollBatch": "このバッチを再生成",
-		"rerollBatchDetail": "前のバッチはそのままです。見積もりには、このバッチとまだ購入していない後続のバッチが含まれます。"
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2626,12 +2635,16 @@
 			"incompleteReferenceFrames": "PixelLabから返された参照フレームまたは立ちポーズのフレームが不足しています。依存するリクエストは送信していません。",
 			"standingFrameSize": "PixelLabから返された立ちポーズのフレームのサイズが正しくありません。依存するリクエストは送信していません。",
 			"layersMismatch": "装備のレイヤーがこの装備スロットと一致しません。生成はリクエストされていません。",
-			"repairBatchMisaligned": "修復バッチのフレームにずれが生じました。残りのバッチを停止し、既存のアートワークを残しました。",
 			"reviewChanged": "このアイテムまたはチェック結果が変わりました。現在のアートワークを承認する前に、アイテムを開き直してください。",
 			"paletteReviewChanged": "このアイテムまたはその色が変わりました。色合わせをもう一度確認してください。",
 			"paletteSaveChanged": "アイテム、ボディ、またはマテリアルが変わりました。既存の色はそのままです。色合わせをもう一度確認してください。",
 			"invalidItemGridSheet": "PixelLabから使用できないアイテムのグリッドが返されました。シートは1枚だけである必要があります。既存のアートワークは残しています。",
 			"invalidItemGridLayout": "PixelLabから使用できないアイテムのグリッドが返されました。シートのフレーム配置が正しくありません。既存のアートワークは残しています。",
+			"savedFramesUnavailable": "現在の素体と装備に合う完成済みのフレームがありません。生成はリクエストしていません。",
+			"itemMoveSaveConflict": "フレームの生成中にこのキャラクターまたはアイテムが変更されました。既存のアートはそのままです。完成したフレームはアクティビティに残っています。",
+			"itemMoveSaveConflictAlso": "フレームの生成中にこのキャラクターまたはアイテムが変更されました。既存のアートはそのままです。完成したフレームはアクティビティに残っています。ほかの向きも停止しました：{reason}",
+			"keepWithoutStanding": "このアイテムはデザインの元になったモーションのフレームが不足しているため、そのモーションなしでは残せません。代わりに不足しているフレームを作成してください。",
+			"keepWithoutNothingLeft": "このアイテムには残せる完全なモーションがありません。代わりに不足しているフレームを作成してください。",
 			"savedFrameMissing": "このアイテムの保存済みフレームがストレージにありません。"
 		}
 	},
@@ -2739,7 +2752,8 @@
 		"review": "保存前に {name} を確認してください。",
 		"generated": "生成結果",
 		"sourceMissing": "元を表示できません",
-		"sourceChanged": "生成後に元が変更されたため、この結果は保存できません。破棄してやり直してください。",
+		"sourceChanged": "生成後にキャラクターのフレームサイズ、基準点、または向きが変更されたため、この結果は位置が合いません。破棄してやり直してください。",
+		"sourceChangedKeep": "この状態の元になったフレームが生成後に変更されました。このまま保存することも、破棄してやり直すこともできます。",
 		"keepGrounded": "元に合わせる",
 		"groundedHint": "足の位置を元に合わせました。オフで元に戻します。",
 		"readyRow": "確認できます",
@@ -2981,6 +2995,8 @@
 		"liftDetailWarned": "{views}：モーションをフレームに収めるため、{total}枚中{frames}枚のモーションフレームで足が最大{px} px上がります。{limit} pxの足チェックを超えるため、モーションは足の警告付きで保存されます。",
 		"reroll": "{views}を再生成",
 		"rerollDetail": "再生成では、その向きだけ新しい試行を購入します。ほかの向きは支払い済みの結果をそのまま使います。",
+		"keepUnposedDetail": "体のフレームをそのまま保存します。一部のフレームで関節が見つからなかったため、もう一度作成するまでこのモーションにはアイテムを合わせられません。",
+		"keepUnposed": "アイテムを合わせずに残す",
 		"pending": "未購入：約{gens} gen。",
 		"liftable": "持ち上げて収められます：{total}枚中{frames}枚で足が最大{px} px上がります。",
 		"notLiftable": "持ち上げても収まりません：モーションが横か上で切れています。"
@@ -2988,7 +3004,11 @@
 	"createReview": {
 		"resume": "支払い済みの結果で続ける",
 		"register": "描いた向きをもう一度登録",
-		"registerDetail": "支払い済みの描画はそのままで、同じ向きの登録を新しく1回購入します。"
+		"registerDetail": "支払い済みの描画はそのままで、同じ向きの登録を新しく1回購入します。",
+		"lift": "持ち上げて収める",
+		"liftDetail": "支払い済みの描画はそのままで、各向きを{size} pxフレーム内で{px} px持ち上げ、同じ向きの登録を新しく1回購入します。",
+		"largerFrame": "{size} pxフレームを使う",
+		"largerFrameDetail": "支払い済みの描画はそのままで、同じ向きを{size} pxフレームに配置し、登録を新しく1回購入します。大きいフレームで後から作るモーションやアイテムは費用が高くなる場合があります。"
 	},
 	"adjustFrame": {
 		"title": "フレームを調整",
@@ -3124,5 +3144,56 @@
 		"copyFailed": "コピーできませんでした。上のテキストを選択してコピーしてください。",
 		"open": "GitHub で開く",
 		"unexpected": "問題が発生しました。繰り返し起きる場合は報告してください。"
+	},
+	"problem": {
+		"details": "詳細",
+		"title": {
+			"frame-count": "PixelLabから想定外の数のフレームが返されました",
+			"overflow": "キャラクターの一部がフレームからはみ出しました",
+			"empty": "PixelLabから空のフレームが返されました",
+			"dropped": "PixelLabが混雑していて、一部の向きが処理されませんでした",
+			"joints": "一部のフレームで関節が見つかりませんでした",
+			"stopped": "有料のリクエストが完了しませんでした",
+			"quality": "新しいフレームが品質チェックに通りませんでした",
+			"changed": "処理中に変更がありました",
+			"missing": "保存済みの結果の一部がこのデバイスにありません",
+			"plan": "ご利用のPixelLabプランには含まれていません",
+			"credits": "PixelLabアカウントのクレジットがなくなりました",
+			"key": "PixelLabがトークンを受け付けませんでした",
+			"offline": "PixelLabに接続できませんでした",
+			"declined": "PixelLabがこのリクエストを拒否しました",
+			"unexpected": "問題が発生しました",
+			"uncertain": "支払い済みの結果が失われた可能性があります",
+			"poses": "このモーションには装備用のポーズがまだありません",
+			"method": "このアイテムはこのキャラクターでポーズを付けられません",
+			"quote": "PixelLabが価格を確認できませんでした",
+			"browser": "このブラウザでは安全に実行できません",
+			"exportId": "別のキャラクターがこのエクスポートIDを使っています",
+			"busy": "PixelLabが混雑しています"
+		},
+		"next": {
+			"frame-count": "支払い済みの結果は保持されています。確認してから、続行するかもう一度お試しください。",
+			"overflow": "持ち上げや大きいフレームが提案されていれば選ぶか、もう一度お試しください。",
+			"empty": "支払い済みの結果はアクティビティに残っています。新しい試行でもう一度お試しください。",
+			"dropped": "少し待ってから、もう一度お試しください。",
+			"joints": "支払い済みのものはアクティビティに残ります。新しく試すか、より分かりやすい立ちポーズから始めてください。",
+			"stopped": "もう一度始める前に、アクティビティで何が起きたか確認してください。",
+			"quality": "結果を確認してから、残すかもう一度お試しください。",
+			"changed": "続ける前にもう一度確認してください。",
+			"missing": "作り直す前に、アクティビティでまだ保存されているものを確認してください。",
+			"plan": "PixelLabでプランをアップグレードするか、プランに含まれるオプションを選んでください。",
+			"credits": "PixelLabでクレジットを追加してから、もう一度お試しください。",
+			"key": "有効なトークンでPixelLabにもう一度接続してください。",
+			"offline": "接続を確認してから、もう一度お試しください。",
+			"declined": "説明を変えてから、もう一度お試しください。",
+			"unexpected": "修正できるよう報告してください。支払い済みのものはアクティビティに残ります。",
+			"uncertain": "もう一度試す前にアクティビティを確認してください。新しい試行で再び課金される可能性があります。",
+			"poses": "先にポーズを設定してから、装備を作成してください。",
+			"method": "「自動」を選んでから、もう一度お試しください。",
+			"quote": "少し待ってからもう一度試すか、別のモデルを選んでください。",
+			"browser": "続けるには最新のブラウザを使ってください。",
+			"exportId": "別のエクスポートIDを選んでください。",
+			"busy": "少し待ってから、もう一度お試しください。"
+		}
 	}
 }

@@ -96,12 +96,7 @@ import { insertSlotInLadder } from '../lib/items/slots.ts';
 import { app } from '../lib/app.svelte.ts';
 import { localizedPlanRestriction, requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
-import {
-	localizedAutomaticRepairError,
-	REPAIR_BATCH_MISALIGNED,
-	repairBatchMisalignedError,
-	type Method
-} from '../lib/items/items.ts';
+import { localizedAutomaticRepairError, type Method } from '../lib/items/items.ts';
 import type { Key } from '../lib/image/chroma.ts';
 import type {
 	BodyPaletteRepairPlan,
@@ -744,7 +739,7 @@ export interface UndoStep {
 export const doc = $state({
 	id: '',
 	loading: true,
-	error: '',
+	error: '' as Message | string,
 	rev: 0,
 	items: {} as Preset['items'],
 	variants: {} as Preset['variants'],
@@ -1020,7 +1015,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		}
 	} catch (e) {
 		if (request !== openRequest) return;
-		doc.error = errorText(e);
+		doc.error = errorMessage(e);
 		// The demo's own open clears doc.error: say why the requested character is not shown.
 		if (id !== DEMO) {
 			console.error('open', e);
@@ -2963,7 +2958,7 @@ export interface Gen {
 	input: NewItemInput;
 	phase: 'running' | 'review' | 'failed';
 	status: string;
-	error?: string;
+	error?: string | Message;
 	canceled?: boolean;
 	cancelSaveFailed?: boolean;
 	requestText?: number;
@@ -3292,7 +3287,7 @@ async function runGenOnce(
 			return;
 		}
 		g.phase = 'failed';
-		g.error = errorText(e);
+		g.error = errorMessage(e);
 	}
 	takeOffGone();
 	await saveGens();
@@ -3369,9 +3364,14 @@ export async function openPendingWork(
 		return openFlow('setup', setup);
 	ui.sheet = 'activity';
 }
-export async function acceptItemIssues(projectId: string, itemId: string, reviewed: Item) {
+export async function acceptItemIssues(
+	projectId: string,
+	itemId: string,
+	reviewed: Item,
+	keepWithout?: string[]
+) {
 	if (follower()) return;
-	await (await itemRun()).acceptItemReview(projectId, itemId, reviewed);
+	await (await itemRun()).acceptItemReview(projectId, itemId, reviewed, keepWithout);
 	if (viewing(projectId)) await openProject(projectId, { quiet: true });
 	else await syncStoredProject(projectId);
 	toast(message('state.nameAcceptedAsIs', { name: reviewed.name }));
@@ -3393,7 +3393,10 @@ async function autoSave(g: Gen): Promise<boolean> {
 	try {
 		return await acceptGen(g, true);
 	} catch (e) {
-		g.draft.log.push(`not saved automatically: ${(e as Error).message}`);
+		g.draft.log.push({
+			...message('generation.outcome.notSavedAutomatically', { reason: errorMessage(e) }),
+			text: `not saved automatically: ${errorText(e)}`
+		});
 		await saveGens();
 		return false;
 	}
@@ -3982,6 +3985,8 @@ interface FlowDraft<S> {
 	error?: string;
 	/** The failure was a PaidStepError: its review (such as a single repair batch re-roll) survives a reload. */
 	paid?: { key: WhisperKey; vars?: WhisperVars; step: PaidStep };
+	/** Any other translated failure: its code and translation survive a reload, so recovery never reads the English. */
+	message?: Message;
 	progress?: Progress | null;
 	requestText?: number;
 }
@@ -3989,10 +3994,11 @@ function restoredFlowError(record: FlowDraft<{ activityScope?: string }>, fallba
 	const raw = record.error || fallback;
 	if (record.paid && record.error)
 		return new PaidStepError(raw, record.paid.key, record.paid.vars, record.paid.step);
+	if (record.message && record.error)
+		return new LocalizedError(raw, record.message.key, record.message.vars);
 	if (raw === STOPPED) return new LocalizedError(raw, 'generation.outcome.stopped');
 	if (raw === SETUP_STOPPED) return new LocalizedError(raw, 'generation.outcome.setupStopped');
 	if (raw === REPAIR_REVIEW_RECOVERY) return new LocalizedError(raw, 'repairReview.recover');
-	if (raw === REPAIR_BATCH_MISALIGNED) return repairBatchMisalignedError();
 	const restriction = localizedPlanRestriction(raw) ?? localizedAutomaticRepairError(raw);
 	if (restriction) return restriction;
 	const resume =
@@ -4010,7 +4016,7 @@ function restoredFlowError(record: FlowDraft<{ activityScope?: string }>, fallba
 			return new LocalizedError(
 				raw,
 				raw === caption ? 'create.errors.requestStopped' : 'create.errors.requestStoppedResume',
-				{ label: job.label, state: activityStateMessage(job.state), error }
+				{ state: activityStateMessage(job.state), error }
 			);
 	}
 	return raw;
@@ -4038,7 +4044,9 @@ async function persistFlowFailure(
 							step: error.paid
 						}
 					}
-				: {})
+				: error instanceof LocalizedError
+					? { message: error.translation }
+					: {})
 		});
 	} catch {
 		return new LocalizedError(

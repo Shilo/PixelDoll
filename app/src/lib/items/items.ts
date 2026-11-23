@@ -104,13 +104,6 @@ export function localizedAutomaticRepairError(raw: string) {
 export const ITEM_GRID_REGISTRATION_NOTICE =
 	'PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame.';
 
-export const REPAIR_BATCH_MISALIGNED =
-	'A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.';
-
-export function repairBatchMisalignedError() {
-	return new LocalizedError(REPAIR_BATCH_MISALIGNED, 'itemRoute.errors.repairBatchMisaligned');
-}
-
 /**
  * Item routes (S4 §Q4), swappable without touching extraction, QA or the UI:
  * - `skel` (default on v1.3 rigs): ONE edit-animation-v2 call dresses the chroma REST VIEWS (S/E/N), then each clip ×

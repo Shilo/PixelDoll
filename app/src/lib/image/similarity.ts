@@ -19,6 +19,20 @@ export const maskOf = (im: Img) => {
 	return m;
 };
 
+/** IoU of two same-size images' opaque silhouettes at their own positions (1 when both are empty), rounded to 3 places. */
+export function maskIoU(a: Img, b: Img): number {
+	if (a.w !== b.w || a.h !== b.h) return 0;
+	let both = 0,
+		either = 0;
+	for (let p = 3; p < a.data.length; p += 4) {
+		const x = a.data[p] >= 128,
+			y = b.data[p] >= 128;
+		if (x && y) both++;
+		if (x || y) either++;
+	}
+	return either ? Math.round((both / either) * 1000) / 1000 : 1;
+}
+
 /** Appearance similarity of layer A to keyframe layer K after centroid alignment (±1 px): over the union of both masks a pixel
  * scores 1 − maxChannelDiff/128 when both are opaque, 0 when only one is; K px landing on `occ` (visible mannequin) are skipped.
  * Optional `shift` maps layer coordinates to keyframe coordinates using stored joints instead of a partial mask's centroid. */

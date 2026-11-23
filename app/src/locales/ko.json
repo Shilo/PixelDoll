@@ -445,6 +445,8 @@
 		"acceptAsIs": "그대로 수락",
 		"pendingWorkBusy": "동작이나 설정이 실행 중이거나 멈춰 있어요. 이 작업을 쓰려면 완료하거나 버리세요.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "크레딧을 쓰지 않고 현재 아트워크를 수락해요. 감지된 문제는 세부 정보에 남아요.",
+		"keepWithoutMoves": "그 동작 없이 유지",
+		"keepWithoutMovesDetail": "크레딧을 쓰지 않고 완성된 동작만으로 아이템을 유지해요. {moves}에서는 숨겨지고, 나중에 각자의 가격으로 만들 수 있도록 빠진 동작으로 계속 표시돼요.",
 		"youAcceptedThisArtworkWithItsRecorded": "기록된 품질 참고 사항과 함께 이 아트워크를 수락했어요.",
 		"generateItemForMove": "동작용 아이템 생성",
 		"labelMakeNameForMissingName": "{missingName} 대상으로 {name} 만들기",
@@ -1683,7 +1685,8 @@
 			"canceled": "취소되었어요. 이미 사용된 생성은 환불되지 않아요. 이미 전송된 요청은 완료되어 요금이 청구될 수 있어요. 결과는 활동에서 확인하세요.",
 			"stopped": "생성이 중지되었어요. 다시 시도하기 전에 활동을 확인하세요.",
 			"setupStopped": "설정이 중지되었어요. 다시 시도하기 전에 활동을 확인하세요.",
-			"noFrames": "PixelLab이 사용할 수 있는 프레임을 반환하지 않았어요."
+			"noFrames": "PixelLab이 사용할 수 있는 프레임을 반환하지 않았어요.",
+			"notSavedAutomatically": "자동으로 저장되지 않았어요: {reason}"
 		},
 		"status": {
 			"starting": "시작 중",
@@ -2060,12 +2063,14 @@
 		"estimate": "예상 생성 {gens}회",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, 피벗 {x},{y}",
-		"waitingForRepairReview": "아이템 프레임 검토 대기 중"
+		"waitingForRepairReview": "아이템 프레임 검토 대기 중",
+		"needsRedo": "관절을 찾지 못함: 아이템을 움직이려면 다시 만드세요"
 	},
 	"setup": {
 		"warnings": {
 			"headroom": "{direction} 방향은 머리 위 여유가 {count} px뿐이에요. 높은 헤어스타일이나 모자에는 더 큰 프레임이 필요할 수 있어요.",
-			"keptFrames": "{name}: 기존 프레임을 유지해요. 설정 후 다시 만들면 이후 동작에도 애니메이션을 적용할 수 있어요."
+			"keptFrames": "{name}: 기존 프레임을 유지해요. 설정 후 다시 만들면 이후 동작에도 애니메이션을 적용할 수 있어요.",
+			"moveSkipped": "{move}을(를) 건너뛰었어요. PixelLab이 그 프레임 중 하나에서 유효한 관절을 찾지 못했어요. 아이템을 움직이려면 다시 만드세요."
 		},
 		"title": "캐릭터 설정",
 		"rigSetup": "리그 설정",
@@ -2104,7 +2109,14 @@
 			"jointsMissing": "PixelLab이 몸체 프레임에서 유효한 관절 18개를 모두 찾지 못했어요. 기존 아트워크는 그대로예요. 다시 연결하거나 더 선명한 서 있는 참조를 선택해 재개하세요.",
 			"noCharacterId": "PixelLab이 관리 캐릭터 ID를 반환하지 않았어요. 기존 아트워크는 그대로예요.",
 			"referenceChanged": "설정 중에 서 있는 참조가 바뀌었어요.",
-			"characterChanged": "설정 중에 캐릭터가 바뀌었어요. 현재 작업은 보관됐어요."
+			"characterChanged": "설정 중에 캐릭터가 바뀌었어요. 현재 작업은 보관됐어요.",
+			"squareFrame": "리그 설정에는 32–256 정수 픽셀의 정사각형 프레임이 필요해요.",
+			"humanoidOnly": "리그 설정은 현재 인간형 캐릭터만 지원해요. 이 캐릭터는 다른 몸체 템플릿을 사용해요.",
+			"singleBaseLayer": "리그 설정에는 고정된 기본 몸체 레이어가 하나만 있어야 해요.",
+			"chooseReference": "서 있는 자세의 기준 동작을 선택하세요.",
+			"noStandingReference": "{move}에는 모든 방향의 서 있는 모습이 없어요. 모든 방향이 있는 동작을 선택하세요.",
+			"needsStandingViews": "리그 설정에는 저장된 원래 서 있는 모습이나 네 방향 모두가 필요해요. 먼저 빠진 회전을 가져오세요.",
+			"emptyBodyFrame": "{move}에 빈 몸체 프레임이 있어요. 그 동작을 고치거나 삭제한 뒤 다시 설정하세요."
 		},
 		"newRegistration": "다시 등록"
 	},
@@ -2149,7 +2161,7 @@
 			"bodyFramesTheirQuality": "검토 후 이 몸체 프레임이나 품질 검사가 바뀌었어요. 저장된 것도 요청도 없어요. 다시 검토하세요.",
 			"characterChangedAnotherTab2": "동작을 저장하기 전에 다른 탭에서 이 캐릭터가 바뀌었어요. 다시 시도하기 전에 다시 여세요.",
 			"demoStandingReferenceMissing": "데모의 서 있는 참조가 없어요.",
-			"resultMissingStorage": "저장소에 결과 {label} 없음",
+			"resultMissingStorage": "결제된 결과가 이 브라우저 저장소에 없어요.",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab이 불완전하거나 잘못된 서 있는 관절을 반환했어요. 이 관절로 애니메이션을 시작하지 않았고 기존 결과는 유지됐어요.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab이 잘못된 프레임 수를 반환했어요. 유료 재시도는 시작되지 않았어요. 다른 시도를 요청하기 전에 활동을 검토하세요.",
 			"animationExceedsPxFrame": "{move} {direction}: 몸체 프레임이 {w}px 프레임에 맞지 않아요. 검토용으로 보관했고, 저장된 것은 없어요.",
@@ -2159,11 +2171,11 @@
 			"colorMatchingCannotRepair": "{direction}: 색상 맞추기로는 포즈, 발, 테두리 실패를 복구할 수 없어요.",
 			"colorDriftOutsideBounded": "{direction}: 색상 편차가 제한된 참조 팔레트 복구 범위를 벗어났어요.",
 			"boundedColorMatchingStill": "{direction}: 제한된 색상 맞추기도 팔레트 품질 검사를 통과하지 못했어요. 새 관절 검사는 시작되지 않았어요.",
-			"jointsFoundEveryFrame": "{label}: 모든 프레임에서 관절을 찾지 못함",
-			"pixellabDroppedDirectionBusy": "{label}: PixelLab이 방향을 누락했어요(사용 중). 다시 시도하세요.",
-			"pixellabReturnedMotionFrames": "{label}: 요청한 {expected}개에 대해 PixelLab이 모션 프레임 {returned}개를 반환했어요. 이 뷰에는 관절 검사나 몸체 렌더링이 요청되지 않았어요.",
-			"motionExceedsPxFrame": "{label}: 모션이 {size}px 프레임에 맞지 않아요. 프레임은 검토용으로 보관했고, 저장된 것은 없어요.",
-			"pixellabReturnedEmptyMotion": "{label}: PixelLab이 빈 모션 프레임을 반환했어요",
+			"jointsFoundEveryFrame": "{move} {direction}: 모든 프레임에서 관절을 찾지 못함",
+			"pixellabDroppedDirectionBusy": "{move} {direction}: PixelLab이 방향을 누락했어요(사용 중). 다시 시도하세요.",
+			"pixellabReturnedMotionFrames": "{move} {direction}: 요청한 {expected}개에 대해 PixelLab이 모션 프레임 {returned}개를 반환했어요. 이 뷰에는 관절 검사나 몸체 렌더링이 요청되지 않았어요.",
+			"motionExceedsPxFrame": "{move} {direction}: 모션이 {size}px 프레임에 맞지 않아요. 프레임은 검토용으로 보관했고, 저장된 것은 없어요.",
+			"pixellabReturnedEmptyMotion": "{move} {direction}: PixelLab이 빈 모션 프레임을 반환했어요",
 			"pixellabReturnedView": "PixelLab이 {direction} 뷰를 반환하지 않았어요",
 			"viewDoesFitPx": "{direction} 뷰가 {cell}px 프레임에 들어가지 않아요. 다시 만들기 전에 프레임을 늘리거나 몸체 크기를 줄이세요.",
 			"pixellabReturnedEmptyView": "PixelLab이 빈 {direction} 뷰를 반환했어요.",
@@ -2180,8 +2192,8 @@
 			"cachedBodyRenderIncomplete": "{direction}: 캐시된 몸체 렌더링이 불완전해요.",
 			"cachedBodyFramesDo": "{direction}: 캐시된 몸체 프레임이 이 캐릭터에 맞지 않아요. 몸체는 다시 생성되지 않았어요.",
 			"demoStandingBodyFacing": "데모에 {id} 방향의 서 있는 몸체가 없어요.",
-			"requestStopped": "{label}: {state}{error}",
-			"requestStoppedResume": "{label}: {state}{error}. 다시 전송하지 않고 생성을 중지했어요. 다시 시작하기 전에 활동에서 이 요청을 검토하세요.",
+			"requestStopped": "PixelLab 요청이 '{state}' 상태로 끝났어요{error}.",
+			"requestStoppedResume": "PixelLab 요청이 '{state}' 상태로 끝났어요{error}. 다시 보내지 않고 생성을 멈췄어요. 다시 시작하기 전에 활동에서 이 요청을 검토하세요.",
 			"promptLength": "프롬프트를 1–2,000자로 입력하세요.",
 			"invalidSeed": "잘못된 시드예요.",
 			"invalidCamera": "잘못된 카메라예요.",
@@ -2208,7 +2220,7 @@
 			"moveAnimationFramesBlocked": "이 모델과 캔버스 크기는 {frames}프레임을 지원하지 않아요. 생성 요청을 보내지 않았어요.",
 			"describeMoveBlocked": "생성하기 전에 이 동작을 설명하세요. 생성 요청을 보내지 않았어요.",
 			"chooseExistingMoveRepairing": "장비를 복구하기 전에 기존 동작을 선택하세요.",
-			"liftedJointsOutside": "{label}: 올린 모션에 아직 {size}px 프레임 밖의 관절이 있어요. 몸체 렌더는 요청하지 않았어요.",
+			"liftedJointsOutside": "{move} {direction}: 올린 모션에 아직 {size}px 프레임 밖의 관절이 있어요. 몸체 렌더는 요청하지 않았어요.",
 			"reviewChoiceInvalid": "이 선택이 더 이상 동작과 맞지 않아요. 다시 검토하세요. 요청은 보내지 않았어요."
 		},
 		"steps": {
@@ -2421,7 +2433,6 @@
 			"frame": "프레임 {number}",
 			"unavailable": "이 프레임을 사용하려면 선택한 모든 방향의 몸체 이미지와 측정된 관절 위치가 필요해요.",
 			"changed": "선택한 시작 프레임이 변경됐어요. 시작할 프레임을 다시 선택하세요. 생성은 요청되지 않았어요.",
-			"route": "이 방식은 서 있기 자세에서 시작해요. 저장된 프레임을 사용하려면 다른 애니메이션 모델을 선택하세요.",
 			"stateTarget": "상태는 동작처럼 교체할 수 없어요."
 		},
 		"loop": "반복",
@@ -2503,7 +2514,7 @@
 			"queueReplacement": "선택한 뷰 교체를 대기열에 추가: {move}"
 		},
 		"titleRepair": "아이템 프레임 복구",
-		"heldBy": "{character}의 {move} 작업이 실패해 새 애니메이션이 대기 중이에요. 시도를 열어 복구 옵션을 확인하세요.",
+		"heldBy": "{character}의 {move} 작업이 실패했어요. 결제된 결과를 복구할 수 있도록, 그곳에서 다시 시도하거나 삭제할 때까지 새 애니메이션은 기다려요. 열어서 옵션을 확인하세요.",
 		"open": "{character} 열기",
 		"progressLabel": "현재 동작 생성",
 		"retryFeature": "이 동작 다시 생성",
@@ -2607,9 +2618,7 @@
 			"currentFrame": "현재 프레임 {number}",
 			"redrawnFrame": "다시 그린 프레임 {number}",
 			"repairedFrame": "수정한 프레임 {number}"
-		},
-		"rerollBatch": "이 묶음 다시 생성",
-		"rerollBatchDetail": "앞의 묶음은 그대로 둬요. 예상 비용에는 이 묶음과 아직 구매하지 않은 다음 묶음이 포함돼요."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2626,12 +2635,16 @@
 			"incompleteReferenceFrames": "PixelLab이 참조 프레임 또는 서 있는 프레임을 불완전하게 반환했어요. 종속 요청은 전송되지 않았어요.",
 			"standingFrameSize": "PixelLab이 잘못된 크기의 서 있는 프레임을 반환했어요. 종속 요청은 전송되지 않았어요.",
 			"layersMismatch": "장비 레이어가 이 장착 슬롯과 맞지 않아요. 생성은 요청되지 않았어요.",
-			"repairBatchMisaligned": "복구 배치에서 정렬이 어긋난 프레임이 반환됐어요. 나머지 배치는 중단하고 기존 아트워크는 유지했어요.",
 			"reviewChanged": "이 아이템이나 검사 결과가 변경됐어요. 현재 아트워크를 승인하기 전에 아이템을 다시 여세요.",
 			"paletteReviewChanged": "이 아이템이나 색상이 변경됐어요. 색상 맞추기를 다시 검토하세요.",
 			"paletteSaveChanged": "아이템, 몸체 또는 재질이 변경됐어요. 기존 색상은 그대로 유지했어요. 색상 맞추기를 다시 검토하세요.",
 			"invalidItemGridSheet": "PixelLab이 사용할 수 없는 아이템 그리드를 반환했어요. 시트는 정확히 하나여야 해요. 기존 아트워크는 유지했어요.",
 			"invalidItemGridLayout": "PixelLab이 사용할 수 없는 아이템 그리드를 반환했어요. 시트의 프레임 배치가 잘못됐어요. 기존 아트워크는 유지했어요.",
+			"savedFramesUnavailable": "현재 기본 몸체와 장비에 맞는 완성된 프레임이 없어요. 생성은 요청하지 않았어요.",
+			"itemMoveSaveConflict": "프레임을 생성하는 동안 이 캐릭터나 아이템이 바뀌었어요. 기존 그림은 그대로 두었고, 완성된 프레임은 활동에 남아 있어요.",
+			"itemMoveSaveConflictAlso": "프레임을 생성하는 동안 이 캐릭터나 아이템이 바뀌었어요. 기존 그림은 그대로 두었고, 완성된 프레임은 활동에 남아 있어요. 다른 방향도 멈췄어요: {reason}",
+			"keepWithoutStanding": "이 아이템은 디자인의 기준이 된 동작에 빠진 프레임이 있어 그 동작 없이 유지할 수 없어요. 대신 빠진 프레임을 만드세요.",
+			"keepWithoutNothingLeft": "이 아이템에는 유지할 수 있는 완전한 동작이 없어요. 대신 빠진 프레임을 만드세요.",
 			"savedFrameMissing": "이 아이템의 저장된 프레임이 저장소에 없어요."
 		}
 	},
@@ -2739,7 +2752,8 @@
 		"review": "저장하기 전에 {name} 상태를 확인해 주세요.",
 		"generated": "생성 결과",
 		"sourceMissing": "원본을 표시할 수 없어요",
-		"sourceChanged": "생성 후 원본이 바뀌어서 이 결과를 저장할 수 없어요. 버리고 다시 시도하세요.",
+		"sourceChanged": "생성 후 캐릭터의 프레임 크기, 기준점 또는 방향이 바뀌어서 이 결과가 맞지 않아요. 버리고 다시 시도하세요.",
+		"sourceChangedKeep": "이 상태의 시작 프레임이 생성 후 바뀌었어요. 그대로 저장하거나, 버리고 다시 시도할 수 있어요.",
 		"keepGrounded": "원본에 맞추기",
 		"groundedHint": "발 위치를 원본에 맞췄어요. 끄면 되돌려요.",
 		"readyRow": "검토 준비됨",
@@ -2981,6 +2995,8 @@
 		"liftDetailWarned": "{views}: 모션이 프레임에 맞도록 모션 프레임 {total}개 중 {frames}개에서 발이 최대 {px}px 올라가요. {limit}px 발 검사를 넘기 때문에, 동작은 발 경고와 함께 저장돼요.",
 		"reroll": "다시 생성: {views}",
 		"rerollDetail": "다시 생성은 그 방향에만 새 시도를 구매해요. 다른 방향은 결제된 결과를 그대로 써요.",
+		"keepUnposedDetail": "몸 프레임을 그대로 저장해요. 일부 프레임에서 관절을 찾지 못해, 다시 만들기 전까지 이 동작에는 아이템을 맞출 수 없어요.",
+		"keepUnposed": "아이템 맞춤 없이 유지",
 		"pending": "구매 예정: 약 {gens}젠.",
 		"liftable": "올려서 맞출 수 있어요: 프레임 {total}개 중 {frames}개에서 발이 최대 {px}px 올라가요.",
 		"notLiftable": "올려도 맞지 않아요: 모션이 옆이나 위에서 잘려 있어요."
@@ -2988,7 +3004,11 @@
 	"createReview": {
 		"resume": "결제된 결과로 계속",
 		"register": "그린 방향 다시 등록",
-		"registerDetail": "결제된 그림은 그대로 두고 같은 방향의 새 등록을 한 번 구매해요."
+		"registerDetail": "결제된 그림은 그대로 두고 같은 방향의 새 등록을 한 번 구매해요.",
+		"lift": "올려서 맞추기",
+		"liftDetail": "결제된 그림은 그대로 두고 각 방향을 {size}px 프레임 안에서 {px}px 올린 뒤 같은 방향의 새 등록을 한 번 구매해요.",
+		"largerFrame": "{size}px 프레임 사용",
+		"largerFrameDetail": "결제된 그림은 그대로 두고 같은 방향을 {size}px 프레임에 배치한 뒤 새 등록을 한 번 구매해요. 더 큰 프레임에서 나중에 만드는 동작과 아이템은 비용이 더 들 수 있어요."
 	},
 	"adjustFrame": {
 		"title": "프레임 조정",
@@ -3124,5 +3144,56 @@
 		"copyFailed": "복사하지 못했어요. 위 텍스트를 선택해 복사해 주세요.",
 		"open": "GitHub에서 열기",
 		"unexpected": "문제가 생겼어요. 다시 발생하면 신고해 주세요."
+	},
+	"problem": {
+		"details": "세부 정보",
+		"title": {
+			"frame-count": "PixelLab이 예상과 다른 수의 프레임을 보냈어요",
+			"overflow": "캐릭터 일부가 프레임 밖으로 나갔어요",
+			"empty": "PixelLab이 빈 프레임을 보냈어요",
+			"dropped": "PixelLab이 바빠서 방향 하나를 건너뛰었어요",
+			"joints": "일부 프레임에서 관절을 찾지 못했어요",
+			"stopped": "유료 요청이 끝나지 않았어요",
+			"quality": "새 프레임이 품질 검사를 통과하지 못했어요",
+			"changed": "작업하는 동안 무언가가 바뀌었어요",
+			"missing": "저장된 결과 일부가 이 기기에 없어요",
+			"plan": "사용 중인 PixelLab 플랜에는 이 기능이 없어요",
+			"credits": "PixelLab 계정의 크레딧이 모두 소진됐어요",
+			"key": "PixelLab이 토큰을 받아들이지 않았어요",
+			"offline": "PixelLab에 연결할 수 없었어요",
+			"declined": "PixelLab이 이 요청을 거부했어요",
+			"unexpected": "문제가 생겼어요",
+			"uncertain": "결제된 결과가 사라졌을 수 있어요",
+			"poses": "이 동작에는 아직 장비용 자세가 없어요",
+			"method": "이 아이템은 이 캐릭터에 자세를 적용할 수 없어요",
+			"quote": "PixelLab이 가격을 확인하지 못했어요",
+			"browser": "이 브라우저에서는 안전하게 실행할 수 없어요",
+			"exportId": "다른 캐릭터가 이 내보내기 ID를 사용하고 있어요",
+			"busy": "PixelLab이 바빠요"
+		},
+		"next": {
+			"frame-count": "결제된 결과는 그대로 있어요. 검토한 뒤 계속하거나 다시 시도하세요.",
+			"overflow": "올리기나 더 큰 프레임이 제안되면 선택하고, 아니면 다시 시도하세요.",
+			"empty": "결제된 결과는 활동에 남아 있어요. 새 시도로 다시 시도하세요.",
+			"dropped": "잠시 기다린 뒤 다시 시도하세요.",
+			"joints": "결제한 결과는 활동에 남아 있어요. 새로 시도하거나 더 분명한 서 있는 자세에서 시작하세요.",
+			"stopped": "다시 시작하기 전에 활동에서 무슨 일이 있었는지 확인하세요.",
+			"quality": "결과를 검토한 뒤 유지하거나 다시 시도하세요.",
+			"changed": "계속하기 전에 다시 검토하세요.",
+			"missing": "다시 만들기 전에 활동에서 아직 저장된 것을 확인하세요.",
+			"plan": "PixelLab에서 플랜을 업그레이드하거나 플랜에 포함된 옵션을 선택하세요.",
+			"credits": "PixelLab에서 크레딧을 추가한 뒤 다시 시도하세요.",
+			"key": "유효한 토큰으로 PixelLab을 다시 연결하세요.",
+			"offline": "연결을 확인한 뒤 다시 시도하세요.",
+			"declined": "설명을 바꾼 뒤 다시 시도하세요.",
+			"unexpected": "고칠 수 있도록 신고해 주세요. 이미 결제한 결과는 활동에 남아 있어요.",
+			"uncertain": "다시 시도하기 전에 활동을 확인하세요. 새 시도에 다시 요금이 부과될 수 있어요.",
+			"poses": "먼저 자세를 설정한 뒤 장비를 만드세요.",
+			"method": "자동을 선택한 뒤 다시 시도하세요.",
+			"quote": "잠시 후 다시 시도하거나 다른 모델을 선택하세요.",
+			"browser": "계속하려면 최신 브라우저를 사용하세요.",
+			"exportId": "다른 내보내기 ID를 선택하세요.",
+			"busy": "잠시 기다린 뒤 다시 시도하세요."
+		}
 	}
 }

@@ -2,6 +2,7 @@ import { accountBalance } from './account-fixture.ts';
 import { expect, test } from 'vitest';
 import { Queue, live, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts';
 import { ApiError } from '../../src/lib/pixellab/client.ts';
+import { recordProblemKind } from '../../src/studio/problemSummary.ts';
 
 function fixture(status: number) {
 	const records = new Map<string, JobRec>();
@@ -42,6 +43,8 @@ for (const status of [0, 500, 422])
 			initial = f.make();
 		const old = await initial.enqueue(request);
 		await initial.tick();
+		// the stored record keeps the class of the error, so Activity can say what a refusal means without its text
+		expect(f.records.get(old.id)?.errorKind).toBe(status === 422 ? 'invalid' : 'retry');
 		const resumed = f.make();
 		await resumed.load();
 		expect((await resumed.enqueue(request)).id).toBe(old.id);
@@ -794,4 +797,44 @@ test('an interrupted HTTP submission without a durable receipt stays lost across
 		expect(records.get(record.id)?.error).toContain('Not resubmitted');
 		expect(posts).toBe(1);
 	}
+});
+
+test('a credit refusal later accepted and then failed is not labeled out of credits', async () => {
+	const records = new Map<string, JobRec>();
+	let posts = 0,
+		now = 1000;
+	const deps: Partial<Deps> = {
+		locks: null,
+		online: () => true,
+		now: () => now,
+		put: async (id, r) => {
+			records.set(id, structuredClone(r));
+		},
+		get: async (id) => structuredClone(records.get(id)),
+		all: async () => [...records.values()].map((r) => structuredClone(r)),
+		api: async <T>(_key: string, method: string, path: string): Promise<T> => {
+			if (path === '/balance') return accountBalance as T;
+			if (method === 'POST') {
+				if (++posts === 1) throw new ApiError(402, 'credits', 'Insufficient credits');
+				return { background_job_id: 'job-1' } as T;
+			}
+			return { id: 'job-1', status: 'failed', last_response: { error: 'provider failure' } } as T;
+		}
+	};
+	const q = new Queue(deps);
+	q.setKey('synthetic-key');
+	const record = await q.enqueue(request);
+	await q.tick();
+	expect(records.get(record.id)).toMatchObject({ state: 'queued', errorKind: 'credits' });
+	q.resume();
+	await q.tick();
+	now += 10_000;
+	await q.tick();
+	const settled = records.get(record.id)!;
+	expect(settled.state).toBe('failed');
+	expect(posts).toBe(2);
+	// The accepted job may have been charged, so Activity must not say the account ran out of credits.
+	expect(settled.errorKind).toBeUndefined();
+	expect(recordProblemKind(settled)).toBe('stopped');
+	expect(recordProblemKind({ ...settled, errorKind: 'credits' })).toBe('stopped');
 });

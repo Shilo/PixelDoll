@@ -14,6 +14,8 @@
 	import { hiddenSlots, equipped } from '../lib/compose/compose.ts';
 	import { SLOTS, slotLadder } from '../lib/items/items.ts';
 	import {
+		gapMoves,
+		keepableWithout,
 		itemPaletteRepairPlan,
 		restorableViews,
 		type ItemPaletteRepairPlan
@@ -309,15 +311,20 @@
 	let onlyDir = $state(false);
 	let acceptingIssues = $state(false);
 	let acceptanceError = $state<Message | string>('');
-	async function acceptIssues() {
+	// The moves an item with checks to accept is missing frames in: it can be kept without them, never with partial frames.
+	const keepWithout = $derived(m && it ? gapMoves(m, it) : []);
+	// Never without the move the item is designed or anchored from: those gaps take the paid redraw.
+	const canKeepWithout = $derived(!!it && keepableWithout(it, keepWithout));
+	async function acceptIssues(withoutGaps = false) {
 		if (!it || acceptingIssues) return;
 		const projectId = doc.id,
 			itemId = it.id,
-			reviewed = $state.snapshot(it);
+			reviewed = $state.snapshot(it),
+			without = withoutGaps ? [...keepWithout] : undefined;
 		acceptingIssues = true;
 		acceptanceError = '';
 		try {
-			await acceptItemIssues(projectId, itemId, reviewed);
+			await acceptItemIssues(projectId, itemId, reviewed, without);
 		} catch (error) {
 			if (doc.id === projectId && it?.id === itemId) acceptanceError = errorMessage(error);
 		} finally {
@@ -465,20 +472,31 @@
 					)}{#if !isDemo()}{' '}{t('itemPane.remakeToFit', { name: m.name })}{/if}
 				</p>{/if}
 			<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
-			{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
+			{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && (!gaps.length || canKeepWithout)}
 				<div class="field">
 					<p class="notice warn small">
 						{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
 					</p>
-					<button
-						class="bu-action btn"
-						data-variant="outline"
-						disabled={acceptingIssues || repairBusy}
-						onclick={acceptIssues}>{t('itemPane.acceptAsIs')}</button
-					>
-					<p class="faint small">
-						{t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits')}
-					</p>
+					{#if gaps.length}<button
+							class="bu-action btn"
+							data-variant="outline"
+							disabled={acceptingIssues || repairBusy}
+							onclick={() => acceptIssues(true)}>{t('itemPane.keepWithoutMoves')}</button
+						>
+						<p class="faint small">
+							{t('itemPane.keepWithoutMovesDetail', {
+								moves: formatList(keepWithout.map((move) => displayMove(move, moveRefs)))
+							})}
+						</p>
+					{:else}<button
+							class="bu-action btn"
+							data-variant="outline"
+							disabled={acceptingIssues || repairBusy}
+							onclick={() => acceptIssues()}>{t('itemPane.acceptAsIs')}</button
+						>
+						<p class="faint small">
+							{t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits')}
+						</p>{/if}
 					{#if acceptanceError}<p class="notice bad small" role="alert">
 							{displayMessage(acceptanceError)}<ReportButton error={acceptanceError} />
 						</p>{/if}

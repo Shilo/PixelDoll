@@ -165,6 +165,23 @@ test('411 distinct setup checks use a bounded window and preserve every frame, k
 	expect(mocks.update).toHaveBeenCalledOnce();
 });
 
+test('a move frame without valid joints is skipped, not fatal: setup registers and publishes the rest', async () => {
+	// Frame 0 is the standing view; frame 2 belongs only to a move, so only that move waits to be made again.
+	const f = await fixture(4);
+	mocks.joints.mockImplementation(async (image: Img) =>
+		frameId(image) === 2 ? undefined : points(frameId(image))
+	);
+	await setupCharacter(f.spec, () => {});
+	const measured = mocks.attach.mock.calls[0][2] as Map<string, Keypoint[]>,
+		hashes = [...f.plan.frames.keys()];
+	expect(measured.has(hashes[2])).toBe(false);
+	expect([0, 1, 3].every((index) => measured.has(hashes[index]))).toBe(true);
+	expect(mocks.run.mock.calls.some(([request]) => request.path !== '/estimate-skeleton')).toBe(
+		true
+	);
+	expect(mocks.update).toHaveBeenCalledOnce();
+});
+
 test('a completed check refills the window before slower checks finish and completion order cannot reorder provenance', async () => {
 	const f = await fixture(windowSize + 3),
 		gates = Array.from({ length: windowSize + 3 }, () => deferred<Keypoint[]>());

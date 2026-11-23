@@ -15,7 +15,7 @@ import {
 	validPaletteRepairs
 } from '../dress/item-palette.ts';
 import { colorCounts, fromHex } from '../dress/palette.ts';
-import { deriveMaterials } from '../dress/dress.ts';
+import { coverageGaps, deriveMaterials } from '../dress/dress.ts';
 import { decodePngBytes, encodePngBytes } from '../image/pngraw.ts';
 import { hardMaskBits } from '../image/hard-mask.ts';
 import * as db from '../store/db.ts';
@@ -31,6 +31,7 @@ import type {
 	Slot
 } from '../store/manifest.ts';
 import { composeCell, dropCut } from '../compose/compose.ts';
+import { retainItemMoves } from '../rig/moves.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
@@ -86,7 +87,6 @@ import {
 	g2Fails,
 	automaticRepairError,
 	localizedAutomaticRepairError,
-	REPAIR_BATCH_MISALIGNED,
 	grayShare,
 	smudgedViews,
 	sharedDesignColors,
@@ -123,8 +123,15 @@ import {
 	type ItemSpec,
 	type QaResult
 } from './items.ts';
-import { LocalizedError } from '../message.ts';
-import { PaidStepError } from '../pixellab/paid-results.ts';
+import {
+	LocalizedError,
+	errorMessage,
+	errorText,
+	loggedError,
+	loggedMessage,
+	message,
+	type LoggedMessage
+} from '../message.ts';
 import { localizedPlanRestriction } from '../pixellab/plans.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
@@ -143,7 +150,8 @@ export interface Draft {
 	spec: ItemSpec;
 	rigId: string;
 	calls: CallState[];
-	log: string[];
+	/** Outcomes, oldest first: English text, or a translated error with its English text. */
+	log: (string | LoggedMessage)[];
 	acceptedAt?: string;
 	activityScope?: string;
 }
@@ -731,6 +739,14 @@ async function runCall(
 	return terminal(r) ? r : settled(r.id, signal);
 }
 
+/** A paid call of the draft that ended without results, as its log keeps it. */
+const callStopped = (call: number, r: JobRec): LoggedMessage => ({
+	key: 'generation.outcome.callStopped',
+	vars: { index: call, state: message(`activity.state.${r.state}`) },
+	text: `call ${call} ${r.state}: ${r.error ?? ''}`,
+	call
+});
+
 /** New seed for call k (k = 0 also drops the later calls: their anchor came from the old design). */
 export function rerollCall(d: Draft, k: number, why: string) {
 	const c = d.calls[k];
@@ -932,7 +948,7 @@ export async function runItem(
 			status('design call');
 			const r0 = await call(0);
 			if (r0.state !== 'done') {
-				d.log.push(`call 1 ${r0.state}: ${r0.error ?? ''}`);
+				d.log.push(callStopped(1, r0));
 				break;
 			}
 			if (d.calls[0].concept) {
@@ -969,14 +985,15 @@ export async function runItem(
 			await Promise.all(gates);
 			const bd = rd.findIndex((r) => r.state !== 'done');
 			if (bd >= 0) {
-				d.log.push(`call ${bd + 2} ${rd[bd].state}: ${rd[bd].error ?? ''}`);
+				d.log.push(callStopped(bd + 2, rd[bd]));
 				break;
 			}
 			res = await evalItem();
 			if (hasStructuralFailure(res)) {
-				d.log.push(
-					'PixelLab returned incomplete or malformed standing frames. No automatic retry was made.'
-				);
+				d.log.push({
+					key: 'generation.outcome.standingFrames',
+					text: 'PixelLab returned incomplete or malformed standing frames. No automatic retry was made.'
+				});
 				break;
 			}
 			status(`calls ${nd + 1}–${d.calls.length}`);
@@ -985,18 +1002,22 @@ export async function runItem(
 			);
 			const broken = rs.findIndex((r) => r.state !== 'done');
 			if (broken >= 0) {
-				d.log.push(`call ${broken + nd + 1} ${rs[broken].state}: ${rs[broken].error ?? ''}`);
+				d.log.push(callStopped(broken + nd + 1, rs[broken]));
 				break;
 			}
 			res = await evalItem();
 			d.log.push(
 				isClean(res)
-					? 'Every frame passed the checks.'
-					: 'Issues detected. Review the item and choose Try again or Accept as is. No automatic retry was made.'
+					? { key: 'generation.outcome.passed', text: 'Every frame passed the checks.' }
+					: {
+							key: 'generation.outcome.reviewIssues',
+							text: 'Issues detected. Review the item and choose Try again or Accept as is. No automatic retry was made.'
+						}
 			);
 		} while (false);
 	} catch (e) {
-		if (!h.signal?.aborted) d.log.push(`error: ${(e as Error).message}`);
+		if (!h.signal?.aborted)
+			d.log.push(e instanceof LocalizedError ? loggedMessage(e) : `error: ${errorText(e)}`);
 	} finally {
 		if (h.signal?.aborted) await Promise.allSettled(started);
 		if (!h.signal?.aborted) await persist();
@@ -1710,7 +1731,11 @@ export async function animateAnchoredItem(
 	const doneDirs = dirs.filter((dir) => !failedDirs.has(dir));
 	const detail =
 		draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.';
-	if (!doneDirs.length) throw localizedAutomaticRepairError(detail) ?? new Error(detail);
+	const detailError = () =>
+		typeof detail === 'string'
+			? (localizedAutomaticRepairError(detail) ?? new Error(detail))
+			: loggedError(detail);
+	if (!doneDirs.length) throw detailError();
 	const finished: Draft = {
 		...draft,
 		spec: { ...draft.spec, dirs: doneDirs },
@@ -1721,7 +1746,7 @@ export async function animateAnchoredItem(
 	const result =
 		doneDirs.length === dirs.length ? whole : await evaluateItem(finished, ctx, standingPalettes);
 	if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(finished, rig, result))
-		throw localizedAutomaticRepairError(detail) ?? new Error(detail);
+		throw detailError();
 	dirs = doneDirs;
 	const missed = [...failedDirs];
 	let materials = ctx.rec.manifest.materials.filter(
@@ -1768,7 +1793,7 @@ export async function animateAnchoredItem(
 		needsMaterials ? materials : undefined
 	);
 	dirs.forEach(onCall);
-	if (missed.length) throw new PartialMoveError(detail, dirs);
+	if (missed.length) throw new PartialMoveError(detailError(), dirs);
 }
 const seedOf = (s: string) =>
 	1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
@@ -1776,10 +1801,11 @@ const seedOf = (s: string) =>
 /** Some directions of an item move failed after the others were saved. */
 export class PartialMoveError extends Error {
 	constructor(
-		readonly reason: string,
+		/** Why the other views stopped; a LocalizedError keeps its translation. */
+		readonly reason: string | Error,
 		readonly savedDirs: DirectionName[]
 	) {
-		super(`${reason} The finished views were saved.`);
+		super(`${errorText(reason)} The finished views were saved.`);
 	}
 }
 
@@ -1795,7 +1821,8 @@ async function submitOrSaved(
 	if (!savedOnly) return queue.enqueue(req, meta);
 	const { requestHash } = await requestIdentity(req),
 		saved = jobs.findLast((r) => r.requestHash === requestHash && r.state === 'done');
-	if (!saved) throw new Error(SAVED_FRAMES_UNAVAILABLE);
+	if (!saved)
+		throw new LocalizedError(SAVED_FRAMES_UNAVAILABLE, 'itemRoute.errors.savedFramesUnavailable');
 	return saved;
 }
 
@@ -1973,20 +2000,32 @@ export async function poseItemClip(
 		bodies,
 		item.prompt
 	);
-	const first = failures.length
-		? failures[0] instanceof Error
-			? failures[0].message
-			: String(failures[0])
-		: '';
+	const first = failures.length ? errorText(failures[0]) : '';
 	try {
 		await mergeClip(ctx, item, anim, doneDirs, cells, prov, q, pad);
 	} catch (error) {
-		// The save error leads: the Studio offers free saved-frame recovery by its prefix (ITEM_MOVE_SAVE_CONFLICT).
+		// The save error leads and keeps its code: the Studio offers free saved-frame recovery on a save conflict.
 		throw failures.length
-			? new Error(`${error instanceof Error ? error.message : String(error)} ${first}`)
+			? error instanceof LocalizedError
+				? error.translation.key === 'itemRoute.errors.itemMoveSaveConflict'
+					? new LocalizedError(
+							`${error.message} ${first}`,
+							'itemRoute.errors.itemMoveSaveConflictAlso',
+							{ reason: errorMessage(failures[0]) }
+						)
+					: new LocalizedError(
+							`${error.message} ${first}`,
+							error.translation.key,
+							error.translation.vars
+						)
+				: new Error(`${errorText(error)} ${first}`)
 			: error;
 	}
-	if (failures.length) throw new PartialMoveError(first, doneDirs);
+	if (failures.length)
+		throw new PartialMoveError(
+			failures[0] instanceof Error ? failures[0] : String(failures[0]),
+			doneDirs
+		);
 	return q;
 }
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
@@ -2113,7 +2152,7 @@ async function publishClip(
 			rigArtworkVersion(current.manifest.rig, current.character) !== version ||
 			clipArtwork(currentItem) !== originalItem
 		)
-			throw new Error(ITEM_MOVE_SAVE_CONFLICT);
+			throw new LocalizedError(ITEM_MOVE_SAVE_CONFLICT, 'itemRoute.errors.itemMoveSaveConflict');
 		// Outfit autosave owns these fields, including when it runs while a paid edit is pending.
 		out.materials = currentItem.materials;
 		if (!out.materials.length && standingMaterials?.length) {
@@ -2238,10 +2277,43 @@ export async function applyRepairReview(projectId: string, review: RepairReview)
 	await publishClip(projectId, review.clip);
 }
 /** Free acknowledgment of the exact artwork and warnings the player reviewed, never a new generation. */
+/** The moves an item is missing frames in (coverageGaps), each once, in rig order. */
+export const gapMoves = (m: Manifest, item: Item) => [
+	...new Set(coverageGaps(m, item).map((gap) => gap.split('/')[0]))
+];
+/** Whether the item has frames in any move besides these (retainItemQa keeps its checks only then). */
+const keepsFramesWithout = (item: Item, moves: readonly string[]) =>
+	item.layers.some((layer) =>
+		Object.entries(layer.cells ?? {}).some(
+			([move, dirs]) => !moves.includes(move) && Object.keys(dirs).length > 0
+		)
+	);
+/** Whether an item can be kept without these moves: never without the standing move it is designed and posed from, or the
+ *  move of its anchor frame, which every other move is drawn from, and never when no frames would be left. Those gaps
+ *  need the paid redraw instead. */
+export const keepableWithout = (item: Item, moves: readonly string[]) =>
+	!!moves.length &&
+	!(item.standing && moves.includes(item.standing)) &&
+	!(item.anchorCell && moves.includes(item.anchorCell.split('/')[0])) &&
+	keepsFramesWithout(item, moves);
+/** The item without these moves (retainItemMoves: frames, coverage, pending cells, hidden body pixels, refit notes and
+ *  checks, with the summary recomputed), so it is hidden there and listed as missing, to make later at its own price.
+ *  Nothing is added or redrawn. */
+function withoutMoves(m: Manifest, item: Item, moves: readonly string[]): Item {
+	const out = structuredClone(item);
+	retainItemMoves(
+		out,
+		new Set(m.rig.animations.map((move) => move.id).filter((id) => !moves.includes(id)))
+	);
+	return out;
+}
+/** Accept a saved item's reviewed checks as they are. With `keepWithout`, the moves it is missing frames in (exactly the
+ *  reviewed gaps) are dropped instead, so an item with gaps can be kept from its complete moves. */
 export async function acceptItemReview(
 	projectId: string,
 	itemId: string,
-	reviewed: Item
+	reviewed: Item,
+	keepWithout?: readonly string[]
 ): Promise<void> {
 	const ctx = await loadProject(projectId),
 		item = ctx.rec.manifest.items.find((i) => i.id === itemId);
@@ -2254,11 +2326,24 @@ export async function acceptItemReview(
 		item.status !== 'accepted' ||
 		!item.qa ||
 		item.baseHash !== ctx.rec.manifest.rig.baseHash ||
-		stableStringify(itemContent(item)) !== expected
+		stableStringify(itemContent(item)) !== expected ||
+		(keepWithout &&
+			stableStringify(gapMoves(ctx.rec.manifest, item)) !== stableStringify(keepWithout))
 	) {
 		throw itemReviewChangedError();
 	}
-	const accepted = { ...item, qa: { ...acceptQa(item.qa), status: 'accepted' as const } };
+	if (keepWithout && !keepableWithout(item, keepWithout))
+		throw keepsFramesWithout(item, keepWithout)
+			? new LocalizedError(
+					'This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.',
+					'itemRoute.errors.keepWithoutStanding'
+				)
+			: new LocalizedError(
+					'This item has no complete move to keep. Make the missing frames instead.',
+					'itemRoute.errors.keepWithoutNothingLeft'
+				);
+	const kept = keepWithout?.length ? withoutMoves(ctx.rec.manifest, item, keepWithout) : item;
+	const accepted = { ...kept, qa: { ...acceptQa(kept.qa!), status: 'accepted' as const } };
 	await saveItem(projectId, accepted, new Map(), [], (current) => {
 		const currentItem = current.manifest.items.find((i) => i.id === itemId);
 		if (
@@ -2474,9 +2559,7 @@ export async function regridClip(
 	preferTierOne = false,
 	activityScope?: string,
 	savedOnly = false,
-	redraw = false,
-	/** Seed salts by batch start, from a review that re-rolls only a misaligned batch; other batches reuse their records. */
-	batchSalt?: Readonly<Record<string, number>>
+	redraw = false
 ): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[]; review?: RepairReview }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -2498,7 +2581,7 @@ export async function regridClip(
 				{ length: batch.count },
 				(_, index) => `${anim}/${dir}/${batch.start + index}`
 			);
-			const batchSeed = seedN + batch.start + (batchSalt?.[batch.start] ?? 0);
+			const batchSeed = seedN + batch.start;
 			const maskRequest = await gridRepairRequest(
 				ctx,
 				item,
@@ -2585,18 +2668,8 @@ export async function regridClip(
 		);
 		if ('blocked' in result)
 			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
-		if (index < requests.length - 1 && result.cells.some((cell) => cell.shifted))
-			throw new PaidStepError(
-				REPAIR_BATCH_MISALIGNED,
-				'itemRoute.errors.repairBatchMisaligned',
-				undefined,
-				{
-					step: `grid-batch:${request.start}`,
-					failure: 'misaligned',
-					// this batch again plus the later batches it stopped before buying
-					gens: requests.slice(index).reduce((sum, batch) => sum + batch.gens, 0)
-				}
-			);
+		// A shifted batch is flagged G10 (itemQa) and lands in the review with the rest of the approved, already priced
+		// batches: stopping them offered only a paid re-roll and left the bought frames unusable.
 		cells.push(...result.cells);
 		provenance.push(result.prov);
 		if (result.registrationIssue) registrationFindings.push(result.registrationIssue);

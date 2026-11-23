@@ -25,12 +25,12 @@
 	import { Check, TriangleAlert } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayDirection } from './displayDirection.ts';
-	import { setupWarningNote } from './model.ts';
-	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { moveName, setupWarningNote } from './model.ts';
+	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
-	import ReportButton from './ReportButton.svelte';
+	import ProblemNotice from './ProblemNotice.svelte';
 	import { cameraMessage } from '../lib/store/generation.ts';
 	const m = $derived(store.project?.manifest);
 	const camera = $derived(
@@ -77,7 +77,9 @@
 			id = doc.id;
 		let stale = false;
 		if (p)
-			void setupPlan(p, selected || undefined).then(
+			void setupPlan(p, selected || undefined, (move) =>
+				moveName(move, p.manifest.rig.animations)
+			).then(
 				(p) => {
 					if (!stale) {
 						plan = p;
@@ -175,14 +177,16 @@
 					</li>{/each}
 			</ol>
 		{/if}
-		{#if settingUp.error}<p class="notice bad" role="alert">
-				<TriangleAlert size={16} /><span>{displayError(settingUp.error)}</span><ReportButton
-					area="Rig setup"
-					error={settingUp.error}
-				/>
-			</p>{/if}
+		{#if settingUp.error}<ProblemNotice
+				error={settingUp.error}
+				report={{ area: 'Rig setup' }}
+			/>{/if}
 		{#each settingUp.warnings as warning (warning)}<p class="notice warn small">
-				<TriangleAlert size={14} /><span>{setupWarningNote(warning, t, displayDirection)}</span>
+				<TriangleAlert size={14} /><span
+					>{setupWarningNote(warning, t, displayDirection, (move) =>
+						displayMove(move, moveRefs)
+					)}</span
+				>
 			</p>{/each}
 	{:else}
 		{#if ready}<p class="notice ok small">
@@ -230,7 +234,11 @@
 				})}
 			</p>{/if}
 		{#each plan?.warnings ?? [] as warning (warning)}<p class="notice warn small">
-				<TriangleAlert size={14} /><span>{setupWarningNote(warning, t, displayDirection)}</span>
+				<TriangleAlert size={14} /><span
+					>{setupWarningNote(warning, t, displayDirection, (move) =>
+						displayMove(move, moveRefs)
+					)}</span
+				>
 			</p>{/each}
 		{#if error}<p class="notice warn small" role="alert">
 				<TriangleAlert size={16} /><span>{displayNestedMessage(error)}</span>

@@ -4,6 +4,7 @@ import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Project } from '../../src/lib/store/manifest.ts';
 import {
 	stateGenerationSource,
+	stateSourceFits,
 	verifyManagedStateParent,
 	type ManagedStateDetail,
 	type StateGenerationSource
@@ -127,5 +128,46 @@ describe('managed State parent preflight', () => {
 	it('does not verify a managed parent when its rotation cannot be downloaded', async () => {
 		const { source, detail } = await fixture();
 		expect(await verifyManagedStateParent(source, 'parent', detail, async () => null)).toBeNull();
+	});
+});
+
+describe('State source fit', () => {
+	it('keeps a State result savable after its source frame changed, never after the frame geometry did', async () => {
+		const image = makeImg(8, 8);
+		image.data.set([9, 0, 0, 255], 4 * 9);
+		const hash = await cellHash(image);
+		const project = {
+			images: new Map([[hash, image]]),
+			manifest: {
+				rig: {
+					baseItem: 'body',
+					cell: { w: 8, h: 8 },
+					pivot: { x: 4, y: 7 },
+					directions: [{ id: 'south' }],
+					animations: [{ id: 'idle', kind: 'move', cells: 1, frames: [{ cell: 0, ms: 100 }] }]
+				},
+				items: [{ id: 'body', layers: [{ cells: { idle: { south: [hash] } } }] }]
+			}
+		} as unknown as Project;
+		const made = stateGenerationSource(project, { clip: 'idle', frame: 0 })!.version;
+		expect(stateSourceFits(project, made)).toBe(true);
+		// Fix frames redrew the source frame: the result was drawn from an earlier look but still lines up.
+		const edited = structuredClone(image);
+		edited.data[4 * 9] = 10;
+		const editedHash = await cellHash(edited);
+		project.images.set(editedHash, edited);
+		project.manifest.items[0].layers[0].cells!.idle.south = [editedHash];
+		expect(stateGenerationSource(project, { clip: 'idle', frame: 0 })!.version).not.toBe(made);
+		expect(stateSourceFits(project, made)).toBe(true);
+		// So does a source move that was deleted since.
+		project.manifest.rig.animations = [];
+		expect(stateSourceFits(project, made)).toBe(true);
+		// A moved pivot or another view set would misalign it.
+		project.manifest.rig.pivot = { x: 4, y: 6 };
+		expect(stateSourceFits(project, made)).toBe(false);
+		project.manifest.rig.pivot = { x: 4, y: 7 };
+		project.manifest.rig.directions = [{ id: 'south' }, { id: 'east' }];
+		expect(stateSourceFits(project, made)).toBe(false);
+		expect(stateSourceFits(project, 'not a version')).toBe(false);
 	});
 });

@@ -453,6 +453,8 @@
 		"acceptAsIs": "Aceitar como está",
 		"pendingWorkBusy": "Há uma animação ou configuração em andamento ou parada. Conclua ou descarte para usar estas ações.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Aceita a arte atual sem gastar créditos. Os problemas detectados continuam nos detalhes do item.",
+		"keepWithoutMoves": "Manter sem essas animações",
+		"keepWithoutMovesDetail": "Mantém o item com suas animações completas sem gastar créditos. Ele fica oculto em {moves}, que continuam listadas como faltando para você criá-las depois pelo próprio preço.",
 		"youAcceptedThisArtworkWithItsRecorded": "Você aceitou esta arte com as observações de qualidade registradas.",
 		"generateItemForMove": "Gerar item para animação",
 		"labelMakeNameForMissingName": "Criar {name} para {missingName}",
@@ -1740,7 +1742,8 @@
 			"canceled": "Cancelado. Gerações já usadas não são reembolsadas. Solicitações já enviadas ainda podem ser concluídas e cobradas. Confira os resultados em Atividade.",
 			"stopped": "Geração interrompida. Confira a Atividade antes de tentar novamente.",
 			"setupStopped": "Configuração interrompida. Confira a Atividade antes de tentar novamente.",
-			"noFrames": "O PixelLab não retornou quadros que pudessem ser usados."
+			"noFrames": "O PixelLab não retornou quadros que pudessem ser usados.",
+			"notSavedAutomatically": "Não foi salvo automaticamente: {reason}"
 		},
 		"status": {
 			"starting": "Iniciando",
@@ -2131,12 +2134,14 @@
 		"estimate": "Estimativa: {gens} gerações",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
-		"waitingForRepairReview": "Aguardando a revisão dos quadros do item"
+		"waitingForRepairReview": "Aguardando a revisão dos quadros do item",
+		"needsRedo": "Articulações não encontradas: crie de novo para animar itens nela"
 	},
 	"setup": {
 		"warnings": {
 			"headroom": "Na direção {direction}, sobram {count} px acima da cabeça. Penteados altos ou chapéus podem precisar de um quadro maior.",
-			"keptFrames": "Os quadros atuais de {name} serão mantidos. Recrie o item depois de configurar o rig para que ele acompanhe os movimentos do personagem nas próximas animações."
+			"keptFrames": "Os quadros atuais de {name} serão mantidos. Recrie o item depois de configurar o rig para que ele acompanhe os movimentos do personagem nas próximas animações.",
+			"moveSkipped": "{move} foi ignorada: o PixelLab não encontrou articulações válidas em um dos quadros. Crie-a novamente para animar itens nela."
 		},
 		"title": "Configurar personagem",
 		"rigSetup": "Configuração do rig",
@@ -2175,7 +2180,14 @@
 			"jointsMissing": "O PixelLab não conseguiu encontrar as 18 articulações válidas em um quadro do corpo. A arte existente não mudou. Reconecte-se ou escolha uma referência mais clara da pose em pé e retome.",
 			"noCharacterId": "O PixelLab não retornou um ID de personagem gerenciado. A arte existente não mudou.",
 			"referenceChanged": "Uma referência da pose em pé mudou durante a configuração.",
-			"characterChanged": "O personagem mudou durante a configuração. O trabalho atual foi mantido."
+			"characterChanged": "O personagem mudou durante a configuração. O trabalho atual foi mantido.",
+			"squareFrame": "A configuração do rig precisa de um quadro quadrado de 32 a 256 pixels inteiros.",
+			"humanoidOnly": "A configuração do rig só oferece suporte a personagens humanoides por enquanto. Este personagem usa outro modelo de corpo.",
+			"singleBaseLayer": "A configuração do rig precisa de uma única camada fixa do corpo base.",
+			"chooseReference": "Escolha uma animação de referência em pé.",
+			"noStandingReference": "{move} não tem uma vista em pé para cada direção. Escolha uma animação com todas as vistas.",
+			"needsStandingViews": "A configuração do rig precisa das vistas em pé originais salvas ou das quatro direções cardeais. Importe primeiro as rotações que faltam.",
+			"emptyBodyFrame": "{move} tem um quadro do corpo vazio. Corrija ou exclua essa animação e configure novamente."
 		},
 		"newRegistration": "Registrar de novo"
 	},
@@ -2220,7 +2232,7 @@
 			"bodyFramesTheirQuality": "Os quadros do corpo ou suas verificações de qualidade mudaram desde a revisão. Nada foi salvo e nenhuma solicitação foi enviada. Revise os quadros novamente.",
 			"characterChangedAnotherTab2": "Este personagem mudou em outra aba antes que a animação pudesse ser salva. Abra o personagem novamente antes de tentar de novo.",
 			"demoStandingReferenceMissing": "A referência da pose em pé da demo está ausente.",
-			"resultMissingStorage": "resultado {label} ausente no armazenamento",
+			"resultMissingStorage": "Um resultado pago está faltando no armazenamento deste navegador.",
 			"pixellabReturnedIncompleteInvalid": "{direction}: o PixelLab retornou articulações incompletas ou inválidas para a pose em pé. A animação não foi iniciada a partir dessas articulações. Os resultados existentes foram mantidos.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: o PixelLab retornou a quantidade errada de quadros. Nenhuma nova tentativa paga foi iniciada. Confira a Atividade antes de solicitar outra tentativa.",
 			"animationExceedsPxFrame": "{move} {direction}: os quadros do corpo não cabem no quadro de {w} px. Eles foram mantidos para revisão; nada foi salvo.",
@@ -2230,11 +2242,11 @@
 			"colorMatchingCannotRepair": "{direction}: o ajuste de cores não corrige problemas de pose, pés ou borda.",
 			"colorDriftOutsideBounded": "{direction}: o desvio de cor ultrapassa os limites de correção pela paleta de referência.",
 			"boundedColorMatchingStill": "{direction}: mesmo com o ajuste dentro dos limites, a paleta ainda não passou na verificação de qualidade. Nenhuma nova verificação de articulações foi iniciada.",
-			"jointsFoundEveryFrame": "{label}: não foi possível encontrar articulações em todos os quadros",
-			"pixellabDroppedDirectionBusy": "{label}: o PixelLab ignorou esta direção porque estava ocupado. Tente novamente.",
-			"pixellabReturnedMotionFrames": "{label}: o PixelLab retornou {returned} quadros de movimento dos {expected} solicitados. Não foram solicitadas verificações de articulações nem renderizações do corpo para esta vista.",
-			"motionExceedsPxFrame": "{label}: o movimento não cabe no quadro de {size} px. Os quadros foram mantidos para revisão; nada foi salvo.",
-			"pixellabReturnedEmptyMotion": "{label}: o PixelLab retornou um quadro de movimento vazio",
+			"jointsFoundEveryFrame": "{move} {direction}: não foi possível encontrar articulações em todos os quadros",
+			"pixellabDroppedDirectionBusy": "{move} {direction}: o PixelLab ignorou esta direção porque estava ocupado. Tente novamente.",
+			"pixellabReturnedMotionFrames": "{move} {direction}: o PixelLab retornou {returned} quadros de movimento dos {expected} solicitados. Não foram solicitadas verificações de articulações nem renderizações do corpo para esta vista.",
+			"motionExceedsPxFrame": "{move} {direction}: o movimento não cabe no quadro de {size} px. Os quadros foram mantidos para revisão; nada foi salvo.",
+			"pixellabReturnedEmptyMotion": "{move} {direction}: o PixelLab retornou um quadro de movimento vazio",
 			"pixellabReturnedView": "O PixelLab não retornou a vista na direção {direction}",
 			"viewDoesFitPx": "A vista na direção {direction} não cabe no quadro de {cell} px. Aumente o Quadro ou reduza o Tamanho do corpo antes de criar novamente.",
 			"pixellabReturnedEmptyView": "O PixelLab retornou uma vista vazia na direção {direction}.",
@@ -2251,8 +2263,8 @@
 			"cachedBodyRenderIncomplete": "{direction}: a renderização do corpo em cache está incompleta.",
 			"cachedBodyFramesDo": "{direction}: os quadros do corpo em cache não são compatíveis com este personagem. O corpo não foi gerado novamente.",
 			"demoStandingBodyFacing": "A demo não tem uma pose em pé do corpo na direção {id}.",
-			"requestStopped": "{label}: {state}{error}",
-			"requestStoppedResume": "{label}: {state}{error}. A geração parou sem reenviar a solicitação. Confira esta solicitação em Atividade antes de começar outra vez.",
+			"requestStopped": "Uma solicitação ao PixelLab terminou com o status {state}{error}.",
+			"requestStoppedResume": "Uma solicitação ao PixelLab terminou com o status {state}{error}. A geração parou sem reenviar. Revise esta solicitação em Atividade antes de começar de novo.",
 			"promptLength": "Digite um prompt com 1 a 2.000 caracteres.",
 			"invalidSeed": "Seed inválida.",
 			"invalidCamera": "Câmera inválida.",
@@ -2279,7 +2291,7 @@
 			"moveAnimationFramesBlocked": "Este modelo e tamanho de tela não aceitam {frames} quadros. Nenhuma geração foi solicitada.",
 			"describeMoveBlocked": "Descreva esta animação antes de gerar. Nenhuma geração foi solicitada.",
 			"chooseExistingMoveRepairing": "Escolha uma animação existente antes de reparar seu equipamento.",
-			"liftedJointsOutside": "{label}: o movimento elevado ainda tem articulações fora do quadro de {size} px. Nenhuma renderização do corpo foi solicitada.",
+			"liftedJointsOutside": "{move} {direction}: o movimento elevado ainda tem articulações fora do quadro de {size} px. Nenhuma renderização do corpo foi solicitada.",
 			"reviewChoiceInvalid": "Esta opção não corresponde mais à animação. Revise de novo. Nenhuma solicitação foi feita."
 		},
 		"steps": {
@@ -2493,7 +2505,6 @@
 			"frame": "Quadro {number}",
 			"unavailable": "Este quadro precisa de uma imagem do corpo e de articulações medidas para cada direção selecionada.",
 			"changed": "O quadro inicial selecionado mudou. Escolha a origem novamente. Nenhuma geração foi solicitada.",
-			"route": "Este método começa na pose em pé. Escolha outro modelo de animação para usar um quadro salvo.",
 			"stateTarget": "Não é possível substituir um estado como se fosse uma animação."
 		},
 		"loop": "Repetir",
@@ -2576,7 +2587,7 @@
 			"queueReplacement": "Enfileirar substituição de vistas de {move}"
 		},
 		"titleRepair": "Reparar quadros do item",
-		"heldBy": "{move} falhou em {character}, então as novas animações ficam em espera. Abra a tentativa para ver as opções.",
+		"heldBy": "{move} falhou em {character}. As novas animações esperam até você tentar de novo ou descartá-la lá, para que os resultados pagos continuem recuperáveis. Abra para ver as opções.",
 		"open": "Abrir {character}",
 		"progressLabel": "Geração de animação atual",
 		"retryFeature": "Gerando esta animação novamente",
@@ -2686,9 +2697,7 @@
 			"currentFrame": "Quadro atual {number}",
 			"redrawnFrame": "Quadro redesenhado {number}",
 			"repairedFrame": "Quadro reparado {number}"
-		},
-		"rerollBatch": "Gerar este lote de novo",
-		"rerollBatchDetail": "Os lotes anteriores continuam como estão. A estimativa cobre este lote e os seguintes, que ainda não foram comprados."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2705,12 +2714,16 @@
 			"incompleteReferenceFrames": "O PixelLab retornou quadros de referência ou da pose em pé incompletos. Nenhuma solicitação dependente foi enviada.",
 			"standingFrameSize": "O PixelLab retornou um quadro da pose em pé com o tamanho errado. Nenhuma solicitação dependente foi enviada.",
 			"layersMismatch": "As camadas do equipamento não correspondem a este espaço. Nenhuma geração foi solicitada.",
-			"repairBatchMisaligned": "Um lote de reparo retornou quadros desalinhados. Os lotes restantes foram interrompidos e a arte existente foi mantida.",
 			"reviewChanged": "Este item ou suas verificações mudaram. Abra-o novamente antes de aceitar a arte atual.",
 			"paletteReviewChanged": "Este item ou suas cores mudaram. Revise a correspondência de cores novamente.",
 			"paletteSaveChanged": "O item, o corpo ou o material mudou. As cores existentes foram mantidas. Revise a correspondência novamente.",
 			"invalidItemGridSheet": "O PixelLab retornou uma grade de item inutilizável. Era esperada exatamente uma folha. A arte existente foi mantida.",
 			"invalidItemGridLayout": "O PixelLab retornou uma grade de item inutilizável. A folha tem o layout de quadros errado. A arte existente foi mantida.",
+			"savedFramesUnavailable": "Não há quadros prontos que correspondam ao corpo e ao equipamento atuais. Nenhuma geração foi solicitada.",
+			"itemMoveSaveConflict": "Este personagem ou item mudou enquanto seus quadros eram gerados. A arte existente foi mantida; os quadros prontos continuam em Atividade.",
+			"itemMoveSaveConflictAlso": "Este personagem ou item mudou enquanto seus quadros eram gerados. A arte existente foi mantida; os quadros prontos continuam em Atividade. Outra vista também parou: {reason}",
+			"keepWithoutStanding": "Faltam quadros deste item na animação da qual ele foi desenhado, então ele não pode ser mantido sem ela. Crie os quadros que faltam.",
+			"keepWithoutNothingLeft": "Este item não tem nenhuma animação completa para manter. Crie os quadros que faltam.",
 			"savedFrameMissing": "Um quadro salvo deste item está faltando no armazenamento."
 		}
 	},
@@ -2818,7 +2831,8 @@
 		"review": "Confira {name} antes de salvar.",
 		"generated": "Gerado",
 		"sourceMissing": "Origem indisponível",
-		"sourceChanged": "A origem mudou depois da geração, então este resultado não pode ser salvo. Descarte e tente de novo.",
+		"sourceChanged": "O tamanho do quadro, o pivô ou as vistas do personagem mudaram depois da geração, então este resultado não ficaria alinhado. Descarte e tente de novo.",
+		"sourceChangedKeep": "O quadro de onde este estado partiu mudou depois da geração. Você ainda pode salvá-lo como está ou descartá-lo e tentar de novo.",
 		"keepGrounded": "Alinhar à origem",
 		"groundedHint": "Pés movidos para combinar com a origem. Desative para desfazer.",
 		"readyRow": "Pronto para revisar",
@@ -3070,6 +3084,8 @@
 		"liftDetailWarned": "{views}: os pés sobem até {px} px em {frames} de {total} quadros de movimento para o movimento caber no quadro. Isso passa da verificação de pés de {limit} px, então a animação é salva com um aviso sobre os pés.",
 		"reroll": "Gerar {views} de novo",
 		"rerollDetail": "Gerar de novo compra uma nova tentativa só para essas direções. Todas as outras mantêm seus resultados pagos.",
+		"keepUnposedDetail": "Salva os quadros do corpo como estão. Não foram encontradas articulações em alguns quadros, então não dá para ajustar itens a esta animação até você criá-la de novo.",
+		"keepUnposed": "Manter sem ajustar itens",
 		"pending": "Ainda a comprar: cerca de {gens} gens.",
 		"liftable": "Pode ser elevado para caber: os pés sobem até {px} px em {frames} de {total} quadros.",
 		"notLiftable": "Elevar não resolve: o movimento está cortado em uma lateral ou no topo."
@@ -3077,7 +3093,11 @@
 	"createReview": {
 		"resume": "Continuar com os resultados pagos",
 		"register": "Registrar as vistas desenhadas de novo",
-		"registerDetail": "Mantém o desenho pago e compra um novo registro das mesmas vistas."
+		"registerDetail": "Mantém o desenho pago e compra um novo registro das mesmas vistas.",
+		"lift": "Subir para caber",
+		"liftDetail": "Mantém o desenho pago, sobe cada vista {px} px no quadro de {size} px e compra um novo registro das mesmas vistas.",
+		"largerFrame": "Usar um quadro de {size} px",
+		"largerFrameDetail": "Mantém o desenho pago, coloca as mesmas vistas em um quadro de {size} px e compra um novo registro. Animações e itens feitos depois em um quadro maior podem custar mais."
 	},
 	"adjustFrame": {
 		"title": "Ajustar quadro",
@@ -3223,5 +3243,56 @@
 		"copyFailed": "Não foi possível copiar. Selecione o texto acima e copie.",
 		"open": "Abrir no GitHub",
 		"unexpected": "Algo deu errado. Se acontecer de novo, relate o problema."
+	},
+	"problem": {
+		"details": "Detalhes",
+		"title": {
+			"frame-count": "O PixelLab devolveu um número inesperado de quadros",
+			"overflow": "Parte do personagem passou do quadro",
+			"empty": "O PixelLab devolveu quadros vazios",
+			"dropped": "O PixelLab estava ocupado e pulou uma vista",
+			"joints": "Não foram encontradas articulações em alguns quadros",
+			"stopped": "Uma solicitação paga não terminou",
+			"quality": "Os novos quadros não passaram nas verificações de qualidade",
+			"changed": "Algo mudou durante o processo",
+			"missing": "Alguns resultados salvos não estão neste dispositivo",
+			"plan": "Seu plano do PixelLab não inclui isto",
+			"credits": "Sua conta do PixelLab ficou sem créditos",
+			"key": "O PixelLab não aceitou seu token",
+			"offline": "Não foi possível acessar o PixelLab",
+			"declined": "O PixelLab recusou esta solicitação",
+			"unexpected": "Algo deu errado",
+			"uncertain": "Um resultado pago pode ter se perdido",
+			"poses": "Esta animação ainda não tem poses para equipamentos",
+			"method": "Este item não pode ser posicionado neste personagem",
+			"quote": "O PixelLab não confirmou o preço",
+			"browser": "Este navegador não consegue fazer isso com segurança",
+			"exportId": "Outro personagem usa este ID de exportação",
+			"busy": "O PixelLab está ocupado"
+		},
+		"next": {
+			"frame-count": "Seus resultados pagos foram mantidos. Revise-os e depois continue ou tente novamente.",
+			"overflow": "Escolha subir ou um quadro maior, se oferecido, ou tente novamente.",
+			"empty": "Seus resultados pagos continuam em Atividade. Tente novamente com uma nova tentativa.",
+			"dropped": "Aguarde um momento e tente novamente.",
+			"joints": "O que foi pago continua em Atividade. Faça uma nova tentativa ou comece de uma pose em pé mais clara.",
+			"stopped": "Veja em Atividade o que aconteceu antes de começar de novo.",
+			"quality": "Revise os resultados e depois mantenha-os ou tente novamente.",
+			"changed": "Revise de novo antes de continuar.",
+			"missing": "Veja em Atividade o que ainda está salvo antes de criar de novo.",
+			"plan": "Faça upgrade do plano no PixelLab ou escolha uma opção que seu plano inclua.",
+			"credits": "Adicione créditos no PixelLab e tente novamente.",
+			"key": "Conecte o PixelLab novamente com um token válido.",
+			"offline": "Verifique sua conexão e tente novamente.",
+			"declined": "Altere a descrição e tente novamente.",
+			"unexpected": "Relate o problema para que ele seja corrigido. O que já foi pago continua em Atividade.",
+			"uncertain": "Confira Atividade antes de tentar de novo: uma nova tentativa pode cobrar outra vez.",
+			"poses": "Configure as poses primeiro e depois crie o equipamento.",
+			"method": "Escolha Automático e tente novamente.",
+			"quote": "Tente novamente em instantes ou escolha outro modelo.",
+			"browser": "Use um navegador atual para continuar.",
+			"exportId": "Escolha outro ID de exportação.",
+			"busy": "Aguarde um momento e tente novamente."
+		}
 	}
 }

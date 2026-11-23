@@ -43,12 +43,15 @@ import { loadProject, readStoredImage, type StoredProject } from '../lib/store/p
 import { sameClipName, withClipWriteLock } from './clipName.ts';
 import { stateAttempts } from './stateRecovery.ts';
 import {
+	MAX_FRAME,
+	canvasLift,
 	frameChangeText,
 	frameFacts,
 	freeOf,
 	makeRoom,
 	reframeCharacter,
 	roomShort,
+	roundedFrame,
 	standingRoom,
 	standingViews,
 	type FrameChange
@@ -56,6 +59,7 @@ import {
 import { defaultCharacterExportId, itemContent, retainMoveChoices } from '../lib/store/identity.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { liftToFit, normalize, opaqueBox } from '../lib/rig/normalize.ts';
+import { maskIoU } from '../lib/image/similarity.ts';
 import { flipH } from '../lib/rig/mirror.ts';
 import {
 	ANCHORS,
@@ -80,8 +84,7 @@ import {
 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { LABELS, armDepth, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
-import { rigReady } from '../lib/rig/setup.ts';
-import { standingHistory } from '../lib/frames/history.ts';
+import { rigReady, setupRedoMoves } from '../lib/rig/setup.ts';
 import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import {
 	RIG_GATES,
@@ -121,7 +124,7 @@ import {
 	type Project,
 	type Provenance
 } from '../lib/store/manifest.ts';
-import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
+import { baseClothesIn, basePrompt, looksOf, moveName, withoutBaseBody } from './model.ts';
 import {
 	moveSourceFitsGeometry,
 	moveSourceMatches,
@@ -167,6 +170,7 @@ import { cellImg } from '../lib/compose/compose.ts';
 import {
 	blockingIssues,
 	errorMessage,
+	errorText,
 	errorTranslation,
 	LocalizedError,
 	message,
@@ -186,6 +190,7 @@ import {
 	moveFrames,
 	moveMotionFrames,
 	moveMotionGens,
+	moveMotionSource,
 	nativeMoveGens,
 	type MoveFrameSpec
 } from './movePricing.ts';
@@ -353,7 +358,6 @@ async function dryRecord(req: Req, label: string, dry: DryRun): Promise<JobRec> 
 			`${label}: ${stopped.state}. Generation stopped without resending.`,
 			'create.errors.requestStoppedResume',
 			{
-				label,
 				state: activityStateMessage(stopped.state),
 				error: stopped.error ? ` (${stopped.error.slice(0, 160)})` : ''
 			},
@@ -439,7 +443,6 @@ export async function run(
 			`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Generation stopped without resending. Review this request in Activity before starting again.' : ''}`,
 			resumeSafe ? 'create.errors.requestStoppedResume' : 'create.errors.requestStopped',
 			{
-				label,
 				state: activityStateMessage(r.state),
 				error: r.error ? ` (${r.error.slice(0, 160)})` : ''
 			}
@@ -479,8 +482,7 @@ export async function imagesOf(
 			if (!blob)
 				throw new LocalizedError(
 					`result ${x.label} missing in storage`,
-					'create.errors.resultMissingStorage',
-					{ label: x.label }
+					'create.errors.resultMissingStorage'
 				);
 			return { label: x.label, img: await decodePng(blob) };
 		})
@@ -632,9 +634,11 @@ interface ClipJob {
 	action: string;
 	paletteRepair?: boolean;
 	authored?: boolean;
-	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number };
+	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number; words: ViewWords };
 	/** Rows each motion frame was lifted by with the user's consent; disclosed with the clip's checks. */
 	lifts?: readonly number[];
+	/** keepUnposed: frames without measured joints are kept (and fail their joint checks) instead of stopping the view. */
+	unposed?: boolean;
 }
 interface ClipOut {
 	frames: Img[];
@@ -689,6 +693,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 			r,
 			outs,
 			j.anim,
+			j.native.words,
 			j.dir,
 			j.native.frames,
 			j.nativeStart ?? j.rest,
@@ -727,7 +732,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 	);
 	const dryJoints = j.signal && dryRuns.get(j.signal);
 	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('render-joints', dryJoints.running);
-	if (measured.some((k) => !hasAll(k)))
+	if (!j.unposed && measured.some((k) => !hasAll(k)))
 		throw new PaidStepError(
 			`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`,
 			'create.errors.validJointsWereFound',
@@ -908,6 +913,7 @@ async function motion(
 	req: Req,
 	dir: Direction,
 	label: string,
+	words: ViewWords,
 	tick: () => void,
 	expected: number,
 	signal?: AbortSignal,
@@ -916,24 +922,28 @@ async function motion(
 	standing?: Img,
 	lifts?: readonly number[],
 	below = 0,
-	echo: 'optional-exact' | 'required-leading' = 'optional-exact',
-	echoes?: ReadonlySet<Sha256>
-): Promise<{ keypoints: Keypoint[][]; record: JobRec }> {
+	echo: MotionEchoRule = 'optional-leading'
+): Promise<{
+	keypoints: Keypoint[][];
+	record: JobRec;
+	motionEcho?: ClipSource['motionEcho'];
+	motionBridged?: number[];
+}> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
-	const frames = await normalizeMotionFrames(
+	const { frames, motionEcho } = await normalizeMotionFrames(
 		r,
 		(await imagesOf(r)).map((out) => out.img),
 		dir,
 		label,
+		words,
 		expected,
 		size,
 		standing,
 		echo,
 		lifts,
 		'motion',
-		below,
-		echoes
+		below
 	);
 	const kps = await Promise.all(
 		frames.map(async (f) => {
@@ -944,26 +954,56 @@ async function motion(
 	);
 	const dryJoints = signal && dryRuns.get(signal);
 	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('motion-joints', dryJoints.running);
-	if (kps.some((k) => !k))
+	const filled = motionJoints(kps);
+	if (!filled)
 		throw new PaidStepError(
 			`${label}: joints not found on every frame`,
 			'create.errors.jointsFoundEveryFrame',
-			{ label },
+			words,
 			{ step: 'motion', failure: 'joints', recordId: r.id }
 		);
 	// Skeleton renders accept joints inside the image only (Keypoint-Input x and y are 0..1). A lifted source whose joints
 	// still fall outside stops here, before its render is bought.
 	if (
 		lifts?.some(Boolean) &&
-		kps.some((k) => k!.some((p) => p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1))
+		filled.some((k) => k.some((p) => p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1))
 	)
 		throw new PaidStepError(
 			`${label}: the lifted motion still has joints outside the ${size} px frame. No body render was requested.`,
 			'create.errors.liftedJointsOutside',
-			{ label, size },
+			{ ...words, size },
 			{ step: 'motion', failure: 'overflow', recordId: r.id }
 		);
-	return { keypoints: kps as Keypoint[][], record: r };
+	const motionBridged = kps.flatMap((points, i) => (hasAll(points) ? [] : [i]));
+	return {
+		keypoints: filled,
+		record: r,
+		...(motionEcho ? { motionEcho } : {}),
+		...(motionBridged.length ? { motionBridged } : {})
+	};
+}
+/** Measured motion joints, with at most one interior frame that has none filled halfway between its measured neighbors.
+ *  Motion joints only shape the poses the body render is asked for, and the render's own frames must still measure every
+ *  joint, so one gap in a smooth motion is safe to bridge; requested keypoints never stand in for measured ones. Undefined
+ *  when an end frame, two frames or neighboring frames have none. */
+export function motionJoints(
+	measured: readonly (Keypoint[] | undefined)[]
+): Keypoint[][] | undefined {
+	const missing = measured.flatMap((points, i) => (hasAll(points) ? [] : [i]));
+	if (!missing.length) return measured as Keypoint[][];
+	const [i] = missing;
+	if (missing.length > 1 || i === 0 || i === measured.length - 1) return undefined;
+	const before = measured[i - 1]!,
+		after = measured[i + 1]!;
+	return measured.map((points, j) =>
+		j === i
+			? LABELS.map((label) => {
+					const a = before.find((p) => p.label === label)!,
+						b = after.find((p) => p.label === label)!;
+					return kp4(label, (a.x + b.x) / 2, (a.y + b.y) / 2);
+				})
+			: points!
+	);
 }
 
 /** The one placement of managed motion frames (live, cached replay, standing echo, lift and Make room): PixelLab draws them
@@ -971,42 +1011,45 @@ async function motion(
  *  moved our art since that registration. Native V3/PixMiniMax moves start from our own art and take no offset. */
 export const artMapping = (rig: Pick<Manifest['rig'], 'artOffset'>, dir: DirectionName) =>
 	rig.artOffset?.[dir] ?? 0;
-/** Earlier standing views managed motion may send back first: Fix frames changes only our Standing, while PixelLab keeps
- *  echoing the one it registered, so every standing the body's edit history recorded for `dir` also counts as the echo. */
-function heldStandings(m: Manifest, dir: DirectionName): ReadonlySet<Sha256> {
-	const base = m.items.find((item) => item.id === m.rig.baseItem);
-	return new Set([...(base ? standingHistory(base, dir) : [])].filter((hash) => hash !== null));
-}
+/** Whether a returned frame 0 may be PixelLab's start frame sent back. `required-leading`: raw pixminimax documents
+ *  frame_count + 1 frames with the input first. `optional-leading`: one extra frame is dropped by position, as managed
+ *  motion sends the standing it registered first (despite `keep_first_frame: false` on described moves; the walk template
+ *  sends no such flag) and that view need not match ours (Fix frames, Adjust frame, an outfit drawn at creation; known
+ *  issues). Matching its pixels would make a paid motion a dead end that a re-roll repeats, so its overlap with our
+ *  standing is recorded as evidence instead. */
+type MotionEchoRule = 'required-leading' | 'optional-leading';
+const motionEchoRule = (spec: MoveFrameSpec): MotionEchoRule =>
+	moveMotionSource(spec) === 'standalone' ? 'required-leading' : 'optional-leading';
 async function normalizeMotionFrames(
 	r: JobRec,
 	images: Img[],
 	dir: Direction,
+	/** The request's label, for the English message only; users read `words`. */
 	label: string,
+	words: ViewWords,
 	expected: number,
 	size: number,
 	standing?: Img,
-	echo: 'optional-exact' | 'required-leading' | 'optional-leading' = 'optional-exact',
+	echo: MotionEchoRule = 'optional-leading',
 	lifts?: readonly number[],
 	step = 'motion',
 	/** Rows our standing art sits below the registered view (artMapping): managed motion only, never native moves. */
-	below = 0,
-	/** Earlier standing views an `optional-exact` echo may also match (heldStandings). */
-	echoes?: ReadonlySet<Sha256>
-): Promise<Img[]> {
+	below = 0
+): Promise<{ frames: Img[]; motionEcho?: ClipSource['motionEcho'] }> {
 	const rejected = (failure: PaidFailure) => ({ step, failure, recordId: r.id });
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
 		throw new PaidStepError(
 			`${label}: PixelLab dropped the direction (busy). Try again.`,
 			'create.errors.pixellabDroppedDirectionBusy',
-			{ label },
+			words,
 			rejected('dropped')
 		); // S4 truncation
 	const returned = images.length,
 		mismatch = new PaidStepError(
 			`${label}: PixelLab returned ${returned} motion frames for ${expected} requested. No joint checks or body render were requested for this view.`,
 			'create.errors.pixellabReturnedMotionFrames',
-			{ label, returned, expected: expected },
+			{ ...words, returned, expected },
 			rejected('frame-count')
 		);
 	const startKept = returned === expected + 1 && !!standing;
@@ -1018,20 +1061,11 @@ async function normalizeMotionFrames(
 			throw new PaidStepError(
 				`${label}: the motion does not fit the ${size} px frame. Its frames were kept for review; nothing was saved.`,
 				'create.errors.motionExceedsPxFrame',
-				{ label, size },
+				{ ...words, size },
 				rejected('overflow')
 			);
 		return normalized.img;
 	};
-	if (startKept && echo === 'optional-exact') {
-		const first = normalizeFrame(images[0]);
-		if (
-			first.w !== standing!.w ||
-			first.h !== standing!.h ||
-			(first.data.some((v, i) => v !== standing!.data[i]) && !echoes?.has(await cellHash(first)))
-		)
-			throw mismatch;
-	}
 	const frames = (startKept ? images.slice(1) : images).map((image, i) =>
 		normalizeFrame(image, lifts?.[i])
 	);
@@ -1039,26 +1073,31 @@ async function normalizeMotionFrames(
 		throw new PaidStepError(
 			`${label}: PixelLab returned an empty motion frame`,
 			'create.errors.pixellabReturnedEmptyMotion',
-			{ label },
+			words,
 			rejected('empty')
 		);
-	return frames;
+	// Evidence of what a motion source's dropped frame was, recorded with the clip; it never decides anything.
+	if (!startKept || step !== 'motion') return { frames };
+	const echoed = normalize(images[0], size, size, 128, size, -below).img;
+	return { frames, motionEcho: { maskIoU: maskIoU(echoed, standing!) } };
 }
 
 async function normalizeNativeMoveFrames(
 	record: JobRec,
 	outputs: { img: Img }[],
 	move: string,
+	words: ViewWords,
 	dir: Direction,
 	count: number,
 	rest: Img,
 	model: 'v3' | 'pixminimax'
 ): Promise<Img[]> {
-	return normalizeMotionFrames(
+	const { frames } = await normalizeMotionFrames(
 		record,
 		outputs.map((out) => out.img),
 		dir,
 		`${move} ${dir}`,
+		words,
 		count,
 		rest.w,
 		rest,
@@ -1066,6 +1105,7 @@ async function normalizeNativeMoveFrames(
 		undefined,
 		'render'
 	);
+	return frames;
 }
 
 export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
@@ -1103,16 +1143,12 @@ async function completedCreation(
 	return saved;
 }
 
-/** A drawn view placed on the creation frame: a V3 reference keeps its own height as the character canvas. */
+/** The character canvas of a drawn view: a V3 reference keeps its own height. */
+const drawnCanvas = (spec: CreateSpec, img: Img, cell: number) =>
+	Math.min(spec.reference && !spec.model ? img.h : img.w, cell);
+/** A drawn view placed on the creation frame. */
 const drawnView = (spec: CreateSpec, img: Img, cell: number) =>
-	normalize(
-		img,
-		cell,
-		cell,
-		128,
-		Math.min(spec.reference && !spec.model ? img.h : img.w, cell),
-		spec.lift ?? 0
-	);
+	normalize(img, cell, cell, 128, drawnCanvas(spec, img, cell), spec.lift ?? 0);
 
 export interface CreatePaidOption extends PaidOption {
 	spec: CreateSpec;
@@ -1124,16 +1160,8 @@ export interface CreatePaidReview extends PaidReview {
  *  from them for free, with a new registration of the same views, or only with a new draw (the sheet's Try again). Undefined
  *  when nothing was drawn yet or the character is already saved. */
 export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidReview | undefined> {
-	const scope = new AbortController(),
-		dry: DryRun = { records: [], checks: 0, unmeasured: false, running: false };
-	dryRuns.set(scope.signal, dry);
-	let outcome: unknown;
-	try {
-		await createCharacter(spec, undefined, undefined, scope.signal);
-		return undefined;
-	} catch (error) {
-		outcome = error;
-	}
+	const { dry, outcome } = await replayCreate(spec);
+	if (!outcome) return undefined;
 	const base = dry.records[0]; // the draw is the first request
 	if (!base) return undefined;
 	const cell = spec.frame ?? CELL,
@@ -1160,11 +1188,7 @@ export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidR
 	const options: CreatePaidOption[] = [];
 	const paid = outcome instanceof PaidStepError ? outcome.paid : undefined;
 	if (outcome instanceof Unpaid) {
-		// Everything bought so far is reused; only an unbought registration or check is still charged.
-		const gens = +(
-			(outcome.path === '/create-character-v3' && !outcome.running ? 0.25 : 0) +
-			dry.checks * EST
-		).toFixed(2);
+		const gens = unpaidCreateGens(outcome, dry);
 		options.push({
 			id: 'resume',
 			label: message('createReview.resume'),
@@ -1184,8 +1208,85 @@ export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidR
 			primary: true,
 			spec: { ...spec, registrationSeed: salt(spec.registrationSeed ?? spec.seed) }
 		});
-	}
+	} else if (paid?.step === 'draw' && paid.failure === 'overflow')
+		options.push(...(await placementOptions(spec, drawn, base)));
 	return { views, spent: spentGens(dry.records), recordIds: dry.records.map((r) => r.id), options };
+}
+/** A creation replayed from the request cache only: the records it reused, and why it stopped (undefined: it completed). */
+async function replayCreate(spec: CreateSpec): Promise<{ dry: DryRun; outcome: unknown }> {
+	const scope = new AbortController(),
+		dry: DryRun = { records: [], checks: 0, unmeasured: false, running: false };
+	dryRuns.set(scope.signal, dry);
+	try {
+		await createCharacter(spec, undefined, undefined, scope.signal);
+		return { dry, outcome: undefined };
+	} catch (error) {
+		return { dry, outcome: error };
+	}
+}
+/** Everything a replay bought is reused; only an unbought registration (0.25) and joint checks are still charged. */
+const unpaidCreateGens = (outcome: Unpaid, dry: DryRun) =>
+	+(
+		(outcome.path === '/create-character-v3' && !outcome.running ? 0.25 : 0) +
+		dry.checks * EST
+	).toFixed(2);
+/** Ways on for drawn views that do not fit their frame. The paid draw does not depend on the frame or the placement
+ *  (drawRequest), so the same views are placed again, raised in the same frame or in the smallest larger frame they fit,
+ *  and only their new registration (and any joint check) is bought: each choice is priced by a replay from the cache. */
+async function placementOptions(
+	spec: CreateSpec,
+	drawn: { label: string; img: Img }[],
+	base: JobRec
+): Promise<CreatePaidOption[]> {
+	const cell = spec.frame ?? CELL,
+		views = DIRECTIONS.map((d) => drawn.find((view) => view.label === d)?.img);
+	if (views.some((img) => !img)) return [];
+	const fits = (candidate: CreateSpec, frame: number) =>
+		views.every((img) => {
+			const placed = drawnView(candidate, img!, frame);
+			return !placed.cutPx && !!opaqueBox(placed.img);
+		});
+	const candidates: Omit<CreatePaidOption, 'gens' | 'paid' | 'primary'>[] = [];
+	const raise = views.map((img) =>
+		liftToFit(img!, cell, cell, 128, drawnCanvas(spec, img!, cell), -(spec.lift ?? 0))
+	);
+	if (raise.every((px) => px !== null) && Math.max(...raise) > 0) {
+		const px = Math.max(...raise);
+		candidates.push({
+			id: 'lift',
+			label: message('createReview.lift'),
+			detail: message('createReview.liftDetail', { px, size: cell }),
+			spec: { ...spec, lift: (spec.lift ?? 0) + px }
+		});
+	}
+	// A new frame takes the placement a new character of that frame gets (startCreate).
+	const framed = (frame: number): CreateSpec => ({
+		...spec,
+		frame,
+		lift: canvasLift(spec.size, frame) || undefined
+	});
+	let smallest: number | undefined;
+	for (let frame = cell + 1; frame <= MAX_FRAME && !smallest; frame++)
+		if ((frame - spec.size) % 2 === 0 && fits(framed(frame), frame)) smallest = frame;
+	if (smallest) {
+		const rounded = roundedFrame(spec.size, smallest),
+			size = fits(framed(rounded), rounded) ? rounded : smallest;
+		candidates.push({
+			id: 'enlarge-frame',
+			label: message('createReview.largerFrame', { size }),
+			detail: message('createReview.largerFrameDetail', { size }),
+			spec: framed(size)
+		});
+	}
+	const options: CreatePaidOption[] = [];
+	for (const candidate of candidates) {
+		const { dry, outcome } = await replayCreate(candidate.spec);
+		// The paid draw must be reused, never bought again; anything but a completion or an unbought step is no way on.
+		if (dry.records[0]?.id !== base.id || (outcome && !(outcome instanceof Unpaid))) continue;
+		const gens = outcome instanceof Unpaid ? unpaidCreateGens(outcome, dry) : 0;
+		options.push({ ...candidate, gens, paid: gens > 0, primary: !options.length });
+	}
+	return options;
 }
 
 /** Insert-only publication. Concurrent/recovered completion can never replace an already customized character. */
@@ -1548,6 +1649,10 @@ export interface MoveSpec {
 	seed: number;
 	/** Per-view seed salts chosen in a paid-result review: only that view's failed step is bought again. */
 	reroll?: Partial<Record<DirectionName, { motion?: number; render?: number }>>;
+	/** Consent from a paid-result review to save a new move whose body frames came back without measured joints on some
+	 *  frames: body only, with no poses (no sources, skeletons or anchors) and listed in rigQa.redo, to make again before
+	 *  items can be fitted to it. Joints are never invented. */
+	keepUnposed?: true;
 	/** The attempt a reviewed continuation runs as (default: the seed). A new one reopens requests the stopped attempt
 	 *  canceled before sending (queue autoCanceledAttempts), so they are sent instead of replayed as stopped. */
 	attempt?: number;
@@ -1555,8 +1660,6 @@ export interface MoveSpec {
 	motionLift?: Partial<Record<DirectionName, number[]>>;
 	/** Preflight warnings (PreflightWarning ids from movePreflightWarnings) the user chose to generate past. */
 	acceptedWarnings?: string[];
-	/** Item repair: seed salts by batch start for re-rolling only a misaligned batch (regridClip). */
-	gridReroll?: Record<string, number>;
 	replace?: boolean;
 	activityScope?: string;
 	dirs?: DirectionName[];
@@ -2097,30 +2200,32 @@ async function inspectMeasurementRecovery(
 					'create.errors.originalCompletedMotionUnavailable',
 					{ direction: d }
 				);
-			const frames = await normalizeMotionFrames(
+			const { frames } = await normalizeMotionFrames(
 				record,
 				(await imagesOf(record, context.read)).map((out) => out.img),
 				d as Direction,
 				`${spec.id} ${d} (motion)`,
+				viewWords(rec.manifest, spec.id, d),
 				moveMotionFrames(rec.manifest, spec),
 				rig.cell.w,
 				motionStart,
-				spec.motionSource === 'standalone' ? 'required-leading' : 'optional-exact',
+				motionEchoRule(spec),
 				spec.motionLift?.[d],
 				'motion',
-				spec.motionSource === 'standalone' ? 0 : artMapping(rig, d),
-				heldStandings(rec.manifest, d)
+				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d)
 			);
-			const measured = await Promise.all(
-				frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
+			const measured = motionJoints(
+				await Promise.all(
+					frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
+				)
 			);
-			if (measured.some((points) => !hasAll(points)))
+			if (!measured)
 				throw new RecoveryUnavailable(
 					`${d}: the original motion has no valid completed joint checks for every frame. No request was made.`,
 					'create.errors.originalMotionValidCompleted',
 					{ direction: d }
 				);
-			keypoints = measured as Keypoint[][];
+			keypoints = measured;
 			rawHashes.push(hash);
 		}
 		if (keypoints)
@@ -2175,6 +2280,7 @@ async function inspectMeasurementRecovery(
 					raw,
 					outputs,
 					spec.id,
+					viewWords(rec.manifest, spec.id, d),
 					d,
 					framesRequested,
 					start ?? restImg,
@@ -2349,16 +2455,6 @@ export function bodyMoveIssue(
 	s: MoveFrameSpec & Pick<MoveSpec, 'text' | 'startFrom'>,
 	blocked = false
 ): LocalizedError | undefined {
-	if (
-		s.startFrom &&
-		moveAnimationModel(s) === 'skeleton-v3' &&
-		s.motionSource !== 'standalone' &&
-		!isAuthoredAction(s.action)
-	)
-		return new LocalizedError(
-			'This route starts from Standing. Choose a different animation model to use a saved frame.',
-			'moveSheet.startFrom.route'
-		);
 	const frames = moveFrames(m, s);
 	const model = moveAnimationModel(s);
 	const suffix = blocked ? ' No generation was requested.' : '';
@@ -2941,13 +3037,13 @@ async function addMoveUnlocked(
 		if (!(error instanceof PartialMoveError)) throw error;
 		const views = error.savedDirs.map(directionLabel).join(', ');
 		throw new LocalizedError(
-			`${error.reason} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,
+			`${errorText(error.reason)} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,
 			spec.replace
 				? 'create.errors.partialSaved'
 				: spec.reuseItemFrames
 					? 'create.errors.partialSavedNewFrames'
 					: 'create.errors.partialSavedRetry',
-			{ reason: error.reason, views }
+			{ reason: errorMessage(error.reason), views }
 		);
 	};
 	let posed = 0;
@@ -2989,8 +3085,7 @@ async function addMoveUnlocked(
 					spec.preferTierOneRepair,
 					spec.activityScope,
 					spec.reuseItemFrames,
-					spec.redrawItem,
-					spec.gridReroll
+					spec.redrawItem
 				);
 				tick();
 				if (result.review) return { warnings: [], repairReview: result.review };
@@ -3058,11 +3153,12 @@ export function moveMotionRequest(
 	first = '[starting artwork]',
 	preview = false
 ): Req {
-	if (spec.motionSource === 'standalone') {
+	if (moveMotionSource(spec) === 'standalone') {
 		return nativeMoveRequest(
 			rec,
 			{
 				...spec,
+				motionSource: 'standalone',
 				animation: {
 					...spec.animation,
 					model: 'pixminimax',
@@ -3076,7 +3172,7 @@ export function moveMotionRequest(
 		);
 	}
 	return routes.animateCharacter(
-		spec.action === 'walk' && spec.motionSource === undefined
+		spec.action === 'walk' && moveMotionSource(spec) === undefined
 			? baseAnimation(
 					'skeleton-v3',
 					rec.character?.id ?? '',
@@ -3141,7 +3237,7 @@ export function nativeMoveRequest(
 		reference?.end === undefined
 			? undefined
 			: { end: reference.end && (preview ? '[uploaded end frame]' : reference.end.base64) },
-		spec.animation?.loop && (spec.motionSource !== undefined || !gaitTemplate(spec.action)),
+		spec.animation?.loop && (moveMotionSource(spec) !== undefined || !gaitTemplate(spec.action)),
 		start
 	);
 	const guard = ', unarmed, no weapon, no props, no other people, no effects';
@@ -3317,7 +3413,14 @@ async function bodyClip(
 	tick: () => void,
 	startImage?: Img,
 	start?: ClipJob['start']
-): Promise<{ d: Direction; keypoints: Keypoint[][]; out: ClipOut; motion?: JobRec }> {
+): Promise<{
+	d: Direction;
+	keypoints: Keypoint[][];
+	out: ClipOut;
+	motion?: JobRec;
+	motionEcho?: ClipSource['motionEcho'];
+	motionBridged?: number[];
+}> {
 	const { rec, project, spec, model, authored, n } = plan,
 		m = rec.manifest,
 		rig = m.rig;
@@ -3340,15 +3443,20 @@ async function bodyClip(
 			signal,
 			activityScope: spec.activityScope,
 			action: bodyAction(spec),
+			unposed: !!spec.keepUnposed,
 			native: {
 				request: nativeMoveRequest(rec, spec, d, model, await b64(restImg)),
 				model,
-				frames: n
+				frames: n,
+				words: viewWords(m, spec.id, d)
 			}
 		});
 		return { d, keypoints: out.measured as Keypoint[][], out };
 	}
-	let keypoints: Keypoint[][], source: JobRec | undefined;
+	let keypoints: Keypoint[][],
+		source: JobRec | undefined,
+		motionEcho: ClipSource['motionEcho'],
+		motionBridged: number[] | undefined;
 	if (authored)
 		keypoints = authoredPoses(
 			authored,
@@ -3359,15 +3467,17 @@ async function bodyClip(
 		).map((p) => armDepth(toApi(p, rig.cell), d));
 	else {
 		const motionStart = startImage ?? restImg;
+		const request = moveMotionRequest(
+			rec,
+			spec,
+			d,
+			moveMotionSource(spec) === 'standalone' ? await b64(motionStart) : undefined
+		);
 		const result = await motion(
-			moveMotionRequest(
-				rec,
-				spec,
-				d,
-				spec.motionSource === 'standalone' ? await b64(motionStart) : undefined
-			),
+			request,
 			d,
 			`${m.name} · ${spec.id} ${d} (motion)`,
+			viewWords(m, spec.id, d),
 			tick,
 			moveMotionFrames(m, spec),
 			signal,
@@ -3375,12 +3485,13 @@ async function bodyClip(
 			rig.cell.w,
 			motionStart,
 			spec.motionLift?.[d],
-			spec.motionSource === 'standalone' ? 0 : artMapping(rig, d),
-			spec.motionSource === 'standalone' ? 'required-leading' : 'optional-exact',
-			heldStandings(m, d)
+			moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d),
+			motionEchoRule(spec)
 		);
 		keypoints = result.keypoints;
 		source = result.record;
+		motionEcho = result.motionEcho;
+		motionBridged = result.motionBridged;
 	}
 	keypoints = movePoseEndpoints(
 		sampleMovePoses(keypoints, n, spec.action, spec.animation?.loop),
@@ -3390,6 +3501,8 @@ async function bodyClip(
 		d,
 		keypoints,
 		...(source ? { motion: source } : {}),
+		...(motionEcho ? { motionEcho } : {}),
+		...(motionBridged ? { motionBridged } : {}),
 		out: await renderClip({
 			anim: spec.id,
 			dir: d,
@@ -3407,7 +3520,8 @@ async function bodyClip(
 			activityScope: spec.activityScope,
 			action: bodyAction(spec),
 			paletteRepair: !!spec.bodyPaletteRepair,
-			lifts: spec.motionLift?.[d]
+			lifts: spec.motionLift?.[d],
+			unposed: !!spec.keepUnposed
 		})
 	};
 }
@@ -3423,6 +3537,19 @@ function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 		!!value && typeof value === 'object' && !Array.isArray(value)
 			? Object.entries(value as Record<string, unknown>)
 			: undefined;
+	// Kept without poses only as a new, body-only move: never over existing directions or with equipment.
+	if (
+		spec.keepUnposed !== undefined &&
+		(spec.keepUnposed !== true ||
+			spec.replace ||
+			spec.dirs?.length ||
+			spec.items.length ||
+			spec.itemsOnly ||
+			spec.itemMethod ||
+			spec.reviewBeforePublish ||
+			m.rig.animations.some((a) => a.id === spec.id))
+	)
+		throw invalid();
 	if (spec.reroll !== undefined) {
 		const entries = record(spec.reroll);
 		if (!entries) throw invalid();
@@ -3441,18 +3568,6 @@ function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 			)
 				throw invalid();
 		}
-	}
-	if (spec.gridReroll !== undefined) {
-		const entries = record(spec.gridReroll);
-		if (
-			!entries ||
-			spec.itemMethod !== 'grid' ||
-			entries.some(
-				([start, salt]) =>
-					!/^\d+$/.test(start) || !Number.isSafeInteger(salt) || (salt as number) < 1
-			)
-		)
-			throw invalid();
 	}
 	if (spec.motionLift !== undefined) {
 		const entries = record(spec.motionLift);
@@ -3482,6 +3597,16 @@ interface ReplayedView {
 	error?: PaidStepError;
 	clip?: Awaited<ReturnType<typeof bodyClip>>;
 }
+/** A new move whose stopped views only lack measured joints on their body frames can still be kept: body only and without
+ *  poses, so items are fitted after it is made again. Decided by the typed failure, never by text. */
+export const keepableUnposed = (
+	spec: Pick<MoveSpec, 'replace' | 'dirs'>,
+	failed: readonly Pick<ReplayedView, 'error'>[]
+) =>
+	!spec.replace &&
+	!spec.dirs?.length &&
+	failed.length > 0 &&
+	failed.every((v) => v.error?.paid.failure === 'joints' && v.error.paid.step === 'render');
 async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedView> {
 	const scope = new AbortController(),
 		dry: DryRun = {
@@ -3544,7 +3669,20 @@ function rerollStep(plan: BodyClipPlan, error: PaidStepError): 'motion' | 'rende
 	return step === 'render' || step === '/animate-with-skeleton-v3' ? 'render' : 'motion';
 }
 const viewName = (d: DirectionName) => message(directionNames[d]);
+/** A view of a move in the user's words, for a message: the move's name and the direction's. */
+type ViewWords = {
+	move: Message | string;
+	direction: Message;
+};
+const viewWords = (m: Manifest, move: string, d: DirectionName): ViewWords => ({
+	move: moveName(move, m.rig.animations),
+	direction: viewName(d)
+});
 const salt = (previous = 0) => previous + 1 + Math.floor(Math.random() * 1_000_000);
+/** The motion frames of a returned source: one extra leading frame is the start frame sent back, which normalizeMotionFrames
+ *  drops by position, so it never asks for a lift or room. */
+const motionFramesOf = (images: Img[], expected: number) =>
+	images.length === expected + 1 ? images.slice(1) : images;
 /** Rows each returned motion frame needs to fit the cell, or null when lifting cannot fit one (cut at a side or the top). */
 async function motionLiftOf(
 	plan: BodyClipPlan,
@@ -3554,10 +3692,12 @@ async function motionLiftOf(
 	const { rec, spec } = plan,
 		size = rec.manifest.rig.cell.w,
 		expected = moveMotionFrames(rec.manifest, spec),
-		images = (await imagesOf(record)).map((out) => out.img),
-		frames = images.length === expected + 1 ? images.slice(1) : images;
+		frames = motionFramesOf(
+			(await imagesOf(record)).map((out) => out.img),
+			expected
+		);
 	if (frames.length !== expected) return null;
-	const below = spec.motionSource === 'standalone' ? 0 : artMapping(rec.manifest.rig, d),
+	const below = moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rec.manifest.rig, d),
 		lifts = frames.map((image) => liftToFit(image, size, size, 128, size, below));
 	return lifts.every((lift): lift is number => lift !== null) ? lifts : null;
 }
@@ -3573,7 +3713,7 @@ async function makeRoomOption(
 	primary: boolean
 ): Promise<MovePaidOption | undefined> {
 	if (
-		plan.spec.motionSource === 'standalone' ||
+		moveMotionSource(plan.spec) === 'standalone' ||
 		!failed.length ||
 		failed.some((v) => v.error?.paid.failure !== 'overflow')
 	)
@@ -3590,7 +3730,8 @@ async function makeRoomOption(
 					.snapshot()
 					.jobs.find((job) => job.requestHash === hash && job.state === 'done');
 			if (!cached) continue;
-			for (const { img } of await imagesOf(cached)) {
+			const images = (await imagesOf(cached)).map((out) => out.img);
+			for (const img of motionFramesOf(images, moveMotionFrames(m, spec))) {
 				const box = opaqueAt(img, 128);
 				if (!box) continue;
 				const x = Math.floor((size - img.w) / 2),
@@ -3825,6 +3966,21 @@ export async function reviewMoveResults(
 			spec: candidate
 		});
 	}
+	if (keepableUnposed(spec, failed)) {
+		const candidate = resumeSpec(plan.spec, {
+			keepUnposed: true,
+			reviewBeforePublish: undefined
+		});
+		const gens = total(await replay(candidate));
+		options.push({
+			id: 'keep-unposed',
+			label: message('moveReview.keepUnposed'),
+			detail: message('moveReview.keepUnposedDetail'),
+			gens,
+			paid: gens > 0,
+			spec: candidate
+		});
+	}
 	// What each view bought: the output a step rejected, as PixelLab returned it.
 	const shown = await Promise.all(
 		views.map(async (v) => {
@@ -4022,6 +4178,8 @@ async function addBodyClip(
 		clips.some(({ out: { qa } }) => failsBodyGate(qa, model !== 'skeleton-v3'))
 	)
 		throw old ? replacementBodyQa() : newMoveBodyQa();
+	// Saved without poses: no frame's joints are invented, so the whole move waits to be made again before items fit it.
+	const unposed = !!spec.keepUnposed && clips.some((c) => c.out.measured.some((k) => !hasAll(k)));
 	const layer = baseIt.layers[0],
 		cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = {
 			...baseIt.layers[0].cells?.[spec.id]
@@ -4049,13 +4207,15 @@ async function addBodyClip(
 			motion:
 				model !== 'skeleton-v3'
 					? `${model}:${spec.text?.trim() || spec.action || spec.id}`
-					: spec.action === 'walk' && spec.motionSource === undefined
+					: spec.action === 'walk' && moveMotionSource(spec) === undefined
 						? 'managed-skeleton-v3:walking-8-frames'
 						: authored
 							? `authored:${spec.action}`
 							: `pixminimax:${spec.text?.trim() || spec.action || spec.id}`,
 			measured: c.out.measured.map((x) => x ?? []),
 			...(c.out.processing ? { processing: c.out.processing } : {}),
+			...(c.motionEcho ? { motionEcho: c.motionEcho } : {}),
+			...(c.motionBridged ? { motionBridged: c.motionBridged } : {}),
 			provenance: idx
 		};
 		anim.sources![c.d] = src;
@@ -4064,7 +4224,7 @@ async function addBodyClip(
 				const h = await cellHash(f);
 				await writeCell(h, f);
 				const s = c.out.measured[i];
-				if (s) skeletons[cellKey(spec.id, c.d, i)] = fromApi(s, frig.cell);
+				if (s && !unposed) skeletons[cellKey(spec.id, c.d, i)] = fromApi(s, frig.cell);
 				return h;
 			})
 		);
@@ -4084,8 +4244,9 @@ async function addBodyClip(
 			})
 		);
 	}
+	if (unposed) delete anim.sources;
 	// anchors for the new clip straight from the measured keypoints (no patch tracking: the clip is posed, not redrawn)
-	for (const id of ANCHORS) {
+	for (const id of unposed ? [] : ANCHORS) {
 		const pts = (d: DirectionName) =>
 			Array.from({ length: n }, (_, i) => {
 				const s = skeletons[cellKey(spec.id, d, i)];
@@ -4170,7 +4331,8 @@ async function addBodyClip(
 			...(qa.warnings ?? []).filter((w) => !affected.some((d) => w.startsWith(`${spec.id}/${d}:`))),
 			...warnings
 		],
-		clips: { ...qa.clips, ...checks }
+		clips: { ...qa.clips, ...checks },
+		...(unposed ? { redo: [...new Set([...setupRedoMoves(fresh), spec.id])] } : {})
 	};
 	// R6 P1-5: `fresh` was read before ~30 cell writes; graft only what this clip changed onto the CURRENT record in one
 	// transaction, so an item accepted or an outfit autosaved meanwhile survives.

@@ -27,6 +27,7 @@
 	import { displayMove } from './displayMove.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import { displayMessage, displayNestedMessage } from '../lib/i18n.ts';
+	import ProblemNotice from './ProblemNotice.svelte';
 	import {
 		generationCallOutcome,
 		generationErrorMessage,
@@ -66,7 +67,7 @@
 	const providerFailed = $derived(outcome?.record.jobs.some((job) => job.failedAtProvider));
 	const policy = $derived(outcome?.record.jobs.some((job) => job.policy || job.errorCode === 5000));
 	const error = $derived(
-		displayMessage(generationErrorMessage(g, $queue.jobs, outcomeFormatters) ?? '')
+		displayNestedMessage(generationErrorMessage(g, $queue.jobs, outcomeFormatters) ?? '')
 	);
 	const unsettledCost = $derived(
 		draftQueueIds(g.draft).some((id) => !$queue.jobs.some((job) => job.id === id && !live(job)))
@@ -382,32 +383,38 @@
 					{t('genCard.incomplete')}
 				</p>{/if}
 		{:else if g.phase === 'failed'}
-			<p class="notice bad small">
-				<CircleAlert size={14} />{g.canceled
-					? t('genCard.canceledDetail')
-					: policy
-						? t('genCard.declined')
+			{#if g.canceled}<p class="notice bad small">
+					<CircleAlert size={14} />{t('genCard.canceledDetail')}
+				</p>
+			{:else}<ProblemNotice
+					error={policy
+						? message('genCard.declined')
+						: (generationErrorMessage(g, $queue.jobs, outcomeFormatters) ??
+							message('generation.outcome.noFrames'))}
+					detail={policy
+						? message('genCard.declined')
 						: providerFailed
 							? error
-								? t('genCard.providerFailedError', { error })
-								: t('genCard.providerFailed')
+								? message('genCard.providerFailedError', { error })
+								: message('genCard.providerFailed')
 							: error
-								? t('genCard.notMadeError', { error })
-								: t('genCard.notMade')}{#if !g.canceled}<ReportButton
-						area="Item generation"
-						message={message(
+								? message('genCard.notMadeError', { error })
+								: message('genCard.notMade')}
+					report={{
+						area: 'Item generation',
+						message: message(
 							policy
 								? 'genCard.declined'
 								: providerFailed
 									? 'genCard.providerFailed'
 									: 'genCard.notMade'
-						)}
-						facts={{
+						),
+						facts: {
 							...(outcome ? jobProblem(outcome.record).facts : {}),
 							phase: g.phase
-						}}
-					/>{/if}
-			</p>
+						}
+					}}
+				/>{/if}
 			{#if providerFailed && !g.canceled}
 				<p class="faint small">
 					{spentUnknown || unsettledCost
@@ -518,7 +525,7 @@
 				{#if g.draft.log.length}<p class="faint small">
 						{g.draft.log
 							.map((line) =>
-								displayMessage(generationLogMessage(g, $queue.jobs, line, outcomeFormatters))
+								displayNestedMessage(generationLogMessage(g, $queue.jobs, line, outcomeFormatters))
 							)
 							.join(' · ')}
 					</p>{/if}

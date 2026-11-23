@@ -445,6 +445,8 @@
 		"acceptAsIs": "按现状接受",
 		"pendingWorkBusy": "有动作或设置正在运行或已停止。请完成或放弃它以使用这些操作。",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "按现状接受当前图像，不消耗点数。检测到的问题仍保留在详情中。",
+		"keepWithoutMoves": "不含这些动作并保留",
+		"keepWithoutMovesDetail": "不花费积分，仅保留该装备在完整动作中的帧。它在{moves}中隐藏，这些动作仍标为缺失，你可以稍后按各自的价格制作。",
 		"youAcceptedThisArtworkWithItsRecorded": "你已接受此图像及其记录的质量说明。",
 		"generateItemForMove": "为动作生成装备",
 		"labelMakeNameForMissingName": "为{missingName}制作{name}",
@@ -1683,7 +1685,8 @@
 			"canceled": "已取消。已使用的生成次数不会退还。已发送的请求仍可能完成并计费。请在“活动”中查看其结果。",
 			"stopped": "生成已停止。再次尝试前请查看“活动”。",
 			"setupStopped": "设置已停止。再次尝试前请查看“活动”。",
-			"noFrames": "PixelLab 未返回可用的帧。"
+			"noFrames": "PixelLab 未返回可用的帧。",
+			"notSavedAutomatically": "未自动保存：{reason}"
 		},
 		"status": {
 			"starting": "正在开始",
@@ -2060,12 +2063,14 @@
 		"estimate": "预计 {gens} 次生成",
 		"bodySize": "{w}×{h} 像素",
 		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
-		"waitingForRepairReview": "等待检查装备帧"
+		"waitingForRepairReview": "等待检查装备帧",
+		"needsRedo": "未找到关节：请重新制作以在其上为装备制作动画"
 	},
 	"setup": {
 		"warnings": {
 			"headroom": "朝向{direction}时头顶空间只有 {count} px；高发型或帽子可能需要更大的帧。",
-			"keptFrames": "{name}将保留现有帧。设置完成后请重新制作它，以便在以后的动作中为它添加动画。"
+			"keptFrames": "{name}将保留现有帧。设置完成后请重新制作它，以便在以后的动作中为它添加动画。",
+			"moveSkipped": "已跳过{move}：PixelLab 未能在其中一帧找到有效的关节。若要在其上制作装备动画，请重新生成。"
 		},
 		"title": "设置角色",
 		"rigSetup": "绑定结构设置",
@@ -2104,7 +2109,14 @@
 			"jointsMissing": "PixelLab 无法在一个身体帧上找到全部 18 个有效关节。现有图像保持不变；请重新连接，或选择更清晰的站立参考后继续。",
 			"noCharacterId": "PixelLab 未返回受管角色 ID。现有图像保持不变。",
 			"referenceChanged": "设置期间站立参考已更改。",
-			"characterChanged": "设置期间角色已更改。其当前工作已保留。"
+			"characterChanged": "设置期间角色已更改。其当前工作已保留。",
+			"squareFrame": "绑定设置需要 32–256 整数像素的正方形帧。",
+			"humanoidOnly": "绑定设置目前仅支持人形角色。此角色使用了其他身体模板。",
+			"singleBaseLayer": "绑定设置需要一个固定的基础身体图层。",
+			"chooseReference": "请选择一个站立参考动作。",
+			"noStandingReference": "{move}并非每个朝向都有站立视图。请选择包含所有视图的动作。",
+			"needsStandingViews": "绑定设置需要已保存的原始站立视图或全部四个基本朝向。请先导入缺少的朝向。",
+			"emptyBodyFrame": "{move}中有空的身体帧。请修正或删除该动作，然后重新设置。"
 		},
 		"newRegistration": "重新登记"
 	},
@@ -2149,7 +2161,7 @@
 			"bodyFramesTheirQuality": "这些身体帧或其质量检查自检查以来已更改。未保存任何内容，也未发出请求。请再次检查。",
 			"characterChangedAnotherTab2": "保存动作前，此角色在另一个标签页中已更改。重试前请重新打开它。",
 			"demoStandingReferenceMissing": "演示站立参考缺失。",
-			"resultMissingStorage": "结果{label}在存储中缺失",
+			"resultMissingStorage": "此浏览器的存储中缺少一个已付费的结果。",
 			"pixellabReturnedIncompleteInvalid": "{direction}：PixelLab 返回了不完整或无效的站立关节。未从这些关节开始动画；现有结果已保留。",
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLab 返回的帧数不正确。未启动付费重试。请求另一次尝试前请查看“活动”。",
 			"animationExceedsPxFrame": "{move} {direction}：身体帧超出 {w} px 帧。已保留以供查看；未保存任何内容。",
@@ -2159,11 +2171,11 @@
 			"colorMatchingCannotRepair": "{direction}：颜色匹配无法修复姿势、脚部或边界失败。",
 			"colorDriftOutsideBounded": "{direction}：颜色偏移超出有界参考调色板修复范围。",
 			"boundedColorMatchingStill": "{direction}：有界颜色匹配仍未通过调色板质量检查。未开始新的关节检查。",
-			"jointsFoundEveryFrame": "{label}：并非每一帧都找到关节",
-			"pixellabDroppedDirectionBusy": "{label}：PixelLab 丢弃了该朝向（繁忙）。请重试。",
-			"pixellabReturnedMotionFrames": "{label}：请求 {expected} 个运动帧，PixelLab 返回了 {returned} 个。未为此视图请求关节检查或身体渲染。",
-			"motionExceedsPxFrame": "{label}：运动超出 {size} px 帧。其帧已保留以供查看；未保存任何内容。",
-			"pixellabReturnedEmptyMotion": "{label}：PixelLab 返回了空运动帧",
+			"jointsFoundEveryFrame": "{move} {direction}：并非每一帧都找到关节",
+			"pixellabDroppedDirectionBusy": "{move} {direction}：PixelLab 丢弃了该朝向（繁忙）。请重试。",
+			"pixellabReturnedMotionFrames": "{move} {direction}：请求 {expected} 个运动帧，PixelLab 返回了 {returned} 个。未为此视图请求关节检查或身体渲染。",
+			"motionExceedsPxFrame": "{move} {direction}：运动超出 {size} px 帧。其帧已保留以供查看；未保存任何内容。",
+			"pixellabReturnedEmptyMotion": "{move} {direction}：PixelLab 返回了空运动帧",
 			"pixellabReturnedView": "PixelLab 未返回{direction}视图",
 			"viewDoesFitPx": "{direction}视图无法放入 {cell} px 帧。再次创建前请增大“帧尺寸”或减小“身体尺寸”。",
 			"pixellabReturnedEmptyView": "PixelLab 返回了空的{direction}视图。",
@@ -2180,8 +2192,8 @@
 			"cachedBodyRenderIncomplete": "{direction}：缓存的身体渲染不完整。",
 			"cachedBodyFramesDo": "{direction}：缓存的身体帧不符合此角色。未重新生成身体。",
 			"demoStandingBodyFacing": "演示没有朝向{id}的站立身体。",
-			"requestStopped": "{label}：{state}{error}",
-			"requestStoppedResume": "{label}：{state}{error}。生成已停止，未重新发送。再次开始前请在“活动”中查看此请求。",
+			"requestStopped": "一个 PixelLab 请求以“{state}”状态结束{error}。",
+			"requestStoppedResume": "一个 PixelLab 请求以“{state}”状态结束{error}。生成已停止，未重新发送。重新开始前，请在“活动”中查看此请求。",
 			"promptLength": "请输入 1–2,000 个字符的提示词。",
 			"invalidSeed": "种子无效。",
 			"invalidCamera": "相机无效。",
@@ -2208,7 +2220,7 @@
 			"moveAnimationFramesBlocked": "此模型和画布尺寸不支持 {frames} 帧。未发出生成请求。",
 			"describeMoveBlocked": "生成前请先描述此动作。 未发出生成请求。",
 			"chooseExistingMoveRepairing": "修复装备前，请先选择一个现有动作。",
-			"liftedJointsOutside": "{label}：抬高后的运动仍有关节在 {size} px 帧之外。未请求身体渲染。",
+			"liftedJointsOutside": "{move} {direction}：抬高后的运动仍有关节在 {size} px 帧之外。未请求身体渲染。",
 			"reviewChoiceInvalid": "此选择已与动作不符。请重新查看。未发送任何请求。"
 		},
 		"steps": {
@@ -2421,7 +2433,6 @@
 			"frame": "第 {number} 帧",
 			"unavailable": "要使用此帧，每个选中的朝向都需要有身体图像和已测量的关节位置。",
 			"changed": "选中的起始帧已更改。请重新选择来源。未发送生成请求。",
-			"route": "此方式从站立姿势开始。若要使用已保存的帧，请选择其他动画模型。",
 			"stateTarget": "状态不能像动作那样被替换。"
 		},
 		"loop": "循环",
@@ -2503,7 +2514,7 @@
 			"queueReplacement": "将 {move} 的视图替换加入队列"
 		},
 		"titleRepair": "修复装备帧",
-		"heldBy": "{character}的{move}失败，新动作需要等待。打开该尝试以查看恢复选项。",
+		"heldBy": "{character}的{move}失败了。为了让已付费的结果仍可恢复，新动作会等到你在那里重试或放弃它。打开即可查看选项。",
 		"open": "打开{character}",
 		"progressLabel": "当前动作生成",
 		"retryFeature": "再次生成此动作",
@@ -2607,9 +2618,7 @@
 			"currentFrame": "当前第 {number} 帧",
 			"redrawnFrame": "重绘后的第 {number} 帧",
 			"repairedFrame": "修复后的第 {number} 帧"
-		},
-		"rerollBatch": "重新生成此批次",
-		"rerollBatchDetail": "之前的批次保持不变。估算包括此批次以及之后尚未购买的批次。"
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2626,12 +2635,16 @@
 			"incompleteReferenceFrames": "PixelLab 返回的参考帧或站立帧不完整。未发送后续请求。",
 			"standingFrameSize": "PixelLab 返回的站立帧尺寸错误。未发送后续请求。",
 			"layersMismatch": "装备图层与此装备栏不匹配。未请求生成。",
-			"repairBatchMisaligned": "一个修复批次返回了未对齐的帧。其余批次已停止，现有图像已保留。",
 			"reviewChanged": "此装备或其检查结果已更改。请重新打开装备，再接受当前图像。",
 			"paletteReviewChanged": "此装备或其颜色已更改。请重新检查配色。",
 			"paletteSaveChanged": "装备、身体或材质已更改。现有颜色已保留。请重新检查配色。",
 			"invalidItemGridSheet": "PixelLab 返回了无法使用的装备网格。应只有一张图集。现有图像已保留。",
 			"invalidItemGridLayout": "PixelLab 返回了无法使用的装备网格。图集的帧布局错误。现有图像已保留。",
+			"savedFramesUnavailable": "没有与当前基础身体和装备匹配的已完成帧。未请求任何生成。",
+			"itemMoveSaveConflict": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。",
+			"itemMoveSaveConflictAlso": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。另一个朝向也已停止：{reason}",
+			"keepWithoutStanding": "此装备在其设计所依据的动作中缺少帧，因此不能不含该动作而保留。请改为制作缺少的帧。",
+			"keepWithoutNothingLeft": "此装备没有可保留的完整动作。请改为制作缺少的帧。",
 			"savedFrameMissing": "此装备的一个已保存帧在存储中缺失。"
 		}
 	},
@@ -2739,7 +2752,8 @@
 		"review": "保存前请检查 {name}。",
 		"generated": "生成结果",
 		"sourceMissing": "来源不可用",
-		"sourceChanged": "生成后来源已更改，因此无法保存此结果。请放弃后重试。",
+		"sourceChanged": "生成后角色的帧尺寸、轴心或视角已更改，因此此结果无法对齐。请放弃后重试。",
+		"sourceChangedKeep": "此状态所基于的帧在生成后已更改。你仍可按原样保存，或放弃后重试。",
 		"keepGrounded": "与来源对齐",
 		"groundedHint": "已将脚部对齐到来源。关闭即可撤销。",
 		"readyRow": "可以检查了",
@@ -2981,6 +2995,8 @@
 		"liftDetailWarned": "{views}：为让运动放进帧内，{total} 个运动帧中有 {frames} 个的脚最多抬高 {px} px。这超过了 {limit} px 的脚部检查，因此动作会带着脚部警告保存。",
 		"reroll": "重新生成{views}",
 		"rerollDetail": "重新生成只为这些朝向购买一次新的尝试。其他朝向保留其付费结果。",
+		"keepUnposedDetail": "按原样保存身体帧。部分帧未找到关节，因此在重新制作之前，无法为此动作适配装备。",
+		"keepUnposed": "保留但不适配装备",
 		"pending": "仍需购买：约 {gens} gens。",
 		"liftable": "可抬高以适配：{total} 帧中有 {frames} 帧的脚最多抬高 {px} px。",
 		"notLiftable": "抬高也放不下：运动在侧边或顶部被裁切。"
@@ -2988,7 +3004,11 @@
 	"createReview": {
 		"resume": "使用付费结果继续",
 		"register": "重新登记已绘制的朝向",
-		"registerDetail": "保留已付费的绘制，并为相同朝向购买一次新的登记。"
+		"registerDetail": "保留已付费的绘制，并为相同朝向购买一次新的登记。",
+		"lift": "上移以放入",
+		"liftDetail": "保留已付费的绘制，将每个朝向在 {size} px 帧中上移 {px} px，并为相同朝向购买一次新的登记。",
+		"largerFrame": "使用 {size} px 帧",
+		"largerFrameDetail": "保留已付费的绘制，将相同朝向放入 {size} px 帧，并购买一次新的登记。之后在更大的帧中制作的动作和装备可能花费更多。"
 	},
 	"adjustFrame": {
 		"title": "调整帧",
@@ -3124,5 +3144,56 @@
 		"copyFailed": "无法复制。请选中上方文字后手动复制。",
 		"open": "在 GitHub 上打开",
 		"unexpected": "出现了问题。如果再次发生，请报告。"
+	},
+	"problem": {
+		"details": "详情",
+		"title": {
+			"frame-count": "PixelLab 返回的帧数不符合预期",
+			"overflow": "角色的一部分超出了帧",
+			"empty": "PixelLab 返回了空帧",
+			"dropped": "PixelLab 繁忙，跳过了一个朝向",
+			"joints": "部分帧未找到关节",
+			"stopped": "一个付费请求未完成",
+			"quality": "新帧未通过质量检查",
+			"changed": "处理期间有内容发生了变化",
+			"missing": "部分已保存的结果不在此设备上",
+			"plan": "你的 PixelLab 套餐不包含此功能",
+			"credits": "你的 PixelLab 账户积分已用完",
+			"key": "PixelLab 未接受你的令牌",
+			"offline": "无法连接 PixelLab",
+			"declined": "PixelLab 拒绝了此请求",
+			"unexpected": "出现了问题",
+			"uncertain": "一个已付费的结果可能已丢失",
+			"poses": "此动作还没有用于装备的姿势",
+			"method": "此装备无法在此角色上摆出姿势",
+			"quote": "PixelLab 未确认价格",
+			"browser": "此浏览器无法安全地完成此操作",
+			"exportId": "另一个角色使用了此导出 ID",
+			"busy": "PixelLab 正忙"
+		},
+		"next": {
+			"frame-count": "已付费的结果都已保留。请先查看，然后继续或重试。",
+			"overflow": "如有提供，请选择上移或更大的帧；否则请重试。",
+			"empty": "已付费的结果仍在“活动”中。请用新的尝试重试。",
+			"dropped": "请稍等片刻后重试。",
+			"joints": "已付费的内容会保留在“活动”中。请重新尝试，或从更清晰的站立姿势开始。",
+			"stopped": "重新开始前，请在“活动”中查看发生了什么。",
+			"quality": "请查看结果，然后保留或重试。",
+			"changed": "继续前请重新查看。",
+			"missing": "重新制作前，请在“活动”中查看仍保存的内容。",
+			"plan": "请在 PixelLab 升级套餐，或选择套餐包含的选项。",
+			"credits": "请在 PixelLab 添加积分后重试。",
+			"key": "请使用有效的令牌重新连接 PixelLab。",
+			"offline": "请检查网络连接后重试。",
+			"declined": "请修改描述后重试。",
+			"unexpected": "请报告此问题以便修复。已付费的内容会保留在“活动”中。",
+			"uncertain": "重试前请先查看“活动”：新的尝试可能会再次收费。",
+			"poses": "请先设置其姿势，然后再制作装备。",
+			"method": "请选择“自动”后重试。",
+			"quote": "请稍后重试，或选择其他模型。",
+			"browser": "请使用最新的浏览器继续。",
+			"exportId": "请选择其他导出 ID。",
+			"busy": "请稍等片刻后重试。"
+		}
 	}
 }

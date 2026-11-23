@@ -58,6 +58,37 @@ export function stateGenerationSource(
 	};
 }
 
+/** The frame geometry a State result lands in: the body layer, frame size, pivot and views. */
+const stateFit = (fit: { base?: unknown; size?: unknown; pivot?: unknown; directions?: unknown }) =>
+	stableStringify({
+		base: fit.base,
+		size: fit.size,
+		pivot: fit.pivot,
+		directions: fit.directions
+	});
+
+/** Whether a State made from the source `version` still lines up with this character. Its source frame may have changed
+ *  since (Fix frames, a replaced or deleted move): the result was then drawn from an earlier look, which the review says,
+ *  but it is still saved and used like any other State. A new frame size, pivot or view set would misalign it. */
+export function stateSourceFits(project: Project, version: string): boolean {
+	const { rig } = project.manifest;
+	let made: Parameters<typeof stateFit>[0];
+	try {
+		made = JSON.parse(version) as Parameters<typeof stateFit>[0];
+	} catch {
+		return false; // not a version stateGenerationSource wrote, so nothing proves it fits
+	}
+	return (
+		stateFit(made) ===
+		stateFit({
+			base: rig.baseItem,
+			size: { width: rig.cell.w, height: rig.cell.h },
+			pivot: rig.pivot,
+			directions: rig.directions
+		})
+	);
+}
+
 export interface ManagedStateDetail {
 	id: string;
 	status?: string;

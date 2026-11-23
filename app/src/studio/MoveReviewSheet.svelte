@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, tick, untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
-	import ReportButton from './ReportButton.svelte';
+	import ProblemNotice from './ProblemNotice.svelte';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import PromptLine from './PromptLine.svelte';
@@ -332,9 +332,7 @@
 	onclose={() => (ui.sheet = null)}
 	footer={candidate ? foot : undefined}
 >
-	{#if error}<p class="notice bad small" role="alert">
-			{displayError(error)}<ReportButton {error} />
-		</p>{/if}
+	{#if error}<ProblemNotice {error} />{/if}
 	{#if changed}
 		<p class="notice small">{t('moveSheet.checkpoint.changed')}</p>
 	{:else if itemsStep}
