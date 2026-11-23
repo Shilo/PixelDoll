@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import Sheet from './Sheet.svelte';
 	import { errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
@@ -176,7 +177,9 @@
 			</details>
 		</form>
 	{/if}
-	{#if error}<p class="notice bad small" role="alert">{displayNestedMessage(error)}</p>{/if}
+	{#if error}<p class="notice bad small" role="alert">
+			{displayNestedMessage(error)}<ReportButton {error} />
+		</p>{/if}
 	{#snippet footer()}
 		<button
 			class="bu-action btn primary"

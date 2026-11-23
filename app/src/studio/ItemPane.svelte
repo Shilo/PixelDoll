@@ -3,6 +3,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { toast } from './state.svelte.ts';
 	import type { Message } from '../lib/message.ts';
@@ -479,7 +480,7 @@
 						{t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits')}
 					</p>
 					{#if acceptanceError}<p class="notice bad small" role="alert">
-							{displayMessage(acceptanceError)}
+							{displayMessage(acceptanceError)}<ReportButton error={acceptanceError} />
 						</p>{/if}
 				</div>
 			{:else if health === 'accepted'}
@@ -671,7 +672,7 @@
 				</div>
 			{/if}
 			{#if colorError}<p class="notice bad small">
-					<TriangleAlert size={14} />{displayMessage(colorError)}
+					<TriangleAlert size={14} />{displayMessage(colorError)}<ReportButton error={colorError} />
 				</p>{/if}
 			{#if colorDone}<p class="notice small">
 					{t('itemPane.colorsMatched', {
@@ -869,7 +870,7 @@
 			onconfirm={() => {
 				const id = target.id;
 				confirmRemove = false;
-				void removeItem(id).catch((error) => toast(errorMessage(error), { tone: 'danger' }));
+				void removeItem(id).catch((error) => toast(errorMessage(error), { tone: 'danger', error }));
 			}}><p>{t('common.deleteRecoverable')}</p></ConfirmDialog
 		>
 	{/if}

@@ -22,3 +22,9 @@ body:
     attributes:
       label: PixelDoll version, browser, and device
       description: You can find the PixelDoll version in Settings under About.
+  - type: textarea
+    id: details
+    attributes:
+      label: Technical details
+      description: Filled in by the Report button in PixelDoll. It holds only app, browser and error facts.
+      render: text

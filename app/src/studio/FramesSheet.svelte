@@ -2,6 +2,7 @@
 	// Fix frames: every frame of one item (or the body) in one move, as the PNG it downloads as. Download, edit anywhere,
 	// import, review what changed, then replace. Free and local; Undo in the toast and Restore originals here.
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import Sheet from './Sheet.svelte';
 	import Sprite from './Sprite.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -421,7 +422,9 @@
 			{#if blocked && !demo}<p class="notice warn small" role="status">
 					{displayError(blocked)}
 				</p>{/if}
-			{#if error}<p class="notice bad small" role="alert">{displayError(error)}</p>{/if}
+			{#if error}<p class="notice bad small" role="alert">
+					{displayError(error)}<ReportButton {error} />
+				</p>{/if}
 		</div>
 		<input
 			hidden

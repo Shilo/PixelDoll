@@ -3,6 +3,7 @@
 	import { openerLabel } from './openerLabel.ts';
 	import { LocalizedError, errorMessage, message, type Message } from '../lib/message.ts';
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import { displayError } from '../lib/i18n.ts';
 	import Sheet from './Sheet.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -168,9 +169,11 @@
 			</p>{/if}
 		{#if !problem && blockedByWork(blocked)}{@render viewPending()}{/if}
 		{#if error && !confirm}<p class="notice bad small" role="alert">
-				{displayDirectionProblem(error)}
+				{displayDirectionProblem(error)}<ReportButton {error} />
 			</p>{/if}
-	{:else if error}<p class="notice bad small" role="alert">{displayDirectionProblem(error)}</p>
+	{:else if error}<p class="notice bad small" role="alert">
+			{displayDirectionProblem(error)}<ReportButton {error} />
+		</p>
 	{:else}<p class="muted" role="status">{t('directionsSheet.loadingDirections')}</p>{/if}
 	{#snippet footer()}
 		{#if record}

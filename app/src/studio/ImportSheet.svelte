@@ -59,6 +59,7 @@
 		TriangleAlert
 	} from './icons.ts';
 	import { t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { LocalizedError, message, type Message } from '../lib/message.ts';
 
@@ -388,7 +389,7 @@
 				alias &&
 				store.projects.some((entry) => entry.id !== projectId && entry.exportId === alias)
 			)
-				toast(message('renameSheet.characterIdConflict'), { tone: 'warning' });
+				toast(message('renameSheet.characterIdConflict'), { tone: 'warning', report: false });
 			else toast(message('import.imported', { name: name.trim() }));
 		} catch (e) {
 			if (alive) error = errorMessage(e);
@@ -565,7 +566,9 @@
 		{:else}
 			{#if !app.key || app.keyRejected}
 				{#if libraryError}<p class="notice bad small" role="alert">
-						<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span>
+						<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span><ReportButton
+							error={libraryError}
+						/>
 					</p>{/if}
 				<button
 					class="bu-action btn"
@@ -589,7 +592,9 @@
 				</div>
 				<div class="character-library" aria-label={t('import.libraryLabel')} aria-busy={loading}>
 					{#if libraryError}<p class="notice bad small" role="alert">
-							<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span>
+							<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span><ReportButton
+								error={libraryError}
+							/>
 						</p>{/if}
 					{#if loading}<p class="muted" role="status">{t('import.loadingCharacters')}</p>
 					{:else if !characters.length && !libraryError}<p class="faint">

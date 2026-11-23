@@ -347,6 +347,29 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 		})
 		.toBe(true);
 	expect(await notice.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+	// An uncaught error gets a notice whose Report previews the public issue; nothing from the error text leaks into it.
+	await page.evaluate(() =>
+		setTimeout(() => {
+			throw new TypeError(
+				'Bad token=sk-ant-api03-AbCdEf123456GhIjKl789012 at C:\\Users\\me\\a.png'
+			);
+		})
+	);
+	await expect(notice).toContainText('Something went wrong.');
+	await notice.getByRole('button', { name: 'Report this problem', exact: true }).click();
+	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
+	await expect(report).toContainText('Error: TypeError');
+	await expect(report).not.toContainText('sk-ant');
+	const href = await report.getByRole('link', { name: 'Open on GitHub' }).getAttribute('href');
+	expect(href).toMatch(
+		/^https:\/\/github\.com\/Shilo\/PixelDoll\/issues\/new\?template=problem-report\.yml&title=/
+	);
+	expect(href).not.toContain('sk-ant');
+	expect(new URL(href!).searchParams.get('details')).toBe(
+		(await report.locator('pre').textContent())!.split('Technical details\n')[1]
+	);
+	await report.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(report).toHaveCount(0);
 });
 
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {

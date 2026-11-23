@@ -25,7 +25,7 @@
 			(error: unknown) => {
 				if (!live) return;
 				if (sheet) ui.sheet = null;
-				toast(errorMessage(error), { tone: 'danger' });
+				toast(errorMessage(error), { tone: 'danger', error });
 			}
 		);
 		return () => {

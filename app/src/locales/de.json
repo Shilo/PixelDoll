@@ -3199,5 +3199,17 @@
 			"other": "{n} Aufrufe ohne Preis"
 		}
 	},
-	"shortcut": { "control": "Strg" }
+	"shortcut": { "control": "Strg" },
+	"report": {
+		"action": "Melden",
+		"actionLabel": "Dieses Problem melden",
+		"title": "Dieses Problem melden",
+		"intro": "Öffnet ein öffentliches GitHub-Issue nur mit dem Text unten. Bilder, Prompts, Namen und Schlüssel sind nicht enthalten. Du veröffentlichst es mit deinem GitHub-Konto.",
+		"preview": "Vorschau der Meldung",
+		"copy": "Meldung kopieren",
+		"copied": "Kopiert",
+		"copyFailed": "Kopieren fehlgeschlagen. Markiere den Text oben und kopiere ihn.",
+		"open": "Auf GitHub öffnen",
+		"unexpected": "Etwas ist schiefgelaufen. Wenn es wieder passiert, melde es bitte."
+	}
 }

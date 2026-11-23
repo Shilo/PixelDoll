@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick, untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import PromptLine from './PromptLine.svelte';
@@ -74,7 +75,7 @@
 	let busy = $state(false);
 	let itemsStep = $state(false);
 	let acceptedInput = $state<string>();
-	let error = $state('');
+	let error = $state<unknown>();
 	let selected = $state<string[]>([]);
 	let itemList = $state<HTMLDivElement>();
 	const currentImage = $derived.by(() => {
@@ -155,7 +156,7 @@
 				if (current) images = result;
 			})
 			.catch((cause) => {
-				if (current) error = displayError(cause);
+				if (current) error = cause;
 			});
 		return () => {
 			current = false;
@@ -220,7 +221,7 @@
 	async function decide(accept: boolean) {
 		if (busy || blocked || !candidate || !project || (accept && (!images || hardFailure))) return;
 		busy = true;
-		error = '';
+		error = undefined;
 		try {
 			const input = await saveReviewedMove(projectId, candidate, accept);
 			const current = () =>
@@ -239,7 +240,7 @@
 			if (changed || equipment.some(({ offer }) => offer?.specs.length)) itemsStep = true;
 			else ui.sheet = null;
 		} catch (cause) {
-			error = displayError(cause);
+			error = cause;
 		} finally {
 			busy = false;
 		}
@@ -331,7 +332,9 @@
 	onclose={() => (ui.sheet = null)}
 	footer={candidate ? foot : undefined}
 >
-	{#if error}<p class="notice bad small" role="alert">{error}</p>{/if}
+	{#if error}<p class="notice bad small" role="alert">
+			{displayError(error)}<ReportButton {error} />
+		</p>{/if}
 	{#if changed}
 		<p class="notice small">{t('moveSheet.checkpoint.changed')}</p>
 	{:else if itemsStep}

@@ -3,6 +3,7 @@
 	import { openerLabel } from './openerLabel.ts';
 	import { message } from '../lib/message.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
 	// Slots: Add slot (show a built-in Wardrobe doesn't show, or create a custom slot) and a custom slot's settings. Order,
@@ -368,7 +369,9 @@
 				{hintError ? displayError(hintError) : t('slotsSheet.hintNote')}
 			</p>
 			{#if formError}<p class="notice bad small" role="alert">
-					<TriangleAlert size={16} /><span>{displayMessage(formError)}</span>
+					<TriangleAlert size={16} /><span>{displayMessage(formError)}</span><ReportButton
+						error={formError}
+					/>
 				</p>{/if}
 			<button
 				type="button"

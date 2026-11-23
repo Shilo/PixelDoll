@@ -54,6 +54,8 @@
 	import { usdText } from './displayCost.ts';
 	import { displayKey } from './displayKey.ts';
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
+	import { jobProblem } from './report.svelte.ts';
 
 	let { g }: { g: Gen } = $props();
 	const outcomeFormatters = { render: displayNestedMessage, formatNumber };
@@ -391,7 +393,20 @@
 								: t('genCard.providerFailed')
 							: error
 								? t('genCard.notMadeError', { error })
-								: t('genCard.notMade')}
+								: t('genCard.notMade')}{#if !g.canceled}<ReportButton
+						area="Item generation"
+						message={message(
+							policy
+								? 'genCard.declined'
+								: providerFailed
+									? 'genCard.providerFailed'
+									: 'genCard.notMade'
+						)}
+						facts={{
+							...(outcome ? jobProblem(outcome.record).facts : {}),
+							phase: g.phase
+						}}
+					/>{/if}
 			</p>
 			{#if providerFailed && !g.canceled}
 				<p class="faint small">
@@ -444,7 +459,10 @@
 				feature={t('genCard.retryFeature')}
 			/>{/if}
 		{#if g.phase !== 'running' && retryEstimateError}<p class="notice bad small">
-				<CircleAlert size={14} />{t('genCard.estimateFailed')}
+				<CircleAlert size={14} />{t('genCard.estimateFailed')}<ReportButton
+					area="Item generation"
+					message={message('genCard.estimateFailed')}
+				/>
 			</p>{/if}
 		{#if g.phase !== 'running'}<p class="faint small">
 				{t('genCard.retryNote')}

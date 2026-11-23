@@ -3988,9 +3988,13 @@ test('a sheet whose code fails to load closes, says so in French and can be trie
 	await page.locator('.customize-action').click();
 	const exportButton = page.getByRole('button', { name: 'Exporter', exact: true }).first();
 	await exportButton.click();
+	// The notice also offers Report, so its text is the message followed by that button.
 	await expect(page.locator('.toast')).toHaveText(
-		'Impossible de charger une partie de PixelDoll. Rechargez la page pour réessayer.'
+		/^\s*Impossible de charger une partie de PixelDoll\. Rechargez la page pour réessayer\.\s+Signaler\s*$/
 	);
+	await expect(
+		page.locator('.toast').getByRole('button', { name: 'Signaler ce problème', exact: true })
+	).toBeVisible();
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
 	const tried = fetches;
 	await exportButton.click();

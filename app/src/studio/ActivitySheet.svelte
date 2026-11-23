@@ -14,6 +14,8 @@
 	import { queueErrorMessage } from './generationStatus.ts';
 	import { usdText } from './displayCost.ts';
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
+	import { jobProblem } from './report.svelte.ts';
 	import { displayMove } from './displayMove.ts';
 	import {
 		ui,
@@ -447,6 +449,7 @@
 									{#if requestTier(r) > 0}<span class="muted small">
 											{t('activity.tierHint', { tier: formatNumber(requestTier(r)) })}
 										</span>{/if}
+									<ReportButton area="Activity" {...jobProblem(r)} />
 								{/if}
 							</span>
 							<span class="act-meta num muted">{cost(r)}</span>

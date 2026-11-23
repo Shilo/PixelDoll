@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { closeSettingsAccount, settingsNavigation } from './settingsNavigation.svelte.ts';
 	import { t, type WhisperKey } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
+	import { message } from '../lib/message.ts';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
 	import { ApiError } from '../lib/pixellab/client.ts';
@@ -230,7 +232,7 @@
 		</PixelLabUsage>
 		{#if app.balanceError}
 			<p class="notice bad small" role="status">
-				{t('usage.loadFailed')}
+				{t('usage.loadFailed')}<ReportButton message={message('usage.loadFailed')} />
 			</p>
 		{/if}
 		<p class="small bu-muted">
@@ -322,13 +324,19 @@
 		{/if}
 		<TierNotice {minimumTier} feature={t('connectSheet.thisGeneration')} />
 		{#if replacementError}
-			<p class="notice bad small" role="status">{t(replacementError)}</p>
+			<p class="notice bad small" role="status">
+				{t(replacementError)}<ReportButton message={message(replacementError)} />
+			</p>
 		{:else if app.keyRejected}
 			<p class="notice bad small" role="status">
 				{t('connectSheet.keyRejected')}
 			</p>
 		{:else if connectionFailed}
-			<p class="notice bad small" role="status">{t('connectSheet.balanceError')}</p>
+			<p class="notice bad small" role="status">
+				{t('connectSheet.balanceError')}<ReportButton
+					message={message('connectSheet.balanceError')}
+				/>
+			</p>
 		{/if}
 		<form
 			class="form"

@@ -3112,5 +3112,17 @@
 			"other": "料金不明の呼び出し{n}件"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"report": {
+		"action": "報告",
+		"actionLabel": "この問題を報告",
+		"title": "この問題を報告",
+		"intro": "下のテキストだけを含む公開の GitHub Issue を開きます。画像、プロンプト、名前、キーは含まれません。投稿はご自身の GitHub アカウントで行います。",
+		"preview": "レポートのプレビュー",
+		"copy": "レポートをコピー",
+		"copied": "コピーしました",
+		"copyFailed": "コピーできませんでした。上のテキストを選択してコピーしてください。",
+		"open": "GitHub で開く",
+		"unexpected": "問題が発生しました。繰り返し起きる場合は報告してください。"
+	}
 }

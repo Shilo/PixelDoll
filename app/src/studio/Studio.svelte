@@ -65,6 +65,8 @@
 	import { WifiOff } from './icons.ts';
 	import { PRE_RELEASE, PREVIEW_NOTICE } from './previewNotice.ts';
 	import Toast from './Toast.svelte';
+	import ReportDialog from './ReportDialog.svelte';
+	import { reportDialog } from './report.svelte.ts';
 	import LibraryBackupButton from './LibraryBackupButton.svelte';
 	import { downloadLibraryBackupWithFeedback } from './downloadLibraryBackup.ts';
 	import PwaRuntime from './PwaRuntime.svelte';
@@ -448,6 +450,9 @@
 	{#if ui.sheet === 'gen' && genOf(ui.selected)}
 		<Lazy load={parts.gen} g={genOf(ui.selected)!} />
 	{/if}
+	{#if reportDialog.report}{#key reportDialog.report}<ReportDialog
+				report={reportDialog.report}
+			/>{/key}{/if}
 </div>
 
 <style>

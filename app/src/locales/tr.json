@@ -3199,5 +3199,17 @@
 			"other": "Fiyatı bilinmeyen çağrı: {n}"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"report": {
+		"action": "Bildir",
+		"actionLabel": "Bu sorunu bildir",
+		"title": "Bu sorunu bildir",
+		"intro": "Yalnızca aşağıdaki metni içeren herkese açık bir GitHub kaydı açar. Görsel, istem, ad veya anahtar eklenmez. Kendi GitHub hesabınızla gönderin.",
+		"preview": "Bildirim önizlemesi",
+		"copy": "Bildirimi kopyala",
+		"copied": "Kopyalandı",
+		"copyFailed": "Kopyalanamadı. Yukarıdaki metni seçip kopyalayın.",
+		"open": "GitHub’da aç",
+		"unexpected": "Bir şeyler ters gitti. Tekrar olursa lütfen bildirin."
+	}
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	// Character ⋮ > Details: how the character was made and what it has cost, read from its saved provenance.
 	import Sheet from './Sheet.svelte';
 	import ApiPeek from './ApiPeek.svelte';
@@ -56,7 +57,9 @@
 		<ApiPeek copyId={m && !id.startsWith('fixture:') ? id : undefined} />
 	{/snippet}
 
-	{#if error}<p class="notice bad small" role="alert">{displayMessage(error)}</p>
+	{#if error}<p class="notice bad small" role="alert">
+			{displayMessage(error)}<ReportButton {error} />
+		</p>
 	{:else if m && base}<GenerationDetails {m} it={base} {extra} />
 	{:else if m}<p class="faint small">{t('detailsSheet.noGenerationDetailsWereSavedForThis')}</p>
 	{:else}<p class="faint small" role="status">{t('common.loading')}</p>{/if}

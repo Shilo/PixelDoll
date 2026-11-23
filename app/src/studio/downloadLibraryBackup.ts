@@ -19,6 +19,6 @@ export async function downloadLibraryBackupWithFeedback() {
 		if (await downloadLibraryBackup())
 			toast(message('librarySettings.backupOmissions'), { tone: 'warning' });
 	} catch (error) {
-		toast(errorMessage(error), { tone: 'danger' });
+		toast(errorMessage(error), { tone: 'danger', error });
 	}
 }

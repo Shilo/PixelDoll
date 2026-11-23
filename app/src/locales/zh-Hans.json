@@ -3112,5 +3112,17 @@
 			"other": "{n} 次调用价格未知"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"report": {
+		"action": "报告",
+		"actionLabel": "报告此问题",
+		"title": "报告此问题",
+		"intro": "这会在 GitHub 上打开一个公开问题，只包含下方文字。不包含图像、提示词、名称或密钥。你需要用自己的 GitHub 账号发布。",
+		"preview": "报告预览",
+		"copy": "复制报告",
+		"copied": "已复制",
+		"copyFailed": "无法复制。请选中上方文字后手动复制。",
+		"open": "在 GitHub 上打开",
+		"unexpected": "出现了问题。如果再次发生，请报告。"
+	}
 }

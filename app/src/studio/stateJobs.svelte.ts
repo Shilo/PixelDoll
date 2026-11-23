@@ -62,6 +62,7 @@ function track(projectId: string, token: string, id: string, finished: Promise<u
 			if (!reviewing(token))
 				toast(message('stateGeneration.failedOpen', { name }), {
 					tone: 'danger',
+					report: false,
 					duration: 8000,
 					action: open
 				});

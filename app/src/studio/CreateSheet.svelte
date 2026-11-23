@@ -50,6 +50,7 @@
 	import { displayError, displayMessage } from '../lib/i18n.ts';
 	import { PreflightWarning, errorText } from '../lib/message.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	const policyDecline = /\b5000\b|policy/i;
 	const opening = createPresentation.id
 		? newCharacterDraft()
@@ -344,7 +345,10 @@
 				<p class="notice bad small">
 					<CircleAlert size={14} />{policyDecline.test(errorText(creating.error))
 						? t('create.sheet.declined')
-						: displayError(creating.error)}
+						: displayError(creating.error)}<ReportButton
+						area="New character"
+						error={creating.error}
+					/>
 				</p>
 				{#if paid}<PaidReview
 						review={paid}

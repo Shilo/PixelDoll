@@ -13,7 +13,7 @@
 			await navigator.clipboard.writeText(text);
 			copied = true;
 		} catch {
-			toast(message('toolbar.selectPromptToCopy'), { tone: 'warning' });
+			toast(message('toolbar.selectPromptToCopy'), { tone: 'warning', report: false });
 		}
 	}
 </script>

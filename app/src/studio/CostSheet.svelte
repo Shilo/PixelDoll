@@ -4,6 +4,7 @@
 	// saved or sent. Prices come from costEstimate.ts, which uses the Studio's own quotes.
 	import { tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import Sheet from './Sheet.svelte';
 	import NumberStepper from './NumberStepper.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
@@ -75,7 +76,7 @@
 	let selected = $state(id);
 	let roster = $state.raw<CostCharacter[]>([]);
 	let opened = $state.raw<CostCharacter | null>(null);
-	let error = $state('');
+	let error = $state<unknown>();
 	async function manifestOf(projectId: string): Promise<Manifest> {
 		if (projectId === doc.id && store.project && !doc.loading) return store.project.manifest;
 		return (await openSource(projectId)).project.manifest;
@@ -92,7 +93,7 @@
 			);
 			opened = roster.find((c) => c.id === id) ?? characterOf(id, await manifestOf(id), defaults());
 		} catch (e) {
-			error = displayMessage(errorMessage(e));
+			error = e;
 		}
 	})();
 	// ---------- the planner's character ----------
@@ -359,14 +360,18 @@
 			{/each}
 		</div>
 
-		{#if error}<p class="notice bad small" role="alert">{error}</p>
+		{#if error}<p class="notice bad small" role="alert">
+				{displayMessage(errorMessage(error))}<ReportButton {error} />
+			</p>
 		{:else if !character && scope !== 'all'}<p class="muted" role="status">
 				{t('costSheet.loading')}
 			</p>
 		{:else}
 			<!-- Reset keeps one place and stays mounted through a pricing error and its recovery. -->
 			<div class="headline">
-				{#if priced.failure}<p class="notice bad small" role="alert">{priced.failure}</p>
+				{#if priced.failure}<p class="notice bad small" role="alert">
+						{priced.failure}<ReportButton />
+					</p>
 				{:else}<p class="readout" role="status" aria-atomic="true">
 						<strong class="amount num">{usd(projected)}</strong>
 						<span class="faint small num">{range}</span>

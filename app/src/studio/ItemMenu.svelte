@@ -2,6 +2,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import { tick } from 'svelte';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
@@ -256,7 +257,7 @@
 						{t('itemMenu.cancelFromTheTabThatIsGenerating')}
 					</p>{/if}
 				{#if cancelError && !cancelling}<p class="notice bad small" role="alert">
-						{displayMessage(cancelError)}
+						{displayMessage(cancelError)}<ReportButton error={cancelError} />
 					</p>{/if}
 			</div>
 		</div>

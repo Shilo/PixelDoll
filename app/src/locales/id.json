@@ -3112,5 +3112,17 @@
 			"other": "{n} panggilan tanpa harga"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"report": {
+		"action": "Laporkan",
+		"actionLabel": "Laporkan masalah ini",
+		"title": "Laporkan masalah ini",
+		"intro": "Ini membuka issue publik di GitHub yang hanya berisi teks di bawah. Tidak ada gambar, prompt, nama, atau kunci yang disertakan. Anda mengirimkannya dengan akun GitHub Anda.",
+		"preview": "Pratinjau laporan",
+		"copy": "Salin laporan",
+		"copied": "Disalin",
+		"copyFailed": "Tidak dapat menyalin. Pilih teks di atas lalu salin.",
+		"open": "Buka di GitHub",
+		"unexpected": "Terjadi kesalahan. Jika terjadi lagi, harap laporkan."
+	}
 }

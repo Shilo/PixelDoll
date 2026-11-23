@@ -3202,5 +3202,17 @@
 			"other": "{n} unpriced calls"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"report": {
+		"action": "Report",
+		"actionLabel": "Report this problem",
+		"title": "Report this problem",
+		"intro": "This opens a public GitHub issue with only the text below. No images, prompts, names or keys are included. You post it with your GitHub account.",
+		"preview": "Report preview",
+		"copy": "Copy report",
+		"copied": "Copied",
+		"copyFailed": "Could not copy. Select the text above and copy it instead.",
+		"open": "Open on GitHub",
+		"unexpected": "Something went wrong. If it keeps happening, please report it."
+	}
 }

@@ -17,6 +17,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import PromptField from './PromptField.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
 	import { promptSuggestions } from './promptSuggestions.svelte.ts';
@@ -550,9 +551,11 @@
 		{/if}
 	</form>
 	<p class="faint small" role="status">{busy ? t(busy) : ''}</p>
-	{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
+	{#if failure}<p class="notice bad small" role="alert">
+			{displayNestedMessage(failure)}<ReportButton error={failure} />
+		</p>{/if}
 	{#if priceFailure && editing}<p class="notice bad small" role="alert">
-			{displayNestedMessage(priceFailure)}
+			{displayNestedMessage(priceFailure)}<ReportButton error={priceFailure} />
 		</p>{/if}
 </Sheet>
 

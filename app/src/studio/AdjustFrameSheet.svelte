@@ -7,6 +7,7 @@
 	import Sprite from './Sprite.svelte';
 	import { LocalizedError, errorMessage, type Message } from '../lib/message.ts';
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import { displayError, displayMessage, displayNestedMessage } from '../lib/i18n.ts';
 	import { composeCell } from '../lib/compose/compose.ts';
 	import { makeImg, type Img } from '../lib/image/png.ts';
@@ -266,10 +267,14 @@
 								flows: !!blocked && blocked.translation.key !== 'adjustFrame.errors.resolveDrafts'
 							})}>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 					>{/if}
-				{#if error}<p class="notice bad small" role="alert">{displayNestedMessage(error)}</p>{/if}
+				{#if error}<p class="notice bad small" role="alert">
+						{displayNestedMessage(error)}<ReportButton {error} />
+					</p>{/if}
 			</div>
 		</div>
-	{:else if error}<p class="notice bad small" role="alert">{displayNestedMessage(error)}</p>
+	{:else if error}<p class="notice bad small" role="alert">
+			{displayNestedMessage(error)}<ReportButton {error} />
+		</p>
 	{:else}<p class="muted" role="status">{t('adjustFrame.loading')}</p>{/if}
 	{#snippet footer()}
 		{#if loaded}<button

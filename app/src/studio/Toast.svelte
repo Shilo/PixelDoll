@@ -10,6 +10,8 @@
 	import { updateNotice } from './updateNotice.svelte.ts';
 	import PwaNotice from './PwaNotice.svelte';
 	import PendingIndicator from './PendingIndicator.svelte';
+	import ReportButton from './ReportButton.svelte';
+	import { areaOf } from './report.svelte.ts';
 
 	let host = $state<HTMLDivElement>();
 	$effect(() => {
@@ -157,19 +159,26 @@
 				{#if typeof ui.toast === 'function'}{@render ui.toast()}{:else if Array.isArray(ui.toast)}{ui.toast
 						.map(displayNestedMessage)
 						.join(' ')}{:else}{displayNestedMessage(ui.toast)}{/if}
-				{#if ui.toastActionLabel}<button
-						class="bu-action btn sm toast-action"
-						data-variant="outline"
-						onclick={activate}>{displayNestedMessage(ui.toastActionLabel)}</button
-					>{/if}
+				{#if ui.toastActionLabel}<span class="toast-actions"
+						><button class="bu-action btn sm" data-variant="outline" onclick={activate}
+							>{displayNestedMessage(ui.toastActionLabel)}</button
+						>{#if ui.toastProblem}<ReportButton
+								{...ui.toastProblem}
+								area={areaOf(ui.toastSheet)}
+							/>{/if}</span
+					>{:else if ui.toastProblem}
+					<ReportButton {...ui.toastProblem} area={areaOf(ui.toastSheet)} />{/if}
 			</Notice>{/if}
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>
 {/if}
 
 <style>
-	.toast-action {
-		display: block;
+	.toast-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
 		margin-top: 6px;
 	}
 	@media (pointer: coarse) {

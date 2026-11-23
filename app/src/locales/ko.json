@@ -3112,5 +3112,17 @@
 			"other": "요금 정보 없는 호출 {n}건"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"report": {
+		"action": "신고",
+		"actionLabel": "이 문제 신고",
+		"title": "이 문제 신고",
+		"intro": "아래 텍스트만 담은 공개 GitHub 이슈를 열어요. 이미지, 프롬프트, 이름, 키는 포함되지 않아요. 내 GitHub 계정으로 게시해요.",
+		"preview": "신고 미리보기",
+		"copy": "신고 내용 복사",
+		"copied": "복사했어요",
+		"copyFailed": "복사하지 못했어요. 위 텍스트를 선택해 복사해 주세요.",
+		"open": "GitHub에서 열기",
+		"unexpected": "문제가 생겼어요. 다시 발생하면 신고해 주세요."
+	}
 }

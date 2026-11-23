@@ -109,6 +109,19 @@ wrapping in the same order when narrow; it never repeats Close, Cancel, Done, Hi
 Back share one close request: an edited form asks Discard changes? first, and an atomic save disables it. Closing running work keeps
 it running in Activity. Confirms stay centered with the safe choice first and the named action last.
 
+## Problem reports
+
+Every unexpected failure offers one quiet Report link-button in place: danger and warning notifications (after their own
+action), failed and lost Activity requests, failed item generation, and the end of each error notice in a sheet or pane. Uncaught errors and unhandled rejections show a warning notification, once per distinct error, with the same Report.
+Expected guidance (a plan limit, a busy tab, a notification that opens a failure view with its own Report) passes `report: false`,
+and validation messages about the user's own input have none. Report opens a centered preview of the exact public issue text with
+Cancel, Copy report and Open on GitHub, which opens GitHub's issue form prefilled through `problem-report.yml` query parameters;
+the user posts it with their own account. A report is built from an allow-list in `app/src/lib/report/report.ts` (version, build
+channel and commit, browser and OS families, device and screen class, language, the area, the message key and its English
+template without variable values, the error name, PixelLab status and normalized endpoint path, queue states and timings), then
+every string passes a sanitizer. It never contains images, prompts, names, IDs, hashes, project data, request bodies or storage.
+Startup failures before the Studio loads show the same report as plain English page content.
+
 Entry is optional and starts only from activation. Nothing is saved or automatically restored. The
 standard Fullscreen API targets `document.documentElement`, keeping the scene, dialogs, popovers and
 notifications together. Browser `fullscreenchange` events determine the icon/action, including browser-owned

@@ -1,0 +1,133 @@
+<script lang="ts">
+	// The report preview: exactly the text the public issue will carry, then Copy report or Open on GitHub, where the
+	// user posts it with their own account. Centered like ConfirmDialog, with the safe choice first.
+	import { t } from 'svelte-whisper';
+	import type { ProblemReport } from '../lib/report/report.ts';
+	import { reportText, reportUrl } from '../lib/report/report.ts';
+	import { ExternalLink } from './icons.ts';
+	import { backdropDismiss } from './backdropDismiss.ts';
+	import { claimSheetExit } from './sheetExit.ts';
+	import { closeReport } from './report.svelte.ts';
+
+	let { report }: { report: ProblemReport } = $props();
+	const id = $props.id();
+	const text = $derived(reportText(report));
+	const url = $derived(reportUrl(report));
+	let dialog: HTMLDialogElement;
+	let cancel: HTMLButtonElement;
+	// Feedback stays inside the modal: a toast would sit under its backdrop.
+	let copied = $state<'' | 'done' | 'failed'>('');
+	$effect(() => claimSheetExit({ alert: true, close: closeReport }));
+	$effect(() => {
+		const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		dialog.showModal();
+		cancel.focus();
+		return () => {
+			dialog.close();
+			if (opener?.isConnected && !document.activeElement?.closest('dialog[open]'))
+				opener.focus({ preventScroll: true });
+		};
+	});
+	async function copy() {
+		try {
+			await navigator.clipboard.writeText(text);
+			copied = 'done';
+		} catch (error) {
+			console.warn('copy report', error);
+			copied = 'failed';
+		}
+	}
+</script>
+
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<dialog
+	bind:this={dialog}
+	use:backdropDismiss={closeReport}
+	class="report-dialog bu-dialog-surface"
+	aria-labelledby="{id}-title"
+	aria-describedby="{id}-body"
+	data-testid="report-dialog"
+	onkeydown={(e) => e.stopPropagation()}
+	oncancel={(e) => {
+		e.preventDefault();
+		closeReport();
+	}}
+>
+	<h2 id="{id}-title">{t('report.title')}</h2>
+	<p id="{id}-body" class="report-intro">{t('report.intro')}</p>
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<pre class="report-preview" tabindex="0" aria-label={t('report.preview')}>{text}</pre>
+	{#if copied === 'failed'}<p class="notice warn small" role="alert">
+			{t('report.copyFailed')}
+		</p>{/if}
+	<div class="report-actions">
+		<button bind:this={cancel} class="bu-btn" onclick={closeReport}>{t('common.cancel')}</button>
+		<button class="bu-btn" onclick={copy}
+			>{t(copied === 'done' ? 'report.copied' : 'report.copy')}</button
+		>
+		<a
+			class="bu-btn"
+			data-variant="primary"
+			href={url}
+			target="_blank"
+			rel="noreferrer"
+			onclick={() => queueMicrotask(closeReport)}
+			>{t('report.open')}<ExternalLink size={16} aria-hidden="true" /></a
+		>
+	</div>
+</dialog>
+
+<style>
+	.report-dialog {
+		width: min(440px, calc(100vw - 32px));
+		max-height: calc(100dvh - 32px);
+		margin: auto;
+		padding: 20px;
+		overflow: auto;
+	}
+	.report-dialog::backdrop {
+		background: var(--bu-scrim);
+	}
+	h2 {
+		margin: 0 0 8px;
+		font-size: 17px;
+		font-weight: 600;
+		text-align: center;
+	}
+	.report-intro {
+		margin: 0 0 12px;
+		color: var(--bu-muted);
+		font-size: 14px;
+		text-align: center;
+	}
+	.report-preview {
+		max-height: min(40dvh, 320px);
+		margin: 0;
+		padding: 10px 12px;
+		overflow: auto;
+		border-radius: var(--r-ctl);
+		background: var(--bg-hover);
+		font-size: 12px;
+		line-height: 1.45;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		user-select: text;
+	}
+	.notice {
+		margin: 12px 0 0;
+	}
+	.report-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 16px;
+	}
+	.report-actions > * {
+		flex: 1 1 calc(33% - 6px);
+		min-height: 44px;
+		height: auto;
+		white-space: normal;
+		gap: 6px;
+		text-decoration: none;
+	}
+</style>

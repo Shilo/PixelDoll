@@ -3202,5 +3202,17 @@
 			"other": "{n} appels sans prix"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"report": {
+		"action": "Signaler",
+		"actionLabel": "Signaler ce problème",
+		"title": "Signaler ce problème",
+		"intro": "Ouvre un ticket public sur GitHub contenant uniquement le texte ci-dessous. Aucune image, aucun prompt, nom ou clé n’est inclus. Vous le publiez avec votre compte GitHub.",
+		"preview": "Aperçu du signalement",
+		"copy": "Copier le signalement",
+		"copied": "Copié",
+		"copyFailed": "Copie impossible. Sélectionnez le texte ci-dessus et copiez-le.",
+		"open": "Ouvrir sur GitHub",
+		"unexpected": "Un problème est survenu. S’il se reproduit, signalez-le."
+	}
 }

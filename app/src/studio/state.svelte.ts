@@ -163,6 +163,7 @@ import {
 import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
 import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
+import type { Problem } from '../lib/report/report.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
@@ -383,6 +384,8 @@ export const ui = $state({
 	toastSheet: null as SheetId,
 	toastAction: null as (() => void | Promise<void>) | null,
 	toastActionLabel: '' as string | Message,
+	/** What the notice's Report action sends: set for danger and warning notices. */
+	toastProblem: null as Problem | null,
 	waitingForTab: false // a spending action waits for the other tab that runs the jobs
 });
 let afterConnect: { run: () => void; minimumTier: number } | null = null;
@@ -424,7 +427,7 @@ export function initUi() {
 						(error: unknown) => {
 							// An unreadable record is not a deleted one: stay on this character and say so.
 							console.error('library change', error);
-							toast(message('state.characterRereadFailed'), { tone: 'danger' });
+							toast(message('state.characterRereadFailed'), { tone: 'danger', error });
 						}
 					);
 				return;
@@ -470,10 +473,16 @@ export function initUi() {
 	const unhandled = (e: PromiseRejectionEvent) => {
 		if (e.reason instanceof LoadError) {
 			e.preventDefault();
-			toast(errorMessage(e.reason), { tone: 'danger' });
-		}
+			toast(errorMessage(e.reason), { tone: 'danger', error: e.reason });
+		} else unexpectedError(e.reason);
+	};
+	// Cross-origin scripts (extensions, embeds) and browser notices such as ResizeObserver loops carry no error object.
+	const uncaught = (e: ErrorEvent) => {
+		if (e.error && (!e.filename || new URL(e.filename, location.href).origin === location.origin))
+			unexpectedError(e.error);
 	};
 	addEventListener('unhandledrejection', unhandled);
+	addEventListener('error', uncaught);
 	addEventListener('resize', on);
 	addEventListener('pagehide', leave);
 	document.addEventListener('visibilitychange', hide);
@@ -482,6 +491,7 @@ export function initUi() {
 		channel?.close();
 		if (identityChannel === channel) identityChannel = undefined;
 		removeEventListener('unhandledrejection', unhandled);
+		removeEventListener('error', uncaught);
 		removeEventListener('resize', on);
 		removeEventListener('pagehide', leave);
 		document.removeEventListener('visibilitychange', hide);
@@ -518,6 +528,25 @@ export interface ToastOptions {
 	action?: () => void | Promise<void>;
 	/** Names the explicit button that runs `action`: without it, the whole notice stays the button. */
 	actionLabel?: string | Message;
+	/** The error behind a danger or warning notice: its report names the error and any PixelLab status and endpoint. */
+	error?: unknown;
+	/** false: expected guidance (a plan limit, a busy tab), or a notice that opens a failure view with its own Report. */
+	report?: false;
+}
+const firstMessage = (value: unknown): Message | undefined =>
+	Array.isArray(value)
+		? value.map(firstMessage).find(Boolean)
+		: value && typeof value === 'object' && typeof (value as Message).key === 'string'
+			? (value as Message)
+			: undefined;
+/** Something failed that no surface handled: a warning with a Report action, once per distinct error. */
+const unexpectedErrors = new Set<string>();
+export function unexpectedError(error: unknown) {
+	if ((error as Error | undefined)?.name === 'AbortError') return;
+	const signature = `${(error as Error | undefined)?.name}:${(error as Error | undefined)?.message ?? String(error)}`;
+	if (unexpectedErrors.has(signature)) return;
+	unexpectedErrors.add(signature);
+	toast(message('report.unexpected'), { tone: 'warning', duration: 10000, error });
 }
 function stopToastTimer() {
 	clearTimeout(toastT);
@@ -533,6 +562,7 @@ export function dismissToast() {
 	ui.toastPending = false;
 	ui.toastAction = null;
 	ui.toastActionLabel = '';
+	ui.toastProblem = null;
 }
 export async function activateToast() {
 	if (!ui.toast || toastActivating === toastRevision) return;
@@ -579,6 +609,14 @@ export function toast(
 	ui.toastSheet = ui.sheet;
 	ui.toastAction = o.action ?? null;
 	ui.toastActionLabel = o.actionLabel ?? '';
+	ui.toastProblem =
+		(o.tone === 'danger' || o.tone === 'warning') && o.report !== false
+			? {
+					message: firstMessage(s) ?? firstMessage(o.title),
+					error: o.error,
+					tone: o.tone === 'danger' ? 'error' : 'warning'
+				}
+			: null;
 	toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000);
 	armToast();
 	return true;
@@ -622,7 +660,8 @@ function allowsTier(minimumTier: number): boolean {
 	const decision = tierDecision(app.balance, { required: minimumTier });
 	if (decision.kind === 'required') {
 		toast(message('activity.planWait.tier', { tier: decision.tier }), {
-			tone: 'warning'
+			tone: 'warning',
+			report: false
 		});
 		return false;
 	}
@@ -630,7 +669,7 @@ function allowsTier(minimumTier: number): boolean {
 }
 export function withKey(fn: () => void, minimumTier = 0) {
 	if (moveReviewPublishing) {
-		toast(message('directionsSheet.waitForGeneration'), { tone: 'warning' });
+		toast(message('directionsSheet.waitForGeneration'), { tone: 'warning', report: false });
 		return;
 	}
 	if (follower(() => withKey(fn, minimumTier))) return;
@@ -802,6 +841,7 @@ export async function refreshProjects(): Promise<boolean> {
 	const listed = await listProjects().catch((e: unknown) => {
 			console.error('projects', e);
 			toast(message('state.couldNotReadYourSavedCharactersReason', { reason: errorMessage(e) }), {
+				error: e,
 				tone: 'danger'
 			});
 			return null;
@@ -980,6 +1020,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (id !== DEMO) {
 			console.error('open', e);
 			toast(message('state.couldNotOpenThatCharacterError', { error: errorMessage(e) }), {
+				error: e,
 				tone: 'danger'
 			});
 			return openProject(DEMO);
@@ -1190,6 +1231,7 @@ function save() {
 		} catch (e) {
 			console.error('autosave', e);
 			toast(message('state.couldNotSaveReason', { reason: errorMessage(e) }), {
+				error: e,
 				tone: 'danger'
 			});
 		}
@@ -1499,7 +1541,10 @@ async function undoAdjust(
 		await refreshCharacterDirections(id);
 		toast(message('adjustFrame.undone'), { tone: 'success' });
 	} catch (error) {
-		toast(errorTranslation(error) ?? message('adjustFrame.errors.undoFailed'), { tone: 'danger' });
+		toast(errorTranslation(error) ?? message('adjustFrame.errors.undoFailed'), {
+			tone: 'danger',
+			error
+		});
 	}
 }
 function generationSettled() {
@@ -1854,7 +1899,7 @@ async function restoreDeletedEntry(id: string): Promise<boolean> {
 		);
 		return true;
 	} catch (error) {
-		toast(errorTranslation(error) ?? errorMessage(error), { tone: 'danger' });
+		toast(errorTranslation(error) ?? errorMessage(error), { tone: 'danger', error });
 		return false;
 	}
 }
@@ -2272,7 +2317,10 @@ export async function revertFrames(
 		});
 	} catch (error) {
 		console.error('fix frames', error);
-		toast(errorTranslation(error) ?? message('fixFrames.errors.saveFailed'), { tone: 'danger' });
+		toast(errorTranslation(error) ?? message('fixFrames.errors.saveFailed'), {
+			tone: 'danger',
+			error
+		});
 	}
 }
 
@@ -2442,11 +2490,12 @@ export async function moveItemToSlot(
 		if (typeof reason !== 'string' && reason.key === 'wardrobe.itemMoveBusy')
 			toast(reason, {
 				tone: 'warning',
+				report: false,
 				// The notice's action is how the person resolves the block, so it never expires on its own.
 				duration: 0,
 				action: () => openPendingWork({ projectId, slots: [item.slot, targetId] })
 			});
-		else toast(message('state.couldNotSaveReason', { reason }), { tone: 'danger' });
+		else toast(message('state.couldNotSaveReason', { reason }), { tone: 'danger', error });
 		return false;
 	});
 	saving = handled.then(() => undefined);
@@ -2704,6 +2753,7 @@ export async function restoreFromDesign(itemId: string) {
 		} catch (e) {
 			failed = true;
 			toast(message('state.restoreFailed', { name: it.name, reason: errorMessage(e) }), {
+				error: e,
 				tone: 'danger'
 			});
 		}
@@ -2734,6 +2784,7 @@ export async function restoreFromDesign(itemId: string) {
 		await refreshShared();
 	} catch (e) {
 		toast(message('state.restoreFinishFailed', { name: it.name, reason: errorMessage(e) }), {
+			error: e,
 			tone: 'danger'
 		});
 	} finally {
@@ -2753,6 +2804,7 @@ async function copyDemoAndAdd(entry: SharedItem) {
 			id = await copyDemo();
 		} catch (e) {
 			toast(message('state.couldNotCopyTheDemoReason', { reason: errorMessage(e) }), {
+				error: e,
 				tone: 'danger'
 			});
 			return;
@@ -3022,6 +3074,7 @@ async function takeOver() {
 	} catch (e) {
 		cancelWaitingForTab(); // never run a click on top of work this tab could not resume
 		toast(message('state.thisTabCouldNotTakeOverThe', { reason: errorMessage(e) }), {
+			error: e,
 			tone: 'danger'
 		});
 	} finally {
@@ -3051,6 +3104,7 @@ function announceStoppedWork() {
 	if (count)
 		toast(message('state.stoppedWork', { count }), {
 			tone: 'warning',
+			report: false,
 			duration: 10000,
 			action: () => openPendingWork()
 		});
@@ -3061,7 +3115,7 @@ export function startupFailed(error: unknown, reported = false) {
 	studioStartup = 'failed';
 	console.error('studio startup', error);
 	if (!reported)
-		toast(message('state.pixelDollCouldNotFinishLoadingYourSaved'), { tone: 'danger' });
+		toast(message('state.pixelDollCouldNotFinishLoadingYourSaved'), { tone: 'danger', error });
 }
 
 interface ItemAttemptConsent {
@@ -3076,7 +3130,10 @@ export async function startItem(input: NewItemInput, consent?: ItemAttemptConsen
 		const request = openRequest;
 		await saving;
 		if (request !== openRequest) {
-			toast(message('state.thisCharacterOrItemChangedReopenIt'), { tone: 'warning' });
+			toast(message('state.thisCharacterOrItemChangedReopenIt'), {
+				tone: 'warning',
+				report: false
+			});
 			return;
 		}
 	}
@@ -3094,6 +3151,7 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 		await loadGens();
 	} catch (e) {
 		toast(message('state.savedItemDraftsCouldNotBeRead', { reason: errorMessage(e) }), {
+			error: e,
 			tone: 'danger'
 		});
 		return;
@@ -3121,14 +3179,16 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 	) {
 		// Try again may carry a measured key
 		toast(message('state.thisCharacterOrItemChangedReopenIt'), {
-			tone: 'warning'
+			tone: 'warning',
+			report: false
 		});
 		return;
 	}
 	const plan = route.plan(ctx.rec.manifest.rig, ctx, input);
 	if (consent && (!Number.isFinite(consent.gens) || plan.gens !== consent.gens)) {
 		toast(message('state.theAttemptPriceChangedReviewTheCurrent'), {
-			tone: 'warning'
+			tone: 'warning',
+			report: false
 		});
 		return;
 	}
@@ -3223,7 +3283,7 @@ async function runGenOnce(
 		// The pipeline did not load, so this attempt submitted nothing: keep the draft running for a reload to resume.
 		if (e instanceof LoadError) {
 			g.status = '';
-			toast(errorMessage(e), { tone: 'danger' });
+			toast(errorMessage(e), { tone: 'danger', error: e });
 			return;
 		}
 		g.phase = 'failed';
@@ -3234,6 +3294,7 @@ async function runGenOnce(
 	if (g.phase === 'failed')
 		toast(message('state.nameCouldNotFinishNoPaidRetry', { name: g.input.name }), {
 			tone: 'danger',
+			report: false,
 			duration: 8000,
 			action: () => openGenerationReview(g.draft.spec.id)
 		});
@@ -3243,6 +3304,7 @@ async function runGenOnce(
 	if (res && (await itemRun()).isClean(res) && (await autoSave(g))) return;
 	toast(message('state.nameHasIssuesToReviewNoPaid', { name: g.input.name }), {
 		tone: 'warning',
+		report: false,
 		action: () => openGenerationReview(g.draft.spec.id)
 	});
 }
@@ -3562,7 +3624,7 @@ export function rerollGen(g: Gen, calls: number[], reviewedGens: number, minimum
 					rec.manifest.rig
 				);
 				if (next.gens !== reviewedGens) {
-					toast(message('state.rerollPriceChanged'), { tone: 'warning' });
+					toast(message('state.rerollPriceChanged'), { tone: 'warning', report: false });
 					return;
 				}
 				const before = {
@@ -3586,7 +3648,7 @@ export function rerollGen(g: Gen, calls: number[], reviewedGens: number, minimum
 				settling.delete(id);
 			}
 			if (g.phase === 'running') void runGen(g);
-		})().catch((error: unknown) => toast(errorMessage(error), { tone: 'danger' }));
+		})().catch((error: unknown) => toast(errorMessage(error), { tone: 'danger', error }));
 	}, minimumTier);
 }
 /** Saving, canceling or re-rolling this draft has started and not finished: its paid choices wait. */
@@ -4115,6 +4177,7 @@ export async function startCreate(input: CreateSpec, present = false, attemptId?
 			if (current() && (ui.sheet !== 'create' || createPresentation.id !== run.id))
 				toast(message('state.createFailedOpen', { name: spec.name }), {
 					tone: 'danger',
+					report: false,
 					duration: 8000,
 					action: () => reviewFailedCreate(run.id)
 				});
@@ -4162,7 +4225,10 @@ export async function discardCreate(id: string) {
 		removeCreate(run);
 		return true;
 	} catch (error) {
-		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });
+		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), {
+			error,
+			tone: 'danger'
+		});
 		return false;
 	} finally {
 		run.running = false;
@@ -4286,17 +4352,19 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 	if (moving.repairReview) {
 		toast(message('repairReview.finishFirst'), {
 			tone: 'warning',
+			report: false,
 			action: () => openFlow('move', moving.projectId)
 		});
 		return;
 	}
 	if (spec.reuseItemFrames && queue.role === 'follower') {
-		toast(message('state.useSavedFramesInTheTabThat'), { tone: 'warning' });
+		toast(message('state.useSavedFramesInTheTabThat'), { tone: 'warning', report: false });
 		return;
 	}
 	if (moveRunning || moveReviewPublishing) {
 		toast(message('state.anotherMoveIsStillBeingAddedSo'), {
 			tone: 'warning',
+			report: false,
 			action: () => openFlow('move', moving.projectId)
 		});
 		return;
@@ -4396,6 +4464,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (ui.sheet !== 'move')
 				toast(message('repairReview.ready'), {
 					tone: 'warning',
+					report: false,
 					action: () => openFlow('move', projectId)
 				});
 			return;
@@ -4481,6 +4550,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (current() && ui.sheet !== 'move')
 				toast(message('state.moveFailedOpen', { moveName }), {
 					tone: 'danger',
+					report: false,
 					duration: 8000,
 					action: () => openFlow('move', projectId)
 				}); // timed: the Moves panel keeps the failure, and a persistent error would hide later successes
@@ -4748,7 +4818,7 @@ export async function resolveRepairReview(useRepair: boolean) {
 		toast(useRepair ? message('repairReview.saved') : message('repairReview.kept'));
 	} catch (error) {
 		moving.error = error instanceof LocalizedError ? error : errorText(error);
-		toast(errorMessage(error), { tone: 'danger' });
+		toast(errorMessage(error), { tone: 'danger', error });
 	} finally {
 		moveRunning = moving.resolvingRepair = false;
 	}
@@ -4802,6 +4872,7 @@ export async function startSetup(spec: SetupSpec) {
 	if (setupRunning) {
 		toast(message('state.anotherRigSetupIsStillRunningSo'), {
 			tone: 'warning',
+			report: false,
 			action: () => openFlow('setup', settingUp.spec?.projectId ?? '')
 		});
 		return;
@@ -4848,6 +4919,7 @@ export async function startSetup(spec: SetupSpec) {
 			if (current() && ui.sheet !== 'setup')
 				toast(message('state.setupFailedOpen'), {
 					tone: 'danger',
+					report: false,
 					duration: 8000,
 					action: () => openFlow('setup', spec.projectId)
 				});
@@ -4911,7 +4983,10 @@ export async function dismissSetup() {
 		Object.assign(settingUp, { spec: null, progress: null, error: '', done: false, warnings: [] });
 		return true;
 	} catch (error) {
-		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });
+		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), {
+			error,
+			tone: 'danger'
+		});
 		return false;
 	} finally {
 		setupRunning = false;

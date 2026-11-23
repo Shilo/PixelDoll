@@ -124,6 +124,7 @@
 	import { errorText, LocalizedError, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import {
 		creationDefaults,
 		moveModels,
@@ -885,14 +886,14 @@
 	}
 	// Make room from the room warning: free; the form keeps every choice and its warnings are checked again.
 	let enlarging = $state(false);
-	let enlargeError = $state('');
+	let enlargeError = $state<unknown>();
 	async function room() {
 		enlarging = true;
-		enlargeError = '';
+		enlargeError = undefined;
 		try {
 			await makeRoomFor(doc.id);
 		} catch (error) {
-			enlargeError = displayError(error);
+			enlargeError = error;
 		} finally {
 			enlarging = false;
 		}
@@ -986,7 +987,9 @@
 			};
 			withKey(
 				() =>
-					void confirm().catch((error: unknown) => toast(errorMessage(error), { tone: 'warning' })),
+					void confirm().catch((error: unknown) =>
+						toast(errorMessage(error), { tone: 'warning', error })
+					),
 				offer.tier
 			);
 			return;
@@ -1061,7 +1064,9 @@
 		};
 		withKey(
 			() =>
-				void confirm().catch((error: unknown) => toast(errorMessage(error), { tone: 'warning' })),
+				void confirm().catch((error: unknown) =>
+					toast(errorMessage(error), { tone: 'warning', error })
+				),
 			minimumTier
 		);
 	}
@@ -1175,7 +1180,9 @@
 			});
 		};
 		const accept = () =>
-			void write().catch((error: unknown) => toast(errorMessage(error), { tone: 'warning' }));
+			void write().catch((error: unknown) =>
+				toast(errorMessage(error), { tone: 'warning', error })
+			);
 		if (kind === 'start') pickStart(accept);
 		else accept();
 	}
@@ -1298,6 +1305,7 @@
 	function leaveFailedMove(close: boolean) {
 		void dismissMove().catch((error) =>
 			toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), {
+				error,
 				tone: 'danger'
 			})
 		);
@@ -1787,7 +1795,7 @@
 					</ul>
 				</details>{/if}
 			{#if moving.error}<p class="notice bad small" role="alert">
-					{displayError(moving.error)}
+					{displayError(moving.error)}<ReportButton error={moving.error} />
 				</p>{/if}
 			{#if queue.role === 'follower'}<p class="notice small">
 					{moving.spec.redrawItem
@@ -1853,7 +1861,7 @@
 			</ol>
 			<!-- The paid review names each stopped view's reason under its frames; the summary shows only a reason it does not. -->
 			{#if moving.error && !errorInReview}<p class="notice bad small">
-					<CircleAlert size={14} />{displayError(moving.error)}
+					<CircleAlert size={14} />{displayError(moving.error)}<ReportButton error={moving.error} />
 				</p>{/if}
 			{#if moving.error}
 				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
@@ -2001,7 +2009,9 @@
 					>{/if}
 			{/if}
 			{#if recoveryError}<p class="notice bad small">
-					<CircleAlert size={14} />{displayNestedMessage(recoveryError)}
+					<CircleAlert size={14} />{displayNestedMessage(recoveryError)}<ReportButton
+						error={recoveryError}
+					/>
 				</p>{/if}
 			{#each moving.warnings as warning (warning)}<p class="notice warn small">
 					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
@@ -2321,7 +2331,9 @@
 									disabled={enlarging || !!frameEditsBlocked(doc.id)}
 									onclick={() => void room()}>{t('moveSheet.makeRoom')}</button
 								>
-								{#if enlargeError}<p class="notice bad small" role="alert">{enlargeError}</p>{/if}
+								{#if enlargeError}<p class="notice bad small" role="alert">
+										{displayError(enlargeError)}<ReportButton error={enlargeError} />
+									</p>{/if}
 							{/if}{/each}{:else if pendingIds.includes(id)}<p class="notice small">
 							<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
 						</p>{:else if busy}<p class="faint small">

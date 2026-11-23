@@ -4,6 +4,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import { Archive, Trash, TriangleAlert, Upload } from './icons.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import DestructiveConfirmButton from './DestructiveConfirmButton.svelte';
@@ -263,7 +264,9 @@
 				</p>{/if}
 			{#if plan?.blockers.length}<p class="notice bad small" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />
-					{t('librarySettings.incomplete')}
+					{t('librarySettings.incomplete')}<ReportButton
+						message={message('librarySettings.incomplete')}
+					/>
 				</p>{/if}
 			{#if preview.archived}
 				<label class="check">

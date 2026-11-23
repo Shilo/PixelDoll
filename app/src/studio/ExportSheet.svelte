@@ -43,6 +43,7 @@
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { getLocale, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import type { WhisperKey } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
@@ -669,7 +670,7 @@
 				? displayMessage(saveError)
 				: loadError
 					? displayMessage(loadError)
-					: ''}
+					: ''}<ReportButton area="Export" error={saveError || loadError} />
 		</p>{/if}
 	{#if invalidPreferences}
 		<p class="bu-muted settings-description">
@@ -949,7 +950,10 @@
 									? t('export.recovery.canDownloadSources')
 									: t('export.failure.noZip')}
 								{result.warnings.map(displayWarning).join(' ')}</span
-							>
+							>{#if result.kind === 'failed'}<ReportButton
+									area="Export"
+									error={result.problemMessage}
+								/>{/if}
 						</p>
 					{/if}
 					{#if m && result?.kind === 'requested'}

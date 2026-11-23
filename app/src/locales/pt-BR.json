@@ -3211,5 +3211,17 @@
 			"other": "{n} chamadas sem preço"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"report": {
+		"action": "Relatar",
+		"actionLabel": "Relatar este problema",
+		"title": "Relatar este problema",
+		"intro": "Isso abre uma issue pública no GitHub só com o texto abaixo. Não inclui imagens, prompts, nomes nem chaves. Você publica com sua conta do GitHub.",
+		"preview": "Prévia do relatório",
+		"copy": "Copiar relatório",
+		"copied": "Copiado",
+		"copyFailed": "Não foi possível copiar. Selecione o texto acima e copie.",
+		"open": "Abrir no GitHub",
+		"unexpected": "Algo deu errado. Se acontecer de novo, relate o problema."
+	}
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatNumber, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { displayNestedMessage } from '../lib/i18n.ts';
 	import type { Img } from '../lib/image/png.ts';
@@ -354,10 +355,10 @@
 	{/if}
 	<p class="faint small" role="status">{busy ? t(busy) : ''}</p>
 	{#if runError && !review}<p class="notice bad small" role="alert">
-			{displayNestedMessage(runError)}
+			{displayNestedMessage(runError)}<ReportButton error={runError} />
 		</p>{/if}
 	{#if failure && failure !== runError}<p class="notice bad small" role="alert">
-			{displayNestedMessage(failure)}
+			{displayNestedMessage(failure)}<ReportButton error={failure} />
 		</p>{/if}
 </Sheet>
 

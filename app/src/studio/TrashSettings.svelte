@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { getLocale, t } from 'svelte-whisper';
+	import ReportButton from './ReportButton.svelte';
 	import {
 		Clapperboard,
 		Layers2,
@@ -203,7 +204,9 @@
 		</p>
 	{/if}
 	{#if failure}<p class="notice bad small" role="alert">
-			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(failure)}
+			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(failure)}<ReportButton
+				error={failure}
+			/>
 		</p>{/if}
 </div>
 

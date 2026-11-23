@@ -3202,5 +3202,17 @@
 			"other": "{n} llamadas sin precio"
 		}
 	},
-	"shortcut": { "control": "Ctrl" }
+	"shortcut": { "control": "Ctrl" },
+	"report": {
+		"action": "Informar",
+		"actionLabel": "Informar de este problema",
+		"title": "Informar de este problema",
+		"intro": "Se abre una incidencia pública en GitHub solo con el texto de abajo. No incluye imágenes, prompts, nombres ni claves. La publicas con tu cuenta de GitHub.",
+		"preview": "Vista previa del informe",
+		"copy": "Copiar informe",
+		"copied": "Copiado",
+		"copyFailed": "No se pudo copiar. Selecciona el texto de arriba y cópialo.",
+		"open": "Abrir en GitHub",
+		"unexpected": "Algo salió mal. Si vuelve a ocurrir, infórmanos."
+	}
 }
