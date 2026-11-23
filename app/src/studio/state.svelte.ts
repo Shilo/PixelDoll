@@ -3369,9 +3369,14 @@ export async function openPendingWork(
 		return openFlow('setup', setup);
 	ui.sheet = 'activity';
 }
-export async function acceptItemIssues(projectId: string, itemId: string, reviewed: Item) {
+export async function acceptItemIssues(
+	projectId: string,
+	itemId: string,
+	reviewed: Item,
+	keepWithout?: string[]
+) {
 	if (follower()) return;
-	await (await itemRun()).acceptItemReview(projectId, itemId, reviewed);
+	await (await itemRun()).acceptItemReview(projectId, itemId, reviewed, keepWithout);
 	if (viewing(projectId)) await openProject(projectId, { quiet: true });
 	else await syncStoredProject(projectId);
 	toast(message('state.nameAcceptedAsIs', { name: reviewed.name }));

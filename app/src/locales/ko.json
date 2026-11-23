@@ -445,6 +445,8 @@
 		"acceptAsIs": "그대로 수락",
 		"pendingWorkBusy": "동작이나 설정이 실행 중이거나 멈춰 있어요. 이 작업을 쓰려면 완료하거나 버리세요.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "크레딧을 쓰지 않고 현재 아트워크를 수락해요. 감지된 문제는 세부 정보에 남아요.",
+		"keepWithoutMoves": "그 동작 없이 유지",
+		"keepWithoutMovesDetail": "크레딧을 쓰지 않고 완성된 동작만으로 아이템을 유지해요. {moves}에서는 숨겨지고, 나중에 각자의 가격으로 만들 수 있도록 빠진 동작으로 계속 표시돼요.",
 		"youAcceptedThisArtworkWithItsRecorded": "기록된 품질 참고 사항과 함께 이 아트워크를 수락했어요.",
 		"generateItemForMove": "동작용 아이템 생성",
 		"labelMakeNameForMissingName": "{missingName} 대상으로 {name} 만들기",

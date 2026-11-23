@@ -164,3 +164,43 @@ test('an edit racing the atomic save cannot accept a newer set of warnings', asy
 	expect(state.imageWrites).toBe(-1);
 	expect(state.enqueue).not.toHaveBeenCalled();
 });
+
+test('an item with missing moves is kept without them: only its complete moves stay, nothing is added', async () => {
+	const m = state.record!.manifest,
+		hat = m.items[0];
+	m.rig.animations = [
+		{ id: 'walk', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] },
+		{ id: 'idle', cells: 2, loop: true, frames: [0, 1].map((cell) => ({ cell, ms: 100 })) }
+	];
+	m.items.push({
+		...structuredClone(hat),
+		id: 'base',
+		slot: 'body',
+		layers: [
+			{
+				id: 'main',
+				role: 'fg',
+				z: 0,
+				cells: { walk: { south: ['sha256:b0'] }, idle: { south: ['sha256:b1', 'sha256:b2'] } }
+			}
+		]
+	});
+	// The hat has walk complete but only the first idle frame: worn in idle it would flicker in and out.
+	hat.layers[0].cells!.idle = { south: ['sha256:i0', null] };
+	hat.coverage = ['walk/south/0', 'idle/south/0'];
+	hat.qa!.clips['idle/south'] = { ...hat.qa!.clips['walk/south'] };
+	hat.qa!.cells['idle/south/0'] = { route: 'posed', area: 3 };
+	const reviewed = structuredClone(hat);
+	// consent covers exactly the reviewed gaps
+	await expect(acceptItemReview('character', hat.id, reviewed, ['walk'])).rejects.toMatchObject({
+		translation: { key: 'itemRoute.errors.reviewChanged' }
+	});
+	await acceptItemReview('character', hat.id, reviewed, ['idle']);
+	expect(state.saved!.layers[0].cells).toEqual({ walk: { south: ['sha256:art'] } });
+	expect(state.saved!.coverage).toEqual(['walk/south/0']);
+	expect(Object.keys(state.saved!.qa!.clips)).toEqual(['walk/south']);
+	expect(state.saved!.qa!.cells['idle/south/0']).toBeUndefined();
+	expect(state.saved!.qa!.status).toBe('accepted');
+	expect(state.imageWrites).toBe(0);
+	expect(state.enqueue).not.toHaveBeenCalled();
+});

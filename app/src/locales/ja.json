@@ -445,6 +445,8 @@
 		"acceptAsIs": "このまま承認",
 		"pendingWorkBusy": "モーションまたはセットアップが実行中か停止しています。これらの操作を使うには、完了するか破棄してください。",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "クレジットを消費せずに現在のアートワークを承認します。検出された問題は詳細に残ります。",
+		"keepWithoutMoves": "そのモーションなしで残す",
+		"keepWithoutMovesDetail": "クレジットを使わずに、そろっているモーションだけでアイテムを残します。{moves}では非表示になり、後で個別の価格で作れるよう不足として表示されたままになります。",
 		"youAcceptedThisArtworkWithItsRecorded": "記録された品質メモとともに、このアートワークを承認しました。",
 		"generateItemForMove": "モーション用のアイテムを生成",
 		"labelMakeNameForMissingName": "{missingName}用の{name}を作成",

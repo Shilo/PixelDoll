@@ -453,6 +453,8 @@
 		"acceptAsIs": "Aceitar como está",
 		"pendingWorkBusy": "Há uma animação ou configuração em andamento ou parada. Conclua ou descarte para usar estas ações.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Aceita a arte atual sem gastar créditos. Os problemas detectados continuam nos detalhes do item.",
+		"keepWithoutMoves": "Manter sem essas animações",
+		"keepWithoutMovesDetail": "Mantém o item com suas animações completas sem gastar créditos. Ele fica oculto em {moves}, que continuam listadas como faltando para você criá-las depois pelo próprio preço.",
 		"youAcceptedThisArtworkWithItsRecorded": "Você aceitou esta arte com as observações de qualidade registradas.",
 		"generateItemForMove": "Gerar item para animação",
 		"labelMakeNameForMissingName": "Criar {name} para {missingName}",

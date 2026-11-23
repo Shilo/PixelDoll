@@ -445,6 +445,8 @@
 		"acceptAsIs": "Terima apa adanya",
 		"pendingWorkBusy": "Ada animasi atau penyiapan yang sedang berjalan atau berhenti. Selesaikan atau buang untuk memakai tindakan ini.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Menerima gambar saat ini tanpa menggunakan kredit. Masalah yang ditemukan tetap tercatat di detail item.",
+		"keepWithoutMoves": "Simpan tanpa animasi itu",
+		"keepWithoutMovesDetail": "Menyimpan item dari animasinya yang lengkap tanpa memakai kredit. Item disembunyikan di {moves}, yang tetap tercantum sebagai hilang agar Anda bisa membuatnya nanti dengan harganya sendiri.",
 		"youAcceptedThisArtworkWithItsRecorded": "Anda menerima gambar ini beserta catatan kualitasnya.",
 		"generateItemForMove": "Buat item untuk animasi",
 		"labelMakeNameForMissingName": "Buat {name} untuk {missingName}",

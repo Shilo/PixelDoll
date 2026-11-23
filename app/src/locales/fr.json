@@ -453,6 +453,8 @@
 		"acceptAsIs": "Accepter tel quel",
 		"pendingWorkBusy": "Une animation ou configuration est en cours ou arrêtée. Terminez-la ou abandonnez-la pour utiliser ces actions.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Conserve le visuel actuel sans dépenser de crédits. Les problèmes détectés restent indiqués dans les détails de l’objet.",
+		"keepWithoutMoves": "Garder sans ces animations",
+		"keepWithoutMovesDetail": "Garde l’objet dans ses animations complètes sans dépenser de crédits. Il est masqué dans {moves}, qui restent indiquées comme manquantes pour que vous puissiez les créer plus tard à leur propre prix.",
 		"youAcceptedThisArtworkWithItsRecorded": "Vous avez accepté ce visuel. Les remarques sur sa qualité restent enregistrées.",
 		"generateItemForMove": "Générer l’objet pour l’animation",
 		"labelMakeNameForMissingName": "Créer {name} pour {missingName}",

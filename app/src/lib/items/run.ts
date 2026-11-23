@@ -15,7 +15,7 @@ import {
 	validPaletteRepairs
 } from '../dress/item-palette.ts';
 import { colorCounts, fromHex } from '../dress/palette.ts';
-import { deriveMaterials } from '../dress/dress.ts';
+import { coverageGaps, deriveMaterials } from '../dress/dress.ts';
 import { decodePngBytes, encodePngBytes } from '../image/pngraw.ts';
 import { hardMaskBits } from '../image/hard-mask.ts';
 import * as db from '../store/db.ts';
@@ -2271,10 +2271,33 @@ export async function applyRepairReview(projectId: string, review: RepairReview)
 	await publishClip(projectId, review.clip);
 }
 /** Free acknowledgment of the exact artwork and warnings the player reviewed, never a new generation. */
+/** The moves an item is missing frames in (coverageGaps), each once, in rig order. */
+export const gapMoves = (m: Manifest, item: Item) => [
+	...new Set(coverageGaps(m, item).map((gap) => gap.split('/')[0]))
+];
+/** The item without these moves: their frames, coverage, hidden body pixels and checks are dropped, so it is hidden there
+ *  and listed as missing, to make later at its own price. Nothing is added or redrawn. */
+function withoutMoves(item: Item, moves: readonly string[]): Item {
+	const out = structuredClone(item),
+		gone = (key: string) => moves.includes(key.split('/')[0]);
+	for (const layer of out.layers) for (const move of moves) delete layer.cells?.[move];
+	if (out.coverage) out.coverage = out.coverage.filter((key) => !gone(key));
+	for (const move of moves) delete out.baseCut?.[move];
+	if (out.qa) {
+		out.qa.cells = Object.fromEntries(
+			Object.entries(out.qa.cells).filter(([key]) => !gone(key))
+		) as typeof out.qa.cells;
+		out.qa.clips = Object.fromEntries(Object.entries(out.qa.clips).filter(([key]) => !gone(key)));
+	}
+	return out;
+}
+/** Accept a saved item's reviewed checks as they are. With `keepWithout`, the moves it is missing frames in (exactly the
+ *  reviewed gaps) are dropped instead, so an item with gaps can be kept from its complete moves. */
 export async function acceptItemReview(
 	projectId: string,
 	itemId: string,
-	reviewed: Item
+	reviewed: Item,
+	keepWithout?: readonly string[]
 ): Promise<void> {
 	const ctx = await loadProject(projectId),
 		item = ctx.rec.manifest.items.find((i) => i.id === itemId);
@@ -2287,11 +2310,14 @@ export async function acceptItemReview(
 		item.status !== 'accepted' ||
 		!item.qa ||
 		item.baseHash !== ctx.rec.manifest.rig.baseHash ||
-		stableStringify(itemContent(item)) !== expected
+		stableStringify(itemContent(item)) !== expected ||
+		(keepWithout &&
+			stableStringify(gapMoves(ctx.rec.manifest, item)) !== stableStringify(keepWithout))
 	) {
 		throw itemReviewChangedError();
 	}
-	const accepted = { ...item, qa: { ...acceptQa(item.qa), status: 'accepted' as const } };
+	const kept = keepWithout?.length ? withoutMoves(item, keepWithout) : item;
+	const accepted = { ...kept, qa: { ...acceptQa(kept.qa!), status: 'accepted' as const } };
 	await saveItem(projectId, accepted, new Map(), [], (current) => {
 		const currentItem = current.manifest.items.find((i) => i.id === itemId);
 		if (

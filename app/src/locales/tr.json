@@ -453,6 +453,8 @@
 		"acceptAsIs": "Olduğu gibi kabul edin",
 		"pendingWorkBusy": "Bir animasyon veya kurulum çalışıyor ya da durdu. Bu işlemleri kullanmak için tamamlayın veya atın.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Kredi harcamadan mevcut görseli kabul eder. Bulunan sorunlar eşya ayrıntılarında kalır.",
+		"keepWithoutMoves": "Bu animasyonlar olmadan tut",
+		"keepWithoutMovesDetail": "Kredi harcamadan eşyayı tamamlanmış animasyonlarıyla tutar. {moves} içinde gizlenir; bunlar, daha sonra kendi fiyatlarıyla oluşturabilmeniz için eksik olarak listelenmeye devam eder.",
 		"youAcceptedThisArtworkWithItsRecorded": "Bu görseli kayıtlı kalite notlarıyla birlikte kabul ettiniz.",
 		"generateItemForMove": "Animasyon için eşya üretin",
 		"labelMakeNameForMissingName": "{missingName} için şu eşyayı üretin: {name}",

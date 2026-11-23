@@ -453,6 +453,8 @@
 		"acceptAsIs": "Unverändert übernehmen",
 		"pendingWorkBusy": "Eine Animation oder Einrichtung läuft oder wurde gestoppt. Schließe sie ab oder verwirf sie, um diese Aktionen zu nutzen.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Übernimmt die aktuelle Grafik, ohne Credits zu verbrauchen. Die festgestellten Probleme bleiben in den Details vermerkt.",
+		"keepWithoutMoves": "Ohne diese Animationen behalten",
+		"keepWithoutMovesDetail": "Behält den Gegenstand aus seinen vollständigen Animationen, ohne Guthaben zu verbrauchen. In {moves} ist er ausgeblendet; diese bleiben als fehlend aufgeführt, damit du sie später zu ihrem eigenen Preis erstellen kannst.",
 		"youAcceptedThisArtworkWithItsRecorded": "Du hast diese Grafik mit den festgehaltenen Qualitätshinweisen übernommen.",
 		"generateItemForMove": "Gegenstand für Animation generieren",
 		"labelMakeNameForMissingName": "{name} für {missingName} erstellen",

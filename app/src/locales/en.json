@@ -453,6 +453,8 @@
 		"acceptAsIs": "Accept as is",
 		"pendingWorkBusy": "A move or setup is running or stopped. Finish or dismiss it to use these actions.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Accepts the current artwork without spending credits. The detected issues remain in its details.",
+		"keepWithoutMoves": "Keep without those moves",
+		"keepWithoutMovesDetail": "Keeps the item from its complete moves without spending credits. It is hidden in {moves}, which stay listed as missing so you can make them later at their own price.",
 		"youAcceptedThisArtworkWithItsRecorded": "You accepted this artwork with its recorded quality notes.",
 		"generateItemForMove": "Generate item for move",
 		"labelMakeNameForMissingName": "Make {name} for {missingName}",

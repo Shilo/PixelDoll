@@ -445,6 +445,8 @@
 		"acceptAsIs": "按现状接受",
 		"pendingWorkBusy": "有动作或设置正在运行或已停止。请完成或放弃它以使用这些操作。",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "按现状接受当前图像，不消耗点数。检测到的问题仍保留在详情中。",
+		"keepWithoutMoves": "不含这些动作并保留",
+		"keepWithoutMovesDetail": "不花费积分，仅保留该装备在完整动作中的帧。它在{moves}中隐藏，这些动作仍标为缺失，你可以稍后按各自的价格制作。",
 		"youAcceptedThisArtworkWithItsRecorded": "你已接受此图像及其记录的质量说明。",
 		"generateItemForMove": "为动作生成装备",
 		"labelMakeNameForMissingName": "为{missingName}制作{name}",
