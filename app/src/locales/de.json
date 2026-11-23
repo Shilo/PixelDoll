@@ -960,6 +960,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Schließe ausstehende Generierungen ab oder verwirf sie, bevor du den Frame anpasst.",
+		"finishBeforeMoveImport": "Schließe ausstehende Generierungen ab oder verwirf sie, bevor du Animationen importierst.",
 		"couldNotCheckNamedFrames": "Bilder für {names} konnten nicht geprüft werden: {reason}",
 		"couldNotCheckSeveralFrames": "Bilder für {names} konnten nicht geprüft werden.",
 		"copyMissingOneMove": "Für {move} fehlen Bilder; der Gegenstand bleibt dort unsichtbar.",
@@ -2181,7 +2182,11 @@
 		"appearance": "Vorhandenes Aussehen",
 		"appearancePlaceholder": "Beschreibe den Grundkörper, die Haare, Farben und Kleidung in dieser Grafik",
 		"appearanceHelp": "Daran orientieren sich neue Animationen. Beschreibe auch vorhandene Haare und Kleidung. Die Einrichtung kann sie nicht vom Grundkörper trennen.",
+		"appearanceSaveHelp": "Daran orientieren sich neue Animationen. Beschreibe auch vorhandene Haare und Kleidung. Änderungen zu speichern ist kostenlos.",
+		"saveDescription": "Beschreibung speichern",
+		"descriptionSaved": "Beschreibung gespeichert. Neue Animationen verwenden sie.",
 		"estimate": "{frames} unterschiedliche Grundkörperframes · ca. {gens} Generierungen, einschließlich {connection} Generierungen für die Kontoverbindung. Passende gespeicherte Messwerte werden wiederverwendet.",
+		"reconnectEstimate": "Beim erneuten Verbinden bleiben alle Posen, Gegenstandspassungen und Frames unverändert. Ca. {gens} Generierungen für die Kontoverbindung.",
 		"busyElsewhere": "Schließe den anderen Figurenvorgang ab, bevor du die Einrichtung startest.",
 		"resumeRigSetup": "Rig-Einrichtung fortsetzen",
 		"dismiss": "Einrichtung verwerfen",
@@ -3064,7 +3069,8 @@
 				"other": "{n} andere Dateien wurden ignoriert."
 			},
 			"fitted": "An diese Grundkörper-Frames angepasste Gegenstände bleiben angelegt: {names}. Prüfe sie in den geänderten Frames.",
-			"emptiedBody": "Ein leerer Grundkörper-Frame wird übersprungen, wenn neue Gegenstände dafür erstellt werden."
+			"emptiedBody": "Ein leerer Grundkörper-Frame wird übersprungen, wenn neue Gegenstände dafür erstellt werden.",
+			"description": "Neue Animationen folgen der Figurenbeschreibung. Wenn du Haare oder Kleidung geändert hast, passe sie unter „Figur einrichten“ an."
 		},
 		"errors": {
 			"size": "Dieses PNG ist {got} px groß, aber diese Frames brauchen {want} px. Behalte die Originalgröße und das Raster bei.",
@@ -3328,5 +3334,48 @@
 		"noneAvailable": "Keiner dieser Gegenstände kann für {move} generiert werden.",
 		"notDrawnFor": "Für {move} noch nicht gezeichnet",
 		"generateFor": "Für {move} generieren"
+	},
+	"moveImport": {
+		"title": "Animationen importieren",
+		"importMoves": "Animationen importieren",
+		"importStates": "Zustände importieren",
+		"dropArea": "Ablagebereich für PixelDoll-ZIP",
+		"drop": "PixelDoll-ZIP hier ablegen",
+		"intro": "Das ZIP einer Animation, ein Backup oder eine geteilte Figur. Kostenlos, wenn es für diese Figur erstellt wurde.",
+		"zip": "PixelDoll-ZIP",
+		"editHint": "Um die Frames einer Animation in einem anderen Editor zu ändern, nutze stattdessen „Frames korrigieren“.",
+		"fit": {
+			"same": "Für diese Figur erstellt. Die Frames passen unverändert.",
+			"shifted": "Für diese Figur vor „Frame anpassen“ erstellt. Die Frames werden passend verschoben.",
+			"near": {
+				"one": "Für diese Figur erstellt, aber ihre Standpose weicht um {count} Pixel ab. Prüfe die Frames nach dem Import.",
+				"other": "Für diese Figur erstellt, aber ihre Standpose weicht um {count} Pixel ab. Prüfe die Frames nach dem Import."
+			},
+			"directions": "Mit anderen Richtungen erstellt, daher sind die Frames hier nicht nutzbar. Die Bewegung einer Animation kann diese Figur trotzdem neu zeichnen.",
+			"body": "Für einen anderen Körper erstellt, daher sind die Frames hier nicht nutzbar. Die Bewegung einer Animation kann diese Figur trotzdem neu zeichnen."
+		},
+		"empty": "Dieses ZIP enthält außer der Standpose keine Animationen oder Zustände.",
+		"move": "Animation",
+		"state": "Zustand",
+		"row": {
+			"add": "Neu",
+			"copy": "Name vergeben: beide behalten als {name}",
+			"present": "Bereits an dieser Figur",
+			"motion": "Kann diese Figur in dieser Bewegung neu zeichnen",
+			"unavailable": "Keine gespeicherte Bewegung zum Wiederverwenden",
+			"stateUnavailable": "Zustände brauchen denselben Körper",
+			"items": "Mit {items}",
+			"left": "Ohne {items} (nicht an dieser Figur)",
+			"missing": "Noch nicht in dieser Animation: {items}"
+		},
+		"useMotion": "Als {move} neu zeichnen",
+		"free": "Kostenlos. Keine Generierungen.",
+		"import": "Importieren",
+		"importing": "Wird importiert…",
+		"imported": "{names} importiert.",
+		"errors": {
+			"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du Animationen importierst.",
+			"changed": "Diese Figur hat sich geändert. Wähle das ZIP erneut, um die aktuelle Version zu prüfen."
+		}
 	}
 }

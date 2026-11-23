@@ -8,7 +8,13 @@
 	import { setupPlan, rigReady, type SetupPlan } from '../lib/rig/setup.ts';
 	import * as db from '../lib/store/db.ts';
 	import type { StoredProject } from '../lib/store/project.ts';
-	import { SETUP_STEPS, setupRegistrationStuck, setupResumeGens } from './setup.ts';
+	import {
+		SETUP_STEPS,
+		saveLooks,
+		setupGens,
+		setupRegistrationStuck,
+		setupResumeGens
+	} from './setup.ts';
 	import { freshSeed } from './characterConfig.ts';
 	import {
 		ui,
@@ -44,7 +50,13 @@
 		looks = $state(
 			draft?.looks ?? store.project?.manifest.items.find((i) => i.slot === 'body')?.prompt ?? ''
 		),
-		restAnim = $state(draft?.restAnim ?? '');
+		restAnim = $state(draft?.restAnim ?? ''),
+		// The description new moves send: shown once loaded unless a draft or typing already set the field.
+		saved = $state<string | undefined>(),
+		typed = !!draft,
+		saving = $state(false),
+		savedNote = $state(false),
+		gens = $state<number | undefined>();
 	const mine = $derived(settingUp.spec?.projectId === doc.id);
 	const active = $derived(mine && !settingUp.done && !settingUp.error);
 	const busyElsewhere = $derived(
@@ -83,6 +95,38 @@
 			current = false;
 		};
 	});
+	$effect(() => {
+		const current = plan;
+		let stale = false;
+		gens = undefined;
+		if (current)
+			void setupGens(current).then(
+				(value) => {
+					if (!stale) gens = value;
+				},
+				(failure: unknown) => console.error('setup estimate', failure)
+			);
+		return () => {
+			stale = true;
+		};
+	});
+	const shownGens = $derived(gens ?? plan?.gens);
+	const looksChanged = $derived(ready && !!looks.trim() && looks.trim() !== saved?.trim());
+	async function save() {
+		if (!looksChanged || saving) return;
+		saving = true;
+		error = '';
+		try {
+			await saveLooks(doc.id, looks);
+			saved = looks.trim();
+			savedNote = true;
+		} catch (e) {
+			console.error('save description', e);
+			error = errorMessage(e);
+		} finally {
+			saving = false;
+		}
+	}
 	const step = $derived(SETUP_STEPS.findIndex((s) => s.id === settingUp.progress?.step));
 	const preview = $derived(plan?.rest.south ?? (plan && Object.values(plan.rest)[0]) ?? null);
 	$effect(() => {
@@ -90,13 +134,27 @@
 			selected = restAnim,
 			id = doc.id;
 		let stale = false;
-		if (p)
-			void setupPlan(p, selected || undefined, (move) =>
-				moveName(move, p.manifest.rig.animations)
-			).then(
-				(p) => {
-					if (!stale) {
-						plan = p;
+		void db
+			.get<StoredProject>('projects', id)
+			.then((r) => {
+				if (stale) return;
+				rec = r ?? null;
+				saved = r?.character?.looks;
+				if (saved && !typed) looks = saved;
+				// A rig that already holds its poses is only connected again (savedSetupPlan).
+				return p
+					? setupPlan(
+							p,
+							selected || undefined,
+							(move) => moveName(move, p.manifest.rig.animations),
+							rigReady(r, false)
+						)
+					: null;
+			})
+			.then(
+				(next) => {
+					if (!stale && next) {
+						plan = next;
 						error = '';
 					}
 				},
@@ -107,9 +165,6 @@
 					}
 				}
 			);
-		void db.get<StoredProject>('projects', id).then((r) => {
-			if (!stale) rec = r ?? null;
-		});
 		return () => {
 			stale = true;
 		};
@@ -206,9 +261,10 @@
 		{#if ready}<p class="notice ok small">
 				<Check size={16} />{t('setup.alreadyRigged')}
 			</p>{/if}
-		<p class="muted">
-			{t('setup.intro')}
-		</p>
+		<!-- A reconnect finds no joints: the rig it keeps is explained by the ready note above. -->
+		{#if !plan?.reconnect}<p class="muted">
+				{t('setup.intro')}
+			</p>{/if}
 		<p class="faint small">
 			{m?.rig.view
 				? t('setup.cameraSaved', { view: camera ? displayMessage(camera) : m.rig.view })
@@ -236,14 +292,26 @@
 				rows="3"
 				maxlength="2000"
 				bind:value={looks}
+				oninput={() => {
+					typed = true;
+					savedNote = false;
+				}}
 				placeholder={t('setup.appearancePlaceholder')}></textarea><span class="faint small"
-				>{t('setup.appearanceHelp')}</span
+				>{t(ready ? 'setup.appearanceSaveHelp' : 'setup.appearanceHelp')}</span
 			></label
 		>
-		{#if plan}<p class="faint small">
+		{#if savedNote}<p class="notice ok small" role="status">
+				<Check size={16} />{t('setup.descriptionSaved')}
+			</p>{/if}
+		{#if plan?.reconnect}<p class="faint small">
+				{t('setup.reconnectEstimate', {
+					gens: formatNumber(shownGens ?? plan.gens, { maximumFractionDigits: 2 })
+				})}
+			</p>
+		{:else if plan}<p class="faint small">
 				{t('setup.estimate', {
 					frames: formatNumber(plan.frames.size),
-					gens: formatNumber(plan.gens, { maximumFractionDigits: 2 }),
+					gens: formatNumber(shownGens ?? plan.gens, { maximumFractionDigits: 2 }),
 					connection: formatNumber(0.25)
 				})}
 			</p>{/if}
@@ -311,8 +379,12 @@
 					>
 				</div>
 			</div>
-		{:else if !active}<span class="foot-note">{t('setup.pixelsUnchanged')}</span><span
-				class="api-action"
+		{:else if !active}<span class="foot-note">{t('setup.pixelsUnchanged')}</span>{#if ready}<button
+					class="bu-action btn"
+					data-variant="outline"
+					disabled={!looksChanged || saving}
+					onclick={save}>{t('setup.saveDescription')}</button
+				>{/if}<span class="api-action"
 				><button
 					class="bu-action btn primary"
 					data-variant="primary"
@@ -321,7 +393,10 @@
 					>{t('setup.setUp')}
 					<span class="cost"
 						>{t('generationDetails.gens', {
-							value: plan ? formatNumber(plan.gens, { maximumFractionDigits: 2 }) : '–'
+							value:
+								shownGens !== undefined
+									? formatNumber(shownGens, { maximumFractionDigits: 2 })
+									: '–'
 						})}</span
 					></button
 				></span

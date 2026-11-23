@@ -36,6 +36,7 @@ import {
 	EST,
 	estimate,
 	extendable,
+	IMPORTED_MOTION,
 	isAuthoredAction,
 	moveEstimate,
 	moveFrames
@@ -162,9 +163,16 @@ function savedMove(m: Manifest, a: RigAnimation): CostMove {
 					? described(model)
 					: motion.startsWith('managed-skeleton-v3:walking')
 						? { id: a.id, action: 'walk', frames, animation: { model } }
-						: authored
-							? { id: a.id, action: authored, frames, animation: { model, frameCount: frames } }
-							: described(model);
+						: motion === IMPORTED_MOTION && source?.keypoints?.length
+							? {
+									id: a.id,
+									poses: { [dir]: source.keypoints },
+									frames,
+									animation: { model, frameCount: frames }
+								}
+							: authored
+								? { id: a.id, action: authored, frames, animation: { model, frameCount: frames } }
+								: described(model);
 		// Imported art, and the demo's moves, whose records carry no request hash, cost this character nothing.
 		const paid = !!source?.provenance.some((i) => !!body.provenance?.[i]?.requestHash);
 		return { dirs: [dir], model, spec, free: model === 'import' || !paid };

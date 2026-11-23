@@ -31,6 +31,9 @@ export interface SetupPlan {
 	frames: Map<Sha256, Img>;
 	gens: number;
 	warnings: string[];
+	/** The rig already holds its poses (rigReady without a registration): setup only registers the standing views again and
+	 *  keeps every pose, anchor and skeleton, so it measures nothing. */
+	reconnect: boolean;
 }
 export const STATE_CAPTURE_MODE = 'state-capture';
 
@@ -98,7 +101,8 @@ export async function setupPlan(
 	p: Project,
 	restAnim?: string,
 	/** A move's name in the user's words for a message (the studio passes its display name). */
-	moveWords: (id: string) => Message | string = (id) => id
+	moveWords: (id: string) => Message | string = (id) => id,
+	reconnect = false
 ): Promise<SetupPlan> {
 	const m = p.manifest,
 		rig = m.rig,
@@ -150,7 +154,7 @@ export async function setupPlan(
 				`${d.id} leaves ${top} px above the head; tall hair or hats may need a larger frame.`
 			);
 		rest[d.id] = im;
-		frames.set(await cellHash(im), im);
+		if (!reconnect) frames.set(await cellHash(im), im);
 	}
 	for (const { id, mirrorOf: source } of rig.directions) {
 		if (rest[id] || !source || source !== mirrorPartner(id)) continue;
@@ -173,7 +177,7 @@ export async function setupPlan(
 			'Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.',
 			'setup.errors.needsStandingViews'
 		);
-	for (const a of rig.animations)
+	for (const a of reconnect ? [] : rig.animations)
 		for (const d of rig.directions.filter((d) => !d.mirrorOf)) {
 			const cells = Array.from({ length: a.cells }, (_, i) =>
 				cellImg(p, base.layers[0], a.id, d.id, i)
@@ -187,7 +191,8 @@ export async function setupPlan(
 				);
 			for (const im of cells as Img[]) frames.set(await cellHash(im), im);
 		}
-	for (const it of m.items.filter((i) => i.slot !== 'body' && !i.dressed))
+	// Reconnecting keeps every pose, so items keep fitting future moves as before.
+	for (const it of reconnect ? [] : m.items.filter((i) => i.slot !== 'body' && !i.dressed))
 		warnings.push(
 			`${it.name} keeps its existing frames. Make it again after setup to animate it onto future moves.`
 		);
@@ -202,7 +207,8 @@ export async function setupPlan(
 		registrationDirections,
 		frames,
 		gens: +(0.25 + frames.size * 0.1).toFixed(2),
-		warnings
+		warnings,
+		reconnect
 	};
 }
 

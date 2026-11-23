@@ -960,6 +960,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Termina o descarta el trabajo de generación pendiente antes de ajustar el marco.",
+		"finishBeforeMoveImport": "Termina o descarta el trabajo de generación pendiente antes de importar movimientos.",
 		"couldNotCheckNamedFrames": "No se pudieron comprobar los fotogramas de {names}: {reason}",
 		"couldNotCheckSeveralFrames": "No se pudieron comprobar los fotogramas de {names}.",
 		"copyMissingOneMove": "Faltan fotogramas en {move}; el objeto se oculta ahí.",
@@ -2181,7 +2182,11 @@
 		"appearance": "Apariencia existente",
 		"appearancePlaceholder": "Describe el cuerpo, el pelo, los colores y la ropa que ya aparecen en la imagen",
 		"appearanceHelp": "Esto guía las animaciones nuevas. Incluye el pelo y la ropa existentes; la configuración no puede separarlos de la base.",
+		"appearanceSaveHelp": "Esto guía las animaciones nuevas. Incluye el pelo y la ropa existentes. Guardar un cambio es gratis.",
+		"saveDescription": "Guardar descripción",
+		"descriptionSaved": "Descripción guardada. Las animaciones nuevas la usan.",
 		"estimate": "{frames} fotogramas únicos del cuerpo · costo estimado: {gens} generaciones. Incluye {connection} generaciones para vincular la cuenta. Se reutilizan las mediciones guardadas que coincidan.",
+		"reconnectEstimate": "Al volver a conectar, todas las poses, ajustes de objetos y fotogramas se mantienen igual. Costo estimado: {gens} generaciones por la conexión de la cuenta.",
 		"busyElsewhere": "Termina la otra operación del personaje antes de iniciar la configuración.",
 		"resumeRigSetup": "Reanudar configuración del rig",
 		"dismiss": "Descartar configuración",
@@ -3064,7 +3069,8 @@
 				"other": "Se ignoraron {n} archivos más."
 			},
 			"fitted": "Los objetos ajustados a estos fotogramas del cuerpo base siguen puestos: {names}. Revísalos en los fotogramas cambiados.",
-			"emptiedBody": "Un fotograma vacío del cuerpo base se omite al crear objetos nuevos para él."
+			"emptiedBody": "Un fotograma vacío del cuerpo base se omite al crear objetos nuevos para él.",
+			"description": "Las animaciones nuevas siguen la descripción del personaje. Si cambiaste el pelo o la ropa, actualízala en Configurar personaje."
 		},
 		"errors": {
 			"size": "Este PNG mide {got} px, pero estos fotogramas necesitan {want} px. Mantén el tamaño y la cuadrícula originales.",
@@ -3331,5 +3337,48 @@
 		"noneAvailable": "Ninguno de estos objetos se puede generar para {move}.",
 		"notDrawnFor": "Aún sin dibujar para {move}",
 		"generateFor": "Generar para {move}"
+	},
+	"moveImport": {
+		"title": "Importar animaciones",
+		"importMoves": "Importar animaciones",
+		"importStates": "Importar estados",
+		"dropArea": "Zona para soltar el ZIP de PixelDoll",
+		"drop": "Suelta aquí un ZIP de PixelDoll",
+		"intro": "El ZIP de un movimiento, una copia de seguridad o un personaje compartido. Gratis si se hizo para este personaje.",
+		"zip": "ZIP de PixelDoll",
+		"editHint": "Para cambiar los fotogramas de un movimiento en otro editor, usa Corregir fotogramas.",
+		"fit": {
+			"same": "Hecho para este personaje. Sus fotogramas encajan tal cual.",
+			"shifted": "Hecho para este personaje antes de Ajustar marco. Sus fotogramas se desplazan para encajar.",
+			"near": {
+				"one": "Hecho para este personaje, pero su pose de pie difiere en {count} píxel. Revisa los fotogramas tras importar.",
+				"other": "Hecho para este personaje, pero su pose de pie difiere en {count} píxeles. Revisa los fotogramas tras importar."
+			},
+			"directions": "Hecho con otras direcciones, así que sus fotogramas no sirven aquí. El movimiento aún puede redibujar a este personaje.",
+			"body": "Hecho para otro cuerpo, así que sus fotogramas no sirven aquí. El movimiento aún puede redibujar a este personaje."
+		},
+		"empty": "Este ZIP no tiene movimientos ni estados aparte de De pie.",
+		"move": "Animación",
+		"state": "Estado",
+		"row": {
+			"add": "Nuevo",
+			"copy": "Nombre en uso: se conservan ambos como {name}",
+			"present": "Ya está en este personaje",
+			"motion": "Puede redibujar a este personaje con su movimiento",
+			"unavailable": "No hay movimiento guardado para reutilizar",
+			"stateUnavailable": "Los estados necesitan el mismo cuerpo",
+			"items": "Con {items}",
+			"left": "Sin {items} (no está en este personaje)",
+			"missing": "Aún no está en esta animación: {items}"
+		},
+		"useMotion": "Redibujar como {move}",
+		"free": "Gratis. Sin generaciones.",
+		"import": "Importar",
+		"importing": "Importando…",
+		"imported": "Importado: {names}.",
+		"errors": {
+			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de importar movimientos.",
+			"changed": "Este personaje cambió. Elige el ZIP de nuevo para revisar la versión más reciente."
+		}
 	}
 }

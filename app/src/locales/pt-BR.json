@@ -963,6 +963,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Conclua ou descarte o trabalho de geração pendente antes de ajustar o quadro.",
+		"finishBeforeMoveImport": "Conclua ou dispense as gerações pendentes antes de importar movimentos.",
 		"couldNotCheckNamedFrames": "Não foi possível verificar os quadros de {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Não foi possível verificar os quadros de {names}.",
 		"copyMissingOneMove": "Faltam quadros em {move}; o item fica oculto nela.",
@@ -2190,7 +2191,11 @@
 		"appearance": "Aparência atual",
 		"appearancePlaceholder": "Descreva o corpo, o cabelo, as cores e as roupas que já aparecem na arte",
 		"appearanceHelp": "Isso orienta as novas animações. Inclua o cabelo e as roupas atuais. A configuração não consegue separá-los da base.",
+		"appearanceSaveHelp": "Isso orienta as novas animações. Inclua o cabelo e as roupas atuais. Salvar uma alteração é grátis.",
+		"saveDescription": "Salvar descrição",
+		"descriptionSaved": "Descrição salva. As novas animações vão usá-la.",
 		"estimate": "{frames} quadros únicos do corpo · estimativa de {gens} gerações. Inclui {connection} geração para vincular a conta. Medições salvas correspondentes são reaproveitadas.",
+		"reconnectEstimate": "Reconectar mantém todas as poses, ajustes de itens e quadros como estão. Estimativa de {gens} gerações pela conexão da conta.",
 		"busyElsewhere": "Conclua a outra operação do personagem antes de iniciar a configuração.",
 		"resumeRigSetup": "Retomar configuração do rig",
 		"dismiss": "Descartar configuração",
@@ -3073,7 +3078,8 @@
 				"other": "{n} outros arquivos foram ignorados."
 			},
 			"fitted": "Os itens ajustados a estes quadros do corpo base continuam vestidos: {names}. Confira-os nos quadros alterados.",
-			"emptiedBody": "Um quadro vazio do corpo base é ignorado quando novos itens são criados para ele."
+			"emptiedBody": "Um quadro vazio do corpo base é ignorado quando novos itens são criados para ele.",
+			"description": "As novas animações seguem a descrição do personagem. Se você mudou o cabelo ou as roupas, atualize-a em Configurar personagem."
 		},
 		"errors": {
 			"size": "Este PNG tem {got} px, mas estes quadros precisam de {want} px. Mantenha o tamanho e a grade originais.",
@@ -3340,5 +3346,48 @@
 		"noneAvailable": "Nenhum destes itens pode ser gerado para {move}.",
 		"notDrawnFor": "Ainda não desenhado para {move}",
 		"generateFor": "Gerar para {move}"
+	},
+	"moveImport": {
+		"title": "Importar animações",
+		"importMoves": "Importar animações",
+		"importStates": "Importar estados",
+		"dropArea": "Área para soltar o ZIP do PixelDoll",
+		"drop": "Solte um ZIP do PixelDoll aqui",
+		"intro": "O ZIP de um movimento, um backup ou um personagem compartilhado. Grátis quando foi feito para este personagem.",
+		"zip": "ZIP do PixelDoll",
+		"editHint": "Para mudar os quadros de um movimento em outro editor, use Corrigir quadros.",
+		"fit": {
+			"same": "Feito para este personagem. Os quadros encaixam como estão.",
+			"shifted": "Feito para este personagem antes de Ajustar quadro. Os quadros são deslocados para encaixar.",
+			"near": {
+				"one": "Feito para este personagem, mas a pose em pé difere em {count} pixel. Confira os quadros depois de importar.",
+				"other": "Feito para este personagem, mas a pose em pé difere em {count} pixels. Confira os quadros depois de importar."
+			},
+			"directions": "Feito com outras direções, então os quadros não servem aqui. O movimento ainda pode redesenhar este personagem.",
+			"body": "Feito para outro corpo, então os quadros não servem aqui. O movimento ainda pode redesenhar este personagem."
+		},
+		"empty": "Este ZIP não tem movimentos nem estados além de Em pé.",
+		"move": "Animação",
+		"state": "Estado",
+		"row": {
+			"add": "Novo",
+			"copy": "Nome em uso: ambos mantidos como {name}",
+			"present": "Já está neste personagem",
+			"motion": "Pode redesenhar este personagem com esse movimento",
+			"unavailable": "Nenhum movimento salvo para reutilizar",
+			"stateUnavailable": "Estados precisam do mesmo corpo",
+			"items": "Com {items}",
+			"left": "Sem {items} (não está neste personagem)",
+			"missing": "Ainda não está nesta animação: {items}"
+		},
+		"useMotion": "Redesenhar como {move}",
+		"free": "Grátis. Sem gerações.",
+		"import": "Importar",
+		"importing": "Importando…",
+		"imported": "{names} importado.",
+		"errors": {
+			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de importar movimentos.",
+			"changed": "Este personagem mudou. Escolha o ZIP de novo para revisar a versão mais recente."
+		}
 	}
 }

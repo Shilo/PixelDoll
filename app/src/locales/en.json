@@ -960,6 +960,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Finish or dismiss pending generation work before adjusting the frame.",
+		"finishBeforeMoveImport": "Finish or dismiss pending generation work before importing moves.",
 		"couldNotCheckNamedFrames": "Could not check frames for {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Could not check frames for {names}.",
 		"copyMissingOneMove": "Missing some {move} frames; it hides there.",
@@ -2181,7 +2182,11 @@
 		"appearance": "Existing appearance",
 		"appearancePlaceholder": "Describe the body, hair, colors and clothes already in this artwork",
 		"appearanceHelp": "This guides new moves. Include existing hair and clothes; setup cannot separate them from the base.",
+		"appearanceSaveHelp": "This guides new moves. Include existing hair and clothes. Saving a change is free.",
+		"saveDescription": "Save description",
+		"descriptionSaved": "Description saved. New moves use it.",
 		"estimate": "{frames} unique body frames · {gens} gens estimated. Includes a {connection}-gen account connection. Matching saved measurements are reused.",
+		"reconnectEstimate": "Reconnecting keeps every pose, item fit and frame as they are. {gens} gens estimated, for the account connection.",
 		"busyElsewhere": "Finish the other character operation before starting setup.",
 		"resumeRigSetup": "Resume rig setup",
 		"dismiss": "Dismiss setup",
@@ -3064,7 +3069,8 @@
 				"other": "{n} other files were ignored."
 			},
 			"fitted": "Items fitted to these body frames stay worn: {names}. Check them on the changed frames.",
-			"emptiedBody": "An empty body frame is skipped when new items are made for it."
+			"emptiedBody": "An empty body frame is skipped when new items are made for it.",
+			"description": "New moves follow the character description. If you changed hair or clothes, update it in Set up character."
 		},
 		"errors": {
 			"size": "This PNG is {got} px, but these frames need {want} px. Keep the original size and grid.",
@@ -3331,5 +3337,48 @@
 		"noneAvailable": "None of these items can be generated for {move}.",
 		"notDrawnFor": "Not drawn for {move} yet",
 		"generateFor": "Generate for {move}"
+	},
+	"moveImport": {
+		"title": "Import moves",
+		"importMoves": "Import moves",
+		"importStates": "Import States",
+		"dropArea": "PixelDoll ZIP drop area",
+		"drop": "Drop a PixelDoll ZIP here",
+		"intro": "A move’s Download ZIP, a backup or a shared character. Free when it was made for this character.",
+		"zip": "PixelDoll ZIP",
+		"editHint": "To change a move’s frames in another editor, use Fix frames instead.",
+		"fit": {
+			"same": "Made for this character. Its frames fit as they are.",
+			"shifted": "Made for this character before Adjust frame. Its frames move to fit.",
+			"near": {
+				"one": "Made for this character, but its Standing differs by {count} pixel. Check the frames after importing.",
+				"other": "Made for this character, but its Standing differs by {count} pixels. Check the frames after importing."
+			},
+			"directions": "Made with other directions, so its frames can’t be used here. A move’s motion can still redraw this character.",
+			"body": "Made for a different body, so its frames can’t be used here. A move’s motion can still redraw this character."
+		},
+		"empty": "This ZIP has no moves or States besides Standing.",
+		"move": "Move",
+		"state": "State",
+		"row": {
+			"add": "New",
+			"copy": "Name in use: kept both as {name}",
+			"present": "Already on this character",
+			"motion": "Can redraw this character in its motion",
+			"unavailable": "No saved motion to reuse",
+			"stateUnavailable": "States need the same body",
+			"items": "With {items}",
+			"left": "Without {items} (not on this character)",
+			"missing": "Not on this move yet: {items}"
+		},
+		"useMotion": "Redraw as {move}",
+		"free": "Free. No generations.",
+		"import": "Import",
+		"importing": "Importing…",
+		"imported": "Imported {names}.",
+		"errors": {
+			"resolveDrafts": "Keep or dismiss this character’s item drafts before importing moves.",
+			"changed": "This character changed. Choose the ZIP again to review the latest version."
+		}
 	}
 }

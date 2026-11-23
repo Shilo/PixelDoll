@@ -933,6 +933,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "프레임을 조정하기 전에 대기 중인 생성 작업을 끝내거나 취소하세요.",
+		"finishBeforeMoveImport": "동작을 가져오기 전에 대기 중인 생성 작업을 끝내거나 닫으세요.",
 		"couldNotCheckNamedFrames": "{names}의 프레임을 확인할 수 없습니다. {reason}",
 		"couldNotCheckSeveralFrames": "{names}의 프레임을 확인할 수 없습니다.",
 		"copyMissingOneMove": "{move} 동작에 프레임이 일부 없어 해당 구간에서 아이템이 숨겨집니다.",
@@ -2116,7 +2117,11 @@
 		"appearance": "기존 외형",
 		"appearancePlaceholder": "이 아트워크에 이미 있는 몸체, 머리카락, 색상, 옷을 설명하세요",
 		"appearanceHelp": "새 동작의 안내로 쓰여요. 기존 머리카락과 옷도 포함하세요. 설정에서 이를 기본 몸체와 분리할 수 없어요.",
+		"appearanceSaveHelp": "새 동작의 안내로 쓰여요. 기존 머리카락과 옷도 포함하세요. 변경 사항 저장은 무료예요.",
+		"saveDescription": "설명 저장",
+		"descriptionSaved": "설명을 저장했어요. 새 동작에 사용돼요.",
 		"estimate": "고유 몸체 프레임 {frames}개 · 예상 생성 {gens}회. 계정 연결 비용(생성 {connection}회)이 포함돼요. 일치하는 저장 측정값은 재사용해요.",
+		"reconnectEstimate": "다시 연결해도 모든 포즈, 아이템 맞춤, 프레임은 그대로 유지돼요. 계정 연결에 약 {gens}회 생성이 들어요.",
 		"busyElsewhere": "설정을 시작하기 전에 다른 캐릭터 작업을 끝내세요.",
 		"resumeRigSetup": "리그 설정 재개",
 		"dismiss": "설정 버리기",
@@ -2981,7 +2986,8 @@
 				"other": "다른 파일 {n}개는 무시했어요."
 			},
 			"fitted": "이 기본 몸체 프레임에 맞춘 아이템은 계속 착용돼요: {names}. 변경된 프레임에서 확인하세요.",
-			"emptiedBody": "빈 기본 몸체 프레임은 그 프레임에 새 아이템을 만들 때 건너뛰어요."
+			"emptiedBody": "빈 기본 몸체 프레임은 그 프레임에 새 아이템을 만들 때 건너뛰어요.",
+			"description": "새 동작은 캐릭터 설명을 따라요. 머리카락이나 옷을 바꿨다면 캐릭터 설정에서 설명을 업데이트하세요."
 		},
 		"errors": {
 			"size": "이 PNG는 {got} px이지만 이 프레임에는 {want} px이 필요해요. 원래 크기와 격자를 유지하세요.",
@@ -3238,5 +3244,47 @@
 		"noneAvailable": "이 아이템들은 모두 생성할 수 없어요: {move}",
 		"notDrawnFor": "아직 그리지 않음: {move}",
 		"generateFor": "생성하기: {move}"
+	},
+	"moveImport": {
+		"title": "동작 가져오기",
+		"importMoves": "동작 가져오기",
+		"importStates": "상태 가져오기",
+		"dropArea": "PixelDoll ZIP 놓기 영역",
+		"drop": "여기에 PixelDoll ZIP을 놓으세요",
+		"intro": "동작의 ZIP, 백업 또는 공유된 캐릭터. 이 캐릭터용으로 만든 것이면 무료예요.",
+		"zip": "PixelDoll ZIP",
+		"editHint": "다른 편집기에서 동작의 프레임을 바꾸려면 프레임 수정을 사용하세요.",
+		"fit": {
+			"same": "이 캐릭터용으로 만들어졌어요. 프레임이 그대로 맞아요.",
+			"shifted": "프레임 조정 전에 이 캐릭터용으로 만들어졌어요. 프레임을 옮겨서 맞춰요.",
+			"near": {
+				"other": "이 캐릭터용이지만 서 있는 자세가 {count}픽셀 달라요. 가져온 뒤 프레임을 확인하세요."
+			},
+			"directions": "다른 방향 구성으로 만들어져 여기서는 프레임을 쓸 수 없어요. 동작의 움직임으로 이 캐릭터를 다시 그릴 수는 있어요.",
+			"body": "다른 몸으로 만들어져 여기서는 프레임을 쓸 수 없어요. 동작의 움직임으로 이 캐릭터를 다시 그릴 수는 있어요."
+		},
+		"empty": "이 ZIP에는 서 있기 외에 동작이나 상태가 없어요.",
+		"move": "동작",
+		"state": "상태",
+		"row": {
+			"add": "새로 추가",
+			"copy": "이름이 사용 중이라 {name}(으)로 둘 다 유지해요",
+			"present": "이미 이 캐릭터에 있어요",
+			"motion": "이 움직임으로 이 캐릭터를 다시 그릴 수 있어요",
+			"unavailable": "다시 쓸 저장된 움직임이 없어요",
+			"stateUnavailable": "상태는 같은 몸이 필요해요",
+			"items": "{items} 포함",
+			"left": "{items} 제외 (이 캐릭터에 없음)",
+			"missing": "이 동작에는 아직 없어요: {items}"
+		},
+		"useMotion": "{move}(으)로 다시 그리기",
+		"free": "무료. 생성 없음.",
+		"import": "가져오기",
+		"importing": "가져오는 중…",
+		"imported": "{names}을(를) 가져왔어요.",
+		"errors": {
+			"resolveDrafts": "동작을 가져오기 전에 이 캐릭터의 아이템 초안을 유지하거나 버리세요.",
+			"changed": "이 캐릭터가 바뀌었어요. 최신 버전을 확인하려면 ZIP을 다시 선택하세요."
+		}
 	}
 }

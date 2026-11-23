@@ -60,7 +60,14 @@
 </script>
 
 <svelte:window ondragover={preventFileNavigation} ondrop={preventFileNavigation} />
-<main class="studio-app picker" aria-busy={busy}>
+<main
+	class="studio-app picker"
+	aria-busy={busy}
+	ondragenter={drop.enter}
+	ondragleave={drop.leave}
+	ondragover={drop.over}
+	ondrop={drop.drop}
+>
 	<section class="bu-surface" aria-labelledby="workspace-title">
 		<h1 id="workspace-title">{t('workspaceCopy.title')}</h1>
 		{#if developerModeEnabled()}
@@ -81,10 +88,6 @@
 				data-variant={dragging ? 'primary' : 'outline'}
 				disabled={busy || installed}
 				onclick={() => input?.click()}
-				ondragenter={drop.enter}
-				ondragleave={drop.leave}
-				ondragover={drop.over}
-				ondrop={drop.drop}
 			>
 				<FileArchive size={30} aria-hidden="true" />
 				<strong aria-live="polite"

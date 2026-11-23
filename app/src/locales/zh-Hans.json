@@ -933,6 +933,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "调整帧前，请完成或放弃待处理的生成任务。",
+		"finishBeforeMoveImport": "导入动作前，请完成或关闭待处理的生成任务。",
 		"couldNotCheckNamedFrames": "无法检查 {names} 的帧：{reason}",
 		"couldNotCheckSeveralFrames": "无法检查 {names} 的帧。",
 		"copyMissingOneMove": "{move} 缺少部分帧，物品会在这些帧中隐藏。",
@@ -2116,7 +2117,11 @@
 		"appearance": "现有外观",
 		"appearancePlaceholder": "描述此图像中已有的身体、头发、颜色和衣服",
 		"appearanceHelp": "这会指导新动作。请包含现有头发和衣服；设置无法将它们与基础身体分离。",
+		"appearanceSaveHelp": "这会指导新动作。请包含现有头发和衣服。保存修改免费。",
+		"saveDescription": "保存描述",
+		"descriptionSaved": "描述已保存。新动作会使用它。",
 		"estimate": "{frames} 个唯一身体帧 · 预计 {gens} 次生成。包含一笔 {connection} 次生成的账户连接费用。匹配的已保存测量会被复用。",
+		"reconnectEstimate": "重新连接会保留所有姿势、装备贴合和帧。账户连接预计使用 {gens} 次生成。",
 		"busyElsewhere": "请先完成另一个角色操作，再开始设置。",
 		"resumeRigSetup": "继续绑定结构设置",
 		"dismiss": "放弃设置",
@@ -2981,7 +2986,8 @@
 				"other": "已忽略其他 {n} 个文件。"
 			},
 			"fitted": "适配这些基础身体帧的装备仍保持穿戴：{names}。请在更改的帧上检查它们。",
-			"emptiedBody": "为空的基础身体帧制作新装备时，会跳过该帧。"
+			"emptiedBody": "为空的基础身体帧制作新装备时，会跳过该帧。",
+			"description": "新动作会遵循角色描述。如果你改了头发或衣服，请在“设置角色”中更新描述。"
 		},
 		"errors": {
 			"size": "此 PNG 为 {got} px，但这些帧需要 {want} px。请保持原始尺寸和网格。",
@@ -3238,5 +3244,47 @@
 		"noneAvailable": "这些装备都无法为{move}生成。",
 		"notDrawnFor": "尚未为{move}绘制",
 		"generateFor": "为{move}生成"
+	},
+	"moveImport": {
+		"title": "导入动作",
+		"importMoves": "导入动作",
+		"importStates": "导入状态",
+		"dropArea": "PixelDoll ZIP 拖放区域",
+		"drop": "将 PixelDoll ZIP 拖放到此处",
+		"intro": "动作的 ZIP、备份或分享的角色。如果是为此角色制作的，则免费。",
+		"zip": "PixelDoll ZIP",
+		"editHint": "如需在其他编辑器中修改动作的帧，请改用“修正帧”。",
+		"fit": {
+			"same": "为此角色制作。帧可直接使用。",
+			"shifted": "在“调整帧”之前为此角色制作。帧会移动以对齐。",
+			"near": {
+				"other": "为此角色制作，但站立姿势有 {count} 个像素不同。导入后请检查帧。"
+			},
+			"directions": "使用了不同的方向，因此帧无法在此使用。动作的运动仍可重新绘制此角色。",
+			"body": "为不同的身体制作，因此帧无法在此使用。动作的运动仍可重新绘制此角色。"
+		},
+		"empty": "此 ZIP 中除站立外没有动作或状态。",
+		"move": "动作",
+		"state": "状态",
+		"row": {
+			"add": "新增",
+			"copy": "名称已被使用：两者都保留，新名称为 {name}",
+			"present": "此角色已有",
+			"motion": "可按此运动重新绘制此角色",
+			"unavailable": "没有可重用的已保存运动",
+			"stateUnavailable": "状态需要相同的身体",
+			"items": "包含 {items}",
+			"left": "不含 {items}（此角色没有）",
+			"missing": "此动作中尚未包含：{items}"
+		},
+		"useMotion": "重新绘制为 {move}",
+		"free": "免费。不消耗生成次数。",
+		"import": "导入",
+		"importing": "正在导入…",
+		"imported": "已导入 {names}。",
+		"errors": {
+			"resolveDrafts": "导入动作前，请保留或放弃此角色的物品草稿。",
+			"changed": "此角色已更改。请重新选择 ZIP 以查看最新版本。"
+		}
 	}
 }

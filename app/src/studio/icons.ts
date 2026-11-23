@@ -7,6 +7,7 @@ export { default as Play } from '@lucide/svelte/icons/play';
 export { default as Pause } from '@lucide/svelte/icons/pause';
 export { default as Download } from '@lucide/svelte/icons/download';
 export { default as Upload } from '@lucide/svelte/icons/upload';
+export { default as FolderOpen } from '@lucide/svelte/icons/folder-open';
 export { default as ClipboardPaste } from '@lucide/svelte/icons/clipboard-paste';
 export { default as MonitorDown } from '@lucide/svelte/icons/monitor-down';
 export { default as BookOpen } from '@lucide/svelte/icons/book-open';
