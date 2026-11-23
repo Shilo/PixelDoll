@@ -850,7 +850,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, Wearing",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "drawing for {move}, {percent}",
+		"itemQueued": "queued for {move}"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "The demo needs no account. Creating uses your {pixelLab} generations.",
@@ -2165,6 +2167,15 @@
 		"itemsDrawn": {
 			"one": "{drawn} of {n} item drawn",
 			"other": "{drawn} of {n} items drawn"
+		},
+		"drawingItem": "Drawing {item}",
+		"moreQueued": {
+			"one": "{n} more queued",
+			"other": "{n} more queued"
+		},
+		"itemsQueued": {
+			"one": "{n} item queued",
+			"other": "{n} items queued"
 		}
 	},
 	"setup": {
@@ -3337,7 +3348,8 @@
 		"allDrawn": "Every item is already drawn for {move}.",
 		"noneAvailable": "None of these items can be generated for {move}.",
 		"notDrawnFor": "Not drawn for {move} yet",
-		"generateFor": "Generate for {move}"
+		"generateFor": "Generate for {move}",
+		"wearOn": "Wear for {move}"
 	},
 	"moveImport": {
 		"title": "Import moves",

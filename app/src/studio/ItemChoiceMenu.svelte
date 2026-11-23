@@ -5,6 +5,7 @@
 	import { popoverFocus } from './experience/focus.ts';
 	import { swallowTilePress } from './tilePress.ts';
 	import { displayMove } from './displayMove.ts';
+	import { wearClip } from './model.ts';
 	import { clipItemOffer, seeded } from './itemGeneration.ts';
 	import { itemOfferAccess } from './itemOfferAccess.ts';
 	import { Circle, CircleCheck, Sparkles } from './icons.ts';
@@ -28,6 +29,8 @@
 	const it = $derived(m?.items.find((item) => item.id === itemId));
 	const move = $derived(displayMove(clip, m?.rig.animations ?? []));
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
+	/** Where Preview goes when it is put on (wear in state.svelte.ts), named on the Wear row. */
+	const shownIn = $derived(m && it && wearClip(m, it, clip));
 	const pending = $derived(!!it && pendingMoves(projectId, it.id).some((spec) => spec.id === clip));
 	const offer = $derived(open && m && it && !pending ? clipItemOffer(m, it.id, clip) : null);
 	const access = $derived(itemOfferAccess(m, offer?.specs ?? []));
@@ -118,7 +121,9 @@
 					>{#if on}<CircleCheck size={16} aria-hidden="true" />{t('common.takeOff')}{:else}<Circle
 							size={16}
 							aria-hidden="true"
-						/>{t('common.wear')}{/if}</button
+						/>{shownIn
+							? t('itemGeneration.wearOn', { move: displayMove(shownIn, m.rig.animations) })
+							: t('common.wear')}{/if}</button
 				>
 			</div>
 			<p class="muted small item-choice-note" id="item-choice-cost">{t('moveSheet.costNotice')}</p>

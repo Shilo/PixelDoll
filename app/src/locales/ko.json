@@ -827,7 +827,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, 착용 중",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "{move}용으로 그리는 중, {percent}",
+		"itemQueued": "{move}용으로 대기 중"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "데모는 계정이 필요 없어요. 캐릭터를 만들 때는 {pixelLab} 계정의 생성 횟수를 사용해요.",
@@ -2100,6 +2102,13 @@
 		"needsRedo": "관절을 찾지 못함: 아이템을 움직이려면 다시 그리세요",
 		"itemsDrawn": {
 			"other": "아이템 {n}개 중 {drawn}개 그림"
+		},
+		"drawingItem": "{item} 그리는 중",
+		"moreQueued": {
+			"other": "{n}개 더 대기 중"
+		},
+		"itemsQueued": {
+			"other": "아이템 {n}개 대기 중"
 		}
 	},
 	"setup": {
@@ -3245,7 +3254,8 @@
 		"allDrawn": "모든 아이템이 이미 그려졌어요: {move}",
 		"noneAvailable": "이 아이템들은 모두 생성할 수 없어요: {move}",
 		"notDrawnFor": "아직 그리지 않음: {move}",
-		"generateFor": "생성하기: {move}"
+		"generateFor": "생성하기: {move}",
+		"wearOn": "{move}에서 착용"
 	},
 	"moveImport": {
 		"title": "동작 가져오기",

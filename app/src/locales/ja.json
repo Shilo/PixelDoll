@@ -827,7 +827,9 @@
 		"generationTileRunning": "{name}、{percent}、{status}",
 		"generationTileWearing": "{name}、{status}、装備中",
 		"generationTile": "{name}、{status}",
-		"generationProgress": "{percent}、{status}"
+		"generationProgress": "{percent}、{status}",
+		"itemDrawing": "{move}用に描画中、{percent}",
+		"itemQueued": "{move}用に待機中"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "デモはアカウントなしで使えます。作成には、お使いの{pixelLab}アカウントの生成回数を使います。",
@@ -2100,6 +2102,13 @@
 		"needsRedo": "関節が見つかりません。アイテムを動かすには描き直してください",
 		"itemsDrawn": {
 			"other": "{n}個中{drawn}個を描画済み"
+		},
+		"drawingItem": "{item}を描画中",
+		"moreQueued": {
+			"other": "ほか{n}個待機中"
+		},
+		"itemsQueued": {
+			"other": "{n}個のアイテムが待機中"
 		}
 	},
 	"setup": {
@@ -3245,7 +3254,8 @@
 		"allDrawn": "すべてのアイテムが{move}用に描画済みです。",
 		"noneAvailable": "これらのアイテムは{move}用に生成できません。",
 		"notDrawnFor": "{move}用はまだ描画されていません",
-		"generateFor": "{move}用に生成"
+		"generateFor": "{move}用に生成",
+		"wearOn": "{move}で装備"
 	},
 	"moveImport": {
 		"title": "モーションを読み込む",

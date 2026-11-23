@@ -850,7 +850,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, giyili",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "{move} için çiziliyor, {percent}",
+		"itemQueued": "{move} için sırada"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "Demo için hesap gerekmez. Üretim, {pixelLab} hesabınızdaki üretim haklarını kullanır.",
@@ -2165,6 +2167,15 @@
 		"itemsDrawn": {
 			"one": "{n} eşyadan {drawn} tanesi çizildi",
 			"other": "{n} eşyadan {drawn} tanesi çizildi"
+		},
+		"drawingItem": "{item} çiziliyor",
+		"moreQueued": {
+			"one": "{n} tane daha sırada",
+			"other": "{n} tane daha sırada"
+		},
+		"itemsQueued": {
+			"one": "{n} eşya sırada",
+			"other": "{n} eşya sırada"
 		}
 	},
 	"setup": {
@@ -3334,7 +3345,8 @@
 		"allDrawn": "Tüm eşyalar zaten çizildi: {move}.",
 		"noneAvailable": "Bu eşyaların hiçbiri üretilemez: {move}.",
 		"notDrawnFor": "Henüz çizilmedi: {move}",
-		"generateFor": "Şunun için üret: {move}"
+		"generateFor": "Şunun için üret: {move}",
+		"wearOn": "{move} için giydirin"
 	},
 	"moveImport": {
 		"title": "Animasyonları içe aktarın",

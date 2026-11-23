@@ -1337,6 +1337,9 @@ export interface Progress {
 	done: number;
 	total: number;
 	recIds: string[];
+	/** The items step only: finished views per item, and the item being drawn now. */
+	items?: Record<string, { done: number; total: number }>;
+	item?: string;
 }
 
 /** Creation = draw -> padded standing views -> re-import -> rest keypoints -> a Default-only rig (no animation calls).
@@ -3047,23 +3050,26 @@ async function addMoveUnlocked(
 			)
 		};
 	});
-	const itemTotal = plans.reduce((total, plan) => {
-		if (spec.itemMethod) return total + plan.dirs.length;
+	const perItem: Record<string, { done: number; total: number }> = {};
+	for (const plan of plans) {
 		const item = fresh.rec.manifest.items.find((candidate) => candidate.id === plan.id)!;
-		return (
-			total +
-			itemPosePlan(
-				fresh.rec.manifest.rig,
-				{
-					...item,
-					slotConfig: requireSlot(fresh.rec.manifest, item.slot)
-				},
-				spec.id,
-				frames,
-				plan.dirs
-			).length
-		);
-	}, 0);
+		perItem[plan.id] = {
+			done: 0,
+			total: spec.itemMethod
+				? plan.dirs.length
+				: itemPosePlan(
+						fresh.rec.manifest.rig,
+						{
+							...item,
+							slotConfig: requireSlot(fresh.rec.manifest, item.slot)
+						},
+						spec.id,
+						frames,
+						plan.dirs
+					).length
+		};
+	}
+	const itemTotal = Object.values(perItem).reduce((total, item) => total + item.total, 0);
 	// Finished views were saved; Try again skips complete views unless it replaces the move, which redraws every view.
 	const partialSaved = (error: unknown): never => {
 		if (!(error instanceof PartialMoveError)) throw error;
@@ -3084,11 +3090,27 @@ async function addMoveUnlocked(
 		(manifest: Manifest, item: Item): ItemViewTitle =>
 		(anim, dir) =>
 			message('activity.titleItemView', { item: item.name, ...viewWords(manifest, anim, dir) });
-	if (itemTotal) onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
-	const tick = () =>
-		onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
+	let drawing: string | undefined;
+	const report = () =>
+		onProgress({
+			step: 'items',
+			done: Math.min(itemTotal, posed),
+			total: itemTotal,
+			recIds: [],
+			items: structuredClone(perItem),
+			item: drawing
+		});
+	if (itemTotal) report();
+	const tick = () => {
+		posed++;
+		const item = drawing && perItem[drawing];
+		if (item) item.done = Math.min(item.total, item.done + 1);
+		report();
+	};
 	for (const plan of plans) {
 		if (!plan.dirs.length) continue;
+		drawing = plan.id;
+		report();
 		const ctx = await loadProject(projectId),
 			it = ctx.rec.manifest.items.find((i) => i.id === plan.id);
 		if (!it)

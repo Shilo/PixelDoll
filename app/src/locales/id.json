@@ -827,7 +827,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, sedang dikenakan",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "sedang digambar untuk {move}, {percent}",
+		"itemQueued": "dalam antrean untuk {move}"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "Demo tidak memerlukan akun. Pembuatan menggunakan jatah generasi {pixelLab} Anda.",
@@ -2100,6 +2102,13 @@
 		"needsRedo": "Sendi tidak ditemukan: gambar ulang untuk menganimasikan item di dalamnya",
 		"itemsDrawn": {
 			"other": "{drawn} dari {n} item sudah digambar"
+		},
+		"drawingItem": "Menggambar {item}",
+		"moreQueued": {
+			"other": "{n} lagi dalam antrean"
+		},
+		"itemsQueued": {
+			"other": "{n} item dalam antrean"
 		}
 	},
 	"setup": {
@@ -3245,7 +3254,8 @@
 		"allDrawn": "Semua item sudah digambar untuk {move}.",
 		"noneAvailable": "Tidak ada item ini yang dapat dibuat untuk {move}.",
 		"notDrawnFor": "Belum digambar untuk {move}",
-		"generateFor": "Buat untuk {move}"
+		"generateFor": "Buat untuk {move}",
+		"wearOn": "Kenakan di {move}"
 	},
 	"moveImport": {
 		"title": "Impor animasi",

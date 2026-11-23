@@ -34,6 +34,7 @@ import { experience } from './experience/state.svelte.ts';
 import {
 	deriveMaterials,
 	randomOutfit,
+	missingFrames,
 	randomVariants,
 	recolor,
 	storeVariants
@@ -111,7 +112,7 @@ import {
 	characterFacts,
 	displayMoveJob,
 	missingMoves,
-	notShownIn,
+	wearClip,
 	pixelSize,
 	uniqueBy
 } from './model.ts';
@@ -139,6 +140,7 @@ import {
 	type SlotUse
 } from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import { itemJobs } from './itemJobs.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import { stateAttempts } from './stateRecovery.ts';
 import {
@@ -2308,16 +2310,19 @@ export function wear(id: string, quiet = false): Message | undefined {
 	const on = doc.items[it.slot] === id && !doc.drafts[it.slot];
 	delete doc.drafts[it.slot]; // a saved item put on or taken off replaces the draft worn in its slot
 	ui.selected = id;
-	// Put on while Preview shows a move it has no frames for: it would be worn and invisible. Its standing frames show it.
-	const m = store.project?.manifest;
-	if (
-		!on &&
-		m &&
-		experience.mode === 'preview' &&
-		notShownIn(m, it, ui.anim) &&
-		!notShownIn(m, it, DEFAULT_MOVE)
-	)
-		showStanding();
+	// Put on while Preview shows a move it has no frames for: it would be worn and invisible, so Preview shows one that has
+	// them (the Wear row of the tile's menu names it).
+	const m = store.project?.manifest,
+		shown = !on && m && experience.mode === 'preview' ? wearClip(m, it, ui.anim) : undefined;
+	if (shown) {
+		ui.anim = shown;
+		ui.frame = 0;
+		// It may be drawn in only some views there: face one that shows it.
+		if (missingFrames(m!, it, shown, ui.dir).length) {
+			const facing = m!.rig.directions.find((d) => !missingFrames(m!, it, shown, d.id).length);
+			if (facing) ui.dir = facing.id;
+		}
+	}
 	if (doc.items[it.slot] !== (on ? null : id))
 		return commit(
 			message(on ? 'history.takeOffItem' : 'history.wear', { name: it.name }),
@@ -4761,6 +4766,31 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 			: []),
 		...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)
 	].filter((s) => !itemId || s.items.includes(itemId));
+/** A character's items being drawn on its saved moves and States (itemJobs.ts), for the clip rows and Wardrobe tiles. */
+export function characterItemJobs(projectId: string, jobs: readonly JobRec[]) {
+	const spec =
+		moving.spec && (!moving.done || moveRunning) && moving.projectId === projectId
+			? moving.spec
+			: null;
+	const list = itemJobs(
+		spec && {
+			spec,
+			progress: moving.progress,
+			attention: !!moving.error || !!moving.repairReview
+		},
+		moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec),
+		jobs
+	);
+	// A request leaves the queue before its view is saved and counted: the share shown never goes back meanwhile.
+	for (const job of list)
+		if (job.status === 'drawing' && spec) {
+			const key = `${projectId}/${spec.activityScope ?? spec.seed}/${spec.attempt ?? ''}/${job.clip}/${job.item}`;
+			job.percent = Math.max(job.percent, shownItemPercent.get(key) ?? 0);
+			shownItemPercent.set(key, job.percent);
+		}
+	return list;
+}
+const shownItemPercent = new Map<string, number>();
 
 export async function pendingBodyMoveName(projectId: string, id: string) {
 	const matches = (spec: MoveSpec) => !spec.itemsOnly && sameClipName(spec.id, id);

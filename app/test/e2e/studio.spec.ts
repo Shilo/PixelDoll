@@ -8246,10 +8246,50 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(tile).toHaveAttribute('aria-pressed', 'false');
 	await expect(playbackPicker(page)).toHaveAttribute('value', 'custom_walk');
 	await tile.click();
-	await choice.getByRole('menuitem', { name: 'Wear', exact: true }).click();
+	// Wear names where Preview goes to show it.
+	await choice.getByRole('menuitem', { name: 'Wear for Standing', exact: true }).click();
 	await expect(tile).toHaveAttribute('aria-pressed', 'true');
 	await expect(playbackPicker(page)).toHaveAttribute('value', 'default');
 	await expect(tile).not.toHaveAttribute('aria-haspopup');
+	// Items drawn on a saved move show on its row and their tiles, never as rows of their own.
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path),
+			spec = { id: 'custom_walk', items: [id], frames: 4, seed: 1, itemsOnly: true };
+		s.moving.projectId = s.doc.id;
+		s.moving.progress = {
+			step: 'items',
+			done: 1,
+			total: 4,
+			recIds: [],
+			items: { [id]: { done: 1, total: 4 } },
+			item: id
+		};
+		s.moving.spec = spec;
+		s.moving.queued = [{ projectId: s.doc.id, spec: { ...spec, id: 'custom_cross_punch' } }];
+	}, fixture.itemId);
+	await expect(tile).toHaveAccessibleName(/drawing for Custom walk, 25%/);
+	await expect(tile).toContainText('25%');
+	await equipmentMode(page, 'Moves');
+	await expect(page.getByRole('button', { name: /^Custom walk preview/ })).toContainText(
+		`Drawing ${fixture.itemName}`
+	);
+	await expect(page.getByRole('button', { name: /^Custom cross punch preview/ })).toContainText(
+		'1 item queued'
+	);
+	await expect(
+		page.getByRole('button', { name: new RegExp(` · ${fixture.itemName}`) })
+	).toHaveCount(0);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.moving.queued = [];
+		s.moving.spec = null;
+		s.moving.progress = null;
+	});
+	await expect(page.getByRole('button', { name: /^Custom walk preview/ })).toContainText(
+		'0 of 6 items drawn'
+	);
 	expect(posts).toEqual([]);
 	const coverage = page.getByRole('button', { name: /equipped items? needs? frames/ });
 	await selectPlaybackClip(page, 'default');

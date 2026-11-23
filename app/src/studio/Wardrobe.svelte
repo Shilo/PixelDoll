@@ -68,8 +68,10 @@
 		showSlotAt,
 		toast,
 		isDemo,
-		pendingMoves
+		pendingMoves,
+		characterItemJobs
 	} from './state.svelte.ts';
+	import { displayMove } from './displayMove.ts';
 	import { extendable } from './movePricing.ts';
 	import { clipItemOffer } from './itemGeneration.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
@@ -164,6 +166,11 @@
 		if (m && clipItemOffer(m, it.id, ui.anim)) choice?.show(it.id, tile);
 		else wear(it.id);
 	}
+	/** Items being drawn on a saved move or State: their tiles show a ring and the share done (the one drawing now) or Queued. */
+	const itemJobs = $derived(characterItemJobs(doc.id, $queue.jobs));
+	const jobOf = (id: string) =>
+		itemJobs.find((job) => job.item === id && job.status === 'drawing') ??
+		itemJobs.find((job) => job.item === id);
 	const wornMark: Mark = $derived({
 		kind: 'worn',
 		label: t('wardrobe.wearing'),
@@ -214,12 +221,12 @@
 	}
 	/** An accessible tile name: the item, then what its icons say (a worn tile says so with aria-pressed), then any
 	 * status shown only by dimming. */
-	const tileName = (name: string, marks: Mark[], extra?: string) =>
+	const tileName = (name: string, marks: Mark[], ...extra: (string | undefined)[]) =>
 		formatList([
 			name,
 			...[
 				...marks.filter((mark) => mark.kind !== 'worn').map((mark) => mark.label),
-				...(extra ? [extra] : [])
+				...extra.filter((text): text is string => !!text)
 			].map((label) => (getLocale() === 'en' ? label[0].toLowerCase() + label.slice(1) : label))
 		]);
 	/** Stands for the Empty tile, which has no data-tile key, when picking where focus lands after a removal. */
@@ -1070,6 +1077,8 @@
 								{@const shownHidden = marks.some((x) => x.kind === 'hidden')}
 								{@const away = !shownHidden && offMove(it)}
 								{@const chooses = offMove(it) && choosable(it)}
+								{@const job = jobOf(it.id)}
+								{@const jobMove = job && displayMove(job.clip, m?.rig.animations ?? [])}
 								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
 								<div
 									class="tile-wrap hover-actions"
@@ -1099,7 +1108,15 @@
 										aria-label={tileName(
 											it.name,
 											marks,
-											away ? t('wardrobe.notShownInMove') : undefined
+											away ? t('wardrobe.notShownInMove') : undefined,
+											job?.status === 'drawing'
+												? t('wardrobe.itemDrawing', {
+														move: jobMove!,
+														percent: formatPercent(job.percent / 100)
+													})
+												: job
+													? t('wardrobe.itemQueued', { move: jobMove! })
+													: undefined
 										)}
 										onclick={(event) =>
 											chooses ? tapDimmed(it, event.currentTarget) : wear(it.id)}
@@ -1109,8 +1126,17 @@
 													project={view.project}
 													item={it}
 													box={64}
-												/>{/if}</span
-										><span class="bu-tile-label tile-name">{it.name}</span>
+												/>{/if}{#if job}<span
+													class="bu-ring ring generation-ring"
+													style:--p={job.status === 'drawing' ? job.percent : undefined}
+												></span>{/if}</span
+										>{#if job}<span class="generation-caption"
+												><span class="generation-time bu-muted small num" aria-hidden="true"
+													>{job.status === 'drawing'
+														? formatPercent(job.percent / 100)
+														: t('generation.status.queued')} · {jobMove}</span
+												><span class="bu-tile-label tile-name">{it.name}</span></span
+											>{:else}<span class="bu-tile-label tile-name">{it.name}</span>{/if}
 										<TileMarks {marks} />
 									</button>
 									<button

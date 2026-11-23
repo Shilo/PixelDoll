@@ -827,7 +827,9 @@
 		"generationTileRunning": "{name}，{percent}，{status}",
 		"generationTileWearing": "{name}，{status}，穿戴中",
 		"generationTile": "{name}，{status}",
-		"generationProgress": "{percent}，{status}"
+		"generationProgress": "{percent}，{status}",
+		"itemDrawing": "正在为{move}绘制，{percent}",
+		"itemQueued": "排队中，将为{move}绘制"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "演示无需账户。创建会消耗你的 {pixelLab} 生成次数。",
@@ -2100,6 +2102,13 @@
 		"needsRedo": "未找到关节：请重绘以在其上为装备制作动画",
 		"itemsDrawn": {
 			"other": "已绘制 {drawn}/{n} 件装备"
+		},
+		"drawingItem": "正在绘制{item}",
+		"moreQueued": {
+			"other": "另有 {n} 件排队中"
+		},
+		"itemsQueued": {
+			"other": "{n} 件装备排队中"
 		}
 	},
 	"setup": {
@@ -3245,7 +3254,8 @@
 		"allDrawn": "所有装备都已为{move}绘制。",
 		"noneAvailable": "这些装备都无法为{move}生成。",
 		"notDrawnFor": "尚未为{move}绘制",
-		"generateFor": "为{move}生成"
+		"generateFor": "为{move}生成",
+		"wearOn": "在{move}中穿戴"
 	},
 	"moveImport": {
 		"title": "导入动作",

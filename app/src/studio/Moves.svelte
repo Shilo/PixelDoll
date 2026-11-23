@@ -14,8 +14,10 @@
 		openPendingWork,
 		openMoveReview,
 		openFrames,
-		openRename
+		openRename,
+		characterItemJobs
 	} from './state.svelte.ts';
+	import { inFlight } from './itemJobs.ts';
 	import { ChevronRight, FolderOpen, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import type { MoveSpec } from './create.ts';
@@ -47,25 +49,34 @@
 	// animated on them until made again.
 	const redo = $derived(setupRedoMoves(store.exportRecord));
 	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
-	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
-	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
+	const saved = (spec: MoveSpec) => playback.find((entry) => entry.clip.id === spec.id);
+	// The tab a job's row belongs in: its saved clip's, or Moves for a move still being made.
+	const inThisTab = (spec: MoveSpec) => (saved(spec)?.kind ?? 'move') === kind;
+	// Items drawn on a saved move or State show on its own row and on their Wardrobe tiles, not as rows of their own,
+	// unless the job needs attention (failed, or waiting for its frame review) or its clip is gone: that row opens it.
+	const ownRow = (spec: MoveSpec) => !spec.itemsOnly || !saved(spec);
+	const mine = $derived(
+		!!moving.spec &&
+			moving.projectId === doc.id &&
+			!moving.done &&
+			inThisTab(moving.spec) &&
+			(ownRow(moving.spec) || !!moving.error || !!moving.repairReview)
+	);
+	const queued = $derived(
+		moving.queued.filter((q) => q.projectId === doc.id && ownRow(q.spec) && inThisTab(q.spec))
+	);
+	const drawing = $derived(characterItemJobs(doc.id, $queue.jobs));
+	const itemName = (id: string) => m?.items.find((item) => item.id === id)?.name ?? '';
 	// A running move reports finished calls in progress.done; the queued call in flight adds its own partial progress.
 	const movePercent = $derived.by(() => {
-		const progress = moving.progress,
-			scope = moving.spec?.activityScope;
+		const progress = moving.progress;
 		if (!progress?.total) return 0;
-		const inFlight = scope
-			? $queue.jobs
-					.filter(
-						(job) =>
-							job.activityScope === scope && (job.state === 'running' || job.state === 'submitting')
-					)
-					.reduce((sum, job) => {
-						const parts = job.jobs.map((call) => (call.done ? 1 : Math.min(1, call.progress ?? 0)));
-						return sum + (parts.length ? parts.reduce((a, b) => a + b, 0) / parts.length : 0);
-					}, 0)
-			: 0;
-		return Math.min(100, Math.round(((progress.done + inFlight) / progress.total) * 100));
+		return Math.min(
+			100,
+			Math.round(
+				((progress.done + inFlight(moving.spec?.activityScope, $queue.jobs)) / progress.total) * 100
+			)
+		);
 	});
 	const thumbnails = $derived(view.project && lookThumbnails(view.project, view.items));
 	const pendingStates = $derived(
@@ -129,6 +140,8 @@
 						.length}
 				{@const lock = moveDeletionBlocked(a.id)}
 				{@const items = clipItemCoverage(m, a.id)}
+				{@const jobs = drawing.filter((job) => job.clip === a.id)}
+				{@const now = jobs.find((job) => job.status === 'drawing')}
 				<SavedActions
 					name={nice(a.id)}
 					{kind}
@@ -193,7 +206,31 @@
 											})
 										: t('moves.oneDirection')
 									: t('export.count.directions', { count: nDirs })}</span
-							>{#if items?.total}<span class="muted small"
+							>{#if now}<span class="muted small item-jobs"
+									><span class="bu-ring ring spin" aria-hidden="true"></span><span
+										>{[
+											t('moves.drawingItem', { item: itemName(now.item) }),
+											jobs.length > 1 &&
+												t('moves.moreQueued', {
+													count: jobs.length - 1,
+													n: formatNumber(jobs.length - 1)
+												})
+										]
+											.filter(Boolean)
+											.join(' · ')}</span
+									><span class="num">{formatPercent(now.percent / 100)}</span></span
+								>{:else if jobs.length}<span class="muted small item-jobs"
+									><span class="bu-ring ring" aria-hidden="true"></span><span
+										>{moving.repairReview
+											? t('moves.waitingForRepairReview')
+											: moving.error
+												? t('moves.waitingForFailed')
+												: t('moves.itemsQueued', {
+														count: jobs.length,
+														n: formatNumber(jobs.length)
+													})}</span
+									></span
+								>{:else if items?.total}<span class="muted small"
 									>{t('moves.itemsDrawn', {
 										count: items.total,
 										drawn: formatNumber(items.drawn),
@@ -210,50 +247,48 @@
 			{#each pendingStates.filter(({ progress }) => progress.status === 'generating') as { attempt, progress } (attempt.token)}
 				{@render stateRow(attempt, progress)}
 			{/each}
-			{#if kind === 'move'}
-				{#if mine && moving.spec}
-					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-						><span class="move-thumb"
-							><span
-								class="bu-ring ring"
-								class:spin={!moving.error && !moving.repairReview}
-								aria-hidden="true"
-							></span></span
-						><span class="move-text"
-							><b>{jobName(moving.spec)}</b><span class="muted small"
-								>{moving.repairReview
-									? moving.spec?.redrawItem
-										? t('moveSheet.review.redrawTitle')
-										: t('moveSheet.review.repairTitle')
-									: moving.error
-										? t('moves.failed')
-										: t('moves.adding', {
-												done: moving.progress?.done ?? 0,
-												total: moving.progress?.total ?? '?'
-											})}</span
-							>{#if !moving.error && !moving.repairReview && moving.progress}<span
-									class="muted small num">{formatPercent(movePercent / 100)}</span
-								>{/if}</span
-						></button
-					>
-				{/if}
-				{#each queued as q, i (i)}
-					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-						><span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span
-						><span class="move-text"
-							><b>{jobName(q.spec)}</b><span class="muted small"
-								>{moving.repairReview
-									? t('moves.waitingForRepairReview')
-									: moving.error
-										? t('moves.waitingForFailed')
-										: t('generation.status.queued')}</span
-							>{#if !moving.error && !moving.repairReview}<span class="muted small num"
-									>{formatPercent(0)}</span
-								>{/if}</span
-						></button
-					>
-				{/each}
+			{#if mine && moving.spec}
+				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+					><span class="move-thumb"
+						><span
+							class="bu-ring ring"
+							class:spin={!moving.error && !moving.repairReview}
+							aria-hidden="true"
+						></span></span
+					><span class="move-text"
+						><b>{jobName(moving.spec)}</b><span class="muted small"
+							>{moving.repairReview
+								? moving.spec?.redrawItem
+									? t('moveSheet.review.redrawTitle')
+									: t('moveSheet.review.repairTitle')
+								: moving.error
+									? t('moves.failed')
+									: t('moves.adding', {
+											done: moving.progress?.done ?? 0,
+											total: moving.progress?.total ?? '?'
+										})}</span
+						>{#if !moving.error && !moving.repairReview && moving.progress}<span
+								class="muted small num">{formatPercent(movePercent / 100)}</span
+							>{/if}</span
+					></button
+				>
 			{/if}
+			{#each queued as q, i (i)}
+				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+					><span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span
+					><span class="move-text"
+						><b>{jobName(q.spec)}</b><span class="muted small"
+							>{moving.repairReview
+								? t('moves.waitingForRepairReview')
+								: moving.error
+									? t('moves.waitingForFailed')
+									: t('generation.status.queued')}</span
+						>{#if !moving.error && !moving.repairReview}<span class="muted small num"
+								>{formatPercent(0)}</span
+							>{/if}</span
+					></button
+				>
+			{/each}
 		</div>
 		{#if (kind === 'move' && !isDemo()) || (kind === 'state' && onaddstate)}
 			{@const importLabel = openerLabel(
@@ -331,6 +366,26 @@
 	/* A move setup skipped: still shown, marked to make again. */
 	.redo {
 		color: var(--warn);
+	}
+	/* Items being drawn on this move: a small ring before the status, in place of the drawn count. */
+	.item-jobs {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.item-jobs .ring {
+		width: 12px;
+		height: 12px;
+	}
+	.item-jobs > :not(.ring, .num) {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.item-jobs .num {
+		flex: none;
+		margin-inline-start: auto;
 	}
 	/* The list gap already separates the CTA from the rows above it. */
 	.cta {

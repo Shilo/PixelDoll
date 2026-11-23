@@ -850,7 +850,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, porté",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "en cours de dessin pour {move}, {percent}",
+		"itemQueued": "en attente pour {move}"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "Aucun compte n’est nécessaire pour essayer la démo. Créer des visuels utilise des générations de votre compte {pixelLab}.",
@@ -2165,6 +2167,15 @@
 		"itemsDrawn": {
 			"one": "{drawn} objet dessiné sur {n}",
 			"other": "{drawn} objets dessinés sur {n}"
+		},
+		"drawingItem": "Dessin de {item}",
+		"moreQueued": {
+			"one": "{n} autre en attente",
+			"other": "{n} autres en attente"
+		},
+		"itemsQueued": {
+			"one": "{n} objet en attente",
+			"other": "{n} objets en attente"
 		}
 	},
 	"setup": {
@@ -3337,7 +3348,8 @@
 		"allDrawn": "Tous les objets sont déjà dessinés pour {move}.",
 		"noneAvailable": "Aucun de ces objets ne peut être généré pour {move}.",
 		"notDrawnFor": "Pas encore dessiné pour {move}",
-		"generateFor": "Générer pour {move}"
+		"generateFor": "Générer pour {move}",
+		"wearOn": "Porter dans {move}"
 	},
 	"moveImport": {
 		"title": "Importer des animations",
