@@ -149,8 +149,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   ([prompt trim A/B](research/2026-11-07-paperdoll-cycle/prompt-trim-ab.md)).
 - **PixelLab sends the start frame back on described moves.** Despite `keep_first_frame: false`, pixminimax returned 9
   motion frames for 8 on every described move on 2026-11-08, frame 0 being the standing view. The app drops that frame
-  only when it is pixel-identical to the standing view; any other extra frame still stops the move before the body is
-  drawn ([prompt trim A/B](research/2026-11-07-paperdoll-cycle/prompt-trim-ab.md)).
+  only when it is pixel-identical to the standing view or to one Fix frames replaced (PixelLab keeps the standing it
+  registered); any other extra frame still stops the move before the body is drawn ([prompt trim A/B](research/2026-11-07-paperdoll-cycle/prompt-trim-ab.md)).
 - **Default-only characters (round 10, D26).** All standing views arrive together, because PixelLab draws every rotation
   in one job; the creator cannot show them one by one. The pivot comes from the standing south view (`default/south/0`),
   not from the first idle frame as on older characters, and moves added later keep it. Each move gets a new random

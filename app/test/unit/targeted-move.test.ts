@@ -1074,6 +1074,65 @@ test('an extra motion frame is accepted only when it is the unstripped standing 
 	expect(odd.measured).toBe(0);
 });
 
+test('managed motion drops the registered standing echo after Fix frames replaced the Standing', async () => {
+	const f = await fixture(),
+		registered = f.images.values().next().value!,
+		original = await cellHash(registered),
+		edited = structuredClone(registered),
+		frame = (shade: number) => {
+			const im = structuredClone(registered);
+			im.data[(30 * 64 + 30) * 4] = shade;
+			return im;
+		};
+	edited.data[(40 * 64 + 30) * 4] = 7; // our Standing now differs from the one PixelLab registered
+	const editedHash = await cellHash(edited);
+	f.images.set(editedHash, edited);
+	const body = f.saved().manifest.items[0];
+	f.saved().manifest.rig.rest!.east!.image = editedHash;
+	body.layers[0].cells!.default = { east: [editedHash] };
+	body.frameEdits = [
+		{
+			version: 'frames-v1',
+			id: 'standing-fix',
+			anim: 'default',
+			frames: [
+				{
+					dir: 'east',
+					cell: 0,
+					layers: [{ id: 'main', before: original, after: editedHash }],
+					cut: { before: null, after: null },
+					rest: original
+				}
+			]
+		}
+	];
+	// PixelLab sends back the standing it registered, then the 4 motion frames
+	const images = [registered, frame(11), frame(12), frame(13), frame(14)],
+		blobs = new Map<string, Blob>();
+	for (const [i, im] of images.entries())
+		blobs.set(`m${i}`, new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>]));
+	vi.spyOn(db, 'getBlob').mockImplementation(async (h) => blobs.get(h));
+	const joints = LABELS.map((label, i) => ({ label, x: 0.3 + i * 0.01, y: 0.3 + i * 0.015 }));
+	f.enqueue.mockResolvedValueOnce({
+		state: 'done',
+		jobs: [{ results: images.map((_, i) => ({ label: `east/${i}`, sha: `m${i}` })) }]
+	} as unknown as JobRec);
+	for (let i = 0; i < 4; i++)
+		f.enqueue.mockResolvedValueOnce({
+			state: 'done',
+			response: { keypoints: joints },
+			jobs: []
+		} as unknown as JobRec);
+	const before = f.enqueue.mock.calls.length;
+	const error = await f
+		.run({ text: 'step softly', action: 'quiet-step', frames: 4 })
+		.catch((e: Error) => e);
+	expect(String(error)).not.toContain('motion frames for');
+	expect(
+		f.enqueue.mock.calls.slice(before).filter(([r]) => r.path === '/estimate-skeleton')
+	).toHaveLength(4);
+});
+
 test('item review binds artwork and cost while unrelated queued clips and playback choices can change', async () => {
 	const f = await fixture(),
 		m = f.original.manifest;

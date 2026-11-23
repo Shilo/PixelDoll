@@ -1,5 +1,6 @@
 // Fix frames history (Item.frameEdits): which frames still hold the user's edit. Small and dependency-free, so item health
 // can read it without loading the Fix frames code.
+import { DEFAULT_MOVE, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import type { Item, ItemFrameEdit, Manifest } from '../store/manifest.ts';
 
 export type FrameEdit = ItemFrameEdit['frames'][number];
@@ -111,3 +112,16 @@ export const editedFrames = (m: Manifest, item: Item, anim: string) =>
 
 /** How many frames (any move) still hold the user's edit. */
 export const editedCount = (m: Manifest, item: Item) => editedHistory(m, item).length;
+
+/** Every standing view and Default frame art the body's history recorded for `dir`. */
+export function standingHistory(base: Item, dir: DirectionName) {
+	const seen = new Set<Sha256 | null>();
+	for (const e of base.frameEdits ?? [])
+		if (e.anim === DEFAULT_MOVE && Array.isArray(e.frames))
+			for (const f of e.frames)
+				if (f.dir === dir && f.cell === 0) {
+					if (f.rest) seen.add(f.rest);
+					for (const l of f.layers ?? []) seen.add(l.before).add(l.after);
+				}
+	return seen;
+}

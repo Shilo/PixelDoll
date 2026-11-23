@@ -81,6 +81,7 @@ import {
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { LABELS, armDepth, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
+import { standingHistory } from '../lib/frames/history.ts';
 import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import {
 	RIG_GATES,
@@ -684,7 +685,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		);
 	const nativeFrames =
 		j.native &&
-		normalizeNativeMoveFrames(
+		(await normalizeNativeMoveFrames(
 			r,
 			outs,
 			j.anim,
@@ -692,7 +693,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 			j.native.frames,
 			j.nativeStart ?? j.rest,
 			j.native.model
-		);
+		));
 	const normalized = nativeFrames
 		? []
 		: outs.map((o) => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
@@ -915,11 +916,12 @@ async function motion(
 	standing?: Img,
 	lifts?: readonly number[],
 	below = 0,
-	echo: 'optional-exact' | 'required-leading' = 'optional-exact'
+	echo: 'optional-exact' | 'required-leading' = 'optional-exact',
+	echoes?: ReadonlySet<Sha256>
 ): Promise<{ keypoints: Keypoint[][]; record: JobRec }> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
-	const frames = normalizeMotionFrames(
+	const frames = await normalizeMotionFrames(
 		r,
 		(await imagesOf(r)).map((out) => out.img),
 		dir,
@@ -930,7 +932,8 @@ async function motion(
 		echo,
 		lifts,
 		'motion',
-		below
+		below,
+		echoes
 	);
 	const kps = await Promise.all(
 		frames.map(async (f) => {
@@ -968,7 +971,13 @@ async function motion(
  *  moved our art since that registration. Native V3/PixMiniMax moves start from our own art and take no offset. */
 export const artMapping = (rig: Pick<Manifest['rig'], 'artOffset'>, dir: DirectionName) =>
 	rig.artOffset?.[dir] ?? 0;
-function normalizeMotionFrames(
+/** Earlier standing views managed motion may send back first: Fix frames changes only our Standing, while PixelLab keeps
+ *  echoing the one it registered, so every standing the body's edit history recorded for `dir` also counts as the echo. */
+function heldStandings(m: Manifest, dir: DirectionName): ReadonlySet<Sha256> {
+	const base = m.items.find((item) => item.id === m.rig.baseItem);
+	return new Set([...(base ? standingHistory(base, dir) : [])].filter((hash) => hash !== null));
+}
+async function normalizeMotionFrames(
 	r: JobRec,
 	images: Img[],
 	dir: Direction,
@@ -980,8 +989,10 @@ function normalizeMotionFrames(
 	lifts?: readonly number[],
 	step = 'motion',
 	/** Rows our standing art sits below the registered view (artMapping): managed motion only, never native moves. */
-	below = 0
-): Img[] {
+	below = 0,
+	/** Earlier standing views an `optional-exact` echo may also match (heldStandings). */
+	echoes?: ReadonlySet<Sha256>
+): Promise<Img[]> {
 	const rejected = (failure: PaidFailure) => ({ step, failure, recordId: r.id });
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
@@ -1017,7 +1028,7 @@ function normalizeMotionFrames(
 		if (
 			first.w !== standing!.w ||
 			first.h !== standing!.h ||
-			first.data.some((v, i) => v !== standing!.data[i])
+			(first.data.some((v, i) => v !== standing!.data[i]) && !echoes?.has(await cellHash(first)))
 		)
 			throw mismatch;
 	}
@@ -1034,7 +1045,7 @@ function normalizeMotionFrames(
 	return frames;
 }
 
-function normalizeNativeMoveFrames(
+async function normalizeNativeMoveFrames(
 	record: JobRec,
 	outputs: { img: Img }[],
 	move: string,
@@ -1042,7 +1053,7 @@ function normalizeNativeMoveFrames(
 	count: number,
 	rest: Img,
 	model: 'v3' | 'pixminimax'
-): Img[] {
+): Promise<Img[]> {
 	return normalizeMotionFrames(
 		record,
 		outputs.map((out) => out.img),
@@ -2086,7 +2097,7 @@ async function inspectMeasurementRecovery(
 					'create.errors.originalCompletedMotionUnavailable',
 					{ direction: d }
 				);
-			const frames = normalizeMotionFrames(
+			const frames = await normalizeMotionFrames(
 				record,
 				(await imagesOf(record, context.read)).map((out) => out.img),
 				d as Direction,
@@ -2097,7 +2108,8 @@ async function inspectMeasurementRecovery(
 				spec.motionSource === 'standalone' ? 'required-leading' : 'optional-exact',
 				spec.motionLift?.[d],
 				'motion',
-				spec.motionSource === 'standalone' ? 0 : artMapping(rig, d)
+				spec.motionSource === 'standalone' ? 0 : artMapping(rig, d),
+				heldStandings(rec.manifest, d)
 			);
 			const measured = await Promise.all(
 				frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
@@ -2159,7 +2171,7 @@ async function inspectMeasurementRecovery(
 			rawHashes.push(rawHash);
 			const nativeFrames =
 				model !== 'skeleton-v3' &&
-				normalizeNativeMoveFrames(
+				(await normalizeNativeMoveFrames(
 					raw,
 					outputs,
 					spec.id,
@@ -2167,7 +2179,7 @@ async function inspectMeasurementRecovery(
 					framesRequested,
 					start ?? restImg,
 					model
-				);
+				));
 			const normalized = nativeFrames ? [] : outputs.map((out) => context.normalize(out.img));
 			if (normalized.some((n) => n.cutPx || !opaqueBox(n.img)))
 				throw new LocalizedError(
@@ -3364,7 +3376,8 @@ async function bodyClip(
 			motionStart,
 			spec.motionLift?.[d],
 			spec.motionSource === 'standalone' ? 0 : artMapping(rig, d),
-			spec.motionSource === 'standalone' ? 'required-leading' : 'optional-exact'
+			spec.motionSource === 'standalone' ? 'required-leading' : 'optional-exact',
+			heldStandings(m, d)
 		);
 		keypoints = result.keypoints;
 		source = result.record;

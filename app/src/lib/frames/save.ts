@@ -21,7 +21,7 @@ import { getBlob } from '../store/db.ts';
 import { layerFrame } from '../compose/compose.ts';
 import { loadProject, rememberDecoded, saveItem, type StoredProject } from '../store/project.ts';
 import { unzip } from '../store/zip.ts';
-import type { FrameHistory } from './history.ts';
+import { standingHistory, type FrameHistory } from './history.ts';
 import {
 	applyPlan,
 	layerOfFile,
@@ -160,19 +160,6 @@ async function blobsOf(images: Map<Sha256, Img>) {
 			new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
 		);
 	return blobs;
-}
-
-/** Every standing view and Default frame art the body's history recorded for `dir`. */
-function standingHistory(base: Item, dir: DirectionName) {
-	const seen = new Set<Sha256 | null>();
-	for (const e of base.frameEdits ?? [])
-		if (e.anim === DEFAULT_MOVE && Array.isArray(e.frames))
-			for (const f of e.frames)
-				if (f.dir === dir && f.cell === 0) {
-					if (f.rest) seen.add(f.rest);
-					for (const l of f.layers ?? []) seen.add(l.before).add(l.after);
-				}
-	return seen;
 }
 
 /** The record with a new body item: the standing view follows the bound Default frame (back to what a reverted import
