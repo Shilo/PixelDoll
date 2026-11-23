@@ -1103,7 +1103,8 @@
 		"restoreOriginals": "Originale wiederherstellen",
 		"changeDescription": "Beschreibung ändern",
 		"changed": "Diese Figur hat sich seitdem geändert, daher kann dieser Schritt nicht mehr rückgängig gemacht oder wiederholt werden.",
-		"notRecorded": "Gespeichert, aber diese Änderung kann nicht rückgängig gemacht werden: Einige ihrer Frames sind nicht mehr gespeichert."
+		"notRecorded": "Gespeichert, aber diese Änderung kann nicht rückgängig gemacht werden: Einige ihrer Frames sind nicht mehr gespeichert.",
+		"busy": "Warte, bis das letzte Rückgängig oder Wiederholen fertig ist. Wenn es nie fertig wird, lade die Seite neu."
 	},
 	"export": {
 		"sheet": {

@@ -1103,7 +1103,8 @@
 		"restoreOriginals": "Restaurar originales",
 		"changeDescription": "Cambiar descripción",
 		"changed": "Este personaje cambió desde entonces, así que este paso ya no se puede deshacer ni rehacer.",
-		"notRecorded": "Se guardó, pero este cambio no se puede deshacer: algunos de sus fotogramas ya no están guardados."
+		"notRecorded": "Se guardó, pero este cambio no se puede deshacer: algunos de sus fotogramas ya no están guardados.",
+		"busy": "Espera a que termine el último Deshacer o Rehacer. Si nunca termina, recarga la página."
 	},
 	"export": {
 		"sheet": {

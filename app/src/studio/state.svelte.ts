@@ -1172,17 +1172,13 @@ function bump() {
  *  reachable after the thing is back. Redo is cleared rather than replaying a deletion. */
 export async function undo() {
 	const e = doc.undo.at(-1);
-	if (!e || stepping) return;
+	if (!e || waitForStep()) return;
 	if (e.trash) {
-		const trash = e.trash;
-		doc.undo = doc.undo.slice(0, -1);
-		doc.redo = [];
-		stepping = true;
-		try {
-			if (!(await restoreDeleted(trash))) doc.undo = [...doc.undo, e];
-		} finally {
-			stepping = false;
-		}
+		const id = doc.id;
+		// The step stays on its stack while the restore runs; a restore drops it (dropTrashSteps), a refusal keeps it.
+		await whileStepping(async () => {
+			if (await restoreDeleted(e.trash!)) historyOf(id).redo = [];
+		});
 		return;
 	}
 	if (e.edit) return applyEdit(e, false);
@@ -1193,9 +1189,9 @@ export async function undo() {
 }
 export async function redo() {
 	const e = doc.redo.at(-1);
-	if (stepping) return;
-	if (e?.edit) return applyEdit(e, true);
-	if (!e?.snap) return;
+	if (!e || waitForStep()) return;
+	if (e.edit) return applyEdit(e, true);
+	if (!e.snap) return;
 	const back = snap();
 	doc.redo = doc.redo.slice(0, -1);
 	restore(e);
@@ -1203,47 +1199,48 @@ export async function redo() {
 }
 /** A step that writes the saved record is running: the next Undo or Redo waits for it instead of overtaking it. */
 let stepping = false;
-/** Undo (or redo) a saved-record step and move it to the other stack, or put it back where it was when refused. The
- *  history is the character's own, also when another character was opened meanwhile. */
-async function applyEdit(e: UndoStep, redoing: boolean) {
-	const id = doc.id,
-		[from, to] = redoing ? (['redo', 'undo'] as const) : (['undo', 'redo'] as const);
-	doc[from] = doc[from].slice(0, -1);
-	// Read again after the write: the open character may have changed meanwhile.
-	const back = (stack: 'undo' | 'redo') => {
-		const history = historyOf(id);
-		history[stack] = [...history[stack], e];
-	};
+/** True, and says so, while a step is still being written: a write that never finishes must not leave Undo silently dead. */
+function waitForStep() {
+	if (stepping) toast(message('history.busy'), { tone: 'warning' });
+	return stepping;
+}
+async function whileStepping(run: () => Promise<void>) {
 	stepping = true;
 	try {
-		back((await e.edit!(redoing)) === false ? from : to);
+		await run();
 	} catch (error) {
-		back(from);
 		toast(errorTranslation(error) ?? errorMessage(error), { tone: 'danger', error });
 	} finally {
 		stepping = false;
 	}
 }
+/** The history holds a state proxy of a step: its function is the same object, so it identifies the step. */
+const sameStep = (a: UndoStep) => (b: UndoStep) => b.edit === a.edit;
+/** Undo (or redo) a saved-record step. It stays on its stack while its write runs and moves to the other stack only once
+ *  the write lands, so a write that fails, is refused or never finishes never loses it. The history is the character's
+ *  own, also when another character was opened meanwhile. */
+function applyEdit(e: UndoStep, redoing: boolean) {
+	const id = doc.id,
+		[from, to] = redoing ? (['redo', 'undo'] as const) : (['undo', 'redo'] as const);
+	return whileStepping(async () => {
+		if ((await e.edit!(redoing)) === false) return;
+		const history = historyOf(id);
+		history[from] = history[from].filter((s) => !sameStep(e)(s));
+		history[to] = [...history[to], e];
+	});
+}
 /** A notice's Undo: exactly the change it announced, even when newer steps followed it, since a saved-record step never
  *  depends on them (each checks the record itself). It leaves the history, as a delete restored from Trash does. */
 export async function undoStep(projectId: string, step: UndoStep) {
-	// The history holds a state proxy of the step: its function is the same object, so it identifies the step.
-	const own = (s: UndoStep) => s.edit === step.edit,
-		undos = historyOf(projectId).undo,
-		at = undos.findIndex(own);
-	if (at < 0 || stepping) return;
+	const undos = historyOf(projectId).undo,
+		at = undos.findIndex(sameStep(step));
+	if (at < 0 || waitForStep()) return;
 	if (projectId === doc.id && at === undos.length - 1) return undo();
-	stepping = true;
-	try {
-		if ((await step.edit!(false)) !== false) {
-			const history = historyOf(projectId);
-			history.undo = history.undo.filter((s) => !own(s));
-		}
-	} catch (error) {
-		toast(errorTranslation(error) ?? errorMessage(error), { tone: 'danger', error });
-	} finally {
-		stepping = false;
-	}
+	await whileStepping(async () => {
+		if ((await step.edit!(false)) === false) return;
+		const history = historyOf(projectId);
+		history.undo = history.undo.filter((s) => !sameStep(step)(s));
+	});
 }
 /** Add a step to a character's history (the open one's, or the one kept for another). */
 function pushStep(projectId: string, step: UndoStep) {

@@ -1103,7 +1103,8 @@
 		"restoreOriginals": "Restaurer les originaux",
 		"changeDescription": "Modifier la description",
 		"changed": "Ce personnage a changé depuis, cette étape ne peut donc plus être annulée ni rétablie.",
-		"notRecorded": "Enregistré, mais cette modification ne peut pas être annulée : certaines de ses images ne sont plus enregistrées."
+		"notRecorded": "Enregistré, mais cette modification ne peut pas être annulée : certaines de ses images ne sont plus enregistrées.",
+		"busy": "Attendez la fin du dernier Annuler ou Rétablir. S’il ne se termine jamais, rechargez la page."
 	},
 	"export": {
 		"sheet": {

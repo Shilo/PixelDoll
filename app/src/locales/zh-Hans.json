@@ -1072,7 +1072,8 @@
 		"restoreOriginals": "恢复原始帧",
 		"changeDescription": "更改描述",
 		"changed": "此角色之后已更改，因此无法再撤销或重做此步骤。",
-		"notRecorded": "已保存，但无法撤销此更改：它的部分帧已不再保存。"
+		"notRecorded": "已保存，但无法撤销此更改：它的部分帧已不再保存。",
+		"busy": "请等待上一次撤销或重做完成。如果一直未完成，请重新加载页面。"
 	},
 	"export": {
 		"sheet": {

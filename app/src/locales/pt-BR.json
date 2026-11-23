@@ -1106,7 +1106,8 @@
 		"restoreOriginals": "Restaurar originais",
 		"changeDescription": "Alterar descrição",
 		"changed": "Este personagem mudou desde então, então esta etapa não pode mais ser desfeita nem refeita.",
-		"notRecorded": "Salvo, mas esta alteração não pode ser desfeita: alguns dos quadros dela não estão mais salvos."
+		"notRecorded": "Salvo, mas esta alteração não pode ser desfeita: alguns dos quadros dela não estão mais salvos.",
+		"busy": "Aguarde o último Desfazer ou Refazer terminar. Se nunca terminar, recarregue a página."
 	},
 	"export": {
 		"sheet": {

@@ -1103,7 +1103,8 @@
 		"restoreOriginals": "Restore originals",
 		"changeDescription": "Change description",
 		"changed": "This character changed since, so this step can no longer be undone or redone.",
-		"notRecorded": "Saved, but this change cannot be undone: some of its frames are no longer stored."
+		"notRecorded": "Saved, but this change cannot be undone: some of its frames are no longer stored.",
+		"busy": "Wait for the last Undo or Redo to finish. If it never does, reload the page."
 	},
 	"export": {
 		"sheet": {

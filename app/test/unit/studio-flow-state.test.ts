@@ -1676,6 +1676,71 @@ describe('undo history', () => {
 		expect(saved.get('rig-a').manifest.rig.cell).toEqual({ w: 96, h: 96 });
 	});
 
+	test('a step stays on its stack while its write runs, and a write that fails or never finishes neither loses it nor silently stops Undo', async () => {
+		const { s, saved } = await opened('rig-a');
+		const before = structuredClone(saved.get('rig-a')),
+			after = structuredClone(before);
+		after.manifest.rig.cell = { w: 96, h: 96 };
+		saved.set('rig-a', structuredClone(after));
+		await s.pushArtworkStep({
+			projectId: 'rig-a',
+			label: message('adjustFrame.title'),
+			before,
+			after,
+			action: 'change the frame of'
+		});
+		const frame = [message('adjustFrame.title')];
+		// A failed write keeps the step where it was and says why.
+		mocks.saveIdle.mockRejectedValueOnce(new Error('Disk full'));
+		await s.undo();
+		expect(s.ui.toast).toBe('Disk full');
+		expect([s.doc.undo.map((step) => step.label), s.doc.redo]).toEqual([frame, []]);
+		// A write that never finishes: the step stays on its stack, and a later Undo says what it waits for.
+		mocks.saveIdle.mockReturnValueOnce(new Promise(() => {}));
+		void s.undo();
+		await vi.waitFor(() => expect(mocks.saveIdle).toHaveBeenCalledTimes(2));
+		expect([s.doc.undo.map((step) => step.label), s.doc.redo]).toEqual([frame, []]);
+		s.ui.toast = '';
+		await s.undo();
+		expect(s.ui.toast).toEqual(message('history.busy'));
+		expect(s.doc.undo.map((step) => step.label)).toEqual(frame);
+	});
+
+	test('an artwork step moves to the other stack only once its write lands', async () => {
+		const { s, saved } = await opened('rig-a');
+		const before = structuredClone(saved.get('rig-a')),
+			after = structuredClone(before);
+		after.manifest.rig.cell = { w: 96, h: 96 };
+		saved.set('rig-a', structuredClone(after));
+		await s.pushArtworkStep({
+			projectId: 'rig-a',
+			label: message('adjustFrame.title'),
+			before,
+			after,
+			action: 'change the frame of'
+		});
+		let land!: () => void;
+		mocks.saveIdle.mockImplementationOnce(
+			(original, next) =>
+				new Promise<void>((resolve) => {
+					land = () => {
+						saved.set(original.id, structuredClone(next));
+						resolve();
+					};
+				})
+		);
+		const undoing = s.undo();
+		await vi.waitFor(() => expect(mocks.saveIdle).toHaveBeenCalledOnce());
+		expect([s.doc.undo.length, s.doc.redo.length]).toEqual([1, 0]);
+		land();
+		await undoing;
+		expect([s.doc.undo.length, s.doc.redo.map((step) => step.label)]).toEqual([
+			0,
+			[message('adjustFrame.title')]
+		]);
+		expect(saved.get('rig-a').manifest.rig.cell).toEqual(before.manifest.rig.cell);
+	});
+
 	test('Match item colors is a step that writes back only that item', async () => {
 		const { s, saved } = await opened('rig-a');
 		const matched = 'c'.repeat(64);

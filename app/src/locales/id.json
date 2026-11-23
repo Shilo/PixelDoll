@@ -1072,7 +1072,8 @@
 		"restoreOriginals": "Pulihkan yang asli",
 		"changeDescription": "Ubah deskripsi",
 		"changed": "Karakter ini telah berubah sejak itu, jadi langkah ini tidak dapat lagi dibatalkan atau diulang.",
-		"notRecorded": "Tersimpan, tetapi perubahan ini tidak dapat dibatalkan: beberapa frame-nya tidak lagi tersimpan."
+		"notRecorded": "Tersimpan, tetapi perubahan ini tidak dapat dibatalkan: beberapa frame-nya tidak lagi tersimpan.",
+		"busy": "Tunggu hingga Urungkan atau Ulangi terakhir selesai. Jika tidak pernah selesai, muat ulang halaman."
 	},
 	"export": {
 		"sheet": {

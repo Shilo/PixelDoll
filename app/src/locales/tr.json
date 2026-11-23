@@ -1103,7 +1103,8 @@
 		"restoreOriginals": "Orijinalleri geri yükle",
 		"changeDescription": "Açıklamayı değiştir",
 		"changed": "Bu karakter o zamandan beri değişti, bu yüzden bu adım artık geri alınamaz veya yinelenemez.",
-		"notRecorded": "Kaydedildi ancak bu değişiklik geri alınamaz: Karelerinin bazıları artık kayıtlı değil."
+		"notRecorded": "Kaydedildi ancak bu değişiklik geri alınamaz: Karelerinin bazıları artık kayıtlı değil.",
+		"busy": "Son “Geri alın” veya “Yineleyin” işleminin bitmesini bekleyin. Hiç bitmezse sayfayı yenileyin."
 	},
 	"export": {
 		"sheet": {
