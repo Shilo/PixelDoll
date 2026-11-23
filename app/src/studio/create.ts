@@ -336,13 +336,30 @@ interface DryRun {
 }
 /** Runs of a free choice (Keep without fitting items, Save the finished views): every request is read from the cache, never
  *  sent. A missing record stops the run so the review is shown again; a stopped joint check leaves its frame unmeasured. */
-const cacheOnlyRuns = new WeakSet<AbortSignal>();
+const cacheOnlyRuns = new WeakMap<AbortSignal, CacheOnly>();
+/** `receipts`: the exact records the review replayed for the free choice; any other record is not what was reviewed. */
+type CacheOnly = { receipts?: ReadonlySet<string> };
+/** In a review's replay, every frame's lookup settles before the first failure is thrown: a replay that stopped on one frame
+ *  still prices the checks of its siblings and meets their receipts, so a free choice and the spent total reflect every
+ *  frame. A live run fails at once instead, so its scope cancels sibling checks before they are sent. */
+async function settledAll<T>(work: Promise<T>[], signal?: AbortSignal): Promise<T[]> {
+	if (!signal || !dryRuns.has(signal)) return Promise.all(work);
+	const results = await Promise.allSettled(work);
+	const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+	if (failed) throw failed.reason;
+	return results.map((r) => (r as PromiseFulfilledResult<T>).value);
+}
 /** A joint check a cache-only run found stopped: its outcome is unknown, so the frame is unmeasured and never sent again. */
 class StoppedCheck extends Error {}
 /** Every receipt a replay met, completed or stopped, once each: a stopped request's reported charge is still spent. */
 const receiptsOf = (records: readonly JobRec[]) => [
 	...new Map(records.map((r) => [r.id, r])).values()
 ];
+/** The receipts replayed views met, completed and stopped, as a free choice is bound to them. */
+const receiptIds = (views: readonly Pick<ReplayedView, 'records' | 'stopped'>[]) =>
+	receiptsOf(views.flatMap((v) => [...v.records, ...v.stopped]))
+		.map((r) => r.id)
+		.sort();
 /** Whether any of these records may have charged more than it reported (the paid review's spentUnknown). */
 const costUnknown = (records: readonly JobRec[]) =>
 	records.some((r) => !!r.costUnknown || r.state === 'lost');
@@ -392,10 +409,10 @@ export async function parallelGeneration<T>(
 	attempt?: number,
 	recovery?: GenerationRecovery,
 	minimumTier = 0,
-	cacheOnly = false
+	cacheOnly?: CacheOnly
 ): Promise<T[]> {
 	const scope = new AbortController();
-	if (cacheOnly) cacheOnlyRuns.add(scope.signal);
+	if (cacheOnly) cacheOnlyRuns.set(scope.signal, cacheOnly);
 	if (Number.isSafeInteger(attempt)) generationAttempts.set(scope.signal, attempt!);
 	if (recovery) measurementRecoveries.set(scope.signal, recovery);
 	generationMinimumTiers.set(scope.signal, minimumTier);
@@ -432,11 +449,13 @@ export async function run(
 	const label = typeof jobLabel === 'string' ? jobLabel : jobLabel.text;
 	const dry = signal && dryRuns.get(signal);
 	if (dry) return dryRecord(req, label, dry);
-	if (signal && cacheOnlyRuns.has(signal)) {
+	const cacheOnly = signal && cacheOnlyRuns.get(signal);
+	if (cacheOnly) {
+		const reviewed = (r: JobRec) => !cacheOnly.receipts || cacheOnly.receipts.has(r.id);
 		const matches = await requestMatches(req),
 			done = matches.find((r) => r.state === 'done');
-		if (done) return done;
-		if (req.path === '/estimate-skeleton' && matches.length && !matches.some(live))
+		if (done && reviewed(done)) return done;
+		if (!done && req.path === '/estimate-skeleton' && matches.some(reviewed) && !matches.some(live))
 			throw new StoppedCheck();
 		throw new LocalizedError(
 			'A result this free choice reuses is no longer saved, so nothing was requested. Review the move again.',
@@ -776,12 +795,13 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		: { frames: rawFrames };
 	const frames = candidate.frames;
 	// Observation failures retain the generated art. Never re-roll it or silently freeze an incomplete rig.
-	const measured = await Promise.all(
+	const measured = await settledAll(
 		frames.map(async (f) => {
 			const k = await joints(f, true, j.signal, j.activityScope);
 			j.tick();
 			return k;
-		})
+		}),
+		j.signal
 	);
 	const dryJoints = j.signal && dryRuns.get(j.signal);
 	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('render-joints', dryJoints.running);
@@ -1014,13 +1034,14 @@ async function motion(
 		'motion',
 		below
 	);
-	const kps = await Promise.all(
+	const kps = await settledAll(
 		frames.map(async (f) => {
 			// An empty frame has no joints to measure; it is bridged from its neighbors or the view stops below.
 			const k = opaqueBox(f) ? await joints(f, true, signal, activityScope) : undefined;
 			tick();
 			return k;
-		})
+		}),
+		signal
 	);
 	const dryJoints = signal && dryRuns.get(signal);
 	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('motion-joints', dryJoints.running);
@@ -1754,6 +1775,8 @@ export interface MoveSpec {
 	/** Consent from a paid-result review to save a new move with only its finished views (`dirs`): the other views stopped,
 	 *  are listed in the review, and can be made later as a partial replacement at the same frame count. */
 	finishedViews?: true;
+	/** The records a review replayed for a free choice (keepUnposed, finishedViews): its run reuses exactly these. */
+	reviewedReceipts?: string[];
 	/** The attempt a reviewed continuation runs as (default: the seed). A new one reopens requests the stopped attempt
 	 *  canceled before sending (queue autoCanceledAttempts), so they are sent instead of replayed as stopped. */
 	attempt?: number;
@@ -3759,6 +3782,14 @@ function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 			(!spec.replace && m.rig.animations.some((a) => a.id === spec.id)))
 	)
 		throw invalid();
+	if (
+		spec.reviewedReceipts !== undefined &&
+		(!(spec.keepUnposed || spec.finishedViews) ||
+			!Array.isArray(spec.reviewedReceipts) ||
+			spec.reviewedReceipts.some((id) => typeof id !== 'string' || !id) ||
+			new Set(spec.reviewedReceipts).size !== spec.reviewedReceipts.length)
+	)
+		throw invalid();
 	// Finished views only of a new, body-only move: some drawn views, never an existing move or equipment.
 	if (
 		spec.finishedViews !== undefined &&
@@ -4233,14 +4264,15 @@ export async function reviewMoveResults(
 			reviewBeforePublish: undefined
 		});
 		// Free by construction: every view is a cached completed render. A replay that would buy anything is no Keep.
-		if (!total(await replay(candidate)))
+		const kept = await replay(candidate);
+		if (!total(kept))
 			options.push({
 				id: 'keep-unposed',
 				label: message('moveReview.keepUnposed'),
 				detail: message('moveReview.keepUnposedDetail'),
 				gens: 0,
 				paid: false,
-				spec: candidate
+				spec: { ...candidate, reviewedReceipts: receiptIds(kept) }
 			});
 	}
 	// A new move whose other views stopped can still be saved with the views that finished, for free and in the staged review;
@@ -4261,7 +4293,7 @@ export async function reviewMoveResults(
 				}),
 				gens: 0,
 				paid: false,
-				spec: candidate
+				spec: { ...candidate, reviewedReceipts: receiptIds(kept) }
 			});
 	}
 	// What each view bought: the output a step rejected, as PixelLab returned it.
@@ -4369,8 +4401,11 @@ async function addBodyClip(
 	onProgress({ step: 'animate', done: 0, total, recIds: [] });
 	const extra = dirs.map((): JobRec[] => []);
 	const minimumTier = moveMinimumTier(m, spec);
-	// Free choices reuse what the review saw and never send a request.
-	const cacheOnly = !!(spec.keepUnposed || spec.finishedViews);
+	// Free choices reuse what the review saw, the exact receipts it replayed, and never send a request.
+	const cacheOnly =
+		spec.keepUnposed || spec.finishedViews
+			? { ...(spec.reviewedReceipts ? { receipts: new Set(spec.reviewedReceipts) } : {}) }
+			: undefined;
 	const recoveryState = recovery && {
 		intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] },
 		rawHashes: new Set(recovery.rawHashes),
