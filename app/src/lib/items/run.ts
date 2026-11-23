@@ -1694,9 +1694,16 @@ export async function acceptItem(
 	if (!r.qa) throw new Error(`${d.spec.id}: not all calls are done`);
 	const pad = padOf(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method, rig.cell);
 	const { provenance, index } = draftProvenance(d);
-	const qa = acceptQa(r.qa.qa);
-	for (const cell of Object.values(qa.cells))
-		if (cell.provenance !== undefined) cell.provenance = index.get(cell.provenance);
+	// Fresh cells, remapped from the review's own call numbers: the review stays intact for a Keep retried after a failed save.
+	const qa = {
+		...acceptQa(r.qa.qa),
+		cells: Object.fromEntries(
+			Object.entries(r.qa.qa.cells).map(([key, cell]) => [
+				key,
+				cell.provenance === undefined ? cell : { ...cell, provenance: index.get(cell.provenance) }
+			])
+		) as typeof r.qa.qa.cells
+	};
 	// Missing frames are not a passing check.
 	if (available) qa.status = 'accepted';
 	const dress = d.calls[0].kind === 'dress',
