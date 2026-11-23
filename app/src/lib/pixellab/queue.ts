@@ -1569,6 +1569,7 @@ export class Queue {
 			r.response = strip(res);
 			const ids = jobIdsOf(res);
 			r.error = undefined;
+			r.errorKind = undefined; // an earlier refusal no longer explains this accepted (possibly charged) request
 			r.waitingForCapacity = false;
 			r.jobs = ids.map((id) => ({ id, status: 'submitted', done: false, results: [] }));
 			if (ids.length) r.state = 'running';

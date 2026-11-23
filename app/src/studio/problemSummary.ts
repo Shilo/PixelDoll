@@ -115,6 +115,8 @@ export function recordProblemKind(
 ): ProblemKind {
 	if (record.jobs.some((job) => job.policy || job.errorCode === 5000)) return 'declined';
 	if (record.state === 'lost') return 'uncertain';
-	if (record.errorKind && record.errorKind !== 'retry') return API_KINDS[record.errorKind];
+	// A refusal explains a record only while nothing was accepted; a submitted job may have charged.
+	if (!record.jobs.length && record.errorKind && record.errorKind !== 'retry')
+		return API_KINDS[record.errorKind];
 	return 'stopped';
 }
