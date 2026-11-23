@@ -460,6 +460,10 @@ export class Queue {
 	/** Records whose latest save failed: saved again until it lands, so a settled result is never only in memory. */
 	private unsavedRecords = new Set<string>();
 	private recordRetryAt = 0;
+	/** A finished record as stored: one whose save is pending or failed is returned only once its outcome is stored. */
+	private stored(r: JobRec) {
+		return !live(r) && this.unsavedRecords.has(r.id) ? this.settled(r.id) : Promise.resolve(r);
+	}
 	/** Paid results only this tab holds (an unsaved record or a held job): it keeps leading until they are saved. */
 	private holdsUnsaved() {
 		return this.unsavedRecords.size > 0 || this.held.size > 0;
@@ -622,7 +626,15 @@ export class Queue {
 	snapshot(): QueueSnapshot {
 		const jobs = [...this.recs.values()]
 			.sort((a, b) => a.createdAt - b.createdAt)
-			.map((r) => ({ ...r, jobs: r.jobs.map((s) => ({ ...s, results: [...s.results] })) }));
+			.map((r) => ({
+				...r,
+				// An outcome counts once it is stored: until then every reader sees the request still in progress, so no
+				// dependent step advances on a result that reload and other tabs would not see.
+				...(!live(r) && this.unsavedRecords.has(r.id)
+					? { state: r.jobs.length ? ('running' as const) : ('queued' as const) }
+					: {}),
+				jobs: r.jobs.map((s) => ({ ...s, results: [...s.results] }))
+			}));
 		const counts = { pending: 0, running: 0, failed: 0, done: 0 };
 		for (const r of jobs) {
 			if (r.state === 'queued') counts.pending++;
@@ -1270,13 +1282,13 @@ export class Queue {
 			return active;
 		}
 		const done = matches.find((r) => r.state === 'done');
-		if (done && (seeded || meta.cache || resumeSafe)) return done;
+		if (done && (seeded || meta.cache || resumeSafe)) return this.stored(done);
 		if (meta.quotedEstimate?.reuseOnly) meta.quotedEstimate.changed();
 		let retryOf: string | undefined;
 		if (meta.estimateRetry) {
 			// Deterministic record identity also prevents two follower tabs from creating two retries for one consent.
 			const previous = matches.find((r) => r.estimateRecovery?.id === meta.estimateRetry!.id);
-			if (previous) return previous; // including another unknown outcome: reload never grants a second submission
+			if (previous) return this.stored(previous); // including another unknown outcome: reload never grants a second submission
 			const source = matches.find((r) => meta.estimateRetry!.recordIds.includes(r.id));
 			if (source) {
 				if (!retryableEstimate(source) || matches[0]?.id !== source.id)
@@ -1286,7 +1298,7 @@ export class Queue {
 		}
 		if (resumeSafe && !retryOf) {
 			const terminal = matches.find((r) => !canReopenQueuedCancellation(r, meta.attempt));
-			if (terminal) return terminal;
+			if (terminal) return this.stored(terminal);
 		}
 		const now = this.deps.now();
 		const rec: JobRec = {
@@ -1499,7 +1511,19 @@ export class Queue {
 		if (this.role !== 'follower')
 			for (const r of this.recs.values()) if (this.pollSubmitted(r)) await this.save(r);
 		const now = this.deps.now();
-		if (!(await this.network(now)) || disconnected()) return { ops: [] };
+		// Results already in memory are saved whatever the credential or connection: only storage has to work.
+		const saving: Promise<void>[] = [];
+		if (this.role !== 'follower' && (!this.key || this.paused === 'auth'))
+			for (const r of this.recs.values())
+				for (const s of r.jobs)
+					if (
+						this.held.has(s.id) &&
+						!s.done &&
+						!this.busy.has(s.id) &&
+						now - (s.lastPoll ?? 0) >= Math.max(POLL_MS, backoff(s.unsaved ?? 1))
+					)
+						saving.push(this.guard(s.id, () => this.poll(r, s)));
+		if (!(await this.network(now)) || disconnected()) return { ops: saving };
 		if (this.role === 'follower') return { ops: [] }; // the leader tab submits and polls
 		// A failed ledger read is retried on the next tick, so a working ledger lifts the storage notice at once.
 		if (
@@ -1511,7 +1535,7 @@ export class Queue {
 			await this.merge();
 		}
 		if (disconnected()) return { ops: [] }; // a suspended tick cannot drive jobs after its lock/session was released
-		const ops: Promise<void>[] = [];
+		const ops: Promise<void>[] = [...saving];
 		let capacity: Promise<void> | undefined;
 		if (
 			this.key &&
@@ -1848,14 +1872,16 @@ export class Queue {
 			connection === this.connection &&
 			credentialRevision === this.keyRevision &&
 			key === this.key;
-		if (this.deps.api === realApi) await this.restoreActivity(r);
-		// Restoring inspection data awaits storage: Forget/reconnect or releasing the queue must stop the old poll.
-		if (!key || !currentCredential()) return;
+		// A finished job whose valid results this device failed to save is kept in memory and saved again from here, so a
+		// result PixelLab later expires is not lost while storage recovers. Saving it needs no credential or connection.
+		const held = this.held.get(s.id);
+		if (!held) {
+			if (this.deps.api === realApi) await this.restoreActivity(r);
+			// Restoring inspection data awaits storage: Forget/reconnect or releasing the queue must stop the old poll.
+			if (!key || !currentCredential()) return;
+		}
 		s.lastPoll = this.deps.now();
 		let job: Job;
-		// A finished job whose valid results this device failed to save is kept in memory and saved again from here, so a
-		// result PixelLab later expires is not lost while storage recovers.
-		const held = this.held.get(s.id);
 		if (held) job = held;
 		else
 			try {

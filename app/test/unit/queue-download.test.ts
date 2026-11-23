@@ -342,10 +342,58 @@ test('a waiter does not take a settled result until its record is stored', async
 	ledgerBroken = true;
 	await run(12);
 	expect(q.snapshot().paused).toBe('storage'); // the failed write was announced
-	expect(q.snapshot().jobs.find((r) => r.id === record.id)?.state).toBe('done'); // finished in this tab
-	expect(settled).toBeUndefined(); // but nothing depends on it before it is stored
+	// Finished in this tab, but every reader (waiters, the item runner, a resumed enqueue) sees it in progress until stored.
+	expect(q.snapshot().jobs.find((r) => r.id === record.id)?.state).toBe('running');
+	expect(settled).toBeUndefined();
+	let resumed: JobRec | undefined;
+	void q
+		.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } }, { cache: true })
+		.then((r) => (resumed = r));
+	await run(1);
+	await new Promise((resolve) => setTimeout(resolve, 100)); // request hashing runs on real time
+	expect(resumed).toBeUndefined();
 	ledgerBroken = false;
 	await run(6);
 	expect(stored.get(record.id)?.state).toBe('done');
 	expect(settled?.state).toBe('done');
+	await vi.waitFor(() => expect(resumed).toMatchObject({ id: record.id, state: 'done' }));
+});
+
+test('a held result is saved after the credential is forgotten, without asking PixelLab', async () => {
+	let gets = 0,
+		blobBroken = true;
+	const { q, store, run } = fixture({
+		api: async <T>(_key: string, method: string, endpoint: string): Promise<T> => {
+			if (endpoint === '/balance') return {} as T;
+			if (method === 'POST') return { background_job_id: 'j' } as T;
+			gets++;
+			return {
+				id: 'j',
+				status: 'completed',
+				last_response: {
+					image: {
+						type: 'rgba_bytes',
+						base64: bytesToBase64(new Uint8Array([1, 2, 3, 255])),
+						width: 1,
+						height: 1
+					}
+				}
+			} as T;
+		},
+		putBlob: async () => {
+			if (blobBroken) throw new Error('QuotaExceededError');
+			return 'output';
+		}
+	});
+	const record = await q.enqueue({ method: 'POST', path: '/edit-image-pro-flash', body: {} });
+	await run(12);
+	expect(gets).toBe(1);
+	q.setKey('');
+	blobBroken = false;
+	await run(70); // past the save backoff
+	expect(store.get(record.id)).toMatchObject({
+		state: 'done',
+		jobs: [{ results: [{ sha: 'output' }] }]
+	});
+	expect(gets).toBe(1);
 });
