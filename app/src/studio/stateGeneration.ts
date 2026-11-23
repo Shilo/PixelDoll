@@ -37,7 +37,7 @@ import {
 	type StateGenerationModel
 } from './stateGenerationPlan.ts';
 import {
-	managedStateRotations,
+	managedStateInventory,
 	stateGenerationSource,
 	stateSourceFits,
 	verifyManagedStateParent,
@@ -104,6 +104,8 @@ export interface StateReview {
 	sourceVersion: string;
 	endpoint: ReadyStatePlan['endpoint'];
 	views: { direction: DirectionName; image: Img }[];
+	/** Drawn facings PixelLab returned blank, failed or unreadable: the State is saved without them and their mirrors. */
+	missing: DirectionName[];
 	/** As returned, for facings that came back off the source's ground and were moved onto it in `views`. */
 	ungrounded: Partial<Record<DirectionName, Img>>;
 	provenance: ReturnType<typeof provOf>[];
@@ -448,26 +450,37 @@ async function childViews(attempt: StateAttempt, record: JobRec) {
 	if (!app.key || app.keyRejected)
 		throw error('Connect to PixelLab to recover the saved State views.', 'connect');
 	const detail = await readManaged(childId);
-	const inventory = managedStateRotations(detail);
+	if (detail.id !== childId) throw invalidResult();
+	const status = detail.status ?? 'completed';
+	// A lost poll can settle while PixelLab still draws the child: it is not done yet, not a bad result.
+	if (status !== 'completed' && status !== 'failed') throw unfinished();
+	const inventory = managedStateInventory(detail);
 	const { width, height } = attempt.plan.cellSize;
 	if (
-		detail.id !== childId ||
-		(detail.status ?? 'completed') !== 'completed' ||
+		status !== 'completed' ||
 		detail.size?.width !== width ||
 		detail.size?.height !== height ||
 		inventory?.count !== attempt.plan.remoteFacingCount
 	)
 		throw invalidResult();
-	const views = await Promise.all(
+	// Each facing on its own: a missing, unreadable or blank one is named in review instead of costing the rest.
+	const read = await Promise.all(
 		attempt.plan.batches[0].facingIds.map(async (direction) => {
 			const url = inventory.rotations[direction];
-			if (!url) throw invalidResult();
-			const image = await readRotation(url);
-			if (image.w !== width || image.h !== height || !opaqueBox(image)) throw invalidResult();
-			return { direction, image };
+			if (typeof url !== 'string' || !url.trim()) return null;
+			const image = await readRotation(url).then(
+				(image) => image,
+				(cause: unknown) => {
+					console.warn(`The ${direction} State view could not be read.`, cause);
+					return null;
+				}
+			);
+			return image?.w === width && image.h === height && opaqueBox(image)
+				? { direction, image }
+				: null;
 		})
 	);
-	return { childId, views };
+	return { childId, views: read.filter((view) => view !== null) };
 }
 
 async function readReview(
@@ -476,13 +489,15 @@ async function readReview(
 	records: JobRec[]
 ): Promise<StateReview> {
 	const plan = attempt.plan;
-	const result =
+	const result: { childId?: string; views: StateReview['views'] } =
 		plan.endpoint === '/create-character-state'
 			? await childViews(attempt, records[0])
 			: {
 					views: (
 						await Promise.all(
 							records.map(async (record, index) => {
+								// A batch that failed or cannot be read loses only its own facings, which review names.
+								if (record.state !== 'done') return [];
 								try {
 									const images = await imagesOf(record);
 									return decodeStateBatch(
@@ -491,12 +506,18 @@ async function readReview(
 										images.map(({ img }) => img)
 									);
 								} catch (cause) {
-									throw Object.assign(invalidResult(), { cause });
+									console.warn('A State batch could not be read.', cause);
+									return [];
 								}
 							})
 						)
 					).flat()
 				};
+	if (!result.views.length) throw invalidResult();
+	const drawn = new Set(result.views.map(({ direction }) => direction));
+	const missing = plan.batches
+		.flatMap(({ facingIds }) => facingIds)
+		.filter((direction) => !drawn.has(direction));
 	const ungrounded: StateReview['ungrounded'] = {};
 	// Managed results stay exactly as PixelLab stored them; local edits are offered back on the source's ground.
 	if (plan.endpoint !== '/create-character-state') {
@@ -513,6 +534,7 @@ async function readReview(
 	}
 	return {
 		...result,
+		missing,
 		ungrounded,
 		projectId,
 		id: attempt.id,

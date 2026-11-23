@@ -9,6 +9,7 @@
 	import { DIRECTIONS, type DirectionName } from '../lib/rig/rig.ts';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import { displayDirection } from './displayDirection.ts';
+	import { displayDirectionList } from './displayDirectionProblem.ts';
 	import { displayMove } from './displayMove.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import { RIDING_STATE } from './experience/presentation.ts';
@@ -125,11 +126,13 @@
 	);
 	// While it generates, the source frame stands in for the result.
 	const sourcePreview = $derived.by((): Img | null => {
-		if (!attempt || !project || !body) return null;
-		const clip = project.manifest.rig.animations.find(({ id }) => id === attempt.source.clip);
-		const cell = clip?.frames[attempt.source.frame]?.cell;
+		// Attempts saved before States recorded their source have none; reading them says to discard.
+		const source = attempt?.source;
+		if (!source || !project || !body) return null;
+		const clip = project.manifest.rig.animations.find(({ id }) => id === source.clip);
+		const cell = clip?.frames[source.frame]?.cell;
 		if (cell === undefined) return null;
-		return cellImg(project, body, attempt.source.clip, ui.dir, cell) ?? null;
+		return cellImg(project, body, source.clip, ui.dir, cell) ?? null;
 	});
 	const discardable = $derived(
 		!review &&
@@ -286,13 +289,20 @@
 					{/if}
 				</div>
 			{/if}
+			{#if review.missing.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.missingViews', {
+						directions: displayDirectionList(review.missing)
+					})}
+				</p>{/if}
 			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
 			{#if reviewRiding}<p class="muted small">{t('stateGeneration.ridingCheck')}</p>{/if}
 			{#if !sourceCurrent}
 				<p class="notice warn small" role="status">
 					{t(sourceFits ? 'stateGeneration.sourceChangedKeep' : 'stateGeneration.sourceChanged')}
 				</p>
-			{:else if Object.keys(review.ungrounded).length}
+			{/if}
+			<!-- Both placements were kept when the result was read, so the choice stays even if the source changes during review. -->
+			{#if Object.keys(review.ungrounded).length}
 				<label class="bu-check review-ground">
 					<span class="edit-copy">
 						<span>{t('stateGeneration.keepGrounded')}</span>
@@ -318,12 +328,12 @@
 	{:else if status === 'generating'}
 		<div class="state-panel generating">
 			<span class="review-stage source-stage">
-				{#if sourcePreview}<span class="cell-frame"
+				{#if sourcePreview && attempt?.source}<span class="cell-frame"
 						>{@render cell(
 							sourcePreview,
 							144,
 							t('stateCapture.preview', {
-								source: clipName(attempt!.source.clip),
+								source: clipName(attempt.source.clip),
 								facing: displayDirection(ui.dir)
 							})
 						)}</span
@@ -375,6 +385,14 @@
 				onclick={discard}
 				>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 			>
+			<!-- Reading again is free: a view whose download failed may come back. -->
+			{#if review?.missing.length}<button
+					type="button"
+					class="bu-btn"
+					data-variant="outline"
+					disabled={!!busy}
+					onclick={load}>{t('common.tryAgain')}</button
+				>{/if}
 			<button
 				type="button"
 				class="bu-btn"

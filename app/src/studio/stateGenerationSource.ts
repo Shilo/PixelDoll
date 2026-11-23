@@ -98,19 +98,34 @@ export interface ManagedStateDetail {
 	rotation_urls?: Partial<Record<DirectionName, string | null>> | null;
 }
 
-export function managedStateRotations(remote: ManagedStateDetail | null | undefined): {
+type ManagedStateInventory = {
 	rotations: NonNullable<ManagedStateDetail['rotation_urls']>;
 	count: 4 | 8;
-} | null {
+};
+
+/** A character's declared facing count and whatever rotation URLs it lists. A State child is recovered from this, facing
+ *  by facing, so one missing rotation does not cost the others. */
+export function managedStateInventory(
+	remote: ManagedStateDetail | null | undefined
+): ManagedStateInventory | null {
 	const count = remote?.directions;
 	const rotations = remote?.rotation_urls;
-	if ((count !== 4 && count !== 8) || !rotations) return null;
+	if ((count !== 4 && count !== 8) || !rotations || typeof rotations !== 'object') return null;
+	return { rotations, count };
+}
+
+export function managedStateRotations(
+	remote: ManagedStateDetail | null | undefined
+): ManagedStateInventory | null {
+	const inventory = managedStateInventory(remote);
+	if (!inventory) return null;
+	const { rotations, count } = inventory;
 	const directions =
 		count === 8 ? DIRECTIONS : DIRECTIONS.filter((direction) => !direction.includes('-'));
 	return directions.every(
 		(direction) => typeof rotations[direction] === 'string' && rotations[direction]?.trim()
 	)
-		? { rotations, count }
+		? inventory
 		: null;
 }
 

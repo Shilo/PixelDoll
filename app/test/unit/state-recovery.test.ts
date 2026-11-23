@@ -66,15 +66,23 @@ test.each<Partial<JobRec>>([
 	{ state: 'queued' },
 	{ state: 'submitting' },
 	{ state: 'running' },
-	{ state: 'lost' },
-	{ state: 'canceled' },
-	{ state: 'failed' },
 	{ tag: 'studio-move' },
 	{ endpoint: '/transfer-outfit-v2' }
-])('never exposes an incomplete or mismatched batch for review: %o', (patch) => {
+])('never exposes a running or mismatched batch for review: %o', (patch) => {
 	expect(stateRecoveryRecords(local, [job(0), job(1, patch)])).toBeNull();
 	expect(stateContinuationBatches(local, [job(1, patch)])).toBeNull();
 });
+
+test.each<Partial<JobRec>>([{ state: 'lost' }, { state: 'canceled' }, { state: 'failed' }])(
+	'a batch that ended without results leaves the finished ones reviewable, never resent: %o',
+	(patch) => {
+		// Its facings read as missing in review; nothing is offered to buy them again.
+		const records = [job(0), job(1, patch)];
+		expect(stateRecoveryRecords(local, records)).toEqual(records);
+		expect(stateRecoveryRecords(local, [job(0, patch), job(1, patch)])).toBeNull();
+		expect(stateContinuationBatches(local, [job(1, patch)])).toBeNull();
+	}
+);
 
 test('recovers an expired managed poll only with a matching durable receipt', () => {
 	const record = job(0, {
@@ -103,7 +111,10 @@ test('a State row reads generating, ready to review or needing attention from th
 	const attempt = { ...local, source: { clip: 'default', frame: 0 } };
 	expect(stateAttemptStatus(attempt, [job(0), job(1, { state: 'running' })])).toBe('generating');
 	expect(stateAttemptStatus(attempt, [job(0), job(1)])).toBe('ready');
-	expect(stateAttemptStatus(attempt, [job(0), job(1, { state: 'failed' })])).toBe('attention');
+	expect(stateAttemptStatus(attempt, [job(0), job(1, { state: 'failed' })])).toBe('ready');
+	expect(
+		stateAttemptStatus(attempt, [job(0, { state: 'failed' }), job(1, { state: 'failed' })])
+	).toBe('attention');
 	expect(stateAttemptStatus(attempt, [job(0)])).toBe('attention');
 	expect(stateAttemptStatus(local, [job(0), job(1)])).toBe('attention');
 });

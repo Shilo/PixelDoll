@@ -17,6 +17,8 @@ function stateRecoveryBatches(attempt: RecoveryAttempt, ledger: readonly JobRec[
 	if (!batches.length || (managed && (!attempt.plan.parentId || batches.length !== 1))) return null;
 	const records: { index: number; record: JobRec }[] = [];
 	const missing: number[] = [];
+	// Batches that ended without results: their facings are missing from review and never resent.
+	const ended: number[] = [];
 	for (const [index] of batches.entries()) {
 		const scope = stateBatchScope(attempt.token, index);
 		const matches = ledger.filter((entry) => entry.activityScope === scope);
@@ -38,16 +40,21 @@ function stateRecoveryBatches(attempt: RecoveryAttempt, ledger: readonly JobRec[
 		if (
 			record.state !== 'done' &&
 			!(managed && record.state === 'lost' && record.jobs[0]?.status === 'lost')
-		)
-			return null;
+		) {
+			if (managed || live(record)) return null;
+			ended.push(index);
+		}
 		records.push({ index, record });
 	}
-	return { records, missing };
+	return { records, missing, ended };
 }
 
+/** Every batch's settled record, in planned order, once at least one batch finished with results. */
 export function stateRecoveryRecords(attempt: RecoveryAttempt, ledger: readonly JobRec[]) {
 	const batches = stateRecoveryBatches(attempt, ledger);
-	return batches && !batches.missing.length ? batches.records.map(({ record }) => record) : null;
+	return batches && !batches.missing.length && batches.ended.length < batches.records.length
+		? batches.records.map(({ record }) => record)
+		: null;
 }
 
 export function stateContinuationBatches(
@@ -57,8 +64,10 @@ export function stateContinuationBatches(
 	const unqueued = attempt.continuation?.unqueued;
 	if (attempt.plan.batches.length < 2 || !Array.isArray(unqueued)) return null;
 	const batches = stateRecoveryBatches(attempt, ledger);
-	return batches?.missing.length && batches.missing.every((index) => unqueued.includes(index))
-		? batches
+	return batches?.missing.length &&
+		!batches.ended.length &&
+		batches.missing.every((index) => unqueued.includes(index))
+		? { records: batches.records, missing: batches.missing }
 		: null;
 }
 

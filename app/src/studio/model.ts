@@ -96,6 +96,14 @@ export function setupWarningNote(
 		return copy(translate)(warning, 'setup.warnings.moveSkipped', {
 			move: displayMoveName(skipped[1])
 		});
+	const empty =
+		/^(.+) was skipped: one of its frames is empty\. Fix that frame or make the move again to animate items on it\.$/.exec(
+			warning
+		);
+	if (empty)
+		return copy(translate)(warning, 'setup.warnings.moveSkippedEmpty', {
+			move: displayMoveName(empty[1])
+		});
 	return bodyQualityNote(warning, translate, displayDirection);
 }
 

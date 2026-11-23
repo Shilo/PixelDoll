@@ -46,7 +46,12 @@
 	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
-	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
+	import {
+		moveSourceMatches,
+		moveSourceMissingViews,
+		resolveMoveSource,
+		savedReplacementSource
+	} from './moveSource.ts';
 	import { clipNameId, sameClipName } from './clipName.ts';
 	import { stateAttempts } from './stateRecovery.ts';
 	import {
@@ -104,6 +109,7 @@
 	import { displayMove } from './displayMove.ts';
 	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
+	import { displayDirectionList } from './displayDirectionProblem.ts';
 	import { ANGLES } from './characterConfig.ts';
 	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert } from './icons.ts';
 	import type { Img } from '../lib/image/png.ts';
@@ -372,7 +378,7 @@
 
 	function saveFit() {
 		const review = fitReview;
-		if (!review || review.blocked || fitBusy) return;
+		if (!review || fitBusy) return;
 		fitReview = null;
 		void fitAction(async () => {
 			await saveStateJointFit(review);
@@ -595,7 +601,12 @@
 					stateAttempts(rec).some((attempt) => sameClipName(attempt.id, id))))
 		)
 			return t('moveSheet.duplicateOption', { move: nice(id) });
-		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
+		if (explicitFrame && !startFrom) {
+			const gaps = sourceSelection ? moveSourceMissingViews(m, sourceSelection, targetDirs) : [];
+			return gaps.length
+				? t('moveSheet.startFrom.missingViews', { directions: displayDirectionList(gaps) })
+				: t('moveSheet.startFrom.unavailable');
+		}
 		if (
 			skeletonRetry &&
 			(!regeneration ||
@@ -2099,10 +2110,15 @@
 										</div>
 									{/each}
 								</div>
+								{#if fitReview.notFitted.length}<p class="notice warn small" role="status">
+										{t('stateJointFit.notFitted', {
+											directions: displayDirectionList(fitReview.notFitted)
+										})}
+									</p>{/if}
 								<button
 									class="bu-action"
 									data-variant="primary"
-									disabled={fitBusy || fitReview.blocked}
+									disabled={fitBusy}
 									onclick={saveFit}
 								>
 									{t('stateJointFit.save')}

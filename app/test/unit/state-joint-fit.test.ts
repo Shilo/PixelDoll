@@ -6,7 +6,7 @@ import { cellHash, type Keypoint, type Sha256 } from '../../src/lib/rig/rig.ts';
 import { CURRENT_FORMAT, type Project } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
-import { resolveMoveSource } from '../../src/studio/moveSource.ts';
+import { moveSourceMissingViews, resolveMoveSource } from '../../src/studio/moveSource.ts';
 import { measureJoints, measurementInput, missingItemMoves } from '../../src/studio/create.ts';
 import { loadProject } from '../../src/lib/store/project.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
@@ -201,6 +201,39 @@ describe('State joint fit target', () => {
 		});
 	});
 
+	test('a State saved without a facing fits the facings it has but never starts a Move there', async () => {
+		const project = await fixture();
+		const glow = project.manifest.items[0].layers[0].cells!.glow;
+		delete glow.east;
+		delete glow.west;
+		const target = await stateJointFitTarget(project, 'glow');
+		expect(target?.views.map(({ direction }) => direction)).toEqual(['south']);
+		const { manifest } = applyStateJointFit(
+			project.manifest,
+			{},
+			{
+				stateId: 'glow',
+				views: [{ direction: 'south', hash: glow.south![0]!, keypoints: pose(), qa: {} as never }],
+				provenance: [
+					{
+						endpoint: '/estimate-skeleton',
+						params: {},
+						seed: 0,
+						requestHash: `sha256:${'c'.repeat(64)}`,
+						createdAt: new Date(0).toISOString(),
+						produced: []
+					}
+				]
+			}
+		);
+		const selection = { clip: 'glow', cell: 0 };
+		expect(resolveMoveSource(manifest, selection, ['south'])).toBeDefined();
+		// A full-direction Move cannot start from it, and the sheet can say which facing is missing.
+		expect(resolveMoveSource(manifest, selection, ['south', 'east'])).toBeUndefined();
+		expect(moveSourceMissingViews(manifest, selection, ['south', 'east'])).toEqual(['east']);
+		expect(moveSourceMissingViews(manifest, selection, ['south'])).toEqual([]);
+	});
+
 	test('refuses art whose stored pixels do not match their hash', async () => {
 		const project = await fixture();
 		const hash = project.manifest.items[0].layers[0].cells!.glow.south![0]!;
@@ -335,7 +368,7 @@ describe('State joint fit service', () => {
 		}));
 		const review = await measureStateJoints(quote);
 		expect(db.update).not.toHaveBeenCalled();
-		expect(review.blocked).toBe(false);
+		expect(review.notFitted).toEqual([]);
 		expect(review.views.map(({ direction }) => direction)).toEqual(['south', 'east']);
 
 		await saveStateJointFit(review);
@@ -390,7 +423,46 @@ describe('State joint fit service', () => {
 		expect(db.update).not.toHaveBeenCalled();
 	});
 
-	test('missing joints on a facing fail measurement instead of producing a review', async () => {
+	test('a facing without joints is reported as not fitted and the measured ones are saved', async () => {
+		const target = (await stateJointFitTarget(project, 'glow'))!;
+		const south = target.views[0].hash;
+		vi.mocked(measureJoints).mockImplementation(async (image) => {
+			const hash = await cellHash(image);
+			return { keypoints: hash === south ? undefined : pose(), record: receipt(hash) };
+		});
+		const review = await measureStateJoints(await quoteStateJointFit('rig-test', 'glow'));
+		expect(review.views.map(({ direction }) => direction)).toEqual(['east']);
+		expect(review.notFitted).toEqual(['south']);
+		expect(review.provenance).toHaveLength(1);
+
+		await saveStateJointFit(review);
+		const sources = record.manifest.rig.animations[1].sources!;
+		expect(sources.east?.measured).toEqual([pose()]);
+		expect(sources.south).toBeUndefined();
+		expect(Object.keys(record.skeletons ?? {}).sort()).toEqual(['glow/east/0', 'glow/west/0']);
+		// The facing left unfitted is still offered for measuring.
+		const { project: saved } = await loadProject('rig-test');
+		expect(
+			(await stateJointFitTarget(saved, 'glow'))?.views.map(({ direction }) => direction)
+		).toEqual(['south']);
+	});
+
+	test('a reviewed facing whose art changed before saving blocks the save', async () => {
+		vi.mocked(measureJoints).mockImplementation(async (image) => ({
+			keypoints: pose(),
+			record: receipt(await cellHash(image))
+		}));
+		const review = await measureStateJoints(await quoteStateJointFit('rig-test', 'glow'));
+		const tampered = {
+			...review,
+			views: [{ ...review.views[0], hash: `sha256:${'d'.repeat(64)}` as Sha256 }],
+			provenance: [review.provenance[0]]
+		};
+		await expect(saveStateJointFit(tampered)).rejects.toThrow('changed');
+		expect(db.update).not.toHaveBeenCalled();
+	});
+
+	test('missing joints on every facing fail measurement instead of producing a review', async () => {
 		vi.mocked(measureJoints).mockImplementation(async (image) => ({
 			keypoints: undefined,
 			record: receipt(await cellHash(image))
