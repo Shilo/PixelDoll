@@ -459,7 +459,10 @@ export class Queue {
 	/** Finished jobs whose valid results could not be saved yet, by job id (see poll). */
 	private held = new Map<string, Job>();
 	/** Records whose latest save failed: saved again until it lands, so a settled result is never only in memory. */
-	private writes = new Map<string, { started: number; pending: number; failed: boolean }>();
+	private writes = new Map<
+		string,
+		{ started: number; pending: number; failed: boolean; retry: boolean }
+	>();
 	private recordRetryAt = 0;
 	/** A finished record as stored: one whose save is pending or failed is returned only once its outcome is stored. */
 	private stored(r: JobRec) {
@@ -477,7 +480,7 @@ export class Queue {
 	 *  lands after a later one started never makes the later outcome look stored. Only a plain save is retried when it
 	 *  fails: a conditional one (pre-submit, cancel) keeps its own recovery, which a blind retry would bypass. */
 	private async write<T>(id: string, run: () => Promise<T>, retried = true): Promise<T> {
-		const entry = this.writes.get(id) ?? { started: 0, pending: 0, failed: false };
+		const entry = this.writes.get(id) ?? { started: 0, pending: 0, failed: false, retry: true };
 		this.writes.set(id, entry);
 		const revision = ++entry.started;
 		entry.pending++;
@@ -488,7 +491,12 @@ export class Queue {
 			return out;
 		} finally {
 			entry.pending--;
-			if (revision === entry.started) entry.failed = !ok && retried;
+			// A failed conditional write (a cancel) stays unresolved, so nothing settles or cleans it up, but it is never
+			// retried blindly: its own Try again, or the stored row another tab writes, resolves it.
+			if (revision === entry.started) {
+				entry.failed = !ok;
+				entry.retry = retried;
+			}
 			if (!entry.pending && !entry.failed && this.writes.get(id) === entry) this.writes.delete(id);
 		}
 	}
@@ -1558,7 +1566,13 @@ export class Queue {
 			for (const [id, entry] of this.writes) {
 				const r = this.recs.get(id);
 				if (!r) this.writes.delete(id);
-				else if (entry.failed && !entry.pending && !this.busy.has(id) && !this.persisting.has(id))
+				else if (
+					entry.failed &&
+					entry.retry &&
+					!entry.pending &&
+					!this.busy.has(id) &&
+					!this.persisting.has(id)
+				)
 					saving.push(this.guard(id, () => this.save(r)));
 			}
 		}
@@ -1694,13 +1708,28 @@ export class Queue {
 		const connection = this.connection;
 		const credentialRevision = this.keyRevision;
 		const key = this.key;
+		const before = {
+			waitingForPlan: r.waitingForPlan,
+			attempts: r.attempts,
+			requestStarted: r.requestStarted
+		};
 		r.waitingForPlan = undefined;
 		r.state = 'submitting';
 		r.attempts++;
 		r.requestStarted = false;
 		// persisted before the request leaves, and only from a still-queued record without jobs: another tab's durable
 		// queued-only cancel (or receipt) wins over this submission, and this submission makes later queued-only cancels no-ops
-		const stored = await this.saveIf(r, queuedWithoutJobs);
+		let stored: JobRec | null;
+		try {
+			stored = await this.saveIf(r, queuedWithoutJobs);
+		} catch (e) {
+			// Nothing was sent: back to queued as it was, so a later tick submits it once storage works (the storage notice
+			// holds sending meanwhile). Another tab's stored cancel or receipt still wins at that next conditional write.
+			Object.assign(r, before, { state: 'queued' });
+			this.writes.delete(r.id);
+			this.emit();
+			throw e;
+		}
 		if (stored) {
 			this.recs.set(r.id, stored);
 			if (this.pollSubmitted(stored)) await this.save(stored);

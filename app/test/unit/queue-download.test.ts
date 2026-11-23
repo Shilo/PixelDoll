@@ -485,17 +485,79 @@ test('a failed conditional write is not retried blindly, and a follower takes th
 		saveIf(r: JobRec, allowed: (stored: JobRec) => boolean): Promise<JobRec | null>;
 		unsaved(id: string): boolean;
 		pull(id: string): Promise<void>;
-		writes: Map<string, { started: number; pending: number; failed: boolean }>;
+		writes: Map<string, { started: number; pending: number; failed: boolean; retry: boolean }>;
 		role: string;
 	};
 	const r = { id: 'r', state: 'submitting', jobs: [], createdAt: 0 } as unknown as JobRec;
 	await expect(inner.saveIf(r, () => true)).rejects.toThrow('IndexedDB unavailable');
-	expect(inner.unsaved('r')).toBe(false); // the pre-submit path recovers on its own: no blind retry of `submitting`
+	// Unresolved, so nothing settles or cleans it up, but never retried blindly (its own recovery or the stored row resolves it).
+	expect(inner.writes.get('r')).toMatchObject({ failed: true, retry: false });
 	// A follower whose own write failed adopts the row another tab stored.
-	inner.writes.set('r', { started: 1, pending: 0, failed: true });
 	inner.role = 'follower';
 	stored.set('r', { ...r, state: 'done' });
 	await inner.pull('r');
 	expect(inner.unsaved('r')).toBe(false);
 	expect(q.snapshot().jobs.find((job) => job.id === 'r')?.state).toBe('done');
+});
+
+test('a submission whose pre-submit save fails goes back to queued and is sent once storage works', async () => {
+	let broken = true,
+		posts = 0;
+	const stored = new Map<string, JobRec>();
+	const { q, run } = fixture({
+		put: async (k, r) => void stored.set(k, structuredClone(r)),
+		get: async (k) => structuredClone(stored.get(k)),
+		all: async () => [...stored.values()].map((r) => structuredClone(r)),
+		transition: async (k, next) => {
+			if (broken) throw new Error('IndexedDB unavailable');
+			const out = next(structuredClone(stored.get(k)));
+			if (out) stored.set(k, structuredClone(out));
+			return out ?? stored.get(k);
+		},
+		api: async <T>(_key: string, method: string, endpoint: string): Promise<T> => {
+			if (endpoint === '/balance') return {} as T;
+			if (method === 'POST') {
+				posts++;
+				return { background_job_id: 'j' } as T;
+			}
+			return { id: 'j', status: 'processing', created_at: '' } as T;
+		}
+	});
+	const record = await q.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } });
+	await run(3);
+	expect(posts).toBe(0);
+	expect(q.snapshot().jobs.find((r) => r.id === record.id)?.state).toBe('queued'); // not stranded in submitting
+	broken = false;
+	q.resume();
+	await run(3);
+	expect(posts).toBe(1);
+	expect(stored.get(record.id)?.state).toBe('running');
+});
+
+test('a Stop whose save fails never reads as settled until it is stored', async () => {
+	let broken = false;
+	const stored = new Map<string, JobRec>();
+	const { q } = fixture({
+		put: async (k, r) => void stored.set(k, structuredClone(r)),
+		get: async (k) => structuredClone(stored.get(k)),
+		all: async () => [...stored.values()].map((r) => structuredClone(r)),
+		transition: async (k, next) => {
+			if (broken) throw new Error('IndexedDB unavailable');
+			const out = next(structuredClone(stored.get(k)));
+			if (out) stored.set(k, structuredClone(out));
+			return out ?? stored.get(k);
+		}
+	});
+	const record = await q.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } });
+	broken = true;
+	await expect(q.cancel(record.id)).rejects.toThrow('IndexedDB unavailable');
+	let settled: JobRec | undefined;
+	void q.settled(record.id).then((r) => (settled = r));
+	expect(await q.clearFinished(() => false)).toBe(0); // kept for its Try again
+	await new Promise((resolve) => setTimeout(resolve, 20));
+	expect(settled).toBeUndefined();
+	broken = false;
+	await q.retryCancelSave(record.id);
+	await vi.waitFor(() => expect(settled?.state).toBe('canceled'));
+	expect(stored.get(record.id)?.state).toBe('canceled');
 });
