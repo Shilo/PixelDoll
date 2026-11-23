@@ -506,6 +506,8 @@ export class Queue {
 	}
 	/** Followers' stops waiting for the leading tab's answer, by reply id. */
 	private stopReplies = new Map<string, (ok: boolean) => void>();
+	/** While this tab starts leading and reads its records again. */
+	private reloading: Promise<void> | null = null;
 	// Order of the latest storage outcomes (reads and writes apart): the storage notice lifts only once a later read and a
 	// later write have both succeeded, never because a tick returned without touching storage.
 	private storageSeq = 0;
@@ -880,17 +882,25 @@ export class Queue {
 		this.role = 'leader';
 		this.capacityCheckedAt = -Infinity;
 		this.capacityKnown = false;
-		// An explicit Stop of ours still waiting for its Try again survives the reload over a stored automatic cancel.
+		// An explicit Stop of ours still waiting for its Try again survives the reload over a stored automatic cancel; a Try
+		// again pressed meanwhile waits for the reload (see retryCancelSave).
 		const stops = [...this.recs.values()].filter(
 			(r) => this.writes.get(r.id)?.failed && r.state === 'canceled' && !r.autoCanceledAttempts
 		);
 		this.recs.clear();
-		await this.load();
-		for (const mine of stops) {
-			const stored = this.recs.get(mine.id);
-			if (stored && this.keepsExplicitStop(mine, stored)) this.recs.set(mine.id, mine);
+		this.reloading = (async () => {
+			await this.load();
+			for (const mine of stops) {
+				const stored = this.recs.get(mine.id);
+				if (stored && this.keepsExplicitStop(mine, stored)) this.recs.set(mine.id, mine);
+			}
+			if (stops.length) this.emit();
+		})();
+		try {
+			await this.reloading;
+		} finally {
+			this.reloading = null;
 		}
-		if (stops.length) this.emit();
 		if (!connection.signal.aborted) this.start();
 	}
 	/** Stop driving jobs and release/cancel this connection's lock; paid requests are never resent. */
@@ -2305,6 +2315,7 @@ export class Queue {
 	 *  own, already settled with the stop's usage: saved as is. A queued-only cancel still loses to another tab's submission
 	 *  or receipt, which is adopted and, when running, stopped like any running cancel. */
 	async retryCancelSave(id: string) {
+		if (this.reloading) await this.reloading; // this tab is taking over leadership: its records are being read again
 		const r = this.recs.get(id);
 		if (!r) return;
 		if (r.jobs.length) return this.save(r); // the save a running cancel ends with, whatever its jobs settled to

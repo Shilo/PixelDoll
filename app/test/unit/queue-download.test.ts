@@ -693,12 +693,14 @@ test('a follower keeps its failed explicit Stop over an automatic cancel, and a 
 	await inner.pull(record.id);
 	await q.sync();
 	expect(inner.recs.get(record.id)?.autoCanceledAttempts).toBeUndefined(); // still this tab's explicit Stop
-	// It also survives this tab becoming the leader before its Try again.
-	await (q as unknown as { lead(c: AbortController): Promise<void> }).lead(new AbortController());
-	expect(inner.recs.get(record.id)?.autoCanceledAttempts).toBeUndefined();
-	q.stop();
+	// It also survives this tab becoming the leader, even when Try again is pressed while the records are read again.
+	const leading = (q as unknown as { lead(c: AbortController): Promise<void> }).lead(
+		new AbortController()
+	);
 	broken = false;
 	await q.retryCancelSave(record.id);
+	await leading;
+	q.stop();
 	expect(stored.get(record.id)?.autoCanceledAttempts).toBeUndefined();
 
 	// The other way round: this (leading) tab's automatic cancel failed, another tab stored an explicit Stop.
