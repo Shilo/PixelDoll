@@ -22,6 +22,7 @@ import { rehash } from '../../src/lib/rig/directions.ts';
 import { cellHash, DEFAULT_MOVE, type Sha256 } from '../../src/lib/rig/rig.ts';
 import type { Project } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
+import { stateGenerationSource, stateSourceFits } from '../../src/studio/stateGenerationSource.ts';
 
 const fixture = () =>
 	loadFixture(
@@ -415,4 +416,25 @@ test('a move from standing views that reach the frame edge warns and offers Make
 	);
 	const resized = { manifest: record.manifest, images: new Map([...project.images, ...newImages]) };
 	expect(frameRoomWarning(resized, spec)).toBeUndefined();
+});
+
+test('a State drawn before a vertical frame move no longer fits: the pivot it was placed on moved with the art', async () => {
+	const { rec, project, history } = await character();
+	const clip = rec.manifest.rig.animations[0].id,
+		made = stateGenerationSource(project, { clip, frame: 0 })!.version;
+	expect(stateSourceFits(project, made)).toBe(true);
+	const { record, newImages } = await reframeCharacter(
+		rec,
+		project.images,
+		{ size: 64, dy: -5 },
+		read(history)
+	);
+	const after: Project = {
+		manifest: record.manifest,
+		images: new Map([...project.images, ...newImages])
+	};
+	// Same frame size and views; only the art and the pivot moved up (rig.artOffset records the move).
+	expect(after.manifest.rig.cell).toEqual(rec.manifest.rig.cell);
+	expect(after.manifest.rig.artOffset).toBeDefined();
+	expect(stateSourceFits(after, made)).toBe(false);
 });
