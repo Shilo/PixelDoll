@@ -120,7 +120,8 @@ async function openGlobalVisibility(page: Page) {
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await expect(settings).toBeVisible();
-	const home = settings.getByRole('button', { name: 'Settings', exact: true });
+	// Settings reopens on the page last shown this session: go back to its index first.
+	const home = settings.getByRole('button', { name: 'Back to Settings', exact: true });
 	if (await home.isVisible()) await home.click();
 	await settings.getByRole('button', { name: 'Wardrobe', exact: true }).click();
 }
