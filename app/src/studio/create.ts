@@ -1654,8 +1654,6 @@ export interface MoveSpec {
 	motionLift?: Partial<Record<DirectionName, number[]>>;
 	/** Preflight warnings (PreflightWarning ids from movePreflightWarnings) the user chose to generate past. */
 	acceptedWarnings?: string[];
-	/** Item repair: seed salts by batch start for re-rolling only a misaligned batch (regridClip). */
-	gridReroll?: Record<string, number>;
 	replace?: boolean;
 	activityScope?: string;
 	dirs?: DirectionName[];
@@ -3081,8 +3079,7 @@ async function addMoveUnlocked(
 					spec.preferTierOneRepair,
 					spec.activityScope,
 					spec.reuseItemFrames,
-					spec.redrawItem,
-					spec.gridReroll
+					spec.redrawItem
 				);
 				tick();
 				if (result.review) return { warnings: [], repairReview: result.review };
@@ -3550,18 +3547,6 @@ function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 			)
 				throw invalid();
 		}
-	}
-	if (spec.gridReroll !== undefined) {
-		const entries = record(spec.gridReroll);
-		if (
-			!entries ||
-			spec.itemMethod !== 'grid' ||
-			entries.some(
-				([start, salt]) =>
-					!/^\d+$/.test(start) || !Number.isSafeInteger(salt) || (salt as number) < 1
-			)
-		)
-			throw invalid();
 	}
 	if (spec.motionLift !== undefined) {
 		const entries = record(spec.motionLift);

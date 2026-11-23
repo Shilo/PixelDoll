@@ -5822,8 +5822,7 @@ test('reload restores failed create, move and setup for review without paid subm
 		const record = await db.get('projects', 'studio-move');
 		await db.put('projects', 'studio-move', {
 			...record,
-			error:
-				'A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.'
+			error: 'The review could not be saved. Use saved frames to recover it without another charge.'
 		});
 		localStorage.setItem('pixeldoll.locale', 'fr');
 	});
@@ -5834,7 +5833,7 @@ test('reload restores failed create, move and setup for review without paid subm
 		(window as unknown as { __studio: { ui: { sheet: string } } }).__studio.ui.sheet = 'move';
 	});
 	await expect(page.getByRole('dialog')).toContainText(
-		'Un lot de réparation a renvoyé des images décalées. Les lots restants ont été arrêtés et le visuel existant a été conservé.'
+		'La vérification n’a pas pu être enregistrée. Utilisez les images enregistrées pour la récupérer sans frais supplémentaires.'
 	);
 	expect(posts).toEqual([]);
 });

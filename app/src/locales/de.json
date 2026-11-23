@@ -2688,9 +2688,7 @@
 			"currentFrame": "Aktueller Frame {number}",
 			"redrawnFrame": "Neu gezeichneter Frame {number}",
 			"repairedFrame": "Reparierter Frame {number}"
-		},
-		"rerollBatch": "Diesen Stapel neu würfeln",
-		"rerollBatchDetail": "Die früheren Stapel bleiben unverändert. Die Schätzung umfasst diesen Stapel und die folgenden, die noch nicht gekauft wurden."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2707,7 +2705,6 @@
 			"incompleteReferenceFrames": "PixelLab hat unvollständige Referenz- oder Standframes geliefert. Es wurde keine abhängige Anfrage gesendet.",
 			"standingFrameSize": "PixelLab hat einen Standframe mit falscher Größe geliefert. Es wurde keine abhängige Anfrage gesendet.",
 			"layersMismatch": "Die Ausrüstungsebenen passen nicht zu diesem Ausrüstungsplatz. Es wurde keine Generierung angefordert.",
-			"repairBatchMisaligned": "Ein Reparaturstapel hat verschobene Frames geliefert. Die übrigen Stapel wurden gestoppt und die vorhandene Grafik bleibt erhalten.",
 			"reviewChanged": "Dieser Gegenstand oder seine Prüfungen haben sich geändert. Öffne ihn erneut, bevor du seine aktuelle Grafik akzeptierst.",
 			"paletteReviewChanged": "Dieser Gegenstand oder seine Farben haben sich geändert. Prüfe die Farbanpassung erneut.",
 			"paletteSaveChanged": "Der Gegenstand, der Körper oder das Material hat sich geändert. Die vorhandenen Farben wurden beibehalten. Prüfe die Farbanpassung erneut.",
@@ -3242,7 +3239,6 @@
 			"dropped": "PixelLab war ausgelastet und hat eine Ansicht ausgelassen",
 			"joints": "Auf einigen Frames wurden keine Gelenke gefunden",
 			"stopped": "Eine bezahlte Anfrage wurde nicht abgeschlossen",
-			"misaligned": "Einige neue Frames sind nicht richtig ausgerichtet",
 			"quality": "Die neuen Frames haben die Qualitätsprüfung nicht bestanden",
 			"changed": "Während der Arbeit hat sich etwas geändert",
 			"missing": "Einige gespeicherte Ergebnisse sind nicht auf diesem Gerät",
@@ -3267,7 +3263,6 @@
 			"dropped": "Warte einen Moment und versuch es dann erneut.",
 			"joints": "Bereits Bezahltes bleibt unter „Aktivität“. Starte einen neuen Versuch oder beginne mit einer deutlicheren Standpose.",
 			"stopped": "Sieh unter „Aktivität“ nach, was passiert ist, bevor du neu startest.",
-			"misaligned": "Generiere nur den verschobenen Teil neu oder behalte die vorhandenen Grafiken.",
 			"quality": "Prüfe die Ergebnisse und behalte sie dann oder versuch es erneut.",
 			"changed": "Prüfe es erneut, bevor du weitermachst.",
 			"missing": "Sieh unter „Aktivität“ nach, was noch gespeichert ist, bevor du es neu erstellst.",

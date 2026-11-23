@@ -2697,9 +2697,7 @@
 			"currentFrame": "Quadro atual {number}",
 			"redrawnFrame": "Quadro redesenhado {number}",
 			"repairedFrame": "Quadro reparado {number}"
-		},
-		"rerollBatch": "Gerar este lote de novo",
-		"rerollBatchDetail": "Os lotes anteriores continuam como estão. A estimativa cobre este lote e os seguintes, que ainda não foram comprados."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2716,7 +2714,6 @@
 			"incompleteReferenceFrames": "O PixelLab retornou quadros de referência ou da pose em pé incompletos. Nenhuma solicitação dependente foi enviada.",
 			"standingFrameSize": "O PixelLab retornou um quadro da pose em pé com o tamanho errado. Nenhuma solicitação dependente foi enviada.",
 			"layersMismatch": "As camadas do equipamento não correspondem a este espaço. Nenhuma geração foi solicitada.",
-			"repairBatchMisaligned": "Um lote de reparo retornou quadros desalinhados. Os lotes restantes foram interrompidos e a arte existente foi mantida.",
 			"reviewChanged": "Este item ou suas verificações mudaram. Abra-o novamente antes de aceitar a arte atual.",
 			"paletteReviewChanged": "Este item ou suas cores mudaram. Revise a correspondência de cores novamente.",
 			"paletteSaveChanged": "O item, o corpo ou o material mudou. As cores existentes foram mantidas. Revise a correspondência novamente.",
@@ -3254,7 +3251,6 @@
 			"dropped": "O PixelLab estava ocupado e pulou uma vista",
 			"joints": "Não foram encontradas articulações em alguns quadros",
 			"stopped": "Uma solicitação paga não terminou",
-			"misaligned": "Alguns quadros novos não estão alinhados",
 			"quality": "Os novos quadros não passaram nas verificações de qualidade",
 			"changed": "Algo mudou durante o processo",
 			"missing": "Alguns resultados salvos não estão neste dispositivo",
@@ -3279,7 +3275,6 @@
 			"dropped": "Aguarde um momento e tente novamente.",
 			"joints": "O que foi pago continua em Atividade. Faça uma nova tentativa ou comece de uma pose em pé mais clara.",
 			"stopped": "Veja em Atividade o que aconteceu antes de começar de novo.",
-			"misaligned": "Gere novamente só a parte desalinhada ou mantenha a arte que você tem.",
 			"quality": "Revise os resultados e depois mantenha-os ou tente novamente.",
 			"changed": "Revise de novo antes de continuar.",
 			"missing": "Veja em Atividade o que ainda está salvo antes de criar de novo.",

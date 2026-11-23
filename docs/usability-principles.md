@@ -13,7 +13,7 @@ PixelDoll follows **simplicity-first design**: strong defaults, minimal necessar
 ## Failures and recovery
 
 - Validate provider output by its contract, never by exact pixels: accept what PixelLab documents (such as a start frame sent back first) and record evidence instead of stopping on it.
-- Never offer a paid retry that cannot change the outcome. A deterministic stop (a joint check, a misaligned batch that replays the same way) offers only what can help.
+- Never offer a paid retry that cannot change the outcome. A deterministic stop (a joint check that replays the same way) offers only what can help.
 - Block only what is unsafe or impossible. Otherwise disclose the issue and let the user continue, and keep paid results keepable.
   - Vital (may block, still keeping whatever is usable): sending or re-sending a paid request without consent or paying
     twice; losing or corrupting saved data or paid results; output the paper doll cannot use (no frames, a frame count

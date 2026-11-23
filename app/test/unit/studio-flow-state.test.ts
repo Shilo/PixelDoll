@@ -429,11 +429,16 @@ test('a new creation fixes its walk-room lift, and a resumed one keeps the lift 
 });
 
 test('a paid step failure keeps its review across a reload', async () => {
-	// A misaligned repair batch is re-rolled alone; after a reload only the full retry would remain, re-buying good batches.
+	// An overflowing motion is lifted from its review; after a reload only the full retry would remain, re-buying it.
 	const { PaidStepError } = await import('../../src/lib/pixellab/paid-results.ts');
-	const step = { step: 'grid-batch:4', failure: 'misaligned' as const, gens: 2.5 };
+	const step = { step: 'motion', failure: 'overflow' as const, recordId: 'motion-record' };
 	mocks.move.mockRejectedValueOnce(
-		new PaidStepError('Batch misaligned', 'itemRoute.errors.repairBatchMisaligned', undefined, step)
+		new PaidStepError(
+			'Motion overflow',
+			'create.errors.motionExceedsPxFrame',
+			{ move: 'Cast', direction: 'South', size: 64 },
+			step
+		)
 	);
 	const first = await import('../../src/studio/state.svelte.ts');
 	await first.startMove('project', { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 });

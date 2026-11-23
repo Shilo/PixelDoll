@@ -223,6 +223,10 @@ async function fixture(mode = 'pass', pad = 16, bladeEnd = 52) {
 						);
 		}
 		if (mode === 'race') current.manifest.rig.pivot.y++;
+		if (mode === 'shift-first' && enqueue.mock.calls.length === 1) {
+			const stride = grid.w * 4;
+			grid.data.copyWithin(stride, 0, grid.data.length - stride);
+		}
 		if (mode === 'redraw-shift') {
 			const stride = grid.w * 4;
 			grid.data.copyWithin(stride, 0, grid.data.length - stride);
@@ -346,6 +350,20 @@ test('Tier 1 does not publish a facing with a visibly different batch palette', 
 	expect(result.review?.clip.out.provenance.map((record) => record.produced.length)).toEqual([
 		3, 3, 2
 	]);
+});
+
+test('Tier 1 sends a shifted first batch to review with the rest it was approved for, never more', async () => {
+	// A shift used to stop the later batches and offer only a paid re-roll of that batch; the review now shows it instead.
+	const f = await fixture('shift-first');
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
+	expect(f.enqueue).toHaveBeenCalledTimes(3);
+	expect(result.saved).toBe(false);
+	expect(f.save).not.toHaveBeenCalled();
+	expect(result.qa.failCalls.get(0)).toEqual(
+		expect.arrayContaining([expect.stringMatching(/^G10 /)])
+	);
+	expect(result.review?.findings).toEqual(expect.arrayContaining([expect.stringMatching(/^G10 /)]));
+	expect(result.review?.replacement).toHaveLength(8);
 });
 
 test('cache-only repair with missing results does not enqueue or change the item', async () => {

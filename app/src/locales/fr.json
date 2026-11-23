@@ -2688,9 +2688,7 @@
 			"currentFrame": "Image actuelle {number}",
 			"redrawnFrame": "Image redessinée {number}",
 			"repairedFrame": "Image réparée {number}"
-		},
-		"rerollBatch": "Relancer ce lot",
-		"rerollBatchDetail": "Les lots précédents restent tels quels. L’estimation couvre ce lot et les suivants, qui n’ont pas encore été achetés."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2707,7 +2705,6 @@
 			"incompleteReferenceFrames": "PixelLab a renvoyé des images de référence ou de pose debout incomplètes. Aucune demande dépendante n’a été envoyée.",
 			"standingFrameSize": "PixelLab a renvoyé une image de pose debout de mauvaise taille. Aucune demande dépendante n’a été envoyée.",
 			"layersMismatch": "Les calques de l’équipement ne correspondent pas à cet emplacement. Aucune génération n’a été demandée.",
-			"repairBatchMisaligned": "Un lot de réparation a renvoyé des images décalées. Les lots restants ont été arrêtés et le visuel existant a été conservé.",
 			"reviewChanged": "Cet équipement ou ses vérifications ont changé. Rouvrez-le avant de valider son visuel actuel.",
 			"paletteReviewChanged": "Cet équipement ou ses couleurs ont changé. Vérifiez de nouveau la mise en correspondance des couleurs.",
 			"paletteSaveChanged": "Cet équipement, le corps ou le matériau a changé. Les couleurs existantes ont été conservées. Vérifiez de nouveau la mise en correspondance.",
@@ -3245,7 +3242,6 @@
 			"dropped": "PixelLab était occupé et a sauté une vue",
 			"joints": "Les articulations sont introuvables sur certaines images",
 			"stopped": "Une requête payée ne s’est pas terminée",
-			"misaligned": "Certaines nouvelles images sont mal alignées",
 			"quality": "Les nouvelles images n’ont pas passé les contrôles de qualité",
 			"changed": "Quelque chose a changé pendant le travail",
 			"missing": "Certains résultats enregistrés ne sont pas sur cet appareil",
@@ -3270,7 +3266,6 @@
 			"dropped": "Patientez un instant, puis réessayez.",
 			"joints": "Ce qui a été payé reste dans Activité. Faites une nouvelle tentative ou partez d’une pose debout plus nette.",
 			"stopped": "Consultez Activité pour voir ce qui s’est passé avant de recommencer.",
-			"misaligned": "Régénérez seulement la partie décalée ou gardez les images actuelles.",
 			"quality": "Vérifiez les résultats, puis gardez-les ou réessayez.",
 			"changed": "Vérifiez de nouveau avant de continuer.",
 			"missing": "Consultez Activité pour voir ce qui est encore enregistré avant de le recréer.",

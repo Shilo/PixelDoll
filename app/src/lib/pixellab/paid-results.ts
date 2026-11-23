@@ -9,8 +9,7 @@ import type { ZipEntry } from '../store/zip.ts';
 import type { Img } from '../image/png.ts';
 
 /** Why a step stopped on completed paid output. `stopped`: the request itself ended without results and replays as such. */
-export type PaidFailure =
-	'overflow' | 'frame-count' | 'empty' | 'dropped' | 'joints' | 'stopped' | 'misaligned';
+export type PaidFailure = 'overflow' | 'frame-count' | 'empty' | 'dropped' | 'joints' | 'stopped';
 export interface PaidStep {
 	/** Flow-defined step, such as `motion` or `render`. */
 	step: string;
@@ -34,14 +33,7 @@ export class PaidStepError extends LocalizedError {
 /** Every way on a review can offer. `enlarge-frame` is a larger frame: Make room and continue for a move (Adjust frame first,
  *  then the same move), or the same paid drawing placed in a larger frame for a new character. */
 export type PaidOptionId =
-	| 'resume'
-	| 'lift'
-	| 'reroll'
-	| 'register'
-	| 'reroll-calls'
-	| 'keep-finished'
-	| 'reroll-batch'
-	| 'enlarge-frame';
+	'resume' | 'lift' | 'reroll' | 'register' | 'reroll-calls' | 'keep-finished' | 'enlarge-frame';
 /** One choice of a review, priced from the request cache: `gens` is 0 when everything it needs is already paid for. */
 export interface PaidOption {
 	id: PaidOptionId;

@@ -96,12 +96,7 @@ import { insertSlotInLadder } from '../lib/items/slots.ts';
 import { app } from '../lib/app.svelte.ts';
 import { localizedPlanRestriction, requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
-import {
-	localizedAutomaticRepairError,
-	REPAIR_BATCH_MISALIGNED,
-	repairBatchMisalignedError,
-	type Method
-} from '../lib/items/items.ts';
+import { localizedAutomaticRepairError, type Method } from '../lib/items/items.ts';
 import type { Key } from '../lib/image/chroma.ts';
 import type {
 	BodyPaletteRepairPlan,
@@ -4004,7 +3999,6 @@ function restoredFlowError(record: FlowDraft<{ activityScope?: string }>, fallba
 	if (raw === STOPPED) return new LocalizedError(raw, 'generation.outcome.stopped');
 	if (raw === SETUP_STOPPED) return new LocalizedError(raw, 'generation.outcome.setupStopped');
 	if (raw === REPAIR_REVIEW_RECOVERY) return new LocalizedError(raw, 'repairReview.recover');
-	if (raw === REPAIR_BATCH_MISALIGNED) return repairBatchMisalignedError();
 	const restriction = localizedPlanRestriction(raw) ?? localizedAutomaticRepairError(raw);
 	if (restriction) return restriction;
 	const resume =

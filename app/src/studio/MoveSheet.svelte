@@ -57,10 +57,6 @@
 		type StateJointFitReview
 	} from './stateJointFit.ts';
 	import {
-		PaidStepError,
-		type PaidReview as PaidReviewData
-	} from '../lib/pixellab/paid-results.ts';
-	import {
 		MOVE_STEPS,
 		b64,
 		bodyMoveIssue,
@@ -674,12 +670,10 @@
 			!moving.spec.replace &&
 			(moving.spec.itemMethod === 'grid'
 				? !!moving.spec.itemReview &&
-					// A misaligned batch replays as misaligned: only a re-roll of that batch can change it.
 					!(
 						[
 							'itemRoute.errors.invalidItemGridSheet',
 							'itemRoute.errors.invalidItemGridLayout',
-							'itemRoute.errors.repairBatchMisaligned',
 							'itemRoute.errors.savedFramesUnavailable'
 						] as const
 					).some((key) => key === errorKey(moving.error)) &&
@@ -817,50 +811,6 @@
 
 	// A new seed while a reviewed request is still at PixelLab would buy that view again before its result is known.
 	const paidRunning = $derived(!!paid?.views.some((view) => view.state === 'running'));
-	// An item repair stopped by a misaligned batch: its earlier batches are kept; only that batch is re-rolled.
-	const batchReview = $derived.by((): (PaidReviewData & { start: string }) | null => {
-		const error = moving.error,
-			spec = moving.spec;
-		if (!mine || !spec || !(error instanceof PaidStepError)) return null;
-		const step = error.paid.step;
-		if (!step.startsWith('grid-batch:')) return null;
-		const records = $queue.jobs.filter(
-			(job) => job.activityScope === spec.activityScope && job.state === 'done'
-		);
-		return {
-			start: step.slice('grid-batch:'.length),
-			views: [],
-			spent: +records.reduce((sum, job) => sum + job.gens, 0).toFixed(2),
-			recordIds: records.map((job) => job.id),
-			options: [
-				{
-					id: 'reroll-batch',
-					label: message('moveSheet.rerollBatch'),
-					detail: message('moveSheet.rerollBatchDetail'),
-					gens: error.paid.gens ?? 0,
-					paid: true,
-					primary: true
-				}
-			]
-		};
-	});
-	function rerollBatch() {
-		if (!moving.spec || !batchReview) return;
-		const projectId = moving.projectId,
-			spec = $state.snapshot(moving.spec),
-			start = batchReview.start;
-		withKey(() => {
-			void startMove(projectId, {
-				...spec,
-				reuseItemFrames: undefined,
-				gridReroll: {
-					...spec.gridReroll,
-					[start]: (spec.gridReroll?.[start] ?? 0) + 1 + Math.floor(Math.random() * 1_000_000)
-				}
-			});
-			ui.sheet = 'move';
-		}, recoveryTier);
-	}
 	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. Make room
 	 *  adjusts the frame first (free; this stopped move waits for it) and then continues the same move. */
 	function choosePaid(option: MovePaidOption) {
@@ -1894,12 +1844,6 @@
 			{#if recoveryChecking}<p class="muted small" role="status">
 					{t('moveSheet.checkingCached')}
 				</p>{/if}
-			{#if batchReview && moving.spec}<PaidReview
-					review={batchReview}
-					name={nice(moving.spec.id)}
-					blocked={!!recoveryAccess.error || tierBlocked(recoveryTier)}
-					onchoose={rerollBatch}
-				/>{/if}
 			{#if paid && moving.spec && (paid.options.length || paid.views.some((view) => view.state !== 'ready'))}<PaidReview
 					review={paid}
 					name={nice(moving.spec.id)}

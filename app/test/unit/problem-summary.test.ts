@@ -25,8 +25,7 @@ test('a paid step failure is summarized by its failure kind, never by its text',
 		'empty',
 		'dropped',
 		'joints',
-		'stopped',
-		'misaligned'
+		'stopped'
 	] as const)
 		expect(kind(paid(failure))).toBe(failure);
 });
@@ -90,7 +89,6 @@ test('every kind has a title and one next step in the catalog', () => {
 		'dropped',
 		'joints',
 		'stopped',
-		'misaligned',
 		'quality',
 		'changed',
 		'missing',

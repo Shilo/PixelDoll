@@ -2618,9 +2618,7 @@
 			"currentFrame": "Frame saat ini {number}",
 			"redrawnFrame": "Frame yang digambar ulang {number}",
 			"repairedFrame": "Frame yang diperbaiki {number}"
-		},
-		"rerollBatch": "Buat ulang batch ini",
-		"rerollBatchDetail": "Batch sebelumnya tetap seperti semula. Perkiraan mencakup batch ini dan batch berikutnya yang belum dibeli."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2637,7 +2635,6 @@
 			"incompleteReferenceFrames": "PixelLab mengembalikan frame referensi atau frame berdiri yang tidak lengkap. Tidak ada permintaan lanjutan yang dikirim.",
 			"standingFrameSize": "PixelLab mengembalikan frame berdiri dengan ukuran yang salah. Tidak ada permintaan lanjutan yang dikirim.",
 			"layersMismatch": "Lapisan perlengkapan tidak cocok dengan slot perlengkapan ini. Tidak ada generasi yang diminta.",
-			"repairBatchMisaligned": "Satu kumpulan perbaikan mengembalikan frame yang tidak sejajar. Kumpulan lainnya dihentikan dan gambar yang ada tetap disimpan.",
 			"reviewChanged": "Item ini atau hasil pemeriksaannya berubah. Buka kembali sebelum menerima gambar saat ini.",
 			"paletteReviewChanged": "Item ini atau warnanya berubah. Tinjau kembali pencocokan warna.",
 			"paletteSaveChanged": "Item, tubuh, atau material berubah. Warna yang ada tetap dipertahankan. Tinjau kembali pencocokan warna.",
@@ -3155,7 +3152,6 @@
 			"dropped": "PixelLab sedang sibuk dan melewatkan satu tampilan",
 			"joints": "Sendi tidak ditemukan pada beberapa frame",
 			"stopped": "Permintaan berbayar tidak selesai",
-			"misaligned": "Beberapa frame baru tidak sejajar",
 			"quality": "Frame baru tidak lolos pemeriksaan kualitas",
 			"changed": "Ada yang berubah saat proses berjalan",
 			"missing": "Beberapa hasil tersimpan tidak ada di perangkat ini",
@@ -3180,7 +3176,6 @@
 			"dropped": "Tunggu sebentar, lalu coba lagi.",
 			"joints": "Apa pun yang sudah dibayar tetap ada di Aktivitas. Coba percobaan baru, atau mulai dari pose berdiri yang lebih jelas.",
 			"stopped": "Periksa Aktivitas untuk melihat apa yang terjadi sebelum memulai lagi.",
-			"misaligned": "Buat ulang hanya bagian yang bergeser, atau simpan gambar yang sudah ada.",
 			"quality": "Tinjau hasilnya, lalu simpan atau coba lagi.",
 			"changed": "Tinjau lagi sebelum melanjutkan.",
 			"missing": "Periksa Aktivitas untuk melihat apa yang masih tersimpan sebelum membuatnya lagi.",

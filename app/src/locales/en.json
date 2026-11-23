@@ -2688,9 +2688,7 @@
 			"currentFrame": "Current frame {number}",
 			"redrawnFrame": "Redrawn frame {number}",
 			"repairedFrame": "Repaired frame {number}"
-		},
-		"rerollBatch": "Re-roll this batch",
-		"rerollBatchDetail": "The earlier batches stay as they are. The estimate covers this batch and the ones after it, which were not bought yet."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2707,7 +2705,6 @@
 			"incompleteReferenceFrames": "PixelLab returned incomplete reference or standing frames. No dependent request was sent.",
 			"standingFrameSize": "PixelLab returned a standing frame of the wrong size. No dependent request was sent.",
 			"layersMismatch": "Equipment layers do not match this slot. No generation was requested.",
-			"repairBatchMisaligned": "A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.",
 			"reviewChanged": "This item or its checks changed. Reopen it before accepting its current artwork.",
 			"paletteReviewChanged": "This item or its colors changed. Review the color match again.",
 			"paletteSaveChanged": "This item, body or material changed. Existing colors were kept; review again.",
@@ -3245,7 +3242,6 @@
 			"dropped": "PixelLab was busy and skipped a view",
 			"joints": "Joints could not be found on some frames",
 			"stopped": "A paid request did not finish",
-			"misaligned": "Some new frames do not line up",
 			"quality": "The new frames did not pass the quality checks",
 			"changed": "Something changed while this was working",
 			"missing": "Some saved results are not on this device",
@@ -3270,7 +3266,6 @@
 			"dropped": "Wait a moment, then try again.",
 			"joints": "Anything paid stays in Activity. Try a new attempt, or start from a clearer standing pose.",
 			"stopped": "Check Activity to see what happened before starting again.",
-			"misaligned": "Re-roll only the part that is off, or keep the artwork you have.",
 			"quality": "Review the results, then keep them or try again.",
 			"changed": "Review it again before continuing.",
 			"missing": "Check Activity for what is still saved before making it again.",

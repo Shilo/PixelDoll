@@ -80,8 +80,7 @@ const KEYS: Readonly<Record<string, ProblemKind>> = {
 	'generation.outcome.noFrames': 'empty',
 	'generation.outcome.standingFrames': 'frame-count',
 	'genCard.declined': 'declined',
-	'create.sheet.declined': 'declined',
-	'itemRoute.errors.repairBatchMisaligned': 'misaligned'
+	'create.sheet.declined': 'declined'
 };
 
 const API_KINDS: Readonly<Record<ErrorKind, ProblemKind>> = {

@@ -2688,9 +2688,7 @@
 			"currentFrame": "Fotograma actual {number}",
 			"redrawnFrame": "Fotograma redibujado {number}",
 			"repairedFrame": "Fotograma reparado {number}"
-		},
-		"rerollBatch": "Volver a generar este lote",
-		"rerollBatchDetail": "Los lotes anteriores se quedan como están. La estimación incluye este lote y los siguientes, que aún no se compraron."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2707,7 +2705,6 @@
 			"incompleteReferenceFrames": "PixelLab devolvió fotogramas de referencia o de pie incompletos. No se envió ninguna solicitud dependiente.",
 			"standingFrameSize": "PixelLab devolvió un fotograma de pie con el tamaño incorrecto. No se envió ninguna solicitud dependiente.",
 			"layersMismatch": "Las capas del equipamiento no coinciden con esta ranura. No se solicitó ninguna generación.",
-			"repairBatchMisaligned": "Un lote de reparación devolvió fotogramas desalineados. Se detuvieron los lotes restantes y se conservaron las imágenes anteriores.",
 			"reviewChanged": "Este objeto o sus comprobaciones han cambiado. Vuelve a abrirlo antes de aceptar sus imágenes actuales.",
 			"paletteReviewChanged": "Este objeto o sus colores han cambiado. Vuelve a revisar el ajuste de colores.",
 			"paletteSaveChanged": "El objeto, el cuerpo o el material ha cambiado. Se conservaron los colores existentes. Vuelve a revisar el ajuste.",
@@ -3245,7 +3242,6 @@
 			"dropped": "PixelLab estaba ocupado y omitió una vista",
 			"joints": "No se encontraron articulaciones en algunos fotogramas",
 			"stopped": "Una solicitud pagada no terminó",
-			"misaligned": "Algunos fotogramas nuevos no están alineados",
 			"quality": "Los fotogramas nuevos no pasaron los controles de calidad",
 			"changed": "Algo cambió mientras se trabajaba",
 			"missing": "Algunos resultados guardados no están en este dispositivo",
@@ -3270,7 +3266,6 @@
 			"dropped": "Espera un momento y vuelve a intentarlo.",
 			"joints": "Lo pagado sigue en Actividad. Haz un intento nuevo o parte de una pose de pie más clara.",
 			"stopped": "Revisa en Actividad qué pasó antes de volver a empezar.",
-			"misaligned": "Vuelve a generar solo la parte desalineada o conserva el arte que tienes.",
 			"quality": "Revisa los resultados y luego consérvalos o vuelve a intentarlo.",
 			"changed": "Vuelve a revisarlo antes de continuar.",
 			"missing": "Revisa en Actividad lo que sigue guardado antes de volver a crearlo.",

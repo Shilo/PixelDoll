@@ -119,6 +119,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Historical item QA.** Older saved items lack replaceable checks; after an edit they stay marked for review with an
   explicit incomplete-check notice. Retained historical totals may omit old additions or include replaced frames until
   all older coverage is replaced. No paid recheck or silent reconstruction is performed.
+- **A shifted repair batch does not stop the rest of the repair.** When a batch of a split equipment repair comes back
+  1 px off, the remaining batches still run, then the whole repair waits in its review with the shift listed (G10):
+  Keep current leaves the item as it was, Use repair keeps the new frames with that warning. Spending no longer stops
+  early after a shift; those batches were priced and approved when the repair started, and nothing is sent beyond them.
 - **A few item colors have no safe key color.** Items are drawn on a single-color stand-in body (green, else magenta, else
   blue, else azure) and separated by that color. An item whose words ban all four keys keeps magenta, and parts in those
   colors can be removed as if they were background. Two words can be enough ("a teal and red tunic": teal bans green, blue

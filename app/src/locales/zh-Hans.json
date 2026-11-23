@@ -2618,9 +2618,7 @@
 			"currentFrame": "当前第 {number} 帧",
 			"redrawnFrame": "重绘后的第 {number} 帧",
 			"repairedFrame": "修复后的第 {number} 帧"
-		},
-		"rerollBatch": "重新生成此批次",
-		"rerollBatchDetail": "之前的批次保持不变。估算包括此批次以及之后尚未购买的批次。"
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2637,7 +2635,6 @@
 			"incompleteReferenceFrames": "PixelLab 返回的参考帧或站立帧不完整。未发送后续请求。",
 			"standingFrameSize": "PixelLab 返回的站立帧尺寸错误。未发送后续请求。",
 			"layersMismatch": "装备图层与此装备栏不匹配。未请求生成。",
-			"repairBatchMisaligned": "一个修复批次返回了未对齐的帧。其余批次已停止，现有图像已保留。",
 			"reviewChanged": "此装备或其检查结果已更改。请重新打开装备，再接受当前图像。",
 			"paletteReviewChanged": "此装备或其颜色已更改。请重新检查配色。",
 			"paletteSaveChanged": "装备、身体或材质已更改。现有颜色已保留。请重新检查配色。",
@@ -3155,7 +3152,6 @@
 			"dropped": "PixelLab 繁忙，跳过了一个朝向",
 			"joints": "部分帧未找到关节",
 			"stopped": "一个付费请求未完成",
-			"misaligned": "部分新帧没有对齐",
 			"quality": "新帧未通过质量检查",
 			"changed": "处理期间有内容发生了变化",
 			"missing": "部分已保存的结果不在此设备上",
@@ -3180,7 +3176,6 @@
 			"dropped": "请稍等片刻后重试。",
 			"joints": "已付费的内容会保留在“活动”中。请重新尝试，或从更清晰的站立姿势开始。",
 			"stopped": "重新开始前，请在“活动”中查看发生了什么。",
-			"misaligned": "只重新生成偏移的部分，或保留现有图像。",
 			"quality": "请查看结果，然后保留或重试。",
 			"changed": "继续前请重新查看。",
 			"missing": "重新制作前，请在“活动”中查看仍保存的内容。",

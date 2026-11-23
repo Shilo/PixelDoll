@@ -87,7 +87,6 @@ import {
 	g2Fails,
 	automaticRepairError,
 	localizedAutomaticRepairError,
-	REPAIR_BATCH_MISALIGNED,
 	grayShare,
 	smudgedViews,
 	sharedDesignColors,
@@ -133,7 +132,6 @@ import {
 	message,
 	type LoggedMessage
 } from '../message.ts';
-import { PaidStepError } from '../pixellab/paid-results.ts';
 import { localizedPlanRestriction } from '../pixellab/plans.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
@@ -2561,9 +2559,7 @@ export async function regridClip(
 	preferTierOne = false,
 	activityScope?: string,
 	savedOnly = false,
-	redraw = false,
-	/** Seed salts by batch start, from a review that re-rolls only a misaligned batch; other batches reuse their records. */
-	batchSalt?: Readonly<Record<string, number>>
+	redraw = false
 ): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[]; review?: RepairReview }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -2585,7 +2581,7 @@ export async function regridClip(
 				{ length: batch.count },
 				(_, index) => `${anim}/${dir}/${batch.start + index}`
 			);
-			const batchSeed = seedN + batch.start + (batchSalt?.[batch.start] ?? 0);
+			const batchSeed = seedN + batch.start;
 			const maskRequest = await gridRepairRequest(
 				ctx,
 				item,
@@ -2672,18 +2668,8 @@ export async function regridClip(
 		);
 		if ('blocked' in result)
 			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
-		if (index < requests.length - 1 && result.cells.some((cell) => cell.shifted))
-			throw new PaidStepError(
-				REPAIR_BATCH_MISALIGNED,
-				'itemRoute.errors.repairBatchMisaligned',
-				undefined,
-				{
-					step: `grid-batch:${request.start}`,
-					failure: 'misaligned',
-					// this batch again plus the later batches it stopped before buying
-					gens: requests.slice(index).reduce((sum, batch) => sum + batch.gens, 0)
-				}
-			);
+		// A shifted batch is flagged G10 (itemQa) and lands in the review with the rest of the approved, already priced
+		// batches: stopping them offered only a paid re-roll and left the bought frames unusable.
 		cells.push(...result.cells);
 		provenance.push(result.prov);
 		if (result.registrationIssue) registrationFindings.push(result.registrationIssue);

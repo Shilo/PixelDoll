@@ -2688,9 +2688,7 @@
 			"currentFrame": "Geçerli kare {number}",
 			"redrawnFrame": "Yeniden çizilen kare {number}",
 			"repairedFrame": "Onarılan kare {number}"
-		},
-		"rerollBatch": "Bu grubu yeniden oluştur",
-		"rerollBatchDetail": "Önceki gruplar olduğu gibi kalır. Tahmin bu grubu ve henüz satın alınmamış sonraki grupları kapsar."
+		}
 	},
 	"itemRoute": {
 		"errors": {
@@ -2707,7 +2705,6 @@
 			"incompleteReferenceFrames": "PixelLab eksik referans veya ayakta duruş kareleri döndürdü. Bağımlı istek gönderilmedi.",
 			"standingFrameSize": "PixelLab yanlış boyutta bir ayakta duruş karesi döndürdü. Bağımlı istek gönderilmedi.",
 			"layersMismatch": "Ekipman katmanları bu ekipman yuvasıyla eşleşmiyor. Üretim isteği gönderilmedi.",
-			"repairBatchMisaligned": "Bir onarım partisi hizasız kareler döndürdü. Kalan partiler durduruldu ve mevcut görsel korundu.",
 			"reviewChanged": "Bu öğe veya denetimleri değişti. Mevcut görseli kabul etmeden önce öğeyi yeniden açın.",
 			"paletteReviewChanged": "Bu öğe veya renkleri değişti. Renk eşlemesini yeniden inceleyin.",
 			"paletteSaveChanged": "Öğe, gövde veya malzeme değişti. Mevcut renkler korundu. Renk eşlemesini yeniden inceleyin.",
@@ -3242,7 +3239,6 @@
 			"dropped": "PixelLab meşguldü ve bir görünümü atladı",
 			"joints": "Bazı karelerde eklemler bulunamadı",
 			"stopped": "Ücretli bir istek tamamlanmadı",
-			"misaligned": "Bazı yeni kareler hizalı değil",
 			"quality": "Yeni kareler kalite kontrollerini geçemedi",
 			"changed": "İşlem sürerken bir şey değişti",
 			"missing": "Kayıtlı bazı sonuçlar bu cihazda yok",
@@ -3267,7 +3263,6 @@
 			"dropped": "Biraz bekleyin, sonra yeniden deneyin.",
 			"joints": "Ödenen her şey Etkinlik’te kalır. Yeni bir deneme yapın ya da daha net bir ayakta duruş pozundan başlayın.",
 			"stopped": "Yeniden başlamadan önce ne olduğunu Etkinlik bölümünde kontrol edin.",
-			"misaligned": "Yalnızca kayan kısmı yeniden oluşturun veya mevcut çizimleri tutun.",
 			"quality": "Sonuçları inceleyin, sonra tutun veya yeniden deneyin.",
 			"changed": "Devam etmeden önce yeniden inceleyin.",
 			"missing": "Yeniden oluşturmadan önce hâlâ kayıtlı olanları Etkinlik bölümünde kontrol edin.",
