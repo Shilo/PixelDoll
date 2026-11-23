@@ -160,6 +160,27 @@ test('a failed pose call re-rolls alone at its own price, and the finished stand
 	expect(finishedPart(draft, walking, result)).toBeUndefined();
 });
 
+test('keeping the finished moves of a posed item keeps its dressed standing views', () => {
+	const { draft, result } = fixture();
+	const walking: Rig = {
+		...rig,
+		animations: [
+			...rig.animations,
+			{ id: 'walk', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }
+		]
+	};
+	draft.spec = { ...draft.spec, anims: ['idle', 'walk'], standing: 'idle', method: 'skel' };
+	draft.calls = [
+		{ kind: 'dress', cells: ['rest/south/0'], seed: 1, recId: 'current', old: [], rerolls: 0 },
+		{ kind: 'pose', cells: ['idle/south/0'], seed: 2, recId: 'idle', old: [], rerolls: 0 },
+		{ kind: 'pose', cells: ['walk/south/0'], seed: 3, recId: 'walk', old: [], rerolls: 0 }
+	];
+	ledger.records.push(record('idle', 3, 0), { ...record('walk', 3, 0), state: 'failed' });
+	const finished = finishedPart(draft, walking, result)!;
+	expect(finished.spec.anims).toEqual(['idle']);
+	expect(finished.calls.map((call) => call.recId)).toEqual(['current', 'idle']);
+});
+
 test.each([
 	'G1 1 outputs for 2 requested frames',
 	'G1 grid 128x64, expected 256x64',

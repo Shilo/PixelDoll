@@ -128,7 +128,7 @@ import { PaidStepError } from '../pixellab/paid-results.ts';
 import { localizedPlanRestriction } from '../pixellab/plans.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
-export interface CallState {
+interface CallState {
 	cells: string[];
 	seed: number;
 	recId?: string;
@@ -253,8 +253,7 @@ export function draftMinimumTier(draft: Draft, rig: Rig): number {
 // ---------- ledger access ----------
 let jobs: JobRec[] = [];
 queue.subscribe((s) => (jobs = s.jobs));
-export const recIn = (list: JobRec[], id?: string) =>
-	id ? list.find((j) => j.id === id) : undefined;
+const recIn = (list: JobRec[], id?: string) => (id ? list.find((j) => j.id === id) : undefined);
 const recOf = (id?: string) => recIn(jobs, id);
 const terminal = (r?: JobRec) => !!r && !['queued', 'submitting', 'running'].includes(r.state);
 const settled = (id: string, signal?: AbortSignal) =>
@@ -296,7 +295,7 @@ function chunkOuts(
 	);
 }
 /** B16: the dressed keyframe output per rest cell over every dress chunk (all must be done). */
-export function dressedOf(
+function dressedOf(
 	calls: CallState[],
 	rec: (id?: string) => JobRec | undefined = recOf
 ): Map<string, { sha: string }> {
@@ -797,7 +796,10 @@ export function finishedPart(d: Draft, rig: Rig, r: ItemResult): Draft | undefin
 				? { clipDirs: Object.fromEntries(complete.map((a) => [a, d.spec.clipDirs![a]])) }
 				: {})
 		},
-		calls: structuredClone(d.calls.filter((c) => c.cells.some(inside)))
+		// Dressed standing views (rest/* cells) and the first call, which later calls anchor to, serve every kept move.
+		calls: structuredClone(
+			d.calls.filter((c, k) => k === 0 || c.kind === 'dress' || c.cells.some(inside))
+		)
 	};
 }
 export const failsOf = (res: ItemResult, k: number) => [
