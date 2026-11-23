@@ -524,6 +524,7 @@
 			"other": "Harmoniser {pixels} avec la palette de l’objet dans {n} images enregistrées de {move} (direction : {direction})."
 		},
 		"colorMatchFixed": "Les autres vues, animations, matières et recolorations enregistrées restent inchangées.",
+		"colorMatchMissing": "Les images {frames} n’ont pas encore de dessin, elles sont donc ignorées.",
 		"colorMatchUnmatched": {
 			"one": "{n} pixel éligible sans correspondance reste inchangé.",
 			"other": "{n} pixels éligibles sans correspondance restent inchangés."

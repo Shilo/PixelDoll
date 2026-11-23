@@ -524,6 +524,7 @@
 			"other": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherte Frames in {move}, Blickrichtung {direction}."
 		},
 		"colorMatchFixed": "Andere Ansichten, Animationen, Materialien und gespeicherte Farbänderungen bleiben unverändert.",
+		"colorMatchMissing": "Die Frames {frames} haben noch keine Grafik und werden ausgelassen.",
 		"colorMatchUnmatched": {
 			"one": "{n} geeigneter Pixel ohne passende Farbe bleibt unverändert.",
 			"other": "{n} geeignete Pixel ohne passende Farbe bleiben unverändert."

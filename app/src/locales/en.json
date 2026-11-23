@@ -524,6 +524,7 @@
 			"other": "Match {pixels} in {n} saved {move} frames facing {direction} to the item’s existing color palette."
 		},
 		"colorMatchFixed": "Other views, moves, materials and saved recolors stay fixed.",
+		"colorMatchMissing": "Frames {frames} have no art yet, so they are left out.",
 		"colorMatchUnmatched": {
 			"one": "{n} unmatched eligible pixel stays unchanged.",
 			"other": "{n} unmatched eligible pixels stay unchanged."

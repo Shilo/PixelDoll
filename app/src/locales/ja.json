@@ -512,6 +512,7 @@
 			"other": "{direction}向きの保存済み{move}の{n}フレームで、{pixels}をアイテムの既存のカラーパレットに合わせます。"
 		},
 		"colorMatchFixed": "他の向きやモーション、素材、保存済みの配色は変わりません。",
+		"colorMatchMissing": "フレーム {frames} にはまだ絵がないため、対象外です。",
 		"colorMatchUnmatched": {
 			"other": "対象のうち一致しなかった{n}ピクセルは変更されません。"
 		},

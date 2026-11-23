@@ -512,6 +512,7 @@
 			"other": "将朝向{direction}的 {n} 个已保存{move}帧中的 {pixels} 匹配到装备现有的调色板。"
 		},
 		"colorMatchFixed": "其他视图、动作、材质和已保存的重新上色保持不变。",
+		"colorMatchMissing": "第 {frames} 帧还没有图像，因此不包括在内。",
 		"colorMatchUnmatched": {
 			"other": "有 {n} 个未匹配的可用像素保持不变。"
 		},

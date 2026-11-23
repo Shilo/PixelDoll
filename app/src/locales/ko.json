@@ -512,6 +512,7 @@
 			"other": "{direction} 방향으로 저장된 {move} 프레임 {n}개에서 아이템의 기존 색상 팔레트에 맞춰요: {pixels}."
 		},
 		"colorMatchFixed": "다른 뷰, 동작, 재질, 저장된 색상 변경은 그대로예요.",
+		"colorMatchMissing": "프레임 {frames}에는 아직 그림이 없어서 제외돼요.",
 		"colorMatchUnmatched": {
 			"other": "일치하지 않는 대상 픽셀 {n}개는 그대로 남아요."
 		},

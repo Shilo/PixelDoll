@@ -3036,6 +3036,8 @@ export interface ItemPaletteRepairPlan {
 	changedPixels: number;
 	changedFrames: number[];
 	unmatchedPixels: number;
+	/** Frames of the view the item has no art for: matching runs on the others, and the review names these. */
+	missingFrames: number[];
 }
 const paletteVersion = (rec: StoredProject, itemId: string) => {
 	const item = rec.manifest.items.find((entry) => entry.id === itemId);
@@ -3078,7 +3080,9 @@ async function prepareItemPalette(
 		unmatchedPixels = 0;
 	for (const [j, layer] of item.layers.entries()) {
 		const row = layer.cells?.[anim]?.[dir];
-		if (!row || row.length !== count)
+		// A layer without frames in this view has nothing to match; a row of another length is malformed.
+		if (!row) continue;
+		if (row.length !== count)
 			throw new Error('Color matching needs every stored frame in this view.');
 		for (const [i, before] of row.entries()) {
 			if (!before) continue;
@@ -3113,7 +3117,10 @@ async function prepareItemPalette(
 		materialId: matcher.materialId,
 		changedPixels,
 		changedFrames: edits.map((f) => f.cell),
-		unmatchedPixels
+		unmatchedPixels,
+		missingFrames: Array.from({ length: count }, (_, i) => i).filter(
+			(i) => item.coverage && !item.coverage.includes(cellKey(anim, dir, i) as CellKey)
+		)
 	};
 	next.paletteRepairs = [
 		...(next.paletteRepairs ?? []),

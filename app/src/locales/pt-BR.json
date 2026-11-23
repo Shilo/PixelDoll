@@ -524,6 +524,7 @@
 			"other": "Ajuste {pixels} em {n} quadros salvos de {move} na direção {direction} à paleta atual do item."
 		},
 		"colorMatchFixed": "As demais vistas, animações, materiais e alterações de cor salvas não mudam.",
+		"colorMatchMissing": "Os quadros {frames} ainda não têm arte, então ficam de fora.",
 		"colorMatchUnmatched": {
 			"one": "{n} pixel elegível sem cor correspondente permanece como está.",
 			"other": "{n} pixels elegíveis sem cor correspondente permanecem como estão."

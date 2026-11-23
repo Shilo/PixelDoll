@@ -524,6 +524,7 @@
 			"other": "Ajusta {pixels} a la paleta actual del objeto en {n} fotogramas guardados de {move} en dirección {direction}."
 		},
 		"colorMatchFixed": "Las demás vistas, animaciones, materiales y cambios de color guardados no cambian.",
+		"colorMatchMissing": "Los fotogramas {frames} aún no tienen arte, así que se omiten.",
 		"colorMatchUnmatched": {
 			"one": "{n} píxel apto sin coincidencia se queda igual.",
 			"other": "{n} píxeles aptos sin coincidencia se quedan igual."

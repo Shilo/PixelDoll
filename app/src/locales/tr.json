@@ -524,6 +524,7 @@
 			"other": "{move} animasyonunun {direction} yönünde kayıtlı {n} karedeki şu pikselleri eşyanın mevcut paletiyle eşleştirin: {pixels}."
 		},
 		"colorMatchFixed": "Diğer görünümler, animasyonlar, malzemeler ve kayıtlı renk değişiklikleri korunur.",
+		"colorMatchMissing": "{frames} karelerinde henüz çizim yok, bu yüzden dışarıda bırakıldı.",
 		"colorMatchUnmatched": {
 			"one": "Eşleşmeyen {n} uygun piksel değişmez.",
 			"other": "Eşleşmeyen {n} uygun piksel değişmez."

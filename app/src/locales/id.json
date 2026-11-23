@@ -512,6 +512,7 @@
 			"other": "Cocokkan {pixels} dalam {n} frame tersimpan dari animasi {move} yang menghadap {direction} dengan palet warna item yang sudah ada."
 		},
 		"colorMatchFixed": "Tampilan lain, animasi lain, material, dan pewarnaan ulang yang tersimpan tidak berubah.",
+		"colorMatchMissing": "Frame {frames} belum punya gambar, jadi tidak disertakan.",
 		"colorMatchUnmatched": {
 			"other": "{n} piksel yang memenuhi syarat tetapi tidak cocok tetap sama."
 		},
