@@ -1937,6 +1937,7 @@
 		"characterSetup": "Character setup",
 		"error": {
 			"jobMissing": "PixelLab no longer has the job. Its results were not saved, and it may have charged you.",
+			"unreadable": "This saved request could not be read. It was not sent again; its result and cost are unknown, so check pixellab.ai.",
 			"malformed": "PixelLab sent a malformed result ({error}). The request may have charged you.",
 			"download": "Result download failed after {count} attempts: {error}. Download manually: {urls}",
 			"closedDuringSubmit": "PixelDoll closed while sending the request. The job may have run; check pixellab.ai. The request was not resent.",

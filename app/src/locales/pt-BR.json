@@ -1945,6 +1945,7 @@
 		"characterSetup": "Configuração do personagem",
 		"error": {
 			"jobMissing": "A tarefa não está mais disponível no PixelLab. Os resultados não foram salvos e a tarefa pode ter sido cobrada.",
+			"unreadable": "Não foi possível ler esta solicitação salva. Ela não foi enviada de novo; o resultado e o custo são desconhecidos, então confira pixellab.ai.",
 			"malformed": "O PixelLab enviou um resultado com formato inválido ({error}). A solicitação pode ter sido cobrada.",
 			"download": "Não foi possível baixar o resultado após {count} tentativas: {error}. Baixe manualmente: {urls}",
 			"closedDuringSubmit": "O PixelDoll foi fechado enquanto enviava a solicitação. A tarefa pode ter sido executada. Confira em pixellab.ai. A solicitação não foi reenviada.",

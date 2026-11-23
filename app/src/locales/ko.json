@@ -1879,6 +1879,7 @@
 		"characterSetup": "캐릭터 설정",
 		"error": {
 			"jobMissing": "PixelLab에 더 이상 이 작업이 없어요. 결과는 저장되지 않았고, 요금이 청구되었을 수 있어요.",
+			"unreadable": "저장된 이 요청을 읽을 수 없어요. 다시 보내지 않았어요. 결과와 비용을 알 수 없으니 pixellab.ai를 확인하세요.",
 			"malformed": "PixelLab이 잘못된 형식의 결과를 보냈어요({error}). 이 요청으로 요금이 청구되었을 수 있어요.",
 			"download": "결과 다운로드가 {count}회 실패했어요: {error}. 직접 다운로드하세요: {urls}",
 			"closedDuringSubmit": "요청을 보내는 중에 PixelDoll이 닫혔어요. 작업이 실행되었을 수 있으니 pixellab.ai에서 확인하세요. 요청은 다시 보내지 않았어요.",

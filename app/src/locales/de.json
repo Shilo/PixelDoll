@@ -1937,6 +1937,7 @@
 		"characterSetup": "Figur einrichten",
 		"error": {
 			"jobMissing": "PixelLab hat den Auftrag nicht mehr. Die Ergebnisse wurden nicht gespeichert. Für den Auftrag sind möglicherweise Kosten angefallen.",
+			"unreadable": "Diese gespeicherte Anfrage konnte nicht gelesen werden. Sie wurde nicht erneut gesendet; Ergebnis und Kosten sind unbekannt, prüfe also pixellab.ai.",
 			"malformed": "PixelLab hat ein Ergebnis in einem fehlerhaften Format gesendet ({error}). Für die Anfrage sind möglicherweise Kosten angefallen.",
 			"download": "Das Ergebnis konnte nach {count} Versuchen nicht heruntergeladen werden: {error}. Lade es manuell herunter: {urls}",
 			"closedDuringSubmit": "PixelDoll wurde beim Senden der Anfrage geschlossen. Der Auftrag wurde möglicherweise ausgeführt. Sieh auf pixellab.ai nach. Die Anfrage wurde nicht erneut gesendet.",

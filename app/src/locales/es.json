@@ -1937,6 +1937,7 @@
 		"characterSetup": "Configuración del personaje",
 		"error": {
 			"jobMissing": "PixelLab ya no tiene el trabajo. Sus resultados no se guardaron y es posible que se te haya cobrado.",
+			"unreadable": "No se pudo leer esta solicitud guardada. No se volvió a enviar; su resultado y su costo son desconocidos, así que revisa pixellab.ai.",
 			"malformed": "PixelLab envió un resultado con formato incorrecto ({error}). Es posible que la solicitud se te haya cobrado.",
 			"download": "La descarga del resultado falló tras {count} intentos: {error}. Descárgalo manualmente: {urls}",
 			"closedDuringSubmit": "PixelDoll se cerró mientras enviaba la solicitud. Es posible que el trabajo se haya ejecutado; revisa pixellab.ai. La solicitud no se volvió a enviar.",

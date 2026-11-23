@@ -1937,6 +1937,7 @@
 		"characterSetup": "Configuration du personnage",
 		"error": {
 			"jobMissing": "PixelLab ne trouve plus la tâche. Ses résultats n’ont pas été enregistrés et la tâche a peut-être été facturée.",
+			"unreadable": "Cette requête enregistrée est illisible. Elle n’a pas été renvoyée ; son résultat et son coût sont inconnus, vérifiez donc pixellab.ai.",
 			"malformed": "PixelLab a renvoyé un résultat au format incorrect ({error}). La requête a peut-être été facturée.",
 			"download": "Le téléchargement du résultat a échoué après {count} tentatives : {error}. Téléchargez-le manuellement : {urls}",
 			"closedDuringSubmit": "PixelDoll s’est fermé pendant l’envoi de la requête. La tâche a peut-être été exécutée ; vérifiez sur pixellab.ai. La requête n’a pas été renvoyée.",

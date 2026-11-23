@@ -1937,6 +1937,7 @@
 		"characterSetup": "Karakter kurulumu",
 		"error": {
 			"jobMissing": "Bu iş artık PixelLab sisteminde yok. Sonuçları kaydedilmedi ve ücretlendirilmiş olabilirsiniz.",
+			"unreadable": "Kayıtlı bu istek okunamadı. Yeniden gönderilmedi; sonucu ve maliyeti bilinmiyor, bu yüzden pixellab.ai adresini kontrol edin.",
 			"malformed": "PixelLab hatalı biçimli bir sonuç gönderdi ({error}). İstek ücretlendirilmiş olabilir.",
 			"download": "Sonuç indirme {count} denemeden sonra başarısız oldu: {error}. Elle indirin: {urls}",
 			"closedDuringSubmit": "PixelDoll istek gönderilirken kapandı. İş çalışmış olabilir; pixellab.ai adresini kontrol edin. İstek yeniden gönderilmedi.",

@@ -1879,6 +1879,7 @@
 		"characterSetup": "角色设置",
 		"error": {
 			"jobMissing": "PixelLab 已不再保留该任务。其结果未保存，可能已向你计费。",
+			"unreadable": "无法读取此已保存的请求。它未被重新发送；其结果和费用未知，请查看 pixellab.ai。",
 			"malformed": "PixelLab 返回了格式错误的结果（{error}）。该请求可能已向你计费。",
 			"download": "结果下载在 {count} 次尝试后失败：{error}。请手动下载：{urls}",
 			"closedDuringSubmit": "发送请求时 PixelDoll 已关闭。任务可能已运行；请查看 pixellab.ai。请求未重新发送。",

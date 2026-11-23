@@ -1879,6 +1879,7 @@
 		"characterSetup": "Penyiapan karakter",
 		"error": {
 			"jobMissing": "Pekerjaan ini sudah tidak ada di PixelLab. Hasilnya tidak disimpan, dan Anda mungkin sudah dikenai biaya.",
+			"unreadable": "Permintaan tersimpan ini tidak dapat dibaca. Permintaan tidak dikirim ulang; hasil dan biayanya tidak diketahui, jadi periksa pixellab.ai.",
 			"malformed": "PixelLab mengirim hasil yang formatnya rusak ({error}). Permintaan ini mungkin sudah dikenai biaya.",
 			"download": "Pengunduhan hasil gagal setelah {count} percobaan: {error}. Unduh secara manual: {urls}",
 			"closedDuringSubmit": "PixelDoll tertutup saat mengirim permintaan. Pekerjaan mungkin sudah berjalan; periksa pixellab.ai. Permintaan tidak dikirim ulang.",
