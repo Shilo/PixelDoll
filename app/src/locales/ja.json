@@ -117,7 +117,13 @@
 		"saveFailed": "この設定を保存できませんでした。もう一度お試しください。",
 		"incompatible": "フレーム数を自動にするか、新しいモデルが対応する数を選択してください。",
 		"framesHelp": "選べるフレーム数はキャラクターのキャンバスサイズによって異なります。",
-		"methodHelp": "対応している場合は「{pose}」、それ以外の場合は「{edit}」を使用します。"
+		"methodHelp": "対応している場合は「{pose}」、それ以外の場合は「{edit}」を使用します。",
+		"itemDrawing": "モーション上のアイテム",
+		"itemDrawingHelp": "モーションのフレームに描くと、アイテムがモーション自体の絵に合います。別の体でポーズを付けると、アイテムを個別にアニメーションさせるため、数ピクセルずれることがあります。",
+		"itemDrawings": {
+			"anchor": "モーションのフレームに描く",
+			"skeleton": "別の体でポーズを付ける"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "乗り物のプレビューを再生",
@@ -2613,6 +2619,8 @@
 		"motionOnly": "体の動きだけを説明してください。武器や小道具はアイテムとして追加します。",
 		"motionModel": "モーションのモデル",
 		"motionModelHelp": "Skeleton v3 は体と装備に同じポーズを使います。V3 と PixMiniMax は先に体を描き、その後 PixelDoll が装備用のポーズを検出します。",
+		"itemDrawing": "このモーションのアイテム",
+		"itemDrawingDefault": "デフォルト（{method}）",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",

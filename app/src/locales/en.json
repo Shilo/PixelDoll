@@ -122,7 +122,13 @@
 		"saveFailed": "Could not save this choice. Try again.",
 		"incompatible": "Set Frames to Automatic or choose a count supported by the new model.",
 		"framesHelp": "Available frame counts depend on the character canvas size.",
-		"methodHelp": "Uses {pose} when supported. Otherwise, uses {edit}."
+		"methodHelp": "Uses {pose} when supported. Otherwise, uses {edit}.",
+		"itemDrawing": "Items on moves",
+		"itemDrawingHelp": "Drawing on move frames fits items to the move's own art. Posing a separate body animates items on their own, so they can drift a few pixels.",
+		"itemDrawings": {
+			"anchor": "Draw on move frames",
+			"skeleton": "Pose a separate body"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Play mount preview",
@@ -2683,6 +2689,8 @@
 		"motionOnly": "Describe body motion only. Add weapons and props as items.",
 		"motionModel": "Motion model",
 		"motionModelHelp": "Skeleton v3 uses shared poses for the body and equipment. V3 and PixMiniMax draw the body first, then PixelDoll finds poses for equipment.",
+		"itemDrawing": "Items on this move",
+		"itemDrawingDefault": "Default ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",

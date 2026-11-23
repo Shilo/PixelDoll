@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import Stage from './Stage.svelte';
 	import Sheet from './Sheet.svelte';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
@@ -60,7 +61,9 @@
 	const poseSpecs = $derived(
 		m && anim
 			? missing.flatMap((item) => {
-					const spec = missingItemMoves(m, item.id, 0).find((s) => s.id === anim.id);
+					const spec = missingItemMoves(m, item.id, currentItemDrawing(), 0).find(
+						(s) => s.id === anim.id
+					);
 					const dirs = spec?.dirs?.filter((dir) => missingDirs(item).includes(dir));
 					return spec && dirs?.length ? [{ ...spec, dirs }] : [];
 				})

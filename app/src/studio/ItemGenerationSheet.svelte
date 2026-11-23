@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import { untrack } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import Sheet from './Sheet.svelte';
@@ -24,7 +25,7 @@
 		return clipMissingItems(manifest, clipId).map((item) =>
 			busyFor(item.id)
 				? { item, offer: null, note: t('itemGeneration.inProgress') }
-				: { item, offer: clipItemOffer(manifest, item.id, clipId) }
+				: { item, offer: clipItemOffer(manifest, item.id, clipId, currentItemDrawing()) }
 		);
 	});
 	const { chosen, gens: total, specs } = $derived(pickedOffers(rows, selected));

@@ -557,10 +557,17 @@ const copy = (translate?: Translate) => (text: string, key: WhisperKey, vars?: W
 
 /**
  * Review reasons for a saved item. Saved QA keeps numbers, not messages, so numeric gates are named only for parts that did
- * not pass, at the limit that part was gated with: skeleton items and posed frames allow more key outside the body than
- * other dressed views, and actions skip the size check. A passing part never lists a reason.
+ * not pass, at the limit that part was gated with: posed frames and a skeleton item's standing views allow more key outside
+ * the body than other dressed views (a skeleton item's move drawn on its own frames is gated as dressed), and actions skip
+ * the size check. A passing part never lists a reason. `skeleton` is a skeleton-pose item: only its standing clip can show
+ * that it was drawn as one, and one without a standing clip was posed on every move.
  */
-function qaReasonCodes(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig): string[] {
+function qaReasonCodes(
+	q: ItemQa,
+	held: boolean,
+	skeleton: false | Pick<Item, 'standing'>,
+	rig?: Rig
+): string[] {
 	const r: string[] = [];
 	if (q.missingLowerFrames) r.push('G11 lower-garment coverage');
 	if (q.footwearReviewFrames) r.push('G12 footwear coverage');
@@ -572,9 +579,10 @@ function qaReasonCodes(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig): 
 		r.push('The held item hangs or sways instead of turning with the hand; check that it should');
 	if (q.motionReviewClips) r.push('G16');
 	if (q.unmeasured) return r;
-	// Skeleton-posed drafts gate every cell, standing views included, at the posed limit (run.ts kOut); older routes by cell.
+	// The skeleton draft gates its standing views at the posed limit (run.ts kOut); every other clip by its own cells' route.
 	const posed = (clip: string | null) =>
-		skeleton ||
+		(!!skeleton &&
+			(!skeleton.standing || clip === null || clip.startsWith(`${skeleton.standing}/`))) ||
 		Object.entries(q.cells).some(
 			([k, c]) => (clip === null || k.startsWith(`${clip}/`)) && c.route === 'posed'
 		);
@@ -605,11 +613,21 @@ function qaReasonCodes(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig): 
 	return r;
 }
 
-export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig): string[] {
+export function qaReasons(
+	q: ItemQa,
+	held: boolean,
+	skeleton: false | Pick<Item, 'standing'>,
+	rig?: Rig
+): string[] {
 	return [...new Set(qaReasonCodes(q, held, skeleton, rig).map(plainReason))];
 }
 
-export function qaReasonMessages(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig) {
+export function qaReasonMessages(
+	q: ItemQa,
+	held: boolean,
+	skeleton: false | Pick<Item, 'standing'>,
+	rig?: Rig
+) {
 	return uniqueBy(
 		qaReasonCodes(q, held, skeleton, rig).map(describeReason),
 		(reason) => reason.text

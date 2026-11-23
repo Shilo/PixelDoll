@@ -272,7 +272,7 @@ test('a generated State is offered for missing gear fit only after its joints ar
 		dressed: { south: standing.south![0]!, east: standing.east![0]! },
 		layers: [{ id: 'main', role: 'fg', z: 20, cells: { default: standing } }]
 	});
-	expect(missingItemMoves(manifest, 'cape', 9)).toEqual([]);
+	expect(missingItemMoves(manifest, 'cape', 'anchor', 9)).toEqual([]);
 
 	const target = (await stateJointFitTarget(project, 'glow'))!;
 	const { manifest: fitted } = applyStateJointFit(manifest, undefined, {
@@ -292,7 +292,7 @@ test('a generated State is offered for missing gear fit only after its joints ar
 			produced: []
 		}))
 	});
-	expect(missingItemMoves(fitted, 'cape', 9)).toEqual([
+	expect(missingItemMoves(fitted, 'cape', 'anchor', 9)).toEqual([
 		{ id: 'glow', frames: 1, items: ['cape'], dirs: ['south', 'east'], itemsOnly: true, seed: 9 }
 	]);
 });

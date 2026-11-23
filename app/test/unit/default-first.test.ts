@@ -278,7 +278,8 @@ test('an item saved before idle and walk existed gets items-only poses for exact
 		status: 'accepted',
 		route: 'skeleton-pose',
 		key: 'green',
-		dressed: {},
+		// Posing starts from the item's standing design in each view.
+		dressed: Object.fromEntries(dirs.map((d) => [d, 'x' as Sha256])),
 		baseHash: m.rig.baseHash,
 		layers: [{ cells: { default: cells(1) } }],
 		coverage: covered('default', 1)
@@ -287,19 +288,19 @@ test('an item saved before idle and walk existed gets items-only poses for exact
 	const base = m.items.find((i) => i.id === m.rig.baseItem)!.layers[0];
 	base.cells = { ...base.cells, walk: { ...cells(8), [dirs[0]]: [] } }; // the body lacks walk facing the first direction
 	// the Default move (standing views) is never re-posed; walk is, with this item only, where the body has frames
-	expect(missingItemMoves(m, 'cape', 9)).toEqual([
+	expect(missingItemMoves(m, 'cape', 'anchor', 9)).toEqual([
 		{ id: 'walk', frames: 8, items: ['cape'], dirs: dirs.slice(1), itemsOnly: true, seed: 9 }
 	]);
 	cape.layers[0].cells = { default: cells(1), walk: cells(8) } as never;
 	cape.coverage = [...covered('default', 1), ...covered('walk', 8)];
-	expect(missingItemMoves(m, 'cape', 9)).toEqual([]);
-	expect(missingItemMoves(m, 'no-such-item', 9)).toEqual([]);
+	expect(missingItemMoves(m, 'cape', 'anchor', 9)).toEqual([]);
+	expect(missingItemMoves(m, 'no-such-item', 'anchor', 9)).toEqual([]);
 	// without stored keypoints (e.g. a demo copy), nothing can be posed, so nothing is offered
 	cape.layers[0].cells = { default: cells(1) } as never;
 	cape.coverage = covered('default', 1);
 	for (const src of Object.values(m.rig.animations.find((a) => a.id === 'walk')!.sources!))
 		src!.keypoints = [];
-	expect(missingItemMoves(m, 'cape', 9)).toEqual([]);
+	expect(missingItemMoves(m, 'cape', 'anchor', 9)).toEqual([]);
 });
 
 test('Standing and its saved key are reserved move names', () => {

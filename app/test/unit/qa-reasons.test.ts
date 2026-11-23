@@ -57,7 +57,27 @@ test('key outside is judged against the limit the clip was gated with', () => {
 	expect(qaReasons(posed, false, false)).toEqual([]);
 	expect(qaReasons(standing, false, false)).toEqual(['Some body pixels were changed by the model']);
 	// A skeleton item's dressed standing view is gated at the posed limit too, so it lists no G3 reason (challenge re-review).
-	expect(qaReasons(standing, false, true)).toEqual([]);
+	expect(qaReasons(standing, false, { standing: 'default' })).toEqual([]);
+	expect(qaReasons(standing, false, {})).toEqual([]);
+});
+
+test('a skeleton item’s move drawn on the move frames is judged at the dressed limit', () => {
+	const q = qa(
+		{
+			'default/south': { maxKeyOutside: 0.03, status: 'warn' },
+			'walk/south': { maxKeyOutside: 0.03, status: 'warn' }
+		},
+		{ 'default/south/0': 'posed', 'walk/south/0': 'ea2' }
+	);
+	const posedOnly = qa(
+		{ 'default/south': { maxKeyOutside: 0.03, status: 'warn' } },
+		{ 'default/south/0': 'posed' }
+	);
+	expect(qaReasons(posedOnly, false, { standing: 'default' })).toEqual([]);
+	expect(qaReasons(q, false, { standing: 'default' })).toEqual([
+		'Some body pixels were changed by the model'
+	]);
+	expect(qaReasonMessages(q, false, { standing: 'default' })).toHaveLength(1);
 });
 
 test('actions skip the size check, locomotion does not', () => {

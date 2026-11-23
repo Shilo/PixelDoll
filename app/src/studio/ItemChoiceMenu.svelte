@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import { formatNumber, t } from 'svelte-whisper';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import Thumb from './Thumb.svelte';
@@ -29,7 +30,9 @@
 	const move = $derived(displayMove(clip, m?.rig.animations ?? []));
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const pending = $derived(!!it && pendingMoves(projectId, it.id).some((spec) => spec.id === clip));
-	const offer = $derived(open && m && it && !pending ? clipItemOffer(m, it.id, clip) : null);
+	const offer = $derived(
+		open && m && it && !pending ? clipItemOffer(m, it.id, clip, currentItemDrawing()) : null
+	);
 	const access = $derived(itemOfferAccess(m, offer?.specs ?? []));
 
 	/** Opens the menu for an item, anchored to its tile. */

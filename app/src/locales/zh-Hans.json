@@ -117,7 +117,13 @@
 		"saveFailed": "无法保存此选项。请重试。",
 		"incompatible": "请将帧数设为自动，或选择新模型支持的帧数。",
 		"framesHelp": "可用帧数取决于角色的画布大小。",
-		"methodHelp": "支持时使用「{pose}」，否则使用「{edit}」。"
+		"methodHelp": "支持时使用「{pose}」，否则使用「{edit}」。",
+		"itemDrawing": "动作中的装备",
+		"itemDrawingHelp": "在动作帧上绘制会让装备贴合动作本身的画面。摆出单独的身体会单独为装备制作动画，因此可能偏移几个像素。",
+		"itemDrawings": {
+			"anchor": "在动作帧上绘制",
+			"skeleton": "摆出单独的身体"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "播放坐骑预览",
@@ -2613,6 +2619,8 @@
 		"motionOnly": "只描述身体动作。武器和道具请通过装备添加。",
 		"motionModel": "运动模型",
 		"motionModelHelp": "Skeleton v3 为身体和装备使用相同的姿势。V3 和 PixMiniMax 会先绘制身体，再由 PixelDoll 检测装备所用的姿势。",
+		"itemDrawing": "此动作中的装备",
+		"itemDrawingDefault": "默认（{method}）",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",

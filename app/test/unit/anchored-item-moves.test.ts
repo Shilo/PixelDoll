@@ -6,11 +6,12 @@ import {
 	PartialMoveError,
 	type RigCtx
 } from '../../src/lib/items/run.ts';
-import { planAnchoredMove } from '../../src/lib/items/items.ts';
+import { anchorable, itemDrawingFor, planAnchoredMove } from '../../src/lib/items/items.ts';
 import { missingItemMoves, itemMoveOffer } from '../../src/studio/create.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
 import { bytesToBase64 } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
+import { LABELS } from '../../src/lib/rig/poses.ts';
 import { encodePngBytes, decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { toChroma } from '../../src/lib/image/chroma.ts';
 import * as db from '../../src/lib/store/db.ts';
@@ -137,7 +138,7 @@ test('two-view unrigged imports extend just the chosen sparse move, reusing thei
 		m = ctx.rec.manifest,
 		item = m.items[1],
 		original = structuredClone(item);
-	const [spec] = missingItemMoves(m, item.id, 77),
+	const [spec] = missingItemMoves(m, item.id, 'anchor', 77),
 		offer = itemMoveOffer(m, [spec]);
 	expect(spec).toMatchObject({
 		id: 'custom_18',
@@ -170,6 +171,94 @@ test('two-view unrigged imports extend just the chosen sparse move, reusing thei
 		expect(body.description).toContain('frame 1');
 		expect(call[1]).toMatchObject({ minimumTier: 1 });
 	}
+	expect(ledger.billed).toBe(2);
+});
+
+/** The fixture's item as one made by posing: the anchored route is a choice, not its own route. */
+async function posedFixture() {
+	const ctx = await fixture(),
+		m = ctx.rec.manifest,
+		item = m.items[1];
+	item.route = 'skeleton-pose';
+	return { ctx, m, item, move: m.rig.animations.find((a) => a.id === 'custom_18')! };
+}
+
+test('one rule picks how an item is drawn on a move and falls back to posing when it cannot be anchored', async () => {
+	const { m, item, move } = await posedFixture();
+	expect(itemDrawingFor(m, item, move, 'anchor', ['east'])).toBe('anchor');
+	expect(itemDrawingFor(m, item, move, 'skeleton', ['east'])).toBe('skeleton');
+	expect(itemDrawingFor(m, item, { itemDrawing: 'skeleton' }, 'anchor')).toBe('skeleton');
+	expect(itemDrawingFor(m, item, { itemDrawing: 'anchor' }, 'skeleton')).toBe('anchor');
+	expect(anchorable(m).map((i) => i.id)).toEqual([item.id]);
+	// No standing design for a needed view.
+	expect(itemDrawingFor(m, item, move, 'anchor', ['south'])).toBe('skeleton');
+	// A padded held layer is larger than the move's frames.
+	const held = structuredClone(item);
+	held.layers[0].cell = { w: 96, h: 96 };
+	expect(itemDrawingFor(m, held, move, 'anchor')).toBe('skeleton');
+	expect(itemDrawingFor(m, { ...item, standing: 'custom_18' }, move, 'anchor')).toBe('skeleton');
+	expect(itemDrawingFor(m, { ...item, baseHash: 'sha256:old' }, move, 'anchor')).toBe('skeleton');
+	// An anchored design has no other route.
+	item.route = 'ea2-anchor';
+	expect(itemDrawingFor(m, item, { itemDrawing: 'skeleton' }, 'skeleton')).toBe('anchor');
+});
+
+test('missing item moves follow the drawing choice, its views and the move override', async () => {
+	const { ctx, m, item, move } = await posedFixture();
+	// Without stored joints the move can only be drawn on its frames.
+	expect(missingItemMoves(m, item.id, 'skeleton', 5)).toEqual([]);
+	expect(missingItemMoves(m, item.id, 'anchor', 5)).toEqual([
+		{
+			id: 'custom_18',
+			frames: 18,
+			items: [item.id],
+			dirs: ['east'],
+			itemsOnly: true,
+			seed: 5,
+			itemMethod: 'anchor'
+		}
+	]);
+	const joints = Array.from({ length: 18 }, () =>
+		LABELS.map((label, i) => ({ label, x: 0.5, y: (i + 1) / (LABELS.length + 1) }))
+	);
+	move.sources = {
+		east: { route: 'skeleton-v3', reference: 'sha256:r', keypoints: joints, provenance: [] }
+	};
+	// Posing also needs the standing view's joints.
+	expect(missingItemMoves(m, item.id, 'skeleton', 5)).toEqual([]);
+	m.rig.rest = { east: { image: 'sha256:r', keypoints: joints[0] } };
+	const [posed] = missingItemMoves(m, item.id, 'skeleton', 5);
+	expect(posed).toMatchObject({ id: 'custom_18', dirs: ['east'] });
+	expect(posed.itemMethod).toBeUndefined();
+	expect(movePlan(ctx.rec, posed).some((c) => c.path === '/animate-with-skeleton-v3')).toBe(true);
+	move.itemDrawing = 'anchor';
+	expect(missingItemMoves(m, item.id, 'skeleton', 5)[0].itemMethod).toBe('anchor');
+	move.itemDrawing = 'skeleton';
+	expect(missingItemMoves(m, item.id, 'anchor', 5)[0].itemMethod).toBeUndefined();
+	// A padded held layer is posed whatever the choice.
+	delete move.itemDrawing;
+	item.layers[0].cell = { w: 96, h: 96 };
+	expect(missingItemMoves(m, item.id, 'anchor', 5)[0].itemMethod).toBeUndefined();
+	// Neither route is offered for a view without a standing design.
+	delete item.dressed!.east;
+	expect(missingItemMoves(m, item.id, 'skeleton', 5)).toEqual([]);
+	expect(missingItemMoves(m, item.id, 'anchor', 5)).toEqual([]);
+});
+
+test('an item made by posing is drawn on the move frames without changing its route', async () => {
+	const { ctx, m, item } = await posedFixture();
+	const [spec] = missingItemMoves(m, item.id, 'anchor', 77);
+	expect(itemMoveOffer(m, [spec]).gens).toBe(20);
+	expect(
+		movePlan(ctx.rec, spec)
+			.filter((c) => c.method === 'POST')
+			.map((c) => c.path)
+	).toEqual(['/edit-animation-v2', '/edit-animation-v2']);
+	await animateAnchoredItem(ctx, item, spec.id, spec.dirs!, spec.seed);
+	const result = vi.mocked(saveItem).mock.calls[0][1];
+	expect(result.route).toBe('skeleton-pose');
+	expect(result.anchorCell).toBeUndefined();
+	expect(result.layers[0].cells!.custom_18!.east).toHaveLength(18);
 	expect(ledger.billed).toBe(2);
 });
 
@@ -277,7 +366,7 @@ test('saved transparent generated views retain explicit coverage and are never o
 	expect(saved.coverage).toContain('custom_18/east/0');
 	expect(saved.coverage).toContain('custom_18/east/1');
 	ctx.rec.manifest.items[1] = saved;
-	expect(missingItemMoves(ctx.rec.manifest, saved.id)).toEqual([]);
+	expect(missingItemMoves(ctx.rec.manifest, saved.id, 'anchor')).toEqual([]);
 });
 
 test.each([false, true])(

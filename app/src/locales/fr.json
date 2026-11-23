@@ -122,7 +122,13 @@
 		"saveFailed": "Impossible d’enregistrer ce choix. Réessayez.",
 		"incompatible": "Choisissez Automatique ou un nombre d’images compatible avec le nouveau modèle.",
 		"framesHelp": "Le nombre d’images disponible dépend de la taille du canevas du personnage.",
-		"methodHelp": "Utilise {pose} si possible. Sinon, utilise {edit}."
+		"methodHelp": "Utilise {pose} si possible. Sinon, utilise {edit}.",
+		"itemDrawing": "Objets dans les animations",
+		"itemDrawingHelp": "Dessiner sur les images de l’animation ajuste les objets à son propre dessin. Poser un corps séparé anime les objets à part, ils peuvent donc se décaler de quelques pixels.",
+		"itemDrawings": {
+			"anchor": "Dessiner sur les images",
+			"skeleton": "Poser un corps séparé"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Lire l’aperçu de la monture",
@@ -2683,6 +2689,8 @@
 		"motionOnly": "Décrivez uniquement le mouvement du corps. Ajoutez les armes et accessoires comme objets.",
 		"motionModel": "Modèle de mouvement",
 		"motionModelHelp": "Skeleton v3 utilise les mêmes poses pour le corps et l’équipement. V3 et PixMiniMax dessinent d’abord le corps, puis PixelDoll détecte les poses pour l’équipement.",
+		"itemDrawing": "Objets de cette animation",
+		"itemDrawingDefault": "Par défaut ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",

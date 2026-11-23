@@ -564,6 +564,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		['Character', 'base-clothing', 'none', 'underwear', 'select'],
 		['Move', 'move-model', 'v3', 'skeleton-v3', 'select'],
 		['Move', 'move-frames', '6', 'auto', 'select'],
+		['Move', 'item-drawing', 'skeleton', 'anchor', 'select'],
 		['State', 'state-model', 'pixen', 'pro', 'select'],
 		['Item', 'item-method', 'anchor', 'auto', 'select']
 	] as const;
@@ -8152,6 +8153,11 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		// Priced as posed on a separate body until Settings switches to drawing on the move frames below.
+		localStorage.setItem(
+			'pixeldoll.creation.moves',
+			JSON.stringify({ model: 'skeleton-v3', frames: 'auto', itemDrawing: 'skeleton' })
+		);
 	});
 	await openStudio(
 		page,
@@ -8276,6 +8282,27 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).toContainText(
 		'~12 gens'
 	);
+	const peekCalls = async (endpoint: string, other: string) => {
+		await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
+		const api = page.getByRole('dialog', { name: 'API calls', exact: true });
+		await expect(api).toContainText(endpoint);
+		await expect(api).not.toContainText(other);
+		await api.getByRole('button', { name: 'Close API calls', exact: true }).click();
+	};
+	await peekCalls('/animate-with-skeleton-v3', '/edit-animation-v2');
+	// Settings > Creation > Moves now draws items on the move's own frames: the open offer follows it.
+	await page.evaluate(async () => {
+		const path = '/src/studio/settingsDefaults.svelte.ts';
+		localStorage.setItem(
+			'pixeldoll.creation.moves',
+			JSON.stringify({ model: 'skeleton-v3', frames: 'auto', itemDrawing: 'anchor' })
+		);
+		(await import(path)).noteCreationSettings();
+	});
+	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).not.toContainText(
+		'~12 gens'
+	);
+	await peekCalls('/edit-animation-v2', '/animate-with-skeleton-v3');
 	await pane.getByRole('button', { name: /^Make for Custom walk/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	await connect
@@ -8297,7 +8324,12 @@ test('standing-first items quote only standing and offer actual custom moves one
 		const path = '/src/studio/state.svelte.ts';
 		return (await import(path)).moving.spec;
 	});
-	expect(scope).toMatchObject({ id: 'custom_walk', items: [fixture.itemId], itemsOnly: true });
+	expect(scope).toMatchObject({
+		id: 'custom_walk',
+		items: [fixture.itemId],
+		itemsOnly: true,
+		itemMethod: 'anchor'
+	});
 	expect(scope.dirs).toEqual(['south', 'east', 'north', 'west']);
 	expect(posts).toEqual([]);
 });

@@ -1835,7 +1835,7 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 			{ rec, project: s.store.project },
 			{ name: 'Coat', slot: 'torso_inner', prompt: 'long coat and boots' }
 		);
-		const move = missingItemMoves(rec.manifest, vest.id, 0).find(
+		const move = missingItemMoves(rec.manifest, vest.id, 'anchor', 0).find(
 			(spec: { id: string }) => spec.id === 'walk'
 		);
 		const offer = itemMoveOffer(rec.manifest, [move]),
@@ -2772,6 +2772,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await move
 		.getByRole('combobox', { name: 'Motion model', exact: true })
 		.selectOption('skeleton-v3');
+	const drawing = move.getByRole('combobox', { name: 'Items on this move', exact: true });
+	await expect(drawing.locator('option:checked')).toHaveText('Default (Draw on move frames)');
+	await drawing.selectOption('skeleton');
 	await page.getByRole('button', { name: /^Generate / }).click();
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
@@ -2797,6 +2800,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	]);
 	expect(after.manifest.rig.baseHash).not.toBe('sha256:');
 	expect(idle.cells).toBe(4);
+	expect(idle.itemDrawing).toBe('skeleton');
 	expect(Object.keys(idle.sources!)).toEqual(['south', 'east', 'north', 'west']);
 	expect(
 		Object.values(idle.sources!).every((s) => s.route === 'skeleton-v3' && s.measured?.length === 4)

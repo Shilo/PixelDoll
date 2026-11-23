@@ -142,7 +142,7 @@ test('a saved item names the detail note for review', () => {
 		clips: {},
 		detailReviewFrames: 2
 	} as ItemQa;
-	expect(qaReasons(q, false, true)).toContain(
+	expect(qaReasons(q, false, {})).toContain(
 		'A detail of the design is missing or recolored in some frames'
 	);
 });

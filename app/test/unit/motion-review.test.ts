@@ -152,7 +152,7 @@ function fixture(change: Change = 'clean', id = 'walk', badHip = true, dirs = ['
 	const q = itemQa(rig, slotOf('main_hand'), 'green', cells, 0);
 	return { rig, cells, q };
 }
-const reasons = (q: ItemQa, rig: Rig) => qaReasons(q, true, true, rig);
+const reasons = (q: ItemQa, rig: Rig) => qaReasons(q, true, {}, rig);
 const reason = "Check the item's size and angle as it moves";
 const item = (qa: ItemQa): Item => ({
 	id: 'rod',

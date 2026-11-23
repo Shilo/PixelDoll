@@ -99,8 +99,38 @@ describe('creation preferences', () => {
 		expect(saveCreationSettings(storage, 'moves', { model: 'v3' })).toBe(false);
 		expect(readCreationSettings(storage, 'moves').values).toEqual({
 			model: 'pixminimax',
-			frames: 20
+			frames: 20,
+			itemDrawing: 'anchor'
 		});
+	});
+
+	it('fills a choice added after the record was saved and still rejects a wrong value', () => {
+		const storage = memoryStorage();
+		const key = creationSettingsKey('moves');
+		storage.setItem(key, '{"model":"pixminimax","frames":20}');
+		expect(readCreationSettings(storage, 'moves')).toEqual({
+			values: { model: 'pixminimax', frames: 20, itemDrawing: 'anchor' },
+			valid: true
+		});
+		expect(saveCreationSettings(storage, 'moves', { itemDrawing: 'skeleton' })).toBe(true);
+		expect(JSON.parse(storage.getItem(key)!)).toEqual({
+			model: 'pixminimax',
+			frames: 20,
+			itemDrawing: 'skeleton'
+		});
+		for (const raw of [
+			'{"model":"pixminimax","frames":20,"itemDrawing":"grid"}',
+			'["skeleton-v3"]',
+			'null'
+		]) {
+			storage.setItem(key, raw);
+			expect(readCreationSettings(storage, 'moves')).toEqual({
+				values: creationDefaults.moves,
+				valid: false
+			});
+			expect(saveCreationSettings(storage, 'moves', { itemDrawing: 'anchor' })).toBe(false);
+			expect(storage.getItem(key)).toBe(raw);
+		}
 	});
 
 	it.each(['not JSON', '{"model":"unknown"}', '{"model":"pro","extra":true}'])(

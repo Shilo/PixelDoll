@@ -18,7 +18,7 @@
 	import { errorMessage } from '../lib/message.ts';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { displayMove } from './displayMove.ts';
-	import { currentCreationSettings } from './settingsDefaults.svelte.ts';
+	import { currentCreationSettings, currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import { closeSettingsCost, settingsNavigation } from './settingsNavigation.svelte.ts';
 	import { characterDraftWithDefaults } from './creationSettings.ts';
 	import {
@@ -67,6 +67,7 @@
 		store.projects.find((p) => p.id === projectId)?.name ?? t('common.character');
 	const defaults = () => ({
 		moveModel: currentCreationSettings('moves').values.model,
+		itemDrawing: currentItemDrawing(),
 		stateModel: currentCreationSettings('states').values.model
 	});
 

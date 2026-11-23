@@ -122,7 +122,13 @@
 		"saveFailed": "Bu seçim kaydedilemedi. Tekrar deneyin.",
 		"incompatible": "Kare sayısını Otomatik olarak ayarlayın veya yeni modelin desteklediği bir sayı seçin.",
 		"framesHelp": "Kullanılabilir kare sayıları karakterin tuval boyutuna bağlıdır.",
-		"methodHelp": "Destekleniyorsa {pose}, aksi takdirde {edit} kullanılır."
+		"methodHelp": "Destekleniyorsa {pose}, aksi takdirde {edit} kullanılır.",
+		"itemDrawing": "Animasyonlardaki eşyalar",
+		"itemDrawingHelp": "Animasyon karelerine çizmek eşyaları animasyonun kendi çizimine uydurur. Ayrı bir gövdeye poz vermek eşyaları ayrı canlandırır, bu yüzden birkaç piksel kayabilirler.",
+		"itemDrawings": {
+			"anchor": "Animasyon karelerine çiz",
+			"skeleton": "Ayrı bir gövdeye poz ver"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Binek önizlemesini oynat",
@@ -2683,6 +2689,8 @@
 		"motionOnly": "Yalnızca gövdenin hareketini tarif edin. Silah ve aksesuarları eşya olarak ekleyin.",
 		"motionModel": "Hareket modeli",
 		"motionModelHelp": "Skeleton v3, gövde ve ekipman için aynı pozları kullanır. V3 ve PixMiniMax önce gövdeyi çizer, ardından PixelDoll ekipman için pozları belirler.",
+		"itemDrawing": "Bu animasyondaki eşyalar",
+		"itemDrawingDefault": "Varsayılan ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",

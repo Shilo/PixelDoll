@@ -7,6 +7,7 @@
 </script>
 
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import { formatNumber, formatPercent, getLocale, t } from 'svelte-whisper';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
@@ -161,7 +162,7 @@
 		!pendingMoves(doc.id, it.id).some((spec) => spec.id === ui.anim);
 	/** Pricing runs only on the tap (it is too slow for every render): no offer here (no joints for this move) wears. */
 	function tapDimmed(it: NonNullable<typeof m>['items'][number], tile: HTMLElement) {
-		if (m && clipItemOffer(m, it.id, ui.anim)) choice?.show(it.id, tile);
+		if (m && clipItemOffer(m, it.id, ui.anim, currentItemDrawing())) choice?.show(it.id, tile);
 		else wear(it.id);
 	}
 	const wornMark: Mark = $derived({

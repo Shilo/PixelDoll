@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import Sheet from './Sheet.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
@@ -199,7 +200,9 @@
 	const missingMoves = $derived.by(() => {
 		if (!m || !it || isDemo()) return [];
 		const pending = pendingMoves(doc.id, it.id).map((s) => s.id);
-		return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id));
+		return missingItemMoves(m, it.id, currentItemDrawing(), 0).filter(
+			(s) => !pending.includes(s.id)
+		);
 	});
 	let chosenMove = $state('');
 	const missingMove = $derived(
@@ -302,7 +305,7 @@
 			? qaReasonMessages(
 					it.qa,
 					SLOTS.find((s) => s.id === it.slot)?.class === 'held',
-					it.route === 'skeleton-pose',
+					it.route === 'skeleton-pose' && it,
 					m?.rig
 				).map(displayMessage)
 			: []

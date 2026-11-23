@@ -38,8 +38,10 @@ import {
 	cellKey,
 	DEFAULT_MOVE,
 	type DirectionName,
+	type ItemDrawing,
 	type Keypoint,
 	type Rig,
+	type RigAnimation,
 	type Sha256
 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
@@ -811,16 +813,34 @@ export const posable = (m: Manifest, dirs: readonly DirectionName[] = []) =>
 			i.baseHash === m.rig.baseHash &&
 			dirs.every((dir) => !!i.dressed?.[dir])
 	);
-export const anchorable = (m: Manifest) =>
-	m.items.filter(
-		(i) =>
-			i.slot !== 'body' &&
-			i.route === 'ea2-anchor' &&
-			i.standing &&
-			i.key &&
-			i.dressed &&
-			i.baseHash === m.rig.baseHash
-	);
+/** Can the item's saved standing design be drawn straight onto a move's own frames (the anchored route, planAnchoredMove) in
+ *  `dirs`? Anchored items always can; a skeleton-pose item can too when it is on the rig cell, since a padded held layer is
+ *  larger than the move's frames. */
+export const canAnchor = (m: Manifest, i: Item, dirs: readonly DirectionName[] = []) =>
+	i.slot !== 'body' &&
+	(i.route === 'ea2-anchor' || i.route === 'skeleton-pose') &&
+	!!i.key &&
+	!!i.standing &&
+	m.rig.animations.some((a) => a.id === i.standing && a.cells === 1) &&
+	i.baseHash === m.rig.baseHash &&
+	i.layers.every((l) => !l.cell || (l.cell.w === m.rig.cell.w && l.cell.h === m.rig.cell.h)) &&
+	!!i.dressed &&
+	dirs.every((dir) => !!i.dressed?.[dir]);
+export const anchorable = (m: Manifest) => m.items.filter((i) => canAnchor(m, i));
+/** How an item is drawn on an existing move: an anchored design always on the move's frames; any other item as the move's
+ *  own choice says, else as `preferred` (Settings > Creation), posed as a separate body when it cannot be anchored. */
+export function itemDrawingFor(
+	m: Manifest,
+	item: Item,
+	move: Pick<RigAnimation, 'itemDrawing'> | undefined,
+	preferred: ItemDrawing,
+	dirs: readonly DirectionName[] = []
+): ItemDrawing {
+	if (item.route === 'ea2-anchor') return 'anchor';
+	return (move?.itemDrawing ?? preferred) === 'anchor' && canAnchor(m, item, dirs)
+		? 'anchor'
+		: 'skeleton';
+}
 
 /** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions. */
 export const poseGens = (n: number, cells: number, dirs: number) => n * dirs * poseGensFor(cells);

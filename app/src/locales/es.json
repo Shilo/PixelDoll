@@ -122,7 +122,13 @@
 		"saveFailed": "No se pudo guardar esta opción. Inténtalo de nuevo.",
 		"incompatible": "Elige Automático o una cantidad de fotogramas compatible con el nuevo modelo.",
 		"framesHelp": "Las cantidades de fotogramas disponibles dependen del tamaño del lienzo del personaje.",
-		"methodHelp": "Usa {pose} si es compatible. De lo contrario, usa {edit}."
+		"methodHelp": "Usa {pose} si es compatible. De lo contrario, usa {edit}.",
+		"itemDrawing": "Objetos en animaciones",
+		"itemDrawingHelp": "Dibujar en los fotogramas de la animación ajusta los objetos a su propio arte. Posar un cuerpo aparte anima los objetos por separado, así que pueden desplazarse unos píxeles.",
+		"itemDrawings": {
+			"anchor": "Dibujar en los fotogramas",
+			"skeleton": "Posar un cuerpo aparte"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Reproducir vista previa de la montura",
@@ -2683,6 +2689,8 @@
 		"motionOnly": "Describe solo el movimiento del cuerpo. Añade las armas y los accesorios como objetos.",
 		"motionModel": "Modelo de movimiento",
 		"motionModelHelp": "Skeleton v3 usa las mismas poses para el cuerpo y el equipo. V3 y PixMiniMax dibujan primero el cuerpo. Después, PixelDoll detecta las poses para el equipo.",
+		"itemDrawing": "Objetos en esta animación",
+		"itemDrawingDefault": "Predeterminado ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",

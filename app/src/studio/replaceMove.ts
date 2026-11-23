@@ -35,6 +35,15 @@ export function applyMoveLoop(
 		animation.loop = animation.moveLoop = requested;
 }
 
+/** Save Add a move's item-drawing choice on the move: 'default' clears it; absent (an automatic retry) keeps the saved one. */
+export function applyItemDrawing(
+	animation: RigAnimation,
+	requested: MoveSpec['itemDrawing']
+): void {
+	if (requested === 'default') delete animation.itemDrawing;
+	else if (requested) animation.itemDrawing = requested;
+}
+
 export function movePlaybackChanged(
 	baseline: MovePlayback | undefined,
 	current: MovePlayback | undefined

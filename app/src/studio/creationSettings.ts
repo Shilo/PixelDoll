@@ -14,6 +14,7 @@ import {
 import { moveFrameCounts, type MoveAnimationModel } from './moveAnimationOptions.ts';
 import type { StateGenerationModel } from './stateGenerationPlan.ts';
 import type { Method } from '../lib/items/items.ts';
+import type { ItemDrawing } from '../lib/rig/rig.ts';
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { planStateGeneration, type StateGenerationInput } from './stateGenerationPlan.ts';
 
@@ -32,6 +33,7 @@ export const stateModels = [
 export const itemMethods = ['auto', 'skel', 'anchor'] as const satisfies readonly (
 	'auto' | Method
 )[];
+export const itemDrawings = ['anchor', 'skeleton'] as const satisfies readonly ItemDrawing[];
 
 export type CreationSettings = {
 	characters: {
@@ -41,7 +43,7 @@ export type CreationSettings = {
 		frame: 'auto' | number;
 		directions: string;
 	};
-	moves: { model: MoveAnimationModel; frames: 'auto' | number };
+	moves: { model: MoveAnimationModel; frames: 'auto' | number; itemDrawing: ItemDrawing };
 	states: { model: StateGenerationModel };
 	items: { method: (typeof itemMethods)[number] };
 };
@@ -57,7 +59,7 @@ export const creationDefaults: Readonly<{
 		frame: 'auto',
 		directions: presetOf(character)!
 	},
-	moves: { model: 'skeleton-v3', frames: 'auto' },
+	moves: { model: 'skeleton-v3', frames: 'auto', itemDrawing: 'anchor' },
 	states: { model: 'pro' },
 	items: { method: 'auto' }
 };
@@ -84,10 +86,11 @@ export function validCreationSettings(section: CreationSection, value: unknown):
 			);
 		}
 		case 'moves': {
-			const { model, frames } = value as CreationSettings['moves'];
+			const { model, frames, itemDrawing } = value as CreationSettings['moves'];
 			return (
 				moveModels.includes(model) &&
-				(frames === 'auto' || preferredMoveFrameCounts(model).includes(frames))
+				(frames === 'auto' || preferredMoveFrameCounts(model).includes(frames)) &&
+				itemDrawings.includes(itemDrawing)
 			);
 		}
 		case 'states':
@@ -109,6 +112,9 @@ export function readCreationSettings<Section extends CreationSection>(
 	} catch {
 		return { values: creationDefaults[section], valid: false };
 	}
+	// A choice added after the record was saved takes its default; a wrong value or an unknown key still fails.
+	if (value && typeof value === 'object' && !Array.isArray(value))
+		value = { ...creationDefaults[section], ...value };
 	return validCreationSettings(section, value)
 		? { values: value as CreationSettings[Section], valid: true }
 		: { values: creationDefaults[section], valid: false };

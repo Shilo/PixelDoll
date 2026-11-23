@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import { onMount, tick, untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import ProblemNotice from './ProblemNotice.svelte';
@@ -110,7 +111,7 @@
 			.filter((item) => item.id !== project.manifest.rig.baseItem)
 			.map((item) => ({
 				item,
-				offer: clipItemOffer(project.manifest, item.id, id, {
+				offer: clipItemOffer(project.manifest, item.id, id, currentItemDrawing(), {
 					seed: candidate.spec.seed,
 					dirs: candidate.dirs,
 					reviewedMoveItems: true
@@ -181,6 +182,7 @@
 			loop: movePlaybackChanged(candidate.basePlayback, saved)
 				? (saved?.moveLoop ?? saved?.loop)
 				: (animation?.loop ?? spec.animation?.loop),
+			itemDrawing: spec.itemDrawing,
 			frameReferences: Object.fromEntries(
 				Object.entries(spec.animation?.references ?? {}).map(([dir, { start, end }]) => [
 					dir,

@@ -117,7 +117,13 @@
 		"saveFailed": "Pilihan ini tidak dapat disimpan. Coba lagi.",
 		"incompatible": "Pilih Otomatis atau jumlah bingkai yang didukung model baru.",
 		"framesHelp": "Jumlah bingkai yang tersedia bergantung pada ukuran kanvas karakter.",
-		"methodHelp": "Menggunakan {pose} jika didukung. Jika tidak, menggunakan {edit}."
+		"methodHelp": "Menggunakan {pose} jika didukung. Jika tidak, menggunakan {edit}.",
+		"itemDrawing": "Item pada animasi",
+		"itemDrawingHelp": "Menggambar pada frame animasi menyesuaikan item dengan gambar animasi itu sendiri. Memberi pose pada tubuh terpisah menganimasikan item secara tersendiri, sehingga item bisa bergeser beberapa piksel.",
+		"itemDrawings": {
+			"anchor": "Gambar pada frame animasi",
+			"skeleton": "Pose tubuh terpisah"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Putar pratinjau tunggangan",
@@ -2613,6 +2619,8 @@
 		"motionOnly": "Jelaskan gerakan tubuh saja. Tambahkan senjata dan properti sebagai item.",
 		"motionModel": "Model gerakan",
 		"motionModelHelp": "Skeleton v3 memakai pose yang sama untuk tubuh dan perlengkapan. V3 dan PixMiniMax menggambar tubuh terlebih dahulu, lalu PixelDoll mendeteksi pose untuk perlengkapan.",
+		"itemDrawing": "Item pada animasi ini",
+		"itemDrawingDefault": "Default ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
