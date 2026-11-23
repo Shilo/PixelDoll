@@ -1615,6 +1615,7 @@
 			"heldLoop": "Form oder Winkel des gehaltenen Gegenstands ändern sich am Übergang der Animationsschleife",
 			"registrationShift": "PixelLab hat einen transparenten Rand geliefert und das Sheet möglicherweise verschoben. Prüfe, ob der Gegenstand in jedem Frame ausgerichtet ist.",
 			"suspiciousJoints": "Die Gelenke wirken in {move} {direction}, Frame {frame}, ungewöhnlich, daher sitzt der Gegenstand dort vielleicht nicht richtig. Prüfe Griff oder Ausrichtung.",
+			"jointReview": "Einige Frames wurden an Gelenken ausgerichtet, die ungewöhnlich wirken. Prüfe Griff oder Ausrichtung.",
 			"bodyUnmeasured": "Der Gegenstand verdeckt fast den ganzen Körper und konnte daher nicht geprüft werden. Achte darauf, dass er kein neu gezeichneter Körper ist"
 		},
 		"anotherCharacter": "eine andere Figur",

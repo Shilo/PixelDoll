@@ -25,6 +25,7 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
+	import PoseIssues from './PoseIssues.svelte';
 	import GenerationDetails from './GenerationDetails.svelte';
 	import { movePlan } from './apiPlans.ts';
 	import ApiPeek from './ApiPeek.svelte';
@@ -592,6 +593,7 @@
 					{#if missingOffer?.error}<p class="notice warn small" role="status">
 							{displayMessage(missingOffer.error)}
 						</p>{/if}
+					<PoseIssues issues={missingOffer?.poseIssues ?? []} />
 					{#if missingTier}<TierNotice
 							id="item-missing-tier"
 							minimumTier={missingTier}

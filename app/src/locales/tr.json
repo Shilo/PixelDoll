@@ -1615,6 +1615,7 @@
 			"heldLoop": "Animasyon döngüye girdiğinde eldeki eşyanın şekli veya açısı değişiyor",
 			"registrationShift": "PixelLab saydam bir kenar döndürdü ve sayfayı kaydırmış olabilir. Eşyanın her karede hizalandığını kontrol edin.",
 			"suspiciousJoints": "{move} {direction} animasyonunun {frame}. karesinde eklemler alışılmadık görünüyor, bu yüzden eşya orada tam oturmayabilir. Tutuşu veya hizalamayı kontrol edin.",
+			"jointReview": "Bazı kareler alışılmadık görünen eklemlere göre yerleştirildi. Tutuşu veya hizalamayı kontrol edin.",
 			"bodyUnmeasured": "Eşya gövdenin neredeyse tamamını kaplıyor, bu yüzden kontrol edilemedi. Yeniden çizilmiş bir gövde olmadığından emin olun"
 		},
 		"anotherCharacter": "başka bir karakter",

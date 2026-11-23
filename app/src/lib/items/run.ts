@@ -118,6 +118,7 @@ import {
 	padOf,
 	planItem,
 	poseFitIssues,
+	suspiciousPoseCells,
 	postProcess,
 	restKey,
 	unrotate,
@@ -1480,14 +1481,16 @@ export async function evaluateItem(
 				d.spec.prompt
 			)
 		: null;
-	const fitIssues = poseFitIssues(
-		rig,
-		d.calls.filter((c) => recOf(c.recId)?.state === 'done')
-	);
-	if (qa && (hiddenWarnings.length || fitIssues.length)) {
-		qa.warnings.push(...hiddenWarnings, ...fitIssues);
+	if (qa && hiddenWarnings.length) {
+		qa.warnings.push(...hiddenWarnings);
 		if (qa.qa.status === 'pass') qa.qa.status = 'warn';
 	}
+	if (qa)
+		discloseJoints(
+			qa,
+			rig,
+			d.calls.filter((c) => recOf(c.recId)?.state === 'done')
+		);
 	// Dressed item pixels can land before any target animation cell exists. Expose them without waiting for pose coverage.
 	const thumbnail = (
 		kfCells.find((c) => c.area && c.key.split('/')[1] === 'south') ?? kfCells.find((c) => c.area)
@@ -1975,6 +1978,25 @@ export class PartialMoveError extends Error {
 	}
 }
 
+/** Suspicious imported joints never stop a fit on valid coordinates. They are named for review and counted on the clips
+ *  they were posed in, so saved checks keep them until those frames are replaced. */
+function discloseJoints(
+	q: QaResult,
+	rig: Rig,
+	calls: readonly { kind?: CallKind; cells: string[] }[]
+) {
+	const cells = suspiciousPoseCells(rig, calls).filter((key) => q.qa.cells[key as CellKey]);
+	if (!cells.length) return;
+	q.warnings.push(...poseFitIssues(rig, calls));
+	for (const key of cells) {
+		const clip = q.qa.clips[key.split('/').slice(0, 2).join('/')];
+		if (!clip) continue;
+		clip.jointReviewFrames = (clip.jointReviewFrames ?? 0) + 1;
+		if (clip.status === 'pass') clip.status = 'warn';
+	}
+	q.qa.jointReviewFrames = (q.qa.jointReviewFrames ?? 0) + cells.length;
+	if (q.qa.status === 'pass') q.qa.status = 'warn';
+}
 /** A paid item request that ended without results; a lost one may still have run and charged. */
 function requestStopped(
 	item: Item,
@@ -2049,7 +2071,7 @@ export async function poseItemClip(
 	const { keys: k0, cuts, hidden } = await dressedKeys(ctx, item, pad);
 	const bodies = referenceBodies(rig, ctx.project.images);
 	Object.assign(keys, k0);
-	const fitIssues: string[] = [];
+	const posed: { kind: 'pose'; cells: string[] }[] = [];
 	const perDir = await Promise.allSettled(
 		dirs.map(async (dir, k) => {
 			const allPoses = clipKeypoints(rig, anim, dir),
@@ -2098,7 +2120,7 @@ export async function poseItemClip(
 					collected.push(...g.cells);
 					continue;
 				}
-				fitIssues.push(...poseFitIssues(rig, [{ kind: 'pose', cells }]));
+				posed.push({ kind: 'pose', cells });
 				const req = itemRoute.pose({
 					keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)),
 					rest,
@@ -2200,11 +2222,7 @@ export async function poseItemClip(
 		bodies,
 		item.prompt
 	);
-	// Suspicious imported joints do not stop a fit on valid coordinates; they stay named for a look.
-	if (fitIssues.length) {
-		q.warnings.push(...fitIssues);
-		if (q.qa.status === 'pass') q.qa.status = 'warn';
-	}
+	discloseJoints(q, rig, posed);
 	const first = failures.length ? errorText(failures[0]) : '';
 	try {
 		await mergeClip(ctx, item, anim, doneDirs, cells, prov, q, pad);

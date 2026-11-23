@@ -268,6 +268,10 @@ test('accepted equipment estimates the actual safe route and prices held targets
 	const held = itemMoveOffer(ctx.rec.manifest, [offer]);
 	expect(held.error).toBe('');
 	expect(held.specs).toHaveLength(1);
+	// The priced fit names the frames it will follow before it is bought.
+	expect(held.poseIssues).toEqual([
+		expect.stringContaining('walking/south frame 2: suspicious estimated joints')
+	]);
 	expect(enqueue).not.toHaveBeenCalled();
 });
 

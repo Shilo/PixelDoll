@@ -1615,6 +1615,7 @@
 			"heldLoop": "The held item changes shape or angle when a move loops",
 			"registrationShift": "PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame.",
 			"suspiciousJoints": "The joints look unusual in {move} {direction} frame {frame}, so the item may not fit there. Check the grip or alignment.",
+			"jointReview": "Some frames were fitted on joints that look unusual. Check the grip or alignment.",
 			"bodyUnmeasured": "The item covers almost all of the body, so it could not be checked; make sure it is not a redrawn body"
 		},
 		"anotherCharacter": "another character",

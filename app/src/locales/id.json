@@ -1565,6 +1565,7 @@
 			"heldLoop": "Bentuk atau sudut item yang dipegang berubah saat animasi berulang",
 			"registrationShift": "PixelLab mengembalikan tepi transparan dan mungkin menggeser lembar gambar. Periksa apakah item sejajar di setiap frame.",
 			"suspiciousJoints": "Sendi terlihat tidak biasa di {move} {direction} frame {frame}, jadi item mungkin tidak pas di sana. Periksa pegangan atau posisinya.",
+			"jointReview": "Beberapa frame dipasang pada sendi yang terlihat tidak biasa. Periksa pegangan atau posisinya.",
 			"bodyUnmeasured": "Item ini menutupi hampir seluruh tubuh sehingga tidak dapat diperiksa. Pastikan ini bukan tubuh yang digambar ulang"
 		},
 		"anotherCharacter": "karakter lain",

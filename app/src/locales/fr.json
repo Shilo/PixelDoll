@@ -1615,6 +1615,7 @@
 			"heldLoop": "L’objet tenu change de forme ou d’angle quand une animation boucle",
 			"registrationShift": "PixelLab a renvoyé un bord transparent et a peut-être décalé la feuille. Vérifiez que l’objet est bien aligné sur chaque image.",
 			"suspiciousJoints": "Les articulations semblent inhabituelles dans {move} {direction}, image {frame}, donc l’objet risque de mal s’y placer. Vérifiez la prise ou l’alignement.",
+			"jointReview": "Certaines images ont été ajustées sur des articulations inhabituelles. Vérifiez la prise ou l’alignement.",
 			"bodyUnmeasured": "L’objet couvre presque tout le corps et n’a donc pas pu être vérifié. Assurez-vous qu’il ne s’agit pas d’un corps redessiné"
 		},
 		"anotherCharacter": "un autre personnage",

@@ -103,7 +103,8 @@ import {
 	repairGridPlan,
 	planAnchoredMove,
 	itemPlanMinimumTier,
-	itemPosePlan
+	itemPosePlan,
+	poseFitIssues
 } from '../lib/items/items.ts';
 import { requireSlot } from '../lib/items/slots.ts';
 import {
@@ -2778,20 +2779,44 @@ export function itemMoveReviewMatches(m: Manifest, spec: MoveSpec): boolean {
 	);
 }
 
+/** Suspicious imported joints the priced skeleton fit of an existing move will follow, to disclose before it is bought. */
+function movePoseIssues(m: Manifest, spec: MoveSpec): string[] {
+	const move = m.rig.animations.find((animation) => animation.id === spec.id);
+	if (!move || spec.itemMethod) return [];
+	return spec.items.flatMap((id) => {
+		const item = m.items.find((candidate) => candidate.id === id);
+		if (!item) return [];
+		const dirs = moveDirections(m, spec.dirs).filter(
+			(dir) => !hasCompleteCells(m, item, spec.id, dir)
+		);
+		return poseFitIssues(
+			m.rig,
+			itemPosePlan(
+				m.rig,
+				{ ...item, slotConfig: requireSlot(m, item.slot) },
+				spec.id,
+				move.cells,
+				dirs
+			)
+		);
+	});
+}
+
 /** An unsupported pose or grid has no valid price. Keep the offer visible with its reason instead of breaking the view. */
 export function itemMoveOffer(
 	m: Manifest,
 	specs: MoveSpec[]
-): { specs: MoveSpec[]; gens: number | null; error: Message | string } {
+): { specs: MoveSpec[]; gens: number | null; error: Message | string; poseIssues: string[] } {
 	try {
 		const reviewed = specs.map((spec) => reviewItemMove(m, spec));
 		return {
 			specs: reviewed,
 			gens: reviewed.reduce((sum, spec) => sum + spec.itemReview!.gens, 0),
-			error: ''
+			error: '',
+			poseIssues: [...new Set(reviewed.flatMap((spec) => movePoseIssues(m, spec)))]
 		};
 	} catch (error) {
-		return { specs: [], gens: null, error: errorMessage(error) };
+		return { specs: [], gens: null, error: errorMessage(error), poseIssues: [] };
 	}
 }
 

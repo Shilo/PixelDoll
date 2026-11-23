@@ -685,6 +685,16 @@ export function frozenGrid(
  *  route dresses frozen frames instead, so its frames have none). */
 export const poseFitIssues = (rig: Rig, calls: readonly { kind?: CallKind; cells: string[] }[]) =>
 	calls.flatMap((c) => (c.kind === 'pose' ? importedPoseIssues(rig, { cells: c.cells }) : []));
+/** The frames of those skeleton-posed calls with such findings. */
+export const suspiciousPoseCells = (
+	rig: Rig,
+	calls: readonly { kind?: CallKind; cells: string[] }[]
+) =>
+	calls.flatMap((c) =>
+		c.kind === 'pose'
+			? c.cells.filter((cell) => importedPoseIssues(rig, { cells: [cell] }).length)
+			: []
+	);
 /**
  * Pose calls: one per clip-direction (split above 15 frames), except that idle and walk of one direction share a call when they
  * fit 15 frames: 12 frames cost 3 gens like 8, and both parts passed QA in all 6 chibi clip-directions (round 4 arm I). Held

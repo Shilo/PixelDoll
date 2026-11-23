@@ -1615,6 +1615,7 @@
 			"heldLoop": "El objeto sostenido cambia de forma o de ángulo cuando la animación se repite",
 			"registrationShift": "PixelLab devolvió un borde transparente y puede que haya desplazado la hoja. Comprueba que el objeto se alinee en todos los fotogramas.",
 			"suspiciousJoints": "Las articulaciones se ven raras en {move} {direction}, fotograma {frame}, así que el objeto puede no encajar ahí. Revisa el agarre o la alineación.",
+			"jointReview": "Algunos fotogramas se ajustaron a articulaciones que se ven raras. Revisa el agarre o la alineación.",
 			"bodyUnmeasured": "El objeto cubre casi todo el cuerpo, así que no se pudo comprobar. Asegúrate de que no sea un cuerpo redibujado"
 		},
 		"anotherCharacter": "otro personaje",
