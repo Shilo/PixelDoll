@@ -30,7 +30,7 @@
 	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
-	import { formatNumber, t } from 'svelte-whisper';
+	import { formatNumber, formatPercent, t } from 'svelte-whisper';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { displayMoveJob, moveLabel } from './model.ts';
 	import { openStateReview, stateProgress, stateStatusText } from './stateJobs.svelte.ts';
@@ -49,6 +49,24 @@
 	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
+	// A running move reports finished calls in progress.done; the queued call in flight adds its own partial progress.
+	const movePercent = $derived.by(() => {
+		const progress = moving.progress,
+			scope = moving.spec?.activityScope;
+		if (!progress?.total) return 0;
+		const inFlight = scope
+			? $queue.jobs
+					.filter(
+						(job) =>
+							job.activityScope === scope && (job.state === 'running' || job.state === 'submitting')
+					)
+					.reduce((sum, job) => {
+						const parts = job.jobs.map((call) => (call.done ? 1 : Math.min(1, call.progress ?? 0)));
+						return sum + (parts.length ? parts.reduce((a, b) => a + b, 0) / parts.length : 0);
+					}, 0)
+			: 0;
+		return Math.min(100, Math.round(((progress.done + inFlight) / progress.total) * 100));
+	});
 	const thumbnails = $derived(view.project && lookThumbnails(view.project, view.items));
 	const pendingStates = $derived(
 		kind === 'state'
@@ -195,11 +213,13 @@
 			{#if kind === 'move'}
 				{#if mine && moving.spec}
 					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-						><span
-							class="bu-ring ring"
-							class:spin={!moving.error && !moving.repairReview}
-							aria-hidden="true"
-						></span><span class="move-text"
+						><span class="move-thumb"
+							><span
+								class="bu-ring ring"
+								class:spin={!moving.error && !moving.repairReview}
+								aria-hidden="true"
+							></span></span
+						><span class="move-text"
 							><b>{jobName(moving.spec)}</b><span class="muted small"
 								>{moving.repairReview
 									? moving.spec?.redrawItem
@@ -211,20 +231,25 @@
 												done: moving.progress?.done ?? 0,
 												total: moving.progress?.total ?? '?'
 											})}</span
-							></span
+							>{#if !moving.error && !moving.repairReview && moving.progress}<span
+									class="muted small num">{formatPercent(movePercent / 100)}</span
+								>{/if}</span
 						></button
 					>
 				{/if}
 				{#each queued as q, i (i)}
 					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-						><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
+						><span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span
+						><span class="move-text"
 							><b>{jobName(q.spec)}</b><span class="muted small"
 								>{moving.repairReview
 									? t('moves.waitingForRepairReview')
 									: moving.error
 										? t('moves.waitingForFailed')
 										: t('generation.status.queued')}</span
-							></span
+							>{#if !moving.error && !moving.repairReview}<span class="muted small num"
+									>{formatPercent(0)}</span
+								>{/if}</span
 						></button
 					>
 				{/each}
