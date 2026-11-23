@@ -2911,8 +2911,14 @@ export async function regridClip(
 			stopped = index;
 			break;
 		}
-		if ('blocked' in result)
-			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
+		if ('blocked' in result) {
+			const refused = localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
+			// A plan that stops allowing a later batch keeps the finished ones usable, like a failed batch.
+			if (!cells.length) throw refused;
+			console.error('item repair batch', refused);
+			stopped = index;
+			break;
+		}
 		// A shifted batch is flagged G10 (itemQa) and lands in the review with the rest of the approved, already priced
 		// batches: stopping them offered only a paid re-roll and left the bought frames unusable.
 		cells.push(...result.cells);
