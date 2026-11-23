@@ -2647,6 +2647,7 @@
 			"itemMoveSaveConflict": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。",
 			"itemMoveSaveConflictAlso": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。另一个朝向也已停止：{reason}",
 			"keepWithoutStanding": "此装备在其设计所依据的动作中缺少帧，因此不能不含该动作而保留。请改为制作缺少的帧。",
+			"keepWithoutNothingLeft": "此装备没有可保留的完整动作。请改为制作缺少的帧。",
 			"savedFrameMissing": "此装备的一个已保存帧在存储中缺失。"
 		}
 	},

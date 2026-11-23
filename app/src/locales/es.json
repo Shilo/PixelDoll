@@ -2717,6 +2717,7 @@
 			"itemMoveSaveConflict": "Este personaje u objeto cambió mientras se generaban sus fotogramas. Se conservó el arte existente; los fotogramas terminados siguen en Actividad.",
 			"itemMoveSaveConflictAlso": "Este personaje u objeto cambió mientras se generaban sus fotogramas. Se conservó el arte existente; los fotogramas terminados siguen en Actividad. Otra vista también se detuvo: {reason}",
 			"keepWithoutStanding": "A este objeto le faltan fotogramas en la animación de la que parte su diseño, así que no se puede conservar sin ella. Crea los fotogramas que faltan.",
+			"keepWithoutNothingLeft": "Este objeto no tiene ninguna animación completa que conservar. Crea los fotogramas que faltan.",
 			"savedFrameMissing": "Falta en el almacenamiento un fotograma guardado de este objeto."
 		}
 	},

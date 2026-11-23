@@ -2726,6 +2726,7 @@
 			"itemMoveSaveConflict": "Este personagem ou item mudou enquanto seus quadros eram gerados. A arte existente foi mantida; os quadros prontos continuam em Atividade.",
 			"itemMoveSaveConflictAlso": "Este personagem ou item mudou enquanto seus quadros eram gerados. A arte existente foi mantida; os quadros prontos continuam em Atividade. Outra vista também parou: {reason}",
 			"keepWithoutStanding": "Faltam quadros deste item na animação da qual ele foi desenhado, então ele não pode ser mantido sem ela. Crie os quadros que faltam.",
+			"keepWithoutNothingLeft": "Este item não tem nenhuma animação completa para manter. Crie os quadros que faltam.",
 			"savedFrameMissing": "Um quadro salvo deste item está faltando no armazenamento."
 		}
 	},

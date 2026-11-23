@@ -2717,6 +2717,7 @@
 			"itemMoveSaveConflict": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity.",
 			"itemMoveSaveConflictAlso": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity. Another view also stopped: {reason}",
 			"keepWithoutStanding": "This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.",
+			"keepWithoutNothingLeft": "This item has no complete move to keep. Make the missing frames instead.",
 			"savedFrameMissing": "A saved frame of this item is missing from storage."
 		}
 	},

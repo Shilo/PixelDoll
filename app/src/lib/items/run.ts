@@ -2283,12 +2283,21 @@ export async function applyRepairReview(projectId: string, review: RepairReview)
 export const gapMoves = (m: Manifest, item: Item) => [
 	...new Set(coverageGaps(m, item).map((gap) => gap.split('/')[0]))
 ];
+/** Whether the item has frames in any move besides these (retainItemQa keeps its checks only then). */
+const keepsFramesWithout = (item: Item, moves: readonly string[]) =>
+	item.layers.some((layer) =>
+		Object.entries(layer.cells ?? {}).some(
+			([move, dirs]) => !moves.includes(move) && Object.keys(dirs).length > 0
+		)
+	);
 /** Whether an item can be kept without these moves: never without the standing move it is designed and posed from, or the
- *  move of its anchor frame, which every other move is drawn from. Those gaps need the paid redraw instead. */
+ *  move of its anchor frame, which every other move is drawn from, and never when no frames would be left. Those gaps
+ *  need the paid redraw instead. */
 export const keepableWithout = (item: Item, moves: readonly string[]) =>
 	!!moves.length &&
 	!(item.standing && moves.includes(item.standing)) &&
-	!(item.anchorCell && moves.includes(item.anchorCell.split('/')[0]));
+	!(item.anchorCell && moves.includes(item.anchorCell.split('/')[0])) &&
+	keepsFramesWithout(item, moves);
 /** The item without these moves (retainItemMoves: frames, coverage, pending cells, hidden body pixels, refit notes and
  *  checks, with the summary recomputed), so it is hidden there and listed as missing, to make later at its own price.
  *  Nothing is added or redrawn. */
@@ -2326,12 +2335,16 @@ export async function acceptItemReview(
 		throw itemReviewChangedError();
 	}
 	if (keepWithout && !keepableWithout(item, keepWithout))
-		throw new LocalizedError(
-			'This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.',
-			'itemRoute.errors.keepWithoutStanding'
-		);
+		throw keepsFramesWithout(item, keepWithout)
+			? new LocalizedError(
+					'This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.',
+					'itemRoute.errors.keepWithoutStanding'
+				)
+			: new LocalizedError(
+					'This item has no complete move to keep. Make the missing frames instead.',
+					'itemRoute.errors.keepWithoutNothingLeft'
+				);
 	const kept = keepWithout?.length ? withoutMoves(ctx.rec.manifest, item, keepWithout) : item;
-	if (!kept.qa) throw itemReviewChangedError(); // nothing would be left to keep
 	const accepted = { ...kept, qa: { ...acceptQa(kept.qa!), status: 'accepted' as const } };
 	await saveItem(projectId, accepted, new Map(), [], (current) => {
 		const currentItem = current.manifest.items.find((i) => i.id === itemId);

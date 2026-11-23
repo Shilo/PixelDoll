@@ -2647,6 +2647,7 @@
 			"itemMoveSaveConflict": "Karakter atau item ini berubah saat frame-nya sedang dibuat. Gambar yang ada tetap disimpan; frame yang selesai tetap ada di Aktivitas.",
 			"itemMoveSaveConflictAlso": "Karakter atau item ini berubah saat frame-nya sedang dibuat. Gambar yang ada tetap disimpan; frame yang selesai tetap ada di Aktivitas. Tampilan lain juga berhenti: {reason}",
 			"keepWithoutStanding": "Item ini kehilangan frame pada animasi yang menjadi dasar desainnya, jadi tidak dapat disimpan tanpa animasi itu. Buat frame yang hilang sebagai gantinya.",
+			"keepWithoutNothingLeft": "Item ini tidak punya animasi lengkap untuk disimpan. Buat frame yang hilang sebagai gantinya.",
 			"savedFrameMissing": "Sebuah frame tersimpan dari item ini tidak ada di penyimpanan."
 		}
 	},

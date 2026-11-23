@@ -2,7 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import type { Item, ItemQa, Manifest } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import { slotOf } from '../../src/lib/items/items.ts';
-import { acceptItemReview } from '../../src/lib/items/run.ts';
+import { acceptItemReview, keepableWithout } from '../../src/lib/items/run.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const state = vi.hoisted(() => ({
@@ -232,3 +232,28 @@ test.each(['standing', 'anchor'] as const)(
 		expect(state.saved).toBeNull();
 	}
 );
+
+test('an item with frames only in the moves it is missing frames in is not offered a keep that leaves nothing', async () => {
+	const m = state.record!.manifest,
+		hat = m.items[0];
+	m.rig.animations = [
+		{ id: 'walk', cells: 2, loop: true, frames: [0, 1].map((cell) => ({ cell, ms: 100 })) }
+	];
+	m.items.push({
+		...structuredClone(hat),
+		id: 'base',
+		slot: 'body',
+		layers: [
+			{ id: 'main', role: 'fg', z: 0, cells: { walk: { south: ['sha256:b0', 'sha256:b1'] } } }
+		]
+	});
+	hat.layers[0].cells!.walk = { south: ['sha256:art', null] };
+	hat.coverage = ['walk/south/0'];
+	const reviewed = structuredClone(hat);
+	expect(keepableWithout(hat, ['walk'])).toBe(false);
+	// Says why in its own words, not that the item changed under the user.
+	await expect(acceptItemReview('character', hat.id, reviewed, ['walk'])).rejects.toMatchObject({
+		translation: { key: 'itemRoute.errors.keepWithoutNothingLeft' }
+	});
+	expect(state.saved).toBeNull();
+});

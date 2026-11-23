@@ -2717,6 +2717,7 @@
 			"itemMoveSaveConflict": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité.",
 			"itemMoveSaveConflictAlso": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité. Une autre vue s’est aussi arrêtée : {reason}",
 			"keepWithoutStanding": "Il manque des images à cet objet dans l’animation dont il est conçu, il ne peut donc pas être gardé sans elle. Créez plutôt les images manquantes.",
+			"keepWithoutNothingLeft": "Cet objet n’a aucune animation complète à garder. Créez plutôt les images manquantes.",
 			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage."
 		}
 	},

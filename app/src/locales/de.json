@@ -2717,6 +2717,7 @@
 			"itemMoveSaveConflict": "Diese Figur oder dieser Gegenstand hat sich geändert, während die Frames generiert wurden. Die vorhandenen Grafiken wurden behalten; fertige Frames bleiben unter „Aktivität“.",
 			"itemMoveSaveConflictAlso": "Diese Figur oder dieser Gegenstand hat sich geändert, während die Frames generiert wurden. Die vorhandenen Grafiken wurden behalten; fertige Frames bleiben unter „Aktivität“. Eine weitere Ansicht wurde ebenfalls gestoppt: {reason}",
 			"keepWithoutStanding": "Diesem Gegenstand fehlen Frames in der Animation, aus der er entworfen ist, daher kann er nicht ohne sie behalten werden. Erstelle stattdessen die fehlenden Frames.",
+			"keepWithoutNothingLeft": "Dieser Gegenstand hat keine vollständige Animation, die behalten werden kann. Erstelle stattdessen die fehlenden Frames.",
 			"savedFrameMissing": "Ein gespeicherter Frame dieses Gegenstands fehlt im Speicher."
 		}
 	},
