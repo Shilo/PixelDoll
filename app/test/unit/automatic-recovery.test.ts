@@ -736,16 +736,21 @@ test('tiny natural eye colors pass the real dress runner without a smudge reroll
 	expect(saved.item.designWarnings).toBeUndefined();
 });
 
-test.each(['one output', 'three outputs', 'wrong-size padding'] as const)(
+test('a single-view edit ignores its unused wrong-size padding frame', async () => {
+	// Padding is never used, so its size no longer makes the requested frame unusable (it failed structurally before).
+	const f = await singleStandingFixture();
+	ledger.output = async () => [f.dressed, makeImg(16, 16)];
+	const result = await runItem(f.draft, f.ctx);
+	expect([...result!.g1.values()].some((reason) => reason.startsWith('G1 '))).toBe(false);
+	expect(result!.cells).toHaveLength(1);
+});
+
+test.each(['one output', 'three outputs'] as const)(
 	'a single-view edit with %s fails structurally and cannot be accepted',
 	async (variant) => {
 		const f = await singleStandingFixture();
 		ledger.output = async () =>
-			variant === 'one output'
-				? [f.dressed]
-				: variant === 'three outputs'
-					? [f.dressed, f.dressed, f.dressed]
-					: [f.dressed, makeImg(16, 16)];
+			variant === 'one output' ? [f.dressed] : [f.dressed, f.dressed, f.dressed];
 		const result = await runItem(f.draft, f.ctx);
 		expect(ledger.requests.every((r) => r.path === '/edit-animation-v2')).toBe(true);
 		expect([...result!.g1.values()].some((reason) => reason.startsWith('G1 '))).toBe(true);
