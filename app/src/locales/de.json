@@ -2034,6 +2034,8 @@
 		"waitingTitle": "Warten auf einen anderen Tab",
 		"waitingBody": "Deine Generierung hat noch nicht begonnen. Lass Aktivität geöffnet; PixelDoll macht hier weiter, sobald der andere Tab bereit ist.",
 		"stopInRunningTab": "Stoppe diesen Auftrag in dem Tab, in dem er läuft.",
+		"stopNoAnswer": "Der Tab, in dem dieser Auftrag läuft, hat nicht geantwortet. Stoppe ihn in diesem Tab oder lade diesen Tab neu und versuche es erneut.",
+		"stopNotConfirmed": "PixelLab hat das Stoppen nicht bestätigt, daher kann der Auftrag weiterlaufen und Kosten verursachen. Sieh in der Aktivität nach.",
 		"pausedStorage": "Gespeicherte Aufträge konnten nicht gelesen oder gespeichert werden, deshalb wird nichts Neues gesendet. Setze fort, um es erneut zu versuchen.",
 		"cancelSaveFailed": "Der Abbruch konnte nicht gespeichert werden. Dieser Tab sendet die Anfrage nicht, ein anderer Tab oder ein Neuladen aber schon."
 	},
@@ -3085,6 +3087,7 @@
 		"download": "Bezahlte Ergebnisse herunterladen",
 		"frame": "{view} Frame {number}",
 		"waiting": "Einige bezahlte Anfragen laufen noch bei PixelLab. Diese Optionen werden freigegeben, sobald sie fertig sind.",
+		"loadFailed": "Deine bezahlten Ergebnisse konnten nicht gelesen werden, daher sind die Möglichkeiten, sie weiterzuverwenden, ausgeblendet. Es ist nichts verloren gegangen.",
 		"state": {
 			"ready": "Fertig",
 			"pending": "Noch nicht gekauft",

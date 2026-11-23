@@ -138,9 +138,15 @@ export function readableRecord(raw: unknown): JobRec | undefined {
 		return undefined;
 	const r = raw as JobRec;
 	const subJob = (s: unknown): s is SubJob => !!s && typeof s === 'object';
+	// Readers sort and open each result by its label and hash, so a damaged entry makes the whole record unreadable.
+	const result = (x: unknown): x is Result =>
+		!!x &&
+		typeof x === 'object' &&
+		typeof (x as Result).label === 'string' &&
+		typeof (x as Result).sha === 'string';
 	if (
 		Array.isArray(r.jobs) &&
-		r.jobs.every((s) => subJob(s) && Array.isArray(s.results)) &&
+		r.jobs.every((s) => subJob(s) && Array.isArray(s.results) && s.results.every(result)) &&
 		typeof r.createdAt === 'number'
 	)
 		return r;
@@ -150,7 +156,12 @@ export function readableRecord(raw: unknown): JobRec | undefined {
 		createdAt: typeof r.createdAt === 'number' ? r.createdAt : 0,
 		jobs: (Array.isArray(r.jobs) ? r.jobs : [])
 			.filter(subJob)
-			.map((s) => ({ ...s, done: true, results: Array.isArray(s.results) ? s.results : [] })),
+			// Results that are still whole stay listed, so what was saved can be found again; nothing is resent.
+			.map((s) => ({
+				...s,
+				done: true,
+				results: Array.isArray(s.results) ? s.results.filter(result) : []
+			})),
 		error: UNREADABLE,
 		costUnknown: true
 	};
@@ -299,7 +310,13 @@ type Msg = {
 	capacitySync?: boolean;
 	/** A follower asks the leader, which owns the submitted jobs and their credential, to stop this record. */
 	stop?: string;
+	/** The follower's id for the answer to its stop. */
+	stopReply?: string;
+	/** The leader's answer: whether the stop was confirmed and saved. */
+	stopped?: { reply: string; ok: boolean };
 };
+/** How long a follower waits for the leading tab to answer a stop before saying it could not be confirmed. */
+const STOP_REPLY_MS = 15_000;
 
 export const backoff = (attempt: number, rnd = Math.random()) =>
 	Math.min(60_000, 2000 * 2 ** Math.max(0, attempt - 1)) * (0.5 + 0.5 * rnd);
@@ -421,6 +438,15 @@ function every(ms: number, fn: () => void): () => void {
 	};
 }
 
+/** A valid PixelLab result this device could not save: a storage fault to retry, never a malformed or failed job. */
+class ResultNotStored extends Error {
+	constructor(label: string, cause: unknown) {
+		super(`${label}: could not be saved on this device (${(cause as Error)?.message ?? cause})`, {
+			cause
+		});
+	}
+}
+
 export class Queue {
 	private recs = new Map<string, JobRec>();
 	private persisting = new Set<string>(); // first ledger write must commit before the scheduler may send
@@ -428,6 +454,15 @@ export class Queue {
 	private listeners = new Set<(s: QueueSnapshot) => void>();
 	private timer: (() => void) | null = null;
 	private ticking = false;
+	/** Followers' stops waiting for the leading tab's answer, by reply id. */
+	private stopReplies = new Map<string, (ok: boolean) => void>();
+	// Order of the latest storage outcomes (reads and writes apart): the storage notice lifts only once a later read and a
+	// later write have both succeeded, never because a tick returned without touching storage.
+	private storageSeq = 0;
+	private readOk = 0;
+	private readBad = 0;
+	private writeOk = 0;
+	private writeBad = 0;
 	private disconnected = false;
 	private capacityProbe: object | null = null;
 	private capacityRead: Promise<void> | null = null;
@@ -527,6 +562,26 @@ export class Queue {
 				return out;
 			};
 		}
+		const track =
+			<A extends unknown[], R>(op: (...args: A) => Promise<R>, write: boolean) =>
+			async (...args: A): Promise<R> => {
+				try {
+					const out = await op(...args);
+					if (write) this.writeOk = ++this.storageSeq;
+					else this.readOk = ++this.storageSeq;
+					return out;
+				} catch (e) {
+					if (write) this.writeBad = ++this.storageSeq;
+					else this.readBad = ++this.storageSeq;
+					this.storageFailed();
+					throw e;
+				}
+			};
+		this.deps.put = track(this.deps.put, true);
+		this.deps.transition = track(this.deps.transition, true);
+		this.deps.putBlob = track(this.deps.putBlob, true);
+		this.deps.all = track(this.deps.all, false);
+		this.deps.get = track(this.deps.get, false);
 		const { all, get } = this.deps;
 		const owns = (r: JobRec) => this.ownsRecord(r);
 		// Every stored row is read through readableRecord: one damaged row must never stop the queue.
@@ -684,8 +739,23 @@ export class Queue {
 					this.emit();
 					this.requestLeadership();
 				}
-				if (typeof m.stop === 'string' && this.role === 'leader')
-					void this.cancel(m.stop).catch((e) => console.error('queue', e));
+				if (typeof m.stop === 'string' && this.role === 'leader') {
+					const reply = m.stopReply;
+					void this.cancel(m.stop)
+						.then(
+							() => true,
+							(e) => {
+								console.error('queue', e);
+								return false;
+							}
+						)
+						.then((ok) => {
+							if (typeof reply === 'string')
+								this.chan?.postMessage({ stopped: { reply, ok } } satisfies Msg);
+						});
+				}
+				if (m.stopped && typeof m.stopped.reply === 'string')
+					this.stopReplies.get(m.stopped.reply)?.(m.stopped.ok === true);
 				if (m.capacitySync && this.role === 'leader') this.emit();
 			};
 		}
@@ -938,19 +1008,28 @@ export class Queue {
 		this.timer ??= every(1000, () =>
 			this.tick().then(
 				() => {
-					// A tick completed: storage works again (sending still saves first, so nothing went out unsaved).
-					if (this.paused === 'storage') this.resume();
+					// Storage works again once both a read and a write succeeded after the last failure of each (sending still
+					// saves first, so nothing went out unsaved meanwhile).
+					if (
+						this.paused === 'storage' &&
+						(!this.readBad || this.readOk > this.readBad) &&
+						(!this.writeBad || this.writeOk > this.writeBad)
+					)
+						this.resume();
 				},
 				(e) => {
-					// The ledger could not be read or saved: say so in Activity until a tick completes again.
+					// The ledger could not be read or saved: say so in Activity until storage is proven again.
 					console.error('queue', e);
-					if (!this.paused) {
-						this.paused = 'storage';
-						this.emit();
-					}
+					this.storageFailed();
 				}
 			)
 		);
+	}
+	/** A storage read or write failed: hold sending and say so in Activity until storage is proven again. */
+	private storageFailed() {
+		if (this.paused) return;
+		this.paused = 'storage';
+		this.emit();
 	}
 	stop() {
 		this.timer?.();
@@ -1398,7 +1477,12 @@ export class Queue {
 		const now = this.deps.now();
 		if (!(await this.network(now)) || disconnected()) return { ops: [] };
 		if (this.role === 'follower') return { ops: [] }; // the leader tab submits and polls
-		if (this.role === 'leader' && now - this.merged >= (this.chan ? FULL_SYNC_MS : SYNC_MS)) {
+		// A failed ledger read is retried on the next tick, so a working ledger lifts the storage notice at once.
+		if (
+			this.role === 'leader' &&
+			(now - this.merged >= (this.chan ? FULL_SYNC_MS : SYNC_MS) ||
+				(this.paused === 'storage' && this.readBad > this.readOk))
+		) {
 			this.merged = now;
 			await this.merge();
 		}
@@ -1794,6 +1878,13 @@ export class Queue {
 							im.rgba
 						);
 			} catch (e) {
+				if (e instanceof ResultNotStored) {
+					// This device could not save a valid result: keep the job open, so a later poll reads the finished job again
+					// and saves it (blobs are content addressed, so a second save is the same blob). Storage is paused meanwhile.
+					s.results = [];
+					s.lastPoll = this.deps.now();
+					throw e;
+				}
 				Object.assign(s, {
 					done: true,
 					status: 'failed',
@@ -1827,7 +1918,12 @@ export class Queue {
 		const png = rgba
 			? await encodePngBytes({ ...size, data: new Uint8ClampedArray(bytes) })
 			: bytes;
-		const sha = await this.deps.putBlob(png);
+		let sha: string;
+		try {
+			sha = await this.deps.putBlob(png);
+		} catch (e) {
+			throw new ResultNotStored(label, e);
+		}
 		s.results.push({ label, sha, ...size });
 	}
 
@@ -1852,6 +1948,8 @@ export class Queue {
 		} catch (e) {
 			// storage CDN error or bad bytes: back off (tick), give up after MAX_TRIES with the URLs kept (R6 P2-9)
 			s.lastPoll = this.deps.now();
+			// This device failing to save is not a failed download: retry without counting it (storage is paused meanwhile).
+			if (e instanceof ResultNotStored) throw e;
 			if (!this.deps.online()) {
 				this.goOffline();
 				return this.save(r);
@@ -1920,7 +2018,26 @@ export class Queue {
 					'Stop this job in the tab that is running it.',
 					'activity.stopInRunningTab'
 				);
-			this.chan.postMessage({ stop: id } satisfies Msg);
+			const reply = crypto.randomUUID();
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			const answer = await new Promise<boolean | undefined>((res) => {
+				this.stopReplies.set(reply, res);
+				timer = setTimeout(() => res(undefined), STOP_REPLY_MS);
+				this.chan!.postMessage({ stop: id, stopReply: reply } satisfies Msg);
+			}).finally(() => {
+				clearTimeout(timer);
+				this.stopReplies.delete(reply);
+			});
+			if (answer === undefined)
+				throw new LocalizedError(
+					'The tab running this job did not answer. Stop it in that tab, or reload this tab and try again.',
+					'activity.stopNoAnswer'
+				);
+			if (!answer)
+				throw new LocalizedError(
+					'PixelLab did not confirm the stop, so it may still run and charge. Check Activity.',
+					'activity.stopNotConfirmed'
+				);
 			return;
 		}
 		if (r.state === 'queued') {
@@ -1937,7 +2054,9 @@ export class Queue {
 			}
 			this.submitScopes.delete(r.id);
 			return;
-		} else if (r.state === 'running') {
+		}
+		let unconfirmed = false;
+		if (r.state === 'running') {
 			for (const s of r.jobs.filter((s) => !s.done && !s.remoteDone)) {
 				try {
 					const stopped = await this.deps.api<{ usage?: Usage | null } | undefined>(
@@ -1959,11 +2078,19 @@ export class Queue {
 					s.usage = stopped?.usage; // the cancel response is the job's final usage report
 				} catch (e) {
 					s.error = (e as Error).message; // 400/409: already finished -> polling picks up the result
+					// Any other refusal or no answer: the job may still run and charge, so the stop must not look done.
+					if (!(e instanceof ApiError && (e.status === 400 || e.status === 409)))
+						unconfirmed = true;
 				}
 			}
 			this.settle(r);
 		}
 		await this.save(r);
+		if (unconfirmed)
+			throw new LocalizedError(
+				'PixelLab did not confirm the stop, so it may still run and charge. Check Activity.',
+				'activity.stopNotConfirmed'
+			);
 	}
 	/** Save again a cancel whose save failed; meanwhile it stays canceled in this tab. A stopped running record is this tab's
 	 *  own, already settled with the stop's usage: saved as is. A queued-only cancel still loses to another tab's submission

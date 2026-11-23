@@ -2034,6 +2034,8 @@
 		"waitingTitle": "Waiting for another tab",
 		"waitingBody": "Your generation hasn’t started. Keep Activity open and PixelDoll will continue here when the other tab is ready.",
 		"stopInRunningTab": "Stop this job in the tab that is running it.",
+		"stopNoAnswer": "The tab running this job did not answer. Stop it in that tab, or reload this tab and try again.",
+		"stopNotConfirmed": "PixelLab did not confirm the stop, so it may still run and charge. Check Activity.",
 		"pausedStorage": "Saved jobs couldn’t be read or saved, so nothing new is sent. Resume to try again.",
 		"cancelSaveFailed": "The cancel couldn’t be saved. This tab won’t send the request, but another tab or a reload could."
 	},
@@ -3085,6 +3087,7 @@
 		"download": "Download paid results",
 		"frame": "{view} frame {number}",
 		"waiting": "Some paid requests are still running at PixelLab. These choices unlock when they finish.",
+		"loadFailed": "Your paid results could not be read, so the ways to reuse them are hidden. Nothing was lost.",
 		"state": {
 			"ready": "Ready",
 			"pending": "Not bought yet",

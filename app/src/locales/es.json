@@ -2034,6 +2034,8 @@
 		"waitingTitle": "Esperando otra pestaña",
 		"waitingBody": "Tu generación aún no ha empezado. Deja Actividad abierta y PixelDoll continuará aquí cuando la otra pestaña esté lista.",
 		"stopInRunningTab": "Detén esta tarea en la pestaña que la está ejecutando.",
+		"stopNoAnswer": "La pestaña que ejecuta esta tarea no respondió. Detenla en esa pestaña, o recarga esta pestaña y vuelve a intentarlo.",
+		"stopNotConfirmed": "PixelLab no confirmó la detención, así que la tarea podría seguir ejecutándose y cobrarse. Revisa Actividad.",
 		"pausedStorage": "No se pudieron leer ni guardar las tareas guardadas, así que no se envía nada nuevo. Reanuda para volver a intentarlo.",
 		"cancelSaveFailed": "No se pudo guardar la cancelación. Esta pestaña no enviará la solicitud, pero otra pestaña o una recarga sí podrían enviarla."
 	},
@@ -3085,6 +3087,7 @@
 		"download": "Descargar resultados pagados",
 		"frame": "{view}, fotograma {number}",
 		"waiting": "Algunas solicitudes pagadas siguen en curso en PixelLab. Estas opciones se activan cuando terminen.",
+		"loadFailed": "No se pudieron leer tus resultados pagados, así que las formas de reutilizarlos están ocultas. No se perdió nada.",
 		"state": {
 			"ready": "Listo",
 			"pending": "Aún no comprado",

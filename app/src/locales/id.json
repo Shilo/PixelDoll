@@ -1973,6 +1973,8 @@
 		"waitingTitle": "Menunggu tab lain",
 		"waitingBody": "Pembuatan Anda belum dimulai. Biarkan Aktivitas tetap terbuka dan PixelDoll akan melanjutkan di sini saat tab lain siap.",
 		"stopInRunningTab": "Hentikan pekerjaan ini di tab yang sedang menjalankannya.",
+		"stopNoAnswer": "Tab yang menjalankan pekerjaan ini tidak menjawab. Hentikan di tab itu, atau muat ulang tab ini lalu coba lagi.",
+		"stopNotConfirmed": "PixelLab tidak mengonfirmasi penghentian, jadi pekerjaan ini mungkin masih berjalan dan dikenai biaya. Periksa Aktivitas.",
 		"pausedStorage": "Pekerjaan yang tersimpan tidak dapat dibaca atau disimpan, jadi tidak ada yang baru dikirim. Lanjutkan untuk mencoba lagi.",
 		"cancelSaveFailed": "Pembatalan tidak dapat disimpan. Tab ini tidak akan mengirim permintaan, tetapi tab lain atau memuat ulang halaman bisa mengirimnya."
 	},
@@ -3003,6 +3005,7 @@
 		"download": "Unduh hasil berbayar",
 		"frame": "{view}, frame {number}",
 		"waiting": "Beberapa permintaan berbayar masih berjalan di PixelLab. Pilihan ini terbuka setelah selesai.",
+		"loadFailed": "Hasil berbayar kamu tidak dapat dibaca, jadi cara untuk memakainya lagi disembunyikan. Tidak ada yang hilang.",
 		"state": {
 			"ready": "Siap",
 			"pending": "Belum dibeli",

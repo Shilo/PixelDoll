@@ -247,6 +247,38 @@ test('Stop in a follower tab is carried out by the leader, with the key that sta
 	}
 });
 
+test('Stop in a follower tab says so when PixelLab does not confirm the stop', async () => {
+	const f = await twoTabs('leader-key');
+	try {
+		const deps = (f.leader as unknown as { deps: Deps }).deps;
+		const api = deps.api;
+		deps.api = async <T>(
+			key: string,
+			method: string,
+			path: string,
+			...rest: unknown[]
+		): Promise<T> => {
+			if (method === 'DELETE') throw new TypeError('Failed to fetch');
+			return (api as (...args: unknown[]) => Promise<T>)(key, method, path, ...rest);
+		};
+		const rec = await f.leader.enqueue(
+			{ method: 'POST', path: '/animate-with-skeleton-v3', body: { seed: 3 } },
+			{ tag: 'studio-move' }
+		);
+		await vi.waitFor(async () => {
+			f.advance(31_000);
+			await f.leader.tick();
+			expect(f.follower.snapshot().jobs.find((r) => r.id === rec.id)?.state).toBe('running');
+		});
+		await expect(f.follower.cancel(rec.id)).rejects.toMatchObject({
+			translation: { key: 'activity.stopNotConfirmed' }
+		});
+		expect(f.store.get(rec.id)?.state).toBe('running'); // never shown as stopped while it may still charge
+	} finally {
+		f.close();
+	}
+});
+
 test('a capacity broadcast updates only the published capacity, never the key, role or pause', async () => {
 	const f = await twoTabs('leader-key');
 	const raw = new BroadcastChannel(f.channel);

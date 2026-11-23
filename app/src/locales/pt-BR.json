@@ -2043,6 +2043,8 @@
 		"waitingTitle": "Aguardando outra aba",
 		"waitingBody": "Sua geração ainda não começou. Mantenha o Atividade aberto e o PixelDoll continuará aqui quando a outra aba estiver pronta.",
 		"stopInRunningTab": "Interrompa esta tarefa na aba que a está executando.",
+		"stopNoAnswer": "A aba que está executando esta tarefa não respondeu. Interrompa-a nessa aba, ou recarregue esta aba e tente de novo.",
+		"stopNotConfirmed": "O PixelLab não confirmou a interrupção, então a tarefa ainda pode rodar e ser cobrada. Confira a Atividade.",
 		"pausedStorage": "Não foi possível ler ou salvar as tarefas salvas, então nada novo é enviado. Retome para tentar de novo.",
 		"cancelSaveFailed": "Não foi possível salvar o cancelamento. Esta aba não vai enviar a solicitação, mas outra aba ou um recarregamento pode enviar."
 	},
@@ -3094,6 +3096,7 @@
 		"download": "Baixar resultados pagos",
 		"frame": "{view}, quadro {number}",
 		"waiting": "Algumas solicitações pagas ainda estão em andamento no PixelLab. Estas opções são liberadas quando terminarem.",
+		"loadFailed": "Não foi possível ler seus resultados pagos, então as formas de reutilizá-los estão ocultas. Nada foi perdido.",
 		"state": {
 			"ready": "Pronto",
 			"pending": "Ainda não comprado",

@@ -2034,6 +2034,8 @@
 		"waitingTitle": "Başka bir sekme bekleniyor",
 		"waitingBody": "Üretiminiz henüz başlamadı. Etkinlik’i açık tutun; diğer sekme hazır olduğunda PixelDoll burada devam eder.",
 		"stopInRunningTab": "Bu işi, çalıştığı sekmeden durdurun.",
+		"stopNoAnswer": "Bu işi çalıştıran sekme yanıt vermedi. İşi o sekmeden durdurun ya da bu sekmeyi yenileyip tekrar deneyin.",
+		"stopNotConfirmed": "PixelLab durdurmayı onaylamadı, bu yüzden iş çalışmaya ve ücretlendirilmeye devam edebilir. Etkinlik bölümüne bakın.",
 		"pausedStorage": "Kayıtlı işler okunamadı veya kaydedilemedi, bu yüzden yeni bir şey gönderilmiyor. Yeniden denemek için devam edin.",
 		"cancelSaveFailed": "İptal kaydedilemedi. Bu sekme isteği göndermeyecek, ancak başka bir sekme veya sayfayı yenilemek gönderebilir."
 	},
@@ -3085,6 +3087,7 @@
 		"download": "Ücretli sonuçları indir",
 		"frame": "{view}, kare {number}",
 		"waiting": "Bazı ücretli istekler PixelLab'de hâlâ işleniyor. Bu seçenekler bitince açılır.",
+		"loadFailed": "Ücretli sonuçlarınız okunamadı, bu yüzden onları yeniden kullanma seçenekleri gizlendi. Hiçbir şey kaybolmadı.",
 		"state": {
 			"ready": "Hazır",
 			"pending": "Henüz satın alınmadı",

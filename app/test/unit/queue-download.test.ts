@@ -195,3 +195,40 @@ test('Clear finished reports a failed delete and keeps the record listed', async
 	expect(q.snapshot().jobs.map((j) => j.id)).toEqual([r.id]);
 	expect(store.has(r.id)).toBe(true);
 });
+
+test('a valid inline result this device cannot save stays open and is saved once storage works, never failed', async () => {
+	let saves = 0,
+		broken = true;
+	const { q, store, run } = fixture({
+		api: async <T>(_key: string, method: string, endpoint: string): Promise<T> => {
+			if (endpoint === '/balance') return {} as T;
+			if (method === 'POST') return { background_job_id: 'j' } as T;
+			return {
+				id: 'j',
+				status: 'completed',
+				last_response: {
+					image: {
+						type: 'rgba_bytes',
+						base64: bytesToBase64(new Uint8Array([1, 2, 3, 255])),
+						width: 1,
+						height: 1
+					}
+				}
+			} as T;
+		},
+		putBlob: async () => {
+			saves++;
+			if (broken) throw new Error('QuotaExceededError');
+			return 'output';
+		}
+	});
+	const record = await q.enqueue({ method: 'POST', path: '/edit-image-pro-flash', body: {} });
+	await run(12);
+	expect(saves).toBeGreaterThan(0);
+	expect(store.get(record.id)?.state).toBe('running'); // paid result kept open, not marked malformed
+	expect(q.snapshot().paused).toBe('storage');
+	broken = false;
+	await run(12);
+	expect(store.get(record.id)?.state).toBe('done');
+	expect(store.get(record.id)?.jobs[0].results).toMatchObject([{ sha: 'output', w: 1, h: 1 }]);
+});
