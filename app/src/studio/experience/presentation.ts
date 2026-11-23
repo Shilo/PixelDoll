@@ -445,7 +445,7 @@ export function resolveLive(
 		defaultDirection?: DirectionName;
 		deadZone?: number;
 		riding?: boolean;
-		/** A State chosen as the rider's pose; used only while riding, and only for the exact facing it covers. */
+		/** A State or Move chosen as the rider's pose; used only while riding, and only for the exact facing it covers. */
 		riderPose?: string;
 	}
 ): Presentation {

@@ -1,5 +1,5 @@
-// Mount settings: whether the test mount shows, which legs it hides, and the saved State each character holds as its
-// Riding pose (docs/research/2026-11-21-riding-state/README.md). Choices persist through mountStorage.ts.
+// Mount settings: whether the test mount shows, which legs it hides, and the saved State or Move each character holds
+// as its Riding pose (docs/research/2026-11-21-riding-state/README.md). Choices persist through mountStorage.ts.
 import { clipKind } from '../../lib/runtime/timeline.js';
 import { DEFAULT_MOVE, type DirectionName } from '../../lib/rig/rig.ts';
 import type { Manifest } from '../../lib/store/manifest.ts';
@@ -16,26 +16,31 @@ import { experience } from './state.svelte.ts';
 
 export interface RiderPoseOption {
 	id: string;
-	/** Facings without body art, mirrors resolved; a pose is offered only when this is empty. */
+	/** Facings without complete body art, mirrors resolved; a pose with any is listed but disabled. */
 	missing: DirectionName[];
 }
 
-/** Every saved State except Standing, with the facings it cannot show. */
+/** Every saved State or Move except Standing, with the facings it cannot show completely. */
 export function riderPoseOptions(manifest: Manifest | undefined): RiderPoseOption[] {
 	if (!manifest) return [];
 	const { rig } = manifest;
 	const body = manifest.items.find((item) => item.id === rig.baseItem)?.layers[0];
 	// A mirrored facing is one hop from its drawn source (the rig validates that).
-	const drawn = (clip: string, direction: DirectionName) => {
+	const drawn = (clip: string, cells: readonly number[], direction: DirectionName) => {
 		const source = rig.directions.find(({ id }) => id === direction)?.mirrorOf ?? direction;
-		return !!body?.cells?.[clip]?.[source]?.[0];
+		return cells.length > 0 && cells.every((cell) => !!body?.cells?.[clip]?.[source]?.[cell]);
 	};
 	return rig.animations
-		.filter((clip) => clipKind(clip) === 'state' && clip.id !== DEFAULT_MOVE)
-		.map(({ id }) => ({
-			id,
-			missing: rig.directions.map((d) => d.id).filter((direction) => !drawn(id, direction))
-		}));
+		.filter((clip) => clip.id !== DEFAULT_MOVE)
+		.map((animation) => {
+			const cells = animation.frames.map(({ cell }) => cell);
+			return {
+				id: animation.id,
+				missing: rig.directions
+					.map((d) => d.id)
+					.filter((direction) => !drawn(animation.id, cells, direction))
+			};
+		});
 }
 
 /** A State other than Standing is drawn seated, so mounted leg cutting never applies to it. */
@@ -44,7 +49,7 @@ export function legsKept(manifest: Manifest | undefined, clip: string | null) {
 	return !!animation && clipKind(animation) === 'state' && animation.id !== DEFAULT_MOVE;
 }
 
-/** The Riding pose for this character, if it is still one of its States. */
+/** The Riding pose for this character, if it is still one of its States or Moves. */
 export function activeRiderPose(projectId: string, manifest: Manifest | undefined) {
 	const chosen = experience.ridingPoses[projectId];
 	if (!chosen) return undefined;
@@ -103,7 +108,7 @@ export function setRidingPose(projectId: string, clip: string) {
 		return { ...current, poses };
 	});
 }
-/** Forget a removed State or character, so a later State with the same ID is not chosen by itself. */
+/** Forget a removed State or Move, so a later clip with the same ID is not chosen by itself. */
 export function forgetRidingPose(projectId: string, clip?: string) {
 	// Checked against the same preferences it writes, so another tab's newer pose is never cleared.
 	update((current) => {

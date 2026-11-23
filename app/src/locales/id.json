@@ -715,7 +715,7 @@
 		"bothLegs": "Kedua kaki",
 		"riderPose": "Pose penunggang",
 		"riderPoseRide": "Otomatis",
-		"riderPoseIncomplete": "{name} (tanpa {directions})",
+		"riderPoseMissing": "Tanpa {directions}",
 		"otherTab": "Tab lain",
 		"updateToVVersion": "Perbarui ke v{version}",
 		"pixelLabAccount": "Akun PixelLab",

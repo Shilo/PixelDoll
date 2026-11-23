@@ -147,6 +147,20 @@ describe('production body presentation', () => {
 			resolveLive(a, { velocity: { x, y }, riding: true, riderPose: 'seated' });
 		expect(ride(1, 0)).toMatchObject({ direction: 'east', clip: 'seated', issue: null });
 		expect(ride(-1, 0)).toMatchObject({ direction: 'west', clip: 'seated', issue: null });
+		// A Move chosen as the pose plays its animation while riding.
+		const walking = resolveLive(a, {
+			velocity: { x: 1, y: 0 },
+			riding: true,
+			riderPose: 'walk'
+		});
+		expect(walking).toMatchObject({
+			direction: 'east',
+			clip: 'walk',
+			kind: 'animation',
+			issue: null
+		});
+		const walkStart = advancePlayback(walking, null, 0);
+		expect(advancePlayback(walking, walkStart, 150).cell).not.toBe(walkStart.cell);
 		const south = ride(0, -1);
 		expect(south).toMatchObject({ direction: 'south', clip: 'ride', requestedClip: 'seated' });
 		expect(south.notice).toMatchObject({ kind: 'missing-direction', move: 'seated' });

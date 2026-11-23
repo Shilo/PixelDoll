@@ -23,7 +23,24 @@ const manifest = {
 		directions: [{ id: 'east' }, { id: 'west', mirrorOf: 'east' }, { id: 'south' }],
 		animations: [
 			{ id: 'default', kind: 'state', cells: 1, loop: false, frames: [{ cell: 0, ms: 100 }] },
-			{ id: 'walk', cells: 2, loop: true, frames: [] },
+			{
+				id: 'walk',
+				cells: 2,
+				loop: true,
+				frames: [
+					{ cell: 0, ms: 100 },
+					{ cell: 1, ms: 100 }
+				]
+			},
+			{
+				id: 'partial',
+				cells: 2,
+				loop: true,
+				frames: [
+					{ cell: 0, ms: 100 },
+					{ cell: 1, ms: 100 }
+				]
+			},
 			{ id: 'riding', kind: 'state', cells: 1, loop: false, frames: [{ cell: 0, ms: 100 }] },
 			{ id: 'half', kind: 'state', cells: 1, loop: false, frames: [{ cell: 0, ms: 100 }] }
 		]
@@ -35,6 +52,8 @@ const manifest = {
 				{
 					cells: {
 						default: { east: ['sha256:a'], south: ['sha256:a'] },
+						walk: { east: ['sha256:w', 'sha256:w2'], south: ['sha256:w', 'sha256:w2'] },
+						partial: { east: ['sha256:p'] },
 						riding: { east: ['sha256:b'], south: ['sha256:c'] },
 						half: { east: ['sha256:d'] }
 					}
@@ -51,17 +70,22 @@ describe('rider pose', () => {
 		experience.riderPoseReplaced = null;
 	});
 
-	test('offers saved States except Standing, with the facings each cannot show', () => {
+	test('offers saved States and Moves except Standing, with the facings each cannot show completely', () => {
 		expect(riderPoseOptions(manifest)).toEqual([
+			{ id: 'walk', missing: [] },
+			{ id: 'partial', missing: ['east', 'west', 'south'] },
 			{ id: 'riding', missing: [] },
 			{ id: 'half', missing: ['south'] }
 		]);
 	});
 
-	test('belongs to the character it was chosen on and to a State it still has', () => {
+	test('belongs to the character it was chosen on and to a clip it still has', () => {
 		experience.ridingPoses = { a: 'riding' };
 		expect(activeRiderPose('a', manifest)).toBe('riding');
 		expect(activeRiderPose('b', manifest)).toBeUndefined();
+		// Moves are Riding poses too.
+		experience.ridingPoses = { a: 'walk' };
+		expect(activeRiderPose('a', manifest)).toBe('walk');
 		// An incomplete State stays chosen so its missing facings are named on stage, not hidden.
 		experience.ridingPoses = { a: 'half' };
 		expect(activeRiderPose('a', manifest)).toBe('half');
