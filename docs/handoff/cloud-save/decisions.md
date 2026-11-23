@@ -117,4 +117,4 @@ UI review of the client (by the UI specialist): tabs not connected now listen fo
 ## 18. Sharing a library is no longer a non-goal (2026-11-23, owner)
 
 - **Decision (owner):** "sharing a library with another person" was a non-goal written by the planning session, never agreed by the owner. It is removed from the plan; collaboration is wanted later. Each collaborator paying PixelLab separately does not stand in the way of sharing artwork.
-- **Follow-up:** research and plans for team sync on GitHub, Export to GitHub and an opt-in PixelDoll server are in [docs/research/2026-11-23-collaboration-sync/](../../research/2026-11-23-collaboration-sync/README.md). v1 scope is unchanged.
+- **Follow-up:** brainstorming research (not a plan) on team sync through GitHub, Export to GitHub and an opt-in PixelDoll server (parked: the owner wants no legal duties from hosting user files) is in [docs/research/2026-11-23-collaboration-sync/](../../research/2026-11-23-collaboration-sync/README.md). v1 scope is unchanged.

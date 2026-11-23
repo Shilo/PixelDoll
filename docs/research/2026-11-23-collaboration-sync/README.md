@@ -1,8 +1,9 @@
-# Collaboration and sync destinations: research and plan
+# Collaboration and sync destinations: research
 
-Written 2026-11-23 after the owner asked for collaboration, an opt-in PixelDoll server and GitHub. This is research
-and planning only. Nothing here is approved for building, and v1 Cloud Save ([plan](../../handoff/2026-11-22-cloud-save-autonomous-plan.md))
-is unchanged. Prices and limits were checked on 2026-11-23; claims marked unverified in the notes must be rechecked
+Written 2026-11-23 after the owner asked for collaboration, an opt-in PixelDoll server and GitHub. **This is
+brainstorming and research, not a plan.** Nothing here is planned or approved, and v1 Cloud Save
+([plan](../../handoff/2026-11-22-cloud-save-autonomous-plan.md)) is unchanged. Read
+[Owner feedback](#owner-feedback-2026-11-23) first: it parks the PixelDoll server. Prices and limits were checked on 2026-11-23; claims marked unverified in the notes must be rechecked
 before code depends on them.
 
 The full notes are:
@@ -13,14 +14,85 @@ The full notes are:
 
 ## Summary
 
-| Question                               | Answer                                                                                                                                                                          |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name                                   | Rename **Cloud Save** to **Cloud Sync**. The working copy stays on the device, and sync describes both devices and teams.                                                       |
-| Collaboration through Drive or Dropbox | Not with the current least-privilege permissions. Shared folders need broader access, which means Google's paid audit or full-Dropbox access.                                   |
-| The sync engine                        | It already merges several writers, so teammates count as extra devices. A new destination is a new provider. The engine itself does not change.                                 |
-| Near real time                         | A WebSocket "something changed" ping triggers the existing sync, so teammates see changes in about 1 to 3 seconds. Live co-editing of the same item (a CRDT) is not needed now. |
-| Opt-in PixelDoll server                | Possible, and it is the only path with push updates. It takes a rule change (D32 below), accounts, quotas and legal pages.                                                      |
-| GitHub                                 | A GitHub App with batched commits to a separate library repo. Export to GitHub is a destination in the Export sheet, not a new format.                                          |
+| Question                               | Answer                                                                                                                                          |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name                                   | Rename **Cloud Save** to **Cloud Sync**. The working copy stays on the device, and sync describes both devices and teams.                       |
+| Collaboration through Drive or Dropbox | Not with the current least-privilege permissions. Shared folders need broader access, which means Google's paid audit or full-Dropbox access.   |
+| The sync engine                        | It already merges several writers, so teammates count as extra devices. A new destination is a new provider. The engine itself does not change. |
+| Near real time                         | Not needed now: the client's own checks bring teammates' edits within about a minute. A server change ping could cut that to seconds later.     |
+| Opt-in PixelDoll server                | Parked. Hosting other people's files brings legal duties the owner does not want.                                                               |
+| GitHub                                 | A GitHub App with batched commits to a separate library repo. Export to GitHub is a destination in the Export sheet, not a new format.          |
+
+## Owner feedback (2026-11-23)
+
+### No legal obligations: the PixelDoll server is parked
+
+The owner wants no legal obligations or responsibilities. Hosting other people's images on the owner's server
+cannot avoid them. The duties that come with it include:
+
+- a privacy policy and terms of service
+- deletion and export requests
+- takedown handling
+- the duty to report illegal content
+
+This is not legal advice, but no hosting choice removes those duties. Section 2 stays as research only. Do not build
+it unless the owner reverses this.
+
+What keeps the owner out of hosting:
+
+- **Destinations the user owns: their own Google Drive, Dropbox or GitHub.**
+  - Files go straight from the browser to the user's own account.
+  - The provider hosts the files and handles abuse under its own terms.
+- **The D31 token Worker stays as it is.** It only passes sign-in tokens through and stores nothing.
+
+### No change ping for now
+
+Nobody is known to collaborate yet. The client already checks for changes by itself (on open, on return to the tab,
+and every 60 s), so teammates' edits arrive within about a minute with no server. Durable Objects or WebSockets are
+only worth revisiting if real teams find a minute too slow.
+
+### Why a server needs gatekeeper code
+
+The owner asked whether static storage with per-account folders, keyed by the sign-in email, could replace server
+code. It cannot. The client can never be trusted, so anyone could edit the app to read or overwrite another person's
+folder.
+
+- **What the gatekeeper does:** on every request it checks the sign-in and allows only that person's (or that
+  team's) files. That is what makes per-account folders secure.
+- **Managed rules instead of code:** Firebase Storage security rules and Supabase row-level security give the same
+  protection without a custom server. The owner would still be hosting the files, so the legal point above still
+  applies.
+- **The user's own cloud needs none of this.** Google, Dropbox and GitHub are the gatekeeper for their own accounts,
+  for free.
+
+### Sync timing: room to cut requests
+
+**Today** (`app/src/lib/sync/client.ts`):
+
+| When                                                | What it sends                                                   |
+| --------------------------------------------------- | --------------------------------------------------------------- |
+| App opens, tab is visible again, connection returns | One check                                                       |
+| 3 s after the last save                             | Only what changed (about 15 KB per item) plus new artwork packs |
+| Every 60 s while the tab is visible                 | One small listing                                               |
+| Tab hidden                                          | Nothing                                                         |
+
+**Already efficient:**
+
+- The whole library is never re-uploaded.
+- Artwork is uploaded once, in packs.
+- An idle check is one request.
+
+**Ideas to cut requests and bandwidth:**
+
+1. **Back off when idle.** Go from 60 s to about 5 minutes after a few quiet checks. That cuts about 80% of idle
+   requests over an 8-hour session (about 480 checks).
+2. **Batch steady editing.** Wait about 30 s after a save instead of 3 s, and also sync when the tab is hidden or
+   closed.
+3. **One file per edit** (for a hosted server only). Bundle the item object and the revision so each edit costs one
+   write instead of 2 or 3.
+
+On Drive and Dropbox these requests cost the owner nothing. The ideas mainly save battery, data and provider rate
+limits. They would matter for cost only on a hosted server.
 
 ## 1. Name: Cloud Sync
 
@@ -31,9 +103,12 @@ The full notes are:
 - Cost: rename the `cloudSave` locale namespace, the Settings section and the docs in one change. This can happen
   before release, since the term has not shipped.
 
-## 2. Opt-in PixelDoll server
+## 2. Opt-in PixelDoll server (parked)
 
-### Recommendation: Cloudflare
+Kept as research. The owner does not want the legal obligations of hosting user files
+([Owner feedback](#owner-feedback-2026-11-23)).
+
+### Best host if ever revisited: Cloudflare
 
 Use Workers, R2 storage, Durable Objects (one room per library, with hibernating WebSockets) and D1 for accounts.
 
@@ -137,20 +212,19 @@ button to two: **Download ZIP** or **Commit to GitHub**, where the user picks a 
 
 It uses the same GitHub App and sign-in as the team library. It is useful on its own and can ship first.
 
-## 4. Recommended order
+## 4. If any of this is pursued
+
+This is a suggested order, not a plan.
 
 1. **Rename to Cloud Sync** before Cloud Save ships. No server is involved.
-2. **Export to GitHub.** It is the smallest step, with immediate value for game teams, and it proves the GitHub App
-   and token flow.
-3. **GitHub team library.** Free for the owner, permissions come from GitHub, and changes arrive in batches.
-4. **PixelDoll server (preview)** on Cloudflare, only after D32 is approved:
-   - personal sync first
-   - then the change ping
-   - then teams, with "Move to Drive or Dropbox" as the exit
+2. **Tune sync timing** (idle backoff, batched saves).
+3. **Export to GitHub.** It is the smallest GitHub step and proves the GitHub App and token flow.
+4. **GitHub team library.** It is free for the owner, GitHub handles permissions and hosting, and changes arrive in
+   batches.
 
-## Open decisions for the owner
+The PixelDoll server is parked.
 
-1. Approve the rename to Cloud Sync.
-2. Approve D32 (an opt-in server that stores the data of users who opt in) or keep the server off the roadmap.
-3. Accept a separate library repo for GitHub team sync instead of a branch or folder inside the game repo.
-4. Hosting: Cloudflare (recommended) or Hetzner if a fixed price matters more than speed and zero ops.
+## Open questions
+
+1. Rename to Cloud Sync?
+2. For a GitHub team library: a separate library repo, or a branch or folder inside the game repo?
