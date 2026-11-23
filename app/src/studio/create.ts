@@ -974,7 +974,8 @@ async function motion(
 	);
 	const kps = await Promise.all(
 		frames.map(async (f) => {
-			const k = await joints(f, true, signal, activityScope);
+			// An empty frame has no joints to measure; it is bridged from its neighbors or the view stops below.
+			const k = opaqueBox(f) ? await joints(f, true, signal, activityScope) : undefined;
 			tick();
 			return k;
 		})
@@ -1096,7 +1097,13 @@ async function normalizeMotionFrames(
 	const frames = (startKept ? images.slice(1) : images).map((image, i) =>
 		normalizeFrame(image, lifts?.[i])
 	);
-	if (frames.some((f) => !opaqueBox(f)))
+	// One empty interior motion frame is bridged like a joint gap (motionJoints): motion frames only shape the requested
+	// poses and are never published. An empty end frame, more than one, or any empty body frame stops the view.
+	const empty = frames.flatMap((f, i) => (opaqueBox(f) ? [] : [i]));
+	if (
+		empty.length &&
+		(step !== 'motion' || empty.length > 1 || empty[0] === 0 || empty[0] === frames.length - 1)
+	)
 		throw new PaidStepError(
 			`${label}: PixelLab returned an empty motion frame`,
 			'create.errors.pixellabReturnedEmptyMotion',
@@ -2267,6 +2274,7 @@ async function inspectMeasurementRecovery(
 			// Only a check that completed with invalid joints may be bridged; a lost, stopped or unsent one is unknown.
 			const checks = await Promise.all(
 				frames.map(async (frame) => {
+					if (!opaqueBox(frame)) return { done: true, points: undefined }; // never measured: nothing to wait for
 					const measurement = await context.measurement(frame);
 					return {
 						done: jobs.some((r) => r.requestHash === measurement.hash && r.state === 'done'),

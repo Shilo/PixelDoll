@@ -1291,6 +1291,59 @@ test('a managed motion with one unmeasured interior frame still renders the body
 	);
 });
 
+test.each([
+	[2, true],
+	[1, false],
+	[4, false]
+] as const)(
+	'an empty managed motion frame at position %i is bridged only when it is interior (%s)',
+	async (blank, bridged) => {
+		const f = await fixture(),
+			standing = (await projects.loadProject('rig-target')).project.images.values().next().value!,
+			// the standing echo first, then four motion frames; frame `blank` (1-based after the echo) is transparent
+			images = [standing, 11, 12, 13, 14].map((shade, i) => {
+				if (typeof shade !== 'number') return shade;
+				const im = i === blank ? makeImg(64, 64) : structuredClone(standing);
+				if (i !== blank) im.data[(30 * 64 + 30) * 4] = shade;
+				return im;
+			}),
+			blobs = new Map<string, Blob>();
+		for (const [i, im] of images.entries())
+			blobs.set(`m${i}`, new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>]));
+		const stored = vi.mocked(db.getBlob).getMockImplementation()!;
+		vi.mocked(db.getBlob).mockImplementation(async (h) => blobs.get(h) ?? stored(h));
+		const rendered = f.enqueue.getMockImplementation()!;
+		f.enqueue.mockImplementation(async (req, ...rest) =>
+			req.path === '/characters/animations'
+				? ({
+						id: 'motion',
+						state: 'done',
+						endpoint: req.path,
+						params: {},
+						createdAt: 0,
+						jobs: [{ results: images.map((_, i) => ({ label: `east/${i}`, sha: `m${i}` })) }]
+					} as unknown as JobRec)
+				: rendered(req, ...rest)
+		);
+		const result = await f
+			.run({ text: 'step softly', action: 'quiet-step', frames: 4 })
+			.catch((e: Error) => e);
+		const paths = f.enqueue.mock.calls.map(([r]) => r.path);
+		if (!bridged) {
+			expect(String(result)).toContain('empty motion frame');
+			expect(paths).not.toContain('/estimate-skeleton');
+			return;
+		}
+		// the empty frame is never measured: three motion checks, then the body render
+		const render = paths.indexOf('/animate-with-skeleton-v3');
+		expect(paths.slice(0, render).filter((p) => p === '/estimate-skeleton')).toHaveLength(3);
+		expect(f.saved().manifest.rig.animations[0].sources?.east?.motionBridged).toEqual([1]);
+		expect((f.saved().rigQa as { warnings: string[] }).warnings).toContain(
+			'idle/east: joints of motion frame 2 of 4 were inferred from its neighbors'
+		);
+	}
+);
+
 // Both managed routes drop one leading frame by position, so a Standing Fix frames replaced never stops them.
 test.each([
 	['described', 4, { text: 'step softly', action: 'quiet-step', frames: 4 }],
