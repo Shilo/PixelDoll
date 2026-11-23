@@ -458,15 +458,37 @@ export class Queue {
 	/** Finished jobs whose valid results could not be saved yet, by job id (see poll). */
 	private held = new Map<string, Job>();
 	/** Records whose latest save failed: saved again until it lands, so a settled result is never only in memory. */
-	private unsavedRecords = new Set<string>();
+	private writes = new Map<string, { started: number; pending: number; failed: boolean }>();
 	private recordRetryAt = 0;
 	/** A finished record as stored: one whose save is pending or failed is returned only once its outcome is stored. */
 	private stored(r: JobRec) {
-		return !live(r) && this.unsavedRecords.has(r.id) ? this.settled(r.id) : Promise.resolve(r);
+		return !live(r) && this.unsaved(r.id) ? this.settled(r.id) : Promise.resolve(r);
 	}
 	/** Paid results only this tab holds (an unsaved record or a held job): it keeps leading until they are saved. */
 	private holdsUnsaved() {
-		return this.unsavedRecords.size > 0 || this.held.size > 0;
+		return this.writes.size > 0 || this.held.size > 0;
+	}
+	/** Whether this tab's latest version of a record is not stored yet: a write is pending, or the latest one failed. */
+	private unsaved(id: string) {
+		return this.writes.has(id);
+	}
+	/** Runs one write of a record: only the latest write decides whether the record is stored, so an earlier write that
+	 *  lands after a later one started never makes the later outcome look stored. */
+	private async write<T>(id: string, run: () => Promise<T>): Promise<T> {
+		const entry = this.writes.get(id) ?? { started: 0, pending: 0, failed: false };
+		this.writes.set(id, entry);
+		const revision = ++entry.started;
+		entry.pending++;
+		let ok = false;
+		try {
+			const out = await run();
+			ok = true;
+			return out;
+		} finally {
+			entry.pending--;
+			if (revision === entry.started) entry.failed = !ok;
+			if (!entry.pending && !entry.failed && this.writes.get(id) === entry) this.writes.delete(id);
+		}
 	}
 	/** Followers' stops waiting for the leading tab's answer, by reply id. */
 	private stopReplies = new Map<string, (ok: boolean) => void>();
@@ -628,11 +650,9 @@ export class Queue {
 			.sort((a, b) => a.createdAt - b.createdAt)
 			.map((r) => ({
 				...r,
-				// An outcome counts once it is stored: until then every reader sees the request still in progress, so no
-				// dependent step advances on a result that reload and other tabs would not see.
-				...(!live(r) && this.unsavedRecords.has(r.id)
-					? { state: r.jobs.length ? ('running' as const) : ('queued' as const) }
-					: {}),
+				// A result counts once it is stored: until then every reader sees the request still in progress, so no
+				// dependent step advances on a result that reload and other tabs would not see. A stop or failure shows at once.
+				...(r.state === 'done' && this.unsaved(r.id) ? { state: 'running' as const } : {}),
 				jobs: r.jobs.map((s) => ({ ...s, results: [...s.results] }))
 			}));
 		const counts = { pending: 0, running: 0, failed: 0, done: 0 };
@@ -670,11 +690,9 @@ export class Queue {
 			} satisfies Msg);
 	}
 	private async save(r: JobRec) {
-		// Marked before writing: a waiter must never take a settled record that is not stored yet (another notice can emit
-		// while the write is pending or failing).
-		this.unsavedRecords.add(r.id);
-		await this.deps.put(r.id, r);
-		this.unsavedRecords.delete(r.id);
+		// Tracked from before writing: a waiter must never take a settled record that is not stored yet (another notice can
+		// emit while the write is pending or failing).
+		await this.write(r.id, () => this.deps.put(r.id, r));
 		this.chan?.postMessage({ rec: r.id } satisfies Msg); // other tabs read just this record
 		this.emit();
 		this.requestLeadership();
@@ -683,11 +701,13 @@ export class Queue {
 	private async saveIf(r: JobRec, allowed: (stored: JobRec) => boolean): Promise<JobRec | null> {
 		const record = structuredClone(r);
 		let blocked: JobRec | null = null;
-		await this.deps.transition(r.id, (stored) => {
-			if (!stored || !this.ownsRecord(stored) || allowed(stored)) return record;
-			blocked = stored;
-			return undefined;
-		});
+		await this.write(r.id, () =>
+			this.deps.transition(r.id, (stored) => {
+				if (!stored || !this.ownsRecord(stored) || allowed(stored)) return record;
+				blocked = stored;
+				return undefined;
+			})
+		);
 		if (blocked) return blocked;
 		this.chan?.postMessage({ rec: r.id } satisfies Msg);
 		this.emit();
@@ -707,7 +727,7 @@ export class Queue {
 			const un = this.subscribe((s) => {
 				const r = s.jobs.find((j) => j.id === id);
 				// Only a stored outcome counts: a dependent step never advances on a result that reload would not see.
-				if (!done && r && !live(r) && !this.unsavedRecords.has(id)) {
+				if (!done && r && !live(r) && !this.unsaved(id)) {
 					done = true;
 					signal?.removeEventListener('abort', abort);
 					res(r);
@@ -1391,7 +1411,7 @@ export class Queue {
 			await this.save(rec);
 		} catch (e) {
 			if (this.recs.get(rec.id) === rec) this.recs.delete(rec.id);
-			this.unsavedRecords.delete(rec.id); // a request whose enqueue failed is never saved later
+			this.writes.delete(rec.id); // a request whose enqueue failed is never saved later
 			throw e;
 		} finally {
 			this.persisting.delete(rec.id);
@@ -1511,9 +1531,10 @@ export class Queue {
 		if (this.role !== 'follower')
 			for (const r of this.recs.values()) if (this.pollSubmitted(r)) await this.save(r);
 		const now = this.deps.now();
-		// Results already in memory are saved whatever the credential or connection: only storage has to work.
+		// Results already in memory, and records whose save failed, are saved whatever the credential or connection: only
+		// storage has to work. Remote polls and downloads stay behind the network gate below.
 		const saving: Promise<void>[] = [];
-		if (this.role !== 'follower' && (!this.key || this.paused === 'auth'))
+		if (this.role !== 'follower')
 			for (const r of this.recs.values())
 				for (const s of r.jobs)
 					if (
@@ -1523,6 +1544,15 @@ export class Queue {
 						now - (s.lastPoll ?? 0) >= Math.max(POLL_MS, backoff(s.unsaved ?? 1))
 					)
 						saving.push(this.guard(s.id, () => this.poll(r, s)));
+		if (this.role !== 'follower' && now >= this.recordRetryAt && this.writes.size) {
+			this.recordRetryAt = now + POLL_MS;
+			for (const [id, entry] of this.writes) {
+				const r = this.recs.get(id);
+				if (!r) this.writes.delete(id);
+				else if (entry.failed && !entry.pending && !this.busy.has(id) && !this.persisting.has(id))
+					saving.push(this.guard(id, () => this.save(r)));
+			}
+		}
 		if (!(await this.network(now)) || disconnected()) return { ops: saving };
 		if (this.role === 'follower') return { ops: [] }; // the leader tab submits and polls
 		// A failed ledger read is retried on the next tick, so a working ledger lifts the storage notice at once.
@@ -1605,15 +1635,6 @@ export class Queue {
 					})
 				);
 				if (this.throttled) break; // one probe at a time until external tools release capacity
-			}
-		}
-		if (now >= this.recordRetryAt && this.unsavedRecords.size) {
-			this.recordRetryAt = now + POLL_MS;
-			for (const id of this.unsavedRecords) {
-				const r = this.recs.get(id);
-				if (!r) this.unsavedRecords.delete(id);
-				else if (!this.busy.has(id) && !this.persisting.has(id))
-					ops.push(this.guard(id, () => this.save(r)));
 			}
 		}
 		// A held job whose record moved on (stopped, cleared, finished elsewhere) no longer needs its answer.
@@ -2205,7 +2226,7 @@ export class Queue {
 		let n = 0;
 		try {
 			for (const r of [...this.recs.values()])
-				if (!live(r) && !keep(r)) {
+				if (!live(r) && !this.unsaved(r.id) && !keep(r)) {
 					await this.deps.del(r.id); // a failed delete stays listed and fails Clear finished, instead of returning on reload
 					this.recs.delete(r.id);
 					n++;
@@ -2217,7 +2238,8 @@ export class Queue {
 		return n;
 	}
 	/** Nothing queued, submitting or running in this tab's view of the ledger. */
-	idle = () => ![...this.recs.values()].some(live);
+	// A finished record not stored yet still holds work: its results must survive cleanup until it is saved.
+	idle = () => ![...this.recs.values()].some(live) && !this.holdsUnsaved();
 }
 
 export const queue = new Queue();

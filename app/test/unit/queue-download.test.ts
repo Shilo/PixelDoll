@@ -397,3 +397,76 @@ test('a held result is saved after the credential is forgotten, without asking P
 	});
 	expect(gets).toBe(1);
 });
+
+test('an earlier write landing after a later one started never makes the later outcome look stored', async () => {
+	const releases: (() => void)[] = [];
+	const { q } = fixture({
+		put: () => new Promise<void>((resolve) => releases.push(resolve))
+	});
+	const tracked = q as unknown as {
+		save(r: JobRec): Promise<void>;
+		unsaved(id: string): boolean;
+		recs: Map<string, JobRec>;
+	};
+	const r = { id: 'r', state: 'running', jobs: [], createdAt: 0 } as unknown as JobRec;
+	tracked.recs.set('r', r);
+	const progress = tracked.save(r);
+	const final = tracked.save({ ...r, state: 'done' });
+	releases[0](); // the earlier progress write lands first
+	await progress;
+	expect(tracked.unsaved('r')).toBe(true); // the done write is still pending
+	releases[1]();
+	await final;
+	expect(tracked.unsaved('r')).toBe(false);
+});
+
+test('held results are saved while offline, and Clear finished keeps a finished record until it is stored', async () => {
+	let online = true,
+		blobBroken = true,
+		ledgerBroken = false;
+	const stored = new Map<string, JobRec>();
+	const { q, run } = fixture({
+		online: () => online,
+		put: async (k, r) => {
+			if (ledgerBroken && r.state === 'done') throw new Error('IndexedDB unavailable');
+			stored.set(k, structuredClone(r));
+		},
+		get: async (k) => structuredClone(stored.get(k)),
+		all: async () => [...stored.values()].map((r) => structuredClone(r)),
+		del: async (k) => void stored.delete(k),
+		api: async <T>(_key: string, method: string, endpoint: string): Promise<T> => {
+			if (endpoint === '/balance') return {} as T;
+			if (method === 'POST') return { background_job_id: 'j' } as T;
+			return {
+				id: 'j',
+				status: 'completed',
+				last_response: {
+					image: {
+						type: 'rgba_bytes',
+						base64: bytesToBase64(new Uint8Array([1, 2, 3, 255])),
+						width: 1,
+						height: 1
+					}
+				}
+			} as T;
+		},
+		putBlob: async () => {
+			if (blobBroken) throw new Error('QuotaExceededError');
+			return 'output';
+		}
+	});
+	const record = await q.enqueue({ method: 'POST', path: '/edit-image-pro-flash', body: {} });
+	await run(12);
+	online = false;
+	blobBroken = false;
+	ledgerBroken = true; // results save offline, the final record save does not
+	await run(70);
+	expect(q.idle()).toBe(false); // cleanup must not collect its result blobs yet
+	expect(await q.clearFinished(() => false)).toBe(0);
+	ledgerBroken = false;
+	await run(6);
+	expect(stored.get(record.id)).toMatchObject({
+		state: 'done',
+		jobs: [{ results: [{ sha: 'output' }] }]
+	});
+});
