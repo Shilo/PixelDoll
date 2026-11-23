@@ -512,6 +512,7 @@ export class Queue {
 	// Results are blobs: a small record save can succeed while a large blob save still fails (quota), so blobs count apart.
 	private blobOk = 0;
 	private blobBad = 0;
+	private storageProbeAt = 0;
 	private disconnected = false;
 	private capacityProbe: object | null = null;
 	private capacityRead: Promise<void> | null = null;
@@ -957,6 +958,13 @@ export class Queue {
 			}
 			return true;
 		}
+		// The stored row settles a conditional write this tab failed to save (a Stop another tab saved meanwhile).
+		const entry = this.writes.get(r.id);
+		if (entry?.failed && !entry.pending && !live(r) && r.state === mine.state) {
+			this.recs.set(r.id, r);
+			this.writes.delete(r.id);
+			return true;
+		}
 		if (mine.state === 'queued' && r.state === 'canceled' && !this.busy.has(r.id)) {
 			this.recs.set(r.id, r);
 			return true;
@@ -1077,24 +1085,11 @@ export class Queue {
 	}
 	start() {
 		this.timer ??= every(1000, () =>
-			this.tick().then(
-				() => {
-					// Storage works again once a read, a record save and a result save each succeeded after their last failure
-					// (sending still saves first, so nothing went out unsaved meanwhile).
-					if (
-						this.paused === 'storage' &&
-						(!this.readBad || this.readOk > this.readBad) &&
-						(!this.writeBad || this.writeOk > this.writeBad) &&
-						(!this.blobBad || this.blobOk > this.blobBad)
-					)
-						this.resume();
-				},
-				(e) => {
-					// The ledger could not be read or saved: say so in Activity until storage is proven again.
-					console.error('queue', e);
-					this.storageFailed();
-				}
-			)
+			this.tick().catch((e) => {
+				// The ledger could not be read or saved: say so in Activity until storage is proven again.
+				console.error('queue', e);
+				this.storageFailed();
+			})
 		);
 	}
 	/** A storage read or write failed: hold sending and say so in Activity until storage is proven again. */
@@ -1533,6 +1528,15 @@ export class Queue {
 			this.ticking = false;
 		}
 		await Promise.all(work.ops);
+		// Storage works again once a read, a record save and a result save each succeeded after their last failure (sending
+		// still saves first, so nothing went out unsaved meanwhile).
+		if (
+			this.paused === 'storage' &&
+			(!this.readBad || this.readOk > this.readBad) &&
+			(!this.writeBad || this.writeOk > this.writeBad) &&
+			(!this.blobBad || this.blobOk > this.blobBad)
+		)
+			this.resume();
 		if (work.capacity) {
 			await work.capacity;
 			await this.tick();
@@ -1607,9 +1611,16 @@ export class Queue {
 			if (!this.capacityKnown) capacity = refreshed;
 		}
 		if (disconnected()) return { ops: [] };
+		// While storage is paused, one queued request at a time may try its conditional pre-submit write: if it lands, storage
+		// is proven and the request goes on (it was saved first); if not, nothing is sent. Never while result saves fail.
+		const probingStorage =
+			this.paused === 'storage' &&
+			(!this.blobBad || this.blobOk > this.blobBad) &&
+			now >= this.storageProbeAt;
+		if (probingStorage) this.storageProbeAt = now + POLL_MS;
 		if (
 			this.key &&
-			!this.paused &&
+			(!this.paused || probingStorage) &&
 			(!this.capacityRead || this.capacityKnown) &&
 			!this.capacityProbe &&
 			now >= this.capacityRetryAt
@@ -1657,7 +1668,7 @@ export class Queue {
 						}
 					})
 				);
-				if (this.throttled) break; // one probe at a time until external tools release capacity
+				if (this.throttled || probingStorage) break; // one probe at a time (capacity or storage)
 			}
 		}
 		// A held job whose record moved on (stopped, cleared, finished elsewhere) no longer needs its answer.

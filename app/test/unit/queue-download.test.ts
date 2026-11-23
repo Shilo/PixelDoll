@@ -527,9 +527,8 @@ test('a submission whose pre-submit save fails goes back to queued and is sent o
 	await run(3);
 	expect(posts).toBe(0);
 	expect(q.snapshot().jobs.find((r) => r.id === record.id)?.state).toBe('queued'); // not stranded in submitting
-	broken = false;
-	q.resume();
-	await run(3);
+	broken = false; // no manual Resume: the paused queue proves storage with the request's own conditional write
+	await run(12);
 	expect(posts).toBe(1);
 	expect(stored.get(record.id)?.state).toBe('running');
 });
@@ -560,4 +559,30 @@ test('a Stop whose save fails never reads as settled until it is stored', async 
 	await q.retryCancelSave(record.id);
 	await vi.waitFor(() => expect(settled?.state).toBe('canceled'));
 	expect(stored.get(record.id)?.state).toBe('canceled');
+});
+
+test('a Stop that failed here settles once another tab stores it', async () => {
+	let broken = false;
+	const stored = new Map<string, JobRec>();
+	const { q } = fixture({
+		put: async (k, r) => void stored.set(k, structuredClone(r)),
+		get: async (k) => structuredClone(stored.get(k)),
+		all: async () => [...stored.values()].map((r) => structuredClone(r)),
+		transition: async (k, next) => {
+			if (broken) throw new Error('IndexedDB unavailable');
+			const out = next(structuredClone(stored.get(k)));
+			if (out) stored.set(k, structuredClone(out));
+			return out ?? stored.get(k);
+		}
+	});
+	const record = await q.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } });
+	broken = true;
+	await expect(q.cancel(record.id)).rejects.toThrow('IndexedDB unavailable');
+	let settled: JobRec | undefined;
+	void q.settled(record.id).then((r) => (settled = r));
+	// Another tab's Stop lands in storage; this (leading) tab reads it.
+	stored.set(record.id, { ...stored.get(record.id)!, state: 'canceled', finishedAt: 1 });
+	(q as unknown as { role: string }).role = 'leader';
+	await (q as unknown as { pull(id: string): Promise<void> }).pull(record.id);
+	await vi.waitFor(() => expect(settled?.state).toBe('canceled'));
 });
