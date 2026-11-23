@@ -1619,6 +1619,7 @@
 			"noRepairGrid": "Não há grade de reparo para {move} ({direction}): {reason}. A melhor tentativa foi mantida",
 			"heldLoop": "O item de mão muda de forma ou ângulo quando a animação volta ao início",
 			"registrationShift": "O PixelLab retornou uma borda transparente e pode ter deslocado a folha. Confira se o item se alinha em todos os quadros.",
+			"suspiciousJoints": "As articulações parecem estranhas em {move} {direction}, quadro {frame}, então o item pode não se encaixar ali. Confira a pegada ou o alinhamento.",
 			"bodyUnmeasured": "O item cobre quase todo o corpo, então não pôde ser verificado. Confira se não é um corpo redesenhado"
 		},
 		"anotherCharacter": "outro personagem",
@@ -2778,6 +2779,7 @@
 		"copyDemo": "Copiar o corpo da demo",
 		"feature": "Geração de equipamento",
 		"needsSetup": "Configure este personagem para usar equipamentos animados pelo esqueleto, armas grandes e novas animações.",
+		"poseIssues": "Algumas articulações medidas parecem estranhas. O item vai segui-las, então confira estes quadros depois de criá-lo:",
 		"standingFirst": "Crie primeiro a arte da pose em pé. Depois de aprovar o resultado, gere este item para animações individuais nos detalhes do item.",
 		"where": "Onde fica o item?",
 		"notShown": "Ainda não aparece no guarda-roupa. Criar um item torna esse espaço visível.",

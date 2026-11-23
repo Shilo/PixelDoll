@@ -1613,6 +1613,7 @@
 			"noRepairGrid": "No repair grid for {move} ({direction}): {reason}; the best try was kept",
 			"heldLoop": "The held item changes shape or angle when a move loops",
 			"registrationShift": "PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame.",
+			"suspiciousJoints": "The joints look unusual in {move} {direction} frame {frame}, so the item may not fit there. Check the grip or alignment.",
 			"bodyUnmeasured": "The item covers almost all of the body, so it could not be checked; make sure it is not a redrawn body"
 		},
 		"anotherCharacter": "another character",
@@ -2769,6 +2770,7 @@
 		"copyDemo": "Copy the demo body",
 		"feature": "Equipment generation",
 		"needsSetup": "Set up this character to use skeleton-posed equipment, oversize weapons and new moves.",
+		"poseIssues": "Some measured joints look unusual. The item will follow them, so check these frames after it is made:",
 		"standingFirst": "Make the standing design first. Generate this item for individual moves from its details after you like the result.",
 		"where": "Where does it go?",
 		"notShown": "Not shown in Wardrobe yet. Making an item shows it.",

@@ -1,9 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import {
-	assertImportedPoses,
-	fixedFacingLocomotion,
-	importedPoseIssues
-} from '../../src/lib/rig/pose-review.ts';
+import { fixedFacingLocomotion, importedPoseIssues } from '../../src/lib/rig/pose-review.ts';
 import { hasAll, LABELS } from '../../src/lib/rig/poses.ts';
 import type { DirectionName, Keypoint, Rig } from '../../src/lib/rig/rig.ts';
 import type { Item } from '../../src/lib/store/manifest.ts';
@@ -14,7 +10,12 @@ import {
 	type Draft,
 	type RigCtx
 } from '../../src/lib/items/run.ts';
-import { itemPlanMinimumTier, itemPoseGens, planGens } from '../../src/lib/items/items.ts';
+import {
+	itemPlanMinimumTier,
+	itemPoseGens,
+	planGens,
+	poseFitIssues
+} from '../../src/lib/items/items.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
 import { itemMoveOffer, moveMinimumTier, reviewItemMove } from '../../src/studio/create.ts';
 import { moveEstimate } from '../../src/studio/movePricing.ts';
@@ -90,8 +91,6 @@ test('reports corroborated bad imported estimates with a useful frame number wit
 	expect(importedPoseIssues(r, { dirs: ['south'], clipDirs: { walking: ['north'] } })).toEqual([]);
 	expect(importedPoseIssues(r, { cells: ['walking/south/0'] })).toEqual([]);
 	expect(importedPoseIssues(r, { cells: ['walking/south/1'] })).toHaveLength(1);
-	expect(() => assertImportedPoses(r)).toThrow('Equipment animation cannot continue');
-	expect(() => assertImportedPoses(r, { cells: ['walking/south/0'] })).not.toThrow();
 });
 
 test('does not infer bad measurements from a torso reversal alone or ordinary walking', () => {
@@ -172,9 +171,15 @@ test('new worn drafts plan and price frozen-grid dressing instead of unsafe skel
 			20
 		);
 	}
-	expect(() => newDraft(ctx, { ...spec, slot: 'main_hand' })).toThrow('walking/south frame 2');
+	// Where the grid cannot dress them, the valid measured joints are posed (priced as usual) with the findings disclosed.
+	const rig = ctx.rec.manifest.rig;
+	const held = newDraft(ctx, { ...spec, slot: 'main_hand' });
+	expect(held.calls.map((c) => c.kind)).toEqual(['dress', 'pose']);
+	expect(poseFitIssues(rig, held.calls)).toEqual([
+		expect.stringContaining('walking/south frame 2: suspicious estimated joints')
+	]);
 	ctx.rec.manifest.rig.cell = { w: 160, h: 160 };
-	expect(() => newDraft(ctx, spec)).toThrow('walking/south frame 2');
+	expect(newDraft(ctx, spec).calls.map((c) => c.kind)).toEqual(['dress', 'pose']);
 	expect(enqueue).not.toHaveBeenCalled();
 });
 
@@ -200,21 +205,9 @@ test('an obsolete unsafe pose plan stops before any unreviewed route or paid req
 	expect(draft.calls[1].kind).toBe('pose');
 	expect(enqueue).not.toHaveBeenCalled();
 	expect(draft.calls[0].recId).toBeUndefined();
-	enqueue.mockClear();
-	await expect(
-		runItem(
-			{
-				...draft,
-				spec: { ...spec, slot: 'main_hand' },
-				calls: [{ kind: 'pose', cells: ['walking/south/1'], seed: 1, rerolls: 0, old: [] }]
-			},
-			ctx
-		)
-	).rejects.toThrow('walking/south frame 2');
-	expect(enqueue).not.toHaveBeenCalled();
 });
 
-test('accepted equipment estimates the actual safe route and still refuses unsafe held targets', () => {
+test('accepted equipment estimates the actual safe route and prices held targets on their measured joints', () => {
 	const ctx = context(),
 		enqueue = vi.spyOn(queue, 'enqueue').mockRejectedValue(new Error('Unexpected paid request'));
 	const item: Item = {
@@ -265,14 +258,16 @@ test('accepted equipment estimates the actual safe route and still refuses unsaf
 	expect(moveMinimumTier(ctx.rec.manifest, { ...offer, frames: 15 })).toBe(2);
 	ctx.rec.manifest.rig.cell = { w: 80, h: 80 };
 	ctx.rec.manifest.rig.animations[0].cells = 3;
-	expect(() =>
+	// Suspicious joints used to refuse a held item here; it is now posed on them like any other held item.
+	expect(
 		itemPoseGens(ctx.rec.manifest.rig, { ...item, slot: 'main_hand' }, 'walking', 3, ['south'])
-	).toThrow('walking/south frame 2');
+	).toBe(
+		planGens([{ kind: 'pose', cells: ['walking/south/0', 'walking/south/1', 'walking/south/2'] }])
+	);
 	item.slot = 'main_hand';
-	const blocked = itemMoveOffer(ctx.rec.manifest, [offer]);
-	expect(blocked.gens).toBeNull();
-	expect(blocked.specs).toEqual([]);
-	expect(blocked.error).toContain('walking/south frame 2');
+	const held = itemMoveOffer(ctx.rec.manifest, [offer]);
+	expect(held.error).toBe('');
+	expect(held.specs).toHaveLength(1);
 	expect(enqueue).not.toHaveBeenCalled();
 });
 

@@ -1563,6 +1563,7 @@
 			"noRepairGrid": "{move}（{direction}）没有修复网格：{reason}；已保留最佳尝试",
 			"heldLoop": "动作循环时，手持装备会改变形状或角度",
 			"registrationShift": "PixelLab 返回了透明边缘，可能移动了图集。请检查装备在每一帧中是否对齐。",
+			"suspiciousJoints": "{move} {direction} 第 {frame} 帧的关节位置异常，装备在那里可能对不齐。请检查握持或对齐。",
 			"bodyUnmeasured": "装备几乎覆盖了整个身体，因此无法检查。请确认它不是重新绘制的身体"
 		},
 		"anotherCharacter": "另一个角色",
@@ -2697,6 +2698,7 @@
 		"copyDemo": "复制演示身体",
 		"feature": "装备生成",
 		"needsSetup": "设置此角色以使用骨架姿态装备、超尺寸武器和新动作。",
+		"poseIssues": "部分测得的关节位置异常。装备会跟随这些关节，因此制作完成后请检查以下帧：",
 		"standingFirst": "请先制作站立设计。满意后，可从其详情中为单个动作生成此装备。",
 		"where": "放在哪里？",
 		"notShown": "尚未显示在衣橱中。制作装备后会显示。",

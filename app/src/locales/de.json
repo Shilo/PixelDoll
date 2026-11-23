@@ -1613,6 +1613,7 @@
 			"noRepairGrid": "Kein Reparaturraster für {move} ({direction}): {reason}. Der beste Versuch wurde behalten",
 			"heldLoop": "Form oder Winkel des gehaltenen Gegenstands ändern sich am Übergang der Animationsschleife",
 			"registrationShift": "PixelLab hat einen transparenten Rand geliefert und das Sheet möglicherweise verschoben. Prüfe, ob der Gegenstand in jedem Frame ausgerichtet ist.",
+			"suspiciousJoints": "Die Gelenke wirken in {move} {direction}, Frame {frame}, ungewöhnlich, daher sitzt der Gegenstand dort vielleicht nicht richtig. Prüfe Griff oder Ausrichtung.",
 			"bodyUnmeasured": "Der Gegenstand verdeckt fast den ganzen Körper und konnte daher nicht geprüft werden. Achte darauf, dass er kein neu gezeichneter Körper ist"
 		},
 		"anotherCharacter": "eine andere Figur",
@@ -2769,6 +2770,7 @@
 		"copyDemo": "Demo-Grundkörper kopieren",
 		"feature": "Ausrüstung generieren",
 		"needsSetup": "Richte diese Figur ein, um Ausrüstung per Skelett zu animieren, übergroße Waffen zu verwenden und neue Animationen hinzuzufügen.",
+		"poseIssues": "Einige gemessene Gelenke wirken ungewöhnlich. Der Gegenstand folgt ihnen, prüfe diese Frames also nach dem Erstellen:",
 		"standingFirst": "Erstelle zuerst das Design der Standpose. Wenn dir das Ergebnis gefällt, generiere den Gegenstand in seinen Details für einzelne Animationen.",
 		"where": "Wohin gehört er?",
 		"notShown": "Noch nicht in der Garderobe sichtbar. Wenn du einen Gegenstand dafür erstellst, wird die Kategorie eingeblendet.",

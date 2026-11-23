@@ -1428,11 +1428,12 @@ test('suspicious imported targets use one priced frozen-grid request without a q
 	const qa = await poseItemClip(f.ctx, f.item, 'walking');
 	expect(ledger.requests.map((r) => r.path)).toEqual(['/inpaint-v3']);
 	expect(qa.qa.footwearReviewFrames).toBe(3);
+	// A held item cannot use the grid: it used to be refused here, and is now posed on the valid measured joints.
 	const before = ledger.requests.length;
-	await expect(poseItemClip(f.ctx, { ...f.item, slot: 'main_hand' }, 'walking')).rejects.toThrow(
-		'suspicious estimated joints'
+	await poseItemClip(f.ctx, { ...f.item, slot: 'main_hand' }, 'walking').catch((error: Error) =>
+		expect(error.message).not.toContain('suspicious estimated joints')
 	);
-	expect(ledger.requests).toHaveLength(before);
+	expect(ledger.requests.slice(before).map((r) => r.path)).toEqual(['/animate-with-skeleton-v3']);
 });
 
 test('an initial frozen-grid item retains its first flagged grid and never submits a refinement on reload', async () => {

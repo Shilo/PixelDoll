@@ -396,6 +396,17 @@ function describeReason(s: string): { text: string; translation: Message | strin
 	const scoped = /^[^ :/]+\/[^ :/]+: ([A-Z]\d+ .*)$/.exec(s);
 	if (scoped) return describeReason(scoped[1]);
 	if (s === ITEM_GRID_REGISTRATION_NOTICE) return say(s, 'studioModel.qa.registrationShift');
+	const joints = /^([^/ ]+)\/([^ ]+) frame (\d+): suspicious estimated joints/.exec(s);
+	if (joints) {
+		const move = joints[1].replaceAll('-', ' '),
+			direction = joints[2].replaceAll('-', ' '),
+			frame = Number(joints[3]);
+		return say(
+			`The joints look unusual in ${move} ${direction} frame ${frame}, so the item may not fit there. Check the grip or alignment.`,
+			'studioModel.qa.suspiciousJoints',
+			{ move, direction, frame }
+		);
+	}
 	if (s.startsWith('D2 '))
 		return say(
 			'The requested waist band differs between standing views',

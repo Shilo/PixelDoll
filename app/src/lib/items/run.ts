@@ -117,6 +117,7 @@ import {
 	padImg,
 	padOf,
 	planItem,
+	poseFitIssues,
 	postProcess,
 	restKey,
 	unrotate,
@@ -1459,8 +1460,12 @@ export async function evaluateItem(
 				d.spec.prompt
 			)
 		: null;
-	if (qa && hiddenWarnings.length) {
-		qa.warnings.push(...hiddenWarnings);
+	const fitIssues = poseFitIssues(
+		rig,
+		d.calls.filter((c) => recOf(c.recId)?.state === 'done')
+	);
+	if (qa && (hiddenWarnings.length || fitIssues.length)) {
+		qa.warnings.push(...hiddenWarnings, ...fitIssues);
 		if (qa.qa.status === 'pass') qa.qa.status = 'warn';
 	}
 	// Dressed item pixels can land before any target animation cell exists. Expose them without waiting for pose coverage.
@@ -2003,6 +2008,7 @@ export async function poseItemClip(
 	const { keys: k0, cuts, hidden } = await dressedKeys(ctx, item, pad);
 	const bodies = referenceBodies(rig, ctx.project.images);
 	Object.assign(keys, k0);
+	const fitIssues: string[] = [];
 	const perDir = await Promise.allSettled(
 		dirs.map(async (dir, k) => {
 			const allPoses = clipKeypoints(rig, anim, dir),
@@ -2051,6 +2057,7 @@ export async function poseItemClip(
 					collected.push(...g.cells);
 					continue;
 				}
+				fitIssues.push(...poseFitIssues(rig, [{ kind: 'pose', cells }]));
 				const req = itemRoute.pose({
 					keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)),
 					rest,
@@ -2138,6 +2145,11 @@ export async function poseItemClip(
 		bodies,
 		item.prompt
 	);
+	// Suspicious imported joints do not stop a fit on valid coordinates; they stay named for a look.
+	if (fitIssues.length) {
+		q.warnings.push(...fitIssues);
+		if (q.qa.status === 'pass') q.qa.status = 'warn';
+	}
 	const first = failures.length ? errorText(failures[0]) : '';
 	try {
 		await mergeClip(ctx, item, anim, doneDirs, cells, prov, q, pad);

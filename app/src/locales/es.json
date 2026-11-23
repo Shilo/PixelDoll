@@ -1613,6 +1613,7 @@
 			"noRepairGrid": "No hay cuadrícula de reparación para {move} ({direction}): {reason}; se conservó el mejor intento",
 			"heldLoop": "El objeto sostenido cambia de forma o de ángulo cuando la animación se repite",
 			"registrationShift": "PixelLab devolvió un borde transparente y puede que haya desplazado la hoja. Comprueba que el objeto se alinee en todos los fotogramas.",
+			"suspiciousJoints": "Las articulaciones se ven raras en {move} {direction}, fotograma {frame}, así que el objeto puede no encajar ahí. Revisa el agarre o la alineación.",
 			"bodyUnmeasured": "El objeto cubre casi todo el cuerpo, así que no se pudo comprobar. Asegúrate de que no sea un cuerpo redibujado"
 		},
 		"anotherCharacter": "otro personaje",
@@ -2769,6 +2770,7 @@
 		"copyDemo": "Copiar el cuerpo de la demo",
 		"feature": "Generación de equipamiento",
 		"needsSetup": "Configura este personaje para usar equipamiento posado con esqueleto, armas extragrandes y animaciones nuevas.",
+		"poseIssues": "Algunas articulaciones medidas se ven raras. El objeto las seguirá, así que revisa estos fotogramas cuando esté hecho:",
 		"standingFirst": "Crea primero el diseño para la pose de pie. Cuando te guste el resultado, genera los fotogramas del objeto para cada animación desde sus detalles.",
 		"where": "¿Dónde va?",
 		"notShown": "Todavía no se muestra en el Armario. Crear un objeto la muestra.",

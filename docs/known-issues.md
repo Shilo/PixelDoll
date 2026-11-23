@@ -264,8 +264,8 @@ its keypoints through its own pivot, so pivots may differ) and the same views, e
 on both characters (a source with fewer views, such as 4 onto 8 directions, is made new; 8 onto 4 fits); both characters
 need stored skeleton keypoints, and every target move must exist on the source with the same frame count (or stand
 still); a pixel pushed off the canvas, a missing wrist or forearm, or mirrored hand labels reject the item; forearm
-angle, body overlap (a front pixel within 2 px of the new body counts as on it) and occlusion checks may fail on up to a
-quarter of the frames, more rejects it; the grip is
+angle, body overlap (a front pixel within 2 px of the new body counts as on it) and occlusion checks are estimates, so
+every failing frame is named to check and never rejects the item; the grip is
 approximate (whole-pixel wrist offset, no rotation); items that hide body pixels or slots never re-fit; head items never
 re-fit (head sizes differ by 2 to 5 px on the same canvas); side-scroller characters (east and west only) never re-fit,
 since the hand side is confirmed facing south; a re-fit is never re-fitted again (exact copies of it are), and an item
@@ -278,7 +278,7 @@ item later gains frames for this body (a move made there) offers **Copy from** t
 them; nothing syncs by itself. Offline
 check over the stored real characters (2026-11-10): the bench adventurer's axe re-fits the Ranger with 7 of 36 frames to
 check; its sword (13 of 36) and bow (11 of 36) on the Ranger and its axe on the imported Ragnarok (8 of 27) fail more
-than a quarter; its sword on Ragnarok leaves the canvas; the other pairs differ in moves or hand labels. Live PixelLab
+than a quarter (rejected before 2026-11-23, now offered with those frames to check); its sword on Ragnarok leaves the canvas; the other pairs differ in moves or hand labels. Live PixelLab
 characters (2026-11-11, 4 directions with a mirrored west): Knight A's sword and shield re-fit Scout B with 13 % and 18 %
 of frames to check and Knight C with 20 % and 0 %, all in side views.
 

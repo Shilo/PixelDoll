@@ -1563,6 +1563,7 @@
 			"noRepairGrid": "Tidak ada kisi perbaikan untuk {move} ({direction}): {reason}. Hasil terbaik dipertahankan",
 			"heldLoop": "Bentuk atau sudut item yang dipegang berubah saat animasi berulang",
 			"registrationShift": "PixelLab mengembalikan tepi transparan dan mungkin menggeser lembar gambar. Periksa apakah item sejajar di setiap frame.",
+			"suspiciousJoints": "Sendi terlihat tidak biasa di {move} {direction} frame {frame}, jadi item mungkin tidak pas di sana. Periksa pegangan atau posisinya.",
 			"bodyUnmeasured": "Item ini menutupi hampir seluruh tubuh sehingga tidak dapat diperiksa. Pastikan ini bukan tubuh yang digambar ulang"
 		},
 		"anotherCharacter": "karakter lain",
@@ -2697,6 +2698,7 @@
 		"copyDemo": "Salin tubuh demo",
 		"feature": "Pembuatan perlengkapan",
 		"needsSetup": "Siapkan karakter ini agar bisa memakai perlengkapan yang mengikuti pose kerangka, senjata berukuran besar, dan animasi baru.",
+		"poseIssues": "Beberapa sendi yang diukur terlihat tidak biasa. Item akan mengikutinya, jadi periksa frame ini setelah item dibuat:",
 		"standingFirst": "Buat dulu desain pose berdiri. Setelah hasilnya sesuai, buat item ini untuk tiap animasi dari detailnya.",
 		"where": "Dipasang di mana?",
 		"notShown": "Belum ditampilkan di Lemari. Membuat item akan menampilkan kategori ini.",

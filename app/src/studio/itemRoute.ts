@@ -22,6 +22,7 @@ import {
 	itemPlanMinimumTier,
 	itemGenerationMinutes,
 	planItem,
+	poseFitIssues,
 	type ItemSpec,
 	type Method
 } from '../lib/items/items.ts';
@@ -51,6 +52,8 @@ export interface ItemRoute {
 		minutes: number;
 		minimumTier: number;
 		cell?: number;
+		/** Suspicious imported joints the paid skeleton fit will follow, disclosed before it is bought. */
+		poseIssues: string[];
 	};
 	/** New persisted job description (not started). */
 	draft(ctx: RigCtx, input: NewItemInput, taken: string[]): Draft;
@@ -155,7 +158,8 @@ export const chromaEdit: ItemRoute = {
 				w: rig.cell.w + 2 * pad,
 				h: rig.cell.h + 2 * pad
 			}),
-			...(pad ? { cell: rig.cell.w + 2 * pad } : {})
+			...(pad ? { cell: rig.cell.w + 2 * pad } : {}),
+			poseIssues: poseFitIssues(rig, p)
 		};
 	},
 	draft: (ctx, input, taken) => {
