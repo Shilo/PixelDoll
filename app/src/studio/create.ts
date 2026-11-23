@@ -3221,8 +3221,39 @@ async function addMoveUnlocked(
 		);
 	}, 0);
 	// Finished views were saved; Try again skips complete views unless it replaces the move, which redraws every view.
+	// A view saved only in part is not complete: Try again redraws all of its frames at its shown price, so the stop says so.
 	const partialSaved = (error: unknown): never => {
 		if (!(error instanceof PartialMoveError)) throw error;
+		if (error.savedFrames.length) {
+			const ranges = (frames: number[]) =>
+				frames
+					.reduce<number[][]>((runs, frame) => {
+						const last = runs.at(-1);
+						if (last && frame === last.at(-1)! + 1) last.push(frame);
+						else runs.push([frame]);
+						return runs;
+					}, [])
+					.map((run) => (run.length > 1 ? `${run[0] + 1}–${run.at(-1)! + 1}` : `${run[0] + 1}`))
+					.join(', ');
+			const english = [
+				...error.savedDirs.map(directionLabel),
+				...error.savedFrames.map((f) => `${directionLabel(f.dir)} frames ${ranges(f.frames)}`)
+			].join(', ');
+			const saved = [
+				...error.savedDirs.map(directionLabel),
+				...error.savedFrames.map((f) =>
+					message('create.errors.savedFrameRange', {
+						view: directionLabel(f.dir),
+						frames: ranges(f.frames)
+					})
+				)
+			];
+			throw new LocalizedError(
+				`${errorText(error.reason)} The finished frames were saved (${english})${spec.replace ? '.' : '. Generating again redraws every frame of the views that are not complete, at the price it shows.'}`,
+				spec.replace ? 'create.errors.partialSaved' : 'create.errors.partialSavedRedraw',
+				{ reason: errorMessage(error.reason), views: saved }
+			);
+		}
 		const views = error.savedDirs.map(directionLabel).join(', ');
 		throw new LocalizedError(
 			`${errorText(error.reason)} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,

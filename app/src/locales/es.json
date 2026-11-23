@@ -2309,6 +2309,8 @@
 			"partialSaved": "{reason} Se guardaron las vistas terminadas ({views}).",
 			"partialSavedNewFrames": "{reason} Se guardaron las vistas terminadas ({views}); Generar fotogramas nuevos solo pide las que faltan.",
 			"partialSavedRetry": "{reason} Se guardaron las vistas terminadas ({views}). Volver a generar solo solicita las que faltan.",
+			"partialSavedRedraw": "{reason} Se guardaron los fotogramas terminados ({views}). Generar de nuevo vuelve a dibujar todos los fotogramas de las vistas incompletas, al precio que se muestra.",
+			"savedFrameRange": "{view}, fotogramas {frames}",
 			"replacementFailsQa": "El reemplazo sigue sin pasar las comprobaciones de calidad de la pose del cuerpo. Se conservaron las direcciones existentes. Revisa los resultados antes de reintentar.",
 			"newMoveFailsQa": "La animación nueva no pasa las comprobaciones de calidad de la pose del cuerpo, así que no se guardó. Revisa los resultados antes de reintentar.",
 			"moveDirectionsChanged": "Las direcciones del personaje cambiaron. Revisa la estimación actual de la animación antes de volver a intentarlo. No se solicitó ninguna generación.",

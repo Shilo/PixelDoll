@@ -2309,6 +2309,8 @@
 			"partialSaved": "{reason} Les vues terminées ont été enregistrées ({views}).",
 			"partialSavedNewFrames": "{reason} Les vues terminées ont été enregistrées ({views}). « Générer de nouvelles images » ne demande que les images manquantes.",
 			"partialSavedRetry": "{reason} Les vues terminées ont été enregistrées ({views}). Seules les vues manquantes seront demandées lors d’une nouvelle génération.",
+			"partialSavedRedraw": "{reason} Les images terminées ont été enregistrées ({views}). Générer à nouveau redessine toutes les images des vues incomplètes, au prix affiché.",
+			"savedFrameRange": "{view} images {frames}",
 			"replacementFailsQa": "Le remplacement échoue toujours aux contrôles de qualité de la pose du corps. Les directions existantes ont été conservées. Vérifiez les résultats avant de réessayer.",
 			"newMoveFailsQa": "La nouvelle animation échoue aux contrôles de qualité de la pose du corps, elle n’a donc pas été enregistrée. Vérifiez les résultats avant de réessayer.",
 			"moveDirectionsChanged": "Les directions du personnage ont changé. Consultez l’estimation actuelle de l’animation avant de réessayer. Aucune génération n’a été demandée.",

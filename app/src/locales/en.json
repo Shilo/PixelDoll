@@ -2309,6 +2309,8 @@
 			"partialSaved": "{reason} The finished views were saved ({views}).",
 			"partialSavedNewFrames": "{reason} The finished views were saved ({views}); Generate new frames requests only the missing ones.",
 			"partialSavedRetry": "{reason} The finished views were saved ({views}). Generating again requests only the missing ones.",
+			"partialSavedRedraw": "{reason} The finished frames were saved ({views}). Generating again redraws every frame of the views that are not complete, at the price it shows.",
+			"savedFrameRange": "{view} frames {frames}",
 			"replacementFailsQa": "The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.",
 			"newMoveFailsQa": "The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.",
 			"moveDirectionsChanged": "Character directions changed. Review the move’s current estimate before trying again. No generation was requested.",

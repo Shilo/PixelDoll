@@ -1893,38 +1893,46 @@ export async function animateAnchoredItem(
 		? await evaluateItem(draft, ctx, standingPalettes)
 		: await runItem(draft, ctx, { standingPalettes });
 	// Views that finished are paid for: publish them even when another view failed, so a retry buys only the missing ones.
-	const failedDirs = new Set<DirectionName>();
-	if (whole)
-		for (const k of failedCalls(draft, whole))
-			failedDirs.add(draft.calls[k].reference!.cell.split('/')[1] as DirectionName);
-	for (const dir of dirs)
-		if (
-			!whole?.qa ||
-			draft.calls.some(
-				(c) => c.reference!.cell.split('/')[1] === dir && recOf(c.recId)?.state !== 'done'
-			)
-		)
-			failedDirs.add(dir);
+	// Each call is anchored on the standing design alone, so a view's finished calls are kept when a later one failed.
+	const failedCallSet = new Set(whole ? failedCalls(draft, whole) : draft.calls.keys());
+	const dirOfCall = (c: CallState) => c.reference!.cell.split('/')[1] as DirectionName;
+	const good = (c: CallState, k: number) =>
+		!!whole?.qa && !failedCallSet.has(k) && recOf(c.recId)?.state === 'done';
+	const failedDirs = new Set(
+		dirs.filter((dir) => draft.calls.some((c, k) => dirOfCall(c) === dir && !good(c, k)))
+	);
 	const doneDirs = dirs.filter((dir) => !failedDirs.has(dir));
+	const partialDirs = [...failedDirs].filter((dir) =>
+		draft.calls.some((c, k) => dirOfCall(c) === dir && good(c, k))
+	);
+	const kept = new Set(
+		draft.calls.flatMap((c, k) =>
+			partialDirs.includes(dirOfCall(c)) && !good(c, k) ? c.cells : []
+		)
+	);
 	const detail =
 		draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.';
 	const detailError = () =>
 		typeof detail === 'string'
 			? (localizedAutomaticRepairError(detail) ?? new Error(detail))
 			: loggedError(detail);
-	if (!doneDirs.length) throw detailError();
+	const savedDirs = [...doneDirs, ...partialDirs];
+	if (!savedDirs.length) throw detailError();
 	const finished: Draft = {
 		...draft,
-		spec: { ...draft.spec, dirs: doneDirs },
-		calls: draft.calls.filter((c) =>
-			doneDirs.includes(c.reference!.cell.split('/')[1] as DirectionName)
-		)
+		spec: { ...draft.spec, dirs: savedDirs },
+		calls: draft.calls.filter((c, k) => savedDirs.includes(dirOfCall(c)) && good(c, k))
 	};
 	const result =
 		doneDirs.length === dirs.length ? whole : await evaluateItem(finished, ctx, standingPalettes);
-	if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(finished, rig, result))
+	const covered = new Set(result?.cells.map((c) => c.key));
+	if (
+		!result?.qa ||
+		hasStructuralFailure(result) ||
+		finished.calls.some((c) => c.cells.some((key) => !covered.has(key)))
+	)
 		throw detailError();
-	dirs = doneDirs;
+	dirs = savedDirs;
 	const missed = [...failedDirs];
 	let materials = ctx.rec.manifest.materials.filter(
 		(m) => m.owner === item.id && item.materials.includes(m.id)
@@ -1967,10 +1975,22 @@ export async function animateAnchoredItem(
 		draftProvenance(finished).provenance,
 		result.qa,
 		0,
-		needsMaterials ? materials : undefined
+		needsMaterials ? materials : undefined,
+		kept
 	);
 	dirs.forEach(onCall);
-	if (missed.length) throw new PartialMoveError(detailError(), dirs);
+	if (missed.length)
+		throw new PartialMoveError(
+			detailError(),
+			doneDirs,
+			partialDirs.map((dir) => ({
+				dir,
+				frames: finished.calls
+					.filter((c) => dirOfCall(c) === dir)
+					.flatMap((c) => c.cells.map((key) => Number(key.split('/')[2])))
+					.sort((a, b) => a - b)
+			}))
+		);
 }
 const seedOf = (s: string) =>
 	1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
@@ -1980,7 +2000,9 @@ export class PartialMoveError extends Error {
 	constructor(
 		/** Why the other views stopped; a LocalizedError keeps its translation. */
 		readonly reason: string | Error,
-		readonly savedDirs: DirectionName[]
+		readonly savedDirs: DirectionName[],
+		/** Directions saved only in part: the frames their finished batches made. The rest stay missing. */
+		readonly savedFrames: { dir: DirectionName; frames: number[] }[] = []
 	) {
 		super(`${errorText(reason)} The finished views were saved.`);
 	}
@@ -2278,7 +2300,17 @@ export async function poseItemClip(
 	if (failures.length)
 		throw new PartialMoveError(
 			failures[0] instanceof Error ? failures[0] : String(failures[0]),
-			doneDirs
+			doneDirs,
+			perDir.flatMap((r, i) =>
+				r.status === 'fulfilled' && r.value.kept.length
+					? [
+							{
+								dir: dirs[i],
+								frames: r.value.collected.map((c) => Number(c.key.split('/')[2]))
+							}
+						]
+					: []
+			)
 		);
 	return q;
 }

@@ -2245,6 +2245,8 @@
 			"partialSaved": "{reason} 완료된 뷰를 저장했어요({views}).",
 			"partialSavedNewFrames": "{reason} 완료된 뷰를 저장했어요({views}). 새 프레임 생성은 빠진 것만 요청해요.",
 			"partialSavedRetry": "{reason} 완료된 뷰를 저장했어요({views}). 다시 생성하면 빠진 뷰만 요청해요.",
+			"partialSavedRedraw": "{reason} 완료된 프레임은 저장했어요({views}). 다시 생성하면 완료되지 않은 방향의 모든 프레임을 표시된 가격으로 다시 그려요.",
+			"savedFrameRange": "{view} 프레임 {frames}",
 			"replacementFailsQa": "대체 결과도 몸체 포즈 품질 검사를 통과하지 못해요. 기존 방향은 유지됐어요. 다시 시도하기 전에 결과를 검토하세요.",
 			"newMoveFailsQa": "새 동작이 몸체 포즈 품질 검사를 통과하지 못해 저장되지 않았어요. 다시 시도하기 전에 결과를 검토하세요.",
 			"moveDirectionsChanged": "캐릭터 방향이 바뀌었어요. 다시 시도하기 전에 동작의 최신 예상 비용을 확인하세요. 생성 요청은 보내지 않았어요.",

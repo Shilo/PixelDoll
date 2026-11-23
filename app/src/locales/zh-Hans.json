@@ -2245,6 +2245,8 @@
 			"partialSaved": "{reason} 已保存完成的视图（{views}）。",
 			"partialSavedNewFrames": "{reason} 已保存完成的视图（{views}）；“生成新帧”只会请求缺失的帧。",
 			"partialSavedRetry": "{reason} 已保存完成的视图（{views}）。重新生成时只会请求缺失的视图。",
+			"partialSavedRedraw": "{reason} 已完成的帧已保存（{views}）。重新生成会按显示的价格重绘未完成朝向的所有帧。",
+			"savedFrameRange": "{view} 第 {frames} 帧",
 			"replacementFailsQa": "替换仍未通过身体姿势质量检查。现有朝向已保留。重试前请查看结果。",
 			"newMoveFailsQa": "新动作未通过身体姿势质量检查，因此未保存。重试前请查看结果。",
 			"moveDirectionsChanged": "角色的朝向已更改。请先查看此动作的最新费用预估，再重试。未发送生成请求。",

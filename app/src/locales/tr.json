@@ -2309,6 +2309,8 @@
 			"partialSaved": "{reason} Tamamlanan görünümler kaydedildi ({views}).",
 			"partialSavedNewFrames": "{reason} Tamamlanan görünümler kaydedildi ({views}). Yeni kareler üretin seçeneği yalnızca eksik kareleri ister.",
 			"partialSavedRetry": "{reason} Tamamlanan görünümler kaydedildi ({views}). Yeniden oluşturma yalnızca eksik görünümleri ister.",
+			"partialSavedRedraw": "{reason} Biten kareler kaydedildi ({views}). Yeniden oluşturmak, tamamlanmamış yönlerin tüm karelerini gösterilen fiyatla yeniden çizer.",
+			"savedFrameRange": "{view} kareleri {frames}",
 			"replacementFailsQa": "Yeni kareler hâlâ gövde pozu kalite kontrollerini geçemiyor. Mevcut yönler korundu. Tekrar denemeden önce sonuçları inceleyin.",
 			"newMoveFailsQa": "Yeni animasyon gövde pozu kalite kontrollerini geçemediği için kaydedilmedi. Tekrar denemeden önce sonuçları inceleyin.",
 			"moveDirectionsChanged": "Karakterin yönleri değişti. Yeniden denemeden önce animasyonun güncel tahminini inceleyin. Üretim isteği gönderilmedi.",
