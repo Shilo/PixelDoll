@@ -2252,7 +2252,6 @@
 			"characterChangedAnotherTab2": "Ce personnage a été modifié dans un autre onglet avant que l’animation puisse être enregistrée. Rouvrez-le avant de réessayer.",
 			"demoStandingReferenceMissing": "La référence debout de la démo est manquante.",
 			"resultMissingStorage": "Un résultat payé manque dans le stockage de ce navigateur.",
-			"pixellabReturnedIncompleteInvalid": "{direction} : PixelLab a renvoyé des articulations debout incomplètes ou invalides. L’animation n’a pas été lancée à partir de ces articulations ; les résultats existants sont conservés.",
 			"pixellabReturnedWrongNumber": "{move} {direction} : PixelLab a renvoyé un nombre d’images incorrect. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
 			"animationExceedsPxFrame": "{move} {direction} : les images du corps ne tiennent pas dans le cadre de {w} px. Elles ont été conservées pour vérification ; rien n’a été enregistré.",
 			"pixellabReturnedEmptyFrames": "{move} {direction} : PixelLab a renvoyé des images vides. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",

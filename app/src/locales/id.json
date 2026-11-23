@@ -2188,7 +2188,6 @@
 			"characterChangedAnotherTab2": "Karakter ini berubah di tab lain sebelum animasi dapat disimpan. Buka kembali sebelum mencoba lagi.",
 			"demoStandingReferenceMissing": "Referensi pose berdiri demo tidak ditemukan.",
 			"resultMissingStorage": "Hasil berbayar tidak ada di penyimpanan browser ini.",
-			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab mengembalikan sendi pose berdiri yang tidak lengkap atau tidak valid. Animasi tidak dimulai dari sendi tersebut. Hasil yang ada tetap disimpan.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: jumlah frame dari PixelLab tidak sesuai. Tidak ada percobaan ulang berbayar yang dimulai. Tinjau Aktivitas sebelum meminta percobaan lain.",
 			"animationExceedsPxFrame": "{move} {direction}: frame tubuh tidak muat di frame {w} px. Frame tersebut disimpan untuk ditinjau; tidak ada yang disimpan ke karakter.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab mengembalikan frame kosong. Tidak ada percobaan ulang berbayar yang dimulai. Tinjau Aktivitas sebelum meminta percobaan lain.",

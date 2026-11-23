@@ -512,38 +512,39 @@ export function checkedKeypoints(raw: unknown): Keypoint[] | undefined {
 		return kp4(label, p.x, p.y);
 	});
 }
-/** Check all present managed references before any missing-reference estimates or paid animations begin. */
+/** Managed standing joints for the drawn views. A view whose reference is absent, incomplete or invalid is listed in
+ *  `unusable` and takes the same bounded estimate as an absent one: the paid draw is never lost to a malformed reference,
+ *  and nothing is clamped or invented from it. */
 export function managedRestKeypoints(
 	refs: unknown,
 	directions: readonly DirectionName[]
-): Partial<Record<DirectionName, Keypoint[]>> {
-	const out: Partial<Record<DirectionName, Keypoint[]>> = {};
-	if (refs == null) return out; // optional/untyped containers can be unavailable, not malformed coordinates
+): { poses: Partial<Record<DirectionName, Keypoint[]>>; unusable: DirectionName[] } {
+	const poses: Partial<Record<DirectionName, Keypoint[]>> = {},
+		unusable: DirectionName[] = [];
+	if (refs == null) return { poses, unusable }; // optional/untyped containers can be unavailable, not malformed coordinates
+	const record = (value: unknown): value is Record<string, unknown> =>
+		!!value && typeof value === 'object' && !Array.isArray(value);
 	for (const d of directions) {
-		const invalid = () =>
-			new LocalizedError(
-				`${d}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.`,
-				'create.errors.pixellabReturnedIncompleteInvalid',
-				{ direction: viewName(d) }
-			);
-		if (!refs || typeof refs !== 'object' || Array.isArray(refs)) throw invalid();
-		if (!Object.hasOwn(refs, d)) continue; // a wholly absent reference retains the bounded estimate fallback
-		const ref = (refs as Record<string, unknown>)[d];
-		if (ref == null) continue;
-		if (!ref || typeof ref !== 'object' || Array.isArray(ref)) throw invalid();
-		const raw = (ref as { keypoints?: unknown }).keypoints;
+		if (!record(refs)) {
+			unusable.push(d);
+			continue;
+		}
+		const ref = Object.hasOwn(refs, d) ? refs[d] : undefined;
+		if (ref == null) continue; // a wholly absent reference
+		const raw = record(ref) ? ref.keypoints : ref;
 		if (raw == null) continue;
-		if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw invalid();
-		const points = checkedKeypoints(
-			LABELS.map((label) => {
-				const p = (raw as Record<string, { x?: unknown; y?: unknown } | null>)[label];
-				return { label, x: p?.x, y: p?.y };
-			})
-		);
-		if (!points) throw invalid();
-		out[d] = points;
+		const points = record(raw)
+			? checkedKeypoints(
+					LABELS.map((label) => {
+						const p = raw[label] as { x?: unknown; y?: unknown } | null | undefined;
+						return { label, x: p?.x, y: p?.y };
+					})
+				)
+			: undefined;
+		if (points && record(ref)) poses[d] = points;
+		else unusable.push(d);
 	}
-	return out;
+	return { poses, unusable };
 }
 /** One estimate-skeleton check with its record for provenance; keypoints are undefined when the response is invalid. */
 export async function measureJoints(
@@ -1531,8 +1532,12 @@ export async function createCharacter(
 	)?.skeletons?.['2d_references'];
 	const restKps = {} as Record<DirectionName, Keypoint[]>,
 		managed = managedRestKeypoints(refs, DIRS);
+	for (const d of managed.unusable)
+		restWarnings.push(
+			`${d}: PixelLab returned incomplete or invalid standing joints; they were estimated from the drawn view`
+		);
 	for (const d of DIRS) {
-		const kps = managed[d] ?? (await joints(rest[d], true, signal, spec.activityScope)); // only absent references use the existing bounded estimate fallback
+		const kps = managed.poses[d] ?? (await joints(rest[d], true, signal, spec.activityScope)); // absent or unusable references take the bounded estimate fallback
 		if (signal && dryRuns.get(signal)?.unmeasured) continue;
 		if (!hasAll(kps))
 			throw new PaidStepError(

@@ -2252,7 +2252,6 @@
 			"characterChangedAnotherTab2": "Diese Figur wurde in einem anderen Tab geändert, bevor die Animation gespeichert werden konnte. Öffne sie vor einem neuen Versuch erneut.",
 			"demoStandingReferenceMissing": "Die Standreferenz der Demo fehlt.",
 			"resultMissingStorage": "Ein bezahltes Ergebnis fehlt im Speicher dieses Browsers.",
-			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab hat unvollständige oder ungültige Gelenkpunkte für die Standpose zurückgegeben. Mit diesen Gelenken wurde keine Animation gestartet. Vorhandene Ergebnisse bleiben erhalten.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab hat die falsche Anzahl an Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
 			"animationExceedsPxFrame": "{move} {direction}: Die Körper-Frames passen nicht in den {w} px großen Frame. Sie wurden zur Prüfung behalten; nichts wurde gespeichert.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab hat leere Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",

@@ -2252,7 +2252,6 @@
 			"characterChangedAnotherTab2": "This character changed in another tab before the move could be saved. Reopen it before trying again.",
 			"demoStandingReferenceMissing": "The demo standing reference is missing.",
 			"resultMissingStorage": "A paid result is missing from this browser's storage.",
-			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.",
 			"animationExceedsPxFrame": "{move} {direction}: the body frames do not fit the {w} px frame. They were kept for review; nothing was saved.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.",

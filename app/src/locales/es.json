@@ -2252,7 +2252,6 @@
 			"characterChangedAnotherTab2": "Este personaje cambió en otra pestaña antes de que se pudiera guardar la animación. Vuelve a abrirlo antes de reintentar.",
 			"demoStandingReferenceMissing": "Falta la referencia de pie de la demo.",
 			"resultMissingStorage": "Falta un resultado pagado en el almacenamiento de este navegador.",
-			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab devolvió articulaciones de pie incompletas o no válidas. No se inició la animación a partir de ellas; se conservan los resultados existentes.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab devolvió una cantidad incorrecta de fotogramas. No se inició ningún reintento de pago. Revisa Actividad antes de pedir otro intento.",
 			"animationExceedsPxFrame": "{move} {direction}: los fotogramas del cuerpo no caben en el marco de {w} px. Se guardaron para revisarlos; no se guardó nada en el personaje.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab devolvió fotogramas vacíos. No se inició ningún reintento de pago. Revisa Actividad antes de pedir otro intento.",

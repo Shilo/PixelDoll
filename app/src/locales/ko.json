@@ -2188,7 +2188,6 @@
 			"characterChangedAnotherTab2": "동작을 저장하기 전에 다른 탭에서 이 캐릭터가 바뀌었어요. 다시 시도하기 전에 다시 여세요.",
 			"demoStandingReferenceMissing": "데모의 서 있는 참조가 없어요.",
 			"resultMissingStorage": "결제된 결과가 이 브라우저 저장소에 없어요.",
-			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab이 불완전하거나 잘못된 서 있는 관절을 반환했어요. 이 관절로 애니메이션을 시작하지 않았고 기존 결과는 유지됐어요.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab이 잘못된 프레임 수를 반환했어요. 유료 재시도는 시작되지 않았어요. 다른 시도를 요청하기 전에 활동을 검토하세요.",
 			"animationExceedsPxFrame": "{move} {direction}: 몸체 프레임이 {w}px 프레임에 맞지 않아요. 검토용으로 보관했고, 저장된 것은 없어요.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab이 빈 프레임을 반환했어요. 유료 재시도는 시작되지 않았어요. 다른 시도를 요청하기 전에 활동을 검토하세요.",

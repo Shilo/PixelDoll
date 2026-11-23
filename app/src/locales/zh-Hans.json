@@ -2188,7 +2188,6 @@
 			"characterChangedAnotherTab2": "保存动作前，此角色在另一个标签页中已更改。重试前请重新打开它。",
 			"demoStandingReferenceMissing": "演示站立参考缺失。",
 			"resultMissingStorage": "此浏览器的存储中缺少一个已付费的结果。",
-			"pixellabReturnedIncompleteInvalid": "{direction}：PixelLab 返回了不完整或无效的站立关节。未从这些关节开始动画；现有结果已保留。",
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLab 返回的帧数不正确。未启动付费重试。请求另一次尝试前请查看“活动”。",
 			"animationExceedsPxFrame": "{move} {direction}：身体帧超出 {w} px 帧。已保留以供查看；未保存任何内容。",
 			"pixellabReturnedEmptyFrames": "{move} {direction}：PixelLab 返回了空帧。未启动付费重试。请求另一次尝试前请查看“活动”。",

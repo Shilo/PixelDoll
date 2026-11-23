@@ -2252,7 +2252,6 @@
 			"characterChangedAnotherTab2": "Animasyon kaydedilmeden önce karakter başka bir sekmede değişti. Tekrar denemeden önce karakteri yeniden açın.",
 			"demoStandingReferenceMissing": "Demonun ayakta duruş referansı eksik.",
 			"resultMissingStorage": "Ücretli bir sonuç bu tarayıcının depolamasında eksik.",
-			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab eksik veya geçersiz ayakta duruş eklemleri döndürdü. Bu eklemlerle animasyon başlatılmadı; mevcut sonuçlar korundu.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab yanlış sayıda kare döndürdü. Ücretli yeniden deneme başlatılmadı. Yeni deneme istemeden önce Etkinlik bölümünü inceleyin.",
 			"animationExceedsPxFrame": "{move} {direction}: Gövde kareleri {w} px kareye sığmıyor. İnceleme için saklandılar; hiçbir şey kaydedilmedi.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab boş kareler döndürdü. Ücretli yeniden deneme başlatılmadı. Yeni deneme istemeden önce Etkinlik bölümünü inceleyin.",
