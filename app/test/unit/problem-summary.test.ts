@@ -58,7 +58,8 @@ test('account, network and unanticipated failures get their own plain words', ()
 	expect(kind(new ApiError(401, 'auth', 'x'))).toBe('key');
 	expect(kind(new ApiError(402, 'credits', 'x'))).toBe('credits');
 	expect(kind(new ApiError(422, 'policy', 'x'))).toBe('declined');
-	expect(kind(new ApiError(422, 'invalid', 'x'))).toBe('invalid');
+	// Flipped on purpose: every request is app-built, so a 422 is a bug to report, not settings for the user to change.
+	expect(kind(new ApiError(422, 'invalid', 'x'))).toBe('unexpected');
 	expect(kind(new ApiError(503, 'retry', 'x'))).toBe('busy');
 	expect(kind(new ApiError(0, 'retry', 'x', { network: true }))).toBe('offline');
 	expect(kind(new TypeError('Failed to fetch'))).toBe('unexpected');
@@ -72,7 +73,7 @@ test('Activity names a refused request by why it was refused, and a lost one as 
 		({ jobs: [], state: 'failed', ...fields }) as unknown as JobRec;
 	expect(recordProblemKind(record({ errorKind: 'auth' }))).toBe('key');
 	expect(recordProblemKind(record({ errorKind: 'credits' }))).toBe('credits');
-	expect(recordProblemKind(record({ errorKind: 'invalid' }))).toBe('invalid');
+	expect(recordProblemKind(record({ errorKind: 'invalid' }))).toBe('unexpected');
 	expect(recordProblemKind(record({ errorKind: 'policy' }))).toBe('declined');
 	expect(recordProblemKind(record({ jobs: [{ policy: true }] as JobRec['jobs'] }))).toBe(
 		'declined'
@@ -104,7 +105,6 @@ test('every kind has a title and one next step in the catalog', () => {
 		'key',
 		'busy',
 		'offline',
-		'invalid',
 		'declined',
 		'unexpected'
 	];

@@ -23,7 +23,6 @@ export type ProblemKind =
 	| 'key'
 	| 'busy'
 	| 'offline'
-	| 'invalid'
 	| 'declined'
 	| 'unexpected';
 
@@ -89,7 +88,8 @@ const API_KINDS: Readonly<Record<ErrorKind, ProblemKind>> = {
 	auth: 'key',
 	credits: 'credits',
 	policy: 'declined',
-	invalid: 'invalid',
+	// Every request is built by the app, so a refusal of its shape is a bug to report, not a setting to change.
+	invalid: 'unexpected',
 	retry: 'busy',
 	notfound: 'unexpected',
 	other: 'unexpected'

@@ -3269,15 +3269,14 @@
 			"quote": "O PixelLab não confirmou o preço",
 			"browser": "Este navegador não consegue fazer isso com segurança",
 			"exportId": "Outro personagem usa este ID de exportação",
-			"busy": "O PixelLab está ocupado",
-			"invalid": "O PixelLab recusou esta solicitação"
+			"busy": "O PixelLab está ocupado"
 		},
 		"next": {
 			"frame-count": "Seus resultados pagos foram mantidos. Revise-os e depois continue ou tente novamente.",
 			"overflow": "Escolha subir ou um quadro maior, se oferecido, ou tente novamente.",
 			"empty": "Seus resultados pagos continuam em Atividade. Tente novamente com uma nova tentativa.",
 			"dropped": "Aguarde um momento e tente novamente.",
-			"joints": "Revise os quadros. Mantenha os que servem ou tente novamente com uma nova tentativa.",
+			"joints": "O que foi pago continua em Atividade. Faça uma nova tentativa ou comece de uma pose em pé mais clara.",
 			"stopped": "Veja em Atividade o que aconteceu antes de começar de novo.",
 			"misaligned": "Gere novamente só a parte desalinhada ou mantenha a arte que você tem.",
 			"quality": "Revise os resultados e depois mantenha-os ou tente novamente.",
@@ -3288,15 +3287,14 @@
 			"key": "Conecte o PixelLab novamente com um token válido.",
 			"offline": "Verifique sua conexão e tente novamente.",
 			"declined": "Altere a descrição e tente novamente.",
-			"unexpected": "Relate o problema para que ele seja corrigido. Seus resultados pagos continuam em Atividade.",
+			"unexpected": "Relate o problema para que ele seja corrigido. O que já foi pago continua em Atividade.",
 			"uncertain": "Confira Atividade antes de tentar de novo: uma nova tentativa pode cobrar outra vez.",
 			"poses": "Configure as poses primeiro e depois crie o equipamento.",
 			"method": "Escolha Automático e tente novamente.",
 			"quote": "Tente novamente em instantes ou escolha outro modelo.",
 			"browser": "Use um navegador atual para continuar.",
 			"exportId": "Escolha outro ID de exportação.",
-			"busy": "Aguarde um momento e tente novamente.",
-			"invalid": "Altere as configurações da solicitação e tente novamente."
+			"busy": "Aguarde um momento e tente novamente."
 		}
 	}
 }

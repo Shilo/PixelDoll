@@ -3260,15 +3260,14 @@
 			"quote": "PixelLab no confirmó el precio",
 			"browser": "Este navegador no puede hacerlo de forma segura",
 			"exportId": "Otro personaje usa este ID de exportación",
-			"busy": "PixelLab está ocupado",
-			"invalid": "PixelLab rechazó esta solicitud"
+			"busy": "PixelLab está ocupado"
 		},
 		"next": {
 			"frame-count": "Tus resultados pagados se conservan. Revísalos y luego continúa o vuelve a intentarlo.",
 			"overflow": "Elige subirlo o un marco más grande si se ofrece, o vuelve a intentarlo.",
 			"empty": "Tus resultados pagados siguen en Actividad. Vuelve a intentarlo con un intento nuevo.",
 			"dropped": "Espera un momento y vuelve a intentarlo.",
-			"joints": "Revisa los fotogramas. Conserva los que sirvan o vuelve a intentarlo con un intento nuevo.",
+			"joints": "Lo pagado sigue en Actividad. Haz un intento nuevo o parte de una pose de pie más clara.",
 			"stopped": "Revisa en Actividad qué pasó antes de volver a empezar.",
 			"misaligned": "Vuelve a generar solo la parte desalineada o conserva el arte que tienes.",
 			"quality": "Revisa los resultados y luego consérvalos o vuelve a intentarlo.",
@@ -3279,15 +3278,14 @@
 			"key": "Vuelve a conectar PixelLab con un token válido.",
 			"offline": "Revisa tu conexión y vuelve a intentarlo.",
 			"declined": "Cambia la descripción y vuelve a intentarlo.",
-			"unexpected": "Infórmalo para que se pueda corregir. Tus resultados pagados siguen en Actividad.",
+			"unexpected": "Infórmalo para que se pueda corregir. Lo que ya se pagó sigue en Actividad.",
 			"uncertain": "Revisa Actividad antes de volver a intentarlo: un intento nuevo podría cobrar otra vez.",
 			"poses": "Configura primero sus poses y luego crea el equipo.",
 			"method": "Elige Automático y vuelve a intentarlo.",
 			"quote": "Vuelve a intentarlo en un momento o elige otro modelo.",
 			"browser": "Usa un navegador actual para continuar.",
 			"exportId": "Elige otro ID de exportación.",
-			"busy": "Espera un momento y vuelve a intentarlo.",
-			"invalid": "Cambia los ajustes de la solicitud y vuelve a intentarlo."
+			"busy": "Espera un momento y vuelve a intentarlo."
 		}
 	}
 }

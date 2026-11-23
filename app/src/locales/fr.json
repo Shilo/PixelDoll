@@ -3260,15 +3260,14 @@
 			"quote": "PixelLab n’a pas confirmé le prix",
 			"browser": "Ce navigateur ne peut pas le faire en toute sécurité",
 			"exportId": "Un autre personnage utilise cet ID d’export",
-			"busy": "PixelLab est occupé",
-			"invalid": "PixelLab a refusé cette requête"
+			"busy": "PixelLab est occupé"
 		},
 		"next": {
 			"frame-count": "Vos résultats payés sont conservés. Vérifiez-les, puis continuez ou réessayez.",
 			"overflow": "Choisissez de le remonter ou un cadre plus grand si c’est proposé, ou réessayez.",
 			"empty": "Vos résultats payés restent dans Activité. Réessayez avec une nouvelle tentative.",
 			"dropped": "Patientez un instant, puis réessayez.",
-			"joints": "Vérifiez les images. Gardez celles qui conviennent ou réessayez avec une nouvelle tentative.",
+			"joints": "Ce qui a été payé reste dans Activité. Faites une nouvelle tentative ou partez d’une pose debout plus nette.",
 			"stopped": "Consultez Activité pour voir ce qui s’est passé avant de recommencer.",
 			"misaligned": "Régénérez seulement la partie décalée ou gardez les images actuelles.",
 			"quality": "Vérifiez les résultats, puis gardez-les ou réessayez.",
@@ -3279,15 +3278,14 @@
 			"key": "Reconnectez PixelLab avec un jeton valide.",
 			"offline": "Vérifiez votre connexion, puis réessayez.",
 			"declined": "Modifiez la description, puis réessayez.",
-			"unexpected": "Signalez-le pour qu’il soit corrigé. Vos résultats payés restent dans Activité.",
+			"unexpected": "Signalez-le pour qu’il soit corrigé. Ce qui a déjà été payé reste dans Activité.",
 			"uncertain": "Consultez Activité avant de réessayer : une nouvelle tentative pourrait être facturée à nouveau.",
 			"poses": "Configurez d’abord ses poses, puis créez l’équipement.",
 			"method": "Choisissez Automatique, puis réessayez.",
 			"quote": "Réessayez dans un instant ou choisissez un autre modèle.",
 			"browser": "Utilisez un navigateur récent pour continuer.",
 			"exportId": "Choisissez un autre ID d’export.",
-			"busy": "Patientez un instant, puis réessayez.",
-			"invalid": "Modifiez les réglages de la requête, puis réessayez."
+			"busy": "Patientez un instant, puis réessayez."
 		}
 	}
 }

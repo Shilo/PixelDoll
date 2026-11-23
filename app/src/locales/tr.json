@@ -3257,15 +3257,14 @@
 			"quote": "PixelLab fiyatı onaylamadı",
 			"browser": "Bu tarayıcı bunu güvenli şekilde yapamıyor",
 			"exportId": "Başka bir karakter bu dışa aktarma kimliğini kullanıyor",
-			"busy": "PixelLab meşgul",
-			"invalid": "PixelLab bu isteği reddetti"
+			"busy": "PixelLab meşgul"
 		},
 		"next": {
 			"frame-count": "Ücretli sonuçlarınız korundu. İnceleyin, sonra devam edin veya yeniden deneyin.",
 			"overflow": "Sunulursa yükseltmeyi veya daha büyük bir kareyi seçin ya da yeniden deneyin.",
 			"empty": "Ücretli sonuçlarınız Etkinlik bölümünde duruyor. Yeni bir denemeyle tekrar deneyin.",
 			"dropped": "Biraz bekleyin, sonra yeniden deneyin.",
-			"joints": "Kareleri inceleyin. İşe yarayanları tutun veya yeni bir denemeyle tekrar deneyin.",
+			"joints": "Ödenen her şey Etkinlik’te kalır. Yeni bir deneme yapın ya da daha net bir ayakta duruş pozundan başlayın.",
 			"stopped": "Yeniden başlamadan önce ne olduğunu Etkinlik bölümünde kontrol edin.",
 			"misaligned": "Yalnızca kayan kısmı yeniden oluşturun veya mevcut çizimleri tutun.",
 			"quality": "Sonuçları inceleyin, sonra tutun veya yeniden deneyin.",
@@ -3276,15 +3275,14 @@
 			"key": "PixelLab'i geçerli bir belirteçle yeniden bağlayın.",
 			"offline": "Bağlantınızı kontrol edin, sonra yeniden deneyin.",
 			"declined": "Açıklamayı değiştirin, sonra yeniden deneyin.",
-			"unexpected": "Düzeltilebilmesi için bildirin. Ücretli sonuçlarınız Etkinlik bölümünde duruyor.",
+			"unexpected": "Düzeltilebilmesi için bildirin. Önceden ödenen her şey Etkinlik’te kalır.",
 			"uncertain": "Yeniden denemeden önce Etkinlik bölümünü kontrol edin: yeni bir deneme yeniden ücretlendirilebilir.",
 			"poses": "Önce duruşlarını kurun, sonra ekipmanı oluşturun.",
 			"method": "Otomatik'i seçin, sonra yeniden deneyin.",
 			"quote": "Biraz sonra yeniden deneyin veya başka bir model seçin.",
 			"browser": "Devam etmek için güncel bir tarayıcı kullanın.",
 			"exportId": "Farklı bir dışa aktarma kimliği seçin.",
-			"busy": "Biraz bekleyin, sonra yeniden deneyin.",
-			"invalid": "İstek ayarlarını değiştirin, sonra yeniden deneyin."
+			"busy": "Biraz bekleyin, sonra yeniden deneyin."
 		}
 	}
 }

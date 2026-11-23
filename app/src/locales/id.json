@@ -3170,15 +3170,14 @@
 			"quote": "PixelLab tidak mengonfirmasi harganya",
 			"browser": "Browser ini tidak dapat melakukannya dengan aman",
 			"exportId": "Karakter lain memakai ID Ekspor ini",
-			"busy": "PixelLab sedang sibuk",
-			"invalid": "PixelLab menolak permintaan ini"
+			"busy": "PixelLab sedang sibuk"
 		},
 		"next": {
 			"frame-count": "Hasil berbayar Anda tetap disimpan. Tinjau, lalu lanjutkan atau coba lagi.",
 			"overflow": "Pilih naikkan atau frame yang lebih besar jika ditawarkan, atau coba lagi.",
 			"empty": "Hasil berbayar Anda tetap ada di Aktivitas. Coba lagi dengan percobaan baru.",
 			"dropped": "Tunggu sebentar, lalu coba lagi.",
-			"joints": "Tinjau frame-nya. Simpan yang bisa dipakai, atau coba lagi dengan percobaan baru.",
+			"joints": "Apa pun yang sudah dibayar tetap ada di Aktivitas. Coba percobaan baru, atau mulai dari pose berdiri yang lebih jelas.",
 			"stopped": "Periksa Aktivitas untuk melihat apa yang terjadi sebelum memulai lagi.",
 			"misaligned": "Buat ulang hanya bagian yang bergeser, atau simpan gambar yang sudah ada.",
 			"quality": "Tinjau hasilnya, lalu simpan atau coba lagi.",
@@ -3189,15 +3188,14 @@
 			"key": "Hubungkan PixelLab lagi dengan token yang valid.",
 			"offline": "Periksa koneksi Anda, lalu coba lagi.",
 			"declined": "Ubah deskripsinya, lalu coba lagi.",
-			"unexpected": "Laporkan agar bisa diperbaiki. Hasil berbayar Anda tetap ada di Aktivitas.",
+			"unexpected": "Laporkan agar bisa diperbaiki. Apa pun yang sudah dibayar tetap ada di Aktivitas.",
 			"uncertain": "Periksa Aktivitas sebelum mencoba lagi: percobaan baru bisa dikenai biaya lagi.",
 			"poses": "Siapkan posenya terlebih dahulu, lalu buat perlengkapannya.",
 			"method": "Pilih Otomatis, lalu coba lagi.",
 			"quote": "Coba lagi sebentar lagi, atau pilih model lain.",
 			"browser": "Gunakan browser terbaru untuk melanjutkan.",
 			"exportId": "Pilih ID Ekspor lain.",
-			"busy": "Tunggu sebentar, lalu coba lagi.",
-			"invalid": "Ubah pengaturan permintaan, lalu coba lagi."
+			"busy": "Tunggu sebentar, lalu coba lagi."
 		}
 	}
 }

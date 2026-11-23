@@ -3260,15 +3260,14 @@
 			"quote": "PixelLab did not confirm the price",
 			"browser": "This browser cannot do this safely",
 			"exportId": "Another character uses this Export ID",
-			"busy": "PixelLab is busy",
-			"invalid": "PixelLab refused this request"
+			"busy": "PixelLab is busy"
 		},
 		"next": {
 			"frame-count": "Your paid results are kept. Review them, then continue or try again.",
 			"overflow": "Choose a lift or a larger frame if one is offered, or try again.",
 			"empty": "Your paid results stay in Activity. Try again with a new attempt.",
 			"dropped": "Wait a moment, then try again.",
-			"joints": "Review the frames. Keep the ones that work, or try again with a new attempt.",
+			"joints": "Anything paid stays in Activity. Try a new attempt, or start from a clearer standing pose.",
 			"stopped": "Check Activity to see what happened before starting again.",
 			"misaligned": "Re-roll only the part that is off, or keep the artwork you have.",
 			"quality": "Review the results, then keep them or try again.",
@@ -3279,15 +3278,14 @@
 			"key": "Connect PixelLab again with a valid token.",
 			"offline": "Check your connection, then try again.",
 			"declined": "Change the description, then try again.",
-			"unexpected": "Report it so it can be fixed. Your paid results stay in Activity.",
+			"unexpected": "Report it so it can be fixed. Anything already paid for stays in Activity.",
 			"uncertain": "Check Activity before trying again: a new attempt could charge again.",
 			"poses": "Set up its poses first, then make the equipment.",
 			"method": "Choose Automatic, then try again.",
 			"quote": "Try again in a moment, or choose another model.",
 			"browser": "Use a current browser to continue.",
 			"exportId": "Choose a different Export ID.",
-			"busy": "Wait a moment, then try again.",
-			"invalid": "Change the request settings, then try again."
+			"busy": "Wait a moment, then try again."
 		}
 	}
 }

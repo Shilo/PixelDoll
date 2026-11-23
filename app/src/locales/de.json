@@ -3257,15 +3257,14 @@
 			"quote": "PixelLab hat den Preis nicht bestätigt",
 			"browser": "Dieser Browser kann das nicht sicher ausführen",
 			"exportId": "Eine andere Figur verwendet diese Export-ID",
-			"busy": "PixelLab ist ausgelastet",
-			"invalid": "PixelLab hat diese Anfrage abgelehnt"
+			"busy": "PixelLab ist ausgelastet"
 		},
 		"next": {
 			"frame-count": "Deine bezahlten Ergebnisse bleiben erhalten. Prüfe sie und mach dann weiter oder versuch es erneut.",
 			"overflow": "Wähle Anheben oder einen größeren Frame, falls angeboten, oder versuch es erneut.",
 			"empty": "Deine bezahlten Ergebnisse bleiben unter „Aktivität“. Versuch es mit einem neuen Versuch erneut.",
 			"dropped": "Warte einen Moment und versuch es dann erneut.",
-			"joints": "Prüfe die Frames. Behalte die brauchbaren oder versuch es mit einem neuen Versuch erneut.",
+			"joints": "Bereits Bezahltes bleibt unter „Aktivität“. Starte einen neuen Versuch oder beginne mit einer deutlicheren Standpose.",
 			"stopped": "Sieh unter „Aktivität“ nach, was passiert ist, bevor du neu startest.",
 			"misaligned": "Generiere nur den verschobenen Teil neu oder behalte die vorhandenen Grafiken.",
 			"quality": "Prüfe die Ergebnisse und behalte sie dann oder versuch es erneut.",
@@ -3276,15 +3275,14 @@
 			"key": "Verbinde PixelLab erneut mit einem gültigen Token.",
 			"offline": "Prüfe deine Verbindung und versuch es dann erneut.",
 			"declined": "Ändere die Beschreibung und versuch es dann erneut.",
-			"unexpected": "Melde es, damit es behoben werden kann. Deine bezahlten Ergebnisse bleiben unter „Aktivität“.",
+			"unexpected": "Melde es, damit es behoben werden kann. Bereits Bezahltes bleibt unter „Aktivität“.",
 			"uncertain": "Prüfe „Aktivität“, bevor du es erneut versuchst: Ein neuer Versuch könnte erneut kosten.",
 			"poses": "Richte zuerst ihre Posen ein und erstelle dann die Ausrüstung.",
 			"method": "Wähle „Automatisch“ und versuch es dann erneut.",
 			"quote": "Versuch es gleich noch einmal oder wähle ein anderes Modell.",
 			"browser": "Verwende einen aktuellen Browser, um fortzufahren.",
 			"exportId": "Wähle eine andere Export-ID.",
-			"busy": "Warte einen Moment und versuch es dann erneut.",
-			"invalid": "Ändere die Einstellungen der Anfrage und versuch es dann erneut."
+			"busy": "Warte einen Moment und versuch es dann erneut."
 		}
 	}
 }
