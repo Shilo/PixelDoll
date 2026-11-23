@@ -1683,7 +1683,8 @@
 			"canceled": "Dibatalkan. Generasi yang sudah digunakan tidak dikembalikan. Permintaan yang sudah dikirim mungkin tetap selesai dan dikenai biaya. Tinjau Aktivitas untuk melihat hasilnya.",
 			"stopped": "Generasi terhenti. Tinjau Aktivitas sebelum mencoba lagi.",
 			"setupStopped": "Penyiapan terhenti. Tinjau Aktivitas sebelum mencoba lagi.",
-			"noFrames": "PixelLab tidak mengembalikan frame yang dapat digunakan."
+			"noFrames": "PixelLab tidak mengembalikan frame yang dapat digunakan.",
+			"notSavedAutomatically": "Tidak disimpan otomatis: {reason}"
 		},
 		"status": {
 			"starting": "Memulai",

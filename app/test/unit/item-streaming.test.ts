@@ -293,7 +293,9 @@ test.each(['missing output', 'extra job'])(
 		await expect(run).resolves.toBeNull();
 		expect(q.order).toHaveLength(1);
 		// The log keeps the translated stop (not its English text), which says no dependent request was sent.
-		expect(d.log).toContainEqual(message('itemRoute.errors.incompleteReferenceFrames'));
+		expect(d.log).toContainEqual(
+			expect.objectContaining(message('itemRoute.errors.incompleteReferenceFrames'))
+		);
 	}
 );
 
@@ -581,7 +583,10 @@ test.each([
 		new LocalizedError('result east/0 missing in storage', 'create.errors.resultMissingStorage', {
 			label: 'east/0'
 		}),
-		message('create.errors.resultMissingStorage', { label: 'east/0' })
+		{
+			...message('create.errors.resultMissingStorage', { label: 'east/0' }),
+			text: 'result east/0 missing in storage'
+		}
 	]
 ] as const)(
 	'a planned pose that fails with %s error surfaces it without a retry or unhandled rejection',

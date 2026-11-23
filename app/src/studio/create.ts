@@ -171,6 +171,7 @@ import { cellImg } from '../lib/compose/compose.ts';
 import {
 	blockingIssues,
 	errorMessage,
+	errorText,
 	errorTranslation,
 	LocalizedError,
 	message,
@@ -3047,15 +3048,14 @@ async function addMoveUnlocked(
 	const partialSaved = (error: unknown): never => {
 		if (!(error instanceof PartialMoveError)) throw error;
 		const views = error.savedDirs.map(directionLabel).join(', ');
-		const reason = typeof error.reason === 'string' ? error.reason : error.reason.key;
 		throw new LocalizedError(
-			`${reason} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,
+			`${errorText(error.reason)} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,
 			spec.replace
 				? 'create.errors.partialSaved'
 				: spec.reuseItemFrames
 					? 'create.errors.partialSavedNewFrames'
 					: 'create.errors.partialSavedRetry',
-			{ reason: error.reason, views }
+			{ reason: errorMessage(error.reason), views }
 		);
 	};
 	let posed = 0;

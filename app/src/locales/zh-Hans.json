@@ -1683,7 +1683,8 @@
 			"canceled": "已取消。已使用的生成次数不会退还。已发送的请求仍可能完成并计费。请在“活动”中查看其结果。",
 			"stopped": "生成已停止。再次尝试前请查看“活动”。",
 			"setupStopped": "设置已停止。再次尝试前请查看“活动”。",
-			"noFrames": "PixelLab 未返回可用的帧。"
+			"noFrames": "PixelLab 未返回可用的帧。",
+			"notSavedAutomatically": "未自动保存：{reason}"
 		},
 		"status": {
 			"starting": "正在开始",

@@ -43,7 +43,7 @@ export function generationLogMessage(
 	raw: string | Message,
 	{ render, formatNumber }: OutcomeFormatters
 ) {
-	if (typeof raw !== 'string') return raw;
+	if (typeof raw !== 'string') return message(raw.key, raw.vars);
 	switch (raw) {
 		case 'PixelLab returned incomplete or malformed standing frames. No automatic retry was made.':
 			return message('generation.outcome.standingFrames');

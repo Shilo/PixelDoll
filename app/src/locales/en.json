@@ -1734,7 +1734,8 @@
 			"canceled": "Canceled. Generations already used are not refunded. Requests already sent may still finish and charge. Review Activity for their outcomes.",
 			"stopped": "Generation stopped. Review Activity before trying again.",
 			"setupStopped": "Setup stopped. Review Activity before trying again.",
-			"noFrames": "PixelLab did not return usable frames."
+			"noFrames": "PixelLab did not return usable frames.",
+			"notSavedAutomatically": "Not saved automatically: {reason}"
 		},
 		"status": {
 			"starting": "Starting",

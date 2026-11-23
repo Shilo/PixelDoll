@@ -487,7 +487,7 @@
 					<details>
 						<summary>log ({d.log.length})</summary>
 						<pre class="small">{d.log
-								.map((line) => (typeof line === 'string' ? line : line.key))
+								.map((line) => (typeof line === 'string' ? line : line.text))
 								.join('\n')}</pre>
 					</details>
 

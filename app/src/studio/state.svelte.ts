@@ -3393,7 +3393,10 @@ async function autoSave(g: Gen): Promise<boolean> {
 	try {
 		return await acceptGen(g, true);
 	} catch (e) {
-		g.draft.log.push(`not saved automatically: ${(e as Error).message}`);
+		g.draft.log.push({
+			...message('generation.outcome.notSavedAutomatically', { reason: errorMessage(e) }),
+			text: `not saved automatically: ${errorText(e)}`
+		});
 		await saveGens();
 		return false;
 	}

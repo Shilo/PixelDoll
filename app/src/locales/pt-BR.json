@@ -1740,7 +1740,8 @@
 			"canceled": "Cancelado. Gerações já usadas não são reembolsadas. Solicitações já enviadas ainda podem ser concluídas e cobradas. Confira os resultados em Atividade.",
 			"stopped": "Geração interrompida. Confira a Atividade antes de tentar novamente.",
 			"setupStopped": "Configuração interrompida. Confira a Atividade antes de tentar novamente.",
-			"noFrames": "O PixelLab não retornou quadros que pudessem ser usados."
+			"noFrames": "O PixelLab não retornou quadros que pudessem ser usados.",
+			"notSavedAutomatically": "Não foi salvo automaticamente: {reason}"
 		},
 		"status": {
 			"starting": "Iniciando",

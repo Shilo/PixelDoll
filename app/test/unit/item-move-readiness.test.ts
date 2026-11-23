@@ -3,6 +3,7 @@ import { equipmentFixture } from './equipment-fixture.ts';
 import type { RigCtx } from '../../src/lib/items/run.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { addMove, itemMoveOffer, type MoveSpec } from '../../src/studio/create.ts';
+import { LocalizedError } from '../../src/lib/message.ts';
 
 const state = vi.hoisted(() => ({ ctx: null as RigCtx | null, pose: vi.fn(), split: vi.fn() }));
 vi.mock('../../src/lib/store/project.ts', async (original) => ({
@@ -116,25 +117,33 @@ test('invalid joints on the selected move stop before generation', async () => {
 
 test('a partly failed item move names the saved views and says Try again requests only the missing ones', async () => {
 	const { PartialMoveError } = await import('../../src/lib/items/run.ts');
-	const run = async () => {
+	const run = async (reason: string | Error) => {
 		const { manifest, spec } = await fixture(),
 			offer = itemMoveOffer(manifest, [spec]);
 		// A local mock: a rejection recorded by the module-level one fails the test in this Vitest version.
 		const shared = state.pose;
 		state.pose = vi.fn(async () => {
-			throw new PartialMoveError('Hat valid_custom east: lost.', ['south', 'north-west']);
+			throw new PartialMoveError(reason, ['south', 'north-west']);
 		});
 		try {
-			return (
-				(await addMove('rig-scoped-readiness', offer.specs[0]).catch((e: Error) => e)) as Error
-			).message;
+			return (await addMove('rig-scoped-readiness', offer.specs[0]).catch(
+				(e: Error) => e
+			)) as LocalizedError;
 		} finally {
 			state.pose = shared;
 		}
 	};
-	expect(await run()).toBe(
+	expect((await run('Hat valid_custom east: lost.')).message).toBe(
 		'Hat valid_custom east: lost. The finished views were saved (South, North-west); Try again requests only the missing ones.'
 	);
+	// A translated reason stays a Message inside the translated stop, so neither part reaches the user in English.
+	const lost = new LocalizedError('east: lost', 'create.errors.resultMissingStorage', {
+		label: 'east/0'
+	});
+	expect((await run(lost)).translation).toEqual({
+		key: 'create.errors.partialSavedRetry',
+		vars: { reason: lost.translation, views: 'South, North-west' }
+	});
 });
 
 test('saved-frame recovery passes through to posing and never covers a body clip or a replace', async () => {

@@ -1734,7 +1734,8 @@
 			"canceled": "Annulé. Les générations déjà utilisées ne sont pas remboursées. Les requêtes déjà envoyées peuvent encore aboutir et être facturées. Consultez « Activité » pour voir leurs résultats.",
 			"stopped": "Génération arrêtée. Consultez « Activité » avant de réessayer.",
 			"setupStopped": "Configuration arrêtée. Consultez « Activité » avant de réessayer.",
-			"noFrames": "PixelLab n’a renvoyé aucune image exploitable."
+			"noFrames": "PixelLab n’a renvoyé aucune image exploitable.",
+			"notSavedAutomatically": "Non enregistré automatiquement : {reason}"
 		},
 		"status": {
 			"starting": "Démarrage",

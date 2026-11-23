@@ -1734,7 +1734,8 @@
 			"canceled": "İptal edildi. Kullanılmış üretim hakları iade edilmez. Gönderilmiş istekler yine de tamamlanıp ücretlendirilebilir. Sonuçları için Etkinlik bölümünü inceleyin.",
 			"stopped": "Üretim durdu. Tekrar denemeden önce Etkinlik bölümünü inceleyin.",
 			"setupStopped": "Kurulum durdu. Tekrar denemeden önce Etkinlik bölümünü inceleyin.",
-			"noFrames": "PixelLab kullanılabilir kare döndürmedi."
+			"noFrames": "PixelLab kullanılabilir kare döndürmedi.",
+			"notSavedAutomatically": "Otomatik olarak kaydedilmedi: {reason}"
 		},
 		"status": {
 			"starting": "Başlatılıyor",

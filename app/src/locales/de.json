@@ -1734,7 +1734,8 @@
 			"canceled": "Abgebrochen. Bereits verbrauchte Generierungen werden nicht erstattet. Bereits gesendete Anfragen können noch abgeschlossen werden und Kosten verursachen. Die Ergebnisse findest du unter „Aktivität“.",
 			"stopped": "Generierung gestoppt. Sieh unter „Aktivität“ nach, bevor du es erneut versuchst.",
 			"setupStopped": "Einrichtung gestoppt. Sieh unter „Aktivität“ nach, bevor du es erneut versuchst.",
-			"noFrames": "PixelLab hat keine brauchbaren Frames geliefert."
+			"noFrames": "PixelLab hat keine brauchbaren Frames geliefert.",
+			"notSavedAutomatically": "Nicht automatisch gespeichert: {reason}"
 		},
 		"status": {
 			"starting": "Wird gestartet",

@@ -1734,7 +1734,8 @@
 			"canceled": "Cancelado. Las generaciones ya usadas no se reembolsan. Las solicitudes ya enviadas aún pueden completarse y es posible que se te cobren. Revisa Actividad para ver sus resultados.",
 			"stopped": "La generación se detuvo. Revisa Actividad antes de volver a intentarlo.",
 			"setupStopped": "La configuración se detuvo. Revisa Actividad antes de volver a intentarlo.",
-			"noFrames": "PixelLab no devolvió fotogramas utilizables."
+			"noFrames": "PixelLab no devolvió fotogramas utilizables.",
+			"notSavedAutomatically": "No se guardó automáticamente: {reason}"
 		},
 		"status": {
 			"starting": "Iniciando",

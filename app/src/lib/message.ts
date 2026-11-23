@@ -45,3 +45,18 @@ export function errorText(error: unknown): string {
 export function errorMessage(error: unknown): Message | string {
 	return errorTranslation(error) ?? errorText(error);
 }
+
+/** A translated error as a stored log keeps it: its Message, with the English text for code that needs words without the
+ *  i18n runtime (an error rebuilt from the log, a developer page). */
+export interface LoggedMessage extends Message {
+	text: string;
+}
+export const loggedMessage = (error: LocalizedError): LoggedMessage => ({
+	...error.translation,
+	text: error.message
+});
+/** The error a log entry describes, keeping its translation. */
+export const loggedError = (entry: string | LoggedMessage): Error =>
+	typeof entry === 'string'
+		? new Error(entry)
+		: new LocalizedError(entry.text, entry.key, entry.vars);

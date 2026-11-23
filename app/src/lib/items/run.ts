@@ -123,7 +123,13 @@ import {
 	type ItemSpec,
 	type QaResult
 } from './items.ts';
-import { LocalizedError, errorText, type Message } from '../message.ts';
+import {
+	LocalizedError,
+	errorText,
+	loggedError,
+	loggedMessage,
+	type LoggedMessage
+} from '../message.ts';
 import { PaidStepError } from '../pixellab/paid-results.ts';
 import { localizedPlanRestriction } from '../pixellab/plans.ts';
 
@@ -143,8 +149,8 @@ export interface Draft {
 	spec: ItemSpec;
 	rigId: string;
 	calls: CallState[];
-	/** Outcomes, oldest first: English text, or a Message for an error that has a translation. */
-	log: (string | Message)[];
+	/** Outcomes, oldest first: English text, or a translated error with its English text. */
+	log: (string | LoggedMessage)[];
 	acceptedAt?: string;
 	activityScope?: string;
 }
@@ -998,7 +1004,7 @@ export async function runItem(
 		} while (false);
 	} catch (e) {
 		if (!h.signal?.aborted)
-			d.log.push(e instanceof LocalizedError ? e.translation : `error: ${errorText(e)}`);
+			d.log.push(e instanceof LocalizedError ? loggedMessage(e) : `error: ${errorText(e)}`);
 	} finally {
 		if (h.signal?.aborted) await Promise.allSettled(started);
 		if (!h.signal?.aborted) await persist();
@@ -1712,11 +1718,10 @@ export async function animateAnchoredItem(
 	const doneDirs = dirs.filter((dir) => !failedDirs.has(dir));
 	const detail =
 		draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.';
-	// A logged Message keeps its translation; its key stands in for the English text.
 	const detailError = () =>
 		typeof detail === 'string'
 			? (localizedAutomaticRepairError(detail) ?? new Error(detail))
-			: new LocalizedError(detail.key, detail.key, detail.vars);
+			: loggedError(detail);
 	if (!doneDirs.length) throw detailError();
 	const finished: Draft = {
 		...draft,
@@ -1775,7 +1780,7 @@ export async function animateAnchoredItem(
 		needsMaterials ? materials : undefined
 	);
 	dirs.forEach(onCall);
-	if (missed.length) throw new PartialMoveError(detail, dirs);
+	if (missed.length) throw new PartialMoveError(detailError(), dirs);
 }
 const seedOf = (s: string) =>
 	1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
@@ -1783,10 +1788,11 @@ const seedOf = (s: string) =>
 /** Some directions of an item move failed after the others were saved. */
 export class PartialMoveError extends Error {
 	constructor(
-		readonly reason: string | Message,
+		/** Why the other views stopped; a LocalizedError keeps its translation. */
+		readonly reason: string | Error,
 		readonly savedDirs: DirectionName[]
 	) {
-		super(`${typeof reason === 'string' ? reason : reason.key} The finished views were saved.`);
+		super(`${errorText(reason)} The finished views were saved.`);
 	}
 }
 
@@ -1980,11 +1986,7 @@ export async function poseItemClip(
 		bodies,
 		item.prompt
 	);
-	const first = failures.length
-		? failures[0] instanceof Error
-			? failures[0].message
-			: String(failures[0])
-		: '';
+	const first = failures.length ? errorText(failures[0]) : '';
 	try {
 		await mergeClip(ctx, item, anim, doneDirs, cells, prov, q, pad);
 	} catch (error) {
@@ -1993,7 +1995,11 @@ export async function poseItemClip(
 			? new Error(`${error instanceof Error ? error.message : String(error)} ${first}`)
 			: error;
 	}
-	if (failures.length) throw new PartialMoveError(first, doneDirs);
+	if (failures.length)
+		throw new PartialMoveError(
+			failures[0] instanceof Error ? failures[0] : String(failures[0]),
+			doneDirs
+		);
 	return q;
 }
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
