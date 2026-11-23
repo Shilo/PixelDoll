@@ -3499,9 +3499,15 @@ test('a State interrupted after its first batch sends only the unqueued views af
 		.poll(async () => (await stored()).jobs.map(({ state }) => state), { timeout: 30_000 })
 		.toEqual(['done']);
 	await equipmentMode(page, 'States');
-	await expect(row).toContainText('Unfinished: tap for options');
+	// The finished batch is a free review; the views never sent are a separately priced choice from it.
+	await expect(row).toContainText('Ready to review');
 	await row.click();
 	const review = page.getByRole('dialog', { name: 'Torch ready', exact: true });
+	await expect(review.getByText('Review Torch ready before saving.')).toBeVisible();
+	await expect(review.getByText(/was not made yet/)).toBeVisible();
+	await expect(
+		review.getByRole('button', { name: 'Save without them', exact: true })
+	).toBeVisible();
 	await review.getByRole('button', { name: 'Check remaining cost', exact: true }).click();
 	await expect(
 		review.getByText(`Views kept: 1. Views to generate: ${batches - 1}.`, { exact: true })
