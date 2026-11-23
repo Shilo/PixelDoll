@@ -2,7 +2,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import Sprite from './Sprite.svelte';
-	import { moveThumbnails } from './moveThumbnails.ts';
+	import { lookThumbnails } from './moveThumbnails.ts';
 	import {
 		ui,
 		doc,
@@ -24,7 +24,6 @@
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { clipItemCoverage } from './itemGeneration.ts';
 	import { characterBodySize } from './experience/bounds.ts';
-	import { buildPresentation } from './experience/presentation.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadMoveZip } from './download.svelte.ts';
@@ -50,11 +49,7 @@
 	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
-	const assets = $derived.by(() => {
-		void doc.rev;
-		return view.project ? buildPresentation(view.project) : null;
-	});
-	const thumbnails = $derived(assets && moveThumbnails(assets, view.items));
+	const thumbnails = $derived(view.project && lookThumbnails(view.project, view.items));
 	const pendingStates = $derived(
 		kind === 'state'
 			? Object.values(store.stateAttempts).map((attempt) => ({
