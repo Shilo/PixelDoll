@@ -2560,6 +2560,7 @@
 			"tier": "Tu plan de PixelLab no admite algunos objetos seleccionados."
 		},
 		"thatCharacter": "ese personaje",
+		"heldWaiting": "{move} falló en este personaje. Sus opciones de recuperación vuelven aquí cuando termine la animación actual.",
 		"recoveryCheckFailed": "No se pudieron comprobar los fotogramas en caché: {error}",
 		"retryLabel": "Volver a generar la animación",
 		"newSetup": "Nueva animación…",
@@ -2577,7 +2578,6 @@
 			"queueReplacement": "Poner en cola el reemplazo de las vistas de {move}"
 		},
 		"titleRepair": "Reparar fotogramas del objeto",
-		"heldBy": "Falló {move} en {character}, así que las animaciones nuevas quedan en espera. Abre el intento para ver las opciones.",
 		"open": "Abrir {character}",
 		"progressLabel": "Generación de animación en curso",
 		"retryFeature": "Volver a generar esta animación",

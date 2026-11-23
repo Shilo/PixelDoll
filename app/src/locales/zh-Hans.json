@@ -2496,6 +2496,7 @@
 			"tier": "当前的 PixelLab 套餐不支持部分已选装备。"
 		},
 		"thatCharacter": "该角色",
+		"heldWaiting": "此角色的{move}失败了。当前动作完成后，恢复选项会回到这里。",
 		"recoveryCheckFailed": "无法检查缓存帧：{error}",
 		"retryLabel": "再次生成动作",
 		"newSetup": "新建动作…",
@@ -2513,7 +2514,6 @@
 			"queueReplacement": "将 {move} 的视图替换加入队列"
 		},
 		"titleRepair": "修复装备帧",
-		"heldBy": "{character}的{move}失败，新动作需要等待。打开该尝试以查看恢复选项。",
 		"open": "打开{character}",
 		"progressLabel": "当前动作生成",
 		"retryFeature": "再次生成此动作",

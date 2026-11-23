@@ -5839,7 +5839,11 @@ test('reload restores failed create, move and setup for review without paid subm
 	expect(posts).toEqual([]);
 });
 
-test('moves waiting behind another character’s failed move point to it', async ({ page }, info) => {
+// Deliberately changed (2026-11-23): a failed move used to hold new moves on every character. It now holds only its own
+// character; another character makes moves at once, and the failed one keeps its recovery options on its character.
+test('a failed move holds only its own character while another character makes new moves', async ({
+	page
+}, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
@@ -5871,21 +5875,27 @@ test('moves waiting behind another character’s failed move point to it', async
 			spec: { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 },
 			status: 'failed',
 			error: 'Cast stopped',
-			requestText: s.REQUEST_TEXT,
-			queued: [
-				{ projectId: waiting, spec: { id: 'jump', action: 'jump', frames: 8, items: [], seed: 1 } }
-			]
+			requestText: s.REQUEST_TEXT
 		});
 	});
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: /^Jump Waiting for the failed move/ }).click();
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New move', exact: true });
-	await expect(sheet).toContainText(
-		'Cast failed on Failed mover, so new moves wait. Open it for recovery options.'
-	);
-	await sheet.getByRole('button', { name: 'Open Failed mover', exact: true }).click();
+	// the other character's failure no longer holds this one: its form is ready, with no hold notice
+	await expect(sheet.getByRole('textbox', { name: 'Describe the motion' })).toBeVisible();
+	await expect(sheet).not.toContainText('Failed mover');
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(/* @vite-ignore */ path),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ dbPath);
+		const failed = (await db.get('projects', 'studio-move')).projectId;
+		await s.openProject(failed);
+	});
 	await expect(page.locator('.project-btn')).toContainText('Failed mover');
+	await page.getByRole('button', { name: /Failed: tap for details/ }).click();
 	// A paid retry discloses its estimate on the button itself, not only when saved frames exist.
 	// The failed move's footer: Discard, New move, then the paid retry last.
 	const cancel = sheet.getByRole('button', { name: 'Discard', exact: true });

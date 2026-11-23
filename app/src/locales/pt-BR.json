@@ -2569,6 +2569,7 @@
 			"tier": "Seu plano do PixelLab não oferece suporte a alguns dos itens selecionados."
 		},
 		"thatCharacter": "esse personagem",
+		"heldWaiting": "{move} falhou neste personagem. As opções de recuperação voltam aqui quando a animação atual terminar.",
 		"recoveryCheckFailed": "Não foi possível verificar os quadros em cache: {error}",
 		"retryLabel": "Gerar animação novamente",
 		"newSetup": "Nova animação…",
@@ -2586,7 +2587,6 @@
 			"queueReplacement": "Enfileirar substituição de vistas de {move}"
 		},
 		"titleRepair": "Reparar quadros do item",
-		"heldBy": "{move} falhou em {character}, então as novas animações ficam em espera. Abra a tentativa para ver as opções.",
 		"open": "Abrir {character}",
 		"progressLabel": "Geração de animação atual",
 		"retryFeature": "Gerando esta animação novamente",

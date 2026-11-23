@@ -2560,6 +2560,7 @@
 			"tier": "Dein PixelLab-Tarif unterstützt einige ausgewählte Gegenstände nicht."
 		},
 		"thatCharacter": "diese Figur",
+		"heldWaiting": "{move} ist bei dieser Figur fehlgeschlagen. Die Wiederherstellungsoptionen erscheinen hier wieder, sobald die aktuelle Animation fertig ist.",
 		"recoveryCheckFailed": "Zwischengespeicherte Frames konnten nicht geprüft werden: {error}",
 		"retryLabel": "Animation erneut generieren",
 		"newSetup": "Neue Animation…",
@@ -2577,7 +2578,6 @@
 			"queueReplacement": "Ansichten für {move} zum Ersetzen einreihen"
 		},
 		"titleRepair": "Gegenstandsframes reparieren",
-		"heldBy": "{move} ist bei {character} fehlgeschlagen. Neue Animationen warten. Öffne den Versuch, um die Optionen zu sehen.",
 		"open": "{character} öffnen",
 		"progressLabel": "Laufende Animationsgenerierung",
 		"retryFeature": "Diese Animation neu generieren",

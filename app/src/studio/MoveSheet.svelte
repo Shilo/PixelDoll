@@ -87,6 +87,8 @@
 		store,
 		isDemo,
 		moving,
+		heldMoves,
+		restoreHeldMove,
 		settingUp,
 		startMove,
 		queueMoves,
@@ -645,6 +647,11 @@
 	);
 	const addTier = $derived(addAccess.tier);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id);
+	// This character's failed move, set aside while another one ran, comes back here for its recovery options.
+	const heldHere = $derived(mine ? undefined : heldMoves.find((held) => held.projectId === doc.id));
+	$effect(() => {
+		if (doc.id && heldMoves.some((held) => held.projectId === doc.id)) void restoreHeldMove(doc.id);
+	});
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
 	ui.moveFormOpen = !!reopen;
 	let reviewingSkeletonFor = $state.raw<MoveSpec | null>(null);
@@ -715,9 +722,10 @@
 		Math.ceil(retryPlan.reduce((sum, call) => sum + (call.generations ?? 0), 0))
 	);
 	const ownQueued = $derived(moving.queued.filter((q) => q.projectId === moving.projectId));
-	// Another character's failed move holds every new move until its attempt is resolved.
+	// Another character's repair review holds every new move until it is decided; a failed move holds only its own character,
+	// and starting a move here sets it aside (state.svelte.ts heldMoves).
 	const holder = $derived(
-		!mine && moving.spec && (moving.error || moving.repairReview)
+		!mine && moving.spec && moving.repairReview
 			? (store.projects.find((p) => p.id === moving.projectId)?.name ??
 					t('moveSheet.thatCharacter'))
 			: ''
@@ -1734,11 +1742,13 @@
 		/>
 	{/snippet}
 
-	{#if holder}<p class="notice small">
+	{#if heldHere}<p class="notice small" role="status">
 			<CircleAlert size={14} /><span
-				>{moving.repairReview
-					? t('moveSheet.review.heldBy', { character: holder })
-					: t('moveSheet.heldBy', { move: nice(moving.spec!.id), character: holder })}</span
+				>{t('moveSheet.heldWaiting', { move: nice(heldHere.spec.id) })}</span
+			>
+		</p>{/if}
+	{#if holder}<p class="notice small">
+			<CircleAlert size={14} /><span>{t('moveSheet.review.heldBy', { character: holder })}</span
 			><button
 				class="bu-action btn sm"
 				data-variant="outline"
