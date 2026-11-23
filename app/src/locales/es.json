@@ -2126,7 +2126,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivote {x},{y}",
 		"waitingForRepairReview": "Esperando la revisión de los fotogramas del objeto",
-		"needsRedo": "Omitida en la configuración: vuelve a crearla para animar objetos en ella"
+		"needsRedo": "No se encontraron articulaciones: vuelve a crearla para animar objetos en ella"
 	},
 	"setup": {
 		"warnings": {
@@ -3075,6 +3075,8 @@
 		"liftDetailWarned": "{views}: los pies suben hasta {px} px en {frames} de {total} fotogramas de movimiento para que el movimiento quepa en el marco. Supera la comprobación de pies de {limit} px, así que la animación se guarda con un aviso sobre los pies.",
 		"reroll": "Volver a generar {views}",
 		"rerollDetail": "Volver a generar compra un intento nuevo solo para esas direcciones. Las demás conservan sus resultados pagados.",
+		"keepUnposedDetail": "Guarda los fotogramas del cuerpo tal como están. No se encontraron articulaciones en algunos fotogramas, así que no se pueden ajustar objetos a esta animación hasta que la vuelvas a crear.",
+		"keepUnposed": "Conservar sin ajustar objetos",
 		"pending": "Por comprar: unos {gens} gens.",
 		"liftable": "Se puede elevar para que quepa: los pies suben hasta {px} px en {frames} de {total} fotogramas.",
 		"notLiftable": "Elevarlo no basta: el movimiento está cortado por un lado o por arriba."

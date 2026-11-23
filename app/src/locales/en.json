@@ -2126,7 +2126,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
 		"waitingForRepairReview": "Waiting for item frame review",
-		"needsRedo": "Skipped in setup: make it again to animate items on it"
+		"needsRedo": "Joints not found: make it again to animate items on it"
 	},
 	"setup": {
 		"warnings": {
@@ -3075,6 +3075,8 @@
 		"liftDetailWarned": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame. This is above the {limit} px feet check, so the move is saved with a feet warning.",
 		"reroll": "Re-roll {views}",
 		"rerollDetail": "A re-roll buys a new attempt only for those views. Every other view keeps its paid results.",
+		"keepUnposedDetail": "Saves the body frames as they are. Joints were not found on some frames, so items can’t be fitted to this move until you make it again.",
+		"keepUnposed": "Keep without fitting items",
 		"pending": "Still to buy: about {gens} gens.",
 		"liftable": "Can be lifted to fit: feet rise up to {px} px in {frames} of {total} frames.",
 		"notLiftable": "Lifting cannot fit this motion: it is cut at a side or at the top."

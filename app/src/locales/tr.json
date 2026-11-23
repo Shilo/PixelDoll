@@ -2126,7 +2126,7 @@
 		"bodySize": "{w}×{h} piksel",
 		"frameSize": "{w}×{h} piksel, pivot noktası {x},{y}",
 		"waitingForRepairReview": "Eşya karelerinin incelenmesi bekleniyor",
-		"needsRedo": "Kurulumda atlandı: üzerinde eşya canlandırmak için yeniden oluşturun"
+		"needsRedo": "Eklemler bulunamadı: üzerinde eşya canlandırmak için yeniden oluşturun"
 	},
 	"setup": {
 		"warnings": {
@@ -3075,6 +3075,8 @@
 		"liftDetailWarned": "{views}: Hareketin kareye sığması için ayaklar {total} hareket karesinin {frames} tanesinde en fazla {px} px yükselir. Bu, {limit} px ayak denetiminin üzerinde olduğundan animasyon bir ayak uyarısıyla kaydedilir.",
 		"reroll": "Yeniden oluştur: {views}",
 		"rerollDetail": "Yeniden oluşturma yalnızca bu yönler için yeni bir deneme satın alır. Diğer tüm yönler ücretli sonuçlarını korur.",
+		"keepUnposedDetail": "Gövde karelerini olduğu gibi kaydeder. Bazı karelerde eklemler bulunamadı, bu yüzden siz yeniden oluşturana kadar bu animasyona eşya uydurulamaz.",
+		"keepUnposed": "Eşya uydurmadan tut",
 		"pending": "Satın alınacak: yaklaşık {gens} gen.",
 		"liftable": "Sığması için yükseltilebilir: Ayaklar {total} karenin {frames} tanesinde en fazla {px} px yükselir.",
 		"notLiftable": "Yükseltmek yetmez: Hareket bir yanda ya da üstte kesilmiş."

@@ -2064,7 +2064,7 @@
 		"bodySize": "{w}×{h} 像素",
 		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
 		"waitingForRepairReview": "等待检查装备帧",
-		"needsRedo": "设置时已跳过：请重新生成，以便在其上制作装备动画"
+		"needsRedo": "未找到关节：请重新制作以在其上为装备制作动画"
 	},
 	"setup": {
 		"warnings": {
@@ -2995,6 +2995,8 @@
 		"liftDetailWarned": "{views}：为让运动放进帧内，{total} 个运动帧中有 {frames} 个的脚最多抬高 {px} px。这超过了 {limit} px 的脚部检查，因此动作会带着脚部警告保存。",
 		"reroll": "重新生成{views}",
 		"rerollDetail": "重新生成只为这些朝向购买一次新的尝试。其他朝向保留其付费结果。",
+		"keepUnposedDetail": "按原样保存身体帧。部分帧未找到关节，因此在重新制作之前，无法为此动作适配装备。",
+		"keepUnposed": "保留但不适配装备",
 		"pending": "仍需购买：约 {gens} gens。",
 		"liftable": "可抬高以适配：{total} 帧中有 {frames} 帧的脚最多抬高 {px} px。",
 		"notLiftable": "抬高也放不下：运动在侧边或顶部被裁切。"

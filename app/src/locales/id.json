@@ -2064,7 +2064,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, titik pivot {x},{y}",
 		"waitingForRepairReview": "Menunggu tinjauan frame item",
-		"needsRedo": "Dilewati saat penyiapan: buat lagi untuk menganimasikan item padanya"
+		"needsRedo": "Sendi tidak ditemukan: buat lagi untuk menganimasikan item di dalamnya"
 	},
 	"setup": {
 		"warnings": {
@@ -2995,6 +2995,8 @@
 		"liftDetailWarned": "{views}: kaki naik hingga {px} px pada {frames} dari {total} frame gerakan agar gerakan muat di frame. Ini melebihi pemeriksaan kaki {limit} px, jadi animasi disimpan dengan peringatan kaki.",
 		"reroll": "Buat ulang {views}",
 		"rerollDetail": "Buat ulang hanya membeli percobaan baru untuk arah tersebut. Arah lain tetap memakai hasil berbayarnya.",
+		"keepUnposedDetail": "Menyimpan frame tubuh apa adanya. Sendi tidak ditemukan pada beberapa frame, jadi item tidak bisa disesuaikan ke animasi ini sampai Anda membuatnya lagi.",
+		"keepUnposed": "Simpan tanpa menyesuaikan item",
 		"pending": "Masih perlu dibeli: sekitar {gens} gen.",
 		"liftable": "Bisa dinaikkan agar muat: kaki naik hingga {px} px pada {frames} dari {total} frame.",
 		"notLiftable": "Menaikkan tidak cukup: gerakan terpotong di sisi atau di atas."

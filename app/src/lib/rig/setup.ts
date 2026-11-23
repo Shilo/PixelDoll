@@ -34,7 +34,8 @@ export interface SetupPlan {
 }
 export const STATE_CAPTURE_MODE = 'state-capture';
 
-/** Moves rig setup skipped because a frame had no valid joints: kept as drawn, marked to make again (rigQa.redo). */
+/** Moves kept as drawn without poses because a frame had no valid joints (skipped by rig setup, or a new move kept
+ *  without fitting items): marked to make again (rigQa.redo). */
 export const setupRedoMoves = (rec?: Pick<StoredProject, 'rigQa'> | null): string[] => {
 	const redo = (rec?.rigQa as { redo?: unknown } | undefined)?.redo;
 	return Array.isArray(redo) ? redo.filter((id): id is string => typeof id === 'string') : [];

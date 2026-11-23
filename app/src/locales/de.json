@@ -2126,7 +2126,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, Drehpunkt {x},{y}",
 		"waitingForRepairReview": "Warten auf die Prüfung der Gegenstandsframes",
-		"needsRedo": "Bei der Einrichtung übersprungen: erstelle sie erneut, um Gegenstände darauf zu animieren"
+		"needsRedo": "Gelenke nicht gefunden: erstelle sie erneut, um Gegenstände darauf zu animieren"
 	},
 	"setup": {
 		"warnings": {
@@ -3075,6 +3075,8 @@
 		"liftDetailWarned": "{views}: Die Füße heben sich um bis zu {px} px in {frames} von {total} Bewegungs-Frames, damit die Bewegung in den Frame passt. Das liegt über der Fußprüfung von {limit} px, daher wird die Animation mit einem Fuß-Hinweis gespeichert.",
 		"reroll": "{views} neu würfeln",
 		"rerollDetail": "Neu würfeln kauft nur für diese Blickrichtungen einen neuen Versuch. Alle anderen behalten ihre bezahlten Ergebnisse.",
+		"keepUnposedDetail": "Speichert die Körper-Frames so, wie sie sind. Auf einigen Frames wurden keine Gelenke gefunden, daher können Gegenstände erst angepasst werden, wenn du die Animation erneut erstellst.",
+		"keepUnposed": "Ohne Gegenstände behalten",
 		"pending": "Noch zu kaufen: etwa {gens} Gens.",
 		"liftable": "Kann angehoben werden: Die Füße heben sich um bis zu {px} px in {frames} von {total} Frames.",
 		"notLiftable": "Anheben reicht nicht: Die Bewegung ist seitlich oder oben abgeschnitten."

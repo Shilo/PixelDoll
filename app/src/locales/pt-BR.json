@@ -2135,7 +2135,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
 		"waitingForRepairReview": "Aguardando a revisão dos quadros do item",
-		"needsRedo": "Ignorada na configuração: crie-a novamente para animar itens nela"
+		"needsRedo": "Articulações não encontradas: crie de novo para animar itens nela"
 	},
 	"setup": {
 		"warnings": {
@@ -3084,6 +3084,8 @@
 		"liftDetailWarned": "{views}: os pés sobem até {px} px em {frames} de {total} quadros de movimento para o movimento caber no quadro. Isso passa da verificação de pés de {limit} px, então a animação é salva com um aviso sobre os pés.",
 		"reroll": "Gerar {views} de novo",
 		"rerollDetail": "Gerar de novo compra uma nova tentativa só para essas direções. Todas as outras mantêm seus resultados pagos.",
+		"keepUnposedDetail": "Salva os quadros do corpo como estão. Não foram encontradas articulações em alguns quadros, então não dá para ajustar itens a esta animação até você criá-la de novo.",
+		"keepUnposed": "Manter sem ajustar itens",
 		"pending": "Ainda a comprar: cerca de {gens} gens.",
 		"liftable": "Pode ser elevado para caber: os pés sobem até {px} px em {frames} de {total} quadros.",
 		"notLiftable": "Elevar não resolve: o movimento está cortado em uma lateral ou no topo."

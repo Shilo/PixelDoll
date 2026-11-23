@@ -3,6 +3,7 @@ import {
 	addMove,
 	b64,
 	bodyMoveIssue,
+	keepableUnposed,
 	motionJoints,
 	moveMotionRequest,
 	nativeMoveRequest,
@@ -28,6 +29,7 @@ import * as projects from '../../src/lib/store/project.ts';
 import { decodePng, makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
+import { PaidStepError } from '../../src/lib/pixellab/paid-results.ts';
 import { skeletonInput } from '../../src/lib/rig/estimate.ts';
 import { cellHash, type Keypoint, type DirectionName } from '../../src/lib/rig/rig.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
@@ -1475,4 +1477,63 @@ test('artwork replaced during durable consumption cannot enter the subsequent re
 	);
 	expect(consumed).toHaveBeenCalledOnce();
 	expect(f.enqueue).not.toHaveBeenCalled();
+});
+
+test('a new move whose body frames lack joints is kept body only, without poses, and marked to make again', async () => {
+	const f = await fixture();
+	const measuring = f.enqueue.getMockImplementation()!;
+	// PixelLab finds no joints on the rendered body frames; nothing stands in for them.
+	f.enqueue.mockImplementation(async (req, ...rest) =>
+		req.path === '/estimate-skeleton'
+			? ({
+					id: 'joints',
+					state: 'done',
+					response: { keypoints: [] },
+					jobs: []
+				} as unknown as JobRec)
+			: measuring(req, ...rest)
+	);
+	const move = { id: 'calm', action: 'idle', replace: false, dirs: undefined };
+	await expect(f.run(move)).rejects.toThrow('valid joints were not found on every frame');
+	expect(f.saved().manifest.rig.animations.map((a) => a.id)).toEqual(['idle']);
+	const renders = () =>
+		f.enqueue.mock.calls.filter(([r]) => r.path === '/animate-with-skeleton-v3').length;
+	const before = renders();
+	await f.run({ ...move, keepUnposed: true });
+	// The same four views are rendered again here only because this fixture has no request cache; no other step is bought.
+	expect(renders() - before).toBe(4);
+	const saved = f.saved(),
+		calm = saved.manifest.rig.animations.find((a) => a.id === 'calm')!;
+	expect(calm.sources).toBeUndefined();
+	expect(Object.keys(saved.manifest.items[0].layers[0].cells!.calm!)).toHaveLength(4);
+	expect(Object.keys(saved.skeletons ?? {}).filter((key) => key.startsWith('calm/'))).toEqual([]);
+	expect(saved.manifest.rig.anchors?.hand_r?.calm).toBeUndefined();
+	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['calm']);
+	// Only a new, body-only move can be kept this way: never over existing directions or with equipment.
+	for (const change of [
+		{ replace: true, id: 'idle', dirs: ['east'] },
+		{ items: ['hat'] },
+		{ reviewBeforePublish: true }
+	])
+		await expect(f.run({ ...move, id: 'still', keepUnposed: true, ...change })).rejects.toThrow(
+			'This review choice no longer matches the move'
+		);
+});
+
+test('only a new move stopped by missing body joints in every failed view offers the unposed keep', () => {
+	const stop = (failure: 'joints' | 'overflow', step = 'render') => ({
+		error: new PaidStepError('x', 'create.errors.validJointsWereFound', undefined, {
+			step,
+			failure
+		})
+	});
+	const added = { replace: false };
+	expect(keepableUnposed(added, [stop('joints'), stop('joints')])).toBe(true);
+	expect(keepableUnposed(added, [])).toBe(false);
+	expect(keepableUnposed(added, [stop('joints'), stop('overflow')])).toBe(false);
+	// Motion joints mean no body was drawn: there is nothing to keep.
+	expect(keepableUnposed(added, [stop('joints', 'motion')])).toBe(false);
+	expect(keepableUnposed(added, [{ error: undefined }])).toBe(false);
+	expect(keepableUnposed({ replace: true }, [stop('joints')])).toBe(false);
+	expect(keepableUnposed({ dirs: ['east'] }, [stop('joints')])).toBe(false);
 });

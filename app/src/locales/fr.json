@@ -2126,7 +2126,7 @@
 		"bodySize": "{w} × {h} px",
 		"frameSize": "{w} × {h} px, pivot {x},{y}",
 		"waitingForRepairReview": "En attente de la vérification des images de l’objet",
-		"needsRedo": "Ignorée lors de la configuration : recréez-la pour y animer des objets"
+		"needsRedo": "Articulations introuvables : recréez-la pour y animer des objets"
 	},
 	"setup": {
 		"warnings": {
@@ -3075,6 +3075,8 @@
 		"liftDetailWarned": "{views} : les pieds montent jusqu’à {px} px dans {frames} images de mouvement sur {total} pour que le mouvement tienne dans le cadre. C’est au-delà du contrôle des pieds de {limit} px, l’animation est donc enregistrée avec un avertissement sur les pieds.",
 		"reroll": "Relancer {views}",
 		"rerollDetail": "Une relance n’achète une nouvelle tentative que pour ces directions. Toutes les autres gardent leurs résultats payés.",
+		"keepUnposedDetail": "Enregistre les images du corps telles quelles. Des articulations manquent sur certaines images : aucun objet ne pourra être ajusté à cette animation avant que vous la recréiez.",
+		"keepUnposed": "Garder sans ajuster d’objets",
 		"pending": "Reste à acheter : environ {gens} gens.",
 		"liftable": "Peut être relevé pour tenir : les pieds montent jusqu’à {px} px dans {frames} images sur {total}.",
 		"notLiftable": "Relever ne suffit pas : le mouvement est coupé sur un côté ou en haut."

@@ -84,7 +84,7 @@ import {
 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { LABELS, armDepth, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
-import { rigReady } from '../lib/rig/setup.ts';
+import { rigReady, setupRedoMoves } from '../lib/rig/setup.ts';
 import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import {
 	RIG_GATES,
@@ -637,6 +637,8 @@ interface ClipJob {
 	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number; words: ViewWords };
 	/** Rows each motion frame was lifted by with the user's consent; disclosed with the clip's checks. */
 	lifts?: readonly number[];
+	/** keepUnposed: frames without measured joints are kept (and fail their joint checks) instead of stopping the view. */
+	unposed?: boolean;
 }
 interface ClipOut {
 	frames: Img[];
@@ -730,7 +732,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 	);
 	const dryJoints = j.signal && dryRuns.get(j.signal);
 	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('render-joints', dryJoints.running);
-	if (measured.some((k) => !hasAll(k)))
+	if (!j.unposed && measured.some((k) => !hasAll(k)))
 		throw new PaidStepError(
 			`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`,
 			'create.errors.validJointsWereFound',
@@ -1647,6 +1649,10 @@ export interface MoveSpec {
 	seed: number;
 	/** Per-view seed salts chosen in a paid-result review: only that view's failed step is bought again. */
 	reroll?: Partial<Record<DirectionName, { motion?: number; render?: number }>>;
+	/** Consent from a paid-result review to save a new move whose body frames came back without measured joints on some
+	 *  frames: body only, with no poses (no sources, skeletons or anchors) and listed in rigQa.redo, to make again before
+	 *  items can be fitted to it. Joints are never invented. */
+	keepUnposed?: true;
 	/** The attempt a reviewed continuation runs as (default: the seed). A new one reopens requests the stopped attempt
 	 *  canceled before sending (queue autoCanceledAttempts), so they are sent instead of replayed as stopped. */
 	attempt?: number;
@@ -3437,6 +3443,7 @@ async function bodyClip(
 			signal,
 			activityScope: spec.activityScope,
 			action: bodyAction(spec),
+			unposed: !!spec.keepUnposed,
 			native: {
 				request: nativeMoveRequest(rec, spec, d, model, await b64(restImg)),
 				model,
@@ -3513,7 +3520,8 @@ async function bodyClip(
 			activityScope: spec.activityScope,
 			action: bodyAction(spec),
 			paletteRepair: !!spec.bodyPaletteRepair,
-			lifts: spec.motionLift?.[d]
+			lifts: spec.motionLift?.[d],
+			unposed: !!spec.keepUnposed
 		})
 	};
 }
@@ -3529,6 +3537,19 @@ function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 		!!value && typeof value === 'object' && !Array.isArray(value)
 			? Object.entries(value as Record<string, unknown>)
 			: undefined;
+	// Kept without poses only as a new, body-only move: never over existing directions or with equipment.
+	if (
+		spec.keepUnposed !== undefined &&
+		(spec.keepUnposed !== true ||
+			spec.replace ||
+			spec.dirs?.length ||
+			spec.items.length ||
+			spec.itemsOnly ||
+			spec.itemMethod ||
+			spec.reviewBeforePublish ||
+			m.rig.animations.some((a) => a.id === spec.id))
+	)
+		throw invalid();
 	if (spec.reroll !== undefined) {
 		const entries = record(spec.reroll);
 		if (!entries) throw invalid();
@@ -3576,6 +3597,16 @@ interface ReplayedView {
 	error?: PaidStepError;
 	clip?: Awaited<ReturnType<typeof bodyClip>>;
 }
+/** A new move whose stopped views only lack measured joints on their body frames can still be kept: body only and without
+ *  poses, so items are fitted after it is made again. Decided by the typed failure, never by text. */
+export const keepableUnposed = (
+	spec: Pick<MoveSpec, 'replace' | 'dirs'>,
+	failed: readonly Pick<ReplayedView, 'error'>[]
+) =>
+	!spec.replace &&
+	!spec.dirs?.length &&
+	failed.length > 0 &&
+	failed.every((v) => v.error?.paid.failure === 'joints' && v.error.paid.step === 'render');
 async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedView> {
 	const scope = new AbortController(),
 		dry: DryRun = {
@@ -3935,6 +3966,21 @@ export async function reviewMoveResults(
 			spec: candidate
 		});
 	}
+	if (keepableUnposed(spec, failed)) {
+		const candidate = resumeSpec(plan.spec, {
+			keepUnposed: true,
+			reviewBeforePublish: undefined
+		});
+		const gens = total(await replay(candidate));
+		options.push({
+			id: 'keep-unposed',
+			label: message('moveReview.keepUnposed'),
+			detail: message('moveReview.keepUnposedDetail'),
+			gens,
+			paid: gens > 0,
+			spec: candidate
+		});
+	}
 	// What each view bought: the output a step rejected, as PixelLab returned it.
 	const shown = await Promise.all(
 		views.map(async (v) => {
@@ -4132,6 +4178,8 @@ async function addBodyClip(
 		clips.some(({ out: { qa } }) => failsBodyGate(qa, model !== 'skeleton-v3'))
 	)
 		throw old ? replacementBodyQa() : newMoveBodyQa();
+	// Saved without poses: no frame's joints are invented, so the whole move waits to be made again before items fit it.
+	const unposed = !!spec.keepUnposed && clips.some((c) => c.out.measured.some((k) => !hasAll(k)));
 	const layer = baseIt.layers[0],
 		cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = {
 			...baseIt.layers[0].cells?.[spec.id]
@@ -4176,7 +4224,7 @@ async function addBodyClip(
 				const h = await cellHash(f);
 				await writeCell(h, f);
 				const s = c.out.measured[i];
-				if (s) skeletons[cellKey(spec.id, c.d, i)] = fromApi(s, frig.cell);
+				if (s && !unposed) skeletons[cellKey(spec.id, c.d, i)] = fromApi(s, frig.cell);
 				return h;
 			})
 		);
@@ -4196,8 +4244,9 @@ async function addBodyClip(
 			})
 		);
 	}
+	if (unposed) delete anim.sources;
 	// anchors for the new clip straight from the measured keypoints (no patch tracking: the clip is posed, not redrawn)
-	for (const id of ANCHORS) {
+	for (const id of unposed ? [] : ANCHORS) {
 		const pts = (d: DirectionName) =>
 			Array.from({ length: n }, (_, i) => {
 				const s = skeletons[cellKey(spec.id, d, i)];
@@ -4282,7 +4331,8 @@ async function addBodyClip(
 			...(qa.warnings ?? []).filter((w) => !affected.some((d) => w.startsWith(`${spec.id}/${d}:`))),
 			...warnings
 		],
-		clips: { ...qa.clips, ...checks }
+		clips: { ...qa.clips, ...checks },
+		...(unposed ? { redo: [...new Set([...setupRedoMoves(fresh), spec.id])] } : {})
 	};
 	// R6 P1-5: `fresh` was read before ~30 cell writes; graft only what this clip changed onto the CURRENT record in one
 	// transaction, so an item accepted or an outfit autosaved meanwhile survives.

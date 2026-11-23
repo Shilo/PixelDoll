@@ -33,7 +33,14 @@ export class PaidStepError extends LocalizedError {
 /** Every way on a review can offer. `enlarge-frame` is a larger frame: Make room and continue for a move (Adjust frame first,
  *  then the same move), or the same paid drawing placed in a larger frame for a new character. */
 export type PaidOptionId =
-	'resume' | 'lift' | 'reroll' | 'register' | 'reroll-calls' | 'keep-finished' | 'enlarge-frame';
+	| 'resume'
+	| 'lift'
+	| 'reroll'
+	| 'register'
+	| 'reroll-calls'
+	| 'keep-finished'
+	| 'keep-unposed'
+	| 'enlarge-frame';
 /** One choice of a review, priced from the request cache: `gens` is 0 when everything it needs is already paid for. */
 export interface PaidOption {
 	id: PaidOptionId;

@@ -42,7 +42,8 @@
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const nice = (id: string) => displayMove(id, moveRefs);
-	// Moves rig setup skipped (a frame had no joints) still play, but items cannot be animated on them until made again.
+	// Moves without poses (setup skipped them, or a new move was kept without joints) still play, but items cannot be
+	// animated on them until made again.
 	const redo = $derived(setupRedoMoves(store.exportRecord));
 	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
