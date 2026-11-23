@@ -3109,6 +3109,8 @@
 		"rerollDetail": "Volver a generar compra un intento nuevo solo para esas direcciones. Las demás conservan sus resultados pagados.",
 		"keepUnposedDetail": "Guarda gratis los fotogramas del cuerpo tal como están. No se encontraron articulaciones en algunos fotogramas, así que no se pueden ajustar objetos en esas vistas hasta que las vuelvas a crear. Las demás vistas conservan sus poses.",
 		"keepUnposed": "Conservar sin ajustar objetos",
+		"saveFinished": "Guardar las vistas terminadas",
+		"saveFinishedDetail": "Guarda {views} gratis, después de que las revises. {missing} no terminaron y quedan fuera; puedes crearlas después desde este movimiento.",
 		"pending": "Por comprar: unos {gens} gens.",
 		"liftable": "Se puede elevar para que quepa: los pies suben hasta {px} px en {frames} de {total} fotogramas.",
 		"notLiftable": "Elevarlo no basta: el movimiento está cortado por un lado o por arriba."

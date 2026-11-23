@@ -3109,6 +3109,8 @@
 		"rerollDetail": "A re-roll buys a new attempt only for those views. Every other view keeps its paid results.",
 		"keepUnposedDetail": "Saves the body frames as they are, for free. Joints were not found on some frames, so items can’t be fitted in those views until you make them again. The other views keep their poses.",
 		"keepUnposed": "Keep without fitting items",
+		"saveFinished": "Save the finished views",
+		"saveFinishedDetail": "Saves {views} for free, after you review them. {missing} did not finish and are left out; you can make them later from this move.",
 		"pending": "Still to buy: about {gens} gens.",
 		"liftable": "Can be lifted to fit: feet rise up to {px} px in {frames} of {total} frames.",
 		"notLiftable": "Lifting cannot fit this motion: it is cut at a side or at the top."

@@ -1722,6 +1722,9 @@ export interface MoveSpec {
 	 *  some frames: body only, and those views without poses (no sources, skeletons or anchors) and listed in rigQa.redo, to
 	 *  make again before items can be fitted there. Views with measured joints keep their poses. Joints are never invented. */
 	keepUnposed?: true;
+	/** Consent from a paid-result review to save a new move with only its finished views (`dirs`): the other views stopped,
+	 *  are listed in the review, and can be made later as a partial replacement at the same frame count. */
+	finishedViews?: true;
 	/** The attempt a reviewed continuation runs as (default: the seed). A new one reopens requests the stopped attempt
 	 *  canceled before sending (queue autoCanceledAttempts), so they are sent instead of replayed as stopped. */
 	attempt?: number;
@@ -3038,7 +3041,7 @@ async function addMoveUnlocked(
 			'A State cannot be replaced as a Move.',
 			'moveSheet.startFrom.stateTarget'
 		);
-	if (!existing && dirs.length !== genDirs(rec.manifest).length)
+	if (!existing && !spec.finishedViews && dirs.length !== genDirs(rec.manifest).length)
 		throw new LocalizedError(
 			'A new move needs every independently drawn direction.',
 			'create.errors.newMoveNeedsEvery'
@@ -3677,6 +3680,19 @@ function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 			(!spec.replace && m.rig.animations.some((a) => a.id === spec.id)))
 	)
 		throw invalid();
+	// Finished views only of a new, body-only move: some drawn views, never an existing move or equipment.
+	if (
+		spec.finishedViews !== undefined &&
+		(spec.finishedViews !== true ||
+			spec.replace ||
+			!spec.dirs?.length ||
+			spec.dirs.some((dir) => !views.includes(dir)) ||
+			spec.items.length ||
+			spec.itemsOnly ||
+			spec.itemMethod ||
+			m.rig.animations.some((a) => a.id === spec.id))
+	)
+		throw invalid();
 	if (spec.reroll !== undefined) {
 		const entries = record(spec.reroll);
 		if (!entries) throw invalid();
@@ -4113,6 +4129,31 @@ export async function reviewMoveResults(
 				id: 'keep-unposed',
 				label: message('moveReview.keepUnposed'),
 				detail: message('moveReview.keepUnposedDetail'),
+				gens: 0,
+				paid: false,
+				spec: candidate
+			});
+	}
+	// A new move whose other views stopped can still be saved with the views that finished, for free and in the staged review;
+	// nothing is requested again, and the views left out are named.
+	const finished = views.filter((v) => v.state === 'ready').map((v) => v.d);
+	if (!spec.replace && finished.length && finished.length < views.length) {
+		const candidate = resumeSpec(plan.spec, {
+			finishedViews: true,
+			dirs: finished,
+			approvedDirs: finished
+		});
+		const kept = await Promise.all(
+			finished.map((d) => replayView({ ...plan, spec: candidate }, d))
+		);
+		if (!total(kept))
+			options.push({
+				id: 'keep-finished',
+				label: message('moveReview.saveFinished'),
+				detail: message('moveReview.saveFinishedDetail', {
+					views: names(finished),
+					missing: names(dirs.filter((d) => !finished.includes(d)))
+				}),
 				gens: 0,
 				paid: false,
 				spec: candidate

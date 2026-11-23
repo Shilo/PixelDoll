@@ -3109,6 +3109,8 @@
 		"rerollDetail": "Yeniden oluşturma yalnızca bu yönler için yeni bir deneme satın alır. Diğer tüm yönler ücretli sonuçlarını korur.",
 		"keepUnposedDetail": "Gövde karelerini olduğu gibi ücretsiz kaydeder. Bazı karelerde eklemler bulunamadı, bu yüzden bu görünümleri yeniden oluşturana kadar onlara eşya uydurulamaz. Diğer görünümler pozlarını korur.",
 		"keepUnposed": "Eşya uydurmadan tut",
+		"saveFinished": "Tamamlanan görünümleri kaydet",
+		"saveFinishedDetail": "{views} görünümlerini incelemenizden sonra ücretsiz kaydeder. {missing} tamamlanmadı ve dışarıda kaldı; bunları daha sonra bu hareketten oluşturabilirsiniz.",
 		"pending": "Satın alınacak: yaklaşık {gens} gen.",
 		"liftable": "Sığması için yükseltilebilir: Ayaklar {total} karenin {frames} tanesinde en fazla {px} px yükselir.",
 		"notLiftable": "Yükseltmek yetmez: Hareket bir yanda ya da üstte kesilmiş."

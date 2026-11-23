@@ -1947,6 +1947,48 @@ test('a move review whose joint check was lost says its spent total is only a kn
 	expect((await reviewMoveResults('rig-recover', f.spec))!.spentUnknown).toBeUndefined();
 });
 
+test('a new move with a stopped view can save only its finished views, free, without requesting anything', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	asNewMove(f.saved());
+	const spec: MoveSpec = {
+		...f.spec,
+		replace: undefined,
+		dirs: undefined,
+		reviewBeforePublish: true
+	};
+	// The west render was never bought: that view is still to buy, east finished.
+	f.records.delete('raw-west');
+	await f.q.sync();
+	const review = (await reviewMoveResults('rig-recover', spec))!;
+	expect(review.views.map((view) => view.state)).toEqual(['ready', 'pending']);
+	const save = review.options.find((option) => option.id === 'keep-finished')!;
+	expect(save).toMatchObject({
+		gens: 0,
+		paid: false,
+		spec: { finishedViews: true, dirs: ['east'], approvedDirs: ['east'], items: [] }
+	});
+	expect(save.detail).toMatchObject({ vars: { missing: [{ key: 'directionNames.west' }] } });
+	const posts = f.posts();
+	await expect(addMove('rig-recover', save.spec)).resolves.toMatchObject({ moveReview: 'idle' });
+	// Every request is answered from the cache: nothing reaches PixelLab, and the west render is not bought.
+	expect(f.posts()).toBe(posts);
+	expect(
+		f.enqueue.mock.calls.some(([r]) => (r.body as { direction?: string })?.direction === 'west')
+	).toBe(false);
+	const draft = f.saved().moveReviews!.idle!;
+	expect(draft.dirs).toEqual(['east']);
+	expect(Object.keys(draft.cells)).toEqual(['east']);
+	// Without that consent a new move still needs every drawn view.
+	await expect(
+		addMove('rig-recover', {
+			...save.spec,
+			finishedViews: undefined,
+			reviewBeforePublish: undefined
+		})
+	).rejects.toThrow('every independently drawn direction');
+});
+
 test('a body move stopped after every view was bought resumes free with the same seed', async () => {
 	const f = await fixture(false, 'walk');
 	await f.finishOriginalChecks();
