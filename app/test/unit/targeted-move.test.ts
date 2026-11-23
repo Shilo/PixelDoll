@@ -3,6 +3,7 @@ import {
 	addMove,
 	b64,
 	bodyMoveIssue,
+	motionJoints,
 	moveMotionRequest,
 	nativeMoveRequest,
 	reviewItemMove,
@@ -27,6 +28,7 @@ import * as projects from '../../src/lib/store/project.ts';
 import { decodePng, makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
+import { skeletonInput } from '../../src/lib/rig/estimate.ts';
 import { cellHash, type Keypoint, type DirectionName } from '../../src/lib/rig/rig.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
@@ -1139,6 +1141,65 @@ test('managed pixminimax drops one extra leading motion frame by position; the w
 	});
 	expect(String(walk.error)).toContain('PixelLab returned 9 motion frames for 8 requested');
 	expect(walk.measured).toBe(0);
+});
+
+test('one interior motion frame without joints is bridged from its measured neighbors, never from requested poses', () => {
+	const pose = (x: number) => LABELS.map((label, i) => ({ label, x, y: 0.2 + i * 0.01 }));
+	const [a, c] = [pose(0.3), pose(0.5)];
+	expect(motionJoints([a, a, a])).toEqual([a, a, a]);
+	const bridged = motionJoints([a, undefined, c, c])!;
+	expect(bridged.map((points) => points[0].x)).toEqual([0.3, 0.4, 0.5, 0.5]);
+	expect(bridged[1].map((p) => p.label)).toEqual(LABELS);
+	expect(bridged[1][3].y).toBeCloseTo(0.23);
+	// An incomplete measurement counts as missing; an end frame, two frames, or a gap next to another gap still fail.
+	expect(motionJoints([a, a.slice(1), c])![1][0].x).toBe(0.4);
+	expect(motionJoints([undefined, a, c])).toBeUndefined();
+	expect(motionJoints([a, c, undefined])).toBeUndefined();
+	expect(motionJoints([a, undefined, c, undefined, c])).toBeUndefined();
+	expect(motionJoints([a, undefined, undefined, c])).toBeUndefined();
+});
+
+test('a managed motion with one unmeasured interior frame still renders the body', async () => {
+	const f = await fixture(),
+		standing = (await projects.loadProject('rig-target')).project.images.values().next().value!,
+		images = [standing, 11, 12, 13, 14].map((shade) => {
+			if (typeof shade !== 'number') return shade;
+			const im = structuredClone(standing);
+			im.data[(30 * 64 + 30) * 4] = shade;
+			return im;
+		}),
+		blobs = new Map<string, Blob>();
+	for (const [i, im] of images.entries())
+		blobs.set(`m${i}`, new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>]));
+	const stored = vi.mocked(db.getBlob).getMockImplementation()!;
+	vi.mocked(db.getBlob).mockImplementation(async (h) => blobs.get(h) ?? stored(h));
+	const joints = LABELS.map((label, i) => ({ label, x: 0.3 + i * 0.01, y: 0.3 + i * 0.015 }));
+	// The checks run concurrently, so the unmeasured frame (the third motion frame) is picked by its image, not call order.
+	const unmeasured = await b64(skeletonInput(images[3]).image),
+		rendered = f.enqueue.getMockImplementation()!;
+	let motionChecks = 0;
+	f.enqueue.mockImplementation(async (req, ...rest) => {
+		if (req.path === '/characters/animations')
+			return {
+				id: 'motion',
+				state: 'done',
+				endpoint: req.path,
+				params: {},
+				createdAt: 0,
+				jobs: [{ results: images.map((_, i) => ({ label: `east/${i}`, sha: `m${i}` })) }]
+			} as unknown as JobRec;
+		if (req.path !== '/estimate-skeleton' || motionChecks >= 4) return rendered(req, ...rest);
+		motionChecks++;
+		const image = (req.body as { image: { base64: string } }).image.base64;
+		return {
+			state: 'done',
+			response: { keypoints: image === unmeasured ? [] : joints },
+			jobs: []
+		} as unknown as JobRec;
+	});
+	await f.run({ text: 'step softly', action: 'quiet-step', frames: 4 });
+	expect(f.enqueue.mock.calls.map(([r]) => r.path)).toContain('/animate-with-skeleton-v3');
+	expect(f.saved().manifest.rig.animations[0].sources?.east?.motion).toBe('pixminimax:step softly');
 });
 
 test('managed motion drops the registered standing echo after Fix frames replaced the Standing', async () => {

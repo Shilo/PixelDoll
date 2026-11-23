@@ -946,7 +946,8 @@ async function motion(
 	);
 	const dryJoints = signal && dryRuns.get(signal);
 	if (dryJoints && dryJoints.unmeasured) throw new Unpaid('motion-joints', dryJoints.running);
-	if (kps.some((k) => !k))
+	const filled = motionJoints(kps);
+	if (!filled)
 		throw new PaidStepError(
 			`${label}: joints not found on every frame`,
 			'create.errors.jointsFoundEveryFrame',
@@ -957,7 +958,7 @@ async function motion(
 	// still fall outside stops here, before its render is bought.
 	if (
 		lifts?.some(Boolean) &&
-		kps.some((k) => k!.some((p) => p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1))
+		filled.some((k) => k.some((p) => p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1))
 	)
 		throw new PaidStepError(
 			`${label}: the lifted motion still has joints outside the ${size} px frame. No body render was requested.`,
@@ -965,7 +966,30 @@ async function motion(
 			{ label, size },
 			{ step: 'motion', failure: 'overflow', recordId: r.id }
 		);
-	return { keypoints: kps as Keypoint[][], record: r, ...(motionEcho ? { motionEcho } : {}) };
+	return { keypoints: filled, record: r, ...(motionEcho ? { motionEcho } : {}) };
+}
+/** Measured motion joints, with at most one interior frame that has none filled halfway between its measured neighbors.
+ *  Motion joints only shape the poses the body render is asked for, and the render's own frames must still measure every
+ *  joint, so one gap in a smooth motion is safe to bridge; requested keypoints never stand in for measured ones. Undefined
+ *  when an end frame, two frames or neighboring frames have none. */
+export function motionJoints(
+	measured: readonly (Keypoint[] | undefined)[]
+): Keypoint[][] | undefined {
+	const missing = measured.flatMap((points, i) => (hasAll(points) ? [] : [i]));
+	if (!missing.length) return measured as Keypoint[][];
+	const [i] = missing;
+	if (missing.length > 1 || i === 0 || i === measured.length - 1) return undefined;
+	const before = measured[i - 1]!,
+		after = measured[i + 1]!;
+	return measured.map((points, j) =>
+		j === i
+			? LABELS.map((label) => {
+					const a = before.find((p) => p.label === label)!,
+						b = after.find((p) => p.label === label)!;
+					return kp4(label, (a.x + b.x) / 2, (a.y + b.y) / 2);
+				})
+			: points!
+	);
 }
 
 /** The one placement of managed motion frames (live, cached replay, standing echo, lift and Make room): PixelLab draws them
@@ -2181,16 +2205,18 @@ async function inspectMeasurementRecovery(
 				'motion',
 				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d)
 			);
-			const measured = await Promise.all(
-				frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
+			const measured = motionJoints(
+				await Promise.all(
+					frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
+				)
 			);
-			if (measured.some((points) => !hasAll(points)))
+			if (!measured)
 				throw new RecoveryUnavailable(
 					`${d}: the original motion has no valid completed joint checks for every frame. No request was made.`,
 					'create.errors.originalMotionValidCompleted',
 					{ direction: d }
 				);
-			keypoints = measured as Keypoint[][];
+			keypoints = measured;
 			rawHashes.push(hash);
 		}
 		if (keypoints)
