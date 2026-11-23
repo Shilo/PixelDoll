@@ -378,15 +378,15 @@
 							>
 							<span class="act-meta num"
 								>{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><span class="api-action"
-									><button
-										class="bu-action btn link small"
-										data-variant="quiet"
-										disabled={r.state === 'submitting'}
-										aria-describedby={r.state === 'submitting'
-											? 'activity-submitting-stop'
-											: undefined}
-										onclick={() => cancelRecord(r.id)}>{t('activity.stop')}</button
-									></span
+									>{#if r.saving}{t('activity.saving')}{:else}<button
+											class="bu-action btn link small"
+											data-variant="quiet"
+											disabled={r.state === 'submitting'}
+											aria-describedby={r.state === 'submitting'
+												? 'activity-submitting-stop'
+												: undefined}
+											onclick={() => cancelRecord(r.id)}>{t('activity.stop')}</button
+										>{/if}</span
 								></span
 							>
 						</li>

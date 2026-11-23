@@ -1973,6 +1973,7 @@
 		"waitingTitle": "Menunggu tab lain",
 		"waitingBody": "Pembuatan Anda belum dimulai. Biarkan Aktivitas tetap terbuka dan PixelDoll akan melanjutkan di sini saat tab lain siap.",
 		"stopInRunningTab": "Hentikan pekerjaan ini di tab yang sedang menjalankannya.",
+		"saving": "Menyimpan di perangkat ini…",
 		"stopNoAnswer": "Tab yang menjalankan pekerjaan ini belum mengonfirmasi penghentian. Periksa Aktivitas sebentar lagi; jika masih berjalan, hentikan di tab itu.",
 		"stopNotConfirmed": "PixelLab tidak mengonfirmasi penghentian, jadi pekerjaan ini mungkin masih berjalan dan dikenai biaya. Periksa Aktivitas.",
 		"pausedStorage": "Pekerjaan yang tersimpan tidak dapat dibaca atau disimpan, jadi tidak ada yang baru dikirim. Lanjutkan untuk mencoba lagi.",

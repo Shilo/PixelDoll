@@ -2034,6 +2034,7 @@
 		"waitingTitle": "Waiting for another tab",
 		"waitingBody": "Your generation hasn’t started. Keep Activity open and PixelDoll will continue here when the other tab is ready.",
 		"stopInRunningTab": "Stop this job in the tab that is running it.",
+		"saving": "Saving on this device…",
 		"stopNoAnswer": "The tab running this job has not confirmed the stop yet. Check Activity in a moment; if it is still running, stop it in that tab.",
 		"stopNotConfirmed": "PixelLab did not confirm the stop, so it may still run and charge. Check Activity.",
 		"pausedStorage": "Saved jobs couldn’t be read or saved, so nothing new is sent. Resume to try again.",

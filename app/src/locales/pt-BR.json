@@ -2043,6 +2043,7 @@
 		"waitingTitle": "Aguardando outra aba",
 		"waitingBody": "Sua geração ainda não começou. Mantenha o Atividade aberto e o PixelDoll continuará aqui quando a outra aba estiver pronta.",
 		"stopInRunningTab": "Interrompa esta tarefa na aba que a está executando.",
+		"saving": "Salvando neste dispositivo…",
 		"stopNoAnswer": "A aba que está executando esta tarefa ainda não confirmou a interrupção. Confira a Atividade em instantes; se ainda estiver em execução, interrompa-a nessa aba.",
 		"stopNotConfirmed": "O PixelLab não confirmou a interrupção, então a tarefa ainda pode rodar e ser cobrada. Confira a Atividade.",
 		"pausedStorage": "Não foi possível ler ou salvar as tarefas salvas, então nada novo é enviado. Retome para tentar de novo.",

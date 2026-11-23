@@ -2034,6 +2034,7 @@
 		"waitingTitle": "Esperando otra pestaña",
 		"waitingBody": "Tu generación aún no ha empezado. Deja Actividad abierta y PixelDoll continuará aquí cuando la otra pestaña esté lista.",
 		"stopInRunningTab": "Detén esta tarea en la pestaña que la está ejecutando.",
+		"saving": "Guardando en este dispositivo…",
 		"stopNoAnswer": "La pestaña que ejecuta esta tarea aún no ha confirmado la detención. Revisa Actividad en un momento; si sigue en curso, detenla en esa pestaña.",
 		"stopNotConfirmed": "PixelLab no confirmó la detención, así que la tarea podría seguir ejecutándose y cobrarse. Revisa Actividad.",
 		"pausedStorage": "No se pudieron leer ni guardar las tareas guardadas, así que no se envía nada nuevo. Reanuda para volver a intentarlo.",

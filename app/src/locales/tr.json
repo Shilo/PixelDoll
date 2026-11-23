@@ -2034,6 +2034,7 @@
 		"waitingTitle": "Başka bir sekme bekleniyor",
 		"waitingBody": "Üretiminiz henüz başlamadı. Etkinlik’i açık tutun; diğer sekme hazır olduğunda PixelDoll burada devam eder.",
 		"stopInRunningTab": "Bu işi, çalıştığı sekmeden durdurun.",
+		"saving": "Bu cihaza kaydediliyor…",
 		"stopNoAnswer": "Bu işi çalıştıran sekme durdurmayı henüz onaylamadı. Birazdan Etkinlik bölümüne bakın; hâlâ çalışıyorsa işi o sekmeden durdurun.",
 		"stopNotConfirmed": "PixelLab durdurmayı onaylamadı, bu yüzden iş çalışmaya ve ücretlendirilmeye devam edebilir. Etkinlik bölümüne bakın.",
 		"pausedStorage": "Kayıtlı işler okunamadı veya kaydedilemedi, bu yüzden yeni bir şey gönderilmiyor. Yeniden denemek için devam edin.",

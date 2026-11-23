@@ -108,6 +108,7 @@ export interface JobRec {
 	gens: number; // reported charges only; with costUnknown they are a known part, never the whole cost
 	usd: number;
 	costUnknown?: true; // settled without a usage report for every job: the cost is unknown, never $0
+	saving?: true; // snapshot only: finished in this tab, its result is still being stored (shown in progress, no Stop)
 }
 
 const isManagedState = (record: JobRec) =>
@@ -473,8 +474,9 @@ export class Queue {
 		return this.writes.has(id);
 	}
 	/** Runs one write of a record: only the latest write decides whether the record is stored, so an earlier write that
-	 *  lands after a later one started never makes the later outcome look stored. */
-	private async write<T>(id: string, run: () => Promise<T>): Promise<T> {
+	 *  lands after a later one started never makes the later outcome look stored. Only a plain save is retried when it
+	 *  fails: a conditional one (pre-submit, cancel) keeps its own recovery, which a blind retry would bypass. */
+	private async write<T>(id: string, run: () => Promise<T>, retried = true): Promise<T> {
 		const entry = this.writes.get(id) ?? { started: 0, pending: 0, failed: false };
 		this.writes.set(id, entry);
 		const revision = ++entry.started;
@@ -486,7 +488,7 @@ export class Queue {
 			return out;
 		} finally {
 			entry.pending--;
-			if (revision === entry.started) entry.failed = !ok;
+			if (revision === entry.started) entry.failed = !ok && retried;
 			if (!entry.pending && !entry.failed && this.writes.get(id) === entry) this.writes.delete(id);
 		}
 	}
@@ -652,7 +654,9 @@ export class Queue {
 				...r,
 				// A result counts once it is stored: until then every reader sees the request still in progress, so no
 				// dependent step advances on a result that reload and other tabs would not see. A stop or failure shows at once.
-				...(r.state === 'done' && this.unsaved(r.id) ? { state: 'running' as const } : {}),
+				...(r.state === 'done' && this.unsaved(r.id)
+					? { state: 'running' as const, saving: true as const }
+					: {}),
 				jobs: r.jobs.map((s) => ({ ...s, results: [...s.results] }))
 			}));
 		const counts = { pending: 0, running: 0, failed: 0, done: 0 };
@@ -701,12 +705,15 @@ export class Queue {
 	private async saveIf(r: JobRec, allowed: (stored: JobRec) => boolean): Promise<JobRec | null> {
 		const record = structuredClone(r);
 		let blocked: JobRec | null = null;
-		await this.write(r.id, () =>
-			this.deps.transition(r.id, (stored) => {
-				if (!stored || !this.ownsRecord(stored) || allowed(stored)) return record;
-				blocked = stored;
-				return undefined;
-			})
+		await this.write(
+			r.id,
+			() =>
+				this.deps.transition(r.id, (stored) => {
+					if (!stored || !this.ownsRecord(stored) || allowed(stored)) return record;
+					blocked = stored;
+					return undefined;
+				}),
+			false
 		);
 		if (blocked) return blocked;
 		this.chan?.postMessage({ rec: r.id } satisfies Msg);
@@ -880,6 +887,7 @@ export class Queue {
 	/** Follower: replace the mirror with the stored ledger. */
 	async sync() {
 		this.recs = new Map((await this.deps.all()).map((r) => [r.id, r]));
+		for (const [id, entry] of this.writes) if (!entry.pending) this.writes.delete(id); // the stored row is authoritative
 		this.emit();
 	}
 	/** Inspect mirrored/persisted submissions without making requests or eagerly decoding every saved input. */
@@ -902,6 +910,7 @@ export class Queue {
 		if (!r) return;
 		if (this.role === 'follower') {
 			this.recs.set(id, r);
+			if (!this.writes.get(id)?.pending) this.writes.delete(id); // the stored row is authoritative
 			this.emit();
 		} else if (this.role === 'leader' && this.adopt(r)) this.emit();
 	}
@@ -2002,7 +2011,8 @@ export class Queue {
 			s.remoteDone = true;
 			s.pendingUrls = ims.filter((im) => im.url).map((im) => ({ label: im.label, url: im.url! }));
 			await this.save(r); // inline images are safe now; URLs are persisted for download
-			return this.download(r, s);
+			// A held answer is saved locally; its URLs are fetched by the network-gated loop, never from here while offline.
+			return held && s.pendingUrls.length ? undefined : this.download(r, s);
 		}
 		await this.save(r);
 	}

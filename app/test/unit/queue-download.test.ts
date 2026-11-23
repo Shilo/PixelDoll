@@ -470,3 +470,32 @@ test('held results are saved while offline, and Clear finished keeps a finished 
 		jobs: [{ results: [{ sha: 'output' }] }]
 	});
 });
+
+test('a failed conditional write is not retried blindly, and a follower takes the stored row as authoritative', async () => {
+	const stored = new Map<string, JobRec>();
+	const { q } = fixture({
+		put: async (k, r) => void stored.set(k, structuredClone(r)),
+		get: async (k) => structuredClone(stored.get(k)),
+		all: async () => [...stored.values()].map((r) => structuredClone(r)),
+		transition: async () => {
+			throw new Error('IndexedDB unavailable');
+		}
+	});
+	const inner = q as unknown as {
+		saveIf(r: JobRec, allowed: (stored: JobRec) => boolean): Promise<JobRec | null>;
+		unsaved(id: string): boolean;
+		pull(id: string): Promise<void>;
+		writes: Map<string, { started: number; pending: number; failed: boolean }>;
+		role: string;
+	};
+	const r = { id: 'r', state: 'submitting', jobs: [], createdAt: 0 } as unknown as JobRec;
+	await expect(inner.saveIf(r, () => true)).rejects.toThrow('IndexedDB unavailable');
+	expect(inner.unsaved('r')).toBe(false); // the pre-submit path recovers on its own: no blind retry of `submitting`
+	// A follower whose own write failed adopts the row another tab stored.
+	inner.writes.set('r', { started: 1, pending: 0, failed: true });
+	inner.role = 'follower';
+	stored.set('r', { ...r, state: 'done' });
+	await inner.pull('r');
+	expect(inner.unsaved('r')).toBe(false);
+	expect(q.snapshot().jobs.find((job) => job.id === 'r')?.state).toBe('done');
+});
