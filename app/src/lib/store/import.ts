@@ -847,7 +847,9 @@ async function pixelLab(
 					standing ||
 					!frames.length ||
 					frames.length > 120 ||
-					frames.some((f, i) => f.index !== frames[0].index + i)
+					frames.some((f, i) => f.index !== frames[0].index + i) ||
+					// A declared frame missing from the archive: checked before sizing reads it.
+					frames.some((f) => !files.has(f.path))
 				) {
 					leaveOut(move.name, dir, standing);
 					move.dirs.delete(dir);

@@ -2844,6 +2844,7 @@
 		"missingViews": "No llegó ninguna vista utilizable en {directions}. Al guardar se conservan las demás vistas; este State no tendrá arte en esas direcciones ni en sus vistas reflejadas.",
 		"unfetchedViews": "No se pudo descargar la vista en {directions}. Inténtalo de nuevo primero: si guardas sin ella, no se podrá recuperar después.",
 		"canceledViews": "La vista en {directions} se canceló antes de crearse. Si guardas ahora, no se creará.",
+		"unmadeViews": "La vista en {directions} no se creó porque una solicitud anterior se detuvo. Consulta el costo de crearla o guarda sin ella.",
 		"saveWithout": "Guardar sin ellas",
 		"unfinished": "El intento tiene resultados incompletos o no disponibles. Consulta Actividad. No se reenvió ninguna solicitud.",
 		"outdated": "Este estado sin terminar se inició con una versión anterior de PixelDoll. Descártalo para empezar de nuevo.",
@@ -2887,6 +2888,7 @@
 		"measure": "Medir articulaciones",
 		"review": "Antes de guardar, comprueba que las articulaciones marcadas coincidan en cada vista.",
 		"notFitted": "No se encontraron articulaciones en {directions}, así que esas vistas aún no pueden ser un punto de partida. Al guardar se conservan las articulaciones de las demás vistas.",
+		"notChecked": "La comprobación de articulaciones en {directions} no terminó y no se volvió a enviar. Al guardar se conservan las articulaciones de las demás vistas.",
 		"save": "Guardar articulaciones"
 	},
 	"stateCapture": {

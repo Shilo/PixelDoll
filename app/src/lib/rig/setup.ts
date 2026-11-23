@@ -208,7 +208,8 @@ export async function setupPlan(
 			.map((d) =>
 				Array.from({ length: clip.cells }, (_, i) => cellImg(p, base.layers[0], clip.id, d.id, i))
 			)
-			.filter((cells) => cells.some((im) => im && opaqueBox(im))); // a row without art is a genuine sparse clip
+			// A row with no stored frame is a genuine sparse clip; a stored blank frame is a gap, as assembly sees it.
+			.filter((cells) => cells.some(Boolean));
 		const usable = (im: Img | null): im is Img => !!im && !!opaqueBox(im);
 		// Default and the standing move's reference frame are required; any other gap only skips its move.
 		const required = (i: number) => clip.id === DEFAULT_MOVE || (clip.id === a.id && i === 0);

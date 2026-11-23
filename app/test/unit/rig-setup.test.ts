@@ -312,6 +312,33 @@ test('setup skips a move with an empty frame before measuring it; standing and D
 	});
 });
 
+test('a stored blank Default row stops setup before spending, while a missing row is sparse', async () => {
+	const project = await source(),
+		{ rig } = project.manifest,
+		cells = project.manifest.items[0].layers[0].cells!,
+		blank = makeImg(64, 64),
+		blankHash = await cellHash(blank);
+	project.images.set(blankHash, blank);
+	// Saved standing originals, so the standing reference does not come from Default.
+	rig.rest = Object.fromEntries(
+		(['south', 'east', 'north', 'west'] as const).map((d) => [
+			d,
+			{ image: cells.default[d]![0]!, keypoints: pose() }
+		])
+	);
+	delete cells.walk.south;
+	const sparse = await setupPlan(project, 'default');
+	expect(sparse.skipped).not.toContain('walk');
+	cells.default.south = [blankHash];
+	await expect(setupPlan(project, 'default')).rejects.toMatchObject({
+		translation: { key: 'setup.errors.emptyBodyFrame' }
+	});
+	// A stored blank row of another move skips that move for its empty frame.
+	cells.default.south = [rig.rest.south!.image];
+	cells.walk.south = [blankHash];
+	expect((await setupPlan(project, 'default')).skipped).toContain('walk');
+});
+
 test('setup refuses missing or invalid measurements and rejects unsupported input before spending', async () => {
 	const p = await source(),
 		plan = await setupPlan(p);

@@ -91,6 +91,8 @@ export interface StateJointFitReview {
 	provenance: Provenance[];
 	/** Facings whose joints could not be measured: saved without them, and measured again on request. */
 	notFitted: DirectionName[];
+	/** Facings whose check stopped or failed: never resent here, so they are saved without joints. */
+	unchecked: DirectionName[];
 }
 
 const changed = () =>
@@ -238,7 +240,8 @@ export async function quoteStateJointFit(
 			status: await checkStatus(jobs, image, attempt)
 		}))
 	);
-	if (checks.some(({ status }) => status === 'stopped')) throw unfinished();
+	// A stopped check is never resent, but it only leaves its own facing unchecked.
+	if (checks.every(({ status }) => status === 'stopped')) throw unfinished();
 	const fresh = checks.filter(({ status }) => status === 'new').length;
 	const queued = checks.filter(({ status }) => status === 'queued').length;
 	if (fresh) {
@@ -286,13 +289,12 @@ async function measure(
 		target.views.map(({ image }) => checkStatus(jobs, image, attempt))
 	);
 	const approved = new Map(quote.checks.map((check) => [check.direction, check]));
-	// Cheaper is fine (another tab finished a check). New, stopped or different checks need a new quote.
+	// Cheaper is fine (another tab finished a check). New or different checks need a new quote; a stopped one is not resent.
 	if (
 		target.views.length !== quote.checks.length ||
 		target.views.some(
 			({ direction, hash }, index) =>
 				approved.get(direction)?.hash !== hash ||
-				statuses[index] === 'stopped' ||
 				(statuses[index] === 'new' && approved.get(direction)?.status !== 'new')
 		)
 	)
@@ -306,29 +308,46 @@ async function measure(
 	});
 	try {
 		const scope = scopeOf(projectId, stateId);
-		const results = await Promise.all(
-			target.views.map(({ direction, image }) =>
-				measureJoints(image, true, signal, scope, {
-					attempt,
-					quotedEstimate: {
-						reuseOnly: approved.get(direction)?.status !== 'new',
-						changed: () => {
-							throw changed();
-						}
-					}
-				})
+		// Each facing settles on its own, so one failed check does not discard the paid measurements beside it.
+		const results = await Promise.allSettled(
+			target.views.map(({ direction, image }, index) =>
+				statuses[index] === 'stopped' || approved.get(direction)?.status === 'stopped'
+					? Promise.reject(unfinished())
+					: measureJoints(image, true, signal, scope, {
+							attempt,
+							quotedEstimate: {
+								reuseOnly: approved.get(direction)?.status !== 'new',
+								changed: () => {
+									throw changed();
+								}
+							}
+						})
 			)
 		);
 		signal.throwIfAborted();
+		const moved = results.find(
+			(result): result is PromiseRejectedResult =>
+				result.status === 'rejected' &&
+				result.reason instanceof LocalizedError &&
+				result.reason.translation.key === 'stateGeneration.changed'
+		);
+		if (moved) throw moved.reason;
 		assertSelected(projectId);
 		assertAccount(keyRevision);
 		const { rig } = project.manifest;
 		const views: StateJointFitReview['views'] = [];
 		const provenance: Provenance[] = [];
 		const notFitted: DirectionName[] = [];
+		const unchecked: DirectionName[] = [];
 		// One facing without usable joints no longer costs the others their paid measurement.
 		for (const [index, { direction, hash, image }] of target.views.entries()) {
-			const { keypoints, record } = results[index];
+			const result = results[index];
+			if (result.status === 'rejected') {
+				console.warn(`The ${direction} joint check did not finish.`, result.reason);
+				unchecked.push(direction);
+				continue;
+			}
+			const { keypoints, record } = result.value;
 			const restView = rig.rest?.[direction];
 			const rest = restView && project.images.get(restView.image);
 			if (!rest) throw unavailable();
@@ -354,8 +373,13 @@ async function measure(
 			views.push({ direction, hash, keypoints, qa });
 			provenance.push(provOf(record));
 		}
-		if (!views.length) throw noJoints(notFitted[0]);
-		return { projectId, stateId, manifestVersion, views, provenance, notFitted };
+		if (!views.length) {
+			const failed = results.find(
+				(result): result is PromiseRejectedResult => result.status === 'rejected'
+			);
+			throw notFitted.length || !failed ? noJoints(notFitted[0]) : failed.reason;
+		}
+		return { projectId, stateId, manifestVersion, views, provenance, notFitted, unchecked };
 	} catch (error) {
 		controller.abort(error);
 		throw error;

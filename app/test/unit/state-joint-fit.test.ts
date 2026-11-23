@@ -378,12 +378,41 @@ describe('State joint fit service', () => {
 		expect(Object.keys(record.skeletons ?? {})).toHaveLength(3);
 	});
 
-	test('a stopped check blocks the quote so nothing is resent', async () => {
+	test('a stopped check is left unchecked and never resent; the other facings are still measured', async () => {
 		const target = (await stateJointFitTarget(project, 'glow'))!;
 		const lost = (await measurementInput(target.views[1].image)).hash;
 		vi.mocked(queue.snapshot).mockReturnValue({ jobs: [receipt(lost, 'lost')] } as never);
+		const quote = await quoteStateJointFit('rig-test', 'glow');
+		expect(quote.checks.map(({ status }) => status)).toEqual(['new', 'stopped']);
+		expect(quote.generations).toBe(0.1);
+		vi.mocked(measureJoints).mockImplementation(async (image) => ({
+			keypoints: pose(),
+			record: receipt(await cellHash(image))
+		}));
+		const review = await measureStateJoints(quote);
+		expect(measureJoints).toHaveBeenCalledTimes(1);
+		expect(review.views.map(({ direction }) => direction)).toEqual(['south']);
+		expect(review.unchecked).toEqual(['east']);
+		// Every check stopped: nothing to measure, and nothing is resent.
+		const south = (await measurementInput(target.views[0].image)).hash;
+		vi.mocked(queue.snapshot).mockReturnValue({
+			jobs: [receipt(lost, 'lost'), receipt(south, 'failed')]
+		} as never);
 		await expect(quoteStateJointFit('rig-test', 'glow')).rejects.toThrow('No request was resent');
-		expect(measureJoints).not.toHaveBeenCalled();
+	});
+
+	test('a measurement that fails keeps the facings measured beside it', async () => {
+		const target = (await stateJointFitTarget(project, 'glow'))!;
+		const east = target.views[1].hash;
+		vi.mocked(measureJoints).mockImplementation(async (image) => {
+			const hash = await cellHash(image);
+			if (hash === east) throw new Error('Offline fixture: the estimate failed.');
+			return { keypoints: pose(), record: receipt(hash) };
+		});
+		const review = await measureStateJoints(await quoteStateJointFit('rig-test', 'glow'));
+		expect(review.views.map(({ direction }) => direction)).toEqual(['south']);
+		expect(review.unchecked).toEqual(['east']);
+		expect(review.notFitted).toEqual([]);
 	});
 
 	test('queued checks are priced but a quote cannot replace a check that vanished', async () => {

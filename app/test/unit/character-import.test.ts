@@ -797,11 +797,22 @@ test.each([null, [], 17, 'bad', {}])(
 	}
 );
 
-test('PixelLab reports missing referenced images and directions before accepting a partial character', async () => {
+test('PixelLab leaves out a direction whose declared frames or standing view are missing, and names it', async () => {
 	const entries = await pixelLabFiles();
+	// A declared animation frame missing from the archive leaves its direction out before sizing.
+	const partial = await readCharacterZip(
+		await zip(entries.filter((entry) => !entry.name.endsWith('frame_001.png')))
+	);
+	expect(partial.project.manifest.rig.animations.map(({ id }) => id)).toEqual(['default']);
+	expect(partial.warnings).toContain(
+		'“walking” facing south was left out: its frames are empty, missing or out of order.'
+	);
+	// A missing standing view still stops the import.
 	await expect(
-		readCharacterZip(await zip(entries.filter((entry) => !entry.name.endsWith('frame_001.png'))))
-	).rejects.toThrow('Missing file: Idle/animations/walking/south/frame_001.png');
+		readCharacterZip(
+			await zip(entries.filter((entry) => !entry.name.endsWith('rotations/east.png')))
+		)
+	).rejects.toThrow('Missing file: Idle/rotations/east.png');
 	const meta = JSON.parse(new TextDecoder().decode(entries[0].data));
 	meta.states[0].frames.animations.walking.north = meta.states[0].frames.animations.walking.south;
 	entries[0].data = enc.encode(JSON.stringify(meta));

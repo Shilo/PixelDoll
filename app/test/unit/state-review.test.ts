@@ -255,3 +255,109 @@ test('a managed facing that could not be downloaded is told apart from one that 
 	expect(review?.canceled).toEqual([]);
 	vi.unstubAllGlobals();
 });
+
+test('trying a managed State again keeps the views already downloaded and fetches only the rest', async () => {
+	app.key = 'key';
+	pngs.set('south', figure());
+	pngs.set('east', figure());
+	pngs.set('north', figure());
+	pngs.set('west', figure());
+	remote.detail = {
+		id: 'child',
+		status: 'completed',
+		size: { width: 64, height: 64 },
+		directions: 4,
+		rotation_urls: Object.fromEntries(
+			['south', 'east', 'north', 'west'].map((d) => [d, `https://example.test/${d}`])
+		)
+	};
+	let offline = new Set(['/east']);
+	const fetched: string[] = [];
+	vi.stubGlobal('fetch', async (url: URL) => {
+		fetched.push(url.pathname);
+		return offline.has(url.pathname)
+			? Promise.reject(new TypeError('Offline fixture'))
+			: new Response(url.pathname.slice(1));
+	});
+	const pendingState = await lostManagedState();
+	const first = (await pendingState('rig-state', 'attempt'))!;
+	expect(first.unfetched).toEqual(['east']);
+	// On the retry east comes back and south would fail: south is kept from the first read, never fetched again.
+	offline = new Set(['/south']);
+	fetched.length = 0;
+	const second = (await pendingState('rig-state', 'attempt', first))!;
+	expect(fetched).toEqual(['/east']);
+	expect(second.views.map(({ direction }) => direction)).toEqual([
+		'south',
+		'east',
+		'north',
+		'west'
+	]);
+	expect(second.missing).toEqual([]);
+	vi.unstubAllGlobals();
+});
+
+test('a local State whose second batch stopped before the third was sent can still review the first', async () => {
+	const pendingState = await lostManagedState();
+	const plan = {
+		endpoint: '/edit-image-pro-flash',
+		cellSize: { width: 64, height: 64 },
+		batches: [
+			{ transport: 'cells', facingIds: ['south'] },
+			{ transport: 'cells', facingIds: ['east'] },
+			{ transport: 'cells', facingIds: ['north'] }
+		]
+	};
+	stored.project = {
+		id: 'rig-state',
+		stateGenerations: {
+			attempt: {
+				token: 'attempt',
+				source: { clip: 'default', frame: 0 },
+				sourceVersion: 'v1',
+				plan,
+				// The third batch was never sent: the run stopped when the second failed.
+				continuation: { unqueued: [2] }
+			}
+		}
+	};
+	pngs.set('south-result', figure());
+	const record = (index: number, patch: Partial<JobRec>): JobRec => ({
+		id: `record-${index}`,
+		label: 'State',
+		tag: 'studio-state',
+		activityScope: `state:attempt:${index}`,
+		method: 'POST',
+		endpoint: plan.endpoint,
+		params: {},
+		inputs: [],
+		requestHash: `hash-${index}`,
+		state: 'done',
+		attempts: 1,
+		nextAt: 0,
+		createdAt: 0,
+		jobs: [],
+		gens: 1,
+		usd: 0,
+		...patch
+	});
+	stored.jobs = [
+		record(0, {
+			jobs: [
+				{
+					id: 'south-result',
+					status: 'completed',
+					done: true,
+					results: [{ label: '0', sha: 'south-result' }]
+				}
+			]
+		}),
+		record(1, { state: 'failed' })
+	];
+	const review = await pendingState('rig-state', 'attempt');
+	expect(review?.views.map(({ direction }) => direction)).toEqual(['south']);
+	expect(review?.missing).toEqual(['east', 'north']);
+	// North was verified never sent: it can be quoted separately, unlike the failed east batch.
+	expect(review?.unmade).toEqual(['north']);
+	vi.unstubAllGlobals();
+});
