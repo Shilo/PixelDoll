@@ -743,6 +743,7 @@
 		"riderPose": "Pose du cavalier",
 		"riderPoseRide": "Automatique",
 		"riderPoseMissing": "Sans {directions}",
+		"riderPoseHides": "Masqués en selle, aucun dessin pour cette pose : {items}",
 		"otherTab": "Autre onglet",
 		"updateToVVersion": "Mettre à jour vers v{version}",
 		"pixelLabAccount": "Compte PixelLab",

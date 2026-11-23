@@ -723,6 +723,7 @@
 		"riderPose": "騎乗ポーズ",
 		"riderPoseRide": "自動",
 		"riderPoseMissing": "{directions}なし",
+		"riderPoseHides": "騎乗中は非表示（このポーズの画像がありません）: {items}",
 		"otherTab": "別のタブ",
 		"updateToVVersion": "v{version}に更新",
 		"pixelLabAccount": "PixelLabアカウント",

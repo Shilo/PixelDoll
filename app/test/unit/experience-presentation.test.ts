@@ -13,6 +13,7 @@ import {
 	buildPresentation,
 	livePlaybackDelta,
 	renderPresentation,
+	itemsHiddenIn,
 	resolveLive,
 	resolvePreview,
 	southStill
@@ -240,6 +241,10 @@ describe('production body presentation', () => {
 		const missing = ride(0, -1, outfit, 'sitting');
 		expect(missing).toMatchObject({ clip: 'default', requestedClip: 'sitting' });
 		expect(missing.notice).toMatchObject({ kind: 'missing-direction', move: 'sitting' });
+		// Mount settings names what a chosen pose hides.
+		expect(itemsHiddenIn(a, outfit, 'sitting').map((item) => item.id)).toEqual(['hat']);
+		expect(itemsHiddenIn(a, outfit, 'default')).toEqual([]);
+		expect(itemsHiddenIn(a, { body: 'base' }, 'sitting')).toEqual([]);
 	});
 
 	test('intentional E/W directions retain remembered vertical facing without missing-coverage warnings', () => {

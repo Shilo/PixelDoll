@@ -587,6 +587,13 @@ function showsOutfit(a: PresentationAvailability, worn: Item[], sequence: BodySe
 	const cells = sequence.frames.map((frame) => frame.cell);
 	return worn.every((item) => a.complete(item, sequence.clip, sequence.direction, cells));
 }
+/** Worn items this clip cannot draw in some facing it has, so they hide whenever it shows (the Riding pose warning). */
+export function itemsHiddenIn(a: PresentationAvailability, items: Preset['items'], clip: string) {
+	const sequences = [...(a.animations.get(clip)?.values() ?? [])];
+	return wornItems(a, items).filter(
+		(item) => !sequences.every((sequence) => showsOutfit(a, [item], sequence))
+	);
+}
 
 /** Exact south still for current-outfit thumbnails; never labels another facing as south. */
 export function southStill(a: PresentationAvailability): Presentation {

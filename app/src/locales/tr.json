@@ -743,6 +743,7 @@
 		"riderPose": "Binici pozu",
 		"riderPoseRide": "Otomatik",
 		"riderPoseMissing": "{directions} yok",
+		"riderPoseHides": "Binerken gizli, bu poz için çizim yok: {items}",
 		"otherTab": "Diğer sekme",
 		"updateToVVersion": "v{version} sürümüne güncelleyin",
 		"pixelLabAccount": "PixelLab hesabı",

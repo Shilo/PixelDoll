@@ -723,6 +723,7 @@
 		"riderPose": "骑乘姿势",
 		"riderPoseRide": "自动",
 		"riderPoseMissing": "缺少{directions}",
+		"riderPoseHides": "骑乘时隐藏，此姿势没有图像：{items}",
 		"otherTab": "另一个标签页",
 		"updateToVVersion": "更新到 v{version}",
 		"pixelLabAccount": "PixelLab 账户",

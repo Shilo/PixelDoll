@@ -743,6 +743,7 @@
 		"riderPose": "Pose de montaria",
 		"riderPoseRide": "Automático",
 		"riderPoseMissing": "Sem {directions}",
+		"riderPoseHides": "Ocultos ao montar, sem arte para esta pose: {items}",
 		"otherTab": "Outra aba",
 		"updateToVVersion": "Atualizar para v{version}",
 		"pixelLabAccount": "Conta do PixelLab",

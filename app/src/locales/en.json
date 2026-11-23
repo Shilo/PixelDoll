@@ -743,6 +743,7 @@
 		"riderPose": "Riding pose",
 		"riderPoseRide": "Automatic",
 		"riderPoseMissing": "No {directions}",
+		"riderPoseHides": "Hidden while riding, no art for this pose: {items}",
 		"otherTab": "Other tab",
 		"updateToVVersion": "Update to v{version}",
 		"pixelLabAccount": "PixelLab account",
