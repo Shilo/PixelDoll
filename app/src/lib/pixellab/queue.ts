@@ -68,7 +68,7 @@ export interface SubJob {
 	eta?: number;
 	lastPoll?: number;
 	tries?: number; // failed result downloads (backoff, give up after MAX_TRIES)
-	unsaved?: number; // in memory: valid results this device failed to save, retried with backoff (never gives up)
+	unsaved?: number; // valid results this device failed to save in a row: retried with backoff, never given up
 	pendingUrls?: { label: string; url: string }[];
 	results: Result[];
 	error?: string;
@@ -457,8 +457,13 @@ export class Queue {
 	private ticking = false;
 	/** Finished jobs whose valid results could not be saved yet, by job id (see poll). */
 	private held = new Map<string, Job>();
-	/** Records whose latest save failed: saved again every tick until it lands, so a settled result is never only in memory. */
+	/** Records whose latest save failed: saved again until it lands, so a settled result is never only in memory. */
 	private unsavedRecords = new Set<string>();
+	private recordRetryAt = 0;
+	/** Paid results only this tab holds (an unsaved record or a held job): it keeps leading until they are saved. */
+	private holdsUnsaved() {
+		return this.unsavedRecords.size > 0 || this.held.size > 0;
+	}
 	/** Followers' stops waiting for the leading tab's answer, by reply id. */
 	private stopReplies = new Map<string, (ok: boolean) => void>();
 	// Order of the latest storage outcomes (reads and writes apart): the storage notice lifts only once a later read and a
@@ -729,7 +734,8 @@ export class Queue {
 					this.role === 'leader' &&
 					this.release &&
 					!this.key &&
-					!this.busy.size
+					!this.busy.size &&
+					!this.holdsUnsaved()
 				)
 					this.stepBack(); // a follower from the start: never act as leader while reconnecting
 				// Another tab has a click waiting: step back (rejoin as follower) when nothing here is in flight.
@@ -738,6 +744,7 @@ export class Queue {
 					this.role === 'leader' &&
 					this.release &&
 					!this.busy.size &&
+					!this.holdsUnsaved() &&
 					this.idle() &&
 					this.canYield()
 				)
@@ -1373,6 +1380,7 @@ export class Queue {
 			await this.save(rec);
 		} catch (e) {
 			if (this.recs.get(rec.id) === rec) this.recs.delete(rec.id);
+			this.unsavedRecords.delete(rec.id); // a request whose enqueue failed is never saved later
 			throw e;
 		} finally {
 			this.persisting.delete(rec.id);
@@ -1576,11 +1584,23 @@ export class Queue {
 				if (this.throttled) break; // one probe at a time until external tools release capacity
 			}
 		}
-		for (const id of this.unsavedRecords) {
-			const r = this.recs.get(id);
-			if (!r) this.unsavedRecords.delete(id);
-			else if (!this.busy.has(id)) ops.push(this.guard(id, () => this.save(r)));
+		if (now >= this.recordRetryAt && this.unsavedRecords.size) {
+			this.recordRetryAt = now + POLL_MS;
+			for (const id of this.unsavedRecords) {
+				const r = this.recs.get(id);
+				if (!r) this.unsavedRecords.delete(id);
+				else if (!this.busy.has(id) && !this.persisting.has(id))
+					ops.push(this.guard(id, () => this.save(r)));
+			}
 		}
+		// A held job whose record moved on (stopped, cleared, finished elsewhere) no longer needs its answer.
+		for (const id of this.held.keys())
+			if (
+				![...this.recs.values()].some(
+					(r) => r.state === 'running' && r.jobs.some((s) => s.id === id && !s.done)
+				)
+			)
+				this.held.delete(id);
 		if (this.key && this.paused !== 'auth')
 			for (const r of this.recs.values()) {
 				if (r.state !== 'running') continue;
@@ -1592,7 +1612,10 @@ export class Queue {
 							now - (s.lastPoll ?? 0) >= backoff((s.tries ?? 0) + (s.unsaved ?? 0))
 						)
 							ops.push(this.guard(s.id, () => this.download(r, s)));
-					} else if (!s.lastPoll || now - s.lastPoll >= POLL_MS)
+					} else if (
+						!s.lastPoll ||
+						now - s.lastPoll >= (s.unsaved ? Math.max(POLL_MS, backoff(s.unsaved)) : POLL_MS)
+					)
 						ops.push(this.guard(s.id, () => this.poll(r, s)));
 				}
 			}
@@ -1914,10 +1937,12 @@ export class Queue {
 					// paused meanwhile.
 					s.results = [];
 					s.lastPoll = this.deps.now();
+					s.unsaved = (s.unsaved ?? 0) + 1;
 					this.held.set(s.id, job);
 					throw e;
 				}
 				this.held.delete(s.id);
+				delete s.unsaved;
 				Object.assign(s, {
 					done: true,
 					status: 'failed',

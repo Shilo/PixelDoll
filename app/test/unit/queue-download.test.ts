@@ -314,7 +314,7 @@ test('a result this device could not save survives PixelLab deleting the job, an
 	await run(12);
 	expect(store.get(record.id)?.state).not.toBe('done');
 	ledgerBroken = false;
-	await run(3);
+	await run(6); // a failed record save is retried every poll interval (5 s)
 	expect(store.get(record.id)).toMatchObject({
 		state: 'done',
 		jobs: [{ results: [{ sha: 'output' }] }]

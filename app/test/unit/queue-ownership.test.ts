@@ -279,6 +279,24 @@ test('Stop in a follower tab says so when PixelLab does not confirm the stop', a
 	}
 });
 
+test('a leader holding a paid result it has not saved keeps leading when another tab asks for a handoff', async () => {
+	for (const holding of [false, true]) {
+		const f = await twoTabs('leader-key');
+		try {
+			expect(f.leader.role).toBe('leader');
+			if (holding) (f.leader as unknown as { held: Map<string, unknown> }).held.set('job-1', {});
+			f.follower.setKey('follower-key');
+			f.follower.requestHandoff();
+			await new Promise((resolve) => setTimeout(resolve, 300));
+			f.follower.requestHandoff(false);
+			// Without unsaved results the idle leader hands over; with them it keeps leading until they are saved.
+			expect(f.leader.role).toBe(holding ? 'leader' : 'follower');
+		} finally {
+			f.close();
+		}
+	}
+});
+
 test('a capacity broadcast updates only the published capacity, never the key, role or pause', async () => {
 	const f = await twoTabs('leader-key');
 	const raw = new BroadcastChannel(f.channel);
