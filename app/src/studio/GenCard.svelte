@@ -172,6 +172,13 @@
 	let paidUnread = $state(false),
 		paidReads = $state(0);
 	// Re-rolling the failed calls at the same price as generating again is one choice: only the review's button is shown.
+	// A free keep of the paid frames leads, ahead of any paid re-roll, and the review's copy points to it.
+	const freeKeep = $derived(
+		!!paid?.options.some(
+			(option) => option.id === 'keep-available' || option.id === 'keep-finished'
+		)
+	);
+	const keepBlocked = $derived(!res?.qa || (!!res && hasStructuralFailure(res)) || incomplete);
 	const sameRetry = $derived(
 		!!paid?.options.some((option) => option.id === 'reroll-calls' && option.gens === retryGens)
 	);
@@ -250,6 +257,17 @@
 									]
 								: [])
 					];
+					// Free first: a keep of what was paid for leads, and the paid re-roll follows it.
+					const keep = options.find((option) => !option.paid && option.id !== 'reroll-calls');
+					if (keep)
+						options.splice(
+							0,
+							options.length,
+							{ ...keep, primary: true },
+							...options
+								.filter((option) => option !== keep)
+								.map((option) => ({ ...option, primary: false }))
+						);
 					if (current && options.length)
 						paid = {
 							views: [],
@@ -418,15 +436,20 @@
 				<p class="muted small">{t('genCard.someChecks')}</p>
 			{/if}
 			{#if !clean}<p class="notice warn small">
-					{t('genCard.noRetryStarted')}
+					{t(
+						!keepBlocked
+							? 'genCard.noRetryStarted'
+							: freeKeep
+								? 'genCard.noRetryStartedFreeKeep'
+								: 'genCard.noRetryStartedNoKeep'
+					)}
 				</p>{/if}
 			<div class="actions">
 				<button
 					class="bu-action btn primary"
 					data-variant="primary"
 					onclick={accept}
-					disabled={busy || !res?.qa || hasStructuralFailure(res) || incomplete}
-					>{t('genCard.keep')}</button
+					disabled={busy || keepBlocked}>{t('genCard.keep')}</button
 				>
 				{#if !sameRetry}<span class="api-action"
 						><button
@@ -451,7 +474,7 @@
 				>
 			</div>
 			{#if incomplete}<p class="notice warn small">
-					{t('genCard.incomplete')}
+					{t(freeKeep ? 'genCard.incompleteFreeKeep' : 'genCard.incomplete')}
 				</p>{/if}
 		{:else if g.phase === 'failed'}
 			{#if g.canceled}<p class="notice bad small">
