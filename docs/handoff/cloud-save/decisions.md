@@ -113,3 +113,8 @@ UI review of the client (by the UI specialist): tabs not connected now listen fo
 ## 17. No Developer-mode gate (2026-11-22, owner)
 
 - **Decision (owner):** Cloud Save is not put behind Developer mode; plan section 5 "Hidden until release" is withdrawn. Until the sign-in values are registered, Connect shows "This version of PixelDoll has no cloud sign-in set up yet."
+
+## 18. Sharing a library is no longer a non-goal (2026-11-23, owner)
+
+- **Decision (owner):** "sharing a library with another person" was a non-goal written by the planning session, never agreed by the owner. It is removed from the plan; collaboration is wanted later. Each collaborator paying PixelLab separately does not stand in the way of sharing artwork.
+- **Follow-up:** research and plans for team sync on GitHub, Export to GitHub and an opt-in PixelDoll server are in [docs/research/2026-11-23-collaboration-sync/](../../research/2026-11-23-collaboration-sync/README.md). v1 scope is unchanged.

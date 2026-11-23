@@ -37,7 +37,6 @@ Providers:
 
 **Non-goals for v1** (each goes on a Later card if it is still wanted):
 - live collaboration
-- sharing a library with another person
 - syncing settings, the paid-job ledger, drafts or credentials
 - frame-level merging (item level only)
 - revision pruning and pack compaction (measure growth; build retention only if v1 data shows the need)
