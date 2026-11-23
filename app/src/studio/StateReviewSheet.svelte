@@ -89,12 +89,13 @@
 	const blankViews = $derived.by(() => {
 		const current = review;
 		if (!current) return [];
-		const named = new Set([...current.unfetched, ...current.canceled]);
+		const named = new Set([...current.unfetched, ...current.canceled, ...current.unmade]);
 		return current.missing.filter((direction) => !named.has(direction));
 	});
 	// Saving now gives up views that could still be fetched or made, so the choice says so.
 	const withoutViews = $derived(
-		!!review && (review.unfetched.length > 0 || review.canceled.length > 0)
+		!!review &&
+			(review.unfetched.length > 0 || review.canceled.length > 0 || review.unmade.length > 0)
 	);
 	// Mounted riding uses the State saved as `riding`, whatever prompt made it.
 	const reviewRiding = $derived(!!review?.riding || review?.id === RIDING_STATE);
@@ -212,6 +213,8 @@
 		canContinue = false;
 		failure = '';
 		loadedFor = '';
+		// The run reads the whole result again when it settles.
+		review = null;
 		continueStateRun(approved, attempt.id);
 	}
 
@@ -314,6 +317,24 @@
 						directions: displayDirectionList(review.canceled)
 					})}
 				</p>{/if}
+			{#if review.unmade.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.unmadeViews', {
+						directions: displayDirectionList(review.unmade)
+					})}
+				</p>{/if}
+			{#if continuation}
+				{@const { keptViews, remainingViews, cost } = continuation}
+				<div class="notice small" role="status">
+					<p>
+						{t('stateGeneration.continueViews', {
+							kept: formatNumber(keptViews),
+							remaining: formatNumber(remainingViews)
+						})}
+					</p>
+					<p>{t('stateGeneration.localOnly')}</p>
+					<strong>{stateCostText(cost)}</strong>
+				</div>
+			{/if}
 			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
 			{#if reviewRiding}<p class="muted small">{t('stateGeneration.ridingCheck')}</p>{/if}
 			{#if !sourceCurrent}
@@ -412,6 +433,20 @@
 					data-variant={review.unfetched.length ? 'primary' : 'outline'}
 					disabled={!!busy}
 					onclick={load}>{t('common.tryAgain')}</button
+				>{/if}
+			<!-- Views never sent are a separately priced choice; saving without them stays free. -->
+			{#if continuation}<button
+					type="button"
+					class="bu-btn"
+					data-variant="outline"
+					disabled={!!busy}
+					onclick={generateRemaining}>{t('stateGeneration.generateRemaining')}</button
+				>{:else if review?.unmade.length}<button
+					type="button"
+					class="bu-btn"
+					data-variant="outline"
+					disabled={!!busy}
+					onclick={checkContinuationCost}>{t('stateGeneration.checkRemainingCost')}</button
 				>{/if}
 			<button
 				type="button"

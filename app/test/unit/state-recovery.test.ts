@@ -80,7 +80,11 @@ test.each<Partial<JobRec>>([{ state: 'lost' }, { state: 'canceled' }, { state: '
 		const records = [job(0), job(1, patch)];
 		expect(stateRecoveryRecords(local, records)).toEqual(records);
 		expect(stateRecoveryRecords(local, [job(0, patch), job(1, patch)])).toBeNull();
-		expect(stateContinuationBatches(local, [job(1, patch)])).toBeNull();
+		// Only a batch verifiably never sent can be bought separately; the stopped one is not among them.
+		expect(stateContinuationBatches(local, [job(1, patch)])).toEqual({
+			records: [{ index: 1, record: job(1, patch) }],
+			missing: [0]
+		});
 	}
 );
 
@@ -135,4 +139,22 @@ test('a failure in this tab never hides finished jobs, and a run between batches
 	});
 	expect(stateProgressOf(attempt, [job(0)], {})).toMatchObject({ status: 'generating', done: 1 });
 	expect(stateProgressOf(attempt, [job(0)])).toMatchObject({ status: 'attention' });
+});
+
+test('a run stopped by a failed batch is reviewable once nothing runs, but this tab between batches still generates', () => {
+	const three = {
+		token: 'attempt',
+		source: { clip: 'default', frame: 0 },
+		continuation: { unqueued: [2] },
+		plan: { endpoint: '/edit-animation-v2', batches: [0, 1, 2] }
+	} as const;
+	const stopped = [job(0), job(1, { state: 'failed' })];
+	expect(stateAttemptStatus(three, stopped)).toBe('ready');
+	expect(
+		stateProgressOf(three, stopped, { error: 'Offline fixture: batch 1 failed.' }).status
+	).toBe('ready');
+	// Before batch 1 is sent this tab's run is still working.
+	expect(
+		stateProgressOf({ ...three, continuation: { unqueued: [1, 2] } }, [job(0)], {}).status
+	).toBe('generating');
 });

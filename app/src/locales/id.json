@@ -2753,6 +2753,7 @@
 		"missingViews": "Tidak ada tampilan yang bisa dipakai untuk arah {directions}. Menyimpan akan mempertahankan tampilan lainnya; State ini tidak akan punya gambar di arah tersebut maupun tampilan cerminnya.",
 		"unfetchedViews": "Tampilan untuk arah {directions} tidak bisa diunduh. Coba lagi dulu: setelah disimpan tanpanya, tampilan itu tidak bisa diambil lagi.",
 		"canceledViews": "Tampilan untuk arah {directions} dibatalkan sebelum dibuat. Jika disimpan sekarang, tampilan itu tidak akan dibuat.",
+		"unmadeViews": "Tampilan untuk arah {directions} tidak dibuat karena permintaan sebelumnya berhenti. Periksa biaya untuk membuatnya, atau simpan tanpanya.",
 		"saveWithout": "Simpan tanpanya",
 		"unfinished": "Hasil percobaan ini belum lengkap atau tidak tersedia. Periksa Aktivitas. Tidak ada permintaan yang dikirim ulang.",
 		"outdated": "State yang belum selesai ini dimulai dengan versi PixelDoll yang lebih lama. Buang untuk memulai lagi.",

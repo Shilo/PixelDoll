@@ -2825,6 +2825,7 @@
 		"missingViews": "Für {directions} kam keine verwendbare Ansicht zurück. Beim Speichern bleiben die anderen Ansichten erhalten; dieser State hat in diesen Blickrichtungen und ihren gespiegelten Ansichten keine Grafik.",
 		"unfetchedViews": "Die Ansicht für {directions} konnte nicht heruntergeladen werden. Versuche es zuerst erneut: Wenn du ohne sie speicherst, kann sie später nicht mehr abgerufen werden.",
 		"canceledViews": "Die Ansicht für {directions} wurde abgebrochen, bevor sie erstellt wurde. Wenn du jetzt speicherst, wird sie nicht erstellt.",
+		"unmadeViews": "Die Ansicht für {directions} wurde nicht erstellt, weil eine frühere Anfrage abgebrochen ist. Prüfe die Kosten für die Erstellung oder speichere ohne sie.",
 		"saveWithout": "Ohne sie speichern",
 		"unfinished": "Die Ergebnisse sind unvollständig oder nicht verfügbar. Prüfe die Aktivitäten. Keine Anfrage wurde erneut gesendet.",
 		"outdated": "Dieser unfertige Zustand wurde mit einer älteren PixelDoll-Version begonnen. Verwirf ihn, um neu zu beginnen.",

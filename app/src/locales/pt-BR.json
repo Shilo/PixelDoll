@@ -2834,6 +2834,7 @@
 		"missingViews": "Nenhuma vista utilizável voltou nas direções {directions}. Ao salvar, as outras vistas são mantidas; este State não terá arte nessas direções nem em suas vistas espelhadas.",
 		"unfetchedViews": "Não foi possível baixar a vista nas direções {directions}. Tente novamente primeiro: se você salvar sem ela, não será possível buscá-la depois.",
 		"canceledViews": "A vista nas direções {directions} foi cancelada antes de ser criada. Se você salvar agora, ela não será criada.",
+		"unmadeViews": "A vista nas direções {directions} não foi criada porque uma solicitação anterior parou. Confira o custo para criá-la ou salve sem ela.",
 		"saveWithout": "Salvar sem elas",
 		"unfinished": "Esta tentativa tem resultados incompletos ou indisponíveis. Confira a Atividade. Nenhuma solicitação foi reenviada.",
 		"outdated": "Este estado inacabado foi iniciado em uma versão anterior do PixelDoll. Descarte-o para começar de novo.",

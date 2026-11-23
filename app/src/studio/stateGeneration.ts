@@ -27,7 +27,12 @@ import { stateClipName } from '../lib/rig/poses.ts';
 import { moveLabel } from './model.ts';
 import { withClipWriteLock } from './clipName.ts';
 import { doc, flushSave, openProject, syncStoredProject, toast, ui } from './state.svelte.ts';
-import { stateAttempts, stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.ts';
+import {
+	stateAttempts,
+	stateContinuationBatches,
+	stateRecoveryRecords,
+	stateReviewBatches
+} from './stateRecovery.ts';
 import { groundToSource } from './stateGrounding.ts';
 import {
 	localStateCost,
@@ -110,6 +115,8 @@ export interface StateReview {
 	unfetched: DirectionName[];
 	/** Of `missing`: facings of a batch canceled before it was made. */
 	canceled: DirectionName[];
+	/** Of `missing`: facings of batches never sent because an earlier batch stopped the run; a continuation can buy them. */
+	unmade: DirectionName[];
 	/** As returned, for facings that came back off the source's ground and were moved onto it in `views`. */
 	ungrounded: Partial<Record<DirectionName, Img>>;
 	provenance: ReturnType<typeof provOf>[];
@@ -142,6 +149,12 @@ const unfinished = () =>
 
 // One lock per attempt, held while it sends or reads its requests, so no tab resends or discards it meanwhile.
 const stateLockName = (token: string) => `pixeldoll-state:${token}`;
+
+/** Whether no tab holds this attempt's lock right now (it is not sending or reading its requests). */
+function stateLockFree(token: string): Promise<boolean> {
+	if (!navigator.locks) return Promise.resolve(false);
+	return navigator.locks.request(stateLockName(token), { ifAvailable: true }, (lock) => !!lock);
+}
 
 function withStateLock<T>(token: string, work: () => Promise<T>): Promise<T> {
 	if (!navigator.locks)
@@ -563,6 +576,7 @@ async function readReview(
 		missing,
 		unfetched,
 		canceled,
+		unmade: [],
 		ungrounded,
 		projectId,
 		id: attempt.id,
@@ -748,8 +762,10 @@ async function prepareContinuation(projectId: string, token: string) {
 		token: attempt.token,
 		keyRevision,
 		missing: batches.missing,
+		// Only finished batches keep views; a stopped one is never resent and is not counted as kept.
 		keptViews: batches.records.reduce(
-			(count, { index }) => count + attempt.plan.batches[index].facingIds.length,
+			(count, { index, record }) =>
+				count + (record.state === 'done' ? attempt.plan.batches[index].facingIds.length : 0),
 			0
 		),
 		remainingViews: remainingPlan.batches.reduce(
@@ -866,10 +882,25 @@ export async function pendingState(
 	const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGenerations?.[token];
 	if (!attempt) return null;
 	if (!attempt.source) throw outdated();
-	const records = stateRecoveryRecords(attempt, await db.all<JobRec>('jobs'));
-	if (!records) throw unfinished();
+	const ready = stateReviewBatches(attempt, await db.all<JobRec>('jobs'));
+	if (!ready) throw unfinished();
+	// Batches never sent are reviewed without only once no tab is still sending them.
+	if (ready.unmade.length && !(await stateLockFree(token))) throw unfinished();
 	try {
-		return await readReview(projectId, attempt, records, known);
+		const review = await readReview(
+			projectId,
+			{
+				...attempt,
+				plan: {
+					...attempt.plan,
+					batches: ready.records.map(({ index }) => attempt.plan.batches[index])
+				}
+			},
+			ready.records.map(({ record }) => record),
+			known
+		);
+		const unmade = ready.unmade.flatMap((index) => attempt.plan.batches[index].facingIds);
+		return { ...review, missing: [...review.missing, ...unmade], unmade };
 	} catch (cause) {
 		// Known causes (no key to recover the views, a PixelLab error) say what to do; only unreadable results are invalid.
 		if (cause instanceof LocalizedError || cause instanceof ApiError) throw cause;
@@ -904,6 +935,12 @@ async function clearStateAttempt(projectId: string, token: string): Promise<void
 
 /** `riding`: saved from the Riding template, so the notice says where to use it. */
 export async function saveState(review: StateReview, riding = false): Promise<void> {
+	// With views never sent, no tab may be sending them while this save gives them up.
+	if (review.unmade.length) return withStateLock(review.token, () => publishState(review, riding));
+	return publishState(review, riding);
+}
+
+async function publishState(review: StateReview, riding: boolean): Promise<void> {
 	const { projectId, id } = review;
 	assertSelected(projectId);
 	await flushSave();
