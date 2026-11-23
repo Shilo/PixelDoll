@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import {
 	addMove,
+	type MoveSpec,
 	b64,
 	bodyMoveIssue,
 	keepableUnposed,
@@ -722,7 +723,7 @@ test('Skeleton retry keeps the exact authored start and omits stale or incompati
 	};
 	await expect(f.run(spec)).resolves.toMatchObject({ moveReview: 'idle' });
 	const draft = f.saved().moveReviews!.idle!;
-	const retry = (record = f.saved(), change: Partial<typeof spec> = {}) =>
+	const retry = (record = f.saved(), change: Partial<MoveSpec> = {}) =>
 		skeletonMoveReview(record, { ...draft.spec, ...change }, undefined, [], draft);
 	const offer = retry();
 	expect(offer?.review.startFrom).toEqual(spec.startFrom);
