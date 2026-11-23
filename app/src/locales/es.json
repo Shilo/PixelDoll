@@ -1565,6 +1565,7 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: hay que revisar los controles de calidad del objeto. No se inició ningún reintento de pago.",
 		"bodyQuality": "{move} {direction}: {reason}",
+		"bridgedJoints": "las articulaciones del fotograma de movimiento {frame} de {total} se dedujeron de los fotogramas vecinos",
 		"health": {
 			"clean": "Sin problemas",
 			"accepted": "Aceptado",

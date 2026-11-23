@@ -1516,6 +1516,7 @@
 	"studioModel": {
 		"itemQualityReview": "{name}：アイテムの品質チェック結果を確認してください。有料の再試行は開始していません。",
 		"bodyQuality": "{move}の{direction}向き：{reason}",
+		"bridgedJoints": "モーションフレーム {frame}/{total} の関節は前後のフレームから推定されました",
 		"health": {
 			"clean": "問題なし",
 			"accepted": "承認済み",

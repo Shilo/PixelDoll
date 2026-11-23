@@ -1516,6 +1516,7 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: 아이템 품질 검사 결과를 확인해야 해요. 유료 재시도는 시작되지 않았어요.",
 		"bodyQuality": "{move} {direction}: {reason}",
+		"bridgedJoints": "모션 프레임 {frame}/{total}의 관절은 앞뒤 프레임에서 추정했습니다",
 		"health": {
 			"clean": "정상",
 			"accepted": "수락됨",

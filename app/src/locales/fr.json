@@ -1565,6 +1565,7 @@
 	"studioModel": {
 		"itemQualityReview": "{name} : vérifiez les résultats des contrôles qualité de l’objet. Aucune nouvelle tentative payante n’a été lancée.",
 		"bodyQuality": "{move} {direction} : {reason}",
+		"bridgedJoints": "les articulations de l’image de mouvement {frame} sur {total} ont été déduites des images voisines",
 		"health": {
 			"clean": "Validé",
 			"accepted": "Accepté",

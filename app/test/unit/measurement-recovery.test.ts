@@ -840,6 +840,34 @@ test.each(['text', 'walk'] as const)(
 	}
 );
 
+test('a cached motion check that completed without joints is bridged and disclosed; a lost one is never bridged', async () => {
+	const f = await fixture('feet', 'text');
+	await f.finishOriginalChecks();
+	const check = f.records.get('motion-check-east-1')!;
+	check.response = { keypoints: [] };
+	await f.q.sync();
+	const note = 'idle/east: joints of motion frame 2 of 4 were inferred from its neighbors';
+	const keep = (await reviewMoveRecovery('rig-recover', f.spec)).keep!;
+	expect(keep.directions.find((d) => d.dir === 'east')?.warnings).toContain(note);
+	expect(keep.directions.find((d) => d.dir === 'west')?.warnings.join(' ')).not.toContain(
+		'inferred'
+	);
+	const calls = f.enqueue.mock.calls.length;
+	await addMove('rig-recover', keepConsent(f.spec, keep));
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
+	const saved = f.saved();
+	expect(saved.manifest.rig.animations[0].sources?.east?.motionBridged).toEqual([1]);
+	expect((saved.rigQa as { warnings: string[] }).warnings).toContain(note);
+	// A check that never completed is unknown, not a missing joint: nothing is inferred from it.
+	const g = await fixture('feet', 'text');
+	await g.finishOriginalChecks();
+	g.records.set('motion-check-east-1', { ...g.records.get('motion-check-east-1')!, state: 'lost' });
+	await g.q.sync();
+	const lost = await reviewMoveRecovery('rig-recover', g.spec);
+	expect(lost.keep).toBeUndefined();
+	expect(lost.unavailable).toContain('no valid completed joint checks');
+});
+
 test.each(['text', 'walk'] as const)(
 	'%s Keep refuses stale or missing motion cache without calls or publication',
 	async (route) => {

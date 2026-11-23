@@ -1571,6 +1571,7 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: revise os resultados das verificações de qualidade do item. Nenhuma nova tentativa paga foi iniciada.",
 		"bodyQuality": "{move} na direção {direction}: {reason}",
+		"bridgedJoints": "as articulações do quadro de movimento {frame} de {total} foram inferidas dos quadros vizinhos",
 		"health": {
 			"clean": "Sem problemas",
 			"accepted": "Aceito",

@@ -38,6 +38,7 @@ import ja from '../../src/locales/ja.json';
 import { displayError, displayNestedMessage, errorMessage } from '../../src/lib/i18n.ts';
 import { generationErrorMessage } from '../../src/studio/generationStatus.ts';
 import type { Gen } from '../../src/studio/state.svelte.ts';
+import { bodyQualityNote } from '../../src/studio/model.ts';
 // The i18n runtime needs the Svelte compiler; Japanese stands in for it here, as a key lookup with {name} variables.
 vi.mock('svelte-whisper', () => ({
 	getLocale: () => 'ja',
@@ -1228,6 +1229,19 @@ test('one interior motion frame without joints is bridged from its measured neig
 	expect(motionJoints([a, undefined, undefined, c])).toBeUndefined();
 });
 
+test('the inferred-joints note is shown in the reader’s language', () => {
+	const translate = ((key: string, vars: Record<string, unknown> = {}) =>
+		key === 'studioModel.bodyQuality'
+			? `${vars.move} ${vars.direction}: ${vars.reason}`
+			: `${key} ${vars.frame}/${vars.total}`) as Parameters<typeof bodyQualityNote>[1];
+	expect(
+		bodyQualityNote(
+			'idle/east: joints of motion frame 3 of 4 were inferred from its neighbors',
+			translate
+		)
+	).toBe('Idle east: studioModel.bridgedJoints 3/4');
+});
+
 test('a managed motion with one unmeasured interior frame still renders the body', async () => {
 	const f = await fixture(),
 		standing = (await projects.loadProject('rig-target')).project.images.values().next().value!,
@@ -1270,8 +1284,11 @@ test('a managed motion with one unmeasured interior frame still renders the body
 	expect(f.enqueue.mock.calls.map(([r]) => r.path)).toContain('/animate-with-skeleton-v3');
 	const source = f.saved().manifest.rig.animations[0].sources?.east;
 	expect(source?.motion).toBe('pixminimax:step softly');
-	// recorded as evidence with the clip: the third motion frame was bridged
+	// recorded as evidence with the clip: the third motion frame was bridged, and disclosed with its checks
 	expect(source?.motionBridged).toEqual([2]);
+	expect((f.saved().rigQa as { warnings: string[] }).warnings).toContain(
+		'idle/east: joints of motion frame 3 of 4 were inferred from its neighbors'
+	);
 });
 
 // Both managed routes drop one leading frame by position, so a Standing Fix frames replaced never stops them.

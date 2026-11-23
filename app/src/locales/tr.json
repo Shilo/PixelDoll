@@ -1565,6 +1565,7 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: Eşya kalite kontrollerinin incelenmesi gerekiyor. Ücretli yeniden deneme başlatılmadı.",
 		"bodyQuality": "{move} {direction}: {reason}",
+		"bridgedJoints": "{total} hareket karesinden {frame}. karenin eklemleri komşu karelerden çıkarıldı",
 		"health": {
 			"clean": "Sorunsuz",
 			"accepted": "Kabul edildi",

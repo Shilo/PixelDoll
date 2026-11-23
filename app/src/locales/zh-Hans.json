@@ -1516,6 +1516,7 @@
 	"studioModel": {
 		"itemQualityReview": "{name}：装备质量检查需要复核。未启动付费重试。",
 		"bodyQuality": "{move} {direction}：{reason}",
+		"bridgedJoints": "动作帧 {frame}/{total} 的关节根据相邻帧推断得出",
 		"health": {
 			"clean": "良好",
 			"accepted": "已接受",

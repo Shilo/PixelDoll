@@ -648,6 +648,8 @@ interface ClipJob {
 	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number; words: ViewWords };
 	/** Rows each motion frame was lifted by with the user's consent; disclosed with the clip's checks. */
 	lifts?: readonly number[];
+	/** Motion frames whose joints were inferred from their neighbors (motionJoints); disclosed with the clip's checks. */
+	bridged?: Bridged;
 	/** keepUnposed: frames without measured joints are kept (and fail their joint checks) instead of stopping the view. */
 	unposed?: boolean; /** The move and view in the user's words, for messages. */
 	words: ViewWords;
@@ -761,7 +763,8 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		j.native ? undefined : j.keypoints,
 		measured,
 		j.authored ? undefined : { dir: j.dir, rest: j.restKps },
-		j.lifts
+		j.lifts,
+		j.bridged
 	);
 	return {
 		frames,
@@ -780,7 +783,8 @@ const bodyClipQa = (
 	requested: Keypoint[][] | undefined,
 	measured: (Keypoint[] | undefined)[],
 	facing?: { dir: string; rest: Keypoint[] },
-	lifts?: readonly number[]
+	lifts?: readonly number[],
+	bridged?: Bridged
 ) => {
 	const qa = clipQa({
 		anim,
@@ -795,8 +799,14 @@ const bodyClipQa = (
 	const lifted = lifts?.filter(Boolean) ?? [];
 	if (lifted.length)
 		qa.warnings.push(liftNote(rest.w, Math.max(...lifted), lifted.length, lifts!.length));
+	for (const frame of bridged?.frames ?? []) qa.warnings.push(bridgeNote(frame, bridged!.of));
 	return qa;
 };
+/** Motion frames (0-based) whose joints were inferred from their measured neighbors, of `of` motion frames. */
+type Bridged = { frames: readonly number[]; of: number };
+/** The one inferred pose is always disclosed (studioModel.bridgedJoints reads this wording). */
+export const bridgeNote = (frame: number, of: number) =>
+	`joints of motion frame ${frame + 1} of ${of} were inferred from its neighbors`;
 /** The disclosure a body made from a lifted motion keeps with its checks (rigQa), in the words of the consent. */
 const liftNote = (size: number, px: number, frames: number, of: number) =>
 	`motion lifted to fit the ${size} px frame: feet rise up to ${px} px in ${frames} of ${of} frames`;
@@ -1863,6 +1873,7 @@ interface CachedBodyClip {
 	frames: Img[];
 	facing?: { dir: string; rest: Keypoint[] };
 	lifts?: readonly number[];
+	bridged?: Bridged;
 }
 /** An expected eligibility limit, distinct from a failed storage read or malformed PNG. */
 class RecoveryUnavailable extends LocalizedError {}
@@ -2060,7 +2071,16 @@ async function inspectKeptBody(
 				);
 			return {
 				...c,
-				qa: bodyClipQa(spec.id, c.rest, c.frames, c.keypoints, measured, c.facing, c.lifts)
+				qa: bodyClipQa(
+					spec.id,
+					c.rest,
+					c.frames,
+					c.keypoints,
+					measured,
+					c.facing,
+					c.lifts,
+					c.bridged
+				)
 			};
 		})
 	);
@@ -2209,7 +2229,7 @@ async function inspectMeasurementRecovery(
 				'Cached body reuse requires completed joint checks.',
 				'create.errors.cachedBodyReuseRequires'
 			);
-		let keypoints: Keypoint[][] | undefined;
+		let keypoints: Keypoint[][] | undefined, bridged: Bridged | undefined;
 		const authored = isAuthoredAction(spec.action);
 		if (model === 'skeleton-v3' && authored)
 			keypoints = authoredPoses(
@@ -2244,11 +2264,21 @@ async function inspectMeasurementRecovery(
 				'motion',
 				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d)
 			);
-			const measured = motionJoints(
-				await Promise.all(
-					frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
-				)
+			// Only a check that completed with invalid joints may be bridged; a lost, stopped or unsent one is unknown.
+			const checks = await Promise.all(
+				frames.map(async (frame) => {
+					const measurement = await context.measurement(frame);
+					return {
+						done: jobs.some((r) => r.requestHash === measurement.hash && r.state === 'done'),
+						points: cachedJoints(jobs, measurement, frame)
+					};
+				})
 			);
+			const measured = checks.every((check) => check.done)
+				? motionJoints(checks.map((check) => check.points))
+				: undefined;
+			const gaps = checks.flatMap((check, i) => (hasAll(check.points) ? [] : [i]));
+			if (gaps.length) bridged = { frames: gaps, of: frames.length };
 			if (!measured)
 				throw new RecoveryUnavailable(
 					`${d}: the original motion has no valid completed joint checks for every frame. No request was made.`,
@@ -2333,6 +2363,7 @@ async function inspectMeasurementRecovery(
 					keypoints,
 					frames,
 					...(spec.motionLift?.[d] ? { lifts: spec.motionLift[d] } : {}),
+					...(bridged ? { bridged } : {}),
 					...(authored && model === 'skeleton-v3'
 						? {}
 						: { facing: { dir: d, rest: rest.keypoints } })
@@ -3565,6 +3596,9 @@ async function bodyClip(
 			action: bodyAction(spec),
 			paletteRepair: !!spec.bodyPaletteRepair,
 			lifts: spec.motionLift?.[d],
+			...(motionBridged
+				? { bridged: { frames: motionBridged, of: moveMotionFrames(m, spec) } }
+				: {}),
 			unposed: !!spec.keepUnposed,
 			words: viewWords(m, spec.id, d)
 		})
