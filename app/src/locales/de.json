@@ -908,7 +908,9 @@
 		"still": "Standpose",
 		"inspect": "Prüfen",
 		"customization": "Anpassen",
-		"customizationPanels": "Bereiche zum Anpassen"
+		"customizationPanels": "Bereiche zum Anpassen",
+		"tabWorkRunning": "Hier läuft gerade etwas",
+		"tabWorkAttention": "Hier braucht etwas deine Aufmerksamkeit"
 	},
 	"worldStage": {
 		"groundUnavailable": "Die fortlaufende Bodendarstellung ist nicht verfügbar. Die statische Szene wird angezeigt.",

@@ -908,7 +908,9 @@
 		"still": "Immobile",
 		"inspect": "Inspecter",
 		"customization": "Personnalisation",
-		"customizationPanels": "Panneaux de personnalisation"
+		"customizationPanels": "Panneaux de personnalisation",
+		"tabWorkRunning": "Un travail est en cours ici",
+		"tabWorkAttention": "Un travail ici demande votre attention"
 	},
 	"worldStage": {
 		"groundUnavailable": "Le rendu du sol en temps réel est indisponible. La scène statique est affichée.",

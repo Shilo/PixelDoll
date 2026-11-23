@@ -908,7 +908,9 @@
 		"still": "Sabit",
 		"inspect": "İnceleyin",
 		"customization": "Özelleştirme",
-		"customizationPanels": "Özelleştirme panelleri"
+		"customizationPanels": "Özelleştirme panelleri",
+		"tabWorkRunning": "Burada süren bir iş var",
+		"tabWorkAttention": "Burada ilgilenmeniz gereken bir iş var"
 	},
 	"worldStage": {
 		"groundUnavailable": "Zemin gerçek zamanlı olarak çizilemiyor. Sabit sahne gösteriliyor.",
