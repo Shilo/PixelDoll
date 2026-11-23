@@ -2252,7 +2252,7 @@
 			"savedEquipmentRecoveryNeeds": "A recuperação de equipamento salvo requer apenas uma animação existente e seu equipamento. Nenhuma geração foi solicitada.",
 			"anchoredEquipmentGenerationRequires": "A geração de equipamento com referência exige uma animação existente e os itens salvos nas poses em pé. Nenhuma geração foi solicitada.",
 			"moveItemMissingStored": "Faltam articulações salvas ou referências da pose em pé nesta animação ou neste item. Configure as poses antes de gerar equipamentos. Nenhuma geração foi solicitada.",
-			"moveKeptUnposed": "Este movimento foi mantido sem poses em uma vista escolhida. Faça o movimento de novo nela antes de ajustar o equipamento. Nenhuma geração foi solicitada.",
+			"moveKeptUnposed": "{move} na direção {direction} foi mantido sem poses. Faça essa vista de novo antes de ajustar o equipamento nela. Nenhuma geração foi solicitada.",
 			"setUpRigFirst": "Configure o rig de poses deste personagem antes de adicionar animações.",
 			"newMoveNeedsEvery": "Uma nova animação precisa de todas as direções com arte própria.",
 			"partialRepairMustKeep": "Uma correção parcial precisa manter a quantidade de quadros existente.",

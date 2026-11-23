@@ -2179,7 +2179,7 @@
 			"savedEquipmentRecoveryNeeds": "Pemulihan perlengkapan tersimpan hanya memerlukan animasi yang sudah ada dan perlengkapannya. Tidak ada generasi yang diminta.",
 			"anchoredEquipmentGenerationRequires": "Pembuatan perlengkapan berbasis acuan memerlukan animasi yang sudah ada dan item pose berdiri yang tersimpan. Tidak ada generasi yang diminta.",
 			"moveItemMissingStored": "Data sendi tersimpan atau referensi berdiri untuk animasi atau item ini tidak lengkap. Siapkan posenya sebelum membuat perlengkapan. Tidak ada generasi yang diminta.",
-			"moveKeptUnposed": "Gerakan ini disimpan tanpa pose pada tampilan yang dipilih. Buat ulang gerakannya di sana sebelum memasang perlengkapan. Tidak ada generasi yang diminta.",
+			"moveKeptUnposed": "{move} {direction} disimpan tanpa pose. Buat ulang tampilan itu sebelum memasang perlengkapan di sana. Tidak ada generasi yang diminta.",
 			"setUpRigFirst": "Siapkan rig pose karakter ini sebelum menambahkan animasi.",
 			"newMoveNeedsEvery": "Animasi baru memerlukan semua arah yang digambar tersendiri.",
 			"partialRepairMustKeep": "Perbaikan sebagian harus mempertahankan jumlah frame yang ada.",

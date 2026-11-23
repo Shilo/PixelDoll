@@ -10,6 +10,7 @@
 	import { displayDirection } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
 	import { bodyQualityNote, thumbCell } from './model.ts';
+	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { croppedBacking, croppedThumbnail } from './experience/thumbnails.svelte.ts';
 	import {
 		itemMoveOffer,
@@ -120,7 +121,11 @@
 				);
 				const offer =
 					spec && dirs?.length
-						? itemMoveOffer(project.manifest, [{ ...spec, dirs, reviewedMoveItems: true }])
+						? itemMoveOffer(
+								project.manifest,
+								[{ ...spec, dirs, reviewedMoveItems: true }],
+								setupRedoMoves(store.exportRecord)
+							)
 						: null;
 				const thumb = thumbCell(project, item);
 				return { item, image: thumb && croppedThumbnail(thumb), offer };

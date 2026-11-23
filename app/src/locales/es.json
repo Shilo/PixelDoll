@@ -2243,7 +2243,7 @@
 			"savedEquipmentRecoveryNeeds": "La recuperación del equipamiento guardado solo necesita una animación existente y su equipamiento. No se solicitó ninguna generación.",
 			"anchoredEquipmentGenerationRequires": "La generación de equipamiento anclada requiere una animación existente y sus objetos de pie guardados. No se solicitó ninguna generación.",
 			"moveItemMissingStored": "A esta animación u objeto le faltan articulaciones o referencias de pie guardadas. Configura sus poses antes de generar equipamiento. No se solicitó ninguna generación.",
-			"moveKeptUnposed": "Este movimiento se conservó sin poses en una vista elegida. Vuelve a crear el movimiento allí antes de ajustar el equipo. No se solicitó ninguna generación.",
+			"moveKeptUnposed": "{move} {direction} se conservó sin poses. Vuelve a crear esa vista antes de ajustar el equipo en ella. No se solicitó ninguna generación.",
 			"setUpRigFirst": "Configura el rig de pose de este personaje antes de agregar animaciones.",
 			"newMoveNeedsEvery": "Una animación nueva necesita todas las direcciones dibujadas por separado.",
 			"partialRepairMustKeep": "Una reparación parcial debe conservar la cantidad de fotogramas existente.",

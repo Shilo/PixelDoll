@@ -40,7 +40,7 @@ import { displayError, displayNestedMessage, errorMessage } from '../../src/lib/
 import { generationErrorMessage } from '../../src/studio/generationStatus.ts';
 import type { Gen } from '../../src/studio/state.svelte.ts';
 import { bodyQualityNote } from '../../src/studio/model.ts';
-import { redoAfterSave, rigReady, unposedView } from '../../src/lib/rig/setup.ts';
+import { redoAfterSave, rigReady, setupRedoMoves, unposedView } from '../../src/lib/rig/setup.ts';
 // The i18n runtime needs the Svelte compiler; Japanese stands in for it here, as a key lookup with {name} variables.
 vi.mock('svelte-whisper', () => ({
 	getLocale: () => 'ja',
@@ -1700,10 +1700,28 @@ test('one replaced view kept without poses loses only its own poses and fitted e
 	}
 	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['idle/east']);
 	expect(rigReady(saved)).toBe(true);
-	// Equipment waits there with a plain next step: make the move again, not set up its poses.
-	await expect(
-		f.run({ items: ['hat'], itemsOnly: true, replace: undefined, keepUnposed: undefined })
-	).rejects.toThrow('Make the move again there');
+	// Equipment waits there with a plain next step naming the move and view: make it again, not set up its poses.
+	const stopped = (await f
+		.run({ items: ['hat'], itemsOnly: true, replace: undefined, keepUnposed: undefined })
+		.catch((error: unknown) => error)) as Error & { translation: { vars: unknown } };
+	expect(stopped.message).toContain('idle east was kept without poses. Make that view again');
+	expect(stopped.translation.vars).toMatchObject({
+		move: { key: 'moveNames.idle' },
+		direction: { key: expect.any(String) }
+	});
+	const fit = {
+		id: 'idle',
+		frames: 4,
+		items: ['hat'],
+		dirs: ['east' as const],
+		itemsOnly: true as const,
+		seed: 1
+	};
+	expect(() => reviewItemMove(saved.manifest, fit, setupRedoMoves(saved))).toThrow(
+		'idle east was kept without poses'
+	);
+	// Without the record's list (an import never set up), the generic setup step stays.
+	expect(() => reviewItemMove(saved.manifest, fit)).toThrow('Set up its poses');
 });
 
 test('redoing one view of a move kept without poses leaves the rest of the rig ready', async () => {
