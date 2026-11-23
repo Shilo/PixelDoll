@@ -9,18 +9,14 @@
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import ReferenceField from './ReferenceField.svelte';
 	import TierNotice from './TierNotice.svelte';
+	import PoseIssues from './PoseIssues.svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import { openingCreationSettings } from './creationSettings.ts';
-	import {
-		itemNameFrom,
-		mirroredHandsNote,
-		namesOffHandItem,
-		plainReasonMessage
-	} from './model.ts';
+	import { itemNameFrom, mirroredHandsNote, namesOffHandItem } from './model.ts';
 	import {
 		baseClothesNote,
 		categories,
@@ -315,14 +311,7 @@ ${name}` !== typedAtStart || reference !== draft?.reference
 			minimumTier={plan?.minimumTier ?? 0}
 			feature={t('newItem.feature')}
 		/>
-		{#if plan?.poseIssues.length}<div class="notice warn small">
-				<p>{t('newItem.poseIssues')}</p>
-				<ul>
-					{#each plan.poseIssues as issue (issue)}<li>
-							{displayMessage(plainReasonMessage(issue))}
-						</li>{/each}
-				</ul>
-			</div>{/if}
+		<PoseIssues issues={plan?.poseIssues ?? []} />
 		{#if rec && !rigReady(rec)}<p class="notice small">
 				<TriangleAlert size={16} /><span>{t('newItem.needsSetup')}</span><button
 					class="bu-action btn small"

@@ -51,6 +51,13 @@ test('a passing posed move does not list the stricter standing key-outside limit
 		vars: { move: 'walking', direction: 'south', frame: 2 }
 	});
 	expect(plainReasonMessage('Unknown upstream diagnosis')).toBe('Unknown upstream diagnosis');
+	const joints = qa(
+		{ 'walk/south': { jointReviewFrames: 1, status: 'warn' } },
+		{ 'walk/south/0': 'posed' }
+	);
+	expect(qaReasonMessages({ ...joints, jointReviewFrames: 1 }, false, false)).toMatchObject([
+		{ key: 'studioModel.qa.jointReview' }
+	]);
 });
 
 test('key outside is judged against the limit the clip was gated with', () => {

@@ -1561,6 +1561,7 @@
 			"heldLoop": "Bentuk atau sudut item yang dipegang berubah saat animasi berulang",
 			"registrationShift": "PixelLab mengembalikan tepi transparan dan mungkin menggeser lembar gambar. Periksa apakah item sejajar di setiap frame.",
 			"suspiciousJoints": "Sendi terlihat tidak biasa di {move} {direction} frame {frame}, jadi item mungkin tidak pas di sana. Periksa pegangan atau posisinya.",
+			"jointReview": "Beberapa frame dipasang pada sendi yang terlihat tidak biasa. Periksa pegangan atau posisinya.",
 			"bodyUnmeasured": "Item ini menutupi hampir seluruh tubuh sehingga tidak dapat diperiksa. Pastikan ini bukan tubuh yang digambar ulang"
 		},
 		"anotherCharacter": "karakter lain",
@@ -2674,6 +2675,8 @@
 			"poseFramesMalformed": "PixelLab mengembalikan frame yang kurang atau rusak untuk {item}. Tidak ada percobaan ulang otomatis.",
 			"poseFrameSize": "PixelLab mengembalikan frame dengan ukuran yang salah untuk {item}. Tidak ada percobaan ulang otomatis.",
 			"gridStopped": "Permintaan perbaikan {item} tidak selesai ({state}). Permintaan itu tidak dikirim ulang.",
+			"poseStopped": "Permintaan pose {item} tidak selesai ({state}). Permintaan itu tidak dikirim ulang.",
+			"requestLost": "Permintaan {item} hilang, jadi mungkin sudah berjalan dan ditagih. Permintaan itu tidak dikirim ulang.",
 			"noUsableFrames": "PixelLab tidak mengembalikan frame yang bisa dipakai untuk {item}.",
 			"layersMismatch": "Lapisan perlengkapan tidak cocok dengan slot perlengkapan ini. Tidak ada generasi yang diminta.",
 			"reviewChanged": "Item ini atau hasil pemeriksaannya berubah. Buka kembali sebelum menerima gambar saat ini.",

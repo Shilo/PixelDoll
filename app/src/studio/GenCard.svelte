@@ -48,6 +48,7 @@
 		settlingGen,
 		retryGen,
 		wearDraft,
+		readGenReview,
 		type Gen
 	} from './state.svelte.ts';
 	import PaidReview from './PaidReview.svelte';
@@ -395,7 +396,15 @@
 		{/if}
 
 		{#if g.phase === 'review'}
-			{#if !res?.qa}
+			{#if !res?.qa && store.resultsUnread[g.draft.spec.id]}
+				<p class="notice warn small">{t('paidReview.loadFailed')}</p>
+				<button
+					class="bu-action"
+					type="button"
+					data-variant="quiet"
+					onclick={() => void readGenReview(g)}>{t('common.tryAgain')}</button
+				>
+			{:else if !res?.qa}
 				<p class="muted small">{t('genCard.checking')}</p>
 			{:else if reasons.length || warns.length}
 				<ul class="reasons small">
@@ -526,8 +535,14 @@
 			>
 				{t('paidReview.loadFailed')}
 			</p>
-			<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
-				>{t('common.tryAgain')}</button
+			<button
+				class="bu-action"
+				type="button"
+				data-variant="quiet"
+				onclick={() => {
+					paidReads++;
+					if (!res) void readGenReview(g);
+				}}>{t('common.tryAgain')}</button
 			>{/if}
 		{#if g.phase !== 'running'}<TierNotice
 				id={tierNoticeId}

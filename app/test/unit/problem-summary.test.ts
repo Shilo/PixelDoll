@@ -42,7 +42,9 @@ test('translated failures are grouped by an explicit map of their catalog codes,
 	expect(kind(coded('itemRoute.errors.noUsableFrames'))).toBe('empty');
 	expect(kind(coded('itemRoute.errors.gridStopped'))).toBe('stopped');
 	expect(kind(coded('itemRoute.errors.poseFramesMalformed'))).toBe('frame-count');
-	expect(kind(coded('itemRoute.errors.poseFrameSize'))).toBe('stated');
+	expect(kind(coded('itemRoute.errors.poseFrameSize'))).toBe('frame-count');
+	expect(kind(coded('itemRoute.errors.poseStopped'))).toBe('stopped');
+	expect(kind(coded('itemRoute.errors.requestLost'))).toBe('uncertain');
 	expect(kind(coded('setup.errors.jointsMissing'))).toBe('joints');
 	expect(kind(coded('create.errors.moveMissingInvalidStored'))).toBe('poses');
 	expect(kind(coded('itemRoute.errors.skeletonUnavailable'))).toBe('method');

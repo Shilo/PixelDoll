@@ -1617,6 +1617,7 @@
 			"heldLoop": "O item de mão muda de forma ou ângulo quando a animação volta ao início",
 			"registrationShift": "O PixelLab retornou uma borda transparente e pode ter deslocado a folha. Confira se o item se alinha em todos os quadros.",
 			"suspiciousJoints": "As articulações parecem estranhas em {move} {direction}, quadro {frame}, então o item pode não se encaixar ali. Confira a pegada ou o alinhamento.",
+			"jointReview": "Alguns quadros foram ajustados a articulações que parecem estranhas. Confira a pegada ou o alinhamento.",
 			"bodyUnmeasured": "O item cobre quase todo o corpo, então não pôde ser verificado. Confira se não é um corpo redesenhado"
 		},
 		"anotherCharacter": "outro personagem",
@@ -2755,6 +2756,8 @@
 			"poseFramesMalformed": "O PixelLab retornou quadros faltando ou com defeito para {item}. Nenhuma nova tentativa automática foi feita.",
 			"poseFrameSize": "O PixelLab retornou quadros do tamanho errado para {item}. Nenhuma nova tentativa automática foi feita.",
 			"gridStopped": "A solicitação de reparo de {item} não terminou ({state}). Ela não foi enviada de novo.",
+			"poseStopped": "A solicitação de pose de {item} não terminou ({state}). Ela não foi enviada de novo.",
+			"requestLost": "A solicitação de {item} se perdeu, então pode ter sido executada e cobrada. Ela não foi enviada de novo.",
 			"noUsableFrames": "O PixelLab não retornou quadros utilizáveis para {item}.",
 			"layersMismatch": "As camadas do equipamento não correspondem a este espaço. Nenhuma geração foi solicitada.",
 			"reviewChanged": "Este item ou suas verificações mudaram. Abra-o novamente antes de aceitar a arte atual.",

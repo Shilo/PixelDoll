@@ -1611,6 +1611,7 @@
 			"heldLoop": "The held item changes shape or angle when a move loops",
 			"registrationShift": "PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame.",
 			"suspiciousJoints": "The joints look unusual in {move} {direction} frame {frame}, so the item may not fit there. Check the grip or alignment.",
+			"jointReview": "Some frames were fitted on joints that look unusual. Check the grip or alignment.",
 			"bodyUnmeasured": "The item covers almost all of the body, so it could not be checked; make sure it is not a redrawn body"
 		},
 		"anotherCharacter": "another character",
@@ -2746,6 +2747,8 @@
 			"poseFramesMalformed": "PixelLab returned missing or malformed frames for {item}. No automatic retry was made.",
 			"poseFrameSize": "PixelLab returned frames of the wrong size for {item}. No automatic retry was made.",
 			"gridStopped": "The {item} repair request did not finish ({state}). It was not sent again.",
+			"poseStopped": "The {item} posing request did not finish ({state}). It was not sent again.",
+			"requestLost": "The {item} request was lost, so it may have run and charged. It was not sent again.",
 			"noUsableFrames": "PixelLab returned no usable frames for {item}.",
 			"layersMismatch": "Equipment layers do not match this slot. No generation was requested.",
 			"reviewChanged": "This item or its checks changed. Reopen it before accepting its current artwork.",

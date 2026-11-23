@@ -118,6 +118,7 @@ import {
 	padOf,
 	planItem,
 	poseFitIssues,
+	suspiciousPoseCells,
 	postProcess,
 	restKey,
 	unrotate,
@@ -634,6 +635,13 @@ const gridable = (spec: { slot: string; slotConfig?: Slot; key?: ItemSpec['key']
 	!!spec.key && spec.key !== 'none' && specSlot(spec).class !== 'held';
 
 /** A frame this draft saved earlier; a pruned or lost one says so instead of failing on an undefined blob. */
+const savedFrameMissing = (error: unknown) =>
+	error instanceof LocalizedError && error.translation.key === 'itemRoute.errors.savedFrameMissing';
+/** A returned frame that cannot be decoded is that frame's failure; missing bytes stay a storage error for the whole item. */
+const unreadable = (error: unknown) => {
+	if (savedFrameMissing(error)) throw error;
+	return errorText(error);
+};
 async function storedFrame(sha: string): Promise<Blob> {
 	const blob = await db.getBlob(sha);
 	if (!blob)
@@ -1048,17 +1056,21 @@ export async function runItem(
 				}
 			}
 			const gates = [poseEarly(early, 0, r0)];
-			const anchor = identifiedOutputs(0, d.calls[0], r0)?.[0];
-			const anchorImage = anchor && (await img(anchor.sha));
+			// Re-rolling call 1 drops every later call (rerollCall), so nothing after it is bought unless each of its requested
+			// frames is identified and of the item's size, not only the anchor frame.
+			const designOuts = identifiedOutputs(0, d.calls[0], r0)?.slice(0, d.calls[0].cells.length);
 			const { cell } = ctx.rec.manifest.rig;
 			const pad = padOf(specSlot(d.spec), d.spec.method, cell);
-			const anchorReady = anchorImage?.w === cell.w + 2 * pad && anchorImage.h === cell.h + 2 * pad;
-			const anchoredCallReady = (c: CallState, k: number) =>
-				!!c.recId || !!c.reference || !!c.concept || !anchored(k, c.kind) || anchorReady;
+			const designIntact =
+				!!designOuts &&
+				(await Promise.all(designOuts.map((o) => img(o.sha)))).every(
+					(im) => im.w === cell.w + 2 * pad && im.h === cell.h + 2 * pad
+				);
+			const anchoredCallReady = (c: CallState) => !!c.recId || designIntact;
 			await Promise.all(
 				d.calls.slice(1, nd).map((c, i) => {
 					const k = i + 1;
-					if (!anchoredCallReady(c, k)) return;
+					if (!anchoredCallReady(c)) return;
 					return call(k).then((r) => {
 						gates.push(poseEarly(early, k, r));
 						if (r.state !== 'done') d.log.push(callStopped(k + 1, r));
@@ -1092,7 +1104,7 @@ export async function runItem(
 				d.calls.slice(nd).map(async (c, i) => {
 					const k = i + nd;
 					if (!c.recId && !designReady) return true;
-					if (!anchoredCallReady(c, k)) return true;
+					if (!anchoredCallReady(c)) return true;
 					if (c.kind === 'pose' || c.kind === 'grid') {
 						const dir = c.cells[0].split('/')[1] as DirectionName;
 						if (!c.recId && !readyDesigns.has(restKey(dir))) return true;
@@ -1264,7 +1276,10 @@ export async function evaluateItem(
 				g1.set(k, `G1 ${(error as Error).message}`);
 				continue;
 			}
-			const g = await img(outputs[0].sha);
+			const g = await img(outputs[0].sha).catch((error: unknown) => {
+				g1.set(k, `G1 repair grid unreadable: ${unreadable(error)}`);
+			});
+			if (!g) continue;
 			if (g.w !== masks.size.width || g.h !== masks.size.height) {
 				g1.set(k, 'G1 repair grid does not match its submitted frame layout');
 				continue;
@@ -1302,8 +1317,14 @@ export async function evaluateItem(
 			).slice(0, c.cells.length);
 		}
 		// Labels prove each frame's cell, so a malformed frame drops only itself; the call stays G1 for review and re-roll.
+		// A frame that cannot be decoded is named with its own reason, like a wrong size. A standing frame it hides still
+		// blocks keeping the draft (availableGaps).
 		for (const [i, key] of c.cells.entries()) {
-			const im = await img(o[i].sha);
+			const im = await img(o[i].sha).catch((error: unknown) => {
+				const why = `G1 frame ${key} unreadable: ${unreadable(error)}`;
+				g1.set(k, [g1.get(k), why].filter(Boolean).join('; '));
+			});
+			if (!im) continue;
 			if (im.w !== W || im.h !== H) {
 				g1.set(k, `G1 output ${im.w}x${im.h}`);
 				continue;
@@ -1460,14 +1481,16 @@ export async function evaluateItem(
 				d.spec.prompt
 			)
 		: null;
-	const fitIssues = poseFitIssues(
-		rig,
-		d.calls.filter((c) => recOf(c.recId)?.state === 'done')
-	);
-	if (qa && (hiddenWarnings.length || fitIssues.length)) {
-		qa.warnings.push(...hiddenWarnings, ...fitIssues);
+	if (qa && hiddenWarnings.length) {
+		qa.warnings.push(...hiddenWarnings);
 		if (qa.qa.status === 'pass') qa.qa.status = 'warn';
 	}
+	if (qa)
+		discloseJoints(
+			qa,
+			rig,
+			d.calls.filter((c) => recOf(c.recId)?.state === 'done')
+		);
 	// Dressed item pixels can land before any target animation cell exists. Expose them without waiting for pose coverage.
 	const thumbnail = (
 		kfCells.find((c) => c.area && c.key.split('/')[1] === 'south') ?? kfCells.find((c) => c.area)
@@ -1690,9 +1713,16 @@ export async function acceptItem(
 	if (!r.qa) throw new Error(`${d.spec.id}: not all calls are done`);
 	const pad = padOf(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method, rig.cell);
 	const { provenance, index } = draftProvenance(d);
-	const qa = acceptQa(r.qa.qa);
-	for (const cell of Object.values(qa.cells))
-		if (cell.provenance !== undefined) cell.provenance = index.get(cell.provenance);
+	// Fresh cells, remapped from the review's own call numbers: the review stays intact for a Keep retried after a failed save.
+	const qa = {
+		...acceptQa(r.qa.qa),
+		cells: Object.fromEntries(
+			Object.entries(r.qa.qa.cells).map(([key, cell]) => [
+				key,
+				cell.provenance === undefined ? cell : { ...cell, provenance: index.get(cell.provenance) }
+			])
+		) as typeof r.qa.qa.cells
+	};
 	// Missing frames are not a passing check.
 	if (available) qa.status = 'accepted';
 	const dress = d.calls[0].kind === 'dress',
@@ -1948,6 +1978,39 @@ export class PartialMoveError extends Error {
 	}
 }
 
+/** Suspicious imported joints never stop a fit on valid coordinates. They are named for review and counted on the clips
+ *  they were posed in, so saved checks keep them until those frames are replaced. */
+function discloseJoints(
+	q: QaResult,
+	rig: Rig,
+	calls: readonly { kind?: CallKind; cells: string[] }[]
+) {
+	const cells = suspiciousPoseCells(rig, calls).filter((key) => q.qa.cells[key as CellKey]);
+	if (!cells.length) return;
+	q.warnings.push(...poseFitIssues(rig, calls));
+	for (const key of cells) {
+		const clip = q.qa.clips[key.split('/').slice(0, 2).join('/')];
+		if (!clip) continue;
+		clip.jointReviewFrames = (clip.jointReviewFrames ?? 0) + 1;
+		if (clip.status === 'pass') clip.status = 'warn';
+	}
+	q.qa.jointReviewFrames = (q.qa.jointReviewFrames ?? 0) + cells.length;
+	if (q.qa.status === 'pass') q.qa.status = 'warn';
+}
+/** A paid item request that ended without results; a lost one may still have run and charged. */
+function requestStopped(
+	item: Item,
+	r: JobRec,
+	text: string,
+	key: 'itemRoute.errors.poseStopped' | 'itemRoute.errors.gridStopped'
+) {
+	return r.state === 'lost'
+		? new LocalizedError(text, 'itemRoute.errors.requestLost', { item: item.name })
+		: new LocalizedError(text, key, {
+				item: item.name,
+				state: message(`activity.state.${r.state}`)
+			});
+}
 export const SAVED_FRAMES_UNAVAILABLE =
 	'Completed frames matching the current body and equipment are unavailable. No generation was requested.';
 export const INVALID_ITEM_GRID = 'PixelLab returned an unusable item grid.';
@@ -2008,7 +2071,7 @@ export async function poseItemClip(
 	const { keys: k0, cuts, hidden } = await dressedKeys(ctx, item, pad);
 	const bodies = referenceBodies(rig, ctx.project.images);
 	Object.assign(keys, k0);
-	const fitIssues: string[] = [];
+	const posed: { kind: 'pose'; cells: string[] }[] = [];
 	const perDir = await Promise.allSettled(
 		dirs.map(async (dir, k) => {
 			const allPoses = clipKeypoints(rig, anim, dir),
@@ -2016,125 +2079,152 @@ export async function poseItemClip(
 			if (!allPoses || !rest) throw new Error(`${anim}/${dir}: no stored keypoints`);
 			const collected: CellOut[] = [],
 				prov: Provenance[] = [];
-			for (const { start, count } of poseBatches(allPoses.length)) {
-				const poses = allPoses.slice(start, start + count),
-					cells = poses.map((_, i) => `${anim}/${dir}/${start + i}`);
-				const seed = seedOf(
-					`${item.id}/${anim}/${dir}/0${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`
-				);
-				if (
-					frozenGrid(
-						rig,
-						{
-							slot: item.slot,
-							slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
-							key
-						},
-						cells
-					)
-				) {
-					const g = await gridItemClip(
-						ctx,
-						item,
+			const batches = poseBatches(allPoses.length);
+			for (const [b, { start, count }] of batches.entries()) {
+				try {
+					const poses = allPoses.slice(start, start + count),
+						cells = poses.map((_, i) => `${anim}/${dir}/${start + i}`);
+					const seed = seedOf(
+						`${item.id}/${anim}/${dir}/0${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`
+					);
+					if (
+						frozenGrid(
+							rig,
+							{
+								slot: item.slot,
+								slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
+								key
+							},
+							cells
+						)
+					) {
+						const g = await gridItemClip(
+							ctx,
+							item,
+							anim,
+							dir,
+							k,
+							keys,
+							cuts,
+							seed,
+							cells,
+							activityScope,
+							savedOnly,
+							undefined,
+							title
+						);
+						if ('blocked' in g)
+							throw new Error(
+								`The planned frozen-frame request is unavailable: ${g.blocked}. Existing artwork was kept.`
+							);
+						onCall();
+						prov.push(g.prov);
+						collected.push(...g.cells);
+						continue;
+					}
+					posed.push({ kind: 'pose', cells });
+					const req = itemRoute.pose({
+						keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)),
+						rest,
+						poses,
+						item: item.prompt,
+						slot: requireSlot(ctx.rec.manifest, item.slot),
+						key,
 						anim,
 						dir,
-						k,
-						keys,
-						cuts,
 						seed,
-						cells,
-						activityScope,
-						savedOnly,
-						undefined,
-						title
-					);
-					if ('blocked' in g)
-						throw new Error(
-							`The planned frozen-frame request is unavailable: ${g.blocked}. Existing artwork was kept.`
-						);
-					onCall();
-					prov.push(g.prov);
-					collected.push(...g.cells);
-					continue;
-				}
-				fitIssues.push(...poseFitIssues(rig, [{ kind: 'pose', cells }]));
-				const req = itemRoute.pose({
-					keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)),
-					rest,
-					poses,
-					item: item.prompt,
-					slot: requireSlot(ctx.rec.manifest, item.slot),
-					key,
-					anim,
-					dir,
-					seed,
-					cell: rig.cell,
-					pad,
-					view: rig.view
-				});
-				const rec = await submitOrSaved(
-					req,
-					{
-						label: `pose ${item.name} · ${anim} ${dir}`,
-						...(title ? { title: title(anim, dir) } : {}),
-						tag: 'studio-move',
-						activityScope,
-						minimumTier
-					},
-					savedOnly
-				);
-				const r = terminal(rec) ? rec : await settled(rec.id);
-				onCall();
-				if (r.state !== 'done')
-					throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
-				const outputs = outputsOf(r);
-				if (outputs.length !== Math.max(3, cells.length))
-					throw new LocalizedError(
-						`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames. No automatic retry was made.`,
-						'itemRoute.errors.poseFramesMalformed',
-						{ item: item.name }
-					);
-				const outs = unrotate(
-					outputs,
-					f0Last(requireSlot(ctx.rec.manifest, item.slot), rest, paddedPoses(poses), rig.cell)
-				).slice(0, cells.length);
-				const images = await Promise.all(outs.map((o) => img(o.sha)));
-				if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad))
-					throw new LocalizedError(
-						`${item.name} ${anim} ${dir}: PixelLab returned the wrong frame size. No automatic retry was made.`,
-						'itemRoute.errors.poseFrameSize',
-						{ item: item.name }
-					);
-				const candidate = cells.map((c, i) =>
-					extractCell({
-						key: c,
-						call: k,
-						base: padImg(baseCell(ctx, c), pad),
-						out: images[i],
-						route: key,
-						band: bandOf(
-							requireSlot(ctx.rec.manifest, item.slot),
-							pad ? undefined : skelOf(ctx, c),
-							rig.cell.h + 2 * pad
-						),
-						posed: true,
-						clip: slot.band,
-						held: slot.class === 'held',
+						cell: rig.cell,
 						pad,
-						cut: cutFor(ctx, item.slot, c, true, cuts)
-					})
-				);
-				postProcess(rig, slot, candidate, keys, pad);
-				prov.push(toProv(r, { cells, seed, rerolls: 0, old: [] }));
-				collected.push(...candidate);
+						view: rig.view
+					});
+					const rec = await submitOrSaved(
+						req,
+						{
+							label: `pose ${item.name} · ${anim} ${dir}`,
+							...(title ? { title: title(anim, dir) } : {}),
+							tag: 'studio-move',
+							activityScope,
+							minimumTier
+						},
+						savedOnly
+					);
+					const r = terminal(rec) ? rec : await settled(rec.id);
+					onCall();
+					if (r.state !== 'done')
+						throw requestStopped(
+							item,
+							r,
+							`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`,
+							'itemRoute.errors.poseStopped'
+						);
+					const outputs = outputsOf(r);
+					if (outputs.length !== Math.max(3, cells.length))
+						throw new LocalizedError(
+							`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames. No automatic retry was made.`,
+							'itemRoute.errors.poseFramesMalformed',
+							{ item: item.name }
+						);
+					const outs = unrotate(
+						outputs,
+						f0Last(requireSlot(ctx.rec.manifest, item.slot), rest, paddedPoses(poses), rig.cell)
+					).slice(0, cells.length);
+					const images = await Promise.all(outs.map((o) => img(o.sha)));
+					if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad))
+						throw new LocalizedError(
+							`${item.name} ${anim} ${dir}: PixelLab returned the wrong frame size. No automatic retry was made.`,
+							'itemRoute.errors.poseFrameSize',
+							{ item: item.name }
+						);
+					const candidate = cells.map((c, i) =>
+						extractCell({
+							key: c,
+							call: k,
+							base: padImg(baseCell(ctx, c), pad),
+							out: images[i],
+							route: key,
+							band: bandOf(
+								requireSlot(ctx.rec.manifest, item.slot),
+								pad ? undefined : skelOf(ctx, c),
+								rig.cell.h + 2 * pad
+							),
+							posed: true,
+							clip: slot.band,
+							held: slot.class === 'held',
+							pad,
+							cut: cutFor(ctx, item.slot, c, true, cuts)
+						})
+					);
+					postProcess(rig, slot, candidate, keys, pad);
+					prov.push(toProv(r, { cells, seed, rerolls: 0, old: [] }));
+					collected.push(...candidate);
+				} catch (error) {
+					// The direction's finished batches are paid and verified: they are saved, and the frames of this batch and the
+					// later ones keep their current art (missing on a new move). Nothing more is bought for this direction.
+					if (!collected.length) throw error;
+					const kept = batches
+						.slice(b)
+						.flatMap(({ start, count }) =>
+							Array.from({ length: count }, (_, i) => `${anim}/${dir}/${start + i}`)
+						);
+					return { collected, prov, failed: error as unknown, kept };
+				}
 			}
-			return { collected, prov };
+			return { collected, prov, failed: undefined, kept: [] as string[] };
 		})
 	);
 	// Directions that finished are paid for: save them even when another direction failed, so a retry that skips complete
 	// directions (addMove without replace) requests only the missing ones instead of buying them again (2026-11-07 audit).
-	const doneDirs = dirs.filter((_, i) => perDir[i].status === 'fulfilled'),
-		failures = perDir.flatMap((r) => (r.status === 'rejected' ? [r.reason] : []));
+	// A direction stopped after a finished batch saves that batch but is not complete, so a retry poses it again.
+	const doneDirs = dirs.filter(
+			(_, i) =>
+				perDir[i].status === 'fulfilled' &&
+				!(perDir[i] as { value: { kept: string[] } }).value.kept.length
+		),
+		failures = perDir.flatMap((r) =>
+			r.status === 'rejected' ? [r.reason] : r.value.kept.length ? [r.value.failed] : []
+		);
+	const savedDirs = dirs.filter((_, i) => perDir[i].status === 'fulfilled');
+	const kept = new Set(perDir.flatMap((r) => (r.status === 'fulfilled' ? r.value.kept : [])));
 	const done = perDir.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])),
 		cells = done.flatMap((r) => r.collected),
 		prov = done.flatMap((r) => r.prov);
@@ -2154,14 +2244,10 @@ export async function poseItemClip(
 		bodies,
 		item.prompt
 	);
-	// Suspicious imported joints do not stop a fit on valid coordinates; they stay named for a look.
-	if (fitIssues.length) {
-		q.warnings.push(...fitIssues);
-		if (q.qa.status === 'pass') q.qa.status = 'warn';
-	}
+	discloseJoints(q, rig, posed);
 	const first = failures.length ? errorText(failures[0]) : '';
 	try {
-		await mergeClip(ctx, item, anim, doneDirs, cells, prov, q, pad);
+		await mergeClip(ctx, item, anim, savedDirs, cells, prov, q, pad, undefined, kept);
 	} catch (error) {
 		// The save error leads and keeps its code: the Studio offers free saved-frame recovery on a save conflict.
 		throw failures.length
@@ -2204,11 +2290,13 @@ export async function mergeClip(
 	prov: Provenance[],
 	q: QaResult,
 	pad = 0,
-	standingMaterials?: Material[]
+	standingMaterials?: Material[],
+	/** Frames of these directions a stopped batch left: they keep their current art, cut and checks. */
+	kept?: ReadonlySet<string>
 ) {
 	await publishClip(
 		ctx.rec.id,
-		await prepareClip(ctx, item, anim, dirs, cells, prov, q, pad),
+		await prepareClip(ctx, item, anim, dirs, cells, prov, q, pad, undefined, kept),
 		standingMaterials
 	);
 }
@@ -2712,10 +2800,11 @@ async function gridItemClip(
 	);
 	const r = terminal(rec) ? rec : await settled(rec.id);
 	if (r.state !== 'done')
-		throw new LocalizedError(
+		throw requestStopped(
+			item,
+			r,
 			`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`,
-			'itemRoute.errors.gridStopped',
-			{ item: item.name, state: message(`activity.state.${r.state}`) }
+			'itemRoute.errors.gridStopped'
 		);
 	if (outputsOf(r).length !== 1)
 		throw new LocalizedError(
@@ -2900,8 +2989,14 @@ export async function regridClip(
 			stopped = index;
 			break;
 		}
-		if ('blocked' in result)
-			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
+		if ('blocked' in result) {
+			const refused = localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
+			// A plan that stops allowing a later batch keeps the finished ones usable, like a failed batch.
+			if (!cells.length) throw refused;
+			console.error('item repair batch', refused);
+			stopped = index;
+			break;
+		}
 		// A shifted batch is flagged G10 (itemQa) and lands in the review with the rest of the approved, already priced
 		// batches: stopping them offered only a paid re-roll and left the bought frames unusable.
 		cells.push(...result.cells);

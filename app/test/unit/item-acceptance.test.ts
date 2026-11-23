@@ -321,6 +321,28 @@ test('explicitly keeping available frames saves a sparse row with distinct trans
 	});
 });
 
+test('a Keep retried after a failed save names the same receipts as the first attempt', async () => {
+	const { draft, ctx, result } = fixture();
+	const fullRig = {
+		...rig,
+		animations: [...rig.animations, { id: 'walk', cells: 2, loop: true, frames: [] }]
+	};
+	ctx.rec.manifest.rig = fullRig;
+	draft.spec.anims.push('walk');
+	draft.calls.push(
+		{ ...draft.calls[0], cells: ['walk/south/1'], recId: undefined },
+		{ ...draft.calls[0], cells: ['walk/south/0'], recId: 'walk' }
+	);
+	ledger.records.push(record('walk', 10, 0));
+	result.cells.push({ ...result.cells[0], key: 'walk/south/0', call: 2 });
+	result.qa = itemQa(fullRig, slotOf('head'), 'green', result.cells, 0);
+	vi.mocked(saveItem).mockRejectedValueOnce(new Error('storage full'));
+	await expect(acceptItem(draft, ctx, result, true)).rejects.toThrow('storage full');
+	const { item } = await acceptItem(draft, ctx, result, true);
+	expect(item.qa?.cells['walk/south/0']?.provenance).toBe(1);
+	expect(result.qa.qa.cells['walk/south/0']?.provenance).toBe(2);
+});
+
 test('accepted keyframe design reasons are retained individually without rewriting clean clip QA', async () => {
 	const { draft, ctx, result } = fixture();
 	result.g1.set(0, 'G2 keyframe rest/south/0 key kept 0.8; D1 keyframe rest/south/0: gray smudges');

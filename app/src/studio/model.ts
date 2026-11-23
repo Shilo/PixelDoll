@@ -441,6 +441,11 @@ function describeReason(s: string): { text: string; translation: Message | strin
 			'The requested waist band differs between standing views',
 			'studioModel.qa.standingWaist'
 		);
+	if (s === 'J1 joint review')
+		return say(
+			'Some frames were fitted on joints that look unusual. Check the grip or alignment.',
+			'studioModel.qa.jointReview'
+		);
 	if (s.startsWith('G13 '))
 		return say(
 			'The waist band differs from the standing design; inspect the clothing',
@@ -606,6 +611,7 @@ function qaReasonCodes(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig): 
 	if (q.footwearReviewFrames) r.push('G12 footwear coverage');
 	if (q.waistReviewFrames) r.push('G13 waist-band consistency');
 	if (q.facingReviewFrames) r.push('G14 torso consistency');
+	if (q.jointReviewFrames) r.push('J1 joint review');
 	if (q.detailReviewFrames) r.push('G15 design detail');
 	if (q.heldLoopReviewClips) r.push('The held item changes shape or angle when a move loops');
 	if (q.heldHangReviewClips)

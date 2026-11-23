@@ -355,6 +355,19 @@ test('Tier 1 offers the finished batch after an unknown second batch, keeping cu
 	expect(f.saved()!.qa!.cells['slash/west/0'].provenance).toBe(before.provenance.length);
 });
 
+test('Tier 1 offers the finished batch when the plan stops allowing a later one', async () => {
+	const f = await fixture();
+	let checks = 0;
+	// Three checks before anything is bought, then one per batch: the second batch is refused.
+	vi.spyOn(queue, 'planBlocks').mockImplementation(() =>
+		++checks === 5 ? 'Needs PixelLab Tier 2 or higher. No request sent.' : null
+	);
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
+	expect(f.enqueue).toHaveBeenCalledTimes(1);
+	expect(result.saved).toBe(false);
+	expect(result.review?.kept).toEqual([3, 4, 5, 6, 7]);
+});
+
 test('Tier 1 does not publish a facing with a visibly different batch palette', async () => {
 	const f = await fixture('palette-second');
 	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
@@ -586,6 +599,12 @@ test.each(['geometry', 'lost'] as const)(
 		expect(f.save).not.toHaveBeenCalled();
 	}
 );
+test('a lost repair request says it may have charged', async () => {
+	const f = await fixture('lost');
+	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123)).rejects.toMatchObject({
+		translation: { key: 'itemRoute.errors.requestLost' }
+	});
+});
 test('concurrent rig edits reject inside the atomic publication guard', async () => {
 	const f = await fixture('race');
 	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123)).rejects.toThrow('changed while');

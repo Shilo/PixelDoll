@@ -7301,7 +7301,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3', '/v2/edit-images-v2']);
 });
 
-test('unsafe imported equipment prices its frozen route and unsupported held offers stay usable', async ({
+test('unsafe imported equipment prices its frozen route and discloses suspicious joints on held offers', async ({
 	page,
 	context
 }, info) => {
@@ -7392,19 +7392,22 @@ test('unsafe imported equipment prices its frozen route and unsupported held off
 		s.wear(id);
 		s.pick(id);
 	}, fixture.itemId);
-	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toBeDisabled();
-	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('Unavailable');
+	// A held item cannot use the frozen grid. It used to be refused here; it is now priced on its measured joints with the
+	// suspicious frames named on the quote before anything is bought.
+	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toBeEnabled();
+	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('gens');
 	await expect(
-		page.locator('.notice').filter({ hasText: 'suspicious estimated joints' }).first()
-	).toBeVisible();
+		page.locator('.notice').filter({ hasText: 'Some measured joints look unusual' }).first()
+	).toContainText('frame 2');
 	await page
 		.getByRole('dialog', { name: 'Item', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await inspectStage(page);
+	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toBeEnabled();
 	await expect(
-		page.locator('.stage-note').getByRole('button', { name: /^Make it/ })
-	).toBeDisabled();
+		page.locator('.stage-note .notice').filter({ hasText: 'Some measured joints look unusual' })
+	).toBeVisible();
 	expect(posts).toEqual([]);
 	expect(errors).toEqual([]);
 });

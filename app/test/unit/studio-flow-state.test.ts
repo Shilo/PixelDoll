@@ -132,6 +132,21 @@ beforeEach(() => {
 	stubGlobals();
 });
 afterEach(() => vi.unstubAllGlobals());
+test('a review draft whose frames cannot be read says so and reads them again for free', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const g = {
+		draft: { rigId: 'rig-unread', spec: { id: 'unread_hat' }, calls: [] }
+	} as unknown as Parameters<typeof state.readGenReview>[0];
+	mocks.load.mockRejectedValueOnce(new Error('storage unavailable'));
+	await state.readGenReview(g);
+	expect(state.store.resultsUnread.unread_hat).toBe(true);
+	expect(state.store.results.unread_hat).toBeUndefined();
+	mocks.load.mockRejectedValueOnce(new Error('still unavailable'));
+	await state.readGenReview(g);
+	expect(mocks.load).toHaveBeenLastCalledWith('rig-unread');
+	expect(state.store.resultsUnread.unread_hat).toBe(true);
+});
+
 test('canceling from a follower explains that generation has not stopped without opening Activity', async () => {
 	const state = await import('../../src/studio/state.svelte.ts');
 	const { queue } = await import('../../src/lib/pixellab/queue.ts');

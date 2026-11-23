@@ -1611,6 +1611,7 @@
 			"heldLoop": "Animasyon döngüye girdiğinde eldeki eşyanın şekli veya açısı değişiyor",
 			"registrationShift": "PixelLab saydam bir kenar döndürdü ve sayfayı kaydırmış olabilir. Eşyanın her karede hizalandığını kontrol edin.",
 			"suspiciousJoints": "{move} {direction} animasyonunun {frame}. karesinde eklemler alışılmadık görünüyor, bu yüzden eşya orada tam oturmayabilir. Tutuşu veya hizalamayı kontrol edin.",
+			"jointReview": "Bazı kareler alışılmadık görünen eklemlere göre yerleştirildi. Tutuşu veya hizalamayı kontrol edin.",
 			"bodyUnmeasured": "Eşya gövdenin neredeyse tamamını kaplıyor, bu yüzden kontrol edilemedi. Yeniden çizilmiş bir gövde olmadığından emin olun"
 		},
 		"anotherCharacter": "başka bir karakter",
@@ -2746,6 +2747,8 @@
 			"poseFramesMalformed": "PixelLab, {item} için eksik veya bozuk kareler döndürdü. Otomatik yeniden deneme yapılmadı.",
 			"poseFrameSize": "PixelLab, {item} için yanlış boyutta kareler döndürdü. Otomatik yeniden deneme yapılmadı.",
 			"gridStopped": "{item} onarım isteği tamamlanmadı ({state}). Yeniden gönderilmedi.",
+			"poseStopped": "{item} poz isteği tamamlanmadı ({state}). Yeniden gönderilmedi.",
+			"requestLost": "{item} isteği kayboldu, bu yüzden çalışıp ücretlendirilmiş olabilir. Yeniden gönderilmedi.",
 			"noUsableFrames": "PixelLab, {item} için kullanılabilir kare döndürmedi.",
 			"layersMismatch": "Ekipman katmanları bu ekipman yuvasıyla eşleşmiyor. Üretim isteği gönderilmedi.",
 			"reviewChanged": "Bu öğe veya denetimleri değişti. Mevcut görseli kabul etmeden önce öğeyi yeniden açın.",

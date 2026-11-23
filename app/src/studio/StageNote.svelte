@@ -27,6 +27,7 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
+	import PoseIssues from './PoseIssues.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { movePlan } from './apiPlans.ts';
 
@@ -183,6 +184,7 @@
 						></span
 					>
 					{#if poseOffer?.error}<span role="status">{displayMessage(poseOffer.error)}</span>{/if}
+					<PoseIssues issues={poseOffer?.poseIssues ?? []} />
 					{#if poseTier}<TierNotice
 							id="stage-pose-tier"
 							minimumTier={poseTier}

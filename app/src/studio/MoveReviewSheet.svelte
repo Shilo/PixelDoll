@@ -2,6 +2,7 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import ProblemNotice from './ProblemNotice.svelte';
+	import PoseIssues from './PoseIssues.svelte';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import PromptLine from './PromptLine.svelte';
@@ -382,6 +383,7 @@
 			{/each}
 		</div>
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
+		<PoseIssues issues={[...new Set(chosen.flatMap(({ offer }) => offer?.poseIssues ?? []))]} />
 	{:else if candidate}
 		{#if candidate.warnings.length}
 			<div class="notice warn small quality-notice">

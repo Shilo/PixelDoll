@@ -1611,6 +1611,7 @@
 			"heldLoop": "L’objet tenu change de forme ou d’angle quand une animation boucle",
 			"registrationShift": "PixelLab a renvoyé un bord transparent et a peut-être décalé la feuille. Vérifiez que l’objet est bien aligné sur chaque image.",
 			"suspiciousJoints": "Les articulations semblent inhabituelles dans {move} {direction}, image {frame}, donc l’objet risque de mal s’y placer. Vérifiez la prise ou l’alignement.",
+			"jointReview": "Certaines images ont été ajustées sur des articulations inhabituelles. Vérifiez la prise ou l’alignement.",
 			"bodyUnmeasured": "L’objet couvre presque tout le corps et n’a donc pas pu être vérifié. Assurez-vous qu’il ne s’agit pas d’un corps redessiné"
 		},
 		"anotherCharacter": "un autre personnage",
@@ -2746,6 +2747,8 @@
 			"poseFramesMalformed": "PixelLab a renvoyé des images manquantes ou défectueuses pour {item}. Aucune nouvelle tentative automatique n’a été faite.",
 			"poseFrameSize": "PixelLab a renvoyé des images de mauvaise taille pour {item}. Aucune nouvelle tentative automatique n’a été faite.",
 			"gridStopped": "La demande de réparation de {item} ne s’est pas terminée ({state}). Elle n’a pas été renvoyée.",
+			"poseStopped": "La demande de pose de {item} ne s’est pas terminée ({state}). Elle n’a pas été renvoyée.",
+			"requestLost": "La demande de {item} a été perdue, elle a donc pu s’exécuter et être facturée. Elle n’a pas été renvoyée.",
 			"noUsableFrames": "PixelLab n’a renvoyé aucune image utilisable pour {item}.",
 			"layersMismatch": "Les calques de l’équipement ne correspondent pas à cet emplacement. Aucune génération n’a été demandée.",
 			"reviewChanged": "Cet équipement ou ses vérifications ont changé. Rouvrez-le avant de valider son visuel actuel.",

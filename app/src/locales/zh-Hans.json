@@ -1561,6 +1561,7 @@
 			"heldLoop": "动作循环时，手持装备会改变形状或角度",
 			"registrationShift": "PixelLab 返回了透明边缘，可能移动了图集。请检查装备在每一帧中是否对齐。",
 			"suspiciousJoints": "{move} {direction} 第 {frame} 帧的关节位置异常，装备在那里可能对不齐。请检查握持或对齐。",
+			"jointReview": "部分帧是按位置异常的关节对齐的。请检查握持或对齐。",
 			"bodyUnmeasured": "装备几乎覆盖了整个身体，因此无法检查。请确认它不是重新绘制的身体"
 		},
 		"anotherCharacter": "另一个角色",
@@ -2674,6 +2675,8 @@
 			"poseFramesMalformed": "PixelLab 返回的 {item} 帧缺失或损坏。没有自动重试。",
 			"poseFrameSize": "PixelLab 返回的 {item} 帧尺寸不对。没有自动重试。",
 			"gridStopped": "{item} 的修复请求没有完成（{state}）。没有再次发送。",
+			"poseStopped": "{item} 的姿势请求没有完成（{state}）。没有再次发送。",
+			"requestLost": "{item} 的请求丢失了，可能已经运行并扣费。没有再次发送。",
 			"noUsableFrames": "PixelLab 没有返回 {item} 可用的帧。",
 			"layersMismatch": "装备图层与此装备栏不匹配。未请求生成。",
 			"reviewChanged": "此装备或其检查结果已更改。请重新打开装备，再接受当前图像。",
