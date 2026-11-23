@@ -1845,7 +1845,7 @@ test('saving the finished views of a move started from a saved frame keeps that 
 	await expect(f.run({ ...east, startFrom: spec.startFrom })).rejects.toThrow(
 		'The selected starting frame changed'
 	);
-	await expect(f.run(east)).resolves.toMatchObject({ moveReview: 'calm' });
+	await expect(f.run({ ...east })).resolves.toMatchObject({ moveReview: 'calm' });
 	expect(f.enqueue.mock.calls).toHaveLength(calls);
 	const draft = f.saved().moveReviews!.calm!;
 	expect(draft.dirs).toEqual(['east']);
