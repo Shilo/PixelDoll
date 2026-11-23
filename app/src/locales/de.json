@@ -2868,6 +2868,7 @@
 		"measure": "Gelenke messen",
 		"review": "Prüfe vor dem Speichern, ob die markierten Gelenke in jeder Ansicht richtig sitzen.",
 		"notFitted": "Für {directions} wurden keine Gelenke gefunden, daher können diese Ansichten noch kein Ausgangspunkt sein. Beim Speichern bleiben die Gelenke der anderen Ansichten erhalten.",
+		"notChecked": "Die Gelenkprüfung für {directions} wurde nicht abgeschlossen und nicht erneut gesendet. Beim Speichern bleiben die Gelenke der anderen Ansichten erhalten.",
 		"save": "Gelenke speichern"
 	},
 	"stateCapture": {

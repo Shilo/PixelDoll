@@ -2110,6 +2110,11 @@
 										</div>
 									{/each}
 								</div>
+								{#if fitReview.unchecked.length}<p class="notice warn small" role="status">
+										{t('stateJointFit.notChecked', {
+											directions: displayDirectionList(fitReview.unchecked)
+										})}
+									</p>{/if}
 								{#if fitReview.notFitted.length}<p class="notice warn small" role="status">
 										{t('stateJointFit.notFitted', {
 											directions: displayDirectionList(fitReview.notFitted)

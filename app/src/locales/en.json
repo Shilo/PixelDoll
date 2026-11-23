@@ -2868,6 +2868,7 @@
 		"measure": "Measure joints",
 		"review": "Check that the marked joints line up with each view before saving.",
 		"notFitted": "No joints were found facing {directions}, so those views can’t be a starting point yet. Saving keeps the joints of the other views.",
+		"notChecked": "The joint check facing {directions} did not finish and was not resent. Saving keeps the joints of the other views.",
 		"save": "Save joints"
 	},
 	"stateCapture": {

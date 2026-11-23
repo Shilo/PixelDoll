@@ -2796,6 +2796,7 @@
 		"measure": "Ukur sendi",
 		"review": "Sebelum menyimpan, periksa posisi sendi yang ditandai di setiap tampilan.",
 		"notFitted": "Tidak ada sendi yang ditemukan untuk arah {directions}, jadi tampilan tersebut belum bisa menjadi titik awal. Menyimpan akan mempertahankan sendi tampilan lainnya.",
+		"notChecked": "Pemeriksaan sendi untuk arah {directions} tidak selesai dan tidak dikirim ulang. Menyimpan akan mempertahankan sendi tampilan lainnya.",
 		"save": "Simpan sendi"
 	},
 	"stateCapture": {

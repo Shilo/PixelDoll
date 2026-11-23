@@ -2868,6 +2868,7 @@
 		"measure": "Mesurer les articulations",
 		"review": "Vérifiez le placement des articulations marquées dans chaque vue avant la sauvegarde.",
 		"notFitted": "Aucune articulation trouvée pour {directions} : ces vues ne peuvent pas encore servir de point de départ. L’enregistrement conserve les articulations des autres vues.",
+		"notChecked": "La vérification des articulations pour {directions} ne s’est pas terminée et n’a pas été renvoyée. L’enregistrement conserve les articulations des autres vues.",
 		"save": "Enregistrer les articulations"
 	},
 	"stateCapture": {
