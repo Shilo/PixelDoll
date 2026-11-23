@@ -16,7 +16,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import ProblemNotice from './ProblemNotice.svelte';
 	import { jobProblem } from './report.svelte.ts';
-	import { recordProblemKind } from './problemSummary.ts';
+	import { paidRetryLeads, recordProblemKind } from './problemSummary.ts';
 	import { displayMove } from './displayMove.ts';
 	import {
 		ui,
@@ -446,7 +446,9 @@
 										listed
 										report={{ area: 'Activity', ...jobProblem(r) }}
 									/>
-									{#if requestTier(r) > 0}<span class="muted small">
+									{#if requestTier(r) > 0 && paidRetryLeads(recordProblemKind(r))}<span
+											class="muted small"
+										>
 											{t('activity.tierHint', { tier: formatNumber(requestTier(r)) })}
 										</span>{/if}
 								{:else}<span class="muted small"

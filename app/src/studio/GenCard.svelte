@@ -193,11 +193,13 @@
 										detail: message('genCard.rerollFailedDetail'),
 										gens: reroll.gens,
 										paid: reroll.gens > 0,
-										primary: rerollLeads(
-											draft.calls.map((call) => call.recId),
-											calls,
-											$queue.jobs
-										)
+										primary:
+											retryLeads &&
+											rerollLeads(
+												draft.calls.map((call) => call.recId),
+												calls,
+												$queue.jobs
+											)
 									}
 								]
 							: []),
@@ -492,7 +494,7 @@
 					message={message('genCard.estimateFailed')}
 				/>
 			</p>{/if}
-		{#if g.phase !== 'running'}<p class="faint small">
+		{#if g.phase !== 'running' && !sameRetry}<p class="faint small">
 				{t('genCard.retryNote')}
 			</p>{/if}
 		<details class="disclosure">

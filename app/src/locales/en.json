@@ -3090,7 +3090,8 @@
 			"pending": "Not bought yet",
 			"failed": "Stopped",
 			"running": "Still running at PixelLab"
-		}
+		},
+		"spentUnreported": "Already paid: unknown. A request may have run and charged without reporting its cost (check pixellab.ai). Finished results are kept and reused."
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, for free. The paid motion is reused; only the steps on the changed frame are bought.",

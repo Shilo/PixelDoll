@@ -13,6 +13,7 @@ import {
 	rerollFailed,
 	hasStructuralFailure,
 	isClean,
+	unknownCostsOf,
 	usdOf,
 	type Draft,
 	type ItemResult,
@@ -248,6 +249,14 @@ test('ordinary failed cell-art QA remains explicitly acceptable', async () => {
 	const saved = await acceptItem(draft, ctx, result);
 	expect(saved.item.qa?.status).toBe('accepted');
 	expect(saveItem).toHaveBeenCalledOnce();
+});
+
+test('a lost request counts as an unknown cost, never as nothing spent', () => {
+	const { draft } = fixture();
+	expect(unknownCostsOf(draft, ledger.records)).toBe(0);
+	ledger.records.find((r) => r.id === 'current')!.state = 'lost';
+	// It may have run and charged without a usage report, so the review must not say "Already paid: 0".
+	expect(unknownCostsOf(draft, ledger.records)).toBe(1);
 });
 
 test('draft cost includes mixed-currency retries and fallback history once per ledger record', () => {

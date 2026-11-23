@@ -695,15 +695,16 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	});
 	const others = await threeCharacters(page);
 	const giant = sharedTile(others, 'Giant helmet');
+	// It has no Cross punch frame at all, so the tile says it was not made for that move rather than "missing some" frames.
 	await expect(giant).toHaveAccessibleName(
-		'Giant helmet, free from Giant, not fitted to this body, missing some Cross punch frames'
+		'Giant helmet, free from Giant, not fitted to this body, not made for Cross punch yet'
 	);
 	// Each icon explains itself on hover, where it came from first; the ⋮ menu says the same, in the same order, for touch too.
 	const titles = [
 		'From Giant. Wearing it copies it here for free.',
 		// Its standing move shows the helmet's standing frame and its walk uses Giant's walk; the punch has no art, so it hides.
 		'Drawn for Giant’s body, so it may float, clip or leave gaps. Default uses the first Giant default frame; Walk uses Giant walk.',
-		'Missing some Cross punch frames; it hides there.'
+		'Not made for Cross punch yet; it hides there.'
 	];
 	expect(
 		await giant.locator('.tile-status').evaluateAll((el) => el.map((e) => e.getAttribute('title')))

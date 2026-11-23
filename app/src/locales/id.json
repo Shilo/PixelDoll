@@ -3008,7 +3008,8 @@
 			"pending": "Belum dibeli",
 			"failed": "Berhenti",
 			"running": "Masih berjalan di PixelLab"
-		}
+		},
+		"spentUnreported": "Sudah dibayar: tidak diketahui. Sebuah permintaan mungkin sudah berjalan dan dikenai biaya tanpa melaporkan biayanya (periksa pixellab.ai). Hasil yang selesai disimpan dan dipakai ulang."
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, gratis. Gerakan yang sudah dibayar dipakai ulang; hanya langkah pada frame yang diubah yang dibeli.",

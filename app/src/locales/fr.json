@@ -3090,7 +3090,8 @@
 			"pending": "Pas encore acheté",
 			"failed": "Arrêté",
 			"running": "Toujours en cours chez PixelLab"
-		}
+		},
+		"spentUnreported": "Déjà payé : inconnu. Une requête a peut-être été exécutée et facturée sans signaler son coût (vérifiez pixellab.ai). Les résultats terminés sont gardés et réutilisés."
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, gratuitement. Le mouvement payé est réutilisé ; seules les étapes sur le cadre modifié sont achetées.",

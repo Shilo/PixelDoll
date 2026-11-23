@@ -3008,7 +3008,8 @@
 			"pending": "未購入",
 			"failed": "停止",
 			"running": "PixelLab で処理中"
-		}
+		},
+		"spentUnreported": "支払い済み：不明。リクエストが実行され、費用が報告されないまま課金された可能性があります（pixellab.ai を確認してください）。完了した結果は保持され、再利用されます。"
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}（無料）。支払い済みの動きを再利用し、購入するのは変更後のフレームでの手順だけです。",

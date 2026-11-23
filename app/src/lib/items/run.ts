@@ -332,8 +332,12 @@ export const gensOf = (d: Draft, list = jobs) =>
 export const usdOf = (d: Draft, list = jobs) =>
 	draftRecords(d).reduce((s, id) => s + (recIn(list, id)?.usd ?? 0), 0);
 /** Calls of a draft whose cost PixelLab did not report: shown as unknown beside the reported spend. */
+/** Requests whose cost PixelLab never reported, including lost ones that may have run and charged. */
 export const unknownCostsOf = (d: Draft, list = jobs) =>
-	draftRecords(d).filter((id) => recIn(list, id)?.costUnknown).length;
+	draftRecords(d).filter((id) => {
+		const record = recIn(list, id);
+		return !!record && (!!record.costUnknown || record.state === 'lost');
+	}).length;
 export const callState = (c: CallState, list = jobs) =>
 	recIn(list, c.recId)?.state ?? 'not submitted';
 

@@ -3008,7 +3008,8 @@
 			"pending": "尚未购买",
 			"failed": "已停止",
 			"running": "仍在 PixelLab 处理中"
-		}
+		},
+		"spentUnreported": "已支付：未知。某个请求可能已运行并收费，但未报告费用（请查看 pixellab.ai）。已完成的结果会保留并重复使用。"
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}，免费。复用已付费的动作；只购买在更改后的帧上的步骤。",

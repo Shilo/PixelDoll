@@ -3099,7 +3099,8 @@
 			"pending": "Ainda não comprado",
 			"failed": "Parado",
 			"running": "Ainda em andamento no PixelLab"
-		}
+		},
+		"spentUnreported": "Já pago: desconhecido. Uma solicitação pode ter sido executada e cobrada sem informar o custo (confira pixellab.ai). Os resultados concluídos são mantidos e reutilizados."
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, de graça. O movimento pago é reutilizado; só as etapas no quadro alterado são compradas.",

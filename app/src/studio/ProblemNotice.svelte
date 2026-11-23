@@ -101,6 +101,10 @@
 		flex: 1 1 auto;
 		min-width: 0;
 	}
+	/* Report always ends the line, with or without Details beside it. */
+	.problem-foot :global(.report-problem) {
+		margin-inline-start: auto;
+	}
 	.problem-details summary {
 		cursor: pointer;
 		width: fit-content;
