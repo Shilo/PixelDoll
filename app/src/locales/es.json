@@ -2601,7 +2601,6 @@
 			"tier": "Tu plan de PixelLab no admite algunos objetos seleccionados."
 		},
 		"thatCharacter": "ese personaje",
-		"recoveryCheckFailed": "No se pudieron comprobar los fotogramas en caché: {error}",
 		"retryLabel": "Volver a generar la animación",
 		"newSetup": "Nueva animación…",
 		"useSaved": "Usar fotogramas guardados",

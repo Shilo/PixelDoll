@@ -2535,7 +2535,6 @@
 			"tier": "当前的 PixelLab 套餐不支持部分已选装备。"
 		},
 		"thatCharacter": "该角色",
-		"recoveryCheckFailed": "无法检查缓存帧：{error}",
 		"retryLabel": "再次生成动作",
 		"newSetup": "新建动作…",
 		"useSaved": "使用已保存的帧",

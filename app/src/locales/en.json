@@ -2601,7 +2601,6 @@
 			"tier": "Your PixelLab plan does not support some selected items."
 		},
 		"thatCharacter": "that character",
-		"recoveryCheckFailed": "Could not check cached frames: {error}",
 		"retryLabel": "Generate move again",
 		"newSetup": "New move…",
 		"useSaved": "Use saved frames",

@@ -2535,7 +2535,6 @@
 			"tier": "ご利用のPixelLabプランでは、選択した一部のアイテムに対応していません。"
 		},
 		"thatCharacter": "そのキャラクター",
-		"recoveryCheckFailed": "キャッシュされたフレームを確認できませんでした：{error}",
 		"retryLabel": "モーションをもう一度生成",
 		"newSetup": "新規モーション…",
 		"useSaved": "保存済みのフレームを使う",

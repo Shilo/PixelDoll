@@ -2535,7 +2535,6 @@
 			"tier": "Paket PixelLab Anda tidak mendukung beberapa item yang dipilih."
 		},
 		"thatCharacter": "karakter tersebut",
-		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",
 		"retryLabel": "Buat ulang animasi",
 		"newSetup": "Animasi baru…",
 		"useSaved": "Gunakan frame tersimpan",

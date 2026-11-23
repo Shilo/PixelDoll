@@ -2601,7 +2601,6 @@
 			"tier": "PixelLab planınız seçilen bazı eşyaları desteklemiyor."
 		},
 		"thatCharacter": "söz konusu karakter",
-		"recoveryCheckFailed": "Önbellekteki kareler kontrol edilemedi: {error}",
 		"retryLabel": "Animasyonu yeniden üretin",
 		"newSetup": "Yeni animasyon…",
 		"useSaved": "Kayıtlı kareleri kullanın",

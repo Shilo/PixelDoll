@@ -2610,7 +2610,6 @@
 			"tier": "Seu plano do PixelLab não oferece suporte a alguns dos itens selecionados."
 		},
 		"thatCharacter": "esse personagem",
-		"recoveryCheckFailed": "Não foi possível verificar os quadros em cache: {error}",
 		"retryLabel": "Gerar animação novamente",
 		"newSetup": "Nova animação…",
 		"useSaved": "Usar quadros salvos",

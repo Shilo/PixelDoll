@@ -2601,7 +2601,6 @@
 			"tier": "Votre forfait PixelLab ne prend pas en charge certains objets sélectionnés."
 		},
 		"thatCharacter": "ce personnage",
-		"recoveryCheckFailed": "Impossible de vérifier les images en cache : {error}",
 		"retryLabel": "Générer à nouveau l’animation",
 		"newSetup": "Nouvelle animation…",
 		"useSaved": "Utiliser les images enregistrées",

@@ -2535,7 +2535,6 @@
 			"tier": "현재 PixelLab 요금제에서 선택한 일부 아이템을 지원하지 않아요."
 		},
 		"thatCharacter": "해당 캐릭터",
-		"recoveryCheckFailed": "캐시된 프레임을 확인하지 못했어요: {error}",
 		"retryLabel": "동작 다시 생성",
 		"newSetup": "새 애니메이션…",
 		"useSaved": "저장된 프레임 사용",
