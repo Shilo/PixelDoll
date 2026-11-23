@@ -122,7 +122,7 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				onclick={() => void refreshRecentlyDeleted()}>{t('common.tryAgain')}</button
-			>
+			><ReportButton message={message('recentlyDeleted.loadFailed')} />
 		</p>
 	{/if}
 	{#if !deleted.entries.length && !deleted.loadFailed}
