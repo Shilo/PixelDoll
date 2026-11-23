@@ -1944,6 +1944,12 @@ test('a move review whose joint check was lost says its spent total is only a kn
 	const f = await fixture(false, 'walk');
 	const lost = (await reviewMoveResults('rig-recover', f.spec))!;
 	expect(lost.spentUnknown).toBe(true);
+	// A stopped check that did report its charge counts toward the spent total, once.
+	f.records.set('old-1', { ...f.records.get('old-1')!, gens: 0.1 });
+	await f.q.sync();
+	const charged = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(charged.spent).toBeCloseTo(lost.spent + 0.1);
+	expect(charged.recordIds.filter((id) => id === 'old-1')).toHaveLength(1);
 	await f.finishOriginalChecks();
 	expect((await reviewMoveResults('rig-recover', f.spec))!.spentUnknown).toBeUndefined();
 });

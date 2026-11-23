@@ -338,6 +338,10 @@ interface DryRun {
 const cacheOnlyRuns = new WeakSet<AbortSignal>();
 /** A joint check a cache-only run found stopped: its outcome is unknown, so the frame is unmeasured and never sent again. */
 class StoppedCheck extends Error {}
+/** Every receipt a replay met, completed or stopped, once each: a stopped request's reported charge is still spent. */
+const receiptsOf = (records: readonly JobRec[]) => [
+	...new Map(records.map((r) => [r.id, r])).values()
+];
 /** Whether any of these records may have charged more than it reported (the paid review's spentUnknown). */
 const costUnknown = (records: readonly JobRec[]) =>
 	records.some((r) => !!r.costUnknown || r.state === 'lost');
@@ -1283,11 +1287,12 @@ export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidR
 		});
 	} else if (paid?.step === 'draw' && paid.failure === 'overflow')
 		options.push(...(await placementOptions(spec, drawn, base)));
+	const receipts = receiptsOf([...dry.records, ...(dry.stopped ?? [])]);
 	return {
 		views,
-		spent: spentGens(dry.records),
-		...(costUnknown([...dry.records, ...(dry.stopped ?? [])]) ? { spentUnknown: true } : {}),
-		recordIds: dry.records.map((r) => r.id),
+		spent: spentGens(receipts),
+		...(costUnknown(receipts) ? { spentUnknown: true } : {}),
+		recordIds: receipts.map((r) => r.id),
 		options
 	};
 }
@@ -4260,11 +4265,14 @@ export async function reviewMoveResults(
 				...(notes.get(v.d) ?? [])
 			]
 		})),
-		spent: spentGens(records),
-		...(costUnknown([...records, ...views.flatMap((v) => v.stopped)])
-			? { spentUnknown: true }
-			: {}),
-		recordIds: records.map((r) => r.id),
+		...(() => {
+			const receipts = receiptsOf([...records, ...views.flatMap((v) => v.stopped)]);
+			return {
+				spent: spentGens(receipts),
+				...(costUnknown(receipts) ? { spentUnknown: true } : {}),
+				recordIds: receipts.map((r) => r.id)
+			};
+		})(),
 		options
 	};
 }
