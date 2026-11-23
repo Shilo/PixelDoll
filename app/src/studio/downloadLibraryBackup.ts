@@ -1,10 +1,11 @@
 import { app } from '../lib/app.svelte.ts';
-import { DEBUG_FOLDER, debugBackupEnabled } from '../lib/debug/flags.ts';
+import { DEBUG_FOLDER } from '../lib/debug/flags.ts';
 import { keyForms, scrubText } from '../lib/debug/sanitize.ts';
 import { errorMessage } from '../lib/i18n.ts';
 import { LocalizedError, message } from '../lib/message.ts';
 import { readSavedKey } from '../lib/shared-auth.ts';
 import { exportBackup } from '../lib/store/backup.ts';
+import { debugBackupOn } from './developerMode.svelte.ts';
 import { saveZip } from './download.svelte.ts';
 import { getLocale } from 'svelte-whisper';
 import { PRE_RELEASE } from './previewNotice.ts';
@@ -40,7 +41,7 @@ export async function downloadLibraryBackup() {
 	await prepareWorkspaceExport();
 	const keys = [app.key, readSavedKey()];
 	let debug: { name: string; data: Uint8Array }[] = [];
-	if (debugBackupEnabled())
+	if (debugBackupOn())
 		debug = await debugFiles(keys).catch((error: unknown) => {
 			console.error('debug backup', error);
 			return failedDebug(error, keys);

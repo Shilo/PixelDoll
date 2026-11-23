@@ -214,7 +214,10 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		const modePath = '/src/studio/developerMode.svelte.ts';
 		(await import(modePath)).setDeveloperMode(true);
 	});
+	const debugMark = backUp.getByRole('img', { name: 'Includes debugging details' });
+	await expect(debugMark).toBeHidden();
 	await debugToggle.check();
+	await expect(debugMark).toBeVisible();
 	await expect(
 		exportDialog.getByText(
 			'Back up saved characters, artwork, archived data, and debugging details.',
@@ -249,6 +252,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		JSON.parse(new TextDecoder().decode(debugZip.get('debug/storage.json'))).local.pixellabApiKey
 	).toBe('[redacted]');
 	await debugToggle.uncheck();
+	await expect(debugMark).toBeHidden();
 	await page.evaluate(async () => {
 		const modePath = '/src/studio/developerMode.svelte.ts';
 		(await import(modePath)).setDeveloperMode(false);

@@ -48,6 +48,7 @@
 	"librarySettings": {
 		"title": "Biblioteca",
 		"scope": "Guarda una copia de los personajes, sus ilustraciones y los datos archivados. No se incluyen preferencias, borradores ni tareas.",
+		"backupWithDebug": "Incluye detalles de depuración",
 		"debugDetails": "Incluir detalles de depuración",
 		"debugDetailsHint": "Añade registros de errores, historial de solicitudes, borradores, trabajos y el estado de la app a cada copia de seguridad para diagnosticar problemas. Se incluyen los errores de esta pestaña y, desde ahora, también se guardan entre recargas y pestañas. Tu clave de PixelLab nunca se incluye.",
 		"scopeDebug": "Guarda personajes, ilustraciones, datos archivados y detalles de depuración.",

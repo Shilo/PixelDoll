@@ -48,6 +48,7 @@
 	"librarySettings": {
 		"title": "Biblioteca",
 		"scope": "Faça backup dos personagens salvos, das imagens e dos dados arquivados. Preferências, rascunhos e tarefas não são incluídos.",
+		"backupWithDebug": "Inclui detalhes de depuração",
 		"debugDetails": "Incluir detalhes de depuração",
 		"debugDetailsHint": "Adiciona logs de erro, histórico de solicitações, rascunhos, tarefas e o estado do app a cada backup para diagnosticar problemas. Os erros desta aba são incluídos e, a partir de agora, também são guardados entre recarregamentos e abas. Sua chave do PixelLab nunca é incluída.",
 		"scopeDebug": "Faça backup de personagens, artes, dados arquivados e detalhes de depuração.",

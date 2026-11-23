@@ -48,6 +48,7 @@
 	"librarySettings": {
 		"title": "Library",
 		"scope": "Back up saved characters, artwork, and archived data. Preferences, drafts, and jobs are not included.",
+		"backupWithDebug": "Includes debugging details",
 		"debugDetails": "Include debugging details",
 		"debugDetailsHint": "Adds error logs, request history, drafts, jobs and app state to every backup so problems can be diagnosed. Errors from this tab are included, and from now on errors are also kept across reloads and tabs. Your PixelLab key is never included.",
 		"scopeDebug": "Back up saved characters, artwork, archived data, and debugging details.",

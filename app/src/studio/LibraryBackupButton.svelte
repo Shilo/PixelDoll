@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
-	import { Download, LoaderCircle } from './icons.ts';
+	import { Bug, Download, LoaderCircle } from './icons.ts';
+	import { debugBackupOn } from './developerMode.svelte.ts';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 
 	let {
@@ -34,6 +35,13 @@
 			aria-hidden="true"
 		/>{/if}
 	<span class:row-name={menu}>{t('librarySettings.backup')}</span>
+	<!-- Same label everywhere; a quiet mark says the file will also carry debug/ (Settings > Library, Developer mode). -->
+	{#if debugBackupOn()}<span
+			class="debug-mark bu-muted"
+			role="img"
+			aria-label={t('librarySettings.backupWithDebug')}
+			title={t('librarySettings.backupWithDebug')}><Bug size={16} aria-hidden="true" /></span
+		>{/if}
 {/snippet}
 
 {#if settings}
@@ -64,6 +72,11 @@
 		align-items: center;
 		gap: 8px;
 		margin-block-start: 6px;
+	}
+	.debug-mark {
+		display: inline-flex;
+		flex: none;
+		margin-inline-start: auto;
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		:global(.backup-spinner) {

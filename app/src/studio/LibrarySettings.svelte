@@ -2,8 +2,12 @@
 	import SettingsBackupCopy from './SettingsBackupCopy.svelte';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 	import SettingsItemToggle from './SettingsItemToggle.svelte';
-	import { DEBUG_BACKUP_KEY, readFlag } from '../lib/debug/flags.ts';
-	import { developerModeEnabled } from './developerMode.svelte.ts';
+	import {
+		debugBackupOn,
+		debugDetailsSaved,
+		developerModeEnabled,
+		setDebugDetails
+	} from './developerMode.svelte.ts';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
@@ -110,30 +114,9 @@
 	}
 
 	// Developer mode only: backups then carry a debug/ folder (lib/debug/bundle.ts) for whoever helps with a problem.
-	let debugDetails = $state(readFlag(DEBUG_BACKUP_KEY));
 	const debugging = $derived(developerModeEnabled() && !workspaceCopy);
-	// Another tab may switch it: the backup reads the saved value, so the switch must show it.
-	$effect(() => {
-		const sync = (event: StorageEvent) => {
-			if (
-				event.storageArea === localStorage &&
-				(event.key === DEBUG_BACKUP_KEY || event.key === null)
-			)
-				debugDetails = readFlag(DEBUG_BACKUP_KEY);
-		};
-		addEventListener('storage', sync);
-		return () => removeEventListener('storage', sync);
-	});
-	function setDebugDetails(on: boolean) {
-		debugDetails = on;
-		try {
-			if (on) localStorage.setItem(DEBUG_BACKUP_KEY, '1');
-			else localStorage.removeItem(DEBUG_BACKUP_KEY);
-		} catch (cause) {
-			console.warn('debug details setting', cause);
-			debugDetails = readFlag(DEBUG_BACKUP_KEY);
-			error = message('librarySettings.debugNotSaved');
-		}
+	function changeDebugDetails(on: boolean) {
+		if (!setDebugDetails(on)) error = message('librarySettings.debugNotSaved');
 	}
 
 	function backup() {
@@ -344,16 +327,16 @@
 			<LibraryBackupButton settings disabled={busy} onbackup={backup} />
 			<div class="backup-notes">
 				<p class="bu-muted settings-description">
-					{t(debugging && debugDetails ? 'librarySettings.scopeDebug' : 'librarySettings.scope')}
+					{t(debugBackupOn() ? 'librarySettings.scopeDebug' : 'librarySettings.scope')}
 				</p>
 			</div>
 			{#if debugging}
 				<SettingsItemToggle
 					setting="debug-details"
 					aria-describedby={debugHint}
-					checked={debugDetails}
+					checked={debugDetailsSaved()}
 					disabled={busy}
-					onchange={(event) => setDebugDetails(event.currentTarget.checked)}
+					onchange={(event) => changeDebugDetails(event.currentTarget.checked)}
 				>
 					<span class="row-name">{t('librarySettings.debugDetails')}</span>
 				</SettingsItemToggle>

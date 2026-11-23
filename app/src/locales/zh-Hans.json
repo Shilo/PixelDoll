@@ -45,6 +45,7 @@
 	"librarySettings": {
 		"title": "角色库",
 		"scope": "备份已保存的角色、素材和归档数据。不包含偏好设置、草稿和任务。",
+		"backupWithDebug": "包含调试信息",
 		"debugDetails": "包含调试信息",
 		"debugDetailsHint": "在每个备份中加入错误日志、请求记录、草稿、任务和应用状态，便于诊断问题。会包含此标签页的错误，从现在起还会跨刷新和标签页保留错误。绝不包含你的 PixelLab 密钥。",
 		"scopeDebug": "备份已保存的角色、图稿、归档数据和调试信息。",
