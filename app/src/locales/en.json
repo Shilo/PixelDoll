@@ -2484,7 +2484,6 @@
 			"frame": "Frame {number}",
 			"unavailable": "This frame needs body artwork and measured joints for every selected facing.",
 			"changed": "The selected starting frame changed. Choose the source again. No generation was requested.",
-			"route": "This route starts from Standing. Choose a different animation model to use a saved frame.",
 			"stateTarget": "A State cannot be replaced as a Move."
 		},
 		"loop": "Loop",

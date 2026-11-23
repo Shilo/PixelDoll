@@ -2493,7 +2493,6 @@
 			"frame": "Quadro {number}",
 			"unavailable": "Este quadro precisa de uma imagem do corpo e de articulações medidas para cada direção selecionada.",
 			"changed": "O quadro inicial selecionado mudou. Escolha a origem novamente. Nenhuma geração foi solicitada.",
-			"route": "Este método começa na pose em pé. Escolha outro modelo de animação para usar um quadro salvo.",
 			"stateTarget": "Não é possível substituir um estado como se fosse uma animação."
 		},
 		"loop": "Repetir",

@@ -186,6 +186,7 @@ import {
 	moveFrames,
 	moveMotionFrames,
 	moveMotionGens,
+	moveMotionSource,
 	nativeMoveGens,
 	type MoveFrameSpec
 } from './movePricing.ts';
@@ -975,8 +976,8 @@ export const artMapping = (rig: Pick<Manifest['rig'], 'artOffset'>, dir: Directi
  *  not match ours (Fix frames, Adjust frame, an outfit drawn at creation). `optional-exact`: the managed skeleton-v3 walk
  *  template sends no such flag, so an extra frame counts only when it is exactly our standing view. */
 type MotionEchoRule = 'optional-exact' | 'required-leading' | 'optional-leading';
-const motionEchoRule = (spec: Pick<MoveSpec, 'motionSource'>, request: Req): MotionEchoRule =>
-	spec.motionSource === 'standalone'
+const motionEchoRule = (spec: MoveFrameSpec, request: Req): MotionEchoRule =>
+	moveMotionSource(spec) === 'standalone'
 		? 'required-leading'
 		: (request.body as { keep_first_frame?: boolean } | undefined)?.keep_first_frame === false
 			? 'optional-leading'
@@ -2114,7 +2115,7 @@ async function inspectMeasurementRecovery(
 				motionEchoRule(spec, request),
 				spec.motionLift?.[d],
 				'motion',
-				spec.motionSource === 'standalone' ? 0 : artMapping(rig, d)
+				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d)
 			);
 			const measured = await Promise.all(
 				frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
@@ -2354,16 +2355,6 @@ export function bodyMoveIssue(
 	s: MoveFrameSpec & Pick<MoveSpec, 'text' | 'startFrom'>,
 	blocked = false
 ): LocalizedError | undefined {
-	if (
-		s.startFrom &&
-		moveAnimationModel(s) === 'skeleton-v3' &&
-		s.motionSource !== 'standalone' &&
-		!isAuthoredAction(s.action)
-	)
-		return new LocalizedError(
-			'This route starts from Standing. Choose a different animation model to use a saved frame.',
-			'moveSheet.startFrom.route'
-		);
 	const frames = moveFrames(m, s);
 	const model = moveAnimationModel(s);
 	const suffix = blocked ? ' No generation was requested.' : '';
@@ -3063,11 +3054,12 @@ export function moveMotionRequest(
 	first = '[starting artwork]',
 	preview = false
 ): Req {
-	if (spec.motionSource === 'standalone') {
+	if (moveMotionSource(spec) === 'standalone') {
 		return nativeMoveRequest(
 			rec,
 			{
 				...spec,
+				motionSource: 'standalone',
 				animation: {
 					...spec.animation,
 					model: 'pixminimax',
@@ -3081,7 +3073,7 @@ export function moveMotionRequest(
 		);
 	}
 	return routes.animateCharacter(
-		spec.action === 'walk' && spec.motionSource === undefined
+		spec.action === 'walk' && moveMotionSource(spec) === undefined
 			? baseAnimation(
 					'skeleton-v3',
 					rec.character?.id ?? '',
@@ -3146,7 +3138,7 @@ export function nativeMoveRequest(
 		reference?.end === undefined
 			? undefined
 			: { end: reference.end && (preview ? '[uploaded end frame]' : reference.end.base64) },
-		spec.animation?.loop && (spec.motionSource !== undefined || !gaitTemplate(spec.action)),
+		spec.animation?.loop && (moveMotionSource(spec) !== undefined || !gaitTemplate(spec.action)),
 		start
 	);
 	const guard = ', unarmed, no weapon, no props, no other people, no effects';
@@ -3374,7 +3366,7 @@ async function bodyClip(
 			rec,
 			spec,
 			d,
-			spec.motionSource === 'standalone' ? await b64(motionStart) : undefined
+			moveMotionSource(spec) === 'standalone' ? await b64(motionStart) : undefined
 		);
 		const result = await motion(
 			request,
@@ -3387,7 +3379,7 @@ async function bodyClip(
 			rig.cell.w,
 			motionStart,
 			spec.motionLift?.[d],
-			spec.motionSource === 'standalone' ? 0 : artMapping(rig, d),
+			moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d),
 			motionEchoRule(spec, request)
 		);
 		keypoints = result.keypoints;
@@ -3570,7 +3562,7 @@ async function motionLiftOf(
 		images = (await imagesOf(record)).map((out) => out.img),
 		frames = images.length === expected + 1 ? images.slice(1) : images;
 	if (frames.length !== expected) return null;
-	const below = spec.motionSource === 'standalone' ? 0 : artMapping(rec.manifest.rig, d),
+	const below = moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rec.manifest.rig, d),
 		lifts = frames.map((image) => liftToFit(image, size, size, 128, size, below));
 	return lifts.every((lift): lift is number => lift !== null) ? lifts : null;
 }
@@ -3586,7 +3578,7 @@ async function makeRoomOption(
 	primary: boolean
 ): Promise<MovePaidOption | undefined> {
 	if (
-		plan.spec.motionSource === 'standalone' ||
+		moveMotionSource(plan.spec) === 'standalone' ||
 		!failed.length ||
 		failed.some((v) => v.error?.paid.failure !== 'overflow')
 	)
@@ -4062,7 +4054,7 @@ async function addBodyClip(
 			motion:
 				model !== 'skeleton-v3'
 					? `${model}:${spec.text?.trim() || spec.action || spec.id}`
-					: spec.action === 'walk' && spec.motionSource === undefined
+					: spec.action === 'walk' && moveMotionSource(spec) === undefined
 						? 'managed-skeleton-v3:walking-8-frames'
 						: authored
 							? `authored:${spec.action}`

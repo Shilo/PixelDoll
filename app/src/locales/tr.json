@@ -2484,7 +2484,6 @@
 			"frame": "Kare {number}",
 			"unavailable": "Bu kare için seçilen her yönde gövde görseli ve ölçülmüş eklem konumları gerekir.",
 			"changed": "Seçilen başlangıç karesi değişti. Kaynağı yeniden seçin. Üretim isteği gönderilmedi.",
-			"route": "Bu yöntem ayakta duruşla başlar. Kayıtlı bir kareyi kullanmak için başka bir animasyon modeli seçin.",
 			"stateTarget": "Bir durum, animasyon gibi değiştirilemez."
 		},
 		"loop": "Döngü",

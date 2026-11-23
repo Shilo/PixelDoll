@@ -81,8 +81,18 @@ export const extendable = (m: Manifest, itemId: string) =>
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const isAuthoredAction = (action?: string): action is string =>
 	!!action && Object.hasOwn(ACTIONS, action);
-export type MoveFrameSpec = Pick<MoveSpec, 'action' | 'frames' | 'animation' | 'motionSource'>;
+export type MoveFrameSpec = Pick<
+	MoveSpec,
+	'action' | 'frames' | 'animation' | 'motionSource' | 'startFrom'
+>;
 export const moveAnimationModel = (spec: MoveFrameSpec) => spec.animation?.model ?? 'skeleton-v3';
+/** The motion source a Skeleton move uses. The managed character's motion always starts from the Standing PixelLab
+ *  registered, so a described move that starts from a saved frame or State takes the standalone PixMiniMax route, which
+ *  starts from that frame at the same price, whatever source was resolved for the character. */
+export const moveMotionSource = (spec: MoveFrameSpec): MoveSpec['motionSource'] =>
+	spec.startFrom && moveAnimationModel(spec) === 'skeleton-v3' && !isAuthoredAction(spec.action)
+		? 'standalone'
+		: spec.motionSource;
 export const moveFrames = (m: Manifest, s: MoveFrameSpec) => {
 	const dir = m.rig.directions.find((d) => !d.mirrorOf && m.rig.rest?.[d.id])?.id;
 	const r = dir && m.rig.rest?.[dir];
@@ -128,13 +138,13 @@ export function nativeMoveGens(
 }
 
 export function moveMotionFrames(m: Manifest, spec: MoveFrameSpec): number {
-	return spec.action === 'walk' && spec.motionSource === undefined
+	return spec.action === 'walk' && moveMotionSource(spec) === undefined
 		? 8
 		: Math.ceil(moveFrames(m, spec) / 4) * 4;
 }
 
 export function moveMotionGens(m: Manifest, spec: MoveFrameSpec): number {
-	return spec.action === 'walk' && spec.motionSource === undefined
+	return spec.action === 'walk' && moveMotionSource(spec) === undefined
 		? 3
 		: nativeMoveGens('pixminimax', m.rig.cell, moveMotionFrames(m, spec));
 }

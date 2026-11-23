@@ -2484,7 +2484,6 @@
 			"frame": "Frame {number}",
 			"unavailable": "Für diesen Frame werden Körperbilder und vermessene Gelenke für jede ausgewählte Blickrichtung benötigt.",
 			"changed": "Der ausgewählte Startframe hat sich geändert. Wähle die Quelle erneut aus. Es wurde keine Generierung angefordert.",
-			"route": "Dieses Verfahren startet mit der Standpose. Wähle ein anderes Animationsmodell, um einen gespeicherten Frame zu verwenden.",
 			"stateTarget": "Ein Zustand kann nicht als Animation ersetzt werden."
 		},
 		"loop": "Schleife",

@@ -2484,7 +2484,6 @@
 			"frame": "Fotograma {number}",
 			"unavailable": "Este fotograma necesita una imagen del cuerpo y articulaciones medidas para cada dirección seleccionada.",
 			"changed": "El fotograma inicial seleccionado ha cambiado. Vuelve a elegir el origen. No se ha solicitado ninguna generación.",
-			"route": "Este método empieza desde la pose de pie. Elige otro modelo de animación para usar un fotograma guardado.",
 			"stateTarget": "No se puede sustituir un estado como si fuera una animación."
 		},
 		"loop": "Repetir",

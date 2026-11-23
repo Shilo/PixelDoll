@@ -2484,7 +2484,6 @@
 			"frame": "Image {number}",
 			"unavailable": "Cette image nécessite un visuel du corps et des articulations mesurées pour chaque direction sélectionnée.",
 			"changed": "L’image de départ sélectionnée a changé. Choisissez à nouveau la source. Aucune génération n’a été demandée.",
-			"route": "Cette méthode part de la pose debout. Choisissez un autre modèle d’animation pour utiliser une image enregistrée.",
 			"stateTarget": "Un état ne peut pas être remplacé comme une animation."
 		},
 		"loop": "Boucle",

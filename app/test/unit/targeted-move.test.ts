@@ -2,6 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import {
 	addMove,
 	b64,
+	bodyMoveIssue,
 	moveMotionRequest,
 	nativeMoveRequest,
 	reviewItemMove,
@@ -649,6 +650,35 @@ test('an authored Skeleton move from a fitted generated State poses the State ar
 		expect(body).toMatchObject({ first_frame: first, first_frame_keypoints: joints });
 });
 
+test('a described Skeleton move from a saved frame on a managed character routes standalone at the same price', async () => {
+	const f = await fixture();
+	const m = f.original.manifest;
+	const startFrom = resolveMoveSource(m, { clip: 'idle', cell: 3 }, ['east'])!;
+	for (const action of [undefined, 'walk']) {
+		const spec = {
+			id: 'idle',
+			action,
+			text: 'Step softly',
+			frames: 4,
+			items: [],
+			replace: true,
+			dirs: ['east' as const],
+			animation: { model: 'skeleton-v3' as const, frameCount: 4 },
+			motionSource: action ? undefined : ('managed' as const),
+			startFrom
+		};
+		expect(bodyMoveIssue(m, spec)).toBeUndefined();
+		const request = moveMotionRequest(f.original, spec, 'east', 'saved-frame');
+		expect(request).toMatchObject({
+			path: '/animate-pixminimax',
+			body: { first_frame: png('saved-frame'), frame_count: 4 }
+		});
+		expect(moveEstimate(m, spec)).toEqual(
+			moveEstimate(m, { ...spec, motionSource: 'standalone' as const })
+		);
+	}
+});
+
 test('Skeleton retry keeps the exact authored start and omits stale or incompatible starts', async () => {
 	const f = await fixture(false, 'bad-palette');
 	const spec = {
@@ -667,9 +697,16 @@ test('Skeleton retry keeps the exact authored start and omits stale or incompati
 	const offer = skeletonMoveReview(f.saved(), spec, result, []);
 	expect(offer?.review.startFrom).toEqual(spec.startFrom);
 	expect(offer?.review.approvedDirs).toEqual(spec.dirs);
-	expect(
-		skeletonMoveReview(f.saved(), { ...spec, action: undefined, text: 'Hold still' }, result, [])
-	).toBeUndefined();
+	// Deliberately flipped (2026-11-23): a described retry from a saved frame used to get no offer, because the managed
+	// character's motion always starts from Standing. It now takes the standalone PixMiniMax route at the same price.
+	const described = skeletonMoveReview(
+		f.saved(),
+		{ ...spec, action: undefined, text: 'Hold still' },
+		result,
+		[]
+	);
+	expect(described?.review.startFrom).toEqual(spec.startFrom);
+	expect(moveMotionRequest(f.saved(), described!.review, 'east').path).toBe('/animate-pixminimax');
 	const changed = structuredClone(f.saved());
 	const east = changed.manifest.rig.animations[0].sources!.east!;
 	east.measured![3] = east.measured![3].map((joint) => ({ ...joint, x: joint.x + 0.01 }));

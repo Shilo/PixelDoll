@@ -2421,7 +2421,6 @@
 			"frame": "Frame {number}",
 			"unavailable": "Frame ini memerlukan gambar tubuh dan sendi yang sudah diukur untuk setiap arah yang dipilih.",
 			"changed": "Frame awal yang dipilih telah berubah. Pilih ulang sumbernya. Tidak ada permintaan generasi yang dikirim.",
-			"route": "Metode ini dimulai dari pose berdiri. Pilih model animasi lain untuk menggunakan frame yang tersimpan.",
 			"stateTarget": "Varian tidak dapat diganti seperti animasi."
 		},
 		"loop": "Ulangi",
