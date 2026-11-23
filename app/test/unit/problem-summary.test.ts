@@ -48,9 +48,12 @@ test('translated failures are grouped by an explicit map of their catalog codes,
 	expect(kind(coded('stateGeneration.quoteUnavailable'))).toBe('quote');
 	expect(kind(coded('stateGeneration.flashSizesUnavailable'))).toBe('quote');
 	expect(kind(coded('renameSheet.characterIdConflict'))).toBe('exportId');
-	// unmapped codes are unexpected (their text stays in view), even when the key name looks like a known kind
-	expect(kind(coded('create.errors.describeMove'))).toBe('unexpected');
-	expect(kind(coded('adjustFrame.errors.missingArtwork'))).toBe('unexpected');
+	// a catalog message with no kind of its own is stated in its own words, even when the key name looks like a known kind
+	expect(kind(coded('create.errors.describeMove'))).toBe('stated');
+	expect(kind(coded('adjustFrame.errors.missingArtwork'))).toBe('stated');
+	// "changed" codes the old name pattern caught keep their review-again step
+	expect(kind(coded('stateGeneration.changed'))).toBe('changed');
+	expect(kind(coded('moveSheet.checkpoint.changed'))).toBe('changed');
 });
 
 test('account, network and unanticipated failures get their own plain words', () => {
