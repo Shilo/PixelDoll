@@ -3691,6 +3691,10 @@ const viewWords = (m: Manifest, move: string, d: DirectionName): ViewWords => ({
 	direction: viewName(d)
 });
 const salt = (previous = 0) => previous + 1 + Math.floor(Math.random() * 1_000_000);
+/** The motion frames of a returned source: one extra leading frame is the start frame sent back (normalizeMotionFrames drops
+ *  it or stops on it), so it never asks for a lift or room. */
+const motionFramesOf = (images: Img[], expected: number) =>
+	images.length === expected + 1 ? images.slice(1) : images;
 /** Rows each returned motion frame needs to fit the cell, or null when lifting cannot fit one (cut at a side or the top). */
 async function motionLiftOf(
 	plan: BodyClipPlan,
@@ -3700,8 +3704,10 @@ async function motionLiftOf(
 	const { rec, spec } = plan,
 		size = rec.manifest.rig.cell.w,
 		expected = moveMotionFrames(rec.manifest, spec),
-		images = (await imagesOf(record)).map((out) => out.img),
-		frames = images.length === expected + 1 ? images.slice(1) : images;
+		frames = motionFramesOf(
+			(await imagesOf(record)).map((out) => out.img),
+			expected
+		);
 	if (frames.length !== expected) return null;
 	const below = moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rec.manifest.rig, d),
 		lifts = frames.map((image) => liftToFit(image, size, size, 128, size, below));
@@ -3736,7 +3742,8 @@ async function makeRoomOption(
 					.snapshot()
 					.jobs.find((job) => job.requestHash === hash && job.state === 'done');
 			if (!cached) continue;
-			for (const { img } of await imagesOf(cached)) {
+			const images = (await imagesOf(cached)).map((out) => out.img);
+			for (const img of motionFramesOf(images, moveMotionFrames(m, spec))) {
 				const box = opaqueAt(img, 128);
 				if (!box) continue;
 				const x = Math.floor((size - img.w) / 2),

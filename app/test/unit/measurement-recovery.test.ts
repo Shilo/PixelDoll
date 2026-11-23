@@ -1824,6 +1824,29 @@ test('an overflowing paid motion is reviewed from the cache with a priced lift a
 	expect(f.posts()).toBe(posts);
 });
 
+test('Make room plans only the motion frames, never the start frame a managed motion sent back first', async () => {
+	const f = await fixture(false, 'managed-walk');
+	await f.finishOriginalChecks();
+	// The stepping foot falls 2 rows below the frame in every motion frame; the dropped leading echo is a canvas-filling
+	// image that no frame change could fit.
+	const png = async (size: number, rows: [number, number], cols: [number, number]) => {
+		const im = makeImg(size, size);
+		for (let y = rows[0]; y < rows[1]; y++)
+			for (let x = cols[0]; x < cols[1]; x++) im.data.set([180, 140, 120, 255], (y * size + x) * 4);
+		return new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' });
+	};
+	const tall = await png(72, [14, 70], [30, 42]),
+		huge = await png(72, [0, 72], [0, 72]);
+	const [echo, ...motion] = f.records.get('motion-east')!.jobs[0].results;
+	f.blobs.set(echo.sha, huge);
+	for (const result of motion) f.blobs.set(result.sha, tall);
+	await expect(addMove('rig-recover', f.spec)).rejects.toThrow('does not fit the 64 px frame');
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(review.options.find((option) => option.id === 'enlarge-frame')).toMatchObject({
+		change: { size: 64, dy: -2 }
+	});
+});
+
 test('a view whose paid request is still at PixelLab is reviewed as running, not as unbought', async () => {
 	const f = await fixture(false, 'walk');
 	await f.finishOriginalChecks();
