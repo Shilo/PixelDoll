@@ -28,7 +28,7 @@ const record = (id: string, requestHash: string, extra: Partial<JobRec>): JobRec
 		...extra
 	}) as JobRec;
 
-test.each(['done', 'lost'] as const)(
+test.each(['done', 'lost', 'failed'] as const)(
 	'a registration without a character (%s) keeps the paid draw and offers only a new registration',
 	async (registration) => {
 		vi.spyOn(db, 'get').mockResolvedValue(undefined);
@@ -61,7 +61,7 @@ test.each(['done', 'lost'] as const)(
 				record('register', 'register', {
 					gens: 0.25,
 					response: {},
-					// A lost registration may have charged without reporting it: the spent total is only a known part.
+					// A stopped registration's reported charge is still spent; a lost one may also have charged without reporting it.
 					state: registration
 				})
 			]
@@ -77,7 +77,8 @@ test.each(['done', 'lost'] as const)(
 		};
 		const review = (await reviewCreateResults(spec))!;
 		expect(enqueue).not.toHaveBeenCalled();
-		expect(review.spent).toBe(registration === 'done' ? 2.25 : 2);
+		expect(review.spent).toBe(2.25);
+		expect(review.recordIds).toEqual(['draw', 'register']);
 		expect(review.spentUnknown).toBe(registration === 'lost' ? true : undefined);
 		expect(review.views).toHaveLength(8);
 		expect(review.views.every((view) => view.state === 'ready' && view.frames.length === 1)).toBe(

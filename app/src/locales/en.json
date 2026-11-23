@@ -2247,6 +2247,7 @@
 			"anchoredEquipmentGenerationRequires": "Anchored equipment generation requires an existing move and its saved standing items. No generation was requested.",
 			"moveItemMissingStored": "This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.",
 			"moveKeptUnposed": "{move} {direction} was kept without poses. Make that view again before fitting equipment there. No generation was requested.",
+			"freeChoiceCacheMissing": "A result this free choice reuses is no longer saved, so nothing was requested. Review the move again.",
 			"setUpRigFirst": "Set up this character’s pose rig before adding moves.",
 			"newMoveNeedsEvery": "A new move needs every independently drawn direction.",
 			"partialRepairMustKeep": "A partial repair must keep the existing frame count.",

@@ -2183,6 +2183,7 @@
 			"anchoredEquipmentGenerationRequires": "锚定装备生成需要现有动作及其已保存的站立装备。未请求生成。",
 			"moveItemMissingStored": "此动作或装备缺少已存储的关节或站立参考。生成装备前请先设置其姿势。未请求生成。",
 			"moveKeptUnposed": "{move} 的{direction}视角未带姿势保存。适配装备前，请重新制作该视角。未请求任何生成。",
+			"freeChoiceCacheMissing": "这个免费选项要复用的结果已不再保存，因此未发送任何请求。请重新检查这个动作。",
 			"setUpRigFirst": "添加动作前，请先设置此角色的姿势绑定结构。",
 			"newMoveNeedsEvery": "新动作需要每个独立绘制的朝向。",
 			"partialRepairMustKeep": "部分修复必须保持现有帧数。",

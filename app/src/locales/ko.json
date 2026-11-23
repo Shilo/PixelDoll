@@ -2183,6 +2183,7 @@
 			"anchoredEquipmentGenerationRequires": "앵커 장비 생성에는 기존 동작과 저장된 서 있는 아이템이 필요해요. 생성은 요청되지 않았어요.",
 			"moveItemMissingStored": "이 동작이나 아이템에 저장된 관절이나 서 있는 참조가 빠져 있어요. 장비를 생성하기 전에 포즈를 설정하세요. 생성은 요청되지 않았어요.",
 			"moveKeptUnposed": "{move} {direction} 방향은 포즈 없이 보관되었어요. 장비를 맞추기 전에 그 방향을 다시 만드세요. 생성 요청은 보내지 않았어요.",
+			"freeChoiceCacheMissing": "이 무료 선택이 다시 쓰는 결과가 더 이상 저장되어 있지 않아 아무것도 요청하지 않았어요. 동작을 다시 검토하세요.",
 			"setUpRigFirst": "동작을 추가하기 전에 이 캐릭터의 자세 리그를 설정하세요.",
 			"newMoveNeedsEvery": "새 동작에는 독립적으로 그린 모든 방향이 필요해요.",
 			"partialRepairMustKeep": "부분 복구는 기존 프레임 수를 유지해야 해요.",

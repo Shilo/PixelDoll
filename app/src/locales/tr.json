@@ -2247,6 +2247,7 @@
 			"anchoredEquipmentGenerationRequires": "Referansa dayalı ekipman üretimi için mevcut bir animasyon ve kayıtlı ayakta duruş eşyaları gerekir. Üretim isteği gönderilmedi.",
 			"moveItemMissingStored": "Bu animasyonun veya eşyanın kayıtlı eklemleri ya da ayakta duruş referansları eksik. Ekipman üretmeden önce pozlarını kurun. Üretim isteği gönderilmedi.",
 			"moveKeptUnposed": "{move} {direction} pozsuz tutuldu. Oraya ekipman uydurmadan önce o görünümü yeniden oluşturun. Hiçbir üretim istenmedi.",
+			"freeChoiceCacheMissing": "Bu ücretsiz seçimin yeniden kullandığı bir sonuç artık kayıtlı değil, bu yüzden hiçbir şey istenmedi. Hareketi yeniden inceleyin.",
 			"setUpRigFirst": "Animasyon eklemeden önce bu karakterin poz rig'ini kurun.",
 			"newMoveNeedsEvery": "Yeni bir animasyon için bağımsız çizilen tüm yönler gerekir.",
 			"partialRepairMustKeep": "Kısmi onarımda mevcut kare sayısı korunmalıdır.",

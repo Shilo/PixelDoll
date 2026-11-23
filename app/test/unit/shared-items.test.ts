@@ -7,6 +7,7 @@ import { loadProject, type StoredProject } from '../../src/lib/store/project.ts'
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
+import { LABELS } from '../../src/lib/rig/poses.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
 import * as core from '../../src/lib/runtime/paperdoll.js';
 import { PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
@@ -489,6 +490,45 @@ test('views both characters mirror are covered by their drawn source view', asyn
 	expect(copy.item.layers[0].cells).toEqual(hatOf(source).layers[0].cells);
 	expect(copy.item.coverage).toEqual(['rest/south/0']);
 	expect(made.size).toBe(0); // nothing needed flipping
+});
+
+test('a target with a move view without poses still keeps the standing references for future fitting', async () => {
+	const source = await equipmentFixture();
+	// A set-up standing: measured rest view, the standing move posed from it, and the item's dressed standing view.
+	const points = LABELS.map((label, i) => ({ label, x: 0.3 + i * 0.01, y: 0.3 + i * 0.015 }));
+	const standing = source.manifest.items.find((item) => item.slot === 'body')!.layers[0].cells!
+		.rest!.south![0]!;
+	source.manifest.rig.rest = { south: { image: standing, keypoints: points } };
+	source.manifest.rig.animations[0].sources = {
+		south: {
+			route: 'import',
+			reference: standing,
+			keypoints: [points],
+			motion: 'imported-rest',
+			provenance: []
+		}
+	};
+	hatOf(source).dressed = { south: standing };
+	const target = bodyOnly(source);
+	const frames = flipper(async (h) => source.images.get(h)!);
+	expect(
+		(await assessCopy(source.manifest, hatOf(source), target.manifest, frames)).canExtend
+	).toBe(true);
+	// A move kept without poses in its view (no sources there): equipment is not fitted there yet, nothing else changes.
+	const rig = target.manifest.rig,
+		body = target.manifest.items.find((item) => item.id === rig.baseItem)!;
+	rig.animations.push({ ...structuredClone(rig.animations[0]), id: 'walk', sources: undefined });
+	body.layers[0].cells!.walk = structuredClone(body.layers[0].cells!.rest);
+	expect(
+		(await assessCopy(source.manifest, hatOf(source), target.manifest, frames)).canExtend
+	).toBe(true);
+	// Stored poses that are present but incomplete still refuse.
+	rig.animations[1].sources = {
+		south: { ...rig.animations[0].sources!.south!, motion: 'estimated', keypoints: [] }
+	};
+	expect(
+		(await assessCopy(source.manifest, hatOf(source), target.manifest, frames)).canExtend
+	).toBe(false);
 });
 
 test('deleting the source removes its entry while the copy stays intact', async () => {

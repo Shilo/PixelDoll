@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import {
 	addMove,
+	finishedViewsSpec,
 	type MoveSpec,
 	b64,
 	bodyMoveIssue,
@@ -366,10 +367,24 @@ async function fixture(
 			} as unknown as JobRec;
 		throw Error('Unexpected route');
 	});
+	/** Keep every answered request as a completed ledger record of its real identity, so free choices can read the cache. */
+	const cache = () => {
+		const ledger: JobRec[] = [],
+			reply = enqueue.getMockImplementation()!;
+		enqueue.mockImplementation(async (req, ...rest) => {
+			const record = await reply(req, ...rest);
+			ledger.push({ ...record, ...(await requestIdentity(req)), state: 'done' });
+			return record;
+		});
+		vi.spyOn(queue, 'snapshot').mockImplementation(
+			() => ({ jobs: ledger }) as unknown as ReturnType<typeof queue.snapshot>
+		);
+	};
 	return {
 		saved: () => saved,
 		images,
 		original,
+		cache,
 		enqueue,
 		put,
 		update,
@@ -1630,6 +1645,7 @@ test('a new move whose body frames lack joints is kept body only, without poses,
 				} as unknown as JobRec)
 			: measuring(req, ...rest)
 	);
+	f.cache();
 	const move = { id: 'calm', action: 'idle', replace: false, dirs: undefined };
 	const stopped = (await f.run(move).catch((error: unknown) => error)) as PaidStepError;
 	expect(stopped.message).toContain('valid joints were not found on every frame');
@@ -1647,9 +1663,11 @@ test('a new move whose body frames lack joints is kept body only, without poses,
 	const renders = () =>
 		f.enqueue.mock.calls.filter(([r]) => r.path === '/animate-with-skeleton-v3').length;
 	const before = renders();
+	const calls = f.enqueue.mock.calls.length;
 	await f.run({ ...move, keepUnposed: true });
-	// The same four views are rendered again here only because this fixture has no request cache; no other step is bought.
-	expect(renders() - before).toBe(4);
+	// Keeping is free: every render and check is read from the cache, nothing is sent.
+	expect(renders()).toBe(before);
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
 	const saved = f.saved(),
 		calm = saved.manifest.rig.animations.find((a) => a.id === 'calm')!;
 	expect(calm.sources).toBeUndefined();
@@ -1708,6 +1726,7 @@ test('one replaced view kept without poses loses only its own poses and fitted e
 				} as unknown as JobRec)
 			: measuring(req, ...rest)
 	);
+	f.cache();
 	await expect(f.run()).rejects.toThrow('valid joints were not found on every frame');
 	expect(f.saved()).toEqual(f.original);
 	await f.run({ keepUnposed: true });
@@ -1799,4 +1818,38 @@ test('unposed views are listed per view and leave the list once they have poses 
 	expect(unposedView(['idle'], idle, 'south')).toBe(true);
 	expect(unposedView(['idle/south'], idle, 'south')).toBe(true);
 	expect(unposedView([], idle, 'south')).toBe(false);
+});
+
+test('saving the finished views of a move started from a saved frame keeps that start for those views', async () => {
+	const f = await fixture();
+	f.cache();
+	const all: DirectionName[] = ['south', 'east', 'north', 'west'];
+	const spec: MoveSpec = {
+		id: 'calm',
+		action: 'idle',
+		frames: 4,
+		items: [],
+		seed: 23,
+		replace: false,
+		poseStyle: 'visible-side-v1',
+		reviewBeforePublish: true,
+		startFrom: resolveMoveSource(f.saved().manifest, { clip: 'idle', cell: 3 }, all)!
+	};
+	// Every view is bought once (here all finish); the draft is discarded so only the cache remains.
+	await expect(f.run({ ...spec, dirs: undefined })).resolves.toMatchObject({ moveReview: 'calm' });
+	delete f.saved().moveReviews;
+	const calls = f.enqueue.mock.calls.length,
+		east = finishedViewsSpec(spec, ['east']);
+	expect(Object.keys(east.startFrom!.views)).toEqual(['east']);
+	// The full source map no longer matches a narrowed run: that was the refusal of the unchanged source.
+	await expect(f.run({ ...east, startFrom: spec.startFrom })).rejects.toThrow(
+		'The selected starting frame changed'
+	);
+	await expect(f.run({ ...east })).resolves.toMatchObject({ moveReview: 'calm' });
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
+	const draft = f.saved().moveReviews!.calm!;
+	expect(draft.dirs).toEqual(['east']);
+	expect(draft.animation.sources?.east?.referenceKeypoints).toEqual(
+		spec.startFrom!.views.east!.keypoints
+	);
 });
