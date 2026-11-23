@@ -421,6 +421,24 @@ test('ordinary standing failures finish only planned coverage and remain flagged
 	expect(q.order).toHaveLength(4);
 });
 
+test('only the calls that need a malformed standing design are skipped', async () => {
+	const { ctx, d, dressed } = await fixture();
+	const wrongSize = makeImg(8, 8);
+	d.calls.push({ ...d.calls[3], kind: 'grid', old: [] });
+	const run = runItem(d, ctx);
+	await vi.waitFor(() => expect(q.order).toHaveLength(1));
+	await land(q.order[0].id, [dressed, wrongSize]); // Unused padding.
+	await vi.waitFor(() => expect(q.order).toHaveLength(2));
+	await land(q.order[1].id, [dressed, wrongSize]); // Used standing design.
+	await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined());
+	await land(call('/animate-with-skeleton-v3', 'south')!.id, Array(4).fill(dressed));
+	const result = await run;
+	expect(result?.g1.has(0)).toBe(false);
+	expect(result?.g1.get(1)).toContain('G1');
+	expect(result?.cells.map((c) => c.key)).toEqual([0, 1, 2, 3].map((i) => `walk/south/${i}`));
+	expect(q.order).toHaveLength(3);
+});
+
 test.each([null, 'Needs PixelLab Tier 2 or higher. No request sent.'])(
 	'cached failing poses never create an automatic grid regardless of plan restriction %s',
 	async (blocked) => {

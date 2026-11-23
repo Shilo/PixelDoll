@@ -291,6 +291,19 @@ const outputsOf = (r: JobRec) => [...(r.jobs[0]?.results ?? [])].sort(frameOrder
 const hasAnchor = (k: number, c: CallState) => !!(c.reference || c.concept || anchored(k, c.kind));
 const cellOuts = (k: number, c: CallState, r: JobRec) =>
 	outputsOf(r).slice(hasAnchor(k, c) ? 1 : 0);
+const expectedCellOutputs = (k: number, c: CallState) =>
+	c.kind === 'pose'
+		? Math.max(3, c.cells.length)
+		: Math.max(EDIT_MIN_FRAMES - Number(hasAnchor(k, c)), c.cells.length);
+
+function identifiedOutputs(k: number, c: CallState, r: JobRec) {
+	const outputs = outputsOf(r);
+	return r.jobs.length === 1 &&
+		outputs.length === expectedCellOutputs(k, c) + Number(hasAnchor(k, c)) &&
+		outputs.every((frame, index) => frame.label.split('/').at(-1) === String(index))
+		? outputs.slice(Number(hasAnchor(k, c)))
+		: undefined;
+}
 /** Dressed keyframe outputs of dress call k, per rest cell (the call must be done). */
 function chunkOuts(
 	calls: CallState[],
@@ -602,8 +615,11 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 		pad = padOf(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method, rig.cell);
 	let req;
 	if (c.kind === 'grid') {
-		// B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
-		req = await gridReq(ctx, d.spec, c.cells, await dressedRefs(d), c.seed);
+		// A grid only consumes the design for its own view.
+		const dir = c.cells[0].split('/')[1] as DirectionName;
+		const kf = keyframeOf(d.calls, dir);
+		if (!kf) throw new Error(`${dir}: no dressed keyframe`);
+		req = await gridReq(ctx, d.spec, c.cells, [{ dir, im: await img(kf.sha) }], c.seed);
 		const blocked = queue.planBlocks(req, 1);
 		if (blocked) throw automaticRepairError(blocked);
 	} else if (c.kind === 'pose') {
@@ -653,7 +669,7 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 			// anchor cell: the design call's dressed cell 0 (cross-call design lock, S2; B16: dress chunks too)
 			const a = recOf(d.calls[0].recId);
 			if (a?.state !== 'done') throw new Error('design call not done');
-			const dressed = cellOuts(0, d.calls[0], a)[0];
+			const dressed = identifiedOutputs(0, d.calls[0], a)?.[0];
 			if (!dressed)
 				throw new LocalizedError(
 					'The design call returned no dressed frame.',
@@ -987,38 +1003,60 @@ export async function runItem(
 				}
 			}
 			const gates = [poseEarly(early, 0, r0)];
-			const rd = await Promise.all(
-				d.calls.slice(1, nd).map((_, i) =>
-					call(i + 1).then((r) => {
-						gates.push(poseEarly(early, i + 1, r));
-						return r;
-					})
-				)
+			const anchor = identifiedOutputs(0, d.calls[0], r0)?.[0];
+			const anchorImage = anchor && (await img(anchor.sha));
+			const { cell } = ctx.rec.manifest.rig;
+			const pad = padOf(specSlot(d.spec), d.spec.method, cell);
+			const anchorReady = anchorImage?.w === cell.w + 2 * pad && anchorImage.h === cell.h + 2 * pad;
+			const anchoredCallReady = (c: CallState, k: number) =>
+				!!c.recId || !!c.reference || !!c.concept || !anchored(k, c.kind) || anchorReady;
+			await Promise.all(
+				d.calls.slice(1, nd).map((c, i) => {
+					const k = i + 1;
+					if (!anchoredCallReady(c, k)) return;
+					return call(k).then((r) => {
+						gates.push(poseEarly(early, k, r));
+						if (r.state !== 'done') d.log.push(callStopped(k + 1, r));
+					});
+				})
 			);
 			await Promise.all(gates);
-			const bd = rd.findIndex((r) => r.state !== 'done');
-			if (bd >= 0) {
-				d.log.push(callStopped(bd + 2, rd[bd]));
-				break;
-			}
-			res = await evalItem();
-			if (hasStructuralFailure(res)) {
+			const design = await evalItem();
+			res = design;
+			if (hasStructuralFailure(design)) {
 				d.log.push({
 					key: 'generation.outcome.standingFrames',
 					text: 'PixelLab returned incomplete or malformed standing frames. No automatic retry was made.'
 				});
-				break;
 			}
-			status(`calls ${nd + 1}–${d.calls.length}`);
-			const rs = await Promise.all(
-				d.calls.slice(nd).map((_, i) => early.get(i + nd) ?? call(i + nd))
+			const readyDesigns = new Set(
+				d.calls
+					.slice(0, nd)
+					.flatMap((c, k) =>
+						c.kind === 'dress' &&
+						recOf(c.recId)?.state === 'done' &&
+						!structuralReason(design.g1.get(k) ?? '')
+							? c.cells
+							: []
+					)
 			);
-			const broken = rs.findIndex((r) => r.state !== 'done');
-			if (broken >= 0) {
-				d.log.push(callStopped(broken + nd + 1, rs[broken]));
-				break;
-			}
+			status(`calls ${nd + 1}–${d.calls.length}`);
+			const stopped = await Promise.all(
+				d.calls.slice(nd).map(async (c, i) => {
+					const k = i + nd;
+					if (!anchoredCallReady(c, k)) return true;
+					if (c.kind === 'pose' || c.kind === 'grid') {
+						const dir = c.cells[0].split('/')[1] as DirectionName;
+						if (!c.recId && !readyDesigns.has(restKey(dir))) return true;
+					}
+					const r = await (early.get(k) ?? call(k));
+					if (r.state === 'done') return false;
+					d.log.push(callStopped(k + 1, r));
+					return true;
+				})
+			);
 			res = await evalItem();
+			if (stopped.some(Boolean)) break;
 			d.log.push(
 				isClean(res)
 					? { key: 'generation.outcome.passed', text: 'Every frame passed the checks.' }
@@ -1197,21 +1235,10 @@ export async function evaluateItem(
 			);
 			continue;
 		}
-		let o = cellOuts(k, c, r);
-		const expected =
-			c.kind === 'pose'
-				? Math.max(3, c.cells.length)
-				: Math.max(EDIT_MIN_FRAMES - Number(hasAnchor(k, c)), c.cells.length);
-		if (o.length !== expected) {
-			g1.set(k, `G1 ${o.length} outputs for ${expected} requested frames`);
+		let o = identifiedOutputs(k, c, r);
+		if (!o) {
+			g1.set(k, `G1 expected ${expectedCellOutputs(k, c)} identifiable frame outputs`);
 			continue;
-		}
-		if (c.kind !== 'pose' && o.length > c.cells.length) {
-			const padding = await Promise.all(o.slice(c.cells.length).map((output) => img(output.sha)));
-			if (padding.some((im) => im.w !== W || im.h !== H)) {
-				g1.set(k, 'G1 duplicated edit output has the wrong frame size');
-				continue;
-			}
 		}
 		if (c.kind === 'pose') {
 			const dir = c.cells[0].split('/')[1] as DirectionName;
