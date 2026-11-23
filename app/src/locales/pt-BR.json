@@ -717,7 +717,7 @@
 		"missingFrames": "Faltam quadros para {names} em {move}",
 		"missingFrameViews": "Faltam quadros para {names} em {move} na direção {direction}",
 		"making": "Gerando…",
-		"makeIt": "Gerar",
+		"makeMissingViews": "Gerar vistas que faltam",
 		"estimate": {
 			"one": "~{n} geração",
 			"other": "~{n} gerações"

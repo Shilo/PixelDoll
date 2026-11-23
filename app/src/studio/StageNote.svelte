@@ -6,7 +6,6 @@
 	import { displayMessage } from '../lib/i18n.ts';
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
-	import type { DirectionName, Item } from '../lib/store/manifest.ts';
 	import { itemMoveOffer, missingItemMoves, moveMinimumTier } from './create.ts';
 	import { extendable } from './movePricing.ts';
 	import { seeded } from './itemGeneration.ts';
@@ -45,28 +44,14 @@
 			missing.map((item) => item.name)
 		)
 	);
-	// A partial replacement may leave other directions intact; only missing views need paid posing.
-	function missingDirs(item: Item): DirectionName[] {
-		if (!m || !anim) return [];
-		return [
-			...new Set(
-				views
-					.filter((dir) =>
-						missingAt(m!, { [item.slot]: item.id }, anim!.id, dir).some((i) => i.id === item.id)
-					)
-					.map((dir) => m!.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir)
-			)
-		];
-	}
+	// The note describes the preview, but making frames completes the eligible views of the move.
 	const poseSpecs = $derived(
 		m && anim
-			? missing.flatMap((item) => {
-					const spec = missingItemMoves(m, item.id, currentItemDrawing(), 0).find(
-						(s) => s.id === anim.id
-					);
-					const dirs = spec?.dirs?.filter((dir) => missingDirs(item).includes(dir));
-					return spec && dirs?.length ? [{ ...spec, dirs }] : [];
-				})
+			? missing.flatMap((item) =>
+					missingItemMoves(m, item.id, currentItemDrawing(), 0).filter(
+						(spec) => spec.id === anim.id
+					)
+				)
 			: []
 	);
 	const poseOffer = $derived(m && poseSpecs.length ? itemMoveOffer(m, poseSpecs) : null);
@@ -169,7 +154,7 @@
 							disabled={(!!moving.spec && !moving.done) || !poseOffer?.specs.length || poseBlocked}
 							aria-describedby={poseBlocked ? 'stage-pose-tier' : undefined}
 							onclick={makePose}
-							>{t('stageNote.makeIt')}
+							>{t('stageNote.makeMissingViews')}
 							<span class="cost"
 								>{poseOffer?.gens == null
 									? t('common.unavailable')

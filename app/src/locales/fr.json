@@ -717,7 +717,7 @@
 		"missingFrames": "{names} : images manquantes pour {move}",
 		"missingFrameViews": "{names} : images manquantes pour {move} (direction : {direction})",
 		"making": "Création…",
-		"makeIt": "Générer les images",
+		"makeMissingViews": "Générer les vues manquantes",
 		"estimate": {
 			"one": "~{n} génération",
 			"other": "~{n} générations"

@@ -717,7 +717,7 @@
 		"missingFrames": "{names} için {move} kareleri eksik",
 		"missingFrameViews": "{names} için {move} animasyonunun {direction} yönündeki kareleri eksik",
 		"making": "Üretiliyor…",
-		"makeIt": "Üretin",
+		"makeMissingViews": "Eksik görünümleri üret",
 		"estimate": {
 			"one": "~{n} üretim hakkı",
 			"other": "~{n} üretim hakkı"

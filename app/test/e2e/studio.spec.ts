@@ -7014,7 +7014,7 @@ test('targeted move replacement names mirrored effects without offering a separa
 	await expect(directions).not.toHaveAccessibleDescription(/Mirrored views also change/);
 });
 
-test('partial missing gear and explicit item repair stay on the current move and view', async ({
+test('stage makes all missing item views while explicit repair stays on the current view', async ({
 	page,
 	context
 }, info) => {
@@ -7040,14 +7040,30 @@ test('partial missing gear and explicit item repair stay on the current move and
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	const fixture = await targetedRepairFixture(page);
+	const fixture = await targetedRepairFixture(page, true);
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		const p = s.store.project,
 			item = p.manifest.items.find((it: { id: string }) => it.id === id);
-		for (const layer of item.layers) delete layer.cells.walk.west;
-		item.coverage = item.coverage.filter((key: string) => !key.startsWith('walk/west/'));
+		// Both extra views have body frames and clip joints. One lacks the item design, the other lacks rest joints.
+		const rig = p.manifest.rig,
+			body = p.manifest.items.find((it: { id: string }) => it.id === rig.baseItem),
+			walk = rig.animations.find((a: { id: string }) => a.id === 'walk');
+		for (const dir of ['north-east', 'south-east']) {
+			rig.directions.push({ id: dir });
+			body.layers[0].cells.walk[dir] = [...body.layers[0].cells.walk.south];
+			walk.sources[dir] = { ...walk.sources.south };
+			rig.rest[dir] = { ...rig.rest.south };
+		}
+		item.dressed['south-east'] = item.dressed.south;
+		delete rig.rest['south-east'].keypoints;
+		for (const layer of item.layers) {
+			delete layer.cells.walk.south;
+			delete layer.cells.walk.east;
+			delete layer.cells.walk.west;
+		}
+		item.coverage = item.coverage.filter((key: string) => !/^walk\/(south|east|west)\//.test(key));
 		s.store.project = {
 			...p,
 			manifest: {
@@ -7072,8 +7088,8 @@ test('partial missing gear and explicit item repair stay on the current move and
 		};
 	}, fixture.itemId);
 	await inspectStage(page);
-	const make = page.locator('.stage-note').getByRole('button', { name: /^Make it/ });
-	await expect(make).toContainText('~3 gens');
+	const make = page.locator('.stage-note').getByRole('button', { name: /^Make missing views/ });
+	await expect(make).toContainText('~6 gens');
 	await expect(make).not.toContainText('...');
 	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
@@ -7089,7 +7105,7 @@ test('partial missing gear and explicit item repair stay on the current move and
 			s = await import(path);
 		return s.moving.spec;
 	});
-	expect(poseScope).toMatchObject({ id: 'walk', dirs: ['west'], items: [fixture.itemId] });
+	expect(poseScope).toMatchObject({ id: 'walk', dirs: ['south', 'east'], items: [fixture.itemId] });
 	expect(poseScope.replace).toBeUndefined();
 	expect(poseScope.itemMethod).toBeUndefined();
 	// The stopped repair's footer Discard leaves it, as Cancel did.
@@ -7151,7 +7167,7 @@ test('partial missing gear and explicit item repair stay on the current move and
 	});
 	expect(gridScope).toMatchObject({
 		id: 'walk',
-		dirs: ['west'],
+		dirs: ['east'],
 		items: [fixture.itemId],
 		itemMethod: 'grid'
 	});
@@ -7381,9 +7397,10 @@ test('unsafe imported equipment prices its frozen route and unsupported held off
 		s.ui.group = 'torso_inner';
 	}, fixture.itemId);
 	await inspectStage(page);
-	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toContainText(
-		'~10 gens'
-	);
+	const stageMake = page
+		.locator('.stage-note')
+		.getByRole('button', { name: /^Make missing views/ });
+	await expect(stageMake).toContainText('~10 gens');
 	await selectedItemDetails(page);
 	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('~10 gens');
 	await page.evaluate(async (id) => {
@@ -7409,9 +7426,7 @@ test('unsafe imported equipment prices its frozen route and unsupported held off
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await inspectStage(page);
-	await expect(
-		page.locator('.stage-note').getByRole('button', { name: /^Make it/ })
-	).toBeDisabled();
+	await expect(stageMake).toBeDisabled();
 	expect(posts).toEqual([]);
 	expect(errors).toEqual([]);
 });

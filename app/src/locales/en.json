@@ -717,7 +717,7 @@
 		"missingFrames": "{names} need frames for {move}",
 		"missingFrameViews": "{names} need frames for {move} facing {direction}",
 		"making": "Making…",
-		"makeIt": "Make it",
+		"makeMissingViews": "Make missing views",
 		"estimate": {
 			"one": "~{n} gen",
 			"other": "~{n} gens"

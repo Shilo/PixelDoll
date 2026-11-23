@@ -717,7 +717,7 @@
 		"missingFrames": "{names} necesitan fotogramas para {move}",
 		"missingFrameViews": "{names} necesitan fotogramas para {move} en dirección {direction}",
 		"making": "Creando…",
-		"makeIt": "Crearlo",
+		"makeMissingViews": "Crear vistas que faltan",
 		"estimate": {
 			"one": "~{n} generación",
 			"other": "~{n} generaciones"

@@ -717,7 +717,7 @@
 		"missingFrames": "Für {names} fehlen Frames in {move}",
 		"missingFrameViews": "Für {names} fehlen Frames in {move} mit Blickrichtung {direction}",
 		"making": "Wird erstellt…",
-		"makeIt": "Erstellen",
+		"makeMissingViews": "Fehlende Ansichten erstellen",
 		"estimate": {
 			"one": "~{n} Generierung",
 			"other": "~{n} Generierungen"

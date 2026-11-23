@@ -698,7 +698,7 @@
 		"missingFrames": "{names}には{move}のフレームが必要です",
 		"missingFrameViews": "{names}には{direction}向きの{move}のフレームが必要です",
 		"making": "作成中…",
-		"makeIt": "作成する",
+		"makeMissingViews": "不足している向きを作成",
 		"estimate": {
 			"other": "~{n}回の生成"
 		},

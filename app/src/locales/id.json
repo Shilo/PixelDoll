@@ -698,7 +698,7 @@
 		"missingFrames": "{names} perlu frame untuk animasi {move}",
 		"missingFrameViews": "{names} perlu frame untuk animasi {move} yang menghadap {direction}",
 		"making": "Membuat…",
-		"makeIt": "Buat",
+		"makeMissingViews": "Buat tampilan yang belum ada",
 		"estimate": {
 			"other": "~{n} generasi"
 		},
