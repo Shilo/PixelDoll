@@ -2830,7 +2830,6 @@
 	},
 	"stateJointFit": {
 		"busy": "A medição das articulações já está em andamento. Tente novamente quando terminar.",
-		"edited": "Uma edição de quadro impede que este estado seja usado como origem de um movimento.",
 		"quote": "Verificar o custo da medição das articulações",
 		"measure": "Medir articulações",
 		"review": "Antes de salvar, confira se as articulações marcadas estão alinhadas em cada vista.",

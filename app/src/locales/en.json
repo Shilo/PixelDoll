@@ -2821,7 +2821,6 @@
 	},
 	"stateJointFit": {
 		"busy": "Joint fitting is already in progress. Try again when it finishes.",
-		"edited": "This State has a frame edit that prevents using it as a Move source.",
 		"quote": "Check joint fitting cost",
 		"measure": "Measure joints",
 		"review": "Check that the marked joints line up with each view before saving.",

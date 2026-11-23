@@ -143,12 +143,14 @@ describe('State joint fit target', () => {
 		expect(await stateJointFitTarget(project, 'default')).toBeUndefined();
 	});
 
-	test('skips fitted facings and facings a frame edit replaced', async () => {
+	test('skips fitted facings and measures a frame edit on its new art', async () => {
 		const project = await fixture();
 		const { rig } = project.manifest;
 		const cells = project.manifest.items[0].layers[0].cells!.glow;
+		const before = `sha256:${'b'.repeat(64)}` as Sha256;
 		rig.animations[1].sources = {
-			south: { route: 'import', reference: cells.south![0]!, measured: [pose()], provenance: [] }
+			south: { route: 'import', reference: cells.south![0]!, measured: [pose()], provenance: [] },
+			east: { route: 'import', reference: before, measured: [pose()], provenance: [] }
 		};
 		project.manifest.items[0].frameEdits = [
 			{
@@ -159,14 +161,44 @@ describe('State joint fit target', () => {
 					{
 						dir: 'east',
 						cell: 0,
-						layers: [{ id: 'main', before: `sha256:${'b'.repeat(64)}`, after: cells.east![0]! }],
+						layers: [{ id: 'main', before, after: cells.east![0]! }],
 						cut: { before: null, after: null }
 					}
 				]
 			}
 		];
+		// Joints measured before the edit do not fit the edited art.
+		expect(
+			resolveMoveSource(project.manifest, { clip: 'glow', cell: 0 }, ['east'])
+		).toBeUndefined();
 		const target = await stateJointFitTarget(project, 'glow');
-		expect(target).toMatchObject({ views: [], fitted: ['south'], edited: ['east'] });
+		expect(target?.fitted).toEqual(['south']);
+		expect(target?.views.map(({ direction, hash }) => [direction, hash])).toEqual([
+			['east', cells.east![0]]
+		]);
+		// Joints fitted on the edited art make it a Move source.
+		const { manifest } = applyStateJointFit(
+			project.manifest,
+			{},
+			{
+				stateId: 'glow',
+				views: [{ direction: 'east', hash: cells.east![0]!, keypoints: pose(), qa: {} as never }],
+				provenance: [
+					{
+						endpoint: '/estimate-skeleton',
+						params: {},
+						seed: 0,
+						requestHash: `sha256:${'c'.repeat(64)}`,
+						createdAt: new Date(0).toISOString(),
+						produced: []
+					}
+				]
+			}
+		);
+		expect(resolveMoveSource(manifest, { clip: 'glow', cell: 0 }, ['east'])?.views.east).toEqual({
+			image: cells.east![0],
+			keypoints: pose()
+		});
 	});
 
 	test('refuses art whose stored pixels do not match their hash', async () => {

@@ -65,12 +65,10 @@ export interface StateJointFitView {
 }
 export interface StateJointFitTarget {
 	stateId: string;
-	/** Exact drawn facings that still need joints and are not replaced by a frame edit. */
+	/** Exact drawn facings that still need joints for the art they show now. */
 	views: StateJointFitView[];
 	/** Drawn facings whose saved joints already match their art. */
 	fitted: DirectionName[];
-	/** Drawn facings a frame edit replaced; a Move cannot use them as a source. */
-	edited: DirectionName[];
 }
 export type StateJointCheckStatus = 'new' | 'queued' | 'running' | 'done' | 'stopped';
 export interface StateJointFitQuote {
@@ -121,18 +119,20 @@ const noJoints = (direction: DirectionName) =>
 		{ direction }
 	);
 
-/** The probe uses the canonical Move source rule, so a fit is only offered where a Move can actually read it. */
+/** The probe uses the canonical Move source rule, so a fit is only offered where a Move can actually read it. Like a saved
+ *  fit, it measures the art the State shows now, frame edits included. */
 function sourceUsable(
 	manifest: Manifest,
 	stateId: string,
 	direction: DirectionName,
+	hash: Sha256,
 	keypoints: Keypoint[]
 ): boolean {
 	const probe = structuredClone(manifest);
 	const clip = probe.rig.animations.find((entry) => entry.id === stateId)!;
 	clip.sources = {
 		...clip.sources,
-		[direction]: { route: 'import', reference: 'sha256:', measured: [keypoints], provenance: [] }
+		[direction]: { route: 'import', reference: hash, measured: [keypoints], provenance: [] }
 	};
 	return !!resolveMoveSource(probe, { clip: stateId, cell: 0 }, [direction])?.views[direction];
 }
@@ -149,7 +149,7 @@ export async function stateJointFitTarget(
 	const layers = manifest.items.find((item) => item.id === rig.baseItem)?.layers;
 	const cells = layers?.length === 1 ? layers[0].cells?.[stateId] : undefined;
 	if (!cells) return;
-	const target: StateJointFitTarget = { stateId, views: [], fitted: [], edited: [] };
+	const target: StateJointFitTarget = { stateId, views: [], fitted: [] };
 	for (const { id: direction, mirrorOf } of rig.directions) {
 		const hash = cells[direction]?.[0];
 		if (mirrorOf) continue;
@@ -160,8 +160,8 @@ export async function stateJointFitTarget(
 		const fitted = saved?.reference === hash && hasAll(saved.measured?.[0]);
 		const probe = fitted ? saved?.measured?.[0] : rig.rest?.[direction]?.keypoints;
 		if (!probe || !hasAll(probe)) return;
-		if (!sourceUsable(manifest, stateId, direction, probe)) target.edited.push(direction);
-		else if (fitted) target.fitted.push(direction);
+		if (!sourceUsable(manifest, stateId, direction, hash, probe)) return;
+		if (fitted) target.fitted.push(direction);
 		else target.views.push({ direction, hash, image });
 	}
 	return target;
@@ -215,11 +215,6 @@ async function current(projectId: string, stateId: string) {
 	await flushSave();
 	const { rec, project } = await loadProject(projectId);
 	const target = await stateJointFitTarget(project, stateId);
-	if (target?.edited.length)
-		throw new LocalizedError(
-			'A frame edit prevents using this State as a Move source.',
-			'stateJointFit.edited'
-		);
 	if (!target?.views.length) throw unavailable();
 	return { rec, project, target, manifestVersion: stableStringify(rec.manifest) };
 }
@@ -332,7 +327,7 @@ async function measure(
 			if (
 				!keypoints ||
 				!hasAll(keypoints) ||
-				!sourceUsable(project.manifest, stateId, direction, keypoints)
+				!sourceUsable(project.manifest, stateId, direction, hash, keypoints)
 			)
 				throw noJoints(direction);
 			const restView = rig.rest?.[direction];

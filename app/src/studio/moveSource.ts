@@ -51,9 +51,14 @@ export function resolveMoveSource(
 	const views: MoveSource['views'] = {};
 	for (const direction of directions) {
 		const image = layers[0].cells?.[clip.id]?.[direction]?.[cell];
-		const keypoints = clip.sources?.[direction]?.measured?.[cell];
+		const source = clip.sources?.[direction];
+		const keypoints = source?.measured?.[cell];
 		if (!image || !keypoints || !hasAll(keypoints)) return;
+		// Joints measured before a frame edit do not fit its new art. A State's joints are measured on its one frame, the
+		// source's reference, so joints fitted after the edit do.
+		const measuredHere = clip.cells === 1 && source?.reference === image;
 		if (
+			!measuredHere &&
 			body?.frameEdits?.some(
 				(edit) =>
 					edit.anim === clip.id &&

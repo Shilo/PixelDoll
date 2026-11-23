@@ -2821,7 +2821,6 @@
 	},
 	"stateJointFit": {
 		"busy": "La mesure des articulations est déjà en cours. Réessayez ensuite.",
-		"edited": "Une retouche empêche de prendre cet état comme source du mouvement.",
 		"quote": "Vérifier le coût de la mesure des articulations",
 		"measure": "Mesurer les articulations",
 		"review": "Vérifiez le placement des articulations marquées dans chaque vue avant la sauvegarde.",

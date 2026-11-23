@@ -2751,7 +2751,6 @@
 	},
 	"stateJointFit": {
 		"busy": "Pengukuran sendi sedang berlangsung. Coba lagi setelah selesai.",
-		"edited": "Perubahan bingkai mencegah keadaan ini digunakan sebagai sumber gerakan.",
 		"quote": "Periksa biaya pengukuran sendi",
 		"measure": "Ukur sendi",
 		"review": "Sebelum menyimpan, periksa posisi sendi yang ditandai di setiap tampilan.",

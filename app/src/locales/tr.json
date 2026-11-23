@@ -2821,7 +2821,6 @@
 	},
 	"stateJointFit": {
 		"busy": "Eklem ölçümü zaten sürüyor. Tamamlandığında tekrar deneyin.",
-		"edited": "Bir kare düzenlemesi bu durumun hareket kaynağı olarak kullanılmasını engelliyor.",
 		"quote": "Eklem ölçümünün maliyetini kontrol et",
 		"measure": "Eklemleri ölç",
 		"review": "Kaydetmeden önce işaretli eklemlerin her görünümde doğru yerde olduğunu kontrol et.",
