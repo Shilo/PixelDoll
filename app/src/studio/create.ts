@@ -60,7 +60,6 @@ import { defaultCharacterExportId, itemContent, retainMoveChoices } from '../lib
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { liftToFit, normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { maskIoU } from '../lib/image/similarity.ts';
-import { standingHistory } from '../lib/frames/history.ts';
 import { flipH } from '../lib/rig/mirror.ts';
 import {
 	ANCHORS,
@@ -921,8 +920,7 @@ async function motion(
 	standing?: Img,
 	lifts?: readonly number[],
 	below = 0,
-	echo: MotionEchoRule = 'optional-exact',
-	echoes?: ReadonlySet<Sha256>
+	echo: MotionEchoRule = 'optional-leading'
 ): Promise<{
 	keypoints: Keypoint[][];
 	record: JobRec;
@@ -943,8 +941,7 @@ async function motion(
 		echo,
 		lifts,
 		'motion',
-		below,
-		echoes
+		below
 	);
 	const kps = await Promise.all(
 		frames.map(async (f) => {
@@ -1014,22 +1011,13 @@ export const artMapping = (rig: Pick<Manifest['rig'], 'artOffset'>, dir: Directi
 	rig.artOffset?.[dir] ?? 0;
 /** Whether a returned frame 0 may be PixelLab's start frame sent back. `required-leading`: raw pixminimax documents
  *  frame_count + 1 frames with the input first. `optional-leading`: one extra frame is dropped by position, as managed
- *  pixminimax sends the standing it registered first despite `keep_first_frame: false` (known issues) and that view need
- *  not match ours (Fix frames, Adjust frame, an outfit drawn at creation). `optional-exact`: the managed skeleton-v3 walk
- *  template sends no such flag, so an extra frame counts only when it is exactly our standing view. */
-type MotionEchoRule = 'optional-exact' | 'required-leading' | 'optional-leading';
-/** Earlier standing views an `optional-exact` echo may also match: Fix frames changes only our Standing, while PixelLab keeps
- *  echoing the one it registered, so every standing the body's edit history recorded for `dir` also counts as the echo. */
-function heldStandings(m: Manifest, dir: DirectionName): ReadonlySet<Sha256> {
-	const base = m.items.find((item) => item.id === m.rig.baseItem);
-	return new Set([...(base ? standingHistory(base, dir) : [])].filter((hash) => hash !== null));
-}
-const motionEchoRule = (spec: MoveFrameSpec, request: Req): MotionEchoRule =>
-	moveMotionSource(spec) === 'standalone'
-		? 'required-leading'
-		: (request.body as { keep_first_frame?: boolean } | undefined)?.keep_first_frame === false
-			? 'optional-leading'
-			: 'optional-exact';
+ *  motion sends the standing it registered first (despite `keep_first_frame: false` on described moves; the walk template
+ *  sends no such flag) and that view need not match ours (Fix frames, Adjust frame, an outfit drawn at creation; known
+ *  issues). Matching its pixels would make a paid motion a dead end that a re-roll repeats, so its overlap with our
+ *  standing is recorded as evidence instead. */
+type MotionEchoRule = 'required-leading' | 'optional-leading';
+const motionEchoRule = (spec: MoveFrameSpec): MotionEchoRule =>
+	moveMotionSource(spec) === 'standalone' ? 'required-leading' : 'optional-leading';
 async function normalizeMotionFrames(
 	r: JobRec,
 	images: Img[],
@@ -1040,13 +1028,11 @@ async function normalizeMotionFrames(
 	expected: number,
 	size: number,
 	standing?: Img,
-	echo: MotionEchoRule = 'optional-exact',
+	echo: MotionEchoRule = 'optional-leading',
 	lifts?: readonly number[],
 	step = 'motion',
 	/** Rows our standing art sits below the registered view (artMapping): managed motion only, never native moves. */
-	below = 0,
-	/** Earlier standing views an `optional-exact` echo may also match (heldStandings). */
-	echoes?: ReadonlySet<Sha256>
+	below = 0
 ): Promise<{ frames: Img[]; motionEcho?: ClipSource['motionEcho'] }> {
 	const rejected = (failure: PaidFailure) => ({ step, failure, recordId: r.id });
 	const got = (r.response as SubmitResponse | undefined)?.directions;
@@ -1078,15 +1064,6 @@ async function normalizeMotionFrames(
 			);
 		return normalized.img;
 	};
-	if (startKept && echo === 'optional-exact') {
-		const first = normalizeFrame(images[0]);
-		if (
-			first.w !== standing!.w ||
-			first.h !== standing!.h ||
-			(first.data.some((v, i) => v !== standing!.data[i]) && !echoes?.has(await cellHash(first)))
-		)
-			throw mismatch;
-	}
 	const frames = (startKept ? images.slice(1) : images).map((image, i) =>
 		normalizeFrame(image, lifts?.[i])
 	);
@@ -2228,11 +2205,10 @@ async function inspectMeasurementRecovery(
 				moveMotionFrames(rec.manifest, spec),
 				rig.cell.w,
 				motionStart,
-				motionEchoRule(spec, request),
+				motionEchoRule(spec),
 				spec.motionLift?.[d],
 				'motion',
-				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d),
-				heldStandings(rec.manifest, d)
+				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d)
 			);
 			const measured = motionJoints(
 				await Promise.all(
@@ -3506,8 +3482,7 @@ async function bodyClip(
 			motionStart,
 			spec.motionLift?.[d],
 			moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d),
-			motionEchoRule(spec, request),
-			heldStandings(m, d)
+			motionEchoRule(spec)
 		);
 		keypoints = result.keypoints;
 		source = result.record;

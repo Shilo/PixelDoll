@@ -1098,7 +1098,7 @@ test('a valid custom description includes motion costs and wrong provider cardin
 	expect(displayNestedMessage(card!)).toBe(shown);
 });
 
-test('managed pixminimax drops one extra leading motion frame by position; the walk template stays exact', async () => {
+test('managed motion drops one extra leading motion frame by position on described moves and the walk template', async () => {
 	const motionWith = async (first: 'standing' | 'other', change: Record<string, unknown> = {}) => {
 		const count = change.action === 'walk' ? 8 : 4;
 		const f = await fixture(),
@@ -1168,14 +1168,17 @@ test('managed pixminimax drops one extra leading motion frame by position; the w
 	expect(odd.measured).toBe(4);
 	expect(odd.echo?.maskIoU).toBeGreaterThan(0.5);
 	expect(odd.echo?.maskIoU).toBeLessThan(1);
-	// The managed skeleton-v3 walk template sends no keep_first_frame flag: an extra frame still counts only when exact.
+	// Deliberately flipped (phase D): the managed skeleton-v3 walk template, which sends no keep_first_frame flag, used to
+	// count an extra leading frame only when it matched our standing pixel for pixel, so a registered standing that differs
+	// from ours left the paid motion a dead end. It is now dropped by position too, with the same evidence recorded.
 	const walk = await motionWith('other', {
 		action: 'walk',
 		text: undefined,
 		animation: { model: 'skeleton-v3', frameCount: 4 }
 	});
-	expect(String(walk.error)).toContain('PixelLab returned 9 motion frames for 8 requested');
-	expect(walk.measured).toBe(0);
+	expect(String(walk.error)).not.toContain('motion frames for');
+	expect(walk.measured).toBe(8);
+	expect(walk.echo?.maskIoU).toBeLessThan(1);
 });
 
 test('one interior motion frame without joints is bridged from its measured neighbors, never from requested poses', () => {
@@ -1240,8 +1243,7 @@ test('a managed motion with one unmeasured interior frame still renders the body
 	expect(source?.motionBridged).toEqual([2]);
 });
 
-// The described route drops any one leading frame by position; the walk template, which sends no keep_first_frame flag, still
-// accepts only an exact standing echo, and a Standing Fix frames replaced counts as one there too.
+// Both managed routes drop one leading frame by position, so a Standing Fix frames replaced never stops them.
 test.each([
 	['described', 4, { text: 'step softly', action: 'quiet-step', frames: 4 }],
 	[
