@@ -2,7 +2,8 @@
 	import { ui } from '../state.svelte.ts';
 	import { castPose } from './carousel.ts';
 	import { floorRing } from './floorRing.ts';
-	import { groundedThumb, stills, thumbScale } from './thumbnails.svelte.ts';
+	import { castStill } from './castMount.ts';
+	import { groundedThumb, thumbScale } from './thumbnails.svelte.ts';
 	let {
 		size,
 		span = 1,
@@ -20,7 +21,7 @@
 		floorFocal: number;
 		selectedId: string | null;
 	} = $props();
-	const still = $derived(stills.get(selectedId ?? ''));
+	const still = $derived(castStill(selectedId ?? ''));
 	const art = $derived(groundedThumb(size, still, ui.dpr));
 	const pose = $derived(castPose(0, width, size, span, { hero: art, side: art }));
 	const scale = $derived(thumbScale(size, still, ui.dpr) * art.scale * pose.scale);

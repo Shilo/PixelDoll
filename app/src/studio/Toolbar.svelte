@@ -239,8 +239,23 @@
 				>{/each}
 		</div>
 	{/if}
+	{#snippet mountSettings()}
+		<button
+			class="bu-action test-mount-toggle"
+			data-variant="quiet"
+			aria-label={t('toolbar.mountSettings')}
+			data-active={experience.testMount || undefined}
+			aria-haspopup="dialog"
+			title={experience.testMount
+				? t('toolbar.titleMountSettingsMounted')
+				: t('toolbar.mountSettings')}
+			onclick={() => openSettings('mount')}
+			disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
+		>
+	{/snippet}
 	<div class="header-actions">
 		{#if experience.screen === 'characters'}
+			{@render mountSettings()}
 			<NewCharacterButton />
 		{:else}
 			<!-- Undo shows once there is something to undo, and Redo after it once there is something to redo. Each takes room
@@ -266,18 +281,6 @@
 				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
 			>
 			<button
-				class="bu-action test-mount-toggle"
-				data-variant="quiet"
-				aria-label={t('toolbar.mountSettings')}
-				data-active={experience.testMount || undefined}
-				aria-haspopup="dialog"
-				title={experience.testMount
-					? t('toolbar.titleMountSettingsMounted')
-					: t('toolbar.mountSettings')}
-				onclick={() => openSettings('mount')}
-				disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
-			>
-			<button
 				class="bu-action header-random"
 				data-variant="quiet"
 				aria-label={t('common.randomLook')}
@@ -285,6 +288,7 @@
 				disabled={!m}
 				onclick={randomize}><Dices size={18} /></button
 			>
+			{@render mountSettings()}
 			<button
 				class="bu-action header-share"
 				data-variant="outline"

@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import {
 	croppedThumbnail,
 	characterStill,
@@ -6,6 +6,11 @@ import {
 	newest,
 	stills
 } from '../../src/studio/experience/thumbnails.svelte.ts';
+import { castStill, mountedStill } from '../../src/studio/experience/castMount.ts';
+import { experience } from '../../src/studio/experience/state.svelte.ts';
+
+// The experience module is a Svelte rune module; plain state is enough for this logic.
+vi.hoisted(() => Object.assign(globalThis, { $state: <T>(value: T) => value }));
 import { makeImg } from '../../src/lib/image/png.ts';
 import { readFile } from 'node:fs/promises';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
@@ -117,4 +122,49 @@ test('static outfit trimming preserves the full padded weapon silhouette and fai
 	const visible = (pixels: Uint8ClampedArray) =>
 		pixels.filter((value, index) => index % 4 === 3 && value > 0).length;
 	expect(visible(trimmed.data)).toBe(visible(still.image!.data));
+});
+
+test('the selection cast rides the mount on its feet, at the standing size, only while the mount shows', async () => {
+	const project = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL('../../public/fixtures/s2/' + path, import.meta.url)))
+	);
+	const items = project.manifest.presets[0].items;
+	const plain = characterStill(project, items);
+	const groundRow = (still: typeof plain) => still.frame.y + still.body.h - still.body.y;
+	try {
+		experience.testMount = true;
+		experience.mountLegs = 'none';
+		const mounted = mountedStill('cast-test', project, items)!;
+		expect(mountedStill('cast-test', project, items)).toBe(mounted);
+		// The same standing body keeps every character's cast size; the mount's feet are the image bottom.
+		expect(mounted.body).toEqual(plain.body);
+		expect(groundRow(mounted)).toBe(mounted.image!.h);
+		// The rider sits above the ground, so it is drawn higher than when standing.
+		const top = (image: NonNullable<typeof plain.image>) => {
+			for (let i = 3; i < image.data.length; i += 4)
+				if (image.data[i]) return Math.floor(i / 4 / image.w);
+			return image.h;
+		};
+		expect(groundRow(mounted) - top(mounted.image!)).toBeGreaterThan(
+			groundRow(plain) - top(plain.image!)
+		);
+		stills.set('cast-test', { ...plain, look: '', mount: { key: '', still: mounted } });
+		expect(castStill('cast-test')).toBe(stills.get('cast-test')); // drawn with other settings
+		stills.set('cast-test', {
+			...plain,
+			look: '',
+			mount: { key: JSON.stringify(['none', '']), still: mounted }
+		});
+		expect(castStill('cast-test')).toBe(mounted);
+		experience.mountLegs = 'both';
+		expect(castStill('cast-test')).toBe(stills.get('cast-test'));
+		expect(mountedStill('cast-test', project, items)).not.toBe(mounted);
+		experience.testMount = false;
+		expect(castStill('cast-test')).toBe(stills.get('cast-test'));
+	} finally {
+		stills.delete('cast-test');
+		experience.testMount = false;
+		experience.mountLegs = 'far';
+	}
 });

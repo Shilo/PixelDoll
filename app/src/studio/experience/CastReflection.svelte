@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ui } from '../state.svelte.ts';
-	import { stills, thumbScale } from './thumbnails.svelte.ts';
+	import { castStill } from './castMount.ts';
+	import { thumbScale } from './thumbnails.svelte.ts';
 	import { REFLECTION, drawReflection, reflectionCanvas, reflectionStyle } from './reflection.ts';
 	let {
 		id,
@@ -15,7 +16,7 @@
 		horizon: number;
 		focal: number;
 	} = $props();
-	const still = $derived(stills.get(id));
+	const still = $derived(castStill(id));
 	const scale = $derived(thumbScale(size, still, ui.dpr));
 	const groundRow = $derived(still ? still.frame.y + still.body.h - still.body.y : 0);
 	const floor = $derived((groundRow - (still?.image?.h ?? 0)) * scale);

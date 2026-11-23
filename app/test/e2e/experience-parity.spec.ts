@@ -744,9 +744,25 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		await route.fulfill({ response, json: fixture });
 	});
 	await landing(page);
+	// Character selection has the same Mount settings button, before New character, and its cast rides the mount.
+	const toggle = page.locator('.test-mount-toggle');
+	const hero = page.locator('.cast-character.chosen');
+	await expect(
+		page.locator('.header-actions > .test-mount-toggle + .selection-create')
+	).toHaveCount(1);
+	await expect(hero).not.toHaveAttribute('data-mounted');
+	const settings = page.getByRole('dialog', { name: 'Settings' });
+	await toggle.click();
+	await settings.getByRole('switch', { name: 'Show mount', exact: true }).check();
+	await page.keyboard.press('Escape');
+	await expect(hero).toHaveAttribute('data-mounted', 'true');
+	await toggle.click();
+	await settings.getByRole('switch', { name: 'Show mount', exact: true }).uncheck();
+	await page.keyboard.press('Escape');
+	await expect(hero).not.toHaveAttribute('data-mounted');
+	await selection(page).focus();
 	await page.keyboard.press('Enter');
 	await pause(page);
-	const toggle = page.locator('.test-mount-toggle');
 	const inactiveMountColor = await toggle.evaluate((element) => getComputedStyle(element).color);
 	const move = playbackPicker(page);
 	await selectPlaybackClip(page, 'cross-punch');
@@ -760,10 +776,10 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(toggle).toHaveAttribute('aria-haspopup', 'dialog');
 	await expect(toggle.locator('.view-label')).toHaveCount(0);
 	await expect(page.locator('.view-modes .test-mount-toggle')).toHaveCount(0);
-	// Undo and Redo lead the trailing group (shown only while usable); Mount settings and Random look follow them.
+	// Undo and Redo lead the trailing group (shown only while usable); Random look and Mount settings follow them.
 	await expect(
 		page.locator(
-			'.header-actions > .header-undo + .header-redo + .test-mount-toggle + .header-random'
+			'.header-actions > .header-undo + .header-redo + .header-random + .test-mount-toggle + .header-share'
 		)
 	).toHaveCount(1);
 	// The mount icon opens the Mount page of Settings directly.

@@ -261,7 +261,7 @@
 .sheet-layout :is(.selection-import, .selection-create) {
 	display: none;
 }
-/* Phones keep Back, the name, Mount settings, Random look, Undo, Export, Full screen and More in the bar; Redo and Share move into More
+/* Phones keep Back, the name, Random look, Mount settings, Undo, Export, Full screen and More in the bar; Redo and Share move into More
    so the character name stays readable (Share's popover then points at More). Random look follows up to 430 px and
    Undo up to 430 px. Full screen always stays on the bar (production-experience.md). */
 .phone-layout:not(.selection) :is(.header-redo, .header-share) {

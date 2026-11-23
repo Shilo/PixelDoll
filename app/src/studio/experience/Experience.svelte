@@ -22,6 +22,7 @@
 	import ZoomControls from './ZoomControls.svelte';
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
 	import { sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
+	import { castStill } from './castMount.ts';
 	import { stills, groundedThumb, thumbScale } from './thumbnails.svelte.ts';
 	import { castPose } from './carousel.ts';
 	import { floorRing, RING_GAP } from './floorRing.ts';
@@ -136,7 +137,7 @@
 	const castSpan = $derived(
 		Math.max(
 			...list.map(({ id }) => {
-				const art = groundedThumb(castSize, stills.get(id), ui.dpr);
+				const art = groundedThumb(castSize, castStill(id), ui.dpr);
 				return (2 * Math.max(-art.l, art.r)) / castSize;
 			}),
 			0.01
@@ -160,7 +161,7 @@
 		const width = g.stage.r - g.stage.l;
 		const hero = groundedThumb(castSize, selectedStill, ui.dpr);
 		return neighbors.map(({ offset, p }) => {
-			const art = groundedThumb(castSize, stills.get(p.id), ui.dpr);
+			const art = groundedThumb(castSize, castStill(p.id), ui.dpr);
 			const pose = castPose(offset, width, castSize, castSpan, { hero, side: art });
 			const bottom = g.feet.y + pose.y;
 			return {
@@ -175,7 +176,7 @@
 		});
 	});
 	const selectedStill = $derived(
-		stills.get(neighbors.find(({ offset }) => !offset)?.p.id ?? doc.id)
+		castStill(neighbors.find(({ offset }) => !offset)?.p.id ?? doc.id)
 	);
 	const selectionFocus = $derived.by(() => {
 		const size = castSize;

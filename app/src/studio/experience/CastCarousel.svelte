@@ -7,6 +7,7 @@
 	import SelectionRing from './SelectionRing.svelte';
 	import { ui } from '../state.svelte.ts';
 	import { carouselFrames, carouselRoute, castPose, castTransform } from './carousel.ts';
+	import { castStill } from './castMount.ts';
 	import { groundedThumb, stills } from './thumbnails.svelte.ts';
 	type Entry = { p: { id: string; name: string }; offset: number };
 	type Actor = Entry & { leaving?: boolean; exitDirection?: number };
@@ -51,10 +52,10 @@
 	const animations = new Map<string, Animation>();
 	let previous: Entry[] = [];
 	const heroArt = $derived(
-		groundedThumb(size, stills.get(entries.find((entry) => !entry.offset)?.p.id ?? ''), ui.dpr)
+		groundedThumb(size, castStill(entries.find((entry) => !entry.offset)?.p.id ?? ''), ui.dpr)
 	);
 	const artwork = $derived(
-		JSON.stringify(entries.map(({ p }) => groundedThumb(size, stills.get(p.id), ui.dpr)))
+		JSON.stringify(entries.map(({ p }) => groundedThumb(size, castStill(p.id), ui.dpr)))
 	);
 	let geometry = '';
 	let generation = 0;
@@ -167,7 +168,7 @@
 			if (!node) continue;
 			const side =
 				artwork[next.findIndex((entry) => entry.p.id === actor.p.id)] ??
-				groundedThumb(size, stills.get(actor.p.id), ui.dpr);
+				groundedThumb(size, castStill(actor.p.id), ui.dpr);
 			const poseAt = (offset: number) => castPose(offset, width, size, span, { hero, side });
 			const before = old.find((entry) => entry.p.id === actor.p.id);
 			const route = carouselRoute(before?.offset ?? actor.offset, actor.offset, shift);
@@ -232,7 +233,7 @@
 	>
 		{#each actors as actor (actor.p.id)}
 			{@const culled = !!actor.offset && culledOffsets.includes(actor.offset)}
-			{@const art = groundedThumb(size, stills.get(actor.p.id), ui.dpr)}
+			{@const art = groundedThumb(size, castStill(actor.p.id), ui.dpr)}
 			<div
 				{@attach registerReflection(actor.p.id)}
 				class="cast-reflection-actor"
@@ -260,6 +261,7 @@
 				class="cast-character carousel-character"
 				class:chosen={!actor.offset && !actor.leaving}
 				data-character-id={actor.p.id}
+				data-mounted={castStill(actor.p.id) !== stills.get(actor.p.id) || undefined}
 				inert={actor.leaving || culled}
 				aria-hidden={actor.leaving || culled ? 'true' : undefined}
 				style:visibility={culled ? 'hidden' : undefined}
@@ -284,7 +286,7 @@
 					style:left="{-size / 2 - art.l}px"
 					style:transform="translate({art.x}px, {art.y}px) scale({art.scale})"
 				>
-					<CharacterThumb id={actor.p.id} name={actor.p.name} {size} />
+					<CharacterThumb id={actor.p.id} name={actor.p.name} {size} mounted />
 				</div>
 			</button>
 		{/each}
