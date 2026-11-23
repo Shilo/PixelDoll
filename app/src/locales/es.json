@@ -2159,6 +2159,7 @@
 		"warnings": {
 			"headroom": "En la dirección {direction} quedan {count} px sobre la cabeza; los peinados altos o los sombreros pueden necesitar un marco más grande.",
 			"keptFrames": "{name} conserva sus fotogramas actuales. Vuelve a crearlo después de la configuración para animarlo en futuras animaciones.",
+			"moveSkippedEmpty": "Se omitió {move}: uno de sus fotogramas está vacío. Corrige ese fotograma o vuelve a crear el movimiento para animar objetos en él.",
 			"moveSkipped": "Se omitió {move}: PixelLab no encontró articulaciones válidas en uno de sus fotogramas. Vuelve a crearla para animar objetos en ella."
 		},
 		"title": "Configurar personaje",

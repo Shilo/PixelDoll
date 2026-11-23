@@ -2159,6 +2159,7 @@
 		"warnings": {
 			"headroom": "{direction} leaves {count} px above the head; tall hair or hats may need a larger frame.",
 			"keptFrames": "{name} keeps its existing frames. Make it again after setup to animate it onto future moves.",
+			"moveSkippedEmpty": "{move} was skipped: one of its frames is empty. Fix that frame or make the move again to animate items on it.",
 			"moveSkipped": "{move} was skipped: PixelLab could not find valid joints on one of its frames. Make it again to animate items on it."
 		},
 		"title": "Set up character",

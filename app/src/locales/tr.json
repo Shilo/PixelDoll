@@ -2159,6 +2159,7 @@
 		"warnings": {
 			"headroom": "Yön: {direction}. Başın üstünde {count} px boşluk kalıyor; yüksek saç modelleri veya şapkalar için daha büyük bir kare boyutu gerekebilir.",
 			"keptFrames": "{name} mevcut karelerini koruyor. Sonraki animasyonlarda canlandırmak için kurulumdan sonra yeniden üretin.",
+			"moveSkippedEmpty": "{move} atlandı: karelerinden biri boş. Üzerinde eşya canlandırmak için o kareyi düzeltin veya hareketi yeniden oluşturun.",
 			"moveSkipped": "{move} atlandı: PixelLab karelerinden birinde geçerli eklem bulamadı. Üzerinde eşya canlandırmak için yeniden oluşturun."
 		},
 		"title": "Karakteri hazırlayın",

@@ -90,6 +90,7 @@ async function fixture(count: number) {
 		restAnim: 'default',
 		fixedRest: false,
 		registrationDirections: 4,
+		skipped: [],
 		gens: 0.25 + count / 10,
 		warnings: []
 	};
@@ -198,6 +199,28 @@ test('a move frame without valid joints is skipped, not fatal: setup registers a
 		true
 	);
 	expect(mocks.update).toHaveBeenCalledOnce();
+});
+
+test('a later frame of the standing move without valid joints only skips that move; its first frame stays required', async () => {
+	const f = await fixture(4);
+	const hashes = [...f.plan.frames.keys()];
+	f.plan.restAnim = 'walk';
+	const layer = (await mocks.load()).project.manifest.items[0].layers[0];
+	layer.cells.walk = { south: [hashes[1], hashes[2]] };
+	mocks.joints.mockImplementation(async (image: Img) =>
+		frameId(image) === 2 ? undefined : points(frameId(image))
+	);
+	await setupCharacter(f.spec, () => {});
+	expect(mocks.update).toHaveBeenCalledOnce();
+
+	mocks.update.mockClear();
+	mocks.joints.mockImplementation(async (image: Img) =>
+		frameId(image) === 1 ? undefined : points(frameId(image))
+	);
+	await expect(setupCharacter(f.spec, () => {})).rejects.toMatchObject({
+		translation: { key: 'setup.errors.jointsMissing' }
+	});
+	expect(mocks.update).not.toHaveBeenCalled();
 });
 
 test('a completed check refills the window before slower checks finish and completion order cannot reorder provenance', async () => {

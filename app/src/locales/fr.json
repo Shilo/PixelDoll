@@ -2159,6 +2159,7 @@
 		"warnings": {
 			"headroom": "Dans la direction {direction}, il reste {count} px au-dessus de la tête ; une coiffure haute ou un chapeau peut nécessiter un cadre plus grand.",
 			"keptFrames": "Les images existantes de {name} sont conservées. Recréez cet objet après la configuration du rig pour pouvoir l’intégrer aux prochaines animations.",
+			"moveSkippedEmpty": "{move} a été ignorée : l’une de ses images est vide. Corrigez cette image ou recréez le mouvement pour y animer des objets.",
 			"moveSkipped": "{move} a été ignorée : PixelLab n’a pas trouvé d’articulations valides sur l’une de ses images. Recréez-la pour y animer des objets."
 		},
 		"title": "Configurer le personnage",

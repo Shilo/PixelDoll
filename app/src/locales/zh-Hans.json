@@ -2095,6 +2095,7 @@
 		"warnings": {
 			"headroom": "朝向{direction}时头顶空间只有 {count} px；高发型或帽子可能需要更大的帧。",
 			"keptFrames": "{name}将保留现有帧。设置完成后请重新制作它，以便在以后的动作中为它添加动画。",
+			"moveSkippedEmpty": "已跳过{move}：其中一帧为空。若要在其上制作装备动画，请修复该帧或重新生成该动作。",
 			"moveSkipped": "已跳过{move}：PixelLab 未能在其中一帧找到有效的关节。若要在其上制作装备动画，请重新生成。"
 		},
 		"title": "设置角色",

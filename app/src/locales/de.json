@@ -2159,6 +2159,7 @@
 		"warnings": {
 			"headroom": "In Blickrichtung {direction} bleiben {count} px über dem Kopf. Hohe Frisuren oder Hüte brauchen möglicherweise einen größeren Frame.",
 			"keptFrames": "Die vorhandenen Frames von {name} bleiben erhalten. Erstelle den Gegenstand nach der Einrichtung des Rigs neu, damit er auch in künftigen Animationen mit der Figur mitbewegt werden kann.",
+			"moveSkippedEmpty": "{move} wurde übersprungen: Einer ihrer Frames ist leer. Korrigiere diesen Frame oder erstelle die Bewegung erneut, um Gegenstände darauf zu animieren.",
 			"moveSkipped": "{move} wurde übersprungen: PixelLab hat auf einem ihrer Frames keine gültigen Gelenke gefunden. Erstelle sie erneut, um Gegenstände darauf zu animieren."
 		},
 		"title": "Figur einrichten",

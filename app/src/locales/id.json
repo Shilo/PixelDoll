@@ -2095,6 +2095,7 @@
 		"warnings": {
 			"headroom": "Arah {direction} menyisakan {count} px di atas kepala; tatanan rambut yang tinggi atau topi mungkin memerlukan ukuran frame yang lebih besar.",
 			"keptFrames": "{name} mempertahankan frame yang sudah ada. Buat lagi setelah penyiapan agar item ini ikut dianimasikan pada animasi berikutnya.",
+			"moveSkippedEmpty": "{move} dilewati: salah satu frame-nya kosong. Perbaiki frame itu atau buat gerakannya lagi untuk menganimasikan item padanya.",
 			"moveSkipped": "{move} dilewati: PixelLab tidak menemukan sendi yang valid pada salah satu frame-nya. Buat lagi untuk menganimasikan item padanya."
 		},
 		"title": "Siapkan karakter",

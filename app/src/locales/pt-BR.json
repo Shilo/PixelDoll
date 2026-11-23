@@ -2168,6 +2168,7 @@
 		"warnings": {
 			"headroom": "Na direção {direction}, sobram {count} px acima da cabeça. Penteados altos ou chapéus podem precisar de um quadro maior.",
 			"keptFrames": "Os quadros atuais de {name} serão mantidos. Recrie o item depois de configurar o rig para que ele acompanhe os movimentos do personagem nas próximas animações.",
+			"moveSkippedEmpty": "{move} foi ignorada: um dos quadros está vazio. Corrija esse quadro ou crie o movimento novamente para animar itens nele.",
 			"moveSkipped": "{move} foi ignorada: o PixelLab não encontrou articulações válidas em um dos quadros. Crie-a novamente para animar itens nela."
 		},
 		"title": "Configurar personagem",
