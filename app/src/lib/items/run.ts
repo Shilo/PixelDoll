@@ -1048,17 +1048,21 @@ export async function runItem(
 				}
 			}
 			const gates = [poseEarly(early, 0, r0)];
-			const anchor = identifiedOutputs(0, d.calls[0], r0)?.[0];
-			const anchorImage = anchor && (await img(anchor.sha));
+			// Re-rolling call 1 drops every later call (rerollCall), so nothing after it is bought unless each of its requested
+			// frames is identified and of the item's size, not only the anchor frame.
+			const designOuts = identifiedOutputs(0, d.calls[0], r0)?.slice(0, d.calls[0].cells.length);
 			const { cell } = ctx.rec.manifest.rig;
 			const pad = padOf(specSlot(d.spec), d.spec.method, cell);
-			const anchorReady = anchorImage?.w === cell.w + 2 * pad && anchorImage.h === cell.h + 2 * pad;
-			const anchoredCallReady = (c: CallState, k: number) =>
-				!!c.recId || !!c.reference || !!c.concept || !anchored(k, c.kind) || anchorReady;
+			const designIntact =
+				!!designOuts &&
+				(await Promise.all(designOuts.map((o) => img(o.sha)))).every(
+					(im) => im.w === cell.w + 2 * pad && im.h === cell.h + 2 * pad
+				);
+			const anchoredCallReady = (c: CallState) => !!c.recId || designIntact;
 			await Promise.all(
 				d.calls.slice(1, nd).map((c, i) => {
 					const k = i + 1;
-					if (!anchoredCallReady(c, k)) return;
+					if (!anchoredCallReady(c)) return;
 					return call(k).then((r) => {
 						gates.push(poseEarly(early, k, r));
 						if (r.state !== 'done') d.log.push(callStopped(k + 1, r));
@@ -1092,7 +1096,7 @@ export async function runItem(
 				d.calls.slice(nd).map(async (c, i) => {
 					const k = i + nd;
 					if (!c.recId && !designReady) return true;
-					if (!anchoredCallReady(c, k)) return true;
+					if (!anchoredCallReady(c)) return true;
 					if (c.kind === 'pose' || c.kind === 'grid') {
 						const dir = c.cells[0].split('/')[1] as DirectionName;
 						if (!c.recId && !readyDesigns.has(restKey(dir))) return true;
