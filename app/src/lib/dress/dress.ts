@@ -43,7 +43,7 @@ export const SWATCHES: Record<string, Hex> = {
 	ink: '#2e2e3a'
 };
 
-export const SKIN_TONES: Hex[] = ['#5c3a21', '#8d5524', '#c68642', '#e0ac69', '#f1c27d', '#ffdbac'];
+const SKIN_TONES: Hex[] = ['#5c3a21', '#8d5524', '#c68642', '#e0ac69', '#f1c27d', '#ffdbac'];
 
 export const itemImgs = (p: Project, it: Item, skipNative = false): Img[] =>
 	it.layers

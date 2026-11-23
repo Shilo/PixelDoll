@@ -907,6 +907,7 @@ let persistAsked = false;
 export function askPersist() {
 	if (persistAsked || workspaceCopy) return;
 	persistAsked = true;
+	// Best effort: a refused or failed request leaves storage evictable, which the app already tolerates.
 	navigator.storage?.persist?.().catch(() => {});
 }
 

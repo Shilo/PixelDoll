@@ -217,7 +217,7 @@ export interface CreateSpec {
 }
 const CELL = 64;
 // Read-only receipt lookup includes previously completed render attempts. New renders submit once.
-export const CLIP_ATTEMPTS = 2;
+const CLIP_ATTEMPTS = 2;
 
 export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPrompt'>) => {
 	if (!spec.exactPrompt) return looksOf(spec.description);
@@ -1661,7 +1661,6 @@ export const MOVE_STEPS = [
 	{ id: 'save', label: message('create.moveSteps.save') },
 	{ id: 'items', label: message('create.moveSteps.items') }
 ];
-export const isV13 = rigReady;
 export const moveRigReady = (rec?: Pick<StoredProject, 'manifest' | 'character'> | null) =>
 	rigReady(rec, false);
 export const moveLooks = (rec: Pick<StoredProject, 'manifest' | 'character'>) =>
@@ -1782,7 +1781,7 @@ async function recoveryContext(projectId: string) {
 	};
 }
 type RecoveryContext = Awaited<ReturnType<typeof recoveryContext>>;
-export interface MoveRecoveryReview {
+interface MoveRecoveryReview {
 	recovery?: MeasurementRecoveryPlan;
 	colorRepair?: BodyPaletteRepairPlan;
 	keep?: KeepBodyPlan;
@@ -2802,7 +2801,7 @@ async function addMoveUnlocked(
 				'This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.',
 				'create.errors.moveItemMissingStored'
 			);
-	} else if (!(spec.itemsOnly ? isV13(rec) : moveRigReady(rec)))
+	} else if (!(spec.itemsOnly ? rigReady(rec) : moveRigReady(rec)))
 		throw new LocalizedError(
 			'Set up this character’s pose rig before adding moves.',
 			'create.errors.setUpRigFirst'
@@ -3099,7 +3098,7 @@ export async function resolveMoveMotionSource(
 	}
 }
 /** A per-view re-roll salts only that view's failed step, so every other view and step keeps reusing what it bought. */
-export const viewSeed = (
+const viewSeed = (
 	spec: Pick<MoveRequestSpec, 'seed' | 'reroll'>,
 	dir: DirectionName,
 	step: 'motion' | 'render'
@@ -3239,7 +3238,7 @@ function sampleMovePoses(
 /** App-side checks that warn before a body move is bought. Each returns a PreflightWarning the user can explicitly generate
  *  past (MoveSheet shows it and offers Generate move anyway). Requests PixelLab would refuse, missing data and saved-data corruption
  *  stay hard stops instead: bodyMoveIssue, partialMoveFrameIssue, reservedMove and addMove's prerequisites. */
-export const MOVE_PREFLIGHT: ((p: Project, spec: MoveSpec) => PreflightWarning | undefined)[] = [
+const MOVE_PREFLIGHT: ((p: Project, spec: MoveSpec) => PreflightWarning | undefined)[] = [
 	frameRoomWarning
 ];
 export const movePreflightWarnings = (p: Project, spec: MoveSpec): PreflightWarning[] =>

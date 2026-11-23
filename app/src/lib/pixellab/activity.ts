@@ -44,7 +44,6 @@ export interface ApiCall extends ActivityContext {
 // status and error message.
 export const MAX_FOREGROUND_CALLS = 500;
 export const MAX_BACKGROUND_CALLS = 2000;
-export const MAX_ACTIVITY_CALLS = MAX_FOREGROUND_CALLS + MAX_BACKGROUND_CALLS;
 const store = writable<readonly ApiCall[]>([]);
 export const apiActivity = { subscribe: store.subscribe };
 const retentionStore = writable({ droppedForeground: 0, droppedBackground: 0 });

@@ -56,19 +56,19 @@ export function withoutRegions(im: Img): Img {
 }
 
 /** Hip (and neck: the body axis, so a falling body splits along itself) in pixel indices of the cell. */
-export interface BodyLine {
+interface BodyLine {
 	hip: [number, number];
 	neck?: [number, number];
 }
 /** No keypoints (fixtures): hip at 60 % of the figure's height (S4 rig: 41.4 vs keypoint 41.2 S, 41.8 vs 43.3 E). */
-export function guessLine(im: Img): BodyLine | null {
+function guessLine(im: Img): BodyLine | null {
 	const b = opaqueBox(im);
 	return b && { hip: [(b.x0 + b.x1) / 2, b.y0 + 0.6 * (b.y1 - b.y0)] };
 }
 
 /** Split one base cell. Garment px form 4-connected components (outlines and skin separate shirt from shorts); a component
  * keeps one region by the majority of its px; only one that straddles the line (no outline in between) is cut px by px. */
-export function splitCell(im: Img, line: BodyLine): Img {
+function splitCell(im: Img, line: BodyLine): Img {
 	const { w, h } = im,
 		d = im.data,
 		m = new Uint8Array(w * h);

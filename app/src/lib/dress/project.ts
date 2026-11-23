@@ -60,7 +60,7 @@ interface ProjectRecord {
 	moveRecovery?: StoredProject['moveRecovery'];
 }
 
-export const FIXTURES = ['s2'];
+const FIXTURES = ['s2'];
 
 // Every open of a bundled character (the Studio and each demo thumbnail at startup) shares one download per file for the
 // page's lifetime; the set is fixed and small. A failed download is dropped so the next open fetches it again.
@@ -274,7 +274,7 @@ export async function saveSplit(
 /** How a save writes slot definitions. `base`: the definitions the saving view started from (its last open or save), so only
  *  the slots it changed since are written (mergeSlotEdits): a routine save of a stale view changes no slot. `keep`: slots its
  *  item attempts use, never removed. Without it the snapshot's whole list is written (a developer page's own save). */
-export interface SlotSave {
+interface SlotSave {
 	base: readonly Slot[];
 	keep?: Iterable<string>;
 }

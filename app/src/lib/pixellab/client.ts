@@ -11,11 +11,11 @@ const TIMEOUT_MS = 120_000,
 	SKELETON_TIMEOUT_MS = 600_000;
 // The estimator returns synchronously; provider queue time is part of this HTTP request. This is a bounded client policy,
 // not a provider SLA. Async submissions and free reads keep their shorter timeout; unknown paid outcomes are never resent.
-export const timeoutFor = (method: string, path: string) =>
+const timeoutFor = (method: string, path: string) =>
 	method === 'POST' && path === '/estimate-skeleton' ? SKELETON_TIMEOUT_MS : TIMEOUT_MS;
 
 // auth: stop queue, ask for key · credits: stop queue · invalid/policy: terminal · retry: backoff (a paid POST only when
-// `rejected`, see queue.submit) · notfound · other: terminal
+// `paidRequestRejected`, see queue.submit) · notfound · other: terminal
 export type ErrorKind = 'auth' | 'credits' | 'invalid' | 'policy' | 'retry' | 'notfound' | 'other';
 
 export class ApiError extends Error {
@@ -53,10 +53,6 @@ export const isNetwork = (e: unknown) =>
 	e instanceof ApiError &&
 	e.status === 0 &&
 	!!(e.body as { network?: boolean } | undefined)?.network;
-
-/** A documented concurrency/rate-limit rejection can be retried. Other server failures do not prove a paid request was unsent.
- * Known route-specific no-job refusals are checked separately in queue.submit; free GET requests still retry transient errors. */
-export const rejected = (status: number) => status === 429;
 
 const NO_ANIMATION_JOBS = /^Failed to start any animation jobs[.!]?$/i;
 /** An accepted job identifier contradicts a retryable status, including when wrapped in last_response. */
@@ -232,15 +228,10 @@ export function selfTest() {
 		'classify policy'
 	);
 	console.assert(
-		rejected(429) &&
-			!rejected(423) &&
-			!rejected(503) &&
-			!rejected(529) &&
-			!rejected(0) &&
-			!rejected(502) &&
-			!rejected(504) &&
-			!rejected(500),
-		'only documented generic rate-limit rejection is automatically resent'
+		[423, 503, 529, 0, 502, 504, 500].every(
+			(status) => !paidRequestRejected('/inpaint-v3', status, undefined)
+		),
+		'other server failures do not prove a paid request was unsent'
 	);
 	console.assert(
 		errorText({ detail: 'Maximum 20 concurrent' }) === 'Maximum 20 concurrent',

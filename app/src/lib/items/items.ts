@@ -183,7 +183,7 @@ export const itemRoute = {
 };
 
 // ---------- B14 fallback: one clip-direction as a Pro inpaint-v3 packed masked grid (S4 inv3, S5 H3) ----------
-export const GRID_COLS = 4;
+const GRID_COLS = 4;
 /** Does a packed repair grid fit PixelLab's 32–512 px canvas? */
 export const gridFits = (
 	cell: { w: number; h: number },
@@ -424,7 +424,7 @@ export function gridPrompt(o: {
 
 // ---------- S5 held route: oversize canvas, held wording, frame 0 last ----------
 /** S5: held items are generated on a 96 px canvas around the same pivot (64 + 2 × 16): no blade px on the border, no flips. */
-export const HELD_PAD = 16;
+const HELD_PAD = 16;
 /** The S5 held route: a held item posed with the skeleton (the anchor route stays on the rig cell, without held wording). */
 export const heldSkel = (slot: SlotRef, method?: Method) =>
 	method === 'skel' && slotOf(slot).class === 'held';
@@ -858,7 +858,7 @@ export function itemPoseGens(
 }
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
-export function planCalls(
+function planCalls(
 	rig: Rig,
 	spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>,
 	reserveAnchor = false
@@ -1214,7 +1214,7 @@ function cutOf(
 	return n && (cut.allow || n <= CUT.maxShare * opaque) ? keep : undefined;
 }
 
-export const TRIM = { support: 2, minOverlap: 0.5 };
+const TRIM = { support: 2, minOverlap: 0.5 };
 
 /**
  * Rigid head-class items (slot.band): the dressed keyframe is the design. Per frame the keyframe mask is aligned (the requested
@@ -1532,7 +1532,7 @@ export function repairDropped(
 const partFloor = (K?: Img) =>
 	Math.min(4, (K && Math.max(0, ...components(maskOf(K), K.w, K.h).map((x) => x.length))) || 4);
 /** Small accessories cover ~1 % of the body (round 5: glasses, earrings); every benchmark item covers >= 14 % in every view. */
-export const SMALL_SHARE = 0.05;
+const SMALL_SHARE = 0.05;
 /** Back views (north, north-east, north-west) whose dressed keyframe is empty while the item is a small accessory shown in at
  * least half of the views: the body hides it (glasses from behind), so the empty view is reviewed instead of re-rolled; its
  * posed frames must stay empty too (G4). An empty front or side view is a failed dress (round 5: the earrings' front view),
@@ -3040,7 +3040,7 @@ export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 
  * turn the front away. Review note only. On the frozen bench it flags 0 of 400 judged frames; no real frame above 128 px
  * was available (an upscale reproduces the 1x verdict by construction) (2026-11-07).
  */
-export const DETAIL = { minPx: 4, tol: 32, bodyTol: 13 };
+const DETAIL = { minPx: 4, tol: 32, bodyTol: 13 };
 /** Patch size that counts as a detail: `DETAIL.minPx` at a 64 px cell, scaled with the cell area. */
 export const detailMinPx = (im: Img) =>
 	Math.max(DETAIL.minPx, Math.round((DETAIL.minPx * (im.w * im.h)) / (64 * 64)));

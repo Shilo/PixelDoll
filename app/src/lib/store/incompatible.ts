@@ -10,12 +10,6 @@ export const RETAINED_ARCHIVE_PREFIX = 'library-archive:';
  *  unfinished character creation saved before explicit direction plans (its paid pipeline is never re-keyed); retired:
  *  shared-design and fit records whose feature was removed. */
 export type IncompatibleKind = 'characters' | 'outfits' | 'creations' | 'retired';
-export const INCOMPATIBLE_KINDS: readonly IncompatibleKind[] = [
-	'characters',
-	'outfits',
-	'creations',
-	'retired'
-];
 
 interface Candidate {
 	id?: unknown;
