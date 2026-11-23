@@ -12,6 +12,7 @@ import {
 	gensOf,
 	rerollFailed,
 	hasStructuralFailure,
+	isClean,
 	usdOf,
 	type Draft,
 	type ItemResult,
@@ -208,6 +209,35 @@ test.each([
 	expect(saved.item.qa?.status).toBe('accepted');
 	expect(saved.item.designWarnings).toEqual([why]);
 	expect(draft.acceptedAt).toBeDefined();
+});
+
+test('a saved frame missing from storage fails the check with a clear error', async () => {
+	const { draft, ctx } = fixture();
+	ledger.records[0].jobs = [
+		{
+			id: 'job',
+			status: 'completed',
+			done: true,
+			results: ['0', '1'].map((label) => ({ label, sha: 'pruned-frame' })) // an edit returns at least 2
+		}
+	];
+	vi.spyOn(db, 'getBlob').mockResolvedValue(undefined);
+	await expect(evaluateItem(draft, ctx)).rejects.toThrow(
+		'A saved frame of this item is missing from storage.'
+	);
+});
+
+test('a body left almost unmeasured asks for review instead of saving itself as clean', () => {
+	const { result } = fixture();
+	result.qa = itemQa(rig, slotOf('head'), 'green', result.cells, 0);
+	expect(isClean(result)).toBe(true);
+	// The model redrew the whole body instead of keying it: G2 had (almost) nothing left to measure, so it "passed".
+	result.cells[0].keyChecked = 0.01;
+	result.qa = itemQa(rig, slotOf('head'), 'green', result.cells, 0);
+	expect(result.qa.warnings).toContainEqual(expect.stringMatching(/^G2 \S+: not measurable/));
+	expect(result.qa.failCalls.size).toBe(0); // a review note, never a paid re-roll
+	expect(result.qa.qa.status).toBe('warn');
+	expect(isClean(result)).toBe(false);
 });
 
 test('ordinary failed cell-art QA remains explicitly acceptable', async () => {

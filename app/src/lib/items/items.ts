@@ -1000,6 +1000,7 @@ export interface CellOut {
 	area: number;
 	keyKept?: number;
 	keyLost?: number; // body px no longer key (G2 counts them too: a nearly covered body has few px left)
+	keyChecked?: number; // share of the body G2 measured; the rest was read as item, cut or detached FX
 	erased?: number;
 	keyOutside?: number;
 	rawKeyOutside?: ReturnType<typeof newKeyPixels>; // held-item observation before registration; mask stays in memory only
@@ -1862,6 +1863,7 @@ export function extractCell(o: {
 			? {
 					keyKept: kk.kept,
 					keyLost: kk.lost,
+					keyChecked: kk.checked,
 					erased: kk.erased,
 					keyOutside: keyOutside(base, out, route, undefined, qm, tol)
 				}
@@ -2084,6 +2086,7 @@ export const isAction = (key: string, rig?: Rig) => {
 export const GATES = {
 	keyKept: 0.97,
 	keyLostPx: 8,
+	keyChecked: 0.02, // bench corpus minimum is 0.052 (a cape from behind, walk north)
 	keyOutside: 0.02,
 	keyOutsidePosed: 0.05,
 	areaRatio: 0.5,
@@ -2336,6 +2339,12 @@ function evaluateQa(
 			...(c.keyKept != null ? { keyKept: +c.keyKept.toFixed(3) } : {})
 		};
 		if (g2Fails(c)) flag(c.call, `G2 ${c.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`);
+		// Almost no body left to measure: G2 and G3 pass vacuously, as when the model redraws the whole body instead of keying it.
+		// A review note, not a failure: an item may legitimately cover nearly everything.
+		else if (c.keyChecked != null && c.keyChecked < GATES.keyChecked)
+			warnings.push(
+				`G2 ${c.key}: not measurable (${(c.keyChecked * 100).toFixed(1)}% of the body checked)`
+			);
 		if (c.keyOutside != null && c.keyOutside > keyOutsideMax)
 			flag(c.call, `G3 ${c.key} key outside ${c.keyOutside.toFixed(3)}`);
 		minKept = Math.min(minKept, c.keyKept ?? 1);

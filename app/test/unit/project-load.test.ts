@@ -233,6 +233,14 @@ test('concurrent and later demo opens download each file once and get separate p
 	expect(reopened.project.images.get(hash)).toBe(image);
 });
 
+test('a demo whose saved outfits cannot be read still opens, with its defaults, marked unread', async () => {
+	const { openSource } = await freshSource(); // no IndexedDB here: the outfit record read fails
+	const opened = await openSource('fixture:s2');
+	expect(opened.dressUnread).toBe(true);
+	expect(opened.current).toBeUndefined();
+	expect(opened.project.manifest.items.length).toBeGreaterThan(0);
+});
+
 test('a failed demo download is not kept: the next open downloads it again', async () => {
 	let down = true;
 	const { openSource, fetch } = await freshSource((path) => down && path.endsWith('walk.png'));

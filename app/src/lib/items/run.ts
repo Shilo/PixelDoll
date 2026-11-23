@@ -561,8 +561,18 @@ async function gridReq(
 const gridable = (spec: { slot: string; slotConfig?: Slot; key?: ItemSpec['key'] }) =>
 	!!spec.key && spec.key !== 'none' && specSlot(spec).class !== 'held';
 
+/** A frame this draft saved earlier; a pruned or lost one says so instead of failing on an undefined blob. */
+async function storedFrame(sha: string): Promise<Blob> {
+	const blob = await db.getBlob(sha);
+	if (!blob)
+		throw new LocalizedError(
+			'A saved frame of this item is missing from storage.',
+			'itemRoute.errors.savedFrameMissing'
+		);
+	return blob;
+}
 const blobB64 = async (sha: string) =>
-	bytesToBase64(new Uint8Array(await (await db.getBlob(sha))!.arrayBuffer()));
+	bytesToBase64(new Uint8Array(await (await storedFrame(sha)).arrayBuffer()));
 /** Times each call was dropped (re-rolled, or its design or key changed): a request built across a drop is stale. */
 const drops = new WeakMap<CallState, number>();
 function drop(c: CallState) {
@@ -999,7 +1009,7 @@ const decoded = new Map<string, Img>();
 async function img(sha: string) {
 	let im = decoded.get(sha);
 	if (!im) {
-		im = binaryAlpha(await decodePng((await db.getBlob(sha))!));
+		im = binaryAlpha(await decodePng(await storedFrame(sha)));
 		decoded.set(sha, im);
 	}
 	return im;

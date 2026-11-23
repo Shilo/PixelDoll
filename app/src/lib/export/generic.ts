@@ -336,9 +336,10 @@ export function validate(p: Project): string[] {
 					continue;
 				}
 				for (const [dir, cells] of Object.entries(dirs ?? {})) {
-					if (cells!.length !== a.cells)
-						e.push(`${it.id}.${l.id} ${anim}/${dir}: ${cells!.length} cells, rig has ${a.cells}`);
-					for (const h of cells!) {
+					if (!cells) continue; // an empty row: this layer draws nothing in that direction (manifestShape allows it)
+					if (cells.length !== a.cells)
+						e.push(`${it.id}.${l.id} ${anim}/${dir}: ${cells.length} cells, rig has ${a.cells}`);
+					for (const h of cells) {
 						const im = h && p.images.get(h);
 						if (h && !im)
 							e.push(`${it.id}.${l.id} ${anim}/${dir}: image ${h.slice(0, 15)} missing`);

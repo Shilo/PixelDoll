@@ -582,19 +582,28 @@ export function chromaLayer(
  */
 export function keyKept(B: Img, C: Img, key: Key, mask: Uint8Array, kT = KT, tol = 0) {
 	let n = 0,
+		body = 0,
 		kept = 0,
 		gone = 0;
 	const { w, h } = B;
 	for (let p = 0; p < mask.length; p++) {
-		if (!B.data[p * 4 + 3] || mask[p]) continue;
+		if (!B.data[p * 4 + 3]) continue;
 		const x = p % w,
 			y = (p / w) | 0;
 		if (!x || !y || x === w - 1 || y === h - 1) continue;
+		body++;
+		if (mask[p]) continue;
 		n++;
 		if (tol ? near(w, h, x, y, tol, (q) => isKey(C, q, key, kT)) : isKey(C, p, key, kT)) kept++;
 		else if (C.data[p * 4 + 3] < 128) gone++;
 	}
-	return { kept: n ? kept / n : 1, erased: n ? gone / n : 0, lost: n - kept };
+	// checked: the share of the body G2 could look at; near 0 its pass is vacuous (the whole body read as item)
+	return {
+		kept: n ? kept / n : 1,
+		erased: n ? gone / n : 0,
+		lost: n - kept,
+		checked: body ? n / body : 1
+	};
 }
 
 /** Share of the composite's key px outside the base silhouette (G3: the mannequin did not move). Item px (mask) excluded. */

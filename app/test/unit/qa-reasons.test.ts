@@ -77,3 +77,12 @@ test('reasons with the same plain wording are listed once', () => {
 	);
 	expect(qaReasons(q, false, false)).toEqual(['Some body pixels were changed by the model']);
 });
+
+test('an unmeasured body says what to check instead of reporting changed body pixels', () => {
+	expect(
+		plainReasonMessage('G2 idle/south/0: not measurable (1.0% of the body checked)')
+	).toMatchObject({ key: 'studioModel.qa.bodyUnmeasured' });
+	expect(plainReasonMessage('G2 idle/south/0 key kept 0.900 (30 px)')).toMatchObject({
+		key: 'studioModel.qa.bodyPixels'
+	});
+});

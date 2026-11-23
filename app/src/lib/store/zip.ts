@@ -162,9 +162,15 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
 			v.getUint32(local, true) !== 0x04034b50
 		)
 			throw new LocalizedError('The ZIP headers are damaged.', 'zip.headersDamaged');
-		const name = new TextDecoder('utf-8', { fatal: true }).decode(
-			bytes.subarray(at + 46, at + 46 + len)
-		);
+		let name: string;
+		try {
+			name = new TextDecoder('utf-8', { fatal: true }).decode(
+				bytes.subarray(at + 46, at + 46 + len)
+			);
+		} catch {
+			// Not UTF-8 (an older archiver's file names): say the archive is unreadable instead of a raw TypeError.
+			throw new LocalizedError('The ZIP headers are damaged.', 'zip.headersDamaged');
+		}
 		if (
 			!name ||
 			name.includes('\\') ||
@@ -195,8 +201,13 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
 						throw new LocalizedError('The ZIP expands beyond its declared size.', 'zip.expansion');
 					chunks.push(r.value);
 				}
+			} catch (error) {
+				if (error instanceof LocalizedError) throw error;
+				// A corrupt deflate stream fails as a raw TypeError.
+				throw new LocalizedError(`The ZIP entry ${name} is damaged.`, 'zip.entryDamaged', { name });
 			} finally {
-				await reader.cancel();
+				// An errored stream rejects cancel with the error handled above.
+				await reader.cancel().catch(() => undefined);
 			}
 			data = new Uint8Array(n);
 			let offset = 0;

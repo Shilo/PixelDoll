@@ -112,13 +112,21 @@ export async function listSources(): Promise<{ id: string; label: string }[]> {
 export async function openFixture(
 	id: string,
 	signal?: AbortSignal
-): Promise<{ project: Project; current?: Outfit }> {
+): Promise<{ project: Project; current?: Outfit; dressUnread?: true }> {
 	const built = await untilAborted(fixtureProject(id.slice(8)), signal);
 	const project: Project = {
 		manifest: structuredClone(built.manifest),
 		images: new Map(built.images)
 	};
-	const saved = await db.get<DressState>('projects', `dress-${id}`).catch(() => undefined);
+	let saved: DressState | undefined;
+	try {
+		saved = await db.get<DressState>('projects', `dress-${id}`);
+	} catch {
+		// The demo still opens with its defaults (also where storage is unavailable), marked so the Studio never saves those
+		// defaults over saved outfits and colors it could not read.
+		signal?.throwIfAborted();
+		return { project, dressUnread: true };
+	}
 	signal?.throwIfAborted();
 	if (saved?.format !== CURRENT_FORMAT) return { project };
 	applyDress(project.manifest, saved);
@@ -129,7 +137,13 @@ export async function openSource(
 	id: string,
 	signal?: AbortSignal,
 	options?: Parameters<typeof loadProject>[2]
-): Promise<{ project: Project; current?: Outfit; missingImages?: number; record?: StoredProject }> {
+): Promise<{
+	project: Project;
+	current?: Outfit;
+	missingImages?: number;
+	record?: StoredProject;
+	dressUnread?: true;
+}> {
 	signal?.throwIfAborted();
 	if (id.startsWith('fixture:')) return openFixture(id, signal);
 	const { rec, project, missingImages } = await loadProject(id, signal, options);

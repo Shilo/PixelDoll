@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
 import { cellImg, composeCell } from '../../src/lib/compose/compose.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
+import { validate } from '../../src/lib/export/generic.ts';
 import { buildExport, moveProject } from '../../src/lib/export/build.ts';
 import { defaultExportSettings } from '../../src/lib/store/export-settings.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
@@ -119,6 +120,17 @@ test('ZIP reader rejects truncation, damaged data, unsafe paths and duplicate en
 			])
 		)
 	).rejects.toThrow('Duplicate');
+});
+
+test('ZIP reader reports non-UTF-8 names and corrupt compressed data as damaged archives', async () => {
+	const named = await zip([{ name: 'a.txt', data: enc.encode('hello') }]);
+	named[Buffer.from(named).lastIndexOf(Buffer.from('a.txt'))] = 0xff; // the central directory's copy of the name
+	await expect(unzip(named)).rejects.toThrow('The ZIP headers are damaged.');
+	const packed = await zip([{ name: 'b.txt', data: enc.encode('hello '.repeat(100)) }], {
+		deflate: true
+	});
+	packed.fill(0xff, 30 + 'b.txt'.length, 30 + 'b.txt'.length + 8); // after the 30-byte local header and the name
+	await expect(unzip(packed)).rejects.toThrow('The ZIP entry b.txt is damaged.');
 });
 
 test('PNG import rejects inflated data that exceeds its declared image dimensions', async () => {
@@ -1536,6 +1548,45 @@ test('editable import reports malformed slot entries instead of crashing', async
 	data.manifest.slots.push(null);
 	projectEntry.data = enc.encode(JSON.stringify(data));
 	await expect(readCharacterZip(await zip(entries))).rejects.toThrow('slot entry has no id');
+});
+
+test('editable import leaves out damaged saved details with a warning instead of failing later', async () => {
+	const imported = await readCharacterZip(await zip(await pixelLabFiles()));
+	const entries = await projectEntries(imported.project);
+	const projectEntry = entries.find((entry) => entry.name === 'project.json')!;
+	const data = JSON.parse(new TextDecoder().decode(projectEntry.data));
+	Object.assign(data, {
+		skeletons: { 'default/south/0': null }, // Frame size reads every point of every skeleton
+		character: { id: 7 },
+		rigQa: { kept: true }
+	});
+	projectEntry.data = enc.encode(JSON.stringify(data));
+	const result = await readCharacterZip(await zip(entries));
+	expect(result.extra).toEqual({ rigQa: { kept: true } });
+	expect(result.warningKeys).toEqual([
+		expect.objectContaining({ key: 'import.warning.detailsDropped' })
+	]);
+});
+
+test('editable import refuses an empty project file with a clear message', async () => {
+	const imported = await readCharacterZip(await zip(await pixelLabFiles()));
+	const entries = await projectEntries(imported.project);
+	entries.find((entry) => entry.name === 'project.json')!.data = enc.encode('null');
+	await expect(readCharacterZip(await zip(entries))).rejects.toThrow(
+		'This PixelDoll project version is not supported.'
+	);
+});
+
+test('an empty direction row in a layer validates instead of crashing', async () => {
+	const p = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url)))
+	);
+	const layer = p.manifest.items.find((item) => item.layers.length)!.layers[0];
+	const [anim, dirs] = Object.entries(layer.cells!)[0];
+	const dir = Object.keys(dirs)[0] as DirectionName;
+	layer.cells![anim][dir] = null as never;
+	expect(validate(p)).toEqual([]);
 });
 
 test('editable import verifies referenced image hashes', async () => {

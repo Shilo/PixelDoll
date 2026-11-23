@@ -223,8 +223,11 @@ export async function putCharacter(
 		const t = writable(db, ['projects', 'blobs']);
 		for (const [hash, blob] of blobs) t.objectStore('blobs').put(blob, hash);
 		t.objectStore('projects').add(record, id);
+		let error: DOMException | null = null;
 		t.oncomplete = () => res();
-		t.onerror = t.onabort = () => rej(t.error);
+		// A refused add reports on its request before the transaction aborts (t.error is still null then).
+		t.onerror = (event) => (error ??= (event.target as IDBRequest).error);
+		t.onabort = () => rej(error ?? t.error);
 	});
 }
 
@@ -714,7 +717,9 @@ export async function claimJob<T extends { id: string }>(
 			}
 		};
 		transaction.oncomplete = () => resolve(result);
-		transaction.onerror = transaction.onabort = () => reject(error ?? transaction.error);
+		// A refused add reports on its request before the transaction aborts (transaction.error is still null then).
+		transaction.onerror = (event) => (error ??= (event.target as IDBRequest).error);
+		transaction.onabort = () => reject(error ?? transaction.error);
 	});
 }
 /** A retained archive is an opaque ZIP: hashes inside it name no stored blob. */
@@ -1002,6 +1007,14 @@ export async function selfTest() {
 			rejected && !(await get('jobs', forbidden.id)),
 			'db claim callback failure inserts no record'
 		);
+		// A refused add rejects with its ConstraintError, never with the still-null transaction error.
+		const duplicate = await claimJob({ ...winner }, () => undefined).catch(
+			(error: unknown) => error
+		);
+		console.assert(
+			(duplicate as DOMException | null)?.name === 'ConstraintError',
+			'db claim reports a refused add'
+		);
 	} finally {
 		await Promise.all(candidates.map((candidate) => del('jobs', candidate.id)));
 	}
@@ -1011,6 +1024,13 @@ export async function selfTest() {
 		image = `selftest-${Math.random()}`;
 	try {
 		await put('projects', taken, { n: 1 });
+		const occupied = await putCharacter(taken, { n: 2 }, new Map()).catch(
+			(error: unknown) => error
+		);
+		console.assert(
+			(occupied as DOMException | null)?.name === 'ConstraintError',
+			'db putCharacter reports a taken id'
+		);
 		const batch = (ids: string[]) =>
 			addCharacters([image], () => ({
 				records: new Map(ids.map((id) => [id, { id }])),

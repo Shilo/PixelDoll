@@ -266,17 +266,50 @@ export function hasVisibleBase(project: Project) {
 	);
 }
 
+const plainObject = (value: unknown): value is Record<string, unknown> =>
+	!!value && typeof value === 'object' && !Array.isArray(value);
+const keypoint = (value: unknown) =>
+	plainObject(value) && Number.isFinite(value.x) && Number.isFinite(value.y);
+/** The saved details an editable project carries, keeping only the ones shaped as the Studio reads them: a hand-edited file
+ *  imports without them instead of failing later (Frame size reads every skeleton point). */
+function savedDetails(data: Record<string, unknown>): {
+	extra: ImportedCharacter['extra'];
+	dropped: boolean;
+} {
+	const extra: ImportedCharacter['extra'] = {};
+	let dropped = false;
+	const { character, skeletons, rigQa } = data;
+	if (character !== undefined) {
+		if (
+			plainObject(character) &&
+			typeof character.id === 'string' &&
+			typeof character.looks === 'string'
+		)
+			extra.character = { id: character.id, looks: character.looks };
+		else dropped = true;
+	}
+	if (skeletons !== undefined) {
+		if (
+			plainObject(skeletons) &&
+			Object.values(skeletons).every(
+				(points) => plainObject(points) && Object.values(points).every(keypoint)
+			)
+		)
+			extra.skeletons = skeletons as NonNullable<ImportedCharacter['extra']['skeletons']>;
+		else dropped = true;
+	}
+	if (rigQa !== undefined) extra.rigQa = rigQa; // its readers check its shape themselves
+	return { extra, dropped };
+}
+
 async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharacter> {
-	const data = json(files, 'project.json') as {
-		format: string;
-		manifest: Manifest;
-	} & ImportedCharacter['extra'];
-	if (data.format !== 'pixeldoll-project/1')
+	const data = json(files, 'project.json') as unknown;
+	if (!plainObject(data) || data.format !== 'pixeldoll-project/1')
 		throw new LocalizedError(
 			'This PixelDoll project version is not supported.',
 			'import.error.unsupportedProject'
 		);
-	const m = data.manifest;
+	const m = data.manifest as Manifest;
 	manifestShape(m);
 	const refs = new Set<string>();
 	for (const it of m.items) {
@@ -307,10 +340,16 @@ async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharact
 			);
 		images.set(h, im);
 	}
+	const { extra, dropped } = savedDetails(data);
 	return {
 		project: { manifest: m, images },
-		extra: { character: data.character, skeletons: data.skeletons, rigQa: data.rigQa },
-		warnings: []
+		extra,
+		warnings: dropped
+			? [
+					'Some saved character details were damaged and were left out. Set up its pose rig again if needed.'
+				]
+			: [],
+		...(dropped ? { warningKeys: [message('import.warning.detailsDropped')] } : {})
 	};
 }
 
