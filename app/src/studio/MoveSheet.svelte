@@ -807,6 +807,8 @@
 	const hasFrameRecovery = $derived(
 		!!(savedItemFrames && !recoveryAccess.error) || !!(recovery || colorRepair || keep)
 	);
+	// A free way on (keep, recover or resume what was paid for) leads, so the paid Generate again is secondary to it.
+	const freeWayOn = $derived(hasFrameRecovery || !!paid?.options.some((option) => !option.paid));
 	const keepK = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1 : 1.5))));
 	const recoveryItemGens = $derived(
 		recovery && m && moving.spec ? moveEstimate(m, moving.spec).items : 0
@@ -1431,8 +1433,8 @@
 				<span class="api-action"
 					><button
 						class="bu-action btn"
-						class:primary={!hasFrameRecovery}
-						data-variant={hasFrameRecovery ? 'outline' : 'primary'}
+						class:primary={!freeWayOn}
+						data-variant={freeWayOn ? 'outline' : 'primary'}
 						disabled={!!retryAccess.error || tierBlocked(retryTier) || paidRunning}
 						aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
 						onclick={() =>
@@ -1884,9 +1886,9 @@
 								class="bu-ring ring spin"
 								aria-hidden="true"
 							></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}
-						{displayMessage(
-							s.label
-						)}{#if !moving.done && i === stepIx && moving.progress && moving.progress.total > 1}<span
+						{displayMessage(s.label)}{#if !moving.done && i === stepIx && moving.error}<span
+								class="muted small">&nbsp;· {t('paidReview.state.failed')}</span
+							>{:else if !moving.done && i === stepIx && moving.progress && moving.progress.total > 1}<span
 								class="muted num small">&nbsp;{moving.progress.done}/{moving.progress.total}</span
 							>{/if}
 					</li>

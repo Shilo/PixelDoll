@@ -184,6 +184,7 @@
 						></span
 					>
 					{#if poseOffer?.error}<span role="status">{displayMessage(poseOffer.error)}</span>{/if}
+					{#each poseOffer?.unposed ?? [] as note, i (i)}<span>{displayMessage(note)}</span>{/each}
 					<PoseIssues issues={poseOffer?.poseIssues ?? []} />
 					{#if poseTier}<TierNotice
 							id="stage-pose-tier"

@@ -3138,8 +3138,15 @@
 		"rerollDetail": "Une relance n’achète une nouvelle tentative que pour ces directions. Toutes les autres gardent leurs résultats payés.",
 		"keepUnposedDetail": "Enregistre gratuitement les images du corps telles quelles. Des articulations manquent sur certaines images : aucun objet ne pourra être ajusté dans ces vues avant que vous les refassiez. Les autres vues gardent leurs poses.",
 		"keepUnposed": "Garder sans ajuster d’objets",
+		"unposedViews": {
+			"one": "{move} {directions} a été gardé sans poses : l’équipement n’y est pas ajusté. Refaites cette vue pour l’ajuster.",
+			"other": "{move} {directions} ont été gardés sans poses : l’équipement n’y est pas ajusté. Refaites ces vues pour l’ajuster."
+		},
 		"saveFinished": "Enregistrer les vues terminées",
-		"saveFinishedDetail": "Enregistre {views} gratuitement, après votre vérification. {missing} n’ont pas abouti et sont laissées de côté ; vous pourrez les faire plus tard depuis ce mouvement.",
+		"saveFinishedDetail": {
+			"one": "Enregistre {views} gratuitement, après votre vérification. {missing} n’a pas abouti et est laissée de côté ; vous pourrez la faire plus tard depuis ce mouvement.",
+			"other": "Enregistre {views} gratuitement, après votre vérification. {missing} n’ont pas abouti et sont laissées de côté ; vous pourrez les faire plus tard depuis ce mouvement."
+		},
 		"pending": "Reste à acheter : environ {gens} gens.",
 		"liftable": "Peut être relevé pour tenir : les pieds montent jusqu’à {px} px dans {frames} images sur {total}.",
 		"notLiftable": "Relever ne suffit pas : le mouvement est coupé sur un côté ou en haut."

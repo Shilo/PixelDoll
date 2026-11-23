@@ -42,7 +42,7 @@
 	} from './state.svelte.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
-	import { displayError } from '../lib/i18n.ts';
+	import { displayError, displayMessage } from '../lib/i18n.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import type { ImageReference } from '../lib/image/reference.ts';
@@ -132,6 +132,10 @@
 				return { item, image: thumb && croppedThumbnail(thumb), offer };
 			});
 	});
+	// Every equipment offer here is for this move, so its views kept without poses are named once.
+	const unposedNotes = $derived(
+		equipment.find(({ offer }) => offer?.unposed.length)?.offer?.unposed ?? []
+	);
 	const chosen = $derived(
 		equipment.filter(({ item, offer }) => offer?.specs.length && selected.includes(item.id))
 	);
@@ -383,6 +387,9 @@
 			{/each}
 		</div>
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
+		{#each unposedNotes as note, i (i)}<p class="notice warn small">
+				{displayMessage(note)}
+			</p>{/each}
 		<PoseIssues issues={[...new Set(chosen.flatMap(({ offer }) => offer?.poseIssues ?? []))]} />
 	{:else if candidate}
 		{#if candidate.warnings.length}

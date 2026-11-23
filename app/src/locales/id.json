@@ -3056,8 +3056,13 @@
 		"rerollDetail": "Buat ulang hanya membeli percobaan baru untuk arah tersebut. Arah lain tetap memakai hasil berbayarnya.",
 		"keepUnposedDetail": "Menyimpan frame tubuh apa adanya, gratis. Sendi tidak ditemukan pada beberapa frame, jadi item tidak bisa disesuaikan pada tampilan itu sampai Anda membuatnya ulang. Tampilan lain tetap memakai posenya.",
 		"keepUnposed": "Simpan tanpa menyesuaikan item",
+		"unposedViews": {
+			"other": "{move} {directions} disimpan tanpa pose, jadi perlengkapan tidak dipasang di sana. Buat ulang tampilan itu untuk memasangnya."
+		},
 		"saveFinished": "Simpan tampilan yang selesai",
-		"saveFinishedDetail": "Menyimpan {views} secara gratis setelah Anda memeriksanya. {missing} tidak selesai dan tidak disertakan; Anda bisa membuatnya nanti dari gerakan ini.",
+		"saveFinishedDetail": {
+			"other": "Menyimpan {views} secara gratis setelah ditinjau. {missing} tidak selesai dan tidak disertakan; Anda bisa membuatnya nanti dari gerakan ini."
+		},
 		"pending": "Masih perlu dibeli: sekitar {gens} gen.",
 		"liftable": "Bisa dinaikkan agar muat: kaki naik hingga {px} px pada {frames} dari {total} frame.",
 		"notLiftable": "Menaikkan tidak cukup: gerakan terpotong di sisi atau di atas."

@@ -2,6 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import {
 	addMove,
 	finishedViewsSpec,
+	itemMoveOffer,
 	type MoveSpec,
 	b64,
 	bodyMoveIssue,
@@ -1773,6 +1774,15 @@ test('one replaced view kept without poses loses only its own poses and fitted e
 	);
 	// Without the record's list (an import never set up), the generic setup step stays.
 	expect(() => reviewItemMove(saved.manifest, fit)).toThrow('Set up its poses');
+	// An offer for the posed views prices only them and names the view left out.
+	const offer = itemMoveOffer(saved.manifest, [{ ...fit, dirs: ['south'] }], setupRedoMoves(saved));
+	expect(offer.specs).toHaveLength(1);
+	expect(offer.unposed).toEqual([
+		{
+			key: 'moveReview.unposedViews',
+			vars: { move: { key: 'moveNames.idle' }, directions: [expect.anything()], count: 1 }
+		}
+	]);
 });
 
 test('redoing one view of a move kept without poses leaves the rest of the rig ready', async () => {

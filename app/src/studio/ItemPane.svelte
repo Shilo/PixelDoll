@@ -600,6 +600,9 @@
 					{#if missingOffer?.error}<p class="notice warn small" role="status">
 							{displayMessage(missingOffer.error)}
 						</p>{/if}
+					{#each missingOffer?.unposed ?? [] as note, i (i)}<p class="notice warn small">
+							{displayMessage(note)}
+						</p>{/each}
 					<PoseIssues issues={missingOffer?.poseIssues ?? []} />
 					{#if missingTier}<TierNotice
 							id="item-missing-tier"
