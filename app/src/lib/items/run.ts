@@ -19,7 +19,7 @@ import { coverageGaps, deriveMaterials } from '../dress/dress.ts';
 import { decodePngBytes, encodePngBytes } from '../image/pngraw.ts';
 import { hardMaskBits } from '../image/hard-mask.ts';
 import * as db from '../store/db.ts';
-import { loadProject, saveItem, type StoredProject } from '../store/project.ts';
+import { loadProject, saveItem, withItem, type StoredProject } from '../store/project.ts';
 import { itemContent, itemExportIdTaken } from '../store/identity.ts';
 import type {
 	CellKey,
@@ -2923,7 +2923,7 @@ async function prepareItemPalette(
 		throw new Error(
 			'This color correction exceeds the supported history format. Existing colors were kept.'
 		);
-	return { plan, version, next, images };
+	return { plan, version, next, images, rec: ctx.rec };
 }
 /** A free, explicit preview; unsupported/ambiguous color families remain unchanged. */
 export async function itemPaletteRepairPlan(
@@ -2934,14 +2934,15 @@ export async function itemPaletteRepairPlan(
 ): Promise<ItemPaletteRepairPlan> {
 	return (await prepareItemPalette(projectId, itemId, anim, dir)).plan;
 }
-/** Apply exactly the reviewed free edit, atomically. Historical QA flags and original paid provenance are preserved. */
+/** Apply exactly the reviewed free edit, atomically. Historical QA flags and original paid provenance are preserved.
+ *  Returns the record it started from and the record as saved. */
 export async function matchItemColors(
 	projectId: string,
 	itemId: string,
 	anim: string,
 	dir: DirectionName,
 	reviewed: ItemPaletteRepairPlan
-): Promise<void> {
+): Promise<{ before: StoredProject; after: StoredProject }> {
 	const prepared = await prepareItemPalette(projectId, itemId, anim, dir);
 	if (stableStringify(prepared.plan) !== stableStringify(reviewed))
 		throw new LocalizedError(
@@ -2955,4 +2956,6 @@ export async function matchItemColors(
 				'itemRoute.errors.paletteSaveChanged'
 			);
 	});
+	// The save refused any item, body or material that differs from this read: these are exactly the two sides of it.
+	return { before: prepared.rec, after: withItem(prepared.rec, prepared.next) };
 }

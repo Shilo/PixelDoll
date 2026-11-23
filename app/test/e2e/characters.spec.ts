@@ -1214,8 +1214,21 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(settings).toBeVisible();
 	await review.click();
-	await confirmation.getByRole('button', { name: 'Remove permanently' }).click();
+	await confirmation.getByRole('button', { name: 'Remove', exact: true }).click();
 	await expect(settings).toBeHidden();
+	// The removal is one history step: Undo brings the directions back and Redo removes them again.
+	const undo = page.locator('.header-undo'),
+		redo = page.locator('.header-redo');
+	await expect(undo).toHaveAccessibleName('Undo Change directions');
+	await undo.click();
+	await expect(redo).toHaveAccessibleName('Redo Change directions');
+	await openDirections();
+	await expect(northWest).toHaveAttribute('aria-pressed', 'true');
+	await expect(southEast).toHaveAttribute('aria-pressed', 'true');
+	await page.keyboard.press('Escape');
+	await expect(settings).toBeHidden();
+	await redo.click();
+	await expect(undo).toHaveAccessibleName('Undo Change directions');
 	await reloadStudio(page);
 	await openDirections();
 	await expect(northWest).toHaveCount(0);
@@ -1302,10 +1315,17 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await size.fill('64');
 	await save.click();
 	await expect(frame).toBeHidden();
+	// The notice's Undo is the history step's: Redo then makes the change again.
 	await notice.getByRole('button', { name: /Frame adjusted/ }).click();
-	await expect(notice).toContainText('Frame change undone.');
+	await expect(page.locator('.header-redo')).toHaveAccessibleName('Redo Adjust frame');
 	frame = await openFrame();
 	await expect(size).toHaveValue('80');
+	await page.keyboard.press('Escape');
+	await expect(frame).toBeHidden();
+	await page.locator('.header-redo').click();
+	await expect(page.locator('.header-undo')).toHaveAccessibleName('Undo Adjust frame');
+	frame = await openFrame();
+	await expect(size).toHaveValue('64');
 });
 
 test('browser Back respects an atomic import and closes sheets after it finishes', async ({
@@ -3958,6 +3978,13 @@ test('rename display names and export IDs without changing saved keys or calling
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
 	await rename('Rename move', 'Stroll', 'stroll');
+	await expect(page.locator('.move-list')).toContainText('Stroll');
+	// A rename is one history step.
+	await expect(page.locator('.header-undo')).toHaveAccessibleName('Undo Rename move');
+	await page.locator('.header-undo').click();
+	await expect(page.locator('.move-list')).not.toContainText('Stroll');
+	await expect(page.locator('.header-redo')).toHaveAccessibleName('Redo Rename move');
+	await page.locator('.header-redo').click();
 	await expect(page.locator('.move-list')).toContainText('Stroll');
 	// Paid item requests confirm against the saved rig's JSON: a rename must leave both identical.
 	expect(

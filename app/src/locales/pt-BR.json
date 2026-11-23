@@ -406,7 +406,7 @@
 			"one": "Remover {n} direção?",
 			"other": "Remover {n} direções?"
 		},
-		"removePermanently": "Remover permanentemente",
+		"remove": "Remover",
 		"removing": "Removendo…",
 		"savedOnly": "Você só pode editar personagens salvos.",
 		"waitForGeneration": "Aguarde até que as gerações em andamento terminem.",
@@ -417,13 +417,13 @@
 		"saving": "Salvando…",
 		"reviewChanges": "Revisar alterações",
 		"changeTitle": "Alterar direções?",
-		"confirmMixedRemoval": "Estas direções serão removidas das animações e dos equipamentos do personagem: {directions}. Não é possível desfazer essa ação.",
+		"confirmMixedRemoval": "Estas direções serão removidas das animações e dos equipamentos do personagem: {directions}. Desfazer as traz de volta até você recarregar ou fechar esta página.",
 		"confirmReplace": "O espelhamento substitui a arte de {directions} pelos quadros invertidos da vista oposta. Se você desativar o espelhamento depois, os quadros invertidos serão mantidos. Baixe um backup para guardar a arte original.",
 		"labelDirectionsToKeep": "Direções a manter",
 		"loadingDirections": "Carregando direções…",
 		"downloadBackup": "Baixar cópia de segurança",
 		"reviewRemoval": "Revisar remoção",
-		"confirmRemoval": "Estas direções serão removidas das animações e dos equipamentos deste personagem: {directions}. As outras direções não mudam. Não é possível desfazer essa ação.",
+		"confirmRemoval": "Estas direções serão removidas das animações e dos equipamentos deste personagem: {directions}. As outras direções não mudam. Desfazer as traz de volta até você recarregar ou fechar esta página.",
 		"rPGMakerExportNeedsAllFourCardinal": "A exportação para RPG Maker precisa das quatro direções cardeais.",
 		"directionsWereSavedReloadToRefreshThe": "As direções foram salvas. Recarregue a página para atualizar o personagem.",
 		"directionsWereSavedReloadToRefreshThe2": "As direções foram salvas. Recarregue a página para atualizar o personagem: {reason}"
@@ -1100,7 +1100,13 @@
 		"changeCategory": "Alterar {name}",
 		"deleteCategory": "Excluir {name}",
 		"deleteItem": "Excluir {name}",
-		"deleteMove": "Excluir {name}"
+		"deleteMove": "Excluir {name}",
+		"moveItem": "Mover {name}",
+		"changeDirections": "Alterar direções",
+		"restoreOriginals": "Restaurar originais",
+		"changeDescription": "Alterar descrição",
+		"changed": "Este personagem mudou desde então, então esta etapa não pode mais ser desfeita nem refeita.",
+		"notRecorded": "Salvo, mas esta alteração não pode ser desfeita: alguns dos quadros dela não estão mais salvos."
 	},
 	"export": {
 		"sheet": {
@@ -3053,10 +3059,6 @@
 			"other": "{count} quadros de {name} substituídos."
 		},
 		"undo": "Desfazer",
-		"undone": {
-			"one": "{count} quadro desfeito.",
-			"other": "{count} quadros desfeitos."
-		},
 		"restored": {
 			"one": "{count} quadro original restaurado.",
 			"other": "{count} quadros originais restaurados."
@@ -3168,7 +3170,6 @@
 		"consequences": "Itens só são copiados exatamente entre personagens com o mesmo tamanho e posição de quadro. As exportações mantêm a mesma escala e origem no jogo; exporte de novo para usar a mudança.",
 		"loading": "Carregando o quadro…",
 		"saved": "Quadro ajustado: {change}.",
-		"undone": "Mudança no quadro desfeita.",
 		"errors": {
 			"reviewOpen": "Salve ou descarte a animação aguardando revisão antes de ajustar o quadro.",
 			"statePending": "Salve ou descarte o estado pendente antes de ajustar o quadro.",
@@ -3181,8 +3182,7 @@
 			"unchanged": "Mude o tamanho ou a posição do quadro primeiro.",
 			"limit": "Nem um quadro de {size} px consegue dar espaço para as animações deste personagem.",
 			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de ajustar o quadro.",
-			"changed": "Este personagem mudou. Abra Ajustar quadro de novo para revisar a versão mais recente.",
-			"undoFailed": "Não foi possível desfazer a mudança no quadro."
+			"changed": "Este personagem mudou. Abra Ajustar quadro de novo para revisar a versão mais recente."
 		}
 	},
 	"costSheet": {

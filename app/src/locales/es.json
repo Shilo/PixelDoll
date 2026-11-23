@@ -406,7 +406,7 @@
 			"one": "¿Quitar {n} dirección?",
 			"other": "¿Quitar {n} direcciones?"
 		},
-		"removePermanently": "Quitar definitivamente",
+		"remove": "Quitar",
 		"removing": "Quitando…",
 		"savedOnly": "Solo se pueden editar personajes guardados.",
 		"waitForGeneration": "Espera a que termine la generación en curso.",
@@ -417,13 +417,13 @@
 		"saving": "Guardando…",
 		"reviewChanges": "Revisar cambios",
 		"changeTitle": "¿Cambiar direcciones?",
-		"confirmMixedRemoval": "Estas direcciones se quitarán de las animaciones y el equipo del personaje: {directions}. No puedes deshacerlo.",
+		"confirmMixedRemoval": "Estas direcciones se quitarán de las animaciones y el equipo del personaje: {directions}. «Deshacer» las recupera hasta que recargues o cierres esta página.",
 		"confirmReplace": "Al activar el reflejo, las imágenes de {directions} se sustituyen por fotogramas invertidos de la vista opuesta. Si lo desactivas después, esos fotogramas se conservan. Descarga una copia de seguridad para conservar las imágenes originales.",
 		"labelDirectionsToKeep": "Direcciones para conservar",
 		"loadingDirections": "Cargando direcciones…",
 		"downloadBackup": "Descargar copia de seguridad",
 		"reviewRemoval": "Revisar eliminación",
-		"confirmRemoval": "Se quitarán estas direcciones de las animaciones y del equipamiento de este personaje: {directions}. Las demás direcciones no cambian. Esto no se puede deshacer.",
+		"confirmRemoval": "Se quitarán estas direcciones de las animaciones y del equipamiento de este personaje: {directions}. Las demás direcciones no cambian. «Deshacer» las recupera hasta que recargues o cierres esta página.",
 		"rPGMakerExportNeedsAllFourCardinal": "La exportación a RPG Maker necesita las cuatro direcciones cardinales.",
 		"directionsWereSavedReloadToRefreshThe": "Se guardaron las direcciones. Recarga para actualizar el personaje.",
 		"directionsWereSavedReloadToRefreshThe2": "Se guardaron las direcciones. Recarga para actualizar el personaje: {reason}"
@@ -1097,7 +1097,13 @@
 		"changeCategory": "Cambiar {name}",
 		"deleteCategory": "Eliminar {name}",
 		"deleteItem": "Eliminar {name}",
-		"deleteMove": "Eliminar {name}"
+		"deleteMove": "Eliminar {name}",
+		"moveItem": "Mover {name}",
+		"changeDirections": "Cambiar direcciones",
+		"restoreOriginals": "Restaurar originales",
+		"changeDescription": "Cambiar descripción",
+		"changed": "Este personaje cambió desde entonces, así que este paso ya no se puede deshacer ni rehacer.",
+		"notRecorded": "Se guardó, pero este cambio no se puede deshacer: algunos de sus fotogramas ya no están guardados."
 	},
 	"export": {
 		"sheet": {
@@ -3044,10 +3050,6 @@
 			"other": "Se reemplazaron {count} fotogramas de {name}."
 		},
 		"undo": "Deshacer",
-		"undone": {
-			"one": "Se deshizo {count} fotograma.",
-			"other": "Se deshicieron {count} fotogramas."
-		},
 		"restored": {
 			"one": "Se restauró {count} fotograma original.",
 			"other": "Se restauraron {count} fotogramas originales."
@@ -3159,7 +3161,6 @@
 		"consequences": "Los objetos solo se copian exactamente entre personajes con el mismo tamaño y posición de marco. Las exportaciones mantienen la misma escala y origen en el juego; vuelve a exportar para usar el cambio.",
 		"loading": "Cargando el marco…",
 		"saved": "Marco ajustado: {change}.",
-		"undone": "Cambio del marco deshecho.",
 		"errors": {
 			"reviewOpen": "Guarda o descarta la animación pendiente de revisión antes de ajustar el marco.",
 			"statePending": "Guarda o descarta el estado pendiente antes de ajustar el marco.",
@@ -3172,8 +3173,7 @@
 			"unchanged": "Cambia primero el tamaño o la posición del marco.",
 			"limit": "Ni siquiera un marco de {size} px puede dar espacio a este personaje para las animaciones.",
 			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de ajustar el marco.",
-			"changed": "Este personaje cambió. Vuelve a abrir Ajustar marco para revisar la versión más reciente.",
-			"undoFailed": "No se pudo deshacer el cambio del marco."
+			"changed": "Este personaje cambió. Vuelve a abrir Ajustar marco para revisar la versión más reciente."
 		}
 	},
 	"costSheet": {

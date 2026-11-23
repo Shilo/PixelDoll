@@ -1,4 +1,4 @@
-// Fix frames persistence: read the user's files, plan against the stored character, and save, undo or restore one item's
+// Fix frames persistence: read the user's files, plan against the stored character, and save or restore one item's
 // (or the body's) frames atomically. Item saves go through saveItem with a version check; body saves rebase the items fitted
 // to the old body and refuse while generation work could write the character back (saveIdleCharacter).
 import { decodePng, pngSize, type Img } from '../image/png.ts';
@@ -19,7 +19,13 @@ import { itemContent } from '../store/identity.ts';
 import type { Item, Project } from '../store/manifest.ts';
 import { getBlob } from '../store/db.ts';
 import { layerFrame } from '../compose/compose.ts';
-import { loadProject, rememberDecoded, saveItem, type StoredProject } from '../store/project.ts';
+import {
+	loadProject,
+	rememberDecoded,
+	saveItem,
+	withItem,
+	type StoredProject
+} from '../store/project.ts';
 import { unzip } from '../store/zip.ts';
 import { standingHistory, type FrameHistory } from './history.ts';
 import {
@@ -29,7 +35,6 @@ import {
 	restoreOriginals,
 	sheetSize,
 	standingBound,
-	undoLast,
 	type FramesPlan,
 	type LayerId
 } from './fix.ts';
@@ -205,6 +210,8 @@ export async function bodyRecord(
 	return next;
 }
 
+/** Save `item` over `rec` and return the record as written: exactly, for the parts the save checks against `rec` (the body
+ *  saves the whole record; an item save replaces only that item, whose content it checks). */
 async function saveTarget(
 	projectId: string,
 	rec: StoredProject,
@@ -212,7 +219,7 @@ async function saveTarget(
 	images: Map<Sha256, Img>,
 	stored: Sha256[],
 	reverted: FrameHistory[] = []
-) {
+): Promise<StoredProject> {
 	assertEditable(projectId);
 	const missing = () =>
 		new LocalizedError(
@@ -230,45 +237,44 @@ async function saveTarget(
 		for (const h of new Set([...stored, ...standing]))
 			if (!images.has(h) && !(await getBlob(h.slice(7)))) throw missing();
 		await db.saveIdleCharacter(rec, next, await blobsOf(images), 'replace body frames of');
-	} else {
-		const version = itemVersion(rec, item.id);
-		await saveItem(
-			projectId,
-			item,
-			images,
-			[],
-			(current) => {
-				if (itemVersion(current, item.id) !== version) throw changedSince();
-			},
-			stored.length ? { keys: new Set(stored.map((h) => h.slice(7))), missing } : undefined
-		);
+		for (const [h, im] of images) rememberDecoded(h, im);
+		return next;
 	}
+	const version = itemVersion(rec, item.id);
+	await saveItem(
+		projectId,
+		item,
+		images,
+		[],
+		(current) => {
+			if (itemVersion(current, item.id) !== version) throw changedSince();
+		},
+		stored.length ? { keys: new Set(stored.map((h) => h.slice(7))), missing } : undefined
+	);
 	for (const [h, im] of images) rememberDecoded(h, im);
+	return withItem(rec, item);
 }
 
-/** Save a reviewed import; returns its id, which Undo names so it never reverts a later import. */
-export async function saveFrames(prepared: PreparedFrames): Promise<string> {
+/** Save a reviewed import. Returns the record it started from and the record as saved. */
+export async function saveFrames(
+	prepared: PreparedFrames
+): Promise<{ before: StoredProject; after: StoredProject }> {
 	const { projectId, rec, project, plan } = prepared;
 	if (!plan.changed.length) throw new Error('No frames changed');
-	const id = crypto.randomUUID();
-	await saveTarget(projectId, rec, applyPlan(project, plan, id), plan.images, []);
-	return id;
+	const item = applyPlan(project, plan, crypto.randomUUID());
+	return { before: rec, after: await saveTarget(projectId, rec, item, plan.images, []) };
 }
 
-/** Undo the latest import of an item's frames, or restore all its edited frames to their originals. */
-export async function revertFrames(
+/** Restore all an item's edited frames to their originals. Returns how many, the record it started from and the record as
+ *  saved. */
+export async function restoreFrames(
 	projectId: string,
-	itemId: string,
-	how: { undo: string } | 'restore'
-): Promise<number> {
+	itemId: string
+): Promise<{ count: number; before: StoredProject; after: StoredProject }> {
 	assertEditable(projectId);
 	const { rec } = await loadProject(projectId);
 	const item = rec.manifest.items.find((i) => i.id === itemId);
-	const result =
-		item &&
-		(how === 'restore'
-			? restoreOriginals(rec.manifest, item)
-			: undoLast(rec.manifest, item, how.undo));
+	const result = item && restoreOriginals(rec.manifest, item);
 	if (!result)
 		throw new LocalizedError(
 			'These frames were changed again since, so there is nothing to undo here.',
@@ -287,7 +293,7 @@ export async function revertFrames(
 				'fixFrames.errors.originalsUnusable'
 			);
 	}
-	await saveTarget(
+	const after = await saveTarget(
 		projectId,
 		rec,
 		result.item,
@@ -295,5 +301,5 @@ export async function revertFrames(
 		result.writes.map((w) => w.hash),
 		result.frames
 	);
-	return result.count;
+	return { count: result.count, before: rec, after };
 }

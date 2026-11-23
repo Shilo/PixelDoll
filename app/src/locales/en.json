@@ -406,7 +406,7 @@
 			"one": "Remove {n} direction?",
 			"other": "Remove {n} directions?"
 		},
-		"removePermanently": "Remove permanently",
+		"remove": "Remove",
 		"removing": "Removing…",
 		"savedOnly": "Only saved characters can be edited.",
 		"waitForGeneration": "Wait for the current generation work to finish.",
@@ -417,13 +417,13 @@
 		"saving": "Saving…",
 		"reviewChanges": "Review changes",
 		"changeTitle": "Change directions?",
-		"confirmMixedRemoval": "{directions} will be removed from this character’s moves and equipment. This can’t be undone.",
+		"confirmMixedRemoval": "{directions} will be removed from this character’s moves and equipment. Undo brings them back until you reload or close this page.",
 		"confirmReplace": "Mirroring replaces the artwork for {directions} with flipped frames from the opposite view. Turning mirroring off later keeps those flipped frames. Download a backup to keep the original artwork.",
 		"labelDirectionsToKeep": "Directions to keep",
 		"loadingDirections": "Loading directions…",
 		"downloadBackup": "Download backup",
 		"reviewRemoval": "Review removal",
-		"confirmRemoval": "{directions} will be removed from this character’s moves and equipment. The other directions stay unchanged. This can’t be undone.",
+		"confirmRemoval": "{directions} will be removed from this character’s moves and equipment. The other directions stay unchanged. Undo brings them back until you reload or close this page.",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker export needs all four cardinal directions.",
 		"directionsWereSavedReloadToRefreshThe": "Directions were saved. Reload to refresh the character.",
 		"directionsWereSavedReloadToRefreshThe2": "Directions were saved. Reload to refresh the character: {reason}"
@@ -1097,7 +1097,13 @@
 		"changeCategory": "Change {name}",
 		"deleteCategory": "Delete {name}",
 		"deleteItem": "Delete {name}",
-		"deleteMove": "Delete {name}"
+		"deleteMove": "Delete {name}",
+		"moveItem": "Move {name}",
+		"changeDirections": "Change directions",
+		"restoreOriginals": "Restore originals",
+		"changeDescription": "Change description",
+		"changed": "This character changed since, so this step can no longer be undone or redone.",
+		"notRecorded": "Saved, but this change cannot be undone: some of its frames are no longer stored."
 	},
 	"export": {
 		"sheet": {
@@ -3044,10 +3050,6 @@
 			"other": "Replaced {count} frames of {name}."
 		},
 		"undo": "Undo",
-		"undone": {
-			"one": "Undid {count} frame.",
-			"other": "Undid {count} frames."
-		},
 		"restored": {
 			"one": "Restored {count} original frame.",
 			"other": "Restored {count} original frames."
@@ -3159,7 +3161,6 @@
 		"consequences": "Items copy exactly only between characters with the same frame size and position. Exports keep the same in-game scale and origin; export again to use the change.",
 		"loading": "Loading the frame…",
 		"saved": "Frame adjusted: {change}.",
-		"undone": "Frame change undone.",
 		"errors": {
 			"reviewOpen": "Save or discard the move waiting for review before adjusting the frame.",
 			"statePending": "Save or discard the pending State before adjusting the frame.",
@@ -3172,8 +3173,7 @@
 			"unchanged": "Change the frame size or position first.",
 			"limit": "Even a {size} px frame cannot give this character room for moves.",
 			"resolveDrafts": "Keep or dismiss this character’s item drafts before adjusting the frame.",
-			"changed": "This character changed. Reopen Adjust frame to review the latest version.",
-			"undoFailed": "The frame change could not be undone."
+			"changed": "This character changed. Reopen Adjust frame to review the latest version."
 		}
 	},
 	"costSheet": {

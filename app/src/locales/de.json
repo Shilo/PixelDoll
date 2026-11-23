@@ -406,7 +406,7 @@
 			"one": "{n} Blickrichtung entfernen?",
 			"other": "{n} Blickrichtungen entfernen?"
 		},
-		"removePermanently": "Endgültig entfernen",
+		"remove": "Entfernen",
 		"removing": "Wird entfernt…",
 		"savedOnly": "Nur gespeicherte Figuren lassen sich bearbeiten.",
 		"waitForGeneration": "Warte, bis die laufende Generierung abgeschlossen ist.",
@@ -417,13 +417,13 @@
 		"saving": "Wird gespeichert…",
 		"reviewChanges": "Änderungen prüfen",
 		"changeTitle": "Blickrichtungen ändern?",
-		"confirmMixedRemoval": "Folgende Blickrichtungen werden aus Animationen und Ausrüstung entfernt: {directions}. Das lässt sich nicht rückgängig machen.",
+		"confirmMixedRemoval": "Folgende Blickrichtungen werden aus Animationen und Ausrüstung entfernt: {directions}. Mit „Rückgängig“ holst du sie zurück, bis du die Seite neu lädst oder schließt.",
 		"confirmReplace": "Beim Spiegeln werden die Grafiken für {directions} durch gespiegelte Frames der gegenüberliegenden Ansicht ersetzt. Wenn du die Spiegelung später ausschaltest, bleiben diese Frames erhalten. Lade eine Sicherung herunter, um die ursprünglichen Grafiken zu behalten.",
 		"labelDirectionsToKeep": "Blickrichtungen, die erhalten bleiben",
 		"loadingDirections": "Blickrichtungen werden geladen…",
 		"downloadBackup": "Sicherung herunterladen",
 		"reviewRemoval": "Entfernung prüfen",
-		"confirmRemoval": "Diese Blickrichtungen werden aus den Animationen und der Ausrüstung dieser Figur entfernt: {directions}. Die übrigen Blickrichtungen bleiben unverändert. Das lässt sich nicht rückgängig machen.",
+		"confirmRemoval": "Diese Blickrichtungen werden aus den Animationen und der Ausrüstung dieser Figur entfernt: {directions}. Die übrigen Blickrichtungen bleiben unverändert. Mit „Rückgängig“ holst du sie zurück, bis du die Seite neu lädst oder schließt.",
 		"rPGMakerExportNeedsAllFourCardinal": "Der Export für RPG Maker braucht alle vier Hauptblickrichtungen.",
 		"directionsWereSavedReloadToRefreshThe": "Die Blickrichtungen wurden gespeichert. Lade die Seite neu, um die Figur zu aktualisieren.",
 		"directionsWereSavedReloadToRefreshThe2": "Die Blickrichtungen wurden gespeichert. Lade die Seite neu, um die Figur zu aktualisieren: {reason}"
@@ -1097,7 +1097,13 @@
 		"changeCategory": "{name} ändern",
 		"deleteCategory": "{name} löschen",
 		"deleteItem": "{name} löschen",
-		"deleteMove": "{name} löschen"
+		"deleteMove": "{name} löschen",
+		"moveItem": "{name} verschieben",
+		"changeDirections": "Blickrichtungen ändern",
+		"restoreOriginals": "Originale wiederherstellen",
+		"changeDescription": "Beschreibung ändern",
+		"changed": "Diese Figur hat sich seitdem geändert, daher kann dieser Schritt nicht mehr rückgängig gemacht oder wiederholt werden.",
+		"notRecorded": "Gespeichert, aber diese Änderung kann nicht rückgängig gemacht werden: Einige ihrer Frames sind nicht mehr gespeichert."
 	},
 	"export": {
 		"sheet": {
@@ -3044,10 +3050,6 @@
 			"other": "{count} Frames von {name} ersetzt."
 		},
 		"undo": "Rückgängig",
-		"undone": {
-			"one": "{count} Frame rückgängig gemacht.",
-			"other": "{count} Frames rückgängig gemacht."
-		},
 		"restored": {
 			"one": "{count} Original-Frame wiederhergestellt.",
 			"other": "{count} Original-Frames wiederhergestellt."
@@ -3159,7 +3161,6 @@
 		"consequences": "Gegenstände werden nur zwischen Figuren mit gleicher Frame-Größe und Position exakt kopiert. Exporte behalten Maßstab und Ursprung im Spiel; exportiere erneut, um die Änderung zu verwenden.",
 		"loading": "Frame wird geladen…",
 		"saved": "Frame angepasst: {change}.",
-		"undone": "Frame-Änderung rückgängig gemacht.",
 		"errors": {
 			"reviewOpen": "Speichere oder verwirf die Animation, die auf Prüfung wartet, bevor du den Frame anpasst.",
 			"statePending": "Speichere oder verwirf den ausstehenden Zustand, bevor du den Frame anpasst.",
@@ -3172,8 +3173,7 @@
 			"unchanged": "Ändere zuerst die Frame-Größe oder die Position.",
 			"limit": "Selbst ein {size}-px-Frame bietet dieser Figur keinen Platz für Animationen.",
 			"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du den Frame anpasst.",
-			"changed": "Diese Figur hat sich geändert. Öffne Frame anpassen erneut, um die neueste Version zu prüfen.",
-			"undoFailed": "Die Frame-Änderung konnte nicht rückgängig gemacht werden."
+			"changed": "Diese Figur hat sich geändert. Öffne Frame anpassen erneut, um die neueste Version zu prüfen."
 		}
 	},
 	"costSheet": {

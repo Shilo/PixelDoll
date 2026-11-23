@@ -398,7 +398,7 @@
 			"1": "방향을 제거할까요?",
 			"other": "방향 {n}개를 제거할까요?"
 		},
-		"removePermanently": "영구 제거",
+		"remove": "제거",
 		"removing": "제거 중…",
 		"savedOnly": "저장된 캐릭터만 편집할 수 있어요.",
 		"waitForGeneration": "진행 중인 생성 작업이 끝날 때까지 기다려 주세요.",
@@ -409,13 +409,13 @@
 		"saving": "저장 중…",
 		"reviewChanges": "변경 사항 확인",
 		"changeTitle": "방향을 변경할까요?",
-		"confirmMixedRemoval": "캐릭터의 동작과 장비에서 다음 방향을 제거해요: {directions}. 되돌릴 수 없어요.",
+		"confirmMixedRemoval": "캐릭터의 동작과 장비에서 다음 방향을 제거해요: {directions}. 이 페이지를 새로고침하거나 닫기 전까지는 실행 취소로 되돌릴 수 있어요.",
 		"confirmReplace": "대칭을 켜면 {directions} 방향의 이미지가 반대쪽의 뒤집힌 프레임으로 바뀌어요. 나중에 대칭을 꺼도 이 프레임은 유지돼요. 원본을 보관하려면 백업을 다운로드하세요.",
 		"labelDirectionsToKeep": "유지할 방향",
 		"loadingDirections": "방향을 불러오는 중…",
 		"downloadBackup": "백업 다운로드",
 		"reviewRemoval": "제거 검토",
-		"confirmRemoval": "{directions} 방향이 이 캐릭터의 동작과 장비에서 제거돼요. 다른 방향은 그대로예요. 되돌릴 수 없어요.",
+		"confirmRemoval": "{directions} 방향이 이 캐릭터의 동작과 장비에서 제거돼요. 다른 방향은 그대로예요. 이 페이지를 새로고침하거나 닫기 전까지는 실행 취소로 되돌릴 수 있어요.",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker로 내보내려면 동서남북 네 방향이 모두 필요해요.",
 		"directionsWereSavedReloadToRefreshThe": "방향이 저장됐어요. 캐릭터를 새로 고치려면 다시 불러와 주세요.",
 		"directionsWereSavedReloadToRefreshThe2": "방향이 저장됐어요. 캐릭터를 새로 고치려면 다시 불러와 주세요: {reason}"
@@ -1066,7 +1066,13 @@
 		"changeCategory": "{name} 변경",
 		"deleteCategory": "{name} 삭제",
 		"deleteItem": "{name} 삭제",
-		"deleteMove": "{name} 삭제"
+		"deleteMove": "{name} 삭제",
+		"moveItem": "{name} 옮기기",
+		"changeDirections": "방향 변경",
+		"restoreOriginals": "원본 복원",
+		"changeDescription": "설명 변경",
+		"changed": "그 뒤로 캐릭터가 바뀌어서 이 단계는 더 이상 실행 취소하거나 다시 실행할 수 없어요.",
+		"notRecorded": "저장했지만 이 변경은 되돌릴 수 없어요. 일부 프레임이 더 이상 저장되어 있지 않아요."
 	},
 	"export": {
 		"sheet": {
@@ -2966,9 +2972,6 @@
 			"other": "{name} 항목의 프레임 {count}개를 바꿨어요."
 		},
 		"undo": "실행 취소",
-		"undone": {
-			"other": "프레임 {count}개를 되돌렸어요."
-		},
 		"restored": {
 			"other": "원본 프레임 {count}개를 복원했어요."
 		},
@@ -3076,7 +3079,6 @@
 		"consequences": "아이템은 프레임 크기와 위치가 같은 캐릭터끼리만 정확히 복사돼요. 내보내기는 게임 속 크기와 기준점을 그대로 유지해요. 변경 사항을 쓰려면 다시 내보내세요.",
 		"loading": "프레임을 불러오는 중…",
 		"saved": "프레임을 조정했어요: {change}.",
-		"undone": "프레임 변경을 되돌렸어요.",
 		"errors": {
 			"reviewOpen": "프레임을 조정하기 전에 검토를 기다리는 동작을 저장하거나 버리세요.",
 			"statePending": "프레임을 조정하기 전에 대기 중인 상태를 저장하거나 버리세요.",
@@ -3089,8 +3091,7 @@
 			"unchanged": "먼저 프레임 크기나 위치를 바꾸세요.",
 			"limit": "{size} px 프레임으로도 이 캐릭터에 동작할 공간을 만들 수 없어요.",
 			"resolveDrafts": "프레임을 조정하기 전에 이 캐릭터의 아이템 초안을 유지하거나 버리세요.",
-			"changed": "이 캐릭터가 바뀌었어요. 프레임 조정을 다시 열어 최신 버전을 확인하세요.",
-			"undoFailed": "프레임 변경을 되돌리지 못했어요."
+			"changed": "이 캐릭터가 바뀌었어요. 프레임 조정을 다시 열어 최신 버전을 확인하세요."
 		}
 	},
 	"costSheet": {

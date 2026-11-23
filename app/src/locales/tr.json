@@ -406,7 +406,7 @@
 			"one": "{n} yön kaldırılsın mı?",
 			"other": "{n} yön kaldırılsın mı?"
 		},
-		"removePermanently": "Kalıcı olarak kaldırın",
+		"remove": "Kaldırın",
 		"removing": "Kaldırılıyor…",
 		"savedOnly": "Yalnızca kayıtlı karakterler düzenlenebilir.",
 		"waitForGeneration": "Devam eden üretimin bitmesini bekleyin.",
@@ -417,13 +417,13 @@
 		"saving": "Kaydediliyor…",
 		"reviewChanges": "Değişiklikleri incele",
 		"changeTitle": "Yönler değiştirilsin mi?",
-		"confirmMixedRemoval": "Şu yönler karakterin animasyonlarından ve ekipmanından kaldırılacak: {directions}. Bu işlem geri alınamaz.",
+		"confirmMixedRemoval": "Şu yönler karakterin animasyonlarından ve ekipmanından kaldırılacak: {directions}. Sayfayı yenileyene veya kapatana kadar “Geri alın” düğmesiyle geri getirebilirsiniz.",
 		"confirmReplace": "Aynalama, şu yönlerdeki görselleri karşı görünümün çevrilmiş kareleriyle değiştirir: {directions}. Aynalamayı daha sonra kapatırsanız çevrilmiş kareler kalır. Özgün görselleri korumak için bir yedek indirin.",
 		"labelDirectionsToKeep": "Kalacak yönler",
 		"loadingDirections": "Yönler yükleniyor…",
 		"downloadBackup": "Yedeği indirin",
 		"reviewRemoval": "Kaldırılacak yönleri inceleyin",
-		"confirmRemoval": "Bu karakterin animasyonlarından ve ekipmanından şu yönler kaldırılacak: {directions}. Diğer yönler değişmez. Bu işlem geri alınamaz.",
+		"confirmRemoval": "Bu karakterin animasyonlarından ve ekipmanından şu yönler kaldırılacak: {directions}. Diğer yönler değişmez. Sayfayı yenileyene veya kapatana kadar “Geri alın” düğmesiyle geri getirebilirsiniz.",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker dışa aktarımı için dört ana yönün tümü gerekir.",
 		"directionsWereSavedReloadToRefreshThe": "Yönler kaydedildi. Karakteri güncellemek için sayfayı yeniden yükleyin.",
 		"directionsWereSavedReloadToRefreshThe2": "Yönler kaydedildi. Karakteri güncellemek için sayfayı yeniden yükleyin: {reason}"
@@ -1097,7 +1097,13 @@
 		"changeCategory": "Değiştirme: {name}",
 		"deleteCategory": "Silme: {name}",
 		"deleteItem": "{name} silinsin",
-		"deleteMove": "{name} silinsin"
+		"deleteMove": "{name} silinsin",
+		"moveItem": "{name} eşyasını taşı",
+		"changeDirections": "Yönleri değiştir",
+		"restoreOriginals": "Orijinalleri geri yükle",
+		"changeDescription": "Açıklamayı değiştir",
+		"changed": "Bu karakter o zamandan beri değişti, bu yüzden bu adım artık geri alınamaz veya yinelenemez.",
+		"notRecorded": "Kaydedildi ancak bu değişiklik geri alınamaz: Karelerinin bazıları artık kayıtlı değil."
 	},
 	"export": {
 		"sheet": {
@@ -3044,10 +3050,6 @@
 			"other": "{name} için {count} kare değiştirildi."
 		},
 		"undo": "Geri alın",
-		"undone": {
-			"one": "{count} kare geri alındı.",
-			"other": "{count} kare geri alındı."
-		},
 		"restored": {
 			"one": "{count} orijinal kare geri yüklendi.",
 			"other": "{count} orijinal kare geri yüklendi."
@@ -3159,7 +3161,6 @@
 		"consequences": "Eşyalar yalnızca kare boyutu ve konumu aynı olan karakterler arasında birebir kopyalanır. Dışa aktarımlar oyun içi ölçeği ve başlangıç noktasını korur; değişikliği kullanmak için yeniden dışa aktarın.",
 		"loading": "Kare yükleniyor…",
 		"saved": "Kare ayarlandı: {change}.",
-		"undone": "Kare değişikliği geri alındı.",
 		"errors": {
 			"reviewOpen": "Kareyi ayarlamadan önce incelemeyi bekleyen animasyonu kaydedin veya atın.",
 			"statePending": "Kareyi ayarlamadan önce bekleyen durumu kaydedin veya atın.",
@@ -3172,8 +3173,7 @@
 			"unchanged": "Önce kare boyutunu veya konumu değiştirin.",
 			"limit": "{size} px’lik bir kare bile bu karaktere animasyonlar için yer açamaz.",
 			"resolveDrafts": "Kareyi ayarlamadan önce bu karakterin eşya taslaklarını saklayın veya kapatın.",
-			"changed": "Bu karakter değişti. En son sürümü incelemek için Kareyi ayarla’yı yeniden açın.",
-			"undoFailed": "Kare değişikliği geri alınamadı."
+			"changed": "Bu karakter değişti. En son sürümü incelemek için Kareyi ayarla’yı yeniden açın."
 		}
 	},
 	"costSheet": {

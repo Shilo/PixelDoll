@@ -23,7 +23,7 @@
 		isDemo,
 		prepareFrames,
 		replaceFrames,
-		revertFrames,
+		restoreFrames,
 		store,
 		ui
 	} from './state.svelte.ts';
@@ -195,7 +195,7 @@
 		working = 'restoring';
 		error = null;
 		try {
-			await revertFrames(doc.id, item.id, 'restore');
+			await restoreFrames(doc.id, item.id);
 		} finally {
 			working = '';
 			confirmRestore = false;

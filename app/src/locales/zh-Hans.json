@@ -398,7 +398,7 @@
 			"1": "移除朝向？",
 			"other": "移除 {n} 个朝向？"
 		},
-		"removePermanently": "永久移除",
+		"remove": "移除",
 		"removing": "正在移除…",
 		"savedOnly": "只能编辑已保存的角色。",
 		"waitForGeneration": "请等待当前生成任务完成。",
@@ -409,13 +409,13 @@
 		"saving": "正在保存…",
 		"reviewChanges": "查看更改",
 		"changeTitle": "更改朝向？",
-		"confirmMixedRemoval": "这些朝向将从角色的动作和装备中移除：{directions}。此操作无法撤销。",
+		"confirmMixedRemoval": "这些朝向将从角色的动作和装备中移除：{directions}。在重新加载或关闭此页面之前，可以用“撤销”恢复。",
 		"confirmReplace": "镜像会将这些朝向的图像替换为相对视图的翻转帧：{directions}。之后关闭镜像也会保留翻转后的帧。如需保留原图，请下载备份。",
 		"labelDirectionsToKeep": "要保留的朝向",
 		"loadingDirections": "正在加载朝向…",
 		"downloadBackup": "下载备份",
 		"reviewRemoval": "查看要移除的内容",
-		"confirmRemoval": "{directions}将从此角色的动作和装备中移除。其他朝向保持不变。此操作无法撤销。",
+		"confirmRemoval": "{directions}将从此角色的动作和装备中移除。其他朝向保持不变。在重新加载或关闭此页面之前，可以用“撤销”恢复。",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker 导出需要全部四个基本朝向。",
 		"directionsWereSavedReloadToRefreshThe": "朝向已保存。请重新加载以刷新角色。",
 		"directionsWereSavedReloadToRefreshThe2": "朝向已保存。请重新加载以刷新角色：{reason}"
@@ -1066,7 +1066,13 @@
 		"changeCategory": "更改{name}",
 		"deleteCategory": "删除{name}",
 		"deleteItem": "删除 {name}",
-		"deleteMove": "删除 {name}"
+		"deleteMove": "删除 {name}",
+		"moveItem": "移动{name}",
+		"changeDirections": "更改朝向",
+		"restoreOriginals": "恢复原始帧",
+		"changeDescription": "更改描述",
+		"changed": "此角色之后已更改，因此无法再撤销或重做此步骤。",
+		"notRecorded": "已保存，但无法撤销此更改：它的部分帧已不再保存。"
 	},
 	"export": {
 		"sheet": {
@@ -2966,9 +2972,6 @@
 			"other": "已替换{name}的 {count} 帧。"
 		},
 		"undo": "撤销",
-		"undone": {
-			"other": "已撤销 {count} 帧。"
-		},
 		"restored": {
 			"other": "已将 {count} 帧恢复为原始状态。"
 		},
@@ -3076,7 +3079,6 @@
 		"consequences": "只有帧尺寸和位置都相同的角色之间才能精确复制装备。导出会保持相同的游戏内比例和原点；请重新导出以使用此更改。",
 		"loading": "正在加载帧…",
 		"saved": "帧已调整：{change}。",
-		"undone": "已撤销帧更改。",
 		"errors": {
 			"reviewOpen": "调整帧前，请先保存或放弃等待检查的动作。",
 			"statePending": "调整帧前，请先保存或放弃待处理的状态。",
@@ -3089,8 +3091,7 @@
 			"unchanged": "请先更改帧尺寸或位置。",
 			"limit": "即使是 {size} px 的帧，也无法为此角色留出动作空间。",
 			"resolveDrafts": "调整帧前，请保留或放弃此角色的装备草稿。",
-			"changed": "此角色已更改。请重新打开“调整帧”查看最新版本。",
-			"undoFailed": "无法撤销帧更改。"
+			"changed": "此角色已更改。请重新打开“调整帧”查看最新版本。"
 		}
 	},
 	"costSheet": {

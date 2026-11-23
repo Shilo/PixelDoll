@@ -1492,6 +1492,12 @@ test('dev server: a saved item moves between slots by mouse, keyboard menu and t
 	await page.getByRole('menuitem', { name: 'Hair', exact: true }).press('Enter');
 	await expect(at('hair')).toHaveAttribute('aria-pressed', 'true');
 	await expect(at('hair')).toBeFocused();
+	// Each move is one history step.
+	await expect(page.locator('.header-undo')).toHaveAccessibleName('Undo Move Wizard hat');
+	await page.locator('.header-undo').click();
+	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
+	await page.locator('.header-redo').click();
+	await expect(at('hair')).toHaveAttribute('aria-pressed', 'true');
 	await reloadStudio(page);
 	await expect(at('hair')).toHaveAttribute('aria-pressed', 'true');
 
@@ -10045,8 +10051,7 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await toast.locator('.bu-notice-content').click();
 	expect(await pixels('walk', 'helmet_steel')).not.toEqual(original);
 	await toast.getByRole('button', { name: 'Undo', exact: true }).click();
-	await expect(toast).toContainText('Undid 1 frame.');
-	expect(await pixels('walk', 'helmet_steel')).toEqual(original);
+	await expect.poll(() => pixels('walk', 'helmet_steel')).toEqual(original);
 
 	await importPng(await edit(3 * 64 + 31, 12));
 	await review.getByRole('button', { name: /^Replace 1 frame/ }).click();
@@ -10064,6 +10069,12 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await expect(sheet.getByText('Restored 1 original frame.')).toBeVisible();
 	expect(await pixels('walk', 'helmet_steel')).toEqual(original);
 	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	// Restoring is one history step: Undo brings the edited frame back and Redo restores it again.
+	await expect(page.locator('.header-undo')).toHaveAccessibleName('Undo Restore originals');
+	await page.locator('.header-undo').click();
+	await expect.poll(() => pixels('walk', 'helmet_steel')).not.toEqual(original);
+	await page.locator('.header-redo').click();
+	await expect.poll(() => pixels('walk', 'helmet_steel')).toEqual(original);
 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk' }).click();

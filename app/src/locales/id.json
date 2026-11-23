@@ -398,7 +398,7 @@
 			"1": "Hapus arah?",
 			"other": "Hapus {n} arah?"
 		},
-		"removePermanently": "Hapus permanen",
+		"remove": "Hapus",
 		"removing": "Menghapus…",
 		"savedOnly": "Hanya karakter tersimpan yang dapat diedit.",
 		"waitForGeneration": "Tunggu hingga proses generasi saat ini selesai.",
@@ -409,13 +409,13 @@
 		"saving": "Menyimpan…",
 		"reviewChanges": "Tinjau perubahan",
 		"changeTitle": "Ubah arah?",
-		"confirmMixedRemoval": "Arah berikut akan dihapus dari animasi dan perlengkapan karakter: {directions}. Tindakan ini tidak bisa dibatalkan.",
+		"confirmMixedRemoval": "Arah berikut akan dihapus dari animasi dan perlengkapan karakter: {directions}. Urungkan mengembalikannya sampai Anda memuat ulang atau menutup halaman ini.",
 		"confirmReplace": "Pencerminan mengganti gambar untuk {directions} dengan frame terbalik dari arah berlawanan. Jika pencerminan dinonaktifkan nanti, frame tersebut tetap digunakan. Unduh cadangan untuk menyimpan gambar asli.",
 		"labelDirectionsToKeep": "Arah yang dipertahankan",
 		"loadingDirections": "Memuat arah…",
 		"downloadBackup": "Unduh cadangan",
 		"reviewRemoval": "Tinjau penghapusan",
-		"confirmRemoval": "Arah berikut akan dihapus dari animasi dan perlengkapan karakter ini: {directions}. Arah lainnya tidak berubah. Tindakan ini tidak dapat diurungkan.",
+		"confirmRemoval": "Arah berikut akan dihapus dari animasi dan perlengkapan karakter ini: {directions}. Arah lainnya tidak berubah. Urungkan mengembalikannya sampai Anda memuat ulang atau menutup halaman ini.",
 		"rPGMakerExportNeedsAllFourCardinal": "Ekspor RPG Maker memerlukan keempat arah mata angin utama.",
 		"directionsWereSavedReloadToRefreshThe": "Arah sudah disimpan. Muat ulang untuk memperbarui karakter.",
 		"directionsWereSavedReloadToRefreshThe2": "Arah sudah disimpan. Muat ulang untuk memperbarui karakter: {reason}"
@@ -1066,7 +1066,13 @@
 		"changeCategory": "Ubah {name}",
 		"deleteCategory": "Hapus {name}",
 		"deleteItem": "Hapus {name}",
-		"deleteMove": "Hapus {name}"
+		"deleteMove": "Hapus {name}",
+		"moveItem": "Pindahkan {name}",
+		"changeDirections": "Ubah arah",
+		"restoreOriginals": "Pulihkan yang asli",
+		"changeDescription": "Ubah deskripsi",
+		"changed": "Karakter ini telah berubah sejak itu, jadi langkah ini tidak dapat lagi dibatalkan atau diulang.",
+		"notRecorded": "Tersimpan, tetapi perubahan ini tidak dapat dibatalkan: beberapa frame-nya tidak lagi tersimpan."
 	},
 	"export": {
 		"sheet": {
@@ -2966,9 +2972,6 @@
 			"other": "{count} frame {name} diganti."
 		},
 		"undo": "Urungkan",
-		"undone": {
-			"other": "{count} frame diurungkan."
-		},
 		"restored": {
 			"other": "{count} frame asli dipulihkan."
 		},
@@ -3076,7 +3079,6 @@
 		"consequences": "Item hanya tersalin persis antar karakter dengan ukuran dan posisi frame yang sama. Ekspor tetap memakai skala dan titik asal dalam game yang sama; ekspor lagi untuk memakai perubahan.",
 		"loading": "Memuat frame…",
 		"saved": "Frame disesuaikan: {change}.",
-		"undone": "Perubahan frame dibatalkan.",
 		"errors": {
 			"reviewOpen": "Simpan atau buang animasi yang menunggu peninjauan sebelum menyesuaikan frame.",
 			"statePending": "Simpan atau buang status yang tertunda sebelum menyesuaikan frame.",
@@ -3089,8 +3091,7 @@
 			"unchanged": "Ubah dulu ukuran atau posisi frame.",
 			"limit": "Bahkan frame {size} px tidak bisa memberi ruang animasi untuk karakter ini.",
 			"resolveDrafts": "Simpan atau tutup draf item karakter ini sebelum menyesuaikan frame.",
-			"changed": "Karakter ini berubah. Buka lagi Sesuaikan frame untuk meninjau versi terbaru.",
-			"undoFailed": "Perubahan frame tidak dapat dibatalkan."
+			"changed": "Karakter ini berubah. Buka lagi Sesuaikan frame untuk meninjau versi terbaru."
 		}
 	},
 	"costSheet": {

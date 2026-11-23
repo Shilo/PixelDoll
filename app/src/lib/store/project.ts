@@ -222,6 +222,16 @@ export async function saveItem(
 	);
 }
 
+/** `rec` with `item` in place of its saved item of the same id: the record a saveItem of `item` over `rec` leaves, for that
+ *  item's content (saveItem keeps the saved name and export ID). */
+export function withItem(rec: StoredProject, item: Item): StoredProject {
+	const next = structuredClone(rec);
+	next.manifest.items = next.manifest.items.map((entry) =>
+		entry.id === item.id ? structuredClone(item) : entry
+	);
+	return next;
+}
+
 export type DressedRecord = StoredProject & {
 	dress?: { current?: Pick<Preset, 'items' | 'variants'> };
 };

@@ -398,7 +398,7 @@
 			"1": "この向きを削除しますか？",
 			"other": "{n}方向を削除しますか？"
 		},
-		"removePermanently": "完全に削除",
+		"remove": "削除",
 		"removing": "削除中…",
 		"savedOnly": "編集できるのは保存済みのキャラクターだけです。",
 		"waitForGeneration": "実行中の生成が終わるまでお待ちください。",
@@ -409,13 +409,13 @@
 		"saving": "保存中…",
 		"reviewChanges": "変更を確認",
 		"changeTitle": "向きを変更しますか？",
-		"confirmMixedRemoval": "次の向きは、このキャラクターのモーションと装備から削除されます：{directions}。この操作は元に戻せません。",
+		"confirmMixedRemoval": "次の向きは、このキャラクターのモーションと装備から削除されます：{directions}。このページを再読み込みするか閉じるまでは、「元に戻す」で復元できます。",
 		"confirmReplace": "反転すると、{directions}の画像が反対向きの反転フレームで置き換わります。後で反転を解除しても、そのフレームは残ります。元の画像を残すにはバックアップをダウンロードしてください。",
 		"labelDirectionsToKeep": "残す向き",
 		"loadingDirections": "向きを読み込み中…",
 		"downloadBackup": "バックアップをダウンロード",
 		"reviewRemoval": "削除内容を確認",
-		"confirmRemoval": "このキャラクターのモーションと装備から{directions}が削除されます。他の向きは変わりません。この操作は取り消せません。",
+		"confirmRemoval": "このキャラクターのモーションと装備から{directions}が削除されます。他の向きは変わりません。このページを再読み込みするか閉じるまでは、「元に戻す」で復元できます。",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Makerへのエクスポートには、東西南北の4方向すべてが必要です。",
 		"directionsWereSavedReloadToRefreshThe": "向きを保存しました。再読み込みするとキャラクターが更新されます。",
 		"directionsWereSavedReloadToRefreshThe2": "向きを保存しました。再読み込みするとキャラクターが更新されます：{reason}"
@@ -1066,7 +1066,13 @@
 		"changeCategory": "{name}の変更",
 		"deleteCategory": "{name}の削除",
 		"deleteItem": "{name} を削除",
-		"deleteMove": "{name} を削除"
+		"deleteMove": "{name} を削除",
+		"moveItem": "{name}を移動",
+		"changeDirections": "向きを変更",
+		"restoreOriginals": "オリジナルを復元",
+		"changeDescription": "説明を変更",
+		"changed": "このキャラクターはその後変更されたため、この操作はもう取り消しもやり直しもできません。",
+		"notRecorded": "保存しましたが、この変更は元に戻せません。一部のフレームが保存されていません。"
 	},
 	"export": {
 		"sheet": {
@@ -2966,9 +2972,6 @@
 			"other": "{name}の{count}フレームを置き換えました。"
 		},
 		"undo": "元に戻す",
-		"undone": {
-			"other": "{count}フレームを元に戻しました。"
-		},
 		"restored": {
 			"other": "元のフレームを{count}フレーム復元しました。"
 		},
@@ -3076,7 +3079,6 @@
 		"consequences": "アイテムを正確にコピーできるのは、フレームサイズと位置が同じキャラクター同士だけです。書き出してもゲーム内の大きさと原点は変わりません。変更を使うには、もう一度書き出してください。",
 		"loading": "フレームを読み込んでいます…",
 		"saved": "フレームを調整しました：{change}。",
-		"undone": "フレームの変更を元に戻しました。",
 		"errors": {
 			"reviewOpen": "フレームを調整する前に、確認待ちのモーションを保存するか破棄してください。",
 			"statePending": "フレームを調整する前に、保留中のステートを保存するか破棄してください。",
@@ -3089,8 +3091,7 @@
 			"unchanged": "先にフレームサイズか位置を変えてください。",
 			"limit": "{size} px のフレームでも、このキャラクターにモーション用の余白を作れません。",
 			"resolveDrafts": "フレームを調整する前に、このキャラクターのアイテム下書きを保存するか破棄してください。",
-			"changed": "このキャラクターは変更されました。「フレームを調整」を開き直して最新の状態を確認してください。",
-			"undoFailed": "フレームの変更を元に戻せませんでした。"
+			"changed": "このキャラクターは変更されました。「フレームを調整」を開き直して最新の状態を確認してください。"
 		}
 	},
 	"costSheet": {

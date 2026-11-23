@@ -25,7 +25,9 @@
 		directionEditsBlocked,
 		flushSave,
 		openPendingWork,
+		pushArtworkStep,
 		refreshCharacterDirections,
+		splitBeforeEdit,
 		toast,
 		ui
 	} from './state.svelte.ts';
@@ -71,6 +73,7 @@
 		void (async () => {
 			try {
 				await flushSave();
+				await splitBeforeEdit(projectId);
 				const saved = await loadProject(projectId, controller.signal);
 				if (saved.rec.origin !== 'studio')
 					throw new LocalizedError(
@@ -93,6 +96,8 @@
 		if (!loaded || !record || !changed || problem || blocked || busy) return;
 		busy = true;
 		error = '';
+		const before = record;
+		let after: typeof record;
 		try {
 			const { record: next, newImages } = await configureDirections(
 				record,
@@ -111,6 +116,7 @@
 			if (reason) throw reason;
 			next.savedAt = new Date().toISOString();
 			await db.saveIdleCharacter(record, next, blobs, 'change directions for');
+			after = next;
 		} catch (failure) {
 			error = errorMessage(failure);
 			busy = false;
@@ -137,6 +143,15 @@
 		} finally {
 			ui.sheet = null;
 		}
+		// After the notices: a step that cannot be recorded says so on top of them.
+		if (after)
+			await pushArtworkStep({
+				projectId: id,
+				label: message('history.changeDirections'),
+				before,
+				after,
+				action: 'change directions for'
+			});
 	}
 </script>
 
@@ -223,7 +238,7 @@
 					n: formatNumber(excluded.length)
 				})
 			: t('directionsSheet.changeTitle')}
-		action={t(removalOnly ? 'directionsSheet.removePermanently' : 'common.save')}
+		action={t(removalOnly ? 'directionsSheet.remove' : 'common.save')}
 		busyAction={t(removalOnly ? 'directionsSheet.removing' : 'directionsSheet.saving')}
 		{busy}
 		problem={error ? displayDirectionProblem(error) : displayError(blocked)}

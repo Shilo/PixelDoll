@@ -406,7 +406,7 @@
 			"one": "Supprimer {n} direction ?",
 			"other": "Supprimer {n} directions ?"
 		},
-		"removePermanently": "Supprimer définitivement",
+		"remove": "Retirer",
 		"removing": "Suppression…",
 		"savedOnly": "Seuls les personnages enregistrés peuvent être modifiés.",
 		"waitForGeneration": "Attendez la fin de la génération en cours.",
@@ -417,13 +417,13 @@
 		"saving": "Enregistrement…",
 		"reviewChanges": "Vérifier les modifications",
 		"changeTitle": "Modifier les directions ?",
-		"confirmMixedRemoval": "Ces directions seront retirées des animations et des équipements du personnage : {directions}. Cette action est irréversible.",
+		"confirmMixedRemoval": "Ces directions seront retirées des animations et des équipements du personnage : {directions}. « Annuler » les rétablit tant que vous ne rechargez pas ou ne fermez pas cette page.",
 		"confirmReplace": "La symétrie remplace les visuels pour {directions} par les images retournées de la vue opposée. Si vous désactivez ensuite la symétrie, les images retournées sont conservées. Téléchargez une sauvegarde pour conserver les visuels d’origine.",
 		"labelDirectionsToKeep": "Directions à conserver",
 		"loadingDirections": "Chargement des directions…",
 		"downloadBackup": "Télécharger une sauvegarde",
 		"reviewRemoval": "Vérifier la suppression",
-		"confirmRemoval": "Suppression définitive de ces directions pour les animations et l’équipement de ce personnage : {directions}. Les autres directions ne changent pas. Cette action est irréversible.",
+		"confirmRemoval": "Suppression définitive de ces directions pour les animations et l’équipement de ce personnage : {directions}. Les autres directions ne changent pas. « Annuler » les rétablit tant que vous ne rechargez pas ou ne fermez pas cette page.",
 		"rPGMakerExportNeedsAllFourCardinal": "L’export RPG Maker nécessite les quatre directions cardinales.",
 		"directionsWereSavedReloadToRefreshThe": "Les directions ont été enregistrées. Rechargez pour actualiser le personnage.",
 		"directionsWereSavedReloadToRefreshThe2": "Les directions ont été enregistrées. Rechargez pour actualiser le personnage : {reason}"
@@ -1097,7 +1097,13 @@
 		"changeCategory": "Modifier {name}",
 		"deleteCategory": "Supprimer {name}",
 		"deleteItem": "Supprimer {name}",
-		"deleteMove": "Supprimer {name}"
+		"deleteMove": "Supprimer {name}",
+		"moveItem": "Déplacer {name}",
+		"changeDirections": "Modifier les directions",
+		"restoreOriginals": "Restaurer les originaux",
+		"changeDescription": "Modifier la description",
+		"changed": "Ce personnage a changé depuis, cette étape ne peut donc plus être annulée ni rétablie.",
+		"notRecorded": "Enregistré, mais cette modification ne peut pas être annulée : certaines de ses images ne sont plus enregistrées."
 	},
 	"export": {
 		"sheet": {
@@ -3044,10 +3050,6 @@
 			"other": "{count} images de {name} remplacées."
 		},
 		"undo": "Annuler",
-		"undone": {
-			"one": "Remplacement annulé pour {count} image.",
-			"other": "Remplacement annulé pour {count} images."
-		},
 		"restored": {
 			"one": "{count} image d’origine restaurée.",
 			"other": "{count} images d’origine restaurées."
@@ -3159,7 +3161,6 @@
 		"consequences": "Les objets ne se copient à l’identique qu’entre personnages de même taille et position de cadre. Les exports gardent la même échelle et la même origine en jeu ; exportez à nouveau pour utiliser le changement.",
 		"loading": "Chargement du cadre…",
 		"saved": "Cadre ajusté : {change}.",
-		"undone": "Modification du cadre annulée.",
 		"errors": {
 			"reviewOpen": "Enregistrez ou ignorez l’animation en attente de vérification avant d’ajuster le cadre.",
 			"statePending": "Enregistrez ou abandonnez l’état en attente avant d’ajuster le cadre.",
@@ -3172,8 +3173,7 @@
 			"unchanged": "Changez d’abord la taille ou la position du cadre.",
 			"limit": "Même un cadre de {size} px ne laisse pas assez de place aux animations de ce personnage.",
 			"resolveDrafts": "Conservez ou ignorez les brouillons d’objets de ce personnage avant d’ajuster le cadre.",
-			"changed": "Ce personnage a changé. Rouvrez Ajuster le cadre pour vérifier la dernière version.",
-			"undoFailed": "Impossible d’annuler la modification du cadre."
+			"changed": "Ce personnage a changé. Rouvrez Ajuster le cadre pour vérifier la dernière version."
 		}
 	},
 	"costSheet": {
