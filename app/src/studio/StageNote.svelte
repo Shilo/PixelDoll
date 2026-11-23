@@ -6,7 +6,7 @@
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
-	import { itemMoveOffer, missingItemMoves, moveMinimumTier } from './create.ts';
+	import { itemMoveOffer, missingItemMoves, moveMinimumTier, unposedItemMoves } from './create.ts';
 	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
 	import { displayMove } from './displayMove.ts';
@@ -65,6 +65,19 @@
 					const dirs = spec?.dirs?.filter((dir) => missingDirs(item).includes(dir));
 					return spec && dirs?.length ? [{ ...spec, dirs }] : [];
 				})
+			: []
+	);
+	// The move on stage was kept without poses where these items are missing: no offer, only the way on.
+	const unposedNotes = $derived(
+		m && anim && !poseSpecs.length
+			? missing
+					.flatMap((item) =>
+						unposedItemMoves(m, item.id, setupRedoMoves(store.exportRecord)).filter(
+							(entry) => entry.move === anim.id
+						)
+					)
+					.slice(0, 1)
+					.map((entry) => entry.note)
 			: []
 	);
 	const poseOffer = $derived(
@@ -191,6 +204,8 @@
 							minimumTier={poseTier}
 							feature={t('stageNote.makingMissingFrames')}
 						/>{/if}
+				{:else if unposedNotes.length}
+					{#each unposedNotes as note, i (i)}<span>{displayMessage(note)}</span>{/each}
 				{:else if remake?.standing && !copyOnly}
 					<button
 						class="bu-action btn sm"

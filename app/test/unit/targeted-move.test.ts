@@ -3,6 +3,8 @@ import {
 	addMove,
 	finishedViewsSpec,
 	itemMoveOffer,
+	missingItemMoves,
+	unposedItemMoves,
 	type MoveSpec,
 	b64,
 	bodyMoveIssue,
@@ -1781,6 +1783,31 @@ test('one replaced view kept without poses loses only its own poses and fitted e
 		{
 			key: 'moveReview.unposedViews',
 			vars: { move: { key: 'moveNames.idle' }, directions: [expect.anything()], count: 1 }
+		}
+	]);
+	// With every view of the move kept without poses there is no offer at all; the move is still named, with no price.
+	const hat = saved.manifest.items[1];
+	Object.assign(hat, {
+		key: 'green',
+		route: 'skeleton-pose',
+		dressed: { south: 'sha256:dressed' }
+	});
+	// The posed views already have the hat, so there is no offer: the unposed East view is still named.
+	expect(unposedItemMoves(saved.manifest, 'hat', setupRedoMoves(saved))).toEqual([
+		{ move: 'idle', note: expect.objectContaining({ vars: expect.objectContaining({ count: 1 }) }) }
+	]);
+	delete saved.manifest.rig.animations[0].sources;
+	(saved.rigQa as { redo: string[] }).redo = ['idle'];
+	expect(
+		missingItemMoves(saved.manifest, 'hat').find((spec) => spec.id === 'idle')
+	).toBeUndefined();
+	expect(unposedItemMoves(saved.manifest, 'hat', setupRedoMoves(saved))).toEqual([
+		{
+			move: 'idle',
+			note: expect.objectContaining({
+				key: 'moveReview.unposedViews',
+				vars: expect.objectContaining({ count: 4 })
+			})
 		}
 	]);
 });

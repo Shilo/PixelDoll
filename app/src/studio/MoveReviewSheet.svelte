@@ -16,6 +16,7 @@
 	import {
 		itemMoveOffer,
 		missingItemMoves,
+		unposedItemMoves,
 		moveMinimumTier,
 		readMoveCandidateImages,
 		skeletonMoveReview
@@ -133,9 +134,16 @@
 			});
 	});
 	// Every equipment offer here is for this move, so its views kept without poses are named once.
-	const unposedNotes = $derived(
-		equipment.find(({ offer }) => offer?.unposed.length)?.offer?.unposed ?? []
-	);
+	const unposedNotes = $derived.by(() => {
+		const offered = equipment.find(({ offer }) => offer?.unposed.length)?.offer?.unposed;
+		if (offered || !project) return offered ?? [];
+		// No offer at all when every view of this move was kept without poses: name them anyway.
+		const redo = setupRedoMoves(store.exportRecord);
+		const entry = equipment
+			.flatMap(({ item }) => unposedItemMoves(project.manifest, item.id, redo))
+			.find((unposed) => unposed.move === id);
+		return entry ? [entry.note] : [];
+	});
 	const chosen = $derived(
 		equipment.filter(({ item, offer }) => offer?.specs.length && selected.includes(item.id))
 	);
@@ -247,7 +255,8 @@
 			ui.anim = id;
 			ui.frame = 0;
 			acceptedInput = input;
-			if (changed || equipment.some(({ offer }) => offer?.specs.length)) itemsStep = true;
+			if (changed || equipment.some(({ offer }) => offer?.specs.length) || unposedNotes.length)
+				itemsStep = true;
 			else ui.sheet = null;
 		} catch (cause) {
 			error = cause;

@@ -20,7 +20,13 @@
 		restorableViews,
 		type ItemPaletteRepairPlan
 	} from '../lib/items/run.ts';
-	import { missingItemMoves, itemMoveOffer, moveMinimumTier, type MoveSpec } from './create.ts';
+	import {
+		missingItemMoves,
+		itemMoveOffer,
+		moveMinimumTier,
+		unposedItemMoves,
+		type MoveSpec
+	} from './create.ts';
 	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -208,6 +214,8 @@
 		const pending = pendingMoves(doc.id, it.id).map((s) => s.id);
 		return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id));
 	});
+	// Moves whose views were all kept without poses get no offer; they are named so the user knows to make them again.
+	const unposedMoves = $derived(m && it && !isDemo() ? unposedItemMoves(m, it.id, redo) : []);
 	let chosenMove = $state('');
 	const missingMove = $derived(
 		missingMoves.find((s) => s.id === chosenMove) ??
@@ -614,6 +622,9 @@
 					</p>
 				</div>
 			{/if}
+			{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
+					{displayMessage(note)}
+				</p>{/each}
 			{#if health === 'stale'}<p class="notice warn small">
 					<TriangleAlert size={14} />{t('itemPane.madeForAnotherBodyItMayNot')}
 				</p>{/if}

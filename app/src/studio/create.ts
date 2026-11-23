@@ -2980,9 +2980,29 @@ export function itemMoveOffer(
 		return { specs: [], gens: null, error: errorMessage(error), poseIssues: [], unposed };
 	}
 }
+/** Moves an item would be posed onto whose views were all kept without poses: missingItemMoves makes no offer for them, so
+ *  they are named here (no price, no paid action) wherever item offers show. */
+export function unposedItemMoves(
+	m: Manifest,
+	itemId: string,
+	redo: readonly string[]
+): { move: string; note: Message }[] {
+	const item = extendable(m, itemId);
+	if (!item || item.route === 'ea2-anchor') return [];
+	const offered = new Set(missingItemMoves(m, itemId, 0).map((spec) => spec.id));
+	return m.rig.animations.flatMap((a) =>
+		offered.has(a.id)
+			? []
+			: unposedViewNote(m, { id: a.id }, redo).map((note) => ({ move: a.id, note }))
+	);
+}
 /** The drawn views of a skeleton-posed item move that were kept without poses and so are left out of its offer
  *  (missingItemMoves posts only posed views): one note naming the move and those views. Anchored fitting needs no poses. */
-function unposedViewNote(m: Manifest, spec: MoveSpec, redo: readonly string[]): Message[] {
+function unposedViewNote(
+	m: Manifest,
+	spec: Pick<MoveSpec, 'id' | 'dirs' | 'itemMethod'>,
+	redo: readonly string[]
+): Message[] {
 	const anim = m.rig.animations.find((a) => a.id === spec.id),
 		base = m.items.find((item) => item.id === m.rig.baseItem)?.layers[0];
 	if (!anim || spec.itemMethod === 'anchor') return [];
