@@ -12,7 +12,8 @@ import {
 	fromApi,
 	hasAll
 } from '../../src/lib/rig/poses.ts';
-import { DIRECTIONS, cellHash, type Keypoint } from '../../src/lib/rig/rig.ts';
+import { DIRECTIONS, cellHash, validateRig, type Keypoint } from '../../src/lib/rig/rig.ts';
+import { riderContact } from '../../src/studio/experience/mounts.ts';
 import { flipSkeleton } from '../../src/lib/rig/skeleton.ts';
 import { flipH, planDirections } from '../../src/lib/rig/mirror.ts';
 import { paddedPoses, poseBatches, rawClip } from '../../src/lib/rig/clips.ts';
@@ -212,6 +213,12 @@ test('a later unmeasured frame of the standing move skips that move; its referen
 	expect(result.manifest.rig.anchors?.neck?.walk).toBeUndefined();
 	expect(result.manifest.rig.anchors?.neck?.blink?.south).toHaveLength(2);
 	expect(rigReady({ ...result, character: { id: 'managed', looks: 'red hair' } })).toBe(true);
+	// Consumers that read per-move anchors find none for the skipped standing move and fall back.
+	expect(validateRig(result.manifest.rig)).toEqual([]);
+	expect(
+		riderContact(result.manifest.rig, { x: 32, y: 60 }, 'walk', 'south', 0, { x: 32, y: 60 }, 40)
+			.source
+	).toBe('estimate');
 
 	// Its reference frame without joints still stops setup.
 	const first = project.manifest.items[0].layers[0].cells!.walk.south![0]!;
