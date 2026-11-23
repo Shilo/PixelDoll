@@ -7974,12 +7974,12 @@ test('a repair whose later batch fails offers its finished repairs for free and 
 	await selectedItemDetails(page);
 	await page.getByRole('button', { name: /^Repair item/ }).click();
 	const review = page.getByRole('dialog', { name: 'Review item repair' });
-	await expect(
-		review.getByText(
-			'A later batch stopped, so 1 frame keeps its current art (16). Nothing more was bought.',
-			{ exact: true }
-		)
-	).toBeVisible();
+	// The note names what is kept and why the later batch stopped.
+	const stoppedNote = review.getByText(
+		'A later batch stopped, so 1 frame keeps its current art (16). Nothing more was bought.'
+	);
+	await expect(stoppedNote).toBeVisible();
+	await expect(stoppedNote).toContainText('did not finish (failed). It was not sent again.');
 	const useFinished = review.getByRole('button', { name: 'Use finished repairs', exact: true });
 	await expect(useFinished).toBeEnabled();
 	await expect(review.getByRole('button', { name: 'Keep current', exact: true })).toBeEnabled();
