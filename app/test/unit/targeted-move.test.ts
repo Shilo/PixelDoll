@@ -1711,6 +1711,8 @@ test('the unposed keep is offered only when stopped views lack body joints and e
 	// A view still to buy or still at PixelLab would make the free keep pay for more work.
 	expect(keepableUnposed([stop('joints'), { state: 'pending' }])).toBe(false);
 	expect(keepableUnposed([stop('joints'), { state: 'running' }])).toBe(false);
+	// A stopped view with another request still at PixelLab is not known yet either.
+	expect(keepableUnposed([{ ...stop('joints'), running: true }])).toBe(false);
 });
 
 test('one replaced view kept without poses loses only its own poses and fitted equipment', async () => {

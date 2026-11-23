@@ -3882,6 +3882,9 @@ interface ReplayedView {
 	stopped: JobRec[];
 	/** Its body render passed every check before its joint checks (DryRun.rendered). */
 	rendered?: boolean;
+	/** A request of this view is still at PixelLab, whatever stopped it otherwise (DryRun.running): its outcome is not known,
+	 *  so nothing may be chosen for it yet. */
+	running?: boolean;
 	error?: PaidStepError;
 	clip?: Awaited<ReturnType<typeof bodyClip>>;
 }
@@ -3889,13 +3892,14 @@ interface ReplayedView {
  *  free: body only, those views without poses, so items are fitted there after they are made again. Every other view must
  *  already be finished, so keeping never buys more work. Decided by the typed failure, never by text. */
 export const keepableUnposed = (
-	views: readonly Pick<ReplayedView, 'state' | 'error' | 'rendered'>[]
+	views: readonly Pick<ReplayedView, 'state' | 'error' | 'rendered' | 'running'>[]
 ) =>
 	views.some((v) => v.state === 'failed') &&
 	views.every(
 		(v) =>
 			v.state === 'ready' ||
 			(v.state === 'failed' &&
+				!v.running &&
 				((v.error?.paid.failure === 'joints' && v.error.paid.step === 'render') ||
 					// a stopped joint check on a render that passed its checks: unknown, kept unmeasured, never sent again
 					(v.rendered &&
@@ -3941,6 +3945,7 @@ async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedVie
 				records: dry.records,
 				stopped: dry.stopped ?? [],
 				...(dry.rendered ? { rendered: true } : {}),
+				...(dry.running ? { running: true } : {}),
 				error
 			};
 		throw error;
@@ -4296,7 +4301,7 @@ export async function reviewMoveResults(
 		});
 		// Free by construction: every view is a cached completed render. A replay that would buy anything is no Keep.
 		const kept = await replay(candidate);
-		if (!total(kept))
+		if (!total(kept) && !kept.some((v) => v.running || v.state === 'running'))
 			options.push({
 				id: 'keep-unposed',
 				label: message('moveReview.keepUnposed'),
@@ -4343,7 +4348,9 @@ export async function reviewMoveResults(
 	return {
 		views: views.map((v, i) => ({
 			label: viewName(v.d),
-			state: failed.includes(v) ? 'failed' : v.state,
+			// A view with a request still at PixelLab is running even when another of its requests stopped: the review and
+			// Generate again wait for it (PaidReview, MoveSheet paidRunning).
+			state: v.running ? 'running' : failed.includes(v) ? 'failed' : v.state,
 			frames: shown[i],
 			notes: [
 				...(v.error ? [v.error.translation] : []),
