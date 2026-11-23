@@ -7,7 +7,7 @@ import { LocalizedError } from '../message.ts';
 import type { StoredProject } from './project.ts';
 import { restoreRemoved, type DressedRecord } from './project.ts';
 import { supportedFormat } from './manifest.ts';
-import { artworkRefs } from './workspace.ts';
+import { artworkRefs, pruneHistory } from './workspace.ts';
 import { restoreMove } from '../rig/moves.ts';
 import { stableStringify } from '../image/hash.ts';
 
@@ -316,17 +316,27 @@ export async function deleteForever(id: string): Promise<void> {
 	await Promise.all([...doomed].map((key) => db.del('projects', key)));
 }
 
-/** How many of the entry's artwork files are no longer on this device, so the list can explain a blocked restore. */
-export async function missingArtwork(e: RecentlyDeleted): Promise<number> {
+const artworkHexes = (e: RecentlyDeleted) => {
 	const hexes = new Set<string>();
 	for (const [hash] of artworkRefs(e.before.manifest)) {
 		const hex =
 			typeof hash === 'string' ? /^(?:sha256:)?([0-9a-f]{64})$/.exec(hash)?.[1] : undefined;
 		if (hex) hexes.add(hex);
 	}
-	if (!hexes.size) return 0;
-	const { stored } = await db.readCharacters([...hexes]);
-	return hexes.size - stored.size;
+	return hexes;
+};
+
+/** Drop the entry's Undo history whose artwork is no longer on this device, then refuse it when artwork it shows is gone too.
+ *  History is never drawn or exported, while a reference to absent artwork would break Undo and Adjust frame on the restored
+ *  character. Returns what is stored, so the restore can drop the same history from the entry its transaction reads. */
+async function availableArtwork(e: RecentlyDeleted): Promise<(hex: string) => boolean> {
+	const hexes = artworkHexes(e);
+	const { stored } = hexes.size ? await db.readCharacters([...hexes]) : { stored: new Set() };
+	const has = (hex: string) => stored.has(hex);
+	pruneHistory(e.before.manifest, has);
+	const away = [...artworkHexes(e)].filter((hex) => !has(hex)).length;
+	if (away) throw missingArtworkError(e.name, away);
+	return has;
 }
 
 export const gone = (key: string) =>
@@ -371,8 +381,7 @@ export async function restoreParts(id: string): Promise<{
 	if (!entry) throw gone(id);
 	if (entry.kind === 'character') throw wrongKind();
 	if (expired(entry)) throw expiredError();
-	const away = await missingArtwork(entry);
-	if (away) throw missingArtworkError(entry.name, away);
+	const has = await availableArtwork(entry);
 	let out:
 		| {
 				items: number;
@@ -390,6 +399,7 @@ export async function restoreParts(id: string): Promise<{
 			const e = readEntry(related(id));
 			if (!e) throw gone(id);
 			if (e.kind === 'character') throw wrongKind();
+			pruneHistory(e.before.manifest, has);
 			if (!rec?.manifest)
 				throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
 			const restored = restoreRemoved(rec, e.before as DressedRecord, {
@@ -418,8 +428,7 @@ export async function restoreMoveEntry(id: string): Promise<{ name: string; proj
 	if (!entry) throw gone(id);
 	if (expired(entry)) throw expiredError();
 	if (!entry.scope.moveId) throw gone(id);
-	const away = await missingArtwork(entry);
-	if (away) throw missingArtworkError(entry.name, away);
+	await availableArtwork(entry);
 	const live = await db.get<StoredProject>('projects', entry.projectId);
 	if (!live?.manifest)
 		throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
@@ -489,8 +498,7 @@ export async function restoreCharacter(
 	if (!entry) throw gone(id);
 	if (entry.kind !== 'character') throw wrongKind();
 	if (expired(entry)) throw expiredError();
-	const away = await missingArtwork(entry);
-	if (away) throw missingArtworkError(entry.name, away);
+	const has = await availableArtwork(entry);
 	let out: RestoredCharacter | undefined;
 	await db.editIdleCharacter(entry.projectId, 'restore', (projects, records) => {
 		const e = readEntry(records.find((r) => r?.id === id));
@@ -499,6 +507,7 @@ export async function restoreCharacter(
 		const taken = records.some((r) => r?.id === e.projectId),
 			next = taken ? `rig-${crypto.randomUUID()}` : e.projectId;
 		const record = structuredClone(e.before);
+		pruneHistory(record.manifest, has);
 		record.id = next;
 		// The key is a fresh one, so the character is a copy from here on: it says so, and its name says why.
 		if (taken) {
