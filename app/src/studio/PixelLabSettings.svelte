@@ -74,6 +74,23 @@
 	}
 </script>
 
+{#if connected}
+	<PixelLabUsage detailed>
+		{#snippet actions()}
+			<button
+				type="button"
+				class="bu-action btn icon plain usage-refresh"
+				data-variant="quiet"
+				aria-label={refreshLabel}
+				title={refreshLabel}
+				aria-disabled={refreshing}
+				onclick={refresh}><RefreshCw size={18} aria-hidden="true" /></button
+			>
+		{/snippet}
+	</PixelLabUsage>
+	{#if app.balanceError}<p class="notice bad small" role="status">{t('usage.loadFailed')}</p>{/if}
+	<hr class="bu-separator" />
+{/if}
 <div data-setting="connection" tabindex="-1">
 	<p class="bu-muted connection-status" role="status">
 		{t(
@@ -121,23 +138,6 @@
 	<ExternalLink size={16} aria-hidden="true" />
 </SettingsItemButton>
 <span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
-{#if connected}
-	<hr class="bu-separator" />
-	<PixelLabUsage detailed>
-		{#snippet actions()}
-			<button
-				type="button"
-				class="bu-action btn icon plain usage-refresh"
-				data-variant="quiet"
-				aria-label={refreshLabel}
-				title={refreshLabel}
-				aria-disabled={refreshing}
-				onclick={refresh}><RefreshCw size={18} aria-hidden="true" /></button
-			>
-		{/snippet}
-	</PixelLabUsage>
-	{#if app.balanceError}<p class="notice bad small" role="status">{t('usage.loadFailed')}</p>{/if}
-{/if}
 {#if confirmingForget}
 	<ConfirmDialog
 		title={t('connectSheet.forgetTitle')}
