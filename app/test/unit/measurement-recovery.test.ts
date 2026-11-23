@@ -2134,6 +2134,25 @@ test('a replay settles every frame check before pricing, so a stopped check neve
 	expect(review.options.find((option) => option.id === 'keep-unposed')).toBeUndefined();
 });
 
+test('a view whose stopped check has a sibling still at PixelLab is reviewed as running, with no free Keep yet', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	const stopped = f.records.get('old-4')!.requestHash,
+		running = f.records.get('old-5')!.requestHash;
+	for (const record of [...f.records.values()]) {
+		if (record.requestHash === stopped) f.records.set(record.id, { ...record, state: 'lost' });
+		if (record.requestHash === running) f.records.set(record.id, { ...record, state: 'running' });
+	}
+	await f.q.sync();
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	// Still at PixelLab: the review holds every choice (PaidReview, Generate again) until it finishes.
+	expect(review.views.map((view) => view.state)).toEqual(['ready', 'running']);
+	expect(review.views[1].notes).toContainEqual(
+		expect.objectContaining({ key: 'create.errors.requestStoppedResume' })
+	);
+	expect(review.options.find((option) => option.id === 'keep-unposed')).toBeUndefined();
+});
+
 test('a body move stopped after every view was bought resumes free with the same seed', async () => {
 	const f = await fixture(false, 'walk');
 	await f.finishOriginalChecks();
