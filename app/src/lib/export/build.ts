@@ -170,6 +170,15 @@ async function requestedExport(
 			);
 		}
 	}
+	// A move started from another move's frame keeps that frame even when the other move is left out or changed.
+	for (const source of manifest.rig.animations.flatMap((a) => Object.values(a.sources ?? {})))
+		if (source?.referenceKeypoints && !(await include(source.reference))) {
+			delete source.referenceKeypoints;
+			note(
+				'Missing body reference images were left out of the editable copy.',
+				message('export.warnings.bodyReferences')
+			);
+		}
 	for (const item of manifest.items) {
 		for (const facing of Object.keys(item.dressed ?? {}) as (keyof NonNullable<
 			Item['dressed']

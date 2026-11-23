@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
 import { cellImg, composeCell } from '../../src/lib/compose/compose.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
-import { moveProject } from '../../src/lib/export/build.ts';
+import { buildExport, moveProject } from '../../src/lib/export/build.ts';
+import { defaultExportSettings } from '../../src/lib/store/export-settings.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { normalize } from '../../src/lib/rig/normalize.ts';
 import { roomFrame, standingRoom } from '../../src/lib/rig/reframe.ts';
@@ -1461,6 +1462,20 @@ test('editable character and move ZIPs retain pinned artwork after the source St
 		expectPixels(restored.images.get(reference), artwork);
 		expect(
 			restored.manifest.rig.animations.find(({ id }) => id === move.id)?.sources?.south
+		).toMatchObject({ reference, referenceKeypoints });
+		// The Studio's Download ZIP path rebuilds the image set itself.
+		const [preset] = source.manifest.presets;
+		const built = await buildExport(source, {
+			engine: 'generic',
+			baked: false,
+			look: { items: preset.items, variants: preset.variants },
+			settings: defaultExportSettings()
+		});
+		expect(built.errors).toEqual([]);
+		const rebuilt = (await readCharacterZip(built.zip!)).project;
+		expectPixels(rebuilt.images.get(reference), artwork);
+		expect(
+			rebuilt.manifest.rig.animations.find(({ id }) => id === move.id)?.sources?.south
 		).toMatchObject({ reference, referenceKeypoints });
 	}
 });
