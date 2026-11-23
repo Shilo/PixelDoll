@@ -926,7 +926,12 @@ async function motion(
 	below = 0,
 	echo: MotionEchoRule = 'optional-exact',
 	echoes?: ReadonlySet<Sha256>
-): Promise<{ keypoints: Keypoint[][]; record: JobRec; motionEcho?: ClipSource['motionEcho'] }> {
+): Promise<{
+	keypoints: Keypoint[][];
+	record: JobRec;
+	motionEcho?: ClipSource['motionEcho'];
+	motionBridged?: number[];
+}> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
 	const { frames, motionEcho } = await normalizeMotionFrames(
@@ -973,7 +978,13 @@ async function motion(
 			{ ...words, size },
 			{ step: 'motion', failure: 'overflow', recordId: r.id }
 		);
-	return { keypoints: filled, record: r, ...(motionEcho ? { motionEcho } : {}) };
+	const motionBridged = kps.flatMap((points, i) => (hasAll(points) ? [] : [i]));
+	return {
+		keypoints: filled,
+		record: r,
+		...(motionEcho ? { motionEcho } : {}),
+		...(motionBridged.length ? { motionBridged } : {})
+	};
 }
 /** Measured motion joints, with at most one interior frame that has none filled halfway between its measured neighbors.
  *  Motion joints only shape the poses the body render is asked for, and the render's own frames must still measure every
@@ -3432,6 +3443,7 @@ async function bodyClip(
 	out: ClipOut;
 	motion?: JobRec;
 	motionEcho?: ClipSource['motionEcho'];
+	motionBridged?: number[];
 }> {
 	const { rec, project, spec, model, authored, n } = plan,
 		m = rec.manifest,
@@ -3464,7 +3476,10 @@ async function bodyClip(
 		});
 		return { d, keypoints: out.measured as Keypoint[][], out };
 	}
-	let keypoints: Keypoint[][], source: JobRec | undefined, motionEcho: ClipSource['motionEcho'];
+	let keypoints: Keypoint[][],
+		source: JobRec | undefined,
+		motionEcho: ClipSource['motionEcho'],
+		motionBridged: number[] | undefined;
 	if (authored)
 		keypoints = authoredPoses(
 			authored,
@@ -3500,6 +3515,7 @@ async function bodyClip(
 		keypoints = result.keypoints;
 		source = result.record;
 		motionEcho = result.motionEcho;
+		motionBridged = result.motionBridged;
 	}
 	keypoints = movePoseEndpoints(
 		sampleMovePoses(keypoints, n, spec.action, spec.animation?.loop),
@@ -3510,6 +3526,7 @@ async function bodyClip(
 		keypoints,
 		...(source ? { motion: source } : {}),
 		...(motionEcho ? { motionEcho } : {}),
+		...(motionBridged ? { motionBridged } : {}),
 		out: await renderClip({
 			anim: spec.id,
 			dir: d,
@@ -4186,6 +4203,7 @@ async function addBodyClip(
 			measured: c.out.measured.map((x) => x ?? []),
 			...(c.out.processing ? { processing: c.out.processing } : {}),
 			...(c.motionEcho ? { motionEcho: c.motionEcho } : {}),
+			...(c.motionBridged ? { motionBridged: c.motionBridged } : {}),
 			provenance: idx
 		};
 		anim.sources![c.d] = src;

@@ -1234,7 +1234,10 @@ test('a managed motion with one unmeasured interior frame still renders the body
 	});
 	await f.run({ text: 'step softly', action: 'quiet-step', frames: 4 });
 	expect(f.enqueue.mock.calls.map(([r]) => r.path)).toContain('/animate-with-skeleton-v3');
-	expect(f.saved().manifest.rig.animations[0].sources?.east?.motion).toBe('pixminimax:step softly');
+	const source = f.saved().manifest.rig.animations[0].sources?.east;
+	expect(source?.motion).toBe('pixminimax:step softly');
+	// recorded as evidence with the clip: the third motion frame was bridged
+	expect(source?.motionBridged).toEqual([2]);
 });
 
 // The described route drops any one leading frame by position; the walk template, which sends no keep_first_frame flag, still

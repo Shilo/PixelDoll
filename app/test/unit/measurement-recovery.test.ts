@@ -1911,4 +1911,9 @@ test('a managed walk whose paid motion sent back a standing that is not ours res
 	expect(recovery.unavailable).toBeUndefined();
 	expect(recovery.keep?.directions.map((view) => view.dir)).toEqual(['east', 'west']);
 	expect(warned.enqueue).not.toHaveBeenCalled();
+	// Keeping them publishes the dropped echo's evidence with each recovered clip.
+	await addMove('rig-recover', keepConsent(warned.spec, recovery.keep!));
+	const sources = warned.saved().manifest.rig.animations.find((a) => a.id === 'idle')!.sources!;
+	for (const dir of ['east', 'west'] as const)
+		expect(sources[dir]?.motionEcho?.maskIoU).toBeLessThan(1);
 });
