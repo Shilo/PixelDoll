@@ -7,6 +7,7 @@
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
 	import { itemMoveOffer, missingItemMoves, moveMinimumTier } from './create.ts';
+	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
@@ -65,7 +66,9 @@
 				})
 			: []
 	);
-	const poseOffer = $derived(m && poseSpecs.length ? itemMoveOffer(m, poseSpecs) : null);
+	const poseOffer = $derived(
+		m && poseSpecs.length ? itemMoveOffer(m, poseSpecs, setupRedoMoves(store.exportRecord)) : null
+	);
 	const poseTier = $derived(
 		m ? Math.max(0, ...(poseOffer?.specs ?? []).map((s) => moveMinimumTier(m, s))) : 0
 	);

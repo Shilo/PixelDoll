@@ -50,16 +50,22 @@ export const unposedView = (
 	anim: Pick<RigAnimation, 'id' | 'sources'>,
 	dir: DirectionName
 ) => !anim.sources?.[dir] && (redo.includes(anim.id) || redo.includes(`${anim.id}/${dir}`));
-/** rigQa.redo after a move's `saved` views were published: its `unposed` views are listed, the other saved views not. */
+/** rigQa.redo after a move was saved as `anim`: its `unposed` views are listed, and an entry leaves the list once its view
+ *  has poses again (the whole-move entry once every drawn view of the move with frames, `views`, has them). */
 export const redoAfterSave = (
 	redo: readonly string[],
-	move: string,
-	saved: readonly DirectionName[],
+	anim: Pick<RigAnimation, 'id' | 'sources'>,
+	views: readonly DirectionName[],
 	unposed: readonly DirectionName[] = []
 ): string[] => [
 	...new Set([
-		...redo.filter((entry) => !saved.some((dir) => entry === `${move}/${dir}`)),
-		...unposed.map((dir) => `${move}/${dir}`)
+		...redo.filter(
+			(entry) =>
+				!(entry === anim.id
+					? views.every((dir) => anim.sources?.[dir])
+					: views.some((dir) => entry === `${anim.id}/${dir}` && anim.sources?.[dir]))
+		),
+		...unposed.map((dir) => `${anim.id}/${dir}`)
 	])
 ];
 

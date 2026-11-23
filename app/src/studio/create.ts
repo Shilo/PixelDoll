@@ -2571,6 +2571,11 @@ export function bodyMoveIssue(
 				blocked ? 'create.errors.describeMoveBlocked' : 'create.errors.describeMove'
 			);
 }
+/** The drawn (not mirrored) views a move has frames in. */
+const drawnViews = (
+	rig: Pick<Rig, 'directions'>,
+	cells: Partial<Record<DirectionName, (Sha256 | null)[]>> | undefined
+) => rig.directions.filter((d) => !d.mirrorOf && cells?.[d.id]?.some(Boolean)).map((d) => d.id);
 /** Equipment cannot be fitted where a move was kept without poses; making the move again there is the way on. */
 function unposedMoveIssue(
 	m: Manifest,
@@ -2578,11 +2583,13 @@ function unposedMoveIssue(
 	dirs: readonly DirectionName[],
 	redo: readonly string[]
 ): LocalizedError | undefined {
-	const anim = m.rig.animations.find((a) => a.id === move);
-	return anim && dirs.some((dir) => unposedView(redo, anim, dir))
+	const anim = m.rig.animations.find((a) => a.id === move),
+		dir = anim && dirs.find((d) => unposedView(redo, anim, d));
+	return dir
 		? new LocalizedError(
-				'This move was kept without poses in a chosen view. Make the move again there before fitting equipment. No generation was requested.',
-				'create.errors.moveKeptUnposed'
+				`${move} ${dir} was kept without poses. Make that view again before fitting equipment there. No generation was requested.`,
+				'create.errors.moveKeptUnposed',
+				viewWords(m, move, dir)
 			)
 		: undefined;
 }
@@ -2763,7 +2770,12 @@ export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
 }
 
 /** Bind a delayed item-only click to its priced artwork. Other queued moves may update this item's unrelated clips. */
-export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
+/** `redo`: the record's rigQa.redo (setupRedoMoves), so a view kept without poses is named with its way on. */
+export function reviewItemMove(
+	m: Manifest,
+	spec: MoveSpec,
+	redo: readonly string[] = []
+): MoveSpec {
 	if (!spec.itemsOnly)
 		throw new LocalizedError(
 			'Only existing item frames can use this review.',
@@ -2771,9 +2783,12 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 		);
 	const dirs = moveDirections(m, spec.dirs);
 	if (spec.itemMethod !== 'anchor' && !canPose(m.rig, { anims: [spec.id], dirs }))
-		throw new LocalizedError(
-			'This move has missing or invalid stored joints. Set up its poses before generating equipment. No generation was requested.',
-			'create.errors.moveMissingInvalidStored'
+		throw (
+			unposedMoveIssue(m, spec.id, dirs, redo) ??
+			new LocalizedError(
+				'This move has missing or invalid stored joints. Set up its poses before generating equipment. No generation was requested.',
+				'create.errors.moveMissingInvalidStored'
+			)
 		);
 	const rows = <T>(value: Partial<Record<DirectionName, T>> | undefined) => {
 		const entries = dirs
@@ -2848,9 +2863,13 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 	return { ...spec, itemReview: { gens: moveEstimate(m, spec).items, artwork } };
 }
 
-export function itemMoveReviewMatches(m: Manifest, spec: MoveSpec): boolean {
+export function itemMoveReviewMatches(
+	m: Manifest,
+	spec: MoveSpec,
+	redo: readonly string[] = []
+): boolean {
 	if (!spec.itemReview) return !spec.reviewedMoveItems;
-	const reviewed = reviewItemMove(m, spec).itemReview!;
+	const reviewed = reviewItemMove(m, spec, redo).itemReview!;
 	return (
 		reviewed.artwork === spec.itemReview.artwork &&
 		(spec.reviewedMoveItems
@@ -2862,10 +2881,11 @@ export function itemMoveReviewMatches(m: Manifest, spec: MoveSpec): boolean {
 /** An unsupported pose or grid has no valid price. Keep the offer visible with its reason instead of breaking the view. */
 export function itemMoveOffer(
 	m: Manifest,
-	specs: MoveSpec[]
+	specs: MoveSpec[],
+	redo: readonly string[] = []
 ): { specs: MoveSpec[]; gens: number | null; error: Message | string } {
 	try {
-		const reviewed = specs.map((spec) => reviewItemMove(m, spec));
+		const reviewed = specs.map((spec) => reviewItemMove(m, spec, redo));
 		return {
 			specs: reviewed,
 			gens: reviewed.reduce((sum, spec) => sum + spec.itemReview!.gens, 0),
@@ -2920,6 +2940,12 @@ async function addMoveUnlocked(
 		);
 	const { rec, project: loaded } = await loadProject(projectId);
 	checkedReviewChoices(rec.manifest, spec);
+	// A staged review of this move decides first: a direct run would buy frames that could not be saved beside it.
+	if (!spec.itemsOnly && !spec.reviewBeforePublish && Object.hasOwn(rec.moveReviews ?? {}, spec.id))
+		throw new LocalizedError(
+			'This move has frames waiting in its review. Save or discard them first. No request was made.',
+			'moveSheet.checkpoint.reviewWaiting'
+		);
 	if (
 		!spec.itemsOnly &&
 		!rec.manifest.rig.animations.some((clip) => clip.kind !== 'state' && clip.id === spec.id) &&
@@ -2957,7 +2983,7 @@ async function addMoveUnlocked(
 		if (warning) throw warning;
 	}
 	const assertReview = (m: Manifest) => {
-		if (!itemMoveReviewMatches(m, spec)) {
+		if (!itemMoveReviewMatches(m, spec, setupRedoMoves(rec))) {
 			throw new LocalizedError(
 				'This character, item or price changed. Reopen the item and review its current estimate before generating. No paid request was made.',
 				'create.errors.characterItemPriceChanged'
@@ -4511,7 +4537,16 @@ async function addBodyClip(
 				Object.entries(skeletons).filter(([key]) => key.startsWith(`${spec.id}/`))
 			),
 			checks,
-			warnings
+			warnings,
+			...(intent
+				? {
+						moveRecovery: {
+							id: intent.id,
+							originalRigVersion: intent.rigVersion,
+							specHash: receiptSpecHash!
+						}
+					}
+				: {})
 		};
 		await db.updateCharacter<StoredProject>(
 			projectId,
@@ -4539,7 +4574,9 @@ async function addBodyClip(
 		],
 		clips: { ...qa.clips, ...checks },
 		...(setupRedoMoves(fresh).length || unposedDirs.length
-			? { redo: redoAfterSave(setupRedoMoves(fresh), spec.id, dirs, unposedDirs) }
+			? {
+					redo: redoAfterSave(setupRedoMoves(fresh), anim, drawnViews(frig, cellMap), unposedDirs)
+				}
 			: {})
 	};
 	// R6 P1-5: `fresh` was read before ~30 cell writes; graft only what this clip changed onto the CURRENT record in one
@@ -4712,6 +4749,11 @@ export async function resolveMoveCandidate(
 				manifest.rig.animations.find((animation) => animation.id === id)
 			);
 			manifest.rig = rig;
+			if (candidate.moveRecovery)
+				current.moveRecovery = {
+					...candidate.moveRecovery,
+					bodyRigVersion: moveRigVersion(current)
+				};
 			Object.assign(currentBase, {
 				provenance: base.provenance,
 				layers: base.layers,
@@ -4736,7 +4778,13 @@ export async function resolveMoveCandidate(
 				],
 				clips: { ...qa.clips, ...candidate.checks },
 				...(setupRedoMoves(current).length
-					? { redo: redoAfterSave(setupRedoMoves(current), id, candidate.dirs) }
+					? {
+							redo: redoAfterSave(
+								setupRedoMoves(current),
+								next,
+								drawnViews(rig, base.layers[0].cells?.[id])
+							)
+						}
 					: {})
 			};
 			delete current.moveReviews![id];

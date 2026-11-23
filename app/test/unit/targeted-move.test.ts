@@ -40,7 +40,7 @@ import { displayError, displayNestedMessage, errorMessage } from '../../src/lib/
 import { generationErrorMessage } from '../../src/studio/generationStatus.ts';
 import type { Gen } from '../../src/studio/state.svelte.ts';
 import { bodyQualityNote } from '../../src/studio/model.ts';
-import { redoAfterSave, rigReady, unposedView } from '../../src/lib/rig/setup.ts';
+import { redoAfterSave, rigReady, setupRedoMoves, unposedView } from '../../src/lib/rig/setup.ts';
 // The i18n runtime needs the Svelte compiler; Japanese stands in for it here, as a key lookup with {name} variables.
 vi.mock('svelte-whisper', () => ({
 	getLocale: () => 'ja',
@@ -509,6 +509,36 @@ test('native PixMiniMax keeps exactly N frames in returned order and discloses t
 		'idle/east: PixelLab sent 4 frames instead of 5, so the first or last frame may differ'
 	);
 });
+
+test.each([2, -1])(
+	'native PixMiniMax with a frame count off by %i from N stops without publishing or another paid request',
+	async (extra) => {
+		const f = await fixture(false, 'none');
+		const reply = f.enqueue.getMockImplementation()!;
+		f.enqueue.mockImplementation(async (req, ...rest) => {
+			const record = await reply(req, ...rest);
+			if (req.path !== '/animate-pixminimax') return record;
+			const results = record.jobs[0].results!;
+			record.jobs[0].results =
+				extra > 0
+					? [
+							...results,
+							...results
+								.slice(0, extra)
+								.map((r, i) => ({ ...r, label: String(results.length + i) }))
+						]
+					: results.slice(0, extra);
+			return record;
+		});
+		await expect(f.run({ animation: { model: 'pixminimax' } })).rejects.toThrow(
+			`PixelLab returned ${4 + extra} motion frames for 4 requested`
+		);
+		// the one paid render only: no joint check, no other render, nothing saved
+		expect(f.enqueue).toHaveBeenCalledOnce();
+		expect(f.put).not.toHaveBeenCalled();
+		expect(f.saved()).toEqual(f.original);
+	}
+);
 
 // Deliberately changed (soft gates): a targeted replacement that misses only numerical body checks used to throw and keep
 // nothing. It is now staged for a free Save or Discard, body only; the priced Skeleton retry is offered from that draft.
@@ -1700,10 +1730,28 @@ test('one replaced view kept without poses loses only its own poses and fitted e
 	}
 	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['idle/east']);
 	expect(rigReady(saved)).toBe(true);
-	// Equipment waits there with a plain next step: make the move again, not set up its poses.
-	await expect(
-		f.run({ items: ['hat'], itemsOnly: true, replace: undefined, keepUnposed: undefined })
-	).rejects.toThrow('Make the move again there');
+	// Equipment waits there with a plain next step naming the move and view: make it again, not set up its poses.
+	const stopped = (await f
+		.run({ items: ['hat'], itemsOnly: true, replace: undefined, keepUnposed: undefined })
+		.catch((error: unknown) => error)) as Error & { translation: { vars: unknown } };
+	expect(stopped.message).toContain('idle east was kept without poses. Make that view again');
+	expect(stopped.translation.vars).toMatchObject({
+		move: { key: 'moveNames.idle' },
+		direction: { key: expect.any(String) }
+	});
+	const fit = {
+		id: 'idle',
+		frames: 4,
+		items: ['hat'],
+		dirs: ['east' as const],
+		itemsOnly: true as const,
+		seed: 1
+	};
+	expect(() => reviewItemMove(saved.manifest, fit, setupRedoMoves(saved))).toThrow(
+		'idle east was kept without poses'
+	);
+	// Without the record's list (an import never set up), the generic setup step stays.
+	expect(() => reviewItemMove(saved.manifest, fit)).toThrow('Set up its poses');
 });
 
 test('redoing one view of a move kept without poses leaves the rest of the rig ready', async () => {
@@ -1719,14 +1767,32 @@ test('redoing one view of a move kept without poses leaves the rest of the rig r
 	expect(Object.keys(saved.manifest.rig.animations[0].sources!)).toEqual(['east']);
 	// south, north and west are still without poses and listed: the rig stays ready, items wait there
 	expect(rigReady(saved)).toBe(true);
+	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['idle']);
+	// Repairing the other views one at a time clears the list once every view has poses again, as read back after reload.
+	for (const dir of ['south', 'north'] as const) await f.run({ dirs: [dir] });
+	expect((f.saved().rigQa as { redo?: string[] }).redo).toEqual(['idle']);
+	await f.run({ dirs: ['west'] });
+	const reloaded = (await projects.loadProject('rig-target')).rec;
+	expect((reloaded.rigQa as { redo?: string[] }).redo).toEqual([]);
+	expect(rigReady(reloaded)).toBe(true);
 });
 
-test('unposed views are listed per view and leave the list once they are saved again', () => {
-	expect(redoAfterSave(['walk', 'idle/east'], 'idle', ['east'])).toEqual(['walk']);
-	expect(redoAfterSave(['walk'], 'idle', ['east', 'south'], ['south'])).toEqual([
-		'walk',
-		'idle/south'
-	]);
+test('unposed views are listed per view and leave the list once they have poses again', () => {
+	const posed = { id: 'idle', sources: { east: {} as never, south: {} as never } };
+	expect(redoAfterSave(['walk', 'idle/east'], posed, ['east', 'south'])).toEqual(['walk']);
+	// a whole-move entry stays until every view with frames has poses
+	expect(
+		redoAfterSave(['idle'], { id: 'idle', sources: { east: {} as never } }, ['east', 'south'])
+	).toEqual(['idle']);
+	expect(redoAfterSave(['idle'], posed, ['east', 'south'])).toEqual([]);
+	expect(
+		redoAfterSave(
+			['walk'],
+			{ id: 'idle', sources: { east: {} as never } },
+			['east', 'south'],
+			['south']
+		)
+	).toEqual(['walk', 'idle/south']);
 	const idle = { id: 'idle', sources: { east: {} as never } };
 	// A view with poses is never unposed; an unlisted view without poses (an import not set up yet) is not either.
 	expect(unposedView(['idle'], idle, 'east')).toBe(false);

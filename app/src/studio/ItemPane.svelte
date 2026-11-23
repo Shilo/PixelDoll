@@ -21,6 +21,7 @@
 		type ItemPaletteRepairPlan
 	} from '../lib/items/run.ts';
 	import { missingItemMoves, itemMoveOffer, moveMinimumTier, type MoveSpec } from './create.ts';
+	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
@@ -166,10 +167,16 @@
 				}
 			: null
 	);
-	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null);
+	// Views kept without poses are named with their way on (make the move again there).
+	const redo = $derived(setupRedoMoves(store.exportRecord));
+	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec], redo) : null);
 	const redrawOffer = $derived(
 		m && repairSpec
-			? itemMoveOffer(m, [{ ...repairSpec, preferTierOneRepair: undefined, redrawItem: true }])
+			? itemMoveOffer(
+					m,
+					[{ ...repairSpec, preferTierOneRepair: undefined, redrawItem: true }],
+					redo
+				)
 			: null
 	);
 	// Required plan tiers come from the mandatory steps of each offered spec, not from the API preview.
@@ -206,7 +213,7 @@
 			missingMoves.find((s) => s.id === ui.anim) ??
 			missingMoves[0]
 	);
-	const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove]) : null);
+	const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove], redo) : null);
 	const missingTier = $derived(offerTier(missingOffer));
 	const missingName = $derived(missingMove ? displayMove(missingMove.id, moveRefs) : '');
 	function makeMissing() {
