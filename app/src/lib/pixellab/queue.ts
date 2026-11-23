@@ -880,8 +880,17 @@ export class Queue {
 		this.role = 'leader';
 		this.capacityCheckedAt = -Infinity;
 		this.capacityKnown = false;
+		// An explicit Stop of ours still waiting for its Try again survives the reload over a stored automatic cancel.
+		const stops = [...this.recs.values()].filter(
+			(r) => this.writes.get(r.id)?.failed && r.state === 'canceled' && !r.autoCanceledAttempts
+		);
 		this.recs.clear();
 		await this.load();
+		for (const mine of stops) {
+			const stored = this.recs.get(mine.id);
+			if (stored && this.keepsExplicitStop(mine, stored)) this.recs.set(mine.id, mine);
+		}
+		if (stops.length) this.emit();
 		if (!connection.signal.aborted) this.start();
 	}
 	/** Stop driving jobs and release/cancel this connection's lock; paid requests are never resent. */
