@@ -2849,7 +2849,7 @@
 		"missingViews": "{directions} yönünde kullanılabilir bir görünüm gelmedi. Kaydetmek diğer görünümleri korur; bu State bu yönlerde ve aynalanmış görünümlerinde çizim içermez.",
 		"unfetchedViews": "{directions} yönündeki görünüm indirilemedi. Önce tekrar dene: onsuz kaydedersen daha sonra alınamaz.",
 		"canceledViews": "{directions} yönündeki görünüm oluşturulmadan önce iptal edildi. Şimdi kaydedersen oluşturulmayacak.",
-		"unmadeViews": "Önceki bir istek durduğu için {directions} yönündeki görünüm oluşturulmadı. Oluşturma maliyetini kontrol et veya onsuz kaydet.",
+		"unmadeViews": "{directions} yönündeki görünüm henüz oluşturulmadı. Oluşturma maliyetini kontrol et veya onsuz kaydet.",
 		"newViews": "Bu State için yeni görünümler tamamlandı. Kaydetmeden önce yeniden gözden geçir. Hiçbir şey kaydedilmedi veya ücretlendirilmedi.",
 		"saveWithout": "Onlar olmadan kaydet",
 		"unfinished": "Bu denemenin sonuçları eksik veya kullanılamıyor. Etkinliği kontrol edin. İstek yeniden gönderilmedi.",

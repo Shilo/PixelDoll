@@ -2849,7 +2849,7 @@
 		"missingViews": "No llegó ninguna vista utilizable en {directions}. Al guardar se conservan las demás vistas; este State no tendrá arte en esas direcciones ni en sus vistas reflejadas.",
 		"unfetchedViews": "No se pudo descargar la vista en {directions}. Inténtalo de nuevo primero: si guardas sin ella, no se podrá recuperar después.",
 		"canceledViews": "La vista en {directions} se canceló antes de crearse. Si guardas ahora, no se creará.",
-		"unmadeViews": "La vista en {directions} no se creó porque una solicitud anterior se detuvo. Consulta el costo de crearla o guarda sin ella.",
+		"unmadeViews": "La vista en {directions} aún no se creó. Consulta el costo de crearla o guarda sin ella.",
 		"newViews": "Se terminaron nuevas vistas para este State. Revísalo de nuevo antes de guardar. No se guardó ni se cobró nada.",
 		"saveWithout": "Guardar sin ellas",
 		"unfinished": "El intento tiene resultados incompletos o no disponibles. Consulta Actividad. No se reenvió ninguna solicitud.",
