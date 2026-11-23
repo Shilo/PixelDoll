@@ -398,7 +398,7 @@
 			"1": "방향을 제거할까요?",
 			"other": "방향 {n}개를 제거할까요?"
 		},
-		"removePermanently": "영구 제거",
+		"remove": "제거",
 		"removing": "제거 중…",
 		"savedOnly": "저장된 캐릭터만 편집할 수 있어요.",
 		"waitForGeneration": "진행 중인 생성 작업이 끝날 때까지 기다려 주세요.",
@@ -409,13 +409,13 @@
 		"saving": "저장 중…",
 		"reviewChanges": "변경 사항 확인",
 		"changeTitle": "방향을 변경할까요?",
-		"confirmMixedRemoval": "캐릭터의 동작과 장비에서 다음 방향을 제거해요: {directions}. 되돌릴 수 없어요.",
+		"confirmMixedRemoval": "캐릭터의 동작과 장비에서 다음 방향을 제거해요: {directions}. 이 페이지를 새로고침하거나 닫기 전까지, 그사이 캐릭터가 달리 바뀌지 않았다면 실행 취소로 되돌릴 수 있어요.",
 		"confirmReplace": "대칭을 켜면 {directions} 방향의 이미지가 반대쪽의 뒤집힌 프레임으로 바뀌어요. 나중에 대칭을 꺼도 이 프레임은 유지돼요. 원본을 보관하려면 백업을 다운로드하세요.",
 		"labelDirectionsToKeep": "유지할 방향",
 		"loadingDirections": "방향을 불러오는 중…",
 		"downloadBackup": "백업 다운로드",
 		"reviewRemoval": "제거 검토",
-		"confirmRemoval": "{directions} 방향이 이 캐릭터의 동작과 장비에서 제거돼요. 다른 방향은 그대로예요. 되돌릴 수 없어요.",
+		"confirmRemoval": "{directions} 방향이 이 캐릭터의 동작과 장비에서 제거돼요. 다른 방향은 그대로예요. 이 페이지를 새로고침하거나 닫기 전까지, 그사이 캐릭터가 달리 바뀌지 않았다면 실행 취소로 되돌릴 수 있어요.",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker로 내보내려면 동서남북 네 방향이 모두 필요해요.",
 		"directionsWereSavedReloadToRefreshThe": "방향이 저장됐어요. 캐릭터를 새로 고치려면 다시 불러와 주세요.",
 		"directionsWereSavedReloadToRefreshThe2": "방향이 저장됐어요. 캐릭터를 새로 고치려면 다시 불러와 주세요: {reason}"
@@ -769,6 +769,8 @@
 		"itemMoved": "{name}을(를) {label}(으)로 옮겼습니다.",
 		"itemMoveBusy": "이 아이템을 옮기기 전에 관련 생성을 완료하거나 폐기하세요.",
 		"itemMoveChanged": "아이템 또는 슬롯이 변경되었습니다. 다시 시도하세요.",
+		"itemMoving": "다른 아이템을 아직 옮기는 중이에요. 끝나면 다시 시도하세요.",
+		"itemNotReady": "이 아이템은 아직 만드는 중이거나 검토를 기다리고 있어요. 저장된 뒤 다시 시도하세요.",
 		"notShownInMove": "이 동작에서는 표시되지 않음",
 		"notShownInMoveNote": "착용 중이지만 이 동작의 모든 방향에 프레임이 없어 표시되지 않습니다.",
 		"randomLowerItem": "무작위 {lower} 아이템",
@@ -828,7 +830,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, 착용 중",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "{move}용으로 그리는 중, {percent}",
+		"itemQueued": "{move}용으로 대기 중"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "데모는 계정이 필요 없어요. 캐릭터를 만들 때는 {pixelLab} 계정의 생성 횟수를 사용해요.",
@@ -934,6 +938,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "프레임을 조정하기 전에 대기 중인 생성 작업을 끝내거나 취소하세요.",
+		"finishBeforeMoveImport": "동작을 가져오기 전에 대기 중인 생성 작업을 끝내거나 닫으세요.",
 		"couldNotCheckNamedFrames": "{names}의 프레임을 확인할 수 없습니다. {reason}",
 		"couldNotCheckSeveralFrames": "{names}의 프레임을 확인할 수 없습니다.",
 		"copyMissingOneMove": "{move} 동작에 프레임이 일부 없어 해당 구간에서 아이템이 숨겨집니다.",
@@ -1067,7 +1072,16 @@
 		"changeCategory": "{name} 변경",
 		"deleteCategory": "{name} 삭제",
 		"deleteItem": "{name} 삭제",
-		"deleteMove": "{name} 삭제"
+		"deleteMove": "{name} 삭제",
+		"moveItem": "{name} 옮기기",
+		"changeDirections": "방향 변경",
+		"restoreOriginals": "원본 복원",
+		"changeDescription": "설명 변경",
+		"changed": "이 단계는 기록에서 제거됐어요. 그 뒤로 캐릭터가 바뀌어서 더 이상 실행 취소하거나 다시 실행할 수 없어요.",
+		"notRecorded": "저장했지만 이 변경은 되돌릴 수 없어요. 일부 프레임이 더 이상 저장되어 있지 않아요.",
+		"busy": "마지막 실행 취소나 다시 실행이 끝날 때까지 기다려 주세요. 끝나지 않으면 페이지를 새로고침하세요.",
+		"notInHistory": "이 단계는 더 이상 기록에 없어요.",
+		"saveFailed": "최근 변경을 저장하지 못했어요. 저장소 오류를 해결한 다음 다시 시도하세요."
 	},
 	"export": {
 		"sheet": {
@@ -2098,7 +2112,17 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, 피벗 {x},{y}",
 		"waitingForRepairReview": "아이템 프레임 검토 대기 중",
-		"needsRedo": "관절을 찾지 못함: 아이템을 움직이려면 다시 그리세요"
+		"needsRedo": "관절을 찾지 못함: 아이템을 움직이려면 다시 그리세요",
+		"itemsDrawn": {
+			"other": "아이템 {n}개 중 {drawn}개 그림"
+		},
+		"drawingItem": "{item} 그리는 중",
+		"moreQueued": {
+			"other": "{n}개 더 대기 중"
+		},
+		"itemsQueued": {
+			"other": "아이템 {n}개 대기 중"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2123,8 +2147,12 @@
 		"appearance": "기존 외형",
 		"appearancePlaceholder": "이 아트워크에 이미 있는 몸체, 머리카락, 색상, 옷을 설명하세요",
 		"appearanceHelp": "새 동작의 안내로 쓰여요. 기존 머리카락과 옷도 포함하세요. 설정에서 이를 기본 몸체와 분리할 수 없어요.",
+		"appearanceSaveHelp": "새 동작의 안내로 쓰여요. 기존 머리카락과 옷도 포함하세요. 변경 사항 저장은 무료예요.",
+		"saveDescription": "설명 저장",
+		"descriptionSaved": "설명을 저장했어요. 새 동작에 사용돼요.",
 		"estimate": "고유 몸체 프레임 {frames}개 · 예상 생성 {gens}회. 계정 연결 비용(생성 {connection}회)이 포함돼요. 일치하는 저장 측정값은 재사용해요.",
 		"willSkip": "{moves}은(는) 건너뛰어요. 빈 프레임이 있어서 비용이 들지 않아요. 아이템을 움직이려면 그 프레임을 고치거나 다시 만드세요.",
+		"reconnectEstimate": "다시 연결해도 모든 포즈, 아이템 맞춤, 프레임은 그대로 유지돼요. 계정 연결에 약 {gens}회 생성이 들어요.",
 		"busyElsewhere": "설정을 시작하기 전에 다른 캐릭터 작업을 끝내세요.",
 		"resumeRigSetup": "리그 설정 재개",
 		"dismiss": "설정 버리기",
@@ -2522,12 +2550,12 @@
 			"save": "동작 저장",
 			"replace": "동작 교체",
 			"discardDraft": "초안 버리기",
-			"titleItems": "아이템 애니메이션",
-			"chooseFor": "동작에 맞춰 움직일 아이템을 선택하세요: {move}",
+			"titleItems": "아이템 생성",
+			"chooseFor": "생성할 아이템을 선택하세요: {move}",
 			"total": "추가 생성 ~{gens}회",
 			"selected": "선택됨",
 			"animateCount": {
-				"other": "아이템 {n}개 애니메이션 만들기"
+				"other": "아이템 {n}개 생성"
 			},
 			"unavailable": "사용할 수 없음",
 			"findings": "품질 안내",
@@ -2536,7 +2564,9 @@
 			"beforeItems": "아이템을 움직이기 전에 동작을 검토하세요.",
 			"changed": "캐릭터 또는 동작이 변경됐어요. 검토 화면을 다시 열어 주세요.",
 			"missingFrames": "검토한 프레임을 더 이상 사용할 수 없어요.",
-			"tier": "현재 PixelLab 요금제에서 선택한 일부 아이템을 지원하지 않아요."
+			"tier": "현재 PixelLab 요금제에서 선택한 일부 아이템을 지원하지 않아요.",
+			"notNow": "나중에",
+			"later": "이 동작의 아이템은 나중에 동작 탭의 메뉴에서 생성할 수 있어요: {move}"
 		},
 		"thatCharacter": "해당 캐릭터",
 		"retryLabel": "동작 다시 생성",
@@ -2991,9 +3021,6 @@
 			"other": "{name} 항목의 프레임 {count}개를 바꿨어요."
 		},
 		"undo": "실행 취소",
-		"undone": {
-			"other": "프레임 {count}개를 되돌렸어요."
-		},
 		"restored": {
 			"other": "원본 프레임 {count}개를 복원했어요."
 		},
@@ -3011,7 +3038,8 @@
 				"other": "다른 파일 {n}개는 무시했어요."
 			},
 			"fitted": "이 기본 몸체 프레임에 맞춘 아이템은 계속 착용돼요: {names}. 변경된 프레임에서 확인하세요.",
-			"emptiedBody": "빈 기본 몸체 프레임은 그 프레임에 새 아이템을 만들 때 건너뛰어요."
+			"emptiedBody": "빈 기본 몸체 프레임은 그 프레임에 새 아이템을 만들 때 건너뛰어요.",
+			"description": "새 동작은 캐릭터 설명을 따라요. 머리카락이나 옷을 바꿨다면 캐릭터 설정에서 설명을 업데이트하세요."
 		},
 		"errors": {
 			"size": "이 PNG는 {got} px이지만 이 프레임에는 {want} px이 필요해요. 원래 크기와 격자를 유지하세요.",
@@ -3108,7 +3136,6 @@
 		"consequences": "아이템은 프레임 크기와 위치가 같은 캐릭터끼리만 정확히 복사돼요. 내보내기는 게임 속 크기와 기준점을 그대로 유지해요. 변경 사항을 쓰려면 다시 내보내세요.",
 		"loading": "프레임을 불러오는 중…",
 		"saved": "프레임을 조정했어요: {change}.",
-		"undone": "프레임 변경을 되돌렸어요.",
 		"errors": {
 			"reviewOpen": "프레임을 조정하기 전에 검토를 기다리는 동작을 저장하거나 버리세요.",
 			"statePending": "프레임을 조정하기 전에 대기 중인 상태를 저장하거나 버리세요.",
@@ -3121,8 +3148,7 @@
 			"unchanged": "먼저 프레임 크기나 위치를 바꾸세요.",
 			"limit": "{size} px 프레임으로도 이 캐릭터에 동작할 공간을 만들 수 없어요.",
 			"resolveDrafts": "프레임을 조정하기 전에 이 캐릭터의 아이템 초안을 유지하거나 버리세요.",
-			"changed": "이 캐릭터가 바뀌었어요. 프레임 조정을 다시 열어 최신 버전을 확인하세요.",
-			"undoFailed": "프레임 변경을 되돌리지 못했어요."
+			"changed": "이 캐릭터가 바뀌었어요. 프레임 조정을 다시 열어 최신 버전을 확인하세요."
 		}
 	},
 	"costSheet": {
@@ -3266,6 +3292,58 @@
 			"browser": "계속하려면 최신 브라우저를 사용하세요.",
 			"exportId": "다른 내보내기 ID를 선택하세요.",
 			"busy": "잠시 기다린 뒤 다시 시도하세요."
+		}
+	},
+	"itemGeneration": {
+		"open": "아이템 생성",
+		"title": "아이템 생성: {move}",
+		"inProgress": "진행 중",
+		"allDrawn": "모든 아이템이 이미 그려졌어요: {move}",
+		"noneAvailable": "이 아이템들은 모두 생성할 수 없어요: {move}",
+		"notDrawnFor": "아직 그리지 않음: {move}",
+		"generateFor": "생성하기: {move}",
+		"wearOn": "{move}에서 착용"
+	},
+	"moveImport": {
+		"title": "동작 가져오기",
+		"importMoves": "동작 가져오기",
+		"importStates": "상태 가져오기",
+		"dropArea": "PixelDoll ZIP 놓기 영역",
+		"drop": "여기에 PixelDoll ZIP을 놓으세요",
+		"intro": "동작의 ZIP, 백업 또는 공유된 캐릭터. 이 캐릭터용으로 만든 것이면 무료예요.",
+		"zip": "PixelDoll ZIP",
+		"editHint": "다른 편집기에서 동작의 프레임을 바꾸려면 프레임 수정을 사용하세요.",
+		"fit": {
+			"same": "이 캐릭터용으로 만들어졌어요. 프레임이 그대로 맞아요.",
+			"shifted": "프레임 조정 전에 이 캐릭터용으로 만들어졌어요. 프레임을 옮겨서 맞춰요.",
+			"near": {
+				"other": "이 캐릭터용이지만 서 있는 자세가 {count}픽셀 달라요. 가져온 뒤 프레임을 확인하세요."
+			},
+			"directions": "다른 방향 구성으로 만들어져 여기서는 프레임을 쓸 수 없어요. 동작의 움직임으로 이 캐릭터를 다시 그릴 수는 있어요.",
+			"body": "다른 몸으로 만들어져 여기서는 프레임을 쓸 수 없어요. 동작의 움직임으로 이 캐릭터를 다시 그릴 수는 있어요."
+		},
+		"empty": "이 ZIP에는 서 있기 외에 동작이나 상태가 없어요.",
+		"move": "동작",
+		"state": "상태",
+		"row": {
+			"add": "새로 추가",
+			"copy": "이름이 사용 중이라 {name}(으)로 둘 다 유지해요",
+			"present": "이미 이 캐릭터에 있어요",
+			"motion": "이 움직임으로 이 캐릭터를 다시 그릴 수 있어요",
+			"unavailable": "다시 쓸 저장된 움직임이 없어요",
+			"stateUnavailable": "상태는 같은 몸이 필요해요",
+			"items": "{items} 포함",
+			"left": "{items} 제외 (이 캐릭터에 없음)",
+			"missing": "이 동작에는 아직 없어요: {items}"
+		},
+		"useMotion": "{move}(으)로 다시 그리기",
+		"free": "무료. 생성 없음.",
+		"import": "가져오기",
+		"importing": "가져오는 중…",
+		"imported": "{names}을(를) 가져왔어요.",
+		"errors": {
+			"resolveDrafts": "동작을 가져오기 전에 이 캐릭터의 아이템 초안을 유지하거나 버리세요.",
+			"changed": "이 캐릭터가 바뀌었어요. 최신 버전을 확인하려면 ZIP을 다시 선택하세요."
 		}
 	}
 }

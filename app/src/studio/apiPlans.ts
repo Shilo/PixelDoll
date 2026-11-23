@@ -15,7 +15,7 @@ import {
 } from './create.ts';
 import {
 	estimate,
-	isAuthoredAction,
+	fixedPoses,
 	moveDirections,
 	moveFrames,
 	moveAnimationModel,
@@ -402,7 +402,7 @@ export function movePlan(
 	if (bodyNeeded) {
 		if (bodyMoveIssue(m, spec) || partialMoveFrameIssue(m, spec, generatedDirections.length))
 			return [];
-		const authored = isAuthoredAction(spec.action);
+		const authored = fixedPoses(spec);
 		for (const direction of generatedDirections) {
 			const customStart = spec.animation?.references?.[direction]?.start;
 			if (model === 'skeleton-v3' && customStart)

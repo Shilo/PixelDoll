@@ -8,7 +8,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { Download, Grid2x2, Pencil, Plus, RefreshCw } from './icons.ts';
+	import { Download, Grid2x2, Pencil, Plus, RefreshCw, Sparkles } from './icons.ts';
 	import { toast } from './state.svelte.ts';
 	let {
 		name,
@@ -20,6 +20,7 @@
 		onfixframes,
 		oncapture,
 		onredraw,
+		ongenerateitems,
 		ondelete,
 		children
 	}: {
@@ -35,6 +36,8 @@
 		oncapture?: () => void;
 		/** Opens the move sheet to redraw this saved move. */
 		onredraw?: () => void;
+		/** Opens the picker for the equipment this move or State is still missing. */
+		ongenerateitems?: () => void;
 		ondelete: () => void | Promise<void>;
 		children: Snippet;
 	} = $props();
@@ -68,6 +71,19 @@
 				}}
 				><Pencil size={16} aria-hidden="true" />{openerLabel(t('toolbar.rename'))}<SurfaceChevron
 				/></button
+			>
+		{/if}
+		{#if ongenerateitems}
+			<button
+				class="row"
+				role="menuitem"
+				onclick={() => {
+					close();
+					ongenerateitems();
+				}}
+				><Sparkles size={16} aria-hidden="true" />{openerLabel(
+					t('itemGeneration.open')
+				)}<SurfaceChevron /></button
 			>
 		{/if}
 		{#if onredraw}

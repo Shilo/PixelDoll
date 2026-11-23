@@ -10,7 +10,7 @@
 	import { displayMove } from './displayMove.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
-	import { bodyClipThumbnail } from './moveThumbnails.ts';
+	import { lookClipThumbnail } from './moveThumbnails.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { ALL_CLIPS, ALL_MOVES, ALL_STATES, includesShareClip } from './shareClips.ts';
 	import {
@@ -341,9 +341,10 @@
 				selected={move}
 				bulk
 				thumbnail={(key) =>
-					store.project &&
-					bodyClipThumbnail(
-						store.project,
+					view.project &&
+					lookClipThumbnail(
+						view.project,
+						view.items,
 						key,
 						direction === ALL_DIRECTIONS ? ui.dir : (direction as DirectionName)
 					)}

@@ -640,6 +640,22 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	await expect(world(page)).toBeFocused();
 });
 
+test('dismissing a top-bar sheet on the world returns keyboard control to the world', async ({
+	page
+}) => {
+	await landing(page);
+	await page.keyboard.press('Enter');
+	await expect(world(page)).toBeFocused();
+	await page.getByRole('button', { name: 'Mount settings', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await expect(settings).toBeVisible();
+	await page.mouse.click(5, 5);
+	await expect(settings).toHaveCount(0);
+	await expect(world(page)).toBeFocused();
+	await page.keyboard.press('ArrowLeft');
+	await expect(world(page)).toHaveAttribute('data-facing', 'west');
+});
+
 test('Preview resolves partial chord releases, preserves pause and clip selection, and rejects stale repeats', async ({
 	page
 }) => {

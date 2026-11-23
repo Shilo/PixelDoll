@@ -186,7 +186,9 @@ import {
 	EST,
 	estimate,
 	extendable,
+	fixedPoses,
 	genDirs,
+	IMPORTED_MOTION,
 	isAuthoredAction,
 	moveAnimationModel,
 	moveDirections,
@@ -1425,6 +1427,9 @@ export interface Progress {
 	done: number;
 	total: number;
 	recIds: string[];
+	/** The items step only: finished views per item, and the item being drawn now. */
+	items?: Record<string, { done: number; total: number }>;
+	item?: string;
 }
 
 /** Creation = draw -> padded standing views -> re-import -> rest keypoints -> a Default-only rig (no animation calls).
@@ -1758,6 +1763,9 @@ export interface MoveSpec {
 	startFrom?: MoveSource;
 	action?: string;
 	text?: string;
+	/** Another body's move (Import moves): per drawn direction, its joints fitted to this body (lib/rig/moveImport.ts
+	 *  fitPose). Like an authored action, no motion request is bought; only the body is drawn in these poses. */
+	poses?: Partial<Record<DirectionName, Keypoint[][]>>;
 	frames: number;
 	animation?: MoveAnimationOptions;
 	items: string[];
@@ -2045,7 +2053,7 @@ function recoveryScopeIssue(
 	const authored =
 		!spec.itemsOnly &&
 		!spec.itemMethod &&
-		(isAuthoredAction(spec.action) ||
+		(fixedPoses(spec) ||
 			((allowMotion || moveAnimationModel(spec) !== 'skeleton-v3') && !bodyMoveIssue(m, spec))) &&
 		(!!spec.dirs?.length || moveAnimationModel(spec) !== 'skeleton-v3');
 	if (!authored)
@@ -2092,7 +2100,7 @@ export async function reviewMoveRecovery(
 	try {
 		const candidates: CachedBodyClip[] = [],
 			plan = await inspectMeasurementRecovery(context, inspection, true, candidates);
-		if (plan.checks && moveAnimationModel(spec) === 'skeleton-v3' && !isAuthoredAction(spec.action))
+		if (plan.checks && moveAnimationModel(spec) === 'skeleton-v3' && !fixedPoses(spec))
 			return unavailableOf([
 				new RecoveryUnavailable(
 					'Keeping this move requires completed cached joint checks for every frame.',
@@ -2112,7 +2120,7 @@ export async function reviewMoveRecovery(
 		let colorRepair: BodyPaletteRepairPlan | undefined;
 		const unavailable: RecoveryUnavailable[] = [];
 		try {
-			if (moveAnimationModel(spec) === 'skeleton-v3' && isAuthoredAction(spec.action))
+			if (moveAnimationModel(spec) === 'skeleton-v3' && fixedPoses(spec))
 				colorRepair = await inspectBodyPaletteRepair(context, inspection);
 		} catch (error) {
 			if (!(error instanceof RecoveryUnavailable)) throw error;
@@ -2306,7 +2314,8 @@ async function inspectMeasurementRecovery(
 			);
 		let keypoints: Keypoint[][] | undefined, notes: FrameNotes | undefined;
 		const authored = isAuthoredAction(spec.action);
-		if (model === 'skeleton-v3' && authored)
+		if (model === 'skeleton-v3' && spec.poses) keypoints = spec.poses[d];
+		else if (model === 'skeleton-v3' && authored)
 			keypoints = authoredPoses(
 				spec.action!,
 				fromApi(rest.keypoints, rig.cell),
@@ -2616,7 +2625,7 @@ export function bodyMoveIssue(
 		)
 	)
 		return moveReferenceIssue(m.rig.cell);
-	return gaitTemplate(s.action) || isAuthoredAction(s.action) || s.text?.trim()
+	return gaitTemplate(s.action) || fixedPoses(s) || s.text?.trim()
 		? undefined
 		: new LocalizedError(
 				`Describe this move before generating it.${suffix}`,
@@ -3064,6 +3073,7 @@ async function addMoveUnlocked(
 		);
 	const { rec, project: loaded } = await loadProject(projectId);
 	checkedReviewChoices(rec.manifest, spec);
+	checkedPoses(rec.manifest, spec);
 	// A staged review of this move decides first: a direct run would buy frames that could not be saved beside it.
 	if (!spec.itemsOnly && !spec.reviewBeforePublish && Object.hasOwn(rec.moveReviews ?? {}, spec.id))
 		throw new LocalizedError(
@@ -3274,23 +3284,26 @@ async function addMoveUnlocked(
 			)
 		};
 	});
-	const itemTotal = plans.reduce((total, plan) => {
-		if (spec.itemMethod) return total + plan.dirs.length;
+	const perItem: Record<string, { done: number; total: number }> = {};
+	for (const plan of plans) {
 		const item = fresh.rec.manifest.items.find((candidate) => candidate.id === plan.id)!;
-		return (
-			total +
-			itemPosePlan(
-				fresh.rec.manifest.rig,
-				{
-					...item,
-					slotConfig: requireSlot(fresh.rec.manifest, item.slot)
-				},
-				spec.id,
-				frames,
-				plan.dirs
-			).length
-		);
-	}, 0);
+		perItem[plan.id] = {
+			done: 0,
+			total: spec.itemMethod
+				? plan.dirs.length
+				: itemPosePlan(
+						fresh.rec.manifest.rig,
+						{
+							...item,
+							slotConfig: requireSlot(fresh.rec.manifest, item.slot)
+						},
+						spec.id,
+						frames,
+						plan.dirs
+					).length
+		};
+	}
+	const itemTotal = Object.values(perItem).reduce((total, item) => total + item.total, 0);
 	// Finished views were saved; Try again skips complete views unless it replaces the move, which redraws every view.
 	// A view saved only in part is not complete: Try again redraws all of its frames at its shown price, so the stop says so.
 	const partialSaved = (error: unknown): never => {
@@ -3342,11 +3355,27 @@ async function addMoveUnlocked(
 		(manifest: Manifest, item: Item): ItemViewTitle =>
 		(anim, dir) =>
 			message('activity.titleItemView', { item: item.name, ...viewWords(manifest, anim, dir) });
-	if (itemTotal) onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
-	const tick = () =>
-		onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
+	let drawing: string | undefined;
+	const report = () =>
+		onProgress({
+			step: 'items',
+			done: Math.min(itemTotal, posed),
+			total: itemTotal,
+			recIds: [],
+			items: structuredClone(perItem),
+			item: drawing
+		});
+	if (itemTotal) report();
+	const tick = () => {
+		posed++;
+		const item = drawing && perItem[drawing];
+		if (item) item.done = Math.min(item.total, item.done + 1);
+		report();
+	};
 	for (const plan of plans) {
 		if (!plan.dirs.length) continue;
+		drawing = plan.id;
+		report();
 		const ctx = await loadProject(projectId),
 			it = ctx.rec.manifest.items.find((i) => i.id === plan.id);
 		if (!it)
@@ -3679,6 +3708,7 @@ interface BodyClipPlan {
 	project: Project;
 	spec: MoveSpec;
 	model: ReturnType<typeof moveAnimationModel>;
+	/** Joints known before any request (fixedPoses): the authored action, or `imported` for spec.poses. */
 	authored?: string;
 	n: number;
 }
@@ -3689,7 +3719,14 @@ function bodyClipPlan(rec: StoredProject, project: Project, spec: MoveSpec): Bod
 		project,
 		spec,
 		model,
-		authored: model === 'skeleton-v3' && isAuthoredAction(spec.action) ? spec.action : undefined,
+		authored:
+			model !== 'skeleton-v3'
+				? undefined
+				: spec.poses
+					? IMPORTED_MOTION
+					: isAuthoredAction(spec.action)
+						? spec.action
+						: undefined,
 		n: moveFrames(rec.manifest, spec)
 	};
 }
@@ -3759,7 +3796,8 @@ async function bodyClip(
 		motionEcho: ClipSource['motionEcho'],
 		motionBridged: number[] | undefined,
 		notes: FrameNotes | undefined;
-	if (authored)
+	if (spec.poses) keypoints = spec.poses[d]!;
+	else if (authored)
 		keypoints = authoredPoses(
 			authored,
 			fromApi(restKps, rig.cell),
@@ -3838,6 +3876,33 @@ async function bodyClip(
 		})
 	};
 }
+/** Imported joints draw a whole new skeleton move: every drawn view, one frame count, every joint of every frame. */
+function checkedPoses(m: Manifest, spec: MoveSpec) {
+	if (spec.poses === undefined) return;
+	const views = genDirs(m),
+		entries = Object.entries(spec.poses);
+	if (
+		spec.itemsOnly ||
+		spec.replace ||
+		spec.action ||
+		spec.startFrom ||
+		spec.keepUnposed ||
+		moveAnimationModel(spec) !== 'skeleton-v3' ||
+		entries.length !== views.length ||
+		new Set(entries.map(([, frames]) => (Array.isArray(frames) ? frames.length : -1))).size !== 1 ||
+		entries.some(
+			([dir, frames]) =>
+				!views.includes(dir as DirectionName) ||
+				!Array.isArray(frames) ||
+				!frames.length ||
+				!frames.every(hasAll)
+		)
+	)
+		throw new LocalizedError(
+			'This review choice no longer matches the move. Review it again. No request was made.',
+			'create.errors.reviewChoiceInvalid'
+		);
+}
 /** Review choices are exact: salts and lifts only for drawn views, lifts only for a generated motion source. */
 function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 	const views = genDirs(m),
@@ -3906,7 +3971,7 @@ function checkedReviewChoices(m: Manifest, spec: MoveSpec) {
 		if (
 			!entries ||
 			moveAnimationModel(spec) !== 'skeleton-v3' ||
-			isAuthoredAction(spec.action) ||
+			fixedPoses(spec) ||
 			entries.some(
 				([dir, lifts]) =>
 					!views.includes(dir as DirectionName) ||
@@ -4564,7 +4629,7 @@ async function addBodyClip(
 	const frameMs = defaultMs(spec.id);
 	const referenceCount =
 		model === 'skeleton-v3' && (authored || spec.action === 'walk')
-			? moveFrames(m, { action: spec.action, frames: spec.frames })
+			? moveFrames(m, { action: spec.action, frames: spec.frames, poses: spec.poses })
 			: n;
 	const durationMs = referenceCount * frameMs;
 	const anim: RigAnimation = {
@@ -4647,9 +4712,11 @@ async function addBodyClip(
 					? `${model}:${spec.text?.trim() || spec.action || spec.id}`
 					: spec.action === 'walk' && moveMotionSource(spec) === undefined
 						? 'managed-skeleton-v3:walking-8-frames'
-						: authored
-							? `authored:${spec.action}`
-							: `pixminimax:${spec.text?.trim() || spec.action || spec.id}`,
+						: spec.poses
+							? IMPORTED_MOTION
+							: authored
+								? `authored:${spec.action}`
+								: `pixminimax:${spec.text?.trim() || spec.action || spec.id}`,
 			measured: c.out.measured.map((x) => x ?? []),
 			...(c.out.processing ? { processing: c.out.processing } : {}),
 			...(c.motionEcho ? { motionEcho: c.motionEcho } : {}),

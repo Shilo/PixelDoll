@@ -283,7 +283,10 @@ compare the weapon on the original body: removing the model's temporary body col
 - **Random look** (shuffle icon) picks a random outfit.
 - The **details** button beside the selected item opens the **Item** sheet. You can change its layer order, choose which items it hides when worn
   ("When worn, hide"), take it off, or remove it for good.
-- **Undo** and **Redo** are in the toolbar (Ctrl+Z, Ctrl+Shift+Z).
+- **Undo** and **Redo** are in the toolbar (Ctrl+Z, Ctrl+Shift+Z). Besides dressing, they cover renames, moving an item to
+  another slot, the move description, Adjust frame, Directions, Fix frames and Match item colors. Each character keeps its
+  own history while the page is open. A step that something newer has changed since (in this tab or another) is refused
+  and stays, rather than overwriting that change.
 - **Outfits**: press **Save current look** and give it a name. Outfits are exported too, so your game can switch between them.
 
 Changes save automatically in this browser on this device. If storage fails, follow the visible error and retry. Export

@@ -23,7 +23,7 @@
 		isDemo,
 		prepareFrames,
 		replaceFrames,
-		revertFrames,
+		restoreFrames,
 		store,
 		ui
 	} from './state.svelte.ts';
@@ -32,6 +32,7 @@
 	import { applyPlan, editedCount, editedFrames, frameTile } from '../lib/frames/fix.ts';
 	import type { PreparedFrames } from '../lib/frames/save.ts';
 	import type { DirectionName, Project } from '../lib/store/manifest.ts';
+	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 
 	const p = $derived(store.project);
 	const m = $derived(p?.manifest);
@@ -194,7 +195,7 @@
 		working = 'restoring';
 		error = null;
 		try {
-			await revertFrames(doc.id, item.id, 'restore');
+			await restoreFrames(doc.id, item.id);
 		} finally {
 			working = '';
 			confirmRestore = false;
@@ -382,6 +383,9 @@
 					</div>
 				{/if}
 				<ul class="notes small">
+					{#if isBody && move.id === DEFAULT_MOVE && prepared.plan.changed.length}<li>
+							<TriangleAlert size={14} />{t('fixFrames.notes.description')}
+						</li>{/if}
 					{#if prepared.plan.softAlpha}<li>
 							<TriangleAlert size={14} />{t('fixFrames.notes.softAlpha', {
 								count: prepared.plan.softAlpha,

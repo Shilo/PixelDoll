@@ -70,6 +70,8 @@
 	let titleElement = $state<HTMLHeadingElement>();
 	/** The exit waiting on Discard changes?. */
 	let discarding = $state<(() => void) | null>(null);
+	/** The backdrop is the world: dismissing there gives the keyboard back to the scene, not the opener. */
+	let restoreScene = false;
 	/** The footer's height, so a full-window screen's form can scroll clear of a footer floating over it. */
 	let footHeight = $state(0);
 	// The native `close` event from our own unmount fires after a replacement sheet is already set; ignore it.
@@ -83,6 +85,11 @@
 		else exit();
 	}
 	const requestClose = () => guarded(onclose);
+	const dismissFromBackdrop = () => {
+		if (locked || discarding) return;
+		restoreScene = true;
+		requestClose();
+	};
 	const goBack = $derived(backTo && backDiscards ? () => guarded(backTo as () => void) : backTo);
 	$effect(() => {
 		ui.sheetBusy = locked;
@@ -115,7 +122,11 @@
 		return () => {
 			unmounting = true;
 			dlg.close();
-			restoreTrigger(opener);
+			const scene = restoreScene
+				? document.querySelector<HTMLElement>('.world-stage, .selection-world')
+				: null;
+			if (scene) scene.focus({ preventScroll: true });
+			else restoreTrigger(opener);
 		};
 	});
 	const showDeveloper = $derived(!!developer && developerModeEnabled());
@@ -138,7 +149,7 @@
 		e.preventDefault();
 		requestClose();
 	}}
-	use:backdropDismiss={requestClose}
+	use:backdropDismiss={dismissFromBackdrop}
 >
 	<SurfaceHeader
 		{title}
@@ -174,7 +185,10 @@
 		title={t('common.discardChangesTitle')}
 		action={t('common.discard')}
 		cancel={t('common.keepEditing')}
-		oncancel={() => (discarding = null)}
+		oncancel={() => {
+			restoreScene = false;
+			discarding = null;
+		}}
 		onconfirm={() => {
 			const exit = discarding;
 			discarding = null;

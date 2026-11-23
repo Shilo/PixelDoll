@@ -30,6 +30,7 @@
 		blockedByWork,
 		doc,
 		flushSave,
+		splitBeforeEdit,
 		frameEditsBlocked,
 		openPendingWork,
 		ui
@@ -110,6 +111,7 @@
 		void (async () => {
 			try {
 				await flushSave();
+				await splitBeforeEdit(projectId);
 				const saved = await loadProject(projectId, controller.signal);
 				if (saved.rec.origin !== 'studio')
 					throw new LocalizedError(

@@ -1214,8 +1214,21 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(settings).toBeVisible();
 	await review.click();
-	await confirmation.getByRole('button', { name: 'Remove permanently' }).click();
+	await confirmation.getByRole('button', { name: 'Remove', exact: true }).click();
 	await expect(settings).toBeHidden();
+	// The removal is one history step: Undo brings the directions back and Redo removes them again.
+	const undo = page.locator('.header-undo'),
+		redo = page.locator('.header-redo');
+	await expect(undo).toHaveAccessibleName('Undo Change directions');
+	await undo.click();
+	await expect(redo).toHaveAccessibleName('Redo Change directions');
+	await openDirections();
+	await expect(northWest).toHaveAttribute('aria-pressed', 'true');
+	await expect(southEast).toHaveAttribute('aria-pressed', 'true');
+	await page.keyboard.press('Escape');
+	await expect(settings).toBeHidden();
+	await redo.click();
+	await expect(undo).toHaveAccessibleName('Undo Change directions');
 	await reloadStudio(page);
 	await openDirections();
 	await expect(northWest).toHaveCount(0);
@@ -1302,10 +1315,17 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await size.fill('64');
 	await save.click();
 	await expect(frame).toBeHidden();
+	// The notice's Undo is the history step's: Redo then makes the change again.
 	await notice.getByRole('button', { name: /Frame adjusted/ }).click();
-	await expect(notice).toContainText('Frame change undone.');
+	await expect(page.locator('.header-redo')).toHaveAccessibleName('Redo Adjust frame');
 	frame = await openFrame();
 	await expect(size).toHaveValue('80');
+	await page.keyboard.press('Escape');
+	await expect(frame).toBeHidden();
+	await page.locator('.header-redo').click();
+	await expect(page.locator('.header-undo')).toHaveAccessibleName('Undo Adjust frame');
+	frame = await openFrame();
+	await expect(size).toHaveValue('64');
 });
 
 test('browser Back respects an atomic import and closes sheets after it finishes', async ({
@@ -2215,6 +2235,62 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	expect(requests).toEqual([]);
 });
 
+test('Import moves brings a deleted move back free from the character ZIP', async ({
+	page,
+	context
+}) => {
+	const requests: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		requests.push(route.request().method());
+		await route.abort();
+	});
+	await openStudio(page, '/');
+	await expect(page.locator('.world-actors').first()).toBeVisible();
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const download = page.waitForEvent('download');
+	await page.getByRole('button', { name: /Download ZIP/ }).click();
+	const bytes = await readFile((await (await download).path())!);
+	await page.locator('.project-btn').click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page
+		.getByLabel('Character ZIP', { exact: true })
+		.setInputFiles({ name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes });
+	await page.getByLabel('Character name', { exact: true }).fill('Move owner');
+	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('button', { name: 'Import character', exact: true }).click();
+	await expect(page.locator('.project-btn')).toContainText('Move owner', { timeout: 30_000 });
+	await equipmentMode(page, 'Moves');
+	const punch = page.locator('.move-list .move-row').filter({ hasText: 'Cross punch' });
+	await punch.click({ button: 'right' });
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
+	await expect(punch).toHaveCount(0);
+	await page.getByRole('button', { name: 'Import moves...', exact: true }).click();
+	const sheet = page.getByRole('dialog', { name: 'Import moves', exact: true });
+	await sheet
+		.getByLabel('PixelDoll ZIP', { exact: true })
+		.setInputFiles({ name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes });
+	await expect(sheet.getByRole('status')).toHaveText(
+		'Made for this character. Its frames fit as they are.'
+	);
+	await expect(sheet.getByRole('checkbox', { name: 'Cross punch', exact: true })).toBeChecked();
+	await expect(sheet).toContainText('Already on this character');
+	await sheet.getByRole('button', { name: 'Import', exact: true }).click();
+	await expect(sheet).toBeHidden({ timeout: 30_000 });
+	await expect(punch).toHaveCount(1);
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await expect(punch).toHaveCount(1);
+	expect(requests).toEqual([]);
+});
+
 test('PixelLab library connection, pagination and direct import use only free reads', async ({
 	page,
 	context
@@ -2620,6 +2696,42 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		id: 'managed-parity-fixture',
 		looks: 'red hair, blue coat and boots'
 	});
+	// The description new moves send changes for free, without a new registration; setup reuses its paid joint check.
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click();
+	const setup = page.getByRole('dialog', { name: 'Set up character', exact: true });
+	await expect(setup).toContainText('0.25 gens estimated');
+	const appearance = setup.getByRole('textbox', { name: /Existing appearance/ });
+	await expect(appearance).toHaveValue('red hair, blue coat and boots');
+	await appearance.fill('bald, gray tunic, bare feet');
+	await setup.getByRole('button', { name: 'Save description', exact: true }).click();
+	await expect(setup).toContainText('Description saved. New moves use it.');
+	await expect(setup.getByRole('button', { name: 'Save description', exact: true })).toBeDisabled();
+	expect((await read()).character).toEqual({
+		id: 'managed-parity-fixture',
+		looks: 'bald, gray tunic, bare feet'
+	});
+	// Setting up a rigged character again only reconnects it: no joint check, and every pose, anchor and skeleton stays.
+	const rigged = await read(),
+		checks = posts.filter((p) => p.path.endsWith('/estimate-skeleton')).length;
+	await expect(setup).toContainText(
+		'Reconnecting keeps every pose, item fit and frame as they are. 0.25 gens estimated'
+	);
+	await setup.getByRole('button', { name: /^Set up.*0.25 gens$/ }).click();
+	await expect(setup).toContainText(
+		'Ready. You can add equipment and moves fitted to this character.',
+		{ timeout: 30_000 }
+	);
+	await setup.getByRole('button', { name: 'Start dressing up' }).click();
+	const reconnected = await read();
+	expect(posts.filter((p) => p.path.endsWith('/estimate-skeleton'))).toHaveLength(checks);
+	expect(posts.filter((p) => p.path.endsWith('/create-character-v3'))).toHaveLength(2);
+	expect(posts.findLast((p) => p.path.endsWith('/create-character-v3'))!.body.description).toBe(
+		'bald, gray tunic, bare feet'
+	);
+	expect(reconnected.manifest.rig).toEqual(rigged.manifest.rig);
+	expect(reconnected.skeletons).toEqual(rigged.skeletons);
+	expect(reconnected.rigQa).toEqual(rigged.rigQa);
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'New State...', exact: true }).click();
 	const emptyCapture = page.getByRole('dialog', { name: 'New State', exact: true });
@@ -2698,7 +2810,13 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		'west'
 	]);
 	expect(registration.description).toBe('red hair, blue coat and boots');
+	expect(posts.filter((p) => p.path.endsWith('/create-character-v3'))).toHaveLength(2);
 	expect(posts.filter((p) => p.path.endsWith('/animate-with-skeleton-v3'))).toHaveLength(4);
+	expect(
+		posts
+			.filter((p) => p.path.endsWith('/animate-with-skeleton-v3'))
+			.every((p) => p.body.description === 'bald, gray tunic, bare feet')
+	).toBe(true);
 	expect(
 		posts
 			.filter((p) => p.path.endsWith('/animate-with-skeleton-v3'))
@@ -2832,7 +2950,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		expect(cells['rest-pose'][direction]).toEqual([cells.idle[direction]![chosenCell]]);
 	const panel = page.getByRole('tabpanel', { name: 'States', exact: true });
 	const addState = panel.getByRole('button', { name: 'New State...', exact: true });
-	await expect(panel.locator('.cta + details')).toBeVisible();
+	await expect(panel.locator('.add-line + details')).toBeVisible();
 	await addState.click();
 	await createState.getByRole('button', { name: 'Source: Standing', exact: true }).click();
 	const sources = page.getByRole('menu', { name: 'Source' });
@@ -2860,7 +2978,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(addState).toBeFocused();
 	await equipmentMode(page, 'Moves');
 	await expect(
-		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.cta + details')
+		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.add-line + details')
 	).toBeVisible();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	const moveSheet = page.getByRole('dialog', { name: 'New move' });
@@ -4116,6 +4234,13 @@ test('rename display names and export IDs without changing saved keys or calling
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
 	await rename('Rename move', 'Stroll', 'stroll');
+	await expect(page.locator('.move-list')).toContainText('Stroll');
+	// A rename is one history step.
+	await expect(page.locator('.header-undo')).toHaveAccessibleName('Undo Rename move');
+	await page.locator('.header-undo').click();
+	await expect(page.locator('.move-list')).not.toContainText('Stroll');
+	await expect(page.locator('.header-redo')).toHaveAccessibleName('Redo Rename move');
+	await page.locator('.header-redo').click();
 	await expect(page.locator('.move-list')).toContainText('Stroll');
 	// Paid item requests confirm against the saved rig's JSON: a rename must leave both identical.
 	expect(

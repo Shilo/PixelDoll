@@ -2,6 +2,11 @@ import { expect, test } from 'vitest';
 import { equipmentFixture } from './equipment-fixture.ts';
 import { coverage, itemRoute, standingCoverage } from '../../src/studio/itemRoute.ts';
 import { itemMoveOffer, missingItemMoves } from '../../src/studio/create.ts';
+import {
+	clipItemCoverage,
+	clipItemOffer,
+	clipMissingItems
+} from '../../src/studio/itemGeneration.ts';
 import { itemPlan, movePlan } from '../../src/studio/apiPlans.ts';
 import {
 	hasCells,
@@ -17,6 +22,10 @@ import { splitBase } from '../../src/lib/dress/regions.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import { rigReady } from '../../src/lib/rig/setup.ts';
+import { wearClip } from '../../src/studio/model.ts';
+import { itemJobs } from '../../src/studio/itemJobs.ts';
+import type { MoveSpec } from '../../src/studio/create.ts';
+import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 
 async function fixture(names: [string, number][] = [], dirs: DirectionName[] = ['south']) {
 	const project = await equipmentFixture(),
@@ -318,4 +327,125 @@ test('a shared copy missing some frames of a move reports them, while recorded t
 	expect(missingFrames(m, hat, 'cast', 'south')).toEqual([4, 5, 6, 7]);
 	expect(coverageGaps(m, hat)).toEqual(['cast/south']);
 	hat.layers[0].cells!.cast.south = drawn;
+});
+
+test('move and State item counts need every body view complete, and offers keep the chosen views', async () => {
+	const ctx = await fixture([['spell_charge', 3]], ['south', 'east']),
+		m = ctx.rec.manifest;
+	m.rig.directions.push({ id: 'west', mirrorOf: 'east' });
+	// Intentionally transparent east frames count; the missing south view leaves the hat out of Spell charge.
+	m.items[1].layers[0].cells!.spell_charge = { east: Array(3).fill(null) };
+	m.items[1].coverage!.push(
+		...Array.from({ length: 3 }, (_, i) => `spell_charge/east/${i}` as const)
+	);
+	expect(clipItemCoverage(m, 'still-custom')).toEqual({ drawn: 1, total: 1 });
+	expect(clipItemCoverage(m, 'spell_charge')).toEqual({ drawn: 0, total: 1 });
+	expect(clipItemCoverage(m, 'no_such_move')).toBeNull();
+	expect(clipMissingItems(m, 'spell_charge').map((it) => it.id)).toEqual(['hat']);
+	expect(clipMissingItems(m, 'still-custom')).toEqual([]);
+	expect(clipItemOffer(m, 'hat', 'spell_charge')?.specs[0]).toMatchObject({
+		id: 'spell_charge',
+		items: ['hat'],
+		dirs: ['south'],
+		itemsOnly: true
+	});
+	// A reviewed move only offers the views it accepted.
+	expect(clipItemOffer(m, 'hat', 'spell_charge', { dirs: ['east'] })).toBeNull();
+	expect(clipItemOffer(m, 'hat', 'still-custom')).toBeNull();
+});
+
+test('Wear shows a dimmed item where it is drawn: Standing first, else the first move or State that has it', async () => {
+	const ctx = await fixture([['spell_charge', 3]]),
+		m = ctx.rec.manifest,
+		hat = m.items[1];
+	expect(wearClip(m, hat, 'still-custom')).toBeUndefined();
+	expect(wearClip(m, hat, 'spell_charge')).toBe('still-custom');
+	m.rig.animations.push({ ...m.rig.animations[0], id: 'default' });
+	hat.layers[0].cells!.default = { south: [null] };
+	hat.coverage!.push('default/south/0');
+	expect(wearClip(m, hat, 'spell_charge')).toBe('default');
+	hat.coverage = [];
+	expect(wearClip(m, hat, 'spell_charge')).toBeUndefined();
+});
+
+test('item jobs report each item on its move: the one drawing with its share done, the rest queued', () => {
+	const spec = (id: string, items: string[], more: Partial<MoveSpec> = {}) =>
+		({ id, items, frames: 4, seed: 1, itemsOnly: true, ...more }) as MoveSpec;
+	const call = (progress: number) => ({
+		id: 'c',
+		status: 'processing',
+		done: false,
+		progress,
+		results: []
+	});
+	const jobs = [
+		{ activityScope: 'scope-walk', state: 'running', jobs: [call(0.5)] },
+		{ activityScope: 'other', state: 'running', jobs: [call(1)] }
+	] as unknown as JobRec[];
+	const progress = {
+		step: 'items',
+		done: 3,
+		total: 8,
+		recIds: [],
+		items: {
+			hat: { done: 4, total: 4 },
+			cape: { done: 1, total: 4 },
+			boots: { done: 0, total: 0 }
+		},
+		item: 'cape'
+	};
+	const running = spec('walk', ['hat', 'cape', 'boots', 'belt'], { activityScope: 'scope-walk' });
+	// Hat is finished and Boots had nothing to draw; Cape is 1 of 4 views plus half a view in flight.
+	expect(
+		itemJobs({ spec: running, progress, attention: false }, [spec('rest', ['hat'])], jobs)
+	).toEqual([
+		{ clip: 'walk', item: 'cape', status: 'drawing', percent: 38 },
+		{ clip: 'walk', item: 'belt', status: 'queued', percent: 0 },
+		{ clip: 'rest', item: 'hat', status: 'queued', percent: 0 }
+	]);
+	// Before its items step, the first item counts as drawing; a body move and a job needing attention list nothing.
+	expect(itemJobs({ spec: running, progress: null, attention: false }, [], [])[0]).toMatchObject({
+		item: 'hat',
+		status: 'drawing',
+		percent: 0
+	});
+	// The item being saved stays the one drawing until the pipeline moves on; requests in flight never make a view.
+	const busy = [0.6, 0.6, 0.6].map((share) => ({
+		activityScope: 'scope-walk',
+		state: 'running',
+		jobs: [call(share)]
+	})) as unknown as JobRec[];
+	expect(
+		itemJobs(
+			{
+				spec: running,
+				progress: { ...progress, items: { ...progress.items, cape: { done: 4, total: 4 } } },
+				attention: false
+			},
+			[],
+			busy
+		).slice(0, 2)
+	).toEqual([
+		{ clip: 'walk', item: 'cape', status: 'drawing', percent: 99 },
+		{ clip: 'walk', item: 'belt', status: 'queued', percent: 0 }
+	]);
+	expect(
+		itemJobs(
+			{
+				spec: running,
+				progress: { ...progress, items: { ...progress.items, cape: { done: 0, total: 4 } } },
+				attention: false
+			},
+			[],
+			busy
+		)[0].percent
+	).toBe(23);
+	expect(itemJobs({ spec: running, progress, attention: true }, [], jobs)).toEqual([]);
+	expect(
+		itemJobs(
+			{ spec: spec('jump', ['hat'], { itemsOnly: undefined }), progress, attention: false },
+			[],
+			jobs
+		)
+	).toEqual([]);
 });

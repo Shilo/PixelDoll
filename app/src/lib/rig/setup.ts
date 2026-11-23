@@ -34,6 +34,9 @@ export interface SetupPlan {
 	skipped: string[];
 	gens: number;
 	warnings: string[];
+	/** The rig already holds its poses (rigReady without a registration): setup only registers the standing views again and
+	 *  keeps every pose, anchor and skeleton, so it measures nothing. */
+	reconnect: boolean;
 }
 export const STATE_CAPTURE_MODE = 'state-capture';
 
@@ -126,7 +129,8 @@ export async function setupPlan(
 	p: Project,
 	restAnim?: string,
 	/** A move's name in the user's words for a message (the studio passes its display name). */
-	moveWords: (id: string) => Message | string = (id) => id
+	moveWords: (id: string) => Message | string = (id) => id,
+	reconnect = false
 ): Promise<SetupPlan> {
 	const m = p.manifest,
 		rig = m.rig,
@@ -178,7 +182,7 @@ export async function setupPlan(
 				`${d.id} leaves ${top} px above the head; tall hair or hats may need a larger frame.`
 			);
 		rest[d.id] = im;
-		frames.set(await cellHash(im), im);
+		if (!reconnect) frames.set(await cellHash(im), im);
 	}
 	for (const { id, mirrorOf: source } of rig.directions) {
 		if (rest[id] || !source || source !== mirrorPartner(id)) continue;
@@ -202,7 +206,8 @@ export async function setupPlan(
 			'setup.errors.needsStandingViews'
 		);
 	const skipped: string[] = [];
-	for (const clip of rig.animations) {
+	// Reconnecting keeps every pose, so items keep fitting future moves as before.
+	for (const clip of reconnect ? [] : rig.animations) {
 		const rows = rig.directions
 			.filter((d) => !d.mirrorOf)
 			.map((d) =>
@@ -226,7 +231,7 @@ export async function setupPlan(
 				// A skipped standing move still measures its reference frame, which keys the anchors.
 				if (usable(im) && (!gap.length || required(i))) frames.set(await cellHash(im), im);
 	}
-	for (const it of m.items.filter((i) => i.slot !== 'body' && !i.dressed))
+	for (const it of reconnect ? [] : m.items.filter((i) => i.slot !== 'body' && !i.dressed))
 		warnings.push(
 			`${it.name} keeps its existing frames. Make it again after setup to animate it onto future moves.`
 		);
@@ -242,7 +247,8 @@ export async function setupPlan(
 		frames,
 		skipped,
 		gens: +(0.25 + frames.size * 0.1).toFixed(2),
-		warnings
+		warnings,
+		reconnect
 	};
 }
 

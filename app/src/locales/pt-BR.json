@@ -406,7 +406,7 @@
 			"one": "Remover {n} direção?",
 			"other": "Remover {n} direções?"
 		},
-		"removePermanently": "Remover permanentemente",
+		"remove": "Remover",
 		"removing": "Removendo…",
 		"savedOnly": "Você só pode editar personagens salvos.",
 		"waitForGeneration": "Aguarde até que as gerações em andamento terminem.",
@@ -417,13 +417,13 @@
 		"saving": "Salvando…",
 		"reviewChanges": "Revisar alterações",
 		"changeTitle": "Alterar direções?",
-		"confirmMixedRemoval": "Estas direções serão removidas das animações e dos equipamentos do personagem: {directions}. Não é possível desfazer essa ação.",
+		"confirmMixedRemoval": "Estas direções serão removidas das animações e dos equipamentos do personagem: {directions}. Até você recarregar ou fechar esta página, Desfazer pode trazê-las de volta se nada mais mudar este personagem antes.",
 		"confirmReplace": "O espelhamento substitui a arte de {directions} pelos quadros invertidos da vista oposta. Se você desativar o espelhamento depois, os quadros invertidos serão mantidos. Baixe um backup para guardar a arte original.",
 		"labelDirectionsToKeep": "Direções a manter",
 		"loadingDirections": "Carregando direções…",
 		"downloadBackup": "Baixar cópia de segurança",
 		"reviewRemoval": "Revisar remoção",
-		"confirmRemoval": "Estas direções serão removidas das animações e dos equipamentos deste personagem: {directions}. As outras direções não mudam. Não é possível desfazer essa ação.",
+		"confirmRemoval": "Estas direções serão removidas das animações e dos equipamentos deste personagem: {directions}. As outras direções não mudam. Até você recarregar ou fechar esta página, Desfazer pode trazê-las de volta se nada mais mudar este personagem antes.",
 		"rPGMakerExportNeedsAllFourCardinal": "A exportação para RPG Maker precisa das quatro direções cardeais.",
 		"directionsWereSavedReloadToRefreshThe": "As direções foram salvas. Recarregue a página para atualizar o personagem.",
 		"directionsWereSavedReloadToRefreshThe2": "As direções foram salvas. Recarregue a página para atualizar o personagem: {reason}"
@@ -793,6 +793,8 @@
 		"itemMoved": "{name} foi movido para {label}.",
 		"itemMoveBusy": "Conclua ou descarte a geração relacionada antes de mover este item.",
 		"itemMoveChanged": "O item ou o espaço mudou. Tente novamente.",
+		"itemMoving": "Outro item ainda está sendo movido. Tente novamente quando terminar.",
+		"itemNotReady": "Este item ainda está sendo criado ou revisado. Tente novamente quando ele for salvo.",
 		"notShownInMove": "Não aparece nesta animação",
 		"notShownInMoveNote": "O item está equipado, mas não aparece porque faltam quadros em todas as vistas desta animação.",
 		"randomLowerItem": "Sortear item: {lower}",
@@ -854,7 +856,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, equipado",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "sendo desenhado para {move}, {percent}",
+		"itemQueued": "na fila para {move}"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "A demo não precisa de conta. Para criar, você usa suas gerações do {pixelLab}.",
@@ -964,6 +968,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Conclua ou descarte o trabalho de geração pendente antes de ajustar o quadro.",
+		"finishBeforeMoveImport": "Conclua ou dispense as gerações pendentes antes de importar movimentos.",
 		"couldNotCheckNamedFrames": "Não foi possível verificar os quadros de {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Não foi possível verificar os quadros de {names}.",
 		"copyMissingOneMove": "Faltam quadros em {move}; o item fica oculto nela.",
@@ -1101,7 +1106,16 @@
 		"changeCategory": "Alterar {name}",
 		"deleteCategory": "Excluir {name}",
 		"deleteItem": "Excluir {name}",
-		"deleteMove": "Excluir {name}"
+		"deleteMove": "Excluir {name}",
+		"moveItem": "Mover {name}",
+		"changeDirections": "Alterar direções",
+		"restoreOriginals": "Restaurar originais",
+		"changeDescription": "Alterar descrição",
+		"changed": "Esta etapa foi removida do histórico: o personagem mudou desde então, então ela não pode mais ser desfeita nem refeita.",
+		"notRecorded": "Salvo, mas esta alteração não pode ser desfeita: alguns dos quadros dela não estão mais salvos.",
+		"busy": "Aguarde o último Desfazer ou Refazer terminar. Se nunca terminar, recarregue a página.",
+		"notInHistory": "Esta etapa não está mais no histórico.",
+		"saveFailed": "Não foi possível salvar suas últimas alterações. Resolva o erro de armazenamento e tente novamente."
 	},
 	"export": {
 		"sheet": {
@@ -2171,7 +2185,20 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
 		"waitingForRepairReview": "Aguardando a revisão dos quadros do item",
-		"needsRedo": "Articulações não encontradas: redesenhe para animar itens nela"
+		"needsRedo": "Articulações não encontradas: redesenhe para animar itens nela",
+		"itemsDrawn": {
+			"one": "{drawn} de {n} item desenhado",
+			"other": "{drawn} de {n} itens desenhados"
+		},
+		"drawingItem": "Desenhando {item}",
+		"moreQueued": {
+			"one": "mais {n} na fila",
+			"other": "mais {n} na fila"
+		},
+		"itemsQueued": {
+			"one": "{n} item na fila",
+			"other": "{n} itens na fila"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2196,8 +2223,12 @@
 		"appearance": "Aparência atual",
 		"appearancePlaceholder": "Descreva o corpo, o cabelo, as cores e as roupas que já aparecem na arte",
 		"appearanceHelp": "Isso orienta as novas animações. Inclua o cabelo e as roupas atuais. A configuração não consegue separá-los da base.",
+		"appearanceSaveHelp": "Isso orienta as novas animações. Inclua o cabelo e as roupas atuais. Salvar uma alteração é grátis.",
+		"saveDescription": "Salvar descrição",
+		"descriptionSaved": "Descrição salva. As novas animações vão usá-la.",
 		"estimate": "{frames} quadros únicos do corpo · estimativa de {gens} gerações. Inclui {connection} geração para vincular a conta. Medições salvas correspondentes são reaproveitadas.",
 		"willSkip": "{moves} será ignorado: cada um tem um quadro vazio, então nada é gasto com ele. Corrija esses quadros ou crie os movimentos novamente para animar itens neles.",
+		"reconnectEstimate": "Reconectar mantém todas as poses, ajustes de itens e quadros como estão. Estimativa de {gens} gerações pela conexão da conta.",
 		"busyElsewhere": "Conclua a outra operação do personagem antes de iniciar a configuração.",
 		"resumeRigSetup": "Retomar configuração do rig",
 		"dismiss": "Descartar configuração",
@@ -2596,13 +2627,13 @@
 			"save": "Salvar animação",
 			"replace": "Substituir animação",
 			"discardDraft": "Descartar rascunho",
-			"titleItems": "Animar itens",
-			"chooseFor": "Escolha os itens que você quer animar em {move}.",
+			"titleItems": "Gerar itens",
+			"chooseFor": "Escolha os itens que você quer gerar em {move}.",
 			"total": "~{gens} gerações a mais",
 			"selected": "Selecionado",
 			"animateCount": {
-				"one": "Animar {n} item",
-				"other": "Animar {n} itens"
+				"one": "Gerar {n} item",
+				"other": "Gerar {n} itens"
 			},
 			"unavailable": "Indisponível",
 			"findings": "Notas de qualidade",
@@ -2611,7 +2642,9 @@
 			"beforeItems": "Revise a animação antes de animar itens.",
 			"changed": "O personagem ou a animação mudou. Abra a revisão novamente.",
 			"missingFrames": "Os quadros revisados não estão mais disponíveis.",
-			"tier": "Seu plano do PixelLab não oferece suporte a alguns dos itens selecionados."
+			"tier": "Seu plano do PixelLab não oferece suporte a alguns dos itens selecionados.",
+			"notNow": "Agora não",
+			"later": "Você pode gerar itens para {move} depois, pelo menu dela em Animações."
 		},
 		"thatCharacter": "esse personagem",
 		"retryLabel": "Gerar animação novamente",
@@ -3078,10 +3111,6 @@
 			"other": "{count} quadros de {name} substituídos."
 		},
 		"undo": "Desfazer",
-		"undone": {
-			"one": "{count} quadro desfeito.",
-			"other": "{count} quadros desfeitos."
-		},
 		"restored": {
 			"one": "{count} quadro original restaurado.",
 			"other": "{count} quadros originais restaurados."
@@ -3103,7 +3132,8 @@
 				"other": "{n} outros arquivos foram ignorados."
 			},
 			"fitted": "Os itens ajustados a estes quadros do corpo base continuam vestidos: {names}. Confira-os nos quadros alterados.",
-			"emptiedBody": "Um quadro vazio do corpo base é ignorado quando novos itens são criados para ele."
+			"emptiedBody": "Um quadro vazio do corpo base é ignorado quando novos itens são criados para ele.",
+			"description": "As novas animações seguem a descrição do personagem. Se você mudou o cabelo ou as roupas, atualize-a em Configurar personagem."
 		},
 		"errors": {
 			"size": "Este PNG tem {got} px, mas estes quadros precisam de {want} px. Mantenha o tamanho e a grade originais.",
@@ -3202,7 +3232,6 @@
 		"consequences": "Itens só são copiados exatamente entre personagens com o mesmo tamanho e posição de quadro. As exportações mantêm a mesma escala e origem no jogo; exporte de novo para usar a mudança.",
 		"loading": "Carregando o quadro…",
 		"saved": "Quadro ajustado: {change}.",
-		"undone": "Mudança no quadro desfeita.",
 		"errors": {
 			"reviewOpen": "Salve ou descarte a animação aguardando revisão antes de ajustar o quadro.",
 			"statePending": "Salve ou descarte o estado pendente antes de ajustar o quadro.",
@@ -3215,8 +3244,7 @@
 			"unchanged": "Mude o tamanho ou a posição do quadro primeiro.",
 			"limit": "Nem um quadro de {size} px consegue dar espaço para as animações deste personagem.",
 			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de ajustar o quadro.",
-			"changed": "Este personagem mudou. Abra Ajustar quadro de novo para revisar a versão mais recente.",
-			"undoFailed": "Não foi possível desfazer a mudança no quadro."
+			"changed": "Este personagem mudou. Abra Ajustar quadro de novo para revisar a versão mais recente."
 		}
 	},
 	"costSheet": {
@@ -3370,6 +3398,59 @@
 			"browser": "Use um navegador atual para continuar.",
 			"exportId": "Escolha outro ID de exportação.",
 			"busy": "Aguarde um momento e tente novamente."
+		}
+	},
+	"itemGeneration": {
+		"open": "Gerar itens",
+		"title": "Gerar itens para {move}",
+		"inProgress": "Em andamento",
+		"allDrawn": "Todos os itens já estão desenhados para {move}.",
+		"noneAvailable": "Nenhum destes itens pode ser gerado para {move}.",
+		"notDrawnFor": "Ainda não desenhado para {move}",
+		"generateFor": "Gerar para {move}",
+		"wearOn": "Equipar em {move}"
+	},
+	"moveImport": {
+		"title": "Importar animações",
+		"importMoves": "Importar animações",
+		"importStates": "Importar estados",
+		"dropArea": "Área para soltar o ZIP do PixelDoll",
+		"drop": "Solte um ZIP do PixelDoll aqui",
+		"intro": "O ZIP de um movimento, um backup ou um personagem compartilhado. Grátis quando foi feito para este personagem.",
+		"zip": "ZIP do PixelDoll",
+		"editHint": "Para mudar os quadros de um movimento em outro editor, use Corrigir quadros.",
+		"fit": {
+			"same": "Feito para este personagem. Os quadros encaixam como estão.",
+			"shifted": "Feito para este personagem antes de Ajustar quadro. Os quadros são deslocados para encaixar.",
+			"near": {
+				"one": "Feito para este personagem, mas a pose em pé difere em {count} pixel. Confira os quadros depois de importar.",
+				"other": "Feito para este personagem, mas a pose em pé difere em {count} pixels. Confira os quadros depois de importar."
+			},
+			"directions": "Feito com outras direções, então os quadros não servem aqui. O movimento ainda pode redesenhar este personagem.",
+			"body": "Feito para outro corpo, então os quadros não servem aqui. O movimento ainda pode redesenhar este personagem."
+		},
+		"empty": "Este ZIP não tem movimentos nem estados além de Em pé.",
+		"move": "Animação",
+		"state": "Estado",
+		"row": {
+			"add": "Novo",
+			"copy": "Nome em uso: ambos mantidos como {name}",
+			"present": "Já está neste personagem",
+			"motion": "Pode redesenhar este personagem com esse movimento",
+			"unavailable": "Nenhum movimento salvo para reutilizar",
+			"stateUnavailable": "Estados precisam do mesmo corpo",
+			"items": "Com {items}",
+			"left": "Sem {items} (não está neste personagem)",
+			"missing": "Ainda não está nesta animação: {items}"
+		},
+		"useMotion": "Redesenhar como {move}",
+		"free": "Grátis. Sem gerações.",
+		"import": "Importar",
+		"importing": "Importando…",
+		"imported": "{names} importado.",
+		"errors": {
+			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de importar movimentos.",
+			"changed": "Este personagem mudou. Escolha o ZIP de novo para revisar a versão mais recente."
 		}
 	}
 }

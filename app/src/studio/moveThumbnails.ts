@@ -2,7 +2,9 @@ import type { Img } from '../lib/image/png.ts';
 import { cellImg, type Frame } from '../lib/compose/compose.ts';
 import { opaqueBox } from '../lib/rig/normalize.ts';
 import type { DirectionName, Preset, Project } from '../lib/store/manifest.ts';
+import { stableStringify } from '../lib/image/hash.ts';
 import {
+	buildPresentation,
 	renderPresentation,
 	resolvePreview,
 	type PresentationAvailability
@@ -20,7 +22,7 @@ export function moveThumbnails(assets: PresentationAvailability, items: Preset['
 		const clip = pose.clip;
 		const facing = pose.direction;
 		const frames = pose.sequence?.frames;
-		const cell = frames ? frames[frame % frames.length].cell : pose.cell;
+		const cell = frames ? frames.at(frame % frames.length)!.cell : pose.cell;
 		const key = JSON.stringify([animation, direction, cell]);
 		const cached = images.get(key);
 		if (cached) return cached;
@@ -43,6 +45,35 @@ export function moveThumbnails(assets: PresentationAvailability, items: Preset['
 		bytes += image.data.byteLength;
 		return image;
 	};
+}
+
+const looks = new WeakMap<Project, { key: string; thumbnail: ReturnType<typeof moveThumbnails> }>();
+
+/** The dressed look's clip thumbnails, one cache per shown project and outfit, shared by the Moves and States tabs and
+ *  every clip picker. A negative frame counts from the end. */
+export function lookThumbnails(project: Project, items: Preset['items']) {
+	const key = stableStringify(items);
+	const cached = looks.get(project);
+	if (cached?.key === key) return cached.thumbnail;
+	const thumbnail = moveThumbnails(buildPresentation(project), items);
+	looks.set(project, { key, thumbnail });
+	return thumbnail;
+}
+
+/** A picker row: the dressed look's last frame of a clip, in the given facing when it has art, else any facing. */
+export function lookClipThumbnail(
+	project: Project,
+	items: Preset['items'],
+	key: string,
+	facing: DirectionName
+): Img | null {
+	const thumbnail = lookThumbnails(project, items);
+	const facings = [facing, ...project.manifest.rig.directions.map(({ id }) => id)];
+	for (const direction of new Set(facings)) {
+		const image = thumbnail(key, direction, -1);
+		if (image && opaqueBox(image)) return image;
+	}
+	return null;
 }
 
 /** The base body’s last frame of a clip for picker rows, in the given facing when it has art. */

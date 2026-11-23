@@ -165,7 +165,8 @@ test('setup preflight prices each unique measurement and registration without in
 		registrationDirections: 8,
 		skipped: [],
 		gens: 0.45,
-		warnings: []
+		warnings: [],
+		reconnect: false
 	};
 	const calls = setupPeekPlan(plan, 'existing blue body');
 	expect(calls.reduce((sum, call) => sum + (call.generations ?? 0), 0)).toBeCloseTo(0.45);

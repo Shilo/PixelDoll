@@ -406,7 +406,7 @@
 			"one": "¿Quitar {n} dirección?",
 			"other": "¿Quitar {n} direcciones?"
 		},
-		"removePermanently": "Quitar definitivamente",
+		"remove": "Quitar",
 		"removing": "Quitando…",
 		"savedOnly": "Solo se pueden editar personajes guardados.",
 		"waitForGeneration": "Espera a que termine la generación en curso.",
@@ -417,13 +417,13 @@
 		"saving": "Guardando…",
 		"reviewChanges": "Revisar cambios",
 		"changeTitle": "¿Cambiar direcciones?",
-		"confirmMixedRemoval": "Estas direcciones se quitarán de las animaciones y el equipo del personaje: {directions}. No puedes deshacerlo.",
+		"confirmMixedRemoval": "Estas direcciones se quitarán de las animaciones y el equipo del personaje: {directions}. Hasta que recargues o cierres esta página, «Deshacer» puede recuperarlas si nada más cambia antes a este personaje.",
 		"confirmReplace": "Al activar el reflejo, las imágenes de {directions} se sustituyen por fotogramas invertidos de la vista opuesta. Si lo desactivas después, esos fotogramas se conservan. Descarga una copia de seguridad para conservar las imágenes originales.",
 		"labelDirectionsToKeep": "Direcciones para conservar",
 		"loadingDirections": "Cargando direcciones…",
 		"downloadBackup": "Descargar copia de seguridad",
 		"reviewRemoval": "Revisar eliminación",
-		"confirmRemoval": "Se quitarán estas direcciones de las animaciones y del equipamiento de este personaje: {directions}. Las demás direcciones no cambian. Esto no se puede deshacer.",
+		"confirmRemoval": "Se quitarán estas direcciones de las animaciones y del equipamiento de este personaje: {directions}. Las demás direcciones no cambian. Hasta que recargues o cierres esta página, «Deshacer» puede recuperarlas si nada más cambia antes a este personaje.",
 		"rPGMakerExportNeedsAllFourCardinal": "La exportación a RPG Maker necesita las cuatro direcciones cardinales.",
 		"directionsWereSavedReloadToRefreshThe": "Se guardaron las direcciones. Recarga para actualizar el personaje.",
 		"directionsWereSavedReloadToRefreshThe2": "Se guardaron las direcciones. Recarga para actualizar el personaje: {reason}"
@@ -791,6 +791,8 @@
 		"itemMoved": "{name} se movió a {label}.",
 		"itemMoveBusy": "Termina o descarta la generación relacionada antes de mover este objeto.",
 		"itemMoveChanged": "El objeto o la ranura cambió. Inténtalo de nuevo.",
+		"itemMoving": "Otro objeto todavía se está moviendo. Vuelve a intentarlo cuando termine.",
+		"itemNotReady": "Este objeto todavía se está creando o revisando. Vuelve a intentarlo cuando se haya guardado.",
 		"notShownInMove": "No se muestra en este movimiento",
 		"notShownInMoveNote": "El objeto está equipado, pero no se muestra porque le faltan fotogramas en todas las vistas de este movimiento.",
 		"randomLowerItem": "Objeto aleatorio de {lower}",
@@ -851,7 +853,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, Puesto",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "dibujándose para {move}, {percent}",
+		"itemQueued": "en cola para {move}"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "La demo no necesita cuenta. Crear usa tus generaciones de {pixelLab}.",
@@ -961,6 +965,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Termina o descarta el trabajo de generación pendiente antes de ajustar el marco.",
+		"finishBeforeMoveImport": "Termina o descarta el trabajo de generación pendiente antes de importar movimientos.",
 		"couldNotCheckNamedFrames": "No se pudieron comprobar los fotogramas de {names}: {reason}",
 		"couldNotCheckSeveralFrames": "No se pudieron comprobar los fotogramas de {names}.",
 		"copyMissingOneMove": "Faltan fotogramas en {move}; el objeto se oculta ahí.",
@@ -1098,7 +1103,16 @@
 		"changeCategory": "Cambiar {name}",
 		"deleteCategory": "Eliminar {name}",
 		"deleteItem": "Eliminar {name}",
-		"deleteMove": "Eliminar {name}"
+		"deleteMove": "Eliminar {name}",
+		"moveItem": "Mover {name}",
+		"changeDirections": "Cambiar direcciones",
+		"restoreOriginals": "Restaurar originales",
+		"changeDescription": "Cambiar descripción",
+		"changed": "Este paso se quitó del historial: el personaje cambió desde entonces, así que ya no se puede deshacer ni rehacer.",
+		"notRecorded": "Se guardó, pero este cambio no se puede deshacer: algunos de sus fotogramas ya no están guardados.",
+		"busy": "Espera a que termine el último Deshacer o Rehacer. Si nunca termina, recarga la página.",
+		"notInHistory": "Este paso ya no está en el historial.",
+		"saveFailed": "No se pudieron guardar tus últimos cambios. Resuelve el error de almacenamiento y vuelve a intentarlo."
 	},
 	"export": {
 		"sheet": {
@@ -2162,7 +2176,20 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivote {x},{y}",
 		"waitingForRepairReview": "Esperando la revisión de los fotogramas del objeto",
-		"needsRedo": "No se encontraron articulaciones: redibújala para animar objetos en ella"
+		"needsRedo": "No se encontraron articulaciones: redibújala para animar objetos en ella",
+		"itemsDrawn": {
+			"one": "{drawn} de {n} objeto dibujado",
+			"other": "{drawn} de {n} objetos dibujados"
+		},
+		"drawingItem": "Dibujando {item}",
+		"moreQueued": {
+			"one": "{n} más en cola",
+			"other": "{n} más en cola"
+		},
+		"itemsQueued": {
+			"one": "{n} objeto en cola",
+			"other": "{n} objetos en cola"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2187,8 +2214,12 @@
 		"appearance": "Apariencia existente",
 		"appearancePlaceholder": "Describe el cuerpo, el pelo, los colores y la ropa que ya aparecen en la imagen",
 		"appearanceHelp": "Esto guía las animaciones nuevas. Incluye el pelo y la ropa existentes; la configuración no puede separarlos de la base.",
+		"appearanceSaveHelp": "Esto guía las animaciones nuevas. Incluye el pelo y la ropa existentes. Guardar un cambio es gratis.",
+		"saveDescription": "Guardar descripción",
+		"descriptionSaved": "Descripción guardada. Las animaciones nuevas la usan.",
 		"estimate": "{frames} fotogramas únicos del cuerpo · costo estimado: {gens} generaciones. Incluye {connection} generaciones para vincular la cuenta. Se reutilizan las mediciones guardadas que coincidan.",
 		"willSkip": "Se omitirá {moves}: cada uno tiene un fotograma vacío, así que no se gasta nada en él. Corrige esos fotogramas o vuelve a crear los movimientos para animar objetos en ellos.",
+		"reconnectEstimate": "Al volver a conectar, todas las poses, ajustes de objetos y fotogramas se mantienen igual. Costo estimado: {gens} generaciones por la conexión de la cuenta.",
 		"busyElsewhere": "Termina la otra operación del personaje antes de iniciar la configuración.",
 		"resumeRigSetup": "Reanudar configuración del rig",
 		"dismiss": "Descartar configuración",
@@ -2587,13 +2618,13 @@
 			"save": "Guardar animación",
 			"replace": "Reemplazar animación",
 			"discardDraft": "Descartar borrador",
-			"titleItems": "Animar objetos",
-			"chooseFor": "Elige los objetos que quieras animar para {move}.",
+			"titleItems": "Generar objetos",
+			"chooseFor": "Elige los objetos que quieras generar para {move}.",
 			"total": "~{gens} generaciones más",
 			"selected": "Seleccionado",
 			"animateCount": {
-				"one": "Animar {n} objeto",
-				"other": "Animar {n} objetos"
+				"one": "Generar {n} objeto",
+				"other": "Generar {n} objetos"
 			},
 			"unavailable": "No disponible",
 			"findings": "Notas de calidad",
@@ -2602,7 +2633,9 @@
 			"beforeItems": "Revisa la animación antes de animar objetos.",
 			"changed": "El personaje o la animación ha cambiado. Vuelve a abrir la revisión.",
 			"missingFrames": "Los fotogramas revisados ya no están disponibles.",
-			"tier": "Tu plan de PixelLab no admite algunos objetos seleccionados."
+			"tier": "Tu plan de PixelLab no admite algunos objetos seleccionados.",
+			"notNow": "Ahora no",
+			"later": "Puedes generar objetos para {move} más tarde desde su menú en Animaciones."
 		},
 		"thatCharacter": "ese personaje",
 		"retryLabel": "Volver a generar la animación",
@@ -3069,10 +3102,6 @@
 			"other": "Se reemplazaron {count} fotogramas de {name}."
 		},
 		"undo": "Deshacer",
-		"undone": {
-			"one": "Se deshizo {count} fotograma.",
-			"other": "Se deshicieron {count} fotogramas."
-		},
 		"restored": {
 			"one": "Se restauró {count} fotograma original.",
 			"other": "Se restauraron {count} fotogramas originales."
@@ -3094,7 +3123,8 @@
 				"other": "Se ignoraron {n} archivos más."
 			},
 			"fitted": "Los objetos ajustados a estos fotogramas del cuerpo base siguen puestos: {names}. Revísalos en los fotogramas cambiados.",
-			"emptiedBody": "Un fotograma vacío del cuerpo base se omite al crear objetos nuevos para él."
+			"emptiedBody": "Un fotograma vacío del cuerpo base se omite al crear objetos nuevos para él.",
+			"description": "Las animaciones nuevas siguen la descripción del personaje. Si cambiaste el pelo o la ropa, actualízala en Configurar personaje."
 		},
 		"errors": {
 			"size": "Este PNG mide {got} px, pero estos fotogramas necesitan {want} px. Mantén el tamaño y la cuadrícula originales.",
@@ -3193,7 +3223,6 @@
 		"consequences": "Los objetos solo se copian exactamente entre personajes con el mismo tamaño y posición de marco. Las exportaciones mantienen la misma escala y origen en el juego; vuelve a exportar para usar el cambio.",
 		"loading": "Cargando el marco…",
 		"saved": "Marco ajustado: {change}.",
-		"undone": "Cambio del marco deshecho.",
 		"errors": {
 			"reviewOpen": "Guarda o descarta la animación pendiente de revisión antes de ajustar el marco.",
 			"statePending": "Guarda o descarta el estado pendiente antes de ajustar el marco.",
@@ -3206,8 +3235,7 @@
 			"unchanged": "Cambia primero el tamaño o la posición del marco.",
 			"limit": "Ni siquiera un marco de {size} px puede dar espacio a este personaje para las animaciones.",
 			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de ajustar el marco.",
-			"changed": "Este personaje cambió. Vuelve a abrir Ajustar marco para revisar la versión más reciente.",
-			"undoFailed": "No se pudo deshacer el cambio del marco."
+			"changed": "Este personaje cambió. Vuelve a abrir Ajustar marco para revisar la versión más reciente."
 		}
 	},
 	"costSheet": {
@@ -3361,6 +3389,59 @@
 			"browser": "Usa un navegador actual para continuar.",
 			"exportId": "Elige otro ID de exportación.",
 			"busy": "Espera un momento y vuelve a intentarlo."
+		}
+	},
+	"itemGeneration": {
+		"open": "Generar objetos",
+		"title": "Generar objetos para {move}",
+		"inProgress": "En curso",
+		"allDrawn": "Todos los objetos ya están dibujados para {move}.",
+		"noneAvailable": "Ninguno de estos objetos se puede generar para {move}.",
+		"notDrawnFor": "Aún sin dibujar para {move}",
+		"generateFor": "Generar para {move}",
+		"wearOn": "Equipar en {move}"
+	},
+	"moveImport": {
+		"title": "Importar animaciones",
+		"importMoves": "Importar animaciones",
+		"importStates": "Importar estados",
+		"dropArea": "Zona para soltar el ZIP de PixelDoll",
+		"drop": "Suelta aquí un ZIP de PixelDoll",
+		"intro": "El ZIP de un movimiento, una copia de seguridad o un personaje compartido. Gratis si se hizo para este personaje.",
+		"zip": "ZIP de PixelDoll",
+		"editHint": "Para cambiar los fotogramas de un movimiento en otro editor, usa Corregir fotogramas.",
+		"fit": {
+			"same": "Hecho para este personaje. Sus fotogramas encajan tal cual.",
+			"shifted": "Hecho para este personaje antes de Ajustar marco. Sus fotogramas se desplazan para encajar.",
+			"near": {
+				"one": "Hecho para este personaje, pero su pose de pie difiere en {count} píxel. Revisa los fotogramas tras importar.",
+				"other": "Hecho para este personaje, pero su pose de pie difiere en {count} píxeles. Revisa los fotogramas tras importar."
+			},
+			"directions": "Hecho con otras direcciones, así que sus fotogramas no sirven aquí. El movimiento aún puede redibujar a este personaje.",
+			"body": "Hecho para otro cuerpo, así que sus fotogramas no sirven aquí. El movimiento aún puede redibujar a este personaje."
+		},
+		"empty": "Este ZIP no tiene movimientos ni estados aparte de De pie.",
+		"move": "Animación",
+		"state": "Estado",
+		"row": {
+			"add": "Nuevo",
+			"copy": "Nombre en uso: se conservan ambos como {name}",
+			"present": "Ya está en este personaje",
+			"motion": "Puede redibujar a este personaje con su movimiento",
+			"unavailable": "No hay movimiento guardado para reutilizar",
+			"stateUnavailable": "Los estados necesitan el mismo cuerpo",
+			"items": "Con {items}",
+			"left": "Sin {items} (no está en este personaje)",
+			"missing": "Aún no está en esta animación: {items}"
+		},
+		"useMotion": "Redibujar como {move}",
+		"free": "Gratis. Sin generaciones.",
+		"import": "Importar",
+		"importing": "Importando…",
+		"imported": "Importado: {names}.",
+		"errors": {
+			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de importar movimientos.",
+			"changed": "Este personaje cambió. Elige el ZIP de nuevo para revisar la versión más reciente."
 		}
 	}
 }
