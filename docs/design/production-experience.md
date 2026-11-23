@@ -147,7 +147,7 @@ Research and PWA handoff (2026-11-02):
 
 Every unexpected failure offers one quiet Report link-button in place: danger and warning notifications (after their own
 action), failed and lost Activity requests, failed item generation, and the end of each error notice in a sheet or pane. A
-notification with Report is dismissed with its X, never by pressing its whole surface. Uncaught errors and unhandled rejections
+notification keeps its pressable surface, named by its title and message alone; Report sits above it as its own target. Uncaught errors and unhandled rejections
 show a warning notification, once per distinct error, unless a notification the person may still act on (Undo, Try again, a
 pending step) is showing; that error can show the next time it happens. Expected guidance (a plan limit, a busy tab) passes
 `report: false`, a notification whose whole surface opens a failure view leaves Report to that view, and choosing the wrong

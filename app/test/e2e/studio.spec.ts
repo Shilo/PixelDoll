@@ -356,8 +356,13 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 		})
 	);
 	await expect(notice).toContainText('Something went wrong.');
+	// The body stays a button, named by the message alone; Report is its own target and does not dismiss the notice.
+	const unexpected = 'Something went wrong. If it keeps happening, please report it.';
+	await expect(notice.locator('.bu-notice-activate')).toHaveAccessibleName(unexpected);
 	await notice.getByRole('button', { name: 'Report this problem', exact: true }).click();
 	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
+	await expect(report).toBeVisible();
+	await expect(notice).toContainText('Something went wrong.');
 	await expect(report).toContainText('Error: TypeError');
 	await expect(report).not.toContainText('sk-ant');
 	const href = await report.getByRole('link', { name: 'Open on GitHub' }).getAttribute('href');
@@ -370,6 +375,10 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	);
 	await report.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(report).toHaveCount(0);
+	// Pressing the message itself still dismisses the notice.
+	const text = (await notice.getByText(unexpected, { exact: true }).boundingBox())!;
+	await page.mouse.click(text.x + 4, text.y + text.height / 2);
+	await expect(notice).toHaveCount(0);
 });
 
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {

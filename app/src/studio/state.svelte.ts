@@ -530,8 +530,8 @@ export interface ToastOptions {
 	actionLabel?: string | Message;
 	/** The error behind a danger or warning notice: its report names the error and any PixelLab status and endpoint. */
 	error?: unknown;
-	/** false: expected guidance (a plan limit, a busy tab). 'uncaught': the error reached the global handlers. A notice
-	 *  whose whole surface opens a failure view (an action without a label) never has Report: that view has its own. */
+	/** false: expected guidance (a plan limit, a busy tab), or a notice that opens a failure view with its own Report.
+	 *  'uncaught': the error reached the global handlers. */
 	report?: false | 'uncaught';
 }
 const firstMessage = (value: unknown): Message | undefined =>
@@ -614,9 +614,7 @@ export function toast(
 	ui.toastAction = o.action ?? null;
 	ui.toastActionLabel = o.actionLabel ?? '';
 	ui.toastProblem =
-		(o.tone === 'danger' || o.tone === 'warning') &&
-		o.report !== false &&
-		!(o.action && !o.actionLabel)
+		(o.tone === 'danger' || o.tone === 'warning') && o.report !== false
 			? {
 					message: firstMessage(s) ?? firstMessage(o.title),
 					error: o.error,

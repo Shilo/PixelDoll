@@ -21,6 +21,23 @@
 		for (const button of host?.querySelectorAll('.bu-notice-dismiss') ?? [])
 			button.setAttribute('aria-label', label);
 	});
+	const toastId = $props.id();
+	$effect(() => {
+		void ui.toast;
+		void ui.toastTitle;
+		void ui.toastActionLabel;
+		void ui.toastProblem;
+		// Notice names its whole-surface button after all of its content, which would include "Report this problem".
+		// Name it after the title and message alone.
+		const surface = host?.querySelector('.bu-toast > .bu-notice-activate');
+		if (!surface) return;
+		const title = host?.querySelector('.bu-toast > .bu-notice-content > strong');
+		if (title) title.id = `${toastId}-title`;
+		surface.setAttribute(
+			'aria-labelledby',
+			[title && title.id, `${toastId}-message`].filter(Boolean).join(' ')
+		);
+	});
 	let focusFrom: HTMLElement | null = null;
 	let hovered = $state(false),
 		focused = $state(false),
@@ -153,14 +170,14 @@
 				tone={ui.toastTone}
 				indicator={ui.toastPending ? pendingIndicator : undefined}
 				live
-				onactivate={typeof ui.toast !== 'function' && !ui.toastActionLabel && !ui.toastProblem
-					? activate
-					: undefined}
+				onactivate={typeof ui.toast !== 'function' && !ui.toastActionLabel ? activate : undefined}
 				ondismiss={dismiss}
 			>
-				{#if typeof ui.toast === 'function'}{@render ui.toast()}{:else if Array.isArray(ui.toast)}{ui.toast
-						.map(displayNestedMessage)
-						.join(' ')}{:else}{displayNestedMessage(ui.toast)}{/if}
+				{#if typeof ui.toast === 'function'}{@render ui.toast()}{:else}<span id="{toastId}-message"
+						>{Array.isArray(ui.toast)
+							? ui.toast.map(displayNestedMessage).join(' ')
+							: displayNestedMessage(ui.toast)}</span
+					>{/if}
 				{#if ui.toastActionLabel}<span class="toast-actions"
 						><button class="bu-action btn sm" data-variant="outline" onclick={activate}
 							>{displayNestedMessage(ui.toastActionLabel)}</button
