@@ -2063,7 +2063,8 @@
 		"estimate": "Perkiraan {gens} generasi",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, titik pivot {x},{y}",
-		"waitingForRepairReview": "Menunggu tinjauan frame item"
+		"waitingForRepairReview": "Menunggu tinjauan frame item",
+		"needsRedo": "Dilewati saat penyiapan: buat lagi untuk menganimasikan item padanya"
 	},
 	"setup": {
 		"warnings": {

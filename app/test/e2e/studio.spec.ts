@@ -5910,6 +5910,38 @@ test('moves waiting behind another character’s failed move point to it', async
 	await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toHaveCount(0);
 });
 
+test('a move rig setup skipped is marked in the Moves list to make again', async ({
+	page
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(/* @vite-ignore */ path),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ dbPath);
+		const rec = await db.get('projects', s.doc.id),
+			walk = rec.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk');
+		delete walk.sources;
+		rec.rigQa = { ...rec.rigQa, redo: ['walk'] };
+		await db.put('projects', s.doc.id, rec);
+	});
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await expect(
+		page.getByRole('button', {
+			name: /^Walk .*Skipped in setup: make it again to animate items on it/
+		})
+	).toBeVisible();
+});
+
 test('Activity shows plan-derived capacity without a manual override or network request', async ({
 	page,
 	context

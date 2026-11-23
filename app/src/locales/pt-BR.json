@@ -2134,7 +2134,8 @@
 		"estimate": "Estimativa: {gens} gerações",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
-		"waitingForRepairReview": "Aguardando a revisão dos quadros do item"
+		"waitingForRepairReview": "Aguardando a revisão dos quadros do item",
+		"needsRedo": "Ignorada na configuração: crie-a novamente para animar itens nela"
 	},
 	"setup": {
 		"warnings": {

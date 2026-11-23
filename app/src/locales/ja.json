@@ -2063,7 +2063,8 @@
 		"estimate": "約{gens}回分",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px、ピボット {x},{y}",
-		"waitingForRepairReview": "装備フレームの確認待ち"
+		"waitingForRepairReview": "装備フレームの確認待ち",
+		"needsRedo": "セットアップでスキップされました。アイテムを動かすにはもう一度作成してください"
 	},
 	"setup": {
 		"warnings": {

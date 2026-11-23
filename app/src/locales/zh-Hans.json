@@ -2063,7 +2063,8 @@
 		"estimate": "预计 {gens} 次生成",
 		"bodySize": "{w}×{h} 像素",
 		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
-		"waitingForRepairReview": "等待检查装备帧"
+		"waitingForRepairReview": "等待检查装备帧",
+		"needsRedo": "设置时已跳过：请重新生成，以便在其上制作装备动画"
 	},
 	"setup": {
 		"warnings": {

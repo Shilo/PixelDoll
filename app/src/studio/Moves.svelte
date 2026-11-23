@@ -20,7 +20,7 @@
 	import { displayMove } from './displayMove.ts';
 	import type { MoveSpec } from './create.ts';
 	import { displayError } from '../lib/i18n.ts';
-	import { STATE_CAPTURE_MODE } from '../lib/rig/setup.ts';
+	import { STATE_CAPTURE_MODE, setupRedoMoves } from '../lib/rig/setup.ts';
 	import { characterBodySize } from './experience/bounds.ts';
 	import { buildPresentation } from './experience/presentation.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
@@ -42,6 +42,8 @@
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const nice = (id: string) => displayMove(id, moveRefs);
+	// Moves rig setup skipped (a frame had no joints) still play, but items cannot be animated on them until made again.
+	const redo = $derived(setupRedoMoves(store.exportRecord));
 	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
@@ -164,7 +166,9 @@
 											})
 										: t('moves.oneDirection')
 									: t('export.count.directions', { count: nDirs })}</span
-							></span
+							>{#if redo.includes(a.id) && !a.sources}<span class="small redo"
+									>{t('moves.needsRedo')}</span
+								>{/if}</span
 						>
 					</button>
 				</SavedActions>
@@ -274,6 +278,10 @@
 </div>
 
 <style>
+	/* A move setup skipped: still shown, marked to make again. */
+	.redo {
+		color: var(--warn);
+	}
 	/* The list gap already separates the CTA from the rows above it. */
 	.cta {
 		margin-top: 0;

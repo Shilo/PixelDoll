@@ -2125,7 +2125,8 @@
 		"estimate": "Ca. {gens} Generierungen",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, Drehpunkt {x},{y}",
-		"waitingForRepairReview": "Warten auf die Prüfung der Gegenstandsframes"
+		"waitingForRepairReview": "Warten auf die Prüfung der Gegenstandsframes",
+		"needsRedo": "Bei der Einrichtung übersprungen: erstelle sie erneut, um Gegenstände darauf zu animieren"
 	},
 	"setup": {
 		"warnings": {

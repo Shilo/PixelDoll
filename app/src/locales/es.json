@@ -2125,7 +2125,8 @@
 		"estimate": "Aprox. {gens} generaciones",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivote {x},{y}",
-		"waitingForRepairReview": "Esperando la revisión de los fotogramas del objeto"
+		"waitingForRepairReview": "Esperando la revisión de los fotogramas del objeto",
+		"needsRedo": "Omitida en la configuración: vuelve a crearla para animar objetos en ella"
 	},
 	"setup": {
 		"warnings": {

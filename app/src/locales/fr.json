@@ -2125,7 +2125,8 @@
 		"estimate": "Env. {gens} gén.",
 		"bodySize": "{w} × {h} px",
 		"frameSize": "{w} × {h} px, pivot {x},{y}",
-		"waitingForRepairReview": "En attente de la vérification des images de l’objet"
+		"waitingForRepairReview": "En attente de la vérification des images de l’objet",
+		"needsRedo": "Ignorée lors de la configuration : recréez-la pour y animer des objets"
 	},
 	"setup": {
 		"warnings": {

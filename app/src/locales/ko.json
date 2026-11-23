@@ -2063,7 +2063,8 @@
 		"estimate": "예상 생성 {gens}회",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, 피벗 {x},{y}",
-		"waitingForRepairReview": "아이템 프레임 검토 대기 중"
+		"waitingForRepairReview": "아이템 프레임 검토 대기 중",
+		"needsRedo": "설정에서 건너뜀: 아이템을 움직이려면 다시 만드세요"
 	},
 	"setup": {
 		"warnings": {

@@ -2125,7 +2125,8 @@
 		"estimate": "Est. {gens} gens",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
-		"waitingForRepairReview": "Waiting for item frame review"
+		"waitingForRepairReview": "Waiting for item frame review",
+		"needsRedo": "Skipped in setup: make it again to animate items on it"
 	},
 	"setup": {
 		"warnings": {
