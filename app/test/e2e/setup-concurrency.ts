@@ -320,7 +320,7 @@ for (const tier of [3, 1] as const)
 				expect(registrations).toBe(1);
 				const resume = setup.getByRole('button', { name: /^Resume setup/ });
 				// Every joint check and the registration completed: resuming is priced from the cache and buys nothing.
-				await expect(resume).toContainText('Est. 0 gens');
+				await expect(resume).toContainText('~0 gens');
 				await resume.click();
 				await expect(setup).toContainText('Ready. You can add equipment');
 			}
