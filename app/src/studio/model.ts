@@ -49,7 +49,8 @@ export function bodyQualityNote(
 export function setupWarningNote(
 	warning: string,
 	translate?: Translate,
-	displayDirection: (direction: DirectionName) => string = (direction) => direction
+	displayDirection: (direction: DirectionName) => string = (direction) => direction,
+	displayMoveName: (move: string) => string = (move) => move
 ): string {
 	const headroom =
 		/^(\S+) leaves (\d+) px above the head; tall hair or hats may need a larger frame\.$/.exec(
@@ -70,7 +71,10 @@ export function setupWarningNote(
 		/^(.+) was skipped: PixelLab could not find valid joints on one of its frames\. Make it again to animate items on it\.$/.exec(
 			warning
 		);
-	if (skipped) return copy(translate)(warning, 'setup.warnings.moveSkipped', { move: skipped[1] });
+	if (skipped)
+		return copy(translate)(warning, 'setup.warnings.moveSkipped', {
+			move: displayMoveName(skipped[1])
+		});
 	return bodyQualityNote(warning, translate, displayDirection);
 }
 

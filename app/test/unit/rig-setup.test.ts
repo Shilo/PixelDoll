@@ -217,6 +217,10 @@ test('setup refuses missing or invalid measurements and rejects unsupported inpu
 	const bad = pose();
 	bad[0].x = NaN;
 	expect(hasAll(bad)).toBe(false);
+	// a move is named in the user's words the studio passes, not by its id
+	await expect(setupPlan(p, 'walk', (id) => `Shown ${id}`)).rejects.toMatchObject({
+		translation: { key: 'setup.errors.noStandingReference', vars: { move: 'Shown walk' } }
+	});
 	p.manifest.rig.template = 'cat';
 	await expect(setupPlan(p)).rejects.toThrow('humanoid');
 	// preconditions are translated stops, not raw English

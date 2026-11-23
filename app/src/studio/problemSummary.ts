@@ -51,6 +51,7 @@ const KEYS: Readonly<Record<string, ProblemKind>> = {
 	'itemRoute.errors.paletteReviewChanged': 'changed',
 	'itemRoute.errors.paletteSaveChanged': 'changed',
 	'itemRoute.errors.itemMoveSaveConflict': 'changed',
+	'itemRoute.errors.itemMoveSaveConflictAlso': 'changed',
 	'fixFrames.errors.changed': 'changed',
 	'adjustFrame.errors.changed': 'changed',
 	// Saved results this device no longer has; nothing paid is at risk of being bought twice without a review.

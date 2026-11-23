@@ -2715,6 +2715,7 @@
 			"invalidItemGridLayout": "PixelLab devolvió una cuadrícula de objeto inutilizable. La hoja tiene un diseño de fotogramas incorrecto. Se conservaron las imágenes anteriores.",
 			"savedFramesUnavailable": "No hay fotogramas terminados que coincidan con el cuerpo y el equipo actuales. No se solicitó ninguna generación.",
 			"itemMoveSaveConflict": "Este personaje u objeto cambió mientras se generaban sus fotogramas. Se conservó el arte existente; los fotogramas terminados siguen en Actividad.",
+			"itemMoveSaveConflictAlso": "Este personaje u objeto cambió mientras se generaban sus fotogramas. Se conservó el arte existente; los fotogramas terminados siguen en Actividad. Otra vista también se detuvo: {reason}",
 			"keepWithoutStanding": "A este objeto le faltan fotogramas en la animación de la que parte su diseño, así que no se puede conservar sin ella. Crea los fotogramas que faltan.",
 			"savedFrameMissing": "Falta en el almacenamiento un fotograma guardado de este objeto."
 		}

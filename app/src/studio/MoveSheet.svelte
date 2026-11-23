@@ -690,7 +690,8 @@
 							job.state === 'done'
 					)
 				: !moving.spec.itemReview &&
-					errorKey(moving.error) === 'itemRoute.errors.itemMoveSaveConflict')
+					(errorKey(moving.error) === 'itemRoute.errors.itemMoveSaveConflict' ||
+						errorKey(moving.error) === 'itemRoute.errors.itemMoveSaveConflictAlso'))
 	);
 	const retrySpec = $derived<MoveSpec | undefined>(
 		moving.spec

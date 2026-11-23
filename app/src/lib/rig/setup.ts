@@ -21,7 +21,7 @@ import { flipSkeleton, type Skeleton } from './skeleton.ts';
 import type { Img } from '../image/png.ts';
 import type { Layer, Project, Provenance } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
-import { LocalizedError } from '../message.ts';
+import { LocalizedError, type Message } from '../message.ts';
 
 export interface SetupPlan {
 	restAnim: string;
@@ -93,7 +93,12 @@ export function setupFrameHashes(
 }
 
 /** Preflight happens offline and before any spending. A source rest clip can be explicitly selected in the UI. */
-export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPlan> {
+export async function setupPlan(
+	p: Project,
+	restAnim?: string,
+	/** A move's name in the user's words for a message (the studio passes its display name). */
+	moveWords: (id: string) => Message | string = (id) => id
+): Promise<SetupPlan> {
 	const m = p.manifest,
 		rig = m.rig,
 		warnings: string[] = [];
@@ -136,7 +141,7 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 			throw new LocalizedError(
 				`${a.id} has no ${d.id} standing reference. Choose a move with every view.`,
 				'setup.errors.noStandingReference',
-				{ move: a.id }
+				{ move: moveWords(a.id) }
 			);
 		const top = opaqueBox(im)!.y0;
 		if (top < HEADROOM_MIN)
@@ -177,7 +182,7 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 				throw new LocalizedError(
 					`${a.id}/${d.id} contains an empty body frame.`,
 					'setup.errors.emptyBodyFrame',
-					{ move: a.id }
+					{ move: moveWords(a.id) }
 				);
 			for (const im of cells as Img[]) frames.set(await cellHash(im), im);
 		}

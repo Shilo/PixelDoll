@@ -11,6 +11,11 @@ import type { Provenance } from '../lib/store/manifest.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { LocalizedError, message } from '../lib/message.ts';
+import { moveName, type MoveRef } from './model.ts';
+
+/** Move names in the user's words for setup's messages. */
+const moveWordsOf = (project: { manifest: { rig: { animations: MoveRef[] } } }) => (id: string) =>
+	moveName(id, project.manifest.rig.animations);
 
 export interface SetupSpec {
 	projectId: string;
@@ -57,7 +62,7 @@ export async function setupRegistrationStuck(spec: SetupSpec): Promise<boolean> 
 	const { project } = await loadProject(spec.projectId);
 	if (project.manifest.rig.baseHash !== spec.baseHash || !spec.looks.trim()) return false;
 	const latest = await latestOutcome(
-		await registration(project, await setupPlan(project, spec.restAnim), spec)
+		await registration(project, await setupPlan(project, spec.restAnim, moveWordsOf(project)), spec)
 	);
 	return (
 		!!latest &&
@@ -81,7 +86,7 @@ export async function setupCharacter(
 			'Describe the character’s existing appearance first.',
 			'setup.errors.looksRequired'
 		);
-	const plan = await setupPlan(project, spec.restAnim),
+	const plan = await setupPlan(project, spec.restAnim, moveWordsOf(project)),
 		measured = new Map<string, Keypoint[]>(),
 		provenance: Provenance[] = [];
 	if (!plan.frames.size)

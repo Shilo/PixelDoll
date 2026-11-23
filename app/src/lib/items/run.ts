@@ -126,6 +126,7 @@ import {
 } from './items.ts';
 import {
 	LocalizedError,
+	errorMessage,
 	errorText,
 	loggedError,
 	loggedMessage,
@@ -2008,11 +2009,17 @@ export async function poseItemClip(
 		// The save error leads and keeps its code: the Studio offers free saved-frame recovery on a save conflict.
 		throw failures.length
 			? error instanceof LocalizedError
-				? new LocalizedError(
-						`${error.message} ${first}`,
-						error.translation.key,
-						error.translation.vars
-					)
+				? error.translation.key === 'itemRoute.errors.itemMoveSaveConflict'
+					? new LocalizedError(
+							`${error.message} ${first}`,
+							'itemRoute.errors.itemMoveSaveConflictAlso',
+							{ reason: errorMessage(failures[0]) }
+						)
+					: new LocalizedError(
+							`${error.message} ${first}`,
+							error.translation.key,
+							error.translation.vars
+						)
 				: new Error(`${errorText(error)} ${first}`)
 			: error;
 	}

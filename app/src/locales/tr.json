@@ -2715,6 +2715,7 @@
 			"invalidItemGridLayout": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Sayfanın kare düzeni yanlış. Mevcut görsel korundu.",
 			"savedFramesUnavailable": "Geçerli gövde ve ekipmanla eşleşen tamamlanmış kareler yok. Oluşturma istenmedi.",
 			"itemMoveSaveConflict": "Kareleri oluşturulurken bu karakter veya eşya değişti. Mevcut çizimler korundu; tamamlanan kareler Etkinlik bölümünde duruyor.",
+			"itemMoveSaveConflictAlso": "Kareleri oluşturulurken bu karakter veya eşya değişti. Mevcut çizimler korundu; tamamlanan kareler Etkinlik bölümünde duruyor. Başka bir görünüm de durdu: {reason}",
 			"keepWithoutStanding": "Bu eşyanın tasarlandığı animasyonda eksik kareler var, bu yüzden o animasyon olmadan tutulamaz. Bunun yerine eksik kareleri oluşturun.",
 			"savedFrameMissing": "Bu eşyanın kayıtlı bir karesi depolamada yok."
 		}
