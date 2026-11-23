@@ -1337,7 +1337,7 @@ test('a failed direction plus a save conflict keeps the conflict first, so free 
 	// the translated stop keeps both: the conflict's code (free recovery routes on it) and the other view's reason
 	const translation = (error as LocalizedError).translation;
 	expect(translation.key).toBe('itemRoute.errors.itemMoveSaveConflictAlso');
-	expect(translation.vars?.reason).toBeTruthy();
+	expect((translation.vars as { reason?: unknown } | undefined)?.reason).toBeTruthy();
 });
 
 test('saved frames reattach completed pose requests without sending one, and refuse when none match', async () => {
