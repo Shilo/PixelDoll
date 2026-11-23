@@ -85,11 +85,12 @@ export interface StateJointFitReview {
 	projectId: string;
 	stateId: string;
 	manifestVersion: string;
+	/** The measured facings, the only ones saved. */
 	views: { direction: DirectionName; hash: Sha256; keypoints: Keypoint[]; qa: ClipQa }[];
 	/** One measurement receipt per view, in view order. */
 	provenance: Provenance[];
-	/** A failed structural check blocks saving. */
-	blocked: boolean;
+	/** Facings whose joints could not be measured: saved without them, and measured again on request. */
+	notFitted: DirectionName[];
 }
 
 const changed = () =>
@@ -322,37 +323,39 @@ async function measure(
 		assertSelected(projectId);
 		assertAccount(keyRevision);
 		const { rig } = project.manifest;
-		const views = target.views.map(({ direction, hash, image }, index) => {
-			const keypoints = results[index].keypoints;
-			if (
-				!keypoints ||
-				!hasAll(keypoints) ||
-				!sourceUsable(project.manifest, stateId, direction, hash, keypoints)
-			)
-				throw noJoints(direction);
+		const views: StateJointFitReview['views'] = [];
+		const provenance: Provenance[] = [];
+		const notFitted: DirectionName[] = [];
+		// One facing without usable joints no longer costs the others their paid measurement.
+		for (const [index, { direction, hash, image }] of target.views.entries()) {
+			const { keypoints, record } = results[index];
 			const restView = rig.rest?.[direction];
 			const rest = restView && project.images.get(restView.image);
 			if (!rest) throw unavailable();
-			const qa = clipQa({
-				anim: stateId,
-				rest,
-				frames: [image],
-				measured: [keypoints],
-				stray: 0,
-				...(hasAll(restView.keypoints)
-					? { facing: { dir: direction, rest: restView.keypoints } }
-					: {})
-			});
-			return { direction, hash, keypoints, qa };
-		});
-		return {
-			projectId,
-			stateId,
-			manifestVersion,
-			views,
-			provenance: results.map(({ record }) => provOf(record)),
-			blocked: views.some(({ qa }) => qa.fails.length > 0)
-		};
+			const qa =
+				keypoints &&
+				hasAll(keypoints) &&
+				sourceUsable(project.manifest, stateId, direction, hash, keypoints)
+					? clipQa({
+							anim: stateId,
+							rest,
+							frames: [image],
+							measured: [keypoints],
+							stray: 0,
+							...(hasAll(restView.keypoints)
+								? { facing: { dir: direction, rest: restView.keypoints } }
+								: {})
+						})
+					: undefined;
+			if (!keypoints || !qa || qa.fails.length) {
+				notFitted.push(direction);
+				continue;
+			}
+			views.push({ direction, hash, keypoints, qa });
+			provenance.push(provOf(record));
+		}
+		if (!views.length) throw noJoints(notFitted[0]);
+		return { projectId, stateId, manifestVersion, views, provenance, notFitted };
 	} catch (error) {
 		controller.abort(error);
 		throw error;
@@ -405,14 +408,16 @@ export function saveStateJointFit(review: StateJointFitReview): Promise<void> {
 
 async function save(review: StateJointFitReview): Promise<void> {
 	const { projectId, stateId, manifestVersion } = review;
-	if (review.blocked) throw noJoints(review.views.find(({ qa }) => qa.fails.length)!.direction);
 	const blocked = directionEditsBlocked(projectId);
 	if (blocked) throw blocked;
 	const { target, manifestVersion: saved } = await current(projectId, stateId);
+	// Exactly the reviewed facings are saved, each still needing joints for the art it was measured on.
+	const open = new Map(target.views.map(({ direction, hash }) => [direction, hash]));
 	if (
 		saved !== manifestVersion ||
-		stableStringify(target.views.map(({ direction, hash }) => [direction, hash])) !==
-			stableStringify(review.views.map(({ direction, hash }) => [direction, hash]))
+		!review.views.length ||
+		new Set(review.views.map(({ direction }) => direction)).size !== review.views.length ||
+		review.views.some(({ direction, hash }) => open.get(direction) !== hash)
 	)
 		throw changed();
 	await db.update<StoredProject>('projects', projectId, (record) => {

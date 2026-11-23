@@ -104,6 +104,7 @@
 	import { displayMove } from './displayMove.ts';
 	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
+	import { displayDirectionList } from './displayDirectionProblem.ts';
 	import { ANGLES } from './characterConfig.ts';
 	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert } from './icons.ts';
 	import type { Img } from '../lib/image/png.ts';
@@ -372,7 +373,7 @@
 
 	function saveFit() {
 		const review = fitReview;
-		if (!review || review.blocked || fitBusy) return;
+		if (!review || fitBusy) return;
 		fitReview = null;
 		void fitAction(async () => {
 			await saveStateJointFit(review);
@@ -2099,10 +2100,15 @@
 										</div>
 									{/each}
 								</div>
+								{#if fitReview.notFitted.length}<p class="notice warn small" role="status">
+										{t('stateJointFit.notFitted', {
+											directions: displayDirectionList(fitReview.notFitted)
+										})}
+									</p>{/if}
 								<button
 									class="bu-action"
 									data-variant="primary"
-									disabled={fitBusy || fitReview.blocked}
+									disabled={fitBusy}
 									onclick={saveFit}
 								>
 									{t('stateJointFit.save')}

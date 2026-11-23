@@ -2875,6 +2875,7 @@
 		"quote": "Verificar o custo da medição das articulações",
 		"measure": "Medir articulações",
 		"review": "Antes de salvar, confira se as articulações marcadas estão alinhadas em cada vista.",
+		"notFitted": "Nenhuma articulação foi encontrada nas direções {directions}, então essas vistas ainda não podem ser um ponto de partida. Ao salvar, as articulações das outras vistas são mantidas.",
 		"save": "Salvar articulações"
 	},
 	"stateCapture": {

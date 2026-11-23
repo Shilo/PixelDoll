@@ -2866,6 +2866,7 @@
 		"quote": "Eklem ölçümünün maliyetini kontrol et",
 		"measure": "Eklemleri ölç",
 		"review": "Kaydetmeden önce işaretli eklemlerin her görünümde doğru yerde olduğunu kontrol et.",
+		"notFitted": "{directions} yönünde eklem bulunamadı, bu yüzden bu görünümler henüz başlangıç noktası olamaz. Kaydetmek diğer görünümlerin eklemlerini korur.",
 		"save": "Eklemleri kaydet"
 	},
 	"stateCapture": {

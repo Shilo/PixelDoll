@@ -335,7 +335,7 @@ describe('State joint fit service', () => {
 		}));
 		const review = await measureStateJoints(quote);
 		expect(db.update).not.toHaveBeenCalled();
-		expect(review.blocked).toBe(false);
+		expect(review.notFitted).toEqual([]);
 		expect(review.views.map(({ direction }) => direction)).toEqual(['south', 'east']);
 
 		await saveStateJointFit(review);
@@ -390,7 +390,46 @@ describe('State joint fit service', () => {
 		expect(db.update).not.toHaveBeenCalled();
 	});
 
-	test('missing joints on a facing fail measurement instead of producing a review', async () => {
+	test('a facing without joints is reported as not fitted and the measured ones are saved', async () => {
+		const target = (await stateJointFitTarget(project, 'glow'))!;
+		const south = target.views[0].hash;
+		vi.mocked(measureJoints).mockImplementation(async (image) => {
+			const hash = await cellHash(image);
+			return { keypoints: hash === south ? undefined : pose(), record: receipt(hash) };
+		});
+		const review = await measureStateJoints(await quoteStateJointFit('rig-test', 'glow'));
+		expect(review.views.map(({ direction }) => direction)).toEqual(['east']);
+		expect(review.notFitted).toEqual(['south']);
+		expect(review.provenance).toHaveLength(1);
+
+		await saveStateJointFit(review);
+		const sources = record.manifest.rig.animations[1].sources!;
+		expect(sources.east?.measured).toEqual([pose()]);
+		expect(sources.south).toBeUndefined();
+		expect(Object.keys(record.skeletons ?? {}).sort()).toEqual(['glow/east/0', 'glow/west/0']);
+		// The facing left unfitted is still offered for measuring.
+		const { project: saved } = await loadProject('rig-test');
+		expect(
+			(await stateJointFitTarget(saved, 'glow'))?.views.map(({ direction }) => direction)
+		).toEqual(['south']);
+	});
+
+	test('a reviewed facing whose art changed before saving blocks the save', async () => {
+		vi.mocked(measureJoints).mockImplementation(async (image) => ({
+			keypoints: pose(),
+			record: receipt(await cellHash(image))
+		}));
+		const review = await measureStateJoints(await quoteStateJointFit('rig-test', 'glow'));
+		const tampered = {
+			...review,
+			views: [{ ...review.views[0], hash: `sha256:${'d'.repeat(64)}` as Sha256 }],
+			provenance: [review.provenance[0]]
+		};
+		await expect(saveStateJointFit(tampered)).rejects.toThrow('changed');
+		expect(db.update).not.toHaveBeenCalled();
+	});
+
+	test('missing joints on every facing fail measurement instead of producing a review', async () => {
 		vi.mocked(measureJoints).mockImplementation(async (image) => ({
 			keypoints: undefined,
 			record: receipt(await cellHash(image))

@@ -2866,6 +2866,7 @@
 		"quote": "Consultar el costo de medir las articulaciones",
 		"measure": "Medir articulaciones",
 		"review": "Antes de guardar, comprueba que las articulaciones marcadas coincidan en cada vista.",
+		"notFitted": "No se encontraron articulaciones en {directions}, así que esas vistas aún no pueden ser un punto de partida. Al guardar se conservan las articulaciones de las demás vistas.",
 		"save": "Guardar articulaciones"
 	},
 	"stateCapture": {
