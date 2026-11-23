@@ -18,7 +18,7 @@
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 	import { Footprints, PawPrint, TriangleAlert } from './icons.ts';
 	import { applyRiderPose } from './mountPreview.ts';
-	import { bodyClipThumbnail } from './moveThumbnails.ts';
+	import { lookClipThumbnail } from './moveThumbnails.ts';
 	import MountPreview from './MountPreview.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
 	import SettingsItemToggle from './SettingsItemToggle.svelte';
@@ -89,7 +89,7 @@
 			label={t('toolbar.riderPose')}
 			automatic={t('toolbar.riderPoseRide')}
 			{unavailable}
-			thumbnail={(key) => store.project && bodyClipThumbnail(store.project, key, ui.dir)}
+			thumbnail={(key) => view.project && lookClipThumbnail(view.project, view.items, key, ui.dir)}
 			onselect={choosePose}
 		/>
 		{#if hidden}<p class="notice warn small" role="status">

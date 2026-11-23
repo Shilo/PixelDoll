@@ -123,17 +123,26 @@ export async function setupGens(plan: SetupPlan): Promise<number> {
 	return +((await jointCheckGens(plan, completed())) + 0.25).toFixed(2);
 }
 
-/** New moves describe the character with this text and never use the registration, so changing it is free. */
-export async function saveLooks(projectId: string, looks: string): Promise<void> {
+/** New moves describe the character with this text and never use the registration, so changing it is free. `check` may
+ *  refuse the saved text it replaces. Returns that text. */
+export async function saveLooks(
+	projectId: string,
+	looks: string,
+	check?: (saved: string) => void
+): Promise<string> {
+	let previous = '';
 	await db.update<StoredProject>('projects', projectId, (rec) => {
 		if (!rec?.character)
 			throw new LocalizedError(
 				'This saved character is no longer available.',
 				'directionsSheet.characterUnavailable'
 			);
+		check?.(rec.character.looks);
+		previous = rec.character.looks;
 		rec.character = { ...rec.character, looks: looks.trim() };
 		return rec;
 	});
+	return previous;
 }
 
 /** Registers the standing views as a managed PixelLab character: its ID and the provenance of the purchase. */

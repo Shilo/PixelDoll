@@ -34,6 +34,7 @@ import { experience } from './experience/state.svelte.ts';
 import {
 	deriveMaterials,
 	randomOutfit,
+	missingFrames,
 	randomVariants,
 	recolor,
 	storeVariants
@@ -50,7 +51,9 @@ import {
 	deleteItems,
 	listProjects,
 	loadProject,
+	pngBlobs,
 	readStoredImage,
+	type BeforeWrite,
 	type DressedRecord,
 	type StoredProject
 } from '../lib/store/project.ts';
@@ -71,6 +74,7 @@ import {
 	type RecentlyDeleted
 } from '../lib/store/recently-deleted.ts';
 import { incompatibleKind } from '../lib/store/incompatible.ts';
+import { artworkRefs } from '../lib/store/workspace.ts';
 import { sameClipName } from './clipName.ts';
 import {
 	CURRENT_OUTFIT_ID,
@@ -110,7 +114,7 @@ import {
 	characterFacts,
 	displayMoveJob,
 	missingMoves,
-	notShownIn,
+	wearClip,
 	pixelSize,
 	uniqueBy
 } from './model.ts';
@@ -138,6 +142,7 @@ import {
 	type SlotUse
 } from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import { itemJobs } from './itemJobs.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import { stateAttempts } from './stateRecovery.ts';
 import {
@@ -162,6 +167,7 @@ import { onceShown, type Problem } from '../lib/report/report.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
+import type { MoveImportPlan } from '../lib/rig/moveImport.ts';
 import { DEFAULT_MOVE, type Sha256 } from '../lib/rig/rig.ts';
 import {
 	canvasLift,
@@ -171,7 +177,6 @@ import {
 	reframeCharacter,
 	type FrameChange
 } from '../lib/rig/reframe.ts';
-import { encodePngBytes } from '../lib/image/pngraw.ts';
 import { forgetRidingPose, syncRiderPose } from './experience/riderPose.ts';
 import { clearDebugLog, recordDebug } from '../lib/debug/log.ts';
 
@@ -275,12 +280,14 @@ export type SheetId =
 	| 'gen'
 	| 'move'
 	| 'moveReview'
+	| 'itemGeneration'
 	| 'stateCapture'
 	| 'stateReview'
 	| 'rename'
 	| 'directions'
 	| 'importZip'
 	| 'importPixelLab'
+	| 'importMoves'
 	| 'delete'
 	| 'details'
 	| 'setup'
@@ -325,6 +332,7 @@ export const ui = $state({
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
+	itemGeneration: '', // the saved move or State whose missing equipment the item picker offers
 	stateCaptureMove: '',
 	stateReview: '', // token of the State attempt the review sheet shows
 	redrawMove: '',
@@ -333,7 +341,11 @@ export const ui = $state({
 		return panel;
 	},
 	set sheet(next: SheetId) {
-		if ((panel === 'create' || panel === 'moveReview') && next !== 'activity' && afterTakeOver)
+		if (
+			(panel === 'create' || panel === 'moveReview' || panel === 'itemGeneration') &&
+			next !== 'activity' &&
+			afterTakeOver
+		)
 			cancelWaitingForTab();
 		if (panel === 'move' && next !== 'move') ui.moveFormOpen = false;
 		const id = createPresentation.id,
@@ -753,6 +765,19 @@ export interface UndoStep {
 	from?: string;
 	/** A deleted entry Undo puts back exactly, instead of replaying a dress snapshot. */
 	trash?: string;
+	/** A change to the saved record (artwork, names, the move description, an item's category) that Undo and Redo write
+	 *  again: `edit(false)` undoes it, `edit(true)` redoes it. Each checks the record first and throws why it refuses: a
+	 *  refusal for good (STEP_GONE) drops the step, any other keeps it; false means refused and already reported (kept). */
+	edit?: (redo: boolean) => Promise<boolean | void>;
+}
+/** The history of every character opened in this tab but not open now, so switching back continues it. */
+const histories = new Map<string, { undo: UndoStep[]; redo: UndoStep[] }>();
+/** A character's Undo and Redo stacks: the open character's live ones, or the ones kept for it. */
+function historyOf(id: string): { undo: UndoStep[]; redo: UndoStep[] } {
+	if (id === doc.id) return doc;
+	let kept = histories.get(id);
+	if (!kept) histories.set(id, (kept = { undo: [], redo: [] }));
+	return kept;
 }
 export const doc = $state({
 	id: '',
@@ -884,6 +909,10 @@ export async function refreshProjects(): Promise<boolean> {
 	// Drop unload snapshots and thumbnails of characters deleted here or in another tab (only when the listing is known to
 	// be complete).
 	if (listed) keepThumbnails(new Set(store.projects.map((p) => p.id)));
+	// The history of a character deleted here or in another tab goes with it.
+	if (listed)
+		for (const id of histories.keys())
+			if (!store.projects.some((p) => p.id === id)) histories.delete(id);
 	if (listed && !workspaceCopy)
 		try {
 			for (const k of Object.keys(localStorage))
@@ -951,8 +980,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 			doc.variants = { ...current.variants };
 		} // in place: keep the live outfit
 		if (id !== doc.id) doc.drafts = {};
-		// Items put on by this open (Keep it, an accepted worn draft): if one needs a hand that a two-handed item holds, the
-		// change is replayed below as one undoable edit with its message.
+		// Items put on by this open (Keep it, an accepted worn draft) are replayed below as one undoable edit, which also says
+		// what a two-handed item took off.
 		const outfit = { ...doc.items },
 			newlyWorn: Item[] = [];
 		if (keep?.wear) {
@@ -963,13 +992,20 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 				newlyWorn.push(it);
 			}
 		}
-		if (!quiet) {
-			doc.undo = [];
-			doc.redo = [];
+		// Reloading the open character keeps its history: snapshots only re-apply the dress state, which never revives a
+		// removed item and keeps items added since. Switching keeps each character's own history for when it opens again
+		// (a deleted one, no longer listed, keeps none).
+		const switched = id !== doc.id;
+		if (switched) {
+			if (doc.id && store.projects.some((p) => p.id === doc.id))
+				histories.set(doc.id, { undo: doc.undo, redo: doc.redo });
+			const kept = histories.get(id);
+			histories.delete(id);
+			doc.undo = kept?.undo ?? [];
+			doc.redo = kept?.redo ?? [];
 		}
 		// Another character starts on its standing move, whatever move the last one showed: it is the one every item is made
 		// for, so what is worn shows. Walk hides each item without walk frames, which reads as lost items.
-		const switched = id !== doc.id;
 		if (switched || !m.rig.animations.some((a) => a.id === ui.anim))
 			ui.anim = (
 				m.rig.animations.find((a) => a.id === DEFAULT_MOVE) ??
@@ -1004,15 +1040,18 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 			}
 			drop(g);
 		}
-		const wornSlot = newlyWorn.at(-1)?.slot;
-		if (wornSlot && settleHands(m, doc.items, wornSlot).removed) {
+		// Putting on what was just saved is its own step: otherwise undoing an older edit would take it off unannounced.
+		const wearing = uniqueBy(newlyWorn, (it) => it.id).filter((it) => outfit[it.slot] !== it.id),
+			wornSlot = wearing.at(-1)?.slot;
+		if (wornSlot) {
 			doc.items = outfit;
 			commit(
-				message('history.wear', { name: newlyWorn.map((i) => i.name).join(', ') }),
+				message('history.wear', { name: wearing.map((i) => i.name).join(', ') }),
 				() => {
-					for (const it of newlyWorn) doc.items[it.slot] = it.id;
+					for (const it of wearing) doc.items[it.slot] = it.id;
 				},
-				{ keepHand: wornSlot }
+				// Only Keep it is the person's own action: a draft saving itself in the background keeps their Redo.
+				{ keepHand: wornSlot, keepRedo: !keep?.wear || !!keep.quiet }
 			);
 		} else doc.items = settleHands(m, doc.items).items; // an outfit read as saved keeps the Main hand
 		if (!quiet) {
@@ -1050,6 +1089,16 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		}
 	}
 }
+/** Split a saved body's shirt and shorts as its first open does (once per character), before a free edit of a character
+ *  that may not have been opened yet (Directions, Adjust frame from the character list): the edit then starts from the
+ *  record that open leaves, instead of that open re-saving the body later and so refusing the edit's Undo. */
+export async function splitBeforeEdit(id: string) {
+	const rec = await db.get<StoredProject>('projects', id);
+	const base = rec?.manifest?.items.find((it) => it.id === rec.manifest.rig.baseItem);
+	if (!base || base.regions === 'shirt-shorts') return;
+	const { r, split } = await readCharacter(id);
+	if (split?.dirty) await saveSplit(id, r.project.manifest, split);
+}
 export const lastProject = () => lsGet(K.last) ?? DEMO;
 /** Work finishing in the background reloads only the character in view, never one the user is leaving: reopening it would
  *  cancel the open of the newly picked one. */
@@ -1083,6 +1132,8 @@ function restore(e: UndoStep) {
 	const kept = removed.filter((s) => keep.has(s.id) && d.slots.some((x) => x.id === s.id));
 	applyDress(m, d);
 	doc.items = { ...d.current!.items };
+	// An item deleted for good since the snapshot (its Trash entry gone, or another tab) is not worn as a dangling id.
+	reconcileItemSlots(doc.items, new Map(m.items.map((it) => [it.id, it.slot])));
 	doc.variants = { ...d.current!.variants };
 	bump();
 	save();
@@ -1092,15 +1143,15 @@ function restore(e: UndoStep) {
 /** Every user edit goes through here: undo entry, apply, re-render, autosave. A two-handed item and an item in the other hand
  *  are never kept together: `keepHand` names the hand the edit is about (a whole outfit or look passes the Main hand);
  *  without it, the one hand the edit put an item on stays. Returns the message about what came off, which is shown unless
- *  `quiet`. */
+ *  `quiet`. `keepRedo`: a change the person did not make (a draft saving itself) leaves their Redo as it is. */
 export function commit(
 	label: Message,
 	fn: () => void,
-	o: { keepHand?: string; quiet?: boolean } = {}
+	o: { keepHand?: string; quiet?: boolean; keepRedo?: boolean } = {}
 ): Message | undefined {
 	if (!store.project) return;
 	const step = { label, snap: snap() };
-	doc.redo = [];
+	if (!o.keepRedo) clearRedo(doc.id);
 	const before = { ...doc.items };
 	fn();
 	doc.undo = [...doc.undo.slice(-99), { ...step, from: slotsNow() }];
@@ -1143,32 +1194,292 @@ function bump() {
  *  reachable after the thing is back. Redo is cleared rather than replaying a deletion. */
 export async function undo() {
 	const e = doc.undo.at(-1);
-	if (!e) return;
+	if (!e || waitForStep()) return;
 	if (e.trash) {
-		const trash = e.trash;
-		doc.undo = doc.undo.slice(0, -1);
-		doc.redo = [];
-		if (!(await restoreDeleted(trash))) doc.undo = [...doc.undo, e];
+		const id = doc.id;
+		// The step stays on its stack while the restore runs; a restore drops it (dropTrashSteps), a refusal keeps it.
+		await whileStepping(async () => {
+			if (await restoreDeleted(e.trash!)) historyOf(id).redo = [];
+		});
 		return;
 	}
+	if (e.edit) return applyEdit(e, false);
 	const back = snap();
 	doc.undo = doc.undo.slice(0, -1);
-	restore($state.snapshot(e));
+	restore(e);
 	doc.redo = [...doc.redo, { label: e.label, snap: back, from: slotsNow() }];
 }
-export function redo() {
+export async function redo() {
 	const e = doc.redo.at(-1);
-	if (!e?.snap) return;
+	if (!e || waitForStep()) return;
+	if (e.edit) return applyEdit(e, true);
+	if (!e.snap) return;
 	const back = snap();
 	doc.redo = doc.redo.slice(0, -1);
-	restore($state.snapshot(e));
+	restore(e);
 	doc.undo = [...doc.undo, { label: e.label, snap: back, from: slotsNow() }];
+}
+/** A step that writes the saved record is running: the next Undo or Redo waits for it instead of overtaking it. */
+let stepping = false;
+/** True, and says so, while a step is still being written: a write that never finishes must not leave Undo silently dead. */
+function waitForStep() {
+	if (stepping) toast(message('history.busy'), { tone: 'warning' });
+	return stepping;
+}
+/** Refusals that never pass: the character, item or target the step names changed or is gone. Anything else (busy work,
+ *  drafts, a storage error) may pass later. */
+const STEP_GONE = new Set([
+	'history.changed',
+	'wardrobe.itemMoveChanged',
+	'directionsSheet.characterUnavailable',
+	'renameSheet.itemMissing',
+	'renameSheet.moveMissing'
+]);
+/** Run a step's write. A step refused for good is dropped (`drop`), so the older steps behind it stay reachable, and the
+ *  notice says it was removed; any other failure keeps it where it was. */
+async function whileStepping(run: () => Promise<void>, drop?: () => void) {
+	stepping = true;
+	try {
+		await run();
+	} catch (error) {
+		const gone = !!drop && error instanceof LocalizedError && STEP_GONE.has(error.translation.key);
+		if (gone) drop();
+		toast(gone ? message('history.changed') : (errorTranslation(error) ?? errorMessage(error)), {
+			tone: 'danger',
+			error
+		});
+	} finally {
+		stepping = false;
+	}
+}
+/** The history holds a state proxy of a step: its function is the same object, so it identifies the step. */
+const sameStep = (a: UndoStep) => (b: UndoStep) => b.edit === a.edit;
+const without = (id: string, stack: 'undo' | 'redo', e: UndoStep) => () => {
+	const history = historyOf(id);
+	history[stack] = history[stack].filter((s) => !sameStep(e)(s));
+};
+/** Redo stacks a new action of the person cleared, per character: counted, since other updates (a background wear, a Trash
+ *  entry leaving) replace the arrays too without clearing anything. */
+const redoClears = new Map<string, number>();
+function clearRedo(id: string) {
+	historyOf(id).redo = [];
+	redoClears.set(id, (redoClears.get(id) ?? 0) + 1);
+}
+/** Undo (or redo) a saved-record step. It stays on its stack while its write runs and moves to the other stack only once
+ *  the write lands, so a write that fails or never finishes never loses it. A finished Redo always rejoins Undo; a finished
+ *  Undo joins Redo unless a new action cleared Redo meanwhile. The history is the character's own, also when another
+ *  character was opened meanwhile. */
+function applyEdit(e: UndoStep, redoing: boolean) {
+	const id = doc.id,
+		[from, to] = redoing ? (['redo', 'undo'] as const) : (['undo', 'redo'] as const),
+		clears = redoClears.get(id) ?? 0;
+	return whileStepping(
+		async () => {
+			if ((await e.edit!(redoing)) === false) return;
+			without(id, from, e)();
+			const history = historyOf(id);
+			if (redoing || (redoClears.get(id) ?? 0) === clears) history[to] = [...history[to], e];
+		},
+		without(id, from, e)
+	);
+}
+/** A notice's Undo: exactly the change it announced, even when newer steps followed it, since a saved-record step never
+ *  depends on them (each checks the record itself). It leaves the history, as a delete restored from Trash does. */
+export async function undoStep(projectId: string, step: UndoStep) {
+	const undos = historyOf(projectId).undo,
+		at = undos.findIndex(sameStep(step));
+	if (at < 0) {
+		toast(message('history.notInHistory'));
+		return;
+	}
+	if (waitForStep()) return;
+	if (projectId === doc.id && at === undos.length - 1) return undo();
+	await whileStepping(
+		async () => {
+			if ((await step.edit!(false)) !== false) without(projectId, 'undo', step)();
+		},
+		without(projectId, 'undo', step)
+	);
+}
+/** Add a step to a character's history (the open one's, or the one kept for another). */
+function pushStep(projectId: string, step: UndoStep) {
+	clearRedo(projectId);
+	const history = historyOf(projectId);
+	history.undo = [...history.undo.slice(-99), step];
 }
 /** Add a delete to the history: one step whose Undo restores exactly the entry the delete wrote. */
 export function pushRecovery(label: Message, trash: string) {
 	if (!store.project) return;
-	doc.redo = [];
-	doc.undo = [...doc.undo.slice(-99), { label, trash, from: slotsNow() }];
+	pushStep(doc.id, { label, trash, from: slotsNow() });
+}
+
+// ---- artwork steps: a free edit of saved artwork (frame, directions, Fix frames, item colors) undone by writing back the
+// record it replaced ----
+/** Parts of a saved character that dressing, renames and the move description change without touching its artwork. An
+ *  artwork step compares everything else, and keeps each of these as it is now unless it still matches the step's other
+ *  side (then it changes with the step). */
+type Part = { get: (r: StoredProject) => unknown; set: (r: StoredProject, value: unknown) => void };
+const field = <K extends string>(
+	of: (r: StoredProject) => Partial<Record<K, unknown>> | undefined,
+	key: K
+): Part => ({
+	get: (r) => of(r)?.[key],
+	set: (r, value) => {
+		const target = of(r);
+		if (!target) return;
+		if (value === undefined) delete target[key];
+		else target[key] = value;
+	}
+});
+const manifestOf = (r: StoredProject) => r.manifest as unknown as Record<string, unknown>;
+function liveParts(r: StoredProject): Part[] {
+	const itemOf = (id: string) => (x: StoredProject) =>
+			x.manifest.items.find((it) => it.id === id) as unknown as Record<string, unknown> | undefined,
+		moveOf = (id: string) => (x: StoredProject) =>
+			x.manifest.rig.animations.find((a) => a.id === id) as unknown as
+				Record<string, unknown> | undefined;
+	return [
+		field((x) => x as unknown as Record<string, unknown>, 'dress'),
+		field((x) => x as unknown as Record<string, unknown>, 'savedAt'),
+		field((x) => x.character, 'looks'),
+		...(['name', 'exportId', 'presets', 'materials', 'slots'] as const).map((key) =>
+			field(manifestOf, key)
+		),
+		...r.manifest.items.flatMap((it) =>
+			(['name', 'exportId', 'hides', 'materials'] as const).map((key) => field(itemOf(it.id), key))
+		),
+		...r.manifest.rig.animations.flatMap((a) =>
+			(['name', 'exportId'] as const).map((key) => field(moveOf(a.id), key))
+		)
+	];
+}
+/** The record without its live parts: what an artwork step must find unchanged before it writes. */
+function artworkOf(r: StoredProject): string {
+	const out = structuredClone(r);
+	for (const part of liveParts(r)) part.set(out, undefined);
+	return stableStringify(out);
+}
+/** `target` (one side of a step) with the live parts that changed since `expect` (its other side) taken from `current`. */
+function withLiveParts(target: StoredProject, expect: StoredProject, current: StoredProject) {
+	const out = structuredClone(target);
+	for (const part of liveParts(current))
+		if (stableStringify(part.get(current)) !== stableStringify(part.get(expect)))
+			part.set(out, structuredClone(part.get(current)));
+	// Slots edited since keep those edits, yet hold the per-direction layer order too: the overrides of directions this step
+	// brings back (removing a direction dropped them) come back with it, and those of directions it removes go.
+	if (stableStringify(current.manifest.slots) !== stableStringify(expect.manifest.slots)) {
+		const had = new Set(expect.manifest.rig.directions.map((d) => d.id)),
+			returning = (slot: Slot) =>
+				(target.manifest.slots.find((x) => x.id === slot.id)?.zOverrides ?? []).filter(
+					(o) => o.dir && !had.has(o.dir)
+				);
+		out.manifest.slots = retainSlotDirections(
+			current.manifest.slots.map((slot) => {
+				const back = returning(slot);
+				return structuredClone(
+					back.length ? { ...slot, zOverrides: [...(slot.zOverrides ?? []), ...back] } : slot
+				);
+			}),
+			target.manifest.rig.directions
+		);
+	}
+	out.savedAt = new Date().toISOString();
+	return out;
+}
+/** A history step found the saved record changed in a way it cannot safely reverse: it is dropped (whileStepping). */
+const historyChanged = () =>
+	new LocalizedError(
+		'This step was removed from the history: the character changed since, so it can no longer be undone or redone.',
+		'history.changed'
+	);
+type ArtworkAction = 'change the frame of' | 'change directions for' | 'replace body frames of';
+/** Why the edit `action` names cannot be written again now: the same checks as the edit itself. */
+const artworkBlocked = (action: ArtworkAction, id: string) =>
+	action === 'change the frame of'
+		? frameEditsBlocked(id)
+		: action === 'change directions for'
+			? directionEditsBlocked(id)
+			: characterEditBlocked('fix frames of', id);
+/** A free artwork edit as one step, made before the edit's save writes (both records are known then). `before` and `after`
+ *  are the record around the edit. `action`: the edit replaces the whole character while it is idle, so its undo does too;
+ *  without it only item `itemId` changes, and only it is written back. The artwork only one side uses is copied now, in
+ *  parallel: the stored record still holds the before side, so no cleanup can have swept it, and `written` holds the new
+ *  images the save stores. Undefined when some of it is not stored: the edit is then saved without a step
+ *  (recordArtworkStep says so). */
+export async function prepareArtworkStep(
+	o: {
+		projectId: string;
+		label: Message;
+		before: StoredProject;
+		after: StoredProject;
+		action?: ArtworkAction;
+		itemId?: string;
+	},
+	written: Map<string, Blob>
+): Promise<UndoStep | undefined> {
+	const { projectId, before, after, action, itemId } = o;
+	// The artwork itself, not every hash-like string (a body hash or rig version names no stored image).
+	const refs = (r: StoredProject) =>
+			new Set(
+				[...artworkRefs(r.manifest)].flatMap(([hash]) =>
+					typeof hash === 'string' && hash.startsWith('sha256:') ? [hash.slice(7)] : []
+				)
+			),
+		a = refs(before),
+		b = refs(after),
+		keys = [...a, ...b].filter((key) => a.has(key) !== b.has(key));
+	const found = await Promise.all(
+		keys.map(
+			async (key) =>
+				written.get(key) ??
+				(await db.getBlob(key).catch((error: unknown) => {
+					console.error('undo step artwork', error);
+					return undefined;
+				}))
+		)
+	);
+	if (found.some((blob) => !blob)) return;
+	const blobs = new Map(keys.map((key, i) => [key, found[i]!]));
+	return {
+		label: o.label,
+		edit: async (redo) => {
+			const [expect, target] = redo ? [before, after] : [after, before];
+			const blocked = action && artworkBlocked(action, projectId);
+			if (blocked) throw blocked;
+			await flushSave();
+			if (action) {
+				const current = db.asLoaded(await db.get<StoredProject>('projects', projectId));
+				if (!current?.manifest || artworkOf(current) !== artworkOf(expect)) throw historyChanged();
+				await db.saveIdleCharacter(current, withLiveParts(target, expect, current), blobs, action);
+			} else
+				await db.updateCharacter<StoredProject>(projectId, blobs, (stored) => {
+					const current = db.asLoaded(stored);
+					const now = current?.manifest.items.findIndex((it) => it.id === itemId) ?? -1;
+					if (!current || now < 0) throw historyChanged();
+					// Only this item is compared and written: everything else stays as it is now.
+					const only = (r: StoredProject) => ({
+						...current,
+						manifest: {
+							...current.manifest,
+							items: r.manifest.items.filter((it) => it.id === itemId)
+						}
+					});
+					if (artworkOf(only(current)) !== artworkOf(only(expect))) throw historyChanged();
+					const next = withLiveParts(only(target), only(expect), only(current)).manifest.items[0];
+					if (!next) throw historyChanged();
+					current.manifest.items[now] = next;
+					current.savedAt = new Date().toISOString();
+					return current;
+				});
+			await refreshCharacterDirections(projectId);
+		}
+	};
+}
+/** Once an artwork edit's save landed, and before anything reloads, so Undo offers it at once: add its step, or say the
+ *  change was saved without one. */
+export function recordArtworkStep(projectId: string, step: UndoStep | undefined) {
+	if (step) pushStep(projectId, step);
+	else toast(message('history.notRecorded'), { tone: 'warning' });
 }
 
 let saveT: ReturnType<typeof setTimeout> | undefined;
@@ -1323,7 +1634,9 @@ const WORK_BLOCKS = new Set([
 	'directionsSheet.resolveDrafts',
 	'moveRemoval.resolveDrafts',
 	'state.finishBeforeFrameChange',
-	'adjustFrame.errors.resolveDrafts'
+	'adjustFrame.errors.resolveDrafts',
+	'state.finishBeforeMoveImport',
+	'moveImport.errors.resolveDrafts'
 ]);
 export const blockedByWork = (reason: LocalizedError | '') =>
 	!!reason && WORK_BLOCKS.has(reason.translation.key);
@@ -1361,7 +1674,12 @@ function workHolds(id: string, stoppedMove = false) {
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(
 	action:
-		'delete' | 'delete move' | 'change directions for' | 'fix frames of' | 'change the frame of',
+		| 'delete'
+		| 'delete move'
+		| 'change directions for'
+		| 'fix frames of'
+		| 'change the frame of'
+		| 'import moves into',
 	id: string,
 	stoppedMove = false
 ): LocalizedError | '' {
@@ -1398,10 +1716,15 @@ function characterEditBlocked(
 								'Finish or dismiss pending generation work before adjusting the frame.',
 								'state.finishBeforeFrameChange'
 							)
-						: new LocalizedError(
-								'Finish or dismiss pending generation work before changing directions.',
-								'state.finishBeforeDirectionRemoval'
-							);
+						: action === 'import moves into'
+							? new LocalizedError(
+									'Finish or dismiss pending generation work before importing moves.',
+									'state.finishBeforeMoveImport'
+								)
+							: new LocalizedError(
+									'Finish or dismiss pending generation work before changing directions.',
+									'state.finishBeforeDirectionRemoval'
+								);
 	return '';
 }
 
@@ -1464,17 +1787,8 @@ function moveReviewHold(reviews: StoredProject['moveReviews']): LocalizedError |
 			)
 		: '';
 }
-const pngBlobs = async (images: Map<Sha256, Img>) => {
-	const blobs = new Map<string, Blob>();
-	for (const [hash, image] of images)
-		blobs.set(
-			hash.slice(7),
-			new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
-		);
-	return blobs;
-};
-/** Adjust frame: move the whole character up or down and change its frame (free and lossless), with an Undo notice that
- *  restores the record as it was. `stoppedMove`: chosen from this character's stopped move review, which continues on the
+/** Adjust frame: move the whole character up or down and change its frame (free and lossless), as one history step that
+ *  its notice's Undo also reverses. `stoppedMove`: chosen from this character's stopped move review, which continues on the
  *  result. */
 export async function adjustCharacter(
 	id: string,
@@ -1504,29 +1818,36 @@ export async function adjustCharacter(
 			'Save or discard the pending State before adjusting the frame.',
 			'adjustFrame.errors.statePending'
 		);
-	const before = rec.manifest.rig.cell.w,
-		old = new Map(project.images as Map<Sha256, Img>);
+	const before = rec.manifest.rig.cell.w;
 	const { record: next, newImages } = await reframeCharacter(
 		rec,
 		project.images,
 		change,
-		async (hash) => {
-			const image = await readStoredImage(hash);
-			old.set(hash, image);
-			return image;
-		}
+		readStoredImage
 	);
 	const blobs = await pngBlobs(newImages);
+	const step = await prepareArtworkStep(
+		{
+			projectId: id,
+			label: message('adjustFrame.title'),
+			before: rec,
+			after: next,
+			action: 'change the frame of'
+		},
+		blobs
+	);
 	blocked();
 	await db.saveIdleCharacter(rec, next, blobs, 'change the frame of', stoppedMove);
+	recordArtworkStep(id, step);
 	await refreshCharacterDirections(id);
-	if (quiet) return;
+	// Without a step, its notice already said the change was saved but cannot be undone.
+	if (quiet || !step) return;
 	toast(
 		[
 			message('adjustFrame.saved', { change: frameChangeText(before, change) }),
 			message('common.undo')
 		],
-		{ tone: 'success', duration: 10000, action: () => void undoAdjust(id, next, rec, old) }
+		{ tone: 'success', duration: 10000, action: () => void undoStep(id, step) }
 	);
 }
 /** Make room for moves (lib/rig/reframe.ts makeRoom) and save it like Adjust frame; says why when nothing can or need change. */
@@ -1544,26 +1865,62 @@ export async function makeRoomFor(id: string): Promise<void> {
 		throw new LocalizedError('This character already has room for moves.', 'adjustFrame.roomy');
 	await adjustCharacter(id, plan);
 }
-/** Put back the record a change replaced, if nothing changed it since; its images are stored again in case cleanup ran. */
-async function undoAdjust(
+/** Why moves cannot be imported into this character now, or ''. */
+export function moveImportBlocked(id: string): LocalizedError | '' {
+	if (!id.startsWith('rig-'))
+		return new LocalizedError('Only saved characters can be edited.', 'directionsSheet.savedOnly');
+	return (
+		characterEditBlocked('import moves into', id) ||
+		(!generationSettled()
+			? new LocalizedError(
+					'Wait for the current generation work to finish.',
+					'directionsSheet.waitForGeneration'
+				)
+			: '') ||
+		(gens.some((gen) => gen.draft.rigId === id && !gen.draft.acceptedAt)
+			? new LocalizedError(
+					'Keep or dismiss this character’s item drafts before importing moves.',
+					'moveImport.errors.resolveDrafts'
+				)
+			: '')
+	);
+}
+/** Import moves and States from a reviewed ZIP plan (lib/rig/moveImport.ts), free, onto the version the review showed. */
+export async function importMoves(
 	id: string,
-	changed: StoredProject,
-	original: StoredProject,
-	images: Map<Sha256, Img>
-) {
-	try {
-		const blocked = frameEditsBlocked(id);
-		if (blocked) throw blocked;
-		await flushSave();
-		await db.saveIdleCharacter(changed, original, await pngBlobs(images), 'change the frame of');
-		await refreshCharacterDirections(id);
-		toast(message('adjustFrame.undone'), { tone: 'success' });
-	} catch (error) {
-		toast(errorTranslation(error) ?? message('adjustFrame.errors.undoFailed'), {
-			tone: 'danger',
-			error
-		});
-	}
+	plan: MoveImportPlan,
+	ids: readonly string[],
+	expect: StoredProject
+): Promise<{ id: string; kind: 'move' | 'state' }[]> {
+	const blocked = () => {
+		const reason = moveImportBlocked(id);
+		if (reason) throw reason;
+	};
+	blocked();
+	await flushSave();
+	const { rec, project } = await loadProject(id);
+	if (stableStringify(expect) !== stableStringify(rec))
+		throw new LocalizedError(
+			'This character changed. Choose the ZIP again to review the latest version.',
+			'moveImport.errors.changed'
+		);
+	const { applyMoveImport } = await lazy(() => import('../lib/rig/moveImport.ts'));
+	const { record, images, added } = await applyMoveImport(
+		{ record: rec, images: project.images },
+		plan,
+		ids
+	);
+	const blobs = await pngBlobs(images);
+	blocked();
+	await db.saveIdleCharacter(
+		rec,
+		{ ...rec, ...record, savedAt: new Date().toISOString() },
+		blobs,
+		'import moves into'
+	);
+	notifyLibraryChanged(id);
+	await refreshCharacterDirections(id);
+	return added;
 }
 function generationSettled() {
 	return !afterConnect && activeGenerationSettled();
@@ -1818,8 +2175,10 @@ export async function refreshRecentlyDeleted(): Promise<void> {
 /** Drop recovery steps that name entries which no longer exist: a restore through the toast or Trash, or a permanent delete. */
 function dropTrashSteps(keys: Iterable<string>) {
 	const gone = new Set(keys);
-	doc.undo = doc.undo.filter((step) => !step.trash || !gone.has(step.trash));
-	doc.redo = doc.redo.filter((step) => !step.trash || !gone.has(step.trash));
+	for (const history of [doc, ...histories.values()]) {
+		history.undo = history.undo.filter((step) => !step.trash || !gone.has(step.trash));
+		history.redo = history.redo.filter((step) => !step.trash || !gone.has(step.trash));
+	}
 }
 
 async function restoreDeletedEntry(id: string): Promise<boolean> {
@@ -2029,16 +2388,19 @@ export function wear(id: string, quiet = false): Message | undefined {
 	const on = doc.items[it.slot] === id && !doc.drafts[it.slot];
 	delete doc.drafts[it.slot]; // a saved item put on or taken off replaces the draft worn in its slot
 	ui.selected = id;
-	// Put on while Preview shows a move it has no frames for: it would be worn and invisible. Its standing frames show it.
-	const m = store.project?.manifest;
-	if (
-		!on &&
-		m &&
-		experience.mode === 'preview' &&
-		notShownIn(m, it, ui.anim) &&
-		!notShownIn(m, it, DEFAULT_MOVE)
-	)
-		showStanding();
+	// Put on while Preview shows a move it has no frames for: it would be worn and invisible, so Preview shows one that has
+	// them (the Wear row of the tile's menu names it).
+	const m = store.project?.manifest,
+		shown = !on && m && experience.mode === 'preview' ? wearClip(m, it, ui.anim) : undefined;
+	if (shown) {
+		ui.anim = shown;
+		ui.frame = 0;
+		// It may be drawn in only some views there: face one that shows it.
+		if (missingFrames(m!, it, shown, ui.dir).length) {
+			const facing = m!.rig.directions.find((d) => !missingFrames(m!, it, shown, d.id).length);
+			if (facing) ui.dir = facing.id;
+		}
+	}
 	if (doc.items[it.slot] !== (on ? null : id))
 		return commit(
 			message(on ? 'history.takeOffItem' : 'history.wear', { name: it.name }),
@@ -2278,7 +2640,9 @@ export async function matchItemPalette(
 ) {
 	const request = openRequest;
 	await flushSave();
-	await (await itemRun()).matchItemColors(projectId, itemId, anim, dir, reviewed);
+	await withItemStep(projectId, itemId, message('itemPane.matchItemColors'), async (beforeWrite) =>
+		(await itemRun()).matchItemColors(projectId, itemId, anim, dir, reviewed, beforeWrite)
+	);
 	await refreshSaved(projectId, request);
 }
 
@@ -2307,33 +2671,67 @@ export async function prepareFrames(
 	await flushSave();
 	return (await framesModule()).prepareFrames(projectId, itemId, anim, files);
 }
-/** Save a reviewed import; the toast's Undo reverts exactly this import. `name` is how the sheet calls the target. */
+/** Save one item's artwork change (`save` passes `beforeWrite` on to the edit) as one step, recorded once the save lands:
+ *  written back as the whole idle character for the body (whose frames items are fitted to), or as just that item. The
+ *  edit gives exactly the records its save checks and writes, so a change another tab made meanwhile is never taken for
+ *  part of it. */
+async function withItemStep<T>(
+	projectId: string,
+	itemId: string,
+	label: Message,
+	save: (beforeWrite: BeforeWrite) => Promise<T>
+): Promise<{ result: T; step?: UndoStep }> {
+	const made: { step?: UndoStep } = {};
+	const result = await save(async ({ before, after }, written) => {
+		made.step = await prepareArtworkStep(
+			{
+				projectId,
+				label,
+				before,
+				after,
+				...(itemId === before.manifest.rig.baseItem
+					? { action: 'replace body frames of' as const }
+					: { itemId })
+			},
+			written
+		);
+	});
+	recordArtworkStep(projectId, made.step);
+	return { result, step: made.step };
+}
+/** Save a reviewed import as one history step, which the notice's Undo also reverses. `name` is how the sheet calls the
+ *  target. */
 export async function replaceFrames(prepared: PreparedFrames, name: string) {
 	const request = openRequest,
 		{ projectId, plan } = prepared;
-	const id = await (await framesModule()).saveFrames(prepared);
+	const { step } = await withItemStep(
+		projectId,
+		plan.itemId,
+		message('fixFrames.title'),
+		async (beforeWrite) => (await framesModule()).saveFrames(prepared, beforeWrite)
+	);
 	await refreshSaved(projectId, request);
-	toast(message('fixFrames.replaced', { count: plan.changed.length, name }), {
-		tone: 'success',
-		duration: 10000,
-		action: () => revertFrames(projectId, plan.itemId, { undo: id }),
-		actionLabel: message('fixFrames.undo')
-	});
+	if (step)
+		toast(message('fixFrames.replaced', { count: plan.changed.length, name }), {
+			tone: 'success',
+			duration: 10000,
+			action: () => undoStep(projectId, step),
+			actionLabel: message('fixFrames.undo')
+		});
 }
-/** Undo one import of an item's frames, or restore every edited frame of it. */
-export async function revertFrames(
-	projectId: string,
-	itemId: string,
-	how: { undo: string } | 'restore'
-) {
+/** Restore every edited frame of an item, as one history step. */
+export async function restoreFrames(projectId: string, itemId: string) {
 	const request = openRequest;
 	try {
 		await flushSave();
-		const count = await (await framesModule()).revertFrames(projectId, itemId, how);
+		const { result: count, step } = await withItemStep(
+			projectId,
+			itemId,
+			message('history.restoreOriginals'),
+			async (beforeWrite) => (await framesModule()).restoreFrames(projectId, itemId, beforeWrite)
+		);
 		await refreshSaved(projectId, request);
-		toast(message(how === 'restore' ? 'fixFrames.restored' : 'fixFrames.undone', { count }), {
-			tone: 'success'
-		});
+		if (step) toast(message('fixFrames.restored', { count }), { tone: 'success' });
 	} catch (error) {
 		console.error('fix frames', error);
 		toast(errorTranslation(error) ?? message('fixFrames.errors.saveFailed'), {
@@ -2405,21 +2803,51 @@ export function itemSlotTargets(manifest: Manifest, item: Item) {
 	});
 }
 
+/** Move a saved item to another category, as one history step unless Undo or Redo is the one moving it back
+ *  (`history: false`): then every refusal throws why instead of returning false, for the step to report it. */
 export async function moveItemToSlot(
 	itemId: string,
 	targetId: string,
-	{ showDestination = false } = {}
+	{ showDestination = false, history = true } = {}
 ): Promise<boolean> {
 	const item = itemById(itemId),
 		projectId = doc.id,
 		request = openRequest;
-	if (!item || isDemo() || relocating) return false;
+	const refuse = (why: () => LocalizedError) => {
+		if (history) return false;
+		throw why();
+	};
+	if (!item || isDemo()) return refuse(historyChanged);
+	if (relocating)
+		return refuse(
+			() =>
+				new LocalizedError(
+					'Another item is still moving. Try again when it finishes.',
+					'wardrobe.itemMoving'
+				)
+		);
 	relocating = true;
 	if (edits !== savedEdits && !pendingSave) save();
 	const startingEdits = edits;
 	const previous = flushSave();
 	const work = previous.then(async () => {
-		if (openRequest !== request || savedEdits < startingEdits) return false;
+		if (openRequest !== request)
+			return refuse(
+				() =>
+					new LocalizedError(
+						'The character changed meanwhile. Try again.',
+						'state.theCharacterChangedMeanwhileTryAgain'
+					)
+			);
+		// The autosave failure was already reported; the move waits for it, as the record it would write is behind.
+		if (savedEdits < startingEdits)
+			return refuse(
+				() =>
+					new LocalizedError(
+						'Your latest changes could not be saved. Resolve the storage error, then try again.',
+						'history.saveFailed'
+					)
+			);
 		const record = await db.update<DressedRecord>(
 			'projects',
 			projectId,
@@ -2450,6 +2878,12 @@ export async function moveItemToSlot(
 					target = manifest && slotDef(manifest, targetId),
 					current =
 						rec?.dress?.current ?? (manifest?.presets[0] && structuredClone(manifest.presets[0]));
+				// Being made or waiting for review is temporary: the move (or its Undo) can run once the item is saved.
+				if (live && (live.status !== 'accepted' || live.pending?.length))
+					throw new LocalizedError(
+						'This item is still being made or reviewed. Try again once it is saved.',
+						'wardrobe.itemNotReady'
+					);
 				if (
 					!rec ||
 					!manifest ||
@@ -2495,6 +2929,12 @@ export async function moveItemToSlot(
 			if (showDestination) ui.group = targetId;
 			bump();
 			if (edits !== startingEdits) save();
+			// Moving it back runs the same checks, so a busy or changed category refuses the step and says why.
+			if (history)
+				pushStep(projectId, {
+					label: message('history.moveItem', { name: item.name }),
+					edit: (redo) => moveItemToSlot(itemId, redo ? targetId : item.slot, { history: false })
+				});
 		}
 		toast(
 			message('wardrobe.itemMoved', {
@@ -2505,6 +2945,7 @@ export async function moveItemToSlot(
 		return true;
 	});
 	const handled = work.catch((error: unknown) => {
+		if (!history) throw error;
 		const reason = errorMessage(error);
 		if (typeof reason !== 'string' && reason.key === 'wardrobe.itemMoveBusy')
 			toast(reason, {
@@ -2517,7 +2958,11 @@ export async function moveItemToSlot(
 		else toast(message('state.couldNotSaveReason', { reason }), { tone: 'danger', error });
 		return false;
 	});
-	saving = handled.then(() => undefined);
+	// Never a rejected chain: every later save would wait on it and fail.
+	saving = handled.then(
+		() => undefined,
+		() => undefined
+	);
 	try {
 		return await handled;
 	} finally {
@@ -2888,14 +3333,40 @@ export async function renameProject(name: string) {
 	if (!isDemo()) await saveIdentity(doc.id, {}, name);
 }
 
-/** Character, item and move names live in the saved record, outside Undo, like the records' other identity. */
-export async function saveIdentity(
+type Identity = { name?: string; exportId?: string };
+const identityTarget = (
+	m: Manifest,
+	of: Pick<RenameOf, 'itemId' | 'moveId'>
+): Identity | undefined =>
+	of.moveId
+		? m.rig.animations.find((move) => move.id === of.moveId)
+		: of.itemId
+			? m.items.find((item) => item.id === of.itemId)
+			: m;
+function identityOf(m: Manifest, of: Pick<RenameOf, 'itemId' | 'moveId'>): Identity | undefined {
+	const target = identityTarget(m, of);
+	return target && { name: target.name, exportId: target.exportId };
+}
+/** Put back a name and export ID exactly, checked like any rename (another item may have taken that export ID since). */
+function putIdentity(
+	m: Manifest,
 	projectId: string,
 	of: Pick<RenameOf, 'itemId' | 'moveId'>,
-	name: string | undefined,
-	exportId?: string
+	value: Identity
 ) {
-	if (projectId.startsWith('fixture:')) return;
+	if (of.moveId) editMoveIdentity(m, of.moveId, value.name, value.exportId ?? of.moveId);
+	else editIdentity(m, projectId, of.itemId, value.name, value.exportId);
+	const target = identityTarget(m, of)!;
+	for (const key of ['name', 'exportId'] as const)
+		if (value[key] === undefined) delete target[key];
+		else target[key] = value[key];
+}
+/** Write a name change to the saved record and show it here and in other tabs. */
+async function writeIdentity(
+	projectId: string,
+	of: Pick<RenameOf, 'itemId' | 'moveId'>,
+	edit: (m: Manifest) => void
+) {
 	const request = openRequest;
 	const updated = await db.update<{ manifest?: Manifest }>('projects', projectId, (rec) => {
 		if (!rec?.manifest)
@@ -2903,14 +3374,63 @@ export async function saveIdentity(
 				'This saved character is no longer available.',
 				'directionsSheet.characterUnavailable'
 			);
-		if (of.moveId) editMoveIdentity(rec.manifest, of.moveId, name, exportId);
-		else editIdentity(rec.manifest, projectId, of.itemId, name, exportId);
+		edit(rec.manifest);
 		return rec;
 	});
 	if (opening === projectId) openingIdentityRevision++;
 	applySavedIdentity(projectId, of, request, updated.manifest!);
 	identityChannel?.postMessage({ projectId, ...of });
 	await refreshProjects();
+}
+/** Rename a character, item or move, or change its export ID, as one history step. Its Undo and Redo write the saved record
+ *  only while it still holds the other side, so a newer rename (here or in another tab) is never overwritten. */
+export async function saveIdentity(
+	projectId: string,
+	of: Pick<RenameOf, 'itemId' | 'moveId'>,
+	name: string | undefined,
+	exportId?: string
+) {
+	if (projectId.startsWith('fixture:')) return;
+	const sides: { from?: Identity; to?: Identity } = {};
+	await writeIdentity(projectId, of, (m) => {
+		sides.from = identityOf(m, of);
+		if (of.moveId) editMoveIdentity(m, of.moveId, name, exportId);
+		else editIdentity(m, projectId, of.itemId, name, exportId);
+		sides.to = identityOf(m, of);
+	});
+	const { from, to } = sides;
+	if (!from || !to || stableStringify(from) === stableStringify(to)) return;
+	pushStep(projectId, {
+		label: message(
+			of.moveId
+				? 'renameSheet.titleRenameMove'
+				: of.itemId
+					? 'renameSheet.titleRenameItem'
+					: 'renameSheet.titleRenameCharacter'
+		),
+		edit: (redo) =>
+			writeIdentity(projectId, of, (m) => {
+				const [expect, target] = redo ? [from, to] : [to, from];
+				if (stableStringify(identityOf(m, of)) !== stableStringify(expect)) throw historyChanged();
+				putIdentity(m, projectId, of, target);
+			})
+	});
+}
+
+/** Save the description new moves use, as one history step that writes back only over the text it replaced. */
+export async function saveDescription(projectId: string, looks: string) {
+	const { saveLooks } = await setupFlow(),
+		from = (await saveLooks(projectId, looks)).trim(),
+		to = looks.trim();
+	if (from === to) return;
+	pushStep(projectId, {
+		label: message('history.changeDescription'),
+		edit: async (redo) => {
+			await saveLooks(projectId, redo ? to : from, (saved) => {
+				if (saved !== (redo ? from : to)) throw historyChanged();
+			});
+		}
+	});
 }
 
 /** Outfits are dress-up state: renaming one is a step Undo reverses, like saving or deleting it. */
@@ -4376,6 +4896,31 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 			: []),
 		...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)
 	].filter((s) => !itemId || s.items.includes(itemId));
+/** A character's items being drawn on its saved moves and States (itemJobs.ts), for the clip rows and Wardrobe tiles. */
+export function characterItemJobs(projectId: string, jobs: readonly JobRec[]) {
+	const spec =
+		moving.spec && (!moving.done || moveRunning) && moving.projectId === projectId
+			? moving.spec
+			: null;
+	const list = itemJobs(
+		spec && {
+			spec,
+			progress: moving.progress,
+			attention: !!moving.error || !!moving.repairReview
+		},
+		moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec),
+		jobs
+	);
+	// A request leaves the queue before its view is saved and counted: the share shown never goes back meanwhile.
+	for (const job of list)
+		if (job.status === 'drawing' && spec) {
+			const key = `${projectId}/${spec.activityScope ?? spec.seed}/${spec.attempt ?? ''}/${job.clip}/${job.item}`;
+			job.percent = Math.max(job.percent, shownItemPercent.get(key) ?? 0);
+			shownItemPercent.set(key, job.percent);
+		}
+	return list;
+}
+const shownItemPercent = new Map<string, number>();
 
 export async function pendingBodyMoveName(projectId: string, id: string) {
 	const matches = (spec: MoveSpec) => !spec.itemsOnly && sameClipName(spec.id, id);

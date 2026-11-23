@@ -2,7 +2,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import Sprite from './Sprite.svelte';
-	import { moveThumbnails } from './moveThumbnails.ts';
+	import { lookThumbnails } from './moveThumbnails.ts';
 	import {
 		ui,
 		doc,
@@ -14,22 +14,25 @@
 		openPendingWork,
 		openMoveReview,
 		openFrames,
-		openRename
+		openRename,
+		characterItemJobs
 	} from './state.svelte.ts';
-	import { ChevronRight, Plus } from './icons.ts';
+	import { inFlight } from './itemJobs.ts';
+	import { ChevronRight, FolderOpen, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import type { MoveSpec } from './create.ts';
 	import { displayError } from '../lib/i18n.ts';
 	import { STATE_CAPTURE_MODE, setupRedoMoves } from '../lib/rig/setup.ts';
+	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+	import { clipItemCoverage } from './itemGeneration.ts';
 	import { characterBodySize } from './experience/bounds.ts';
-	import { buildPresentation } from './experience/presentation.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadMoveZip } from './download.svelte.ts';
 	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
-	import { t } from 'svelte-whisper';
+	import { formatNumber, formatPercent, t } from 'svelte-whisper';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { displayMoveJob, moveLabel } from './model.ts';
 	import { openStateReview, stateProgress, stateStatusText } from './stateJobs.svelte.ts';
@@ -46,13 +49,36 @@
 	// animated on them until made again.
 	const redo = $derived(setupRedoMoves(store.exportRecord));
 	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
-	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
-	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
-	const assets = $derived.by(() => {
-		void doc.rev;
-		return view.project ? buildPresentation(view.project) : null;
+	const saved = (spec: MoveSpec) => playback.find((entry) => entry.clip.id === spec.id);
+	// The tab a job's row belongs in: its saved clip's, or Moves for a move still being made.
+	const inThisTab = (spec: MoveSpec) => (saved(spec)?.kind ?? 'move') === kind;
+	// Items drawn on a saved move or State show on its own row and on their Wardrobe tiles, not as rows of their own,
+	// unless the job needs attention (failed, or waiting for its frame review) or its clip is gone: that row opens it.
+	const ownRow = (spec: MoveSpec) => !spec.itemsOnly || !saved(spec);
+	const mine = $derived(
+		!!moving.spec &&
+			moving.projectId === doc.id &&
+			!moving.done &&
+			inThisTab(moving.spec) &&
+			(ownRow(moving.spec) || !!moving.error || !!moving.repairReview)
+	);
+	const queued = $derived(
+		moving.queued.filter((q) => q.projectId === doc.id && ownRow(q.spec) && inThisTab(q.spec))
+	);
+	const drawing = $derived(characterItemJobs(doc.id, $queue.jobs));
+	const itemName = (id: string) => m?.items.find((item) => item.id === id)?.name ?? '';
+	// A running move reports finished calls in progress.done; the queued call in flight adds its own partial progress.
+	const movePercent = $derived.by(() => {
+		const progress = moving.progress;
+		if (!progress?.total) return 0;
+		return Math.min(
+			100,
+			Math.round(
+				((progress.done + inFlight(moving.spec?.activityScope, $queue.jobs)) / progress.total) * 100
+			)
+		);
 	});
-	const thumbnails = $derived(assets && moveThumbnails(assets, view.items));
+	const thumbnails = $derived(view.project && lookThumbnails(view.project, view.items));
 	const pendingStates = $derived(
 		kind === 'state'
 			? Object.values(store.stateAttempts).map((attempt) => ({
@@ -113,6 +139,9 @@
 					m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf))
 						.length}
 				{@const lock = moveDeletionBlocked(a.id)}
+				{@const items = clipItemCoverage(m, a.id)}
+				{@const jobs = drawing.filter((job) => job.clip === a.id)}
+				{@const now = jobs.find((job) => job.status === 'drawing')}
 				<SavedActions
 					name={nice(a.id)}
 					{kind}
@@ -137,6 +166,16 @@
 						? () => {
 								ui.stateCaptureMove = a.id;
 								ui.sheet = 'stateCapture';
+							}
+						: undefined}
+					ongenerateitems={!isDemo() &&
+					a.id !== DEFAULT_MOVE &&
+					!redo.includes(a.id) &&
+					items &&
+					items.drawn < items.total
+						? () => {
+								ui.itemGeneration = a.id;
+								ui.sheet = 'itemGeneration';
 							}
 						: undefined}
 					ondelete={() => removeMove(a.id)}
@@ -167,7 +206,38 @@
 											})
 										: t('moves.oneDirection')
 									: t('export.count.directions', { count: nDirs })}</span
-							>{#if redo.includes(a.id) && !a.sources}<span class="small redo"
+							>{#if now}<span class="muted small item-jobs"
+									><span class="bu-ring ring spin" aria-hidden="true"></span><span
+										>{[
+											formatPercent(now.percent / 100),
+											t('moves.drawingItem', { item: itemName(now.item) }),
+											jobs.length > 1 &&
+												t('moves.moreQueued', {
+													count: jobs.length - 1,
+													n: formatNumber(jobs.length - 1)
+												})
+										]
+											.filter(Boolean)
+											.join(' · ')}</span
+									></span
+								>{:else if jobs.length}<span class="muted small item-jobs"
+									><span class="bu-ring ring" aria-hidden="true"></span><span
+										>{moving.repairReview
+											? t('moves.waitingForRepairReview')
+											: moving.error
+												? t('moves.waitingForFailed')
+												: t('moves.itemsQueued', {
+														count: jobs.length,
+														n: formatNumber(jobs.length)
+													})}</span
+									></span
+								>{:else if items?.total}<span class="muted small"
+									>{t('moves.itemsDrawn', {
+										count: items.total,
+										drawn: formatNumber(items.drawn),
+										n: formatNumber(items.total)
+									})}</span
+								>{/if}{#if redo.includes(a.id) && !a.sources}<span class="small redo"
 									>{t('moves.needsRedo')}</span
 								>{/if}</span
 						>
@@ -178,55 +248,70 @@
 			{#each pendingStates.filter(({ progress }) => progress.status === 'generating') as { attempt, progress } (attempt.token)}
 				{@render stateRow(attempt, progress)}
 			{/each}
-			{#if kind === 'move'}
-				{#if mine && moving.spec}
-					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+			{#if mine && moving.spec}
+				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+					><span class="move-thumb"
 						><span
 							class="bu-ring ring"
 							class:spin={!moving.error && !moving.repairReview}
 							aria-hidden="true"
-						></span><span class="move-text"
-							><b>{jobName(moving.spec)}</b><span class="muted small"
-								>{moving.repairReview
-									? moving.spec?.redrawItem
-										? t('moveSheet.review.redrawTitle')
-										: t('moveSheet.review.repairTitle')
-									: moving.error
-										? t('moves.failed')
-										: t('moves.adding', {
-												done: moving.progress?.done ?? 0,
-												total: moving.progress?.total ?? '?'
-											})}</span
-							></span
-						></button
-					>
-				{/if}
-				{#each queued as q, i (i)}
-					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-						><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
-							><b>{jobName(q.spec)}</b><span class="muted small"
-								>{moving.repairReview
-									? t('moves.waitingForRepairReview')
-									: moving.error
-										? t('moves.waitingForFailed')
-										: t('generation.status.queued')}</span
-							></span
-						></button
-					>
-				{/each}
+						></span></span
+					><span class="move-text"
+						><b>{jobName(moving.spec)}</b><span class="muted small"
+							>{moving.repairReview
+								? moving.spec?.redrawItem
+									? t('moveSheet.review.redrawTitle')
+									: t('moveSheet.review.repairTitle')
+								: moving.error
+									? t('moves.failed')
+									: t('moves.adding', {
+											done: moving.progress?.done ?? 0,
+											total: moving.progress?.total ?? '?'
+										})}</span
+						>{#if !moving.error && !moving.repairReview && moving.progress}<span
+								class="muted small num">{formatPercent(movePercent / 100)}</span
+							>{/if}</span
+					></button
+				>
 			{/if}
+			{#each queued as q, i (i)}
+				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+					><span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span
+					><span class="move-text"
+						><b>{jobName(q.spec)}</b><span class="muted small"
+							>{moving.repairReview
+								? t('moves.waitingForRepairReview')
+								: moving.error
+									? t('moves.waitingForFailed')
+									: t('generation.status.queued')}</span
+						>{#if !moving.error && !moving.repairReview}<span class="muted small num"
+								>{formatPercent(0)}</span
+							>{/if}</span
+					></button
+				>
+			{/each}
 		</div>
-		{#if kind === 'move' && !isDemo()}<button
-				class="bu-action add-row cta"
-				data-variant="outline"
-				onclick={() => (ui.sheet = 'move')}
-				><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
-			>{:else if kind === 'state' && onaddstate}<button
-				class="bu-action add-row cta"
-				data-variant="outline"
-				onclick={onaddstate}
-				><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
-			>{/if}
+		{#if (kind === 'move' && !isDemo()) || (kind === 'state' && onaddstate)}
+			{@const importLabel = openerLabel(
+				t(kind === 'move' ? 'moveImport.importMoves' : 'moveImport.importStates')
+			)}
+			<div class="add-line">
+				{#if kind === 'move'}<button
+						class="bu-action add-row cta"
+						data-variant="outline"
+						onclick={() => (ui.sheet = 'move')}
+						><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
+					>{:else}<button class="bu-action add-row cta" data-variant="outline" onclick={onaddstate}
+						><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
+					>{/if}{#if !isDemo()}<button
+						class="bu-action add-row cta import"
+						data-variant="outline"
+						aria-label={importLabel}
+						title={importLabel}
+						onclick={() => (ui.sheet = 'importMoves')}><FolderOpen size={16} /></button
+					>{/if}
+			</div>
+		{/if}
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>
@@ -283,8 +368,38 @@
 	.redo {
 		color: var(--warn);
 	}
+	/* Items being drawn on this move: a small ring, then the share done and the status, in place of the drawn count. */
+	.item-jobs {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.item-jobs .ring {
+		width: 12px;
+		height: 12px;
+	}
+	.item-jobs > :not(.ring) {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
 	/* The list gap already separates the CTA from the rows above it. */
 	.cta {
 		margin-top: 0;
+	}
+	.add-line {
+		display: flex;
+		gap: 8px;
+	}
+	.add-line > .cta:first-child {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	.import {
+		flex: none;
+		width: 44px;
+		padding: 0;
 	}
 </style>

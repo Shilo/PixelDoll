@@ -402,7 +402,7 @@
 			"1": "Hapus arah?",
 			"other": "Hapus {n} arah?"
 		},
-		"removePermanently": "Hapus permanen",
+		"remove": "Hapus",
 		"removing": "Menghapus…",
 		"savedOnly": "Hanya karakter tersimpan yang dapat diedit.",
 		"waitForGeneration": "Tunggu hingga proses generasi saat ini selesai.",
@@ -413,13 +413,13 @@
 		"saving": "Menyimpan…",
 		"reviewChanges": "Tinjau perubahan",
 		"changeTitle": "Ubah arah?",
-		"confirmMixedRemoval": "Arah berikut akan dihapus dari animasi dan perlengkapan karakter: {directions}. Tindakan ini tidak bisa dibatalkan.",
+		"confirmMixedRemoval": "Arah berikut akan dihapus dari animasi dan perlengkapan karakter: {directions}. Sampai Anda memuat ulang atau menutup halaman ini, Urungkan dapat mengembalikannya jika tidak ada hal lain yang mengubah karakter ini lebih dulu.",
 		"confirmReplace": "Pencerminan mengganti gambar untuk {directions} dengan frame terbalik dari arah berlawanan. Jika pencerminan dinonaktifkan nanti, frame tersebut tetap digunakan. Unduh cadangan untuk menyimpan gambar asli.",
 		"labelDirectionsToKeep": "Arah yang dipertahankan",
 		"loadingDirections": "Memuat arah…",
 		"downloadBackup": "Unduh cadangan",
 		"reviewRemoval": "Tinjau penghapusan",
-		"confirmRemoval": "Arah berikut akan dihapus dari animasi dan perlengkapan karakter ini: {directions}. Arah lainnya tidak berubah. Tindakan ini tidak dapat diurungkan.",
+		"confirmRemoval": "Arah berikut akan dihapus dari animasi dan perlengkapan karakter ini: {directions}. Arah lainnya tidak berubah. Sampai Anda memuat ulang atau menutup halaman ini, Urungkan dapat mengembalikannya jika tidak ada hal lain yang mengubah karakter ini lebih dulu.",
 		"rPGMakerExportNeedsAllFourCardinal": "Ekspor RPG Maker memerlukan keempat arah mata angin utama.",
 		"directionsWereSavedReloadToRefreshThe": "Arah sudah disimpan. Muat ulang untuk memperbarui karakter.",
 		"directionsWereSavedReloadToRefreshThe2": "Arah sudah disimpan. Muat ulang untuk memperbarui karakter: {reason}"
@@ -772,6 +772,8 @@
 		"itemMoved": "{name} dipindahkan ke {label}.",
 		"itemMoveBusy": "Selesaikan atau buang generasi terkait sebelum memindahkan item ini.",
 		"itemMoveChanged": "Item atau slot berubah. Coba lagi.",
+		"itemMoving": "Item lain masih dipindahkan. Coba lagi setelah selesai.",
+		"itemNotReady": "Item ini masih dibuat atau ditinjau. Coba lagi setelah tersimpan.",
 		"notShownInMove": "Tidak terlihat dalam gerakan ini",
 		"notShownInMoveNote": "Item sedang dipakai, tetapi tidak terlihat karena tidak memiliki bingkai di semua tampilan gerakan ini.",
 		"randomLowerItem": "Acak item {lower}",
@@ -831,7 +833,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, sedang dikenakan",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "sedang digambar untuk {move}, {percent}",
+		"itemQueued": "dalam antrean untuk {move}"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "Demo tidak memerlukan akun. Pembuatan menggunakan jatah generasi {pixelLab} Anda.",
@@ -937,6 +941,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Selesaikan atau tutup pekerjaan pembuatan yang tertunda sebelum menyesuaikan frame.",
+		"finishBeforeMoveImport": "Selesaikan atau tutup pekerjaan generasi yang tertunda sebelum mengimpor gerakan.",
 		"couldNotCheckNamedFrames": "Tidak dapat memeriksa bingkai {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Tidak dapat memeriksa bingkai untuk {names}.",
 		"copyMissingOneMove": "Beberapa bingkai {move} hilang; item tidak terlihat dalam gerakan itu.",
@@ -1069,7 +1074,16 @@
 		"changeCategory": "Ubah {name}",
 		"deleteCategory": "Hapus {name}",
 		"deleteItem": "Hapus {name}",
-		"deleteMove": "Hapus {name}"
+		"deleteMove": "Hapus {name}",
+		"moveItem": "Pindahkan {name}",
+		"changeDirections": "Ubah arah",
+		"restoreOriginals": "Pulihkan yang asli",
+		"changeDescription": "Ubah deskripsi",
+		"changed": "Langkah ini dihapus dari riwayat: karakter telah berubah sejak itu, jadi langkah ini tidak dapat lagi dibatalkan atau diulang.",
+		"notRecorded": "Tersimpan, tetapi perubahan ini tidak dapat dibatalkan: beberapa frame-nya tidak lagi tersimpan.",
+		"busy": "Tunggu hingga Urungkan atau Ulangi terakhir selesai. Jika tidak pernah selesai, muat ulang halaman.",
+		"notInHistory": "Langkah ini sudah tidak ada di riwayat.",
+		"saveFailed": "Perubahan terakhir Anda tidak dapat disimpan. Atasi kesalahan penyimpanan, lalu coba lagi."
 	},
 	"export": {
 		"sheet": {
@@ -2093,7 +2107,17 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, titik pivot {x},{y}",
 		"waitingForRepairReview": "Menunggu tinjauan frame item",
-		"needsRedo": "Sendi tidak ditemukan: gambar ulang untuk menganimasikan item di dalamnya"
+		"needsRedo": "Sendi tidak ditemukan: gambar ulang untuk menganimasikan item di dalamnya",
+		"itemsDrawn": {
+			"other": "{drawn} dari {n} item sudah digambar"
+		},
+		"drawingItem": "Menggambar {item}",
+		"moreQueued": {
+			"other": "{n} lagi dalam antrean"
+		},
+		"itemsQueued": {
+			"other": "{n} item dalam antrean"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2515,12 +2539,12 @@
 			"save": "Simpan animasi",
 			"replace": "Ganti animasi",
 			"discardDraft": "Buang draf",
-			"titleItems": "Animasikan item",
-			"chooseFor": "Pilih item yang ingin dianimasikan untuk {move}.",
+			"titleItems": "Buat item",
+			"chooseFor": "Pilih item yang ingin dibuat untuk {move}.",
 			"total": "~{gens} generasi tambahan",
 			"selected": "Dipilih",
 			"animateCount": {
-				"other": "Animasikan {n} item"
+				"other": "Buat {n} item"
 			},
 			"unavailable": "Tidak tersedia",
 			"findings": "Catatan kualitas",
@@ -2528,7 +2552,9 @@
 			"beforeItems": "Tinjau animasi sebelum menganimasikan item.",
 			"changed": "Karakter atau animasi berubah. Buka kembali tinjauan sebelum melanjutkan.",
 			"missingFrames": "Frame yang telah ditinjau tidak lagi tersedia.",
-			"tier": "Paket PixelLab Anda tidak mendukung beberapa item yang dipilih."
+			"tier": "Paket PixelLab Anda tidak mendukung beberapa item yang dipilih.",
+			"notNow": "Nanti saja",
+			"later": "Anda dapat membuat item untuk {move} nanti dari menunya di Animasi."
 		},
 		"thatCharacter": "karakter tersebut",
 		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",
@@ -2964,9 +2990,6 @@
 			"other": "{count} frame {name} diganti."
 		},
 		"undo": "Urungkan",
-		"undone": {
-			"other": "{count} frame diurungkan."
-		},
 		"restored": {
 			"other": "{count} frame asli dipulihkan."
 		},
@@ -3074,7 +3097,6 @@
 		"consequences": "Item hanya tersalin persis antar karakter dengan ukuran dan posisi frame yang sama. Ekspor tetap memakai skala dan titik asal dalam game yang sama; ekspor lagi untuk memakai perubahan.",
 		"loading": "Memuat frame…",
 		"saved": "Frame disesuaikan: {change}.",
-		"undone": "Perubahan frame dibatalkan.",
 		"errors": {
 			"reviewOpen": "Simpan atau buang animasi yang menunggu peninjauan sebelum menyesuaikan frame.",
 			"statePending": "Simpan atau buang status yang tertunda sebelum menyesuaikan frame.",
@@ -3087,8 +3109,7 @@
 			"unchanged": "Ubah dulu ukuran atau posisi frame.",
 			"limit": "Bahkan frame {size} px tidak bisa memberi ruang animasi untuk karakter ini.",
 			"resolveDrafts": "Simpan atau tutup draf item karakter ini sebelum menyesuaikan frame.",
-			"changed": "Karakter ini berubah. Buka lagi Sesuaikan frame untuk meninjau versi terbaru.",
-			"undoFailed": "Perubahan frame tidak dapat dibatalkan."
+			"changed": "Karakter ini berubah. Buka lagi Sesuaikan frame untuk meninjau versi terbaru."
 		}
 	},
 	"costSheet": {
@@ -3232,6 +3253,58 @@
 			"browser": "Gunakan browser terbaru untuk melanjutkan.",
 			"exportId": "Pilih ID Ekspor lain.",
 			"busy": "Tunggu sebentar, lalu coba lagi."
+		}
+	},
+	"itemGeneration": {
+		"open": "Buat item",
+		"title": "Buat item untuk {move}",
+		"inProgress": "Sedang diproses",
+		"allDrawn": "Semua item sudah digambar untuk {move}.",
+		"noneAvailable": "Tidak ada item ini yang dapat dibuat untuk {move}.",
+		"notDrawnFor": "Belum digambar untuk {move}",
+		"generateFor": "Buat untuk {move}",
+		"wearOn": "Kenakan di {move}"
+	},
+	"moveImport": {
+		"title": "Impor animasi",
+		"importMoves": "Impor animasi",
+		"importStates": "Impor status",
+		"dropArea": "Area lepas ZIP PixelDoll",
+		"drop": "Lepaskan ZIP PixelDoll di sini",
+		"intro": "ZIP unduhan gerakan, cadangan, atau karakter yang dibagikan. Gratis jika dibuat untuk karakter ini.",
+		"zip": "ZIP PixelDoll",
+		"editHint": "Untuk mengubah frame gerakan di editor lain, gunakan Perbaiki frame.",
+		"fit": {
+			"same": "Dibuat untuk karakter ini. Frame-nya pas apa adanya.",
+			"shifted": "Dibuat untuk karakter ini sebelum Sesuaikan frame. Frame-nya digeser agar pas.",
+			"near": {
+				"other": "Dibuat untuk karakter ini, tetapi pose berdirinya berbeda {count} piksel. Periksa frame setelah mengimpor."
+			},
+			"directions": "Dibuat dengan arah lain, jadi frame-nya tidak bisa dipakai di sini. Gerakannya tetap bisa menggambar ulang karakter ini.",
+			"body": "Dibuat untuk tubuh lain, jadi frame-nya tidak bisa dipakai di sini. Gerakannya tetap bisa menggambar ulang karakter ini."
+		},
+		"empty": "ZIP ini tidak berisi animasi atau status selain Berdiri.",
+		"move": "Animasi",
+		"state": "Status",
+		"row": {
+			"add": "Baru",
+			"copy": "Nama sudah dipakai: keduanya disimpan sebagai {name}",
+			"present": "Sudah ada di karakter ini",
+			"motion": "Bisa menggambar ulang karakter ini dengan gerakannya",
+			"unavailable": "Tidak ada gerakan tersimpan untuk dipakai ulang",
+			"stateUnavailable": "Status memerlukan tubuh yang sama",
+			"items": "Dengan {items}",
+			"left": "Tanpa {items} (tidak ada di karakter ini)",
+			"missing": "Belum ada di animasi ini: {items}"
+		},
+		"useMotion": "Gambar ulang sebagai {move}",
+		"free": "Gratis. Tanpa generasi.",
+		"import": "Impor",
+		"importing": "Mengimpor…",
+		"imported": "{names} diimpor.",
+		"errors": {
+			"resolveDrafts": "Simpan atau buang draf item karakter ini sebelum mengimpor gerakan.",
+			"changed": "Karakter ini berubah. Pilih ZIP lagi untuk meninjau versi terbaru."
 		}
 	}
 }

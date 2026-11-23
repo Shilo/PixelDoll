@@ -18,6 +18,8 @@
 	import { jobProblem } from './report.svelte.ts';
 	import { paidRetryLeads, recordProblemKind } from './problemSummary.ts';
 	import { displayMove } from './displayMove.ts';
+	import { displayMoveJob } from './model.ts';
+	import type { MoveSpec } from './create.ts';
 	import {
 		ui,
 		doc,
@@ -113,6 +115,18 @@
 	// Only the open character's moves are loaded; another character's move shows its default label.
 	const moveName = (projectId: string, id: string) =>
 		displayMove(id, projectId === doc.id ? store.project?.manifest.rig.animations : undefined);
+	// A move, a frame repair or redraw, or the items drawn on a move ("Walk · Hat, Cape"; another character's items are not
+	// loaded, so just its move).
+	const jobName = (projectId: string, spec: MoveSpec) =>
+		spec.redrawItem
+			? t('activity.redrawFrames')
+			: spec.itemMethod === 'grid'
+				? t('activity.repairFrames')
+				: displayMoveJob(
+						moveName(projectId, spec.id),
+						spec,
+						projectId === doc.id ? store.project?.manifest.items : undefined
+					);
 	const errorText = (r: JobRec) => displayMessage(queueErrorMessage(r, displayMessage) ?? '');
 	const money = usdText;
 	const gensText = (n: number) =>
@@ -220,11 +234,7 @@
 						)}
 					{/each}
 					{#if movingPending}
-						{@const task = movingPending.redrawItem
-							? t('activity.redrawFrames')
-							: movingPending.itemsOnly
-								? t('activity.repairFrames')
-								: moveName(moving.projectId, movingPending.id)}
+						{@const task = jobName(moving.projectId, movingPending)}
 						{@render workRow(
 							`${task} · ${characterName(moving.projectId)}`,
 							moving.repairReview
@@ -247,7 +257,7 @@
 					{/if}
 					{#each moving.queued as work (work)}
 						{@render workRow(
-							`${moveName(work.projectId, work.spec.id)} · ${characterName(work.projectId)}`,
+							`${jobName(work.projectId, work.spec)} · ${characterName(work.projectId)}`,
 							t('activity.waiting')
 						)}
 					{/each}

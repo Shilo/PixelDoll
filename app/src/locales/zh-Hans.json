@@ -402,7 +402,7 @@
 			"1": "移除朝向？",
 			"other": "移除 {n} 个朝向？"
 		},
-		"removePermanently": "永久移除",
+		"remove": "移除",
 		"removing": "正在移除…",
 		"savedOnly": "只能编辑已保存的角色。",
 		"waitForGeneration": "请等待当前生成任务完成。",
@@ -413,13 +413,13 @@
 		"saving": "正在保存…",
 		"reviewChanges": "查看更改",
 		"changeTitle": "更改朝向？",
-		"confirmMixedRemoval": "这些朝向将从角色的动作和装备中移除：{directions}。此操作无法撤销。",
+		"confirmMixedRemoval": "这些朝向将从角色的动作和装备中移除：{directions}。在重新加载或关闭此页面之前，如果此角色没有先发生其他更改，可以用“撤销”恢复。",
 		"confirmReplace": "镜像会将这些朝向的图像替换为相对视图的翻转帧：{directions}。之后关闭镜像也会保留翻转后的帧。如需保留原图，请下载备份。",
 		"labelDirectionsToKeep": "要保留的朝向",
 		"loadingDirections": "正在加载朝向…",
 		"downloadBackup": "下载备份",
 		"reviewRemoval": "查看要移除的内容",
-		"confirmRemoval": "{directions}将从此角色的动作和装备中移除。其他朝向保持不变。此操作无法撤销。",
+		"confirmRemoval": "{directions}将从此角色的动作和装备中移除。其他朝向保持不变。在重新加载或关闭此页面之前，如果此角色没有先发生其他更改，可以用“撤销”恢复。",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker 导出需要全部四个基本朝向。",
 		"directionsWereSavedReloadToRefreshThe": "朝向已保存。请重新加载以刷新角色。",
 		"directionsWereSavedReloadToRefreshThe2": "朝向已保存。请重新加载以刷新角色：{reason}"
@@ -772,6 +772,8 @@
 		"itemMoved": "已将{name}移至{label}。",
 		"itemMoveBusy": "请先完成或丢弃相关生成，再移动此装备。",
 		"itemMoveChanged": "装备或槽位已变更。请重试。",
+		"itemMoving": "另一件装备仍在移动。完成后再试一次。",
+		"itemNotReady": "此装备仍在制作或等待审核。保存后再试一次。",
 		"notShownInMove": "此动作中不显示",
 		"notShownInMoveNote": "物品已穿戴，但此动作的所有朝向都缺少帧，因此不会显示。",
 		"randomLowerItem": "随机{lower}装备",
@@ -831,7 +833,9 @@
 		"generationTileRunning": "{name}，{percent}，{status}",
 		"generationTileWearing": "{name}，{status}，穿戴中",
 		"generationTile": "{name}，{status}",
-		"generationProgress": "{percent}，{status}"
+		"generationProgress": "{percent}，{status}",
+		"itemDrawing": "正在为{move}绘制，{percent}",
+		"itemQueued": "排队中，将为{move}绘制"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "演示无需账户。创建会消耗你的 {pixelLab} 生成次数。",
@@ -937,6 +941,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "调整帧前，请完成或放弃待处理的生成任务。",
+		"finishBeforeMoveImport": "导入动作前，请完成或关闭待处理的生成任务。",
 		"couldNotCheckNamedFrames": "无法检查 {names} 的帧：{reason}",
 		"couldNotCheckSeveralFrames": "无法检查 {names} 的帧。",
 		"copyMissingOneMove": "{move} 缺少部分帧，物品会在这些帧中隐藏。",
@@ -1069,7 +1074,16 @@
 		"changeCategory": "更改{name}",
 		"deleteCategory": "删除{name}",
 		"deleteItem": "删除 {name}",
-		"deleteMove": "删除 {name}"
+		"deleteMove": "删除 {name}",
+		"moveItem": "移动{name}",
+		"changeDirections": "更改朝向",
+		"restoreOriginals": "恢复原始帧",
+		"changeDescription": "更改描述",
+		"changed": "此步骤已从历史记录中移除：此角色之后已更改，因此无法再撤销或重做。",
+		"notRecorded": "已保存，但无法撤销此更改：它的部分帧已不再保存。",
+		"busy": "请等待上一次撤销或重做完成。如果一直未完成，请重新加载页面。",
+		"notInHistory": "此步骤已不在历史记录中。",
+		"saveFailed": "无法保存你最近的更改。请先解决存储错误，然后重试。"
 	},
 	"export": {
 		"sheet": {
@@ -2093,7 +2107,17 @@
 		"bodySize": "{w}×{h} 像素",
 		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
 		"waitingForRepairReview": "等待检查装备帧",
-		"needsRedo": "未找到关节：请重绘以在其上为装备制作动画"
+		"needsRedo": "未找到关节：请重绘以在其上为装备制作动画",
+		"itemsDrawn": {
+			"other": "已绘制 {drawn}/{n} 件装备"
+		},
+		"drawingItem": "正在绘制{item}",
+		"moreQueued": {
+			"other": "另有 {n} 件排队中"
+		},
+		"itemsQueued": {
+			"other": "{n} 件装备排队中"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2515,12 +2539,12 @@
 			"save": "保存动作",
 			"replace": "替换动作",
 			"discardDraft": "丢弃草稿",
-			"titleItems": "制作装备动画",
-			"chooseFor": "请选择要随{move}播放的装备。",
+			"titleItems": "生成装备",
+			"chooseFor": "请选择要为{move}生成的装备。",
 			"total": "再生成 ~{gens} 次",
 			"selected": "已选",
 			"animateCount": {
-				"other": "为 {n} 件装备生成动画"
+				"other": "生成 {n} 件装备"
 			},
 			"unavailable": "不可用",
 			"findings": "质量提示",
@@ -2528,7 +2552,9 @@
 			"beforeItems": "制作装备动画前，请先检查动作。",
 			"changed": "角色或动作已更改。请重新打开检查界面。",
 			"missingFrames": "已检查的帧不再可用。",
-			"tier": "当前的 PixelLab 套餐不支持部分已选装备。"
+			"tier": "当前的 PixelLab 套餐不支持部分已选装备。",
+			"notNow": "暂不",
+			"later": "之后可在“动作”中通过{move}的菜单生成装备。"
 		},
 		"thatCharacter": "该角色",
 		"recoveryCheckFailed": "无法检查缓存帧：{error}",
@@ -2964,9 +2990,6 @@
 			"other": "已替换{name}的 {count} 帧。"
 		},
 		"undo": "撤销",
-		"undone": {
-			"other": "已撤销 {count} 帧。"
-		},
 		"restored": {
 			"other": "已将 {count} 帧恢复为原始状态。"
 		},
@@ -3074,7 +3097,6 @@
 		"consequences": "只有帧尺寸和位置都相同的角色之间才能精确复制装备。导出会保持相同的游戏内比例和原点；请重新导出以使用此更改。",
 		"loading": "正在加载帧…",
 		"saved": "帧已调整：{change}。",
-		"undone": "已撤销帧更改。",
 		"errors": {
 			"reviewOpen": "调整帧前，请先保存或放弃等待检查的动作。",
 			"statePending": "调整帧前，请先保存或放弃待处理的状态。",
@@ -3087,8 +3109,7 @@
 			"unchanged": "请先更改帧尺寸或位置。",
 			"limit": "即使是 {size} px 的帧，也无法为此角色留出动作空间。",
 			"resolveDrafts": "调整帧前，请保留或放弃此角色的装备草稿。",
-			"changed": "此角色已更改。请重新打开“调整帧”查看最新版本。",
-			"undoFailed": "无法撤销帧更改。"
+			"changed": "此角色已更改。请重新打开“调整帧”查看最新版本。"
 		}
 	},
 	"costSheet": {
@@ -3232,6 +3253,58 @@
 			"browser": "请使用最新的浏览器继续。",
 			"exportId": "请选择其他导出 ID。",
 			"busy": "请稍等片刻后重试。"
+		}
+	},
+	"itemGeneration": {
+		"open": "生成装备",
+		"title": "为{move}生成装备",
+		"inProgress": "进行中",
+		"allDrawn": "所有装备都已为{move}绘制。",
+		"noneAvailable": "这些装备都无法为{move}生成。",
+		"notDrawnFor": "尚未为{move}绘制",
+		"generateFor": "为{move}生成",
+		"wearOn": "在{move}中穿戴"
+	},
+	"moveImport": {
+		"title": "导入动作",
+		"importMoves": "导入动作",
+		"importStates": "导入状态",
+		"dropArea": "PixelDoll ZIP 拖放区域",
+		"drop": "将 PixelDoll ZIP 拖放到此处",
+		"intro": "动作的 ZIP、备份或分享的角色。如果是为此角色制作的，则免费。",
+		"zip": "PixelDoll ZIP",
+		"editHint": "如需在其他编辑器中修改动作的帧，请改用“修正帧”。",
+		"fit": {
+			"same": "为此角色制作。帧可直接使用。",
+			"shifted": "在“调整帧”之前为此角色制作。帧会移动以对齐。",
+			"near": {
+				"other": "为此角色制作，但站立姿势有 {count} 个像素不同。导入后请检查帧。"
+			},
+			"directions": "使用了不同的方向，因此帧无法在此使用。动作的运动仍可重新绘制此角色。",
+			"body": "为不同的身体制作，因此帧无法在此使用。动作的运动仍可重新绘制此角色。"
+		},
+		"empty": "此 ZIP 中除站立外没有动作或状态。",
+		"move": "动作",
+		"state": "状态",
+		"row": {
+			"add": "新增",
+			"copy": "名称已被使用：两者都保留，新名称为 {name}",
+			"present": "此角色已有",
+			"motion": "可按此运动重新绘制此角色",
+			"unavailable": "没有可重用的已保存运动",
+			"stateUnavailable": "状态需要相同的身体",
+			"items": "包含 {items}",
+			"left": "不含 {items}（此角色没有）",
+			"missing": "此动作中尚未包含：{items}"
+		},
+		"useMotion": "重新绘制为 {move}",
+		"free": "免费。不消耗生成次数。",
+		"import": "导入",
+		"importing": "正在导入…",
+		"imported": "已导入 {names}。",
+		"errors": {
+			"resolveDrafts": "导入动作前，请保留或放弃此角色的物品草稿。",
+			"changed": "此角色已更改。请重新选择 ZIP 以查看最新版本。"
 		}
 	}
 }

@@ -8,13 +8,7 @@
 	import { setupPlan, rigReady, type SetupPlan } from '../lib/rig/setup.ts';
 	import * as db from '../lib/store/db.ts';
 	import type { StoredProject } from '../lib/store/project.ts';
-	import {
-		SETUP_STEPS,
-		saveLooks,
-		setupGens,
-		setupRegistrationStuck,
-		setupResumeGens
-	} from './setup.ts';
+	import { SETUP_STEPS, setupGens, setupRegistrationStuck, setupResumeGens } from './setup.ts';
 	import { freshSeed } from './characterConfig.ts';
 	import {
 		ui,
@@ -26,6 +20,7 @@
 		startSetup,
 		setupBusy,
 		dismissSetup,
+		saveDescription,
 		withKey
 	} from './state.svelte.ts';
 	import { Check, TriangleAlert } from './icons.ts';
@@ -117,7 +112,7 @@
 		saving = true;
 		error = '';
 		try {
-			await saveLooks(doc.id, looks);
+			await saveDescription(doc.id, looks);
 			saved = looks.trim();
 			savedNote = true;
 		} catch (e) {

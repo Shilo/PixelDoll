@@ -410,7 +410,7 @@
 			"one": "Remove {n} direction?",
 			"other": "Remove {n} directions?"
 		},
-		"removePermanently": "Remove permanently",
+		"remove": "Remove",
 		"removing": "Removing…",
 		"savedOnly": "Only saved characters can be edited.",
 		"waitForGeneration": "Wait for the current generation work to finish.",
@@ -421,13 +421,13 @@
 		"saving": "Saving…",
 		"reviewChanges": "Review changes",
 		"changeTitle": "Change directions?",
-		"confirmMixedRemoval": "{directions} will be removed from this character’s moves and equipment. This can’t be undone.",
+		"confirmMixedRemoval": "{directions} will be removed from this character’s moves and equipment. Until you reload or close this page, Undo can bring them back if nothing else changes this character first.",
 		"confirmReplace": "Mirroring replaces the artwork for {directions} with flipped frames from the opposite view. Turning mirroring off later keeps those flipped frames. Download a backup to keep the original artwork.",
 		"labelDirectionsToKeep": "Directions to keep",
 		"loadingDirections": "Loading directions…",
 		"downloadBackup": "Download backup",
 		"reviewRemoval": "Review removal",
-		"confirmRemoval": "{directions} will be removed from this character’s moves and equipment. The other directions stay unchanged. This can’t be undone.",
+		"confirmRemoval": "{directions} will be removed from this character’s moves and equipment. The other directions stay unchanged. Until you reload or close this page, Undo can bring them back if nothing else changes this character first.",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker export needs all four cardinal directions.",
 		"directionsWereSavedReloadToRefreshThe": "Directions were saved. Reload to refresh the character.",
 		"directionsWereSavedReloadToRefreshThe2": "Directions were saved. Reload to refresh the character: {reason}"
@@ -794,6 +794,8 @@
 		"itemMoved": "Moved {name} to {label}.",
 		"itemMoveBusy": "Finish or discard the related generation before moving this item.",
 		"itemMoveChanged": "The item or slot changed. Try again.",
+		"itemMoving": "Another item is still moving. Try again when it finishes.",
+		"itemNotReady": "This item is still being made or reviewed. Try again once it is saved.",
 		"notShownInMove": "Not shown in this move",
 		"notShownInMoveNote": "Wearing it, but it is missing frames for this move in every view, so it is not shown.",
 		"randomLowerItem": "Random {lower} item",
@@ -854,7 +856,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, Wearing",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "drawing for {move}, {percent}",
+		"itemQueued": "queued for {move}"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "The demo needs no account. Creating uses your {pixelLab} generations.",
@@ -964,6 +968,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Finish or dismiss pending generation work before adjusting the frame.",
+		"finishBeforeMoveImport": "Finish or dismiss pending generation work before importing moves.",
 		"couldNotCheckNamedFrames": "Could not check frames for {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Could not check frames for {names}.",
 		"copyMissingOneMove": "Missing some {move} frames; it hides there.",
@@ -1100,7 +1105,16 @@
 		"changeCategory": "Change {name}",
 		"deleteCategory": "Delete {name}",
 		"deleteItem": "Delete {name}",
-		"deleteMove": "Delete {name}"
+		"deleteMove": "Delete {name}",
+		"moveItem": "Move {name}",
+		"changeDirections": "Change directions",
+		"restoreOriginals": "Restore originals",
+		"changeDescription": "Change description",
+		"changed": "This step was removed from the history: the character changed since, so it can no longer be undone or redone.",
+		"notRecorded": "Saved, but this change cannot be undone: some of its frames are no longer stored.",
+		"busy": "Wait for the last Undo or Redo to finish. If it never does, reload the page.",
+		"notInHistory": "This step is no longer in the history.",
+		"saveFailed": "Your latest changes could not be saved. Resolve the storage error, then try again."
 	},
 	"export": {
 		"sheet": {
@@ -2157,7 +2171,20 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
 		"waitingForRepairReview": "Waiting for item frame review",
-		"needsRedo": "Joints not found: redraw it to animate items on it"
+		"needsRedo": "Joints not found: redraw it to animate items on it",
+		"itemsDrawn": {
+			"one": "{drawn} of {n} item drawn",
+			"other": "{drawn} of {n} items drawn"
+		},
+		"drawingItem": "Drawing {item}",
+		"moreQueued": {
+			"one": "{n} more queued",
+			"other": "{n} more queued"
+		},
+		"itemsQueued": {
+			"one": "{n} item queued",
+			"other": "{n} items queued"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2580,13 +2607,13 @@
 			"save": "Save move",
 			"replace": "Replace move",
 			"discardDraft": "Discard draft",
-			"titleItems": "Animate items",
-			"chooseFor": "Choose items to animate for {move}.",
+			"titleItems": "Generate items",
+			"chooseFor": "Choose items to generate for {move}.",
 			"total": "~{gens} more gens",
 			"selected": "Selected",
 			"animateCount": {
-				"one": "Animate {n} item",
-				"other": "Animate {n} items"
+				"one": "Generate {n} item",
+				"other": "Generate {n} items"
 			},
 			"unavailable": "Not available",
 			"findings": "Quality notes",
@@ -2594,7 +2621,9 @@
 			"beforeItems": "Review the move before animating items.",
 			"changed": "The character or move changed. Reopen the review before continuing.",
 			"missingFrames": "The reviewed frames are no longer available.",
-			"tier": "Your PixelLab plan does not support some selected items."
+			"tier": "Your PixelLab plan does not support some selected items.",
+			"notNow": "Not now",
+			"later": "You can generate items for {move} later from its menu in Moves."
 		},
 		"thatCharacter": "that character",
 		"recoveryCheckFailed": "Could not check cached frames: {error}",
@@ -3041,10 +3070,6 @@
 			"other": "Replaced {count} frames of {name}."
 		},
 		"undo": "Undo",
-		"undone": {
-			"one": "Undid {count} frame.",
-			"other": "Undid {count} frames."
-		},
 		"restored": {
 			"one": "Restored {count} original frame.",
 			"other": "Restored {count} original frames."
@@ -3156,7 +3181,6 @@
 		"consequences": "Items copy exactly only between characters with the same frame size and position. Exports keep the same in-game scale and origin; export again to use the change.",
 		"loading": "Loading the frame…",
 		"saved": "Frame adjusted: {change}.",
-		"undone": "Frame change undone.",
 		"errors": {
 			"reviewOpen": "Save or discard the move waiting for review before adjusting the frame.",
 			"statePending": "Save or discard the pending State before adjusting the frame.",
@@ -3169,8 +3193,7 @@
 			"unchanged": "Change the frame size or position first.",
 			"limit": "Even a {size} px frame cannot give this character room for moves.",
 			"resolveDrafts": "Keep or dismiss this character’s item drafts before adjusting the frame.",
-			"changed": "This character changed. Reopen Adjust frame to review the latest version.",
-			"undoFailed": "The frame change could not be undone."
+			"changed": "This character changed. Reopen Adjust frame to review the latest version."
 		}
 	},
 	"costSheet": {
@@ -3324,6 +3347,59 @@
 			"browser": "Use a current browser to continue.",
 			"exportId": "Choose a different Export ID.",
 			"busy": "Wait a moment, then try again."
+		}
+	},
+	"itemGeneration": {
+		"open": "Generate items",
+		"title": "Generate items for {move}",
+		"inProgress": "In progress",
+		"allDrawn": "Every item is already drawn for {move}.",
+		"noneAvailable": "None of these items can be generated for {move}.",
+		"notDrawnFor": "Not drawn for {move} yet",
+		"generateFor": "Generate for {move}",
+		"wearOn": "Wear for {move}"
+	},
+	"moveImport": {
+		"title": "Import moves",
+		"importMoves": "Import moves",
+		"importStates": "Import States",
+		"dropArea": "PixelDoll ZIP drop area",
+		"drop": "Drop a PixelDoll ZIP here",
+		"intro": "A move’s Download ZIP, a backup or a shared character. Free when it was made for this character.",
+		"zip": "PixelDoll ZIP",
+		"editHint": "To change a move’s frames in another editor, use Fix frames instead.",
+		"fit": {
+			"same": "Made for this character. Its frames fit as they are.",
+			"shifted": "Made for this character before Adjust frame. Its frames move to fit.",
+			"near": {
+				"one": "Made for this character, but its Standing differs by {count} pixel. Check the frames after importing.",
+				"other": "Made for this character, but its Standing differs by {count} pixels. Check the frames after importing."
+			},
+			"directions": "Made with other directions, so its frames can’t be used here. A move’s motion can still redraw this character.",
+			"body": "Made for a different body, so its frames can’t be used here. A move’s motion can still redraw this character."
+		},
+		"empty": "This ZIP has no moves or States besides Standing.",
+		"move": "Move",
+		"state": "State",
+		"row": {
+			"add": "New",
+			"copy": "Name in use: kept both as {name}",
+			"present": "Already on this character",
+			"motion": "Can redraw this character in its motion",
+			"unavailable": "No saved motion to reuse",
+			"stateUnavailable": "States need the same body",
+			"items": "With {items}",
+			"left": "Without {items} (not on this character)",
+			"missing": "Not on this move yet: {items}"
+		},
+		"useMotion": "Redraw as {move}",
+		"free": "Free. No generations.",
+		"import": "Import",
+		"importing": "Importing…",
+		"imported": "Imported {names}.",
+		"errors": {
+			"resolveDrafts": "Keep or dismiss this character’s item drafts before importing moves.",
+			"changed": "This character changed. Choose the ZIP again to review the latest version."
 		}
 	}
 }

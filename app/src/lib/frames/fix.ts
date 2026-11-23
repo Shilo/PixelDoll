@@ -7,7 +7,7 @@ import { cellImg, layerFrame, over, unionFrame, type Frame } from '../compose/co
 import { flipH } from '../rig/mirror.ts';
 import { cellHash, DEFAULT_MOVE, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { LocalizedError } from '../message.ts';
-import { editedHistory, holds, replayable, type FrameEdit, type FrameHistory } from './history.ts';
+import { editedHistory, replayable, type FrameEdit, type FrameHistory } from './history.ts';
 import type { CellKey, Item, ItemFrameEdit, Layer, Manifest, Project } from '../store/manifest.ts';
 
 export type LayerId = Layer['id'];
@@ -395,34 +395,6 @@ const revert = (m: Manifest, item: Item, frames: FrameHistory[]): Reverted => {
 		count: frames.length
 	};
 };
-
-/** Revert import `id` if it is the latest and its frames still hold it; null otherwise. */
-export function undoLast(m: Manifest, item: Item, id: string): Reverted | null {
-	const last = item.frameEdits?.at(-1);
-	if (
-		!last ||
-		!replayable(last) ||
-		last.id !== id ||
-		!last.frames.every((f) => holds(m, item, last.anim, f))
-	)
-		return null;
-	const result = revert(
-		m,
-		item,
-		last.frames.map((f) => ({
-			anim: last.anim,
-			first: f,
-			latest: f,
-			original: new Map(f.layers.map((l) => [l.id, l.before])),
-			added: !!f.added,
-			created: f.newRows ?? [],
-			absent: []
-		}))
-	);
-	result.item.frameEdits = result.item.frameEdits!.slice(0, -1);
-	if (!result.item.frameEdits.length) delete result.item.frameEdits;
-	return result;
-}
 
 /** Put every still-edited frame back to its original and forget the history. */
 export function restoreOriginals(m: Manifest, item: Item): Reverted | null {

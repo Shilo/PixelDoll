@@ -410,7 +410,7 @@
 			"one": "Supprimer {n} direction ?",
 			"other": "Supprimer {n} directions ?"
 		},
-		"removePermanently": "Supprimer définitivement",
+		"remove": "Retirer",
 		"removing": "Suppression…",
 		"savedOnly": "Seuls les personnages enregistrés peuvent être modifiés.",
 		"waitForGeneration": "Attendez la fin de la génération en cours.",
@@ -421,13 +421,13 @@
 		"saving": "Enregistrement…",
 		"reviewChanges": "Vérifier les modifications",
 		"changeTitle": "Modifier les directions ?",
-		"confirmMixedRemoval": "Ces directions seront retirées des animations et des équipements du personnage : {directions}. Cette action est irréversible.",
+		"confirmMixedRemoval": "Ces directions seront retirées des animations et des équipements du personnage : {directions}. Jusqu’à ce que vous rechargiez ou fermiez cette page, « Annuler » peut les rétablir si rien d’autre ne modifie ce personnage entre-temps.",
 		"confirmReplace": "La symétrie remplace les visuels pour {directions} par les images retournées de la vue opposée. Si vous désactivez ensuite la symétrie, les images retournées sont conservées. Téléchargez une sauvegarde pour conserver les visuels d’origine.",
 		"labelDirectionsToKeep": "Directions à conserver",
 		"loadingDirections": "Chargement des directions…",
 		"downloadBackup": "Télécharger une sauvegarde",
 		"reviewRemoval": "Vérifier la suppression",
-		"confirmRemoval": "Suppression définitive de ces directions pour les animations et l’équipement de ce personnage : {directions}. Les autres directions ne changent pas. Cette action est irréversible.",
+		"confirmRemoval": "Suppression définitive de ces directions pour les animations et l’équipement de ce personnage : {directions}. Les autres directions ne changent pas. Jusqu’à ce que vous rechargiez ou fermiez cette page, « Annuler » peut les rétablir si rien d’autre ne modifie ce personnage entre-temps.",
 		"rPGMakerExportNeedsAllFourCardinal": "L’export RPG Maker nécessite les quatre directions cardinales.",
 		"directionsWereSavedReloadToRefreshThe": "Les directions ont été enregistrées. Rechargez pour actualiser le personnage.",
 		"directionsWereSavedReloadToRefreshThe2": "Les directions ont été enregistrées. Rechargez pour actualiser le personnage : {reason}"
@@ -794,6 +794,8 @@
 		"itemMoved": "{name} a été déplacé vers {label}.",
 		"itemMoveBusy": "Terminez ou abandonnez la génération associée avant de déplacer cet objet.",
 		"itemMoveChanged": "L’objet ou l’emplacement a changé. Réessayez.",
+		"itemMoving": "Un autre objet est encore en cours de déplacement. Réessayez une fois terminé.",
+		"itemNotReady": "Cet objet est encore en cours de création ou de vérification. Réessayez une fois qu’il est enregistré.",
 		"notShownInMove": "Non affiché dans ce mouvement",
 		"notShownInMoveNote": "L’objet est porté, mais il reste invisible car il manque des images dans toutes les vues de ce mouvement.",
 		"randomLowerItem": "Choisir un objet au hasard : {lower}",
@@ -854,7 +856,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, porté",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "en cours de dessin pour {move}, {percent}",
+		"itemQueued": "en attente pour {move}"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "Aucun compte n’est nécessaire pour essayer la démo. Créer des visuels utilise des générations de votre compte {pixelLab}.",
@@ -964,6 +968,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "Terminez ou ignorez la génération en attente avant d’ajuster le cadre.",
+		"finishBeforeMoveImport": "Terminez ou ignorez les générations en attente avant d’importer des mouvements.",
 		"couldNotCheckNamedFrames": "Impossible de vérifier les images de {names} : {reason}",
 		"couldNotCheckSeveralFrames": "Impossible de vérifier les images de {names}.",
 		"copyMissingOneMove": "Des images manquent pour {move} ; l’objet y reste masqué.",
@@ -1100,7 +1105,16 @@
 		"changeCategory": "Modifier {name}",
 		"deleteCategory": "Supprimer {name}",
 		"deleteItem": "Supprimer {name}",
-		"deleteMove": "Supprimer {name}"
+		"deleteMove": "Supprimer {name}",
+		"moveItem": "Déplacer {name}",
+		"changeDirections": "Modifier les directions",
+		"restoreOriginals": "Restaurer les originaux",
+		"changeDescription": "Modifier la description",
+		"changed": "Cette étape a été retirée de l’historique : le personnage a changé depuis, elle ne peut donc plus être annulée ni rétablie.",
+		"notRecorded": "Enregistré, mais cette modification ne peut pas être annulée : certaines de ses images ne sont plus enregistrées.",
+		"busy": "Attendez la fin du dernier Annuler ou Rétablir. S’il ne se termine jamais, rechargez la page.",
+		"notInHistory": "Cette étape n’est plus dans l’historique.",
+		"saveFailed": "Vos dernières modifications n’ont pas pu être enregistrées. Corrigez l’erreur de stockage, puis réessayez."
 	},
 	"export": {
 		"sheet": {
@@ -2157,7 +2171,20 @@
 		"bodySize": "{w} × {h} px",
 		"frameSize": "{w} × {h} px, pivot {x},{y}",
 		"waitingForRepairReview": "En attente de la vérification des images de l’objet",
-		"needsRedo": "Articulations introuvables : redessinez-la pour y animer des objets"
+		"needsRedo": "Articulations introuvables : redessinez-la pour y animer des objets",
+		"itemsDrawn": {
+			"one": "{drawn} objet dessiné sur {n}",
+			"other": "{drawn} objets dessinés sur {n}"
+		},
+		"drawingItem": "Dessin de {item}",
+		"moreQueued": {
+			"one": "{n} autre en attente",
+			"other": "{n} autres en attente"
+		},
+		"itemsQueued": {
+			"one": "{n} objet en attente",
+			"other": "{n} objets en attente"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2580,13 +2607,13 @@
 			"save": "Enregistrer l’animation",
 			"replace": "Remplacer l’animation",
 			"discardDraft": "Supprimer le brouillon",
-			"titleItems": "Animer des objets",
-			"chooseFor": "Choisissez les objets à animer pour {move}.",
+			"titleItems": "Générer des objets",
+			"chooseFor": "Choisissez les objets à générer pour {move}.",
 			"total": "~{gens} générations de plus",
 			"selected": "Sélectionné",
 			"animateCount": {
-				"one": "Animer {n} objet",
-				"other": "Animer {n} objets"
+				"one": "Générer {n} objet",
+				"other": "Générer {n} objets"
 			},
 			"unavailable": "Non disponible",
 			"findings": "Notes de qualité",
@@ -2594,7 +2621,9 @@
 			"beforeItems": "Vérifiez l’animation avant d’animer des objets.",
 			"changed": "Le personnage ou l’animation a changé. Rouvrez la vérification.",
 			"missingFrames": "Les images vérifiées ne sont plus disponibles.",
-			"tier": "Votre forfait PixelLab ne prend pas en charge certains objets sélectionnés."
+			"tier": "Votre forfait PixelLab ne prend pas en charge certains objets sélectionnés.",
+			"notNow": "Plus tard",
+			"later": "Vous pourrez générer des objets pour {move} plus tard depuis son menu dans Animations."
 		},
 		"thatCharacter": "ce personnage",
 		"recoveryCheckFailed": "Impossible de vérifier les images en cache : {error}",
@@ -3041,10 +3070,6 @@
 			"other": "{count} images de {name} remplacées."
 		},
 		"undo": "Annuler",
-		"undone": {
-			"one": "Remplacement annulé pour {count} image.",
-			"other": "Remplacement annulé pour {count} images."
-		},
 		"restored": {
 			"one": "{count} image d’origine restaurée.",
 			"other": "{count} images d’origine restaurées."
@@ -3156,7 +3181,6 @@
 		"consequences": "Les objets ne se copient à l’identique qu’entre personnages de même taille et position de cadre. Les exports gardent la même échelle et la même origine en jeu ; exportez à nouveau pour utiliser le changement.",
 		"loading": "Chargement du cadre…",
 		"saved": "Cadre ajusté : {change}.",
-		"undone": "Modification du cadre annulée.",
 		"errors": {
 			"reviewOpen": "Enregistrez ou ignorez l’animation en attente de vérification avant d’ajuster le cadre.",
 			"statePending": "Enregistrez ou abandonnez l’état en attente avant d’ajuster le cadre.",
@@ -3169,8 +3193,7 @@
 			"unchanged": "Changez d’abord la taille ou la position du cadre.",
 			"limit": "Même un cadre de {size} px ne laisse pas assez de place aux animations de ce personnage.",
 			"resolveDrafts": "Conservez ou ignorez les brouillons d’objets de ce personnage avant d’ajuster le cadre.",
-			"changed": "Ce personnage a changé. Rouvrez Ajuster le cadre pour vérifier la dernière version.",
-			"undoFailed": "Impossible d’annuler la modification du cadre."
+			"changed": "Ce personnage a changé. Rouvrez Ajuster le cadre pour vérifier la dernière version."
 		}
 	},
 	"costSheet": {
@@ -3324,6 +3347,59 @@
 			"browser": "Utilisez un navigateur récent pour continuer.",
 			"exportId": "Choisissez un autre ID d’export.",
 			"busy": "Patientez un instant, puis réessayez."
+		}
+	},
+	"itemGeneration": {
+		"open": "Générer des objets",
+		"title": "Générer des objets pour {move}",
+		"inProgress": "En cours",
+		"allDrawn": "Tous les objets sont déjà dessinés pour {move}.",
+		"noneAvailable": "Aucun de ces objets ne peut être généré pour {move}.",
+		"notDrawnFor": "Pas encore dessiné pour {move}",
+		"generateFor": "Générer pour {move}",
+		"wearOn": "Porter dans {move}"
+	},
+	"moveImport": {
+		"title": "Importer des animations",
+		"importMoves": "Importer des animations",
+		"importStates": "Importer des états",
+		"dropArea": "Zone de dépôt du ZIP PixelDoll",
+		"drop": "Déposez un ZIP PixelDoll ici",
+		"intro": "Le ZIP d’un mouvement, une sauvegarde ou un personnage partagé. Gratuit s’il a été créé pour ce personnage.",
+		"zip": "ZIP PixelDoll",
+		"editHint": "Pour modifier les images d’un mouvement dans un autre éditeur, utilisez plutôt Corriger les images.",
+		"fit": {
+			"same": "Créé pour ce personnage. Ses images s’adaptent telles quelles.",
+			"shifted": "Créé pour ce personnage avant Ajuster le cadre. Ses images sont décalées pour s’adapter.",
+			"near": {
+				"one": "Créé pour ce personnage, mais sa pose debout diffère de {count} pixel. Vérifiez les images après l’import.",
+				"other": "Créé pour ce personnage, mais sa pose debout diffère de {count} pixels. Vérifiez les images après l’import."
+			},
+			"directions": "Créé avec d’autres directions, ses images ne peuvent donc pas servir ici. Le mouvement peut quand même redessiner ce personnage.",
+			"body": "Créé pour un autre corps, ses images ne peuvent donc pas servir ici. Le mouvement peut quand même redessiner ce personnage."
+		},
+		"empty": "Ce ZIP ne contient aucun mouvement ni état en dehors de Debout.",
+		"move": "Animation",
+		"state": "État",
+		"row": {
+			"add": "Nouveau",
+			"copy": "Nom déjà utilisé : les deux sont gardés sous {name}",
+			"present": "Déjà sur ce personnage",
+			"motion": "Peut redessiner ce personnage avec son mouvement",
+			"unavailable": "Aucun mouvement enregistré à réutiliser",
+			"stateUnavailable": "Les états nécessitent le même corps",
+			"items": "Avec {items}",
+			"left": "Sans {items} (absent de ce personnage)",
+			"missing": "Pas encore sur cette animation : {items}"
+		},
+		"useMotion": "Redessiner en {move}",
+		"free": "Gratuit. Aucune génération.",
+		"import": "Importer",
+		"importing": "Import en cours…",
+		"imported": "Importé : {names}.",
+		"errors": {
+			"resolveDrafts": "Gardez ou ignorez les brouillons d’objets de ce personnage avant d’importer des mouvements.",
+			"changed": "Ce personnage a changé. Choisissez à nouveau le ZIP pour vérifier la dernière version."
 		}
 	}
 }

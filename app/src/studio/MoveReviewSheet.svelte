@@ -6,18 +6,16 @@
 	import DirectionCompass from './DirectionCompass.svelte';
 	import PromptLine from './PromptLine.svelte';
 	import Sprite from './Sprite.svelte';
-	import { ChevronLeft, ChevronRight, Pause, Play, Shirt } from './icons.ts';
+	import ItemGenerationList, { type ItemGenerationRow } from './ItemGenerationList.svelte';
+	import ItemGenerationFooter from './ItemGenerationFooter.svelte';
+	import { ChevronLeft, ChevronRight, Pause, Play } from './icons.ts';
 	import { displayDirection } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
-	import { bodyQualityNote, thumbCell } from './model.ts';
-	import { croppedBacking, croppedThumbnail } from './experience/thumbnails.svelte.ts';
-	import {
-		itemMoveOffer,
-		missingItemMoves,
-		moveMinimumTier,
-		readMoveCandidateImages,
-		skeletonMoveReview
-	} from './create.ts';
+	import { bodyQualityNote } from './model.ts';
+	import { croppedBacking } from './experience/thumbnails.svelte.ts';
+	import { readMoveCandidateImages, skeletonMoveReview } from './create.ts';
+	import { clipItemOffer, pickedOffers } from './itemGeneration.ts';
+	import { itemOfferAccess } from './itemOfferAccess.ts';
 	import { moveAnimationModel, moveFrames } from './movePricing.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { moveTemplatePrompt } from './moveAnimationOptions.ts';
@@ -40,7 +38,6 @@
 	} from './state.svelte.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
-	import { displayError } from '../lib/i18n.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import type { ImageReference } from '../lib/image/reference.ts';
@@ -107,46 +104,21 @@
 				store.exportRecord.id !== projectId ||
 				moveCandidateInput(store.exportRecord, id) !== acceptedInput)
 	);
-	const equipment = $derived.by(() => {
+	const equipment = $derived.by((): ItemGenerationRow[] => {
 		if (!acceptedInput || !project || !candidate || changed) return [];
 		return project.manifest.items
 			.filter((item) => item.id !== project.manifest.rig.baseItem)
-			.map((item) => {
-				const spec = missingItemMoves(project.manifest, item.id, candidate.spec.seed).find(
-					(move) => move.id === id
-				);
-				const dirs = spec?.dirs?.filter(
-					(dir) => candidate.dirs.includes(dir) && item.dressed?.[dir]
-				);
-				const offer =
-					spec && dirs?.length
-						? itemMoveOffer(project.manifest, [{ ...spec, dirs, reviewedMoveItems: true }])
-						: null;
-				const thumb = thumbCell(project, item);
-				return { item, image: thumb && croppedThumbnail(thumb), offer };
-			});
+			.map((item) => ({
+				item,
+				offer: clipItemOffer(project.manifest, item.id, id, {
+					seed: candidate.spec.seed,
+					dirs: candidate.dirs,
+					reviewedMoveItems: true
+				})
+			}));
 	});
-	const chosen = $derived(
-		equipment.filter(({ item, offer }) => offer?.specs.length && selected.includes(item.id))
-	);
-	const total = $derived(chosen.reduce((sum, row) => sum + (row.offer?.gens ?? 0), 0));
-	const specs = $derived(chosen.flatMap(({ offer }) => offer?.specs ?? []));
-	const access = $derived.by(() => {
-		try {
-			const minimumTier = manifest
-				? Math.max(0, ...specs.map((spec) => moveMinimumTier(manifest, spec)))
-				: 0;
-			return {
-				minimumTier,
-				error:
-					tierDecision(app.balance, { required: minimumTier }).kind === 'required'
-						? t('moveSheet.checkpoint.tier')
-						: ''
-			};
-		} catch (cause) {
-			return { minimumTier: 0, error: displayError(cause) };
-		}
-	});
+	const { chosen, gens: total, specs } = $derived(pickedOffers(equipment, selected));
+	const access = $derived(itemOfferAccess(manifest, specs));
 
 	onMount(() => {
 		if (!candidate) return;
@@ -264,26 +236,17 @@
 {#snippet foot()}
 	<div class="checkpoint-footer">
 		{#if itemsStep}
-			<p class="muted small checkpoint-note" id="move-item-cost">{t('moveSheet.costNotice')}</p>
-			<div class="checkpoint-actions checkpoint-item-actions">
-				<b class="checkpoint-total" aria-live="polite" aria-atomic="true"
-					>{t('moveSheet.checkpoint.total', { gens: formatNumber(total) })}</b
-				>
-				<button
-					class="bu-action btn primary checkpoint-primary"
-					data-variant="primary"
-					disabled={busy || ui.waitingForTab || !specs.length || !!access.error}
-					aria-describedby="move-item-cost"
-					onclick={animate}
-				>
-					{chosen.length
-						? t('moveSheet.checkpoint.animateCount', {
-								count: chosen.length,
-								n: formatNumber(chosen.length)
-							})
-						: t('moveSheet.checkpoint.titleItems')}
-				</button>
-			</div>
+			<ItemGenerationFooter
+				count={chosen.length}
+				gens={total}
+				disabled={busy || ui.waitingForTab || !specs.length || !!access.error}
+				onsubmit={animate}
+				dismiss={{
+					label: t('moveSheet.checkpoint.notNow'),
+					disabled: busy,
+					onclick: () => (ui.sheet = null)
+				}}
+			/>
 		{:else if candidate}
 			{#if candidate.spec.replace && !hardFailure}
 				<p class="muted small checkpoint-note" id="move-replace-note">
@@ -337,45 +300,15 @@
 		<p class="notice small">{t('moveSheet.checkpoint.changed')}</p>
 	{:else if itemsStep}
 		<p class="muted small checkpoint-note">{t('moveSheet.checkpoint.chooseFor', { move: name })}</p>
-		<div
-			class="checkpoint-items"
-			bind:this={itemList}
-			role="group"
-			aria-label={t('moveSheet.checkpoint.titleItems')}
-		>
-			{#each equipment as { item, image, offer } (item.id)}
-				<button
-					class="bu-action checkpoint-item"
-					data-variant="tile"
-					disabled={busy || ui.waitingForTab || !offer?.specs.length}
-					aria-pressed={selected.includes(item.id)}
-					onclick={() =>
-						(selected = selected.includes(item.id)
-							? selected.filter((value) => value !== item.id)
-							: [...selected, item.id])}
-				>
-					<span class="checkpoint-thumb" aria-hidden="true">
-						{#if image}<Sprite
-								img={image}
-								k={croppedBacking(42, image, ui.dpr)}
-								fitToBox={image.w > 42 || image.h > 42}
-								label=""
-							/>{:else}<Shirt size={20} />{/if}
-					</span>
-					<span class="checkpoint-name"
-						><b>{item.name}</b>{#if selected.includes(item.id)}<span
-								class="small"
-								aria-hidden="true">{t('moveSheet.checkpoint.selected')}</span
-							>{/if}</span
-					>
-					<span class="muted small checkpoint-price"
-						>{offer?.gens != null
-							? t('generationDetails.gens', { value: formatNumber(offer.gens) })
-							: t('moveSheet.checkpoint.unavailable')}</span
-					>
-				</button>
-			{/each}
-		</div>
+		{#if project}<ItemGenerationList
+				{project}
+				rows={equipment}
+				bind:selected
+				bind:list={itemList}
+				disabled={busy || !!ui.waitingForTab}
+				label={t('moveSheet.checkpoint.titleItems')}
+			/>{/if}
+		<p class="muted small checkpoint-note">{t('moveSheet.checkpoint.later', { move: name })}</p>
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
 	{:else if candidate}
 		{#if candidate.warnings.length}
@@ -532,9 +465,7 @@
 		min-height: 44px;
 		padding-inline: 6px;
 	}
-	.checkpoint-frame,
-	.checkpoint-price,
-	.checkpoint-total {
+	.checkpoint-frame {
 		font-variant-numeric: tabular-nums;
 	}
 	.checkpoint-note {
@@ -548,35 +479,6 @@
 	.checkpoint-footer .checkpoint-note {
 		margin: 0;
 	}
-	.checkpoint-items {
-		display: grid;
-		gap: 6px;
-	}
-	.checkpoint-item {
-		display: grid;
-		grid-template-columns: 42px minmax(0, 1fr) auto;
-		align-items: center;
-		text-align: start;
-		gap: 10px;
-		min-height: 54px;
-		padding: 5px 10px 5px 7px;
-		width: 100%;
-	}
-	.checkpoint-thumb {
-		display: grid;
-		place-items: center;
-		width: 42px;
-		height: 42px;
-	}
-	.checkpoint-name {
-		display: grid;
-		overflow-wrap: anywhere;
-	}
-	.checkpoint-price {
-		text-align: end;
-		max-inline-size: 9ch;
-		overflow-wrap: anywhere;
-	}
 	.checkpoint-actions {
 		display: flex;
 		align-items: center;
@@ -584,9 +486,6 @@
 		flex-wrap: wrap;
 		gap: 6px;
 		width: 100%;
-	}
-	.checkpoint-item-actions {
-		justify-content: space-between;
 	}
 	.checkpoint-discard {
 		margin-inline-end: auto;
@@ -636,7 +535,7 @@
 		}
 	}
 	@media (max-width: 365px) {
-		.checkpoint-actions:not(.checkpoint-item-actions) .checkpoint-primary {
+		.checkpoint-actions .checkpoint-primary {
 			flex-basis: 100%;
 		}
 	}

@@ -402,7 +402,7 @@
 			"1": "この向きを削除しますか？",
 			"other": "{n}方向を削除しますか？"
 		},
-		"removePermanently": "完全に削除",
+		"remove": "削除",
 		"removing": "削除中…",
 		"savedOnly": "編集できるのは保存済みのキャラクターだけです。",
 		"waitForGeneration": "実行中の生成が終わるまでお待ちください。",
@@ -413,13 +413,13 @@
 		"saving": "保存中…",
 		"reviewChanges": "変更を確認",
 		"changeTitle": "向きを変更しますか？",
-		"confirmMixedRemoval": "次の向きは、このキャラクターのモーションと装備から削除されます：{directions}。この操作は元に戻せません。",
+		"confirmMixedRemoval": "次の向きは、このキャラクターのモーションと装備から削除されます：{directions}。このページを再読み込みするか閉じるまでは、その前にこのキャラクターがほかに変更されなければ「元に戻す」で復元できます。",
 		"confirmReplace": "反転すると、{directions}の画像が反対向きの反転フレームで置き換わります。後で反転を解除しても、そのフレームは残ります。元の画像を残すにはバックアップをダウンロードしてください。",
 		"labelDirectionsToKeep": "残す向き",
 		"loadingDirections": "向きを読み込み中…",
 		"downloadBackup": "バックアップをダウンロード",
 		"reviewRemoval": "削除内容を確認",
-		"confirmRemoval": "このキャラクターのモーションと装備から{directions}が削除されます。他の向きは変わりません。この操作は取り消せません。",
+		"confirmRemoval": "このキャラクターのモーションと装備から{directions}が削除されます。他の向きは変わりません。このページを再読み込みするか閉じるまでは、その前にこのキャラクターがほかに変更されなければ「元に戻す」で復元できます。",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Makerへのエクスポートには、東西南北の4方向すべてが必要です。",
 		"directionsWereSavedReloadToRefreshThe": "向きを保存しました。再読み込みするとキャラクターが更新されます。",
 		"directionsWereSavedReloadToRefreshThe2": "向きを保存しました。再読み込みするとキャラクターが更新されます：{reason}"
@@ -772,6 +772,8 @@
 		"itemMoved": "{name} を「{label}」に移動しました。",
 		"itemMoveBusy": "このアイテムを移動する前に、関連する生成を完了または破棄してください。",
 		"itemMoveChanged": "アイテムまたはスロットが変更されました。もう一度お試しください。",
+		"itemMoving": "別のアイテムをまだ移動中です。終わってからもう一度お試しください。",
+		"itemNotReady": "このアイテムはまだ作成中か確認待ちです。保存されてからもう一度お試しください。",
 		"notShownInMove": "この動作では非表示",
 		"notShownInMoveNote": "装備中ですが、この動作ではどの向きにもフレームがないため表示されません。",
 		"randomLowerItem": "ランダムな{lower}",
@@ -831,7 +833,9 @@
 		"generationTileRunning": "{name}、{percent}、{status}",
 		"generationTileWearing": "{name}、{status}、装備中",
 		"generationTile": "{name}、{status}",
-		"generationProgress": "{percent}、{status}"
+		"generationProgress": "{percent}、{status}",
+		"itemDrawing": "{move}用に描画中、{percent}",
+		"itemQueued": "{move}用に待機中"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "デモはアカウントなしで使えます。作成には、お使いの{pixelLab}アカウントの生成回数を使います。",
@@ -937,6 +941,7 @@
 	},
 	"state": {
 		"finishBeforeFrameChange": "フレームを調整する前に、保留中の生成作業を完了するか取り消してください。",
+		"finishBeforeMoveImport": "モーションを読み込む前に、保留中の生成を完了するか破棄してください。",
 		"couldNotCheckNamedFrames": "{names}のフレームを確認できませんでした：{reason}",
 		"couldNotCheckSeveralFrames": "{names}のフレームを確認できませんでした。",
 		"copyMissingOneMove": "{move}のフレームが一部不足しているため、その箇所では非表示になります。",
@@ -1069,7 +1074,16 @@
 		"changeCategory": "{name}の変更",
 		"deleteCategory": "{name}の削除",
 		"deleteItem": "{name} を削除",
-		"deleteMove": "{name} を削除"
+		"deleteMove": "{name} を削除",
+		"moveItem": "{name}を移動",
+		"changeDirections": "向きを変更",
+		"restoreOriginals": "オリジナルを復元",
+		"changeDescription": "説明を変更",
+		"changed": "この操作は履歴から削除されました。その後キャラクターが変更されたため、取り消しもやり直しもできません。",
+		"notRecorded": "保存しましたが、この変更は元に戻せません。一部のフレームが保存されていません。",
+		"busy": "直前の「元に戻す」または「やり直す」が終わるまでお待ちください。終わらない場合は、ページを再読み込みしてください。",
+		"notInHistory": "この操作はもう履歴にありません。",
+		"saveFailed": "最新の変更を保存できませんでした。ストレージのエラーを解決してから、もう一度お試しください。"
 	},
 	"export": {
 		"sheet": {
@@ -2093,7 +2107,17 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px、ピボット {x},{y}",
 		"waitingForRepairReview": "装備フレームの確認待ち",
-		"needsRedo": "関節が見つかりません。アイテムを動かすには描き直してください"
+		"needsRedo": "関節が見つかりません。アイテムを動かすには描き直してください",
+		"itemsDrawn": {
+			"other": "{n}個中{drawn}個を描画済み"
+		},
+		"drawingItem": "{item}を描画中",
+		"moreQueued": {
+			"other": "ほか{n}個待機中"
+		},
+		"itemsQueued": {
+			"other": "{n}個のアイテムが待機中"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2515,12 +2539,12 @@
 			"save": "モーションを保存",
 			"replace": "モーションを差し替え",
 			"discardDraft": "下書きを破棄",
-			"titleItems": "アイテムを動かす",
-			"chooseFor": "{move}に合わせて動かすアイテムを選択してください。",
+			"titleItems": "アイテムを生成",
+			"chooseFor": "{move}用に生成するアイテムを選択してください。",
 			"total": "追加で~{gens}回の生成",
 			"selected": "選択済み",
 			"animateCount": {
-				"other": "アイテム{n}個を動かす"
+				"other": "アイテム{n}個を生成"
 			},
 			"unavailable": "利用不可",
 			"findings": "品質に関する注意",
@@ -2528,7 +2552,9 @@
 			"beforeItems": "アイテムを動かす前に、モーションを確認してください。",
 			"changed": "キャラクターまたはモーションが変更されました。確認画面を開き直してください。",
 			"missingFrames": "確認済みのフレームは利用できなくなりました。",
-			"tier": "ご利用のPixelLabプランでは、選択した一部のアイテムに対応していません。"
+			"tier": "ご利用のPixelLabプランでは、選択した一部のアイテムに対応していません。",
+			"notNow": "後で",
+			"later": "{move}のアイテムは、あとから「モーション」のメニューで生成できます。"
 		},
 		"thatCharacter": "そのキャラクター",
 		"recoveryCheckFailed": "キャッシュされたフレームを確認できませんでした：{error}",
@@ -2964,9 +2990,6 @@
 			"other": "{name}の{count}フレームを置き換えました。"
 		},
 		"undo": "元に戻す",
-		"undone": {
-			"other": "{count}フレームを元に戻しました。"
-		},
 		"restored": {
 			"other": "元のフレームを{count}フレーム復元しました。"
 		},
@@ -3074,7 +3097,6 @@
 		"consequences": "アイテムを正確にコピーできるのは、フレームサイズと位置が同じキャラクター同士だけです。書き出してもゲーム内の大きさと原点は変わりません。変更を使うには、もう一度書き出してください。",
 		"loading": "フレームを読み込んでいます…",
 		"saved": "フレームを調整しました：{change}。",
-		"undone": "フレームの変更を元に戻しました。",
 		"errors": {
 			"reviewOpen": "フレームを調整する前に、確認待ちのモーションを保存するか破棄してください。",
 			"statePending": "フレームを調整する前に、保留中のステートを保存するか破棄してください。",
@@ -3087,8 +3109,7 @@
 			"unchanged": "先にフレームサイズか位置を変えてください。",
 			"limit": "{size} px のフレームでも、このキャラクターにモーション用の余白を作れません。",
 			"resolveDrafts": "フレームを調整する前に、このキャラクターのアイテム下書きを保存するか破棄してください。",
-			"changed": "このキャラクターは変更されました。「フレームを調整」を開き直して最新の状態を確認してください。",
-			"undoFailed": "フレームの変更を元に戻せませんでした。"
+			"changed": "このキャラクターは変更されました。「フレームを調整」を開き直して最新の状態を確認してください。"
 		}
 	},
 	"costSheet": {
@@ -3232,6 +3253,58 @@
 			"browser": "続けるには最新のブラウザを使ってください。",
 			"exportId": "別のエクスポートIDを選んでください。",
 			"busy": "少し待ってから、もう一度お試しください。"
+		}
+	},
+	"itemGeneration": {
+		"open": "アイテムを生成",
+		"title": "{move}用のアイテムを生成",
+		"inProgress": "処理中",
+		"allDrawn": "すべてのアイテムが{move}用に描画済みです。",
+		"noneAvailable": "これらのアイテムは{move}用に生成できません。",
+		"notDrawnFor": "{move}用はまだ描画されていません",
+		"generateFor": "{move}用に生成",
+		"wearOn": "{move}で装備"
+	},
+	"moveImport": {
+		"title": "モーションを読み込む",
+		"importMoves": "モーションを読み込む",
+		"importStates": "ステートを読み込む",
+		"dropArea": "PixelDoll ZIPのドロップエリア",
+		"drop": "PixelDoll ZIPをここにドロップ",
+		"intro": "モーションのZIP、バックアップ、共有されたキャラクター。このキャラクター用に作られたものなら無料です。",
+		"zip": "PixelDoll ZIP",
+		"editHint": "モーションのフレームを別のエディターで変更するには、「フレームを修正」を使ってください。",
+		"fit": {
+			"same": "このキャラクター用に作られています。フレームはそのまま合います。",
+			"shifted": "「フレームを調整」の前にこのキャラクター用に作られています。フレームを移動して合わせます。",
+			"near": {
+				"other": "このキャラクター用ですが、立ちポーズが{count}ピクセル異なります。読み込み後にフレームを確認してください。"
+			},
+			"directions": "向きの構成が異なるため、フレームはここでは使えません。モーションの動きでこのキャラクターを描き直すことはできます。",
+			"body": "別の体用に作られているため、フレームはここでは使えません。モーションの動きでこのキャラクターを描き直すことはできます。"
+		},
+		"empty": "このZIPには立ちポーズ以外のモーションやステートがありません。",
+		"move": "モーション",
+		"state": "ステート",
+		"row": {
+			"add": "新規",
+			"copy": "名前が使用中のため、{name}として両方を残します",
+			"present": "すでにこのキャラクターにあります",
+			"motion": "この動きでこのキャラクターを描き直せます",
+			"unavailable": "再利用できる保存済みの動きがありません",
+			"stateUnavailable": "ステートには同じ体が必要です",
+			"items": "{items}付き",
+			"left": "{items}なし（このキャラクターにはありません）",
+			"missing": "このモーションにはまだありません：{items}"
+		},
+		"useMotion": "{move}として描き直す",
+		"free": "無料。生成なし。",
+		"import": "読み込む",
+		"importing": "読み込み中…",
+		"imported": "{names}を読み込みました。",
+		"errors": {
+			"resolveDrafts": "モーションを読み込む前に、このキャラクターのアイテム下書きを保存するか破棄してください。",
+			"changed": "このキャラクターが変更されました。最新の内容を確認するには、ZIPをもう一度選んでください。"
 		}
 	}
 }

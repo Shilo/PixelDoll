@@ -13,7 +13,7 @@ import type {
 } from '../lib/store/manifest.ts';
 import { GATES, isAction, ITEM_GRID_REGISTRATION_NOTICE, SLOTS } from '../lib/items/items.ts';
 import { coverageGaps, missingFrames } from '../lib/dress/dress.ts';
-import { DIRECTIONS, type Rig, type RigAnimation } from '../lib/rig/rig.ts';
+import { DEFAULT_MOVE, DIRECTIONS, type Rig, type RigAnimation } from '../lib/rig/rig.ts';
 import { moveExportId } from '../lib/store/identity.ts';
 import { stateClipName } from '../lib/rig/poses.ts';
 import { clipKind } from '../lib/runtime/timeline.js';
@@ -381,6 +381,15 @@ export function missingFramesNote(m: Manifest, it: Item): Message | '' {
 /** No view of `anim` has every frame of the item, so the stage shows none of it there (an incomplete view is hidden whole). */
 export const notShownIn = (m: Manifest, it: Item, anim: string): boolean =>
 	m.rig.directions.every((d) => missingFrames(m, it, anim, d.id).length > 0);
+/** Where Preview goes when the item is put on while `anim` does not show it: Standing, else the first move or State that
+ *  shows it. Undefined when `anim` shows it or nothing does. */
+export function wearClip(m: Manifest, it: Item, anim: string): string | undefined {
+	if (!notShownIn(m, it, anim)) return;
+	const shows = (id: string) => id !== anim && !notShownIn(m, it, id);
+	return m.rig.animations.some((a) => a.id === DEFAULT_MOVE) && shows(DEFAULT_MOVE)
+		? DEFAULT_MOVE
+		: m.rig.animations.find((a) => shows(a.id))?.id;
+}
 /** Those moves by name, for a message with room to list them. */
 export function missingMoves(m: Manifest, it: Item): string[] {
 	return [...new Set(coverageGaps(m, it).map((g) => g.split('/')[0]))];

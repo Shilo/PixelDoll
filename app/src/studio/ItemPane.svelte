@@ -22,6 +22,7 @@
 	} from '../lib/items/run.ts';
 	import { missingItemMoves, itemMoveOffer, moveMinimumTier, type MoveSpec } from './create.ts';
 	import { extendable } from './movePricing.ts';
+	import { seeded } from './itemGeneration.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
@@ -212,8 +213,7 @@
 	function makeMissing() {
 		if (!missingOffer?.specs.length) return;
 		const projectId = doc.id,
-			seed = 1 + Math.floor(Math.random() * 1_000_000),
-			specs = missingOffer.specs.map((s) => ({ ...$state.snapshot(s), seed }));
+			specs = seeded($state.snapshot(missingOffer.specs));
 		withKey(() => {
 			void queueMoves(projectId, specs);
 			ui.sheet = 'move';

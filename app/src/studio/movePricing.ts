@@ -81,23 +81,30 @@ export const extendable = (m: Manifest, itemId: string) =>
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const isAuthoredAction = (action?: string): action is string =>
 	!!action && Object.hasOwn(ACTIONS, action);
+/** Moves whose joints are known before any request: an authored action, or a move's motion imported from another body.
+ *  They buy no motion request; only the body render and its checks. */
+export const fixedPoses = (spec: Pick<MoveSpec, 'action' | 'poses'>) =>
+	!!spec.poses || isAuthoredAction(spec.action);
+/** ClipSource.motion of a move drawn in another body's imported joints. */
+export const IMPORTED_MOTION = 'imported-motion';
 export type MoveFrameSpec = Pick<
 	MoveSpec,
-	'action' | 'frames' | 'animation' | 'motionSource' | 'startFrom'
+	'action' | 'frames' | 'animation' | 'motionSource' | 'startFrom' | 'poses'
 >;
 export const moveAnimationModel = (spec: MoveFrameSpec) => spec.animation?.model ?? 'skeleton-v3';
 /** The motion source a Skeleton move uses. The managed character's motion always starts from the Standing PixelLab
  *  registered, so a described move that starts from a saved frame or State takes the standalone PixMiniMax route, which
  *  starts from that frame at the same price, whatever source was resolved for the character. */
 export const moveMotionSource = (spec: MoveFrameSpec): MoveSpec['motionSource'] =>
-	spec.startFrom && moveAnimationModel(spec) === 'skeleton-v3' && !isAuthoredAction(spec.action)
+	spec.startFrom && moveAnimationModel(spec) === 'skeleton-v3' && !fixedPoses(spec)
 		? 'standalone'
 		: spec.motionSource;
 export const moveFrames = (m: Manifest, s: MoveFrameSpec) => {
 	const dir = m.rig.directions.find((d) => !d.mirrorOf && m.rig.rest?.[d.id])?.id;
 	const r = dir && m.rig.rest?.[dir];
-	const preferred =
-		s.action === 'walk'
+	const preferred = s.poses
+		? (Object.values(s.poses)[0]?.length ?? s.frames)
+		: s.action === 'walk'
 			? 8
 			: isAuthoredAction(s.action) && r && dir
 				? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length
@@ -155,6 +162,7 @@ export function moveEstimate(
 		MoveSpec,
 		| 'id'
 		| 'action'
+		| 'poses'
 		| 'motionSource'
 		| 'frames'
 		| 'animation'
@@ -181,9 +189,7 @@ export function moveEstimate(
 							(model !== 'skeleton-v3'
 								? nativeMoveGens(model, m.rig.cell, n)
 								: poseCallGens(n) +
-									(isAuthoredAction(s.action)
-										? 0
-										: moveMotionGens(m, s) + moveMotionFrames(m, s) * EST))) +
+									(fixedPoses(s) ? 0 : moveMotionGens(m, s) + moveMotionFrames(m, s) * EST))) +
 					(model === 'skeleton-v3'
 						? moveDirections(m, s.dirs).filter(
 								(direction) => s.animation?.references?.[direction]?.start

@@ -479,7 +479,12 @@ export function generationWork(
 	);
 }
 type IdleAction =
-	'delete' | 'restore' | 'change directions for' | 'replace body frames of' | 'change the frame of';
+	| 'delete'
+	| 'restore'
+	| 'change directions for'
+	| 'replace body frames of'
+	| 'change the frame of'
+	| 'import moves into';
 
 export async function editIdleCharacter(
 	id: string,
@@ -551,10 +556,15 @@ export async function editIdleCharacter(
 											'Finish or dismiss pending generation work before adjusting the frame.',
 											'state.finishBeforeFrameChange'
 										)
-									: new LocalizedError(
-											'Finish or dismiss pending generation work before changing directions.',
-											'state.finishBeforeDirectionRemoval'
-										);
+									: action === 'import moves into'
+										? new LocalizedError(
+												'Finish or dismiss pending generation work before importing moves.',
+												'state.finishBeforeMoveImport'
+											)
+										: new LocalizedError(
+												'Finish or dismiss pending generation work before changing directions.',
+												'state.finishBeforeDirectionRemoval'
+											);
 				edit(projects, records.result);
 				for (const [hash, blob] of blobs ?? []) t.objectStore('blobs').put(blob, hash);
 			} catch (failure) {
@@ -609,7 +619,8 @@ export async function saveIdleCharacter(
 	const { id } = original;
 	const version = stableStringify(original);
 	const frames = action === 'replace body frames of',
-		frame = action === 'change the frame of';
+		frame = action === 'change the frame of',
+		moves = action === 'import moves into';
 	await editIdleCharacter(
 		id,
 		action,
@@ -625,7 +636,14 @@ export async function saveIdleCharacter(
 								'Keep or dismiss this character’s item drafts before adjusting the frame.',
 								'adjustFrame.errors.resolveDrafts'
 							)
-						: new Error('Keep or dismiss this character’s item drafts before changing directions.');
+						: moves
+							? new LocalizedError(
+									'Keep or dismiss this character’s item drafts before importing moves.',
+									'moveImport.errors.resolveDrafts'
+								)
+							: new Error(
+									'Keep or dismiss this character’s item drafts before changing directions.'
+								);
 			if (stableStringify(asLoaded(records.find((record) => record?.id === id))) !== version)
 				throw frames
 					? new LocalizedError(
@@ -637,9 +655,14 @@ export async function saveIdleCharacter(
 								'This character changed. Reopen Adjust frame to review the latest version.',
 								'adjustFrame.errors.changed'
 							)
-						: new Error(
-								'This character changed. Close and reopen Directions to review the latest version.'
-							);
+						: moves
+							? new LocalizedError(
+									'This character changed. Choose the ZIP again to review the latest version.',
+									'moveImport.errors.changed'
+								)
+							: new Error(
+									'This character changed. Close and reopen Directions to review the latest version.'
+								);
 			projects.put(next, id);
 		},
 		blobs,

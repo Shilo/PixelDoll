@@ -8,8 +8,7 @@ import {
 	frameTile,
 	layerOfFile,
 	planFrames,
-	restoreOriginals,
-	undoLast
+	restoreOriginals
 } from '../../src/lib/frames/fix.ts';
 import { bodyRecord } from '../../src/lib/frames/save.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
@@ -261,11 +260,12 @@ test('erasing an item where it hid body pixels shows them again', async () => {
 	expect(next.layers[0].cells!.walk.south![0]).toBeNull();
 	expect(next.baseCut!.walk.south![0]).toBeNull();
 	expect(next.frameEdits![0].frames[0].cut).toEqual({ before: [4 + 6 * W], after: null });
-	const undone = undoLast(p.manifest, next, 'op')!;
-	expect(undone.item.baseCut!.walk.south![0]).toEqual([4 + 6 * W]);
+	const restored = restoreOriginals(p.manifest, next)!;
+	expect(restored.item.baseCut!.walk.south![0]).toEqual([4 + 6 * W]);
 });
 
-test('undo reverts the latest import; restore returns every still-edited frame to its original', async () => {
+// Undo of one import is a history step that writes the item back as it was (studio-flow-state.test.ts).
+test('restore returns every still-edited frame to its original', async () => {
 	const { p, hat } = await project();
 	const a = sheetOf(p, 'hat', 'walk');
 	px(a, 1, 1, [10, 10, 200, 255]);
@@ -279,22 +279,15 @@ test('undo reverts the latest import; restore returns every still-edited frame t
 	const second = await planFrames(p, 'hat', 'walk', [{ layerId: 'main', image: b }]);
 	const twice = applyPlan(p, second, 'b');
 	expect(editedCount(p.manifest, twice)).toBe(2);
-	expect(undoLast(p.manifest, twice, 'a')).toBeNull(); // not the latest import
-
-	const undone = undoLast(p.manifest, twice, 'b')!;
-	expect(undone.count).toBe(2);
-	expect(undone.item.layers[0].cells!.walk.south).toEqual(once.layers[0].cells!.walk.south);
-	expect(undone.item.frameEdits).toHaveLength(1);
 
 	const restored = restoreOriginals(p.manifest, twice)!;
 	expect(restored.item.layers[0].cells!.walk.south).toEqual([hat, hat]);
 	expect(restored.item.frameEdits).toBeUndefined();
 	expect(restored.writes.map((w) => w.hash)).toEqual([hat, hat]);
 
-	// A frame changed by something else since is no longer the user's edit: Undo refuses, Restore skips it.
+	// A frame changed by something else since is no longer the user's edit: Restore skips it.
 	const changed = structuredClone(twice);
 	changed.layers[0].cells!.walk.south![1] = hat;
-	expect(undoLast(p.manifest, changed, 'b')).toBeNull();
 	expect(restoreOriginals(p.manifest, changed)!.count).toBe(1);
 });
 
@@ -361,17 +354,16 @@ test('a body save moves fitted items, follows the standing reference and keeps a
 	expect(rec.manifest.rig.baseHash).toBe('sha256:base');
 });
 
-test('undo removes rows and coverage an import created', async () => {
+test('restore removes rows and coverage an import created', async () => {
 	const { p } = await project();
 	const sheet = sheetOf(p, 'hat', 'walk');
 	px(sheet, 2, W + 2, [10, 10, 200, 255]);
 	const plan = await planFrames(p, 'hat', 'walk', [{ layerId: 'main', image: sheet }]);
 	const next = applyPlan(p, plan, 'op');
 	expect(next.frameEdits![0].frames[0]).toMatchObject({ added: true, newRows: ['main'] });
-	const undone = undoLast(p.manifest, next, 'op')!;
-	expect(undone.item.layers[0].cells!.walk.east).toBeUndefined();
-	expect(undone.item.coverage).toEqual(['walk/south/0', 'walk/south/1']);
-	expect(restoreOriginals(p.manifest, next)!.item.layers[0].cells!.walk.east).toBeUndefined();
+	const restored = restoreOriginals(p.manifest, next)!;
+	expect(restored.item.layers[0].cells!.walk.east).toBeUndefined();
+	expect(restored.item.coverage).toEqual(['walk/south/0', 'walk/south/1']);
 });
 
 test('a mirrored direction with its own stored rows follows its edited source', async () => {
@@ -590,7 +582,7 @@ test('a frame changed by something else in between starts its history over', asy
 	expect(restoreOriginals(p.manifest, next)!.item.layers[0].cells!.walk.south![0]).toBe(x);
 });
 
-test('undo of a drawing into an erased Default frame puts the standing reference back', async () => {
+test('restoring a drawing into an erased Default frame puts the original standing reference back', async () => {
 	const { p, body } = await project();
 	const rec = (): StoredProject => ({
 		id: 'rig-test',
@@ -609,17 +601,16 @@ test('undo of a drawing into an erased Default frame puts the standing reference
 	const c = await edit(p, 'base', 'default', 'c', (s) => px(s, 3, 3, [90, 60, 40, 255]));
 	p.manifest = (await bodyRecord(rec(), c.next)).manifest;
 	expect(p.manifest.rig.rest!.south!.image).toBe(c.plan.changed[0].layers[0].after);
-	const undone = undoLast(p.manifest, item(p, 'base'), 'c')!;
-	p.manifest = (await bodyRecord(rec(), undone.item, undone.frames)).manifest;
-	expect(p.manifest.rig.rest!.south!.image).toBe(B);
 	expect(B).not.toBe(body);
+	const restored = restoreOriginals(p.manifest, item(p, 'base'))!;
+	p.manifest = (await bodyRecord(rec(), restored.item, restored.frames)).manifest;
+	expect(p.manifest.rig.rest!.south!.image).toBe(body);
 });
 
-test('undo and restore keep an empty row the item already had', async () => {
+test('restore keeps an empty row the item already had', async () => {
 	const { p } = await project();
 	item(p, 'hat').layers[0].cells!.walk.east = [null, null];
 	const { next } = await edit(p, 'hat', 'walk', 'a', (s) => px(s, 2, W + 2, [10, 10, 200, 255]));
-	expect(undoLast(p.manifest, next, 'a')!.item.layers[0].cells!.walk.east).toEqual([null, null]);
 	expect(restoreOriginals(p.manifest, next)!.item.layers[0].cells!.walk.east).toEqual([null, null]);
 });
 

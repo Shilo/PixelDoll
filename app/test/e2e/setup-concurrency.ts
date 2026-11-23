@@ -249,6 +249,9 @@ for (const tier of [3, 1] as const)
 				).toBe(true);
 			}
 			await activity.getByRole('button', { name: 'Close', exact: true }).click();
+			// A dress step made while setup runs survives the reload its finish makes.
+			await page.locator('.header-random').click();
+			await expect(page.locator('.header-undo')).toHaveAccessibleName('Undo Random look');
 			await page.locator('.project-btn').click();
 			await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click();
 			await expect(setup.locator('.steps-list li.now')).toContainText('0/41');
@@ -292,7 +295,18 @@ for (const tier of [3, 1] as const)
 			if (tier === 3) {
 				await expect(setup.getByRole('alert')).toContainText('Setup publication fixture failure');
 				expect((await projectSnapshot(page, name)).ready).toBe(false);
-			} else await expect(setup).toContainText('Ready. You can add equipment');
+			} else {
+				await expect(setup).toContainText('Ready. You can add equipment');
+				await setup
+					.locator('.sheet-head')
+					.getByRole('button', { name: 'Close', exact: true })
+					.click();
+				await expect(page.locator('.header-undo')).toHaveAccessibleName('Undo Random look');
+				await page.locator('.header-undo').click();
+				await expect(page.locator('.header-redo')).toHaveAccessibleName('Redo Random look');
+				await page.locator('.header-redo').click();
+				await expect(page.locator('.header-undo')).toHaveAccessibleName('Undo Random look');
+			}
 			const progress = await page.evaluate(() => {
 				const history = (
 					window as unknown as { setupProgress: { values: number[]; stop: () => void } }
