@@ -743,6 +743,7 @@
 		"riderPose": "Pose de jinete",
 		"riderPoseRide": "Automático",
 		"riderPoseMissing": "Sin {directions}",
+		"riderPoseHides": "Ocultos al montar, sin arte para esta pose: {items}",
 		"otherTab": "Otra pestaña",
 		"updateToVVersion": "Actualizar a v{version}",
 		"pixelLabAccount": "Cuenta de PixelLab",

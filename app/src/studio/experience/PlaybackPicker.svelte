@@ -8,6 +8,7 @@
 	import { Check, ChevronDown, Layers2, PersonStanding } from '../icons.ts';
 	import { ALL_CLIPS, ALL_MOVES, ALL_STATES } from '../shareClips.ts';
 	import PopoverArrow from '../PopoverArrow.svelte';
+	import SettingsItemButton from '../SettingsItemButton.svelte';
 	import Sprite from '../Sprite.svelte';
 	import { ui } from '../state.svelte.ts';
 	import { navigateMenu, popoverFocus } from './focus.ts';
@@ -21,6 +22,7 @@
 		bulk = false,
 		field,
 		label,
+		settings = false,
 		automatic,
 		unavailable,
 		valueLabel,
@@ -37,6 +39,8 @@
 		field?: string;
 		/** Accessible name for the quiet trigger when the surrounding row already shows the visible label. */
 		label?: string;
+		/** A Settings row (like Language): the whole row opens the menu, and the menu fits its widest choice. */
+		settings?: boolean;
 		/** A row that clears the choice, such as Mount's Automatic (no Riding pose). */
 		automatic?: string;
 		/** Keys that cannot be chosen, with the reason shown under the row name. */
@@ -96,7 +100,27 @@
 	</button>
 {/snippet}
 
-{#if field}
+{#if settings}
+	<SettingsItemButton
+		aria-label={`${menuLabel}: ${value}`}
+		value={selected}
+		aria-haspopup="menu"
+		aria-expanded={expanded}
+		popovertarget={menuId}
+		disabled={disabled || (!clips.length && !automatic)}
+		onkeydown={(event) => {
+			if (!expanded && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+				event.preventDefault();
+				menu.showPopover({ source: event.currentTarget });
+			}
+		}}
+	>
+		<PersonStanding size={18} aria-hidden="true" />
+		<span class="row-name">{menuLabel}</span>
+		<span class="faint small clip-value">{value}</span>
+		<ChevronDown size={16} aria-hidden="true" />
+	</SettingsItemButton>
+{:else if field}
 	<div class="field clip-field">
 		<span class="label" aria-hidden="true">{field}</span>
 		{@render trigger()}
@@ -110,10 +134,11 @@
 		'menu clip-menu bu-popover-anchor',
 		{
 			'two-columns': !compact && (bulk || (states.length > 0 && moves.length > 0)),
-			'with-art': !!thumbnail
+			'with-art': !!thumbnail,
+			fit: settings
 		}
 	]}
-	data-placement={field ? 'bottom-start' : 'top'}
+	data-placement={field ? 'bottom-start' : settings ? 'bottom-end' : 'top'}
 	popover
 	role="menu"
 	aria-label={menuLabel}
@@ -312,5 +337,10 @@
 	}
 	.clip-menu.with-art .clip-row {
 		padding-inline-start: 4px;
+	}
+	/* Last and specific enough to beat the fixed widths above: as wide as its widest choice, never past the screen. */
+	:global(.studio-app .clip-menu.fit[popover]) {
+		width: max-content;
+		max-width: calc(100vw - 16px);
 	}
 </style>

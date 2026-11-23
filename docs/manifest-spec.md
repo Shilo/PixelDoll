@@ -1072,8 +1072,9 @@ checks remain `pass`; Studio separately labels the accepted appearance warnings.
 
 An item may contain `paletteRepairs`: local, explicit color edits under the fixed `neutral-owned-v1` policy. Each entry
 records `materialId`, `anim`, authored `dir`, and changed frames (`cell`, `changedPixels`, layer `id` plus `before`/`after`
-SHA-256 image references). Current cells point to corrected images. Historical hashes are audit references and do not
-require obsolete blobs in the editable ZIP; later clip replacements may supersede them. Original paid provenance and
+SHA-256 image references). Current cells point to corrected images. Adjust frame reads every historical image, so a
+saved character keeps only history whose images it stores: an editable ZIP carries shown artwork only, and its import drops
+repair and Fix frames history naming images the ZIP lacks, as library and Trash restores do. Original paid provenance and
 historical QA remain intact. The operation preserves alpha and pixel coordinates, changes no material definition or
 variant, and matches only unclaimed neutral/cool colors to the one eligible item-owned neutral ramp within 24/255 per
 channel. Ambiguous or unsupported colors stay unchanged. No PixelLab request or synthetic clean QA claim is implied.

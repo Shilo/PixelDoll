@@ -21,6 +21,7 @@ import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
 import type { StoredProject } from './project.ts';
 import { checkExportIdentity, defaultCharacterExportId } from './identity.ts';
 import { unzip, type ZipEntry } from './zip.ts';
+import { pruneHistory } from './workspace.ts';
 import * as db from './db.ts';
 import type { WhisperKey, WhisperVars } from 'svelte-whisper';
 import { LocalizedError, errorMessage, errorText, message, type Message } from '../message.ts';
@@ -236,6 +237,10 @@ export async function readCharacterZip(
 			'The character has no visible base frames.',
 			'import.error.noVisibleBase'
 		);
+	// An editable ZIP carries only shown artwork (a loaded project holds no history images), so its valid Undo history may
+	// name images it lacks: the copy keeps only what Undo and Adjust frame can read.
+	const { images } = result.project;
+	pruneHistory(result.project.manifest, (hex) => images.has(`sha256:${hex}`));
 	return result;
 }
 

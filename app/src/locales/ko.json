@@ -723,6 +723,7 @@
 		"riderPose": "탑승 포즈",
 		"riderPoseRide": "자동",
 		"riderPoseMissing": "{directions} 없음",
+		"riderPoseHides": "탑승 중 숨김, 이 자세의 그림 없음: {items}",
 		"otherTab": "다른 탭",
 		"updateToVVersion": "v{version} 버전으로 업데이트",
 		"pixelLabAccount": "PixelLab 계정",

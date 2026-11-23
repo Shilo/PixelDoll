@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { t } from 'svelte-whisper';
+	import { getLocale, t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { displayDirectionInSentence } from './displayDirection.ts';
+	import { buildPresentation, itemsHiddenIn } from './experience/presentation.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import {
 		activeRiderPose,
@@ -15,13 +16,13 @@
 	} from './experience/riderPose.ts';
 	import type { MountLegMode } from './experience/mountLegs.ts';
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
-	import { Footprints, PawPrint, PersonStanding } from './icons.ts';
+	import { Footprints, PawPrint, TriangleAlert } from './icons.ts';
 	import { applyRiderPose } from './mountPreview.ts';
 	import { bodyClipThumbnail } from './moveThumbnails.ts';
 	import MountPreview from './MountPreview.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
 	import SettingsItemToggle from './SettingsItemToggle.svelte';
-	import { doc, store, toast, ui } from './state.svelte.ts';
+	import { doc, store, toast, ui, view } from './state.svelte.ts';
 
 	const manifest = $derived(store.project?.manifest);
 	const moves = $derived(manifest?.rig.animations ?? []);
@@ -40,6 +41,16 @@
 				])
 		)
 	);
+	// Items are drawn on Standing first, so a chosen pose may lack some; they hide while riding in it.
+	const hidden = $derived.by(() => {
+		if (!pose || !view.project) return '';
+		const names = itemsHiddenIn(buildPresentation(view.project), view.items, pose).map(
+			(item) => item.name
+		);
+		return names.length
+			? new Intl.ListFormat(getLocale(), { type: 'conjunction' }).format(names)
+			: '';
+	});
 	const legOptions = $derived([
 		{ value: 'none', label: t('common.none') },
 		{ value: 'far', label: t('toolbar.farLeg') },
@@ -69,10 +80,9 @@
 	<span class="row-name">{t('toolbar.showMount')}</span>
 </SettingsItemToggle>
 {#if doc.id}
-	<div class="row riding-pose" data-setting="riding-pose">
-		<PersonStanding size={18} aria-hidden="true" />
-		<span class="row-name">{t('toolbar.riderPose')}</span>
+	<div class="riding-pose" data-setting="riding-pose" tabindex="-1">
 		<PlaybackPicker
+			settings
 			{clips}
 			moveRefs={moves}
 			selected={pose ?? ''}
@@ -82,6 +92,11 @@
 			thumbnail={(key) => store.project && bodyClipThumbnail(store.project, key, ui.dir)}
 			onselect={choosePose}
 		/>
+		{#if hidden}<p class="notice warn small" role="status">
+				<TriangleAlert size={14} aria-hidden="true" />{t('toolbar.riderPoseHides', {
+					items: hidden
+				})}
+			</p>{/if}
 	</div>
 {/if}
 <SettingsItemSegmented
@@ -99,8 +114,11 @@
 {/if}
 
 <style>
-	.riding-pose :global(.clip-trigger) {
-		min-height: 44px;
-		padding-inline: 8px;
+	.riding-pose {
+		display: grid;
+		gap: 6px;
+	}
+	.riding-pose .notice {
+		margin: 0;
 	}
 </style>

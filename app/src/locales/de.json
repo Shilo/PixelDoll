@@ -743,6 +743,7 @@
 		"riderPose": "Reitpose",
 		"riderPoseRide": "Automatisch",
 		"riderPoseMissing": "Ohne {directions}",
+		"riderPoseHides": "Beim Reiten ausgeblendet, keine Grafik für diese Haltung: {items}",
 		"otherTab": "Anderer Tab",
 		"updateToVVersion": "Auf v{version} aktualisieren",
 		"pixelLabAccount": "PixelLab-Konto",

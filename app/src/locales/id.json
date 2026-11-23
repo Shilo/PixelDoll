@@ -723,6 +723,7 @@
 		"riderPose": "Pose penunggang",
 		"riderPoseRide": "Otomatis",
 		"riderPoseMissing": "Tanpa {directions}",
+		"riderPoseHides": "Disembunyikan saat menunggang, tidak ada gambar untuk pose ini: {items}",
 		"otherTab": "Tab lain",
 		"updateToVVersion": "Perbarui ke v{version}",
 		"pixelLabAccount": "Akun PixelLab",
