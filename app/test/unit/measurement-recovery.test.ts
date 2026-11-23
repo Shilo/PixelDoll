@@ -736,19 +736,26 @@ const keepConsent = (spec: MoveSpec, plan: { qaHash: string; rigVersion: string 
 		keep: { qaHash: plan.qaHash }
 	}
 });
+/** Numbers-only body results are staged for a free Save or Discard instead of thrown away (soft gates); this discards it. */
+function discardStaged(record: projects.StoredProject, before: projects.StoredProject) {
+	expect(record.manifest).toEqual(before.manifest);
+	expect(record.moveReviews?.idle?.spec).toMatchObject({ items: [], reviewBeforePublish: true });
+	delete record.moveReviews;
+	expect(record).toEqual(before);
+}
 const cellsOf = (record: projects.StoredProject, item: string, dir: 'east' | 'west' | 'south') =>
 	record.manifest.items.find((i) => i.id === item)!.layers[0].cells?.idle?.[dir];
 
-test('warning-only cached body is refused, then reviewed free and kept exactly, body only, with no request', async () => {
+test('warning-only cached body is staged, then reviewed free and kept exactly, body only, with no request', async () => {
 	const f = await fixture('feet');
 	f.addItem();
 	await f.finishOriginalChecks();
 	const posts = f.posts(),
 		before = structuredClone(f.saved());
-	await expect(addMove('rig-recover', await f.recovery())).rejects.toThrow(
-		'replacement still fails body-pose quality checks'
-	);
-	expect(f.saved()).toEqual(before);
+	await expect(addMove('rig-recover', await f.recovery())).resolves.toMatchObject({
+		moveReview: 'idle'
+	});
+	discardStaged(f.saved(), before);
 	const calls = f.enqueue.mock.calls.length,
 		review = await reviewMoveRecovery('rig-recover', f.spec);
 	expect(review.recovery).toBeUndefined();
@@ -772,7 +779,8 @@ test('warning-only cached body is refused, then reviewed free and kept exactly, 
 		addMove('rig-recover', keepConsent(f.spec, { ...keep, qaHash: '0'.repeat(64) }))
 	).rejects.toThrow('changed since review');
 	expect(f.saved()).toEqual(before);
-	await addMove('rig-recover', keepConsent(f.spec, keep));
+	// Views the user just kept despite their numbers are not offered a paid redraw as the follow-up.
+	expect((await addMove('rig-recover', keepConsent(f.spec, keep))).qualityDirs).toBeUndefined();
 	expect(f.enqueue.mock.calls).toHaveLength(calls);
 	expect(f.posts()).toBe(posts);
 	const saved = f.saved();
@@ -799,10 +807,8 @@ test.each(['text', 'walk'] as const)(
 		await expect(measurementRecoveryPlan('rig-recover', f.spec)).rejects.toThrow(
 			'original authored body-repair settings'
 		);
-		await expect(addMove('rig-recover', f.spec)).rejects.toThrow(
-			'replacement still fails body-pose quality checks'
-		);
-		expect(f.saved()).toEqual(before);
+		await expect(addMove('rig-recover', f.spec)).resolves.toMatchObject({ moveReview: 'idle' });
+		discardStaged(f.saved(), before);
 		expect(f.posts()).toBe(posts);
 		const calls = f.enqueue.mock.calls.length,
 			review = await reviewMoveRecovery('rig-recover', f.spec),
@@ -919,7 +925,8 @@ test('a new authored move without replace can be kept from its cached frames', a
 	await f.finishOriginalChecks();
 	asNewMove(f.saved());
 	const spec: MoveSpec = { ...f.spec, replace: undefined };
-	const plan = await measurementRecoveryPlan('rig-recover', spec);
+	const plan = await measurementRecoveryPlan('rig-recover', spec),
+		unsaved = structuredClone(f.saved());
 	await expect(
 		addMove('rig-recover', {
 			...spec,
@@ -930,7 +937,8 @@ test('a new authored move without replace can be kept from its cached frames', a
 				rigVersion: plan.rigVersion
 			}
 		})
-	).rejects.toThrow('new move fails body-pose quality checks');
+	).resolves.toMatchObject({ moveReview: 'idle' });
+	discardStaged(f.saved(), unsaved);
 	const calls = f.enqueue.mock.calls.length,
 		posts = f.posts(),
 		keep = (await reviewMoveRecovery('rig-recover', spec)).keep!;
@@ -1397,20 +1405,18 @@ test('missing original raw results or a changed original seed cannot buy replace
 	expect(g.posts()).toBe(0);
 });
 
-test('bad real recovered measurements never trigger an uncached raw reroll or publish a weakened result', async () => {
+test('bad real recovered measurements never trigger an uncached raw reroll and are staged for review, never published', async () => {
 	const f = await fixture(),
 		spec = await f.recovery();
 	f.bad();
-	await expect(addMove('rig-recover', spec)).rejects.toThrow(
-		'replacement still fails body-pose quality checks'
-	);
+	await expect(addMove('rig-recover', spec)).resolves.toMatchObject({ moveReview: 'idle' });
 	expect(f.enqueue.mock.calls.filter(([r]) => r.path === '/animate-with-skeleton-v3')).toHaveLength(
 		0
 	);
 	expect(f.posts()).toBeLessThanOrEqual(8);
 	expect(f.put).not.toHaveBeenCalled();
 	expect(f.update).not.toHaveBeenCalled();
-	expect(f.saved()).toEqual(f.before);
+	discardStaged(f.saved(), f.before);
 });
 
 test('body publication receipt survives a failed item step and resumes only missing equipment without rerender', async () => {
@@ -1912,6 +1918,18 @@ test('a body move stopped after every view was bought resumes free with the same
 	expect(review.views.map((view) => view.state)).toEqual(['ready', 'ready']);
 	expect(review.options).toMatchObject([{ id: 'resume', gens: 0, paid: false }]);
 	expect(review.options[0].spec.seed).toBe(f.spec.seed);
+});
+
+test('a targeted view that misses only numerical body checks is not failed: it resumes free into the staged review', async () => {
+	// Before soft gates, a numbers-only view of a targeted move counted as failed and the review pushed a paid re-roll.
+	const f = await fixture('feet', 'walk');
+	await f.finishOriginalChecks();
+	expect(f.spec.dirs?.length).toBeGreaterThan(0);
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(review.views.map((view) => view.state)).toEqual(['ready', 'ready']);
+	expect(review.options).toMatchObject([
+		{ id: 'resume', gens: 0, paid: false, spec: { reviewBeforePublish: true } }
+	]);
 });
 
 test('a managed walk whose paid motion sent back a standing that is not ours resumes free from the cache', async () => {

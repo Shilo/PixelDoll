@@ -3157,8 +3157,11 @@ async function addMoveUnlocked(
 	const qualityDirs = dirs.filter((dir) => {
 		const clip = `${spec.id}/${dir}`;
 		return (
+			// Frames the user chose to keep despite their numbers are not offered a paid redraw right after Keep.
 			(!published &&
 				(spec.replace || !existing) &&
+				!spec.measurementRecovery?.keep &&
+				!spec.keepUnposed &&
 				clipQa[clip] &&
 				failsBodyGate(clipQa[clip], true)) ||
 			plans.some(
@@ -3894,12 +3897,9 @@ export async function reviewMoveResults(
 	const total = (views: ReplayedView[]) => +views.reduce((sum, v) => sum + v.gens, 0).toFixed(2);
 	const views = await replay(plan.spec);
 	const records = [...new Map(views.flatMap((v) => v.records).map((r) => [r.id, r])).values()];
-	const gated = !!spec.dirs?.length || !!spec.motionLift;
-	const failed = views.filter(
-		(v) =>
-			v.state === 'failed' ||
-			(gated && v.clip && failsBodyGate(v.clip.out.qa, plan.model !== 'skeleton-v3'))
-	);
+	// A view that completed and misses only numerical body checks is not failed: every way on lands in the staged review,
+	// where keeping it is free, so it never prices a re-roll.
+	const failed = views.filter((v) => v.state === 'failed');
 	const options: MovePaidOption[] = [];
 	// Lift every overflowing motion that a vertical lift can fit; anything else that stopped is re-rolled at its own step.
 	const lifts: NonNullable<MoveSpec['motionLift']> = {},
@@ -4198,6 +4198,7 @@ async function addBodyClip(
 	};
 	for (const d of affected) delete anim.sources![d];
 	const keep = spec.measurementRecovery?.keep;
+	let staged = !!spec.reviewBeforePublish;
 	if (keep) {
 		// Consent covers only the reviewed frames and checks, recomputed here from the cached render that was replayed.
 		const kept = clips.map((c) => ({
@@ -4215,8 +4216,13 @@ async function addBodyClip(
 		!spec.reviewBeforePublish &&
 		spec.dirs &&
 		clips.some(({ out: { qa } }) => failsBodyGate(qa, model !== 'skeleton-v3'))
-	)
-		throw old ? replacementBodyQa() : newMoveBodyQa();
+	) {
+		// A structural failure (missing joints, a broken frame) cannot be kept; a view that misses only the numerical body
+		// checks was paid for, so it goes to the staged review where Save or Discard is the user's free choice.
+		if (clips.some(({ out: { qa } }) => qa.fails.length))
+			throw old ? replacementBodyQa() : newMoveBodyQa();
+		staged = true;
+	}
 	// Saved without poses: no frame's joints are invented, so the whole move waits to be made again before items fit it.
 	const unposed = !!spec.keepUnposed && clips.some((c) => c.out.measured.some((k) => !hasAll(k)));
 	const layer = baseIt.layers[0],
@@ -4225,7 +4231,7 @@ async function addBodyClip(
 		};
 	const skeletons = (fresh.skeletons ??= {}),
 		warnings: string[] = [];
-	const reviewBlobs = spec.reviewBeforePublish ? new Map<string, Blob>() : null;
+	const reviewBlobs = staged ? new Map<string, Blob>() : null;
 	const writeCell = async (hash: Sha256, image: Img) => {
 		if (reviewBlobs) reviewBlobs.set(hash.slice(7), await cellBlob(image));
 		else await putCell(hash, image);
@@ -4327,7 +4333,16 @@ async function addBodyClip(
 	const checks = Object.fromEntries(clips.map((clip) => [`${spec.id}/${clip.d}`, clip.out.qa]));
 	if (reviewBlobs) {
 		const candidate: MoveCandidate = {
-			spec,
+			// A staged numbers-only result is body only, like every review: equipment is a separate priced choice after Save.
+			spec: spec.reviewBeforePublish
+				? spec
+				: {
+						...spec,
+						items: [],
+						itemReview: undefined,
+						reviewedMoveItems: undefined,
+						reviewBeforePublish: true
+					},
 			input: moveCandidateInput(rec, spec.id),
 			dirs,
 			animation: anim,

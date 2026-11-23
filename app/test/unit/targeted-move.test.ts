@@ -494,7 +494,9 @@ test('native PixMiniMax rejects a missing leading frame before buying any joint 
 	expect(f.saved()).toEqual(f.original);
 });
 
-test('a native quality failure offers a priced body draft retry without buying equipment', async () => {
+// Deliberately changed (soft gates): a targeted replacement that misses only numerical body checks used to throw and keep
+// nothing. It is now staged for a free Save or Discard, body only; the priced Skeleton retry is offered from that draft.
+test('a native quality failure stages a free body review and offers a priced body draft retry without buying equipment', async () => {
 	const f = await fixture(false, 'bad-palette', true);
 	const spec = {
 		id: 'idle',
@@ -506,13 +508,11 @@ test('a native quality failure offers a priced body draft retry without buying e
 		dirs: ['east'] as DirectionName[],
 		animation: { model: 'pixminimax' as const, frameCount: 4 }
 	};
-	const result = await f.run(spec).then(
-		() => null,
-		(error: unknown) => error
-	);
-	expect(result).toBeInstanceOf(Error);
-	expect(f.saved()).toEqual(f.original);
-	const offer = skeletonMoveReview(f.saved(), spec, result, []);
+	await expect(f.run(spec)).resolves.toMatchObject({ moveReview: 'idle' });
+	expect(f.saved().manifest).toEqual(f.original.manifest);
+	const draft = f.saved().moveReviews!.idle!;
+	expect(draft.spec).toMatchObject({ items: [], reviewBeforePublish: true });
+	const offer = skeletonMoveReview(f.saved(), draft.spec, undefined, [], draft);
 	expect(offer).toMatchObject({
 		review: {
 			dirs: ['east'],
@@ -528,15 +528,16 @@ test('a native quality failure offers a priced body draft retry without buying e
 	const withFrames = skeletonMoveReview(
 		f.saved(),
 		{
-			...spec,
+			...draft.spec,
 			animation: {
 				...spec.animation,
 				loop: false,
 				references: { east: { start, end }, south: { start } }
 			}
 		},
-		result,
-		[]
+		undefined,
+		[],
+		draft
 	);
 	expect(withFrames?.review.animation).toEqual({
 		model: 'skeleton-v3',
@@ -549,14 +550,24 @@ test('a native quality failure offers a priced body draft retry without buying e
 		skeletonMoveReview(f.saved(), spec, new Error('Standing reference is missing'), [])
 	).toBeUndefined();
 	expect(
-		skeletonMoveReview(f.saved(), { ...spec, animation: { model: 'skeleton-v3' } }, result, [])
+		skeletonMoveReview(
+			f.saved(),
+			{ ...draft.spec, animation: { model: 'skeleton-v3' } },
+			undefined,
+			[],
+			draft
+		)
 	).toBeUndefined();
-	await expect(f.run({ ...offer!.review, seed: 24 })).resolves.toMatchObject({
-		moveReview: 'idle'
-	});
+	await expect(
+		f.run({ ...offer!.review, seed: 24, reviewRegeneration: { id: 'idle', seed: 23 } })
+	).resolves.toMatchObject({ moveReview: 'idle' });
 	const saved = f.saved();
 	expect(saved.manifest).toEqual(f.original.manifest);
-	expect(saved.moveReviews?.idle?.spec).toMatchObject({ items: [], reviewBeforePublish: true });
+	expect(saved.moveReviews?.idle?.spec).toMatchObject({
+		items: [],
+		reviewBeforePublish: true,
+		seed: 24
+	});
 });
 
 test('a new Move cannot take the normalized name of a State or a pending State', async () => {
@@ -708,34 +719,31 @@ test('Skeleton retry keeps the exact authored start and omits stale or incompati
 		animation: { model: 'pixminimax' as const, frameCount: 4 },
 		startFrom: resolveMoveSource(f.original.manifest, { clip: 'idle', cell: 3 }, ['south', 'east'])!
 	};
-	const result = await f.run(spec).catch((error: unknown) => error);
-	expect(result).toBeInstanceOf(Error);
-	const offer = skeletonMoveReview(f.saved(), spec, result, []);
+	await expect(f.run(spec)).resolves.toMatchObject({ moveReview: 'idle' });
+	const draft = f.saved().moveReviews!.idle!;
+	const retry = (record = f.saved(), change: Partial<typeof spec> = {}) =>
+		skeletonMoveReview(record, { ...draft.spec, ...change }, undefined, [], draft);
+	const offer = retry();
 	expect(offer?.review.startFrom).toEqual(spec.startFrom);
 	expect(offer?.review.approvedDirs).toEqual(spec.dirs);
 	// Deliberately flipped (2026-11-23): a described retry from a saved frame used to get no offer, because the managed
 	// character's motion always starts from Standing. It now takes the standalone PixMiniMax route at the same price.
-	const described = skeletonMoveReview(
-		f.saved(),
-		{ ...spec, action: undefined, text: 'Hold still' },
-		result,
-		[]
-	);
+	const described = retry(f.saved(), { action: undefined, text: 'Hold still' });
 	expect(described?.review.startFrom).toEqual(spec.startFrom);
 	expect(moveMotionRequest(f.saved(), described!.review, 'east').path).toBe('/animate-pixminimax');
 	const changed = structuredClone(f.saved());
 	const east = changed.manifest.rig.animations[0].sources!.east!;
 	east.measured![3] = east.measured![3].map((joint) => ({ ...joint, x: joint.x + 0.01 }));
-	expect(skeletonMoveReview(changed, spec, result, [])).toBeUndefined();
+	expect(retry(changed)).toBeUndefined();
 	const missing = structuredClone(f.saved());
 	delete missing.manifest.items[0].layers[0].cells!.idle.east;
-	expect(skeletonMoveReview(missing, spec, result, [])).toBeUndefined();
+	expect(retry(missing)).toBeUndefined();
 	const resized = structuredClone(f.saved());
 	resized.manifest.rig.pivot.x++;
-	expect(skeletonMoveReview(resized, spec, result, [])).toBeUndefined();
-	await expect(f.run({ ...offer!.review, seed: 24 })).resolves.toMatchObject({
-		moveReview: 'idle'
-	});
+	expect(retry(resized)).toBeUndefined();
+	await expect(
+		f.run({ ...offer!.review, seed: 24, reviewRegeneration: { id: 'idle', seed: 23 } })
+	).resolves.toMatchObject({ moveReview: 'idle' });
 	expect(f.saved().manifest).toEqual(f.original.manifest);
 	expect(f.saved().moveReviews?.idle?.spec.startFrom).toEqual(spec.startFrom);
 });
@@ -955,12 +963,17 @@ test('regeneration keeps explicit play-once preferences, including choices chang
 		['cast', false]
 	]);
 });
-test('failed genuine measurements cannot publish a targeted replacement or invalidate prior equipment', async () => {
+// Deliberately changed (soft gates): numerical misses used to throw away the paid replacement; they now stage it for review.
+test('numerical misses stage a targeted replacement for review without publishing it or invalidating prior equipment', async () => {
 	const f = await fixture(true);
-	await expect(f.run()).rejects.toThrow('still fails body-pose');
+	await expect(f.run()).resolves.toMatchObject({ moveReview: 'idle' });
 	expect(f.put).not.toHaveBeenCalled();
 	expect(f.update).not.toHaveBeenCalled();
-	expect(f.saved()).toEqual(f.original);
+	expect(f.saved().manifest).toEqual(f.original.manifest);
+	const draft = f.saved().moveReviews!.idle!;
+	expect(draft.dirs).toEqual(['east']);
+	expect(draft.checks['idle/east'].fails).toEqual([]);
+	expect(draft.checks['idle/east'].adherence).toBeGreaterThan(0);
 });
 test('invalid subset, new partial move and changed partial frame count are rejected before spending', async () => {
 	for (const change of [
