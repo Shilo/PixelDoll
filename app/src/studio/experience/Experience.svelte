@@ -126,8 +126,8 @@
 		['wardrobe', 'experience.tabWardrobe'],
 		['colors', 'experience.tabColors'],
 		['outfits', 'experience.tabOutfits'],
-		['states', 'experience.tabStates'],
-		['moves', 'experience.tabMoves']
+		['moves', 'experience.tabMoves'],
+		['states', 'experience.tabStates']
 	] as const;
 	const g = $derived(layout(viewportWidth, viewportHeight, experience.screen, previewHeight));
 	// The cast is drawn from 64 px frames whose bodies stand about 50 px tall and 48 px wide.
