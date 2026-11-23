@@ -439,11 +439,11 @@
 				onclick={discard}
 				>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 			>
-			<!-- Reading again is free: a view whose download failed may come back, so it leads while one did. -->
-			{#if review?.missing.length}<button
+			<!-- Reading again is free and only helps a view whose download failed, so it leads while one did. -->
+			{#if review?.unfetched.length}<button
 					type="button"
 					class="bu-btn"
-					data-variant={review.unfetched.length ? 'primary' : 'outline'}
+					data-variant="primary"
 					disabled={!!busy}
 					onclick={load}>{t('common.tryAgain')}</button
 				>{/if}
@@ -583,18 +583,23 @@
 			gap: 16px;
 		}
 	}
+	/* The note sits beside the buttons when both fit, else on its own row above them (phones). */
 	.state-footer {
 		flex: 1;
 		min-inline-size: 0;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
+		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px;
+	}
+	.state-footer > p {
+		flex: 1 1 160px;
 	}
 	.state-actions {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: flex-end;
 		gap: 8px;
+		margin-inline-start: auto;
 	}
 </style>

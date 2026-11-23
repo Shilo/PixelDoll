@@ -3498,7 +3498,8 @@ test('a paid State review keeps its usable facings and names missing, undownload
 	await expect(review.getByText(/^No usable view came back facing North\./)).toBeVisible();
 	const save = review.getByRole('button', { name: 'Save', exact: true });
 	await expect(save).toHaveAttribute('data-variant', 'primary');
-	await expect(tryAgain).toHaveAttribute('data-variant', 'outline');
+	// Reading again cannot bring back a blank view, so Try again leaves once every download succeeded.
+	await expect(tryAgain).toHaveCount(0);
 	// Try again only reads the paid result again.
 	expect(requests.slice(beforeRetry).length).toBeGreaterThan(0);
 	expect(requests.slice(beforeRetry).every((request) => request.startsWith('GET '))).toBe(true);
@@ -3594,9 +3595,13 @@ test('a paid State review keeps its usable facings and names missing, undownload
 		canceledReview.getByText(/^The view facing \S+ was canceled before it was made\./)
 	).toBeVisible();
 	await expect(canceledReview.getByText(/^No usable view came back/)).toHaveCount(0);
-	await expect(
-		canceledReview.getByRole('button', { name: 'Try again', exact: true })
-	).toHaveAttribute('data-variant', 'outline');
+	await expect(canceledReview.getByRole('button', { name: 'Try again', exact: true })).toHaveCount(
+		0
+	);
+	// On a phone the footer note takes its own row instead of being squeezed beside the buttons.
+	await page.setViewportSize({ width: 390, height: 844 });
+	const footerNote = canceledReview.locator('.state-footer > p');
+	await expect.poll(async () => (await footerNote.boundingBox())?.width ?? 0).toBeGreaterThan(200);
 	const saveCanceled = canceledReview.getByRole('button', {
 		name: 'Save without them',
 		exact: true
