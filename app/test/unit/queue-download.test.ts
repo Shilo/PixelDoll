@@ -1,5 +1,6 @@
 import { expect, test, vi } from 'vitest';
 import { bytesToBase64 } from '../../src/lib/image/png.ts';
+import { ApiError } from '../../src/lib/pixellab/client.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import {
 	Queue,
@@ -269,4 +270,54 @@ test('a result save that keeps failing holds the storage notice even while small
 		q.stop();
 		vi.useRealTimers();
 	}
+});
+
+test('a result this device could not save survives PixelLab deleting the job, and a failed final save is retried', async () => {
+	let gets = 0,
+		blobBroken = true,
+		ledgerBroken = false;
+	const { q, store, run } = fixture({
+		api: async <T>(_key: string, method: string, endpoint: string): Promise<T> => {
+			if (endpoint === '/balance') return {} as T;
+			if (method === 'POST') return { background_job_id: 'j' } as T;
+			// The job answers once, then PixelLab has deleted it.
+			if (gets++) throw new ApiError(404, 'notfound', 'not found');
+			return {
+				id: 'j',
+				status: 'completed',
+				last_response: {
+					image: {
+						type: 'rgba_bytes',
+						base64: bytesToBase64(new Uint8Array([1, 2, 3, 255])),
+						width: 1,
+						height: 1
+					}
+				}
+			} as T;
+		},
+		putBlob: async () => {
+			if (blobBroken) throw new Error('QuotaExceededError');
+			return 'output';
+		}
+	});
+	const deps = (q as unknown as { deps: Deps }).deps;
+	const put = deps.put;
+	deps.put = async (k, r) => {
+		if (ledgerBroken && r.state === 'done') throw new Error('IndexedDB unavailable');
+		return put(k, r);
+	};
+	const record = await q.enqueue({ method: 'POST', path: '/edit-image-pro-flash', body: {} });
+	await run(12);
+	expect(gets).toBe(1); // held in memory: never asked PixelLab again
+	blobBroken = false;
+	ledgerBroken = true; // the result saves, the final record save does not
+	await run(12);
+	expect(store.get(record.id)?.state).not.toBe('done');
+	ledgerBroken = false;
+	await run(3);
+	expect(store.get(record.id)).toMatchObject({
+		state: 'done',
+		jobs: [{ results: [{ sha: 'output' }] }]
+	});
+	expect(gets).toBe(1);
 });
