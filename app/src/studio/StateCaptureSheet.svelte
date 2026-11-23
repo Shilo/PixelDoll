@@ -48,8 +48,14 @@
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 	import { bodyClipThumbnail } from './moveThumbnails.ts';
 	import { doc, openProject, store, ui, withKey } from './state.svelte.ts';
-	import { prepareState, type PreparedState } from './stateGeneration.ts';
-	import type { StateGenerationModel } from './stateGenerationPlan.ts';
+	import {
+		prepareState,
+		quoteStateModels,
+		stateModelInput,
+		type PreparedState
+	} from './stateGeneration.ts';
+	import type { StateGenerationCost, StateGenerationModel } from './stateGenerationPlan.ts';
+	import ModelSelect from './ModelSelect.svelte';
 	import { stateCostText } from './stateCost.ts';
 	import { generateState } from './stateJobs.svelte.ts';
 	import { stateAttempts } from './stateRecovery.ts';
@@ -350,13 +356,14 @@
 		pricing = true;
 		priceFailure = '';
 		try {
+			const input = stateModelInput(draft.model, draft.description, draft.reference);
 			const prepared = await prepareState(
 				projectId,
 				draft.source,
 				id,
-				draft.model === 'pro-flash' && draft.reference ? '' : draft.description.trim(),
+				input.description,
 				draft.model,
-				draft.model === 'pixen' ? undefined : draft.reference
+				input.reference
 			);
 			if (request !== priceRequest) return;
 			if (prepared.sourceVersion !== version)
@@ -372,6 +379,45 @@
 		} finally {
 			if (request === priceRequest) pricing = false;
 		}
+	}
+
+	// The open Model list prices every model for this draft, once per draft; it is checked again when opened after a change.
+	type ModelCosts = Partial<Record<StateGenerationModel, StateGenerationCost | null>>;
+	const MODELS: readonly StateGenerationModel[] = ['pro', 'pro-flash', 'pixen'];
+	const listDraft = () => ({
+		key: app.key,
+		version: views?.version,
+		clip,
+		frame,
+		reference,
+		// Only very long instructions change a model's route (the managed Pro State takes up to 1000 characters).
+		long: Array.from(description.trim()).length > 1000
+	});
+	type ListDraft = ReturnType<typeof listDraft>;
+	const sameDraft = (left: ListDraft, right: ListDraft) =>
+		(Object.keys(left) as (keyof ListDraft)[]).every((key) => left[key] === right[key]);
+	let modelCosts = $state.raw<{ draft: ListDraft; costs?: ModelCosts }>();
+
+	function priceModels() {
+		if (!connected || !sourceReady) return;
+		const draft = listDraft();
+		if (modelCosts && sameDraft(modelCosts.draft, draft)) return;
+		modelCosts = { draft };
+		void quoteStateModels(projectId, { clip, frame }, description, reference, MODELS).then(
+			(costs) => {
+				if (modelCosts?.draft === draft) modelCosts = { draft, costs };
+			},
+			// The saved character could not be read: every model shows Unavailable, and Generate's own quote explains why.
+			() => {
+				if (modelCosts?.draft === draft) modelCosts = { draft, costs: {} };
+			}
+		);
+	}
+	function modelCost(option: StateGenerationModel) {
+		if (!connected || !modelCosts || !sameDraft(modelCosts.draft, listDraft())) return;
+		if (!modelCosts.costs) return t('stateGeneration.quoting');
+		const cost = modelCosts.costs[option];
+		return cost ? stateCostText(cost) : t('common.unavailable');
 	}
 
 	function generate() {
@@ -512,19 +558,21 @@
 					<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
 					<label class="field">
 						<span class="label">{t('create.form.model')}</span>
-						<select
-							class="bu-input input"
+						<ModelSelect
 							value={model}
-							onchange={(event) => {
+							options={[
+								{ value: 'pro', label: t('create.form.models.pro.label') },
+								{ value: 'pro-flash', label: t('create.form.models.proFlash.label') },
+								{ value: 'pixen', label: 'V3 (Pixen)' }
+							]}
+							cost={modelCost}
+							onopen={priceModels}
+							onpick={(next) => {
 								modelEdited = true;
-								model = event.currentTarget.value as StateGenerationModel;
+								model = next;
 							}}
 							disabled={!!busy || referenceLoading}
-						>
-							<option value="pro">{t('create.form.models.pro.label')}</option>
-							<option value="pro-flash">{t('create.form.models.proFlash.label')}</option>
-							<option value="pixen">V3 (Pixen)</option>
-						</select>
+						/>
 					</label>
 				</details>
 				{#if quote}

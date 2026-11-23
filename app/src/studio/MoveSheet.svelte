@@ -13,6 +13,7 @@
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import Help from './Help.svelte';
+	import ModelSelect from './ModelSelect.svelte';
 	import Sprite from './Sprite.svelte';
 	import SourcePreview from './SourcePreview.svelte';
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
@@ -430,28 +431,38 @@
 			: (moveModels.find((option) => fitsSource(option) && fitsPreferred(option)) ??
 					redrawFallbackModel);
 	});
-	// Model-valid counts for this character's actual canvas; the same object prices and submits the move.
-	const frameCounts = $derived(moveFrameCounts(model, canvas));
 	const usesSavedFrames = $derived(!replacing && describing && frameChoice === undefined);
-	const userFrameCount = $derived(
-		keptFrames === undefined
-			? resolveMoveFramePreference(
-					model,
-					(usesSavedFrames ? savedCustomFrames : frameChoice) ?? 'auto',
-					canvas
-				)
-			: undefined
-	);
+	// Model-valid counts for this character's actual canvas; the same object prices and submits the move.
+	function framesFor(option: MoveAnimationModel) {
+		const counts = moveFrameCounts(option, canvas);
+		const user =
+			keptFrames === undefined
+				? resolveMoveFramePreference(
+						option,
+						(usesSavedFrames ? savedCustomFrames : frameChoice) ?? 'auto',
+						canvas
+					)
+				: undefined;
+		return {
+			counts,
+			user,
+			chosen: keptFrames !== undefined && counts.includes(keptFrames) ? keptFrames : user
+		};
+	}
+	const modelFrames = $derived(framesFor(model));
+	const frameCounts = $derived(modelFrames.counts);
+	const userFrameCount = $derived(modelFrames.user);
 	const frameFallback = $derived(
 		usesSavedFrames && savedCustomFrames !== undefined && userFrameCount === undefined
 	);
-	const chosenFrameCount = $derived(
-		keptFrames !== undefined && frameCounts.includes(keptFrames) ? keptFrames : userFrameCount
-	);
-	const animationOptions = $derived<MoveAnimationOptions>({
-		model,
+	const chosenFrameCount = $derived(modelFrames.chosen);
+	const animationFor = (
+		option: MoveAnimationModel,
+		frameCount = framesFor(option).chosen
+	): MoveAnimationOptions => ({
+		model: option,
 		loop: looping,
-		...(chosenFrameCount === undefined ? {} : { frameCount: chosenFrameCount }),
+		...(frameCount === undefined ? {} : { frameCount }),
 		...(Object.keys(frameReferences).length
 			? {
 					references: Object.fromEntries(
@@ -468,7 +479,7 @@
 									direction,
 									{
 										...(value.start ? { start: compact(value.start) } : {}),
-										...(model !== 'skeleton-v3' && value.end !== undefined
+										...(option !== 'skeleton-v3' && value.end !== undefined
 											? { end: value.end ? compact(value.end) : null }
 											: {})
 									}
@@ -479,6 +490,7 @@
 				}
 			: {})
 	});
+	const animationOptions = $derived(animationFor(model, chosenFrameCount));
 	// What the core resolves with no explicit count, so the Default label matches the price and the request.
 	const defaultFrames = $derived(
 		m
@@ -497,17 +509,21 @@
 		error?: string;
 	}>();
 	let motionProbe = $state(0);
-	const managedId = $derived(
-		model === 'skeleton-v3' &&
-			(describing || !isAuthoredAction(action)) &&
+	const managedMotionId = $derived(
+		(describing || !isAuthoredAction(action)) &&
 			!startFrom &&
 			!draft?.skeletonRetry &&
 			!targetDirs.some((direction) => frameReferences[direction]?.start)
 			? rec?.character?.id
 			: undefined
 	);
+	const managedFor = (option: MoveAnimationModel) =>
+		option === 'skeleton-v3' ? managedMotionId : undefined;
+	const managedId = $derived(managedFor(model));
+	// The open Model list prices Skeleton V3 too, which needs the same free motion check.
+	let pricingModels = $state(false);
 	$effect(() => {
-		const id = managedId;
+		const id = managedId ?? (pricingModels ? managedFor('skeleton-v3') : undefined);
 		const key = app.key;
 		void motionProbe;
 		if (!id || !key || app.keyRejected) return;
@@ -523,9 +539,9 @@
 		);
 		return () => controller.abort();
 	});
-	const motionAccess = $derived(
-		managedMotion?.id === managedId && managedMotion?.key === app.key ? managedMotion : undefined
-	);
+	const accessFor = (managed: string | undefined) =>
+		managedMotion?.id === managed && managedMotion?.key === app.key ? managedMotion : undefined;
+	const motionAccess = $derived(accessFor(managedId));
 	const advancedNote = $derived(
 		[
 			t(MODEL_TEXT[model]),
@@ -540,20 +556,26 @@
 			.filter(Boolean)
 			.join(' · ')
 	);
-	const motion = $derived({
-		id,
-		motionSource:
-			managedId && app.key && !app.keyRejected ? motionAccess?.source : ('standalone' as const),
-		action: describing ? undefined : action,
-		text: text.trim(),
-		frames: baseFrames,
-		replace: replacing,
-		animation: animationOptions,
-		startFrom
-	});
+	const motionFor = (option: MoveAnimationModel, animation = animationFor(option)) => {
+		const managed = managedFor(option);
+		return {
+			id,
+			motionSource:
+				managed && app.key && !app.keyRejected
+					? accessFor(managed)?.source
+					: ('standalone' as const),
+			action: describing ? undefined : action,
+			text: text.trim(),
+			frames: baseFrames,
+			replace: replacing,
+			animation,
+			startFrom
+		};
+	};
+	const motion = $derived(motionFor(model, animationOptions));
 	const regeneration = $derived(draftRegeneration?.id === id ? draftRegeneration : undefined);
 	const skeletonRetry = draft?.skeletonRetry;
-	const motionIssue = $derived.by(() => {
+	function motionIssueFor(option: MoveAnimationModel, motion: ReturnType<typeof motionFor>) {
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
 		if (Object.hasOwn(store.moveReviews, id) && !regeneration)
 			return t('moveSheet.checkpoint.ready', { move: nice(id) });
@@ -577,7 +599,7 @@
 		if (
 			skeletonRetry &&
 			(!regeneration ||
-				model !== 'skeleton-v3' ||
+				option !== 'skeleton-v3' ||
 				motion.action !== skeletonRetry.review.action ||
 				motion.text !==
 					(skeletonRetry.review.text ??
@@ -593,7 +615,8 @@
 			bodyMoveIssue(m, motion) ||
 			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
 		);
-	});
+	}
+	const motionIssue = $derived(motionIssueFor(model, motion));
 	// App-side warnings never block a request PixelLab would take: Generate move anyway records them as accepted with the move.
 	const preflight = $derived(
 		m && store.project && id && !motionIssue
@@ -605,17 +628,31 @@
 				})
 			: []
 	);
-	const formEstimate = $derived(
-		m &&
-			id &&
-			targetDirs.length &&
-			!reservedMove(id, replacing) &&
-			!motionIssue &&
-			(!managedId || !app.key || app.keyRejected || !!motionAccess?.source) &&
-			!pendingIds.includes(id)
-			? moveEstimate(m, { ...motion, items: [], dirs: targetDirs })
-			: null
-	);
+	// Null while the form cannot price a move; undefined while the managed motion check is still running.
+	function estimateFor(option: MoveAnimationModel, motion = motionFor(option)) {
+		if (
+			!m ||
+			!id ||
+			!targetDirs.length ||
+			reservedMove(id, replacing) ||
+			pendingIds.includes(id) ||
+			motionIssueFor(option, motion)
+		)
+			return null;
+		if (managedFor(option) && app.key && !app.keyRejected && !motion.motionSource) return undefined;
+		return moveEstimate(m, { ...motion, items: [], dirs: targetDirs });
+	}
+	const formEstimate = $derived(estimateFor(model, motion) ?? null);
+	function modelCost(option: MoveAnimationModel) {
+		// Like Generate, a managed character's Skeleton V3 price waits for a connection to check its motion.
+		if (managedFor(option) && (!app.key || app.keyRejected)) return '';
+		const estimate = estimateFor(option);
+		if (estimate === undefined)
+			return t(
+				accessFor(managedFor(option))?.error ? 'common.unavailable' : 'stateGeneration.quoting'
+			);
+		return estimate ? t('moves.estimate', { gens: formatNumber(Math.ceil(estimate.gens)) }) : '';
+	}
 	const dirs = $derived(targetDirs.length);
 	const specAccess = (spec: MoveSpec | undefined) => {
 		try {
@@ -1454,17 +1491,18 @@
 			<label for={`${advancedId}-model`}>{t('moveSheet.motionModel')}</label>
 			<Help iconOnly title={t('moveSheet.motionModel')} text={t('moveSheet.motionModelHelp')} />
 		</div>
-		<select
+		<ModelSelect
 			id={`${advancedId}-model`}
-			class="bu-input input"
 			value={model}
-			onchange={(event) => chooseModel(event.currentTarget.value as MoveAnimationModel)}
-		>
-			{#each moveModels as option (option)}<option
-					value={option}
-					disabled={option !== model && !fitsKept(option)}>{t(MODEL_TEXT[option])}</option
-				>{/each}
-		</select>
+			options={moveModels.map((option) => ({
+				value: option,
+				label: t(MODEL_TEXT[option]),
+				disabled: option !== model && !fitsKept(option)
+			}))}
+			cost={modelCost}
+			onopen={() => (pricingModels = true)}
+			onpick={chooseModel}
+		/>
 	</div>
 	{#if frameDirection && m}
 		{@const direction = frameDirection}

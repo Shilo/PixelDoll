@@ -3438,9 +3438,18 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	await panel.getByRole('textbox', { name: 'State name' }).fill('Torch ready');
 	await panel.getByRole('textbox', { name: 'Instructions' }).fill('Hold a torch');
 	await panel.getByText('Advanced', { exact: true }).click();
-	await panel.getByRole('combobox', { name: 'Model', exact: true }).selectOption('pro-flash');
+	// The open list quotes every model; the closed field keeps only the chosen name, and the footer shows the same price.
+	const model = panel.getByRole('combobox', { name: 'Model', exact: true });
+	await model.click();
+	const listed = model.getByRole('option', { name: /^Pro Flash Est\. \d+ gens$/ });
+	const price = (await listed.locator('.model-cost').textContent())!;
+	await expect(model.getByRole('option', { name: /^V3 \(Pixen\) Cost: / })).toBeVisible();
+	await listed.click();
+	await expect(model).toHaveValue('pro-flash');
+	await expect(model.getByRole('button')).toHaveText('Pro Flash');
 	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
 	await expect(generate).toBeEnabled();
+	await expect(panel.locator('.state-footer strong')).toHaveText(price);
 	await generate.click();
 	await polled;
 	expect(flashPosts()).toHaveLength(1);

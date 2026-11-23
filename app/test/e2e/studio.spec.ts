@@ -3835,6 +3835,14 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	const slider = move.getByRole('slider', { name: 'Frames' });
 	await expect(model).toHaveValue('skeleton-v3');
 	await expect(model.getByRole('option')).toHaveText(['PixMiniMax', 'Skeleton V3', 'V3']);
+	// The open list prices each model; the closed field keeps only the chosen name, and Generate shows the same price.
+	await model.click();
+	const listed = model.getByRole('option', { name: /^PixMiniMax Est\. \d+ gens$/ });
+	const price = (await listed.locator('.model-cost').textContent())!;
+	await listed.click();
+	await expect(model).toHaveValue('pixminimax');
+	await expect(model.getByRole('button')).toHaveText('PixMiniMax');
+	await expect(move.getByRole('button', { name: /^Generate / })).toContainText(price);
 	await model.selectOption('skeleton-v3');
 	await slider.press('Home');
 	await expect(slider).toHaveAttribute('aria-valuetext', '3 frames');

@@ -253,48 +253,17 @@ async function flashCost(plan: ReadyStatePlan): Promise<StateGenerationCost> {
 	return { kind: 'estimate', minGenerations: total, maxGenerations: total };
 }
 
-export async function prepareState(
-	projectId: string,
-	source: StateSourceFrame,
-	id: string,
+type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
+
+/** Picks the route one model takes for this source and prices it; PixelLab is only read, never charged. */
+async function routeState(
+	rec: LoadedProject['rec'],
+	project: LoadedProject['project'],
+	sourceFrame: StateSourceFrame,
 	description: string,
 	model: StateGenerationModel,
 	reference?: ImageReference
-): Promise<PreparedState> {
-	return prepareStatePlan(projectId, source, id, description, model, reference);
-}
-
-async function prepareStatePlan(
-	projectId: string,
-	sourceFrame: StateSourceFrame,
-	id: string,
-	description: string,
-	model: StateGenerationModel,
-	reference?: ImageReference,
-	continuationToken?: string
-): Promise<PreparedState> {
-	assertSelected(projectId);
-	if (!app.key) throw error('Connect to PixelLab to check the route and price.', 'connect');
-	const keyRevision = getKeyRevision();
-	description = description.trim();
-	const limit = model === 'pixen' ? 500 : 2000;
-	if (
-		(!description && !reference) ||
-		Array.from(description).length > limit ||
-		!id ||
-		id.length > 100
-	)
-		throw error('Check the State name and edit instructions.', 'invalidInput');
-	await flushSave();
-	const { rec, project } = await loadProject(projectId);
-	const others = stateAttempts(rec).filter(({ token }) => token !== continuationToken);
-	const issue = stateCaptureNameIssue(rec.manifest, id, [
-		...Object.keys(rec.moveReviews ?? {}),
-		...others.map((attempt) => attempt.id)
-	]);
-	if (issue || (!continuationToken && (await pendingStateName(projectId, id))))
-		throw new LocalizedError('That State name is unavailable.', issue ?? 'stateCapture.takenName');
-	if (continuationToken && !rec.stateGenerations?.[continuationToken]) throw unfinished();
+) {
 	const source = stateGenerationSource(project, sourceFrame);
 	if (!source) throw missing();
 	let managedParent;
@@ -339,6 +308,107 @@ async function prepareStatePlan(
 		(candidate.endpoint === '/create-character-state'
 			? managedStateCost(source.size)
 			: await flashCost(candidate));
+	return { source, candidate, cost, managedParent };
+}
+
+/** What each model is sent: Pro Flash with a reference ignores the instructions and Pixen takes no reference. */
+export function stateModelInput(
+	model: StateGenerationModel,
+	description: string,
+	reference?: ImageReference
+) {
+	return {
+		description: model === 'pro-flash' && reference ? '' : description.trim(),
+		reference: model === 'pixen' ? undefined : reference
+	};
+}
+
+/**
+ * Prices several models for one draft, for the Model list. A model that cannot take this draft, or whose quote
+ * PixelLab does not confirm, is priced as null: choosing it shows the full reason through the usual quote.
+ */
+export async function quoteStateModels(
+	projectId: string,
+	sourceFrame: StateSourceFrame,
+	description: string,
+	reference: ImageReference | undefined,
+	models: readonly StateGenerationModel[]
+): Promise<Partial<Record<StateGenerationModel, StateGenerationCost | null>>> {
+	assertSelected(projectId);
+	if (!app.key) throw error('Connect to PixelLab to check the route and price.', 'connect');
+	await flushSave();
+	const { rec, project } = await loadProject(projectId);
+	const costs = await Promise.all(
+		models.map(async (model) => {
+			const input = stateModelInput(model, description, reference);
+			try {
+				const routed = await routeState(
+					rec,
+					project,
+					sourceFrame,
+					input.description,
+					model,
+					input.reference
+				);
+				return [model, routed.cost] as const;
+			} catch {
+				return [model, null] as const;
+			}
+		})
+	);
+	return Object.fromEntries(costs);
+}
+
+export async function prepareState(
+	projectId: string,
+	source: StateSourceFrame,
+	id: string,
+	description: string,
+	model: StateGenerationModel,
+	reference?: ImageReference
+): Promise<PreparedState> {
+	return prepareStatePlan(projectId, source, id, description, model, reference);
+}
+
+async function prepareStatePlan(
+	projectId: string,
+	sourceFrame: StateSourceFrame,
+	id: string,
+	description: string,
+	model: StateGenerationModel,
+	reference?: ImageReference,
+	continuationToken?: string
+): Promise<PreparedState> {
+	assertSelected(projectId);
+	if (!app.key) throw error('Connect to PixelLab to check the route and price.', 'connect');
+	const keyRevision = getKeyRevision();
+	description = description.trim();
+	const limit = model === 'pixen' ? 500 : 2000;
+	if (
+		(!description && !reference) ||
+		Array.from(description).length > limit ||
+		!id ||
+		id.length > 100
+	)
+		throw error('Check the State name and edit instructions.', 'invalidInput');
+	await flushSave();
+	const { rec, project } = await loadProject(projectId);
+	const others = stateAttempts(rec).filter(({ token }) => token !== continuationToken);
+	const issue = stateCaptureNameIssue(rec.manifest, id, [
+		...Object.keys(rec.moveReviews ?? {}),
+		...others.map((attempt) => attempt.id)
+	]);
+	if (issue || (!continuationToken && (await pendingStateName(projectId, id))))
+		throw new LocalizedError('That State name is unavailable.', issue ?? 'stateCapture.takenName');
+	if (continuationToken && !rec.stateGenerations?.[continuationToken]) throw unfinished();
+	const { source, candidate, cost, managedParent } = await routeState(
+		rec,
+		project,
+		sourceFrame,
+		description,
+		model,
+		reference
+	);
 	await refreshBalance();
 	if (app.keyRejected || app.balanceError)
 		throw error(
