@@ -2958,18 +2958,66 @@ export function itemMoveOffer(
 	m: Manifest,
 	specs: MoveSpec[],
 	redo: readonly string[] = []
-): { specs: MoveSpec[]; gens: number | null; error: Message | string; poseIssues: string[] } {
+): {
+	specs: MoveSpec[];
+	gens: number | null;
+	error: Message | string;
+	poseIssues: string[];
+	/** Views of these moves kept without poses: priced out of the offer and named here, so the user knows to make them again. */
+	unposed: Message[];
+} {
+	const unposed = specs.flatMap((spec) => unposedViewNote(m, spec, redo));
 	try {
 		const reviewed = specs.map((spec) => reviewItemMove(m, spec, redo));
 		return {
 			specs: reviewed,
 			gens: reviewed.reduce((sum, spec) => sum + spec.itemReview!.gens, 0),
 			error: '',
-			poseIssues: [...new Set(reviewed.flatMap((spec) => movePoseIssues(m, spec)))]
+			poseIssues: [...new Set(reviewed.flatMap((spec) => movePoseIssues(m, spec)))],
+			unposed
 		};
 	} catch (error) {
-		return { specs: [], gens: null, error: errorMessage(error), poseIssues: [] };
+		return { specs: [], gens: null, error: errorMessage(error), poseIssues: [], unposed };
 	}
+}
+/** Moves an item would be posed onto whose views were all kept without poses: missingItemMoves makes no offer for them, so
+ *  they are named here (no price, no paid action) wherever item offers show. */
+export function unposedItemMoves(
+	m: Manifest,
+	itemId: string,
+	redo: readonly string[]
+): { move: string; note: Message }[] {
+	const item = extendable(m, itemId);
+	if (!item || item.route === 'ea2-anchor') return [];
+	const offered = new Set(missingItemMoves(m, itemId, 0).map((spec) => spec.id));
+	return m.rig.animations.flatMap((a) =>
+		offered.has(a.id)
+			? []
+			: unposedViewNote(m, { id: a.id }, redo).map((note) => ({ move: a.id, note }))
+	);
+}
+/** The drawn views of a skeleton-posed item move that were kept without poses and so are left out of its offer
+ *  (missingItemMoves posts only posed views): one note naming the move and those views. Anchored fitting needs no poses. */
+function unposedViewNote(
+	m: Manifest,
+	spec: Pick<MoveSpec, 'id' | 'dirs' | 'itemMethod'>,
+	redo: readonly string[]
+): Message[] {
+	const anim = m.rig.animations.find((a) => a.id === spec.id),
+		base = m.items.find((item) => item.id === m.rig.baseItem)?.layers[0];
+	if (!anim || spec.itemMethod === 'anchor') return [];
+	const dirs = drawnViews(m.rig, base?.cells?.[spec.id]).filter(
+		(d) => !spec.dirs?.includes(d) && unposedView(redo, anim, d)
+	);
+	return dirs.length
+		? [
+				message('moveReview.unposedViews', {
+					move: moveName(spec.id, m.rig.animations),
+					directions: dirs.map(viewName),
+					count: dirs.length
+				})
+			]
+		: [];
 }
 
 /**
@@ -4325,12 +4373,22 @@ export async function reviewMoveResults(
 				label: message('moveReview.saveFinished'),
 				detail: message('moveReview.saveFinishedDetail', {
 					views: names(finished),
-					missing: names(dirs.filter((d) => !finished.includes(d)))
+					missing: names(dirs.filter((d) => !finished.includes(d))),
+					count: dirs.length - finished.length
 				}),
 				gens: 0,
 				paid: false,
 				spec: { ...candidate, reviewedReceipts: receiptIds(kept) }
 			});
+	}
+	// Keeping what was paid for, for free, leads; the paid ways on stay available after it.
+	const freeKeep = options.findIndex(
+		(option) => !option.paid && (option.id === 'keep-unposed' || option.id === 'keep-finished')
+	);
+	if (freeKeep >= 0) {
+		const [keep] = options.splice(freeKeep, 1);
+		for (const option of options) option.primary = false;
+		options.unshift({ ...keep, primary: true });
 	}
 	// What each view bought: the output a step rejected, as PixelLab returned it.
 	const shown = await Promise.all(

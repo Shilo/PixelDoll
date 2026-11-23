@@ -1970,12 +1970,17 @@ test('a new move with a stopped view can save only its finished views, free, wit
 	const review = (await reviewMoveResults('rig-recover', spec))!;
 	expect(review.views.map((view) => view.state)).toEqual(['ready', 'pending']);
 	const save = review.options.find((option) => option.id === 'keep-finished')!;
+	// The free save leads; every paid way on stays available after it.
+	expect(review.options[0]).toBe(save);
+	expect(review.options.filter((option) => option.primary)).toEqual([save]);
 	expect(save).toMatchObject({
 		gens: 0,
 		paid: false,
 		spec: { finishedViews: true, dirs: ['east'], approvedDirs: ['east'], items: [] }
 	});
-	expect(save.detail).toMatchObject({ vars: { missing: [{ key: 'directionNames.west' }] } });
+	expect(save.detail).toMatchObject({
+		vars: { missing: [{ key: 'directionNames.west' }], count: 1 }
+	});
 	const posts = f.posts();
 	await expect(addMove('rig-recover', save.spec)).resolves.toMatchObject({ moveReview: 'idle' });
 	// Every request is answered from the cache: nothing reaches PixelLab, and the west render is not bought.

@@ -16,6 +16,7 @@
 	import {
 		itemMoveOffer,
 		missingItemMoves,
+		unposedItemMoves,
 		moveMinimumTier,
 		readMoveCandidateImages,
 		skeletonMoveReview
@@ -42,7 +43,7 @@
 	} from './state.svelte.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
-	import { displayError } from '../lib/i18n.ts';
+	import { displayError, displayNestedMessage } from '../lib/i18n.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import type { ImageReference } from '../lib/image/reference.ts';
@@ -131,6 +132,17 @@
 				const thumb = thumbCell(project, item);
 				return { item, image: thumb && croppedThumbnail(thumb), offer };
 			});
+	});
+	// Every equipment offer here is for this move, so its views kept without poses are named once.
+	const unposedNotes = $derived.by(() => {
+		const offered = equipment.find(({ offer }) => offer?.unposed.length)?.offer?.unposed;
+		if (offered || !project) return offered ?? [];
+		// No offer at all when every view of this move was kept without poses: name them anyway.
+		const redo = setupRedoMoves(store.exportRecord);
+		const entry = equipment
+			.flatMap(({ item }) => unposedItemMoves(project.manifest, item.id, redo))
+			.find((unposed) => unposed.move === id);
+		return entry ? [entry.note] : [];
 	});
 	const chosen = $derived(
 		equipment.filter(({ item, offer }) => offer?.specs.length && selected.includes(item.id))
@@ -243,7 +255,8 @@
 			ui.anim = id;
 			ui.frame = 0;
 			acceptedInput = input;
-			if (changed || equipment.some(({ offer }) => offer?.specs.length)) itemsStep = true;
+			if (changed || equipment.some(({ offer }) => offer?.specs.length) || unposedNotes.length)
+				itemsStep = true;
 			else ui.sheet = null;
 		} catch (cause) {
 			error = cause;
@@ -383,6 +396,9 @@
 			{/each}
 		</div>
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
+		{#each unposedNotes as note, i (i)}<p class="notice warn small">
+				{displayNestedMessage(note)}
+			</p>{/each}
 		<PoseIssues issues={[...new Set(chosen.flatMap(({ offer }) => offer?.poseIssues ?? []))]} />
 	{:else if candidate}
 		{#if candidate.warnings.length}

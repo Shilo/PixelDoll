@@ -3153,8 +3153,15 @@
 		"rerollDetail": "Gerar de novo compra uma nova tentativa só para essas direções. Todas as outras mantêm seus resultados pagos.",
 		"keepUnposedDetail": "Salva os quadros do corpo como estão, de graça. Não foram encontradas articulações em alguns quadros, então não dá para ajustar itens nessas vistas até você refazê-las. As outras vistas mantêm suas poses.",
 		"keepUnposed": "Manter sem ajustar itens",
+		"unposedViews": {
+			"one": "{move} na direção {directions} foi mantido sem poses, então o equipamento não é ajustado ali. Faça essa vista de novo para ajustá-lo.",
+			"other": "{move} nas direções {directions} foi mantido sem poses, então o equipamento não é ajustado ali. Faça essas vistas de novo para ajustá-lo."
+		},
 		"saveFinished": "Salvar as vistas concluídas",
-		"saveFinishedDetail": "Salva {views} de graça, depois que você revisar. {missing} não terminaram e ficam de fora; você pode fazê-las depois a partir deste movimento.",
+		"saveFinishedDetail": {
+			"one": "Salva {views} de graça, depois da revisão. {missing} não terminou e fica de fora; você pode fazê-la depois a partir deste movimento.",
+			"other": "Salva {views} de graça, depois da revisão. {missing} não terminaram e ficam de fora; você pode fazê-las depois a partir deste movimento."
+		},
 		"pending": "Ainda a comprar: cerca de {gens} gens.",
 		"liftable": "Pode ser elevado para caber: os pés sobem até {px} px em {frames} de {total} quadros.",
 		"notLiftable": "Elevar não resolve: o movimento está cortado em uma lateral ou no topo."

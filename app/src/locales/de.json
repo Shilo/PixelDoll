@@ -3144,8 +3144,15 @@
 		"rerollDetail": "Neu würfeln kauft nur für diese Blickrichtungen einen neuen Versuch. Alle anderen behalten ihre bezahlten Ergebnisse.",
 		"keepUnposedDetail": "Speichert die Körper-Frames kostenlos so, wie sie sind. Auf einigen Frames wurden keine Gelenke gefunden, daher können Gegenstände in diesen Ansichten erst angepasst werden, wenn du sie neu erstellst. Die anderen Ansichten behalten ihre Posen.",
 		"keepUnposed": "Ohne Gegenstände behalten",
+		"unposedViews": {
+			"one": "{move} {directions} wurde ohne Posen behalten, daher wird dort keine Ausrüstung angepasst. Erstelle diese Ansicht neu, um sie anzupassen.",
+			"other": "{move} {directions} wurden ohne Posen behalten, daher wird dort keine Ausrüstung angepasst. Erstelle diese Ansichten neu, um sie anzupassen."
+		},
 		"saveFinished": "Fertige Ansichten speichern",
-		"saveFinishedDetail": "Speichert {views} kostenlos, nachdem du sie geprüft hast. {missing} wurden nicht fertig und fehlen; du kannst sie später aus dieser Bewegung erstellen.",
+		"saveFinishedDetail": {
+			"one": "Speichert {views} kostenlos nach deiner Prüfung. {missing} wurde nicht fertig und fehlt; du kannst sie später aus dieser Bewegung erstellen.",
+			"other": "Speichert {views} kostenlos nach deiner Prüfung. {missing} wurden nicht fertig und fehlen; du kannst sie später aus dieser Bewegung erstellen."
+		},
 		"pending": "Noch zu kaufen: etwa {gens} Gens.",
 		"liftable": "Kann angehoben werden: Die Füße heben sich um bis zu {px} px in {frames} von {total} Frames.",
 		"notLiftable": "Anheben reicht nicht: Die Bewegung ist seitlich oder oben abgeschnitten."

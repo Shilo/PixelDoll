@@ -3061,8 +3061,13 @@
 		"rerollDetail": "重新生成只为这些朝向购买一次新的尝试。其他朝向保留其付费结果。",
 		"keepUnposedDetail": "免费按原样保存身体帧。部分帧未找到关节，因此在重新制作这些视角之前，无法在其中适配装备。其他视角保留姿势。",
 		"keepUnposed": "保留但不适配装备",
+		"unposedViews": {
+			"other": "{move} 的{directions}视角未带姿势保存，因此那里不适配装备。请重新制作这些视角以适配装备。"
+		},
 		"saveFinished": "保存已完成的视角",
-		"saveFinishedDetail": "在你检查后免费保存 {views}。{missing} 未完成，因此不包含在内；之后可以从这个动作中制作。",
+		"saveFinishedDetail": {
+			"other": "检查后免费保存 {views}。{missing} 未完成，因此不包含在内；之后可以从这个动作中制作。"
+		},
 		"pending": "仍需购买：约 {gens} gens。",
 		"liftable": "可抬高以适配：{total} 帧中有 {frames} 帧的脚最多抬高 {px} px。",
 		"notLiftable": "抬高也放不下：运动在侧边或顶部被裁切。"
