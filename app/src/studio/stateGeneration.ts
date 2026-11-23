@@ -448,11 +448,14 @@ async function childViews(attempt: StateAttempt, record: JobRec) {
 	if (!app.key || app.keyRejected)
 		throw error('Connect to PixelLab to recover the saved State views.', 'connect');
 	const detail = await readManaged(childId);
+	if (detail.id !== childId) throw invalidResult();
+	const status = detail.status ?? 'completed';
+	// A lost poll can settle while PixelLab still draws the child: it is not done yet, not a bad result.
+	if (status !== 'completed' && status !== 'failed') throw unfinished();
 	const inventory = managedStateRotations(detail);
 	const { width, height } = attempt.plan.cellSize;
 	if (
-		detail.id !== childId ||
-		(detail.status ?? 'completed') !== 'completed' ||
+		status !== 'completed' ||
 		detail.size?.width !== width ||
 		detail.size?.height !== height ||
 		inventory?.count !== attempt.plan.remoteFacingCount

@@ -125,11 +125,13 @@
 	);
 	// While it generates, the source frame stands in for the result.
 	const sourcePreview = $derived.by((): Img | null => {
-		if (!attempt || !project || !body) return null;
-		const clip = project.manifest.rig.animations.find(({ id }) => id === attempt.source.clip);
-		const cell = clip?.frames[attempt.source.frame]?.cell;
+		// Attempts saved before States recorded their source have none; reading them says to discard.
+		const source = attempt?.source;
+		if (!source || !project || !body) return null;
+		const clip = project.manifest.rig.animations.find(({ id }) => id === source.clip);
+		const cell = clip?.frames[source.frame]?.cell;
 		if (cell === undefined) return null;
-		return cellImg(project, body, attempt.source.clip, ui.dir, cell) ?? null;
+		return cellImg(project, body, source.clip, ui.dir, cell) ?? null;
 	});
 	const discardable = $derived(
 		!review &&
@@ -292,7 +294,9 @@
 				<p class="notice warn small" role="status">
 					{t(sourceFits ? 'stateGeneration.sourceChangedKeep' : 'stateGeneration.sourceChanged')}
 				</p>
-			{:else if Object.keys(review.ungrounded).length}
+			{/if}
+			<!-- Both placements were kept when the result was read, so the choice stays even if the source changes during review. -->
+			{#if Object.keys(review.ungrounded).length}
 				<label class="bu-check review-ground">
 					<span class="edit-copy">
 						<span>{t('stateGeneration.keepGrounded')}</span>
@@ -318,12 +322,12 @@
 	{:else if status === 'generating'}
 		<div class="state-panel generating">
 			<span class="review-stage source-stage">
-				{#if sourcePreview}<span class="cell-frame"
+				{#if sourcePreview && attempt?.source}<span class="cell-frame"
 						>{@render cell(
 							sourcePreview,
 							144,
 							t('stateCapture.preview', {
-								source: clipName(attempt!.source.clip),
+								source: clipName(attempt.source.clip),
 								facing: displayDirection(ui.dir)
 							})
 						)}</span
