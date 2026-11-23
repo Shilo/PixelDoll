@@ -23,7 +23,10 @@ const pluralsWithoutDisplayedCount = new Set([
 	'export.warnings.rpgOmittedMoves',
 	'export.error.rpgMissingViews',
 	'itemPane.restoreStanding',
-	'itemPane.restoreStandingHint'
+	'itemPane.restoreStandingHint',
+	// Name the views themselves ("Idle West was kept…", "West did not finish…"), like the RPG Maker view warnings.
+	'moveReview.unposedViews',
+	'moveReview.saveFinishedDetail'
 ]);
 
 function verifyPlurals(source: Catalog, target: Catalog, categories: string[], path = '') {

@@ -6879,7 +6879,7 @@ test('a new move whose one view stopped saves its finished views for free and en
 	const save = paid.getByRole('button', { name: /^Save the finished views/ });
 	await expect(save).toContainText('Free');
 	await expect(paid).toContainText(
-		'Saves South, East, and North for free, after you review them. West did not finish'
+		'Saves South, East, and North for free, after review. West did not finish and is left out'
 	);
 	const sent = posts.length;
 	await save.click();
@@ -7976,7 +7976,7 @@ test('a repair whose later batch fails offers its finished repairs for free and 
 	const review = page.getByRole('dialog', { name: 'Review item repair' });
 	await expect(
 		review.getByText(
-			'A later batch did not come back usable, so frames 16 keep their current art. Nothing more was bought.',
+			'A later batch stopped, so 1 frame keeps its current art (16). Nothing more was bought.',
 			{ exact: true }
 		)
 	).toBeVisible();
