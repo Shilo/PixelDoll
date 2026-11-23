@@ -896,14 +896,20 @@ export class Queue {
 	}
 	start() {
 		this.timer ??= every(1000, () =>
-			this.tick().catch((e) => {
-				// The ledger could not be read or saved: send nothing more until the user resumes.
-				console.error('queue', e);
-				if (!this.paused) {
-					this.paused = 'storage';
-					this.emit();
+			this.tick().then(
+				() => {
+					// A tick completed: storage works again (sending still saves first, so nothing went out unsaved).
+					if (this.paused === 'storage') this.resume();
+				},
+				(e) => {
+					// The ledger could not be read or saved: say so in Activity until a tick completes again.
+					console.error('queue', e);
+					if (!this.paused) {
+						this.paused = 'storage';
+						this.emit();
+					}
 				}
-			})
+			)
 		);
 	}
 	stop() {
@@ -1915,11 +1921,14 @@ export class Queue {
 		}
 		await this.save(r);
 	}
-	/** Save again a queued-only cancel whose save failed; meanwhile it stays canceled in this tab. Another tab's submission or
-	 *  receipt still wins: it is adopted and, when running, stopped like any running cancel. */
+	/** Save again a cancel whose save failed; meanwhile it stays canceled in this tab. A stopped running record is this tab's
+	 *  own, already settled with the stop's usage: saved as is. A queued-only cancel still loses to another tab's submission
+	 *  or receipt, which is adopted and, when running, stopped like any running cancel. */
 	async retryCancelSave(id: string) {
 		const r = this.recs.get(id);
-		if (r?.state !== 'canceled') return;
+		if (!r) return;
+		if (r.jobs.length) return this.save(r); // the save a running cancel ends with, whatever its jobs settled to
+		if (r.state !== 'canceled') return;
 		const stored = await this.saveIf(r, queuedWithoutJobs);
 		if (!stored) {
 			this.submitScopes.delete(id);

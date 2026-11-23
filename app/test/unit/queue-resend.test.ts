@@ -287,7 +287,7 @@ test('a cancel whose save fails stays canceled in this tab and can be saved agai
 	expect(f.records.get(rec.id)?.state).toBe('canceled');
 });
 
-test('a ledger that cannot be read pauses the queue visibly until the user resumes', async () => {
+test('a ledger that cannot be read pauses the queue visibly until a tick succeeds again', async () => {
 	vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
 	const f = failing(true);
 	try {
@@ -295,13 +295,41 @@ test('a ledger that cannot be read pauses the queue visibly until the user resum
 		expect(f.q.role).toBe('leader');
 		f.fail.all = true;
 		f.advance(60_000); // due for its periodic full read of the shared ledger
-		await vi.advanceTimersByTimeAsync(2_000);
+		await vi.advanceTimersByTimeAsync(1_000); // one tick
 		expect(f.q.snapshot().paused).toBe('storage');
-		f.fail.all = false;
-		f.q.resume();
+		f.fail.all = false; // a transient failure: the next tick completes
+		await vi.advanceTimersByTimeAsync(1_000);
 		expect(f.q.snapshot().paused).toBeNull();
 	} finally {
 		f.q.disconnect();
 		vi.useRealTimers();
 	}
+});
+
+test('saving a stopped running job again keeps its stop and never stops it twice', async () => {
+	const f = failing();
+	const deletes: string[] = [];
+	const api = (f.q as unknown as { deps: Deps }).deps.api;
+	(f.q as unknown as { deps: Deps }).deps.api = async <T>(
+		key: string,
+		method: string,
+		path: string,
+		...rest: unknown[]
+	): Promise<T> => {
+		if (method === 'DELETE') {
+			deletes.push(path);
+			return { usage: { generations: 2 } } as T;
+		}
+		return (api as (...args: unknown[]) => Promise<T>)(key, method, path, ...rest);
+	};
+	const rec = await f.q.enqueue(request, { tag: 'studio-move' });
+	await f.q.tick();
+	expect(f.records.get(rec.id)?.state).toBe('running');
+	f.fail.put = true;
+	await expect(f.q.cancel(rec.id)).rejects.toThrow('IndexedDB unavailable');
+	f.fail.put = false;
+	await f.q.retryCancelSave(rec.id);
+	expect(deletes).toHaveLength(1);
+	expect(f.records.get(rec.id)?.state).toBe('canceled');
+	expect(f.records.get(rec.id)?.jobs[0]).toMatchObject({ done: true, usage: { generations: 2 } });
 });
