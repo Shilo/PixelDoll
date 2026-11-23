@@ -4031,6 +4031,26 @@ export interface MovePaidOption extends PaidOption {
 export interface MovePaidReview extends PaidReview {
 	options: MovePaidOption[];
 }
+/** A new move saved with only its finished views: the same reviewed attempt narrowed to them, and an explicit start frame
+ *  narrowed to the same views, so it still matches its source (moveSourceMatches compares exactly these views). */
+export const finishedViewsSpec = (spec: MoveSpec, finished: DirectionName[]): MoveSpec =>
+	resumeSpec(spec, {
+		finishedViews: true,
+		dirs: finished,
+		approvedDirs: finished,
+		...(spec.startFrom
+			? {
+					startFrom: {
+						...spec.startFrom,
+						views: Object.fromEntries(
+							finished.flatMap((d) =>
+								spec.startFrom!.views[d] ? [[d, spec.startFrom!.views[d]]] : []
+							)
+						)
+					}
+				}
+			: {})
+	});
 /** The next attempt of a reviewed move keeps its seed, so every completed request is reused; only consents change. */
 /** Every way on is body only and lands in the staged visual review (addBodyClip reviewBeforePublish): equipment is a
  *  separate, freshly quoted choice after Save, never posed automatically after a recovery. */
@@ -4197,11 +4217,7 @@ export async function reviewMoveResults(
 	// nothing is requested again, and the views left out are named.
 	const finished = views.filter((v) => v.state === 'ready').map((v) => v.d);
 	if (!spec.replace && finished.length && finished.length < views.length) {
-		const candidate = resumeSpec(plan.spec, {
-			finishedViews: true,
-			dirs: finished,
-			approvedDirs: finished
-		});
+		const candidate = finishedViewsSpec(plan.spec, finished);
 		const kept = await Promise.all(
 			finished.map((d) => replayView({ ...plan, spec: candidate }, d))
 		);

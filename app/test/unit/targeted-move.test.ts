@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import {
 	addMove,
+	finishedViewsSpec,
 	type MoveSpec,
 	b64,
 	bodyMoveIssue,
@@ -1817,4 +1818,38 @@ test('unposed views are listed per view and leave the list once they have poses 
 	expect(unposedView(['idle'], idle, 'south')).toBe(true);
 	expect(unposedView(['idle/south'], idle, 'south')).toBe(true);
 	expect(unposedView([], idle, 'south')).toBe(false);
+});
+
+test('saving the finished views of a move started from a saved frame keeps that start for those views', async () => {
+	const f = await fixture();
+	f.cache();
+	const all: DirectionName[] = ['south', 'east', 'north', 'west'];
+	const spec: MoveSpec = {
+		id: 'calm',
+		action: 'idle',
+		frames: 4,
+		items: [],
+		seed: 23,
+		replace: false,
+		poseStyle: 'visible-side-v1',
+		reviewBeforePublish: true,
+		startFrom: resolveMoveSource(f.saved().manifest, { clip: 'idle', cell: 3 }, all)!
+	};
+	// Every view is bought once (here all finish); the draft is discarded so only the cache remains.
+	await expect(f.run({ ...spec, dirs: undefined })).resolves.toMatchObject({ moveReview: 'calm' });
+	delete f.saved().moveReviews;
+	const calls = f.enqueue.mock.calls.length,
+		east = finishedViewsSpec(spec, ['east']);
+	expect(Object.keys(east.startFrom!.views)).toEqual(['east']);
+	// The full source map no longer matches a narrowed run: that was the refusal of the unchanged source.
+	await expect(f.run({ ...east, startFrom: spec.startFrom })).rejects.toThrow(
+		'The selected starting frame changed'
+	);
+	await expect(f.run(east)).resolves.toMatchObject({ moveReview: 'calm' });
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
+	const draft = f.saved().moveReviews!.calm!;
+	expect(draft.dirs).toEqual(['east']);
+	expect(draft.animation.sources?.east?.referenceKeypoints).toEqual(
+		spec.startFrom!.views.east!.keypoints
+	);
 });
