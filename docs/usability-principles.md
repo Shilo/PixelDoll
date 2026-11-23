@@ -15,6 +15,14 @@ PixelDoll follows **simplicity-first design**: strong defaults, minimal necessar
 - Validate provider output by its contract, never by exact pixels: accept what PixelLab documents (such as a start frame sent back first) and record evidence instead of stopping on it.
 - Never offer a paid retry that cannot change the outcome. A deterministic stop (a joint check, a misaligned batch that replays the same way) offers only what can help.
 - Block only what is unsafe or impossible. Otherwise disclose the issue and let the user continue, and keep paid results keepable.
+  - Vital (may block, still keeping whatever is usable): sending or re-sending a paid request without consent or paying
+    twice; losing or corrupting saved data or paid results; output the paper doll cannot use (no frames, a frame count
+    or cell size that misaligns layers, pixels cut by the frame, undecodable images, hashes that do not match stored
+    data); credential, privacy and security rules; impossible states (a missing character, a conflicting concurrent write).
+  - Soft (everything else): quality gates and heuristics (key, area, palette, IoU, grip, stray pixels, motion, body and
+    item checks, pixel matches against a reference, framing and estimate warnings). Show a plain warning that stays on
+    the item or move and in problem reports, and offer Keep, Accept as is or Continue; never force a paid re-roll or
+    discard paid output for them.
 - A stale check re-validates what the work depends on and re-prices it; it never silently discards paid work.
 - Say what happened in plain words with one next step; keep the technical detail behind Details, next to Report (`ProblemNotice`).
 - Never route behavior on message text: use typed codes (an error's catalog key, a paid step's failure, an API status).
