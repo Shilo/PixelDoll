@@ -3164,9 +3164,9 @@ test('Moves stays in place, disabled with its reason, in the live views', async 
 		// selecting it.
 		await outfits.click();
 		await page.keyboard.press('Tab');
-		await expect(states).toBeFocused();
-		await page.keyboard.press('Tab');
 		await expect(moves).toBeFocused();
+		await page.keyboard.press('Tab');
+		await expect(states).toBeFocused();
 		await page.keyboard.press('ArrowLeft');
 		await expect(outfits).toBeFocused();
 		await expect(outfits).toHaveAttribute('aria-selected', 'true');
