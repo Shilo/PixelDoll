@@ -887,7 +887,9 @@
 		"still": "静止",
 		"inspect": "检查",
 		"customization": "自定义",
-		"customizationPanels": "自定义面板"
+		"customizationPanels": "自定义面板",
+		"tabWorkRunning": "此处有任务正在进行",
+		"tabWorkAttention": "此处有任务需要处理"
 	},
 	"worldStage": {
 		"groundUnavailable": "无法实时渲染地面，正在显示静态场景。",

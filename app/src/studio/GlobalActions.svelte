@@ -58,7 +58,7 @@
 		border-radius: 50%;
 		background: var(--bu-accent);
 	}
-	:global(:is(.phone-layout, dialog.sheet)) [data-activity='stopped']::after {
+	[data-activity='stopped']::after {
 		background: var(--bu-danger);
 	}
 </style>

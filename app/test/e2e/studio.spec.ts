@@ -8280,16 +8280,61 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(
 		page.getByRole('button', { name: new RegExp(` · ${fixture.itemName}`) })
 	).toHaveCount(0);
+	// The tab with the work carries a dot, and so does More; a failed job turns both red.
+	const movesTab = page.locator('#customization-tab-moves'),
+		statesTab = page.locator('#customization-tab-states'),
+		more = page.getByRole('button', { name: 'More options', exact: true });
+	const dot = (target: Locator, pseudo: string) =>
+		target.evaluate((node, pseudo) => {
+			const probe = document.createElement('i');
+			probe.style.color = 'var(--bu-danger)';
+			node.append(probe);
+			const danger = getComputedStyle(probe).color;
+			probe.remove();
+			const owner = pseudo === 'label' ? node.querySelector('.bu-tab-label')! : node;
+			const color = getComputedStyle(owner, '::after').backgroundColor;
+			if (getComputedStyle(owner, '::after').content === 'none') return 'none';
+			return color === danger ? 'red' : 'accent';
+		}, pseudo);
+	await expect(movesTab).toHaveAttribute('data-activity', 'busy');
+	await expect(statesTab).not.toHaveAttribute('data-activity');
+	await expect(more).toHaveAttribute('data-activity', 'busy');
+	expect(await dot(movesTab, 'label')).toBe('accent');
+	expect(await dot(more, 'button')).toBe('accent');
+	await expect(movesTab).toHaveAccessibleDescription('Work is running here');
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.moving.queued = [
+			...s.moving.queued,
+			{
+				projectId: s.doc.id,
+				spec: { id: 'default', items: [id], frames: 1, seed: 1, itemsOnly: true }
+			}
+		];
+		s.moving.error = 'synthetic failure';
+	}, fixture.itemId);
+	await expect(statesTab).toHaveAttribute('data-activity', 'busy');
+	await expect(movesTab).toHaveAttribute('data-activity', 'stopped');
+	await expect(more).toHaveAttribute('data-activity', 'stopped');
+	expect(await dot(movesTab, 'label')).toBe('red');
+	expect(await dot(statesTab, 'label')).toBe('accent');
+	expect(await dot(more, 'button')).toBe('red');
+	await expect(movesTab).toHaveAccessibleDescription('Work here needs attention');
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		s.moving.queued = [];
 		s.moving.spec = null;
 		s.moving.progress = null;
+		s.moving.error = '';
 	});
 	await expect(page.getByRole('button', { name: /^Custom walk preview/ })).toContainText(
 		'0 of 6 items drawn'
 	);
+	await expect(movesTab).not.toHaveAttribute('data-activity');
+	await expect(statesTab).not.toHaveAttribute('data-activity');
+	await expect(more).not.toHaveAttribute('data-activity');
 	expect(posts).toEqual([]);
 	const coverage = page.getByRole('button', { name: /equipped items? needs? frames/ });
 	await selectPlaybackClip(page, 'default');

@@ -887,7 +887,9 @@
 		"still": "静止",
 		"inspect": "キャラクターを確認",
 		"customization": "カスタマイズ",
-		"customizationPanels": "カスタマイズパネル"
+		"customizationPanels": "カスタマイズパネル",
+		"tabWorkRunning": "ここで処理を実行中です",
+		"tabWorkAttention": "ここで対応が必要な処理があります"
 	},
 	"worldStage": {
 		"groundUnavailable": "地面をリアルタイムで描画できないため、静止シーンを表示しています。",

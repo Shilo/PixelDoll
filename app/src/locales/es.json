@@ -911,7 +911,9 @@
 		"still": "Quieto",
 		"inspect": "Inspeccionar",
 		"customization": "Personalización",
-		"customizationPanels": "Paneles de personalización"
+		"customizationPanels": "Paneles de personalización",
+		"tabWorkRunning": "Hay trabajo en curso aquí",
+		"tabWorkAttention": "Hay trabajo aquí que requiere atención"
 	},
 	"worldStage": {
 		"groundUnavailable": "No se puede renderizar el suelo en tiempo real. Se muestra la escena estática.",
