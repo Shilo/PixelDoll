@@ -19,8 +19,9 @@
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import type { MoveSpec } from './create.ts';
+	import type { RigAnimation } from '../lib/rig/rig.ts';
 	import { displayError } from '../lib/i18n.ts';
-	import { STATE_CAPTURE_MODE, setupRedoMoves } from '../lib/rig/setup.ts';
+	import { STATE_CAPTURE_MODE, setupRedoMoves, unposedView } from '../lib/rig/setup.ts';
 	import { characterBodySize } from './experience/bounds.ts';
 	import { buildPresentation } from './experience/presentation.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
@@ -42,9 +43,11 @@
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const nice = (id: string) => displayMove(id, moveRefs);
-	// Moves without poses (setup skipped them, or a new move was kept without joints) still play, but items cannot be
-	// animated on them until made again.
+	// Moves with views without poses (setup skipped them, or views were kept without joints) still play, but items cannot be
+	// animated there until those views are made again.
 	const redo = $derived(setupRedoMoves(store.exportRecord));
+	const needsRedo = (a: RigAnimation) =>
+		!!m?.rig.directions.some((d) => !d.mirrorOf && unposedView(redo, a, d.id));
 	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
@@ -167,9 +170,7 @@
 											})
 										: t('moves.oneDirection')
 									: t('export.count.directions', { count: nDirs })}</span
-							>{#if redo.includes(a.id) && !a.sources}<span class="small redo"
-									>{t('moves.needsRedo')}</span
-								>{/if}</span
+							>{#if needsRedo(a)}<span class="small redo">{t('moves.needsRedo')}</span>{/if}</span
 						>
 					</button>
 				</SavedActions>

@@ -40,6 +40,7 @@ import { displayError, displayNestedMessage, errorMessage } from '../../src/lib/
 import { generationErrorMessage } from '../../src/studio/generationStatus.ts';
 import type { Gen } from '../../src/studio/state.svelte.ts';
 import { bodyQualityNote } from '../../src/studio/model.ts';
+import { redoAfterSave, rigReady, unposedView } from '../../src/lib/rig/setup.ts';
 // The i18n runtime needs the Svelte compiler; Japanese stands in for it here, as a key lookup with {name} variables.
 vi.mock('svelte-whisper', () => ({
 	getLocale: () => 'ja',
@@ -1625,32 +1626,111 @@ test('a new move whose body frames lack joints is kept body only, without poses,
 	expect(Object.keys(saved.manifest.items[0].layers[0].cells!.calm!)).toHaveLength(4);
 	expect(Object.keys(saved.skeletons ?? {}).filter((key) => key.startsWith('calm/'))).toEqual([]);
 	expect(saved.manifest.rig.anchors?.hand_r?.calm).toBeUndefined();
-	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['calm']);
-	// Only a new, body-only move can be kept this way: never over existing directions or with equipment.
-	for (const change of [
-		{ replace: true, id: 'idle', dirs: ['east'] },
-		{ items: ['hat'] },
-		{ reviewBeforePublish: true }
-	])
+	// Each view without poses is listed on its own (soft gates: views, not whole moves), and the rig stays ready.
+	expect((saved.rigQa as { redo?: string[] }).redo).toEqual([
+		'calm/south',
+		'calm/east',
+		'calm/north',
+		'calm/west'
+	]);
+	expect(rigReady(saved)).toBe(true);
+	// Kept as body frames only: never with equipment, and never as a staged review.
+	for (const change of [{ items: ['hat'] }, { reviewBeforePublish: true }])
 		await expect(f.run({ ...move, id: 'still', keepUnposed: true, ...change })).rejects.toThrow(
 			'This review choice no longer matches the move'
 		);
 });
 
-test('only a new move stopped by missing body joints in every failed view offers the unposed keep', () => {
+// Deliberately changed (soft gates): the unposed keep used to be offered only for a new whole move. It is now offered for
+// replacements and some views too, and only when every other view is already finished, so keeping never buys more work.
+test('the unposed keep is offered only when stopped views lack body joints and every other view is finished', () => {
 	const stop = (failure: 'joints' | 'overflow', step = 'render') => ({
+		state: 'failed' as const,
 		error: new PaidStepError('x', 'create.errors.validJointsWereFound', undefined, {
 			step,
 			failure
 		})
 	});
-	const added = { replace: false };
-	expect(keepableUnposed(added, [stop('joints'), stop('joints')])).toBe(true);
-	expect(keepableUnposed(added, [])).toBe(false);
-	expect(keepableUnposed(added, [stop('joints'), stop('overflow')])).toBe(false);
+	const ready = { state: 'ready' as const };
+	expect(keepableUnposed([stop('joints'), stop('joints')])).toBe(true);
+	expect(keepableUnposed([stop('joints'), ready])).toBe(true);
+	expect(keepableUnposed([])).toBe(false);
+	expect(keepableUnposed([ready])).toBe(false);
+	expect(keepableUnposed([stop('joints'), stop('overflow')])).toBe(false);
 	// Motion joints mean no body was drawn: there is nothing to keep.
-	expect(keepableUnposed(added, [stop('joints', 'motion')])).toBe(false);
-	expect(keepableUnposed(added, [{ error: undefined }])).toBe(false);
-	expect(keepableUnposed({ replace: true }, [stop('joints')])).toBe(false);
-	expect(keepableUnposed({ dirs: ['east'] }, [stop('joints')])).toBe(false);
+	expect(keepableUnposed([stop('joints', 'motion')])).toBe(false);
+	expect(keepableUnposed([{ state: 'failed' }])).toBe(false);
+	// A view still to buy or still at PixelLab would make the free keep pay for more work.
+	expect(keepableUnposed([stop('joints'), { state: 'pending' }])).toBe(false);
+	expect(keepableUnposed([stop('joints'), { state: 'running' }])).toBe(false);
+});
+
+test('one replaced view kept without poses loses only its own poses and fitted equipment', async () => {
+	const f = await fixture();
+	const measuring = f.enqueue.getMockImplementation()!;
+	f.enqueue.mockImplementation(async (req, ...rest) =>
+		req.path === '/estimate-skeleton'
+			? ({
+					id: 'joints',
+					state: 'done',
+					response: { keypoints: [] },
+					jobs: []
+				} as unknown as JobRec)
+			: measuring(req, ...rest)
+	);
+	await expect(f.run()).rejects.toThrow('valid joints were not found on every frame');
+	expect(f.saved()).toEqual(f.original);
+	await f.run({ keepUnposed: true });
+	const saved = f.saved(),
+		before = f.original,
+		idle = saved.manifest.rig.animations[0];
+	expect(Object.keys(idle.sources!).sort()).toEqual(['north', 'south', 'west']);
+	expect(saved.skeletons!['idle/east/0']).toBeUndefined();
+	expect(saved.manifest.rig.anchors!.hand_r!.idle!.east).toBeUndefined();
+	expect(saved.manifest.items[1].layers[0].cells!.idle!.east).toBeUndefined();
+	for (const d of ['south', 'north', 'west'] as const) {
+		expect(idle.sources![d]).toEqual(before.manifest.rig.animations[0].sources![d]);
+		expect(saved.skeletons![`idle/${d}/0`]).toEqual(before.skeletons![`idle/${d}/0`]);
+		expect(saved.manifest.rig.anchors!.hand_r!.idle![d]).toEqual(
+			before.manifest.rig.anchors!.hand_r!.idle![d]
+		);
+		expect(saved.manifest.items[1].layers[0].cells!.idle![d]).toEqual(
+			before.manifest.items[1].layers[0].cells!.idle![d]
+		);
+	}
+	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['idle/east']);
+	expect(rigReady(saved)).toBe(true);
+	// Equipment waits there with a plain next step: make the move again, not set up its poses.
+	await expect(
+		f.run({ items: ['hat'], itemsOnly: true, replace: undefined, keepUnposed: undefined })
+	).rejects.toThrow('Make the move again there');
+});
+
+test('redoing one view of a move kept without poses leaves the rest of the rig ready', async () => {
+	const f = await fixture();
+	const unposed = f.saved();
+	delete unposed.manifest.rig.animations[0].sources;
+	delete unposed.manifest.rig.anchors;
+	unposed.skeletons = {};
+	(unposed.rigQa as { redo?: string[] }).redo = ['idle'];
+	expect(rigReady(unposed)).toBe(true);
+	await f.run();
+	const saved = f.saved();
+	expect(Object.keys(saved.manifest.rig.animations[0].sources!)).toEqual(['east']);
+	// south, north and west are still without poses and listed: the rig stays ready, items wait there
+	expect(rigReady(saved)).toBe(true);
+});
+
+test('unposed views are listed per view and leave the list once they are saved again', () => {
+	expect(redoAfterSave(['walk', 'idle/east'], 'idle', ['east'])).toEqual(['walk']);
+	expect(redoAfterSave(['walk'], 'idle', ['east', 'south'], ['south'])).toEqual([
+		'walk',
+		'idle/south'
+	]);
+	const idle = { id: 'idle', sources: { east: {} as never } };
+	// A view with poses is never unposed; an unlisted view without poses (an import not set up yet) is not either.
+	expect(unposedView(['idle'], idle, 'east')).toBe(false);
+	expect(unposedView(['idle'], idle, 'south')).toBe(true);
+	expect(unposedView(['idle/south'], idle, 'south')).toBe(true);
+	expect(unposedView([], idle, 'south')).toBe(false);
 });
