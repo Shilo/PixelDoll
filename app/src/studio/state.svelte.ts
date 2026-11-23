@@ -178,6 +178,7 @@ import {
 	type FrameChange
 } from '../lib/rig/reframe.ts';
 import { forgetRidingPose, syncRiderPose } from './experience/riderPose.ts';
+import { clearDebugLog, recordDebug } from '../lib/debug/log.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -547,6 +548,17 @@ const firstMessage = (value: unknown): Message | undefined =>
 		: value && typeof value === 'object' && typeof (value as Message).key === 'string'
 			? (value as Message)
 			: undefined;
+/** A toast's text for the debug log: the message key beside the shown, translated text. */
+const toastText = (value: unknown): string =>
+	value === undefined || value === ''
+		? ''
+		: typeof value === 'string'
+			? value
+			: Array.isArray(value)
+				? value.map(toastText).join(' ')
+				: firstMessage(value)
+					? `[${(value as Message).key}] ${displayMessage(value as Message)}`
+					: '[custom content]';
 /** Something failed that no surface handled: a warning with a Report action, once per distinct error. It never
  *  replaces a notice the person may still act on (Undo, Try again, a pending step). */
 export const unexpectedError = onceShown(
@@ -610,6 +622,12 @@ export function toast(
 	options: number | ToastOptions = 4000
 ) {
 	const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
+	if (o.tone === 'danger' || o.tone === 'warning')
+		recordDebug(o.tone === 'danger' ? 'error' : 'warn', 'toast', [
+			toastText(o.title),
+			toastText(s),
+			...(o.error === undefined ? [] : [o.error])
+		]);
 	if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
 	stopToastTimer();
 	toastRevision++;
@@ -2105,6 +2123,7 @@ export async function deleteLocalWorkAndReload(): Promise<void> {
 	await flushSave();
 	blocked();
 	await deleteLocalWork();
+	await clearDebugLog().catch((error: unknown) => console.warn('clear debug log', error));
 	// Stop resumes and unload snapshots: the deleted work must not come back from this tab's memory.
 	hmrReloading = true;
 	clearTimeout(saveT);

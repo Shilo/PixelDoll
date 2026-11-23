@@ -48,6 +48,10 @@
 	"librarySettings": {
 		"title": "Bibliothèque",
 		"scope": "Sauvegardez les personnages enregistrés, leurs images et les données archivées. Les préférences, les brouillons et les tâches ne sont pas inclus.",
+		"debugDetails": "Inclure les détails de débogage",
+		"debugDetailsHint": "Ajoute à chaque sauvegarde les journaux d’erreurs, l’historique des requêtes, les brouillons, les tâches et l’état de l’app pour diagnostiquer les problèmes. Les erreurs de cet onglet sont incluses et, dès maintenant, elles sont aussi conservées entre rechargements et onglets. Votre clé PixelLab n’est jamais incluse.",
+		"scopeDebug": "Sauvegarder les personnages, illustrations, données archivées et détails de débogage.",
+		"debugNotSaved": "Le navigateur n’a pas pu enregistrer ce réglage.",
 		"backup": "Sauvegarder la bibliothèque",
 		"restoreFromBackup": "Restaurer depuis une sauvegarde",
 		"review": "Vérifier la sauvegarde",

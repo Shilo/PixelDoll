@@ -24,6 +24,7 @@ import {
 	type WorkspaceArchive
 } from './workspace.ts';
 import { MAX_ZIP_BYTES, unzip } from './zip.ts';
+import { DEBUG_FOLDER } from '../debug/flags.ts';
 
 export const BACKUP_FORMAT = 'pixeldoll-backup/1';
 const indexPath = 'backup.json';
@@ -133,7 +134,10 @@ const backupErrors: ArchiveErrors = {
 /** Every saved Studio character with its artwork, read in one snapshot. Preferences, the demo outfit, export settings,
  *  drafts, jobs, credentials and diagnostics stay out. `keys`: the connected and remembered PixelLab keys, refused if any
  *  saved field holds one. hasOmissions: a character or some artwork failed verification and was left out. */
-export async function exportBackup(keys: readonly string[]) {
+export async function exportBackup(
+	keys: readonly string[],
+	debug: readonly { name: string; data: Uint8Array }[] = []
+) {
 	const archives = await archiveEntries(keys);
 	const { bytes, hasOmissions, records } = await packArchive(
 		studioCharacter,
@@ -150,7 +154,7 @@ export async function exportBackup(keys: readonly string[]) {
 				...(omitted && { omitted: omitted.characters })
 			} satisfies BackupIndex
 		],
-		archives.files
+		[...archives.files, ...debug]
 	);
 	return { bytes, hasOmissions: hasOmissions || archives.hasOmissions, characters: records };
 }
@@ -234,6 +238,8 @@ async function readRestoreFiles(
 	)
 		throw invalid();
 	const counts = { characters: omitted, demoOutfit: false, exportSettings: false };
+	// Debugging details (lib/debug/bundle.ts) are for whoever helps the user, never restored.
+	for (const path of [...files.keys()]) if (path.startsWith(DEBUG_FOLDER)) files.delete(path);
 	const archives: ArchivePack[] = [];
 	for (const [path, data] of files) {
 		const digest = archivePath.exec(path)?.[1];

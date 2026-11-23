@@ -48,6 +48,10 @@
 	"librarySettings": {
 		"title": "Bibliothek",
 		"scope": "Sichere gespeicherte Figuren, Grafiken und archivierte Daten. Einstellungen, Entwürfe und Aufträge sind nicht enthalten.",
+		"debugDetails": "Debugging-Details einschließen",
+		"debugDetailsHint": "Fügt jeder Sicherung Fehlerprotokolle, Anfrageverlauf, Entwürfe, Aufträge und den App-Zustand hinzu, damit Probleme untersucht werden können. Fehler aus diesem Tab sind enthalten, und ab jetzt werden Fehler auch über Neuladen und Tabs hinweg aufbewahrt. Dein PixelLab-Schlüssel ist nie enthalten.",
+		"scopeDebug": "Gespeicherte Figuren, Grafiken, archivierte Daten und Debugging-Details sichern.",
+		"debugNotSaved": "Der Browser konnte diese Einstellung nicht speichern.",
 		"backup": "Bibliothek sichern",
 		"restoreFromBackup": "Aus Sicherung wiederherstellen",
 		"review": "Sicherung prüfen",
