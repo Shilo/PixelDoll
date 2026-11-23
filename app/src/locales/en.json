@@ -2212,7 +2212,7 @@
 			"bodyFramesTheirQuality": "These body frames or their quality checks changed since review. Nothing was saved and no request was made. Review them again.",
 			"characterChangedAnotherTab2": "This character changed in another tab before the move could be saved. Reopen it before trying again.",
 			"demoStandingReferenceMissing": "The demo standing reference is missing.",
-			"resultMissingStorage": "result {label} missing in storage",
+			"resultMissingStorage": "A paid result is missing from this browser's storage.",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.",
 			"animationExceedsPxFrame": "{move} {direction}: the body frames do not fit the {w} px frame. They were kept for review; nothing was saved.",
@@ -2243,8 +2243,8 @@
 			"cachedBodyRenderIncomplete": "{direction}: the cached body render is incomplete.",
 			"cachedBodyFramesDo": "{direction}: the cached body frames do not fit this character. No body was regenerated.",
 			"demoStandingBodyFacing": "The demo has no standing body facing {id}.",
-			"requestStopped": "{label}: {state}{error}",
-			"requestStoppedResume": "{label}: {state}{error}. Generation stopped without resending. Review this request in Activity before starting again.",
+			"requestStopped": "A PixelLab request ended as {state}{error}.",
+			"requestStoppedResume": "A PixelLab request ended as {state}{error}. Generation stopped without resending. Review this request in Activity before starting again.",
 			"promptLength": "Enter a prompt of 1–2,000 characters.",
 			"invalidSeed": "Invalid seed.",
 			"invalidCamera": "Invalid camera.",
@@ -2702,6 +2702,8 @@
 			"paletteSaveChanged": "This item, body or material changed. Existing colors were kept; review again.",
 			"invalidItemGridSheet": "PixelLab returned an unusable item grid. Expected exactly one sheet. Existing artwork was kept.",
 			"invalidItemGridLayout": "PixelLab returned an unusable item grid. The sheet has the wrong frame layout. Existing artwork was kept.",
+			"savedFramesUnavailable": "Completed frames matching the current body and equipment are unavailable. No generation was requested.",
+			"itemMoveSaveConflict": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity.",
 			"savedFrameMissing": "A saved frame of this item is missing from storage."
 		}
 	},

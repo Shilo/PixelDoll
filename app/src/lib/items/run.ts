@@ -128,6 +128,7 @@ import {
 	errorText,
 	loggedError,
 	loggedMessage,
+	message,
 	type LoggedMessage
 } from '../message.ts';
 import { PaidStepError } from '../pixellab/paid-results.ts';
@@ -738,6 +739,14 @@ async function runCall(
 	return terminal(r) ? r : settled(r.id, signal);
 }
 
+/** A paid call of the draft that ended without results, as its log keeps it. */
+const callStopped = (call: number, r: JobRec): LoggedMessage => ({
+	key: 'generation.outcome.callStopped',
+	vars: { index: call, state: message(`activity.state.${r.state}`) },
+	text: `call ${call} ${r.state}: ${r.error ?? ''}`,
+	call
+});
+
 /** New seed for call k (k = 0 also drops the later calls: their anchor came from the old design). */
 export function rerollCall(d: Draft, k: number, why: string) {
 	const c = d.calls[k];
@@ -939,7 +948,7 @@ export async function runItem(
 			status('design call');
 			const r0 = await call(0);
 			if (r0.state !== 'done') {
-				d.log.push(`call 1 ${r0.state}: ${r0.error ?? ''}`);
+				d.log.push(callStopped(1, r0));
 				break;
 			}
 			if (d.calls[0].concept) {
@@ -976,14 +985,15 @@ export async function runItem(
 			await Promise.all(gates);
 			const bd = rd.findIndex((r) => r.state !== 'done');
 			if (bd >= 0) {
-				d.log.push(`call ${bd + 2} ${rd[bd].state}: ${rd[bd].error ?? ''}`);
+				d.log.push(callStopped(bd + 2, rd[bd]));
 				break;
 			}
 			res = await evalItem();
 			if (hasStructuralFailure(res)) {
-				d.log.push(
-					'PixelLab returned incomplete or malformed standing frames. No automatic retry was made.'
-				);
+				d.log.push({
+					key: 'generation.outcome.standingFrames',
+					text: 'PixelLab returned incomplete or malformed standing frames. No automatic retry was made.'
+				});
 				break;
 			}
 			status(`calls ${nd + 1}–${d.calls.length}`);
@@ -992,14 +1002,17 @@ export async function runItem(
 			);
 			const broken = rs.findIndex((r) => r.state !== 'done');
 			if (broken >= 0) {
-				d.log.push(`call ${broken + nd + 1} ${rs[broken].state}: ${rs[broken].error ?? ''}`);
+				d.log.push(callStopped(broken + nd + 1, rs[broken]));
 				break;
 			}
 			res = await evalItem();
 			d.log.push(
 				isClean(res)
-					? 'Every frame passed the checks.'
-					: 'Issues detected. Review the item and choose Try again or Accept as is. No automatic retry was made.'
+					? { key: 'generation.outcome.passed', text: 'Every frame passed the checks.' }
+					: {
+							key: 'generation.outcome.reviewIssues',
+							text: 'Issues detected. Review the item and choose Try again or Accept as is. No automatic retry was made.'
+						}
 			);
 		} while (false);
 	} catch (e) {
@@ -1808,7 +1821,8 @@ async function submitOrSaved(
 	if (!savedOnly) return queue.enqueue(req, meta);
 	const { requestHash } = await requestIdentity(req),
 		saved = jobs.findLast((r) => r.requestHash === requestHash && r.state === 'done');
-	if (!saved) throw new Error(SAVED_FRAMES_UNAVAILABLE);
+	if (!saved)
+		throw new LocalizedError(SAVED_FRAMES_UNAVAILABLE, 'itemRoute.errors.savedFramesUnavailable');
 	return saved;
 }
 
@@ -1990,9 +2004,15 @@ export async function poseItemClip(
 	try {
 		await mergeClip(ctx, item, anim, doneDirs, cells, prov, q, pad);
 	} catch (error) {
-		// The save error leads: the Studio offers free saved-frame recovery by its prefix (ITEM_MOVE_SAVE_CONFLICT).
+		// The save error leads and keeps its code: the Studio offers free saved-frame recovery on a save conflict.
 		throw failures.length
-			? new Error(`${error instanceof Error ? error.message : String(error)} ${first}`)
+			? error instanceof LocalizedError
+				? new LocalizedError(
+						`${error.message} ${first}`,
+						error.translation.key,
+						error.translation.vars
+					)
+				: new Error(`${errorText(error)} ${first}`)
 			: error;
 	}
 	if (failures.length)
@@ -2126,7 +2146,7 @@ async function publishClip(
 			rigArtworkVersion(current.manifest.rig, current.character) !== version ||
 			clipArtwork(currentItem) !== originalItem
 		)
-			throw new Error(ITEM_MOVE_SAVE_CONFLICT);
+			throw new LocalizedError(ITEM_MOVE_SAVE_CONFLICT, 'itemRoute.errors.itemMoveSaveConflict');
 		// Outfit autosave owns these fields, including when it runs while a paid edit is pending.
 		out.materials = currentItem.materials;
 		if (!out.materials.length && standingMaterials?.length) {

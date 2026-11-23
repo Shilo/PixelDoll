@@ -2150,7 +2150,7 @@
 			"bodyFramesTheirQuality": "这些身体帧或其质量检查自检查以来已更改。未保存任何内容，也未发出请求。请再次检查。",
 			"characterChangedAnotherTab2": "保存动作前，此角色在另一个标签页中已更改。重试前请重新打开它。",
 			"demoStandingReferenceMissing": "演示站立参考缺失。",
-			"resultMissingStorage": "结果{label}在存储中缺失",
+			"resultMissingStorage": "此浏览器的存储中缺少一个已付费的结果。",
 			"pixellabReturnedIncompleteInvalid": "{direction}：PixelLab 返回了不完整或无效的站立关节。未从这些关节开始动画；现有结果已保留。",
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLab 返回的帧数不正确。未启动付费重试。请求另一次尝试前请查看“活动”。",
 			"animationExceedsPxFrame": "{move} {direction}：身体帧超出 {w} px 帧。已保留以供查看；未保存任何内容。",
@@ -2181,8 +2181,8 @@
 			"cachedBodyRenderIncomplete": "{direction}：缓存的身体渲染不完整。",
 			"cachedBodyFramesDo": "{direction}：缓存的身体帧不符合此角色。未重新生成身体。",
 			"demoStandingBodyFacing": "演示没有朝向{id}的站立身体。",
-			"requestStopped": "{label}：{state}{error}",
-			"requestStoppedResume": "{label}：{state}{error}。生成已停止，未重新发送。再次开始前请在“活动”中查看此请求。",
+			"requestStopped": "一个 PixelLab 请求以“{state}”状态结束{error}。",
+			"requestStoppedResume": "一个 PixelLab 请求以“{state}”状态结束{error}。生成已停止，未重新发送。重新开始前，请在“活动”中查看此请求。",
 			"promptLength": "请输入 1–2,000 个字符的提示词。",
 			"invalidSeed": "种子无效。",
 			"invalidCamera": "相机无效。",
@@ -2632,6 +2632,8 @@
 			"paletteSaveChanged": "装备、身体或材质已更改。现有颜色已保留。请重新检查配色。",
 			"invalidItemGridSheet": "PixelLab 返回了无法使用的装备网格。应只有一张图集。现有图像已保留。",
 			"invalidItemGridLayout": "PixelLab 返回了无法使用的装备网格。图集的帧布局错误。现有图像已保留。",
+			"savedFramesUnavailable": "没有与当前基础身体和装备匹配的已完成帧。未请求任何生成。",
+			"itemMoveSaveConflict": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。",
 			"savedFrameMissing": "此装备的一个已保存帧在存储中缺失。"
 		}
 	},

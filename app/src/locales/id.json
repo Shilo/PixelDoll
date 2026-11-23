@@ -2150,7 +2150,7 @@
 			"bodyFramesTheirQuality": "Frame tubuh ini atau pemeriksaan kualitasnya berubah sejak ditinjau. Tidak ada yang disimpan dan tidak ada permintaan yang dikirim. Tinjau kembali.",
 			"characterChangedAnotherTab2": "Karakter ini berubah di tab lain sebelum animasi dapat disimpan. Buka kembali sebelum mencoba lagi.",
 			"demoStandingReferenceMissing": "Referensi pose berdiri demo tidak ditemukan.",
-			"resultMissingStorage": "hasil {label} tidak ditemukan di penyimpanan",
+			"resultMissingStorage": "Hasil berbayar tidak ada di penyimpanan browser ini.",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab mengembalikan sendi pose berdiri yang tidak lengkap atau tidak valid. Animasi tidak dimulai dari sendi tersebut. Hasil yang ada tetap disimpan.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: jumlah frame dari PixelLab tidak sesuai. Tidak ada percobaan ulang berbayar yang dimulai. Tinjau Aktivitas sebelum meminta percobaan lain.",
 			"animationExceedsPxFrame": "{move} {direction}: frame tubuh tidak muat di frame {w} px. Frame tersebut disimpan untuk ditinjau; tidak ada yang disimpan ke karakter.",
@@ -2181,8 +2181,8 @@
 			"cachedBodyRenderIncomplete": "{direction}: render tubuh di cache tidak lengkap.",
 			"cachedBodyFramesDo": "{direction}: frame tubuh di cache tidak cocok dengan karakter ini. Tubuh tidak dibuat ulang.",
 			"demoStandingBodyFacing": "Demo tidak memiliki pose berdiri yang menghadap {id}.",
-			"requestStopped": "{label}: {state}{error}",
-			"requestStoppedResume": "{label}: {state}{error}. Generasi berhenti tanpa mengirim ulang. Tinjau permintaan ini di Aktivitas sebelum memulai lagi.",
+			"requestStopped": "Permintaan PixelLab berakhir dengan status {state}{error}.",
+			"requestStoppedResume": "Permintaan PixelLab berakhir dengan status {state}{error}. Pembuatan dihentikan tanpa mengirim ulang. Tinjau permintaan ini di Aktivitas sebelum memulai lagi.",
 			"promptLength": "Masukkan prompt sepanjang 1–2.000 karakter.",
 			"invalidSeed": "Seed tidak valid.",
 			"invalidCamera": "Sudut kamera tidak valid.",
@@ -2632,6 +2632,8 @@
 			"paletteSaveChanged": "Item, tubuh, atau material berubah. Warna yang ada tetap dipertahankan. Tinjau kembali pencocokan warna.",
 			"invalidItemGridSheet": "PixelLab mengembalikan kisi item yang tidak bisa digunakan. Seharusnya hanya ada satu lembar. Gambar yang ada tetap disimpan.",
 			"invalidItemGridLayout": "PixelLab mengembalikan kisi item yang tidak bisa digunakan. Lembar memiliki tata letak frame yang salah. Gambar yang ada tetap disimpan.",
+			"savedFramesUnavailable": "Frame selesai yang cocok dengan tubuh dan perlengkapan saat ini tidak tersedia. Tidak ada pembuatan yang diminta.",
+			"itemMoveSaveConflict": "Karakter atau item ini berubah saat frame-nya sedang dibuat. Gambar yang ada tetap disimpan; frame yang selesai tetap ada di Aktivitas.",
 			"savedFrameMissing": "Sebuah frame tersimpan dari item ini tidak ada di penyimpanan."
 		}
 	},

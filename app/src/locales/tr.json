@@ -2212,7 +2212,7 @@
 			"bodyFramesTheirQuality": "Gövde kareleri veya kalite kontrolleri incelemeden bu yana değişti. Hiçbir şey kaydedilmedi ve istek gönderilmedi. Yeniden inceleyin.",
 			"characterChangedAnotherTab2": "Animasyon kaydedilmeden önce karakter başka bir sekmede değişti. Tekrar denemeden önce karakteri yeniden açın.",
 			"demoStandingReferenceMissing": "Demonun ayakta duruş referansı eksik.",
-			"resultMissingStorage": "{label} sonucu depolama alanında bulunamadı",
+			"resultMissingStorage": "Ücretli bir sonuç bu tarayıcının depolamasında eksik.",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab eksik veya geçersiz ayakta duruş eklemleri döndürdü. Bu eklemlerle animasyon başlatılmadı; mevcut sonuçlar korundu.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab yanlış sayıda kare döndürdü. Ücretli yeniden deneme başlatılmadı. Yeni deneme istemeden önce Etkinlik bölümünü inceleyin.",
 			"animationExceedsPxFrame": "{move} {direction}: Gövde kareleri {w} px kareye sığmıyor. İnceleme için saklandılar; hiçbir şey kaydedilmedi.",
@@ -2243,8 +2243,8 @@
 			"cachedBodyRenderIncomplete": "{direction}: Önbellekteki gövde çizimi eksik.",
 			"cachedBodyFramesDo": "{direction}: Önbellekteki gövde kareleri bu karaktere uymuyor. Gövde yeniden üretilmedi.",
 			"demoStandingBodyFacing": "Demonun {id} yönünde ayakta duran gövdesi yok.",
-			"requestStopped": "{label}: {state}{error}",
-			"requestStoppedResume": "{label}: {state}{error}. Üretim, istek yeniden gönderilmeden durdu. Yeniden başlamadan önce bu isteği Etkinlik bölümünde inceleyin.",
+			"requestStopped": "Bir PixelLab isteği şu durumla sona erdi: {state}{error}.",
+			"requestStoppedResume": "Bir PixelLab isteği şu durumla sona erdi: {state}{error}. Oluşturma yeniden gönderilmeden durduruldu. Yeniden başlamadan önce bu isteği Etkinlik bölümünde inceleyin.",
 			"promptLength": "1–2.000 karakter uzunluğunda bir istem girin.",
 			"invalidSeed": "Geçersiz seed değeri.",
 			"invalidCamera": "Geçersiz kamera.",
@@ -2702,6 +2702,8 @@
 			"paletteSaveChanged": "Öğe, gövde veya malzeme değişti. Mevcut renkler korundu. Renk eşlemesini yeniden inceleyin.",
 			"invalidItemGridSheet": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Tam olarak bir sayfa bekleniyordu. Mevcut görsel korundu.",
 			"invalidItemGridLayout": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Sayfanın kare düzeni yanlış. Mevcut görsel korundu.",
+			"savedFramesUnavailable": "Geçerli gövde ve ekipmanla eşleşen tamamlanmış kareler yok. Oluşturma istenmedi.",
+			"itemMoveSaveConflict": "Kareleri oluşturulurken bu karakter veya eşya değişti. Mevcut çizimler korundu; tamamlanan kareler Etkinlik bölümünde duruyor.",
 			"savedFrameMissing": "Bu eşyanın kayıtlı bir karesi depolamada yok."
 		}
 	},

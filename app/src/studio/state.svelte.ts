@@ -3985,6 +3985,8 @@ interface FlowDraft<S> {
 	error?: string;
 	/** The failure was a PaidStepError: its review (such as a single repair batch re-roll) survives a reload. */
 	paid?: { key: WhisperKey; vars?: WhisperVars; step: PaidStep };
+	/** Any other translated failure: its code and translation survive a reload, so recovery never reads the English. */
+	message?: Message;
 	progress?: Progress | null;
 	requestText?: number;
 }
@@ -3992,6 +3994,8 @@ function restoredFlowError(record: FlowDraft<{ activityScope?: string }>, fallba
 	const raw = record.error || fallback;
 	if (record.paid && record.error)
 		return new PaidStepError(raw, record.paid.key, record.paid.vars, record.paid.step);
+	if (record.message && record.error)
+		return new LocalizedError(raw, record.message.key, record.message.vars);
 	if (raw === STOPPED) return new LocalizedError(raw, 'generation.outcome.stopped');
 	if (raw === SETUP_STOPPED) return new LocalizedError(raw, 'generation.outcome.setupStopped');
 	if (raw === REPAIR_REVIEW_RECOVERY) return new LocalizedError(raw, 'repairReview.recover');
@@ -4013,7 +4017,7 @@ function restoredFlowError(record: FlowDraft<{ activityScope?: string }>, fallba
 			return new LocalizedError(
 				raw,
 				raw === caption ? 'create.errors.requestStopped' : 'create.errors.requestStoppedResume',
-				{ label: job.label, state: activityStateMessage(job.state), error }
+				{ state: activityStateMessage(job.state), error }
 			);
 	}
 	return raw;
@@ -4041,7 +4045,9 @@ async function persistFlowFailure(
 							step: error.paid
 						}
 					}
-				: {})
+				: error instanceof LocalizedError
+					? { message: error.translation }
+					: {})
 		});
 	} catch {
 		return new LocalizedError(

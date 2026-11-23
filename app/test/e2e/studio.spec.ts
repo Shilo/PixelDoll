@@ -6244,6 +6244,8 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 			projectId: s.doc.id,
 			status: 'failed',
 			error: run.ITEM_MOVE_SAVE_CONFLICT,
+			// recovery routes on the stored code, never on the English text
+			message: { key: 'itemRoute.errors.itemMoveSaveConflict' },
 			requestText: s.REQUEST_TEXT,
 			progress: { step: 'items', done: 0, total: 1, recIds: [] },
 			spec: {

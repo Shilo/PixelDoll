@@ -2150,7 +2150,7 @@
 			"bodyFramesTheirQuality": "確認後に、これらの体のフレームまたは品質チェックが変更されました。何も保存しておらず、リクエストも送信していません。もう一度確認してください。",
 			"characterChangedAnotherTab2": "モーションを保存する前に、別のタブでこのキャラクターが変更されました。やり直す前に開き直してください。",
 			"demoStandingReferenceMissing": "デモの立ちの参照画像が見つかりません。",
-			"resultMissingStorage": "結果{label}がストレージにありません",
+			"resultMissingStorage": "支払い済みの結果がこのブラウザのストレージにありません。",
 			"pixellabReturnedIncompleteInvalid": "{direction}：PixelLabが返した立ちポーズの関節データが不完全か無効です。この関節データによるアニメーション生成は開始していません。既存の結果は残しています。",
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLabから返されたフレーム数が正しくありません。有料の再試行は開始していません。もう一度リクエストする前にアクティビティを確認してください。",
 			"animationExceedsPxFrame": "{move} {direction}：体のフレームが{w} pxのフレームに収まりません。確認用に保持されています。何も保存されていません。",
@@ -2181,8 +2181,8 @@
 			"cachedBodyRenderIncomplete": "{direction}：キャッシュされた体の描画が不完全です。",
 			"cachedBodyFramesDo": "{direction}：キャッシュされた体のフレームがこのキャラクターに合いません。体は再生成していません。",
 			"demoStandingBodyFacing": "デモには{id}向きの立ちポーズの素体画像がありません。",
-			"requestStopped": "{label}：{state}{error}",
-			"requestStoppedResume": "{label}：{state}{error}。再送信せずに生成を停止しました。もう一度始める前に、アクティビティでこのリクエストを確認してください。",
+			"requestStopped": "PixelLabへのリクエストが「{state}」で終了しました{error}。",
+			"requestStoppedResume": "PixelLabへのリクエストが「{state}」で終了しました{error}。再送信せずに生成を停止しました。もう一度始める前に、アクティビティでこのリクエストを確認してください。",
 			"promptLength": "プロンプトは1～2,000文字で入力してください。",
 			"invalidSeed": "シードが無効です。",
 			"invalidCamera": "カメラが無効です。",
@@ -2632,6 +2632,8 @@
 			"paletteSaveChanged": "アイテム、ボディ、またはマテリアルが変わりました。既存の色はそのままです。色合わせをもう一度確認してください。",
 			"invalidItemGridSheet": "PixelLabから使用できないアイテムのグリッドが返されました。シートは1枚だけである必要があります。既存のアートワークは残しています。",
 			"invalidItemGridLayout": "PixelLabから使用できないアイテムのグリッドが返されました。シートのフレーム配置が正しくありません。既存のアートワークは残しています。",
+			"savedFramesUnavailable": "現在の素体と装備に合う完成済みのフレームがありません。生成はリクエストしていません。",
+			"itemMoveSaveConflict": "フレームの生成中にこのキャラクターまたはアイテムが変更されました。既存のアートはそのままです。完成したフレームはアクティビティに残っています。",
 			"savedFrameMissing": "このアイテムの保存済みフレームがストレージにありません。"
 		}
 	},

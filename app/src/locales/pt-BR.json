@@ -2221,7 +2221,7 @@
 			"bodyFramesTheirQuality": "Os quadros do corpo ou suas verificações de qualidade mudaram desde a revisão. Nada foi salvo e nenhuma solicitação foi enviada. Revise os quadros novamente.",
 			"characterChangedAnotherTab2": "Este personagem mudou em outra aba antes que a animação pudesse ser salva. Abra o personagem novamente antes de tentar de novo.",
 			"demoStandingReferenceMissing": "A referência da pose em pé da demo está ausente.",
-			"resultMissingStorage": "resultado {label} ausente no armazenamento",
+			"resultMissingStorage": "Um resultado pago está faltando no armazenamento deste navegador.",
 			"pixellabReturnedIncompleteInvalid": "{direction}: o PixelLab retornou articulações incompletas ou inválidas para a pose em pé. A animação não foi iniciada a partir dessas articulações. Os resultados existentes foram mantidos.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: o PixelLab retornou a quantidade errada de quadros. Nenhuma nova tentativa paga foi iniciada. Confira a Atividade antes de solicitar outra tentativa.",
 			"animationExceedsPxFrame": "{move} {direction}: os quadros do corpo não cabem no quadro de {w} px. Eles foram mantidos para revisão; nada foi salvo.",
@@ -2252,8 +2252,8 @@
 			"cachedBodyRenderIncomplete": "{direction}: a renderização do corpo em cache está incompleta.",
 			"cachedBodyFramesDo": "{direction}: os quadros do corpo em cache não são compatíveis com este personagem. O corpo não foi gerado novamente.",
 			"demoStandingBodyFacing": "A demo não tem uma pose em pé do corpo na direção {id}.",
-			"requestStopped": "{label}: {state}{error}",
-			"requestStoppedResume": "{label}: {state}{error}. A geração parou sem reenviar a solicitação. Confira esta solicitação em Atividade antes de começar outra vez.",
+			"requestStopped": "Uma solicitação ao PixelLab terminou com o status {state}{error}.",
+			"requestStoppedResume": "Uma solicitação ao PixelLab terminou com o status {state}{error}. A geração parou sem reenviar. Revise esta solicitação em Atividade antes de começar de novo.",
 			"promptLength": "Digite um prompt com 1 a 2.000 caracteres.",
 			"invalidSeed": "Seed inválida.",
 			"invalidCamera": "Câmera inválida.",
@@ -2711,6 +2711,8 @@
 			"paletteSaveChanged": "O item, o corpo ou o material mudou. As cores existentes foram mantidas. Revise a correspondência novamente.",
 			"invalidItemGridSheet": "O PixelLab retornou uma grade de item inutilizável. Era esperada exatamente uma folha. A arte existente foi mantida.",
 			"invalidItemGridLayout": "O PixelLab retornou uma grade de item inutilizável. A folha tem o layout de quadros errado. A arte existente foi mantida.",
+			"savedFramesUnavailable": "Não há quadros prontos que correspondam ao corpo e ao equipamento atuais. Nenhuma geração foi solicitada.",
+			"itemMoveSaveConflict": "Este personagem ou item mudou enquanto seus quadros eram gerados. A arte existente foi mantida; os quadros prontos continuam em Atividade.",
 			"savedFrameMissing": "Um quadro salvo deste item está faltando no armazenamento."
 		}
 	},

@@ -2,7 +2,8 @@ import { expect, test } from 'vitest';
 import { generationLogMessage, generationStatus } from '../../src/studio/generationStatus.ts';
 import type { Gen } from '../../src/studio/state.svelte.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
-import { message, type Message } from '../../src/lib/message.ts';
+import { loggedMessage, message, type LoggedMessage, type Message } from '../../src/lib/message.ts';
+import { automaticRepairError } from '../../src/lib/items/items.ts';
 
 type Vars = Parameters<typeof message>[1];
 const m = (key: string, vars?: Vars) =>
@@ -71,7 +72,12 @@ test('local checks and terminal states never promise zero seconds', () => {
 		status([record('lost', { error: 'Unknown response' })], 0, {
 			...generation(),
 			phase: 'failed',
-			error: 'call 1 lost: Unknown response'
+			// the log names the stopped call by its index, never by matching its English line
+			error: {
+				key: 'generation.outcome.callStopped',
+				text: 'call 1 lost: Unknown response',
+				call: 1
+			} as LoggedMessage
 		}).detail
 	).toEqual(
 		message('generation.outcome.callError', {
@@ -85,19 +91,15 @@ test('local checks and terminal states never promise zero seconds', () => {
 	);
 });
 
-test('persisted automatic repair blocks localize both the failure and the plan reason', () => {
-	const raw =
-		'error: Automatic equipment repair is unavailable: Needs PixelLab Tier 1 or higher. No request sent.. Existing artwork was kept; manual review is needed.';
-	const render = (value: Message | string) => {
-		expect(value).toEqual(
-			message('itemRoute.errors.automaticRepairUnavailable', {
-				reason: message('activity.planWait.tier', { tier: 1 })
-			})
-		);
-		return 'translated repair block';
-	};
-	expect(generationLogMessage(generation(), [], raw, { ...formatters, render })).toBe(
-		'translated repair block'
+// Rewritten on purpose (2026-11-23): logs now keep a translated error as its Message, so the English line is no longer parsed.
+test('logged automatic repair blocks keep both the failure and the plan reason translated', () => {
+	const logged = loggedMessage(
+		automaticRepairError('Needs PixelLab Tier 1 or higher. No request sent.')
+	);
+	expect(generationLogMessage(generation(), [], logged, formatters)).toEqual(
+		message('itemRoute.errors.automaticRepairUnavailable', {
+			reason: message('activity.planWait.tier', { tier: 1 })
+		})
 	);
 });
 

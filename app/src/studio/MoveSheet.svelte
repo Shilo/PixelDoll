@@ -42,11 +42,6 @@
 	import type { StoredProject } from '../lib/store/project.ts';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
-	import {
-		INVALID_ITEM_GRID,
-		ITEM_MOVE_SAVE_CONFLICT,
-		SAVED_FRAMES_UNAVAILABLE
-	} from '../lib/items/run.ts';
 	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
@@ -61,7 +56,6 @@
 		type StateJointFitQuote,
 		type StateJointFitReview
 	} from './stateJointFit.ts';
-	import { REPAIR_BATCH_MISALIGNED } from '../lib/items/items.ts';
 	import {
 		PaidStepError,
 		type PaidReview as PaidReviewData
@@ -121,7 +115,14 @@
 	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
-	import { errorText, LocalizedError, message, type Message } from '../lib/message.ts';
+	import {
+		errorKey,
+		errorTranslation,
+		LocalizedError,
+		message,
+		sameMessage,
+		type Message
+	} from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
@@ -672,17 +673,23 @@
 			!moving.spec.replace &&
 			(moving.spec.itemMethod === 'grid'
 				? !!moving.spec.itemReview &&
-					!errorText(moving.error).startsWith(INVALID_ITEM_GRID) &&
 					// A misaligned batch replays as misaligned: only a re-roll of that batch can change it.
-					!errorText(moving.error).startsWith(REPAIR_BATCH_MISALIGNED) &&
-					!errorText(moving.error).startsWith(SAVED_FRAMES_UNAVAILABLE) &&
+					!(
+						[
+							'itemRoute.errors.invalidItemGridSheet',
+							'itemRoute.errors.invalidItemGridLayout',
+							'itemRoute.errors.repairBatchMisaligned',
+							'itemRoute.errors.savedFramesUnavailable'
+						] as const
+					).some((key) => key === errorKey(moving.error)) &&
 					$queue.jobs.some(
 						(job) =>
 							job.activityScope === moving.spec?.activityScope &&
 							job.endpoint === (moving.spec?.redrawItem ? '/edit-images-v2' : '/inpaint-v3') &&
 							job.state === 'done'
 					)
-				: !moving.spec.itemReview && errorText(moving.error).startsWith(ITEM_MOVE_SAVE_CONFLICT))
+				: !moving.spec.itemReview &&
+					errorKey(moving.error) === 'itemRoute.errors.itemMoveSaveConflict')
 	);
 	const retrySpec = $derived<MoveSpec | undefined>(
 		moving.spec
@@ -740,10 +747,11 @@
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
 	let paid = $state.raw<MovePaidReview | null>(null);
+	// The same stop by its code and values, never by comparing displayed text.
 	const errorInReview = $derived(
 		!!moving.error &&
 			!!paid?.views.some((view) =>
-				view.notes.some((note) => displayNestedMessage(note) === displayError(moving.error))
+				view.notes.some((note) => sameMessage(note, errorTranslation(moving.error)))
 			)
 	);
 	const hasFrameRecovery = $derived(

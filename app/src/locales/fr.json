@@ -2212,7 +2212,7 @@
 			"bodyFramesTheirQuality": "Ces images du corps ou leurs contrôles de qualité ont changé depuis la vérification. Rien n’a été enregistré et aucune requête n’a été envoyée. Vérifiez-les à nouveau.",
 			"characterChangedAnotherTab2": "Ce personnage a été modifié dans un autre onglet avant que l’animation puisse être enregistrée. Rouvrez-le avant de réessayer.",
 			"demoStandingReferenceMissing": "La référence debout de la démo est manquante.",
-			"resultMissingStorage": "résultat {label} absent du stockage",
+			"resultMissingStorage": "Un résultat payé manque dans le stockage de ce navigateur.",
 			"pixellabReturnedIncompleteInvalid": "{direction} : PixelLab a renvoyé des articulations debout incomplètes ou invalides. L’animation n’a pas été lancée à partir de ces articulations ; les résultats existants sont conservés.",
 			"pixellabReturnedWrongNumber": "{move} {direction} : PixelLab a renvoyé un nombre d’images incorrect. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
 			"animationExceedsPxFrame": "{move} {direction} : les images du corps ne tiennent pas dans le cadre de {w} px. Elles ont été conservées pour vérification ; rien n’a été enregistré.",
@@ -2243,8 +2243,8 @@
 			"cachedBodyRenderIncomplete": "{direction} : le rendu du corps en cache est incomplet.",
 			"cachedBodyFramesDo": "{direction} : les images du corps en cache ne correspondent pas à ce personnage. Aucun corps n’a été régénéré.",
 			"demoStandingBodyFacing": "La démo n’a pas de corps debout orienté {id}.",
-			"requestStopped": "{label} : {state}{error}",
-			"requestStoppedResume": "{label} : {state}{error}. La génération s’est arrêtée sans renvoi. Vérifiez cette requête dans Activité avant de recommencer.",
+			"requestStopped": "Une requête PixelLab s’est terminée avec l’état {state}{error}.",
+			"requestStoppedResume": "Une requête PixelLab s’est terminée avec l’état {state}{error}. La génération s’est arrêtée sans renvoyer la requête. Vérifiez cette requête dans Activité avant de recommencer.",
 			"promptLength": "Saisissez un prompt de 1 à 2 000 caractères.",
 			"invalidSeed": "Seed invalide.",
 			"invalidCamera": "Caméra invalide.",
@@ -2702,6 +2702,8 @@
 			"paletteSaveChanged": "Cet équipement, le corps ou le matériau a changé. Les couleurs existantes ont été conservées. Vérifiez de nouveau la mise en correspondance.",
 			"invalidItemGridSheet": "PixelLab a renvoyé une grille d’objet inutilisable. Une seule feuille était attendue. Le visuel existant a été conservé.",
 			"invalidItemGridLayout": "PixelLab a renvoyé une grille d’objet inutilisable. La feuille a une disposition d’images incorrecte. Le visuel existant a été conservé.",
+			"savedFramesUnavailable": "Aucune image terminée ne correspond au corps et à l’équipement actuels. Aucune génération n’a été demandée.",
+			"itemMoveSaveConflict": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité.",
 			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage."
 		}
 	},

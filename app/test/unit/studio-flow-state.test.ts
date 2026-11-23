@@ -449,6 +449,25 @@ test('a paid step failure keeps its review across a reload', async () => {
 	expect((s.moving.error as InstanceType<typeof paid.PaidStepError>).paid).toEqual(step);
 });
 
+test('any translated move failure keeps its code across a reload, so recovery never reads its English', async () => {
+	const { LocalizedError: Thrown } = await import('../../src/lib/message.ts');
+	mocks.move.mockRejectedValueOnce(
+		new Thrown('Saved frames changed.', 'itemRoute.errors.itemMoveSaveConflict', { n: 1 })
+	);
+	const first = await import('../../src/studio/state.svelte.ts');
+	await first.startMove('project', { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 });
+	const stored = mocks.put.mock.calls.findLast(
+		([, , record]) => (record as { status?: string }).status === 'failed'
+	)![2];
+	vi.resetModules();
+	const message = await import('../../src/lib/message.ts');
+	const s = await import('../../src/studio/state.svelte.ts');
+	mocks.get.mockImplementation(async (_store, id) => (id === 'studio-move' ? stored : undefined));
+	await s.resumeMove();
+	expect(message.errorKey(s.moving.error)).toBe('itemRoute.errors.itemMoveSaveConflict');
+	expect(message.errorTranslation(s.moving.error)?.vars).toEqual({ n: 1 });
+});
+
 test.each(['failed', 'running'] as const)(
 	'clears %s rig setup work for a missing character without reopening or restarting it',
 	async (status) => {

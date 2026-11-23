@@ -387,7 +387,7 @@ test('planned direction poses stream landed cells while the remaining original c
 	expect(thumbnail.data.some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
 	await land(call('/animate-with-skeleton-v3', 'east')!.id, Array(4).fill(dressed));
 	const res = await run;
-	expect(d.log.at(-1)).toMatch(/passed the checks/);
+	expect(d.log.at(-1)).toMatchObject({ key: 'generation.outcome.passed' });
 	expect(q.order.map((o) => o.path).sort()).toEqual([
 		'/animate-with-skeleton-v3',
 		'/animate-with-skeleton-v3',

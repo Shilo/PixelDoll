@@ -2212,7 +2212,7 @@
 			"bodyFramesTheirQuality": "Diese Grundkörperframes oder ihre Qualitätsprüfungen haben sich seit der Prüfung geändert. Es wurde nichts gespeichert und keine Anfrage gesendet. Prüfe sie erneut.",
 			"characterChangedAnotherTab2": "Diese Figur wurde in einem anderen Tab geändert, bevor die Animation gespeichert werden konnte. Öffne sie vor einem neuen Versuch erneut.",
 			"demoStandingReferenceMissing": "Die Standreferenz der Demo fehlt.",
-			"resultMissingStorage": "Ergebnis {label} fehlt im Speicher",
+			"resultMissingStorage": "Ein bezahltes Ergebnis fehlt im Speicher dieses Browsers.",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab hat unvollständige oder ungültige Gelenkpunkte für die Standpose zurückgegeben. Mit diesen Gelenken wurde keine Animation gestartet. Vorhandene Ergebnisse bleiben erhalten.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab hat die falsche Anzahl an Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
 			"animationExceedsPxFrame": "{move} {direction}: Die Körper-Frames passen nicht in den {w} px großen Frame. Sie wurden zur Prüfung behalten; nichts wurde gespeichert.",
@@ -2243,8 +2243,8 @@
 			"cachedBodyRenderIncomplete": "{direction}: Das zwischengespeicherte Grundkörper-Rendering ist unvollständig.",
 			"cachedBodyFramesDo": "{direction}: Die zwischengespeicherten Grundkörperframes passen nicht zu dieser Figur. Der Grundkörper wurde nicht neu generiert.",
 			"demoStandingBodyFacing": "Für die Demo fehlt die Standpose in Blickrichtung {id}.",
-			"requestStopped": "{label}: {state}{error}",
-			"requestStoppedResume": "{label}: {state}{error}. Die Generierung wurde gestoppt, ohne die Anfrage erneut zu senden. Prüfe diese Anfrage unter „Aktivität“, bevor du neu startest.",
+			"requestStopped": "Eine PixelLab-Anfrage endete mit dem Status {state}{error}.",
+			"requestStoppedResume": "Eine PixelLab-Anfrage endete mit dem Status {state}{error}. Die Generierung wurde gestoppt, ohne die Anfrage erneut zu senden. Prüfe diese Anfrage unter „Aktivität“, bevor du neu startest.",
 			"promptLength": "Gib einen Prompt mit 1–2.000 Zeichen ein.",
 			"invalidSeed": "Ungültiger Seed.",
 			"invalidCamera": "Ungültige Perspektive.",
@@ -2702,6 +2702,8 @@
 			"paletteSaveChanged": "Der Gegenstand, der Körper oder das Material hat sich geändert. Die vorhandenen Farben wurden beibehalten. Prüfe die Farbanpassung erneut.",
 			"invalidItemGridSheet": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Erwartet war genau ein Sheet. Die vorhandene Grafik bleibt erhalten.",
 			"invalidItemGridLayout": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Das Sheet hat ein falsches Frame-Layout. Die vorhandene Grafik bleibt erhalten.",
+			"savedFramesUnavailable": "Fertige Frames, die zum aktuellen Grundkörper und zur Ausrüstung passen, sind nicht verfügbar. Es wurde keine Generierung angefordert.",
+			"itemMoveSaveConflict": "Diese Figur oder dieser Gegenstand hat sich geändert, während die Frames generiert wurden. Die vorhandenen Grafiken wurden behalten; fertige Frames bleiben unter „Aktivität“.",
 			"savedFrameMissing": "Ein gespeicherter Frame dieses Gegenstands fehlt im Speicher."
 		}
 	},

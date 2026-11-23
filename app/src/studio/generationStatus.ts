@@ -1,7 +1,7 @@
 import { queueErrorParts, type JobRec, type RecState } from '../lib/pixellab/queue.ts';
-import { itemGenerationMinutes, localizedAutomaticRepairError } from '../lib/items/items.ts';
+import { itemGenerationMinutes } from '../lib/items/items.ts';
 import type { Gen } from './state.svelte.ts';
-import { message, type Message } from '../lib/message.ts';
+import { message, type LoggedMessage, type Message } from '../lib/message.ts';
 
 export const GENERATION_STOPPED = 'Generation stopped. Review Activity before trying again.';
 export const NO_USABLE_FRAMES = 'PixelLab did not return usable frames';
@@ -24,17 +24,16 @@ export function queueErrorMessage(record: JobRec, render: RenderMessage) {
 	return parts.length > 1 ? parts.map(render).join(' | ') : parts[0];
 }
 
+/** The stopped paid call a log entry names by its index, read from that call's record. */
 export function generationCallOutcome(g: Gen, jobs: JobRec[], raw = g.error) {
-	if (!raw) return;
-	for (const [index, call] of g.draft.calls.entries()) {
-		const record = jobs.find((job) => job.id === call.recId);
-		if (
-			record &&
-			(record.state === 'failed' || record.state === 'lost' || record.state === 'canceled') &&
-			raw === `call ${index + 1} ${record.state}: ${record.error ?? ''}`
-		)
-			return { record, index: index + 1 };
-	}
+	const index = raw && typeof raw !== 'string' ? (raw as LoggedMessage).call : undefined;
+	if (!index) return;
+	const record = jobs.find((job) => job.id === g.draft.calls[index - 1]?.recId);
+	if (
+		record &&
+		(record.state === 'failed' || record.state === 'lost' || record.state === 'canceled')
+	)
+		return { record, index };
 }
 
 export function generationLogMessage(
@@ -43,19 +42,10 @@ export function generationLogMessage(
 	raw: string | Message,
 	{ render, formatNumber }: OutcomeFormatters
 ) {
-	if (typeof raw !== 'string') return message(raw.key, raw.vars);
-	switch (raw) {
-		case 'PixelLab returned incomplete or malformed standing frames. No automatic retry was made.':
-			return message('generation.outcome.standingFrames');
-		case 'Every frame passed the checks.':
-			return message('generation.outcome.passed');
-		case 'Issues detected. Review the item and choose Try again or Accept as is. No automatic retry was made.':
-			return message('generation.outcome.reviewIssues');
-	}
-	const repairError = localizedAutomaticRepairError(raw);
-	if (repairError) return render(repairError.translation);
+	// Entries are typed: English text alone is an untranslated error (or data from an earlier version), shown as is.
+	if (typeof raw === 'string') return raw;
 	const outcome = generationCallOutcome(g, jobs, raw);
-	if (!outcome) return raw;
+	if (!outcome) return message(raw.key, raw.vars);
 	const { record, index } = outcome;
 	const error = queueErrorMessage(record, render);
 	return message(error ? 'generation.outcome.callError' : 'generation.outcome.callStopped', {

@@ -359,7 +359,6 @@ async function dryRecord(req: Req, label: string, dry: DryRun): Promise<JobRec> 
 			`${label}: ${stopped.state}. Generation stopped without resending.`,
 			'create.errors.requestStoppedResume',
 			{
-				label,
 				state: activityStateMessage(stopped.state),
 				error: stopped.error ? ` (${stopped.error.slice(0, 160)})` : ''
 			},
@@ -445,7 +444,6 @@ export async function run(
 			`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Generation stopped without resending. Review this request in Activity before starting again.' : ''}`,
 			resumeSafe ? 'create.errors.requestStoppedResume' : 'create.errors.requestStopped',
 			{
-				label,
 				state: activityStateMessage(r.state),
 				error: r.error ? ` (${r.error.slice(0, 160)})` : ''
 			}
@@ -485,8 +483,7 @@ export async function imagesOf(
 			if (!blob)
 				throw new LocalizedError(
 					`result ${x.label} missing in storage`,
-					'create.errors.resultMissingStorage',
-					{ label: x.label }
+					'create.errors.resultMissingStorage'
 				);
 			return { label: x.label, img: await decodePng(blob) };
 		})

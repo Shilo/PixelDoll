@@ -2212,7 +2212,7 @@
 			"bodyFramesTheirQuality": "Estos fotogramas del cuerpo o sus comprobaciones de calidad cambiaron desde la revisión. No se guardó nada ni se hizo ninguna solicitud. Revísalos de nuevo.",
 			"characterChangedAnotherTab2": "Este personaje cambió en otra pestaña antes de que se pudiera guardar la animación. Vuelve a abrirlo antes de reintentar.",
 			"demoStandingReferenceMissing": "Falta la referencia de pie de la demo.",
-			"resultMissingStorage": "falta el resultado {label} en el almacenamiento",
+			"resultMissingStorage": "Falta un resultado pagado en el almacenamiento de este navegador.",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab devolvió articulaciones de pie incompletas o no válidas. No se inició la animación a partir de ellas; se conservan los resultados existentes.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab devolvió una cantidad incorrecta de fotogramas. No se inició ningún reintento de pago. Revisa Actividad antes de pedir otro intento.",
 			"animationExceedsPxFrame": "{move} {direction}: los fotogramas del cuerpo no caben en el marco de {w} px. Se guardaron para revisarlos; no se guardó nada en el personaje.",
@@ -2243,8 +2243,8 @@
 			"cachedBodyRenderIncomplete": "{direction}: el renderizado del cuerpo en caché está incompleto.",
 			"cachedBodyFramesDo": "{direction}: los fotogramas del cuerpo en caché no encajan con este personaje. No se volvió a generar ningún cuerpo.",
 			"demoStandingBodyFacing": "La demo no tiene una vista del cuerpo de pie en dirección {id}.",
-			"requestStopped": "{label}: {state}{error}",
-			"requestStoppedResume": "{label}: {state}{error}. La generación se detuvo sin reenviar nada. Revisa esta solicitud en Actividad antes de volver a empezar.",
+			"requestStopped": "Una solicitud a PixelLab terminó con el estado {state}{error}.",
+			"requestStoppedResume": "Una solicitud a PixelLab terminó con el estado {state}{error}. La generación se detuvo sin volver a enviar la solicitud. Revisa esta solicitud en Actividad antes de volver a empezar.",
 			"promptLength": "Escribe un prompt de 1 a 2000 caracteres.",
 			"invalidSeed": "Semilla no válida.",
 			"invalidCamera": "Cámara no válida.",
@@ -2702,6 +2702,8 @@
 			"paletteSaveChanged": "El objeto, el cuerpo o el material ha cambiado. Se conservaron los colores existentes. Vuelve a revisar el ajuste.",
 			"invalidItemGridSheet": "PixelLab devolvió una cuadrícula de objeto inutilizable. Se esperaba una sola hoja. Se conservaron las imágenes anteriores.",
 			"invalidItemGridLayout": "PixelLab devolvió una cuadrícula de objeto inutilizable. La hoja tiene un diseño de fotogramas incorrecto. Se conservaron las imágenes anteriores.",
+			"savedFramesUnavailable": "No hay fotogramas terminados que coincidan con el cuerpo y el equipo actuales. No se solicitó ninguna generación.",
+			"itemMoveSaveConflict": "Este personaje u objeto cambió mientras se generaban sus fotogramas. Se conservó el arte existente; los fotogramas terminados siguen en Actividad.",
 			"savedFrameMissing": "Falta en el almacenamiento un fotograma guardado de este objeto."
 		}
 	},
