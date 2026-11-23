@@ -43,7 +43,7 @@
 	} from './state.svelte.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
-	import { displayError, displayMessage } from '../lib/i18n.ts';
+	import { displayError, displayNestedMessage } from '../lib/i18n.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import type { ImageReference } from '../lib/image/reference.ts';
@@ -397,7 +397,7 @@
 		</div>
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
 		{#each unposedNotes as note, i (i)}<p class="notice warn small">
-				{displayMessage(note)}
+				{displayNestedMessage(note)}
 			</p>{/each}
 		<PoseIssues issues={[...new Set(chosen.flatMap(({ offer }) => offer?.poseIssues ?? []))]} />
 	{:else if candidate}

@@ -2,7 +2,7 @@
 	import Stage from './Stage.svelte';
 	import Sheet from './Sheet.svelte';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
-	import { displayMessage } from '../lib/i18n.ts';
+	import { displayMessage, displayNestedMessage } from '../lib/i18n.ts';
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
@@ -197,7 +197,8 @@
 						></span
 					>
 					{#if poseOffer?.error}<span role="status">{displayMessage(poseOffer.error)}</span>{/if}
-					{#each poseOffer?.unposed ?? [] as note, i (i)}<span>{displayMessage(note)}</span>{/each}
+					{#each poseOffer?.unposed ?? [] as note, i (i)}<span>{displayNestedMessage(note)}</span
+						>{/each}
 					<PoseIssues issues={poseOffer?.poseIssues ?? []} />
 					{#if poseTier}<TierNotice
 							id="stage-pose-tier"
@@ -205,7 +206,7 @@
 							feature={t('stageNote.makingMissingFrames')}
 						/>{/if}
 				{:else if unposedNotes.length}
-					{#each unposedNotes as note, i (i)}<span>{displayMessage(note)}</span>{/each}
+					{#each unposedNotes as note, i (i)}<span>{displayNestedMessage(note)}</span>{/each}
 				{:else if remake?.standing && !copyOnly}
 					<button
 						class="bu-action btn sm"

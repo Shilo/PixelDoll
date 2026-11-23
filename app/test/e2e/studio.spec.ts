@@ -7015,22 +7015,17 @@ test('a view kept without poses names the move and view to make again before equ
 	await expect(
 		page.getByRole('button', { name: /^Idle .*Joints not found: redraw it to animate items on it/ })
 	).toBeVisible();
-	// Equipment that still names that view (a move queued before the Keep) stops with a plain next step and buys nothing.
+	// The item's details name that view and its way on, with no price for it; nothing is bought.
 	await page.evaluate(async (itemId) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
-		void s.startMove(s.doc.id, {
-			id: 'idle',
-			frames: 4,
-			items: [itemId],
-			dirs: ['south', 'east', 'north', 'west'],
-			itemsOnly: true,
-			seed: 1
-		});
-		s.ui.sheet = 'move';
+		s.ui.anim = 'idle';
+		s.wear(itemId);
+		s.pick(itemId);
 	}, itemId);
-	await expect(page.getByRole('dialog')).toContainText(
-		'Idle West was kept without poses. Make that view again before fitting equipment there. No generation was requested.'
+	const details = await selectedItemDetails(page);
+	await expect(details).toContainText(
+		'Idle West was kept without poses, so equipment is not fitted there. Make that view again to fit it.'
 	);
 	expect(posts.length).toBe(sent);
 });

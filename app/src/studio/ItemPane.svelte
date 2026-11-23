@@ -4,7 +4,7 @@
 	import { openerLabel } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
-	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
 	import { toast } from './state.svelte.ts';
 	import type { Message } from '../lib/message.ts';
 	import { displayDirectionInSentence, displayDirectionShort } from './displayDirection.ts';
@@ -609,7 +609,7 @@
 							{displayMessage(missingOffer.error)}
 						</p>{/if}
 					{#each missingOffer?.unposed ?? [] as note, i (i)}<p class="notice warn small">
-							{displayMessage(note)}
+							{displayNestedMessage(note)}
 						</p>{/each}
 					<PoseIssues issues={missingOffer?.poseIssues ?? []} />
 					{#if missingTier}<TierNotice
@@ -623,7 +623,7 @@
 				</div>
 			{/if}
 			{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
-					{displayMessage(note)}
+					{displayNestedMessage(note)}
 				</p>{/each}
 			{#if health === 'stale'}<p class="notice warn small">
 					<TriangleAlert size={14} />{t('itemPane.madeForAnotherBodyItMayNot')}
