@@ -43,12 +43,15 @@ import { loadProject, readStoredImage, type StoredProject } from '../lib/store/p
 import { sameClipName, withClipWriteLock } from './clipName.ts';
 import { stateAttempts } from './stateRecovery.ts';
 import {
+	MAX_FRAME,
+	canvasLift,
 	frameChangeText,
 	frameFacts,
 	freeOf,
 	makeRoom,
 	reframeCharacter,
 	roomShort,
+	roundedFrame,
 	standingRoom,
 	standingViews,
 	type FrameChange
@@ -1110,16 +1113,12 @@ async function completedCreation(
 	return saved;
 }
 
-/** A drawn view placed on the creation frame: a V3 reference keeps its own height as the character canvas. */
+/** The character canvas of a drawn view: a V3 reference keeps its own height. */
+const drawnCanvas = (spec: CreateSpec, img: Img, cell: number) =>
+	Math.min(spec.reference && !spec.model ? img.h : img.w, cell);
+/** A drawn view placed on the creation frame. */
 const drawnView = (spec: CreateSpec, img: Img, cell: number) =>
-	normalize(
-		img,
-		cell,
-		cell,
-		128,
-		Math.min(spec.reference && !spec.model ? img.h : img.w, cell),
-		spec.lift ?? 0
-	);
+	normalize(img, cell, cell, 128, drawnCanvas(spec, img, cell), spec.lift ?? 0);
 
 export interface CreatePaidOption extends PaidOption {
 	spec: CreateSpec;
@@ -1131,16 +1130,8 @@ export interface CreatePaidReview extends PaidReview {
  *  from them for free, with a new registration of the same views, or only with a new draw (the sheet's Try again). Undefined
  *  when nothing was drawn yet or the character is already saved. */
 export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidReview | undefined> {
-	const scope = new AbortController(),
-		dry: DryRun = { records: [], checks: 0, unmeasured: false, running: false };
-	dryRuns.set(scope.signal, dry);
-	let outcome: unknown;
-	try {
-		await createCharacter(spec, undefined, undefined, scope.signal);
-		return undefined;
-	} catch (error) {
-		outcome = error;
-	}
+	const { dry, outcome } = await replayCreate(spec);
+	if (!outcome) return undefined;
 	const base = dry.records[0]; // the draw is the first request
 	if (!base) return undefined;
 	const cell = spec.frame ?? CELL,
@@ -1167,11 +1158,7 @@ export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidR
 	const options: CreatePaidOption[] = [];
 	const paid = outcome instanceof PaidStepError ? outcome.paid : undefined;
 	if (outcome instanceof Unpaid) {
-		// Everything bought so far is reused; only an unbought registration or check is still charged.
-		const gens = +(
-			(outcome.path === '/create-character-v3' && !outcome.running ? 0.25 : 0) +
-			dry.checks * EST
-		).toFixed(2);
+		const gens = unpaidCreateGens(outcome, dry);
 		options.push({
 			id: 'resume',
 			label: message('createReview.resume'),
@@ -1191,8 +1178,85 @@ export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidR
 			primary: true,
 			spec: { ...spec, registrationSeed: salt(spec.registrationSeed ?? spec.seed) }
 		});
-	}
+	} else if (paid?.step === 'draw' && paid.failure === 'overflow')
+		options.push(...(await placementOptions(spec, drawn, base)));
 	return { views, spent: spentGens(dry.records), recordIds: dry.records.map((r) => r.id), options };
+}
+/** A creation replayed from the request cache only: the records it reused, and why it stopped (undefined: it completed). */
+async function replayCreate(spec: CreateSpec): Promise<{ dry: DryRun; outcome: unknown }> {
+	const scope = new AbortController(),
+		dry: DryRun = { records: [], checks: 0, unmeasured: false, running: false };
+	dryRuns.set(scope.signal, dry);
+	try {
+		await createCharacter(spec, undefined, undefined, scope.signal);
+		return { dry, outcome: undefined };
+	} catch (error) {
+		return { dry, outcome: error };
+	}
+}
+/** Everything a replay bought is reused; only an unbought registration (0.25) and joint checks are still charged. */
+const unpaidCreateGens = (outcome: Unpaid, dry: DryRun) =>
+	+(
+		(outcome.path === '/create-character-v3' && !outcome.running ? 0.25 : 0) +
+		dry.checks * EST
+	).toFixed(2);
+/** Ways on for drawn views that do not fit their frame. The paid draw does not depend on the frame or the placement
+ *  (drawRequest), so the same views are placed again, raised in the same frame or in the smallest larger frame they fit,
+ *  and only their new registration (and any joint check) is bought: each choice is priced by a replay from the cache. */
+async function placementOptions(
+	spec: CreateSpec,
+	drawn: { label: string; img: Img }[],
+	base: JobRec
+): Promise<CreatePaidOption[]> {
+	const cell = spec.frame ?? CELL,
+		views = DIRECTIONS.map((d) => drawn.find((view) => view.label === d)?.img);
+	if (views.some((img) => !img)) return [];
+	const fits = (candidate: CreateSpec, frame: number) =>
+		views.every((img) => {
+			const placed = drawnView(candidate, img!, frame);
+			return !placed.cutPx && !!opaqueBox(placed.img);
+		});
+	const candidates: Omit<CreatePaidOption, 'gens' | 'paid' | 'primary'>[] = [];
+	const raise = views.map((img) =>
+		liftToFit(img!, cell, cell, 128, drawnCanvas(spec, img!, cell), -(spec.lift ?? 0))
+	);
+	if (raise.every((px) => px !== null) && Math.max(...raise) > 0) {
+		const px = Math.max(...raise);
+		candidates.push({
+			id: 'lift',
+			label: message('createReview.lift'),
+			detail: message('createReview.liftDetail', { px, size: cell }),
+			spec: { ...spec, lift: (spec.lift ?? 0) + px }
+		});
+	}
+	// A new frame takes the placement a new character of that frame gets (startCreate).
+	const framed = (frame: number): CreateSpec => ({
+		...spec,
+		frame,
+		lift: canvasLift(spec.size, frame) || undefined
+	});
+	let smallest: number | undefined;
+	for (let frame = cell + 1; frame <= MAX_FRAME && !smallest; frame++)
+		if ((frame - spec.size) % 2 === 0 && fits(framed(frame), frame)) smallest = frame;
+	if (smallest) {
+		const rounded = roundedFrame(spec.size, smallest),
+			size = fits(framed(rounded), rounded) ? rounded : smallest;
+		candidates.push({
+			id: 'enlarge-frame',
+			label: message('createReview.largerFrame', { size }),
+			detail: message('createReview.largerFrameDetail', { size }),
+			spec: framed(size)
+		});
+	}
+	const options: CreatePaidOption[] = [];
+	for (const candidate of candidates) {
+		const { dry, outcome } = await replayCreate(candidate.spec);
+		// The paid draw must be reused, never bought again; anything but a completion or an unbought step is no way on.
+		if (dry.records[0]?.id !== base.id || (outcome && !(outcome instanceof Unpaid))) continue;
+		const gens = outcome instanceof Unpaid ? unpaidCreateGens(outcome, dry) : 0;
+		options.push({ ...candidate, gens, paid: gens > 0, primary: !options.length });
+	}
+	return options;
 }
 
 /** Insert-only publication. Concurrent/recovered completion can never replace an already customized character. */

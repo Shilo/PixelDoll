@@ -2987,7 +2987,11 @@
 	"createReview": {
 		"resume": "支払い済みの結果で続ける",
 		"register": "描いた向きをもう一度登録",
-		"registerDetail": "支払い済みの描画はそのままで、同じ向きの登録を新しく1回購入します。"
+		"registerDetail": "支払い済みの描画はそのままで、同じ向きの登録を新しく1回購入します。",
+		"lift": "持ち上げて収める",
+		"liftDetail": "支払い済みの描画はそのままで、各向きを{size} pxフレーム内で{px} px持ち上げ、同じ向きの登録を新しく1回購入します。",
+		"largerFrame": "{size} pxフレームを使う",
+		"largerFrameDetail": "支払い済みの描画はそのままで、同じ向きを{size} pxフレームに配置し、登録を新しく1回購入します。"
 	},
 	"adjustFrame": {
 		"title": "フレームを調整",

@@ -3067,7 +3067,11 @@
 	"createReview": {
 		"resume": "Continue with paid results",
 		"register": "Register the drawn views again",
-		"registerDetail": "Keeps the paid drawing and buys one new registration of the same views."
+		"registerDetail": "Keeps the paid drawing and buys one new registration of the same views.",
+		"lift": "Raise to fit",
+		"liftDetail": "Keeps the paid drawing, raises every view {px} px in its {size} px frame and buys one new registration of the same views.",
+		"largerFrame": "Use a {size} px frame",
+		"largerFrameDetail": "Keeps the paid drawing, places the same views in a {size} px frame and buys one new registration."
 	},
 	"adjustFrame": {
 		"title": "Adjust frame",

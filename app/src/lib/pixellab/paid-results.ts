@@ -31,7 +31,8 @@ export class PaidStepError extends LocalizedError {
 	}
 }
 
-/** Every way on a review can offer. `enlarge-frame` is Make room and continue: Adjust frame first, then the same move. */
+/** Every way on a review can offer. `enlarge-frame` is a larger frame: Make room and continue for a move (Adjust frame first,
+ *  then the same move), or the same paid drawing placed in a larger frame for a new character. */
 export type PaidOptionId =
 	| 'resume'
 	| 'lift'

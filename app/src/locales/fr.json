@@ -3067,7 +3067,11 @@
 	"createReview": {
 		"resume": "Continuer avec les résultats payés",
 		"register": "Réenregistrer les vues dessinées",
-		"registerDetail": "Conserve le dessin payé et achète un nouvel enregistrement des mêmes vues."
+		"registerDetail": "Conserve le dessin payé et achète un nouvel enregistrement des mêmes vues.",
+		"lift": "Remonter pour faire tenir",
+		"liftDetail": "Conserve le dessin payé, remonte chaque vue de {px} px dans son cadre de {size} px et achète un nouvel enregistrement des mêmes vues.",
+		"largerFrame": "Utiliser un cadre de {size} px",
+		"largerFrameDetail": "Conserve le dessin payé, place les mêmes vues dans un cadre de {size} px et achète un nouvel enregistrement."
 	},
 	"adjustFrame": {
 		"title": "Ajuster le cadre",

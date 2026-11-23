@@ -2987,7 +2987,11 @@
 	"createReview": {
 		"resume": "使用付费结果继续",
 		"register": "重新登记已绘制的朝向",
-		"registerDetail": "保留已付费的绘制，并为相同朝向购买一次新的登记。"
+		"registerDetail": "保留已付费的绘制，并为相同朝向购买一次新的登记。",
+		"lift": "上移以放入",
+		"liftDetail": "保留已付费的绘制，将每个朝向在 {size} px 帧中上移 {px} px，并为相同朝向购买一次新的登记。",
+		"largerFrame": "使用 {size} px 帧",
+		"largerFrameDetail": "保留已付费的绘制，将相同朝向放入 {size} px 帧，并购买一次新的登记。"
 	},
 	"adjustFrame": {
 		"title": "调整帧",

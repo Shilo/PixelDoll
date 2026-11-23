@@ -3067,7 +3067,11 @@
 	"createReview": {
 		"resume": "Continuar con los resultados pagados",
 		"register": "Registrar de nuevo las vistas dibujadas",
-		"registerDetail": "Conserva el dibujo pagado y compra un registro nuevo de las mismas vistas."
+		"registerDetail": "Conserva el dibujo pagado y compra un registro nuevo de las mismas vistas.",
+		"lift": "Subir para que quepa",
+		"liftDetail": "Conserva el dibujo pagado, sube cada vista {px} px en su marco de {size} px y compra un registro nuevo de las mismas vistas.",
+		"largerFrame": "Usar un marco de {size} px",
+		"largerFrameDetail": "Conserva el dibujo pagado, coloca las mismas vistas en un marco de {size} px y compra un registro nuevo."
 	},
 	"adjustFrame": {
 		"title": "Ajustar marco",

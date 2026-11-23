@@ -3067,7 +3067,11 @@
 	"createReview": {
 		"resume": "Mit bezahlten Ergebnissen fortfahren",
 		"register": "Gezeichnete Ansichten neu registrieren",
-		"registerDetail": "Behält die bezahlte Zeichnung und kauft eine neue Registrierung derselben Ansichten."
+		"registerDetail": "Behält die bezahlte Zeichnung und kauft eine neue Registrierung derselben Ansichten.",
+		"lift": "Zum Einpassen anheben",
+		"liftDetail": "Behält die bezahlte Zeichnung, hebt jede Ansicht im {size}-px-Frame um {px} px an und kauft eine neue Registrierung derselben Ansichten.",
+		"largerFrame": "{size}-px-Frame verwenden",
+		"largerFrameDetail": "Behält die bezahlte Zeichnung, setzt dieselben Ansichten in einen {size}-px-Frame und kauft eine neue Registrierung."
 	},
 	"adjustFrame": {
 		"title": "Frame anpassen",

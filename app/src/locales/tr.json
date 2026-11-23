@@ -3067,7 +3067,11 @@
 	"createReview": {
 		"resume": "Ücretli sonuçlarla devam et",
 		"register": "Çizilen görünümleri yeniden kaydet",
-		"registerDetail": "Ücretli çizimi korur ve aynı görünümler için yeni bir kayıt satın alır."
+		"registerDetail": "Ücretli çizimi korur ve aynı görünümler için yeni bir kayıt satın alır.",
+		"lift": "Sığdırmak için yükselt",
+		"liftDetail": "Ücretli çizimi korur, her görünümü {size} px karede {px} px yükseltir ve aynı görünümler için yeni bir kayıt satın alır.",
+		"largerFrame": "{size} px kare kullan",
+		"largerFrameDetail": "Ücretli çizimi korur, aynı görünümleri {size} px kareye yerleştirir ve yeni bir kayıt satın alır."
 	},
 	"adjustFrame": {
 		"title": "Kareyi ayarla",

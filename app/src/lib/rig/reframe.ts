@@ -92,7 +92,11 @@ export function roomFrame(size: number, room: FrameRoom, max = MAX_FRAME): numbe
 		need.side - room.right
 	);
 	if (!p) return size;
-	const smallest = size + 2 * p;
+	return roundedFrame(size, size + 2 * p, max);
+}
+/** `smallest` (a frame with the parity of `size`) rounded up to the next multiple of 16 for an even size, the price-verified
+ *  canvases, without crossing a cost step the smallest frame does not, and capped at `max`. */
+export function roundedFrame(size: number, smallest: number, max = MAX_FRAME): number {
 	let frame = size % 2 ? smallest : 16 * Math.ceil(smallest / 16);
 	if (FRAME_COST_STEPS.some((step) => smallest <= step && frame > step)) frame = smallest;
 	return Math.min(frame, capped(size, max));

@@ -2987,7 +2987,11 @@
 	"createReview": {
 		"resume": "Lanjutkan dengan hasil berbayar",
 		"register": "Daftarkan ulang tampilan yang digambar",
-		"registerDetail": "Mempertahankan gambar berbayar dan membeli satu pendaftaran baru untuk tampilan yang sama."
+		"registerDetail": "Mempertahankan gambar berbayar dan membeli satu pendaftaran baru untuk tampilan yang sama.",
+		"lift": "Naikkan agar muat",
+		"liftDetail": "Mempertahankan gambar berbayar, menaikkan setiap tampilan {px} px dalam frame {size} px dan membeli satu pendaftaran baru untuk tampilan yang sama.",
+		"largerFrame": "Gunakan frame {size} px",
+		"largerFrameDetail": "Mempertahankan gambar berbayar, menempatkan tampilan yang sama dalam frame {size} px dan membeli satu pendaftaran baru."
 	},
 	"adjustFrame": {
 		"title": "Sesuaikan frame",
