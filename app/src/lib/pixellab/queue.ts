@@ -412,6 +412,10 @@ export function canReopenQueuedCancellation(record: JobRec, attempt?: number): b
 }
 
 const queuedWithoutJobs = (record: JobRec) => record.state === 'queued' && !record.jobs.length;
+/** An explicit Stop may also replace an automatic cancel of the same unsent row: it must never be reopened later. */
+const unsentForExplicitStop = (record: JobRec) =>
+	queuedWithoutJobs(record) ||
+	(record.state === 'canceled' && !record.jobs.length && !!record.autoCanceledAttempts);
 
 /** setInterval that keeps ticking in background tabs (worker-driven); plain setInterval where Worker is missing (node). */
 let ticker: Worker | null | undefined;
@@ -960,7 +964,14 @@ export class Queue {
 		}
 		// The stored row settles a conditional write this tab failed to save (a Stop another tab saved meanwhile).
 		const entry = this.writes.get(r.id);
-		if (entry?.failed && !entry.pending && !live(r) && r.state === mine.state) {
+		if (
+			entry?.failed &&
+			!entry.pending &&
+			!live(r) &&
+			r.state === mine.state &&
+			// An automatic cancel stored by another tab is not this tab's explicit Stop (it could be reopened later).
+			!r.autoCanceledAttempts === !mine.autoCanceledAttempts
+		) {
 			this.recs.set(r.id, r);
 			this.writes.delete(r.id);
 			return true;
@@ -1782,11 +1793,15 @@ export class Queue {
 				await cancelBeforeSend();
 				return;
 			}
+			// A storage pause no longer holds a request whose own conditional write just landed (storage is proven for it, and
+			// result saves are not failing): rolling it back to queued could leave `submitting` stored if the tab closes.
+			const storageProven =
+				this.paused === 'storage' && (!this.blobBad || this.blobOk > this.blobBad);
 			const held = () =>
 				credentialRevision !== this.keyRevision ||
 				key !== this.key ||
 				this.disconnected ||
-				this.paused ||
+				(this.paused && !storageProven) ||
 				this.deps.now() < this.capacityRetryAt ||
 				this.planWait(r);
 			if (held()) {
@@ -2205,7 +2220,7 @@ export class Queue {
 			r.state = 'canceled';
 			r.finishedAt = this.deps.now();
 			// another tab may already have persisted `submitting` or a job receipt: never overwrite it with a stale cancel
-			const stored = await this.saveIf(r, queuedWithoutJobs);
+			const stored = await this.saveIf(r, queuedOnly ? queuedWithoutJobs : unsentForExplicitStop);
 			if (stored) {
 				this.recs.set(id, stored);
 				this.emit();
@@ -2260,7 +2275,10 @@ export class Queue {
 		if (!r) return;
 		if (r.jobs.length) return this.save(r); // the save a running cancel ends with, whatever its jobs settled to
 		if (r.state !== 'canceled') return;
-		const stored = await this.saveIf(r, queuedWithoutJobs);
+		const stored = await this.saveIf(
+			r,
+			r.autoCanceledAttempts ? queuedWithoutJobs : unsentForExplicitStop
+		);
 		if (!stored) {
 			this.submitScopes.delete(id);
 			return;
