@@ -1791,7 +1791,9 @@
 			{#if repairReview.kept && !moving.repairApplied}<p class="notice warn small">
 					{displayNestedMessage(
 						message('moveSheet.review.stopped', {
-							frames: repairReview.kept.map((index) => formatNumber(index + 1))
+							frames: repairReview.kept.map((index) => formatNumber(index + 1)),
+							count: repairReview.kept.length,
+							n: formatNumber(repairReview.kept.length)
 						})
 					)}
 					{#if repairReview.stoppedBy}{displayNestedMessage(repairReview.stoppedBy)}{/if}
@@ -1803,7 +1805,7 @@
 							>{t('moveSheet.review.frame', { number: formatNumber(index + 1) })}</span
 						>
 						<div class="repair-pair-columns">
-							{#each [{ img: repairReview.current[index], label: t('moveSheet.review.currentFrames'), frameLabel: t( 'moveSheet.review.currentFrame', { number: formatNumber(index + 1) } ) }, { img: frame, label: moving.spec.redrawItem ? t('moveSheet.review.redrawnFrames') : t('moveSheet.review.repairedFrames'), frameLabel: t( moving.spec.redrawItem ? 'moveSheet.review.redrawnFrame' : 'moveSheet.review.repairedFrame', { number: formatNumber(index + 1) } ) }] as version (version.label)}
+							{#each [{ img: repairReview.current[index], label: t('moveSheet.review.currentLabel'), frameLabel: t( 'moveSheet.review.currentFrame', { number: formatNumber(index + 1) } ) }, { img: frame, label: moving.spec.redrawItem ? t('moveSheet.review.redrawnLabel') : t('moveSheet.review.repairedLabel'), frameLabel: t( moving.spec.redrawItem ? 'moveSheet.review.redrawnFrame' : 'moveSheet.review.repairedFrame', { number: formatNumber(index + 1) } ) }] as version (version.label)}
 								<div class="keep-view">
 									<strong class="small">{version.label}</strong>
 									<div class="repair-sprite" style:aspect-ratio={`${frame.w} / ${frame.h}`}>

@@ -72,14 +72,19 @@
 	{/each}
 	{#if running}<p class="muted small" role="status">{t('paidReview.waiting')}</p>{/if}
 	<div class="paid-actions">
-		{#each review.options as option (option.id)}<button
-				class="bu-action btn"
-				class:primary={option.primary}
-				data-variant={option.primary ? 'primary' : 'outline'}
-				disabled={busy || running || (option.paid && blocked)}
-				onclick={() => onchoose(option)}
-				>{displayNestedMessage(option.label)} <span class="cost">{cost(option.gens)}</span></button
-			>{/each}
+		<!-- Each choice keeps its detail beside it, so the detail is never a scroll away from its button on a phone. -->
+		{#each review.options as option (option.id)}<div class="paid-option">
+				<button
+					class="bu-action btn"
+					class:primary={option.primary}
+					data-variant={option.primary ? 'primary' : 'outline'}
+					disabled={busy || running || (option.paid && blocked)}
+					onclick={() => onchoose(option)}
+					>{displayNestedMessage(option.label)}
+					<span class="cost">{cost(option.gens)}</span></button
+				>
+				{#if option.detail}<p class="muted small">{displayNestedMessage(option.detail)}</p>{/if}
+			</div>{/each}
 		{#if review.recordIds.length}<button
 				class="bu-action btn"
 				data-variant="outline"
@@ -87,11 +92,6 @@
 				>{t('paidReview.download')}</button
 			>{/if}
 	</div>
-	{#each review.options.filter((option) => option.detail) as option (option.id)}<p
-			class="muted small"
-		>
-			{displayNestedMessage(option.detail!)}
-		</p>{/each}
 </section>
 
 <style>
@@ -100,13 +100,22 @@
 		display: grid;
 		gap: 6px;
 	}
-	.paid-frames,
-	.paid-actions {
+	.paid-frames {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
 	}
 	.paid-actions {
+		display: grid;
+		justify-items: start;
 		gap: 8px;
+	}
+	.paid-option {
+		display: grid;
+		justify-items: start;
+		gap: 4px;
+	}
+	.paid-option p {
+		margin: 0;
 	}
 </style>
