@@ -11,6 +11,7 @@
 	import { ui, doc, store, view, stepPreviewFrame } from './state.svelte.ts';
 	import { moveDirs } from '../lib/dress/dress.ts';
 	import { displayMove } from './displayMove.ts';
+	import { displayNestedMessage } from '../lib/i18n.ts';
 	import {
 		ChevronDown,
 		ChevronLeft,
@@ -366,7 +367,7 @@
 			{/if}
 		</div>
 	{:else}
-		<div class="stage-msg">{doc.error || 'Nothing to show'}</div>
+		<div class="stage-msg">{doc.error ? displayNestedMessage(doc.error) : 'Nothing to show'}</div>
 	{/if}
 </div>
 

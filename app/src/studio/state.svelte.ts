@@ -744,7 +744,7 @@ export interface UndoStep {
 export const doc = $state({
 	id: '',
 	loading: true,
-	error: '',
+	error: '' as Message | string,
 	rev: 0,
 	items: {} as Preset['items'],
 	variants: {} as Preset['variants'],
@@ -1020,7 +1020,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		}
 	} catch (e) {
 		if (request !== openRequest) return;
-		doc.error = errorText(e);
+		doc.error = errorMessage(e);
 		// The demo's own open clears doc.error: say why the requested character is not shown.
 		if (id !== DEMO) {
 			console.error('open', e);
@@ -2963,7 +2963,7 @@ export interface Gen {
 	input: NewItemInput;
 	phase: 'running' | 'review' | 'failed';
 	status: string;
-	error?: string;
+	error?: string | Message;
 	canceled?: boolean;
 	cancelSaveFailed?: boolean;
 	requestText?: number;
@@ -3292,7 +3292,7 @@ async function runGenOnce(
 			return;
 		}
 		g.phase = 'failed';
-		g.error = errorText(e);
+		g.error = errorMessage(e);
 	}
 	takeOffGone();
 	await saveGens();

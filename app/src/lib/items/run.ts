@@ -123,7 +123,7 @@ import {
 	type ItemSpec,
 	type QaResult
 } from './items.ts';
-import { LocalizedError } from '../message.ts';
+import { LocalizedError, errorText, type Message } from '../message.ts';
 import { PaidStepError } from '../pixellab/paid-results.ts';
 import { localizedPlanRestriction } from '../pixellab/plans.ts';
 
@@ -143,7 +143,8 @@ export interface Draft {
 	spec: ItemSpec;
 	rigId: string;
 	calls: CallState[];
-	log: string[];
+	/** Outcomes, oldest first: English text, or a Message for an error that has a translation. */
+	log: (string | Message)[];
 	acceptedAt?: string;
 	activityScope?: string;
 }
@@ -996,7 +997,8 @@ export async function runItem(
 			);
 		} while (false);
 	} catch (e) {
-		if (!h.signal?.aborted) d.log.push(`error: ${(e as Error).message}`);
+		if (!h.signal?.aborted)
+			d.log.push(e instanceof LocalizedError ? e.translation : `error: ${errorText(e)}`);
 	} finally {
 		if (h.signal?.aborted) await Promise.allSettled(started);
 		if (!h.signal?.aborted) await persist();
@@ -1710,7 +1712,12 @@ export async function animateAnchoredItem(
 	const doneDirs = dirs.filter((dir) => !failedDirs.has(dir));
 	const detail =
 		draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.';
-	if (!doneDirs.length) throw localizedAutomaticRepairError(detail) ?? new Error(detail);
+	// A logged Message keeps its translation; its key stands in for the English text.
+	const detailError = () =>
+		typeof detail === 'string'
+			? (localizedAutomaticRepairError(detail) ?? new Error(detail))
+			: new LocalizedError(detail.key, detail.key, detail.vars);
+	if (!doneDirs.length) throw detailError();
 	const finished: Draft = {
 		...draft,
 		spec: { ...draft.spec, dirs: doneDirs },
@@ -1721,7 +1728,7 @@ export async function animateAnchoredItem(
 	const result =
 		doneDirs.length === dirs.length ? whole : await evaluateItem(finished, ctx, standingPalettes);
 	if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(finished, rig, result))
-		throw localizedAutomaticRepairError(detail) ?? new Error(detail);
+		throw detailError();
 	dirs = doneDirs;
 	const missed = [...failedDirs];
 	let materials = ctx.rec.manifest.materials.filter(
@@ -1776,10 +1783,10 @@ const seedOf = (s: string) =>
 /** Some directions of an item move failed after the others were saved. */
 export class PartialMoveError extends Error {
 	constructor(
-		readonly reason: string,
+		readonly reason: string | Message,
 		readonly savedDirs: DirectionName[]
 	) {
-		super(`${reason} The finished views were saved.`);
+		super(`${typeof reason === 'string' ? reason : reason.key} The finished views were saved.`);
 	}
 }
 

@@ -32,6 +32,18 @@ import { skeletonInput } from '../../src/lib/rig/estimate.ts';
 import { cellHash, type Keypoint, type DirectionName } from '../../src/lib/rig/rig.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import ja from '../../src/locales/ja.json';
+import { displayError, displayNestedMessage, errorMessage } from '../../src/lib/i18n.ts';
+import { generationErrorMessage } from '../../src/studio/generationStatus.ts';
+import type { Gen } from '../../src/studio/state.svelte.ts';
+// The i18n runtime needs the Svelte compiler; Japanese stands in for it here, as a key lookup with {name} variables.
+vi.mock('svelte-whisper', () => ({
+	getLocale: () => 'ja',
+	t: (key: string, vars: Record<string, unknown> = {}) =>
+		String(
+			key.split('.').reduce<unknown>((at, part) => (at as Record<string, unknown>)?.[part], ja)
+		).replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name]))
+}));
 afterEach(() => vi.restoreAllMocks());
 
 test('managed ownership decides the quoted source without sending any generation', async () => {
@@ -1061,6 +1073,29 @@ test('a valid custom description includes motion costs and wrong provider cardin
 		}
 	});
 	expect(f.put).not.toHaveBeenCalled();
+	// The stop names the move and view in the user's words and language, never the internal request label, and an item
+	// card shows the stored Message the same way.
+	f.enqueue.mockResolvedValueOnce({ state: 'done', jobs: [{ results: [] }] } as unknown as JobRec);
+	const error = await f.run(spec).catch((e: unknown) => e);
+	const shown = displayError(error);
+	expect(shown).toBe(
+		ja.create.errors.pixellabReturnedMotionFrames
+			.replace('{move}', ja.moveNames.idle)
+			.replace('{direction}', ja.directionNames.east)
+			.replace('{expected}', '4')
+			.replace('{returned}', '0')
+	);
+	expect(shown).not.toMatch(/Test ·|\(motion\)|idle east/);
+	const gen = {
+		canceled: false,
+		error: errorMessage(error),
+		draft: { calls: [] }
+	} as unknown as Gen;
+	const card = generationErrorMessage(gen, [], {
+		render: displayNestedMessage,
+		formatNumber: String
+	});
+	expect(displayNestedMessage(card!)).toBe(shown);
 });
 
 test('managed pixminimax drops one extra leading motion frame by position; the walk template stays exact', async () => {

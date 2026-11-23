@@ -124,7 +124,7 @@ import {
 	type Project,
 	type Provenance
 } from '../lib/store/manifest.ts';
-import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
+import { baseClothesIn, basePrompt, looksOf, moveName, withoutBaseBody } from './model.ts';
 import {
 	moveSourceFitsGeometry,
 	moveSourceMatches,
@@ -636,7 +636,7 @@ interface ClipJob {
 	action: string;
 	paletteRepair?: boolean;
 	authored?: boolean;
-	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number };
+	native?: { request: Req; model: 'v3' | 'pixminimax'; frames: number; words: ViewWords };
 	/** Rows each motion frame was lifted by with the user's consent; disclosed with the clip's checks. */
 	lifts?: readonly number[];
 }
@@ -693,6 +693,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 			r,
 			outs,
 			j.anim,
+			j.native.words,
 			j.dir,
 			j.native.frames,
 			j.nativeStart ?? j.rest,
@@ -912,6 +913,7 @@ async function motion(
 	req: Req,
 	dir: Direction,
 	label: string,
+	words: ViewWords,
 	tick: () => void,
 	expected: number,
 	signal?: AbortSignal,
@@ -929,6 +931,7 @@ async function motion(
 		(await imagesOf(r)).map((out) => out.img),
 		dir,
 		label,
+		words,
 		expected,
 		size,
 		standing,
@@ -951,7 +954,7 @@ async function motion(
 		throw new PaidStepError(
 			`${label}: joints not found on every frame`,
 			'create.errors.jointsFoundEveryFrame',
-			{ label },
+			words,
 			{ step: 'motion', failure: 'joints', recordId: r.id }
 		);
 	// Skeleton renders accept joints inside the image only (Keypoint-Input x and y are 0..1). A lifted source whose joints
@@ -963,7 +966,7 @@ async function motion(
 		throw new PaidStepError(
 			`${label}: the lifted motion still has joints outside the ${size} px frame. No body render was requested.`,
 			'create.errors.liftedJointsOutside',
-			{ label, size },
+			{ ...words, size },
 			{ step: 'motion', failure: 'overflow', recordId: r.id }
 		);
 	return { keypoints: filled, record: r, ...(motionEcho ? { motionEcho } : {}) };
@@ -1013,7 +1016,9 @@ async function normalizeMotionFrames(
 	r: JobRec,
 	images: Img[],
 	dir: Direction,
+	/** The request's label, for the English message only; users read `words`. */
 	label: string,
+	words: ViewWords,
 	expected: number,
 	size: number,
 	standing?: Img,
@@ -1029,14 +1034,14 @@ async function normalizeMotionFrames(
 		throw new PaidStepError(
 			`${label}: PixelLab dropped the direction (busy). Try again.`,
 			'create.errors.pixellabDroppedDirectionBusy',
-			{ label },
+			words,
 			rejected('dropped')
 		); // S4 truncation
 	const returned = images.length,
 		mismatch = new PaidStepError(
 			`${label}: PixelLab returned ${returned} motion frames for ${expected} requested. No joint checks or body render were requested for this view.`,
 			'create.errors.pixellabReturnedMotionFrames',
-			{ label, returned, expected: expected },
+			{ ...words, returned, expected },
 			rejected('frame-count')
 		);
 	const startKept = returned === expected + 1 && !!standing;
@@ -1048,7 +1053,7 @@ async function normalizeMotionFrames(
 			throw new PaidStepError(
 				`${label}: the motion does not fit the ${size} px frame. Its frames were kept for review; nothing was saved.`,
 				'create.errors.motionExceedsPxFrame',
-				{ label, size },
+				{ ...words, size },
 				rejected('overflow')
 			);
 		return normalized.img;
@@ -1069,7 +1074,7 @@ async function normalizeMotionFrames(
 		throw new PaidStepError(
 			`${label}: PixelLab returned an empty motion frame`,
 			'create.errors.pixellabReturnedEmptyMotion',
-			{ label },
+			words,
 			rejected('empty')
 		);
 	// Evidence of what a motion source's dropped frame was, recorded with the clip; it never decides anything.
@@ -1082,6 +1087,7 @@ async function normalizeNativeMoveFrames(
 	record: JobRec,
 	outputs: { img: Img }[],
 	move: string,
+	words: ViewWords,
 	dir: Direction,
 	count: number,
 	rest: Img,
@@ -1092,6 +1098,7 @@ async function normalizeNativeMoveFrames(
 		outputs.map((out) => out.img),
 		dir,
 		`${move} ${dir}`,
+		words,
 		count,
 		rest.w,
 		rest,
@@ -2197,6 +2204,7 @@ async function inspectMeasurementRecovery(
 				(await imagesOf(record, context.read)).map((out) => out.img),
 				d as Direction,
 				`${spec.id} ${d} (motion)`,
+				viewWords(rec.manifest, spec.id, d),
 				moveMotionFrames(rec.manifest, spec),
 				rig.cell.w,
 				motionStart,
@@ -2271,6 +2279,7 @@ async function inspectMeasurementRecovery(
 					raw,
 					outputs,
 					spec.id,
+					viewWords(rec.manifest, spec.id, d),
 					d,
 					framesRequested,
 					start ?? restImg,
@@ -3026,8 +3035,9 @@ async function addMoveUnlocked(
 	const partialSaved = (error: unknown): never => {
 		if (!(error instanceof PartialMoveError)) throw error;
 		const views = error.savedDirs.map(directionLabel).join(', ');
+		const reason = typeof error.reason === 'string' ? error.reason : error.reason.key;
 		throw new LocalizedError(
-			`${error.reason} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,
+			`${reason} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,
 			spec.replace
 				? 'create.errors.partialSaved'
 				: spec.reuseItemFrames
@@ -3436,7 +3446,8 @@ async function bodyClip(
 			native: {
 				request: nativeMoveRequest(rec, spec, d, model, await b64(restImg)),
 				model,
-				frames: n
+				frames: n,
+				words: viewWords(m, spec.id, d)
 			}
 		});
 		return { d, keypoints: out.measured as Keypoint[][], out };
@@ -3462,6 +3473,7 @@ async function bodyClip(
 			request,
 			d,
 			`${m.name} · ${spec.id} ${d} (motion)`,
+			viewWords(m, spec.id, d),
 			tick,
 			moveMotionFrames(m, spec),
 			signal,
@@ -3639,6 +3651,15 @@ function rerollStep(plan: BodyClipPlan, error: PaidStepError): 'motion' | 'rende
 	return step === 'render' || step === '/animate-with-skeleton-v3' ? 'render' : 'motion';
 }
 const viewName = (d: DirectionName) => message(directionNames[d]);
+/** A view of a move in the user's words, for a message: the move's name and the direction's. */
+type ViewWords = {
+	move: Message | string;
+	direction: Message;
+};
+const viewWords = (m: Manifest, move: string, d: DirectionName): ViewWords => ({
+	move: moveName(move, m.rig.animations),
+	direction: viewName(d)
+});
 const salt = (previous = 0) => previous + 1 + Math.floor(Math.random() * 1_000_000);
 /** Rows each returned motion frame needs to fit the cell, or null when lifting cannot fit one (cut at a side or the top). */
 async function motionLiftOf(

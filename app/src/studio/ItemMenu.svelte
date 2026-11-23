@@ -4,7 +4,7 @@
 	import { t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import { tick } from 'svelte';
-	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
 	// One shared per-tile item menu (approved in docs/design/2026-11-11-ui-refinement/ui-lab-7.html): an arrowed popover
 	// anchored to the tile's ⋮ at every size, with Wear as a toggle in its header.
@@ -206,7 +206,7 @@
 				>
 			</div>
 			<div class="item-menu-confirm">
-				<p class="small">{displayMessage(generationInfo.detail)}</p>
+				<p class="small">{displayNestedMessage(generationInfo.detail)}</p>
 				{#if generation.phase === 'running'}<p class="small">
 						{t('itemMenu.runningDetail', {
 							status: displayMessage(generation.status || message('itemMenu.preparing')),

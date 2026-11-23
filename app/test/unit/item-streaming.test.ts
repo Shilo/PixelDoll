@@ -19,6 +19,7 @@ import {
 import { crop, plainReason, thumbCell } from '../../src/studio/model.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { LocalizedError, message } from '../../src/lib/message.ts';
 
 // A fake ledger: enqueue records requests in order, the test lands them one at a time.
 // Record ids stay unique across tests, so a run a test leaves waiting never wakes on a later test's record.
@@ -291,7 +292,8 @@ test.each(['missing output', 'extra job'])(
 		);
 		await expect(run).resolves.toBeNull();
 		expect(q.order).toHaveLength(1);
-		expect(d.log.join(' ')).toContain('No dependent request was sent.');
+		// The log keeps the translated stop (not its English text), which says no dependent request was sent.
+		expect(d.log).toContainEqual(message('itemRoute.errors.incompleteReferenceFrames'));
 	}
 );
 
@@ -571,25 +573,38 @@ test('a call re-rolled while its request is built keeps the paid record counted 
 	expect(d.calls[1].recId).toBeUndefined();
 });
 
-test('a planned pose that fails surfaces its error without a retry or unhandled rejection', async () => {
-	const { ctx, d, dressed } = await fixture(),
-		enqueue = vi.mocked(queue.enqueue).getMockImplementation()!;
-	vi.mocked(queue.enqueue).mockImplementation(async (req, meta) => {
-		if (req.path === '/animate-with-skeleton-v3') throw new Error('offline');
-		return enqueue(req, meta);
-	});
-	try {
-		const run = runItem(d, ctx, {});
-		await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined());
-		await land(q.order[0].id, [dressed, dressed]); // the south pose fails at once, long before the coverage step
-		await vi.waitFor(() =>
-			expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2)
-		);
-		await new Promise((r) => setTimeout(r, 50));
-		await land(q.order.filter((o) => o.path === '/edit-animation-v2')[1].id, [dressed, dressed]);
-		await run;
-		expect(d.log.at(-1)).toBe('error: offline');
-	} finally {
-		vi.mocked(queue.enqueue).mockImplementation(enqueue);
+// A translated error is logged as its Message, so the item card shows it in the user's language, not flattened to English.
+test.each([
+	['an English', new Error('offline'), 'error: offline'],
+	[
+		'a translated',
+		new LocalizedError('result east/0 missing in storage', 'create.errors.resultMissingStorage', {
+			label: 'east/0'
+		}),
+		message('create.errors.resultMissingStorage', { label: 'east/0' })
+	]
+] as const)(
+	'a planned pose that fails with %s error surfaces it without a retry or unhandled rejection',
+	async (_, failure, logged) => {
+		const { ctx, d, dressed } = await fixture(),
+			enqueue = vi.mocked(queue.enqueue).getMockImplementation()!;
+		vi.mocked(queue.enqueue).mockImplementation(async (req, meta) => {
+			if (req.path === '/animate-with-skeleton-v3') throw failure;
+			return enqueue(req, meta);
+		});
+		try {
+			const run = runItem(d, ctx, {});
+			await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined());
+			await land(q.order[0].id, [dressed, dressed]); // the south pose fails at once, long before the coverage step
+			await vi.waitFor(() =>
+				expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2)
+			);
+			await new Promise((r) => setTimeout(r, 50));
+			await land(q.order.filter((o) => o.path === '/edit-animation-v2')[1].id, [dressed, dressed]);
+			await run;
+			expect(d.log.at(-1)).toEqual(logged);
+		} finally {
+			vi.mocked(queue.enqueue).mockImplementation(enqueue);
+		}
 	}
-});
+);

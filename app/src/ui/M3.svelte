@@ -486,7 +486,9 @@
 					{/if}
 					<details>
 						<summary>log ({d.log.length})</summary>
-						<pre class="small">{d.log.join('\n')}</pre>
+						<pre class="small">{d.log
+								.map((line) => (typeof line === 'string' ? line : line.key))
+								.join('\n')}</pre>
 					</details>
 
 					<div class="row">

@@ -66,7 +66,7 @@
 	const providerFailed = $derived(outcome?.record.jobs.some((job) => job.failedAtProvider));
 	const policy = $derived(outcome?.record.jobs.some((job) => job.policy || job.errorCode === 5000));
 	const error = $derived(
-		displayMessage(generationErrorMessage(g, $queue.jobs, outcomeFormatters) ?? '')
+		displayNestedMessage(generationErrorMessage(g, $queue.jobs, outcomeFormatters) ?? '')
 	);
 	const unsettledCost = $derived(
 		draftQueueIds(g.draft).some((id) => !$queue.jobs.some((job) => job.id === id && !live(job)))
@@ -518,7 +518,7 @@
 				{#if g.draft.log.length}<p class="faint small">
 						{g.draft.log
 							.map((line) =>
-								displayMessage(generationLogMessage(g, $queue.jobs, line, outcomeFormatters))
+								displayNestedMessage(generationLogMessage(g, $queue.jobs, line, outcomeFormatters))
 							)
 							.join(' · ')}
 					</p>{/if}

@@ -228,6 +228,23 @@ export const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase(
 /** Readable move names keep their stored IDs; colliding labels expose the IDs so every move remains selectable. */
 /** A move by internal ID, or the rig's move with the name and export ID the user gave it. */
 export type MoveRef = string | Pick<RigAnimation, 'id' | 'name' | 'exportId'>;
+const moveNameKeys: Readonly<Record<string, WhisperKey>> = {
+	default: 'moveNames.default',
+	idle: 'moveNames.idle',
+	walk: 'moveNames.walk',
+	run: 'moveNames.run'
+};
+/** The move's name as words for a Message: a built-in move's catalog name, else its label (a name the user gave it stays as
+ *  typed). Free of the i18n runtime, so flows can name a move in an error that follows a language switch. */
+export function moveName(id: string, moves: readonly MoveRef[] = []): Message | string {
+	const label = moveLabel(id, moves);
+	const named = moves.some(
+		(move) => typeof move !== 'string' && move.id === id && move.name !== undefined
+	);
+	return !named && Object.hasOwn(moveNameKeys, id) && label === moveLabel(id)
+		? message(moveNameKeys[id])
+		: label;
+}
 export function moveLabel(id: string, moves: readonly MoveRef[] = []): string {
 	const readable = (value: string) => {
 		const text = value.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();

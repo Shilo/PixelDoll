@@ -40,9 +40,10 @@ export function generationCallOutcome(g: Gen, jobs: JobRec[], raw = g.error) {
 export function generationLogMessage(
 	g: Gen,
 	jobs: JobRec[],
-	raw: string,
+	raw: string | Message,
 	{ render, formatNumber }: OutcomeFormatters
 ) {
+	if (typeof raw !== 'string') return raw;
 	switch (raw) {
 		case 'PixelLab returned incomplete or malformed standing frames. No automatic retry was made.':
 			return message('generation.outcome.standingFrames');
