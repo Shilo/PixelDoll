@@ -318,7 +318,10 @@ for (const tier of [3, 1] as const)
 				await expect(setup.getByRole('alert')).toContainText('Setup publication fixture failure');
 				expect(estimates).toBe(FRAME_COUNT);
 				expect(registrations).toBe(1);
-				await setup.getByRole('button', { name: 'Resume setup', exact: true }).click();
+				const resume = setup.getByRole('button', { name: /^Resume setup/ });
+				// Every joint check and the registration completed: resuming is priced from the cache and buys nothing.
+				await expect(resume).toContainText('Est. 0 gens');
+				await resume.click();
 				await expect(setup).toContainText('Ready. You can add equipment');
 			}
 			const after = await projectSnapshot(page, name);

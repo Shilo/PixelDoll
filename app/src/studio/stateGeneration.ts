@@ -758,7 +758,9 @@ async function submitStateBatches(
 				if (!ledger?.missing.includes(index)) throw changed();
 			}
 			// States run in the background, so the character may be edited or closed meanwhile. Other edits are fine, but
-			// no further view is paid for once its source frame changed: Save would refuse the result.
+			// no further view is paid for once its source frame changed: it would be drawn from another look than the views
+			// already bought and was not what the quote approved. A State whose views all finished is still saved while it fits
+			// (stateSourceFits).
 			const { project } = await loadProject(projectId);
 			if (stateGenerationSource(project, attempt.source)?.version !== attempt.sourceVersion)
 				throw changed();

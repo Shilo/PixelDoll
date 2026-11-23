@@ -13,6 +13,18 @@ export const directionNames = {
 	'south-west': 'directionNames.southWest'
 } as const satisfies Record<DirectionName, WhisperKey>;
 
+/** Direction names inside a sentence ("no south view"): lowercase where the language does not capitalize them. */
+export const directionInline = {
+	south: 'directionInline.south',
+	'south-east': 'directionInline.southEast',
+	east: 'directionInline.east',
+	'north-east': 'directionInline.northEast',
+	north: 'directionInline.north',
+	'north-west': 'directionInline.northWest',
+	west: 'directionInline.west',
+	'south-west': 'directionInline.southWest'
+} as const satisfies Record<DirectionName, WhisperKey>;
+
 export const directionShort = {
 	south: 'directionShort.south',
 	'south-east': 'directionShort.southEast',

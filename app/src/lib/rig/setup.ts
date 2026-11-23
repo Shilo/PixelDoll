@@ -231,7 +231,7 @@ export async function attachImportedRig(
 			k = measured.get(hash);
 		if (!hasAll(k))
 			throw new LocalizedError(
-				'PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.',
+				'PixelLab could not find all 18 valid joints on a standing frame. Existing artwork is unchanged; redraw that frame in Fix frames or choose a clearer standing view, then resume setup.',
 				'setup.errors.jointsMissing'
 			);
 		return { hash, keypoints: k! };

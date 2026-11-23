@@ -287,6 +287,16 @@
 		"west": "West",
 		"southWest": "South-west"
 	},
+	"directionInline": {
+		"south": "south",
+		"southEast": "south-east",
+		"east": "east",
+		"northEast": "north-east",
+		"north": "north",
+		"northWest": "north-west",
+		"west": "west",
+		"southWest": "south-west"
+	},
 	"directionShort": {
 		"south": "S",
 		"southEast": "SE",
@@ -1024,6 +1034,7 @@
 		"nameCouldNotFinishNoPaidRetry": "{name} could not finish. No paid retry was started. Open its review to try again.",
 		"nameHasIssuesToReviewNoPaid": "{name} has issues to review. No paid retry was started.",
 		"nameAcceptedAsIs": "{name} accepted as is",
+		"nameKeptWithout": "{name} kept without {moves}. It stays hidden there until those frames are made.",
 		"nameSaved": "{name} saved",
 		"nameAdded": "{name} added",
 		"cancelThisItemInTheTabThat": "Cancel this item in the tab that is generating it. This tab has not stopped the generation.",
@@ -1565,6 +1576,7 @@
 		},
 		"coverage": {
 			"oneMove": "Missing some {move} frames",
+			"notMade": "Not made for {move} yet",
 			"severalMoves": "Missing frames in {count} moves"
 		},
 		"qa": {
@@ -1937,6 +1949,7 @@
 		"characterSetup": "Character setup",
 		"error": {
 			"jobMissing": "PixelLab no longer has the job. Its results were not saved, and it may have charged you.",
+			"unreadable": "This saved request could not be read. It was not sent again; its result and cost are unknown, so check pixellab.ai.",
 			"malformed": "PixelLab sent a malformed result ({error}). The request may have charged you.",
 			"download": "Result download failed after {count} attempts: {error}. Download manually: {urls}",
 			"closedDuringSubmit": "PixelDoll closed while sending the request. The job may have run; check pixellab.ai. The request was not resent.",
@@ -1960,6 +1973,13 @@
 		"cleared": "Cleared {jobs}. Jobs your drafts or a running create or move still use are kept.",
 		"clearedWithImages": "Cleared {jobs} and {images}. Jobs your drafts or a running create or move still use are kept.",
 		"findingJoints": "Finding joints",
+		"titleItemCall": "{name}: request {index} of {total}",
+		"titleItemView": "{item}: {move}, {direction}",
+		"titleSetup": "{name}: character setup",
+		"titleRegistering": "{name}: preparing the views",
+		"titleDrawing": "{name}: drawing the character",
+		"titleMoveMotion": "{name}: {move} motion, {direction}",
+		"titleMoveView": "{name}: {move}, {direction}",
 		"state": {
 			"queued": "queued",
 			"submitting": "submitting",
@@ -1995,7 +2015,6 @@
 		"retryIn": "retry in {seconds} s",
 		"needsKey": "needs your key",
 		"recent": "Recent",
-		"lostDetail": "unknown: may have run, check pixellab.ai",
 		"tierHint": "Workflow requires PixelLab Tier {tier} or higher. Check your plan and balance before retrying. A failed job alone does not confirm a plan issue.",
 		"session": "This session: {cost}. Some moves are billed in dollars instead of gens; your balance above is the real total.",
 		"clearFollower": "Clear it in the PixelDoll tab that runs the jobs",
@@ -2134,7 +2153,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
 		"waitingForRepairReview": "Waiting for item frame review",
-		"needsRedo": "Joints not found: make it again to animate items on it"
+		"needsRedo": "Joints not found: redraw it to animate items on it"
 	},
 	"setup": {
 		"warnings": {
@@ -2163,6 +2182,7 @@
 		"resumeRigSetup": "Resume rig setup",
 		"dismiss": "Dismiss setup",
 		"resume": "Resume setup",
+		"resumePriceUnknown": "The price of resuming could not be worked out: {reason}",
 		"keepWorking": "You can keep working. Setup resumes after reload.",
 		"pixelsUnchanged": "Existing pixels stay unchanged",
 		"setUpRig": "Set up rig",
@@ -2176,7 +2196,7 @@
 			"bodyChanged": "The body changed since setup started. Start setup again for the current frames.",
 			"looksRequired": "Describe the character’s existing appearance first.",
 			"noFrames": "No body frames are available for rig setup. Existing artwork is unchanged.",
-			"jointsMissing": "PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.",
+			"jointsMissing": "PixelLab could not find all 18 valid joints on a standing frame. Existing artwork is unchanged; redraw that frame in Fix frames or choose a clearer standing view, then resume setup.",
 			"noCharacterId": "PixelLab did not return a managed character ID. Existing artwork is unchanged.",
 			"referenceChanged": "A standing reference changed during setup.",
 			"characterChanged": "The character changed during setup. Its current work has been kept.",
@@ -2236,7 +2256,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.",
 			"animationExceedsPxFrame": "{move} {direction}: the body frames do not fit the {w} px frame. They were kept for review; nothing was saved.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.",
-			"validJointsWereFound": "{move} {direction}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.",
+			"validJointsWereFound": "{move} {direction}: valid joints were not found on every frame. Generated images are retained in Activity; the move stopped without redrawing them.",
 			"matchBodyColorsOnly": "{direction}: match body colors only after all original joint checks have completed.",
 			"colorMatchingCannotRepair": "{direction}: color matching cannot repair pose, feet or border failures.",
 			"colorDriftOutsideBounded": "{direction}: the color drift is outside the bounded reference-palette repair.",
@@ -2721,7 +2741,7 @@
 			"savedFramesUnavailable": "Completed frames matching the current body and equipment are unavailable. No generation was requested.",
 			"itemMoveSaveConflict": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity.",
 			"itemMoveSaveConflictAlso": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity. Another view also stopped: {reason}",
-			"keepWithoutStanding": "This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.",
+			"keepWithoutStanding": "This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.",
 			"keepWithoutNothingLeft": "This item has no complete move to keep. Make the missing frames instead.",
 			"savedFrameMissing": "A saved frame of this item is missing from storage."
 		}
@@ -3060,6 +3080,7 @@
 	"paidReview": {
 		"title": "Paid results",
 		"spent": "Already paid: {gens} gens. These results are kept and reused.",
+		"spentUnknown": "Already paid: at least {gens} gens. Some requests may have charged without reporting it (check pixellab.ai). Finished results are kept and reused.",
 		"free": "Free",
 		"download": "Download paid results",
 		"frame": "{view} frame {number}",
@@ -3069,7 +3090,8 @@
 			"pending": "Not bought yet",
 			"failed": "Stopped",
 			"running": "Still running at PixelLab"
-		}
+		},
+		"spentUnreported": "Already paid: unknown. A request may have run and charged without reporting its cost (check pixellab.ai). Finished results are kept and reused."
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, for free. The paid motion is reused; only the steps on the changed frame are bought.",
@@ -3083,7 +3105,7 @@
 		"liftDetailWarned": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame. This is above the {limit} px feet check, so the move is saved with a feet warning.",
 		"reroll": "Re-roll {views}",
 		"rerollDetail": "A re-roll buys a new attempt only for those views. Every other view keeps its paid results.",
-		"keepUnposedDetail": "Saves the body frames as they are. Joints were not found on some frames, so items can’t be fitted to this move until you make it again.",
+		"keepUnposedDetail": "Saves the body frames as they are. Joints were not found on some frames, so items can’t be fitted to this move until you redraw it.",
 		"keepUnposed": "Keep without fitting items",
 		"pending": "Still to buy: about {gens} gens.",
 		"liftable": "Can be lifted to fit: feet rise up to {px} px in {frames} of {total} frames.",
@@ -3234,6 +3256,7 @@
 	"report": {
 		"action": "Report",
 		"actionLabel": "Report this problem",
+		"actionLabelFor": "Report this problem: {name}",
 		"title": "Report this problem",
 		"intro": "This opens a public GitHub issue with only the text below. No images, prompts, names or keys are included. You post it with your GitHub account.",
 		"preview": "Report preview",
@@ -3275,7 +3298,7 @@
 			"empty": "Your paid results stay in Activity. Try again with a new attempt.",
 			"dropped": "Wait a moment, then try again.",
 			"joints": "Anything paid stays in Activity. Try a new attempt, or start from a clearer standing pose.",
-			"stopped": "Check Activity to see what happened before starting again.",
+			"stopped": "It was not sent again. Look at what it returned before starting again.",
 			"quality": "Review the results, then keep them or try again.",
 			"changed": "Review it again before continuing.",
 			"missing": "Check Activity for what is still saved before making it again.",
@@ -3283,11 +3306,11 @@
 			"credits": "Add credits on PixelLab, then try again.",
 			"key": "Connect PixelLab again with a valid token.",
 			"offline": "Check your connection, then try again.",
-			"declined": "Change the description, then try again.",
+			"declined": "Make it again with a different description.",
 			"unexpected": "Report it so it can be fixed. Anything already paid for stays in Activity.",
-			"uncertain": "Check Activity before trying again: a new attempt could charge again.",
+			"uncertain": "It may have run and charged you. Check pixellab.ai before trying again.",
 			"poses": "Set up its poses first, then make the equipment.",
-			"method": "Choose Automatic, then try again.",
+			"method": "Make the item again and choose Automatic for Animation method.",
 			"quote": "Try again in a moment, or choose another model.",
 			"browser": "Use a current browser to continue.",
 			"exportId": "Choose a different Export ID.",

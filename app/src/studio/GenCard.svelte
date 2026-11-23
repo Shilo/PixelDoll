@@ -28,9 +28,12 @@
 	import { slotLabelMessage } from './slots.ts';
 	import { displayMessage, displayNestedMessage } from '../lib/i18n.ts';
 	import ProblemNotice from './ProblemNotice.svelte';
+	import { paidRetryLeads } from './problemSummary.ts';
 	import {
 		generationCallOutcome,
 		generationErrorMessage,
+		generationProblemKind,
+		rerollLeads,
 		generationLogMessage
 	} from './generationStatus.ts';
 	import {
@@ -69,6 +72,15 @@
 	const error = $derived(
 		displayNestedMessage(generationErrorMessage(g, $queue.jobs, outcomeFormatters) ?? '')
 	);
+	const failure = $derived(
+		policy
+			? message('genCard.declined')
+			: (generationErrorMessage(g, $queue.jobs, outcomeFormatters) ??
+					message('generation.outcome.noFrames'))
+	);
+	const kind = $derived(policy ? 'declined' : generationProblemKind(g, $queue.jobs, failure));
+	// A bug, a choice to change first, a repeat decline or a possible charge: the paid retry is offered, never promoted.
+	const retryLeads = $derived(paidRetryLeads(kind));
 	const unsettledCost = $derived(
 		draftQueueIds(g.draft).some((id) => !$queue.jobs.some((job) => job.id === id && !live(job)))
 	);
@@ -153,6 +165,10 @@
 	});
 	// What a stopped draft already bought stays usable: re-roll only its failed calls, or keep the moves that finished.
 	let paid = $state.raw<(PaidReviewData & { calls: number[]; tier: number }) | null>(null);
+	// Re-rolling the failed calls at the same price as generating again is one choice: only the review's button is shown.
+	const sameRetry = $derived(
+		!!paid?.options.some((option) => option.id === 'reroll-calls' && option.gens === retryGens)
+	);
 	$effect(() => {
 		const draft = $state.snapshot(g.draft),
 			result = res,
@@ -177,7 +193,13 @@
 										detail: message('genCard.rerollFailedDetail'),
 										gens: reroll.gens,
 										paid: reroll.gens > 0,
-										primary: true
+										primary:
+											retryLeads &&
+											rerollLeads(
+												draft.calls.map((call) => call.recId),
+												calls,
+												$queue.jobs
+											)
 									}
 								]
 							: []),
@@ -197,6 +219,7 @@
 						paid = {
 							views: [],
 							spent: +gensOf(draft, $queue.jobs).toFixed(2),
+							spentUnknown: unknownCostsOf(draft, $queue.jobs) > 0,
 							recordIds: draft.calls.flatMap((c) => (c.recId ? [c.recId] : [])),
 							options,
 							calls,
@@ -357,21 +380,21 @@
 					disabled={busy || !res?.qa || hasStructuralFailure(res) || incomplete}
 					>{t('genCard.keep')}</button
 				>
-				<span class="api-action"
-					><button
-						class="bu-action btn"
-						data-variant="outline"
-						onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
-						disabled={busy || retryGens === null || retryBlocked}
-						aria-describedby={retryBlocked ? tierNoticeId : undefined}
-						>{t('common.generateAgain')}
-						<span class="cost"
-							>{t('moves.estimate', {
-								gens: retryGens === null ? '–' : formatNumber(retryGens)
-							})}</span
-						></button
-					></span
-				>
+				{#if !sameRetry}<span class="api-action"
+						><button
+							class="bu-action btn"
+							data-variant="outline"
+							onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
+							disabled={busy || retryGens === null || retryBlocked}
+							aria-describedby={retryBlocked ? tierNoticeId : undefined}
+							>{t('common.generateAgain')}
+							<span class="cost"
+								>{t('moves.estimate', {
+									gens: retryGens === null ? '–' : formatNumber(retryGens)
+								})}</span
+							></button
+						></span
+					>{/if}
 				<button
 					class="bu-action btn plain danger"
 					data-variant="quiet"
@@ -387,10 +410,8 @@
 					<CircleAlert size={14} />{t('genCard.canceledDetail')}
 				</p>
 			{:else}<ProblemNotice
-					error={policy
-						? message('genCard.declined')
-						: (generationErrorMessage(g, $queue.jobs, outcomeFormatters) ??
-							message('generation.outcome.noFrames'))}
+					error={failure}
+					{kind}
 					detail={policy
 						? message('genCard.declined')
 						: providerFailed
@@ -434,21 +455,23 @@
 					>{t(g.canceled ? 'common.discard' : 'common.cancel')}</button
 				>
 				<div class="recovery-options">
-					<span class="api-action"
-						><button
-							class="bu-action btn primary"
-							data-variant="primary"
-							onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
-							disabled={busy || retryGens === null || retryBlocked}
-							aria-describedby={retryBlocked ? tierNoticeId : undefined}
-							>{t('common.generateAgain')}
-							<span class="cost"
-								>{t('moves.estimate', {
-									gens: retryGens === null ? '–' : formatNumber(retryGens)
-								})}</span
-							></button
-						></span
-					>
+					{#if !sameRetry}<span class="api-action"
+							><button
+								class="bu-action btn"
+								class:primary={retryLeads}
+								data-variant={retryLeads ? 'primary' : 'outline'}
+								onclick={() =>
+									retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
+								disabled={busy || retryGens === null || retryBlocked}
+								aria-describedby={retryBlocked ? tierNoticeId : undefined}
+								>{t('common.generateAgain')}
+								<span class="cost"
+									>{t('moves.estimate', {
+										gens: retryGens === null ? '–' : formatNumber(retryGens)
+									})}</span
+								></button
+							></span
+						>{/if}
 				</div>
 			</div>
 		{/if}
@@ -471,7 +494,7 @@
 					message={message('genCard.estimateFailed')}
 				/>
 			</p>{/if}
-		{#if g.phase !== 'running'}<p class="faint small">
+		{#if g.phase !== 'running' && !sameRetry}<p class="faint small">
 				{t('genCard.retryNote')}
 			</p>{/if}
 		<details class="disclosure">

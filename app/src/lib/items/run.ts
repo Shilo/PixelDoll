@@ -32,6 +32,7 @@ import type {
 } from '../store/manifest.ts';
 import { composeCell, dropCut } from '../compose/compose.ts';
 import { retainItemMoves } from '../rig/moves.ts';
+import { standingMove } from '../equipment/refit.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
@@ -130,7 +131,8 @@ import {
 	loggedError,
 	loggedMessage,
 	message,
-	type LoggedMessage
+	type LoggedMessage,
+	type Message
 } from '../message.ts';
 import { localizedPlanRestriction } from '../pixellab/plans.ts';
 
@@ -330,8 +332,12 @@ export const gensOf = (d: Draft, list = jobs) =>
 export const usdOf = (d: Draft, list = jobs) =>
 	draftRecords(d).reduce((s, id) => s + (recIn(list, id)?.usd ?? 0), 0);
 /** Calls of a draft whose cost PixelLab did not report: shown as unknown beside the reported spend. */
+/** Requests whose cost PixelLab never reported, including lost ones that may have run and charged. */
 export const unknownCostsOf = (d: Draft, list = jobs) =>
-	draftRecords(d).filter((id) => recIn(list, id)?.costUnknown).length;
+	draftRecords(d).filter((id) => {
+		const record = recIn(list, id);
+		return !!record && (!!record.costUnknown || record.state === 'lost');
+	}).length;
 export const callState = (c: CallState, list = jobs) =>
 	recIn(list, c.recId)?.state ?? 'not submitted';
 
@@ -688,6 +694,8 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 	return req;
 }
 
+/** The Activity title of an item request for one view of a move, in the user's words; the Studio names moves and views. */
+export type ItemViewTitle = (anim: string, dir: DirectionName) => Message;
 /** A dropped call keeps its paid record in `old` so its previous design or key never lands in the current draft. */
 async function submit(d: Draft, k: number, ctx: RigCtx, signal?: AbortSignal): Promise<string> {
 	const c = d.calls[k],
@@ -706,6 +714,11 @@ async function submit(d: Draft, k: number, ctx: RigCtx, signal?: AbortSignal): P
 		await queue.enqueue(req, {
 			signal,
 			label,
+			title: message('activity.titleItemCall', {
+				name: d.spec.name,
+				index: k + 1,
+				total: d.calls.length
+			}),
 			tag: d.activityScope ? 'studio-move' : 'm3',
 			activityScope: d.activityScope,
 			minimumTier: draftMinimumTier(d, ctx.rec.manifest.rig)
@@ -1836,7 +1849,8 @@ export async function poseItemClip(
 	moveSeed?: number,
 	selectedDirs?: DirectionName[],
 	activityScope?: string,
-	savedOnly = false
+	savedOnly = false,
+	title?: ItemViewTitle
 ): Promise<QaResult> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -1903,7 +1917,9 @@ export async function poseItemClip(
 						seed,
 						cells,
 						activityScope,
-						savedOnly
+						savedOnly,
+						undefined,
+						title
 					);
 					if ('blocked' in g)
 						throw new Error(
@@ -1932,6 +1948,7 @@ export async function poseItemClip(
 					req,
 					{
 						label: `pose ${item.name} · ${anim} ${dir}`,
+						...(title ? { title: title(anim, dir) } : {}),
 						tag: 'studio-move',
 						activityScope,
 						minimumTier
@@ -2288,14 +2305,35 @@ const keepsFramesWithout = (item: Item, moves: readonly string[]) =>
 			([move, dirs]) => !moves.includes(move) && Object.keys(dirs).length > 0
 		)
 	);
-/** Whether an item can be kept without these moves: never without the standing move it is designed and posed from, or the
- *  move of its anchor frame, which every other move is drawn from, and never when no frames would be left. Those gaps
- *  need the paid redraw instead. */
-export const keepableWithout = (item: Item, moves: readonly string[]) =>
-	!!moves.length &&
-	!(item.standing && moves.includes(item.standing)) &&
-	!(item.anchorCell && moves.includes(item.anchorCell.split('/')[0])) &&
-	keepsFramesWithout(item, moves);
+/** Why an item cannot be kept without these moves, in the user's words, or undefined when it can: never without the
+ *  standing move it is designed and posed from (the rig's standing move when the item names none), or the move of its
+ *  anchor frame, which every other move is drawn from, and never when no frames would be left. Those gaps need the paid
+ *  redraw instead. */
+export function keepWithoutRefusal(
+	m: Manifest,
+	item: Item,
+	moves: readonly string[]
+): LocalizedError | undefined {
+	const designed = item.standing ?? standingMove(m, m.rig.directions[0]?.id ?? 'south');
+	if (
+		moves.length &&
+		!(designed && moves.includes(designed)) &&
+		!(item.anchorCell && moves.includes(item.anchorCell.split('/')[0])) &&
+		keepsFramesWithout(item, moves)
+	)
+		return undefined;
+	return keepsFramesWithout(item, moves)
+		? new LocalizedError(
+				'This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.',
+				'itemRoute.errors.keepWithoutStanding'
+			)
+		: new LocalizedError(
+				'This item has no complete move to keep. Make the missing frames instead.',
+				'itemRoute.errors.keepWithoutNothingLeft'
+			);
+}
+export const keepableWithout = (m: Manifest, item: Item, moves: readonly string[]) =>
+	!keepWithoutRefusal(m, item, moves);
 /** The item without these moves (retainItemMoves: frames, coverage, pending cells, hidden body pixels, refit notes and
  *  checks, with the summary recomputed), so it is hidden there and listed as missing, to make later at its own price.
  *  Nothing is added or redrawn. */
@@ -2332,16 +2370,8 @@ export async function acceptItemReview(
 	) {
 		throw itemReviewChangedError();
 	}
-	if (keepWithout && !keepableWithout(item, keepWithout))
-		throw keepsFramesWithout(item, keepWithout)
-			? new LocalizedError(
-					'This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.',
-					'itemRoute.errors.keepWithoutStanding'
-				)
-			: new LocalizedError(
-					'This item has no complete move to keep. Make the missing frames instead.',
-					'itemRoute.errors.keepWithoutNothingLeft'
-				);
+	const refusal = keepWithout && keepWithoutRefusal(ctx.rec.manifest, item, keepWithout);
+	if (refusal) throw refusal;
 	const kept = keepWithout?.length ? withoutMoves(ctx.rec.manifest, item, keepWithout) : item;
 	const accepted = { ...kept, qa: { ...acceptQa(kept.qa!), status: 'accepted' as const } };
 	await saveItem(projectId, accepted, new Map(), [], (current) => {
@@ -2462,7 +2492,8 @@ async function gridItemClip(
 		tier: number;
 		start: number;
 		count: number;
-	}
+	},
+	title?: ItemViewTitle
 ): Promise<
 	{ cells: CellOut[]; prov: Provenance; registrationIssue?: string } | { blocked: string }
 > {
@@ -2487,6 +2518,7 @@ async function gridItemClip(
 		req,
 		{
 			label: `${prepared?.maskRequest ? 'redraw' : 'grid'} ${item.name} · ${anim} ${dir}${prepared ? ` · frames ${prepared.start + 1}–${prepared.start + prepared.count}` : ''}`,
+			...(title ? { title: title(anim, dir) } : {}),
 			tag: 'studio-move',
 			activityScope,
 			minimumTier: prepared?.tier ?? 1
@@ -2559,7 +2591,8 @@ export async function regridClip(
 	preferTierOne = false,
 	activityScope?: string,
 	savedOnly = false,
-	redraw = false
+	redraw = false,
+	title?: ItemViewTitle
 ): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[]; review?: RepairReview }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -2664,7 +2697,8 @@ export async function regridClip(
 			request.cells,
 			activityScope,
 			savedOnly,
-			request
+			request,
+			title
 		);
 		if ('blocked' in result)
 			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);

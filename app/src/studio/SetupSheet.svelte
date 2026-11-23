@@ -8,7 +8,7 @@
 	import { setupPlan, rigReady, type SetupPlan } from '../lib/rig/setup.ts';
 	import * as db from '../lib/store/db.ts';
 	import type { StoredProject } from '../lib/store/project.ts';
-	import { SETUP_STEPS, setupRegistrationStuck } from './setup.ts';
+	import { SETUP_STEPS, setupRegistrationStuck, setupResumeGens } from './setup.ts';
 	import { freshSeed } from './characterConfig.ts';
 	import {
 		ui,
@@ -55,16 +55,30 @@
 	const ready = $derived(rigReady(rec));
 	// A registration that finished without a usable character replays as such: only a new seed (0.25 gen) can change it.
 	let stuck = $state(false);
+	// Resuming reuses every completed request; this is what it still buys, shown on the button before it is pressed.
+	let resumeGens = $state<number | null>(null);
+	// When the price cannot be worked out, its reason is shown and Resume is not the leading choice.
+	let resumePriceError = $state<Message | string>('');
 	$effect(() => {
 		const spec = mine && settingUp.error ? $state.snapshot(settingUp.spec) : null;
 		let current = true;
 		stuck = false;
-		if (spec)
+		resumeGens = null;
+		resumePriceError = '';
+		if (spec) {
 			void setupRegistrationStuck(spec)
 				.then((value) => {
 					if (current) stuck = value;
 				})
 				.catch((failure: unknown) => console.error('setup review', failure));
+			void setupResumeGens(spec)
+				.then((value) => {
+					if (current) resumeGens = value;
+				})
+				.catch((failure: unknown) => {
+					if (current) resumePriceError = errorMessage(failure);
+				});
+		}
 		return () => {
 			current = false;
 		};
@@ -259,6 +273,9 @@
 				}}>{t('create.sheet.startDressing')}</button
 			>
 		{:else if mine && settingUp.error}
+			{#if resumePriceError && !stuck}<p class="notice warn small" role="status">
+					{t('setup.resumePriceUnknown', { reason: displayMessage(resumePriceError) })}
+				</p>{/if}
 			<div class="recovery-actions">
 				<button
 					class="bu-action btn plain"
@@ -270,8 +287,9 @@
 				<div class="recovery-options">
 					<span class="api-action"
 						><button
-							class="bu-action btn primary"
-							data-variant="primary"
+							class="bu-action btn"
+							class:primary={stuck || resumeGens !== null}
+							data-variant={stuck || resumeGens !== null ? 'primary' : 'outline'}
 							onclick={() =>
 								settingUp.spec &&
 								withKey(
@@ -283,7 +301,12 @@
 								)}
 							>{#if stuck}{t('setup.newRegistration')}
 								<span class="cost">{t('moves.estimate', { gens: formatNumber(0.25) })}</span
-								>{:else}{t('setup.resume')}{/if}</button
+								>{:else}{t('setup.resume')}
+								<span class="cost"
+									>{t('moves.estimate', {
+										gens: resumeGens === null ? '–' : formatNumber(resumeGens)
+									})}</span
+								>{/if}</button
 						></span
 					>
 				</div>

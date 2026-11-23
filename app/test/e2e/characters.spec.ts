@@ -1942,7 +1942,31 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 			item = rec.manifest.items.find((i: { id: string }) => i.id === s.ui.selected);
 		return { id: item.id, projectId: s.doc.id, item };
 	});
-	await pane.getByRole('button', { name: 'Accept as is', exact: true }).click();
+	// A move stopped on another character never holds this free accept; a stopped move whose review involves the item does.
+	const stoppedMove = (projectId: string, items: string[]) =>
+		page.evaluate(
+			async ({ projectId, items }) => {
+				const statePath = '/src/studio/state.svelte.ts',
+					s = await import(statePath);
+				Object.assign(s.moving, {
+					spec:
+						items.length || projectId
+							? { id: 'cast', action: 'cast', frames: 8, items, seed: 1 }
+							: null,
+					projectId,
+					error: projectId ? 'Cast stopped' : '',
+					done: false
+				});
+			},
+			{ projectId, items }
+		);
+	const accept = pane.getByRole('button', { name: 'Accept as is', exact: true });
+	await stoppedMove('another-character', [before.id]);
+	await expect(accept).toBeEnabled();
+	await stoppedMove(before.projectId, [before.id]);
+	await expect(accept).toBeDisabled();
+	await stoppedMove('', []);
+	await accept.click();
 	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
 	await expect(pane.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
 	await expect(

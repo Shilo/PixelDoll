@@ -282,6 +282,16 @@
 		"west": "Barat",
 		"southWest": "Barat daya"
 	},
+	"directionInline": {
+		"south": "selatan",
+		"southEast": "tenggara",
+		"east": "timur",
+		"northEast": "timur laut",
+		"north": "utara",
+		"northWest": "barat laut",
+		"west": "barat",
+		"southWest": "barat daya"
+	},
 	"directionShort": {
 		"south": "S",
 		"southEast": "TG",
@@ -995,6 +1005,7 @@
 		"nameCouldNotFinishNoPaidRetry": "Pembuatan {name} tidak selesai. Tidak ada percobaan ulang berbayar yang dimulai. Buka tinjauannya untuk mencoba lagi.",
 		"nameHasIssuesToReviewNoPaid": "Ada masalah pada {name} yang perlu ditinjau. Tidak ada percobaan ulang berbayar yang dimulai.",
 		"nameAcceptedAsIs": "{name} diterima apa adanya",
+		"nameKeptWithout": "{name} disimpan tanpa {moves}. Item tetap tersembunyi di sana sampai frame tersebut dibuat.",
 		"nameSaved": "{name} disimpan",
 		"nameAdded": "{name} ditambahkan",
 		"cancelThisItemInTheTabThat": "Batalkan item ini di tab yang sedang membuatnya. Tab ini belum menghentikan generasi.",
@@ -1516,6 +1527,7 @@
 		},
 		"coverage": {
 			"oneMove": "Sebagian frame {move} belum ada",
+			"notMade": "Belum dibuat untuk {move}",
 			"severalMoves": "Ada frame yang belum ada di {count} animasi"
 		},
 		"qa": {
@@ -1879,6 +1891,7 @@
 		"characterSetup": "Penyiapan karakter",
 		"error": {
 			"jobMissing": "Pekerjaan ini sudah tidak ada di PixelLab. Hasilnya tidak disimpan, dan Anda mungkin sudah dikenai biaya.",
+			"unreadable": "Permintaan tersimpan ini tidak dapat dibaca. Permintaan tidak dikirim ulang; hasil dan biayanya tidak diketahui, jadi periksa pixellab.ai.",
 			"malformed": "PixelLab mengirim hasil yang formatnya rusak ({error}). Permintaan ini mungkin sudah dikenai biaya.",
 			"download": "Pengunduhan hasil gagal setelah {count} percobaan: {error}. Unduh secara manual: {urls}",
 			"closedDuringSubmit": "PixelDoll tertutup saat mengirim permintaan. Pekerjaan mungkin sudah berjalan; periksa pixellab.ai. Permintaan tidak dikirim ulang.",
@@ -1900,6 +1913,13 @@
 		"cleared": "{jobs} dibersihkan. Pekerjaan yang masih digunakan oleh draf atau proses pembuatan karakter atau penambahan animasi yang aktif tetap disimpan.",
 		"clearedWithImages": "{jobs} dan {images} dibersihkan. Pekerjaan yang masih digunakan oleh draf atau proses pembuatan karakter atau penambahan animasi yang aktif tetap disimpan.",
 		"findingJoints": "Mencari sendi",
+		"titleItemCall": "{name}: permintaan {index} dari {total}",
+		"titleItemView": "{item}: {move}, {direction}",
+		"titleSetup": "{name}: penyiapan karakter",
+		"titleRegistering": "{name}: menyiapkan tampilan",
+		"titleDrawing": "{name}: menggambar karakter",
+		"titleMoveMotion": "{name}: gerakan {move}, {direction}",
+		"titleMoveView": "{name}: {move}, {direction}",
 		"state": {
 			"queued": "dalam antrean",
 			"submitting": "sedang dikirim",
@@ -1934,7 +1954,6 @@
 		"retryIn": "coba lagi dalam {seconds} dtk",
 		"needsKey": "memerlukan kunci Anda",
 		"recent": "Terbaru",
-		"lostDetail": "tidak diketahui: mungkin sudah berjalan, periksa pixellab.ai",
 		"tierHint": "Alur kerja memerlukan PixelLab Tier {tier} atau lebih tinggi. Periksa paket dan saldo sebelum mencoba lagi. Satu pekerjaan yang gagal belum tentu berarti paket Anda bermasalah.",
 		"session": "Sesi ini: {cost}. Biaya sebagian animasi ditagih dalam dolar, bukan generasi. Saldo di atas mencerminkan total sebenarnya.",
 		"clearFollower": "Bersihkan di tab PixelDoll yang menjalankan pekerjaan",
@@ -2070,7 +2089,7 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, titik pivot {x},{y}",
 		"waitingForRepairReview": "Menunggu tinjauan frame item",
-		"needsRedo": "Sendi tidak ditemukan: buat lagi untuk menganimasikan item di dalamnya"
+		"needsRedo": "Sendi tidak ditemukan: gambar ulang untuk menganimasikan item di dalamnya"
 	},
 	"setup": {
 		"warnings": {
@@ -2099,6 +2118,7 @@
 		"resumeRigSetup": "Lanjutkan penyiapan rig",
 		"dismiss": "Singkirkan penyiapan",
 		"resume": "Lanjutkan penyiapan",
+		"resumePriceUnknown": "Harga untuk melanjutkan tidak dapat dihitung: {reason}",
 		"keepWorking": "Anda bisa terus bekerja. Penyiapan dilanjutkan setelah memuat ulang.",
 		"pixelsUnchanged": "Piksel yang sudah ada tidak berubah",
 		"setUpRig": "Siapkan rig",
@@ -2112,7 +2132,7 @@
 			"bodyChanged": "Tubuh berubah sejak penyiapan dimulai. Mulai ulang penyiapan untuk frame saat ini.",
 			"looksRequired": "Deskripsikan dulu penampilan karakter saat ini.",
 			"noFrames": "Tidak ada frame tubuh untuk penyiapan rig. Gambar yang ada tidak berubah.",
-			"jointsMissing": "PixelLab tidak dapat menemukan ke-18 sendi yang valid pada salah satu frame tubuh. Gambar yang ada tidak berubah. Hubungkan kembali atau pilih referensi berdiri yang lebih jelas, lalu lanjutkan.",
+			"jointsMissing": "PixelLab tidak dapat menemukan ke-18 sendi yang valid pada salah satu frame berdiri. Gambar yang ada tidak berubah. Gambar ulang frame itu di Perbaiki frame atau pilih tampilan berdiri yang lebih jelas, lalu lanjutkan penyiapan.",
 			"noCharacterId": "PixelLab tidak mengembalikan ID karakter terkelola. Gambar yang ada tidak berubah.",
 			"referenceChanged": "Referensi berdiri berubah selama penyiapan.",
 			"characterChanged": "Karakter berubah selama penyiapan. Pekerjaan karakter saat ini tetap disimpan.",
@@ -2172,7 +2192,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction}: jumlah frame dari PixelLab tidak sesuai. Tidak ada percobaan ulang berbayar yang dimulai. Tinjau Aktivitas sebelum meminta percobaan lain.",
 			"animationExceedsPxFrame": "{move} {direction}: frame tubuh tidak muat di frame {w} px. Frame tersebut disimpan untuk ditinjau; tidak ada yang disimpan ke karakter.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab mengembalikan frame kosong. Tidak ada percobaan ulang berbayar yang dimulai. Tinjau Aktivitas sebelum meminta percobaan lain.",
-			"validJointsWereFound": "{move} {direction}: tidak semua frame memiliki sendi yang valid. Gambar hasil generasi disimpan di Aktivitas. Penyiapan dihentikan tanpa menggambar ulang.",
+			"validJointsWereFound": "{move} {direction}: tidak semua frame memiliki sendi yang valid. Gambar hasil generasi disimpan di Aktivitas. Animasi dihentikan tanpa menggambar ulang.",
 			"matchBodyColorsOnly": "{direction}: cocokkan warna tubuh hanya setelah semua pemeriksaan sendi awal selesai.",
 			"colorMatchingCannotRepair": "{direction}: pencocokan warna tidak bisa memperbaiki masalah pose, kaki, atau batas frame.",
 			"colorDriftOutsideBounded": "{direction}: pergeseran warna melampaui batas perbaikan dengan palet referensi.",
@@ -2649,7 +2669,7 @@
 			"savedFramesUnavailable": "Frame selesai yang cocok dengan tubuh dan perlengkapan saat ini tidak tersedia. Tidak ada pembuatan yang diminta.",
 			"itemMoveSaveConflict": "Karakter atau item ini berubah saat frame-nya sedang dibuat. Gambar yang ada tetap disimpan; frame yang selesai tetap ada di Aktivitas.",
 			"itemMoveSaveConflictAlso": "Karakter atau item ini berubah saat frame-nya sedang dibuat. Gambar yang ada tetap disimpan; frame yang selesai tetap ada di Aktivitas. Tampilan lain juga berhenti: {reason}",
-			"keepWithoutStanding": "Item ini kehilangan frame pada animasi yang menjadi dasar desainnya, jadi tidak dapat disimpan tanpa animasi itu. Buat frame yang hilang sebagai gantinya.",
+			"keepWithoutStanding": "Item ini kehilangan frame pada animasi yang menjadi dasar desainnya, jadi tidak dapat disimpan tanpa animasi itu. Tampilkan animasi itu lalu gunakan Perbaiki item atau Gambar ulang item jika tersedia, atau buat item lagi.",
 			"keepWithoutNothingLeft": "Item ini tidak punya animasi lengkap untuk disimpan. Buat frame yang hilang sebagai gantinya.",
 			"savedFrameMissing": "Sebuah frame tersimpan dari item ini tidak ada di penyimpanan."
 		}
@@ -2978,6 +2998,7 @@
 	"paidReview": {
 		"title": "Hasil berbayar",
 		"spent": "Sudah dibayar: {gens} gen. Hasil ini disimpan dan dipakai ulang.",
+		"spentUnknown": "Sudah dibayar: setidaknya {gens} gen. Beberapa permintaan mungkin dikenai biaya tanpa laporan (periksa pixellab.ai). Hasil yang selesai disimpan dan dipakai ulang.",
 		"free": "Gratis",
 		"download": "Unduh hasil berbayar",
 		"frame": "{view}, frame {number}",
@@ -2987,7 +3008,8 @@
 			"pending": "Belum dibeli",
 			"failed": "Berhenti",
 			"running": "Masih berjalan di PixelLab"
-		}
+		},
+		"spentUnreported": "Sudah dibayar: tidak diketahui. Sebuah permintaan mungkin sudah berjalan dan dikenai biaya tanpa melaporkan biayanya (periksa pixellab.ai). Hasil yang selesai disimpan dan dipakai ulang."
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, gratis. Gerakan yang sudah dibayar dipakai ulang; hanya langkah pada frame yang diubah yang dibeli.",
@@ -3001,7 +3023,7 @@
 		"liftDetailWarned": "{views}: kaki naik hingga {px} px pada {frames} dari {total} frame gerakan agar gerakan muat di frame. Ini melebihi pemeriksaan kaki {limit} px, jadi animasi disimpan dengan peringatan kaki.",
 		"reroll": "Buat ulang {views}",
 		"rerollDetail": "Buat ulang hanya membeli percobaan baru untuk arah tersebut. Arah lain tetap memakai hasil berbayarnya.",
-		"keepUnposedDetail": "Menyimpan frame tubuh apa adanya. Sendi tidak ditemukan pada beberapa frame, jadi item tidak bisa disesuaikan ke animasi ini sampai Anda membuatnya lagi.",
+		"keepUnposedDetail": "Menyimpan frame tubuh apa adanya. Sendi tidak ditemukan pada beberapa frame, jadi item tidak bisa disesuaikan ke animasi ini sampai Anda menggambarnya ulang.",
 		"keepUnposed": "Simpan tanpa menyesuaikan item",
 		"pending": "Masih perlu dibeli: sekitar {gens} gen.",
 		"liftable": "Bisa dinaikkan agar muat: kaki naik hingga {px} px pada {frames} dari {total} frame.",
@@ -3142,6 +3164,7 @@
 	"report": {
 		"action": "Laporkan",
 		"actionLabel": "Laporkan masalah ini",
+		"actionLabelFor": "Laporkan masalah ini: {name}",
 		"title": "Laporkan masalah ini",
 		"intro": "Ini membuka issue publik di GitHub yang hanya berisi teks di bawah. Tidak ada gambar, prompt, nama, atau kunci yang disertakan. Anda mengirimkannya dengan akun GitHub Anda.",
 		"preview": "Pratinjau laporan",
@@ -3183,7 +3206,7 @@
 			"empty": "Hasil berbayar Anda tetap ada di Aktivitas. Coba lagi dengan percobaan baru.",
 			"dropped": "Tunggu sebentar, lalu coba lagi.",
 			"joints": "Apa pun yang sudah dibayar tetap ada di Aktivitas. Coba percobaan baru, atau mulai dari pose berdiri yang lebih jelas.",
-			"stopped": "Periksa Aktivitas untuk melihat apa yang terjadi sebelum memulai lagi.",
+			"stopped": "Permintaan tidak dikirim ulang. Lihat hasilnya sebelum memulai lagi.",
 			"quality": "Tinjau hasilnya, lalu simpan atau coba lagi.",
 			"changed": "Tinjau lagi sebelum melanjutkan.",
 			"missing": "Periksa Aktivitas untuk melihat apa yang masih tersimpan sebelum membuatnya lagi.",
@@ -3191,11 +3214,11 @@
 			"credits": "Tambahkan kredit di PixelLab, lalu coba lagi.",
 			"key": "Hubungkan PixelLab lagi dengan token yang valid.",
 			"offline": "Periksa koneksi Anda, lalu coba lagi.",
-			"declined": "Ubah deskripsinya, lalu coba lagi.",
+			"declined": "Buat lagi dengan deskripsi yang berbeda.",
 			"unexpected": "Laporkan agar bisa diperbaiki. Apa pun yang sudah dibayar tetap ada di Aktivitas.",
-			"uncertain": "Periksa Aktivitas sebelum mencoba lagi: percobaan baru bisa dikenai biaya lagi.",
+			"uncertain": "Permintaan ini mungkin sudah berjalan dan dikenai biaya. Periksa pixellab.ai sebelum mencoba lagi.",
 			"poses": "Siapkan posenya terlebih dahulu, lalu buat perlengkapannya.",
-			"method": "Pilih Otomatis, lalu coba lagi.",
+			"method": "Buat item lagi dan pilih Otomatis untuk Metode animasi.",
 			"quote": "Coba lagi sebentar lagi, atau pilih model lain.",
 			"browser": "Gunakan browser terbaru untuk melanjutkan.",
 			"exportId": "Pilih ID Ekspor lain.",

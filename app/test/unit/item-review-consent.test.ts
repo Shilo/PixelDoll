@@ -250,10 +250,66 @@ test('an item with frames only in the moves it is missing frames in is not offer
 	hat.layers[0].cells!.walk = { south: ['sha256:art', null] };
 	hat.coverage = ['walk/south/0'];
 	const reviewed = structuredClone(hat);
-	expect(keepableWithout(hat, ['walk'])).toBe(false);
+	expect(keepableWithout(m, hat, ['walk'])).toBe(false);
 	// Says why in its own words, not that the item changed under the user.
 	await expect(acceptItemReview('character', hat.id, reviewed, ['walk'])).rejects.toMatchObject({
 		translation: { key: 'itemRoute.errors.keepWithoutNothingLeft' }
 	});
 	expect(state.saved).toBeNull();
+});
+
+test('free accepts wait only for work on this character that involves the item', async () => {
+	const { itemAcceptWaits } = await import('../../src/studio/model.ts');
+	const idle = { spec: null, projectId: '', done: false, error: '' },
+		noSetup = { spec: null, done: false, error: '' };
+	const move = (projectId: string, items: string[], error = '') => ({
+		spec: { items },
+		projectId,
+		done: false,
+		error
+	});
+	expect(itemAcceptWaits('hat', 'character', idle, noSetup)).toBe(false);
+	// A stopped move on another character, or one here for other items, never blocks the free accept.
+	expect(itemAcceptWaits('hat', 'character', move('other', ['hat'], 'stopped'), noSetup)).toBe(
+		false
+	);
+	expect(itemAcceptWaits('hat', 'character', move('character', [], 'stopped'), noSetup)).toBe(
+		false
+	);
+	// A stopped move whose review involves the item, a move running here, or a running setup here waits.
+	expect(itemAcceptWaits('hat', 'character', move('character', ['hat'], 'stopped'), noSetup)).toBe(
+		true
+	);
+	expect(itemAcceptWaits('hat', 'character', move('character', []), noSetup)).toBe(true);
+	expect(
+		itemAcceptWaits('hat', 'character', idle, {
+			spec: { projectId: 'character' },
+			done: false,
+			error: ''
+		})
+	).toBe(true);
+	expect(
+		itemAcceptWaits('hat', 'character', idle, {
+			spec: { projectId: 'character' },
+			done: false,
+			error: 'stopped'
+		})
+	).toBe(false);
+});
+
+test('an item that names no standing move is never kept without the rig standing move', async () => {
+	const { keepWithoutRefusal } = await import('../../src/lib/items/run.ts');
+	const m = state.record!.manifest,
+		hat = m.items[0];
+	// Default is the rig's standing move; the hat has frames there and in walk, and names no standing move of its own.
+	m.rig.animations = [
+		{ id: 'default', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] },
+		{ id: 'walk', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }
+	];
+	hat.layers[0].cells!.default = { south: ['sha256:art'] };
+	delete hat.standing;
+	expect(keepWithoutRefusal(m, hat, ['default'])?.translation.key).toBe(
+		'itemRoute.errors.keepWithoutStanding'
+	);
+	expect(keepWithoutRefusal(m, hat, ['walk'])).toBeUndefined();
 });

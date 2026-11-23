@@ -78,6 +78,8 @@ export interface SubJob {
 export interface JobRec {
 	id: string;
 	label: string;
+	/** The row title users read in Activity, localized when shown; `label` stays the English text for the ledger and reports. */
+	title?: Message;
 	tag?: string;
 	activityScope?: string;
 	method: Req['method'];
@@ -126,9 +128,42 @@ export function managedStateSubmitChildId(record: JobRec): string | undefined {
 	return childId;
 }
 
+const UNREADABLE =
+	'This saved request could not be read. It was not resent; its result and cost are unknown.';
+/** A stored row the queue can show, or undefined when it is not a record at all. Older or damaged rows never stop the app
+ *  from opening: a record whose jobs or results cannot be read becomes terminal and unreadable (lost: it may have been
+ *  charged), so it is listed but never polled, downloaded or resent. */
+export function readableRecord(raw: unknown): JobRec | undefined {
+	if (!raw || typeof raw !== 'object' || typeof (raw as { id?: unknown }).id !== 'string')
+		return undefined;
+	const r = raw as JobRec;
+	const subJob = (s: unknown): s is SubJob => !!s && typeof s === 'object';
+	if (
+		Array.isArray(r.jobs) &&
+		r.jobs.every((s) => subJob(s) && Array.isArray(s.results)) &&
+		typeof r.createdAt === 'number'
+	)
+		return r;
+	const unreadable: JobRec = {
+		...r,
+		state: 'lost',
+		createdAt: typeof r.createdAt === 'number' ? r.createdAt : 0,
+		jobs: (Array.isArray(r.jobs) ? r.jobs : [])
+			.filter(subJob)
+			.map((s) => ({ ...s, done: true, results: Array.isArray(s.results) ? s.results : [] })),
+		error: UNREADABLE,
+		costUnknown: true
+	};
+	repaired.add(unreadable);
+	return unreadable;
+}
+/** Records readableRecord rebuilt from a damaged row: load stores them once, so every reader of the store sees them lost. */
+const repaired = new WeakSet<JobRec>();
+
 export function queueErrorParts(record: JobRec): (Message | string)[] {
 	const raw = record.error;
 	if (!raw) return [];
+	if (raw === UNREADABLE) return [message('activity.error.unreadable')];
 	const failed = record.jobs.filter((job) => job.error);
 	if (failed.length && raw === failed.map((job) => job.error).join(' | '))
 		return failed.map((job) => {
@@ -494,9 +529,11 @@ export class Queue {
 		}
 		const { all, get } = this.deps;
 		const owns = (r: JobRec) => this.ownsRecord(r);
-		this.deps.all = async () => (await all()).filter(owns);
+		// Every stored row is read through readableRecord: one damaged row must never stop the queue.
+		this.deps.all = async () =>
+			(await all()).flatMap((row) => readableRecord(row) ?? []).filter(owns);
 		this.deps.get = async (id) => {
-			const r = await get(id);
+			const r = readableRecord(await get(id));
 			return r && owns(r) ? r : undefined;
 		};
 	}
@@ -818,7 +855,7 @@ export class Queue {
 	}
 	async load() {
 		for (const r of await this.deps.all()) {
-			if (this.pollSubmitted(r)) await this.deps.put(r.id, r);
+			if (repaired.has(r) || this.pollSubmitted(r)) await this.deps.put(r.id, r);
 			// Crashed between "submitting" and saving the job id: the server may have it. Never auto-resubmit.
 			if (r.state === 'submitting') {
 				r.state = r.requestStarted === false ? 'failed' : 'lost';
@@ -1074,6 +1111,7 @@ export class Queue {
 		req: Req,
 		meta: {
 			label?: string;
+			title?: Message;
 			tag?: string;
 			activityScope?: string;
 			minimumTier?: number;
@@ -1157,6 +1195,7 @@ export class Queue {
 				? { estimateRecovery: { id: meta.estimateRetry.id, ...(retryOf ? { retryOf } : {}) } }
 				: {}),
 			label: meta.label ?? req.path,
+			...(meta.title ? { title: meta.title } : {}),
 			tag: meta.tag,
 			activityScope: meta.activityScope,
 			minimumTier: meta.minimumTier,

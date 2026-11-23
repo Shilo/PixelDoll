@@ -1,6 +1,13 @@
 import { accountBalance } from './account-fixture.ts';
 import { expect, test } from 'vitest';
-import { Queue, live, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts';
+import {
+	Queue,
+	live,
+	queueErrorParts,
+	type Deps,
+	type JobRec
+} from '../../src/lib/pixellab/queue.ts';
+import { message } from '../../src/lib/message.ts';
 import { ApiError } from '../../src/lib/pixellab/client.ts';
 import { recordProblemKind } from '../../src/studio/problemSummary.ts';
 
@@ -837,4 +844,29 @@ test('a credit refusal later accepted and then failed is not labeled out of cred
 	expect(settled.errorKind).toBeUndefined();
 	expect(recordProblemKind(settled)).toBe('stopped');
 	expect(recordProblemKind({ ...settled, errorKind: 'credits' })).toBe('stopped');
+});
+
+test('a damaged saved record never stops the queue from opening and is never resent', async () => {
+	const f = fixture(500),
+		q = f.make();
+	const old = await q.enqueue(request);
+	await q.tick();
+	// An older or damaged row: a sub-job without its results list, plus rows that are not records at all.
+	f.records.set(old.id, {
+		...f.records.get(old.id)!,
+		state: 'done',
+		jobs: [{ id: 'job', status: 'completed', done: true }]
+	} as unknown as JobRec);
+	f.records.set('junk', null as unknown as JobRec);
+	f.records.set('no-id', { state: 'queued' } as unknown as JobRec);
+	const resumed = f.make();
+	await resumed.load();
+	const shown = resumed.snapshot().jobs;
+	expect(shown.map((r) => r.id)).toEqual([old.id]);
+	expect(shown[0]).toMatchObject({ state: 'lost', jobs: [{ results: [] }] });
+	expect(queueErrorParts(shown[0])).toEqual([message('activity.error.unreadable')]);
+	await resumed.tick();
+	expect(f.posts()).toBe(1);
+	// Stored as read, so other readers of the store (State recovery, other tabs) see it lost and readable too.
+	expect(f.records.get(old.id)).toMatchObject({ state: 'lost', jobs: [{ results: [] }] });
 });

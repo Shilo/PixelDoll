@@ -1125,6 +1125,10 @@ dialog select option {
 	align-items: center;
 	gap: 10px;
 }
+/* A failure row holds a few lines: its icon stays beside the title instead of floating mid-row. */
+.act-group li:has(.problem) {
+	align-items: flex-start;
+}
 .act-main {
 	flex: 1;
 	min-width: 0;

@@ -122,6 +122,11 @@ test('drawn views that overflow their frame are placed again from the paid draw,
 	const review = (await reviewCreateResults(spec))!;
 	expect(enqueue).not.toHaveBeenCalled();
 	expect(review.views.every((view) => view.state === 'failed')).toBe(true);
+	// The view is named inside the sentence as the language writes it there ("the south view"), never by its id.
+	expect(review.views[0].notes[0]).toEqual({
+		key: 'create.errors.viewDoesFitPx',
+		vars: { direction: { key: 'directionInline.south' }, cell: 44 }
+	});
 	// Raised 1 px in the same frame, or in the smallest larger frame rounded to a price-verified size: each reuses the
 	// paid draw and is priced at one registration before anything is sent.
 	expect(review.options).toMatchObject([

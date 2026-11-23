@@ -287,6 +287,16 @@
 		"west": "Ouest",
 		"southWest": "Sud-ouest"
 	},
+	"directionInline": {
+		"south": "sud",
+		"southEast": "sud-est",
+		"east": "est",
+		"northEast": "nord-est",
+		"north": "nord",
+		"northWest": "nord-ouest",
+		"west": "ouest",
+		"southWest": "sud-ouest"
+	},
 	"directionShort": {
 		"south": "S",
 		"southEast": "SE",
@@ -1024,6 +1034,7 @@
 		"nameCouldNotFinishNoPaidRetry": "La génération de {name} n’a pas abouti. Aucune nouvelle tentative payante n’a été lancée. Ouvrez le panneau de vérification de l’objet pour réessayer.",
 		"nameHasIssuesToReviewNoPaid": "{name} a des problèmes à vérifier. Aucune nouvelle tentative payante n’a été lancée.",
 		"nameAcceptedAsIs": "{name} accepté tel quel",
+		"nameKeptWithout": "{name} gardé sans {moves}. Il reste masqué là jusqu’à ce que ces images soient créées.",
 		"nameSaved": "{name} enregistré",
 		"nameAdded": "{name} ajouté",
 		"cancelThisItemInTheTabThat": "Annulez la génération depuis l’onglet qui crée cet objet. Cet onglet n’a pas arrêté la génération.",
@@ -1565,6 +1576,7 @@
 		},
 		"coverage": {
 			"oneMove": "Il manque des images pour {move}",
+			"notMade": "Pas encore créé pour {move}",
 			"severalMoves": "Images manquantes dans {count} animations"
 		},
 		"qa": {
@@ -1937,6 +1949,7 @@
 		"characterSetup": "Configuration du personnage",
 		"error": {
 			"jobMissing": "PixelLab ne trouve plus la tâche. Ses résultats n’ont pas été enregistrés et la tâche a peut-être été facturée.",
+			"unreadable": "Cette requête enregistrée est illisible. Elle n’a pas été renvoyée ; son résultat et son coût sont inconnus, vérifiez donc pixellab.ai.",
 			"malformed": "PixelLab a renvoyé un résultat au format incorrect ({error}). La requête a peut-être été facturée.",
 			"download": "Le téléchargement du résultat a échoué après {count} tentatives : {error}. Téléchargez-le manuellement : {urls}",
 			"closedDuringSubmit": "PixelDoll s’est fermé pendant l’envoi de la requête. La tâche a peut-être été exécutée ; vérifiez sur pixellab.ai. La requête n’a pas été renvoyée.",
@@ -1960,6 +1973,13 @@
 		"cleared": "Effacé : {jobs}. Les tâches encore utilisées par vos brouillons, une création ou une animation en cours sont conservées.",
 		"clearedWithImages": "Effacé : {jobs} et {images}. Les tâches encore utilisées par vos brouillons, une création ou une animation en cours sont conservées.",
 		"findingJoints": "Recherche des articulations",
+		"titleItemCall": "{name} : requête {index} sur {total}",
+		"titleItemView": "{item} : {move}, {direction}",
+		"titleSetup": "{name} : configuration du personnage",
+		"titleRegistering": "{name} : préparation des vues",
+		"titleDrawing": "{name} : dessin du personnage",
+		"titleMoveMotion": "{name} : mouvement de {move}, {direction}",
+		"titleMoveView": "{name} : {move}, {direction}",
 		"state": {
 			"queued": "en file d’attente",
 			"submitting": "envoi en cours",
@@ -1995,7 +2015,6 @@
 		"retryIn": "nouvel essai dans {seconds} s",
 		"needsKey": "nécessite votre clé",
 		"recent": "Récent",
-		"lostDetail": "issue inconnue : la tâche a peut-être été exécutée. Vérifiez sur pixellab.ai",
 		"tierHint": "Cette opération nécessite un forfait PixelLab Tier {tier} ou supérieur. Vérifiez votre forfait et votre solde avant de réessayer. Une tâche en échec ne suffit pas à établir un problème de forfait.",
 		"session": "Cette session : {cost}. Certaines animations sont facturées en dollars américains plutôt qu’en générations. Le solde affiché ci-dessus fait foi.",
 		"clearFollower": "Effacez-les dans l’onglet PixelDoll qui exécute les tâches",
@@ -2134,7 +2153,7 @@
 		"bodySize": "{w} × {h} px",
 		"frameSize": "{w} × {h} px, pivot {x},{y}",
 		"waitingForRepairReview": "En attente de la vérification des images de l’objet",
-		"needsRedo": "Articulations introuvables : recréez-la pour y animer des objets"
+		"needsRedo": "Articulations introuvables : redessinez-la pour y animer des objets"
 	},
 	"setup": {
 		"warnings": {
@@ -2163,6 +2182,7 @@
 		"resumeRigSetup": "Reprendre la configuration du rig",
 		"dismiss": "Ignorer la configuration",
 		"resume": "Reprendre la configuration",
+		"resumePriceUnknown": "Le prix de la reprise n’a pas pu être calculé : {reason}",
 		"keepWorking": "Vous pouvez continuer à travailler. La configuration reprend après rechargement.",
 		"pixelsUnchanged": "Les pixels existants restent inchangés",
 		"setUpRig": "Configurer le rig",
@@ -2176,7 +2196,7 @@
 			"bodyChanged": "Le corps a changé depuis le début de la configuration. Relancez la configuration pour les images actuelles.",
 			"looksRequired": "Décrivez d’abord l’apparence existante du personnage.",
 			"noFrames": "Aucune image du corps n’est disponible pour la configuration du rig. Les visuels existants sont inchangés.",
-			"jointsMissing": "PixelLab n’a pas trouvé les 18 articulations valides sur une image du corps. Les visuels existants sont inchangés ; reconnectez-vous ou choisissez une référence debout plus claire, puis reprenez.",
+			"jointsMissing": "PixelLab n’a pas trouvé les 18 articulations valides sur une image debout. Les visuels existants sont inchangés ; redessinez cette image dans Corriger les images ou choisissez une vue debout plus claire, puis reprenez la configuration.",
 			"noCharacterId": "PixelLab n’a pas renvoyé d’ID de personnage géré. Les visuels existants sont inchangés.",
 			"referenceChanged": "Une référence debout a changé pendant la configuration.",
 			"characterChanged": "Le personnage a changé pendant la configuration. Son travail actuel a été conservé.",
@@ -2236,7 +2256,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction} : PixelLab a renvoyé un nombre d’images incorrect. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
 			"animationExceedsPxFrame": "{move} {direction} : les images du corps ne tiennent pas dans le cadre de {w} px. Elles ont été conservées pour vérification ; rien n’a été enregistré.",
 			"pixellabReturnedEmptyFrames": "{move} {direction} : PixelLab a renvoyé des images vides. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
-			"validJointsWereFound": "{move} {direction} : certaines images n’ont pas d’articulations valides. Les images générées sont conservées dans « Activité » ; la configuration s’est arrêtée sans les redessiner.",
+			"validJointsWereFound": "{move} {direction} : certaines images n’ont pas d’articulations valides. Les images générées sont conservées dans « Activité » ; l’animation s’est arrêtée sans les redessiner.",
 			"matchBodyColorsOnly": "{direction} : harmonisez les couleurs du corps uniquement une fois tous les contrôles d’articulations d’origine terminés.",
 			"colorMatchingCannotRepair": "{direction} : l’harmonisation des couleurs ne corrige pas les problèmes de pose, de pieds ou de bordure.",
 			"colorDriftOutsideBounded": "{direction} : l’écart de couleurs est trop important pour être corrigé avec la palette de référence.",
@@ -2721,7 +2741,7 @@
 			"savedFramesUnavailable": "Aucune image terminée ne correspond au corps et à l’équipement actuels. Aucune génération n’a été demandée.",
 			"itemMoveSaveConflict": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité.",
 			"itemMoveSaveConflictAlso": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité. Une autre vue s’est aussi arrêtée : {reason}",
-			"keepWithoutStanding": "Il manque des images à cet objet dans l’animation dont il est conçu, il ne peut donc pas être gardé sans elle. Créez plutôt les images manquantes.",
+			"keepWithoutStanding": "Il manque des images à cet objet dans l’animation dont il est conçu, il ne peut donc pas être gardé sans elle. Affichez cette animation et utilisez Réparer l’objet ou Redessiner l’objet s’ils sont proposés, ou recréez l’objet.",
 			"keepWithoutNothingLeft": "Cet objet n’a aucune animation complète à garder. Créez plutôt les images manquantes.",
 			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage."
 		}
@@ -3060,6 +3080,7 @@
 	"paidReview": {
 		"title": "Résultats payés",
 		"spent": "Déjà payé : {gens} gens. Ces résultats sont conservés et réutilisés.",
+		"spentUnknown": "Déjà payé : au moins {gens} gens. Certaines requêtes ont peut-être été facturées sans le signaler (vérifiez pixellab.ai). Les résultats terminés sont gardés et réutilisés.",
 		"free": "Gratuit",
 		"download": "Télécharger les résultats payés",
 		"frame": "{view}, image {number}",
@@ -3069,7 +3090,8 @@
 			"pending": "Pas encore acheté",
 			"failed": "Arrêté",
 			"running": "Toujours en cours chez PixelLab"
-		}
+		},
+		"spentUnreported": "Déjà payé : inconnu. Une requête a peut-être été exécutée et facturée sans signaler son coût (vérifiez pixellab.ai). Les résultats terminés sont gardés et réutilisés."
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}, gratuitement. Le mouvement payé est réutilisé ; seules les étapes sur le cadre modifié sont achetées.",
@@ -3083,7 +3105,7 @@
 		"liftDetailWarned": "{views} : les pieds montent jusqu’à {px} px dans {frames} images de mouvement sur {total} pour que le mouvement tienne dans le cadre. C’est au-delà du contrôle des pieds de {limit} px, l’animation est donc enregistrée avec un avertissement sur les pieds.",
 		"reroll": "Relancer {views}",
 		"rerollDetail": "Une relance n’achète une nouvelle tentative que pour ces directions. Toutes les autres gardent leurs résultats payés.",
-		"keepUnposedDetail": "Enregistre les images du corps telles quelles. Des articulations manquent sur certaines images : aucun objet ne pourra être ajusté à cette animation avant que vous la recréiez.",
+		"keepUnposedDetail": "Enregistre les images du corps telles quelles. Des articulations manquent sur certaines images : aucun objet ne pourra être ajusté à cette animation avant que vous la redessiniez.",
 		"keepUnposed": "Garder sans ajuster d’objets",
 		"pending": "Reste à acheter : environ {gens} gens.",
 		"liftable": "Peut être relevé pour tenir : les pieds montent jusqu’à {px} px dans {frames} images sur {total}.",
@@ -3234,6 +3256,7 @@
 	"report": {
 		"action": "Signaler",
 		"actionLabel": "Signaler ce problème",
+		"actionLabelFor": "Signaler ce problème : {name}",
 		"title": "Signaler ce problème",
 		"intro": "Ouvre un ticket public sur GitHub contenant uniquement le texte ci-dessous. Aucune image, aucun prompt, nom ou clé n’est inclus. Vous le publiez avec votre compte GitHub.",
 		"preview": "Aperçu du signalement",
@@ -3275,7 +3298,7 @@
 			"empty": "Vos résultats payés restent dans Activité. Réessayez avec une nouvelle tentative.",
 			"dropped": "Patientez un instant, puis réessayez.",
 			"joints": "Ce qui a été payé reste dans Activité. Faites une nouvelle tentative ou partez d’une pose debout plus nette.",
-			"stopped": "Consultez Activité pour voir ce qui s’est passé avant de recommencer.",
+			"stopped": "Elle n’a pas été renvoyée. Regardez ce qu’elle a renvoyé avant de recommencer.",
 			"quality": "Vérifiez les résultats, puis gardez-les ou réessayez.",
 			"changed": "Vérifiez de nouveau avant de continuer.",
 			"missing": "Consultez Activité pour voir ce qui est encore enregistré avant de le recréer.",
@@ -3283,11 +3306,11 @@
 			"credits": "Ajoutez des crédits sur PixelLab, puis réessayez.",
 			"key": "Reconnectez PixelLab avec un jeton valide.",
 			"offline": "Vérifiez votre connexion, puis réessayez.",
-			"declined": "Modifiez la description, puis réessayez.",
+			"declined": "Recréez-le avec une autre description.",
 			"unexpected": "Signalez-le pour qu’il soit corrigé. Ce qui a déjà été payé reste dans Activité.",
-			"uncertain": "Consultez Activité avant de réessayer : une nouvelle tentative pourrait être facturée à nouveau.",
+			"uncertain": "Elle a peut-être été exécutée et facturée. Vérifiez pixellab.ai avant de réessayer.",
 			"poses": "Configurez d’abord ses poses, puis créez l’équipement.",
-			"method": "Choisissez Automatique, puis réessayez.",
+			"method": "Recréez l’objet et choisissez Automatique pour Méthode d’animation.",
 			"quote": "Réessayez dans un instant ou choisissez un autre modèle.",
 			"browser": "Utilisez un navigateur récent pour continuer.",
 			"exportId": "Choisissez un autre ID d’export.",

@@ -282,6 +282,16 @@
 		"west": "西",
 		"southWest": "西南"
 	},
+	"directionInline": {
+		"south": "南",
+		"southEast": "东南",
+		"east": "东",
+		"northEast": "东北",
+		"north": "北",
+		"northWest": "西北",
+		"west": "西",
+		"southWest": "西南"
+	},
 	"directionShort": {
 		"south": "南",
 		"southEast": "东南",
@@ -995,6 +1005,7 @@
 		"nameCouldNotFinishNoPaidRetry": "{name}无法完成。未启动付费重试。请打开其检查页重试。",
 		"nameHasIssuesToReviewNoPaid": "{name}有问题需要检查。未启动付费重试。",
 		"nameAcceptedAsIs": "{name}已按现状接受",
+		"nameKeptWithout": "已保留{name}，但不含{moves}。在制作这些帧之前，它在那里会保持隐藏。",
 		"nameSaved": "{name}已保存",
 		"nameAdded": "{name}已添加",
 		"cancelThisItemInTheTabThat": "请在生成此装备的标签页中取消。此标签页未停止生成。",
@@ -1516,6 +1527,7 @@
 		},
 		"coverage": {
 			"oneMove": "缺少部分{move}帧",
+			"notMade": "尚未为{move}制作",
 			"severalMoves": "有 {count} 个动作缺少帧"
 		},
 		"qa": {
@@ -1879,6 +1891,7 @@
 		"characterSetup": "角色设置",
 		"error": {
 			"jobMissing": "PixelLab 已不再保留该任务。其结果未保存，可能已向你计费。",
+			"unreadable": "无法读取此已保存的请求。它未被重新发送；其结果和费用未知，请查看 pixellab.ai。",
 			"malformed": "PixelLab 返回了格式错误的结果（{error}）。该请求可能已向你计费。",
 			"download": "结果下载在 {count} 次尝试后失败：{error}。请手动下载：{urls}",
 			"closedDuringSubmit": "发送请求时 PixelDoll 已关闭。任务可能已运行；请查看 pixellab.ai。请求未重新发送。",
@@ -1900,6 +1913,13 @@
 		"cleared": "已清除 {jobs}。仍被草稿或正在进行的创建、动作任务使用的任务会保留。",
 		"clearedWithImages": "已清除 {jobs}和 {images}。仍被草稿或正在进行的创建、动作任务使用的任务会保留。",
 		"findingJoints": "正在查找关节",
+		"titleItemCall": "{name}：第 {index} 个请求，共 {total} 个",
+		"titleItemView": "{item}：{move}，{direction}",
+		"titleSetup": "{name}：角色设置",
+		"titleRegistering": "{name}：准备视角",
+		"titleDrawing": "{name}：绘制角色",
+		"titleMoveMotion": "{name}：{move}动作轨迹，{direction}",
+		"titleMoveView": "{name}：{move}，{direction}",
 		"state": {
 			"queued": "排队中",
 			"submitting": "提交中",
@@ -1934,7 +1954,6 @@
 		"retryIn": "{seconds} 秒后重试",
 		"needsKey": "需要你的密钥",
 		"recent": "最近",
-		"lostDetail": "未知：可能已运行，请检查 pixellab.ai",
 		"tierHint": "工作流需要 PixelLab Tier {tier} 或更高套餐。重试前请检查你的套餐和余额。仅任务失败并不能确认是套餐问题。",
 		"session": "本次会话：{cost}。部分动作按美元而非生成次数计费；上方的余额才是实际总额。",
 		"clearFollower": "请在运行任务的 PixelDoll 标签页中清除",
@@ -2070,7 +2089,7 @@
 		"bodySize": "{w}×{h} 像素",
 		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
 		"waitingForRepairReview": "等待检查装备帧",
-		"needsRedo": "未找到关节：请重新制作以在其上为装备制作动画"
+		"needsRedo": "未找到关节：请重绘以在其上为装备制作动画"
 	},
 	"setup": {
 		"warnings": {
@@ -2099,6 +2118,7 @@
 		"resumeRigSetup": "继续绑定结构设置",
 		"dismiss": "放弃设置",
 		"resume": "继续设置",
+		"resumePriceUnknown": "无法计算继续的费用：{reason}",
 		"keepWorking": "你可以继续工作。重新加载后会继续设置。",
 		"pixelsUnchanged": "现有像素保持不变",
 		"setUpRig": "设置绑定结构",
@@ -2112,7 +2132,7 @@
 			"bodyChanged": "设置开始后身体已更改。请为当前帧重新开始设置。",
 			"looksRequired": "请先描述角色现有的外观。",
 			"noFrames": "没有可用于绑定结构设置的身体帧。现有图像保持不变。",
-			"jointsMissing": "PixelLab 无法在一个身体帧上找到全部 18 个有效关节。现有图像保持不变；请重新连接，或选择更清晰的站立参考后继续。",
+			"jointsMissing": "PixelLab 无法在一个站立帧上找到全部 18 个有效关节。现有图像保持不变；请在“修正帧”中重绘该帧，或选择更清晰的站立视角，然后继续设置。",
 			"noCharacterId": "PixelLab 未返回受管角色 ID。现有图像保持不变。",
 			"referenceChanged": "设置期间站立参考已更改。",
 			"characterChanged": "设置期间角色已更改。其当前工作已保留。",
@@ -2172,7 +2192,7 @@
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLab 返回的帧数不正确。未启动付费重试。请求另一次尝试前请查看“活动”。",
 			"animationExceedsPxFrame": "{move} {direction}：身体帧超出 {w} px 帧。已保留以供查看；未保存任何内容。",
 			"pixellabReturnedEmptyFrames": "{move} {direction}：PixelLab 返回了空帧。未启动付费重试。请求另一次尝试前请查看“活动”。",
-			"validJointsWereFound": "{move} {direction}：并非每一帧都找到了有效关节。生成的图像保留在“活动”中；设置已停止，未重绘它们。",
+			"validJointsWereFound": "{move} {direction}：并非每一帧都找到了有效关节。生成的图像保留在“活动”中；动作已停止，未重绘它们。",
 			"matchBodyColorsOnly": "{direction}：请在所有原始关节检查完成后才匹配身体颜色。",
 			"colorMatchingCannotRepair": "{direction}：颜色匹配无法修复姿势、脚部或边界失败。",
 			"colorDriftOutsideBounded": "{direction}：颜色偏移超出有界参考调色板修复范围。",
@@ -2649,7 +2669,7 @@
 			"savedFramesUnavailable": "没有与当前基础身体和装备匹配的已完成帧。未请求任何生成。",
 			"itemMoveSaveConflict": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。",
 			"itemMoveSaveConflictAlso": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。另一个朝向也已停止：{reason}",
-			"keepWithoutStanding": "此装备在其设计所依据的动作中缺少帧，因此不能不含该动作而保留。请改为制作缺少的帧。",
+			"keepWithoutStanding": "此装备在其设计所依据的动作中缺少帧，因此不能不含该动作而保留。请显示该动作，并在可用时使用“修复装备”或“重绘装备”，或重新制作此装备。",
 			"keepWithoutNothingLeft": "此装备没有可保留的完整动作。请改为制作缺少的帧。",
 			"savedFrameMissing": "此装备的一个已保存帧在存储中缺失。"
 		}
@@ -2978,6 +2998,7 @@
 	"paidReview": {
 		"title": "付费结果",
 		"spent": "已支付：{gens} gens。这些结果会保留并重复使用。",
+		"spentUnknown": "已支付：至少 {gens} gens。部分请求可能已收费但未报告（请查看 pixellab.ai）。已完成的结果会保留并重复使用。",
 		"free": "免费",
 		"download": "下载付费结果",
 		"frame": "{view}，第 {number} 帧",
@@ -2987,7 +3008,8 @@
 			"pending": "尚未购买",
 			"failed": "已停止",
 			"running": "仍在 PixelLab 处理中"
-		}
+		},
+		"spentUnreported": "已支付：未知。某个请求可能已运行并收费，但未报告费用（请查看 pixellab.ai）。已完成的结果会保留并重复使用。"
 	},
 	"moveReview": {
 		"makeRoomDetail": "{change}，免费。复用已付费的动作；只购买在更改后的帧上的步骤。",
@@ -3001,7 +3023,7 @@
 		"liftDetailWarned": "{views}：为让运动放进帧内，{total} 个运动帧中有 {frames} 个的脚最多抬高 {px} px。这超过了 {limit} px 的脚部检查，因此动作会带着脚部警告保存。",
 		"reroll": "重新生成{views}",
 		"rerollDetail": "重新生成只为这些朝向购买一次新的尝试。其他朝向保留其付费结果。",
-		"keepUnposedDetail": "按原样保存身体帧。部分帧未找到关节，因此在重新制作之前，无法为此动作适配装备。",
+		"keepUnposedDetail": "按原样保存身体帧。部分帧未找到关节，因此在重绘之前，无法为此动作适配装备。",
 		"keepUnposed": "保留但不适配装备",
 		"pending": "仍需购买：约 {gens} gens。",
 		"liftable": "可抬高以适配：{total} 帧中有 {frames} 帧的脚最多抬高 {px} px。",
@@ -3142,6 +3164,7 @@
 	"report": {
 		"action": "报告",
 		"actionLabel": "报告此问题",
+		"actionLabelFor": "报告此问题：{name}",
 		"title": "报告此问题",
 		"intro": "这会在 GitHub 上打开一个公开问题，只包含下方文字。不包含图像、提示词、名称或密钥。你需要用自己的 GitHub 账号发布。",
 		"preview": "报告预览",
@@ -3183,7 +3206,7 @@
 			"empty": "已付费的结果仍在“活动”中。请用新的尝试重试。",
 			"dropped": "请稍等片刻后重试。",
 			"joints": "已付费的内容会保留在“活动”中。请重新尝试，或从更清晰的站立姿势开始。",
-			"stopped": "重新开始前，请在“活动”中查看发生了什么。",
+			"stopped": "它未被重新发送。重新开始前，请先查看它返回的内容。",
 			"quality": "请查看结果，然后保留或重试。",
 			"changed": "继续前请重新查看。",
 			"missing": "重新制作前，请在“活动”中查看仍保存的内容。",
@@ -3191,11 +3214,11 @@
 			"credits": "请在 PixelLab 添加积分后重试。",
 			"key": "请使用有效的令牌重新连接 PixelLab。",
 			"offline": "请检查网络连接后重试。",
-			"declined": "请修改描述后重试。",
+			"declined": "请用不同的描述重新制作。",
 			"unexpected": "请报告此问题以便修复。已付费的内容会保留在“活动”中。",
-			"uncertain": "重试前请先查看“活动”：新的尝试可能会再次收费。",
+			"uncertain": "它可能已运行并收费。重试前请先查看 pixellab.ai。",
 			"poses": "请先设置其姿势，然后再制作装备。",
-			"method": "请选择“自动”后重试。",
+			"method": "请重新制作此装备，并在“动画方法”中选择“自动”。",
 			"quote": "请稍后重试，或选择其他模型。",
 			"browser": "请使用最新的浏览器继续。",
 			"exportId": "请选择其他导出 ID。",

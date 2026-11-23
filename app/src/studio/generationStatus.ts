@@ -2,6 +2,12 @@ import { queueErrorParts, type JobRec, type RecState } from '../lib/pixellab/que
 import { itemGenerationMinutes } from '../lib/items/items.ts';
 import type { Gen } from './state.svelte.ts';
 import { message, type LoggedMessage, type Message } from '../lib/message.ts';
+import {
+	paidRetryLeads,
+	problemKind,
+	recordProblemKind,
+	type ProblemKind
+} from './problemSummary.ts';
 
 export const GENERATION_STOPPED = 'Generation stopped. Review Activity before trying again.';
 export const NO_USABLE_FRAMES = 'PixelLab did not return usable frames';
@@ -52,6 +58,30 @@ export function generationLogMessage(
 		index: formatNumber(index),
 		state: render(activityStateMessage(record.state)),
 		...(error ? { error: render(error) } : {})
+	});
+}
+
+/** What a failed generation's notice says happened: a stopped paid call is read from its request record (a refusal for
+ *  credits or the token, a decline, a possible charge), anything else from the error itself. */
+export function generationProblemKind(
+	g: Gen,
+	jobs: JobRec[],
+	error: unknown
+): ProblemKind | undefined {
+	const outcome = generationCallOutcome(g, jobs);
+	return outcome ? recordProblemKind(outcome.record) : problemKind(error);
+}
+
+/** Whether re-buying these stopped calls is the way on that leads: never when one of them may already have charged, was
+ *  declined or was refused for the account (paidRetryLeads). */
+export function rerollLeads(
+	recIds: readonly (string | undefined)[],
+	calls: readonly number[],
+	jobs: JobRec[]
+) {
+	return calls.every((k) => {
+		const record = jobs.find((job) => job.id === recIds[k]);
+		return !record || paidRetryLeads(recordProblemKind(record));
 	});
 }
 

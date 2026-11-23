@@ -5966,7 +5966,7 @@ test('a move rig setup skipped is marked in the Moves list to make again', async
 	await equipmentMode(page, 'Moves');
 	await expect(
 		page.getByRole('button', {
-			name: /^Walk .*Joints not found: make it again to animate items on it/
+			name: /^Walk .*Joints not found: redraw it to animate items on it/
 		})
 	).toBeVisible();
 });
