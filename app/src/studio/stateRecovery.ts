@@ -136,3 +136,17 @@ export function stateProgressOf(
 		...(status === 'attention' && run?.error && { error: run.error })
 	};
 }
+
+/** Which batch receipts a review was read from; it differs once another tab buys or finishes a batch of the attempt. */
+export function stateReviewReceipts(
+	attempt: ContinuableAttempt,
+	ledger: readonly JobRec[]
+): string {
+	const ready = stateReviewBatches(attempt, ledger);
+	return JSON.stringify(
+		ready && {
+			records: ready.records.map(({ index, record }) => [index, record.id, record.state]),
+			unmade: ready.unmade
+		}
+	);
+}

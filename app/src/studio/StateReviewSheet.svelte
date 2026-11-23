@@ -3,7 +3,7 @@
 	import ProblemNotice from './ProblemNotice.svelte';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import type { Img } from '../lib/image/png.ts';
-	import { errorMessage, type Message } from '../lib/message.ts';
+	import { errorMessage, LocalizedError, type Message } from '../lib/message.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import { DIRECTIONS, type DirectionName } from '../lib/rig/rig.ts';
@@ -222,7 +222,20 @@
 		if (!reviewed) return;
 		const pending = reviewed;
 		void run('stateCapture.saving', async () => {
-			await saveState(pending, reviewRiding);
+			try {
+				await saveState(pending, reviewRiding);
+			} catch (cause) {
+				// Another tab finished more views: show them, and say why nothing was saved.
+				if (
+					cause instanceof LocalizedError &&
+					cause.translation.key === 'stateGeneration.newViews'
+				) {
+					review = await pendingState(projectId, token);
+					reviewFacing = null;
+					keepGrounded = true;
+				}
+				throw cause;
+			}
 			delete stateRuns[token];
 			await refreshStateAttempts(projectId);
 		});

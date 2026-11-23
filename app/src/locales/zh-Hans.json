@@ -2776,6 +2776,7 @@
 		"unfetchedViews": "无法下载朝向{directions}的视图。请先重试：如果不带它保存，之后将无法再获取。",
 		"canceledViews": "朝向{directions}的视图在生成前已被取消。现在保存的话，它将不会生成。",
 		"unmadeViews": "由于之前的请求已停止，朝向{directions}的视图未生成。请查看生成它的费用，或不带它保存。",
+		"newViews": "此 State 有新视图已完成。保存前请重新查看。没有保存任何内容，也没有扣费。",
 		"saveWithout": "不带它们保存",
 		"unfinished": "本次尝试的结果尚未完成或不可用。请查看活动。未再次发送请求。",
 		"outdated": "这个未完成的状态是用旧版 PixelDoll 开始的。请放弃后重新开始。",
