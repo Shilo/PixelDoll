@@ -510,6 +510,36 @@ test('native PixMiniMax keeps exactly N frames in returned order and discloses t
 	);
 });
 
+test.each([2, -1])(
+	'native PixMiniMax with a frame count off by %i from N stops without publishing or another paid request',
+	async (extra) => {
+		const f = await fixture(false, 'none');
+		const reply = f.enqueue.getMockImplementation()!;
+		f.enqueue.mockImplementation(async (req, ...rest) => {
+			const record = await reply(req, ...rest);
+			if (req.path !== '/animate-pixminimax') return record;
+			const results = record.jobs[0].results!;
+			record.jobs[0].results =
+				extra > 0
+					? [
+							...results,
+							...results
+								.slice(0, extra)
+								.map((r, i) => ({ ...r, label: String(results.length + i) }))
+						]
+					: results.slice(0, extra);
+			return record;
+		});
+		await expect(f.run({ animation: { model: 'pixminimax' } })).rejects.toThrow(
+			`PixelLab returned ${4 + extra} motion frames for 4 requested`
+		);
+		// the one paid render only: no joint check, no other render, nothing saved
+		expect(f.enqueue).toHaveBeenCalledOnce();
+		expect(f.put).not.toHaveBeenCalled();
+		expect(f.saved()).toEqual(f.original);
+	}
+);
+
 // Deliberately changed (soft gates): a targeted replacement that misses only numerical body checks used to throw and keep
 // nothing. It is now staged for a free Save or Discard, body only; the priced Skeleton retry is offered from that draft.
 test('a native quality failure stages a free body review and offers a priced body draft retry without buying equipment', async () => {
