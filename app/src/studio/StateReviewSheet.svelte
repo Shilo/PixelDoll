@@ -27,7 +27,7 @@
 		type StateReview
 	} from './stateGeneration.ts';
 	import { stateCostText } from './stateCost.ts';
-	import { stateGenerationSource } from './stateGenerationSource.ts';
+	import { stateGenerationSource, stateSourceFits } from './stateGenerationSource.ts';
 	import {
 		continueStateRun,
 		refreshStateAttempts,
@@ -88,6 +88,10 @@
 	const reviewRiding = $derived(!!review?.riding || review?.id === RIDING_STATE);
 	const reviewSource = $derived(review && project && stateGenerationSource(project, review.source));
 	const sourceCurrent = $derived(!!review && reviewSource?.version === review.sourceVersion);
+	// Drawn from an earlier look of its source frame, it can still be saved while it lines up with the character.
+	const sourceFits = $derived(
+		!!review && !!project && stateSourceFits(project, review.sourceVersion)
+	);
 	// Every facing the saved State will have: generated views plus the rig's mirrors of them.
 	const reviewViews = $derived.by(() => {
 		const current = reviewed;
@@ -285,7 +289,9 @@
 			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
 			{#if reviewRiding}<p class="muted small">{t('stateGeneration.ridingCheck')}</p>{/if}
 			{#if !sourceCurrent}
-				<p class="notice warn small" role="status">{t('stateGeneration.sourceChanged')}</p>
+				<p class="notice warn small" role="status">
+					{t(sourceFits ? 'stateGeneration.sourceChangedKeep' : 'stateGeneration.sourceChanged')}
+				</p>
 			{:else if Object.keys(review.ungrounded).length}
 				<label class="bu-check review-ground">
 					<span class="edit-copy">
@@ -373,7 +379,7 @@
 				type="button"
 				class="bu-btn"
 				data-variant="primary"
-				disabled={!!busy || !sourceCurrent}
+				disabled={!!busy || !sourceFits}
 				onclick={save}>{t('common.save')}</button
 			>
 		</div>
