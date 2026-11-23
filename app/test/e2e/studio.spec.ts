@@ -7704,9 +7704,9 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	const sheet = page.getByRole('dialog', { name: /^Redraw / });
 	await expect(sheet).toContainText('Joint-check outcome unknown');
 	await expect(sheet.getByText('Posing your items', { exact: true })).not.toHaveClass(/\bdone\b/);
-	await expect(sheet).toContainText(
-		'Could not check cached frames: Synthetic standing image storage failure'
-	);
+	// A failed review read is shown with a free Try again; Generate again stays available (startMove guards live requests).
+	await expect(sheet).toContainText('Your paid results could not be read');
+	await expect(sheet.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
 	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',

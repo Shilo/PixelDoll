@@ -1022,6 +1022,7 @@
 		"couldNotSaveFlowFailure": "{error} 이 기기에 이 실패를 저장하지 못했어요. 다시 불러오기 전에 이 작업을 버려 주세요.",
 		"useSavedFramesInTheTabThat": "PixelDoll 작업을 관리하는 탭에서 저장된 프레임을 사용하세요.",
 		"anotherMoveIsStillBeingAddedSo": "다른 동작을 아직 추가하고 있어서 이 동작은 시작되지 않았어요. 끝나면 다시 시도해 주세요.",
+		"moveStillAtPixelLab": "이 동작의 요청이 아직 PixelLab에서 처리 중이라 새 시도를 시작하지 않았고 요금도 없어요. 활동에서 끝날 때까지 기다린 뒤 동작을 검토하세요.",
 		"moveNameAdded": "{moveName} 추가됨",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} 쪽에 검토할 아이템 문제가 있어요. 유료 재시도는 시작되지 않았어요.",
 		"moveFailedOpen": "{moveName} 실패. 애니메이션을 열어 복구 옵션을 확인하세요.",
@@ -2534,7 +2535,6 @@
 			"tier": "현재 PixelLab 요금제에서 선택한 일부 아이템을 지원하지 않아요."
 		},
 		"thatCharacter": "해당 캐릭터",
-		"recoveryCheckFailed": "캐시된 프레임을 확인하지 못했어요: {error}",
 		"retryLabel": "동작 다시 생성",
 		"newSetup": "새 애니메이션…",
 		"useSaved": "저장된 프레임 사용",

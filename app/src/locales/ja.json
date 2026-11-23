@@ -1022,6 +1022,7 @@
 		"couldNotSaveFlowFailure": "このエラーをこのデバイスに保存できませんでした。再読み込みする前に、この操作を破棄してください。（{error}）",
 		"useSavedFramesInTheTabThat": "保存済みのフレームは、PixelDollのジョブを管理しているタブで使ってください。",
 		"anotherMoveIsStillBeingAddedSo": "別のモーションを追加中のため、このモーションの追加は始まりませんでした。完了後にもう一度お試しください。",
+		"moveStillAtPixelLab": "このモーションのリクエストがまだ PixelLab で処理中のため、新しい試行は開始せず、料金も発生していません。アクティビティで完了を待ってから、モーションを確認してください。",
 		"moveNameAdded": "{moveName}を追加しました",
 		"moveNameHasItemIssuesToReviewNo": "{moveName}には、確認が必要なアイテムがあります。有料の再試行は開始していません。",
 		"moveFailedOpen": "{moveName}の生成に失敗しました。「モーション」を開いて対処方法を確認してください。",
@@ -2534,7 +2535,6 @@
 			"tier": "ご利用のPixelLabプランでは、選択した一部のアイテムに対応していません。"
 		},
 		"thatCharacter": "そのキャラクター",
-		"recoveryCheckFailed": "キャッシュされたフレームを確認できませんでした：{error}",
 		"retryLabel": "モーションをもう一度生成",
 		"newSetup": "新規モーション…",
 		"useSaved": "保存済みのフレームを使う",
