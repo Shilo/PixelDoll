@@ -907,7 +907,9 @@
 		"still": "Still",
 		"inspect": "Inspect",
 		"customization": "Customization",
-		"customizationPanels": "Customization panels"
+		"customizationPanels": "Customization panels",
+		"tabWorkRunning": "Work is running here",
+		"tabWorkAttention": "Work here needs attention"
 	},
 	"worldStage": {
 		"groundUnavailable": "Continuous ground rendering unavailable. Showing the static scene.",

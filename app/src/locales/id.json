@@ -883,7 +883,9 @@
 		"still": "Diam",
 		"inspect": "Periksa",
 		"customization": "Penyesuaian",
-		"customizationPanels": "Panel penyesuaian"
+		"customizationPanels": "Panel penyesuaian",
+		"tabWorkRunning": "Ada pekerjaan yang sedang berjalan di sini",
+		"tabWorkAttention": "Ada pekerjaan di sini yang perlu diperhatikan"
 	},
 	"worldStage": {
 		"groundUnavailable": "Perenderan lantai secara langsung tidak tersedia. Adegan statis ditampilkan.",

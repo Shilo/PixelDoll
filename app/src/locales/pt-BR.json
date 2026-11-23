@@ -910,7 +910,9 @@
 		"still": "Parado",
 		"inspect": "Inspecionar",
 		"customization": "Personalização",
-		"customizationPanels": "Painéis de personalização"
+		"customizationPanels": "Painéis de personalização",
+		"tabWorkRunning": "Há trabalho em andamento aqui",
+		"tabWorkAttention": "Há trabalho aqui que precisa de atenção"
 	},
 	"worldStage": {
 		"groundUnavailable": "Não é possível renderizar o chão em tempo real. A cena estática é exibida.",
