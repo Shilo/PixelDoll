@@ -2716,7 +2716,7 @@
 			"useRepaired": "Usar quadros reparados",
 			"useFinishedRedraws": "Usar os redesenhos concluídos",
 			"useFinishedRepairs": "Usar os reparos concluídos",
-			"stopped": "Um lote seguinte não voltou utilizável, então os quadros {frames} mantêm a arte atual. Nada mais foi comprado.",
+			"stopped": "Um lote seguinte parou, então os quadros {frames} mantêm a arte atual. Nada mais foi comprado.",
 			"heldBy": "Os quadros de um item de {character} estão prontos para revisão. As animações na fila vão aguardar sua escolha.",
 			"compare": "Comparar quadros do item",
 			"saved": "Os novos quadros já foram salvos. Conclua a revisão para continuar.",

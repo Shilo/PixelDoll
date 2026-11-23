@@ -2438,6 +2438,8 @@ export type RepairReview = {
 	replacement: Img[];
 	/** Frame indices a stopped batch left with their current art, when the finished batches are offered alone. */
 	kept?: number[];
+	/** Why that batch stopped (a failed request or the plan refusing it), shown with the review. */
+	stoppedBy?: Message | string;
 };
 
 async function publishClip(
@@ -2977,7 +2979,7 @@ export async function regridClip(
 	const cells: CellOut[] = [],
 		provenance: Provenance[] = [],
 		registrationFindings: string[] = [];
-	let stopped: number | undefined;
+	let stopped: number | undefined, stoppedBy: Message | string | undefined;
 	for (const [index, request] of requests.entries()) {
 		let result: Awaited<ReturnType<typeof gridItemClip>>;
 		try {
@@ -3002,6 +3004,7 @@ export async function regridClip(
 			if (!cells.length) throw error;
 			console.error('item repair batch', error);
 			stopped = index;
+			stoppedBy = errorMessage(error);
 			break;
 		}
 		if ('blocked' in result) {
@@ -3010,6 +3013,7 @@ export async function regridClip(
 			if (!cells.length) throw refused;
 			console.error('item repair batch', refused);
 			stopped = index;
+			stoppedBy = errorMessage(refused);
 			break;
 		}
 		// A shifted batch is flagged G10 (itemQa) and lands in the review with the rest of the approved, already priced
@@ -3082,7 +3086,9 @@ export async function regridClip(
 			findings: [...new Set([...registrationFindings, ...[...qa.failCalls.values()].flat()])],
 			current: previews(project),
 			replacement: previews(repaired),
-			...(kept.length ? { kept: kept.map((k) => Number(k.split('/')[2])) } : {})
+			...(kept.length
+				? { kept: kept.map((k) => Number(k.split('/')[2])), stoppedBy: stoppedBy! }
+				: {})
 		}
 	};
 }

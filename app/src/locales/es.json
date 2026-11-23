@@ -2707,7 +2707,7 @@
 			"useRepaired": "Usar los fotogramas reparados",
 			"useFinishedRedraws": "Usar los redibujos terminados",
 			"useFinishedRepairs": "Usar las reparaciones terminadas",
-			"stopped": "Un lote posterior no llegó utilizable, así que los fotogramas {frames} conservan su arte actual. No se compró nada más.",
+			"stopped": "Un lote posterior se detuvo, así que los fotogramas {frames} conservan su arte actual. No se compró nada más.",
 			"heldBy": "Los fotogramas de un objeto de {character} están listos para revisar. Las animaciones de la cola esperarán tu decisión.",
 			"compare": "Comparar fotogramas del objeto",
 			"saved": "Los nuevos fotogramas ya están guardados. Termina la revisión para continuar.",

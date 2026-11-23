@@ -390,6 +390,8 @@ test('Tier 1 offers the finished batch when the plan stops allowing a later one'
 	expect(f.enqueue).toHaveBeenCalledTimes(1);
 	expect(result.saved).toBe(false);
 	expect(result.review?.kept).toEqual([3, 4, 5, 6, 7]);
+	// The review says why the later batch stopped, not only the console.
+	expect(result.review?.stoppedBy).toMatchObject({ key: 'activity.planWait.tier' });
 });
 
 test('Tier 1 does not publish a facing with a visibly different batch palette', async () => {

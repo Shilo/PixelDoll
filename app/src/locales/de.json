@@ -2707,7 +2707,7 @@
 			"useRepaired": "Reparierte Frames verwenden",
 			"useFinishedRedraws": "Fertige Neuzeichnungen verwenden",
 			"useFinishedRepairs": "Fertige Reparaturen verwenden",
-			"stopped": "Ein späterer Durchgang kam nicht brauchbar zurück, daher behalten die Frames {frames} ihre aktuelle Grafik. Es wurde nichts weiter gekauft.",
+			"stopped": "Ein späterer Durchgang wurde nicht abgeschlossen, daher behalten die Frames {frames} ihre aktuelle Grafik. Es wurde nichts weiter gekauft.",
 			"heldBy": "Die Frames eines Gegenstands für {character} können geprüft werden. Animationen in der Warteschlange warten auf deine Entscheidung.",
 			"compare": "Gegenstandsframes vergleichen",
 			"saved": "Die neuen Frames sind bereits gespeichert. Schließe die Prüfung ab, um fortzufahren.",

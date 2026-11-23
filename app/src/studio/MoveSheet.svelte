@@ -1780,6 +1780,7 @@
 							frames: repairReview.kept.map((index) => formatNumber(index + 1))
 						})
 					)}
+					{#if repairReview.stoppedBy}{displayNestedMessage(repairReview.stoppedBy)}{/if}
 				</p>{/if}
 			<div class="repair-pairs">
 				{#each repairReview.replacement as frame, index (index)}

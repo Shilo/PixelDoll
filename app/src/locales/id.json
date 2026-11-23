@@ -2635,7 +2635,7 @@
 			"useRepaired": "Gunakan frame yang diperbaiki",
 			"useFinishedRedraws": "Gunakan gambar ulang yang selesai",
 			"useFinishedRepairs": "Gunakan perbaikan yang selesai",
-			"stopped": "Batch berikutnya tidak kembali dalam kondisi bisa dipakai, jadi frame {frames} tetap memakai gambar saat ini. Tidak ada lagi yang dibeli.",
+			"stopped": "Batch berikutnya berhenti, jadi frame {frames} tetap memakai gambar saat ini. Tidak ada lagi yang dibeli.",
 			"heldBy": "Frame item untuk {character} siap ditinjau. Gerakan dalam antrean menunggu pilihan Anda.",
 			"compare": "Bandingkan frame item",
 			"saved": "Frame baru sudah disimpan. Selesaikan peninjauan untuk melanjutkan.",
