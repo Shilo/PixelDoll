@@ -715,6 +715,8 @@ class Store {
 	exportRecord = $state.raw<StoredProject>();
 	projects = $state.raw<ProjectRef[]>([]);
 	results = $state.raw<Record<string, ItemResult | null>>({});
+	/** Drafts whose paid frames could not be read for review: the review offers a free Try again (readGenReview). */
+	resultsUnread = $state.raw<Record<string, true>>({});
 }
 export const store = new Store();
 /** Entries in Recently deleted, newest first: one per deletion, each restorable after a reload. */
@@ -3017,7 +3019,7 @@ export function loadGens(): Promise<void> {
 		setGens(await readGens());
 		gensReady = true;
 		if (queue.role !== 'follower') drive();
-		else for (const g of gens) if (g.phase === 'review') void evalGen(g);
+		else for (const g of gens) if (g.phase === 'review') void readGenReview(g);
 	})());
 }
 function drive() {
@@ -3029,7 +3031,7 @@ function drive() {
 	if (outdated.length) void saveGens();
 	for (const g of gens)
 		if (g.phase === 'running') void runGen(g);
-		else if (g.phase === 'review') void evalGen(g);
+		else if (g.phase === 'review') void readGenReview(g);
 	void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
 	if (!deleted.ready) void refreshRecentlyDeleted(); // once: expired deletions never look restorable
 }
@@ -3053,7 +3055,7 @@ queue.subscribe((s) => {
 			setGens(list);
 			refreshSharedSoon(); // the leader tab may have saved an item to another character
 			for (const g of gens)
-				if (g.phase === 'review' && !store.results[g.draft.spec.id]) void evalGen(g);
+				if (g.phase === 'review' && !store.results[g.draft.spec.id]) void readGenReview(g);
 		},
 		(e) => console.error('drafts', e)
 	);
@@ -3409,12 +3411,21 @@ async function autoSave(g: Gen): Promise<boolean> {
 		return false;
 	}
 }
-async function evalGen(g: Gen) {
-	const ctx = await loadProject(g.draft.rigId);
-	// Spread after the await: concurrent evaluations (every review draft after a reload) otherwise overwrite each other's results,
-	// leaving a card on "Checking the frames" forever (2026-11-07 live test).
-	const result = await (await itemRun()).evaluateItem(g.draft, ctx);
-	store.results = { ...store.results, [g.draft.spec.id]: result };
+/** Read a review draft's paid frames again. A failed read is recorded, never left as "Checking the frames" forever. */
+export async function readGenReview(g: Gen) {
+	const id = g.draft.spec.id;
+	const { [id]: _, ...unread } = store.resultsUnread;
+	store.resultsUnread = unread;
+	try {
+		const ctx = await loadProject(g.draft.rigId);
+		// Spread after the await: concurrent evaluations (every review draft after a reload) otherwise overwrite each other's
+		// results, leaving a card on "Checking the frames" forever (2026-11-07 live test).
+		const result = await (await itemRun()).evaluateItem(g.draft, ctx);
+		store.results = { ...store.results, [id]: result };
+	} catch (error) {
+		console.error('item review frames', error);
+		store.resultsUnread = { ...store.resultsUnread, [id]: true };
+	}
 }
 export const genOf = (sel: string) => gens.find((g) => `gen:${g.draft.spec.id}` === sel);
 
