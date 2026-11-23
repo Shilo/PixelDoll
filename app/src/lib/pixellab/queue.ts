@@ -1374,6 +1374,7 @@ export class Queue {
 								const stored = await this.saveIf(r, queuedWithoutJobs);
 								if (stored) {
 									this.recs.set(r.id, stored);
+									if (!live(stored)) this.submitScopes.delete(r.id);
 									this.emit();
 								}
 							})

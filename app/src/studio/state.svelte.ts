@@ -4618,8 +4618,8 @@ let moveResumed = false;
 export async function resumeMove() {
 	if (hmrReloading || moveResumed || queue.role === 'follower') return;
 	moveResumed = true;
-	// An unreadable record is not an empty one: fail startup or takeover and let a later attempt read it again, so a new move
-	// never overwrites a stopped one and its paid-failure review.
+	// An unreadable record is not an empty one: fail startup or takeover visibly instead of resuming as if no move were saved,
+	// and stay unresumed so a later resume reads it again.
 	const r = await db
 		.get<
 			FlowDraft<MoveSpec> & {
