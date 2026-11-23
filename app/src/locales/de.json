@@ -524,6 +524,7 @@
 			"other": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherte Frames in {move}, Blickrichtung {direction}."
 		},
 		"colorMatchFixed": "Andere Ansichten, Animationen, Materialien und gespeicherte Farbänderungen bleiben unverändert.",
+		"colorMatchMissing": "Die Frames {frames} haben noch keine Grafik und werden ausgelassen.",
 		"colorMatchUnmatched": {
 			"one": "{n} geeigneter Pixel ohne passende Farbe bleibt unverändert.",
 			"other": "{n} geeignete Pixel ohne passende Farbe bleiben unverändert."
@@ -1609,6 +1610,7 @@
 			"noRepairGrid": "Kein Reparaturraster für {move} ({direction}): {reason}. Der beste Versuch wurde behalten",
 			"heldLoop": "Form oder Winkel des gehaltenen Gegenstands ändern sich am Übergang der Animationsschleife",
 			"registrationShift": "PixelLab hat einen transparenten Rand geliefert und das Sheet möglicherweise verschoben. Prüfe, ob der Gegenstand in jedem Frame ausgerichtet ist.",
+			"suspiciousJoints": "Die Gelenke wirken in {move} {direction}, Frame {frame}, ungewöhnlich, daher sitzt der Gegenstand dort vielleicht nicht richtig. Prüfe Griff oder Ausrichtung.",
 			"bodyUnmeasured": "Der Gegenstand verdeckt fast den ganzen Körper und konnte daher nicht geprüft werden. Achte darauf, dass er kein neu gezeichneter Körper ist"
 		},
 		"anotherCharacter": "eine andere Figur",
@@ -2077,7 +2079,10 @@
 		"rerollFailed": "Fehlgeschlagene Aufrufe neu würfeln",
 		"rerollFailedDetail": "Nur die fehlgeschlagenen Aufrufe und was von ihnen abhängt werden neu gekauft. Alle anderen fertigen Aufrufe werden wiederverwendet.",
 		"keepFinished": "Fertige Animationen behalten",
-		"keepFinishedDetail": "Speichert die Animationen, deren Frames alle fertig sind. Die anderen bleiben als fehlende Frames aufgeführt, die du später erstellen kannst."
+		"keepFinishedDetail": "Speichert die Animationen, deren Frames alle fertig sind. Die anderen bleiben als fehlende Frames aufgeführt, die du später erstellen kannst.",
+		"keepAvailable": "Verfügbare Frames behalten",
+		"keepAvailableDetail": "Speichert alle Frames, die zurückgekommen sind. Es fehlen: {views}. Sie bleiben als fehlende Frames aufgeführt, die du später erstellen kannst.",
+		"missingFrames": "{move} {direction} ({missing} von {total} Frames)"
 	},
 	"generationDetails": {
 		"copiedFrom": "einmal für {name} bezahlt, hierher kostenlos kopiert",
@@ -2698,6 +2703,9 @@
 			"finish": "Prüfung abschließen",
 			"useRedrawn": "Neu gezeichnete Frames verwenden",
 			"useRepaired": "Reparierte Frames verwenden",
+			"useFinishedRedraws": "Fertige Neuzeichnungen verwenden",
+			"useFinishedRepairs": "Fertige Reparaturen verwenden",
+			"stopped": "Ein späterer Durchgang kam nicht brauchbar zurück, daher behalten die Frames {frames} ihre aktuelle Grafik. Es wurde nichts weiter gekauft.",
 			"heldBy": "Die Frames eines Gegenstands für {character} können geprüft werden. Animationen in der Warteschlange warten auf deine Entscheidung.",
 			"compare": "Gegenstandsframes vergleichen",
 			"saved": "Die neuen Frames sind bereits gespeichert. Schließe die Prüfung ab, um fortzufahren.",
@@ -2734,6 +2742,10 @@
 			"designFrameMissing": "Der Design-Aufruf hat keinen Frame mit angelegtem Gegenstand geliefert.",
 			"incompleteReferenceFrames": "PixelLab hat unvollständige Referenz- oder Standframes geliefert. Es wurde keine abhängige Anfrage gesendet.",
 			"standingFrameSize": "PixelLab hat einen Standframe mit falscher Größe geliefert. Es wurde keine abhängige Anfrage gesendet.",
+			"poseFramesMalformed": "PixelLab hat für {item} fehlende oder fehlerhafte Frames zurückgegeben. Es wurde kein automatischer neuer Versuch gestartet.",
+			"poseFrameSize": "PixelLab hat für {item} Frames in der falschen Größe zurückgegeben. Es wurde kein automatischer neuer Versuch gestartet.",
+			"gridStopped": "Die Reparaturanfrage für {item} wurde nicht abgeschlossen ({state}). Sie wurde nicht erneut gesendet.",
+			"noUsableFrames": "PixelLab hat für {item} keine brauchbaren Frames zurückgegeben.",
 			"layersMismatch": "Die Ausrüstungsebenen passen nicht zu diesem Ausrüstungsplatz. Es wurde keine Generierung angefordert.",
 			"reviewChanged": "Dieser Gegenstand oder seine Prüfungen haben sich geändert. Öffne ihn erneut, bevor du seine aktuelle Grafik akzeptierst.",
 			"paletteReviewChanged": "Dieser Gegenstand oder seine Farben haben sich geändert. Prüfe die Farbanpassung erneut.",
@@ -2765,6 +2777,7 @@
 		"copyDemo": "Demo-Grundkörper kopieren",
 		"feature": "Ausrüstung generieren",
 		"needsSetup": "Richte diese Figur ein, um Ausrüstung per Skelett zu animieren, übergroße Waffen zu verwenden und neue Animationen hinzuzufügen.",
+		"poseIssues": "Einige gemessene Gelenke wirken ungewöhnlich. Der Gegenstand folgt ihnen, prüfe diese Frames also nach dem Erstellen:",
 		"standingFirst": "Erstelle zuerst das Design der Standpose. Wenn dir das Ergebnis gefällt, generiere den Gegenstand in seinen Details für einzelne Animationen.",
 		"where": "Wohin gehört er?",
 		"notShown": "Noch nicht in der Garderobe sichtbar. Wenn du einen Gegenstand dafür erstellst, wird die Kategorie eingeblendet.",

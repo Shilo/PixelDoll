@@ -512,6 +512,7 @@
 			"other": "{direction} 방향으로 저장된 {move} 프레임 {n}개에서 아이템의 기존 색상 팔레트에 맞춰요: {pixels}."
 		},
 		"colorMatchFixed": "다른 뷰, 동작, 재질, 저장된 색상 변경은 그대로예요.",
+		"colorMatchMissing": "프레임 {frames}에는 아직 그림이 없어서 제외돼요.",
 		"colorMatchUnmatched": {
 			"other": "일치하지 않는 대상 픽셀 {n}개는 그대로 남아요."
 		},
@@ -1559,6 +1560,7 @@
 			"noRepairGrid": "{move}({direction})의 복구 그리드가 없어요: {reason}. 가장 좋은 시도를 유지했어요",
 			"heldLoop": "동작이 반복될 때 든 아이템의 모양이나 각도가 바뀌어요",
 			"registrationShift": "PixelLab이 투명한 가장자리를 포함한 결과를 반환해 시트가 밀렸을 수 있어요. 모든 프레임에서 아이템이 정렬되는지 확인하세요.",
+			"suspiciousJoints": "{move} {direction} 프레임 {frame}에서 관절이 이상해 보여서 아이템이 맞지 않을 수 있어요. 잡는 위치나 정렬을 확인하세요.",
 			"bodyUnmeasured": "아이템이 몸 거의 전체를 덮어 확인할 수 없었어요. 다시 그려진 몸이 아닌지 확인하세요"
 		},
 		"anotherCharacter": "다른 캐릭터",
@@ -2016,7 +2018,10 @@
 		"rerollFailed": "실패한 호출 다시 생성",
 		"rerollFailedDetail": "실패한 호출과 그에 의존하는 것만 다시 구매해요. 완료된 다른 호출은 다시 사용해요.",
 		"keepFinished": "완료된 동작 보관",
-		"keepFinishedDetail": "모든 프레임이 완료된 동작을 저장해요. 나머지는 누락된 프레임으로 남고 나중에 만들 수 있어요."
+		"keepFinishedDetail": "모든 프레임이 완료된 동작을 저장해요. 나머지는 누락된 프레임으로 남고 나중에 만들 수 있어요.",
+		"keepAvailable": "받은 프레임 보관",
+		"keepAvailableDetail": "받은 프레임을 모두 저장해요. 누락: {views}. 누락된 프레임으로 남고 나중에 만들 수 있어요.",
+		"missingFrames": "{move} {direction} ({total}개 중 {missing}개 프레임 누락)"
 	},
 	"generationDetails": {
 		"copiedFrom": "{name} 캐릭터에서 한 번 결제했고, 여기에는 무료로 복사했어요",
@@ -2626,6 +2631,9 @@
 			"finish": "검토 완료",
 			"useRedrawn": "다시 그린 프레임 사용",
 			"useRepaired": "수정한 프레임 사용",
+			"useFinishedRedraws": "완료된 다시 그리기 사용",
+			"useFinishedRepairs": "완료된 수정 사용",
+			"stopped": "이후 배치를 사용할 수 없어서 프레임 {frames}은 현재 그림을 유지해요. 더 이상 구매하지 않았어요.",
 			"heldBy": "{character}의 아이템 프레임을 검토할 수 있어요. 대기 중인 동작은 선택이 끝날 때까지 기다려요.",
 			"compare": "아이템 프레임 비교",
 			"saved": "새 프레임은 이미 저장됐어요. 계속하려면 검토를 완료하세요.",
@@ -2662,6 +2670,10 @@
 			"designFrameMissing": "디자인 호출에서 아이템을 입힌 프레임을 반환하지 않았어요.",
 			"incompleteReferenceFrames": "PixelLab이 참조 프레임 또는 서 있는 프레임을 불완전하게 반환했어요. 종속 요청은 전송되지 않았어요.",
 			"standingFrameSize": "PixelLab이 잘못된 크기의 서 있는 프레임을 반환했어요. 종속 요청은 전송되지 않았어요.",
+			"poseFramesMalformed": "PixelLab이 {item}의 프레임을 누락되거나 손상된 상태로 돌려보냈어요. 자동으로 다시 시도하지 않았어요.",
+			"poseFrameSize": "PixelLab이 {item}의 프레임을 잘못된 크기로 돌려보냈어요. 자동으로 다시 시도하지 않았어요.",
+			"gridStopped": "{item} 수정 요청이 끝나지 않았어요({state}). 다시 보내지 않았어요.",
+			"noUsableFrames": "PixelLab이 {item}에 쓸 수 있는 프레임을 돌려보내지 않았어요.",
 			"layersMismatch": "장비 레이어가 이 장착 슬롯과 맞지 않아요. 생성은 요청되지 않았어요.",
 			"reviewChanged": "이 아이템이나 검사 결과가 변경됐어요. 현재 아트워크를 승인하기 전에 아이템을 다시 여세요.",
 			"paletteReviewChanged": "이 아이템이나 색상이 변경됐어요. 색상 맞추기를 다시 검토하세요.",
@@ -2693,6 +2705,7 @@
 		"copyDemo": "데모 몸체 복사",
 		"feature": "장비 생성",
 		"needsSetup": "스켈레톤 자세 장비, 큰 무기, 새 동작을 쓰려면 이 캐릭터를 설정하세요.",
+		"poseIssues": "측정한 관절 일부가 이상해 보여요. 아이템이 그대로 따라가니 만든 뒤 이 프레임들을 확인하세요:",
 		"standingFirst": "서 있는 디자인을 먼저 만드세요. 마음에 들면 세부 정보에서 개별 동작용으로 이 아이템을 생성하세요.",
 		"where": "어디에 착용하나요?",
 		"notShown": "아직 옷장에 표시되지 않았어요. 아이템을 만들면 표시돼요.",

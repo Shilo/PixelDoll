@@ -700,6 +700,9 @@
 						})}
 						{#if sourceDir !== ui.dir}{t('itemPane.itsMirroredViewsUpdateToo')}{/if}
 						{t('itemPane.colorMatchFixed')}
+						{#if colorPlan.missingFrames.length}{t('itemPane.colorMatchMissing', {
+								frames: formatList(colorPlan.missingFrames.map((frame) => frame + 1))
+							})}{/if}
 						{#if colorPlan.unmatchedPixels}{t('itemPane.colorMatchUnmatched', {
 								count: colorPlan.unmatchedPixels,
 								n: number(colorPlan.unmatchedPixels)

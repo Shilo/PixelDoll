@@ -524,6 +524,7 @@
 			"other": "Match {pixels} in {n} saved {move} frames facing {direction} to the item’s existing color palette."
 		},
 		"colorMatchFixed": "Other views, moves, materials and saved recolors stay fixed.",
+		"colorMatchMissing": "Frames {frames} have no art yet, so they are left out.",
 		"colorMatchUnmatched": {
 			"one": "{n} unmatched eligible pixel stays unchanged.",
 			"other": "{n} unmatched eligible pixels stay unchanged."
@@ -1609,6 +1610,7 @@
 			"noRepairGrid": "No repair grid for {move} ({direction}): {reason}; the best try was kept",
 			"heldLoop": "The held item changes shape or angle when a move loops",
 			"registrationShift": "PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame.",
+			"suspiciousJoints": "The joints look unusual in {move} {direction} frame {frame}, so the item may not fit there. Check the grip or alignment.",
 			"bodyUnmeasured": "The item covers almost all of the body, so it could not be checked; make sure it is not a redrawn body"
 		},
 		"anotherCharacter": "another character",
@@ -2077,7 +2079,10 @@
 		"rerollFailed": "Re-roll failed calls",
 		"rerollFailedDetail": "Only the calls that failed are bought again, with whatever depends on them. Every other finished call is reused.",
 		"keepFinished": "Keep finished moves",
-		"keepFinishedDetail": "Saves the moves whose frames all finished. The others stay listed as missing frames, which you can make later."
+		"keepFinishedDetail": "Saves the moves whose frames all finished. The others stay listed as missing frames, which you can make later.",
+		"keepAvailable": "Keep available frames",
+		"keepAvailableDetail": "Saves every frame that came back. Missing: {views}. They stay listed as missing frames, which you can make later.",
+		"missingFrames": "{move} {direction} ({missing} of {total} frames)"
 	},
 	"generationDetails": {
 		"copiedFrom": "paid once for {name}; copied here for free",
@@ -2698,6 +2703,9 @@
 			"finish": "Finish review",
 			"useRedrawn": "Use redrawn frames",
 			"useRepaired": "Use repaired frames",
+			"useFinishedRedraws": "Use finished redraws",
+			"useFinishedRepairs": "Use finished repairs",
+			"stopped": "A later batch did not come back usable, so frames {frames} keep their current art. Nothing more was bought.",
 			"heldBy": "An item frame review on {character} is ready. Queued moves will wait for your choice.",
 			"compare": "Compare item frames",
 			"saved": "The new frames are already saved. Finish the review to continue.",
@@ -2734,6 +2742,10 @@
 			"designFrameMissing": "The design call returned no dressed frame.",
 			"incompleteReferenceFrames": "PixelLab returned incomplete reference or standing frames. No dependent request was sent.",
 			"standingFrameSize": "PixelLab returned a standing frame of the wrong size. No dependent request was sent.",
+			"poseFramesMalformed": "PixelLab returned missing or malformed frames for {item}. No automatic retry was made.",
+			"poseFrameSize": "PixelLab returned frames of the wrong size for {item}. No automatic retry was made.",
+			"gridStopped": "The {item} repair request did not finish ({state}). It was not sent again.",
+			"noUsableFrames": "PixelLab returned no usable frames for {item}.",
 			"layersMismatch": "Equipment layers do not match this slot. No generation was requested.",
 			"reviewChanged": "This item or its checks changed. Reopen it before accepting its current artwork.",
 			"paletteReviewChanged": "This item or its colors changed. Review the color match again.",
@@ -2765,6 +2777,7 @@
 		"copyDemo": "Copy the demo body",
 		"feature": "Equipment generation",
 		"needsSetup": "Set up this character to use skeleton-posed equipment, oversize weapons and new moves.",
+		"poseIssues": "Some measured joints look unusual. The item will follow them, so check these frames after it is made:",
 		"standingFirst": "Make the standing design first. Generate this item for individual moves from its details after you like the result.",
 		"where": "Where does it go?",
 		"notShown": "Not shown in Wardrobe yet. Making an item shows it.",

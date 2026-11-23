@@ -1284,7 +1284,8 @@ const itemColorPlan = {
 	materialId: 'sword-metal',
 	changedPixels: 20,
 	changedFrames: [0, 1],
-	unmatchedPixels: 0
+	unmatchedPixels: 0,
+	missingFrames: []
 };
 
 test('free item palette refresh preserves the outfit, selected view and inspector without invoking paid flow', async () => {

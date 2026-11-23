@@ -512,6 +512,7 @@
 			"other": "Cocokkan {pixels} dalam {n} frame tersimpan dari animasi {move} yang menghadap {direction} dengan palet warna item yang sudah ada."
 		},
 		"colorMatchFixed": "Tampilan lain, animasi lain, material, dan pewarnaan ulang yang tersimpan tidak berubah.",
+		"colorMatchMissing": "Frame {frames} belum punya gambar, jadi tidak disertakan.",
 		"colorMatchUnmatched": {
 			"other": "{n} piksel yang memenuhi syarat tetapi tidak cocok tetap sama."
 		},
@@ -1559,6 +1560,7 @@
 			"noRepairGrid": "Tidak ada kisi perbaikan untuk {move} ({direction}): {reason}. Hasil terbaik dipertahankan",
 			"heldLoop": "Bentuk atau sudut item yang dipegang berubah saat animasi berulang",
 			"registrationShift": "PixelLab mengembalikan tepi transparan dan mungkin menggeser lembar gambar. Periksa apakah item sejajar di setiap frame.",
+			"suspiciousJoints": "Sendi terlihat tidak biasa di {move} {direction} frame {frame}, jadi item mungkin tidak pas di sana. Periksa pegangan atau posisinya.",
 			"bodyUnmeasured": "Item ini menutupi hampir seluruh tubuh sehingga tidak dapat diperiksa. Pastikan ini bukan tubuh yang digambar ulang"
 		},
 		"anotherCharacter": "karakter lain",
@@ -2016,7 +2018,10 @@
 		"rerollFailed": "Buat ulang panggilan yang gagal",
 		"rerollFailedDetail": "Hanya panggilan yang gagal, dan yang bergantung padanya, yang dibeli lagi. Panggilan lain yang selesai dipakai ulang.",
 		"keepFinished": "Simpan animasi yang selesai",
-		"keepFinishedDetail": "Menyimpan animasi yang semua frame-nya selesai. Sisanya tetap tercantum sebagai frame yang kurang, yang bisa Anda buat nanti."
+		"keepFinishedDetail": "Menyimpan animasi yang semua frame-nya selesai. Sisanya tetap tercantum sebagai frame yang kurang, yang bisa Anda buat nanti.",
+		"keepAvailable": "Simpan frame yang tersedia",
+		"keepAvailableDetail": "Menyimpan semua frame yang sudah kembali. Yang kurang: {views}. Frame tersebut tetap tercantum sebagai frame yang kurang, yang bisa Anda buat nanti.",
+		"missingFrames": "{move} {direction} ({missing} dari {total} frame)"
 	},
 	"generationDetails": {
 		"copiedFrom": "dibayar sekali untuk {name}; disalin ke sini secara gratis",
@@ -2626,6 +2631,9 @@
 			"finish": "Selesaikan peninjauan",
 			"useRedrawn": "Gunakan frame yang digambar ulang",
 			"useRepaired": "Gunakan frame yang diperbaiki",
+			"useFinishedRedraws": "Gunakan gambar ulang yang selesai",
+			"useFinishedRepairs": "Gunakan perbaikan yang selesai",
+			"stopped": "Batch berikutnya tidak kembali dalam kondisi bisa dipakai, jadi frame {frames} tetap memakai gambar saat ini. Tidak ada lagi yang dibeli.",
 			"heldBy": "Frame item untuk {character} siap ditinjau. Gerakan dalam antrean menunggu pilihan Anda.",
 			"compare": "Bandingkan frame item",
 			"saved": "Frame baru sudah disimpan. Selesaikan peninjauan untuk melanjutkan.",
@@ -2662,6 +2670,10 @@
 			"designFrameMissing": "Panggilan desain tidak mengembalikan frame dengan item yang dikenakan.",
 			"incompleteReferenceFrames": "PixelLab mengembalikan frame referensi atau frame berdiri yang tidak lengkap. Tidak ada permintaan lanjutan yang dikirim.",
 			"standingFrameSize": "PixelLab mengembalikan frame berdiri dengan ukuran yang salah. Tidak ada permintaan lanjutan yang dikirim.",
+			"poseFramesMalformed": "PixelLab mengembalikan frame yang kurang atau rusak untuk {item}. Tidak ada percobaan ulang otomatis.",
+			"poseFrameSize": "PixelLab mengembalikan frame dengan ukuran yang salah untuk {item}. Tidak ada percobaan ulang otomatis.",
+			"gridStopped": "Permintaan perbaikan {item} tidak selesai ({state}). Permintaan itu tidak dikirim ulang.",
+			"noUsableFrames": "PixelLab tidak mengembalikan frame yang bisa dipakai untuk {item}.",
 			"layersMismatch": "Lapisan perlengkapan tidak cocok dengan slot perlengkapan ini. Tidak ada generasi yang diminta.",
 			"reviewChanged": "Item ini atau hasil pemeriksaannya berubah. Buka kembali sebelum menerima gambar saat ini.",
 			"paletteReviewChanged": "Item ini atau warnanya berubah. Tinjau kembali pencocokan warna.",
@@ -2693,6 +2705,7 @@
 		"copyDemo": "Salin tubuh demo",
 		"feature": "Pembuatan perlengkapan",
 		"needsSetup": "Siapkan karakter ini agar bisa memakai perlengkapan yang mengikuti pose kerangka, senjata berukuran besar, dan animasi baru.",
+		"poseIssues": "Beberapa sendi yang diukur terlihat tidak biasa. Item akan mengikutinya, jadi periksa frame ini setelah item dibuat:",
 		"standingFirst": "Buat dulu desain pose berdiri. Setelah hasilnya sesuai, buat item ini untuk tiap animasi dari detailnya.",
 		"where": "Dipasang di mana?",
 		"notShown": "Belum ditampilkan di Lemari. Membuat item akan menampilkan kategori ini.",

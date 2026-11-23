@@ -5,6 +5,7 @@
 	import { bakedFrame, composeCell } from '../lib/compose/compose.ts';
 	import { live, queue } from '../lib/pixellab/queue.ts';
 	import {
+		availableGaps,
 		draftMinimumTier,
 		failedCalls,
 		finishedPart,
@@ -23,7 +24,8 @@
 	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import Sprite from './Sprite.svelte';
-	import { plainReasonMessage } from './model.ts';
+	import { moveName, plainReasonMessage } from './model.ts';
+	import { directionNames } from './directionKeys.ts';
 	import { displayMove } from './displayMove.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import { displayMessage, displayNestedMessage } from '../lib/i18n.ts';
@@ -163,8 +165,11 @@
 			current = false;
 		};
 	});
-	// What a stopped draft already bought stays usable: re-roll only its failed calls, or keep the moves that finished.
+	// What a stopped draft already bought stays usable: re-roll only its failed calls, or keep the frames that finished.
 	let paid = $state.raw<(PaidReviewData & { calls: number[]; tier: number }) | null>(null);
+	// Reading the paid results failed: the ways on stay one free Try again away instead of silently disappearing.
+	let paidUnread = $state(false),
+		paidReads = $state(0);
 	// Re-rolling the failed calls at the same price as generating again is one choice: only the review's button is shown.
 	const sameRetry = $derived(
 		!!paid?.options.some((option) => option.id === 'reroll-calls' && option.gens === retryGens)
@@ -174,8 +179,10 @@
 			result = res,
 			stopped = g.phase !== 'running';
 		void $queue.jobs.length;
+		void paidReads;
 		let current = true;
 		paid = null;
+		paidUnread = false;
 		if (stopped)
 			void loadProject(draft.rigId)
 				.then((ctx) => {
@@ -183,7 +190,15 @@
 						calls = failedCalls(draft, result ?? null),
 						reroll = calls.length ? rerollFailed(draft, calls, rig) : undefined,
 						finished =
-							result && incompleteCoverage(draft, rig, result) && finishedPart(draft, rig, result);
+							result && incompleteCoverage(draft, rig, result) && finishedPart(draft, rig, result),
+						gaps = result ? availableGaps(draft, rig, result) : undefined,
+						// Keeping the available frames is offered when it keeps more than the finished moves would.
+						available =
+							!!gaps?.length &&
+							(!finished ||
+								!!result?.cells.some(
+									(cell) => !finished.spec.anims.includes(cell.key.split('/')[0])
+								));
 					const options: PaidOption[] = [
 						...(reroll
 							? [
@@ -203,17 +218,36 @@
 									}
 								]
 							: []),
-						...(finished
+						...(available
 							? [
 									{
-										id: 'keep-finished' as const,
-										label: message('genCard.keepFinished'),
-										detail: message('genCard.keepFinishedDetail'),
+										id: 'keep-available' as const,
+										label: message('genCard.keepAvailable'),
+										detail: message('genCard.keepAvailableDetail', {
+											views: gaps!.map((gap) =>
+												message('genCard.missingFrames', {
+													move: moveName(gap.anim, rig.animations),
+													direction: message(directionNames[gap.dir]),
+													missing: gap.missing,
+													total: gap.total
+												})
+											)
+										}),
 										gens: 0,
 										paid: false
 									}
 								]
-							: [])
+							: finished
+								? [
+										{
+											id: 'keep-finished' as const,
+											label: message('genCard.keepFinished'),
+											detail: message('genCard.keepFinishedDetail'),
+											gens: 0,
+											paid: false
+										}
+									]
+								: [])
 					];
 					if (current && options.length)
 						paid = {
@@ -226,7 +260,10 @@
 							tier: reroll ? draftMinimumTier(reroll.draft, rig) : 0
 						};
 				})
-				.catch((error: unknown) => console.error('item review', error));
+				.catch((error: unknown) => {
+					console.error('item review', error);
+					if (current) paidUnread = true;
+				});
 		return () => {
 			current = false;
 		};
@@ -236,7 +273,9 @@
 		if (option.id === 'reroll-calls') rerollGen(g, paid.calls, option.gens, paid.tier);
 		else {
 			busy = true;
-			void acceptGen(g, false, true).finally(() => (busy = false));
+			void acceptGen(g, false, option.id === 'keep-available' ? 'available' : 'finished').finally(
+				() => (busy = false)
+			);
 		}
 	}
 	let busy = $state(false);
@@ -482,7 +521,14 @@
 				busy={busy || settlingGen(g.draft.spec.id)}
 				blocked={retryBlocked}
 				onchoose={choosePaid}
-			/>{/if}
+			/>{:else if paidUnread && (g.phase === 'review' || g.phase === 'failed')}<p
+				class="notice warn small"
+			>
+				{t('paidReview.loadFailed')}
+			</p>
+			<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
+				>{t('common.tryAgain')}</button
+			>{/if}
 		{#if g.phase !== 'running'}<TierNotice
 				id={tierNoticeId}
 				minimumTier={retryTier}

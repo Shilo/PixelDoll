@@ -736,16 +736,21 @@ test('tiny natural eye colors pass the real dress runner without a smudge reroll
 	expect(saved.item.designWarnings).toBeUndefined();
 });
 
-test.each(['one output', 'three outputs', 'wrong-size padding'] as const)(
+test('a single-view edit ignores its unused wrong-size padding frame', async () => {
+	// Padding is never used, so its size no longer makes the requested frame unusable (it failed structurally before).
+	const f = await singleStandingFixture();
+	ledger.output = async () => [f.dressed, makeImg(16, 16)];
+	const result = await runItem(f.draft, f.ctx);
+	expect([...result!.g1.values()].some((reason) => reason.startsWith('G1 '))).toBe(false);
+	expect(result!.cells).toHaveLength(1);
+});
+
+test.each(['one output', 'three outputs'] as const)(
 	'a single-view edit with %s fails structurally and cannot be accepted',
 	async (variant) => {
 		const f = await singleStandingFixture();
 		ledger.output = async () =>
-			variant === 'one output'
-				? [f.dressed]
-				: variant === 'three outputs'
-					? [f.dressed, f.dressed, f.dressed]
-					: [f.dressed, makeImg(16, 16)];
+			variant === 'one output' ? [f.dressed] : [f.dressed, f.dressed, f.dressed];
 		const result = await runItem(f.draft, f.ctx);
 		expect(ledger.requests.every((r) => r.path === '/edit-animation-v2')).toBe(true);
 		expect([...result!.g1.values()].some((reason) => reason.startsWith('G1 '))).toBe(true);
@@ -1423,11 +1428,12 @@ test('suspicious imported targets use one priced frozen-grid request without a q
 	const qa = await poseItemClip(f.ctx, f.item, 'walking');
 	expect(ledger.requests.map((r) => r.path)).toEqual(['/inpaint-v3']);
 	expect(qa.qa.footwearReviewFrames).toBe(3);
+	// A held item cannot use the grid: it used to be refused here, and is now posed on the valid measured joints.
 	const before = ledger.requests.length;
-	await expect(poseItemClip(f.ctx, { ...f.item, slot: 'main_hand' }, 'walking')).rejects.toThrow(
-		'suspicious estimated joints'
+	await poseItemClip(f.ctx, { ...f.item, slot: 'main_hand' }, 'walking').catch((error: Error) =>
+		expect(error.message).not.toContain('suspicious estimated joints')
 	);
-	expect(ledger.requests).toHaveLength(before);
+	expect(ledger.requests.slice(before).map((r) => r.path)).toEqual(['/animate-with-skeleton-v3']);
 });
 
 test('an initial frozen-grid item retains its first flagged grid and never submits a refinement on reload', async () => {

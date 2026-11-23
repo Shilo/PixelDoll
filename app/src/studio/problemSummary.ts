@@ -98,6 +98,9 @@ const KEYS: Readonly<Record<string, ProblemKind>> = {
 	'generation.outcome.callStopped': 'stopped',
 	'generation.outcome.callError': 'stopped',
 	'generation.outcome.noFrames': 'empty',
+	'itemRoute.errors.noUsableFrames': 'empty',
+	'itemRoute.errors.gridStopped': 'stopped',
+	'itemRoute.errors.poseFramesMalformed': 'frame-count',
 	'generation.outcome.standingFrames': 'frame-count',
 	'genCard.declined': 'declined',
 	// Internal checks that only a bug can fail: Report it.

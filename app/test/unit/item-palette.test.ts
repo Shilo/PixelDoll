@@ -394,6 +394,26 @@ test('free scoped publication preserves old shared pixels, QA, source, material 
 		'No eligible'
 	);
 });
+test('matching runs on the frames a view has and names the missing ones; lost bytes stay an error', async () => {
+	const f = await fixture(),
+		sword = f.current.manifest.items[1];
+	// A sparse item: frame 1 of slash south has no art (it used to refuse the whole view only when a row was absent).
+	sword.coverage = [
+		'idle/south/0',
+		'idle/south/1',
+		'slash/south/0',
+		'slash/east/0',
+		'slash/east/1'
+	];
+	sword.layers[0].cells!.slash!.south = [f.h, null];
+	sword.layers.push({ id: 'bg', role: 'bg', z: 5, cells: { idle: { south: [null, null] } } });
+	const plan = await itemPaletteRepairPlan('rig-test', 'sword', 'slash', 'south');
+	expect(plan).toMatchObject({ changedFrames: [0], missingFrames: [1] });
+	sword.layers[0].cells!.slash!.south = [f.h, 'sha256:lost'];
+	await expect(itemPaletteRepairPlan('rig-test', 'sword', 'slash', 'south')).rejects.toThrow(
+		'An equipment frame is missing'
+	);
+});
 test('reviewed counts or material/rig/item changes refuse before publication', async () => {
 	const f = await fixture(),
 		plan = await itemPaletteRepairPlan('rig-test', 'sword', 'slash', 'south');

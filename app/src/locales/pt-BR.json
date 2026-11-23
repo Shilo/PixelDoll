@@ -524,6 +524,7 @@
 			"other": "Ajuste {pixels} em {n} quadros salvos de {move} na direção {direction} à paleta atual do item."
 		},
 		"colorMatchFixed": "As demais vistas, animações, materiais e alterações de cor salvas não mudam.",
+		"colorMatchMissing": "Os quadros {frames} ainda não têm arte, então ficam de fora.",
 		"colorMatchUnmatched": {
 			"one": "{n} pixel elegível sem cor correspondente permanece como está.",
 			"other": "{n} pixels elegíveis sem cor correspondente permanecem como estão."
@@ -1615,6 +1616,7 @@
 			"noRepairGrid": "Não há grade de reparo para {move} ({direction}): {reason}. A melhor tentativa foi mantida",
 			"heldLoop": "O item de mão muda de forma ou ângulo quando a animação volta ao início",
 			"registrationShift": "O PixelLab retornou uma borda transparente e pode ter deslocado a folha. Confira se o item se alinha em todos os quadros.",
+			"suspiciousJoints": "As articulações parecem estranhas em {move} {direction}, quadro {frame}, então o item pode não se encaixar ali. Confira a pegada ou o alinhamento.",
 			"bodyUnmeasured": "O item cobre quase todo o corpo, então não pôde ser verificado. Confira se não é um corpo redesenhado"
 		},
 		"anotherCharacter": "outro personagem",
@@ -2086,7 +2088,10 @@
 		"rerollFailed": "Gerar as chamadas com falha de novo",
 		"rerollFailedDetail": "Só as chamadas com falha, e o que depende delas, são compradas de novo. Todas as outras chamadas concluídas são reutilizadas.",
 		"keepFinished": "Manter as animações concluídas",
-		"keepFinishedDetail": "Salva as animações com todos os quadros concluídos. As outras continuam listadas como quadros faltando, que você pode criar depois."
+		"keepFinishedDetail": "Salva as animações com todos os quadros concluídos. As outras continuam listadas como quadros faltando, que você pode criar depois.",
+		"keepAvailable": "Manter os quadros disponíveis",
+		"keepAvailableDetail": "Salva todos os quadros que voltaram. Faltando: {views}. Eles continuam listados como quadros faltando, que você pode criar depois.",
+		"missingFrames": "{move} {direction} ({missing} de {total} quadros)"
 	},
 	"generationDetails": {
 		"copiedFrom": "pago uma vez para {name}; cópia gratuita aqui",
@@ -2707,6 +2712,9 @@
 			"finish": "Concluir revisão",
 			"useRedrawn": "Usar quadros redesenhados",
 			"useRepaired": "Usar quadros reparados",
+			"useFinishedRedraws": "Usar os redesenhos concluídos",
+			"useFinishedRepairs": "Usar os reparos concluídos",
+			"stopped": "Um lote seguinte não voltou utilizável, então os quadros {frames} mantêm a arte atual. Nada mais foi comprado.",
 			"heldBy": "Os quadros de um item de {character} estão prontos para revisão. As animações na fila vão aguardar sua escolha.",
 			"compare": "Comparar quadros do item",
 			"saved": "Os novos quadros já foram salvos. Conclua a revisão para continuar.",
@@ -2743,6 +2751,10 @@
 			"designFrameMissing": "A chamada de design não retornou nenhum quadro com o item vestido.",
 			"incompleteReferenceFrames": "O PixelLab retornou quadros de referência ou da pose em pé incompletos. Nenhuma solicitação dependente foi enviada.",
 			"standingFrameSize": "O PixelLab retornou um quadro da pose em pé com o tamanho errado. Nenhuma solicitação dependente foi enviada.",
+			"poseFramesMalformed": "O PixelLab retornou quadros faltando ou com defeito para {item}. Nenhuma nova tentativa automática foi feita.",
+			"poseFrameSize": "O PixelLab retornou quadros do tamanho errado para {item}. Nenhuma nova tentativa automática foi feita.",
+			"gridStopped": "A solicitação de reparo de {item} não terminou ({state}). Ela não foi enviada de novo.",
+			"noUsableFrames": "O PixelLab não retornou quadros utilizáveis para {item}.",
 			"layersMismatch": "As camadas do equipamento não correspondem a este espaço. Nenhuma geração foi solicitada.",
 			"reviewChanged": "Este item ou suas verificações mudaram. Abra-o novamente antes de aceitar a arte atual.",
 			"paletteReviewChanged": "Este item ou suas cores mudaram. Revise a correspondência de cores novamente.",
@@ -2774,6 +2786,7 @@
 		"copyDemo": "Copiar o corpo da demo",
 		"feature": "Geração de equipamento",
 		"needsSetup": "Configure este personagem para usar equipamentos animados pelo esqueleto, armas grandes e novas animações.",
+		"poseIssues": "Algumas articulações medidas parecem estranhas. O item vai segui-las, então confira estes quadros depois de criá-lo:",
 		"standingFirst": "Crie primeiro a arte da pose em pé. Depois de aprovar o resultado, gere este item para animações individuais nos detalhes do item.",
 		"where": "Onde fica o item?",
 		"notShown": "Ainda não aparece no guarda-roupa. Criar um item torna esse espaço visível.",

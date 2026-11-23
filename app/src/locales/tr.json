@@ -524,6 +524,7 @@
 			"other": "{move} animasyonunun {direction} yönünde kayıtlı {n} karedeki şu pikselleri eşyanın mevcut paletiyle eşleştirin: {pixels}."
 		},
 		"colorMatchFixed": "Diğer görünümler, animasyonlar, malzemeler ve kayıtlı renk değişiklikleri korunur.",
+		"colorMatchMissing": "{frames} karelerinde henüz çizim yok, bu yüzden dışarıda bırakıldı.",
 		"colorMatchUnmatched": {
 			"one": "Eşleşmeyen {n} uygun piksel değişmez.",
 			"other": "Eşleşmeyen {n} uygun piksel değişmez."
@@ -1609,6 +1610,7 @@
 			"noRepairGrid": "{move} ({direction}) için onarım ızgarası yok: {reason}; en iyi deneme korundu",
 			"heldLoop": "Animasyon döngüye girdiğinde eldeki eşyanın şekli veya açısı değişiyor",
 			"registrationShift": "PixelLab saydam bir kenar döndürdü ve sayfayı kaydırmış olabilir. Eşyanın her karede hizalandığını kontrol edin.",
+			"suspiciousJoints": "{move} {direction} animasyonunun {frame}. karesinde eklemler alışılmadık görünüyor, bu yüzden eşya orada tam oturmayabilir. Tutuşu veya hizalamayı kontrol edin.",
 			"bodyUnmeasured": "Eşya gövdenin neredeyse tamamını kaplıyor, bu yüzden kontrol edilemedi. Yeniden çizilmiş bir gövde olmadığından emin olun"
 		},
 		"anotherCharacter": "başka bir karakter",
@@ -2077,7 +2079,10 @@
 		"rerollFailed": "Başarısız çağrıları yeniden oluştur",
 		"rerollFailedDetail": "Yalnızca başarısız çağrılar ve onlara bağlı olanlar yeniden satın alınır. Biten diğer tüm çağrılar yeniden kullanılır.",
 		"keepFinished": "Biten animasyonları sakla",
-		"keepFinishedDetail": "Tüm kareleri biten animasyonları kaydeder. Diğerleri eksik kareler olarak listelenir ve daha sonra oluşturulabilir."
+		"keepFinishedDetail": "Tüm kareleri biten animasyonları kaydeder. Diğerleri eksik kareler olarak listelenir ve daha sonra oluşturulabilir.",
+		"keepAvailable": "Gelen kareleri sakla",
+		"keepAvailableDetail": "Gelen tüm kareleri kaydeder. Eksik: {views}. Bunlar eksik kareler olarak listelenir ve daha sonra oluşturulabilir.",
+		"missingFrames": "{move} {direction} ({total} kareden {missing} tanesi eksik)"
 	},
 	"generationDetails": {
 		"copiedFrom": "{name} için bir kez ücret ödendi; buraya ücretsiz kopyalandı",
@@ -2698,6 +2703,9 @@
 			"finish": "İncelemeyi bitirin",
 			"useRedrawn": "Yeniden çizilen kareleri kullanın",
 			"useRepaired": "Onarılan kareleri kullanın",
+			"useFinishedRedraws": "Biten yeniden çizimleri kullanın",
+			"useFinishedRepairs": "Biten onarımları kullanın",
+			"stopped": "Sonraki bir grup kullanılabilir şekilde dönmedi, bu yüzden {frames} kareleri mevcut çizimini koruyor. Başka bir şey satın alınmadı.",
 			"heldBy": "{character} için bir eşyanın kareleri incelemeye hazır. Sıradaki hareketler seçimini bekleyecek.",
 			"compare": "Eşya karelerini karşılaştırın",
 			"saved": "Yeni kareler kaydedildi. Devam etmek için incelemeyi bitirin.",
@@ -2734,6 +2742,10 @@
 			"designFrameMissing": "Tasarım çağrısı, eşyanın giydirildiği bir kare döndürmedi.",
 			"incompleteReferenceFrames": "PixelLab eksik referans veya ayakta duruş kareleri döndürdü. Bağımlı istek gönderilmedi.",
 			"standingFrameSize": "PixelLab yanlış boyutta bir ayakta duruş karesi döndürdü. Bağımlı istek gönderilmedi.",
+			"poseFramesMalformed": "PixelLab, {item} için eksik veya bozuk kareler döndürdü. Otomatik yeniden deneme yapılmadı.",
+			"poseFrameSize": "PixelLab, {item} için yanlış boyutta kareler döndürdü. Otomatik yeniden deneme yapılmadı.",
+			"gridStopped": "{item} onarım isteği tamamlanmadı ({state}). Yeniden gönderilmedi.",
+			"noUsableFrames": "PixelLab, {item} için kullanılabilir kare döndürmedi.",
 			"layersMismatch": "Ekipman katmanları bu ekipman yuvasıyla eşleşmiyor. Üretim isteği gönderilmedi.",
 			"reviewChanged": "Bu öğe veya denetimleri değişti. Mevcut görseli kabul etmeden önce öğeyi yeniden açın.",
 			"paletteReviewChanged": "Bu öğe veya renkleri değişti. Renk eşlemesini yeniden inceleyin.",
@@ -2765,6 +2777,7 @@
 		"copyDemo": "Demo gövdesini kopyalayın",
 		"feature": "Ekipman üretimi",
 		"needsSetup": "İskelete göre pozlanan ekipman, büyük boy silahlar ve yeni animasyonlar kullanmak için bu karakteri hazırlayın.",
+		"poseIssues": "Ölçülen bazı eklemler alışılmadık görünüyor. Eşya bunları izleyecek, bu yüzden oluşturulduktan sonra bu kareleri kontrol edin:",
 		"standingFirst": "Önce ayakta duruş tasarımını üretin. Sonucu beğendiğinizde eşya ayrıntılarından her animasyon için ayrı kare üretebilirsiniz.",
 		"where": "Nereye takılır?",
 		"notShown": "Henüz Gardırop bölümünde gösterilmiyor. Bir eşya üretirseniz görünür.",

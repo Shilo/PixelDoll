@@ -524,6 +524,7 @@
 			"other": "Harmoniser {pixels} avec la palette de l’objet dans {n} images enregistrées de {move} (direction : {direction})."
 		},
 		"colorMatchFixed": "Les autres vues, animations, matières et recolorations enregistrées restent inchangées.",
+		"colorMatchMissing": "Les images {frames} n’ont pas encore de dessin, elles sont donc ignorées.",
 		"colorMatchUnmatched": {
 			"one": "{n} pixel éligible sans correspondance reste inchangé.",
 			"other": "{n} pixels éligibles sans correspondance restent inchangés."
@@ -1609,6 +1610,7 @@
 			"noRepairGrid": "Aucune grille de réparation pour {move} ({direction}) : {reason} ; le meilleur essai a été conservé",
 			"heldLoop": "L’objet tenu change de forme ou d’angle quand une animation boucle",
 			"registrationShift": "PixelLab a renvoyé un bord transparent et a peut-être décalé la feuille. Vérifiez que l’objet est bien aligné sur chaque image.",
+			"suspiciousJoints": "Les articulations semblent inhabituelles dans {move} {direction}, image {frame}, donc l’objet risque de mal s’y placer. Vérifiez la prise ou l’alignement.",
 			"bodyUnmeasured": "L’objet couvre presque tout le corps et n’a donc pas pu être vérifié. Assurez-vous qu’il ne s’agit pas d’un corps redessiné"
 		},
 		"anotherCharacter": "un autre personnage",
@@ -2077,7 +2079,10 @@
 		"rerollFailed": "Relancer les appels échoués",
 		"rerollFailedDetail": "Seuls les appels échoués et ce qui en dépend sont rachetés. Tous les autres appels terminés sont réutilisés.",
 		"keepFinished": "Garder les animations terminées",
-		"keepFinishedDetail": "Enregistre les animations dont toutes les images sont terminées. Les autres restent listées comme images manquantes, à créer plus tard."
+		"keepFinishedDetail": "Enregistre les animations dont toutes les images sont terminées. Les autres restent listées comme images manquantes, à créer plus tard.",
+		"keepAvailable": "Garder les images disponibles",
+		"keepAvailableDetail": "Enregistre toutes les images reçues. Manquantes : {views}. Elles restent listées comme images manquantes, à créer plus tard.",
+		"missingFrames": "{move} {direction} ({missing} sur {total} images)"
 	},
 	"generationDetails": {
 		"copiedFrom": "payé une fois pour {name} ; copié ici gratuitement",
@@ -2698,6 +2703,9 @@
 			"finish": "Terminer la vérification",
 			"useRedrawn": "Utiliser les images redessinées",
 			"useRepaired": "Utiliser les images réparées",
+			"useFinishedRedraws": "Utiliser les images redessinées terminées",
+			"useFinishedRepairs": "Utiliser les réparations terminées",
+			"stopped": "Un lot suivant n’est pas revenu utilisable, donc les images {frames} gardent leur dessin actuel. Rien d’autre n’a été acheté.",
 			"heldBy": "Les images d’un objet de {character} sont prêtes à être vérifiées. Les animations en attente reprendront après votre choix.",
 			"compare": "Comparer les images de l’objet",
 			"saved": "Les nouvelles images sont déjà enregistrées. Terminez la vérification pour continuer.",
@@ -2734,6 +2742,10 @@
 			"designFrameMissing": "L’appel de conception n’a renvoyé aucune image avec l’objet porté.",
 			"incompleteReferenceFrames": "PixelLab a renvoyé des images de référence ou de pose debout incomplètes. Aucune demande dépendante n’a été envoyée.",
 			"standingFrameSize": "PixelLab a renvoyé une image de pose debout de mauvaise taille. Aucune demande dépendante n’a été envoyée.",
+			"poseFramesMalformed": "PixelLab a renvoyé des images manquantes ou défectueuses pour {item}. Aucune nouvelle tentative automatique n’a été faite.",
+			"poseFrameSize": "PixelLab a renvoyé des images de mauvaise taille pour {item}. Aucune nouvelle tentative automatique n’a été faite.",
+			"gridStopped": "La demande de réparation de {item} ne s’est pas terminée ({state}). Elle n’a pas été renvoyée.",
+			"noUsableFrames": "PixelLab n’a renvoyé aucune image utilisable pour {item}.",
 			"layersMismatch": "Les calques de l’équipement ne correspondent pas à cet emplacement. Aucune génération n’a été demandée.",
 			"reviewChanged": "Cet équipement ou ses vérifications ont changé. Rouvrez-le avant de valider son visuel actuel.",
 			"paletteReviewChanged": "Cet équipement ou ses couleurs ont changé. Vérifiez de nouveau la mise en correspondance des couleurs.",
@@ -2765,6 +2777,7 @@
 		"copyDemo": "Copier le corps de la démo",
 		"feature": "Génération d’équipement",
 		"needsSetup": "Configurez ce personnage pour utiliser l’équipement posé sur le squelette, les armes surdimensionnées et les nouvelles animations.",
+		"poseIssues": "Certaines articulations mesurées semblent inhabituelles. L’objet les suivra, vérifiez donc ces images une fois créé :",
 		"standingFirst": "Créez d’abord l’objet en pose debout. Si le résultat vous convient, générez ensuite ses images une animation à la fois depuis ses détails.",
 		"where": "Où se porte-t-il ?",
 		"notShown": "Cet emplacement n’est pas encore visible dans la Garde-robe. Il s’affiche dès que vous y créez un objet.",
