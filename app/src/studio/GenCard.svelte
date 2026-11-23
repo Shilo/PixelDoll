@@ -39,6 +39,7 @@
 		acceptGen,
 		discardGen,
 		rerollGen,
+		settlingGen,
 		retryGen,
 		wearDraft,
 		type Gen
@@ -433,7 +434,7 @@
 		{#if paid && (g.phase === 'review' || g.phase === 'failed')}<PaidReview
 				review={paid}
 				name={g.input.name}
-				{busy}
+				busy={busy || settlingGen(g.draft.spec.id)}
 				blocked={retryBlocked}
 				onchoose={choosePaid}
 			/>{/if}

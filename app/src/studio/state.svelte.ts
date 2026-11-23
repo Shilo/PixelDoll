@@ -413,16 +413,20 @@ export function initUi() {
 				// A restore or delete touched this character's record: re-read it quietly so a stale outfit or outfit list is
 				// never saved over it. If it is gone, switch away instead of reporting that it could not be opened.
 				if (typeof data.projectId === 'string' && data.projectId === doc.id)
-					void db
-						.get<StoredProject>('projects', data.projectId)
-						.catch(() => undefined)
-						.then(async (record) => {
+					void db.get<StoredProject>('projects', data.projectId).then(
+						async (record) => {
 							if (record?.manifest) await openProject(data.projectId, { quiet: true });
 							else if (doc.id === data.projectId) {
 								await refreshProjects();
 								await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
 							}
-						});
+						},
+						(error: unknown) => {
+							// An unreadable record is not a deleted one: stay on this character and say so.
+							console.error('library change', error);
+							toast(message('state.characterRereadFailed'), { tone: 'danger' });
+						}
+					);
 				return;
 			}
 			if (
@@ -679,6 +683,8 @@ class DeletedList {
 	entries = $state.raw<RecentlyDeleted[]>([]);
 	/** Read once per session; deletes, restores and the Library panel refresh it after that. */
 	ready = false;
+	/** The last read failed: `entries` is the last list that loaded, which may be empty or out of date. */
+	loadFailed = $state(false);
 }
 export const deleted = new DeletedList();
 /** An undo or redo step: the dress state to go back to, and the slot definitions (JSON) right after the step, so applying
@@ -913,6 +919,9 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 				m.rig.animations[0]
 			).id;
 		doc.id = id;
+		if (r.dressUnread && dressUnread !== id)
+			toast(message('state.demoOutfitsUnread'), { tone: 'danger' });
+		dressUnread = r.dressUnread ? id : '';
 		slotBase = { id, slots: savedSlots };
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
@@ -1160,11 +1169,13 @@ async function saveSlotsAndDress(id: string, m: Manifest, cur: Outfit) {
 }
 let edits = 0,
 	savedEdits = 0;
+/** The open demo whose saved outfits could not be read: its edits stay in memory, never saved over the unread record. */
+let dressUnread = '';
 function save() {
 	clearTimeout(saveT);
 	const id = doc.id,
 		m = store.project?.manifest;
-	if (!m) return;
+	if (!m || dressUnread === id) return;
 	const n = ++edits,
 		cur = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
 	pendingSave = async () => {
@@ -1730,9 +1741,11 @@ export async function refreshRecentlyDeleted(): Promise<void> {
 			Date.now()
 		);
 		deleted.ready = true;
+		deleted.loadFailed = false;
 	} catch (error) {
+		// Never show an empty list for a failed read: that reads as "nothing can be restored".
 		console.error('recently deleted', error);
-		deleted.entries = [];
+		deleted.loadFailed = true;
 	}
 }
 
@@ -3529,26 +3542,55 @@ export function retryGen(
 /** Re-roll only the failed calls of a stopped draft at the reviewed price; every other completed call is reused. */
 export function rerollGen(g: Gen, calls: number[], reviewedGens: number, minimumTier: number) {
 	withKey(() => {
+		const id = g.draft.spec.id;
+		if (
+			follower() ||
+			settling.has(id) ||
+			runningGens.has(id) ||
+			g.phase === 'running' ||
+			!gens.includes(g)
+		)
+			return;
+		// Claimed before the first await: a second click finds it taken instead of buying the failed calls again with new seeds.
+		settling.add(id);
 		void (async () => {
-			const id = g.draft.spec.id;
-			if (follower() || settling.has(id) || runningGens.has(id) || !gens.includes(g)) return;
-			const { rec } = await loadProject(g.draft.rigId);
-			const next = (await itemRun()).rerollFailed(
-				$state.snapshot(g.draft) as Draft,
-				calls,
-				rec.manifest.rig
-			);
-			if (next.gens !== reviewedGens) {
-				toast(message('state.rerollPriceChanged'), { tone: 'warning' });
-				return;
+			try {
+				const { rec } = await loadProject(g.draft.rigId);
+				const next = (await itemRun()).rerollFailed(
+					$state.snapshot(g.draft) as Draft,
+					calls,
+					rec.manifest.rig
+				);
+				if (next.gens !== reviewedGens) {
+					toast(message('state.rerollPriceChanged'), { tone: 'warning' });
+					return;
+				}
+				const before = {
+					draft: g.draft,
+					phase: g.phase,
+					status: g.status,
+					error: g.error,
+					canceled: g.canceled
+				};
+				Object.assign(g, { draft: next.draft, phase: 'running', status: '', error: undefined });
+				g.canceled = false;
+				try {
+					await saveGens();
+				} catch (error) {
+					Object.assign(g, before); // nothing was bought: the draft stays stopped, ready to re-roll again
+					throw error;
+				}
+				// An explicit re-roll replaces an earlier cancel whose save failed; that cancel no longer holds the draft.
+				cancellationRequested.delete(id);
+			} finally {
+				settling.delete(id);
 			}
-			Object.assign(g, { draft: next.draft, phase: 'running', status: '', error: undefined });
-			g.canceled = false;
-			await saveGens();
-			void runGen(g);
+			if (g.phase === 'running') void runGen(g);
 		})().catch((error: unknown) => toast(errorMessage(error), { tone: 'danger' }));
 	}, minimumTier);
 }
+/** Saving, canceling or re-rolling this draft has started and not finished: its paid choices wait. */
+export const settlingGen = (id: string) => settling.has(id);
 
 const WEEK = 7 * 86_400_000;
 const FLOW_TAGS = ['studio-base', 'studio-rig', 'studio-move', 'studio-setup', 'm2-skel']; // flows re-attached by request hash

@@ -743,6 +743,8 @@ export async function pendingState(projectId: string, token: string): Promise<St
 	try {
 		return await readReview(projectId, attempt, records);
 	} catch (cause) {
+		// Known causes (no key to recover the views, a PixelLab error) say what to do; only unreadable results are invalid.
+		if (cause instanceof LocalizedError || cause instanceof ApiError) throw cause;
 		throw Object.assign(invalidResult(), { cause });
 	}
 }

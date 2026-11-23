@@ -2599,6 +2599,51 @@ describe('optional review', () => {
 		expect(snapshot!.gens[0]).toMatchObject({ phase: 'failed', canceled: true });
 	});
 
+	test('a re-roll claims the draft at once, and replaces a cancel whose save failed', async () => {
+		const hooks: import('../../src/lib/items/run.ts').RunHooks[] = [];
+		routeMock((_draft, _ctx, hook) => {
+			hooks.push(hook);
+			return new Promise((resolve) =>
+				hook.signal!.addEventListener('abort', () => resolve(null), { once: true })
+			);
+		});
+		const ctx = { rec: { id: 'project', manifest: fixtureManifest() } };
+		mocks.load.mockResolvedValue(ctx);
+		mockAccount.key = 'key';
+		const state = await import('../../src/studio/state.svelte.ts');
+		state.doc.id = 'project';
+		await state.startItem({ name: 'A', slot: 'head', prompt: 'a helm' });
+		await vi.waitFor(() => expect(hooks).toHaveLength(1));
+		const generation = state.gens[0];
+		generation.draft.calls.push({
+			recId: 'cancel-record',
+			old: [],
+			cells: ['rest/south/0'],
+			seed: 1,
+			rerolls: 0,
+			kind: 'dress'
+		});
+		mocks.cancelScoped.mockResolvedValue(undefined);
+		mocks.put.mockImplementation(async (_store, key) => {
+			if (key === 'studio-drafts') throw new Error('Drafts unavailable');
+		});
+		await expect(state.cancelGen(generation)).rejects.toThrow('Drafts unavailable');
+		mocks.put.mockResolvedValue(undefined);
+		expect(generation).toMatchObject({ phase: 'failed', canceled: true, cancelSaveFailed: true });
+		const loading = pending<typeof ctx>(),
+			loads = mocks.load.mock.calls.length;
+		mocks.load.mockReturnValueOnce(loading.promise);
+		state.rerollGen(generation, [], 0, 0);
+		state.rerollGen(generation, [], 0, 0); // a double click
+		expect(mocks.load).toHaveBeenCalledTimes(loads + 1);
+		expect(state.settlingGen(generation.draft.spec.id)).toBe(true);
+		loading.resolve(ctx);
+		// The re-roll runs although the failed cancel was never saved: it is the user's newer choice.
+		await vi.waitFor(() => expect(hooks).toHaveLength(2));
+		expect(state.settlingGen(generation.draft.spec.id)).toBe(false);
+		expect(generation.phase).toBe('running');
+	});
+
 	test('a clean draft saves itself in place: the worn slot keeps it, undo and the view stay', async () => {
 		const done = pending<typeof clean>(),
 			accept = routeMock(() => done.promise);
@@ -3078,6 +3123,71 @@ describe('optional review', () => {
 			dispose();
 		}
 	});
+
+	test('an unreadable record after another tab changed this character keeps it open and says so', async () => {
+		routeMock(async () => null);
+		vi.stubGlobal('addEventListener', vi.fn());
+		vi.stubGlobal('removeEventListener', vi.fn());
+		vi.stubGlobal('document', {
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+			documentElement: { dataset: {}, style: {} }
+		});
+		const channel = { onmessage: (_event: MessageEvent) => {}, close: vi.fn() };
+		vi.stubGlobal(
+			'BroadcastChannel',
+			vi.fn(function () {
+				return channel;
+			})
+		);
+		const s = await import('../../src/studio/state.svelte.ts');
+		const dispose = s.initUi();
+		try {
+			s.doc.id = 'rig-open';
+			const reads = mocks.source.mock.calls.length;
+			mocks.get.mockImplementation(async (_store, key) => {
+				if (key === 'rig-open') throw new Error('IndexedDB unavailable');
+			});
+			channel.onmessage(
+				new MessageEvent('message', { data: { libraryChanged: true, projectId: 'rig-open' } })
+			);
+			await vi.waitFor(() =>
+				expect(s.ui.toast).toMatchObject({ key: 'state.characterRereadFailed' })
+			);
+			expect(s.doc.id).toBe('rig-open');
+			expect(mocks.source).toHaveBeenCalledTimes(reads); // nothing else was opened
+		} finally {
+			dispose();
+		}
+	});
+
+	test('a demo whose saved outfits could not be read opens with defaults and never saves over them', async () => {
+		routeMock(async () => null); // only for the mocked base split
+		mocks.source.mockResolvedValue({ ...opened(), current: undefined, dressUnread: true });
+		const s = await import('../../src/studio/state.svelte.ts');
+		await s.openProject('fixture:s2');
+		expect(s.doc.id).toBe('fixture:s2');
+		expect(s.ui.toast).toMatchObject({ key: 'state.demoOutfitsUnread' });
+		s.setVariant('any-material', 'azure');
+		await s.flushSave();
+		const dressWrites = [...mocks.put.mock.calls, ...mocks.update.mock.calls].filter(
+			([, key]) => key === 'dress-fixture:s2'
+		);
+		expect(dressWrites).toEqual([]);
+	});
+});
+
+test('Recently deleted keeps its last list and says so when a read fails', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const entry = { id: 'kept-entry' } as unknown as (typeof s.deleted.entries)[number];
+	s.deleted.entries = [entry];
+	mocks.all.mockRejectedValueOnce(new Error('IndexedDB unavailable'));
+	await s.refreshRecentlyDeleted();
+	expect(s.deleted.entries).toEqual([entry]);
+	expect(s.deleted.loadFailed).toBe(true);
+	mocks.all.mockResolvedValueOnce([]);
+	await s.refreshRecentlyDeleted();
+	expect(s.deleted.loadFailed).toBe(false);
 });
 
 test('a worn draft saved or discarded in another tab comes off when the drafts are read', async () => {

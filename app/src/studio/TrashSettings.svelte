@@ -114,7 +114,17 @@
 
 <div class="trash-settings" tabindex="-1" bind:this={section}>
 	<p class="bu-muted settings-description">{t('recentlyDeleted.kept')}</p>
-	{#if !deleted.entries.length}
+	{#if deleted.loadFailed}
+		<p class="notice bad small" role="alert">
+			{t('recentlyDeleted.loadFailed')}
+			<button
+				class="bu-action btn sm"
+				data-variant="outline"
+				onclick={() => void refreshRecentlyDeleted()}>{t('common.tryAgain')}</button
+			>
+		</p>
+	{/if}
+	{#if !deleted.entries.length && !deleted.loadFailed}
 		<div class="trash-empty" tabindex="-1" bind:this={emptyNote}>
 			<Trash size={28} aria-hidden="true" />
 			<p class="bu-muted settings-description">{t('recentlyDeleted.empty')}</p>

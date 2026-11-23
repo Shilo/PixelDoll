@@ -377,6 +377,11 @@ function describeReason(s: string): { text: string; translation: Message | strin
 			'Footwear differs from the standing design; inspect the feet',
 			'studioModel.qa.footwear'
 		);
+	if (s.startsWith('G2') && s.includes('not measurable'))
+		return say(
+			'The item covers almost all of the body, so it could not be checked; make sure it is not a redrawn body',
+			'studioModel.qa.bodyUnmeasured'
+		);
 	if (s.startsWith('G2') || s.startsWith('G3'))
 		return say('Some body pixels were changed by the model', 'studioModel.qa.bodyPixels');
 	if (s.startsWith('G4'))
