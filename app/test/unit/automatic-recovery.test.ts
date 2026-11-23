@@ -1407,6 +1407,43 @@ test('a long accepted-item move makes one request for each planned batch and kee
 	}
 });
 
+test('a long move keeps the finished batch of a direction when its later batch fails', async () => {
+	const f = await fixture(),
+		rig = f.ctx.rec.manifest.rig,
+		animation = rig.animations[0],
+		points = rig.rest!.south!.keypoints;
+	animation.cells = 18;
+	animation.frames = Array.from({ length: 18 }, (_, cell) => ({ cell, ms: 100 }));
+	animation.sources!.south!.keypoints = Array(18).fill(points);
+	animation.sources!.south!.measured = Array(18).fill(points);
+	const bodyHash = rig.rest!.south!.image;
+	f.ctx.rec.manifest.items[0].layers[0].cells!.walking!.south = Array(18).fill(bodyHash);
+	f.ctx.rec.skeletons = Object.fromEntries(
+		Array.from({ length: 18 }, (_, i) => [`walking/south/${i}`, fromApi(points, rig.cell)])
+	);
+	ledger.project = structuredClone(f.ctx.rec);
+	const old = ledger.project.manifest.items.find((i) => i.id === f.item.id)!;
+	const before = structuredClone(old.layers[0].cells?.walking?.south ?? []);
+	let calls = 0;
+	// The second batch comes back malformed: the first, paid and verified, used to be thrown away with it.
+	ledger.output = async (req) =>
+		++calls === 2
+			? []
+			: Array((req.body as { keypoints: unknown[] }).keypoints.length).fill(f.missing);
+	await expect(poseItemClip(f.ctx, f.item, 'walking')).rejects.toThrow();
+	expect(ledger.requests).toHaveLength(2);
+	const saved = ledger.project!.manifest.items.find((i) => i.id === f.item.id)!;
+	const row = saved.layers[0].cells!.walking!.south!;
+	expect(row).toHaveLength(18);
+	expect(saved.provenance.at(-1)?.produced).toHaveLength(9);
+	expect(
+		Array.from({ length: 18 }, (_, i) => !!saved.coverage?.includes(`walking/south/${i}`))
+	).toEqual(
+		Array.from({ length: 18 }, (_, i) => i < 9 || !!old.coverage?.includes(`walking/south/${i}`))
+	);
+	expect(row.slice(9)).toEqual(before.length ? before.slice(9) : Array(9).fill(null));
+});
+
 test.each(['empty', 'count', 'canvas'] as const)(
 	'malformed accepted-item %s output fails after one request and keeps existing artwork',
 	async (variant) => {
