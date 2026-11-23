@@ -102,6 +102,7 @@
 					velocity: { x: 0, y: 0 },
 					riding: true,
 					riderPose: ridingPose,
+					items: current.items,
 					defaultDirection: direction
 				});
 				clock = advancePlayback(p, clock, dt);

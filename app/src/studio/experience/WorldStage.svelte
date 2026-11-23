@@ -960,6 +960,7 @@
 							velocity,
 							riding: mountVisible,
 							riderPose,
+							items: view.items,
 							previous,
 							defaultDirection:
 								experience.mode === 'side'

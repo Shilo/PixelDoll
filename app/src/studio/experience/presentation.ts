@@ -447,6 +447,8 @@ export function resolveLive(
 		riding?: boolean;
 		/** A State chosen as the rider's pose; used only while riding, and only for the exact facing it covers. */
 		riderPose?: string;
+		/** The worn outfit. While riding without a chosen pose, the first pose in the riding order that shows all of it wins. */
+		items?: Preset['items'];
 	}
 ): Presentation {
 	const velocity = unit(options.velocity, options.deadZone ?? 1e-6),
@@ -527,6 +529,22 @@ export function resolveLive(
 		const sequence = intended ? a.animations.get(clip)?.get(intended) : undefined;
 		if (sequence) return withIssue(a, animated(base, sequence));
 	}
+	// Idle and Standing only stand in for a riding pose. Items are drawn on Standing first and may never be posed onto
+	// Idle, so the stand-in that shows the whole worn outfit wins. Standing in for Idle is no gap to report.
+	if (options.riding && options.items && intended) {
+		const worn = wornItems(a, options.items);
+		const dressed = ['idle', DEFAULT_MOVE]
+			.map((clip) => a.animations.get(clip)?.get(intended))
+			.find((sequence) => sequence && showsOutfit(a, worn, sequence));
+		if (dressed)
+			return withIssue(
+				a,
+				animated(
+					base.requestedClip === 'idle' ? { ...base, requestedClip: dressed.clip } : base,
+					dressed
+				)
+			);
+	}
 	for (const clip of options.riding
 		? ['idle', DEFAULT_MOVE]
 		: moving
@@ -557,6 +575,17 @@ export function resolveLive(
 		saved
 	);
 	return withIssue(a, direction ? still(a, base, direction) : base);
+}
+
+/** The shown worn items besides the body. */
+function wornItems(a: PresentationAvailability, items: Preset['items']) {
+	const m = a.project.manifest;
+	return shownItems(m, equipped(m, items)).filter((item) => item.id !== m.rig.baseItem);
+}
+/** Whether this sequence draws every worn item, so rendering it hides none (renderPresentation's check). */
+function showsOutfit(a: PresentationAvailability, worn: Item[], sequence: BodySequence) {
+	const cells = sequence.frames.map((frame) => frame.cell);
+	return worn.every((item) => a.complete(item, sequence.clip, sequence.direction, cells));
 }
 
 /** Exact south still for current-outfit thumbnails; never labels another facing as south. */

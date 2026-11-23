@@ -188,6 +188,46 @@ describe('production body presentation', () => {
 		expect(resolveLive(a, { velocity: { x: 0, y: -1 }, riding: true }).issue).toBeNull();
 	});
 
+	test('riding stands in with the Idle or Standing that shows the worn outfit, never hiding a riding pose', () => {
+		// Items are drawn on Standing first; this hat was never posed onto Idle, Ride or the chosen State.
+		const project = fixture(['south', 'east'], ['default', 'idle', 'ride', 'sitting']);
+		Object.assign(
+			project.manifest.rig.animations.find((clip) => clip.id === 'sitting')!,
+			{
+				kind: 'state',
+				cells: 1,
+				loop: false,
+				frames: [{ cell: 0, ms: 100 }]
+			}
+		);
+		const body = project.manifest.items[0].layers[0].cells!;
+		body.ride = { east: [bodyHash, bodyHash] };
+		body.sitting = { east: [bodyHash] };
+		const hat = project.manifest.items[1];
+		hat.layers[0].cells = { default: { south: [gearHash, gearHash], east: [gearHash, gearHash] } };
+		hat.coverage = ['default/south/0', 'default/south/1', 'default/east/0', 'default/east/1'];
+		const a = buildPresentation(project);
+		const outfit = { body: 'base', head: 'hat' };
+		const ride = (
+			x: number,
+			y: number,
+			items?: Record<string, string | null>,
+			riderPose?: string
+		) => resolveLive(a, { velocity: { x, y }, riding: true, riderPose, items });
+		// No Ride facing south: Standing shows the hat where Idle would hide it, with no notice.
+		const south = ride(0, -1, outfit);
+		expect(south).toMatchObject({ clip: 'default', direction: 'south', issue: null });
+		expect(renderPresentation(a, outfit, south).hiddenItems).toEqual([]);
+		// Nothing worn keeps Idle, and a real riding pose is never swapped to hide a gap.
+		expect(ride(0, -1, { body: 'base' }).clip).toBe('idle');
+		expect(ride(1, 0, outfit).clip).toBe('ride');
+		expect(ride(1, 0, outfit, 'sitting').clip).toBe('sitting');
+		// A chosen pose missing this facing still names the gap while the outfit stays on.
+		const missing = ride(0, -1, outfit, 'sitting');
+		expect(missing).toMatchObject({ clip: 'default', requestedClip: 'sitting' });
+		expect(missing.notice).toMatchObject({ kind: 'missing-direction', move: 'sitting' });
+	});
+
 	test('intentional E/W directions retain remembered vertical facing without missing-coverage warnings', () => {
 		const a = buildPresentation(fixture(['east', 'west']));
 		const east = resolveLive(a, { velocity: moving });

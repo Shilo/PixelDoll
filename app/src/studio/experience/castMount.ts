@@ -46,7 +46,8 @@ export function mountedStill(
 		velocity: { x: 0, y: 0 },
 		riding: true,
 		// Its default facing (south, else east for a side-view rig), so the Riding pose drawn for it applies.
-		riderPose: activeRiderPose(id, project.manifest)
+		riderPose: activeRiderPose(id, project.manifest),
+		items
 	});
 	const place = mountPlacement(project, p, previewBounds(project));
 	let still: CharacterStill | null = null;
