@@ -2109,6 +2109,7 @@
 		"appearancePlaceholder": "描述此图像中已有的身体、头发、颜色和衣服",
 		"appearanceHelp": "这会指导新动作。请包含现有头发和衣服；设置无法将它们与基础身体分离。",
 		"estimate": "{frames} 个唯一身体帧 · 预计 {gens} 次生成。包含一笔 {connection} 次生成的账户连接费用。匹配的已保存测量会被复用。",
+		"willSkip": "将跳过{moves}：每个动作都有空帧，因此不会为其花费。若要在其上制作装备动画，请修复这些帧或重新生成这些动作。",
 		"busyElsewhere": "请先完成另一个角色操作，再开始设置。",
 		"resumeRigSetup": "继续绑定结构设置",
 		"dismiss": "放弃设置",

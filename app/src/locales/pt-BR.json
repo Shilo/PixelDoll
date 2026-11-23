@@ -2182,6 +2182,7 @@
 		"appearancePlaceholder": "Descreva o corpo, o cabelo, as cores e as roupas que já aparecem na arte",
 		"appearanceHelp": "Isso orienta as novas animações. Inclua o cabelo e as roupas atuais. A configuração não consegue separá-los da base.",
 		"estimate": "{frames} quadros únicos do corpo · estimativa de {gens} gerações. Inclui {connection} geração para vincular a conta. Medições salvas correspondentes são reaproveitadas.",
+		"willSkip": "{moves} será ignorado: cada um tem um quadro vazio, então nada é gasto com ele. Corrija esses quadros ou crie os movimentos novamente para animar itens neles.",
 		"busyElsewhere": "Conclua a outra operação do personagem antes de iniciar a configuração.",
 		"resumeRigSetup": "Retomar configuração do rig",
 		"dismiss": "Descartar configuração",

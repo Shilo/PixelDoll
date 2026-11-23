@@ -2173,6 +2173,7 @@
 		"appearancePlaceholder": "Describe el cuerpo, el pelo, los colores y la ropa que ya aparecen en la imagen",
 		"appearanceHelp": "Esto guía las animaciones nuevas. Incluye el pelo y la ropa existentes; la configuración no puede separarlos de la base.",
 		"estimate": "{frames} fotogramas únicos del cuerpo · costo estimado: {gens} generaciones. Incluye {connection} generaciones para vincular la cuenta. Se reutilizan las mediciones guardadas que coincidan.",
+		"willSkip": "Se omitirá {moves}: cada uno tiene un fotograma vacío, así que no se gasta nada en él. Corrige esos fotogramas o vuelve a crear los movimientos para animar objetos en ellos.",
 		"busyElsewhere": "Termina la otra operación del personaje antes de iniciar la configuración.",
 		"resumeRigSetup": "Reanudar configuración del rig",
 		"dismiss": "Descartar configuración",

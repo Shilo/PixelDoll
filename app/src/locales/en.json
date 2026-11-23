@@ -2173,6 +2173,7 @@
 		"appearancePlaceholder": "Describe the body, hair, colors and clothes already in this artwork",
 		"appearanceHelp": "This guides new moves. Include existing hair and clothes; setup cannot separate them from the base.",
 		"estimate": "{frames} unique body frames · {gens} gens estimated. Includes a {connection}-gen account connection. Matching saved measurements are reused.",
+		"willSkip": "{moves} will be skipped: each has an empty frame, so nothing is spent on it. Fix those frames or make the moves again to animate items on them.",
 		"busyElsewhere": "Finish the other character operation before starting setup.",
 		"resumeRigSetup": "Resume rig setup",
 		"dismiss": "Dismiss setup",

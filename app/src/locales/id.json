@@ -2109,6 +2109,7 @@
 		"appearancePlaceholder": "Deskripsikan tubuh, rambut, warna, dan pakaian yang sudah ada pada gambar ini",
 		"appearanceHelp": "Deskripsi ini memandu animasi baru. Sertakan rambut dan pakaian yang sudah ada karena penyiapan tidak bisa memisahkannya dari tubuh dasar.",
 		"estimate": "{frames} frame tubuh unik · perkiraan {gens} generasi. Termasuk {connection} generasi untuk menghubungkan akun. Pengukuran tersimpan yang cocok dipakai ulang.",
+		"willSkip": "{moves} akan dilewati: masing-masing punya frame kosong, jadi tidak ada biaya untuknya. Perbaiki frame itu atau buat gerakannya lagi untuk menganimasikan item padanya.",
 		"busyElsewhere": "Selesaikan operasi karakter lain sebelum memulai penyiapan.",
 		"resumeRigSetup": "Lanjutkan penyiapan rig",
 		"dismiss": "Singkirkan penyiapan",
