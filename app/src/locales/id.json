@@ -2113,6 +2113,9 @@
 		"appearance": "Penampilan saat ini",
 		"appearancePlaceholder": "Deskripsikan tubuh, rambut, warna, dan pakaian yang sudah ada pada gambar ini",
 		"appearanceHelp": "Deskripsi ini memandu animasi baru. Sertakan rambut dan pakaian yang sudah ada karena penyiapan tidak bisa memisahkannya dari tubuh dasar.",
+		"appearanceSaveHelp": "Deskripsi ini memandu animasi baru. Sertakan rambut dan pakaian yang sudah ada. Menyimpan perubahan gratis.",
+		"saveDescription": "Simpan deskripsi",
+		"descriptionSaved": "Deskripsi disimpan. Animasi baru akan memakainya.",
 		"estimate": "{frames} frame tubuh unik · perkiraan {gens} generasi. Termasuk {connection} generasi untuk menghubungkan akun. Pengukuran tersimpan yang cocok dipakai ulang.",
 		"busyElsewhere": "Selesaikan operasi karakter lain sebelum memulai penyiapan.",
 		"resumeRigSetup": "Lanjutkan penyiapan rig",
@@ -2976,7 +2979,8 @@
 				"other": "{n} file lain diabaikan."
 			},
 			"fitted": "Item yang disesuaikan dengan frame tubuh dasar ini tetap dikenakan: {names}. Periksa item tersebut di frame yang berubah.",
-			"emptiedBody": "Frame tubuh dasar yang kosong dilewati saat item baru dibuat untuknya."
+			"emptiedBody": "Frame tubuh dasar yang kosong dilewati saat item baru dibuat untuknya.",
+			"description": "Animasi baru mengikuti deskripsi karakter. Jika Anda mengubah rambut atau pakaian, perbarui di Siapkan karakter."
 		},
 		"errors": {
 			"size": "PNG ini berukuran {got} px, tetapi frame ini memerlukan {want} px. Pertahankan ukuran dan grid aslinya.",

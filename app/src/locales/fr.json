@@ -2177,6 +2177,9 @@
 		"appearance": "Apparence existante",
 		"appearancePlaceholder": "Décrivez le corps, les cheveux, les couleurs et les vêtements déjà présents dans ce visuel",
 		"appearanceHelp": "Cela guide les nouvelles animations. Incluez les cheveux et vêtements existants ; la configuration ne peut pas les séparer de la base.",
+		"appearanceSaveHelp": "Cela guide les nouvelles animations. Incluez les cheveux et vêtements existants. Enregistrer une modification est gratuit.",
+		"saveDescription": "Enregistrer la description",
+		"descriptionSaved": "Description enregistrée. Les nouvelles animations l’utilisent.",
 		"estimate": "Images distinctes du corps : {frames} · estimation : {gens} gén., dont {connection} gén. pour associer les vues debout au compte. Les mesures enregistrées correspondantes sont réutilisées.",
 		"busyElsewhere": "Terminez l’autre opération sur le personnage avant de lancer la configuration.",
 		"resumeRigSetup": "Reprendre la configuration du rig",
@@ -3058,7 +3061,8 @@
 				"other": "{n} autres fichiers ont été ignorés."
 			},
 			"fitted": "Les objets ajustés à ces images du corps de base restent portés : {names}. Vérifiez-les sur les images modifiées.",
-			"emptiedBody": "Une image vide du corps de base est ignorée lors de la création de nouveaux objets pour elle."
+			"emptiedBody": "Une image vide du corps de base est ignorée lors de la création de nouveaux objets pour elle.",
+			"description": "Les nouvelles animations suivent la description du personnage. Si vous avez modifié les cheveux ou les vêtements, mettez-la à jour dans Configurer le personnage."
 		},
 		"errors": {
 			"size": "Ce PNG fait {got} px, mais ces images nécessitent {want} px. Conservez la taille et la grille d’origine.",

@@ -2177,6 +2177,9 @@
 		"appearance": "Vorhandenes Aussehen",
 		"appearancePlaceholder": "Beschreibe den Grundkörper, die Haare, Farben und Kleidung in dieser Grafik",
 		"appearanceHelp": "Daran orientieren sich neue Animationen. Beschreibe auch vorhandene Haare und Kleidung. Die Einrichtung kann sie nicht vom Grundkörper trennen.",
+		"appearanceSaveHelp": "Daran orientieren sich neue Animationen. Beschreibe auch vorhandene Haare und Kleidung. Änderungen zu speichern ist kostenlos.",
+		"saveDescription": "Beschreibung speichern",
+		"descriptionSaved": "Beschreibung gespeichert. Neue Animationen verwenden sie.",
 		"estimate": "{frames} unterschiedliche Grundkörperframes · ca. {gens} Generierungen, einschließlich {connection} Generierungen für die Kontoverbindung. Passende gespeicherte Messwerte werden wiederverwendet.",
 		"busyElsewhere": "Schließe den anderen Figurenvorgang ab, bevor du die Einrichtung startest.",
 		"resumeRigSetup": "Rig-Einrichtung fortsetzen",
@@ -3058,7 +3061,8 @@
 				"other": "{n} andere Dateien wurden ignoriert."
 			},
 			"fitted": "An diese Grundkörper-Frames angepasste Gegenstände bleiben angelegt: {names}. Prüfe sie in den geänderten Frames.",
-			"emptiedBody": "Ein leerer Grundkörper-Frame wird übersprungen, wenn neue Gegenstände dafür erstellt werden."
+			"emptiedBody": "Ein leerer Grundkörper-Frame wird übersprungen, wenn neue Gegenstände dafür erstellt werden.",
+			"description": "Neue Animationen folgen der Figurenbeschreibung. Wenn du Haare oder Kleidung geändert hast, passe sie unter „Figur einrichten“ an."
 		},
 		"errors": {
 			"size": "Dieses PNG ist {got} px groß, aber diese Frames brauchen {want} px. Behalte die Originalgröße und das Raster bei.",

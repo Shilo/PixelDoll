@@ -2177,6 +2177,9 @@
 		"appearance": "Apariencia existente",
 		"appearancePlaceholder": "Describe el cuerpo, el pelo, los colores y la ropa que ya aparecen en la imagen",
 		"appearanceHelp": "Esto guía las animaciones nuevas. Incluye el pelo y la ropa existentes; la configuración no puede separarlos de la base.",
+		"appearanceSaveHelp": "Esto guía las animaciones nuevas. Incluye el pelo y la ropa existentes. Guardar un cambio es gratis.",
+		"saveDescription": "Guardar descripción",
+		"descriptionSaved": "Descripción guardada. Las animaciones nuevas la usan.",
 		"estimate": "{frames} fotogramas únicos del cuerpo · costo estimado: {gens} generaciones. Incluye {connection} generaciones para vincular la cuenta. Se reutilizan las mediciones guardadas que coincidan.",
 		"busyElsewhere": "Termina la otra operación del personaje antes de iniciar la configuración.",
 		"resumeRigSetup": "Reanudar configuración del rig",
@@ -3058,7 +3061,8 @@
 				"other": "Se ignoraron {n} archivos más."
 			},
 			"fitted": "Los objetos ajustados a estos fotogramas del cuerpo base siguen puestos: {names}. Revísalos en los fotogramas cambiados.",
-			"emptiedBody": "Un fotograma vacío del cuerpo base se omite al crear objetos nuevos para él."
+			"emptiedBody": "Un fotograma vacío del cuerpo base se omite al crear objetos nuevos para él.",
+			"description": "Las animaciones nuevas siguen la descripción del personaje. Si cambiaste el pelo o la ropa, actualízala en Configurar personaje."
 		},
 		"errors": {
 			"size": "Este PNG mide {got} px, pero estos fotogramas necesitan {want} px. Mantén el tamaño y la cuadrícula originales.",

@@ -2113,6 +2113,9 @@
 		"appearance": "现有外观",
 		"appearancePlaceholder": "描述此图像中已有的身体、头发、颜色和衣服",
 		"appearanceHelp": "这会指导新动作。请包含现有头发和衣服；设置无法将它们与基础身体分离。",
+		"appearanceSaveHelp": "这会指导新动作。请包含现有头发和衣服。保存修改免费。",
+		"saveDescription": "保存描述",
+		"descriptionSaved": "描述已保存。新动作会使用它。",
 		"estimate": "{frames} 个唯一身体帧 · 预计 {gens} 次生成。包含一笔 {connection} 次生成的账户连接费用。匹配的已保存测量会被复用。",
 		"busyElsewhere": "请先完成另一个角色操作，再开始设置。",
 		"resumeRigSetup": "继续绑定结构设置",
@@ -2976,7 +2979,8 @@
 				"other": "已忽略其他 {n} 个文件。"
 			},
 			"fitted": "适配这些基础身体帧的装备仍保持穿戴：{names}。请在更改的帧上检查它们。",
-			"emptiedBody": "为空的基础身体帧制作新装备时，会跳过该帧。"
+			"emptiedBody": "为空的基础身体帧制作新装备时，会跳过该帧。",
+			"description": "新动作会遵循角色描述。如果你改了头发或衣服，请在“设置角色”中更新描述。"
 		},
 		"errors": {
 			"size": "此 PNG 为 {got} px，但这些帧需要 {want} px。请保持原始尺寸和网格。",

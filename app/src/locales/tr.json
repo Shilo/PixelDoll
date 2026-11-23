@@ -2177,6 +2177,9 @@
 		"appearance": "Mevcut görünüm",
 		"appearancePlaceholder": "Bu görseldeki gövdeyi, saçı, renkleri ve giysileri tarif edin",
 		"appearanceHelp": "Yeni animasyonları yönlendirir. Mevcut saç ve giysileri de tarif edin; kurulum bunları temel gövdeden ayıramaz.",
+		"appearanceSaveHelp": "Yeni animasyonları yönlendirir. Mevcut saç ve giysileri de tarif edin. Değişikliği kaydetmek ücretsizdir.",
+		"saveDescription": "Açıklamayı kaydet",
+		"descriptionSaved": "Açıklama kaydedildi. Yeni animasyonlar bunu kullanır.",
 		"estimate": "{frames} benzersiz gövde karesi · Tahmini {gens} üretim hakkı. Hesabı bağlamak için gereken {connection} üretim hakkı dahildir. Eşleşen kayıtlı ölçümler yeniden kullanılır.",
 		"busyElsewhere": "Kuruluma başlamadan önce diğer karakter işlemini bitirin.",
 		"resumeRigSetup": "Rig kurulumuna devam edin",
@@ -3058,7 +3061,8 @@
 				"other": "{n} diğer dosya yok sayıldı."
 			},
 			"fitted": "Bu temel gövde karelerine uyarlanan eşyalar giyili kalır: {names}. Bunları değişen karelerde kontrol edin.",
-			"emptiedBody": "Boş bir temel gövde karesi, onun için yeni eşyalar oluşturulurken atlanır."
+			"emptiedBody": "Boş bir temel gövde karesi, onun için yeni eşyalar oluşturulurken atlanır.",
+			"description": "Yeni animasyonlar karakter açıklamasını izler. Saçı veya giysileri değiştirdiyseniz açıklamayı Karakteri hazırlayın bölümünden güncelleyin."
 		},
 		"errors": {
 			"size": "Bu PNG {got} px, ancak bu kareler {want} px gerektiriyor. Orijinal boyutu ve ızgarayı koruyun.",

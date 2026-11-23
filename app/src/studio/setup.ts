@@ -21,6 +21,7 @@ import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { LocalizedError, message } from '../lib/message.ts';
 import { moveName, type MoveRef } from './model.ts';
+import { EST } from './movePricing.ts';
 
 /** Move names in the user's words for setup's messages. */
 const moveWordsOf = (project: { manifest: { rig: { animations: MoveRef[] } } }) => (id: string) =>
@@ -65,22 +66,30 @@ async function registration(
 		seed: spec.seed
 	});
 }
+/** Request hashes the queue already completed: a setup reuses them instead of buying them again. */
+const completed = () =>
+	new Set(
+		queue
+			.snapshot()
+			.jobs.filter((job) => job.state === 'done')
+			.map((job) => job.requestHash)
+	);
+/** Joint checks `plan` still buys: one for each frame with no completed check. */
+async function jointCheckGens(plan: SetupPlan, done: Set<string>): Promise<number> {
+	let gens = 0;
+	for (const image of plan.frames.values()) {
+		const check = routes.estimateSkeleton(png(await b64(skeletonInput(image).image)));
+		if (!done.has((await requestIdentity(check)).requestHash)) gens += EST;
+	}
+	return gens;
+}
 /** API-free: what resuming this stopped setup still buys, priced from the request cache: a joint check for each frame with
  *  no completed check, and the registration when it has none. Completed requests are reused, never bought again. */
 export async function setupResumeGens(spec: SetupSpec): Promise<number> {
 	const { project } = await loadProject(spec.projectId);
 	const plan = await setupPlan(project, spec.restAnim, moveWordsOf(project)),
-		done = new Set(
-			queue
-				.snapshot()
-				.jobs.filter((job) => job.state === 'done')
-				.map((job) => job.requestHash)
-		);
-	let gens = 0;
-	for (const image of plan.frames.values()) {
-		const check = routes.estimateSkeleton(png(await b64(skeletonInput(image).image)));
-		if (!done.has((await requestIdentity(check)).requestHash)) gens += 0.1;
-	}
+		done = completed();
+	let gens = await jointCheckGens(plan, done);
 	if (!done.has((await requestIdentity(await registration(project, plan, spec))).requestHash))
 		gens += 0.25;
 	return +gens.toFixed(2);
@@ -98,6 +107,25 @@ export async function setupRegistrationStuck(spec: SetupSpec): Promise<boolean> 
 		(latest.state !== 'done' ||
 			!(latest.response as { character_id?: string } | undefined)?.character_id)
 	);
+}
+
+/** API-free: what a new setup would charge now. Completed joint checks are reused; the registration always sends, as a new
+ *  setup has a new seed. */
+export async function setupGens(plan: SetupPlan): Promise<number> {
+	return +((await jointCheckGens(plan, completed())) + 0.25).toFixed(2);
+}
+
+/** New moves describe the character with this text and never use the registration, so changing it is free. */
+export async function saveLooks(projectId: string, looks: string): Promise<void> {
+	await db.update<StoredProject>('projects', projectId, (rec) => {
+		if (!rec?.character)
+			throw new LocalizedError(
+				'This saved character is no longer available.',
+				'directionsSheet.characterUnavailable'
+			);
+		rec.character = { ...rec.character, looks: looks.trim() };
+		return rec;
+	});
 }
 
 export async function setupCharacter(

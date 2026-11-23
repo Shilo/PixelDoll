@@ -2620,6 +2620,22 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		id: 'managed-parity-fixture',
 		looks: 'red hair, blue coat and boots'
 	});
+	// The description new moves send changes for free, without a new registration; setup reuses its paid joint check.
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click();
+	const setup = page.getByRole('dialog', { name: 'Set up character', exact: true });
+	await expect(setup).toContainText('0.25 gens estimated');
+	const appearance = setup.getByRole('textbox', { name: /Existing appearance/ });
+	await expect(appearance).toHaveValue('red hair, blue coat and boots');
+	await appearance.fill('bald, gray tunic, bare feet');
+	await setup.getByRole('button', { name: 'Save description', exact: true }).click();
+	await expect(setup).toContainText('Description saved. New moves use it.');
+	await expect(setup.getByRole('button', { name: 'Save description', exact: true })).toBeDisabled();
+	await setup.getByRole('button', { name: 'Close', exact: true }).click();
+	expect((await read()).character).toEqual({
+		id: 'managed-parity-fixture',
+		looks: 'bald, gray tunic, bare feet'
+	});
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'New State...', exact: true }).click();
 	const emptyCapture = page.getByRole('dialog', { name: 'New State', exact: true });
@@ -2698,7 +2714,13 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		'west'
 	]);
 	expect(registration.description).toBe('red hair, blue coat and boots');
+	expect(posts.filter((p) => p.path.endsWith('/create-character-v3'))).toHaveLength(1);
 	expect(posts.filter((p) => p.path.endsWith('/animate-with-skeleton-v3'))).toHaveLength(4);
+	expect(
+		posts
+			.filter((p) => p.path.endsWith('/animate-with-skeleton-v3'))
+			.every((p) => p.body.description === 'bald, gray tunic, bare feet')
+	).toBe(true);
 	expect(
 		posts
 			.filter((p) => p.path.endsWith('/animate-with-skeleton-v3'))
