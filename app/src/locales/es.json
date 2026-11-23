@@ -2153,7 +2153,11 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivote {x},{y}",
 		"waitingForRepairReview": "Esperando la revisión de los fotogramas del objeto",
-		"needsRedo": "No se encontraron articulaciones: redibújala para animar objetos en ella"
+		"needsRedo": "No se encontraron articulaciones: redibújala para animar objetos en ella",
+		"itemsDrawn": {
+			"one": "{drawn} de {n} objeto dibujado",
+			"other": "{drawn} de {n} objetos dibujados"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2572,13 +2576,13 @@
 			"save": "Guardar animación",
 			"replace": "Reemplazar animación",
 			"discardDraft": "Descartar borrador",
-			"titleItems": "Animar objetos",
-			"chooseFor": "Elige los objetos que quieras animar para {move}.",
+			"titleItems": "Generar objetos",
+			"chooseFor": "Elige los objetos que quieras generar para {move}.",
 			"total": "~{gens} generaciones más",
 			"selected": "Seleccionado",
 			"animateCount": {
-				"one": "Animar {n} objeto",
-				"other": "Animar {n} objetos"
+				"one": "Generar {n} objeto",
+				"other": "Generar {n} objetos"
 			},
 			"unavailable": "No disponible",
 			"findings": "Notas de calidad",
@@ -2586,7 +2590,9 @@
 			"beforeItems": "Revisa la animación antes de animar objetos.",
 			"changed": "El personaje o la animación ha cambiado. Vuelve a abrir la revisión.",
 			"missingFrames": "Los fotogramas revisados ya no están disponibles.",
-			"tier": "Tu plan de PixelLab no admite algunos objetos seleccionados."
+			"tier": "Tu plan de PixelLab no admite algunos objetos seleccionados.",
+			"notNow": "Ahora no",
+			"later": "Puedes generar objetos para {move} más tarde desde su menú en Animaciones."
 		},
 		"thatCharacter": "ese personaje",
 		"recoveryCheckFailed": "No se pudieron comprobar los fotogramas en caché: {error}",
@@ -3316,5 +3322,14 @@
 			"exportId": "Elige otro ID de exportación.",
 			"busy": "Espera un momento y vuelve a intentarlo."
 		}
+	},
+	"itemGeneration": {
+		"open": "Generar objetos",
+		"title": "Generar objetos para {move}",
+		"inProgress": "En curso",
+		"allDrawn": "Todos los objetos ya están dibujados para {move}.",
+		"noneAvailable": "Ninguno de estos objetos se puede generar para {move}.",
+		"notDrawnFor": "Aún sin dibujar para {move}",
+		"generateFor": "Generar para {move}"
 	}
 }

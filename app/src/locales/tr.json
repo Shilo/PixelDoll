@@ -2153,7 +2153,11 @@
 		"bodySize": "{w}×{h} piksel",
 		"frameSize": "{w}×{h} piksel, pivot noktası {x},{y}",
 		"waitingForRepairReview": "Eşya karelerinin incelenmesi bekleniyor",
-		"needsRedo": "Eklemler bulunamadı: üzerinde eşya canlandırmak için yeniden çizin"
+		"needsRedo": "Eklemler bulunamadı: üzerinde eşya canlandırmak için yeniden çizin",
+		"itemsDrawn": {
+			"one": "{n} eşyadan {drawn} tanesi çizildi",
+			"other": "{n} eşyadan {drawn} tanesi çizildi"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2572,13 +2576,13 @@
 			"save": "Animasyonu kaydet",
 			"replace": "Animasyonu değiştir",
 			"discardDraft": "Taslağı sil",
-			"titleItems": "Eşyaları canlandır",
-			"chooseFor": "Şu animasyon için canlandırılacak eşyaları seçin: {move}.",
+			"titleItems": "Eşya üret",
+			"chooseFor": "Şu animasyon için üretilecek eşyaları seçin: {move}.",
 			"total": "~{gens} ek üretim",
 			"selected": "Seçili",
 			"animateCount": {
-				"one": "{n} eşyayı canlandır",
-				"other": "{n} eşyayı canlandır"
+				"one": "{n} eşya üret",
+				"other": "{n} eşya üret"
 			},
 			"unavailable": "Kullanılamıyor",
 			"findings": "Kalite notları",
@@ -2586,7 +2590,9 @@
 			"beforeItems": "Eşyaları canlandırmadan önce animasyonu inceleyin.",
 			"changed": "Karakter veya animasyon değişti. Devam etmeden önce incelemeyi yeniden açın.",
 			"missingFrames": "İncelenen kareler artık kullanılamıyor.",
-			"tier": "PixelLab planınız seçilen bazı eşyaları desteklemiyor."
+			"tier": "PixelLab planınız seçilen bazı eşyaları desteklemiyor.",
+			"notNow": "Şimdi değil",
+			"later": "Bu animasyonun eşyalarını daha sonra Animasyonlar'daki menüsünden üretebilirsiniz: {move}."
 		},
 		"thatCharacter": "söz konusu karakter",
 		"recoveryCheckFailed": "Önbellekteki kareler kontrol edilemedi: {error}",
@@ -3313,5 +3319,14 @@
 			"exportId": "Farklı bir dışa aktarma kimliği seçin.",
 			"busy": "Biraz bekleyin, sonra yeniden deneyin."
 		}
+	},
+	"itemGeneration": {
+		"open": "Eşya üret",
+		"title": "Eşya üret: {move}",
+		"inProgress": "Sürüyor",
+		"allDrawn": "Tüm eşyalar zaten çizildi: {move}.",
+		"noneAvailable": "Bu eşyaların hiçbiri üretilemez: {move}.",
+		"notDrawnFor": "Henüz çizilmedi: {move}",
+		"generateFor": "Şunun için üret: {move}"
 	}
 }

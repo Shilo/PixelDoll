@@ -32,6 +32,7 @@ const AREAS: Record<NonNullable<SheetId>, string> = {
 	gen: 'Item generation',
 	move: 'Add a move',
 	moveReview: 'Move review',
+	itemGeneration: 'Generate items',
 	stateCapture: 'New state',
 	stateReview: 'State review',
 	rename: 'Rename',

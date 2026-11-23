@@ -2153,7 +2153,11 @@
 		"bodySize": "{w} × {h} px",
 		"frameSize": "{w} × {h} px, pivot {x},{y}",
 		"waitingForRepairReview": "En attente de la vérification des images de l’objet",
-		"needsRedo": "Articulations introuvables : redessinez-la pour y animer des objets"
+		"needsRedo": "Articulations introuvables : redessinez-la pour y animer des objets",
+		"itemsDrawn": {
+			"one": "{drawn} objet dessiné sur {n}",
+			"other": "{drawn} objets dessinés sur {n}"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2572,13 +2576,13 @@
 			"save": "Enregistrer l’animation",
 			"replace": "Remplacer l’animation",
 			"discardDraft": "Supprimer le brouillon",
-			"titleItems": "Animer des objets",
-			"chooseFor": "Choisissez les objets à animer pour {move}.",
+			"titleItems": "Générer des objets",
+			"chooseFor": "Choisissez les objets à générer pour {move}.",
 			"total": "~{gens} générations de plus",
 			"selected": "Sélectionné",
 			"animateCount": {
-				"one": "Animer {n} objet",
-				"other": "Animer {n} objets"
+				"one": "Générer {n} objet",
+				"other": "Générer {n} objets"
 			},
 			"unavailable": "Non disponible",
 			"findings": "Notes de qualité",
@@ -2586,7 +2590,9 @@
 			"beforeItems": "Vérifiez l’animation avant d’animer des objets.",
 			"changed": "Le personnage ou l’animation a changé. Rouvrez la vérification.",
 			"missingFrames": "Les images vérifiées ne sont plus disponibles.",
-			"tier": "Votre forfait PixelLab ne prend pas en charge certains objets sélectionnés."
+			"tier": "Votre forfait PixelLab ne prend pas en charge certains objets sélectionnés.",
+			"notNow": "Plus tard",
+			"later": "Vous pourrez générer des objets pour {move} plus tard depuis son menu dans Animations."
 		},
 		"thatCharacter": "ce personnage",
 		"recoveryCheckFailed": "Impossible de vérifier les images en cache : {error}",
@@ -3316,5 +3322,14 @@
 			"exportId": "Choisissez un autre ID d’export.",
 			"busy": "Patientez un instant, puis réessayez."
 		}
+	},
+	"itemGeneration": {
+		"open": "Générer des objets",
+		"title": "Générer des objets pour {move}",
+		"inProgress": "En cours",
+		"allDrawn": "Tous les objets sont déjà dessinés pour {move}.",
+		"noneAvailable": "Aucun de ces objets ne peut être généré pour {move}.",
+		"notDrawnFor": "Pas encore dessiné pour {move}",
+		"generateFor": "Générer pour {move}"
 	}
 }

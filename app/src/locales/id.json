@@ -2089,7 +2089,10 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, titik pivot {x},{y}",
 		"waitingForRepairReview": "Menunggu tinjauan frame item",
-		"needsRedo": "Sendi tidak ditemukan: gambar ulang untuk menganimasikan item di dalamnya"
+		"needsRedo": "Sendi tidak ditemukan: gambar ulang untuk menganimasikan item di dalamnya",
+		"itemsDrawn": {
+			"other": "{drawn} dari {n} item sudah digambar"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2507,12 +2510,12 @@
 			"save": "Simpan animasi",
 			"replace": "Ganti animasi",
 			"discardDraft": "Buang draf",
-			"titleItems": "Animasikan item",
-			"chooseFor": "Pilih item yang ingin dianimasikan untuk {move}.",
+			"titleItems": "Buat item",
+			"chooseFor": "Pilih item yang ingin dibuat untuk {move}.",
 			"total": "~{gens} generasi tambahan",
 			"selected": "Dipilih",
 			"animateCount": {
-				"other": "Animasikan {n} item"
+				"other": "Buat {n} item"
 			},
 			"unavailable": "Tidak tersedia",
 			"findings": "Catatan kualitas",
@@ -2520,7 +2523,9 @@
 			"beforeItems": "Tinjau animasi sebelum menganimasikan item.",
 			"changed": "Karakter atau animasi berubah. Buka kembali tinjauan sebelum melanjutkan.",
 			"missingFrames": "Frame yang telah ditinjau tidak lagi tersedia.",
-			"tier": "Paket PixelLab Anda tidak mendukung beberapa item yang dipilih."
+			"tier": "Paket PixelLab Anda tidak mendukung beberapa item yang dipilih.",
+			"notNow": "Nanti saja",
+			"later": "Anda dapat membuat item untuk {move} nanti dari menunya di Animasi."
 		},
 		"thatCharacter": "karakter tersebut",
 		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",
@@ -3224,5 +3229,14 @@
 			"exportId": "Pilih ID Ekspor lain.",
 			"busy": "Tunggu sebentar, lalu coba lagi."
 		}
+	},
+	"itemGeneration": {
+		"open": "Buat item",
+		"title": "Buat item untuk {move}",
+		"inProgress": "Sedang diproses",
+		"allDrawn": "Semua item sudah digambar untuk {move}.",
+		"noneAvailable": "Tidak ada item ini yang dapat dibuat untuk {move}.",
+		"notDrawnFor": "Belum digambar untuk {move}",
+		"generateFor": "Buat untuk {move}"
 	}
 }

@@ -8,6 +8,7 @@
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
 	import { itemMoveOffer, missingItemMoves, moveMinimumTier } from './create.ts';
 	import { extendable } from './movePricing.ts';
+	import { seeded } from './itemGeneration.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import {
@@ -86,10 +87,7 @@
 	function makePose() {
 		if (!poseOffer?.specs.length) return;
 		const projectId = doc.id;
-		const specs = poseOffer.specs.map((spec) => ({
-			...$state.snapshot(spec),
-			seed: 1 + Math.floor(Math.random() * 1_000_000)
-		}));
+		const specs = seeded($state.snapshot(poseOffer.specs));
 		withKey(() => {
 			void queueMoves(projectId, specs);
 			ui.sheet = 'move';

@@ -2089,7 +2089,10 @@
 		"bodySize": "{w}×{h} 像素",
 		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
 		"waitingForRepairReview": "等待检查装备帧",
-		"needsRedo": "未找到关节：请重绘以在其上为装备制作动画"
+		"needsRedo": "未找到关节：请重绘以在其上为装备制作动画",
+		"itemsDrawn": {
+			"other": "已绘制 {drawn}/{n} 件装备"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2507,12 +2510,12 @@
 			"save": "保存动作",
 			"replace": "替换动作",
 			"discardDraft": "丢弃草稿",
-			"titleItems": "制作装备动画",
-			"chooseFor": "请选择要随{move}播放的装备。",
+			"titleItems": "生成装备",
+			"chooseFor": "请选择要为{move}生成的装备。",
 			"total": "再生成 ~{gens} 次",
 			"selected": "已选",
 			"animateCount": {
-				"other": "为 {n} 件装备生成动画"
+				"other": "生成 {n} 件装备"
 			},
 			"unavailable": "不可用",
 			"findings": "质量提示",
@@ -2520,7 +2523,9 @@
 			"beforeItems": "制作装备动画前，请先检查动作。",
 			"changed": "角色或动作已更改。请重新打开检查界面。",
 			"missingFrames": "已检查的帧不再可用。",
-			"tier": "当前的 PixelLab 套餐不支持部分已选装备。"
+			"tier": "当前的 PixelLab 套餐不支持部分已选装备。",
+			"notNow": "暂不",
+			"later": "之后可在“动作”中通过{move}的菜单生成装备。"
 		},
 		"thatCharacter": "该角色",
 		"recoveryCheckFailed": "无法检查缓存帧：{error}",
@@ -3224,5 +3229,14 @@
 			"exportId": "请选择其他导出 ID。",
 			"busy": "请稍等片刻后重试。"
 		}
+	},
+	"itemGeneration": {
+		"open": "生成装备",
+		"title": "为{move}生成装备",
+		"inProgress": "进行中",
+		"allDrawn": "所有装备都已为{move}绘制。",
+		"noneAvailable": "这些装备都无法为{move}生成。",
+		"notDrawnFor": "尚未为{move}绘制",
+		"generateFor": "为{move}生成"
 	}
 }

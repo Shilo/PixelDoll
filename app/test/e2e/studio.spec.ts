@@ -8196,6 +8196,55 @@ test('standing-first items quote only standing and offer actual custom moves one
 		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
 		.getByRole('button', { name: 'Discard', exact: true })
 		.click();
+	// A saved move counts its drawn items and offers the missing ones together; Standing never needs it.
+	await selectPlaybackClip(page, 'custom_walk');
+	await equipmentMode(page, 'Moves');
+	await expect(page.getByRole('button', { name: /^Custom walk preview/ })).toContainText(
+		'0 of 6 items drawn'
+	);
+	await page.getByRole('button', { name: 'More actions for Custom walk', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Generate items/ }).click();
+	const picker = page.getByRole('dialog', { name: 'Generate items for Custom walk', exact: true });
+	const pickerRow = picker.getByRole('button', { name: new RegExp(fixture.itemName) });
+	await expect(pickerRow).toContainText('12 gens');
+	await expect(picker.getByRole('button', { name: 'Generate items', exact: true })).toBeDisabled();
+	await pickerRow.click();
+	await expect(picker).toContainText('~12 more gens');
+	await picker.getByRole('button', { name: 'Generate 1 item', exact: true }).click();
+	await page
+		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'More actions for Standing', exact: true }).click();
+	await expect(page.getByRole('menuitem', { name: /^Rename/ })).toBeVisible();
+	await expect(page.getByRole('menuitem', { name: /^Generate items/ })).toHaveCount(0);
+	await page.keyboard.press('Escape');
+	// The dimmed tile asks instead of switching Preview to Standing: draw it for this move, or wear it anyway.
+	await equipmentGroup(page, 'Main hand');
+	const tile = page.locator(`[data-tile="${fixture.itemId}"]`);
+	const choice = page.locator('#item-choice');
+	await expect(tile).toHaveAttribute('aria-pressed', 'true');
+	await expect(tile).toHaveAttribute('aria-haspopup', 'menu');
+	await tile.click();
+	await expect(tile).toHaveAttribute('aria-expanded', 'true');
+	const generateFor = choice.getByRole('menuitem', { name: /^Generate for Custom walk/ });
+	await expect(generateFor).toContainText('~12 gens');
+	await generateFor.click();
+	await page
+		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
+	await tile.click();
+	await choice.getByRole('menuitem', { name: 'Take off', exact: true }).click();
+	await expect(tile).toHaveAttribute('aria-pressed', 'false');
+	await expect(playbackPicker(page)).toHaveAttribute('value', 'custom_walk');
+	await tile.click();
+	await choice.getByRole('menuitem', { name: 'Wear', exact: true }).click();
+	await expect(tile).toHaveAttribute('aria-pressed', 'true');
+	await expect(playbackPicker(page)).toHaveAttribute('value', 'default');
+	await expect(tile).not.toHaveAttribute('aria-haspopup');
+	expect(posts).toEqual([]);
 	const coverage = page.getByRole('button', { name: /equipped items? needs? frames/ });
 	await selectPlaybackClip(page, 'default');
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
@@ -8426,9 +8475,9 @@ test('move review gates item selection and shows live estimates without spending
 	});
 	await page.setViewportSize({ width: 320, height: 720 });
 	await replace.click();
-	const picker = page.getByRole('dialog', { name: 'Animate items', exact: true });
+	const picker = page.getByRole('dialog', { name: 'Generate items', exact: true });
 	const item = picker.getByRole('button', { name: new RegExp(fixture.itemName) });
-	const animate = picker.getByRole('button', { name: /^Animate (items|1 item)$/ });
+	const animate = picker.getByRole('button', { name: /^Generate (items|1 item)$/ });
 	await expect(item).toHaveAttribute('aria-pressed', 'false');
 	await expect(picker).toContainText('~0 more gens');
 	expect(await savedPlayback()).toEqual({ loop: false, moveLoop: false, firstMs: 137 });
@@ -8438,7 +8487,7 @@ test('move review gates item selection and shows live estimates without spending
 	await expect(item.locator('canvas')).toBeVisible();
 	await item.press('Space');
 	await expect(item).toHaveAttribute('aria-pressed', 'true');
-	await expect(animate).toHaveAccessibleName('Animate 1 item');
+	await expect(animate).toHaveAccessibleName('Generate 1 item');
 	await expect(picker).toContainText(`~${price} more gens`);
 	await item.click();
 	await expect(animate).toBeDisabled();
@@ -8459,7 +8508,7 @@ test('move review gates item selection and shows live estimates without spending
 					(button) =>
 						button.textContent?.trim() === name || button.getAttribute('aria-label') === name
 				)!;
-			button('Animate 1 item').click();
+			button('Generate 1 item').click();
 			button('Close').click();
 			return { requests: [...requests], waiting: ui.waitingForTab };
 		} finally {
@@ -8479,8 +8528,17 @@ test('move review gates item selection and shows live estimates without spending
 	await replace.click();
 	await expect(picker).toBeVisible();
 	expect(await savedPlayback()).toEqual({ loop: true, moveLoop: true, firstMs: 137 });
-	await item.click();
-	await animate.click();
+	// Items are optional: Not now spends nothing, and the move's own menu offers the same choice later.
+	await expect(picker).toContainText(
+		'You can generate items for Walk later from its menu in Moves.'
+	);
+	await picker.getByRole('button', { name: 'Not now', exact: true }).click();
+	await expect(picker).toBeHidden();
+	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Generate items/ }).click();
+	const later = page.getByRole('dialog', { name: 'Generate items for Walk', exact: true });
+	await later.getByRole('button', { name: new RegExp(fixture.itemName) }).click();
+	await later.getByRole('button', { name: 'Generate 1 item', exact: true }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
@@ -8611,7 +8669,7 @@ test('reviewed move animates the chosen item and exports layered frames using of
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	await page.getByRole('button', { name: 'Replace move', exact: true }).click();
-	const items = page.getByRole('dialog', { name: 'Animate items' });
+	const items = page.getByRole('dialog', { name: 'Generate items' });
 	const helmet = items.getByRole('button', { name: /Steel helmet/i });
 	await expect(helmet).toHaveAttribute('aria-pressed', 'false');
 	expect(
@@ -8627,7 +8685,7 @@ test('reviewed move animates the chosen item and exports layered frames using of
 	).toBe(false);
 	expect(posts).toEqual([]);
 	await helmet.click();
-	await items.getByRole('button', { name: 'Animate 1 item' }).click();
+	await items.getByRole('button', { name: 'Generate 1 item' }).click();
 	await page
 		.getByRole('dialog', { name: 'New move', exact: true })
 		.getByRole('button', { name: 'Done', exact: true })

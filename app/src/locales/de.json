@@ -2153,7 +2153,11 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, Drehpunkt {x},{y}",
 		"waitingForRepairReview": "Warten auf die Prüfung der Gegenstandsframes",
-		"needsRedo": "Gelenke nicht gefunden: neu zeichnen, um Gegenstände darauf zu animieren"
+		"needsRedo": "Gelenke nicht gefunden: neu zeichnen, um Gegenstände darauf zu animieren",
+		"itemsDrawn": {
+			"one": "{drawn} von {n} Gegenstand gezeichnet",
+			"other": "{drawn} von {n} Gegenständen gezeichnet"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2572,13 +2576,13 @@
 			"save": "Animation speichern",
 			"replace": "Animation ersetzen",
 			"discardDraft": "Entwurf verwerfen",
-			"titleItems": "Gegenstände animieren",
-			"chooseFor": "Wähle Gegenstände für {move} aus.",
+			"titleItems": "Gegenstände generieren",
+			"chooseFor": "Wähle Gegenstände aus, die für {move} generiert werden sollen.",
 			"total": "~{gens} weitere Generierungen",
 			"selected": "Ausgewählt",
 			"animateCount": {
-				"one": "{n} Gegenstand animieren",
-				"other": "{n} Gegenstände animieren"
+				"one": "{n} Gegenstand generieren",
+				"other": "{n} Gegenstände generieren"
 			},
 			"unavailable": "Nicht verfügbar",
 			"findings": "Qualitätshinweise",
@@ -2586,7 +2590,9 @@
 			"beforeItems": "Prüfe die Animation, bevor du Gegenstände animierst.",
 			"changed": "Charakter oder Animation wurden geändert. Öffne die Prüfung erneut.",
 			"missingFrames": "Die geprüften Frames sind nicht mehr verfügbar.",
-			"tier": "Dein PixelLab-Tarif unterstützt einige ausgewählte Gegenstände nicht."
+			"tier": "Dein PixelLab-Tarif unterstützt einige ausgewählte Gegenstände nicht.",
+			"notNow": "Nicht jetzt",
+			"later": "Du kannst Gegenstände für {move} später über das Menü in Animationen generieren."
 		},
 		"thatCharacter": "diese Figur",
 		"recoveryCheckFailed": "Zwischengespeicherte Frames konnten nicht geprüft werden: {error}",
@@ -3313,5 +3319,14 @@
 			"exportId": "Wähle eine andere Export-ID.",
 			"busy": "Warte einen Moment und versuch es dann erneut."
 		}
+	},
+	"itemGeneration": {
+		"open": "Gegenstände generieren",
+		"title": "Gegenstände für {move} generieren",
+		"inProgress": "Läuft",
+		"allDrawn": "Alle Gegenstände sind für {move} bereits gezeichnet.",
+		"noneAvailable": "Keiner dieser Gegenstände kann für {move} generiert werden.",
+		"notDrawnFor": "Für {move} noch nicht gezeichnet",
+		"generateFor": "Für {move} generieren"
 	}
 }

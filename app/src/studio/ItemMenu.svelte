@@ -17,6 +17,7 @@
 	import DeleteRow from './DeleteRow.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { popoverFocus } from './experience/focus.ts';
+	import { swallowTilePress } from './tilePress.ts';
 	import { extendable } from './movePricing.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import { twoHanded } from '../lib/compose/compose.ts';
@@ -130,26 +131,10 @@
 		close();
 		fn();
 	}
-	// A press on a tile while the menu is open only dismisses the menu (the popover's light dismiss); its click must not
-	// also wear or take off that tile. Other ⋮ buttons keep their own click (they reopen the menu for their tile).
+	// A press on a tile while the menu is open only dismisses the menu; other ⋮ buttons keep their own click (they reopen
+	// the menu for their tile).
 	$effect(() => {
-		if (!open) return;
-		const down = (e: PointerEvent) => {
-			const target = e.target instanceof Element ? e.target : null;
-			if (!target?.closest('.bu-tile') || menu?.contains(target)) return;
-			const swallow = (click: MouseEvent) => {
-				click.preventDefault();
-				click.stopImmediatePropagation();
-			};
-			// Only the click this press makes; a press that turns into a scroll or drag makes none.
-			const stop = () =>
-				setTimeout(() => window.removeEventListener('click', swallow, { capture: true }));
-			window.addEventListener('click', swallow, { capture: true, once: true });
-			window.addEventListener('pointerup', stop, { capture: true, once: true });
-			window.addEventListener('pointercancel', stop, { capture: true, once: true });
-		};
-		window.addEventListener('pointerdown', down, { capture: true });
-		return () => window.removeEventListener('pointerdown', down, { capture: true });
+		if (open) return swallowTilePress(() => menu);
 	});
 	// Keep focus inside the menu when a row appears in place of another.
 	const focusKeep = (node: HTMLElement) => {

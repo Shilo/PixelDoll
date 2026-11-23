@@ -274,6 +274,7 @@ export type SheetId =
 	| 'gen'
 	| 'move'
 	| 'moveReview'
+	| 'itemGeneration'
 	| 'stateCapture'
 	| 'stateReview'
 	| 'rename'
@@ -324,6 +325,7 @@ export const ui = $state({
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
+	itemGeneration: '', // the saved move or State whose missing equipment the item picker offers
 	stateCaptureMove: '',
 	stateReview: '', // token of the State attempt the review sheet shows
 	redrawMove: '',
@@ -332,7 +334,11 @@ export const ui = $state({
 		return panel;
 	},
 	set sheet(next: SheetId) {
-		if ((panel === 'create' || panel === 'moveReview') && next !== 'activity' && afterTakeOver)
+		if (
+			(panel === 'create' || panel === 'moveReview' || panel === 'itemGeneration') &&
+			next !== 'activity' &&
+			afterTakeOver
+		)
 			cancelWaitingForTab();
 		if (panel === 'move' && next !== 'move') ui.moveFormOpen = false;
 		const id = createPresentation.id,

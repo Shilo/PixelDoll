@@ -2162,7 +2162,11 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
 		"waitingForRepairReview": "Aguardando a revisão dos quadros do item",
-		"needsRedo": "Articulações não encontradas: redesenhe para animar itens nela"
+		"needsRedo": "Articulações não encontradas: redesenhe para animar itens nela",
+		"itemsDrawn": {
+			"one": "{drawn} de {n} item desenhado",
+			"other": "{drawn} de {n} itens desenhados"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2581,13 +2585,13 @@
 			"save": "Salvar animação",
 			"replace": "Substituir animação",
 			"discardDraft": "Descartar rascunho",
-			"titleItems": "Animar itens",
-			"chooseFor": "Escolha os itens que você quer animar em {move}.",
+			"titleItems": "Gerar itens",
+			"chooseFor": "Escolha os itens que você quer gerar em {move}.",
 			"total": "~{gens} gerações a mais",
 			"selected": "Selecionado",
 			"animateCount": {
-				"one": "Animar {n} item",
-				"other": "Animar {n} itens"
+				"one": "Gerar {n} item",
+				"other": "Gerar {n} itens"
 			},
 			"unavailable": "Indisponível",
 			"findings": "Notas de qualidade",
@@ -2595,7 +2599,9 @@
 			"beforeItems": "Revise a animação antes de animar itens.",
 			"changed": "O personagem ou a animação mudou. Abra a revisão novamente.",
 			"missingFrames": "Os quadros revisados não estão mais disponíveis.",
-			"tier": "Seu plano do PixelLab não oferece suporte a alguns dos itens selecionados."
+			"tier": "Seu plano do PixelLab não oferece suporte a alguns dos itens selecionados.",
+			"notNow": "Agora não",
+			"later": "Você pode gerar itens para {move} depois, pelo menu dela em Animações."
 		},
 		"thatCharacter": "esse personagem",
 		"recoveryCheckFailed": "Não foi possível verificar os quadros em cache: {error}",
@@ -3325,5 +3331,14 @@
 			"exportId": "Escolha outro ID de exportação.",
 			"busy": "Aguarde um momento e tente novamente."
 		}
+	},
+	"itemGeneration": {
+		"open": "Gerar itens",
+		"title": "Gerar itens para {move}",
+		"inProgress": "Em andamento",
+		"allDrawn": "Todos os itens já estão desenhados para {move}.",
+		"noneAvailable": "Nenhum destes itens pode ser gerado para {move}.",
+		"notDrawnFor": "Ainda não desenhado para {move}",
+		"generateFor": "Gerar para {move}"
 	}
 }

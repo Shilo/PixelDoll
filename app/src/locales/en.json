@@ -2153,7 +2153,11 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
 		"waitingForRepairReview": "Waiting for item frame review",
-		"needsRedo": "Joints not found: redraw it to animate items on it"
+		"needsRedo": "Joints not found: redraw it to animate items on it",
+		"itemsDrawn": {
+			"one": "{drawn} of {n} item drawn",
+			"other": "{drawn} of {n} items drawn"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2572,13 +2576,13 @@
 			"save": "Save move",
 			"replace": "Replace move",
 			"discardDraft": "Discard draft",
-			"titleItems": "Animate items",
-			"chooseFor": "Choose items to animate for {move}.",
+			"titleItems": "Generate items",
+			"chooseFor": "Choose items to generate for {move}.",
 			"total": "~{gens} more gens",
 			"selected": "Selected",
 			"animateCount": {
-				"one": "Animate {n} item",
-				"other": "Animate {n} items"
+				"one": "Generate {n} item",
+				"other": "Generate {n} items"
 			},
 			"unavailable": "Not available",
 			"findings": "Quality notes",
@@ -2586,7 +2590,9 @@
 			"beforeItems": "Review the move before animating items.",
 			"changed": "The character or move changed. Reopen the review before continuing.",
 			"missingFrames": "The reviewed frames are no longer available.",
-			"tier": "Your PixelLab plan does not support some selected items."
+			"tier": "Your PixelLab plan does not support some selected items.",
+			"notNow": "Not now",
+			"later": "You can generate items for {move} later from its menu in Moves."
 		},
 		"thatCharacter": "that character",
 		"recoveryCheckFailed": "Could not check cached frames: {error}",
@@ -3316,5 +3322,14 @@
 			"exportId": "Choose a different Export ID.",
 			"busy": "Wait a moment, then try again."
 		}
+	},
+	"itemGeneration": {
+		"open": "Generate items",
+		"title": "Generate items for {move}",
+		"inProgress": "In progress",
+		"allDrawn": "Every item is already drawn for {move}.",
+		"noneAvailable": "None of these items can be generated for {move}.",
+		"notDrawnFor": "Not drawn for {move} yet",
+		"generateFor": "Generate for {move}"
 	}
 }

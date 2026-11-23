@@ -66,8 +66,12 @@
 		hideSlot,
 		showSlot,
 		showSlotAt,
-		toast
+		toast,
+		isDemo,
+		pendingMoves
 	} from './state.svelte.ts';
+	import { extendable } from './movePricing.ts';
+	import { clipItemOffer } from './itemGeneration.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { generationStatus } from './generationStatus.ts';
@@ -78,6 +82,7 @@
 	import GroupIcon from './GroupIcon.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import ItemMenu from './ItemMenu.svelte';
+	import ItemChoiceMenu from './ItemChoiceMenu.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import {
@@ -143,6 +148,22 @@
 	 * or not, so a move's usable items can be scanned at a glance. */
 	const offMove = (it: NonNullable<typeof m>['items'][number]) =>
 		!!m && experience.mode === 'preview' && notShownIn(m, it, ui.anim);
+	let choice = $state<ItemChoiceMenu>(),
+		choiceFor = $state(''),
+		choiceOpen = $state(false);
+	/** A tile dimmed because Preview's move or State has no frame of its item (worn or not) opens a menu to draw it there
+	 *  or wear it, instead of wearing it at once; copies without their own design, the demo and items already queued for
+	 *  it keep the direct tap. */
+	const choosable = (it: NonNullable<typeof m>['items'][number]) =>
+		!!m &&
+		!isDemo() &&
+		!!extendable(m, it.id) &&
+		!pendingMoves(doc.id, it.id).some((spec) => spec.id === ui.anim);
+	/** Pricing runs only on the tap (it is too slow for every render): no offer here (no joints for this move) wears. */
+	function tapDimmed(it: NonNullable<typeof m>['items'][number], tile: HTMLElement) {
+		if (m && clipItemOffer(m, it.id, ui.anim)) choice?.show(it.id, tile);
+		else wear(it.id);
+	}
 	const wornMark: Mark = $derived({
 		kind: 'worn',
 		label: t('wardrobe.wearing'),
@@ -1048,6 +1069,7 @@
 								{@const marks = marksOf(it)}
 								{@const shownHidden = marks.some((x) => x.kind === 'hidden')}
 								{@const away = !shownHidden && offMove(it)}
+								{@const chooses = offMove(it) && choosable(it)}
 								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
 								<div
 									class="tile-wrap hover-actions"
@@ -1072,12 +1094,15 @@
 										data-tile={it.id}
 										data-dim={shownHidden || away || undefined}
 										aria-pressed={on}
+										aria-haspopup={chooses ? 'menu' : undefined}
+										aria-expanded={chooses ? choiceOpen && choiceFor === it.id : undefined}
 										aria-label={tileName(
 											it.name,
 											marks,
 											away ? t('wardrobe.notShownInMove') : undefined
 										)}
-										onclick={() => wear(it.id)}
+										onclick={(event) =>
+											chooses ? tapDimmed(it, event.currentTarget) : wear(it.id)}
 									>
 										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(it.id)}
 											>{#if seen.has(it.id)}<Thumb
@@ -1487,6 +1512,7 @@
 			onmove={(id, target) => void moveTileFromMenu(id, target)}
 			bind:open={menuOpen}
 		/>
+		<ItemChoiceMenu bind:this={choice} bind:itemId={choiceFor} bind:open={choiceOpen} />
 		<!-- Navigation over the list's sections (not tabs): arrows move along it like the other rails (Studio.svelte). -->
 		<div class="slot-rail-column">
 			<nav

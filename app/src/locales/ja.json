@@ -2089,7 +2089,10 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px、ピボット {x},{y}",
 		"waitingForRepairReview": "装備フレームの確認待ち",
-		"needsRedo": "関節が見つかりません。アイテムを動かすには描き直してください"
+		"needsRedo": "関節が見つかりません。アイテムを動かすには描き直してください",
+		"itemsDrawn": {
+			"other": "{n}個中{drawn}個を描画済み"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2507,12 +2510,12 @@
 			"save": "モーションを保存",
 			"replace": "モーションを差し替え",
 			"discardDraft": "下書きを破棄",
-			"titleItems": "アイテムを動かす",
-			"chooseFor": "{move}に合わせて動かすアイテムを選択してください。",
+			"titleItems": "アイテムを生成",
+			"chooseFor": "{move}用に生成するアイテムを選択してください。",
 			"total": "追加で~{gens}回の生成",
 			"selected": "選択済み",
 			"animateCount": {
-				"other": "アイテム{n}個を動かす"
+				"other": "アイテム{n}個を生成"
 			},
 			"unavailable": "利用不可",
 			"findings": "品質に関する注意",
@@ -2520,7 +2523,9 @@
 			"beforeItems": "アイテムを動かす前に、モーションを確認してください。",
 			"changed": "キャラクターまたはモーションが変更されました。確認画面を開き直してください。",
 			"missingFrames": "確認済みのフレームは利用できなくなりました。",
-			"tier": "ご利用のPixelLabプランでは、選択した一部のアイテムに対応していません。"
+			"tier": "ご利用のPixelLabプランでは、選択した一部のアイテムに対応していません。",
+			"notNow": "後で",
+			"later": "{move}のアイテムは、あとから「モーション」のメニューで生成できます。"
 		},
 		"thatCharacter": "そのキャラクター",
 		"recoveryCheckFailed": "キャッシュされたフレームを確認できませんでした：{error}",
@@ -3224,5 +3229,14 @@
 			"exportId": "別のエクスポートIDを選んでください。",
 			"busy": "少し待ってから、もう一度お試しください。"
 		}
+	},
+	"itemGeneration": {
+		"open": "アイテムを生成",
+		"title": "{move}用のアイテムを生成",
+		"inProgress": "処理中",
+		"allDrawn": "すべてのアイテムが{move}用に描画済みです。",
+		"noneAvailable": "これらのアイテムは{move}用に生成できません。",
+		"notDrawnFor": "{move}用はまだ描画されていません",
+		"generateFor": "{move}用に生成"
 	}
 }

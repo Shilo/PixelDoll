@@ -2089,7 +2089,10 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, 피벗 {x},{y}",
 		"waitingForRepairReview": "아이템 프레임 검토 대기 중",
-		"needsRedo": "관절을 찾지 못함: 아이템을 움직이려면 다시 그리세요"
+		"needsRedo": "관절을 찾지 못함: 아이템을 움직이려면 다시 그리세요",
+		"itemsDrawn": {
+			"other": "아이템 {n}개 중 {drawn}개 그림"
+		}
 	},
 	"setup": {
 		"warnings": {
@@ -2507,12 +2510,12 @@
 			"save": "동작 저장",
 			"replace": "동작 교체",
 			"discardDraft": "초안 버리기",
-			"titleItems": "아이템 애니메이션",
-			"chooseFor": "동작에 맞춰 움직일 아이템을 선택하세요: {move}",
+			"titleItems": "아이템 생성",
+			"chooseFor": "생성할 아이템을 선택하세요: {move}",
 			"total": "추가 생성 ~{gens}회",
 			"selected": "선택됨",
 			"animateCount": {
-				"other": "아이템 {n}개 애니메이션 만들기"
+				"other": "아이템 {n}개 생성"
 			},
 			"unavailable": "사용할 수 없음",
 			"findings": "품질 안내",
@@ -2520,7 +2523,9 @@
 			"beforeItems": "아이템을 움직이기 전에 동작을 검토하세요.",
 			"changed": "캐릭터 또는 동작이 변경됐어요. 검토 화면을 다시 열어 주세요.",
 			"missingFrames": "검토한 프레임을 더 이상 사용할 수 없어요.",
-			"tier": "현재 PixelLab 요금제에서 선택한 일부 아이템을 지원하지 않아요."
+			"tier": "현재 PixelLab 요금제에서 선택한 일부 아이템을 지원하지 않아요.",
+			"notNow": "나중에",
+			"later": "이 동작의 아이템은 나중에 동작 탭의 메뉴에서 생성할 수 있어요: {move}"
 		},
 		"thatCharacter": "해당 캐릭터",
 		"recoveryCheckFailed": "캐시된 프레임을 확인하지 못했어요: {error}",
@@ -3224,5 +3229,14 @@
 			"exportId": "다른 내보내기 ID를 선택하세요.",
 			"busy": "잠시 기다린 뒤 다시 시도하세요."
 		}
+	},
+	"itemGeneration": {
+		"open": "아이템 생성",
+		"title": "아이템 생성: {move}",
+		"inProgress": "진행 중",
+		"allDrawn": "모든 아이템이 이미 그려졌어요: {move}",
+		"noneAvailable": "이 아이템들은 모두 생성할 수 없어요: {move}",
+		"notDrawnFor": "아직 그리지 않음: {move}",
+		"generateFor": "생성하기: {move}"
 	}
 }

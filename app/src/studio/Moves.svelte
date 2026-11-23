@@ -21,6 +21,8 @@
 	import type { MoveSpec } from './create.ts';
 	import { displayError } from '../lib/i18n.ts';
 	import { STATE_CAPTURE_MODE, setupRedoMoves } from '../lib/rig/setup.ts';
+	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+	import { clipItemCoverage } from './itemGeneration.ts';
 	import { characterBodySize } from './experience/bounds.ts';
 	import { buildPresentation } from './experience/presentation.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
@@ -29,7 +31,7 @@
 	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
-	import { t } from 'svelte-whisper';
+	import { formatNumber, t } from 'svelte-whisper';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { displayMoveJob, moveLabel } from './model.ts';
 	import { openStateReview, stateProgress, stateStatusText } from './stateJobs.svelte.ts';
@@ -113,6 +115,7 @@
 					m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf))
 						.length}
 				{@const lock = moveDeletionBlocked(a.id)}
+				{@const items = clipItemCoverage(m, a.id)}
 				<SavedActions
 					name={nice(a.id)}
 					{kind}
@@ -137,6 +140,16 @@
 						? () => {
 								ui.stateCaptureMove = a.id;
 								ui.sheet = 'stateCapture';
+							}
+						: undefined}
+					ongenerateitems={!isDemo() &&
+					a.id !== DEFAULT_MOVE &&
+					!redo.includes(a.id) &&
+					items &&
+					items.drawn < items.total
+						? () => {
+								ui.itemGeneration = a.id;
+								ui.sheet = 'itemGeneration';
 							}
 						: undefined}
 					ondelete={() => removeMove(a.id)}
@@ -167,7 +180,13 @@
 											})
 										: t('moves.oneDirection')
 									: t('export.count.directions', { count: nDirs })}</span
-							>{#if redo.includes(a.id) && !a.sources}<span class="small redo"
+							>{#if items?.total}<span class="muted small"
+									>{t('moves.itemsDrawn', {
+										count: items.total,
+										drawn: formatNumber(items.drawn),
+										n: formatNumber(items.total)
+									})}</span
+								>{/if}{#if redo.includes(a.id) && !a.sources}<span class="small redo"
 									>{t('moves.needsRedo')}</span
 								>{/if}</span
 						>
