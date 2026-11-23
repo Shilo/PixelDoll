@@ -209,6 +209,7 @@
 							>{#if now}<span class="muted small item-jobs"
 									><span class="bu-ring ring spin" aria-hidden="true"></span><span
 										>{[
+											formatPercent(now.percent / 100),
 											t('moves.drawingItem', { item: itemName(now.item) }),
 											jobs.length > 1 &&
 												t('moves.moreQueued', {
@@ -218,7 +219,7 @@
 										]
 											.filter(Boolean)
 											.join(' · ')}</span
-									><span class="num">{formatPercent(now.percent / 100)}</span></span
+									></span
 								>{:else if jobs.length}<span class="muted small item-jobs"
 									><span class="bu-ring ring" aria-hidden="true"></span><span
 										>{moving.repairReview
@@ -367,7 +368,7 @@
 	.redo {
 		color: var(--warn);
 	}
-	/* Items being drawn on this move: a small ring before the status, in place of the drawn count. */
+	/* Items being drawn on this move: a small ring, then the share done and the status, in place of the drawn count. */
 	.item-jobs {
 		display: flex;
 		align-items: center;
@@ -377,16 +378,13 @@
 		width: 12px;
 		height: 12px;
 	}
-	.item-jobs > :not(.ring, .num) {
+	.item-jobs > :not(.ring) {
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.item-jobs .num {
-		flex: none;
-		margin-inline-start: auto;
-	}
+
 	/* The list gap already separates the CTA from the rows above it. */
 	.cta {
 		margin-top: 0;
