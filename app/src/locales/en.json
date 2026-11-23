@@ -68,7 +68,14 @@
 		"archivedSaved": "Archived data was kept for future downloads.",
 		"changed": "Your library changed. Review the updated counts before restoring.",
 		"restoredName": "{name} (restored copy)",
-		"incomplete": "Some artwork is missing or invalid. Nothing was restored.",
+		"incomplete": {
+			"one": "{count} character is missing artwork and will be skipped.",
+			"other": "{count} characters are missing artwork and will be skipped."
+		},
+		"trimmedHistory": {
+			"one": "{count} character will be restored without some undo history that this file lacks.",
+			"other": "{count} characters will be restored without some undo history that this file lacks."
+		},
 		"backupOmissions": "Backup downloaded with some characters or artwork missing.",
 		"deleteWork": {
 			"deleteAll": "Delete all",

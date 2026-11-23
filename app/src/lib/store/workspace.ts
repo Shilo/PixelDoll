@@ -7,7 +7,13 @@ import { cellHash, DIRECTIONS, pinnedArtwork, type DirectionName } from '../rig/
 import { readWorkspaceSnapshot } from './db.ts';
 import { checkedSettings, EXPORT_SETTINGS_KEY } from './export-settings.ts';
 import { manifestShape } from './import.ts';
-import { supportedFormat, type Manifest } from './manifest.ts';
+import { replayable } from '../frames/history.ts';
+import {
+	supportedFormat,
+	type ItemFrameEdit,
+	type ItemPaletteRepair,
+	type Manifest
+} from './manifest.ts';
 import type { StoredProject } from './project.ts';
 import { MAX_ZIP_BYTES, MAX_ZIP_ENTRIES, unzip, zip } from './zip.ts';
 import { LocalizedError } from '../message.ts';
@@ -120,6 +126,8 @@ export type WorkspaceArchive = Pick<
 > & {
 	projects: Map<string, unknown>;
 	blobs: Map<string, Blob>;
+	/** Characters read without Undo history the file lacks or that was malformed. */
+	trimmed?: number;
 };
 
 const object = (value: unknown): Record<string, unknown> | undefined =>
@@ -136,11 +144,9 @@ const selects = (key: string, value: unknown) =>
 type FrameSize = { w: number; h: number };
 type Omitted = NonNullable<WorkspaceIndex['omitted']>;
 
-/** Every artwork reference of a character, with the frame size it must have when the reference fixes one. */
-export function* artworkRefs(
-	manifest: Manifest,
-	history = false
-): Generator<[unknown, FrameSize | undefined]> {
+/** Every artwork reference of a character, Undo history included, with the frame size it must have when the reference fixes
+ *  one. */
+export function* artworkRefs(manifest: Manifest): Generator<[unknown, FrameSize | undefined]> {
 	for (const pose of Object.values(manifest.rig.rest ?? {})) yield [pose?.image, manifest.rig.cell];
 	for (const hash of pinnedArtwork(manifest.rig)) yield [hash, manifest.rig.cell];
 	for (const item of manifest.items) {
@@ -151,23 +157,75 @@ export function* artworkRefs(
 				for (const cells of Object.values(dirs ?? {}))
 					for (const hash of cells ?? []) yield [hash, frame];
 		}
-		if (history) {
-			for (const edit of item.frameEdits ?? [])
-				for (const frame of edit.frames) {
-					if (frame.rest) yield [frame.rest, manifest.rig.cell];
-					for (const layer of frame.layers) {
-						if (layer.before) yield [layer.before, undefined];
-						if (layer.after) yield [layer.after, undefined];
-					}
+		for (const edit of item.frameEdits ?? [])
+			for (const frame of edit.frames) {
+				if (frame.rest) yield [frame.rest, manifest.rig.cell];
+				for (const layer of frame.layers) {
+					if (layer.before) yield [layer.before, undefined];
+					if (layer.after) yield [layer.after, undefined];
 				}
-			for (const repair of item.paletteRepairs ?? [])
-				for (const frame of repair.frames)
-					for (const layer of frame.layers) {
-						yield [layer.before, undefined];
-						yield [layer.after, undefined];
-					}
-		}
+			}
+		for (const repair of item.paletteRepairs ?? [])
+			for (const frame of repair.frames)
+				for (const layer of frame.layers) {
+					yield [layer.before, undefined];
+					yield [layer.after, undefined];
+				}
 	}
+}
+
+/** Drop the Undo history (Fix frames edits and palette repairs) that is malformed or whose artwork `has` lacks, frame by frame.
+ *  Compose and export never read it, so a character stays whole without it, while a reference to absent artwork would leave
+ *  every later archive of the character incomplete. Returns whether anything was dropped. */
+export function pruneHistory(manifest: Manifest, has: (hex: string) => boolean): boolean {
+	const available = (hash: unknown) => {
+		const hex = typeof hash === 'string' && hashPattern.exec(hash)?.[1];
+		return !!hex && has(hex);
+	};
+	const optional = (hash: unknown) => hash == null || available(hash);
+	const layers = (value: unknown, kept: (layer: Record<string, unknown>) => boolean) =>
+		Array.isArray(value) && value.every((layer) => !!object(layer) && kept(object(layer)!));
+	let dropped = false;
+	function prune<T extends { frames: unknown[] }>(
+		list: unknown,
+		valid: (entry: T) => boolean,
+		keep: (frame: T['frames'][number]) => boolean
+	): T[] | undefined {
+		if (list === undefined) return undefined;
+		const entries = Array.isArray(list) ? (list as unknown[]) : [];
+		const out: T[] = [];
+		for (const value of entries) {
+			const entry = value as T;
+			if (!object(value) || !Array.isArray(entry.frames) || !valid(entry)) continue;
+			const frames = entry.frames.filter(keep);
+			if (frames.length)
+				out.push(frames.length === entry.frames.length ? entry : { ...entry, frames });
+		}
+		dropped ||=
+			!Array.isArray(list) ||
+			out.length !== entries.length ||
+			out.some((entry, index) => entry !== entries[index]);
+		return out;
+	}
+	for (const item of manifest.items) {
+		const edits = prune<ItemFrameEdit>(
+			item.frameEdits,
+			replayable,
+			(frame) =>
+				optional(frame.rest) &&
+				layers(frame.layers, (layer) => optional(layer.before) && optional(layer.after))
+		);
+		const repairs = prune<ItemPaletteRepair>(
+			item.paletteRepairs,
+			() => true,
+			(frame) =>
+				!!object(frame) &&
+				layers(frame.layers, (layer) => available(layer.before) && available(layer.after))
+		);
+		if (edits) item.frameEdits = edits;
+		if (repairs) item.paletteRepairs = repairs;
+	}
+	return dropped;
 }
 
 function checkDemoDress(value: unknown) {
@@ -206,7 +264,11 @@ function checkDemoDress(value: unknown) {
 		throw new Error('Saved demo outfit data is invalid.');
 }
 
-function recoverRecords(projects: Map<string, unknown>, omitted: Omitted, history: boolean) {
+function recoverRecords(
+	projects: Map<string, unknown>,
+	omitted: Omitted,
+	trimmed = new Set<string>()
+) {
 	const found = new Map<string, FrameSize | undefined>();
 	for (const [key, value] of projects) {
 		const local = new Map<string, FrameSize | undefined>();
@@ -234,7 +296,8 @@ function recoverRecords(projects: Map<string, unknown>, omitted: Omitted, histor
 				throw new Error('Unsupported character record.');
 			delete record.stateGenerations;
 			manifestShape(manifest);
-			for (const [hash, frame] of artworkRefs(manifest, history)) add(hash, frame);
+			if (pruneHistory(manifest, () => true)) trimmed.add(key);
+			for (const [hash, frame] of artworkRefs(manifest)) add(hash, frame);
 			for (const [hash, frame] of local) found.set(hash, frame);
 		} catch {
 			projects.delete(key);
@@ -244,6 +307,26 @@ function recoverRecords(projects: Map<string, unknown>, omitted: Omitted, histor
 		}
 	}
 	return found;
+}
+
+/** Prune the history of each validated character to the artwork `has` holds: every hash the characters still reference, and
+ *  how many characters lost history. */
+function prunedReferences(
+	projects: Map<string, unknown>,
+	has: (hash: string) => boolean,
+	trimmed = new Set<string>()
+) {
+	const refs = new Set<string>();
+	for (const [key, value] of projects) {
+		if (!key.startsWith('rig-')) continue;
+		const { manifest } = value as StoredProject;
+		if (pruneHistory(manifest, has)) trimmed.add(key);
+		for (const [hash] of artworkRefs(manifest)) {
+			const hex = typeof hash === 'string' && hashPattern.exec(hash)?.[1];
+			if (hex) refs.add(hex);
+		}
+	}
+	return refs;
 }
 
 const summaryTool = (endpoint: unknown) =>
@@ -370,15 +453,14 @@ export async function packArchive(
 		omitted?: Omitted;
 		jobs: unknown[];
 	}) => [name: string, index: object],
-	attachments: readonly { name: string; data: Uint8Array }[] = [],
-	history = false
+	attachments: readonly { name: string; data: Uint8Array }[] = []
 ) {
 	const omitted = { characters: 0, demoOutfit: false, exportSettings: false };
 	let references = new Map<string, FrameSize | undefined>();
 	const snapshot = await readWorkspaceSnapshot(
 		select,
 		(projects) => {
-			references = recoverRecords(projects, omitted, history);
+			references = recoverRecords(projects, omitted);
 			return references;
 		},
 		includeJobs
@@ -391,29 +473,36 @@ export async function packArchive(
 		delete record.moveRecovery;
 		delete record.moveReviews;
 	}
-	const artwork: { name: string; data: Uint8Array }[] = [];
-	let pixels = 0,
-		artworkBytes = 0;
+	const verified = new Map<string, Uint8Array>();
+	let pixels = 0;
 	for (const [hash, blob] of blobs) {
 		if (blob.size > MAX_ZIP_BYTES) throw errors.tooLarge();
 		const bytes = new Uint8Array(await blob.arrayBuffer());
-		const verified = await recoverArtwork(
+		const size = await recoverArtwork(
 			bytes,
 			hash,
 			maxPixels - pixels,
 			references.get(hash),
 			errors
 		);
-		if (verified === undefined) blobs.delete(hash);
-		else {
-			pixels += verified;
-			artworkBytes += bytes.length;
-			if (artworkBytes > MAX_ZIP_BYTES || artwork.length + 2 > MAX_ZIP_ENTRIES)
-				throw errors.tooLarge();
-			artwork.push({ name: `blobs/${hash}`, data: bytes });
+		if (size !== undefined) {
+			pixels += size;
+			verified.set(hash, bytes);
 		}
 	}
-	const missing = [...references.keys()].filter((hash) => !blobs.has(hash));
+	// History whose artwork is gone from this device (or failed verification) is left out, so the archive never references
+	// artwork it lacks and its own restore accepts it.
+	const kept = prunedReferences(projects, (hash) => verified.has(hash));
+	const artwork: { name: string; data: Uint8Array }[] = [];
+	let artworkBytes = 0;
+	for (const [hash, bytes] of verified) {
+		if (!kept.has(hash)) continue;
+		artworkBytes += bytes.length;
+		if (artworkBytes > MAX_ZIP_BYTES || artwork.length + 2 > MAX_ZIP_ENTRIES)
+			throw errors.tooLarge();
+		artwork.push({ name: `blobs/${hash}`, data: bytes });
+	}
+	const missing = [...kept].filter((hash) => !verified.has(hash));
 	const omissions = Object.values(omitted).some(Boolean) ? omitted : undefined;
 	const [name, index] = write({ projects, missing, omitted: omissions, jobs: snapshot.jobs });
 	const json = JSON.stringify(index);
@@ -501,8 +590,7 @@ export async function readArchiveFiles(
 	listed: unknown,
 	omitted: Omitted,
 	allowed: (key: string) => boolean,
-	errors: ArchiveErrors,
-	history = false
+	errors: ArchiveErrors
 ) {
 	if (
 		!Array.isArray(rows) ||
@@ -524,8 +612,10 @@ export async function readArchiveFiles(
 		projects.set(row[0], row[1]);
 	}
 	const previousOmissions = omitted.characters;
-	const references = recoverRecords(projects, omitted, history);
-	const skippedCharacter = omitted.characters > previousOmissions;
+	const trimmed = new Set<string>();
+	const references = recoverRecords(projects, omitted, trimmed);
+	// What a left-out character or dropped history referenced may still be listed or packed.
+	const skippedCharacter = omitted.characters > previousOmissions || trimmed.size > 0;
 	const absent = new Set<unknown>(listed);
 	if (
 		absent.size !== listed.length ||
@@ -557,10 +647,13 @@ export async function readArchiveFiles(
 			blobs.set(hash, new Blob([data as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
 		}
 	}
+	const refs = prunedReferences(projects, (hash) => blobs.has(hash), trimmed);
 	return {
 		projects,
 		blobs,
-		missing: [...references.keys()].filter((hash) => !blobs.has(hash))
+		missing: [...refs].filter((hash) => !blobs.has(hash)),
+		/** Characters restored without Undo history the file lacks or that was malformed. */
+		trimmed: trimmed.size
 	};
 }
 
@@ -604,7 +697,7 @@ export async function readWorkspaceFiles(
 	)
 		throw workspaceErrors.invalidIndex();
 	const omitted = { characters: 0, demoOutfit: false, exportSettings: false, ...index.omitted };
-	const { projects, blobs, missing } = await readArchiveFiles(
+	const { projects, blobs, missing, trimmed } = await readArchiveFiles(
 		files,
 		indexPath,
 		index.projects,
@@ -641,6 +734,7 @@ export async function readWorkspaceFiles(
 		projects,
 		blobs,
 		missing,
+		trimmed,
 		omitted: Object.values(omitted).some(Boolean) ? omitted : undefined
 	};
 }

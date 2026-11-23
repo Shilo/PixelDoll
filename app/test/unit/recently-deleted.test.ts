@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 import { equipmentFixture } from './equipment-fixture.ts';
 import {
 	KEEP_MS,
@@ -8,13 +8,69 @@ import {
 	draftCallIds,
 	listEntries,
 	pruneKeys,
-	readEntry
+	readEntry,
+	restoreCharacter,
+	restoreParts
 } from '../../src/lib/store/recently-deleted.ts';
 import { restoreRemoved, type DressedRecord } from '../../src/lib/store/project.ts';
 import { retainMoves, restoreMove } from '../../src/lib/rig/moves.ts';
 import { stableStringify } from '../../src/lib/image/hash.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
-import type { Preset } from '../../src/lib/store/manifest.ts';
+import type { Preset, Sha256 } from '../../src/lib/store/manifest.ts';
+
+// IndexedDB is a browser API: this stand-in keeps the saved records and artwork the Trash restores read and write.
+const saved = vi.hoisted(() => ({
+	projects: new Map<string, unknown>(),
+	blobs: new Set<string>()
+}));
+vi.mock(import('../../src/lib/store/db.ts'), async (original) => ({
+	...(await original()),
+	get: async <T>(_store: string, key: string) =>
+		structuredClone(saved.projects.get(key)) as T | undefined,
+	readCharacters: async (hashes: readonly string[]) => ({
+		records: new Map(),
+		stored: new Set(hashes.filter((hash) => saved.blobs.has(hash)))
+	}),
+	async editIdleCharacter(
+		_id: string,
+		_action: string,
+		edit: (
+			projects: { delete(key: string): void; put(value: unknown, key: string): void },
+			records: unknown[]
+		) => void
+	) {
+		edit(
+			{
+				delete: (key) => saved.projects.delete(key),
+				put: (value, key) => saved.projects.set(key, structuredClone(value))
+			},
+			[...saved.projects.values()].map((value) => structuredClone(value))
+		);
+	},
+	async update<T>(
+		_store: string,
+		key: string,
+		fn: (value: T | undefined, related: <R>(key: string) => R | undefined) => T,
+		relatedKeys: readonly string[] = [],
+		_preserve?: unknown,
+		consume: readonly string[] = []
+	) {
+		const next = fn(
+			structuredClone(saved.projects.get(key)) as T | undefined,
+			<R>(related: string) =>
+				relatedKeys.includes(related)
+					? (structuredClone(saved.projects.get(related)) as R | undefined)
+					: undefined
+		);
+		saved.projects.set(key, structuredClone(next));
+		for (const gone of consume) saved.projects.delete(gone);
+		return next;
+	}
+}));
+beforeEach(() => {
+	saved.projects.clear();
+	saved.blobs.clear();
+});
 
 async function stored(): Promise<StoredProject> {
 	const project = await equipmentFixture();
@@ -343,4 +399,100 @@ test('a move is refused when the character no longer fits its frames', async () 
 	expect(stableStringify(record.manifest.rig.animations.map((clip) => clip.id))).toBe(
 		stableStringify(['rest'])
 	);
+});
+
+/** The fixture with Undo history on the hat: a Fix frames edit and a palette repair whose snapshots are gone, and one Fix
+ *  frames edit whose snapshot is still saved. Returns the record with every hash it shows saved. */
+async function withHistory() {
+	const record = await stored();
+	const hat = record.manifest.items.find((item) => item.id === 'hat')!;
+	const shown = hat.layers[0].cells!.rest.south![0]!;
+	const gone = `sha256:${'d'.repeat(64)}` as Sha256,
+		kept = `sha256:${'e'.repeat(64)}` as Sha256;
+	const edit = (id: string, before: Sha256) => ({
+		version: 'frames-v1' as const,
+		id,
+		anim: 'rest',
+		frames: [
+			{
+				dir: 'south' as const,
+				cell: 0,
+				layers: [{ id: 'main' as const, before, after: shown }],
+				cut: { before: null, after: null }
+			}
+		]
+	});
+	hat.frameEdits = [edit('lost', gone), edit('kept', kept)];
+	hat.paletteRepairs = [
+		{
+			version: 'neutral-owned-v1',
+			materialId: 'hat',
+			anim: 'rest',
+			dir: 'south',
+			frames: [{ cell: 0, changedPixels: 1, layers: [{ id: 'main', before: gone, after: shown }] }]
+		}
+	];
+	for (const item of record.manifest.items)
+		for (const hash of item.layers[0].cells!.rest.south!) saved.blobs.add(hash!.slice(7));
+	saved.blobs.add(kept.slice(7));
+	return { record, shown };
+}
+
+test('a deleted character restores without Undo history whose artwork is gone', async () => {
+	const { record } = await withHistory();
+	const entry = deletedEntry({
+		kind: 'character',
+		record,
+		name: 'Fixture',
+		context: '',
+		scope: {}
+	});
+	saved.projects.set(entry.id, entry);
+	await restoreCharacter(entry.id, { copyName: (name) => `${name} copy` });
+	const hat = (saved.projects.get(record.id) as StoredProject).manifest.items.find(
+		(item) => item.id === 'hat'
+	)!;
+	expect(hat.frameEdits?.map((edit) => edit.id)).toEqual(['kept']);
+	expect(hat.paletteRepairs).toEqual([]);
+	expect(saved.projects.has(entry.id)).toBe(false);
+});
+
+test('a deleted item restores without Undo history whose artwork is gone', async () => {
+	const { record } = await withHistory();
+	const entry = deletedEntry({
+		kind: 'items',
+		record,
+		name: 'hat',
+		context: 'Fixture',
+		scope: { itemIds: ['hat'] }
+	});
+	saved.projects.set(record.id, withoutHat(structuredClone(record) as DressedRecord));
+	saved.projects.set(entry.id, entry);
+	await restoreParts(entry.id);
+	const hat = (saved.projects.get(record.id) as StoredProject).manifest.items.find(
+		(item) => item.id === 'hat'
+	)!;
+	expect(hat.frameEdits?.map((edit) => edit.id)).toEqual(['kept']);
+	expect(hat.paletteRepairs).toEqual([]);
+});
+
+test('a deleted character missing artwork it shows is still refused', async () => {
+	const { record, shown } = await withHistory();
+	saved.blobs.delete(shown.slice(7));
+	const entry = deletedEntry({
+		kind: 'character',
+		record,
+		name: 'Fixture',
+		context: '',
+		scope: {}
+	});
+	saved.projects.set(entry.id, entry);
+	await expect(
+		restoreCharacter(entry.id, { copyName: (name) => `${name} copy` })
+	).rejects.toMatchObject({
+		// Only the shown frame counts: the missing history snapshot is dropped, not reported.
+		translation: { key: 'recentlyDeleted.errors.missingArtwork', vars: { count: 1 } }
+	});
+	expect(saved.projects.has(record.id)).toBe(false);
+	expect(saved.projects.has(entry.id)).toBe(true);
 });

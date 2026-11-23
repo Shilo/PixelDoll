@@ -371,8 +371,9 @@ selected equipment posing. The previous body remains if any quality check still 
 Choose **Settings → Library → Back up library** to download saved characters and their artwork. The ZIP can contain
 personal artwork and prompts, so share it only with someone you trust. Preferences, jobs, and drafts are not restored.
 Use **Restore from backup** to review what will be added or skipped before confirming. Restore never replaces or deletes
-existing characters. If a character with the same ID has changed, its backup becomes a separate copy. Older workspace
-ZIPs can also be reviewed for character restore.
+existing characters. If a character with the same ID has changed, its backup becomes a separate copy. A character missing
+artwork it shows is skipped while the rest restore, and undo history the file lacks is left out. Older workspace ZIPs can
+also be reviewed for character restore.
 
 **Download archived data** preserves records this version cannot edit. You can also include it in a library backup.
 Archives retained from other backups can be downloaded one at a time, even when they cannot fit in a single library backup.

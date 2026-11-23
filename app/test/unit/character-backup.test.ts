@@ -302,7 +302,7 @@ test('identical characters under different IDs are separate characters', async (
 	]);
 });
 
-test('a character missing artwork is a blocker that stops the restore', async () => {
+test('a character missing artwork it shows is skipped while the rest restore', async () => {
 	const second = structuredClone(character);
 	second.id = 'rig-b';
 	second.manifest.items = second.manifest.items.filter(({ slot }) => slot === 'body');
@@ -323,9 +323,74 @@ test('a character missing artwork is a blocker that stops the restore', async ()
 		{ id: 'rig-b', action: 'add' }
 	]);
 	expect(plan.blockers).toEqual([{ code: 'missingArtwork', id: 'rig-a', count: 1 }]);
-	await expect(restoreCharacters(plan)).rejects.toThrow('blockers');
-	expect(saved.projects.size).toBe(0);
-	expect(saved.blobs.size).toBe(0);
+	expect(await restoreCharacters(plan)).toEqual({ added: [{ from: 'rig-b', id: 'rig-b' }] });
+	expect([...saved.projects.keys()]).toEqual(['rig-b']);
+});
+
+test('undo history whose artwork is missing is left out of backups and restores, never blocking them', async () => {
+	// Modeled on a library restored from a workspace ZIP that did not carry Fix frames history: the character's frameEdits
+	// referenced before/after artwork that was never stored here, and its backup then listed it missing and was refused.
+	const [kept, keptAfter] = [...artwork.keys()];
+	const [gone, goneAfter] = ['e'.repeat(64), 'f'.repeat(64)];
+	const anim = character.manifest.rig.animations[0].id;
+	const frame = (cell: number, before: string, after: string) => ({
+		dir: 'south' as const,
+		cell,
+		layers: [
+			{
+				id: 'main' as const,
+				before: `sha256:${before}` as Sha256,
+				after: `sha256:${after}` as Sha256
+			}
+		],
+		cut: { before: null, after: null }
+	});
+	const history = [
+		{
+			version: 'frames-v1' as const,
+			id: 'edit-1',
+			anim,
+			frames: [frame(2, gone, goneAfter), frame(3, kept, keptAfter)]
+		},
+		{ version: 'frames-v1' as const, id: 'edit-2', anim, frames: [frame(5, gone, goneAfter)] }
+	];
+	const base = (record: StoredProject) =>
+		record.manifest.items.find(({ slot }) => slot === 'body')!;
+	base(character).frameEdits = history;
+
+	const file = await exportBackup([]);
+	expect(file.hasOmissions).toBe(false);
+	const files = await unzip(file.bytes);
+	const index = JSON.parse(new TextDecoder().decode(files.get('backup.json')));
+	expect(index.missing).toEqual([]);
+	const packed = new Map<string, StoredProject>(index.characters);
+	expect(base(packed.get('rig-a')!).frameEdits).toEqual([
+		{ ...history[0], frames: [history[0].frames[1]] }
+	]);
+	expect(files.has(`blobs/${keptAfter}`)).toBe(true);
+
+	// A backup written before this fix: the whole history, with its absent artwork listed missing.
+	index.characters = [['rig-a', { ...character, manifest: structuredClone(character.manifest) }]];
+	index.missing = [gone, goneAfter];
+	files.set('backup.json', new TextEncoder().encode(JSON.stringify(index)));
+	const older = await zip([...files].map(([name, data]) => ({ name, data })));
+	saved.projects = new Map();
+	saved.blobs = new Map();
+	const source = await readRestoreSource(older);
+	expect(source).toMatchObject({ trimmed: 1, missing: [] });
+	const plan = await planRestore(source);
+	expect(plan.blockers).toEqual([]);
+	expect(plan.warnings).toEqual([{ code: 'trimmedHistory', count: 1 }]);
+	expect(await restoreCharacters(plan)).toEqual({ added: [{ from: 'rig-a', id: 'rig-a' }] });
+	expect(base(restored('rig-a')).frameEdits).toEqual([
+		{ ...history[0], frames: [history[0].frames[1]] }
+	]);
+	expect(saved.blobs.has(keptAfter)).toBe(true);
+	expect([...saved.blobs.keys()]).not.toContain(gone);
+
+	// Restoring the full backup over the trimmed character finds it unchanged: history is not part of its content.
+	saved.projects.set('rig-a', { ...restored('rig-a'), restoredFrom: undefined });
+	expect((await planRestore(source)).entries).toMatchObject([{ action: 'skip', match: 'rig-a' }]);
 });
 
 test('a restore writes nothing and refreshes its preview when saved characters change first', async () => {
@@ -368,8 +433,35 @@ test('a workspace ZIP restores only its characters, and a key in a saved field b
 		tab: 'wardrobe',
 		theme: 'light'
 	} as const;
-	const source = await readRestoreSource((await exportWorkspace(view, undefined, [])).bytes);
+	const [before, after] = [...artwork.keys()];
+	character.manifest.items[0].frameEdits = [
+		{
+			version: 'frames-v1',
+			id: 'edit',
+			anim: character.manifest.rig.animations[0].id,
+			frames: [
+				{
+					dir: 'south',
+					cell: 0,
+					layers: [{ id: 'main', before: `sha256:${before}`, after: `sha256:${after}` }],
+					cut: { before: null, after: null }
+				}
+			]
+		}
+	];
+	// A workspace carries Undo history and its artwork, so a restore from it keeps the history whole.
+	// The saved demo outfit here is invalid: the export leaves it out and says so instead of failing.
+	const workspace = await exportWorkspace(view, undefined, []);
+	expect(workspace.hasOmissions).toBe(true);
+	const index = JSON.parse(
+		new TextDecoder().decode((await unzip(workspace.bytes)).get('workspace.json'))
+	);
+	expect(index.omitted).toEqual({ characters: 0, demoOutfit: true, exportSettings: false });
+	const source = await readRestoreSource(workspace.bytes);
 	expect(source.kind).toBe('workspace');
+	expect(source.trimmed).toBe(0);
+	expect(source.characters.get('rig-a')!.manifest.items[0].frameEdits).toHaveLength(1);
+	expect(source.blobs.has(after)).toBe(true);
 	expect([...source.characters.keys()]).toEqual(['rig-a']);
 	expect((await planRestore(source)).entries).toMatchObject([{ action: 'skip', match: 'rig-a' }]);
 

@@ -68,7 +68,14 @@
 		"archivedSaved": "Archivierte Daten wurden für spätere Downloads behalten.",
 		"changed": "Deine Bibliothek hat sich geändert. Prüfe vor dem Wiederherstellen die aktualisierten Zahlen.",
 		"restoredName": "{name} (wiederhergestellte Kopie)",
-		"incomplete": "Einige Grafiken fehlen oder sind ungültig. Es wurde nichts wiederhergestellt.",
+		"incomplete": {
+			"one": "Bei {count} Figur fehlen Grafiken. Sie wird übersprungen.",
+			"other": "Bei {count} Figuren fehlen Grafiken. Sie werden übersprungen."
+		},
+		"trimmedHistory": {
+			"one": "{count} Figur wird ohne einen Teil des Rückgängig-Verlaufs wiederhergestellt, der in dieser Datei fehlt.",
+			"other": "{count} Figuren werden ohne einen Teil des Rückgängig-Verlaufs wiederhergestellt, der in dieser Datei fehlt."
+		},
 		"backupOmissions": "Die Sicherung wurde heruntergeladen. Einige Charaktere oder Grafiken fehlen.",
 		"deleteWork": {
 			"deleteAll": "Alles löschen",

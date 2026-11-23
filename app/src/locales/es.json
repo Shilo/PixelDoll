@@ -68,7 +68,14 @@
 		"archivedSaved": "Se conservaron los datos archivados para futuras descargas.",
 		"changed": "Tu biblioteca cambió. Revisa las cifras actualizadas antes de restaurar.",
 		"restoredName": "{name} (copia restaurada)",
-		"incomplete": "Faltan algunos gráficos o no son válidos. No se restauró nada.",
+		"incomplete": {
+			"one": "A {count} personaje le faltan gráficos y se omitirá.",
+			"other": "A {count} personajes les faltan gráficos y se omitirán."
+		},
+		"trimmedHistory": {
+			"one": "{count} personaje se restaurará sin parte del historial de deshacer, que falta en este archivo.",
+			"other": "{count} personajes se restaurarán sin parte del historial de deshacer, que falta en este archivo."
+		},
 		"backupOmissions": "La copia de seguridad se descargó, pero faltan personajes o imágenes.",
 		"deleteWork": {
 			"deleteAll": "Eliminar todo",
