@@ -57,11 +57,14 @@
 	let stuck = $state(false);
 	// Resuming reuses every completed request; this is what it still buys, shown on the button before it is pressed.
 	let resumeGens = $state<number | null>(null);
+	// When the price cannot be worked out, its reason is shown and Resume is not the leading choice.
+	let resumePriceError = $state<Message | string>('');
 	$effect(() => {
 		const spec = mine && settingUp.error ? $state.snapshot(settingUp.spec) : null;
 		let current = true;
 		stuck = false;
 		resumeGens = null;
+		resumePriceError = '';
 		if (spec) {
 			void setupRegistrationStuck(spec)
 				.then((value) => {
@@ -72,7 +75,9 @@
 				.then((value) => {
 					if (current) resumeGens = value;
 				})
-				.catch((failure: unknown) => console.error('setup price', failure));
+				.catch((failure: unknown) => {
+					if (current) resumePriceError = errorMessage(failure);
+				});
 		}
 		return () => {
 			current = false;
@@ -268,6 +273,9 @@
 				}}>{t('create.sheet.startDressing')}</button
 			>
 		{:else if mine && settingUp.error}
+			{#if resumePriceError && !stuck}<p class="notice warn small" role="status">
+					{t('setup.resumePriceUnknown', { reason: displayMessage(resumePriceError) })}
+				</p>{/if}
 			<div class="recovery-actions">
 				<button
 					class="bu-action btn plain"
@@ -279,8 +287,9 @@
 				<div class="recovery-options">
 					<span class="api-action"
 						><button
-							class="bu-action btn primary"
-							data-variant="primary"
+							class="bu-action btn"
+							class:primary={stuck || resumeGens !== null}
+							data-variant={stuck || resumeGens !== null ? 'primary' : 'outline'}
 							onclick={() =>
 								settingUp.spec &&
 								withKey(

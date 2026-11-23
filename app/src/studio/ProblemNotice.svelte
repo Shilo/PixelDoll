@@ -15,7 +15,7 @@
 		report = {},
 		kind: known,
 		name,
-		alert = true
+		listed = false
 	}: {
 		/** The failure: an Error, a stored Message or text. */
 		error: unknown;
@@ -27,8 +27,9 @@
 		kind?: ProblemKind;
 		/** What failed, in the user's words: names this notice's Report for screen readers when several are listed. */
 		name?: string;
-		/** Announce it as it appears; a list of past failures (Activity) is read in place instead. */
-		alert?: boolean;
+		/** A row of a list of past failures (Activity): read in place, not announced, and quiet (no box or second icon; the row
+		 *  has its own). */
+		listed?: boolean;
 	} = $props();
 	const kind = $derived(known ?? problemKind(error));
 	// Report reads an Error's code and status; a stored Message is reported as the message the user saw.
@@ -47,8 +48,14 @@
 	);
 </script>
 
-<div class="notice bad small problem" role={alert ? 'alert' : undefined}>
-	<CircleAlert size={14} />
+<div
+	class="small problem"
+	class:notice={!listed}
+	class:bad={!listed}
+	class:listed
+	role={listed ? undefined : 'alert'}
+>
+	{#if !listed}<CircleAlert size={14} />{/if}
 	<div class="problem-body">
 		{#if kind}
 			<!-- Title and next step are separate paragraphs, so screen readers pause between them in every language. -->
@@ -74,6 +81,11 @@
 		display: grid;
 		gap: 4px;
 		min-width: 0;
+	}
+	/* A list row: no box, the row's own icon, full row width. */
+	.listed {
+		min-width: 0;
+		margin-top: 2px;
 	}
 	.problem-body p {
 		overflow-wrap: anywhere;

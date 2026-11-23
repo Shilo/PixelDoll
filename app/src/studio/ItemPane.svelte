@@ -220,6 +220,11 @@
 		}, missingTier);
 	}
 	let colorPlan = $state<ItemPaletteRepairPlan | null>(null);
+	// The pending-work notice explains a disabled action, so it shows only while one it covers is actually waiting.
+	const pendingBlocks = $derived(
+		(repairBusy && (!!repairSpec || !!colorPlan)) ||
+			(acceptWaits && (it?.qa?.status === 'warn' || it?.qa?.status === 'fail'))
+	);
 	let colorBusy = $state(false);
 	let colorError = $state<Message | string>('');
 	let colorDone = $state<{ pixels: number; frames: number }>();
@@ -455,7 +460,7 @@
 					</ul>
 				</div>
 			{/if}
-			{#if !isDemo() && repairBusy && (repairSpec || colorPlan || it.qa?.status === 'warn' || it.qa?.status === 'fail')}
+			{#if !isDemo() && pendingBlocks}
 				<p class="notice small" role="status">
 					{t('itemPane.pendingWorkBusy')}
 					<button
@@ -477,9 +482,10 @@
 			<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
 			{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail')}
 				<div class="field">
-					<p class="notice warn small">
-						{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
-					</p>
+					<!-- "Accept it as it is" is not on offer when keeping is refused, so only the refusal speaks. -->
+					{#if !(gaps.length && keepRefusal)}<p class="notice warn small">
+							{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
+						</p>{/if}
 					{#if gaps.length && keepRefusal}
 						<!-- Says why it cannot be kept as it is: the missing frames are the way on, offered below. -->
 						<p class="small">{displayMessage(errorMessage(keepRefusal))}</p>

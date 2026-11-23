@@ -33,6 +33,7 @@
 		generationCallOutcome,
 		generationErrorMessage,
 		generationProblemKind,
+		rerollLeads,
 		generationLogMessage
 	} from './generationStatus.ts';
 	import {
@@ -164,6 +165,10 @@
 	});
 	// What a stopped draft already bought stays usable: re-roll only its failed calls, or keep the moves that finished.
 	let paid = $state.raw<(PaidReviewData & { calls: number[]; tier: number }) | null>(null);
+	// Re-rolling the failed calls at the same price as generating again is one choice: only the review's button is shown.
+	const sameRetry = $derived(
+		!!paid?.options.some((option) => option.id === 'reroll-calls' && option.gens === retryGens)
+	);
 	$effect(() => {
 		const draft = $state.snapshot(g.draft),
 			result = res,
@@ -188,7 +193,11 @@
 										detail: message('genCard.rerollFailedDetail'),
 										gens: reroll.gens,
 										paid: reroll.gens > 0,
-										primary: true
+										primary: rerollLeads(
+											draft.calls.map((call) => call.recId),
+											calls,
+											$queue.jobs
+										)
 									}
 								]
 							: []),
@@ -208,6 +217,7 @@
 						paid = {
 							views: [],
 							spent: +gensOf(draft, $queue.jobs).toFixed(2),
+							spentUnknown: unknownCostsOf(draft, $queue.jobs) > 0,
 							recordIds: draft.calls.flatMap((c) => (c.recId ? [c.recId] : [])),
 							options,
 							calls,
@@ -368,21 +378,21 @@
 					disabled={busy || !res?.qa || hasStructuralFailure(res) || incomplete}
 					>{t('genCard.keep')}</button
 				>
-				<span class="api-action"
-					><button
-						class="bu-action btn"
-						data-variant="outline"
-						onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
-						disabled={busy || retryGens === null || retryBlocked}
-						aria-describedby={retryBlocked ? tierNoticeId : undefined}
-						>{t('common.generateAgain')}
-						<span class="cost"
-							>{t('moves.estimate', {
-								gens: retryGens === null ? '–' : formatNumber(retryGens)
-							})}</span
-						></button
-					></span
-				>
+				{#if !sameRetry}<span class="api-action"
+						><button
+							class="bu-action btn"
+							data-variant="outline"
+							onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
+							disabled={busy || retryGens === null || retryBlocked}
+							aria-describedby={retryBlocked ? tierNoticeId : undefined}
+							>{t('common.generateAgain')}
+							<span class="cost"
+								>{t('moves.estimate', {
+									gens: retryGens === null ? '–' : formatNumber(retryGens)
+								})}</span
+							></button
+						></span
+					>{/if}
 				<button
 					class="bu-action btn plain danger"
 					data-variant="quiet"
@@ -443,22 +453,23 @@
 					>{t(g.canceled ? 'common.discard' : 'common.cancel')}</button
 				>
 				<div class="recovery-options">
-					<span class="api-action"
-						><button
-							class="bu-action btn"
-							class:primary={retryLeads}
-							data-variant={retryLeads ? 'primary' : 'outline'}
-							onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
-							disabled={busy || retryGens === null || retryBlocked}
-							aria-describedby={retryBlocked ? tierNoticeId : undefined}
-							>{t('common.generateAgain')}
-							<span class="cost"
-								>{t('moves.estimate', {
-									gens: retryGens === null ? '–' : formatNumber(retryGens)
-								})}</span
-							></button
-						></span
-					>
+					{#if !sameRetry}<span class="api-action"
+							><button
+								class="bu-action btn"
+								class:primary={retryLeads}
+								data-variant={retryLeads ? 'primary' : 'outline'}
+								onclick={() =>
+									retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
+								disabled={busy || retryGens === null || retryBlocked}
+								aria-describedby={retryBlocked ? tierNoticeId : undefined}
+								>{t('common.generateAgain')}
+								<span class="cost"
+									>{t('moves.estimate', {
+										gens: retryGens === null ? '–' : formatNumber(retryGens)
+									})}</span
+								></button
+							></span
+						>{/if}
 				</div>
 			</div>
 		{/if}

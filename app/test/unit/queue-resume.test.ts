@@ -867,4 +867,6 @@ test('a damaged saved record never stops the queue from opening and is never res
 	expect(queueErrorParts(shown[0])).toEqual([message('activity.error.unreadable')]);
 	await resumed.tick();
 	expect(f.posts()).toBe(1);
+	// Stored as read, so other readers of the store (State recovery, other tabs) see it lost and readable too.
+	expect(f.records.get(old.id)).toMatchObject({ state: 'lost', jobs: [{ results: [] }] });
 });

@@ -131,7 +131,8 @@ import {
 	loggedError,
 	loggedMessage,
 	message,
-	type LoggedMessage
+	type LoggedMessage,
+	type Message
 } from '../message.ts';
 import { localizedPlanRestriction } from '../pixellab/plans.ts';
 
@@ -689,6 +690,8 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 	return req;
 }
 
+/** The Activity title of an item request for one view of a move, in the user's words; the Studio names moves and views. */
+export type ItemViewTitle = (anim: string, dir: DirectionName) => Message;
 /** A dropped call keeps its paid record in `old` so its previous design or key never lands in the current draft. */
 async function submit(d: Draft, k: number, ctx: RigCtx, signal?: AbortSignal): Promise<string> {
 	const c = d.calls[k],
@@ -707,6 +710,11 @@ async function submit(d: Draft, k: number, ctx: RigCtx, signal?: AbortSignal): P
 		await queue.enqueue(req, {
 			signal,
 			label,
+			title: message('activity.titleItemCall', {
+				name: d.spec.name,
+				index: k + 1,
+				total: d.calls.length
+			}),
 			tag: d.activityScope ? 'studio-move' : 'm3',
 			activityScope: d.activityScope,
 			minimumTier: draftMinimumTier(d, ctx.rec.manifest.rig)
@@ -1837,7 +1845,8 @@ export async function poseItemClip(
 	moveSeed?: number,
 	selectedDirs?: DirectionName[],
 	activityScope?: string,
-	savedOnly = false
+	savedOnly = false,
+	title?: ItemViewTitle
 ): Promise<QaResult> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -1904,7 +1913,9 @@ export async function poseItemClip(
 						seed,
 						cells,
 						activityScope,
-						savedOnly
+						savedOnly,
+						undefined,
+						title
 					);
 					if ('blocked' in g)
 						throw new Error(
@@ -1933,6 +1944,7 @@ export async function poseItemClip(
 					req,
 					{
 						label: `pose ${item.name} · ${anim} ${dir}`,
+						...(title ? { title: title(anim, dir) } : {}),
 						tag: 'studio-move',
 						activityScope,
 						minimumTier
@@ -2308,7 +2320,7 @@ export function keepWithoutRefusal(
 		return undefined;
 	return keepsFramesWithout(item, moves)
 		? new LocalizedError(
-				'This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.',
+				'This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.',
 				'itemRoute.errors.keepWithoutStanding'
 			)
 		: new LocalizedError(
@@ -2476,7 +2488,8 @@ async function gridItemClip(
 		tier: number;
 		start: number;
 		count: number;
-	}
+	},
+	title?: ItemViewTitle
 ): Promise<
 	{ cells: CellOut[]; prov: Provenance; registrationIssue?: string } | { blocked: string }
 > {
@@ -2501,6 +2514,7 @@ async function gridItemClip(
 		req,
 		{
 			label: `${prepared?.maskRequest ? 'redraw' : 'grid'} ${item.name} · ${anim} ${dir}${prepared ? ` · frames ${prepared.start + 1}–${prepared.start + prepared.count}` : ''}`,
+			...(title ? { title: title(anim, dir) } : {}),
 			tag: 'studio-move',
 			activityScope,
 			minimumTier: prepared?.tier ?? 1
@@ -2573,7 +2587,8 @@ export async function regridClip(
 	preferTierOne = false,
 	activityScope?: string,
 	savedOnly = false,
-	redraw = false
+	redraw = false,
+	title?: ItemViewTitle
 ): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[]; review?: RepairReview }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -2678,7 +2693,8 @@ export async function regridClip(
 			request.cells,
 			activityScope,
 			savedOnly,
-			request
+			request,
+			title
 		);
 		if ('blocked' in result)
 			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);

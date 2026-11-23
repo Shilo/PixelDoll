@@ -667,3 +667,14 @@ test('standing views an item lacks are rebuilt from its saved designs without a 
 	expect(await restoreStandingViews('rig-grid', 'sword')).toEqual([]);
 	expect(restorableViews(m, { ...sword, unfitted: [] })).toEqual([]);
 });
+
+test('an item repair request carries the Activity title the Studio names it by', async () => {
+	const f = await fixture();
+	const title = (anim: string, dir: DirectionName) =>
+		({
+			key: 'activity.titleItemView',
+			vars: { item: 'Sword', move: anim, direction: dir }
+		}) as const;
+	await regridClip(f.ctx, f.item, 'slash', 'west', 123, false, undefined, false, false, title);
+	expect(f.enqueue.mock.calls[0][1]).toMatchObject({ title: title('slash', 'west') });
+});

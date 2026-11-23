@@ -63,6 +63,8 @@ export interface PaidReview {
 	views: PaidView[];
 	/** Reported generations of the completed records this attempt used. */
 	spent: number;
+	/** Some records ended without a usage report (a request that may have charged): `spent` is only a known part. */
+	spentUnknown?: boolean;
 	recordIds: string[];
 	options: PaidOption[];
 }

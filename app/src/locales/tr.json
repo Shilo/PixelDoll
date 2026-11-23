@@ -287,6 +287,16 @@
 		"west": "Batı",
 		"southWest": "Güneybatı"
 	},
+	"directionInline": {
+		"south": "güney",
+		"southEast": "güneydoğu",
+		"east": "doğu",
+		"northEast": "kuzeydoğu",
+		"north": "kuzey",
+		"northWest": "kuzeybatı",
+		"west": "batı",
+		"southWest": "güneybatı"
+	},
 	"directionShort": {
 		"south": "G",
 		"southEast": "GD",
@@ -1963,6 +1973,8 @@
 		"cleared": "Temizlendi: {jobs}. Taslaklarınızın veya devam eden karakter ya da animasyon üretiminin kullandığı işler korunur.",
 		"clearedWithImages": "Temizlendi: {jobs} ve {images}. Taslaklarınızın veya devam eden karakter ya da animasyon üretiminin kullandığı işler korunur.",
 		"findingJoints": "Eklemler bulunuyor",
+		"titleItemCall": "{name}: istek {index}/{total}",
+		"titleItemView": "{item}: {move}, {direction}",
 		"titleSetup": "{name}: karakter kurulumu",
 		"titleRegistering": "{name}: görünümler hazırlanıyor",
 		"titleDrawing": "{name}: karakter çiziliyor",
@@ -2170,6 +2182,7 @@
 		"resumeRigSetup": "Rig kurulumuna devam edin",
 		"dismiss": "Kurulumu kapatın",
 		"resume": "Kuruluma devam edin",
+		"resumePriceUnknown": "Devam etmenin fiyatı hesaplanamadı: {reason}",
 		"keepWorking": "Çalışmaya devam edebilirsiniz. Sayfa yeniden yüklendiğinde kurulum kaldığı yerden sürer.",
 		"pixelsUnchanged": "Mevcut pikseller değişmez",
 		"setUpRig": "Rig'i kurun",
@@ -2728,7 +2741,7 @@
 			"savedFramesUnavailable": "Geçerli gövde ve ekipmanla eşleşen tamamlanmış kareler yok. Oluşturma istenmedi.",
 			"itemMoveSaveConflict": "Kareleri oluşturulurken bu karakter veya eşya değişti. Mevcut çizimler korundu; tamamlanan kareler Etkinlik bölümünde duruyor.",
 			"itemMoveSaveConflictAlso": "Kareleri oluşturulurken bu karakter veya eşya değişti. Mevcut çizimler korundu; tamamlanan kareler Etkinlik bölümünde duruyor. Başka bir görünüm de durdu: {reason}",
-			"keepWithoutStanding": "Bu eşyanın tasarlandığı animasyonda eksik kareler var, bu yüzden o animasyon olmadan tutulamaz. Bunun yerine eksik kareleri oluşturun.",
+			"keepWithoutStanding": "Bu eşyanın tasarlandığı animasyonda eksik kareler var, bu yüzden o animasyon olmadan tutulamaz. O animasyonu gösterin ve sunuluyorsa Eşyayı onarın veya Eşyayı yeniden çizin seçeneğini kullanın ya da eşyayı yeniden oluşturun.",
 			"keepWithoutNothingLeft": "Bu eşyanın tutulabilecek eksiksiz bir animasyonu yok. Bunun yerine eksik kareleri oluşturun.",
 			"savedFrameMissing": "Bu eşyanın kayıtlı bir karesi depolamada yok."
 		}
@@ -3067,6 +3080,7 @@
 	"paidReview": {
 		"title": "Ücretli sonuçlar",
 		"spent": "Zaten ödendi: {gens} gen. Bu sonuçlar saklanır ve yeniden kullanılır.",
+		"spentUnknown": "Zaten ödenen: en az {gens} gen. Bazı istekler bildirilmeden ücretlendirilmiş olabilir (pixellab.ai adresini kontrol edin). Tamamlanan sonuçlar korunur ve yeniden kullanılır.",
 		"free": "Ücretsiz",
 		"download": "Ücretli sonuçları indir",
 		"frame": "{view}, kare {number}",
@@ -3280,7 +3294,7 @@
 			"empty": "Ücretli sonuçlarınız Etkinlik bölümünde duruyor. Yeni bir denemeyle tekrar deneyin.",
 			"dropped": "Biraz bekleyin, sonra yeniden deneyin.",
 			"joints": "Ödenen her şey Etkinlik’te kalır. Yeni bir deneme yapın ya da daha net bir ayakta duruş pozundan başlayın.",
-			"stopped": "Yeniden başlamadan önce ne olduğunu Etkinlik bölümünde kontrol edin.",
+			"stopped": "Yeniden gönderilmedi. Yeniden başlamadan önce ne döndürdüğüne bakın.",
 			"quality": "Sonuçları inceleyin, sonra tutun veya yeniden deneyin.",
 			"changed": "Devam etmeden önce yeniden inceleyin.",
 			"missing": "Yeniden oluşturmadan önce hâlâ kayıtlı olanları Etkinlik bölümünde kontrol edin.",
@@ -3288,7 +3302,7 @@
 			"credits": "PixelLab'de kredi ekleyin, sonra yeniden deneyin.",
 			"key": "PixelLab'i geçerli bir belirteçle yeniden bağlayın.",
 			"offline": "Bağlantınızı kontrol edin, sonra yeniden deneyin.",
-			"declined": "Açıklamayı değiştirin, sonra yeniden deneyin.",
+			"declined": "Farklı bir açıklamayla yeniden oluşturun.",
 			"unexpected": "Düzeltilebilmesi için bildirin. Önceden ödenen her şey Etkinlik’te kalır.",
 			"uncertain": "Çalışmış ve ücretlendirilmiş olabilir. Yeniden denemeden önce pixellab.ai adresini kontrol edin.",
 			"poses": "Önce duruşlarını kurun, sonra ekipmanı oluşturun.",

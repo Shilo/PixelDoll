@@ -2,7 +2,8 @@ import { expect, test } from 'vitest';
 import {
 	generationLogMessage,
 	generationProblemKind,
-	generationStatus
+	generationStatus,
+	rerollLeads
 } from '../../src/studio/generationStatus.ts';
 import { paidRetryLeads } from '../../src/studio/problemSummary.ts';
 import type { Gen } from '../../src/studio/state.svelte.ts';
@@ -148,8 +149,19 @@ test('a stopped item call is summarized by its request record, so a credit refus
 });
 
 test('a paid try again leads only where it can help', () => {
-	for (const kind of ['stopped', 'busy', 'credits', 'empty', 'offline'] as const)
+	for (const kind of ['stopped', 'busy', 'empty', 'offline'] as const)
 		expect(paidRetryLeads(kind)).toBe(true);
-	for (const kind of ['unexpected', 'method', 'declined', 'uncertain'] as const)
+	// Flipped on purpose (round 3): a credit or token refusal is fixed on the account first, so the paid retry follows it.
+	for (const kind of ['unexpected', 'method', 'declined', 'uncertain', 'credits', 'key'] as const)
 		expect(paidRetryLeads(kind)).toBe(false);
+});
+
+test('re-rolling stopped calls never leads when one may have charged, was declined or was refused', () => {
+	const two = ['0', '1'];
+	expect(rerollLeads(two, [0, 1], [record('failed'), record('failed', { id: '1' })])).toBe(true);
+	expect(rerollLeads(two, [0, 1], [record('failed'), record('lost', { id: '1' })])).toBe(false);
+	expect(
+		rerollLeads(two, [0], [record('failed', { jobs: [{ policy: true }] as JobRec['jobs'] })])
+	).toBe(false);
+	expect(rerollLeads(two, [0], [record('canceled', { errorKind: 'credits' })])).toBe(false);
 });

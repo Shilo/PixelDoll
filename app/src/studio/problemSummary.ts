@@ -109,9 +109,14 @@ export function problemKind(error: unknown): ProblemKind | undefined {
 }
 
 /** Whether a paid try again is the way on that leads. Not for a bug (Report it), a choice the user must change first, a
- *  decline that would repeat, or a request that may already have charged. */
+ *  decline that would repeat, a request that may already have charged, or an account to fix first (credits, token). */
 export const paidRetryLeads = (kind: ProblemKind | undefined) =>
-	kind !== 'unexpected' && kind !== 'method' && kind !== 'declined' && kind !== 'uncertain';
+	kind !== 'unexpected' &&
+	kind !== 'method' &&
+	kind !== 'declined' &&
+	kind !== 'uncertain' &&
+	kind !== 'credits' &&
+	kind !== 'key';
 
 /** A request Activity lists as failed or lost, by what is known of it: a lost request may have charged; a refusal says why. */
 export function recordProblemKind(

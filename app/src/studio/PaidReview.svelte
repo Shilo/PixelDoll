@@ -43,7 +43,9 @@
 
 <section class="paid-review" aria-label={t('paidReview.title')}>
 	<p class="small">
-		{t('paidReview.spent', { gens: formatNumber(review.spent, { maximumFractionDigits: 1 }) })}
+		{t(review.spentUnknown ? 'paidReview.spentUnknown' : 'paidReview.spent', {
+			gens: formatNumber(review.spent, { maximumFractionDigits: 1 })
+		})}
 	</p>
 	{#each review.views as view, index (index)}
 		<div class="paid-view">

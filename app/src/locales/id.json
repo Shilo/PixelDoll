@@ -282,6 +282,16 @@
 		"west": "Barat",
 		"southWest": "Barat daya"
 	},
+	"directionInline": {
+		"south": "selatan",
+		"southEast": "tenggara",
+		"east": "timur",
+		"northEast": "timur laut",
+		"north": "utara",
+		"northWest": "barat laut",
+		"west": "barat",
+		"southWest": "barat daya"
+	},
 	"directionShort": {
 		"south": "S",
 		"southEast": "TG",
@@ -1903,6 +1913,8 @@
 		"cleared": "{jobs} dibersihkan. Pekerjaan yang masih digunakan oleh draf atau proses pembuatan karakter atau penambahan animasi yang aktif tetap disimpan.",
 		"clearedWithImages": "{jobs} dan {images} dibersihkan. Pekerjaan yang masih digunakan oleh draf atau proses pembuatan karakter atau penambahan animasi yang aktif tetap disimpan.",
 		"findingJoints": "Mencari sendi",
+		"titleItemCall": "{name}: permintaan {index} dari {total}",
+		"titleItemView": "{item}: {move}, {direction}",
 		"titleSetup": "{name}: penyiapan karakter",
 		"titleRegistering": "{name}: menyiapkan tampilan",
 		"titleDrawing": "{name}: menggambar karakter",
@@ -2106,6 +2118,7 @@
 		"resumeRigSetup": "Lanjutkan penyiapan rig",
 		"dismiss": "Singkirkan penyiapan",
 		"resume": "Lanjutkan penyiapan",
+		"resumePriceUnknown": "Harga untuk melanjutkan tidak dapat dihitung: {reason}",
 		"keepWorking": "Anda bisa terus bekerja. Penyiapan dilanjutkan setelah memuat ulang.",
 		"pixelsUnchanged": "Piksel yang sudah ada tidak berubah",
 		"setUpRig": "Siapkan rig",
@@ -2656,7 +2669,7 @@
 			"savedFramesUnavailable": "Frame selesai yang cocok dengan tubuh dan perlengkapan saat ini tidak tersedia. Tidak ada pembuatan yang diminta.",
 			"itemMoveSaveConflict": "Karakter atau item ini berubah saat frame-nya sedang dibuat. Gambar yang ada tetap disimpan; frame yang selesai tetap ada di Aktivitas.",
 			"itemMoveSaveConflictAlso": "Karakter atau item ini berubah saat frame-nya sedang dibuat. Gambar yang ada tetap disimpan; frame yang selesai tetap ada di Aktivitas. Tampilan lain juga berhenti: {reason}",
-			"keepWithoutStanding": "Item ini kehilangan frame pada animasi yang menjadi dasar desainnya, jadi tidak dapat disimpan tanpa animasi itu. Buat frame yang hilang sebagai gantinya.",
+			"keepWithoutStanding": "Item ini kehilangan frame pada animasi yang menjadi dasar desainnya, jadi tidak dapat disimpan tanpa animasi itu. Tampilkan animasi itu lalu gunakan Perbaiki item atau Gambar ulang item jika tersedia, atau buat item lagi.",
 			"keepWithoutNothingLeft": "Item ini tidak punya animasi lengkap untuk disimpan. Buat frame yang hilang sebagai gantinya.",
 			"savedFrameMissing": "Sebuah frame tersimpan dari item ini tidak ada di penyimpanan."
 		}
@@ -2985,6 +2998,7 @@
 	"paidReview": {
 		"title": "Hasil berbayar",
 		"spent": "Sudah dibayar: {gens} gen. Hasil ini disimpan dan dipakai ulang.",
+		"spentUnknown": "Sudah dibayar: setidaknya {gens} gen. Beberapa permintaan mungkin dikenai biaya tanpa laporan (periksa pixellab.ai). Hasil yang selesai disimpan dan dipakai ulang.",
 		"free": "Gratis",
 		"download": "Unduh hasil berbayar",
 		"frame": "{view}, frame {number}",
@@ -3191,7 +3205,7 @@
 			"empty": "Hasil berbayar Anda tetap ada di Aktivitas. Coba lagi dengan percobaan baru.",
 			"dropped": "Tunggu sebentar, lalu coba lagi.",
 			"joints": "Apa pun yang sudah dibayar tetap ada di Aktivitas. Coba percobaan baru, atau mulai dari pose berdiri yang lebih jelas.",
-			"stopped": "Periksa Aktivitas untuk melihat apa yang terjadi sebelum memulai lagi.",
+			"stopped": "Permintaan tidak dikirim ulang. Lihat hasilnya sebelum memulai lagi.",
 			"quality": "Tinjau hasilnya, lalu simpan atau coba lagi.",
 			"changed": "Tinjau lagi sebelum melanjutkan.",
 			"missing": "Periksa Aktivitas untuk melihat apa yang masih tersimpan sebelum membuatnya lagi.",
@@ -3199,7 +3213,7 @@
 			"credits": "Tambahkan kredit di PixelLab, lalu coba lagi.",
 			"key": "Hubungkan PixelLab lagi dengan token yang valid.",
 			"offline": "Periksa koneksi Anda, lalu coba lagi.",
-			"declined": "Ubah deskripsinya, lalu coba lagi.",
+			"declined": "Buat lagi dengan deskripsi yang berbeda.",
 			"unexpected": "Laporkan agar bisa diperbaiki. Apa pun yang sudah dibayar tetap ada di Aktivitas.",
 			"uncertain": "Permintaan ini mungkin sudah berjalan dan dikenai biaya. Periksa pixellab.ai sebelum mencoba lagi.",
 			"poses": "Siapkan posenya terlebih dahulu, lalu buat perlengkapannya.",

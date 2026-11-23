@@ -287,6 +287,16 @@
 		"west": "Oeste",
 		"southWest": "Sudoeste"
 	},
+	"directionInline": {
+		"south": "sul",
+		"southEast": "sudeste",
+		"east": "leste",
+		"northEast": "nordeste",
+		"north": "norte",
+		"northWest": "noroeste",
+		"west": "oeste",
+		"southWest": "sudoeste"
+	},
 	"directionShort": {
 		"south": "S",
 		"southEast": "SE",
@@ -1972,6 +1982,8 @@
 		"cleared": "Remoção concluída: {jobs}. Foram mantidas as tarefas ainda usadas por rascunhos ou pela criação de um personagem ou de uma animação em andamento.",
 		"clearedWithImages": "Remoção concluída: {jobs} e {images}. Foram mantidas as tarefas ainda usadas por rascunhos ou pela criação de um personagem ou de uma animação em andamento.",
 		"findingJoints": "Detectando articulações",
+		"titleItemCall": "{name}: solicitação {index} de {total}",
+		"titleItemView": "{item}: {move}, {direction}",
 		"titleSetup": "{name}: configuração do personagem",
 		"titleRegistering": "{name}: preparando as vistas",
 		"titleDrawing": "{name}: desenhando o personagem",
@@ -2179,6 +2191,7 @@
 		"resumeRigSetup": "Retomar configuração do rig",
 		"dismiss": "Descartar configuração",
 		"resume": "Retomar configuração",
+		"resumePriceUnknown": "Não foi possível calcular o preço de retomar: {reason}",
 		"keepWorking": "Você pode continuar trabalhando. A configuração é retomada após recarregar a página.",
 		"pixelsUnchanged": "Os pixels existentes não mudam",
 		"setUpRig": "Configurar rig",
@@ -2737,7 +2750,7 @@
 			"savedFramesUnavailable": "Não há quadros prontos que correspondam ao corpo e ao equipamento atuais. Nenhuma geração foi solicitada.",
 			"itemMoveSaveConflict": "Este personagem ou item mudou enquanto seus quadros eram gerados. A arte existente foi mantida; os quadros prontos continuam em Atividade.",
 			"itemMoveSaveConflictAlso": "Este personagem ou item mudou enquanto seus quadros eram gerados. A arte existente foi mantida; os quadros prontos continuam em Atividade. Outra vista também parou: {reason}",
-			"keepWithoutStanding": "Faltam quadros deste item na animação da qual ele foi desenhado, então ele não pode ser mantido sem ela. Crie os quadros que faltam.",
+			"keepWithoutStanding": "Faltam quadros deste item na animação da qual ele foi desenhado, então ele não pode ser mantido sem ela. Mostre essa animação e use Reparar item ou Redesenhar item se aparecerem, ou crie o item de novo.",
 			"keepWithoutNothingLeft": "Este item não tem nenhuma animação completa para manter. Crie os quadros que faltam.",
 			"savedFrameMissing": "Um quadro salvo deste item está faltando no armazenamento."
 		}
@@ -3076,6 +3089,7 @@
 	"paidReview": {
 		"title": "Resultados pagos",
 		"spent": "Já pago: {gens} gens. Estes resultados são mantidos e reutilizados.",
+		"spentUnknown": "Já pago: pelo menos {gens} gens. Algumas solicitações podem ter cobrado sem informar (confira pixellab.ai). Os resultados concluídos são mantidos e reutilizados.",
 		"free": "Grátis",
 		"download": "Baixar resultados pagos",
 		"frame": "{view}, quadro {number}",
@@ -3292,7 +3306,7 @@
 			"empty": "Seus resultados pagos continuam em Atividade. Tente novamente com uma nova tentativa.",
 			"dropped": "Aguarde um momento e tente novamente.",
 			"joints": "O que foi pago continua em Atividade. Faça uma nova tentativa ou comece de uma pose em pé mais clara.",
-			"stopped": "Veja em Atividade o que aconteceu antes de começar de novo.",
+			"stopped": "Ela não foi enviada de novo. Veja o que ela retornou antes de recomeçar.",
 			"quality": "Revise os resultados e depois mantenha-os ou tente novamente.",
 			"changed": "Revise de novo antes de continuar.",
 			"missing": "Veja em Atividade o que ainda está salvo antes de criar de novo.",
@@ -3300,7 +3314,7 @@
 			"credits": "Adicione créditos no PixelLab e tente novamente.",
 			"key": "Conecte o PixelLab novamente com um token válido.",
 			"offline": "Verifique sua conexão e tente novamente.",
-			"declined": "Altere a descrição e tente novamente.",
+			"declined": "Crie de novo com outra descrição.",
 			"unexpected": "Relate o problema para que ele seja corrigido. O que já foi pago continua em Atividade.",
 			"uncertain": "Ela pode ter sido executada e cobrada. Confira pixellab.ai antes de tentar de novo.",
 			"poses": "Configure as poses primeiro e depois crie o equipamento.",

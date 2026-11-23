@@ -287,6 +287,16 @@
 		"west": "West",
 		"southWest": "South-west"
 	},
+	"directionInline": {
+		"south": "south",
+		"southEast": "south-east",
+		"east": "east",
+		"northEast": "north-east",
+		"north": "north",
+		"northWest": "north-west",
+		"west": "west",
+		"southWest": "south-west"
+	},
 	"directionShort": {
 		"south": "S",
 		"southEast": "SE",
@@ -1963,6 +1973,8 @@
 		"cleared": "Cleared {jobs}. Jobs your drafts or a running create or move still use are kept.",
 		"clearedWithImages": "Cleared {jobs} and {images}. Jobs your drafts or a running create or move still use are kept.",
 		"findingJoints": "Finding joints",
+		"titleItemCall": "{name}: request {index} of {total}",
+		"titleItemView": "{item}: {move}, {direction}",
 		"titleSetup": "{name}: character setup",
 		"titleRegistering": "{name}: preparing the views",
 		"titleDrawing": "{name}: drawing the character",
@@ -2170,6 +2182,7 @@
 		"resumeRigSetup": "Resume rig setup",
 		"dismiss": "Dismiss setup",
 		"resume": "Resume setup",
+		"resumePriceUnknown": "The price of resuming could not be worked out: {reason}",
 		"keepWorking": "You can keep working. Setup resumes after reload.",
 		"pixelsUnchanged": "Existing pixels stay unchanged",
 		"setUpRig": "Set up rig",
@@ -2728,7 +2741,7 @@
 			"savedFramesUnavailable": "Completed frames matching the current body and equipment are unavailable. No generation was requested.",
 			"itemMoveSaveConflict": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity.",
 			"itemMoveSaveConflictAlso": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity. Another view also stopped: {reason}",
-			"keepWithoutStanding": "This item is missing frames in the move it is designed from, so it cannot be kept without it. Make the missing frames instead.",
+			"keepWithoutStanding": "This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.",
 			"keepWithoutNothingLeft": "This item has no complete move to keep. Make the missing frames instead.",
 			"savedFrameMissing": "A saved frame of this item is missing from storage."
 		}
@@ -3067,6 +3080,7 @@
 	"paidReview": {
 		"title": "Paid results",
 		"spent": "Already paid: {gens} gens. These results are kept and reused.",
+		"spentUnknown": "Already paid: at least {gens} gens. Some requests may have charged without reporting it (check pixellab.ai). Finished results are kept and reused.",
 		"free": "Free",
 		"download": "Download paid results",
 		"frame": "{view} frame {number}",
@@ -3283,7 +3297,7 @@
 			"empty": "Your paid results stay in Activity. Try again with a new attempt.",
 			"dropped": "Wait a moment, then try again.",
 			"joints": "Anything paid stays in Activity. Try a new attempt, or start from a clearer standing pose.",
-			"stopped": "Check Activity to see what happened before starting again.",
+			"stopped": "It was not sent again. Look at what it returned before starting again.",
 			"quality": "Review the results, then keep them or try again.",
 			"changed": "Review it again before continuing.",
 			"missing": "Check Activity for what is still saved before making it again.",
@@ -3291,7 +3305,7 @@
 			"credits": "Add credits on PixelLab, then try again.",
 			"key": "Connect PixelLab again with a valid token.",
 			"offline": "Check your connection, then try again.",
-			"declined": "Change the description, then try again.",
+			"declined": "Make it again with a different description.",
 			"unexpected": "Report it so it can be fixed. Anything already paid for stays in Activity.",
 			"uncertain": "It may have run and charged you. Check pixellab.ai before trying again.",
 			"poses": "Set up its poses first, then make the equipment.",

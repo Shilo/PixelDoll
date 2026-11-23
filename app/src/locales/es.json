@@ -287,6 +287,16 @@
 		"west": "Oeste",
 		"southWest": "Suroeste"
 	},
+	"directionInline": {
+		"south": "sur",
+		"southEast": "sureste",
+		"east": "este",
+		"northEast": "noreste",
+		"north": "norte",
+		"northWest": "noroeste",
+		"west": "oeste",
+		"southWest": "suroeste"
+	},
 	"directionShort": {
 		"south": "S",
 		"southEast": "SE",
@@ -1963,6 +1973,8 @@
 		"cleared": "Se borraron {jobs}. Se conservan las tareas que aún usan tus borradores o una creación o animación en curso.",
 		"clearedWithImages": "Se borraron {jobs} y {images}. Se conservan las tareas que aún usan tus borradores o una creación o animación en curso.",
 		"findingJoints": "Buscando articulaciones",
+		"titleItemCall": "{name}: solicitud {index} de {total}",
+		"titleItemView": "{item}: {move}, {direction}",
 		"titleSetup": "{name}: configuración del personaje",
 		"titleRegistering": "{name}: preparando las vistas",
 		"titleDrawing": "{name}: dibujando el personaje",
@@ -2170,6 +2182,7 @@
 		"resumeRigSetup": "Reanudar configuración del rig",
 		"dismiss": "Descartar configuración",
 		"resume": "Reanudar configuración",
+		"resumePriceUnknown": "No se pudo calcular el precio de reanudar: {reason}",
 		"keepWorking": "Puedes seguir trabajando. La configuración se reanuda al recargar.",
 		"pixelsUnchanged": "Los píxeles existentes no cambian",
 		"setUpRig": "Configurar rig",
@@ -2728,7 +2741,7 @@
 			"savedFramesUnavailable": "No hay fotogramas terminados que coincidan con el cuerpo y el equipo actuales. No se solicitó ninguna generación.",
 			"itemMoveSaveConflict": "Este personaje u objeto cambió mientras se generaban sus fotogramas. Se conservó el arte existente; los fotogramas terminados siguen en Actividad.",
 			"itemMoveSaveConflictAlso": "Este personaje u objeto cambió mientras se generaban sus fotogramas. Se conservó el arte existente; los fotogramas terminados siguen en Actividad. Otra vista también se detuvo: {reason}",
-			"keepWithoutStanding": "A este objeto le faltan fotogramas en la animación de la que parte su diseño, así que no se puede conservar sin ella. Crea los fotogramas que faltan.",
+			"keepWithoutStanding": "A este objeto le faltan fotogramas en la animación de la que parte su diseño, así que no se puede conservar sin ella. Muestra esa animación y usa Reparar objeto o Redibujar objeto si aparecen, o vuelve a crear el objeto.",
 			"keepWithoutNothingLeft": "Este objeto no tiene ninguna animación completa que conservar. Crea los fotogramas que faltan.",
 			"savedFrameMissing": "Falta en el almacenamiento un fotograma guardado de este objeto."
 		}
@@ -3067,6 +3080,7 @@
 	"paidReview": {
 		"title": "Resultados pagados",
 		"spent": "Ya pagado: {gens} gens. Estos resultados se conservan y se reutilizan.",
+		"spentUnknown": "Ya pagado: al menos {gens} gens. Algunas solicitudes pueden haber cobrado sin informarlo (revisa pixellab.ai). Los resultados terminados se conservan y se reutilizan.",
 		"free": "Gratis",
 		"download": "Descargar resultados pagados",
 		"frame": "{view}, fotograma {number}",
@@ -3283,7 +3297,7 @@
 			"empty": "Tus resultados pagados siguen en Actividad. Vuelve a intentarlo con un intento nuevo.",
 			"dropped": "Espera un momento y vuelve a intentarlo.",
 			"joints": "Lo pagado sigue en Actividad. Haz un intento nuevo o parte de una pose de pie más clara.",
-			"stopped": "Revisa en Actividad qué pasó antes de volver a empezar.",
+			"stopped": "No se volvió a enviar. Revisa lo que devolvió antes de empezar de nuevo.",
 			"quality": "Revisa los resultados y luego consérvalos o vuelve a intentarlo.",
 			"changed": "Vuelve a revisarlo antes de continuar.",
 			"missing": "Revisa en Actividad lo que sigue guardado antes de volver a crearlo.",
@@ -3291,7 +3305,7 @@
 			"credits": "Añade créditos en PixelLab y vuelve a intentarlo.",
 			"key": "Vuelve a conectar PixelLab con un token válido.",
 			"offline": "Revisa tu conexión y vuelve a intentarlo.",
-			"declined": "Cambia la descripción y vuelve a intentarlo.",
+			"declined": "Vuelve a crearlo con otra descripción.",
 			"unexpected": "Infórmalo para que se pueda corregir. Lo que ya se pagó sigue en Actividad.",
 			"uncertain": "Puede que se haya ejecutado y cobrado. Revisa pixellab.ai antes de volver a intentarlo.",
 			"poses": "Configura primero sus poses y luego crea el equipo.",

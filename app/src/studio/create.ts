@@ -111,15 +111,17 @@ import {
 	poseItemClip,
 	regridClip,
 	PartialMoveError,
+	type ItemViewTitle,
 	type RepairReview,
 	type RigCtx
 } from '../lib/items/run.ts';
 import { directionLabel } from './experience/movement.ts';
-import { directionNames } from './directionKeys.ts';
+import { directionInline, directionNames } from './directionKeys.ts';
 import { coverage } from './itemRoute.ts';
 import {
 	CURRENT_FORMAT,
 	type CellKey,
+	type Item,
 	type Manifest,
 	type Project,
 	type Provenance
@@ -1184,11 +1186,11 @@ export async function reviewCreateResults(spec: CreateSpec): Promise<CreatePaidR
 		const view = drawn.find((x) => x.label === d),
 			placed = view && drawnView(spec, view.img, cell);
 		const problem = !placed
-			? message('create.errors.pixellabReturnedView', { direction: viewName(d) })
+			? message('create.errors.pixellabReturnedView', { direction: viewInline(d) })
 			: placed.cutPx
-				? message('create.errors.viewDoesFitPx', { direction: viewName(d), cell })
+				? message('create.errors.viewDoesFitPx', { direction: viewInline(d), cell })
 				: !opaqueBox(placed.img)
-					? message('create.errors.pixellabReturnedEmptyView', { direction: viewName(d) })
+					? message('create.errors.pixellabReturnedEmptyView', { direction: viewInline(d) })
 					: undefined;
 		return {
 			label: viewName(d),
@@ -1442,7 +1444,7 @@ export async function createCharacter(
 			throw new PaidStepError(
 				`PixelLab returned no ${d} view`,
 				'create.errors.pixellabReturnedView',
-				{ direction: viewName(d) },
+				{ direction: viewInline(d) },
 				drew('frame-count')
 			);
 		const n = drawnView(spec, r.img, cell);
@@ -1450,7 +1452,7 @@ export async function createCharacter(
 			throw new PaidStepError(
 				`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`,
 				'create.errors.viewDoesFitPx',
-				{ direction: viewName(d), cell },
+				{ direction: viewInline(d), cell },
 				drew('overflow')
 			);
 		const top = opaqueBox(n.img)?.y0 ?? cell;
@@ -1458,7 +1460,7 @@ export async function createCharacter(
 			throw new PaidStepError(
 				`PixelLab returned an empty ${d} view.`,
 				'create.errors.pixellabReturnedEmptyView',
-				{ direction: viewName(d) },
+				{ direction: viewInline(d) },
 				drew('empty')
 			);
 		if (top < HEADROOM_MIN)
@@ -1536,7 +1538,7 @@ export async function createCharacter(
 			throw new PaidStepError(
 				`no valid joints found on the ${d} view`,
 				'create.errors.validJointsFoundView',
-				{ direction: viewName(d) },
+				{ direction: viewInline(d) },
 				{ step: 'register', failure: 'joints', recordId: imp.id }
 			);
 		restKps[d] = kps!;
@@ -3070,6 +3072,11 @@ async function addMoveUnlocked(
 		);
 	};
 	let posed = 0;
+	// Activity names an item request by the item, move and view in the user's words.
+	const itemTitle =
+		(manifest: Manifest, item: Item): ItemViewTitle =>
+		(anim, dir) =>
+			message('activity.titleItemView', { item: item.name, ...viewWords(manifest, anim, dir) });
 	if (itemTotal) onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
 	const tick = () =>
 		onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
@@ -3108,7 +3115,8 @@ async function addMoveUnlocked(
 					spec.preferTierOneRepair,
 					spec.activityScope,
 					spec.reuseItemFrames,
-					spec.redrawItem
+					spec.redrawItem,
+					itemTitle(current.rec.manifest, item)
 				);
 				tick();
 				if (result.review) return { warnings: [], repairReview: result.review };
@@ -3122,7 +3130,8 @@ async function addMoveUnlocked(
 				spec.seed,
 				plan.dirs,
 				spec.activityScope,
-				!!spec.reuseItemFrames
+				!!spec.reuseItemFrames,
+				itemTitle(ctx.rec.manifest, it)
 			).catch(partialSaved);
 	}
 	const saved = (await loadProject(projectId)).rec;
@@ -3697,6 +3706,8 @@ function rerollStep(plan: BodyClipPlan, error: PaidStepError): 'motion' | 'rende
 	return step === 'render' || step === '/animate-with-skeleton-v3' ? 'render' : 'motion';
 }
 const viewName = (d: DirectionName) => message(directionNames[d]);
+/** A view's name inside a sentence ("no south view"), cased as the language writes it there. */
+const viewInline = (d: DirectionName) => message(directionInline[d]);
 /** A view of a move in the user's words, for a message: the move's name and the direction's. */
 type ViewWords = {
 	move: Message | string;

@@ -282,6 +282,16 @@
 		"west": "西",
 		"southWest": "西南"
 	},
+	"directionInline": {
+		"south": "南",
+		"southEast": "东南",
+		"east": "东",
+		"northEast": "东北",
+		"north": "北",
+		"northWest": "西北",
+		"west": "西",
+		"southWest": "西南"
+	},
 	"directionShort": {
 		"south": "南",
 		"southEast": "东南",
@@ -1903,6 +1913,8 @@
 		"cleared": "已清除 {jobs}。仍被草稿或正在进行的创建、动作任务使用的任务会保留。",
 		"clearedWithImages": "已清除 {jobs}和 {images}。仍被草稿或正在进行的创建、动作任务使用的任务会保留。",
 		"findingJoints": "正在查找关节",
+		"titleItemCall": "{name}：第 {index} 个请求，共 {total} 个",
+		"titleItemView": "{item}：{move}，{direction}",
 		"titleSetup": "{name}：角色设置",
 		"titleRegistering": "{name}：准备视角",
 		"titleDrawing": "{name}：绘制角色",
@@ -2106,6 +2118,7 @@
 		"resumeRigSetup": "继续绑定结构设置",
 		"dismiss": "放弃设置",
 		"resume": "继续设置",
+		"resumePriceUnknown": "无法计算继续的费用：{reason}",
 		"keepWorking": "你可以继续工作。重新加载后会继续设置。",
 		"pixelsUnchanged": "现有像素保持不变",
 		"setUpRig": "设置绑定结构",
@@ -2656,7 +2669,7 @@
 			"savedFramesUnavailable": "没有与当前基础身体和装备匹配的已完成帧。未请求任何生成。",
 			"itemMoveSaveConflict": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。",
 			"itemMoveSaveConflictAlso": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。另一个朝向也已停止：{reason}",
-			"keepWithoutStanding": "此装备在其设计所依据的动作中缺少帧，因此不能不含该动作而保留。请改为制作缺少的帧。",
+			"keepWithoutStanding": "此装备在其设计所依据的动作中缺少帧，因此不能不含该动作而保留。请显示该动作，并在可用时使用“修复装备”或“重绘装备”，或重新制作此装备。",
 			"keepWithoutNothingLeft": "此装备没有可保留的完整动作。请改为制作缺少的帧。",
 			"savedFrameMissing": "此装备的一个已保存帧在存储中缺失。"
 		}
@@ -2985,6 +2998,7 @@
 	"paidReview": {
 		"title": "付费结果",
 		"spent": "已支付：{gens} gens。这些结果会保留并重复使用。",
+		"spentUnknown": "已支付：至少 {gens} gens。部分请求可能已收费但未报告（请查看 pixellab.ai）。已完成的结果会保留并重复使用。",
 		"free": "免费",
 		"download": "下载付费结果",
 		"frame": "{view}，第 {number} 帧",
@@ -3191,7 +3205,7 @@
 			"empty": "已付费的结果仍在“活动”中。请用新的尝试重试。",
 			"dropped": "请稍等片刻后重试。",
 			"joints": "已付费的内容会保留在“活动”中。请重新尝试，或从更清晰的站立姿势开始。",
-			"stopped": "重新开始前，请在“活动”中查看发生了什么。",
+			"stopped": "它未被重新发送。重新开始前，请先查看它返回的内容。",
 			"quality": "请查看结果，然后保留或重试。",
 			"changed": "继续前请重新查看。",
 			"missing": "重新制作前，请在“活动”中查看仍保存的内容。",
@@ -3199,7 +3213,7 @@
 			"credits": "请在 PixelLab 添加积分后重试。",
 			"key": "请使用有效的令牌重新连接 PixelLab。",
 			"offline": "请检查网络连接后重试。",
-			"declined": "请修改描述后重试。",
+			"declined": "请用不同的描述重新制作。",
 			"unexpected": "请报告此问题以便修复。已付费的内容会保留在“活动”中。",
 			"uncertain": "它可能已运行并收费。重试前请先查看 pixellab.ai。",
 			"poses": "请先设置其姿势，然后再制作装备。",

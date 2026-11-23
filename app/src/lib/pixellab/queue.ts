@@ -144,7 +144,7 @@ export function readableRecord(raw: unknown): JobRec | undefined {
 		typeof r.createdAt === 'number'
 	)
 		return r;
-	return {
+	const unreadable: JobRec = {
 		...r,
 		state: 'lost',
 		createdAt: typeof r.createdAt === 'number' ? r.createdAt : 0,
@@ -154,7 +154,11 @@ export function readableRecord(raw: unknown): JobRec | undefined {
 		error: UNREADABLE,
 		costUnknown: true
 	};
+	repaired.add(unreadable);
+	return unreadable;
 }
+/** Records readableRecord rebuilt from a damaged row: load stores them once, so every reader of the store sees them lost. */
+const repaired = new WeakSet<JobRec>();
 
 export function queueErrorParts(record: JobRec): (Message | string)[] {
 	const raw = record.error;
@@ -851,7 +855,7 @@ export class Queue {
 	}
 	async load() {
 		for (const r of await this.deps.all()) {
-			if (this.pollSubmitted(r)) await this.deps.put(r.id, r);
+			if (repaired.has(r) || this.pollSubmitted(r)) await this.deps.put(r.id, r);
 			// Crashed between "submitting" and saving the job id: the server may have it. Never auto-resubmit.
 			if (r.state === 'submitting') {
 				r.state = r.requestStarted === false ? 'failed' : 'lost';

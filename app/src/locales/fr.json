@@ -287,6 +287,16 @@
 		"west": "Ouest",
 		"southWest": "Sud-ouest"
 	},
+	"directionInline": {
+		"south": "sud",
+		"southEast": "sud-est",
+		"east": "est",
+		"northEast": "nord-est",
+		"north": "nord",
+		"northWest": "nord-ouest",
+		"west": "ouest",
+		"southWest": "sud-ouest"
+	},
 	"directionShort": {
 		"south": "S",
 		"southEast": "SE",
@@ -1963,6 +1973,8 @@
 		"cleared": "Effacé : {jobs}. Les tâches encore utilisées par vos brouillons, une création ou une animation en cours sont conservées.",
 		"clearedWithImages": "Effacé : {jobs} et {images}. Les tâches encore utilisées par vos brouillons, une création ou une animation en cours sont conservées.",
 		"findingJoints": "Recherche des articulations",
+		"titleItemCall": "{name} : requête {index} sur {total}",
+		"titleItemView": "{item} : {move}, {direction}",
 		"titleSetup": "{name} : configuration du personnage",
 		"titleRegistering": "{name} : préparation des vues",
 		"titleDrawing": "{name} : dessin du personnage",
@@ -2170,6 +2182,7 @@
 		"resumeRigSetup": "Reprendre la configuration du rig",
 		"dismiss": "Ignorer la configuration",
 		"resume": "Reprendre la configuration",
+		"resumePriceUnknown": "Le prix de la reprise n’a pas pu être calculé : {reason}",
 		"keepWorking": "Vous pouvez continuer à travailler. La configuration reprend après rechargement.",
 		"pixelsUnchanged": "Les pixels existants restent inchangés",
 		"setUpRig": "Configurer le rig",
@@ -2728,7 +2741,7 @@
 			"savedFramesUnavailable": "Aucune image terminée ne correspond au corps et à l’équipement actuels. Aucune génération n’a été demandée.",
 			"itemMoveSaveConflict": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité.",
 			"itemMoveSaveConflictAlso": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité. Une autre vue s’est aussi arrêtée : {reason}",
-			"keepWithoutStanding": "Il manque des images à cet objet dans l’animation dont il est conçu, il ne peut donc pas être gardé sans elle. Créez plutôt les images manquantes.",
+			"keepWithoutStanding": "Il manque des images à cet objet dans l’animation dont il est conçu, il ne peut donc pas être gardé sans elle. Affichez cette animation et utilisez Réparer l’objet ou Redessiner l’objet s’ils sont proposés, ou recréez l’objet.",
 			"keepWithoutNothingLeft": "Cet objet n’a aucune animation complète à garder. Créez plutôt les images manquantes.",
 			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage."
 		}
@@ -3067,6 +3080,7 @@
 	"paidReview": {
 		"title": "Résultats payés",
 		"spent": "Déjà payé : {gens} gens. Ces résultats sont conservés et réutilisés.",
+		"spentUnknown": "Déjà payé : au moins {gens} gens. Certaines requêtes ont peut-être été facturées sans le signaler (vérifiez pixellab.ai). Les résultats terminés sont gardés et réutilisés.",
 		"free": "Gratuit",
 		"download": "Télécharger les résultats payés",
 		"frame": "{view}, image {number}",
@@ -3283,7 +3297,7 @@
 			"empty": "Vos résultats payés restent dans Activité. Réessayez avec une nouvelle tentative.",
 			"dropped": "Patientez un instant, puis réessayez.",
 			"joints": "Ce qui a été payé reste dans Activité. Faites une nouvelle tentative ou partez d’une pose debout plus nette.",
-			"stopped": "Consultez Activité pour voir ce qui s’est passé avant de recommencer.",
+			"stopped": "Elle n’a pas été renvoyée. Regardez ce qu’elle a renvoyé avant de recommencer.",
 			"quality": "Vérifiez les résultats, puis gardez-les ou réessayez.",
 			"changed": "Vérifiez de nouveau avant de continuer.",
 			"missing": "Consultez Activité pour voir ce qui est encore enregistré avant de le recréer.",
@@ -3291,7 +3305,7 @@
 			"credits": "Ajoutez des crédits sur PixelLab, puis réessayez.",
 			"key": "Reconnectez PixelLab avec un jeton valide.",
 			"offline": "Vérifiez votre connexion, puis réessayez.",
-			"declined": "Modifiez la description, puis réessayez.",
+			"declined": "Recréez-le avec une autre description.",
 			"unexpected": "Signalez-le pour qu’il soit corrigé. Ce qui a déjà été payé reste dans Activité.",
 			"uncertain": "Elle a peut-être été exécutée et facturée. Vérifiez pixellab.ai avant de réessayer.",
 			"poses": "Configurez d’abord ses poses, puis créez l’équipement.",

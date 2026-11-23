@@ -443,7 +443,7 @@
 										error={errorText(r)}
 										kind={recordProblemKind(r)}
 										name={nice(r)}
-										alert={false}
+										listed
 										report={{ area: 'Activity', ...jobProblem(r) }}
 									/>
 									{#if requestTier(r) > 0}<span class="muted small">

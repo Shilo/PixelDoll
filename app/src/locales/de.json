@@ -287,6 +287,16 @@
 		"west": "Westen",
 		"southWest": "Südwesten"
 	},
+	"directionInline": {
+		"south": "Süden",
+		"southEast": "Südosten",
+		"east": "Osten",
+		"northEast": "Nordosten",
+		"north": "Norden",
+		"northWest": "Nordwesten",
+		"west": "Westen",
+		"southWest": "Südwesten"
+	},
 	"directionShort": {
 		"south": "S",
 		"southEast": "SO",
@@ -1963,6 +1973,8 @@
 		"cleared": "Entfernt: {jobs}. Aufträge, die noch für Entwürfe, Figurenerstellung oder Animationen benötigt werden, bleiben erhalten.",
 		"clearedWithImages": "Entfernt: {jobs} und {images}. Aufträge, die noch für Entwürfe, Figurenerstellung oder Animationen benötigt werden, bleiben erhalten.",
 		"findingJoints": "Gelenke werden gesucht",
+		"titleItemCall": "{name}: Anfrage {index} von {total}",
+		"titleItemView": "{item}: {move}, {direction}",
 		"titleSetup": "{name}: Figur einrichten",
 		"titleRegistering": "{name}: Ansichten werden vorbereitet",
 		"titleDrawing": "{name}: Figur wird gezeichnet",
@@ -2170,6 +2182,7 @@
 		"resumeRigSetup": "Rig-Einrichtung fortsetzen",
 		"dismiss": "Einrichtung verwerfen",
 		"resume": "Einrichtung fortsetzen",
+		"resumePriceUnknown": "Der Preis für das Fortsetzen konnte nicht ermittelt werden: {reason}",
 		"keepWorking": "Du kannst weiterarbeiten. Nach dem Neuladen wird die Einrichtung fortgesetzt.",
 		"pixelsUnchanged": "Vorhandene Pixel bleiben unverändert",
 		"setUpRig": "Rig einrichten",
@@ -2728,7 +2741,7 @@
 			"savedFramesUnavailable": "Fertige Frames, die zum aktuellen Grundkörper und zur Ausrüstung passen, sind nicht verfügbar. Es wurde keine Generierung angefordert.",
 			"itemMoveSaveConflict": "Diese Figur oder dieser Gegenstand hat sich geändert, während die Frames generiert wurden. Die vorhandenen Grafiken wurden behalten; fertige Frames bleiben unter „Aktivität“.",
 			"itemMoveSaveConflictAlso": "Diese Figur oder dieser Gegenstand hat sich geändert, während die Frames generiert wurden. Die vorhandenen Grafiken wurden behalten; fertige Frames bleiben unter „Aktivität“. Eine weitere Ansicht wurde ebenfalls gestoppt: {reason}",
-			"keepWithoutStanding": "Diesem Gegenstand fehlen Frames in der Animation, aus der er entworfen ist, daher kann er nicht ohne sie behalten werden. Erstelle stattdessen die fehlenden Frames.",
+			"keepWithoutStanding": "Diesem Gegenstand fehlen Frames in der Animation, aus der er entworfen ist, daher kann er nicht ohne sie behalten werden. Zeige diese Animation und nutze „Gegenstand reparieren“ oder „Gegenstand neu zeichnen“, falls angeboten, oder erstelle den Gegenstand erneut.",
 			"keepWithoutNothingLeft": "Dieser Gegenstand hat keine vollständige Animation, die behalten werden kann. Erstelle stattdessen die fehlenden Frames.",
 			"savedFrameMissing": "Ein gespeicherter Frame dieses Gegenstands fehlt im Speicher."
 		}
@@ -3067,6 +3080,7 @@
 	"paidReview": {
 		"title": "Bezahlte Ergebnisse",
 		"spent": "Bereits bezahlt: {gens} Gens. Diese Ergebnisse bleiben erhalten und werden wiederverwendet.",
+		"spentUnknown": "Bereits bezahlt: mindestens {gens} Gens. Einige Anfragen wurden vielleicht ohne Meldung berechnet (prüfe pixellab.ai). Fertige Ergebnisse bleiben erhalten und werden wiederverwendet.",
 		"free": "Kostenlos",
 		"download": "Bezahlte Ergebnisse herunterladen",
 		"frame": "{view} Frame {number}",
@@ -3280,7 +3294,7 @@
 			"empty": "Deine bezahlten Ergebnisse bleiben unter „Aktivität“. Versuch es mit einem neuen Versuch erneut.",
 			"dropped": "Warte einen Moment und versuch es dann erneut.",
 			"joints": "Bereits Bezahltes bleibt unter „Aktivität“. Starte einen neuen Versuch oder beginne mit einer deutlicheren Standpose.",
-			"stopped": "Sieh unter „Aktivität“ nach, was passiert ist, bevor du neu startest.",
+			"stopped": "Sie wurde nicht erneut gesendet. Sieh dir das Ergebnis an, bevor du neu beginnst.",
 			"quality": "Prüfe die Ergebnisse und behalte sie dann oder versuch es erneut.",
 			"changed": "Prüfe es erneut, bevor du weitermachst.",
 			"missing": "Sieh unter „Aktivität“ nach, was noch gespeichert ist, bevor du es neu erstellst.",
@@ -3288,7 +3302,7 @@
 			"credits": "Lade bei PixelLab Guthaben auf und versuch es dann erneut.",
 			"key": "Verbinde PixelLab erneut mit einem gültigen Token.",
 			"offline": "Prüfe deine Verbindung und versuch es dann erneut.",
-			"declined": "Ändere die Beschreibung und versuch es dann erneut.",
+			"declined": "Erstelle es erneut mit einer anderen Beschreibung.",
 			"unexpected": "Melde es, damit es behoben werden kann. Bereits Bezahltes bleibt unter „Aktivität“.",
 			"uncertain": "Sie wurde vielleicht ausgeführt und berechnet. Prüfe pixellab.ai, bevor du es erneut versuchst.",
 			"poses": "Richte zuerst ihre Posen ein und erstelle dann die Ausrüstung.",
