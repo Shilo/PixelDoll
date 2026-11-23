@@ -475,6 +475,28 @@ test('a wrong-size pose frame leaves verified neighbors at their original indice
 	]);
 });
 
+test('an unreadable pose frame leaves its readable neighbors and is named on its own', async () => {
+	const { ctx, d, dressed } = await fixture();
+	for (const [k, c] of d.calls.entries()) {
+		const id = `corrupt-${k}`;
+		q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec);
+		c.recId = id;
+		await land(id, c.kind === 'dress' ? [dressed, dressed] : Array(4).fill(dressed));
+	}
+	// A valid PNG signature with a corrupt payload, stored for frame 1 of the south pose only.
+	const results = q.recs.get('corrupt-2')!.jobs[0].results!;
+	const bad = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 1, 2, 3]);
+	blobs.set('sha-corrupt', new Blob([bad], { type: 'image/png' }));
+	results[1] = { ...results[1], sha: 'sha-corrupt' };
+	const result = await evaluateItem(d, ctx);
+	expect(result.g1.get(2)).toContain('G1');
+	expect(result.cells.map((c) => c.key).filter((key) => key.includes('/south/'))).toEqual([
+		'walk/south/0',
+		'walk/south/2',
+		'walk/south/3'
+	]);
+});
+
 test.each([null, 'Needs PixelLab Tier 2 or higher. No request sent.'])(
 	'cached failing poses never create an automatic grid regardless of plan restriction %s',
 	async (blocked) => {

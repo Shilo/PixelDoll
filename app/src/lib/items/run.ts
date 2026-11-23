@@ -634,6 +634,13 @@ const gridable = (spec: { slot: string; slotConfig?: Slot; key?: ItemSpec['key']
 	!!spec.key && spec.key !== 'none' && specSlot(spec).class !== 'held';
 
 /** A frame this draft saved earlier; a pruned or lost one says so instead of failing on an undefined blob. */
+const savedFrameMissing = (error: unknown) =>
+	error instanceof LocalizedError && error.translation.key === 'itemRoute.errors.savedFrameMissing';
+/** A returned frame that cannot be decoded is that frame's failure; missing bytes stay a storage error for the whole item. */
+const unreadable = (error: unknown) => {
+	if (savedFrameMissing(error)) throw error;
+	return errorText(error);
+};
 async function storedFrame(sha: string): Promise<Blob> {
 	const blob = await db.getBlob(sha);
 	if (!blob)
@@ -1268,7 +1275,10 @@ export async function evaluateItem(
 				g1.set(k, `G1 ${(error as Error).message}`);
 				continue;
 			}
-			const g = await img(outputs[0].sha);
+			const g = await img(outputs[0].sha).catch((error: unknown) => {
+				g1.set(k, `G1 repair grid unreadable: ${unreadable(error)}`);
+			});
+			if (!g) continue;
 			if (g.w !== masks.size.width || g.h !== masks.size.height) {
 				g1.set(k, 'G1 repair grid does not match its submitted frame layout');
 				continue;
@@ -1306,8 +1316,14 @@ export async function evaluateItem(
 			).slice(0, c.cells.length);
 		}
 		// Labels prove each frame's cell, so a malformed frame drops only itself; the call stays G1 for review and re-roll.
+		// A frame that cannot be decoded is named with its own reason, like a wrong size. A standing frame it hides still
+		// blocks keeping the draft (availableGaps).
 		for (const [i, key] of c.cells.entries()) {
-			const im = await img(o[i].sha);
+			const im = await img(o[i].sha).catch((error: unknown) => {
+				const why = `G1 frame ${key} unreadable: ${unreadable(error)}`;
+				g1.set(k, [g1.get(k), why].filter(Boolean).join('; '));
+			});
+			if (!im) continue;
 			if (im.w !== W || im.h !== H) {
 				g1.set(k, `G1 output ${im.w}x${im.h}`);
 				continue;
