@@ -153,7 +153,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   2026-11-23), so the app drops exactly one extra leading frame by position and records its silhouette overlap with our
   standing (`motionEcho.maskIoU`) as evidence, never as a check. Any other count still stops the move before the body is
   drawn. The managed walk template sends no `keep_first_frame` flag and still drops an extra frame only when it is
-  pixel-identical to our standing view ([prompt trim A/B](research/2026-11-07-paperdoll-cycle/prompt-trim-ab.md)).
+  pixel-identical to our standing view or to one Fix frames replaced ([prompt trim A/B](research/2026-11-07-paperdoll-cycle/prompt-trim-ab.md)).
 - **Default-only characters (round 10, D26).** All standing views arrive together, because PixelLab draws every rotation
   in one job; the creator cannot show them one by one. The pivot comes from the standing south view (`default/south/0`),
   not from the first idle frame as on older characters, and moves added later keep it. Each move gets a new random

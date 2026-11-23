@@ -60,6 +60,7 @@ import { defaultCharacterExportId, itemContent, retainMoveChoices } from '../lib
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { liftToFit, normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { maskIoU } from '../lib/image/similarity.ts';
+import { standingHistory } from '../lib/frames/history.ts';
 import { flipH } from '../lib/rig/mirror.ts';
 import {
 	ANCHORS,
@@ -922,7 +923,8 @@ async function motion(
 	standing?: Img,
 	lifts?: readonly number[],
 	below = 0,
-	echo: MotionEchoRule = 'optional-exact'
+	echo: MotionEchoRule = 'optional-exact',
+	echoes?: ReadonlySet<Sha256>
 ): Promise<{ keypoints: Keypoint[][]; record: JobRec; motionEcho?: ClipSource['motionEcho'] }> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
@@ -938,7 +940,8 @@ async function motion(
 		echo,
 		lifts,
 		'motion',
-		below
+		below,
+		echoes
 	);
 	const kps = await Promise.all(
 		frames.map(async (f) => {
@@ -1006,6 +1009,12 @@ export const artMapping = (rig: Pick<Manifest['rig'], 'artOffset'>, dir: Directi
  *  not match ours (Fix frames, Adjust frame, an outfit drawn at creation). `optional-exact`: the managed skeleton-v3 walk
  *  template sends no such flag, so an extra frame counts only when it is exactly our standing view. */
 type MotionEchoRule = 'optional-exact' | 'required-leading' | 'optional-leading';
+/** Earlier standing views an `optional-exact` echo may also match: Fix frames changes only our Standing, while PixelLab keeps
+ *  echoing the one it registered, so every standing the body's edit history recorded for `dir` also counts as the echo. */
+function heldStandings(m: Manifest, dir: DirectionName): ReadonlySet<Sha256> {
+	const base = m.items.find((item) => item.id === m.rig.baseItem);
+	return new Set([...(base ? standingHistory(base, dir) : [])].filter((hash) => hash !== null));
+}
 const motionEchoRule = (spec: MoveFrameSpec, request: Req): MotionEchoRule =>
 	moveMotionSource(spec) === 'standalone'
 		? 'required-leading'
@@ -1026,7 +1035,9 @@ async function normalizeMotionFrames(
 	lifts?: readonly number[],
 	step = 'motion',
 	/** Rows our standing art sits below the registered view (artMapping): managed motion only, never native moves. */
-	below = 0
+	below = 0,
+	/** Earlier standing views an `optional-exact` echo may also match (heldStandings). */
+	echoes?: ReadonlySet<Sha256>
 ): Promise<{ frames: Img[]; motionEcho?: ClipSource['motionEcho'] }> {
 	const rejected = (failure: PaidFailure) => ({ step, failure, recordId: r.id });
 	const got = (r.response as SubmitResponse | undefined)?.directions;
@@ -1063,7 +1074,7 @@ async function normalizeMotionFrames(
 		if (
 			first.w !== standing!.w ||
 			first.h !== standing!.h ||
-			first.data.some((v, i) => v !== standing!.data[i])
+			(first.data.some((v, i) => v !== standing!.data[i]) && !echoes?.has(await cellHash(first)))
 		)
 			throw mismatch;
 	}
@@ -2211,7 +2222,8 @@ async function inspectMeasurementRecovery(
 				motionEchoRule(spec, request),
 				spec.motionLift?.[d],
 				'motion',
-				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d)
+				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d),
+				heldStandings(rec.manifest, d)
 			);
 			const measured = motionJoints(
 				await Promise.all(
@@ -3482,7 +3494,8 @@ async function bodyClip(
 			motionStart,
 			spec.motionLift?.[d],
 			moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d),
-			motionEchoRule(spec, request)
+			motionEchoRule(spec, request),
+			heldStandings(m, d)
 		);
 		keypoints = result.keypoints;
 		source = result.record;
