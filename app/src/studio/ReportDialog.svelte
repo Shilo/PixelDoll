@@ -14,14 +14,14 @@
 	const text = $derived(reportText(report));
 	const url = $derived(reportUrl(report));
 	let dialog: HTMLDialogElement;
-	let cancel: HTMLButtonElement;
+	let closeButton: HTMLButtonElement;
 	// Feedback stays inside the modal: a toast would sit under its backdrop.
 	let copied = $state<'' | 'done' | 'failed'>('');
 	$effect(() => claimSheetExit({ alert: true, close: closeReport }));
 	$effect(() => {
 		const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		dialog.showModal();
-		cancel.focus();
+		closeButton.focus();
 		return () => {
 			dialog.close();
 			if (opener?.isConnected && !document.activeElement?.closest('dialog[open]'))
@@ -69,14 +69,15 @@
 	</p>
 	<!-- Whole buttons wrap, never their labels; the last (primary) one then fills its own row. -->
 	<div class="report-actions">
-		<button bind:this={cancel} class="bu-btn" onclick={closeReport}>{t('common.cancel')}</button>
+		<button bind:this={closeButton} class="bu-btn" onclick={closeReport}>{t('common.close')}</button
+		>
 		<button class="bu-btn" onclick={copy}
 			>{t(copied === 'done' ? 'report.copied' : 'report.copy')}</button
 		>
 		<!-- It stays open: a blocked popup would otherwise lose the report. -->
 		<a class="bu-btn" data-variant="primary" href={url} target="_blank" rel="noreferrer"
-			>{t('report.open')}<ExternalLink size={16} aria-hidden="true" /><span class="bu-sr">
-				{t('noticeLink.opensInANewTab')}</span
+			>{t('report.open')}<ExternalLink size={16} aria-hidden="true" /><span class="bu-sr"
+				>{' ' + t('noticeLink.opensInANewTab')}</span
 			></a
 		>
 	</div>
@@ -88,7 +89,8 @@
 		max-height: calc(100dvh - 32px);
 		margin: auto;
 		padding: 20px;
-		overflow: hidden;
+		/* Only when even a short preview cannot fit (a tiny screen, or the copy notice), the dialog itself scrolls. */
+		overflow: auto;
 	}
 	/* A column whose preview gives up height first, so the actions stay in view on short screens. */
 	.report-dialog[open] {
@@ -115,7 +117,7 @@
 	}
 	.report-preview {
 		flex: 0 1 auto;
-		min-height: 0;
+		min-height: 4.5em;
 		max-height: 320px;
 		margin: 0;
 		padding: 10px 12px;

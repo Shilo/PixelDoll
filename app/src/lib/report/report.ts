@@ -1,7 +1,6 @@
 // A problem report for the public GitHub issue form. It is built only from the allow-listed facts below, never from app
 // state, and every string then passes the sanitizer anyway: GitHub Issues are public, so a report must never carry a key,
-// an image, a prompt, a name, an ID or project data. Kept free of Svelte and the locale catalog so the startup fallback in
-// main.ts can use it too.
+// an image, a prompt, a name, an ID or project data. Kept free of Svelte and the locale catalog so it can be tested alone.
 import type { Message } from '../message.ts';
 import { repository } from '../repository.ts';
 
@@ -32,8 +31,6 @@ export interface Problem {
 	area?: string;
 	/** The message the user saw. Only its key and English template are reported, never its variables' text. */
 	message?: Message;
-	/** A fixed English sentence from code, for startup failures that happen before the catalog loads. Never user data. */
-	summary?: string;
 	/** The underlying error: only its name, a localized key and PixelLab status and endpoint are read from it. */
 	error?: unknown;
 	tone?: ProblemTone;
@@ -174,6 +171,8 @@ const count = (value: unknown, max = 1e6) =>
 		? value
 		: undefined;
 const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+/** A thrown value that is not an error object, or cannot be read. */
+const NON_ERROR = 'Non-error value';
 /** Error class and DOMException names; anything else (a name a script made up) is reported as Error. */
 const ERROR_NAME = /^[A-Z][A-Za-z]{0,40}(?:Error|Exception)$/;
 const errorName = (value: unknown) =>
@@ -190,10 +189,10 @@ interface ErrorFacts {
 
 /** What an error may contribute: its name, a localized message, and for a PixelLab error its status, kind and endpoint
  *  path, read from the "METHOD /path -> status" prefix the client writes. Never its message text. */
-export function errorFacts(error: unknown): ErrorFacts {
+function readErrorFacts(error: unknown): ErrorFacts {
 	// Text is never reported: it may be anything, including what the user typed.
 	if (error === undefined || error === null || typeof error === 'string') return {};
-	if (typeof error !== 'object') return { name: 'Non-error value' };
+	if (typeof error !== 'object') return { name: NON_ERROR };
 	const e = error as {
 		name?: unknown;
 		message?: unknown;
@@ -207,7 +206,11 @@ export function errorFacts(error: unknown): ErrorFacts {
 	const out: ErrorFacts = {};
 	if (e.translation && typeof e.translation.key === 'string') out.message = e.translation;
 	const api = typeof e.status === 'number' && typeof e.kind === 'string';
-	out.name = api ? 'ApiError' : errorName(e.name);
+	out.name = api
+		? 'ApiError'
+		: error instanceof Error || typeof e.name === 'string'
+			? errorName(e.name)
+			: NON_ERROR;
 	if (api) {
 		out.kind = word(e.kind);
 		out.status = count(e.status, 999) || undefined; // 0 and -1 mean no response
@@ -223,14 +226,30 @@ export function errorFacts(error: unknown): ErrorFacts {
 	return out;
 }
 
+/** Any value can be thrown, including a null-prototype object or one whose getters throw: reading it must never throw
+ *  in turn, or the report would describe this code instead of the failure. */
+export function errorFacts(error: unknown): ErrorFacts {
+	try {
+		return readErrorFacts(error);
+	} catch {
+		return { name: NON_ERROR };
+	}
+}
+
 /** Shows each distinct uncaught error once. `show` returns whether it showed: an error that could not be shown yet
  *  (another notice holds the place) is not remembered, so its next occurrence can show. */
 export function onceShown(show: (error: unknown) => boolean): (error: unknown) => void {
 	const shown = new Set<string>();
 	return (error) => {
-		const e = error as { name?: unknown; message?: unknown } | null | undefined;
-		if (e?.name === 'AbortError') return;
-		const signature = `${String(e?.name)}:${String(e?.message ?? error)}`;
+		let signature: string;
+		try {
+			const e = error as { name?: unknown; message?: unknown } | null | undefined;
+			if (e?.name === 'AbortError') return;
+			signature = `${String(e?.name)}:${String(e?.message ?? error)}`;
+		} catch {
+			// Unreadable (see errorFacts): such values share one signature.
+			signature = NON_ERROR;
+		}
 		if (!shown.has(signature) && show(error)) shown.add(signature);
 	};
 }
@@ -346,8 +365,8 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 	const english = (shown && context.english?.(shown)) || undefined;
 	const area = word(problem.area) ?? 'PixelDoll';
 	const kind = problem.tone === 'warning' ? 'warning' : 'error';
-	const unexpected = `Unexpected ${fromError.name ?? 'problem'}`;
-	const text = english || problem.summary || unexpected;
+	const unexpected = `Unexpected ${fromError.name && fromError.name !== NON_ERROR ? fromError.name : 'problem'}`;
+	const text = english || unexpected;
 	const endpoint = endpointPath(facts.endpoint ?? '') ?? fromError.endpoint;
 	const method = METHODS.has(facts.method ?? '') ? facts.method : fromError.method;
 	const seconds = count(facts.seconds);

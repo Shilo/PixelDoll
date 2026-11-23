@@ -28,10 +28,10 @@
 		void ui.toastActionLabel;
 		void ui.toastProblem;
 		// Notice names its whole-surface button after all of its content, which would include "Report this problem".
-		// Name it after the title and message alone.
-		const surface = host?.querySelector('.bu-toast > .bu-notice-activate');
+		// Name it after the title and message alone. Scoped to this notice: the update notice shares the region.
+		const surface = host?.querySelector('.studio-toast > .bu-notice-activate');
 		if (!surface) return;
-		const title = host?.querySelector('.bu-toast > .bu-notice-content > strong');
+		const title = host?.querySelector('.studio-toast > .bu-notice-content > strong');
 		if (title) title.id = `${toastId}-title`;
 		surface.setAttribute(
 			'aria-labelledby',
@@ -165,7 +165,7 @@
 		}}
 	>
 		{#if ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)}<Notice
-				class="bu-toast"
+				class="bu-toast studio-toast"
 				title={ui.toastTitle ? displayNestedMessage(ui.toastTitle) : undefined}
 				tone={ui.toastTone}
 				indicator={ui.toastPending ? pendingIndicator : undefined}

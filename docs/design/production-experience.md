@@ -151,14 +151,14 @@ notification keeps its pressable surface, named by its title and message alone; 
 show a warning notification, once per distinct error, unless a notification the person may still act on (Undo, Try again, a
 pending step) is showing; that error can show the next time it happens. Expected guidance (a plan limit, a busy tab) passes
 `report: false`, a notification whose whole surface opens a failure view leaves Report to that view, and choosing the wrong
-file has none. Report opens a centered preview of the exact public issue text with Cancel, Copy report and Open on GitHub
+file has none. Report opens a centered preview of the exact public issue text with Close, Copy report and Open on GitHub
 (it stays open in case the new tab is blocked), which opens GitHub's issue form prefilled through `problem-report.yml` query
 parameters; the user posts it with their own account and writes the steps to reproduce if they know them. A report is built
 from an allow-list in `app/src/lib/report/report.ts` (version, build channel and commit, browser and OS families, device and
 screen class, language, the area, the key and English template of an app message with its variables hidden, an error-class
 name, PixelLab status and normalized endpoint path, queue states and timings), then every string passes a sanitizer. It
-never contains images, prompts, names, IDs, hashes, project data, request bodies or storage. Startup failures before the
-Studio loads show the same report as plain English page content.
+never contains images, prompts, names, IDs, hashes, project data, request bodies or storage. A failure before the Studio
+loads has no Report: its code is not loaded yet, and loading it there would pull Studio modules into the startup page.
 
 ## Ownership
 

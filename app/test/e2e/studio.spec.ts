@@ -373,7 +373,7 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	expect(new URL(href!).searchParams.get('details')).toBe(
 		(await report.locator('pre').textContent())!.split('Technical details\n')[1]
 	);
-	await report.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await report.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(report).toHaveCount(0);
 	// Pressing the message itself still dismisses the notice.
 	const text = (await notice.getByText(unexpected, { exact: true }).boundingBox())!;

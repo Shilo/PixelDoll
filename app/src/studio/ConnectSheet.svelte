@@ -324,8 +324,13 @@
 		{/if}
 		<TierNotice {minimumTier} feature={t('connectSheet.thisGeneration')} />
 		{#if replacementError}
+			<!-- Only a failed check is a problem to report: a rejected key or a change from another tab is the person's to act on. -->
 			<p class="notice bad small" role="status">
-				{t(replacementError)}<ReportButton message={message(replacementError)} />
+				{t(
+					replacementError
+				)}{#if replacementError === 'connectSheet.balanceError' || replacementError === 'connectSheet.replacementUnverified'}<ReportButton
+						message={message(replacementError)}
+					/>{/if}
 			</p>
 		{:else if app.keyRejected}
 			<p class="notice bad small" role="status">

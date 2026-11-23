@@ -117,6 +117,19 @@ describe('onceShown', () => {
 		report(Object.assign(new Error('stop'), { name: 'AbortError' }));
 		expect(shown.map((e) => (e as Error).message)).toEqual(['a', 'b']);
 	});
+
+	test('never throws on a value it cannot read', () => {
+		const shown: unknown[] = [];
+		const report = onceShown((error) => shown.push(error) > 0);
+		const throwing = {
+			get name(): string {
+				throw new Error('getter');
+			}
+		};
+		expect(() => report(Object.create(null))).not.toThrow();
+		expect(() => report(throwing)).not.toThrow();
+		expect(shown).toHaveLength(1); // both share the unreadable signature
+	});
 });
 
 test('englishMessage hides text variables and fills numbers and nested messages', () => {
@@ -185,7 +198,6 @@ describe('buildReport', () => {
 		const report = buildReport(
 			{
 				area: everything,
-				summary: `${everything} ${'字'.repeat(50_000)}`,
 				error: hostile,
 				message: message('recentlyDeleted.restoreNamed', { name: everything }),
 				facts: {
@@ -197,6 +209,8 @@ describe('buildReport', () => {
 			},
 			{
 				...context,
+				// As if an English template itself carried them, far over every limit.
+				english: () => `${everything} ${'字'.repeat(50_000)}`,
 				env: { ...env, version: SECRETS.apiKey, commit: SECRETS.sha256, locale: everything }
 			}
 		);
@@ -246,13 +260,40 @@ describe('buildReport', () => {
 	});
 
 	test('the URL encodes spaces as %20, never +', () => {
-		const url = reportUrl(buildReport({ area: 'Add a move', summary: 'a + b c' }, context));
+		const url = reportUrl(
+			buildReport(
+				{ area: 'Add a move', message: message('report.unexpected') },
+				{ ...context, english: () => 'a + b c' }
+			)
+		);
 		expect(url).toContain('title=Add%20a%20move%3A%20a%20%2B%20b%20c');
 		expect(url.split('?')[1]).not.toContain('+');
 	});
 
-	test('an overlong summary shrinks until the URL fits', () => {
-		const report = buildReport({ summary: '字'.repeat(50_000) }, context);
+	test('an unreadable thrown value is reported as an unexpected problem without throwing', () => {
+		const throwing = {
+			get name(): string {
+				throw new Error('getter');
+			}
+		};
+		for (const value of [Object.create(null), throwing]) {
+			const report = buildReport(
+				{ area: 'Characters', error: value, tone: 'warning', uncaught: true },
+				context
+			);
+			expect(report.title).toBe('Unexpected problem in Characters');
+			expect(report.details).toContain('Error: Non-error value');
+		}
+		expect(buildReport({ error: 42, uncaught: true }, context).title).toBe(
+			'Unexpected problem in PixelDoll'
+		);
+	});
+
+	test('an overlong message shrinks until the URL fits', () => {
+		const report = buildReport(
+			{ message: message('report.unexpected') },
+			{ ...context, english: () => '字'.repeat(50_000) }
+		);
 		expect(reportUrl(report).length).toBeLessThanOrEqual(MAX_URL_LENGTH);
 		expect(report.problem.endsWith('...')).toBe(true);
 	});
