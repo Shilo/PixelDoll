@@ -126,6 +126,7 @@
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
+	import ProblemNotice from './ProblemNotice.svelte';
 	import {
 		creationDefaults,
 		moveModels,
@@ -1802,9 +1803,7 @@
 							</li>{/each}
 					</ul>
 				</details>{/if}
-			{#if moving.error}<p class="notice bad small" role="alert">
-					{displayError(moving.error)}<ReportButton error={moving.error} />
-				</p>{/if}
+			{#if moving.error}<ProblemNotice error={moving.error} />{/if}
 			{#if queue.role === 'follower'}<p class="notice small">
 					{moving.spec.redrawItem
 						? t('moveSheet.review.redrawInManagingTab')
@@ -1868,9 +1867,7 @@
 				{/each}
 			</ol>
 			<!-- The paid review names each stopped view's reason under its frames; the summary shows only a reason it does not. -->
-			{#if moving.error && !errorInReview}<p class="notice bad small">
-					<CircleAlert size={14} />{displayError(moving.error)}<ReportButton error={moving.error} />
-				</p>{/if}
+			{#if moving.error && !errorInReview}<ProblemNotice error={moving.error} />{/if}
 			{#if moving.error}
 				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
 						{retryAccess.error || recoveryAccess.error}
@@ -2016,11 +2013,7 @@
 						onclick={matchColors}>{t('moveSheet.matchColors')}</button
 					>{/if}
 			{/if}
-			{#if recoveryError}<p class="notice bad small">
-					<CircleAlert size={14} />{displayNestedMessage(recoveryError)}<ReportButton
-						error={recoveryError}
-					/>
-				</p>{/if}
+			{#if recoveryError}<ProblemNotice error={recoveryError} />{/if}
 			{#each moving.warnings as warning (warning)}<p class="notice warn small">
 					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 				</p>{/each}

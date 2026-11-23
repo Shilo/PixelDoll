@@ -3229,5 +3229,44 @@
 		"copyFailed": "Não foi possível copiar. Selecione o texto acima e copie.",
 		"open": "Abrir no GitHub",
 		"unexpected": "Algo deu errado. Se acontecer de novo, relate o problema."
+	},
+	"problem": {
+		"details": "Detalhes",
+		"title": {
+			"frame-count": "O PixelLab devolveu um número inesperado de quadros",
+			"overflow": "Parte do personagem passou do quadro",
+			"empty": "O PixelLab devolveu quadros vazios",
+			"dropped": "O PixelLab estava ocupado e pulou uma vista",
+			"joints": "Não foram encontradas articulações em alguns quadros",
+			"stopped": "Uma solicitação paga não terminou",
+			"misaligned": "Alguns quadros novos não estão alinhados",
+			"quality": "Os novos quadros não passaram nas verificações de qualidade",
+			"changed": "Algo mudou durante o processo",
+			"missing": "Alguns resultados salvos não estão disponíveis",
+			"plan": "Seu plano do PixelLab não inclui isto",
+			"credits": "Sua conta do PixelLab ficou sem créditos",
+			"key": "O PixelLab não aceitou seu token",
+			"offline": "Não foi possível acessar o PixelLab",
+			"declined": "O PixelLab recusou esta solicitação",
+			"unexpected": "Algo deu errado"
+		},
+		"next": {
+			"frame-count": "Seus resultados pagos foram mantidos. Revise-os e depois continue ou tente novamente.",
+			"overflow": "Escolha subir ou um quadro maior, se oferecido, ou tente novamente.",
+			"empty": "Seus resultados pagos continuam em Atividade. Tente novamente com uma nova tentativa.",
+			"dropped": "Aguarde um momento e tente novamente.",
+			"joints": "Revise os quadros. Mantenha os que servem ou tente novamente com uma nova tentativa.",
+			"stopped": "Veja em Atividade o que aconteceu antes de começar de novo.",
+			"misaligned": "Gere novamente só a parte desalinhada ou mantenha a arte que você tem.",
+			"quality": "Revise os resultados e depois mantenha-os ou tente novamente.",
+			"changed": "Revise de novo antes de continuar.",
+			"missing": "O resto do seu trabalho foi mantido. Tente novamente para criar a parte que falta.",
+			"plan": "Faça upgrade do plano no PixelLab ou escolha uma opção que seu plano inclua.",
+			"credits": "Adicione créditos no PixelLab e tente novamente.",
+			"key": "Conecte o PixelLab novamente com um token válido.",
+			"offline": "Verifique sua conexão e tente novamente.",
+			"declined": "Altere a descrição e tente novamente.",
+			"unexpected": "Relate o problema para que ele seja corrigido. Seus resultados pagos continuam em Atividade."
+		}
 	}
 }

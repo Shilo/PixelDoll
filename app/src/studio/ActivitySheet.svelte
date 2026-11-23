@@ -16,6 +16,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import { jobProblem } from './report.svelte.ts';
+	import { recordProblemKind } from './problemSummary.ts';
 	import { displayMove } from './displayMove.ts';
 	import {
 		ui,
@@ -445,7 +446,12 @@
 											: stateText(r.state)}</span
 								>
 								{#if r.state === 'failed' || r.state === 'lost'}
-									{#if r.error}<span class="small">{errorText(r)}</span>{/if}
+									{#if r.error}<span class="small"
+											>{t(`problem.title.${recordProblemKind(r)}`)}</span
+										>
+										<details class="small act-error">
+											<summary>{t('problem.details')}</summary>{errorText(r)}
+										</details>{/if}
 									{#if requestTier(r) > 0}<span class="muted small">
 											{t('activity.tierHint', { tier: formatNumber(requestTier(r)) })}
 										</span>{/if}

@@ -3220,5 +3220,44 @@
 		"copyFailed": "Could not copy. Select the text above and copy it instead.",
 		"open": "Open on GitHub",
 		"unexpected": "Something went wrong. If it keeps happening, please report it."
+	},
+	"problem": {
+		"details": "Details",
+		"title": {
+			"frame-count": "PixelLab sent back an unexpected number of frames",
+			"overflow": "Part of the character went past the frame",
+			"empty": "PixelLab sent back empty frames",
+			"dropped": "PixelLab was busy and skipped a view",
+			"joints": "Joints could not be found on some frames",
+			"stopped": "A paid request did not finish",
+			"misaligned": "Some new frames do not line up",
+			"quality": "The new frames did not pass the quality checks",
+			"changed": "Something changed while this was working",
+			"missing": "Some saved results are not available",
+			"plan": "Your PixelLab plan does not include this",
+			"credits": "Your PixelLab account is out of credits",
+			"key": "PixelLab did not accept your token",
+			"offline": "PixelLab could not be reached",
+			"declined": "PixelLab declined this request",
+			"unexpected": "Something went wrong"
+		},
+		"next": {
+			"frame-count": "Your paid results are kept. Review them, then continue or try again.",
+			"overflow": "Choose a lift or a larger frame if one is offered, or try again.",
+			"empty": "Your paid results stay in Activity. Try again with a new attempt.",
+			"dropped": "Wait a moment, then try again.",
+			"joints": "Review the frames. Keep the ones that work, or try again with a new attempt.",
+			"stopped": "Check Activity to see what happened before starting again.",
+			"misaligned": "Re-roll only the part that is off, or keep the artwork you have.",
+			"quality": "Review the results, then keep them or try again.",
+			"changed": "Review it again before continuing.",
+			"missing": "Your other work is kept. Try again to make the missing part.",
+			"plan": "Upgrade your plan on PixelLab, or choose an option your plan includes.",
+			"credits": "Add credits on PixelLab, then try again.",
+			"key": "Connect PixelLab again with a valid token.",
+			"offline": "Check your connection, then try again.",
+			"declined": "Change the description, then try again.",
+			"unexpected": "Report it so it can be fixed. Your paid results stay in Activity."
+		}
 	}
 }

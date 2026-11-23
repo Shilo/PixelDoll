@@ -3217,5 +3217,44 @@
 		"copyFailed": "Kopyalanamadı. Yukarıdaki metni seçip kopyalayın.",
 		"open": "GitHub’da aç",
 		"unexpected": "Bir şeyler ters gitti. Tekrar olursa lütfen bildirin."
+	},
+	"problem": {
+		"details": "Ayrıntılar",
+		"title": {
+			"frame-count": "PixelLab beklenmeyen sayıda kare döndürdü",
+			"overflow": "Karakterin bir kısmı karenin dışına taştı",
+			"empty": "PixelLab boş kareler döndürdü",
+			"dropped": "PixelLab meşguldü ve bir görünümü atladı",
+			"joints": "Bazı karelerde eklemler bulunamadı",
+			"stopped": "Ücretli bir istek tamamlanmadı",
+			"misaligned": "Bazı yeni kareler hizalı değil",
+			"quality": "Yeni kareler kalite kontrollerini geçemedi",
+			"changed": "İşlem sürerken bir şey değişti",
+			"missing": "Kayıtlı bazı sonuçlar kullanılamıyor",
+			"plan": "PixelLab planınız bunu içermiyor",
+			"credits": "PixelLab hesabınızın kredisi bitti",
+			"key": "PixelLab belirtecinizi kabul etmedi",
+			"offline": "PixelLab'e ulaşılamadı",
+			"declined": "PixelLab bu isteği reddetti",
+			"unexpected": "Bir sorun oluştu"
+		},
+		"next": {
+			"frame-count": "Ücretli sonuçlarınız korundu. İnceleyin, sonra devam edin veya yeniden deneyin.",
+			"overflow": "Sunulursa yükseltmeyi veya daha büyük bir kareyi seçin ya da yeniden deneyin.",
+			"empty": "Ücretli sonuçlarınız Etkinlik bölümünde duruyor. Yeni bir denemeyle tekrar deneyin.",
+			"dropped": "Biraz bekleyin, sonra yeniden deneyin.",
+			"joints": "Kareleri inceleyin. İşe yarayanları tutun veya yeni bir denemeyle tekrar deneyin.",
+			"stopped": "Yeniden başlamadan önce ne olduğunu Etkinlik bölümünde kontrol edin.",
+			"misaligned": "Yalnızca kayan kısmı yeniden oluşturun veya mevcut çizimleri tutun.",
+			"quality": "Sonuçları inceleyin, sonra tutun veya yeniden deneyin.",
+			"changed": "Devam etmeden önce yeniden inceleyin.",
+			"missing": "Diğer çalışmalarınız korundu. Eksik kısmı oluşturmak için yeniden deneyin.",
+			"plan": "PixelLab'de planınızı yükseltin veya planınızın içerdiği bir seçeneği seçin.",
+			"credits": "PixelLab'de kredi ekleyin, sonra yeniden deneyin.",
+			"key": "PixelLab'i geçerli bir belirteçle yeniden bağlayın.",
+			"offline": "Bağlantınızı kontrol edin, sonra yeniden deneyin.",
+			"declined": "Açıklamayı değiştirin, sonra yeniden deneyin.",
+			"unexpected": "Düzeltilebilmesi için bildirin. Ücretli sonuçlarınız Etkinlik bölümünde duruyor."
+		}
 	}
 }

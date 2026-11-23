@@ -3217,5 +3217,44 @@
 		"copyFailed": "Kopieren fehlgeschlagen. Markiere den Text oben und kopiere ihn.",
 		"open": "Auf GitHub öffnen",
 		"unexpected": "Etwas ist schiefgelaufen. Wenn es wieder passiert, melde es bitte."
+	},
+	"problem": {
+		"details": "Details",
+		"title": {
+			"frame-count": "PixelLab hat eine unerwartete Anzahl an Frames zurückgegeben",
+			"overflow": "Ein Teil der Figur ragt über den Frame hinaus",
+			"empty": "PixelLab hat leere Frames zurückgegeben",
+			"dropped": "PixelLab war ausgelastet und hat eine Ansicht ausgelassen",
+			"joints": "Auf einigen Frames wurden keine Gelenke gefunden",
+			"stopped": "Eine bezahlte Anfrage wurde nicht abgeschlossen",
+			"misaligned": "Einige neue Frames sind nicht richtig ausgerichtet",
+			"quality": "Die neuen Frames haben die Qualitätsprüfung nicht bestanden",
+			"changed": "Während der Arbeit hat sich etwas geändert",
+			"missing": "Einige gespeicherte Ergebnisse sind nicht verfügbar",
+			"plan": "Dein PixelLab-Tarif enthält das nicht",
+			"credits": "Dein PixelLab-Konto hat kein Guthaben mehr",
+			"key": "PixelLab hat dein Token nicht akzeptiert",
+			"offline": "PixelLab war nicht erreichbar",
+			"declined": "PixelLab hat diese Anfrage abgelehnt",
+			"unexpected": "Etwas ist schiefgelaufen"
+		},
+		"next": {
+			"frame-count": "Deine bezahlten Ergebnisse bleiben erhalten. Prüfe sie und mach dann weiter oder versuch es erneut.",
+			"overflow": "Wähle Anheben oder einen größeren Frame, falls angeboten, oder versuch es erneut.",
+			"empty": "Deine bezahlten Ergebnisse bleiben unter „Aktivität“. Versuch es mit einem neuen Versuch erneut.",
+			"dropped": "Warte einen Moment und versuch es dann erneut.",
+			"joints": "Prüfe die Frames. Behalte die brauchbaren oder versuch es mit einem neuen Versuch erneut.",
+			"stopped": "Sieh unter „Aktivität“ nach, was passiert ist, bevor du neu startest.",
+			"misaligned": "Generiere nur den verschobenen Teil neu oder behalte die vorhandenen Grafiken.",
+			"quality": "Prüfe die Ergebnisse und behalte sie dann oder versuch es erneut.",
+			"changed": "Prüfe es erneut, bevor du weitermachst.",
+			"missing": "Deine übrige Arbeit bleibt erhalten. Versuch es erneut, um den fehlenden Teil zu erstellen.",
+			"plan": "Wechsle bei PixelLab zu einem höheren Tarif oder wähle eine Option, die dein Tarif enthält.",
+			"credits": "Lade bei PixelLab Guthaben auf und versuch es dann erneut.",
+			"key": "Verbinde PixelLab erneut mit einem gültigen Token.",
+			"offline": "Prüfe deine Verbindung und versuch es dann erneut.",
+			"declined": "Ändere die Beschreibung und versuch es dann erneut.",
+			"unexpected": "Melde es, damit es behoben werden kann. Deine bezahlten Ergebnisse bleiben unter „Aktivität“."
+		}
 	}
 }

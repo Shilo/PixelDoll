@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { formatNumber, t } from 'svelte-whisper';
-	import ReportButton from './ReportButton.svelte';
+	import ProblemNotice from './ProblemNotice.svelte';
 	import { cellImg } from '../lib/compose/compose.ts';
-	import { displayNestedMessage } from '../lib/i18n.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import { errorMessage, type Message } from '../lib/message.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
@@ -354,12 +353,8 @@
 		</div>
 	{/if}
 	<p class="faint small" role="status">{busy ? t(busy) : ''}</p>
-	{#if runError && !review}<p class="notice bad small" role="alert">
-			{displayNestedMessage(runError)}<ReportButton error={runError} />
-		</p>{/if}
-	{#if failure && failure !== runError}<p class="notice bad small" role="alert">
-			{displayNestedMessage(failure)}<ReportButton error={failure} />
-		</p>{/if}
+	{#if runError && !review}<ProblemNotice error={runError} />{/if}
+	{#if failure && failure !== runError}<ProblemNotice error={failure} />{/if}
 </Sheet>
 
 {#snippet footer()}

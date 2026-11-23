@@ -3130,5 +3130,44 @@
 		"copyFailed": "Tidak dapat menyalin. Pilih teks di atas lalu salin.",
 		"open": "Buka di GitHub",
 		"unexpected": "Terjadi kesalahan. Jika terjadi lagi, harap laporkan."
+	},
+	"problem": {
+		"details": "Detail",
+		"title": {
+			"frame-count": "PixelLab mengirim jumlah frame yang tidak terduga",
+			"overflow": "Sebagian karakter keluar dari frame",
+			"empty": "PixelLab mengirim frame kosong",
+			"dropped": "PixelLab sedang sibuk dan melewatkan satu tampilan",
+			"joints": "Sendi tidak ditemukan pada beberapa frame",
+			"stopped": "Permintaan berbayar tidak selesai",
+			"misaligned": "Beberapa frame baru tidak sejajar",
+			"quality": "Frame baru tidak lolos pemeriksaan kualitas",
+			"changed": "Ada yang berubah saat proses berjalan",
+			"missing": "Beberapa hasil tersimpan tidak tersedia",
+			"plan": "Paket PixelLab Anda tidak mencakup ini",
+			"credits": "Kredit akun PixelLab Anda habis",
+			"key": "PixelLab tidak menerima token Anda",
+			"offline": "PixelLab tidak dapat dihubungi",
+			"declined": "PixelLab menolak permintaan ini",
+			"unexpected": "Terjadi kesalahan"
+		},
+		"next": {
+			"frame-count": "Hasil berbayar Anda tetap disimpan. Tinjau, lalu lanjutkan atau coba lagi.",
+			"overflow": "Pilih naikkan atau frame yang lebih besar jika ditawarkan, atau coba lagi.",
+			"empty": "Hasil berbayar Anda tetap ada di Aktivitas. Coba lagi dengan percobaan baru.",
+			"dropped": "Tunggu sebentar, lalu coba lagi.",
+			"joints": "Tinjau frame-nya. Simpan yang bisa dipakai, atau coba lagi dengan percobaan baru.",
+			"stopped": "Periksa Aktivitas untuk melihat apa yang terjadi sebelum memulai lagi.",
+			"misaligned": "Buat ulang hanya bagian yang bergeser, atau simpan gambar yang sudah ada.",
+			"quality": "Tinjau hasilnya, lalu simpan atau coba lagi.",
+			"changed": "Tinjau lagi sebelum melanjutkan.",
+			"missing": "Pekerjaan Anda yang lain tetap disimpan. Coba lagi untuk membuat bagian yang hilang.",
+			"plan": "Tingkatkan paket Anda di PixelLab, atau pilih opsi yang tercakup dalam paket Anda.",
+			"credits": "Tambahkan kredit di PixelLab, lalu coba lagi.",
+			"key": "Hubungkan PixelLab lagi dengan token yang valid.",
+			"offline": "Periksa koneksi Anda, lalu coba lagi.",
+			"declined": "Ubah deskripsinya, lalu coba lagi.",
+			"unexpected": "Laporkan agar bisa diperbaiki. Hasil berbayar Anda tetap ada di Aktivitas."
+		}
 	}
 }

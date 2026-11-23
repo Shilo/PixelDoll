@@ -44,13 +44,13 @@
 		withKey,
 		leavingCreatorForSheet
 	} from './state.svelte.ts';
-	import { Check, CircleAlert, TriangleAlert } from './icons.ts';
+	import { Check, TriangleAlert } from './icons.ts';
 	import { displayDirection, displayDirectionInSentence } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
-	import { displayError, displayMessage } from '../lib/i18n.ts';
-	import { PreflightWarning, errorText } from '../lib/message.ts';
+	import { displayMessage } from '../lib/i18n.ts';
+	import { PreflightWarning, errorText, message } from '../lib/message.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
-	import ReportButton from './ReportButton.svelte';
+	import ProblemNotice from './ProblemNotice.svelte';
 	const policyDecline = /\b5000\b|policy/i;
 	const opening = createPresentation.id
 		? newCharacterDraft()
@@ -342,14 +342,12 @@
 				</div>
 			{/if}
 			{#if creating.error}
-				<p class="notice bad small">
-					<CircleAlert size={14} />{policyDecline.test(errorText(creating.error))
-						? t('create.sheet.declined')
-						: displayError(creating.error)}<ReportButton
-						area="New character"
-						error={creating.error}
-					/>
-				</p>
+				<ProblemNotice
+					error={policyDecline.test(errorText(creating.error))
+						? message('create.sheet.declined')
+						: creating.error}
+					report={{ area: 'New character', error: creating.error }}
+				/>
 				{#if paid}<PaidReview
 						review={paid}
 						name={creating.spec?.name ?? ''}

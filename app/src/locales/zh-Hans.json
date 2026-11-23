@@ -3130,5 +3130,44 @@
 		"copyFailed": "无法复制。请选中上方文字后手动复制。",
 		"open": "在 GitHub 上打开",
 		"unexpected": "出现了问题。如果再次发生，请报告。"
+	},
+	"problem": {
+		"details": "详情",
+		"title": {
+			"frame-count": "PixelLab 返回的帧数不符合预期",
+			"overflow": "角色的一部分超出了帧",
+			"empty": "PixelLab 返回了空帧",
+			"dropped": "PixelLab 繁忙，跳过了一个朝向",
+			"joints": "部分帧未找到关节",
+			"stopped": "一个付费请求未完成",
+			"misaligned": "部分新帧没有对齐",
+			"quality": "新帧未通过质量检查",
+			"changed": "处理期间有内容发生了变化",
+			"missing": "部分已保存的结果不可用",
+			"plan": "你的 PixelLab 套餐不包含此功能",
+			"credits": "你的 PixelLab 账户积分已用完",
+			"key": "PixelLab 未接受你的令牌",
+			"offline": "无法连接 PixelLab",
+			"declined": "PixelLab 拒绝了此请求",
+			"unexpected": "出现了问题"
+		},
+		"next": {
+			"frame-count": "已付费的结果都已保留。请先查看，然后继续或重试。",
+			"overflow": "如有提供，请选择上移或更大的帧；否则请重试。",
+			"empty": "已付费的结果仍在“活动”中。请用新的尝试重试。",
+			"dropped": "请稍等片刻后重试。",
+			"joints": "请查看这些帧。保留可用的帧，或用新的尝试重试。",
+			"stopped": "重新开始前，请在“活动”中查看发生了什么。",
+			"misaligned": "只重新生成偏移的部分，或保留现有图像。",
+			"quality": "请查看结果，然后保留或重试。",
+			"changed": "继续前请重新查看。",
+			"missing": "你的其他作品都已保留。请重试以生成缺少的部分。",
+			"plan": "请在 PixelLab 升级套餐，或选择套餐包含的选项。",
+			"credits": "请在 PixelLab 添加积分后重试。",
+			"key": "请使用有效的令牌重新连接 PixelLab。",
+			"offline": "请检查网络连接后重试。",
+			"declined": "请修改描述后重试。",
+			"unexpected": "请报告问题以便修复。已付费的结果仍在“活动”中。"
+		}
 	}
 }

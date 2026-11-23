@@ -26,11 +26,11 @@
 	import { displayMove } from './displayMove.ts';
 	import { displayDirection } from './displayDirection.ts';
 	import { setupWarningNote } from './model.ts';
-	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
-	import ReportButton from './ReportButton.svelte';
+	import ProblemNotice from './ProblemNotice.svelte';
 	import { cameraMessage } from '../lib/store/generation.ts';
 	const m = $derived(store.project?.manifest);
 	const camera = $derived(
@@ -175,12 +175,10 @@
 					</li>{/each}
 			</ol>
 		{/if}
-		{#if settingUp.error}<p class="notice bad" role="alert">
-				<TriangleAlert size={16} /><span>{displayError(settingUp.error)}</span><ReportButton
-					area="Rig setup"
-					error={settingUp.error}
-				/>
-			</p>{/if}
+		{#if settingUp.error}<ProblemNotice
+				error={settingUp.error}
+				report={{ area: 'Rig setup' }}
+			/>{/if}
 		{#each settingUp.warnings as warning (warning)}<p class="notice warn small">
 				<TriangleAlert size={14} /><span>{setupWarningNote(warning, t, displayDirection)}</span>
 			</p>{/each}
