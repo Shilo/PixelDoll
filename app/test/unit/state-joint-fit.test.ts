@@ -6,7 +6,7 @@ import { cellHash, type Keypoint, type Sha256 } from '../../src/lib/rig/rig.ts';
 import { CURRENT_FORMAT, type Project } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
-import { resolveMoveSource } from '../../src/studio/moveSource.ts';
+import { moveSourceMissingViews, resolveMoveSource } from '../../src/studio/moveSource.ts';
 import { measureJoints, measurementInput, missingItemMoves } from '../../src/studio/create.ts';
 import { loadProject } from '../../src/lib/store/project.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
@@ -199,6 +199,39 @@ describe('State joint fit target', () => {
 			image: cells.east![0],
 			keypoints: pose()
 		});
+	});
+
+	test('a State saved without a facing fits the facings it has but never starts a Move there', async () => {
+		const project = await fixture();
+		const glow = project.manifest.items[0].layers[0].cells!.glow;
+		delete glow.east;
+		delete glow.west;
+		const target = await stateJointFitTarget(project, 'glow');
+		expect(target?.views.map(({ direction }) => direction)).toEqual(['south']);
+		const { manifest } = applyStateJointFit(
+			project.manifest,
+			{},
+			{
+				stateId: 'glow',
+				views: [{ direction: 'south', hash: glow.south![0]!, keypoints: pose(), qa: {} as never }],
+				provenance: [
+					{
+						endpoint: '/estimate-skeleton',
+						params: {},
+						seed: 0,
+						requestHash: `sha256:${'c'.repeat(64)}`,
+						createdAt: new Date(0).toISOString(),
+						produced: []
+					}
+				]
+			}
+		);
+		const selection = { clip: 'glow', cell: 0 };
+		expect(resolveMoveSource(manifest, selection, ['south'])).toBeDefined();
+		// A full-direction Move cannot start from it, and the sheet can say which facing is missing.
+		expect(resolveMoveSource(manifest, selection, ['south', 'east'])).toBeUndefined();
+		expect(moveSourceMissingViews(manifest, selection, ['south', 'east'])).toEqual(['east']);
+		expect(moveSourceMissingViews(manifest, selection, ['south'])).toEqual([]);
 	});
 
 	test('refuses art whose stored pixels do not match their hash', async () => {

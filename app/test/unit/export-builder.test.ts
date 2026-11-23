@@ -393,3 +393,30 @@ test('move ZIP retains standing-reference moves so the imported character remain
 	expect(imported.project.manifest.items[1].standing).toBe('default');
 	await expect(moveProject(source, 'gone')).rejects.toThrow('no longer available');
 });
+
+test.each(['generic', 'godot', 'unity', 'phaser', 'gdevelop', 'aseprite'] as const)(
+	'%s exports a State saved without some facings, with their mirrors left out',
+	async (engine) => {
+		const source = await project();
+		const { rig } = source.manifest;
+		rig.directions = [{ id: 'south' }, { id: 'east' }, { id: 'west', mirrorOf: 'east' }];
+		rig.animations.push({
+			id: 'glow',
+			kind: 'state',
+			cells: 1,
+			loop: false,
+			frames: [{ cell: 0, ms: 100 }]
+		});
+		for (const item of source.manifest.items) {
+			const cells = item.layers[0].cells!;
+			cells.idle.east = [...cells.idle.south!];
+		}
+		// The east facing of the State came back blank, so it was saved with south only.
+		source.manifest.items[0].layers[0].cells!.glow = {
+			south: [source.manifest.items[0].layers[0].cells!.idle.south![0]]
+		};
+		const result = await buildExport(source, { ...exportOptions, engine });
+		expect(result.errors).toEqual([]);
+		expect(result.kind).toBe('requested');
+	}
+);

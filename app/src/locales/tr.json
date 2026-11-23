@@ -2523,6 +2523,7 @@
 			"label": "Başlangıç noktası",
 			"frame": "Kare {number}",
 			"unavailable": "Bu kare için seçilen her yönde gövde görseli ve ölçülmüş eklem konumları gerekir.",
+			"missingViews": "Bu karede {directions} yönünde görünüm yok, bu yüzden hareket buradan başlayamaz. Başka bir kare seç.",
 			"changed": "Seçilen başlangıç karesi değişti. Kaynağı yeniden seçin. Üretim isteği gönderilmedi.",
 			"stateTarget": "Bir durum, animasyon gibi değiştirilemez."
 		},
@@ -2825,6 +2826,7 @@
 		"changed": "Kaynak veya fiyat teklifi değişti. Oluşturmadan önce maliyeti tekrar kontrol edin.",
 		"sourceUnavailable": "Kaynak karede çizilen her yön için kayıtlı çizim olmalıdır.",
 		"invalidResult": "PixelLab beklenen tüm görünümleri planlanan boyutta döndürmedi.",
+		"missingViews": "{directions} yönünde kullanılabilir bir görünüm gelmedi. Kaydetmek diğer görünümleri korur; bu State bu yönlerde ve aynalanmış görünümlerinde çizim içermez.",
 		"unfinished": "Bu denemenin sonuçları eksik veya kullanılamıyor. Etkinliği kontrol edin. İstek yeniden gönderilmedi.",
 		"outdated": "Bu tamamlanmamış durum PixelDoll’un eski bir sürümüyle başlatıldı. Yeniden başlamak için atın.",
 		"quoteUnavailable": "PixelLab, Pro Flash için kullanılabilir bir fiyat teklifi vermedi.",

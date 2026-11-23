@@ -2523,6 +2523,7 @@
 			"label": "Empezar desde",
 			"frame": "Fotograma {number}",
 			"unavailable": "Este fotograma necesita una imagen del cuerpo y articulaciones medidas para cada dirección seleccionada.",
+			"missingViews": "Este fotograma no tiene vista en {directions}, así que un movimiento no puede empezar desde él. Elige otro fotograma.",
 			"changed": "El fotograma inicial seleccionado ha cambiado. Vuelve a elegir el origen. No se ha solicitado ninguna generación.",
 			"stateTarget": "No se puede sustituir un estado como si fuera una animación."
 		},
@@ -2825,6 +2826,7 @@
 		"changed": "El origen o la estimación cambiaron. Consulta el coste de nuevo antes de generar.",
 		"sourceUnavailable": "El fotograma de origen necesita arte guardado en cada dirección dibujada.",
 		"invalidResult": "PixelLab no devolvió todas las vistas previstas con el tamaño indicado.",
+		"missingViews": "No llegó ninguna vista utilizable en {directions}. Al guardar se conservan las demás vistas; este State no tendrá arte en esas direcciones ni en sus vistas reflejadas.",
 		"unfinished": "El intento tiene resultados incompletos o no disponibles. Consulta Actividad. No se reenvió ninguna solicitud.",
 		"outdated": "Este estado sin terminar se inició con una versión anterior de PixelDoll. Descártalo para empezar de nuevo.",
 		"quoteUnavailable": "PixelLab no proporcionó una estimación válida para Pro Flash.",

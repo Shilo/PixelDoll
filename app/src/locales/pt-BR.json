@@ -2532,6 +2532,7 @@
 			"label": "Começar a partir de",
 			"frame": "Quadro {number}",
 			"unavailable": "Este quadro precisa de uma imagem do corpo e de articulações medidas para cada direção selecionada.",
+			"missingViews": "Este quadro não tem vista nas direções {directions}, então um movimento não pode começar a partir dele. Escolha outro quadro.",
 			"changed": "O quadro inicial selecionado mudou. Escolha a origem novamente. Nenhuma geração foi solicitada.",
 			"stateTarget": "Não é possível substituir um estado como se fosse uma animação."
 		},
@@ -2834,6 +2835,7 @@
 		"changed": "A origem ou a estimativa mudou. Consulte o custo novamente antes de gerar.",
 		"sourceUnavailable": "O quadro de origem precisa de arte salva em cada direção desenhada.",
 		"invalidResult": "O PixelLab não retornou todas as vistas esperadas no tamanho previsto.",
+		"missingViews": "Nenhuma vista utilizável voltou nas direções {directions}. Ao salvar, as outras vistas são mantidas; este State não terá arte nessas direções nem em suas vistas espelhadas.",
 		"unfinished": "Esta tentativa tem resultados incompletos ou indisponíveis. Confira a Atividade. Nenhuma solicitação foi reenviada.",
 		"outdated": "Este estado inacabado foi iniciado em uma versão anterior do PixelDoll. Descarte-o para começar de novo.",
 		"quoteUnavailable": "O PixelLab não forneceu uma estimativa válida para o Pro Flash.",

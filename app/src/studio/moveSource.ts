@@ -35,14 +35,31 @@ export function savedReplacementSource(
 	return { clip, replacement: true, geometry: sourceGeometry(manifest), views };
 }
 
+const selectedFrame = ({ rig }: Manifest, selection: MoveSourceSelection) => {
+	const clip = rig.animations.find((entry) => entry.id === selection.clip);
+	return { clip, cell: selection.cell ?? (clip && lastPlaybackCell(clip)) };
+};
+
+/** Facings the selected frame has no body art for, such as a State saved without a facing that came back blank. A Move
+ *  cannot start from it in those facings, so the sheet names them. */
+export function moveSourceMissingViews(
+	manifest: Manifest,
+	selection: MoveSourceSelection,
+	directions: readonly DirectionName[]
+): DirectionName[] {
+	const { clip, cell } = selectedFrame(manifest, selection);
+	const cells = manifest.items.find((item) => item.id === manifest.rig.baseItem)?.layers[0]?.cells;
+	if (!clip || cell === undefined) return [];
+	return directions.filter((direction) => !cells?.[clip.id]?.[direction]?.[cell]);
+}
+
 export function resolveMoveSource(
 	manifest: Manifest,
 	selection: MoveSourceSelection,
 	directions: readonly DirectionName[]
 ): MoveSource | undefined {
 	const rig = manifest.rig;
-	const clip = rig.animations.find((entry) => entry.id === selection.clip);
-	const cell = selection.cell ?? (clip && lastPlaybackCell(clip));
+	const { clip, cell } = selectedFrame(manifest, selection);
 	if (!clip || cell === undefined || !Number.isInteger(cell) || cell < 0 || cell >= clip.cells)
 		return;
 	const body = manifest.items.find((item) => item.id === rig.baseItem);

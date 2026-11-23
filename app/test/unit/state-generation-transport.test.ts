@@ -202,12 +202,11 @@ test('Pixen packs in planned row-major order with transparent padding and crops 
 	);
 	const paddingOnly = makeImg(sheet.w, sheet.h);
 	paddingOnly.data.set([9, 8, 7, 255], paddingOnly.data.length - 4);
-	expect(() => decodeStateBatch(plan, plan.batches[0], [paddingOnly])).toThrow(
-		'north State result is empty'
-	);
+	// Pixels in the padding are no facing's art, so every facing reads as blank and is left out.
+	expect(decodeStateBatch(plan, plan.batches[0], [paddingOnly])).toEqual([]);
 });
 
-test('batch decoding rejects missing, extra, malformed, and empty provider results', () => {
+test('batch decoding rejects missing, extra and malformed provider results and leaves out blank facings', () => {
 	const cellSize = square(64);
 	const { plan, source } = setup({ model: 'pro', cellSize, facingIds: ['south', 'north'] });
 	const [batch] = plan.batches;
@@ -222,7 +221,7 @@ test('batch decoding rejects missing, extra, malformed, and empty provider resul
 	expect(() =>
 		decodeStateBatch(plan, batch, [south, { ...north, data: north.data.slice(4) }])
 	).toThrow('RGBA image');
-	expect(() => decodeStateBatch(plan, batch, [south, makeImg(64, 64)])).toThrow(
-		'north State result is empty'
-	);
+	expect(decodeStateBatch(plan, batch, [south, makeImg(64, 64)])).toEqual([
+		{ direction: 'south', image: south }
+	]);
 });

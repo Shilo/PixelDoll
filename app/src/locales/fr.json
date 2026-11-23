@@ -2523,6 +2523,7 @@
 			"label": "Point de départ",
 			"frame": "Image {number}",
 			"unavailable": "Cette image nécessite un visuel du corps et des articulations mesurées pour chaque direction sélectionnée.",
+			"missingViews": "Cette image n’a pas de vue pour {directions} : un mouvement ne peut pas partir d’elle. Choisissez une autre image.",
 			"changed": "L’image de départ sélectionnée a changé. Choisissez à nouveau la source. Aucune génération n’a été demandée.",
 			"stateTarget": "Un état ne peut pas être remplacé comme une animation."
 		},
@@ -2825,6 +2826,7 @@
 		"changed": "La source ou le devis a changé. Vérifiez à nouveau le coût avant de générer.",
 		"sourceUnavailable": "L’image source doit avoir un dessin enregistré pour chaque direction dessinée.",
 		"invalidResult": "PixelLab n’a pas renvoyé toutes les vues attendues à la taille prévue.",
+		"missingViews": "Aucune vue utilisable n’est revenue pour {directions}. L’enregistrement conserve les autres vues ; ce State n’aura pas de graphisme dans ces directions ni dans leurs vues en miroir.",
 		"unfinished": "Les résultats sont incomplets ou indisponibles. Consultez l’activité. Aucune demande n’a été renvoyée.",
 		"outdated": "Cet état inachevé a été commencé avec une version antérieure de PixelDoll. Abandonnez-le pour recommencer.",
 		"quoteUnavailable": "PixelLab n’a pas fourni de devis utilisable pour Pro Flash.",

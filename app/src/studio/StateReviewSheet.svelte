@@ -9,6 +9,7 @@
 	import { DIRECTIONS, type DirectionName } from '../lib/rig/rig.ts';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import { displayDirection } from './displayDirection.ts';
+	import { displayDirectionList } from './displayDirectionProblem.ts';
 	import { displayMove } from './displayMove.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import { RIDING_STATE } from './experience/presentation.ts';
@@ -288,6 +289,11 @@
 					{/if}
 				</div>
 			{/if}
+			{#if review.missing.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.missingViews', {
+						directions: displayDirectionList(review.missing)
+					})}
+				</p>{/if}
 			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
 			{#if reviewRiding}<p class="muted small">{t('stateGeneration.ridingCheck')}</p>{/if}
 			{#if !sourceCurrent}
@@ -379,6 +385,14 @@
 				onclick={discard}
 				>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 			>
+			<!-- Reading again is free: a view whose download failed may come back. -->
+			{#if review?.missing.length}<button
+					type="button"
+					class="bu-btn"
+					data-variant="outline"
+					disabled={!!busy}
+					onclick={load}>{t('common.tryAgain')}</button
+				>{/if}
 			<button
 				type="button"
 				class="bu-btn"

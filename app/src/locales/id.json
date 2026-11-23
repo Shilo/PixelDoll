@@ -2458,6 +2458,7 @@
 			"label": "Mulai dari",
 			"frame": "Frame {number}",
 			"unavailable": "Frame ini memerlukan gambar tubuh dan sendi yang sudah diukur untuk setiap arah yang dipilih.",
+			"missingViews": "Frame ini tidak punya tampilan untuk arah {directions}, jadi gerakan tidak bisa dimulai darinya. Pilih frame lain.",
 			"changed": "Frame awal yang dipilih telah berubah. Pilih ulang sumbernya. Tidak ada permintaan generasi yang dikirim.",
 			"stateTarget": "Varian tidak dapat diganti seperti animasi."
 		},
@@ -2753,6 +2754,7 @@
 		"changed": "Sumber atau perkiraan berubah. Periksa lagi biaya sebelum menghasilkan keadaan.",
 		"sourceUnavailable": "Frame sumber memerlukan gambar tersimpan di setiap arah yang digambar.",
 		"invalidResult": "PixelLab tidak mengembalikan semua tampilan yang diharapkan dalam ukuran yang direncanakan.",
+		"missingViews": "Tidak ada tampilan yang bisa dipakai untuk arah {directions}. Menyimpan akan mempertahankan tampilan lainnya; State ini tidak akan punya gambar di arah tersebut maupun tampilan cerminnya.",
 		"unfinished": "Hasil percobaan ini belum lengkap atau tidak tersedia. Periksa Aktivitas. Tidak ada permintaan yang dikirim ulang.",
 		"outdated": "State yang belum selesai ini dimulai dengan versi PixelDoll yang lebih lama. Buang untuk memulai lagi.",
 		"quoteUnavailable": "PixelLab tidak memberikan perkiraan biaya Pro Flash yang dapat digunakan.",

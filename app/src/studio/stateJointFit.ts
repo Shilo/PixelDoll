@@ -153,8 +153,8 @@ export async function stateJointFitTarget(
 	const target: StateJointFitTarget = { stateId, views: [], fitted: [] };
 	for (const { id: direction, mirrorOf } of rig.directions) {
 		const hash = cells[direction]?.[0];
-		if (mirrorOf) continue;
-		if (!hash) return;
+		// A State saved without a facing (it came back blank) fits the facings it has.
+		if (mirrorOf || !hash) continue;
 		const image = project.images.get(hash);
 		if (!image || (await cellHash(image)) !== hash) return;
 		const saved = clip.sources?.[direction];

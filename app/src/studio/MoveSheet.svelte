@@ -46,7 +46,12 @@
 	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
-	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
+	import {
+		moveSourceMatches,
+		moveSourceMissingViews,
+		resolveMoveSource,
+		savedReplacementSource
+	} from './moveSource.ts';
 	import { clipNameId, sameClipName } from './clipName.ts';
 	import { stateAttempts } from './stateRecovery.ts';
 	import {
@@ -596,7 +601,12 @@
 					stateAttempts(rec).some((attempt) => sameClipName(attempt.id, id))))
 		)
 			return t('moveSheet.duplicateOption', { move: nice(id) });
-		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
+		if (explicitFrame && !startFrom) {
+			const gaps = sourceSelection ? moveSourceMissingViews(m, sourceSelection, targetDirs) : [];
+			return gaps.length
+				? t('moveSheet.startFrom.missingViews', { directions: displayDirectionList(gaps) })
+				: t('moveSheet.startFrom.unavailable');
+		}
 		if (
 			skeletonRetry &&
 			(!regeneration ||
