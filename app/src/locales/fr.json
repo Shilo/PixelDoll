@@ -417,13 +417,13 @@
 		"saving": "Enregistrement…",
 		"reviewChanges": "Vérifier les modifications",
 		"changeTitle": "Modifier les directions ?",
-		"confirmMixedRemoval": "Ces directions seront retirées des animations et des équipements du personnage : {directions}. « Annuler » les rétablit tant que vous ne rechargez pas ou ne fermez pas cette page.",
+		"confirmMixedRemoval": "Ces directions seront retirées des animations et des équipements du personnage : {directions}. Jusqu’à ce que vous rechargiez ou fermiez cette page, « Annuler » peut les rétablir si rien d’autre ne modifie ce personnage entre-temps.",
 		"confirmReplace": "La symétrie remplace les visuels pour {directions} par les images retournées de la vue opposée. Si vous désactivez ensuite la symétrie, les images retournées sont conservées. Téléchargez une sauvegarde pour conserver les visuels d’origine.",
 		"labelDirectionsToKeep": "Directions à conserver",
 		"loadingDirections": "Chargement des directions…",
 		"downloadBackup": "Télécharger une sauvegarde",
 		"reviewRemoval": "Vérifier la suppression",
-		"confirmRemoval": "Suppression définitive de ces directions pour les animations et l’équipement de ce personnage : {directions}. Les autres directions ne changent pas. « Annuler » les rétablit tant que vous ne rechargez pas ou ne fermez pas cette page.",
+		"confirmRemoval": "Suppression définitive de ces directions pour les animations et l’équipement de ce personnage : {directions}. Les autres directions ne changent pas. Jusqu’à ce que vous rechargiez ou fermiez cette page, « Annuler » peut les rétablir si rien d’autre ne modifie ce personnage entre-temps.",
 		"rPGMakerExportNeedsAllFourCardinal": "L’export RPG Maker nécessite les quatre directions cardinales.",
 		"directionsWereSavedReloadToRefreshThe": "Les directions ont été enregistrées. Rechargez pour actualiser le personnage.",
 		"directionsWereSavedReloadToRefreshThe2": "Les directions ont été enregistrées. Rechargez pour actualiser le personnage : {reason}"
@@ -790,6 +790,8 @@
 		"itemMoved": "{name} a été déplacé vers {label}.",
 		"itemMoveBusy": "Terminez ou abandonnez la génération associée avant de déplacer cet objet.",
 		"itemMoveChanged": "L’objet ou l’emplacement a changé. Réessayez.",
+		"itemMoving": "Un autre objet est encore en cours de déplacement. Réessayez une fois terminé.",
+		"itemNotReady": "Cet objet est encore en cours de création ou de vérification. Réessayez une fois qu’il est enregistré.",
 		"notShownInMove": "Non affiché dans ce mouvement",
 		"notShownInMoveNote": "L’objet est porté, mais il reste invisible car il manque des images dans toutes les vues de ce mouvement.",
 		"randomLowerItem": "Choisir un objet au hasard : {lower}",
@@ -1104,9 +1106,11 @@
 		"changeDirections": "Modifier les directions",
 		"restoreOriginals": "Restaurer les originaux",
 		"changeDescription": "Modifier la description",
-		"changed": "Ce personnage a changé depuis, cette étape ne peut donc plus être annulée ni rétablie.",
+		"changed": "Cette étape a été retirée de l’historique : le personnage a changé depuis, elle ne peut donc plus être annulée ni rétablie.",
 		"notRecorded": "Enregistré, mais cette modification ne peut pas être annulée : certaines de ses images ne sont plus enregistrées.",
-		"busy": "Attendez la fin du dernier Annuler ou Rétablir. S’il ne se termine jamais, rechargez la page."
+		"busy": "Attendez la fin du dernier Annuler ou Rétablir. S’il ne se termine jamais, rechargez la page.",
+		"notInHistory": "Cette étape n’est plus dans l’historique.",
+		"saveFailed": "Vos dernières modifications n’ont pas pu être enregistrées. Corrigez l’erreur de stockage, puis réessayez."
 	},
 	"export": {
 		"sheet": {

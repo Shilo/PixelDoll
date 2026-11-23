@@ -417,13 +417,13 @@
 		"saving": "Guardando…",
 		"reviewChanges": "Revisar cambios",
 		"changeTitle": "¿Cambiar direcciones?",
-		"confirmMixedRemoval": "Estas direcciones se quitarán de las animaciones y el equipo del personaje: {directions}. «Deshacer» las recupera hasta que recargues o cierres esta página.",
+		"confirmMixedRemoval": "Estas direcciones se quitarán de las animaciones y el equipo del personaje: {directions}. Hasta que recargues o cierres esta página, «Deshacer» puede recuperarlas si nada más cambia antes a este personaje.",
 		"confirmReplace": "Al activar el reflejo, las imágenes de {directions} se sustituyen por fotogramas invertidos de la vista opuesta. Si lo desactivas después, esos fotogramas se conservan. Descarga una copia de seguridad para conservar las imágenes originales.",
 		"labelDirectionsToKeep": "Direcciones para conservar",
 		"loadingDirections": "Cargando direcciones…",
 		"downloadBackup": "Descargar copia de seguridad",
 		"reviewRemoval": "Revisar eliminación",
-		"confirmRemoval": "Se quitarán estas direcciones de las animaciones y del equipamiento de este personaje: {directions}. Las demás direcciones no cambian. «Deshacer» las recupera hasta que recargues o cierres esta página.",
+		"confirmRemoval": "Se quitarán estas direcciones de las animaciones y del equipamiento de este personaje: {directions}. Las demás direcciones no cambian. Hasta que recargues o cierres esta página, «Deshacer» puede recuperarlas si nada más cambia antes a este personaje.",
 		"rPGMakerExportNeedsAllFourCardinal": "La exportación a RPG Maker necesita las cuatro direcciones cardinales.",
 		"directionsWereSavedReloadToRefreshThe": "Se guardaron las direcciones. Recarga para actualizar el personaje.",
 		"directionsWereSavedReloadToRefreshThe2": "Se guardaron las direcciones. Recarga para actualizar el personaje: {reason}"
@@ -790,6 +790,8 @@
 		"itemMoved": "{name} se movió a {label}.",
 		"itemMoveBusy": "Termina o descarta la generación relacionada antes de mover este objeto.",
 		"itemMoveChanged": "El objeto o la ranura cambió. Inténtalo de nuevo.",
+		"itemMoving": "Otro objeto todavía se está moviendo. Vuelve a intentarlo cuando termine.",
+		"itemNotReady": "Este objeto todavía se está creando o revisando. Vuelve a intentarlo cuando se haya guardado.",
 		"notShownInMove": "No se muestra en este movimiento",
 		"notShownInMoveNote": "El objeto está equipado, pero no se muestra porque le faltan fotogramas en todas las vistas de este movimiento.",
 		"randomLowerItem": "Objeto aleatorio de {lower}",
@@ -1104,9 +1106,11 @@
 		"changeDirections": "Cambiar direcciones",
 		"restoreOriginals": "Restaurar originales",
 		"changeDescription": "Cambiar descripción",
-		"changed": "Este personaje cambió desde entonces, así que este paso ya no se puede deshacer ni rehacer.",
+		"changed": "Este paso se quitó del historial: el personaje cambió desde entonces, así que ya no se puede deshacer ni rehacer.",
 		"notRecorded": "Se guardó, pero este cambio no se puede deshacer: algunos de sus fotogramas ya no están guardados.",
-		"busy": "Espera a que termine el último Deshacer o Rehacer. Si nunca termina, recarga la página."
+		"busy": "Espera a que termine el último Deshacer o Rehacer. Si nunca termina, recarga la página.",
+		"notInHistory": "Este paso ya no está en el historial.",
+		"saveFailed": "No se pudieron guardar tus últimos cambios. Resuelve el error de almacenamiento y vuelve a intentarlo."
 	},
 	"export": {
 		"sheet": {

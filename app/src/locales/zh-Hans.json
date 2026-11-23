@@ -409,13 +409,13 @@
 		"saving": "正在保存…",
 		"reviewChanges": "查看更改",
 		"changeTitle": "更改朝向？",
-		"confirmMixedRemoval": "这些朝向将从角色的动作和装备中移除：{directions}。在重新加载或关闭此页面之前，可以用“撤销”恢复。",
+		"confirmMixedRemoval": "这些朝向将从角色的动作和装备中移除：{directions}。在重新加载或关闭此页面之前，如果此角色没有先发生其他更改，可以用“撤销”恢复。",
 		"confirmReplace": "镜像会将这些朝向的图像替换为相对视图的翻转帧：{directions}。之后关闭镜像也会保留翻转后的帧。如需保留原图，请下载备份。",
 		"labelDirectionsToKeep": "要保留的朝向",
 		"loadingDirections": "正在加载朝向…",
 		"downloadBackup": "下载备份",
 		"reviewRemoval": "查看要移除的内容",
-		"confirmRemoval": "{directions}将从此角色的动作和装备中移除。其他朝向保持不变。在重新加载或关闭此页面之前，可以用“撤销”恢复。",
+		"confirmRemoval": "{directions}将从此角色的动作和装备中移除。其他朝向保持不变。在重新加载或关闭此页面之前，如果此角色没有先发生其他更改，可以用“撤销”恢复。",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker 导出需要全部四个基本朝向。",
 		"directionsWereSavedReloadToRefreshThe": "朝向已保存。请重新加载以刷新角色。",
 		"directionsWereSavedReloadToRefreshThe2": "朝向已保存。请重新加载以刷新角色：{reason}"
@@ -768,6 +768,8 @@
 		"itemMoved": "已将{name}移至{label}。",
 		"itemMoveBusy": "请先完成或丢弃相关生成，再移动此装备。",
 		"itemMoveChanged": "装备或槽位已变更。请重试。",
+		"itemMoving": "另一件装备仍在移动。完成后再试一次。",
+		"itemNotReady": "此装备仍在制作或等待审核。保存后再试一次。",
 		"notShownInMove": "此动作中不显示",
 		"notShownInMoveNote": "物品已穿戴，但此动作的所有朝向都缺少帧，因此不会显示。",
 		"randomLowerItem": "随机{lower}装备",
@@ -1073,9 +1075,11 @@
 		"changeDirections": "更改朝向",
 		"restoreOriginals": "恢复原始帧",
 		"changeDescription": "更改描述",
-		"changed": "此角色之后已更改，因此无法再撤销或重做此步骤。",
+		"changed": "此步骤已从历史记录中移除：此角色之后已更改，因此无法再撤销或重做。",
 		"notRecorded": "已保存，但无法撤销此更改：它的部分帧已不再保存。",
-		"busy": "请等待上一次撤销或重做完成。如果一直未完成，请重新加载页面。"
+		"busy": "请等待上一次撤销或重做完成。如果一直未完成，请重新加载页面。",
+		"notInHistory": "此步骤已不在历史记录中。",
+		"saveFailed": "无法保存你最近的更改。请先解决存储错误，然后重试。"
 	},
 	"export": {
 		"sheet": {

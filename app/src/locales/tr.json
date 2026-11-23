@@ -417,13 +417,13 @@
 		"saving": "Kaydediliyor…",
 		"reviewChanges": "Değişiklikleri incele",
 		"changeTitle": "Yönler değiştirilsin mi?",
-		"confirmMixedRemoval": "Şu yönler karakterin animasyonlarından ve ekipmanından kaldırılacak: {directions}. Sayfayı yenileyene veya kapatana kadar “Geri alın” düğmesiyle geri getirebilirsiniz.",
+		"confirmMixedRemoval": "Şu yönler karakterin animasyonlarından ve ekipmanından kaldırılacak: {directions}. Sayfayı yenileyene veya kapatana kadar, bu karakterde başka bir şey değişmezse “Geri alın” düğmesiyle geri getirebilirsiniz.",
 		"confirmReplace": "Aynalama, şu yönlerdeki görselleri karşı görünümün çevrilmiş kareleriyle değiştirir: {directions}. Aynalamayı daha sonra kapatırsanız çevrilmiş kareler kalır. Özgün görselleri korumak için bir yedek indirin.",
 		"labelDirectionsToKeep": "Kalacak yönler",
 		"loadingDirections": "Yönler yükleniyor…",
 		"downloadBackup": "Yedeği indirin",
 		"reviewRemoval": "Kaldırılacak yönleri inceleyin",
-		"confirmRemoval": "Bu karakterin animasyonlarından ve ekipmanından şu yönler kaldırılacak: {directions}. Diğer yönler değişmez. Sayfayı yenileyene veya kapatana kadar “Geri alın” düğmesiyle geri getirebilirsiniz.",
+		"confirmRemoval": "Bu karakterin animasyonlarından ve ekipmanından şu yönler kaldırılacak: {directions}. Diğer yönler değişmez. Sayfayı yenileyene veya kapatana kadar, bu karakterde başka bir şey değişmezse “Geri alın” düğmesiyle geri getirebilirsiniz.",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker dışa aktarımı için dört ana yönün tümü gerekir.",
 		"directionsWereSavedReloadToRefreshThe": "Yönler kaydedildi. Karakteri güncellemek için sayfayı yeniden yükleyin.",
 		"directionsWereSavedReloadToRefreshThe2": "Yönler kaydedildi. Karakteri güncellemek için sayfayı yeniden yükleyin: {reason}"
@@ -790,6 +790,8 @@
 		"itemMoved": "{name}, {label} yuvasına taşındı.",
 		"itemMoveBusy": "Bu eşyayı taşımadan önce ilgili üretimi tamamla veya iptal et.",
 		"itemMoveChanged": "Eşya veya yuva değişti. Tekrar dene.",
+		"itemMoving": "Başka bir eşya hâlâ taşınıyor. Bittiğinde tekrar deneyin.",
+		"itemNotReady": "Bu eşya hâlâ oluşturuluyor veya inceleniyor. Kaydedildikten sonra tekrar deneyin.",
 		"notShownInMove": "Bu harekette görünmüyor",
 		"notShownInMoveNote": "Eşya takılı ancak bu hareketin hiçbir görünümünde kareleri olmadığı için görünmüyor.",
 		"randomLowerItem": "{lower} için rastgele eşya",
@@ -1104,9 +1106,11 @@
 		"changeDirections": "Yönleri değiştir",
 		"restoreOriginals": "Orijinalleri geri yükle",
 		"changeDescription": "Açıklamayı değiştir",
-		"changed": "Bu karakter o zamandan beri değişti, bu yüzden bu adım artık geri alınamaz veya yinelenemez.",
+		"changed": "Bu adım geçmişten kaldırıldı: Karakter o zamandan beri değişti, bu yüzden artık geri alınamaz veya yinelenemez.",
 		"notRecorded": "Kaydedildi ancak bu değişiklik geri alınamaz: Karelerinin bazıları artık kayıtlı değil.",
-		"busy": "Son “Geri alın” veya “Yineleyin” işleminin bitmesini bekleyin. Hiç bitmezse sayfayı yenileyin."
+		"busy": "Son “Geri alın” veya “Yineleyin” işleminin bitmesini bekleyin. Hiç bitmezse sayfayı yenileyin.",
+		"notInHistory": "Bu adım artık geçmişte değil.",
+		"saveFailed": "Son değişiklikleriniz kaydedilemedi. Depolama hatasını giderin, ardından tekrar deneyin."
 	},
 	"export": {
 		"sheet": {

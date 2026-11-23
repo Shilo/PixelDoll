@@ -186,7 +186,8 @@ export async function loadProject(
 
 /**
  * Add or replace an item (same id) in the project record, store its cell PNGs, and insert its slot (ladder order) if missing.
- * Publish blobs and references in one transaction, so garbage collection cannot sweep the gap between them.
+ * Publish blobs and references in one transaction, so garbage collection cannot sweep the gap between them. `encoded`: those
+ * PNGs already encoded (pngBlobs), so they are not encoded twice.
  */
 export async function saveItem(
 	id: string,
@@ -194,17 +195,12 @@ export async function saveItem(
 	images: Map<Sha256, Img>,
 	ladder: Slot[],
 	check?: (rec: StoredProject) => void,
-	stored?: Parameters<typeof db.updateCharacter>[3]
+	stored?: Parameters<typeof db.updateCharacter>[3],
+	encoded?: Map<string, Blob>
 ): Promise<void> {
-	const blobs = new Map<string, Blob>();
-	for (const [h, im] of images)
-		blobs.set(
-			h.slice(7),
-			new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
-		);
 	await db.updateCharacter<StoredProject>(
 		id,
-		blobs,
+		encoded ?? (await pngBlobs(images)),
 		(rec) => {
 			if (!rec) throw new Error(`project ${id} not found`);
 			check?.(rec);
@@ -221,6 +217,24 @@ export async function saveItem(
 		stored
 	);
 }
+
+/** Images as the PNG blobs a save stores, keyed by hash hex. */
+export async function pngBlobs(images: Map<Sha256, Img>): Promise<Map<string, Blob>> {
+	const blobs = new Map<string, Blob>();
+	for (const [h, im] of images)
+		blobs.set(
+			h.slice(7),
+			new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
+		);
+	return blobs;
+}
+
+/** Called by a free artwork edit once its change is planned and before it writes: the record it starts from, the record
+ *  as it will be saved, and the new images the save stores (pngBlobs). */
+export type BeforeWrite = (
+	sides: { before: StoredProject; after: StoredProject },
+	written: Map<string, Blob>
+) => Promise<void>;
 
 /** `rec` with `item` in place of its saved item of the same id: the record a saveItem of `item` over `rec` leaves, for that
  *  item's content (saveItem keeps the saved name and export ID). */

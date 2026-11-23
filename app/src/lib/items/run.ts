@@ -19,7 +19,14 @@ import { coverageGaps, deriveMaterials } from '../dress/dress.ts';
 import { decodePngBytes, encodePngBytes } from '../image/pngraw.ts';
 import { hardMaskBits } from '../image/hard-mask.ts';
 import * as db from '../store/db.ts';
-import { loadProject, saveItem, withItem, type StoredProject } from '../store/project.ts';
+import {
+	loadProject,
+	pngBlobs,
+	saveItem,
+	withItem,
+	type BeforeWrite,
+	type StoredProject
+} from '../store/project.ts';
 import { itemContent, itemExportIdTaken } from '../store/identity.ts';
 import type {
 	CellKey,
@@ -2935,27 +2942,40 @@ export async function itemPaletteRepairPlan(
 	return (await prepareItemPalette(projectId, itemId, anim, dir)).plan;
 }
 /** Apply exactly the reviewed free edit, atomically. Historical QA flags and original paid provenance are preserved.
- *  Returns the record it started from and the record as saved. */
+ *  `beforeWrite` gets the record it starts from and the record as it will be saved: the save refuses any item, body or
+ *  material that differs from this read, so those are exactly its two sides. */
 export async function matchItemColors(
 	projectId: string,
 	itemId: string,
 	anim: string,
 	dir: DirectionName,
-	reviewed: ItemPaletteRepairPlan
-): Promise<{ before: StoredProject; after: StoredProject }> {
+	reviewed: ItemPaletteRepairPlan,
+	beforeWrite?: BeforeWrite
+): Promise<void> {
 	const prepared = await prepareItemPalette(projectId, itemId, anim, dir);
 	if (stableStringify(prepared.plan) !== stableStringify(reviewed))
 		throw new LocalizedError(
 			'This item or its colors changed. Review the color match again.',
 			'itemRoute.errors.paletteReviewChanged'
 		);
-	await saveItem(projectId, prepared.next, prepared.images, [], (current) => {
-		if (paletteVersion(current, itemId) !== prepared.version)
-			throw new LocalizedError(
-				'This item, body or material changed. Existing colors were kept; review again.',
-				'itemRoute.errors.paletteSaveChanged'
-			);
-	});
-	// The save refused any item, body or material that differs from this read: these are exactly the two sides of it.
-	return { before: prepared.rec, after: withItem(prepared.rec, prepared.next) };
+	const blobs = await pngBlobs(prepared.images);
+	await beforeWrite?.(
+		{ before: prepared.rec, after: withItem(prepared.rec, prepared.next) },
+		blobs
+	);
+	await saveItem(
+		projectId,
+		prepared.next,
+		prepared.images,
+		[],
+		(current) => {
+			if (paletteVersion(current, itemId) !== prepared.version)
+				throw new LocalizedError(
+					'This item, body or material changed. Existing colors were kept; review again.',
+					'itemRoute.errors.paletteSaveChanged'
+				);
+		},
+		undefined,
+		blobs
+	);
 }

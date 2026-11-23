@@ -409,13 +409,13 @@
 		"saving": "저장 중…",
 		"reviewChanges": "변경 사항 확인",
 		"changeTitle": "방향을 변경할까요?",
-		"confirmMixedRemoval": "캐릭터의 동작과 장비에서 다음 방향을 제거해요: {directions}. 이 페이지를 새로고침하거나 닫기 전까지는 실행 취소로 되돌릴 수 있어요.",
+		"confirmMixedRemoval": "캐릭터의 동작과 장비에서 다음 방향을 제거해요: {directions}. 이 페이지를 새로고침하거나 닫기 전까지, 그사이 캐릭터가 달리 바뀌지 않았다면 실행 취소로 되돌릴 수 있어요.",
 		"confirmReplace": "대칭을 켜면 {directions} 방향의 이미지가 반대쪽의 뒤집힌 프레임으로 바뀌어요. 나중에 대칭을 꺼도 이 프레임은 유지돼요. 원본을 보관하려면 백업을 다운로드하세요.",
 		"labelDirectionsToKeep": "유지할 방향",
 		"loadingDirections": "방향을 불러오는 중…",
 		"downloadBackup": "백업 다운로드",
 		"reviewRemoval": "제거 검토",
-		"confirmRemoval": "{directions} 방향이 이 캐릭터의 동작과 장비에서 제거돼요. 다른 방향은 그대로예요. 이 페이지를 새로고침하거나 닫기 전까지는 실행 취소로 되돌릴 수 있어요.",
+		"confirmRemoval": "{directions} 방향이 이 캐릭터의 동작과 장비에서 제거돼요. 다른 방향은 그대로예요. 이 페이지를 새로고침하거나 닫기 전까지, 그사이 캐릭터가 달리 바뀌지 않았다면 실행 취소로 되돌릴 수 있어요.",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker로 내보내려면 동서남북 네 방향이 모두 필요해요.",
 		"directionsWereSavedReloadToRefreshThe": "방향이 저장됐어요. 캐릭터를 새로 고치려면 다시 불러와 주세요.",
 		"directionsWereSavedReloadToRefreshThe2": "방향이 저장됐어요. 캐릭터를 새로 고치려면 다시 불러와 주세요: {reason}"
@@ -768,6 +768,8 @@
 		"itemMoved": "{name}을(를) {label}(으)로 옮겼습니다.",
 		"itemMoveBusy": "이 아이템을 옮기기 전에 관련 생성을 완료하거나 폐기하세요.",
 		"itemMoveChanged": "아이템 또는 슬롯이 변경되었습니다. 다시 시도하세요.",
+		"itemMoving": "다른 아이템을 아직 옮기는 중이에요. 끝나면 다시 시도하세요.",
+		"itemNotReady": "이 아이템은 아직 만드는 중이거나 검토를 기다리고 있어요. 저장된 뒤 다시 시도하세요.",
 		"notShownInMove": "이 동작에서는 표시되지 않음",
 		"notShownInMoveNote": "착용 중이지만 이 동작의 모든 방향에 프레임이 없어 표시되지 않습니다.",
 		"randomLowerItem": "무작위 {lower} 아이템",
@@ -1073,9 +1075,11 @@
 		"changeDirections": "방향 변경",
 		"restoreOriginals": "원본 복원",
 		"changeDescription": "설명 변경",
-		"changed": "그 뒤로 캐릭터가 바뀌어서 이 단계는 더 이상 실행 취소하거나 다시 실행할 수 없어요.",
+		"changed": "이 단계는 기록에서 제거됐어요. 그 뒤로 캐릭터가 바뀌어서 더 이상 실행 취소하거나 다시 실행할 수 없어요.",
 		"notRecorded": "저장했지만 이 변경은 되돌릴 수 없어요. 일부 프레임이 더 이상 저장되어 있지 않아요.",
-		"busy": "마지막 실행 취소나 다시 실행이 끝날 때까지 기다려 주세요. 끝나지 않으면 페이지를 새로고침하세요."
+		"busy": "마지막 실행 취소나 다시 실행이 끝날 때까지 기다려 주세요. 끝나지 않으면 페이지를 새로고침하세요.",
+		"notInHistory": "이 단계는 더 이상 기록에 없어요.",
+		"saveFailed": "최근 변경을 저장하지 못했어요. 저장소 오류를 해결한 다음 다시 시도하세요."
 	},
 	"export": {
 		"sheet": {

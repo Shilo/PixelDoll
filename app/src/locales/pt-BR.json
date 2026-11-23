@@ -417,13 +417,13 @@
 		"saving": "Salvando…",
 		"reviewChanges": "Revisar alterações",
 		"changeTitle": "Alterar direções?",
-		"confirmMixedRemoval": "Estas direções serão removidas das animações e dos equipamentos do personagem: {directions}. Desfazer as traz de volta até você recarregar ou fechar esta página.",
+		"confirmMixedRemoval": "Estas direções serão removidas das animações e dos equipamentos do personagem: {directions}. Até você recarregar ou fechar esta página, Desfazer pode trazê-las de volta se nada mais mudar este personagem antes.",
 		"confirmReplace": "O espelhamento substitui a arte de {directions} pelos quadros invertidos da vista oposta. Se você desativar o espelhamento depois, os quadros invertidos serão mantidos. Baixe um backup para guardar a arte original.",
 		"labelDirectionsToKeep": "Direções a manter",
 		"loadingDirections": "Carregando direções…",
 		"downloadBackup": "Baixar cópia de segurança",
 		"reviewRemoval": "Revisar remoção",
-		"confirmRemoval": "Estas direções serão removidas das animações e dos equipamentos deste personagem: {directions}. As outras direções não mudam. Desfazer as traz de volta até você recarregar ou fechar esta página.",
+		"confirmRemoval": "Estas direções serão removidas das animações e dos equipamentos deste personagem: {directions}. As outras direções não mudam. Até você recarregar ou fechar esta página, Desfazer pode trazê-las de volta se nada mais mudar este personagem antes.",
 		"rPGMakerExportNeedsAllFourCardinal": "A exportação para RPG Maker precisa das quatro direções cardeais.",
 		"directionsWereSavedReloadToRefreshThe": "As direções foram salvas. Recarregue a página para atualizar o personagem.",
 		"directionsWereSavedReloadToRefreshThe2": "As direções foram salvas. Recarregue a página para atualizar o personagem: {reason}"
@@ -792,6 +792,8 @@
 		"itemMoved": "{name} foi movido para {label}.",
 		"itemMoveBusy": "Conclua ou descarte a geração relacionada antes de mover este item.",
 		"itemMoveChanged": "O item ou o espaço mudou. Tente novamente.",
+		"itemMoving": "Outro item ainda está sendo movido. Tente novamente quando terminar.",
+		"itemNotReady": "Este item ainda está sendo criado ou revisado. Tente novamente quando ele for salvo.",
 		"notShownInMove": "Não aparece nesta animação",
 		"notShownInMoveNote": "O item está equipado, mas não aparece porque faltam quadros em todas as vistas desta animação.",
 		"randomLowerItem": "Sortear item: {lower}",
@@ -1107,9 +1109,11 @@
 		"changeDirections": "Alterar direções",
 		"restoreOriginals": "Restaurar originais",
 		"changeDescription": "Alterar descrição",
-		"changed": "Este personagem mudou desde então, então esta etapa não pode mais ser desfeita nem refeita.",
+		"changed": "Esta etapa foi removida do histórico: o personagem mudou desde então, então ela não pode mais ser desfeita nem refeita.",
 		"notRecorded": "Salvo, mas esta alteração não pode ser desfeita: alguns dos quadros dela não estão mais salvos.",
-		"busy": "Aguarde o último Desfazer ou Refazer terminar. Se nunca terminar, recarregue a página."
+		"busy": "Aguarde o último Desfazer ou Refazer terminar. Se nunca terminar, recarregue a página.",
+		"notInHistory": "Esta etapa não está mais no histórico.",
+		"saveFailed": "Não foi possível salvar suas últimas alterações. Resolva o erro de armazenamento e tente novamente."
 	},
 	"export": {
 		"sheet": {

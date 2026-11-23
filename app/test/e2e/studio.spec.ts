@@ -10092,6 +10092,16 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	expect(await pixels('walk', 'helmet_steel')).not.toEqual(original);
 	await toast.getByRole('button', { name: 'Undo', exact: true }).click();
 	await expect.poll(() => pixels('walk', 'helmet_steel')).toEqual(original);
+	// Redo makes the import again, from the history it went to.
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(page.locator('.header-redo')).toHaveAccessibleName('Redo Fix frames');
+	await page.locator('.header-redo').click();
+	await expect.poll(() => pixels('walk', 'helmet_steel')).not.toEqual(original);
+	await page.locator('.header-undo').click();
+	await expect.poll(() => pixels('walk', 'helmet_steel')).toEqual(original);
+	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
+	await page.getByRole('menuitem', { name: /^Fix frames/ }).click();
+	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 
 	await importPng(await edit(3 * 64 + 31, 12));
 	await review.getByRole('button', { name: /^Replace 1 frame/ }).click();

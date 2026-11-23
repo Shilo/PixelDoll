@@ -112,10 +112,13 @@
 	/** Steps history; a button whose stack just emptied hides, so its focus moves to the other one. */
 	async function step(action: () => Promise<void>, other: HTMLButtonElement | undefined) {
 		const own = document.activeElement;
-		// A step that writes the saved record leaves its stack while it runs: move focus once it has landed.
+		// A step that writes the saved record stays on its stack until its write lands: decide only then.
 		await action();
 		await tick();
 		if (!(own instanceof HTMLButtonElement) || !own.disabled) return;
+		// Focus the person moved elsewhere meanwhile stays there; a disabled button leaves it on the page body.
+		const now = document.activeElement;
+		if (now !== own && now !== document.body) return;
 		// The other one may live in More at this width; More then takes focus.
 		const next =
 			other && !other.disabled && other.checkVisibility()

@@ -417,13 +417,13 @@
 		"saving": "Wird gespeichert…",
 		"reviewChanges": "Änderungen prüfen",
 		"changeTitle": "Blickrichtungen ändern?",
-		"confirmMixedRemoval": "Folgende Blickrichtungen werden aus Animationen und Ausrüstung entfernt: {directions}. Mit „Rückgängig“ holst du sie zurück, bis du die Seite neu lädst oder schließt.",
+		"confirmMixedRemoval": "Folgende Blickrichtungen werden aus Animationen und Ausrüstung entfernt: {directions}. Bis du die Seite neu lädst oder schließt, kann „Rückgängig“ sie zurückholen, solange sich an dieser Figur sonst nichts ändert.",
 		"confirmReplace": "Beim Spiegeln werden die Grafiken für {directions} durch gespiegelte Frames der gegenüberliegenden Ansicht ersetzt. Wenn du die Spiegelung später ausschaltest, bleiben diese Frames erhalten. Lade eine Sicherung herunter, um die ursprünglichen Grafiken zu behalten.",
 		"labelDirectionsToKeep": "Blickrichtungen, die erhalten bleiben",
 		"loadingDirections": "Blickrichtungen werden geladen…",
 		"downloadBackup": "Sicherung herunterladen",
 		"reviewRemoval": "Entfernung prüfen",
-		"confirmRemoval": "Diese Blickrichtungen werden aus den Animationen und der Ausrüstung dieser Figur entfernt: {directions}. Die übrigen Blickrichtungen bleiben unverändert. Mit „Rückgängig“ holst du sie zurück, bis du die Seite neu lädst oder schließt.",
+		"confirmRemoval": "Diese Blickrichtungen werden aus den Animationen und der Ausrüstung dieser Figur entfernt: {directions}. Die übrigen Blickrichtungen bleiben unverändert. Bis du die Seite neu lädst oder schließt, kann „Rückgängig“ sie zurückholen, solange sich an dieser Figur sonst nichts ändert.",
 		"rPGMakerExportNeedsAllFourCardinal": "Der Export für RPG Maker braucht alle vier Hauptblickrichtungen.",
 		"directionsWereSavedReloadToRefreshThe": "Die Blickrichtungen wurden gespeichert. Lade die Seite neu, um die Figur zu aktualisieren.",
 		"directionsWereSavedReloadToRefreshThe2": "Die Blickrichtungen wurden gespeichert. Lade die Seite neu, um die Figur zu aktualisieren: {reason}"
@@ -790,6 +790,8 @@
 		"itemMoved": "{name} wurde nach {label} verschoben.",
 		"itemMoveBusy": "Schließe die zugehörige Generierung ab oder verwirf sie, bevor du den Gegenstand verschiebst.",
 		"itemMoveChanged": "Der Gegenstand oder Slot hat sich geändert. Versuche es erneut.",
+		"itemMoving": "Ein anderer Gegenstand wird noch verschoben. Versuche es erneut, wenn das fertig ist.",
+		"itemNotReady": "Dieser Gegenstand wird noch erstellt oder geprüft. Versuche es erneut, sobald er gespeichert ist.",
 		"notShownInMove": "In dieser Bewegung nicht sichtbar",
 		"notShownInMoveNote": "Der Gegenstand wird getragen, hat aber in keiner Ansicht dieser Bewegung Bilder und bleibt deshalb unsichtbar.",
 		"randomLowerItem": "Zufälliger Gegenstand: {lower}",
@@ -1104,9 +1106,11 @@
 		"changeDirections": "Blickrichtungen ändern",
 		"restoreOriginals": "Originale wiederherstellen",
 		"changeDescription": "Beschreibung ändern",
-		"changed": "Diese Figur hat sich seitdem geändert, daher kann dieser Schritt nicht mehr rückgängig gemacht oder wiederholt werden.",
+		"changed": "Dieser Schritt wurde aus dem Verlauf entfernt: Die Figur hat sich seitdem geändert, daher kann er nicht mehr rückgängig gemacht oder wiederholt werden.",
 		"notRecorded": "Gespeichert, aber diese Änderung kann nicht rückgängig gemacht werden: Einige ihrer Frames sind nicht mehr gespeichert.",
-		"busy": "Warte, bis das letzte Rückgängig oder Wiederholen fertig ist. Wenn es nie fertig wird, lade die Seite neu."
+		"busy": "Warte, bis das letzte Rückgängig oder Wiederholen fertig ist. Wenn es nie fertig wird, lade die Seite neu.",
+		"notInHistory": "Dieser Schritt ist nicht mehr im Verlauf.",
+		"saveFailed": "Deine letzten Änderungen konnten nicht gespeichert werden. Behebe den Speicherfehler und versuche es dann erneut."
 	},
 	"export": {
 		"sheet": {
