@@ -2039,6 +2039,53 @@ test('a staged recovery result carries its receipt through reload and Save', asy
 	expect(await reviewMoveRecovery('rig-recover', spec)).toEqual({});
 });
 
+test('a free Save of finished views never sends a request when a reviewed result vanished; it asks for review', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	asNewMove(f.saved());
+	const spec: MoveSpec = {
+		...f.spec,
+		replace: undefined,
+		dirs: undefined,
+		reviewBeforePublish: true
+	};
+	f.records.delete('raw-west');
+	await f.q.sync();
+	const save = (await reviewMoveResults('rig-recover', spec))!.options.find(
+		(option) => option.id === 'keep-finished'
+	)!;
+	// A completed joint check of the kept view is gone from the ledger after the review.
+	f.records.delete('motion-check-east-0');
+	await f.q.sync();
+	const posts = f.posts();
+	await expect(addMove('rig-recover', save.spec)).rejects.toThrow('no longer saved');
+	expect(f.posts()).toBe(posts);
+	expect(f.saved().moveReviews).toBeUndefined();
+});
+
+test('a finished render whose joint check stopped is kept free without poses; the check is never sent again', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	// One west body-frame check ended without an answer (lost): its outcome is unknown. (The last west frame: earlier ones
+	// share pixels with east frames in this fixture.)
+	const lost = f.records.get('old-7')!.requestHash;
+	for (const record of f.records.values())
+		if (record.requestHash === lost) f.records.set(record.id, { ...record, state: 'lost' });
+	await f.q.sync();
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(review.views.map((view) => view.state)).toEqual(['ready', 'failed']);
+	const keep = review.options.find((option) => option.id === 'keep-unposed')!;
+	expect(keep).toMatchObject({ gens: 0, paid: false });
+	const posts = f.posts();
+	await addMove('rig-recover', keep.spec);
+	expect(f.posts()).toBe(posts);
+	const saved = f.saved(),
+		idle = saved.manifest.rig.animations[0];
+	expect(idle.sources!.west).toBeUndefined();
+	expect(idle.sources!.east?.keypoints).toHaveLength(idle.cells);
+	expect((saved.rigQa as { redo?: string[] }).redo).toEqual(['idle/west']);
+});
+
 test('a body move stopped after every view was bought resumes free with the same seed', async () => {
 	const f = await fixture(false, 'walk');
 	await f.finishOriginalChecks();

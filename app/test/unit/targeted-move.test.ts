@@ -366,10 +366,24 @@ async function fixture(
 			} as unknown as JobRec;
 		throw Error('Unexpected route');
 	});
+	/** Keep every answered request as a completed ledger record of its real identity, so free choices can read the cache. */
+	const cache = () => {
+		const ledger: JobRec[] = [],
+			reply = enqueue.getMockImplementation()!;
+		enqueue.mockImplementation(async (req, ...rest) => {
+			const record = await reply(req, ...rest);
+			ledger.push({ ...record, ...(await requestIdentity(req)), state: 'done' });
+			return record;
+		});
+		vi.spyOn(queue, 'snapshot').mockImplementation(
+			() => ({ jobs: ledger }) as unknown as ReturnType<typeof queue.snapshot>
+		);
+	};
 	return {
 		saved: () => saved,
 		images,
 		original,
+		cache,
 		enqueue,
 		put,
 		update,
@@ -1630,6 +1644,7 @@ test('a new move whose body frames lack joints is kept body only, without poses,
 				} as unknown as JobRec)
 			: measuring(req, ...rest)
 	);
+	f.cache();
 	const move = { id: 'calm', action: 'idle', replace: false, dirs: undefined };
 	const stopped = (await f.run(move).catch((error: unknown) => error)) as PaidStepError;
 	expect(stopped.message).toContain('valid joints were not found on every frame');
@@ -1647,9 +1662,11 @@ test('a new move whose body frames lack joints is kept body only, without poses,
 	const renders = () =>
 		f.enqueue.mock.calls.filter(([r]) => r.path === '/animate-with-skeleton-v3').length;
 	const before = renders();
+	const calls = f.enqueue.mock.calls.length;
 	await f.run({ ...move, keepUnposed: true });
-	// The same four views are rendered again here only because this fixture has no request cache; no other step is bought.
-	expect(renders() - before).toBe(4);
+	// Keeping is free: every render and check is read from the cache, nothing is sent.
+	expect(renders()).toBe(before);
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
 	const saved = f.saved(),
 		calm = saved.manifest.rig.animations.find((a) => a.id === 'calm')!;
 	expect(calm.sources).toBeUndefined();
@@ -1708,6 +1725,7 @@ test('one replaced view kept without poses loses only its own poses and fitted e
 				} as unknown as JobRec)
 			: measuring(req, ...rest)
 	);
+	f.cache();
 	await expect(f.run()).rejects.toThrow('valid joints were not found on every frame');
 	expect(f.saved()).toEqual(f.original);
 	await f.run({ keepUnposed: true });

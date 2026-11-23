@@ -2244,6 +2244,7 @@
 			"anchoredEquipmentGenerationRequires": "Zum Generieren verankerter Ausrüstung brauchst du eine vorhandene Animation und ihre gespeicherten Gegenstände aus der Standpose. Es wurde keine Generierung angefordert.",
 			"moveItemMissingStored": "Für diese Animation oder diesen Gegenstand fehlen gespeicherte Gelenkpunkte oder Standreferenzen. Richte die Posen ein, bevor du Ausrüstung generierst. Es wurde keine Generierung angefordert.",
 			"moveKeptUnposed": "{move} {direction} wurde ohne Posen behalten. Erstelle diese Ansicht neu, bevor du dort Ausrüstung anpasst. Es wurde keine Generierung angefordert.",
+			"freeChoiceCacheMissing": "Ein Ergebnis, das diese kostenlose Wahl wiederverwendet, ist nicht mehr gespeichert, daher wurde nichts angefordert. Prüfe die Bewegung erneut.",
 			"setUpRigFirst": "Richte das Posen-Rig dieser Figur ein, bevor du Animationen hinzufügst.",
 			"newMoveNeedsEvery": "Eine neue Animation braucht alle eigenständig gezeichneten Blickrichtungen.",
 			"partialRepairMustKeep": "Bei einer Teilreparatur muss die Anzahl der Frames unverändert bleiben.",

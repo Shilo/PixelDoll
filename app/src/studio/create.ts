@@ -330,7 +330,14 @@ interface DryRun {
 	reopensCanceled?: boolean;
 	/** Stopped records the replay met: a lost one may have charged without reporting it. */
 	stopped?: JobRec[];
+	/** A body render of this replay passed its identity, layout and pixel checks (renderClip), before its joint checks. */
+	rendered?: boolean;
 }
+/** Runs of a free choice (Keep without fitting items, Save the finished views): every request is read from the cache, never
+ *  sent. A missing record stops the run so the review is shown again; a stopped joint check leaves its frame unmeasured. */
+const cacheOnlyRuns = new WeakSet<AbortSignal>();
+/** A joint check a cache-only run found stopped: its outcome is unknown, so the frame is unmeasured and never sent again. */
+class StoppedCheck extends Error {}
 /** Whether any of these records may have charged more than it reported (the paid review's spentUnknown). */
 const costUnknown = (records: readonly JobRec[]) =>
 	records.some((r) => !!r.costUnknown || r.state === 'lost');
@@ -379,9 +386,11 @@ export async function parallelGeneration<T>(
 	tasks: ((signal: AbortSignal) => Promise<T>)[],
 	attempt?: number,
 	recovery?: GenerationRecovery,
-	minimumTier = 0
+	minimumTier = 0,
+	cacheOnly = false
 ): Promise<T[]> {
 	const scope = new AbortController();
+	if (cacheOnly) cacheOnlyRuns.add(scope.signal);
 	if (Number.isSafeInteger(attempt)) generationAttempts.set(scope.signal, attempt!);
 	if (recovery) measurementRecoveries.set(scope.signal, recovery);
 	generationMinimumTiers.set(scope.signal, minimumTier);
@@ -418,6 +427,17 @@ export async function run(
 	const label = typeof jobLabel === 'string' ? jobLabel : jobLabel.text;
 	const dry = signal && dryRuns.get(signal);
 	if (dry) return dryRecord(req, label, dry);
+	if (signal && cacheOnlyRuns.has(signal)) {
+		const matches = await requestMatches(req),
+			done = matches.find((r) => r.state === 'done');
+		if (done) return done;
+		if (req.path === '/estimate-skeleton' && matches.length && !matches.some(live))
+			throw new StoppedCheck();
+		throw new LocalizedError(
+			'A result this free choice reuses is no longer saved, so nothing was requested. Review the move again.',
+			'create.errors.freeChoiceCacheMissing'
+		);
+	}
 	const recovery = signal ? measurementRecoveries.get(signal) : undefined;
 	if (recovery) {
 		const { requestHash } = await requestIdentity(req);
@@ -618,6 +638,7 @@ export async function joints(
 			dry.unmeasured = true;
 			return undefined;
 		}
+		if (e instanceof StoppedCheck) return undefined;
 		if (resumeSafe) throw e;
 		return undefined;
 	}
@@ -743,6 +764,8 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 			j.words,
 			rejected('empty')
 		);
+	const replaying = j.signal && dryRuns.get(j.signal);
+	if (replaying) replaying.rendered = true;
 	const candidate = j.paletteRepair
 		? await paletteCandidate(j.anim, j.dir, j.rest, rawFrames, j.keypoints, 0)
 		: { frames: rawFrames };
@@ -3765,18 +3788,27 @@ interface ReplayedView {
 	records: JobRec[];
 	/** Stopped records this view met (DryRun.stopped). */
 	stopped: JobRec[];
+	/** Its body render passed every check before its joint checks (DryRun.rendered). */
+	rendered?: boolean;
 	error?: PaidStepError;
 	clip?: Awaited<ReturnType<typeof bodyClip>>;
 }
 /** A move (new, replaced or some views) whose stopped views only lack measured joints on their body frames can be kept
  *  free: body only, those views without poses, so items are fitted there after they are made again. Every other view must
  *  already be finished, so keeping never buys more work. Decided by the typed failure, never by text. */
-export const keepableUnposed = (views: readonly Pick<ReplayedView, 'state' | 'error'>[]) =>
+export const keepableUnposed = (
+	views: readonly Pick<ReplayedView, 'state' | 'error' | 'rendered'>[]
+) =>
 	views.some((v) => v.state === 'failed') &&
 	views.every(
 		(v) =>
 			v.state === 'ready' ||
-			(v.state === 'failed' && v.error?.paid.failure === 'joints' && v.error.paid.step === 'render')
+			(v.state === 'failed' &&
+				((v.error?.paid.failure === 'joints' && v.error.paid.step === 'render') ||
+					// a stopped joint check on a render that passed its checks: unknown, kept unmeasured, never sent again
+					(v.rendered &&
+						v.error?.paid.failure === 'stopped' &&
+						v.error.paid.step === '/estimate-skeleton')))
 	);
 async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedView> {
 	const scope = new AbortController(),
@@ -3816,6 +3848,7 @@ async function replayView(plan: BodyClipPlan, d: Direction): Promise<ReplayedVie
 				gens: priced(0),
 				records: dry.records,
 				stopped: dry.stopped ?? [],
+				...(dry.rendered ? { rendered: true } : {}),
 				error
 			};
 		throw error;
@@ -4287,6 +4320,8 @@ async function addBodyClip(
 	onProgress({ step: 'animate', done: 0, total, recIds: [] });
 	const extra = dirs.map((): JobRec[] => []);
 	const minimumTier = moveMinimumTier(m, spec);
+	// Free choices reuse what the review saw and never send a request.
+	const cacheOnly = !!(spec.keepUnposed || spec.finishedViews);
 	const recoveryState = recovery && {
 		intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] },
 		rawHashes: new Set(recovery.rawHashes),
@@ -4308,7 +4343,8 @@ async function addBodyClip(
 					}),
 					spec.attempt ?? spec.seed,
 					recoveryState,
-					minimumTier
+					minimumTier,
+					cacheOnly
 				)
 			: [];
 	const clips = await parallelGeneration(
@@ -4328,7 +4364,8 @@ async function addBodyClip(
 		),
 		spec.attempt ?? spec.seed,
 		recoveryState,
-		minimumTier
+		minimumTier,
+		cacheOnly
 	);
 
 	onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
