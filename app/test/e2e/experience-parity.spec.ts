@@ -4285,3 +4285,107 @@ test.describe('live views actions', () => {
 		});
 	});
 });
+
+test.describe('live view framing', () => {
+	// The topmost opaque actor pixel, so an underestimated reach shows up as cropped art, not just a wrong number.
+	const paintedTop = (page: Page) =>
+		page.evaluate(() => {
+			const canvas = document.querySelector<HTMLCanvasElement>('.world-actors')!;
+			const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+			for (let y = 0; y < canvas.height; y++)
+				for (let x = 0; x < canvas.width; x++)
+					if (pixels[(y * canvas.width + x) * 4 + 3] >= 200)
+						return (y * canvas.getBoundingClientRect().height) / canvas.height;
+			return Infinity;
+		});
+	for (const screen of [
+		{ name: 'desktop', width: 1280, height: 800 },
+		{ name: 'phone portrait', width: 390, height: 844 }
+	])
+		test(`${screen.name}: the body stands mid-stage with its reach in view, walking south and in a mounted jump`, async ({
+			page
+		}) => {
+			await page.setViewportSize({ width: screen.width, height: screen.height });
+			await customize(page);
+			const host = world(page);
+			const frame = () =>
+				host.evaluate((element) => {
+					const stage = element.getBoundingClientRect();
+					return { top: stage.top, bottom: stage.bottom, feet: Number(element.dataset.feetY) };
+				});
+			for (const view of ['Top-down', 'Side-scroller'] as const) {
+				await modes(page).getByRole('button', { name: view, exact: true }).click();
+				await expect(host).toHaveAttribute('data-feet-y', /\d/);
+				const rest = await frame();
+				// Raised off the bottom, and every painted pixel inside the stage.
+				expect(rest.feet).toBeLessThan(rest.top + (rest.bottom - rest.top) * 0.8);
+				expect(await paintedTop(page)).toBeGreaterThanOrEqual(rest.top);
+				await host.focus();
+				const key = view === 'Top-down' ? 's' : 'd';
+				const start = await host.getAttribute('data-position');
+				await page.keyboard.down(key);
+				await expect(host).not.toHaveAttribute('data-position', start!);
+				await page.waitForTimeout(800);
+				const walking = await frame();
+				await page.keyboard.up(key);
+				// The leading camera keeps a steady walk close to where it started.
+				expect(Math.abs(walking.feet - rest.feet)).toBeLessThan(12);
+			}
+			// Zoomed well in, a steady walk south still drifts no further on screen and the feet stay in the stage.
+			await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
+			await host.focus();
+			const fitZoom = Number(await host.getAttribute('data-scene-zoom'));
+			for (let step = 0; step < 6; step++) await page.keyboard.press('+');
+			await expect
+				.poll(async () => Number(await host.getAttribute('data-scene-zoom')))
+				.toBeGreaterThan(fitZoom * 1.8);
+			const zoomed = await frame();
+			await page.keyboard.down('s');
+			await page.waitForTimeout(1200);
+			const south = await frame();
+			await page.keyboard.up('s');
+			expect(Math.abs(south.feet - zoomed.feet)).toBeLessThan(16);
+			expect(south.feet).toBeLessThanOrEqual(south.bottom);
+			await page.keyboard.press('0');
+			// Mounted, at the top of a jump, nothing painted leaves the top of the stage.
+			await page.keyboard.press('m');
+			await expect(host).toHaveAttribute('data-mount', /\S/);
+			const top = (await frame()).top;
+			await host.focus();
+			const jumping = page.keyboard.press('Space');
+			// A jump lasts under half a second: sample the height and the painted top together on every frame.
+			const apex = await page.evaluate(
+				() =>
+					new Promise<{ height: number; top: number }>((resolve) => {
+						const stage = document.querySelector<HTMLElement>('.world-stage')!,
+							canvas = document.querySelector<HTMLCanvasElement>('.world-actors')!;
+						let best = { height: 0, top: Infinity };
+						const started = performance.now();
+						const frame = () => {
+							const height = Number(stage.dataset.jump);
+							if (height > best.height) {
+								const pixels = canvas
+									.getContext('2d')!
+									.getImageData(0, 0, canvas.width, canvas.height).data;
+								let top = Infinity;
+								for (let y = 0; y < canvas.height && top === Infinity; y++)
+									for (let x = 0; x < canvas.width; x++)
+										if (pixels[(y * canvas.width + x) * 4 + 3] >= 200) {
+											top = (y * canvas.getBoundingClientRect().height) / canvas.height;
+											break;
+										}
+								best = { height, top };
+							}
+							if (performance.now() - started < 1200) requestAnimationFrame(frame);
+							else resolve(best);
+						};
+						requestAnimationFrame(frame);
+					})
+			);
+			await jumping;
+			expect(apex.height).toBeGreaterThan(0.3);
+			expect(Number.isFinite(apex.top)).toBe(true);
+			expect(apex.top).toBeGreaterThanOrEqual(top);
+			await page.keyboard.press('m');
+		});
+});

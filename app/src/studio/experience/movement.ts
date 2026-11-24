@@ -92,14 +92,19 @@ export function keyboardVector(keys: ReadonlySet<string>, horizontalOnly = false
 	});
 }
 
-/** Bounded integration avoids a jump after a background tab resumes. It never changes the requested velocity. */
+/**
+ * Bounded integration avoids a jump after a background tab resumes. It never changes the requested velocity. The camera
+ * eases toward the actor; `lead` (0 to 1) aims it ahead along the travel by that share of the lag an eased follow builds
+ * up (speed / response), so a steady walk trails by only (1 - lead) of it and never carries the actor toward an edge.
+ */
 export function integrateMovement(
 	position: Vector,
 	camera: Vector,
 	velocity: Vector,
 	deltaSeconds: number,
 	speed = 90,
-	response = 7
+	response = 7,
+	lead = 0
 ): { position: Vector; camera: Vector } {
 	const dt = Number.isFinite(deltaSeconds) ? Math.max(0, Math.min(deltaSeconds, 0.05)) : 0;
 	const valid = [velocity.x, velocity.y, speed].every(Number.isFinite);
@@ -108,11 +113,15 @@ export function integrateMovement(
 		y: position.y + (valid ? velocity.y * speed * dt : 0)
 	};
 	const amount = Number.isFinite(response) ? 1 - Math.exp(-Math.max(0, response) * dt) : 0;
+	const ahead =
+		valid && Number.isFinite(lead) && response > 0
+			? (Math.min(1, Math.max(0, lead)) * speed) / response
+			: 0;
 	return {
 		position: next,
 		camera: {
-			x: camera.x + (next.x - camera.x) * amount,
-			y: camera.y + (next.y - camera.y) * amount
+			x: camera.x + (next.x + (ahead ? velocity.x * ahead : 0) - camera.x) * amount,
+			y: camera.y + (next.y + (ahead ? velocity.y * ahead : 0) - camera.y) * amount
 		}
 	};
 }

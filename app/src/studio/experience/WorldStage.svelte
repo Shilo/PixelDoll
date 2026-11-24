@@ -12,7 +12,16 @@
 		reflectionStyle,
 		floorFlatness
 	} from './reflection.ts';
-	import { EYE, heroRoom, layout, placeWorld, ringRadius } from './geometry.ts';
+	import {
+		EYE,
+		heroRoom,
+		layout,
+		liveFeetY,
+		liveFrame,
+		liveRoom,
+		placeWorld,
+		ringRadius
+	} from './geometry.ts';
 	import { floorRing, RING_GAP, RING_STROKE } from './floorRing.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import { displayDirection, displayDirectionInSentence } from '../displayDirection.ts';
@@ -185,6 +194,25 @@
 		const p = view.project;
 		if (mountedReach.size) return unionFrame([...mountedReach.values()]);
 		return grounding?.reach ?? (p ? reachFrame(p) : null);
+	});
+	// How far the live actor can reach in any facing it may turn to: every wardrobe item standing, and riding when the
+	// mount shows (its rider raised by the mount), so neither facing, outfit nor mounting reframes the scene mid-play.
+	const liveEnvelope = $derived.by(() => {
+		void doc.rev;
+		const p = view.project;
+		if (experience.mode === 'preview' || !p) return null;
+		const frames = [grounding?.reach ?? reachFrame(p)];
+		// Each mounted pose sits the rider on its own contact: the shown clip and the Attack and Jump it may play.
+		const clips = [...new Set([ui.anim, ...roles.attack, ...roles.jump])];
+		if (mountVisible && availability)
+			for (const direction of availability.directions)
+				for (const clip of clips) {
+					const mounted = mountedPresentation(resolvePreview(availability, { clip, direction }));
+					const frame = facingReach.get(direction);
+					if (mounted?.view && frame)
+						frames.push(mountedFrame(frame, mounted.ground, mounted.view, mounted.contact));
+				}
+		return unionFrame(frames);
 	});
 	// Each facing's own reach bounds its click target.
 	const facingReach = $derived.by(() => {
@@ -953,19 +981,41 @@
 							scale: fittedRow.scale
 						})
 					: fittedRow;
-			// The live views fit the jump's apex too, so a jump never leaves the top of the stage.
-			const apex =
-				(bodyBounds?.facings.get(ui.dir)?.standingHeight ?? fitFrame?.h ?? 0) * JUMP.height;
-			const fitted =
-				live && fitFrame ? { ...fitFrame, y: fitFrame.y + apex, h: fitFrame.h + apex } : fitFrame;
-			const fit = row?.scale ?? (fitted ? actorScale(fitted, room, dpr) : 0);
+			// The live views stand the body at the stage's middle with its whole reach in view: every wardrobe item (worn
+			// or not, so dressing never reframes the scene), the mount and the jump's apex (geometry.ts liveFrame).
+			const standing = bodyBounds?.facings.get(ui.dir)?.standingHeight ?? fitFrame?.h ?? 0;
+			const envelope = live && fitFrame ? (liveEnvelope ?? fitFrame) : null;
+			const liveReach = envelope
+				? {
+						above: Math.max(envelope.y, fitFrame!.y) + standing * JUMP.height,
+						body: standing,
+						below: Math.max(0, envelope.h - envelope.y)
+					}
+				: null;
+			const fit =
+				row?.scale ??
+				(fitFrame
+					? liveReach
+						? // Never larger than Preview's own fit of the body, unless Preview has no room at all (a squat window).
+							Math.min(
+								actorScale(fitFrame, room, dpr) || Infinity,
+								actorScale(liveFrame(fitFrame, liveReach), liveRoom(place), dpr)
+							)
+						: actorScale(fitFrame, room, dpr)
+					: 0);
 			const shared = sharedZoom('studio', fit);
+			// The gear's height above the feet, without the jump allowance (art px).
+			const gearAbove = envelope ? Math.max(envelope.y, fitFrame!.y) : 0;
+			if (liveReach)
+				anchor.y = liveFeetY(place, {
+					above: liveReach.above * shared.scale,
+					body: liveReach.body * shared.scale,
+					below: liveReach.below * shared.scale
+				});
 			const magnification = !fit ? 1 : shared.scale / fit;
 			// The world image, sky and side floor share one horizon: the eye line of the characters as drawn
 			// (geometry.ts placeWorld), so a lineup's smaller scale pulls the whole world back with it.
-			const heroNow = fitFrame
-				? Math.round(fitFrame.y * (row?.scale ?? actorScale(fitFrame, room, dpr)))
-				: experience.heroHeight;
+			const heroNow = fitFrame ? Math.round(fitFrame.y * fit) : experience.heroHeight;
 			const art = worldArt(ui.theme);
 			let backdrop = placeWorld(place, art, anchor, heroNow),
 				lift = 0;
@@ -1023,20 +1073,22 @@
 			const zoom = sceneCamera({
 				value: magnification,
 				anchor: groundedFocus,
-				framing: clearance,
-				bodyHeight: live ? (bodyReference?.standingHeight ?? fitFrame?.h ?? 0) * fit : undefined,
+				// The live views frame the actor themselves (liveFeetY at the drawn scale), so they zoom around its feet.
+				framing: live ? undefined : clearance,
 				centerX: inspecting ? (clearance.l + clearance.r) / 2 : undefined,
 				backdrop,
 				plate: art,
 				viewport: { l: 0, t: 0, r: width, b: backdrop.coverBottom },
-				center: {
-					x: groundedFocus.x + (mountBounds ? (mountBounds.w / 2 - mountBounds.x) * fit : 0),
-					y:
-						groundedFocus.y -
-						(mountBounds
-							? (mountBounds.y - mountBounds.h / 2) * fit
-							: ((bodyReference?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2)
-				}
+				center: live
+					? groundedFocus
+					: {
+							x: groundedFocus.x + (mountBounds ? (mountBounds.w / 2 - mountBounds.x) * fit : 0),
+							y:
+								groundedFocus.y -
+								(mountBounds
+									? (mountBounds.y - mountBounds.h / 2) * fit
+									: ((bodyReference?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2)
+						}
 			});
 			const drawPosition = (
 				frame: { x: number; y: number },
@@ -1131,7 +1183,10 @@
 					velocity,
 					dt / 1000,
 					speed,
-					MOTION.cameraResponse
+					MOTION.cameraResponse,
+					// Zoomed in, each world unit spans more of the screen, so the camera leads closer to the actor and
+					// a steady walk drifts no further on screen than at the fit.
+					1 - (1 - MOTION.cameraLead) / Math.max(1, magnification)
 				));
 			const options: RenderOptions = (sceneOptions = {
 				width,
@@ -1583,6 +1638,10 @@
 					host.dataset.facing = p.direction ?? '';
 					host.dataset.clip = p.clip ?? '';
 					host.dataset.jump = live ? actions.jump.height.toFixed(3) : '';
+					// Where the live actor stands and how high its reach goes on screen, for framing checks.
+					host.dataset.feetY = live ? point.y.toFixed(1) : '';
+					// The gear's top as drawn now: the reach above the feet without the jump allowance, raised by the lift.
+					host.dataset.reachTop = live ? (point.y - lift - gearAbove * scale).toFixed(1) : '';
 					host.dataset.destination = destination
 						? `${destination.x.toFixed(2)},${destination.y.toFixed(2)}`
 						: '';
