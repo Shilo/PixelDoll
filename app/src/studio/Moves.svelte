@@ -15,8 +15,12 @@
 		openMoveReview,
 		openFrames,
 		openRename,
-		characterItemJobs
+		characterItemJobs,
+		elsewhereMove,
+		mirrorElsewhereMove,
+		workRunsInAnotherTab
 	} from './state.svelte.ts';
+	import { onMount } from 'svelte';
 	import { inFlight } from './itemJobs.ts';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
@@ -69,6 +73,26 @@
 		moving.queued.filter((q) => q.projectId === doc.id && ownRow(q.spec) && inThisTab(q.spec))
 	);
 	const drawing = $derived(characterItemJobs(doc.id, $queue.jobs));
+	// Another tab's stored move, mirrored here read-only: our own moving state stays empty in a follower.
+	const elsewhere = $derived(
+		kind === 'move' && workRunsInAnotherTab() && elsewhereMove.current?.projectId === doc.id
+			? elsewhereMove.current
+			: null
+	);
+	const elsewhereRunning = $derived(
+		elsewhere?.spec && ownRow(elsewhere.spec) && inThisTab(elsewhere.spec) ? elsewhere.spec : null
+	);
+	const elsewhereQueued = $derived(
+		elsewhere?.queued.filter(
+			(q) => q.projectId === doc.id && ownRow(q.spec) && inThisTab(q.spec)
+		) ?? []
+	);
+	// The record changes only in the leading tab: keep the mirror current while this list is open.
+	onMount(() => {
+		void mirrorElsewhereMove();
+		const timer = setInterval(() => void mirrorElsewhereMove(), 2000);
+		return () => clearInterval(timer);
+	});
 	const itemName = (id: string) => m?.items.find((item) => item.id === id)?.name ?? '';
 	// A running move reports finished calls in progress.done; the queued call in flight adds its own partial progress.
 	const movePercent = $derived.by(() => {
@@ -292,6 +316,26 @@
 					></button
 				>
 			{/each}
+			<!-- Another tab's move and its queue: the same rows, informative and never clickable here. -->
+			{#if elsewhereRunning}
+				<div class="move-row bu-action elsewhere" data-variant="tile">
+					<span class="move-thumb"><span class="bu-ring ring spin" aria-hidden="true"></span></span>
+					<span class="move-text"
+						><b>{jobName(elsewhereRunning)}</b><span class="muted small"
+							>{t('moves.inAnotherTab')}</span
+						></span
+					>
+				</div>
+			{/if}
+			{#each elsewhereQueued as q, i (i)}
+				<div class="move-row bu-action elsewhere" data-variant="tile">
+					<span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span>
+					<span class="move-text"
+						><b>{jobName(q.spec)}</b><span class="muted small">{t('moves.queuedInAnotherTab')}</span
+						></span
+					>
+				</div>
+			{/each}
 		</div>
 		{#if kind === 'move' && !isDemo()}<button
 				class="bu-action add-row cta"
@@ -380,5 +424,10 @@
 	/* The list gap already separates the CTA from the rows above it. */
 	.cta {
 		margin-top: 0;
+	}
+
+	/* Another tab's rows are informative: no hover, click or pointer, so they cannot start or queue anything here. */
+	.elsewhere {
+		pointer-events: none;
 	}
 </style>

@@ -2195,6 +2195,8 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivote {x},{y}",
 		"waitingForRepairReview": "Esperando la revisión de los fotogramas del objeto",
+		"inAnotherTab": "Se está ejecutando en otra pestaña",
+		"queuedInAnotherTab": "En cola en otra pestaña",
 		"needsRedo": "No se encontraron articulaciones: redibújala para animar objetos en ella",
 		"itemsDrawn": {
 			"one": "{drawn} de {n} objeto dibujado",

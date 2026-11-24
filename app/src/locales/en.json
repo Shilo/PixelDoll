@@ -2195,6 +2195,8 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
 		"waitingForRepairReview": "Waiting for item frame review",
+		"inAnotherTab": "Running in another tab",
+		"queuedInAnotherTab": "Queued in another tab",
 		"needsRedo": "Joints not found: redraw it to animate items on it",
 		"itemsDrawn": {
 			"one": "{drawn} of {n} item drawn",

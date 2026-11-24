@@ -2195,6 +2195,8 @@
 		"bodySize": "{w}×{h} piksel",
 		"frameSize": "{w}×{h} piksel, pivot noktası {x},{y}",
 		"waitingForRepairReview": "Eşya karelerinin incelenmesi bekleniyor",
+		"inAnotherTab": "Başka bir sekmede çalışıyor",
+		"queuedInAnotherTab": "Başka bir sekmede sırada",
 		"needsRedo": "Eklemler bulunamadı: üzerinde eşya canlandırmak için yeniden çizin",
 		"itemsDrawn": {
 			"one": "{n} eşyadan {drawn} tanesi çizildi",

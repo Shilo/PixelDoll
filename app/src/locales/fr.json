@@ -2195,6 +2195,8 @@
 		"bodySize": "{w} × {h} px",
 		"frameSize": "{w} × {h} px, pivot {x},{y}",
 		"waitingForRepairReview": "En attente de la vérification des images de l’objet",
+		"inAnotherTab": "En cours dans un autre onglet",
+		"queuedInAnotherTab": "En attente dans un autre onglet",
 		"needsRedo": "Articulations introuvables : redessinez-la pour y animer des objets",
 		"itemsDrawn": {
 			"one": "{drawn} objet dessiné sur {n}",

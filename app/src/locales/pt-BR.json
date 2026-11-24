@@ -2204,6 +2204,8 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
 		"waitingForRepairReview": "Aguardando a revisão dos quadros do item",
+		"inAnotherTab": "Em execução em outra aba",
+		"queuedInAnotherTab": "Na fila em outra aba",
 		"needsRedo": "Articulações não encontradas: redesenhe para animar itens nela",
 		"itemsDrawn": {
 			"one": "{drawn} de {n} item desenhado",

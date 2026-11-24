@@ -143,6 +143,7 @@ import {
 } from './slots.ts';
 import { live, queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { itemJobs } from './itemJobs.ts';
+import { mirroredMove, type ElsewhereMove } from './elsewhereMove.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import { stateAttempts } from './stateRecovery.ts';
 import {
@@ -3698,7 +3699,10 @@ export function loadGens(): Promise<void> {
 		setGens(await readGens());
 		gensReady = true;
 		if (queue.role !== 'follower') drive();
-		else for (const g of gens) if (g.phase === 'review') void readGenReview(g);
+		else {
+			for (const g of gens) if (g.phase === 'review') void readGenReview(g);
+			void mirrorElsewhereMove();
+		}
 	})());
 }
 function drive() {
@@ -3714,6 +3718,32 @@ function drive() {
 	void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
 	if (!deleted.ready) void refreshRecentlyDeleted(); // once: expired deletions never look restorable
 }
+// ---------- a follower mirrors the move another tab runs ----------
+/** The move another tab is running, read-only here: its Moves list shows it and the moves queued behind it. */
+export const elsewhereMove = $state<{ current: ElsewhereMove | null }>({ current: null });
+let elsewhereRead = 0;
+/** Whether this tab only mirrors the queue: the work runs in another tab. */
+export const workRunsInAnotherTab = () => characterJobsInOtherTab;
+function clearElsewhereMove() {
+	elsewhereRead++; // a read still in flight must not put it back
+	elsewhereMove.current = null;
+}
+/** A follower reads the stored move record the leading tab updates; it never starts, stops or queues anything here. */
+export async function mirrorElsewhereMove() {
+	if (queue.role !== 'follower') {
+		clearElsewhereMove();
+		return;
+	}
+	const read = ++elsewhereRead;
+	let raw: unknown;
+	try {
+		raw = await db.get('projects', MOVE_KEY);
+	} catch (error) {
+		console.error('move mirror', error); // keep the last mirror; a later read tries again
+		return;
+	}
+	if (read === elsewhereRead) elsewhereMove.current = mirroredMove(raw);
+}
 queue.subscribe((s) => {
 	characterJobsPending = !queue.idle();
 	characterJobsInOtherTab = s.role === 'follower';
@@ -3723,11 +3753,13 @@ queue.subscribe((s) => {
 	runWaiting();
 	if (!gensReady || driving) return;
 	if (s.role !== 'follower') {
+		clearElsewhereMove();
 		void takeOver();
 		return;
 	}
 	if (Date.now() - mirrorAt < 2000) return;
 	mirrorAt = Date.now();
+	void mirrorElsewhereMove();
 	void readGens().then(
 		(list) => {
 			if (driving || JSON.stringify(list) === mirrored) return;
@@ -3743,6 +3775,7 @@ queue.subscribe((s) => {
 async function takeOver() {
 	if (driving || takingOver) return;
 	takingOver = takeOverRunning = true;
+	clearElsewhereMove(); // this tab now runs the stored move itself (resumeMove below)
 	try {
 		const list = await readGens();
 		if (driving) return; // startup drove first; its own resumes follow and call startupResumed
@@ -5061,17 +5094,26 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 	].filter((s) => !itemId || s.items.includes(itemId));
 /** A character's items being drawn on its saved moves and States (itemJobs.ts), for the clip rows and Wardrobe tiles. */
 export function characterItemJobs(projectId: string, jobs: readonly JobRec[]) {
-	const spec =
+	const local =
 		moving.spec && (!moving.done || moveRunning) && moving.projectId === projectId
-			? moving.spec
+			? { spec: moving.spec, progress: moving.progress }
 			: null;
+	// A follower shows the items another tab is drawing from the mirrored record, read-only.
+	const elsewhere =
+		!local && characterJobsInOtherTab && elsewhereMove.current?.projectId === projectId
+			? elsewhereMove.current
+			: null;
+	const spec = local?.spec ?? elsewhere?.spec ?? null;
 	const list = itemJobs(
 		spec && {
 			spec,
-			progress: moving.progress,
-			attention: !!moving.error || !!moving.repairReview
+			progress: local?.progress ?? elsewhere?.progress ?? null,
+			attention: !!local && (!!moving.error || !!moving.repairReview)
 		},
-		moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec),
+		[
+			...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec),
+			...(elsewhere?.queued.filter((q) => q.projectId === projectId).map((q) => q.spec) ?? [])
+		],
 		jobs
 	);
 	// A request leaves the queue before its view is saved and counted: the share shown never goes back meanwhile.

@@ -2128,6 +2128,8 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, titik pivot {x},{y}",
 		"waitingForRepairReview": "Menunggu tinjauan frame item",
+		"inAnotherTab": "Sedang berjalan di tab lain",
+		"queuedInAnotherTab": "Menunggu di tab lain",
 		"needsRedo": "Sendi tidak ditemukan: gambar ulang untuk menganimasikan item di dalamnya",
 		"itemsDrawn": {
 			"other": "{drawn} dari {n} item sudah digambar"

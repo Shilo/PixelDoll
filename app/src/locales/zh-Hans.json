@@ -2128,6 +2128,8 @@
 		"bodySize": "{w}×{h} 像素",
 		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
 		"waitingForRepairReview": "等待检查装备帧",
+		"inAnotherTab": "正在另一个标签页中运行",
+		"queuedInAnotherTab": "在另一个标签页中排队",
 		"needsRedo": "未找到关节：请重绘以在其上为装备制作动画",
 		"itemsDrawn": {
 			"other": "已绘制 {drawn}/{n} 件装备"

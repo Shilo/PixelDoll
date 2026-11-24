@@ -1,4 +1,5 @@
-import { newItem, openStudio, reloadStudio } from './immersive-helpers.ts';
+import { equipmentMode, newItem, openStudio, reloadStudio } from './immersive-helpers.ts';
+import { followerTab } from './queue-lock.ts';
 import { expect, test } from '@playwright/test';
 
 for (const labFirst of [true, false])
@@ -302,4 +303,57 @@ test('a stop from a second tab says PixelLab did not confirm it when the running
 	expect(await deletes.evaluate((sent) => sent.length)).toBeGreaterThan(0);
 	expect(network).toEqual([]);
 	expect(errors).toEqual([]);
+});
+
+test('a follower tab lists the move another tab is running in Moves, read-only', async ({
+	page,
+	context
+}) => {
+	const requests: string[] = [];
+	await context.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await context.route('https://api.pixellab.ai/**', (route) => {
+		requests.push(route.request().url());
+		return route.abort();
+	});
+	const follower = await followerTab(page, context);
+	// Let the leading tab finish its startup resumes before writing a record it would otherwise resume.
+	await page.waitForTimeout(1000);
+	// The stored record the leading tab writes while a move runs; writing it makes no PixelLab calls.
+	await page.evaluate(async () => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = (await import(dbPath)) as typeof import('../../src/lib/store/db.ts');
+		await db.put('projects', 'studio-move', {
+			id: 'studio-move',
+			spec: { id: 'spin', frames: 4, items: [], seed: 987654 },
+			projectId: 'fixture:s2',
+			status: 'running',
+			requestText: db.REQUEST_TEXT,
+			queued: [
+				{
+					projectId: 'fixture:s2',
+					spec: { id: 'jump', frames: 4, items: ['helmet'], itemsOnly: true, seed: 987655 }
+				}
+			]
+		});
+	});
+	await equipmentMode(follower, 'Moves');
+	const rows = follower.locator('.move-list .move-row');
+	await expect(rows.filter({ hasText: 'Spin' })).toContainText('Running in another tab', {
+		timeout: 10_000
+	});
+	await expect(rows.filter({ hasText: 'Jump' })).toContainText('Queued in another tab');
+	await expect(rows.filter({ hasText: 'Spin' })).toHaveCSS('pointer-events', 'none');
+	await expect(follower.getByRole('dialog', { name: 'New move', exact: true })).toHaveCount(0);
+	// The stored record finishing clears the follower's rows; it never starts or queues anything here.
+	await page.evaluate(async () => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = (await import(dbPath)) as typeof import('../../src/lib/store/db.ts');
+		await db.del('projects', 'studio-move');
+	});
+	await expect(rows.filter({ hasText: 'Spin' })).toHaveCount(0, { timeout: 10_000 });
+	await expect(rows.filter({ hasText: 'Jump' })).toHaveCount(0);
+	expect(requests).toEqual([]);
 });

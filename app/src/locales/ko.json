@@ -2128,6 +2128,8 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, 피벗 {x},{y}",
 		"waitingForRepairReview": "아이템 프레임 검토 대기 중",
+		"inAnotherTab": "다른 탭에서 실행 중입니다",
+		"queuedInAnotherTab": "다른 탭에서 대기 중입니다",
 		"needsRedo": "관절을 찾지 못함: 아이템을 움직이려면 다시 그리세요",
 		"itemsDrawn": {
 			"other": "아이템 {n}개 중 {drawn}개 그림"

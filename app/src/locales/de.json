@@ -2195,6 +2195,8 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, Drehpunkt {x},{y}",
 		"waitingForRepairReview": "Warten auf die Prüfung der Gegenstandsframes",
+		"inAnotherTab": "Läuft in einem anderen Tab",
+		"queuedInAnotherTab": "Wartet in einem anderen Tab",
 		"needsRedo": "Gelenke nicht gefunden: neu zeichnen, um Gegenstände darauf zu animieren",
 		"itemsDrawn": {
 			"one": "{drawn} von {n} Gegenstand gezeichnet",

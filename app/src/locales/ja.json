@@ -2128,6 +2128,8 @@
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px、ピボット {x},{y}",
 		"waitingForRepairReview": "装備フレームの確認待ち",
+		"inAnotherTab": "別のタブで実行中です",
+		"queuedInAnotherTab": "別のタブで待機中です",
 		"needsRedo": "関節が見つかりません。アイテムを動かすには描き直してください",
 		"itemsDrawn": {
 			"other": "{n}個中{drawn}個を描画済み"
