@@ -51,6 +51,32 @@ that needs them.
 There is still **no `attack` or slash template for mannequins**: `attack`, `attack-back/left/right`, `angry` and `dying`
 are rejected for this body template.
 
+## Using template moves in the Studio
+
+The **Walk**, **Run** and **Jump** chips in New move are not just prompts. A chip's text is the signal: when the text
+in the box is exactly that chip's built-in prompt, the sheet sends the chip's action, and the action selects the
+template.
+
+A move uses the template only when all of these hold:
+
+- **Text:** you pressed the chip and did not edit its text. Typing "run" yourself, editing the text, or a chip prompt
+  customized in Settings makes it a described move.
+- **Model:** Skeleton V3.
+- **Character:** registered with PixelLab. Every character drawn in PixelDoll is; the sheet checks it for free.
+- **Frames:** Automatic, or at most the template's count (Walk and Run 8, Jump 7).
+- **Start frame:** none chosen (no "start from" frame or uploaded start).
+- **Redraw:** when redrawing only some views, the saved views must already be template-made.
+
+How to confirm before paying:
+
+- **Details line:** open **Details** under the price. A template move reads "`running-8-frames` skeleton-v3 template →
+  joints → raw skeleton-v3 on the rest view". A described move says "pixminimax motion …".
+- **API calls preview (Developer mode):** a template move sends `POST /characters/animations` with
+  `template_animation_id`, not `action_description`.
+- **Price:** a template move costs about 2 generations more per view than the described route.
+
+After saving, the move's source records `managed-skeleton-v3:<template>`.
+
 ## Method
 
 **Template list.** The 49 mannequin templates were read from PixelLab's own validation error on 2026-11-24 (free); see
