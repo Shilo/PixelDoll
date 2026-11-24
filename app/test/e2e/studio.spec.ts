@@ -9172,18 +9172,32 @@ test('standing-first items quote only standing and offer actual custom moves one
 	expect(await dot(movesTab, 'label')).toBe('red');
 	expect(await dot(statesTab, 'label')).toBe('accent');
 	await expect(movesTab).toHaveAccessibleDescription('Work here needs attention');
-	// Work outside the tabs (an item draft) marks More: running, then stopped.
-	const draft = (phase: string) =>
-		page.evaluate(async (phase) => {
-			const path = '/src/studio/state.svelte.ts',
-				s = await import(path);
-			s.gens.splice(0, s.gens.length, {
-				phase,
-				draft: { rigId: 'another-character', spec: { id: 'outside-draft' } },
-				input: { slot: 'head', name: 'Outside draft' }
-			});
-		}, phase);
-	await draft('running');
+	// This character's item drafts mark Wardrobe (gold, red when one failed); another character's mark More instead.
+	const wardrobeTab = page.locator('#customization-tab-wardrobe');
+	const draft = (phase: string, own: boolean) =>
+		page.evaluate(
+			async ({ phase, own }) => {
+				const path = '/src/studio/state.svelte.ts',
+					s = await import(path);
+				s.gens.splice(0, s.gens.length, {
+					phase,
+					status: '',
+					draft: { rigId: own ? s.doc.id : 'another-character', spec: { id: 'dot-draft' } },
+					input: { slot: 'head', name: 'Dot draft' }
+				});
+			},
+			{ phase, own }
+		);
+	await draft('running', true);
+	await expect(wardrobeTab).toHaveAttribute('data-activity', 'busy');
+	expect(await dot(wardrobeTab, 'label')).toBe('accent');
+	await expect(more).not.toHaveAttribute('data-activity');
+	await draft('failed', true);
+	await expect(wardrobeTab).toHaveAttribute('data-activity', 'stopped');
+	expect(await dot(wardrobeTab, 'label')).toBe('red');
+	await expect(more).not.toHaveAttribute('data-activity');
+	await draft('running', false);
+	await expect(wardrobeTab).not.toHaveAttribute('data-activity');
 	await expect(more).toHaveAttribute('data-activity', 'busy');
 	expect(await dot(more, 'button')).toBe('accent');
 	const size = (target: Locator, pseudo: string) =>
@@ -9195,7 +9209,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 			return [after.width, after.height];
 		}, pseudo);
 	expect(await size(more, 'button')).toEqual(await size(movesTab, 'label'));
-	await draft('failed');
+	await draft('failed', false);
 	await expect(more).toHaveAttribute('data-activity', 'stopped');
 	expect(await dot(more, 'button')).toBe('red');
 	await page.evaluate(async () => {
@@ -9758,10 +9772,15 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		.getByRole('dialog', { name: 'Item review', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
-	// Activity (in More, which carries a warning dot) lists the stopped draft that holds its slot and opens its review.
+	// Wardrobe carries the stopped draft's warning dot (More leaves it to the tab); Activity in More lists the draft that
+	// holds its slot and opens its review.
+	await expect(page.locator('#customization-tab-wardrobe')).toHaveAttribute(
+		'data-activity',
+		'stopped'
+	);
 	await expect(
-		page.locator('.experience-header [popovertarget="experience-options"][data-activity="stopped"]')
-	).toBeVisible();
+		page.locator('.experience-header [popovertarget="experience-options"]')
+	).not.toHaveAttribute('data-activity');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')

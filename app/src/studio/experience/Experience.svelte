@@ -125,9 +125,12 @@
 	const movesOff = $derived(
 		message(experience.testMount ? 'experience.movesOffMounted' : 'experience.movesOffWalking')
 	);
-	// Moves and States carry a dot while this character's work runs there, red when it stopped (activityStatus.svelte.ts).
-	const movesWork = $derived(tabActivity('move'));
-	const statesWork = $derived(tabActivity('state'));
+	// Wardrobe, Moves and States carry a dot for this character's work there, red when some failed (activityStatus.svelte.ts).
+	const tabWork = $derived({
+		wardrobe: tabActivity('wardrobe'),
+		moves: tabActivity('moves'),
+		states: tabActivity('states')
+	});
 	// While the tabs are on screen, More's dot leaves their work to them.
 	const showWorkTabs = () => {
 		workTabs.shown = true;
@@ -904,7 +907,7 @@
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
 				{#each tabs as [id, label]}{@const off =
 						(id === 'moves' || id === 'states') && experience.mode !== 'preview'}{@const work =
-						id === 'moves' ? movesWork : id === 'states' ? statesWork : undefined}<button
+						id in tabWork ? tabWork[id as keyof typeof tabWork] : undefined}<button
 						class="bu-action"
 						data-variant="tab"
 						role="tab"
