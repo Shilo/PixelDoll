@@ -13,3 +13,6 @@ coverage/
 public/fixtures/
 dev-fixtures/
 test/fixtures/**/*.json
+
+# Local Impeccable hook cache (excluded from git only via .git/info/exclude)
+.impeccable/hook.cache.json
