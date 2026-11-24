@@ -191,23 +191,31 @@ export function popoverFocus(
 	}
 }
 
-/** Arrow keys, Home and End move focus between a menu's enabled radio rows. */
+/** Arrow keys, Home and End move focus through a menu's enabled items in DOM order. */
 export function navigateMenu(menu: HTMLElement, event: KeyboardEvent) {
+	// Nested menus own their own arrows; leave those keys to them.
+	if (event.target instanceof Element && event.target.closest('[role=menu]') !== menu) return;
 	const items = [
-		...menu.querySelectorAll<HTMLButtonElement>('[role=menuitemradio]:not(:disabled)')
-	];
-	const at = items.indexOf(document.activeElement as HTMLButtonElement);
-	const target =
-		event.key === 'ArrowDown'
-			? items[(at + 1) % items.length]
-			: event.key === 'ArrowUp'
-				? items[(at - 1 + items.length) % items.length]
-				: event.key === 'Home'
-					? items[0]
-					: event.key === 'End'
-						? items.at(-1)
-						: undefined;
+		...menu.querySelectorAll<HTMLElement>('[role=menuitem],[role=menuitemradio]')
+	].filter(
+		(item) =>
+			!item.matches(':disabled,[hidden]') &&
+			item.getClientRects().length > 0 &&
+			item.closest('[role=menu]') === menu
+	);
+	if (!items.length) return;
+	const at = items.indexOf(document.activeElement as HTMLElement);
+	let target: HTMLElement | undefined;
+	if (event.key === 'Home') target = items[0];
+	else if (event.key === 'End') target = items.at(-1);
+	else if (event.key === 'ArrowDown') target = at < 0 ? items[0] : items[(at + 1) % items.length];
+	else if (event.key === 'ArrowUp')
+		target = at < 0 ? items.at(-1) : items[(at - 1 + items.length) % items.length];
 	if (!target) return;
+	if (target === document.activeElement) return;
 	event.preventDefault();
+	// The app also has a global arrow handler for menus; leaving this one to own the move keeps its
+	// unavailable rows focusable.
+	event.stopPropagation();
 	target.focus();
 }

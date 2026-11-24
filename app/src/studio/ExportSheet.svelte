@@ -41,7 +41,7 @@
 	import { displayMove } from './displayMove.ts';
 	import { Check, ChevronDown, ChevronRight, Download, Settings2, TriangleAlert } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
-	import { popoverFocus } from './experience/focus.ts';
+	import { navigateMenu, popoverFocus } from './experience/focus.ts';
 	import { getLocale, t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import type { WhisperKey } from 'svelte-whisper';
@@ -887,8 +887,10 @@
 						popover
 						role="menu"
 						aria-label={t('export.settings.versionMenu')}
+						tabindex={-1}
 						bind:this={versionMenu}
 						ontoggle={popoverFocus}
+						onkeydown={(event) => navigateMenu(event.currentTarget, event)}
 					>
 						<PopoverArrow />
 						<div class="menu-surface bu-popover-surface bu-floating">

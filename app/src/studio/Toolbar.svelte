@@ -4,7 +4,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { app } from '../lib/app.svelte.ts';
-	import { popoverFocus } from './experience/focus.ts';
+	import { navigateMenu, popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
 	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
@@ -309,10 +309,12 @@
 	bind:this={menu}
 	role="menu"
 	aria-label={t('common.characters')}
+	tabindex={-1}
 	ontoggle={(e) => {
 		copyFeedback = null;
 		popoverFocus(e);
 	}}
+	onkeydown={(event) => navigateMenu(menu, event)}
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">

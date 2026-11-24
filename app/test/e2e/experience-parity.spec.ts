@@ -612,9 +612,55 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	await page.locator('.name-menu').click();
 	const menu = page.locator('#project-menu');
 	await expect(menu.locator('.menu-prompt-text')).toBeVisible();
-	await expect(menu.getByRole('menuitem', { name: 'Copy prompt', exact: true })).toBeVisible();
+	const copy = menu.getByRole('menuitem', { name: 'Copy prompt', exact: true });
+	await expect(copy).toBeVisible();
+	const current = menu.locator('[role=menuitemradio][aria-checked="true"]');
+	const locked = menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
+	const connect = menu.getByRole('menuitem', { name: /^Connect PixelLab/ });
+	const last = menu.getByRole('menuitem', { name: 'Character selection', exact: true });
+	await expect(current).toBeFocused();
+	// Unavailable rows stay in the sequence so their reason is reachable.
+	await page.keyboard.press('ArrowDown');
+	await expect(locked).toBeFocused();
+	await expect(locked).toHaveAccessibleDescription("Demo character can't be deleted");
+	await page.keyboard.press('ArrowDown');
+	await expect(connect).toBeFocused();
+	await page.keyboard.press('ArrowUp');
+	await expect(locked).toBeFocused();
+	await page.keyboard.press('ArrowUp');
+	await expect(current).toBeFocused();
+	await page.keyboard.press('Home');
+	await expect(copy).toBeFocused();
+	await page.keyboard.press('ArrowDown');
+	await expect(current).toBeFocused();
+	await page.keyboard.press('End');
+	await expect(last).toBeFocused();
+	await page.keyboard.press('ArrowDown');
+	await expect(copy).toBeFocused();
+	await page.keyboard.press('ArrowUp');
+	await expect(last).toBeFocused();
+	// A character's nested Actions menu keeps its arrows instead of handing them to the project menu.
+	const currentName = (await current.getAttribute('aria-label'))!;
+	const more = menu.getByRole('button', {
+		name: `More actions for ${currentName}`,
+		exact: true
+	});
+	await more.click();
+	const actions = page.getByRole('menu', { name: `Actions for ${currentName}`, exact: true });
+	const details = actions.getByRole('menuitem', { name: 'Details...', exact: true });
+	await expect(details).toBeFocused();
+	await page.keyboard.press('ArrowUp');
+	// The shared handler still steps over the locked Delete row to the last enabled one.
+	await expect(actions.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toBeFocused();
+	await actions.getByRole('menuitem').last().focus();
+	await page.keyboard.press('ArrowDown');
+	await expect(details).toBeFocused();
+	await more.click();
+	await expect(actions).not.toBeVisible();
+	await expect(menu).toBeVisible();
 	await page.keyboard.press('Escape');
 	await expect(menu).not.toBeVisible();
+	await expect(page.locator('.name-menu')).toBeFocused();
 	await world(page).focus();
 	await expect(world(page)).toBeFocused();
 	await page.keyboard.press('Escape');

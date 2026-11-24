@@ -3870,6 +3870,24 @@ test('export picker has accessible categories, local icons and a native GDevelop
 		await expect(
 			versionMenu.getByRole('menuitemradio', { name: 'Standard: MZ, MV, VX Ace, VX' })
 		).toHaveAttribute('aria-checked', 'true'); // Standard is current both times
+		const versions = versionMenu.getByRole('menuitemradio');
+		const count = await versions.count();
+		const checkedAt = await versions.evaluateAll((rows) =>
+			rows.findIndex((row) => row.getAttribute('aria-checked') === 'true')
+		);
+		await expect(versions.nth(checkedAt)).toBeFocused();
+		await page.keyboard.press('ArrowDown');
+		await expect(versions.nth((checkedAt + 1) % count)).toBeFocused();
+		await page.keyboard.press('ArrowUp');
+		await expect(versions.nth(checkedAt)).toBeFocused();
+		await page.keyboard.press('End');
+		await expect(versions.last()).toBeFocused();
+		await page.keyboard.press('ArrowDown');
+		await expect(versions.first()).toBeFocused();
+		await page.keyboard.press('Home');
+		await expect(versions.first()).toBeFocused();
+		await page.keyboard.press('ArrowUp');
+		await expect(versions.last()).toBeFocused();
 		await versionMenu.getByRole('menuitemradio', { name: item }).click();
 		await expect(versionMenu).toBeHidden();
 		await expect(versionButton).toHaveAccessibleName(`RPG Maker version: ${item}`);
@@ -3928,6 +3946,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	await page.screenshot({ path: testInfo.outputPath('export-rpg-version-390.png') });
 	await page.keyboard.press('Escape');
 	await expect(versionMenu).toBeHidden();
+	await expect(versionButton).toBeFocused();
 	expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(errors).toEqual([]);
