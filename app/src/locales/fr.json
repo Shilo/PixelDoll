@@ -3497,7 +3497,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Marcher en attaquant",
-		"layeringHelp": "Combine le haut du corps de l’attaque et les jambes de la marche si les poses concordent. Les capes et les manteaux longs peuvent donner un résultat étrange. Au sol, les attaques à pied se déplacent à 80 % de la vitesse normale.",
+		"layeringHelp": "La marche et l’attaque doivent être orientées dans le même sens, les jambes doivent avoir des images pour les deux mouvements et le raccord à la taille doit être aligné. Sinon, l’attaque normale du corps entier est jouée.",
 		"waist": "Taille",
 		"automaticWaist": "Automatique",
 		"waistHelp": "Déplace la jonction de 4 pixels au maximum vers le haut ou le bas. Le mode automatique utilise la position des hanches dans chaque image.",

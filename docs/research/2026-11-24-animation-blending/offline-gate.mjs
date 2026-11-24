@@ -73,7 +73,7 @@ function compare(walk, action, size, gear, w, a) {
 }
 
 function print(label, pairs, geometry = [], actionLoops = false) {
-  const score = actionSetScore(pairs);
+  const score = actionSetScore(pairs, pairs[0].output.w);
   const count = (keys) =>
     Object.fromEntries(
       [...new Set(keys)].map((key) => [

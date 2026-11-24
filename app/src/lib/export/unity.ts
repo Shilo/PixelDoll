@@ -32,6 +32,7 @@ export function unityJson(m: Manifest) {
 		pivotY: rig.pivot.y,
 		ppu: m.export?.pixelsPerUnit ?? exportUnit(rig),
 		baseItem: rig.baseItem,
+		actionOmissions: m.actionLayers?.omissions ?? [],
 		actionPairs:
 			m.actionLayers?.pairs.map((pair) => ({
 				...pair,
@@ -109,6 +110,7 @@ namespace PixelDoll
 {
     [Serializable] public class PdActionHip { public int x, y; public bool present; }
     [Serializable] public class PdActionCell { public bool eligible; public int x, y; }
+    [Serializable] public class PdActionOmission { public string clip, direction; public string[] items; }
     [Serializable] public class PdActionPair { public string walk, action, direction; public int upperCells; public string[] blocked; public PdActionCell[] cells; public PdActionHip[] lowerHip, upperHip; }
     [Serializable] public class PdFrame { public int cell; public int ms; }
     [Serializable] public class PdAnim { public string id; public bool loop; public int cells; public PdFrame[] frames; public string[] directions; }
@@ -132,6 +134,7 @@ namespace PixelDoll
         public string[] directions;
         public PdAnim[] animations;
         public PdActionPair[] actionPairs;
+        public PdActionOmission[] actionOmissions;
         public PdSlot[] slots;
         public PdItem[] items;
         public PdEquip[] preset;
@@ -323,12 +326,13 @@ namespace PixelDoll
                 int upperCell = action.frames[index].cell;
                 var offset = actionLayered && dir == actionDirection
                     ? PairOffset(anim, dir, cell, action.id, upperCell) : null;
-                if (offset == null) RenderStack(visible, action.id, actionDirection, upperCell, "", hidden, false, Vector3.zero);
+                var omitted = Array.Find(data.actionOmissions, row => row.clip == action.id && row.direction == actionDirection)?.items;
+                if (offset == null) RenderStack(visible, action.id, actionDirection, upperCell, "", hidden, false, Vector3.zero, omitted);
                 else
                 {
-                    RenderStack(visible, anim, dir, cell, "lower", hidden, false, Vector3.zero);
+                    RenderStack(visible, anim, dir, cell, "lower", hidden, false, Vector3.zero, omitted);
                     RenderStack(visible, action.id, actionDirection, upperCell, "upper", hidden, true,
-                        new Vector3(offset.Value.x / data.ppu, -offset.Value.y / data.ppu));
+                        new Vector3(offset.Value.x / data.ppu, -offset.Value.y / data.ppu), omitted);
                 }
             }
             visible.Sort((a, b) => a.z != b.z ? a.z.CompareTo(b.z) : a.order.CompareTo(b.order));
@@ -367,7 +371,7 @@ namespace PixelDoll
             return hidden;
         }
 
-        void RenderStack(List<(SpriteRenderer renderer, int z, int order)> visible, string anim, string dir, int cell, string part, HashSet<string> hidden, bool upper, Vector3 offset)
+        void RenderStack(List<(SpriteRenderer renderer, int z, int order)> visible, string anim, string dir, int cell, string part, HashSet<string> hidden, bool upper, Vector3 offset, string[] omitted = null)
         {
             string name = anim + "_" + dir + "_" + cell;
             for (int i = 0; i < nodes.Count; i++)
@@ -377,7 +381,7 @@ namespace PixelDoll
                 var layer = it == null ? null : Array.Find(it.layers, l => l.role == n.role);
                 var renderer = upper ? UpperNode(i) : n.renderer;
                 renderer.enabled = false;
-                if (layer == null || hidden.Contains(n.slot)) continue;
+                if (layer == null || hidden.Contains(n.slot) || (omitted != null && Array.IndexOf(omitted, it.id) >= 0)) continue;
                 var key = (part.Length == 0 ? "" : part + ":") + it.id + "/" + layer.id;
                 if (!maps.TryGetValue(key, out var m) || !m.TryGetValue(name, out var sp)) continue;
                 renderer.sprite = Recolor(it, sp);

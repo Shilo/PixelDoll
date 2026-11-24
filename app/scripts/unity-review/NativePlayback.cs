@@ -144,8 +144,12 @@ namespace PixelDollNativeReview
             bool UsesUpper() => renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_"));
             Check((bool)Invoke(doll, "Equip", "head", "walk_only_hat"), label + ": equips walk-only hat");
             Invoke(doll, "Sync");
+			Check(Playing() && UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": walk-only hat does not downgrade or reset the action");
+			Check((bool)Invoke(doll, "Equip", "legs", "attack_only_legs"), label + ": equips attack-only legs");
+			Invoke(doll, "Sync");
             Check(Playing() && !UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": unsupported outfit downgrades without resetting action time");
             Check((bool)Invoke(doll, "Equip", "head", "hat"), label + ": restores supported hat");
+			Check((bool)Invoke(doll, "Equip", "legs", ""), label + ": removes attack-only legs");
             Invoke(doll, "Sync");
             Check((bool)Invoke(doll, "CanLayerAction", "jump", "south") && Playing() && !UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": restoring outfit does not upgrade an active action");
             Invoke(doll, "Play", "walk", "south");

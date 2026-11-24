@@ -35,6 +35,7 @@ export interface Manifest {
 
 export interface ActionLayers {
 	planes: ActionPlane[];
+	omissions?: { clip: string; direction: DirectionName; items: string[] }[];
 	pairs: {
 		walk: string;
 		action: string;

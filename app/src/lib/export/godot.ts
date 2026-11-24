@@ -277,12 +277,17 @@ func _render_action() -> void:
 		index += 1
 	var a: String = _action["id"]
 	var offset := _pair_offset(a, _action_dir, int(frames[index]["cell"])) if _action_layered else {}
+	var omitted: Array = []
+	for row in manifest.get("actionLayers", {}).get("omissions", []):
+		if row["clip"] == a and row["direction"] == _action_dir:
+			omitted = row["items"]
+			break
 	var draws: Array = []
 	if offset.is_empty():
-		_action_stack(draws, a, _action_dir, index, "", Vector2.ZERO)
+		_action_stack(draws, a, _action_dir, index, "", Vector2.ZERO, omitted)
 	else:
-		_action_stack(draws, anim, dir, body.frame, "lower", Vector2.ZERO)
-		_action_stack(draws, a, _action_dir, index, "upper", Vector2(offset["x"], offset["y"]))
+		_action_stack(draws, anim, dir, body.frame, "lower", Vector2.ZERO, omitted)
+		_action_stack(draws, a, _action_dir, index, "upper", Vector2(offset["x"], offset["y"]), omitted)
 	draws.sort_custom(func(x, y): return x["z"] < y["z"] if x["z"] != y["z"] else x["order"] < y["order"])
 	var start := maxi(-4096, mini(0, 4097 - draws.size()))
 	for i in draws.size():
@@ -300,14 +305,14 @@ func _render_action() -> void:
 		node.show()
 
 
-func _action_stack(draws: Array, a: String, d: String, index: int, part: String, pos: Vector2) -> void:
+func _action_stack(draws: Array, a: String, d: String, index: int, part: String, pos: Vector2, omitted: Array) -> void:
 	var move := _find(manifest["rig"]["animations"], a)
 	var cell := int(move["frames"][index]["cell"])
 	var nodes := _layers()
 	for order in nodes.size():
 		var node: Node = nodes[order]
 		var slot: String = node.get_meta("slot")
-		if _hidden.has(slot):
+		if _hidden.has(slot) or omitted.has(_shown(slot)):
 			continue
 		var layer := _layer_of(node)
 		if layer.is_empty() or (not part.is_empty() and not layer.get("actionSheets", {}).get(part, {}).has(a)):

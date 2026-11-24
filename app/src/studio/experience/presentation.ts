@@ -756,7 +756,7 @@ export function renderPresentation(
 		const walk = { clip: lower.pose.clip, direction: lower.pose.direction, cell: lower.cell };
 		const layered = composeLayeredAction(
 			p,
-			items,
+			filtered,
 			walk,
 			{ clip, direction, cell: actualCell },
 			lower.waist,
@@ -766,11 +766,6 @@ export function renderPresentation(
 		result.frame = layered.frame;
 		result.attackLayered = !!layered.image;
 		result.attackFallback = layered.fallback ?? undefined;
-		if (layered.image) {
-			result.hiddenItems = [];
-			result.loadingItems = [];
-			result.loading = null;
-		}
 	}
 	result.image ??= composeCell(p, filtered, clip, direction, actualCell, result.frame);
 	if (result.hiddenItems.length && !a.loading) {

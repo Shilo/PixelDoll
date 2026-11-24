@@ -144,6 +144,7 @@ async function fixtureArchive() {
 			{ id: 'body', z: 10, class: 'base', required: true },
 			{ id: 'hair', z: 20, class: 'rigid' },
 			{ id: 'head', z: 30, class: 'rigid' },
+			{ id: 'legs', z: 25, class: 'worn' },
 			{ id: 'weapon_extra', z: 150, class: 'held', anchor: 'hand_r', profile: 'main_hand' },
 			{ id: 'shield_extra', z: 110, class: 'held', anchor: 'hand_l', profile: 'off_hand' }
 		],
@@ -208,6 +209,12 @@ async function fixtureArchive() {
 	unsupported.name = 'Walk-only hat';
 	delete unsupported.layers[0].cells.jump;
 	manifest.items.push(unsupported);
+	const attackOnly = structuredClone(manifest.items.find(({ id }) => id === 'hat_small'));
+	attackOnly.id = 'attack_only_legs';
+	attackOnly.name = 'Attack-only legs';
+	attackOnly.slot = 'legs';
+	delete attackOnly.layers[0].cells.walk;
+	manifest.items.push(attackOnly);
 	const copy = structuredClone(manifest);
 	applyExportSettings(copy, {
 		engine: 'unity',

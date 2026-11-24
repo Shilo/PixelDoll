@@ -3497,7 +3497,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Walk while attacking",
-		"layeringHelp": "Combines the attack's upper body with walking legs when the poses line up. Capes and long coats may look odd. Grounded attacks on foot move at 80% of normal speed.",
+		"layeringHelp": "Walk and attack must face the same way, the legs need art for both moves, and the waist join must line up. Otherwise, the normal full-body attack plays.",
 		"waist": "Waist",
 		"automaticWaist": "Automatic",
 		"waistHelp": "Moves the join up or down by up to 4 pixels. Automatic uses the hips tracked in each frame.",

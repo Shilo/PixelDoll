@@ -189,6 +189,8 @@ Layering starts off. `canLayerAction` checks all reachable cells of the current 
 
 The Studio uses the canonical fragment splitter, seam measurement and compositor. It pads the whole cached set around the same pivot without changing Live's world scale. Engine sprites are independently translated and have no shared clipping frame. Export preparation writes source-color body fragments with the original grids and pivots and points whole equipment layers at their existing source sheets. Both parts share normal layer ordering. The upper translation is lower hip minus upper hip plus the baked correction. Native controllers consume only prepared assets and metadata. The host game owns travel speed, action input and hit timing.
 
+For configured attacks, gear without complete attack art is omitted from either action mode. It does not block layering; Live retains the hidden-gear or loading notice. Visible lower-slot gear with complete attack art and incomplete walk art forces a full-body action. Exports record the omissions by attack/facing and the blockers by walk/attack/facing, so the four players do not recalculate image coverage. Seam limits are scaled by unpadded rig width, and off-silhouette hips prefer valid measured or requested coordinates before clamping to the occupied silhouette.
+
 ## Maintaining cross-engine consistency
 
 Before changing a paper-doll behavior or public controller operation:

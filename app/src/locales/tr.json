@@ -3494,7 +3494,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Saldırırken yürü",
-		"layeringHelp": "Pozlar uyumluysa saldırının üst gövdesini yürüyüşün bacaklarıyla birleştirir. Pelerinler ve uzun paltolar tuhaf görünebilir. Yerde, yaya olarak saldırırken normal hızın %80’iyle ilerlersiniz.",
+		"layeringHelp": "Yürüyüş ve saldırı aynı yöne bakmalı, iki hareket için de bacak görselleri olmalı ve beldeki birleşim uyuşmalı. Aksi halde normal tüm vücut saldırısı oynatılır.",
 		"waist": "Bel",
 		"automaticWaist": "Otomatik",
 		"waistHelp": "Birleşim çizgisini 4 piksele kadar yukarı veya aşağı kaydırır. Otomatik mod her karedeki kalça konumunu kullanır.",

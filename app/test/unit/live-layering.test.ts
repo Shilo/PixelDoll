@@ -9,12 +9,13 @@ import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import {
 	actionHip,
-	ACTION_WORST_SEAM_LIMIT,
+	actionSeamLimits,
 	actionSetScore,
 	actionWaist,
 	composeLayeredAction,
 	exportedActionDraws,
 	layerOffset,
+	over,
 	splitLower,
 	splitUpper
 } from '../../src/lib/runtime/paperdoll.js';
@@ -112,7 +113,7 @@ test.each([
 			return splitUpper(image, hip);
 		});
 		const pairs = lower.flatMap((bottom) => upper.map((top) => layerOffset(bottom, top)));
-		expect(actionSetScore(pairs)).toEqual(expected);
+		expect(actionSetScore(pairs, 64)).toEqual(expected);
 	}
 );
 
@@ -259,13 +260,27 @@ test('registration triggers a fit even for a one-pixel shift from an infinite se
 	expect(actionWaist(14)).toBe(4);
 });
 
+test('chooses a near-equal seam that avoids an invalid shared shift', () => {
+	const hip = { x: 35, y: 32 };
+	const lower = { image: pixels(30, 32, 10, 10, 70), hip, waist: 32, source: 'anchor' as const };
+	const above = pixels(34, 31, 10, 1, 70);
+	over(above, pixels(33, 30, 13, 1, 70));
+	const upper = { image: above, hip, waist: 32, source: 'anchor' as const };
+	expect(layerOffset(lower, upper, 92)).toMatchObject({ x: -1, y: 1, seam: 7, sharedShift: 2 });
+});
+
 test.each([
 	{ seams: [8, 0, 5, 3], worst: 8, median: 4, fallback: null },
 	{ seams: [9, 0, 5, 3], worst: 9, median: 4, fallback: 'seam' },
 	{ seams: [8, 0, 6, 4], worst: 8, median: 5, fallback: 'seam' },
 	{ seams: [0, 0, Infinity], worst: Infinity, median: 0, fallback: 'seam' }
 ])('scores the set $seams = $worst / $median', ({ seams, ...score }) => {
-	expect(actionSetScore(seams.map((seam) => ({ seam, sharedShift: 0 })))).toEqual({
+	expect(
+		actionSetScore(
+			seams.map((seam) => ({ seam, sharedShift: 0 })),
+			92
+		)
+	).toEqual({
 		...score,
 		maxSharedShift: 0
 	});
@@ -284,7 +299,7 @@ test.each([
 		const upper = splitUpper(pixels(27 + shift, 14, 10, 37, 70), { ...geometry, feet: [] });
 		const pair = layerOffset(lower, upper);
 		expect(pair).toMatchObject({ seam: 2 * sharedShift, sharedShift });
-		expect(actionSetScore([pair, { seam: 0, sharedShift: 0 }])).toMatchObject({
+		expect(actionSetScore([pair, { seam: 0, sharedShift: 0 }], 92)).toMatchObject({
 			worst: 2 * sharedShift,
 			median: sharedShift,
 			maxSharedShift: sharedShift,
@@ -306,7 +321,7 @@ test.each(['one failing seam pair', 'one unusable limb split', 'missing action h
 		if (missingHip) delete project.manifest.rig.anchors!.hip!.slash.south;
 		else
 			for (const [clip, image] of missingLegs
-				? ([['walk', pixels(26, 14, 12, 18, 70)]] as const)
+				? ([['walk', pixels(32, 14, 1, 18, 70)]] as const)
 				: ([
 						['walk', wideWalk],
 						['slash', narrowSlash]
@@ -328,13 +343,12 @@ test.each(['one failing seam pair', 'one unusable limb split', 'missing action h
 				if (
 					!missingHip &&
 					layerOffset(fragment(walk, splitLower), fragment(action, splitUpper)).seam >
-						ACTION_WORST_SEAM_LIMIT
+						actionSeamLimits(64).worst
 				)
 					rejected.push([walkCell, actionCell]);
-				expect(composeLayeredAction(project, {}, walk, action, 0, frame)).toMatchObject({
-					image: null,
-					fallback: missingHip ? 'hip' : 'seam'
-				});
+				const result = composeLayeredAction(project, {}, walk, action, 0, frame);
+				expect(result.fallback).toBe(missingHip ? 'hip' : 'seam');
+				expect(result.image).toBeNull();
 			}
 		expect(rejected).toEqual(
 			missingHip
@@ -461,18 +475,88 @@ test('exports ship precut source layers and exact integer hip registration only 
 	expect(text('gdevelop/game.json')).toContain('upper_PD_');
 });
 
+function withGearCoverageGaps(project: Project) {
+	const [, boots, , trousers, cape] = project.manifest.items;
+	delete cape.layers[0].cells!.slash;
+	delete boots.layers[0].cells!.slash;
+	delete trousers.layers[0].cells!.walk;
+	return project;
+}
+
+test('only gear visible through the full attack can block the layered attack', async () => {
+	const project = withGearCoverageGaps(await fixture());
+	const walk = { clip: 'walk', direction: 'south', cell: 0 } as const;
+	const action = { ...walk, clip: 'slash' };
+	const frame = { w: 64, h: 64, x: 32, y: 51 };
+	const gear = { back: 'cape', feet: 'boots' };
+	const plain = composeLayeredAction(project, {}, walk, action, 0, frame);
+	expect(plain.image).not.toBeNull();
+	expect(composeLayeredAction(project, gear, walk, action, 0, frame)).toEqual(plain);
+	expect(
+		composeLayeredAction(project, { ...gear, legs: 'trousers' }, walk, action, 0, frame)
+	).toMatchObject({ image: null, fallback: 'gear-loss' });
+	const files = await exportFiles(project, {
+		engines: ['phaser'],
+		baked: false,
+		actionLayering: { waist: 0, walk: ['walk'], attacks: ['slash'] }
+	});
+	expect(files.errors).toEqual([]);
+	const manifest = JSON.parse(
+		new TextDecoder().decode(files.entries.find(({ name }) => name === 'manifest.json')!.data)
+	);
+	expect(manifest.actionLayers.omissions).toEqual([
+		{ clip: 'slash', direction: 'south', items: ['boots', 'cape'] }
+	]);
+	expect(manifest.actionLayers.pairs[0].blocked).toEqual(['trousers']);
+	for (const layered of [true, false])
+		expect(
+			exportedActionDraws(manifest, gear, action, walk, layered).map(({ item }) => item.id)
+		).toEqual(layered ? ['base', 'base'] : ['base']);
+});
+
+test.each([
+	[48, 8, 4, 2],
+	[92, 8, 4, 2],
+	[128, 11, 6, 3],
+	[256, 22, 11, 6]
+])('scales seam gates to a %i px cell', (width, worst, median, shared) => {
+	expect(actionSeamLimits(width)).toEqual({ worst, median, shared });
+	const pairs = [
+		{ seam: 0, sharedShift: 0 },
+		{ seam: median, sharedShift: 0 },
+		{ seam: worst, sharedShift: shared }
+	];
+	expect(actionSetScore(pairs, width).fallback).toBeNull();
+	for (const [index, score] of [
+		[2, { seam: worst + 1, sharedShift: shared }],
+		[1, { seam: median + 1, sharedShift: 0 }],
+		[2, { seam: worst, sharedShift: shared + 1 }]
+	] as const)
+		expect(actionSetScore(pairs.with(index, score), width).fallback).toBe('seam');
+});
+
+test.each([46.5, 47.5])(
+	'recovers an off-silhouette hip at y=%f at the top of the Bonequin East walk 4 shape',
+	(hipY) => {
+		const image = pixels(29, 48, 4, 10, 70);
+		const geometry = { hip: { x: 28.5, y: hipY }, feet: [], source: 'anchor' } as const;
+		const lower = splitLower(image, { ...geometry, feet: [] });
+		expect(lower).toMatchObject({ waist: 48, hip: { x: 29.5, y: 48.5 } });
+		expect(lower.image.data[(48 * 64 + 29) * 4 + 3]).toBe(255);
+		expect(
+			splitLower(image, {
+				...geometry,
+				feet: [],
+				alternatives: [{ hip: { x: 30.5, y: 49.5 }, source: 'measured' }]
+			})
+		).toMatchObject({ waist: 49, source: 'measured' });
+	}
+);
+
 test.skipIf(!process.env.GODOT_BIN)(
 	'Godot draws the precut stacks while the native walk clock stays active',
 	async () => {
-		const p = await fixture();
-		const cape = p.manifest.items.find(({ id }) => id === 'cape')!;
-		delete cape.layers[0].cells!.slash;
-		const walk = { clip: 'walk', direction: 'south', cell: 0 } as const;
-		const action = { ...walk, clip: 'slash' };
-		expect(
-			composeLayeredAction(p, { back: 'cape' }, walk, action, 0, { w: 64, h: 64, x: 32, y: 51 })
-				.fallback
-		).toBe('gear-loss');
+		const p = withGearCoverageGaps(await fixture());
 		const exported = await exportFiles(p, {
 			engines: ['godot'],
 			baked: false,
@@ -522,8 +606,11 @@ func verify():
 	ok = ok and not doll.is_action_playing() and doll.body.is_visible() and doll.body.is_playing()
 	doll.set_action_layering(true)
 	ok = ok and doll.play_action("slash", "south") == "layered"
-	ok = ok and doll.equip("back", "cape") and not doll._action_layered and doll.is_action_playing()
-	ok = ok and doll.equip("back", "") and not doll._action_layered and doll.is_action_playing()
+	ok = ok and doll.equip("back", "cape") and doll.equip("feet", "boots") and doll._action_layered and doll.is_action_playing()
+	doll._process(0.01)
+	ok = ok and doll._action_nodes.filter(func(node): return node.visible).size() == 2
+	ok = ok and doll.equip("legs", "trousers") and not doll._action_layered and doll.is_action_playing()
+	ok = ok and doll.equip("legs", "") and not doll._action_layered and doll.is_action_playing()
 	doll.play_anim("walk", "south")
 	ok = ok and not doll.is_action_playing()
 	print("ACTION_GODOT_PASS" if ok else "ACTION_GODOT_FAIL")

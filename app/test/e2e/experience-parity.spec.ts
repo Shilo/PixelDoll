@@ -4267,7 +4267,9 @@ test.describe('live views actions', () => {
 				const move = fixture.rig.animations.find(({ id }: { id: string }) => id === clip);
 				const source = body.rig.animations.find(({ id }: { id: string }) => id === sourceClip);
 				move.cells = source.cells;
-				move.frames = source.frames;
+				move.frames = source.frames.map((frame: { cell: number; ms: number }) =>
+					sourceClip === 'slash' && frame.cell === 5 ? { ...frame, cell: 4 } : frame
+				);
 				move.sources = {
 					south: {
 						keypoints: Array.from(
@@ -4372,7 +4374,6 @@ test.describe('live views actions', () => {
 			if (!(button instanceof HTMLButtonElement)) throw new Error('Expected Wizard hat button');
 			const stage = document.querySelector<HTMLElement>('.world-stage')!;
 			let state = 0;
-			let relayered = false;
 			const observer = new MutationObserver(() => {
 				if (stage.dataset.clip !== 'cross-punch') {
 					if (state) observer.disconnect();
@@ -4382,17 +4383,18 @@ test.describe('live views actions', () => {
 				if (state === 0 && attackLayered === 'true') {
 					state = 1;
 					button.click();
-				} else if (state === 1 && attackLayered === 'false' && attackFallback === 'gear-loss') {
+				} else if (
+					state === 1 &&
+					button.getAttribute('aria-pressed') === 'true' &&
+					attackLayered === 'true'
+				) {
 					state = 2;
 					button.click();
 				} else if (state >= 2 && button.getAttribute('aria-pressed') === 'false') {
 					state = 3;
-					relayered ||= attackLayered === 'true';
 				}
 				if (state)
-					stage.dataset.outfitActionSample = [state, attackLayered, attackFallback, relayered].join(
-						'/'
-					);
+					stage.dataset.outfitActionSample = [state, attackLayered, attackFallback].join('/');
 			});
 			observer.observe(stage, {
 				attributes: true,
@@ -4403,15 +4405,16 @@ test.describe('live views actions', () => {
 					'data-walk-cell'
 				]
 			});
+			observer.observe(button, { attributes: true, attributeFilter: ['aria-pressed'] });
 		});
 		await page.keyboard.down('s');
 		try {
 			await expect(host).toHaveAttribute('data-clip', 'walk');
 			await page.keyboard.press('x');
-			await expect(host).toHaveAttribute('data-outfit-action-sample', '3/false/gear-loss/false');
+			await expect(host).toHaveAttribute('data-outfit-action-sample', '3/true/');
 			await expect(hat).toHaveAttribute('aria-pressed', 'false');
 			await expect(host).toHaveAttribute('data-clip', 'walk');
-			await expect(host).toHaveAttribute('data-outfit-action-sample', '3/false/gear-loss/false');
+			await expect(host).toHaveAttribute('data-outfit-action-sample', '3/true/');
 		} finally {
 			await page.keyboard.up('s');
 		}

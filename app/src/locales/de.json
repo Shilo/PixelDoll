@@ -3494,7 +3494,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Beim Angriff weiterlaufen",
-		"layeringHelp": "Kombiniert den Oberkörper des Angriffs mit den Beinen der Gehbewegung, wenn die Posen zusammenpassen. Umhänge und lange Mäntel können ungewöhnlich aussehen. Bei Angriffen zu Fuß am Boden beträgt das Tempo 80 % des normalen Tempos.",
+		"layeringHelp": "Gehen und Angriff müssen in dieselbe Richtung zeigen, die Beine brauchen Grafiken für beide Bewegungen und der Übergang an der Taille muss passen. Sonst läuft der normale Ganzkörperangriff.",
 		"waist": "Taille",
 		"automaticWaist": "Automatisch",
 		"waistHelp": "Verschiebt den Übergang um bis zu 4 Pixel nach oben oder unten. Automatisch verwendet die Hüftposition jedes Einzelbilds.",

@@ -4,7 +4,7 @@
 import { makeImg, type Img } from '../image/png.ts';
 import {
 	actionFragment,
-	actionGearAvailable,
+	actionGearComplete,
 	actionLayerFragment,
 	actionLowerSlot,
 	actionSetScore,
@@ -99,17 +99,13 @@ export function actionSheets(p: Project, manifest: Manifest, options: ActionShee
 		data.planes.push({ clip, part, anchors });
 		for (const item of manifest.items) {
 			const body = item.id === rig.baseItem || item.variantOf === rig.baseItem;
-			if (!body && (part === 'lower') !== actionLowerSlot(item.slot)) continue;
 			const source = items.get(item.id)!;
+			if (body || part === 'upper' || actionLowerSlot(item.slot))
+				for (const { id } of rig.directions)
+					if (!actionGearComplete(p, source, clip, id, used)) checks.get(id)!.add(item.id);
+			if (!body && (part === 'lower') !== actionLowerSlot(item.slot)) continue;
 			for (const layer of item.layers) {
 				const original = source.layers.find(({ id }) => id === layer.id)!;
-				for (const { id } of rig.directions)
-					if (
-						[...used].some(
-							(cell) => !actionGearAvailable(p, source, original, { clip, direction: id, cell })
-						)
-					)
-						checks.get(id)!.add(item.id);
 				layer.actionSheets ??= {};
 				const paths = (layer.actionSheets[part] ??= {});
 				if (!body) {
@@ -132,6 +128,17 @@ export function actionSheets(p: Project, manifest: Manifest, options: ActionShee
 	}
 	const lower = [...new Set(options.walk)].flatMap((clip) => prepare(clip, 'lower') ?? []);
 	const upper = [...new Set(options.attacks)].flatMap((clip) => prepare(clip, 'upper') ?? []);
+	const bodyIDs = new Set(
+		manifest.items
+			.filter((item) => item.id === rig.baseItem || item.variantOf === rig.baseItem)
+			.map(({ id }) => id)
+	);
+	data.omissions = upper.flatMap(({ clip, checks }) =>
+		[...checks].flatMap(([direction, missing]) => {
+			const items = [...missing].filter((id) => !bodyIDs.has(id));
+			return items.length ? [{ clip, direction, items }] : [];
+		})
+	);
 	for (const walk of lower)
 		for (const attack of upper) {
 			for (const { id: direction } of rig.directions) {
@@ -149,13 +156,17 @@ export function actionSheets(p: Project, manifest: Manifest, options: ActionShee
 						};
 					})
 				);
+				const missingAttack = attack.checks.get(direction)!;
 				const blocked = [
-					...new Set([...walk.checks.get(direction)!, ...attack.checks.get(direction)!])
+					...new Set([
+						...[...walk.checks.get(direction)!].filter((id) => !missingAttack.has(id)),
+						...[...missingAttack].filter((id) => bodyIDs.has(id))
+					])
 				];
 				if (
 					!blocked.includes(rig.baseItem) &&
 					pairs.length === walk.used.size * attack.used.size &&
-					!actionSetScore(pairs).fallback
+					!actionSetScore(pairs, base.w).fallback
 				)
 					data.pairs.push({
 						walk: walk.clip,
@@ -169,6 +180,8 @@ export function actionSheets(p: Project, manifest: Manifest, options: ActionShee
 		}
 	if (!data.pairs.length) {
 		for (const item of manifest.items) for (const layer of item.layers) delete layer.actionSheets;
+		if (data.omissions.length)
+			manifest.actionLayers = { planes: [], pairs: [], omissions: data.omissions };
 		return [];
 	}
 	manifest.actionLayers = data;

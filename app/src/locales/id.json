@@ -3395,7 +3395,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Berjalan saat menyerang",
-		"layeringHelp": "Menggabungkan tubuh bagian atas saat menyerang dengan kaki saat berjalan jika posenya cocok. Jubah dan mantel panjang bisa terlihat aneh. Serangan sambil berpijak bergerak dengan 80% kecepatan normal.",
+		"layeringHelp": "Berjalan dan menyerang harus menghadap ke arah yang sama, kaki perlu gambar untuk kedua gerakan, dan sambungan pinggang harus selaras. Jika tidak, serangan seluruh tubuh biasa akan diputar.",
 		"waist": "Pinggang",
 		"automaticWaist": "Otomatis",
 		"waistHelp": "Menggeser sambungan hingga 4 piksel ke atas atau ke bawah. Mode otomatis memakai posisi pinggul di setiap bingkai.",

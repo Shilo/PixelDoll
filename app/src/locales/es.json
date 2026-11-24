@@ -3497,7 +3497,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Caminar mientras atacas",
-		"layeringHelp": "Combina el torso del ataque con las piernas de la caminata si las poses encajan. Las capas y los abrigos largos pueden verse raros. Al atacar a pie en el suelo, te mueves al 80 % de la velocidad normal.",
+		"layeringHelp": "La caminata y el ataque deben mirar en la misma dirección, las piernas necesitan imágenes para ambos movimientos y la unión en la cintura debe encajar. Si no, se reproduce el ataque normal de cuerpo entero.",
 		"waist": "Cintura",
 		"automaticWaist": "Automático",
 		"waistHelp": "Desplaza la unión hasta 4 píxeles hacia arriba o abajo. El modo automático usa la posición de la cadera en cada fotograma.",
