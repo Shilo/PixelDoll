@@ -4184,14 +4184,19 @@ test.describe('live views actions', () => {
 		// Chorded buttons: walking to a left-press point continues while the right button aims and attacks.
 		await page.mouse.move(ax + 300, ay - 20);
 		await page.mouse.down();
+		await expect(host).toHaveAttribute('data-destination', /\S/);
+		const target = (await host.getAttribute('data-destination'))!;
 		await page.mouse.down({ button: 'right' });
 		await page.mouse.move(ax - 200, ay - 150, { steps: 3 });
-		const going = Number((await host.getAttribute('data-destination'))!.split(',')[0]);
+		// The right-held cursor only aims: the walk keeps its point, or has already reached it.
+		const [now, at] = await host.evaluate((element) => [
+			element.dataset.destination!,
+			Number(element.dataset.position!.split(',')[0])
+		]);
+		if (now) expect(now).toBe(target);
+		else expect(Math.abs((at as number) - Number(target.split(',')[0]))).toBeLessThan(0.5);
 		await page.mouse.up({ button: 'right' });
 		await page.mouse.up();
-		expect(going, 'the right-held cursor aimed without moving the destination').toBeGreaterThan(
-			Number((await host.getAttribute('data-position'))!.split(',')[0])
-		);
 		// A keyboard-opened menu (button 0) stays native.
 		expect(
 			await page.evaluate(() => {
