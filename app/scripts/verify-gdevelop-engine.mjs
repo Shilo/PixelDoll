@@ -262,6 +262,15 @@ try {
 			d.play('walk', 'south');
 			const walkRestarts =
 				d.elapsed === 0 && d.cell === 1 && extract().slice(-4).join() === '0,200,0,255';
+			// The fixture's moves have one view, so this covers the no-op and rejection; unit tests cover turning.
+			d.update(40);
+			d.setDirection('south');
+			let turnKeeps = false;
+			try {
+				d.setDirection('east');
+			} catch {
+				turnKeeps = d.anim.id === 'walk' && d.dir === 'south' && d.elapsed === 40;
+			}
 			const second = library.create(400, 240);
 			second.applyPreset('red');
 			const independent = {
@@ -308,6 +317,7 @@ try {
 				stateReplays,
 				stateRejectsMissingFacing,
 				walkRestarts,
+				turnKeeps,
 				replay,
 				restart,
 				hatHidden,
@@ -347,7 +357,8 @@ try {
 			result.stateHeld &&
 			result.stateReplays &&
 			result.stateRejectsMissingFacing &&
-			result.walkRestarts
+			result.walkRestarts &&
+			result.turnKeeps
 	);
 	assert.ok(
 		result.hatHidden &&

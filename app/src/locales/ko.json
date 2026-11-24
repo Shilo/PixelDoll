@@ -894,7 +894,7 @@
 			"other": "문제 {n}개"
 		},
 		"workspaceCopyPixelLabOff": "워크스페이스 사본 · PixelLab 꺼짐",
-		"characterSelectionWASDOrArrowsSelectEnter": "캐릭터 선택. WASD 또는 방향키로 선택하고 Enter로 꾸미며, 더하기와 빼기로 확대/축소해요.",
+		"characterSelectionWASDOrArrowsSelectEnter": "캐릭터 선택. WASD 또는 방향키로 선택하고 Enter로 꾸미며, M으로 탈것을 보이고, 더하기와 빼기로 확대/축소해요.",
 		"previousCharacter": "이전 캐릭터",
 		"nextCharacter": "다음 캐릭터",
 		"noMatchingCharacters": "일치하는 캐릭터가 없어요",
@@ -922,7 +922,7 @@
 		"groundUnavailable": "바닥을 실시간으로 렌더링할 수 없어 정적 장면을 표시합니다.",
 		"materialUnavailable": "바닥 재질을 불러올 수 없어 정적 장면을 표시합니다.",
 		"sceneUnavailable": "라이브 장면을 표시할 수 없습니다. 새로고침하여 다시 시도하세요.",
-		"characterPreviewWASDOrArrowsChangeFacing": "캐릭터 미리보기. WASD 또는 방향키로 방향을 바꾸고, 숫자 1, 2, 3으로 뷰를 전환해요.",
+		"characterPreviewWASDOrArrowsChangeFacing": "캐릭터 미리보기. WASD 또는 방향키로 방향을 바꾸고, M으로 탈것을 보이며, 숫자 1, 2, 3으로 뷰를 전환해요.",
 		"loadingCharacter": "캐릭터 불러오는 중…",
 		"notice": {
 			"hiddenItemsInMove": {
@@ -3398,6 +3398,11 @@
 		"forCharacter": "{name} 캐릭터가 탑다운과 사이드 스크롤러에서 재생하는 동작이에요.",
 		"idle": "대기",
 		"walk": "걷기",
+		"run": "달리기",
+		"sprint": "질주",
+		"shiftKey": "Shift",
+		"attackKeys": "X 또는 오른쪽 클릭",
+		"automaticFaster": "자동: {clip}, 더 빠르게",
 		"attack": "공격",
 		"jump": "점프",
 		"attackUp": "위로 공격",
@@ -3414,10 +3419,10 @@
 		"spaceKey": "스페이스",
 		"noAttack": "아직 공격으로 재생할 것이 없어요. 라이브 뷰 설정에서 동작이나 상태를 골라 주세요.",
 		"noAttackDirection": "{move}에는 {direction} 방향 프레임이 없어서 그쪽으로는 공격할 수 없어요.",
-		"hintTopDown": "WASD 또는 클릭으로 이동 · 오른쪽 클릭 또는 X로 공격 · 스페이스로 점프 · M으로 타기/내리기",
-		"hintSide": "A/D 또는 클릭으로 이동 · 오른쪽 클릭 또는 X로 공격 · 스페이스로 점프 · M으로 타기/내리기",
-		"hintTouch": "왼쪽은 이동 · 오른쪽은 조준, 손을 떼면 공격 · 버튼으로 점프하고 타기",
-		"stageTopDown": "캐릭터 테스트 월드예요. WASD, 화살표 키, 클릭 또는 드래그로 이동해요. 오른쪽 클릭이나 X로 공격하고, 스페이스로 점프하고, M으로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요.",
-		"stageSide": "사이드 스크롤러 테스트 월드예요. A/D, 좌우 화살표 키, 클릭 또는 드래그로 이동해요. 오른쪽 클릭이나 X로 공격하고, 스페이스로 점프하고, M으로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요."
+		"hintTopDown": "WASD 또는 클릭을 누른 채로 이동 · Shift로 질주 · 오른쪽 클릭 또는 X로 공격 · 스페이스로 점프 · M으로 타기/내리기",
+		"hintSide": "A/D 또는 클릭을 누른 채로 이동 · Shift로 질주 · 오른쪽 클릭 또는 X로 공격 · 스페이스로 점프 · M으로 타기/내리기",
+		"hintTouch": "드래그로 이동 · 검을 누른 채 드래그해 공격하고 조준 · 버튼으로 점프, 질주, 타기",
+		"stageTopDown": "캐릭터 테스트 월드예요. WASD, 화살표 키, 클릭 또는 드래그로 이동하고 Shift로 질주해요. 오른쪽 클릭이나 X로 공격하고, 스페이스로 점프하고, M으로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요.",
+		"stageSide": "사이드 스크롤러 테스트 월드예요. A/D, 좌우 화살표 키, 클릭 또는 드래그로 이동하고 Shift로 질주해요. 오른쪽 클릭이나 X로 공격하고, 스페이스로 점프하고, M으로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요."
 	}
 }

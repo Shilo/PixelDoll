@@ -14,8 +14,6 @@ export interface SceneZoomOptions {
 	/** A one-finger horizontal swipe: 1 toward the next item (finger moving left), -1 toward the previous. */
 	onswipe?: (direction: 1 | -1) => void;
 	onpinch?: () => void;
-	/** A touch the screen keeps for itself (a second joystick), which never starts a pinch. */
-	claims?: (event: PointerEvent) => boolean;
 }
 
 // Trackpad pinches reach the page as wheel events with ctrlKey set, but no Control key press; tracking the real key
@@ -192,7 +190,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 					options.onchange(null);
 					return;
 				}
-				if (event.pointerType !== 'touch' || options.claims?.(event)) return;
+				if (event.pointerType !== 'touch') return;
 				touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
 				if (touches.size < 2) {
 					swipe = { id: event.pointerId, x: event.clientX, y: event.clientY };

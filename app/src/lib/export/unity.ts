@@ -150,6 +150,26 @@ namespace PixelDoll
             return true;
         }
 
+        /// Turns the active move to dir without restarting it: playlist entry, time, loop count and completion are kept.
+        public bool SetDirection(string dir)
+        {
+            var animator = GetComponent<Animator>();
+            animator.Update(0f); // applies a Play requested earlier this frame before reading the active state
+            var current = animator.GetCurrentAnimatorStateInfo(0);
+            PdAnim move = null;
+            string active = null;
+            foreach (var a in data.animations) foreach (var d in a.directions) if (current.shortNameHash == Animator.StringToHash(a.id + "_" + d)) { move = a; active = d; }
+            if (move == null) { Debug.LogWarning("PixelDoll: no active move", this); return false; }
+            if (Array.IndexOf(move.directions, dir) < 0) { Debug.LogWarning("PixelDoll: unavailable move/direction " + move.id + "/" + dir, this); return false; }
+            if (dir == active) return true;
+            // Directions of one move share their timeline, so the normalized time (whole loops included) carries over.
+            animator.Play(move.id + "_" + dir, 0, current.normalizedTime);
+            animator.Update(0f);
+            dirty = true;
+            Sync();
+            return true;
+        }
+
         /// Equips itemId in slot (null or "" = empty); hides are re-applied on the next LateUpdate.
         public bool Equip(string slot, string itemId)
         {
@@ -550,10 +570,11 @@ Tools > PixelDoll > ${identity} > Import if no prefab appeared.
 Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)}, pivot at the feet),
 <anim>_<dir>.anim clips for supported views, ${unityJson(m).name}.controller and ${unityJson(m).name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
-Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
+Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), SetDirection(dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
 Play preserves an active clip's progress. Calling it again after the same non-looping clip completes replays that clip.
 Changed moves/directions start at the beginning. Pass true as Play's third argument to restart explicitly.
-These methods return true on success; invalid move/direction, equipment, outfit or material IDs return false and log an engine warning before changing state. Unequip with null or "".
+SetDirection turns the active move (e.g. an aimed attack) and keeps its frame, time, loop count and completion without replaying it; the current direction is a no-op.
+These methods return true on success; invalid move/direction, equipment, outfit or material IDs, or SetDirection without an active move, return false and log an engine warning before changing state. Unequip with null or "".
 SetVariant changes one explicit selection using exported exact ramps; null restores the default, while "" uses source colors. Linked materials follow their target's selection.
 Palettes are owner-local, use the original source sheets and cache recolored textures/sprites per doll until it is destroyed.
 Source textures are readable for these swaps. Do not put them in a Sprite Atlas (packing/rotation changes their source coordinates).

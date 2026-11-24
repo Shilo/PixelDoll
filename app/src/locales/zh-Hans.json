@@ -894,7 +894,7 @@
 			"other": "{n} 个问题"
 		},
 		"workspaceCopyPixelLabOff": "工作区副本 · PixelLab 已关闭",
-		"characterSelectionWASDOrArrowsSelectEnter": "角色选择。使用 WASD 或方向键选择；按 Enter 自定义；加号和减号缩放。",
+		"characterSelectionWASDOrArrowsSelectEnter": "角色选择。使用 WASD 或方向键选择；按 Enter 自定义；按 M 显示坐骑；加号和减号缩放。",
 		"previousCharacter": "上一个角色",
 		"nextCharacter": "下一个角色",
 		"noMatchingCharacters": "没有匹配的角色",
@@ -922,7 +922,7 @@
 		"groundUnavailable": "无法实时渲染地面，正在显示静态场景。",
 		"materialUnavailable": "无法加载地面材质，正在显示静态场景。",
 		"sceneUnavailable": "实时场景不可用，请重新加载页面后再试。",
-		"characterPreviewWASDOrArrowsChangeFacing": "角色预览。使用 WASD 或方向键更改朝向。按键 1、2、3 切换视图。",
+		"characterPreviewWASDOrArrowsChangeFacing": "角色预览。使用 WASD 或方向键更改朝向。按 M 显示坐骑。按键 1、2、3 切换视图。",
 		"loadingCharacter": "正在加载角色…",
 		"notice": {
 			"hiddenItemsInMove": {
@@ -3398,6 +3398,11 @@
 		"forCharacter": "{name} 在俯视和横版视图中播放的动作。",
 		"idle": "待机",
 		"walk": "行走",
+		"run": "奔跑",
+		"sprint": "冲刺",
+		"shiftKey": "Shift",
+		"attackKeys": "X 或右键",
+		"automaticFaster": "自动：{clip}，加快",
 		"attack": "攻击",
 		"jump": "跳跃",
 		"attackUp": "向上攻击",
@@ -3414,10 +3419,10 @@
 		"spaceKey": "空格",
 		"noAttack": "还没有指定攻击。请在实时视图设置中选择一个动作或状态。",
 		"noAttackDirection": "{move} 没有朝向{direction}的帧，无法向该方向攻击。",
-		"hintTopDown": "WASD 或点击移动 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",
-		"hintSide": "A/D 或点击移动 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",
-		"hintTouch": "左侧移动 · 右侧瞄准，松开即攻击 · 按钮用于跳跃和上下坐骑",
-		"stageTopDown": "角色测试世界。使用 WASD、方向键、点击或拖动来移动。右键或 X 攻击，空格跳跃，M 上下坐骑。按 1、2、3 切换视图。",
-		"stageSide": "横版测试世界。使用 A/D、左右方向键、点击或拖动来移动。右键或 X 攻击，空格跳跃，M 上下坐骑。按 1、2、3 切换视图。"
+		"hintTopDown": "WASD 或按住点击移动 · Shift 冲刺 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",
+		"hintSide": "A/D 或按住点击移动 · Shift 冲刺 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",
+		"hintTouch": "拖动移动 · 按住并拖动剑来攻击和瞄准 · 按钮用于跳跃、冲刺和上下坐骑",
+		"stageTopDown": "角色测试世界。使用 WASD、方向键、点击或拖动来移动；Shift 冲刺。右键或 X 攻击，空格跳跃，M 上下坐骑。按 1、2、3 切换视图。",
+		"stageSide": "横版测试世界。使用 A/D、左右方向键、点击或拖动来移动；Shift 冲刺。右键或 X 攻击，空格跳跃，M 上下坐骑。按 1、2、3 切换视图。"
 	}
 }

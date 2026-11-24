@@ -36,13 +36,17 @@ describe('Live views roles', () => {
 		expect(automaticClip([clip('rune-blast'), clip('hopscotch')], 'jump')).toBeUndefined();
 		expect(automaticClip([clip('attack', 'state')], 'attack')).toBe('attack');
 		expect(automaticClip(animations, 'attackUp')).toBeUndefined();
+		// Run names a sustained gait only: a dash is a burst, not a sprint.
+		expect(automaticClip([clip('dash'), clip('sprint-loop')], 'run')).toBe('sprint-loop');
+		expect(automaticClip([clip('dash')], 'run')).toBeUndefined();
 	});
 
-	test('chains fall back Walk to Idle to Standing, and Attack up and down to Attack', () => {
+	test('chains fall back Run to Walk to Idle to Standing, and Attack up and down to Attack', () => {
 		const animations = [clip('default', 'state'), clip('idle'), clip('punch'), clip('uppercut')];
 		expect(liveClips(animations)).toEqual({
 			idle: ['idle', 'default'],
 			walk: ['walk', 'idle', 'default'],
+			run: ['walk', 'idle', 'default'],
 			attack: ['punch'],
 			jump: [],
 			attackUp: ['punch'],
@@ -51,6 +55,8 @@ describe('Live views roles', () => {
 		const chosen = liveClips(animations, { idle: 'default', walk: 'idle', attackUp: 'uppercut' });
 		expect(chosen.idle).toEqual(['default']);
 		expect(chosen.walk).toEqual(['idle', 'default']);
+		expect(chosen.run).toEqual(['idle', 'default']);
+		expect(liveClips([...animations, clip('run')]).run).toEqual(['run', 'walk', 'idle', 'default']);
 		expect(chosen.attackUp).toEqual(['uppercut', 'punch']);
 		// A trashed or deleted clip plays Automatic until it exists again.
 		expect(liveClips(animations, { attack: 'gone' }).attack).toEqual(['punch']);

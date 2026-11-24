@@ -896,7 +896,8 @@ ms / msBase}`. AtlasTexture `filter_clip = true`, region = the layer's own cell 
   slot), `z_index = layer z`, `texture_filter = NEAREST`. `body_fg` is the master clock. Verified with a 96 sword [B8].
 - `paperdoll.gd`: master `frame_changed`/`animation_changed` → every other layer `set_frame_and_progress`;
   `equip(slot, item_id)` swaps the slot's fg/bg resources and applies `hides`; `play_anim(anim, dir, restart = false)` selects a supported
-  move/view and applies `zOverrides`. `set_preset(id)` and `set_variant(material_id, name)` perform exact owner-local
+  move/view and applies `zOverrides`; `set_direction(dir)` turns the active move, keeping its frame, progress and completion.
+  `set_preset(id)` and `set_variant(material_id, name)` perform exact owner-local
   source-ramp swaps, including linked/default variants. Palette refresh preserves the clock's frame, progress and playback.
 - Native `library.tres` stores manifest metadata and references every equipment resource, so alternate items survive
   selected-scene game packaging. Resource IDs encode names without collapsing hyphens and underscores.
@@ -921,7 +922,8 @@ Export adds `pixeldoll_unity.json` (flattened for `JsonUtility`) and two per-cha
   with `ObjectReferenceKeyframe`s on `SpriteRenderer.sprite` from the playlist (cumulative ms), an Animator Controller, and a
   prefab: root with **Sorting Group** + `Paperdoll.cs`, a hidden animation clock and one visible `SpriteRenderer` per
   (slot, role). Sorting ranks preserve resolved z and slot/role ties. Clip/controller assets are updated in place.
-- `Paperdoll.cs`: `Play(anim, dir)`, `Equip(slot, itemId)`, `ApplyPreset(id)`, `SetVariant(materialId, name)`.
+- `Paperdoll.cs`: `Play(anim, dir)`, `SetDirection(dir)`, `Equip(slot, itemId)`, `ApplyPreset(id)`, `SetVariant(materialId, name)`.
+  `SetDirection` replays the other direction's state at the same normalized time, so loop count and completion carry over.
   `LateUpdate` synchronizes visible source sprites to the hidden clock. Runtime palette swaps use original sheets,
   owner-local RGB maps and cached textures/sprites. Default material selections and linked selections are supported.
   Keep source textures readable and unpacked (no Sprite Atlas); see the generated README for project setup.
@@ -944,6 +946,8 @@ Historical verification [M5] covered Phaser 3.80, 3.90 and 4.2.1. The current
   `play(anim, dir)`, `equip(slot, itemId)`, `applyPreset(preset)` and `setVariants(selections)` preserve the frozen base,
   hides, tucked variants and owner-local source-ramp palettes. Repeated `play` preserves active progress;
   changed moves/directions and completed once-only clips start at the beginning. A third `true` argument explicitly restarts.
+  `setDirection(dir)` turns the active move in place (same playlist entry, clock, repeat count and completion) without
+  animation start or complete events.
   `destroy()` removes the container; palette textures remain
   cached until game teardown. Use `pixelArt: true`, `roundPixels: true`.
 

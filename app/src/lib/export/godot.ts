@@ -164,6 +164,30 @@ func play_anim(a: String, d: String, restart: bool = false) -> bool:
 	return true
 
 
+## Turns the active move to d without restarting it: playlist entry, progress, playing state and speed are kept.
+func set_direction(d: String) -> bool:
+	if anim.is_empty():
+		push_warning("PixelDoll: no active move")
+		return false
+	var move := _find(manifest["rig"]["animations"], anim)
+	if (move.has("directions") and not move["directions"].has(d)) or not body.sprite_frames.has_animation("%s_%s" % [anim, d]):
+		push_warning("PixelDoll: unavailable move/direction %s/%s" % [anim, d])
+		return false
+	if d == dir:
+		return true
+	# Directions of one move share frame count and durations; changing the animation property keeps playback
+	# running without play() and emits no animation_finished or animation_looped.
+	var clock_frame := body.frame
+	var clock_progress := body.frame_progress
+	dir = d
+	_refreshing = true
+	body.animation = "%s_%s" % [anim, d]
+	body.set_frame_and_progress(clock_frame, clock_progress)
+	_refreshing = false
+	_sync()
+	return true
+
+
 ## Equips item_id in slot ("" = empty), then re-applies hides.
 func equip(slot: String, item_id: String) -> bool:
 	if slot == "body" or _find(manifest["slots"], slot).is_empty():
@@ -424,9 +448,10 @@ export function godotFiles(m: Manifest): OutFile[] {
 	files.push({
 		name: 'godot/README.txt',
 		data: `Copy the whole export folder into your Godot 4 project, then instance godot/Paperdoll.tscn.
-API: play_anim(anim, dir, restart = false), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
+API: play_anim(anim, dir, restart = false), set_direction(dir), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
 play_anim preserves active progress, starts changed moves/directions at the beginning and replays completed once-only clips. Pass true to restart explicitly.
-These methods return true on success; invalid move/direction, equipment, outfit or material IDs return false and emit an engine warning before changing state.
+set_direction turns the active move (e.g. an aimed attack) and keeps its frame, progress and completion without replaying it; the current direction is a no-op.
+These methods return true on success; invalid move/direction, equipment, outfit or material IDs, or set_direction without an active move, return false and emit an engine warning before changing state.
 set_variant changes one explicit selection; null removes it and restores the material default, while "" uses source colors. Linked materials follow their target's selection.
 The frozen base body stays equipped. body_fg is the clock; other layers follow it. Palette swaps use exact source RGBs,
 owner-local materials, linked selections and defaults; variant names must exist in exported materials[].variants.

@@ -5,20 +5,29 @@ import { moveWords } from '../../lib/rig/clips.ts';
 import { DEFAULT_MOVE } from '../../lib/rig/rig.ts';
 import type { RigAnimation } from '../../lib/store/manifest.ts';
 
-export const LIVE_ROLES = ['idle', 'walk', 'attack', 'jump', 'attackUp', 'attackDown'] as const;
+export const LIVE_ROLES = [
+	'idle',
+	'walk',
+	'run',
+	'attack',
+	'jump',
+	'attackUp',
+	'attackDown'
+] as const;
 export type LiveRole = (typeof LIVE_ROLES)[number];
 /** The saved choice per role; a missing role plays its Automatic clip. */
 export type LiveRoleChoices = Partial<Record<LiveRole, string>>;
 
 /** Whole words in a Move's ID that name an action, tried after its exact ID. Idle and Walk keep their exact IDs only, so
- * a character's existing walk never changes to a "walk-attack". */
-const ROLE_WORDS: Record<'attack' | 'jump', readonly string[]> = {
+ * a character's existing walk never changes to a "walk-attack". Run names only a sustained gait, never a dash. */
+const ROLE_WORDS: Record<'run' | 'attack' | 'jump', readonly string[]> = {
+	run: ['run', 'running', 'sprint', 'sprinting'],
 	attack: ['attack', 'slash', 'punch', 'strike', 'stab', 'swing', 'kick', 'shoot', 'cast'],
 	jump: ['jump', 'jumping', 'leap', 'hop']
 };
 
 /**
- * The clip Automatic plays for a role: the clip with the role's own ID, then for Attack and Jump the first Move whose ID
+ * The clip Automatic plays for a role: the clip with the role's own ID, then for Run, Attack and Jump the first Move whose ID
  * names it, in the character's order. Attack up and down have none: they fall back to Attack.
  */
 export function automaticClip(
@@ -51,6 +60,8 @@ export interface LiveClips {
 	/** Each list is tried in order, per facing, until one has artwork. */
 	idle: string[];
 	walk: string[];
+	/** Sprinting; falls back to Walk, played faster. */
+	run: string[];
 	/** Empty when the character has no clip for the action. */
 	attack: string[];
 	jump: string[];
@@ -58,7 +69,7 @@ export interface LiveClips {
 	attackDown: string[];
 }
 
-/** Idle falls back to Standing, Walk to Idle; Attack up and down fall back to Attack. */
+/** Idle falls back to Standing, Walk to Idle, Run to Walk; Attack up and down fall back to Attack. */
 export function liveClips(
 	animations: readonly RigAnimation[],
 	choices?: LiveRoleChoices
@@ -70,9 +81,11 @@ export function liveClips(
 	];
 	const idle = chain(pick('idle') ?? 'idle', DEFAULT_MOVE);
 	const attack = chain(pick('attack'));
+	const walk = chain(pick('walk') ?? 'walk', ...idle);
 	return {
 		idle,
-		walk: chain(pick('walk') ?? 'walk', ...idle),
+		walk,
+		run: chain(pick('run'), ...walk),
 		attack,
 		jump: chain(pick('jump')),
 		attackUp: chain(pick('attackUp'), ...attack),

@@ -144,7 +144,14 @@ function sceneHarness() {
 		},
 		anims: {
 			exists: (key: string) => animations.has(key),
-			create: (config: any) => animations.set(config.key, config)
+			create: (config: any) => animations.set(config.key, config),
+			// Phaser's Animation exposes 1-based AnimationFrame objects for each playlist entry.
+			get: (key: string) => ({
+				key,
+				frames: animations
+					.get(key)
+					.frames.map((f: any, i: number) => ({ textureFrame: f.frame, index: i + 1 }))
+			})
 		},
 		add: {
 			container: () => ({
@@ -163,7 +170,14 @@ function sceneHarness() {
 					depth: 0,
 					key: '',
 					frame: '',
-					anims: { currentFrame: null as any, currentAnim: null as any, isPlaying: false },
+					anims: {
+						currentFrame: null as any,
+						currentAnim: null as any,
+						isPlaying: false,
+						setCurrentFrame(frame: any) {
+							this.currentFrame = frame;
+						}
+					},
 					setName() {
 						return this;
 					},
@@ -246,6 +260,45 @@ test('Phaser repeated play preserves active progress, supports explicit restart 
 	doll.play('walk', 'south');
 	expect(doll.body.anims.currentFrame.textureFrame).toBe('walk_south_1');
 	expect(doll.body.anims.isPlaying).toBe(true);
+});
+
+test('Phaser setDirection keeps the active playlist entry and clock without replaying the clip', async () => {
+	const m = fixture();
+	m.rig.animations[0].directions = ['south', 'east'];
+	const api = runtime(),
+		h = sceneHarness();
+	browserHarness(m);
+	const loaded = await api.loadPaperdoll(h.scene, '/hero/');
+	const doll = new api.Paperdoll(h.scene, 0, 0, loaded);
+	expect(() => doll.setDirection('south')).toThrow('no active move');
+	doll.play('walk', 'south');
+	const starts = vi.fn();
+	doll.body.on('animationstart', starts);
+	// The third entry repeats the first entry's cell, so only its index identifies the playlist position.
+	const south = h.scene.anims.get(api.animKey(loaded, 'walk', 'south'));
+	Object.assign(doll.body.anims, {
+		currentFrame: south.frames[2],
+		accumulator: 290,
+		repeatCounter: 7
+	});
+	doll.setDirection('east');
+	const anims = doll.body.anims;
+	expect([doll.anim, doll.dir, anims.currentAnim.key]).toEqual([
+		'walk',
+		'east',
+		api.animKey(loaded, 'walk', 'east')
+	]);
+	expect([anims.currentFrame.index, anims.currentFrame.textureFrame]).toEqual([3, 'walk_east_1']);
+	expect([anims.accumulator, anims.repeatCounter, anims.isPlaying]).toEqual([290, 7, true]);
+	expect(starts).not.toHaveBeenCalled();
+	for (const n of doll.nodes.filter((n: any) => n.visible)) expect(n.frame).toBe('walk_east_1');
+	doll.setDirection('east');
+	expect(anims.currentFrame.index).toBe(3);
+	anims.isPlaying = false;
+	expect(() => doll.setDirection('north')).toThrow('unavailable move/direction walk/north');
+	expect([doll.dir, anims.currentFrame.index, anims.isPlaying]).toEqual(['east', 3, false]);
+	doll.setDirection('south');
+	expect([anims.currentFrame.textureFrame, anims.isPlaying]).toEqual(['walk_south_1', false]);
 });
 
 test('Phaser selects and synchronizes the complete body-cut combination independently of equipment insertion order', async () => {

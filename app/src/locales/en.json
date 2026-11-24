@@ -920,7 +920,7 @@
 			"other": "{n} problems"
 		},
 		"workspaceCopyPixelLabOff": "Workspace copy · PixelLab off",
-		"characterSelectionWASDOrArrowsSelectEnter": "Character selection. WASD or arrows select; Enter customizes; plus and minus zoom.",
+		"characterSelectionWASDOrArrowsSelectEnter": "Character selection. WASD or arrows select; Enter customizes; M shows the mount; plus and minus zoom.",
 		"previousCharacter": "Previous character",
 		"nextCharacter": "Next character",
 		"noMatchingCharacters": "No matching characters",
@@ -948,7 +948,7 @@
 		"groundUnavailable": "Continuous ground rendering unavailable. Showing the static scene.",
 		"materialUnavailable": "Ground material unavailable. Showing the static scene.",
 		"sceneUnavailable": "Live scene unavailable. Reload to try again.",
-		"characterPreviewWASDOrArrowsChangeFacing": "Character preview. WASD or arrows change facing. Keys 1, 2, 3 switch views.",
+		"characterPreviewWASDOrArrowsChangeFacing": "Character preview. WASD or arrows change facing. M shows the mount. Keys 1, 2, 3 switch views.",
 		"loadingCharacter": "Loading character…",
 		"notice": {
 			"hiddenItemsInMove": {
@@ -3500,6 +3500,11 @@
 		"forCharacter": "What {name} plays in Top-down and Side-scroller.",
 		"idle": "Idle",
 		"walk": "Walk",
+		"run": "Run",
+		"sprint": "Sprint",
+		"shiftKey": "Shift",
+		"attackKeys": "X or right-click",
+		"automaticFaster": "Automatic: {clip}, faster",
 		"attack": "Attack",
 		"jump": "Jump",
 		"attackUp": "Attack up",
@@ -3516,10 +3521,10 @@
 		"spaceKey": "Space",
 		"noAttack": "Nothing plays as Attack yet. Choose a move or state in Live views settings.",
 		"noAttackDirection": "{move} has no {direction} frames, so it can’t attack that way.",
-		"hintTopDown": "WASD or click to move · Right-click or X to attack · Space to jump · M to mount",
-		"hintSide": "A/D or click to move · Right-click or X to attack · Space to jump · M to mount",
-		"hintTouch": "Left side moves · Right side aims, lift to attack · Buttons jump and mount",
-		"stageTopDown": "Character test world. WASD, arrows, click or drag to move. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views.",
-		"stageSide": "Side-scroller test world. A/D, left and right arrows, click or drag to move. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views."
+		"hintTopDown": "WASD or hold click to move · Shift to sprint · Right-click or X to attack · Space to jump · M to mount",
+		"hintSide": "A/D or hold click to move · Shift to sprint · Right-click or X to attack · Space to jump · M to mount",
+		"hintTouch": "Drag to move · Hold and drag the sword to attack and aim · Buttons jump, sprint and mount",
+		"stageTopDown": "Character test world. WASD, arrows, click or drag to move; Shift sprints. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views.",
+		"stageSide": "Side-scroller test world. A/D, left and right arrows, click or drag to move; Shift sprints. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views."
 	}
 }

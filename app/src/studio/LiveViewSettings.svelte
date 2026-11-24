@@ -16,6 +16,7 @@
 	const roles: { role: LiveRole; label: WhisperKey }[] = [
 		{ role: 'idle', label: 'liveViews.idle' },
 		{ role: 'walk', label: 'liveViews.walk' },
+		{ role: 'run', label: 'liveViews.run' },
 		{ role: 'attack', label: 'liveViews.attack' },
 		{ role: 'jump', label: 'liveViews.jump' },
 		{ role: 'attackUp', label: 'liveViews.attackUp' },
@@ -25,12 +26,15 @@
 	/** Automatic names the clip it plays now, so people see what a choice replaces. */
 	function automatic(role: LiveRole) {
 		if (role === 'attackUp' || role === 'attackDown') return t('liveViews.sameAsAttack');
-		const chain = liveClips(moves, { ...choices, [role]: undefined })[role];
-		const clip = chain.find((id) => moves.some((move) => move.id === id));
+		const automaticClips = liveClips(moves, { ...choices, [role]: undefined });
+		const clip = automaticClips[role].find((id) => moves.some((move) => move.id === id));
+		// Run without its own clip sprints with Walk, played faster.
+		if (role === 'run' && clip && automaticClips.walk.includes(clip))
+			return t('liveViews.automaticFaster', { clip: displayMove(clip, moves) });
 		// With no Idle, Walk or Standing the character still shows its art standing still (presentation.ts stills).
 		return clip
 			? t('liveViews.automaticClip', { clip: displayMove(clip, moves) })
-			: role === 'idle' || role === 'walk'
+			: role === 'idle' || role === 'walk' || role === 'run'
 				? t('liveViews.automaticStill')
 				: t('liveViews.automaticNone');
 	}

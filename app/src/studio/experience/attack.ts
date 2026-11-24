@@ -7,12 +7,22 @@ import type { BodySequence, PresentationAvailability } from './presentation.ts';
 
 export type AttackFailure =
 	{ kind: 'no-attack' } | { kind: 'no-direction'; move: string; direction: DirectionName | null };
-export type AttackChoice = { sequence: BodySequence } | { failure: AttackFailure };
+export type AttackSector = 'up' | 'down' | 'level';
+export type AttackChoice =
+	{ sequence: BodySequence; sector: AttackSector } | { failure: AttackFailure };
 
-/** Side-scroller aim more than 45° from level plays Attack up or Attack down. */
-export function attackSector(aim: Vector): 'up' | 'down' | 'level' {
+/** Degrees past the 45° boundary an aim must cross to change sector while an attack turns, so it never flickers there. */
+const SECTOR_DEADBAND = 8;
+
+/** Side-scroller aim more than 45° from level plays Attack up or Attack down. An attack turning mid-swing passes its
+ * `current` sector and keeps it until the aim leaves the boundary's deadband. */
+export function attackSector(aim: Vector, current?: AttackSector): AttackSector {
 	const u = unit(aim);
-	return Math.abs(u.y) > Math.abs(u.x) + 1e-9 ? (u.y > 0 ? 'up' : 'down') : 'level';
+	const sector = Math.abs(u.y) > Math.abs(u.x) + 1e-9 ? (u.y > 0 ? 'up' : 'down') : 'level';
+	if (!current || sector === current) return sector;
+	const angle = (Math.atan2(Math.abs(u.y), Math.abs(u.x)) * 180) / Math.PI;
+	const near = Math.abs(angle - 45) < SECTOR_DEADBAND;
+	return near && (current === 'level' || current === (u.y > 0 ? 'up' : 'down')) ? current : sector;
 }
 
 /**
@@ -24,12 +34,17 @@ export function resolveAttack(
 	a: PresentationAvailability,
 	clips: LiveClips,
 	aim: Vector,
-	options: { side: boolean; facing: DirectionName | null }
+	options: {
+		side: boolean;
+		facing: DirectionName | null;
+		/** The sector of an attack turning mid-swing, held through the boundary's deadband. */
+		sector?: AttackSector;
+	}
 ): AttackChoice {
 	const facing = directionInfo(options.facing ?? '')?.vector ?? { x: 0, y: -1 };
 	let u = unit(aim);
 	if (!u.x && !u.y) u = facing;
-	const sector = options.side ? attackSector(u) : 'level';
+	const sector = options.side ? attackSector(u, options.sector) : 'level';
 	const chain =
 		sector === 'up' ? clips.attackUp : sector === 'down' ? clips.attackDown : clips.attack;
 	const toward = options.side
@@ -48,7 +63,7 @@ export function resolveAttack(
 				: dot(directionInfo(direction)!.vector, toward) > 1e-6
 		);
 		const direction = nearestDirection(eligible, toward, options.facing);
-		if (direction) return { sequence: sequences.get(direction)! };
+		if (direction) return { sequence: sequences.get(direction)!, sector };
 	}
 	return {
 		failure: missing

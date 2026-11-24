@@ -61,12 +61,37 @@ export const MOTION = {
 	cameraResponse: 9,
 	/** Share of the eased camera's trailing lag removed by aiming it ahead of travel (movement.ts integrateMovement). */
 	cameraLead: 0.75,
+	/** World units within which a click or held mouse press counts as the spot the character stands on. */
+	arrival: 4,
+	/** Sprint (Shift or the Sprint toggle) multiplies travel speed, walking or riding. */
+	sprintMultiplier: 1.5,
 	/** Touch stick sizes in CSS px; compact applies on narrow or short screens such as phones in landscape. */
 	joystick: {
 		regular: { base: 144, thumb: 48, stroke: 2 },
 		compact: { base: 128, thumb: 44, stroke: 2 },
 		compactQuery: '(max-width: 360px), (max-height: 400px)',
 		deadZone: 8
+	},
+	/**
+	 * The touch action cluster at the stage's lower right: the Attack stick (the largest, under the thumb's rest) with
+	 * Jump above it, Sprint at its upper left and Mount to its left, on an arc the thumb reaches by pivoting. Each button
+	 * is [diameter, x, y] with its center relative to the stick's center in CSS px.
+	 */
+	actions: {
+		/** A stage shorter than this (CSS px) takes the compact cluster, so Jump stays clear of the zoom controls. */
+		compactBelow: 280,
+		regular: {
+			stick: { base: 112, thumb: 44, stroke: 2 },
+			jump: [56, 0, -98],
+			sprint: [48, -72, -64],
+			mount: [44, -102, 0]
+		},
+		compact: {
+			stick: { base: 96, thumb: 40, stroke: 2 },
+			jump: [52, 0, -86],
+			sprint: [44, -67, -45],
+			mount: [44, -102, 0]
+		}
 	},
 	tileSize: 100
 };

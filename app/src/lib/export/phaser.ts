@@ -141,6 +141,21 @@ export class Paperdoll {
     this.sync();
   }
 
+  /** Turns the active move without restarting it: playlist entry, time, loop count and completion are kept. */
+  setDirection(dir) {
+    const move = this.m.rig.animations.find((a) => a.id === this.anim), anims = this.body.anims;
+    if (!move || !anims.currentFrame) throw new Error('PixelDoll: no active move');
+    if (!available(this.m, move).some((d) => d.id === dir)) throw new Error('PixelDoll: unavailable move/direction ' + this.anim + '/' + dir);
+    if (dir === this.dir) return;
+    // Directions of one move share frame count, durations and repeat settings, so swapping the clip in place
+    // keeps the clock's accumulator, repeat counter and playing state without emitting start or complete.
+    const next = this.scene.anims.get(animKey(this.m, this.anim, dir));
+    this.dir = dir;
+    anims.currentAnim = next;
+    anims.setCurrentFrame(next.frames[anims.currentFrame.index - 1]);
+    this.sync();
+  }
+
   equip(slot, itemId) {
     if (slot === 'body' || !validEquipment(this.m, slot, itemId)) throw new Error('PixelDoll: invalid equipment for ' + slot);
     this.equipped[slot] = itemId; this.sync();
@@ -239,6 +254,7 @@ export function phaserFiles(m: Manifest): OutFile[] {
      }
 Switch outfits with doll.applyPreset(m.presets[1]) or doll.applyPreset(outfitId); unknown outfit IDs throw without changing the doll.
 play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
+doll.setDirection(dir) turns the active move (e.g. an aimed attack) while keeping its frame, time, loop position and completion; it emits no start or complete events. The current direction is a no-op; an unavailable direction or no active move throws before changing state.
 Invalid move/direction, equipment and outfit IDs throw before changing state. Unequip a non-body slot with null.
 Recolor with doll.setVariants({ material_id: "stored_variant" }).
 setVariants replaces all explicit color selections. Omitted keys or null restore material defaults; an empty-string selection uses source colors. Linked materials follow their target's selection.

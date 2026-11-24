@@ -5,7 +5,6 @@
 	import { displayMessage } from '../lib/i18n.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { popoverFocus } from './experience/focus.ts';
-	import { openSettings } from './settingsNavigation.svelte.ts';
 	import { tick } from 'svelte';
 	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
@@ -49,8 +48,7 @@
 		Dices,
 		Eye,
 		Layers2,
-		Mountain,
-		PawPrint
+		Mountain
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
@@ -243,23 +241,8 @@
 				>{/each}
 		</div>
 	{/if}
-	{#snippet mountSettings()}
-		<button
-			class="bu-action test-mount-toggle"
-			data-variant="quiet"
-			aria-label={t('toolbar.mountSettings')}
-			data-active={experience.testMount || undefined}
-			aria-haspopup="dialog"
-			title={experience.testMount
-				? t('toolbar.titleMountSettingsMounted')
-				: t('toolbar.mountSettings')}
-			onclick={() => openSettings('mount')}
-			disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
-		>
-	{/snippet}
 	<div class="header-actions">
 		{#if experience.screen === 'characters'}
-			{@render mountSettings()}
 			<NewCharacterButton />
 		{:else}
 			<!-- Undo shows once there is something to undo, and Redo after it once there is something to redo. Each takes room
@@ -292,7 +275,6 @@
 				disabled={!m}
 				onclick={randomize}><Dices size={18} /></button
 			>
-			{@render mountSettings()}
 			<button
 				class="bu-action header-share"
 				data-variant="outline"

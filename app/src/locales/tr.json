@@ -920,7 +920,7 @@
 			"other": "{n} sorun"
 		},
 		"workspaceCopyPixelLabOff": "Çalışma alanı kopyası · PixelLab kapalı",
-		"characterSelectionWASDOrArrowsSelectEnter": "Karakter seçimi. WASD veya ok tuşlarıyla seçin, Enter ile özelleştirin, artı ve eksiyle yakınlaştırıp uzaklaştırın.",
+		"characterSelectionWASDOrArrowsSelectEnter": "Karakter seçimi. WASD veya ok tuşlarıyla seçin, Enter ile özelleştirin, M ile bineği gösterin, artı ve eksiyle yakınlaştırıp uzaklaştırın.",
 		"previousCharacter": "Önceki karakter",
 		"nextCharacter": "Sonraki karakter",
 		"noMatchingCharacters": "Eşleşen karakter bulunamadı",
@@ -948,7 +948,7 @@
 		"groundUnavailable": "Zemin gerçek zamanlı olarak çizilemiyor. Sabit sahne gösteriliyor.",
 		"materialUnavailable": "Zemin malzemesi kullanılamıyor. Sabit sahne gösteriliyor.",
 		"sceneUnavailable": "Canlı sahne kullanılamıyor. Tekrar denemek için sayfayı yenileyin.",
-		"characterPreviewWASDOrArrowsChangeFacing": "Karakter önizlemesi. Yönü WASD veya ok tuşlarıyla değiştirin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
+		"characterPreviewWASDOrArrowsChangeFacing": "Karakter önizlemesi. Yönü WASD veya ok tuşlarıyla değiştirin. M bineği gösterir. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
 		"loadingCharacter": "Karakter yükleniyor…",
 		"notice": {
 			"hiddenItemsInMove": {
@@ -3497,6 +3497,11 @@
 		"forCharacter": "{name} karakterinin Üstten görünüm ve Yandan kaydırmalı görünümde oynattığı animasyonlar.",
 		"idle": "Bekleme",
 		"walk": "Yürüme",
+		"run": "Koşma",
+		"sprint": "Hızlı koşu",
+		"shiftKey": "Shift",
+		"attackKeys": "X veya sağ tık",
+		"automaticFaster": "Otomatik: {clip}, daha hızlı",
 		"attack": "Saldırı",
 		"jump": "Zıplama",
 		"attackUp": "Yukarı saldırı",
@@ -3513,10 +3518,10 @@
 		"spaceKey": "Boşluk",
 		"noAttack": "Henüz Saldırı için bir şey seçilmedi. Canlı görünüm ayarlarından bir animasyon veya durum seçin.",
 		"noAttackDirection": "Bu animasyonda ({move}) {direction} yönüne bakan kare yok, bu yüzden o yöne saldıramaz.",
-		"hintTopDown": "Hareket için WASD veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
-		"hintSide": "Hareket için A/D veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
-		"hintTouch": "Sol taraf hareket ettirir · Sağ taraf nişan alır, bırakınca saldırır · Düğmeler zıplatır ve bindirir",
-		"stageTopDown": "Karakter test dünyası. Hareket etmek için WASD, ok tuşları, tıklama veya sürükleme kullanın. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir.",
-		"stageSide": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D, sol ve sağ ok tuşları, tıklama veya sürükleme kullanın. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir."
+		"hintTopDown": "Hareket için WASD veya basılı tıklama · Hızlı koşu için Shift · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
+		"hintSide": "Hareket için A/D veya basılı tıklama · Hızlı koşu için Shift · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
+		"hintTouch": "Hareket için sürükleyin · Saldırıp nişan almak için kılıcı basılı tutup sürükleyin · Düğmeler zıplatır, hızlı koşturur ve bindirir",
+		"stageTopDown": "Karakter test dünyası. Hareket etmek için WASD, ok tuşları, tıklama veya sürükleme kullanın; Shift hızlı koşturur. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir.",
+		"stageSide": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D, sol ve sağ ok tuşları, tıklama veya sürükleme kullanın; Shift hızlı koşturur. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir."
 	}
 }

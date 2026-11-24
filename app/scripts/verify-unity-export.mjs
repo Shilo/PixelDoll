@@ -108,7 +108,8 @@ async function fixtureArchive() {
 		pivot: { x: 32, y: 60 },
 		baseItem: 'base',
 		baseHash: '',
-		directions: [{ id: 'south' }],
+		// The mirrored view gives SetDirection a second direction with the same unequal, repeated-cell timelines.
+		directions: [{ id: 'south' }, { id: 'west', mirrorOf: 'south' }],
 		animations
 	};
 	rig.baseHash = await baseHashOf(

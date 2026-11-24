@@ -421,7 +421,7 @@ try {
 							'restart-every-play'
 						]
 					: archive.adversarial
-						? ['none', 'no-covers', 'no-hides', 'no-palette', 'wrong-direction']
+						? ['none', 'no-covers', 'no-hides', 'no-palette', 'wrong-direction', 'turn-restarts']
 						: archive.state
 							? ['none', 'restart-every-play', 'state-loop']
 							: ['none']) {
@@ -453,6 +453,11 @@ try {
 								'this.body.play(animKey(this.m, anim, dir), !restart)',
 								'this.body.play(animKey(this.m, anim, dir))'
 							);
+						} else if (control === 'turn-restarts') {
+							const turn =
+								'anims.currentAnim = next;\n    anims.setCurrentFrame(next.frames[anims.currentFrame.index - 1]);';
+							assert(runtime.includes(turn), 'Turn control must mutate the current setDirection.');
+							runtime = runtime.replace(turn, 'this.body.play(animKey(this.m, this.anim, dir));');
 						} else if (control === 'no-repeat') {
 							assert(runtime.includes('repeat: a.loop ? -1 : 0'));
 							runtime = runtime.replace('repeat: a.loop ? -1 : 0', 'repeat: 0');
@@ -504,7 +509,7 @@ try {
 						let data, failure;
 						try {
 							data = await page.evaluate(
-								async ({ renderer, fixture, control, bakedPaths, stateMove }) => {
+								async ({ renderer, fixture, control, bakedPaths, stateMove, turns }) => {
 									const api = await import('/hero/phaser/PaperdollContainer.js');
 									return new Promise((resolve, reject) => {
 										const timeout = setTimeout(
@@ -637,6 +642,100 @@ try {
 															doll.body.off('animationcomplete', completed);
 															// Leave a different clip active so the generic loop starts each clip fresh.
 															doll.play(stateMove, dir, true);
+														}
+														// Turns on the final playlist entry, which repeats the previous cell with its own duration.
+														if (turns) {
+															const advance = (ms) => {
+																	for (let t = 0; t < ms; t++) doll.body.anims.update(t, 1);
+																},
+																events = { start: 0, repeat: 0, complete: 0 },
+																listeners = Object.keys(events).map((name) => [
+																	'animation' + name,
+																	() => events[name]++
+																]);
+															for (const move of m.rig.animations) {
+																const views = move.directions ?? m.rig.directions.map((d) => d.id);
+																if (views.length < 2) continue;
+																const from = views[0],
+																	to = views.at(-2),
+																	entry = move.frames.length - 1,
+																	length = move.frames[entry].ms,
+																	total = move.frames.reduce((n, frame) => n + frame.ms, 0),
+																	anims = doll.body.anims,
+																	shows = (dir, index) =>
+																		anims.currentAnim.key === api.animKey(m, move.id, dir) &&
+																		anims.currentFrame.index === index + 1 &&
+																		anims.currentFrame.textureFrame ===
+																			`${move.id}_${dir}_${move.frames[index].cell}` &&
+																		doll.nodes
+																			.filter((n) => n.sprite.visible)
+																			.every(
+																				(n) =>
+																					n.sprite.frame.name === anims.currentFrame.textureFrame
+																			);
+																doll.play(move.id, from, true);
+																if (move.loop) advance(total);
+																advance(total - length + Math.floor(length / 3));
+																const before = [
+																	anims.accumulator,
+																	anims.nextTick,
+																	anims.repeatCounter
+																];
+																for (const [name, listener] of listeners)
+																	doll.body.on(name, listener);
+																for (const name in events) events[name] = 0;
+																doll.setDirection(to);
+																check(
+																	shows(to, entry) &&
+																		anims.isPlaying &&
+																		JSON.stringify([
+																			anims.accumulator,
+																			anims.nextTick,
+																			anims.repeatCounter
+																		]) === JSON.stringify(before),
+																	`direction: ${move.id} turn must keep its playlist entry, clock and every layer`
+																);
+																doll.setDirection(to);
+																check(
+																	shows(to, entry) && anims.accumulator === before[0],
+																	`direction: ${move.id} turning to the current view must be a no-op`
+																);
+																advance(length - Math.floor(length / 3) - 1);
+																check(
+																	shows(to, entry),
+																	`direction: ${move.id} turned entry must keep its remaining duration`
+																);
+																advance(2);
+																check(
+																	move.loop
+																		? shows(to, 0) && events.repeat === 1 && events.complete === 0
+																		: shows(to, entry) && !anims.isPlaying && events.complete === 1,
+																	`direction: ${move.id} turned clip must continue its timeline`
+																);
+																if (!move.loop) {
+																	doll.setDirection(from);
+																	check(
+																		shows(from, entry) && !anims.isPlaying && events.complete === 1,
+																		`direction: ${move.id} turning a completed once-only clip must hold it`
+																	);
+																	doll.play(move.id, from);
+																	check(
+																		shows(from, 0) && anims.isPlaying,
+																		`direction: ${move.id} turned completed clip must still replay`
+																	);
+																}
+																check(
+																	events.start === (move.loop ? 0 : 1),
+																	`direction: ${move.id} turning must not restart the clip`
+																);
+																for (const [name, listener] of listeners)
+																	doll.body.off(name, listener);
+															}
+															// The generic loop must start each clip fresh: leave a clip other than the first active.
+															check(
+																doll.anim !== m.rig.animations[0].id,
+																'direction: fixture must end on a different clip'
+															);
 														}
 														for (const move of m.rig.animations) {
 															const dir = (move.directions ?? m.rig.directions.map((d) => d.id))[0];
@@ -974,7 +1073,8 @@ try {
 									fixture: archive.fixture,
 									control,
 									bakedPaths: archive.bakedPaths,
-									stateMove: archive.state ? 'ready-stance' : null
+									stateMove: archive.state ? 'ready-stance' : null,
+									turns: !!archive.adversarial
 								}
 							);
 						} catch (error) {
@@ -983,17 +1083,19 @@ try {
 						if (control !== 'none') {
 							const expectedFailure = archive.state
 								? 'state:'
-								: [
-											'wrong-pivot',
-											'no-covers',
-											'no-hides',
-											'no-palette',
-											'wrong-direction'
-									  ].includes(control)
-									? 'pixels:'
-									: control === 'no-layer-update'
-										? 'synchronization:'
-										: 'clock:';
+								: control === 'turn-restarts'
+									? 'direction:'
+									: [
+												'wrong-pivot',
+												'no-covers',
+												'no-hides',
+												'no-palette',
+												'wrong-direction'
+										  ].includes(control)
+										? 'pixels:'
+										: control === 'no-layer-update'
+											? 'synchronization:'
+											: 'clock:';
 							assert(
 								failure && failure.message.includes(expectedFailure),
 								`Negative control was not caught by ${expectedFailure}: ${failure?.message ?? 'passed'}`

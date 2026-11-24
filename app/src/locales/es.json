@@ -920,7 +920,7 @@
 			"other": "{n} problemas"
 		},
 		"workspaceCopyPixelLabOff": "Copia del espacio de trabajo · PixelLab desactivado",
-		"characterSelectionWASDOrArrowsSelectEnter": "Selección de personaje. WASD o flechas para elegir; Enter para personalizar; más y menos para el zoom.",
+		"characterSelectionWASDOrArrowsSelectEnter": "Selección de personaje. WASD o flechas para elegir; Enter para personalizar; M muestra la montura; más y menos para el zoom.",
 		"previousCharacter": "Personaje anterior",
 		"nextCharacter": "Personaje siguiente",
 		"noMatchingCharacters": "No hay personajes que coincidan",
@@ -948,7 +948,7 @@
 		"groundUnavailable": "No se puede renderizar el suelo en tiempo real. Se muestra la escena estática.",
 		"materialUnavailable": "El material del suelo no está disponible. Se muestra la escena estática.",
 		"sceneUnavailable": "La escena en vivo no está disponible. Recarga la página para volver a intentarlo.",
-		"characterPreviewWASDOrArrowsChangeFacing": "Vista previa del personaje. WASD o flechas cambian la orientación. Las teclas 1, 2 y 3 cambian de vista.",
+		"characterPreviewWASDOrArrowsChangeFacing": "Vista previa del personaje. WASD o flechas cambian la orientación. M muestra la montura. Las teclas 1, 2 y 3 cambian de vista.",
 		"loadingCharacter": "Cargando personaje…",
 		"notice": {
 			"hiddenItemsInMove": {
@@ -3500,6 +3500,11 @@
 		"forCharacter": "Animaciones que {name} usa en Vista cenital y Vista lateral.",
 		"idle": "Reposo",
 		"walk": "Caminar",
+		"run": "Correr",
+		"sprint": "Esprintar",
+		"shiftKey": "Mayús",
+		"attackKeys": "X o clic derecho",
+		"automaticFaster": "Automático: {clip}, más rápido",
 		"attack": "Ataque",
 		"jump": "Salto",
 		"attackUp": "Ataque hacia arriba",
@@ -3516,10 +3521,10 @@
 		"spaceKey": "Espacio",
 		"noAttack": "Aún no hay nada asignado a Ataque. Elige una animación o un estado en los ajustes de Vistas en vivo.",
 		"noAttackDirection": "{move} no tiene fotogramas hacia {direction}, así que no puede atacar en esa dirección.",
-		"hintTopDown": "WASD o clic para moverte · Clic derecho o X para atacar · Espacio para saltar · M para montar",
-		"hintSide": "A/D o clic para moverte · Clic derecho o X para atacar · Espacio para saltar · M para montar",
-		"hintTouch": "El lado izquierdo mueve · El lado derecho apunta; suelta para atacar · Los botones saltan y montan",
-		"stageTopDown": "Mundo de prueba del personaje. WASD, flechas, clic o arrastre para moverte. Clic derecho o X ataca, Espacio salta, M monta. Las teclas 1, 2 y 3 cambian de vista.",
-		"stageSide": "Mundo de prueba en vista lateral. A/D, flechas izquierda y derecha, clic o arrastre para moverte. Clic derecho o X ataca, Espacio salta, M monta. Las teclas 1, 2 y 3 cambian de vista."
+		"hintTopDown": "WASD o mantén el clic para moverte · Mayús para esprintar · Clic derecho o X para atacar · Espacio para saltar · M para montar",
+		"hintSide": "A/D o mantén el clic para moverte · Mayús para esprintar · Clic derecho o X para atacar · Espacio para saltar · M para montar",
+		"hintTouch": "Arrastra para moverte · Mantén y arrastra la espada para atacar y apuntar · Los botones saltan, esprintan y montan",
+		"stageTopDown": "Mundo de prueba del personaje. WASD, flechas, clic o arrastre para moverte; Mayús esprinta. Clic derecho o X ataca, Espacio salta, M monta. Las teclas 1, 2 y 3 cambian de vista.",
+		"stageSide": "Mundo de prueba en vista lateral. A/D, flechas izquierda y derecha, clic o arrastre para moverte; Mayús esprinta. Clic derecho o X ataca, Espacio salta, M monta. Las teclas 1, 2 y 3 cambian de vista."
 	}
 }

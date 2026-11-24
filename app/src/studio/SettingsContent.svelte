@@ -152,6 +152,7 @@
 					terms: ['toolbar.viewTopDown', 'toolbar.viewSide']
 				},
 				{ id: 'live-walk', label: 'liveViews.walk' },
+				{ id: 'live-run', label: 'liveViews.run', terms: ['liveViews.sprint'] },
 				{ id: 'live-attack', label: 'liveViews.attack' },
 				{ id: 'live-jump', label: 'liveViews.jump' },
 				{ id: 'live-attackUp', label: 'liveViews.attackUp' },

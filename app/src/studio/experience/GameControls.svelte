@@ -1,36 +1,104 @@
-<!-- Jump and Mount for the live views. Touch shows round thumb buttons by the right (aim) thumb; a mouse shows a compact
-     icon bar with shortcut tooltips. Neither ever takes keyboard focus: Space and M stay the stage's (gameAction.ts). A
-     press in the air does nothing, without dimming the buttons on every jump. -->
+<!-- The live views' actions. Touch shows a thumb cluster at the stage's lower right: the Attack stick with Jump, Sprint and
+     Mount on an arc around it (config.ts MOTION.actions). A mouse shows a compact icon bar there, with shortcut tooltips.
+     Nothing here ever takes keyboard focus: Space, Shift, X and M stay the stage's (gameAction.ts). Jump and Attack last
+     while held; Sprint and Mount toggle. A press in the air does nothing, without dimming the buttons on every jump. -->
 <script lang="ts">
 	import { t } from 'svelte-whisper';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { gameAction } from '../../lib/input/gameAction.ts';
+	import type { JoystickSnapshot } from '../../lib/input/joystick.ts';
+	import StickControl from '../../lib/input/StickControl.svelte';
 	import TouchActionButton from '../../lib/input/TouchActionButton.svelte';
-	import { ArrowBigUp, PawPrint } from '../icons.ts';
+	import { ArrowBigUp, ChevronsRight, PawPrint, Sword } from '../icons.ts';
+	import { MOTION } from './config.ts';
 
 	let {
 		touch,
 		mounted,
+		sprinting,
+		onattack,
+		onattackrelease,
+		onstick,
 		onjump,
-		onmount
+		onjumprelease,
+		onsprint,
+		onmount,
+		compact: shortStage = false
 	}: {
 		touch: boolean;
 		mounted: boolean;
+		/** The Sprint toggle's state (Shift sprints without it). */
+		sprinting: boolean;
+		/** Attack held along the travel or facing: the desktop button, or the stick tapped by assistive technology. */
+		onattack: () => void;
+		onattackrelease: () => void;
+		/** The touch Attack stick's every press, drag and release. */
+		onstick: (snapshot: JoystickSnapshot) => void;
 		onjump: () => void;
+		onjumprelease: () => void;
+		onsprint: () => void;
 		onmount: () => void;
+		/** A short stage takes the compact cluster, like a small screen. */
+		compact?: boolean;
 	} = $props();
-	const jump = $derived(t('liveViews.jump')),
+	const attack = $derived(t('liveViews.attack')),
+		jump = $derived(t('liveViews.jump')),
+		sprint = $derived(t('liveViews.sprint')),
 		mount = $derived(t('liveViews.mount'));
-	const space = $derived(t('liveViews.spaceKey'));
+	const compact = new MediaQuery(MOTION.joystick.compactQuery);
+	const cluster = $derived(
+		compact.current || shortStage ? MOTION.actions.compact : MOTION.actions.regular
+	);
+	const radius = $derived(cluster.stick.base / 2);
+	/** A button's place in the cluster, measured from the cluster's lower right like the stick itself. */
+	const place = ([size, x, y]: readonly number[]) =>
+		`right: ${radius - x - size / 2}px; bottom: ${radius - y - size / 2}px;`;
 </script>
 
 {#if touch}
-	<div class="game-touch" role="group" aria-label={t('liveViews.actions')}>
-		<TouchActionButton label={mount} size={48} pressed={mounted} onactivate={onmount}
-			><PawPrint aria-hidden="true" /></TouchActionButton
-		>
-		<TouchActionButton label={jump} size={60} onactivate={onjump}
-			><ArrowBigUp aria-hidden="true" /></TouchActionButton
-		>
+	<div
+		class="game-touch"
+		role="group"
+		aria-label={t('liveViews.actions')}
+		style:--cluster-w="{radius - cluster.mount[1] + cluster.mount[0] / 2}px"
+		style:--cluster-h="{radius - cluster.jump[2] + cluster.jump[0] / 2}px"
+	>
+		<div class="stick-place">
+			<StickControl
+				label={attack}
+				size={cluster.stick}
+				deadZone={MOTION.joystick.deadZone}
+				onchange={onstick}
+				onactivate={() => {
+					onattack();
+					onattackrelease();
+				}}><Sword aria-hidden="true" /></StickControl
+			>
+		</div>
+		<div class="button-place" style={place(cluster.jump)}>
+			<TouchActionButton
+				label={jump}
+				size={cluster.jump[0]}
+				onactivate={onjump}
+				onrelease={onjumprelease}><ArrowBigUp aria-hidden="true" /></TouchActionButton
+			>
+		</div>
+		<div class="button-place" style={place(cluster.sprint)}>
+			<TouchActionButton
+				label={sprint}
+				size={cluster.sprint[0]}
+				pressed={sprinting}
+				onactivate={onsprint}><ChevronsRight aria-hidden="true" /></TouchActionButton
+			>
+		</div>
+		<div class="button-place" style={place(cluster.mount)}>
+			<TouchActionButton
+				label={mount}
+				size={cluster.mount[0]}
+				pressed={mounted}
+				onactivate={onmount}><PawPrint aria-hidden="true" /></TouchActionButton
+			>
+		</div>
 	</div>
 {:else}
 	<div class="game-bar bu-floating" role="group" aria-label={t('liveViews.actions')}>
@@ -38,17 +106,40 @@
 			type="button"
 			class="bu-action"
 			data-variant="quiet"
-			tabindex="-1"
-			aria-label={jump}
-			aria-keyshortcuts="Space"
-			title={t('liveViews.withShortcut', { action: jump, key: space })}
-			{@attach gameAction(() => onjump())}><ArrowBigUp size={18} aria-hidden="true" /></button
+			aria-label={attack}
+			aria-keyshortcuts="X"
+			title={t('liveViews.withShortcut', { action: attack, key: t('liveViews.attackKeys') })}
+			{@attach gameAction(
+				() => onattack(),
+				() => onattackrelease()
+			)}><Sword size={18} aria-hidden="true" /></button
 		>
 		<button
 			type="button"
 			class="bu-action"
 			data-variant="quiet"
-			tabindex="-1"
+			aria-label={jump}
+			aria-keyshortcuts="Space"
+			title={t('liveViews.withShortcut', { action: jump, key: t('liveViews.spaceKey') })}
+			{@attach gameAction(
+				() => onjump(),
+				() => onjumprelease()
+			)}><ArrowBigUp size={18} aria-hidden="true" /></button
+		>
+		<button
+			type="button"
+			class="bu-action"
+			data-variant="quiet"
+			aria-label={sprint}
+			aria-pressed={sprinting}
+			aria-keyshortcuts="Shift"
+			title={t('liveViews.withShortcut', { action: sprint, key: t('liveViews.shiftKey') })}
+			{@attach gameAction(() => onsprint())}><ChevronsRight size={18} aria-hidden="true" /></button
+		>
+		<button
+			type="button"
+			class="bu-action"
+			data-variant="quiet"
 			aria-label={mount}
 			aria-pressed={mounted}
 			aria-keyshortcuts="M"
@@ -59,21 +150,32 @@
 {/if}
 
 <style>
-	.game-touch {
-		position: fixed;
-		z-index: 4;
-		right: calc(var(--stage-right, 0px) + max(16px, env(safe-area-inset-right)));
-		bottom: calc(var(--stage-bottom, 0px) + max(20px, env(safe-area-inset-bottom)));
-		display: flex;
-		align-items: flex-end;
-		gap: 20px;
-	}
+	/* Both sit at the stage's lower right, beside the side panel, clear of the notch and home indicator. */
+	.game-touch,
 	.game-bar {
 		position: fixed;
 		z-index: 4;
-		/* Centered on the stage, between any side panels. */
-		left: calc((var(--stage-left, 0px) + 100vw - var(--stage-right, 0px)) / 2);
-		translate: -50% 0;
+		right: calc(var(--stage-right, 0px) + max(12px, env(safe-area-inset-right)));
+		bottom: calc(var(--stage-bottom, 0px) + max(12px, env(safe-area-inset-bottom)));
+	}
+	.game-touch {
+		inline-size: var(--cluster-w);
+		block-size: var(--cluster-h);
+		/* The cluster's empty corners let presses through to the stage, so movement can start anywhere. */
+		pointer-events: none;
+	}
+	.stick-place,
+	.button-place {
+		position: absolute;
+		display: grid;
+		pointer-events: auto;
+	}
+	.stick-place {
+		right: 0;
+		bottom: 0;
+	}
+	.game-bar {
+		right: calc(var(--stage-right, 0px) + 16px);
 		bottom: calc(var(--stage-bottom, 0px) + 16px);
 		display: flex;
 		align-items: center;

@@ -196,6 +196,74 @@ test('GDevelop selects combined body cuts and returns to single cutters when equ
 	expect(d.nodes.has(gdObjectName('base~cape~hat', 'main'))).toBe(true);
 });
 
+test('GDevelop setDirection turns the active move without restarting, replaying or accepting unavailable views', () => {
+	const m = gdFixture();
+	m.materials = [];
+	for (const move of m.rig.animations) move.directions = ['south', 'east'];
+	const nodes: { hidden: boolean; animation: string; cell: number }[] = [];
+	let synced = 0;
+	const scene = {
+		createObject: () => {
+			const n = {
+				hidden: false,
+				animation: '',
+				cell: -1,
+				hide(v = true) {
+					n.hidden = v;
+				},
+				setLayer() {},
+				setAnimationName(name: string) {
+					n.animation = name;
+				},
+				setAnimationFrame(cell: number) {
+					n.cell = cell;
+				},
+				pauseAnimation() {},
+				setPosition() {
+					synced++;
+				},
+				setZOrder() {},
+				updatePreRender() {},
+				getRendererObject: () => ({})
+			};
+			nodes.push(n);
+			return n;
+		},
+		getGame: () => ({ getImageManager: () => ({ getPIXITexture: () => ({}) }) })
+	};
+	const names = Object.fromEntries(
+		m.items.map((item) => [
+			item.id,
+			Object.fromEntries(item.layers.map((layer) => [layer.id, gdObjectName(item.id, layer.id)]))
+		])
+	);
+	const create = new Function(GDEVELOP_RUNTIME + '\nreturn createPixelDoll;')();
+	const d = create(scene, m, names);
+	// 30 ms into the 100 ms final entry, which repeats the first entry's cell.
+	d.update(290);
+	expect(d.setDirection('east')).toBe(d);
+	expect([d.anim.id, d.dir, d.elapsed, d.cell]).toEqual(['walk', 'east', 290, 1]);
+	const shown = nodes.filter((n) => !n.hidden);
+	expect(shown.length).toBeGreaterThan(1);
+	for (const n of shown)
+		expect([n.animation, n.cell]).toEqual([JSON.stringify(['walk', 'east']), 1]);
+	// The current direction changes nothing: no sync repositions or redraws the layers.
+	const before = synced;
+	d.setDirection('east');
+	expect(d.elapsed).toBe(290);
+	expect(synced).toBe(before);
+	expect(() => d.setDirection('north')).toThrow('unavailable move/direction walk/north');
+	expect([d.dir, d.elapsed]).toEqual(['east', 290]);
+	d.play('stop', 'east');
+	d.update(999);
+	d.setDirection('south');
+	expect([d.dir, d.elapsed, d.cell]).toEqual(['south', 999, 1]);
+	d.play('stop', 'south');
+	expect(d.elapsed).toBe(0);
+	for (const move of m.rig.animations) move.directions = [];
+	expect(() => create(scene, m, names).setDirection('south')).toThrow('no active move');
+});
+
 test('GDevelop executes canonical timeline changes rather than a separate playlist sampler', () => {
 	const original = 'export function sampleTimeline(frames, elapsedMs, loop = true) {',
 		mutated = GDEVELOP_RUNTIME.replace(

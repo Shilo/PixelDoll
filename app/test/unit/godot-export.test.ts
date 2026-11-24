@@ -299,7 +299,7 @@ test.skipIf(!process.env.GODOT_BIN)(
 		writeFileSync(join(directory, 'native.log'), run.stdout + run.stderr);
 		expect(run.status, run.stdout + run.stderr).toBe(0);
 		expect(run.stdout + run.stderr).not.toMatch(/SCRIPT ERROR|ERROR:/);
-		expect((run.stderr.match(/WARNING: PixelDoll:/g) ?? []).length).toBe(8);
+		expect((run.stderr.match(/WARNING: PixelDoll:/g) ?? []).length).toBe(10);
 		expect(run.stdout).toContain('GODOT_EXPORT_PASS');
 		expect(readFileSync(join(directory, 'native.log'), 'utf8')).toContain('GODOT_EXPORT_PASS');
 		writeFileSync(
@@ -332,7 +332,7 @@ test.skipIf(!process.env.GODOT_BIN)(
 		writeFileSync(join(directory, 'packed-runtime.log'), packed.stdout + packed.stderr);
 		expect(packed.status, packed.stdout + packed.stderr).toBe(0);
 		expect(packed.stdout + packed.stderr).not.toMatch(/ERROR:/);
-		expect((packed.stderr.match(/WARNING: PixelDoll:/g) ?? []).length).toBe(8);
+		expect((packed.stderr.match(/WARNING: PixelDoll:/g) ?? []).length).toBe(10);
 		expect(packed.stdout).toContain('GODOT_EXPORT_PASS');
 	},
 	120_000
@@ -403,6 +403,24 @@ func run() -> void:
 	check(doll.body.frame == 1 and is_equal_approx(doll.body.frame_progress, 0.4), "Repeated play preserves active progress")
 	doll.play_anim("walk_fast", "south", true)
 	check(doll.body.frame == 0 and is_zero_approx(doll.body.frame_progress), "Explicit restart returns to the first playlist entry")
+	# The last entry repeats cell 1 with its own 75 ms, so only a kept playlist index (2, not 0) passes.
+	var turns := [0]
+	var count_turn := func(): turns[0] += 1
+	doll.body.animation_finished.connect(count_turn)
+	doll.body.animation_looped.connect(count_turn)
+	doll.body.set_frame_and_progress(2, 0.4)
+	check(doll.set_direction("west"), "Turning to an available view succeeds")
+	check(doll.anim == "walk_fast" and doll.dir == "west" and doll.body.animation == "walk_fast_west" and doll.get_node("hair_fg").animation == "walk_fast_west", "Turning changes only the facing on every layer")
+	check(doll.body.frame == 2 and is_equal_approx(doll.body.frame_progress, 0.4) and doll.body.is_playing() and doll.get_node("hair_fg").frame == 2, "Turning keeps the playlist entry, progress and playback")
+	check(doll.set_direction("west") and doll.body.frame == 2 and is_equal_approx(doll.body.frame_progress, 0.4), "Turning to the current view is a no-op")
+	check(not doll.set_direction("east"), "Turning to an unavailable view reports failure")
+	check(doll.dir == "west" and doll.body.animation == "walk_fast_west" and doll.body.frame == 2 and is_equal_approx(doll.body.frame_progress, 0.4), "A rejected turn preserves playback")
+	check(doll.set_direction("south") and turns[0] == 0, "Turning replays no lifecycle signals")
+	doll.body.animation_finished.disconnect(count_turn)
+	doll.body.animation_looped.disconnect(count_turn)
+	var idle = load("res://godot/Paperdoll.tscn").instantiate()
+	check(not idle.set_direction("south"), "Turning without an active move reports failure")
+	idle.free()
 	check(not doll.equip("body", ""), "Frozen-body mutation reports failure")
 	check(not doll.equip("hair", "${nativeBodyId}"), "Wrong-slot equipment reports failure")
 	check(doll.equipped.body == "${nativeBodyId}" and doll.equipped.hair == "a", "Frozen base and wrong-slot guards")
@@ -461,6 +479,8 @@ func run() -> void:
 	for tick in 20:
 		await process_frame
 	check(not doll.body.is_playing() and doll.body.frame == 2, "Once-only playback completes and holds the final playlist entry")
+	check(doll.set_direction("west") and not doll.body.is_playing() and doll.body.animation == "once_west" and doll.body.frame == 2, "Turning a completed once-only clip holds its final entry")
+	doll.set_direction("south")
 	doll.play_anim("once", "south")
 	check(doll.body.is_playing() and doll.body.frame == 0 and is_zero_approx(doll.body.frame_progress), "Selecting a completed once-only clip replays it")
 	for a in doll.manifest.rig.animations:

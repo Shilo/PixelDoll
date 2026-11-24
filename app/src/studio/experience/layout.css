@@ -101,7 +101,15 @@
 	gap: 0;
 }
 .experience
-	:is(.mobile-random, .mobile-undo, .mobile-redo, .mobile-share, .mobile-inspect, .mobile-sep) {
+	:is(
+		.mobile-random,
+		.mobile-undo,
+		.mobile-redo,
+		.mobile-share,
+		.mobile-inspect,
+		.mobile-mount,
+		.mobile-sep
+	) {
 	display: none !important;
 }
 .brand {
@@ -444,10 +452,10 @@
 .compact-playback .playback-move {
 	flex: 1 1 auto;
 }
-.compact-playback :is(.playback-inspect, .playback-still, .playback-sep) {
+.compact-playback :is(.playback-inspect, .playback-mount, .playback-still, .playback-sep) {
 	display: none !important;
 }
-.compact-playback .mobile-inspect {
+.compact-playback :is(.mobile-inspect, .mobile-mount) {
 	display: flex !important;
 }
 .facing-cycle {
@@ -954,7 +962,8 @@
 .scene-zoom {
 	position: absolute;
 	z-index: 3;
-	left: calc(var(--stage-left) + 12px);
+	/* Top right, beside the side panel, like the game controls at the bottom right. */
+	right: calc(var(--stage-right) + 12px);
 	top: calc(var(--stage-top) + 8px);
 	display: flex;
 	align-items: center;

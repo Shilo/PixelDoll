@@ -42,6 +42,7 @@
 		Activity,
 		Dices,
 		Grid2x2,
+		PawPrint,
 		Shirt
 	} from './icons.ts';
 
@@ -136,6 +137,19 @@
 					ui.sheet = 'inspect';
 				}}
 				><Grid2x2 size={18} /><span class="row-name">{openerLabel(t('experience.inspect'))}</span
+				><SurfaceChevron /></button
+			>{/if}
+		{#if studio && experience.mode === 'preview'}<button
+				class="row bu-action mobile-mount"
+				data-variant="quiet"
+				aria-haspopup="dialog"
+				disabled={!m}
+				onclick={() => {
+					closeOptions();
+					openSettings('mount');
+				}}
+				><PawPrint size={18} /><span class="row-name"
+					>{openerLabel(t('toolbar.mountSettings'))}</span
 				><SurfaceChevron /></button
 			>{/if}
 		{#if studio}<hr class={{ 'mobile-sep': !doc.id.startsWith('fixture:') }} />{/if}

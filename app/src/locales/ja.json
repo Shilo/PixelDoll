@@ -894,7 +894,7 @@
 			"other": "{n}件の問題"
 		},
 		"workspaceCopyPixelLabOff": "ワークスペースのコピー・PixelLabは無効",
-		"characterSelectionWASDOrArrowsSelectEnter": "キャラクターの選択。WASDまたは矢印キーで選択、Enterでカスタマイズ、プラスとマイナスでズームします。",
+		"characterSelectionWASDOrArrowsSelectEnter": "キャラクターの選択。WASDまたは矢印キーで選択、Enterでカスタマイズ、Mで乗り物を表示、プラスとマイナスでズームします。",
 		"previousCharacter": "前のキャラクター",
 		"nextCharacter": "次のキャラクター",
 		"noMatchingCharacters": "一致するキャラクターはありません",
@@ -922,7 +922,7 @@
 		"groundUnavailable": "地面をリアルタイムで描画できないため、静止シーンを表示しています。",
 		"materialUnavailable": "地面のマテリアルを読み込めないため、静止シーンを表示しています。",
 		"sceneUnavailable": "ライブシーンを表示できません。ページを再読み込みしてください。",
-		"characterPreviewWASDOrArrowsChangeFacing": "キャラクターのプレビュー。WASDまたは矢印キーで向きを変えます。1、2、3キーでビューを切り替えます。",
+		"characterPreviewWASDOrArrowsChangeFacing": "キャラクターのプレビュー。WASDまたは矢印キーで向きを変えます。Mで乗り物を表示します。1、2、3キーでビューを切り替えます。",
 		"loadingCharacter": "キャラクターを読み込み中…",
 		"notice": {
 			"hiddenItemsInMove": {
@@ -3398,6 +3398,11 @@
 		"forCharacter": "{name} が見下ろし型と横スクロールで再生するモーションです。",
 		"idle": "待機",
 		"walk": "歩行",
+		"run": "走る",
+		"sprint": "ダッシュ",
+		"shiftKey": "Shift",
+		"attackKeys": "X または右クリック",
+		"automaticFaster": "自動：{clip}（速く）",
 		"attack": "攻撃",
 		"jump": "ジャンプ",
 		"attackUp": "上攻撃",
@@ -3414,10 +3419,10 @@
 		"spaceKey": "スペース",
 		"noAttack": "攻撃に割り当てられたものがまだありません。ライブビューの設定でモーションか状態を選んでください。",
 		"noAttackDirection": "{move} には{direction}向きのフレームがないため、その方向には攻撃できません。",
-		"hintTopDown": "WASD またはクリックで移動 · 右クリックまたは X で攻撃 · スペースでジャンプ · M で乗り降り",
-		"hintSide": "A/D またはクリックで移動 · 右クリックまたは X で攻撃 · スペースでジャンプ · M で乗り降り",
-		"hintTouch": "左側で移動 · 右側で狙い、指を離すと攻撃 · ボタンでジャンプと乗り降り",
-		"stageTopDown": "キャラクターのテストワールド。WASD、矢印キー、クリック、またはドラッグで移動します。右クリックまたは X で攻撃、スペースでジャンプ、M で乗り降りします。1、2、3キーでビューを切り替えます。",
-		"stageSide": "横スクロールのテストワールド。A/D、左右の矢印キー、クリック、またはドラッグで移動します。右クリックまたは X で攻撃、スペースでジャンプ、M で乗り降りします。1、2、3キーでビューを切り替えます。"
+		"hintTopDown": "WASD またはクリック長押しで移動 · Shift でダッシュ · 右クリックまたは X で攻撃 · スペースでジャンプ · M で乗り降り",
+		"hintSide": "A/D またはクリック長押しで移動 · Shift でダッシュ · 右クリックまたは X で攻撃 · スペースでジャンプ · M で乗り降り",
+		"hintTouch": "ドラッグで移動 · 剣を押したままドラッグで攻撃と狙い · ボタンでジャンプ、ダッシュ、乗り降り",
+		"stageTopDown": "キャラクターのテストワールド。WASD、矢印キー、クリック、またはドラッグで移動し、Shift でダッシュします。右クリックまたは X で攻撃、スペースでジャンプ、M で乗り降りします。1、2、3キーでビューを切り替えます。",
+		"stageSide": "横スクロールのテストワールド。A/D、左右の矢印キー、クリック、またはドラッグで移動し、Shift でダッシュします。右クリックまたは X で攻撃、スペースでジャンプ、M で乗り降りします。1、2、3キーでビューを切り替えます。"
 	}
 }

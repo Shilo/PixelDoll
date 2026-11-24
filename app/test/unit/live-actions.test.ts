@@ -8,7 +8,7 @@ import {
 	flightPhase,
 	GROUNDED,
 	JUMP,
-	jumpGrounding,
+	jumpReflection,
 	launch,
 	stepJump
 } from '../../src/studio/experience/jump.ts';
@@ -144,6 +144,16 @@ describe('directional attack', () => {
 		).toEqual({ failure: { kind: 'no-direction', move: 'punch', direction: 'east' } });
 		expect(attackSector({ x: 1, y: -2 })).toBe('down');
 		expect(attackSector({ x: 1, y: 1 })).toBe('level');
+		// A turning attack keeps its sector near the 45° boundary, and changes once the aim clearly leaves it.
+		const at = (degrees: number) => ({
+			x: Math.cos((degrees * Math.PI) / 180),
+			y: Math.sin((degrees * Math.PI) / 180)
+		});
+		expect(attackSector(at(50), 'level')).toBe('level');
+		expect(attackSector(at(40), 'up')).toBe('up');
+		expect(attackSector(at(55), 'level')).toBe('up');
+		expect(attackSector(at(35), 'up')).toBe('level');
+		expect(attackSector(at(-50), 'up')).toBe('down');
 	});
 });
 
@@ -173,6 +183,50 @@ describe('live actions', () => {
 		actions.refused();
 		actions.release('key');
 		expect(actions.step(ATTACK_GAP_MS)).toBeNull();
+	});
+
+	test('a held attack turns mid-swing from the same point, keeping the first swing length', () => {
+		const actions = new LiveActions();
+		actions.hold('mouse', () => ({ x: 1, y: 0 }));
+		actions.step(0);
+		actions.start(sequence('punch', 'east'));
+		actions.step(100);
+		expect(actions.attackCell()).toBe(1);
+		// A slower clip in the new facing plays from the same share of its own timeline.
+		actions.turn(sequence('punch', 'west', 200), 'level');
+		expect(actions.attack?.sequence.direction).toBe('west');
+		expect(actions.attackCell()).toBe(1);
+		expect(actions.heldAim()).toEqual({ x: 1, y: 0 });
+		actions.step(100);
+		expect(actions.attack).toBeNull();
+		actions.release('mouse');
+		expect(actions.heldAim()).toBeNull();
+	});
+
+	test('a held jump takes off at once and again on every landing; a quick tap jumps once', () => {
+		const actions = new LiveActions();
+		actions.holdJump('key');
+		actions.releaseJump('key');
+		expect(actions.grounded).toBe(false);
+		for (let i = 0; i < 60; i++) actions.step(16);
+		expect(actions.grounded).toBe(true);
+		actions.holdJump('button');
+		let landings = 0,
+			grounded = false;
+		for (let i = 0; i < 120; i++) {
+			actions.step(16);
+			if (actions.grounded) grounded = true;
+			else if (grounded) {
+				grounded = false;
+				landings++;
+			}
+		}
+		// Each landing bounced straight back up: never a frame on the floor.
+		expect(landings).toBe(0);
+		expect(actions.grounded).toBe(false);
+		actions.letGo();
+		for (let i = 0; i < 60; i++) actions.step(16);
+		expect(actions.grounded).toBe(true);
 	});
 
 	test('letting go stops repeats but the playing attack and jump finish; a paused scene holds still', () => {
@@ -231,17 +285,11 @@ describe('click to walk', () => {
 	});
 });
 
-describe('jump grounding', () => {
-	test('the shadow fades in at takeoff, shrinks and lightens with height; the reflection fades with distance', () => {
-		const floor = jumpGrounding(0, 0.7),
-			takeoff = jumpGrounding(0.02, 0.7),
-			apex = jumpGrounding(JUMP.height, 0.7);
-		expect(floor).toEqual({ shadowScale: 1, shadowStrength: 0, reflectionOpacity: 1 });
-		expect(takeoff.shadowStrength).toBeGreaterThan(0);
-		expect(takeoff.shadowStrength).toBeLessThan(0.5);
-		expect(apex.shadowScale).toBeLessThan(takeoff.shadowScale);
-		expect(apex.shadowStrength).toBeCloseTo(0.5);
-		expect(apex.reflectionOpacity).toBeCloseTo(0.5);
-		expect(jumpGrounding(Number.NaN, 0.7)).toEqual(floor);
+describe('jump reflection', () => {
+	test('the reflection fades with the distance below the floor', () => {
+		expect(jumpReflection(0, 0.7)).toBe(1);
+		expect(jumpReflection(JUMP.height, 0.7)).toBeCloseTo(0.5);
+		expect(jumpReflection(1, 0.7)).toBe(0);
+		expect(jumpReflection(Number.NaN, 0.7)).toBe(1);
 	});
 });

@@ -8,6 +8,7 @@
 		size = 56,
 		pressed,
 		onactivate,
+		onrelease,
 		children
 	}: {
 		label: string;
@@ -16,6 +17,8 @@
 		/** A toggle's state, such as Mount; omit for a momentary action such as Jump. */
 		pressed?: boolean;
 		onactivate: () => void;
+		/** For an action that lasts while held, such as Jump repeating on each landing. */
+		onrelease?: () => void;
 		children: Snippet;
 	} = $props();
 </script>
@@ -27,7 +30,7 @@
 	tabindex="-1"
 	aria-label={label}
 	aria-pressed={pressed}
-	{@attach gameAction(() => onactivate())}
+	{@attach gameAction(() => onactivate(), onrelease && (() => onrelease()))}
 >
 	{@render children()}
 </button>

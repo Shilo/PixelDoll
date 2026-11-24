@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
 	IDLE,
 	Joystick,
+	JOYSTICK_TYPES,
 	joystickTravel,
 	type JoystickOptions
 } from '../../src/lib/input/joystick.ts';
@@ -84,7 +85,48 @@ describe('joystick', () => {
 		expect(stick.move(3, { x: Infinity, y: 0 })).toBe(IDLE);
 	});
 
+	test('a resting stick takes presses only within its activation radius and returns to rest', () => {
+		const rest = { x: 300, y: 500 };
+		// The touch Attack stick: centers on the press, follows past the rim, snaps back on release.
+		const stick = new Joystick({ ...options, rest, activationRadius: 56, follow: true });
+		expect(stick.snapshot).toEqual({ ...IDLE, origin: rest });
+		expect(stick.contains({ x: 300, y: 557 })).toBe(false);
+		expect(stick.begin(1, { x: 360, y: 500 }).pointerId).toBeNull();
+		const pressed = stick.begin(1, { x: 320, y: 510 });
+		expect(pressed).toMatchObject({
+			pointerId: 1,
+			origin: { x: 320, y: 510 },
+			value: { x: 0, y: 0 }
+		});
+		expect(stick.pressed).toBe(true);
+		expect(stick.move(1, { x: 420, y: 510 }).origin).toEqual({ x: 380, y: 510 });
+		expect(stick.end(1)).toEqual({ ...IDLE, origin: rest });
+		expect(stick.pressed).toBe(false);
+		// Without its own radius, a resting stick accepts presses within its throw.
+		expect(new Joystick({ ...options, rest }).contains({ x: 341, y: 500 })).toBe(false);
+	});
+
+	test('a fixed stick keeps its base at rest and gives output from the press itself', () => {
+		const rest = { x: 100, y: 100 };
+		const fixed = new Joystick({ ...options, ...JOYSTICK_TYPES.fixed, rest, activationRadius: 60 });
+		const pressed = fixed.begin(1, { x: 140, y: 100 });
+		expect(pressed.origin).toEqual(rest);
+		expect(pressed.value).toEqual({ x: 1, y: 0 });
+		expect(fixed.move(1, { x: 300, y: 100 }).origin).toEqual(rest);
+		// The follow type drags the same resting base along instead.
+		const follow = new Joystick({
+			...options,
+			...JOYSTICK_TYPES.follow,
+			rest,
+			activationRadius: 60
+		});
+		follow.begin(1, { x: 140, y: 100 });
+		expect(follow.move(1, { x: 300, y: 100 }).origin).toEqual({ x: 260, y: 100 });
+	});
+
 	test('invalid geometry fails loudly', () => {
+		expect(() => new Joystick({ ...options, rest: { x: NaN, y: 0 } })).toThrow(RangeError);
+		expect(() => new Joystick({ ...options, activationRadius: -1 })).toThrow(RangeError);
 		expect(() => new Joystick({ ...options, deadZone: 40 })).toThrow(RangeError);
 		expect(() => new Joystick({ ...options, travel: NaN })).toThrow(RangeError);
 		expect(() => new Joystick({ ...options, deadZone: -1 })).toThrow(RangeError);

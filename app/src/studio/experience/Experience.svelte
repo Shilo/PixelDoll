@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { applyRiderPose } from '../mountPreview.ts';
+	import { applyRiderPose, showMount } from '../mountPreview.ts';
 	import SurfaceChevron from '../SurfaceChevron.svelte';
 	import { openerLabel } from '../openerLabel.ts';
 	import { formatNumber, t } from 'svelte-whisper';
@@ -8,6 +8,7 @@
 	import { tabActivity, workTabs } from '../activityStatus.svelte.ts';
 	import { onMount, tick, untrack } from 'svelte';
 	import Toolbar from '../Toolbar.svelte';
+	import { openSettings } from '../settingsNavigation.svelte.ts';
 	import CharacterActions from '../CharacterActions.svelte';
 	import CharacterName from '../CharacterName.svelte';
 	import NewCharacterButton from '../NewCharacterButton.svelte';
@@ -58,6 +59,7 @@
 		Play,
 		Pause,
 		Grid2x2,
+		PawPrint,
 		PersonStanding,
 		TriangleAlert
 	} from '../icons.ts';
@@ -395,6 +397,10 @@
 		} else if (k === 'enter' && list.length) {
 			e.preventDefault();
 			customize();
+		} else if (k === 'm') {
+			// M shows or hides the mount, as in every character view.
+			e.preventDefault();
+			showMount(!experience.testMount);
 		}
 	}
 	onMount(() => {
@@ -861,6 +867,17 @@
 						aria-label={t('experience.inspect')}
 						title={t('experience.inspect')}
 						onclick={() => (ui.sheet = 'inspect')}><Grid2x2 size={16} /></button
+					>
+					<button
+						class="bu-action playback-mount test-mount-toggle"
+						data-variant="quiet"
+						aria-label={t('toolbar.mountSettings')}
+						aria-haspopup="dialog"
+						data-active={experience.testMount || undefined}
+						title={experience.testMount
+							? t('toolbar.titleMountSettingsMounted')
+							: t('toolbar.mountSettings')}
+						onclick={() => openSettings('mount')}><PawPrint size={16} aria-hidden="true" /></button
 					>
 					{#if problems}
 						{@const coverageLabel =

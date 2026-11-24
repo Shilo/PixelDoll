@@ -760,23 +760,16 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		await route.fulfill({ response, json: fixture });
 	});
 	await landing(page);
-	// Character selection has the same Mount settings button, before New character, and its cast rides the mount.
+	// Character selection has no mount button; M shows and hides the mount its cast rides.
 	const toggle = page.locator('.test-mount-toggle');
 	const hero = page.locator('.cast-character.chosen');
-	await expect(
-		page.locator('.header-actions > .test-mount-toggle + .selection-create')
-	).toHaveCount(1);
-	await expect(hero).not.toHaveAttribute('data-mounted');
-	const settings = page.getByRole('dialog', { name: 'Settings' });
-	await toggle.click();
-	await settings.getByRole('switch', { name: 'Show mount', exact: true }).check();
-	await page.keyboard.press('Escape');
-	await expect(hero).toHaveAttribute('data-mounted', 'true');
-	await toggle.click();
-	await settings.getByRole('switch', { name: 'Show mount', exact: true }).uncheck();
-	await page.keyboard.press('Escape');
+	await expect(toggle).toHaveCount(0);
 	await expect(hero).not.toHaveAttribute('data-mounted');
 	await selection(page).focus();
+	await page.keyboard.press('m');
+	await expect(hero).toHaveAttribute('data-mounted', 'true');
+	await page.keyboard.press('m');
+	await expect(hero).not.toHaveAttribute('data-mounted');
 	await page.keyboard.press('Enter');
 	await pause(page);
 	const inactiveMountColor = await toggle.evaluate((element) => getComputedStyle(element).color);
@@ -790,14 +783,17 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.keyboard.press('Escape');
 	await expect(toggle).toHaveAccessibleName('Mount settings');
 	await expect(toggle).toHaveAttribute('aria-haspopup', 'dialog');
-	await expect(toggle.locator('.view-label')).toHaveCount(0);
-	await expect(page.locator('.view-modes .test-mount-toggle')).toHaveCount(0);
-	// Undo and Redo lead the trailing group (shown only while usable); Random look and Mount settings follow them.
+	// Mount settings sits in Preview's playback bar, right of Inspect; the top bar keeps Undo, Redo, Random look, Share.
+	await expect(page.locator('.playback-bar .playback-inspect + .test-mount-toggle')).toHaveCount(1);
 	await expect(
-		page.locator(
-			'.header-actions > .header-undo + .header-redo + .header-random + .test-mount-toggle + .header-share'
-		)
+		page.locator('.header-actions > .header-undo + .header-redo + .header-random + .header-share')
 	).toHaveCount(1);
+	// M shows and hides the mount in Preview too.
+	await world(page).focus();
+	await page.keyboard.press('m');
+	await expect(toggle).toHaveAttribute('data-active', 'true');
+	await page.keyboard.press('m');
+	await expect(toggle).not.toHaveAttribute('data-active');
 	// The mount icon opens the Mount page of Settings directly.
 	const mountMenu = page.getByRole('dialog', { name: 'Settings' });
 	const shown = mountMenu.getByRole('switch', { name: 'Show mount', exact: true });
@@ -916,21 +912,23 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(
 		page.getByRole('button', { name: 'Reveal covered parts (diagnostic)', exact: true })
 	).toHaveCount(0);
+	// The live views toggle the same mount with their Mount action.
+	const liveMount = page
+		.getByRole('group', { name: 'Game actions', exact: true })
+		.getByRole('button', { name: 'Mount', exact: true });
 	for (const mode of ['Top-down', 'Side-scroller']) {
 		await page.getByRole('button', { name: mode, exact: true }).click();
-		await expect(toggle).toHaveAttribute('data-active', 'true');
+		await expect(liveMount).toHaveAttribute('aria-pressed', 'true');
 		await world(page).focus();
 		await page.keyboard.down('ArrowLeft');
 		await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle west \d+$/);
 		const position = await world(page).getAttribute('data-position');
 		await expect(world(page)).not.toHaveAttribute('data-position', position!);
 		await page.keyboard.up('ArrowLeft');
-		await toggle.click();
-		await shown.uncheck();
-		await expect(toggle).not.toHaveAttribute('data-active');
+		await page.keyboard.press('m');
+		await expect(liveMount).toHaveAttribute('aria-pressed', 'false');
 		await expect(world(page)).not.toHaveAttribute('data-mount');
-		await shown.check();
-		await closeMount();
+		await page.keyboard.press('m');
 		await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle west \d+$/);
 	}
 	await page.getByRole('button', { name: 'Preview', exact: true }).click();
@@ -941,8 +939,15 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		{ width: 844, height: 390 }
 	]) {
 		await page.setViewportSize(viewport);
-		await expect(toggle.locator('.view-label')).toHaveCount(0);
-		await toggle.click();
+		// A compact playback bar moves Mount settings into More, like Inspect.
+		const compact = page.locator('.experience.compact-playback');
+		await expect
+			.poll(async () => (await toggle.isVisible()) !== (await compact.count()) > 0)
+			.toBe(true);
+		if (await compact.count()) {
+			await page.getByRole('button', { name: 'More options', exact: true }).click();
+			await page.locator('.mobile-mount').click();
+		} else await toggle.click();
 		await expect(shown).toBeVisible();
 		const menuBounds = await mountMenu.boundingBox();
 		expect(menuBounds).not.toBeNull();
@@ -975,7 +980,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 								top = Math.min(top, y);
 								bottom = Math.max(bottom, y);
 							}
-					const controls = document.querySelector('.test-mount-toggle')!.getBoundingClientRect();
+					const controls = document.querySelector('.header-actions')!.getBoundingClientRect();
 					const tabs = document.querySelector('.view-modes')!.getBoundingClientRect();
 					const playback = document.querySelector('.playback-bar')!.getBoundingClientRect();
 					return {
@@ -2871,7 +2876,7 @@ for (const screen of [
 				expect(Math.abs(actual - expected)).toBeLessThan(1);
 			const position = () =>
 				world(page).evaluate((element) => element.dataset.position!.split(',').map(Number));
-			// A blank world point with room for the whole base on the moving (left) half, nearest the stage center.
+			// A blank world point with room for the whole base on the left half (clear of the game controls), nearest the stage center.
 			const blank = () =>
 				page.evaluate(
 					(inset) => {
@@ -4127,16 +4132,52 @@ test.describe('live views actions', () => {
 		const host = world(page);
 		await expect(host).toBeFocused();
 		await expect(page.locator('.world-hint')).toHaveText(
-			'WASD or click to move · Right-click or X to attack · Space to jump · M to mount'
+			'WASD or hold click to move · Shift to sprint · Right-click or X to attack · Space to jump · M to mount'
 		);
 		const bar = page.getByRole('group', { name: 'Game actions', exact: true });
 		const jump = bar.getByRole('button', { name: 'Jump', exact: true });
 		const mount = bar.getByRole('button', { name: 'Mount', exact: true });
+		const sprint = bar.getByRole('button', { name: 'Sprint', exact: true });
+		// Attack first, then Jump, Sprint and Mount, docked at the stage's lower right beside the side panel.
+		expect(
+			await bar
+				.getByRole('button')
+				.evaluateAll((buttons) => buttons.map((b) => b.getAttribute('title')))
+		).toEqual(['Attack (X or right-click)', 'Jump (Space)', 'Sprint (Shift)', 'Mount (M)']);
+		const docked = await page.evaluate(() => {
+			const bar = document.querySelector('.game-bar')!.getBoundingClientRect();
+			const panel = document.querySelector('.equipment-rail')!.getBoundingClientRect();
+			return { gap: panel.left - bar.right, bottom: innerHeight - bar.bottom };
+		});
+		expect(docked.gap).toBeGreaterThan(0);
+		expect(docked.gap).toBeLessThan(40);
+		expect(docked.bottom).toBeLessThan(40);
 		await expect(jump).toHaveAttribute('aria-keyshortcuts', 'Space');
-		await expect(jump).toHaveAttribute('title', 'Jump (Space)');
 		await expect(jump).toHaveAttribute('tabindex', '-1');
 		await jumped(page, () => page.keyboard.press('Space'));
 		await jumped(page, () => jump.click());
+		await expect(host).toBeFocused();
+		// Held Space jumps again on every landing until it is let go.
+		await record(page);
+		await page.keyboard.down('Space');
+		await expect
+			.poll(async () => {
+				const heights = (await shown(page)).map((s) => s.jump);
+				return heights.filter((h, i) => i > 0 && h > 0 && heights[i - 1] === 0).length;
+			})
+			.toBeGreaterThanOrEqual(2);
+		await page.keyboard.up('Space');
+		await expect(host).toHaveAttribute('data-jump', '0.000');
+		// Shift sprints while held; the Sprint button toggles it.
+		await page.keyboard.down('Shift');
+		await expect(host).toHaveAttribute('data-sprint', 'true');
+		await page.keyboard.up('Shift');
+		await expect(host).toHaveAttribute('data-sprint', '');
+		await sprint.click();
+		await expect(sprint).toHaveAttribute('aria-pressed', 'true');
+		await expect(host).toHaveAttribute('data-sprint', 'true');
+		await sprint.click();
+		await expect(host).toHaveAttribute('data-sprint', '');
 		await expect(host).toBeFocused();
 		// M and the Mount button toggle the same mount; the stage keeps the keyboard.
 		await expect(mount).toHaveAttribute('aria-pressed', 'false');
@@ -4150,6 +4191,10 @@ test.describe('live views actions', () => {
 		// X attacks once along the facing; Automatic plays the demo's Cross punch.
 		await attacked(page, 'south', () => page.keyboard.press('x'));
 		await expect(host).not.toHaveAttribute('data-clip', 'cross-punch');
+		// The Attack button attacks along the facing, like X.
+		await attacked(page, 'south', () =>
+			bar.getByRole('button', { name: 'Attack', exact: true }).click()
+		);
 		// A left click walks to the floor point and stops there.
 		const [ax, ay] = (await host.getAttribute('data-scene-anchor'))!.split(',').map(Number);
 		await page.mouse.click(ax + 240, ay - 20);
@@ -4158,6 +4203,15 @@ test.describe('live views actions', () => {
 			.poll(async () => Number((await host.getAttribute('data-position'))!.split(',')[0]))
 			.toBeGreaterThan(20);
 		await expect(host).toHaveAttribute('data-destination', '', { timeout: 10_000 });
+		// A held left button keeps walking toward the floor under a still cursor.
+		const along = async () => Number((await host.getAttribute('data-position'))!.split(',')[0]);
+		await page.mouse.move(ax + 300, ay - 20);
+		await page.mouse.down();
+		const start = await along();
+		await expect.poll(along).toBeGreaterThan(start + 150);
+		const later = await along();
+		await expect.poll(along).toBeGreaterThan(later + 150);
+		await page.mouse.up();
 		// A right click attacks toward the cursor, not the facing, and opens no menu. The walk faced east.
 		await page.evaluate(() =>
 			addEventListener('contextmenu', (e) =>
@@ -4185,8 +4239,9 @@ test.describe('live views actions', () => {
 		await page.mouse.move(ax + 300, ay - 20);
 		await page.mouse.down();
 		await expect(host).toHaveAttribute('data-destination', /\S/);
-		const target = (await host.getAttribute('data-destination'))!;
+		// A held left button steers every frame; once right is held too, the destination stays where it was.
 		await page.mouse.down({ button: 'right' });
+		const target = (await host.getAttribute('data-destination'))!;
 		await page.mouse.move(ax - 200, ay - 150, { steps: 3 });
 		// The right-held cursor only aims: the walk keeps its point, or has already reached it.
 		const [now, at] = await host.evaluate((element) => [
@@ -4231,58 +4286,117 @@ test.describe('live views actions', () => {
 
 	test.describe('on touch', () => {
 		test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
-		test('the right half aims and attacks on release, and the thumb Jump button jumps', async ({
+		test('one stick moves from anywhere, and the Attack stick attacks at once and turns while held', async ({
 			page,
 			context
 		}) => {
 			await customize(page);
 			await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 			const host = world(page);
-			const jump = page
-				.getByRole('group', { name: 'Game actions', exact: true })
-				.getByRole('button', { name: 'Jump', exact: true });
+			const actions = page.getByRole('group', { name: 'Game actions', exact: true });
+			const jump = actions.getByRole('button', { name: 'Jump', exact: true });
+			const stick = actions.getByRole('button', { name: 'Attack', exact: true });
 			await jumped(page, () => jump.tap());
-			// An open world point on the aiming half.
+			// The cluster: the Attack stick at the lower right, Jump above it, Sprint and Mount to its upper left.
+			const boxes = await page.evaluate(() =>
+				Object.fromEntries(
+					[...document.querySelectorAll('.game-touch button')].map((b) => {
+						const r = b.getBoundingClientRect();
+						return [
+							b.getAttribute('aria-label'),
+							{ x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width }
+						];
+					})
+				)
+			);
+			expect(boxes.Attack.w).toBeGreaterThan(boxes.Jump.w);
+			expect(boxes.Jump.y).toBeLessThan(boxes.Attack.y);
+			expect(boxes.Sprint.x).toBeLessThan(boxes.Attack.x);
+			expect(boxes.Mount.x).toBeLessThan(boxes.Sprint.x);
+			// An open world point on the stage's right half: movement starts on either side now.
 			const point = await page.evaluate(() => {
-				for (let y = innerHeight * 0.6; y > 40; y -= 8)
-					for (let x = innerWidth * 0.55; x < innerWidth * 0.8; x += 8)
+				for (let y = innerHeight * 0.35; y > 40; y -= 8)
+					for (let x = innerWidth * 0.4; x < innerWidth * 0.6; x += 8)
 						if (document.elementFromPoint(x, y)?.classList.contains('world-input'))
 							return { x: Math.round(x), y: Math.round(y) };
 				return null;
 			});
 			expect(point, 'an open point on the right half').toBeTruthy();
 			const cdp = await context.newCDPSession(page);
-			const box = (await host.boundingBox())!;
-			const move = { x: Math.round(box.x + 12), y: point!.y, id: 1 };
-			const aim = (y = 0) => ({ x: point!.x, y: point!.y + y, id: 2 });
+			const move = { ...point!, id: 1 };
+			const thumb = { x: Math.round(boxes.Attack.x), y: Math.round(boxes.Attack.y), id: 2 };
 			const touch = (
 				type: 'touchStart' | 'touchMove' | 'touchEnd',
 				points: { x: number; y: number; id: number }[]
 			) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
 			const x = async () => Number((await host.getAttribute('data-position'))!.split(',')[0]);
 			try {
-				// Hold the left stick to walk, then aim with a second finger on the right half: both sticks stay.
 				await touch('touchStart', [move]);
 				await touch('touchMove', [{ ...move, x: move.x + 42 }]);
 				await expect.poll(x).toBeGreaterThan(2);
-				await touch('touchStart', [{ ...move, x: move.x + 42 }, aim()]);
-				await expect(page.locator('.world-aim')).toBeVisible();
-				await expect(page.locator('.world-stick:not(.world-aim)')).toBeVisible();
-				await touch('touchMove', [{ ...move, x: move.x + 42 }, aim(15)]);
-				// Released aimed down: the demo's south punch, while the walk goes on.
+				// A second finger on the Attack stick attacks at once along the facing, while the walk goes on.
 				const walked = await x();
+				await expect(stick).not.toHaveClass(/held/);
+				await touch('touchStart', [{ ...move, x: move.x + 42 }, thumb]);
+				await expect(stick).toHaveClass(/held/);
+				await expect(page.locator('.stick-control-held')).toBeVisible();
+				await expect(host).toHaveAttribute('data-attack', /^(cross-punch|missing) /);
+				// Dragged down, it aims south: the demo's south punch.
 				await attacked(page, 'south', async () => {
-					await touch('touchMove', [{ ...move, x: move.x + 42 }, aim(40)]);
-					// touchEnd names the finger that lifts.
-					await touch('touchEnd', [aim(40)]);
+					await touch('touchMove', [
+						{ ...move, x: move.x + 42 },
+						{ ...thumb, y: thumb.y + 30 }
+					]);
 				});
-				await expect(page.locator('.world-aim')).toHaveCount(0);
 				await expect.poll(x).toBeGreaterThan(walked + 2);
+				// touchEnd names the finger that lifts; the stick snaps back to rest.
+				await touch('touchEnd', [{ ...thumb, y: thumb.y + 30 }]);
+				await expect(stick).not.toHaveClass(/held/);
+				await expect(page.locator('.stick-control-held')).toHaveCount(0);
 				await touch('touchEnd', [{ ...move, x: move.x + 42 }]);
 			} finally {
 				await cdp.detach();
 			}
 		});
+	});
+	test('a held attack turns with the cursor mid-swing and carries on from the same frame', async ({
+		page
+	}) => {
+		// Cross punch borrows Walk's art, which has every facing, so the swing can turn.
+		await page.route('**/layers/body/base/main/cross-punch.png*', (route) =>
+			route.fulfill({ path: 'public/fixtures/s2/layers/body/base/main/walk.png' })
+		);
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await customize(page);
+		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
+		const host = world(page);
+		const [ax, ay] = (await host.getAttribute('data-scene-anchor'))!.split(',').map(Number);
+		type Shown = { attack: string; cell: number; at: number };
+		await host.evaluate((element) => {
+			const shown: Shown[] = [];
+			(window as unknown as { shown: Shown[] }).shown = shown;
+			new MutationObserver(() =>
+				shown.push({
+					attack: element.dataset.attack ?? '',
+					cell: Number(element.dataset.cell),
+					at: performance.now()
+				})
+			).observe(element, { attributeFilter: ['data-attack', 'data-cell'] });
+		});
+		await page.mouse.move(ax + 160, ay - 60);
+		await page.mouse.down({ button: 'right' });
+		await expect(host).toHaveAttribute('data-attack', 'cross-punch east');
+		// Two frames into the swing (100 ms each), the cursor crosses to the west.
+		await page.waitForTimeout(250);
+		await page.mouse.move(ax - 160, ay - 60, { steps: 2 });
+		await expect(host).toHaveAttribute('data-attack', 'cross-punch west');
+		await page.mouse.up({ button: 'right' });
+		const shown = await page.evaluate(() => (window as unknown as { shown: Shown[] }).shown);
+		const east = shown.find((s) => s.attack === 'cross-punch east')!;
+		const west = shown.find((s) => s.attack === 'cross-punch west')!;
+		// The same swing turned before it ended (600 ms), and the west art did not restart at its first frame.
+		expect(west.at - east.at).toBeLessThan(550);
+		expect(west.cell).toBeGreaterThanOrEqual(2);
 	});
 });
 

@@ -920,7 +920,7 @@
 			"other": "{n} problèmes"
 		},
 		"workspaceCopyPixelLabOff": "Copie de l’espace de travail · PixelLab désactivé",
-		"characterSelectionWASDOrArrowsSelectEnter": "Sélection du personnage. WASD ou les flèches pour choisir ; Entrée pour personnaliser ; plus et moins pour zoomer.",
+		"characterSelectionWASDOrArrowsSelectEnter": "Sélection du personnage. WASD ou les flèches pour choisir ; Entrée pour personnaliser ; M affiche la monture ; plus et moins pour zoomer.",
 		"previousCharacter": "Personnage précédent",
 		"nextCharacter": "Personnage suivant",
 		"noMatchingCharacters": "Aucun personnage correspondant",
@@ -948,7 +948,7 @@
 		"groundUnavailable": "Le rendu du sol en temps réel est indisponible. La scène statique est affichée.",
 		"materialUnavailable": "Le matériau du sol est indisponible. La scène statique est affichée.",
 		"sceneUnavailable": "La scène en direct est indisponible. Rechargez la page pour réessayer.",
-		"characterPreviewWASDOrArrowsChangeFacing": "Aperçu du personnage. WASD ou les flèches changent l’orientation. Les touches 1, 2, 3 changent de vue.",
+		"characterPreviewWASDOrArrowsChangeFacing": "Aperçu du personnage. WASD ou les flèches changent l’orientation. M affiche la monture. Les touches 1, 2, 3 changent de vue.",
 		"loadingCharacter": "Chargement du personnage…",
 		"notice": {
 			"hiddenItemsInMove": {
@@ -3500,6 +3500,11 @@
 		"forCharacter": "Animations que {name} joue en Vue de dessus et en Défilement horizontal.",
 		"idle": "Repos",
 		"walk": "Marche",
+		"run": "Course",
+		"sprint": "Sprint",
+		"shiftKey": "Maj",
+		"attackKeys": "X ou clic droit",
+		"automaticFaster": "Automatique : {clip}, plus vite",
 		"attack": "Attaque",
 		"jump": "Saut",
 		"attackUp": "Attaque vers le haut",
@@ -3516,10 +3521,10 @@
 		"spaceKey": "Espace",
 		"noAttack": "Rien n’est encore associé à Attaque. Choisissez une animation ou un état dans les réglages des vues en direct.",
 		"noAttackDirection": "{move} n’a pas d’images vers {direction}, il ne peut donc pas attaquer dans cette direction.",
-		"hintTopDown": "WASD ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
-		"hintSide": "A/D ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
-		"hintTouch": "Le côté gauche déplace · Le côté droit vise, relâchez pour attaquer · Les boutons sautent et montent",
-		"stageTopDown": "Monde de test du personnage. WASD, les flèches, un clic ou un glissement pour se déplacer. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue.",
-		"stageSide": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite, un clic ou un glissement pour se déplacer. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue."
+		"hintTopDown": "WASD ou clic maintenu pour se déplacer · Maj pour sprinter · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
+		"hintSide": "A/D ou clic maintenu pour se déplacer · Maj pour sprinter · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
+		"hintTouch": "Glissez pour vous déplacer · Maintenez et glissez l’épée pour attaquer et viser · Les boutons sautent, sprintent et montent",
+		"stageTopDown": "Monde de test du personnage. WASD, les flèches, un clic ou un glissement pour se déplacer ; Maj sprinte. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue.",
+		"stageSide": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite, un clic ou un glissement pour se déplacer ; Maj sprinte. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue."
 	}
 }

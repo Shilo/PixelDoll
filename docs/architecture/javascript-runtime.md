@@ -134,12 +134,14 @@ implement those same decisions in their host language; changing JavaScript does 
 | Operation                                    | Phaser / GDevelop                                   | Godot                                         | Unity                                    |
 | -------------------------------------------- | --------------------------------------------------- | --------------------------------------------- | ---------------------------------------- |
 | Select animation                             | `play(move, direction, restart = false)`            | `play_anim(move, direction, restart = false)` | `Play(move, direction, restart = false)` |
+| Turn the active move                         | `setDirection(direction)`                           | `set_direction(direction)`                    | `SetDirection(direction)`                |
 | Change one slot                              | `equip(slot, item)`                                 | `equip(slot, item)`                           | `Equip(slot, item)`                      |
 | Apply complete outfit                        | `applyPreset(idOrObject)`                           | `set_preset(id)`                              | `ApplyPreset(id)`                        |
 | Change color selections                      | `setVariants(map)` replaces all explicit selections | `set_variant(material, name)` changes one     | `SetVariant(material, name)` changes one |
 | Remove explicit color                        | Omit the key or use `null` in the replacement map   | `set_variant(material, null)`                 | `SetVariant(material, null)`             |
 | Unequip a non-body slot                      | `null`                                              | `""`                                          | `null` or `""`                           |
 | Invalid move, direction, equipment or outfit | Throws before mutation                              | Warning and `false`, before mutation          | Warning and `false`, before mutation     |
+| Turn with no active move                     | Throws before mutation                              | Warning and `false`, before mutation          | Warning and `false`, before mutation     |
 | Disposal                                     | `destroy()`                                         | Native `queue_free()`                         | Native `Destroy(gameObject)`             |
 
 All four live controllers must preserve these behaviors:
@@ -147,6 +149,11 @@ All four live controllers must preserve these behaviors:
 - Selecting the active move/direction preserves its progress. Selecting a different move/direction
   starts at the beginning. Selecting a completed once-only clip replays it. Explicit `restart = true`
   starts the requested clip from its first playlist entry, even if it is already active.
+- Turning changes only the active move's facing, for example an aimed attack that rotates while it plays.
+  It keeps the playlist entry, time within it, loop position and once-only completion. It redraws every layer
+  immediately and replays no lifecycle events (no start, repeat or complete). A completed once-only clip stays
+  completed, so a later `play` of it still replays. Turning to the current direction is a successful no-op.
+  `play` keeps its restart semantics; directions of one move share their timeline, so no resampling is needed.
 - Frame lists retain authored order, repeated cells and individual durations. Loops repeat; once-only
   clips hold their final cell. Equipment, outfit and palette changes do not restart animation.
 - The body cannot be unequipped. Equipment must belong to the requested slot and cannot directly
@@ -188,7 +195,9 @@ Before changing a paper-doll behavior or public controller operation:
    areas to specs and lists the cross-cutting changes that need the full suite.
 5. Run the affected native checks: `GODOT_BIN` enables `godot-export.test.ts`; the Phaser, GDevelop and
    Unity verifiers live in `app/scripts/verify-*-export.mjs` and `verify-gdevelop-engine.mjs`.
-   Playback checks include repeated selection, explicit restart and completion replay; palette checks
+   Playback checks include repeated selection, explicit restart, completion replay and turning mid-entry
+   on a repeated cell with unequal durations (the GDevelop native fixture has one view per move, so its
+   verifier covers only the no-op and rejection; unit tests execute the turn itself); palette checks
    include restoration and owner isolation; rejected calls must preserve state and report failure.
    Preserve negative controls and test a freshly generated export, not a previously downloaded runtime.
 6. Have an independent reviewer challenge the behavior, tests and intentional differences. Report
@@ -201,12 +210,13 @@ GDScript/C# execution. Do not claim that every native port automatically inherit
 
 Required scenario coverage lives in these existing harnesses rather than a second test framework:
 
-| Scenario                                     | Executable checks                                                                                                         |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Shared rendering, ordering and palettes      | `runtime.test.ts`, `runtime-preset.test.ts`, `export-phaser.test.ts`, `gdevelop-export.test.ts`                           |
-| Repeat selection, restart, completion replay | `verify-phaser-export.mjs`, `verify-gdevelop-engine.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs` |
-| Rejection atomicity and palette restoration  | Controller unit tests, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                    |
-| Portable resources and export boundary       | `export-portability.test.ts`, `export-validation.test.ts`                                                                 |
+| Scenario                                     | Executable checks                                                                                                                               |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared rendering, ordering and palettes      | `runtime.test.ts`, `runtime-preset.test.ts`, `export-phaser.test.ts`, `gdevelop-export.test.ts`                                                 |
+| Repeat selection, restart, completion replay | `verify-phaser-export.mjs`, `verify-gdevelop-engine.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                       |
+| Turning mid-move, including completed clips  | `export-phaser.test.ts`, `gdevelop-export.test.ts`, `verify-phaser-export.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs` |
+| Rejection atomicity and palette restoration  | Controller unit tests, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                                          |
+| Portable resources and export boundary       | `export-portability.test.ts`, `export-validation.test.ts`                                                                                       |
 
 Paths in this table are under `app/test/unit/` or `app/scripts/`. Test exported runtime bytes and
 native controller output; matching source text alone is not evidence of matching engine behavior.

@@ -53,7 +53,7 @@
 	import { showMount } from '../mountPreview.ts';
 	import { resolveAttack, type AttackFailure } from './attack.ts';
 	import { LiveActions } from './liveActions.ts';
-	import { airborne, JUMP, jumpGrounding } from './jump.ts';
+	import { airborne, JUMP, jumpReflection } from './jump.ts';
 	import GameControls from './GameControls.svelte';
 	import { displayMove } from '../displayMove.ts';
 	import { mountPlacement } from './mountPlacement.ts';
@@ -72,7 +72,13 @@
 		type Presentation
 	} from './presentation.ts';
 	import { displayLoadingItems, displayPresentationNotice } from './displayPresentation.ts';
-	import { IDLE, Joystick, joystickTravel, type JoystickSize } from '../../lib/input/joystick.ts';
+	import {
+		IDLE,
+		Joystick,
+		joystickTravel,
+		type JoystickSize,
+		type JoystickSnapshot
+	} from '../../lib/input/joystick.ts';
 	import JoystickView from '../../lib/input/Joystick.svelte';
 	import {
 		directionInfo,
@@ -103,10 +109,13 @@
 	let pad: Joystick | null = null,
 		padSize = $state.raw<JoystickSize>(MOTION.joystick.regular),
 		stick = $state.raw(IDLE);
-	// Touch in the live views: the left half moves, the right half aims and attacks on release (twin-stick convention).
-	let aimPad: Joystick | null = null,
-		aimStick = $state.raw(IDLE),
-		aimed = false;
+	// The touch Attack stick's aim while held (GameControls.svelte), in ground coordinates.
+	let stickAim: Vector = { x: 0, y: 0 };
+	// Sprint: the Sprint toggle, or either Shift key held (by physical key, so releasing one keeps the other's sprint).
+	let sprintOn = $state(false);
+	// The live stage's height, for sizing the touch controls to it.
+	let stageHeight = $state(Infinity);
+	const shifts = new Set<string>();
 	// Attack and jump timing, stepped by the scene (liveActions.ts).
 	const actions = new LiveActions();
 	// The last input that pressed the stage: touch shows thumb buttons, a mouse the icon bar.
@@ -276,7 +285,6 @@
 	const noticed = new Set<string>();
 	function release() {
 		endMove();
-		releaseAim();
 	}
 	function endMove() {
 		const id = stick.pointerId;
@@ -284,13 +292,6 @@
 		pad = null;
 		stick = IDLE;
 		secondaryTouches.clear();
-	}
-	function releaseAim() {
-		const id = aimStick.pointerId;
-		if (id !== null && host?.hasPointerCapture(id)) host.releasePointerCapture(id);
-		aimPad = null;
-		aimStick = IDLE;
-		aimed = false;
 	}
 	/** Lost focus, a sheet or a cancel: held attacks and mouse travel stop; a playing attack or jump finishes. */
 	function letGo() {
@@ -301,18 +302,10 @@
 		destination = null;
 		host?.classList.remove('aiming');
 	}
-	/** Touch splits the stage, not the window, in two: the left half moves, the right half aims. */
-	const aimHalf = (e: { clientX: number }) => {
-		const stage = host.getBoundingClientRect();
-		return e.clientX >= stage.left + stage.width / 2;
-	};
-	/** A finger on the free half while the other half's stick is held is the second stick, never a pinch. */
-	const secondStick = (e: PointerEvent) =>
-		experience.mode !== 'preview' &&
-		e.pointerType !== 'mouse' &&
-		(aimHalf(e) ? !aimPad && !!pad : !pad && !!aimPad);
 	let reset = () => {
+		interruptions++;
 		keys.clear();
+		shifts.clear();
 		clearHover();
 		release();
 		letGo();
@@ -401,16 +394,34 @@
 		const k = e.key.toLowerCase();
 		keys.delete(k);
 		if (k === 'x') actions.release('key');
+		if (k === ' ') actions.releaseJump('key');
+		if (k === 'shift') shifts.delete(e.code);
 		previewFacing();
 	}
 	/** X attacks where the character travels, or along its facing while it stands. */
 	const keyAim = () => travel;
-	function jump() {
-		if (experience.mode === 'preview' || ui.sheet) return;
-		actions.takeOff();
+	const playing = () => experience.mode !== 'preview' && !ui.sheet;
+	/** Jumps now and on every landing while the source (Space, the Jump button) is held. */
+	function jump(source: string) {
+		if (playing()) actions.holdJump(source);
 	}
+	/** An attack along the travel or facing, repeating while the source (the Attack button) is held. */
+	function attack(source: string) {
+		if (playing()) actions.hold(source, keyAim);
+	}
+	/** The touch Attack stick: attacks at once along the facing, then wherever the stick points while it is held. */
+	function attackStick(snapshot: JoystickSnapshot) {
+		if (snapshot.pointerId === null) {
+			actions.release('stick');
+			return;
+		}
+		touchInput = true;
+		stickAim = { x: snapshot.value.x, y: -snapshot.value.y };
+		if (playing() && !actions.holds('stick')) actions.hold('stick', () => stickAim);
+	}
+	/** M and the Mount action, in every view; the live views mount only on the floor. */
 	function toggleMount() {
-		if (experience.mode === 'preview' || ui.sheet || !actions.grounded) return;
+		if (ui.sheet || (experience.mode !== 'preview' && !actions.grounded)) return;
 		showMount(!experience.testMount);
 	}
 	function key(e: KeyboardEvent) {
@@ -431,10 +442,12 @@
 			const popover = document.querySelector<HTMLElement>('[popover]:popover-open');
 			if (popover) popover.hidePopover();
 			else characters();
+		} else if (k === 'shift') {
+			if (experience.mode !== 'preview') shifts.add(e.code);
 		} else if (k === ' ' && experience.mode !== 'preview') {
 			e.preventDefault();
-			if (!e.repeat) jump();
-		} else if (k === 'm' && experience.mode !== 'preview') {
+			if (!e.repeat) jump('key');
+		} else if (k === 'm') {
 			e.preventDefault();
 			if (!e.repeat) toggleMount();
 		} else if (k === 'x' && experience.mode !== 'preview') {
@@ -488,33 +501,32 @@
 			mouseButtons(e);
 			return;
 		}
-		// Each finger keeps the stick it landed on until it lifts, wherever it travels.
-		const aiming = aimHalf(e);
-		if (aiming ? aimPad : pad) return;
+		// The first finger anywhere on the stage moves, with a stick that appears under it and follows it until it lifts.
+		if (pad) return;
 		host.setPointerCapture(e.pointerId);
 		const { regular, compact, compactQuery, deadZone } = MOTION.joystick;
 		padSize = matchMedia(compactQuery).matches ? compact : regular;
-		const next = new Joystick({
-			axis: !aiming && experience.mode === 'side' ? 'x' : 'xy',
+		pad = new Joystick({
+			axis: experience.mode === 'side' ? 'x' : 'xy',
 			travel: joystickTravel(padSize),
 			deadZone,
 			follow: true
 		});
-		if (aiming) {
-			aimPad = next;
-			aimed = false;
-			aimStick = next.begin(e.pointerId, { x: e.clientX, y: e.clientY });
-		} else {
-			pad = next;
-			stick = next.begin(e.pointerId, { x: e.clientX, y: e.clientY });
-		}
+		stick = pad.begin(e.pointerId, { x: e.clientX, y: e.clientY });
 	}
 	/** The floor point under the cursor; a press on the character itself stops mouse travel. */
 	function setDestination(e: { clientX: number; clientY: number }) {
 		const near = actorAt && Math.hypot(e.clientX - actorAt.x, e.clientY - actorAt.y) <= actorAt.r;
-		destination =
+		const point =
 			!near && scene && sceneOptions
 				? scene.unproject({ x: e.clientX, y: e.clientY }, sceneOptions, position.y)
+				: null;
+		// A point the character already stands on is no destination, so a held press at its feet never jitters there.
+		destination =
+			point &&
+			Math.hypot(point.x - position.x, experience.mode === 'side' ? 0 : point.y - position.y) >
+				MOTION.arrival
+				? point
 				: null;
 	}
 	/** From the character toward the cursor in ground coordinates; on the character, its facing. */
@@ -533,7 +545,8 @@
 	}
 	/**
 	 * Mouse buttons by their held state, since a second button pressed or released during the first sends a move, not a
-	 * down or up (W3C chorded buttons). Left sets and steers a destination; right attacks toward the cursor while held and
+	 * down or up (W3C chorded buttons). Left sets a destination, and while held keeps steering it to the floor under the
+	 * cursor every frame (the scene moves under a still cursor); right attacks toward the cursor while held and
 	 * owns the cursor until released, so the character keeps walking to the left-button destination meanwhile.
 	 */
 	function mouseButtons(e: PointerEvent) {
@@ -560,7 +573,7 @@
 		if (left !== mouse.left) {
 			mouse.left = left;
 			if (left) setDestination(e);
-		} else if (left && !right && e.type === 'pointermove' && e.button === -1) setDestination(e);
+		}
 		if (!left && !right) {
 			mouseOwned = false;
 			if (host.hasPointerCapture(e.pointerId)) host.releasePointerCapture(e.pointerId);
@@ -596,11 +609,6 @@
 			else cursor = { x: e.clientX, y: e.clientY };
 		}
 		if (pad) stick = pad.move(e.pointerId, { x: e.clientX, y: e.clientY });
-		if (aimPad) {
-			aimStick = aimPad.move(e.pointerId, { x: e.clientX, y: e.clientY });
-			if (aimStick.pointerId === e.pointerId && (aimStick.value.x || aimStick.value.y))
-				aimed = true;
-		}
 	}
 	function up(e: PointerEvent) {
 		if (pendingTap?.pointerId === e.pointerId) {
@@ -618,18 +626,15 @@
 			if (e.type === 'pointerup') mouseButtons(e);
 			else if (mouse.left || mouse.right) letGo();
 		}
-		if (aimStick.pointerId === e.pointerId) {
-			// Release attacks where the stick points; a tap attacks along the facing; aiming back to the middle cancels.
-			const { x, y } = aimStick.value;
-			if (e.type === 'pointerup' && (x || y || !aimed)) actions.request({ x, y: -y });
-			releaseAim();
-			return;
-		}
 		if (stick.pointerId !== e.pointerId) return;
 		endMove();
 	}
+	/** Bumped when held input is interrupted, so held game controls (the Attack stick, a held Jump) let go too. */
+	let interruptions = $state(0);
 	function stop() {
+		interruptions++;
 		pendingTap = null;
+		shifts.clear();
 		endWalk();
 		release();
 		letGo();
@@ -728,7 +733,7 @@
 		const button =
 			e.target instanceof Element ? e.target.closest<HTMLButtonElement>('button') : null;
 		if (
-			(pad || aimPad) &&
+			pad &&
 			e.pointerType === 'touch' &&
 			!e.isPrimary &&
 			button &&
@@ -954,6 +959,8 @@
 			g.imageSmoothingEnabled = false;
 			// The feet sit just above the playback bar in every view; only a Preview lineup lifts them to clear its ring.
 			const place = layout(width, height, 'studio', playbackHeight);
+			if (place.stage.b - place.stage.t !== stageHeight)
+				stageHeight = place.stage.b - place.stage.t;
 			const anchor = { x: place.feet.x, y: place.feet.y };
 			const room = heroRoom(place);
 			const live = experience.mode !== 'preview';
@@ -1154,7 +1161,10 @@
 			host.dataset.sceneMin = String(shared.min);
 			host.dataset.sceneMax = String(shared.max);
 			// A press on the stage that has not been dragged yet steers nothing: the keyboard keeps the walk.
-			const speed = travelSpeed(experience.mode === 'side' ? 'side' : 'topdown', mountVisible),
+			const sprinting = live && (sprintOn || shifts.size > 0);
+			const speed =
+					travelSpeed(experience.mode === 'side' ? 'side' : 'topdown', mountVisible) *
+					(sprinting ? MOTION.sprintMultiplier : 1),
 				travelRate = speed / MOTION.walkSpeed.topdown;
 			// A paused scene (a sheet, a hidden page) stops time, so no takeoff, landing or attack is skipped.
 			const paused = !!ui.sheet || document.hidden;
@@ -1162,6 +1172,9 @@
 				stick.origin && (stick.value.x || stick.value.y)
 					? { x: stick.value.x, y: -stick.value.y }
 					: keyboardVector(keys, experience.mode === 'side');
+			// A held left button walks on toward the floor under the cursor, even while the mouse stays still.
+			if (live && !paused && mouse.left && !mouse.right && cursor)
+				setDestination({ clientX: cursor.x, clientY: cursor.y });
 			// Direction keys and the stick own travel, even while opposite keys cancel out.
 			if (keys.size || stick.origin) destination = null;
 			else if (destination && live) {
@@ -1262,7 +1275,8 @@
 				const loco = live
 					? resolveLive(a, {
 							velocity,
-							clips: roles,
+							// Sprinting plays Run, or Walk faster (livePlaybackDelta scales Walk with the speed).
+							clips: { idle: roles.idle, walk: sprinting ? roles.run : roles.walk },
 							riding: mountVisible,
 							riderPose,
 							items: view.items,
@@ -1288,10 +1302,25 @@
 							'sequence' in choice
 								? `${choice.sequence.clip} ${choice.sequence.direction}`
 								: `missing ${choice.failure.kind === 'no-direction' ? (choice.failure.direction ?? '') : ''}`;
-						if ('sequence' in choice) actions.start(choice.sequence);
+						if ('sequence' in choice) actions.start(choice.sequence, choice.sector);
 						else {
 							actions.refused();
 							attackWarning(choice.failure);
+						}
+					}
+					// A held attack turns with its aim mid-swing and carries on from the same frame. An aim it has no art for,
+					// or a centered one, keeps the facing it has; once let go, the swing finishes where it was last aimed.
+					const swing = actions.attack,
+						aim = swing && !paused ? actions.heldAim() : null;
+					if (swing && aim && (aim.x || aim.y)) {
+						const turned = resolveAttack(a, roles, aim, {
+							side: experience.mode === 'side',
+							facing: swing.sequence.direction,
+							sector: swing.sector
+						});
+						if ('sequence' in turned && turned.sequence !== swing.sequence) {
+							actions.turn(turned.sequence, turned.sector);
+							host.dataset.attack = `${turned.sequence.clip} ${turned.sequence.direction}`;
 						}
 					}
 					const flying = airborne(actions.jump);
@@ -1306,10 +1335,13 @@
 						actionCell = actions.attack ? actions.attackCell() : actions.jumpCell(shown);
 					}
 					// Without Jump art the body holds its pose in the air and resumes its gait on landing.
+					// Walk standing in for Run (no Run art in this facing) still steps with the faster ground speed.
+					const gait =
+						sprinting && loco.clip === roles.walk[0] ? { ...loco, requestedClip: loco.clip } : loco;
 					clock = advancePlayback(
 						loco,
 						clock,
-						flying && !flight ? 0 : livePlaybackDelta(loco, velocity, dt, travelRate, roles.walk[0])
+						flying && !flight ? 0 : livePlaybackDelta(gait, velocity, dt, travelRate, roles.walk[0])
 					);
 				}
 				experience.presentation = p.kind;
@@ -1515,12 +1547,12 @@
 						});
 					// A mounted rider leaves the floor, so Preview's floor reflection would be wrong.
 					const floorProjection = s?.projection(options);
-					const inAir = jumpGrounding(live ? actions.jump.height : 0, REFLECTION.fadeHeight);
+					const reflected = jumpReflection(live ? actions.jump.height : 0, REFLECTION.fadeHeight);
 					if (
 						REFLECTION.enabled &&
 						REFLECTION[experience.mode] &&
 						!mounted?.view &&
-						inAir.reflectionOpacity > 0
+						reflected > 0
 					) {
 						const reflect = (
 							image: typeof img,
@@ -1540,7 +1572,7 @@
 								g,
 								reflectionCanvas(image, groundRow, ground?.standingHeight ?? fit.h),
 								{ x: left, y: top, scale, groundRow, lift },
-								{ ...style, opacity: style.opacity * inAir.reflectionOpacity }
+								{ ...style, opacity: style.opacity * reflected }
 							);
 						};
 						for (const other of others) {
@@ -1580,7 +1612,7 @@
 							g.stroke();
 							g.restore();
 						}
-					// Quiet floor cues: where a click sends the character, and in Top-down the shadow under a jump.
+					// A quiet floor cue: where a click sends the character.
 					if (live && s && destination) {
 						const target = s.project(destination, options);
 						g.save();
@@ -1590,26 +1622,6 @@
 						g.beginPath();
 						g.ellipse(snap(target.x), snap(target.y), 9, 3.5, 0, 0, Math.PI * 2);
 						g.stroke();
-						g.restore();
-					}
-					// A contact shadow on the floor under a jump, as flat as the floor is foreshortened there. A mount casts
-					// one as wide as its body.
-					if (lift && inAir.shadowStrength > 0) {
-						const width = mounted?.view ? mounted.view.frames[0].back.w * 0.8 : fit.w;
-						const rx = ringRadius(width, scale) * inAir.shadowScale;
-						// As flat as the world image's floor at the feet, like the lineup's floor ring; zoom scales both
-						// distances alike, so the unzoomed layout gives the ratio.
-						const flat = Math.max(
-							0.15,
-							ringFlatness(anchor.y - backdrop.eye, backdrop.scale, art.focal)
-						);
-						g.save();
-						// The dark floor is nearly black, so its shadow needs more weight to read.
-						g.globalAlpha = (ui.theme === 'dark' ? 0.55 : 0.32) * inAir.shadowStrength;
-						g.fillStyle = '#000';
-						g.beginPath();
-						g.ellipse(snap(point.x), snap(point.y), rx, rx * flat, 0, 0, Math.PI * 2);
-						g.fill();
 						g.restore();
 					}
 					for (const other of others)
@@ -1638,6 +1650,8 @@
 					host.dataset.facing = p.direction ?? '';
 					host.dataset.clip = p.clip ?? '';
 					host.dataset.jump = live ? actions.jump.height.toFixed(3) : '';
+					host.dataset.sprint = sprinting ? 'true' : '';
+					host.dataset.cell = live ? String(cell) : '';
 					// Where the live actor stands and how high its reach goes on screen, for framing checks.
 					host.dataset.feetY = live ? point.y.toFixed(1) : '';
 					// The gear's top as drawn now: the reach above the feet without the jump allowance, raised by the lift.
@@ -1700,13 +1714,9 @@
 			get enabled() {
 				return enabled && experience.mode === mode;
 			},
-			claims: secondStick,
 			onpinch: () => {
 				pad = null;
 				stick = IDLE;
-				aimPad = null;
-				aimStick = IDLE;
-				aimed = false;
 				pendingTap = null;
 				secondaryTouches.clear();
 			},
@@ -1729,7 +1739,9 @@
 	onfocusout={() => {
 		if (handoff) return;
 		keys.clear();
+		shifts.clear();
 		actions.release('key');
+		actions.releaseJump('key');
 	}}
 	onpointerdown={down}
 	onpointermove={drag}
@@ -1751,12 +1763,10 @@
 		class="world-notes"
 		style:bottom={experience.mode === 'preview' && playbackHeight
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
-			: experience.mode !== 'preview' && !touchInput
-				? 'calc(var(--stage-bottom) + 68px)' // above the game icon bar
-				: undefined}
-		style:max-width={experience.mode !== 'preview' && touchInput
-			? // Stop short of the thumb buttons at the stage's lower right (GameControls.svelte).
-				'min(420px, calc(100vw - var(--stage-left) - var(--stage-right) - 2 * var(--edge) - 156px))'
+			: undefined}
+		style:max-width={experience.mode !== 'preview'
+			? // Stop short of the game controls at the stage's lower right (GameControls.svelte).
+				`min(420px, calc(100vw - var(--stage-left) - var(--stage-right) - 2 * var(--edge) - ${touchInput ? 204 : 196}px))`
 			: undefined}
 	>
 		{#if mountIssue}<p class="world-hint" role="status">{mountIssue}</p>{/if}
@@ -1780,14 +1790,20 @@
 	size={padSize}
 	axis={experience.mode === 'side' ? 'x' : 'xy'}
 />
-<JoystickView class="world-stick world-aim" snapshot={aimStick} size={padSize} />
-{#if experience.mode !== 'preview' && view.project && !ui.sheet}
-	<GameControls
-		touch={touchInput}
-		mounted={experience.testMount}
-		onjump={jump}
-		onmount={toggleMount}
-	/>
+{#if experience.mode !== 'preview' && view.project && !ui.sheet}{#key interruptions}
+		<GameControls
+			touch={touchInput}
+			mounted={experience.testMount}
+			sprinting={sprintOn}
+			onattack={() => attack('button')}
+			onattackrelease={() => actions.release('button')}
+			onstick={attackStick}
+			onjump={() => jump('button')}
+			onjumprelease={() => actions.releaseJump('button')}
+			onsprint={() => (sprintOn = !sprintOn)}
+			onmount={toggleMount}
+			compact={stageHeight < MOTION.actions.compactBelow}
+		/>{/key}
 {/if}
 
 <style>
