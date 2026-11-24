@@ -4,11 +4,13 @@ import type { Message } from '../message.ts';
 type Catalog = { [key: string]: string | Catalog };
 // Plain dots: the sanitizer normalizes an ellipsis character to them anyway (NFKC).
 const HIDDEN = '...';
+/** A number or a size such as 32×32, which reports need and which cannot carry user text. */
+const MEASURE = /^\d{1,6}(?:×\d{1,6})?$/;
 
 const isMessage = (value: unknown): value is Message =>
 	!!value && typeof value === 'object' && typeof (value as Message).key === 'string';
 
-/** A message's English template for a public report. Numbers and nested messages fill in; every other variable becomes
+/** A message's English template for a public report. Numbers, sizes and nested messages fill in; every other variable becomes
  *  "...", because variables carry names, prompts, errors from other systems and other user data. */
 export function englishMessage(value: Message, depth = 0): string | undefined {
 	let entry: string | Catalog | undefined = en as unknown as Catalog;
@@ -26,6 +28,7 @@ export function englishMessage(value: Message, depth = 0): string | undefined {
 	return entry.replace(/\{(\w+)\}/g, (_, name: string) => {
 		const variable = vars[name];
 		if (typeof variable === 'number' && Number.isFinite(variable)) return String(variable);
+		if (typeof variable === 'string' && MEASURE.test(variable)) return variable;
 		if (isMessage(variable) && depth < 3) return englishMessage(variable, depth + 1) ?? HIDDEN;
 		return HIDDEN;
 	});

@@ -139,6 +139,11 @@ test('englishMessage hides text variables and fills numbers and nested messages'
 	expect(
 		englishMessage(message('recentlyDeleted.restoredWithDrafts', { name: 'X', count: 1 }))
 	).toBe('Restored ... with 1 draft');
+	expect(
+		englishMessage(
+			message('fixFrames.errors.size', { got: '64×64', want: `32×32 ${SECRETS.prompt}` })
+		)
+	).toBe('This PNG is 64×64 px, but these frames need ... px. Keep the original size and grid.');
 	expect(englishMessage({ key: 'nope.missing' } as unknown as Message)).toBeUndefined();
 });
 
@@ -164,15 +169,14 @@ describe('buildReport', () => {
 				'Area: Add a move',
 				'Kind: error',
 				'Message key: state.couldNotSaveReason',
-				'Message: Could not save: ...',
-				'Error: ApiError',
+				'Error type: ApiError',
 				'Error kind: invalid',
 				'HTTP status: 422',
 				'Endpoint: POST /characters/{id}/animations',
 				'Queue state: failed',
 				'Attempts: 2',
 				'Ran for: 2 min',
-				'Page open for: 13 min'
+				'App open for: 13 min'
 			].join('\n')
 		);
 		expect(report.environment).toBe(
@@ -187,7 +191,7 @@ describe('buildReport', () => {
 			{ error: new TypeError(`Cannot read ${SECRETS.windowsPath}`), tone: 'warning' },
 			context
 		);
-		expect(plain.details).toContain('Error: TypeError');
+		expect(plain.details).toContain('Error type: TypeError');
 		expect(plain.title).toBe('PixelDoll: Unexpected TypeError');
 		expect(reportText(plain)).not.toContain('Cannot read');
 	});
@@ -234,10 +238,10 @@ describe('buildReport', () => {
 			context
 		);
 		expect(report.details).not.toContain('Message key');
-		expect(report.details).toContain('Error: Error');
+		expect(report.details).not.toContain('Error type');
 		expect(
 			buildReport({ error: new DOMException('x', 'QuotaExceededError') }, context).details
-		).toContain('Error: QuotaExceededError');
+		).toContain('Error type: QuotaExceededError');
 	});
 
 	test('an uncaught error is titled by its name and area, and Steps to reproduce is left to the person', () => {
@@ -282,7 +286,7 @@ describe('buildReport', () => {
 				context
 			);
 			expect(report.title).toBe('Unexpected problem in Characters');
-			expect(report.details).toContain('Error: Non-error value');
+			expect(report.details).toContain('Error type: Non-error value');
 		}
 		expect(buildReport({ error: 42, uncaught: true }, context).title).toBe(
 			'Unexpected problem in PixelDoll'

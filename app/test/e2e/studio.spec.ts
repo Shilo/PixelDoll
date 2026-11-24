@@ -366,7 +366,7 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
 	await expect(report).toBeVisible();
 	await expect(notice).toContainText('Something went wrong.');
-	await expect(report).toContainText('Error: TypeError');
+	await expect(report).toContainText('Error type: TypeError');
 	await expect(report).not.toContainText('sk-ant');
 	const href = await report.getByRole('link', { name: 'Open on GitHub' }).getAttribute('href');
 	expect(href).toMatch(

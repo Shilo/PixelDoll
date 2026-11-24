@@ -59,7 +59,7 @@ export interface ReportContext {
 	env: ReportEnvironment;
 	/** The English template of a message, from the English catalog. */
 	english?: (message: Message) => string | undefined;
-	/** Seconds since the page loaded. */
+	/** Wall-clock seconds since the app loaded, including time the device slept. */
 	uptime?: number;
 }
 
@@ -374,9 +374,9 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 	const lines: [string, string | number | undefined][] = [
 		['Area', area],
 		['Kind', kind],
+		// The message itself is already the problem text; a plain "Error" name says nothing more.
 		['Message key', english && shown?.key],
-		['Message', text],
-		['Error', fromError.name],
+		['Error type', fromError.name === 'Error' ? undefined : fromError.name],
 		['Error kind', fromError.kind],
 		['HTTP status', count(facts.status, 999) || fromError.status],
 		['Endpoint', endpoint && (method ? `${method} ${endpoint}` : endpoint)],
@@ -387,7 +387,7 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 		['Error code', count(facts.errorCode, 99999)],
 		['Attempts', count(facts.attempts, 999)],
 		['Ran for', seconds === undefined ? undefined : duration(seconds)],
-		['Page open for', uptime === undefined ? undefined : duration(uptime)]
+		['App open for', uptime === undefined ? undefined : duration(uptime)]
 	];
 	const details = lines
 		.filter(([, value]) => value !== undefined && value !== '')

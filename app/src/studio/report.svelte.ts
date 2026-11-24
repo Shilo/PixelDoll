@@ -61,7 +61,7 @@ export function reportProblem(problem: Problem) {
 		{
 			env: browserEnvironment(getLocale() || 'en', PRE_RELEASE),
 			english: englishMessage,
-			uptime: performance.now() / 1000
+			uptime: (Date.now() - performance.timeOrigin) / 1000
 		}
 	);
 }
