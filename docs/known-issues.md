@@ -119,10 +119,14 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Historical item QA.** Older saved items lack replaceable checks; after an edit they stay marked for review with an
   explicit incomplete-check notice. Retained historical totals may omit old additions or include replaced frames until
   all older coverage is replaced. No paid recheck or silent reconstruction is performed.
-- **A move kept without joints has no equipment.** When PixelLab finds no joints on some body frames of a new move, its
-  review offers Keep without fitting items: the body frames are saved as drawn, with no poses, and the Moves list marks
-  the move to make again before items can be fitted to it. Joints are never invented, and a replaced move cannot be
-  kept this way.
+- **A view kept without joints has no equipment.** When PixelLab finds no joints on some body frames of a move (new,
+  replaced or a single redrawn view), its review offers Keep without fitting items for free: those views' body frames are
+  saved as drawn, with no poses, and only those views are marked to make again before items can be fitted there. Item
+  offers name the skipped views. Joints are never invented; the only inferred pose is one bridged interior frame, which
+  the review discloses.
+- **Retrying an item that stopped partway redraws the whole view.** When a later pose batch of an item fails, the
+  finished batches are kept and the rest of that view keeps its current art. Generate again then redraws every frame of
+  the incomplete views at the price it shows; a cheaper retry of only the missing frames is not built yet.
 - **A shifted repair batch does not stop the rest of the repair.** When a batch of a split equipment repair comes back
   1 px off, the remaining batches still run, then the whole repair waits in its review with the shift listed (G10):
   Keep current leaves the item as it was, Use repair keeps the new frames with that warning. Spending no longer stops
