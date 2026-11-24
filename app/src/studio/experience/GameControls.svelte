@@ -4,12 +4,12 @@
      while held; Sprint and Mount toggle. A press in the air does nothing, without dimming the buttons on every jump. -->
 <script lang="ts">
 	import { t } from 'svelte-whisper';
-	import { MediaQuery } from 'svelte/reactivity';
 	import { gameAction } from '../../lib/input/gameAction.ts';
 	import type { JoystickSnapshot } from '../../lib/input/joystick.ts';
 	import StickControl from '../../lib/input/StickControl.svelte';
 	import TouchActionButton from '../../lib/input/TouchActionButton.svelte';
 	import { ArrowBigUp, ChevronsRight, PawPrint, Sword } from '../icons.ts';
+	import { actionArc } from './actionArc.ts';
 	import { MOTION } from './config.ts';
 
 	let {
@@ -22,8 +22,7 @@
 		onjump,
 		onjumprelease,
 		onsprint,
-		onmount,
-		compact: shortStage = false
+		onmount
 	}: {
 		touch: boolean;
 		mounted: boolean;
@@ -38,21 +37,20 @@
 		onjumprelease: () => void;
 		onsprint: () => void;
 		onmount: () => void;
-		/** A short stage takes the compact cluster, like a small screen. */
-		compact?: boolean;
 	} = $props();
 	const attack = $derived(t('liveViews.attack')),
 		jump = $derived(t('liveViews.jump')),
 		sprint = $derived(t('liveViews.sprint')),
 		mount = $derived(t('liveViews.mount'));
-	const compact = new MediaQuery(MOTION.joystick.compactQuery);
-	const cluster = $derived(
-		compact.current || shortStage ? MOTION.actions.compact : MOTION.actions.regular
-	);
-	const radius = $derived(cluster.stick.base / 2);
+	const { stick } = MOTION.actions,
+		arc = actionArc(),
+		radius = stick.base / 2;
 	/** A button's place in the cluster, measured from the cluster's lower right like the stick itself. */
-	const place = ([size, x, y]: readonly number[]) =>
+	const place = ({ size, x, y }: { size: number; x: number; y: number }) =>
 		`right: ${radius - x - size / 2}px; bottom: ${radius - y - size / 2}px;`;
+	// The cluster's box: from the stick's lower right to the leftmost and topmost button edges.
+	const width = Math.max(...Object.values(arc).map((b) => radius - b.x + b.size / 2)),
+		height = Math.max(...Object.values(arc).map((b) => radius - b.y + b.size / 2));
 </script>
 
 {#if touch}
@@ -60,13 +58,13 @@
 		class="game-touch"
 		role="group"
 		aria-label={t('liveViews.actions')}
-		style:--cluster-w="{radius - cluster.mount[1] + cluster.mount[0] / 2}px"
-		style:--cluster-h="{radius - cluster.jump[2] + cluster.jump[0] / 2}px"
+		style:--cluster-w="{width}px"
+		style:--cluster-h="{height}px"
 	>
 		<div class="stick-place">
 			<StickControl
 				label={attack}
-				size={cluster.stick}
+				size={stick}
 				deadZone={MOTION.joystick.deadZone}
 				onchange={onstick}
 				onactivate={() => {
@@ -75,28 +73,25 @@
 				}}><Sword aria-hidden="true" /></StickControl
 			>
 		</div>
-		<div class="button-place" style={place(cluster.jump)}>
+		<div class="button-place" style={place(arc.jump)}>
 			<TouchActionButton
 				label={jump}
-				size={cluster.jump[0]}
+				size={arc.jump.size}
 				onactivate={onjump}
 				onrelease={onjumprelease}><ArrowBigUp aria-hidden="true" /></TouchActionButton
 			>
 		</div>
-		<div class="button-place" style={place(cluster.sprint)}>
+		<div class="button-place" style={place(arc.sprint)}>
 			<TouchActionButton
 				label={sprint}
-				size={cluster.sprint[0]}
+				size={arc.sprint.size}
 				pressed={sprinting}
 				onactivate={onsprint}><ChevronsRight aria-hidden="true" /></TouchActionButton
 			>
 		</div>
-		<div class="button-place" style={place(cluster.mount)}>
-			<TouchActionButton
-				label={mount}
-				size={cluster.mount[0]}
-				pressed={mounted}
-				onactivate={onmount}><PawPrint aria-hidden="true" /></TouchActionButton
+		<div class="button-place" style={place(arc.mount)}>
+			<TouchActionButton label={mount} size={arc.mount.size} pressed={mounted} onactivate={onmount}
+				><PawPrint aria-hidden="true" /></TouchActionButton
 			>
 		</div>
 	</div>

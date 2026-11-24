@@ -73,24 +73,18 @@ export const MOTION = {
 		deadZone: 8
 	},
 	/**
-	 * The touch action cluster at the stage's lower right: the Attack stick (the largest, under the thumb's rest) with
-	 * Jump above it, Sprint at its upper left and Mount to its left, on an arc the thumb reaches by pivoting. Each button
-	 * is [diameter, x, y] with its center relative to the stick's center in CSS px.
+	 * The touch action cluster at the stage's lower right, the same on every screen and orientation (actionArc.ts): the
+	 * Attack stick, the largest, under the thumb's rest, with Jump above it, Sprint at its upper left and Mount to its left,
+	 * on an arc the thumb reaches by pivoting. Angles are degrees counterclockwise from the stick's right; the gap is
+	 * between the stick's rim and each button.
 	 */
 	actions: {
-		/** A stage shorter than this (CSS px) takes the compact cluster, so Jump stays clear of the zoom controls. */
-		compactBelow: 280,
-		regular: {
-			stick: { base: 112, thumb: 44, stroke: 2 },
-			jump: [56, 0, -98],
-			sprint: [48, -72, -64],
-			mount: [44, -102, 0]
-		},
-		compact: {
-			stick: { base: 96, thumb: 40, stroke: 2 },
-			jump: [52, 0, -86],
-			sprint: [44, -67, -45],
-			mount: [44, -102, 0]
+		stick: { base: 112, thumb: 44, stroke: 2 },
+		gap: 14,
+		buttons: {
+			jump: { size: 56, angle: 90 },
+			sprint: { size: 48, angle: 135 },
+			mount: { size: 44, angle: 180 }
 		}
 	},
 	tileSize: 100

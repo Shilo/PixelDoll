@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import type { DirectionName, RigAnimation } from '../../src/lib/store/manifest.ts';
+import { actionArc } from '../../src/studio/experience/actionArc.ts';
 import { attackSector, resolveAttack } from '../../src/studio/experience/attack.ts';
+import { MOTION } from '../../src/studio/experience/config.ts';
 import { project, unproject, type RenderOptions } from '../../src/studio/experience/ground.ts';
 import {
 	airborne,
@@ -291,5 +293,19 @@ describe('jump reflection', () => {
 		expect(jumpReflection(JUMP.height, 0.7)).toBeCloseTo(0.5);
 		expect(jumpReflection(1, 0.7)).toBe(0);
 		expect(jumpReflection(Number.NaN, 0.7)).toBe(1);
+	});
+});
+
+describe('touch action arc', () => {
+	test('Jump, Sprint and Mount sit the same gap from the Attack stick, up, upper left and left', () => {
+		const arc = actionArc(),
+			radius = MOTION.actions.stick.base / 2;
+		for (const { size, x, y } of Object.values(arc))
+			expect(Math.hypot(x, y) - radius - size / 2).toBeCloseTo(MOTION.actions.gap);
+		expect(arc.jump.x).toBeCloseTo(0);
+		expect(arc.jump.y).toBeLessThan(0);
+		expect(arc.sprint.x).toBeCloseTo(arc.sprint.y);
+		expect(arc.mount.y).toBeCloseTo(0);
+		expect(arc.mount.x).toBeLessThan(0);
 	});
 });

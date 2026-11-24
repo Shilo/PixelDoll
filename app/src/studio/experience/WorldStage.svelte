@@ -113,8 +113,6 @@
 	let stickAim: Vector = { x: 0, y: 0 };
 	// Sprint: the Sprint toggle, or either Shift key held (by physical key, so releasing one keeps the other's sprint).
 	let sprintOn = $state(false);
-	// The live stage's height, for sizing the touch controls to it.
-	let stageHeight = $state(Infinity);
 	const shifts = new Set<string>();
 	// Attack and jump timing, stepped by the scene (liveActions.ts).
 	const actions = new LiveActions();
@@ -959,8 +957,6 @@
 			g.imageSmoothingEnabled = false;
 			// The feet sit just above the playback bar in every view; only a Preview lineup lifts them to clear its ring.
 			const place = layout(width, height, 'studio', playbackHeight);
-			if (place.stage.b - place.stage.t !== stageHeight)
-				stageHeight = place.stage.b - place.stage.t;
 			const anchor = { x: place.feet.x, y: place.feet.y };
 			const room = heroRoom(place);
 			const live = experience.mode !== 'preview';
@@ -1802,7 +1798,6 @@
 			onjumprelease={() => actions.releaseJump('button')}
 			onsprint={() => (sprintOn = !sprintOn)}
 			onmount={toggleMount}
-			compact={stageHeight < MOTION.actions.compactBelow}
 		/>{/key}
 {/if}
 
