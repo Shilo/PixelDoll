@@ -1309,6 +1309,7 @@
 		"drop": "캐릭터 ZIP을 여기에 놓으세요",
 		"dropNote": "PixelLab 캐릭터 또는 PixelDoll 내보내기 · 최대 64MB",
 		"chooseZip": "ZIP 선택",
+		"chooseAnother": "다른 ZIP 선택",
 		"characterZip": "캐릭터 ZIP",
 		"devicePrivacy": "파일은 이 기기에 남아요. 가져오기 전에 캐릭터를 미리 확인하세요.",
 		"pixelLabHint": "PixelLab 캐릭터 생성기에서 개별 프레임이 담긴 ZIP을 내보내세요. 상위 폴더도 지원해요. 다른 스프라이트 시트 레이아웃과 PNG만 있는 ZIP은 지원하지 않아요.",
@@ -3293,8 +3294,28 @@
 		"generateFor": "생성하기: {move}",
 		"wearOn": "{move}에서 착용"
 	},
+	"itemImport": {
+		"title": "아이템 가져오기",
+		"intro": "캐릭터의 ZIP, 백업 또는 공유된 캐릭터. 아이템이 이 캐릭터에 맞으면 무료예요.",
+		"empty": "이 ZIP에는 완성된 아이템이 없어요.",
+		"skipped": {
+			"other": "아이템 {count}개를 읽을 수 없어요."
+		},
+		"notFitted": "{names}은(는) 더 이상 맞지 않아 추가되지 않았어요.",
+		"busy": "아이템이 추가될 때까지 기다린 뒤 다시 시도해 주세요.",
+		"row": {
+			"copy": "이 캐릭터에 정확히 맞아요",
+			"refit": "이 몸에 무료로 맞췄어요. 가져온 뒤 프레임을 확인해 주세요.",
+			"unfitted": "다른 몸용이에요. 그려진 그대로 착용해서 떠 보이거나 겹칠 수 있어요.",
+			"remake": "다른 몸용이라 여기서는 착용할 수 없어요"
+		}
+	},
+	"importDrop": {
+		"items": "놓아서 아이템 가져오기",
+		"moves": "놓아서 동작 가져오기",
+		"states": "놓아서 상태 가져오기"
+	},
 	"moveImport": {
-		"title": "동작 가져오기",
 		"importMoves": "동작 가져오기",
 		"importStates": "상태 가져오기",
 		"dropArea": "PixelDoll ZIP 놓기 영역",

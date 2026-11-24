@@ -18,7 +18,7 @@
 		characterItemJobs
 	} from './state.svelte.ts';
 	import { inFlight } from './itemJobs.ts';
-	import { ChevronRight, FolderOpen, Plus } from './icons.ts';
+	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import type { MoveSpec } from './create.ts';
 	import type { RigAnimation } from '../lib/rig/rig.ts';
@@ -293,27 +293,17 @@
 				>
 			{/each}
 		</div>
-		{#if (kind === 'move' && !isDemo()) || (kind === 'state' && onaddstate)}
-			{@const importLabel = openerLabel(
-				t(kind === 'move' ? 'moveImport.importMoves' : 'moveImport.importStates')
-			)}
-			<div class="add-line">
-				{#if kind === 'move'}<button
-						class="bu-action add-row cta"
-						data-variant="outline"
-						onclick={() => (ui.sheet = 'move')}
-						><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
-					>{:else}<button class="bu-action add-row cta" data-variant="outline" onclick={onaddstate}
-						><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
-					>{/if}{#if !isDemo()}<button
-						class="bu-action add-row cta import"
-						data-variant="outline"
-						aria-label={importLabel}
-						title={importLabel}
-						onclick={() => (ui.sheet = 'importMoves')}><FolderOpen size={16} /></button
-					>{/if}
-			</div>
-		{/if}
+		{#if kind === 'move' && !isDemo()}<button
+				class="bu-action add-row cta"
+				data-variant="outline"
+				onclick={() => (ui.sheet = 'move')}
+				><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
+			>{:else if kind === 'state' && onaddstate}<button
+				class="bu-action add-row cta"
+				data-variant="outline"
+				onclick={onaddstate}
+				><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
+			>{/if}
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>
@@ -390,18 +380,5 @@
 	/* The list gap already separates the CTA from the rows above it. */
 	.cta {
 		margin-top: 0;
-	}
-	.add-line {
-		display: flex;
-		gap: 8px;
-	}
-	.add-line > .cta:first-child {
-		flex: 1 1 auto;
-		min-width: 0;
-	}
-	.import {
-		flex: none;
-		width: 44px;
-		padding: 0;
 	}
 </style>

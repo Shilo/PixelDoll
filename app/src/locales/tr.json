@@ -1352,6 +1352,7 @@
 		"drop": "Karakter ZIP dosyasını buraya bırakın",
 		"dropNote": "PixelLab karakteri veya PixelDoll dışa aktarımı · En fazla 64 MB",
 		"chooseZip": "ZIP seçin",
+		"chooseAnother": "Başka bir ZIP seçin",
 		"characterZip": "Karakter ZIP dosyası",
 		"devicePrivacy": "Dosyalarınız bu cihazda kalır. İçe aktarmadan önce karakteri önizleyin.",
 		"pixelLabHint": "PixelLab karakter oluşturucusunda her karenin ayrı dosya olduğu bir ZIP dışa aktarın. Üst klasörler desteklenir. Diğer sprite sayfası düzenleri ve yalnızca PNG içeren ZIP dosyaları desteklenmez.",
@@ -3387,8 +3388,29 @@
 		"generateFor": "Şunun için üret: {move}",
 		"wearOn": "{move} için giydirin"
 	},
+	"itemImport": {
+		"title": "Eşyaları içe aktarın",
+		"intro": "Bir karakterin ZIP dosyası, bir yedek veya paylaşılan bir karakter. Eşyaları bu karaktere uyuyorsa ücretsizdir.",
+		"empty": "Bu ZIP dosyasında tamamlanmış eşya yok.",
+		"skipped": {
+			"one": "{count} eşya okunamadı.",
+			"other": "{count} eşya okunamadı."
+		},
+		"notFitted": "{names} artık uymuyor ve eklenmedi.",
+		"busy": "Eşyanın eklenmesini bekleyin, sonra tekrar deneyin.",
+		"row": {
+			"copy": "Bu karaktere tam uyuyor",
+			"refit": "Bu bedene ücretsiz uyarlandı. İçe aktardıktan sonra karelerini kontrol edin.",
+			"unfitted": "Başka bir beden için yapıldı. Çizildiği gibi giyilir, bu yüzden havada kalabilir veya taşabilir.",
+			"remake": "Başka bir beden için yapıldı, bu yüzden burada giyilemez"
+		}
+	},
+	"importDrop": {
+		"items": "Eşyaları içe aktarmak için bırakın",
+		"moves": "Animasyonları içe aktarmak için bırakın",
+		"states": "Durumları içe aktarmak için bırakın"
+	},
 	"moveImport": {
-		"title": "Animasyonları içe aktarın",
 		"importMoves": "Animasyonları içe aktarın",
 		"importStates": "Durumları içe aktarın",
 		"dropArea": "PixelDoll ZIP bırakma alanı",

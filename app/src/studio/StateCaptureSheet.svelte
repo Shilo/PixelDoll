@@ -33,7 +33,11 @@
 	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { moveLabel } from './model.ts';
 	import { displayMove } from './displayMove.ts';
-	import { ChevronRight } from './icons.ts';
+	import { ChevronRight, Import } from './icons.ts';
+	import ImportMovesPane from './ImportMovesPane.svelte';
+	import ImportFoot from './ImportFoot.svelte';
+	import { MoveImporter } from './moveImporter.svelte.ts';
+	import { leaveSheetForm, showSheetPage } from './sheetPage.ts';
 	import {
 		captureState,
 		stateCaptureId,
@@ -47,7 +51,7 @@
 	import SourcePreview from './SourcePreview.svelte';
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 	import { bodyClipThumbnail } from './moveThumbnails.ts';
-	import { doc, openProject, store, ui, withKey } from './state.svelte.ts';
+	import { doc, isDemo, openProject, store, takeImport, ui, withKey } from './state.svelte.ts';
 	import {
 		prepareState,
 		quoteStateModels,
@@ -432,16 +436,43 @@
 			if (ui.sheet === 'stateCapture') ui.sheet = null;
 		});
 	}
+
+	// Import: a page of this sheet (a ZIP dropped on States opens on it); Back keeps the form as it was.
+	const opening = takeImport('states');
+	let importing = $state(!!opening);
+	const importer = new MoveImporter();
+	if (opening?.files) void importer.read(opening.files);
+	$effect(() => () => {
+		importer.gone = true;
+	});
+	function page(inner: boolean) {
+		if (inner) leaveSheetForm();
+		importing = inner;
+		void showSheetPage(inner);
+	}
 </script>
 
 <Sheet
-	title={t('moves.addState')}
-	className={['state-capture-sheet', editing && 'split'].filter(Boolean).join(' ')}
-	wide={editing}
-	locked={!!busy}
+	title={importing ? t('moveImport.importStates') : t('moves.addState')}
+	className={['state-capture-sheet', editing && !importing && 'split', importing && 'importing']
+		.filter(Boolean)
+		.join(' ')}
+	wide={editing && !importing}
+	locked={!!busy || (importing && importer.busy && !!importer.review)}
 	onclose={() => (ui.sheet = null)}
-	{footer}
+	back={importing ? () => page(false) : undefined}
+	backTo={t('moves.addState')}
+	opener={importing || isDemo()
+		? undefined
+		: {
+				label: t('moveImport.importStates'),
+				icon: Import,
+				iconOnly: true,
+				onclick: () => page(true)
+			}}
+	footer={importing ? (importer.ready ? importFoot : undefined) : footer}
 >
+	{#if importing}<ImportMovesPane {importer} onqueued={() => (ui.sheet = 'move')} />{/if}
 	<form id={formId} class="state-form" onsubmit={submit} aria-busy={!!busy}>
 		<div class="state-panel state-main">
 			<PlaybackPicker
@@ -606,6 +637,13 @@
 			{displayNestedMessage(priceFailure)}<ReportButton error={priceFailure} />
 		</p>{/if}
 </Sheet>
+{#snippet importFoot()}
+	<ImportFoot
+		busy={importer.busy}
+		disabled={!importer.chosen.length || !!importer.blocked}
+		onimport={() => void importer.save()}
+	/>
+{/snippet}
 
 {#snippet footer()}
 	<div class="state-footer">
