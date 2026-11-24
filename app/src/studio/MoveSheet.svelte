@@ -608,19 +608,21 @@
 	);
 	const motionFor = (option: MoveAnimationModel, animation = animationFor(option)) => {
 		const managed = managedFor(option);
-		return {
+		const spec = {
 			id,
 			motionSource:
 				managed && app.key && !app.keyRejected
 					? accessFor(managed)?.source
 					: ('standalone' as const),
-			action: describing || keepsDescribedRoute ? undefined : action,
+			action: describing ? undefined : action,
 			text: text.trim(),
 			frames: baseFrames,
 			replace: replacing,
 			animation,
 			startFrom
 		};
+		// Only when the template would take over the redrawn views; any other route already matches the kept ones.
+		return keepsDescribedRoute && moveTemplate(spec) ? { ...spec, action: undefined } : spec;
 	};
 	const motion = $derived(motionFor(model, animationOptions));
 	const regeneration = $derived(draftRegeneration?.id === id ? draftRegeneration : undefined);
