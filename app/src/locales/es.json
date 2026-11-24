@@ -1479,8 +1479,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Actividad del espacio de trabajo",
-		"activityIntro": "Guardado con el espacio de trabajo desde PixelDoll {build}. Las tareas del ZIP no se reinician.",
+		"activityTitle": "Detalles de la copia de seguridad",
+		"activityIntro": "Abierta desde una copia de seguridad hecha con PixelDoll {build}.",
 		"missing": {
 			"one": "Faltaba {count} archivo de imagen o no se pudo leer.",
 			"other": "Faltaban {count} archivos de imagen o no se pudieron leer."
@@ -1488,29 +1488,11 @@
 		"skippedCharacters": {
 			"one": "Personajes guardados omitidos: {count}.",
 			"other": "Personajes guardados omitidos: {count}."
-		},
-		"demoOutfit": "La demo usa sus ajustes de atuendo predeterminados.",
-		"exportSettings": "La copia usa los ajustes de exportación predeterminados.",
-		"tier": "Nivel de PixelLab: {tier}",
-		"noErrors": "No se registraron errores recientes ni tareas sin terminar.",
-		"noRecent": "No se incluyeron los errores recientes.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Código {code}",
-		"error": {
-			"tooLarge": "Este espacio de trabajo supera el límite de tamaño del ZIP o el de las imágenes. Usa ZIP de personajes individuales.",
-			"containsKey": "Un campo guardado contiene la clave de PixelLab en uso o guardada en el dispositivo. Elimínala de ese campo antes de exportar el espacio de trabajo.",
-			"invalidIndex": "El índice de este espacio de trabajo no es válido.",
-			"unsupportedVersion": "Esta versión de archivo de espacio de trabajo no es compatible.",
-			"duplicateRecord": "Este espacio de trabajo contiene un registro guardado no compatible o duplicado.",
-			"missingFiles": "Este espacio de trabajo tiene una lista de archivos faltantes no válida.",
-			"unexpectedFile": "Este espacio de trabajo contiene un archivo inesperado.",
-			"invalidDiagnostics": "Este espacio de trabajo tiene errores recientes no válidos."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Elige una copia de seguridad de PixelDoll o un ZIP de espacio de trabajo, no un ZIP de personaje.",
+			"notBackup": "Elige una copia de seguridad de PixelDoll, no un ZIP de personaje.",
 			"unsupportedVersion": "Esta versión del archivo de copia de seguridad no es compatible.",
 			"invalid": "Esta copia de seguridad está dañada o no es válida.",
 			"tooLarge": "Esta copia de seguridad supera el límite de tamaño del ZIP o el de las imágenes. Usa ZIP de personajes individuales.",

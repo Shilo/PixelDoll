@@ -15,15 +15,15 @@ export const workspaceKeys = {
 	last: 'pixeldoll.studio.project'
 };
 export const copyPreferences = new Map<string, string>();
-import type { WorkspaceArchive } from './workspace.ts';
+import type { CopyArchive } from './workspace.ts';
 
-export let workspaceInfo: Omit<WorkspaceArchive, 'projects' | 'blobs'> | undefined;
+export let workspaceInfo: Omit<CopyArchive, 'projects' | 'blobs'> | undefined;
 export const copyMissingArtwork = new Set<string>();
 
-export function setWorkspaceInfo(info: NonNullable<typeof workspaceInfo>) {
+/** `project`: the character the copy opens on, the backup's first. */
+export function setWorkspaceInfo(info: NonNullable<typeof workspaceInfo>, project: string) {
 	workspaceInfo = info;
 	for (const hash of info.missing) copyMissingArtwork.add(`sha256:${hash}`);
 	copyPreferences.set(workspaceKeys.welcomed, '1');
-	copyPreferences.set(workspaceKeys.theme, info.view.theme);
-	copyPreferences.set(workspaceKeys.last, info.view.project);
+	copyPreferences.set(workspaceKeys.last, project);
 }

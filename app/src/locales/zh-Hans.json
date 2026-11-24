@@ -1434,36 +1434,18 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "工作区活动",
-		"activityIntro": "随工作区一起保存，PixelDoll 版本为 {build}。ZIP 中的任务不会重新启动。",
+		"activityTitle": "备份详情",
+		"activityIntro": "从 PixelDoll {build} 制作的备份打开。",
 		"missing": {
 			"other": "有 {count} 个图像文件缺失或无法读取。"
 		},
 		"skippedCharacters": {
 			"other": "已跳过的已保存角色：{count}。"
-		},
-		"demoOutfit": "演示使用其默认套装设置。",
-		"exportSettings": "副本使用默认导出设置。",
-		"tier": "PixelLab 套餐：{tier}",
-		"noErrors": "未记录到最近错误或未完成的任务。",
-		"noRecent": "未包含最近错误。",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · 代码 {code}",
-		"error": {
-			"tooLarge": "此工作区超出 ZIP 大小或图像限制。请改用单独的角色 ZIP。",
-			"containsKey": "已保存的字段包含已连接或已记住的 PixelLab 密钥。导出前请将其从工作区中移除。",
-			"invalidIndex": "此工作区索引无效。",
-			"unsupportedVersion": "不支持此工作区文件版本。",
-			"duplicateRecord": "此工作区包含不受支持或重复的已保存记录。",
-			"missingFiles": "此工作区的缺失文件列表无效。",
-			"unexpectedFile": "此工作区包含意外文件。",
-			"invalidDiagnostics": "此工作区的最近错误无效。"
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "请选择 PixelDoll 备份或工作区 ZIP，而不是角色 ZIP。",
+			"notBackup": "请选择 PixelDoll 备份，而不是角色 ZIP。",
 			"unsupportedVersion": "不支持此版本的备份文件。",
 			"invalid": "此备份已损坏或无效。",
 			"tooLarge": "此备份超出 ZIP 大小或图像限制。请改用单独的角色 ZIP。",

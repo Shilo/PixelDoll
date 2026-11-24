@@ -42,13 +42,13 @@
 		error = '';
 		try {
 			if (file.size > MAX_ZIP_BYTES)
-				throw new LocalizedError('Choose a workspace ZIP up to 64 MB.', 'openWorkspace.tooLarge');
+				throw new LocalizedError('Choose a backup ZIP up to 64 MB.', 'openWorkspace.tooLarge');
 			const { projects, blobs, ...info } = await readBackupCopy(
 				new Uint8Array(await file.arrayBuffer())
 			);
 			if (!developerModeEnabled()) return;
 			installWorkspaceCopy(projects, blobs);
-			setWorkspaceInfo(info);
+			setWorkspaceInfo(info, projects.keys().next().value ?? '');
 			installed = true;
 			await openStudio();
 		} catch (cause) {

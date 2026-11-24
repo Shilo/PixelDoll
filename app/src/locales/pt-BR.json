@@ -1485,8 +1485,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Atividade do espaço de trabalho",
-		"activityIntro": "Salvo com o espaço de trabalho do PixelDoll {build}. As tarefas do ZIP não são retomadas.",
+		"activityTitle": "Detalhes do backup",
+		"activityIntro": "Aberto a partir de um backup feito com o PixelDoll {build}.",
 		"missing": {
 			"one": "{count} arquivo de arte estava ausente ou ilegível.",
 			"other": "{count} arquivos de arte estavam ausentes ou ilegíveis."
@@ -1494,29 +1494,11 @@
 		"skippedCharacters": {
 			"one": "Personagens salvos ignorados: {count}.",
 			"other": "Personagens salvos ignorados: {count}."
-		},
-		"demoOutfit": "A demo usa as configurações padrão de traje.",
-		"exportSettings": "A cópia usa as configurações padrão de exportação.",
-		"tier": "Plano do PixelLab: {tier}",
-		"noErrors": "Nenhum erro recente ou tarefa inacabada foi registrado.",
-		"noRecent": "Os erros recentes não foram incluídos.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Código {code}",
-		"error": {
-			"tooLarge": "Este espaço de trabalho excede o limite de tamanho do ZIP ou de arte. Use ZIPs de personagens individuais.",
-			"containsKey": "Um campo salvo contém a chave do PixelLab em uso ou salva neste dispositivo. Remova-a do espaço de trabalho antes de exportar.",
-			"invalidIndex": "O índice deste espaço de trabalho é inválido.",
-			"unsupportedVersion": "Esta versão de arquivo do espaço de trabalho não é compatível.",
-			"duplicateRecord": "Este espaço de trabalho contém um registro salvo incompatível ou duplicado.",
-			"missingFiles": "Este espaço de trabalho tem uma lista inválida de arquivos ausentes.",
-			"unexpectedFile": "Este espaço de trabalho contém um arquivo inesperado.",
-			"invalidDiagnostics": "Este espaço de trabalho tem registros inválidos de erros recentes."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Escolha um backup do PixelDoll ou um ZIP de espaço de trabalho, não um ZIP de personagem.",
+			"notBackup": "Escolha um backup do PixelDoll, não um ZIP de personagem.",
 			"unsupportedVersion": "Esta versão do arquivo de backup não é compatível.",
 			"invalid": "Este backup está danificado ou é inválido.",
 			"tooLarge": "Este backup excede o limite de tamanho do ZIP ou de arte. Use ZIPs de personagens individuais.",

@@ -1434,36 +1434,18 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Aktivitas ruang kerja",
-		"activityIntro": "Disimpan bersama ruang kerja dari PixelDoll {build}. Tugas dari ZIP tidak dimulai ulang.",
+		"activityTitle": "Detail cadangan",
+		"activityIntro": "Dibuka dari cadangan yang dibuat dengan PixelDoll {build}.",
 		"missing": {
 			"other": "{count} file gambar tidak ditemukan atau tidak dapat dibaca."
 		},
 		"skippedCharacters": {
 			"other": "Karakter tersimpan yang dilewati: {count}."
-		},
-		"demoOutfit": "Demo menggunakan pengaturan setelan bawaan.",
-		"exportSettings": "Salinan menggunakan pengaturan ekspor bawaan.",
-		"tier": "Tier PixelLab: {tier}",
-		"noErrors": "Tidak ada kesalahan terbaru atau pekerjaan yang belum selesai yang tercatat.",
-		"noRecent": "Kesalahan terbaru tidak disertakan.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Kode {code}",
-		"error": {
-			"tooLarge": "Ruang kerja ini melebihi batas ukuran ZIP atau gambar. Gunakan ZIP per karakter sebagai gantinya.",
-			"containsKey": "Ada kolom tersimpan yang berisi kunci PixelLab yang terhubung atau diingat. Hapus kunci tersebut dari ruang kerja sebelum mengekspor.",
-			"invalidIndex": "Indeks ruang kerja ini tidak valid.",
-			"unsupportedVersion": "Versi file ruang kerja ini tidak didukung.",
-			"duplicateRecord": "Ruang kerja ini berisi data tersimpan yang tidak didukung atau duplikat.",
-			"missingFiles": "Daftar file yang tidak ditemukan dalam ruang kerja ini tidak valid.",
-			"unexpectedFile": "Ruang kerja ini berisi file yang tidak semestinya.",
-			"invalidDiagnostics": "Data kesalahan terbaru di ruang kerja ini tidak valid."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Pilih cadangan PixelDoll atau ZIP ruang kerja, bukan ZIP karakter.",
+			"notBackup": "Pilih cadangan PixelDoll, bukan ZIP karakter.",
 			"unsupportedVersion": "Versi file cadangan ini tidak didukung.",
 			"invalid": "Cadangan ini rusak atau tidak valid.",
 			"tooLarge": "Cadangan ini melebihi batas ukuran ZIP atau gambar. Gunakan ZIP karakter satu per satu.",

@@ -27,7 +27,7 @@
 	import DeleteSheet from './DeleteSheet.svelte';
 	import DirectionsSheet from './DirectionsSheet.svelte';
 	import { moveDirs } from '../lib/dress/dress.ts';
-	import { workspaceCopy, workspaceInfo } from '../lib/store/workspace-mode.ts';
+	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import {
 		ui,
@@ -128,10 +128,7 @@
 				reviewFailedCreate,
 				loadGens
 			};
-		if (workspaceCopy && workspaceInfo) {
-			ui.theme = workspaceInfo.view.theme;
-			ui.welcome = false;
-		}
+		if (workspaceCopy) ui.welcome = false;
 		const off = initUi();
 		if (PRE_RELEASE && !workspaceCopy)
 			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: downloadLibraryBackupWithFeedback });
@@ -145,24 +142,6 @@
 					: initial
 			);
 			if (workspaceCopy) {
-				const saved = workspaceInfo?.view;
-				const manifest = store.project?.manifest;
-				if (saved && manifest && doc.id === saved.project) {
-					experience.screen = saved.screen;
-					experience.mode = saved.mode;
-					ui.tab = saved.tab;
-					const move = manifest.rig.animations.find((animation) => animation.id === saved.move);
-					if (move?.frames.length) {
-						ui.anim = move.id;
-						ui.frame = saved.frame % move.frames.length;
-					}
-					if (moveDirs(manifest, ui.anim).includes(saved.direction)) ui.dir = saved.direction;
-					const item = manifest.items.find((entry) => entry.id === saved.item);
-					if (item) {
-						ui.selected = item.id;
-						ui.group = item.slot;
-					}
-				}
 				ui.playing = false;
 				return;
 			}

@@ -37,7 +37,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   views quoted again only when Studio can prove those batches were never queued. If work stops after a batch is reserved
   but before its queue record is written, Studio will not resend it. Review Activity before deciding whether to discard
   the attempt and approve a new generation.
-  Editable workspace ZIPs preserve saved art, not pending State attempts or their job receipts.
+  Library backups preserve saved art, not pending State attempts or their job receipts.
 - **Canceling a managed State does not guarantee a refund.** In a trial-account check, PixelLab reported cancellation
   and $0 job usage, but the child later completed and the balance fell by 10 generations. Do not retry uncertain jobs
   or use that cancellation receipt as proof of no charge.

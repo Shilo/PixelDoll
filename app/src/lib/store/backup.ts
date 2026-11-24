@@ -1,5 +1,5 @@
 // Character backups: a private ZIP of saved Studio characters and their artwork, and a restore that adds them back without
-// overwriting anything. Restore also reads workspace ZIPs (pixeldoll-workspace/1), taking only their characters.
+// overwriting anything.
 import { sha256, stableStringify } from '../image/hash.ts';
 import { LocalizedError } from '../message.ts';
 import * as db from './db.ts';
@@ -18,10 +18,9 @@ import {
 	packArchive,
 	parseIndex,
 	readArchiveFiles,
-	readWorkspaceFiles,
 	studioCharacter,
 	type ArchiveErrors,
-	type WorkspaceArchive
+	type CopyArchive
 } from './workspace.ts';
 import { MAX_ZIP_BYTES, unzip } from './zip.ts';
 import { DEBUG_FOLDER } from '../debug/flags.ts';
@@ -44,8 +43,7 @@ export async function listArchiveDownloads() {
 			if (incompatibleKind(value)) localCount++;
 			return false;
 		},
-		() => new Map(),
-		false
+		() => new Map()
 	);
 	return { localCount, retainedIds };
 }
@@ -141,7 +139,6 @@ export async function exportBackup(
 	const archives = await archiveEntries(keys);
 	const { bytes, hasOmissions, records } = await packArchive(
 		studioCharacter,
-		false,
 		keys,
 		backupErrors,
 		({ projects, missing, omitted }) => [
@@ -160,7 +157,6 @@ export async function exportBackup(
 }
 
 export interface RestoreSource {
-	kind: 'backup' | 'workspace';
 	/** The build that made the file. */
 	build: string;
 	/** Validated saved Studio characters, in file order. */
@@ -176,16 +172,15 @@ export interface RestoreSource {
 	missing?: string[];
 }
 
-/** A bounded backup or workspace ZIP, validated. Throws a LocalizedError when the file as a whole cannot be read. */
+/** A bounded backup ZIP, validated. Throws a LocalizedError when the file as a whole cannot be read. */
 export async function readRestoreSource(
 	bytes: Uint8Array,
 	keys: readonly string[] = []
 ): Promise<RestoreSource> {
 	const files = await unzip(bytes);
-	if (!files.has(indexPath) && !files.has('workspace.json') && files.has(incompatibleIndexPath)) {
+	if (!files.has(indexPath) && files.has(incompatibleIndexPath)) {
 		const { build, counts } = inspectIncompatibleFiles(files, keys);
 		return {
-			kind: 'backup',
 			build,
 			characters: new Map(),
 			blobs: new Map(),
@@ -204,22 +199,9 @@ async function readRestoreFiles(
 	keys: readonly string[]
 ): Promise<RestoreSource> {
 	const json = files.get(indexPath);
-	if (!json && files.has('workspace.json')) {
-		const workspace = await readWorkspaceFiles(files);
-		return {
-			kind: 'workspace',
-			build: workspace.build,
-			characters: new Map(
-				[...workspace.projects].filter(([key, value]) => studioCharacter(key, value))
-			) as Map<string, StoredProject>,
-			blobs: workspace.blobs,
-			unreadable: workspace.omitted?.characters ?? 0,
-			trimmed: workspace.trimmed ?? 0
-		};
-	}
 	if (!json)
 		throw new LocalizedError(
-			'Choose a PixelDoll backup or workspace ZIP, not a character ZIP.',
+			'Choose a PixelDoll backup ZIP, not a character ZIP.',
 			'backup.error.notBackup'
 		);
 	const index = parseIndex(json, backupErrors) as Partial<BackupIndex> | null;
@@ -237,7 +219,7 @@ async function readRestoreFiles(
 		omitted > maxRecords
 	)
 		throw invalid();
-	const counts = { characters: omitted, demoOutfit: false, exportSettings: false };
+	const counts = { characters: omitted };
 	// Debugging details (lib/debug/bundle.ts) are for whoever helps the user, never restored.
 	for (const path of [...files.keys()]) if (path.startsWith(DEBUG_FOLDER)) files.delete(path);
 	const archives: ArchivePack[] = [];
@@ -259,7 +241,6 @@ async function readRestoreFiles(
 		backupErrors
 	);
 	return {
-		kind: 'backup',
 		build: index.build,
 		characters: projects as Map<string, StoredProject>,
 		blobs,
@@ -270,29 +251,14 @@ async function readRestoreFiles(
 	};
 }
 
-export async function readBackupCopy(bytes: Uint8Array): Promise<WorkspaceArchive> {
-	const files = await unzip(bytes);
-	if (!files.has(indexPath)) return readWorkspaceFiles(files);
-	const source = await readRestoreFiles(files, []);
+export async function readBackupCopy(bytes: Uint8Array): Promise<CopyArchive> {
+	const source = await readRestoreFiles(await unzip(bytes), []);
 	return {
 		build: source.build,
 		projects: source.characters,
 		blobs: source.blobs,
 		missing: source.missing ?? [],
-		...(source.unreadable && {
-			omitted: { characters: source.unreadable, demoOutfit: false, exportSettings: false }
-		}),
-		view: {
-			project: source.characters.keys().next().value ?? '',
-			item: '',
-			move: '',
-			direction: 'south',
-			frame: 0,
-			screen: 'characters',
-			mode: 'preview',
-			tab: 'wardrobe',
-			theme: 'dark'
-		}
+		...(source.unreadable && { omitted: source.unreadable })
 	};
 }
 

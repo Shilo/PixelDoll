@@ -1479,8 +1479,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Çalışma alanı etkinliği",
-		"activityIntro": "Çalışma alanıyla birlikte PixelDoll {build} sürümünden kaydedildi. ZIP dosyasındaki işler yeniden başlatılmaz.",
+		"activityTitle": "Yedek ayrıntıları",
+		"activityIntro": "PixelDoll {build} ile yapılan bir yedekten açıldı.",
 		"missing": {
 			"one": "{count} görsel dosyası eksikti veya okunamadı.",
 			"other": "{count} görsel dosyası eksikti veya okunamadı."
@@ -1488,29 +1488,11 @@
 		"skippedCharacters": {
 			"one": "Atlanan kayıtlı karakter sayısı: {count}.",
 			"other": "Atlanan kayıtlı karakter sayısı: {count}."
-		},
-		"demoOutfit": "Demo varsayılan kıyafet ayarlarını kullanır.",
-		"exportSettings": "Kopya varsayılan dışa aktarım ayarlarını kullanır.",
-		"tier": "PixelLab plan seviyesi: {tier}",
-		"noErrors": "Yakın zamanda oluşmuş hata veya yarım kalan iş kaydedilmemiş.",
-		"noRecent": "Yakın zamanda oluşan hatalar dahil edilmedi.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Kod {code}",
-		"error": {
-			"tooLarge": "Bu çalışma alanı ZIP boyutu veya görsel sınırını aşıyor. Bunun yerine karakterleri ayrı ZIP dosyaları olarak alın.",
-			"containsKey": "Kayıtlı bir alan, bağlı veya hatırlanan PixelLab anahtarını içeriyor. Dışa aktarmadan önce anahtarı çalışma alanından kaldırın.",
-			"invalidIndex": "Bu çalışma alanı dizini geçersiz.",
-			"unsupportedVersion": "Bu çalışma alanı dosyasının sürümü desteklenmiyor.",
-			"duplicateRecord": "Bu çalışma alanı desteklenmeyen veya yinelenen bir kayıt içeriyor.",
-			"missingFiles": "Bu çalışma alanında geçersiz bir eksik dosya listesi var.",
-			"unexpectedFile": "Bu çalışma alanında beklenmeyen bir dosya var.",
-			"invalidDiagnostics": "Bu çalışma alanında geçersiz yakın tarihli hata kayıtları var."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Karakter ZIP dosyası yerine bir PixelDoll yedeği veya çalışma alanı ZIP dosyası seçin.",
+			"notBackup": "Karakter ZIP dosyası yerine bir PixelDoll yedeği seçin.",
 			"unsupportedVersion": "Bu yedek dosyası sürümü desteklenmiyor.",
 			"invalid": "Bu yedek hasarlı veya geçersiz.",
 			"tooLarge": "Bu yedek ZIP boyutu veya görsel sınırını aşıyor. Bunun yerine karakterleri ayrı ZIP dosyaları olarak alın.",

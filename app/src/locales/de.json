@@ -1479,8 +1479,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Arbeitsbereichsaktivität",
-		"activityIntro": "Mit dem Arbeitsbereich aus PixelDoll {build} gespeichert. Aufträge aus der ZIP-Datei werden nicht neu gestartet.",
+		"activityTitle": "Sicherungsdetails",
+		"activityIntro": "Aus einer Sicherung von PixelDoll {build} geöffnet.",
 		"missing": {
 			"one": "{count} Grafikdatei fehlte oder war nicht lesbar.",
 			"other": "{count} Grafikdateien fehlten oder waren nicht lesbar."
@@ -1488,29 +1488,11 @@
 		"skippedCharacters": {
 			"one": "Gespeicherte Figuren übersprungen: {count}.",
 			"other": "Gespeicherte Figuren übersprungen: {count}."
-		},
-		"demoOutfit": "Die Demo verwendet ihre Standard-Outfiteinstellungen.",
-		"exportSettings": "Die Kopie verwendet die Standard-Exporteinstellungen.",
-		"tier": "PixelLab-Tarif: {tier}",
-		"noErrors": "Es wurden keine kürzlichen Fehler oder offenen Aufträge erfasst.",
-		"noRecent": "Kürzliche Fehler wurden nicht aufgenommen.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Code {code}",
-		"error": {
-			"tooLarge": "Dieser Arbeitsbereich überschreitet das Limit für die ZIP-Größe oder die Grafiken. Verwende stattdessen einzelne Figuren-ZIPs.",
-			"containsKey": "Ein gespeichertes Feld enthält den verbundenen oder gespeicherten PixelLab-Schlüssel. Entferne ihn vor dem Export aus dem Arbeitsbereich.",
-			"invalidIndex": "Dieser Arbeitsbereichsindex ist ungültig.",
-			"unsupportedVersion": "Diese Version der Arbeitsbereichsdatei wird nicht unterstützt.",
-			"duplicateRecord": "Dieser Arbeitsbereich enthält einen nicht unterstützten oder doppelten gespeicherten Datensatz.",
-			"missingFiles": "Dieser Arbeitsbereich enthält eine ungültige Liste fehlender Dateien.",
-			"unexpectedFile": "Dieser Arbeitsbereich enthält eine unerwartete Datei.",
-			"invalidDiagnostics": "Dieser Arbeitsbereich enthält ungültige Daten zu kürzlichen Fehlern."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Wähle eine PixelDoll-Sicherung oder ein Arbeitsbereich-ZIP, kein Figuren-ZIP.",
+			"notBackup": "Wähle eine PixelDoll-Sicherung, kein Figuren-ZIP.",
 			"unsupportedVersion": "Diese Version der Sicherungsdatei wird nicht unterstützt.",
 			"invalid": "Diese Sicherung ist beschädigt oder ungültig.",
 			"tooLarge": "Diese Sicherung überschreitet das Limit für die ZIP-Größe oder die Grafiken. Verwende stattdessen einzelne Figuren-ZIPs.",

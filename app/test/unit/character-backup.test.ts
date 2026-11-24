@@ -12,7 +12,6 @@ import {
 	restoreCharacters
 } from '../../src/lib/store/backup.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
-import { exportWorkspace } from '../../src/lib/store/workspace.ts';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
 import { equipmentFixture } from './equipment-fixture.ts';
 
@@ -79,7 +78,6 @@ vi.mock(import('../../src/lib/store/db.ts'), async (original) => {
 			return {
 				projects,
 				blobs,
-				jobs: [],
 				retainedIds: [...saved.projects.keys()].filter((key) => key.startsWith('library-archive:'))
 			};
 		}
@@ -135,7 +133,7 @@ test('a backup holds only saved Studio characters and restores them with their a
 	const file = await exportBackup([]);
 	expect(file).toMatchObject({ characters: 1, hasOmissions: false });
 	const source = await readRestoreSource(file.bytes);
-	expect(source).toMatchObject({ kind: 'backup', build: 'test (abc)', unreadable: 0 });
+	expect(source).toMatchObject({ build: 'test (abc)', unreadable: 0 });
 	expect([...source.characters.keys()]).toEqual(['rig-a']);
 	expect(source.characters.get('rig-a')!.creationSpec).toBeUndefined();
 	expect(source.characters.get('rig-a')!.stateGenerations).toBeUndefined();
@@ -253,7 +251,7 @@ test('an archive cannot carry a known key disguised as JSON escapes', async () =
 	files.set(index, new TextEncoder().encode(text.replace(key, '\\u0066ake-known-key')));
 	const escaped = await zip([...files].map(([name, data]) => ({ name, data })));
 	await expect(readRestoreSource(escaped, [key])).rejects.toMatchObject({
-		translation: { key: 'workspace.error.containsKey' }
+		translation: { key: 'backup.error.containsKey' }
 	});
 });
 
@@ -422,50 +420,7 @@ test('a failed restore adds no character and no artwork', async () => {
 	expect(saved.blobs.size).toBe(0);
 });
 
-test('a workspace ZIP restores only its characters, and a key in a saved field blocks a backup', async () => {
-	const view = {
-		project: 'rig-a',
-		item: '',
-		move: '',
-		direction: 'south',
-		frame: 0,
-		screen: 'studio',
-		mode: 'preview',
-		tab: 'wardrobe',
-		theme: 'light'
-	} as const;
-	const [before, after] = [...artwork.keys()];
-	character.manifest.items[0].frameEdits = [
-		{
-			version: 'frames-v1',
-			id: 'edit',
-			anim: character.manifest.rig.animations[0].id,
-			frames: [
-				{
-					dir: 'south',
-					cell: 0,
-					layers: [{ id: 'main', before: `sha256:${before}`, after: `sha256:${after}` }],
-					cut: { before: null, after: null }
-				}
-			]
-		}
-	];
-	// A workspace carries Undo history and its artwork, so a restore from it keeps the history whole.
-	// The saved demo outfit here is invalid: the export leaves it out and says so instead of failing.
-	const workspace = await exportWorkspace(view, undefined, []);
-	expect(workspace.hasOmissions).toBe(true);
-	const index = JSON.parse(
-		new TextDecoder().decode((await unzip(workspace.bytes)).get('workspace.json'))
-	);
-	expect(index.omitted).toEqual({ characters: 0, demoOutfit: true, exportSettings: false });
-	const source = await readRestoreSource(workspace.bytes);
-	expect(source.kind).toBe('workspace');
-	expect(source.trimmed).toBe(0);
-	expect(source.characters.get('rig-a')!.manifest.items[0].frameEdits).toHaveLength(1);
-	expect(source.blobs.has(after)).toBe(true);
-	expect([...source.characters.keys()]).toEqual(['rig-a']);
-	expect((await planRestore(source)).entries).toMatchObject([{ action: 'skip', match: 'rig-a' }]);
-
+test('a key in a saved field blocks a backup', async () => {
 	saved.projects.set('rig-a', {
 		...character,
 		manifest: { ...character.manifest, name: 'secret-key' }

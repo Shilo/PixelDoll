@@ -1479,8 +1479,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Workspace activity",
-		"activityIntro": "Saved with the workspace from PixelDoll {build}. Jobs from the ZIP do not restart.",
+		"activityTitle": "Backup details",
+		"activityIntro": "Opened from a backup made with PixelDoll {build}.",
 		"missing": {
 			"one": "{count} artwork file was missing or unreadable.",
 			"other": "{count} artwork files were missing or unreadable."
@@ -1488,29 +1488,11 @@
 		"skippedCharacters": {
 			"one": "Saved characters skipped: {count}.",
 			"other": "Saved characters skipped: {count}."
-		},
-		"demoOutfit": "The demo uses its default outfit settings.",
-		"exportSettings": "The copy uses default export settings.",
-		"tier": "PixelLab tier: {tier}",
-		"noErrors": "No recent errors or unfinished jobs were recorded.",
-		"noRecent": "Recent errors were not included.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Code {code}",
-		"error": {
-			"tooLarge": "This workspace exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.",
-			"containsKey": "A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.",
-			"invalidIndex": "This workspace index is invalid.",
-			"unsupportedVersion": "This workspace file version is not supported.",
-			"duplicateRecord": "This workspace contains an unsupported or duplicate saved record.",
-			"missingFiles": "This workspace has an invalid list of missing files.",
-			"unexpectedFile": "This workspace contains an unexpected file.",
-			"invalidDiagnostics": "This workspace has invalid recent errors."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Choose a PixelDoll backup or workspace ZIP, not a character ZIP.",
+			"notBackup": "Choose a PixelDoll backup ZIP, not a character ZIP.",
 			"unsupportedVersion": "This backup file version is not supported.",
 			"invalid": "This backup is damaged or invalid.",
 			"tooLarge": "This backup exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.",

@@ -1434,36 +1434,18 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "ワークスペースのアクティビティ",
-		"activityIntro": "PixelDoll {build}でワークスペースと一緒に保存された記録です。ZIP内のジョブは再開されません。",
+		"activityTitle": "バックアップの詳細",
+		"activityIntro": "PixelDoll {build} で作成したバックアップから開きました。",
 		"missing": {
 			"other": "{count}個のアートワークファイルが見つからないか、読み込めませんでした。"
 		},
 		"skippedCharacters": {
 			"other": "スキップした保存済みキャラクター：{count}体。"
-		},
-		"demoOutfit": "デモでは初期設定のコーディネートを使用します。",
-		"exportSettings": "コピーのエクスポート設定には初期値が使われます。",
-		"tier": "PixelLabのTier：{tier}",
-		"noErrors": "最近のエラーや未完了のジョブは記録されていません。",
-		"noRecent": "最近のエラーは含まれていません。",
-		"errorLine": "{date}・{tool}・{outcome}{http}{code}",
-		"errorLineHttp": "・HTTP {status}",
-		"errorLineCode": "・コード {code}",
-		"error": {
-			"tooLarge": "このワークスペースはZIPのサイズまたはアートワークの上限を超えています。代わりにキャラクターごとのZIPを使ってください。",
-			"containsKey": "保存済みの入力内容に、現在使っているか、このデバイスに記憶したPixelLabのキーが含まれています。エクスポートする前に、入力内容からキーを削除してください。",
-			"invalidIndex": "このワークスペースのインデックスは無効です。",
-			"unsupportedVersion": "このワークスペースファイルのバージョンには対応していません。",
-			"duplicateRecord": "このワークスペースには、対応していないか重複している保存レコードが含まれています。",
-			"missingFiles": "このワークスペースの不足ファイルのリストが無効です。",
-			"unexpectedFile": "このワークスペースには想定外のファイルが含まれています。",
-			"invalidDiagnostics": "このワークスペースに記録された最近のエラー情報が無効です。"
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "キャラクターのZIPではなく、PixelDollのバックアップまたはワークスペースのZIPを選んでください。",
+			"notBackup": "キャラクターのZIPではなく、PixelDollのバックアップを選んでください。",
 			"unsupportedVersion": "このバージョンのバックアップファイルには対応していません。",
 			"invalid": "このバックアップは破損しているか、無効です。",
 			"tooLarge": "このバックアップはZIPのサイズまたはアートワークの上限を超えています。代わりにキャラクターごとのZIPを使ってください。",
