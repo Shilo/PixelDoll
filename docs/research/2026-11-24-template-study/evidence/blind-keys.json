@@ -1,0 +1,95 @@
+{
+  "cmp-idle": {
+    "south_s31": {
+      "X": "A",
+      "Y": "BI",
+      "Z": "FS"
+    },
+    "east_s31": {
+      "X": "BI",
+      "Y": "A",
+      "Z": "FS"
+    }
+  },
+  "cmp-hurt": {
+    "south_s31": {
+      "X": "A",
+      "Y": "P",
+      "Z": "TP"
+    },
+    "east_s31": {
+      "X": "A",
+      "Y": "TP",
+      "Z": "P"
+    }
+  },
+  "cmp-death": {
+    "south_s31": {
+      "X": "A",
+      "Y": "FB"
+    },
+    "east_s31": {
+      "X": "FB",
+      "Y": "A"
+    }
+  },
+  "cmp-run": {
+    "south_s31": {
+      "X": "P",
+      "Y": "R6",
+      "Z": "R4",
+      "W": "R8"
+    },
+    "east_s31": {
+      "X": "R8",
+      "Y": "P",
+      "Z": "R4",
+      "W": "R6"
+    }
+  },
+  "cmp47-run": {
+    "south_s47": {
+      "X": "P",
+      "Y": "R8"
+    },
+    "east_s47": {
+      "X": "R8",
+      "Y": "P"
+    }
+  },
+  "cmp47-hurt": {
+    "south_s47": {
+      "X": "TP",
+      "Y": "P",
+      "Z": "A"
+    },
+    "east_s47": {
+      "X": "TP",
+      "Y": "P",
+      "Z": "A"
+    }
+  },
+  "cmp47-walk": {
+    "south_s47": {
+      "X": "T",
+      "Y": "D"
+    },
+    "east_s47": {
+      "X": "D",
+      "Y": "T"
+    }
+  },
+  "_arms": {
+    "A": "authored table",
+    "P": "described route",
+    "BI": "breathing-idle",
+    "FS": "fight-stance-idle-8-frames",
+    "TP": "taking-punch",
+    "FB": "falling-back-death",
+    "R4": "running-4-frames",
+    "R6": "running-6-frames",
+    "R8": "running-8-frames",
+    "T": "walking-8-frames",
+    "D": "described walk with the new seam trim"
+  }
+}

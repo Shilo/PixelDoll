@@ -1,0 +1,200 @@
+{
+  "taking-punch/east": {
+    "trimmed": 0,
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "taking-punch/south": {
+    "trimmed": 0,
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "running-8-frames/east": {
+    "trimmed": 0,
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "running-8-frames/south": {
+    "trimmed": 0,
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "walking-8-frames/south": {
+    "trimmed": 0,
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "walking-8-frames/east": {
+    "trimmed": 0,
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "described-walk/south": {
+    "trimmed": 1,
+    "returned": 9,
+    "canvas": "84x84",
+    "echo": true,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "described-walk/east": {
+    "trimmed": 0,
+    "returned": 9,
+    "canvas": "84x84",
+    "echo": true,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "roundhouse-kick/south": {
+    "trimmed": 0,
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "roundhouse-kick/east": {
+    "trimmed": 0,
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "high-kick/south": {
+    "trimmed": 0,
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "high-kick/east": {
+    "trimmed": 0,
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "throw-object/south": {
+    "trimmed": 0,
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "throw-object/east": {
+    "trimmed": 0,
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "two-footed-jump/south": {
+    "trimmed": 0,
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "two-footed-jump/east": {
+    "trimmed": 0,
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "jumping-2/south": {
+    "trimmed": 0,
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "jumping-2/east": {
+    "trimmed": 0,
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  }
+}

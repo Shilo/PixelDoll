@@ -1,0 +1,993 @@
+{
+  "attack/south": {
+    "status": "no-result (invalid template, cap or error; see ledger)"
+  },
+  "attack/east": {
+    "status": "no-result (invalid template, cap or error; see ledger)"
+  },
+  "breathing-idle/east": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 4,
+    "status": "rendered"
+  },
+  "breathing-idle/south": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 4,
+    "status": "rendered"
+  },
+  "crouching/east": {
+    "returned": 5,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 5,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 5,
+    "status": "rendered"
+  },
+  "crouching/south": {
+    "returned": 5,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 5,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 5,
+    "status": "rendered"
+  },
+  "cross-punch/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "cross-punch/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "fight-stance-idle-8-frames/east": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "fight-stance-idle-8-frames/south": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "lead-jab/south": {
+    "returned": 3,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 3,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 3,
+    "status": "rendered"
+  },
+  "lead-jab/east": {
+    "returned": 3,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 3,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 3,
+    "status": "rendered"
+  },
+  "surprise-uppercut/south": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "surprise-uppercut/east": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "high-kick/east": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "flying-kick/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "high-kick/south": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "flying-kick/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "hurricane-kick/south": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 4,
+    "status": "rendered"
+  },
+  "hurricane-kick/east": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 4,
+    "status": "rendered"
+  },
+  "roundhouse-kick/south": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "roundhouse-kick/east": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "fireball/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "leg-sweep/south": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "fireball/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "throw-object/south": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "leg-sweep/east": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "throw-object/east": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "taking-punch/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "taking-punch/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "falling-back-death/east": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "falling-back-death/south": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "getting-up/south": {
+    "returned": 5,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 5,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 5,
+    "status": "rendered"
+  },
+  "getting-up/east": {
+    "returned": 5,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 5,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 5,
+    "status": "rendered"
+  },
+  "running-4-frames/south": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 4,
+    "status": "rendered"
+  },
+  "running-4-frames/east": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 4,
+    "status": "rendered"
+  },
+  "running-6-frames/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "running-jump/south": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "running-6-frames/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "running-8-frames/south": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "running-8-frames/east": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "running-jump/east": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "running-slide/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "running-slide/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "jumping-1/south": {
+    "returned": 9,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 9,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 9,
+    "status": "rendered"
+  },
+  "jumping-1/east": {
+    "returned": 9,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 9,
+    "cutPx": 10,
+    "status": "motion leaves the 84 px frame"
+  },
+  "jumping-2/south": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "jumping-2/east": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "two-footed-jump/south": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "two-footed-jump/east": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "backflip/south": {
+    "returned": 10,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 10,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 10,
+    "status": "rendered"
+  },
+  "backflip/east": {
+    "returned": 10,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 10,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 10,
+    "status": "rendered"
+  },
+  "front-flip/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "front-flip/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "drinking/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "picking-up/south": {
+    "returned": 5,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 5,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 5,
+    "status": "rendered"
+  },
+  "drinking/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "pull-heavy-object/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "picking-up/east": {
+    "returned": 5,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 5,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 5,
+    "status": "rendered"
+  },
+  "pull-heavy-object/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "pushing/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "crouched-walking/south": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "crouched-walking/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "pushing/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "sad-walk/east": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "sad-walk/south": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "scary-walk/south": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "scary-walk/east": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "walking-2/east": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0
+  },
+  "walking-3/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walk-2/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walk-1/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walk/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walking/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walking-5/east": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0
+  },
+  "walking-4/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walking-6/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walking-7/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walking-8/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walking-9/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walking-4-frames/east": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0
+  },
+  "walking-10/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walking-6-frames/east": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0
+  },
+  "walking-8-frames/east": {
+    "trimmed": 0,
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "breathing-idle/north": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 4,
+    "status": "rendered"
+  },
+  "crouching/north": {
+    "returned": 5,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 5,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 5,
+    "status": "rendered"
+  },
+  "running-4-frames/north": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 4,
+    "status": "rendered"
+  },
+  "running-8-frames/north": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "fight-stance-idle-8-frames/north": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "running-6-frames/north": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "getting-up/north": {
+    "returned": 5,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 5,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 5,
+    "status": "rendered"
+  },
+  "taking-punch/north": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "hurricane-kick/north": {
+    "returned": 4,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 4,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 4,
+    "status": "rendered"
+  },
+  "high-kick/north": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "roundhouse-kick/north": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "throw-object/north": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "jumping-2/north": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "running-jump/north": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "two-footed-jump/north": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "sad-walk/north": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "scary-walk/north": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "falling-back-death/north": {
+    "returned": 7,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 7,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 7,
+    "status": "rendered"
+  },
+  "cross-punch/north": {
+    "returned": 6,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 6,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 6,
+    "status": "rendered"
+  },
+  "walking-8-frames/north": {
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  },
+  "walking-8-frames/south": {
+    "trimmed": 0,
+    "returned": 8,
+    "canvas": "96x96",
+    "echo": false,
+    "frames": 8,
+    "cutPx": 0,
+    "missingJoints": 0,
+    "rendered": 8,
+    "status": "rendered"
+  }
+}

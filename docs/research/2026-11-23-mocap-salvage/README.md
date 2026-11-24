@@ -124,6 +124,10 @@ That saving does not buy acceptable motion.
 
 ## Recommended next steps
 
+Update 2026-11-24: steps 1-4 were carried out in the [template study](../2026-11-24-template-study/README.md). Walk and Run
+use templates on registered characters, Jump was added, Hurt stays authored (its template faces three-quarter in
+south), and described loops drop exact standing seam frames.
+
 In priority order. Each needs its own board card and approval; none was started.
 
 1. **Restore the walk template for Skeleton V3 Walk (free to build, no study needed).** The Move sheet's Walk pill has

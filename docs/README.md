@@ -54,6 +54,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
+- [Template study](research/2026-11-24-template-study/README.md) tested all 49 PixelLab mannequin templates through the Studio pipeline with blind reviews. Walk, Run and a new Jump suggestion now use templates on registered characters; Hurt stays authored, and no kick, punch or slash template qualified.
 - [Mocap salvage study](research/2026-11-23-mocap-salvage/README.md) re-tested converted 3D clips against the Studio's authored tables, described moves and PixelLab templates in blind matched comparisons. Verdict: not salvageable; templates and authored tables win.
 - [Animation model default audit](research/2026-11-19-animation-model-audit.md) records a data-only 216-frame archival screen and the matched live protocol for Skeleton V3, PixMiniMax, and Text V3.
 - [PixelLab Character Creator states and animations](research/2026-11-18-character-creator-states.md) describes the website workflow, public endpoint lifecycle, and how PixelDoll currently imports and uses standing references.
