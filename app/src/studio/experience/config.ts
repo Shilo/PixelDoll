@@ -84,7 +84,7 @@ export const MOTION = {
 		buttons: {
 			jump: { size: 56, angle: 90 },
 			sprint: { size: 48, angle: 135 },
-			mount: { size: 44, angle: 180 }
+			mount: { size: 48, angle: 180 }
 		}
 	},
 	tileSize: 100
