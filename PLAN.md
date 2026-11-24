@@ -196,7 +196,9 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   appears ([mocap salvage study](docs/research/2026-11-23-mocap-salvage/README.md)).
 - D32 (2026-11-24, user-approved research): Skeleton V3 move suggestions use a PixelLab template only where the template
   passed blind review in south, east and north and beat the existing route: Walk `walking-8-frames`, Run
-  `running-8-frames`, Jump `two-footed-jump` (`MOVE_TEMPLATES` in `routes.ts`).
+  `running-8-frames`, Jump `two-footed-jump` (`MOVE_TEMPLATES` in `routes.ts`). The three other qualified templates, which
+  have no suggestion of their own (Getting up, Scary walk, Running jump), are picked in **Advanced → More templates**; a
+  typed template id is never a command.
   - One rule (`moveTemplate` in `movePricing.ts`) drives requests, frame counts, prices, re-pricing, the planner and the
     Move sheet.
   - It requires a registered character, the unedited suggestion, Automatic or at most the template's frame count, and no

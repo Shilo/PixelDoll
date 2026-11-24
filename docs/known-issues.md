@@ -53,8 +53,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 - **Template moves are qualified on the mannequin body, in south, east and north only.** PixelLab template IDs are
   per body template. Every character PixelDoll creates is a `mannequin`, but an imported PixelLab character made from
-  another body template may refuse `walking-8-frames`, `running-8-frames` or `two-footed-jump` (a free 422). Diagonal
-  views, clothing and held items were not part of the blind study. See the
+  another body template may refuse any template the Studio offers (`MOVE_TEMPLATES` in `routes.ts`) with a free 422.
+  Diagonal views, clothing and held items were not part of the blind study. See the
   [template study](research/2026-11-24-template-study/README.md).
 - **The Walk template is stronger in east than in south.** It won every east sheet. In south, the described walk won
   two of three seeds. Template frames can also sit 1 to 4 px from the standing art before the re-render, so watch for a

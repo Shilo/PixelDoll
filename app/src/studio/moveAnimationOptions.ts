@@ -1,5 +1,6 @@
 import type { ImageReference } from '../lib/image/reference.ts';
 import { actionOf } from '../lib/rig/clips.ts';
+import { MOVE_TEMPLATES } from '../lib/pixellab/routes.ts';
 import type { DirectionName } from '../lib/store/manifest.ts';
 
 export type MoveAnimationModel = 'skeleton-v3' | 'v3' | 'pixminimax';
@@ -16,9 +17,16 @@ export type MoveAnimationOptions = {
 };
 
 export const gaitTemplate = (action?: string) => action === 'walk' || action === 'run';
-export const templateLoops = (action?: string) => action === 'idle' || gaitTemplate(action);
+/** A qualified template's own loop setting, else the rule for moves without a template. */
+export const templateLoops = (action?: string) =>
+	action && Object.hasOwn(MOVE_TEMPLATES, action)
+		? MOVE_TEMPLATES[action].loop
+		: action === 'idle' || gaitTemplate(action);
 
 export function moveTemplatePrompt(action: string, loop = templateLoops(action)): string {
+	// A template that is not a gait needs its own prompt: `actionOf` would name its Walk-like id "walking".
+	const own = MOVE_TEMPLATES[action]?.prompt;
+	if (own) return own;
 	const prompt = actionOf(action);
 	return gaitTemplate(action) && loop
 		? `${prompt}, continuous even strides, no stopping or settling into a standing pose`

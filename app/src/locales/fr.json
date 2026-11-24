@@ -2730,6 +2730,10 @@
 		"templates": "Modèles d’animation",
 		"suggestionBuiltIn": "Utilise l’animation intégrée de ce mouvement.",
 		"suggestionDescribed": "PixelLab anime ce mouvement à partir de votre texte au lieu de son animation intégrée.",
+		"moreTemplates": "Autres modèles",
+		"moreTemplatesHelp": "Des mouvements propres à PixelLab. Un modèle remplace le texte, exige un personnage enregistré auprès de PixelLab et coûte plus cher qu’un mouvement décrit.",
+		"chooseTemplate": "Choisir un modèle…",
+		"templateUnavailable": "Les modèles exigent un mouvement Skeleton V3 sur un personnage enregistré auprès de PixelLab, sans image de départ.",
 		"describeMotion": "Décrivez le mouvement",
 		"motionOnly": "Décrivez uniquement le mouvement du corps. Ajoutez les armes et accessoires comme objets.",
 		"motionModel": "Modèle de mouvement",
@@ -2900,7 +2904,10 @@
 		"idle": "Attente",
 		"walk": "Marche",
 		"run": "Course",
-		"jump": "Saut"
+		"jump": "Saut",
+		"gettingUp": "Se relever",
+		"scaryWalk": "Marche menaçante",
+		"runningJump": "Saut en course"
 	},
 	"stateGeneration": {
 		"continueIntro": "Vous pouvez terminer les vues qui n’ont jamais été envoyées. Les vues terminées seront conservées.",

@@ -289,6 +289,21 @@
 	let templatePicked = $state(
 		!!draft?.action || untrack(() => !!action && text !== moveTemplatePrompt(action))
 	);
+	// The three common templates have pills of their own; Advanced offers the qualified ones that have none and that
+	// this character does not already own.
+	const pickerTemplates = $derived(
+		Object.entries(MOVE_TEMPLATES).filter(
+			([key]) =>
+				!suggestions.some((entry) => entry.action === key) && !have.has(key) && !stateIds.has(key)
+		)
+	);
+	// The chosen template keeps a pill of its own, so an edited prompt can show it as described and pressing it again
+	// releases the move, exactly like a suggestion.
+	const shownSuggestions = $derived(
+		action && pickerTemplates.some(([key]) => key === action)
+			? [...suggestions, { id: action, title: displayMove(action), prompt: text.trim(), action }]
+			: suggestions
+	);
 	let loopChoice = $state<boolean | undefined>(draft?.loop);
 	let itemDrawingChoice = $state<ItemDrawing | 'default' | undefined>(draft?.itemDrawing);
 	const defaultItemDrawing = $derived(currentItemDrawing());
@@ -560,13 +575,28 @@
 	const managedFor = (option: MoveAnimationModel) =>
 		option === 'skeleton-v3' ? managedMotionId : undefined;
 	const managedId = $derived(managedFor(model));
+	// The Advanced picker asks whether this character can run a template before any is chosen. Its availability also
+	// mirrors the route's own rules: no start frame and no uploaded start, which the picker cannot grant.
+	const templateStartBlocked = $derived(
+		!!startFrom || targetDirs.some((direction) => !!frameReferences[direction]?.start)
+	);
+	const templateAccessId = $derived(
+		model === 'skeleton-v3' && advancedOpen && !replacing && !templateStartBlocked
+			? rec?.character?.id
+			: undefined
+	);
 	// The open Model list prices Skeleton V3 too, which needs the same free motion check.
 	let pricingModels = $state(false);
 	$effect(() => {
-		const id = managedId ?? (pricingModels ? managedFor('skeleton-v3') : undefined);
+		const id =
+			managedId ?? templateAccessId ?? (pricingModels ? managedFor('skeleton-v3') : undefined);
 		const key = app.key;
 		void motionProbe;
-		if (!id || !key || app.keyRejected) return;
+		// Nothing may keep claiming the character's motion once its key or the character itself is gone.
+		if (!id || !key || app.keyRejected) {
+			managedMotion = undefined;
+			return;
+		}
 		const controller = new AbortController();
 		managedMotion = undefined;
 		void resolveMoveMotionSource(key, id, controller.signal).then(
@@ -582,6 +612,19 @@
 	const accessFor = (managed: string | undefined) =>
 		managedMotion?.id === managed && managedMotion?.key === app.key ? managedMotion : undefined;
 	const motionAccess = $derived(accessFor(managedId));
+	const templateAccess = $derived(accessFor(templateAccessId));
+	// A template runs only on the character PixelLab registered, with no start frame of its own.
+	const templatesAvailable = $derived(templateAccess?.source === 'managed');
+	// The reason, once the record and the probe can give one; a pending check says nothing yet.
+	const templatesBlocked = $derived(
+		recFor === doc.id &&
+			(!rec?.character?.id ||
+				templateStartBlocked ||
+				(!!templateAccess && templateAccess.source !== 'managed'))
+	);
+	const templateNote = $derived(
+		templateAccess?.error ? 'error' : templatesBlocked ? 'blocked' : undefined
+	);
 	const advancedNote = $derived(
 		[
 			t(MODEL_TEXT[model]),
@@ -626,6 +669,11 @@
 		return keepsDescribedRoute && moveTemplate(spec) ? { ...spec, action: undefined } : spec;
 	};
 	const motion = $derived(motionFor(model, animationOptions));
+	// The picker shows a template only while that template is the route, so editing the prompt or passing its frame
+	// count leaves the field empty and picking the same template again works.
+	const pickerValue = $derived(
+		action && moveTemplate(motion) && pickerTemplates.some(([key]) => key === action) ? action : ''
+	);
 	const regeneration = $derived(draftRegeneration?.id === id ? draftRegeneration : undefined);
 	const skeletonRetry = draft?.skeletonRetry;
 	// A suggestion's own motion is only claimed once the route is known: a template waits for the managed character
@@ -1238,6 +1286,18 @@
 			suggestions.find((entry) => entry.action === template)?.prompt ?? moveTemplatePrompt(template)
 		);
 	}
+	// A template chosen in Advanced behaves like its missing pill: it names the move and sets the prompt, Loop and Frames.
+	function chooseTemplate(key: string) {
+		if (!key) {
+			const kept = text;
+			chooseAction('');
+			text = kept;
+			return;
+		}
+		chooseAction(key);
+		// A frame count left from another move would push the template past its own frames and drop it.
+		frameChoice = undefined;
+	}
 	function inputMotion(value: string) {
 		if (!templatePicked && !replacing && action) chooseAction('');
 		text = value;
@@ -1640,6 +1700,42 @@
 			onpick={chooseModel}
 		/>
 	</div>
+	{#if model === 'skeleton-v3' && !replacing && !isDemo()}
+		<div class="advanced-field">
+			<div class="advanced-label">
+				<label for={`${advancedId}-template`}>{t('moveSheet.moreTemplates')}</label>
+				<Help
+					iconOnly
+					title={t('moveSheet.moreTemplates')}
+					text={t('moveSheet.moreTemplatesHelp')}
+				/>
+			</div>
+			<select
+				id={`${advancedId}-template`}
+				class="bu-select input"
+				value={pickerValue}
+				disabled={!templatesAvailable}
+				aria-describedby={templateNote ? `${advancedId}-template-note` : undefined}
+				onchange={(event) => chooseTemplate(event.currentTarget.value)}
+			>
+				<option value="">{t('moveSheet.chooseTemplate')}</option>
+				{#each pickerTemplates as [key, entry] (key)}
+					<option value={key}
+						>{nice(key)} · {t('moveSheet.framesValue', { count: entry.frames })}</option
+					>
+				{/each}
+			</select>
+			{#if templateNote === 'error'}
+				<p class="notice warn small" id={`${advancedId}-template-note`} role="status">
+					<CircleAlert size={14} />{templateAccess?.error}
+				</p>
+			{:else if templateNote === 'blocked'}
+				<p class="faint small" id={`${advancedId}-template-note`} role="status">
+					{t('moveSheet.templateUnavailable')}
+				</p>
+			{/if}
+		</div>
+	{/if}
 	<div class="advanced-field">
 		<div class="advanced-label">
 			<label for={`${advancedId}-item-drawing`}>{t('moveSheet.itemDrawing')}</label>
@@ -2409,7 +2505,7 @@
 								active={action}
 								described={suggestionRoute === 'described'}
 								hint={suggestionHint}
-								{suggestions}
+								suggestions={shownSuggestions}
 								onpick={pickSuggestion}
 							/>
 						{/if}

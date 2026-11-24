@@ -125,13 +125,51 @@ export const BASE_ANIMS: BaseAnim[] = [
 	{ name: 'idle', template: 'breathing-idle', action: 'breathing idle, standing still', frames: 4 },
 	{ name: 'walk', template: 'walking-8-frames', action: 'walking', frames: 8 }
 ];
-/** The PixelLab skeleton-v3 templates that Studio move suggestions animate with on a registered character, keyed by the
- *  suggestion's action. Only templates that passed the 2026-11-24 blind study in every tested view are listed
+/** The PixelLab skeleton-v3 templates Studio moves animate with on a registered character, keyed by the move's action.
+ *  Only templates that passed the 2026-11-24 blind study in every tested view are listed
  *  (docs/research/2026-11-24-template-study/README.md). `frames` is the count the template returns. */
-export const MOVE_TEMPLATES: Readonly<Record<string, BaseAnim>> = {
-	walk: BASE_ANIMS[1],
-	run: { name: 'run', template: 'running-8-frames', action: 'running', frames: 8 },
-	jump: { name: 'jump', template: 'two-footed-jump', action: 'jumping with both feet', frames: 7 }
+export interface MoveTemplate extends BaseAnim {
+	/** Whether the motion is a cycle, which sets the move's Loop default. */
+	loop: boolean;
+	/** The move's prompt when no suggestion supplies one; `actionOf` cannot name a template that is not a gait. */
+	prompt?: string;
+}
+export const MOVE_TEMPLATES: Readonly<Record<string, MoveTemplate>> = {
+	walk: { ...BASE_ANIMS[1], loop: true },
+	run: { name: 'run', template: 'running-8-frames', action: 'running', frames: 8, loop: true },
+	jump: {
+		name: 'jump',
+		template: 'two-footed-jump',
+		action: 'jumping with both feet',
+		frames: 7,
+		loop: false
+	},
+	// Qualified, with no Studio move of their own, so Advanced offers them. The study's other valid templates either
+	// duplicate an existing move or lost to it (the idle variants lost to the authored idle).
+	'getting-up': {
+		name: 'getting-up',
+		template: 'getting-up',
+		action: 'getting up',
+		prompt: 'getting up from the ground',
+		frames: 5,
+		loop: false
+	},
+	'scary-walk': {
+		name: 'scary-walk',
+		template: 'scary-walk',
+		action: 'walking',
+		prompt: 'walking, hunched and menacing',
+		frames: 8,
+		loop: true
+	},
+	'running-jump': {
+		name: 'running-jump',
+		template: 'running-jump',
+		action: 'jumping',
+		prompt: 'jumping while running',
+		frames: 8,
+		loop: false
+	}
 };
 export const baseAnimation = (
 	mode: BaseAnimMode,

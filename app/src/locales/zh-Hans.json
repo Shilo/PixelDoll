@@ -2655,6 +2655,10 @@
 		"templates": "动作模板",
 		"suggestionBuiltIn": "使用此动作内置的动画。",
 		"suggestionDescribed": "PixelLab 会根据你的文本而不是内置动画来生成此动作。",
+		"moreTemplates": "更多模板",
+		"moreTemplatesHelp": "PixelLab 自带的动作。模板会取代文本，需要已注册到 PixelLab 的角色，并且比描述动作花费更多。",
+		"chooseTemplate": "选择模板…",
+		"templateUnavailable": "模板需要已注册到 PixelLab 的角色上的 Skeleton V3 动作，且不能有起始帧。",
 		"describeMotion": "描述动作",
 		"motionOnly": "只描述身体动作。武器和道具请通过装备添加。",
 		"motionModel": "运动模型",
@@ -2821,7 +2825,10 @@
 		"idle": "待机",
 		"walk": "行走",
 		"run": "奔跑",
-		"jump": "跳跃"
+		"jump": "跳跃",
+		"gettingUp": "起身",
+		"scaryWalk": "诡异行走",
+		"runningJump": "奔跑跳跃"
 	},
 	"stateGeneration": {
 		"continueIntro": "你可以完成从未提交的视角。已完成的视角将保留。",

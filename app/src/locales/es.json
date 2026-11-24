@@ -2730,6 +2730,10 @@
 		"templates": "Plantillas de animación",
 		"suggestionBuiltIn": "Usa la animación integrada de este movimiento.",
 		"suggestionDescribed": "PixelLab anima este movimiento a partir de tu texto en lugar de su animación integrada.",
+		"moreTemplates": "Más plantillas",
+		"moreTemplatesHelp": "Movimientos propios de PixelLab. Una plantilla sustituye al texto, necesita un personaje registrado en PixelLab y cuesta más que un movimiento descrito.",
+		"chooseTemplate": "Elige una plantilla…",
+		"templateUnavailable": "Las plantillas necesitan un movimiento de Skeleton V3 en un personaje registrado en PixelLab y sin fotograma inicial.",
 		"describeMotion": "Describe el movimiento",
 		"motionOnly": "Describe solo el movimiento del cuerpo. Añade las armas y los accesorios como objetos.",
 		"motionModel": "Modelo de movimiento",
@@ -2900,7 +2904,10 @@
 		"idle": "Reposo",
 		"walk": "Caminar",
 		"run": "Correr",
-		"jump": "Saltar"
+		"jump": "Saltar",
+		"gettingUp": "Levantarse",
+		"scaryWalk": "Caminar amenazante",
+		"runningJump": "Salto corriendo"
 	},
 	"stateGeneration": {
 		"continueIntro": "Puedes terminar las vistas que no se enviaron. Se conservarán las vistas completadas.",

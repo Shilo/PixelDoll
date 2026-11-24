@@ -2730,6 +2730,10 @@
 		"templates": "Animationsvorlagen",
 		"suggestionBuiltIn": "Nutzt die eingebaute Bewegung dieser Animation.",
 		"suggestionDescribed": "PixelLab animiert diese Animation aus deinem Prompt statt aus ihrer eingebauten Bewegung.",
+		"moreTemplates": "Weitere Vorlagen",
+		"moreTemplatesHelp": "Eigene Bewegungen von PixelLab. Eine Vorlage ersetzt den Prompt, braucht eine bei PixelLab registrierte Figur und kostet mehr als eine beschriebene Animation.",
+		"chooseTemplate": "Vorlage wählen…",
+		"templateUnavailable": "Vorlagen brauchen eine Skeleton-V3-Animation für eine bei PixelLab registrierte Figur, ohne Startframe.",
 		"describeMotion": "Beschreibe die Bewegung",
 		"motionOnly": "Beschreibe nur die Körperbewegung. Füge Waffen und Requisiten als Gegenstände hinzu.",
 		"motionModel": "Bewegungsmodell",
@@ -2900,7 +2904,10 @@
 		"idle": "Idle",
 		"walk": "Gehen",
 		"run": "Laufen",
-		"jump": "Springen"
+		"jump": "Springen",
+		"gettingUp": "Aufstehen",
+		"scaryWalk": "Gruselgang",
+		"runningJump": "Sprung im Lauf"
 	},
 	"stateGeneration": {
 		"continueIntro": "Du kannst die noch nicht gesendeten Ansichten fertigstellen. Fertige Ansichten bleiben erhalten.",

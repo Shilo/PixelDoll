@@ -2730,6 +2730,10 @@
 		"templates": "Move templates",
 		"suggestionBuiltIn": "Uses this move's built-in motion.",
 		"suggestionDescribed": "PixelLab animates this move from your prompt instead of its built-in motion.",
+		"moreTemplates": "More templates",
+		"moreTemplatesHelp": "PixelLab's own motions. A template replaces the prompt, needs a character registered with PixelLab and costs more than a described move.",
+		"chooseTemplate": "Choose a template…",
+		"templateUnavailable": "Templates need a Skeleton V3 move on a character registered with PixelLab, with no start frame.",
 		"describeMotion": "Describe the motion",
 		"motionOnly": "Describe body motion only. Add weapons and props as items.",
 		"motionModel": "Motion model",
@@ -2900,7 +2904,10 @@
 		"idle": "Idle",
 		"walk": "Walk",
 		"run": "Run",
-		"jump": "Jump"
+		"jump": "Jump",
+		"gettingUp": "Getting up",
+		"scaryWalk": "Scary walk",
+		"runningJump": "Running jump"
 	},
 	"stateGeneration": {
 		"continueIntro": "You can finish the views that were never sent. Completed views will be kept.",

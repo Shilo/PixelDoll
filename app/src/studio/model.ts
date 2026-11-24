@@ -270,7 +270,10 @@ const moveNameKeys: Readonly<Record<string, WhisperKey>> = {
 	default: 'moveNames.default',
 	idle: 'moveNames.idle',
 	walk: 'moveNames.walk',
-	run: 'moveNames.run'
+	run: 'moveNames.run',
+	'getting-up': 'moveNames.gettingUp',
+	'scary-walk': 'moveNames.scaryWalk',
+	'running-jump': 'moveNames.runningJump'
 };
 /** The move's name as words for a Message: a built-in move's catalog name, else its label (a name the user gave it stays as
  *  typed). Free of the i18n runtime, so flows can name a move in an error that follows a language switch. */

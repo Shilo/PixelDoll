@@ -27,7 +27,11 @@ import {
 	moveTemplate,
 	nativeMoveGens
 } from '../../src/studio/movePricing.ts';
-import { moveFrameCounts, moveTemplatePrompt } from '../../src/studio/moveAnimationOptions.ts';
+import {
+	moveFrameCounts,
+	moveTemplatePrompt,
+	templateLoops
+} from '../../src/studio/moveAnimationOptions.ts';
 import { resolveMoveSource } from '../../src/studio/moveSource.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
 import { withClipWriteLock } from '../../src/studio/clipName.ts';
@@ -134,6 +138,9 @@ test('a suggestion animates with its PixelLab template only when the template ca
 		});
 		expect(moveFrames(original.manifest, spec)).toBe(template.frames);
 		expect(fixedPoses(spec)).toBe(false);
+		// Each template names its own Loop and, where `actionOf` cannot, its own prompt.
+		expect(templateLoops(action)).toBe(template.loop);
+		expect(moveTemplatePrompt(action).trim()).not.toBe('');
 		expect(moveMotionGens(original.manifest, spec)).toBe(template.frames <= 3 ? 2 : 3);
 		// Fewer frames sample the template's own poses down; more would invent in-betweens, so they take the other route.
 		const fewer = { ...spec, animation: { ...spec.animation, frameCount: template.frames - 1 } };
@@ -147,6 +154,26 @@ test('a suggestion animates with its PixelLab template only when the template ca
 		])
 			expect(moveTemplate(other)).toBeUndefined();
 	}
+});
+
+test('a typed template id stays a described move', async () => {
+	const { original } = await fixture();
+	// The prompt is prose, not a command: only a suggestion's action can select a template.
+	const spec = {
+		id: 'walking-8-frames',
+		text: 'walking-8-frames',
+		frames: 8,
+		items: [],
+		motionSource: 'managed' as const,
+		animation: { model: 'skeleton-v3' as const }
+	};
+	expect(moveTemplate(spec)).toBeUndefined();
+	const request = moveMotionRequest(original, spec, 'east');
+	expect(request.body).toMatchObject({ mode: 'pixminimax' });
+	expect((request.body as { action_description: string }).action_description).toContain(
+		'walking-8-frames'
+	);
+	expect(request.body).not.toHaveProperty('template_animation_id');
 });
 
 test('native motion uses only the selected direction’s start and end frames', async () => {

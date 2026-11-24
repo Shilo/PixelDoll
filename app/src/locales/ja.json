@@ -2655,6 +2655,10 @@
 		"templates": "モーションのテンプレート",
 		"suggestionBuiltIn": "このモーションの組み込みアニメーションを使用します。",
 		"suggestionDescribed": "PixelLab は組み込みアニメーションではなく、入力したテキストからこのモーションを生成します。",
+		"moreTemplates": "その他のテンプレート",
+		"moreTemplatesHelp": "PixelLab 独自のモーションです。テンプレートはテキストの代わりに使われ、PixelLab に登録済みのキャラクターが必要で、テキストから作るモーションより費用がかかります。",
+		"chooseTemplate": "テンプレートを選択…",
+		"templateUnavailable": "テンプレートには、PixelLab に登録済みのキャラクターでの Skeleton V3 モーションと、開始フレームなしが必要です。",
 		"describeMotion": "動きを説明",
 		"motionOnly": "体の動きだけを説明してください。武器や小道具はアイテムとして追加します。",
 		"motionModel": "モーションのモデル",
@@ -2821,7 +2825,10 @@
 		"idle": "待機",
 		"walk": "歩き",
 		"run": "走り",
-		"jump": "ジャンプ"
+		"jump": "ジャンプ",
+		"gettingUp": "立ち上がり",
+		"scaryWalk": "不気味な歩き",
+		"runningJump": "走りジャンプ"
 	},
 	"stateGeneration": {
 		"continueIntro": "まだ送信していない向きの画像を生成できます。完了した画像は保持されます。",

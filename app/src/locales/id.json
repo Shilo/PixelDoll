@@ -2655,6 +2655,10 @@
 		"templates": "Templat animasi",
 		"suggestionBuiltIn": "Memakai animasi bawaan gerakan ini.",
 		"suggestionDescribed": "PixelLab menganimasikan gerakan ini dari teks Anda, bukan dari animasi bawaannya.",
+		"moreTemplates": "Templat lainnya",
+		"moreTemplatesHelp": "Gerakan bawaan PixelLab. Templat menggantikan teks, memerlukan karakter yang terdaftar di PixelLab, dan lebih mahal daripada gerakan yang dijelaskan.",
+		"chooseTemplate": "Pilih templat…",
+		"templateUnavailable": "Templat memerlukan gerakan Skeleton V3 pada karakter yang terdaftar di PixelLab, tanpa bingkai awal.",
 		"describeMotion": "Deskripsikan gerakannya",
 		"motionOnly": "Jelaskan gerakan tubuh saja. Tambahkan senjata dan properti sebagai item.",
 		"motionModel": "Model gerakan",
@@ -2821,7 +2825,10 @@
 		"idle": "Diam",
 		"walk": "Berjalan",
 		"run": "Berlari",
-		"jump": "Melompat"
+		"jump": "Melompat",
+		"gettingUp": "Bangun",
+		"scaryWalk": "Jalan seram",
+		"runningJump": "Lompat sambil berlari"
 	},
 	"stateGeneration": {
 		"continueIntro": "Anda dapat menyelesaikan tampilan yang belum pernah dikirim. Tampilan yang sudah selesai akan disimpan.",

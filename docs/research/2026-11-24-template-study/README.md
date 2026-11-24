@@ -29,10 +29,11 @@ A template is used only when it can honor the request:
 Everything else keeps the move's existing route: the described or authored route, standalone characters, edited text,
 and more frames than the template has.
 
-**Valid but not added:** `running-4-frames`, `running-6-frames`, `running-jump`, `jumping-2`, `getting-up`,
-`fight-stance-idle-8-frames`, `breathing-idle` and `scary-walk`. Each passed every view it was screened in: south, east
-and north at seed 31, plus seed 47 for `jumping-2`. They either lost to an existing route or have no Studio suggestion
-that needs them.
+**Valid but not offered:** `running-4-frames`, `running-6-frames`, `jumping-2`, `breathing-idle` and
+`fight-stance-idle-8-frames`. Each passed every view it was screened in: south, east and north at seed 31, plus seed 47
+for `jumping-2`. They duplicate a move the Studio already makes (Run's Frames control, Jump, Idle), and the authored idle
+beat both idle templates. `getting-up`, `scary-walk` and `running-jump` are the three with no Studio move of their own,
+so **Advanced → More templates** offers them.
 
 **Not valid:**
 
@@ -55,15 +56,18 @@ are rejected for this body template.
 
 The **Walk**, **Run** and **Jump** chips in New move are not just prompts. A chip's text is the signal: when the text
 in the box is exactly that chip's built-in prompt, the sheet sends the chip's action, and the action selects the
-template.
+template. **Advanced → More templates** offers the three qualified templates that have no chip of their own: Getting
+up, Scary walk and Running jump. Picking one names the move, writes its prompt, takes its Loop default, clears the
+frame choice so the template's own count applies, and adds the same kind of pill. A typed template id is still only a
+described motion.
 
 A move uses the template only when all of these hold:
 
-- **Text:** you pressed the chip and did not edit its text. Typing "run" yourself, editing the text, or a chip prompt
-  customized in Settings makes it a described move.
+- **Text:** you pressed the chip or picked the template and did not edit its text. Typing "run" yourself, editing the
+  text, or a chip prompt customized in Settings makes it a described move.
 - **Model:** Skeleton V3.
 - **Character:** registered with PixelLab. Every character drawn in PixelDoll is; the sheet checks it for free.
-- **Frames:** Automatic, or at most the template's count (Walk and Run 8, Jump 7).
+- **Frames:** Automatic, or at most the template's count (Walk and Run 8, Jump 7, and each advanced template's own).
 - **Start frame:** none chosen (no "start from" frame or uploaded start).
 - **Redraw:** when redrawing only some views, the saved views must already be template-made.
 

@@ -3282,6 +3282,124 @@ test('picking the opening gait template after turning Loop off keeps the templat
 	await expect(move.getByRole('button', { name: /^Generate Run/ })).toBeVisible();
 });
 
+test('Advanced picks a qualified template for a registered character and shows its route', async ({
+	page,
+	context
+}, info) => {
+	await context.route('https://api.pixellab.ai/**', (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					subscription: { type: 'generations', status: 'active', generations: 42, total: 100 },
+					credits: { usd: 1 }
+				}
+			});
+		if (request.method() === 'GET' && path.includes('/characters/'))
+			return route.fulfill({ json: { id: 'template-fixture' } });
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
+	await move.getByRole('button', { name: /^Advanced/ }).click();
+	const picker = move.getByRole('combobox', { name: 'More templates', exact: true });
+	await expect(picker).toBeEnabled();
+	await picker.selectOption('getting-up');
+	const description = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
+	await expect(description).toHaveValue('getting up from the ground');
+	await expect(move.getByRole('slider', { name: 'Frames', exact: true })).toHaveAttribute(
+		'aria-valuetext',
+		'5 frames'
+	);
+	await expect(move.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
+	// The chosen template keeps a pill of its own, filled while it is the motion that will run.
+	const pill = move
+		.getByRole('group', { name: 'Move templates', exact: true })
+		.getByRole('button', { name: 'Getting up', exact: true });
+	await expect(pill).toHaveAttribute('aria-pressed', 'true');
+	await expect(pill).not.toHaveAttribute('data-described');
+	await move.locator('summary', { hasText: 'Details' }).click();
+	await expect(move.getByText(/getting-up skeleton-v3 template/)).toBeVisible();
+	// Editing the prompt makes it a described move without releasing the pill.
+	await description.fill('getting up slowly');
+	await expect(pill).toHaveAttribute('data-described', '');
+	await expect(move.getByText(/pixminimax motion/)).toBeVisible();
+	// The field does not claim the template while the prompt is described, so choosing it again restores it.
+	await picker.selectOption('getting-up');
+	await expect(description).toHaveValue('getting up from the ground');
+	await expect(pill).not.toHaveAttribute('data-described');
+	await expect(move.getByText(/getting-up skeleton-v3 template/)).toBeVisible();
+	// The picker belongs to Skeleton V3 alone.
+	await move
+		.getByRole('combobox', { name: 'Motion model', exact: true })
+		.selectOption('pixminimax');
+	await expect(move.getByRole('combobox', { name: 'More templates', exact: true })).toHaveCount(0);
+});
+
+test('a picked template reaches PixelLab as a template request', async ({
+	page,
+	context
+}, info) => {
+	const motionBodies: Record<string, unknown>[] = [];
+	await context.route('https://api.pixellab.ai/**', (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					subscription: { type: 'generations', status: 'active', generations: 42, total: 100 },
+					credits: { usd: 1 }
+				}
+			});
+		if (request.method() === 'GET' && path.includes('/characters/'))
+			return route.fulfill({ json: { id: 'template-fixture' } });
+		if (request.method() === 'POST' && path.endsWith('/characters/animations'))
+			motionBodies.push(request.postDataJSON() as Record<string, unknown>);
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'New move', exact: true });
+	await move.getByRole('button', { name: /^Advanced/ }).click();
+	await move
+		.getByRole('combobox', { name: 'More templates', exact: true })
+		.selectOption('getting-up');
+	await move.getByRole('button', { name: /^Generate Getting up/ }).click();
+	await expect.poll(() => motionBodies.length, { timeout: 15_000 }).toBeGreaterThan(0);
+	// The motion request names the template, not the prompt, and asks for no described action or frame count.
+	for (const body of motionBodies)
+		expect(body).toMatchObject({
+			mode: 'skeleton-v3',
+			template_animation_id: 'getting-up',
+			animation_name: 'getting-up'
+		});
+	expect(motionBodies.some((body) => (body.directions as string[]).includes('south'))).toBe(true);
+	expect(motionBodies[0]).not.toHaveProperty('action_description');
+	expect(motionBodies[0]).not.toHaveProperty('frame_count');
+});
+
 test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Return', async ({
 	page
 }) => {

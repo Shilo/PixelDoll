@@ -2655,6 +2655,10 @@
 		"templates": "동작 템플릿",
 		"suggestionBuiltIn": "이 동작의 내장 애니메이션을 사용해요.",
 		"suggestionDescribed": "PixelLab이 내장 애니메이션이 아닌 입력한 텍스트로 이 동작을 만들어요.",
+		"moreTemplates": "더 많은 템플릿",
+		"moreTemplatesHelp": "PixelLab 자체 모션이에요. 템플릿은 텍스트 대신 사용되고, PixelLab에 등록된 캐릭터가 필요하며, 설명으로 만드는 모션보다 비용이 더 들어요.",
+		"chooseTemplate": "템플릿 선택…",
+		"templateUnavailable": "템플릿을 쓰려면 PixelLab에 등록된 캐릭터의 Skeleton V3 모션이 필요하고, 시작 프레임이 없어야 해요.",
 		"describeMotion": "움직임 설명",
 		"motionOnly": "몸체의 움직임만 설명하세요. 무기와 소품은 아이템으로 추가하세요.",
 		"motionModel": "모션 모델",
@@ -2821,7 +2825,10 @@
 		"idle": "대기",
 		"walk": "걷기",
 		"run": "달리기",
-		"jump": "점프"
+		"jump": "점프",
+		"gettingUp": "일어나기",
+		"scaryWalk": "으스스한 걷기",
+		"runningJump": "달리며 점프"
 	},
 	"stateGeneration": {
 		"continueIntro": "아직 전송하지 않은 방향의 이미지를 생성할 수 있습니다. 완료된 이미지는 유지됩니다.",

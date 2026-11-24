@@ -2730,6 +2730,10 @@
 		"templates": "Animasyon şablonları",
 		"suggestionBuiltIn": "Bu hareketin yerleşik animasyonunu kullanır.",
 		"suggestionDescribed": "PixelLab bu hareketi yerleşik animasyon yerine metninizden canlandırır.",
+		"moreTemplates": "Diğer şablonlar",
+		"moreTemplatesHelp": "PixelLab'ın kendi hareketleri. Şablon metnin yerine geçer, PixelLab'a kayıtlı bir karakter gerektirir ve açıklanan hareketten daha pahalıdır.",
+		"chooseTemplate": "Şablon seçin…",
+		"templateUnavailable": "Şablonlar için PixelLab'a kayıtlı bir karakterde Skeleton V3 hareketi ve başlangıç karesi olmaması gerekir.",
 		"describeMotion": "Hareketi tarif edin",
 		"motionOnly": "Yalnızca gövdenin hareketini tarif edin. Silah ve aksesuarları eşya olarak ekleyin.",
 		"motionModel": "Hareket modeli",
@@ -2900,7 +2904,10 @@
 		"idle": "Bekleme",
 		"walk": "Yürüme",
 		"run": "Koşma",
-		"jump": "Zıplama"
+		"jump": "Zıplama",
+		"gettingUp": "Ayağa kalkma",
+		"scaryWalk": "Ürkütücü yürüyüş",
+		"runningJump": "Koşarak zıplama"
 	},
 	"stateGeneration": {
 		"continueIntro": "Hiç gönderilmemiş görünümleri tamamlayabilirsiniz. Tamamlanan görünümler korunur.",
