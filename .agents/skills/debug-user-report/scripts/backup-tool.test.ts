@@ -8,9 +8,10 @@ import { loadFixture } from '../../../../app/src/lib/compose/fixture.ts';
 import { buildExport } from '../../../../app/src/lib/export/build.ts';
 import { defaultExportSettings } from '../../../../app/src/lib/store/export-settings.ts';
 import { validate } from '../../../../app/src/lib/export/generic.ts';
-import type { Img } from '../../../../app/src/lib/image/png.ts';
+import { makeImg, type Img } from '../../../../app/src/lib/image/png.ts';
+import { layerFrame, over } from '../../../../app/src/lib/compose/compose.ts';
 import { decodePngBytes, encodePngBytes } from '../../../../app/src/lib/image/pngraw.ts';
-import { cellHash } from '../../../../app/src/lib/rig/rig.ts';
+import { cellHash, type DirectionName } from '../../../../app/src/lib/rig/rig.ts';
 import {
 	characterFingerprint,
 	exportBackup,
@@ -27,6 +28,7 @@ import {
 import {
 	EXPORT_ENGINES,
 	supportedFormat,
+	type Layer,
 	type Manifest
 } from '../../../../app/src/lib/store/manifest.ts';
 import type { StoredProject } from '../../../../app/src/lib/store/project.ts';
@@ -671,6 +673,29 @@ async function samples() {
 			preset.items[slot] = 'no-such-item';
 		})
 	];
+	// An item that keeps its shape, with its fill lost in two frames (only its outline kept), as in a real report whose stored
+	// checks passed.
+	const [hollowId, hollow] = variant('rig-hollow-item', () => {}) as [string, StoredProject];
+	const held = hollow.manifest.items.find((item) => item.id === 'helmet_steel')!.layers[0];
+	const heldAnim = hollow.manifest.rig.animations[0].id,
+		heldDir = hollow.manifest.rig.directions[0].id;
+	const heldCells = held.cells![heldAnim]![heldDir]!;
+	const drawn = heldCells.flatMap((hash, cell) => (hash && cell ? [cell] : []));
+	for (const cell of drawn.slice(1, 3)) {
+		const im = await decodePngBytes(files.get(`blobs/${heldCells[cell]!.slice(7)}`)!);
+		const kept = new Uint8ClampedArray(im.data);
+		for (let y = 1; y < im.h - 1; y++)
+			for (let x = 1; x < im.w - 1; x++) {
+				const a = (dx: number, dy: number) => im.data[((y + dy) * im.w + x + dx) * 4 + 3] > 0;
+				if (a(0, 0) && a(-1, 0) && a(1, 0) && a(0, -1) && a(0, 1))
+					kept.fill(0, (y * im.w + x) * 4, (y * im.w + x) * 4 + 4);
+			}
+		const outline = { ...im, data: kept };
+		const hash = await cellHash(outline);
+		heldCells[cell] = hash;
+		files.set(`blobs/${hash.slice(7)}`, await encodePngBytes(outline));
+	}
+	index.characters.push([hollowId, hollow]);
 	files.set('backup.json', new TextEncoder().encode(JSON.stringify(index)));
 	files.set(`blobs/${oddHash.slice(7)}`, await encodePngBytes(other));
 	for (const { name, data } of debug({
@@ -797,16 +822,233 @@ async function samples() {
 	};
 }
 
+// Frames review: what stored QA cannot be trusted to show. Every move and generated direction of each item becomes one
+// zoomed contact sheet (the item's standing frame first, then each frame; the body is dimmed and the item's back layer is
+// tinted red), and frames whose solid interior collapses or that gain holes against that standing frame are flagged.
+const opaque = (im: Img, x: number, y: number) =>
+	x >= 0 && y >= 0 && x < im.w && y < im.h && im.data[(y * im.w + x) * 4 + 3] > 0;
+/** Opaque px, px whose 4 neighbors are all opaque (a filled shape has many, an outline almost none), and transparent px the
+ *  shape encloses. */
+function shapeOf(im: Img) {
+	let px = 0,
+		interior = 0;
+	const outside = new Uint8Array(im.w * im.h),
+		stack: number[] = [];
+	for (let y = 0; y < im.h; y++)
+		for (let x = 0; x < im.w; x++) {
+			if (!opaque(im, x, y)) {
+				if (!x || !y || x === im.w - 1 || y === im.h - 1) {
+					outside[y * im.w + x] = 1;
+					stack.push(y * im.w + x);
+				}
+				continue;
+			}
+			px++;
+			if (
+				opaque(im, x - 1, y) &&
+				opaque(im, x + 1, y) &&
+				opaque(im, x, y - 1) &&
+				opaque(im, x, y + 1)
+			)
+				interior++;
+		}
+	while (stack.length) {
+		const p = stack.pop()!,
+			x = p % im.w,
+			y = (p / im.w) | 0;
+		for (const [nx, ny] of [
+			[x - 1, y],
+			[x + 1, y],
+			[x, y - 1],
+			[x, y + 1]
+		]) {
+			const q = ny * im.w + nx;
+			if (nx < 0 || ny < 0 || nx >= im.w || ny >= im.h || outside[q] || opaque(im, nx, ny))
+				continue;
+			outside[q] = 1;
+			stack.push(q);
+		}
+	}
+	let holes = 0;
+	for (let p = 0; p < outside.length; p++) if (!outside[p] && !im.data[p * 4 + 3]) holes++;
+	return { px, interior, holes };
+}
+
+async function frames() {
+	const pick = (value: string, wanted: string | undefined) =>
+		!wanted || value.toLowerCase().includes(wanted.toLowerCase());
+	const source = await readRestoreSource(new Uint8Array(await readFile(process.env.TOOL_ZIP!)));
+	const decoded = new Map<string, Img | null>();
+	const image = async (hash: unknown) => {
+		const hex = hexOf(hash);
+		if (!hex) return null;
+		if (!decoded.has(hex)) {
+			const blob = source.blobs.get(hex);
+			decoded.set(
+				hex,
+				blob ? await decodePngBytes(new Uint8Array(await blob.arrayBuffer())) : null
+			);
+		}
+		return decoded.get(hex)!;
+	};
+	await mkdir(OUT, { recursive: true });
+	const SCALE = 8;
+	const flagged: unknown[] = [];
+	const undrawn: string[] = [];
+	const sheets: string[] = [];
+	for (const [id, record] of source.characters) {
+		const m = record.manifest;
+		if (!pick(`${id} ${m.name}`, process.env.TOOL_CHARACTER)) continue;
+		const body = m.items.filter((item) => item.slot === 'body' && !item.variantOf);
+		const generated = m.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
+		for (const item of m.items) {
+			if (
+				item.slot === 'body' ||
+				item.variantOf ||
+				!pick(`${item.id} ${item.name}`, process.env.TOOL_ITEM)
+			)
+				continue;
+			const frame = layerFrame(m.rig, item.layers[0]);
+			const render = async (anim: string, dir: DirectionName, cell: number) => {
+				const out = makeImg(frame.w, frame.h),
+					itemOnly = makeImg(frame.w, frame.h);
+				const paint = async (layer: Layer, tint?: 'dim' | 'red', into = out) => {
+					const im = await image(layer.cells?.[anim]?.[dir]?.[cell]);
+					if (!im) return;
+					const copy = { ...im, data: new Uint8ClampedArray(im.data) };
+					for (let p = 0; p < copy.data.length; p += 4)
+						if (tint === 'dim') copy.data[p + 3] = copy.data[p + 3] / 3;
+						else if (tint === 'red') copy.data[p] = Math.min(255, copy.data[p] + 70);
+					const f = layerFrame(m.rig, layer);
+					over(into, copy, frame.x - f.x, frame.y - f.y);
+				};
+				for (const layer of item.layers.filter((l) => l.role === 'bg')) await paint(layer, 'red');
+				for (const b of body) for (const layer of b.layers) await paint(layer, 'dim');
+				for (const layer of item.layers.filter((l) => l.role !== 'bg')) await paint(layer);
+				for (const layer of item.layers) await paint(layer, undefined, itemOnly);
+				return { out, itemOnly, shape: shapeOf(itemOnly) };
+			};
+			const standing =
+				[item.standing, ...m.rig.animations.map((a) => a.id)].find(
+					(anim) => anim && item.layers[0].cells?.[anim]
+				) ?? m.rig.animations[0].id;
+			for (const anim of m.rig.animations) {
+				if (!item.layers.some((layer) => layer.cells?.[anim.id])) continue;
+				for (const dir of generated) {
+					const ref = await render(standing, dir, 0);
+					const tiles = [ref];
+					for (let cell = 0; cell < anim.cells; cell++)
+						tiles.push(await render(anim.id, dir, cell));
+					const moveTiles = tiles.slice(1);
+					// A view the item was never drawn in is one note; a frame missing from a view it is drawn in is a flag.
+					if (moveTiles.every((tile) => !tile.shape.px)) {
+						if (ref.shape.px) undrawn.push(`${id.slice(0, 12)} ${item.id} ${anim.id}/${dir}`);
+						continue;
+					}
+					// Fill and holes only mean something for items that keep their shape (weapons, shields, hats); clothing
+					// legitimately changes with the body, so it is reviewed by eye only.
+					const keepsShape = ['held', 'rigid'].includes(
+						m.slots.find((slot) => slot.id === item.slot)?.class ?? ''
+					);
+					moveTiles.forEach(({ shape }, cell) => {
+						const why: string[] = [];
+						if (!shape.px) why.push('item missing (hidden behind the body, or lost)');
+						else if (
+							keepsShape &&
+							ref.shape.interior >= 8 &&
+							shape.interior < 0.5 * ref.shape.interior
+						)
+							why.push(
+								`fill collapsed: ${shape.interior} interior px vs ${ref.shape.interior} standing`
+							);
+						if (keepsShape && shape.holes > Math.max(8, 3 * ref.shape.holes))
+							why.push(`${shape.holes} enclosed transparent px (standing ${ref.shape.holes})`);
+						if (why.length)
+							flagged.push({
+								character: id,
+								item: item.id,
+								frame: `${anim.id}/${dir}/${cell}`,
+								why
+							});
+					});
+					// Each tile is zoomed on its own item (a full-body tile shrinks when viewed and hides holes): standing frame first,
+					// then the move's frames, five per row, the body dimmed around the item for context.
+					const boxes = tiles.map(({ itemOnly }) => {
+						let x0 = Infinity,
+							y0 = Infinity,
+							x1 = -1,
+							y1 = -1;
+						for (let y = 0; y < itemOnly.h; y++)
+							for (let x = 0; x < itemOnly.w; x++)
+								if (opaque(itemOnly, x, y)) {
+									x0 = Math.min(x0, x);
+									y0 = Math.min(y0, y);
+									x1 = Math.max(x1, x);
+									y1 = Math.max(y1, y);
+								}
+						return x1 < 0
+							? { cx: frame.x, cy: frame.y, w: 0, h: 0 }
+							: { cx: (x0 + x1) >> 1, cy: (y0 + y1) >> 1, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+					});
+					const side = Math.min(
+						Math.max(frame.w, frame.h),
+						Math.max(16, ...boxes.map((b) => Math.max(b.w, b.h))) + 12
+					);
+					const cols = Math.min(5, tiles.length),
+						gap = 2,
+						cellPx = (side + gap) * SCALE;
+					const sheet = makeImg(cols * cellPx, Math.ceil(tiles.length / cols) * cellPx);
+					for (let p = 0; p < sheet.data.length; p += 4) sheet.data.set([32, 32, 40, 255], p);
+					tiles.forEach(({ out: tile }, index) => {
+						const { cx, cy } = boxes[index],
+							ox = cx - (side >> 1),
+							oy = cy - (side >> 1),
+							X0 = (index % cols) * cellPx,
+							Y0 = ((index / cols) | 0) * cellPx;
+						for (let y = 0; y < side; y++)
+							for (let x = 0; x < side; x++) {
+								const tx = ox + x,
+									ty = oy + y;
+								const inside = tx >= 0 && ty >= 0 && tx < tile.w && ty < tile.h;
+								const s = (ty * tile.w + tx) * 4,
+									a = inside ? tile.data[s + 3] / 255 : 0;
+								// the standing tile gets a lighter backdrop so it reads as the reference
+								const bg = index ? [32, 32, 40] : [56, 56, 68];
+								for (let dy = 0; dy < SCALE; dy++)
+									for (let dx = 0; dx < SCALE; dx++) {
+										const d = ((Y0 + y * SCALE + dy) * sheet.w + X0 + x * SCALE + dx) * 4;
+										for (let c = 0; c < 3; c++)
+											sheet.data[d + c] = Math.round(
+												(inside ? tile.data[s + c] : 0) * a + bg[c] * (1 - a)
+											);
+									}
+							}
+					});
+					const name = `${id.slice(0, 12)}-${item.id}-${anim.id}-${dir}.png`.replace(
+						/[^\w.-]/g,
+						'_'
+					);
+					await writeFile(join(OUT, name), await encodePngBytes(sheet));
+					sheets.push(name);
+				}
+			}
+		}
+	}
+	return { sheets, flagged, undrawn };
+}
+
 test(`backup tool: ${MODE}`, async () => {
 	const result =
 		MODE === 'audit'
 			? await audit()
 			: MODE === 'sample'
 				? await samples()
-				: { error: `unknown TOOL_MODE ${MODE}` };
+				: MODE === 'frames'
+					? await frames()
+					: { error: `unknown TOOL_MODE ${MODE}` };
 	await mkdir(OUT, { recursive: true });
 	await writeFile(
-		join(OUT, MODE === 'audit' ? 'report.json' : 'samples.json'),
+		join(OUT, `${MODE === 'sample' ? 'samples' : MODE === 'frames' ? 'frames' : 'report'}.json`),
 		JSON.stringify(result, null, 1)
 	);
 });

@@ -133,10 +133,11 @@
 		"framesHelp": "可用帧数取决于角色的画布大小。",
 		"methodHelp": "支持时使用「{pose}」，否则使用「{edit}」。",
 		"itemDrawing": "动作中的装备",
-		"itemDrawingHelp": "在动作帧上绘制会让装备贴合动作本身的画面。摆出单独的身体会单独为装备制作动画，因此可能偏移几个像素。",
+		"itemDrawingHelp": "在动作帧上绘制会让装备贴合动作本身的画面。摆出单独的身体会单独为装备制作动画，因此可能偏移几个像素。一次绘制所有视图比摆姿势花费更多、比在动作帧上绘制花费更少，并且保存前你可以先检查结果。它适合 80 到 128 px、四个朝向的角色所穿戴的装备；其他装备会在动作帧上绘制，手持装备会摆出姿势。",
 		"itemDrawings": {
 			"anchor": "在动作帧上绘制",
-			"skeleton": "摆出单独的身体"
+			"skeleton": "摆出单独的身体",
+			"sheet": "一次绘制所有视图"
 		}
 	},
 	"settings": {
@@ -1557,6 +1558,7 @@
 			"facing": "部分帧与相对视图相似；请检查躯干",
 			"detail": "部分帧中设计的一个细节缺失或被重新上色",
 			"motion": "检查装备移动时的大小和角度",
+			"fill": "装备在部分帧中变成空心，只剩轮廓；请检查其形状",
 			"lowerClothing": "与站立设计相比，部分下装缺失",
 			"footwear": "鞋履与站立设计不同；请检查脚部",
 			"bodyPixels": "模型更改了部分身体像素",
@@ -1891,7 +1893,9 @@
 			"conceptNote": "上传的图片排在最前，位于角色帧之前。其输出不会被使用。",
 			"redrawEquipment": "{item} {direction} · 重绘装备",
 			"redrawEquipmentNote": "{width}×{height}，帧 {from}–{to}。发送未加蒙版的图集和匹配的参考。PixelDoll 会限制保留的内容，并在替换你的帧之前始终询问。PixelDoll 需要 Tier 1。如果以美元计费，最低为 {minimum}；实际费用可能更高。",
-			"gridRepairNote": "{width}×{height}，帧 {from}–{to}。仅使用一个受保护的匹配朝向参考。身体保持不变。带有阻塞性视觉问题的完整修复会保留供你检查。"
+			"gridRepairNote": "{width}×{height}，帧 {from}–{to}。仅使用一个受保护的匹配朝向参考。身体保持不变。带有阻塞性视觉问题的完整修复会保留供你检查。",
+			"itemSheet": "{item}：{directions}，一张图集",
+			"itemSheetNote": "{width}×{height}：每个视图一行，先放站立设计，再放 {frames} 帧动作，每帧裁剪为 {cellWidth}×{cellHeight} px。身体保持不变。PixelDoll 会在保存前询问，只保留通过检查的视图，并列出其他视图。PixelDoll 需要 Tier 1。只尝试一次；任何付费重试都需要你操作。"
 		},
 		"copyEndpointTitle": "复制端点",
 		"manualCopyLabel": "用于手动复制的端点",
@@ -2000,7 +2004,10 @@
 		"stopNoAnswer": "运行此任务的标签页尚未确认停止。请稍后查看活动；如果它仍在运行，请在那个标签页中停止它。",
 		"stopNotConfirmed": "PixelLab 没有确认停止，因此它可能仍会运行并扣费。请查看活动。",
 		"pausedStorage": "无法读取或保存已保存的任务，因此不会发送新的请求。点击继续以重试。",
-		"cancelSaveFailed": "无法保存取消操作。此标签页不会发送该请求，但其他标签页或重新加载后可能会发送。"
+		"cancelSaveFailed": "无法保存取消操作。此标签页不会发送该请求，但其他标签页或重新加载后可能会发送。",
+		"titleItemViews": {
+			"other": "{item}：{move}，{count} 个视图"
+		}
 	},
 	"genCard": {
 		"retryKey": "重新生成会使用从本设计颜色测得的{color}背景",
@@ -2704,7 +2711,11 @@
 			"repairNote": "身体保持不变。如果修复完成后仍有视觉问题，结果会等待你审核。",
 			"currentFrame": "当前第 {number} 帧",
 			"redrawnFrame": "重绘后的第 {number} 帧",
-			"repairedFrame": "修复后的第 {number} 帧"
+			"repairedFrame": "修复后的第 {number} 帧",
+			"skippedViews": "未保留：{views}。PixelLab 没有在那里绘制装备，因此仍然缺少。你可以只重新绘制这些视图。",
+			"viewFrame": "{view}，第 {number} 帧",
+			"keepFailedViews": "同时保留未通过检查的 {views}",
+			"chooseViews": "保存前请选择要保留的视图。"
 		}
 	},
 	"itemRoute": {
@@ -2738,7 +2749,9 @@
 			"itemMoveSaveConflictAlso": "生成帧期间此角色或装备已更改。已保留现有图像；已完成的帧仍在“活动”中。另一个朝向也已停止：{reason}",
 			"keepWithoutStanding": "此装备在其设计所依据的动作中缺少帧，因此不能不含该动作而保留。请显示该动作，并在可用时使用“修复装备”或“重绘装备”，或重新制作此装备。",
 			"keepWithoutNothingLeft": "此装备没有可保留的完整动作。请改为制作缺少的帧。",
-			"savedFrameMissing": "此装备的一个已保存帧在存储中缺失。"
+			"savedFrameMissing": "此装备的一个已保存帧在存储中缺失。",
+			"itemSheetChanged": "计算图集价格后，此装备或动作已更改。请重新打开该装备再检查一次。未请求任何生成。",
+			"itemSheetNoView": "PixelLab 没有在任何视图中绘制装备，因此没有保留任何内容。图集仍保留在活动中。"
 		}
 	},
 	"newItem": {

@@ -214,7 +214,7 @@
 	const missingMoves = $derived.by(() => {
 		if (!m || !it || isDemo()) return [];
 		const pending = pendingMoves(doc.id, it.id).map((s) => s.id);
-		return missingItemMoves(m, it.id, currentItemDrawing(), 0).filter(
+		return missingItemMoves(m, it.id, currentItemDrawing(), 0, store.project?.images).filter(
 			(s) => !pending.includes(s.id)
 		);
 	});

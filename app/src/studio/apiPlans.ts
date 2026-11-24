@@ -33,6 +33,7 @@ import {
 	frozenGrid,
 	planItem,
 	planAnchoredMove,
+	itemSheetLayout,
 	itemPrompt,
 	planGens,
 	padOf,
@@ -538,6 +539,36 @@ export function movePlan(
 				item.dressed?.[d] &&
 				(spec.replace || spec.itemMethod === 'grid' || !hasCompleteCells(m, item, spec.id, d))
 		);
+		if (spec.itemMethod === 'sheet') {
+			const cell = spec.itemSheet,
+				sheet = cell && itemSheetLayout(cell, missingDirs.length, frames);
+			if (cell && sheet)
+				calls.push(
+					shown(
+						{
+							method: 'POST',
+							path: '/edit-images-v2',
+							label: `${item.name} · ${spec.id} ${missingDirs.join(', ')} · item sheet`,
+							generations: sheet.gens,
+							note: `${sheet.w}×${sheet.h}: one row per view, its standing design first, then ${frames} move frames, each cut to ${cell.w}×${cell.h} px. The body stays fixed. PixelDoll asks before saving, keeps only the views that pass their checks and lists the others. PixelDoll requires Tier 1. One attempt; any paid retry needs your action.`
+						},
+						({ t, displayDirection }) =>
+							t('apiPeek.plan.itemSheet', {
+								item: item.name,
+								directions: missingDirs.map(displayDirection).join(', ')
+							}),
+						({ t, formatNumber }) =>
+							t('apiPeek.plan.itemSheetNote', {
+								width: formatNumber(sheet.w),
+								height: formatNumber(sheet.h),
+								frames: formatNumber(frames),
+								cellWidth: formatNumber(cell.w),
+								cellHeight: formatNumber(cell.h)
+							})
+					)
+				);
+			continue;
+		}
 		if (spec.itemMethod === 'anchor') {
 			for (const call of planAnchoredMove(m.rig, item, spec.id, missingDirs))
 				calls.push(

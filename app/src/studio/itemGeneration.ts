@@ -1,6 +1,7 @@
 import { hasCompleteCells, moveDirs } from '../lib/dress/dress.ts';
 import type { DirectionName, Item, Manifest } from '../lib/store/manifest.ts';
 import type { ItemDrawing } from '../lib/rig/rig.ts';
+import type { Img } from '../lib/image/png.ts';
 import { itemMoveOffer, missingItemMoves, type MoveSpec } from './create.ts';
 
 /** Equipment that has every frame in every view the body has for the move or State. */
@@ -44,16 +45,21 @@ export function clipItemOffer(
 		reviewedMoveItems?: boolean;
 		/** Moves and views kept without poses (rigQa.redo), named in the offer instead of being skipped silently. */
 		redo?: readonly string[];
+		/** The loaded frames, so a sheet can be measured and offered (missingItemMoves). */
+		images?: ReadonlyMap<string, Img>;
 	} = {}
 ) {
 	const item = m.items.find((it) => it.id === itemId);
+	// The accepted views are applied before the route is chosen and a sheet measured.
 	const spec =
-		item && missingItemMoves(m, itemId, drawing, options.seed ?? 0).find((s) => s.id === clipId);
-	const dirs = options.dirs ? spec?.dirs?.filter((dir) => options.dirs!.includes(dir)) : spec?.dirs;
-	if (!spec || !dirs?.length) return null;
+		item &&
+		missingItemMoves(m, itemId, drawing, options.seed ?? 0, options.images, options.dirs).find(
+			(s) => s.id === clipId
+		);
+	if (!spec?.dirs?.length) return null;
 	return itemMoveOffer(
 		m,
-		[{ ...spec, dirs, ...(options.reviewedMoveItems ? { reviewedMoveItems: true } : {}) }],
+		[{ ...spec, ...(options.reviewedMoveItems ? { reviewedMoveItems: true } : {}) }],
 		options.redo
 	);
 }

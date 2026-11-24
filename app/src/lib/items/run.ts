@@ -4,7 +4,14 @@ import { handOf, requireSlot, specSlot } from './slots.ts';
 // and persisted through the `persist` hook. Everything is re-derived from the job ledger, so reloads resume.
 import { queue, requestIdentity, type JobRec } from '../pixellab/queue.ts';
 import { reportedUsage } from '../pixellab/activity.ts';
-import { base64ToBytes, binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
+import {
+	base64ToBytes,
+	binaryAlpha,
+	bytesToBase64,
+	decodePng,
+	makeImg,
+	type Img
+} from '../image/png.ts';
 import { normalize } from '../rig/normalize.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { cellHash, cellKey, matchesStanding, rigArtworkVersion, type Sha256 } from '../rig/rig.ts';
@@ -129,8 +136,18 @@ import {
 	postProcess,
 	restKey,
 	unrotate,
+	canSheet,
+	cropEdgeContact,
+	ITEM_SHEET_CHANGED,
+	itemSheetCells,
+	itemSheetFits,
+	itemSheetPrompt,
+	itemSheetWindows,
+	sheetOffset,
+	uncropCell,
 	type CallKind,
 	type CellOut,
+	type ItemSheetCell,
 	type ItemSpec,
 	type QaResult
 } from './items.ts';
@@ -526,6 +543,21 @@ export function heldRepairRadius(
 	}
 	return Math.max(34, reach + Math.max(4, 0.1 * reach));
 }
+/** The item layer of a view's dressed standing reference (chroma keyframe) on its standing body. */
+const standingDesign = (ctx: RigCtx, dir: DirectionName, reference: Img, key: Key, pad = 0) =>
+	chromaLayer(reference, key, padImg(baseCell(ctx, restKey(dir), true), pad)).layer;
+/** Redraw's permission for a worn or rigid item on frame `k`: the slot's repair band, widened to the view's standing design. */
+const garmentStencil = (ctx: RigCtx, slot: string, design: Img, k: string, w: number, h: number) =>
+	bandMask(
+		garmentBand(
+			bandOf(requireSlot(ctx.rec.manifest, slot), skelOf(ctx, k), h, 'repair'),
+			design,
+			skelOf(ctx, restKey(k.split('/')[1] as DirectionName), true),
+			skelOf(ctx, k)
+		),
+		w,
+		h
+	);
 /** B14 grid request (S4 inv3 / S5 H3): the clip-direction's chroma cells masked to the slot band, then the dressed keyframes
  *  (kept, black mask) as the reference design. Rig cell only (held items keep their oversize S5 route). */
 async function gridReq(
@@ -561,26 +593,14 @@ async function gridReq(
 	if (refs.some((r) => r.im.w !== w || r.im.h !== h))
 		throw new Error('Equipment reference dimensions do not match its repair canvas.');
 	const designs = new Map(
-		refs.map((r) => [
-			r.dir,
-			chromaLayer(r.im, spec.key as Key, padImg(baseCell(ctx, restKey(r.dir), true), pad)).layer
-		])
+		refs.map((r) => [r.dir, standingDesign(ctx, r.dir, r.im, spec.key as Key, pad)])
 	);
 	const masks = cells.map((k) => {
 		if (!held) {
 			const direction = k.split('/')[1] as DirectionName,
 				design = designs.get(direction);
 			if (!design) throw new Error(`${direction}: no dressed garment reference for repair`);
-			return bandMask(
-				garmentBand(
-					bandOf(requireSlot(ctx.rec.manifest, spec.slot), skelOf(ctx, k), h, 'repair'),
-					design,
-					skelOf(ctx, restKey(direction), true),
-					skelOf(ctx, k)
-				),
-				w,
-				h
-			);
+			return garmentStencil(ctx, spec.slot, design, k, w, h);
 		}
 		const [a, d, i] = k.split('/') as [string, DirectionName, string],
 			measured = rig.animations.find((a0) => a0.id === a)?.sources?.[d]?.measured?.[+i];
@@ -1884,18 +1904,7 @@ export async function animateAnchoredItem(
 				call.recId = (await submitOrSaved(await callRequest(draft, k, ctx), {}, true)).id;
 			})
 		);
-	const standingPalettes = new Map(
-		dirs.map((dir) => {
-			const standing = item.layers.flatMap((layer) => {
-				const hash = layer.cells?.[item.standing!]?.[dir]?.[0],
-					image = hash && ctx.project.images.get(hash);
-				return image ? [image] : [];
-			});
-			const counts = colorCounts(standing);
-			// A dense palette does not provide discrete shade witnesses and can be expensive to compare per frame.
-			return [dir, counts.size <= 256 ? [...counts.keys()] : []];
-		})
-	);
+	const standingPalettes = standingPalettesOf(ctx, item, dirs);
 	const whole = options.savedOnly
 		? await evaluateItem(draft, ctx, standingPalettes)
 		: await runItem(draft, ctx, { standingPalettes });
@@ -1941,6 +1950,56 @@ export async function animateAnchoredItem(
 		throw detailError();
 	dirs = savedDirs;
 	const missed = [...failedDirs];
+	const snapped = snapToStanding(ctx, item, result.cells, standingPalettes);
+	await mergeClip(
+		ctx,
+		item,
+		anim,
+		dirs,
+		snapped.cells,
+		draftProvenance(finished).provenance,
+		result.qa,
+		0,
+		snapped.materials,
+		kept
+	);
+	dirs.forEach(onCall);
+	if (missed.length)
+		throw new PartialMoveError(
+			detailError(),
+			doneDirs,
+			partialDirs.map((dir) => ({
+				dir,
+				frames: finished.calls
+					.filter((c) => dirOfCall(c) === dir)
+					.flatMap((c) => c.cells.map((key) => Number(key.split('/')[2])))
+					.sort((a, b) => a - b)
+			}))
+		);
+}
+/** Each view's standing design colors, the witnesses a redrawn frame's colors are snapped to (snapToStanding). */
+function standingPalettesOf(ctx: RigCtx, item: Item, dirs: readonly DirectionName[]) {
+	return new Map(
+		dirs.map((dir) => {
+			const standing = item.layers.flatMap((layer) => {
+				const hash = layer.cells?.[item.standing!]?.[dir]?.[0],
+					image = hash && ctx.project.images.get(hash);
+				return image ? [image] : [];
+			});
+			const counts = colorCounts(standing);
+			// A dense palette does not provide discrete shade witnesses and can be expensive to compare per frame.
+			return [dir, counts.size <= 256 ? [...counts.keys()] : []];
+		})
+	);
+}
+/** Snap each view's redrawn frames to its standing design's colors (standingDyeMatcher). An item that has no materials yet
+ *  gets them from its standing design, returned to publish with the frames. */
+function snapToStanding(
+	ctx: RigCtx,
+	item: Item,
+	cells: CellOut[],
+	standingPalettes: ReadonlyMap<DirectionName, number[]>
+): { cells: CellOut[]; materials?: Material[] } {
 	let materials = ctx.rec.manifest.materials.filter(
 		(m) => m.owner === item.id && item.materials.includes(m.id)
 	);
@@ -1965,39 +2024,17 @@ export async function animateAnchoredItem(
 			standingDyeMatcher(
 				new Set(colors),
 				owned,
-				result.cells.filter((c) => c.key.split('/')[1] === dir).map((c) => c.layer)
+				cells.filter((c) => c.key.split('/')[1] === dir).map((c) => c.layer)
 			)
 		])
 	);
-	const cells = result.cells.map((c) => ({
-		...c,
-		layer: matchers.get(c.key.split('/')[1] as DirectionName)!(c.layer)
-	}));
-	await mergeClip(
-		ctx,
-		item,
-		anim,
-		dirs,
-		cells,
-		draftProvenance(finished).provenance,
-		result.qa,
-		0,
-		needsMaterials ? materials : undefined,
-		kept
-	);
-	dirs.forEach(onCall);
-	if (missed.length)
-		throw new PartialMoveError(
-			detailError(),
-			doneDirs,
-			partialDirs.map((dir) => ({
-				dir,
-				frames: finished.calls
-					.filter((c) => dirOfCall(c) === dir)
-					.flatMap((c) => c.cells.map((key) => Number(key.split('/')[2])))
-					.sort((a, b) => a - b)
-			}))
-		);
+	return {
+		cells: cells.map((c) => ({
+			...c,
+			layer: matchers.get(c.key.split('/')[1] as DirectionName)!(c.layer)
+		})),
+		...(needsMaterials ? { materials } : {})
+	};
 }
 const seedOf = (s: string) =>
 	1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
@@ -2479,6 +2516,16 @@ export type RepairReview = {
 	kept?: number[];
 	/** Why that batch stopped (a failed request or the plan refusing it), shown with the review. */
 	stoppedBy?: Message | string;
+	/** The view and frame of each compared frame, when the review spans several views (the item sheet). */
+	views?: { dir: DirectionName; index: number }[];
+	/** Views where nothing usable was drawn: not kept, so the item stays missing there. */
+	skipped?: DirectionName[];
+	/** Views in `clip` that failed a check: kept only when the player chooses (applyRepairReview keepFailed). */
+	failed?: DirectionName[];
+	/** `clip` without the failed views: what a review with failed views saves by default; absent when no view passed. */
+	passClip?: PreparedClip;
+	/** Materials from the standing design, for an item that had none (snapToStanding). */
+	materials?: Material[];
 };
 
 async function publishClip(
@@ -2612,12 +2659,28 @@ export async function restoreStandingViews(projectId: string, itemId: string): P
 export async function repairAlreadyApplied(projectId: string, review: RepairReview) {
 	const { rec } = await loadProject(projectId);
 	const current = rec.manifest.items.find((item) => item.id === review.clip.out.id);
-	return !!current && clipArtwork(current) === clipArtwork(review.clip.out);
+	return (
+		!!current &&
+		[review.clip, review.passClip].some(
+			(clip) => !!clip && clipArtwork(current) === clipArtwork(clip.out)
+		)
+	);
 }
 
-export async function applyRepairReview(projectId: string, review: RepairReview) {
+/** Save the reviewed frames: every view, or with failed views (an item sheet) only the passing ones unless `keepFailed`. */
+export async function applyRepairReview(
+	projectId: string,
+	review: RepairReview,
+	keepFailed = false
+) {
 	if (await repairAlreadyApplied(projectId, review)) return;
-	await publishClip(projectId, review.clip);
+	const clip = review.failed?.length && !keepFailed ? review.passClip : review.clip;
+	if (!clip)
+		throw new LocalizedError(
+			'Choose the views to keep before saving.',
+			'moveSheet.review.chooseViews'
+		);
+	await publishClip(projectId, clip, review.materials);
 }
 /** Free acknowledgment of the exact artwork and warnings the player reviewed, never a new generation. */
 /** The moves an item is missing frames in (coverageGaps), each once, in rig order. */
@@ -3098,7 +3161,223 @@ export async function regridClip(
 		return { qa, saved: true, cells };
 	}
 
-	const project = ctx.project;
+	return {
+		qa,
+		saved: false,
+		cells,
+		review: {
+			...reviewOf(ctx, item, clip, anim, [dir], pad, [
+				...new Set([...registrationFindings, ...[...qa.failCalls.values()].flat()])
+			]),
+			...(kept.length
+				? { kept: kept.map((k) => Number(k.split('/')[2])), stoppedBy: stoppedBy! }
+				: {})
+		}
+	};
+}
+/** The item-on-move sheet (docs/research/2026-11-23-item-move-route-cost.md): one edit-images-v2 request, a row per view of
+ *  [dressed standing reference, chroma frames...] cut to the view's crop window. `cell` is the measured cell the user
+ *  reviewed and was quoted for; a different measurement now refuses before anything is sent. */
+export async function itemSheetRequest(
+	ctx: RigCtx,
+	item: Item,
+	anim: string,
+	dirs: DirectionName[],
+	seed: number,
+	cell: { w: number; h: number }
+) {
+	const m = ctx.rec.manifest,
+		frames = m.rig.animations.find((a) => a.id === anim)?.cells ?? 0,
+		measured = canSheet(m, item, dirs)
+			? itemSheetWindows(m, ctx.project.images, item, anim, dirs)
+			: undefined,
+		layout = measured && itemSheetFits(m, item, anim, dirs, frames, measured.cell);
+	if (!measured || !layout || measured.cell.w !== cell.w || measured.cell.h !== cell.h)
+		throw new LocalizedError(ITEM_SHEET_CHANGED, 'itemRoute.errors.itemSheetChanged');
+	const plan = itemSheetCells(anim, item.standing!, dirs, frames, measured),
+		sent = makeImg(layout.w, layout.h);
+	for (const c of plan) {
+		const im = c.ref
+			? ctx.project.images.get(item.dressed![c.dir]!)!
+			: inputCell(baseCell(ctx, c.key), item.key!);
+		for (let y = 0; y < cell.h; y++) {
+			const from = ((c.window.y + y) * im.w + c.window.x) * 4;
+			sent.data.set(im.data.subarray(from, from + cell.w * 4), ((c.y + y) * sent.w + c.x) * 4);
+		}
+	}
+	const size = { width: sent.w, height: sent.h };
+	const req = routes.editImagesV2({
+		method: 'edit_with_text',
+		description: itemSheetPrompt({
+			item: item.prompt,
+			slot: requireSlot(m, item.slot),
+			key: item.key as Key,
+			anim,
+			dirs,
+			frames,
+			cell
+		}),
+		edit_images: [{ ...size, image: png(bytesToBase64(await encodePngBytes(sent))) }],
+		image_size: size,
+		no_background: true,
+		seed
+	});
+	return { req, sent, plan, cell, gens: layout.gens };
+}
+/** Read a returned item sheet: register it once (sheetOffset, by moving every cell's cut origin), put each frame cell back at
+ *  its window, extract it as an edit cell inside Redraw's garment stencil, then check every view. */
+export async function readItemSheet(
+	ctx: RigCtx,
+	item: Item,
+	anim: string,
+	sheet: { sent: Img; got: Img; cell: { w: number; h: number }; plan: ItemSheetCell[] }
+) {
+	const m = ctx.rec.manifest,
+		{ rig } = m,
+		slot = requireSlot(m, item.slot),
+		key = item.key!,
+		targets = sheet.plan.filter((c) => !c.ref),
+		dirs = [...new Set(targets.map((c) => c.dir))];
+	const offset = sheetOffset(sheet.sent, sheet.got);
+	const { keys, hidden } = await dressedKeys(ctx, item, 0);
+	const designs = new Map(
+		await Promise.all(
+			dirs.map(
+				async (dir) =>
+					[dir, standingDesign(ctx, dir, await img(item.dressed![dir]!.slice(7)), key)] as const
+			)
+		)
+	);
+	// The cut origin moved by `offset`, as if the returned cell had been translated back by it: recorded like a registration.
+	const cells = targets.map((c) => ({
+		...extractCell({
+			key: c.key,
+			call: 0,
+			base: baseCell(ctx, c.key),
+			out: uncropCell(sheet.got, c.x + offset[0], c.y + offset[1], sheet.cell, c.window, rig.cell),
+			route: key,
+			band: bandOf(slot, skelOf(ctx, c.key), rig.cell.h),
+			clip: slot.band,
+			stencil: garmentStencil(ctx, item.slot, designs.get(c.dir)!, c.key, rig.cell.w, rig.cell.h)
+		}),
+		offset: [-offset[0], -offset[1]] as [number, number]
+	}));
+	// An item reaching an edge of its crop window inside the frame was cut there: the frame's own G7 border check cannot see it.
+	const edges = targets
+		.filter((c, i) => cropEdgeContact(cells[i].layer, c.window, sheet.cell, rig.cell))
+		.map((c) => `G7 ${c.key}: the item reaches the edge of its sheet cell and may be cut there`);
+	postProcess(rig, slot, cells, keys, 0);
+	const palettes = standingPalettesOf(ctx, item, dirs);
+	const check = (part: CellOut[]) =>
+		withH4(
+			itemQa(rig, slot, key, part, 0, GATES.keyOutside, 0, hidden, palettes),
+			slot,
+			part,
+			keys,
+			rig,
+			referenceBodies(rig, ctx.project.images),
+			item.prompt
+		);
+	const qa = check(cells);
+	const dirOf = (c: CellOut) => c.key.split('/')[1] as DirectionName;
+	return {
+		offset,
+		cells,
+		qa,
+		palettes,
+		check,
+		edges,
+		failed: dirs.filter((d) => qa.qa.clips[`${anim}/${d}`]?.status === 'fail'),
+		/** Views with no item pixel in any frame: nothing to keep. */
+		empty: dirs.filter((d) => cells.every((c) => dirOf(c) !== d || !c.area))
+	};
+}
+/** Draw an item on every drawn view of an existing move in one sheet and hold the result for review before saving. Views that
+ *  pass are kept by default; views that fail a check stay in the review with their findings, kept only if the player
+ *  chooses; views with no item at all are left missing, so a later request draws only those. The paid art of every usable
+ *  view stays keepable. The request is seeded, so a reload reattaches to it instead of paying again. */
+export async function sheetItemMove(
+	ctx: RigCtx,
+	item: Item,
+	anim: string,
+	dirs: DirectionName[],
+	seed: number,
+	cell: { w: number; h: number },
+	options: { savedOnly?: boolean; activityScope?: string; title?: Message } = {}
+): Promise<RepairReview> {
+	const { req, sent, plan } = await itemSheetRequest(ctx, item, anim, dirs, seed, cell);
+	if (!options.savedOnly) {
+		const blocked = queue.planBlocks(req, 1);
+		if (blocked) throw localizedPlanRestriction(blocked) ?? new Error(blocked);
+	}
+	const rec = await submitOrSaved(
+		req,
+		{
+			label: `sheet ${item.name} · ${anim} ${dirs.join(', ')}`,
+			...(options.title ? { title: options.title } : {}),
+			tag: 'studio-move',
+			activityScope: options.activityScope,
+			minimumTier: 1
+		},
+		options.savedOnly
+	);
+	const r = terminal(rec) ? rec : await settled(rec.id);
+	if (r.state !== 'done')
+		throw new Error(`${item.name} ${anim} sheet: ${r.state} ${r.error ?? ''}`);
+	if (outputsOf(r).length !== 1)
+		throw new LocalizedError(
+			`${INVALID_ITEM_GRID} Expected exactly one sheet. Existing artwork was kept.`,
+			'itemRoute.errors.invalidItemGridSheet'
+		);
+	const got = await img(outputsOf(r)[0].sha);
+	if (got.w !== sent.w || got.h !== sent.h)
+		throw new LocalizedError(
+			`${INVALID_ITEM_GRID} The sheet has the wrong frame layout. Existing artwork was kept.`,
+			'itemRoute.errors.invalidItemGridLayout'
+		);
+	const read = await readItemSheet(ctx, item, anim, { sent, got, cell, plan });
+	const usable = dirs.filter((d) => !read.empty.includes(d));
+	if (!usable.length)
+		throw new LocalizedError(
+			'PixelLab drew no item in any view, so nothing was kept. The sheet stays in Activity.',
+			'itemRoute.errors.itemSheetNoView'
+		);
+	const failed = usable.filter((d) => read.failed.includes(d)),
+		passing = usable.filter((d) => !failed.includes(d)),
+		within = (keep: DirectionName[]) => (c: CellOut) =>
+			keep.includes(c.key.split('/')[1] as DirectionName),
+		snapped = snapToStanding(ctx, item, read.cells.filter(within(usable)), read.palettes);
+	const prepare = (keep: DirectionName[]) => {
+		const cells = read.cells.filter(within(keep)),
+			qa = keep.length === dirs.length ? read.qa : read.check(cells),
+			prov = toProv(r, { cells: cells.map((c) => c.key), seed, rerolls: 0, old: [] });
+		return prepareClip(ctx, item, anim, keep, snapped.cells.filter(within(keep)), [prov], qa, 0);
+	};
+	const clip = await prepare(usable);
+	return {
+		...reviewOf(ctx, item, clip, anim, usable, 0, [
+			...new Set([...read.edges, ...read.qa.warnings, ...[...read.qa.failCalls.values()].flat()])
+		]),
+		...(read.empty.length ? { skipped: read.empty } : {}),
+		...(failed.length
+			? { failed, ...(passing.length ? { passClip: await prepare(passing) } : {}) }
+			: {}),
+		...(snapped.materials ? { materials: snapped.materials } : {})
+	};
+}
+/** The comparison shown before replacing frames: every frame of `dirs` with the current item and with the prepared one. */
+function reviewOf(
+	ctx: RigCtx,
+	item: Item,
+	clip: PreparedClip,
+	anim: string,
+	dirs: DirectionName[],
+	pad: number,
+	findings: string[]
+): RepairReview {
+	const { rig } = ctx.rec.manifest,
+		project = ctx.project,
+		frames = rig.animations.find((a) => a.id === anim)?.cells ?? 0;
 	const repaired = {
 		manifest: {
 			...project.manifest,
@@ -3112,23 +3391,19 @@ export async function regridClip(
 		x: rig.pivot.x + pad,
 		y: rig.pivot.y + pad
 	};
+	const views = dirs.flatMap((dir) =>
+		Array.from({ length: frames }, (_, index) => ({ dir, index }))
+	);
 	const previews = (source: Project) =>
-		Array.from({ length: frames }, (_, index) =>
+		views.map(({ dir, index }) =>
 			composeCell(source, { [item.slot]: item.id }, anim, dir, index, frame)
 		);
 	return {
-		qa,
-		saved: false,
-		cells,
-		review: {
-			clip,
-			findings: [...new Set([...registrationFindings, ...[...qa.failCalls.values()].flat()])],
-			current: previews(project),
-			replacement: previews(repaired),
-			...(kept.length
-				? { kept: kept.map((k) => Number(k.split('/')[2])), stoppedBy: stoppedBy! }
-				: {})
-		}
+		clip,
+		findings,
+		current: previews(project),
+		replacement: previews(repaired),
+		...(dirs.length > 1 ? { views } : {})
 	};
 }
 

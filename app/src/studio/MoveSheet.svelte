@@ -240,7 +240,8 @@
 	};
 	const ITEM_DRAWING_TEXT = {
 		anchor: 'creationSettings.itemDrawings.anchor',
-		skeleton: 'creationSettings.itemDrawings.skeleton'
+		skeleton: 'creationSettings.itemDrawings.skeleton',
+		sheet: 'creationSettings.itemDrawings.sheet'
 	} as const satisfies Record<ItemDrawing, WhisperKey>;
 	// Advanced starts open when a restored draft already changed something there, so no choice is hidden.
 	let advancedOpen = $state(
@@ -717,6 +718,11 @@
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
 	ui.moveFormOpen = !!reopen;
 	let reviewingSkeletonFor = $state.raw<MoveSpec | null>(null);
+	// An item sheet's views that failed a check are kept only on request; with none passing, nothing is chosen yet.
+	let keepFailed = $state(false);
+	const nothingChosen = $derived(
+		!!moving.repairReview?.failed?.length && !moving.repairReview.passClip && !keepFailed
+	);
 	const skeletonOffer = $derived.by(() => {
 		if (!mine || !moving.spec || !m || !rec || !ok || moving.repairReview) return;
 		if (
@@ -737,23 +743,27 @@
 	const progress = $derived(mine && !ui.moveFormOpen && !skeletonReview);
 	const repairReview = $derived(progress ? moving.repairReview : null);
 	const busy = $derived(!!moving.spec && !moving.done);
+	// The item sheet is a reviewed redraw too: it is compared before it replaces frames (lib/items/run.ts sheetItemMove).
+	const redrawing = $derived(!!moving.spec?.redrawItem || moving.spec?.itemMethod === 'sheet');
 	const savedItemFrames = $derived(
 		!!moving.spec &&
 			!!moving.spec.itemsOnly &&
 			!moving.spec.replace &&
-			(moving.spec.itemMethod === 'grid'
+			(moving.spec.itemMethod === 'grid' || moving.spec.itemMethod === 'sheet'
 				? !!moving.spec.itemReview &&
 					!(
 						[
 							'itemRoute.errors.invalidItemGridSheet',
 							'itemRoute.errors.invalidItemGridLayout',
-							'itemRoute.errors.savedFramesUnavailable'
+							'itemRoute.errors.savedFramesUnavailable',
+							'itemRoute.errors.itemSheetChanged',
+							'itemRoute.errors.itemSheetNoView'
 						] as const
 					).some((key) => key === errorKey(moving.error)) &&
 					$queue.jobs.some(
 						(job) =>
 							job.activityScope === moving.spec?.activityScope &&
-							job.endpoint === (moving.spec?.redrawItem ? '/edit-images-v2' : '/inpaint-v3') &&
+							job.endpoint === (redrawing ? '/edit-images-v2' : '/inpaint-v3') &&
 							job.state === 'done'
 					)
 				: !moving.spec.itemReview &&
@@ -1459,15 +1469,17 @@
 		<button
 			class="bu-action btn primary"
 			data-variant="primary"
-			disabled={moving.resolvingRepair || queue.role === 'follower'}
-			onclick={() => void resolveRepairReview(true)}
+			disabled={moving.resolvingRepair ||
+				queue.role === 'follower' ||
+				(!moving.repairApplied && nothingChosen)}
+			onclick={() => void resolveRepairReview(true, keepFailed)}
 			>{moving.repairApplied
 				? t('moveSheet.review.finish')
 				: repairReview.kept
-					? moving.spec?.redrawItem
+					? redrawing
 						? t('moveSheet.review.useFinishedRedraws')
 						: t('moveSheet.review.useFinishedRepairs')
-					: moving.spec?.redrawItem
+					: redrawing
 						? t('moveSheet.review.useRedrawn')
 						: t('moveSheet.review.useRepaired')}</button
 		>
@@ -1776,7 +1788,7 @@
 		: skeletonReview
 			? t('moveSheet.skeleton.title')
 			: repairReview
-				? moving.spec?.redrawItem
+				? redrawing
 					? t('moveSheet.review.redrawTitle')
 					: t('moveSheet.review.repairTitle')
 				: progress && moving.spec?.itemMethod === 'grid'
@@ -1876,9 +1888,7 @@
 		</p>{/if}
 	{#if mine && ui.moveFormOpen && moving.repairReview}
 		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = false)}
-			>{moving.spec?.redrawItem
-				? t('moveSheet.review.redrawTitle')
-				: t('moveSheet.review.repairTitle')}</button
+			>{redrawing ? t('moveSheet.review.redrawTitle') : t('moveSheet.review.repairTitle')}</button
 		>
 	{/if}
 	{#if repairReview && moving.spec}
@@ -1891,7 +1901,7 @@
 			{#if moving.repairApplied}<p class="small" role="status">
 					{t('moveSheet.review.saved')}
 				</p>{:else}<p class="small" role="status">
-					{moving.spec.redrawItem
+					{redrawing
 						? repairReview.findings.length
 							? t('moveSheet.review.redrawIssues')
 							: t('moveSheet.review.redrawReady')
@@ -1908,14 +1918,35 @@
 					)}
 					{#if repairReview.stoppedBy}{displayNestedMessage(repairReview.stoppedBy)}{/if}
 				</p>{/if}
+			{#if repairReview.skipped?.length}<p class="small notice">
+					<CircleAlert size={14} /><span
+						>{t('moveSheet.review.skippedViews', {
+							views: repairReview.skipped.map(directionLabel).join(', ')
+						})}</span
+					>
+				</p>{/if}
+			{#if repairReview.failed?.length && !moving.repairApplied}<label class="check small">
+					<input
+						type="checkbox"
+						bind:checked={keepFailed}
+						disabled={moving.resolvingRepair || queue.role === 'follower'}
+					/>
+					{t('moveSheet.review.keepFailedViews', {
+						views: repairReview.failed.map(directionLabel).join(', ')
+					})}
+				</label>{/if}
 			<div class="repair-pairs">
 				{#each repairReview.replacement as frame, index (index)}
+					{@const view = repairReview.views?.[index]}
+					{@const number = formatNumber((view?.index ?? index) + 1)}
 					<div class="repair-pair">
 						<span class="small"
-							>{t('moveSheet.review.frame', { number: formatNumber(index + 1) })}</span
+							>{view
+								? t('moveSheet.review.viewFrame', { view: directionLabel(view.dir), number })
+								: t('moveSheet.review.frame', { number })}</span
 						>
 						<div class="repair-pair-columns">
-							{#each [{ img: repairReview.current[index], label: t('moveSheet.review.currentLabel'), frameLabel: t( 'moveSheet.review.currentFrame', { number: formatNumber(index + 1) } ) }, { img: frame, label: moving.spec.redrawItem ? t('moveSheet.review.redrawnLabel') : t('moveSheet.review.repairedLabel'), frameLabel: t( moving.spec.redrawItem ? 'moveSheet.review.redrawnFrame' : 'moveSheet.review.repairedFrame', { number: formatNumber(index + 1) } ) }] as version (version.label)}
+							{#each [{ img: repairReview.current[index], label: t('moveSheet.review.currentLabel'), frameLabel: t( 'moveSheet.review.currentFrame', { number } ) }, { img: frame, label: redrawing ? t('moveSheet.review.redrawnLabel') : t('moveSheet.review.repairedLabel'), frameLabel: t( redrawing ? 'moveSheet.review.redrawnFrame' : 'moveSheet.review.repairedFrame', { number } ) }] as version (version.label)}
 								<div class="keep-view">
 									<strong class="small">{version.label}</strong>
 									<div class="repair-sprite" style:aspect-ratio={`${frame.w} / ${frame.h}`}>
@@ -1943,7 +1974,7 @@
 				</details>{/if}
 			{#if moving.error}<ProblemNotice error={moving.error} />{/if}
 			{#if queue.role === 'follower'}<p class="notice small">
-					{moving.spec.redrawItem
+					{redrawing
 						? t('moveSheet.review.redrawInManagingTab')
 						: t('moveSheet.review.repairInManagingTab')}
 				</p>{/if}
@@ -1983,10 +2014,10 @@
 					? ` · ${moving.spec.dirs.map(directionLabel).join(', ')}`
 					: ''}
 			</p>
-			{#if moving.spec?.itemMethod === 'grid'}<p class="muted small">
-					{moving.spec.redrawItem
-						? t('moveSheet.review.redrawNote')
-						: t('moveSheet.review.repairNote')}
+			{#if moving.spec?.itemMethod === 'grid' || moving.spec?.itemMethod === 'sheet'}<p
+					class="muted small"
+				>
+					{redrawing ? t('moveSheet.review.redrawNote') : t('moveSheet.review.repairNote')}
 				</p>{/if}
 			<ol class="steps-list">
 				{#each steps as s, i (s.id)}

@@ -31,7 +31,8 @@
 				: {
 						item,
 						offer: clipItemOffer(manifest, item.id, clipId, currentItemDrawing(), {
-							redo: setupRedoMoves(store.exportRecord)
+							redo: setupRedoMoves(store.exportRecord),
+							images: project?.images
 						})
 					}
 		);

@@ -1,6 +1,6 @@
 ---
 name: debug-user-report
-description: Diagnose and fix a PixelDoll user's problem from whatever the owner pastes, then test, commit and report. Use this whenever the owner shares a Library backup ZIP (pixeldoll-*.backup.zip or *.debug.backup.zip), an in-app problem report or GitHub issue, pasted error messages or toasts, screenshots of a failure, or just describes something a user hit ("my friend says export fails", "this backup won't restore", "a user's item is stuck generating"), even if they never say "debug" or "skill".
+description: Diagnose and fix a PixelDoll user's problem from whatever the owner pastes, then test, commit and report. Use this whenever the owner shares a Library backup ZIP (pixeldoll-*.backup.zip or *.debug.backup.zip), an in-app problem report or GitHub issue, pasted error messages or toasts, screenshots of a failure, or just describes something a user hit ("my friend says export fails", "this backup won't restore", "a user's item is stuck generating", "the sword looks wrong in the attack"), even if they never say "debug" or "skill".
 ---
 
 # Debug a user report
@@ -54,6 +54,18 @@ and where it is shown, `validate()` (the import check), export to every engine t
 an empty library plus a new backup of it, and, when `debug/` is present, the log in time order, jobs that are not done,
 failed API calls, Studio state, environment and storage, records and artwork locations.
 
+Then look at the artwork, because valid records can still hold broken pixels (a hollowed blade, a missing hand, a
+smear) and the app's stored quality results can pass them:
+
+```
+node .agents/skills/debug-user-report/scripts/run.mjs frames "<backup.zip>" --out "<scratch dir>/frames" [--character <c>] [--item <i>]
+```
+
+It writes one PNG per item, move and generated direction: the item's standing frame first (lighter backdrop), then every
+frame of the move, each zoomed on the item with the body dimmed around it and the item's back layer tinted red. It prints
+frames whose solid interior collapsed or that gained enclosed holes against the standing frame. Without filters it covers
+every item (a few seconds per character).
+
 If the tool itself fails on the file, that is evidence too (a reader that throws instead of refusing clearly): read
 `report.json` or the stderr, then inspect the ZIP by hand in a new empty scratch directory.
 
@@ -74,6 +86,12 @@ Users report one symptom; the backup often shows the cause and other damage. Go 
   missing moves (problem) versus equipment not yet drawn for a move (note, usually fine); slots, outfits and material
   variants that point at nothing; rig keypoints whose length differs from the move's frame count.
 - **Artwork**: missing or failed-verification hashes and where they appear; whether restore would block the character.
+- **Pixels, verified by looking**: treat stored data (item `qa` status, warnings, "passed" clips) as claims to check, not
+  verdicts. Open the frames sheets with Read for every item the report, a screenshot or the log mentions, in every move and
+  direction it has, including the ones marked as passing, plus every flagged sheet. Compare each frame with the standing
+  frame: the item's shape and fill, grip and hand side, missing or extra parts, holes, smears and stray pixels, and whether
+  it moves with the body. A defect you see that the stored checks passed is two findings: the bad frames (what to tell the
+  user) and a quality-gate gap in the app (a code bug, see step 5).
 - **Round trip**: anything that changes after restore and re-backup is a data-loss bug.
 - **debug/** (when present): read the log in time order and line errors up with failed activity calls, jobs that are
   failed, lost, or stuck `running`/`queued` long after `createdAt`, drafts in `records.json`, the Studio state at backup
@@ -102,6 +120,11 @@ Fix it in the code every caller shares (AGENTS.md Rules: DRY, KISS, no backward-
 surfaced errors). When the user's data is damaged beyond what the app can recover, make the app handle that damage
 clearly (skip it or fail with a plain localized message) instead of bricking, and write down what the user can do now.
 
+For a quality-gate gap, add the missing check where the item checks run (`GATES` and the clip checks in
+`app/src/lib/items/items.ts`), proven by a unit test on a small synthetic frame that shows the defect. Gate thresholds
+were tuned by paid tests: add a check, never loosen an existing one, and prefer a review warning over a hard failure
+until a check has been measured on real items.
+
 ## 6. Test and commit
 
 - Run the new test first, then the checks AGENTS.md "Testing" requires: `npm run check`, `npm test`, and only the e2e
@@ -129,5 +152,7 @@ Better evidence next time: <e.g. turn on Developer mode and Settings > Library >
 `run.mjs sample <dir>` writes three backups made from the demo fixture: `pixeldoll-sample.backup.zip` (healthy, no
 debug/), `pixeldoll-sample.debug.backup.zip` (healthy, synthetic debug/) and
 `pixeldoll-sample-broken.debug.backup.zip` (an old build, absent and mismatched artwork, a character with an impossible
-frame count, an outfit naming a missing item, and a debug/ folder with errors, a stuck and a failed job, failed API calls
-and nearly full storage). Audit them to check the tool after changes to backup, import or export code.
+frame count, an outfit naming a missing item, a helmet hollowed to its outline in two walk frames, and a debug/ folder
+with errors, a stuck and a failed job, failed API calls and nearly full storage). Run `audit` and `frames` on them to check
+the tool after changes to backup, import, export or item code: `frames` flags nothing on the healthy backup and must flag
+the two hollow helmet frames and the missing vest frames in the broken one.

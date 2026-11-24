@@ -21,6 +21,9 @@ test('native project registers all frames, source palettes, native origins and e
 	expect(new Set(p.resources.resources.map((r: { name: string }) => r.name)).size).toBe(32);
 	for (const r of p.resources.resources)
 		expect(files.some((f) => f.name === 'gdevelop/' + r.file)).toBe(true);
+	// Identical frames share one file (two distinct body frames, one hair/tucked frame, one hat frame), so many-item
+	// characters stay within the ZIP entry limit.
+	expect(files.filter((f) => f.name.startsWith('gdevelop/images/'))).toHaveLength(4);
 	const hat = p.layouts[0].objects.find(
 		(o: { name: string }) => o.name === gdObjectName('hat', 'main', gdCharacterKey(m))
 	);

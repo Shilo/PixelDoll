@@ -139,10 +139,11 @@
 		"framesHelp": "As quantidades de quadros disponíveis dependem do tamanho da tela do personagem.",
 		"methodHelp": "Usa {pose} quando houver suporte. Caso contrário, usa {edit}.",
 		"itemDrawing": "Itens nas animações",
-		"itemDrawingHelp": "Desenhar nos quadros da animação ajusta os itens à arte da própria animação. Posar um corpo separado anima os itens por conta própria, então eles podem se deslocar alguns pixels.",
+		"itemDrawingHelp": "Desenhar nos quadros da animação ajusta os itens à arte da própria animação. Posar um corpo separado anima os itens por conta própria, então eles podem se deslocar alguns pixels. Desenhar todas as vistas de uma vez custa mais que posar e menos que desenhar nos quadros, e você revisa o resultado antes de salvar. Serve para itens vestidos em personagens de quatro direções de 80 a 128 px; os outros itens são desenhados nos quadros, e os itens segurados são posados.",
 		"itemDrawings": {
 			"anchor": "Desenhar nos quadros",
-			"skeleton": "Posar um corpo separado"
+			"skeleton": "Posar um corpo separado",
+			"sheet": "Desenhar todas as vistas de uma vez"
 		}
 	},
 	"settings": {
@@ -1614,6 +1615,7 @@
 			"facing": "Alguns quadros parecem mostrar a vista oposta. Confira o tronco",
 			"detail": "Um detalhe do visual sumiu ou mudou de cor em alguns quadros",
 			"motion": "Confira o tamanho e o ângulo do item durante a animação",
+			"fill": "O item está oco em alguns quadros, só com o contorno; confira o formato",
 			"lowerClothing": "Faltam partes da roupa da cintura para baixo em comparação com a arte da pose em pé",
 			"footwear": "Os calçados não correspondem à arte da pose em pé. Confira os pés",
 			"bodyPixels": "O modelo alterou alguns pixels do corpo",
@@ -1959,7 +1961,9 @@
 			"conceptNote": "A arte enviada vem primeiro, antes dos quadros do personagem. O resultado dela não é usado.",
 			"redrawEquipment": "{item} {direction} · redesenhar equipamento",
 			"redrawEquipmentNote": "{width}×{height}, quadros {from}–{to}. Envia uma folha sem máscara com uma referência correspondente. O PixelDoll limita o que mantém e sempre pergunta antes de substituir seus quadros. O PixelDoll exige o Tier 1. Se cobrado em dólares, o mínimo é {minimum}; o valor real pode ser maior.",
-			"gridRepairNote": "{width}×{height}, quadros {from}–{to}. Usa uma referência protegida da mesma direção. O corpo não muda. Reparos completos com problemas visuais bloqueantes ficam retidos para sua revisão."
+			"gridRepairNote": "{width}×{height}, quadros {from}–{to}. Usa uma referência protegida da mesma direção. O corpo não muda. Reparos completos com problemas visuais bloqueantes ficam retidos para sua revisão.",
+			"itemSheet": "{item}: {directions}, uma folha",
+			"itemSheetNote": "{width}×{height}: uma linha por vista, primeiro o design em pé e depois {frames} quadros da animação, cada um recortado em {cellWidth}×{cellHeight} px. O corpo não muda. O PixelDoll pergunta antes de salvar, mantém só as vistas que passam nas verificações e lista as outras. O PixelDoll exige o Tier 1. Uma tentativa; qualquer nova tentativa paga precisa da sua ação."
 		},
 		"copyEndpointTitle": "Copiar endpoint",
 		"manualCopyLabel": "Endpoint para copiar manualmente",
@@ -2072,7 +2076,11 @@
 		"stopNoAnswer": "A aba que está executando esta tarefa ainda não confirmou a interrupção. Confira a Atividade em instantes; se ainda estiver em execução, interrompa-a nessa aba.",
 		"stopNotConfirmed": "O PixelLab não confirmou a interrupção, então a tarefa ainda pode rodar e ser cobrada. Confira a Atividade.",
 		"pausedStorage": "Não foi possível ler ou salvar as tarefas salvas, então nada novo é enviado. Retome para tentar de novo.",
-		"cancelSaveFailed": "Não foi possível salvar o cancelamento. Esta aba não vai enviar a solicitação, mas outra aba ou um recarregamento pode enviar."
+		"cancelSaveFailed": "Não foi possível salvar o cancelamento. Esta aba não vai enviar a solicitação, mas outra aba ou um recarregamento pode enviar.",
+		"titleItemViews": {
+			"one": "{item}: {move}, {count} vista",
+			"other": "{item}: {move}, {count} vistas"
+		}
 	},
 	"genCard": {
 		"retryKey": "A nova tentativa usa um fundo {color}, escolhido com base nas cores deste visual",
@@ -2791,7 +2799,11 @@
 			"repairNote": "O corpo não muda. Se o reparo for concluído com problemas visuais, o resultado ficará aguardando sua revisão.",
 			"currentFrame": "Quadro atual {number}",
 			"redrawnFrame": "Quadro redesenhado {number}",
-			"repairedFrame": "Quadro reparado {number}"
+			"repairedFrame": "Quadro reparado {number}",
+			"skippedViews": "Não mantido: {views}. O PixelLab não desenhou o item ali, então ele ainda falta. Você pode desenhar só essas vistas de novo.",
+			"viewFrame": "{view}, quadro {number}",
+			"keepFailedViews": "Manter também {views}, que não passaram nas verificações",
+			"chooseViews": "Escolha as vistas que serão mantidas antes de salvar."
 		}
 	},
 	"itemRoute": {
@@ -2825,7 +2837,9 @@
 			"itemMoveSaveConflictAlso": "Este personagem ou item mudou enquanto seus quadros eram gerados. A arte existente foi mantida; os quadros prontos continuam em Atividade. Outra vista também parou: {reason}",
 			"keepWithoutStanding": "Faltam quadros deste item na animação da qual ele foi desenhado, então ele não pode ser mantido sem ela. Mostre essa animação e use Reparar item ou Redesenhar item se aparecerem, ou crie o item de novo.",
 			"keepWithoutNothingLeft": "Este item não tem nenhuma animação completa para manter. Crie os quadros que faltam.",
-			"savedFrameMissing": "Um quadro salvo deste item está faltando no armazenamento."
+			"savedFrameMissing": "Um quadro salvo deste item está faltando no armazenamento.",
+			"itemSheetChanged": "Este item ou esta animação mudou desde que o preço da folha foi calculado. Abra o item de novo para revisá-lo. Nenhuma geração foi solicitada.",
+			"itemSheetNoView": "O PixelLab não desenhou o item em nenhuma vista, então nada foi mantido. A folha continua em Atividade."
 		}
 	},
 	"newItem": {

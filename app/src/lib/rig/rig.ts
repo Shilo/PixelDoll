@@ -65,7 +65,7 @@ export interface ClipSource {
 	motionBridged?: number[];
 	provenance: number[]; // indexes into the base item's provenance
 }
-export type ItemDrawing = 'anchor' | 'skeleton';
+export type ItemDrawing = 'anchor' | 'skeleton' | 'sheet';
 export interface RigAnimation {
 	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
@@ -81,8 +81,9 @@ export interface RigAnimation {
 	loop: boolean;
 	/** Explicit Add a move choice; omitted when global Export preferences supply the default. */
 	moveLoop?: boolean;
-	/** Explicit Add a move choice of how items are drawn on this move: on its own frames ('anchor') or posed as a separate
-	 *  body ('skeleton'); omitted when Settings > Creation supplies the default. */
+	/** Explicit Add a move choice of how items are drawn on this move: on its own frames ('anchor'), posed as a separate
+	 *  body ('skeleton') or on every view's frames in one reviewed sheet ('sheet'); omitted when Settings > Creation supplies
+	 *  the default. */
 	itemDrawing?: ItemDrawing;
 	frames: { cell: number; ms: number }[];
 	source?: {
@@ -260,8 +261,13 @@ export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[]
 		if (typeof a.loop !== 'boolean') e.push(`${a.id}: loop must be true or false`);
 		if (a.moveLoop !== undefined && typeof a.moveLoop !== 'boolean')
 			e.push(`${a.id}: moveLoop must be true or false`);
-		if (a.itemDrawing !== undefined && a.itemDrawing !== 'anchor' && a.itemDrawing !== 'skeleton')
-			e.push(`${a.id}: itemDrawing must be anchor or skeleton`);
+		if (
+			a.itemDrawing !== undefined &&
+			a.itemDrawing !== 'anchor' &&
+			a.itemDrawing !== 'skeleton' &&
+			a.itemDrawing !== 'sheet'
+		)
+			e.push(`${a.id}: itemDrawing must be anchor, skeleton or sheet`);
 		if (!a.frames.length) e.push(`${a.id}: empty playlist`);
 		for (const f of a.frames)
 			if (

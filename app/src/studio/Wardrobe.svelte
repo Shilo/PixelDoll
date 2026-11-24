@@ -164,7 +164,11 @@
 		!pendingMoves(doc.id, it.id).some((spec) => spec.id === ui.anim);
 	/** Pricing runs only on the tap (it is too slow for every render): no offer here (no joints for this move) wears. */
 	function tapDimmed(it: NonNullable<typeof m>['items'][number], tile: HTMLElement) {
-		if (m && clipItemOffer(m, it.id, ui.anim, currentItemDrawing())) choice?.show(it.id, tile);
+		if (
+			m &&
+			clipItemOffer(m, it.id, ui.anim, currentItemDrawing(), { images: store.project?.images })
+		)
+			choice?.show(it.id, tile);
 		else wear(it.id);
 	}
 	/** Items being drawn on a saved move or State: their tiles show a ring and the share done (the one drawing now) or Queued. */

@@ -118,7 +118,8 @@
 					seed: candidate.spec.seed,
 					dirs: candidate.dirs,
 					reviewedMoveItems: true,
-					redo: setupRedoMoves(store.exportRecord)
+					redo: setupRedoMoves(store.exportRecord),
+					images: project.images
 				})
 			}));
 	});

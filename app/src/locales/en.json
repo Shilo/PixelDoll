@@ -139,10 +139,11 @@
 		"framesHelp": "Available frame counts depend on the character canvas size.",
 		"methodHelp": "Uses {pose} when supported. Otherwise, uses {edit}.",
 		"itemDrawing": "Items on moves",
-		"itemDrawingHelp": "Drawing on move frames fits items to the move's own art. Posing a separate body animates items on their own, so they can drift a few pixels.",
+		"itemDrawingHelp": "Drawing on move frames fits items to the move's own art. Posing a separate body animates items on their own, so they can drift a few pixels. Drawing all views at once costs more than posing and less than drawing on move frames, and you review it before it is saved. It suits worn items on four-direction characters of 80 to 128 px; other items are drawn on move frames, and held items are posed.",
 		"itemDrawings": {
 			"anchor": "Draw on move frames",
-			"skeleton": "Pose a separate body"
+			"skeleton": "Pose a separate body",
+			"sheet": "Draw all views at once"
 		}
 	},
 	"settings": {
@@ -1608,6 +1609,7 @@
 			"facing": "Some frames resemble the opposite view; inspect the torso",
 			"detail": "A detail of the design is missing or recolored in some frames",
 			"motion": "Check the item's size and angle as it moves",
+			"fill": "The item is hollow in some frames, with only its outline left; inspect its shape",
 			"lowerClothing": "Some lower clothing is missing compared with the standing design",
 			"footwear": "Footwear differs from the standing design; inspect the feet",
 			"bodyPixels": "Some body pixels were changed by the model",
@@ -1951,7 +1953,9 @@
 			"conceptNote": "The uploaded artwork goes first, before the character frames. Its output is not used.",
 			"redrawEquipment": "{item} {direction} · redraw equipment",
 			"redrawEquipmentNote": "{width}×{height}, frames {from}–{to}. Sends an unmasked sheet with a matching reference. PixelDoll limits what it keeps and always asks before replacing your frames. PixelDoll requires Tier 1. If billed in dollars, the minimum is {minimum}; the actual charge may be higher.",
-			"gridRepairNote": "{width}×{height}, frames {from}–{to}. Uses one protected matching-direction reference. The body remains unchanged. Complete repairs with blocking visual issues are held for your review."
+			"gridRepairNote": "{width}×{height}, frames {from}–{to}. Uses one protected matching-direction reference. The body remains unchanged. Complete repairs with blocking visual issues are held for your review.",
+			"itemSheet": "{item}: {directions}, one sheet",
+			"itemSheetNote": "{width}×{height}: one row per view, its standing design first, then {frames} move frames, each cut to {cellWidth}×{cellHeight} px. The body stays fixed. PixelDoll asks before saving, keeps only the views that pass their checks and lists the others. PixelDoll requires Tier 1. One attempt; any paid retry needs your action."
 		},
 		"copyEndpointTitle": "Copy endpoint",
 		"manualCopyLabel": "Endpoint for manual copy",
@@ -2063,7 +2067,11 @@
 		"stopNoAnswer": "The tab running this job has not confirmed the stop yet. Check Activity in a moment; if it is still running, stop it in that tab.",
 		"stopNotConfirmed": "PixelLab did not confirm the stop, so it may still run and charge. Check Activity.",
 		"pausedStorage": "Saved jobs couldn’t be read or saved, so nothing new is sent. Resume to try again.",
-		"cancelSaveFailed": "The cancel couldn’t be saved. This tab won’t send the request, but another tab or a reload could."
+		"cancelSaveFailed": "The cancel couldn’t be saved. This tab won’t send the request, but another tab or a reload could.",
+		"titleItemViews": {
+			"one": "{item}: {move}, {count} view",
+			"other": "{item}: {move}, {count} views"
+		}
 	},
 	"genCard": {
 		"retryKey": "Generate again uses a {color} background, measured from this design's colors",
@@ -2782,7 +2790,11 @@
 			"repairNote": "The body stays fixed. A complete repair with visual issues is held for your review.",
 			"currentFrame": "Current frame {number}",
 			"redrawnFrame": "Redrawn frame {number}",
-			"repairedFrame": "Repaired frame {number}"
+			"repairedFrame": "Repaired frame {number}",
+			"skippedViews": "Not kept: {views}. PixelLab drew no item there, so it is still missing. You can draw just those views again.",
+			"viewFrame": "{view}, frame {number}",
+			"keepFailedViews": "Also keep {views}, which did not pass their checks",
+			"chooseViews": "Choose the views to keep before saving."
 		}
 	},
 	"itemRoute": {
@@ -2816,7 +2828,9 @@
 			"itemMoveSaveConflictAlso": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity. Another view also stopped: {reason}",
 			"keepWithoutStanding": "This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.",
 			"keepWithoutNothingLeft": "This item has no complete move to keep. Make the missing frames instead.",
-			"savedFrameMissing": "A saved frame of this item is missing from storage."
+			"savedFrameMissing": "A saved frame of this item is missing from storage.",
+			"itemSheetChanged": "This item or move changed since its sheet was priced. Reopen the item to review it again. No generation was requested.",
+			"itemSheetNoView": "PixelLab drew no item in any view, so nothing was kept. The sheet stays in Activity."
 		}
 	},
 	"newItem": {

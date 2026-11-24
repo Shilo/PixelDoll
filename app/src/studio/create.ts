@@ -100,7 +100,11 @@ import {
 import {
 	anchorable,
 	canPose,
+	canSheet,
+	ITEM_SHEET_CHANGED,
 	itemDrawingFor,
+	itemSheetTier,
+	itemSheetWindows,
 	posable,
 	poseGens,
 	repairGridPlan,
@@ -114,6 +118,7 @@ import {
 	animateAnchoredItem,
 	poseItemClip,
 	regridClip,
+	sheetItemMove,
 	PartialMoveError,
 	type ItemViewTitle,
 	type RepairReview,
@@ -1800,7 +1805,9 @@ export interface MoveSpec {
 	activityScope?: string;
 	dirs?: DirectionName[];
 	approvedDirs?: DirectionName[];
-	itemMethod?: 'grid' | 'anchor';
+	itemMethod?: 'grid' | 'anchor' | 'sheet';
+	/** The sheet route's measured crop cell (itemSheetWindows), priced and reviewed with the offer. */
+	itemSheet?: { w: number; h: number };
 	/** Add a move's choice of how items are later drawn on this move, saved on it: 'default' clears a saved choice so Settings
 	 *  decides; absent (an automatic retry) keeps the saved one. Draws nothing itself. */
 	itemDrawing?: ItemDrawing | 'default';
@@ -2567,43 +2574,58 @@ async function inspectMeasurementRecovery(
  * keeps the body clip and draws only these directions, the same request "Make it" sends). Each move draws the item as
  * itemDrawingFor resolves it, in the views the item has a standing design for: on the move's own frames, or posed as a
  * separate body where the move and the standing view also have the joints posing needs (the Default move's standing views
- * are never drawn). `drawing` is the Settings > Creation default (currentItemDrawing). The user starts them from a priced
- * offer; nothing is queued automatically (credits are real money). */
+ * are never drawn). `drawing` is the Settings > Creation default (currentItemDrawing). The sheet is measured on the loaded
+ * `images`, so without them it is never offered. The user starts them from a priced offer; nothing is queued automatically
+ * (credits are real money). */
 export function missingItemMoves(
 	m: Manifest,
 	itemId: string,
 	drawing: ItemDrawing,
-	seed = 1 + Math.floor(Math.random() * 1_000_000)
+	seed = 1 + Math.floor(Math.random() * 1_000_000),
+	images?: ReadonlyMap<string, Img>,
+	/** Only these views (e.g. those a Move Review accepted), applied before the route is chosen and its sheet measured. */
+	onlyDirs?: readonly DirectionName[]
 ): MoveSpec[] {
 	const item = extendable(m, itemId);
 	if (!item) return [];
 	const { clipDirs } = coverage({ rec: { manifest: m } } as RigCtx);
 	return m.rig.animations
 		.map((a) => {
-			const anchored = itemDrawingFor(m, item, a, drawing) === 'anchor';
-			const drawable = (d: DirectionName) =>
-				a.sources?.[d]?.motion !== 'imported-rest' &&
-				!!item.dressed?.[d] &&
-				(anchored ||
-					(a.sources?.[d]?.keypoints?.length === a.cells &&
-						canPose(m.rig, { anims: [a.id], dirs: [d] })));
-			return {
+			const missing = (clipDirs?.[a.id] ?? []).filter(
+				(d) =>
+					(!onlyDirs || onlyDirs.includes(d)) &&
+					a.sources?.[d]?.motion !== 'imported-rest' &&
+					!!item.dressed?.[d] &&
+					!hasCompleteCells(m, item, a.id, d)
+			);
+			const sheet =
+				images && (a.itemDrawing ?? drawing) === 'sheet'
+					? itemSheetWindows(m, images, item, a.id, missing)?.cell
+					: undefined;
+			const method = itemDrawingFor(
+				m,
+				item,
 				a,
-				anchored,
-				dirs: (clipDirs?.[a.id] ?? []).filter(
-					(d) => drawable(d) && !hasCompleteCells(m, item, a.id, d)
-				)
-			};
+				drawing,
+				missing,
+				sheet && { anim: a.id, cell: sheet, frames: a.cells }
+			);
+			const drawable = (d: DirectionName) =>
+				method !== 'skeleton' ||
+				(a.sources?.[d]?.keypoints?.length === a.cells &&
+					canPose(m.rig, { anims: [a.id], dirs: [d] }));
+			return { a, method, sheet, dirs: missing.filter(drawable) };
 		})
 		.filter(({ dirs }) => dirs.length)
-		.map(({ a, anchored, dirs }) => ({
+		.map(({ a, method, sheet, dirs }) => ({
 			id: a.id,
 			frames: a.cells,
 			items: [item.id],
 			dirs,
 			itemsOnly: true,
 			seed,
-			...(anchored ? { itemMethod: 'anchor' as const } : {})
+			...(method === 'anchor' ? { itemMethod: 'anchor' as const } : {}),
+			...(method === 'sheet' ? { itemMethod: 'sheet' as const, itemSheet: sheet } : {})
 		}));
 }
 export function partialMoveFrameIssue(
@@ -2833,6 +2855,7 @@ export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
 							).map((batch) => batch.tier)
 						)
 					: 0;
+			if (spec.itemMethod === 'sheet') return dirs.length ? itemSheetTier() : 0;
 			const calls =
 				spec.itemMethod === 'anchor'
 					? planAnchoredMove(manifest.rig, item, spec.id, dirs)
@@ -2861,7 +2884,11 @@ export function reviewItemMove(
 			'create.errors.onlyExistingItemFrames'
 		);
 	const dirs = moveDirections(m, spec.dirs);
-	if (spec.itemMethod !== 'anchor' && !canPose(m.rig, { anims: [spec.id], dirs }))
+	if (
+		spec.itemMethod !== 'anchor' &&
+		spec.itemMethod !== 'sheet' &&
+		!canPose(m.rig, { anims: [spec.id], dirs })
+	)
 		throw (
 			unposedMoveIssue(m, spec.id, dirs, redo) ??
 			new LocalizedError(
@@ -2932,11 +2959,15 @@ export function reviewItemMove(
 			dirs: spec.dirs,
 			items: spec.items,
 			itemMethod: spec.itemMethod,
+			itemSheet: spec.itemSheet,
 			preferTierOneRepair: spec.preferTierOneRepair,
 			redrawItem: spec.redrawItem,
-			redrawSlots: spec.redrawItem
-				? items.slice(1).map((item) => requireSlot(m, item.slot))
-				: undefined
+			// The redraw and sheet prompts read the slot (its creative hint and behavior): a change must refuse a resumed request
+			// before it is rebuilt with another identity and paid for again.
+			redrawSlots:
+				spec.redrawItem || spec.itemMethod === 'sheet'
+					? items.slice(1).map((item) => requireSlot(m, item.slot))
+					: undefined
 		}
 	});
 	return { ...spec, itemReview: { gens: moveEstimate(m, spec).items, artwork } };
@@ -3051,6 +3082,11 @@ function unposedViewNote(
 		: [];
 }
 
+/** Item routes whose result waits for the player's review before it saves: their priced review stays on the spec, so a
+ *  resumed request reattaches to the reviewed one and saved-frame recovery can rebuild it. */
+const reviewedItemRoute = (spec: Pick<MoveSpec, 'itemMethod'>) =>
+	spec.itemMethod === 'grid' || spec.itemMethod === 'sheet';
+
 /**
  * Freeze a pose-first or text-rendered body move, then
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
@@ -3157,16 +3193,24 @@ async function addMoveUnlocked(
 	// Saved-frame recovery only reattaches completed equipment requests, never a new or replaced body clip.
 	if (
 		spec.reuseItemFrames &&
-		((spec.itemMethod === 'grid' && !spec.itemReview) ||
-			!spec.itemsOnly ||
-			!existing ||
-			spec.replace)
+		((reviewedItemRoute(spec) && !spec.itemReview) || !spec.itemsOnly || !existing || spec.replace)
 	)
 		throw new LocalizedError(
 			'Saved equipment recovery needs an existing move and its equipment only. No generation was requested.',
 			'create.errors.savedEquipmentRecoveryNeeds'
 		);
-	if (spec.itemMethod === 'anchor') {
+	if (
+		spec.itemMethod === 'sheet' &&
+		(!spec.itemSheet ||
+			!spec.itemReview ||
+			spec.items.length !== 1 ||
+			spec.items.some((id) => {
+				const item = rec.manifest.items.find((i) => i.id === id);
+				return !item || !canSheet(rec.manifest, item, dirs);
+			}))
+	)
+		throw new LocalizedError(ITEM_SHEET_CHANGED, 'itemRoute.errors.itemSheetChanged');
+	if (spec.itemMethod === 'anchor' || spec.itemMethod === 'sheet') {
 		if (
 			!spec.itemsOnly ||
 			!existing ||
@@ -3269,7 +3313,7 @@ async function addMoveUnlocked(
 	const fresh = await loadProject(projectId),
 		frames = fresh.rec.manifest.rig.animations.find((a) => a.id === spec.id)!.cells;
 	assertReview(fresh.rec.manifest);
-	if (spec.itemReview && spec.itemMethod !== 'grid' && !spec.reviewedMoveItems) {
+	if (spec.itemReview && !reviewedItemRoute(spec) && !spec.reviewedMoveItems) {
 		const reviewed = spec.itemReview;
 		delete spec.itemReview;
 		try {
@@ -3412,7 +3456,22 @@ async function addMoveUnlocked(
 				plannedDirs: spec.reuseItemFrames ? dirs : undefined,
 				activityScope: spec.activityScope
 			}).catch(partialSaved);
-		else if (spec.itemMethod === 'grid')
+		else if (spec.itemMethod === 'sheet') {
+			const review = await sheetItemMove(ctx, it, spec.id, plan.dirs, spec.seed, spec.itemSheet!, {
+				savedOnly: spec.reuseItemFrames,
+				activityScope: spec.activityScope,
+				title:
+					plan.dirs.length === 1
+						? itemTitle(ctx.rec.manifest, it)(spec.id, plan.dirs[0])
+						: message('activity.titleItemViews', {
+								item: it.name,
+								move: moveName(spec.id, ctx.rec.manifest.rig.animations),
+								count: plan.dirs.length
+							})
+			});
+			plan.dirs.forEach(tick);
+			return { warnings: [], repairReview: review };
+		} else if (spec.itemMethod === 'grid')
 			for (const d of plan.dirs) {
 				const current = await loadProject(projectId),
 					item = current.rec.manifest.items.find((i) => i.id === plan.id);

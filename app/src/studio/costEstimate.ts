@@ -17,6 +17,7 @@ import {
 	canPose,
 	itemPoseGens,
 	itemDrawingFor,
+	itemSheetLayout,
 	padOf,
 	planAnchoredMove,
 	planGens,
@@ -595,9 +596,11 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		return planGens(plan, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
 	};
 	// Fitting to a move follows itemDrawingFor. A design not made yet is priced as the item it will be: the Items method's
-	// route on the standing views, with a held layer padded when it is posed.
-	const fitMethod = (item: Item, index: number): Method => {
-		if (!posable) return 'anchor';
+	// route on the standing views, with a held layer padded when it is posed. No pixels exist here, so a sheet is planned with
+	// whole frames as its cells: a real crop is never larger, so it never costs more, and a move whose whole-frame sheet
+	// does not fit is planned on the anchored route the offer may fall back to.
+	const sheetCell = rig.cell;
+	const fitMethod = (item: Item, index: number, dirs: DirectionName[]): Method | 'sheet' => {
 		const move =
 			index < c.moves.length
 				? original.rig.animations.find((a) => a.id === c.moves[index].id)
@@ -621,6 +624,10 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 						}
 					]
 				};
+		const frames = framesOf(index);
+		const sheet = { anim: specAt(index).id, cell: sheetCell, frames };
+		if (itemDrawingFor(m, made, move, c.itemDrawing, dirs, sheet) === 'sheet') return 'sheet';
+		if (!posable) return 'anchor';
 		return itemDrawingFor(m, made, move, c.itemDrawing) === 'anchor' ? 'anchor' : 'skel';
 	};
 	const fitCache = new Map<string, number>();
@@ -630,22 +637,25 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		const key = `${item.id}|${move}|${dirs.join()}`;
 		let gens = fitCache.get(key);
 		if (gens === undefined) {
-			const anim = specAt(index).id;
+			const anim = specAt(index).id,
+				method = fitMethod(item, index, dirs);
 			gens =
-				fitMethod(item, index) === 'anchor'
-					? planGens(
-							planAnchoredMove(
-								rig,
-								{
-									standing,
-									dressed: Object.fromEntries(dirs.map((d) => [d, 'sha256:cost' as const]))
-								},
-								anim,
-								dirs
-							),
-							rig.cell
-						)
-					: itemPoseGens(rig, item, anim, framesOf(index), dirs, original);
+				method === 'sheet'
+					? itemSheetLayout(sheetCell, dirs.length, framesOf(index))!.gens
+					: method === 'anchor'
+						? planGens(
+								planAnchoredMove(
+									rig,
+									{
+										standing,
+										dressed: Object.fromEntries(dirs.map((d) => [d, 'sha256:cost' as const]))
+									},
+									anim,
+									dirs
+								),
+								rig.cell
+							)
+						: itemPoseGens(rig, item, anim, framesOf(index), dirs, original);
 			fitCache.set(key, gens);
 		}
 		return gens;

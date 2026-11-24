@@ -2854,6 +2854,12 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		.selectOption('skeleton-v3');
 	const drawing = move.getByRole('combobox', { name: 'Items on this move', exact: true });
 	await expect(drawing.locator('option:checked')).toHaveText('Default (Pose a separate body)');
+	await expect(drawing.locator('option')).toHaveText([
+		'Default (Pose a separate body)',
+		'Draw on move frames',
+		'Pose a separate body',
+		'Draw all views at once'
+	]);
 	await drawing.selectOption('anchor');
 	await page.getByRole('button', { name: /^Generate / }).click();
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });

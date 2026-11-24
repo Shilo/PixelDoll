@@ -307,6 +307,21 @@ describe('cost estimate', () => {
 		expect(posed.item(0).toGo).toBeCloseTo(4 * 3);
 	});
 
+	test('plans an item sheet with whole-frame cells, and anchored when those do not fit: never below what runs', () => {
+		const m = manifest({ cell: 92, directions: FOUR, items: [{ id: 'a' }] });
+		const sheet = characterOf('rig-test', m, { ...defaults, itemDrawing: 'sheet' }),
+			anchor = characterOf('rig-test', m, { ...defaults, itemDrawing: 'anchor' });
+		const seed = { ...firstPass(seedInputs(sheet)), moves: 1 };
+		// Idle, 4 frames: rows of five whole 92 px cells for four views fit one 460 x 368 sheet (25 gens).
+		expect(characterCost(sheet, seed).item(0).toGo).toBeCloseTo(25);
+		// Six frames: seven whole frames are 644 px wide. A real crop may still be too wide (74 px is 518), so the plan is the
+		// anchored route the offer would fall back to, not an estimated sheet.
+		const six = { ...seed, frames: { 0: 6 } };
+		expect(characterCost(sheet, six).item(0).toGo).toBeCloseTo(
+			characterCost(anchor, six).item(0).toGo
+		);
+	});
+
 	test('fits every item to every added move, with nothing to go for saved work', () => {
 		const m = manifest({
 			cell: 92,

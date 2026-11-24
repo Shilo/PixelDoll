@@ -38,7 +38,8 @@
 	const offer = $derived(
 		open && m && it && !pending
 			? clipItemOffer(m, it.id, clip, currentItemDrawing(), {
-					redo: setupRedoMoves(store.exportRecord)
+					redo: setupRedoMoves(store.exportRecord),
+					images: store.project?.images
 				})
 			: null
 	);
