@@ -108,8 +108,8 @@ using UnityEngine;
 namespace PixelDoll
 {
     [Serializable] public class PdActionHip { public int x, y; public bool present; }
-    [Serializable] public class PdActionCell { public bool eligible; public int x, y; public string[] blocked; }
-    [Serializable] public class PdActionPair { public string walk, action, direction; public int upperCells; public PdActionCell[] cells; public PdActionHip[] lowerHip, upperHip; }
+    [Serializable] public class PdActionCell { public bool eligible; public int x, y; }
+    [Serializable] public class PdActionPair { public string walk, action, direction; public int upperCells; public string[] blocked; public PdActionCell[] cells; public PdActionHip[] lowerHip, upperHip; }
     [Serializable] public class PdFrame { public int cell; public int ms; }
     [Serializable] public class PdAnim { public string id; public bool loop; public int cells; public PdFrame[] frames; public string[] directions; }
     [Serializable] public class PdZOverride { public string layer; public int z; public string dir; public string anim; public int cell = -1; }
@@ -182,16 +182,17 @@ namespace PixelDoll
         public void SetActionLayering(bool enabled)
         {
             layerActions = enabled;
-            dirty = true;
-            Sync();
         }
 
         public bool CanLayerAction(string anim, string dir)
         {
             var move = Array.Find(data.animations, a => a.id == anim);
             if (move == null || Array.IndexOf(move.directions, dir) < 0 || !clock || clock.sprite == null) return false;
-            ParsePose(clock.sprite.name, out var walk, out var facing, out var lower);
-            return facing == dir && PairOffset(walk, dir, lower, anim, move.frames[0].cell, HiddenSlots()) != null;
+            ParsePose(clock.sprite.name, out var walk, out var facing, out _);
+            var pair = facing == dir ? ActionPair(walk, dir, anim) : null;
+            if (pair == null) return false;
+            var hidden = HiddenSlots();
+            return !equipped.Exists(e => !hidden.Contains(e.slot) && Array.IndexOf(pair.blocked, Shown(e.item)) >= 0);
         }
 
         public string PlayAction(string anim, string dir)
@@ -212,14 +213,20 @@ namespace PixelDoll
             return actionLayered ? "layered" : "full";
         }
 
-        Vector2Int? PairOffset(string walk, string dir, int lower, string move, int upper, HashSet<string> hidden)
+        PdActionPair ActionPair(string walk, string dir, string move) =>
+            Array.Find(data.actionPairs ?? Array.Empty<PdActionPair>(), p => p.walk == walk && p.action == move && p.direction == dir);
+
+        void CheckActionOutfit()
         {
-            var pair = Array.Find(data.actionPairs ?? Array.Empty<PdActionPair>(), p => p.walk == walk && p.action == move && p.direction == dir);
+            if (action != null && actionLayered) actionLayered = CanLayerAction(action.id, actionDirection);
+        }
+
+        Vector2Int? PairOffset(string walk, string dir, int lower, string move, int upper)
+        {
+            var pair = ActionPair(walk, dir, move);
             if (pair == null) return null;
             var cell = pair.cells[lower * pair.upperCells + upper];
             if (cell == null || !cell.eligible) return null;
-            foreach (var e in equipped)
-                if (!hidden.Contains(e.slot) && Array.IndexOf(cell.blocked, Shown(e.item)) >= 0) return null;
             var lo = pair.lowerHip[lower];
             var hi = pair.upperHip[upper];
             return lo.present && hi.present ? new Vector2Int(lo.x - hi.x + cell.x, lo.y - hi.y + cell.y) : (Vector2Int?)null;
@@ -233,6 +240,7 @@ namespace PixelDoll
             var e = equipped.Find(x => x.slot == slot);
             if (e == null) equipped.Add(e = new PdEquip { slot = slot });
             e.item = itemId ?? "";
+            CheckActionOutfit();
             dirty = true;
             return true;
         }
@@ -256,6 +264,7 @@ namespace PixelDoll
             equipped.Add(new PdEquip { slot = "body", item = data.baseItem });
             variants = new List<PdVariant>();
             foreach (var v in p.variants) variants.Add(new PdVariant { id = v.id, variant = v.variant });
+            CheckActionOutfit();
             dirty = true;
             return true;
         }
@@ -300,24 +309,30 @@ namespace PixelDoll
             ParsePose(s.name, out var anim, out var dir, out var cell);
             var hidden = HiddenSlots();
             foreach (var renderer in upperNodes) renderer.enabled = false;
-            if (action == null) { RenderStack(anim, dir, cell, "", hidden, false, Vector3.zero, 0); return; }
-            var elapsed = actionElapsed;
-            int index = 0;
-            while (index + 1 < action.frames.Length && elapsed >= action.frames[index].ms)
-            {
-                elapsed -= action.frames[index].ms;
-                index++;
-            }
-            int upperCell = action.frames[index].cell;
-            var offset = actionLayered && layerActions && dir == actionDirection
-                ? PairOffset(anim, dir, cell, action.id, upperCell, hidden) : null;
-            if (offset == null) RenderStack(action.id, actionDirection, upperCell, "", hidden, false, Vector3.zero, 0);
+            var visible = new List<(SpriteRenderer renderer, int z, int order)>();
+            if (action == null) RenderStack(visible, anim, dir, cell, "", hidden, false, Vector3.zero);
             else
             {
-                int rank = RenderStack(anim, dir, cell, "lower", hidden, false, Vector3.zero, 0);
-                RenderStack(action.id, actionDirection, upperCell, "upper", hidden, true,
-                    new Vector3(offset.Value.x / data.ppu, -offset.Value.y / data.ppu), rank);
+                var elapsed = actionElapsed;
+                int index = 0;
+                while (index + 1 < action.frames.Length && elapsed >= action.frames[index].ms)
+                {
+                    elapsed -= action.frames[index].ms;
+                    index++;
+                }
+                int upperCell = action.frames[index].cell;
+                var offset = actionLayered && dir == actionDirection
+                    ? PairOffset(anim, dir, cell, action.id, upperCell) : null;
+                if (offset == null) RenderStack(visible, action.id, actionDirection, upperCell, "", hidden, false, Vector3.zero);
+                else
+                {
+                    RenderStack(visible, anim, dir, cell, "lower", hidden, false, Vector3.zero);
+                    RenderStack(visible, action.id, actionDirection, upperCell, "upper", hidden, true,
+                        new Vector3(offset.Value.x / data.ppu, -offset.Value.y / data.ppu));
+                }
             }
+            visible.Sort((a, b) => a.z != b.z ? a.z.CompareTo(b.z) : a.order.CompareTo(b.order));
+            for (int i = 0; i < visible.Count; i++) visible[i].renderer.sortingOrder = i;
         }
 
         static void ParsePose(string name, out string anim, out string dir, out int cell)
@@ -352,10 +367,9 @@ namespace PixelDoll
             return hidden;
         }
 
-        int RenderStack(string anim, string dir, int cell, string part, HashSet<string> hidden, bool upper, Vector3 offset, int first)
+        void RenderStack(List<(SpriteRenderer renderer, int z, int order)> visible, string anim, string dir, int cell, string part, HashSet<string> hidden, bool upper, Vector3 offset)
         {
             string name = anim + "_" + dir + "_" + cell;
-            var visible = new List<(SpriteRenderer renderer, int z, int order)>();
             for (int i = 0; i < nodes.Count; i++)
             {
                 var n = nodes[i];
@@ -369,11 +383,8 @@ namespace PixelDoll
                 renderer.sprite = Recolor(it, sp);
                 if (upper) renderer.transform.localPosition = offset;
                 renderer.enabled = true;
-                visible.Add((renderer, Z(Slot(n.slot), layer, anim, dir, cell), i));
+                visible.Add((renderer, Z(Slot(n.slot), layer, anim, dir, cell), i * 2 + (upper ? 1 : 0)));
             }
-            visible.Sort((a, b) => a.z != b.z ? a.z.CompareTo(b.z) : a.order.CompareTo(b.order));
-            for (int i = 0; i < visible.Count; i++) visible[i].renderer.sortingOrder = first + i;
-            return first + visible.Count;
         }
 
         SpriteRenderer UpperNode(int i)
@@ -698,7 +709,7 @@ Tools > PixelDoll > ${identity} > Import if no prefab appeared.
 Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)}, pivot at the feet),
 <anim>_<dir>.anim clips for supported views, ${unityJson(m).name}.controller and ${unityJson(m).name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
-Call SetActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. CanLayerAction(move, direction) checks the current gait and equipment. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action.
+Call SetActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. CanLayerAction(move, direction) checks the whole action set and equipped gear. Invalid PlayAction calls warn and return an empty string without changing playback. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action.
 
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
 Play preserves an active clip's progress. Calling it again after the same non-looping clip completes replays that clip.

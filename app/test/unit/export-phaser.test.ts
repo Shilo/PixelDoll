@@ -508,7 +508,14 @@ test('Phaser plays a one-shot over its native walk clock, with optional precut s
 		h = sceneHarness(),
 		api = runtime();
 	const walk = m.rig.animations[0];
-	const slash = { ...walk, id: 'slash', frames: [{ cell: 0, ms: 100 }] };
+	const slash = {
+		...walk,
+		id: 'slash',
+		frames: [
+			{ cell: 0, ms: 60 },
+			{ cell: 1, ms: 40 }
+		]
+	};
 	m.rig.animations.push(slash);
 	m.materials = [];
 	for (const item of m.items)
@@ -561,7 +568,13 @@ test('Phaser plays a one-shot over its native walk clock, with optional precut s
 				action: 'slash',
 				direction: 'south',
 				upperCells: 2,
-				cells: [null, null, { x: 2, y: -1, blocked: [] }, null]
+				blocked: ['hat'],
+				cells: [
+					{ x: 0, y: 0 },
+					{ x: 0, y: 0 },
+					{ x: 2, y: -1 },
+					{ x: 2, y: -1 }
+				]
 			}
 		]
 	};
@@ -574,6 +587,25 @@ test('Phaser plays a one-shot over its native walk clock, with optional precut s
 	);
 	doll.setVariants({});
 	doll.equip('hair', null);
+	doll.setActionLayering(false);
+	doll.body.anims.currentFrame.textureFrame = 'walk_south_0';
+	h.scene.events.emit('update', 60, 60);
+	expect(
+		doll.actionNodes
+			.filter((node: { visible: boolean }) => node.visible)
+			.map((node: { frame: string }) => node.frame)
+	).toEqual(expect.arrayContaining(['walk_south_0', 'slash_south_1']));
+	expect(() => doll.playAction('unavailable', 'south')).toThrow('unavailable');
+	h.scene.events.emit('update', 99, 39);
+	expect(doll.action.layered).toBe(true);
+	h.scene.events.emit('update', 100, 1);
+	expect(doll.actionPlaying).toBe(false);
+	doll.setActionLayering(true);
+	expect(doll.playAction('slash', 'south')).toBe('layered');
+	doll.equip('head', 'hat');
+	expect(doll.action.layered).toBe(false);
+	doll.equip('head', null);
+	expect(doll.action.layered).toBe(false);
 	expect(doll.actionPlaying).toBe(true);
 	doll.play('walk', 'south');
 	expect(doll.actionPlaying).toBe(false);

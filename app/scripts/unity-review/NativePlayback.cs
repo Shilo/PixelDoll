@@ -119,9 +119,29 @@ namespace PixelDollNativeReview
             Check(renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_") && r.sprite.name == "jump_south_0"), label + ": upper renderers display the action");
             Check(renderers.Any(r => r.enabled && r.name == "body_fg" && r.sprite.name == "walk_south_1"), label + ": lower renderer displays the current gait");
             Check((string)Invoke(doll, "PlayAction", "missing", "south") == "" && Playing(), label + ": invalid action preserves playback");
+            Invoke(doll, "SetActionLayering", false);
+            var elapsed = doll.GetType().GetField("actionElapsed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var phases = new HashSet<string>();
+            foreach (var ms in new[] { 84, 174, 265, 359 })
+            {
+                elapsed.SetValue(doll, (double)ms);
+                animator.Update(.09f);
+                Invoke(doll, "Sync");
+                phases.Add(clock.sprite.name);
+                Check(Playing() && renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_") && r.sprite.name.StartsWith("jump_south_")), label + ": layered throughout action at " + ms);
+                Check(renderers.Any(r => r.enabled && r.name == "body_fg" && r.sprite.name == clock.sprite.name), label + ": gait still displayed at " + ms);
+            }
+            Check(phases.Count > 1, label + ": layered action crosses gait cells");
+            var walkFrame = clock.sprite.name;
+            var duration = doll.GetType().GetField("actionDuration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            elapsed.SetValue(doll, duration.GetValue(doll));
+            doll.GetType().GetMethod("LateUpdate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(doll, null);
+            Check(!Playing() && clock.sprite.name == walkFrame, label + ": layered action completes without resetting the walk");
+            Invoke(doll, "SetActionLayering", true);
+            Check((string)Invoke(doll, "PlayAction", "jump", "south") == "layered", label + ": starts another layered action");
             Invoke(doll, "Play", "walk", "south");
             Invoke(doll, "Sync");
-            Check(!Playing() && clock.sprite.name == "walk_south_1", label + ": Play cancels the action without resetting the walk");
+            Check(!Playing() && clock.sprite.name == walkFrame, label + ": Play cancels the action without resetting the walk");
         }
 
         /// The fixture's one-cell State has a magenta center block that no Move cell has; the hat layer is read because it is not recolored.

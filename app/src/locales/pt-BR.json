@@ -1173,6 +1173,8 @@
 			"playbackSetInMove": "Definido na animação",
 			"dressed": "Incluir folhas do personagem equipado",
 			"dressedHint": "Adiciona folhas de sprites em PNG para o visual atual e cada traje salvo, com o corpo e os itens equipados juntos. As camadas separadas sempre são incluídas, exceto nas folhas para RPG Maker, que sempre combinam as camadas.",
+			"actionLayers": "Camadas de ataque em movimento",
+			"actionLayersHint": "Adiciona ao ZIP partes do corpo para ataques compatíveis durante a caminhada. Usa as configurações de movimento e cintura da vista ao vivo, mesmo se os ataques em movimento estiverem desativados lá.",
 			"format": "Formato de exportação",
 			"defaultTarget": "Destino padrão de exportação",
 			"openCharacter": "Exportar o personagem {name}",
@@ -3504,7 +3506,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Caminhar enquanto ataca",
-		"layeringHelp": "Usa o ataque acima da cintura e a caminhada abaixo. As duas animações precisam ter a mesma direção e encaixar no quadril. Se não encaixarem, o ataque completo é reproduzido. Atacar a pé no chão reduz um pouco a velocidade de movimento.",
+		"layeringHelp": "Combina a parte superior do ataque com as pernas da caminhada quando as poses se encaixam. Capas e casacos longos podem ficar estranhos. Ataques a pé no chão usam 80% da velocidade normal.",
 		"waist": "Cintura",
 		"automaticWaist": "Automático",
 		"waistHelp": "Move a junção até 4 pixels para cima ou para baixo. O modo automático usa a posição do quadril em cada quadro.",

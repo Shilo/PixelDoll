@@ -1170,6 +1170,8 @@
 			"playbackSetInMove": "In der Animation festgelegt",
 			"dressed": "Angezogene Figur als Spritesheets exportieren",
 			"dressedHint": "Fügt PNG-Spritesheets für deinen aktuellen Look und jedes gespeicherte Outfit hinzu, jeweils mit Grundkörper und angelegten Gegenständen in einem Bild. Separate Ebenen sind immer dabei, außer bei RPG Maker: Dort sind alle Ebenen zusammengefasst.",
+			"actionLayers": "Ebenen für Laufangriffe",
+			"actionLayersHint": "Fügt dem ZIP Körperteile für kompatible Laufangriffe hinzu. Verwendet die Live-Einstellungen für Bewegungen und Taille, auch wenn Laufangriffe dort aus sind.",
 			"format": "Exportformat",
 			"defaultTarget": "Standard-Exportziel",
 			"openCharacter": "Charakter {name} exportieren",
@@ -3492,7 +3494,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Beim Angriff weiterlaufen",
-		"layeringHelp": "Verwendet den Angriff oberhalb der Taille und die Gehbilder darunter. Beide Animationen müssen in dieselbe Richtung zeigen und an der Hüfte zusammenpassen. Sonst wird der ganze Angriff abgespielt. Angriffe zu Fuß am Boden verlangsamen die Bewegung etwas.",
+		"layeringHelp": "Kombiniert den Oberkörper des Angriffs mit den Beinen der Gehbewegung, wenn die Posen zusammenpassen. Umhänge und lange Mäntel können ungewöhnlich aussehen. Bei Angriffen zu Fuß am Boden beträgt das Tempo 80 % des normalen Tempos.",
 		"waist": "Taille",
 		"automaticWaist": "Automatisch",
 		"waistHelp": "Verschiebt den Übergang um bis zu 4 Pixel nach oben oder unten. Automatisch verwendet die Hüftposition jedes Einzelbilds.",

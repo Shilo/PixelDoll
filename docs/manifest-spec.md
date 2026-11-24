@@ -1045,9 +1045,9 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 
 ### 6.9 Optional moving-action fragments
 
-Phaser, GDevelop, Godot and Unity exports can include data for the character’s selected Walk and Attack clips. Each layer’s optional `actionSheets.lower` and `actionSheets.upper` map move IDs to source-color PNG sheets. Rows, columns and pivots are identical to the corresponding original layer. The manifest’s `actionLayers.planes` stores integer x/y hip coordinates per direction and cell for each fragment type.
+The Export checkbox **Moving attack layers** is off by default and independent of the Live switch. Enabled Phaser, GDevelop, Godot and Unity exports use the character's Live Walk, Attack and Waist settings. Optional `actionSheets.lower` and `actionSheets.upper` map moves to the new `action/` body PNGs or to existing source-color equipment sheets. Rows, columns and pivots match the original layer. `actionLayers.planes` stores integer hip registration coordinates by direction and cell.
 
-Each `actionLayers.pairs` entry identifies the Walk, Attack and shared direction. The compact cell array is row-major by Walk cell then Attack cell. A null entry indicates an ineligible seam. Other entries contain the integer correction to add to the hip difference and the item IDs that lose artwork with that correction. The controller uses the full attack pose if the available frame pair or visible gear fails this gate. See the [controller contract](architecture/javascript-runtime.md#one-shot-actions-over-a-loop).
+Each `actionLayers.pairs` entry is a set that passed the geometry and seam gate for all reachable cells of the Walk, Attack and shared direction. Its `blocked` IDs are items without drawable art on their required clip. The `cells` array is row-major by Walk cell then Attack cell. Unused combinations are null; the rest contain the integer correction to add to the hip difference. This optional data is rebuilt with the same archive, not separately versioned or updated in place. Re-export when the source art, timing, or Waist setting changes. See the [controller contract](architecture/javascript-runtime.md#one-shot-actions-over-a-loop).
 
 
 ## 7. Editable import copy

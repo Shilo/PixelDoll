@@ -3,7 +3,6 @@ import {
 	bakedFrame,
 	composeCell,
 	composeLayeredAction,
-	actionLowerSlot,
 	equipped,
 	hiddenSlots,
 	shownItems,
@@ -755,25 +754,16 @@ export function renderPresentation(
 	const actualCell = cells.includes(cell) ? cell : cells[0];
 	if (lower?.pose.direction && lower.pose.clip) {
 		const walk = { clip: lower.pose.clip, direction: lower.pose.direction, cell: lower.cell };
-		const missingGear = worn.some(
-			(item) =>
-				item.id !== m.rig.baseItem &&
-				!hidden.has(item.slot) &&
-				(actionLowerSlot(item.slot)
-					? !a.complete(item, walk.clip, walk.direction, [walk.cell])
-					: !a.complete(item, clip, direction, [actualCell]))
+		const layered = composeLayeredAction(
+			p,
+			items,
+			walk,
+			{ clip, direction, cell: actualCell },
+			lower.waist,
+			result.frame
 		);
-		const layered = missingGear
-			? { image: null, fallback: 'gear-loss' }
-			: composeLayeredAction(
-					p,
-					items,
-					walk,
-					{ clip, direction, cell: actualCell },
-					lower.waist,
-					result.frame
-				);
 		result.image = layered.image;
+		result.frame = layered.frame;
 		result.attackLayered = !!layered.image;
 		result.attackFallback = layered.fallback ?? undefined;
 		if (layered.image) {

@@ -193,7 +193,15 @@ func is_action_playing() -> bool:
 
 func can_layer_action(a: String, d: String) -> bool:
 	var move := _find(manifest["rig"]["animations"], a)
-	return not move.is_empty() and not _pair_offset(a, d, int(move["frames"][0]["cell"])).is_empty()
+	if move.is_empty() or dir != d or (move.has("directions") and not move["directions"].has(d)):
+		return false
+	var pair := _action_pair(a, d)
+	if pair.is_empty():
+		return false
+	for slot in equipped:
+		if not _hidden.has(slot) and pair["blocked"].has(_shown(slot)):
+			return false
+	return true
 
 
 func play_action(a: String, d: String) -> String:
@@ -225,21 +233,24 @@ func _process(delta: float) -> void:
 	_sync()
 
 
+func _action_pair(a: String, d: String) -> Dictionary:
+	for pair in manifest.get("actionLayers", {}).get("pairs", []):
+		if pair["walk"] == anim and pair["action"] == a and pair["direction"] == d:
+			return pair
+	return {}
+
+
 func _pair_offset(a: String, d: String, action_cell: int) -> Dictionary:
 	if anim.is_empty() or dir != d:
 		return {}
 	var frames: Array = _find(manifest["rig"]["animations"], anim)["frames"]
 	var cell := int(frames[mini(body.frame, frames.size() - 1)]["cell"])
 	var layers: Dictionary = manifest.get("actionLayers", {})
-	for pair in layers.get("pairs", []):
-		if pair["walk"] != anim or pair["action"] != a or pair["direction"] != d:
-			continue
+	var pair := _action_pair(a, d)
+	if not pair.is_empty():
 		var record: Variant = pair["cells"][cell * int(pair["upperCells"]) + action_cell]
 		if record == null:
 			return {}
-		for slot in equipped:
-			if not _hidden.has(slot) and record["blocked"].has(_shown(slot)):
-				return {}
 		var lo := _action_hip(layers, anim, "lower", d, cell)
 		var hi := _action_hip(layers, a, "upper", d, action_cell)
 		if lo.is_empty() or hi.is_empty():
@@ -265,13 +276,14 @@ func _render_action() -> void:
 		elapsed -= float(frames[index]["ms"])
 		index += 1
 	var a: String = _action["id"]
-	var offset := _pair_offset(a, _action_dir, int(frames[index]["cell"])) if _action_layered and _layer_actions else {}
+	var offset := _pair_offset(a, _action_dir, int(frames[index]["cell"])) if _action_layered else {}
 	var draws: Array = []
 	if offset.is_empty():
 		_action_stack(draws, a, _action_dir, index, "", Vector2.ZERO)
 	else:
 		_action_stack(draws, anim, dir, body.frame, "lower", Vector2.ZERO)
 		_action_stack(draws, a, _action_dir, index, "upper", Vector2(offset["x"], offset["y"]))
+	draws.sort_custom(func(x, y): return x["z"] < y["z"] if x["z"] != y["z"] else x["order"] < y["order"])
 	var start := maxi(-4096, mini(0, 4097 - draws.size()))
 	for i in draws.size():
 		if i >= _action_nodes.size():
@@ -289,10 +301,11 @@ func _render_action() -> void:
 
 
 func _action_stack(draws: Array, a: String, d: String, index: int, part: String, pos: Vector2) -> void:
-	var stack: Array = []
 	var move := _find(manifest["rig"]["animations"], a)
 	var cell := int(move["frames"][index]["cell"])
-	for node in _layers():
+	var nodes := _layers()
+	for order in nodes.size():
+		var node: Node = nodes[order]
 		var slot: String = node.get_meta("slot")
 		if _hidden.has(slot):
 			continue
@@ -301,13 +314,12 @@ func _action_stack(draws: Array, a: String, d: String, index: int, part: String,
 			continue
 		var frames := _colored_frames(_find(manifest["items"], _shown(slot)), layer, part)
 		var pv: Dictionary = layer.get("pivot", manifest["rig"]["pivot"])
-		stack.append({
+		var slot_order: int = manifest["slots"].find(_find(manifest["slots"], slot))
+		draws.append({
 			"texture": frames.get_frame_texture("%s_%s" % [a, d], index),
 			"pivot": -Vector2(pv["x"], pv["y"]),
-			"position": pos, "z": _z(slot, layer, cell, a, d), "order": stack.size()
+			"position": pos, "z": _z(slot, layer, cell, a, d), "order": slot_order * 4 + int(layer["role"] != "bg") * 2 + int(part == "upper")
 		})
-	stack.sort_custom(func(x, y): return x["z"] < y["z"] if x["z"] != y["z"] else x["order"] < y["order"])
-	draws.append_array(stack)
 
 
 ## Equips item_id in slot ("" = empty), then re-applies hides.
@@ -407,6 +419,8 @@ func _refresh() -> void:
 			for h in hides[slot]:
 				hidden[h] = true
 	_hidden = hidden
+	if _action_layered and is_action_playing():
+		_action_layered = can_layer_action(_action["id"], _action_dir)
 	for node in _layers():
 		var layer := _layer_of(node)
 		node.visible = not layer.is_empty() and not hidden.has(node.get_meta("slot"))
@@ -594,7 +608,7 @@ export function godotFiles(m: Manifest): OutFile[] {
 		name: 'godot/README.txt',
 		data: `Copy the whole export folder into your Godot 4 project, then instance godot/Paperdoll.tscn.
 API: play_anim(anim, dir, restart = false), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
-Call set_action_layering(true) to enable moving attacks when the ZIP contains precut fragments. can_layer_action(move, direction) checks the current gait and equipment. play_action(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Call is_action_playing() to check completion. Calling play_anim cancels the action.
+Call set_action_layering(true) to enable moving attacks when the ZIP contains precut fragments. can_layer_action(move, direction) checks the whole action set and equipped gear. Invalid play_action calls warn and return an empty string without changing playback. play_action(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Call is_action_playing() to check completion. Calling play_anim cancels the action.
 
 play_anim preserves active progress, starts changed moves/directions at the beginning and replays completed once-only clips. Pass true to restart explicitly.
 These methods return true on success; invalid move/direction, equipment, outfit or material IDs return false and emit an engine warning before changing state.

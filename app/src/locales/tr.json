@@ -1170,6 +1170,8 @@
 			"playbackSetInMove": "Animasyonda ayarlanır",
 			"dressed": "Giydirilmiş karakter sayfalarını dahil edin",
 			"dressedHint": "Gövdeyi ve giyili eşyaları birleştirerek mevcut görünümün ve her kayıtlı kıyafetin PNG sprite sayfasını ekler. Sayfaları her zaman birleşik olan RPG Maker dışında ayrı katmanlar da her zaman dahil edilir.",
+			"actionLayers": "Hareketli saldırı katmanları",
+			"actionLayersHint": "Uyumlu yürüyüş saldırıları için gövde parçalarını ZIP dosyasına ekler. Canlı görünümde hareketli saldırılar kapalı olsa bile oradaki hareket ve bel ayarlarını kullanır.",
 			"format": "Dışa aktarım biçimi",
 			"defaultTarget": "Varsayılan dışa aktarma hedefi",
 			"openCharacter": "{name} karakterini dışa aktar",
@@ -3492,7 +3494,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Saldırırken yürü",
-		"layeringHelp": "Belin üstünde saldırı, altında yürüyüş kareleri kullanılır. İki animasyon aynı yöne bakmalı ve kalçada hizalanmalıdır. Hizalanmazsa saldırı animasyonunun tamamı oynatılır. Yerde ve yaya saldırırken hareket biraz yavaşlar.",
+		"layeringHelp": "Pozlar uyumluysa saldırının üst gövdesini yürüyüşün bacaklarıyla birleştirir. Pelerinler ve uzun paltolar tuhaf görünebilir. Yerde, yaya olarak saldırırken normal hızın %80’iyle ilerlersiniz.",
 		"waist": "Bel",
 		"automaticWaist": "Otomatik",
 		"waistHelp": "Birleşim çizgisini 4 piksele kadar yukarı veya aşağı kaydırır. Otomatik mod her karedeki kalça konumunu kullanır.",

@@ -159,7 +159,8 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 				action: 'stop',
 				direction: 'south',
 				upperCells: 2,
-				cells: [{ x: 1, y: 0, blocked: [] }, null, { x: 1, y: 0, blocked: [] }, null]
+				blocked: [],
+				cells: Array.from({ length: 4 }, () => ({ x: 1, y: 0 }))
 			}
 		]
 	};
@@ -171,10 +172,19 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 	expect(d.playAction('stop', 'south')).toBe('layered');
 	expect([...d.nodes.keys()]).toContain('upper' + names.base.main);
 	expect(() => d.playAction('invalid', 'south')).toThrow('unavailable');
+	for (const delta of [50, 50, 19]) {
+		d.update(delta);
+		expect(d.nodes.get('lower' + names.base.main).hidden).toBe(false);
+		expect(d.nodes.get('upper' + names.base.main).hidden).toBe(false);
+	}
+	expect(d.cell).toBe(1);
 	expect(d.actionPlaying).toBe(true);
+	d.update(1);
+	expect(d.actionPlaying).toBe(false);
+	expect(d.playAction('stop', 'south')).toBe('layered');
 	d.play('walk', 'south');
 	expect(d.actionPlaying).toBe(false);
-	expect(d.elapsed).toBe(160);
+	expect(d.elapsed).toBe(280);
 	d.destroy();
 	expect(d.nodes.size).toBe(0);
 	expect(second.nodes.size).toBeGreaterThan(0);

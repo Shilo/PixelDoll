@@ -24,8 +24,9 @@ export interface ActionLayers {
 		action: string;
 		direction: DirectionName;
 		upperCells: number;
+		blocked: string[];
 		/** Row-major by lower cell and then upper cell. A cell stores the fit correction after subtracting hip anchors. */
-		cells: ({ x: number; y: number; blocked: string[] } | null)[];
+		cells: ({ x: number; y: number } | null)[];
 	}[];
 }
 

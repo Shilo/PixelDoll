@@ -39,11 +39,11 @@ ${Object.values(runtimeSources)
     d.anim = a; d.dir = dir; d.sync(); return d;
   };
   Object.defineProperty(d, 'actionPlaying', { get: () => d.action !== null });
-  d.setActionLayering = (enabled) => { d.layerActions = !!enabled; d.sync(); };
+  d.setActionLayering = (enabled) => { d.layerActions = !!enabled; };
   d.canLayerAction = (anim, dir) => {
     const move = m.rig.animations.find((a) => a.id === anim);
     return !!(move && available(move).includes(dir) && d.anim && d.dir === dir &&
-      exportedActionOffset(m, d.equipped, d.anim.id, dir, sampleTimeline(d.anim.frames, d.elapsed, d.anim.loop), anim, move.frames[0].cell));
+      canExportLayerAction(m, d.equipped, d.anim.id, dir, anim));
   };
   d.playAction = (anim, dir) => {
     const move = m.rig.animations.find((a) => a.id === anim);
@@ -53,14 +53,17 @@ ${Object.values(runtimeSources)
     d.sync();
     return layered ? 'layered' : 'full';
   };
+  const checkActionOutfit = () => {
+    if (d.action?.layered) d.action.layered = d.canLayerAction(d.action.move.id, d.action.dir);
+  };
   d.equip = (slot, id) => {
     if (slot === 'body' || !validEquipment(m, slot, id)) throw new Error('PixelDoll: invalid equipment for ' + slot);
-    d.equipped[slot] = id; d.sync(); return d;
+    d.equipped[slot] = id; checkActionOutfit(); d.sync(); return d;
   };
   d.setVariants = (variants) => { d.variants = { ...variants }; d.sync(); return d; };
   d.applyPreset = (preset) => {
     const resolved = resolvePreset(m, preset);
-    d.equipped = resolved.items; return d.setVariants(resolved.variants);
+    d.equipped = resolved.items; checkActionOutfit(); return d.setVariants(resolved.variants);
   };
   const texture = (resource, map) => {
     const manager = scene.getGame().getImageManager();
@@ -89,7 +92,7 @@ ${Object.values(runtimeSources)
     const action = d.action;
     const draws = action ? exportedActionDraws(m, d.equipped,
       { clip: action.move.id, direction: action.dir, cell: sampleTimeline(action.move.frames, action.elapsed, false) },
-      pose, action.layered && d.layerActions)
+      pose, action.layered)
       : drawList(m, d.equipped, a.id, d.dir, d.cell).map((draw) => ({ ...draw, ...pose, part: null, point: { x: 0, y: 0 } }));
     for (const draw of draws) {
       const { item, layer: l, clip, direction, cell, part, point } = draw;
@@ -333,7 +336,7 @@ export function gdevelopFiles(m: Manifest, sheets: Map<string, Img>): OutFile[] 
 	files.push({ name: 'gdevelop/Paperdoll.js', data: eventCode + '\n' });
 	files.push({
 		name: 'gdevelop/README.txt',
-		data: `GDevelop 5.6.285+ native project\n\nOpen game.json in GDevelop, then Preview. Every item layer is a native Sprite object with registered individual PNG frames and a shared pivot origin. One JavaScript event drives exact frame timing and equipment; Paperdoll.js is a readable copy already embedded in the event (do not run it twice).\n\nExisting project: copy all Sprite objects from this scene, copy the PixelDoll JavaScript event into your destination scene, and copy images/ alongside its project file (preserve registered resource paths). GDevelop's object copy imports resources; check Resources for missing files before preview/export. Place the event before events using the controller. Keep all objects/resources, including unequipped items.\n\nIn a later JavaScript event:\n  const library = runtimeScene[${JSON.stringify(namespace)}];\n  const doll = library.dolls[0];\n  doll.x = 320; doll.y = 240; // position is the shared pivot\n  doll.play(moveId, directionId); // preserves active progress; true as third argument restarts\n  doll.equip(slotId, itemId); // null unequips; body is protected\n  doll.applyPreset(outfitId); // stored preset id or preset object\n  doll.setVariants({ materialId: "storedVariantId" });\n  const second = library.create(400, 240); // independently equipped/recolored\n  doll.layer = ""; doll.z = 0; // scene layer and first consecutive layer z rank\n  doll.destroy();\n\nCall setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. canLayerAction(move, direction) checks the current gait and equipment. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action.\n\nplay preserves active progress, starts changed moves/directions at the beginning and replays completed once-only clips. Invalid move/direction, equipment and outfit IDs throw before changing state; null unequips non-body slots. setVariants replaces explicit selections: omitted keys or null restore material defaults, while an empty-string selection uses source colors. Linked materials follow the target selection.\n\nThe embedded event updates every doll once per scene frame; do not call update again. Reserve enough consecutive z values for each doll's visible layers. Source palette pixels remain immutable; recolored PIXI textures belong to each doll and are released by destroy(). Native JavaScript events use GDevelop's PIXI renderer; 2D Canvas/WebGL texture rendering, exact RGB palette ramps, linked defaults, outfit colors, hides, baked tuck variants, per-cell z overrides and variable/repeated-frame timelines are preserved. Non-looping clips stop on their last frame.\n\nSprite collision masks cover individual layers; use a separate gameplay collision object for the character body. Native Sprite/resource/library identities include a stable 16-hex character key derived from its name and frozen base hash. Different characters with the same item IDs can coexist; importing the same name/base export again replaces that library. Create multiple doll instances with library.create(). Image filenames are short for Windows extraction. Generated Sprite names encode item/layer IDs to prevent user-name collisions. No extension installation or network request is needed.\n`
+		data: `GDevelop 5.6.285+ native project\n\nOpen game.json in GDevelop, then Preview. Every item layer is a native Sprite object with registered individual PNG frames and a shared pivot origin. One JavaScript event drives exact frame timing and equipment; Paperdoll.js is a readable copy already embedded in the event (do not run it twice).\n\nExisting project: copy all Sprite objects from this scene, copy the PixelDoll JavaScript event into your destination scene, and copy images/ alongside its project file (preserve registered resource paths). GDevelop's object copy imports resources; check Resources for missing files before preview/export. Place the event before events using the controller. Keep all objects/resources, including unequipped items.\n\nIn a later JavaScript event:\n  const library = runtimeScene[${JSON.stringify(namespace)}];\n  const doll = library.dolls[0];\n  doll.x = 320; doll.y = 240; // position is the shared pivot\n  doll.play(moveId, directionId); // preserves active progress; true as third argument restarts\n  doll.equip(slotId, itemId); // null unequips; body is protected\n  doll.applyPreset(outfitId); // stored preset id or preset object\n  doll.setVariants({ materialId: "storedVariantId" });\n  const second = library.create(400, 240); // independently equipped/recolored\n  doll.layer = ""; doll.z = 0; // scene layer and first consecutive layer z rank\n  doll.destroy();\n\nCall setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action.\n\nplay preserves active progress, starts changed moves/directions at the beginning and replays completed once-only clips. Invalid move/direction, equipment and outfit IDs throw before changing state; null unequips non-body slots. setVariants replaces explicit selections: omitted keys or null restore material defaults, while an empty-string selection uses source colors. Linked materials follow the target selection.\n\nThe embedded event updates every doll once per scene frame; do not call update again. Reserve enough consecutive z values for each doll's visible layers. Source palette pixels remain immutable; recolored PIXI textures belong to each doll and are released by destroy(). Native JavaScript events use GDevelop's PIXI renderer; 2D Canvas/WebGL texture rendering, exact RGB palette ramps, linked defaults, outfit colors, hides, baked tuck variants, per-cell z overrides and variable/repeated-frame timelines are preserved. Non-looping clips stop on their last frame.\n\nSprite collision masks cover individual layers; use a separate gameplay collision object for the character body. Native Sprite/resource/library identities include a stable 16-hex character key derived from its name and frozen base hash. Different characters with the same item IDs can coexist; importing the same name/base export again replaces that library. Create multiple doll instances with library.create(). Image filenames are short for Windows extraction. Generated Sprite names encode item/layer IDs to prevent user-name collisions. No extension installation or network request is needed.\n`
 	});
 	return files;
 }

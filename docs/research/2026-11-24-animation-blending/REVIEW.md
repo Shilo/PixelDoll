@@ -71,3 +71,17 @@ Required fix: decide layering once per action. A walk/action/facing set is eligi
 2. Address the below-waist limb erasure and the small-component cleanup or scope approval to the actions where it cannot happen.
 3. Align the mirrored hip convention, document the invalid sentinel, and test it in all four controllers.
 4. Re-run the checks and report: gate set verdicts, the playback test, the four controller tests, and a real-cadence visual check of at least one complete layered action.
+
+## Round 3: fixes verified
+
+The fix round accepted the blocker and the major findings. I re-read the changed runtime, Live path, exporters and tests, and ran the checks myself:
+
+- `npm run check` passed.
+- `npm test -- live-layering export-phaser gdevelop-export godot-export unity-export runtime` passed 73 tests, 2 Godot opt-ins skipped without `GODOT_BIN`.
+- `npm run e2e -- experience-parity -g "Walk while attacking layers tracked frames"` passed.
+- I wrote a temporary Playwright capture against the same bodyA injection the E2E uses, drove real frames, and sampled every `cross-punch` frame for three action cycles: 18 of 18 action frames stayed `layered=true`, with walk cells changing underneath. The test was deleted after the run; the screenshots remain in [evidence/live](evidence/live/16-layered-action-0.png).
+- Visual check of the captured frames at 1440x900: no third hand, no missing arm, the seam sits under the shirt, the walking legs keep stepping, and the body does not visibly bob or shrink mid-action. The raised-arm and recovery frames both read as a walking slash.
+- The fallback capture hit a character with no east attack art, so it showed the missing-direction notice rather than a full-body fallback. That specific visual path is still unverified.
+- Gate verdicts after the fixes: bodyA South pass at 4/3, North pass at 3/2, East fail at 6/3. The stock demo has no tracked hips and falls back.
+
+Remaining gaps are test coverage and unverified environments, not known behavior defects: the outfit downgrade has explicit tests only in Phaser and Godot; Live, GDevelop and Unity lack that assertion; long coats, diagonals, eight directions, real-cadence foot slide and the Unity verifier on this exact commit are unverified. Opus should confirm or refute that these are non-blocking.

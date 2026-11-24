@@ -1170,6 +1170,8 @@
 			"playbackSetInMove": "Se define en la animación",
 			"dressed": "Incluir hojas de sprites del personaje vestido",
 			"dressedHint": "Agrega hojas de sprites PNG de tu look actual y de cada atuendo guardado, con el cuerpo y los objetos puestos combinados. Las capas separadas siempre se incluyen, salvo en las hojas de RPG Maker, que siempre van combinadas.",
+			"actionLayers": "Capas de ataque en movimiento",
+			"actionLayersHint": "Añade al ZIP fragmentos del cuerpo para ataques compatibles al caminar. Usa los ajustes de movimiento y cintura de la vista en vivo, aunque allí estén desactivados.",
 			"format": "Formato de exportación",
 			"defaultTarget": "Destino de exportación predeterminado",
 			"openCharacter": "Exportar el personaje {name}",
@@ -3495,7 +3497,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Caminar mientras atacas",
-		"layeringHelp": "Usa el ataque por encima de la cintura y la caminata por debajo. Las dos animaciones deben mirar en la misma dirección y encajar en la cadera. Si no encajan, se reproduce el ataque completo. Los ataques a pie en el suelo reducen un poco la velocidad.",
+		"layeringHelp": "Combina el torso del ataque con las piernas de la caminata si las poses encajan. Las capas y los abrigos largos pueden verse raros. Al atacar a pie en el suelo, te mueves al 80 % de la velocidad normal.",
 		"waist": "Cintura",
 		"automaticWaist": "Automático",
 		"waistHelp": "Desplaza la unión hasta 4 píxeles hacia arriba o abajo. El modo automático usa la posición de la cadera en cada fotograma.",

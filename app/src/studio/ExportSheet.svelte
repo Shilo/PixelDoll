@@ -156,7 +156,9 @@
 	let preferences = $state.raw<ExportSettings | null>(null);
 	let savedProjects = $state.raw<StoredProject[]>([]);
 	let formatChoice = $state<Engine | null>(null);
+	let includeActionLayers = $state(false);
 	const engine = $derived(formatChoice ?? preferences?.engine ?? DEFAULT_EXPORT_ENGINE);
+	const supportsActionLayers = $derived(['phaser', 'gdevelop', 'godot', 'unity'].includes(engine));
 	const selected = $derived(
 		engine === 'rpgmakerxp' ? RPG_XP : ENGINES.find((target) => target.id === engine)
 	);
@@ -532,13 +534,14 @@
 		const snapshot = { ...p, manifest: structuredClone(p.manifest) };
 		const layering = currentLiveLayering(doc.id);
 		const clips = currentLiveClips(doc.id, snapshot.manifest.rig.animations);
-		const actionLayering = layering.on
-			? {
-					waist: layering.waist,
-					walk: clips.walk.slice(0, 1),
-					attacks: [...clips.attack, ...clips.attackUp, ...clips.attackDown]
-				}
-			: undefined;
+		const actionLayering =
+			includeActionLayers && supportsActionLayers
+				? {
+						waist: layering.waist,
+						walk: clips.walk.slice(0, 1),
+						attacks: [...clips.attack, ...clips.attackUp, ...clips.attackDown]
+					}
+				: undefined;
 		let stale = false;
 		void (async () => {
 			const qa = rec?.rigQa as { clips?: Record<string, { fails?: unknown }> } | undefined;
@@ -939,6 +942,22 @@
 								slots={{ name: engineName }}
 							/>
 						</p>{/if}
+					{#if supportsActionLayers}
+						<div class="export-dressed">
+							<label class="check">
+								<input
+									type="checkbox"
+									bind:checked={includeActionLayers}
+									disabled={saving || !ready}
+									aria-describedby="export-action-layers-description"
+								/>
+								<span class="settings-label">{t('export.settings.actionLayers')}</span>
+							</label>
+							<p class="bu-muted settings-description" id="export-action-layers-description">
+								{t('export.settings.actionLayersHint')}
+							</p>
+						</div>
+					{/if}
 					{#if walks.length > 1}<label class="field"
 							><span class="label small">{t('export.settings.walkMove')}</span><select
 								class="bu-input input"

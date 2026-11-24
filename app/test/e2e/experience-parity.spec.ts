@@ -12,7 +12,7 @@ import { focalSlot, pickFacings } from '../../src/studio/experience/lineup.ts';
 import { DIRECTIONS, type DirectionName } from '../../src/lib/rig/rig.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
-import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
+import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
@@ -4232,36 +4232,33 @@ test.describe('live views actions', () => {
 	test('Walk while attacking layers tracked frames and keeps the on-foot speed factor in full mode', async ({
 		page
 	}) => {
+		const bench = new URL('../fixtures/bench/', import.meta.url);
+		const body = JSON.parse(await readFile(new URL('bodyA.json', bench), 'utf8'));
+		const atlas = await decodePngBytes(await readFile(new URL('bodyA.png', bench)));
+		const clips = { walk: 'walk', 'cross-punch': 'slash' } as const;
+		for (const [clip, sourceClip] of Object.entries(clips)) {
+			await page.route(`**/fixtures/s2/layers/body/base/main/${clip}.png*`, async (route) => {
+				const response = await route.fetch();
+				const sheet = await decodePngBytes(await response.body());
+				const start = body.cols.indexOf(`${sourceClip}/0`) * 64;
+				for (let row = 0; row < 64; row++) {
+					const offset = (row * atlas.w + start) * 4;
+					sheet.data.set(atlas.data.subarray(offset, offset + sheet.w * 4), row * sheet.w * 4);
+				}
+				await route.fulfill({ response, body: Buffer.from(await encodePngBytes(sheet)) });
+			});
+		}
 		await page.route('**/fixtures/s2/fixture.json*', async (route) => {
 			const response = await route.fetch();
 			const fixture = await response.json();
 			fixture.presets = [fixture.presets[1]];
-			fixture.rig.anchors = {
-				hip: {
-					walk: {
-						south: [
-							[32, 44],
-							[32, 43],
-							[32, 43],
-							[32, 43],
-							[32, 43],
-							[32, 43],
-							[33, 43],
-							[33, 43]
-						]
-					},
-					'cross-punch': {
-						south: [
-							[34, 46],
-							[34, 46],
-							[33, 46],
-							[34, 45],
-							[34, 46],
-							[32, 46]
-						]
-					}
-				}
-			};
+			for (const [clip, sourceClip] of Object.entries(clips)) {
+				const move = fixture.rig.animations.find(({ id }: { id: string }) => id === clip);
+				const source = body.rig.animations.find(({ id }: { id: string }) => id === sourceClip);
+				move.sources = {
+					south: { keypoints: source.sources.south.keypoints.slice(0, move.cells) }
+				};
+			}
 			await route.fulfill({ response, json: fixture });
 		});
 		await customize(page);
@@ -4270,15 +4267,25 @@ test.describe('live views actions', () => {
 		const attackFrame = async (layered: string, reason: string) => {
 			await host.evaluate((element) => {
 				const host = element as HTMLElement & {
-					recordedRates?: { clip?: string; scale?: string; walk?: string }[];
+					recordedRates?: {
+						clip?: string;
+						scale?: string;
+						walk?: string;
+						attackLayered?: string;
+					}[];
 					stopRateObserver?: () => void;
 				};
 				const frames: NonNullable<typeof host.recordedRates> = (host.recordedRates = []);
 				const observer = new MutationObserver(() => {
-					const { clip, attackTravelScale: scale, walkCell: walk } = element.dataset;
+					const { clip, attackTravelScale: scale, walkCell: walk, attackLayered } = element.dataset;
 					const last = frames.at(-1);
-					if (last?.clip !== clip || last?.scale !== scale || last?.walk !== walk)
-						frames.push({ clip, scale, walk });
+					if (
+						last?.clip !== clip ||
+						last?.scale !== scale ||
+						last?.walk !== walk ||
+						last?.attackLayered !== attackLayered
+					)
+						frames.push({ clip, scale, walk, attackLayered });
 				});
 				observer.observe(element, { attributes: true });
 				host.stopRateObserver = () => observer.disconnect();
@@ -4308,7 +4315,12 @@ test.describe('live views actions', () => {
 					.toEqual(['walk', '1']);
 				const samples = await host.evaluate((element) => {
 					const host = element as HTMLElement & {
-						recordedRates?: { clip?: string; scale?: string; walk?: string }[];
+						recordedRates?: {
+							clip?: string;
+							scale?: string;
+							walk?: string;
+							attackLayered?: string;
+						}[];
 						stopRateObserver?: () => void;
 					};
 					host.stopRateObserver?.();
@@ -4317,6 +4329,13 @@ test.describe('live views actions', () => {
 				const firstAttack = samples.findIndex((frame) => frame.clip === 'cross-punch');
 				expect(firstAttack).toBeGreaterThan(0);
 				expect(samples[firstAttack].scale).toBe('0.8');
+				expect(
+					new Set(
+						samples
+							.filter((frame) => frame.clip === 'cross-punch')
+							.map((frame) => frame.attackLayered)
+					)
+				).toEqual(new Set([layered]));
 				expect(samples.slice(firstAttack).find((frame) => frame.clip === 'walk')?.scale).toBe('1');
 				expect(
 					new Set(

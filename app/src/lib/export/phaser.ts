@@ -163,12 +163,12 @@ export class Paperdoll {
   }
 
   get actionPlaying() { return this.action !== null; }
-  setActionLayering(enabled) { this.layerActions = !!enabled; this.sync(); }
+  setActionLayering(enabled) { this.layerActions = !!enabled; }
   canLayerAction(anim, dir) {
     const move = this.m.rig.animations.find((a) => a.id === anim);
     const walk = this.walkCell();
     return !!(move && walk && walk.direction === dir && available(this.m, move).some((d) => d.id === dir) &&
-      exportedActionOffset(this.m, this.equipped, walk.clip, dir, walk.cell, anim, move.frames[0].cell));
+      canExportLayerAction(this.m, this.equipped, walk.clip, dir, anim));
   }
   playAction(anim, dir) {
     const move = this.m.rig.animations.find((a) => a.id === anim);
@@ -190,16 +190,21 @@ export class Paperdoll {
 
   equip(slot, itemId) {
     if (slot === 'body' || !validEquipment(this.m, slot, itemId)) throw new Error('PixelDoll: invalid equipment for ' + slot);
-    this.equipped[slot] = itemId; this.sync();
+    this.equipped[slot] = itemId; this.checkActionOutfit(); this.sync();
   }
 
   applyPreset(preset) {
     const resolved = resolvePreset(this.m, preset);
     this.equipped = resolved.items;
+    this.checkActionOutfit();
     this.setVariants(resolved.variants);
   }
 
   setVariants(variants) { this.variants = { ...variants }; this.sync(); }
+
+  checkActionOutfit() {
+    if (this.action?.layered) this.action.layered = this.canLayerAction(this.action.move.id, this.action.dir);
+  }
 
   /** @param {'lower' | 'upper' | null} [part] */
   texture(item, layer, anim = this.anim, part = null) {
@@ -243,7 +248,7 @@ export class Paperdoll {
     if (this.action) {
       const { move, dir, elapsed, layered } = this.action;
       const pose = { clip: move.id, direction: dir, cell: sampleTimeline(move.frames, elapsed, false) };
-      const draws = exportedActionDraws(this.m, this.equipped, pose, this.walkCell(), layered && this.layerActions);
+      const draws = exportedActionDraws(this.m, this.equipped, pose, this.walkCell(), layered);
       for (const n of this.nodes) n.sprite.setVisible(false);
       draws.forEach((draw, order) => {
         let sprite = this.actionNodes[order];
@@ -315,7 +320,7 @@ export function phaserFiles(m: Manifest): OutFile[] {
        doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})
      }
 Switch outfits with doll.applyPreset(m.presets[1]) or doll.applyPreset(outfitId); unknown outfit IDs throw without changing the doll.
-Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. canLayerAction(move, direction) checks the current gait and equipment. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action.
+Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action.
 
 play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
 Invalid move/direction, equipment and outfit IDs throw before changing state. Unequip a non-body slot with null.

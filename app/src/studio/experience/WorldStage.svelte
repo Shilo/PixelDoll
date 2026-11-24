@@ -969,6 +969,9 @@
 			lastProject: unknown,
 			cameraStamp = '',
 			imageCache: ReturnType<typeof renderPresentation> | null = null;
+		let layeredAttack: typeof actions.attack;
+		let attackLower: { pose: Presentation; cell: number; waist: number } | undefined;
+		let attackLayerFallback = 'no-action';
 		const animate = (now: number) => {
 			const dt = Math.min(50, now - last);
 			last = now;
@@ -1373,22 +1376,35 @@
 					: p.kind === 'animation'
 						? view.cell
 						: p.cell;
-				const layering = currentLiveLayering(doc.id);
-				const fallback =
-					actions.attack && loco
-						? liveActionFallback(
-								layering.on,
-								actions.grounded,
-								mountVisible,
-								loco,
-								p,
-								roles.walk[0]
-							)
-						: 'no-action';
-				const lower =
-					!fallback && loco && clock
-						? { pose: loco, cell: clock.cell, waist: layering.waist }
-						: undefined;
+				if (layeredAttack !== actions.attack) {
+					layeredAttack = actions.attack;
+					const layering = currentLiveLayering(doc.id);
+					const fallback =
+						actions.attack && loco && clock
+							? liveActionFallback(
+									layering.on,
+									actions.grounded,
+									mountVisible,
+									loco,
+									p,
+									roles.walk[0]
+								)
+							: 'no-action';
+					attackLayerFallback = fallback ?? '';
+					attackLower =
+						!fallback && loco && clock
+							? { pose: loco, cell: clock.cell, waist: layering.waist }
+							: undefined;
+				}
+				if (
+					attackLower &&
+					loco?.moving &&
+					loco.clip === attackLower.pose.clip &&
+					loco.direction === attackLower.pose.direction &&
+					clock
+				)
+					attackLower.cell = clock.cell;
+				const lower = attackLower;
 				const nextKey = JSON.stringify([
 					p.kind,
 					p.clip,
@@ -1400,6 +1416,10 @@
 				]);
 				if (lastProject !== a || nextKey !== renderKey) {
 					imageCache = renderPresentation(a, view.items, p, cell, undefined, lower);
+					if (lower && !imageCache.attackLayered) {
+						attackLayerFallback = imageCache.attackFallback ?? '';
+						attackLower = undefined;
+					}
 					renderKey = nextKey;
 					lastProject = a;
 					if (imageCache.image) {
@@ -1444,7 +1464,7 @@
 				host.dataset.walkCell = live && loco?.moving && clock ? String(clock.cell) : '';
 				host.dataset.attackCell = actionCell === null || !actions.attack ? '' : String(actionCell);
 				host.dataset.attackLayered = String(!!lower && imageCache?.attackLayered === true);
-				host.dataset.attackFallback = lower ? (imageCache?.attackFallback ?? '') : (fallback ?? '');
+				host.dataset.attackFallback = attackLayerFallback;
 				const intendedMount = loco?.intendedDirection ?? loco?.direction ?? ui.dir;
 				const mountFacing = mountSupportsFacing(intendedMount)
 					? intendedMount

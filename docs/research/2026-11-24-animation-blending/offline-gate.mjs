@@ -1,6 +1,10 @@
 // Run from app/: node --experimental-transform-types ../docs/research/2026-11-24-animation-blending/offline-gate.mjs
 import { readFileSync, writeFileSync } from "node:fs";
+import assert from "node:assert/strict";
 import { runBench } from "../../../app/scripts/bench.ts";
+import { exportZip } from "../../../app/src/lib/export/export.ts";
+import { makeImg } from "../../../app/src/lib/image/png.ts";
+import { baseHashOf, cellHash } from "../../../app/src/lib/rig/rig.ts";
 import {
   decodePngBytes,
   encodePngBytes,
@@ -10,8 +14,11 @@ import {
   actionComponents,
   actionPairFallback,
   compositeAction,
+  composeLayeredAction,
   flipH,
   layerOffset,
+  over,
+  rigFrame,
   splitLower,
   splitUpper,
 } from "../../../app/src/lib/runtime/paperdoll.js";
@@ -46,19 +53,9 @@ function pose(image, size, row, col, mirror, geometry) {
 function compare(walk, action, size, gear, w, a) {
   const lower = splitLower(walk.image, walk.geometry);
   const upper = splitUpper(action.image, action.geometry);
-  const { x: dx, y: dy, seam, source } = layerOffset(lower, upper);
+  const { x: dx, y: dy, seam, source, hipDeparture } = layerOffset(lower, upper);
   const output = compositeAction(lower.image, upper.image, { x: dx, y: dy });
   const parts = actionComponents(occupied(output, size, 0, 0), size);
-  let gearLoss = 0;
-  let gearClippedInLab = 0;
-  for (const { pixels, width, pad, lower } of gear) {
-    for (const p of pixels) {
-      const x = (p % width) + (lower ? 0 : dx);
-      const y = Math.floor(p / width) + (lower ? 0 : dy);
-      if (lower && y < walk.waist + pad) gearLoss++;
-      else if (x < 0 || x >= width || y < 0 || y >= width) gearClippedInLab++;
-    }
-  }
   return {
     w,
     a,
@@ -66,10 +63,11 @@ function compare(walk, action, size, gear, w, a) {
     dy,
     seam,
     source,
-    gearLoss: gearLoss + gearClippedInLab,
+    hipDeparture,
+    gearPixels: gear.reduce((sum, entry) => sum + entry.pixels.size, 0),
     fragments: Math.max(0, parts.length - 1),
     output,
-    fallback: actionPairFallback(seam, gearLoss + gearClippedInLab),
+    fallback: actionPairFallback(seam, 0),
   };
 }
 
@@ -98,13 +96,12 @@ function print(label, pairs, geometry = []) {
     worstPair: [worst.w, worst.a],
     worstOffset: [worst.dx, worst.dy],
     sources: count(pairs.map((p) => p.source)),
-    gearLoss: Math.max(...pairs.map((p) => p.gearLoss)),
+    worstHipDeparture: worst.hipDeparture,
+    maxHipDeparture: Math.max(...pairs.map((p) => Math.abs(p.hipDeparture))),
+    maxGearPixelsBeforeComposition: Math.max(...pairs.map((p) => p.gearPixels)),
     fragments: Math.max(...pairs.map((p) => p.fragments)),
-    eligible: pairs
-      .filter((p) => !p.fallback)
-      .map((p) => `${p.w}/${p.a}`)
-      .join(" "),
-    fallback: count(pairs.map((p) => p.fallback).filter(Boolean)),
+    verdict: worst.fallback ?? "layered",
+    at2px: worst.seam <= 2 ? "layered" : "seam",
   });
 }
 
@@ -185,7 +182,7 @@ for (const body of ["A", "B", "C", "N"]) {
     );
     if (body === "A")
       writeFileSync(
-        new URL(`evidence/20-gate-bodyA-${id}-selected.png`, import.meta.url),
+      new URL(`evidence/22-set-gate-bodyA-${id}.png`, import.meta.url),
         await sheet(pairs, upper.length, lower.length),
       );
   }
@@ -250,6 +247,97 @@ print(
 );
 
 writeFileSync(
-  new URL("evidence/21-gate-demo-south-selected.png", import.meta.url),
+  new URL("evidence/23-set-gate-demo-south.png", import.meta.url),
   await sheet(demoPairs, punching.length, walking.length),
 );
+
+const bodyA = json(bench, "bodyA.json");
+const sourceAtlas = await png(bench, "bodyA.png");
+const images = new Map();
+const rig = bodyA.rig;
+const stored = {};
+const trousers = {};
+const cape = {};
+const alpha = (image, x, y) => image.data[(y * image.w + x) * 4 + 3];
+const store = async (image) => {
+  const hash = await cellHash(image);
+  images.set(hash, image);
+  return hash;
+};
+for (const move of rig.animations) {
+  stored[move.id] = {};
+  for (const { id } of rig.directions) {
+    const row = bodyA.rows.indexOf(id);
+    if (row < 0) continue;
+    stored[move.id][id] = [];
+    if (move.id === "walk") trousers[id] = [];
+    if (move.id === "slash") cape[id] = [];
+    for (let cell = 0; cell < move.cells; cell++) {
+      const geometry = actionHip(rig, move.id, id, cell);
+      const { image } = pose(sourceAtlas, 64, row, bodyA.cols.indexOf(`${move.id}/${cell}`), false, geometry);
+      stored[move.id][id].push(await store(image));
+      const gear = makeImg(64, 64);
+      if (move.id === "walk") {
+        const part = splitLower(image, geometry);
+        for (let y = part.waist - 2; y < 57; y++)
+          for (let x = 20; x < 45; x++) {
+            const waistband = y < part.waist && Math.abs(x - geometry.hip.x) <= 4 && alpha(image, x, y);
+            if (waistband || alpha(part.image, x, y)) gear.data.set([44, 115, 182, 255], (y * 64 + x) * 4);
+          }
+        trousers[id].push(await store(gear));
+      } else {
+        for (let y = 36; y < 53; y++)
+          for (let x = 17; x < 38; x++) gear.data.set([185, 50, 100, 255], (y * 64 + x) * 4);
+        cape[id].push(await store(gear));
+      }
+    }
+  }
+}
+rig.baseHash = await baseHashOf(rig, Object.fromEntries(Object.entries(stored).flatMap(([move, directions]) =>
+  Object.entries(directions).flatMap(([direction, cells]) => cells.map((hash, cell) => [`${move}/${direction}/${cell}`, hash])))));
+const item = (id, slot, layers) => ({ id, name: id, slot, layers, baseHash: rig.baseHash, status: "accepted", mirror: "flip", materials: [], prompt: "", provenance: [] });
+const project = { images, manifest: {
+  format: "pixeldoll/3", app: "test", name: "Bench bodyA with trousers and cape", rig, materials: [], presets: [],
+  slots: [{ id: "body", class: "base", z: 10 }, { id: "legs", class: "worn", z: 20 }, { id: "back", class: "worn", z: 10 }],
+  items: [item("base", "body", [{ id: "main", role: "fg", z: 10, cells: stored }]),
+    item("trousers", "legs", [{ id: "main", role: "fg", z: 20, cells: { walk: trousers } }]),
+    item("cape", "back", [{ id: "bg", role: "bg", z: 1, cells: { slash: cape } }, { id: "fg", role: "fg", z: 30, cells: { slash: Object.fromEntries(Object.entries(cape).map(([direction, cells]) => [direction, cells.map(() => stored.slash[direction][0])])) } }])]
+} };
+const blank = await store(makeImg(64, 64));
+for (const direction of Object.keys(cape)) project.manifest.items[2].layers[1].cells.slash[direction].fill(blank);
+const walkCell = { clip: "walk", direction: "south", cell: 1 };
+const slashCell = { ...walkCell, clip: "slash" };
+const dressed = { legs: "trousers", back: "cape" };
+const layered = composeLayeredAction(project, dressed, walkCell, slashCell, 0, rigFrame(rig));
+assert.equal(layered.fallback, null);
+const contact = makeImg(layered.frame.w * 3, layered.frame.h);
+over(contact, images.get(stored.walk.south[1]), layered.frame.x - rig.pivot.x, layered.frame.y - rig.pivot.y);
+over(contact, images.get(stored.slash.south[1]), layered.frame.w + layered.frame.x - rig.pivot.x, layered.frame.y - rig.pivot.y);
+over(contact, layered.image, layered.frame.w * 2, 0);
+writeFileSync(new URL("evidence/24-bodyA-hands-trousers-cape.png", import.meta.url), await encodePngBytes(contact));
+const options = { engines: ["phaser"], baked: false, exportedAt: "2026-11-24T00:00:00.000Z" };
+const off = await exportZip(project, options);
+const on = await exportZip(project, { ...options, actionLayering: { waist: 0, walk: ["walk"], attacks: ["slash"] } });
+assert.deepEqual(off.errors, []);
+assert.deepEqual(on.errors, []);
+assert(off.zip && on.zip);
+console.log("bodyA south + trousers + cape", { verdict: "layered", paddedFrame: layered.frame, zipOff: off.zip.length, zipOn: on.zip.length, added: on.zip.length - off.zip.length, newPngs: on.entries.filter(({ name }) => name.startsWith("action/")).map(({ name }) => name) });
+
+for (const size of [64, 128]) {
+  const square = makeImg(size, size);
+  for (let y = 14; y < size - 10; y++)
+    for (let x = size / 2 - 6; x < size / 2 + 6; x++) square.data[(y * size + x) * 4 + 3] = 255;
+  const body = project.manifest.items[0];
+  const moves = rig.animations.map((move) => ({ ...move, sources: undefined }));
+  const actions = Object.fromEntries(moves.map(({ id, cells }) => [id, { south: Array(cells).fill(blank) }]));
+  const timedRig = { ...rig, cell: { w: size, h: size }, pivot: { x: size / 2, y: size - 10 }, animations: moves, anchors: { hip: Object.fromEntries(moves.map(({ id, cells }) => [id, { south: Array.from({ length: cells }, () => [size / 2, size / 2]) }])) } };
+  const timedManifest = { ...project.manifest, rig: timedRig, items: [{ ...body, layers: [{ ...body.layers[0], cells: actions }] }] };
+  const timedProject = { manifest: timedManifest, images: new Map([[blank, square]]) };
+  const measure = (index) => composeLayeredAction(timedProject, {}, { ...walkCell, cell: index % 8 }, { ...slashCell, cell: Math.floor(index / 8) % 8 }, 0, rigFrame(timedRig));
+  const start = performance.now();
+  assert.equal(measure(0).fallback, null);
+  const coldMs = performance.now() - start;
+  const hotStart = performance.now();
+  for (let index = 0; index < 256; index++) assert.equal(measure(index).fallback, null);
+  console.log("set cache", { size, coldMs, warmMsPerPaint: (performance.now() - hotStart) / 256 });
+}

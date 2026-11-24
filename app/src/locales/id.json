@@ -1137,6 +1137,8 @@
 			"playbackSetInMove": "Diatur di animasi",
 			"dressed": "Sertakan sprite sheet karakter berperlengkapan",
 			"dressedHint": "Menambahkan sprite sheet PNG untuk penampilan saat ini dan setiap setelan tersimpan, dengan tubuh dan item yang dikenakan digabungkan. Lapisan terpisah selalu disertakan, kecuali pada sprite sheet RPG Maker yang selalu digabungkan.",
+			"actionLayers": "Lapisan serangan sambil berjalan",
+			"actionLayersHint": "Menambahkan bagian tubuh untuk serangan sambil berjalan yang kompatibel ke ZIP. Memakai pengaturan gerakan dan pinggang tampilan langsung, meski fitur ini dimatikan di sana.",
 			"format": "Format ekspor",
 			"defaultTarget": "Target ekspor bawaan",
 			"openCharacter": "Ekspor karakter {name}",
@@ -3393,7 +3395,7 @@
 	},
 	"liveViews": {
 		"walkWhileAttacking": "Berjalan saat menyerang",
-		"layeringHelp": "Menggunakan animasi serangan di atas pinggang dan animasi berjalan di bawahnya. Kedua animasi harus menghadap ke arah yang sama dan sejajar di pinggul. Jika tidak, animasi serangan penuh diputar. Serangan saat berjalan di tanah sedikit memperlambat gerakan.",
+		"layeringHelp": "Menggabungkan tubuh bagian atas saat menyerang dengan kaki saat berjalan jika posenya cocok. Jubah dan mantel panjang bisa terlihat aneh. Serangan sambil berpijak bergerak dengan 80% kecepatan normal.",
 		"waist": "Pinggang",
 		"automaticWaist": "Otomatis",
 		"waistHelp": "Menggeser sambungan hingga 4 piksel ke atas atau ke bawah. Mode otomatis memakai posisi pinggul di setiap bingkai.",
