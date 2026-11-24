@@ -7,7 +7,6 @@ const below = os.constants.priority.PRIORITY_BELOW_NORMAL;
 if (!process.env.GITHUB_ACTIONS && os.getPriority() < below) os.setPriority(below);
 
 export default defineConfig({
-	define: { __AGENT_API_BASE__: 'null' }, // as in every non-agent mode (vite.config.ts)
 	test: {
 		include: ['test/unit/**/*.test.ts'],
 		environment: 'node',
