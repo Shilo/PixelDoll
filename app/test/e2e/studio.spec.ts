@@ -9165,7 +9165,17 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(statesTab).not.toHaveAttribute('data-activity');
 	await expect(more).not.toHaveAttribute('data-activity');
 	expect(await dot(movesTab, 'label')).toBe('accent');
-	await expect(movesTab).toHaveAccessibleDescription('Work is running here');
+	await expect(movesTab).toHaveAccessibleDescription(
+		'Work here is running, waiting or ready to review'
+	);
+	// Outside Preview, Moves and States are disabled, so their work moves to More's dot.
+	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
+	await expect(movesTab).not.toHaveAttribute('data-activity');
+	await expect(more).toHaveAttribute('data-activity', 'busy');
+	await page.getByRole('button', { name: 'Preview', exact: true }).click();
+	await equipmentMode(page, 'Moves');
+	await expect(movesTab).toHaveAttribute('data-activity', 'busy');
+	await expect(more).not.toHaveAttribute('data-activity');
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
@@ -9194,7 +9204,11 @@ test('standing-first items quote only standing and offer actual custom moves one
 				s.gens.splice(0, s.gens.length, {
 					phase,
 					status: '',
-					draft: { rigId: own ? s.doc.id : 'another-character', spec: { id: 'dot-draft' } },
+					draft: {
+						rigId: own ? s.doc.id : 'another-character',
+						spec: { id: 'dot-draft' },
+						calls: []
+					},
 					input: { slot: 'head', name: 'Dot draft' }
 				});
 			},

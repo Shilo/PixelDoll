@@ -917,7 +917,7 @@
 		"inspect": "Inspecionar",
 		"customization": "Personalização",
 		"customizationPanels": "Painéis de personalização",
-		"tabWorkRunning": "Há trabalho em andamento aqui",
+		"tabWorkRunning": "Há trabalho aqui em andamento, aguardando ou pronto para revisão",
 		"tabWorkAttention": "Há trabalho aqui que precisa de atenção"
 	},
 	"worldStage": {

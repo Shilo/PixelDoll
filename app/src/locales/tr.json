@@ -914,7 +914,7 @@
 		"inspect": "İnceleyin",
 		"customization": "Özelleştirme",
 		"customizationPanels": "Özelleştirme panelleri",
-		"tabWorkRunning": "Burada süren bir iş var",
+		"tabWorkRunning": "Burada süren, bekleyen ya da incelemeye hazır bir iş var",
 		"tabWorkAttention": "Burada ilgilenmeniz gereken bir iş var"
 	},
 	"worldStage": {

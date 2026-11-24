@@ -890,7 +890,7 @@
 		"inspect": "キャラクターを確認",
 		"customization": "カスタマイズ",
 		"customizationPanels": "カスタマイズパネル",
-		"tabWorkRunning": "ここで処理を実行中です",
+		"tabWorkRunning": "ここに実行中、待機中、または確認待ちの処理があります",
 		"tabWorkAttention": "ここで対応が必要な処理があります"
 	},
 	"worldStage": {

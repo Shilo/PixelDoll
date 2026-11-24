@@ -914,7 +914,7 @@
 		"inspect": "Inspect",
 		"customization": "Customization",
 		"customizationPanels": "Customization panels",
-		"tabWorkRunning": "Work is running here",
+		"tabWorkRunning": "Work here is running, waiting or ready to review",
 		"tabWorkAttention": "Work here needs attention"
 	},
 	"worldStage": {

@@ -890,7 +890,7 @@
 		"inspect": "Periksa",
 		"customization": "Penyesuaian",
 		"customizationPanels": "Panel penyesuaian",
-		"tabWorkRunning": "Ada pekerjaan yang sedang berjalan di sini",
+		"tabWorkRunning": "Ada pekerjaan di sini yang sedang berjalan, menunggu, atau siap ditinjau",
 		"tabWorkAttention": "Ada pekerjaan di sini yang perlu diperhatikan"
 	},
 	"worldStage": {

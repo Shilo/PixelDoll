@@ -890,7 +890,7 @@
 		"inspect": "검사",
 		"customization": "꾸미기",
 		"customizationPanels": "꾸미기 패널",
-		"tabWorkRunning": "여기서 작업이 진행 중입니다",
+		"tabWorkRunning": "여기에 진행 중이거나 대기 중이거나 검토할 준비가 된 작업이 있습니다",
 		"tabWorkAttention": "여기에 확인이 필요한 작업이 있습니다"
 	},
 	"worldStage": {

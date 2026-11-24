@@ -125,19 +125,21 @@
 	const movesOff = $derived(
 		message(experience.testMount ? 'experience.movesOffMounted' : 'experience.movesOffWalking')
 	);
-	// Wardrobe, Moves and States carry a dot for this character's work there, red when some failed (activityStatus.svelte.ts).
+	// Wardrobe, Moves and States carry a dot for this character's work there, red when some failed (activityStatus.svelte.ts);
+	// disabled Moves and States leave theirs to More.
 	const tabWork = $derived({
 		wardrobe: tabActivity('wardrobe'),
 		moves: tabActivity('moves'),
 		states: tabActivity('states')
 	});
-	// While the tabs are on screen, More's dot leaves their work to them.
-	const showWorkTabs = () => {
-		workTabs.shown = true;
-		return () => {
-			workTabs.shown = false;
-		};
-	};
+	// While a tab is on screen and usable, More's dot leaves its work to it: not without a panel, under a sheet or on
+	// another screen, and not Moves or States outside Preview, where they are disabled.
+	$effect(() => {
+		const shown = experience.screen === 'studio' && !(g.sheet && !g.sheetHeight) && !ui.sheet,
+			clips = shown && experience.mode === 'preview';
+		Object.assign(workTabs, { wardrobe: shown, moves: clips, states: clips });
+		return () => Object.assign(workTabs, { wardrobe: false, moves: false, states: false });
+	});
 	const tabs = [
 		['wardrobe', 'experience.tabWardrobe'],
 		['colors', 'experience.tabColors'],
@@ -897,17 +899,12 @@
 		{/if}
 		<aside class="equipment-rail" aria-label={t('experience.customization')}>
 			{#if g.sheet}<span class="sheet-handle" aria-hidden="true"></span>{/if}
-			<div
-				class="equipment-modes"
-				role="tablist"
-				aria-label={t('experience.customizationPanels')}
-				{@attach showWorkTabs}
-			>
+			<div class="equipment-modes" role="tablist" aria-label={t('experience.customizationPanels')}>
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
 				{#each tabs as [id, label]}{@const off =
 						(id === 'moves' || id === 'states') && experience.mode !== 'preview'}{@const work =
-						id in tabWork ? tabWork[id as keyof typeof tabWork] : undefined}<button
+						!off && id in tabWork ? tabWork[id as keyof typeof tabWork] : undefined}<button
 						class="bu-action"
 						data-variant="tab"
 						role="tab"
@@ -928,8 +925,8 @@
 					>{/each}
 			</div>
 			<span class="sr" id="moves-tab-note">{displayMessage(movesOff)}</span>
-			<span class="sr" id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
-			<span class="sr" id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
+			<span hidden id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
+			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
 			<PhonePanel />
 		</aside>
 	{/if}

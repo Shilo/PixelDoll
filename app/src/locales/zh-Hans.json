@@ -890,7 +890,7 @@
 		"inspect": "检查",
 		"customization": "自定义",
 		"customizationPanels": "自定义面板",
-		"tabWorkRunning": "此处有任务正在进行",
+		"tabWorkRunning": "此处有任务正在进行、等待中或可供审阅",
 		"tabWorkAttention": "此处有任务需要处理"
 	},
 	"worldStage": {
