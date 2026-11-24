@@ -48,6 +48,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Localize new or changed user-facing text via [app/src/locales/](app/src/locales/); don’t hardcode it.
 - Dev-only pages: app/src/ui/
 - Demo fixture: app/public/fixtures/s2/
+- User problem reports (backups, problem reports, pasted errors, screenshots): follow .claude/skills/debug-user-report/SKILL.md (Claude loads it as a skill; Codex: read it)
 - Chroma keys (colors, order, mannequin style, despill) were chosen by paid A/B tests; read docs/research/2026-11-09-paperdoll-video-review/chroma-key.md before changing them, and change them only after a paired live test beats them
 
 ## Theme
