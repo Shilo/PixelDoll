@@ -6,10 +6,9 @@
 	import { Ellipsis } from './icons.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
 	// Activity lives in More on every screen, so More carries its status: a dot while work runs, a warning dot when
-	// stopped work needs attention (which wins), and the same status for screen readers.
-	const activity = $derived(
-		activityStatus.stopped ? 'stopped' : activityStatus.busy ? 'busy' : undefined
-	);
+	// stopped work needs attention (which wins), and the same status for screen readers. Work the Moves and States
+	// tabs already mark is left to their dots.
+	const activity = $derived(activityStatus.elsewhere);
 	const statusId = $props.id();
 </script>
 
@@ -48,13 +47,16 @@
 	[data-activity] {
 		position: relative;
 	}
+	/* The same 6px dot as the Moves and States tabs, the same 4px after the icon's last dot (the 20px Ellipsis draws to
+	   7.5px right of its center), and centered on it. */
 	[data-activity]::after {
 		content: '';
 		position: absolute;
-		top: 9px;
-		right: 9px;
-		width: 8px;
-		height: 8px;
+		top: 50%;
+		left: calc(50% + 7.5px + 4px);
+		width: 6px;
+		height: 6px;
+		margin-top: -3px;
 		border-radius: 50%;
 		background: var(--bu-accent);
 	}

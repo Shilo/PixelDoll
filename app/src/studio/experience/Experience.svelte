@@ -5,7 +5,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage, displayNestedMessage } from '../../lib/i18n.ts';
 	import { message } from '../../lib/message.ts';
-	import { tabActivity } from '../activityStatus.svelte.ts';
+	import { tabActivity, workTabs } from '../activityStatus.svelte.ts';
 	import { onMount, tick, untrack } from 'svelte';
 	import Toolbar from '../Toolbar.svelte';
 	import CharacterActions from '../CharacterActions.svelte';
@@ -125,9 +125,19 @@
 	const movesOff = $derived(
 		message(experience.testMount ? 'experience.movesOffMounted' : 'experience.movesOffWalking')
 	);
-	// Moves and States carry a dot while this character's work runs there, red when it stopped (activityStatus.svelte.ts).
-	const movesWork = $derived(tabActivity('move'));
-	const statesWork = $derived(tabActivity('state'));
+	// Wardrobe, Moves and States carry a dot for this character's work there, red when some failed (activityStatus.svelte.ts).
+	const tabWork = $derived({
+		wardrobe: tabActivity('wardrobe'),
+		moves: tabActivity('moves'),
+		states: tabActivity('states')
+	});
+	// While the tabs are on screen, More's dot leaves their work to them.
+	const showWorkTabs = () => {
+		workTabs.shown = true;
+		return () => {
+			workTabs.shown = false;
+		};
+	};
 	const tabs = [
 		['wardrobe', 'experience.tabWardrobe'],
 		['colors', 'experience.tabColors'],
@@ -887,12 +897,17 @@
 		{/if}
 		<aside class="equipment-rail" aria-label={t('experience.customization')}>
 			{#if g.sheet}<span class="sheet-handle" aria-hidden="true"></span>{/if}
-			<div class="equipment-modes" role="tablist" aria-label={t('experience.customizationPanels')}>
+			<div
+				class="equipment-modes"
+				role="tablist"
+				aria-label={t('experience.customizationPanels')}
+				{@attach showWorkTabs}
+			>
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
 				{#each tabs as [id, label]}{@const off =
 						(id === 'moves' || id === 'states') && experience.mode !== 'preview'}{@const work =
-						id === 'moves' ? movesWork : id === 'states' ? statesWork : undefined}<button
+						id in tabWork ? tabWork[id as keyof typeof tabWork] : undefined}<button
 						class="bu-action"
 						data-variant="tab"
 						role="tab"
