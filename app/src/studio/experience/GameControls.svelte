@@ -1,6 +1,6 @@
 <!-- The live views' actions. Touch shows a thumb cluster at the stage's lower right: the Attack stick with Jump, Sprint and
      Mount on an arc around it (config.ts MOTION.actions). A mouse shows a compact icon bar there, with shortcut tooltips.
-     Nothing here ever takes keyboard focus: Space, Shift, X and M stay the stage's (gameAction.ts). Jump and Attack last
+     Nothing here ever takes keyboard focus: Space, Shift, E and F stay the stage's (gameAction.ts). Jump and Attack last
      while held; Sprint and Mount toggle. A press in the air does nothing, without dimming the buttons on every jump. -->
 <script lang="ts">
 	import { t } from 'svelte-whisper';
@@ -102,7 +102,7 @@
 			class="bu-action"
 			data-variant="quiet"
 			aria-label={attack}
-			aria-keyshortcuts="X"
+			aria-keyshortcuts="E"
 			title={t('liveViews.withShortcut', { action: attack, key: t('liveViews.attackKeys') })}
 			{@attach gameAction(
 				() => onattack(),
@@ -137,8 +137,8 @@
 			data-variant="quiet"
 			aria-label={mount}
 			aria-pressed={mounted}
-			aria-keyshortcuts="M"
-			title={t('liveViews.withShortcut', { action: mount, key: 'M' })}
+			aria-keyshortcuts="F"
+			title={t('liveViews.withShortcut', { action: mount, key: 'F' })}
 			{@attach gameAction(() => onmount())}><PawPrint size={18} aria-hidden="true" /></button
 		>
 	</div>

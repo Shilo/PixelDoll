@@ -760,15 +760,15 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		await route.fulfill({ response, json: fixture });
 	});
 	await landing(page);
-	// Character selection has no mount button; M shows and hides the mount its cast rides.
+	// Character selection has no mount button; F shows and hides the mount its cast rides.
 	const toggle = page.locator('.test-mount-toggle');
 	const hero = page.locator('.cast-character.chosen');
 	await expect(toggle).toHaveCount(0);
 	await expect(hero).not.toHaveAttribute('data-mounted');
 	await selection(page).focus();
-	await page.keyboard.press('m');
+	await page.keyboard.press('f');
 	await expect(hero).toHaveAttribute('data-mounted', 'true');
-	await page.keyboard.press('m');
+	await page.keyboard.press('f');
 	await expect(hero).not.toHaveAttribute('data-mounted');
 	await page.keyboard.press('Enter');
 	await pause(page);
@@ -788,11 +788,11 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(
 		page.locator('.header-actions > .header-undo + .header-redo + .header-random + .header-share')
 	).toHaveCount(1);
-	// M shows and hides the mount in Preview too.
+	// F shows and hides the mount in Preview too.
 	await world(page).focus();
-	await page.keyboard.press('m');
+	await page.keyboard.press('f');
 	await expect(toggle).toHaveAttribute('data-active', 'true');
-	await page.keyboard.press('m');
+	await page.keyboard.press('f');
 	await expect(toggle).not.toHaveAttribute('data-active');
 	// The mount icon opens the Mount page of Settings directly.
 	const mountMenu = page.getByRole('dialog', { name: 'Settings' });
@@ -925,10 +925,10 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		const position = await world(page).getAttribute('data-position');
 		await expect(world(page)).not.toHaveAttribute('data-position', position!);
 		await page.keyboard.up('ArrowLeft');
-		await page.keyboard.press('m');
+		await page.keyboard.press('f');
 		await expect(liveMount).toHaveAttribute('aria-pressed', 'false');
 		await expect(world(page)).not.toHaveAttribute('data-mount');
-		await page.keyboard.press('m');
+		await page.keyboard.press('f');
 		await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle west \d+$/);
 	}
 	await page.getByRole('button', { name: 'Preview', exact: true }).click();
@@ -4132,7 +4132,7 @@ test.describe('live views actions', () => {
 		const host = world(page);
 		await expect(host).toBeFocused();
 		await expect(page.locator('.world-hint')).toHaveText(
-			'WASD or hold click to move · Shift to sprint · Right-click or X to attack · Space to jump · M to mount'
+			'WASD or hold click to move · Shift to sprint · Right-click or E to attack · Space to jump · F to mount'
 		);
 		const bar = page.getByRole('group', { name: 'Game actions', exact: true });
 		const jump = bar.getByRole('button', { name: 'Jump', exact: true });
@@ -4143,7 +4143,7 @@ test.describe('live views actions', () => {
 			await bar
 				.getByRole('button')
 				.evaluateAll((buttons) => buttons.map((b) => b.getAttribute('title')))
-		).toEqual(['Attack (X or right-click)', 'Jump (Space)', 'Sprint (Shift)', 'Mount (M)']);
+		).toEqual(['Attack (E or right-click)', 'Jump (Space)', 'Sprint (Shift)', 'Mount (F)']);
 		const docked = await page.evaluate(() => {
 			const bar = document.querySelector('.game-bar')!.getBoundingClientRect();
 			const panel = document.querySelector('.equipment-rail')!.getBoundingClientRect();
@@ -4181,17 +4181,17 @@ test.describe('live views actions', () => {
 		await expect(host).toBeFocused();
 		// M and the Mount button toggle the same mount; the stage keeps the keyboard.
 		await expect(mount).toHaveAttribute('aria-pressed', 'false');
-		await page.keyboard.press('m');
+		await page.keyboard.press('f');
 		await expect(mount).toHaveAttribute('aria-pressed', 'true');
 		await expect(host).toHaveAttribute('data-mount', /\S/);
 		await mount.click();
 		await expect(mount).toHaveAttribute('aria-pressed', 'false');
 		await expect(host).not.toHaveAttribute('data-mount');
 		await expect(host).toBeFocused();
-		// X attacks once along the facing; Automatic plays the demo's Cross punch.
-		await attacked(page, 'south', () => page.keyboard.press('x'));
+		// E attacks once along the facing; Automatic plays the demo's Cross punch.
+		await attacked(page, 'south', () => page.keyboard.press('e'));
 		await expect(host).not.toHaveAttribute('data-clip', 'cross-punch');
-		// The Attack button attacks along the facing, like X.
+		// The Attack button attacks along the facing, like E.
 		await attacked(page, 'south', () =>
 			bar.getByRole('button', { name: 'Attack', exact: true }).click()
 		);
@@ -4462,7 +4462,7 @@ test.describe('live view framing', () => {
 			expect(south.feet).toBeLessThanOrEqual(south.bottom);
 			await page.keyboard.press('0');
 			// Mounted, at the top of a jump, nothing painted leaves the top of the stage.
-			await page.keyboard.press('m');
+			await page.keyboard.press('f');
 			await expect(host).toHaveAttribute('data-mount', /\S/);
 			const top = (await frame()).top;
 			await host.focus();
@@ -4500,6 +4500,6 @@ test.describe('live view framing', () => {
 			expect(apex.height).toBeGreaterThan(0.3);
 			expect(Number.isFinite(apex.top)).toBe(true);
 			expect(apex.top).toBeGreaterThanOrEqual(top);
-			await page.keyboard.press('m');
+			await page.keyboard.press('f');
 		});
 });

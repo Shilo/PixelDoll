@@ -391,12 +391,12 @@
 	function keyup(e: KeyboardEvent) {
 		const k = e.key.toLowerCase();
 		keys.delete(k);
-		if (k === 'x') actions.release('key');
+		if (k === 'e') actions.release('key');
 		if (k === ' ') actions.releaseJump('key');
 		if (k === 'shift') shifts.delete(e.code);
 		previewFacing();
 	}
-	/** X attacks where the character travels, or along its facing while it stands. */
+	/** E attacks where the character travels, or along its facing while it stands. */
 	const keyAim = () => travel;
 	const playing = () => experience.mode !== 'preview' && !ui.sheet;
 	/** Jumps now and on every landing while the source (Space, the Jump button) is held. */
@@ -417,7 +417,7 @@
 		stickAim = { x: snapshot.value.x, y: -snapshot.value.y };
 		if (playing() && !actions.holds('stick')) actions.hold('stick', () => stickAim);
 	}
-	/** M and the Mount action, in every view; the live views mount only on the floor. */
+	/** F and the Mount action, in every view; the live views mount only on the floor. */
 	function toggleMount() {
 		if (ui.sheet || (experience.mode !== 'preview' && !actions.grounded)) return;
 		showMount(!experience.testMount);
@@ -445,10 +445,10 @@
 		} else if (k === ' ' && experience.mode !== 'preview') {
 			e.preventDefault();
 			if (!e.repeat) jump('key');
-		} else if (k === 'm') {
+		} else if (k === 'f') {
 			e.preventDefault();
 			if (!e.repeat) toggleMount();
-		} else if (k === 'x' && experience.mode !== 'preview') {
+		} else if (k === 'e' && experience.mode !== 'preview') {
 			e.preventDefault();
 			if (!e.repeat) actions.hold('key', keyAim);
 		} else if (!e.repeat && k === ' ' && experience.mode === 'preview') {

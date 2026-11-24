@@ -397,8 +397,8 @@
 		} else if (k === 'enter' && list.length) {
 			e.preventDefault();
 			customize();
-		} else if (k === 'm') {
-			// M shows or hides the mount, as in every character view.
+		} else if (k === 'f') {
+			// F shows or hides the mount, as in every character view.
 			e.preventDefault();
 			showMount(!experience.testMount);
 		}

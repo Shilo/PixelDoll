@@ -920,7 +920,7 @@
 			"other": "{n} Probleme"
 		},
 		"workspaceCopyPixelLabOff": "Arbeitsbereichskopie · PixelLab aus",
-		"characterSelectionWASDOrArrowsSelectEnter": "Figurenauswahl. Wähle mit WASD oder den Pfeiltasten, bearbeite mit der Eingabetaste, zeige mit M das Reittier und zoome mit Plus und Minus.",
+		"characterSelectionWASDOrArrowsSelectEnter": "Figurenauswahl. Wähle mit WASD oder den Pfeiltasten, bearbeite mit der Eingabetaste, zeige mit F das Reittier und zoome mit Plus und Minus.",
 		"previousCharacter": "Vorherige Figur",
 		"nextCharacter": "Nächste Figur",
 		"noMatchingCharacters": "Keine passenden Figuren",
@@ -948,7 +948,7 @@
 		"groundUnavailable": "Die fortlaufende Bodendarstellung ist nicht verfügbar. Die statische Szene wird angezeigt.",
 		"materialUnavailable": "Das Bodenmaterial ist nicht verfügbar. Die statische Szene wird angezeigt.",
 		"sceneUnavailable": "Die Live-Szene ist nicht verfügbar. Lade die Seite neu.",
-		"characterPreviewWASDOrArrowsChangeFacing": "Figurenvorschau. Ändere die Blickrichtung mit WASD oder den Pfeiltasten. M zeigt das Reittier. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
+		"characterPreviewWASDOrArrowsChangeFacing": "Figurenvorschau. Ändere die Blickrichtung mit WASD oder den Pfeiltasten. F zeigt das Reittier. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
 		"loadingCharacter": "Figur wird geladen…",
 		"notice": {
 			"hiddenItemsInMove": {
@@ -3502,7 +3502,7 @@
 		"run": "Rennen",
 		"sprint": "Sprinten",
 		"shiftKey": "Umschalt",
-		"attackKeys": "X oder Rechtsklick",
+		"attackKeys": "E oder Rechtsklick",
 		"automaticFaster": "Automatisch: {clip}, schneller",
 		"attack": "Angriff",
 		"jump": "Sprung",
@@ -3520,10 +3520,10 @@
 		"spaceKey": "Leertaste",
 		"noAttack": "Für Angriff ist noch nichts festgelegt. Wähle in den Einstellungen der Live-Ansichten eine Animation oder einen Zustand.",
 		"noAttackDirection": "{move} hat keine Frames in Richtung {direction}, daher ist dort kein Angriff möglich.",
-		"hintTopDown": "WASD oder Klick halten zum Bewegen · Umschalt zum Sprinten · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",
-		"hintSide": "A/D oder Klick halten zum Bewegen · Umschalt zum Sprinten · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",
+		"hintTopDown": "WASD oder Klick halten zum Bewegen · Umschalt zum Sprinten · Rechtsklick oder E zum Angreifen · Leertaste zum Springen · F zum Auf- und Absitzen",
+		"hintSide": "A/D oder Klick halten zum Bewegen · Umschalt zum Sprinten · Rechtsklick oder E zum Angreifen · Leertaste zum Springen · F zum Auf- und Absitzen",
 		"hintTouch": "Ziehen bewegt · Schwert halten und ziehen greift an und zielt · Tasten springen, sprinten und sitzen auf",
-		"stageTopDown": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten, per Klick oder durch Ziehen; Umschalt sprintet. Rechtsklick oder X greift an, die Leertaste springt, M sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
-		"stageSide": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts, per Klick oder durch Ziehen; Umschalt sprintet. Rechtsklick oder X greift an, die Leertaste springt, M sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht."
+		"stageTopDown": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten, per Klick oder durch Ziehen; Umschalt sprintet. Rechtsklick oder E greift an, die Leertaste springt, F sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
+		"stageSide": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts, per Klick oder durch Ziehen; Umschalt sprintet. Rechtsklick oder E greift an, die Leertaste springt, F sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht."
 	}
 }
