@@ -3392,6 +3392,13 @@
 		}
 	},
 	"liveViews": {
+		"walkWhileAttacking": "공격하면서 걷기",
+		"layeringHelp": "허리 위에는 공격, 아래에는 걷기 프레임을 사용해요. 두 애니메이션의 방향이 같고 골반 위치가 맞아야 해요. 맞지 않으면 전체 공격 애니메이션을 재생해요. 지상에서 도보로 공격하면 이동 속도가 조금 느려져요.",
+		"waist": "허리",
+		"automaticWaist": "자동",
+		"waistHelp": "이음새를 위아래로 최대 4픽셀 옮겨요. 자동은 각 프레임의 골반 위치를 사용해요.",
+		"raiseWaist": "허리 올리기",
+		"lowerWaist": "허리 내리기",
 		"automaticStill": "자동: 가만히 서 있기",
 		"controls": "조작",
 		"title": "라이브 뷰",

@@ -3494,6 +3494,13 @@
 		}
 	},
 	"liveViews": {
+		"walkWhileAttacking": "Walk while attacking",
+		"layeringHelp": "Uses the attack above the waist and the walking frames below it. Both moves must face the same way and line up at the hips. If they do not, the whole attack plays. Grounded attacks on foot slow travel slightly.",
+		"waist": "Waist",
+		"automaticWaist": "Automatic",
+		"waistHelp": "Moves the join up or down by up to 4 pixels. Automatic uses the hips tracked in each frame.",
+		"raiseWaist": "Raise waist",
+		"lowerWaist": "Lower waist",
 		"automaticStill": "Automatic: stands still",
 		"controls": "Controls",
 		"title": "Live views",

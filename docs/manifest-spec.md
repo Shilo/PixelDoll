@@ -1043,6 +1043,13 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   one; off Steam and superseded by U2U), WITH and other console or handheld editions (no custom images), and U2U (unreleased;
   no announced character import). The research is in `docs/research/rpg-maker-export-2026-11-07.md`.
 
+### 6.9 Optional moving-action fragments
+
+Phaser, GDevelop, Godot and Unity exports can include data for the character’s selected Walk and Attack clips. Each layer’s optional `actionSheets.lower` and `actionSheets.upper` map move IDs to source-color PNG sheets. Rows, columns and pivots are identical to the corresponding original layer. The manifest’s `actionLayers.planes` stores integer x/y hip coordinates per direction and cell for each fragment type.
+
+Each `actionLayers.pairs` entry identifies the Walk, Attack and shared direction. The compact cell array is row-major by Walk cell then Attack cell. A null entry indicates an ineligible seam. Other entries contain the integer correction to add to the hip difference and the item IDs that lose artwork with that correction. The controller uses the full attack pose if the available frame pair or visible gear fails this gate. See the [controller contract](architecture/javascript-runtime.md#one-shot-actions-over-a-loop).
+
+
 ## 7. Editable import copy
 
 Every new export ZIP also contains `project.json` and `cells/<rgba-sha256>.png`. Engine readers continue to consume `manifest.json` and `layers/`.

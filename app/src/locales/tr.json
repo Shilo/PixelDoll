@@ -3491,6 +3491,13 @@
 		}
 	},
 	"liveViews": {
+		"walkWhileAttacking": "Saldırırken yürü",
+		"layeringHelp": "Belin üstünde saldırı, altında yürüyüş kareleri kullanılır. İki animasyon aynı yöne bakmalı ve kalçada hizalanmalıdır. Hizalanmazsa saldırı animasyonunun tamamı oynatılır. Yerde ve yaya saldırırken hareket biraz yavaşlar.",
+		"waist": "Bel",
+		"automaticWaist": "Otomatik",
+		"waistHelp": "Birleşim çizgisini 4 piksele kadar yukarı veya aşağı kaydırır. Otomatik mod her karedeki kalça konumunu kullanır.",
+		"raiseWaist": "Beli yükselt",
+		"lowerWaist": "Beli alçalt",
 		"automaticStill": "Otomatik: hareketsiz durur",
 		"controls": "Kontroller",
 		"title": "Canlı görünümler",

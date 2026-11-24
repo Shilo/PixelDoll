@@ -4085,19 +4085,25 @@ test.describe('live views actions', () => {
 	// Every stage state the scene shows, recorded as it changes: a jump or an attack is over in well under a second.
 	const record = (page: Page) =>
 		world(page).evaluate((host) => {
-			const shown: { clip: string; facing: string; jump: number }[] = [];
+			const shown: { clip: string; facing: string; jump: number; mount: string }[] = [];
 			(window as unknown as { shown: typeof shown }).shown = shown;
 			new MutationObserver(() =>
 				shown.push({
 					clip: host.dataset.clip ?? '',
 					facing: host.dataset.facing ?? '',
-					jump: Number(host.dataset.jump || 0)
+					jump: Number(host.dataset.jump || 0),
+					mount: host.dataset.mount ?? ''
 				})
 			).observe(host, { attributes: true });
 		});
 	const shown = (page: Page) =>
 		page.evaluate(
-			() => (window as unknown as { shown: { clip: string; facing: string; jump: number }[] }).shown
+			() =>
+				(
+					window as unknown as {
+						shown: { clip: string; facing: string; jump: number; mount: string }[];
+					}
+				).shown
 		);
 	const jumped = async (page: Page, jump: () => Promise<void>) => {
 		await record(page);
@@ -4158,6 +4164,21 @@ test.describe('live views actions', () => {
 			.poll(async () => Number((await host.getAttribute('data-position'))!.split(',')[0]))
 			.toBeGreaterThan(20);
 		await expect(host).toHaveAttribute('data-destination', '', { timeout: 10_000 });
+		await mount.click();
+		await page.keyboard.down('d');
+		await expect(host).toHaveAttribute('data-mount', /^narrow-saddle east \d+$/);
+		await expect(host).toHaveAttribute('data-mount-facing', 'east');
+		const [mx, my] = (await host.getAttribute('data-scene-anchor'))!.split(',').map(Number);
+		await attacked(page, 'south', () => page.mouse.click(mx, my + 56, { button: 'right' }));
+		await page.keyboard.up('d');
+		await expect(host).not.toHaveAttribute('data-clip', 'cross-punch');
+		const mountedAttack = (await shown(page)).filter((frame) => frame.clip === 'cross-punch');
+		expect(mountedAttack.length).toBeGreaterThan(0);
+		for (const frame of mountedAttack) {
+			expect(frame.facing).toBe('south');
+			expect(frame.mount).toMatch(/^narrow-saddle east \d+$/);
+		}
+		await mount.click();
 		// A right click attacks toward the cursor, not the facing, and opens no menu. The walk faced east.
 		await page.evaluate(() =>
 			addEventListener('contextmenu', (e) =>
@@ -4206,6 +4227,119 @@ test.describe('live views actions', () => {
 			}),
 			'a keyboard menu stays native'
 		).toBe(false);
+	});
+
+	test('Walk while attacking layers tracked frames and keeps the on-foot speed factor in full mode', async ({
+		page
+	}) => {
+		await page.route('**/fixtures/s2/fixture.json*', async (route) => {
+			const response = await route.fetch();
+			const fixture = await response.json();
+			fixture.presets = [fixture.presets[1]];
+			fixture.rig.anchors = {
+				hip: {
+					walk: {
+						south: [
+							[32, 44],
+							[32, 43],
+							[32, 43],
+							[32, 43],
+							[32, 43],
+							[32, 43],
+							[33, 43],
+							[33, 43]
+						]
+					},
+					'cross-punch': {
+						south: [
+							[34, 46],
+							[34, 46],
+							[33, 46],
+							[34, 45],
+							[34, 46],
+							[32, 46]
+						]
+					}
+				}
+			};
+			await route.fulfill({ response, json: fixture });
+		});
+		await customize(page);
+		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
+		const host = world(page);
+		const attackFrame = async (layered: string, reason: string) => {
+			await host.evaluate((element) => {
+				const host = element as HTMLElement & {
+					recordedRates?: { clip?: string; scale?: string; walk?: string }[];
+					stopRateObserver?: () => void;
+				};
+				const frames: NonNullable<typeof host.recordedRates> = (host.recordedRates = []);
+				const observer = new MutationObserver(() => {
+					const { clip, attackTravelScale: scale, walkCell: walk } = element.dataset;
+					const last = frames.at(-1);
+					if (last?.clip !== clip || last?.scale !== scale || last?.walk !== walk)
+						frames.push({ clip, scale, walk });
+				});
+				observer.observe(element, { attributes: true });
+				host.stopRateObserver = () => observer.disconnect();
+			});
+			await page.keyboard.down('s');
+			try {
+				await expect(host).toHaveAttribute('data-clip', 'walk');
+				await page.keyboard.down('x');
+				try {
+					await expect
+						.poll(() =>
+							host.evaluate((element) => [
+								element.dataset.clip,
+								element.dataset.attackLayered,
+								element.dataset.attackFallback,
+								element.dataset.attackTravelScale
+							])
+						)
+						.toEqual(['cross-punch', layered, reason, '0.8']);
+				} finally {
+					await page.keyboard.up('x');
+				}
+				await expect
+					.poll(() =>
+						host.evaluate((element) => [element.dataset.clip, element.dataset.attackTravelScale])
+					)
+					.toEqual(['walk', '1']);
+				const samples = await host.evaluate((element) => {
+					const host = element as HTMLElement & {
+						recordedRates?: { clip?: string; scale?: string; walk?: string }[];
+						stopRateObserver?: () => void;
+					};
+					host.stopRateObserver?.();
+					return host.recordedRates ?? [];
+				});
+				const firstAttack = samples.findIndex((frame) => frame.clip === 'cross-punch');
+				expect(firstAttack).toBeGreaterThan(0);
+				expect(samples[firstAttack].scale).toBe('0.8');
+				expect(samples.slice(firstAttack).find((frame) => frame.clip === 'walk')?.scale).toBe('1');
+				expect(
+					new Set(
+						samples.filter((frame) => frame.clip === 'cross-punch').map((frame) => frame.walk)
+					).size
+				).toBeGreaterThan(1);
+			} finally {
+				await page.keyboard.up('s');
+			}
+		};
+		await attackFrame('true', '');
+		await page.keyboard.press('Control+,');
+		const settings = page.getByRole('dialog', { name: 'Settings' });
+		await settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		const toggle = settings.getByRole('switch', { name: 'Walk while attacking' });
+		await expect(toggle).toBeChecked();
+		await expect(settings.getByRole('spinbutton', { name: /Waist/ })).toHaveValue('0');
+		await toggle.uncheck();
+		await expect(settings.getByRole('spinbutton', { name: /Waist/ })).toHaveCount(0);
+		await page.keyboard.press('Escape');
+		await expect(settings).toHaveCount(0);
+		await host.focus();
+		await attackFrame('false', 'disabled');
 	});
 
 	test('Live views settings save the clip each action plays per character', async ({ page }) => {

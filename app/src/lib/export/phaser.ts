@@ -8,7 +8,13 @@ import { atlasName } from '../runtime/paths.js';
 
 export { atlasName };
 
-export function atlasJson(m: Manifest, itemId: string, layerId: string, anim: string) {
+export function atlasJson(
+	m: Manifest,
+	itemId: string,
+	layerId: string,
+	anim: string,
+	part?: 'lower' | 'upper'
+) {
 	const { rig } = m;
 	const it = m.items.find((i) => i.id === itemId)!,
 		l = it.layers.find((x) => x.id === layerId)!,
@@ -31,7 +37,7 @@ export function atlasJson(m: Manifest, itemId: string, layerId: string, anim: st
 		meta: {
 			app: m.app,
 			version: m.format,
-			image: `../${l.sourceSheets?.[anim] ?? l.sheets![anim]}`,
+			image: `../${part ? l.actionSheets?.[part]?.[anim] : (l.sourceSheets?.[anim] ?? l.sheets![anim])}`,
 			format: 'RGBA8888',
 			size: { w: a.cells * w, h: rig.directions.length * h },
 			scale: '1'
@@ -52,6 +58,7 @@ export const PAPERDOLL_JS =
 
 export const texKey = (m, item, layer, anim) => 'pd:' + JSON.stringify([m._base ?? m.exportId ?? m.name, item, layer, anim]);
 export const animKey = (m, anim, dir) => 'pd:' + JSON.stringify([m._base ?? m.exportId ?? m.name, anim, dir]);
+const fragmentKey = (anim, part) => part ? part + ':' + anim : anim;
 const loads = new WeakMap();
 const available = (m, a) => m.rig.directions.filter((d) => !a.directions || a.directions.includes(d.id));
 async function json(url) {
@@ -75,6 +82,10 @@ export async function loadPaperdoll(scene, base) {
     for (const it of m.items) for (const l of it.layers) for (const a of m.rig.animations) {
       const key = texKey(m, it.id, l.id, a.id);
       entries.push({ key, sheet: l.sourceSheets?.[a.id] ?? l.sheets[a.id], path: atlasName(it.id, l.id, a.id) });
+      for (const part of ['lower', 'upper']) {
+        const sheet = l.actionSheets?.[part]?.[a.id];
+        if (sheet) entries.push({ key: texKey(m, it.id, l.id, fragmentKey(a.id, part)), sheet, path: part + '-' + atlasName(it.id, l.id, a.id) });
+      }
     }
     // Fetch all metadata before mutating Phaser's caches.
     await Promise.all(entries.map(async (e) => { m._atlases[e.key] = await json(base + 'phaser/' + e.path); }));
@@ -118,6 +129,15 @@ export class Paperdoll {
     this.equipped = resolved.items;
     this.variants = resolved.variants;
     this.container = scene.add.container(x, y);
+    this.actionNodes = [];
+    this.action = null;
+    this.layerActions = false;
+    this.tickAction = (_time, delta) => {
+      if (!this.action) return;
+      this.action.elapsed += Math.max(0, delta);
+      if (this.action.elapsed >= timelineDuration(this.action.move.frames)) this.cancelAction();
+      this.sync();
+    };
     this.nodes = []; // one sprite per (slot, role) any item uses
     for (const s of manifest.slots) {
       const roles = new Set(manifest.items.filter((i) => i.slot === s.id).flatMap((i) => i.layers.map((l) => l.role)));
@@ -136,9 +156,36 @@ export class Paperdoll {
   play(anim, dir, restart = false) {
     const move = this.m.rig.animations.find((a) => a.id === anim);
     if (!move || !available(this.m, move).some((d) => d.id === dir)) throw new Error('PixelDoll: unavailable move/direction ' + anim + '/' + dir);
+    this.cancelAction();
     this.anim = anim; this.dir = dir;
     this.body.play(animKey(this.m, anim, dir), !restart);
     this.sync();
+  }
+
+  get actionPlaying() { return this.action !== null; }
+  setActionLayering(enabled) { this.layerActions = !!enabled; this.sync(); }
+  canLayerAction(anim, dir) {
+    const move = this.m.rig.animations.find((a) => a.id === anim);
+    const walk = this.walkCell();
+    return !!(move && walk && walk.direction === dir && available(this.m, move).some((d) => d.id === dir) &&
+      exportedActionOffset(this.m, this.equipped, walk.clip, dir, walk.cell, anim, move.frames[0].cell));
+  }
+  playAction(anim, dir) {
+    const move = this.m.rig.animations.find((a) => a.id === anim);
+    if (!move || !available(this.m, move).some((d) => d.id === dir)) throw new Error('PixelDoll: unavailable move/direction ' + anim + '/' + dir);
+    const layered = this.layerActions && this.canLayerAction(anim, dir);
+    if (!this.action) this.scene.events.on('update', this.tickAction);
+    this.action = { move, dir, elapsed: 0, layered };
+    this.sync();
+    return layered ? 'layered' : 'full';
+  }
+  cancelAction() {
+    if (this.action) this.scene.events.off('update', this.tickAction);
+    this.action = null;
+  }
+  walkCell() {
+    const name = this.body.anims.currentFrame?.textureFrame;
+    return name && this.anim ? { clip: this.anim, direction: this.dir, cell: +name.slice(name.lastIndexOf('_') + 1) } : null;
   }
 
   equip(slot, itemId) {
@@ -154,8 +201,9 @@ export class Paperdoll {
 
   setVariants(variants) { this.variants = { ...variants }; this.sync(); }
 
-  texture(item, layer) {
-    const original = texKey(this.m, item.id, layer.id, this.anim);
+  /** @param {'lower' | 'upper' | null} [part] */
+  texture(item, layer, anim = this.anim, part = null) {
+    const original = texKey(this.m, item.id, layer.id, fragmentKey(anim, part));
     const table = paletteMap(this.m, item, this.variants);
     if (!table.size) return original;
     const key = original + ':palette:' + JSON.stringify([...table]);
@@ -191,6 +239,27 @@ export class Paperdoll {
   }
 
   sync() {
+    for (const sprite of this.actionNodes) sprite.setVisible(false);
+    if (this.action) {
+      const { move, dir, elapsed, layered } = this.action;
+      const pose = { clip: move.id, direction: dir, cell: sampleTimeline(move.frames, elapsed, false) };
+      const draws = exportedActionDraws(this.m, this.equipped, pose, this.walkCell(), layered && this.layerActions);
+      for (const n of this.nodes) n.sprite.setVisible(false);
+      draws.forEach((draw, order) => {
+        let sprite = this.actionNodes[order];
+        if (!sprite) {
+          sprite = this.scene.add.sprite(0, 0, '__DEFAULT');
+          this.actionNodes.push(sprite);
+          this.container.add(sprite);
+        }
+        sprite.pdOrder = order;
+        sprite.setTexture(this.texture(draw.item, draw.layer, draw.clip, draw.part), draw.clip + '_' + draw.direction + '_' + draw.cell);
+        const { w, h, x, y } = layerFrame(this.m.rig, draw.layer);
+        sprite.setOrigin(x / w, y / h).setPosition(draw.point.x, draw.point.y).setVisible(true);
+      });
+      this.container.sort('pdOrder', (a, b) => a.pdOrder - b.pdOrder);
+      return;
+    }
     const frame = this.body.anims.currentFrame;
     if (!frame) return;
     const name = frame.textureFrame, cell = +name.slice(name.lastIndexOf('_') + 1);
@@ -207,7 +276,7 @@ export class Paperdoll {
     this.container.sort('pdOrder', (a, b) => a.pdOrder - b.pdOrder);
   }
 
-  destroy() { this.container.destroy(); }
+  destroy() { this.cancelAction(); this.container.destroy(); }
 }
 `;
 
@@ -215,11 +284,19 @@ export function phaserFiles(m: Manifest): OutFile[] {
 	const files: OutFile[] = [];
 	for (const it of m.items)
 		for (const l of it.layers)
-			for (const a of m.rig.animations)
+			for (const a of m.rig.animations) {
+				const path = atlasName(it.id, l.id, a.id);
 				files.push({
-					name: `phaser/${atlasName(it.id, l.id, a.id)}`,
+					name: `phaser/${path}`,
 					data: JSON.stringify(atlasJson(m, it.id, l.id, a.id), null, 1) + '\n'
 				});
+				for (const part of ['lower', 'upper'] as const)
+					if (l.actionSheets?.[part]?.[a.id])
+						files.push({
+							name: `phaser/${part}-${path}`,
+							data: JSON.stringify(atlasJson(m, it.id, l.id, a.id, part), null, 1) + '\n'
+						});
+			}
 	files.push({ name: 'phaser/PaperdollContainer.js', data: PAPERDOLL_JS });
 	files.push({ name: 'phaser/types.d.ts', data: runtimeTypes });
 	const dir = `assets/${m.exportId ?? m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`;
@@ -238,6 +315,8 @@ export function phaserFiles(m: Manifest): OutFile[] {
        doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})
      }
 Switch outfits with doll.applyPreset(m.presets[1]) or doll.applyPreset(outfitId); unknown outfit IDs throw without changing the doll.
+Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. canLayerAction(move, direction) checks the current gait and equipment. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action.
+
 play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
 Invalid move/direction, equipment and outfit IDs throw before changing state. Unequip a non-body slot with null.
 Recolor with doll.setVariants({ material_id: "stored_variant" }).

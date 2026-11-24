@@ -1,12 +1,12 @@
 # Decision: attack while walking
 
 Date: 2026-11-24
-Status: decided by the coordinator after independent memos from GPT-6.2 Sol and Claude Opus 5.5. No implementation yet.
+Status: implementation round 1 follows the coordinator review and uses the corrected gate.
 Inputs: [spike](README.md), [pixel probe](composite-probe.md), [independent review](review-gpt62/README.md), [Sol decision](review-gpt62/decision-sol.md), [Opus decision](review-opus55/README.md), [my lab](layering-lab.html), [Sol lab](review-gpt62/lab.html).
 
 ## Verdict
 
-Ship it, narrowly and optionally. Same-facing only: the Walk's legs stay under the Attack's upper body, the attack's own legs are removed with a shaped mask, and held gear stays intact. Off by default, no PixelLab cost, and a whole-body fallback whenever the pair is not eligible.
+Ship it, narrowly and optionally. Same-facing only: the Walk's legs stay under the Attack's upper body, the attack's own legs are removed with a shaped mask, and held gear stays intact. On by default in Live, off by default in engine controllers, no PixelLab cost, and a whole-body fallback whenever the pair is ineligible.
 
 The owner has seen the shaped result and accepts the quality, including a brief cape oddity during the attack. That settles the quality question for the pilot. It does not settle the export contract, so the app proves it first.
 
@@ -22,8 +22,8 @@ All must hold, otherwise the current whole-body attack plays:
 - Action layering is enabled for that character.
 
 Upper part: every attack layer, with the body's legs removed by the leg-shaped flood fill below the waist row, then fragments under 40 px dropped. Held weapons and capes stay whole.
-Lower part: the Walk composite from the waist row down, so walk boots and trousers come along.
-Registration: an integer offset from the two frames' stored hip points, with the lab's bounded silhouette fit as the fallback when the hip points miss by more than 1 px.
+Lower part: the Walk body and lower-body clothing from the waist row down. Held gear, capes and upper clothing come from the Attack so they appear once.
+Registration starts with the tracked hip, then uses measured or requested hips when needed. A nonzero or missing seam measurement tries the bounded silhouette fit. Use the offset with the lower measured seam step. A frame pair qualifies at a finite seam step of at most 1 px and zero gear loss.
 
 ## Exported API
 
@@ -57,7 +57,7 @@ No exported API operation is added for this. Mounts are editor-only today, and a
 
 In Settings, Live views, directly under the Attack picker, per character:
 
-- **Walk while attacking** (switch, default off). Help: "Legs keep walking during a same-facing attack. Capes may look odd."
+- **Walk while attacking** (switch, default on). Help: "Legs keep walking during a same-facing attack. Capes may look odd."
 - **Waist** (stepper, minus 4 to plus 4 px, default Automatic, shown only while the switch is on). Nudges the cut line for characters with long tops or low belts.
 
 Everything else is automatic: eligibility, registration, fragment cleanup, which layers come from which clip, fallback, and the slowdown. No seam slider, no speed slider, no per-pair list.
@@ -76,7 +76,7 @@ App policy, not exported API. While a grounded, unmounted attack plays, travel s
 
 Use the real rigs in `app/test/fixtures/bench/` (bodyA, bodyB, bodyC, bodyN with rest and per-cell keypoints, plus cape, boots, chest, helmet, hair and two-handed weapon sheets). Compare hip-keypoint offsets with the lab's fitted offsets for every walk and slash phase in each direction. Bake upper and lower fragments, verify the sword and cape stay whole, verify no gear disappears, and record the worst seam step per body.
 
-Gate: the automatic hip offset must be within 1 px of the fitted offset, or the fallback fit must reach it. If both fail on real rigs, stop and keep the whole-body attack.
+Gate: measure the seam at the chosen offset and report lost gear and detached body components. Keep the full action for each ineligible pair. [Round 1 review](REVIEW.md) records why offset agreement was dropped.
 
 ### Phase B: Live view, ship and use it
 
@@ -88,15 +88,15 @@ Gate: the automatic hip offset must be within 1 px of the fitted offset, or the 
 - `app/src/studio/LiveViewSettings.svelte` and `app/src/locales/`: the switch, the waist stepper, and help text.
 - Tests: new `app/test/unit/live-layering.test.ts` (offsets, leg removal keeps the sword, walk boots come from the walk, direction mismatch falls back, determinism, waist clamping) on bench frames; settings parsing in the existing settings test; one `experience-parity.spec.ts` case that toggles the switch, walks and attacks, and asserts the host attribute plus reduced travel.
 
-No export changes in Phase B. The runtime functions land because Live will reuse them later, not because exports change yet.
+The corrected gate is shared by Live and export preparation.
 
-### Phase C: exports, only after the owner has used Phase B
+### Phase C: exports
 
 - `app/src/lib/export/sheets.ts` and `build.ts`: fragment cells and anchors when the character enabled layering.
 - `phaser.ts`, `gdevelop.ts`, `godot.ts`, `unity.ts`: the four operations above.
 - `docs/architecture/javascript-runtime.md`: add the operations to the behavior contract.
 - Tests: `runtime.test.ts`, the four export suites, `runtime-sync.test.ts`, and the native verifiers. Run the full E2E suite because the shared runtime changed, plus `export-picker`.
-- Move the waist offset from browser preferences into the saved character so an export reproduces it.
+- Bake the character’s selected waist offset into the exported fragments.
 
 ## Review criteria for the implementation
 

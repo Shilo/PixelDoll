@@ -3503,6 +3503,13 @@
 		}
 	},
 	"liveViews": {
+		"walkWhileAttacking": "Caminhar enquanto ataca",
+		"layeringHelp": "Usa o ataque acima da cintura e a caminhada abaixo. As duas animações precisam ter a mesma direção e encaixar no quadril. Se não encaixarem, o ataque completo é reproduzido. Atacar a pé no chão reduz um pouco a velocidade de movimento.",
+		"waist": "Cintura",
+		"automaticWaist": "Automático",
+		"waistHelp": "Move a junção até 4 pixels para cima ou para baixo. O modo automático usa a posição do quadril em cada quadro.",
+		"raiseWaist": "Subir a cintura",
+		"lowerWaist": "Baixar a cintura",
 		"automaticStill": "Automático: parado",
 		"controls": "Controles",
 		"title": "Visualizações ao vivo",

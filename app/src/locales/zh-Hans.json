@@ -3392,6 +3392,13 @@
 		}
 	},
 	"liveViews": {
+		"walkWhileAttacking": "攻击时保持行走",
+		"layeringHelp": "腰部以上使用攻击帧，腰部以下使用行走帧。两个动作必须朝向相同，并且在髋部对齐。如果无法对齐，就播放完整的攻击动作。在地面徒步攻击时，移动速度会略微降低。",
+		"waist": "腰线",
+		"automaticWaist": "自动",
+		"waistHelp": "将接缝向上或向下移动最多 4 像素。自动模式使用每帧跟踪的髋部位置。",
+		"raiseWaist": "升高腰线",
+		"lowerWaist": "降低腰线",
 		"automaticStill": "自动：静止站立",
 		"controls": "操作",
 		"title": "实时视图",

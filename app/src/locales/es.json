@@ -3494,6 +3494,13 @@
 		}
 	},
 	"liveViews": {
+		"walkWhileAttacking": "Caminar mientras atacas",
+		"layeringHelp": "Usa el ataque por encima de la cintura y la caminata por debajo. Las dos animaciones deben mirar en la misma dirección y encajar en la cadera. Si no encajan, se reproduce el ataque completo. Los ataques a pie en el suelo reducen un poco la velocidad.",
+		"waist": "Cintura",
+		"automaticWaist": "Automático",
+		"waistHelp": "Desplaza la unión hasta 4 píxeles hacia arriba o abajo. El modo automático usa la posición de la cadera en cada fotograma.",
+		"raiseWaist": "Subir cintura",
+		"lowerWaist": "Bajar cintura",
 		"automaticStill": "Automático: quieto",
 		"controls": "Controles",
 		"title": "Vistas en vivo",

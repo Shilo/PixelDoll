@@ -16,6 +16,13 @@ function exportId(m: Manifest): string {
 
 export function unityJson(m: Manifest) {
 	const { rig } = m;
+	const anchors = (clip: string, part: 'lower' | 'upper', direction: string) =>
+		m.actionLayers?.planes
+			.find((plane) => plane.clip === clip && plane.part === part)
+			?.anchors.find((row) => row.direction === direction)
+			?.cells.map((point) =>
+				point ? { x: point[0], y: point[1], present: true } : { present: false }
+			) ?? [];
 	return {
 		name: m.exportId ?? portableAssetName(m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'Paperdoll'),
 		exportId: exportId(m),
@@ -25,6 +32,13 @@ export function unityJson(m: Manifest) {
 		pivotY: rig.pivot.y,
 		ppu: m.export?.pixelsPerUnit ?? exportUnit(rig),
 		baseItem: rig.baseItem,
+		actionPairs:
+			m.actionLayers?.pairs.map((pair) => ({
+				...pair,
+				lowerHip: anchors(pair.walk, 'lower', pair.direction),
+				upperHip: anchors(pair.action, 'upper', pair.direction),
+				cells: pair.cells.map((cell) => (cell ? { ...cell, eligible: true } : { eligible: false }))
+			})) ?? [],
 		directions: rig.directions.map((d) => d.id),
 		animations: rig.animations.map((a) => ({
 			id: a.id,
@@ -74,7 +88,9 @@ export function unityJson(m: Manifest) {
 					pivotX: f.x,
 					pivotY: f.y,
 					sheets: rig.animations.map((a) => l.sheets![a.id]),
-					sourceSheets: rig.animations.map((a) => l.sourceSheets?.[a.id] ?? l.sheets![a.id])
+					sourceSheets: rig.animations.map((a) => l.sourceSheets?.[a.id] ?? l.sheets![a.id]),
+					lowerSheets: rig.animations.map((a) => l.actionSheets?.lower?.[a.id] ?? ''),
+					upperSheets: rig.animations.map((a) => l.actionSheets?.upper?.[a.id] ?? '')
 				};
 			})
 		})),
@@ -91,14 +107,17 @@ using UnityEngine;
 
 namespace PixelDoll
 {
+    [Serializable] public class PdActionHip { public int x, y; public bool present; }
+    [Serializable] public class PdActionCell { public bool eligible; public int x, y; public string[] blocked; }
+    [Serializable] public class PdActionPair { public string walk, action, direction; public int upperCells; public PdActionCell[] cells; public PdActionHip[] lowerHip, upperHip; }
     [Serializable] public class PdFrame { public int cell; public int ms; }
     [Serializable] public class PdAnim { public string id; public bool loop; public int cells; public PdFrame[] frames; public string[] directions; }
     [Serializable] public class PdZOverride { public string layer; public int z; public string dir; public string anim; public int cell = -1; }
     [Serializable] public class PdSlot { public string id; public int z; public string[] hides; public PdZOverride[] zOverrides; }
-    [Serializable] public class PdLayer { public string id; public string role; public int z, cellW, cellH, pivotX, pivotY; public string[] sheets, sourceSheets; }
+    [Serializable] public class PdLayer { public string id; public string role; public int z, cellW, cellH, pivotX, pivotY; public string[] sheets, sourceSheets, lowerSheets, upperSheets; }
     [Serializable] public class PdItem { public string id, slot, variantOf; public bool hasHides; public string[] hides, materials, underAll; public PdLayer[] layers; }
     [Serializable] public class PdEquip { public string slot; public string item; }
-    [Serializable] public class PdSprites { public string item; public string layer; public Sprite[] sprites, sources; }
+    [Serializable] public class PdSprites { public string item; public string layer; public Sprite[] sprites, sources, lower, upper; }
     [Serializable] public class PdNode { public string slot; public string role; public SpriteRenderer renderer; }
     [Serializable] public class PdVariant { public string id; public string variant; }
     [Serializable] public class PdRamp { public string id; public string[] ramp; }
@@ -112,6 +131,7 @@ namespace PixelDoll
         public float ppu;
         public string[] directions;
         public PdAnim[] animations;
+        public PdActionPair[] actionPairs;
         public PdSlot[] slots;
         public PdItem[] items;
         public PdEquip[] preset;
@@ -134,6 +154,11 @@ namespace PixelDoll
         readonly Dictionary<string, Sprite> colored = new Dictionary<string, Sprite>();
         Sprite last;
         bool dirty = true;
+        bool layerActions, actionLayered;
+        PdAnim action;
+        string actionDirection;
+        double actionElapsed, actionDuration;
+        readonly List<SpriteRenderer> upperNodes = new List<SpriteRenderer>();
 
         public SpriteRenderer Body => nodes.Find(n => n.slot == "body" && n.role == "fg")?.renderer;
 
@@ -142,12 +167,62 @@ namespace PixelDoll
         {
             var move = Array.Find(data.animations, a => a.id == anim);
             if (move == null || Array.IndexOf(move.directions, dir) < 0) { Debug.LogWarning("PixelDoll: unavailable move/direction " + anim + "/" + dir, this); return false; }
+            action = null;
+            dirty = true;
             var animator = GetComponent<Animator>();
             var stateName = anim + "_" + dir;
             var current = animator.GetCurrentAnimatorStateInfo(0);
             if (restart || (!move.loop && current.shortNameHash == Animator.StringToHash(stateName) && current.normalizedTime >= 1f)) animator.Play(stateName, 0, 0f);
             else animator.Play(stateName);
             return true;
+        }
+
+        public bool IsActionPlaying => action != null;
+
+        public void SetActionLayering(bool enabled)
+        {
+            layerActions = enabled;
+            dirty = true;
+            Sync();
+        }
+
+        public bool CanLayerAction(string anim, string dir)
+        {
+            var move = Array.Find(data.animations, a => a.id == anim);
+            if (move == null || Array.IndexOf(move.directions, dir) < 0 || !clock || clock.sprite == null) return false;
+            ParsePose(clock.sprite.name, out var walk, out var facing, out var lower);
+            return facing == dir && PairOffset(walk, dir, lower, anim, move.frames[0].cell, HiddenSlots()) != null;
+        }
+
+        public string PlayAction(string anim, string dir)
+        {
+            var move = Array.Find(data.animations, a => a.id == anim);
+            if (move == null || Array.IndexOf(move.directions, dir) < 0)
+            {
+                Debug.LogWarning("PixelDoll: unavailable move/direction " + anim + "/" + dir, this);
+                return "";
+            }
+            actionLayered = layerActions && CanLayerAction(anim, dir);
+            action = move;
+            actionDirection = dir;
+            actionElapsed = actionDuration = 0;
+            foreach (var frame in move.frames) actionDuration += frame.ms;
+            dirty = true;
+            Sync();
+            return actionLayered ? "layered" : "full";
+        }
+
+        Vector2Int? PairOffset(string walk, string dir, int lower, string move, int upper, HashSet<string> hidden)
+        {
+            var pair = Array.Find(data.actionPairs ?? Array.Empty<PdActionPair>(), p => p.walk == walk && p.action == move && p.direction == dir);
+            if (pair == null) return null;
+            var cell = pair.cells[lower * pair.upperCells + upper];
+            if (cell == null || !cell.eligible) return null;
+            foreach (var e in equipped)
+                if (!hidden.Contains(e.slot) && Array.IndexOf(cell.blocked, Shown(e.item)) >= 0) return null;
+            var lo = pair.lowerHip[lower];
+            var hi = pair.upperHip[upper];
+            return lo.present && hi.present ? new Vector2Int(lo.x - hi.x + cell.x, lo.y - hi.y + cell.y) : (Vector2Int?)null;
         }
 
         /// Equips itemId in slot (null or "" = empty); hides are re-applied on the next LateUpdate.
@@ -185,7 +260,16 @@ namespace PixelDoll
             return true;
         }
 
-        void LateUpdate() => Sync();
+        void LateUpdate()
+        {
+            if (action != null)
+            {
+                actionElapsed += Time.deltaTime * 1000.0;
+                if (actionElapsed >= actionDuration) action = null;
+                dirty = true;
+            }
+            Sync();
+        }
         void OnEnable() { maps = null; last = null; dirty = true; }
 
         public void Sync()
@@ -202,13 +286,50 @@ namespace PixelDoll
                     var d = new Dictionary<string, Sprite>();
                     foreach (var sp in Application.isPlaying ? l.sources : l.sprites) d[sp.name] = sp;
                     maps[l.item + "/" + l.layer] = d;
+                    AddPlane("lower", l.lower);
+                    AddPlane("upper", l.upper);
+                    void AddPlane(string part, Sprite[] sprites)
+                    {
+                        if (sprites == null || sprites.Length == 0) return;
+                        var plane = new Dictionary<string, Sprite>();
+                        foreach (var sp in sprites) plane[sp.name] = sp;
+                        maps[part + ":" + l.item + "/" + l.layer] = plane;
+                    }
                 }
             }
-            // sprite name = <anim>_<dir>_<cell>; direction ids never contain '_'
-            var name = s.name;
+            ParsePose(s.name, out var anim, out var dir, out var cell);
+            var hidden = HiddenSlots();
+            foreach (var renderer in upperNodes) renderer.enabled = false;
+            if (action == null) { RenderStack(anim, dir, cell, "", hidden, false, Vector3.zero, 0); return; }
+            var elapsed = actionElapsed;
+            int index = 0;
+            while (index + 1 < action.frames.Length && elapsed >= action.frames[index].ms)
+            {
+                elapsed -= action.frames[index].ms;
+                index++;
+            }
+            int upperCell = action.frames[index].cell;
+            var offset = actionLayered && layerActions && dir == actionDirection
+                ? PairOffset(anim, dir, cell, action.id, upperCell, hidden) : null;
+            if (offset == null) RenderStack(action.id, actionDirection, upperCell, "", hidden, false, Vector3.zero, 0);
+            else
+            {
+                int rank = RenderStack(anim, dir, cell, "lower", hidden, false, Vector3.zero, 0);
+                RenderStack(action.id, actionDirection, upperCell, "upper", hidden, true,
+                    new Vector3(offset.Value.x / data.ppu, -offset.Value.y / data.ppu), rank);
+            }
+        }
+
+        static void ParsePose(string name, out string anim, out string dir, out int cell)
+        {
             int c2 = name.LastIndexOf('_'), c1 = name.LastIndexOf('_', c2 - 1);
-            string anim = name.Substring(0, c1), dir = name.Substring(c1 + 1, c2 - c1 - 1);
-            int cell = int.Parse(name.Substring(c2 + 1));
+            anim = name.Substring(0, c1);
+            dir = name.Substring(c1 + 1, c2 - c1 - 1);
+            cell = int.Parse(name.Substring(c2 + 1));
+        }
+
+        HashSet<string> HiddenSlots()
+        {
             var hidden = new HashSet<string>();
             var baseItem = Item(data.baseItem);
             if (baseItem != null)
@@ -228,19 +349,42 @@ namespace PixelDoll
                 if (worn.Exists(o => o != it && Array.IndexOf(HidesOf(it), o.slot) >= 0 && Array.IndexOf(HidesOf(o), it.slot) >= 0 && At(o.slot) > At(it.slot))) continue;
                 foreach (var h in HidesOf(it)) hidden.Add(h);
             }
-            var visible = new List<KeyValuePair<PdNode, int>>();
-            foreach (var n in nodes)
+            return hidden;
+        }
+
+        int RenderStack(string anim, string dir, int cell, string part, HashSet<string> hidden, bool upper, Vector3 offset, int first)
+        {
+            string name = anim + "_" + dir + "_" + cell;
+            var visible = new List<(SpriteRenderer renderer, int z, int order)>();
+            for (int i = 0; i < nodes.Count; i++)
             {
+                var n = nodes[i];
                 var it = Item(Shown(n.slot == "body" ? data.baseItem : equipped.Find(x => x.slot == n.slot)?.item));
                 var layer = it == null ? null : Array.Find(it.layers, l => l.role == n.role);
-                n.renderer.enabled = layer != null && !hidden.Contains(n.slot);
-                if (layer == null) continue;
-                visible.Add(new KeyValuePair<PdNode, int>(n, Z(Slot(n.slot), layer, anim, dir, cell)));
-                n.renderer.sprite = maps.TryGetValue(it.id + "/" + layer.id, out var m) && m.TryGetValue(name, out var sp) ? Recolor(it, sp) : null;
+                var renderer = upper ? UpperNode(i) : n.renderer;
+                renderer.enabled = false;
+                if (layer == null || hidden.Contains(n.slot)) continue;
+                var key = (part.Length == 0 ? "" : part + ":") + it.id + "/" + layer.id;
+                if (!maps.TryGetValue(key, out var m) || !m.TryGetValue(name, out var sp)) continue;
+                renderer.sprite = Recolor(it, sp);
+                if (upper) renderer.transform.localPosition = offset;
+                renderer.enabled = true;
+                visible.Add((renderer, Z(Slot(n.slot), layer, anim, dir, cell), i));
             }
-            // nodes follow manifest slot order, bg before fg; tie-break is independent of camera distance.
-            visible.Sort((a, b) => a.Value != b.Value ? a.Value.CompareTo(b.Value) : nodes.IndexOf(a.Key).CompareTo(nodes.IndexOf(b.Key)));
-            for (int i = 0; i < visible.Count; i++) visible[i].Key.renderer.sortingOrder = i;
+            visible.Sort((a, b) => a.z != b.z ? a.z.CompareTo(b.z) : a.order.CompareTo(b.order));
+            for (int i = 0; i < visible.Count; i++) visible[i].renderer.sortingOrder = first + i;
+            return first + visible.Count;
+        }
+
+        SpriteRenderer UpperNode(int i)
+        {
+            while (upperNodes.Count <= i)
+            {
+                var child = new GameObject("action_upper_" + upperNodes.Count);
+                child.transform.SetParent(transform, false);
+                upperNodes.Add(child.AddComponent<SpriteRenderer>());
+            }
+            return upperNodes[i];
         }
 
         string Variant(PdMaterial mat, HashSet<string> seen)
@@ -382,13 +526,17 @@ namespace PixelDoll.Editor
                 {
                     var sprites = new List<Sprite>();
                     var sources = new List<Sprite>();
+                    var lower = new List<Sprite>();
+                    var upper = new List<Sprite>();
                     for (int a = 0; a < d.animations.Length; a++)
                     {
                         var sliced = Slice(root + "/" + l.sheets[a], d, l, d.animations[a]);
                         sprites.AddRange(sliced);
                         sources.AddRange(l.sourceSheets[a] == l.sheets[a] ? sliced : Slice(root + "/" + l.sourceSheets[a], d, l, d.animations[a]));
+                        if (l.lowerSheets != null && !string.IsNullOrEmpty(l.lowerSheets[a])) lower.AddRange(Slice(root + "/" + l.lowerSheets[a], d, l, d.animations[a]));
+                        if (l.upperSheets != null && !string.IsNullOrEmpty(l.upperSheets[a])) upper.AddRange(Slice(root + "/" + l.upperSheets[a], d, l, d.animations[a]));
                     }
-                    library.Add(new PdSprites { item = it.id, layer = l.id, sprites = sprites.ToArray(), sources = sources.ToArray() });
+                    library.Add(new PdSprites { item = it.id, layer = l.id, sprites = sprites.ToArray(), sources = sources.ToArray(), lower = lower.ToArray(), upper = upper.ToArray() });
                 }
 
             var bodyLayer = d.items.First(i => i.id == d.baseItem).layers.First(l => l.role == "fg");
@@ -550,6 +698,8 @@ Tools > PixelDoll > ${identity} > Import if no prefab appeared.
 Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)}, pivot at the feet),
 <anim>_<dir>.anim clips for supported views, ${unityJson(m).name}.controller and ${unityJson(m).name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
+Call SetActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. CanLayerAction(move, direction) checks the current gait and equipment. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action.
+
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
 Play preserves an active clip's progress. Calling it again after the same non-looping clip completes replays that clip.
 Changed moves/directions start at the beginning. Pass true as Play's third argument to restart explicitly.

@@ -10,17 +10,25 @@ const q = JSON.stringify;
 const rid = (s: string) => q('r_' + Array.from(s, (c) => c.codePointAt(0)!.toString(16)).join('_'));
 const num = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
-export function spriteFramesTres(m: Manifest, itemId: string, layerId: string): string {
+export function spriteFramesTres(
+	m: Manifest,
+	itemId: string,
+	layerId: string,
+	part?: 'lower' | 'upper'
+): string {
 	const { rig } = m;
 	const layer = m.items.find((i) => i.id === itemId)!.layers.find((l) => l.id === layerId)!,
 		{ w, h } = layerFrame(rig, layer);
-	const ext = rig.animations.map(
+	const clips = part
+		? rig.animations.filter((a) => layer.actionSheets?.[part]?.[a.id])
+		: rig.animations;
+	const ext = clips.map(
 		(a) =>
-			`[ext_resource type="Texture2D" path=${q('../' + (layer.sourceSheets?.[a.id] ?? layer.sheets![a.id]))} id=${rid(a.id)}]`
+			`[ext_resource type="Texture2D" path=${q('../' + (part ? layer.actionSheets![part]![a.id] : (layer.sourceSheets?.[a.id] ?? layer.sheets![a.id])))} id=${rid(a.id)}]`
 	);
 	const subs: string[] = [],
 		anims: string[] = [];
-	for (const a of rig.animations) {
+	for (const a of clips) {
 		const msBase = Math.min(...a.frames.map((f) => f.ms));
 		rig.directions.forEach((d, r) => {
 			for (let c = 0; c < a.cells; c++)
@@ -127,10 +135,19 @@ var dir := ""
 var _refreshing := false
 var _frame_cache := {}
 var _texture_cache := {}
+var _hidden := {}
+var _action: Dictionary = {}
+var _action_elapsed := 0.0
+var _action_duration := 0.0
+var _action_layered := false
+var _layer_actions := false
+var _action_dir := ""
+var _action_nodes: Array[Sprite2D] = []
 @onready var body: AnimatedSprite2D = $body_fg
 
 
 func _ready() -> void:
+	set_process(false)
 	manifest = library.get_meta("manifest")
 	body.frame_changed.connect(_sync)
 	body.animation_changed.connect(_sync)
@@ -155,6 +172,7 @@ func play_anim(a: String, d: String, restart: bool = false) -> bool:
 	if not body.sprite_frames.has_animation("%s_%s" % [a, d]):
 		push_warning("PixelDoll: unavailable move/direction %s/%s" % [a, d])
 		return false
+	_cancel_action()
 	anim = a
 	dir = d
 	if restart:
@@ -162,6 +180,134 @@ func play_anim(a: String, d: String, restart: bool = false) -> bool:
 	body.play("%s_%s" % [a, d])
 	_sync()
 	return true
+
+
+func set_action_layering(enabled: bool) -> void:
+	_layer_actions = enabled
+	_sync()
+
+
+func is_action_playing() -> bool:
+	return not _action.is_empty()
+
+
+func can_layer_action(a: String, d: String) -> bool:
+	var move := _find(manifest["rig"]["animations"], a)
+	return not move.is_empty() and not _pair_offset(a, d, int(move["frames"][0]["cell"])).is_empty()
+
+
+func play_action(a: String, d: String) -> String:
+	var move := _find(manifest["rig"]["animations"], a)
+	if move.is_empty() or not body.sprite_frames.has_animation("%s_%s" % [a, d]) or (move.has("directions") and not move["directions"].has(d)):
+		push_warning("PixelDoll: unavailable move/direction %s/%s" % [a, d])
+		return ""
+	_action_layered = _layer_actions and can_layer_action(a, d)
+	_action = move
+	_action_dir = d
+	_action_elapsed = 0.0
+	_action_duration = 0.0
+	for frame in move["frames"]:
+		_action_duration += float(frame["ms"])
+	set_process(true)
+	_sync()
+	return "layered" if _action_layered else "full"
+
+
+func _cancel_action() -> void:
+	_action = {}
+	set_process(false)
+
+
+func _process(delta: float) -> void:
+	_action_elapsed += delta * 1000.0
+	if _action_elapsed >= _action_duration:
+		_cancel_action()
+	_sync()
+
+
+func _pair_offset(a: String, d: String, action_cell: int) -> Dictionary:
+	if anim.is_empty() or dir != d:
+		return {}
+	var frames: Array = _find(manifest["rig"]["animations"], anim)["frames"]
+	var cell := int(frames[mini(body.frame, frames.size() - 1)]["cell"])
+	var layers: Dictionary = manifest.get("actionLayers", {})
+	for pair in layers.get("pairs", []):
+		if pair["walk"] != anim or pair["action"] != a or pair["direction"] != d:
+			continue
+		var record: Variant = pair["cells"][cell * int(pair["upperCells"]) + action_cell]
+		if record == null:
+			return {}
+		for slot in equipped:
+			if not _hidden.has(slot) and record["blocked"].has(_shown(slot)):
+				return {}
+		var lo := _action_hip(layers, anim, "lower", d, cell)
+		var hi := _action_hip(layers, a, "upper", d, action_cell)
+		if lo.is_empty() or hi.is_empty():
+			return {}
+		return { "x": int(lo[0]) - int(hi[0]) + int(record["x"]), "y": int(lo[1]) - int(hi[1]) + int(record["y"]) }
+	return {}
+
+
+func _action_hip(layers: Dictionary, a: String, part: String, d: String, cell: int) -> Array:
+	for plane in layers.get("planes", []):
+		if plane["clip"] == a and plane["part"] == part:
+			var row := _find(plane["anchors"], d, "direction")
+			if not row.is_empty() and row["cells"][cell] != null:
+				return row["cells"][cell]
+	return []
+
+
+func _render_action() -> void:
+	var frames: Array = _action["frames"]
+	var elapsed := _action_elapsed
+	var index := 0
+	while index + 1 < frames.size() and elapsed >= float(frames[index]["ms"]):
+		elapsed -= float(frames[index]["ms"])
+		index += 1
+	var a: String = _action["id"]
+	var offset := _pair_offset(a, _action_dir, int(frames[index]["cell"])) if _action_layered and _layer_actions else {}
+	var draws: Array = []
+	if offset.is_empty():
+		_action_stack(draws, a, _action_dir, index, "", Vector2.ZERO)
+	else:
+		_action_stack(draws, anim, dir, body.frame, "lower", Vector2.ZERO)
+		_action_stack(draws, a, _action_dir, index, "upper", Vector2(offset["x"], offset["y"]))
+	var start := maxi(-4096, mini(0, 4097 - draws.size()))
+	for i in draws.size():
+		if i >= _action_nodes.size():
+			var sprite := Sprite2D.new()
+			sprite.centered = false
+			add_child(sprite)
+			_action_nodes.append(sprite)
+		var draw: Dictionary = draws[i]
+		var node := _action_nodes[i]
+		node.texture = draw["texture"]
+		node.offset = draw["pivot"]
+		node.position = draw["position"]
+		node.z_index = mini(4096, start + i)
+		node.show()
+
+
+func _action_stack(draws: Array, a: String, d: String, index: int, part: String, pos: Vector2) -> void:
+	var stack: Array = []
+	var move := _find(manifest["rig"]["animations"], a)
+	var cell := int(move["frames"][index]["cell"])
+	for node in _layers():
+		var slot: String = node.get_meta("slot")
+		if _hidden.has(slot):
+			continue
+		var layer := _layer_of(node)
+		if layer.is_empty() or (not part.is_empty() and not layer.get("actionSheets", {}).get(part, {}).has(a)):
+			continue
+		var frames := _colored_frames(_find(manifest["items"], _shown(slot)), layer, part)
+		var pv: Dictionary = layer.get("pivot", manifest["rig"]["pivot"])
+		stack.append({
+			"texture": frames.get_frame_texture("%s_%s" % [a, d], index),
+			"pivot": -Vector2(pv["x"], pv["y"]),
+			"position": pos, "z": _z(slot, layer, cell, a, d), "order": stack.size()
+		})
+	stack.sort_custom(func(x, y): return x["z"] < y["z"] if x["z"] != y["z"] else x["order"] < y["order"])
+	draws.append_array(stack)
 
 
 ## Equips item_id in slot ("" = empty), then re-applies hides.
@@ -260,6 +406,7 @@ func _refresh() -> void:
 		if not yields:
 			for h in hides[slot]:
 				hidden[h] = true
+	_hidden = hidden
 	for node in _layers():
 		var layer := _layer_of(node)
 		node.visible = not layer.is_empty() and not hidden.has(node.get_meta("slot"))
@@ -283,15 +430,23 @@ func _refresh() -> void:
 func _sync() -> void:
 	if anim.is_empty() or _refreshing:
 		return
+	for node in _action_nodes:
+		node.hide()
+	if is_action_playing():
+		for node in _layers():
+			node.hide()
+		_render_action()
+		return
 	var frames: Array = _find(manifest["rig"]["animations"], anim)["frames"]
 	var cell := int(frames[mini(body.frame, frames.size() - 1)]["cell"])
 	var visible := []
 	for node in _layers():
 		var layer := _layer_of(node)
+		node.visible = not layer.is_empty() and not _hidden.has(node.get_meta("slot"))
 		if layer.is_empty():
 			continue
 		if node.visible:
-			visible.append({"node": node, "z": _z(node.get_meta("slot"), layer, cell), "order": visible.size()})
+			visible.append({"node": node, "z": _z(node.get_meta("slot"), layer, cell, anim, dir), "order": visible.size()})
 		if node != body and node.visible:
 			if node.animation != body.animation:
 				node.animation = body.animation
@@ -313,8 +468,10 @@ func _variant_of(id: String, seen: Dictionary) -> String:
 	return variants.get(id, material.get("defaultVariant", ""))
 
 
-func _colored_frames(item: Dictionary, layer: Dictionary) -> SpriteFrames:
+func _colored_frames(item: Dictionary, layer: Dictionary, part := "") -> SpriteFrames:
 	var key: String = "%s_%s" % [item["id"], layer["id"]]
+	if not part.is_empty():
+		key = part + ":" + key
 	if _frame_cache.has(key):
 		return _frame_cache[key]
 	var source: SpriteFrames = library.get_meta("frames")[key]
@@ -361,11 +518,11 @@ func _colored_frames(item: Dictionary, layer: Dictionary) -> SpriteFrames:
 
 
 ## Most specific zOverride (cell > anim > dir > none, later wins on ties), else the layer's z.
-func _z(slot: String, layer: Dictionary, cell: int) -> int:
+func _z(slot: String, layer: Dictionary, cell: int, a: String, d: String) -> int:
 	var z := int(layer["z"])
 	var best := -1
 	for o in _find(manifest["slots"], slot).get("zOverrides", []):
-		if o["layer"] != layer["role"] or (o.has("dir") and o["dir"] != dir) or (o.has("anim") and o["anim"] != anim) or (o.has("cell") and int(o["cell"]) != cell):
+		if o["layer"] != layer["role"] or (o.has("dir") and o["dir"] != d) or (o.has("anim") and o["anim"] != a) or (o.has("cell") and int(o["cell"]) != cell):
 			continue
 		var rank := 3 if o.has("cell") else 2 if o.has("anim") else 1 if o.has("dir") else 0
 		if rank >= best:
@@ -404,18 +561,30 @@ func _find(list: Array, id: String, key := "id") -> Dictionary:
 `;
 
 export function godotFiles(m: Manifest): OutFile[] {
-	const files: OutFile[] = m.items.flatMap((it) =>
-		it.layers.map((l) => ({
-			name: `godot/${boundedFileStem(`${it.id}_${l.id}`)}.tres`,
-			data: spriteFramesTres(m, it.id, l.id)
-		}))
-	);
-	// A scene dependency retains every alternate item even when a game's export preset includes selected scenes only.
-	// Store the manifest as native resource metadata too: runtime never depends on unimported JSON/FileAccess paths.
-	const layers = m.items.flatMap((it) => it.layers.map((l) => `${it.id}_${l.id}`));
+	const files: OutFile[] = [];
+	const layers: string[] = [];
+	for (const it of m.items)
+		for (const layer of it.layers) {
+			const id = `${it.id}_${layer.id}`;
+			layers.push(id);
+			files.push({
+				name: `godot/${boundedFileStem(id)}.tres`,
+				data: spriteFramesTres(m, it.id, layer.id)
+			});
+			for (const part of ['lower', 'upper'] as const) {
+				if (!layer.actionSheets?.[part]) continue;
+				const key = `${part}:${id}`;
+				layers.push(key);
+				files.push({
+					name: `godot/${boundedFileStem(key.replace(':', '@'))}.tres`,
+					data: spriteFramesTres(m, it.id, layer.id, part)
+				});
+			}
+		}
+	// Native resource metadata retains all dependencies in selected-scene builds.
 	files.push({
 		name: 'godot/library.tres',
-		data: `[gd_resource type="Resource" format=3]\n\n${layers.map((key, i) => `[ext_resource type="SpriteFrames" path=${q(boundedFileStem(key) + '.tres')} id="f${i}"]`).join('\n')}\n\n[resource]\nmetadata/manifest = ${JSON.stringify(m)}\nmetadata/frames = {${layers.map((key, i) => `${q(key)}: ExtResource("f${i}")`).join(', ')}}\n`
+		data: `[gd_resource type="Resource" format=3]\n\n${layers.map((key, i) => `[ext_resource type="SpriteFrames" path=${q(boundedFileStem(key.replace(':', '@')) + '.tres')} id="f${i}"]`).join('\n')}\n\n[resource]\nmetadata/manifest = ${JSON.stringify(m)}\nmetadata/frames = {${layers.map((key, i) => `${q(key)}: ExtResource("f${i}")`).join(', ')}}\n`
 	});
 	files.push(
 		{ name: 'godot/Paperdoll.tscn', data: paperdollTscn(m) },
@@ -425,6 +594,8 @@ export function godotFiles(m: Manifest): OutFile[] {
 		name: 'godot/README.txt',
 		data: `Copy the whole export folder into your Godot 4 project, then instance godot/Paperdoll.tscn.
 API: play_anim(anim, dir, restart = false), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
+Call set_action_layering(true) to enable moving attacks when the ZIP contains precut fragments. can_layer_action(move, direction) checks the current gait and equipment. play_action(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Call is_action_playing() to check completion. Calling play_anim cancels the action.
+
 play_anim preserves active progress, starts changed moves/directions at the beginning and replays completed once-only clips. Pass true to restart explicitly.
 These methods return true on success; invalid move/direction, equipment, outfit or material IDs return false and emit an engine warning before changing state.
 set_variant changes one explicit selection; null removes it and restores the material default, while "" uses source colors. Linked materials follow their target's selection.

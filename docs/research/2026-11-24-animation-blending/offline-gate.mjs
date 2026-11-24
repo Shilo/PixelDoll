@@ -1,7 +1,20 @@
 // Run from app/: node --experimental-transform-types ../docs/research/2026-11-24-animation-blending/offline-gate.mjs
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { runBench } from "../../../app/scripts/bench.ts";
-import { decodePngBytes } from "../../../app/src/lib/image/pngraw.ts";
+import {
+  decodePngBytes,
+  encodePngBytes,
+} from "../../../app/src/lib/image/pngraw.ts";
+import {
+  actionHip,
+  actionComponents,
+  actionPairFallback,
+  compositeAction,
+  flipH,
+  layerOffset,
+  splitLower,
+  splitUpper,
+} from "../../../app/src/lib/runtime/paperdoll.js";
 
 const bench = new URL("../../../app/test/fixtures/bench/", import.meta.url);
 const demo = new URL("../../../app/public/fixtures/s2/", import.meta.url);
@@ -17,118 +30,25 @@ const occupied = (image, size, row, col, mirror = false) => {
   return pixels;
 };
 
-function components(pixels, size) {
-  const unseen = new Set(pixels);
-  const parts = [];
-  for (const first of unseen) {
-    const part = [first];
-    unseen.delete(first);
-    for (const pixel of part) {
-      const x = pixel % size;
-      const neighbors = [pixel - size, pixel + size];
-      if (x) neighbors.push(pixel - 1);
-      if (x + 1 < size) neighbors.push(pixel + 1);
-      for (const next of neighbors) if (unseen.delete(next)) part.push(next);
-    }
-    parts.push(part);
+function pose(image, size, row, col, mirror, geometry) {
+  const frame = {
+    w: size,
+    h: size,
+    data: new Uint8ClampedArray(size * size * 4),
+  };
+  for (let y = 0; y < size; y++) {
+    const start = ((row * size + y) * image.w + col * size) * 4;
+    frame.data.set(image.data.subarray(start, start + size * 4), y * size * 4);
   }
-  return parts;
+  return { image: mirror ? flipH(frame) : frame, geometry };
 }
 
-function pose(pixels, size, points, mirror, fallback) {
-  const pointsFor = (part) =>
-    points
-      ?.filter(({ label }) => label.endsWith(" " + part))
-      .map(({ x, y }) => ({ x: (mirror ? 1 - x : x) * size, y: y * size })) ??
-    [];
-  const hips = pointsFor("HIP");
-  const [x, y] = hips.length
-    ? ["x", "y"].map(
-        (axis) => hips.reduce((sum, hip) => sum + hip[axis], 0) / hips.length,
-      )
-    : fallback;
-  const waist = Math.round(y);
-  const feet = pointsFor("LEG");
-  const below = [...pixels].filter((pixel) => pixel >= waist * size);
-  const footDistance = (pixel, foot) =>
-    Math.hypot(
-      (pixel % size) + 0.5 - foot.x,
-      Math.floor(pixel / size) + 0.5 - foot.y,
-    );
-  const seeds = feet.length
-    ? feet.map((foot) =>
-        below.reduce(
-          (best, p) =>
-            footDistance(p, foot) < footDistance(best, foot) ? p : best,
-          below[0],
-        ),
-      )
-    : below.filter(
-        (p) => Math.floor(p / size) === Math.floor(below.at(-1) / size),
-      );
-  const removed = new Set(
-    components(below, size)
-      .filter((part) => seeds.some((p) => part.includes(p)))
-      .flat(),
-  );
-  const upper = new Set(
-    components(
-      [...pixels].filter((p) => !removed.has(p)),
-      size,
-    )
-      .filter((part) => part.length >= 40)
-      .flat(),
-  );
-  const lower = new Set(below);
-  return { x, y, waist, upper, lower };
-}
-
-function compare(walk, action, size, gear, expected) {
-  const range = Math.round(size / 8);
-  const extent = (pixels, row, center, dx = 0) => {
-    const xs = [];
-    for (
-      let x = Math.round(center) - range;
-      x <= Math.round(center) + range;
-      x++
-    )
-      if (x - dx >= 0 && x - dx < size && pixels.has(row * size + x - dx))
-        xs.push(x);
-    return xs.length ? [xs[0], xs.at(-1)] : null;
-  };
-  const bottom = extent(walk.lower, walk.waist, walk.x);
-  const step = (dx, dy) => {
-    const top = extent(action.upper, walk.waist - 1 - dy, walk.x, dx);
-    return top && bottom
-      ? Math.abs(top[0] - bottom[0]) + Math.abs(top[1] - bottom[1])
-      : Infinity;
-  };
-  const initial = expected ?? [
-    Math.round(walk.x - action.x),
-    Math.round(walk.y - action.y),
-  ];
-  let fitted = [0, 0];
-  let best = Infinity;
-  // Lab search and tie-break. No use of fitted data from other characters.
-  for (let dx = -5; dx <= 5; dx++)
-    for (let dy = -5; dy <= 5; dy++) {
-      const score = step(dx, dy) + 0.02 * (Math.abs(dx) + Math.abs(dy));
-      if (score < best) {
-        best = score;
-        fitted = [dx, dy];
-      }
-    }
-  const miss = Math.max(
-    ...initial.map((value, axis) => Math.abs(value - fitted[axis])),
-  );
-  const [dx, dy] = miss > 1 ? fitted : initial;
-  const out = new Set(walk.lower);
-  for (const p of action.upper) {
-    const x = (p % size) + dx;
-    const y = Math.floor(p / size) + dy;
-    if (x >= 0 && x < size && y >= 0 && y < size) out.add(y * size + x);
-  }
-  const parts = components(out, size).sort((a, b) => b.length - a.length);
+function compare(walk, action, size, gear, w, a) {
+  const lower = splitLower(walk.image, walk.geometry);
+  const upper = splitUpper(action.image, action.geometry);
+  const { x: dx, y: dy, seam, source } = layerOffset(lower, upper);
+  const output = compositeAction(lower.image, upper.image, { x: dx, y: dy });
+  const parts = actionComponents(occupied(output, size, 0, 0), size);
   let gearLoss = 0;
   let gearClippedInLab = 0;
   for (const { pixels, width, pad, lower } of gear) {
@@ -140,32 +60,70 @@ function compare(walk, action, size, gear, expected) {
     }
   }
   return {
-    miss,
-    initialStep: step(...initial),
-    fittedStep: step(...fitted),
-    fallbackStep: step(dx, dy),
+    w,
+    a,
+    dx,
+    dy,
+    seam,
+    source,
+    gearLoss: gearLoss + gearClippedInLab,
     fragments: Math.max(0, parts.length - 1),
-    detachedPixels: parts.slice(1).reduce((sum, part) => sum + part.length, 0),
-    gearLoss,
-    gearClippedInLab,
+    output,
+    fallback: actionPairFallback(seam, gearLoss + gearClippedInLab),
   };
 }
 
-function print(label, pairs) {
-  const maxima = Object.fromEntries(
-    Object.keys(pairs[0]).map((key) => [
-      key,
-      Math.max(...pairs.map((pair) => pair[key])),
-    ]),
+function print(label, pairs, geometry = []) {
+  const seams = pairs.map((p) => p.seam).sort((a, b) => a - b);
+  const count = (keys) =>
+    Object.fromEntries(
+      [...new Set(keys)].map((key) => [
+        key,
+        keys.filter((other) => key === other).length,
+      ]),
+    );
+  const worst = pairs.reduce((max, pair) =>
+    pair.seam > max.seam ? pair : max,
   );
-  console.log(
-    label,
-    pairs.length,
-    "pairs",
-    pairs.filter(({ miss }) => miss > 1).length,
-    "offset misses > 1 px",
-    maxima,
-  );
+  console.log(label, {
+    anchors:
+      geometry.filter((p) => p?.source === "anchor").length +
+      "/" +
+      geometry.length,
+    worst: worst.seam,
+    median:
+      (seams[Math.floor((seams.length - 1) / 2)] +
+        seams[Math.floor(seams.length / 2)]) /
+      2,
+    worstPair: [worst.w, worst.a],
+    worstOffset: [worst.dx, worst.dy],
+    sources: count(pairs.map((p) => p.source)),
+    gearLoss: Math.max(...pairs.map((p) => p.gearLoss)),
+    fragments: Math.max(...pairs.map((p) => p.fragments)),
+    eligible: pairs
+      .filter((p) => !p.fallback)
+      .map((p) => `${p.w}/${p.a}`)
+      .join(" "),
+    fallback: count(pairs.map((p) => p.fallback).filter(Boolean)),
+  });
+}
+
+async function sheet(pairs, width, height) {
+  const size = pairs[0].output.w,
+    tile = size * 4;
+  const image = {
+    w: width * tile,
+    h: height * tile,
+    data: new Uint8ClampedArray(width * height * tile * tile * 4),
+  };
+  for (const { w, a, output } of pairs)
+    for (let y = 0; y < tile; y++)
+      for (let x = 0; x < tile; x++) {
+        const src = (Math.floor(y / 4) * size + Math.floor(x / 4)) * 4;
+        const dst = ((w * tile + y) * image.w + a * tile + x) * 4;
+        image.data.set(output.data.subarray(src, src + 4), dst);
+      }
+  return encodePngBytes(image);
 }
 
 const { cases, results } = await runBench();
@@ -181,22 +139,22 @@ for (const body of ["A", "B", "C", "N"]) {
   const image = await png(bench, "body" + body + ".png");
   const walk = rig.animations.find(({ id }) => id === "walk");
   const slash = rig.animations.find(({ id }) => id === "slash");
-  const allPairs = [];
+
   for (const { id, mirrorOf } of rig.directions) {
     const source = mirrorOf ?? id;
     const make = (clip, i) =>
       pose(
-        occupied(
-          image,
-          size,
-          rows.indexOf(source),
-          cols.indexOf(clip.id + "/" + i),
-          !!mirrorOf,
-        ),
+        image,
         size,
-        clip.sources[source].measured?.[i] ?? clip.sources[source].keypoints[i],
+        rows.indexOf(source),
+        cols.indexOf(clip.id + "/" + i),
         !!mirrorOf,
+        actionHip(rig, clip.id, id, i),
       );
+    const lower = Array.from({ length: walk.cells }, (_, i) => make(walk, i));
+    const upper = Array.from({ length: (slash ?? walk).cells }, (_, i) =>
+      make(slash ?? walk, i),
+    );
     const gear = (w, a) =>
       cases
         .filter((entry) => entry.body === body)
@@ -217,19 +175,20 @@ for (const body of ["A", "B", "C", "N"]) {
               ]
             : [];
         });
-    const pairs = [];
-    for (let w = 0; w < walk.cells; w++)
-      for (let a = 0; a < (slash ?? walk).cells; a++)
-        pairs.push(
-          compare(make(walk, w), make(slash ?? walk, a), size, gear(w, a)),
-        );
-    print("body" + body + " " + id, pairs);
-    allPairs.push(...pairs);
+    const pairs = lower.flatMap((walk, w) =>
+      upper.map((action, a) => compare(walk, action, size, gear(w, a), w, a)),
+    );
+    print(
+      "body" + body + " " + id + (slash ? "" : " walk/walk"),
+      pairs,
+      [...lower, ...upper].map((p) => p.geometry),
+    );
+    if (body === "A")
+      writeFileSync(
+        new URL(`evidence/20-gate-bodyA-${id}-selected.png`, import.meta.url),
+        await sheet(pairs, upper.length, lower.length),
+      );
   }
-  print(
-    "body" + body + (slash ? " actual" : " Walk/Walk diagnostic only"),
-    allPairs,
-  );
 }
 
 const fixture = json(demo, "fixture.json");
@@ -262,27 +221,35 @@ const punching = [
   [46, 29, 39],
   [46, 27, 37],
 ];
-const demoPairs = [];
-for (const [w, [wy, wl, wr]] of walking.entries())
-  for (const [a, [ay, al, ar]] of punching.entries())
-    demoPairs.push(
-      compare(
-        pose(occupied(demoWalk, 64, 0, w), 64, null, false, [
-          (wl + wr) / 2,
-          wy,
-        ]),
-        pose(occupied(demoAttack, 64, 0, a), 64, null, false, [
-          (al + ar) / 2,
-          ay,
-        ]),
-        64,
-        demoGear.map((sheet) => ({
-          pixels: occupied(sheet, 64, 0, a),
-          width: 64,
-          pad: 0,
-          lower: false,
-        })),
-        [Math.round((wl + wr - al - ar) / 2), wy - ay],
-      ),
-    );
-print("demo south, manual targets (no keypoints)", demoPairs);
+const manual = ([y, left, right]) => ({
+  hip: { x: (left + right) / 2, y },
+  feet: [],
+  source: "manual",
+});
+const demoPairs = walking.flatMap((walk, w) =>
+  punching.map((attack, a) =>
+    compare(
+      pose(demoWalk, 64, 0, w, false, manual(walk)),
+      pose(demoAttack, 64, 0, a, false, manual(attack)),
+      64,
+      demoGear.map((sheet) => ({
+        pixels: occupied(sheet, 64, 0, a),
+        width: 64,
+        pad: 0,
+        lower: false,
+      })),
+      w,
+      a,
+    ),
+  ),
+);
+print(
+  "demo south (manual diagnostic)",
+  demoPairs,
+  [...walking, ...punching].map(manual),
+);
+
+writeFileSync(
+  new URL("evidence/21-gate-demo-south-selected.png", import.meta.url),
+  await sheet(demoPairs, punching.length, walking.length),
+);

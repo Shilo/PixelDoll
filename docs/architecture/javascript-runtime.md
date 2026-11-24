@@ -176,6 +176,19 @@ Generic PNG/JSON is an integration format, not a live API. Aseprite records edit
 first outfit. RPG Maker resamples to its fixed sheet format. These targets must use shared decisions
 where applicable, but cannot expose live operations the destination format does not support.
 
+### One-shot actions over a loop
+
+| Operation | Phaser / GDevelop | Godot | Unity |
+| --- | --- | --- | --- |
+| Enable precut action layers | `setActionLayering(enabled)` | `set_action_layering(enabled)` | `SetActionLayering(enabled)` |
+| Start a one-shot action | `playAction(move, direction)` | `play_action(move, direction)` | `PlayAction(move, direction)` |
+| Check the initial frame pair | `canLayerAction(move, direction)` | `can_layer_action(move, direction)` | `CanLayerAction(move, direction)` |
+| Query the action clock | `actionPlaying` | `is_action_playing()` | `IsActionPlaying` |
+
+Layering starts off. `canLayerAction` checks the playing walk cell against the action’s first cell and current equipment independently of the switch. It returns false when either facing or the precut data is unavailable. `playAction` starts at time zero and returns `layered` when enabled and eligible, or `full` for a whole-body action. An action started in layered mode can temporarily show the full pose when a subsequent frame pair or outfit is ineligible. The selected locomotion clock advances underneath either rendering mode. A valid `play` cancels the action and keeps the existing playback semantics. Palette and equipment changes keep both clocks. Invalid playback requests leave both clocks and the visible state intact.
+
+The Studio uses the canonical fragment splitter, seam measurement and compositor. Export preparation writes source-color fragments with the original layer grids and pivots, integer hip anchors, and the automatically measured registration corrections and gear exclusions. Controllers draw each stack in its normal layer order with the upper stack above the lower. Upper translation is lower hip minus upper hip plus the baked correction. Native controllers consume only prepared assets and metadata. The host game owns travel speed, action input and hit timing.
+
 ## Maintaining cross-engine consistency
 
 Before changing a paper-doll behavior or public controller operation:

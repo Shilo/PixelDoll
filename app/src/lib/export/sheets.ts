@@ -3,14 +3,30 @@
 // bakedFrame() (the union of every layer around the pivot).
 import { makeImg, type Img } from '../image/png.ts';
 import {
+	actionClipsGear,
+	actionFragment,
+	actionLayerFragment,
+	actionLowerSlot,
+	actionPairFallback,
+	actionPixelBounds,
+	layerOffset,
+	rigFrame,
 	bakedFrame,
 	cellImg,
 	composeCell,
 	layerFrame,
 	over,
 	type Frame
-} from '../compose/compose.ts';
-import type { DirectionName, Item, Layer, Preset, Project } from '../store/manifest.ts';
+} from '../runtime/paperdoll.js';
+import type {
+	ActionLayers,
+	DirectionName,
+	Item,
+	Layer,
+	Manifest,
+	Preset,
+	Project
+} from '../store/manifest.ts';
 import { portablePathId } from './paths.ts';
 
 export const sheetPath = (
@@ -46,6 +62,138 @@ export function bakedSheet(
 	f = bakedFrame(p.manifest)
 ) {
 	return grid(p, anim, f, (d, i) => composeCell(p, items, anim, d, i, f));
+}
+
+export interface ActionSheetOptions {
+	waist: number;
+	walk: readonly string[];
+	attacks: readonly string[];
+}
+
+/** Source-color sheets reuse each layer's atlas grid and pivot. Registration and gear checks are baked once. */
+export function actionSheets(p: Project, manifest: Manifest, options: ActionSheetOptions) {
+	const files: { name: string; data: Img }[] = [];
+	const data: ActionLayers = { planes: [], pairs: [] };
+	const { rig } = p.manifest;
+	const base = rigFrame(rig),
+		target = bakedFrame(manifest);
+	const items = new Map(p.manifest.items.map((item) => [item.id, item]));
+	function prepare(clip: string, part: 'lower' | 'upper') {
+		const move = manifest.rig.animations.find(({ id }) => id === clip);
+		if (!move) return undefined;
+		const poses = Object.fromEntries(
+			rig.directions.map(({ id: direction }) => [
+				direction,
+				Array.from({ length: move.cells }, (_, cell) =>
+					actionFragment(p, { clip, direction, cell }, options.waist, part)
+				)
+			])
+		);
+		const checks = new Map<
+			string,
+			Map<
+				string,
+				{
+					lost: number;
+					bounds: ReturnType<typeof actionPixelBounds>;
+					frame: Frame;
+				}[]
+			>
+		>();
+		const anchors = rig.directions.map(({ id: direction }) => ({
+			direction,
+			cells: poses[direction].map((pose): [number, number] | null =>
+				pose ? [Math.round(pose.hip.x), Math.round(pose.hip.y)] : null
+			)
+		}));
+		if (!anchors.some((d) => d.cells.some(Boolean))) return undefined;
+		data.planes.push({ clip, part, anchors });
+		for (const item of manifest.items) {
+			const body = item.id === rig.baseItem || item.variantOf === rig.baseItem;
+			if (!body && (part === 'lower') !== actionLowerSlot(item.slot)) continue;
+			const source = items.get(item.id)!;
+			for (const layer of item.layers) {
+				const original = source.layers.find(({ id }) => id === layer.id)!;
+				const frame = layerFrame(rig, original);
+				const name = `action/${part}/${sheetPath(item, layer, clip)}`;
+				const sheet = grid(p, clip, frame, (dir, cell) => {
+					const pose = poses[dir][cell],
+						image = cellImg(p, original, clip, dir, cell);
+					if (!pose || !image) return null;
+					const fragment = actionLayerFragment(image, frame, base, pose, part, body);
+					if (!body) {
+						const key = `${dir}/${cell}`;
+						const found = checks.get(key) ?? new Map();
+						const entries = found.get(item.id) ?? [];
+						entries.push({
+							frame,
+							lost: part === 'lower' && actionLowerSlot(item.slot) ? fragment.lost : 0,
+							bounds: part === 'upper' ? actionPixelBounds(fragment.image) : null
+						});
+						found.set(item.id, entries);
+						checks.set(key, found);
+					}
+					return fragment.image;
+				});
+				layer.actionSheets ??= {};
+				(layer.actionSheets[part] ??= {})[clip] = name;
+				files.push({ name, data: sheet });
+			}
+		}
+		return { clip, poses, checks, move };
+	}
+	const lower = [...new Set(options.walk)].flatMap((clip) => prepare(clip, 'lower') ?? []);
+	const upper = [...new Set(options.attacks)].flatMap((clip) => prepare(clip, 'upper') ?? []);
+	for (const walk of lower)
+		for (const attack of upper) {
+			if (walk.clip === attack.clip) continue;
+			for (const { id: direction } of rig.directions) {
+				if (walk.move.directions && !walk.move.directions.includes(direction)) continue;
+				if (attack.move.directions && !attack.move.directions.includes(direction)) continue;
+				const cells = walk.poses[direction].flatMap((lo, w) =>
+					attack.poses[direction].map((hi, a) => {
+						if (!lo || !hi) return null;
+						const offset = layerOffset(lo, hi);
+						if (actionPairFallback(offset.seam, 0)) return null;
+						const blocked: string[] = [];
+						for (const item of manifest.items) {
+							if (item.id === rig.baseItem || item.variantOf === rig.baseItem) continue;
+							const bottom = walk.checks.get(`${direction}/${w}`)?.get(item.id);
+							const top = attack.checks.get(`${direction}/${a}`)?.get(item.id);
+							const useBottom = actionLowerSlot(item.slot);
+							if (
+								useBottom
+									? !bottom || bottom.some((entry) => entry.lost)
+									: !top ||
+										top.some((entry) =>
+											actionClipsGear(entry.bounds ?? null, entry.frame, target, offset)
+										)
+							)
+								blocked.push(item.id);
+						}
+						return {
+							x: offset.x - (Math.round(lo.hip.x) - Math.round(hi.hip.x)),
+							y: offset.y - (Math.round(lo.hip.y) - Math.round(hi.hip.y)),
+							blocked
+						};
+					})
+				);
+				if (cells.some(Boolean))
+					data.pairs.push({
+						walk: walk.clip,
+						action: attack.clip,
+						direction,
+						upperCells: attack.move.cells,
+						cells
+					});
+			}
+		}
+	if (!data.pairs.length) {
+		for (const item of manifest.items) for (const layer of item.layers) delete layer.actionSheets;
+		return [];
+	}
+	manifest.actionLayers = data;
+	return files;
 }
 
 /** One sheet row (= one direction) as a strip image. */

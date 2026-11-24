@@ -117,6 +117,64 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 	d.play('stop', 'south', true);
 	expect(d.elapsed).toBe(0);
 	expect(d.cell).toBe(0);
+	d.play('walk', 'south');
+	expect(d.canLayerAction('stop', 'south')).toBe(false);
+	expect(d.playAction('stop', 'south')).toBe('full');
+	expect(d.actionPlaying).toBe(true);
+	d.update(160);
+	expect(d.actionPlaying).toBe(false);
+	expect(d.elapsed).toBe(160);
+	m.actionLayers = {
+		planes: [
+			{
+				clip: 'walk',
+				part: 'lower',
+				anchors: [
+					{
+						direction: 'south',
+						cells: [
+							[32, 32],
+							[32, 32]
+						]
+					}
+				]
+			},
+			{
+				clip: 'stop',
+				part: 'upper',
+				anchors: [
+					{
+						direction: 'south',
+						cells: [
+							[32, 32],
+							[32, 32]
+						]
+					}
+				]
+			}
+		],
+		pairs: [
+			{
+				walk: 'walk',
+				action: 'stop',
+				direction: 'south',
+				upperCells: 2,
+				cells: [{ x: 1, y: 0, blocked: [] }, null, { x: 1, y: 0, blocked: [] }, null]
+			}
+		]
+	};
+	for (const item of m.items)
+		for (const layer of item.layers)
+			layer.actionSheets = { lower: { walk: 'lower.png' }, upper: { stop: 'upper.png' } };
+	d.setActionLayering(true);
+	expect(d.canLayerAction('stop', 'south')).toBe(true);
+	expect(d.playAction('stop', 'south')).toBe('layered');
+	expect([...d.nodes.keys()]).toContain('upper' + names.base.main);
+	expect(() => d.playAction('invalid', 'south')).toThrow('unavailable');
+	expect(d.actionPlaying).toBe(true);
+	d.play('walk', 'south');
+	expect(d.actionPlaying).toBe(false);
+	expect(d.elapsed).toBe(160);
 	d.destroy();
 	expect(d.nodes.size).toBe(0);
 	expect(second.nodes.size).toBeGreaterThan(0);

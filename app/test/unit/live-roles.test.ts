@@ -4,6 +4,8 @@ import { automaticClip, liveClips } from '../../src/studio/experience/liveRoles.
 import { livePreferences, parseLivePreferences } from '../../src/studio/experience/liveSettings.ts';
 import {
 	chooseLiveRole,
+	chooseLiveLayering,
+	currentLiveLayering,
 	forgetLiveChoices,
 	liveViewsAtDefaults,
 	resetLiveViews
@@ -62,6 +64,7 @@ describe('Live views settings', () => {
 	beforeEach(() => {
 		store.clear();
 		experience.liveRoles = {};
+		experience.liveLayering = {};
 		vi.stubGlobal('localStorage', {
 			getItem: (key: string) => store.get(key) ?? null,
 			setItem: (key: string, value: string) => void store.set(key, value)
@@ -110,6 +113,18 @@ describe('Live views settings', () => {
 		expect(chooseLiveRole('a', 'attack', 'punch')).toBe(false);
 		expect(chooseLiveRole('a', 'jump', 'hop')).toBe(false);
 		expect(experience.liveRoles).toEqual({ a: { attack: 'punch', jump: 'hop' } });
+	});
+
+	test('layering defaults on and preserves the clamped waist across role changes', () => {
+		expect(currentLiveLayering('a')).toEqual({ on: true, waist: 0 });
+		expect(chooseLiveLayering('a', { on: false, waist: 9 })).toBe(true);
+		chooseLiveRole('a', 'attack', 'punch');
+		expect(livePreferences.read().layering).toEqual({ a: { on: false, waist: 4 } });
+		expect(
+			parseLivePreferences('{"layering":{"b":{"on":false,"waist":"2"},"c":{"waist":-9}}}').layering
+		).toEqual({ b: { on: false, waist: 0 }, c: { on: true, waist: -4 } });
+		resetLiveViews('a');
+		expect(currentLiveLayering('a')).toEqual({ on: true, waist: 0 });
 	});
 
 	test('tampered data keeps every valid character and role', () => {

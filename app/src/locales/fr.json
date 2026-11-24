@@ -3494,6 +3494,13 @@
 		}
 	},
 	"liveViews": {
+		"walkWhileAttacking": "Marcher en attaquant",
+		"layeringHelp": "Utilise l’attaque au-dessus de la taille et la marche en dessous. Les deux animations doivent regarder dans la même direction et coïncider aux hanches. Sinon, l’attaque complète se joue. Les attaques à pied au sol ralentissent légèrement le déplacement.",
+		"waist": "Taille",
+		"automaticWaist": "Automatique",
+		"waistHelp": "Déplace la jonction de 4 pixels au maximum vers le haut ou le bas. Le mode automatique utilise la position des hanches dans chaque image.",
+		"raiseWaist": "Remonter la taille",
+		"lowerWaist": "Abaisser la taille",
 		"automaticStill": "Automatique : immobile",
 		"controls": "Commandes",
 		"title": "Vues en direct",

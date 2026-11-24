@@ -55,7 +55,7 @@ export function mountedStill(
 		items,
 		clips: currentLiveClips(id, project.manifest.rig.animations)
 	});
-	const place = mountPlacement(project, p, previewBounds(project));
+	const place = mountPlacement(project, p.intendedDirection, p, previewBounds(project));
 	let still: CharacterStill | null = null;
 	if (place?.view && p.clip && p.direction) {
 		const cell = advancePlayback(p, undefined, 0).cell;

@@ -3491,6 +3491,13 @@
 		}
 	},
 	"liveViews": {
+		"walkWhileAttacking": "Beim Angriff weiterlaufen",
+		"layeringHelp": "Verwendet den Angriff oberhalb der Taille und die Gehbilder darunter. Beide Animationen müssen in dieselbe Richtung zeigen und an der Hüfte zusammenpassen. Sonst wird der ganze Angriff abgespielt. Angriffe zu Fuß am Boden verlangsamen die Bewegung etwas.",
+		"waist": "Taille",
+		"automaticWaist": "Automatisch",
+		"waistHelp": "Verschiebt den Übergang um bis zu 4 Pixel nach oben oder unten. Automatisch verwendet die Hüftposition jedes Einzelbilds.",
+		"raiseWaist": "Taille anheben",
+		"lowerWaist": "Taille absenken",
 		"automaticStill": "Automatisch: steht still",
 		"controls": "Steuerung",
 		"title": "Live-Ansichten",

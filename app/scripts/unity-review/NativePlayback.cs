@@ -92,9 +92,36 @@ namespace PixelDollNativeReview
                 if (!move.loop) Check(clock.sprite != null && clock.sprite.name == state + "_" + move.frames[0].cell && animator.GetCurrentAnimatorStateInfo(0).normalizedTime < .01f, label + ": replay completed once " + state, "normalizedTime=" + animator.GetCurrentAnimatorStateInfo(0).normalizedTime);
                 else Check(Math.Abs(animator.GetCurrentAnimatorStateInfo(0).normalizedTime - completedTime) < .0001f && clock.sprite == completedSprite, label + ": repeated Play preserves active loop " + state);
             }
-            if (label == "LayeredTiming") VerifyEquipmentAndPalette(label, prefab, doll, clock, data);
+            if (label == "LayeredTiming")
+            {
+                VerifyEquipmentAndPalette(label, prefab, doll, clock, data);
+                VerifyAction(label, doll, animator, clock);
+            }
             UnityEngine.Object.DestroyImmediate(instance);
             if (label == "LayeredTiming") VerifyState(label, prefab, data);
+        }
+
+        static void VerifyAction(string label, object doll, Animator animator, SpriteRenderer clock)
+        {
+            var state = doll.GetType().GetProperty("IsActionPlaying");
+            bool Playing() => (bool)state.GetValue(doll);
+            Invoke(doll, "Play", "walk", "south", true);
+            animator.Update(0);
+            Invoke(doll, "Sync");
+            Check((bool)Invoke(doll, "CanLayerAction", "jump", "south"), label + ": action can use exported anchors");
+            Check((string)Invoke(doll, "PlayAction", "jump", "south") == "full" && Playing(), label + ": action layering defaults off");
+            animator.Update(.1f);
+            Invoke(doll, "Sync");
+            Check(clock.sprite.name == "walk_south_1", label + ": native loop advances during a full action");
+            Invoke(doll, "SetActionLayering", true);
+            Check((string)Invoke(doll, "PlayAction", "jump", "south") == "layered", label + ": enabled action uses precut textures");
+            var renderers = ((Component)doll).GetComponentsInChildren<SpriteRenderer>();
+            Check(renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_") && r.sprite.name == "jump_south_0"), label + ": upper renderers display the action");
+            Check(renderers.Any(r => r.enabled && r.name == "body_fg" && r.sprite.name == "walk_south_1"), label + ": lower renderer displays the current gait");
+            Check((string)Invoke(doll, "PlayAction", "missing", "south") == "" && Playing(), label + ": invalid action preserves playback");
+            Invoke(doll, "Play", "walk", "south");
+            Invoke(doll, "Sync");
+            Check(!Playing() && clock.sprite.name == "walk_south_1", label + ": Play cancels the action without resetting the walk");
         }
 
         /// The fixture's one-cell State has a magenta center block that no Move cell has; the hat layer is read because it is not recolored.

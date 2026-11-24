@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { Joystick } from '../../src/lib/input/joystick.ts';
 import { MOTION } from '../../src/studio/experience/config.ts';
 import {
+	attackTravelScale,
 	directionInfo,
 	integrateMovement,
 	keyboardVector,
@@ -11,6 +12,15 @@ import {
 } from '../../src/studio/experience/movement.ts';
 
 describe('shared world movement', () => {
+	test('only grounded attacks on foot scale travel and gait to 80%', () => {
+		const onFoot = { grounded: true, attacking: true, mounted: false, ridingPose: false };
+		expect(attackTravelScale(onFoot)).toBe(0.8);
+		expect(attackTravelScale({ ...onFoot, attacking: false })).toBe(1);
+		expect(attackTravelScale({ ...onFoot, grounded: false })).toBe(1);
+		expect(attackTravelScale({ ...onFoot, mounted: true })).toBe(1);
+		expect(attackTravelScale({ ...onFoot, ridingPose: true })).toBe(1);
+	});
+
 	test('mode-relative walking and 130% mounted travel preserve analog strength', () => {
 		for (const [mode, axis, walking] of [
 			['topdown', 'xy', 300],

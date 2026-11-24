@@ -24,7 +24,10 @@ import { checkExportIdentity } from '../store/identity.ts';
 import { playbackClips } from '../runtime/timeline.js';
 import { projectExportIdentity } from './identity.ts';
 
+import { actionSheets, type ActionSheetOptions } from './sheets.ts';
+
 export interface ExportOptions {
+	actionLayering?: ActionSheetOptions;
 	engines: Engine[];
 	baked: boolean;
 	pixelsPerUnit?: number;
@@ -159,7 +162,25 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			errors: ['RPG Maker sheets export on their own; choose one format.'],
 			errorMessages: [message('export.error.rpgAlone')]
 		};
-	const files: OutFile[] = rpg ? [] : coreFiles(p, m);
+	const identities = new Map(
+		playbackClips(src.manifest.rig.animations).map(({ key, id }) => [key, id])
+	);
+	const opts = o.actionLayering;
+	delete m.actionLayers;
+	for (const item of m.items) for (const layer of item.layers) delete layer.actionSheets;
+	const fragments =
+		opts &&
+		o.engines.some(
+			(engine) =>
+				engine === 'phaser' || engine === 'gdevelop' || engine === 'godot' || engine === 'unity'
+		)
+			? actionSheets(p, m, {
+					waist: opts.waist,
+					walk: opts.walk.flatMap((id) => identities.get(id) ?? []),
+					attacks: opts.attacks.flatMap((id) => identities.get(id) ?? [])
+				})
+			: [];
+	const files: OutFile[] = rpg ? [] : [...coreFiles(p, m), ...fragments];
 	const sheets = new Map(
 		files.flatMap((f) =>
 			typeof f.data === 'object' && 'w' in f.data ? [[f.name, f.data] as [string, Img]] : []

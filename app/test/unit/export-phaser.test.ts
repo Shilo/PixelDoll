@@ -128,6 +128,7 @@ function sceneHarness() {
 		}
 	});
 	const scene = {
+		events: new EventEmitter(),
 		load,
 		textures: {
 			exists: (key: string) => textures.has(key),
@@ -164,6 +165,13 @@ function sceneHarness() {
 					key: '',
 					frame: '',
 					anims: { currentFrame: null as any, currentAnim: null as any, isPlaying: false },
+					setOrigin() {
+						return this;
+					},
+					setPosition(x: number, y: number) {
+						Object.assign(this, { x, y });
+						return this;
+					},
 					setName() {
 						return this;
 					},
@@ -493,4 +501,81 @@ test('generated runtime keeps the later slot visible when two equipped items hid
 	expect([shown('main_hand'), shown('off_hand')]).toEqual([true, false]);
 	doll.equip('main_hand', null);
 	expect(shown('off_hand')).toBe(true);
+});
+
+test('Phaser plays a one-shot over its native walk clock, with optional precut stacks', () => {
+	const m = fixture(),
+		h = sceneHarness(),
+		api = runtime();
+	const walk = m.rig.animations[0];
+	const slash = { ...walk, id: 'slash', frames: [{ cell: 0, ms: 100 }] };
+	m.rig.animations.push(slash);
+	m.materials = [];
+	for (const item of m.items)
+		for (const layer of item.layers) {
+			layer.actionSheets = { lower: { walk: 'low.png' }, upper: { slash: 'up.png' } };
+		}
+	h.animations.set(api.animKey(m, 'walk', 'south'), { frames: [{ frame: 'walk_south_1' }] });
+	const doll = new api.Paperdoll(h.scene, 0, 0, m, 'two');
+	doll.play('walk', 'south');
+	expect(doll.canLayerAction('slash', 'south')).toBe(false);
+	expect(doll.playAction('slash', 'south')).toBe('full');
+	expect(doll.actionPlaying).toBe(true);
+	expect(() => doll.play('unavailable', 'south')).toThrow('unavailable');
+	expect(doll.actionPlaying).toBe(true);
+	h.scene.events.emit('update', 100, 100);
+	expect(doll.actionPlaying).toBe(false);
+	expect(doll.body.frame).toBe('walk_south_1');
+	m.actionLayers = {
+		planes: [
+			{
+				clip: 'walk',
+				part: 'lower',
+				anchors: [
+					{
+						direction: 'south',
+						cells: [
+							[32, 32],
+							[32, 32]
+						]
+					}
+				]
+			},
+			{
+				clip: 'slash',
+				part: 'upper',
+				anchors: [
+					{
+						direction: 'south',
+						cells: [
+							[32, 32],
+							[32, 32]
+						]
+					}
+				]
+			}
+		],
+		pairs: [
+			{
+				walk: 'walk',
+				action: 'slash',
+				direction: 'south',
+				upperCells: 2,
+				cells: [null, null, { x: 2, y: -1, blocked: [] }, null]
+			}
+		]
+	};
+	expect(doll.canLayerAction('slash', 'south')).toBe(true);
+	expect(doll.playAction('slash', 'south')).toBe('full');
+	doll.setActionLayering(true);
+	expect(doll.playAction('slash', 'south')).toBe('layered');
+	expect(doll.actionNodes.filter((node: { visible: boolean }) => node.visible)).toEqual(
+		expect.arrayContaining([expect.objectContaining({ x: 2, y: -1, frame: 'slash_south_0' })])
+	);
+	doll.setVariants({});
+	doll.equip('hair', null);
+	expect(doll.actionPlaying).toBe(true);
+	doll.play('walk', 'south');
+	expect(doll.actionPlaying).toBe(false);
+	expect(h.scene.events.listenerCount('update')).toBe(0);
 });

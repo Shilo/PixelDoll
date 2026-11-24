@@ -109,7 +109,23 @@ async function fixtureArchive() {
 		baseItem: 'base',
 		baseHash: '',
 		directions: [{ id: 'south' }],
-		animations
+		animations,
+		anchors: {
+			hip: {
+				walk: {
+					south: [
+						[32, 32],
+						[32, 32]
+					]
+				},
+				jump: {
+					south: [
+						[31, 32],
+						[31, 32]
+					]
+				}
+			}
+		}
 	};
 	rig.baseHash = await baseHashOf(
 		rig,
@@ -195,7 +211,12 @@ async function fixtureArchive() {
 	});
 	const result = await exportZip(
 		{ manifest: copy, images },
-		{ engines: ['unity'], baked: false, exportedAt: '2026-10-28T00:00:00.000Z' }
+		{
+			engines: ['unity'],
+			baked: false,
+			exportedAt: '2026-10-28T00:00:00.000Z',
+			actionLayering: { waist: 0, walk: ['walk'], attacks: ['jump'] }
+		}
 	);
 	assert.deepEqual(result.errors, []);
 	assert.deepEqual(

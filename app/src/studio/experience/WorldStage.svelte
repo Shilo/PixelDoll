@@ -41,6 +41,7 @@
 	import { frameRecorder } from './paint.ts';
 	import {
 		MOUNT_HEIGHT_REASON,
+		mountSupportsFacing,
 		mountedFrame,
 		placeRider,
 		sampleMountFrame,
@@ -49,7 +50,7 @@
 	import type { Img } from '../../lib/image/png.ts';
 	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
 	import { activeRiderPose, legsKept } from './riderPose.ts';
-	import { currentLiveClips } from './liveViews.ts';
+	import { currentLiveClips, currentLiveLayering } from './liveViews.ts';
 	import { showMount } from '../mountPreview.ts';
 	import { resolveAttack, type AttackFailure } from './attack.ts';
 	import { LiveActions } from './liveActions.ts';
@@ -67,8 +68,11 @@
 		resolvePreview,
 		resolveLive,
 		renderPresentation,
+		liveActionFallback,
 		advancePlayback,
 		livePlaybackDelta,
+		RIDE_MOVE,
+		RIDING_STATE,
 		type Presentation
 	} from './presentation.ts';
 	import { displayLoadingItems, displayPresentationNotice } from './displayPresentation.ts';
@@ -79,6 +83,7 @@
 		keyboardVector,
 		nearestDirection,
 		integrateMovement,
+		attackTravelScale,
 		travelSpeed,
 		travelDelta,
 		unit,
@@ -147,21 +152,23 @@
 	const mountVisible = $derived(experience.testMount);
 	// The saved Idle, Walk, Attack and Jump of the open character (Live views settings).
 	const roles = $derived(currentLiveClips(doc.id, view.project?.manifest.rig.animations ?? []));
-	const riderPose = $derived(
-		mountVisible ? activeRiderPose(doc.id, view.project?.manifest) : undefined
-	);
+	const riderPose = $derived(activeRiderPose(doc.id, view.project?.manifest));
 	// A State is drawn seated: cutting legs by standing or estimated joints would cut the wrong pixels.
 	const legMode = (clip: string | null) =>
 		legsKept(view.project?.manifest, clip) ? 'none' : experience.mountLegs;
 	const previewMount = $derived.by(() => {
 		if (experience.mode !== 'preview' || !availability) return null;
-		return mountedPresentation(resolvePreview(availability, { clip: ui.anim, direction: ui.dir }));
+		return mountedPresentation(
+			ui.dir,
+			resolvePreview(availability, { clip: ui.anim, direction: ui.dir })
+		);
 	});
 	const mountBounds = $derived.by(() => {
 		if (!previewMount?.view || !bodyFrame || !availability) return null;
 		return unionFrame(
 			(lineupDirections.length ? lineupDirections : [ui.dir]).flatMap((direction) => {
 				const mounted = mountedPresentation(
+					direction,
 					resolvePreview(availability, { clip: ui.anim, direction })
 				);
 				return mounted?.view
@@ -183,10 +190,10 @@
 			? t('worldStage.notice.mountHeight')
 			: failure.reason;
 	}
-	function mountedPresentation(p: Presentation) {
+	function mountedPresentation(direction: DirectionName | null, p: Presentation) {
 		const project = view.project;
 		if (!mountVisible || !project) return null;
-		return mountPlacement(project, p, grounding);
+		return mountPlacement(project, direction, p, grounding);
 	}
 	// How far any of the character's gear can reach: Preview's lineup sizes and spaces its facings by it.
 	const reach = $derived.by(() => {
@@ -203,15 +210,44 @@
 		if (experience.mode === 'preview' || !p) return null;
 		const frames = [grounding?.reach ?? reachFrame(p)];
 		// Each mounted pose sits the rider on its own contact: the shown clip and the Attack and Jump it may play.
-		const clips = [...new Set([ui.anim, ...roles.attack, ...roles.jump])];
-		if (mountVisible && availability)
-			for (const direction of availability.directions)
+		if (!mountVisible || !availability) return frames[0];
+		const mountFacings = availability.directions.filter(mountSupportsFacing);
+		const clips = [
+			...new Set([
+				riderPose,
+				RIDE_MOVE,
+				RIDING_STATE,
+				...roles.idle,
+				...roles.walk,
+				...roles.attack,
+				...roles.attackUp,
+				...roles.attackDown,
+				...roles.jump
+			])
+		].filter((clip): clip is string => !!clip && availability?.animations.has(clip) === true);
+		if (mountVisible && availability) {
+			for (const direction of availability.directions) {
 				for (const clip of clips) {
-					const mounted = mountedPresentation(resolvePreview(availability, { clip, direction }));
-					const frame = facingReach.get(direction);
-					if (mounted?.view && frame)
-						frames.push(mountedFrame(frame, mounted.ground, mounted.view, mounted.contact));
+					if (!availability.animations.get(clip)?.has(direction)) continue;
+					const rider = resolvePreview(availability, { clip, direction });
+					const frame = rider.direction && facingReach.get(rider.direction);
+					if (!frame) continue;
+					for (const facing of mountFacings) {
+						const mounted = mountedPresentation(facing, rider);
+						if (mounted?.view)
+							frames.push(
+								mountedFrame(
+									frame,
+									mounted.ground,
+									mounted.view,
+									mounted.contact,
+									mounted.riderGround
+								)
+							);
+					}
 				}
+			}
+		}
 		return unionFrame(frames);
 	});
 	// Each facing's own reach bounds its click target.
@@ -244,12 +280,14 @@
 		const bounds = new Map<DirectionName, Frame>();
 		if (!mountVisible || !availability) return bounds;
 		for (const direction of lineupDirections.length ? lineupDirections : [ui.dir]) {
-			const mounted = mountedPresentation(
-				resolvePreview(availability, { clip: ui.anim, direction })
-			);
-			const frame = facingReach.get(direction);
+			const rider = resolvePreview(availability, { clip: ui.anim, direction });
+			const mounted = mountedPresentation(direction, rider);
+			const frame = rider.direction && facingReach.get(rider.direction);
 			if (mounted?.view && frame)
-				bounds.set(direction, mountedFrame(frame, mounted.ground, mounted.view, mounted.contact));
+				bounds.set(
+					direction,
+					mountedFrame(frame, mounted.ground, mounted.view, mounted.contact, mounted.riderGround)
+				);
 		}
 		return bounds;
 	});
@@ -842,11 +880,11 @@
 		const prepareActor = (
 			available: NonNullable<typeof availability>,
 			presentation: Presentation,
+			mounted: ReturnType<typeof mountedPresentation>,
 			result: ReturnType<typeof renderPresentation>,
 			source: HTMLCanvasElement,
 			requestedCell: number
 		) => {
-			const mounted = mountedPresentation(presentation);
 			let legs: ReturnType<typeof hideMountedLegs> | null = null;
 			if (mounted?.view && result.image && presentation.clip && presentation.direction) {
 				const { clip, direction } = presentation;
@@ -1154,9 +1192,7 @@
 			host.dataset.sceneMin = String(shared.min);
 			host.dataset.sceneMax = String(shared.max);
 			// A press on the stage that has not been dragged yet steers nothing: the keyboard keeps the walk.
-			const speed = travelSpeed(experience.mode === 'side' ? 'side' : 'topdown', mountVisible),
-				travelRate = speed / MOTION.walkSpeed.topdown;
-			// A paused scene (a sheet, a hidden page) stops time, so no takeoff, landing or attack is skipped.
+			// Resolve a new action before movement so the shown frame and travel use the same rate.
 			const paused = !!ui.sheet || document.hidden;
 			let velocity =
 				stick.origin && (stick.value.x || stick.value.y)
@@ -1164,17 +1200,69 @@
 					: keyboardVector(keys, experience.mode === 'side');
 			// Direction keys and the stick own travel, even while opposite keys cancel out.
 			if (keys.size || stick.origin) destination = null;
-			else if (destination && live) {
-				const dx = destination.x - position.x,
-					dy = experience.mode === 'side' ? 0 : destination.y - position.y,
-					distance = Math.hypot(dx, dy),
-					reach = (speed * dt) / 1000;
-				// The last step lands on the point exactly.
-				velocity =
-					distance > reach ? unit({ x: dx, y: dy }) : { x: dx / reach || 0, y: dy / reach || 0 };
-				if (distance <= reach) destination = null;
-			}
+			const goal =
+				destination && live
+					? {
+							x: destination.x - position.x,
+							y: experience.mode === 'side' ? 0 : destination.y - position.y
+						}
+					: null;
+			if (goal) velocity = unit(goal);
 			if (paused) velocity = { x: 0, y: 0 };
+			// Locomotion never remembers the action facing. Mount travel is resolved from this pose.
+			const loco =
+				live && a
+					? resolveLive(a, {
+							velocity,
+							clips: roles,
+							riding: mountVisible,
+							riderPose,
+							items: view.items,
+							previous,
+							defaultDirection:
+								experience.mode === 'side'
+									? (nearestDirection(a.directions, { x: 1, y: 0 }, ui.dir) ?? undefined)
+									: ui.dir
+						})
+					: null;
+			if (loco && a && !paused) {
+				const request = actions.step(dt);
+				if (request) {
+					const choice = resolveAttack(a, roles, request, {
+						side: experience.mode === 'side',
+						facing: loco.direction
+					});
+					host.dataset.attack =
+						'sequence' in choice
+							? `${choice.sequence.clip} ${choice.sequence.direction}`
+							: `missing ${choice.failure.kind === 'no-direction' ? (choice.failure.direction ?? '') : ''}`;
+					if ('sequence' in choice) actions.start(choice.sequence);
+					else {
+						actions.refused();
+						attackWarning(choice.failure);
+					}
+				}
+			}
+			const attackClip = actions.attack?.sequence.clip;
+			const attackScale = attackTravelScale({
+				attacking: !!attackClip,
+				grounded: actions.grounded,
+				mounted: mountVisible,
+				ridingPose: [attackClip, loco?.clip].some(
+					(clip) => !!clip && (clip === riderPose || clip === RIDE_MOVE || clip === RIDING_STATE)
+				)
+			});
+			const speed =
+				travelSpeed(experience.mode === 'side' ? 'side' : 'topdown', mountVisible) * attackScale;
+			const travelRate = speed / MOTION.walkSpeed.topdown;
+			host.dataset.attackTravelScale = String(attackScale);
+			if (goal && !paused) {
+				const reach = (speed * dt) / 1000;
+				if (reach > 0 && Math.hypot(goal.x, goal.y) <= reach) {
+					velocity = { x: goal.x / reach, y: goal.y / reach };
+					destination = null;
+				}
+			}
 			travel = velocity;
 			if (live)
 				({ position, camera } = integrateMovement(
@@ -1258,42 +1346,9 @@
 			experience.mountLegIssue = '';
 			delete host.dataset.mountLegIssue;
 			if (a) {
-				// Locomotion is resolved on its own, so an attack east never replaces the remembered westward facing.
-				const loco = live
-					? resolveLive(a, {
-							velocity,
-							clips: roles,
-							riding: mountVisible,
-							riderPose,
-							items: view.items,
-							previous,
-							defaultDirection:
-								experience.mode === 'side'
-									? (nearestDirection(a.directions, { x: 1, y: 0 }, ui.dir) ?? undefined)
-									: ui.dir
-						})
-					: null;
 				let p = loco ?? resolvePreview(a, { clip: ui.anim, direction: ui.dir }),
 					actionCell: number | null = null;
 				if (loco) {
-					// A paused scene starts nothing: an attack asked for behind a sheet waits until it closes.
-					const request = paused ? null : actions.step(dt);
-					if (request) {
-						const choice = resolveAttack(a, roles, request, {
-							side: experience.mode === 'side',
-							facing: loco.direction
-						});
-						// The last attack asked for: what played, or the aimed facing it lacked.
-						host.dataset.attack =
-							'sequence' in choice
-								? `${choice.sequence.clip} ${choice.sequence.direction}`
-								: `missing ${choice.failure.kind === 'no-direction' ? (choice.failure.direction ?? '') : ''}`;
-						if ('sequence' in choice) actions.start(choice.sequence);
-						else {
-							actions.refused();
-							attackWarning(choice.failure);
-						}
-					}
 					const flying = airborne(actions.jump);
 					// The shown action: an attack, else the Jump art for the walking facing, else the walk itself.
 					const flight =
@@ -1318,9 +1373,33 @@
 					: p.kind === 'animation'
 						? view.cell
 						: p.cell;
-				const nextKey = JSON.stringify([p.kind, p.clip, p.direction, cell, view.items, doc.rev]);
+				const layering = currentLiveLayering(doc.id);
+				const fallback =
+					actions.attack && loco
+						? liveActionFallback(
+								layering.on,
+								actions.grounded,
+								mountVisible,
+								loco,
+								p,
+								roles.walk[0]
+							)
+						: 'no-action';
+				const lower =
+					!fallback && loco && clock
+						? { pose: loco, cell: clock.cell, waist: layering.waist }
+						: undefined;
+				const nextKey = JSON.stringify([
+					p.kind,
+					p.clip,
+					p.direction,
+					cell,
+					view.items,
+					doc.rev,
+					lower && [lower.pose.clip, lower.pose.direction, lower.cell, lower.waist]
+				]);
 				if (lastProject !== a || nextKey !== renderKey) {
-					imageCache = renderPresentation(a, view.items, p, cell);
+					imageCache = renderPresentation(a, view.items, p, cell, undefined, lower);
 					renderKey = nextKey;
 					lastProject = a;
 					if (imageCache.image) {
@@ -1362,7 +1441,16 @@
 						? t('worldStage.notice.equippedHidden', { count: result.hiddenItems.length })
 						: ''
 				].filter(Boolean);
-				const mounted = mountedPresentation(p);
+				host.dataset.walkCell = live && loco?.moving && clock ? String(clock.cell) : '';
+				host.dataset.attackCell = actionCell === null || !actions.attack ? '' : String(actionCell);
+				host.dataset.attackLayered = String(!!lower && imageCache?.attackLayered === true);
+				host.dataset.attackFallback = lower ? (imageCache?.attackFallback ?? '') : (fallback ?? '');
+				const intendedMount = loco?.intendedDirection ?? loco?.direction ?? ui.dir;
+				const mountFacing = mountSupportsFacing(intendedMount)
+					? intendedMount
+					: (loco?.direction ?? ui.dir);
+				host.dataset.mountFacing = mountVisible ? mountFacing : '';
+				const mounted = mountedPresentation(mountFacing, p);
 				mountIssue =
 					mounted && !mounted.view ? displayMountIssue(mounted.failure, mounted.direction) : '';
 				if (mounted?.view && !ui.sheet && !document.hidden)
@@ -1375,7 +1463,7 @@
 							: 0;
 				delete host.dataset.mountLegs;
 				delete host.dataset.mountLegSource;
-				const actor = result ? prepareActor(a, p, result, source, cell) : null;
+				const actor = result ? prepareActor(a, p, mounted, result, source, cell) : null;
 				const legResult = actor?.legs;
 				if (legResult) {
 					const axial =
@@ -1430,7 +1518,7 @@
 					const facings = visibleFacings,
 						at = (d: DirectionName) => point.x + (row?.offsets[row.facings.indexOf(d)] ?? 0);
 					const origin = (d: DirectionName) => grounding?.facings.get(d),
-						selectedOrigin = origin(p.direction ?? ui.dir);
+						selectedOrigin = origin((mounted?.view && mountFacing) || p.direction || ui.dir);
 					const { x, y } = drawPosition(
 						{ x: frame.x + (selectedOrigin?.x ?? 0), y: frame.y + (selectedOrigin?.y ?? 0) },
 						{ x: at(ui.dir), y: point.y },
@@ -1485,7 +1573,14 @@
 							for (const text of displayLoadingItems(entry.result.loadingItems)) loadings.add(text);
 							const ground = origin(direction);
 							const actor = entry.canvas
-								? prepareActor(a, entry.presentation, entry.result, entry.canvas, view.cell)
+								? prepareActor(
+										a,
+										entry.presentation,
+										mountedPresentation(direction, entry.presentation),
+										entry.result,
+										entry.canvas,
+										view.cell
+									)
 								: null;
 							if (actor?.mounted && !actor.mounted.view)
 								notes.push(displayMountIssue(actor.mounted.failure, actor.mounted.direction));

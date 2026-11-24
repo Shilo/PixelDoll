@@ -12,6 +12,7 @@ import {
 	advancePlayback,
 	buildPresentation,
 	livePlaybackDelta,
+	liveActionFallback,
 	renderPresentation,
 	itemsHiddenIn,
 	resolveLive,
@@ -688,4 +689,31 @@ describe('synchronized production equipment', () => {
 		expect(east.hiddenItems.map((item) => item.id)).toEqual(['sword']);
 		expect(east.issue).toBe('1 item hidden — missing walk / East frames'); // south has it
 	});
+});
+
+test('moving actions require the selected walk and same-facing grounded locomotion', () => {
+	const a = buildPresentation(fixture(['south', 'east'], ['walk', 'slash']));
+	const walk = resolveLive(a, { velocity: { x: 1, y: 0 } });
+	const east = resolvePreview(a, { clip: 'slash', direction: 'east' });
+	const south = resolvePreview(a, { clip: 'slash', direction: 'south' });
+	expect(liveActionFallback(true, true, false, walk, east, 'walk')).toBeNull();
+	expect(liveActionFallback(true, true, false, walk, south, 'walk')).toBe('direction');
+	expect(liveActionFallback(false, true, false, walk, east, 'walk')).toBe('disabled');
+	expect(liveActionFallback(true, false, false, walk, east, 'walk')).toBe('airborne');
+	expect(liveActionFallback(true, true, true, walk, east, 'walk')).toBe('mounted');
+	expect(liveActionFallback(true, true, false, walk, east, 'run')).toBe('not-walking');
+});
+
+test('a rider retains westward intent at rest after a south-facing attack', () => {
+	const project = fixture(['south', 'west'], ['default', 'ride', 'slash']);
+	project.manifest.items[0].layers[0].cells!.ride = { south: [bodyHash, bodyHash] };
+	project.manifest.items[0].layers[0].cells!.default = { south: [bodyHash, bodyHash] };
+	const a = buildPresentation(project);
+	const riding = resolveLive(a, { velocity: { x: -1, y: 0 }, riding: true });
+	const attack = resolvePreview(a, { clip: 'slash', direction: 'south' });
+	expect(riding.intendedDirection).toBe('west');
+	expect(riding.direction).toBe('south');
+	expect(attack.direction).toBe('south');
+	const retained = resolveLive(a, { velocity: { x: 0, y: 0 }, riding: true, previous: riding });
+	expect(retained.intendedDirection).toBe('west');
 });

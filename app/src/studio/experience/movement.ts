@@ -1,5 +1,14 @@
 import type { DirectionName } from '../../lib/store/manifest.ts';
 export const TRAVEL = { walkSpeed: { topdown: 300, side: 150 }, mountedMultiplier: 1.3 };
+export const ATTACK_MOVE_SCALE = 0.8;
+
+export const attackTravelScale = (state: {
+	attacking: boolean;
+	grounded: boolean;
+	mounted: boolean;
+	ridingPose: boolean;
+}): number =>
+	state.attacking && state.grounded && !state.mounted && !state.ridingPose ? ATTACK_MOVE_SCALE : 1;
 
 /** Ground coordinates: x points east/right; y points north/up. */
 export interface Vector {

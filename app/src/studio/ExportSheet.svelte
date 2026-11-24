@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentLiveClips, currentLiveLayering } from './experience/liveViews.ts';
 	import { MediaQuery } from 'svelte/reactivity';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
@@ -529,6 +530,15 @@
 		result = null;
 		const look = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
 		const snapshot = { ...p, manifest: structuredClone(p.manifest) };
+		const layering = currentLiveLayering(doc.id);
+		const clips = currentLiveClips(doc.id, snapshot.manifest.rig.animations);
+		const actionLayering = layering.on
+			? {
+					waist: layering.waist,
+					walk: clips.walk.slice(0, 1),
+					attacks: [...clips.attack, ...clips.attackUp, ...clips.attackDown]
+				}
+			: undefined;
 		let stale = false;
 		void (async () => {
 			const qa = rec?.rigQa as { clips?: Record<string, { fails?: unknown }> } | undefined;
@@ -556,7 +566,8 @@
 					look,
 					settings: exportPreferences!,
 					projectData: editableData(rec),
-					rpgWalk: w
+					rpgWalk: w,
+					actionLayering
 				})),
 				rigIssues
 			};

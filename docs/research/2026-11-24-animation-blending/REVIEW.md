@@ -45,9 +45,29 @@ At 4x, East reads as a profile walk with a slash upper body; the seam is hidden 
 - The E2E case proves the mount keeps its east facing while the rider attacks south.
 - Tests, check and formatting pass on the shipped parts.
 
+## Round 2: review of the implementation
+
+The API surface, export plan, settings and tests are present and coherent. The targeted unit tests, `npm run check` and the `experience-parity` case pass, and I inspected the settings and tooltip live in the T3 browser at 1280 px: the switch is on by default, the Waist stepper shows Automatic, and both tooltips are readable and keyboard-reachable ([capture](evidence/live/15-coordinator-settings-tooltip.png)).
+
+**Blocker: a layered attack can flip to the full pose and back mid-action.** Eligibility is evaluated for the current pair of cells every frame (`composeLayeredAction` returns a per-pair fallback, then `renderPresentation` draws the whole-body attack for that frame). The gate qualifies only 28 of 48 demo pairs and 35 to 61 of 64 per bodyA facing. A six-frame attack crossed with an eight-frame walk therefore hits ineligible pairs during the action, and the character snaps from layered legs to the attack's own legs and back. That is worse than the slide it replaces and it is not the accepted "brief cape oddity".
+
+Required fix: decide layering once per action. A walk/action/facing set is eligible only if every pair the action can traverse is acceptable, or compute one worst-case verdict for the set at export and at load. Never switch between layered and full inside one action. Add a test that plays a complete action over a changing walk phase and asserts `data-attack-layered` never changes.
+
+**Major: the 1 px seam threshold is tight enough to cause that flicker.** The demo's worst seam is 0 px and its only failures are small gear losses (5 px). BodyA's worst is 4 px. Decide the set-level threshold from visual review, not per-pair conservatism: allow a small gear tolerance (for example up to 10 px) and a seam up to 2 or 3 px, then require the whole action set to pass. The goal is one honest decision per action, not 48 verdicts.
+
+**Major: an arm or weapon connected below the waist is erased as part of the legs.** `splitUpper` removes everything connected to the feet below the waist. A low slash or a hand resting on the hip is connected, so that frame loses the arm and no seam metric notices. Add a visual review of the lowest-arm frames for each approved action, or a setting that keeps layering off for moves whose silhouette crosses the waist.
+
+**Minor: mirrored hip reflection differs by one pixel.** `actionHip` reflects anchors as `w - 1 - x` but keypoints as `(1 - x) * w`. Use one convention so a mirrored facing does not lose a pixel at the join.
+
+**Minor: invalid input returns different shapes.** Phaser/Unity throw, Godot returns `""`, GDevelop throws. That matches the existing host-language contract, but the string return should be documented as the invalid sentinel and tested in all four.
+
+**Minor: `splitUpper` drops every component under 40 px anywhere in the body.** That can delete intentional small art (a spark, a thrown token) above the waist. Restrict cleanup to components that intersect the removed leg region.
+
+**Verification gap: motion was not observed at native cadence.** The browser captures used a test timer because the preview did not deliver frames; foot sliding, the mid-action flip above and reduced motion remain unverified in real time. The E2E suite drives real frames but asserts attributes, not pixels over time.
+
 ## Required next round
 
-1. Fix findings 1 to 3 and re-run the gate, reporting selected seam step, gear loss, fragments and anchor coverage per body and facing, with a rendered sheet for the worst pair of each facing.
-2. Use the corrected gate as eligibility data: a pair layers only when its selected step is finite and within the agreed threshold and gear loss is zero. Everything else falls back.
-3. Implement the rest of the decision: canonical split/composite functions in `paperdoll.js`, Live dogfooding, the switch on by default with the Waist control and `Help.svelte` tooltips, the four controller operations, fragments and anchors in the export, and the tests listed in the decision.
-4. Fix findings 6 to 9 or rebut them with evidence.
+1. Replace per-pair eligibility with one decision per action set, so a layered action never flips to the full pose. Pick the set-level threshold from visual review (seam and gear tolerance), re-run the gate as a set verdict, and add a playback test that observes a whole action.
+2. Address the below-waist limb erasure and the small-component cleanup or scope approval to the actions where it cannot happen.
+3. Align the mirrored hip convention, document the invalid sentinel, and test it in all four controllers.
+4. Re-run the checks and report: gate set verdicts, the playback test, the four controller tests, and a real-cadence visual check of at least one complete layered action.

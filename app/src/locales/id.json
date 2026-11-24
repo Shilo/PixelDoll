@@ -3392,6 +3392,13 @@
 		}
 	},
 	"liveViews": {
+		"walkWhileAttacking": "Berjalan saat menyerang",
+		"layeringHelp": "Menggunakan animasi serangan di atas pinggang dan animasi berjalan di bawahnya. Kedua animasi harus menghadap ke arah yang sama dan sejajar di pinggul. Jika tidak, animasi serangan penuh diputar. Serangan saat berjalan di tanah sedikit memperlambat gerakan.",
+		"waist": "Pinggang",
+		"automaticWaist": "Otomatis",
+		"waistHelp": "Menggeser sambungan hingga 4 piksel ke atas atau ke bawah. Mode otomatis memakai posisi pinggul di setiap bingkai.",
+		"raiseWaist": "Naikkan pinggang",
+		"lowerWaist": "Turunkan pinggang",
 		"automaticStill": "Otomatis: diam di tempat",
 		"controls": "Kontrol",
 		"title": "Tampilan langsung",

@@ -493,20 +493,413 @@ export function over(dst, src, x = 0, y = 0) {
  * @param {string} anim
  * @param {DirectionName} dir
  * @param {number} cell
- * @returns {Img}
  */
-export function composeCell(p, items, anim, dir, cell, frame = rigFrame(p.manifest.rig)) {
-	const out = makeImg(frame.w, frame.h),
-		m = p.manifest;
+function* dollPixels(p, items, anim, dir, cell) {
+	const m = p.manifest;
 	const cuts = equipped(m, items)
 		.filter((it) => it.baseCut && it.baseHash === m.rig.baseHash)
 		.map((it) => cutAt(m, it, anim, dir, cell));
-	for (const d of drawList(m, items, anim, dir, cell)) {
-		let im = tucked(p, cellImg(p, d.layer, anim, dir, cell), d.layer, d.under, anim, dir, cell);
-		if (im && (d.item.id === m.rig.baseItem || d.item.variantOf === m.rig.baseItem))
-			im = cutBodyLayer(im, cuts, m.rig, d.layer);
-		const f = layerFrame(m.rig, d.layer);
-		if (im) over(out, im, frame.x - f.x, frame.y - f.y);
+	for (const draw of drawList(m, items, anim, dir, cell)) {
+		let image = tucked(
+			p,
+			cellImg(p, draw.layer, anim, dir, cell),
+			draw.layer,
+			draw.under,
+			anim,
+			dir,
+			cell
+		);
+		if (!image) continue;
+		const body = draw.item.id === m.rig.baseItem || draw.item.variantOf === m.rig.baseItem;
+		if (body) image = cutBodyLayer(image, cuts, m.rig, draw.layer);
+		yield { ...draw, image, body, frame: layerFrame(m.rig, draw.layer) };
 	}
+}
+
+/**
+ * @param {Project} p
+ * @param {Preset['items']} items
+ * @param {string} anim
+ * @param {DirectionName} dir
+ * @param {number} cell
+ * @returns {Img}
+ */
+export function composeCell(p, items, anim, dir, cell, frame = rigFrame(p.manifest.rig)) {
+	const out = makeImg(frame.w, frame.h);
+	for (const draw of dollPixels(p, items, anim, dir, cell))
+		over(out, draw.image, frame.x - draw.frame.x, frame.y - draw.frame.y);
 	return out;
+}
+/** @typedef {{x: number, y: number}} DollPoint */
+/** @typedef {'anchor' | 'measured' | 'requested' | 'fit' | 'manual'} DollHipSource */
+/** @typedef {{hip: DollPoint, feet: DollPoint[], source: DollHipSource}} DollHip */
+/** @typedef {{image: Img, hip: DollPoint, waist: number, source: DollHipSource}} DollFragment */
+
+/** Maximum total horizontal displacement of the two waist edges, in pixels. */
+export const ACTION_SEAM_LIMIT = 1;
+
+/**
+ * @param {Rig} rig
+ * @param {string} clip
+ * @param {DirectionName} dir
+ * @param {number} cell
+ * @returns {DollHip | null}
+ */
+export function actionHip(rig, clip, dir, cell) {
+	const mirror = rig.directions.find((d) => d.id === dir)?.mirrorOf;
+	const sources = rig.animations.find((a) => a.id === clip)?.sources;
+	const reflected = !sources?.[dir] && !!mirror;
+	const source = sources?.[dir] ?? (mirror ? sources?.[mirror] : undefined);
+	const jointSets = [source?.measured?.[cell], source?.keypoints?.[cell]];
+	const [measured, requested] = jointSets.map((joints) =>
+		joints
+			?.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+			.map((p) => ({
+				label: p.label,
+				x: (reflected ? 1 - p.x : p.x) * rig.cell.w,
+				y: p.y * rig.cell.h
+			}))
+	);
+	const feet = (measured ?? requested ?? []).filter((p) => p.label.endsWith(' LEG'));
+	const track = rig.anchors?.hip?.[clip];
+	const own = track?.[dir]?.[cell],
+		anchor = own ?? (mirror ? track?.[mirror]?.[cell] : undefined);
+	if (anchor?.every(Number.isFinite))
+		return {
+			hip: { x: own ? anchor[0] : rig.cell.w - 1 - anchor[0], y: anchor[1] },
+			feet,
+			source: 'anchor'
+		};
+	for (const kind of /** @type {const} */ (['measured', 'requested'])) {
+		const hips = (kind === 'measured' ? measured : requested)?.filter((p) =>
+			p.label.endsWith(' HIP')
+		);
+		if (hips?.length)
+			return {
+				hip: {
+					x: hips.reduce((sum, p) => sum + p.x, 0) / hips.length,
+					y: hips.reduce((sum, p) => sum + p.y, 0) / hips.length
+				},
+				feet,
+				source: kind
+			};
+	}
+	return null;
+}
+
+/** @param {number} waist */
+export function actionWaist(waist) {
+	return Number.isFinite(waist) ? Math.max(-4, Math.min(4, Math.round(waist))) : 0;
+}
+
+/** @param {Set<number>} ids @param {number} width */
+export function actionComponents(ids, width) {
+	const unseen = new Set(ids);
+	const parts = [];
+	for (const first of unseen) {
+		const part = [first];
+		unseen.delete(first);
+		for (const pixel of part) {
+			const x = pixel % width;
+			const neighbors = [pixel - width, pixel + width];
+			if (x > 0) neighbors.push(pixel - 1);
+			if (x + 1 < width) neighbors.push(pixel + 1);
+			for (const next of neighbors) if (unseen.delete(next)) part.push(next);
+		}
+		parts.push(part);
+	}
+	return parts;
+}
+
+/** @param {Img} image @param {number} first */
+function actionOpaque(image, first) {
+	const ids = new Set();
+	for (let i = first; i < image.w * image.h; i++) if (image.data[i * 4 + 3]) ids.add(i);
+	return ids;
+}
+
+/** @param {Img} image @param {DollHip} geometry @param {number} waist */
+export function splitLower(image, geometry, waist = 0) {
+	const row = Math.max(0, Math.min(image.h, Math.round(geometry.hip.y) + actionWaist(waist)));
+	const lower = makeImg(image.w, image.h);
+	const cut = row * image.w * 4;
+	lower.data.set(image.data.subarray(cut), cut);
+	return { image: lower, hip: geometry.hip, waist: row, source: geometry.source };
+}
+
+/** @param {Img} image @param {DollHip} geometry @param {number} waist */
+export function splitUpper(image, geometry, waist = 0) {
+	const row = Math.max(0, Math.min(image.h, Math.round(geometry.hip.y) + actionWaist(waist)));
+	const below = actionOpaque(image, row * image.w);
+	const seeds = new Set();
+	for (const foot of geometry.feet) {
+		let closest = Infinity;
+		let seed = -1;
+		for (const pixel of below) {
+			const distance =
+				((pixel % image.w) + 0.5 - foot.x) ** 2 + (Math.floor(pixel / image.w) + 0.5 - foot.y) ** 2;
+			if (distance < closest) {
+				closest = distance;
+				seed = pixel;
+			}
+		}
+		seeds.add(seed);
+	}
+	if (!geometry.feet.length) {
+		let bottom = -1;
+		for (const pixel of below) bottom = Math.floor(pixel / image.w);
+		for (const pixel of below) if (Math.floor(pixel / image.w) === bottom) seeds.add(pixel);
+	}
+	const kept = actionOpaque(image, 0);
+	for (const part of actionComponents(below, image.w))
+		if (part.some((pixel) => seeds.has(pixel))) for (const pixel of part) kept.delete(pixel);
+	const upper = makeImg(image.w, image.h);
+	for (const part of actionComponents(kept, image.w))
+		if (part.length >= 40)
+			for (const pixel of part)
+				upper.data.set(image.data.subarray(pixel * 4, pixel * 4 + 4), pixel * 4);
+	return { image: upper, hip: geometry.hip, waist: row, source: geometry.source };
+}
+
+/**
+ * @param {DollFragment} lower
+ * @param {DollFragment} upper
+ * @param {number} cellWidth Width of the unpadded rig cell.
+ */
+export function layerOffset(lower, upper, cellWidth = lower.image.w) {
+	const range = Math.round(cellWidth / 8);
+	/** @param {Img} image @param {number} row @param {number} dx */
+	const extent = (image, row, dx) => {
+		if (row < 0 || row >= image.h) return null;
+		const center = Math.round(lower.hip.x);
+		let first = Infinity,
+			last = -Infinity;
+		for (let x = center - range; x <= center + range; x++) {
+			const sx = x - dx;
+			if (sx >= 0 && sx < image.w && image.data[(row * image.w + sx) * 4 + 3]) {
+				first = Math.min(first, x);
+				last = x;
+			}
+		}
+		return first <= last ? { first, last } : null;
+	};
+	const bottom = extent(lower.image, lower.waist, 0);
+	/** @param {number} x @param {number} y */
+	const step = (x, y) => {
+		const top = extent(upper.image, lower.waist - 1 - y, x);
+		return top && bottom
+			? Math.abs(top.first - bottom.first) + Math.abs(top.last - bottom.last)
+			: Infinity;
+	};
+	let x = Math.round(lower.hip.x - upper.hip.x),
+		y = Math.round(lower.hip.y - upper.hip.y);
+	let seam = step(x, y),
+		source = lower.source === upper.source ? lower.source : lower.source + '/' + upper.source;
+	if (seam > 0) {
+		let bestDistance = Infinity;
+		for (let dx = -5; dx <= 5; dx++)
+			for (let dy = -5; dy <= 5; dy++) {
+				const score = step(dx, dy);
+				const distance = Math.abs(dx) + Math.abs(dy);
+				if (score < seam || (source === 'fit' && score === seam && distance < bestDistance)) {
+					x = dx;
+					y = dy;
+					seam = score;
+					source = 'fit';
+					bestDistance = distance;
+				}
+			}
+	}
+	return { x, y, seam, source };
+}
+
+/** @param {number} seam @param {number} gearLoss */
+export function actionPairFallback(seam, gearLoss) {
+	if (!Number.isFinite(seam) || seam > ACTION_SEAM_LIMIT) return 'seam';
+	return gearLoss ? 'gear-loss' : null;
+}
+
+/** @param {Img} lower @param {Img} upper @param {DollPoint} offset */
+export function compositeAction(lower, upper, offset) {
+	const out = makeImg(lower.w, lower.h);
+	out.data.set(lower.data);
+	over(out, upper, offset.x, offset.y);
+	return out;
+}
+
+/** @typedef {{clip: string, direction: DirectionName, cell: number}} DollActionCell */
+
+/** @param {string} slot */
+export const actionLowerSlot = (slot) => slot === 'feet' || slot === 'legs' || slot === 'underwear';
+
+/**
+ * @param {Img} image
+ * @param {Frame} frame
+ * @param {Frame} base
+ * @param {DollFragment} fragment
+ * @param {'lower' | 'upper'} part
+ * @param {boolean} body
+ */
+export function actionLayerFragment(image, frame, base, fragment, part, body) {
+	if (part === 'upper' && !body) return { image, lost: 0 };
+	const output = makeImg(image.w, image.h);
+	let lost = 0;
+	for (let i = 0; i < image.w * image.h; i++) {
+		const pixel = i * 4;
+		if (!image.data[pixel + 3]) continue;
+		const x = (i % image.w) + base.x - frame.x;
+		const y = Math.floor(i / image.w) + base.y - frame.y;
+		const keep =
+			part === 'lower'
+				? y >= fragment.waist
+				: x >= 0 &&
+					x < fragment.image.w &&
+					y >= 0 &&
+					y < fragment.image.h &&
+					fragment.image.data[(y * fragment.image.w + x) * 4 + 3];
+		if (keep) output.data.set(image.data.subarray(pixel, pixel + 4), pixel);
+		else lost++;
+	}
+	return { image: output, lost };
+}
+
+/** @param {Img} image */
+export function actionPixelBounds(image) {
+	let left = image.w,
+		top = image.h,
+		right = -1,
+		bottom = -1;
+	for (let i = 0; i < image.w * image.h; i++) {
+		if (!image.data[i * 4 + 3]) continue;
+		const x = i % image.w,
+			y = Math.floor(i / image.w);
+		left = Math.min(left, x);
+		top = Math.min(top, y);
+		right = Math.max(right, x);
+		bottom = Math.max(bottom, y);
+	}
+	return right < 0 ? null : { left, top, right, bottom };
+}
+
+/** @param {ReturnType<typeof actionPixelBounds>} bounds @param {Frame} from @param {Frame} target @param {DollPoint} offset */
+export function actionClipsGear(bounds, from, target, offset) {
+	const x = target.x - from.x + offset.x,
+		y = target.y - from.y + offset.y;
+	return (
+		!!bounds &&
+		(bounds.left + x < 0 ||
+			bounds.top + y < 0 ||
+			bounds.right + x >= target.w ||
+			bounds.bottom + y >= target.h)
+	);
+}
+
+/**
+ * @param {Project} project
+ * @param {DollActionCell} pose
+ * @param {number} waist
+ * @param {'lower' | 'upper'} part
+ */
+export function actionFragment(project, pose, waist, part) {
+	const hip = actionHip(project.manifest.rig, pose.clip, pose.direction, pose.cell);
+	if (!hip) return null;
+	const body = composeCell(project, {}, pose.clip, pose.direction, pose.cell);
+	const fragment = part === 'lower' ? splitLower(body, hip, waist) : splitUpper(body, hip, waist);
+	return fragment;
+}
+
+/**
+ * @param {Project} project
+ * @param {Preset['items']} items
+ * @param {DollActionCell} walk
+ * @param {DollActionCell} action
+ * @param {number} waist
+ * @param {Frame} frame
+ */
+export function composeLayeredAction(project, items, walk, action, waist, frame) {
+	if (walk.direction !== action.direction) return { image: null, fallback: 'direction' };
+	const base = rigFrame(project.manifest.rig);
+	const lower = actionFragment(project, walk, waist, 'lower');
+	const upper = actionFragment(project, action, waist, 'upper');
+	if (!lower || !upper) return { image: null, fallback: 'hip' };
+	const offset = layerOffset(lower, upper);
+	if (actionPairFallback(offset.seam, 0)) return { image: null, fallback: 'seam' };
+	const legs = makeImg(frame.w, frame.h),
+		torso = makeImg(frame.w, frame.h);
+	for (const draw of dollPixels(project, items, walk.clip, walk.direction, walk.cell)) {
+		if (!draw.body && !actionLowerSlot(draw.slot.id)) continue;
+		const { image, lost } = actionLayerFragment(
+			draw.image,
+			draw.frame,
+			base,
+			lower,
+			'lower',
+			draw.body
+		);
+		if (lost && actionLowerSlot(draw.slot.id)) return { image: null, fallback: 'gear-loss' };
+		over(legs, image, frame.x - draw.frame.x, frame.y - draw.frame.y);
+	}
+	for (const draw of dollPixels(project, items, action.clip, action.direction, action.cell)) {
+		if (!draw.body && actionLowerSlot(draw.slot.id)) continue;
+		const { image } = actionLayerFragment(draw.image, draw.frame, base, upper, 'upper', draw.body);
+		if (!draw.body && actionClipsGear(actionPixelBounds(image), draw.frame, frame, offset))
+			return { image: null, fallback: 'gear-loss' };
+		over(torso, image, frame.x - draw.frame.x, frame.y - draw.frame.y);
+	}
+	return { image: compositeAction(legs, torso, offset), fallback: null };
+}
+
+/** @param {Manifest} manifest @param {Preset['items']} items @param {string} walk @param {DirectionName} facing @param {number} lower @param {string} action @param {number} upper */
+export function exportedActionOffset(manifest, items, walk, facing, lower, action, upper) {
+	const layers = manifest.actionLayers;
+	const pair = layers?.pairs.find(
+		(p) => p.walk === walk && p.action === action && p.direction === facing
+	);
+	const data = pair?.cells[lower * pair.upperCells + upper];
+	if (
+		!data ||
+		drawList(manifest, items, action, facing, upper).some(({ item }) =>
+			data.blocked.includes(item.id)
+		)
+	)
+		return null;
+	/** @param {string} clip @param {'lower' | 'upper'} part @param {number} cell */
+	const hip = (clip, part, cell) =>
+		layers?.planes
+			.find((plane) => plane.clip === clip && plane.part === part)
+			?.anchors.find(({ direction }) => direction === facing)?.cells[cell];
+	const lo = hip(walk, 'lower', lower),
+		hi = hip(action, 'upper', upper);
+	return lo && hi ? { x: lo[0] - hi[0] + data.x, y: lo[1] - hi[1] + data.y } : null;
+}
+
+/**
+ * @param {Manifest} manifest
+ * @param {Preset['items']} items
+ * @param {DollActionCell} action
+ * @param {DollActionCell | null} walk
+ * @param {boolean} layering
+ */
+export function exportedActionDraws(manifest, items, action, walk, layering) {
+	const offset =
+		layering && walk?.direction === action.direction
+			? exportedActionOffset(
+					manifest,
+					items,
+					walk.clip,
+					walk.direction,
+					walk.cell,
+					action.clip,
+					action.cell
+				)
+			: null;
+	/** @param {DollActionCell} pose @param {'upper' | 'lower' | null} part @param {DollPoint} point */
+	const draws = (pose, part, point) =>
+		drawList(manifest, items, pose.clip, pose.direction, pose.cell)
+			.filter(({ layer }) => !part || !!layer.actionSheets?.[part]?.[pose.clip])
+			.map((draw) => ({ ...draw, ...pose, part, point }));
+	const origin = { x: 0, y: 0 };
+	return offset && walk
+		? [...draws(walk, 'lower', origin), ...draws(action, 'upper', offset)]
+		: draws(action, null, origin);
 }
