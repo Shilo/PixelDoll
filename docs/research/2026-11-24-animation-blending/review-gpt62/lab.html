@@ -118,7 +118,7 @@ details p { margin-top: .4rem; }
 
   <section class="matrix" aria-labelledby="matrix-title">
     <h2 id="matrix-title">All 48 phase pairs</h2>
-    <p><strong id="counts"></strong> <span class="quiet">Cell = largest hip edge step (source px). Select a cell to pause and load it.</span></p>
+    <p><strong id="counts"></strong> <span class="quiet" id="matrix-key"></span></p>
     <table aria-label="Walk phases down, punch phases across">
       <thead><tr><th scope="col">W / P</th><th scope="col">P0</th><th scope="col">P1</th><th scope="col">P2</th><th scope="col">P3</th><th scope="col">P4</th><th scope="col">P5</th></tr></thead>
       <tbody id="cells"></tbody>
@@ -179,9 +179,9 @@ const punching = [
   [45, 29, 39], [46, 29, 39], [46, 27, 37]
 ];
 const caseText = {
-  seam: ["Fixed cut", "Shaped and fitted", "Both cuts meet on the selected row. The shaped split keeps the walking legs and removes stray walking arm pixels at the hips. Toggle the overlay to mark the common seam."],
+  seam: ["Fixed cut", "Shaped and fitted", "Both cuts use the selected seam row. The shaped split keeps the walking legs and removes stray walking arm pixels at the hips. Toggle the overlay to mark the common seam."],
   motion: ["Full punch under translation", "Punch over walking legs", "Watch the boots against the moving tiles. The full punch drags its planted pose through the scene. The split retains the gait. The gold tick tracks the foot-band center across the sprite. Choose a different starting phase in the matrix to compare other offsets."],
-  gear: ["Original punch outfit", "Shaped outfit", "The sword remains whole with the hand. The cape carries the old punch outline into the new gait. Compare the outline with the cape hidden, then use the overlay to locate new coverage."]
+  gear: ["Original punch outfit", "Shaped outfit", "The sword remains whole with the hand. The cape carries the old punch outline into the new gait, covering parts of the walking legs. Compare the outline with the cape hidden, then use the overlay to locate new coverage."]
 };
 
 let activeCase = "seam";
@@ -302,6 +302,9 @@ function grade(metric, capeEnabled) {
 }
 
 function redrawMatrix() {
+  const capeEnabled = on("cape");
+  byId("matrix-key").textContent = "Cell = " + (capeEnabled ? "new cape coverage" : "largest hip edge step") +
+    " (source px). Select a cell to pause and load it.";
   matrix = walking.map((_, w) => punching.map((_, p) => inspectPair(pose(w, p, value("seam"), on("align")))));
   const counts = { pass: 0, warn: 0, fail: 0 };
   matrix.forEach((metrics, w) => metrics.forEach((metric, p) => {
@@ -309,7 +312,7 @@ function redrawMatrix() {
     const button = cells[w][p];
     counts[status]++;
     button.className = status;
-    button.textContent = status[0].toUpperCase() + " " + metric.edge;
+    button.textContent = status[0].toUpperCase() + " " + (capeEnabled ? metric.conflict.length : metric.edge);
     button.title = "W" + w + " / P" + p + " · " + status + " · edge step " + metric.edge +
       " px · overlap " + metric.overlap + " px · split " + metric.split +
       " px" + (on("cape") ? " · cape " + metric.conflict.length + " px" : "");
@@ -529,7 +532,7 @@ async function start() {
       redrawMatrix();
       if (activeCase === "gear") largestCapeConflict();
       else showPair();
-      setPlaying(activeCase === "motion");
+      setPlaying(activeCase === "motion" && !matchMedia("(prefers-reduced-motion: reduce)").matches);
     };
   });
   for (const id of ["seam", "align", "cape"]) {
@@ -570,4 +573,3 @@ start().catch((error) => {
 </script>
 </body>
 </html>
-
