@@ -1774,11 +1774,12 @@
 						: t('liveViews.hintTopDown')}
 			</p>{/if}{#if loadingNote}<p class="world-coverage world-loading-items" role="status">
 				<LoaderCircle size={14} class="spin" aria-hidden="true" />{loadingNote}
-			</p>{/if}{#if experience.mode !== 'preview' && (note || rendererWarning)}<p
-				class="world-coverage"
+			</p>{/if}{#if experience.mode !== 'preview' && rendererWarning}<p
+				class="world-coverage world-renderer-warning"
+				role="status"
 			>
-				{[rendererWarning ? t(rendererWarning) : '', note].filter(Boolean).join(' · ')}
-			</p>{/if}
+				{t(rendererWarning)}
+			</p>{/if}{#if experience.mode !== 'preview' && note}<p class="world-coverage">{note}</p>{/if}
 	</div>{/if}
 <JoystickView
 	class="world-stick"

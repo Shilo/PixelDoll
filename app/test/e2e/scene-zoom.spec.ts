@@ -2106,7 +2106,7 @@ test('playable zoom keeps the fallback actor on its environment camera when the 
 		.getByRole('group', { name: 'Character view', exact: true })
 		.getByRole('button', { name: 'Top-down', exact: true })
 		.click();
-	await expect(page.locator('.world-coverage')).toContainText('Live scene unavailable');
+	await expect(page.locator('.world-renderer-warning')).toContainText('Live scene unavailable');
 	await resetZoom(page, host);
 	const base = await actorBounds(page, 255);
 	await zoomStep(page, host, 'in');
@@ -2125,6 +2125,74 @@ test('playable zoom keeps the fallback actor on its environment camera when the 
 		Math.abs(shown.bottom - Number(await host.getAttribute('data-feet-y')))
 	).toBeLessThanOrEqual(1.5);
 	expectCovered(await backdrop(page), 'renderer failure fallback');
+});
+
+test.describe('renderer failure on short screens', () => {
+	test.use({ viewport: { width: 1440, height: 900 }, isMobile: true, hasTouch: true });
+
+	test('short landscape keeps the renderer failure warning when the renderer fails to load', async ({
+		page
+	}, info) => {
+		await page.route('**/src/studio/experience/ground.ts*', (route) => route.abort());
+		await seedCharacters(page, 1);
+		await page.locator('.customize-action').click();
+		await page
+			.getByRole('group', { name: 'Character view', exact: true })
+			.getByRole('button', { name: 'Top-down', exact: true })
+			.click();
+		const warning = page.locator('.world-renderer-warning');
+		const routine = page.locator('.world-coverage:not(.world-renderer-warning)');
+		const experience = page.locator('.experience');
+		const hint = page.locator('.world-hint');
+		await expect(warning).toHaveText('Live scene unavailable. Reload to try again.');
+		await expect(page.locator('.game-touch')).toBeVisible();
+		// The stack keeps its order: the movement hint above, the failure warning under it.
+		const hintBox = (await hint.boundingBox())!,
+			warningBox = (await warning.boundingBox())!;
+		expect(hintBox.y + hintBox.height).toBeLessThanOrEqual(warningBox.y);
+		// The fixture has no Idle art, so the live fallback already reports a routine coverage note.
+		await expect(routine).toContainText('No Idle move yet');
+		await expect(routine).toBeVisible();
+		// Desktop and portrait keep both notes; short landscape keeps only the failure warning, clear of the touch
+		// controls and inside the viewport.
+		for (const theme of THEMES) {
+			await setTheme(page, theme);
+			for (const [width, height] of [
+				[390, 844],
+				[844, 390],
+				[320, 240]
+			] as const) {
+				await page.setViewportSize({ width, height });
+				await settle(page);
+				const short = height <= 540;
+				if (short) await expect(experience).toHaveClass(/\bshort-layout\b/);
+				else await expect(experience).not.toHaveClass(/\bshort-layout\b/);
+				await expect(warning).toBeVisible();
+				await expect(warning).toHaveText('Live scene unavailable. Reload to try again.');
+				if (short) await expect(routine).toBeHidden();
+				else await expect(routine).toBeVisible();
+				const box = (await warning.boundingBox())!,
+					cluster = (await page.locator('.game-touch').boundingBox())!;
+				expect(
+					box.x,
+					`${width}x${height} ${theme}: the warning starts inside the screen`
+				).toBeGreaterThanOrEqual(0);
+				expect(
+					box.x + box.width,
+					`${width}x${height} ${theme}: clear of the touch controls`
+				).toBeLessThanOrEqual(cluster.x);
+				expect(
+					box.y,
+					`${width}x${height} ${theme}: the warning stays below the top edge`
+				).toBeGreaterThanOrEqual(0);
+				expect(
+					box.y + box.height,
+					`${width}x${height} ${theme}: the warning stays above the bottom edge`
+				).toBeLessThanOrEqual(height);
+				await shot(page, info, `renderer-warning-${theme}-${width}x${height}`);
+			}
+		}
+	});
 });
 
 test('playable zoom keeps absolute sprite size and covered backgrounds across responsive views', async ({
