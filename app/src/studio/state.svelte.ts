@@ -287,7 +287,6 @@ export type SheetId =
 	| 'directions'
 	| 'importZip'
 	| 'importPixelLab'
-	| 'importMoves'
 	| 'delete'
 	| 'details'
 	| 'setup'
@@ -3171,6 +3170,81 @@ async function addEntry(entry: SharedItem, openedDemoCopy = false) {
 			{ tone: 'danger' }
 		);
 	}
+}
+
+/** Free: copy the chosen items of an imported ZIP (`source`, not stored) into `projectId` one by one, exactly as tapping a
+ *  shared tile would (exact copy, re-fit or worn as drawn); a name in use keeps both as "Name 2". One item that fails or no
+ *  longer fits leaves the others to finish. Wears what was added; `notes` are what wearing took off and the categories it
+ *  showed, as a shared tile's toast says them. */
+export async function importItems(
+	projectId: string,
+	source: BundledSource,
+	entries: readonly SharedItem[]
+): Promise<{
+	added: Item[];
+	skipped: SharedItem[];
+	failed: { entry: SharedItem; error: unknown }[];
+	notes: Message[];
+}> {
+	if (shared.adding) throw new LocalizedError('Wait for the item being added.', 'itemImport.busy');
+	shared.adding = 'import';
+	const added: Item[] = [],
+		skipped: SharedItem[] = [],
+		failed: { entry: SharedItem; error: unknown }[] = [],
+		notes: Message[] = [];
+	try {
+		await flushSave();
+		for (const entry of entries)
+			try {
+				const item = await acceptCopy(source.id, entry.item.id, projectId, source, {
+					numberName: true
+				});
+				if (item) added.push(item);
+				else skipped.push(entry);
+			} catch (error) {
+				failed.push({ entry, error });
+			}
+	} finally {
+		shared.adding = '';
+		if (added.length) {
+			forgetFits();
+			await openProject(projectId, { quiet: true });
+			if (doc.id === projectId) {
+				for (const item of added) {
+					const note = wear(item.id, true);
+					if (note) notes.push(note);
+				}
+				for (const slot of new Set(added.map((item) => item.slot))) {
+					const shown = revealSlot(slot);
+					if (shown) notes.push(shown);
+				}
+			}
+			void refreshShared();
+		}
+	}
+	return { added, skipped, failed, notes };
+}
+
+/** Where an import starts: the New item, New move or New State sheet opens on its Import page, reading a dropped ZIP. */
+export type ImportKind = 'items' | 'moves' | 'states';
+let importOpening: { kind: ImportKind; projectId: string; files?: File[] } | undefined;
+export function openImport(kind: ImportKind, files?: File[]) {
+	importOpening = { kind, projectId: doc.id, files };
+	if (kind === 'items') openNewItem(ui.group);
+	else if (kind === 'moves') {
+		ui.redrawMove = '';
+		ui.sheet = 'move';
+	} else {
+		ui.stateCaptureMove = '';
+		ui.sheet = 'stateCapture';
+	}
+}
+/** The import a sheet of `kind` was opened for, or undefined. Every New item, New move and New State sheet takes it as it
+ *  opens, so a request is used once and never resurfaces later, for another sheet or character. */
+export function takeImport(kind: ImportKind): { files?: File[] } | undefined {
+	const opening = importOpening;
+	importOpening = undefined;
+	return opening?.kind === kind && opening.projectId === doc.id && !isDemo() ? opening : undefined;
 }
 
 /** Free: an exact copy takes the frames its source item gained since (moves added there), into the same item. */

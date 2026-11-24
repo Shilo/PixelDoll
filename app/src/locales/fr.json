@@ -1352,6 +1352,7 @@
 		"drop": "Déposez un ZIP de personnage ici",
 		"dropNote": "Personnage PixelLab ou export PixelDoll · jusqu’à 64 Mo",
 		"chooseZip": "Choisir un ZIP",
+		"chooseAnother": "Choisir un autre ZIP",
 		"characterZip": "ZIP de personnage",
 		"devicePrivacy": "Vos fichiers restent sur cet appareil. Prévisualisez votre personnage avant de l’importer.",
 		"pixelLabHint": "Dans le créateur de personnages de PixelLab, exportez un ZIP avec des images individuelles. Les images peuvent être regroupées dans des dossiers. Les autres dispositions de feuilles de sprites et les ZIP contenant uniquement des PNG ne sont pas pris en charge.",
@@ -3408,8 +3409,29 @@
 		"generateFor": "Générer pour {move}",
 		"wearOn": "Porter dans {move}"
 	},
+	"itemImport": {
+		"title": "Importer des objets",
+		"intro": "Le ZIP d’un personnage, une sauvegarde ou un personnage partagé. Gratuit si ses objets conviennent à ce personnage.",
+		"empty": "Ce ZIP ne contient aucun objet terminé.",
+		"skipped": {
+			"one": "{count} objet n’a pas pu être lu.",
+			"other": "{count} objets n’ont pas pu être lus."
+		},
+		"notFitted": "{names} ne convient plus et n’a pas été ajouté.",
+		"busy": "Attendez que l’objet soit ajouté, puis réessayez.",
+		"row": {
+			"copy": "Convient exactement à ce personnage",
+			"refit": "Ajusté gratuitement à ce corps. Vérifiez ses images après l’import.",
+			"unfitted": "Créé pour un autre corps. Porté tel quel, il peut flotter ou déborder.",
+			"remake": "Créé pour un autre corps, il ne peut donc pas être porté ici"
+		}
+	},
+	"importDrop": {
+		"items": "Déposez pour importer des objets",
+		"moves": "Déposez pour importer des animations",
+		"states": "Déposez pour importer des états"
+	},
 	"moveImport": {
-		"title": "Importer des animations",
 		"importMoves": "Importer des animations",
 		"importStates": "Importer des états",
 		"dropArea": "Zone de dépôt du ZIP PixelDoll",

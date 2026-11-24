@@ -103,15 +103,20 @@
 		toast,
 		openProject,
 		pendingMoves,
-		withKey
+		withKey,
+		takeImport
 	} from './state.svelte.ts';
+	import ImportMovesPane from './ImportMovesPane.svelte';
+	import ImportFoot from './ImportFoot.svelte';
+	import { MoveImporter } from './moveImporter.svelte.ts';
+	import { leaveSheetForm, showSheetPage } from './sheetPage.ts';
 	import { bodyQualityNote, displayMoveJob, plainReasonMessage } from './model.ts';
 	import { displayMove } from './displayMove.ts';
 	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
 	import { displayDirectionList } from './displayDirectionProblem.ts';
 	import { ANGLES } from './characterConfig.ts';
-	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert } from './icons.ts';
+	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert, Import } from './icons.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import { opaqueBox } from '../lib/rig/normalize.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -1335,7 +1340,34 @@
 		);
 		if (close && !moving.spec) ui.sheet = null;
 	}
+
+	// Import: a page of the New move form (a ZIP dropped on Moves opens on it); Back keeps the form as it was.
+	const opening = takeImport('moves');
+	// A ZIP dropped while a move runs opens the form over it, as "Queue another move" does.
+	if (opening) ui.moveFormOpen = true;
+	let importing = $state(!!opening);
+	const importer = new MoveImporter();
+	if (opening?.files) void importer.read(opening.files);
+	$effect(() => () => {
+		importer.gone = true;
+	});
+	// Free imports need no rig: the page is there before setup too, wherever the form or its setup notice shows.
+	const canImport = $derived(!isDemo() && !skeletonReview && !progress);
+	const importPage = $derived(importing && canImport);
+	function page(inner: boolean) {
+		if (inner) leaveSheetForm();
+		importing = inner;
+		void showSheetPage(inner);
+	}
 </script>
+
+{#snippet importFoot()}
+	<ImportFoot
+		busy={importer.busy}
+		disabled={!importer.chosen.length || !!importer.blocked}
+		onimport={() => void importer.save()}
+	/>
+{/snippet}
 
 {#snippet framePicker(
 	direction: DirectionName,
@@ -1690,70 +1722,98 @@
 {/snippet}
 
 <Sheet
-	title={skeletonReview
-		? t('moveSheet.skeleton.title')
-		: repairReview
-			? moving.spec?.redrawItem
-				? t('moveSheet.review.redrawTitle')
-				: t('moveSheet.review.repairTitle')
-			: progress && moving.spec?.itemMethod === 'grid'
+	className={importPage ? 'importing' : ''}
+	title={importPage
+		? t('moveImport.importMoves')
+		: skeletonReview
+			? t('moveSheet.skeleton.title')
+			: repairReview
 				? moving.spec?.redrawItem
-					? t('moveSheet.review.redrawProgress')
-					: t('moveSheet.titleRepair')
-				: (progress ? moving.spec?.replace : replacing)
-					? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
-					: t('moves.add')}
-	back={skeletonReview
-		? () => (reviewingSkeletonFor = null)
-		: mine && ui.moveFormOpen
-			? () => (ui.moveFormOpen = false)
-			: undefined}
+					? t('moveSheet.review.redrawTitle')
+					: t('moveSheet.review.repairTitle')
+				: progress && moving.spec?.itemMethod === 'grid'
+					? moving.spec?.redrawItem
+						? t('moveSheet.review.redrawProgress')
+						: t('moveSheet.titleRepair')
+					: (progress ? moving.spec?.replace : replacing)
+						? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
+						: t('moves.add')}
+	back={importPage
+		? () => page(false)
+		: skeletonReview
+			? () => (reviewingSkeletonFor = null)
+			: mine && ui.moveFormOpen
+				? () => (ui.moveFormOpen = false)
+				: undefined}
+	backTo={importPage ? t('moves.add') : undefined}
+	opener={canImport && !importPage && !redrawTarget
+		? {
+				label: t('moveImport.importMoves'),
+				icon: Import,
+				iconOnly: true,
+				onclick: () => page(true)
+			}
+		: undefined}
+	locked={importPage && importer.busy && !!importer.review}
 	onclose={() => (ui.sheet = null)}
 	exitNote={progress && !moving.done && !moving.error && !repairReview
 		? 'sheet-exit-note'
 		: undefined}
 	dirty={ok && !progress && !skeletonReview && !repairReview && textTyped && !!text.trim()}
-	footer={isDemo() || (!ok && !progress) ? undefined : foot}
+	footer={importPage
+		? importer.ready
+			? importFoot
+			: undefined
+		: isDemo() || (!ok && !progress)
+			? undefined
+			: foot}
 >
 	{#snippet developer()}
 		{@const review = skeletonReview?.review}
-		<ApiPeek
-			targets={isDemo()
-				? []
-				: progress
-					? [
-							{
-								scope: 'move-progress',
-								label: t('moveSheet.progressLabel'),
-								plan: moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : [],
-								activityScope: moving.spec?.activityScope
-							},
-							...(moving.error && !moving.done
-								? [{ scope: 'move-retry', label: t('moveSheet.retryLabel'), plan: retryPlan }]
-								: [])
-						]
-					: ok && est
+		{#if !importPage}<ApiPeek
+				targets={isDemo()
+					? []
+					: progress
 						? [
 								{
-									scope: 'move-add',
-									label: t('moveSheet.addLabel'),
-									plan: movePlan(
-										rec,
-										review
-											? { ...review, seed: undefined }
-											: {
-													...motion,
-													items: [],
-													poseStyle: 'visible-side-v1',
-													...(replacing ? { dirs: [...targetDirs] } : {})
-												}
-									)
-								}
+									scope: 'move-progress',
+									label: t('moveSheet.progressLabel'),
+									plan: moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : [],
+									activityScope: moving.spec?.activityScope
+								},
+								...(moving.error && !moving.done
+									? [{ scope: 'move-retry', label: t('moveSheet.retryLabel'), plan: retryPlan }]
+									: [])
 							]
-						: []}
-		/>
+						: ok && est
+							? [
+									{
+										scope: 'move-add',
+										label: t('moveSheet.addLabel'),
+										plan: movePlan(
+											rec,
+											review
+												? { ...review, seed: undefined }
+												: {
+														...motion,
+														items: [],
+														poseStyle: 'visible-side-v1',
+														...(replacing ? { dirs: [...targetDirs] } : {})
+													}
+										)
+									}
+								]
+							: []}
+			/>{/if}
 	{/snippet}
 
+	{#if importPage}<ImportMovesPane
+			{importer}
+			onqueued={() => {
+				importing = false;
+				ui.moveFormOpen = false;
+			}}
+		/>{/if}
 	{#if holder}<p class="notice small">
 			<CircleAlert size={14} /><span
 				>{moving.repairReview
@@ -2055,7 +2115,9 @@
 					>
 						{t('moveSheet.skeleton.title')}
 						<span class="cost">
-							{t('moves.estimate', { gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens)) })}
+							{t('moves.estimate', {
+								gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens))
+							})}
 						</span>
 						<SurfaceChevron />
 					</button>
@@ -2378,7 +2440,9 @@
 						</p>{:else if busy}<p class="faint small">
 							{t('moveSheet.waitsForCurrent')}
 						</p>{/if}
-					{#if addAccess.error}<p class="notice warn small" role="status">{addAccess.error}</p>{/if}
+					{#if addAccess.error}<p class="notice warn small" role="status">
+							{addAccess.error}
+						</p>{/if}
 					<TierNotice
 						id="move-action-tier"
 						minimumTier={addTier}

@@ -1352,6 +1352,7 @@
 		"drop": "Drop a character ZIP here",
 		"dropNote": "PixelLab character or PixelDoll export · up to 64 MB",
 		"chooseZip": "Choose ZIP",
+		"chooseAnother": "Choose another ZIP",
 		"characterZip": "Character ZIP",
 		"devicePrivacy": "Your files stay on this device. Preview your character before importing.",
 		"pixelLabHint": "In PixelLab’s character creator, export a ZIP with individual frames. Enclosing folders are supported. Other spritesheet layouts and PNG-only ZIPs are not supported.",
@@ -3408,8 +3409,29 @@
 		"generateFor": "Generate for {move}",
 		"wearOn": "Wear for {move}"
 	},
+	"itemImport": {
+		"title": "Import items",
+		"intro": "A character’s Download ZIP, a backup or a shared character. Free when its items fit this character.",
+		"empty": "This ZIP has no finished items.",
+		"skipped": {
+			"one": "{count} item couldn’t be read.",
+			"other": "{count} items couldn’t be read."
+		},
+		"notFitted": "{names} no longer fit and weren’t added.",
+		"busy": "Wait for the item being added, then try again.",
+		"row": {
+			"copy": "Fits this character exactly",
+			"refit": "Fitted to this body for free. Check its frames after importing.",
+			"unfitted": "Made for another body. Worn as drawn, so it may float or clip.",
+			"remake": "Made for another body, so it can’t be worn here"
+		}
+	},
+	"importDrop": {
+		"items": "Drop to import items",
+		"moves": "Drop to import moves",
+		"states": "Drop to import States"
+	},
 	"moveImport": {
-		"title": "Import moves",
 		"importMoves": "Import moves",
 		"importStates": "Import States",
 		"dropArea": "PixelDoll ZIP drop area",

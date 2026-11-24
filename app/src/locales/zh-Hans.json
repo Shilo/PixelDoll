@@ -1309,6 +1309,7 @@
 		"drop": "将角色 ZIP 拖放到此处",
 		"dropNote": "PixelLab 角色或 PixelDoll 导出 · 最大 64 MB",
 		"chooseZip": "选择 ZIP",
+		"chooseAnother": "选择其他 ZIP",
 		"characterZip": "角色 ZIP",
 		"devicePrivacy": "你的文件保留在此设备上。导入前请先预览角色。",
 		"pixelLabHint": "在 PixelLab 的角色创建器中，导出包含单独帧的 ZIP。支持外层文件夹。不支持其他精灵图集布局和仅含 PNG 的 ZIP。",
@@ -3311,8 +3312,28 @@
 		"generateFor": "为{move}生成",
 		"wearOn": "在{move}中穿戴"
 	},
+	"itemImport": {
+		"title": "导入装备",
+		"intro": "角色的 ZIP、备份或分享的角色。如果装备适合此角色，则免费。",
+		"empty": "此 ZIP 中没有已完成的装备。",
+		"skipped": {
+			"other": "有 {count} 件装备无法读取。"
+		},
+		"notFitted": "{names} 已不再适配，未添加。",
+		"busy": "请等待装备添加完成后再试。",
+		"row": {
+			"copy": "与此角色完全适配",
+			"refit": "已免费适配到此身体。导入后请检查其帧。",
+			"unfitted": "为其他身体制作。按原样穿戴，可能悬空或穿模。",
+			"remake": "为其他身体制作，因此无法在此穿戴"
+		}
+	},
+	"importDrop": {
+		"items": "放下以导入装备",
+		"moves": "放下以导入动作",
+		"states": "放下以导入状态"
+	},
 	"moveImport": {
-		"title": "导入动作",
 		"importMoves": "导入动作",
 		"importStates": "导入状态",
 		"dropArea": "PixelDoll ZIP 拖放区域",

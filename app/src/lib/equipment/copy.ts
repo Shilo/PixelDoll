@@ -423,14 +423,25 @@ function retargetDepth(item: Item, plan: SlotCopyPlan) {
 		layer.z = retargetLayerDepth(layer, from, to);
 	}
 }
+/** `name`, or the first free "name 2", "name 3"... when another item of the character already uses it ("Cape 2" kept again
+ *  is "Cape 3", not "Cape 2 2"). */
+export function freeItemName(name: string, items: readonly Pick<Item, 'name'>[]): string {
+	const taken = new Set(items.map((it) => it.name.trim().toLowerCase()));
+	if (!taken.has(name.trim().toLowerCase())) return name;
+	const stem = name.replace(/\s+\d+$/, '') || name;
+	for (let n = 2; ; n++) if (!taken.has(`${stem} ${n}`.toLowerCase())) return `${stem} ${n}`;
+}
+
 /** Copy an item of another saved character into `targetId` in one transaction: exact on an identical body, otherwise a free
  *  approximate fit when one exists, otherwise the item as drawn for the other body (both marked for review). Returns the new item, the copy this character already holds of it
- *  (a second tap while the first was saving), or null when it does not fit (nothing is written). Never generates anything. */
+ *  (a second tap while the first was saving), or null when it does not fit (nothing is written). Never generates anything.
+ *  `numberName` keeps both when the name is in use, as "Name 2" (an import), instead of a second item with the same name. */
 export async function acceptCopy(
 	sourceId: string,
 	itemId: string,
 	targetId: string,
-	bundled?: BundledSource
+	bundled?: BundledSource,
+	{ numberName = false }: { numberName?: boolean } = {}
 ): Promise<Item | null> {
 	if (!targetId.startsWith('rig-'))
 		throw new Error('Make an editable copy of the demo to add items to it.');
@@ -536,6 +547,11 @@ export async function acceptCopy(
 				source.manifest.name
 			);
 			// A slot only the source defines (a custom one) comes with its item, shown and with its labels, behavior and depths.
+			if (numberName)
+				item.name = freeItemName(
+					item.name,
+					rec.manifest.items.filter((it) => it.slot !== 'body' && !it.variantOf)
+				);
 			item.exportId = newItemExportId(rec.manifest.items, item.id);
 			putItem(rec.manifest, item, [
 				...slotLadder(rec.manifest.rig),
