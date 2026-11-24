@@ -15,6 +15,10 @@ Inputs in this folder:
 
 ## 1. Answer
 
+**In plain terms.** The attack picture is a single drawing of the whole body, so simply sawing it in half at the waist cuts through hands, swords and capes. But you do not have to saw the attack in half. You can keep the attack's upper body whole, throw away only its own legs, and put the walking legs underneath, lining up the hips frame by frame. Arms and weapons stay intact because they belong to the upper picture. That is the cheap way, and a careful test showed the join can be about one pixel off rather than a visible gash, as long as both halves face the same direction. What it cannot do is make the chest face one way while the legs walk another; that pose was never drawn. And anything that hangs across the waist (cape, long coat, low-held two-hander) has no clear owner at the join, so those characters need a different approach.
+
+Technical summary follows.
+
 **The requested capability is achievable for the case that matters most, if it is treated as authored, reviewed layering rather than an automatic split.**
 
 - **Same-facing action layering works as a pilot.** Keep the Walk legs and gait, play the attack's upper body over them, both facing the same direction. The independent review's fitted per-frame graft reached a **1 px median and 2 px maximum junction edge step** on the south pair, with no detached fragments in most phase pairs. That is reviewable art, not a broken cut.
@@ -63,6 +67,20 @@ Full detail and URLs are in [research-industry.md](research-industry.md). The re
 ## 5. The three tiers, practically
 
 ### Tier 1: reviewed same-facing action layering (free, pilot)
+
+**What it actually is, mechanically.** Not "cut both animations at the hip". The steps per frame are:
+
+1. Start from the attack picture for this direction and frame. Keep everything except the attack's own legs and the parts of clothing that belong to those legs.
+2. Start from the walk picture for the same direction. Keep only the lower body: legs, feet, and the bottom of shorts or trousers.
+3. Move the walk legs so the hip line matches the attack's hip line for that frame. The shift is a whole number of pixels, computed per frame, so it does not wobble by fractions.
+4. Overlap the two pieces by one row at the joint, so the darker belt or shorts edge covers the seam.
+5. Repeat for every worn layer with the same joint, so the vest comes from the attack picture and the boots come from the walk picture.
+
+**Why the arms are no longer a problem.** The earlier objection was about cutting a single attack drawing at the waist, which severs an arm or weapon that crosses that line. In this method the attack drawing is never cut across its middle. Its arms, weapon and torso stay in one piece, exactly as drawn. Only the legs at the bottom are removed, and the walk supplies replacement legs. A sword held in the hand stays with the hand.
+
+**Why some outfits still fail.** A cape, skirt or long coat can pass in front of one leg and behind the other. At the joint it cannot belong to both pictures, so it has to be authored with alternate depth or excluded. The same applies to a weapon held so low that it overlaps the legs. The review measured this: a fixed cut destroyed 77-87 sword pixels and 105-196 cape pixels per action frame, while vest, hair and helmet were almost untouched.
+
+**What it costs.** No PixelLab generations. The work is a small offline alignment tool, a manual pass to approve each character, walking animation, attack and direction, storing the two halves in the export, and a runtime switch. Each approved combination is recorded, so an unapproved outfit simply keeps today's behavior.
 
 What the player sees: the character keeps walking (legs and gait unchanged) while the upper body punches, slashes or casts, both facing the same direction. The slide is gone because the legs genuinely walk. Aim and travel still have to agree on facing; this tier does not give independent aim.
 
