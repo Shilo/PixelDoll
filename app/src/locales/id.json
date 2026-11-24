@@ -868,7 +868,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Pilih animasi di Pratinjau. Saat menunggang, gerakan mengikuti Pose penunggang di pengaturan tunggangan.",
-		"movesOffWalking": "Pilih animasi di Pratinjau. Di sini, karakter memakai animasi diam atau jalan saat Anda menggerakkannya.",
+		"movesOffWalking": "Pilih animasi di Pratinjau. Di sini, pengaturan Tampilan langsung menentukan apa yang diputar.",
 		"tabWardrobe": "Lemari",
 		"tabColors": "Warna",
 		"tabOutfits": "Setelan",
@@ -3384,7 +3384,7 @@
 		"noAttackDirection": "{move} tidak memiliki frame ke arah {direction}, jadi tidak dapat menyerang ke arah itu.",
 		"hintTopDown": "WASD atau klik untuk bergerak · Klik kanan atau X untuk menyerang · Spasi untuk melompat · M untuk naik atau turun",
 		"hintSide": "A/D atau klik untuk bergerak · Klik kanan atau X untuk menyerang · Spasi untuk melompat · M untuk naik atau turun",
-		"hintTouch": "Sisi kiri untuk bergerak · Sisi kanan untuk membidik, lepaskan untuk menyerang",
+		"hintTouch": "Sisi kiri untuk bergerak · Sisi kanan untuk membidik, lepaskan untuk menyerang · Tombol untuk melompat dan menunggang",
 		"stageTopDown": "Dunia uji karakter. Gunakan WASD, tombol panah, klik, atau seret untuk bergerak. Klik kanan atau X menyerang, Spasi melompat, M naik atau turun. Tombol 1, 2, 3 mengganti tampilan.",
 		"stageSide": "Dunia uji gulir samping. Gunakan A/D, panah kiri dan kanan, klik, atau seret untuk bergerak. Klik kanan atau X menyerang, Spasi melompat, M naik atau turun. Tombol 1, 2, 3 mengganti tampilan."
 	}

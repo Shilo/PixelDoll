@@ -891,7 +891,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Las animaciones se eligen en Vista previa. Al moverte con montura se sigue la pose de jinete de los ajustes de montura.",
-		"movesOffWalking": "Las animaciones se eligen en Vista previa. Aquí, moverse reproduce Reposo o Caminar.",
+		"movesOffWalking": "Las animaciones se eligen en Vista previa. Aquí, los ajustes de Vistas en vivo eligen qué se reproduce.",
 		"tabWardrobe": "Armario",
 		"tabColors": "Colores",
 		"tabOutfits": "Atuendos",
@@ -3483,7 +3483,7 @@
 		"noAttackDirection": "{move} no tiene fotogramas hacia {direction}, así que no puede atacar en esa dirección.",
 		"hintTopDown": "WASD o clic para moverte · Clic derecho o X para atacar · Espacio para saltar · M para montar",
 		"hintSide": "A/D o clic para moverte · Clic derecho o X para atacar · Espacio para saltar · M para montar",
-		"hintTouch": "El lado izquierdo mueve · El lado derecho apunta; suelta para atacar",
+		"hintTouch": "El lado izquierdo mueve · El lado derecho apunta; suelta para atacar · Los botones saltan y montan",
 		"stageTopDown": "Mundo de prueba del personaje. WASD, flechas, clic o arrastre para moverte. Clic derecho o X ataca, Espacio salta, M monta. Las teclas 1, 2 y 3 cambian de vista.",
 		"stageSide": "Mundo de prueba en vista lateral. A/D, flechas izquierda y derecha, clic o arrastre para moverte. Clic derecho o X ataca, Espacio salta, M monta. Las teclas 1, 2 y 3 cambian de vista."
 	}

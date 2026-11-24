@@ -44,7 +44,7 @@
 	import { showMount } from '../mountPreview.ts';
 	import { resolveAttack, type AttackFailure } from './attack.ts';
 	import { LiveActions } from './liveActions.ts';
-	import { airborne, JUMP } from './jump.ts';
+	import { airborne, JUMP, jumpGrounding } from './jump.ts';
 	import GameControls from './GameControls.svelte';
 	import { displayMove } from '../displayMove.ts';
 	import { mountPlacement } from './mountPlacement.ts';
@@ -494,7 +494,14 @@
 		if (!cursor || !actorAt) return { x: 0, y: 0 };
 		const dx = cursor.x - actorAt.x,
 			dy = actorAt.y - cursor.y;
-		return Math.hypot(dx, dy) <= actorAt.r ? { x: 0, y: 0 } : { x: dx, y: dy };
+		if (Math.hypot(dx, dy) <= actorAt.r) return { x: 0, y: 0 };
+		// Top-down aims at the floor point under the cursor, the same point a left click walks to. Side-scroller keeps
+		// the screen direction, since aiming up or down there picks Attack up or Attack down.
+		const floor =
+			experience.mode === 'topdown' && scene && sceneOptions
+				? scene.unproject(cursor, sceneOptions, position.y)
+				: null;
+		return floor ? { x: floor.x - position.x, y: floor.y - position.y } : { x: dx, y: dy };
 	}
 	/**
 	 * Mouse buttons by their held state, since a second button pressed or released during the first sends a move, not a
@@ -612,6 +619,8 @@
 	function pressOutside(e: PointerEvent) {
 		cancelAnimationFrame(handback);
 		handoff = false;
+		// Any press, a game button's or a panel's, shows the controls for the hand in use (hybrid devices).
+		if (experience.mode !== 'preview') touchInput = e.pointerType !== 'mouse';
 		if (
 			experience.mode === 'preview' ||
 			!keys.size ||
@@ -1377,7 +1386,7 @@
 					const standing = (bodyBounds?.facings.get(ui.dir)?.standingHeight ?? fit.h) * scale;
 					const lift = live ? snap(actions.jump.height * standing) : 0;
 					actorAt = live
-						? { x: point.x, y: point.y - lift - standing / 2, r: Math.max(12, standing / 3) }
+						? { x: point.x, y: point.y - lift - standing / 2, r: Math.max(12, standing / 5) }
 						: null;
 					picks = live
 						? []
@@ -1450,8 +1459,14 @@
 							};
 						});
 					// A mounted rider leaves the floor, so Preview's floor reflection would be wrong.
-					if (REFLECTION.enabled && REFLECTION[experience.mode] && !mounted?.view && !lift) {
-						const floorProjection = s?.projection(options);
+					const floorProjection = s?.projection(options);
+					const inAir = jumpGrounding(live ? actions.jump.height : 0, REFLECTION.fadeHeight);
+					if (
+						REFLECTION.enabled &&
+						REFLECTION[experience.mode] &&
+						!mounted?.view &&
+						inAir.reflectionOpacity > 0
+					) {
 						const reflect = (
 							image: typeof img,
 							frame: typeof result.frame,
@@ -1460,22 +1475,24 @@
 							top: number
 						) => {
 							const groundRow = frame.y + (ground?.y ?? 0);
+							// Styled by the real floor row, below a lifted actor's feet.
+							const style = reflectionStyle(
+								top + lift + groundRow * scale,
+								floorProjection?.horizon ?? backdrop.eye,
+								floorProjection?.focal ?? backdrop.scale * art.focal
+							);
 							drawReflection(
 								g,
 								reflectionCanvas(image, groundRow, ground?.standingHeight ?? fit.h),
-								{ x: left, y: top, scale, groundRow },
-								reflectionStyle(
-									top + groundRow * scale,
-									floorProjection?.horizon ?? backdrop.eye,
-									floorProjection?.focal ?? backdrop.scale * art.focal
-								)
+								{ x: left, y: top, scale, groundRow, lift },
+								{ ...style, opacity: style.opacity * inAir.reflectionOpacity }
 							);
 						};
 						for (const other of others) {
 							const image = other.entry.result.image;
 							if (image) reflect(image, other.entry.result.frame, other.ground, other.x, other.y);
 						}
-						reflect(img, frame, selectedOrigin, x, y);
+						reflect(img, frame, selectedOrigin, x, y - lift);
 					}
 					// A lineup marks its selected facing with a thin accent ring on the floor, anchored to the feet so it
 					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half. A circle
@@ -1520,13 +1537,23 @@
 						g.stroke();
 						g.restore();
 					}
-					if (lift && experience.mode === 'topdown') {
-						const rx = ringRadius(fit.w, scale);
+					// A contact shadow on the floor under a jump, as flat as the floor is foreshortened there. A mount casts
+					// one as wide as its body.
+					if (lift && inAir.shadowStrength > 0) {
+						const width = mounted?.view ? mounted.view.frames[0].back.w * 0.8 : fit.w;
+						const rx = ringRadius(width, scale) * inAir.shadowScale;
+						// As flat as the world image's floor at the feet, like the lineup's floor ring; zoom scales both
+						// distances alike, so the unzoomed layout gives the ratio.
+						const flat = Math.max(
+							0.15,
+							ringFlatness(anchor.y - backdrop.eye, backdrop.scale, art.focal)
+						);
 						g.save();
-						g.globalAlpha = 0.3 - 0.12 * Math.min(1, actions.jump.height / JUMP.height);
+						// The dark floor is nearly black, so its shadow needs more weight to read.
+						g.globalAlpha = (ui.theme === 'dark' ? 0.55 : 0.32) * inAir.shadowStrength;
 						g.fillStyle = '#000';
 						g.beginPath();
-						g.ellipse(snap(point.x), snap(point.y), rx, rx * 0.3, 0, 0, Math.PI * 2);
+						g.ellipse(snap(point.x), snap(point.y), rx, rx * flat, 0, 0, Math.PI * 2);
 						g.fill();
 						g.restore();
 					}
@@ -1668,6 +1695,10 @@
 			: experience.mode !== 'preview' && !touchInput
 				? 'calc(var(--stage-bottom) + 68px)' // above the game icon bar
 				: undefined}
+		style:max-width={experience.mode !== 'preview' && touchInput
+			? // Stop short of the thumb buttons at the stage's lower right (GameControls.svelte).
+				'min(420px, calc(100vw - var(--stage-left) - var(--stage-right) - 2 * var(--edge) - 156px))'
+			: undefined}
 	>
 		{#if mountIssue}<p class="world-hint" role="status">{mountIssue}</p>{/if}
 		{#if hint}<p class="world-hint">

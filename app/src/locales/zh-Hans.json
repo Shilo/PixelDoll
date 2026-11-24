@@ -868,7 +868,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "动作在预览中选择。骑乘移动会遵循坐骑设置中的骑乘姿势。",
-		"movesOffWalking": "动作在预览中选择。在此处移动会播放待机或行走。",
+		"movesOffWalking": "动作在预览中选择。此处播放的内容由实时视图设置决定。",
 		"tabWardrobe": "衣橱",
 		"tabColors": "颜色",
 		"tabOutfits": "套装",
@@ -3384,7 +3384,7 @@
 		"noAttackDirection": "{move} 没有朝向{direction}的帧，无法向该方向攻击。",
 		"hintTopDown": "WASD 或点击移动 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",
 		"hintSide": "A/D 或点击移动 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",
-		"hintTouch": "左侧移动 · 右侧瞄准，松开即攻击",
+		"hintTouch": "左侧移动 · 右侧瞄准，松开即攻击 · 按钮用于跳跃和上下坐骑",
 		"stageTopDown": "角色测试世界。使用 WASD、方向键、点击或拖动来移动。右键或 X 攻击，空格跳跃，M 上下坐骑。按 1、2、3 切换视图。",
 		"stageSide": "横版测试世界。使用 A/D、左右方向键、点击或拖动来移动。右键或 X 攻击，空格跳跃，M 上下坐骑。按 1、2、3 切换视图。"
 	}

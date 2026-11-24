@@ -891,7 +891,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture suit la pose du cavalier des réglages de la monture.",
-		"movesOffWalking": "Choisissez les animations dans « Aperçu ». Ici, le personnage joue l’animation d’attente à l’arrêt et celle de marche quand il se déplace.",
+		"movesOffWalking": "Choisissez les animations dans « Aperçu ». Ici, les réglages des vues en direct choisissent ce qui est joué.",
 		"tabWardrobe": "Garde-robe",
 		"tabColors": "Couleurs",
 		"tabOutfits": "Tenues",
@@ -3483,7 +3483,7 @@
 		"noAttackDirection": "{move} n’a pas d’images vers {direction}, il ne peut donc pas attaquer dans cette direction.",
 		"hintTopDown": "WASD ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
 		"hintSide": "A/D ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
-		"hintTouch": "Le côté gauche déplace · Le côté droit vise, relâchez pour attaquer",
+		"hintTouch": "Le côté gauche déplace · Le côté droit vise, relâchez pour attaquer · Les boutons sautent et montent",
 		"stageTopDown": "Monde de test du personnage. WASD, les flèches, un clic ou un glissement pour se déplacer. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue.",
 		"stageSide": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite, un clic ou un glissement pour se déplacer. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue."
 	}

@@ -44,6 +44,9 @@
 {#if doc.id}
 	<p class="bu-muted small character">{t('liveViews.forCharacter', { name: characterName() })}</p>
 	{#each roles as { role, label } (role)}
+		{#if role === 'attackUp'}
+			<h4 class="small side-heading">{t('toolbar.viewSide')}</h4>
+		{/if}
 		<div data-setting="live-{role}" tabindex="-1">
 			<PlaybackPicker
 				settings
@@ -72,6 +75,9 @@
 <style>
 	.character {
 		margin: 0;
+	}
+	.side-heading {
+		margin: 8px 0 0;
 	}
 	.controls {
 		display: grid;

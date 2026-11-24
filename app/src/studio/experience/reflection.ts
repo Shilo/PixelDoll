@@ -91,13 +91,16 @@ interface Actor {
 	y: number;
 	scale: number;
 	groundRow: number;
+	/** CSS px a jump raises the actor above its floor point; its mirror image sits as far below the floor. */
+	lift?: number;
 }
 
 export function reflectionPlacement(actor: Actor, height: number, compression: number) {
-	const floor = actor.y + actor.groundRow * actor.scale;
+	// `y` is where the actor is drawn, so a lifted actor's floor is `lift` below its feet.
+	const floor = actor.y + (actor.lift ?? 0) + actor.groundRow * actor.scale;
 	return {
 		floor,
-		top: floor + (actor.groundRow - height) * actor.scale * compression,
+		top: floor + ((actor.lift ?? 0) + (actor.groundRow - height) * actor.scale) * compression,
 		height: height * actor.scale * compression
 	};
 }

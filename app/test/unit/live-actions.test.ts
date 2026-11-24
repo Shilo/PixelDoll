@@ -8,6 +8,7 @@ import {
 	flightPhase,
 	GROUNDED,
 	JUMP,
+	jumpGrounding,
 	launch,
 	stepJump
 } from '../../src/studio/experience/jump.ts';
@@ -227,5 +228,20 @@ describe('click to walk', () => {
 			}
 		);
 		expect(above).toBeNull();
+	});
+});
+
+describe('jump grounding', () => {
+	test('the shadow fades in at takeoff, shrinks and lightens with height; the reflection fades with distance', () => {
+		const floor = jumpGrounding(0, 0.7),
+			takeoff = jumpGrounding(0.02, 0.7),
+			apex = jumpGrounding(JUMP.height, 0.7);
+		expect(floor).toEqual({ shadowScale: 1, shadowStrength: 0, reflectionOpacity: 1 });
+		expect(takeoff.shadowStrength).toBeGreaterThan(0);
+		expect(takeoff.shadowStrength).toBeLessThan(0.5);
+		expect(apex.shadowScale).toBeLessThan(takeoff.shadowScale);
+		expect(apex.shadowStrength).toBeCloseTo(0.5);
+		expect(apex.reflectionOpacity).toBeCloseTo(0.5);
+		expect(jumpGrounding(Number.NaN, 0.7)).toEqual(floor);
 	});
 });

@@ -891,7 +891,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket, binek ayarlarındaki Binici pozunu izler.",
-		"movesOffWalking": "Animasyonlar Önizleme'de seçilir. Burada harekete göre bekleme veya yürüme animasyonu oynatılır.",
+		"movesOffWalking": "Animasyonlar Önizleme'de seçilir. Burada ne oynatılacağını Canlı görünüm ayarları belirler.",
 		"tabWardrobe": "Gardırop",
 		"tabColors": "Renkler",
 		"tabOutfits": "Kıyafetler",
@@ -3480,7 +3480,7 @@
 		"noAttackDirection": "Bu animasyonda ({move}) {direction} yönüne bakan kare yok, bu yüzden o yöne saldıramaz.",
 		"hintTopDown": "Hareket için WASD veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
 		"hintSide": "Hareket için A/D veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
-		"hintTouch": "Sol taraf hareket ettirir · Sağ taraf nişan alır, bırakınca saldırır",
+		"hintTouch": "Sol taraf hareket ettirir · Sağ taraf nişan alır, bırakınca saldırır · Düğmeler zıplatır ve bindirir",
 		"stageTopDown": "Karakter test dünyası. Hareket etmek için WASD, ok tuşları, tıklama veya sürükleme kullanın. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir.",
 		"stageSide": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D, sol ve sağ ok tuşları, tıklama veya sürükleme kullanın. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir."
 	}

@@ -891,7 +891,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Wähle Animationen in der Vorschau. Beim Reiten gilt die Reitpose aus den Reittier-Einstellungen.",
-		"movesOffWalking": "Wähle Animationen in der Vorschau. Hier wird je nach Bewegung die Idle- oder Gehanimation abgespielt.",
+		"movesOffWalking": "Wähle Animationen in der Vorschau. Hier legen die Einstellungen der Live-Ansichten fest, was abgespielt wird.",
 		"tabWardrobe": "Garderobe",
 		"tabColors": "Farben",
 		"tabOutfits": "Outfits",
@@ -3480,7 +3480,7 @@
 		"noAttackDirection": "{move} hat keine Frames in Richtung {direction}, daher ist dort kein Angriff möglich.",
 		"hintTopDown": "WASD oder Klick zum Bewegen · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",
 		"hintSide": "A/D oder Klick zum Bewegen · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",
-		"hintTouch": "Linke Seite bewegt · Rechte Seite zielt, loslassen greift an",
+		"hintTouch": "Linke Seite bewegt · Rechte Seite zielt, loslassen greift an · Tasten springen und sitzen auf",
 		"stageTopDown": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten, per Klick oder durch Ziehen. Rechtsklick oder X greift an, die Leertaste springt, M sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
 		"stageSide": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts, per Klick oder durch Ziehen. Rechtsklick oder X greift an, die Leertaste springt, M sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht."
 	}

@@ -53,3 +53,18 @@ export function flightPhase(state: JumpState): number {
 			: JUMP.apexSeconds + -state.velocity / fall;
 	return Math.min(1, Math.max(0, seconds / FLIGHT_SECONDS));
 }
+
+/**
+ * How a jump grounds the actor visually, from its height in body heights. A contact shadow fades in over the first part of
+ * takeoff (so it never pops), then shrinks and lightens as the actor rises, as a real one spreads and weakens. The floor
+ * reflection mirrors the lift below the floor and fades with that distance, so it hands off to the shadow smoothly.
+ */
+export function jumpGrounding(height: number, reflectionFade: number) {
+	const h = Number.isFinite(height) ? Math.max(0, height) : 0,
+		t = Math.min(1, h / JUMP.height);
+	return {
+		shadowScale: 1 - 0.4 * t,
+		shadowStrength: Math.min(1, t * 5) * (1 - 0.5 * t),
+		reflectionOpacity: Math.max(0, 1 - h / Math.max(1e-6, reflectionFade))
+	};
+}

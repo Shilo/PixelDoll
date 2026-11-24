@@ -894,7 +894,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Escolha as animações na Prévia. Ao se mover montado, o personagem segue a pose de montaria das configurações da montaria.",
-		"movesOffWalking": "Escolha as animações na Prévia. Aqui, o personagem usa a animação de repouso ou de caminhada.",
+		"movesOffWalking": "Escolha as animações na Prévia. Aqui, as configurações de Visualizações ao vivo escolhem o que é reproduzido.",
 		"tabWardrobe": "Guarda-roupa",
 		"tabColors": "Cores",
 		"tabOutfits": "Trajes",
@@ -3492,7 +3492,7 @@
 		"noAttackDirection": "{move} não tem quadros na direção {direction}, então não pode atacar para esse lado.",
 		"hintTopDown": "WASD ou clique para mover · Botão direito ou X para atacar · Espaço para pular · M para montar",
 		"hintSide": "A/D ou clique para mover · Botão direito ou X para atacar · Espaço para pular · M para montar",
-		"hintTouch": "O lado esquerdo move · O lado direito mira; solte para atacar",
+		"hintTouch": "O lado esquerdo move · O lado direito mira; solte para atacar · Os botões pulam e montam",
 		"stageTopDown": "Mundo de teste do personagem. WASD, setas, clique ou arraste para mover. Botão direito ou X ataca, Espaço pula, M monta. As teclas 1, 2 e 3 trocam a visualização.",
 		"stageSide": "Mundo de teste em rolagem lateral. A/D, setas esquerda e direita, clique ou arraste para mover. Botão direito ou X ataca, Espaço pula, M monta. As teclas 1, 2 e 3 trocam a visualização."
 	}

@@ -891,7 +891,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Moves are picked in Preview. Mounted movement follows the Riding pose in Mount settings.",
-		"movesOffWalking": "Moves are picked in Preview. Here, moving plays idle or walk.",
+		"movesOffWalking": "Moves are picked in Preview. Here, Live views settings choose what plays.",
 		"tabWardrobe": "Wardrobe",
 		"tabColors": "Colors",
 		"tabOutfits": "Outfits",
@@ -3483,7 +3483,7 @@
 		"noAttackDirection": "{move} has no {direction} frames, so it can’t attack that way.",
 		"hintTopDown": "WASD or click to move · Right-click or X to attack · Space to jump · M to mount",
 		"hintSide": "A/D or click to move · Right-click or X to attack · Space to jump · M to mount",
-		"hintTouch": "Left side moves · Right side aims, lift to attack",
+		"hintTouch": "Left side moves · Right side aims, lift to attack · Buttons jump and mount",
 		"stageTopDown": "Character test world. WASD, arrows, click or drag to move. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views.",
 		"stageSide": "Side-scroller test world. A/D, left and right arrows, click or drag to move. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views."
 	}
