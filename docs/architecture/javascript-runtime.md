@@ -59,6 +59,10 @@ Deliberate boundaries:
 - Aseprite resolves and applies first-outfit palettes through the canonical color API. Generic and RPG
   Maker baked frames use the canonical compositor. Godot and Unity retain native-language controllers,
   so their independent implementations still require native conformance checks rather than source identity.
+- A mount and its rider have independent facings and clocks. The mount follows travel, and the rider
+  can face an attack while its hip contact stays on the mount's seat. The editor's test mount is an
+  editor feature. A game can compose the same behavior by playing two exported dolls independently
+  and placing the rider's contact on the mount's seat.
 
 Add runtime behavior to the canonical JavaScript modules, not the TypeScript facades. Existing
 application entry points preserve caller interfaces; direct canonical imports are appropriate for
