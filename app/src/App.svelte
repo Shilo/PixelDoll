@@ -4,6 +4,7 @@
 	import { workspaceCopy } from './lib/store/workspace-mode.ts';
 	import { localDeveloperToolsEnabled, watchDeveloperMode } from './studio/developerMode.svelte.ts';
 	import { watchMountPreferences } from './studio/experience/riderPose.ts';
+	import { watchLivePreferences } from './studio/experience/liveViews.ts';
 	import { applyRiderPose } from './studio/mountPreview.ts';
 	import { experience } from './studio/experience/state.svelte.ts';
 	import { doc } from './studio/state.svelte.ts';
@@ -36,6 +37,7 @@
 		})
 	);
 	$effect(watchPromptSuggestions);
+	$effect(watchLivePreferences);
 	$effect(() => {
 		if (!import.meta.env.DEV || workspaceCopy || localDeveloperToolsEnabled() || route === '/')
 			return;

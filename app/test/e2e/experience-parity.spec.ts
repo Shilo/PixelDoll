@@ -2837,9 +2837,8 @@ test.describe('two-finger equipment input', () => {
 	});
 });
 
-// Desktop drives the stick with a mouse; the others use real touch through CDP. Sizes mirror MOTION.joystick.
+// Real touch through CDP; a mouse walks to a clicked point instead (live views mouse test). Sizes mirror MOTION.joystick.
 for (const screen of [
-	{ name: 'desktop', width: 1920, height: 1080, touch: false, theme: 'dark' },
 	{ name: 'tablet portrait', width: 820, height: 1180, touch: true, theme: 'light' },
 	{ name: 'phone portrait', width: 390, height: 844, touch: true, theme: 'dark' },
 	{ name: 'phone landscape', width: 844, height: 390, touch: true, theme: 'light' },
@@ -2872,14 +2871,14 @@ for (const screen of [
 				expect(Math.abs(actual - expected)).toBeLessThan(1);
 			const position = () =>
 				world(page).evaluate((element) => element.dataset.position!.split(',').map(Number));
-			// A blank world point with room for the whole base, nearest the stage center.
+			// A blank world point with room for the whole base on the moving (left) half, nearest the stage center.
 			const blank = () =>
 				page.evaluate(
 					(inset) => {
 						const r = document.querySelector('.world-stage')!.getBoundingClientRect();
 						const points: { x: number; y: number }[] = [];
 						for (let y = r.top + inset; y <= r.bottom - inset; y += 8)
-							for (let x = r.left + inset; x <= r.right - inset; x += 8) points.push({ x, y });
+							for (let x = r.left + inset; x < innerWidth / 2; x += 8) points.push({ x, y });
 						const center = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 						points.sort(
 							(a, b) =>
@@ -2920,19 +2919,12 @@ for (const screen of [
 						accent
 					};
 				});
-			const cdp = screen.touch ? await context.newCDPSession(page) : null;
-			const press = async (type: 'down' | 'move' | 'up', x = 0, y = 0) => {
-				if (cdp)
-					await cdp.send('Input.dispatchTouchEvent', {
-						type: type === 'down' ? 'touchStart' : type === 'move' ? 'touchMove' : 'touchEnd',
-						touchPoints: type === 'up' ? [] : [{ x, y, id: 1 }]
-					});
-				else if (type === 'down') {
-					await page.mouse.move(x, y);
-					await page.mouse.down();
-				} else if (type === 'move') await page.mouse.move(x, y, { steps: 4 });
-				else await page.mouse.up();
-			};
+			const cdp = await context.newCDPSession(page);
+			const press = (type: 'down' | 'move' | 'up', x = 0, y = 0) =>
+				cdp.send('Input.dispatchTouchEvent', {
+					type: type === 'down' ? 'touchStart' : type === 'move' ? 'touchMove' : 'touchEnd',
+					touchPoints: type === 'up' ? [] : [{ x, y, id: 1 }]
+				});
 			let pressed = false;
 			try {
 				for (const view of ['Top-down', 'Side-scroller'] as const) {
@@ -3001,7 +2993,7 @@ for (const screen of [
 				}
 			} finally {
 				if (pressed) await press('up');
-				await cdp?.detach();
+				await cdp.detach();
 			}
 		});
 	});
@@ -4087,4 +4079,169 @@ test.describe('Preview facing lineup', () => {
 			const widths = ['3440×1440', '2560×1440', '1920×1080', '1366×768'].map((k) => counts.get(k)!);
 			for (let i = 1; i < widths.length; i++) expect(widths[i]).toBeLessThanOrEqual(widths[i - 1]);
 		});
+});
+
+test.describe('live views actions', () => {
+	// Every stage state the scene shows, recorded as it changes: a jump or an attack is over in well under a second.
+	const record = (page: Page) =>
+		world(page).evaluate((host) => {
+			const shown: { clip: string; facing: string; jump: number }[] = [];
+			(window as unknown as { shown: typeof shown }).shown = shown;
+			new MutationObserver(() =>
+				shown.push({
+					clip: host.dataset.clip ?? '',
+					facing: host.dataset.facing ?? '',
+					jump: Number(host.dataset.jump || 0)
+				})
+			).observe(host, { attributes: true });
+		});
+	const shown = (page: Page) =>
+		page.evaluate(
+			() => (window as unknown as { shown: { clip: string; facing: string; jump: number }[] }).shown
+		);
+	const jumped = async (page: Page, jump: () => Promise<void>) => {
+		await record(page);
+		await jump();
+		await expect
+			.poll(async () => Math.max(...(await shown(page)).map((s) => s.jump)))
+			.toBeGreaterThan(0.2);
+		await expect(world(page)).toHaveAttribute('data-jump', '0.000');
+	};
+	const attacked = async (page: Page, facing: string, attack: () => Promise<void>) => {
+		await record(page);
+		await attack();
+		await expect
+			.poll(async () =>
+				(await shown(page)).some((s) => s.clip === 'cross-punch' && s.facing === facing)
+			)
+			.toBe(true);
+	};
+
+	test('keys and a mouse jump, mount, attack and walk to a clicked point, and game buttons never take focus', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await customize(page);
+		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
+		const host = world(page);
+		await expect(host).toBeFocused();
+		await expect(page.locator('.world-hint')).toHaveText(
+			'WASD or click to move · Right-click or X to attack · Space to jump · M to mount'
+		);
+		const bar = page.getByRole('toolbar', { name: 'Game actions', exact: true });
+		const jump = bar.getByRole('button', { name: 'Jump', exact: true });
+		const mount = bar.getByRole('button', { name: 'Mount', exact: true });
+		await expect(jump).toHaveAttribute('aria-keyshortcuts', 'Space');
+		await expect(jump).toHaveAttribute('title', 'Jump (Space)');
+		await expect(jump).toHaveAttribute('tabindex', '-1');
+		await jumped(page, () => page.keyboard.press('Space'));
+		await jumped(page, () => jump.click());
+		await expect(host).toBeFocused();
+		// M and the Mount button toggle the same mount; the stage keeps the keyboard.
+		await expect(mount).toHaveAttribute('aria-pressed', 'false');
+		await page.keyboard.press('m');
+		await expect(mount).toHaveAttribute('aria-pressed', 'true');
+		await expect(host).toHaveAttribute('data-mount', /\S/);
+		await mount.click();
+		await expect(mount).toHaveAttribute('aria-pressed', 'false');
+		await expect(host).not.toHaveAttribute('data-mount');
+		await expect(host).toBeFocused();
+		// X attacks once along the facing; Automatic plays the demo's Cross punch.
+		await attacked(page, 'south', () => page.keyboard.press('x'));
+		await expect(host).not.toHaveAttribute('data-clip', 'cross-punch');
+		// A left click walks to the floor point and stops there.
+		const [ax, ay] = (await host.getAttribute('data-scene-anchor'))!.split(',').map(Number);
+		await page.mouse.click(ax + 240, ay - 20);
+		await expect(host).toHaveAttribute('data-destination', /\S/);
+		await expect
+			.poll(async () => Number((await host.getAttribute('data-position'))!.split(',')[0]))
+			.toBeGreaterThan(20);
+		await expect(host).toHaveAttribute('data-destination', '', { timeout: 10_000 });
+		// A right click attacks toward the cursor instead of opening a menu; the demo has no north punch.
+		await page.evaluate(() =>
+			addEventListener('contextmenu', (e) =>
+				document.body.setAttribute('data-menu', String(e.defaultPrevented))
+			)
+		);
+		await page.mouse.click(ax, ay - 150, { button: 'right' });
+		await expect(page.locator('body'), 'the stage right press opens no menu').toHaveAttribute(
+			'data-menu',
+			'true'
+		);
+		await expect(page.locator('.toast')).toContainText('so it can’t attack that way');
+		expect(
+			await page.evaluate(() => {
+				const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+				document.querySelector('.world-input')!.dispatchEvent(event);
+				return event.defaultPrevented;
+			}),
+			'a menu not opened by a stage right press stays native'
+		).toBe(false);
+	});
+
+	test('Live views settings save the clip each action plays per character', async ({ page }) => {
+		await customize(page);
+		await page.keyboard.press('Control+,');
+		const settings = page.getByRole('dialog', { name: 'Settings' });
+		const open = () => settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		await open();
+		const attack = settings.getByRole('button', { name: /^Attack: / });
+		await expect(attack).toHaveAccessibleName('Attack: Automatic: Cross punch');
+		await attack.click();
+		await page.getByRole('menuitemradio', { name: 'Walk', exact: true }).click();
+		await expect(attack).toHaveAccessibleName('Attack: Walk');
+		expect(
+			await page.evaluate(() => JSON.parse(localStorage.getItem('pixeldoll.liveViews')!))
+		).toEqual({ roles: { 'fixture:s2': { attack: 'walk' } } });
+		await page.reload();
+		await page.locator('.customize-action').click();
+		await page.keyboard.press('Control+,');
+		await open();
+		await expect(attack).toHaveAccessibleName('Attack: Walk');
+	});
+
+	test.describe('on touch', () => {
+		test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+		test('the right half aims and attacks on release, and the thumb Jump button jumps', async ({
+			page,
+			context
+		}) => {
+			await customize(page);
+			await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
+			const host = world(page);
+			const jump = page
+				.getByRole('group', { name: 'Game actions', exact: true })
+				.getByRole('button', { name: 'Jump', exact: true });
+			await jumped(page, () => jump.tap());
+			// An open world point on the aiming half.
+			const point = await page.evaluate(() => {
+				for (let y = innerHeight * 0.6; y > 40; y -= 8)
+					for (let x = innerWidth * 0.55; x < innerWidth * 0.8; x += 8)
+						if (document.elementFromPoint(x, y)?.classList.contains('world-input'))
+							return { x: Math.round(x), y: Math.round(y) };
+				return null;
+			});
+			expect(point, 'an open point on the right half').toBeTruthy();
+			const cdp = await context.newCDPSession(page);
+			const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', y = 0) =>
+				cdp.send('Input.dispatchTouchEvent', {
+					type,
+					touchPoints: type === 'touchEnd' ? [] : [{ x: point!.x, y: point!.y + y, id: 1 }]
+				});
+			try {
+				await touch('touchStart');
+				await expect(page.locator('.world-aim')).toBeVisible();
+				await touch('touchMove', 15);
+				// Released aimed down: the demo's south punch, and aiming never moved the character.
+				await attacked(page, 'south', async () => {
+					await touch('touchMove', 40);
+					await touch('touchEnd');
+				});
+				await expect(host).toHaveAttribute('data-position', '0.00,0.00');
+				await expect(page.locator('.world-aim')).toHaveCount(0);
+			} finally {
+				await cdp.detach();
+			}
+		});
+	});
 });

@@ -9,6 +9,7 @@ import {
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { developerModeEnabled } from './developerMode.svelte.ts';
 import { mountAtDefaults, ridingPosesSaved } from './experience/riderPose.ts';
+import { liveRolesSaved, liveViewsAtDefaults } from './experience/liveViews.ts';
 import {
 	creationDefaults,
 	creationSections,
@@ -126,6 +127,7 @@ const atDefaults = {
 	wardrobe: () =>
 		!sharedItemsHiddenForAll() && !demoItemsShown() && !sharedItemsHiddenForCharacter(doc.id),
 	mount: () => mountAtDefaults(doc.id),
+	live: () => liveViewsAtDefaults(doc.id),
 	export: () => exportDefaults === true,
 	developer: () => !developerModeEnabled(),
 	characters: () => creationAtDefaults('characters'),
@@ -138,6 +140,7 @@ export function settingsAtDefaults(scope: ResetScope) {
 	return scope === 'all'
 		? Object.values(atDefaults).every((check) => check()) &&
 				!hasHiddenCharacterWardrobes() &&
-				!ridingPosesSaved()
+				!ridingPosesSaved() &&
+				!liveRolesSaved()
 		: atDefaults[scope]();
 }

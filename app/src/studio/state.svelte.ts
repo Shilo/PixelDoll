@@ -178,6 +178,7 @@ import {
 	type FrameChange
 } from '../lib/rig/reframe.ts';
 import { forgetRidingPose, syncRiderPose } from './experience/riderPose.ts';
+import { forgetLiveChoices } from './experience/liveViews.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -2294,10 +2295,15 @@ export async function deleteDeletedForever(id: string): Promise<void> {
 	void cleanUp(0, true).catch((error) => console.error('cleanup after delete forever', error));
 }
 
-/** Drop the Riding pose a permanently deleted thing held: a character's, or a State's own. */
+/** Drop the Riding pose and Live Views choices a permanently deleted thing held: a character's, or a clip's own. */
 function forgetPose(entry: RecentlyDeleted) {
-	if (entry.kind === 'character') forgetRidingPose(entry.projectId);
-	else if (entry.scope.moveId) forgetRidingPose(entry.projectId, entry.scope.moveId);
+	if (entry.kind === 'character') {
+		forgetRidingPose(entry.projectId);
+		forgetLiveChoices(entry.projectId);
+	} else if (entry.scope.moveId) {
+		forgetRidingPose(entry.projectId, entry.scope.moveId);
+		forgetLiveChoices(entry.projectId, entry.scope.moveId);
+	}
 }
 
 export async function removeProject(id = doc.id): Promise<void> {

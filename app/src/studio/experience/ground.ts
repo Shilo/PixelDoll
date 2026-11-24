@@ -51,6 +51,24 @@ export function project(point: Point, options: RenderOptions): Point {
 	};
 }
 
+/** The floor point under a screen point, as the shader maps it. Side-scroller has one row of travel, so it keeps
+ * `groundY` and maps only x. Null above the horizon. */
+export function unproject(screen: Point, options: RenderOptions, groundY = 0): Point | null {
+	if (options.mode === 'preview') return null;
+	const p = projection(options);
+	const z =
+		options.mode === 'side'
+			? p.depth + groundY - p.camera.y
+			: screen.y > p.horizon
+				? (p.focal * p.height) / (screen.y - p.horizon)
+				: NaN;
+	if (!(z > 0)) return null;
+	return {
+		x: p.camera.x + ((screen.x - p.anchor.x) * z) / p.focal,
+		y: options.mode === 'side' ? groundY : p.camera.y + z - p.depth
+	};
+}
+
 // Shader and sampled/mirrored material math copied from round-six world.js.
 const vertex = `#version 300 es
 in vec2 p;void main(){gl_Position=vec4(p,0,1);}`;

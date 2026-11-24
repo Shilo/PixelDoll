@@ -109,6 +109,19 @@ function fixture(
 const moving = { x: 1, y: 1 };
 
 describe('production body presentation', () => {
+	test('live views play the chosen Idle and Walk, and the walk gait follows travel', () => {
+		const a = buildPresentation(fixture(['east', 'west'], ['walk', 'idle', 'stroll', 'rest']));
+		const clips = { idle: ['rest', 'default'], walk: ['stroll', 'rest', 'default'] };
+		const walking = resolveLive(a, { velocity: { x: 1, y: 0 }, clips });
+		expect(walking).toMatchObject({ clip: 'stroll', requestedClip: 'stroll', issue: null });
+		expect(livePlaybackDelta(walking, { x: 0.5, y: 0 }, 100, 1, 'stroll')).toBe(50);
+		expect(resolveLive(a, { velocity: { x: 0, y: 0 }, clips, previous: walking })).toMatchObject({
+			clip: 'rest',
+			direction: 'east',
+			issue: null
+		});
+	});
+
 	test('mounted movement uses the matching Ride view or standing art, never the walking cycle', () => {
 		const project = fixture(['east', 'west'], ['walk', 'idle', 'ride']);
 		delete project.manifest.items[0].layers[0].cells!.ride.west;

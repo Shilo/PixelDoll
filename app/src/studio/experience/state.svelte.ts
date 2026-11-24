@@ -3,8 +3,10 @@ import { cancelStartupUpdate } from '../../lib/startup-update.ts';
 import { resolveZoom, type SceneCamera } from './zoom.ts';
 import type { MountLegMode } from './mountLegs.ts';
 import { readMountPreferences } from './mountStorage.ts';
+import { livePreferences } from './liveSettings.ts';
 export type WorldMode = 'preview' | 'topdown' | 'side';
 const saved = readMountPreferences();
+const liveSaved = livePreferences.read();
 export const experience = $state({
 	screen: 'characters' as 'characters' | 'studio',
 	mode: 'preview' as WorldMode,
@@ -14,6 +16,8 @@ export const experience = $state({
 	ridingPoses: saved.poses,
 	/** The Preview selection a rider pose replaced, restored on dismount. */
 	riderPoseReplaced: null as { projectId: string; clip: string; pose: string } | null,
+	/** The Live Views clip chosen per character ID and action (liveRoles.ts); a missing one plays Automatic. */
+	liveRoles: liveSaved.roles,
 	mountLegIssue: '',
 	presentation: 'animation' as string,
 	/** The chosen zoom in CSS px per art px, shared by all views; null shows each view's fit. */

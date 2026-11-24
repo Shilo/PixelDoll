@@ -914,12 +914,7 @@
 		"materialUnavailable": "Ground material unavailable. Showing the static scene.",
 		"sceneUnavailable": "Live scene unavailable. Reload to try again.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Character preview. WASD or arrows change facing. Keys 1, 2, 3 switch views.",
-		"sideScrollerTestWorldADLeft": "Side-scroller test world. A/D, left/right arrows or horizontal drag to move. Keys 1, 2, 3 switch views.",
-		"characterTestWorldWASDArrowsOrDrag": "Character test world. WASD, arrows or drag to move. Keys 1, 2, 3 switch views.",
 		"loadingCharacter": "Loading character…",
-		"dragInTheWorldToMove": "Drag in the world to move",
-		"focusWorldADOrToMove": "Focus world · A/D or ←/→ to move",
-		"focusWorldWASDOrArrowKeysTo": "Focus world · WASD or arrow keys to move",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} item hidden: missing {move} frames",
@@ -3397,5 +3392,33 @@
 			"resolveDrafts": "Keep or dismiss this character’s item drafts before importing moves.",
 			"changed": "This character changed. Choose the ZIP again to review the latest version."
 		}
+	},
+	"liveViews": {
+		"controls": "Controls",
+		"title": "Live views",
+		"forCharacter": "What {name} plays in Top-down and Side-scroller.",
+		"idle": "Idle",
+		"walk": "Walk",
+		"attack": "Attack",
+		"jump": "Jump",
+		"attackUp": "Attack up",
+		"attackDown": "Attack down",
+		"automaticClip": "Automatic: {clip}",
+		"automaticNone": "Automatic: none",
+		"sameAsAttack": "Same as Attack",
+		"sideAttackHelp": "Side-scroller plays Attack up or Attack down when you aim up or down.",
+		"notSaved": "Live views setting changed, but this browser could not save it.",
+		"openCharacter": "Open a character to choose what it plays.",
+		"mount": "Mount",
+		"actions": "Game actions",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Space",
+		"noAttack": "No Attack move yet. Choose one in Live views settings.",
+		"noAttackDirection": "{move} has no {direction} frames, so it can’t attack that way.",
+		"hintTopDown": "WASD or click to move · Right-click or X to attack · Space to jump · M to mount",
+		"hintSide": "A/D or click to move · Right-click or X to attack · Space to jump · M to mount",
+		"hintTouch": "Left side moves · Right side aims, lift to attack",
+		"stageTopDown": "Character test world. WASD, arrows, click or drag to move. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views.",
+		"stageSide": "Side-scroller test world. A/D, left and right arrows, click or drag to move. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views."
 	}
 }

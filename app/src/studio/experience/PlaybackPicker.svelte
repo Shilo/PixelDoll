@@ -5,7 +5,7 @@
 	import type { playbackClips } from '../../lib/runtime/timeline.js';
 	import { displayMove } from '../displayMove.ts';
 	import type { MoveRef } from '../model.ts';
-	import { Check, ChevronDown, Layers2, PersonStanding } from '../icons.ts';
+	import { Check, ChevronDown, Layers2, PersonStanding, Sparkles } from '../icons.ts';
 	import { ALL_CLIPS, ALL_MOVES, ALL_STATES } from '../shareClips.ts';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import SettingsItemButton from '../SettingsItemButton.svelte';
@@ -207,11 +207,13 @@
 			menu.hidePopover();
 		}}
 	>
-		{#if thumbnail}
+		{#if thumbnail || (key === '' && automatic)}
 			<span class="clip-art" aria-hidden="true">
-				{#if scope}
+				{#if key === '' && automatic}
+					<Sparkles size={18} />
+				{:else if scope}
 					<Layers2 size={18} />
-				{:else if expanded}
+				{:else if expanded && thumbnail}
 					{@const art = (() => {
 						const image = thumbnail(key);
 						return image && croppedThumbnail(image);

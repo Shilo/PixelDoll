@@ -20,6 +20,7 @@
 		type PlaybackClock
 	} from './experience/presentation.ts';
 	import { activeRiderPose, legsKept } from './experience/riderPose.ts';
+	import { currentLiveClips } from './experience/liveViews.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import { Pause, Play } from './icons.ts';
 	import { openFixture } from '../lib/dress/project.ts';
@@ -103,7 +104,8 @@
 					riding: true,
 					riderPose: ridingPose,
 					items: current.items,
-					defaultDirection: direction
+					defaultDirection: direction,
+					clips: currentLiveClips(current.id, current.project.manifest.rig.animations)
 				});
 				clock = advancePlayback(p, clock, dt);
 				place = mountPlacement(current.project, p, grounding);

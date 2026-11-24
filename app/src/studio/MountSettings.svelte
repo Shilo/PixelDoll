@@ -11,13 +11,12 @@
 		legsKept,
 		riderPoseOptions,
 		setMountLegs,
-		setRidingPose,
-		setShowMount
+		setRidingPose
 	} from './experience/riderPose.ts';
 	import type { MountLegMode } from './experience/mountLegs.ts';
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 	import { Footprints, PawPrint, TriangleAlert } from './icons.ts';
-	import { applyRiderPose } from './mountPreview.ts';
+	import { applyRiderPose, showMount } from './mountPreview.ts';
 	import { lookClipThumbnail } from './moveThumbnails.ts';
 	import MountPreview from './MountPreview.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
@@ -72,8 +71,7 @@
 	setting="show-mount"
 	checked={experience.testMount}
 	onchange={(event) => {
-		saved(setShowMount(event.currentTarget.checked));
-		applyRiderPose();
+		showMount(event.currentTarget.checked);
 	}}
 >
 	<PawPrint size={18} aria-hidden="true" />

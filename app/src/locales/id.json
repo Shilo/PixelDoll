@@ -890,12 +890,7 @@
 		"materialUnavailable": "Material lantai tidak tersedia. Adegan statis ditampilkan.",
 		"sceneUnavailable": "Adegan langsung tidak tersedia. Muat ulang untuk mencoba lagi.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Pratinjau karakter. Ubah arah hadap dengan WASD atau tombol panah. Beralih tampilan dengan tombol 1, 2, 3.",
-		"sideScrollerTestWorldADLeft": "Dunia uji gulir samping. Bergerak dengan A/D, panah kiri/kanan, atau seret mendatar. Beralih tampilan dengan tombol 1, 2, 3.",
-		"characterTestWorldWASDArrowsOrDrag": "Dunia uji karakter. Bergerak dengan WASD, tombol panah, atau seret. Beralih tampilan dengan tombol 1, 2, 3.",
 		"loadingCharacter": "Memuat karakter…",
-		"dragInTheWorldToMove": "Seret di area dunia untuk bergerak",
-		"focusWorldADOrToMove": "Fokuskan area dunia · Bergerak dengan A/D atau ←/→",
-		"focusWorldWASDOrArrowKeysTo": "Fokuskan area dunia · Bergerak dengan WASD atau tombol panah",
 		"notice": {
 			"hiddenItemsInMove": {
 				"other": "{count} item disembunyikan: bingkai {move} tidak lengkap"
@@ -3302,5 +3297,33 @@
 			"resolveDrafts": "Simpan atau buang draf item karakter ini sebelum mengimpor gerakan.",
 			"changed": "Karakter ini berubah. Pilih ZIP lagi untuk meninjau versi terbaru."
 		}
+	},
+	"liveViews": {
+		"controls": "Kontrol",
+		"title": "Tampilan langsung",
+		"forCharacter": "Animasi yang diputar {name} di Tampak atas dan Gulir samping.",
+		"idle": "Diam",
+		"walk": "Berjalan",
+		"attack": "Serangan",
+		"jump": "Lompat",
+		"attackUp": "Serangan ke atas",
+		"attackDown": "Serangan ke bawah",
+		"automaticClip": "Otomatis: {clip}",
+		"automaticNone": "Otomatis: tidak ada",
+		"sameAsAttack": "Sama seperti Serangan",
+		"sideAttackHelp": "Di Gulir samping, Serangan ke atas atau ke bawah diputar saat Anda membidik ke atas atau ke bawah.",
+		"notSaved": "Pengaturan tampilan langsung berubah, tetapi browser ini tidak dapat menyimpannya.",
+		"openCharacter": "Buka karakter untuk memilih animasi yang diputarnya.",
+		"mount": "Tunggangan",
+		"actions": "Aksi permainan",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Spasi",
+		"noAttack": "Belum ada animasi Serangan. Pilih satu di pengaturan Tampilan langsung.",
+		"noAttackDirection": "{move} tidak memiliki frame ke arah {direction}, jadi tidak dapat menyerang ke arah itu.",
+		"hintTopDown": "WASD atau klik untuk bergerak · Klik kanan atau X untuk menyerang · Spasi untuk melompat · M untuk naik atau turun",
+		"hintSide": "A/D atau klik untuk bergerak · Klik kanan atau X untuk menyerang · Spasi untuk melompat · M untuk naik atau turun",
+		"hintTouch": "Sisi kiri untuk bergerak · Sisi kanan untuk membidik, lepaskan untuk menyerang",
+		"stageTopDown": "Dunia uji karakter. Gunakan WASD, tombol panah, klik, atau seret untuk bergerak. Klik kanan atau X menyerang, Spasi melompat, M naik atau turun. Tombol 1, 2, 3 mengganti tampilan.",
+		"stageSide": "Dunia uji gulir samping. Gunakan A/D, panah kiri dan kanan, klik, atau seret untuk bergerak. Klik kanan atau X menyerang, Spasi melompat, M naik atau turun. Tombol 1, 2, 3 mengganti tampilan."
 	}
 }

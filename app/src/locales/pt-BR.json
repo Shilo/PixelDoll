@@ -917,12 +917,7 @@
 		"materialUnavailable": "O material do chão não está disponível. A cena estática é exibida.",
 		"sceneUnavailable": "A cena ao vivo não está disponível. Recarregue a página para tentar de novo.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Prévia do personagem. Use WASD ou as setas para mudar de direção. Use as teclas 1, 2 e 3 para alternar as vistas.",
-		"sideScrollerTestWorldADLeft": "Cenário de teste com rolagem lateral. Use A/D ou as setas esquerda e direita, ou arraste na horizontal para mover. Use as teclas 1, 2 e 3 para alternar as vistas.",
-		"characterTestWorldWASDArrowsOrDrag": "Cenário de teste do personagem. Use WASD ou as setas, ou arraste para mover. Use as teclas 1, 2 e 3 para alternar as vistas.",
 		"loadingCharacter": "Carregando personagem…",
-		"dragInTheWorldToMove": "Arraste no cenário para mover",
-		"focusWorldADOrToMove": "Coloque o foco no cenário · A/D ou ←/→ para mover",
-		"focusWorldWASDOrArrowKeysTo": "Coloque o foco no cenário · WASD ou setas para mover",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} item oculto: faltam quadros de {move}",
@@ -3406,5 +3401,33 @@
 			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de importar movimentos.",
 			"changed": "Este personagem mudou. Escolha o ZIP de novo para revisar a versão mais recente."
 		}
+	},
+	"liveViews": {
+		"controls": "Controles",
+		"title": "Visualizações ao vivo",
+		"forCharacter": "Animações que {name} usa em Vista de cima e Rolagem lateral.",
+		"idle": "Parado",
+		"walk": "Andar",
+		"attack": "Ataque",
+		"jump": "Pulo",
+		"attackUp": "Ataque para cima",
+		"attackDown": "Ataque para baixo",
+		"automaticClip": "Automático: {clip}",
+		"automaticNone": "Automático: nenhuma",
+		"sameAsAttack": "Igual ao Ataque",
+		"sideAttackHelp": "Na Rolagem lateral, Ataque para cima ou para baixo é usado quando você mira nessa direção.",
+		"notSaved": "A configuração das visualizações ao vivo mudou, mas este navegador não conseguiu salvá-la.",
+		"openCharacter": "Abra um personagem para escolher as animações dele.",
+		"mount": "Montaria",
+		"actions": "Ações de jogo",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Espaço",
+		"noAttack": "Ainda não há animação de Ataque. Escolha uma nas configurações de Visualizações ao vivo.",
+		"noAttackDirection": "{move} não tem quadros na direção {direction}, então não pode atacar para esse lado.",
+		"hintTopDown": "WASD ou clique para mover · Botão direito ou X para atacar · Espaço para pular · M para montar",
+		"hintSide": "A/D ou clique para mover · Botão direito ou X para atacar · Espaço para pular · M para montar",
+		"hintTouch": "O lado esquerdo move · O lado direito mira; solte para atacar",
+		"stageTopDown": "Mundo de teste do personagem. WASD, setas, clique ou arraste para mover. Botão direito ou X ataca, Espaço pula, M monta. As teclas 1, 2 e 3 trocam a visualização.",
+		"stageSide": "Mundo de teste em rolagem lateral. A/D, setas esquerda e direita, clique ou arraste para mover. Botão direito ou X ataca, Espaço pula, M monta. As teclas 1, 2 e 3 trocam a visualização."
 	}
 }

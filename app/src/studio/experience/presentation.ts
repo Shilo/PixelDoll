@@ -8,6 +8,7 @@ import {
 	type Frame
 } from '../../lib/compose/compose.ts';
 import { DEFAULT_MOVE } from '../../lib/rig/rig.ts';
+import { liveClips, type LiveClips } from './liveRoles.ts';
 import { moveLabel } from '../model.ts';
 import type { Img } from '../../lib/image/png.ts';
 import type {
@@ -449,8 +450,11 @@ export function resolveLive(
 		riderPose?: string;
 		/** The worn outfit. While riding without a chosen pose, the first pose in the riding order that shows all of it wins. */
 		items?: Preset['items'];
+		/** The character's Idle and Walk chains (liveRoles.ts liveClips); each falls back in order, per facing. */
+		clips?: Pick<LiveClips, 'idle' | 'walk'>;
 	}
 ): Presentation {
+	const { idle, walk } = options.clips ?? liveClips(a.project.manifest.rig.animations);
 	const velocity = unit(options.velocity, options.deadZone ?? 1e-6),
 		moving = !!(velocity.x || velocity.y),
 		previous = options.previous;
@@ -484,10 +488,10 @@ export function resolveLive(
 			].filter((clip): clip is string => !!clip)
 		: [];
 	const ridingClip =
-		options.riderPose ?? riding.find((clip) => a.animations.get(clip)?.has(intended!)) ?? 'idle';
+		options.riderPose ?? riding.find((clip) => a.animations.get(clip)?.has(intended!)) ?? idle[0];
 	const start = initial(
 		a,
-		options.riding ? ridingClip : moving ? 'walk' : 'idle',
+		options.riding ? ridingClip : moving ? walk[0] : idle[0],
 		intended,
 		moving
 	);
@@ -533,23 +537,19 @@ export function resolveLive(
 	// Idle, so the stand-in that shows the whole worn outfit wins. Standing in for Idle is no gap to report.
 	if (options.riding && options.items && intended) {
 		const worn = wornItems(a, options.items);
-		const dressed = ['idle', DEFAULT_MOVE]
+		const dressed = idle
 			.map((clip) => a.animations.get(clip)?.get(intended))
 			.find((sequence) => sequence && showsOutfit(a, worn, sequence));
 		if (dressed)
 			return withIssue(
 				a,
 				animated(
-					base.requestedClip === 'idle' ? { ...base, requestedClip: dressed.clip } : base,
+					base.requestedClip === idle[0] ? { ...base, requestedClip: dressed.clip } : base,
 					dressed
 				)
 			);
 	}
-	for (const clip of options.riding
-		? ['idle', DEFAULT_MOVE]
-		: moving
-			? ['walk', 'idle', DEFAULT_MOVE]
-			: ['idle', DEFAULT_MOVE]) {
+	for (const clip of options.riding || !moving ? idle : walk) {
 		// Default: a new character's standing views
 		const sequences = a.animations.get(clip),
 			directions = [...(sequences?.keys() ?? [])].filter(eligible);
@@ -625,7 +625,9 @@ export function livePlaybackDelta(
 	presentation: Presentation,
 	velocity: Vector,
 	deltaMs: number,
-	travelRate = 1
+	travelRate = 1,
+	/** The character's chosen Walk (liveRoles.ts). */
+	walkClip = 'walk'
 ): number {
 	const dt = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
 	// Ride follows travel whether it was asked for or reached as a riding fallback.
@@ -635,8 +637,8 @@ export function livePlaybackDelta(
 	if (
 		presentation.kind !== 'animation' ||
 		!presentation.moving ||
-		presentation.requestedClip !== 'walk' ||
-		presentation.clip !== 'walk'
+		presentation.requestedClip !== walkClip ||
+		presentation.clip !== walkClip
 	)
 		return dt;
 	return travelDelta(velocity, dt, travelRate);
