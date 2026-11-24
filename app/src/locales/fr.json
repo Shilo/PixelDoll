@@ -1609,6 +1609,7 @@
 			"facing": "Certaines images ressemblent à la vue opposée ; inspectez le torse",
 			"detail": "Un détail du design est absent ou recoloré sur certaines images",
 			"motion": "Vérifiez la taille et l’angle de l’objet pendant le mouvement",
+			"fill": "L’objet est creux sur certaines images, seul son contour reste ; vérifiez sa forme",
 			"lowerClothing": "Une partie des vêtements du bas manque par rapport à la pose debout",
 			"footwear": "Les chaussures diffèrent de celles de la pose debout ; vérifiez les pieds",
 			"bodyPixels": "Certains pixels du corps ont été modifiés par le modèle",

@@ -1609,6 +1609,7 @@
 			"facing": "Einige Frames ähneln der gegenüberliegenden Ansicht. Prüfe den Oberkörper",
 			"detail": "In einigen Frames fehlt ein Detail oder hat eine andere Farbe",
 			"motion": "Prüfe Größe und Winkel des Gegenstands in Bewegung",
+			"fill": "Der Gegenstand ist in einigen Frames hohl, nur sein Umriss ist übrig; prüfe seine Form",
 			"lowerClothing": "Im Vergleich zur Standpose fehlen Teile der Beinbekleidung",
 			"footwear": "Das Schuhwerk weicht von der Standpose ab. Prüfe die Füße",
 			"bodyPixels": "Das Modell hat einige Pixel des Grundkörpers verändert",

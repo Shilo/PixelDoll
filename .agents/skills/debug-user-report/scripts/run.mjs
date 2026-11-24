@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 // Offline backup tooling for the debug-user-report skill. Spends nothing, opens nothing in a browser, writes only to --out.
 //   node .agents/skills/debug-user-report/scripts/run.mjs audit <backup.zip> [--out <dir>]
+//   node .agents/skills/debug-user-report/scripts/run.mjs frames <backup.zip> [--out <dir>] [--character <id or name>] [--item <id or name>]
 //   node .agents/skills/debug-user-report/scripts/run.mjs sample <dir>
 // audit: reads the ZIP in memory with the app's own readers (readRestoreSource, readBackupCopy), audits every character,
 // summarizes debug/ when present, exports each character to every engine, re-imports the character ZIP and round-trips a
 // restore and a new backup. It writes <out>/report.json (holds user data: keep it out of the repository) and prints a summary.
+// frames: one zoomed PNG sheet per item, move and generated direction (standing frame first, body dimmed, back layer tinted
+// red) plus frames.json, and prints the frames whose fill collapsed or that gained holes against the standing frame. Look at
+// the sheets yourself: the flags only point; stored QA status is not evidence that a frame looks right.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -19,8 +23,10 @@ const flag = (name) => {
 	return at >= 0 ? rest[at + 1] : undefined;
 };
 
-if (!['audit', 'sample'].includes(mode) || !target) {
-	console.error('Usage: run.mjs audit <backup.zip> [--out <dir>] | run.mjs sample <dir>');
+if (!['audit', 'frames', 'sample'].includes(mode) || !target) {
+	console.error(
+		'Usage: run.mjs audit <backup.zip> [--out <dir>] | run.mjs frames <backup.zip> [--out <dir>] [--character <c>] [--item <i>] | run.mjs sample <dir>'
+	);
 	process.exit(2);
 }
 const vitest = join(app, 'node_modules/vitest/vitest.mjs');
@@ -28,7 +34,7 @@ if (!existsSync(vitest)) {
 	console.error('app/node_modules is missing: run npm ci in app/ first.');
 	process.exit(2);
 }
-const zipPath = mode === 'audit' ? resolve(target) : undefined;
+const zipPath = mode === 'sample' ? undefined : resolve(target);
 if (zipPath && !existsSync(zipPath)) {
 	console.error(`No such file: ${zipPath}`);
 	process.exit(2);
@@ -49,7 +55,9 @@ const run = spawnSync(
 			TOOL_MODE: mode,
 			TOOL_OUT: out,
 			TOOL_ZIP: zipPath ?? '',
-			TOOL_ZIP_NAME: zipPath ? basename(zipPath) : ''
+			TOOL_ZIP_NAME: zipPath ? basename(zipPath) : '',
+			TOOL_CHARACTER: flag('--character') ?? '',
+			TOOL_ITEM: flag('--item') ?? ''
 		}
 	}
 );
@@ -65,6 +73,21 @@ if (mode === 'sample') {
 	console.log(`Sample backups in ${out}:`);
 	for (const name of JSON.parse(readFileSync(join(out, 'samples.json'), 'utf8')).written)
 		console.log(`  ${join(out, name)}`);
+	process.exit(0);
+}
+
+if (mode === 'frames') {
+	const f = JSON.parse(readFileSync(join(out, 'frames.json'), 'utf8'));
+	console.log(
+		`${f.sheets.length} sheets in ${out} (user artwork: never commit or paste publicly). Open the ones for the reported items and every flagged one.`
+	);
+	if (f.undrawn.length)
+		console.log(
+			`${f.undrawn.length} views where an item has no frames at all (never drawn there; usually fine): ${f.undrawn.slice(0, 8).join(', ')}${f.undrawn.length > 8 ? ', …' : ''}`
+		);
+	console.log(`${f.flagged.length} flagged frames:`);
+	for (const x of f.flagged)
+		console.log(`  ${x.character.slice(0, 12)} ${x.item} ${x.frame}: ${x.why.join('; ')}`);
 	process.exit(0);
 }
 

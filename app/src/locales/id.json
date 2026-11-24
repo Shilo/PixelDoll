@@ -1558,6 +1558,7 @@
 			"facing": "Sebagian frame menyerupai tampilan arah berlawanan. Periksa bagian torso",
 			"detail": "Ada detail desain yang hilang atau berubah warna di sebagian frame",
 			"motion": "Periksa ukuran dan sudut item saat bergerak",
+			"fill": "Item berlubang di beberapa frame, hanya tersisa garis luarnya; periksa bentuknya",
 			"lowerClothing": "Sebagian pakaian bawah hilang dibandingkan dengan desain pose berdiri",
 			"footwear": "Alas kaki berbeda dari desain pose berdiri. Periksa bagian kaki",
 			"bodyPixels": "Model mengubah sebagian piksel tubuh",
