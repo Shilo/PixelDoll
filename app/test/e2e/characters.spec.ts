@@ -9,7 +9,7 @@ import {
 	openPlaybackPicker
 } from './immersive-helpers.ts';
 import './setup-concurrency.ts';
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes, decodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -2235,7 +2235,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	expect(requests).toEqual([]);
 });
 
-test('Import moves brings a deleted move back free from the character ZIP', async ({
+test('Import pages bring moves and items back free from the character ZIP, by browsing or dropping', async ({
 	page,
 	context
 }) => {
@@ -2272,14 +2272,32 @@ test('Import moves brings a deleted move back free from the character ZIP', asyn
 		.getByRole('button', { name: 'Move to Trash', exact: true })
 		.click();
 	await expect(punch).toHaveCount(0);
-	await page.getByRole('button', { name: 'Import moves...', exact: true }).click();
+	const zipFile = { name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes };
+	/** Drags the ZIP over `target` (dragenter and dragover); the returned function drops it there. */
+	const dragZip = async (target: Locator) => {
+		const transfer = await page.evaluateHandle((base64) => {
+			const data = new DataTransfer();
+			const raw = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+			data.items.add(new File([raw], 'hero.pixeldoll.zip', { type: 'application/zip' }));
+			return data;
+		}, Buffer.from(bytes).toString('base64'));
+		await target.dispatchEvent('dragenter', { dataTransfer: transfer });
+		await target.dispatchEvent('dragover', { dataTransfer: transfer });
+		return () => target.dispatchEvent('drop', { dataTransfer: transfer });
+	};
+	const sameBody = 'Made for this character. Its frames fit as they are.';
+	// New move pages to Import and back, then browses for the ZIP there.
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const moveSheet = page.getByRole('dialog', { name: 'New move', exact: true });
+	const importMoves = moveSheet.getByRole('button', { name: 'Import moves', exact: true });
+	await importMoves.click();
 	const sheet = page.getByRole('dialog', { name: 'Import moves', exact: true });
-	await sheet
-		.getByLabel('PixelDoll ZIP', { exact: true })
-		.setInputFiles({ name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes });
-	await expect(sheet.getByRole('status')).toHaveText(
-		'Made for this character. Its frames fit as they are.'
-	);
+	await expect(sheet.getByRole('heading', { name: 'Import moves', exact: true })).toBeFocused();
+	await sheet.getByRole('button', { name: 'Back to New move', exact: true }).click();
+	await expect(importMoves).toBeFocused();
+	await importMoves.click();
+	await sheet.getByLabel('PixelDoll ZIP', { exact: true }).setInputFiles(zipFile);
+	await expect(sheet.getByRole('status')).toHaveText(sameBody);
 	await expect(sheet.getByRole('checkbox', { name: 'Cross punch', exact: true })).toBeChecked();
 	await expect(sheet).toContainText('Already on this character');
 	await sheet.getByRole('button', { name: 'Import', exact: true }).click();
@@ -2288,6 +2306,68 @@ test('Import moves brings a deleted move back free from the character ZIP', asyn
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
 	await expect(punch).toHaveCount(1);
+	// A ZIP dragged over Moves or States says what dropping does, and opens that Import page reading it.
+	const panel = page.locator('#customization-panel'),
+		hint = panel.locator('.drop-hint');
+	let drop = await dragZip(panel);
+	await expect(hint).toHaveText('Drop to import moves');
+	await drop();
+	await expect(hint).toHaveCount(0);
+	await expect(sheet.getByRole('status')).toHaveText(sameBody);
+	await expect(sheet).toContainText('Already on this character');
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await equipmentMode(page, 'States');
+	drop = await dragZip(panel);
+	await expect(hint).toHaveText('Drop to import States');
+	await drop();
+	const stateSheet = page.getByRole('dialog', { name: 'Import States', exact: true });
+	await expect(stateSheet.getByRole('status')).toHaveText(sameBody);
+	await stateSheet.getByRole('button', { name: 'Back to New State', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'New State', exact: true })).toBeVisible();
+	await page
+		.getByRole('dialog', { name: 'New State', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
+	// Items: trash one, then New item pages to Import, keeping its typed draft, and takes the ZIP dropped on the page.
+	await equipmentMode(page, 'Wardrobe');
+	const hat = page.locator('.equipment-scroll .item-tile', { hasText: 'Wizard hat' });
+	await page.getByRole('button', { name: 'More options for Wizard hat', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Move to Trash/ }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
+	await expect(hat).toHaveCount(0);
+	await page.getByRole('button', { name: 'New head item', exact: true }).first().click();
+	const itemSheet = page.getByRole('dialog', { name: 'New item', exact: true });
+	const prompt = itemSheet.getByRole('textbox', { name: 'What is it?', exact: true });
+	await prompt.fill('a straw hat');
+	await itemSheet.getByRole('button', { name: 'Import items', exact: true }).click();
+	const items = page.getByRole('dialog', { name: 'Import items', exact: true });
+	await expect(items.getByRole('heading', { name: 'Import items', exact: true })).toBeFocused();
+	await items.getByRole('button', { name: 'Back to New item', exact: true }).click();
+	await expect(prompt).toHaveValue('a straw hat');
+	await itemSheet.getByRole('button', { name: 'Import items', exact: true }).click();
+	const area = items.getByRole('region', { name: 'PixelDoll ZIP drop area', exact: true });
+	drop = await dragZip(area);
+	await expect(area).toContainText('Release ZIP to preview');
+	await drop();
+	await expect(items.getByRole('checkbox', { name: 'Wizard hat', exact: true })).toBeChecked();
+	await expect(items).toContainText('Fits this character exactly');
+	await expect(items).toContainText('Already on this character');
+	await items.getByRole('button', { name: 'Import', exact: true }).click();
+	await expect(items).toBeHidden({ timeout: 30_000 });
+	await expect(hat).toHaveCount(1);
+	// Dropped on the Wardrobe, the ZIP opens Import items with nothing left to bring.
+	drop = await dragZip(panel);
+	await expect(hint).toHaveText('Drop to import items');
+	await drop();
+	// Opened on its Import page, the sheet starts on that page's title, not in the hidden form.
+	await expect(items.getByRole('heading', { name: 'Import items', exact: true })).toBeFocused();
+	await expect(items).toContainText('Already on this character');
+	await expect(items.getByRole('checkbox')).toHaveCount(0);
+	await expect(items.getByRole('button', { name: 'Import', exact: true })).toHaveCount(0);
+	await items.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(requests).toEqual([]);
 });
 
@@ -2950,7 +3030,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		expect(cells['rest-pose'][direction]).toEqual([cells.idle[direction]![chosenCell]]);
 	const panel = page.getByRole('tabpanel', { name: 'States', exact: true });
 	const addState = panel.getByRole('button', { name: 'New State...', exact: true });
-	await expect(panel.locator('.add-line + details')).toBeVisible();
+	await expect(panel.locator('.cta + details')).toBeVisible();
 	await addState.click();
 	await createState.getByRole('button', { name: 'Source: Standing', exact: true }).click();
 	const sources = page.getByRole('menu', { name: 'Source' });
@@ -2978,7 +3058,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(addState).toBeFocused();
 	await equipmentMode(page, 'Moves');
 	await expect(
-		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.add-line + details')
+		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.cta + details')
 	).toBeVisible();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	const moveSheet = page.getByRole('dialog', { name: 'New move' });
@@ -3482,6 +3562,256 @@ test('a managed State reloads its child without another submission', async ({
 	expect(pageErrors).toEqual([]);
 });
 
+test('a paid State review keeps its usable facings and names missing, undownloaded and canceled ones', async ({
+	page,
+	context
+}, info) => {
+	const parent = 'partial-state-parent';
+	const child = 'partial-state-child';
+	const job = 'partial-state-job';
+	const requests: string[] = [];
+	const pageErrors: string[] = [];
+	const directions = ['south', 'east', 'north', 'west'];
+	let images: Record<string, number[]> = {};
+	// The east download fails until it is released; north never comes back.
+	let eastDownloads = false;
+	page.on('pageerror', (error) => pageErrors.push(error.message));
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const path = new URL(route.request().url()).pathname;
+		requests.push(`${route.request().method()} ${path}`);
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					credits: { type: 'usd', usd: 0 },
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
+				}
+			});
+		if (path.endsWith('/create-character-state'))
+			return route.fulfill({ status: 202, json: { background_job_id: job, character_id: child } });
+		if (path.endsWith(`/background-jobs/${job}`))
+			return route.fulfill({
+				json: {
+					id: job,
+					status: 'completed',
+					created_at: '',
+					last_response: { character_id: child },
+					usage: { type: 'generations', generations: 10 }
+				}
+			});
+		const id = path.split('/').pop()!;
+		if (id === parent || id === child)
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					size: { width: 64, height: 64 },
+					directions: directions.length,
+					rotation_urls: Object.fromEntries(
+						directions.map((direction) => [
+							direction,
+							id === child && direction === 'north'
+								? null
+								: `https://api.pixellab.ai/qa-state-rotations/${id}/${direction}`
+						])
+					)
+				}
+			});
+		if (path.startsWith('/qa-state-rotations/') && images[id]) {
+			if (path === `/qa-state-rotations/${child}/east` && !eastDownloads) return route.abort();
+			return route.fulfill({
+				headers: { 'access-control-allow-origin': '*' },
+				contentType: 'image/png',
+				body: Buffer.from(Uint8Array.from(images[id]))
+			});
+		}
+		return route.abort();
+	});
+	await page.addInitScript(() =>
+		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key')
+	);
+	await openStudio(
+		page,
+		info.config.projects.find(({ name }) => name === 'browser-selftests')!.use.baseURL!
+	);
+	const result = await page.evaluate(
+		async ({ parent, directions }) => {
+			const statePath = '/src/studio/state.svelte.ts',
+				dbPath = '/src/lib/store/db.ts';
+			const studio = await import(statePath),
+				db = await import(dbPath);
+			const projectId = await studio.copyDemo();
+			const record: StoredProject = await db.get('projects', projectId);
+			record.character = { id: parent, looks: 'Demo test fixture' };
+			delete record.manifest.exportId;
+			await db.put('projects', projectId, record);
+			const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
+			const cells = base.layers[0].cells!.default;
+			return {
+				projectId,
+				images: Object.fromEntries(
+					await Promise.all(
+						directions.map(async (direction) => {
+							const hash = cells[direction as keyof typeof cells]?.[0] ?? cells.east?.[0];
+							if (!hash) throw new Error(`Missing Standing fixture for ${direction}`);
+							const blob: Blob = await db.getBlob(hash.slice(7));
+							return [direction, Array.from(new Uint8Array(await blob.arrayBuffer()))];
+						})
+					)
+				)
+			};
+		},
+		{ parent, directions }
+	);
+	images = result.images;
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'New State...', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'New State', exact: true });
+	await dialog.getByRole('switch', { name: 'Edit this pose' }).check();
+	await dialog.getByRole('textbox', { name: 'State name' }).fill('Potion');
+	await dialog.getByRole('textbox', { name: 'Instructions' }).fill('Hold a potion');
+	const generate = dialog.getByRole('button', { name: 'Generate State', exact: true });
+	await expect(generate).toBeEnabled();
+	await generate.click();
+	await expect(dialog).toBeHidden();
+	const states = page.getByRole('tabpanel', { name: 'States', exact: true });
+	await states.getByRole('button', { name: /^Potion/ }).click();
+	const review = page.getByRole('dialog', { name: 'Potion', exact: true });
+	await expect(review.getByText('Review Potion before saving.')).toBeVisible();
+	const tryAgain = review.getByRole('button', { name: 'Try again', exact: true });
+	const saveWithout = review.getByRole('button', { name: 'Save without them', exact: true });
+	// North came back empty; east may still download, so the free Try again leads and saving says what it gives up.
+	await expect(review.getByText(/^No usable view came back facing North\./)).toBeVisible();
+	await expect(
+		review.getByText(/^The view facing East could not be downloaded\. Try again first/)
+	).toBeVisible();
+	await expect(tryAgain).toHaveAttribute('data-variant', 'primary');
+	await expect(saveWithout).toHaveAttribute('data-variant', 'outline');
+	await expect(saveWithout).toBeEnabled();
+	const submitted = requests.filter((request) => request.startsWith('POST')).length;
+	expect(submitted).toBe(1);
+	const beforeRetry = requests.length;
+	eastDownloads = true;
+	await tryAgain.click();
+	await expect(review.getByText(/could not be downloaded/)).toHaveCount(0);
+	await expect(review.getByText(/^No usable view came back facing North\./)).toBeVisible();
+	const save = review.getByRole('button', { name: 'Save', exact: true });
+	await expect(save).toHaveAttribute('data-variant', 'primary');
+	// Reading again cannot bring back a blank view, so Try again leaves once every download succeeded.
+	await expect(tryAgain).toHaveCount(0);
+	// Try again only reads the paid result again.
+	expect(requests.slice(beforeRetry).length).toBeGreaterThan(0);
+	expect(requests.slice(beforeRetry).every((request) => request.startsWith('GET '))).toBe(true);
+	await save.click();
+	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
+	const saved = await page.evaluate(async (projectId) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const record: StoredProject = await db.get('projects', projectId);
+		const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
+		// The saved State is the last move added.
+		const id = record.manifest.rig.animations.at(-1)?.id;
+		return { id, views: id ? Object.keys(base.layers[0].cells![id]).sort() : null };
+	}, result.projectId);
+	// The demo draws west as a mirror of east, so only the drawn facings are stored; north stays without art.
+	expect(saved).toEqual({ id: expect.stringContaining('potion'), views: ['east', 'south'] });
+	// A batch canceled before it was made is named apart, and saving says those views will not be made.
+	await page.evaluate(async (projectId) => {
+		const dbPath = '/src/lib/store/db.ts',
+			projectPath = '/src/lib/store/project.ts',
+			sourcePath = '/src/studio/stateGenerationSource.ts';
+		const db = await import(dbPath),
+			{ loadProject } = await import(projectPath),
+			{ stateGenerationSource } = await import(sourcePath);
+		const { rec, project } = await loadProject(projectId);
+		const frame = { clip: 'default', frame: 0 };
+		const source = stateGenerationSource(project, frame)!;
+		const [kept, canceled] = source.views.map(({ direction }: { direction: string }) => direction);
+		const base = rec.manifest.items.find(
+			({ id }: { id: string }) => id === rec.manifest.rig.baseItem
+		)!;
+		const sha = base.layers[0].cells!.default[kept]![0]!.slice(7);
+		const token = 'canceled-state-attempt';
+		const endpoint = '/edit-image-pro-flash';
+		rec.stateGenerations = {
+			...rec.stateGenerations,
+			[token]: {
+				token,
+				id: 'wave',
+				description: 'Wave',
+				source: frame,
+				sourceVersion: source.version,
+				plan: {
+					endpoint,
+					method: 'text',
+					cellSize: { width: 64, height: 64 },
+					batches: [
+						{ transport: 'cells', facingIds: [kept] },
+						{ transport: 'cells', facingIds: [canceled] }
+					],
+					cost: { kind: 'fixed', minGenerations: 2, maxGenerations: 2 }
+				}
+			}
+		};
+		await db.put('projects', projectId, rec);
+		for (const [index, state] of (['done', 'canceled'] as const).entries())
+			await db.put('jobs', `canceled-state-${index}`, {
+				id: `canceled-state-${index}`,
+				label: 'Wave',
+				tag: 'studio-state',
+				activityScope: `state:${token}:${index}`,
+				method: 'POST',
+				endpoint,
+				params: {},
+				inputs: [],
+				requestHash: `canceled-state-hash-${index}`,
+				state,
+				attempts: 1,
+				nextAt: 0,
+				createdAt: Date.now(),
+				finishedAt: Date.now(),
+				jobs:
+					state === 'done'
+						? [
+								{
+									id: `canceled-state-job-${index}`,
+									status: 'completed',
+									done: true,
+									results: [{ label: '0', sha }]
+								}
+							]
+						: [],
+				gens: state === 'done' ? 1 : 0,
+				usd: 0
+			});
+	}, result.projectId);
+	await reloadStudio(page);
+	await equipmentMode(page, 'States');
+	await states.getByRole('button', { name: /^Wave/ }).click();
+	const canceledReview = page.getByRole('dialog', { name: 'Wave', exact: true });
+	await expect(canceledReview.getByText('Review Wave before saving.')).toBeVisible();
+	await expect(
+		canceledReview.getByText(/^The view facing \S+ was canceled before it was made\./)
+	).toBeVisible();
+	await expect(canceledReview.getByText(/^No usable view came back/)).toHaveCount(0);
+	await expect(canceledReview.getByRole('button', { name: 'Try again', exact: true })).toHaveCount(
+		0
+	);
+	// On a phone the footer note takes its own row instead of being squeezed beside the buttons.
+	await page.setViewportSize({ width: 390, height: 844 });
+	const footerNote = canceledReview.locator('.state-footer > p');
+	await expect.poll(async () => (await footerNote.boundingBox())?.width ?? 0).toBeGreaterThan(200);
+	const saveCanceled = canceledReview.getByRole('button', {
+		name: 'Save without them',
+		exact: true
+	});
+	await expect(saveCanceled).toHaveAttribute('data-variant', 'primary');
+	await saveCanceled.click();
+	await expect(canceledReview).toBeHidden();
+	await expect(states.getByText('Ready to review')).toHaveCount(0);
+	expect(requests.filter((request) => request.startsWith('POST')).length).toBe(submitted);
+	expect(pageErrors).toEqual([]);
+});
+
 test('a State interrupted after its first batch sends only the unqueued views after a new quote', async ({
 	page,
 	context
@@ -3617,9 +3947,15 @@ test('a State interrupted after its first batch sends only the unqueued views af
 		.poll(async () => (await stored()).jobs.map(({ state }) => state), { timeout: 30_000 })
 		.toEqual(['done']);
 	await equipmentMode(page, 'States');
-	await expect(row).toContainText('Unfinished: tap for options');
+	// The finished batch is a free review; the views never sent are a separately priced choice from it.
+	await expect(row).toContainText('Ready to review');
 	await row.click();
 	const review = page.getByRole('dialog', { name: 'Torch ready', exact: true });
+	await expect(review.getByText('Review Torch ready before saving.')).toBeVisible();
+	await expect(review.getByText(/was not made yet/)).toBeVisible();
+	await expect(
+		review.getByRole('button', { name: 'Save without them', exact: true })
+	).toBeVisible();
 	await review.getByRole('button', { name: 'Check remaining cost', exact: true }).click();
 	await expect(
 		review.getByText(`Views kept: 1. Views to generate: ${batches - 1}.`, { exact: true })

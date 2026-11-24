@@ -61,7 +61,7 @@ async function captureWorkspaceStore(page: Page, projectKeys: string[], artworkK
 	);
 }
 
-test('workspace ZIP isolates the library and PixelLab connection', async ({
+test('a backup opened as a copy isolates the library and PixelLab connection', async ({
 	browser,
 	page,
 	context
@@ -79,19 +79,13 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		const statePath = '/src/studio/state.svelte.ts',
 			createPath = '/src/studio/create.ts',
 			dbPath = '/src/lib/store/db.ts',
-			dressPath = '/src/lib/dress/project.ts',
 			pngPath = '/src/lib/image/pngraw.ts',
 			rigPath = '/src/lib/rig/rig.ts';
 		const state = await import(statePath),
 			{ saveCopy } = await import(createPath),
 			db = await import(dbPath),
-			{ dressOf } = await import(dressPath),
 			{ decodePngBytes, encodePngBytes } = await import(pngPath),
 			{ cellHash } = await import(rigPath);
-		const demoDress = structuredClone(dressOf(state.store.project.manifest));
-		demoDress.presets[0] = { ...demoDress.presets[0], name: 'Tester demo outfit' };
-		const { slots: _slots, ...demoWithoutSlots } = demoDress;
-		await db.put('projects', 'dress-fixture:s2', demoWithoutSlots);
 		const id = await saveCopy(state.store.project, 'Workspace Alpha');
 		const saved = await db.get('projects', id);
 		const other = structuredClone(saved);
@@ -121,11 +115,6 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		otherFrames[0] = uniqueHash;
 		await db.put('projects', id, saved);
 		await db.put('projects', other.id, other);
-		await db.put('projects', 'studio-export-settings', {
-			engine: 'unity',
-			dressedCharacterSheets: false,
-			playOnce: ['walk']
-		});
 		await db.put('jobs', 'workspace-evidence', {
 			state: 'lost',
 			tag: 'm3',
@@ -207,6 +196,57 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 			.characters.map(([key]: [string, unknown]) => key)
 			.sort()
 	).toEqual([sample.id, sample.otherId].sort());
+	// Developer mode offers debugging details: the next backup adds debug/ with the lost job, never the key.
+	const debugToggle = exportDialog.getByRole('switch', { name: 'Include debugging details' });
+	await expect(debugToggle).toBeHidden();
+	await page.evaluate(async () => {
+		const modePath = '/src/studio/developerMode.svelte.ts';
+		(await import(modePath)).setDeveloperMode(true);
+	});
+	const debugMark = backUp.getByRole('img', { name: 'Includes debugging details' });
+	await expect(debugMark).toBeHidden();
+	await debugToggle.check();
+	await expect(debugMark).toBeVisible();
+	await expect(
+		exportDialog.getByText(
+			'Back up saved characters, artwork, archived data, and debugging details.',
+			{ exact: true }
+		)
+	).toBeVisible();
+	const waitDebug = page.waitForEvent('download');
+	await backUp.click();
+	const debugDownload = await waitDebug;
+	expect(debugDownload.suggestedFilename()).toMatch(/\.debug\.backup\.zip$/);
+	const debugZip = await unzip(await readFile((await debugDownload.path())!));
+	for (const name of [
+		'README.txt',
+		'index.json',
+		'environment.json',
+		'state.json',
+		'log.json',
+		'activity.json',
+		'jobs.json',
+		'records.json',
+		'storage.json',
+		'artwork.json'
+	])
+		expect(debugZip.has(`debug/${name}`), name).toBe(true);
+	const debugText = [...debugZip]
+		.filter(([name]) => name.startsWith('debug/') && !name.startsWith('debug/blobs/'))
+		.map(([, data]) => new TextDecoder().decode(data))
+		.join('\n');
+	expect(debugText).not.toContain('fake-workspace-test-key-no-network');
+	expect(debugText).toContain('/edit-animation-v2');
+	expect(
+		JSON.parse(new TextDecoder().decode(debugZip.get('debug/storage.json'))).local.pixellabApiKey
+	).toBe('[redacted]');
+	await debugToggle.uncheck();
+	await expect(debugMark).toBeHidden();
+	await page.evaluate(async () => {
+		const modePath = '/src/studio/developerMode.svelte.ts';
+		(await import(modePath)).setDeveloperMode(false);
+	});
+	await expect(debugToggle).toBeHidden();
 	const recipientContext = await browser.newContext({ viewport: { width: 360, height: 740 } });
 	try {
 		await recipientContext.route('https://*.pixellab.ai/**', (route) => route.abort());
@@ -294,41 +334,21 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	);
 	const archive = Buffer.from(
 		await page.evaluate(async () => {
-			const workspacePath = '/src/lib/store/workspace.ts';
-			const activityPath = '/src/lib/pixellab/activity.ts';
-			const statePath = '/src/studio/state.svelte.ts';
-			const { ui, doc } = await import(statePath);
-			const { apiActivity } = await import(activityPath);
-			let calls: unknown[] = [];
-			apiActivity.subscribe((value: unknown[]) => (calls = value))();
+			const backupPath = '/src/lib/store/backup.ts';
 			const { bytes } = await (
-				await import(workspacePath)
-			).exportWorkspace(
-				{
-					project: doc.id,
-					item: ui.selected,
-					move: ui.anim,
-					direction: ui.dir,
-					frame: ui.frame,
-					screen: 'studio',
-					mode: 'topdown',
-					tab: ui.tab,
-					theme: ui.theme
-				},
-				{ tier: null, calls },
-				[localStorage.getItem('pixellabApiKey')]
-			);
+				await import(backupPath)
+			).exportBackup([localStorage.getItem('pixellabApiKey')]);
 			return [...bytes];
 		})
 	);
 	const files = await unzip(archive);
-	const indexText = new TextDecoder().decode(files.get('workspace.json'));
+	const indexText = new TextDecoder().decode(files.get('backup.json'));
 	expect(indexText).not.toMatch(/fake-workspace-test-key|diagnostic-private-body/);
 	const index = JSON.parse(indexText);
 	expect(index.missing).toEqual(['1'.repeat(64)]);
-	expect(index.omitted).toEqual({ characters: 1, demoOutfit: false, exportSettings: false });
-	const projectKeys = ['dress-fixture:s2', sample.id, sample.otherId, EXPORT_SETTINGS_KEY].sort();
-	const archivedProjects = new Map<string, StoredProject>(index.projects);
+	expect(index.omitted).toBe(1);
+	const projectKeys = [sample.id, sample.otherId].sort();
+	const archivedProjects = new Map<string, StoredProject>(index.characters);
 	expect([...archivedProjects.keys()].sort()).toEqual(projectKeys);
 	const referenced = new Set<string>();
 	const remember = (hash: string | null | undefined) => {
@@ -348,20 +368,17 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	const artworkKeys = [...referenced].sort();
 	expect(artworkKeys).toContain(sample.uniqueHash);
 	expect([...files.keys()].sort()).toEqual([
-		...artworkKeys.filter((hash) => !index.missing.includes(hash)).map((hash) => `blobs/${hash}`),
-		'workspace.json'
+		'backup.json',
+		...artworkKeys.filter((hash) => !index.missing.includes(hash)).map((hash) => `blobs/${hash}`)
 	]);
 	const expected = await captureWorkspaceStore(page, projectKeys, artworkKeys);
-	expect(index.projects).toEqual(expected.projects);
+	expect(index.characters).toEqual(expected.projects);
 	expect(
 		artworkKeys.map((hash) => {
 			const bytes = files.get(`blobs/${hash}`);
 			return [hash, bytes ? createHash('sha256').update(bytes).digest('hex') : null];
 		})
 	).toEqual(expected.artwork);
-	expect(index.diagnostics.errors).toContainEqual(
-		expect.objectContaining({ tool: 'edit-animation-v2', outcome: 'lost' })
-	);
 	await exportDialog.getByRole('button', { name: 'Developer', exact: true }).click();
 	await expect(exportDialog.getByRole('button', { name: 'Open backup as a copy' })).toBeHidden();
 	await exportDialog.getByRole('switch', { name: 'Developer mode' }).check();
@@ -384,14 +401,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		buffer: Buffer.from('not a ZIP')
 	});
 	await expect(copy.getByRole('alert')).toContainText('not a supported ZIP');
-	const invalidDemo = structuredClone(index);
-	invalidDemo.projects.find(([key]: [string, unknown]) => key === 'dress-fixture:s2')[1] = {
-		format: CURRENT_FORMAT
-	};
-	const entries = [...files].map(([name, data]) => ({
-		name,
-		data: name === 'workspace.json' ? new TextEncoder().encode(JSON.stringify(invalidDemo)) : data
-	}));
+	const entries = [...files].map(([name, data]) => ({ name, data }));
 	const artwork = entries.filter(({ name }) => name.startsWith('blobs/'));
 	const asset = artwork.find(({ name }) => name === `blobs/${sample.uniqueHash}`)!;
 	const matchingSize = artwork.find(
@@ -427,14 +437,13 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await (
 		await chooseZip
 	).setFiles({
-		name: 'legacy.workspace.zip',
+		name: download.suggestedFilename(),
 		mimeType: 'application/zip',
 		buffer: archive
 	});
 	await expect(
 		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
 	).toBeVisible();
-	await expect(copy.locator('html')).toHaveAttribute('data-theme', 'light');
 	expect(await captureWorkspaceStore(copy, projectKeys, artworkKeys)).toEqual(expected);
 	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
 	expect((await captureWorkspaceStore(copy, ['rig-recipient-only'], [])).projects).toEqual([
@@ -442,29 +451,32 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	]);
 	await expect
 		.poll(() =>
-			copy.evaluate(async ({ id, otherId, item }) => {
-				const dbPath = '/src/lib/store/db.ts',
-					statePath = '/src/studio/state.svelte.ts',
-					keyPath = '/src/lib/app.svelte.ts',
-					dressPath = '/src/lib/dress/dress.ts';
-				const db = await import(dbPath),
-					{ ui, doc, store } = await import(statePath),
-					{ app } = await import(keyPath);
-				const { coverageGaps } = await import(dressPath);
-				const manifest = store.project?.manifest;
-				return {
-					opened: doc.id === id && ui.anim === 'walk' && ui.selected === item && ui.dir === 'east',
-					gap:
-						manifest &&
-						coverageGaps(
-							manifest,
-							manifest.items.find((entry: { id: string }) => entry.id === item)
-						).includes('walk/south'),
-					other: (await db.get('projects', otherId))?.manifest.name,
-					hasKey: !!app.key,
-					jobs: (await db.all('jobs')).length
-				};
-			}, sample)
+			copy.evaluate(
+				async ({ id, otherId, item, first }) => {
+					const dbPath = '/src/lib/store/db.ts',
+						statePath = '/src/studio/state.svelte.ts',
+						keyPath = '/src/lib/app.svelte.ts',
+						dressPath = '/src/lib/dress/dress.ts';
+					const db = await import(dbPath),
+						{ doc } = await import(statePath),
+						{ app } = await import(keyPath);
+					const { coverageGaps } = await import(dressPath);
+					const manifest = (await db.get('projects', id))?.manifest;
+					return {
+						opened: doc.id === first,
+						gap:
+							manifest &&
+							coverageGaps(
+								manifest,
+								manifest.items.find((entry: { id: string }) => entry.id === item)
+							).includes('walk/south'),
+						other: (await db.get('projects', otherId))?.manifest.name,
+						hasKey: !!app.key,
+						jobs: (await db.all('jobs')).length
+					};
+				},
+				{ ...sample, first: index.characters[0][0] }
+			)
 		)
 		.toEqual({ opened: true, gap: true, other: 'Workspace Beta', hasKey: false, jobs: 0 });
 	const readSettings = () =>
@@ -659,9 +671,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	}, Buffer.from(tampered).toString('base64'));
 	await expect(copy.locator('.workspace-banner')).toBeVisible();
 	const recovered = await captureWorkspaceStore(copy, projectKeys, artworkKeys);
-	expect(recovered.projects).toEqual(
-		expected.projects.map(([key, record]) => [key, key === 'dress-fixture:s2' ? undefined : record])
-	);
+	expect(recovered.projects).toEqual(expected.projects);
 	expect(recovered.artwork).toEqual(
 		expected.artwork.map(([hash, digest]) => [hash, hash === sample.uniqueHash ? null : digest])
 	);
@@ -693,7 +703,13 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		buffer: archive
 	});
 	await expect(copy.locator('.workspace-banner')).toBeVisible();
-	await expect(copy.locator('html')).toHaveAttribute('data-theme', 'light');
+	// A backup carries no view: open Workspace Alpha in Top-down the way a person would.
+	await copy.getByRole('button', { name: /^Workspace Alpha / }).click();
+	await copy.getByRole('button', { name: 'Customize Workspace Alpha', exact: true }).last().click();
+	await copy
+		.getByRole('group', { name: 'Character view', exact: true })
+		.getByRole('button', { name: 'Top-down', exact: true })
+		.click();
 	await expect(copy.locator('.project-btn')).toContainText('Workspace Alpha');
 	await expect(
 		copy.getByRole('button', { name: 'Leather vest, missing some Walk frames' })

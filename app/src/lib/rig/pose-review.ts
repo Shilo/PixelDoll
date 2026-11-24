@@ -13,14 +13,6 @@ export interface PoseReviewScope {
 	cells?: readonly string[];
 }
 
-export function assertImportedPoses(rig: Rig, scope: PoseReviewScope = {}): void {
-	const issues = importedPoseIssues(rig, scope);
-	if (issues.length)
-		throw new Error(
-			`Equipment animation cannot continue: ${issues.join('; ')} No new generation was submitted. Existing artwork was kept.`
-		);
-}
-
 /** Review estimates, never repair them: plausible coordinates can still describe the wrong joints. */
 export function importedPoseIssues(rig: Rig, scope: PoseReviewScope = {}): string[] {
 	const issues: string[] = [];
@@ -88,7 +80,7 @@ export function importedPoseIssues(rig: Rig, scope: PoseReviewScope = {}): strin
 				// Require separate anatomical evidence as well as reversed torso sides. A turn alone proves no bad measurement.
 				if (evidence.length)
 					issues.push(
-						`${animation.id}/${dir} frame ${index + 1}: suspicious estimated joints; shoulders and hips reverse sides, and ${evidence.join('; ')}. Review the pose rig before generating equipment.`
+						`${animation.id}/${dir} frame ${index + 1}: suspicious estimated joints; shoulders and hips reverse sides, and ${evidence.join('; ')}. The item may not fit these joints.`
 					);
 			}
 		}

@@ -20,6 +20,7 @@ import { unzip, zip } from '../../src/lib/store/zip.ts';
 import { CURRENT_FORMAT, type Manifest } from '../../src/lib/store/manifest.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
+import { CharacterApi } from '../fixtures/character-api.ts';
 import './studio-thumbnails.ts';
 import './dialog-dismissal.ts';
 
@@ -3800,9 +3801,21 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await setup.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await equipmentMode(page, 'Moves');
+	// A set-up character never flashes the setup notice while its record is still being read.
+	await page.evaluate(() => {
+		const seen = window as unknown as { setupNoticeSeen?: boolean };
+		seen.setupNoticeSeen = false;
+		new MutationObserver(() => {
+			if (document.body.textContent?.includes('pose rig to add moves')) seen.setupNoticeSeen = true;
+		}).observe(document.body, { subtree: true, childList: true, characterData: true });
+	});
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'New move', exact: true })).toBeVisible();
 	const move = page.getByRole('dialog', { name: /^(New move|Redraw .+)$/ });
+	await expect(move.getByRole('textbox', { name: /^Describe the motion$/ })).toBeVisible();
+	expect(
+		await page.evaluate(() => (window as unknown as { setupNoticeSeen?: boolean }).setupNoticeSeen)
+	).toBe(false);
 	const description = move.getByRole('textbox', { name: /^Describe the (motion|replacement)$/ });
 	// Templates are suggestions under the prompt: pressed while applied.
 	const templates = move.getByRole('group', { name: 'Move templates', exact: true });
@@ -4720,6 +4733,337 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
 	await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeEnabled();
 	await expect(review.getByText('Every frame passed the checks.', { exact: true })).toBeVisible();
 	expect(requests).toEqual([]);
+});
+
+test('a stopped item draft keeps its available frames for free, and an unreadable paid review offers a free Try again', async ({
+	page,
+	context
+}, info) => {
+	const requests: string[] = [];
+	await context.route('https://api.pixellab.ai/**', (r) => {
+		requests.push(r.request().method());
+		return r.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await expect(page.locator('.world-actors').first()).toBeVisible();
+	// The draft's calls: walk (its design move) and the first half of cross-punch finished, its second half failed at PixelLab.
+	await page.evaluate(async () => {
+		const path = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ path);
+		const now = Date.now();
+		for (const [id, state] of [
+			['keep-available-walk', 'done'],
+			['keep-available-punch-start', 'done'],
+			['keep-available-punch-end', 'failed']
+		])
+			await db.put('jobs', id, {
+				id,
+				label: 'Available hat',
+				method: 'POST',
+				endpoint: '/edit-animation-v2',
+				params: { seed: 1 },
+				inputs: [],
+				requestHash: id.length.toString(16).padStart(64, '0'),
+				state,
+				attempts: 1,
+				nextAt: 0,
+				createdAt: now,
+				submittedAt: now,
+				finishedAt: now,
+				jobs: [],
+				...(state === 'failed' ? { error: 'Offline fixture failure' } : {}),
+				gens: state === 'done' ? 1 : 0,
+				usd: 0
+			});
+	});
+	await reloadStudio(page);
+	await expect(page.locator('.world-actors').first()).toBeVisible();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(/* @vite-ignore */ path);
+		await s.loadGens();
+		// The built-in demo is not stored, so the draft belongs to a saved copy of it.
+		await s.copyDemo();
+		s.ui.playing = false;
+		s.ui.anim = 'cross-punch';
+		const p = s.store.project,
+			hat = p.manifest.items.find((i: { id: string }) => i.id === 'hat_wizard'),
+			frames = hat.layers[0].cells,
+			planned = (anim: string, dir: string) =>
+				Array.from(
+					{ length: p.manifest.rig.animations.find((a: { id: string }) => a.id === anim).cells },
+					(_, i) => `${anim}/${dir}/${i}`
+				);
+		const cell = (key: string, call: number) => {
+			const [anim, dir, i] = key.split('/'),
+				// The demo hat has no cross-punch frames, so its walk frames stand in for them.
+				layer = p.images.get(frames[anim]?.[dir]?.[+i] ?? frames.walk.south[+i]),
+				mask = new Uint8Array(layer.w * layer.h);
+			for (let px = 0; px < mask.length; px++) mask[px] = layer.data[px * 4 + 3] ? 1 : 0;
+			return {
+				key,
+				call,
+				base: layer,
+				input: layer,
+				out: layer,
+				layer,
+				mask,
+				area: mask.reduce((n: number, v: number) => n + v, 0)
+			};
+		};
+		const calls = [
+			{
+				cells: [...planned('walk', 'south'), ...planned('walk', 'east')],
+				recId: 'keep-available-walk'
+			},
+			{ cells: planned('cross-punch', 'south').slice(0, 3), recId: 'keep-available-punch-start' },
+			{ cells: planned('cross-punch', 'south').slice(3), recId: 'keep-available-punch-end' }
+		].map((call) => ({ kind: 'pose', seed: 1, rerolls: 0, old: [], ...call }));
+		const preview = {
+			...structuredClone(hat),
+			id: 'available_hat',
+			name: 'Available hat',
+			status: 'draft'
+		};
+		preview.layers[0].cells['cross-punch'] = {
+			south: planned('cross-punch', 'south').map((_, i) => (i < 3 ? frames.walk.south[i] : null))
+		};
+		s.gens.push({
+			draft: {
+				rigId: s.doc.id,
+				spec: {
+					id: 'available_hat',
+					name: 'Available hat',
+					slot: 'head',
+					prompt: 'a hat',
+					key: 'magenta',
+					anims: ['walk', 'cross-punch'],
+					dirs: ['south', 'east'],
+					// The demo's cross-punch has only a south view.
+					clipDirs: { walk: ['south', 'east'], 'cross-punch': ['south'] }
+				},
+				calls,
+				keySwitched: false,
+				log: []
+			},
+			input: { name: 'Available hat', slot: 'head', prompt: 'a hat' },
+			phase: 'review',
+			status: 'Review',
+			requestText: s.REQUEST_TEXT
+		});
+		s.store.results = {
+			...s.store.results,
+			available_hat: {
+				cells: calls.slice(0, 2).flatMap((call, k) => call.cells.map((key) => cell(key, k))),
+				qa: {
+					qa: {
+						status: 'pass',
+						minKeyKept: 1,
+						maxKeyOutside: 0,
+						minAreaRatio: 1,
+						maxAreaCV: 0,
+						maxPaletteDist: 0,
+						clipPx: 0,
+						rerolls: 0,
+						cells: {},
+						clips: {}
+					},
+					warnings: [],
+					failCalls: new Map(),
+					softCalls: new Set()
+				},
+				g1: new Map(),
+				preview: {
+					manifest: { ...p.manifest, items: [...p.manifest.items, preview] },
+					images: p.images
+				}
+			}
+		};
+		s.ui.selected = 'gen:available_hat';
+	});
+	await reviewSelectedDraft(page);
+	const review = page.locator('.gen'),
+		paid = review.getByRole('region', { name: 'Paid results', exact: true }),
+		keepAvailable = paid.getByRole('button', { name: 'Keep available frames · Free', exact: true });
+	// The free keep is offered beside the priced re-roll, and names the view it leaves missing.
+	await expect(keepAvailable).toBeVisible();
+	await expect(paid.getByRole('button', { name: /^Re-roll failed calls · ~\d/ })).toBeVisible();
+	await expect(paid).toContainText(
+		/Saves every frame that came back\. Missing: Cross.punch South \(3 of 6 frames\)\./i
+	);
+	await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeDisabled();
+	// An unreadable paid review hides its choices behind a free Try again, which recovers once the character reads again.
+	const original = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(/* @vite-ignore */ statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ dbPath);
+		const record = await db.get('projects', s.doc.id);
+		await db.put('projects', s.doc.id, {
+			...record,
+			manifest: { ...record.manifest, format: -1 }
+		});
+		s.store.results = { ...s.store.results, available_hat: { ...s.store.results.available_hat } };
+		return record;
+	});
+	await expect(
+		review.getByText(
+			'Your paid results could not be read, so the ways to reuse them are hidden. Nothing was lost.',
+			{ exact: true }
+		)
+	).toBeVisible();
+	await expect(paid).toHaveCount(0);
+	const tryAgain = review.getByRole('button', { name: 'Try again', exact: true });
+	await page.evaluate(async (record) => {
+		const path = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ path);
+		await db.put('projects', record.id, record);
+	}, original);
+	await tryAgain.click();
+	await expect(keepAvailable).toBeVisible();
+	await expect(tryAgain).toHaveCount(0);
+	await keepAvailable.click();
+	await expect(page.getByText('Available hat added', { exact: true })).toBeVisible();
+	await expect(review).toHaveCount(0);
+	const saved = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(/* @vite-ignore */ statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ dbPath);
+		const item = (await db.get('projects', s.doc.id)).manifest.items.find(
+			(i: { id: string }) => i.id === 'available_hat'
+		);
+		const views = (anim: string) =>
+			Object.fromEntries(
+				Object.entries(item.layers[0].cells[anim] ?? {}).map(([dir, cells]) => [
+					dir,
+					(cells as (string | null)[]).filter(Boolean).length
+				])
+			);
+		return { status: item.qa.status, walk: views('walk'), punch: views('cross-punch') };
+	});
+	expect(saved).toEqual({
+		status: 'accepted',
+		walk: { south: 8, east: 8 },
+		punch: { south: 3 }
+	});
+	// The saved item lists the view it still lacks among its missing frames.
+	const details = await selectedItemDetails(page);
+	await expect(details.locator('dl', { hasText: 'Missing frames' })).toContainText(
+		/Missing frames.*cross-punch\/south/
+	);
+	expect(requests.filter((method) => method === 'POST')).toEqual([]);
+});
+
+test('a stopped character creation whose paid review cannot be read offers a free Try again that recovers it', async ({
+	page,
+	context
+}, info) => {
+	const api = new CharacterApi();
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const req = route.request(),
+			body = req.postDataJSON();
+		// The registration answers without a character, so the paid drawing stops the creation at its review.
+		const response =
+			new URL(req.url()).pathname === '/v2/create-character-v3' && body?.reference_image
+				? (api.calls.push({ method: req.method(), path: '/v2/create-character-v3', body }),
+					Response.json({ usage: { type: 'generations', generations: 0.25 } }))
+				: await api.handle(req.method(), req.url(), body);
+		await route.fulfill({
+			status: response.status,
+			headers: Object.fromEntries(response.headers),
+			body: Buffer.from(await response.arrayBuffer())
+		});
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await page.locator('.project-btn').click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
+	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A plain human');
+	await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click();
+	await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
+	await page
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('offline-fixture-not-a-real-key');
+	await page
+		.getByRole('dialog', { name: 'Connect PixelLab' })
+		.getByRole('button', { name: 'Connect', exact: true })
+		.click();
+	const paid = sheet.getByRole('region', { name: 'Paid results', exact: true });
+	await expect(paid.getByRole('button', { name: /^Register the drawn views again/ })).toBeVisible({
+		timeout: 60_000
+	});
+	const posts = () => api.calls.filter((call) => call.method === 'POST').length,
+		posted = posts();
+	await page.keyboard.press('Escape');
+	await expect(sheet).toHaveCount(0);
+	// The paid drawing's saved views go missing, so the review cannot be read.
+	const removed = await page.evaluate(async () => {
+		const path = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ path);
+		const records = await db.all('jobs'),
+			shas: string[] = records
+				.filter((r: { endpoint: string }) => r.endpoint === '/create-character-v3')
+				.flatMap((r: { jobs: { results?: { sha: string }[] }[] }) =>
+					r.jobs.flatMap((job) => job.results ?? []).map((result) => result.sha)
+				);
+		const blobs: [string, Blob][] = [];
+		for (const sha of shas) {
+			const blob = await db.getBlob(sha);
+			if (!blob) continue;
+			blobs.push([sha, blob]);
+			await db.del('blobs', sha);
+		}
+		(window as unknown as { removedViews: [string, Blob][] }).removedViews = blobs;
+		return blobs.length;
+	});
+	expect(removed).toBeGreaterThan(0);
+	const reopen = () =>
+		page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				s = await import(/* @vite-ignore */ path);
+			s.reviewFailedCreate(s.creates.find((run: { error?: unknown }) => run.error).id);
+		});
+	await reopen();
+	await expect(
+		sheet.getByText(
+			'Your paid results could not be read, so the ways to reuse them are hidden. Nothing was lost.',
+			{ exact: true }
+		)
+	).toBeVisible();
+	await expect(paid).toHaveCount(0);
+	const tryAgain = sheet.getByRole('button', { name: 'Try again', exact: true });
+	await expect(tryAgain).toBeVisible();
+	// Once the views can be read again, the free Try again brings back every way on without a request.
+	await page.evaluate(async () => {
+		const path = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ path);
+		for (const [sha, blob] of (window as unknown as { removedViews: [string, Blob][] })
+			.removedViews)
+			await db.put('blobs', sha, blob);
+	});
+	await tryAgain.click();
+	await expect(paid.getByRole('button', { name: /^Register the drawn views again/ })).toBeVisible();
+	await expect(tryAgain).toHaveCount(0);
+	expect(posts()).toBe(posted);
 });
 
 test('long item and outfit names leave wardrobe controls inside the desktop sidebar', async ({
@@ -5977,6 +6321,64 @@ test('a move rig setup skipped is marked in the Moves list to make again', async
 	).toBeVisible();
 });
 
+test('the priced rig setup preflight names a move it will skip for an empty frame', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	await context.route('https://api.pixellab.ai/**', (route) => {
+		if (route.request().method() === 'POST') posts.push(new URL(route.request().url()).pathname);
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await expect(page.locator('.world-actors').first()).toBeVisible();
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(/* @vite-ignore */ statePath),
+			projectPath = '/src/lib/store/project.ts',
+			project = await import(/* @vite-ignore */ projectPath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ dbPath),
+			pngPath = '/src/lib/image/png.ts',
+			png = await import(/* @vite-ignore */ pngPath),
+			rawPath = '/src/lib/image/pngraw.ts',
+			raw = await import(/* @vite-ignore */ rawPath);
+		const id = await s.copyDemo(),
+			{ rec, project: loaded } = await project.loadProject(id),
+			m = rec.manifest,
+			cells = m.items.find((i: { id: string }) => i.id === m.rig.baseItem).layers[0].cells,
+			frame = loaded.images.get(cells['cross-punch'].south[2]);
+		// Setup needs all four cardinal views drawn; the demo mirrors west, so draw it as a copy of east.
+		for (const direction of m.rig.directions) delete direction.mirrorOf;
+		for (const clip of Object.values(cells) as Record<string, string[]>[])
+			if (clip.east) clip.west = [...clip.east];
+		m.items = m.items.filter((i: { id: string }) => i.id === m.rig.baseItem);
+		// A fully transparent frame mid-move: setup skips that move rather than refusing or spending on it.
+		const empty = await db.putBlob(await raw.encodePngBytes(png.makeImg(frame.w, frame.h)));
+		cells['cross-punch'].south[2] = `sha256:${empty}`;
+		await db.put('projects', id, rec);
+		await s.openProject(id);
+	});
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click();
+	const setup = page.getByRole('dialog', { name: 'Set up character', exact: true });
+	await expect(setup).toContainText(/unique body frames · [\d.]+ gens estimated/);
+	await expect(
+		setup.getByText(
+			'Cross punch will be skipped: each has an empty frame, so nothing is spent on it. Fix those frames or make the moves again to animate items on them.',
+			{ exact: true }
+		)
+	).toBeVisible();
+	expect(posts).toEqual([]);
+});
+
 test('Activity shows plan-derived capacity without a manual override or network request', async ({
 	page,
 	context
@@ -6339,6 +6741,311 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 	);
 	await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toHaveCount(0);
 	expect(posts).toEqual([]);
+});
+
+/** Offline skeleton-v3 moves: each render echoes its first frame once per requested pose, and every joint check finds the
+ *  fixture's standing joints. `holdUntilOthers` answers that direction's render only after the other renders completed. */
+async function skeletonMoveApi(
+	page: Page,
+	context: BrowserContext,
+	options: {
+		/** The render of this direction is refused (never charged), so that view stops. */
+		refuse?: string;
+		/** Every frame of this direction comes back without joints. */
+		jointless?: string;
+		/** Every frame of this direction comes back in a color off the character's palette (a numbers-only body check). */
+		recolor?: string;
+	} = {}
+) {
+	const posts: string[] = [],
+		jobs = new Map<string, { images: string[] }>(),
+		finished = new Set<string>();
+	let checked = 0;
+	// A marker color nothing in the demo uses tells a jointless direction's frames apart at the joint check.
+	const MARK = [3, 251, 7];
+	const labels = await page.evaluate(async () => {
+		const path = '/src/lib/rig/poses.ts';
+		return (await import(path)).LABELS as string[];
+	});
+	const keypoints = labels.map((label, i) => ({ label, x: 0.3 + i * 0.01, y: 0.2 + i * 0.025 }));
+	const marked = async (base64: string) => {
+		const im = await decodePngBytes(Buffer.from(base64, 'base64'));
+		for (let p = 0; p < im.w * im.h; p++)
+			if (
+				im.data[p * 4 + 3] &&
+				im.data[p * 4] === MARK[0] &&
+				im.data[p * 4 + 1] === MARK[1] &&
+				im.data[p * 4 + 2] === MARK[2]
+			)
+				return true;
+		return false;
+	};
+	const mark = async (base64: string, color = MARK) => {
+		const im = await decodePngBytes(Buffer.from(base64, 'base64'));
+		for (let p = 0; p < im.w * im.h; p++)
+			if (im.data[p * 4 + 3]) im.data.set([...color, 255], p * 4);
+		return Buffer.from(await encodePngBytes(im)).toString('base64');
+	};
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (request.method() === 'GET' && path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					// Tier 3 runs every view's render at once, so a held view never blocks the others.
+					subscription: {
+						type: 'generations',
+						status: 'active',
+						plan: 'Tier 3',
+						generations: 100,
+						total: 100
+					},
+					credits: { type: 'usd', usd: 1 }
+				}
+			});
+		if (request.method() === 'GET' && path.includes('/characters/'))
+			return route.fulfill({ status: 404, json: { detail: 'Not available on this account' } });
+		if (request.method() === 'POST') {
+			const body = request.postDataJSON() as {
+				direction?: string;
+				keypoints?: unknown[];
+				frame_count?: number;
+				first_frame?: { base64: string };
+				image?: { base64: string };
+			};
+			posts.push(path);
+			if (path.endsWith('/estimate-skeleton')) checked++;
+			if (path.endsWith('/estimate-skeleton'))
+				return route.fulfill({
+					json: {
+						keypoints: body.image && (await marked(body.image.base64)) ? [] : keypoints,
+						usage: { type: 'generations', generations: 0.1 }
+					}
+				});
+			if (path.endsWith('/animate-pixminimax') || path.endsWith('/animate-with-skeleton-v3')) {
+				if (body.direction === options.refuse) {
+					// Answer only once the other three views have their renders and joint checks, so this one alone stops.
+					for (let wait = 0; (finished.size < 3 || checked < 3) && wait < 200; wait++)
+						await new Promise((resolve) => setTimeout(resolve, 100));
+					return route.fulfill({ status: 422, json: { detail: 'Refused by the offline fixture' } });
+				}
+				const frame =
+					body.direction === options.jointless
+						? await mark(body.first_frame!.base64)
+						: body.direction === options.recolor
+							? await mark(body.first_frame!.base64, [40, 200, 230])
+							: body.first_frame!.base64;
+				const id = `skeleton-move-${jobs.size}-${body.direction}`;
+				jobs.set(id, {
+					images: Array.from({ length: body.keypoints?.length ?? body.frame_count! }, () => frame)
+				});
+				return route.fulfill({ json: { background_job_id: id } });
+			}
+			return route.abort();
+		}
+		const id = path.split('/').pop()!,
+			job = jobs.get(id);
+		if (job) {
+			finished.add(id);
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 2 },
+					last_response: { images: job.images.map((base64) => ({ type: 'base64', base64 })) }
+				}
+			});
+		}
+		return route.abort();
+	});
+	return posts;
+}
+
+async function generateNewSkeletonMove(page: Page, template: string) {
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const sheet = page.getByRole('dialog', { name: 'New move', exact: true });
+	await sheet.getByRole('button', { name: template, exact: true }).click();
+	await sheet.getByRole('button', { name: /^Advanced/ }).click();
+	await sheet
+		.getByRole('combobox', { name: 'Motion model', exact: true })
+		.selectOption('skeleton-v3');
+	await sheet.getByRole('button', { name: /^Generate / }).click();
+	return sheet;
+}
+
+test('a new move whose one view stopped saves its finished views for free and ends the hold', async ({
+	page,
+	context
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-finished-views-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	const posts = await skeletonMoveApi(page, context, { refuse: 'west' });
+	const sheet = await generateNewSkeletonMove(page, 'Idle');
+	const paid = sheet.getByRole('region', { name: 'Paid results', exact: true });
+	await expect(paid).toBeVisible({ timeout: 45_000 });
+	await expect(paid).toContainText('West · Stopped');
+	const save = paid.getByRole('button', { name: /^Save the finished views/ });
+	await expect(save).toContainText('Free');
+	await expect(paid).toContainText(
+		'Saves South, East, and North for free, after review. West did not finish and is left out'
+	);
+	const sent = posts.length;
+	await save.click();
+	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
+	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
+	await expect(review).toBeHidden();
+	// Saving offers equipment for the new move as a separate priced step; closing it buys nothing.
+	const animate = page.getByRole('dialog', { name: 'Generate items', exact: true });
+	await animate.getByRole('button', { name: 'Close', exact: true }).click();
+	expect(posts.length).toBe(sent);
+	const saved = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts';
+		const s = await import(statePath),
+			db = await import(dbPath);
+		const rec = await db.get('projects', s.doc.id),
+			base = rec.manifest.items.find((it: { id: string }) => it.id === rec.manifest.rig.baseItem);
+		return {
+			views: Object.keys(base.layers[0].cells.idle ?? {}),
+			hold: !!s.moving.error,
+			record: (await db.get('projects', 'studio-move'))?.status ?? null
+		};
+	});
+	expect(saved).toEqual({ views: ['south', 'east', 'north'], hold: false, record: null });
+	// No failed-move hold: a new move opens on a fresh form.
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await expect(sheet.getByRole('textbox', { name: 'Describe the motion' })).toBeVisible();
+	await expect(sheet.getByRole('region', { name: 'Paid results', exact: true })).toHaveCount(0);
+});
+
+test('a replacement missing only numeric body checks lands in the staged review with a free Save', async ({
+	page,
+	context
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-numbers-only-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page);
+	const posts = await skeletonMoveApi(page, context, { recolor: 'east' });
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	const sheet = page.getByRole('dialog', { name: /^Redraw / });
+	await sheet
+		.getByRole('group', { name: 'Directions to redraw' })
+		.getByRole('button', { name: 'West direction', exact: true })
+		.click();
+	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
+	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
+	const replace = review.getByRole('button', { name: 'Replace move', exact: true });
+	await expect(replace).toBeEnabled({ timeout: 45_000 });
+	// The paid frames are kept for a free choice: Save leads, Discard is beside it, and no paid re-roll leads.
+	await expect(replace).toHaveAttribute('data-variant', 'primary');
+	await expect(review.getByRole('button', { name: 'Discard draft', exact: true })).toBeEnabled();
+	await expect(review.getByRole('button', { name: 'Regenerate…', exact: true })).toHaveAttribute(
+		'data-variant',
+		'outline'
+	);
+	await expect(review.getByText('Regenerate this move before saving it.')).toHaveCount(0);
+	await expect(page.getByText(/still fails body-pose quality checks/)).toHaveCount(0);
+	const sent = posts.length;
+	await replace.click();
+	await expect(review).toBeHidden();
+	const east = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts';
+		const s = await import(statePath),
+			db = await import(dbPath);
+		const rec = await db.get('projects', s.doc.id);
+		return {
+			draft: !!rec.moveReviews?.walk,
+			hold: !!s.moving.error,
+			posed: !!rec.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk').sources
+				?.east
+		};
+	});
+	expect(east).toEqual({ draft: false, hold: false, posed: true });
+	expect(posts.length).toBe(sent);
+});
+
+test('a view kept without poses names the move and view to make again before equipment', async ({
+	page,
+	context
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-keep-unposed-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const { itemId } = await targetedRepairFixture(page);
+	const posts = await skeletonMoveApi(page, context, { jointless: 'west' });
+	const sheet = await generateNewSkeletonMove(page, 'Idle');
+	const paid = sheet.getByRole('region', { name: 'Paid results', exact: true });
+	const keep = paid.getByRole('button', { name: /^Keep without fitting items/ });
+	await expect(keep).toBeVisible({ timeout: 45_000 });
+	await expect(keep).toContainText('Free');
+	await expect(paid).toContainText('Saves the body frames as they are, for free.');
+	const sent = posts.length;
+	await keep.click();
+	await expect
+		.poll(
+			() =>
+				page.evaluate(async () => {
+					const statePath = '/src/studio/state.svelte.ts',
+						dbPath = '/src/lib/store/db.ts';
+					const s = await import(statePath),
+						db = await import(dbPath);
+					const rec = await db.get('projects', s.doc.id),
+						idle = rec.manifest.rig.animations.find((a: { id: string }) => a.id === 'idle');
+					return idle && { redo: rec.rigQa?.redo, posed: Object.keys(idle.sources ?? {}) };
+				}),
+			{ timeout: 30_000 }
+		)
+		.toEqual({ redo: ['idle/west'], posed: ['south', 'east', 'north'] });
+	expect(posts.length).toBe(sent);
+	const animate = page.getByRole('dialog', { name: 'Generate items', exact: true });
+	if (await animate.isVisible())
+		await animate.getByRole('button', { name: 'Close', exact: true }).click();
+	if (await sheet.isVisible())
+		await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	// The Moves list marks the move to make again, and the item offers leave that view out.
+	await equipmentMode(page, 'Moves');
+	await expect(
+		page.getByRole('button', { name: /^Idle .*Joints not found: redraw it to animate items on it/ })
+	).toBeVisible();
+	// The item's details name that view and its way on, with no price for it; nothing is bought.
+	await page.evaluate(async (itemId) => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.ui.anim = 'idle';
+		s.wear(itemId);
+		s.pick(itemId);
+	}, itemId);
+	const details = await selectedItemDetails(page);
+	await expect(details).toContainText(
+		'Idle West was kept without poses, so equipment is not fitted there. Make that view again to fit it.'
+	);
+	expect(posts.length).toBe(sent);
 });
 
 test('an item missing a standing view restores it from its saved design for free', async ({
@@ -7158,6 +7865,156 @@ test('partial missing gear and explicit item repair stay on the current move and
 	expect(posts).toEqual([]);
 });
 
+test('a repair whose later batch fails offers its finished repairs for free and keeps the rest', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	const outputs = new Map<string, Record<string, unknown>>();
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (path === '/v2/balance')
+			return route.fulfill({
+				json: {
+					subscription: {
+						plan: 'Tier 1',
+						type: 'generations',
+						status: 'active',
+						generations: 100,
+						total: 100
+					},
+					credits: { type: 'usd', usd: 0 }
+				}
+			});
+		if (request.method() === 'POST') {
+			posts.push(path);
+			// The second batch is refused, so only the first, paid batch comes back.
+			if (path === '/v2/inpaint-v3' && posts.length === 1) {
+				const id = 'offline-partial-repair-1';
+				outputs.set(id, { image: request.postDataJSON().inpainting_image.image });
+				return route.fulfill({ status: 202, json: { background_job_id: id } });
+			}
+			return route.fulfill({ status: 422, json: { detail: 'Synthetic batch refusal' } });
+		}
+		const id = path.split('/').at(-1)!;
+		if (outputs.has(id))
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 10 },
+					last_response: outputs.get(id)
+				}
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-partial-repair-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const { itemId } = await targetedRepairFixture(page);
+	// Sixteen walk frames need two Tier 1 grids (fifteen frames and one), so a later batch exists to fail.
+	await page.evaluate(async (id) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts';
+		const state = await import(statePath),
+			db = await import(dbPath);
+		const rec = await db.get('projects', state.doc.id),
+			m = rec.manifest,
+			walk = m.rig.animations.find((a: { id: string }) => a.id === 'walk'),
+			count = walk.cells;
+		walk.cells = count * 2;
+		walk.frames = [
+			...walk.frames,
+			...walk.frames.map((f: { cell: number }) => ({ ...f, cell: f.cell + count }))
+		];
+		for (const source of Object.values(walk.sources ?? {}) as { keypoints?: unknown[] }[])
+			if (source.keypoints) source.keypoints = [...source.keypoints, ...source.keypoints];
+		for (const item of m.items) {
+			for (const layer of item.layers)
+				for (const [dir, row] of Object.entries(layer.cells?.walk ?? {}) as [string, unknown[]][])
+					layer.cells.walk[dir] = [...row, ...row];
+			for (const [dir, row] of Object.entries(item.baseCut?.walk ?? {}) as [string, unknown[]][])
+				item.baseCut.walk[dir] = [...row, ...row];
+			if (item.coverage)
+				item.coverage = [
+					...item.coverage,
+					...item.coverage
+						.filter((key: string) => key.startsWith('walk/'))
+						.map((key: string) => {
+							const [anim, dir, index] = key.split('/');
+							return `${anim}/${dir}/${Number(index) + count}`;
+						})
+				];
+			if (item.qa?.cells)
+				for (const [key, cell] of Object.entries(item.qa.cells)) {
+					const [anim, dir, index] = key.split('/');
+					if (anim === 'walk') item.qa.cells[`walk/${dir}/${Number(index) + count}`] = cell;
+				}
+		}
+		const sword = m.items.find((it: { id: string }) => it.id === id);
+		sword.slot = 'torso_inner';
+		sword.layers = sword.layers.slice(0, 1);
+		await db.put('projects', state.doc.id, rec);
+		await state.openProject(state.doc.id);
+	}, itemId);
+	const saved = () =>
+		page.evaluate(async (id) => {
+			const statePath = '/src/studio/state.svelte.ts',
+				dbPath = '/src/lib/store/db.ts';
+			const state = await import(statePath),
+				db = await import(dbPath);
+			const rec = await db.get('projects', state.doc.id);
+			const item = rec.manifest.items.find((it: { id: string }) => it.id === id);
+			return {
+				west: item.layers[0].cells.walk.west as string[],
+				east: item.layers[0].cells.walk.east as string[],
+				provenance: item.provenance.length as number
+			};
+		}, itemId);
+	const before = await saved();
+	expect(before.west).toHaveLength(16);
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		state.ui.anim = 'walk';
+		state.ui.dir = 'west';
+		state.ui.all = false;
+		state.pick(id);
+	}, itemId);
+	await selectedItemDetails(page);
+	await page.getByRole('button', { name: /^Repair item/ }).click();
+	const review = page.getByRole('dialog', { name: 'Review item repair' });
+	// The note names what is kept and why the later batch stopped.
+	const stoppedNote = review.getByText(
+		'A later batch stopped, so 1 frame keeps its current art (16). Nothing more was bought.'
+	);
+	await expect(stoppedNote).toBeVisible();
+	await expect(stoppedNote).toContainText('did not finish (failed). It was not sent again.');
+	const useFinished = review.getByRole('button', { name: 'Use finished repairs', exact: true });
+	await expect(useFinished).toBeEnabled();
+	await expect(review.getByRole('button', { name: 'Keep current', exact: true })).toBeEnabled();
+	// Nothing was saved while the review waits, and the refused batch was not sent again.
+	expect(await saved()).toEqual(before);
+	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3']);
+	await useFinished.click();
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
+	const after = await saved();
+	expect(after.east).toEqual(before.east);
+	expect(after.west).toHaveLength(16);
+	expect(after.west[15]).toBe(before.west[15]);
+	expect(after.west.slice(0, 15)).not.toEqual(before.west.slice(0, 15));
+	expect(after.provenance).toBe(before.provenance + 1);
+	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3']);
+});
+
 test('paid item repair review survives reload and both decisions send no extra request', async ({
 	page,
 	context
@@ -7307,7 +8164,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3', '/v2/edit-images-v2']);
 });
 
-test('unsafe imported equipment prices its frozen route and unsupported held offers stay usable', async ({
+test('unsafe imported equipment prices its frozen route and discloses suspicious joints on held offers', async ({
 	page,
 	context
 }, info) => {
@@ -7398,19 +8255,22 @@ test('unsafe imported equipment prices its frozen route and unsupported held off
 		s.wear(id);
 		s.pick(id);
 	}, fixture.itemId);
-	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toBeDisabled();
-	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('Unavailable');
+	// A held item cannot use the frozen grid. It used to be refused here; it is now priced on its measured joints with the
+	// suspicious frames named on the quote before anything is bought.
+	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toBeEnabled();
+	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('gens');
 	await expect(
-		page.locator('.notice').filter({ hasText: 'suspicious estimated joints' }).first()
-	).toBeVisible();
+		page.locator('.notice').filter({ hasText: 'Some measured joints look unusual' }).first()
+	).toContainText('frame 2');
 	await page
 		.getByRole('dialog', { name: 'Item', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await inspectStage(page);
+	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toBeEnabled();
 	await expect(
-		page.locator('.stage-note').getByRole('button', { name: /^Make it/ })
-	).toBeDisabled();
+		page.locator('.stage-note .notice').filter({ hasText: 'Some measured joints look unusual' })
+	).toBeVisible();
 	expect(posts).toEqual([]);
 	expect(errors).toEqual([]);
 });
@@ -7707,9 +8567,9 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	const sheet = page.getByRole('dialog', { name: /^Redraw / });
 	await expect(sheet).toContainText('Joint-check outcome unknown');
 	await expect(sheet.getByText('Posing your items', { exact: true })).not.toHaveClass(/\bdone\b/);
-	await expect(sheet).toContainText(
-		'Could not check cached frames: Synthetic standing image storage failure'
-	);
+	// A failed review read is shown with a free Try again; Generate again stays available (startMove guards live requests).
+	await expect(sheet).toContainText('Your paid results could not be read');
+	await expect(sheet.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
 	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
@@ -7733,7 +8593,11 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	await expect(sheet).toContainText(
 		'Wait for the current joint checks to finish before recovering them.'
 	);
-	await expect(sheet.getByRole('status')).toHaveCount(0);
+	// Deliberately changed (soft gates): the queued sibling check is still live, so the paid-result review holds its choices
+	// and says so, even though another check of that view was lost.
+	await expect(sheet.getByRole('status')).toHaveText(
+		'Some paid requests are still running at PixelLab. These choices unlock when they finish.'
+	);
 	await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toHaveCount(
 		0
 	);
@@ -8280,16 +9144,119 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(
 		page.getByRole('button', { name: new RegExp(` · ${fixture.itemName}`) })
 	).toHaveCount(0);
+	// The tab with the work carries a dot, red when its job failed; More only marks work the tabs do not show, with the
+	// same 6px dot.
+	const movesTab = page.locator('#customization-tab-moves'),
+		statesTab = page.locator('#customization-tab-states'),
+		more = page.getByRole('button', { name: 'More options', exact: true });
+	const dot = (target: Locator, pseudo: string) =>
+		target.evaluate((node, pseudo) => {
+			const probe = document.createElement('i');
+			probe.style.color = 'var(--bu-danger)';
+			node.append(probe);
+			const danger = getComputedStyle(probe).color;
+			probe.remove();
+			const owner = pseudo === 'label' ? node.querySelector('.bu-tab-label')! : node;
+			const color = getComputedStyle(owner, '::after').backgroundColor;
+			if (getComputedStyle(owner, '::after').content === 'none') return 'none';
+			return color === danger ? 'red' : 'accent';
+		}, pseudo);
+	await expect(movesTab).toHaveAttribute('data-activity', 'busy');
+	await expect(statesTab).not.toHaveAttribute('data-activity');
+	await expect(more).not.toHaveAttribute('data-activity');
+	expect(await dot(movesTab, 'label')).toBe('accent');
+	await expect(movesTab).toHaveAccessibleDescription(
+		'Work here is running, waiting or ready to review'
+	);
+	// Outside Preview, Moves and States are disabled, so their work moves to More's dot.
+	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
+	await expect(movesTab).not.toHaveAttribute('data-activity');
+	await expect(more).toHaveAttribute('data-activity', 'busy');
+	await page.getByRole('button', { name: 'Preview', exact: true }).click();
+	await equipmentMode(page, 'Moves');
+	await expect(movesTab).toHaveAttribute('data-activity', 'busy');
+	await expect(more).not.toHaveAttribute('data-activity');
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.moving.queued = [
+			...s.moving.queued,
+			{
+				projectId: s.doc.id,
+				spec: { id: 'default', items: [id], frames: 1, seed: 1, itemsOnly: true }
+			}
+		];
+		s.moving.error = 'synthetic failure';
+	}, fixture.itemId);
+	await expect(statesTab).toHaveAttribute('data-activity', 'busy');
+	await expect(movesTab).toHaveAttribute('data-activity', 'stopped');
+	await expect(more).not.toHaveAttribute('data-activity');
+	expect(await dot(movesTab, 'label')).toBe('red');
+	expect(await dot(statesTab, 'label')).toBe('accent');
+	await expect(movesTab).toHaveAccessibleDescription('Work here needs attention');
+	// This character's item drafts mark Wardrobe (gold, red when one failed); another character's mark More instead.
+	const wardrobeTab = page.locator('#customization-tab-wardrobe');
+	const draft = (phase: string, own: boolean) =>
+		page.evaluate(
+			async ({ phase, own }) => {
+				const path = '/src/studio/state.svelte.ts',
+					s = await import(path);
+				s.gens.splice(0, s.gens.length, {
+					phase,
+					status: '',
+					draft: {
+						rigId: own ? s.doc.id : 'another-character',
+						spec: { id: 'dot-draft' },
+						calls: []
+					},
+					input: { slot: 'head', name: 'Dot draft' }
+				});
+			},
+			{ phase, own }
+		);
+	await draft('running', true);
+	await expect(wardrobeTab).toHaveAttribute('data-activity', 'busy');
+	expect(await dot(wardrobeTab, 'label')).toBe('accent');
+	await expect(more).not.toHaveAttribute('data-activity');
+	await draft('failed', true);
+	await expect(wardrobeTab).toHaveAttribute('data-activity', 'stopped');
+	expect(await dot(wardrobeTab, 'label')).toBe('red');
+	await expect(more).not.toHaveAttribute('data-activity');
+	await draft('running', false);
+	await expect(wardrobeTab).not.toHaveAttribute('data-activity');
+	await expect(more).toHaveAttribute('data-activity', 'busy');
+	expect(await dot(more, 'button')).toBe('accent');
+	const size = (target: Locator, pseudo: string) =>
+		target.evaluate((node, pseudo) => {
+			const after = getComputedStyle(
+				pseudo === 'label' ? node.querySelector('.bu-tab-label')! : node,
+				'::after'
+			);
+			return [after.width, after.height];
+		}, pseudo);
+	expect(await size(more, 'button')).toEqual(await size(movesTab, 'label'));
+	await draft('failed', false);
+	await expect(more).toHaveAttribute('data-activity', 'stopped');
+	expect(await dot(more, 'button')).toBe('red');
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.gens.splice(0, s.gens.length);
+	});
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		s.moving.queued = [];
 		s.moving.spec = null;
 		s.moving.progress = null;
+		s.moving.error = '';
 	});
 	await expect(page.getByRole('button', { name: /^Custom walk preview/ })).toContainText(
 		'0 of 6 items drawn'
 	);
+	await expect(movesTab).not.toHaveAttribute('data-activity');
+	await expect(statesTab).not.toHaveAttribute('data-activity');
+	await expect(more).not.toHaveAttribute('data-activity');
 	expect(posts).toEqual([]);
 	const coverage = page.getByRole('button', { name: /equipped items? needs? frames/ });
 	await selectPlaybackClip(page, 'default');
@@ -8831,10 +9798,15 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		.getByRole('dialog', { name: 'Item review', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
-	// Activity (in More, which carries a warning dot) lists the stopped draft that holds its slot and opens its review.
+	// Wardrobe carries the stopped draft's warning dot (More leaves it to the tab); Activity in More lists the draft that
+	// holds its slot and opens its review.
+	await expect(page.locator('#customization-tab-wardrobe')).toHaveAttribute(
+		'data-activity',
+		'stopped'
+	);
 	await expect(
-		page.locator('.experience-header [popovertarget="experience-options"][data-activity="stopped"]')
-	).toBeVisible();
+		page.locator('.experience-header [popovertarget="experience-options"]')
+	).not.toHaveAttribute('data-activity');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')

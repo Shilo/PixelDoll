@@ -1,7 +1,7 @@
 // A free, approximate fit of another character's held item (Main hand / Off hand) onto a different body on the same canvas
 // size: every frame's layers move by the offset between the two bodies' wrists, never resampled. Each rig maps its keypoints
 // to the layer canvas through its own pivot, so the pivots may differ. It is offered only when both characters share the
-// item's views (drawn or mirrored alike) and moves, and at most a quarter of the frames fail a grip check below; head items
+// item's views (drawn or mirrored alike) and moves; frames that fail a grip check below are named for a look; head items
 // never fit this way (head sizes differ by 2 to 5 px on the same canvas). The offline check over stored characters
 // (2026-11-10) is recorded in docs/known-issues.md under Shared items. Never generates anything.
 import { layerFrame, type Frame } from '../compose/compose.ts';
@@ -36,9 +36,7 @@ export const REFIT = {
 	/** Item area against its standing frame in that direction (a frame where the body hid part of it). */
 	minArea: 0.8,
 	/** Mean joint distance (px) under which a frame counts as the standing pose. */
-	nearStandingPx: 1,
-	/** Share of the target's frames that may fail the checks above and still be offered, marked for a look. */
-	maxFailing: 0.25
+	nearStandingPx: 1
 };
 const heldAnchor = (item: Item, source?: Pick<Manifest, 'slots'>): 'LEFT' | 'RIGHT' | undefined => {
 	const slot =
@@ -355,7 +353,7 @@ async function fit(
 		if (ref && (await area(sa, td, +si)) / ref < REFIT.minArea) checks.add('hidden');
 		if (checks.size) failing.set(match.target, checks);
 	}
-	if (failing.size > plan.length * REFIT.maxFailing) return null;
+	// The checks are visual estimates: every failing frame is named for a look instead of refusing the free fit.
 	// One note per move and direction, frames in order.
 	const notes = new Map<string, RefitNote>();
 	for (const [key, checks] of failing) {

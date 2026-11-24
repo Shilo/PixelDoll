@@ -48,6 +48,11 @@
 	"librarySettings": {
 		"title": "Bibliothek",
 		"scope": "Sichere gespeicherte Figuren, Grafiken und archivierte Daten. Einstellungen, Entwürfe und Aufträge sind nicht enthalten.",
+		"backupWithDebug": "Enthält Debugging-Details",
+		"debugDetails": "Debugging-Details einschließen",
+		"debugDetailsHint": "Fügt jeder Sicherung Fehlerprotokolle, Anfrageverlauf, Entwürfe, Aufträge und den App-Zustand hinzu, damit Probleme untersucht werden können. Fehler aus diesem Tab sind enthalten, und ab jetzt werden Fehler auch über Neuladen und Tabs hinweg aufbewahrt. Dein PixelLab-Schlüssel ist nie enthalten.",
+		"scopeDebug": "Gespeicherte Figuren, Grafiken, archivierte Daten und Debugging-Details sichern.",
+		"debugNotSaved": "Der Browser konnte diese Einstellung nicht speichern.",
 		"backup": "Bibliothek sichern",
 		"restoreFromBackup": "Aus Sicherung wiederherstellen",
 		"review": "Sicherung prüfen",
@@ -524,6 +529,7 @@
 			"other": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherte Frames in {move}, Blickrichtung {direction}."
 		},
 		"colorMatchFixed": "Andere Ansichten, Animationen, Materialien und gespeicherte Farbänderungen bleiben unverändert.",
+		"colorMatchMissing": "Die Frames {frames} haben noch keine Grafik und werden ausgelassen.",
 		"colorMatchUnmatched": {
 			"one": "{n} geeigneter Pixel ohne passende Farbe bleibt unverändert.",
 			"other": "{n} geeignete Pixel ohne passende Farbe bleiben unverändert."
@@ -907,7 +913,9 @@
 		"still": "Standpose",
 		"inspect": "Prüfen",
 		"customization": "Anpassen",
-		"customizationPanels": "Bereiche zum Anpassen"
+		"customizationPanels": "Bereiche zum Anpassen",
+		"tabWorkRunning": "Hier läuft, wartet oder ist etwas zum Prüfen bereit",
+		"tabWorkAttention": "Hier braucht etwas deine Aufmerksamkeit"
 	},
 	"worldStage": {
 		"groundUnavailable": "Die fortlaufende Bodendarstellung ist nicht verfügbar. Die statische Szene wird angezeigt.",
@@ -1051,6 +1059,7 @@
 		"couldNotSaveFlowFailure": "{error} Dieser Fehler konnte nicht auf diesem Gerät gespeichert werden. Verwirf den Vorgang, bevor du die Seite neu lädst.",
 		"useSavedFramesInTheTabThat": "Verwende gespeicherte Frames in dem Tab, der deine PixelDoll-Aufträge verwaltet.",
 		"anotherMoveIsStillBeingAddedSo": "Eine andere Animation wird noch hinzugefügt. Diese wurde deshalb nicht gestartet. Versuch es erneut, sobald die andere fertig ist.",
+		"moveStillAtPixelLab": "Eine Anfrage dieser Bewegung läuft noch bei PixelLab, daher wurde kein neuer Versuch gestartet und nichts berechnet. Warte unter „Aktivität“, bis sie fertig ist, und prüfe dann die Bewegung.",
 		"moveNameAdded": "{moveName} hinzugefügt",
 		"moveNameHasItemIssuesToReviewNo": "Bei Gegenständen für {moveName} gibt es Probleme zu prüfen. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
 		"moveFailedOpen": "{moveName} fehlgeschlagen. Öffne „Animationen“, um die Optionen zu sehen.",
@@ -1338,6 +1347,7 @@
 		"drop": "Zieh ein Figuren-ZIP hierher",
 		"dropNote": "PixelLab-Figur oder PixelDoll-Export · bis zu 64 MB",
 		"chooseZip": "ZIP auswählen",
+		"chooseAnother": "Anderes ZIP auswählen",
 		"characterZip": "Figuren-ZIP",
 		"devicePrivacy": "Deine Dateien bleiben auf diesem Gerät. Sieh dir die Figur vor dem Import in der Vorschau an.",
 		"pixelLabHint": "Exportiere im Figureneditor von PixelLab ein ZIP mit einzelnen Frames. Übergeordnete Ordner werden unterstützt. Andere Spritesheet-Layouts und ZIPs, die nur PNGs enthalten, werden nicht unterstützt.",
@@ -1398,6 +1408,9 @@
 			"noRoom": "Platz für Animationen wurde nicht hinzugefügt, weil diese Figur zu viele Bildpixel hat. Nutze nach dem Import Frame anpassen, um ihn hinzuzufügen.",
 			"fixedBase": "Importierte Grafiken bilden den festen Grundkörper: Vorhandene Kleidung und Haare können nicht entfernt werden. Richte das Posen-Rig ein, um Ausrüstung per Skelett zu animieren und neue Animationen hinzuzufügen.",
 			"frameCounts": "„{move}“ hat je nach Blickrichtung unterschiedlich viele Frames. Die Blickrichtungen wurden als separate Animationen importiert, damit alle Originalframes und die jeweilige Länge erhalten bleiben.",
+			"skippedMove": "„{move}“ wurde weggelassen: Die Animationsframes konnten nicht gelesen werden. Exportiere sie erneut mit einzelnen nummerierten Frames.",
+			"skippedDirection": "„{move}“ in Blickrichtung {direction} wurde weggelassen: Die Frames sind leer, fehlen oder sind nicht in Reihenfolge.",
+			"skippedStanding": "„{move}“ in Blickrichtung {direction} wurde weggelassen: Die Figur hat keine Standansicht in diese Richtung.",
 			"semiAlpha": "Teiltransparente Kanten wurden in harte Pixelgrafik-Transparenz umgewandelt.",
 			"detailsDropped": "Einige gespeicherte Angaben zur Figur waren beschädigt und wurden ausgelassen. Richte bei Bedarf ihr Posen-Rig erneut ein."
 		},
@@ -1435,9 +1448,6 @@
 			"stateFrames": "Der Zustand „{state}“ hat ein ungültiges Frame-Layout.",
 			"undeclaredAnimation": "Der Zustand „{state}“ enthält eine Animationsdatei, die in seinen Metadaten fehlt: {path}.",
 			"stateAnimations": "Der Zustand „{state}“ enthält eine ungültige Animationsliste.",
-			"moveDirections": "Die Animation {move} hat keine Blickrichtungen.",
-			"moveDirection": "Die Animation {move}/{direction} hat eine nicht unterstützte Blickrichtung.",
-			"moveFrames": "Die Animation {move}/{direction} muss 1–120 Frame-Pfade enthalten.",
 			"selectedState": "Dieser PixelLab-Export enthält den gewählten Figurenzustand nicht.",
 			"stateInfo": "{detail} Wähle eine andere Standpose oder exportiere das ZIP erneut.",
 			"selectedRotations": "Dieser PixelLab-Export enthält die Rundumansichten des gewählten Figurenzustands nicht.",
@@ -1446,17 +1456,11 @@
 			"fixState": "{detail} Wähle die Animationen dieses Zustands ab, um fortzufahren, oder exportiere das ZIP erneut.",
 			"stateMetadata": "Animationen aus „{state}“ haben ungültige Metadaten für Größe oder Perspektive: {detail} Wähle die Animationen dieses Zustands ab, um fortzufahren.",
 			"stateMismatch": "Animationen aus „{state}“ verwenden eine andere Figurengröße oder Perspektive. Wähle diesen Zustand ab, um fortzufahren.",
-			"missingStandingView": "Für {move}/{direction} fehlt im gewählten Zustand eine passende Standansicht.",
 			"tooManyMoves": "Diese Figur enthält zu viele Animationen. Wähle weniger Zustände oder exportiere weniger Animationen (höchstens 99 plus Standpose).",
 			"orphanFile": "Dieses ZIP enthält eine Animationsdatei ohne eindeutige Zuordnung zu einem Zustand: {path}. Exportiere ein neues Figuren-ZIP mit einzelnen Frames.",
 			"rotationPathName": "Nicht unterstützter Pfad einer Rundumansicht: {path}. Exportiere ein Figuren-ZIP mit nach Blickrichtung benannten PNGs.",
 			"animationPath": "Nicht unterstützter Pfad eines Animationsframes: {path}. Exportiere ein Figuren-ZIP mit einzelnen, nummerierten Frames.",
-			"frameNumber": "{path} hat eine ungültige Frame-Nummer.",
-			"animationDirection": "Die Animation {move} hat eine nicht unterstützte Blickrichtung: {direction}.",
 			"noRotations": "Dieses PixelLab-ZIP enthält keine unterstützten Rundumansichten. Exportiere eine einzelne Figur mit den Ordnern rotations/ und animations/.",
-			"noRotation": "Für die Animation in Blickrichtung {direction} fehlt eine passende Rundumansicht.",
-			"moveFrameRange": "{move}/{direction} muss 1–120 Frames enthalten.",
-			"missingAnimationFrames": "Bei {move}/{direction} fehlen Animationsframes.",
 			"frameImage": "{path} ist keine PNG-Datei oder überschreitet das Größenlimit für den Import.",
 			"cutPixels": "Bei {path} gingen in einer Zelle mit {frame} px Seitenlänge {cut} sichtbare Pixel verloren. Importiere eine kleinere Figur. Grafiken werden nie skaliert.",
 			"emptyFrame": "{path} ist ein leerer Frame.",
@@ -1471,8 +1475,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Arbeitsbereichsaktivität",
-		"activityIntro": "Mit dem Arbeitsbereich aus PixelDoll {build} gespeichert. Aufträge aus der ZIP-Datei werden nicht neu gestartet.",
+		"activityTitle": "Sicherungsdetails",
+		"activityIntro": "Aus einer Sicherung von PixelDoll {build} geöffnet.",
 		"missing": {
 			"one": "{count} Grafikdatei fehlte oder war nicht lesbar.",
 			"other": "{count} Grafikdateien fehlten oder waren nicht lesbar."
@@ -1480,29 +1484,11 @@
 		"skippedCharacters": {
 			"one": "Gespeicherte Figuren übersprungen: {count}.",
 			"other": "Gespeicherte Figuren übersprungen: {count}."
-		},
-		"demoOutfit": "Die Demo verwendet ihre Standard-Outfiteinstellungen.",
-		"exportSettings": "Die Kopie verwendet die Standard-Exporteinstellungen.",
-		"tier": "PixelLab-Tarif: {tier}",
-		"noErrors": "Es wurden keine kürzlichen Fehler oder offenen Aufträge erfasst.",
-		"noRecent": "Kürzliche Fehler wurden nicht aufgenommen.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Code {code}",
-		"error": {
-			"tooLarge": "Dieser Arbeitsbereich überschreitet das Limit für die ZIP-Größe oder die Grafiken. Verwende stattdessen einzelne Figuren-ZIPs.",
-			"containsKey": "Ein gespeichertes Feld enthält den verbundenen oder gespeicherten PixelLab-Schlüssel. Entferne ihn vor dem Export aus dem Arbeitsbereich.",
-			"invalidIndex": "Dieser Arbeitsbereichsindex ist ungültig.",
-			"unsupportedVersion": "Diese Version der Arbeitsbereichsdatei wird nicht unterstützt.",
-			"duplicateRecord": "Dieser Arbeitsbereich enthält einen nicht unterstützten oder doppelten gespeicherten Datensatz.",
-			"missingFiles": "Dieser Arbeitsbereich enthält eine ungültige Liste fehlender Dateien.",
-			"unexpectedFile": "Dieser Arbeitsbereich enthält eine unerwartete Datei.",
-			"invalidDiagnostics": "Dieser Arbeitsbereich enthält ungültige Daten zu kürzlichen Fehlern."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Wähle eine PixelDoll-Sicherung oder ein Arbeitsbereich-ZIP, kein Figuren-ZIP.",
+			"notBackup": "Wähle eine PixelDoll-Sicherung, kein Figuren-ZIP.",
 			"unsupportedVersion": "Diese Version der Sicherungsdatei wird nicht unterstützt.",
 			"invalid": "Diese Sicherung ist beschädigt oder ungültig.",
 			"tooLarge": "Diese Sicherung überschreitet das Limit für die ZIP-Größe oder die Grafiken. Verwende stattdessen einzelne Figuren-ZIPs.",
@@ -1574,6 +1560,8 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: Prüfe die Ergebnisse der Qualitätskontrolle für diesen Gegenstand. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
 		"bodyQuality": "{move} {direction}: {reason}",
+		"bridgedJoints": "die Gelenke von Bewegungsbild {frame} von {total} wurden aus den Nachbarbildern abgeleitet",
+		"shortFrames": "PixelLab hat {count} statt {expected} Bilder gesendet, daher kann das erste oder letzte Bild abweichen",
 		"health": {
 			"clean": "In Ordnung",
 			"accepted": "Akzeptiert",
@@ -1622,6 +1610,8 @@
 			"noRepairGrid": "Kein Reparaturraster für {move} ({direction}): {reason}. Der beste Versuch wurde behalten",
 			"heldLoop": "Form oder Winkel des gehaltenen Gegenstands ändern sich am Übergang der Animationsschleife",
 			"registrationShift": "PixelLab hat einen transparenten Rand geliefert und das Sheet möglicherweise verschoben. Prüfe, ob der Gegenstand in jedem Frame ausgerichtet ist.",
+			"suspiciousJoints": "Die Gelenke wirken in {move} {direction}, Frame {frame}, ungewöhnlich, daher sitzt der Gegenstand dort vielleicht nicht richtig. Prüfe Griff oder Ausrichtung.",
+			"jointReview": "Einige Frames wurden an Gelenken ausgerichtet, die ungewöhnlich wirken. Prüfe Griff oder Ausrichtung.",
 			"bodyUnmeasured": "Der Gegenstand verdeckt fast den ganzen Körper und konnte daher nicht geprüft werden. Achte darauf, dass er kein neu gezeichneter Körper ist"
 		},
 		"anotherCharacter": "eine andere Figur",
@@ -2043,6 +2033,9 @@
 		"waitingTitle": "Warten auf einen anderen Tab",
 		"waitingBody": "Deine Generierung hat noch nicht begonnen. Lass Aktivität geöffnet; PixelDoll macht hier weiter, sobald der andere Tab bereit ist.",
 		"stopInRunningTab": "Stoppe diesen Auftrag in dem Tab, in dem er läuft.",
+		"saving": "Wird auf diesem Gerät gespeichert …",
+		"stopNoAnswer": "Der Tab, in dem dieser Auftrag läuft, hat das Stoppen noch nicht bestätigt. Sieh gleich in der Aktivität nach; läuft er noch, stoppe ihn in diesem Tab.",
+		"stopNotConfirmed": "PixelLab hat das Stoppen nicht bestätigt, daher kann der Auftrag weiterlaufen und Kosten verursachen. Sieh in der Aktivität nach.",
 		"pausedStorage": "Gespeicherte Aufträge konnten nicht gelesen oder gespeichert werden, deshalb wird nichts Neues gesendet. Setze fort, um es erneut zu versuchen.",
 		"cancelSaveFailed": "Der Abbruch konnte nicht gespeichert werden. Dieser Tab sendet die Anfrage nicht, ein anderer Tab oder ein Neuladen aber schon."
 	},
@@ -2057,6 +2050,9 @@
 		"checking": "Frames werden geprüft…",
 		"someChecks": "Einige Prüfergebnisse solltest du ansehen.",
 		"noRetryStarted": "Es wurde kein kostenpflichtiger Neuversuch gestartet. Wähle „Erneut generieren“ für einen neuen Versuch oder „Behalten“, um die vollständige Grafik mit diesen Warnungen zu übernehmen. Wenn du die Ansicht schließt, bleibt die Prüfung ausstehend.",
+		"noRetryStartedFreeKeep": "Es wurde kein kostenpflichtiger neuer Versuch gestartet. Behalte die zurückgekommenen Frames kostenlos oder wähle „Erneut generieren“ für einen neuen Versuch. Wenn du diese Prüfung schließt, wartet sie weiter.",
+		"noRetryStartedNoKeep": "Es wurde kein kostenpflichtiger neuer Versuch gestartet. Wähle „Erneut generieren“ für einen neuen Versuch. Wenn du diese Prüfung schließt, wartet sie weiter.",
+		"incompleteFreeKeep": "Einige Frames wurden nicht erstellt. Du kannst die zurückgekommenen Frames kostenlos behalten oder einen neuen Versuch starten.",
 		"keep": "Behalten",
 		"retryLabel": "{name} erneut versuchen",
 		"incomplete": "Einige Frames wurden nicht generiert. Bevor du diesen Gegenstand behalten kannst, ist ein neuer Versuch nötig.",
@@ -2088,7 +2084,10 @@
 		"rerollFailed": "Fehlgeschlagene Aufrufe neu würfeln",
 		"rerollFailedDetail": "Nur die fehlgeschlagenen Aufrufe und was von ihnen abhängt werden neu gekauft. Alle anderen fertigen Aufrufe werden wiederverwendet.",
 		"keepFinished": "Fertige Animationen behalten",
-		"keepFinishedDetail": "Speichert die Animationen, deren Frames alle fertig sind. Die anderen bleiben als fehlende Frames aufgeführt, die du später erstellen kannst."
+		"keepFinishedDetail": "Speichert die Animationen, deren Frames alle fertig sind. Die anderen bleiben als fehlende Frames aufgeführt, die du später erstellen kannst.",
+		"keepAvailable": "Verfügbare Frames behalten",
+		"keepAvailableDetail": "Speichert alle Frames, die zurückgekommen sind. Es fehlen: {views}. Sie bleiben als fehlende Frames aufgeführt, die du später erstellen kannst.",
+		"missingFrames": "{move} {direction} ({missing} von {total} Frames)"
 	},
 	"generationDetails": {
 		"copiedFrom": "einmal für {name} bezahlt, hierher kostenlos kopiert",
@@ -2181,6 +2180,7 @@
 		"warnings": {
 			"headroom": "In Blickrichtung {direction} bleiben {count} px über dem Kopf. Hohe Frisuren oder Hüte brauchen möglicherweise einen größeren Frame.",
 			"keptFrames": "Die vorhandenen Frames von {name} bleiben erhalten. Erstelle den Gegenstand nach der Einrichtung des Rigs neu, damit er auch in künftigen Animationen mit der Figur mitbewegt werden kann.",
+			"moveSkippedEmpty": "{move} wurde übersprungen: Einer ihrer Frames ist leer. Korrigiere diesen Frame oder erstelle die Bewegung erneut, um Gegenstände darauf zu animieren.",
 			"moveSkipped": "{move} wurde übersprungen: PixelLab hat auf einem ihrer Frames keine gültigen Gelenke gefunden. Erstelle sie erneut, um Gegenstände darauf zu animieren."
 		},
 		"title": "Figur einrichten",
@@ -2203,6 +2203,7 @@
 		"saveDescription": "Beschreibung speichern",
 		"descriptionSaved": "Beschreibung gespeichert. Neue Animationen verwenden sie.",
 		"estimate": "{frames} unterschiedliche Grundkörperframes · ca. {gens} Generierungen, einschließlich {connection} Generierungen für die Kontoverbindung. Passende gespeicherte Messwerte werden wiederverwendet.",
+		"willSkip": "{moves} wird übersprungen: Jede hat einen leeren Frame, daher wird dafür nichts ausgegeben. Korrigiere diese Frames oder erstelle die Bewegungen erneut, um Gegenstände darauf zu animieren.",
 		"reconnectEstimate": "Beim erneuten Verbinden bleiben alle Posen, Gegenstandspassungen und Frames unverändert. Ca. {gens} Generierungen für die Kontoverbindung.",
 		"busyElsewhere": "Schließe den anderen Figurenvorgang ab, bevor du die Einrichtung startest.",
 		"resumeRigSetup": "Rig-Einrichtung fortsetzen",
@@ -2267,6 +2268,8 @@
 			"savedEquipmentRecoveryNeeds": "Zum Wiederherstellen gespeicherter Ausrüstung brauchst du eine vorhandene Animation und nur deren Ausrüstung. Es wurde keine Generierung angefordert.",
 			"anchoredEquipmentGenerationRequires": "Zum Generieren verankerter Ausrüstung brauchst du eine vorhandene Animation und ihre gespeicherten Gegenstände aus der Standpose. Es wurde keine Generierung angefordert.",
 			"moveItemMissingStored": "Für diese Animation oder diesen Gegenstand fehlen gespeicherte Gelenkpunkte oder Standreferenzen. Richte die Posen ein, bevor du Ausrüstung generierst. Es wurde keine Generierung angefordert.",
+			"moveKeptUnposed": "{move} {direction} wurde ohne Posen behalten. Erstelle diese Ansicht neu, bevor du dort Ausrüstung anpasst. Es wurde keine Generierung angefordert.",
+			"freeChoiceCacheMissing": "Ein Ergebnis, das diese kostenlose Wahl wiederverwendet, ist nicht mehr gespeichert, daher wurde nichts angefordert. Prüfe die Bewegung erneut.",
 			"setUpRigFirst": "Richte das Posen-Rig dieser Figur ein, bevor du Animationen hinzufügst.",
 			"newMoveNeedsEvery": "Eine neue Animation braucht alle eigenständig gezeichneten Blickrichtungen.",
 			"partialRepairMustKeep": "Bei einer Teilreparatur muss die Anzahl der Frames unverändert bleiben.",
@@ -2278,7 +2281,6 @@
 			"characterChangedAnotherTab2": "Diese Figur wurde in einem anderen Tab geändert, bevor die Animation gespeichert werden konnte. Öffne sie vor einem neuen Versuch erneut.",
 			"demoStandingReferenceMissing": "Die Standreferenz der Demo fehlt.",
 			"resultMissingStorage": "Ein bezahltes Ergebnis fehlt im Speicher dieses Browsers.",
-			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab hat unvollständige oder ungültige Gelenkpunkte für die Standpose zurückgegeben. Mit diesen Gelenken wurde keine Animation gestartet. Vorhandene Ergebnisse bleiben erhalten.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab hat die falsche Anzahl an Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
 			"animationExceedsPxFrame": "{move} {direction}: Die Körper-Frames passen nicht in den {w} px großen Frame. Sie wurden zur Prüfung behalten; nichts wurde gespeichert.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab hat leere Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
@@ -2328,6 +2330,8 @@
 			"partialSaved": "{reason} Die fertigen Ansichten wurden gespeichert ({views}).",
 			"partialSavedNewFrames": "{reason} Die fertigen Ansichten wurden gespeichert ({views}). „Neue Frames generieren“ fordert nur fehlende Frames an.",
 			"partialSavedRetry": "{reason} Die fertigen Ansichten wurden gespeichert ({views}). Bei einer neuen Generierung werden nur die fehlenden Ansichten angefordert.",
+			"partialSavedRedraw": "{reason} Die fertigen Frames wurden gespeichert ({views}). Erneutes Generieren zeichnet alle Frames der unvollständigen Ansichten neu, zum angezeigten Preis.",
+			"savedFrameRange": "{view} Frames {frames}",
 			"replacementFailsQa": "Der Ersatz besteht die Qualitätsprüfungen für die Grundkörperposen weiterhin nicht. Vorhandene Blickrichtungen bleiben erhalten. Prüfe die Ergebnisse vor einem neuen Versuch.",
 			"newMoveFailsQa": "Die neue Animation besteht die Qualitätsprüfungen für die Grundkörperposen nicht und wurde daher nicht gespeichert. Prüfe die Ergebnisse vor einem neuen Versuch.",
 			"moveDirectionsChanged": "Die Blickrichtungen des Charakters haben sich geändert. Prüfe die aktuelle Schätzung für die Animation, bevor du es erneut versuchst. Es wurde keine Generierung angefordert.",
@@ -2549,6 +2553,7 @@
 			"label": "Ausgangspunkt",
 			"frame": "Frame {number}",
 			"unavailable": "Für diesen Frame werden Körperbilder und vermessene Gelenke für jede ausgewählte Blickrichtung benötigt.",
+			"missingViews": "Dieser Frame hat keine Ansicht für {directions}, daher kann eine Bewegung nicht von ihm aus starten. Wähle einen anderen Frame.",
 			"changed": "Der ausgewählte Startframe hat sich geändert. Wähle die Quelle erneut aus. Es wurde keine Generierung angefordert.",
 			"stateTarget": "Ein Zustand kann nicht als Animation ersetzt werden."
 		},
@@ -2609,6 +2614,7 @@
 			"unavailable": "Nicht verfügbar",
 			"findings": "Qualitätshinweise",
 			"hardFailure": "Generiere diese Animation neu, bevor du sie speicherst.",
+			"reviewWaiting": "Für diese Bewegung warten Frames auf deine Prüfung. Speichere oder verwirf sie zuerst. Es wurde keine Anfrage gesendet.",
 			"beforeItems": "Prüfe die Animation, bevor du Gegenstände animierst.",
 			"changed": "Charakter oder Animation wurden geändert. Öffne die Prüfung erneut.",
 			"missingFrames": "Die geprüften Frames sind nicht mehr verfügbar.",
@@ -2617,7 +2623,6 @@
 			"later": "Du kannst Gegenstände für {move} später über das Menü in Animationen generieren."
 		},
 		"thatCharacter": "diese Figur",
-		"recoveryCheckFailed": "Zwischengespeicherte Frames konnten nicht geprüft werden: {error}",
 		"retryLabel": "Animation erneut generieren",
 		"newSetup": "Neue Animation…",
 		"useSaved": "Gespeicherte Frames verwenden",
@@ -2724,6 +2729,12 @@
 			"finish": "Prüfung abschließen",
 			"useRedrawn": "Neu gezeichnete Frames verwenden",
 			"useRepaired": "Reparierte Frames verwenden",
+			"useFinishedRedraws": "Fertige Neuzeichnungen verwenden",
+			"useFinishedRepairs": "Fertige Reparaturen verwenden",
+			"stopped": {
+				"one": "Ein späterer Durchgang wurde nicht abgeschlossen, daher behält {n} Frame seine aktuelle Grafik ({frames}). Es wurde nichts weiter gekauft.",
+				"other": "Ein späterer Durchgang wurde nicht abgeschlossen, daher behalten {n} Frames ihre aktuelle Grafik ({frames}). Es wurde nichts weiter gekauft."
+			},
 			"heldBy": "Die Frames eines Gegenstands für {character} können geprüft werden. Animationen in der Warteschlange warten auf deine Entscheidung.",
 			"compare": "Gegenstandsframes vergleichen",
 			"saved": "Die neuen Frames sind bereits gespeichert. Schließe die Prüfung ab, um fortzufahren.",
@@ -2732,9 +2743,9 @@
 			"repairIssues": "Die kostenpflichtige Reparatur ist fertig, aber einige Frames könnten Darstellungsfehler haben.",
 			"noCost": "Deine bisherigen Bilder bleiben unverändert. Beide Entscheidungen sind kostenlos. Blende dieses Fenster aus, um später zu entscheiden.",
 			"frame": "Frame {number}",
-			"currentFrames": "Aktuelle Frames",
-			"redrawnFrames": "Neu gezeichnete Frames",
-			"repairedFrames": "Reparierte Frames",
+			"currentLabel": "Aktueller Frame",
+			"redrawnLabel": "Neu gezeichneter Frame",
+			"repairedLabel": "Reparierter Frame",
 			"findings": "Ergebnisse der Qualitätsprüfung",
 			"redrawInManagingTab": "Prüfe die neu gezeichneten Frames in dem Tab, der deine PixelDoll-Aufträge verwaltet.",
 			"repairInManagingTab": "Prüfe die Reparatur in dem Tab, der deine PixelDoll-Aufträge verwaltet.",
@@ -2760,6 +2771,12 @@
 			"designFrameMissing": "Der Design-Aufruf hat keinen Frame mit angelegtem Gegenstand geliefert.",
 			"incompleteReferenceFrames": "PixelLab hat unvollständige Referenz- oder Standframes geliefert. Es wurde keine abhängige Anfrage gesendet.",
 			"standingFrameSize": "PixelLab hat einen Standframe mit falscher Größe geliefert. Es wurde keine abhängige Anfrage gesendet.",
+			"poseFramesMalformed": "PixelLab hat für {item} fehlende oder fehlerhafte Frames zurückgegeben. Es wurde kein automatischer neuer Versuch gestartet.",
+			"poseFrameSize": "PixelLab hat für {item} Frames in der falschen Größe zurückgegeben. Es wurde kein automatischer neuer Versuch gestartet.",
+			"gridStopped": "Die Reparaturanfrage für {item} wurde nicht abgeschlossen ({state}). Sie wurde nicht erneut gesendet.",
+			"poseStopped": "Die Posing-Anfrage für {item} wurde nicht abgeschlossen ({state}). Sie wurde nicht erneut gesendet.",
+			"requestLost": "Die Anfrage für {item} ging verloren, sie wurde also eventuell ausgeführt und berechnet. Sie wurde nicht erneut gesendet.",
+			"noUsableFrames": "PixelLab hat für {item} keine brauchbaren Frames zurückgegeben.",
 			"layersMismatch": "Die Ausrüstungsebenen passen nicht zu diesem Ausrüstungsplatz. Es wurde keine Generierung angefordert.",
 			"reviewChanged": "Dieser Gegenstand oder seine Prüfungen haben sich geändert. Öffne ihn erneut, bevor du seine aktuelle Grafik akzeptierst.",
 			"paletteReviewChanged": "Dieser Gegenstand oder seine Farben haben sich geändert. Prüfe die Farbanpassung erneut.",
@@ -2791,6 +2808,7 @@
 		"copyDemo": "Demo-Grundkörper kopieren",
 		"feature": "Ausrüstung generieren",
 		"needsSetup": "Richte diese Figur ein, um Ausrüstung per Skelett zu animieren, übergroße Waffen zu verwenden und neue Animationen hinzuzufügen.",
+		"poseIssues": "Einige gemessene Gelenke wirken ungewöhnlich. Der Gegenstand folgt ihnen, prüfe diese Frames also nach dem Erstellen:",
 		"standingFirst": "Erstelle zuerst das Design der Standpose. Wenn dir das Ergebnis gefällt, generiere den Gegenstand in seinen Details für einzelne Animationen.",
 		"where": "Wohin gehört er?",
 		"notShown": "Noch nicht in der Garderobe sichtbar. Wenn du einen Gegenstand dafür erstellst, wird die Kategorie eingeblendet.",
@@ -2853,6 +2871,12 @@
 		"changed": "Quelle oder Kostenschätzung haben sich geändert. Prüfe vor dem Generieren erneut die Kosten.",
 		"sourceUnavailable": "Für jede gezeichnete Blickrichtung muss der Quell-Frame gespeicherte Grafik haben.",
 		"invalidResult": "PixelLab hat nicht alle erwarteten Ansichten in der vorgesehenen Größe geliefert.",
+		"missingViews": "Für {directions} kam keine verwendbare Ansicht zurück. Beim Speichern bleiben die anderen Ansichten erhalten; dieser State hat in diesen Blickrichtungen und ihren gespiegelten Ansichten keine Grafik.",
+		"unfetchedViews": "Die Ansicht für {directions} konnte nicht heruntergeladen werden. Versuche es zuerst erneut: Wenn du ohne sie speicherst, kann sie später nicht mehr abgerufen werden.",
+		"canceledViews": "Die Ansicht für {directions} wurde abgebrochen, bevor sie erstellt wurde. Wenn du jetzt speicherst, wird sie nicht erstellt.",
+		"unmadeViews": "Die Ansicht für {directions} wurde noch nicht erstellt. Prüfe die Kosten für die Erstellung oder speichere ohne sie.",
+		"newViews": "Für diesen State wurden neue Ansichten fertiggestellt. Prüfe ihn vor dem Speichern erneut. Es wurde nichts gespeichert oder berechnet.",
+		"saveWithout": "Ohne sie speichern",
 		"unfinished": "Die Ergebnisse sind unvollständig oder nicht verfügbar. Prüfe die Aktivitäten. Keine Anfrage wurde erneut gesendet.",
 		"outdated": "Dieser unfertige Zustand wurde mit einer älteren PixelDoll-Version begonnen. Verwirf ihn, um neu zu beginnen.",
 		"quoteUnavailable": "PixelLab hat keine brauchbare Kostenschätzung für Pro Flash geliefert.",
@@ -2894,6 +2918,8 @@
 		"quote": "Kosten der Gelenkmessung prüfen",
 		"measure": "Gelenke messen",
 		"review": "Prüfe vor dem Speichern, ob die markierten Gelenke in jeder Ansicht richtig sitzen.",
+		"notFitted": "Für {directions} wurden keine Gelenke gefunden, daher können diese Ansichten noch kein Ausgangspunkt sein. Beim Speichern bleiben die Gelenke der anderen Ansichten erhalten.",
+		"notChecked": "Die Gelenkprüfung für {directions} wurde nicht abgeschlossen und nicht erneut gesendet. Beim Speichern bleiben die Gelenke der anderen Ansichten erhalten.",
 		"save": "Gelenke speichern"
 	},
 	"stateCapture": {
@@ -3110,6 +3136,7 @@
 		"download": "Bezahlte Ergebnisse herunterladen",
 		"frame": "{view} Frame {number}",
 		"waiting": "Einige bezahlte Anfragen laufen noch bei PixelLab. Diese Optionen werden freigegeben, sobald sie fertig sind.",
+		"loadFailed": "Deine bezahlten Ergebnisse konnten nicht gelesen werden, daher sind die Möglichkeiten, sie weiterzuverwenden, ausgeblendet. Es ist nichts verloren gegangen.",
 		"state": {
 			"ready": "Fertig",
 			"pending": "Noch nicht gekauft",
@@ -3130,8 +3157,17 @@
 		"liftDetailWarned": "{views}: Die Füße heben sich um bis zu {px} px in {frames} von {total} Bewegungs-Frames, damit die Bewegung in den Frame passt. Das liegt über der Fußprüfung von {limit} px, daher wird die Animation mit einem Fuß-Hinweis gespeichert.",
 		"reroll": "{views} neu würfeln",
 		"rerollDetail": "Neu würfeln kauft nur für diese Blickrichtungen einen neuen Versuch. Alle anderen behalten ihre bezahlten Ergebnisse.",
-		"keepUnposedDetail": "Speichert die Körper-Frames so, wie sie sind. Auf einigen Frames wurden keine Gelenke gefunden, daher können Gegenstände erst angepasst werden, wenn du die Animation neu zeichnest.",
+		"keepUnposedDetail": "Speichert die Körper-Frames kostenlos so, wie sie sind. Auf einigen Frames wurden keine Gelenke gefunden, daher können Gegenstände in diesen Ansichten erst angepasst werden, wenn du sie neu erstellst. Die anderen Ansichten behalten ihre Posen.",
 		"keepUnposed": "Ohne Gegenstände behalten",
+		"unposedViews": {
+			"one": "{move} {directions} wurde ohne Posen behalten, daher wird dort keine Ausrüstung angepasst. Erstelle diese Ansicht neu, um sie anzupassen.",
+			"other": "{move} {directions} wurden ohne Posen behalten, daher wird dort keine Ausrüstung angepasst. Erstelle diese Ansichten neu, um sie anzupassen."
+		},
+		"saveFinished": "Fertige Ansichten speichern",
+		"saveFinishedDetail": {
+			"one": "Speichert {views} kostenlos nach deiner Prüfung. {missing} wurde nicht fertig und fehlt; du kannst sie später aus dieser Bewegung erstellen.",
+			"other": "Speichert {views} kostenlos nach deiner Prüfung. {missing} wurden nicht fertig und fehlen; du kannst sie später aus dieser Bewegung erstellen."
+		},
 		"pending": "Noch zu kaufen: etwa {gens} Gens.",
 		"liftable": "Kann angehoben werden: Die Füße heben sich um bis zu {px} px in {frames} von {total} Frames.",
 		"notLiftable": "Anheben reicht nicht: Die Bewegung ist seitlich oder oben abgeschnitten."
@@ -3317,7 +3353,7 @@
 			"overflow": "Wähle Anheben oder einen größeren Frame, falls angeboten, oder versuch es erneut.",
 			"empty": "Deine bezahlten Ergebnisse bleiben unter „Aktivität“. Versuch es mit einem neuen Versuch erneut.",
 			"dropped": "Warte einen Moment und versuch es dann erneut.",
-			"joints": "Bereits Bezahltes bleibt unter „Aktivität“. Starte einen neuen Versuch oder beginne mit einer deutlicheren Standpose.",
+			"joints": "Bereits Bezahltes bleibt unter „Aktivität“. Behalte die Frames ohne Gegenstände anzupassen, wenn das angeboten wird, oder beginne mit einer deutlicheren Standpose.",
 			"stopped": "Sie wurde nicht erneut gesendet. Sieh dir das Ergebnis an, bevor du neu beginnst.",
 			"quality": "Prüfe die Ergebnisse und behalte sie dann oder versuch es erneut.",
 			"changed": "Prüfe es erneut, bevor du weitermachst.",
@@ -3347,8 +3383,29 @@
 		"generateFor": "Für {move} generieren",
 		"wearOn": "In {move} anlegen"
 	},
+	"itemImport": {
+		"title": "Gegenstände importieren",
+		"intro": "Das ZIP einer Figur, ein Backup oder eine geteilte Figur. Kostenlos, wenn die Gegenstände zu dieser Figur passen.",
+		"empty": "Dieses ZIP enthält keine fertigen Gegenstände.",
+		"skipped": {
+			"one": "{count} Gegenstand konnte nicht gelesen werden.",
+			"other": "{count} Gegenstände konnten nicht gelesen werden."
+		},
+		"notFitted": "{names} passt nicht mehr und wurde nicht hinzugefügt.",
+		"busy": "Warte, bis der Gegenstand hinzugefügt ist, und versuche es dann erneut.",
+		"row": {
+			"copy": "Passt genau zu dieser Figur",
+			"refit": "Kostenlos an diesen Körper angepasst. Prüfe die Frames nach dem Import.",
+			"unfitted": "Für einen anderen Körper erstellt. Wird wie gezeichnet getragen und kann schweben oder überlappen.",
+			"remake": "Für einen anderen Körper erstellt, daher hier nicht tragbar"
+		}
+	},
+	"importDrop": {
+		"items": "Ablegen, um Gegenstände zu importieren",
+		"moves": "Ablegen, um Animationen zu importieren",
+		"states": "Ablegen, um Zustände zu importieren"
+	},
 	"moveImport": {
-		"title": "Animationen importieren",
 		"importMoves": "Animationen importieren",
 		"importStates": "Zustände importieren",
 		"dropArea": "Ablagebereich für PixelDoll-ZIP",

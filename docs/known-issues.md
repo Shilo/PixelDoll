@@ -37,7 +37,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   views quoted again only when Studio can prove those batches were never queued. If work stops after a batch is reserved
   but before its queue record is written, Studio will not resend it. Review Activity before deciding whether to discard
   the attempt and approve a new generation.
-  Editable workspace ZIPs preserve saved art, not pending State attempts or their job receipts.
+  Library backups preserve saved art, not pending State attempts or their job receipts.
 - **Canceling a managed State does not guarantee a refund.** In a trial-account check, PixelLab reported cancellation
   and $0 job usage, but the child later completed and the balance fell by 10 generations. Do not retry uncertain jobs
   or use that cancellation receipt as proof of no charge.
@@ -119,10 +119,14 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Historical item QA.** Older saved items lack replaceable checks; after an edit they stay marked for review with an
   explicit incomplete-check notice. Retained historical totals may omit old additions or include replaced frames until
   all older coverage is replaced. No paid recheck or silent reconstruction is performed.
-- **A move kept without joints has no equipment.** When PixelLab finds no joints on some body frames of a new move, its
-  review offers Keep without fitting items: the body frames are saved as drawn, with no poses, and the Moves list marks
-  the move to make again before items can be fitted to it. Joints are never invented, and a replaced move cannot be
-  kept this way.
+- **A view kept without joints has no equipment.** When PixelLab finds no joints on some body frames of a move (new,
+  replaced or a single redrawn view), its review offers Keep without fitting items for free: those views' body frames are
+  saved as drawn, with no poses, and only those views are marked to make again before items can be fitted there. Item
+  offers name the skipped views. Joints are never invented; the only inferred pose is one bridged interior frame, which
+  the review discloses.
+- **Retrying an item that stopped partway redraws the whole view.** When a later pose batch of an item fails, the
+  finished batches are kept and the rest of that view keeps its current art. Generate again then redraws every frame of
+  the incomplete views at the price it shows; a cheaper retry of only the missing frames is not built yet.
 - **A shifted repair batch does not stop the rest of the repair.** When a batch of a split equipment repair comes back
   1 px off, the remaining batches still run, then the whole repair waits in its review with the shift listed (G10):
   Keep current leaves the item as it was, Use repair keeps the new frames with that warning. Spending no longer stops
@@ -264,8 +268,8 @@ its keypoints through its own pivot, so pivots may differ) and the same views, e
 on both characters (a source with fewer views, such as 4 onto 8 directions, is made new; 8 onto 4 fits); both characters
 need stored skeleton keypoints, and every target move must exist on the source with the same frame count (or stand
 still); a pixel pushed off the canvas, a missing wrist or forearm, or mirrored hand labels reject the item; forearm
-angle, body overlap (a front pixel within 2 px of the new body counts as on it) and occlusion checks may fail on up to a
-quarter of the frames, more rejects it; the grip is
+angle, body overlap (a front pixel within 2 px of the new body counts as on it) and occlusion checks are estimates, so
+every failing frame is named to check and never rejects the item; the grip is
 approximate (whole-pixel wrist offset, no rotation); items that hide body pixels or slots never re-fit; head items never
 re-fit (head sizes differ by 2 to 5 px on the same canvas); side-scroller characters (east and west only) never re-fit,
 since the hand side is confirmed facing south; a re-fit is never re-fitted again (exact copies of it are), and an item
@@ -278,7 +282,7 @@ item later gains frames for this body (a move made there) offers **Copy from** t
 them; nothing syncs by itself. Offline
 check over the stored real characters (2026-11-10): the bench adventurer's axe re-fits the Ranger with 7 of 36 frames to
 check; its sword (13 of 36) and bow (11 of 36) on the Ranger and its axe on the imported Ragnarok (8 of 27) fail more
-than a quarter; its sword on Ragnarok leaves the canvas; the other pairs differ in moves or hand labels. Live PixelLab
+than a quarter (rejected before 2026-11-23, now offered with those frames to check); its sword on Ragnarok leaves the canvas; the other pairs differ in moves or hand labels. Live PixelLab
 characters (2026-11-11, 4 directions with a mirrored west): Knight A's sword and shield re-fit Scout B with 13 % and 18 %
 of frames to check and Knight C with 20 % and 0 %, all in side views.
 

@@ -1,8 +1,11 @@
 // Do not initialize credentials, queues, or API clients inside another page's frame.
 import { workspaceCopy } from './lib/store/workspace-mode.ts';
+import { installDebugLog } from './lib/debug/log.ts';
 
 export {};
 if (window.top === window) {
+	// First, so a debugging backup also sees startup failures. A workspace copy is someone else's library: no log.
+	if (!workspaceCopy) installDebugLog();
 	try {
 		// Keep these imports inside the frame guard: bundlers can share their chunks with credential-bearing Studio modules.
 		if (workspaceCopy) await import('./workspace-entry.ts');

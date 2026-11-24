@@ -60,22 +60,24 @@ export const forgetFits = () => {
 	fits = new Map();
 };
 
-/** Items of the other characters, saved and `bundled` (the demo), without ones this character already has; one entry per item:
- *  the one that fits this character best (exact copy, then re-fit, then worn as drawn, then made new), the most recent first
- *  within each tier. An entry whose images cannot be read is skipped and counted, so the others still list. `images` are
- *  decoded images already in memory (the open character's), read before storage. */
+/** Items of the other characters, saved and `bundled` (the demo, an imported ZIP), without ones this character already has;
+ *  one entry per item: the one that fits this character best (exact copy, then re-fit, then worn as drawn, then made new), the
+ *  most recent first within each tier. An entry whose images cannot be read is skipped and counted, so the others still list.
+ *  `images` are decoded images already in memory (the open character's), read before storage. `saved: false` lists only the
+ *  bundled sources and leaves the wardrobe's remembered outcomes alone. */
 export async function listShared(
 	targetId: string,
 	target: Manifest | null,
 	images?: ReadonlyMap<string, Img>,
-	bundled: readonly BundledSource[] = []
+	bundled: readonly BundledSource[] = [],
+	{ saved = true }: { saved?: boolean } = {}
 ): Promise<{ items: SharedItem[]; skipped: number }> {
 	const own = new Set(
 			target?.items.filter((it) => it.status === 'accepted').map((it) => itemKey(it, targetId))
 		),
 		groups = new Map<string, Omit<SharedItem, 'fit' | 'cells'>[]>();
 	const sources = [
-		...(await listProjects())
+		...(saved ? await listProjects() : [])
 			.filter((rec) => rec.origin !== 'dev')
 			.map((rec) => ({
 				id: rec.id,
@@ -136,10 +138,11 @@ export async function listShared(
 					})
 				)
 			: '',
-		known = fits,
+		known = saved ? fits : new Map<string, SharedChoice>(),
+		latestFits = new Map<string, SharedChoice>(),
 		kept: SharedItem[] = [];
 	let skipped = 0;
-	fits = new Map();
+	if (saved) fits = latestFits;
 	for (const entries of groups.values()) {
 		let best: SharedItem | undefined;
 		for (const entry of entries.sort((a, b) => b.at.localeCompare(a.at))) {
@@ -154,7 +157,7 @@ export async function listShared(
 				skipped++;
 				continue;
 			}
-			fits.set(key, choice);
+			latestFits.set(key, choice);
 			const { fit } = choice,
 				approximated = (it: Item) => !!(it.refit || it.unfitted);
 			// On a tie the original beats a re-fit or an unfitted copy of it (their pixels were placed for another body).

@@ -9,6 +9,7 @@ import {
 	type DirectionName,
 	type Keypoint,
 	type Rig,
+	type RigAnimation,
 	type Sha256
 } from './rig.ts';
 import { HEADROOM_MIN, anchorTracks, type Built } from './freeze.ts';
@@ -29,6 +30,8 @@ export interface SetupPlan {
 	rest: Partial<Record<DirectionName, Img>>;
 	registrationDirections: 4 | 8;
 	frames: Map<Sha256, Img>;
+	/** Moves with an empty body frame: left without poses (rigQa.redo) and not measured. */
+	skipped: string[];
 	gens: number;
 	warnings: string[];
 	/** The rig already holds its poses (rigReady without a registration): setup only registers the standing views again and
@@ -37,12 +40,37 @@ export interface SetupPlan {
 }
 export const STATE_CAPTURE_MODE = 'state-capture';
 
-/** Moves kept as drawn without poses because a frame had no valid joints (skipped by rig setup, or a new move kept
- *  without fitting items): marked to make again (rigQa.redo). */
+/** Moves and views kept as drawn without poses because a frame had no valid joints, marked to make again (rigQa.redo): a
+ *  move id when rig setup skipped the whole move, or "move/direction" for one view kept without fitting items. */
 export const setupRedoMoves = (rec?: Pick<StoredProject, 'rigQa'> | null): string[] => {
 	const redo = (rec?.rigQa as { redo?: unknown } | undefined)?.redo;
 	return Array.isArray(redo) ? redo.filter((id): id is string => typeof id === 'string') : [];
 };
+/** A view kept without poses: listed in rigQa.redo (by move or by view) and without poses. Equipment is not fitted there
+ *  yet; an imported character that was never set up is never listed, so it still needs setup. */
+export const unposedView = (
+	redo: readonly string[],
+	anim: Pick<RigAnimation, 'id' | 'sources'>,
+	dir: DirectionName
+) => !anim.sources?.[dir] && (redo.includes(anim.id) || redo.includes(`${anim.id}/${dir}`));
+/** rigQa.redo after a move was saved as `anim`: its `unposed` views are listed, and an entry leaves the list once its view
+ *  has poses again (the whole-move entry once every drawn view of the move with frames, `views`, has them). */
+export const redoAfterSave = (
+	redo: readonly string[],
+	anim: Pick<RigAnimation, 'id' | 'sources'>,
+	views: readonly DirectionName[],
+	unposed: readonly DirectionName[] = []
+): string[] => [
+	...new Set([
+		...redo.filter(
+			(entry) =>
+				!(entry === anim.id
+					? views.every((dir) => anim.sources?.[dir])
+					: views.some((dir) => entry === `${anim.id}/${dir}` && anim.sources?.[dir]))
+		),
+		...unposed.map((dir) => `${anim.id}/${dir}`)
+	])
+];
 
 export function rigReady(
 	rec?:
@@ -59,10 +87,10 @@ export function rigReady(
 		r.directions.every((d) => d.mirrorOf || hasAll(r.rest?.[d.id]?.keypoints)) &&
 		r.animations.every((a) => {
 			if (a.kind === 'state' && a.id !== DEFAULT_MOVE) return true;
-			// A move setup skipped waits to be made again; the rest of the rig is ready without it.
-			if (redo.includes(a.id) && !a.sources) return true;
 			return r.directions.every((d) => {
 				if (d.mirrorOf || !base.cells?.[a.id]?.[d.id]?.some(Boolean)) return true;
+				// A view kept without poses waits to be made again; the rest of the rig is ready without it.
+				if (unposedView(redo, a, d.id)) return true;
 				if (matchesStanding(r, a, d.id, base.cells?.[a.id]?.[d.id]?.[0])) return true;
 				const poses = a.sources?.[d.id]?.keypoints;
 				return poses?.length === a.cells && poses.every(hasAll);
@@ -177,21 +205,32 @@ export async function setupPlan(
 			'Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.',
 			'setup.errors.needsStandingViews'
 		);
-	for (const a of reconnect ? [] : rig.animations)
-		for (const d of rig.directions.filter((d) => !d.mirrorOf)) {
-			const cells = Array.from({ length: a.cells }, (_, i) =>
-				cellImg(p, base.layers[0], a.id, d.id, i)
-			);
-			if (!cells.some((im) => im && opaqueBox(im))) continue; // genuine sparse clip
-			if (cells.some((im) => !im || !opaqueBox(im)))
-				throw new LocalizedError(
-					`${a.id}/${d.id} contains an empty body frame.`,
-					'setup.errors.emptyBodyFrame',
-					{ move: moveWords(a.id) }
-				);
-			for (const im of cells as Img[]) frames.set(await cellHash(im), im);
-		}
+	const skipped: string[] = [];
 	// Reconnecting keeps every pose, so items keep fitting future moves as before.
+	for (const clip of reconnect ? [] : rig.animations) {
+		const rows = rig.directions
+			.filter((d) => !d.mirrorOf)
+			.map((d) =>
+				Array.from({ length: clip.cells }, (_, i) => cellImg(p, base.layers[0], clip.id, d.id, i))
+			)
+			// A row with no stored frame is a genuine sparse clip; a stored blank frame is a gap, as assembly sees it.
+			.filter((cells) => cells.some(Boolean));
+		const usable = (im: Img | null): im is Img => !!im && !!opaqueBox(im);
+		// Default and the standing move's reference frame are required; any other gap only skips its move.
+		const required = (i: number) => clip.id === DEFAULT_MOVE || (clip.id === a.id && i === 0);
+		const gap = rows.flatMap((cells) => cells.flatMap((im, i) => (usable(im) ? [] : [i])));
+		if (gap.some(required))
+			throw new LocalizedError(
+				`${clip.id} contains an empty body frame.`,
+				'setup.errors.emptyBodyFrame',
+				{ move: moveWords(clip.id) }
+			);
+		if (gap.length) skipped.push(clip.id);
+		for (const cells of rows)
+			for (const [i, im] of cells.entries())
+				// A skipped standing move still measures its reference frame, which keys the anchors.
+				if (usable(im) && (!gap.length || required(i))) frames.set(await cellHash(im), im);
+	}
 	for (const it of reconnect ? [] : m.items.filter((i) => i.slot !== 'body' && !i.dressed))
 		warnings.push(
 			`${it.name} keeps its existing frames. Make it again after setup to animate it onto future moves.`
@@ -206,6 +245,7 @@ export async function setupPlan(
 		rest,
 		registrationDirections,
 		frames,
+		skipped,
 		gens: +(0.25 + frames.size * 0.1).toFixed(2),
 		warnings,
 		reconnect
@@ -264,18 +304,35 @@ export async function attachImportedRig(
 		redo: string[] = [];
 	for (const a of rig.animations) {
 		const views = rig.directions.filter((d) => !d.mirrorOf);
-		// The standing move (pivot, rest views, anchors) and Default are never skipped: get() stops setup there instead.
-		let skip = false;
-		if (a.id !== plan.restAnim && a.id !== DEFAULT_MOVE)
+		const standing = a.id === plan.restAnim;
+		// Default and the standing move's first frame (it keys the anchors) are never skipped: get() stops setup there.
+		const empty = plan.skipped.includes(a.id);
+		let skip = empty;
+		if (!skip && a.id !== DEFAULT_MOVE)
 			for (const d of views)
-				for (let i = 0; i < a.cells && !skip; i++)
+				for (let i = standing ? 1 : 0; i < a.cells && !skip; i++)
 					skip = await unmeasured(cellImg(p, base.layers[0], a.id, d.id, i) ?? undefined);
 		if (skip) {
 			delete a.sources;
 			redo.push(a.id);
 			warnings.push(
-				`${a.id} was skipped: PixelLab could not find valid joints on one of its frames. Make it again to animate items on it.`
+				empty
+					? `${a.id} was skipped: one of its frames is empty. Fix that frame or make the move again to animate items on it.`
+					: `${a.id} was skipped: PixelLab could not find valid joints on one of its frames. Make it again to animate items on it.`
 			);
+			if (standing)
+				for (const d of views) {
+					const im = cellImg(p, base.layers[0], a.id, d.id, 0);
+					if (!im) continue;
+					const { hash, keypoints } = await get(im);
+					byHash[hash] = fromApi(keypoints, rig.cell);
+					built.cells[cellKey(a.id, d.id, 0)] = {
+						img: im,
+						hash,
+						box: opaqueBox(im),
+						offset: [0, 0]
+					};
+				}
 			continue;
 		}
 		a.sources = {};
@@ -346,6 +403,9 @@ export async function attachImportedRig(
 				item.route = 'skeleton-pose';
 		}
 	const tracks = anchorTracks(built, byHash);
+	// A skipped standing move only keyed the anchors: like any skipped move it has no track of its own.
+	for (const track of Object.values(tracks.anchors ?? {})) for (const id of redo) delete track[id];
+	tracks.stats = tracks.stats.filter(({ animDir }) => !redo.includes(animDir.split('/')[0]));
 	rig.anchors = tracks.anchors;
 	warnings.push(...importedPoseIssues(rig));
 	return {

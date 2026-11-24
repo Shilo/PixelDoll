@@ -46,7 +46,12 @@
 	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
-	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
+	import {
+		moveSourceMatches,
+		moveSourceMissingViews,
+		resolveMoveSource,
+		savedReplacementSource
+	} from './moveSource.ts';
 	import { clipNameId, sameClipName } from './clipName.ts';
 	import { stateAttempts } from './stateRecovery.ts';
 	import {
@@ -98,14 +103,20 @@
 		toast,
 		openProject,
 		pendingMoves,
-		withKey
+		withKey,
+		takeImport
 	} from './state.svelte.ts';
+	import ImportMovesPane from './ImportMovesPane.svelte';
+	import ImportFoot from './ImportFoot.svelte';
+	import { MoveImporter } from './moveImporter.svelte.ts';
+	import { leaveSheetForm, showSheetPage } from './sheetPage.ts';
 	import { bodyQualityNote, displayMoveJob, plainReasonMessage } from './model.ts';
 	import { displayMove } from './displayMove.ts';
 	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
+	import { displayDirectionList } from './displayDirectionProblem.ts';
 	import { ANGLES } from './characterConfig.ts';
-	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert } from './icons.ts';
+	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert, Import } from './icons.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import { opaqueBox } from '../lib/rig/normalize.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -133,6 +144,8 @@
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
+	// The character whose record was last read: until it is, readiness is unknown and nothing claims setup is needed.
+	let recFor = $state('');
 	// Re-read after a failure (a move saves its body and finished item views before failing, and Try again is priced from
 	// them) and after Frame size replaced the character.
 	$effect(() => {
@@ -140,7 +153,11 @@
 		void moving.error;
 		void store.project;
 		void moving.done;
-		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
+		if (!isDemo())
+			void db.get<StoredProject>('projects', id).then((r) => {
+				rec = r ?? null;
+				recFor = id;
+			});
 	});
 	const ok = $derived(!!m && moveRigReady(rec ? { ...rec, manifest: m } : null));
 	const sourceClips = $derived(playbackClips(m?.rig.animations ?? []));
@@ -372,7 +389,7 @@
 
 	function saveFit() {
 		const review = fitReview;
-		if (!review || review.blocked || fitBusy) return;
+		if (!review || fitBusy) return;
 		fitReview = null;
 		void fitAction(async () => {
 			await saveStateJointFit(review);
@@ -595,7 +612,12 @@
 					stateAttempts(rec).some((attempt) => sameClipName(attempt.id, id))))
 		)
 			return t('moveSheet.duplicateOption', { move: nice(id) });
-		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
+		if (explicitFrame && !startFrom) {
+			const gaps = sourceSelection ? moveSourceMissingViews(m, sourceSelection, targetDirs) : [];
+			return gaps.length
+				? t('moveSheet.startFrom.missingViews', { directions: displayDirectionList(gaps) })
+				: t('moveSheet.startFrom.unavailable');
+		}
 		if (
 			skeletonRetry &&
 			(!regeneration ||
@@ -780,6 +802,12 @@
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
 	let paid = $state.raw<MovePaidReview | null>(null);
+	/** The paid-result review of a stopped move is loading: whether a request is still at PixelLab is not known yet, so
+	 *  Generate again waits for it. A failed load shows a free Try again instead; startMove still refuses a fresh attempt
+	 *  while a request of the move is live. */
+	let paidLoading = $state(false),
+		paidUnread = $state(false),
+		paidReads = $state(0);
 	// The same stop by its code and values, never by comparing displayed text.
 	const errorInReview = $derived(
 		!!moving.error &&
@@ -790,6 +818,8 @@
 	const hasFrameRecovery = $derived(
 		!!(savedItemFrames && !recoveryAccess.error) || !!(recovery || colorRepair || keep)
 	);
+	// A free way on (keep, recover or resume what was paid for) leads, so the paid Generate again is secondary to it.
+	const freeWayOn = $derived(hasFrameRecovery || !!paid?.options.some((option) => !option.paid));
 	const keepK = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1 : 1.5))));
 	const recoveryItemGens = $derived(
 		recovery && m && moving.spec ? moveEstimate(m, moving.spec).items : 0
@@ -797,6 +827,7 @@
 	const ledgerStates = $derived($queue.jobs.map((r) => `${r.id}:${r.state}`).join('|'));
 	$effect(() => {
 		void ledgerStates; // Re-check finished siblings without decoding PNGs on every progress poll.
+		void paidReads; // Try again reads the review again
 		const projectId = moving.projectId,
 			spec = moving.spec && $state.snapshot(moving.spec),
 			error = moving.error;
@@ -805,11 +836,14 @@
 		colorRepair = null;
 		keep = null;
 		paid = null;
+		paidLoading = false;
+		paidUnread = false;
 		recoveryError = '';
 		recoveryUnavailable = [];
 		recoveryChecking = false;
 		if (mine && error && spec && !moving.done && spec.itemMethod !== 'grid') {
 			recoveryChecking = true;
+			paidLoading = true;
 			void Promise.all([reviewMoveRecovery(projectId, spec), reviewMoveResults(projectId, spec)])
 				.then(([review, results]) => {
 					if (!current) return;
@@ -818,15 +852,17 @@
 					keep = review.keep ?? null;
 					recoveryUnavailable = review.unavailableMessages ?? [];
 					paid = results ?? null;
+					paidLoading = false;
 				})
 				.catch((error: unknown) => {
-					if (current)
-						recoveryError = message('moveSheet.recoveryCheckFailed', {
-							error: errorMessage(error)
-						});
+					console.error('move review', error);
+					if (current) paidUnread = true;
 				})
 				.finally(() => {
-					if (current) recoveryChecking = false;
+					if (current) {
+						recoveryChecking = false;
+						paidLoading = false;
+					}
 				});
 		}
 		return () => {
@@ -847,7 +883,9 @@
 	}
 
 	// A new seed while a reviewed request is still at PixelLab would buy that view again before its result is known.
-	const paidRunning = $derived(!!paid?.views.some((view) => view.state === 'running'));
+	const paidRunning = $derived(
+		paidLoading || !!paid?.views.some((view) => view.state === 'running')
+	);
 	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. Make room
 	 *  adjusts the frame first (free; this stopped move waits for it) and then continues the same move. */
 	function choosePaid(option: MovePaidOption) {
@@ -1308,7 +1346,34 @@
 		);
 		if (close && !moving.spec) ui.sheet = null;
 	}
+
+	// Import: a page of the New move form (a ZIP dropped on Moves opens on it); Back keeps the form as it was.
+	const opening = takeImport('moves');
+	// A ZIP dropped while a move runs opens the form over it, as "Queue another move" does.
+	if (opening) ui.moveFormOpen = true;
+	let importing = $state(!!opening);
+	const importer = new MoveImporter();
+	if (opening?.files) void importer.read(opening.files);
+	$effect(() => () => {
+		importer.gone = true;
+	});
+	// Free imports need no rig: the page is there before setup too, wherever the form or its setup notice shows.
+	const canImport = $derived(!isDemo() && !skeletonReview && !progress);
+	const importPage = $derived(importing && canImport);
+	function page(inner: boolean) {
+		if (inner) leaveSheetForm();
+		importing = inner;
+		void showSheetPage(inner);
+	}
 </script>
+
+{#snippet importFoot()}
+	<ImportFoot
+		busy={importer.busy}
+		disabled={!importer.chosen.length || !!importer.blocked}
+		onimport={() => void importer.save()}
+	/>
+{/snippet}
 
 {#snippet framePicker(
 	direction: DirectionName,
@@ -1382,9 +1447,13 @@
 			onclick={() => void resolveRepairReview(true)}
 			>{moving.repairApplied
 				? t('moveSheet.review.finish')
-				: moving.spec?.redrawItem
-					? t('moveSheet.review.useRedrawn')
-					: t('moveSheet.review.useRepaired')}</button
+				: repairReview.kept
+					? moving.spec?.redrawItem
+						? t('moveSheet.review.useFinishedRedraws')
+						: t('moveSheet.review.useFinishedRepairs')
+					: moving.spec?.redrawItem
+						? t('moveSheet.review.useRedrawn')
+						: t('moveSheet.review.useRepaired')}</button
 		>
 	{:else if progress && moving.error}
 		<div class="recovery-actions">
@@ -1402,8 +1471,8 @@
 				<span class="api-action"
 					><button
 						class="bu-action btn"
-						class:primary={!hasFrameRecovery}
-						data-variant={hasFrameRecovery ? 'outline' : 'primary'}
+						class:primary={!freeWayOn}
+						data-variant={freeWayOn ? 'outline' : 'primary'}
 						disabled={!!retryAccess.error || tierBlocked(retryTier) || paidRunning}
 						aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
 						onclick={() =>
@@ -1659,70 +1728,98 @@
 {/snippet}
 
 <Sheet
-	title={skeletonReview
-		? t('moveSheet.skeleton.title')
-		: repairReview
-			? moving.spec?.redrawItem
-				? t('moveSheet.review.redrawTitle')
-				: t('moveSheet.review.repairTitle')
-			: progress && moving.spec?.itemMethod === 'grid'
+	className={importPage ? 'importing' : ''}
+	title={importPage
+		? t('moveImport.importMoves')
+		: skeletonReview
+			? t('moveSheet.skeleton.title')
+			: repairReview
 				? moving.spec?.redrawItem
-					? t('moveSheet.review.redrawProgress')
-					: t('moveSheet.titleRepair')
-				: (progress ? moving.spec?.replace : replacing)
-					? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
-					: t('moves.add')}
-	back={skeletonReview
-		? () => (reviewingSkeletonFor = null)
-		: mine && ui.moveFormOpen
-			? () => (ui.moveFormOpen = false)
-			: undefined}
+					? t('moveSheet.review.redrawTitle')
+					: t('moveSheet.review.repairTitle')
+				: progress && moving.spec?.itemMethod === 'grid'
+					? moving.spec?.redrawItem
+						? t('moveSheet.review.redrawProgress')
+						: t('moveSheet.titleRepair')
+					: (progress ? moving.spec?.replace : replacing)
+						? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
+						: t('moves.add')}
+	back={importPage
+		? () => page(false)
+		: skeletonReview
+			? () => (reviewingSkeletonFor = null)
+			: mine && ui.moveFormOpen
+				? () => (ui.moveFormOpen = false)
+				: undefined}
+	backTo={importPage ? t('moves.add') : undefined}
+	opener={canImport && !importPage && !redrawTarget
+		? {
+				label: t('moveImport.importMoves'),
+				icon: Import,
+				iconOnly: true,
+				onclick: () => page(true)
+			}
+		: undefined}
+	locked={importPage && importer.busy && !!importer.review}
 	onclose={() => (ui.sheet = null)}
 	exitNote={progress && !moving.done && !moving.error && !repairReview
 		? 'sheet-exit-note'
 		: undefined}
 	dirty={ok && !progress && !skeletonReview && !repairReview && textTyped && !!text.trim()}
-	footer={isDemo() || (!ok && !progress) ? undefined : foot}
+	footer={importPage
+		? importer.ready
+			? importFoot
+			: undefined
+		: isDemo() || (!ok && !progress)
+			? undefined
+			: foot}
 >
 	{#snippet developer()}
 		{@const review = skeletonReview?.review}
-		<ApiPeek
-			targets={isDemo()
-				? []
-				: progress
-					? [
-							{
-								scope: 'move-progress',
-								label: t('moveSheet.progressLabel'),
-								plan: moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : [],
-								activityScope: moving.spec?.activityScope
-							},
-							...(moving.error && !moving.done
-								? [{ scope: 'move-retry', label: t('moveSheet.retryLabel'), plan: retryPlan }]
-								: [])
-						]
-					: ok && est
+		{#if !importPage}<ApiPeek
+				targets={isDemo()
+					? []
+					: progress
 						? [
 								{
-									scope: 'move-add',
-									label: t('moveSheet.addLabel'),
-									plan: movePlan(
-										rec,
-										review
-											? { ...review, seed: undefined }
-											: {
-													...motion,
-													items: [],
-													poseStyle: 'visible-side-v1',
-													...(replacing ? { dirs: [...targetDirs] } : {})
-												}
-									)
-								}
+									scope: 'move-progress',
+									label: t('moveSheet.progressLabel'),
+									plan: moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : [],
+									activityScope: moving.spec?.activityScope
+								},
+								...(moving.error && !moving.done
+									? [{ scope: 'move-retry', label: t('moveSheet.retryLabel'), plan: retryPlan }]
+									: [])
 							]
-						: []}
-		/>
+						: ok && est
+							? [
+									{
+										scope: 'move-add',
+										label: t('moveSheet.addLabel'),
+										plan: movePlan(
+											rec,
+											review
+												? { ...review, seed: undefined }
+												: {
+														...motion,
+														items: [],
+														poseStyle: 'visible-side-v1',
+														...(replacing ? { dirs: [...targetDirs] } : {})
+													}
+										)
+									}
+								]
+							: []}
+			/>{/if}
 	{/snippet}
 
+	{#if importPage}<ImportMovesPane
+			{importer}
+			onqueued={() => {
+				importing = false;
+				ui.moveFormOpen = false;
+			}}
+		/>{/if}
 	{#if holder}<p class="notice small">
 			<CircleAlert size={14} /><span
 				>{moving.repairReview
@@ -1759,6 +1856,16 @@
 						: t('moveSheet.review.repairIssues')}
 					{t('moveSheet.review.noCost')}
 				</p>{/if}
+			{#if repairReview.kept && !moving.repairApplied}<p class="notice warn small">
+					{displayNestedMessage(
+						message('moveSheet.review.stopped', {
+							frames: repairReview.kept.map((index) => formatNumber(index + 1)),
+							count: repairReview.kept.length,
+							n: formatNumber(repairReview.kept.length)
+						})
+					)}
+					{#if repairReview.stoppedBy}{displayNestedMessage(repairReview.stoppedBy)}{/if}
+				</p>{/if}
 			<div class="repair-pairs">
 				{#each repairReview.replacement as frame, index (index)}
 					<div class="repair-pair">
@@ -1766,7 +1873,7 @@
 							>{t('moveSheet.review.frame', { number: formatNumber(index + 1) })}</span
 						>
 						<div class="repair-pair-columns">
-							{#each [{ img: repairReview.current[index], label: t('moveSheet.review.currentFrames'), frameLabel: t( 'moveSheet.review.currentFrame', { number: formatNumber(index + 1) } ) }, { img: frame, label: moving.spec.redrawItem ? t('moveSheet.review.redrawnFrames') : t('moveSheet.review.repairedFrames'), frameLabel: t( moving.spec.redrawItem ? 'moveSheet.review.redrawnFrame' : 'moveSheet.review.repairedFrame', { number: formatNumber(index + 1) } ) }] as version (version.label)}
+							{#each [{ img: repairReview.current[index], label: t('moveSheet.review.currentLabel'), frameLabel: t( 'moveSheet.review.currentFrame', { number: formatNumber(index + 1) } ) }, { img: frame, label: moving.spec.redrawItem ? t('moveSheet.review.redrawnLabel') : t('moveSheet.review.repairedLabel'), frameLabel: t( moving.spec.redrawItem ? 'moveSheet.review.redrawnFrame' : 'moveSheet.review.repairedFrame', { number: formatNumber(index + 1) } ) }] as version (version.label)}
 								<div class="keep-view">
 									<strong class="small">{version.label}</strong>
 									<div class="repair-sprite" style:aspect-ratio={`${frame.w} / ${frame.h}`}>
@@ -1847,9 +1954,9 @@
 								class="bu-ring ring spin"
 								aria-hidden="true"
 							></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}
-						{displayMessage(
-							s.label
-						)}{#if !moving.done && i === stepIx && moving.progress && moving.progress.total > 1}<span
+						{displayMessage(s.label)}{#if !moving.done && i === stepIx && moving.error}<span
+								class="muted small">&nbsp;· {t('paidReview.state.failed')}</span
+							>{:else if !moving.done && i === stepIx && moving.progress && moving.progress.total > 1}<span
 								class="muted num small">&nbsp;{moving.progress.done}/{moving.progress.total}</span
 							>{/if}
 					</li>
@@ -1997,6 +2104,10 @@
 					>{/if}
 			{/if}
 			{#if recoveryError}<ProblemNotice error={recoveryError} />{/if}
+			{#if paidUnread}<p class="notice warn small">{t('paidReview.loadFailed')}</p>
+				<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
+					>{t('common.tryAgain')}</button
+				>{/if}
 			{#each moving.warnings as warning (warning)}<p class="notice warn small">
 					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 				</p>{/each}
@@ -2010,13 +2121,17 @@
 					>
 						{t('moveSheet.skeleton.title')}
 						<span class="cost">
-							{t('moves.estimate', { gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens)) })}
+							{t('moves.estimate', {
+								gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens))
+							})}
 						</span>
 						<SurfaceChevron />
 					</button>
 				</p>
 			{/if}
 		</div>
+	{:else if !isDemo() && !ok && recFor !== doc.id}
+		<!-- Still reading the character: no setup notice flashes before readiness is known. -->
 	{:else if isDemo() || !ok}
 		<p class="notice small">
 			<CircleAlert size={14} />{isDemo() ? t('moveSheet.demo') : t('moveSheet.needsSetup')}
@@ -2099,10 +2214,20 @@
 										</div>
 									{/each}
 								</div>
+								{#if fitReview.unchecked.length}<p class="notice warn small" role="status">
+										{t('stateJointFit.notChecked', {
+											directions: displayDirectionList(fitReview.unchecked)
+										})}
+									</p>{/if}
+								{#if fitReview.notFitted.length}<p class="notice warn small" role="status">
+										{t('stateJointFit.notFitted', {
+											directions: displayDirectionList(fitReview.notFitted)
+										})}
+									</p>{/if}
 								<button
 									class="bu-action"
 									data-variant="primary"
-									disabled={fitBusy || fitReview.blocked}
+									disabled={fitBusy}
 									onclick={saveFit}
 								>
 									{t('stateJointFit.save')}
@@ -2323,7 +2448,9 @@
 						</p>{:else if busy}<p class="faint small">
 							{t('moveSheet.waitsForCurrent')}
 						</p>{/if}
-					{#if addAccess.error}<p class="notice warn small" role="status">{addAccess.error}</p>{/if}
+					{#if addAccess.error}<p class="notice warn small" role="status">
+							{addAccess.error}
+						</p>{/if}
 					<TierNotice
 						id="move-action-tier"
 						minimumTier={addTier}

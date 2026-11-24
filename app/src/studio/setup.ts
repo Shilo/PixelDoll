@@ -230,17 +230,20 @@ export async function setupCharacter(
 	progress({ step: 'joints', done, total: plan.frames.size, recIds: [] });
 	const frames = [...plan.frames],
 		observations: Provenance[] = new Array(frames.length),
-		// A frame of a standing view, the standing move or Default without joints stops setup; any other frame only skips its
-		// move (attachImportedRig).
+		// A standing view, the standing move's first frame or a Default frame without joints stops setup; any other frame only
+		// skips its move (attachImportedRig).
 		standingViews = new Set(Object.values(plan.rest)),
 		layer = project.manifest.items.find((i) => i.id === project.manifest.rig.baseItem)?.layers[0],
+		required = (move: string) =>
+			Object.values(layer?.cells?.[move] ?? {}).flatMap((cells) =>
+				(move === DEFAULT_MOVE ? (cells ?? []) : (cells ?? []).slice(0, 1)).filter(
+					(hash): hash is Sha256 => !!hash
+				)
+			),
 		standingHashes = new Set<string>([
 			...(await Promise.all(Object.values(plan.rest).map((im) => cellHash(im!)))),
-			...[plan.restAnim, DEFAULT_MOVE].flatMap((move) =>
-				Object.values(layer?.cells?.[move] ?? {}).flatMap((cells) =>
-					(cells ?? []).filter((hash): hash is Sha256 => !!hash)
-				)
-			)
+			...required(plan.restAnim),
+			...required(DEFAULT_MOVE)
 		]);
 	let next = 0,
 		failure: { error: unknown } | undefined;

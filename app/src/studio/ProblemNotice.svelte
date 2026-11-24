@@ -1,6 +1,7 @@
 <script lang="ts">
 	// A failure notice in plain words: a short title and one next step by the failure's kind, with the detailed text one
-	// tap away under Details, beside Report. An unexpected failure keeps its detailed text in view.
+	// tap away under Details, beside Report. An unexpected failure keeps its detailed text in view, and a message written for
+	// the user with no kind of its own (stated) is the notice itself.
 	import { CircleAlert } from './icons.ts';
 	import { t } from 'svelte-whisper';
 	import { displayNestedMessage } from '../lib/i18n.ts';
@@ -57,7 +58,7 @@
 >
 	{#if !listed}<CircleAlert size={14} />{/if}
 	<div class="problem-body">
-		{#if kind}
+		{#if kind && kind !== 'stated'}
 			<!-- Title and next step are separate paragraphs, so screen readers pause between them in every language. -->
 			<p><strong>{t(`problem.title.${kind}`)}</strong></p>
 			<p>{t(`problem.next.${kind}`)}</p>
@@ -67,7 +68,9 @@
 			<p>{shown}</p>
 		{/if}
 		<div class="problem-foot">
-			{#if kind && kind !== 'unexpected' && shown}<details class="problem-details">
+			{#if kind && kind !== 'unexpected' && kind !== 'stated' && shown}<details
+					class="problem-details"
+				>
 					<summary>{t('problem.details')}</summary>
 					<p>{shown}</p>
 				</details>{/if}

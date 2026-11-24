@@ -152,7 +152,16 @@ test('a paid try again leads only where it can help', () => {
 	for (const kind of ['stopped', 'busy', 'empty', 'offline'] as const)
 		expect(paidRetryLeads(kind)).toBe(true);
 	// Flipped on purpose (round 3): a credit or token refusal is fixed on the account first, so the paid retry follows it.
-	for (const kind of ['unexpected', 'method', 'declined', 'uncertain', 'credits', 'key'] as const)
+	// Flipped on purpose (soft gates): missing joints may have a free Keep, and a joint check answers the same frames alike.
+	for (const kind of [
+		'unexpected',
+		'method',
+		'declined',
+		'uncertain',
+		'credits',
+		'key',
+		'joints'
+	] as const)
 		expect(paidRetryLeads(kind)).toBe(false);
 });
 

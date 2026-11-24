@@ -524,6 +524,22 @@
 		font-size: clamp(12px, 4cqi, 15px);
 	}
 }
+/* Work on a Wardrobe, Moves or States tab: a 6px dot 4px after its label (the flex label sets the gap and centers it),
+   like the one on More; red when some of it failed. */
+.equipment-modes button[data-activity] .bu-tab-label {
+	column-gap: 4px;
+}
+.equipment-modes button[data-activity] .bu-tab-label::after {
+	content: '';
+	flex: none;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--bu-accent);
+}
+.equipment-modes button[data-activity='stopped'] .bu-tab-label::after {
+	background: var(--bu-danger);
+}
 .customize-panel {
 	display: flex;
 	flex-direction: column;

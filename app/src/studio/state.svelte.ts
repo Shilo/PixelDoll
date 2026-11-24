@@ -141,7 +141,7 @@ import {
 	slotUseMessages,
 	type SlotUse
 } from './slots.ts';
-import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import { live, queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { itemJobs } from './itemJobs.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import { stateAttempts } from './stateRecovery.ts';
@@ -179,6 +179,7 @@ import {
 } from '../lib/rig/reframe.ts';
 import { forgetRidingPose, syncRiderPose } from './experience/riderPose.ts';
 import { forgetLiveChoices } from './experience/liveViews.ts';
+import { clearDebugLog, recordDebug } from '../lib/debug/log.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -287,7 +288,6 @@ export type SheetId =
 	| 'directions'
 	| 'importZip'
 	| 'importPixelLab'
-	| 'importMoves'
 	| 'delete'
 	| 'details'
 	| 'setup'
@@ -548,6 +548,17 @@ const firstMessage = (value: unknown): Message | undefined =>
 		: value && typeof value === 'object' && typeof (value as Message).key === 'string'
 			? (value as Message)
 			: undefined;
+/** A toast's text for the debug log: the message key beside the shown, translated text. */
+const toastText = (value: unknown): string =>
+	value === undefined || value === ''
+		? ''
+		: typeof value === 'string'
+			? value
+			: Array.isArray(value)
+				? value.map(toastText).join(' ')
+				: firstMessage(value)
+					? `[${(value as Message).key}] ${displayMessage(value as Message)}`
+					: '[custom content]';
 /** Something failed that no surface handled: a warning with a Report action, once per distinct error. It never
  *  replaces a notice the person may still act on (Undo, Try again, a pending step). */
 export const unexpectedError = onceShown(
@@ -611,6 +622,12 @@ export function toast(
 	options: number | ToastOptions = 4000
 ) {
 	const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
+	if (o.tone === 'danger' || o.tone === 'warning')
+		recordDebug(o.tone === 'danger' ? 'error' : 'warn', 'toast', [
+			toastText(o.title),
+			toastText(s),
+			...(o.error === undefined ? [] : [o.error])
+		]);
 	if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
 	stopToastTimer();
 	toastRevision++;
@@ -728,6 +745,8 @@ class Store {
 	exportRecord = $state.raw<StoredProject>();
 	projects = $state.raw<ProjectRef[]>([]);
 	results = $state.raw<Record<string, ItemResult | null>>({});
+	/** Drafts whose paid frames could not be read for review: the review offers a free Try again (readGenReview). */
+	resultsUnread = $state.raw<Record<string, true>>({});
 }
 export const store = new Store();
 /** Entries in Recently deleted, newest first: one per deletion, each restorable after a reload. */
@@ -2104,6 +2123,7 @@ export async function deleteLocalWorkAndReload(): Promise<void> {
 	await flushSave();
 	blocked();
 	await deleteLocalWork();
+	await clearDebugLog().catch((error: unknown) => console.warn('clear debug log', error));
 	// Stop resumes and unload snapshots: the deleted work must not come back from this tab's memory.
 	hmrReloading = true;
 	clearTimeout(saveT);
@@ -3158,6 +3178,81 @@ async function addEntry(entry: SharedItem, openedDemoCopy = false) {
 	}
 }
 
+/** Free: copy the chosen items of an imported ZIP (`source`, not stored) into `projectId` one by one, exactly as tapping a
+ *  shared tile would (exact copy, re-fit or worn as drawn); a name in use keeps both as "Name 2". One item that fails or no
+ *  longer fits leaves the others to finish. Wears what was added; `notes` are what wearing took off and the categories it
+ *  showed, as a shared tile's toast says them. */
+export async function importItems(
+	projectId: string,
+	source: BundledSource,
+	entries: readonly SharedItem[]
+): Promise<{
+	added: Item[];
+	skipped: SharedItem[];
+	failed: { entry: SharedItem; error: unknown }[];
+	notes: Message[];
+}> {
+	if (shared.adding) throw new LocalizedError('Wait for the item being added.', 'itemImport.busy');
+	shared.adding = 'import';
+	const added: Item[] = [],
+		skipped: SharedItem[] = [],
+		failed: { entry: SharedItem; error: unknown }[] = [],
+		notes: Message[] = [];
+	try {
+		await flushSave();
+		for (const entry of entries)
+			try {
+				const item = await acceptCopy(source.id, entry.item.id, projectId, source, {
+					numberName: true
+				});
+				if (item) added.push(item);
+				else skipped.push(entry);
+			} catch (error) {
+				failed.push({ entry, error });
+			}
+	} finally {
+		shared.adding = '';
+		if (added.length) {
+			forgetFits();
+			await openProject(projectId, { quiet: true });
+			if (doc.id === projectId) {
+				for (const item of added) {
+					const note = wear(item.id, true);
+					if (note) notes.push(note);
+				}
+				for (const slot of new Set(added.map((item) => item.slot))) {
+					const shown = revealSlot(slot);
+					if (shown) notes.push(shown);
+				}
+			}
+			void refreshShared();
+		}
+	}
+	return { added, skipped, failed, notes };
+}
+
+/** Where an import starts: the New item, New move or New State sheet opens on its Import page, reading a dropped ZIP. */
+export type ImportKind = 'items' | 'moves' | 'states';
+let importOpening: { kind: ImportKind; projectId: string; files?: File[] } | undefined;
+export function openImport(kind: ImportKind, files?: File[]) {
+	importOpening = { kind, projectId: doc.id, files };
+	if (kind === 'items') openNewItem(ui.group);
+	else if (kind === 'moves') {
+		ui.redrawMove = '';
+		ui.sheet = 'move';
+	} else {
+		ui.stateCaptureMove = '';
+		ui.sheet = 'stateCapture';
+	}
+}
+/** The import a sheet of `kind` was opened for, or undefined. Every New item, New move and New State sheet takes it as it
+ *  opens, so a request is used once and never resurfaces later, for another sheet or character. */
+export function takeImport(kind: ImportKind): { files?: File[] } | undefined {
+	const opening = importOpening;
+	importOpening = undefined;
+	return opening?.kind === kind && opening.projectId === doc.id && !isDemo() ? opening : undefined;
+}
+
 /** Free: an exact copy takes the frames its source item gained since (moves added there), into the same item. */
 export async function copyFromSource(itemId: string) {
 	const it = itemById(itemId);
@@ -3543,7 +3638,7 @@ export function loadGens(): Promise<void> {
 		setGens(await readGens());
 		gensReady = true;
 		if (queue.role !== 'follower') drive();
-		else for (const g of gens) if (g.phase === 'review') void evalGen(g);
+		else for (const g of gens) if (g.phase === 'review') void readGenReview(g);
 	})());
 }
 function drive() {
@@ -3555,7 +3650,7 @@ function drive() {
 	if (outdated.length) void saveGens();
 	for (const g of gens)
 		if (g.phase === 'running') void runGen(g);
-		else if (g.phase === 'review') void evalGen(g);
+		else if (g.phase === 'review') void readGenReview(g);
 	void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
 	if (!deleted.ready) void refreshRecentlyDeleted(); // once: expired deletions never look restorable
 }
@@ -3579,7 +3674,7 @@ queue.subscribe((s) => {
 			setGens(list);
 			refreshSharedSoon(); // the leader tab may have saved an item to another character
 			for (const g of gens)
-				if (g.phase === 'review' && !store.results[g.draft.spec.id]) void evalGen(g);
+				if (g.phase === 'review' && !store.results[g.draft.spec.id]) void readGenReview(g);
 		},
 		(e) => console.error('drafts', e)
 	);
@@ -3618,9 +3713,11 @@ export function startupResumed() {
 	runWaiting();
 }
 /** Stopped item drafts, moves, setups and new characters: each waits for the user and blocks related edits. */
+/** A failed move or item job that holds the queue (it counts as stopped work once). */
+export const stoppedMove = () => !!heldMove() && !!moving.error && !moveRunning;
 export const stoppedWork = () =>
 	gens.filter((g) => g.phase === 'failed').length +
-	(heldMove() && moving.error && !moveRunning ? 1 : 0) +
+	(stoppedMove() ? 1 : 0) +
 	(heldSetup() && settingUp.error ? 1 : 0) +
 	creates.filter((run) => !run.projectId && run.error && !run.running).length;
 /** Work that stopped before this page loaded waits silently in its panel, so say so once. */
@@ -3935,12 +4032,21 @@ async function autoSave(g: Gen): Promise<boolean> {
 		return false;
 	}
 }
-async function evalGen(g: Gen) {
-	const ctx = await loadProject(g.draft.rigId);
-	// Spread after the await: concurrent evaluations (every review draft after a reload) otherwise overwrite each other's results,
-	// leaving a card on "Checking the frames" forever (2026-11-07 live test).
-	const result = await (await itemRun()).evaluateItem(g.draft, ctx);
-	store.results = { ...store.results, [g.draft.spec.id]: result };
+/** Read a review draft's paid frames again. A failed read is recorded, never left as "Checking the frames" forever. */
+export async function readGenReview(g: Gen) {
+	const id = g.draft.spec.id;
+	const { [id]: _, ...unread } = store.resultsUnread;
+	store.resultsUnread = unread;
+	try {
+		const ctx = await loadProject(g.draft.rigId);
+		// Spread after the await: concurrent evaluations (every review draft after a reload) otherwise overwrite each other's
+		// results, leaving a card on "Checking the frames" forever (2026-11-07 live test).
+		const result = await (await itemRun()).evaluateItem(g.draft, ctx);
+		store.results = { ...store.results, [id]: result };
+	} catch (error) {
+		console.error('item review frames', error);
+		store.resultsUnread = { ...store.resultsUnread, [id]: true };
+	}
 }
 export const genOf = (sel: string) => gens.find((g) => `gen:${g.draft.spec.id}` === sel);
 
@@ -4011,30 +4117,40 @@ const drop = (g: Gen) => {
 };
 /** Keep it (or `auto`: a clean draft saving itself). Keep it wears the item; a saved draft keeps the slot it was worn in (same id)
  *  and reloads the open character in place. True when saved. */
-export async function acceptGen(g: Gen, auto = false, finished = false): Promise<boolean> {
+export async function acceptGen(
+	g: Gen,
+	auto = false,
+	keep?: 'finished' | 'available'
+): Promise<boolean> {
 	const id = g.draft.spec.id;
 	// A background auto-save never pops Activity open in a follower tab; the draft stays ready to review there.
 	if ((auto ? queue.role === 'follower' : follower()) || settling.has(id)) return false;
 	settling.add(id);
 	try {
 		const ctx = await loadProject(g.draft.rigId);
-		// `finished`: keep only the moves that completed (re-evaluated from their records); the rest stay missing coverage.
+		// `finished`: keep only the moves that completed (re-evaluated from their records); `available`: keep every verified
+		// frame. The rest stay missing coverage.
 		const part =
-			finished && store.results[id]
+			keep === 'finished' && store.results[id]
 				? (await itemRun()).finishedPart(
 						$state.snapshot(g.draft) as Draft,
 						ctx.rec.manifest.rig,
 						store.results[id]!
 					)
 				: undefined;
-		if (finished && !part)
+		if (keep === 'finished' && !part)
 			throw new LocalizedError(
 				'The finished frames changed. Review the item again. Nothing was saved.',
 				'state.finishedFramesChanged'
 			);
 		const item = await (
 			await itemFlow()
-		).accept(part ?? g.draft, ctx, part ? undefined : (store.results[id] ?? undefined));
+		).accept(
+			part ?? g.draft,
+			ctx,
+			part ? undefined : (store.results[id] ?? undefined),
+			keep === 'available'
+		);
 		if (part) g.draft.acceptedAt = part.acceptedAt;
 		const worn = doc.drafts[item.slot] === id;
 		await saveGens();
@@ -4938,6 +5054,22 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			tone: 'warning',
 			report: false,
 			action: () => openFlow('move', moving.projectId)
+		});
+		return;
+	}
+	// A fresh attempt (a new seed) of the move on screen would buy its views again while one of its earlier requests is still
+	// at PixelLab, in this tab or another, before its outcome is known. Read from the shared ledger at click time.
+	const prior = moving.projectId === projectId ? moving.spec : null;
+	if (
+		prior?.activityScope &&
+		prior.id === spec.id &&
+		prior.seed !== spec.seed &&
+		queue.snapshot().jobs.some((r) => r.activityScope === prior.activityScope && live(r))
+	) {
+		toast(message('state.moveStillAtPixelLab'), {
+			tone: 'warning',
+			report: false,
+			action: () => openFlow('move', projectId)
 		});
 		return;
 	}

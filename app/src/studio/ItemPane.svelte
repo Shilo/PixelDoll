@@ -4,7 +4,7 @@
 	import { openerLabel } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
-	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
 	import { toast } from './state.svelte.ts';
 	import type { Message } from '../lib/message.ts';
 	import { displayDirectionInSentence, displayDirectionShort } from './displayDirection.ts';
@@ -20,12 +20,20 @@
 		restorableViews,
 		type ItemPaletteRepairPlan
 	} from '../lib/items/run.ts';
-	import { missingItemMoves, itemMoveOffer, moveMinimumTier, type MoveSpec } from './create.ts';
+	import {
+		missingItemMoves,
+		itemMoveOffer,
+		moveMinimumTier,
+		unposedItemMoves,
+		type MoveSpec
+	} from './create.ts';
+	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
 	import { seeded } from './itemGeneration.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
+	import PoseIssues from './PoseIssues.svelte';
 	import GenerationDetails from './GenerationDetails.svelte';
 	import { movePlan } from './apiPlans.ts';
 	import ApiPeek from './ApiPeek.svelte';
@@ -167,10 +175,16 @@
 				}
 			: null
 	);
-	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null);
+	// Views kept without poses are named with their way on (make the move again there).
+	const redo = $derived(setupRedoMoves(store.exportRecord));
+	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec], redo) : null);
 	const redrawOffer = $derived(
 		m && repairSpec
-			? itemMoveOffer(m, [{ ...repairSpec, preferTierOneRepair: undefined, redrawItem: true }])
+			? itemMoveOffer(
+					m,
+					[{ ...repairSpec, preferTierOneRepair: undefined, redrawItem: true }],
+					redo
+				)
 			: null
 	);
 	// Required plan tiers come from the mandatory steps of each offered spec, not from the API preview.
@@ -201,13 +215,15 @@
 		const pending = pendingMoves(doc.id, it.id).map((s) => s.id);
 		return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id));
 	});
+	// Moves whose views were all kept without poses get no offer; they are named so the user knows to make them again.
+	const unposedMoves = $derived(m && it && !isDemo() ? unposedItemMoves(m, it.id, redo) : []);
 	let chosenMove = $state('');
 	const missingMove = $derived(
 		missingMoves.find((s) => s.id === chosenMove) ??
 			missingMoves.find((s) => s.id === ui.anim) ??
 			missingMoves[0]
 	);
-	const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove]) : null);
+	const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove], redo) : null);
 	const missingTier = $derived(offerTier(missingOffer));
 	const missingName = $derived(missingMove ? displayMove(missingMove.id, moveRefs) : '');
 	function makeMissing() {
@@ -592,6 +608,10 @@
 					{#if missingOffer?.error}<p class="notice warn small" role="status">
 							{displayMessage(missingOffer.error)}
 						</p>{/if}
+					{#each missingOffer?.unposed ?? [] as note, i (i)}<p class="notice warn small">
+							{displayNestedMessage(note)}
+						</p>{/each}
+					<PoseIssues issues={missingOffer?.poseIssues ?? []} />
 					{#if missingTier}<TierNotice
 							id="item-missing-tier"
 							minimumTier={missingTier}
@@ -602,6 +622,9 @@
 					</p>
 				</div>
 			{/if}
+			{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
+					{displayNestedMessage(note)}
+				</p>{/each}
 			{#if health === 'stale'}<p class="notice warn small">
 					<TriangleAlert size={14} />{t('itemPane.madeForAnotherBodyItMayNot')}
 				</p>{/if}
@@ -693,6 +716,9 @@
 						})}
 						{#if sourceDir !== ui.dir}{t('itemPane.itsMirroredViewsUpdateToo')}{/if}
 						{t('itemPane.colorMatchFixed')}
+						{#if colorPlan.missingFrames.length}{t('itemPane.colorMatchMissing', {
+								frames: formatList(colorPlan.missingFrames.map((frame) => frame + 1))
+							})}{/if}
 						{#if colorPlan.unmatchedPixels}{t('itemPane.colorMatchUnmatched', {
 								count: colorPlan.unmatchedPixels,
 								n: number(colorPlan.unmatchedPixels)

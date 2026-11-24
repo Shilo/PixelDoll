@@ -162,16 +162,20 @@ export async function restoreMove(
 			if (key.split('/')[0] === moveId && record.skeletons[key] === undefined)
 				record.skeletons[key] = structuredClone(value);
 	}
-	const wrote = before.rigQa as
-			{ clips?: Record<string, unknown>; warnings?: string[] } | undefined,
-		now = record.rigQa as { clips?: Record<string, unknown>; warnings?: string[] } | undefined;
+	type Qa = { clips?: Record<string, unknown>; warnings?: string[]; redo?: string[] };
+	const wrote = before.rigQa as Qa | undefined,
+		now = record.rigQa as Qa | undefined;
 	const savedClips = Object.fromEntries(
 		Object.entries(wrote?.clips ?? {}).filter(([key]) => key.split('/')[0] === moveId)
 	);
 	const savedWarnings = (wrote?.warnings ?? []).filter(
 		(warning) => warning.startsWith(`${moveId}/`) || warning.startsWith(`${moveId} `)
 	);
-	if (Object.keys(savedClips).length || savedWarnings.length) {
+	// Views kept without poses stay marked to make again (setupRedoMoves: "move" or "move/direction").
+	const savedRedo = (Array.isArray(wrote?.redo) ? wrote.redo : []).filter(
+		(entry) => typeof entry === 'string' && entry.split('/')[0] === moveId
+	);
+	if (Object.keys(savedClips).length || savedWarnings.length || savedRedo.length) {
 		if (!now) record.rigQa = structuredClone(before.rigQa);
 		else {
 			now.clips = { ...(now.clips ?? {}), ...savedClips };
@@ -179,6 +183,7 @@ export async function restoreMove(
 				...(now.warnings ?? []),
 				...savedWarnings.filter((warning) => !(now.warnings ?? []).includes(warning))
 			];
+			if (savedRedo.length) now.redo = [...new Set([...(now.redo ?? []), ...savedRedo])];
 		}
 	}
 	// The body hash retainMoves recomputed: the restored clip is part of it again.
@@ -200,7 +205,15 @@ export function retainMoveMetadata(
 			Object.entries(result.skeletons).filter(([key]) => ids.has(key.split('/')[0]))
 		);
 	if (result.rigQa && typeof result.rigQa === 'object') {
-		const qa = result.rigQa as { clips?: Record<string, unknown>; warnings?: string[] };
+		const qa = result.rigQa as {
+			clips?: Record<string, unknown>;
+			warnings?: string[];
+			redo?: unknown;
+		};
+		if (Array.isArray(qa.redo))
+			qa.redo = qa.redo.filter(
+				(entry) => typeof entry === 'string' && ids.has(entry.split('/')[0])
+			);
 		if (qa.clips)
 			qa.clips = Object.fromEntries(
 				Object.entries(qa.clips).filter(([key]) => ids.has(key.split('/')[0]))

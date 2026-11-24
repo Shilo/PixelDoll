@@ -26,6 +26,7 @@
 	import { Check, TriangleAlert } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayDirection } from './displayDirection.ts';
+	import { formatList } from './displayDirectionProblem.ts';
 	import { moveName, setupWarningNote } from './model.ts';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
@@ -309,6 +310,13 @@
 					gens: formatNumber(shownGens ?? plan.gens, { maximumFractionDigits: 2 }),
 					connection: formatNumber(0.25)
 				})}
+			</p>{/if}
+		{#if plan?.skipped.length}<p class="notice warn small">
+				<TriangleAlert size={14} /><span
+					>{t('setup.willSkip', {
+						moves: formatList(plan.skipped.map((move) => displayMove(move, moveRefs)))
+					})}</span
+				>
 			</p>{/if}
 		{#each plan?.warnings ?? [] as warning (warning)}<p class="notice warn small">
 				<TriangleAlert size={14} /><span

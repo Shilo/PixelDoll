@@ -433,6 +433,25 @@ async function pixelLab(
 	let projectName: string | undefined;
 	const warnings: string[] = [],
 		warningKeys: Message[] = [];
+	// A bad animation or direction is left out with a warning instead of failing the whole character. Standing art, archive
+	// bounds, decoding and clipping stay hard. Each warning is listed once.
+	const leaveOut = (move: string, direction?: string, standing = false) => {
+		const text = !direction
+			? `“${move}” was left out: its animation frames could not be read. Export it again with individual numbered frames.`
+			: standing
+				? `“${move}” facing ${direction} was left out: the character has no standing view facing that way.`
+				: `“${move}” facing ${direction} was left out: its frames are empty, missing or out of order.`;
+		if (warnings.includes(text)) return;
+		warnings.push(text);
+		warningKeys.push(
+			!direction
+				? message('import.warning.skippedMove', { move })
+				: message(standing ? 'import.warning.skippedStanding' : 'import.warning.skippedDirection', {
+						move,
+						direction
+					})
+		);
+	};
 	const frameSize = (path: string) => {
 		const size = pngSize(required(files, path));
 		if (!size || !fitsEditableImage(size))
@@ -471,6 +490,7 @@ async function pixelLab(
 				owners = new Map<string, Set<string>>();
 			const parsed = meta.states.map((state) => {
 				const moves: { name: string; dirs: Record<string, string[]> }[] = [];
+				const unreadable: { move: string; direction?: string }[] = [];
 				let error: Error | undefined;
 				const own = (prefix: string) => {
 					const ids = owners.get(prefix) ?? new Set<string>();
@@ -510,38 +530,29 @@ async function pixelLab(
 								{ state: state.character.name }
 							);
 						for (const [name, dirs] of Object.entries(state.frames.animations)) {
-							if (!object(dirs) || !Object.keys(dirs).length)
-								throw new LocalizedError(
-									`The ${name} move has no animation directions.`,
-									'import.error.moveDirections',
-									{ move: name }
-								);
+							if (!object(dirs) || !Object.keys(dirs).length) {
+								unreadable.push({ move: name });
+								continue;
+							}
+							const kept: Record<string, string[]> = {};
 							for (const [dir, frames] of Object.entries(dirs)) {
-								if (!DIRECTIONS.includes(dir as DirectionName))
-									throw new LocalizedError(
-										`The ${name}/${dir} animation has an unsupported direction.`,
-										'import.error.moveDirection',
-										{ move: name, direction: dir }
-									);
 								if (
+									!DIRECTIONS.includes(dir as DirectionName) ||
 									!Array.isArray(frames) ||
 									!frames.length ||
 									frames.length > 120 ||
 									frames.some((path) => typeof path !== 'string')
 								)
-									throw new LocalizedError(
-										`The ${name}/${dir} animation must contain 1–120 frame paths.`,
-										'import.error.moveFrames',
-										{ move: name, direction: dir }
-									);
+									unreadable.push({ move: name, direction: dir });
+								else kept[dir] = frames as string[];
 							}
-							moves.push({ name, dirs: dirs as Record<string, string[]> });
+							if (Object.keys(kept).length) moves.push({ name, dirs: kept });
 						}
 					}
 				} catch (failure) {
 					error = failure instanceof Error ? failure : new Error(errorText(failure));
 				} // An unreadable sibling can still be excluded while retaining the valid state.
-				return { state, moves, error };
+				return { state, moves, unreadable, error };
 			});
 			let orphan: string | undefined;
 			for (const [path, bytes] of files) {
@@ -706,6 +717,7 @@ async function pixelLab(
 						'import.error.fixState',
 						{ detail: errorMessage(entry.error) }
 					);
+				for (const { move, direction } of entry.unreadable) leaveOut(move, direction);
 				if (sibling && !entry.moves.length) continue;
 				if (sibling) {
 					try {
@@ -734,18 +746,16 @@ async function pixelLab(
 				for (const { name, dirs: directions } of entry.moves) {
 					const dirs: PixelLabMove['dirs'] = new Map();
 					for (const [dir, frames] of Object.entries(directions)) {
-						if (!rotations.some((r) => r.dir === dir))
-							throw new LocalizedError(
-								`The ${name}/${dir} animation has no matching standing view in the selected state.`,
-								'import.error.missingStandingView',
-								{ move: name, direction: dir }
-							);
+						if (!rotations.some((r) => r.dir === dir)) {
+							leaveOut(name, dir, true);
+							continue;
+						}
 						dirs.set(
 							dir as DirectionName,
 							frames.map((path, index) => ({ index, path }))
 						);
 					}
-					source.push({ name, state: character.name, sibling, dirs });
+					if (dirs.size) source.push({ name, state: character.name, sibling, dirs });
 					if (source.length > 99)
 						throw new LocalizedError(
 							'This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Standing).',
@@ -771,6 +781,7 @@ async function pixelLab(
 				view: meta.view ?? meta.character?.view,
 				size: meta.size ?? meta.character?.size
 			});
+			const unreadable = new Set<string>();
 			for (const [path, bytes] of files) {
 				const png = /\.png$/i.test(path) || !!pngSize(bytes);
 				const rotation = /^rotations\/([a-z-]+)\.png$/.exec(path);
@@ -783,26 +794,28 @@ async function pixelLab(
 						{ path }
 					);
 				const animation = /^animations\/([^/]+)\/([a-z-]+)\/frame_(\d+)\.png$/.exec(path);
-				if (!animation && png && /^animations\//i.test(path))
-					throw new LocalizedError(
-						`Unsupported animation frame path: ${path}. Export a character ZIP with individual numbered frames.`,
-						'import.error.animationPath',
-						{ path }
-					);
+				// A frame whose place in its move is unknown leaves that whole move out: its order cannot be proven.
+				const owner = /^animations\/([^/]+)\//i.exec(path)?.[1];
+				if (!animation && png && /^animations\//i.test(path)) {
+					if (!owner)
+						throw new LocalizedError(
+							`Unsupported animation frame path: ${path}. Export a character ZIP with individual numbered frames.`,
+							'import.error.animationPath',
+							{ path }
+						);
+					unreadable.add(owner);
+					continue;
+				}
 				if (!animation) continue;
 				const [, name, dir, index] = animation;
-				if (!Number.isSafeInteger(+index))
-					throw new LocalizedError(
-						`${path} has an invalid animation frame number.`,
-						'import.error.frameNumber',
-						{ path }
-					);
-				if (!DIRECTIONS.includes(dir as DirectionName))
-					throw new LocalizedError(
-						`The ${name} animation has an unsupported direction: ${dir}.`,
-						'import.error.animationDirection',
-						{ move: name, direction: dir }
-					);
+				if (!Number.isSafeInteger(+index)) {
+					unreadable.add(name);
+					continue;
+				}
+				if (!DIRECTIONS.includes(dir as DirectionName)) {
+					leaveOut(name, dir);
+					continue;
+				}
 				let move = source.find((s) => s.name === name);
 				if (!move) {
 					move = { name, sibling: false, dirs: new Map() };
@@ -813,6 +826,11 @@ async function pixelLab(
 					{ index: +index, path }
 				]);
 			}
+			for (const name of unreadable) {
+				leaveOut(name);
+				const at = source.findIndex((move) => move.name === name);
+				if (at >= 0) source.splice(at, 1);
+			}
 		}
 		if (!rotations.length)
 			throw new LocalizedError(
@@ -821,28 +839,23 @@ async function pixelLab(
 			);
 		const directions = DIRECTIONS.filter((d) => rotations.some((r) => r.dir === d));
 		const groups = source.flatMap((move) => {
-			const counts = new Set([...move.dirs.values()].map((frames) => frames.length));
+			// Each direction is its own row, so leaving one out keeps the other directions' frame indexes.
 			for (const [dir, frames] of move.dirs) {
-				if (!directions.includes(dir))
-					throw new LocalizedError(
-						`The ${dir} animation has no matching rotation.`,
-						'import.error.noRotation',
-						{ direction: dir }
-					);
-				if (!frames.length || frames.length > 120)
-					throw new LocalizedError(
-						`${move.name}/${dir} must contain 1–120 frames.`,
-						'import.error.moveFrameRange',
-						{ move: move.name, direction: dir }
-					);
 				frames.sort((a, b) => a.index - b.index);
-				if (frames.some((f, i) => f.index !== frames[0].index + i))
-					throw new LocalizedError(
-						`${move.name}/${dir} is missing animation frames.`,
-						'import.error.missingAnimationFrames',
-						{ move: move.name, direction: dir }
-					);
+				const standing = !directions.includes(dir);
+				if (
+					standing ||
+					!frames.length ||
+					frames.length > 120 ||
+					frames.some((f, i) => f.index !== frames[0].index + i) ||
+					// A declared frame missing from the archive: checked before sizing reads it.
+					frames.some((f) => !files.has(f.path))
+				) {
+					leaveOut(move.name, dir, standing);
+					move.dirs.delete(dir);
+				}
 			}
+			const counts = new Set([...move.dirs.values()].map((frames) => frames.length));
 			if (counts.size > 1) {
 				warnings.push(
 					`“${move.name}” has different frame counts by direction. Its directions were imported as separate moves to keep every original frame and direction length.`
@@ -914,7 +927,8 @@ async function pixelLab(
 			importedPaths = new Map<string, Sha256>(),
 			cells: NonNullable<Manifest['items'][number]['layers'][number]['cells']> = {};
 		let semi = 0;
-		const put = async (path: string) => {
+		/** Null for an empty animation frame, which leaves its direction out; an empty standing view stops the import. */
+		const put = async (path: string, animation = false) => {
 			const cached = importedPaths.get(path);
 			if (cached) return cached;
 			const im = await decode(path),
@@ -926,8 +940,10 @@ async function pixelLab(
 					'import.error.cutPixels',
 					{ path, cut: n.cutPx, frame }
 				);
-			if (!hasPixels(n.img))
+			if (!hasPixels(n.img)) {
+				if (animation) return null;
 				throw new LocalizedError(`${path} is an empty frame.`, 'import.error.emptyFrame', { path });
+			}
 			semi += n.semiAlpha;
 			const h = await cellHash(n.img);
 			images.set(h, n.img);
@@ -936,9 +952,10 @@ async function pixelLab(
 		};
 		const name = projectName ?? meta.name ?? meta.character?.name ?? 'Imported character',
 			prompt = meta.prompt ?? meta.character?.prompt ?? name;
+		const standing = async (path: string) => (await put(path))!;
 		const restId = DEFAULT_MOVE;
 		cells[restId] = {};
-		for (const r of rotations) cells[restId][r.dir] = [await put(r.path)];
+		for (const r of rotations) cells[restId][r.dir] = [await standing(r.path)];
 		const animations: Manifest['rig']['animations'] = [
 			{ id: restId, cells: 1, loop: true, frames: playlist(1, 150) }
 		];
@@ -954,8 +971,18 @@ async function pixelLab(
 			while (animations.some((a) => a.id === id)) id += '-copy';
 			cells[id] = {};
 			for (const [dir, frames] of move.dirs) {
-				cells[id][dir] = [];
-				for (const source of frames) cells[id][dir]!.push(await put(source.path));
+				const row: Sha256[] = [];
+				for (const source of frames) {
+					const hash = await put(source.path, true);
+					if (!hash) break;
+					row.push(hash);
+				}
+				if (row.length === frames.length) cells[id][dir] = row;
+				else leaveOut(move.name, dir);
+			}
+			if (!Object.keys(cells[id]).length) {
+				delete cells[id];
+				continue;
 			}
 			animations.push({ id, cells: move.count, loop: true, frames: playlist(move.count, 100) });
 		}
@@ -964,7 +991,7 @@ async function pixelLab(
 			const name = stateClipName(id);
 			while (animations.some((animation) => animation.id === id)) id += '-copy';
 			cells[id] = {};
-			for (const { dir, path } of pose.rotations) cells[id][dir] = [await put(path)];
+			for (const { dir, path } of pose.rotations) cells[id][dir] = [await standing(path)];
 			animations.push({
 				id,
 				kind: 'state',

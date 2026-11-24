@@ -736,16 +736,21 @@ test('tiny natural eye colors pass the real dress runner without a smudge reroll
 	expect(saved.item.designWarnings).toBeUndefined();
 });
 
-test.each(['one output', 'three outputs', 'wrong-size padding'] as const)(
+test('a single-view edit ignores its unused wrong-size padding frame', async () => {
+	// Padding is never used, so its size no longer makes the requested frame unusable (it failed structurally before).
+	const f = await singleStandingFixture();
+	ledger.output = async () => [f.dressed, makeImg(16, 16)];
+	const result = await runItem(f.draft, f.ctx);
+	expect([...result!.g1.values()].some((reason) => reason.startsWith('G1 '))).toBe(false);
+	expect(result!.cells).toHaveLength(1);
+});
+
+test.each(['one output', 'three outputs'] as const)(
 	'a single-view edit with %s fails structurally and cannot be accepted',
 	async (variant) => {
 		const f = await singleStandingFixture();
 		ledger.output = async () =>
-			variant === 'one output'
-				? [f.dressed]
-				: variant === 'three outputs'
-					? [f.dressed, f.dressed, f.dressed]
-					: [f.dressed, makeImg(16, 16)];
+			variant === 'one output' ? [f.dressed] : [f.dressed, f.dressed, f.dressed];
 		const result = await runItem(f.draft, f.ctx);
 		expect(ledger.requests.every((r) => r.path === '/edit-animation-v2')).toBe(true);
 		expect([...result!.g1.values()].some((reason) => reason.startsWith('G1 '))).toBe(true);
@@ -1402,6 +1407,46 @@ test('a long accepted-item move makes one request for each planned batch and kee
 	}
 });
 
+test('a long move keeps the finished batch of a direction when its later batch fails', async () => {
+	const f = await fixture(),
+		rig = f.ctx.rec.manifest.rig,
+		animation = rig.animations[0],
+		points = rig.rest!.south!.keypoints;
+	animation.cells = 18;
+	animation.frames = Array.from({ length: 18 }, (_, cell) => ({ cell, ms: 100 }));
+	animation.sources!.south!.keypoints = Array(18).fill(points);
+	animation.sources!.south!.measured = Array(18).fill(points);
+	const bodyHash = rig.rest!.south!.image;
+	f.ctx.rec.manifest.items[0].layers[0].cells!.walking!.south = Array(18).fill(bodyHash);
+	f.ctx.rec.skeletons = Object.fromEntries(
+		Array.from({ length: 18 }, (_, i) => [`walking/south/${i}`, fromApi(points, rig.cell)])
+	);
+	ledger.project = structuredClone(f.ctx.rec);
+	const old = ledger.project.manifest.items.find((i) => i.id === f.item.id)!;
+	const before = structuredClone(old.layers[0].cells?.walking?.south ?? []);
+	let calls = 0;
+	// The second batch comes back malformed: the first, paid and verified, used to be thrown away with it.
+	ledger.output = async (req) =>
+		++calls === 2
+			? []
+			: Array((req.body as { keypoints: unknown[] }).keypoints.length).fill(f.missing);
+	await expect(poseItemClip(f.ctx, f.item, 'walking')).rejects.toMatchObject({
+		savedDirs: [],
+		savedFrames: [{ dir: 'south', frames: Array.from({ length: 9 }, (_, i) => i) }]
+	});
+	expect(ledger.requests).toHaveLength(2);
+	const saved = ledger.project!.manifest.items.find((i) => i.id === f.item.id)!;
+	const row = saved.layers[0].cells!.walking!.south!;
+	expect(row).toHaveLength(18);
+	expect(saved.provenance.at(-1)?.produced).toHaveLength(9);
+	expect(
+		Array.from({ length: 18 }, (_, i) => !!saved.coverage?.includes(`walking/south/${i}`))
+	).toEqual(
+		Array.from({ length: 18 }, (_, i) => i < 9 || !!old.coverage?.includes(`walking/south/${i}`))
+	);
+	expect(row.slice(9)).toEqual(before.length ? before.slice(9) : Array(9).fill(null));
+});
+
 test.each(['empty', 'count', 'canvas'] as const)(
 	'malformed accepted-item %s output fails after one request and keeps existing artwork',
 	async (variant) => {
@@ -1423,11 +1468,22 @@ test('suspicious imported targets use one priced frozen-grid request without a q
 	const qa = await poseItemClip(f.ctx, f.item, 'walking');
 	expect(ledger.requests.map((r) => r.path)).toEqual(['/inpaint-v3']);
 	expect(qa.qa.footwearReviewFrames).toBe(3);
-	const before = ledger.requests.length;
-	await expect(poseItemClip(f.ctx, { ...f.item, slot: 'main_hand' }, 'walking')).rejects.toThrow(
-		'suspicious estimated joints'
+	// A held item cannot use the grid: it used to be refused here, and is now posed on the valid measured joints with the
+	// finding kept on that move's saved checks.
+	const g = await fixture(true),
+		before = ledger.requests.length;
+	for (const rec of [g.ctx.rec, ledger.project!])
+		rec.manifest.items.find((i) => i.id === g.item.id)!.slot = 'main_hand';
+	ledger.output = async () => Array(3).fill(g.dressed);
+	const held = await poseItemClip(g.ctx, { ...g.item, slot: 'main_hand' }, 'walking');
+	expect(ledger.requests.slice(before).map((r) => r.path)).toEqual(['/animate-with-skeleton-v3']);
+	expect(held.qa.clips['walking/south']?.jointReviewFrames).toBe(1);
+	expect(held.warnings).toEqual(
+		expect.arrayContaining([expect.stringContaining('suspicious estimated joints')])
 	);
-	expect(ledger.requests).toHaveLength(before);
+	const saved = ledger.project!.manifest.items.find((i) => i.id === g.item.id)!;
+	expect(saved.qa?.clips['walking/south']?.jointReviewFrames).toBe(1);
+	expect(saved.qa?.jointReviewFrames).toBe(1);
 });
 
 test('an initial frozen-grid item retains its first flagged grid and never submits a refinement on reload', async () => {

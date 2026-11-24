@@ -329,13 +329,69 @@ test('Tier 1 splits a 96px facing and saves eight ordered frames once with per-b
 	);
 });
 
-test('Tier 1 stops after an unknown second batch without publishing or resending', async () => {
+test('Tier 1 offers the finished batch after an unknown second batch, keeping current art without resending', async () => {
+	// The lost batch used to throw away the finished, paid first batch; its frames now reach review on their own.
 	const f = await fixture('lost-second');
-	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123, true)).rejects.toThrow(
-		'unknown test response'
-	);
+	const before = structuredClone(f.item);
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
 	expect(f.enqueue).toHaveBeenCalledTimes(2);
 	expect(f.save).not.toHaveBeenCalled();
+	expect(result.saved).toBe(false);
+	expect(result.review?.kept).toEqual([3, 4, 5, 6, 7]);
+	expect(result.review?.replacement).toHaveLength(8);
+	await applyRepairReview(f.ctx.rec.id, result.review!);
+	expect(f.enqueue).toHaveBeenCalledTimes(2);
+	const west = f.saved()!.layers[0].cells!.slash!.west!,
+		old = before.layers[0].cells!.slash!.west!;
+	expect(west).toHaveLength(8);
+	expect(west.slice(3)).toEqual(old.slice(3));
+	expect(west.slice(0, 3)).not.toEqual(old.slice(0, 3));
+	expect(f.saved()!.baseCut?.slash?.west?.slice(3)).toEqual(before.baseCut?.slash?.west?.slice(3));
+	expect(Object.keys(f.saved()!.qa!.cells).filter((key) => key.startsWith('slash/west/'))).toEqual([
+		'slash/west/0',
+		'slash/west/1',
+		'slash/west/2'
+	]);
+	expect(f.saved()!.qa!.cells['slash/west/0'].provenance).toBe(before.provenance.length);
+});
+
+test('a partial repair keeps the joint finding of a frame it did not replace', async () => {
+	const f = await fixture('lost-second');
+	const summary = {
+		minKeyKept: 1,
+		maxKeyOutside: 0,
+		minAreaRatio: 1,
+		maxAreaCV: 0,
+		maxPaletteDist: 0,
+		clipPx: 0
+	};
+	f.item.qa = {
+		...summary,
+		status: 'warn',
+		rerolls: 0,
+		jointReviewFrames: 1,
+		cells: { 'slash/west/5': { route: 'posed', area: 10, jointReview: true } },
+		clips: { 'slash/west': { ...summary, status: 'warn', jointReviewFrames: 1 } }
+	};
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
+	expect(result.review?.kept).toContain(5);
+	expect(result.review?.clip.out.qa?.clips['slash/west']?.jointReviewFrames).toBe(1);
+	expect(result.review?.clip.out.qa?.jointReviewFrames).toBe(1);
+});
+
+test('Tier 1 offers the finished batch when the plan stops allowing a later one', async () => {
+	const f = await fixture();
+	let checks = 0;
+	// Three checks before anything is bought, then one per batch: the second batch is refused.
+	vi.spyOn(queue, 'planBlocks').mockImplementation(() =>
+		++checks === 5 ? 'Needs PixelLab Tier 2 or higher. No request sent.' : null
+	);
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
+	expect(f.enqueue).toHaveBeenCalledTimes(1);
+	expect(result.saved).toBe(false);
+	expect(result.review?.kept).toEqual([3, 4, 5, 6, 7]);
+	// The review says why the later batch stopped, not only the console.
+	expect(result.review?.stoppedBy).toMatchObject({ key: 'activity.planWait.tier' });
 });
 
 test('Tier 1 does not publish a facing with a visibly different batch palette', async () => {
@@ -569,6 +625,12 @@ test.each(['geometry', 'lost'] as const)(
 		expect(f.save).not.toHaveBeenCalled();
 	}
 );
+test('a lost repair request says it may have charged', async () => {
+	const f = await fixture('lost');
+	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123)).rejects.toMatchObject({
+		translation: { key: 'itemRoute.errors.requestLost' }
+	});
+});
 test('concurrent rig edits reject inside the atomic publication guard', async () => {
 	const f = await fixture('race');
 	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123)).rejects.toThrow('changed while');

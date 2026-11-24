@@ -72,7 +72,9 @@
 			action: () =>
 				queue.retryCancelSave(id).catch((error: unknown) => {
 					console.error('cancel', error);
-					cancelNotSaved(id);
+					// A stop PixelLab did not confirm is not a failed save: say so instead of offering to save it again.
+					if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger' });
+					else cancelNotSaved(id);
 				})
 		});
 	}
@@ -386,15 +388,15 @@
 							>
 							<span class="act-meta num"
 								>{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><span class="api-action"
-									><button
-										class="bu-action btn link small"
-										data-variant="quiet"
-										disabled={r.state === 'submitting'}
-										aria-describedby={r.state === 'submitting'
-											? 'activity-submitting-stop'
-											: undefined}
-										onclick={() => cancelRecord(r.id)}>{t('activity.stop')}</button
-									></span
+									>{#if r.saving}{t('activity.saving')}{:else}<button
+											class="bu-action btn link small"
+											data-variant="quiet"
+											disabled={r.state === 'submitting'}
+											aria-describedby={r.state === 'submitting'
+												? 'activity-submitting-stop'
+												: undefined}
+											onclick={() => cancelRecord(r.id)}>{t('activity.stop')}</button
+										>{/if}</span
 								></span
 							>
 						</li>

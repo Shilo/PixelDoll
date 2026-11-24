@@ -1,6 +1,7 @@
 // A failure in plain words: a short title and one next step (catalog `problem.title` and `problem.next`) by kind, with the
 // detailed text one tap away. Free of the i18n runtime. Kinds come from typed facts only (a paid step's failure, an error's
-// catalog key in the explicit map below, an API error kind), never from message text or key names. Anything not mapped is
+// catalog key in the explicit map below, an API error kind), never from message text or key names. A catalog message not
+// mapped is `stated`: written for the user, so its own words are the notice. Anything else (an uncatalogued Error) is
 // `unexpected`, which keeps its detailed text in view.
 import { ApiError, isNetwork, type ErrorKind } from '../lib/pixellab/client.ts';
 import { PaidStepError, type PaidFailure } from '../lib/pixellab/paid-results.ts';
@@ -24,6 +25,7 @@ export type ProblemKind =
 	| 'busy'
 	| 'offline'
 	| 'declined'
+	| 'stated'
 	| 'unexpected';
 
 /** Every catalog key with a kind. A key is the error's typed code; add one here when its next step is known. */
@@ -53,11 +55,29 @@ const KEYS: Readonly<Record<string, ProblemKind>> = {
 	'itemRoute.errors.itemMoveSaveConflictAlso': 'changed',
 	'fixFrames.errors.changed': 'changed',
 	'adjustFrame.errors.changed': 'changed',
+	'moveSheet.checkpoint.changed': 'changed',
+	'stateGeneration.changed': 'changed',
+	'stateCapture.concurrentEdit': 'changed',
+	'wardrobe.itemMoveChanged': 'changed',
+	'moveRemoval.selectedCharacterChanged': 'changed',
+	'create.errors.characterColorRepairPolicy': 'changed',
+	'create.errors.reviewChoiceInvalid': 'changed',
+	'create.errors.reviewedJointChecksDo': 'changed',
+	'state.finishedFramesChanged': 'changed',
+	'state.theCharacterChangedMeanwhileTryAgain': 'changed',
+	'state.theBodyColorCorrectionsChangedReviewTheir': 'changed',
+	'state.thePendingJointChecksChangedReviewTheir': 'changed',
+	'state.theseBodyFramesOrTheirQualityChecks': 'changed',
+	'state.thisOperationChangedReviewTheBodyColors': 'changed',
+	'state.thisOperationChangedReviewTheBodyFrames': 'changed',
+	'state.thisOperationChangedReviewTheJointChecks': 'changed',
 	// Saved results this device no longer has; nothing paid is at risk of being bought twice without a review.
 	'itemRoute.errors.savedFramesUnavailable': 'missing',
 	'itemRoute.errors.savedFrameMissing': 'missing',
 	'create.errors.originalCompletedMotionUnavailable': 'missing',
 	'create.errors.cachedRecoveryImageMissing': 'missing',
+	'moveSheet.checkpoint.missingFrames': 'missing',
+	'fixFrames.errors.originalsMissing': 'missing',
 	// A paid result that may be lost or may have charged: never suggest a retry that could charge twice.
 	'create.errors.resultMissingStorage': 'uncertain',
 	'activity.error.jobMissing': 'uncertain',
@@ -78,8 +98,22 @@ const KEYS: Readonly<Record<string, ProblemKind>> = {
 	'generation.outcome.callStopped': 'stopped',
 	'generation.outcome.callError': 'stopped',
 	'generation.outcome.noFrames': 'empty',
+	'itemRoute.errors.noUsableFrames': 'empty',
+	'itemRoute.errors.gridStopped': 'stopped',
+	'itemRoute.errors.poseStopped': 'stopped',
+	'itemRoute.errors.requestLost': 'uncertain',
+	'itemRoute.errors.poseFramesMalformed': 'frame-count',
+	'itemRoute.errors.poseFrameSize': 'frame-count',
 	'generation.outcome.standingFrames': 'frame-count',
 	'genCard.declined': 'declined',
+	// Internal checks that only a bug can fail: Report it.
+	'create.errors.rigValid': 'unexpected',
+	'create.errors.standingViewsDoFit': 'unexpected',
+	'create.errors.completedJointCheckInvalid': 'unexpected',
+	'create.errors.creationAttemptSavedFingerprint': 'unexpected',
+	'create.errors.jointCheckRecoveryIntent': 'unexpected',
+	'create.errors.bodyColorRepairIntent': 'unexpected',
+	'create.errors.reviewedJointCheckHashes': 'unexpected',
 	'create.sheet.declined': 'declined'
 };
 
@@ -94,7 +128,7 @@ const API_KINDS: Readonly<Record<ErrorKind, ProblemKind>> = {
 	other: 'unexpected'
 };
 
-const keyKind = (key: string): ProblemKind => (Object.hasOwn(KEYS, key) ? KEYS[key] : 'unexpected');
+const keyKind = (key: string): ProblemKind => (Object.hasOwn(KEYS, key) ? KEYS[key] : 'stated');
 
 /** The kind whose plain title (`problem.title.<kind>`) and next step (`problem.next.<kind>`) describe a failure; undefined
  *  only when there is no failure. */
@@ -109,9 +143,12 @@ export function problemKind(error: unknown): ProblemKind | undefined {
 }
 
 /** Whether a paid try again is the way on that leads. Not for a bug (Report it), a choice the user must change first, a
- *  decline that would repeat, a request that may already have charged, or an account to fix first (credits, token). */
+ *  decline that would repeat, a request that may already have charged, an account to fix first (credits, token), or missing
+ *  joints, where a free Keep may be offered and a joint check repeats the same answer on the same frames. */
 export const paidRetryLeads = (kind: ProblemKind | undefined) =>
 	kind !== 'unexpected' &&
+	kind !== 'joints' &&
+	kind !== 'stated' &&
 	kind !== 'method' &&
 	kind !== 'declined' &&
 	kind !== 'uncertain' &&

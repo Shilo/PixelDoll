@@ -4,6 +4,7 @@ import type { MoveSpec, Progress } from '../../src/studio/create.ts';
 import type { RepairReview } from '../../src/lib/items/run.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import type { Balance } from '../../src/lib/pixellab/routes.ts';
+import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import { message } from '../../src/lib/message.ts';
 import { characterFacts } from '../../src/studio/model.ts';
 import { readFileSync } from 'node:fs';
@@ -37,6 +38,7 @@ const mocks = vi.hoisted(() => ({
 	updateCharacter: vi.fn(),
 	saveIdle: vi.fn()
 }));
+const ledger = vi.hoisted(() => ({ jobs: [] as JobRec[] }));
 const mockAccount = vi.hoisted(() => ({ key: '', balance: null as Balance | null }));
 vi.mock('../../src/studio/create.ts', () => ({
 	createCharacter: mocks.create,
@@ -91,9 +93,10 @@ vi.mock('../../src/lib/store/db.ts', async (original) => ({
 }));
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: mockAccount }));
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({
+	live: (r?: JobRec) => !!r && ['queued', 'submitting', 'running'].includes(r.state),
 	queue: {
 		role: 'leader',
-		snapshot: () => ({ jobs: [] }),
+		snapshot: () => ({ jobs: ledger.jobs }),
 		subscribe: mocks.subscribe,
 		requestHandoff: mocks.handoff,
 		idle: () => true,
@@ -142,6 +145,21 @@ beforeEach(() => {
 	stubGlobals();
 });
 afterEach(() => vi.unstubAllGlobals());
+test('a review draft whose frames cannot be read says so and reads them again for free', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const g = {
+		draft: { rigId: 'rig-unread', spec: { id: 'unread_hat' }, calls: [] }
+	} as unknown as Parameters<typeof state.readGenReview>[0];
+	mocks.load.mockRejectedValueOnce(new Error('storage unavailable'));
+	await state.readGenReview(g);
+	expect(state.store.resultsUnread.unread_hat).toBe(true);
+	expect(state.store.results.unread_hat).toBeUndefined();
+	mocks.load.mockRejectedValueOnce(new Error('still unavailable'));
+	await state.readGenReview(g);
+	expect(mocks.load).toHaveBeenLastCalledWith('rig-unread');
+	expect(state.store.resultsUnread.unread_hat).toBe(true);
+});
+
 test('canceling from a follower explains that generation has not stopped without opening Activity', async () => {
 	const state = await import('../../src/studio/state.svelte.ts');
 	const { queue } = await import('../../src/lib/pixellab/queue.ts');
@@ -735,6 +753,24 @@ const recoverySpec = {
 	poseStyle: 'visible-side-v1' as const
 };
 
+test('a fresh attempt of a failed move waits while one of its requests is still at PixelLab', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const failed = { ...recoverySpec, activityScope: 'move:2438:attempt' };
+	Object.assign(s.moving, { projectId: 'project', spec: failed, error: 'stopped', done: false });
+	ledger.jobs = [{ id: 'render', state: 'running', activityScope: failed.activityScope } as JobRec];
+	await s.startMove('project', { ...failed, seed: 99 });
+	// Nothing new is bought and the failed move stays as it was.
+	expect(mocks.move).not.toHaveBeenCalled();
+	expect(s.moving.spec).toBe(failed);
+	expect(s.ui.toast).toMatchObject({ key: 'state.moveStillAtPixelLab' });
+	// Once that request has an outcome, the fresh attempt starts.
+	ledger.jobs = [{ id: 'render', state: 'done', activityScope: failed.activityScope } as JobRec];
+	mocks.move.mockResolvedValue({ warnings: [] });
+	await s.startMove('project', { ...failed, seed: 99 });
+	expect(mocks.move).toHaveBeenCalledOnce();
+	ledger.jobs = [];
+});
+
 test('explicit joint-check recovery preserves the body identity and persists one reviewed intent before work', async () => {
 	const persisted = pending<void>();
 	mocks.put.mockImplementationOnce(() => persisted.promise);
@@ -1294,7 +1330,8 @@ const itemColorPlan = {
 	materialId: 'sword-metal',
 	changedPixels: 20,
 	changedFrames: [0, 1],
-	unmatchedPixels: 0
+	unmatchedPixels: 0,
+	missingFrames: []
 };
 
 test('free item palette refresh preserves the outfit, selected view and inspector without invoking paid flow', async () => {

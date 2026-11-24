@@ -22,6 +22,7 @@ import {
 	itemPlanMinimumTier,
 	itemGenerationMinutes,
 	planItem,
+	poseFitIssues,
 	type ItemSpec,
 	type Method
 } from '../lib/items/items.ts';
@@ -51,13 +52,15 @@ export interface ItemRoute {
 		minutes: number;
 		minimumTier: number;
 		cell?: number;
+		/** Suspicious imported joints the paid skeleton fit will follow, disclosed before it is bought. */
+		poseIssues: string[];
 	};
 	/** New persisted job description (not started). */
 	draft(ctx: RigCtx, input: NewItemInput, taken: string[]): Draft;
 	/** Generate each planned batch once and run QA. Resumable from the ledger without quality retries. */
 	run(d: Draft, ctx: RigCtx, hooks: RunHooks): Promise<ItemResult | null>;
-	/** Write the accepted item into the project record. */
-	accept(d: Draft, ctx: RigCtx, res?: ItemResult): Promise<Item>;
+	/** Write the accepted item into the project record; `available` keeps a stopped draft's verified frames only. */
+	accept(d: Draft, ctx: RigCtx, res?: ItemResult, available?: boolean): Promise<Item>;
 	spent(d: Draft): number;
 }
 
@@ -155,7 +158,8 @@ export const chromaEdit: ItemRoute = {
 				w: rig.cell.w + 2 * pad,
 				h: rig.cell.h + 2 * pad
 			}),
-			...(pad ? { cell: rig.cell.w + 2 * pad } : {})
+			...(pad ? { cell: rig.cell.w + 2 * pad } : {}),
+			poseIssues: poseFitIssues(rig, p)
 		};
 	},
 	draft: (ctx, input, taken) => {
@@ -163,7 +167,7 @@ export const chromaEdit: ItemRoute = {
 		return newDraft(ctx, { ...s, method: itemMethod(ctx, s) }, taken);
 	},
 	run: (d, ctx, hooks) => runItem(d, ctx, hooks),
-	accept: async (d, ctx, res) => (await acceptItem(d, ctx, res)).item,
+	accept: async (d, ctx, res, available) => (await acceptItem(d, ctx, res, available)).item,
 	spent: (d) => gensOf(d)
 };
 

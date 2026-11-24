@@ -1,6 +1,13 @@
 <script lang="ts">
 	import SettingsBackupCopy from './SettingsBackupCopy.svelte';
 	import SettingsItemButton from './SettingsItemButton.svelte';
+	import SettingsItemToggle from './SettingsItemToggle.svelte';
+	import {
+		debugBackupOn,
+		debugDetailsSaved,
+		developerModeEnabled,
+		setDebugDetails
+	} from './developerMode.svelte.ts';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
@@ -82,6 +89,7 @@
 	const additions = $derived(preview ? preview.add + preview.copies : 0);
 	const heading = $props.id();
 	const dropHint = `${heading}-drop`;
+	const debugHint = `${heading}-debug`;
 	const keys = () => [app.key, readSavedKey()];
 	const today = () => new Date().toISOString().slice(0, 10);
 	onMount(() => {
@@ -103,6 +111,12 @@
 		} finally {
 			busy = false;
 		}
+	}
+
+	// Developer mode only: backups then carry a debug/ folder (lib/debug/bundle.ts) for whoever helps with a problem.
+	const debugging = $derived(developerModeEnabled() && !workspaceCopy);
+	function changeDebugDetails(on: boolean) {
+		if (!setDebugDetails(on)) error = message('librarySettings.debugNotSaved');
 	}
 
 	function backup() {
@@ -312,8 +326,24 @@
 		<section class="library-task">
 			<LibraryBackupButton settings disabled={busy} onbackup={backup} />
 			<div class="backup-notes">
-				<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
+				<p class="bu-muted settings-description">
+					{t(debugBackupOn() ? 'librarySettings.scopeDebug' : 'librarySettings.scope')}
+				</p>
 			</div>
+			{#if debugging}
+				<SettingsItemToggle
+					setting="debug-details"
+					aria-describedby={debugHint}
+					checked={debugDetailsSaved()}
+					disabled={busy}
+					onchange={(event) => changeDebugDetails(event.currentTarget.checked)}
+				>
+					<span class="row-name">{t('librarySettings.debugDetails')}</span>
+				</SettingsItemToggle>
+				<p class="bu-muted settings-description" id={debugHint}>
+					{t('librarySettings.debugDetailsHint')}
+				</p>
+			{/if}
 		</section>
 		<hr class="bu-separator" />
 		<section class="library-task">

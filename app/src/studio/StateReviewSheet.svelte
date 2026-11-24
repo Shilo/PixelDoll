@@ -3,12 +3,13 @@
 	import ProblemNotice from './ProblemNotice.svelte';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import type { Img } from '../lib/image/png.ts';
-	import { errorMessage, type Message } from '../lib/message.ts';
+	import { errorMessage, LocalizedError, type Message } from '../lib/message.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import { DIRECTIONS, type DirectionName } from '../lib/rig/rig.ts';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import { displayDirection } from './displayDirection.ts';
+	import { displayDirectionList } from './displayDirectionProblem.ts';
 	import { displayMove } from './displayMove.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import { RIDING_STATE } from './experience/presentation.ts';
@@ -84,6 +85,18 @@
 		focusedReview = current;
 		reviewHeading.focus();
 	});
+	// Views that came back blank or failed; ones that could not be downloaded or were canceled have their own notice.
+	const blankViews = $derived.by(() => {
+		const current = review;
+		if (!current) return [];
+		const named = new Set([...current.unfetched, ...current.canceled, ...current.unmade]);
+		return current.missing.filter((direction) => !named.has(direction));
+	});
+	// Saving now gives up views that could still be fetched or made, so the choice says so.
+	const withoutViews = $derived(
+		!!review &&
+			(review.unfetched.length > 0 || review.canceled.length > 0 || review.unmade.length > 0)
+	);
 	// Mounted riding uses the State saved as `riding`, whatever prompt made it.
 	const reviewRiding = $derived(!!review?.riding || review?.id === RIDING_STATE);
 	const reviewSource = $derived(review && project && stateGenerationSource(project, review.source));
@@ -125,11 +138,13 @@
 	);
 	// While it generates, the source frame stands in for the result.
 	const sourcePreview = $derived.by((): Img | null => {
-		if (!attempt || !project || !body) return null;
-		const clip = project.manifest.rig.animations.find(({ id }) => id === attempt.source.clip);
-		const cell = clip?.frames[attempt.source.frame]?.cell;
+		// Attempts saved before States recorded their source have none; reading them says to discard.
+		const source = attempt?.source;
+		if (!source || !project || !body) return null;
+		const clip = project.manifest.rig.animations.find(({ id }) => id === source.clip);
+		const cell = clip?.frames[source.frame]?.cell;
 		if (cell === undefined) return null;
-		return cellImg(project, body, attempt.source.clip, ui.dir, cell) ?? null;
+		return cellImg(project, body, source.clip, ui.dir, cell) ?? null;
 	});
 	const discardable = $derived(
 		!review &&
@@ -171,7 +186,8 @@
 		return run('common.loading', async () => {
 			canContinue = false;
 			try {
-				review = await pendingState(projectId, token);
+				// Try again keeps the views already downloaded for this attempt.
+				review = await pendingState(projectId, token, review ?? undefined);
 				// Saved or discarded in another tab: refreshing the list closes this sheet.
 				if (!review) return void (await refreshStateAttempts(projectId));
 				reviewFacing = null;
@@ -197,6 +213,8 @@
 		canContinue = false;
 		failure = '';
 		loadedFor = '';
+		// The run reads the whole result again when it settles.
+		review = null;
 		continueStateRun(approved, attempt.id);
 	}
 
@@ -204,7 +222,20 @@
 		if (!reviewed) return;
 		const pending = reviewed;
 		void run('stateCapture.saving', async () => {
-			await saveState(pending, reviewRiding);
+			try {
+				await saveState(pending, reviewRiding);
+			} catch (cause) {
+				// Another tab finished more views: show them, and say why nothing was saved.
+				if (
+					cause instanceof LocalizedError &&
+					cause.translation.key === 'stateGeneration.newViews'
+				) {
+					review = await pendingState(projectId, token);
+					reviewFacing = null;
+					keepGrounded = true;
+				}
+				throw cause;
+			}
 			delete stateRuns[token];
 			await refreshStateAttempts(projectId);
 		});
@@ -286,13 +317,46 @@
 					{/if}
 				</div>
 			{/if}
+			{#if blankViews.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.missingViews', { directions: displayDirectionList(blankViews) })}
+				</p>{/if}
+			{#if review.unfetched.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.unfetchedViews', {
+						directions: displayDirectionList(review.unfetched)
+					})}
+				</p>{/if}
+			{#if review.canceled.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.canceledViews', {
+						directions: displayDirectionList(review.canceled)
+					})}
+				</p>{/if}
+			{#if review.unmade.length}<p class="notice warn small" role="status">
+					{t('stateGeneration.unmadeViews', {
+						directions: displayDirectionList(review.unmade)
+					})}
+				</p>{/if}
+			{#if continuation}
+				{@const { keptViews, remainingViews, cost } = continuation}
+				<div class="notice small" role="status">
+					<p>
+						{t('stateGeneration.continueViews', {
+							kept: formatNumber(keptViews),
+							remaining: formatNumber(remainingViews)
+						})}
+					</p>
+					<p>{t('stateGeneration.localOnly')}</p>
+					<strong>{stateCostText(cost)}</strong>
+				</div>
+			{/if}
 			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
 			{#if reviewRiding}<p class="muted small">{t('stateGeneration.ridingCheck')}</p>{/if}
 			{#if !sourceCurrent}
 				<p class="notice warn small" role="status">
 					{t(sourceFits ? 'stateGeneration.sourceChangedKeep' : 'stateGeneration.sourceChanged')}
 				</p>
-			{:else if Object.keys(review.ungrounded).length}
+			{/if}
+			<!-- Both placements were kept when the result was read, so the choice stays even if the source changes during review. -->
+			{#if Object.keys(review.ungrounded).length}
 				<label class="bu-check review-ground">
 					<span class="edit-copy">
 						<span>{t('stateGeneration.keepGrounded')}</span>
@@ -318,12 +382,12 @@
 	{:else if status === 'generating'}
 		<div class="state-panel generating">
 			<span class="review-stage source-stage">
-				{#if sourcePreview}<span class="cell-frame"
+				{#if sourcePreview && attempt?.source}<span class="cell-frame"
 						>{@render cell(
 							sourcePreview,
 							144,
 							t('stateCapture.preview', {
-								source: clipName(attempt!.source.clip),
+								source: clipName(attempt.source.clip),
 								facing: displayDirection(ui.dir)
 							})
 						)}</span
@@ -375,12 +439,34 @@
 				onclick={discard}
 				>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 			>
+			<!-- Reading again is free and only helps a view whose download failed, so it leads while one did. -->
+			{#if review?.unfetched.length}<button
+					type="button"
+					class="bu-btn"
+					data-variant="primary"
+					disabled={!!busy}
+					onclick={load}>{t('common.tryAgain')}</button
+				>{/if}
+			<!-- Views never sent are a separately priced choice; saving without them stays free. -->
+			{#if continuation}<button
+					type="button"
+					class="bu-btn"
+					data-variant="outline"
+					disabled={!!busy}
+					onclick={generateRemaining}>{t('stateGeneration.generateRemaining')}</button
+				>{:else if review?.unmade.length}<button
+					type="button"
+					class="bu-btn"
+					data-variant="outline"
+					disabled={!!busy}
+					onclick={checkContinuationCost}>{t('stateGeneration.checkRemainingCost')}</button
+				>{/if}
 			<button
 				type="button"
 				class="bu-btn"
-				data-variant="primary"
+				data-variant={review?.unfetched.length ? 'outline' : 'primary'}
 				disabled={!!busy || !sourceFits}
-				onclick={save}>{t('common.save')}</button
+				onclick={save}>{t(withoutViews ? 'stateGeneration.saveWithout' : 'common.save')}</button
 			>
 		</div>
 	</div>
@@ -497,18 +583,23 @@
 			gap: 16px;
 		}
 	}
+	/* The note sits beside the buttons when both fit, else on its own row above them (phones). */
 	.state-footer {
 		flex: 1;
 		min-inline-size: 0;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
+		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px;
+	}
+	.state-footer > p {
+		flex: 1 1 160px;
 	}
 	.state-actions {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: flex-end;
 		gap: 8px;
+		margin-inline-start: auto;
 	}
 </style>

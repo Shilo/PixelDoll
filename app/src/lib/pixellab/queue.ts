@@ -68,6 +68,7 @@ export interface SubJob {
 	eta?: number;
 	lastPoll?: number;
 	tries?: number; // failed result downloads (backoff, give up after MAX_TRIES)
+	unsaved?: number; // valid results this device failed to save in a row: retried with backoff, never given up
 	pendingUrls?: { label: string; url: string }[];
 	results: Result[];
 	error?: string;
@@ -107,6 +108,7 @@ export interface JobRec {
 	gens: number; // reported charges only; with costUnknown they are a known part, never the whole cost
 	usd: number;
 	costUnknown?: true; // settled without a usage report for every job: the cost is unknown, never $0
+	saving?: true; // snapshot only: finished in this tab, its result is still being stored (shown in progress, no Stop)
 }
 
 const isManagedState = (record: JobRec) =>
@@ -138,9 +140,15 @@ export function readableRecord(raw: unknown): JobRec | undefined {
 		return undefined;
 	const r = raw as JobRec;
 	const subJob = (s: unknown): s is SubJob => !!s && typeof s === 'object';
+	// Readers sort and open each result by its label and hash, so a damaged entry makes the whole record unreadable.
+	const result = (x: unknown): x is Result =>
+		!!x &&
+		typeof x === 'object' &&
+		typeof (x as Result).label === 'string' &&
+		typeof (x as Result).sha === 'string';
 	if (
 		Array.isArray(r.jobs) &&
-		r.jobs.every((s) => subJob(s) && Array.isArray(s.results)) &&
+		r.jobs.every((s) => subJob(s) && Array.isArray(s.results) && s.results.every(result)) &&
 		typeof r.createdAt === 'number'
 	)
 		return r;
@@ -150,7 +158,12 @@ export function readableRecord(raw: unknown): JobRec | undefined {
 		createdAt: typeof r.createdAt === 'number' ? r.createdAt : 0,
 		jobs: (Array.isArray(r.jobs) ? r.jobs : [])
 			.filter(subJob)
-			.map((s) => ({ ...s, done: true, results: Array.isArray(s.results) ? s.results : [] })),
+			// Results that are still whole stay listed, so what was saved can be found again; nothing is resent.
+			.map((s) => ({
+				...s,
+				done: true,
+				results: Array.isArray(s.results) ? s.results.filter(result) : []
+			})),
 		error: UNREADABLE,
 		costUnknown: true
 	};
@@ -299,7 +312,13 @@ type Msg = {
 	capacitySync?: boolean;
 	/** A follower asks the leader, which owns the submitted jobs and their credential, to stop this record. */
 	stop?: string;
+	/** The follower's id for the answer to its stop. */
+	stopReply?: string;
+	/** The leader's answer: whether the stop was confirmed and saved. */
+	stopped?: { reply: string; ok: boolean };
 };
+/** How long a follower waits for the leading tab to answer a stop before saying it could not be confirmed. */
+const STOP_REPLY_MS = 15_000;
 
 export const backoff = (attempt: number, rnd = Math.random()) =>
 	Math.min(60_000, 2000 * 2 ** Math.max(0, attempt - 1)) * (0.5 + 0.5 * rnd);
@@ -393,6 +412,10 @@ export function canReopenQueuedCancellation(record: JobRec, attempt?: number): b
 }
 
 const queuedWithoutJobs = (record: JobRec) => record.state === 'queued' && !record.jobs.length;
+/** An explicit Stop may also replace an automatic cancel of the same unsent row: it must never be reopened later. */
+const unsentForExplicitStop = (record: JobRec) =>
+	queuedWithoutJobs(record) ||
+	(record.state === 'canceled' && !record.jobs.length && !!record.autoCanceledAttempts);
 
 /** setInterval that keeps ticking in background tabs (worker-driven); plain setInterval where Worker is missing (node). */
 let ticker: Worker | null | undefined;
@@ -421,6 +444,15 @@ function every(ms: number, fn: () => void): () => void {
 	};
 }
 
+/** A valid PixelLab result this device could not save: a storage fault to retry, never a malformed or failed job. */
+class ResultNotStored extends Error {
+	constructor(label: string, cause: unknown) {
+		super(`${label}: could not be saved on this device (${(cause as Error)?.message ?? cause})`, {
+			cause
+		});
+	}
+}
+
 export class Queue {
 	private recs = new Map<string, JobRec>();
 	private persisting = new Set<string>(); // first ledger write must commit before the scheduler may send
@@ -428,6 +460,65 @@ export class Queue {
 	private listeners = new Set<(s: QueueSnapshot) => void>();
 	private timer: (() => void) | null = null;
 	private ticking = false;
+	/** Finished jobs whose valid results could not be saved yet, by job id (see poll). */
+	private held = new Map<string, Job>();
+	/** Records whose latest save failed: saved again until it lands, so a settled result is never only in memory. */
+	private writes = new Map<
+		string,
+		{ started: number; pending: number; failed: boolean; retry: boolean }
+	>();
+	private recordRetryAt = 0;
+	/** A finished record as stored: one whose save is pending or failed is returned only once its outcome is stored. */
+	private stored(r: JobRec) {
+		return !live(r) && this.unsaved(r.id) ? this.settled(r.id) : Promise.resolve(r);
+	}
+	/** Paid results only this tab holds (an unsaved record or a held job): it keeps leading until they are saved. */
+	private holdsUnsaved() {
+		return this.writes.size > 0 || this.held.size > 0;
+	}
+	/** Whether this tab's latest version of a record is not stored yet: a write is pending, or the latest one failed. */
+	private unsaved(id: string) {
+		return this.writes.has(id);
+	}
+	/** Runs one write of a record: only the latest write decides whether the record is stored, so an earlier write that
+	 *  lands after a later one started never makes the later outcome look stored. Only a plain save is retried when it
+	 *  fails: a conditional one (pre-submit, cancel) keeps its own recovery, which a blind retry would bypass. */
+	private async write<T>(id: string, run: () => Promise<T>, retried = true): Promise<T> {
+		const entry = this.writes.get(id) ?? { started: 0, pending: 0, failed: false, retry: true };
+		this.writes.set(id, entry);
+		const revision = ++entry.started;
+		entry.pending++;
+		let ok = false;
+		try {
+			const out = await run();
+			ok = true;
+			return out;
+		} finally {
+			entry.pending--;
+			// A failed conditional write (a cancel) stays unresolved, so nothing settles or cleans it up, but it is never
+			// retried blindly: its own Try again, or the stored row another tab writes, resolves it.
+			if (revision === entry.started) {
+				entry.failed = !ok;
+				entry.retry = retried;
+			}
+			if (!entry.pending && !entry.failed && this.writes.get(id) === entry) this.writes.delete(id);
+		}
+	}
+	/** Followers' stops waiting for the leading tab's answer, by reply id. */
+	private stopReplies = new Map<string, (ok: boolean) => void>();
+	/** While this tab starts leading and reads its records again. */
+	private reloading: Promise<void> | null = null;
+	// Order of the latest storage outcomes (reads and writes apart): the storage notice lifts only once a later read and a
+	// later write have both succeeded, never because a tick returned without touching storage.
+	private storageSeq = 0;
+	private readOk = 0;
+	private readBad = 0;
+	private writeOk = 0;
+	private writeBad = 0;
+	// Results are blobs: a small record save can succeed while a large blob save still fails (quota), so blobs count apart.
+	private blobOk = 0;
+	private blobBad = 0;
+	private storageProbeAt = 0;
 	private disconnected = false;
 	private capacityProbe: object | null = null;
 	private capacityRead: Promise<void> | null = null;
@@ -527,6 +618,28 @@ export class Queue {
 				return out;
 			};
 		}
+		const track =
+			<A extends unknown[], R>(op: (...args: A) => Promise<R>, kind: 'read' | 'write' | 'blob') =>
+			async (...args: A): Promise<R> => {
+				try {
+					const out = await op(...args);
+					if (kind === 'write') this.writeOk = ++this.storageSeq;
+					else if (kind === 'blob') this.blobOk = ++this.storageSeq;
+					else this.readOk = ++this.storageSeq;
+					return out;
+				} catch (e) {
+					if (kind === 'write') this.writeBad = ++this.storageSeq;
+					else if (kind === 'blob') this.blobBad = ++this.storageSeq;
+					else this.readBad = ++this.storageSeq;
+					this.storageFailed();
+					throw e;
+				}
+			};
+		this.deps.put = track(this.deps.put, 'write');
+		this.deps.transition = track(this.deps.transition, 'write');
+		this.deps.putBlob = track(this.deps.putBlob, 'blob');
+		this.deps.all = track(this.deps.all, 'read');
+		this.deps.get = track(this.deps.get, 'read');
 		const { all, get } = this.deps;
 		const owns = (r: JobRec) => this.ownsRecord(r);
 		// Every stored row is read through readableRecord: one damaged row must never stop the queue.
@@ -552,7 +665,15 @@ export class Queue {
 	snapshot(): QueueSnapshot {
 		const jobs = [...this.recs.values()]
 			.sort((a, b) => a.createdAt - b.createdAt)
-			.map((r) => ({ ...r, jobs: r.jobs.map((s) => ({ ...s, results: [...s.results] })) }));
+			.map((r) => ({
+				...r,
+				// A result counts once it is stored: until then every reader sees the request still in progress, so no
+				// dependent step advances on a result that reload and other tabs would not see. A stop or failure shows at once.
+				...(r.state === 'done' && this.unsaved(r.id)
+					? { state: 'running' as const, saving: true as const }
+					: {}),
+				jobs: r.jobs.map((s) => ({ ...s, results: [...s.results] }))
+			}));
 		const counts = { pending: 0, running: 0, failed: 0, done: 0 };
 		for (const r of jobs) {
 			if (r.state === 'queued') counts.pending++;
@@ -588,7 +709,9 @@ export class Queue {
 			} satisfies Msg);
 	}
 	private async save(r: JobRec) {
-		await this.deps.put(r.id, r);
+		// Tracked from before writing: a waiter must never take a settled record that is not stored yet (another notice can
+		// emit while the write is pending or failing).
+		await this.write(r.id, () => this.deps.put(r.id, r));
 		this.chan?.postMessage({ rec: r.id } satisfies Msg); // other tabs read just this record
 		this.emit();
 		this.requestLeadership();
@@ -597,11 +720,16 @@ export class Queue {
 	private async saveIf(r: JobRec, allowed: (stored: JobRec) => boolean): Promise<JobRec | null> {
 		const record = structuredClone(r);
 		let blocked: JobRec | null = null;
-		await this.deps.transition(r.id, (stored) => {
-			if (!stored || !this.ownsRecord(stored) || allowed(stored)) return record;
-			blocked = stored;
-			return undefined;
-		});
+		await this.write(
+			r.id,
+			() =>
+				this.deps.transition(r.id, (stored) => {
+					if (!stored || !this.ownsRecord(stored) || allowed(stored)) return record;
+					blocked = stored;
+					return undefined;
+				}),
+			false
+		);
 		if (blocked) return blocked;
 		this.chan?.postMessage({ rec: r.id } satisfies Msg);
 		this.emit();
@@ -620,7 +748,8 @@ export class Queue {
 			};
 			const un = this.subscribe((s) => {
 				const r = s.jobs.find((j) => j.id === id);
-				if (!done && r && !live(r)) {
+				// Only a stored outcome counts: a dependent step never advances on a result that reload would not see.
+				if (!done && r && !live(r) && !this.unsaved(id)) {
 					done = true;
 					signal?.removeEventListener('abort', abort);
 					res(r);
@@ -658,7 +787,8 @@ export class Queue {
 					this.role === 'leader' &&
 					this.release &&
 					!this.key &&
-					!this.busy.size
+					!this.busy.size &&
+					!this.holdsUnsaved()
 				)
 					this.stepBack(); // a follower from the start: never act as leader while reconnecting
 				// Another tab has a click waiting: step back (rejoin as follower) when nothing here is in flight.
@@ -667,6 +797,7 @@ export class Queue {
 					this.role === 'leader' &&
 					this.release &&
 					!this.busy.size &&
+					!this.holdsUnsaved() &&
 					this.idle() &&
 					this.canYield()
 				)
@@ -684,8 +815,23 @@ export class Queue {
 					this.emit();
 					this.requestLeadership();
 				}
-				if (typeof m.stop === 'string' && this.role === 'leader')
-					void this.cancel(m.stop).catch((e) => console.error('queue', e));
+				if (typeof m.stop === 'string' && this.role === 'leader') {
+					const reply = m.stopReply;
+					void this.cancel(m.stop)
+						.then(
+							() => true,
+							(e) => {
+								console.error('queue', e);
+								return false;
+							}
+						)
+						.then((ok) => {
+							if (typeof reply === 'string')
+								this.chan?.postMessage({ stopped: { reply, ok } } satisfies Msg);
+						});
+				}
+				if (m.stopped && typeof m.stopped.reply === 'string')
+					this.stopReplies.get(m.stopped.reply)?.(m.stopped.ok === true);
 				if (m.capacitySync && this.role === 'leader') this.emit();
 			};
 		}
@@ -736,8 +882,25 @@ export class Queue {
 		this.role = 'leader';
 		this.capacityCheckedAt = -Infinity;
 		this.capacityKnown = false;
+		// An explicit Stop of ours still waiting for its Try again survives the reload over a stored automatic cancel; a Try
+		// again pressed meanwhile waits for the reload (see retryCancelSave).
+		const stops = [...this.recs.values()].filter(
+			(r) => this.writes.get(r.id)?.failed && r.state === 'canceled' && !r.autoCanceledAttempts
+		);
 		this.recs.clear();
-		await this.load();
+		this.reloading = (async () => {
+			await this.load();
+			for (const mine of stops) {
+				const stored = this.recs.get(mine.id);
+				if (stored && this.keepsExplicitStop(mine, stored)) this.recs.set(mine.id, mine);
+			}
+			if (stops.length) this.emit();
+		})();
+		try {
+			await this.reloading;
+		} finally {
+			this.reloading = null;
+		}
 		if (!connection.signal.aborted) this.start();
 	}
 	/** Stop driving jobs and release/cancel this connection's lock; paid requests are never resent. */
@@ -755,7 +918,16 @@ export class Queue {
 	}
 	/** Follower: replace the mirror with the stored ledger. */
 	async sync() {
-		this.recs = new Map((await this.deps.all()).map((r) => [r.id, r]));
+		const before = this.recs;
+		this.recs = new Map(
+			(await this.deps.all()).map((r) => {
+				const mine = before.get(r.id);
+				return [r.id, mine && this.keepsExplicitStop(mine, r) ? mine : r];
+			})
+		);
+		// The stored row is authoritative, except an explicit Stop of ours still waiting for its Try again.
+		for (const [id, entry] of this.writes)
+			if (!entry.pending && this.recs.get(id) !== before.get(id)) this.writes.delete(id);
 		this.emit();
 	}
 	/** Inspect mirrored/persisted submissions without making requests or eagerly decoding every saved input. */
@@ -772,12 +944,28 @@ export class Queue {
 	private wasRequested(r: JobRec) {
 		return r.attempts > 0 && r.requestStarted !== false && !/nothing was sent/i.test(r.error ?? '');
 	}
+	/** This tab's explicit Stop failed to save and the stored row is only an automatic cancel: keep the Stop (and its failed
+	 *  write) so its Try again can replace the cancel, which could otherwise be reopened later. */
+	private keepsExplicitStop(mine: JobRec | undefined, stored: JobRec) {
+		const entry = this.writes.get(stored.id);
+		return (
+			!!mine &&
+			!!entry?.failed &&
+			!entry.pending &&
+			mine.state === 'canceled' &&
+			!mine.autoCanceledAttempts &&
+			stored.state === 'canceled' &&
+			!!stored.autoCanceledAttempts
+		);
+	}
 	/** One record another tab saved: a follower mirrors it, the leader adopts it. */
 	private async pull(id: string) {
 		const r = await this.deps.get(id);
 		if (!r) return;
 		if (this.role === 'follower') {
+			if (this.keepsExplicitStop(this.recs.get(id), r)) return;
 			this.recs.set(id, r);
+			if (!this.writes.get(id)?.pending) this.writes.delete(id); // the stored row is authoritative
 			this.emit();
 		} else if (this.role === 'leader' && this.adopt(r)) this.emit();
 	}
@@ -814,6 +1002,21 @@ export class Queue {
 				});
 				void this.save(r).catch((e) => console.error('queue', e));
 			}
+			return true;
+		}
+		// The stored row settles a conditional write this tab failed to save (a Stop another tab saved meanwhile).
+		const entry = this.writes.get(r.id);
+		if (
+			entry?.failed &&
+			!entry.pending &&
+			!live(r) &&
+			r.state === mine.state &&
+			// A stored explicit Stop settles any local cancel; a stored automatic cancel settles only a local automatic one
+			// (it could be reopened later, which an explicit Stop never is).
+			(!r.autoCanceledAttempts || !!mine.autoCanceledAttempts)
+		) {
+			this.recs.set(r.id, r);
+			this.writes.delete(r.id);
 			return true;
 		}
 		if (mine.state === 'queued' && r.state === 'canceled' && !this.busy.has(r.id)) {
@@ -936,21 +1139,18 @@ export class Queue {
 	}
 	start() {
 		this.timer ??= every(1000, () =>
-			this.tick().then(
-				() => {
-					// A tick completed: storage works again (sending still saves first, so nothing went out unsaved).
-					if (this.paused === 'storage') this.resume();
-				},
-				(e) => {
-					// The ledger could not be read or saved: say so in Activity until a tick completes again.
-					console.error('queue', e);
-					if (!this.paused) {
-						this.paused = 'storage';
-						this.emit();
-					}
-				}
-			)
+			this.tick().catch((e) => {
+				// The ledger could not be read or saved: say so in Activity until storage is proven again.
+				console.error('queue', e);
+				this.storageFailed();
+			})
 		);
+	}
+	/** A storage read or write failed: hold sending and say so in Activity until storage is proven again. */
+	private storageFailed() {
+		if (this.paused) return;
+		this.paused = 'storage';
+		this.emit();
 	}
 	stop() {
 		this.timer?.();
@@ -1168,13 +1368,13 @@ export class Queue {
 			return active;
 		}
 		const done = matches.find((r) => r.state === 'done');
-		if (done && (seeded || meta.cache || resumeSafe)) return done;
+		if (done && (seeded || meta.cache || resumeSafe)) return this.stored(done);
 		if (meta.quotedEstimate?.reuseOnly) meta.quotedEstimate.changed();
 		let retryOf: string | undefined;
 		if (meta.estimateRetry) {
 			// Deterministic record identity also prevents two follower tabs from creating two retries for one consent.
 			const previous = matches.find((r) => r.estimateRecovery?.id === meta.estimateRetry!.id);
-			if (previous) return previous; // including another unknown outcome: reload never grants a second submission
+			if (previous) return this.stored(previous); // including another unknown outcome: reload never grants a second submission
 			const source = matches.find((r) => meta.estimateRetry!.recordIds.includes(r.id));
 			if (source) {
 				if (!retryableEstimate(source) || matches[0]?.id !== source.id)
@@ -1184,7 +1384,7 @@ export class Queue {
 		}
 		if (resumeSafe && !retryOf) {
 			const terminal = matches.find((r) => !canReopenQueuedCancellation(r, meta.attempt));
-			if (terminal) return terminal;
+			if (terminal) return this.stored(terminal);
 		}
 		const now = this.deps.now();
 		const rec: JobRec = {
@@ -1277,6 +1477,7 @@ export class Queue {
 			await this.save(rec);
 		} catch (e) {
 			if (this.recs.get(rec.id) === rec) this.recs.delete(rec.id);
+			this.writes.delete(rec.id); // a request whose enqueue failed is never saved later
 			throw e;
 		} finally {
 			this.persisting.delete(rec.id);
@@ -1381,6 +1582,15 @@ export class Queue {
 			this.ticking = false;
 		}
 		await Promise.all(work.ops);
+		// Storage works again once a read, a record save and a result save each succeeded after their last failure (sending
+		// still saves first, so nothing went out unsaved meanwhile).
+		if (
+			this.paused === 'storage' &&
+			(!this.readBad || this.readOk > this.readBad) &&
+			(!this.writeBad || this.writeOk > this.writeBad) &&
+			(!this.blobBad || this.blobOk > this.blobBad)
+		)
+			this.resume();
 		if (work.capacity) {
 			await work.capacity;
 			await this.tick();
@@ -1396,14 +1606,47 @@ export class Queue {
 		if (this.role !== 'follower')
 			for (const r of this.recs.values()) if (this.pollSubmitted(r)) await this.save(r);
 		const now = this.deps.now();
-		if (!(await this.network(now)) || disconnected()) return { ops: [] };
+		// Results already in memory, and records whose save failed, are saved whatever the credential or connection: only
+		// storage has to work. Remote polls and downloads stay behind the network gate below.
+		const saving: Promise<void>[] = [];
+		if (this.role !== 'follower')
+			for (const r of this.recs.values())
+				for (const s of r.jobs)
+					if (
+						this.held.has(s.id) &&
+						!s.done &&
+						!this.busy.has(s.id) &&
+						now - (s.lastPoll ?? 0) >= Math.max(POLL_MS, backoff(s.unsaved ?? 1))
+					)
+						saving.push(this.guard(s.id, () => this.poll(r, s)));
+		if (this.role !== 'follower' && now >= this.recordRetryAt && this.writes.size) {
+			this.recordRetryAt = now + POLL_MS;
+			for (const [id, entry] of this.writes) {
+				const r = this.recs.get(id);
+				if (!r) this.writes.delete(id);
+				else if (
+					entry.failed &&
+					entry.retry &&
+					!entry.pending &&
+					!this.busy.has(id) &&
+					!this.persisting.has(id)
+				)
+					saving.push(this.guard(id, () => this.save(r)));
+			}
+		}
+		if (!(await this.network(now)) || disconnected()) return { ops: saving };
 		if (this.role === 'follower') return { ops: [] }; // the leader tab submits and polls
-		if (this.role === 'leader' && now - this.merged >= (this.chan ? FULL_SYNC_MS : SYNC_MS)) {
+		// A failed ledger read is retried on the next tick, so a working ledger lifts the storage notice at once.
+		if (
+			this.role === 'leader' &&
+			(now - this.merged >= (this.chan ? FULL_SYNC_MS : SYNC_MS) ||
+				(this.paused === 'storage' && this.readBad > this.readOk))
+		) {
 			this.merged = now;
 			await this.merge();
 		}
 		if (disconnected()) return { ops: [] }; // a suspended tick cannot drive jobs after its lock/session was released
-		const ops: Promise<void>[] = [];
+		const ops: Promise<void>[] = [...saving];
 		let capacity: Promise<void> | undefined;
 		if (
 			this.key &&
@@ -1422,9 +1665,16 @@ export class Queue {
 			if (!this.capacityKnown) capacity = refreshed;
 		}
 		if (disconnected()) return { ops: [] };
+		// While storage is paused, one queued request at a time may try its conditional pre-submit write: if it lands, storage
+		// is proven and the request goes on (it was saved first); if not, nothing is sent. Never while result saves fail.
+		const probingStorage =
+			this.paused === 'storage' &&
+			(!this.blobBad || this.blobOk > this.blobBad) &&
+			now >= this.storageProbeAt;
+		if (probingStorage) this.storageProbeAt = now + POLL_MS;
 		if (
 			this.key &&
-			!this.paused &&
+			(!this.paused || probingStorage) &&
 			(!this.capacityRead || this.capacityKnown) &&
 			!this.capacityProbe &&
 			now >= this.capacityRetryAt
@@ -1466,24 +1716,38 @@ export class Queue {
 				ops.push(
 					this.guard(r.id, async () => {
 						try {
-							await this.submit(r, !!probe);
+							await this.submit(r, !!probe, probingStorage);
 						} finally {
 							if (probe && this.capacityProbe === probe) this.capacityProbe = null;
 						}
 					})
 				);
-				if (this.throttled) break; // one probe at a time until external tools release capacity
+				if (this.throttled || probingStorage) break; // one probe at a time (capacity or storage)
 			}
 		}
+		// A held job whose record moved on (stopped, cleared, finished elsewhere) no longer needs its answer.
+		for (const id of this.held.keys())
+			if (
+				![...this.recs.values()].some(
+					(r) => r.state === 'running' && r.jobs.some((s) => s.id === id && !s.done)
+				)
+			)
+				this.held.delete(id);
 		if (this.key && this.paused !== 'auth')
 			for (const r of this.recs.values()) {
 				if (r.state !== 'running') continue;
 				for (const s of r.jobs) {
 					if (s.done || this.busy.has(s.id)) continue;
 					if (s.remoteDone) {
-						if (!s.tries || now - (s.lastPoll ?? 0) >= backoff(s.tries))
+						if (
+							!(s.tries || s.unsaved) ||
+							now - (s.lastPoll ?? 0) >= backoff((s.tries ?? 0) + (s.unsaved ?? 0))
+						)
 							ops.push(this.guard(s.id, () => this.download(r, s)));
-					} else if (!s.lastPoll || now - s.lastPoll >= POLL_MS)
+					} else if (
+						!s.lastPoll ||
+						now - s.lastPoll >= (s.unsaved ? Math.max(POLL_MS, backoff(s.unsaved)) : POLL_MS)
+					)
 						ops.push(this.guard(s.id, () => this.poll(r, s)));
 				}
 			}
@@ -1501,7 +1765,7 @@ export class Queue {
 		}
 	}
 
-	private async submit(r: JobRec, probe: boolean) {
+	private async submit(r: JobRec, probe: boolean, storageProbe = false) {
 		if (this.pollSubmitted(r)) {
 			await this.save(r);
 			return;
@@ -1509,13 +1773,28 @@ export class Queue {
 		const connection = this.connection;
 		const credentialRevision = this.keyRevision;
 		const key = this.key;
+		const before = {
+			waitingForPlan: r.waitingForPlan,
+			attempts: r.attempts,
+			requestStarted: r.requestStarted
+		};
 		r.waitingForPlan = undefined;
 		r.state = 'submitting';
 		r.attempts++;
 		r.requestStarted = false;
 		// persisted before the request leaves, and only from a still-queued record without jobs: another tab's durable
 		// queued-only cancel (or receipt) wins over this submission, and this submission makes later queued-only cancels no-ops
-		const stored = await this.saveIf(r, queuedWithoutJobs);
+		let stored: JobRec | null;
+		try {
+			stored = await this.saveIf(r, queuedWithoutJobs);
+		} catch (e) {
+			// Nothing was sent: back to queued as it was, so a later tick submits it once storage works (the storage notice
+			// holds sending meanwhile). Another tab's stored cancel or receipt still wins at that next conditional write.
+			Object.assign(r, before, { state: 'queued' });
+			this.writes.delete(r.id);
+			this.emit();
+			throw e;
+		}
 		if (stored) {
 			this.recs.set(r.id, stored);
 			if (this.pollSubmitted(stored)) await this.save(stored);
@@ -1557,11 +1836,16 @@ export class Queue {
 				await cancelBeforeSend();
 				return;
 			}
+			// A storage pause no longer holds the storage probe whose own conditional write just landed (storage is proven for
+			// it): rolling it back to queued could leave `submitting` stored if the tab closes. Read at every check, so any
+			// other pause, or result saves failing meanwhile, still holds it.
+			const storageProven = () =>
+				storageProbe && this.paused === 'storage' && (!this.blobBad || this.blobOk > this.blobBad);
 			const held = () =>
 				credentialRevision !== this.keyRevision ||
 				key !== this.key ||
 				this.disconnected ||
-				this.paused ||
+				(this.paused && !storageProven()) ||
 				this.deps.now() < this.capacityRetryAt ||
 				this.planWait(r);
 			if (held()) {
@@ -1717,43 +2001,50 @@ export class Queue {
 			connection === this.connection &&
 			credentialRevision === this.keyRevision &&
 			key === this.key;
-		if (this.deps.api === realApi) await this.restoreActivity(r);
-		// Restoring inspection data awaits storage: Forget/reconnect or releasing the queue must stop the old poll.
-		if (!key || !currentCredential()) return;
+		// A finished job whose valid results this device failed to save is kept in memory and saved again from here, so a
+		// result PixelLab later expires is not lost while storage recovers. Saving it needs no credential or connection.
+		const held = this.held.get(s.id);
+		if (!held) {
+			if (this.deps.api === realApi) await this.restoreActivity(r);
+			// Restoring inspection data awaits storage: Forget/reconnect or releasing the queue must stop the old poll.
+			if (!key || !currentCredential()) return;
+		}
 		s.lastPoll = this.deps.now();
 		let job: Job;
-		try {
-			job = await this.deps.api<Job>(
-				key,
-				'GET',
-				`/background-jobs/${encodeURIComponent(s.id)}`,
-				undefined,
-				undefined,
-				{
-					queueId: r.id,
-					queueTag: r.tag,
-					activityScope: r.activityScope,
-					label: r.label,
-					background: true
-				}
-			);
-		} catch (e) {
-			if (!(e instanceof ApiError)) throw e;
-			if (e.kind === 'auth') {
-				s.error = e.message;
-				if (currentCredential()) this.paused = 'auth';
-			} else if (isNetwork(e)) {
-				s.error = e.message;
-				if (currentCredential()) this.goOffline();
-			} // B15
-			else if (e.kind === 'notfound' && this.deps.now() - (r.submittedAt ?? 0) > LOST_AFTER_MS) {
-				s.done = true;
-				s.status = 'lost';
-				s.error = 'job not found (auto-deleted before results were saved; cost may be spent)';
-				this.settle(r);
-			} else s.error = e.message; // transient: poll again in 5 s, never resubmit
-			return this.save(r);
-		}
+		if (held) job = held;
+		else
+			try {
+				job = await this.deps.api<Job>(
+					key,
+					'GET',
+					`/background-jobs/${encodeURIComponent(s.id)}`,
+					undefined,
+					undefined,
+					{
+						queueId: r.id,
+						queueTag: r.tag,
+						activityScope: r.activityScope,
+						label: r.label,
+						background: true
+					}
+				);
+			} catch (e) {
+				if (!(e instanceof ApiError)) throw e;
+				if (e.kind === 'auth') {
+					s.error = e.message;
+					if (currentCredential()) this.paused = 'auth';
+				} else if (isNetwork(e)) {
+					s.error = e.message;
+					if (currentCredential()) this.goOffline();
+				} // B15
+				else if (e.kind === 'notfound' && this.deps.now() - (r.submittedAt ?? 0) > LOST_AFTER_MS) {
+					s.done = true;
+					s.status = 'lost';
+					s.error = 'job not found (auto-deleted before results were saved; cost may be spent)';
+					this.settle(r);
+				} else s.error = e.message; // transient: poll again in 5 s, never resubmit
+				return this.save(r);
+			}
 		const lr = job.last_response;
 		s.status = job.status;
 		s.progress = lr?.progress;
@@ -1794,6 +2085,18 @@ export class Queue {
 							im.rgba
 						);
 			} catch (e) {
+				if (e instanceof ResultNotStored) {
+					// This device could not save a valid result: keep the job open and its answer in memory, so a later poll saves it
+					// again without asking PixelLab (blobs are content addressed, so a second save is the same blob). Storage is
+					// paused meanwhile.
+					s.results = [];
+					s.lastPoll = this.deps.now();
+					s.unsaved = (s.unsaved ?? 0) + 1;
+					this.held.set(s.id, job);
+					throw e;
+				}
+				this.held.delete(s.id);
+				delete s.unsaved;
 				Object.assign(s, {
 					done: true,
 					status: 'failed',
@@ -1803,10 +2106,12 @@ export class Queue {
 				this.settle(r);
 				return this.save(r);
 			}
+			this.held.delete(s.id);
 			s.remoteDone = true;
 			s.pendingUrls = ims.filter((im) => im.url).map((im) => ({ label: im.label, url: im.url! }));
 			await this.save(r); // inline images are safe now; URLs are persisted for download
-			return this.download(r, s);
+			// A held answer is saved locally; its URLs are fetched by the network-gated loop, never from here while offline.
+			return held && s.pendingUrls.length ? undefined : this.download(r, s);
 		}
 		await this.save(r);
 	}
@@ -1827,7 +2132,12 @@ export class Queue {
 		const png = rgba
 			? await encodePngBytes({ ...size, data: new Uint8ClampedArray(bytes) })
 			: bytes;
-		const sha = await this.deps.putBlob(png);
+		let sha: string;
+		try {
+			sha = await this.deps.putBlob(png);
+		} catch (e) {
+			throw new ResultNotStored(label, e);
+		}
 		s.results.push({ label, sha, ...size });
 	}
 
@@ -1847,11 +2157,18 @@ export class Queue {
 					})
 				);
 				s.pendingUrls.shift();
+				delete s.unsaved;
 				await this.save(r);
 			}
 		} catch (e) {
 			// storage CDN error or bad bytes: back off (tick), give up after MAX_TRIES with the URLs kept (R6 P2-9)
 			s.lastPoll = this.deps.now();
+			// This device failing to save is not a failed download: retry with its own backoff, never giving up (storage is
+			// paused meanwhile).
+			if (e instanceof ResultNotStored) {
+				s.unsaved = (s.unsaved ?? 0) + 1;
+				throw e;
+			}
 			if (!this.deps.online()) {
 				this.goOffline();
 				return this.save(r);
@@ -1920,7 +2237,26 @@ export class Queue {
 					'Stop this job in the tab that is running it.',
 					'activity.stopInRunningTab'
 				);
-			this.chan.postMessage({ stop: id } satisfies Msg);
+			const reply = crypto.randomUUID();
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			const answer = await new Promise<boolean | undefined>((res) => {
+				this.stopReplies.set(reply, res);
+				timer = setTimeout(() => res(undefined), STOP_REPLY_MS);
+				this.chan!.postMessage({ stop: id, stopReply: reply } satisfies Msg);
+			}).finally(() => {
+				clearTimeout(timer);
+				this.stopReplies.delete(reply);
+			});
+			if (answer === undefined)
+				throw new LocalizedError(
+					'The tab running this job has not confirmed the stop yet. Check Activity in a moment; if it is still running, stop it in that tab.',
+					'activity.stopNoAnswer'
+				);
+			if (!answer)
+				throw new LocalizedError(
+					'PixelLab did not confirm the stop, so it may still run and charge. Check Activity.',
+					'activity.stopNotConfirmed'
+				);
 			return;
 		}
 		if (r.state === 'queued') {
@@ -1928,7 +2264,7 @@ export class Queue {
 			r.state = 'canceled';
 			r.finishedAt = this.deps.now();
 			// another tab may already have persisted `submitting` or a job receipt: never overwrite it with a stale cancel
-			const stored = await this.saveIf(r, queuedWithoutJobs);
+			const stored = await this.saveIf(r, queuedOnly ? queuedWithoutJobs : unsentForExplicitStop);
 			if (stored) {
 				this.recs.set(id, stored);
 				this.emit();
@@ -1937,7 +2273,9 @@ export class Queue {
 			}
 			this.submitScopes.delete(r.id);
 			return;
-		} else if (r.state === 'running') {
+		}
+		let unconfirmed = false;
+		if (r.state === 'running') {
 			for (const s of r.jobs.filter((s) => !s.done && !s.remoteDone)) {
 				try {
 					const stopped = await this.deps.api<{ usage?: Usage | null } | undefined>(
@@ -1959,21 +2297,33 @@ export class Queue {
 					s.usage = stopped?.usage; // the cancel response is the job's final usage report
 				} catch (e) {
 					s.error = (e as Error).message; // 400/409: already finished -> polling picks up the result
+					// Any other refusal or no answer: the job may still run and charge, so the stop must not look done.
+					if (!(e instanceof ApiError && (e.status === 400 || e.status === 409)))
+						unconfirmed = true;
 				}
 			}
 			this.settle(r);
 		}
 		await this.save(r);
+		if (unconfirmed)
+			throw new LocalizedError(
+				'PixelLab did not confirm the stop, so it may still run and charge. Check Activity.',
+				'activity.stopNotConfirmed'
+			);
 	}
 	/** Save again a cancel whose save failed; meanwhile it stays canceled in this tab. A stopped running record is this tab's
 	 *  own, already settled with the stop's usage: saved as is. A queued-only cancel still loses to another tab's submission
 	 *  or receipt, which is adopted and, when running, stopped like any running cancel. */
 	async retryCancelSave(id: string) {
+		if (this.reloading) await this.reloading; // this tab is taking over leadership: its records are being read again
 		const r = this.recs.get(id);
 		if (!r) return;
 		if (r.jobs.length) return this.save(r); // the save a running cancel ends with, whatever its jobs settled to
 		if (r.state !== 'canceled') return;
-		const stored = await this.saveIf(r, queuedWithoutJobs);
+		const stored = await this.saveIf(
+			r,
+			r.autoCanceledAttempts ? queuedWithoutJobs : unsentForExplicitStop
+		);
 		if (!stored) {
 			this.submitScopes.delete(id);
 			return;
@@ -1989,7 +2339,7 @@ export class Queue {
 		let n = 0;
 		try {
 			for (const r of [...this.recs.values()])
-				if (!live(r) && !keep(r)) {
+				if (!live(r) && !this.unsaved(r.id) && !keep(r)) {
 					await this.deps.del(r.id); // a failed delete stays listed and fails Clear finished, instead of returning on reload
 					this.recs.delete(r.id);
 					n++;
@@ -2001,7 +2351,8 @@ export class Queue {
 		return n;
 	}
 	/** Nothing queued, submitting or running in this tab's view of the ledger. */
-	idle = () => ![...this.recs.values()].some(live);
+	// A finished record not stored yet still holds work: its results must survive cleanup until it is saved.
+	idle = () => ![...this.recs.values()].some(live) && !this.holdsUnsaved();
 }
 
 export const queue = new Queue();

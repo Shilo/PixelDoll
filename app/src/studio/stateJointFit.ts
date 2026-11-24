@@ -85,11 +85,14 @@ export interface StateJointFitReview {
 	projectId: string;
 	stateId: string;
 	manifestVersion: string;
+	/** The measured facings, the only ones saved. */
 	views: { direction: DirectionName; hash: Sha256; keypoints: Keypoint[]; qa: ClipQa }[];
 	/** One measurement receipt per view, in view order. */
 	provenance: Provenance[];
-	/** A failed structural check blocks saving. */
-	blocked: boolean;
+	/** Facings whose joints could not be measured: saved without them, and measured again on request. */
+	notFitted: DirectionName[];
+	/** Facings whose check stopped or failed: never resent here, so they are saved without joints. */
+	unchecked: DirectionName[];
 }
 
 const changed = () =>
@@ -152,8 +155,8 @@ export async function stateJointFitTarget(
 	const target: StateJointFitTarget = { stateId, views: [], fitted: [] };
 	for (const { id: direction, mirrorOf } of rig.directions) {
 		const hash = cells[direction]?.[0];
-		if (mirrorOf) continue;
-		if (!hash) return;
+		// A State saved without a facing (it came back blank) fits the facings it has.
+		if (mirrorOf || !hash) continue;
 		const image = project.images.get(hash);
 		if (!image || (await cellHash(image)) !== hash) return;
 		const saved = clip.sources?.[direction];
@@ -237,7 +240,8 @@ export async function quoteStateJointFit(
 			status: await checkStatus(jobs, image, attempt)
 		}))
 	);
-	if (checks.some(({ status }) => status === 'stopped')) throw unfinished();
+	// A stopped check is never resent, but it only leaves its own facing unchecked.
+	if (checks.every(({ status }) => status === 'stopped')) throw unfinished();
 	const fresh = checks.filter(({ status }) => status === 'new').length;
 	const queued = checks.filter(({ status }) => status === 'queued').length;
 	if (fresh) {
@@ -285,13 +289,12 @@ async function measure(
 		target.views.map(({ image }) => checkStatus(jobs, image, attempt))
 	);
 	const approved = new Map(quote.checks.map((check) => [check.direction, check]));
-	// Cheaper is fine (another tab finished a check). New, stopped or different checks need a new quote.
+	// Cheaper is fine (another tab finished a check). New or different checks need a new quote; a stopped one is not resent.
 	if (
 		target.views.length !== quote.checks.length ||
 		target.views.some(
 			({ direction, hash }, index) =>
 				approved.get(direction)?.hash !== hash ||
-				statuses[index] === 'stopped' ||
 				(statuses[index] === 'new' && approved.get(direction)?.status !== 'new')
 		)
 	)
@@ -305,54 +308,78 @@ async function measure(
 	});
 	try {
 		const scope = scopeOf(projectId, stateId);
-		const results = await Promise.all(
-			target.views.map(({ direction, image }) =>
-				measureJoints(image, true, signal, scope, {
-					attempt,
-					quotedEstimate: {
-						reuseOnly: approved.get(direction)?.status !== 'new',
-						changed: () => {
-							throw changed();
-						}
-					}
-				})
+		// Each facing settles on its own, so one failed check does not discard the paid measurements beside it.
+		const results = await Promise.allSettled(
+			target.views.map(({ direction, image }, index) =>
+				statuses[index] === 'stopped' || approved.get(direction)?.status === 'stopped'
+					? Promise.reject(unfinished())
+					: measureJoints(image, true, signal, scope, {
+							attempt,
+							quotedEstimate: {
+								reuseOnly: approved.get(direction)?.status !== 'new',
+								changed: () => {
+									throw changed();
+								}
+							}
+						})
 			)
 		);
 		signal.throwIfAborted();
+		const moved = results.find(
+			(result): result is PromiseRejectedResult =>
+				result.status === 'rejected' &&
+				result.reason instanceof LocalizedError &&
+				result.reason.translation.key === 'stateGeneration.changed'
+		);
+		if (moved) throw moved.reason;
 		assertSelected(projectId);
 		assertAccount(keyRevision);
 		const { rig } = project.manifest;
-		const views = target.views.map(({ direction, hash, image }, index) => {
-			const keypoints = results[index].keypoints;
-			if (
-				!keypoints ||
-				!hasAll(keypoints) ||
-				!sourceUsable(project.manifest, stateId, direction, hash, keypoints)
-			)
-				throw noJoints(direction);
+		const views: StateJointFitReview['views'] = [];
+		const provenance: Provenance[] = [];
+		const notFitted: DirectionName[] = [];
+		const unchecked: DirectionName[] = [];
+		// One facing without usable joints no longer costs the others their paid measurement.
+		for (const [index, { direction, hash, image }] of target.views.entries()) {
+			const result = results[index];
+			if (result.status === 'rejected') {
+				console.warn(`The ${direction} joint check did not finish.`, result.reason);
+				unchecked.push(direction);
+				continue;
+			}
+			const { keypoints, record } = result.value;
 			const restView = rig.rest?.[direction];
 			const rest = restView && project.images.get(restView.image);
 			if (!rest) throw unavailable();
-			const qa = clipQa({
-				anim: stateId,
-				rest,
-				frames: [image],
-				measured: [keypoints],
-				stray: 0,
-				...(hasAll(restView.keypoints)
-					? { facing: { dir: direction, rest: restView.keypoints } }
-					: {})
-			});
-			return { direction, hash, keypoints, qa };
-		});
-		return {
-			projectId,
-			stateId,
-			manifestVersion,
-			views,
-			provenance: results.map(({ record }) => provOf(record)),
-			blocked: views.some(({ qa }) => qa.fails.length > 0)
-		};
+			const qa =
+				keypoints &&
+				hasAll(keypoints) &&
+				sourceUsable(project.manifest, stateId, direction, hash, keypoints)
+					? clipQa({
+							anim: stateId,
+							rest,
+							frames: [image],
+							measured: [keypoints],
+							stray: 0,
+							...(hasAll(restView.keypoints)
+								? { facing: { dir: direction, rest: restView.keypoints } }
+								: {})
+						})
+					: undefined;
+			if (!keypoints || !qa || qa.fails.length) {
+				notFitted.push(direction);
+				continue;
+			}
+			views.push({ direction, hash, keypoints, qa });
+			provenance.push(provOf(record));
+		}
+		if (!views.length) {
+			const failed = results.find(
+				(result): result is PromiseRejectedResult => result.status === 'rejected'
+			);
+			throw notFitted.length || !failed ? noJoints(notFitted[0]) : failed.reason;
+		}
+		return { projectId, stateId, manifestVersion, views, provenance, notFitted, unchecked };
 	} catch (error) {
 		controller.abort(error);
 		throw error;
@@ -405,14 +432,16 @@ export function saveStateJointFit(review: StateJointFitReview): Promise<void> {
 
 async function save(review: StateJointFitReview): Promise<void> {
 	const { projectId, stateId, manifestVersion } = review;
-	if (review.blocked) throw noJoints(review.views.find(({ qa }) => qa.fails.length)!.direction);
 	const blocked = directionEditsBlocked(projectId);
 	if (blocked) throw blocked;
 	const { target, manifestVersion: saved } = await current(projectId, stateId);
+	// Exactly the reviewed facings are saved, each still needing joints for the art it was measured on.
+	const open = new Map(target.views.map(({ direction, hash }) => [direction, hash]));
 	if (
 		saved !== manifestVersion ||
-		stableStringify(target.views.map(({ direction, hash }) => [direction, hash])) !==
-			stableStringify(review.views.map(({ direction, hash }) => [direction, hash]))
+		!review.views.length ||
+		new Set(review.views.map(({ direction }) => direction)).size !== review.views.length ||
+		review.views.some(({ direction, hash }) => open.get(direction) !== hash)
 	)
 		throw changed();
 	await db.update<StoredProject>('projects', projectId, (record) => {

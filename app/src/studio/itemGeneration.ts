@@ -36,7 +36,13 @@ export function clipItemOffer(
 	m: Manifest,
 	itemId: string,
 	clipId: string,
-	options: { seed?: number; dirs?: readonly DirectionName[]; reviewedMoveItems?: boolean } = {}
+	options: {
+		seed?: number;
+		dirs?: readonly DirectionName[];
+		reviewedMoveItems?: boolean;
+		/** Moves and views kept without poses (rigQa.redo), named in the offer instead of being skipped silently. */
+		redo?: readonly string[];
+	} = {}
 ) {
 	const item = m.items.find((it) => it.id === itemId);
 	const spec = item && missingItemMoves(m, itemId, options.seed ?? 0).find((s) => s.id === clipId);
@@ -44,9 +50,11 @@ export function clipItemOffer(
 		? spec?.dirs?.filter((dir) => options.dirs!.includes(dir) && item?.dressed?.[dir])
 		: spec?.dirs;
 	if (!spec || !dirs?.length) return null;
-	return itemMoveOffer(m, [
-		{ ...spec, dirs, ...(options.reviewedMoveItems ? { reviewedMoveItems: true } : {}) }
-	]);
+	return itemMoveOffer(
+		m,
+		[{ ...spec, dirs, ...(options.reviewedMoveItems ? { reviewedMoveItems: true } : {}) }],
+		options.redo
+	);
 }
 
 /** Fresh seeds for approved requests, so a repeat attempt is not the same draw. */

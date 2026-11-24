@@ -18,11 +18,12 @@
 		characterItemJobs
 	} from './state.svelte.ts';
 	import { inFlight } from './itemJobs.ts';
-	import { ChevronRight, FolderOpen, Plus } from './icons.ts';
+	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import type { MoveSpec } from './create.ts';
+	import type { RigAnimation } from '../lib/rig/rig.ts';
 	import { displayError } from '../lib/i18n.ts';
-	import { STATE_CAPTURE_MODE, setupRedoMoves } from '../lib/rig/setup.ts';
+	import { STATE_CAPTURE_MODE, setupRedoMoves, unposedView } from '../lib/rig/setup.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { clipItemCoverage } from './itemGeneration.ts';
 	import { characterBodySize } from './experience/bounds.ts';
@@ -45,9 +46,11 @@
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const nice = (id: string) => displayMove(id, moveRefs);
-	// Moves without poses (setup skipped them, or a new move was kept without joints) still play, but items cannot be
-	// animated on them until made again.
+	// Moves with views without poses (setup skipped them, or views were kept without joints) still play, but items cannot be
+	// animated there until those views are made again.
 	const redo = $derived(setupRedoMoves(store.exportRecord));
+	const needsRedo = (a: RigAnimation) =>
+		!!m?.rig.directions.some((d) => !d.mirrorOf && unposedView(redo, a, d.id));
 	const jobName = (spec: MoveSpec) => displayMoveJob(nice(spec.id), spec, m?.items);
 	const saved = (spec: MoveSpec) => playback.find((entry) => entry.clip.id === spec.id);
 	// The tab a job's row belongs in: its saved clip's, or Moves for a move still being made.
@@ -237,8 +240,7 @@
 										drawn: formatNumber(items.drawn),
 										n: formatNumber(items.total)
 									})}</span
-								>{/if}{#if redo.includes(a.id) && !a.sources}<span class="small redo"
-									>{t('moves.needsRedo')}</span
+								>{/if}{#if needsRedo(a)}<span class="small redo">{t('moves.needsRedo')}</span
 								>{/if}</span
 						>
 					</button>
@@ -291,27 +293,17 @@
 				>
 			{/each}
 		</div>
-		{#if (kind === 'move' && !isDemo()) || (kind === 'state' && onaddstate)}
-			{@const importLabel = openerLabel(
-				t(kind === 'move' ? 'moveImport.importMoves' : 'moveImport.importStates')
-			)}
-			<div class="add-line">
-				{#if kind === 'move'}<button
-						class="bu-action add-row cta"
-						data-variant="outline"
-						onclick={() => (ui.sheet = 'move')}
-						><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
-					>{:else}<button class="bu-action add-row cta" data-variant="outline" onclick={onaddstate}
-						><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
-					>{/if}{#if !isDemo()}<button
-						class="bu-action add-row cta import"
-						data-variant="outline"
-						aria-label={importLabel}
-						title={importLabel}
-						onclick={() => (ui.sheet = 'importMoves')}><FolderOpen size={16} /></button
-					>{/if}
-			</div>
-		{/if}
+		{#if kind === 'move' && !isDemo()}<button
+				class="bu-action add-row cta"
+				data-variant="outline"
+				onclick={() => (ui.sheet = 'move')}
+				><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
+			>{:else if kind === 'state' && onaddstate}<button
+				class="bu-action add-row cta"
+				data-variant="outline"
+				onclick={onaddstate}
+				><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
+			>{/if}
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>
@@ -388,18 +380,5 @@
 	/* The list gap already separates the CTA from the rows above it. */
 	.cta {
 		margin-top: 0;
-	}
-	.add-line {
-		display: flex;
-		gap: 8px;
-	}
-	.add-line > .cta:first-child {
-		flex: 1 1 auto;
-		min-width: 0;
-	}
-	.import {
-		flex: none;
-		width: 44px;
-		padding: 0;
 	}
 </style>
