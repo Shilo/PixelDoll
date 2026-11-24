@@ -1,7 +1,7 @@
 # Attack while moving: layering, split bodies, and what to build
 
 Date: 2026-11-24
-Status: research spike, no implementation approved
+Status: decided, see [DECISION.md](DECISION.md)
 Revised after the independent [GPT-6.2 Sol review](review-gpt62/README.md)
 
 Question: the live views let you attack in one direction while walking in another, and the character slides because the attack clip owns the whole body. Can PixelDoll combine an action animation with locomotion animation, at high quality, on baked directional sprite frames, and expose that as an optional runtime capability on every export platform?
