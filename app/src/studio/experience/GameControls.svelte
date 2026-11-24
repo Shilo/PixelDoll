@@ -150,7 +150,8 @@
 	.game-bar {
 		position: fixed;
 		z-index: 4;
-		right: calc(var(--stage-right, 0px) + max(12px, env(safe-area-inset-right)));
+		/* Right-aligned with the zoom controls at the top right (layout.css .scene-zoom), clear of the notch. */
+		right: calc(var(--stage-right) + max(var(--edge), env(safe-area-inset-right)));
 		bottom: calc(var(--stage-bottom, 0px) + max(12px, env(safe-area-inset-bottom)));
 	}
 	.game-touch {
@@ -170,7 +171,6 @@
 		bottom: 0;
 	}
 	.game-bar {
-		right: calc(var(--stage-right, 0px) + 16px);
 		bottom: calc(var(--stage-bottom, 0px) + 16px);
 		display: flex;
 		align-items: center;

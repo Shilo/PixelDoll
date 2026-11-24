@@ -962,8 +962,9 @@
 .scene-zoom {
 	position: absolute;
 	z-index: 3;
-	/* Top right, beside the side panel, like the game controls at the bottom right. */
-	right: calc(var(--stage-right) + 12px);
+	/* Top right, beside the side panel, right-aligned with the game controls below (GameControls.svelte): the stage's
+	   right edge inset by the same edge margin as everything floating on the stage. */
+	right: calc(var(--stage-right) + var(--edge));
 	top: calc(var(--stage-top) + 8px);
 	display: flex;
 	align-items: center;
