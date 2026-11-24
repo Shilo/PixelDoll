@@ -485,6 +485,17 @@
 		"keepWithoutMovesDetail": "Menyimpan item dari animasinya yang lengkap tanpa memakai kredit. Item disembunyikan di {moves}, yang tetap tercantum sebagai hilang agar Anda bisa membuatnya nanti dengan harganya sendiri.",
 		"youAcceptedThisArtworkWithItsRecorded": "Anda menerima gambar ini beserta catatan kualitasnya.",
 		"generateItemForMove": "Buat item untuk animasi",
+		"coverageTitle": "Cakupan animasi",
+		"coverageAllDrawn": "Digambar di setiap animasi dan status",
+		"coverageMissing": {
+			"other": "{n} animasi belum ada"
+		},
+		"coverageClipDrawn": "{move}: sudah digambar",
+		"coverageClipMissing": "{move}: belum ada",
+		"fillMissingMoves": "Lengkapi animasi yang belum ada",
+		"fillMissingHint": {
+			"other": "Menggambar item ini untuk semua {n} animasi yang belum ada dalam satu penawaran, memakai ulang desain berdirinya."
+		},
 		"labelMakeNameForMissingName": "Buat {name} untuk {missingName}",
 		"generatesOnlyThisItemSMissingViews": "Hanya membuat tampilan item yang belum ada untuk animasi pilihan, memakai ulang desain saat berdiri. Tubuh tetap sama. PixelLab mungkin mengenakan biaya dalam dolar. Waktu antrean bervariasi.",
 		"madeForAnotherBodyItMayNot": "Dibuat untuk tubuh lain. Letaknya mungkin tidak pas.",

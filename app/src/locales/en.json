@@ -496,6 +496,19 @@
 		"keepWithoutMovesDetail": "Keeps the item from its complete moves without spending credits. It is hidden in {moves}, which stay listed as missing so you can make them later at their own price.",
 		"youAcceptedThisArtworkWithItsRecorded": "You accepted this artwork with its recorded quality notes.",
 		"generateItemForMove": "Generate item for move",
+		"coverageTitle": "Move coverage",
+		"coverageAllDrawn": "Drawn in every move and State",
+		"coverageMissing": {
+			"one": "Missing {n} move",
+			"other": "Missing {n} moves"
+		},
+		"coverageClipDrawn": "{move}: drawn",
+		"coverageClipMissing": "{move}: missing",
+		"fillMissingMoves": "Fill missing moves",
+		"fillMissingHint": {
+			"one": "Draws this item for {n} missing move in one offer, reusing its standing design.",
+			"other": "Draws this item for all {n} missing moves in one offer, reusing its standing design."
+		},
 		"labelMakeNameForMissingName": "Make {name} for {missingName}",
 		"generatesOnlyThisItemSMissingViews": "Generates only this item’s missing views for the chosen move, reusing its standing design. The body stays as it is. PixelLab may bill dollars; queue time varies.",
 		"madeForAnotherBodyItMayNot": "Made for another body. It may not line up.",

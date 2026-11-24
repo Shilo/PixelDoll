@@ -485,6 +485,17 @@
 		"keepWithoutMovesDetail": "크레딧을 쓰지 않고 완성된 동작만으로 아이템을 유지해요. {moves}에서는 숨겨지고, 나중에 각자의 가격으로 만들 수 있도록 빠진 동작으로 계속 표시돼요.",
 		"youAcceptedThisArtworkWithItsRecorded": "기록된 품질 참고 사항과 함께 이 아트워크를 수락했어요.",
 		"generateItemForMove": "동작용 아이템 생성",
+		"coverageTitle": "동작 적용 범위",
+		"coverageAllDrawn": "모든 동작과 상태에 그려짐",
+		"coverageMissing": {
+			"other": "{n}개 동작 누락"
+		},
+		"coverageClipDrawn": "{move}: 그려짐",
+		"coverageClipMissing": "{move}: 누락",
+		"fillMissingMoves": "누락된 동작 채우기",
+		"fillMissingHint": {
+			"other": "서 있는 디자인을 재사용해 누락된 {n}개 동작 모두에 이 아이템을 한 번의 견적으로 그립니다."
+		},
 		"labelMakeNameForMissingName": "{missingName} 대상으로 {name} 만들기",
 		"generatesOnlyThisItemSMissingViews": "선택한 동작에 대해 이 아이템의 빠진 뷰만, 서 있는 자세의 디자인을 재사용해 생성해요. 몸체는 그대로예요. PixelLab에서 달러로 요금이 청구될 수 있고 대기 시간은 달라질 수 있어요.",
 		"madeForAnotherBodyItMayNot": "다른 몸체용으로 만들어졌어요. 정렬이 맞지 않을 수 있어요.",

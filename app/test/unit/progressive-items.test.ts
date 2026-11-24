@@ -5,7 +5,9 @@ import { itemMoveOffer, missingItemMoves } from '../../src/studio/create.ts';
 import {
 	clipItemCoverage,
 	clipItemOffer,
-	clipMissingItems
+	clipMissingItems,
+	fillMissingMovesOffer,
+	itemClipDrawn
 } from '../../src/studio/itemGeneration.ts';
 import { itemPlan, movePlan } from '../../src/studio/apiPlans.ts';
 import {
@@ -352,6 +354,30 @@ test('move and State item counts need every body view complete, and offers keep 
 	// A reviewed move only offers the views it accepted.
 	expect(clipItemOffer(m, 'hat', 'spell_charge', 'anchor', { dirs: ['east'] })).toBeNull();
 	expect(clipItemOffer(m, 'hat', 'still-custom', 'anchor')).toBeNull();
+});
+
+test('one item fills every missing move in a single combined offer, and coverage follows clipMissingItems', async () => {
+	const ctx = await fixture(
+			[
+				['spell_charge', 3],
+				['cast', 8]
+			],
+			['south', 'east']
+		),
+		m = ctx.rec.manifest;
+	expect(itemClipDrawn(m, 'hat', 'still-custom')).toBe(true);
+	expect(itemClipDrawn(m, 'hat', 'spell_charge')).toBe(false);
+	expect(itemClipDrawn(m, 'hat', 'cast')).toBe(false);
+	expect(itemClipDrawn(m, 'hat', 'no_such_move')).toBeNull();
+	const specs = missingItemMoves(m, 'hat', 'anchor', 0);
+	expect(specs.map((s) => s.id)).toEqual(['spell_charge', 'cast']);
+	const fill = fillMissingMovesOffer(m, specs, []);
+	expect(fill?.specs.map((s) => s.id)).toEqual(['spell_charge', 'cast']);
+	// One estimate for both moves, the sum of their own offers, never a per-move price.
+	expect(fill?.gens).toBe(
+		itemMoveOffer(m, [specs[0]], []).gens! + itemMoveOffer(m, [specs[1]], []).gens!
+	);
+	expect(fillMissingMovesOffer(m, [specs[0]])).toBeNull();
 });
 
 test('Wear shows a dimmed item where it is drawn: Standing first, else the first move or State that has it', async () => {

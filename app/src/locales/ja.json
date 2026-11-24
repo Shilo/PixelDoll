@@ -485,6 +485,17 @@
 		"keepWithoutMovesDetail": "クレジットを使わずに、そろっているモーションだけでアイテムを残します。{moves}では非表示になり、後で個別の価格で作れるよう不足として表示されたままになります。",
 		"youAcceptedThisArtworkWithItsRecorded": "記録された品質メモとともに、このアートワークを承認しました。",
 		"generateItemForMove": "モーション用のアイテムを生成",
+		"coverageTitle": "モーションの網羅状況",
+		"coverageAllDrawn": "すべてのモーションとステートに描画済み",
+		"coverageMissing": {
+			"other": "{n}件のモーションが未描画"
+		},
+		"coverageClipDrawn": "{move}: 描画済み",
+		"coverageClipMissing": "{move}: 未描画",
+		"fillMissingMoves": "未描画のモーションをまとめて作成",
+		"fillMissingHint": {
+			"other": "立ち絵のデザインを再利用し、未描画の{n}件のモーションすべてにこのアイテムを1回の見積もりで描画します。"
+		},
 		"labelMakeNameForMissingName": "{missingName}用の{name}を作成",
 		"generatesOnlyThisItemSMissingViews": "選んだモーションで、このアイテムに不足している向きのフレームだけを生成します。立ちポーズのデザインを再利用し、素体は変更しません。PixelLabから米ドルで請求される場合があります。待ち時間は状況によって異なります。",
 		"madeForAnotherBodyItMayNot": "別の素体用に作られたアイテムです。位置が合わない場合があります。",

@@ -496,6 +496,19 @@
 		"keepWithoutMovesDetail": "Kredi harcamadan eşyayı tamamlanmış animasyonlarıyla tutar. {moves} içinde gizlenir; bunlar, daha sonra kendi fiyatlarıyla oluşturabilmeniz için eksik olarak listelenmeye devam eder.",
 		"youAcceptedThisArtworkWithItsRecorded": "Bu görseli kayıtlı kalite notlarıyla birlikte kabul ettiniz.",
 		"generateItemForMove": "Animasyon için eşya üretin",
+		"coverageTitle": "Animasyon kapsamı",
+		"coverageAllDrawn": "Her animasyon ve durumda çizildi",
+		"coverageMissing": {
+			"one": "{n} animasyon eksik",
+			"other": "{n} animasyon eksik"
+		},
+		"coverageClipDrawn": "{move}: çizildi",
+		"coverageClipMissing": "{move}: eksik",
+		"fillMissingMoves": "Eksik animasyonları tamamla",
+		"fillMissingHint": {
+			"one": "Bu eşyayı ayakta duruş tasarımını yeniden kullanarak eksik {n} animasyon için tek teklifte çizer.",
+			"other": "Bu eşyayı ayakta duruş tasarımını yeniden kullanarak eksik {n} animasyonun tümü için tek teklifte çizer."
+		},
 		"labelMakeNameForMissingName": "{missingName} için şu eşyayı üretin: {name}",
 		"generatesOnlyThisItemSMissingViews": "Duruş tasarımını yeniden kullanarak yalnızca seçilen animasyondaki eksik eşya görünümlerini üretir. Gövde olduğu gibi kalır. PixelLab dolar cinsinden ücret alabilir; bekleme süresi değişir.",
 		"madeForAnotherBodyItMayNot": "Başka bir gövde için yapılmış. Tam oturmayabilir.",

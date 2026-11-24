@@ -485,6 +485,17 @@
 		"keepWithoutMovesDetail": "不花费积分，仅保留该装备在完整动作中的帧。它在{moves}中隐藏，这些动作仍标为缺失，你可以稍后按各自的价格制作。",
 		"youAcceptedThisArtworkWithItsRecorded": "你已接受此图像及其记录的质量说明。",
 		"generateItemForMove": "为动作生成装备",
+		"coverageTitle": "动作覆盖",
+		"coverageAllDrawn": "已在所有动作和状态中绘制",
+		"coverageMissing": {
+			"other": "缺少 {n} 个动作"
+		},
+		"coverageClipDrawn": "{move}：已绘制",
+		"coverageClipMissing": "{move}：缺少",
+		"fillMissingMoves": "补齐缺少的动作",
+		"fillMissingHint": {
+			"other": "复用站立设计，一次报价为全部 {n} 个缺少的动作绘制这个物品。"
+		},
 		"labelMakeNameForMissingName": "为{missingName}制作{name}",
 		"generatesOnlyThisItemSMissingViews": "仅为所选动作中此装备缺失的视图生成，并复用其站立设计。身体保持不变。PixelLab 可能按美元计费；排队时间不定。",
 		"madeForAnotherBodyItMayNot": "为另一个身体制作，可能无法对齐。",

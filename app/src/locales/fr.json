@@ -496,6 +496,19 @@
 		"keepWithoutMovesDetail": "Garde l’objet dans ses animations complètes sans dépenser de crédits. Il est masqué dans {moves}, qui restent indiquées comme manquantes pour que vous puissiez les créer plus tard à leur propre prix.",
 		"youAcceptedThisArtworkWithItsRecorded": "Vous avez accepté ce visuel. Les remarques sur sa qualité restent enregistrées.",
 		"generateItemForMove": "Générer l’objet pour l’animation",
+		"coverageTitle": "Couverture des animations",
+		"coverageAllDrawn": "Dessiné dans toutes les animations et tous les états",
+		"coverageMissing": {
+			"one": "{n} animation manquante",
+			"other": "{n} animations manquantes"
+		},
+		"coverageClipDrawn": "{move} : dessiné",
+		"coverageClipMissing": "{move} : manquant",
+		"fillMissingMoves": "Compléter les animations manquantes",
+		"fillMissingHint": {
+			"one": "Dessine cet objet pour {n} animation manquante en une seule offre, à partir de son design debout.",
+			"other": "Dessine cet objet pour les {n} animations manquantes en une seule offre, à partir de son design debout."
+		},
 		"labelMakeNameForMissingName": "Créer {name} pour {missingName}",
 		"generatesOnlyThisItemSMissingViews": "Génère uniquement les vues manquantes de cet objet pour l’animation choisie, à partir du visuel de la pose debout. Le corps ne change pas. PixelLab peut facturer en dollars américains ; le temps d’attente varie.",
 		"madeForAnotherBodyItMayNot": "Créé pour un autre corps. Il risque de ne pas s’aligner.",

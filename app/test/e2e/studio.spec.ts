@@ -9781,6 +9781,25 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).toContainText(
 		'~12 gens'
 	);
+	// Coverage marks each move this item is drawn for, and one action fills every missing move together.
+	const coverageList = pane.getByRole('list', { name: 'Move coverage', exact: true });
+	await expect(coverageList.getByRole('listitem', { name: 'Standing: missing' })).toBeVisible();
+	await expect(coverageList.getByRole('listitem', { name: 'Custom walk: missing' })).toBeVisible();
+	await expect(
+		coverageList.getByRole('listitem', { name: 'Custom cross punch: missing' })
+	).toBeVisible();
+	await expect(pane.getByText('Missing 3 moves', { exact: true })).toBeVisible();
+	const fillMissing = pane.getByRole('button', { name: /^Fill missing moves/ });
+	await expect(fillMissing).toContainText('~15 gens');
+	await fillMissing.click();
+	await page
+		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		(await import(path)).ui.sheet = 'item';
+	});
 	const peekCalls = async (endpoint: string, other: string) => {
 		await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
 		const api = page.getByRole('dialog', { name: 'API calls', exact: true });

@@ -496,6 +496,19 @@
 		"keepWithoutMovesDetail": "Mantém o item com suas animações completas sem gastar créditos. Ele fica oculto em {moves}, que continuam listadas como faltando para você criá-las depois pelo próprio preço.",
 		"youAcceptedThisArtworkWithItsRecorded": "Você aceitou esta arte com as observações de qualidade registradas.",
 		"generateItemForMove": "Gerar item para animação",
+		"coverageTitle": "Cobertura de animações",
+		"coverageAllDrawn": "Desenhado em todas as animações e estados",
+		"coverageMissing": {
+			"one": "{n} animação faltando",
+			"other": "{n} animações faltando"
+		},
+		"coverageClipDrawn": "{move}: desenhado",
+		"coverageClipMissing": "{move}: faltando",
+		"fillMissingMoves": "Completar animações faltantes",
+		"fillMissingHint": {
+			"one": "Desenha este item para {n} animação faltante em uma única oferta, reutilizando o design em pé.",
+			"other": "Desenha este item para todas as {n} animações faltantes em uma única oferta, reutilizando o design em pé."
+		},
 		"labelMakeNameForMissingName": "Criar {name} para {missingName}",
 		"generatesOnlyThisItemSMissingViews": "Gera apenas as vistas que faltam para este item na animação escolhida, reaproveitando a arte da pose em pé. O corpo não muda. O PixelLab pode cobrar em dólares, e o tempo de espera na fila varia.",
 		"madeForAnotherBodyItMayNot": "Feito para outro corpo. Pode não encaixar.",

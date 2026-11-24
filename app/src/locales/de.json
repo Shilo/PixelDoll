@@ -496,6 +496,19 @@
 		"keepWithoutMovesDetail": "Behält den Gegenstand aus seinen vollständigen Animationen, ohne Guthaben zu verbrauchen. In {moves} ist er ausgeblendet; diese bleiben als fehlend aufgeführt, damit du sie später zu ihrem eigenen Preis erstellen kannst.",
 		"youAcceptedThisArtworkWithItsRecorded": "Du hast diese Grafik mit den festgehaltenen Qualitätshinweisen übernommen.",
 		"generateItemForMove": "Gegenstand für Animation generieren",
+		"coverageTitle": "Animationsabdeckung",
+		"coverageAllDrawn": "In jeder Animation und jedem Zustand gezeichnet",
+		"coverageMissing": {
+			"one": "{n} Animation fehlt",
+			"other": "{n} Animationen fehlen"
+		},
+		"coverageClipDrawn": "{move}: gezeichnet",
+		"coverageClipMissing": "{move}: fehlt",
+		"fillMissingMoves": "Fehlende Animationen füllen",
+		"fillMissingHint": {
+			"one": "Zeichnet diesen Gegenstand für {n} fehlende Animation in einem Angebot, aus dem stehenden Design.",
+			"other": "Zeichnet diesen Gegenstand für alle {n} fehlenden Animationen in einem Angebot, aus dem stehenden Design."
+		},
 		"labelMakeNameForMissingName": "{name} für {missingName} erstellen",
 		"generatesOnlyThisItemSMissingViews": "Generiert nur die fehlenden Ansichten dieses Gegenstands für die gewählte Animation und verwendet dabei sein Design aus der Standpose. Der Grundkörper bleibt unverändert. PixelLab kann Kosten in US-Dollar berechnen. Die Wartezeit kann variieren.",
 		"madeForAnotherBodyItMayNot": "Für einen anderen Grundkörper erstellt. Passt möglicherweise nicht genau.",

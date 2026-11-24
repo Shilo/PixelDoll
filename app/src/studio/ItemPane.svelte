@@ -30,7 +30,8 @@
 	} from './create.ts';
 	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
-	import { seeded } from './itemGeneration.ts';
+	import { seeded, fillMissingMovesOffer, itemClipDrawn } from './itemGeneration.ts';
+	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
@@ -231,6 +232,19 @@
 	const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove], redo) : null);
 	const missingTier = $derived(offerTier(missingOffer));
 	const missingName = $derived(missingMove ? displayMove(missingMove.id, moveRefs) : '');
+	// Every move and State the body has views for, marked drawn or missing for this item (same rules as clipMissingItems).
+	const coverage = $derived(
+		m && it
+			? playbackClips(m.rig.animations).flatMap(({ key }) => {
+					const drawn = itemClipDrawn(m, it!.id, key);
+					return drawn == null ? [] : [{ id: key, name: displayMove(key, moveRefs), drawn }];
+				})
+			: []
+	);
+	const coverageMissing = $derived(coverage.filter((clip) => !clip.drawn).length);
+	// One combined estimate for every missing move this item has, so a character with several new moves fills them together.
+	const fillOffer = $derived(m ? fillMissingMovesOffer(m, missingMoves, redo) : null);
+	const fillTier = $derived(offerTier(fillOffer));
 	function makeMissing() {
 		if (!missingOffer?.specs.length) return;
 		const projectId = doc.id,
@@ -239,6 +253,15 @@
 			void queueMoves(projectId, specs);
 			ui.sheet = 'move';
 		}, missingTier);
+	}
+	function fillMissing() {
+		if (!fillOffer?.specs.length) return;
+		const projectId = doc.id,
+			specs = seeded($state.snapshot(fillOffer.specs));
+		withKey(() => {
+			void queueMoves(projectId, specs);
+			ui.sheet = 'move';
+		}, fillTier);
 	}
 	let colorPlan = $state<ItemPaletteRepairPlan | null>(null);
 	// The pending-work notice explains a disabled action, so it shows only while one it covers is actually waiting.
@@ -441,6 +464,36 @@
 				</div>
 			{/if}
 
+			{#if coverage.length}
+				<div class="field">
+					<span class="sec-title">{t('itemPane.coverageTitle')}</span>
+					<ul class="coverage-list" aria-label={t('itemPane.coverageTitle')}>
+						{#each coverage as clip (clip.id)}
+							<li
+								class="coverage-clip"
+								class:missing={!clip.drawn}
+								aria-label={t(
+									clip.drawn ? 'itemPane.coverageClipDrawn' : 'itemPane.coverageClipMissing',
+									{ move: clip.name }
+								)}
+							>
+								{#if clip.drawn}<Check size={12} strokeWidth={2.5} />{:else}<TriangleAlert
+										size={12}
+									/>{/if}<span>{clip.name}</span>
+							</li>
+						{/each}
+					</ul>
+					<p class="faint small">
+						{coverageMissing
+							? t('itemPane.coverageMissing', {
+									count: coverageMissing,
+									n: number(coverageMissing)
+								})
+							: t('itemPane.coverageAllDrawn')}
+					</p>
+				</div>
+			{/if}
+
 			<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
 			<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
 			{#if designReasons.length && !it.refit}
@@ -625,6 +678,36 @@
 					<p class="faint small">
 						{t('itemPane.generatesOnlyThisItemSMissingViews')}
 					</p>
+					{#if fillOffer}<div class="fill-missing">
+							<span class="api-action"
+								><button
+									class="bu-action btn"
+									data-variant="primary"
+									disabled={fillOffer.gens == null || tierBlocked(fillTier)}
+									aria-describedby={tierBlocked(fillTier) ? 'item-fill-tier' : 'item-fill-help'}
+									onclick={fillMissing}
+									>{t('itemPane.fillMissingMoves')}
+									<span class="cost"
+										>{fillOffer.gens == null
+											? t('common.unavailable')
+											: t('moves.estimate', {
+													gens: number(Math.ceil(fillOffer.gens))
+												})}</span
+									></button
+								></span
+							>
+							<p class="faint small" id="item-fill-help">
+								{t('itemPane.fillMissingHint', {
+									count: missingMoves.length,
+									n: number(missingMoves.length)
+								})}
+							</p>
+							{#if fillTier}<TierNotice
+									id="item-fill-tier"
+									minimumTier={fillTier}
+									feature={t('itemPane.makingMoreMoves')}
+								/>{/if}
+						</div>{/if}
 				</div>
 			{/if}
 			{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
@@ -938,6 +1021,35 @@
 </Sheet>
 
 <style>
+	.coverage-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 10px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.coverage-clip {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: var(--fs-sm);
+		color: var(--ok);
+	}
+	.coverage-clip span {
+		color: var(--text-2);
+	}
+	.coverage-clip.missing {
+		color: var(--warn);
+	}
+	.coverage-clip.missing span {
+		color: var(--text);
+	}
+	.fill-missing {
+		display: grid;
+		gap: 6px;
+		margin-top: 4px;
+	}
 	.item-links {
 		display: flex;
 		flex-wrap: wrap;
