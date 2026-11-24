@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Offline backup tooling for the debug-user-report skill. Spends nothing, opens nothing in a browser, writes only to --out.
-//   node .claude/skills/debug-user-report/scripts/run.mjs audit <backup.zip> [--out <dir>]
-//   node .claude/skills/debug-user-report/scripts/run.mjs sample <dir>
+//   node .agents/skills/debug-user-report/scripts/run.mjs audit <backup.zip> [--out <dir>]
+//   node .agents/skills/debug-user-report/scripts/run.mjs sample <dir>
 // audit: reads the ZIP in memory with the app's own readers (readRestoreSource, readBackupCopy), audits every character,
 // summarizes debug/ when present, exports each character to every engine, re-imports the character ZIP and round-trips a
 // restore and a new backup. It writes <out>/report.json (holds user data: keep it out of the repository) and prints a summary.

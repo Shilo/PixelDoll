@@ -74,11 +74,14 @@ which evidence was missing.
 
 ## Using the skill
 
-The skill lives in `.claude/skills/debug-user-report/` (SKILL.md plus an offline audit tool) and is registered in AGENTS.md.
+The skill lives in `.agents/skills/debug-user-report/` (SKILL.md plus an offline audit tool), which Codex and OpenCode
+load. `.claude/skills/debug-user-report/SKILL.md` is a pointer to it with the same name and description, so Claude Code
+loads it too. Edit only the `.agents` copy, and keep the pointer's description in step with it.
 
 - **Owner:** paste or attach whatever the user sent (the backup ZIP path, the report text, errors, screenshots) and ask
-  Claude to debug it, or type `/debug-user-report`. For the best evidence, ask the user to turn on Developer mode and
-  Settings > Library > Include debugging details, then send a new backup. Codex: tell it to follow the SKILL.md.
-- **Agents:** `node .claude/skills/debug-user-report/scripts/run.mjs audit <zip> --out <scratch dir>` opens a backup in
+  any agent to debug it, or pick the skill by name (`/debug-user-report` in Claude Code, `$debug-user-report` or the skill
+  picker in Codex). For the best evidence, ask the user to turn on Developer mode and Settings > Library > Include
+  debugging details, then send a new backup.
+- **Agents:** `node .agents/skills/debug-user-report/scripts/run.mjs audit <zip> --out <scratch dir>` opens a backup in
   memory with the app's own readers and audits it; it never touches browser data or spends credits.
   `run.mjs sample <dir>` writes a healthy, a healthy-with-debug and a deliberately broken sample backup to test the tool.
