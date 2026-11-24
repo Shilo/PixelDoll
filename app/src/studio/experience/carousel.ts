@@ -26,6 +26,30 @@ export function castTransform(pose: CastPose): string {
 	return `translate(${pose.x}px, ${pose.y}px) scale(${pose.scale})`;
 }
 
+type CastHitEdge = { left: number; right: number };
+
+/**
+ * Extra hit reach in each slot's own unscaled pixels, splitting every painted gap between horizontally adjacent
+ * slots at its midpoint so their hit areas meet without overlapping.
+ */
+export function castHitReach(
+	slots: { id: string; x: number; scale: number; l: number; r: number }[]
+): Map<string, CastHitEdge> {
+	const reach = new Map<string, CastHitEdge>(slots.map((slot) => [slot.id, { left: 0, right: 0 }]));
+	const ordered = [...slots].sort((left, right) => left.x - right.x);
+	for (let i = 0; i < ordered.length - 1; i++) {
+		const left = ordered[i];
+		const right = ordered[i + 1];
+		const leftEdge = left.x + left.scale * left.r;
+		const rightEdge = right.x + right.scale * right.l;
+		if (left.scale <= 0 || right.scale <= 0 || rightEdge <= leftEdge) continue;
+		const midpoint = (leftEdge + rightEdge) / 2;
+		reach.get(left.id)!.right = (midpoint - leftEdge) / left.scale;
+		reach.get(right.id)!.left = (rightEdge - midpoint) / right.scale;
+	}
+	return reach;
+}
+
 export function carouselFrames(
 	from: { transform: string; opacity: string },
 	to: CastPose,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	castHitReach,
 	castPose,
 	castTransform,
 	carouselFrames,
@@ -130,6 +131,60 @@ describe('character carousel geometry', () => {
 				expect(Math.abs(slots.enter.x)).toBeCloseTo(2 * Math.abs(target.x));
 			}
 		}
+	});
+	it('splits the painted gap between neighbors at its midpoint without overlap', () => {
+		for (const [span, heroArt, rightArt, leftArt] of [
+			[1, { l: -120, r: 40 }, { l: -30, r: 60 }, { l: -60, r: 30 }],
+			[0.6, { l: -150, r: 150 }, { l: -150, r: 150 }, { l: -150, r: 150 }],
+			[1.5, { l: -40, r: 110 }, { l: -90, r: 20 }, { l: -20, r: 90 }]
+		] as const) {
+			const width = 1000;
+			const size = 320;
+			const heroPose = castPose(0, width, size, span, { hero: heroArt, side: leftArt });
+			const leftPose = castPose(-1, width, size, span, { hero: heroArt, side: leftArt });
+			const rightPose = castPose(1, width, size, span, { hero: heroArt, side: rightArt });
+			const slots = [
+				{ id: 'left', ...leftPose, ...leftArt },
+				{ id: 'hero', ...heroPose, ...heroArt },
+				{ id: 'right', ...rightPose, ...rightArt }
+			];
+			const reach = castHitReach(slots);
+			const edge = (slot: (typeof slots)[number], side: 'l' | 'r') => {
+				const extra = side === 'l' ? reach.get(slot.id)!.left : reach.get(slot.id)!.right;
+				return slot.x + slot.scale * (side === 'l' ? slot.l - extra : slot.r + extra);
+			};
+			for (const [a, b] of [
+				[slots[0], slots[1]],
+				[slots[1], slots[2]]
+			]) {
+				const paintedLeft = a.x + a.scale * a.r;
+				const paintedRight = b.x + b.scale * b.l;
+				expect(edge(a, 'r')).toBeCloseTo((paintedLeft + paintedRight) / 2);
+				expect(edge(b, 'l')).toBeCloseTo((paintedLeft + paintedRight) / 2);
+				expect(edge(b, 'l')).toBeGreaterThanOrEqual(paintedLeft);
+				expect(edge(a, 'r')).toBeLessThanOrEqual(paintedRight);
+			}
+		}
+	});
+	it('leaves already overlapping or gapped-out silhouettes without added hit reach', () => {
+		const reach = castHitReach([
+			{ id: 'wide', x: 0, scale: 1, l: -100, r: 100 },
+			{ id: 'close', x: 120, scale: 1, l: -50, r: 50 }
+		]);
+		expect(reach.get('wide')).toEqual({ left: 0, right: 0 });
+		expect(reach.get('close')).toEqual({ left: 0, right: 0 });
+		const single = castHitReach([{ id: 'only', x: 0, scale: 1, l: -20, r: 20 }]);
+		expect(single.get('only')).toEqual({ left: 0, right: 0 });
+	});
+	it('adds no hit reach while the cast has no measurable scale', () => {
+		const slots = [-1, 0, 1].map((offset) => ({
+			id: `slot${offset}`,
+			...castPose(offset, 0, 320),
+			l: -100,
+			r: 100
+		}));
+		const reach = castHitReach(slots);
+		for (const slot of slots) expect(reach.get(slot.id)).toEqual({ left: 0, right: 0 });
 	});
 	it('retargets from the sampled pose instead of restarting', () => {
 		const current = { transform: 'matrix(0.8, 0, 0, 0.8, 123, -15)', opacity: '0.7' };

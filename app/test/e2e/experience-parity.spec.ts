@@ -2745,6 +2745,114 @@ test.describe('selected cast centering', () => {
 					}
 				}
 			});
+	test('neighboring hit areas meet at the painted gap midpoint and select the nearest character', async ({
+		page
+	}) => {
+		await landing(page);
+		await page.evaluate(async () => {
+			const { openSource } = await import(/* @vite-ignore */ String('/src/lib/dress/project.ts'));
+			const { saveImportedCharacter } = await import(
+				/* @vite-ignore */ String('/src/lib/store/import.ts')
+			);
+			const { refreshProjects, openProject, store } = await import(
+				/* @vite-ignore */ String('/src/studio/state.svelte.ts')
+			);
+			const { project } = await openSource('fixture:s2');
+			for (let copy = 1; copy <= 2; copy++)
+				await saveImportedCharacter(
+					{
+						project: { manifest: structuredClone(project.manifest), images: project.images },
+						extra: {},
+						warnings: []
+					},
+					`Hit area ${copy}`
+				);
+			await refreshProjects();
+			await openProject(store.projects[0].id);
+		});
+		await expect(page.locator('.character-row')).toHaveCount(3);
+		await expect(page.locator('.cast-character')).toHaveCount(3);
+		const settled = () =>
+			expect
+				.poll(() =>
+					page.locator('.cast').evaluate((cast) => cast.getAnimations({ subtree: true }).length)
+				)
+				.toBe(0);
+		const reachable = () =>
+			expect
+				.poll(() =>
+					page
+						.locator('.cast-character')
+						.evaluateAll((nodes) =>
+							nodes.every((node) =>
+								(node as HTMLElement).style.getPropertyValue('--cast-reach-left')
+							)
+						)
+				)
+				.toBe(true);
+		await settled();
+		await reachable();
+
+		for (const [width, height] of [
+			[1280, 800],
+			[390, 844]
+		] as const) {
+			await page.setViewportSize({ width, height });
+			await settled();
+			await reachable();
+			const gaps = await page.locator('.cast').evaluate((cast) => {
+				const rows = [...cast.querySelectorAll<HTMLElement>('.cast-character:not([inert])')]
+					.map((node) => {
+						const rect = node.getBoundingClientRect();
+						return {
+							id: node.dataset.characterId!,
+							chosen: node.classList.contains('chosen'),
+							left: rect.left,
+							right: rect.right,
+							top: rect.top,
+							bottom: rect.bottom
+						};
+					})
+					.sort((left, right) => left.left - right.left);
+				return rows.slice(0, -1).map((left, index) => {
+					const right = rows[index + 1];
+					const middle = (left.right + right.left) / 2;
+					const y = (Math.max(left.top, right.top) + Math.min(left.bottom, right.bottom)) / 2;
+					const owner = (x: number) =>
+						document.elementFromPoint(x, y)?.closest<HTMLElement>('.cast-character')?.dataset
+							.characterId ?? null;
+					return {
+						left: left.id,
+						right: right.id,
+						chosenIsLeft: left.chosen,
+						chosenIsRight: right.chosen,
+						middle,
+						y,
+						leftOwner: owner(middle - 2),
+						rightOwner: owner(middle + 2)
+					};
+				});
+			});
+			expect(gaps.length).toBeGreaterThan(0);
+			for (const gap of gaps) {
+				expect(gap.leftOwner, `${width}x${height}: ${gap.left} reaches the midpoint`).toBe(
+					gap.left
+				);
+				expect(gap.rightOwner, `${width}x${height}: ${gap.right} reaches the midpoint`).toBe(
+					gap.right
+				);
+			}
+			const gap = gaps.find((entry) => entry.chosenIsLeft || entry.chosenIsRight)!;
+			const fromLeft = gap.chosenIsRight;
+			const target = fromLeft ? gap.left : gap.right;
+			await page.mouse.click(gap.middle + (fromLeft ? -4 : 4), gap.y);
+			await expect(page.locator('.cast-character.chosen')).toHaveAttribute(
+				'data-character-id',
+				target
+			);
+			await settled();
+		}
+	});
 });
 
 test('saved light appearance applies before the application module initializes', async ({

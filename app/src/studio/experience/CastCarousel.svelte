@@ -6,7 +6,13 @@
 	import CastReflection from './CastReflection.svelte';
 	import SelectionRing from './SelectionRing.svelte';
 	import { ui } from '../state.svelte.ts';
-	import { carouselFrames, carouselRoute, castPose, castTransform } from './carousel.ts';
+	import {
+		carouselFrames,
+		carouselRoute,
+		castHitReach,
+		castPose,
+		castTransform
+	} from './carousel.ts';
 	import { castStill } from './castMount.ts';
 	import { groundedThumb, stills } from './thumbnails.svelte.ts';
 	type Entry = { p: { id: string; name: string }; offset: number };
@@ -163,6 +169,7 @@
 		];
 		await tick();
 		if (epoch !== generation) return;
+		const placed: { id: string; x: number; scale: number; l: number; r: number }[] = [];
 		for (const actor of actors) {
 			const node = nodes.get(actor.p.id);
 			if (!node) continue;
@@ -178,6 +185,8 @@
 			};
 			const pose = actor.leaving ? slots.exit : poseAt(actor.offset);
 			const endpoint = castTransform(pose);
+			if (!actor.leaving)
+				placed.push({ id: actor.p.id, x: pose.x, scale: pose.scale, l: side.l, r: side.r });
 			node.style.transform = endpoint;
 			node.style.opacity = actor.leaving ? '0' : '1';
 			const reflection = reflections.get(actor.p.id);
@@ -216,6 +225,14 @@
 				animations.delete(actor.p.id);
 				if (actor.leaving) actors = actors.filter((entry) => entry.p.id !== actor.p.id);
 			};
+		}
+		const reach = castHitReach(placed);
+		for (const actor of actors) {
+			const node = nodes.get(actor.p.id);
+			if (!node) continue;
+			const edges = reach.get(actor.p.id) ?? { left: 0, right: 0 };
+			node.style.setProperty('--cast-reach-left', `${edges.left}px`);
+			node.style.setProperty('--cast-reach-right', `${edges.right}px`);
 		}
 	}
 	function clicked(event: MouseEvent, actor: Actor) {
@@ -280,6 +297,8 @@
 				}}
 				onclick={(event) => clicked(event, actor)}
 			>
+				<span class="cast-hit cast-hit-left" aria-hidden="true"></span>
+				<span class="cast-hit cast-hit-right" aria-hidden="true"></span>
 				<div
 					class="cast-art"
 					style:width="{size}px"
@@ -312,6 +331,19 @@
 		bottom: 0;
 		transform-origin: 50% 100%;
 		pointer-events: none;
+	}
+	.cast-hit {
+		position: absolute;
+		bottom: 0;
+		height: 100%;
+	}
+	.cast-hit-left {
+		right: 100%;
+		width: var(--cast-reach-left, 0px);
+	}
+	.cast-hit-right {
+		left: 100%;
+		width: var(--cast-reach-right, 0px);
 	}
 
 	.cast-character.carousel-character,
