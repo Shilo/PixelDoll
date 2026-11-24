@@ -199,6 +199,12 @@ body three-quarter. Every candidate needs south and north checked, not just east
 - **Watch the ledger's estimates.** The `c25` ledger counts the estimate for rows that errored (free 422s) toward
   `spent()`. Report actual usage from the `gens` field.
 
+- **Run every Move sheet retry test before pushing routing changes.** The first push of this change turned main red. The
+  partial-redraw guard dropped the action of a "Review Skeleton V3" retry, so its checkpoint saw a changed request and
+  disabled Replace (`studio -g "move review gates item selection"`). A hand-picked end-to-end subset had missed it. For
+  changes to move routing, also run `studio -g "move review|Redraw|Replace"` and `character-creator -g "move"`, or let CI
+  finish before calling the work done.
+
 ### Environment pitfalls (this Windows workstation)
 
 - **Python writes CRLF by default.** On Windows, Python text-mode writes convert files to CRLF. Open with `newline=''`
