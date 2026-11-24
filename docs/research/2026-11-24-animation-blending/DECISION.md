@@ -98,6 +98,34 @@ No export changes in Phase B. The runtime functions land because Live will reuse
 - Tests: `runtime.test.ts`, the four export suites, `runtime-sync.test.ts`, and the native verifiers. Run the full E2E suite because the shared runtime changed, plus `export-picker`.
 - Move the waist offset from browser preferences into the saved character so an export reproduces it.
 
+## Review criteria for the implementation
+
+The implementer and the reviewer both check these before the pilot is accepted.
+
+**API, structural parity**
+
+1. The same four operations exist with the same names, arguments and results in JS/Phaser, GDevelop, Godot and Unity. Only host-language conventions differ.
+2. Default is off. Enabling layering never changes what `play` does; `play` during an action cancels it; invalid input leaves state unchanged.
+3. `playAction` returns `layered` only when layering is enabled and the pair is eligible; otherwise `full`, and `full` renders exactly today's behavior.
+4. The loop keeps its own clock and progress across action start and end. Equipment and palette changes restart neither clock.
+5. No controller performs masking or anatomical inference. They draw supplied fragments at integer offsets.
+6. An export without fragments or anchors reports `canLayerAction` false and behaves as before.
+
+**App, dogfooding**
+
+7. The Live view calls the canonical runtime split and composite functions. No second implementation of the mask, offset or draw order exists in `studio/`.
+8. Eligibility is: grounded, unmounted, moving on Walk, attack direction equals locomotion direction, both clips have hip geometry, layering enabled. Everything else falls back with a reason.
+9. Same-facing only; mounted, airborne, idle and mismatched directions never layer.
+10. The 0.8 travel factor applies to grounded unmounted attacks only, in both modes, with gait following velocity. Mounts keep 1.0 and their own gait. Mount facing follows travel; only the rider turns to the aim.
+11. Settings: one switch on by default, one Waist stepper shown only when on, both with accessible human-readable tooltips, all text localized. No seam or speed sliders.
+12. Walk phase is preserved across attack start, end and direction change; the walk does not restart.
+
+**Tests and reporting**
+
+13. Unit tests cover offsets, shaped removal keeps held gear, lower slots come from Walk, fallback on direction mismatch, determinism, waist clamping, settings parsing, the mounted exemptions and the four controller operations.
+14. One E2E case asserts layered rendering and reduced travel through the UI.
+15. The implementer reports exactly what ran and what could not run. Native engine output stays unverified until a native check runs.
+
 ## Dissent and why
 
 | Question | Sol | Opus | Decision |
