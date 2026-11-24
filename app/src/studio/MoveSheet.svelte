@@ -82,7 +82,15 @@
 		type KeepBodyPlan,
 		type MeasurementRecoveryPlan
 	} from './create.ts';
-	import { moveFrames, moveMotionFrames, isAuthoredAction, moveEstimate } from './movePricing.ts';
+	import {
+		fixedPoses,
+		moveFrames,
+		moveMotionFrames,
+		moveTemplate,
+		isAuthoredAction,
+		moveEstimate
+	} from './movePricing.ts';
+	import { MOVE_TEMPLATES } from '../lib/pixellab/routes.ts';
 	import {
 		ui,
 		doc,
@@ -516,7 +524,7 @@
 	}>();
 	let motionProbe = $state(0);
 	const managedMotionId = $derived(
-		(describing || !isAuthoredAction(action)) &&
+		(describing || !isAuthoredAction(action) || !!MOVE_TEMPLATES[action]) &&
 			!startFrom &&
 			!draft?.skeletonRetry &&
 			!targetDirs.some((direction) => frameReferences[direction]?.start)
@@ -562,6 +570,16 @@
 			.filter(Boolean)
 			.join(' · ')
 	);
+	// Redrawing some views of a saved move keeps that move's route: when its kept views were not drawn by a PixelLab
+	// template, the redrawn views take the described route too, so one move never mixes two motions.
+	const keepsDescribedRoute = $derived(
+		replacing &&
+			targetDirs.length !== availableDirs.length &&
+			!!MOVE_TEMPLATES[action] &&
+			!Object.values(savedMove?.sources ?? {}).some((source) =>
+				source?.motion?.startsWith('managed-skeleton-v3:')
+			)
+	);
 	const motionFor = (option: MoveAnimationModel, animation = animationFor(option)) => {
 		const managed = managedFor(option);
 		return {
@@ -570,7 +588,7 @@
 				managed && app.key && !app.keyRejected
 					? accessFor(managed)?.source
 					: ('standalone' as const),
-			action: describing ? undefined : action,
+			action: describing || keepsDescribedRoute ? undefined : action,
 			text: text.trim(),
 			frames: baseFrames,
 			replace: replacing,
@@ -2391,11 +2409,13 @@
 							<div>
 								<p class="faint small">
 									{[
-										motion.text
-											? t('moveSheet.pipeline.described')
-											: action === 'walk'
-												? t('moveSheet.pipeline.walk')
-												: t('moveSheet.pipeline.authored'),
+										moveTemplate(motion)
+											? t('moveSheet.pipeline.template', {
+													template: moveTemplate(motion)!.template
+												})
+											: fixedPoses(motion)
+												? t('moveSheet.pipeline.authored')
+												: t('moveSheet.pipeline.described'),
 										affectedMirrors
 											? t('moveSheet.pipeline.gridMirrored', {
 													frames: est.frames,

@@ -2707,7 +2707,7 @@
 		"addFeature": "Giyili eşyalar için animasyonlar",
 		"pipeline": {
 			"described": "pixminimax hareketi (silahsız, aksesuarsız, efektsiz) → eklemler → dinlenme görünümünde ham skeleton-v3",
-			"walk": "skeleton-v3 yürüme hareketi → eklemler → dinlenme görünümünde ham skeleton-v3",
+			"template": "skeleton-v3 şablonu {template} → eklemler → dinlenme görünümünde ham skeleton-v3",
 			"authored": "dinlenme pozundan oluşturulan anahtar noktalar → ham skeleton-v3",
 			"grid": "{frames} kare × {dirs} yön",
 			"gridMirrored": "{frames} kare × {dirs} yön ({mirrored} aynalanmış)"
@@ -2877,7 +2877,8 @@
 		"default": "Ayakta",
 		"idle": "Bekleme",
 		"walk": "Yürüme",
-		"run": "Koşma"
+		"run": "Koşma",
+		"jump": "Zıplama"
 	},
 	"stateGeneration": {
 		"continueIntro": "Hiç gönderilmemiş görünümleri tamamlayabilirsiniz. Tamamlanan görünümler korunur.",

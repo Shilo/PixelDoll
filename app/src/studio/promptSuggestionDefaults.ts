@@ -89,6 +89,7 @@ export const promptSuggestionDefaults: Record<SuggestionListKey, readonly Sugges
 		move('idle', 'moveNames.idle'),
 		move('walk', 'moveNames.walk'),
 		move('run', 'moveNames.run'),
+		move('jump', 'moveNames.jump'),
 		move('slash'),
 		move('hurt'),
 		move('death'),

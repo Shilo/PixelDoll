@@ -125,6 +125,14 @@ export const BASE_ANIMS: BaseAnim[] = [
 	{ name: 'idle', template: 'breathing-idle', action: 'breathing idle, standing still', frames: 4 },
 	{ name: 'walk', template: 'walking-8-frames', action: 'walking', frames: 8 }
 ];
+/** The PixelLab skeleton-v3 templates that Studio move suggestions animate with on a registered character, keyed by the
+ *  suggestion's action. Only templates that passed the 2026-11-24 blind study in every tested view are listed
+ *  (docs/research/2026-11-24-template-study/README.md). `frames` is the count the template returns. */
+export const MOVE_TEMPLATES: Readonly<Record<string, BaseAnim>> = {
+	walk: BASE_ANIMS[1],
+	run: { name: 'run', template: 'running-8-frames', action: 'running', frames: 8 },
+	jump: { name: 'jump', template: 'two-footed-jump', action: 'jumping with both feet', frames: 7 }
+};
 export const baseAnimation = (
 	mode: BaseAnimMode,
 	character_id: string,

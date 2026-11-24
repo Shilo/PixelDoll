@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
+	addedMoves,
 	characterCost,
 	characterOf,
 	currentGens,
@@ -14,7 +15,7 @@ import {
 	usdOf,
 	type CostInputs
 } from '../../src/studio/costEstimate.ts';
-import { estimate, moveEstimate } from '../../src/studio/movePricing.ts';
+import { estimate, moveEstimate, moveTemplate } from '../../src/studio/movePricing.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { poseCallGens, poseGensFor } from '../../src/lib/rig/clips.ts';
 import { padOf, planGens, planItem } from '../../src/lib/items/items.ts';
@@ -220,6 +221,48 @@ describe('cost estimate', () => {
 		expect(characterCost(c, { ...inputs, retries: 2 }).total).toBeCloseTo(3140.25);
 		expect(usdOf(3140.25, planRate(2))).toBeCloseTo(15.0732);
 		expect(usdOf(3140.25, planRate(2), 'low')).toBeCloseTo(13.8171);
+	});
+
+	test('re-prices a saved template move as its template and a saved authored move as authored', () => {
+		const priced = (motion: string, id: string) => {
+			const m = manifest({ cell: 64, directions: FOUR, moves: [{ id, cells: 8, motion }] });
+			return { m, gens: characterCost(of(m), firstPass(seedInputs(of(m)))).moves.gens };
+		};
+		const run = priced('managed-skeleton-v3:running-8-frames', 'run');
+		const template = moveEstimate(run.m, {
+			id: 'run',
+			action: 'run',
+			frames: 8,
+			animation: { model: 'skeleton-v3', frameCount: 8 },
+			items: []
+		}).body;
+		expect(run.gens).toBeCloseTo(template);
+		// The template's motion and its joint checks are part of the price.
+		const slash = priced('authored:slash', 'slash');
+		expect(run.gens).toBeGreaterThan(slash.gens);
+		expect(slash.gens).toBeCloseTo(
+			moveEstimate(slash.m, {
+				id: 'slash',
+				action: 'slash',
+				frames: 8,
+				motionSource: 'standalone',
+				animation: { model: 'skeleton-v3', frameCount: 8 },
+				items: []
+			}).body
+		);
+	});
+
+	test('plans suggestions on the template route only for characters drawn here', () => {
+		const draw = newCharacter(
+			{ body: 48, frame: 64, directions: FOUR },
+			{ moveModel: 'skeleton-v3', stateModel: 'pro' }
+		);
+		const walk = (c: ReturnType<typeof newCharacter>) =>
+			addedMoves(c).suggested.find((spec) => spec.action === 'walk')!;
+		expect(moveTemplate(walk(draw))?.template).toBe('walking-8-frames');
+		// An imported character may not be registered with PixelLab, so it is planned on the standalone route.
+		const imported = { ...draw, setup: { kind: 'import' as const } };
+		expect(moveTemplate(walk(imported))).toBeUndefined();
 	});
 
 	test('prices pose batches at 3, 12, 15 and 16 frames like itemPoseGens', () => {

@@ -2707,7 +2707,7 @@
 		"addFeature": "Animaciones para objetos puestos",
 		"pipeline": {
 			"described": "movimiento pixminimax (sin armas, sin accesorios, sin efectos) → articulaciones → skeleton-v3 sin procesar en la vista de reposo",
-			"walk": "movimiento skeleton-v3 al caminar → articulaciones → skeleton-v3 sin procesar en la vista de reposo",
+			"template": "plantilla skeleton-v3 {template} → articulaciones → skeleton-v3 sin procesar en la vista de reposo",
 			"authored": "keypoints creados a partir de la pose de reposo → skeleton-v3 sin procesar",
 			"grid": "{frames} fotogramas × {dirs} direcciones",
 			"gridMirrored": "{frames} fotogramas × {dirs} direcciones ({mirrored} reflejadas)"
@@ -2877,7 +2877,8 @@
 		"default": "De pie",
 		"idle": "Reposo",
 		"walk": "Caminar",
-		"run": "Correr"
+		"run": "Correr",
+		"jump": "Saltar"
 	},
 	"stateGeneration": {
 		"continueIntro": "Puedes terminar las vistas que no se enviaron. Se conservarán las vistas completadas.",

@@ -2635,7 +2635,7 @@
 		"addFeature": "装備中のアイテムのモーション",
 		"pipeline": {
 			"described": "pixminimaxのモーション（素手、小道具なし、エフェクトなし）→ 関節 → 基準ビューでraw skeleton-v3",
-			"walk": "歩きのskeleton-v3モーション → 関節 → 基準ビューでraw skeleton-v3",
+			"template": "skeleton-v3テンプレート {template} → 関節 → 基準ビューでraw skeleton-v3",
 			"authored": "基準ポーズから作成したキーポイント → raw skeleton-v3",
 			"grid": "{frames}フレーム × {dirs}方向",
 			"gridMirrored": "{frames}フレーム × {dirs}方向（{mirrored}方向は反転）"
@@ -2801,7 +2801,8 @@
 		"default": "立ちポーズ",
 		"idle": "待機",
 		"walk": "歩き",
-		"run": "走り"
+		"run": "走り",
+		"jump": "ジャンプ"
 	},
 	"stateGeneration": {
 		"continueIntro": "まだ送信していない向きの画像を生成できます。完了した画像は保持されます。",

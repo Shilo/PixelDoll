@@ -16,6 +16,7 @@ import { hasCompleteCells } from '../lib/dress/dress.ts';
 import { characterReference, costBody } from './characterConfig.ts';
 import { defaultMoveFrameCount } from './moveAnimationOptions.ts';
 import { LocalizedError } from '../lib/message.ts';
+import { MOVE_TEMPLATES, type BaseAnim } from '../lib/pixellab/routes.ts';
 
 /** Generations per uncached estimate-skeleton joint check. */
 export const EST = 0.1;
@@ -81,10 +82,30 @@ export const extendable = (m: Manifest, itemId: string) =>
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const isAuthoredAction = (action?: string): action is string =>
 	!!action && Object.hasOwn(ACTIONS, action);
+/** The PixelLab template a Skeleton V3 move suggestion animates with, when the template can honor the request: the
+ *  suggestion's own action (its text unedited, or the sheet would send no action), on a registered character (a resolved
+ *  managed source, or a saved template move's spec, which has none), with no start frame, start reference or imported
+ *  joints, at Automatic or at most the template's own frame count: its poses are then sampled down to the move's frames,
+ *  while more frames than the template has would be invented in-betweens, so those take the move's other route. */
+export function moveTemplate(spec: MoveFrameSpec): BaseAnim | undefined {
+	const template = spec.action ? MOVE_TEMPLATES[spec.action] : undefined;
+	if (
+		!template ||
+		moveAnimationModel(spec) !== 'skeleton-v3' ||
+		spec.motionSource === 'standalone' ||
+		spec.startFrom ||
+		spec.poses ||
+		Object.values(spec.animation?.references ?? {}).some((reference) => reference?.start) ||
+		(spec.animation?.frameCount ?? 0) > template.frames
+	)
+		return undefined;
+	return template;
+}
 /** Moves whose joints are known before any request: an authored action, or a move's motion imported from another body.
- *  They buy no motion request; only the body render and its checks. */
-export const fixedPoses = (spec: Pick<MoveSpec, 'action' | 'poses'>) =>
-	!!spec.poses || isAuthoredAction(spec.action);
+ *  They buy no motion request; only the body render and its checks. An authored action that a template animates instead
+ *  (moveTemplate) is not fixed. */
+export const fixedPoses = (spec: MoveFrameSpec) =>
+	!!spec.poses || (isAuthoredAction(spec.action) && !moveTemplate(spec));
 /** ClipSource.motion of a move drawn in another body's imported joints. */
 export const IMPORTED_MOTION = 'imported-motion';
 export type MoveFrameSpec = Pick<
@@ -102,10 +123,11 @@ export const moveMotionSource = (spec: MoveFrameSpec): MoveSpec['motionSource'] 
 export const moveFrames = (m: Manifest, s: MoveFrameSpec) => {
 	const dir = m.rig.directions.find((d) => !d.mirrorOf && m.rig.rest?.[d.id])?.id;
 	const r = dir && m.rig.rest?.[dir];
+	const template = moveTemplate(s);
 	const preferred = s.poses
 		? (Object.values(s.poses)[0]?.length ?? s.frames)
-		: s.action === 'walk'
-			? 8
+		: template
+			? template.frames
 			: isAuthoredAction(s.action) && r && dir
 				? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length
 				: s.frames;
@@ -145,14 +167,14 @@ export function nativeMoveGens(
 }
 
 export function moveMotionFrames(m: Manifest, spec: MoveFrameSpec): number {
-	return spec.action === 'walk' && moveMotionSource(spec) === undefined
-		? 8
-		: Math.ceil(moveFrames(m, spec) / 4) * 4;
+	return moveTemplate(spec)?.frames ?? Math.ceil(moveFrames(m, spec) / 4) * 4;
 }
 
+/** A template motion bills like a raw skeleton-v3 call of its frames (2-3 gens per view in the 2026-11-24 study). */
 export function moveMotionGens(m: Manifest, spec: MoveFrameSpec): number {
-	return spec.action === 'walk' && moveMotionSource(spec) === undefined
-		? 3
+	const template = moveTemplate(spec);
+	return template
+		? poseCallGens(template.frames)
 		: nativeMoveGens('pixminimax', m.rig.cell, moveMotionFrames(m, spec));
 }
 

@@ -25,7 +25,7 @@ import {
 	type PaidView
 } from '../lib/pixellab/paid-results.ts';
 import {
-	BASE_ANIMS,
+	MOVE_TEMPLATES,
 	baseAnimation,
 	frameOrder,
 	png,
@@ -197,6 +197,7 @@ import {
 	moveMotionFrames,
 	moveMotionGens,
 	moveMotionSource,
+	moveTemplate,
 	nativeMoveGens,
 	type MoveFrameSpec
 } from './movePricing.ts';
@@ -1011,7 +1012,8 @@ async function motion(
 	standing?: Img,
 	lifts?: readonly number[],
 	below = 0,
-	echo: MotionEchoRule = 'optional-leading'
+	echo: MotionEchoRule = 'optional-leading',
+	loop = false
 ): Promise<{
 	keypoints: Keypoint[][];
 	record: JobRec;
@@ -1022,7 +1024,7 @@ async function motion(
 	const label = jobLabel.text;
 	const r = await run(req, jobLabel, 'studio-rig', false, true, signal, activityScope);
 	tick();
-	const { frames, motionEcho, short } = await normalizeMotionFrames(
+	const normalized = await normalizeMotionFrames(
 		r,
 		(await imagesOf(r)).map((out) => out.img),
 		dir,
@@ -1036,6 +1038,9 @@ async function motion(
 		'motion',
 		below
 	);
+	const { motionEcho, short } = normalized,
+		seam = trimStandingSeam(normalized.frames, standing, loop),
+		frames = seam.frames;
 	const kps = await settledAll(
 		frames.map(async (f) => {
 			// An empty frame has no joints to measure; it is bridged from its neighbors or the view stops below.
@@ -1067,7 +1072,8 @@ async function motion(
 			{ ...words, size },
 			{ step: 'motion', failure: 'overflow', recordId: r.id }
 		);
-	const motionBridged = kps.flatMap((points, i) => (hasAll(points) ? [] : [i]));
+	// Bridged frames are reported by their place in the returned motion, before any seam frame was dropped.
+	const motionBridged = kps.flatMap((points, i) => (hasAll(points) ? [] : [i + seam.start]));
 	return {
 		keypoints: filled,
 		record: r,
@@ -1075,6 +1081,25 @@ async function motion(
 		...(motionBridged.length ? { motionBridged } : {}),
 		...(short ? { short } : {})
 	};
+}
+/** A looping described motion that opens or closes on an exact copy of the standing pose it started from (PixMiniMax often
+ *  opens on it, and a standalone loop is asked to end on it) holds the cycle on a stand at every seam. That one seam frame
+ *  per end is dropped before its joints are measured, and the remaining poses are resampled to the move's frame count
+ *  (sampleMovePoses). A motion with more than two such frames barely leaves the standing silhouette (a breath or a sway),
+ *  so it is left whole. `start` is how many leading frames were dropped, so frame notes keep the returned numbering. */
+const STANDING_SEAM_IOU = 0.99;
+export function trimStandingSeam(
+	frames: Img[],
+	standing: Img | undefined,
+	loop: boolean
+): { frames: Img[]; start: number } {
+	if (!loop || !standing || frames.length <= 3) return { frames, start: 0 };
+	const still = frames.map((frame) => maskIoU(frame, standing) >= STANDING_SEAM_IOU);
+	const start = still[0] ? 1 : 0,
+		end = still.at(-1) ? frames.length - 1 : frames.length;
+	// Fewer than three poses left would no longer be a cycle (and could not bridge a gap), so such a motion stays whole.
+	if (still.filter(Boolean).length > 2 || end - start < 3) return { frames, start: 0 };
+	return { frames: frames.slice(start, end), start };
 }
 /** Measured motion joints, with at most one interior frame that has none filled halfway between its measured neighbors.
  *  Motion joints only shape the poses the body render is asked for, and the render's own frames must still measure every
@@ -2313,7 +2338,7 @@ async function inspectMeasurementRecovery(
 				'create.errors.cachedBodyReuseRequires'
 			);
 		let keypoints: Keypoint[][] | undefined, notes: FrameNotes | undefined;
-		const authored = isAuthoredAction(spec.action);
+		const authored = isAuthoredAction(spec.action) && !moveTemplate(spec);
 		if (model === 'skeleton-v3' && spec.poses) keypoints = spec.poses[d];
 		else if (model === 'skeleton-v3' && authored)
 			keypoints = authoredPoses(
@@ -2334,7 +2359,7 @@ async function inspectMeasurementRecovery(
 					'create.errors.originalCompletedMotionUnavailable',
 					{ direction: viewName(d) }
 				);
-			const { frames, short } = await normalizeMotionFrames(
+			const normalized = await normalizeMotionFrames(
 				record,
 				(await imagesOf(record, context.read)).map((out) => out.img),
 				d as Direction,
@@ -2348,6 +2373,13 @@ async function inspectMeasurementRecovery(
 				'motion',
 				moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d)
 			);
+			const { short } = normalized,
+				seam = trimStandingSeam(
+					normalized.frames,
+					motionStart,
+					!!spec.animation?.loop && !moveTemplate(spec)
+				),
+				frames = seam.frames;
 			// Only a check that completed with invalid joints may be bridged; a lost, stopped or unsent one is unknown.
 			const checks = await Promise.all(
 				frames.map(async (frame) => {
@@ -2362,10 +2394,10 @@ async function inspectMeasurementRecovery(
 			const measured = checks.every((check) => check.done)
 				? motionJoints(checks.map((check) => check.points))
 				: undefined;
-			const gaps = checks.flatMap((check, i) => (hasAll(check.points) ? [] : [i]));
+			const gaps = checks.flatMap((check, i) => (hasAll(check.points) ? [] : [i + seam.start]));
 			if (gaps.length || short)
 				notes = {
-					of: frames.length,
+					of: normalized.frames.length,
 					...(gaps.length ? { bridged: gaps } : {}),
 					...(short ? { short } : {})
 				};
@@ -2713,7 +2745,7 @@ export function skeletonMoveReview(
 		const action =
 			bodyRejected || draftWarning
 				? spec.action
-				: motion === spec.id && (motion === 'walk' || isAuthoredAction(motion))
+				: motion === spec.id && (!!MOVE_TEMPLATES[motion] || isAuthoredAction(motion))
 					? motion
 					: undefined;
 		const preferred = candidate?.animation.cells ?? saved?.cells ?? moveFrames(manifest, spec);
@@ -3500,12 +3532,13 @@ export function moveMotionRequest(
 			preview
 		);
 	}
+	const template = moveTemplate(spec);
 	return routes.animateCharacter(
-		spec.action === 'walk' && moveMotionSource(spec) === undefined
+		template
 			? baseAnimation(
 					'skeleton-v3',
 					rec.character?.id ?? '',
-					BASE_ANIMS.find((animation) => animation.name === 'walk')!,
+					template,
 					[dir],
 					viewSeed(spec, dir, 'motion')
 				)
@@ -3724,7 +3757,7 @@ function bodyClipPlan(rec: StoredProject, project: Project, spec: MoveSpec): Bod
 				? undefined
 				: spec.poses
 					? IMPORTED_MOTION
-					: isAuthoredAction(spec.action)
+					: isAuthoredAction(spec.action) && !moveTemplate(spec)
 						? spec.action
 						: undefined,
 		n: moveFrames(rec.manifest, spec)
@@ -3829,7 +3862,9 @@ async function bodyClip(
 			motionStart,
 			spec.motionLift?.[d],
 			moveMotionSource(spec) === 'standalone' ? 0 : artMapping(rig, d),
-			motionEchoRule(spec)
+			motionEchoRule(spec),
+			// Template loops are whole cycles; only a described loop can stall on the standing pose.
+			!!spec.animation?.loop && !moveTemplate(spec)
 		);
 		keypoints = result.keypoints;
 		source = result.record;
@@ -4628,7 +4663,7 @@ async function addBodyClip(
 	const basePlayback = original && { loop: original.loop, moveLoop: original.moveLoop };
 	const frameMs = defaultMs(spec.id);
 	const referenceCount =
-		model === 'skeleton-v3' && (authored || spec.action === 'walk')
+		model === 'skeleton-v3' && (authored || moveTemplate(spec))
 			? moveFrames(m, { action: spec.action, frames: spec.frames, poses: spec.poses })
 			: n;
 	const durationMs = referenceCount * frameMs;
@@ -4710,8 +4745,8 @@ async function addBodyClip(
 			motion:
 				model !== 'skeleton-v3'
 					? `${model}:${spec.text?.trim() || spec.action || spec.id}`
-					: spec.action === 'walk' && moveMotionSource(spec) === undefined
-						? 'managed-skeleton-v3:walking-8-frames'
+					: moveTemplate(spec)
+						? `managed-skeleton-v3:${moveTemplate(spec)!.template}`
 						: spec.poses
 							? IMPORTED_MOTION
 							: authored

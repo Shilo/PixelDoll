@@ -2707,7 +2707,7 @@
 		"addFeature": "Animationen für angelegte Gegenstände",
 		"pipeline": {
 			"described": "pixminimax-Bewegung (unbewaffnet, keine Requisiten oder Effekte) → Gelenke → skeleton-v3 ohne Nachbearbeitung auf der Ruheansicht",
-			"walk": "Gehbewegung per skeleton-v3 → Gelenke → skeleton-v3 ohne Nachbearbeitung auf der Ruheansicht",
+			"template": "skeleton-v3-Vorlage {template} → Gelenke → skeleton-v3 ohne Nachbearbeitung auf der Ruheansicht",
 			"authored": "Aus der Ruhepose erstellte Gelenkpunkte → skeleton-v3 ohne Nachbearbeitung",
 			"grid": "{frames} Frames × {dirs} Blickrichtungen",
 			"gridMirrored": "{frames} Frames × {dirs} Blickrichtungen ({mirrored} gespiegelt)"
@@ -2877,7 +2877,8 @@
 		"default": "Standpose",
 		"idle": "Idle",
 		"walk": "Gehen",
-		"run": "Laufen"
+		"run": "Laufen",
+		"jump": "Springen"
 	},
 	"stateGeneration": {
 		"continueIntro": "Du kannst die noch nicht gesendeten Ansichten fertigstellen. Fertige Ansichten bleiben erhalten.",

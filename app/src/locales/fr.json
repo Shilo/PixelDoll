@@ -2707,7 +2707,7 @@
 		"addFeature": "Animations pour les objets portés",
 		"pipeline": {
 			"described": "mouvement pixminimax (sans arme, sans accessoire, sans effet) → articulations → skeleton-v3 brut sur la vue de repos",
-			"walk": "mouvement de marche skeleton-v3 → articulations → skeleton-v3 brut sur la vue de repos",
+			"template": "modèle skeleton-v3 {template} → articulations → skeleton-v3 brut sur la vue de repos",
 			"authored": "points clés définis à partir de la pose de repos → skeleton-v3 brut",
 			"grid": "{frames} images × {dirs} directions",
 			"gridMirrored": "{frames} images × {dirs} directions ({mirrored} en miroir)"
@@ -2877,7 +2877,8 @@
 		"default": "Debout",
 		"idle": "Attente",
 		"walk": "Marche",
-		"run": "Course"
+		"run": "Course",
+		"jump": "Saut"
 	},
 	"stateGeneration": {
 		"continueIntro": "Vous pouvez terminer les vues qui n’ont jamais été envoyées. Les vues terminées seront conservées.",

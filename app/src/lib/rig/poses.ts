@@ -412,7 +412,7 @@ export const AUTHORED = Object.keys(ACTIONS).filter((a) => a !== 'idle');
 
 // Move presets create these ids and Preview plays `walk` and `idle` by id, so a State never takes one. Typed names
 // never produce `_`, so a prefixed id is never mistaken for one typed as "State walk".
-const BUILT_IN_CLIPS = [DEFAULT_MOVE, 'standing', 'idle', 'walk', 'run', ...AUTHORED];
+const BUILT_IN_CLIPS = [DEFAULT_MOVE, 'standing', 'idle', 'walk', 'run', 'jump', ...AUTHORED];
 const STATE_PREFIX = 'state_';
 /** The id of a State named `slug`: a built-in move's name keeps its label but moves to a prefixed id. */
 export const stateClipId = (slug: string) =>

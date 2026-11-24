@@ -1844,12 +1844,27 @@ test('an overflowing paid motion is reviewed from the cache with a priced lift a
 		animation,
 		dirs: undefined
 	}))!;
-	expect(longer.options).toEqual(
+	// Changed 2026-11-24: a template is never stretched to more frames than it has (invented in-betweens), so a 12-frame
+	// walk takes the described route, whose motion was never bought. It is offered as a priced resume, never a lift of the
+	// cached 8-frame template motion, and pricing it still sends nothing.
+	expect(longer.options.map((option) => option.id)).toEqual(['resume']);
+	expect(longer.options[0]).toMatchObject({
+		paid: true,
+		spec: expect.objectContaining({ animation })
+	});
+	// Fewer frames than the template sample its cached motion down, so the lift that reuses it is still offered.
+	const shorter = { model: 'skeleton-v3', frameCount: 6, loop: true } as const;
+	const sampled = (await reviewMoveResults('rig-recover', {
+		...f.spec,
+		animation: shorter,
+		dirs: undefined
+	}))!;
+	expect(sampled.options).toEqual(
 		expect.arrayContaining([
 			expect.objectContaining({
 				id: 'lift',
 				spec: expect.objectContaining({
-					animation,
+					animation: shorter,
 					motionLift: { east: Array(8).fill(2) }
 				})
 			}),

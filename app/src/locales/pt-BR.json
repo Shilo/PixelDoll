@@ -2716,7 +2716,7 @@
 		"addFeature": "Animações para itens equipados",
 		"pipeline": {
 			"described": "Movimento com pixminimax (sem armas, objetos ou efeitos) → articulações → skeleton-v3 direto na vista de repouso",
-			"walk": "Caminhada com skeleton-v3 → articulações → skeleton-v3 direto na vista de repouso",
+			"template": "Modelo skeleton-v3 {template} → articulações → skeleton-v3 direto na vista de repouso",
 			"authored": "Pontos-chave criados a partir da pose de repouso → skeleton-v3 direto",
 			"grid": "{frames} quadros × {dirs} direções",
 			"gridMirrored": "{frames} quadros × {dirs} direções ({mirrored} espelhadas)"
@@ -2886,7 +2886,8 @@
 		"default": "Em pé",
 		"idle": "Repouso",
 		"walk": "Caminhada",
-		"run": "Corrida"
+		"run": "Corrida",
+		"jump": "Salto"
 	},
 	"stateGeneration": {
 		"continueIntro": "Você pode concluir as vistas que nunca foram enviadas. As vistas concluídas serão mantidas.",

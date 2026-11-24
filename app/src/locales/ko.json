@@ -2635,7 +2635,7 @@
 		"addFeature": "착용 아이템용 동작",
 		"pipeline": {
 			"described": "pixminimax 모션(무기 없음, 소품 없음, 효과 없음) → 관절 → 기본 자세 뷰의 원본 skeleton-v3",
-			"walk": "걷기 skeleton-v3 모션 → 관절 → 기본 자세 뷰의 원본 skeleton-v3",
+			"template": "skeleton-v3 템플릿 {template} → 관절 → 기본 자세 뷰의 원본 skeleton-v3",
 			"authored": "기본 자세에서 만든 키포인트 → 원본 skeleton-v3",
 			"grid": "{frames}프레임 × {dirs}방향",
 			"gridMirrored": "{frames}프레임 × {dirs}방향({mirrored}개 대칭)"
@@ -2801,7 +2801,8 @@
 		"default": "서 있기",
 		"idle": "대기",
 		"walk": "걷기",
-		"run": "달리기"
+		"run": "달리기",
+		"jump": "점프"
 	},
 	"stateGeneration": {
 		"continueIntro": "아직 전송하지 않은 방향의 이미지를 생성할 수 있습니다. 완료된 이미지는 유지됩니다.",

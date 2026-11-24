@@ -2635,7 +2635,7 @@
 		"addFeature": "已穿戴装备的动作",
 		"pipeline": {
 			"described": "pixminimax 运动（徒手、无道具、无特效）→ 关节 → 在静止视图上运行原始 skeleton-v3",
-			"walk": "行走 skeleton-v3 运动 → 关节 → 在静止视图上运行原始 skeleton-v3",
+			"template": "skeleton-v3 模板 {template} → 关节 → 在静止视图上运行原始 skeleton-v3",
 			"authored": "从静止姿势创作关键点 → 原始 skeleton-v3",
 			"grid": "{frames} 帧 × {dirs} 个朝向",
 			"gridMirrored": "{frames} 帧 × {dirs} 个朝向（{mirrored} 个镜像）"
@@ -2801,7 +2801,8 @@
 		"default": "站立",
 		"idle": "待机",
 		"walk": "行走",
-		"run": "奔跑"
+		"run": "奔跑",
+		"jump": "跳跃"
 	},
 	"stateGeneration": {
 		"continueIntro": "你可以完成从未提交的视角。已完成的视角将保留。",

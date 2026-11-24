@@ -32,6 +32,7 @@ import {
 	type RecordedCost
 } from '../lib/store/generation.ts';
 import { PLAN_PRICES, type PricedTier } from '../lib/pixellab/plans.ts';
+import { MOVE_TEMPLATES } from '../lib/pixellab/routes.ts';
 import {
 	EST,
 	estimate,
@@ -149,6 +150,10 @@ function savedMove(m: Manifest, a: RigAnimation): CostMove {
 		const source = a.sources?.[dir];
 		const motion = source?.motion ?? '';
 		const authored = /^authored:(.+)$/.exec(motion)?.[1];
+		const template = /^managed-skeleton-v3:(.+)$/.exec(motion)?.[1];
+		const templateAction =
+			template &&
+			Object.entries(MOVE_TEMPLATES).find(([, entry]) => entry.template === template)?.[0];
 		const model = source?.route ?? 'import';
 		const described = (model: MoveAnimationModel): BodySpec => ({
 			id: a.id,
@@ -161,8 +166,8 @@ function savedMove(m: Manifest, a: RigAnimation): CostMove {
 				? described('skeleton-v3')
 				: model !== 'skeleton-v3'
 					? described(model)
-					: motion.startsWith('managed-skeleton-v3:walking')
-						? { id: a.id, action: 'walk', frames, animation: { model } }
+					: templateAction
+						? { id: a.id, action: templateAction, frames, animation: { model, frameCount: frames } }
 						: motion === IMPORTED_MOTION && source?.keypoints?.length
 							? {
 									id: a.id,
@@ -171,7 +176,14 @@ function savedMove(m: Manifest, a: RigAnimation): CostMove {
 									animation: { model, frameCount: frames }
 								}
 							: authored
-								? { id: a.id, action: authored, frames, animation: { model, frameCount: frames } }
+								? {
+										id: a.id,
+										action: authored,
+										frames,
+										// An authored move stays authored even where a template now animates that action.
+										motionSource: 'standalone' as const,
+										animation: { model, frameCount: frames }
+									}
 								: described(model);
 		// Imported art, and the demo's moves, whose records carry no request hash, cost this character nothing.
 		const paid = !!source?.provenance.some((i) => !!body.provenance?.[i]?.requestHash);
@@ -319,8 +331,10 @@ export function addedMoves(c: CostCharacter): { suggested: BodySpec[]; typical: 
 		action,
 		frames: 8,
 		animation: { model },
+		// A character drawn here is registered with PixelLab, so its suggestions take their template where one exists; an
+		// imported one may not be, so it is priced on the standalone route.
 		...(model === 'skeleton-v3' && !isAuthoredAction(action)
-			? { motionSource: 'standalone' as const }
+			? { motionSource: c.setup.kind === 'draw' ? ('managed' as const) : ('standalone' as const) }
 			: {})
 	}));
 	const counts = new Map<string, { spec: BodySpec; n: number }>();

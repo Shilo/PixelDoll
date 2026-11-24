@@ -15,12 +15,16 @@ import {
 	reviewItemMove,
 	reviewMoveRecovery,
 	resolveMoveMotionSource,
-	skeletonMoveReview
+	skeletonMoveReview,
+	trimStandingSeam
 } from '../../src/studio/create.ts';
 import {
+	fixedPoses,
 	moveDirections,
 	moveEstimate,
 	moveFrames,
+	moveMotionGens,
+	moveTemplate,
 	nativeMoveGens
 } from '../../src/studio/movePricing.ts';
 import { moveFrameCounts, moveTemplatePrompt } from '../../src/studio/moveAnimationOptions.ts';
@@ -28,7 +32,7 @@ import { resolveMoveSource } from '../../src/studio/moveSource.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
 import { withClipWriteLock } from '../../src/studio/clipName.ts';
 import { queue, requestIdentity, type JobRec } from '../../src/lib/pixellab/queue.ts';
-import { png, routes } from '../../src/lib/pixellab/routes.ts';
+import { MOVE_TEMPLATES, png, routes } from '../../src/lib/pixellab/routes.ts';
 import * as db from '../../src/lib/store/db.ts';
 import * as projects from '../../src/lib/store/project.ts';
 import { decodePng, makeImg } from '../../src/lib/image/png.ts';
@@ -108,6 +112,41 @@ test('managed ownership decides the quoted source without sending any generation
 		}
 	});
 	expect(standalone.body).not.toHaveProperty('character_id');
+});
+
+test('a suggestion animates with its PixelLab template only when the template can honor the request', async () => {
+	const { original } = await fixture();
+	expect(Object.keys(MOVE_TEMPLATES).length).toBeGreaterThan(0);
+	for (const [action, template] of Object.entries(MOVE_TEMPLATES)) {
+		const spec = {
+			id: action,
+			action,
+			text: moveTemplatePrompt(action),
+			frames: 8,
+			items: [],
+			motionSource: 'managed' as const,
+			animation: { model: 'skeleton-v3' as const }
+		};
+		// A registered character at Automatic frames: the template itself, priced like a raw call of its frames.
+		expect(moveMotionRequest(original, spec, 'east')).toMatchObject({
+			path: '/characters/animations',
+			body: { mode: 'skeleton-v3', template_animation_id: template.template, directions: ['east'] }
+		});
+		expect(moveFrames(original.manifest, spec)).toBe(template.frames);
+		expect(fixedPoses(spec)).toBe(false);
+		expect(moveMotionGens(original.manifest, spec)).toBe(template.frames <= 3 ? 2 : 3);
+		// Fewer frames sample the template's own poses down; more would invent in-betweens, so they take the other route.
+		const fewer = { ...spec, animation: { ...spec.animation, frameCount: template.frames - 1 } };
+		expect(moveTemplate(fewer)).toBe(template);
+		expect(moveFrames(original.manifest, fewer)).toBe(template.frames - 1);
+		// The template cannot honor another frame count, another model, a start frame or a character it cannot reach.
+		for (const other of [
+			{ ...spec, animation: { ...spec.animation, frameCount: template.frames + 1 } },
+			{ ...spec, animation: { model: 'pixminimax' as const } },
+			{ ...spec, motionSource: 'standalone' as const }
+		])
+			expect(moveTemplate(other)).toBeUndefined();
+	}
 });
 
 test('native motion uses only the selected direction’s start and end frames', async () => {
@@ -1891,4 +1930,29 @@ test('saving the finished views of a move started from a saved frame keeps that 
 	expect(draft.animation.sources?.east?.referenceKeypoints).toEqual(
 		spec.startFrom!.views.east!.keypoints
 	);
+});
+
+test('a looping motion drops one exact standing copy at each seam, and leaves subtle loops whole', () => {
+	const box = (x0: number, w: number) => {
+		const im = makeImg(16, 16);
+		for (let y = 2; y < 14; y++)
+			for (let x = x0; x < x0 + w; x++) im.data.set([200, 150, 120, 255], (y * 16 + x) * 4);
+		return im;
+	};
+	const standing = box(6, 4);
+	// PixMiniMax opened on the standing pose and a standalone loop ended on it; the stride in between is real motion, and a
+	// near-standing frame (box(6, 5), overlap 0.8) is a pose, not a copy.
+	const frames = [box(6, 4), box(4, 7), box(5, 6), box(3, 8), box(6, 5), box(6, 4)];
+	expect(trimStandingSeam(frames, standing, true)).toEqual({
+		frames: frames.slice(1, 5),
+		start: 1
+	});
+	// One-shot moves keep their start and end.
+	expect(trimStandingSeam(frames, standing, false)).toEqual({ frames, start: 0 });
+	// A breath or sway that mostly holds the standing silhouette has no stall: nothing is dropped.
+	const breath = [box(6, 4), box(6, 4), box(6, 5), box(6, 4), box(6, 4)];
+	expect(trimStandingSeam(breath, standing, true)).toEqual({ frames: breath, start: 0 });
+	// The shortest described loop (4 frames) keeps at least three poses: trimming both seams would leave only two.
+	const short = [box(6, 4), box(4, 7), box(3, 8), box(6, 4)];
+	expect(trimStandingSeam(short, standing, true)).toEqual({ frames: short, start: 0 });
 });

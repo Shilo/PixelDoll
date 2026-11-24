@@ -2707,7 +2707,7 @@
 		"addFeature": "Moves for worn items",
 		"pipeline": {
 			"described": "pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view",
-			"walk": "walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view",
+			"template": "{template} skeleton-v3 template → joints → raw skeleton-v3 on the rest view",
 			"authored": "keypoints authored from the rest pose → raw skeleton-v3",
 			"grid": "{frames} frames × {dirs} directions",
 			"gridMirrored": "{frames} frames × {dirs} directions ({mirrored} mirrored)"
@@ -2877,7 +2877,8 @@
 		"default": "Standing",
 		"idle": "Idle",
 		"walk": "Walk",
-		"run": "Run"
+		"run": "Run",
+		"jump": "Jump"
 	},
 	"stateGeneration": {
 		"continueIntro": "You can finish the views that were never sent. Completed views will be kept.",

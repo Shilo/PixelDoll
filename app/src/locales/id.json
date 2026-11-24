@@ -2635,7 +2635,7 @@
 		"addFeature": "Animasi untuk item yang dikenakan",
 		"pipeline": {
 			"described": "Gerakan pixminimax (tanpa senjata, properti, atau efek) → sendi → skeleton-v3 langsung pada tampilan pose awal",
-			"walk": "Gerakan berjalan skeleton-v3 → sendi → skeleton-v3 langsung pada tampilan pose awal",
+			"template": "Templat skeleton-v3 {template} → sendi → skeleton-v3 langsung pada tampilan pose awal",
 			"authored": "Titik sendi dibuat dari pose awal → skeleton-v3 langsung",
 			"grid": "{frames} frame × {dirs} arah",
 			"gridMirrored": "{frames} frame × {dirs} arah ({mirrored} dicerminkan)"
@@ -2801,7 +2801,8 @@
 		"default": "Berdiri",
 		"idle": "Diam",
 		"walk": "Berjalan",
-		"run": "Berlari"
+		"run": "Berlari",
+		"jump": "Melompat"
 	},
 	"stateGeneration": {
 		"continueIntro": "Anda dapat menyelesaikan tampilan yang belum pernah dikirim. Tampilan yang sudah selesai akan disimpan.",
