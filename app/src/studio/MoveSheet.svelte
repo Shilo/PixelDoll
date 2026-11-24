@@ -144,6 +144,8 @@
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
+	// The character whose record was last read: until it is, readiness is unknown and nothing claims setup is needed.
+	let recFor = $state('');
 	// Re-read after a failure (a move saves its body and finished item views before failing, and Try again is priced from
 	// them) and after Frame size replaced the character.
 	$effect(() => {
@@ -151,7 +153,11 @@
 		void moving.error;
 		void store.project;
 		void moving.done;
-		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
+		if (!isDemo())
+			void db.get<StoredProject>('projects', id).then((r) => {
+				rec = r ?? null;
+				recFor = id;
+			});
 	});
 	const ok = $derived(!!m && moveRigReady(rec ? { ...rec, manifest: m } : null));
 	const sourceClips = $derived(playbackClips(m?.rig.animations ?? []));
@@ -2124,6 +2130,8 @@
 				</p>
 			{/if}
 		</div>
+	{:else if !isDemo() && !ok && recFor !== doc.id}
+		<!-- Still reading the character: no setup notice flashes before readiness is known. -->
 	{:else if isDemo() || !ok}
 		<p class="notice small">
 			<CircleAlert size={14} />{isDemo() ? t('moveSheet.demo') : t('moveSheet.needsSetup')}

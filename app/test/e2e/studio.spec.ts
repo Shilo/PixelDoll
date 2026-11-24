@@ -3801,9 +3801,21 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await setup.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await equipmentMode(page, 'Moves');
+	// A set-up character never flashes the setup notice while its record is still being read.
+	await page.evaluate(() => {
+		const seen = window as unknown as { setupNoticeSeen?: boolean };
+		seen.setupNoticeSeen = false;
+		new MutationObserver(() => {
+			if (document.body.textContent?.includes('pose rig to add moves')) seen.setupNoticeSeen = true;
+		}).observe(document.body, { subtree: true, childList: true, characterData: true });
+	});
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'New move', exact: true })).toBeVisible();
 	const move = page.getByRole('dialog', { name: /^(New move|Redraw .+)$/ });
+	await expect(move.getByRole('textbox', { name: /^Describe the motion$/ })).toBeVisible();
+	expect(
+		await page.evaluate(() => (window as unknown as { setupNoticeSeen?: boolean }).setupNoticeSeen)
+	).toBe(false);
 	const description = move.getByRole('textbox', { name: /^Describe the (motion|replacement)$/ });
 	// Templates are suggestions under the prompt: pressed while applied.
 	const templates = move.getByRole('group', { name: 'Move templates', exact: true });
