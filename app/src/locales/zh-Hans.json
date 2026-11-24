@@ -889,6 +889,9 @@
 			"other": "{n} 件已穿戴装备需要帧"
 		},
 		"missingFramesForMove": "{move}缺少帧 · {direction}",
+		"previewProblems": {
+			"other": "{n} 个问题"
+		},
 		"workspaceCopyPixelLabOff": "工作区副本 · PixelLab 已关闭",
 		"characterSelectionWASDOrArrowsSelectEnter": "角色选择。使用 WASD 或方向键选择；按 Enter 自定义；加号和减号缩放。",
 		"previousCharacter": "上一个角色",
@@ -908,17 +911,18 @@
 		"tabWorkRunning": "此处有任务正在进行、等待中或可供审阅",
 		"tabWorkAttention": "此处有任务需要处理"
 	},
+	"stateColors": {
+		"alreadyMatched": "{name}已使用身体颜色。",
+		"drift": "{name}没有使用身体颜色",
+		"match": "匹配颜色",
+		"matched": "已将{name}匹配到身体颜色。"
+	},
 	"worldStage": {
 		"groundUnavailable": "无法实时渲染地面，正在显示静态场景。",
 		"materialUnavailable": "无法加载地面材质，正在显示静态场景。",
 		"sceneUnavailable": "实时场景不可用，请重新加载页面后再试。",
 		"characterPreviewWASDOrArrowsChangeFacing": "角色预览。使用 WASD 或方向键更改朝向。按键 1、2、3 切换视图。",
-		"sideScrollerTestWorldADLeft": "横版测试世界。使用 A/D、左右方向键或水平拖动来移动。按键 1、2、3 切换视图。",
-		"characterTestWorldWASDArrowsOrDrag": "角色测试世界。使用 WASD、方向键或拖动来移动。按键 1、2、3 切换视图。",
 		"loadingCharacter": "正在加载角色…",
-		"dragInTheWorldToMove": "在世界中拖动以移动",
-		"focusWorldADOrToMove": "聚焦世界 · 使用 A/D 或 ←/→ 移动",
-		"focusWorldWASDOrArrowKeysTo": "聚焦世界 · 使用 WASD 或方向键移动",
 		"notice": {
 			"hiddenItemsInMove": {
 				"other": "已隐藏 {count} 件物品：缺少 {move} 的帧"
@@ -3372,5 +3376,34 @@
 			"resolveDrafts": "导入动作前，请保留或放弃此角色的物品草稿。",
 			"changed": "此角色已更改。请重新选择 ZIP 以查看最新版本。"
 		}
+	},
+	"liveViews": {
+		"automaticStill": "自动：静止站立",
+		"controls": "操作",
+		"title": "实时视图",
+		"forCharacter": "{name} 在俯视和横版视图中播放的动作。",
+		"idle": "待机",
+		"walk": "行走",
+		"attack": "攻击",
+		"jump": "跳跃",
+		"attackUp": "向上攻击",
+		"attackDown": "向下攻击",
+		"automaticClip": "自动：{clip}",
+		"automaticNone": "自动：无",
+		"sameAsAttack": "与攻击相同",
+		"sideAttackHelp": "在横版视图中向上或向下瞄准时，播放向上攻击或向下攻击。",
+		"notSaved": "实时视图设置已更改，但此浏览器无法保存。",
+		"openCharacter": "打开一个角色以选择它播放的动作。",
+		"mount": "坐骑",
+		"actions": "游戏操作",
+		"withShortcut": "{action}（{key}）",
+		"spaceKey": "空格",
+		"noAttack": "还没有指定攻击。请在实时视图设置中选择一个动作或状态。",
+		"noAttackDirection": "{move} 没有朝向{direction}的帧，无法向该方向攻击。",
+		"hintTopDown": "WASD 或点击移动 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",
+		"hintSide": "A/D 或点击移动 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",
+		"hintTouch": "左侧移动 · 右侧瞄准，松开即攻击",
+		"stageTopDown": "角色测试世界。使用 WASD、方向键、点击或拖动来移动。右键或 X 攻击，空格跳跃，M 上下坐骑。按 1、2、3 切换视图。",
+		"stageSide": "横版测试世界。使用 A/D、左右方向键、点击或拖动来移动。右键或 X 攻击，空格跳跃，M 上下坐骑。按 1、2、3 切换视图。"
 	}
 }

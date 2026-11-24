@@ -15,7 +15,7 @@
 	import { EYE, heroRoom, layout, placeWorld, ringRadius } from './geometry.ts';
 	import { floorRing, RING_GAP, RING_STROKE } from './floorRing.ts';
 	import { LoaderCircle } from '../icons.ts';
-	import { displayDirection } from '../displayDirection.ts';
+	import { displayDirection, displayDirectionInSentence } from '../displayDirection.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { bakedFrame, unionFrame, type Frame } from '../../lib/compose/compose.ts';
 	import { paintedFrame, reachFrame, actorScale, previewBounds, framePosition } from './bounds.ts';
@@ -40,6 +40,13 @@
 	import type { Img } from '../../lib/image/png.ts';
 	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
 	import { activeRiderPose, legsKept } from './riderPose.ts';
+	import { currentLiveClips } from './liveViews.ts';
+	import { showMount } from '../mountPreview.ts';
+	import { resolveAttack, type AttackFailure } from './attack.ts';
+	import { LiveActions } from './liveActions.ts';
+	import { airborne, JUMP } from './jump.ts';
+	import GameControls from './GameControls.svelte';
+	import { displayMove } from '../displayMove.ts';
 	import { mountPlacement } from './mountPlacement.ts';
 	import { imageCanvas } from './imageCanvas.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
@@ -65,6 +72,7 @@
 		integrateMovement,
 		travelSpeed,
 		travelDelta,
+		unit,
 		MOVEMENT_KEYS,
 		type Vector
 	} from './movement.ts';
@@ -86,6 +94,27 @@
 	let pad: Joystick | null = null,
 		padSize = $state.raw<JoystickSize>(MOTION.joystick.regular),
 		stick = $state.raw(IDLE);
+	// Touch in the live views: the left half moves, the right half aims and attacks on release (twin-stick convention).
+	let aimPad: Joystick | null = null,
+		aimStick = $state.raw(IDLE),
+		aimed = false;
+	// Attack and jump timing, stepped by the scene (liveActions.ts).
+	const actions = new LiveActions();
+	// The last input that pressed the stage: touch shows thumb buttons, a mouse the icon bar.
+	let touchInput = $state(matchMedia('(pointer: coarse)').matches);
+	// Mouse travel: a left press sets a floor destination; while right is held the cursor only aims.
+	let destination: Vector | null = null,
+		mouse = { left: false, right: false },
+		cursor: { x: number; y: number } | null = null,
+		// Whether a mouse press began on the live stage; captured moves after it was let go steer nothing.
+		mouseOwned = false,
+		// A right press on the stage claims the one menu it opens: on press (macOS, Linux) or on release (Windows).
+		menuClaim: 'none' | 'held' | 'released' = 'none',
+		menuUsed = false;
+	// Where the actor is on screen, for aiming at the cursor and clicking on it to stop.
+	let actorAt: { x: number; y: number; r: number } | null = null;
+	let travel: Vector = { x: 0, y: 0 };
+	let sceneOptions: RenderOptions | null = null;
 	const secondaryTouches = new Map<number, { button: HTMLButtonElement; x: number; y: number }>();
 	let consumedTouch: { x: number; y: number; until: number } | null = null;
 	const availability = $derived.by(() => {
@@ -107,6 +136,8 @@
 		return grounding?.body ?? (p ? paintedFrame(p, {}) : null);
 	});
 	const mountVisible = $derived(experience.testMount);
+	// The saved Idle, Walk, Attack and Jump of the open character (Live views settings).
+	const roles = $derived(currentLiveClips(doc.id, view.project?.manifest.rig.animations ?? []));
 	const riderPose = $derived(
 		mountVisible ? activeRiderPose(doc.id, view.project?.manifest) : undefined
 	);
@@ -216,16 +247,49 @@
 	let clock: ReturnType<typeof advancePlayback> | undefined;
 	const noticed = new Set<string>();
 	function release() {
+		endMove();
+		releaseAim();
+	}
+	function endMove() {
 		const id = stick.pointerId;
 		if (id !== null && host?.hasPointerCapture(id)) host.releasePointerCapture(id);
 		pad = null;
 		stick = IDLE;
 		secondaryTouches.clear();
 	}
+	function releaseAim() {
+		const id = aimStick.pointerId;
+		if (id !== null && host?.hasPointerCapture(id)) host.releasePointerCapture(id);
+		aimPad = null;
+		aimStick = IDLE;
+		aimed = false;
+	}
+	/** Lost focus, a sheet or a cancel: held attacks and mouse travel stop; a playing attack or jump finishes. */
+	function letGo() {
+		actions.letGo();
+		mouse = { left: false, right: false };
+		mouseOwned = false;
+		menuClaim = 'none';
+		destination = null;
+		host?.classList.remove('aiming');
+	}
+	/** Touch splits the stage, not the window, in two: the left half moves, the right half aims. */
+	const aimHalf = (e: { clientX: number }) => {
+		const stage = host.getBoundingClientRect();
+		return e.clientX >= stage.left + stage.width / 2;
+	};
+	/** A finger on the free half while the other half's stick is held is the second stick, never a pinch. */
+	const secondStick = (e: PointerEvent) =>
+		experience.mode !== 'preview' &&
+		e.pointerType !== 'mouse' &&
+		(aimHalf(e) ? !aimPad && !!pad : !pad && !!aimPad);
 	let reset = () => {
 		keys.clear();
 		clearHover();
 		release();
+		letGo();
+		actions.reset();
+		actorAt = null;
 		position = { x: 0, y: 0 };
 		camera = { x: 0, y: 0 };
 		previous = undefined;
@@ -240,6 +304,21 @@
 		void experience.mode;
 		untrack(reset);
 	});
+	/** Why an attack could not play, once per gap until the character changes. */
+	function attackWarning(failure: AttackFailure) {
+		const key =
+			failure.kind === 'no-attack' ? 'attack:none' : `attack:${failure.move}:${failure.direction}`;
+		if (noticed.has(key)) return;
+		const moves = view.project?.manifest.rig.animations ?? [];
+		const text =
+			failure.kind === 'no-attack'
+				? t('liveViews.noAttack')
+				: t('liveViews.noAttackDirection', {
+						move: displayMove(failure.move, moves),
+						direction: failure.direction ? displayDirectionInSentence(failure.direction) : ''
+					});
+		if (toast(text, { tone: 'warning' })) noticed.add(key);
+	}
 	// Live views briefly name their movement controls, as in the approved prototype; moving or 6.5s dismisses it.
 	let hint = $state(false);
 	$effect(() => {
@@ -276,6 +355,7 @@
 		if (ui.sheet) {
 			keys.clear();
 			release();
+			letGo();
 		}
 	});
 	function previewFacing() {
@@ -290,8 +370,20 @@
 		if (direction) ui.dir = direction;
 	}
 	function keyup(e: KeyboardEvent) {
-		keys.delete(e.key.toLowerCase());
+		const k = e.key.toLowerCase();
+		keys.delete(k);
+		if (k === 'x') actions.release('key');
 		previewFacing();
+	}
+	/** X attacks where the character travels, or along its facing while it stands. */
+	const keyAim = () => travel;
+	function jump() {
+		if (experience.mode === 'preview' || ui.sheet) return;
+		actions.takeOff();
+	}
+	function toggleMount() {
+		if (experience.mode === 'preview' || ui.sheet || !actions.grounded) return;
+		showMount(!experience.testMount);
 	}
 	function key(e: KeyboardEvent) {
 		if (e.target !== host || ui.sheet || e.ctrlKey || e.metaKey || e.altKey || e.isComposing)
@@ -311,6 +403,15 @@
 			const popover = document.querySelector<HTMLElement>('[popover]:popover-open');
 			if (popover) popover.hidePopover();
 			else characters();
+		} else if (k === ' ' && experience.mode !== 'preview') {
+			e.preventDefault();
+			if (!e.repeat) jump();
+		} else if (k === 'm' && experience.mode !== 'preview') {
+			e.preventDefault();
+			if (!e.repeat) toggleMount();
+		} else if (k === 'x' && experience.mode !== 'preview') {
+			e.preventDefault();
+			if (!e.repeat) actions.hold('key', keyAim);
 		} else if (!e.repeat && k === ' ' && experience.mode === 'preview') {
 			e.preventDefault();
 			ui.playing = !ui.playing;
@@ -339,8 +440,11 @@
 				)?.direction
 			: undefined;
 	function down(e: PointerEvent) {
-		if (e.button !== 0 || ui.sheet) return;
+		const live = experience.mode !== 'preview';
+		if (ui.sheet || (e.button !== 0 && !(live && e.pointerType === 'mouse' && e.button === 2)))
+			return;
 		host.focus({ preventScroll: true });
+		touchInput = e.pointerType !== 'mouse';
 		const direction = picked(e);
 		if (experience.mode === 'preview' && e.pointerType === 'touch') {
 			pendingTap = e.isPrimary
@@ -349,17 +453,83 @@
 			return;
 		}
 		if (direction) ui.dir = direction;
-		if (experience.mode === 'preview' || pad) return;
+		if (!live) return;
+		if (e.pointerType === 'mouse') {
+			host.setPointerCapture(e.pointerId);
+			mouseOwned = true;
+			mouseButtons(e);
+			return;
+		}
+		// Each finger keeps the stick it landed on until it lifts, wherever it travels.
+		const aiming = aimHalf(e);
+		if (aiming ? aimPad : pad) return;
 		host.setPointerCapture(e.pointerId);
 		const { regular, compact, compactQuery, deadZone } = MOTION.joystick;
 		padSize = matchMedia(compactQuery).matches ? compact : regular;
-		pad = new Joystick({
-			axis: experience.mode === 'side' ? 'x' : 'xy',
+		const next = new Joystick({
+			axis: !aiming && experience.mode === 'side' ? 'x' : 'xy',
 			travel: joystickTravel(padSize),
 			deadZone,
 			follow: true
 		});
-		stick = pad.begin(e.pointerId, { x: e.clientX, y: e.clientY });
+		if (aiming) {
+			aimPad = next;
+			aimed = false;
+			aimStick = next.begin(e.pointerId, { x: e.clientX, y: e.clientY });
+		} else {
+			pad = next;
+			stick = next.begin(e.pointerId, { x: e.clientX, y: e.clientY });
+		}
+	}
+	/** The floor point under the cursor; a press on the character itself stops mouse travel. */
+	function setDestination(e: { clientX: number; clientY: number }) {
+		const near = actorAt && Math.hypot(e.clientX - actorAt.x, e.clientY - actorAt.y) <= actorAt.r;
+		destination =
+			!near && scene && sceneOptions
+				? scene.unproject({ x: e.clientX, y: e.clientY }, sceneOptions, position.y)
+				: null;
+	}
+	/** From the character toward the cursor in ground coordinates; on the character, its facing. */
+	function mouseAim(): Vector {
+		if (!cursor || !actorAt) return { x: 0, y: 0 };
+		const dx = cursor.x - actorAt.x,
+			dy = actorAt.y - cursor.y;
+		return Math.hypot(dx, dy) <= actorAt.r ? { x: 0, y: 0 } : { x: dx, y: dy };
+	}
+	/**
+	 * Mouse buttons by their held state, since a second button pressed or released during the first sends a move, not a
+	 * down or up (W3C chorded buttons). Left sets and steers a destination; right attacks toward the cursor while held and
+	 * owns the cursor until released, so the character keeps walking to the left-button destination meanwhile.
+	 */
+	function mouseButtons(e: PointerEvent) {
+		if (ui.sheet || !mouseOwned) return;
+		cursor = { x: e.clientX, y: e.clientY };
+		const left = (e.buttons & 1) !== 0,
+			right = (e.buttons & 2) !== 0;
+		if (right !== mouse.right) {
+			mouse.right = right;
+			if (right) {
+				menuClaim = 'held';
+				menuUsed = false;
+				actions.hold('mouse', mouseAim);
+			} else {
+				// A menu still to come opens on this release; one already suppressed on the press is done.
+				menuClaim = menuUsed ? 'none' : 'released';
+				requestAnimationFrame(() => {
+					if (menuClaim === 'released') menuClaim = 'none';
+				});
+				actions.release('mouse');
+			}
+			host.classList.toggle('aiming', right);
+		}
+		if (left !== mouse.left) {
+			mouse.left = left;
+			if (left) setDestination(e);
+		} else if (left && !right && e.type === 'pointermove' && e.button === -1) setDestination(e);
+		if (!left && !right) {
+			mouseOwned = false;
+			if (host.hasPointerCapture(e.pointerId)) host.releasePointerCapture(e.pointerId);
+		}
 	}
 	// The companion under the pointer shows a faint ring: clicking it selects that facing.
 	let hovered: DirectionName | undefined;
@@ -381,7 +551,21 @@
 			pendingTap = null;
 		pointer = { clientX: e.clientX, clientY: e.clientY };
 		updateHover();
+		if (e.pointerType === 'mouse' && experience.mode !== 'preview') {
+			// Leaving the playfield (over a panel or bar) ends held mouse travel and attacks until a new press.
+			const over = document.elementFromPoint(e.clientX, e.clientY);
+			if (mouseOwned && over && !host.contains(over)) {
+				letGo();
+				if (host.hasPointerCapture(e.pointerId)) host.releasePointerCapture(e.pointerId);
+			} else if (mouseOwned) mouseButtons(e);
+			else cursor = { x: e.clientX, y: e.clientY };
+		}
 		if (pad) stick = pad.move(e.pointerId, { x: e.clientX, y: e.clientY });
+		if (aimPad) {
+			aimStick = aimPad.move(e.pointerId, { x: e.clientX, y: e.clientY });
+			if (aimStick.pointerId === e.pointerId && (aimStick.value.x || aimStick.value.y))
+				aimed = true;
+		}
 	}
 	function up(e: PointerEvent) {
 		if (pendingTap?.pointerId === e.pointerId) {
@@ -395,13 +579,25 @@
 			)
 				ui.dir = tap.direction;
 		}
+		if (e.pointerType === 'mouse' && experience.mode !== 'preview') {
+			if (e.type === 'pointerup') mouseButtons(e);
+			else if (mouse.left || mouse.right) letGo();
+		}
+		if (aimStick.pointerId === e.pointerId) {
+			// Release attacks where the stick points; a tap attacks along the facing; aiming back to the middle cancels.
+			const { x, y } = aimStick.value;
+			if (e.type === 'pointerup' && (x || y || !aimed)) actions.request({ x, y: -y });
+			releaseAim();
+			return;
+		}
 		if (stick.pointerId !== e.pointerId) return;
-		release();
+		endMove();
 	}
 	function stop() {
 		pendingTap = null;
 		endWalk();
 		release();
+		letGo();
 		clearHover();
 	}
 	// A walk held on the keyboard continues through a plain mouse click on a control outside the stage (a wardrobe tile,
@@ -426,6 +622,22 @@
 			return;
 		if (e.pointerType === 'mouse' && e.button === 0 && !typing(e.target)) handoff = true;
 		else keys.clear();
+	}
+	/** The stage's own right press is an attack, not a menu; a menu opened any other way ends a keyboard walk. */
+	function contextMenu(e: MouseEvent) {
+		// A keyboard-opened menu (Shift+F10, the Menu key) reports button 0 and always stays native.
+		if (
+			menuClaim !== 'none' &&
+			e.button === 2 &&
+			e.target instanceof Node &&
+			host?.contains(e.target)
+		) {
+			e.preventDefault();
+			menuUsed = true;
+			if (menuClaim === 'released') menuClaim = 'none';
+			return;
+		}
+		endWalk();
 	}
 	function endWalk() {
 		cancelAnimationFrame(handback);
@@ -478,7 +690,14 @@
 	function secondaryDown(e: PointerEvent) {
 		const button =
 			e.target instanceof Element ? e.target.closest<HTMLButtonElement>('button') : null;
-		if (pad && e.pointerType === 'touch' && !e.isPrimary && button && !button.disabled)
+		if (
+			(pad || aimPad) &&
+			e.pointerType === 'touch' &&
+			!e.isPrimary &&
+			button &&
+			!button.disabled &&
+			!('gameAction' in button.dataset)
+		)
 			secondaryTouches.set(e.pointerId, { button, x: e.clientX, y: e.clientY });
 	}
 	function secondaryUp(e: PointerEvent) {
@@ -725,7 +944,12 @@
 							scale: fittedRow.scale
 						})
 					: fittedRow;
-			const fit = row?.scale ?? (fitFrame ? actorScale(fitFrame, room, dpr) : 0);
+			// The live views fit the jump's apex too, so a jump never leaves the top of the stage.
+			const apex =
+				(bodyBounds?.facings.get(ui.dir)?.standingHeight ?? fitFrame?.h ?? 0) * JUMP.height;
+			const fitted =
+				live && fitFrame ? { ...fitFrame, y: fitFrame.y + apex, h: fitFrame.h + apex } : fitFrame;
+			const fit = row?.scale ?? (fitted ? actorScale(fitted, room, dpr) : 0);
 			const shared = sharedZoom('studio', fit);
 			const magnification = !fit ? 1 : shared.scale / fit;
 			// The world image, sky and side floor share one horizon: the eye line of the characters as drawn
@@ -869,13 +1093,28 @@
 			host.dataset.sceneMin = String(shared.min);
 			host.dataset.sceneMax = String(shared.max);
 			// A press on the stage that has not been dragged yet steers nothing: the keyboard keeps the walk.
+			const speed = travelSpeed(experience.mode === 'side' ? 'side' : 'topdown', mountVisible),
+				travelRate = speed / MOTION.walkSpeed.topdown;
+			// A paused scene (a sheet, a hidden page) stops time, so no takeoff, landing or attack is skipped.
+			const paused = !!ui.sheet || document.hidden;
 			let velocity =
 				stick.origin && (stick.value.x || stick.value.y)
 					? { x: stick.value.x, y: -stick.value.y }
 					: keyboardVector(keys, experience.mode === 'side');
-			if (ui.sheet || document.hidden) velocity = { x: 0, y: 0 };
-			const speed = travelSpeed(experience.mode === 'side' ? 'side' : 'topdown', mountVisible),
-				travelRate = speed / MOTION.walkSpeed.topdown;
+			// Direction keys and the stick own travel, even while opposite keys cancel out.
+			if (keys.size || stick.origin) destination = null;
+			else if (destination && live) {
+				const dx = destination.x - position.x,
+					dy = experience.mode === 'side' ? 0 : destination.y - position.y,
+					distance = Math.hypot(dx, dy),
+					reach = (speed * dt) / 1000;
+				// The last step lands on the point exactly.
+				velocity =
+					distance > reach ? unit({ x: dx, y: dy }) : { x: dx / reach || 0, y: dy / reach || 0 };
+				if (distance <= reach) destination = null;
+			}
+			if (paused) velocity = { x: 0, y: 0 };
+			travel = velocity;
 			if (live)
 				({ position, camera } = integrateMovement(
 					position,
@@ -885,7 +1124,7 @@
 					speed,
 					MOTION.cameraResponse
 				));
-			const options: RenderOptions = {
+			const options: RenderOptions = (sceneOptions = {
 				width,
 				height,
 				dpr,
@@ -901,7 +1140,7 @@
 							offset: zoom.offset
 						}
 					: undefined
-			};
+			});
 			const world = WORLDS[ui.theme],
 				skyUrl = world.backgrounds[experience.mode],
 				s = live ? scene : undefined;
@@ -955,9 +1194,11 @@
 			experience.mountLegIssue = '';
 			delete host.dataset.mountLegIssue;
 			if (a) {
-				const p = live
+				// Locomotion is resolved on its own, so an attack east never replaces the remembered westward facing.
+				const loco = live
 					? resolveLive(a, {
 							velocity,
+							clips: roles,
 							riding: mountVisible,
 							riderPose,
 							items: view.items,
@@ -967,10 +1208,52 @@
 									? (nearestDirection(a.directions, { x: 1, y: 0 }, ui.dir) ?? undefined)
 									: ui.dir
 						})
-					: resolvePreview(a, { clip: ui.anim, direction: ui.dir });
+					: null;
+				let p = loco ?? resolvePreview(a, { clip: ui.anim, direction: ui.dir }),
+					actionCell: number | null = null;
+				if (loco) {
+					// A paused scene starts nothing: an attack asked for behind a sheet waits until it closes.
+					const request = paused ? null : actions.step(dt);
+					if (request) {
+						const choice = resolveAttack(a, roles, request, {
+							side: experience.mode === 'side',
+							facing: loco.direction
+						});
+						// The last attack asked for: what played, or the aimed facing it lacked.
+						host.dataset.attack =
+							'sequence' in choice
+								? `${choice.sequence.clip} ${choice.sequence.direction}`
+								: `missing ${choice.failure.kind === 'no-direction' ? (choice.failure.direction ?? '') : ''}`;
+						if ('sequence' in choice) actions.start(choice.sequence);
+						else {
+							actions.refused();
+							attackWarning(choice.failure);
+						}
+					}
+					const flying = airborne(actions.jump);
+					// The shown action: an attack, else the Jump art for the walking facing, else the walk itself.
+					const flight =
+						flying && loco.direction
+							? roles.jump.map((clip) => a.animations.get(clip)?.get(loco.direction!)).find(Boolean)
+							: undefined;
+					const shown = actions.attack?.sequence ?? flight;
+					if (shown) {
+						p = resolvePreview(a, { clip: shown.clip, direction: shown.direction });
+						actionCell = actions.attack ? actions.attackCell() : actions.jumpCell(shown);
+					}
+					// Without Jump art the body holds its pose in the air and resumes its gait on landing.
+					clock = advancePlayback(
+						loco,
+						clock,
+						flying && !flight ? 0 : livePlaybackDelta(loco, velocity, dt, travelRate, roles.walk[0])
+					);
+				}
 				experience.presentation = p.kind;
-				if (live) clock = advancePlayback(p, clock, livePlaybackDelta(p, velocity, dt, travelRate));
-				const cell = live ? (clock?.cell ?? p.cell) : p.kind === 'animation' ? view.cell : p.cell;
+				const cell = live
+					? (actionCell ?? clock?.cell ?? p.cell)
+					: p.kind === 'animation'
+						? view.cell
+						: p.cell;
 				const nextKey = JSON.stringify([p.kind, p.clip, p.direction, cell, view.items, doc.rev]);
 				if (lastProject !== a || nextKey !== renderKey) {
 					imageCache = renderPresentation(a, view.items, p, cell);
@@ -1019,7 +1302,13 @@
 				mountIssue =
 					mounted && !mounted.view ? displayMountIssue(mounted.failure, mounted.direction) : '';
 				if (mounted?.view && !ui.sheet && !document.hidden)
-					mountElapsed += live ? travelDelta(velocity, dt, travelRate) : ui.playing ? dt : 0;
+					mountElapsed += live
+						? airborne(actions.jump)
+							? 0 // the mount's gait holds in the air
+							: travelDelta(velocity, dt, travelRate)
+						: ui.playing
+							? dt
+							: 0;
 				delete host.dataset.mountLegs;
 				delete host.dataset.mountLegSource;
 				const actor = result ? prepareActor(a, p, result, source, cell) : null;
@@ -1083,6 +1372,13 @@
 						{ x: at(ui.dir), y: point.y },
 						scale
 					);
+					// A jump lifts the drawn actor (and its mount) off the floor point; the pivot never moves.
+					// One standing height for the whole flight, so turning or attacking in the air never changes the lift.
+					const standing = (bodyBounds?.facings.get(ui.dir)?.standingHeight ?? fit.h) * scale;
+					const lift = live ? snap(actions.jump.height * standing) : 0;
+					actorAt = live
+						? { x: point.x, y: point.y - lift - standing / 2, r: Math.max(12, standing / 3) }
+						: null;
 					picks = live
 						? []
 						: facings.map((direction) => {
@@ -1154,7 +1450,7 @@
 							};
 						});
 					// A mounted rider leaves the floor, so Preview's floor reflection would be wrong.
-					if (REFLECTION.enabled && REFLECTION[experience.mode] && !mounted?.view) {
+					if (REFLECTION.enabled && REFLECTION[experience.mode] && !mounted?.view && !lift) {
 						const floorProjection = s?.projection(options);
 						const reflect = (
 							image: typeof img,
@@ -1212,9 +1508,31 @@
 							g.stroke();
 							g.restore();
 						}
+					// Quiet floor cues: where a click sends the character, and in Top-down the shadow under a jump.
+					if (live && s && destination) {
+						const target = s.project(destination, options);
+						g.save();
+						g.globalAlpha = 0.6;
+						g.strokeStyle = accent;
+						g.lineWidth = 1.5;
+						g.beginPath();
+						g.ellipse(snap(target.x), snap(target.y), 9, 3.5, 0, 0, Math.PI * 2);
+						g.stroke();
+						g.restore();
+					}
+					if (lift && experience.mode === 'topdown') {
+						const rx = ringRadius(fit.w, scale);
+						g.save();
+						g.globalAlpha = 0.3 - 0.12 * Math.min(1, actions.jump.height / JUMP.height);
+						g.fillStyle = '#000';
+						g.beginPath();
+						g.ellipse(snap(point.x), snap(point.y), rx, rx * 0.3, 0, 0, Math.PI * 2);
+						g.fill();
+						g.restore();
+					}
 					for (const other of others)
 						if (other.actor) drawActor(other.actor, other.x, other.y, scale);
-					const mountIndex = actor ? drawActor(actor, x, y, scale) : null;
+					const mountIndex = actor ? drawActor(actor, x, y - lift, scale) : null;
 					host.dataset.mountedLineup = facings
 						.filter((direction) =>
 							direction === ui.dir
@@ -1237,11 +1555,15 @@
 					host.dataset.presentation = p.kind;
 					host.dataset.facing = p.direction ?? '';
 					host.dataset.clip = p.clip ?? '';
+					host.dataset.jump = live ? actions.jump.height.toFixed(3) : '';
+					host.dataset.destination = destination
+						? `${destination.x.toFixed(2)},${destination.y.toFixed(2)}`
+						: '';
 					host.dataset.lineup = facings.join(' ');
 				}
 				note = [...new Set(notes)].join(' · '); // each facing of the lineup can report the same thing
 				loadingNote = [...loadings].join(' · ');
-				previous = p;
+				previous = loco ?? p;
 			}
 			if (!picks.length) updateHover();
 			paint.commit();
@@ -1271,7 +1593,7 @@
 	onpointerupcapture={pressEnded}
 	onpointercancelcapture={pressEnded}
 	onmousedowncapture={otherButton}
-	oncontextmenucapture={endWalk}
+	oncontextmenucapture={contextMenu}
 	onkeydowncapture={heldElsewhere}
 />
 <svelte:document onvisibilitychange={stop} />
@@ -1292,9 +1614,13 @@
 			get enabled() {
 				return enabled && experience.mode === mode;
 			},
+			claims: secondStick,
 			onpinch: () => {
 				pad = null;
 				stick = IDLE;
+				aimPad = null;
+				aimStick = IDLE;
+				aimed = false;
 				pendingTap = null;
 				secondaryTouches.clear();
 			},
@@ -1311,11 +1637,13 @@
 	aria-label={experience.mode === 'preview'
 		? t('worldStage.characterPreviewWASDOrArrowsChangeFacing')
 		: experience.mode === 'side'
-			? t('worldStage.sideScrollerTestWorldADLeft')
-			: t('worldStage.characterTestWorldWASDArrowsOrDrag')}
+			? t('liveViews.stageSide')
+			: t('liveViews.stageTopDown')}
 	onkeydown={key}
 	onfocusout={() => {
-		if (!handoff) keys.clear();
+		if (handoff) return;
+		keys.clear();
+		actions.release('key');
 	}}
 	onpointerdown={down}
 	onpointermove={drag}
@@ -1337,15 +1665,17 @@
 		class="world-notes"
 		style:bottom={experience.mode === 'preview' && playbackHeight
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
-			: undefined}
+			: experience.mode !== 'preview' && !touchInput
+				? 'calc(var(--stage-bottom) + 68px)' // above the game icon bar
+				: undefined}
 	>
 		{#if mountIssue}<p class="world-hint" role="status">{mountIssue}</p>{/if}
 		{#if hint}<p class="world-hint">
-				{matchMedia('(pointer:coarse)').matches
-					? t('worldStage.dragInTheWorldToMove')
+				{touchInput
+					? t('liveViews.hintTouch')
 					: experience.mode === 'side'
-						? t('worldStage.focusWorldADOrToMove')
-						: t('worldStage.focusWorldWASDOrArrowKeysTo')}
+						? t('liveViews.hintSide')
+						: t('liveViews.hintTopDown')}
 			</p>{/if}{#if loadingNote}<p class="world-coverage world-loading-items" role="status">
 				<LoaderCircle size={14} class="spin" aria-hidden="true" />{loadingNote}
 			</p>{/if}{#if experience.mode !== 'preview' && (note || rendererWarning)}<p
@@ -1360,3 +1690,19 @@
 	size={padSize}
 	axis={experience.mode === 'side' ? 'x' : 'xy'}
 />
+<JoystickView class="world-stick world-aim" snapshot={aimStick} size={padSize} />
+{#if experience.mode !== 'preview' && view.project && !ui.sheet}
+	<GameControls
+		touch={touchInput}
+		mounted={experience.testMount}
+		onjump={jump}
+		onmount={toggleMount}
+	/>
+{/if}
+
+<style>
+	/* A held right button aims at the cursor. */
+	:global(.world-stage.live.aiming) .world-input {
+		cursor: crosshair;
+	}
+</style>

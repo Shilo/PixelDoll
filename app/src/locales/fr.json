@@ -914,6 +914,10 @@
 			"other": "{n} objets portés ont besoin d’images"
 		},
 		"missingFramesForMove": "Images manquantes pour {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problème",
+			"other": "{n} problèmes"
+		},
 		"workspaceCopyPixelLabOff": "Copie de l’espace de travail · PixelLab désactivé",
 		"characterSelectionWASDOrArrowsSelectEnter": "Sélection du personnage. WASD ou les flèches pour choisir ; Entrée pour personnaliser ; plus et moins pour zoomer.",
 		"previousCharacter": "Personnage précédent",
@@ -933,17 +937,18 @@
 		"tabWorkRunning": "Un travail ici est en cours, en attente ou prêt à être vérifié",
 		"tabWorkAttention": "Un travail ici demande votre attention"
 	},
+	"stateColors": {
+		"alreadyMatched": "{name} utilise déjà les couleurs du corps.",
+		"drift": "{name} ne suit pas les couleurs du corps",
+		"match": "Harmoniser les couleurs",
+		"matched": "{name} utilise maintenant les couleurs du corps."
+	},
 	"worldStage": {
 		"groundUnavailable": "Le rendu du sol en temps réel est indisponible. La scène statique est affichée.",
 		"materialUnavailable": "Le matériau du sol est indisponible. La scène statique est affichée.",
 		"sceneUnavailable": "La scène en direct est indisponible. Rechargez la page pour réessayer.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Aperçu du personnage. WASD ou les flèches changent l’orientation. Les touches 1, 2, 3 changent de vue.",
-		"sideScrollerTestWorldADLeft": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite ou un glissement horizontal pour se déplacer. Les touches 1, 2, 3 changent de vue.",
-		"characterTestWorldWASDArrowsOrDrag": "Monde de test du personnage. WASD, les flèches ou un glissement pour se déplacer. Les touches 1, 2, 3 changent de vue.",
 		"loadingCharacter": "Chargement du personnage…",
-		"dragInTheWorldToMove": "Faites glisser le pointeur dans la scène pour vous déplacer",
-		"focusWorldADOrToMove": "Sélectionnez la scène · A/D ou ←/→ pour vous déplacer",
-		"focusWorldWASDOrArrowKeysTo": "Sélectionnez la scène · WASD ou les flèches pour vous déplacer",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} objet masqué : images manquantes pour {move}",
@@ -3472,5 +3477,34 @@
 			"resolveDrafts": "Gardez ou ignorez les brouillons d’objets de ce personnage avant d’importer des mouvements.",
 			"changed": "Ce personnage a changé. Choisissez à nouveau le ZIP pour vérifier la dernière version."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Automatique : immobile",
+		"controls": "Commandes",
+		"title": "Vues en direct",
+		"forCharacter": "Animations que {name} joue en Vue de dessus et en Défilement horizontal.",
+		"idle": "Repos",
+		"walk": "Marche",
+		"attack": "Attaque",
+		"jump": "Saut",
+		"attackUp": "Attaque vers le haut",
+		"attackDown": "Attaque vers le bas",
+		"automaticClip": "Automatique : {clip}",
+		"automaticNone": "Automatique : aucune",
+		"sameAsAttack": "Comme Attaque",
+		"sideAttackHelp": "En Défilement horizontal, Attaque vers le haut ou vers le bas est jouée quand vous visez dans cette direction.",
+		"notSaved": "Le réglage des vues en direct a changé, mais ce navigateur n’a pas pu l’enregistrer.",
+		"openCharacter": "Ouvrez un personnage pour choisir ses animations.",
+		"mount": "Monture",
+		"actions": "Actions de jeu",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Espace",
+		"noAttack": "Rien n’est encore associé à Attaque. Choisissez une animation ou un état dans les réglages des vues en direct.",
+		"noAttackDirection": "{move} n’a pas d’images vers {direction}, il ne peut donc pas attaquer dans cette direction.",
+		"hintTopDown": "WASD ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
+		"hintSide": "A/D ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
+		"hintTouch": "Le côté gauche déplace · Le côté droit vise, relâchez pour attaquer",
+		"stageTopDown": "Monde de test du personnage. WASD, les flèches, un clic ou un glissement pour se déplacer. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue.",
+		"stageSide": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite, un clic ou un glissement pour se déplacer. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue."
 	}
 }

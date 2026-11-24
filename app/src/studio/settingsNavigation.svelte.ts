@@ -6,6 +6,7 @@ export type SettingsSection =
 	| 'general'
 	| 'wardrobe'
 	| 'mount'
+	| 'live'
 	| 'export'
 	| 'pixellab'
 	| 'library'
@@ -18,6 +19,7 @@ export const settingsLabels = {
 	general: 'settings.appearance',
 	wardrobe: 'experience.tabWardrobe',
 	mount: 'settings.mount',
+	live: 'liveViews.title',
 	characters: 'creationSettings.character',
 	moves: 'creationSettings.move',
 	states: 'creationSettings.state',

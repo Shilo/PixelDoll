@@ -3,6 +3,7 @@ import { selectLanguage } from '../lib/i18n.ts';
 import { defaultExportSettings, resetExportSettings } from '../lib/store/export-settings.ts';
 import { setDeveloperMode } from './developerMode.svelte.ts';
 import { resetMount } from './experience/riderPose.ts';
+import { resetLiveViews } from './experience/liveViews.ts';
 import { applyRiderPose } from './mountPreview.ts';
 import {
 	getCreationSettings,
@@ -26,6 +27,7 @@ const resettableSections = [
 	'general',
 	'wardrobe',
 	'mount',
+	'live',
 	'export',
 	'developer',
 	...creationSections
@@ -72,6 +74,8 @@ export async function resetSettings(scope: ResetScope): Promise<WhisperKey[]> {
 		applyRiderPose();
 		if (!saved) failures.push('settings.mount');
 	}
+	if ((scope === 'all' || scope === 'live') && !resetLiveViews(scope === 'all' ? null : doc.id))
+		failures.push('liveViews.title');
 	if ((scope === 'all' || scope === 'developer') && !setDeveloperMode(false))
 		failures.push('developer.title');
 	if (scope === 'all' || scope === 'export') {

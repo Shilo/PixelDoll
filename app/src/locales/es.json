@@ -914,6 +914,10 @@
 			"other": "{n} objetos puestos necesitan fotogramas"
 		},
 		"missingFramesForMove": "Faltan fotogramas de {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problema",
+			"other": "{n} problemas"
+		},
 		"workspaceCopyPixelLabOff": "Copia del espacio de trabajo · PixelLab desactivado",
 		"characterSelectionWASDOrArrowsSelectEnter": "Selección de personaje. WASD o flechas para elegir; Enter para personalizar; más y menos para el zoom.",
 		"previousCharacter": "Personaje anterior",
@@ -933,17 +937,18 @@
 		"tabWorkRunning": "Aquí hay trabajo en curso, en espera o listo para revisar",
 		"tabWorkAttention": "Hay trabajo aquí que requiere atención"
 	},
+	"stateColors": {
+		"alreadyMatched": "{name} ya usa los colores del cuerpo.",
+		"drift": "{name} no sigue los colores del cuerpo",
+		"match": "Igualar colores",
+		"matched": "{name} ahora usa los colores del cuerpo."
+	},
 	"worldStage": {
 		"groundUnavailable": "No se puede renderizar el suelo en tiempo real. Se muestra la escena estática.",
 		"materialUnavailable": "El material del suelo no está disponible. Se muestra la escena estática.",
 		"sceneUnavailable": "La escena en vivo no está disponible. Recarga la página para volver a intentarlo.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Vista previa del personaje. WASD o flechas cambian la orientación. Las teclas 1, 2 y 3 cambian de vista.",
-		"sideScrollerTestWorldADLeft": "Mundo de prueba de desplazamiento lateral. A/D, flechas izquierda/derecha o arrastre horizontal para moverte. Las teclas 1, 2 y 3 cambian de vista.",
-		"characterTestWorldWASDArrowsOrDrag": "Mundo de prueba del personaje. WASD, flechas o arrastre para moverte. Las teclas 1, 2 y 3 cambian de vista.",
 		"loadingCharacter": "Cargando personaje…",
-		"dragInTheWorldToMove": "Arrastra en el mundo para moverte",
-		"focusWorldADOrToMove": "Enfoca el mundo · A/D o ←/→ para moverte",
-		"focusWorldWASDOrArrowKeysTo": "Enfoca el mundo · WASD o flechas para moverte",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} objeto oculto: faltan fotogramas de {move}",
@@ -3472,5 +3477,34 @@
 			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de importar movimientos.",
 			"changed": "Este personaje cambió. Elige el ZIP de nuevo para revisar la versión más reciente."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Automático: quieto",
+		"controls": "Controles",
+		"title": "Vistas en vivo",
+		"forCharacter": "Animaciones que {name} usa en Vista cenital y Vista lateral.",
+		"idle": "Reposo",
+		"walk": "Caminar",
+		"attack": "Ataque",
+		"jump": "Salto",
+		"attackUp": "Ataque hacia arriba",
+		"attackDown": "Ataque hacia abajo",
+		"automaticClip": "Automático: {clip}",
+		"automaticNone": "Automático: ninguna",
+		"sameAsAttack": "Igual que Ataque",
+		"sideAttackHelp": "En Vista lateral se usa Ataque hacia arriba o hacia abajo cuando apuntas en esa dirección.",
+		"notSaved": "Se cambió el ajuste de vistas en vivo, pero este navegador no pudo guardarlo.",
+		"openCharacter": "Abre un personaje para elegir sus animaciones.",
+		"mount": "Montura",
+		"actions": "Acciones de juego",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Espacio",
+		"noAttack": "Aún no hay nada asignado a Ataque. Elige una animación o un estado en los ajustes de Vistas en vivo.",
+		"noAttackDirection": "{move} no tiene fotogramas hacia {direction}, así que no puede atacar en esa dirección.",
+		"hintTopDown": "WASD o clic para moverte · Clic derecho o X para atacar · Espacio para saltar · M para montar",
+		"hintSide": "A/D o clic para moverte · Clic derecho o X para atacar · Espacio para saltar · M para montar",
+		"hintTouch": "El lado izquierdo mueve · El lado derecho apunta; suelta para atacar",
+		"stageTopDown": "Mundo de prueba del personaje. WASD, flechas, clic o arrastre para moverte. Clic derecho o X ataca, Espacio salta, M monta. Las teclas 1, 2 y 3 cambian de vista.",
+		"stageSide": "Mundo de prueba en vista lateral. A/D, flechas izquierda y derecha, clic o arrastre para moverte. Clic derecho o X ataca, Espacio salta, M monta. Las teclas 1, 2 y 3 cambian de vista."
 	}
 }

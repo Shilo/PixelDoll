@@ -5,6 +5,7 @@ import { decodePng, pngSize, type Img } from '../image/png.ts';
 import { stableStringify } from '../image/hash.ts';
 import { LocalizedError } from '../message.ts';
 import { isGarment, regionMarker } from '../dress/regions.ts';
+import { stateColorMatcher } from '../dress/stateColors.ts';
 import {
 	baseHashOf,
 	DEFAULT_MOVE,
@@ -31,6 +32,7 @@ import { unzip } from '../store/zip.ts';
 import { standingHistory, type FrameHistory } from './history.ts';
 import {
 	applyPlan,
+	frameSheets,
 	layerOfFile,
 	planFrames,
 	restoreOriginals,
@@ -150,6 +152,35 @@ export async function prepareFrames(
 				.map((i) => i.name)
 		: [];
 	return { projectId, rec, project, plan, ignored, fitted };
+}
+
+/** A State saved before States were matched to the body's colors, as a Fix frames import of its own frames on those
+ *  colors (one undoable step, like any other). Null when nothing would change. */
+export async function prepareStateColorMatch(
+	projectId: string,
+	anim: string
+): Promise<PreparedFrames | null> {
+	assertEditable(projectId);
+	const { rec, project } = await loadProject(projectId);
+	const m = rec.manifest,
+		base = m.items.find((i) => i.id === m.rig.baseItem);
+	if (!base || m.rig.animations.find((a) => a.id === anim)?.kind !== 'state')
+		throw new LocalizedError('This item or move no longer exists.', 'fixFrames.errors.targetGone');
+	const match = stateColorMatcher(project);
+	if (!match) return null;
+	const sheets = frameSheets(project, base.id, anim).map(({ layerId, image }) => ({
+		layerId,
+		image: match(image)
+	}));
+	const plan = await planFrames(project, base.id, anim, sheets, {
+		mark: regionMarker(project, anim),
+		colorKey: base.regions ? (c) => (isGarment(c) ? c & ~1 : c) : undefined
+	});
+	if (!plan.changed.length) return null;
+	const fitted = m.items
+		.filter((i) => i.id !== base.id && !i.variantOf && i.baseHash === m.rig.baseHash)
+		.map((i) => i.name);
+	return { projectId, rec, project, plan, ignored: 0, fitted };
 }
 
 const changedSince = () =>

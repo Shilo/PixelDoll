@@ -4,10 +4,9 @@ import { clipKind } from '../../lib/runtime/timeline.js';
 import { DEFAULT_MOVE, type DirectionName } from '../../lib/rig/rig.ts';
 import type { Manifest } from '../../lib/store/manifest.ts';
 import type { MountLegMode } from './mountLegs.ts';
-import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
 import {
 	MOUNT_DEFAULTS,
-	MOUNT_KEY,
+	mountPreferences,
 	readMountPreferences,
 	updateMountPreferences,
 	type MountPreferences
@@ -137,14 +136,7 @@ export function resetMount(projectId: string | null) {
 
 /** Another tab's mount choices apply here too; `changed` gets what they replaced, so Preview can follow them. */
 export function watchMountPreferences(changed: (previous: MountPreferences) => void) {
-	if (workspaceCopy) return () => {};
-	const sync = (event: StorageEvent) => {
-		if (event.key !== MOUNT_KEY && event.key !== null) return;
-		try {
-			if (event.storageArea !== localStorage) return;
-		} catch {
-			return;
-		}
+	return mountPreferences.watch(() => {
 		const previous = {
 			show: experience.testMount,
 			legs: experience.mountLegs,
@@ -153,7 +145,5 @@ export function watchMountPreferences(changed: (previous: MountPreferences) => v
 		apply(readMountPreferences());
 		unsaved = false;
 		changed(previous);
-	};
-	addEventListener('storage', sync);
-	return () => removeEventListener('storage', sync);
+	});
 }

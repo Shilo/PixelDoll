@@ -154,7 +154,8 @@ test('the selection cast rides the mount on its feet, at the standing size, only
 		stills.set('cast-test', {
 			...plain,
 			look: '',
-			mount: { key: JSON.stringify(['none', '']), still: mounted }
+			// Legs, Riding pose and the Live views Idle the rider falls back to.
+			mount: { key: JSON.stringify(['none', '', '']), still: mounted }
 		});
 		expect(castStill('cast-test')).toBe(mounted);
 		experience.mountLegs = 'both';

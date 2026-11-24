@@ -914,6 +914,10 @@
 			"other": "Für {n} angelegte Gegenstände fehlen Frames"
 		},
 		"missingFramesForMove": "Fehlende Frames für {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} Problem",
+			"other": "{n} Probleme"
+		},
 		"workspaceCopyPixelLabOff": "Arbeitsbereichskopie · PixelLab aus",
 		"characterSelectionWASDOrArrowsSelectEnter": "Figurenauswahl. Wähle mit WASD oder den Pfeiltasten, bearbeite mit der Eingabetaste und zoome mit Plus und Minus.",
 		"previousCharacter": "Vorherige Figur",
@@ -933,17 +937,18 @@
 		"tabWorkRunning": "Hier läuft, wartet oder ist etwas zum Prüfen bereit",
 		"tabWorkAttention": "Hier braucht etwas deine Aufmerksamkeit"
 	},
+	"stateColors": {
+		"alreadyMatched": "{name} nutzt die Körperfarben bereits.",
+		"drift": "{name} übernimmt die Körperfarben nicht",
+		"match": "Farben angleichen",
+		"matched": "{name} an die Körperfarben angeglichen."
+	},
 	"worldStage": {
 		"groundUnavailable": "Die fortlaufende Bodendarstellung ist nicht verfügbar. Die statische Szene wird angezeigt.",
 		"materialUnavailable": "Das Bodenmaterial ist nicht verfügbar. Die statische Szene wird angezeigt.",
 		"sceneUnavailable": "Die Live-Szene ist nicht verfügbar. Lade die Seite neu.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Figurenvorschau. Ändere die Blickrichtung mit WASD oder den Pfeiltasten. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
-		"sideScrollerTestWorldADLeft": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts oder durch waagerechtes Ziehen. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
-		"characterTestWorldWASDArrowsOrDrag": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten oder durch Ziehen. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
 		"loadingCharacter": "Figur wird geladen…",
-		"dragInTheWorldToMove": "Zieh in der Welt, um dich zu bewegen",
-		"focusWorldADOrToMove": "Welt fokussieren · Bewegen mit A/D oder ←/→",
-		"focusWorldWASDOrArrowKeysTo": "Welt fokussieren · Bewegen mit WASD oder den Pfeiltasten",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} Gegenstand ausgeblendet: Bilder für {move} fehlen",
@@ -3469,5 +3474,34 @@
 			"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du Animationen importierst.",
 			"changed": "Diese Figur hat sich geändert. Wähle das ZIP erneut, um die aktuelle Version zu prüfen."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Automatisch: steht still",
+		"controls": "Steuerung",
+		"title": "Live-Ansichten",
+		"forCharacter": "Animationen, die {name} in Draufsicht und Seitenansicht abspielt.",
+		"idle": "Ruhe",
+		"walk": "Gehen",
+		"attack": "Angriff",
+		"jump": "Sprung",
+		"attackUp": "Angriff nach oben",
+		"attackDown": "Angriff nach unten",
+		"automaticClip": "Automatisch: {clip}",
+		"automaticNone": "Automatisch: keine",
+		"sameAsAttack": "Wie Angriff",
+		"sideAttackHelp": "In der Seitenansicht spielt Angriff nach oben oder unten, wenn du nach oben oder unten zielst.",
+		"notSaved": "Die Einstellung der Live-Ansichten wurde geändert, aber dieser Browser konnte sie nicht speichern.",
+		"openCharacter": "Öffne einen Charakter, um seine Animationen auszuwählen.",
+		"mount": "Reittier",
+		"actions": "Spielaktionen",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Leertaste",
+		"noAttack": "Für Angriff ist noch nichts festgelegt. Wähle in den Einstellungen der Live-Ansichten eine Animation oder einen Zustand.",
+		"noAttackDirection": "{move} hat keine Frames in Richtung {direction}, daher ist dort kein Angriff möglich.",
+		"hintTopDown": "WASD oder Klick zum Bewegen · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",
+		"hintSide": "A/D oder Klick zum Bewegen · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",
+		"hintTouch": "Linke Seite bewegt · Rechte Seite zielt, loslassen greift an",
+		"stageTopDown": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten, per Klick oder durch Ziehen. Rechtsklick oder X greift an, die Leertaste springt, M sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
+		"stageSide": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts, per Klick oder durch Ziehen. Rechtsklick oder X greift an, die Leertaste springt, M sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht."
 	}
 }

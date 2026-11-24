@@ -914,6 +914,10 @@
 			"other": "Giyili {n} eşyanın kareleri eksik"
 		},
 		"missingFramesForMove": "Eksik kareler: {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} sorun",
+			"other": "{n} sorun"
+		},
 		"workspaceCopyPixelLabOff": "Çalışma alanı kopyası · PixelLab kapalı",
 		"characterSelectionWASDOrArrowsSelectEnter": "Karakter seçimi. WASD veya ok tuşlarıyla seçin, Enter ile özelleştirin, artı ve eksiyle yakınlaştırıp uzaklaştırın.",
 		"previousCharacter": "Önceki karakter",
@@ -933,17 +937,18 @@
 		"tabWorkRunning": "Burada süren, bekleyen ya da incelemeye hazır bir iş var",
 		"tabWorkAttention": "Burada ilgilenmeniz gereken bir iş var"
 	},
+	"stateColors": {
+		"alreadyMatched": "Zaten vücut renklerini kullanıyor: {name}.",
+		"drift": "Vücut renklerine uymuyor: {name}",
+		"match": "Renkleri eşle",
+		"matched": "Vücut renklerine eşlendi: {name}."
+	},
 	"worldStage": {
 		"groundUnavailable": "Zemin gerçek zamanlı olarak çizilemiyor. Sabit sahne gösteriliyor.",
 		"materialUnavailable": "Zemin malzemesi kullanılamıyor. Sabit sahne gösteriliyor.",
 		"sceneUnavailable": "Canlı sahne kullanılamıyor. Tekrar denemek için sayfayı yenileyin.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Karakter önizlemesi. Yönü WASD veya ok tuşlarıyla değiştirin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
-		"sideScrollerTestWorldADLeft": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D veya sol/sağ ok tuşlarını kullanın ya da yatay sürükleyin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
-		"characterTestWorldWASDArrowsOrDrag": "Karakter test dünyası. Hareket etmek için WASD veya ok tuşlarını kullanın ya da sürükleyin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
 		"loadingCharacter": "Karakter yükleniyor…",
-		"dragInTheWorldToMove": "Hareket etmek için dünyada sürükleyin",
-		"focusWorldADOrToMove": "Dünyaya odaklanın · A/D veya ←/→ ile hareket edin",
-		"focusWorldWASDOrArrowKeysTo": "Dünyaya odaklanın · WASD veya ok tuşlarıyla hareket edin",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} eşya gizli: {move} kareleri eksik",
@@ -3469,5 +3474,34 @@
 			"resolveDrafts": "Hareketleri içe aktarmadan önce bu karakterin eşya taslaklarını tutun veya kapatın.",
 			"changed": "Bu karakter değişti. En son sürümü incelemek için ZIP dosyasını yeniden seçin."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Otomatik: hareketsiz durur",
+		"controls": "Kontroller",
+		"title": "Canlı görünümler",
+		"forCharacter": "{name} karakterinin Üstten görünüm ve Yandan kaydırmalı görünümde oynattığı animasyonlar.",
+		"idle": "Bekleme",
+		"walk": "Yürüme",
+		"attack": "Saldırı",
+		"jump": "Zıplama",
+		"attackUp": "Yukarı saldırı",
+		"attackDown": "Aşağı saldırı",
+		"automaticClip": "Otomatik: {clip}",
+		"automaticNone": "Otomatik: yok",
+		"sameAsAttack": "Saldırı ile aynı",
+		"sideAttackHelp": "Yandan kaydırmalı görünümde yukarı veya aşağı nişan aldığınızda Yukarı saldırı veya Aşağı saldırı oynatılır.",
+		"notSaved": "Canlı görünüm ayarı değişti ancak bu tarayıcı kaydedemedi.",
+		"openCharacter": "Oynatacağı animasyonları seçmek için bir karakter açın.",
+		"mount": "Binek",
+		"actions": "Oyun eylemleri",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Boşluk",
+		"noAttack": "Henüz Saldırı için bir şey seçilmedi. Canlı görünüm ayarlarından bir animasyon veya durum seçin.",
+		"noAttackDirection": "Bu animasyonda ({move}) {direction} yönüne bakan kare yok, bu yüzden o yöne saldıramaz.",
+		"hintTopDown": "Hareket için WASD veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
+		"hintSide": "Hareket için A/D veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
+		"hintTouch": "Sol taraf hareket ettirir · Sağ taraf nişan alır, bırakınca saldırır",
+		"stageTopDown": "Karakter test dünyası. Hareket etmek için WASD, ok tuşları, tıklama veya sürükleme kullanın. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir.",
+		"stageSide": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D, sol ve sağ ok tuşları, tıklama veya sürükleme kullanın. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir."
 	}
 }

@@ -37,10 +37,14 @@ function compatible(a: RGB, b: RGB): boolean {
 /** A State is a fresh drawing of the body, so its shading drifts further than a move's; measured on saved States, every
  *  skin color but a handful of pixels sat within 24/255 of a body color. Farther or other-hued colors are new detail. */
 const STATE_SNAP = 24;
-/** Put a new State's colors onto the body's own colors, so exact-ramp recolors reach it like every other frame. Each color
+/** Puts a State's colors onto the body's own colors, so exact-ramp recolors reach it like every other frame. Each color
  *  takes its nearest same-family reference color (ties: the most used) when at most 24/255 per channel away; other colors
- *  (new detail such as a gold hilt) and alpha stay exactly as drawn. */
-export function snapToBodyColors(reference: Iterable<Img>, frames: Img[]): Img[] {
+ *  (new detail such as a gold hilt), `keep` colors and alpha stay exactly as drawn. One snapper serves many frames. */
+export function bodyColorSnapper(
+	reference: Iterable<Img>,
+	/** 0xRRGGBB colors already counted as the body's (its recolor ramps): kept as they are. */
+	keep: ReadonlySet<number> = new Set()
+): (frame: Img) => Img {
 	const counts = new Map<number, { color: RGB; n: number }>();
 	for (const image of reference)
 		for (let i = 0; i < image.data.length; i += 4)
@@ -55,6 +59,10 @@ export function snapToBodyColors(reference: Iterable<Img>, frames: Img[]): Img[]
 	const decide = (c: RGB) => {
 		const id = keyOf(c);
 		if (decisions.has(id)) return decisions.get(id);
+		if (keep.has(id)) {
+			decisions.set(id, undefined);
+			return undefined;
+		}
 		let nearest = Infinity,
 			best: { color: RGB; n: number } | undefined;
 		for (const candidate of counts.values()) {
@@ -69,7 +77,7 @@ export function snapToBodyColors(reference: Iterable<Img>, frames: Img[]): Img[]
 		decisions.set(id, replacement);
 		return replacement;
 	};
-	return frames.map((frame) => {
+	return (frame) => {
 		const out = { ...frame, data: new Uint8ClampedArray(frame.data) };
 		for (let i = 0; i < frame.data.length; i += 4) {
 			if (!frame.data[i + 3]) continue;
@@ -77,7 +85,7 @@ export function snapToBodyColors(reference: Iterable<Img>, frames: Img[]): Img[]
 			if (replacement) out.data.set(replacement, i);
 		}
 		return out;
-	});
+	};
 }
 
 export interface BodyPaletteRepair {

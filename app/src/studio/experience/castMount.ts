@@ -16,13 +16,18 @@ import {
 	resolveLive
 } from './presentation.ts';
 import { activeRiderPose, legsKept } from './riderPose.ts';
+import { currentLiveClips } from './liveViews.ts';
 import { experience } from './state.svelte.ts';
 import { stills, type CharacterStill, type MountedVariant } from './thumbnails.svelte.ts';
 
 /** The mount settings a character's cast still rides with, or '' while the mount is hidden. */
 export function mountKey(id: string) {
 	return experience.testMount
-		? JSON.stringify([experience.mountLegs, experience.ridingPoses[id] ?? ''])
+		? JSON.stringify([
+				experience.mountLegs,
+				experience.ridingPoses[id] ?? '',
+				experience.liveRoles[id]?.idle ?? ''
+			])
 		: '';
 }
 
@@ -47,7 +52,8 @@ export function mountedStill(
 		riding: true,
 		// Its default facing (south, else east for a side-view rig), so the Riding pose drawn for it applies.
 		riderPose: activeRiderPose(id, project.manifest),
-		items
+		items,
+		clips: currentLiveClips(id, project.manifest.rig.animations)
 	});
 	const place = mountPlacement(project, p, previewBounds(project));
 	let still: CharacterStill | null = null;

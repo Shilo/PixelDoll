@@ -178,6 +178,7 @@ import {
 	type FrameChange
 } from '../lib/rig/reframe.ts';
 import { forgetRidingPose, syncRiderPose } from './experience/riderPose.ts';
+import { forgetLiveChoices } from './experience/liveViews.ts';
 import { clearDebugLog, recordDebug } from '../lib/debug/log.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
@@ -2321,10 +2322,15 @@ export async function deleteDeletedForever(id: string): Promise<void> {
 	void cleanUp(0, true).catch((error) => console.error('cleanup after delete forever', error));
 }
 
-/** Drop the Riding pose a permanently deleted thing held: a character's, or a State's own. */
+/** Drop the Riding pose and Live Views choices a permanently deleted thing held: a character's, or a clip's own. */
 function forgetPose(entry: RecentlyDeleted) {
-	if (entry.kind === 'character') forgetRidingPose(entry.projectId);
-	else if (entry.scope.moveId) forgetRidingPose(entry.projectId, entry.scope.moveId);
+	if (entry.kind === 'character') {
+		forgetRidingPose(entry.projectId);
+		forgetLiveChoices(entry.projectId);
+	} else if (entry.scope.moveId) {
+		forgetRidingPose(entry.projectId, entry.scope.moveId);
+		forgetLiveChoices(entry.projectId, entry.scope.moveId);
+	}
 }
 
 export async function removeProject(id = doc.id): Promise<void> {
@@ -2745,6 +2751,40 @@ export async function replaceFrames(prepared: PreparedFrames, name: string) {
 			action: () => undoStep(projectId, step),
 			actionLabel: message('fixFrames.undo')
 		});
+}
+/** Put a State saved before States were matched to the body's colors onto those colors: free and local, one history step
+ *  that the notice's Undo (or Restore originals in Fix frames) reverses. `name` is how the Studio shows the State. */
+export async function matchStateColors(anim: string, name: string) {
+	const projectId = doc.id,
+		request = openRequest;
+	try {
+		await flushSave();
+		const prepared = await (await framesModule()).prepareStateColorMatch(projectId, anim);
+		if (!prepared) {
+			toast(message('stateColors.alreadyMatched', { name }));
+			return;
+		}
+		const { step } = await withItemStep(
+			projectId,
+			prepared.plan.itemId,
+			message('stateColors.match'),
+			async (beforeWrite) => (await framesModule()).saveFrames(prepared, beforeWrite)
+		);
+		await refreshSaved(projectId, request);
+		if (step)
+			toast(message('stateColors.matched', { name }), {
+				tone: 'success',
+				duration: 10000,
+				action: () => undoStep(projectId, step),
+				actionLabel: message('fixFrames.undo')
+			});
+	} catch (error) {
+		console.error('match state colors', error);
+		toast(errorTranslation(error) ?? message('fixFrames.errors.saveFailed'), {
+			tone: 'danger',
+			error
+		});
+	}
 }
 /** Restore every edited frame of an item, as one history step. */
 export async function restoreFrames(projectId: string, itemId: string) {

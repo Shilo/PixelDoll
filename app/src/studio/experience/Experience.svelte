@@ -39,8 +39,10 @@
 		characterName,
 		showStanding,
 		toast,
-		view
+		view,
+		matchStateColors
 	} from '../state.svelte.ts';
+	import { stateColorDrift } from '../../lib/dress/stateColors.ts';
 	import {
 		experience,
 		customize as enterCustomize,
@@ -86,6 +88,15 @@
 	const clips = $derived(playbackClips(m?.rig.animations ?? []));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const selectedMove = $derived(m?.rig.animations.find((animation) => animation.id === ui.anim));
+	// A State saved before States were matched to the body's colors: recolors miss most of it (stateColors.ts).
+	const colorDrift = $derived(
+		!!store.project &&
+			doc.id.startsWith('rig-') &&
+			selectedMove?.kind === 'state' &&
+			stateColorDrift(store.project, selectedMove.id)
+	);
+	let matchingColors = $state(false);
+	const problems = $derived((missing?.items.length ?? 0) + (colorDrift ? 1 : 0));
 	// A shown mount has its own gait, so Play/Pause stays useful even over a single-frame move.
 	const canPlay = $derived(
 		(experience.presentation === 'animation' &&
@@ -851,18 +862,21 @@
 						title={t('experience.inspect')}
 						onclick={() => (ui.sheet = 'inspect')}><Grid2x2 size={16} /></button
 					>
-					{#if missing}
-						{@const coverageLabel = t('experience.missingEquippedFrames', {
-							count: missing.items.length,
-							n: formatNumber(missing.items.length)
-						})}
+					{#if problems}
+						{@const coverageLabel =
+							missing && !colorDrift
+								? t('experience.missingEquippedFrames', {
+										count: missing.items.length,
+										n: formatNumber(missing.items.length)
+									})
+								: t('experience.previewProblems', { count: problems, n: formatNumber(problems) })}
 						<button
 							class="bu-action"
 							data-variant="quiet"
 							aria-label={coverageLabel}
 							title={coverageLabel}
 							popovertarget="preview-coverage"
-							><TriangleAlert size={16} /><span>{formatNumber(missing.items.length)}</span></button
+							><TriangleAlert size={16} /><span>{formatNumber(problems)}</span></button
 						>
 						<div
 							id="preview-coverage"
@@ -874,22 +888,42 @@
 						>
 							<PopoverArrow />
 							<div class="menu-surface bu-popover-surface bu-floating">
-								<p class="menu-sec">
-									{t('experience.missingFramesForMove', {
-										move: displayMove(missing.clip, moveRefs),
-										direction: displayDirection(missing.direction)
-									})}
-								</p>
-								{#each missing.items as item (item.id)}
-									{@const saved = m.items.find((i) => i.id === (item.variantOf ?? item.id))}
-									{#if saved}<button
-											class="row bu-action"
-											data-variant="quiet"
-											onclick={() => showMissingItem(saved)}
-											>{item.name}<ChevronRight size={16} aria-hidden="true" /></button
-										>
-									{:else}<p class="menu-sec">{item.name}</p>{/if}
-								{/each}
+								{#if missing}
+									<p class="menu-sec">
+										{t('experience.missingFramesForMove', {
+											move: displayMove(missing.clip, moveRefs),
+											direction: displayDirection(missing.direction)
+										})}
+									</p>
+									{#each missing.items as item (item.id)}
+										{@const saved = m.items.find((i) => i.id === (item.variantOf ?? item.id))}
+										{#if saved}<button
+												class="row bu-action"
+												data-variant="quiet"
+												onclick={() => showMissingItem(saved)}
+												>{item.name}<ChevronRight size={16} aria-hidden="true" /></button
+											>
+										{:else}<p class="menu-sec">{item.name}</p>{/if}
+									{/each}
+								{/if}
+								{#if colorDrift && selectedMove}
+									{@const stateName = displayMove(selectedMove.id, moveRefs)}
+									<p class="menu-sec">{t('stateColors.drift', { name: stateName })}</p>
+									<button
+										class="row bu-action"
+										data-variant="quiet"
+										disabled={matchingColors}
+										onclick={async () => {
+											coveragePopover?.hidePopover();
+											matchingColors = true;
+											try {
+												await matchStateColors(selectedMove.id, stateName);
+											} finally {
+												matchingColors = false;
+											}
+										}}>{t('stateColors.match')}<span class="cost">{t('common.free')}</span></button
+									>
+								{/if}
 							</div>
 						</div>
 					{/if}
