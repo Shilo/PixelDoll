@@ -1,0 +1,1169 @@
+{
+  "date": "2026-11-23",
+  "parents": {
+    "A": "5414a06d-90fe-418b-87b4-bc1076654a6f (80 px, 55 colors)",
+    "B": "39182c61-9e22-4181-ade2-273a6b5f2ebd (64 px, 55 colors)",
+    "C": "4441e93e-3c22-4277-a7c0-755979158633 (96 px, 38 colors)"
+  },
+  "prompts": {
+    "sword": "holding a plain steel longsword with both hands in a ready guard stance",
+    "apple": "holding a shiny red apple raised up in the right hand",
+    "sit": "sitting cross-legged on the ground with hands resting on the knees"
+  },
+  "arms": {
+    "none": "no palette option",
+    "ref": "use_color_palette_from_reference: true",
+    "tp": "target_palette.colors = parent rotation colors",
+    "corr": "use_color_palette_correction: true"
+  },
+  "requests": [
+    {
+      "id": "A-apple-11-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple none 11",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "5bb291fb-09c3-45ee-a27f-5263148ef2fe",
+      "childId": "0fdfb322-3184-4871-81e0-6d7b05b73a08",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-apple-11-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple ref 11",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "114bcd75-842e-4a88-88c8-afc064049549",
+      "childId": "659d91b0-8ea9-439c-9327-f8afb196e1a3",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 53,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-apple-11-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple tp 11",
+        "seed": 11,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "65ea3f58-2db0-4566-b46e-dc7095bc1434",
+      "childId": "0df5ac98-6442-49f3-a800-774008c050db",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 51,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-apple-12-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple none 12",
+        "seed": 12,
+        "no_background": true
+      },
+      "jobId": "6d6427ee-3242-497c-8ea9-3f0ae0ffe3c0",
+      "childId": "308db7ea-6aee-44af-8239-d20e25b3fe9b",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-apple-12-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple ref 12",
+        "seed": 12,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "5e316a7e-0742-478d-8bd7-8557b4ec0a30",
+      "childId": "6c6780d3-9871-4b6e-ad8d-fc41027d819d",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-apple-12-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple tp 12",
+        "seed": 12,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "b594612b-51ec-49ae-96db-7adfb6ba0542",
+      "childId": "4c3dce48-af68-4d52-aa9c-26cb4f1ac959",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 51,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-apple-13-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple none 13",
+        "seed": 13,
+        "no_background": true
+      },
+      "jobId": "cc454435-a5bb-49eb-a722-ba575dfb72af",
+      "childId": "5732d67b-e841-4471-9ce6-887f99148a86",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-apple-13-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple ref 13",
+        "seed": 13,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "1c4a733c-0214-4061-8d34-75707439e4da",
+      "childId": "af507e4e-389c-4f99-aad0-fd67331bd383",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-apple-13-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple tp 13",
+        "seed": 13,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "bb63cec5-41e2-4803-b3fc-f1a14c694076",
+      "childId": "f3015157-8eba-42e9-9d91-e9dd81ab5787",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-apple-14-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple none 14",
+        "seed": 14,
+        "no_background": true
+      },
+      "jobId": "9857edfc-306a-4458-83cb-2c0329a44916",
+      "childId": "7bac3b80-9422-4c8f-b75c-b2fe1ed10c41",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 95,
+        "inBodyPalette": 0.005,
+        "inBodyPaletteAfterLocalSnap": 0.907
+      }
+    },
+    {
+      "id": "A-apple-14-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple ref 14",
+        "seed": 14,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "1ec8d1b2-9fc8-449c-88da-0cab99c5201a",
+      "childId": "78dde30d-7125-461b-a27f-1307fe496cac",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-apple-14-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple tp 14",
+        "seed": 14,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "a7eda484-acd0-485f-b04d-a16e9342a4e2",
+      "childId": "96079137-a41e-41af-b664-68d90a7bcb1c",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-sit-11-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit none 11",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "d0e23384-212d-46c7-97d5-61156af3d86c",
+      "childId": "2158fcdd-dd7d-46db-a198-32238cdb1ce3",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 99,
+        "inBodyPalette": 0.003,
+        "inBodyPaletteAfterLocalSnap": 0.953
+      }
+    },
+    {
+      "id": "A-sit-11-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit ref 11",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "84cefaae-d1cf-464b-a7da-3def2c8524d3",
+      "childId": "be131b1b-e264-4921-9bfc-f1bdabdb2888",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 50,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-sit-11-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit tp 11",
+        "seed": 11,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "bf730b5d-c2b4-463a-b553-fe1ca3db6df0",
+      "childId": "a01831f7-8c5f-4363-ac10-3be210d63398",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 49,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-sit-12-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit none 12",
+        "seed": 12,
+        "no_background": true
+      },
+      "jobId": "5f3cb7bb-5d46-4f6c-8353-0bff87b3afd8",
+      "childId": "3d656a08-f2bd-49f9-9272-cc4938225a30",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 98,
+        "inBodyPalette": 0.003,
+        "inBodyPaletteAfterLocalSnap": 0.964
+      }
+    },
+    {
+      "id": "A-sit-12-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit ref 12",
+        "seed": 12,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "7b0b2327-1c21-43ba-8e33-b49a448b2d0f",
+      "childId": "1a0d9d71-896e-49f1-9322-969e54cf5290",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 49,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-sit-12-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit tp 12",
+        "seed": 12,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "59db0a99-dd7b-461e-986a-65685b2ae8e5",
+      "childId": "8eb0aa93-152e-4bcf-968d-483104ade745",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 49,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-sword-11-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword none 11",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "d955b830-0ce5-4f7c-ac62-319e91dcc1e9",
+      "childId": "7b44fec7-9db2-407d-aea7-3c5fa9411aca",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-sword-11-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword ref 11",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "2f7b95f9-45f6-474b-ba35-c389fce0c1df",
+      "childId": "461ec430-feeb-4b6e-99ad-35289f0f7207",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 49,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-sword-11-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword tp 11",
+        "seed": 11,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "db673536-5b9b-4918-b930-2e3c0c653223",
+      "childId": "2d4a117a-9c05-47d3-abd8-370f1f78adad",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-sword-12-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword none 12",
+        "seed": 12,
+        "no_background": true
+      },
+      "jobId": "f73f513d-c8c7-467a-823a-0c80087c0868",
+      "childId": "b2da7099-177c-4cfe-9287-86253a07cc07",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 108,
+        "inBodyPalette": 0,
+        "inBodyPaletteAfterLocalSnap": 0.922
+      }
+    },
+    {
+      "id": "A-sword-12-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword ref 12",
+        "seed": 12,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "33b7e402-0181-436b-aab4-58c5ca30704e",
+      "childId": "3ed57b7a-8a18-4f20-bb38-a772ea29d7b6",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 49,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-sword-12-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword tp 12",
+        "seed": 12,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "231064ce-d48e-41df-aa42-bd248c9d8868",
+      "childId": "acb91605-5feb-434a-862b-02a134b7a73c",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 51,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "A-sword-13-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword none 13",
+        "seed": 13,
+        "no_background": true
+      },
+      "jobId": "1a12ee46-2d36-4231-af5e-94b0eb66970c",
+      "childId": "deae1b3a-ebd1-41a8-b60f-53ef005256ec",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 104,
+        "inBodyPalette": 0.006,
+        "inBodyPaletteAfterLocalSnap": 0.933
+      }
+    },
+    {
+      "id": "A-sword-13-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword ref 13",
+        "seed": 13,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "031799ac-1fa1-45d4-95a4-2622e1eaf923",
+      "childId": "5d61b08e-500c-479f-bf78-1dbd1f297c65",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "A-sword-13-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "5414a06d-90fe-418b-87b4-bc1076654a6f",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword tp 13",
+        "seed": 13,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "3ff4b3c0-30cc-4136-9d26-2dafcee813ee",
+      "childId": "fae7830f-7d43-4007-8cde-04eae2c040a7",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "B-apple-11-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "39182c61-9e22-4181-ade2-273a6b5f2ebd",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple none 11",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "04ace687-5ff1-464e-babd-1165cc60b5b4",
+      "childId": "cd6a758b-b29c-4699-8644-cd6966d41594",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "B-apple-11-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "39182c61-9e22-4181-ade2-273a6b5f2ebd",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple ref 11",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "57f9f0ba-7584-49be-88f0-f7b89a08ca71",
+      "childId": "d6e1e00b-efa0-4ff8-975f-09f5bf2729ba",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "B-apple-11-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "39182c61-9e22-4181-ade2-273a6b5f2ebd",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple tp 11",
+        "seed": 11,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "9bd4e14b-0296-45e6-85b0-233d5bad5b63",
+      "childId": "0232e5c5-5f2f-408e-b052-a2ec0e5d9145",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "B-sit-11-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "39182c61-9e22-4181-ade2-273a6b5f2ebd",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit none 11",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "b12feb69-693e-4976-b2af-1b55f87f6a85",
+      "childId": "3113a267-1700-4a3f-9df8-4561cd356376",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "B-sit-11-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "39182c61-9e22-4181-ade2-273a6b5f2ebd",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit ref 11",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "08a538f1-4e0c-43c4-bad2-f97af27acb39",
+      "childId": "79bccd8e-a0ce-4af0-ab18-f6d90344fcd0",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 48,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "B-sit-11-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "39182c61-9e22-4181-ade2-273a6b5f2ebd",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit tp 11",
+        "seed": 11,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "e25b7074-0d89-4fb5-a330-742c63f78ffb",
+      "childId": "6704347a-9e12-4396-95e9-2630ab807d92",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "metrics": {
+        "colors": 47,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "B-sword-11-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "39182c61-9e22-4181-ade2-273a6b5f2ebd",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword none 11",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "7745670b-e9cb-4757-80dd-ff87c657b5cb",
+      "childId": "95e584ff-50fe-4bf9-8264-9fcc599aeeb5",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "B-sword-11-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "39182c61-9e22-4181-ade2-273a6b5f2ebd",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword ref 11",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "7b655739-b83d-4886-99b8-115deaef0e05",
+      "childId": "34ead784-ce1c-43f6-84a0-cc52fb7dddea",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "B-sword-11-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "39182c61-9e22-4181-ade2-273a6b5f2ebd",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword tp 11",
+        "seed": 11,
+        "no_background": true,
+        "target_palette": {
+          "colors": 55
+        }
+      },
+      "jobId": "17335255-16b7-4934-b542-75fc5a92cc70",
+      "childId": "497883f9-197d-45b0-97e7-7876daa6d1f1",
+      "status": "failed",
+      "error": "content policy",
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      }
+    },
+    {
+      "id": "C-apple-11-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "4441e93e-3c22-4277-a7c0-755979158633",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple none 11",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "f63f4600-715c-434c-bf79-29c692c769af",
+      "childId": "a213d134-1147-4e49-aab0-d7af7037834d",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 15
+      },
+      "metrics": {
+        "colors": 23,
+        "inBodyPalette": 0,
+        "inBodyPaletteAfterLocalSnap": 0.903
+      }
+    },
+    {
+      "id": "C-apple-11-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "4441e93e-3c22-4277-a7c0-755979158633",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple ref 11",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "a1eefa15-1a88-4488-89a4-84716b10d970",
+      "childId": "8062a352-e530-45fa-be45-290fe39fd5f0",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 15
+      },
+      "metrics": {
+        "colors": 38,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "C-apple-11-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "4441e93e-3c22-4277-a7c0-755979158633",
+        "edit_description": "holding a shiny red apple raised up in the right hand",
+        "state_name": "pt apple tp 11",
+        "seed": 11,
+        "no_background": true,
+        "target_palette": {
+          "colors": 38
+        }
+      },
+      "jobId": "89b7e24a-074a-4543-8b32-8c9b282822d6",
+      "childId": "b0e0c584-7724-44f8-9616-3d172b013c77",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 15
+      },
+      "metrics": {
+        "colors": 38,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "C-sit-11-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "4441e93e-3c22-4277-a7c0-755979158633",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit none 11",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "8593ae3f-a045-452f-b9cc-d803b17b846e",
+      "childId": "c8e52565-14f5-4823-8ff5-5d6da38da298",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 15
+      },
+      "metrics": {
+        "colors": 44,
+        "inBodyPalette": 0.167,
+        "inBodyPaletteAfterLocalSnap": 0.998
+      }
+    },
+    {
+      "id": "C-sit-11-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "4441e93e-3c22-4277-a7c0-755979158633",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit ref 11",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "a701581e-24c5-4439-991a-1afe352c92f5",
+      "childId": "3a7af656-1193-4b06-9614-dc62e2679169",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 15
+      },
+      "metrics": {
+        "colors": 38,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "C-sit-11-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "4441e93e-3c22-4277-a7c0-755979158633",
+        "edit_description": "sitting cross-legged on the ground with hands resting on the knees",
+        "state_name": "pt sit tp 11",
+        "seed": 11,
+        "no_background": true,
+        "target_palette": {
+          "colors": 38
+        }
+      },
+      "jobId": "10b3fc47-a2fb-4c56-84cb-f80eb9a4c8cd",
+      "childId": "b499323a-35fa-411a-90ce-6991870d6220",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 15
+      },
+      "metrics": {
+        "colors": 38,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "C-sword-11-none",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "4441e93e-3c22-4277-a7c0-755979158633",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword none 11",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "a44370d4-dd79-4b76-98fc-a16fabf289a8",
+      "childId": "e3cfc249-aab8-420c-a9b1-089609658a9b",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 15
+      },
+      "metrics": {
+        "colors": 55,
+        "inBodyPalette": 0.147,
+        "inBodyPaletteAfterLocalSnap": 0.984
+      }
+    },
+    {
+      "id": "C-sword-11-ref",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "4441e93e-3c22-4277-a7c0-755979158633",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword ref 11",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_from_reference": true
+      },
+      "jobId": "95d79dfd-40c4-47af-9f69-88952024bd92",
+      "childId": "9c21e749-c8c2-467b-85ca-8c736a76358d",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 15
+      },
+      "metrics": {
+        "colors": 38,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "C-sword-11-tp",
+      "endpoint": "/create-character-state",
+      "params": {
+        "character_id": "4441e93e-3c22-4277-a7c0-755979158633",
+        "edit_description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "state_name": "pt sword tp 11",
+        "seed": 11,
+        "no_background": true,
+        "target_palette": {
+          "colors": 38
+        }
+      },
+      "jobId": "e7a8c403-e630-4dae-9604-26211d079ee6",
+      "childId": "ef15e1e2-ef8c-46a7-a42c-37e808a4f584",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 15
+      },
+      "metrics": {
+        "colors": 38,
+        "inBodyPalette": 1,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "F-apple-11-corr",
+      "endpoint": "/edit-image-pro-flash",
+      "params": {
+        "method": "text",
+        "description": "holding a shiny red apple raised up in the right hand",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_correction": true
+      },
+      "jobId": "04d407d6-1c5b-4205-ba09-01f645cb4e1a",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 5
+      },
+      "metrics": {
+        "colors": 19,
+        "inBodyPalette": 0.318,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "F-apple-11-none",
+      "endpoint": "/edit-image-pro-flash",
+      "params": {
+        "method": "text",
+        "description": "holding a shiny red apple raised up in the right hand",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "f8a11a21-047f-48cf-80c3-59145822c671",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 5
+      },
+      "metrics": {
+        "colors": 35,
+        "inBodyPalette": 0,
+        "inBodyPaletteAfterLocalSnap": 0.951
+      }
+    },
+    {
+      "id": "F-sit-11-corr",
+      "endpoint": "/edit-image-pro-flash",
+      "params": {
+        "method": "text",
+        "description": "sitting cross-legged on the ground with hands resting on the knees",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_correction": true
+      },
+      "jobId": "3ce57bec-250e-4572-9334-8082bb3e3bde",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 5
+      },
+      "metrics": {
+        "colors": 26,
+        "inBodyPalette": 0.611,
+        "inBodyPaletteAfterLocalSnap": 0.987
+      }
+    },
+    {
+      "id": "F-sit-11-none",
+      "endpoint": "/edit-image-pro-flash",
+      "params": {
+        "method": "text",
+        "description": "sitting cross-legged on the ground with hands resting on the knees",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "59bc0c6f-9f58-47b3-82d0-49fd7ddb30a1",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 5
+      },
+      "metrics": {
+        "colors": 55,
+        "inBodyPalette": 0,
+        "inBodyPaletteAfterLocalSnap": 0.996
+      }
+    },
+    {
+      "id": "F-sword-11-corr",
+      "endpoint": "/edit-image-pro-flash",
+      "params": {
+        "method": "text",
+        "description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "seed": 11,
+        "no_background": true,
+        "use_color_palette_correction": true
+      },
+      "jobId": "b0e28b11-3e4b-43ce-a79d-974cca13be94",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 5
+      },
+      "metrics": {
+        "colors": 27,
+        "inBodyPalette": 0.595,
+        "inBodyPaletteAfterLocalSnap": 1
+      }
+    },
+    {
+      "id": "F-sword-11-none",
+      "endpoint": "/edit-image-pro-flash",
+      "params": {
+        "method": "text",
+        "description": "holding a plain steel longsword with both hands in a ready guard stance",
+        "seed": 11,
+        "no_background": true
+      },
+      "jobId": "8f781781-ddd9-45c7-91bc-2f1a39318100",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 5
+      },
+      "metrics": {
+        "colors": 52,
+        "inBodyPalette": 0,
+        "inBodyPaletteAfterLocalSnap": 0.931
+      }
+    }
+  ]
+}

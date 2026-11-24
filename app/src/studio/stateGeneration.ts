@@ -8,7 +8,9 @@ import { api, API_BASE, ApiError } from '../lib/pixellab/client.ts';
 import { planRestriction, localizedPlanRestriction } from '../lib/pixellab/plans.ts';
 import { live, managedStateSubmitChildId, queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { routes, type Req, type Size } from '../lib/pixellab/routes.ts';
+import { regionMarker, withoutRegions } from '../lib/dress/regions.ts';
 import { opaqueBox } from '../lib/rig/normalize.ts';
+import { snapToBodyColors } from '../lib/rig/palette.ts';
 import {
 	DEFAULT_MOVE,
 	baseHashOf,
@@ -978,8 +980,23 @@ async function publishState(review: StateReview, riding: boolean): Promise<void>
 	const layer = base?.layers[0];
 	if (!base || !layer?.cells) throw missing();
 	const blobs = new Map<string, Blob>();
+	// Recolors swap exact body colors, and a State is a new drawing with its own shading: put it on the body's colors (and
+	// its shirt and shorts in their regions) or a recolor reaches only the pixels that happen to match.
+	const states = new Set(
+		rig.animations.filter((clip) => clip.kind === 'state').map((clip) => clip.id)
+	);
+	const bodyColors = Object.entries(layer.cells)
+		.filter(([clip]) => !states.has(clip))
+		.flatMap(([, dirs]) => Object.values(dirs ?? {}).flat())
+		.flatMap((hash) => {
+			const image = hash && project.images.get(hash);
+			return image ? [withoutRegions(image)] : [];
+		});
+	const mark = regionMarker(project, id);
 	const views = await Promise.all(
-		review.views.map(async ({ direction, image }) => {
+		review.views.map(async ({ direction, image: drawn }) => {
+			const [snapped] = snapToBodyColors(bodyColors, [drawn]);
+			const image = mark ? mark(direction, 0, snapped) : snapped;
 			const hash = await cellHash(image);
 			blobs.set(hash.slice(7), await cellBlob(image));
 			return [direction, [hash]] as const;
