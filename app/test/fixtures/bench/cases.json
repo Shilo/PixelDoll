@@ -9,11 +9,11 @@
    "walk/south": "pass",
    "walk/east": "pass",
    "walk/north": "pass",
-   "slash/south": "pass",
+   "slash/south": "warn:G17",
    "slash/east": "fail:H4",
    "slash/north": "pass"
   },
-  "source": "docs/spikes/S4_model_routing.md (Q3 skel_ea2) and docs/research/generation-quality-campaign-2026-10-25.md (R0 baseline); visual: streaks across the face in slash E 2-3",
+  "source": "docs/spikes/S4_model_routing.md (Q3 skel_ea2) and docs/research/generation-quality-campaign-2026-10-25.md (R0 baseline); visual: streaks across the face in slash E 2-3; holes through the dome in slash S 5 (G17, 2026-11-23)",
   "clips": [
    "walk/south",
    "walk/east",

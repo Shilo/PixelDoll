@@ -472,6 +472,11 @@ function describeReason(s: string): { text: string; translation: Message | strin
 		);
 	if (s.startsWith('G16'))
 		return say("Check the item's size and angle as it moves", 'studioModel.qa.motion');
+	if (s.startsWith('G17'))
+		return say(
+			'The item is hollow in some frames, with only its outline left; inspect its shape',
+			'studioModel.qa.fill'
+		);
 	if (s.startsWith('G11 '))
 		return say(
 			'Some lower clothing is missing compared with the standing design',
@@ -633,6 +638,7 @@ function qaReasonCodes(
 	if (q.heldHangReviewClips)
 		r.push('The held item hangs or sways instead of turning with the hand; check that it should');
 	if (q.motionReviewClips) r.push('G16');
+	if (q.fillReviewClips) r.push('G17');
 	if (q.unmeasured) return r;
 	// The skeleton draft gates its standing views at the posed limit (run.ts kOut); every other clip by its own cells' route.
 	const posed = (clip: string | null) =>

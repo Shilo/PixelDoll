@@ -2283,6 +2283,7 @@ export function itemQa(
 	standingPalettes?: ReadonlyMap<DirectionName, number[]>
 ): QaResult {
 	const ref = standingPalettes ? [] : designColors(cells);
+	const fill = designFill(cells, rig.cell.w + 2 * pad, rig.cell.h + 2 * pad);
 	const q = evaluateQa(
 		rig,
 		slot,
@@ -2293,7 +2294,8 @@ export function itemQa(
 		pad,
 		ref,
 		hidden,
-		standingPalettes
+		standingPalettes,
+		fill
 	);
 	q.qa.clips = Object.fromEntries(
 		q.clips.map(({ clip, hand }) => {
@@ -2307,7 +2309,8 @@ export function itemQa(
 				pad,
 				ref,
 				hidden,
-				standingPalettes
+				standingPalettes,
+				fill
 			);
 			const summary = summaryOf(part.qa);
 			for (const warning of part.warnings)
@@ -2326,6 +2329,28 @@ export function itemQa(
 		q.qa.status = 'warn';
 	return q;
 }
+/** Item px whose four neighbors are all item px: a filled shape has many, an outline almost none. */
+export function interiorPx(mask: Uint8Array, w: number, h: number) {
+	let n = 0;
+	for (let y = 1; y < h - 1; y++)
+		for (let x = 1; x < w - 1; x++) {
+			const p = y * w + x;
+			if (mask[p] && mask[p - 1] && mask[p + 1] && mask[p - w] && mask[p + w]) n++;
+		}
+	return n;
+}
+/** G17 reference: each direction's interior in the design call (the dressed standing views), by direction. */
+const designFill = (cells: CellOut[], w: number, h: number) => {
+	const first = Math.min(...cells.map((c) => c.call)),
+		out = new Map<string, { clip: string; interior: number }>();
+	for (const c of cells)
+		if (c.call === first) {
+			const d = c.key.split('/')[1],
+				interior = interiorPx(c.mask, w, h);
+			if (interior > (out.get(d)?.interior ?? -1)) out.set(d, { clip: clipOf(c.key), interior });
+		}
+	return out;
+};
 const designColors = (cells: CellOut[]) => {
 	const first = Math.min(...cells.map((c) => c.call));
 	return [...new Set(cells.filter((c) => c.call === first).flatMap((c) => colors(c.layer)))];
@@ -2340,7 +2365,8 @@ function evaluateQa(
 	pad: number,
 	ref: number[],
 	hidden: Set<string>,
-	standingPalettes?: ReadonlyMap<DirectionName, number[]>
+	standingPalettes?: ReadonlyMap<DirectionName, number[]>,
+	fill?: ReadonlyMap<string, { clip: string; interior: number }>
 ): QaResult {
 	const w = rig.cell.w + 2 * pad,
 		h = rig.cell.h + 2 * pad,
@@ -2412,7 +2438,8 @@ function evaluateQa(
 	const clips: ClipQa[] = [];
 	let heldLoopReviewClips = 0,
 		heldHangReviewClips = 0,
-		motionReviewClips = 0;
+		motionReviewClips = 0,
+		fillReviewClips = 0;
 	const byClip = new Map<string, CellOut[]>(),
 		grip = { R: 0, L: 0, amb: 0, none: 0 };
 	for (const c of cells) {
@@ -2532,6 +2559,26 @@ function evaluateQa(
 				fixed.every((a) => a >= GATES.areaRatio * med)
 			);
 		};
+		// G17: a weapon, shield or hat keeps its fill as it moves. Posed frames reduced to an outline (2026-11-23 user report: a
+		// knife blade hollow in six slash frames) pass G4 and G5, because a stretched outline has as many px as the solid
+		// design, and G2 measures the body. A review note only: no paid retry, and no threshold has been measured on a corpus.
+		const design = fill?.get(d);
+		if (
+			(slot.class === 'held' || slot.class === 'rigid') &&
+			design &&
+			design.clip !== clip &&
+			design.interior >= 8
+		) {
+			const hollow = cs
+				.filter((c) => c.area && interiorPx(c.mask, w, h) < 0.5 * design.interior)
+				.map((c) => +c.key.split('/')[2]);
+			if (hollow.length) {
+				fillReviewClips++;
+				warnings.push(
+					`G17 ${clip}: the item lost its fill in ${hollow.length === 1 ? 'frame' : 'frames'} ${hollow.join(', ')} (outline only); inspect its shape`
+				);
+			}
+		}
 		// R1: the S5 repair pastes the dressed keyframe on near-rest frames. Free and allowed, but the pasted item stands still
 		// there (round 10: a static weapon over idle), so review says so; the pixels are unchanged.
 		const pasted = cs.filter((c) => c.repaired).length;
@@ -2884,7 +2931,8 @@ function evaluateQa(
 				: {}),
 			...(heldLoopReviewClips ? { heldLoopReviewClips } : {}),
 			...(heldHangReviewClips ? { heldHangReviewClips } : {}),
-			...(motionReviewClips ? { motionReviewClips } : {})
+			...(motionReviewClips ? { motionReviewClips } : {}),
+			...(fillReviewClips ? { fillReviewClips } : {})
 		},
 		clips,
 		failCalls: fail,

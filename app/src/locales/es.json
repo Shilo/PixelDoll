@@ -1608,6 +1608,7 @@
 			"facing": "Algunos fotogramas se parecen a la vista opuesta; revisa el torso",
 			"detail": "Falta un detalle del diseño o cambió de color en algunos fotogramas",
 			"motion": "Revisa el tamaño y el ángulo del objeto mientras se mueve",
+			"fill": "El objeto está hueco en algunos fotogramas y solo queda su contorno; revisa su forma",
 			"lowerClothing": "Falta parte de la ropa inferior en comparación con el diseño de pie",
 			"footwear": "El calzado difiere del diseño de pie; revisa los pies",
 			"bodyPixels": "El modelo cambió algunos píxeles del cuerpo",

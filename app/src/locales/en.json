@@ -1608,6 +1608,7 @@
 			"facing": "Some frames resemble the opposite view; inspect the torso",
 			"detail": "A detail of the design is missing or recolored in some frames",
 			"motion": "Check the item's size and angle as it moves",
+			"fill": "The item is hollow in some frames, with only its outline left; inspect its shape",
 			"lowerClothing": "Some lower clothing is missing compared with the standing design",
 			"footwear": "Footwear differs from the standing design; inspect the feet",
 			"bodyPixels": "Some body pixels were changed by the model",

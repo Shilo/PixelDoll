@@ -1608,6 +1608,7 @@
 			"facing": "Bazı kareler karşı yönden görünüyormuş gibi; gövdeyi inceleyin",
 			"detail": "Tasarımın bir ayrıntısı bazı karelerde eksik veya farklı renkte",
 			"motion": "Hareket ederken eşyanın boyutunu ve açısını kontrol edin",
+			"fill": "Eşyanın içi bazı karelerde boş, yalnızca dış çizgisi kalmış; şeklini kontrol edin",
 			"lowerClothing": "Ayakta duruş tasarımına kıyasla bazı alt giysiler eksik",
 			"footwear": "Ayakkabılar ayakta duruş tasarımından farklı; ayakları inceleyin",
 			"bodyPixels": "Model bazı gövde piksellerini değiştirdi",

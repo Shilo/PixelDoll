@@ -103,6 +103,7 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
 			| 'heldLoopReviewClips'
 			| 'heldHangReviewClips'
 			| 'motionReviewClips'
+			| 'fillReviewClips'
 	) => parts.reduce((n, p) => n + (p[k] ?? 0), 0);
 	const missingLowerFrames = sum('missingLowerFrames'),
 		footwearReviewFrames = sum('footwearReviewFrames'),
@@ -149,6 +150,7 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
 		...(sum('heldLoopReviewClips') ? { heldLoopReviewClips: sum('heldLoopReviewClips') } : {}),
 		...(sum('heldHangReviewClips') ? { heldHangReviewClips: sum('heldHangReviewClips') } : {}),
 		...(sum('motionReviewClips') ? { motionReviewClips: sum('motionReviewClips') } : {}),
+		...(sum('fillReviewClips') ? { fillReviewClips: sum('fillReviewClips') } : {}),
 		...(grip ? { grip } : {}),
 		...(parts.some((p) => p.handedness) ? { handedness: switched ? 'switched' : 'ok' } : {}),
 		status,
