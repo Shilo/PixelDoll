@@ -1309,6 +1309,7 @@
 		"drop": "Letakkan ZIP karakter di sini",
 		"dropNote": "Karakter PixelLab atau ekspor PixelDoll · maksimal 64 MB",
 		"chooseZip": "Pilih ZIP",
+		"chooseAnother": "Pilih ZIP lain",
 		"characterZip": "ZIP karakter",
 		"devicePrivacy": "File Anda tetap di perangkat ini. Lihat pratinjau karakter sebelum mengimpor.",
 		"pixelLabHint": "Di pembuat karakter PixelLab, ekspor ZIP dengan file terpisah untuk tiap frame. File boleh berada di dalam folder. Tata letak sprite sheet lain dan ZIP yang hanya berisi PNG tidak didukung.",
@@ -3311,8 +3312,28 @@
 		"generateFor": "Buat untuk {move}",
 		"wearOn": "Kenakan di {move}"
 	},
+	"itemImport": {
+		"title": "Impor item",
+		"intro": "ZIP unduhan karakter, cadangan, atau karakter yang dibagikan. Gratis jika item-nya cocok dengan karakter ini.",
+		"empty": "ZIP ini tidak berisi item yang sudah selesai.",
+		"skipped": {
+			"other": "{count} item tidak dapat dibaca."
+		},
+		"notFitted": "{names} sudah tidak cocok dan tidak ditambahkan.",
+		"busy": "Tunggu hingga item selesai ditambahkan, lalu coba lagi.",
+		"row": {
+			"copy": "Cocok persis dengan karakter ini",
+			"refit": "Disesuaikan gratis dengan tubuh ini. Periksa frame-nya setelah impor.",
+			"unfitted": "Dibuat untuk tubuh lain. Dipakai seperti digambar, jadi bisa melayang atau menembus.",
+			"remake": "Dibuat untuk tubuh lain, jadi tidak bisa dipakai di sini"
+		}
+	},
+	"importDrop": {
+		"items": "Lepaskan untuk mengimpor item",
+		"moves": "Lepaskan untuk mengimpor animasi",
+		"states": "Lepaskan untuk mengimpor status"
+	},
 	"moveImport": {
-		"title": "Impor animasi",
 		"importMoves": "Impor animasi",
 		"importStates": "Impor status",
 		"dropArea": "Area lepas ZIP PixelDoll",

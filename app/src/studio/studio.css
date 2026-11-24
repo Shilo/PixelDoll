@@ -1258,7 +1258,8 @@ dialog.sheet.side::backdrop {
 	outline: none;
 }
 /* Full 44px targets in every header, whatever the control height. */
-.btn.icon.surface-close {
+.btn.icon.surface-close,
+.btn.icon.surface-opener {
 	flex: none;
 	width: 44px;
 	height: 44px;
@@ -1291,6 +1292,10 @@ dialog.sheet.side::backdrop {
 	font-size: var(--fs-md);
 	font-weight: 600;
 	text-align: center;
+}
+/* New item, New move and New State paged to Import: the form stays mounted with its draft, out of sight and reach. */
+.sheet.importing .sheet-body > :not(.import-page) {
+	display: none;
 }
 .sheet-body {
 	flex: 1;

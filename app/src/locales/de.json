@@ -1352,6 +1352,7 @@
 		"drop": "Zieh ein Figuren-ZIP hierher",
 		"dropNote": "PixelLab-Figur oder PixelDoll-Export · bis zu 64 MB",
 		"chooseZip": "ZIP auswählen",
+		"chooseAnother": "Anderes ZIP auswählen",
 		"characterZip": "Figuren-ZIP",
 		"devicePrivacy": "Deine Dateien bleiben auf diesem Gerät. Sieh dir die Figur vor dem Import in der Vorschau an.",
 		"pixelLabHint": "Exportiere im Figureneditor von PixelLab ein ZIP mit einzelnen Frames. Übergeordnete Ordner werden unterstützt. Andere Spritesheet-Layouts und ZIPs, die nur PNGs enthalten, werden nicht unterstützt.",
@@ -3405,8 +3406,29 @@
 		"generateFor": "Für {move} generieren",
 		"wearOn": "In {move} anlegen"
 	},
+	"itemImport": {
+		"title": "Gegenstände importieren",
+		"intro": "Das ZIP einer Figur, ein Backup oder eine geteilte Figur. Kostenlos, wenn die Gegenstände zu dieser Figur passen.",
+		"empty": "Dieses ZIP enthält keine fertigen Gegenstände.",
+		"skipped": {
+			"one": "{count} Gegenstand konnte nicht gelesen werden.",
+			"other": "{count} Gegenstände konnten nicht gelesen werden."
+		},
+		"notFitted": "{names} passt nicht mehr und wurde nicht hinzugefügt.",
+		"busy": "Warte, bis der Gegenstand hinzugefügt ist, und versuche es dann erneut.",
+		"row": {
+			"copy": "Passt genau zu dieser Figur",
+			"refit": "Kostenlos an diesen Körper angepasst. Prüfe die Frames nach dem Import.",
+			"unfitted": "Für einen anderen Körper erstellt. Wird wie gezeichnet getragen und kann schweben oder überlappen.",
+			"remake": "Für einen anderen Körper erstellt, daher hier nicht tragbar"
+		}
+	},
+	"importDrop": {
+		"items": "Ablegen, um Gegenstände zu importieren",
+		"moves": "Ablegen, um Animationen zu importieren",
+		"states": "Ablegen, um Zustände zu importieren"
+	},
 	"moveImport": {
-		"title": "Animationen importieren",
 		"importMoves": "Animationen importieren",
 		"importStates": "Zustände importieren",
 		"dropArea": "Ablagebereich für PixelDoll-ZIP",
