@@ -38,6 +38,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   but before its queue record is written, Studio will not resend it. Review Activity before deciding whether to discard
   the attempt and approve a new generation.
   Library backups preserve saved art, not pending State attempts or their job receipts.
+- **Original generations are not archived.** The Library download zips the raw results still kept in this device's jobs
+  ledger for requests a saved character names. Finished records are pruned after a week and "Clear finished" sweeps their
+  images, so older results, discarded drafts and deleted items cannot be recovered. Library backups carry artwork and
+  receipts, never raw results.
 - **Canceling a managed State does not guarantee a refund.** In a trial-account check, PixelLab reported cancellation
   and $0 job usage, but the child later completed and the balance fell by 10 generations. Do not retry uncertain jobs
   or use that cancellation receipt as proof of no charge.

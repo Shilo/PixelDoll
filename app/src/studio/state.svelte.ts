@@ -2752,6 +2752,40 @@ export async function replaceFrames(prepared: PreparedFrames, name: string) {
 			actionLabel: message('fixFrames.undo')
 		});
 }
+/** Put a State saved before States were matched to the body's colors onto those colors: free and local, one history step
+ *  that the notice's Undo (or Restore originals in Fix frames) reverses. `name` is how the Studio shows the State. */
+export async function matchStateColors(anim: string, name: string) {
+	const projectId = doc.id,
+		request = openRequest;
+	try {
+		await flushSave();
+		const prepared = await (await framesModule()).prepareStateColorMatch(projectId, anim);
+		if (!prepared) {
+			toast(message('stateColors.alreadyMatched', { name }));
+			return;
+		}
+		const { step } = await withItemStep(
+			projectId,
+			prepared.plan.itemId,
+			message('stateColors.match'),
+			async (beforeWrite) => (await framesModule()).saveFrames(prepared, beforeWrite)
+		);
+		await refreshSaved(projectId, request);
+		if (step)
+			toast(message('stateColors.matched', { name }), {
+				tone: 'success',
+				duration: 10000,
+				action: () => undoStep(projectId, step),
+				actionLabel: message('fixFrames.undo')
+			});
+	} catch (error) {
+		console.error('match state colors', error);
+		toast(errorTranslation(error) ?? message('fixFrames.errors.saveFailed'), {
+			tone: 'danger',
+			error
+		});
+	}
+}
 /** Restore every edited frame of an item, as one history step. */
 export async function restoreFrames(projectId: string, itemId: string) {
 	const request = openRequest;

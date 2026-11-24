@@ -54,6 +54,16 @@
 		"scopeDebug": "Sauvegarder les personnages, illustrations, données archivées et détails de débogage.",
 		"debugNotSaved": "Le navigateur n’a pas pu enregistrer ce réglage.",
 		"backup": "Sauvegarder la bibliothèque",
+		"originals": "Télécharger les générations d’origine",
+		"originalsHint": "Les images brutes renvoyées par PixelLab pour les personnages enregistrés, avant leur traitement par PixelDoll, avec les requêtes qui les ont achetées. Seules les requêtes encore conservées sur cet appareil sont incluses.",
+		"originalsName": "générations d’origine",
+		"originalsNone": "Aucune image d’origine n’est conservée pour vos personnages enregistrés.",
+		"originalsPartial": {
+			"one": "Les originales ne sont plus conservées pour {count} personnage.",
+			"other": "Les originales ne sont plus conservées pour {count} personnages."
+		},
+		"originalsStarted": "Le téléchargement des générations d’origine a commencé.",
+		"originalsTooLarge": "Les générations d’origine sont trop volumineuses pour être téléchargées en une fois.",
 		"restoreFromBackup": "Restaurer depuis une sauvegarde",
 		"review": "Vérifier la sauvegarde",
 		"add": "Personnages à ajouter",
@@ -904,6 +914,10 @@
 			"other": "{n} objets portés ont besoin d’images"
 		},
 		"missingFramesForMove": "Images manquantes pour {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problème",
+			"other": "{n} problèmes"
+		},
 		"workspaceCopyPixelLabOff": "Copie de l’espace de travail · PixelLab désactivé",
 		"characterSelectionWASDOrArrowsSelectEnter": "Sélection du personnage. WASD ou les flèches pour choisir ; Entrée pour personnaliser ; plus et moins pour zoomer.",
 		"previousCharacter": "Personnage précédent",
@@ -922,6 +936,12 @@
 		"customizationPanels": "Panneaux de personnalisation",
 		"tabWorkRunning": "Un travail ici est en cours, en attente ou prêt à être vérifié",
 		"tabWorkAttention": "Un travail ici demande votre attention"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} utilise déjà les couleurs du corps.",
+		"drift": "{name} ne suit pas les couleurs du corps",
+		"match": "Harmoniser les couleurs",
+		"matched": "{name} utilise maintenant les couleurs du corps."
 	},
 	"worldStage": {
 		"groundUnavailable": "Le rendu du sol en temps réel est indisponible. La scène statique est affichée.",

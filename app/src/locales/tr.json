@@ -54,6 +54,16 @@
 		"scopeDebug": "Kayıtlı karakterleri, çizimleri, arşivlenmiş verileri ve hata ayıklama ayrıntılarını yedekle.",
 		"debugNotSaved": "Tarayıcı bu ayarı kaydedemedi.",
 		"backup": "Kitaplığı yedekle",
+		"originals": "Orijinal üretimleri indir",
+		"originalsHint": "PixelLab’in kayıtlı karakterler için PixelDoll işlemeden önce döndürdüğü ham görseller ve bunları satın alan istekler. Yalnızca bu cihazda hâlâ saklanan istekler eklenir.",
+		"originalsName": "orijinal üretimler",
+		"originalsNone": "Kayıtlı karakterleriniz için orijinal görsel saklanmıyor.",
+		"originalsPartial": {
+			"one": "Orijinali saklanmayan karakter: {count}.",
+			"other": "Orijinali saklanmayan karakterler: {count}."
+		},
+		"originalsStarted": "Orijinal üretimlerin indirilmesi başladı.",
+		"originalsTooLarge": "Orijinal üretimler tek seferde indirilemeyecek kadar büyük.",
 		"restoreFromBackup": "Yedekten geri yükle",
 		"review": "Yedeği incele",
 		"add": "Eklenecek karakterler",
@@ -904,6 +914,10 @@
 			"other": "Giyili {n} eşyanın kareleri eksik"
 		},
 		"missingFramesForMove": "Eksik kareler: {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} sorun",
+			"other": "{n} sorun"
+		},
 		"workspaceCopyPixelLabOff": "Çalışma alanı kopyası · PixelLab kapalı",
 		"characterSelectionWASDOrArrowsSelectEnter": "Karakter seçimi. WASD veya ok tuşlarıyla seçin, Enter ile özelleştirin, artı ve eksiyle yakınlaştırıp uzaklaştırın.",
 		"previousCharacter": "Önceki karakter",
@@ -922,6 +936,12 @@
 		"customizationPanels": "Özelleştirme panelleri",
 		"tabWorkRunning": "Burada süren, bekleyen ya da incelemeye hazır bir iş var",
 		"tabWorkAttention": "Burada ilgilenmeniz gereken bir iş var"
+	},
+	"stateColors": {
+		"alreadyMatched": "Zaten vücut renklerini kullanıyor: {name}.",
+		"drift": "Vücut renklerine uymuyor: {name}",
+		"match": "Renkleri eşle",
+		"matched": "Vücut renklerine eşlendi: {name}."
 	},
 	"worldStage": {
 		"groundUnavailable": "Zemin gerçek zamanlı olarak çizilemiyor. Sabit sahne gösteriliyor.",

@@ -9,7 +9,7 @@ import { itemExportId, moveExportId } from '../lib/store/identity.ts';
 import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
 import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
-import { message } from '../lib/message.ts';
+import { errorMessage, LocalizedError, message } from '../lib/message.ts';
 
 /** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). `build` names the app
  *  that wrote the file, for diagnosing a report; an import never reads it. */
@@ -196,6 +196,73 @@ export function downloadMoveZip(moveId: string) {
 			name: `${characterZipId(project.manifest)}-${fileSlug(move ? moveExportId(move, moves) : moveId)}`
 		};
 	});
+}
+
+/** Every raw result PixelLab returned for the saved characters, before PixelDoll processed it, as returned, with the
+ *  requests that bought them. Only requests still kept in the jobs ledger on this device can be included. */
+export async function downloadOriginalGenerations() {
+	const key = 'originals';
+	if (pending.has(key)) return;
+	pending.add(key);
+	toast(message('download.preparing', { label: message('librarySettings.originalsName') }), {
+		pending: true
+	});
+	try {
+		const [{ planOrigins, originalsZip }, { zip }, db, { listProjects }, { readableRecord }] =
+			await Promise.all([
+				lazy(() => import('../lib/pixellab/originals.ts')),
+				lazy(() => import('../lib/store/zip.ts')),
+				lazy(() => import('../lib/store/db.ts')),
+				lazy(() => import('../lib/store/project.ts')),
+				lazy(() => import('../lib/pixellab/queue.ts'))
+			]);
+		const characters = (await listProjects()).map((record) => ({
+			name: record.manifest.name,
+			manifest: record.manifest
+		}));
+		const jobs = (await db.all<unknown>('jobs')).flatMap((row) => readableRecord(row) ?? []);
+		const plan = planOrigins(characters, jobs);
+		const blobs = new Map<string, Blob | undefined>();
+		const read = async (sha: string) => {
+			if (!blobs.has(sha))
+				try {
+					blobs.set(sha, await db.getBlob(sha));
+				} catch (e) {
+					console.error('original generation image', sha, e);
+					blobs.set(sha, undefined);
+				}
+			return blobs.get(sha);
+		};
+		const { entries, images, withoutImages } = await originalsZip(
+			plan,
+			(character, index) =>
+				`${String(index + 1).padStart(2, '0')}-${characterZipId(character.manifest)}`,
+			read
+		);
+		if (!images) {
+			toast(message('librarySettings.originalsNone'), { tone: 'warning', report: false });
+			return;
+		}
+		const date = new Date().toISOString().slice(0, 10);
+		saveZip(await zip(entries), `pixeldoll-${date}-originals.zip`);
+		const without = plan.withoutOriginals.length + withoutImages.length;
+		if (without)
+			toast(message('librarySettings.originalsPartial', { count: without }), {
+				tone: 'warning',
+				report: false
+			});
+		else toast(message('librarySettings.originalsStarted'));
+	} catch (e) {
+		console.error('download original generations', e);
+		toast(
+			e instanceof LocalizedError
+				? errorMessage(e)
+				: message('download.failedRetry', { label: message('librarySettings.originalsName') }),
+			{ tone: 'danger', error: e }
+		);
+	} finally {
+		pending.delete(key);
+	}
 }
 
 /** The raw results of paid requests a flow could not finish with, as PixelLab returned them, with their sanitized requests. */

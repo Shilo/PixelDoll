@@ -51,6 +51,15 @@
 		"scopeDebug": "저장된 캐릭터, 아트워크, 보관된 데이터, 디버깅 정보를 백업합니다.",
 		"debugNotSaved": "브라우저가 이 설정을 저장하지 못했습니다.",
 		"backup": "라이브러리 백업하기",
+		"originals": "원본 생성 이미지 다운로드",
+		"originalsHint": "PixelDoll이 처리하기 전에 PixelLab이 저장된 캐릭터를 위해 반환한 원본 이미지와 이를 구매한 요청입니다. 이 기기에 아직 보관된 요청만 포함됩니다.",
+		"originalsName": "원본 생성 이미지",
+		"originalsNone": "저장된 캐릭터의 원본 이미지가 남아 있지 않습니다.",
+		"originalsPartial": {
+			"other": "원본이 남아 있지 않은 캐릭터: {count}."
+		},
+		"originalsStarted": "원본 생성 이미지 다운로드를 시작했습니다.",
+		"originalsTooLarge": "원본 생성 이미지가 너무 커서 한 번에 다운로드할 수 없습니다.",
 		"restoreFromBackup": "백업에서 복원",
 		"review": "백업 검토",
 		"add": "추가할 캐릭터",
@@ -880,6 +889,9 @@
 			"other": "착용한 아이템 {n}개에 프레임이 필요해요"
 		},
 		"missingFramesForMove": "{move} · {direction} 프레임이 부족해요",
+		"previewProblems": {
+			"other": "문제 {n}개"
+		},
 		"workspaceCopyPixelLabOff": "워크스페이스 사본 · PixelLab 꺼짐",
 		"characterSelectionWASDOrArrowsSelectEnter": "캐릭터 선택. WASD 또는 방향키로 선택하고 Enter로 꾸미며, 더하기와 빼기로 확대/축소해요.",
 		"previousCharacter": "이전 캐릭터",
@@ -898,6 +910,12 @@
 		"customizationPanels": "꾸미기 패널",
 		"tabWorkRunning": "여기에 진행 중이거나 대기 중이거나 검토할 준비가 된 작업이 있습니다",
 		"tabWorkAttention": "여기에 확인이 필요한 작업이 있습니다"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name}: 이미 몸 색상을 사용해요.",
+		"drift": "{name}: 몸 색상과 맞지 않아요",
+		"match": "색상 맞추기",
+		"matched": "{name}: 몸 색상에 맞췄어요."
 	},
 	"worldStage": {
 		"groundUnavailable": "바닥을 실시간으로 렌더링할 수 없어 정적 장면을 표시합니다.",

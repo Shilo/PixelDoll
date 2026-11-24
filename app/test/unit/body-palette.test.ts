@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import {
 	PaletteRepairUnavailable,
 	repairBodyPalette,
-	snapToBodyColors
+	bodyColorSnapper
 } from '../../src/lib/rig/palette.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 const frame = (rgb: number[], count = 20) => {
@@ -147,7 +147,7 @@ test('a State takes the nearest same-family body color and keeps new detail as d
 	drawn.data.set([230, 190, 40, 255], 8); // a gold hilt: kept
 	drawn.data.set([1, 2, 3, 0], 12); // transparent: untouched
 	const before = structuredClone(drawn);
-	const [out] = snapToBodyColors([body], [drawn]);
+	const out = bodyColorSnapper([body])(drawn);
 	expect([...out.data]).toEqual([
 		249, 193, 173, 255, 249, 193, 173, 255, 230, 190, 40, 255, 1, 2, 3, 0
 	]);

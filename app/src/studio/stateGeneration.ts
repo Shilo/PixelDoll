@@ -8,9 +8,9 @@ import { api, API_BASE, ApiError } from '../lib/pixellab/client.ts';
 import { planRestriction, localizedPlanRestriction } from '../lib/pixellab/plans.ts';
 import { live, managedStateSubmitChildId, queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { routes, type Req, type Size } from '../lib/pixellab/routes.ts';
-import { regionMarker, withoutRegions } from '../lib/dress/regions.ts';
+import { regionMarker } from '../lib/dress/regions.ts';
+import { stateColorMatcher } from '../lib/dress/stateColors.ts';
 import { opaqueBox } from '../lib/rig/normalize.ts';
-import { snapToBodyColors } from '../lib/rig/palette.ts';
 import {
 	DEFAULT_MOVE,
 	baseHashOf,
@@ -981,21 +981,13 @@ async function publishState(review: StateReview, riding: boolean): Promise<void>
 	if (!base || !layer?.cells) throw missing();
 	const blobs = new Map<string, Blob>();
 	// Recolors swap exact body colors, and a State is a new drawing with its own shading: put it on the body's colors (and
-	// its shirt and shorts in their regions) or a recolor reaches only the pixels that happen to match.
-	const states = new Set(
-		rig.animations.filter((clip) => clip.kind === 'state').map((clip) => clip.id)
-	);
-	const bodyColors = Object.entries(layer.cells)
-		.filter(([clip]) => !states.has(clip))
-		.flatMap(([, dirs]) => Object.values(dirs ?? {}).flat())
-		.flatMap((hash) => {
-			const image = hash && project.images.get(hash);
-			return image ? [withoutRegions(image)] : [];
-		});
+	// its shirt and shorts in their regions) or a recolor reaches only the pixels that happen to match. A body without
+	// frames has no colors to match, so its State stays as drawn.
+	const match = stateColorMatcher(project);
 	const mark = regionMarker(project, id);
 	const views = await Promise.all(
 		review.views.map(async ({ direction, image: drawn }) => {
-			const [snapped] = snapToBodyColors(bodyColors, [drawn]);
+			const snapped = match ? match(drawn) : drawn;
 			const image = mark ? mark(direction, 0, snapped) : snapped;
 			const hash = await cellHash(image);
 			blobs.set(hash.slice(7), await cellBlob(image));

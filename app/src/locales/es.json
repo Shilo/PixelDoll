@@ -54,6 +54,16 @@
 		"scopeDebug": "Guarda personajes, ilustraciones, datos archivados y detalles de depuración.",
 		"debugNotSaved": "El navegador no pudo guardar este ajuste.",
 		"backup": "Hacer una copia de seguridad",
+		"originals": "Descargar generaciones originales",
+		"originalsHint": "Las imágenes sin procesar que PixelLab devolvió para los personajes guardados, antes de que PixelDoll las procesara, con las solicitudes que las compraron. Solo se incluyen las solicitudes que aún se conservan en este dispositivo.",
+		"originalsName": "generaciones originales",
+		"originalsNone": "No se conservan imágenes originales de tus personajes guardados.",
+		"originalsPartial": {
+			"one": "Ya no se conservan originales de {count} personaje.",
+			"other": "Ya no se conservan originales de {count} personajes."
+		},
+		"originalsStarted": "Se inició la descarga de las generaciones originales.",
+		"originalsTooLarge": "Las generaciones originales son demasiado grandes para descargarlas de una vez.",
 		"restoreFromBackup": "Restaurar desde una copia de seguridad",
 		"review": "Revisar copia de seguridad",
 		"add": "Personajes por añadir",
@@ -904,6 +914,10 @@
 			"other": "{n} objetos puestos necesitan fotogramas"
 		},
 		"missingFramesForMove": "Faltan fotogramas de {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problema",
+			"other": "{n} problemas"
+		},
 		"workspaceCopyPixelLabOff": "Copia del espacio de trabajo · PixelLab desactivado",
 		"characterSelectionWASDOrArrowsSelectEnter": "Selección de personaje. WASD o flechas para elegir; Enter para personalizar; más y menos para el zoom.",
 		"previousCharacter": "Personaje anterior",
@@ -922,6 +936,12 @@
 		"customizationPanels": "Paneles de personalización",
 		"tabWorkRunning": "Aquí hay trabajo en curso, en espera o listo para revisar",
 		"tabWorkAttention": "Hay trabajo aquí que requiere atención"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} ya usa los colores del cuerpo.",
+		"drift": "{name} no sigue los colores del cuerpo",
+		"match": "Igualar colores",
+		"matched": "{name} ahora usa los colores del cuerpo."
 	},
 	"worldStage": {
 		"groundUnavailable": "No se puede renderizar el suelo en tiempo real. Se muestra la escena estática.",
