@@ -53,7 +53,7 @@ function pose(image, size, row, col, mirror, geometry) {
 function compare(walk, action, size, gear, w, a) {
   const lower = splitLower(walk.image, walk.geometry);
   const upper = splitUpper(action.image, action.geometry);
-  const { x: dx, y: dy, seam, source, hipDeparture, hipDepartureX } = layerOffset(lower, upper);
+  const { x: dx, y: dy, seam, sharedShift, source, hipDeparture, hipDepartureX } = layerOffset(lower, upper);
   const output = compositeAction(lower.image, upper.image, { x: dx, y: dy });
   const parts = actionComponents(occupied(output, size, 0, 0), size);
   return {
@@ -62,6 +62,7 @@ function compare(walk, action, size, gear, w, a) {
     dx,
     dy,
     seam,
+    sharedShift,
     source,
     hipDeparture,
     hipDepartureX,
@@ -72,7 +73,7 @@ function compare(walk, action, size, gear, w, a) {
 }
 
 function print(label, pairs, geometry = [], actionLoops = false) {
-  const score = actionSetScore(pairs.map((pair) => pair.seam));
+  const score = actionSetScore(pairs);
   const count = (keys) =>
     Object.fromEntries(
       [...new Set(keys)].map((key) => [
@@ -102,6 +103,7 @@ function print(label, pairs, geometry = [], actionLoops = false) {
       geometry.length,
     worst: score.worst,
     median: score.median,
+    maxSharedShift: score.maxSharedShift,
     worstPair: [worst.w, worst.a],
     worstOffset: [worst.dx, worst.dy],
     sources: count(pairs.map((p) => p.source)),

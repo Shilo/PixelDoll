@@ -1,8 +1,8 @@
 # Moving-attack implementation report
 
 Date: 2026-11-24
-Status: implemented and revised after the hip-lock visual review. The updated gate has passed local checks.
-Commits: `2cfc0b63` (feature), `c2d8f504` (fix plan), `23281e1af` (fix round and review).
+Status: implemented, reviewed, and accepted by the independent Opus review. The shared-shift guard from that review is included and tested.
+Commits: `2cfc0b63` (feature), `c2d8f504` (fix plan), `23281e1af` (fix round and review), `92630302` (hip lock and justified seam rule), plus the shared-shift guard and final docs.
 
 ## What shipped
 
@@ -36,27 +36,29 @@ Earlier implementer results, not rerun in full for the revised gate:
 - Unity 6000.4.0f1 verifier passed 4,509 Play Mode, 648 GPU and 648 linear GPU checks.
 - Phaser 3.90.0 Canvas and WebGL playback regressions passed; GDevelop native editor unverified.
 
-Revised-gate checks (from `app/`):
+Final checks with the shared-shift guard (from `app/`):
 
 | Command | Result |
 | --- | --- |
 | `npm run check` | Passed, including types and Prettier |
-| `npm test -- live-layering export-phaser gdevelop-export godot-export unity-export runtime` with `GODOT_BIN` | 83 passed, including native Godot 4.7.2 |
+| `npx vitest run live-layering runtime export-phaser gdevelop-export godot unity experience-presentation` with `GODOT_BIN` | 117 passed in 9 files, including native Godot 4.7.2; no skips |
 | `node --experimental-transform-types scripts/verify-unity-export.mjs --editor <Unity.exe>` | Unity 6000.4.0f1: 4,540 Editor Play Mode, 648 GPU, and 648 linear GPU checks passed |
-| `npm run e2e -- experience-parity -g "Walk while attacking layers tracked frames"` | 1 passed; includes unsupported-outfit downgrade without upgrading mid-action |
-| `node --experimental-transform-types ../docs/research/2026-11-24-animation-blending/offline-gate.mjs` | Passed; refreshed the offline sheets and source comparison |
+| `npm run e2e -- experience-parity -g "Walk while attacking layers"` | 1 passed; includes unsupported-outfit downgrade without upgrading mid-action |
+| `node --experimental-transform-types ../docs/research/2026-11-24-animation-blending/offline-gate.mjs` | Passed; regenerated offline sheets and source comparison were byte-identical |
 
 ## Offline gate, after the fixes
 
-The set must have a worst seam ≤ 8 px and a median seam ≤ 4 px, with hip geometry, drawable required equipment, and a usable limb split. Offset search stays within 1 px of the hips on each axis. The [worst-frame review](gate-results.md) supports the cutoff: the visible difference is garment overlap, not torso slide.
+The set must have a worst seam ≤ 8 px and a median seam ≤ 4 px, with hip geometry, drawable required equipment, and a usable limb split. Offset search stays within 1 px of the hips on each axis. A pair is also ineligible if both waist edges shift in the same direction by more than 2 px each. This keeps the [worst-frame garment overlaps](gate-results.md) but rejects the review's injected 4 px South Slash 3 hip error (7 / 1 seam, 3 px shared shift).
 
-| Set | Worst / median seam (px) | Max hip departure X / Y (px) | Max frame change (px) | Verdict |
-| --- | ---: | ---: | ---: | --- |
-| bodyA South | 7 / 0 | 1 / 1 | 2 | Layered |
-| bodyA East | 6 / 3 | 1 / 1 | 3 | Layered |
-| bodyA North | 7 / 0 | 1 / 1 | 2 | Layered |
-| Manually tracked demo South | 6 / 3 | 1 / 1 | 3 | Layered with manual hips only |
-| Stock demo | n/a | n/a | n/a | Full body: no tracked hips |
+| Set | Worst / median seam (px) | Max shared shift (px) | Max hip departure X / Y (px) | Max frame change (px) | Verdict |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| bodyA South | 7 / 0 | 0 | 1 / 1 | 2 | Layered |
+| bodyA East | 6 / 3 | 2 | 1 / 1 | 3 | Layered |
+| bodyA North | 7 / 0 | 0 | 1 / 1 | 2 | Layered |
+| Manually tracked demo South | 6 / 3 | 0 | 1 / 1 | 3 | Layered with manual hips only |
+| Stock demo | n/a | n/a | n/a | n/a | Full body: no tracked hips |
+
+The only recorded verdict change was bodyN North Walk/Walk, a registration diagnostic with no attack. It now falls back at a 3 px shared shift. The offline evidence images were unchanged.
 
 Trousers and bg-cape z-order are covered by fixtures and rendered evidence: [24-bodyA-hands-trousers-cape.png](evidence/24-bodyA-hands-trousers-cape.png). Gate sheets: [22-set-gate-bodyA-south.png](evidence/22-set-gate-bodyA-south.png), [east](evidence/22-set-gate-bodyA-east.png), [north](evidence/22-set-gate-bodyA-north.png).
 
@@ -75,6 +77,8 @@ Trousers and bg-cape z-order are covered by fixtures and rendered evidence: [24-
 3. [Fix plan](FIX-PLAN.md): latched per-action verdict, set-level gate with dy ±1 and a padded stable frame, segment ownership, whole walk lower-body clothing, z merge, explicit export inclusion, half-pixel anchors, invalid sentinel, tooltip and docs.
 4. [Review round 3](REVIEW.md): fixes read and tested. Real-cadence capture shows no mid-action flip and no visible seam, third hand or bob on the captured action.
 5. [Opus recheck of `23281e1af`](review-opus55/recheck.md): found the sideways torso drift. Round 4 limits both axes to the hips and excludes arms from seam measurements. See [current gate results](gate-results.md).
+6. [Opus final review](review-opus55/recheck2.md): mergeable. The 8/4 rule is justified because the seam measures waist outline, not alignment, and the worst frames show clothing overlap. It found one blind spot, a symmetric 3 px shift; the shared-shift guard above closes it. Final verdicts: South, East, North and the manually tracked demo layer; the stock demo falls back.
+7. Coordinator final verification: `npm run check`, 89 targeted tests (2 Godot opt-ins skipped without `GODOT_BIN`), and the layering E2E case passed on the final tree. The implementer separately ran 117 targeted tests with native Godot and the Unity verifier, both passing.
 
 ## Known limits and unverified areas
 

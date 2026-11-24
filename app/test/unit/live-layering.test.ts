@@ -20,26 +20,28 @@ import {
 } from '../../src/lib/runtime/paperdoll.js';
 import { CURRENT_FORMAT, type Item, type Project } from '../../src/lib/store/manifest.ts';
 
-async function bodyASouthPoses() {
+async function bodyAPoses(direction: 'south' | 'east' | 'north' = 'south') {
 	const root = new URL('../fixtures/bench/', import.meta.url);
-	const { rig, cols } = JSON.parse(readFileSync(new URL('bodyA.json', root), 'utf8')) as {
+	const { rig, rows, cols } = JSON.parse(readFileSync(new URL('bodyA.json', root), 'utf8')) as {
 		rig: Project['manifest']['rig'];
+		rows: string[];
 		cols: string[];
 	};
 	const atlas = await decodePngBytes(readFileSync(new URL('bodyA.png', root)));
+	const startRow = rows.indexOf(direction) * 64;
 	return (clip: string, cell: number) => {
 		const image = makeImg(64, 64);
 		const column = cols.indexOf(`${clip}/${cell}`) * 64;
 		for (let row = 0; row < 64; row++) {
-			const offset = (row * atlas.w + column) * 4;
+			const offset = ((startRow + row) * atlas.w + column) * 4;
 			image.data.set(atlas.data.subarray(offset, offset + 256), row * 256);
 		}
-		return { image, hip: actionHip(rig, clip, 'south', cell)! };
+		return { image, hip: actionHip(rig, clip, direction, cell)! };
 	};
 }
 
 test('bodyA south walk 1 drops the walking hand and slash 1 keeps its below-waist hand', async () => {
-	const pose = await bodyASouthPoses();
+	const pose = await bodyAPoses();
 	const walk = pose('walk', 1),
 		slash = pose('slash', 1);
 	const lower = splitLower(walk.image, walk.hip);
@@ -59,7 +61,7 @@ test('bodyA south walk 1 drops the walking hand and slash 1 keeps its below-wais
 });
 
 test('bodyA south placement stays within one pixel of both hips and changes by at most two per frame', async () => {
-	const pose = await bodyASouthPoses();
+	const pose = await bodyAPoses();
 	const fragments = (clip: string, split: typeof splitLower) =>
 		Array.from({ length: 8 }, (_, cell) => {
 			const { image, hip } = pose(clip, cell);
@@ -90,6 +92,29 @@ test('bodyA south placement stays within one pixel of both hips and changes by a
 					expect(Math.abs(next[axis] - current[axis])).toBeLessThanOrEqual(2);
 		}
 });
+
+test.each([
+	{ direction: 'south', hipError: 0, worst: 7, median: 0, maxSharedShift: 0, fallback: null },
+	{ direction: 'east', hipError: 0, worst: 6, median: 3, maxSharedShift: 2, fallback: null },
+	{ direction: 'north', hipError: 0, worst: 7, median: 0, maxSharedShift: 0, fallback: null },
+	{ direction: 'south', hipError: 4, worst: 7, median: 1, maxSharedShift: 3, fallback: 'seam' }
+] as const)(
+	'scores bodyA $direction with a $hipError px hip error',
+	async ({ direction, hipError, ...expected }) => {
+		const pose = await bodyAPoses(direction);
+		const lower = Array.from({ length: 8 }, (_, cell) => {
+			const { image, hip } = pose('walk', cell);
+			return splitLower(image, hip);
+		});
+		const upper = Array.from({ length: 8 }, (_, cell) => {
+			const { image, hip } = pose('slash', cell);
+			if (cell === 3) hip.hip.x += hipError;
+			return splitUpper(image, hip);
+		});
+		const pairs = lower.flatMap((bottom) => upper.map((top) => layerOffset(bottom, top)));
+		expect(actionSetScore(pairs)).toEqual(expected);
+	}
+);
 
 function pixels(left: number, top: number, width: number, height: number, red: number) {
 	const image = makeImg(64, 64);
@@ -225,6 +250,7 @@ test('registration triggers a fit even for a one-pixel shift from an infinite se
 		x: 0,
 		y: 0,
 		seam: 0,
+		sharedShift: 0,
 		source: 'fit',
 		hipDeparture: 1,
 		hipDepartureX: 0
@@ -239,8 +265,33 @@ test.each([
 	{ seams: [8, 0, 6, 4], worst: 8, median: 5, fallback: 'seam' },
 	{ seams: [0, 0, Infinity], worst: Infinity, median: 0, fallback: 'seam' }
 ])('scores the set $seams = $worst / $median', ({ seams, ...score }) => {
-	expect(actionSetScore(seams)).toEqual(score);
+	expect(actionSetScore(seams.map((seam) => ({ seam, sharedShift: 0 })))).toEqual({
+		...score,
+		maxSharedShift: 0
+	});
 });
+
+test.each([
+	{ shift: 3, sharedShift: 2, fallback: null },
+	{ shift: -3, sharedShift: 2, fallback: null },
+	{ shift: 4, sharedShift: 3, fallback: 'seam' },
+	{ shift: -4, sharedShift: 3, fallback: 'seam' }
+])(
+	'scores a $sharedShift px shared shift after fitting from $shift px',
+	({ shift, sharedShift, fallback }) => {
+		const geometry = { hip: { x: 32, y: 32 }, feet: [], source: 'anchor' } as const;
+		const lower = splitLower(pixels(27, 14, 10, 37, 70), { ...geometry, feet: [] });
+		const upper = splitUpper(pixels(27 + shift, 14, 10, 37, 70), { ...geometry, feet: [] });
+		const pair = layerOffset(lower, upper);
+		expect(pair).toMatchObject({ seam: 2 * sharedShift, sharedShift });
+		expect(actionSetScore([pair, { seam: 0, sharedShift: 0 }])).toMatchObject({
+			worst: 2 * sharedShift,
+			median: sharedShift,
+			maxSharedShift: sharedShift,
+			fallback
+		});
+	}
+);
 
 test.each(['one failing seam pair', 'one unusable limb split', 'missing action hips'] as const)(
 	'%s makes the whole action full-body in Live and exports',

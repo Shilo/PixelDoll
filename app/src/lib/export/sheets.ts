@@ -137,12 +137,12 @@ export function actionSheets(p: Project, manifest: Manifest, options: ActionShee
 			for (const { id: direction } of rig.directions) {
 				if (walk.move.directions && !walk.move.directions.includes(direction)) continue;
 				if (attack.move.directions && !attack.move.directions.includes(direction)) continue;
-				const seams: number[] = [];
+				const pairs: ReturnType<typeof layerOffset>[] = [];
 				const cells = walk.poses[direction].flatMap((lo, w) =>
 					attack.poses[direction].map((hi, a) => {
 						if (!walk.used.has(w) || !attack.used.has(a) || !lo || !hi) return null;
 						const offset = layerOffset(lo, hi);
-						seams.push(offset.seam);
+						pairs.push(offset);
 						return {
 							x: offset.x - (Math.round(lo.hip.x) - Math.round(hi.hip.x)),
 							y: offset.y - (Math.round(lo.hip.y) - Math.round(hi.hip.y))
@@ -154,8 +154,8 @@ export function actionSheets(p: Project, manifest: Manifest, options: ActionShee
 				];
 				if (
 					!blocked.includes(rig.baseItem) &&
-					seams.length === walk.used.size * attack.used.size &&
-					!actionSetScore(seams).fallback
+					pairs.length === walk.used.size * attack.used.size &&
+					!actionSetScore(pairs).fallback
 				)
 					data.pairs.push({
 						walk: walk.clip,

@@ -539,6 +539,7 @@ export function composeCell(p, items, anim, dir, cell, frame = rigFrame(p.manife
 /** Maximum total horizontal displacement of the two waist edges, in pixels. */
 export const ACTION_WORST_SEAM_LIMIT = 8;
 const ACTION_MEDIAN_SEAM_LIMIT = 4;
+const ACTION_SHARED_SHIFT_LIMIT = 2;
 
 /**
  * @param {Rig} rig
@@ -758,48 +759,60 @@ export function layerOffset(lower, upper, cellWidth = lower.image.w) {
 	/** @param {number} x @param {number} y */
 	const step = (x, y) => {
 		const top = extent(upper, lower.waist - 1 - y, x);
-		return top && bottom
-			? Math.abs(top.first - bottom.first) + Math.abs(top.last - bottom.last)
-			: Infinity;
+		if (!top || !bottom) return { seam: Infinity, sharedShift: 0 };
+		const leftShift = top.first - bottom.first;
+		const rightShift = top.last - bottom.last;
+		return {
+			seam: Math.abs(leftShift) + Math.abs(rightShift),
+			sharedShift:
+				Math.sign(leftShift) === Math.sign(rightShift)
+					? Math.min(Math.abs(leftShift), Math.abs(rightShift))
+					: 0
+		};
 	};
 	const hipX = Math.round(lower.hip.x - upper.hip.x),
 		hipY = Math.round(lower.hip.y - upper.hip.y);
 	let x = hipX,
 		y = hipY;
-	let seam = step(x, y),
+	let measurement = step(x, y),
 		source = lower.source === upper.source ? lower.source : lower.source + '/' + upper.source;
-	if (seam > 0) {
+	if (measurement.seam > 0) {
 		let bestDistance = Infinity;
 		for (let dx = hipX - 1; dx <= hipX + 1; dx++)
 			for (let dy = hipY - 1; dy <= hipY + 1; dy++) {
 				const score = step(dx, dy);
 				const distance = Math.abs(dx - hipX) + Math.abs(dy - hipY);
-				if (score < seam || (source === 'fit' && score === seam && distance < bestDistance)) {
+				if (
+					score.seam < measurement.seam ||
+					(source === 'fit' && score.seam === measurement.seam && distance < bestDistance)
+				) {
 					x = dx;
 					y = dy;
-					seam = score;
+					measurement = score;
 					source = 'fit';
 					bestDistance = distance;
 				}
 			}
 	}
-	return { x, y, seam, source, hipDeparture: y - hipY, hipDepartureX: x - hipX };
+	return { x, y, ...measurement, source, hipDeparture: y - hipY, hipDepartureX: x - hipX };
 }
 
-/** @param {number[]} seams */
-export function actionSetScore(seams) {
-	const sorted = [...seams].sort((left, right) => left - right);
+/** @param {{ seam: number, sharedShift: number }[]} pairs */
+export function actionSetScore(pairs) {
+	const sorted = pairs.map(({ seam }) => seam).sort((left, right) => left - right);
 	const worst = sorted.at(-1) ?? Infinity;
 	const median = sorted.length
 		? (sorted[Math.floor((sorted.length - 1) / 2)] + sorted[Math.floor(sorted.length / 2)]) / 2
 		: Infinity;
+	const maxSharedShift = pairs.reduce((max, { sharedShift }) => Math.max(max, sharedShift), 0);
 	const fallback =
-		seams.some((seam) => !Number.isFinite(seam)) ||
+		sorted.some((seam) => !Number.isFinite(seam)) ||
+		maxSharedShift > ACTION_SHARED_SHIFT_LIMIT ||
 		worst > ACTION_WORST_SEAM_LIMIT ||
 		median > ACTION_MEDIAN_SEAM_LIMIT
 			? 'seam'
 			: null;
-	return { worst, median, fallback };
+	return { worst, median, maxSharedShift, fallback };
 }
 
 /** @param {Img} lower @param {Img} upper @param {DollPoint} offset */
@@ -923,7 +936,7 @@ function prepareActionSet(project, items, walk, action, waist) {
 	if (!lower.size || !upper.size) return { fallback: 'hip' };
 	/** @type {Map<string, DollPoint>} */
 	const offsets = new Map();
-	const seams = [];
+	const pairs = [];
 	let paddingX = 0,
 		paddingY = 0;
 	for (const [walkCell, bottom] of lower)
@@ -931,12 +944,12 @@ function prepareActionSet(project, items, walk, action, waist) {
 			if (!bottom.fragment || !top.fragment)
 				return { fallback: bottom.fallback ?? top.fallback ?? 'hip' };
 			const offset = layerOffset(bottom.fragment, top.fragment);
-			seams.push(offset.seam);
+			pairs.push(offset);
 			offsets.set(`${walkCell}/${actionCell}`, offset);
 			paddingX = Math.max(paddingX, Math.abs(offset.x));
 			paddingY = Math.max(paddingY, Math.abs(offset.y));
 		}
-	const { fallback } = actionSetScore(seams);
+	const { fallback } = actionSetScore(pairs);
 	if (fallback) return { fallback };
 	return { lower, upper, offsets, paddingX, paddingY, fullFrame: bakedFrame(manifest) };
 }
