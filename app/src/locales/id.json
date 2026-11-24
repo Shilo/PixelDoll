@@ -133,10 +133,11 @@
 		"framesHelp": "Jumlah bingkai yang tersedia bergantung pada ukuran kanvas karakter.",
 		"methodHelp": "Menggunakan {pose} jika didukung. Jika tidak, menggunakan {edit}.",
 		"itemDrawing": "Item pada animasi",
-		"itemDrawingHelp": "Menggambar pada frame animasi menyesuaikan item dengan gambar animasi itu sendiri. Memberi pose pada tubuh terpisah menganimasikan item secara tersendiri, sehingga item bisa bergeser beberapa piksel.",
+		"itemDrawingHelp": "Menggambar pada frame animasi menyesuaikan item dengan gambar animasi itu sendiri. Memberi pose pada tubuh terpisah menganimasikan item secara tersendiri, sehingga item bisa bergeser beberapa piksel. Menggambar semua tampilan sekaligus lebih mahal daripada memberi pose dan lebih murah daripada menggambar pada frame animasi, dan Anda memeriksanya sebelum disimpan. Cocok untuk item yang dikenakan pada karakter empat arah berukuran 80 hingga 128 px; item lain digambar pada frame animasi, dan item yang dipegang diberi pose.",
 		"itemDrawings": {
 			"anchor": "Gambar pada frame animasi",
-			"skeleton": "Pose tubuh terpisah"
+			"skeleton": "Pose tubuh terpisah",
+			"sheet": "Gambar semua tampilan sekaligus"
 		}
 	},
 	"settings": {
@@ -1891,7 +1892,9 @@
 			"conceptNote": "Gambar yang diunggah dikirim lebih dulu, sebelum frame karakter. Hasilnya tidak dipakai.",
 			"redrawEquipment": "{item} {direction} · gambar ulang perlengkapan",
 			"redrawEquipmentNote": "{width}×{height}, frame {from}–{to}. Mengirim sheet tanpa masker dengan referensi yang cocok. PixelDoll membatasi apa yang disimpan dan selalu bertanya sebelum mengganti frame Anda. PixelDoll memerlukan Tier 1. Jika ditagih dalam dolar, minimumnya {minimum}; biaya sebenarnya bisa lebih tinggi.",
-			"gridRepairNote": "{width}×{height}, frame {from}–{to}. Memakai satu referensi searah yang dilindungi. Tubuh tetap sama. Perbaikan lengkap dengan masalah visual yang menghalangi disimpan untuk Anda tinjau."
+			"gridRepairNote": "{width}×{height}, frame {from}–{to}. Memakai satu referensi searah yang dilindungi. Tubuh tetap sama. Perbaikan lengkap dengan masalah visual yang menghalangi disimpan untuk Anda tinjau.",
+			"itemSheet": "{item}: {directions}, satu sheet",
+			"itemSheetNote": "{width}×{height}: satu baris per tampilan, desain berdirinya lebih dulu, lalu {frames} frame animasi, masing-masing dipotong menjadi {cellWidth}×{cellHeight} px. Tubuh tidak berubah. PixelDoll bertanya sebelum menyimpan, hanya menyimpan tampilan yang lolos pemeriksaan, dan mencantumkan yang lain. PixelDoll memerlukan Tier 1. Satu percobaan; setiap percobaan ulang berbayar memerlukan tindakan Anda."
 		},
 		"copyEndpointTitle": "Salin endpoint",
 		"manualCopyLabel": "Endpoint untuk salin manual",
@@ -2000,7 +2003,10 @@
 		"stopNoAnswer": "Tab yang menjalankan pekerjaan ini belum mengonfirmasi penghentian. Periksa Aktivitas sebentar lagi; jika masih berjalan, hentikan di tab itu.",
 		"stopNotConfirmed": "PixelLab tidak mengonfirmasi penghentian, jadi pekerjaan ini mungkin masih berjalan dan dikenai biaya. Periksa Aktivitas.",
 		"pausedStorage": "Pekerjaan yang tersimpan tidak dapat dibaca atau disimpan, jadi tidak ada yang baru dikirim. Lanjutkan untuk mencoba lagi.",
-		"cancelSaveFailed": "Pembatalan tidak dapat disimpan. Tab ini tidak akan mengirim permintaan, tetapi tab lain atau memuat ulang halaman bisa mengirimnya."
+		"cancelSaveFailed": "Pembatalan tidak dapat disimpan. Tab ini tidak akan mengirim permintaan, tetapi tab lain atau memuat ulang halaman bisa mengirimnya.",
+		"titleItemViews": {
+			"other": "{item}: {move}, {count} tampilan"
+		}
 	},
 	"genCard": {
 		"retryKey": "Percobaan ulang memakai latar belakang {color}, berdasarkan pengukuran warna desain ini",
@@ -2704,7 +2710,11 @@
 			"repairNote": "Tubuh tidak berubah. Jika perbaikan selesai tetapi masih ada masalah visual, hasilnya ditahan untuk Anda tinjau.",
 			"currentFrame": "Frame saat ini {number}",
 			"redrawnFrame": "Frame yang digambar ulang {number}",
-			"repairedFrame": "Frame yang diperbaiki {number}"
+			"repairedFrame": "Frame yang diperbaiki {number}",
+			"skippedViews": "Tidak disimpan: {views}. PixelLab tidak menggambar item di sana, jadi item masih belum ada. Anda bisa menggambar ulang tampilan tersebut saja.",
+			"viewFrame": "{view}, frame {number}",
+			"keepFailedViews": "Simpan juga {views}, yang tidak lolos pemeriksaan",
+			"chooseViews": "Pilih tampilan yang ingin disimpan sebelum menyimpan."
 		}
 	},
 	"itemRoute": {
@@ -2738,7 +2748,9 @@
 			"itemMoveSaveConflictAlso": "Karakter atau item ini berubah saat frame-nya sedang dibuat. Gambar yang ada tetap disimpan; frame yang selesai tetap ada di Aktivitas. Tampilan lain juga berhenti: {reason}",
 			"keepWithoutStanding": "Item ini kehilangan frame pada animasi yang menjadi dasar desainnya, jadi tidak dapat disimpan tanpa animasi itu. Tampilkan animasi itu lalu gunakan Perbaiki item atau Gambar ulang item jika tersedia, atau buat item lagi.",
 			"keepWithoutNothingLeft": "Item ini tidak punya animasi lengkap untuk disimpan. Buat frame yang hilang sebagai gantinya.",
-			"savedFrameMissing": "Sebuah frame tersimpan dari item ini tidak ada di penyimpanan."
+			"savedFrameMissing": "Sebuah frame tersimpan dari item ini tidak ada di penyimpanan.",
+			"itemSheetChanged": "Item atau animasi ini berubah sejak harga sheet-nya dihitung. Buka kembali item untuk memeriksanya lagi. Tidak ada pembuatan yang diminta.",
+			"itemSheetNoView": "PixelLab tidak menggambar item di tampilan mana pun, jadi tidak ada yang disimpan. Sheet tetap ada di Aktivitas."
 		}
 	},
 	"newItem": {

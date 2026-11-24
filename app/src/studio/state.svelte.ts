@@ -5549,7 +5549,8 @@ export async function resumeMove() {
 	else void startMove(r.projectId, r.spec);
 }
 
-export async function resolveRepairReview(useRepair: boolean) {
+/** `keepFailed`: an item sheet's review also keeps the views that failed a check (unselected by default). */
+export async function resolveRepairReview(useRepair: boolean, keepFailed = false) {
 	if (moveRunning || !moving.repairReview || queue.role === 'follower') return;
 	const projectId = moving.projectId,
 		review = $state.snapshot(moving.repairReview),
@@ -5559,7 +5560,7 @@ export async function resolveRepairReview(useRepair: boolean) {
 	try {
 		const run = await itemRun();
 		if (useRepair) {
-			if (!moving.repairApplied) await run.applyRepairReview(projectId, review);
+			if (!moving.repairApplied) await run.applyRepairReview(projectId, review, keepFailed);
 			moving.repairApplied = true;
 		} else if (await run.repairAlreadyApplied(projectId, review)) {
 			moving.repairApplied = true;

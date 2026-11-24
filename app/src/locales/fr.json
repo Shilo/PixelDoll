@@ -139,10 +139,11 @@
 		"framesHelp": "Le nombre d’images disponible dépend de la taille du canevas du personnage.",
 		"methodHelp": "Utilise {pose} si possible. Sinon, utilise {edit}.",
 		"itemDrawing": "Objets dans les animations",
-		"itemDrawingHelp": "Dessiner sur les images de l’animation ajuste les objets à son propre dessin. Poser un corps séparé anime les objets à part, ils peuvent donc se décaler de quelques pixels.",
+		"itemDrawingHelp": "Dessiner sur les images de l’animation ajuste les objets à son propre dessin. Poser un corps séparé anime les objets à part, ils peuvent donc se décaler de quelques pixels. Dessiner toutes les vues d’un coup coûte plus que poser un corps et moins que dessiner sur les images, et vous vérifiez le résultat avant son enregistrement. Cela convient aux objets portés sur des personnages à quatre directions de 80 à 128 px ; les autres objets sont dessinés sur les images, et les objets tenus sont posés.",
 		"itemDrawings": {
 			"anchor": "Dessiner sur les images",
-			"skeleton": "Poser un corps séparé"
+			"skeleton": "Poser un corps séparé",
+			"sheet": "Dessiner toutes les vues d’un coup"
 		}
 	},
 	"settings": {
@@ -1951,7 +1952,9 @@
 			"conceptNote": "L’illustration importée passe en premier, avant les images du personnage. Son résultat n’est pas utilisé.",
 			"redrawEquipment": "{item} {direction} · redessiner l’équipement",
 			"redrawEquipmentNote": "{width}×{height}, images {from}–{to}. Envoie une feuille sans masque avec une référence correspondante. PixelDoll limite ce qu’il conserve et demande toujours avant de remplacer vos images. PixelDoll nécessite le Tier 1. Si la facturation est en dollars, le minimum est de {minimum} ; le montant réel peut être plus élevé.",
-			"gridRepairNote": "{width}×{height}, images {from}–{to}. Utilise une référence protégée de la direction correspondante. Le corps reste inchangé. Les réparations complètes comportant des problèmes visuels bloquants sont gardées pour votre vérification."
+			"gridRepairNote": "{width}×{height}, images {from}–{to}. Utilise une référence protégée de la direction correspondante. Le corps reste inchangé. Les réparations complètes comportant des problèmes visuels bloquants sont gardées pour votre vérification.",
+			"itemSheet": "{item} : {directions}, une feuille",
+			"itemSheetNote": "{width}×{height} : une ligne par vue, d’abord son design debout, puis {frames} images de l’animation, chacune découpée à {cellWidth}×{cellHeight} px. Le corps reste inchangé. PixelDoll demande avant d’enregistrer, ne conserve que les vues qui passent leurs contrôles et liste les autres. PixelDoll nécessite le Tier 1. Une seule tentative ; toute nouvelle tentative payante nécessite votre action."
 		},
 		"copyEndpointTitle": "Copier le point d’accès",
 		"manualCopyLabel": "Point d’accès à copier manuellement",
@@ -2063,7 +2066,11 @@
 		"stopNoAnswer": "L’onglet qui exécute cette tâche n’a pas encore confirmé l’arrêt. Consultez l’Activité dans un instant ; si elle tourne encore, arrêtez-la depuis cet onglet.",
 		"stopNotConfirmed": "PixelLab n’a pas confirmé l’arrêt : la tâche peut encore s’exécuter et être facturée. Consultez l’Activité.",
 		"pausedStorage": "Les tâches enregistrées n’ont pas pu être lues ni enregistrées, donc rien de nouveau n’est envoyé. Reprenez pour réessayer.",
-		"cancelSaveFailed": "L’annulation n’a pas pu être enregistrée. Cet onglet n’enverra pas la requête, mais un autre onglet ou un rechargement pourrait l’envoyer."
+		"cancelSaveFailed": "L’annulation n’a pas pu être enregistrée. Cet onglet n’enverra pas la requête, mais un autre onglet ou un rechargement pourrait l’envoyer.",
+		"titleItemViews": {
+			"one": "{item} : {move}, {count} vue",
+			"other": "{item} : {move}, {count} vues"
+		}
 	},
 	"genCard": {
 		"retryKey": "La nouvelle tentative utilise un fond {color}, choisi d’après les couleurs de ce visuel",
@@ -2782,7 +2789,11 @@
 			"repairNote": "Le corps reste inchangé. Si une réparation terminée présente des défauts visuels, elle attendra votre vérification.",
 			"currentFrame": "Image actuelle {number}",
 			"redrawnFrame": "Image redessinée {number}",
-			"repairedFrame": "Image réparée {number}"
+			"repairedFrame": "Image réparée {number}",
+			"skippedViews": "Non conservé : {views}. PixelLab n’y a pas dessiné l’objet, il y manque donc encore. Vous pouvez redessiner uniquement ces vues.",
+			"viewFrame": "{view}, image {number}",
+			"keepFailedViews": "Conserver aussi {views}, qui n’ont pas passé leurs contrôles",
+			"chooseViews": "Choisissez les vues à conserver avant d’enregistrer."
 		}
 	},
 	"itemRoute": {
@@ -2816,7 +2827,9 @@
 			"itemMoveSaveConflictAlso": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité. Une autre vue s’est aussi arrêtée : {reason}",
 			"keepWithoutStanding": "Il manque des images à cet objet dans l’animation dont il est conçu, il ne peut donc pas être gardé sans elle. Affichez cette animation et utilisez Réparer l’objet ou Redessiner l’objet s’ils sont proposés, ou recréez l’objet.",
 			"keepWithoutNothingLeft": "Cet objet n’a aucune animation complète à garder. Créez plutôt les images manquantes.",
-			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage."
+			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage.",
+			"itemSheetChanged": "Cet objet ou cette animation a changé depuis le calcul du prix de sa feuille. Rouvrez l’objet pour le vérifier à nouveau. Aucune génération n’a été demandée.",
+			"itemSheetNoView": "PixelLab n’a dessiné l’objet dans aucune vue, rien n’a donc été conservé. La feuille reste dans Activité."
 		}
 	},
 	"newItem": {

@@ -221,10 +221,15 @@ export function gridEstimate(
 			'This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.',
 			'itemRoute.errors.repairGridBounds'
 		);
-	const side = (w + h) / 2;
-	// Receipts pin the 15/25 edge only to [336, 360) (384x288 = 336 billed 15), so a mean above 336 quotes 25: never low.
-	return { w, h, gens: side <= 256 ? 10 : side <= 336 ? 15 : 25 };
+	return { w, h, gens: meanSideGens(w, h) };
 }
+/** Price of an inpaint-v3 or edit-images-v2 canvas by the mean of its sides (see the bands above gridEstimate). Receipts pin
+ *  the 15/25 edge only to [336, 360) (384x288 = 336 billed 15; an edit-images-v2 392x284 sheet, mean 338, also billed 15), so
+ *  a mean above 336 quotes 25: never low. */
+export const meanSideGens = (w: number, h: number) => {
+	const side = (w + h) / 2;
+	return side <= 256 ? 10 : side <= 336 ? 15 : 25;
+};
 
 /** The grid layout explicit equipment repairs (regridClip) and the frozen-grid fallback inside moves are sent and priced with.
  * Keep the qualified GRID_COLS layout unless another column count is strictly cheaper: fewer gens, or the same gens on a lower
@@ -840,19 +845,274 @@ export const canAnchor = (m: Manifest, i: Item, dirs: readonly DirectionName[] =
 	!!i.dressed &&
 	dirs.every((dir) => !!i.dressed?.[dir]);
 export const anchorable = (m: Manifest) => m.items.filter((i) => canAnchor(m, i));
-/** How an item is drawn on an existing move: an anchored design always on the move's frames; any other item as the move's
- *  own choice says, else as `preferred` (Settings > Creation), posed as a separate body when it cannot be anchored. */
+/** How an item is drawn on an existing move: as the move's own choice says, else as `preferred` (Settings > Creation). The
+ *  sheet needs canSheet and a measured sheet that fits; otherwise an anchored design is always drawn on the move's frames,
+ *  and an item that cannot be anchored is posed as a separate body. */
 export function itemDrawingFor(
 	m: Manifest,
 	item: Item,
 	move: Pick<RigAnimation, 'itemDrawing'> | undefined,
 	preferred: ItemDrawing,
-	dirs: readonly DirectionName[] = []
+	dirs: readonly DirectionName[] = [],
+	/** The move, its frame count and the sheet's measured crop cell (itemSheetWindows); without it the sheet is never chosen. */
+	sheet?: { anim: string; cell: { w: number; h: number }; frames: number }
 ): ItemDrawing {
+	const choice = move?.itemDrawing ?? preferred;
+	if (
+		choice === 'sheet' &&
+		sheet &&
+		canSheet(m, item, dirs) &&
+		itemSheetFits(m, item, sheet.anim, dirs, sheet.frames, sheet.cell)
+	)
+		return 'sheet';
 	if (item.route === 'ea2-anchor') return 'anchor';
-	return (move?.itemDrawing ?? preferred) === 'anchor' && canAnchor(m, item, dirs)
-		? 'anchor'
-		: 'skeleton';
+	// A sheet the item or move cannot take falls back: held items are posed, others drawn on the move's frames when they can be.
+	const anchor =
+		choice === 'anchor' || (choice === 'sheet' && requireSlot(m, item.slot).class !== 'held');
+	return anchor && canAnchor(m, item, dirs) ? 'anchor' : 'skeleton';
+}
+
+// ---------- item-on-move sheet: every drawn view of a move in one edit-images-v2 request ----------
+// docs/research/2026-11-23-item-move-route-cost.md: one row per view, the view's dressed standing reference first, then its
+// frames, each a fixed crop window of the real frame. Clean at 80-128 px on 4-direction rigs; at 64 px single frames swapped
+// front and back views, and no diagonal view was tested.
+export const ITEM_SHEET = {
+	margin: 4,
+	minCell: 80,
+	maxCell: 128,
+	side: 512,
+	/** edit-images-v2 description limit (pixellab-openapi-v2.json EditImagesV2Request). */
+	description: 2000
+} as const;
+const CARDINAL: readonly DirectionName[] = ['south', 'east', 'north', 'west'];
+export const ITEM_SHEET_CHANGED =
+	'This item or move changed since its sheet was priced. Reopen the item to review it again. No generation was requested.';
+/** Can the item take the sheet route on a move in `dirs`, before its sheet is measured? A worn or rigid item that can be
+ *  anchored (its saved standing design in every drawn view, on the rig cell), on a rig of 80-128 px without diagonal views. */
+export const canSheet = (m: Manifest, i: Item, dirs: readonly DirectionName[]) =>
+	dirs.length > 0 &&
+	canAnchor(m, i, dirs) &&
+	requireSlot(m, i.slot).class !== 'held' &&
+	[m.rig.cell.w, m.rig.cell.h].every((s) => s >= ITEM_SHEET.minCell && s <= ITEM_SHEET.maxCell) &&
+	m.rig.directions.every((d) => !!d.mirrorOf || CARDINAL.includes(d.id)) &&
+	dirs.every((d) => CARDINAL.includes(d));
+/** The row layout: one row per view, its reference then its frames, every cell `cell` px; undefined when it does not fit one
+ *  canvas. A sheet that does not fit is not split: only this layout was tested, so the item is drawn anchored instead. */
+export function itemSheetLayout(cell: { w: number; h: number }, views: number, frames: number) {
+	const cols = frames + 1,
+		w = cols * cell.w,
+		h = views * cell.h;
+	if (views < 1 || frames < 1 || w > ITEM_SHEET.side || h > ITEM_SHEET.side || w < 32 || h < 32)
+		return undefined;
+	return { cols, rows: views, w, h, gens: meanSideGens(w, h) };
+}
+/** The plan tier the sheet's one edit-images-v2 request needs. */
+export const itemSheetTier = () =>
+	workflowTier([{ method: 'POST', endpoint: '/edit-images-v2', params: {} }]);
+/** The sheet's layout when it fits one canvas and its completed prompt (whose action text repeats once per row) fits the
+ *  description limit; undefined otherwise, so the item is drawn another way. */
+export function itemSheetFits(
+	m: Manifest,
+	i: Item,
+	anim: string,
+	dirs: readonly DirectionName[],
+	frames: number,
+	cell: { w: number; h: number }
+) {
+	const layout = itemSheetLayout(cell, dirs.length, frames);
+	const prompt =
+		layout &&
+		itemSheetPrompt({
+			item: i.prompt,
+			slot: requireSlot(m, i.slot),
+			key: i.key as Key,
+			anim,
+			dirs,
+			frames,
+			cell
+		});
+	return prompt && prompt.length <= ITEM_SHEET.description ? layout : undefined;
+}
+type Bounds = { x0: number; y0: number; x1: number; y1: number };
+/** Opaque bounds (inclusive) of images of one size, or undefined when all are empty. */
+function opaqueBounds(ims: Img[]): Bounds | undefined {
+	const b = { x0: Infinity, y0: Infinity, x1: -1, y1: -1 };
+	for (const im of ims)
+		for (let p = 0; p < im.w * im.h; p++)
+			if (im.data[p * 4 + 3]) {
+				const x = p % im.w,
+					y = (p / im.w) | 0;
+				b.x0 = Math.min(b.x0, x);
+				b.y0 = Math.min(b.y0, y);
+				b.x1 = Math.max(b.x1, x);
+				b.y1 = Math.max(b.y1, y);
+			}
+	return b.x1 < 0 ? undefined : b;
+}
+export type ItemSheetWindows = {
+	cell: { w: number; h: number };
+	windows: Partial<Record<DirectionName, { x: number; y: number }>>;
+};
+/** The sheet's crop windows: one cell size for every view (the widest view's content over the move's body frames and its
+ *  dressed standing reference, plus ITEM_SHEET.margin on each side, capped at the frame) and per view its window centered on
+ *  that content, inside the frame. Never rescaled. Undefined when a needed image is not loaded or a view is empty. */
+export function itemSheetWindows(
+	m: Manifest,
+	images: ReadonlyMap<string, Img>,
+	item: Pick<Item, 'dressed'>,
+	anim: string,
+	dirs: readonly DirectionName[]
+): ItemSheetWindows | undefined {
+	const { w: W, h: H } = m.rig.cell,
+		frames = m.items.find((i) => i.slot === 'body')?.layers[0].cells?.[anim],
+		boxes: [DirectionName, Bounds][] = [];
+	for (const dir of dirs) {
+		const reference = item.dressed?.[dir],
+			body = frames?.[dir];
+		if (!reference || !body?.length) return undefined;
+		const ims = [reference, ...body].flatMap((h) => (h ? [images.get(h)] : []));
+		if (ims.some((im) => !im || im.w !== W || im.h !== H)) return undefined;
+		const box = opaqueBounds(ims as Img[]);
+		if (!box) return undefined;
+		boxes.push([dir, box]);
+	}
+	if (!boxes.length) return undefined;
+	const size = (span: (b: Bounds) => number, max: number) =>
+		Math.min(max, Math.max(...boxes.map(([, b]) => span(b))) + 2 * ITEM_SHEET.margin);
+	const cell = { w: size((b) => b.x1 - b.x0 + 1, W), h: size((b) => b.y1 - b.y0 + 1, H) };
+	const place = (lo: number, hi: number, side: number, max: number) =>
+		Math.max(0, Math.min(max - side, Math.round((lo + hi + 1) / 2 - side / 2)));
+	return {
+		cell,
+		windows: Object.fromEntries(
+			boxes.map(([dir, b]) => [
+				dir,
+				{ x: place(b.x0, b.x1, cell.w, W), y: place(b.y0, b.y1, cell.h, H) }
+			])
+		)
+	};
+}
+/** The validated row prompt (research arm eiv2-prod), in the app's facing and action words. */
+export function itemSheetPrompt(o: {
+	item: string;
+	slot: SlotRef;
+	key: Key;
+	anim: string;
+	dirs: readonly DirectionName[];
+	frames: number;
+	cell: { w: number; h: number };
+}): string {
+	const item = creativePrompt(o.item, slotOf(o.slot)),
+		color = KEY_NAME[o.key],
+		action = actionOf(o.anim);
+	return (
+		`This image is a sprite sheet: a ${o.frames + 1}x${o.dirs.length} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${color} mannequin. ` +
+		o.dirs
+			.map(
+				(d, k) =>
+					`Row ${k + 1}: frame 1 is the reference design ${facing(d)}, then a ${o.frames}-frame ${action} animation ${facing(d)}.`
+			)
+			.join(' ') +
+		` The reference shows the mannequin wearing ${item}. ` +
+		`The ${color} color is intentional (a chroma key) and must stay exactly the same ${color}. ` +
+		`Draw the identical ${item} on every animation frame, copying the reference in the same row and following each frame's pose${behaviorOf(o.slot) === 'back' ? '; it never wraps around or follows the arms' : ''}; keep each frame's facing, never turn around or swap front and back details; empty hands, no weapon, no effects. ` +
+		`Keep every other pixel, the poses, the outlines, the grid layout and the transparent background unchanged.`
+	);
+}
+/** Whole-sheet offset (dx, dy) of a returned sheet against the sent one: the best opaque-mask IoU within ±`reach` px, the
+ *  smallest offset on a tie. Cells are then cut at their origin plus this offset (cut-origin registration), so no returned
+ *  pixel is translated or dropped at the sheet border. */
+export function sheetOffset(sent: Img, got: Img, reach = 5): [number, number] {
+	let best: [number, number] = [0, 0],
+		score = -1;
+	for (let dy = -reach; dy <= reach; dy++)
+		for (let dx = -reach; dx <= reach; dx++) {
+			let both = 0,
+				either = 0;
+			for (let y = 0; y < sent.h; y++)
+				for (let x = 0; x < sent.w; x++) {
+					const a = sent.data[(y * sent.w + x) * 4 + 3] > 0,
+						X = x + dx,
+						Y = y + dy,
+						b = X >= 0 && Y >= 0 && X < got.w && Y < got.h && got.data[(Y * got.w + X) * 4 + 3] > 0;
+					if (a && b) both++;
+					if (a || b) either++;
+				}
+			const v = either ? both / either : 0;
+			const closer = dx * dx + dy * dy < best[0] * best[0] + best[1] * best[1];
+			if (v > score + 1e-9 || (v > score - 1e-9 && closer)) {
+				score = v;
+				best = [dx, dy];
+			}
+		}
+	return best;
+}
+/** Where each cell of the row layout sits: the reference of row r at (0, r), then frame i at (i + 1, r). */
+export type ItemSheetCell = {
+	key: string;
+	dir: DirectionName;
+	ref: boolean;
+	x: number;
+	y: number;
+	window: { x: number; y: number };
+};
+export function itemSheetCells(
+	anim: string,
+	standing: string,
+	dirs: readonly DirectionName[],
+	frames: number,
+	{ cell, windows }: ItemSheetWindows
+): ItemSheetCell[] {
+	return dirs.flatMap((dir, row) =>
+		Array.from({ length: frames + 1 }, (_, col) => ({
+			key: col ? cellKey(anim, dir, col - 1) : cellKey(standing, dir, 0),
+			dir,
+			ref: !col,
+			x: col * cell.w,
+			y: row * cell.h,
+			window: windows[dir]!
+		}))
+	);
+}
+/** Does an extracted item layer (frame coordinates) reach an edge of its crop window that lies inside the frame? The frame's
+ *  own G7 border check cannot see it: whatever the model drew past that edge belonged to the neighbor cell and was cut. */
+export function cropEdgeContact(
+	layer: Img,
+	window: { x: number; y: number },
+	cell: { w: number; h: number },
+	frame: { w: number; h: number }
+): boolean {
+	const x1 = window.x + cell.w - 1,
+		y1 = window.y + cell.h - 1,
+		at = (x: number, y: number) => !!layer.data[(y * layer.w + x) * 4 + 3];
+	for (let y = window.y; y <= y1; y++)
+		if ((window.x > 0 && at(window.x, y)) || (x1 < frame.w - 1 && at(x1, y))) return true;
+	for (let x = window.x; x <= x1; x++)
+		if ((window.y > 0 && at(x, window.y)) || (y1 < frame.h - 1 && at(x, y1))) return true;
+	return false;
+}
+/** One returned cell put back in its frame: the `cell`-sized region at (sx, sy) of the sheet (outside the sheet reads
+ *  transparent) drawn at the view's window of an empty frame. */
+export function uncropCell(
+	sheet: Img,
+	sx: number,
+	sy: number,
+	cell: { w: number; h: number },
+	window: { x: number; y: number },
+	frame: { w: number; h: number }
+): Img {
+	const o = makeImg(frame.w, frame.h);
+	for (let y = 0; y < cell.h; y++)
+		for (let x = 0; x < cell.w; x++) {
+			const X = sx + x,
+				Y = sy + y;
+			if (X < 0 || Y < 0 || X >= sheet.w || Y >= sheet.h) continue;
+			o.data.set(
+				sheet.data.subarray((Y * sheet.w + X) * 4, (Y * sheet.w + X) * 4 + 4),
+				((window.y + y) * frame.w + window.x + x) * 4
+			);
+		}
+	return o;
 }
 
 /** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions. */

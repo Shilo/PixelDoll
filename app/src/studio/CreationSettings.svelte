@@ -56,7 +56,8 @@
 	} as const;
 	const itemDrawingNames = {
 		anchor: 'creationSettings.itemDrawings.anchor',
-		skeleton: 'creationSettings.itemDrawings.skeleton'
+		skeleton: 'creationSettings.itemDrawings.skeleton',
+		sheet: 'creationSettings.itemDrawings.sheet'
 	} as const;
 	const id = $props.id();
 	const itemProfiles = (

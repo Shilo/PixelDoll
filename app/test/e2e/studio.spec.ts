@@ -21,6 +21,8 @@ import { CURRENT_FORMAT, type Manifest } from '../../src/lib/store/manifest.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { CharacterApi } from '../fixtures/character-api.ts';
+import { itemSheetCells, itemSheetLayout, itemSheetWindows } from '../../src/lib/items/items.ts';
+import { answer, sheetCharacter } from '../fixtures/item-sheet.ts';
 import './studio-thumbnails.ts';
 import './dialog-dismissal.ts';
 
@@ -650,7 +652,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		['Character', 'base-clothing', 'none', 'underwear', 'select'],
 		['Move', 'move-model', 'v3', 'skeleton-v3', 'select'],
 		['Move', 'move-frames', '6', 'auto', 'select'],
-		['Move', 'item-drawing', 'anchor', 'skeleton', 'select'],
+		['Move', 'item-drawing', 'sheet', 'skeleton', 'select'],
 		['State', 'state-model', 'pixen', 'pro', 'select'],
 		['Item', 'item-method', 'anchor', 'auto', 'select']
 	] as const;
@@ -8381,6 +8383,144 @@ test('paid item repair review survives reload and both decisions send no extra r
 	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(await saved()).toMatchObject({ east: before.east, provenance: after.provenance + 1 });
 	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3', '/v2/edit-images-v2']);
+});
+
+test('the item sheet offers one priced edit-images-v2 request and holds its result for review', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	const outputs = new Map<string, Record<string, unknown>>();
+	// A synthetic 92 px, four-direction character whose jeans have only their standing design (test/fixtures/item-sheet.ts).
+	const character = await sheetCharacter(),
+		views = ['south', 'east', 'north'] as const,
+		measured = itemSheetWindows(
+			character.manifest,
+			character.images,
+			character.manifest.items.find((it) => it.id === 'jeans')!,
+			'walk',
+			views
+		)!,
+		plan = itemSheetCells('walk', 'default', views, 6, measured),
+		gens = itemSheetLayout(measured.cell, 3, 6)!.gens;
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (path === '/v2/balance')
+			return route.fulfill({
+				json: {
+					subscription: {
+						plan: 'Tier 1',
+						type: 'generations',
+						status: 'active',
+						generations: 100,
+						total: 100
+					},
+					credits: { type: 'usd', usd: 0 }
+				}
+			});
+		if (request.method() === 'POST' && path === '/v2/edit-images-v2') {
+			posts.push(path);
+			const sent = await decodePngBytes(
+				Buffer.from(request.postDataJSON().edit_images[0].image.base64, 'base64')
+			);
+			// The offline model draws the jeans on every frame, but redraws the body in the north row (a failed, usable view).
+			const sheet = answer(sent, plan, measured.cell, character.jeans, (dir) =>
+				dir === 'north' ? 'naked' : 'jeans'
+			);
+			const id = `offline-item-sheet-${posts.length}`,
+				base64 = Buffer.from(await encodePngBytes(sheet)).toString('base64');
+			outputs.set(id, { images: [{ type: 'base64', base64, format: 'png' }] });
+			return route.fulfill({ status: 202, json: { background_job_id: id } });
+		}
+		const id = path.split('/').at(-1)!;
+		if (outputs.has(id))
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 15 },
+					last_response: outputs.get(id)
+				}
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-item-sheet-key');
+		localStorage.setItem('pixeldoll.developerMode', '1');
+		localStorage.setItem(
+			'pixeldoll.creation.moves',
+			JSON.stringify({ model: 'skeleton-v3', frames: 'auto', itemDrawing: 'sheet' })
+		);
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const fixture = {
+		manifest: character.manifest,
+		images: Object.fromEntries(
+			await Promise.all(
+				[...character.images].map(
+					async ([h, im]) => [h, Buffer.from(await encodePngBytes(im)).toString('base64')] as const
+				)
+			)
+		)
+	};
+	const projectId: string = await page.evaluate(async (raw) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			createPath = '/src/studio/create.ts',
+			pngPath = '/src/lib/image/pngraw.ts';
+		const s = await import(statePath),
+			create = await import(createPath),
+			png = await import(pngPath);
+		const images = new Map();
+		for (const [h, b64] of Object.entries(raw.images as Record<string, string>))
+			images.set(h, await png.decodePngBytes(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))));
+		const id = await create.saveCopy({ manifest: raw.manifest, images }, 'Sheet fixture');
+		await s.refreshProjects();
+		await s.openProject(id);
+		s.ui.anim = 'walk';
+		s.pick('jeans');
+		return id;
+	}, fixture);
+	const walkCells = () =>
+		page.evaluate(async (id) => {
+			const dbPath = '/src/lib/store/db.ts',
+				db = await import(dbPath);
+			const rec = await db.get('projects', id);
+			return rec.manifest.items.find((it: { id: string }) => it.id === 'jeans').layers[0].cells
+				.walk;
+		}, projectId);
+	const pane = await selectedItemDetails(page);
+	const make = pane.getByRole('button', { name: /^Make for Walk/ });
+	await expect(make).toContainText(`~${gens} gens`);
+	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
+	const api = page.getByRole('dialog', { name: 'API calls', exact: true });
+	await expect(api).toContainText('/edit-images-v2');
+	await expect(api).toContainText('one sheet');
+	await expect(api).not.toContainText('/edit-animation-v2');
+	await api.getByRole('button', { name: 'Close API calls', exact: true }).click();
+	await make.click();
+	const review = page.getByRole('dialog', { name: 'Review item redraw' });
+	await expect(review.getByRole('img', { name: 'Redrawn frame 6', exact: true })).toHaveCount(3);
+	await expect(review).toContainText('North, frame 6');
+	// The failed north view is shown, but kept only on request.
+	await expect(
+		review.getByRole('checkbox', {
+			name: 'Also keep North, which did not pass their checks',
+			exact: true
+		})
+	).not.toBeChecked();
+	expect(await walkCells()).toBeUndefined();
+	await review.getByRole('button', { name: 'Use redrawn frames', exact: true }).click();
+	await expect
+		.poll(async () => Object.keys((await walkCells()) ?? {}).sort())
+		.toEqual(['east', 'south']);
+	expect(posts).toEqual(['/v2/edit-images-v2']);
 });
 
 test('unsafe imported equipment prices its frozen route and discloses suspicious joints on held offers', async ({

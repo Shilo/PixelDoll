@@ -139,10 +139,11 @@
 		"framesHelp": "Kullanılabilir kare sayıları karakterin tuval boyutuna bağlıdır.",
 		"methodHelp": "Destekleniyorsa {pose}, aksi takdirde {edit} kullanılır.",
 		"itemDrawing": "Animasyonlardaki eşyalar",
-		"itemDrawingHelp": "Animasyon karelerine çizmek eşyaları animasyonun kendi çizimine uydurur. Ayrı bir gövdeye poz vermek eşyaları ayrı canlandırır, bu yüzden birkaç piksel kayabilirler.",
+		"itemDrawingHelp": "Animasyon karelerine çizmek eşyaları animasyonun kendi çizimine uydurur. Ayrı bir gövdeye poz vermek eşyaları ayrı canlandırır, bu yüzden birkaç piksel kayabilirler. Tüm görünümleri tek seferde çizmek poz vermekten pahalı, animasyon karelerine çizmekten ucuzdur ve sonucu kaydetmeden önce incelersiniz. 80 ile 128 px arası, dört yönlü karakterlerin giydiği eşyalar için uygundur; diğer eşyalar animasyon karelerine çizilir, elde tutulan eşyalara poz verilir.",
 		"itemDrawings": {
 			"anchor": "Animasyon karelerine çiz",
-			"skeleton": "Ayrı bir gövdeye poz ver"
+			"skeleton": "Ayrı bir gövdeye poz ver",
+			"sheet": "Tüm görünümleri tek seferde çiz"
 		}
 	},
 	"settings": {
@@ -1951,7 +1952,9 @@
 			"conceptNote": "Yüklenen görsel karakter karelerinden önce gönderilir. Çıktısı kullanılmaz.",
 			"redrawEquipment": "{item} {direction} · ekipmanı yeniden çiz",
 			"redrawEquipmentNote": "{width}×{height}, kareler {from}–{to}. Maskesiz bir sayfa ve eşleşen bir referans gönderir. PixelDoll neyi tutacağını sınırlar ve karelerinizi değiştirmeden önce her zaman sorar. PixelDoll için Tier 1 gerekir. Dolar olarak faturalanırsa minimum {minimum} olur; gerçek ücret daha yüksek olabilir.",
-			"gridRepairNote": "{width}×{height}, kareler {from}–{to}. Aynı yönden korumalı bir referans kullanır. Gövde değişmez. Görsel olarak engelleyici sorunları olan tamamlanmış onarımlar incelenmeniz için tutulur."
+			"gridRepairNote": "{width}×{height}, kareler {from}–{to}. Aynı yönden korumalı bir referans kullanır. Gövde değişmez. Görsel olarak engelleyici sorunları olan tamamlanmış onarımlar incelenmeniz için tutulur.",
+			"itemSheet": "{item}: {directions}, tek sayfa",
+			"itemSheetNote": "{width}×{height}: her görünüm için bir satır; önce ayakta duran tasarım, ardından her biri {cellWidth}×{cellHeight} px olarak kesilmiş {frames} animasyon karesi. Gövde değişmez. PixelDoll kaydetmeden önce sorar, yalnızca denetimlerden geçen görünümleri tutar ve diğerlerini listeler. PixelDoll için Tier 1 gerekir. Tek deneme; ücretli her yeniden deneme sizin işleminizi gerektirir."
 		},
 		"copyEndpointTitle": "Uç noktayı kopyala",
 		"manualCopyLabel": "Elle kopyalamak için uç nokta",
@@ -2063,7 +2066,11 @@
 		"stopNoAnswer": "Bu işi çalıştıran sekme durdurmayı henüz onaylamadı. Birazdan Etkinlik bölümüne bakın; hâlâ çalışıyorsa işi o sekmeden durdurun.",
 		"stopNotConfirmed": "PixelLab durdurmayı onaylamadı, bu yüzden iş çalışmaya ve ücretlendirilmeye devam edebilir. Etkinlik bölümüne bakın.",
 		"pausedStorage": "Kayıtlı işler okunamadı veya kaydedilemedi, bu yüzden yeni bir şey gönderilmiyor. Yeniden denemek için devam edin.",
-		"cancelSaveFailed": "İptal kaydedilemedi. Bu sekme isteği göndermeyecek, ancak başka bir sekme veya sayfayı yenilemek gönderebilir."
+		"cancelSaveFailed": "İptal kaydedilemedi. Bu sekme isteği göndermeyecek, ancak başka bir sekme veya sayfayı yenilemek gönderebilir.",
+		"titleItemViews": {
+			"one": "{item}: {move}, {count} görünüm",
+			"other": "{item}: {move}, {count} görünüm"
+		}
 	},
 	"genCard": {
 		"retryKey": "Yeniden deneme, tasarımın renklerine göre belirlenen {color} bir arka plan kullanır",
@@ -2782,7 +2789,11 @@
 			"repairNote": "Gövde değişmez. Tamamlanan onarımda görsel sorun varsa sonuç incelemeniz için bekletilir.",
 			"currentFrame": "Geçerli kare {number}",
 			"redrawnFrame": "Yeniden çizilen kare {number}",
-			"repairedFrame": "Onarılan kare {number}"
+			"repairedFrame": "Onarılan kare {number}",
+			"skippedViews": "Tutulmayanlar: {views}. PixelLab orada eşya çizmedi, bu yüzden eşya hâlâ eksik. Yalnızca bu görünümleri yeniden çizebilirsiniz.",
+			"viewFrame": "{view}, kare {number}",
+			"keepFailedViews": "Denetimlerden geçmeyen görünümleri de tut: {views}",
+			"chooseViews": "Kaydetmeden önce tutulacak görünümleri seçin."
 		}
 	},
 	"itemRoute": {
@@ -2816,7 +2827,9 @@
 			"itemMoveSaveConflictAlso": "Kareleri oluşturulurken bu karakter veya eşya değişti. Mevcut çizimler korundu; tamamlanan kareler Etkinlik bölümünde duruyor. Başka bir görünüm de durdu: {reason}",
 			"keepWithoutStanding": "Bu eşyanın tasarlandığı animasyonda eksik kareler var, bu yüzden o animasyon olmadan tutulamaz. O animasyonu gösterin ve sunuluyorsa Eşyayı onarın veya Eşyayı yeniden çizin seçeneğini kullanın ya da eşyayı yeniden oluşturun.",
 			"keepWithoutNothingLeft": "Bu eşyanın tutulabilecek eksiksiz bir animasyonu yok. Bunun yerine eksik kareleri oluşturun.",
-			"savedFrameMissing": "Bu eşyanın kayıtlı bir karesi depolamada yok."
+			"savedFrameMissing": "Bu eşyanın kayıtlı bir karesi depolamada yok.",
+			"itemSheetChanged": "Sayfanın fiyatı hesaplandıktan sonra bu eşya veya animasyon değişti. Yeniden incelemek için eşyayı tekrar açın. Oluşturma istenmedi.",
+			"itemSheetNoView": "PixelLab hiçbir görünümde eşya çizmedi, bu yüzden hiçbir şey tutulmadı. Sayfa Etkinlik bölümünde kalır."
 		}
 	},
 	"newItem": {

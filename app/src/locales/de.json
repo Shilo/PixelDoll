@@ -139,10 +139,11 @@
 		"framesHelp": "Die verfügbaren Frame-Anzahlen hängen von der Leinwandgröße der Figur ab.",
 		"methodHelp": "Verwendet {pose}, wenn unterstützt. Andernfalls wird {edit} verwendet.",
 		"itemDrawing": "Gegenstände in Animationen",
-		"itemDrawingHelp": "Auf den Frames der Animation gezeichnet passen Gegenstände zu ihrer eigenen Grafik. Mit einem separaten Körper posiert werden Gegenstände eigenständig animiert und können um einige Pixel verrutschen.",
+		"itemDrawingHelp": "Auf den Frames der Animation gezeichnet passen Gegenstände zu ihrer eigenen Grafik. Mit einem separaten Körper posiert werden Gegenstände eigenständig animiert und können um einige Pixel verrutschen. Alle Ansichten auf einmal zu zeichnen kostet mehr als das Posieren und weniger als das Zeichnen auf den Frames, und du prüfst das Ergebnis, bevor es gespeichert wird. Das eignet sich für getragene Gegenstände an Figuren mit vier Blickrichtungen und 80 bis 128 px; andere Gegenstände werden auf den Frames gezeichnet, gehaltene posiert.",
 		"itemDrawings": {
 			"anchor": "Auf Animations-Frames zeichnen",
-			"skeleton": "Separaten Körper posieren"
+			"skeleton": "Separaten Körper posieren",
+			"sheet": "Alle Ansichten auf einmal zeichnen"
 		}
 	},
 	"settings": {
@@ -1951,7 +1952,9 @@
 			"conceptNote": "Die hochgeladene Vorlage kommt zuerst, vor den Frames der Figur. Ihre Ausgabe wird nicht verwendet.",
 			"redrawEquipment": "{item} {direction} · Ausrüstung neu zeichnen",
 			"redrawEquipmentNote": "{width}×{height}, Frames {from}–{to}. Sendet ein ungemaskertes Sheet mit einer passenden Referenz. PixelDoll begrenzt, was übernommen wird, und fragt immer, bevor deine Frames ersetzt werden. PixelDoll benötigt Tier 1. Bei Abrechnung in Dollar beträgt das Minimum {minimum}; die tatsächliche Belastung kann höher sein.",
-			"gridRepairNote": "{width}×{height}, Frames {from}–{to}. Nutzt eine geschützte Referenz derselben Blickrichtung. Der Grundkörper bleibt unverändert. Vollständige Reparaturen mit blockierenden visuellen Problemen werden dir zur Prüfung vorgelegt."
+			"gridRepairNote": "{width}×{height}, Frames {from}–{to}. Nutzt eine geschützte Referenz derselben Blickrichtung. Der Grundkörper bleibt unverändert. Vollständige Reparaturen mit blockierenden visuellen Problemen werden dir zur Prüfung vorgelegt.",
+			"itemSheet": "{item}: {directions}, ein Sheet",
+			"itemSheetNote": "{width}×{height}: eine Zeile pro Ansicht, zuerst das Design im Stand, dann {frames} Frames der Animation, jeweils auf {cellWidth}×{cellHeight} px zugeschnitten. Der Körper bleibt unverändert. PixelDoll fragt vor dem Speichern, übernimmt nur Ansichten, die die Prüfungen bestehen, und listet die anderen auf. PixelDoll benötigt Tier 1. Ein Versuch; jede bezahlte Wiederholung braucht deine Bestätigung."
 		},
 		"copyEndpointTitle": "Endpunkt kopieren",
 		"manualCopyLabel": "Endpunkt zum manuellen Kopieren",
@@ -2063,7 +2066,11 @@
 		"stopNoAnswer": "Der Tab, in dem dieser Auftrag läuft, hat das Stoppen noch nicht bestätigt. Sieh gleich in der Aktivität nach; läuft er noch, stoppe ihn in diesem Tab.",
 		"stopNotConfirmed": "PixelLab hat das Stoppen nicht bestätigt, daher kann der Auftrag weiterlaufen und Kosten verursachen. Sieh in der Aktivität nach.",
 		"pausedStorage": "Gespeicherte Aufträge konnten nicht gelesen oder gespeichert werden, deshalb wird nichts Neues gesendet. Setze fort, um es erneut zu versuchen.",
-		"cancelSaveFailed": "Der Abbruch konnte nicht gespeichert werden. Dieser Tab sendet die Anfrage nicht, ein anderer Tab oder ein Neuladen aber schon."
+		"cancelSaveFailed": "Der Abbruch konnte nicht gespeichert werden. Dieser Tab sendet die Anfrage nicht, ein anderer Tab oder ein Neuladen aber schon.",
+		"titleItemViews": {
+			"one": "{item}: {move}, {count} Ansicht",
+			"other": "{item}: {move}, {count} Ansichten"
+		}
 	},
 	"genCard": {
 		"retryKey": "Beim neuen Versuch wird die Hintergrundfarbe {color} verwendet. Sie wurde anhand der Farben dieses Designs bestimmt",
@@ -2782,7 +2789,11 @@
 			"repairNote": "Der Körper bleibt unverändert. Eine abgeschlossene Reparatur mit Darstellungsfehlern bleibt zur Prüfung zurückgestellt.",
 			"currentFrame": "Aktueller Frame {number}",
 			"redrawnFrame": "Neu gezeichneter Frame {number}",
-			"repairedFrame": "Reparierter Frame {number}"
+			"repairedFrame": "Reparierter Frame {number}",
+			"skippedViews": "Nicht übernommen: {views}. PixelLab hat dort keinen Gegenstand gezeichnet, er fehlt also noch. Du kannst nur diese Ansichten erneut zeichnen.",
+			"viewFrame": "{view}, Frame {number}",
+			"keepFailedViews": "Auch {views} übernehmen, obwohl die Prüfungen nicht bestanden wurden",
+			"chooseViews": "Wähle vor dem Speichern die Ansichten aus, die übernommen werden sollen."
 		}
 	},
 	"itemRoute": {
@@ -2816,7 +2827,9 @@
 			"itemMoveSaveConflictAlso": "Diese Figur oder dieser Gegenstand hat sich geändert, während die Frames generiert wurden. Die vorhandenen Grafiken wurden behalten; fertige Frames bleiben unter „Aktivität“. Eine weitere Ansicht wurde ebenfalls gestoppt: {reason}",
 			"keepWithoutStanding": "Diesem Gegenstand fehlen Frames in der Animation, aus der er entworfen ist, daher kann er nicht ohne sie behalten werden. Zeige diese Animation und nutze „Gegenstand reparieren“ oder „Gegenstand neu zeichnen“, falls angeboten, oder erstelle den Gegenstand erneut.",
 			"keepWithoutNothingLeft": "Dieser Gegenstand hat keine vollständige Animation, die behalten werden kann. Erstelle stattdessen die fehlenden Frames.",
-			"savedFrameMissing": "Ein gespeicherter Frame dieses Gegenstands fehlt im Speicher."
+			"savedFrameMissing": "Ein gespeicherter Frame dieses Gegenstands fehlt im Speicher.",
+			"itemSheetChanged": "Dieser Gegenstand oder diese Animation hat sich geändert, seit das Sheet berechnet wurde. Öffne den Gegenstand erneut, um ihn noch einmal zu prüfen. Es wurde keine Generierung angefordert.",
+			"itemSheetNoView": "PixelLab hat in keiner Ansicht einen Gegenstand gezeichnet, daher wurde nichts übernommen. Das Sheet bleibt in der Aktivität."
 		}
 	},
 	"newItem": {

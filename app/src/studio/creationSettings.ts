@@ -33,7 +33,11 @@ export const stateModels = [
 export const itemMethods = ['auto', 'skel', 'anchor'] as const satisfies readonly (
 	'auto' | Method
 )[];
-export const itemDrawings = ['anchor', 'skeleton'] as const satisfies readonly ItemDrawing[];
+export const itemDrawings = [
+	'anchor',
+	'skeleton',
+	'sheet'
+] as const satisfies readonly ItemDrawing[];
 
 export type CreationSettings = {
 	characters: {

@@ -139,10 +139,11 @@
 		"framesHelp": "Las cantidades de fotogramas disponibles dependen del tamaño del lienzo del personaje.",
 		"methodHelp": "Usa {pose} si es compatible. De lo contrario, usa {edit}.",
 		"itemDrawing": "Objetos en animaciones",
-		"itemDrawingHelp": "Dibujar en los fotogramas de la animación ajusta los objetos a su propio arte. Posar un cuerpo aparte anima los objetos por separado, así que pueden desplazarse unos píxeles.",
+		"itemDrawingHelp": "Dibujar en los fotogramas de la animación ajusta los objetos a su propio arte. Posar un cuerpo aparte anima los objetos por separado, así que pueden desplazarse unos píxeles. Dibujar todas las vistas a la vez cuesta más que posar y menos que dibujar en los fotogramas, y lo revisas antes de guardarlo. Sirve para objetos que se visten en personajes de cuatro direcciones de 80 a 128 px; los demás objetos se dibujan en los fotogramas y los que se sostienen se posan.",
 		"itemDrawings": {
 			"anchor": "Dibujar en los fotogramas",
-			"skeleton": "Posar un cuerpo aparte"
+			"skeleton": "Posar un cuerpo aparte",
+			"sheet": "Dibujar todas las vistas a la vez"
 		}
 	},
 	"settings": {
@@ -1951,7 +1952,9 @@
 			"conceptNote": "La ilustración subida va primero, antes de los fotogramas del personaje. Su resultado no se usa.",
 			"redrawEquipment": "{item} {direction} · redibujar equipamiento",
 			"redrawEquipmentNote": "{width}×{height}, fotogramas {from}–{to}. Envía una hoja sin máscara con una referencia correspondiente. PixelDoll limita lo que conserva y siempre pregunta antes de reemplazar tus fotogramas. PixelDoll requiere Tier 1. Si se factura en dólares, el mínimo es {minimum}; el cargo real puede ser mayor.",
-			"gridRepairNote": "{width}×{height}, fotogramas {from}–{to}. Usa una referencia protegida de la dirección correspondiente. El cuerpo no cambia. Las reparaciones completas con problemas visuales bloqueantes se retienen para tu revisión."
+			"gridRepairNote": "{width}×{height}, fotogramas {from}–{to}. Usa una referencia protegida de la dirección correspondiente. El cuerpo no cambia. Las reparaciones completas con problemas visuales bloqueantes se retienen para tu revisión.",
+			"itemSheet": "{item}: {directions}, una hoja",
+			"itemSheetNote": "{width}×{height}: una fila por vista, primero su diseño de pie y luego {frames} fotogramas de la animación, cada uno recortado a {cellWidth}×{cellHeight} px. El cuerpo no cambia. PixelDoll pregunta antes de guardar, conserva solo las vistas que pasan sus controles y enumera las demás. PixelDoll requiere Tier 1. Un intento; cualquier reintento de pago necesita tu acción."
 		},
 		"copyEndpointTitle": "Copiar endpoint",
 		"manualCopyLabel": "Endpoint para copiar manualmente",
@@ -2063,7 +2066,11 @@
 		"stopNoAnswer": "La pestaña que ejecuta esta tarea aún no ha confirmado la detención. Revisa Actividad en un momento; si sigue en curso, detenla en esa pestaña.",
 		"stopNotConfirmed": "PixelLab no confirmó la detención, así que la tarea podría seguir ejecutándose y cobrarse. Revisa Actividad.",
 		"pausedStorage": "No se pudieron leer ni guardar las tareas guardadas, así que no se envía nada nuevo. Reanuda para volver a intentarlo.",
-		"cancelSaveFailed": "No se pudo guardar la cancelación. Esta pestaña no enviará la solicitud, pero otra pestaña o una recarga sí podrían enviarla."
+		"cancelSaveFailed": "No se pudo guardar la cancelación. Esta pestaña no enviará la solicitud, pero otra pestaña o una recarga sí podrían enviarla.",
+		"titleItemViews": {
+			"one": "{item}: {move}, {count} vista",
+			"other": "{item}: {move}, {count} vistas"
+		}
 	},
 	"genCard": {
 		"retryKey": "Al reintentar se usa un fondo {color}, elegido a partir de mediciones de los colores del diseño.",
@@ -2782,7 +2789,11 @@
 			"repairNote": "El cuerpo no cambia. Si la reparación termina con problemas visuales, podrás revisar el resultado antes de aplicarlo.",
 			"currentFrame": "Fotograma actual {number}",
 			"redrawnFrame": "Fotograma redibujado {number}",
-			"repairedFrame": "Fotograma reparado {number}"
+			"repairedFrame": "Fotograma reparado {number}",
+			"skippedViews": "No se conservó: {views}. PixelLab no dibujó el objeto ahí, así que aún falta. Puedes volver a dibujar solo esas vistas.",
+			"viewFrame": "{view}, fotograma {number}",
+			"keepFailedViews": "Conservar también {views}, que no pasaron sus controles",
+			"chooseViews": "Elige las vistas que quieres conservar antes de guardar."
 		}
 	},
 	"itemRoute": {
@@ -2816,7 +2827,9 @@
 			"itemMoveSaveConflictAlso": "Este personaje u objeto cambió mientras se generaban sus fotogramas. Se conservó el arte existente; los fotogramas terminados siguen en Actividad. Otra vista también se detuvo: {reason}",
 			"keepWithoutStanding": "A este objeto le faltan fotogramas en la animación de la que parte su diseño, así que no se puede conservar sin ella. Muestra esa animación y usa Reparar objeto o Redibujar objeto si aparecen, o vuelve a crear el objeto.",
 			"keepWithoutNothingLeft": "Este objeto no tiene ninguna animación completa que conservar. Crea los fotogramas que faltan.",
-			"savedFrameMissing": "Falta en el almacenamiento un fotograma guardado de este objeto."
+			"savedFrameMissing": "Falta en el almacenamiento un fotograma guardado de este objeto.",
+			"itemSheetChanged": "Este objeto o esta animación cambió desde que se calculó el precio de su hoja. Vuelve a abrir el objeto para revisarlo de nuevo. No se solicitó ninguna generación.",
+			"itemSheetNoView": "PixelLab no dibujó el objeto en ninguna vista, así que no se conservó nada. La hoja sigue en Actividad."
 		}
 	},
 	"newItem": {

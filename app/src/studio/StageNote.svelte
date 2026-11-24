@@ -52,7 +52,7 @@
 	const poseSpecs = $derived(
 		m && anim
 			? missing.flatMap((item) =>
-					missingItemMoves(m, item.id, currentItemDrawing(), 0).filter(
+					missingItemMoves(m, item.id, currentItemDrawing(), 0, store.project?.images).filter(
 						(spec) => spec.id === anim.id
 					)
 				)
