@@ -4110,6 +4110,7 @@ test.describe('live views actions', () => {
 	const attacked = async (page: Page, facing: string, attack: () => Promise<void>) => {
 		await record(page);
 		await attack();
+		await expect(world(page)).toHaveAttribute('data-attack', `cross-punch ${facing}`);
 		await expect
 			.poll(async () =>
 				(await shown(page)).some((s) => s.clip === 'cross-punch' && s.facing === facing)
@@ -4128,7 +4129,7 @@ test.describe('live views actions', () => {
 		await expect(page.locator('.world-hint')).toHaveText(
 			'WASD or click to move · Right-click or X to attack · Space to jump · M to mount'
 		);
-		const bar = page.getByRole('toolbar', { name: 'Game actions', exact: true });
+		const bar = page.getByRole('group', { name: 'Game actions', exact: true });
 		const jump = bar.getByRole('button', { name: 'Jump', exact: true });
 		const mount = bar.getByRole('button', { name: 'Mount', exact: true });
 		await expect(jump).toHaveAttribute('aria-keyshortcuts', 'Space');
@@ -4157,25 +4158,48 @@ test.describe('live views actions', () => {
 			.poll(async () => Number((await host.getAttribute('data-position'))!.split(',')[0]))
 			.toBeGreaterThan(20);
 		await expect(host).toHaveAttribute('data-destination', '', { timeout: 10_000 });
-		// A right click attacks toward the cursor instead of opening a menu; the demo has no north punch.
+		// A right click attacks toward the cursor, not the facing, and opens no menu. The walk faced east.
 		await page.evaluate(() =>
 			addEventListener('contextmenu', (e) =>
 				document.body.setAttribute('data-menu', String(e.defaultPrevented))
 			)
 		);
-		await page.mouse.click(ax, ay - 150, { button: 'right' });
+		// The open stage well west of the body (side panels cover the window's edges).
+		const west = await page.evaluate(
+			([x, y]) => {
+				for (let at = x - 400; at < x - 150; at += 10)
+					if (document.elementFromPoint(at, y)?.classList.contains('world-input')) return at;
+				return null;
+			},
+			[ax, ay - 300]
+		);
+		expect(west, 'open stage west of the character').not.toBeNull();
+		await page.mouse.click(west!, ay - 300, { button: 'right' });
 		await expect(page.locator('body'), 'the stage right press opens no menu').toHaveAttribute(
 			'data-menu',
 			'true'
 		);
-		await expect(page.locator('.toast')).toContainText('so it can’t attack that way');
+		// Above and west of the body: no south art within 90°, and never the walk's east facing.
+		await expect(host).toHaveAttribute('data-attack', /^missing (west|north-west)$/);
+		// Chorded buttons: walking to a left-press point continues while the right button aims and attacks.
+		await page.mouse.move(ax + 300, ay - 20);
+		await page.mouse.down();
+		await page.mouse.down({ button: 'right' });
+		await page.mouse.move(ax - 200, ay - 150, { steps: 3 });
+		const going = Number((await host.getAttribute('data-destination'))!.split(',')[0]);
+		await page.mouse.up({ button: 'right' });
+		await page.mouse.up();
+		expect(going, 'the right-held cursor aimed without moving the destination').toBeGreaterThan(
+			Number((await host.getAttribute('data-position'))!.split(',')[0])
+		);
+		// A keyboard-opened menu (button 0) stays native.
 		expect(
 			await page.evaluate(() => {
 				const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
 				document.querySelector('.world-input')!.dispatchEvent(event);
 				return event.defaultPrevented;
 			}),
-			'a menu not opened by a stage right press stays native'
+			'a keyboard menu stays native'
 		).toBe(false);
 	});
 
@@ -4223,22 +4247,33 @@ test.describe('live views actions', () => {
 			});
 			expect(point, 'an open point on the right half').toBeTruthy();
 			const cdp = await context.newCDPSession(page);
-			const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', y = 0) =>
-				cdp.send('Input.dispatchTouchEvent', {
-					type,
-					touchPoints: type === 'touchEnd' ? [] : [{ x: point!.x, y: point!.y + y, id: 1 }]
-				});
+			const box = (await host.boundingBox())!;
+			const move = { x: Math.round(box.x + 12), y: point!.y, id: 1 };
+			const aim = (y = 0) => ({ x: point!.x, y: point!.y + y, id: 2 });
+			const touch = (
+				type: 'touchStart' | 'touchMove' | 'touchEnd',
+				points: { x: number; y: number; id: number }[]
+			) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+			const x = async () => Number((await host.getAttribute('data-position'))!.split(',')[0]);
 			try {
-				await touch('touchStart');
+				// Hold the left stick to walk, then aim with a second finger on the right half: both sticks stay.
+				await touch('touchStart', [move]);
+				await touch('touchMove', [{ ...move, x: move.x + 42 }]);
+				await expect.poll(x).toBeGreaterThan(2);
+				await touch('touchStart', [{ ...move, x: move.x + 42 }, aim()]);
 				await expect(page.locator('.world-aim')).toBeVisible();
-				await touch('touchMove', 15);
-				// Released aimed down: the demo's south punch, and aiming never moved the character.
+				await expect(page.locator('.world-stick:not(.world-aim)')).toBeVisible();
+				await touch('touchMove', [{ ...move, x: move.x + 42 }, aim(15)]);
+				// Released aimed down: the demo's south punch, while the walk goes on.
+				const walked = await x();
 				await attacked(page, 'south', async () => {
-					await touch('touchMove', 40);
-					await touch('touchEnd');
+					await touch('touchMove', [{ ...move, x: move.x + 42 }, aim(40)]);
+					// touchEnd names the finger that lifts.
+					await touch('touchEnd', [aim(40)]);
 				});
-				await expect(host).toHaveAttribute('data-position', '0.00,0.00');
 				await expect(page.locator('.world-aim')).toHaveCount(0);
+				await expect.poll(x).toBeGreaterThan(walked + 2);
+				await touch('touchEnd', [{ ...move, x: move.x + 42 }]);
 			} finally {
 				await cdp.detach();
 			}

@@ -3352,6 +3352,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "自动：静止站立",
 		"controls": "操作",
 		"title": "实时视图",
 		"forCharacter": "{name} 在俯视和横版视图中播放的动作。",
@@ -3371,7 +3372,7 @@
 		"actions": "游戏操作",
 		"withShortcut": "{action}（{key}）",
 		"spaceKey": "空格",
-		"noAttack": "还没有攻击动作。请在实时视图设置中选择一个。",
+		"noAttack": "还没有指定攻击。请在实时视图设置中选择一个动作或状态。",
 		"noAttackDirection": "{move} 没有朝向{direction}的帧，无法向该方向攻击。",
 		"hintTopDown": "WASD 或点击移动 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",
 		"hintSide": "A/D 或点击移动 · 右键或 X 攻击 · 空格跳跃 · M 上下坐骑",

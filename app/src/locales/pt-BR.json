@@ -3460,6 +3460,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "Automático: parado",
 		"controls": "Controles",
 		"title": "Visualizações ao vivo",
 		"forCharacter": "Animações que {name} usa em Vista de cima e Rolagem lateral.",
@@ -3479,7 +3480,7 @@
 		"actions": "Ações de jogo",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Espaço",
-		"noAttack": "Ainda não há animação de Ataque. Escolha uma nas configurações de Visualizações ao vivo.",
+		"noAttack": "Ainda não há nada definido como Ataque. Escolha uma animação ou um estado nas configurações de Visualizações ao vivo.",
 		"noAttackDirection": "{move} não tem quadros na direção {direction}, então não pode atacar para esse lado.",
 		"hintTopDown": "WASD ou clique para mover · Botão direito ou X para atacar · Espaço para pular · M para montar",
 		"hintSide": "A/D ou clique para mover · Botão direito ou X para atacar · Espaço para pular · M para montar",

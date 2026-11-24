@@ -78,7 +78,6 @@ export { default as Settings2 } from '@lucide/svelte/icons/settings-2';
 export { default as Shirt } from '@lucide/svelte/icons/shirt';
 export { default as Gamepad2 } from '@lucide/svelte/icons/gamepad-2';
 export { default as ArrowBigUp } from '@lucide/svelte/icons/arrow-big-up';
-export { default as Swords } from '@lucide/svelte/icons/swords';
 export { default as Lock } from '@lucide/svelte/icons/lock';
 export { default as Ban } from '@lucide/svelte/icons/ban';
 export { default as Dices } from '@lucide/svelte/icons/dices';

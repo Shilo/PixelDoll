@@ -3352,6 +3352,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "自動：静止",
 		"controls": "操作",
 		"title": "ライブビュー",
 		"forCharacter": "{name} が見下ろし型と横スクロールで再生するモーションです。",
@@ -3371,7 +3372,7 @@
 		"actions": "ゲーム操作",
 		"withShortcut": "{action}（{key}）",
 		"spaceKey": "スペース",
-		"noAttack": "攻撃モーションがまだありません。ライブビューの設定で選んでください。",
+		"noAttack": "攻撃に割り当てられたものがまだありません。ライブビューの設定でモーションか状態を選んでください。",
 		"noAttackDirection": "{move} には{direction}向きのフレームがないため、その方向には攻撃できません。",
 		"hintTopDown": "WASD またはクリックで移動 · 右クリックまたは X で攻撃 · スペースでジャンプ · M で乗り降り",
 		"hintSide": "A/D またはクリックで移動 · 右クリックまたは X で攻撃 · スペースでジャンプ · M で乗り降り",

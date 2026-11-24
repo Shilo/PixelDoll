@@ -3448,6 +3448,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "Automatisch: steht still",
 		"controls": "Steuerung",
 		"title": "Live-Ansichten",
 		"forCharacter": "Animationen, die {name} in Draufsicht und Seitenansicht abspielt.",
@@ -3467,7 +3468,7 @@
 		"actions": "Spielaktionen",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Leertaste",
-		"noAttack": "Noch keine Angriffsanimation. Wähle eine in den Einstellungen der Live-Ansichten.",
+		"noAttack": "Für Angriff ist noch nichts festgelegt. Wähle in den Einstellungen der Live-Ansichten eine Animation oder einen Zustand.",
 		"noAttackDirection": "{move} hat keine Frames in Richtung {direction}, daher ist dort kein Angriff möglich.",
 		"hintTopDown": "WASD oder Klick zum Bewegen · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",
 		"hintSide": "A/D oder Klick zum Bewegen · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",

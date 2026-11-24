@@ -33,7 +33,7 @@
 		>
 	</div>
 {:else}
-	<div class="game-bar bu-floating" role="toolbar" aria-label={t('liveViews.actions')}>
+	<div class="game-bar bu-floating" role="group" aria-label={t('liveViews.actions')}>
 		<button
 			type="button"
 			class="bu-action"
@@ -66,7 +66,7 @@
 		bottom: calc(var(--stage-bottom, 0px) + max(20px, env(safe-area-inset-bottom)));
 		display: flex;
 		align-items: flex-end;
-		gap: 14px;
+		gap: 20px;
 	}
 	.game-bar {
 		position: fixed;
@@ -86,10 +86,6 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-	}
-	/* Toggled Mount reads as on, like a pressed toolbar button. */
-	.game-bar .bu-action[aria-pressed='true'] {
-		color: var(--bu-accent);
 	}
 	.game-bar .bu-action:global([data-pressed]) {
 		scale: 0.94;

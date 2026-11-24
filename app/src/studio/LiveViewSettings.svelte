@@ -27,9 +27,12 @@
 		if (role === 'attackUp' || role === 'attackDown') return t('liveViews.sameAsAttack');
 		const chain = liveClips(moves, { ...choices, [role]: undefined })[role];
 		const clip = chain.find((id) => moves.some((move) => move.id === id));
+		// With no Idle, Walk or Standing the character still shows its art standing still (presentation.ts stills).
 		return clip
 			? t('liveViews.automaticClip', { clip: displayMove(clip, moves) })
-			: t('liveViews.automaticNone');
+			: role === 'idle' || role === 'walk'
+				? t('liveViews.automaticStill')
+				: t('liveViews.automaticNone');
 	}
 	function choose(role: LiveRole, clip: string) {
 		if (!doc.id) return;
@@ -59,6 +62,7 @@
 	<section class="controls" aria-labelledby="live-controls">
 		<h4 id="live-controls" class="small">{t('liveViews.controls')}</h4>
 		<p class="bu-muted small">{t('liveViews.hintTopDown')}</p>
+		<p class="bu-muted small">{t('liveViews.hintSide')}</p>
 		<p class="bu-muted small">{t('liveViews.hintTouch')}</p>
 	</section>
 {:else}

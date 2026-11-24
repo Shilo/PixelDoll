@@ -124,6 +124,23 @@ describe('directional attack', () => {
 		expect(attack({ x: -1, y: 0.2 })).toMatchObject({
 			sequence: { clip: 'punch', direction: 'west' }
 		});
+		// Side view never shows a diagonal sprite for a level attack.
+		const diagonal = availability(['east', 'north-east'], { punch: ['north-east'] });
+		expect(resolveAttack(diagonal, clips, { x: 1, y: 0 }, { side: true, facing: 'east' })).toEqual({
+			failure: { kind: 'no-direction', move: 'punch', direction: 'east' }
+		});
+		// A south-only rig aimed east names east, the aimed direction, not a facing it has.
+		expect(
+			resolveAttack(
+				availability(['south'], { punch: ['south'] }),
+				clips,
+				{ x: 1, y: 0 },
+				{
+					side: false,
+					facing: 'south'
+				}
+			)
+		).toEqual({ failure: { kind: 'no-direction', move: 'punch', direction: 'east' } });
 		expect(attackSector({ x: 1, y: -2 })).toBe('down');
 		expect(attackSector({ x: 1, y: 1 })).toBe('level');
 	});

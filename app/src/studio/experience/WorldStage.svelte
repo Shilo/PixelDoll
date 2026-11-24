@@ -106,8 +106,11 @@
 	let destination: Vector | null = null,
 		mouse = { left: false, right: false },
 		cursor: { x: number; y: number } | null = null,
-		// Until when a right press on the stage claims the menu its release opens (Windows opens it on release).
-		menuClaim = 0;
+		// Whether a mouse press began on the live stage; captured moves after it was let go steer nothing.
+		mouseOwned = false,
+		// A right press on the stage claims the one menu it opens: on press (macOS, Linux) or on release (Windows).
+		menuClaim: 'none' | 'held' | 'released' = 'none',
+		menuUsed = false;
 	// Where the actor is on screen, for aiming at the cursor and clicking on it to stop.
 	let actorAt: { x: number; y: number; r: number } | null = null;
 	let travel: Vector = { x: 0, y: 0 };
@@ -265,9 +268,21 @@
 	function letGo() {
 		actions.letGo();
 		mouse = { left: false, right: false };
+		mouseOwned = false;
+		menuClaim = 'none';
 		destination = null;
 		host?.classList.remove('aiming');
 	}
+	/** Touch splits the stage, not the window, in two: the left half moves, the right half aims. */
+	const aimHalf = (e: { clientX: number }) => {
+		const stage = host.getBoundingClientRect();
+		return e.clientX >= stage.left + stage.width / 2;
+	};
+	/** A finger on the free half while the other half's stick is held is the second stick, never a pinch. */
+	const secondStick = (e: PointerEvent) =>
+		experience.mode !== 'preview' &&
+		e.pointerType !== 'mouse' &&
+		(aimHalf(e) ? !aimPad && !!pad : !pad && !!aimPad);
 	let reset = () => {
 		keys.clear();
 		clearHover();
@@ -441,12 +456,12 @@
 		if (!live) return;
 		if (e.pointerType === 'mouse') {
 			host.setPointerCapture(e.pointerId);
+			mouseOwned = true;
 			mouseButtons(e);
 			return;
 		}
 		// Each finger keeps the stick it landed on until it lifts, wherever it travels.
-		const stage = host.getBoundingClientRect();
-		const aiming = e.clientX >= stage.left + stage.width / 2;
+		const aiming = aimHalf(e);
 		if (aiming ? aimPad : pad) return;
 		host.setPointerCapture(e.pointerId);
 		const { regular, compact, compactQuery, deadZone } = MOTION.joystick;
@@ -487,17 +502,22 @@
 	 * owns the cursor until released, so the character keeps walking to the left-button destination meanwhile.
 	 */
 	function mouseButtons(e: PointerEvent) {
-		if (ui.sheet) return;
+		if (ui.sheet || !mouseOwned) return;
 		cursor = { x: e.clientX, y: e.clientY };
 		const left = (e.buttons & 1) !== 0,
 			right = (e.buttons & 2) !== 0;
 		if (right !== mouse.right) {
 			mouse.right = right;
 			if (right) {
-				menuClaim = Infinity;
+				menuClaim = 'held';
+				menuUsed = false;
 				actions.hold('mouse', mouseAim);
 			} else {
-				menuClaim = performance.now() + 500;
+				// A menu still to come opens on this release; one already suppressed on the press is done.
+				menuClaim = menuUsed ? 'none' : 'released';
+				requestAnimationFrame(() => {
+					if (menuClaim === 'released') menuClaim = 'none';
+				});
 				actions.release('mouse');
 			}
 			host.classList.toggle('aiming', right);
@@ -506,8 +526,10 @@
 			mouse.left = left;
 			if (left) setDestination(e);
 		} else if (left && !right && e.type === 'pointermove' && e.button === -1) setDestination(e);
-		if (!left && !right && host.hasPointerCapture(e.pointerId))
-			host.releasePointerCapture(e.pointerId);
+		if (!left && !right) {
+			mouseOwned = false;
+			if (host.hasPointerCapture(e.pointerId)) host.releasePointerCapture(e.pointerId);
+		}
 	}
 	// The companion under the pointer shows a faint ring: clicking it selects that facing.
 	let hovered: DirectionName | undefined;
@@ -530,7 +552,12 @@
 		pointer = { clientX: e.clientX, clientY: e.clientY };
 		updateHover();
 		if (e.pointerType === 'mouse' && experience.mode !== 'preview') {
-			if (mouse.left || mouse.right || e.buttons) mouseButtons(e);
+			// Leaving the playfield (over a panel or bar) ends held mouse travel and attacks until a new press.
+			const over = document.elementFromPoint(e.clientX, e.clientY);
+			if (mouseOwned && over && !host.contains(over)) {
+				letGo();
+				if (host.hasPointerCapture(e.pointerId)) host.releasePointerCapture(e.pointerId);
+			} else if (mouseOwned) mouseButtons(e);
 			else cursor = { x: e.clientX, y: e.clientY };
 		}
 		if (pad) stick = pad.move(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -598,9 +625,16 @@
 	}
 	/** The stage's own right press is an attack, not a menu; a menu opened any other way ends a keyboard walk. */
 	function contextMenu(e: MouseEvent) {
-		if (performance.now() < menuClaim && e.target instanceof Node && host?.contains(e.target)) {
+		// A keyboard-opened menu (Shift+F10, the Menu key) reports button 0 and always stays native.
+		if (
+			menuClaim !== 'none' &&
+			e.button === 2 &&
+			e.target instanceof Node &&
+			host?.contains(e.target)
+		) {
 			e.preventDefault();
-			menuClaim = 0;
+			menuUsed = true;
+			if (menuClaim === 'released') menuClaim = 'none';
 			return;
 		}
 		endWalk();
@@ -1185,6 +1219,11 @@
 							side: experience.mode === 'side',
 							facing: loco.direction
 						});
+						// The last attack asked for: what played, or the aimed facing it lacked.
+						host.dataset.attack =
+							'sequence' in choice
+								? `${choice.sequence.clip} ${choice.sequence.direction}`
+								: `missing ${choice.failure.kind === 'no-direction' ? (choice.failure.direction ?? '') : ''}`;
 						if ('sequence' in choice) actions.start(choice.sequence);
 						else {
 							actions.refused();
@@ -1334,7 +1373,8 @@
 						scale
 					);
 					// A jump lifts the drawn actor (and its mount) off the floor point; the pivot never moves.
-					const standing = (selectedOrigin?.standingHeight ?? fit.h) * scale;
+					// One standing height for the whole flight, so turning or attacking in the air never changes the lift.
+					const standing = (bodyBounds?.facings.get(ui.dir)?.standingHeight ?? fit.h) * scale;
 					const lift = live ? snap(actions.jump.height * standing) : 0;
 					actorAt = live
 						? { x: point.x, y: point.y - lift - standing / 2, r: Math.max(12, standing / 3) }
@@ -1574,6 +1614,7 @@
 			get enabled() {
 				return enabled && experience.mode === mode;
 			},
+			claims: secondStick,
 			onpinch: () => {
 				pad = null;
 				stick = IDLE;
@@ -1600,7 +1641,9 @@
 			: t('liveViews.stageTopDown')}
 	onkeydown={key}
 	onfocusout={() => {
-		if (!handoff) keys.clear();
+		if (handoff) return;
+		keys.clear();
+		actions.release('key');
 	}}
 	onpointerdown={down}
 	onpointermove={drag}

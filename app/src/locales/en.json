@@ -3451,6 +3451,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "Automatic: stands still",
 		"controls": "Controls",
 		"title": "Live views",
 		"forCharacter": "What {name} plays in Top-down and Side-scroller.",
@@ -3470,7 +3471,7 @@
 		"actions": "Game actions",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Space",
-		"noAttack": "No Attack move yet. Choose one in Live views settings.",
+		"noAttack": "Nothing plays as Attack yet. Choose a move or state in Live views settings.",
 		"noAttackDirection": "{move} has no {direction} frames, so it can’t attack that way.",
 		"hintTopDown": "WASD or click to move · Right-click or X to attack · Space to jump · M to mount",
 		"hintSide": "A/D or click to move · Right-click or X to attack · Space to jump · M to mount",

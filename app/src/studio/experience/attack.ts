@@ -2,7 +2,7 @@
 // faces where it is aimed and leaves the remembered walking facing alone. It never turns the body away from the aim.
 import type { DirectionName } from '../../lib/store/manifest.ts';
 import type { LiveClips } from './liveRoles.ts';
-import { directionInfo, dot, nearestDirection, unit, type Vector } from './movement.ts';
+import { COMPASS, directionInfo, dot, nearestDirection, unit, type Vector } from './movement.ts';
 import type { BodySequence, PresentationAvailability } from './presentation.ts';
 
 export type AttackFailure =
@@ -40,15 +40,27 @@ export function resolveAttack(
 		const sequences = a.animations.get(clip);
 		if (!sequences?.size) continue;
 		missing ??= clip;
-		const eligible = [...sequences.keys()].filter(
-			(direction) => dot(directionInfo(direction)!.vector, toward) > 1e-6
+		// Side-scroller shows only a side profile; Top-down any facing within 90° of the aim.
+		const eligible = [...sequences.keys()].filter((direction) =>
+			options.side
+				? directionInfo(direction)!.vector.x === toward.x &&
+					directionInfo(direction)!.vector.y === 0
+				: dot(directionInfo(direction)!.vector, toward) > 1e-6
 		);
 		const direction = nearestDirection(eligible, toward, options.facing);
 		if (direction) return { sequence: sequences.get(direction)! };
 	}
 	return {
 		failure: missing
-			? { kind: 'no-direction', move: missing, direction: nearestDirection(a.directions, toward) }
+			? // The aimed compass direction, not a facing the character happens to have.
+				{
+					kind: 'no-direction',
+					move: missing,
+					direction: nearestDirection(
+						COMPASS.map((d) => d.id),
+						toward
+					)
+				}
 			: { kind: 'no-attack' }
 	};
 }

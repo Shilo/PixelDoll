@@ -3451,6 +3451,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "Automatique : immobile",
 		"controls": "Commandes",
 		"title": "Vues en direct",
 		"forCharacter": "Animations que {name} joue en Vue de dessus et en Défilement horizontal.",
@@ -3470,7 +3471,7 @@
 		"actions": "Actions de jeu",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Espace",
-		"noAttack": "Pas encore d’animation d’Attaque. Choisissez-en une dans les réglages des vues en direct.",
+		"noAttack": "Rien n’est encore associé à Attaque. Choisissez une animation ou un état dans les réglages des vues en direct.",
 		"noAttackDirection": "{move} n’a pas d’images vers {direction}, il ne peut donc pas attaquer dans cette direction.",
 		"hintTopDown": "WASD ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
 		"hintSide": "A/D ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",

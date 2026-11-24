@@ -3451,6 +3451,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "Automático: quieto",
 		"controls": "Controles",
 		"title": "Vistas en vivo",
 		"forCharacter": "Animaciones que {name} usa en Vista cenital y Vista lateral.",
@@ -3470,7 +3471,7 @@
 		"actions": "Acciones de juego",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Espacio",
-		"noAttack": "Aún no hay animación de Ataque. Elige una en los ajustes de Vistas en vivo.",
+		"noAttack": "Aún no hay nada asignado a Ataque. Elige una animación o un estado en los ajustes de Vistas en vivo.",
 		"noAttackDirection": "{move} no tiene fotogramas hacia {direction}, así que no puede atacar en esa dirección.",
 		"hintTopDown": "WASD o clic para moverte · Clic derecho o X para atacar · Espacio para saltar · M para montar",
 		"hintSide": "A/D o clic para moverte · Clic derecho o X para atacar · Espacio para saltar · M para montar",

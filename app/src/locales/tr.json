@@ -3448,6 +3448,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "Otomatik: hareketsiz durur",
 		"controls": "Kontroller",
 		"title": "Canlı görünümler",
 		"forCharacter": "{name} karakterinin Üstten görünüm ve Yandan kaydırmalı görünümde oynattığı animasyonlar.",
@@ -3467,7 +3468,7 @@
 		"actions": "Oyun eylemleri",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Boşluk",
-		"noAttack": "Henüz Saldırı animasyonu yok. Canlı görünüm ayarlarından bir tane seçin.",
+		"noAttack": "Henüz Saldırı için bir şey seçilmedi. Canlı görünüm ayarlarından bir animasyon veya durum seçin.",
 		"noAttackDirection": "Bu animasyonda ({move}) {direction} yönüne bakan kare yok, bu yüzden o yöne saldıramaz.",
 		"hintTopDown": "Hareket için WASD veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
 		"hintSide": "Hareket için A/D veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",

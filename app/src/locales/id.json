@@ -3352,6 +3352,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "Otomatis: diam di tempat",
 		"controls": "Kontrol",
 		"title": "Tampilan langsung",
 		"forCharacter": "Animasi yang diputar {name} di Tampak atas dan Gulir samping.",
@@ -3371,7 +3372,7 @@
 		"actions": "Aksi permainan",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Spasi",
-		"noAttack": "Belum ada animasi Serangan. Pilih satu di pengaturan Tampilan langsung.",
+		"noAttack": "Belum ada yang diputar sebagai Serangan. Pilih animasi atau keadaan di pengaturan Tampilan langsung.",
 		"noAttackDirection": "{move} tidak memiliki frame ke arah {direction}, jadi tidak dapat menyerang ke arah itu.",
 		"hintTopDown": "WASD atau klik untuk bergerak · Klik kanan atau X untuk menyerang · Spasi untuk melompat · M untuk naik atau turun",
 		"hintSide": "A/D atau klik untuk bergerak · Klik kanan atau X untuk menyerang · Spasi untuk melompat · M untuk naik atau turun",

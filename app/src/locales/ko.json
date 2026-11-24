@@ -3352,6 +3352,7 @@
 		}
 	},
 	"liveViews": {
+		"automaticStill": "자동: 가만히 서 있기",
 		"controls": "조작",
 		"title": "라이브 뷰",
 		"forCharacter": "{name} 캐릭터가 탑다운과 사이드 스크롤러에서 재생하는 동작이에요.",
@@ -3371,7 +3372,7 @@
 		"actions": "게임 동작",
 		"withShortcut": "{action}({key})",
 		"spaceKey": "스페이스",
-		"noAttack": "아직 공격 동작이 없어요. 라이브 뷰 설정에서 하나를 골라 주세요.",
+		"noAttack": "아직 공격으로 재생할 것이 없어요. 라이브 뷰 설정에서 동작이나 상태를 골라 주세요.",
 		"noAttackDirection": "{move}에는 {direction} 방향 프레임이 없어서 그쪽으로는 공격할 수 없어요.",
 		"hintTopDown": "WASD 또는 클릭으로 이동 · 오른쪽 클릭 또는 X로 공격 · 스페이스로 점프 · M으로 타기/내리기",
 		"hintSide": "A/D 또는 클릭으로 이동 · 오른쪽 클릭 또는 X로 공격 · 스페이스로 점프 · M으로 타기/내리기",
