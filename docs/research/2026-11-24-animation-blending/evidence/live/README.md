@@ -19,3 +19,16 @@ The stock Adventurer demo has no hip geometry. It visibly played a full attack w
 The first zoomed capture showed the walk sword surviving below the cut alongside the attack sword. The lower stack now contains only the walking body and lower-body clothing. The sword and cape are taken whole from the attack. [Before](00-before-fix-duplicate-sword.png) and [after](08-desktop-zoomed-layered.png).
 
 The preview reported zero console warnings, zero console errors and zero failed requests in the final run. Reduced-motion emulation and a native touch device were unavailable in this preview. The timer-driven observations cover gait continuity and the travel factor. Perceived foot sliding at the browser's native frame cadence remains unverified.
+
+## Round 3 browser captures (before the horizontal fix)
+
+- [16 series](16-layered-action-0.png): a temporary Playwright capture replaced the demo's South Walk and Cross punch artwork and keypoints with stored bodyA Walk and Slash cells. It ran the real Live frame loop, sampled all 18 attack frames across three actions, and saved five layered frames ([1](16-layered-action-1.png), [2](16-layered-action-2.png), [3](16-layered-action-3.png), [4](16-layered-action-4.png)). These frames show the lateral torso shift the Round 4 review caught.
+- [17](17-full-body-fallback.png): the same browser check turned East, where the fixture has no matching attack artwork, and captured the missing-art notice, not a layered-to-full transition mid-action.
+
+## Round 4 placement capture
+
+[18: historical six-frame positive control at 8×](18-bodyA-south-fixed-action-8x.png). This used bodyA South Walk and the first six Slash cells, repeating Slash 4 in place of Slash 5 because the previous 4 px worst-only rule rejected the full action.
+
+## Complete South action under the revised gate
+
+[19: all eight South Slash frames at 8×](19-bodyA-south-full-slash-8x.png). The layering E2E loaded every original bodyA South Walk and Slash cell into the base-only demo. Temporary Playwright instrumentation captured the foreground Live actor buffers during one normally timed action, verified cells 0–7 in order, and enlarged them with nearest-neighbor scaling. Each tile identifies its zero-based Slash and Walk cells. The captured Walk 4 / Slash 5 pair scores the South maximum of 7 px. See the [side-by-side worst-pair comparison](../27-south-slash-source-vs-composite-8x.png) for the right-side hand already present in the original art. The revised gate uses worst ≤ 8 px and median ≤ 4 px because the reviewed worst frames read as clothing overlap with the hips still locked.

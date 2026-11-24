@@ -1,32 +1,31 @@
-# Corrected moving attack gate
+# Moving attack gate after the horizontal fit fix
 
-Run from `app/` with `node --experimental-transform-types ../docs/research/2026-11-24-animation-blending/offline-gate.mjs`. The accepted seam step is finite and at most **1 px total** across both edges, with **zero lost gear pixels**. Infinite and nonzero initial steps try the bounded fit. A fit replaces registration only when it measures better. A tie retains the hip-derived offset.
+From `app/`, run `node --experimental-transform-types ../docs/research/2026-11-24-animation-blending/offline-gate.mjs`.
 
-| Fixture and facing | Hip anchors | Worst / median seam (px) | Max gear loss (px) | Max detached body fragments | Selected source counts | Qualified |
-| --- | ---: | ---: | ---: | ---: | --- | ---: |
-| bodyA South | 0/16 | 2 / 0 | 10 | 1 | 44 fit, 20 requested | 35/64 |
-| bodyA East | 0/16 | 4 / 1 | 6 | 0 | 31 fit, 33 requested | 37/64 |
-| bodyA North | 0/16 | 1 / 0 | 9 | 0 | 49 fit, 15 requested | 61/64 |
-| Demo South, manual geometry | 0/14 | 0 / 0 | 5 | 0 | 48 fit | 28/48 |
+Live and export qualify a walk, action, and facing as a **set**. A set must have a **worst seam ≤ 8 px** and a **median seam ≤ 4 px**, measured across both edges of every reachable pair. Missing hip geometry, undrawable required outfit layers, and an unusable limb split with no finite join still force a full-body action. The verdict is latched at action start; a newly unsupported outfit can downgrade it once, but restoring support does not upgrade it. The table isolates the geometry gate; the recorded gear-pixel counts are input counts, not loss measurements.
 
-BodyB has 128/128 anchor samples and bodyC and bodyN each have 64/64 across all reported facings. Those three fixtures have Walk art for the diagnostic but no Slash. Their results are Walk/Walk registration checks. The stock demo has no hip geometry. The manual diagnostic preserves the earlier visual result and gives no stock-demo Live eligibility by itself.
+The fit may improve the measured seam only within **1 px per axis** of rounded hip registration. Arm-owned pixels stay visible but do not count toward the seam extents when both limb chains are complete. Otherwise the split uses the ankle-component fallback, with the same placement bounds.
 
-Tiles are indexed by Walk row and Attack column, both zero-based. East is worst. Tile **Walk 2 / Slash 1** uses the fit at (-1, +3) and still has a 4 px seam. Its sleeve and side profile are readable, but the shirt edge steps abruptly at the join. East Walk 2 / Slash 4 has the tighter profile and qualifies. The cutoff keeps joins within one source pixel across both edges. Printed gear loss is measured separately from the body-only sheets.
+| Set / facing | Worst / median seam (px) | Max hip departure X / Y (px) | Max frame placement change (px) | Verdict |
+| --- | ---: | ---: | ---: | --- |
+| bodyA Walk/Slash South | 7 / 0 | 1 / 1 | 2 | Layered |
+| bodyA Walk/Slash East | 6 / 3 | 1 / 1 | 3 | Layered |
+| bodyA Walk/Slash North | 7 / 0 | 1 / 1 | 2 | Layered |
+| Demo Walk/Cross punch South, manual hips | 6 / 3 | 1 / 1 | 3 | Layered with manual hips only |
+| Stock demo | n/a | n/a | n/a | Full body: no tracked hips |
 
-[South 4×](evidence/20-gate-bodyA-south-selected.png) · [East 4×](evidence/20-gate-bodyA-east-selected.png) · [North 4×](evidence/20-gate-bodyA-north-selected.png) · [Demo 4×](evidence/21-gate-demo-south-selected.png)
+Frame placement change is the largest absolute delta on either axis across adjacent walk, action, or simultaneous steps, including the walk loop boundary. The largest change in the hip-relative correction is South 2 px, East 2 px, North 1 px, and manual demo South 1 px. This coordinate-wise metric is not diagonal distance: the largest South diagonal displacement is about 2.83 px (both axes change by 2), or 2.24 px for simultaneous steps alone.
 
-## Qualifying Attack cells for each Walk cell
+The threshold follows visual review, not a requirement that the fixtures pass. With hip registration held fixed, the [South worst frames](evidence/25-fixed-south-worst-8x.png) and [East worst frames](evidence/26-fixed-east-worst-8x.png) read as normal shirt and shorts overlap, not torso slide. The seam measures the silhouette at the waist, not hip alignment; the 8 px ceiling allows isolated changes in silhouette but the 4 px median ceiling keeps the typical join tight.
 
-| Walk | bodyA South | bodyA East | bodyA North | Demo South |
-| ---: | --- | --- | --- | --- |
-| 0 | 0 6 7 | 0 1 2 3 5 6 7 | 0 1 2 3 4 5 6 7 | 0 1 4 5 |
-| 1 | 0 4 6 7 | 2 3 4 | 0 1 2 3 4 5 7 | 1 4 5 |
-| 2 | 0 4 6 7 | 4 | 0 1 2 3 4 5 6 7 | 1 4 5 |
-| 3 | 0 1 2 3 4 5 6 7 | 2 3 5 6 | 0 1 2 3 4 5 6 7 | 1 4 5 |
-| 4 | 0 4 6 7 | 0 1 2 3 5 6 7 | 0 1 2 3 4 5 6 7 | 1 4 5 |
-| 5 | 0 4 6 7 | 1 2 3 5 6 7 | 1 2 3 4 5 6 7 | 1 4 5 |
-| 6 | 0 4 6 7 | 2 3 | 1 2 3 4 5 6 7 | 1 4 5 |
-| 7 | 0 3 4 7 | 0 1 2 3 5 6 7 | 0 1 2 3 4 5 6 7 | 0 1 2 3 4 5 |
+South's first worst pair is Walk 0 / Slash 5, North's is Walk 2 / Slash 5, and East's is Walk 2 / Slash 0. The [8× South comparison](evidence/27-south-slash-source-vs-composite-8x.png) shows original Slash 5 on the left and the worst composite on the right. All 48 opaque source pixels in the checked right-arm patch match after the (1, 2) px upper translation, including the detached-looking shape. The [complete 8× Live capture](evidence/live/19-bodyA-south-full-slash-8x.png) includes all eight original Slash cells; its Walk 4 / Slash 5 pair also scores the South maximum of 7 px. [South 4×](evidence/22-set-gate-bodyA-south.png) · [East 4×](evidence/22-set-gate-bodyA-east.png) · [North 4×](evidence/22-set-gate-bodyA-north.png) · [Manual demo 4×](evidence/23-set-gate-demo-south.png).
 
-South has 1 seam fallback and 28 gear-loss fallbacks. East has 22 seam fallbacks and 5 gear-loss fallbacks. North has 3 gear-loss fallbacks. The demo manual diagnostic has 20 gear-loss fallbacks. When both reasons apply, the seam takes precedence.
+## Walk/Walk diagnostics
 
+BodyB, bodyC and bodyN have Walk but no recorded Slash. Their passing facings below are registration diagnostics, not attack eligibility.
+
+| Diagnostic | Facing: worst / median seam (px) | Passing facings |
+| --- | --- | --- |
+| bodyB | S 2/0, SE 5/1, E no join/3, NE 4/1, N 1/0, NW 4/1, W no join/3, SW 5/1 | S, SE, NE, N, NW, SW |
+| bodyC | S 3/1, E 28/9, N 2/0, W 28/10 | S, N |
+| bodyN | S 2/1, E 22/4.5, N 6/1, W 22/4.5 | S, N |

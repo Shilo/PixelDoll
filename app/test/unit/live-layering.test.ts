@@ -9,7 +9,8 @@ import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import {
 	actionHip,
-	actionPairFallback,
+	ACTION_WORST_SEAM_LIMIT,
+	actionSetScore,
 	actionWaist,
 	composeLayeredAction,
 	exportedActionDraws,
@@ -19,35 +20,75 @@ import {
 } from '../../src/lib/runtime/paperdoll.js';
 import { CURRENT_FORMAT, type Item, type Project } from '../../src/lib/store/manifest.ts';
 
-test('bodyA south walk 1 drops the walking hand and slash 1 keeps its below-waist hand', async () => {
+async function bodyASouthPoses() {
 	const root = new URL('../fixtures/bench/', import.meta.url);
-	const { rig, cols } = JSON.parse(readFileSync(new URL('bodyA.json', root), 'utf8'));
+	const { rig, cols } = JSON.parse(readFileSync(new URL('bodyA.json', root), 'utf8')) as {
+		rig: Project['manifest']['rig'];
+		cols: string[];
+	};
 	const atlas = await decodePngBytes(readFileSync(new URL('bodyA.png', root)));
-	const walk = makeImg(64, 64),
-		slash = makeImg(64, 64);
-	for (const [clip, image] of [
-		['walk', walk],
-		['slash', slash]
-	] as const) {
-		const column = cols.indexOf(`${clip}/1`) * 64;
+	return (clip: string, cell: number) => {
+		const image = makeImg(64, 64);
+		const column = cols.indexOf(`${clip}/${cell}`) * 64;
 		for (let row = 0; row < 64; row++) {
 			const offset = (row * atlas.w + column) * 4;
 			image.data.set(atlas.data.subarray(offset, offset + 256), row * 256);
 		}
-	}
-	const lower = splitLower(walk, actionHip(rig, 'walk', 'south', 1)!);
-	const upper = splitUpper(slash, actionHip(rig, 'slash', 'south', 1)!);
+		return { image, hip: actionHip(rig, clip, 'south', cell)! };
+	};
+}
+
+test('bodyA south walk 1 drops the walking hand and slash 1 keeps its below-waist hand', async () => {
+	const pose = await bodyASouthPoses();
+	const walk = pose('walk', 1),
+		slash = pose('slash', 1);
+	const lower = splitLower(walk.image, walk.hip);
+	const upper = splitUpper(slash.image, slash.hip);
 	const alpha = (x: number, y: number) => (y * 64 + x) * 4 + 3;
 	const walkHand = alpha(23, 48),
 		slashHand = alpha(38, 46),
 		knee = alpha(29, 52);
-	expect(walk.data[walkHand]).toBe(255);
+	expect(walk.image.data[walkHand]).toBe(255);
 	expect(lower.image.data[walkHand]).toBe(0);
 	expect(lower.image.data[knee]).toBe(255);
-	expect(slash.data[slashHand]).toBe(255);
+	expect(slash.image.data[slashHand]).toBe(255);
 	expect(upper.image.data[slashHand]).toBe(255);
+	expect(upper.seamMask?.has((slashHand - 3) / 4)).toBe(false);
 	expect(upper.image.data[knee]).toBe(0);
 	expect(Math.abs(layerOffset(lower, upper).hipDeparture)).toBeLessThanOrEqual(1);
+});
+
+test('bodyA south placement stays within one pixel of both hips and changes by at most two per frame', async () => {
+	const pose = await bodyASouthPoses();
+	const fragments = (clip: string, split: typeof splitLower) =>
+		Array.from({ length: 8 }, (_, cell) => {
+			const { image, hip } = pose(clip, cell);
+			return split(image, hip);
+		});
+	const lower = fragments('walk', splitLower);
+	const upper = fragments('slash', splitUpper);
+	const placements = lower.map((bottom) =>
+		upper.map((top) => {
+			const offset = layerOffset(bottom, top);
+			for (const axis of ['x', 'y'] as const)
+				expect(
+					Math.abs(offset[axis] - Math.round(bottom.hip[axis] - top.hip[axis]))
+				).toBeLessThanOrEqual(1);
+			return offset;
+		})
+	);
+	for (const [walk, actionPlacements] of placements.entries())
+		for (const [action, current] of actionPlacements.entries()) {
+			const nextWalk = (walk + 1) % lower.length;
+			const nextAction = Math.min(action + 1, upper.length - 1);
+			for (const next of [
+				placements[nextWalk][action],
+				placements[walk][nextAction],
+				placements[nextWalk][nextAction]
+			])
+				for (const axis of ['x', 'y'] as const)
+					expect(Math.abs(next[axis] - current[axis])).toBeLessThanOrEqual(2);
+		}
 });
 
 function pixels(left: number, top: number, width: number, height: number, red: number) {
@@ -185,16 +226,93 @@ test('registration triggers a fit even for a one-pixel shift from an infinite se
 		y: 0,
 		seam: 0,
 		source: 'fit',
-		hipDeparture: 1
+		hipDeparture: 1,
+		hipDepartureX: 0
 	});
-	expect(actionPairFallback(Infinity, 0)).toBe('seam');
-	expect(actionPairFallback(4, 0)).toBeNull();
-	expect(actionPairFallback(5, 0)).toBe('seam');
-	expect(actionPairFallback(1, 1)).toBe('gear-loss');
-	expect(actionPairFallback(1, 0)).toBeNull();
 	expect(actionWaist(-14)).toBe(-4);
 	expect(actionWaist(14)).toBe(4);
 });
+
+test.each([
+	{ seams: [8, 0, 5, 3], worst: 8, median: 4, fallback: null },
+	{ seams: [9, 0, 5, 3], worst: 9, median: 4, fallback: 'seam' },
+	{ seams: [8, 0, 6, 4], worst: 8, median: 5, fallback: 'seam' },
+	{ seams: [0, 0, Infinity], worst: Infinity, median: 0, fallback: 'seam' }
+])('scores the set $seams = $worst / $median', ({ seams, ...score }) => {
+	expect(actionSetScore(seams)).toEqual(score);
+});
+
+test.each(['one failing seam pair', 'one unusable limb split', 'missing action hips'] as const)(
+	'%s makes the whole action full-body in Live and exports',
+	async (caseName) => {
+		const project = await fixture();
+		const frame = { w: 64, h: 64, x: 32, y: 51 };
+		const base = project.manifest.items[0];
+		const wideWalk = pixels(24, 14, 16, 37, 70);
+		const narrowSlash = pixels(29, 14, 6, 37, 70);
+		const missingHip = caseName === 'missing action hips';
+		const missingLegs = caseName === 'one unusable limb split';
+		if (missingHip) delete project.manifest.rig.anchors!.hip!.slash.south;
+		else
+			for (const [clip, image] of missingLegs
+				? ([['walk', pixels(26, 14, 12, 18, 70)]] as const)
+				: ([
+						['walk', wideWalk],
+						['slash', narrowSlash]
+					] as const)) {
+				const hash = await cellHash(image);
+				project.images.set(hash, image);
+				base.layers[0].cells![clip].south![1] = hash;
+			}
+		const rejected: number[][] = [];
+		for (const walkCell of [0, 1])
+			for (const actionCell of [0, 1]) {
+				const walk = { clip: 'walk', direction: 'south', cell: walkCell } as const;
+				const action = { ...walk, clip: 'slash', cell: actionCell };
+				const fragment = (pose: typeof walk | typeof action, split: typeof splitLower) =>
+					split(
+						project.images.get(base.layers[0].cells![pose.clip].south![pose.cell]!)!,
+						actionHip(project.manifest.rig, pose.clip, pose.direction, pose.cell)!
+					);
+				if (
+					!missingHip &&
+					layerOffset(fragment(walk, splitLower), fragment(action, splitUpper)).seam >
+						ACTION_WORST_SEAM_LIMIT
+				)
+					rejected.push([walkCell, actionCell]);
+				expect(composeLayeredAction(project, {}, walk, action, 0, frame)).toMatchObject({
+					image: null,
+					fallback: missingHip ? 'hip' : 'seam'
+				});
+			}
+		expect(rejected).toEqual(
+			missingHip
+				? []
+				: missingLegs
+					? [
+							[1, 0],
+							[1, 1]
+						]
+					: [[1, 1]]
+		);
+		const result = await exportFiles(project, {
+			engines: ['phaser'],
+			baked: false,
+			actionLayering: { waist: 0, walk: ['walk'], attacks: ['slash'] }
+		});
+		expect(result.errors).toEqual([]);
+		const manifest = JSON.parse(
+			new TextDecoder().decode(result.entries.find(({ name }) => name === 'manifest.json')?.data)
+		) as Project['manifest'];
+		expect(manifest.actionLayers?.pairs ?? []).toEqual([]);
+		for (const cell of [0, 1]) {
+			const walk = { clip: 'walk', direction: 'south', cell } as const;
+			const action = { ...walk, clip: 'slash' };
+			const draws = exportedActionDraws(manifest, {}, action, walk, true);
+			expect(draws.map(({ clip, part }) => [clip, part])).toEqual([['slash', null]]);
+		}
+	}
+);
 
 test('Live shares shaped body trimming and keeps the attack sword and walk boots', async () => {
 	const project = await fixture();

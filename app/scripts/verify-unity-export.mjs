@@ -203,6 +203,11 @@ async function fixtureArchive() {
 		if (slot === 'weapon_extra') item.hides = ['off_hand'];
 		manifest.items.push(item);
 	}
+	const unsupported = structuredClone(manifest.items.find(({ id }) => id === 'hat_small'));
+	unsupported.id = 'walk_only_hat';
+	unsupported.name = 'Walk-only hat';
+	delete unsupported.layers[0].cells.jump;
+	manifest.items.push(unsupported);
 	const copy = structuredClone(manifest);
 	applyExportSettings(copy, {
 		engine: 'unity',

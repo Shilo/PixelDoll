@@ -32,7 +32,6 @@ import {
 export {
 	actionHip,
 	actionLowerSlot,
-	actionPairFallback,
 	actionWaist,
 	composeLayeredAction,
 	compositeAction,

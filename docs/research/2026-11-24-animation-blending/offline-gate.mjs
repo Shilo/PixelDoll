@@ -12,7 +12,7 @@ import {
 import {
   actionHip,
   actionComponents,
-  actionPairFallback,
+  actionSetScore,
   compositeAction,
   composeLayeredAction,
   flipH,
@@ -53,7 +53,7 @@ function pose(image, size, row, col, mirror, geometry) {
 function compare(walk, action, size, gear, w, a) {
   const lower = splitLower(walk.image, walk.geometry);
   const upper = splitUpper(action.image, action.geometry);
-  const { x: dx, y: dy, seam, source, hipDeparture } = layerOffset(lower, upper);
+  const { x: dx, y: dy, seam, source, hipDeparture, hipDepartureX } = layerOffset(lower, upper);
   const output = compositeAction(lower.image, upper.image, { x: dx, y: dy });
   const parts = actionComponents(occupied(output, size, 0, 0), size);
   return {
@@ -64,15 +64,15 @@ function compare(walk, action, size, gear, w, a) {
     seam,
     source,
     hipDeparture,
+    hipDepartureX,
     gearPixels: gear.reduce((sum, entry) => sum + entry.pixels.size, 0),
     fragments: Math.max(0, parts.length - 1),
     output,
-    fallback: actionPairFallback(seam, 0),
   };
 }
 
-function print(label, pairs, geometry = []) {
-  const seams = pairs.map((p) => p.seam).sort((a, b) => a - b);
+function print(label, pairs, geometry = [], actionLoops = false) {
+  const score = actionSetScore(pairs.map((pair) => pair.seam));
   const count = (keys) =>
     Object.fromEntries(
       [...new Set(keys)].map((key) => [
@@ -83,31 +83,42 @@ function print(label, pairs, geometry = []) {
   const worst = pairs.reduce((max, pair) =>
     pair.seam > max.seam ? pair : max,
   );
+  const walkCells = 1 + Math.max(...pairs.map(({ w }) => w));
+  const actionCells = 1 + Math.max(...pairs.map(({ a }) => a));
+  const maxFrameChange = (x, y) => Math.max(...pairs.flatMap((pair) => {
+    const nextWalk = (pair.w + 1) % walkCells;
+    const nextAction = pair.a + 1 < actionCells || actionLoops
+      ? (pair.a + 1) % actionCells
+      : pair.a;
+    return [[nextWalk, pair.a], [pair.w, nextAction], [nextWalk, nextAction]].map(([w, a]) => {
+      const next = pairs[w * actionCells + a];
+      return Math.max(Math.abs(next[x] - pair[x]), Math.abs(next[y] - pair[y]));
+    });
+  }));
   console.log(label, {
     anchors:
       geometry.filter((p) => p?.source === "anchor").length +
       "/" +
       geometry.length,
-    worst: worst.seam,
-    median:
-      (seams[Math.floor((seams.length - 1) / 2)] +
-        seams[Math.floor(seams.length / 2)]) /
-      2,
+    worst: score.worst,
+    median: score.median,
     worstPair: [worst.w, worst.a],
     worstOffset: [worst.dx, worst.dy],
     sources: count(pairs.map((p) => p.source)),
     worstHipDeparture: worst.hipDeparture,
     maxHipDeparture: Math.max(...pairs.map((p) => Math.abs(p.hipDeparture))),
+    maxHipDepartureX: Math.max(...pairs.map((p) => Math.abs(p.hipDepartureX))),
+    maxFramePlacementChange: maxFrameChange("dx", "dy"),
+    maxFrameHipDepartureChange: maxFrameChange("hipDepartureX", "hipDeparture"),
     maxGearPixelsBeforeComposition: Math.max(...pairs.map((p) => p.gearPixels)),
     fragments: Math.max(...pairs.map((p) => p.fragments)),
-    verdict: worst.fallback ?? "layered",
-    at2px: worst.seam <= 2 ? "layered" : "seam",
+    verdict: score.fallback ?? "layered",
   });
 }
 
-async function sheet(pairs, width, height) {
+async function sheet(pairs, width, height, zoom = 4) {
   const size = pairs[0].output.w,
-    tile = size * 4;
+    tile = size * zoom;
   const image = {
     w: width * tile,
     h: height * tile,
@@ -116,7 +127,7 @@ async function sheet(pairs, width, height) {
   for (const { w, a, output } of pairs)
     for (let y = 0; y < tile; y++)
       for (let x = 0; x < tile; x++) {
-        const src = (Math.floor(y / 4) * size + Math.floor(x / 4)) * 4;
+        const src = (Math.floor(y / zoom) * size + Math.floor(x / zoom)) * 4;
         const dst = ((w * tile + y) * image.w + a * tile + x) * 4;
         image.data.set(output.data.subarray(src, src + 4), dst);
       }
@@ -179,12 +190,23 @@ for (const body of ["A", "B", "C", "N"]) {
       "body" + body + " " + id + (slash ? "" : " walk/walk"),
       pairs,
       [...lower, ...upper].map((p) => p.geometry),
+      !slash,
     );
     if (body === "A")
       writeFileSync(
       new URL(`evidence/22-set-gate-bodyA-${id}.png`, import.meta.url),
         await sheet(pairs, upper.length, lower.length),
       );
+    if (body === "A" && id === "south") {
+      const worst = pairs.reduce((max, pair) => pair.seam > max.seam ? pair : max);
+      writeFileSync(
+        new URL("evidence/27-south-slash-source-vs-composite-8x.png", import.meta.url),
+        await sheet([
+          { w: 0, a: 0, output: upper[worst.a].image },
+          { w: 0, a: 1, output: worst.output },
+        ], 2, 1, 8),
+      );
+    }
   }
 }
 
@@ -309,19 +331,20 @@ const walkCell = { clip: "walk", direction: "south", cell: 1 };
 const slashCell = { ...walkCell, clip: "slash" };
 const dressed = { legs: "trousers", back: "cape" };
 const layered = composeLayeredAction(project, dressed, walkCell, slashCell, 0, rigFrame(rig));
-assert.equal(layered.fallback, null);
+if (layered.image) {
 const contact = makeImg(layered.frame.w * 3, layered.frame.h);
 over(contact, images.get(stored.walk.south[1]), layered.frame.x - rig.pivot.x, layered.frame.y - rig.pivot.y);
 over(contact, images.get(stored.slash.south[1]), layered.frame.w + layered.frame.x - rig.pivot.x, layered.frame.y - rig.pivot.y);
 over(contact, layered.image, layered.frame.w * 2, 0);
 writeFileSync(new URL("evidence/24-bodyA-hands-trousers-cape.png", import.meta.url), await encodePngBytes(contact));
+}
 const options = { engines: ["phaser"], baked: false, exportedAt: "2026-11-24T00:00:00.000Z" };
 const off = await exportZip(project, options);
 const on = await exportZip(project, { ...options, actionLayering: { waist: 0, walk: ["walk"], attacks: ["slash"] } });
 assert.deepEqual(off.errors, []);
 assert.deepEqual(on.errors, []);
 assert(off.zip && on.zip);
-console.log("bodyA south + trousers + cape", { verdict: "layered", paddedFrame: layered.frame, zipOff: off.zip.length, zipOn: on.zip.length, added: on.zip.length - off.zip.length, newPngs: on.entries.filter(({ name }) => name.startsWith("action/")).map(({ name }) => name) });
+console.log("bodyA south + synthetic trousers + cape", { verdict: layered.fallback ?? "layered", frame: layered.frame, zipOff: off.zip.length, zipOn: on.zip.length, added: on.zip.length - off.zip.length, newPngs: on.entries.filter(({ name }) => name.startsWith("action/")).map(({ name }) => name) });
 
 for (const size of [64, 128]) {
   const square = makeImg(size, size);

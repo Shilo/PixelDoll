@@ -159,7 +159,7 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 				action: 'stop',
 				direction: 'south',
 				upperCells: 2,
-				blocked: [],
+				blocked: ['hat'],
 				cells: Array.from({ length: 4 }, () => ({ x: 1, y: 0 }))
 			}
 		]
@@ -182,6 +182,14 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 	d.update(1);
 	expect(d.actionPlaying).toBe(false);
 	expect(d.playAction('stop', 'south')).toBe('layered');
+	const usesUpper = () => !d.nodes.get('upper' + names.base.main).hidden;
+	d.equip('head', 'hat');
+	expect(d.actionPlaying).toBe(true);
+	expect(usesUpper()).toBe(false);
+	d.equip('head', null);
+	expect(d.canLayerAction('stop', 'south')).toBe(true);
+	expect(d.actionPlaying).toBe(true);
+	expect(usesUpper()).toBe(false);
 	d.play('walk', 'south');
 	expect(d.actionPlaying).toBe(false);
 	expect(d.elapsed).toBe(280);

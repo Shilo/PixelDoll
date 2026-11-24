@@ -139,6 +139,15 @@ namespace PixelDollNativeReview
             Check(!Playing() && clock.sprite.name == walkFrame, label + ": layered action completes without resetting the walk");
             Invoke(doll, "SetActionLayering", true);
             Check((string)Invoke(doll, "PlayAction", "jump", "south") == "layered", label + ": starts another layered action");
+            double actionTime = 84;
+            elapsed.SetValue(doll, actionTime);
+            bool UsesUpper() => renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_"));
+            Check((bool)Invoke(doll, "Equip", "head", "walk_only_hat"), label + ": equips walk-only hat");
+            Invoke(doll, "Sync");
+            Check(Playing() && !UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": unsupported outfit downgrades without resetting action time");
+            Check((bool)Invoke(doll, "Equip", "head", "hat"), label + ": restores supported hat");
+            Invoke(doll, "Sync");
+            Check((bool)Invoke(doll, "CanLayerAction", "jump", "south") && Playing() && !UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": restoring outfit does not upgrade an active action");
             Invoke(doll, "Play", "walk", "south");
             Invoke(doll, "Sync");
             Check(!Playing() && clock.sprite.name == walkFrame, label + ": Play cancels the action without resetting the walk");

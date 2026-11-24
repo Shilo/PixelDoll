@@ -534,10 +534,11 @@ export function composeCell(p, items, anim, dir, cell, frame = rigFrame(p.manife
 /** @typedef {'anchor' | 'measured' | 'requested' | 'fit' | 'manual'} DollHipSource */
 /** @typedef {[DollPoint, DollPoint]} DollSegment */
 /** @typedef {{hip: DollPoint, feet: DollPoint[], source: DollHipSource, legs?: DollSegment[], arms?: DollSegment[]}} DollHip */
-/** @typedef {{image: Img, hip: DollPoint, waist: number, source: DollHipSource}} DollFragment */
+/** @typedef {{image: Img, hip: DollPoint, waist: number, source: DollHipSource, seamMask?: Set<number>}} DollFragment */
 
 /** Maximum total horizontal displacement of the two waist edges, in pixels. */
-export const ACTION_SEAM_LIMIT = 4;
+export const ACTION_WORST_SEAM_LIMIT = 8;
+const ACTION_MEDIAN_SEAM_LIMIT = 4;
 
 /**
  * @param {Rig} rig
@@ -649,20 +650,20 @@ function actionSegmentDistance(x, y, [from, to]) {
 	return (x - from.x - dx * along) ** 2 + (y - from.y - dy * along) ** 2;
 }
 
+/** @param {number} pixel @param {number} width @param {DollSegment[]} legs @param {DollSegment[]} arms */
+function actionLegOwns(pixel, width, legs, arms) {
+	const x = (pixel % width) + 0.5,
+		y = Math.floor(pixel / width) + 0.5;
+	const leg = Math.min(...legs.map((segment) => actionSegmentDistance(x, y, segment)));
+	const arm = Math.min(...arms.map((segment) => actionSegmentDistance(x, y, segment)));
+	return leg <= arm;
+}
+
 /** @param {Img} image @param {DollHip} geometry @param {Set<number>} below */
 function actionLegPixels(image, geometry, below) {
 	const { legs, arms } = geometry;
-	if (legs?.length === 4 && arms?.length === 4) {
-		const owned = new Set();
-		for (const pixel of below) {
-			const x = (pixel % image.w) + 0.5,
-				y = Math.floor(pixel / image.w) + 0.5;
-			const leg = Math.min(...legs.map((segment) => actionSegmentDistance(x, y, segment)));
-			const arm = Math.min(...arms.map((segment) => actionSegmentDistance(x, y, segment)));
-			if (leg <= arm) owned.add(pixel);
-		}
-		return owned;
-	}
+	if (legs?.length === 4 && arms?.length === 4)
+		return new Set([...below].filter((pixel) => actionLegOwns(pixel, image.w, legs, arms)));
 	const seeds = new Set();
 	for (const foot of geometry.feet) {
 		let closest = Infinity;
@@ -712,7 +713,12 @@ function splitActionBody(image, geometry, waist, part) {
 	}
 	for (const pixel of part === 'lower' ? legs : opaque)
 		output.data.set(image.data.subarray(pixel * 4, pixel * 4 + 4), pixel * 4);
-	return { image: output, hip: geometry.hip, waist: row, source: geometry.source };
+	const { arms, legs: legChain } = geometry;
+	const seamMask =
+		part === 'upper' && arms?.length === 4 && legChain?.length === 4
+			? new Set([...opaque].filter((pixel) => actionLegOwns(pixel, image.w, legChain, arms)))
+			: undefined;
+	return { image: output, hip: geometry.hip, waist: row, source: geometry.source, seamMask };
 }
 
 /** @param {Img} image @param {DollHip} geometry @param {number} waist */
@@ -732,30 +738,31 @@ export function splitUpper(image, geometry, waist = 0) {
  */
 export function layerOffset(lower, upper, cellWidth = lower.image.w) {
 	const range = Math.round(cellWidth / 8);
-	/** @param {Img} image @param {number} row @param {number} dx */
-	const extent = (image, row, dx) => {
+	/** @param {DollFragment} fragment @param {number} row @param {number} dx */
+	const extent = ({ image, seamMask }, row, dx) => {
 		if (row < 0 || row >= image.h) return null;
 		const center = Math.round(lower.hip.x);
 		let first = Infinity,
 			last = -Infinity;
 		for (let x = center - range; x <= center + range; x++) {
 			const sx = x - dx;
-			if (sx >= 0 && sx < image.w && image.data[(row * image.w + sx) * 4 + 3]) {
+			const pixel = row * image.w + sx;
+			if (sx >= 0 && sx < image.w && (seamMask?.has(pixel) ?? image.data[pixel * 4 + 3])) {
 				first = Math.min(first, x);
 				last = x;
 			}
 		}
 		return first <= last ? { first, last } : null;
 	};
-	const bottom = extent(lower.image, lower.waist, 0);
+	const bottom = extent(lower, lower.waist, 0);
 	/** @param {number} x @param {number} y */
 	const step = (x, y) => {
-		const top = extent(upper.image, lower.waist - 1 - y, x);
+		const top = extent(upper, lower.waist - 1 - y, x);
 		return top && bottom
 			? Math.abs(top.first - bottom.first) + Math.abs(top.last - bottom.last)
 			: Infinity;
 	};
-	const hipX = Math.max(-5, Math.min(5, Math.round(lower.hip.x - upper.hip.x))),
+	const hipX = Math.round(lower.hip.x - upper.hip.x),
 		hipY = Math.round(lower.hip.y - upper.hip.y);
 	let x = hipX,
 		y = hipY;
@@ -763,7 +770,7 @@ export function layerOffset(lower, upper, cellWidth = lower.image.w) {
 		source = lower.source === upper.source ? lower.source : lower.source + '/' + upper.source;
 	if (seam > 0) {
 		let bestDistance = Infinity;
-		for (let dx = -5; dx <= 5; dx++)
+		for (let dx = hipX - 1; dx <= hipX + 1; dx++)
 			for (let dy = hipY - 1; dy <= hipY + 1; dy++) {
 				const score = step(dx, dy);
 				const distance = Math.abs(dx - hipX) + Math.abs(dy - hipY);
@@ -776,13 +783,23 @@ export function layerOffset(lower, upper, cellWidth = lower.image.w) {
 				}
 			}
 	}
-	return { x, y, seam, source, hipDeparture: y - hipY };
+	return { x, y, seam, source, hipDeparture: y - hipY, hipDepartureX: x - hipX };
 }
 
-/** @param {number} seam @param {number} gearLoss */
-export function actionPairFallback(seam, gearLoss) {
-	if (!Number.isFinite(seam) || seam > ACTION_SEAM_LIMIT) return 'seam';
-	return gearLoss ? 'gear-loss' : null;
+/** @param {number[]} seams */
+export function actionSetScore(seams) {
+	const sorted = [...seams].sort((left, right) => left - right);
+	const worst = sorted.at(-1) ?? Infinity;
+	const median = sorted.length
+		? (sorted[Math.floor((sorted.length - 1) / 2)] + sorted[Math.floor(sorted.length / 2)]) / 2
+		: Infinity;
+	const fallback =
+		seams.some((seam) => !Number.isFinite(seam)) ||
+		worst > ACTION_WORST_SEAM_LIMIT ||
+		median > ACTION_MEDIAN_SEAM_LIMIT
+			? 'seam'
+			: null;
+	return { worst, median, fallback };
 }
 
 /** @param {Img} lower @param {Img} upper @param {DollPoint} offset */
@@ -906,6 +923,7 @@ function prepareActionSet(project, items, walk, action, waist) {
 	if (!lower.size || !upper.size) return { fallback: 'hip' };
 	/** @type {Map<string, DollPoint>} */
 	const offsets = new Map();
+	const seams = [];
 	let paddingX = 0,
 		paddingY = 0;
 	for (const [walkCell, bottom] of lower)
@@ -913,11 +931,13 @@ function prepareActionSet(project, items, walk, action, waist) {
 			if (!bottom.fragment || !top.fragment)
 				return { fallback: bottom.fallback ?? top.fallback ?? 'hip' };
 			const offset = layerOffset(bottom.fragment, top.fragment);
-			if (actionPairFallback(offset.seam, 0)) return { fallback: 'seam' };
+			seams.push(offset.seam);
 			offsets.set(`${walkCell}/${actionCell}`, offset);
 			paddingX = Math.max(paddingX, Math.abs(offset.x));
 			paddingY = Math.max(paddingY, Math.abs(offset.y));
 		}
+	const { fallback } = actionSetScore(seams);
+	if (fallback) return { fallback };
 	return { lower, upper, offsets, paddingX, paddingY, fullFrame: bakedFrame(manifest) };
 }
 

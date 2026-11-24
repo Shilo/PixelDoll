@@ -4239,11 +4239,22 @@ test.describe('live views actions', () => {
 		for (const [clip, sourceClip] of Object.entries(clips)) {
 			await page.route(`**/fixtures/s2/layers/body/base/main/${clip}.png*`, async (route) => {
 				const response = await route.fetch();
-				const sheet = await decodePngBytes(await response.body());
-				const start = body.cols.indexOf(`${sourceClip}/0`) * 64;
-				for (let row = 0; row < 64; row++) {
-					const offset = (row * atlas.w + start) * 4;
-					sheet.data.set(atlas.data.subarray(offset, offset + sheet.w * 4), row * sheet.w * 4);
+				const original = await decodePngBytes(await response.body());
+				const move = body.rig.animations.find(({ id }: { id: string }) => id === sourceClip);
+				const sheet = makeImg(move.cells * 64, original.h);
+				for (let row = 64; row < original.h; row++) {
+					const start = row * original.w * 4;
+					sheet.data.set(original.data.subarray(start, start + original.w * 4), row * sheet.w * 4);
+				}
+				for (let cell = 0; cell < sheet.w / 64; cell++) {
+					const start = body.cols.indexOf(`${sourceClip}/${cell}`) * 64;
+					for (let row = 0; row < 64; row++) {
+						const offset = (row * atlas.w + start) * 4;
+						sheet.data.set(
+							atlas.data.subarray(offset, offset + 64 * 4),
+							(row * sheet.w + cell * 64) * 4
+						);
+					}
 				}
 				await route.fulfill({ response, body: Buffer.from(await encodePngBytes(sheet)) });
 			});
@@ -4255,13 +4266,21 @@ test.describe('live views actions', () => {
 			for (const [clip, sourceClip] of Object.entries(clips)) {
 				const move = fixture.rig.animations.find(({ id }: { id: string }) => id === clip);
 				const source = body.rig.animations.find(({ id }: { id: string }) => id === sourceClip);
+				move.cells = source.cells;
+				move.frames = source.frames;
 				move.sources = {
-					south: { keypoints: source.sources.south.keypoints.slice(0, move.cells) }
+					south: {
+						keypoints: Array.from(
+							{ length: move.cells },
+							(_, cell) => source.sources.south.keypoints[cell]
+						)
+					}
 				};
 			}
 			await route.fulfill({ response, json: fixture });
 		});
 		await customize(page);
+		await equipmentGroup(page, 'Head');
 		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 		const host = world(page);
 		const attackFrame = async (layered: string, reason: string) => {
@@ -4347,6 +4366,55 @@ test.describe('live views actions', () => {
 			}
 		};
 		await attackFrame('true', '');
+		const hat = page.getByRole('button', { name: /^Wizard hat(,|$)/ });
+		await expect(hat).toHaveAttribute('aria-pressed', 'false');
+		await hat.evaluate((button) => {
+			if (!(button instanceof HTMLButtonElement)) throw new Error('Expected Wizard hat button');
+			const stage = document.querySelector<HTMLElement>('.world-stage')!;
+			let state = 0;
+			let relayered = false;
+			const observer = new MutationObserver(() => {
+				if (stage.dataset.clip !== 'cross-punch') {
+					if (state) observer.disconnect();
+					return;
+				}
+				const { attackLayered, attackFallback } = stage.dataset;
+				if (state === 0 && attackLayered === 'true') {
+					state = 1;
+					button.click();
+				} else if (state === 1 && attackLayered === 'false' && attackFallback === 'gear-loss') {
+					state = 2;
+					button.click();
+				} else if (state >= 2 && button.getAttribute('aria-pressed') === 'false') {
+					state = 3;
+					relayered ||= attackLayered === 'true';
+				}
+				if (state)
+					stage.dataset.outfitActionSample = [state, attackLayered, attackFallback, relayered].join(
+						'/'
+					);
+			});
+			observer.observe(stage, {
+				attributes: true,
+				attributeFilter: [
+					'data-clip',
+					'data-attack-layered',
+					'data-attack-fallback',
+					'data-walk-cell'
+				]
+			});
+		});
+		await page.keyboard.down('s');
+		try {
+			await expect(host).toHaveAttribute('data-clip', 'walk');
+			await page.keyboard.press('x');
+			await expect(host).toHaveAttribute('data-outfit-action-sample', '3/false/gear-loss/false');
+			await expect(hat).toHaveAttribute('aria-pressed', 'false');
+			await expect(host).toHaveAttribute('data-clip', 'walk');
+			await expect(host).toHaveAttribute('data-outfit-action-sample', '3/false/gear-loss/false');
+		} finally {
+			await page.keyboard.up('s');
+		}
 		await page.keyboard.press('Control+,');
 		const settings = page.getByRole('dialog', { name: 'Settings' });
 		await settings.getByRole('button', { name: 'Live views', exact: true }).click();
