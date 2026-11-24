@@ -85,3 +85,13 @@ The fix round accepted the blocker and the major findings. I re-read the changed
 - Gate verdicts after the fixes: bodyA South pass at 4/3, North pass at 3/2, East fail at 6/3. The stock demo has no tracked hips and falls back.
 
 Remaining gaps are test coverage and unverified environments, not known behavior defects: the outfit downgrade has explicit tests only in Phaser and Godot; Live, GDevelop and Unity lack that assertion; long coats, diagonals, eight directions, real-cadence foot slide and the Unity verifier on this exact commit are unverified. Opus should confirm or refute that these are non-blocking.
+
+## Round 4: Opus recheck
+
+Opus re-ran `npm run check`, the targeted suites including the native Godot test (101 passed), and the offline gate. It agrees the latch, limb ownership, whole lower clothing, z merge, export choice and small corrections hold. It found one remaining blocker and two gaps:
+
+- **Blocker: the torso slides sideways against the legs.** `layerOffset` still searches dx -5..+5 with no cost for leaving the hips, and only dy is reported as hip departure. On bodyA South the sideways departure has a median of 4 px and a maximum of 6 px, and changes by up to 10 px between consecutive 100 ms frames. It is visible in the round-3 screenshots. Likely cause: arm-owned pixels kept at the waist widen the seam measurement and the fit chases them.
+- **Missing test:** the requested frame-to-frame placement test became a single-pair vertical assertion. No test covers x or jitter across the set.
+- **Gaps:** no fixture with one failing pair, outfit downgrade tested only in Phaser and Godot, `gate-results.md` still describes the old 1 px per-pair rule, and the export size claim used synthetic gear.
+
+Required fix: constrain dx to the hip registration plus or minus 1 px (or an equivalent penalty), exclude arm-owned pixels from the seam extents, report horizontal departure and jitter in the gate, add the placement-jitter and one-failing-pair tests, add the downgrade assertions, refresh the docs, and re-run the gate. If South then fails at 4 px, that is the honest result and the shipping set changes accordingly.
