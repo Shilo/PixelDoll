@@ -705,23 +705,23 @@ test('Settings saves creation choices across reload and resets them by scope', a
 	}
 	const suggestions = (tab = page) =>
 		sheet(tab).getByRole('region', { name: 'Prompt suggestions', exact: true });
-	const titles = (tab = page) =>
-		suggestions(tab).getByRole('textbox', { name: 'Title', exact: true });
+	const titles = (tab = page) => suggestions(tab).getByRole('textbox', { name: /^Title: \d+$/ });
+	const prompts = (tab = page) =>
+		suggestions(tab).getByRole('textbox', { name: /^Prompt \(English\): \d+$/ });
 	const picker = settings.getByRole('combobox', { name: 'Slot', exact: true });
 	await picker.selectOption('hair');
 	await titles().first().fill('Short curls');
 	await titles().first().press('Tab');
 	await picker.selectOption('head');
+	const rows = suggestions().locator('li');
 	const add = suggestions().getByRole('button', { name: 'Add suggestion', exact: true });
 	await add.click();
 	await expect(titles().last()).toBeFocused();
+	// The draft is named after the row it would become, so it never shares a saved row's name.
+	await expect(titles().last()).toHaveAccessibleName(`Title: ${(await rows.count()) + 1}`);
 	await expect(add).toBeDisabled();
-	await suggestions()
-		.getByRole('textbox', { name: 'Prompt (English)', exact: true })
-		.last()
-		.fill('Wide blue sun hat');
+	await prompts().last().fill('Wide blue sun hat');
 	await add.click();
-	const rows = suggestions().locator('li');
 	await expect(titles().last()).toHaveValue('Wide blue sun hat');
 	await rows.last().getByRole('button', { name: 'Move up', exact: true }).click();
 	await expect(titles().nth(3)).toHaveValue('Wide blue sun hat');
@@ -3111,10 +3111,13 @@ test('New item Enhance describes the item alone at its canvas size, then Undo re
 	const navigation = settings.getByRole('navigation', { name: 'Settings', exact: true });
 	await navigation.getByRole('button', { name: 'Item', exact: true }).click();
 	const suggestions = settings.getByRole('region', { name: 'Prompt suggestions', exact: true });
-	const crownTitle = suggestions.getByRole('textbox', { name: 'Title', exact: true }).last();
-	const crownPrompt = suggestions
-		.getByRole('textbox', { name: 'Prompt (English)', exact: true })
-		.last();
+	const titles = suggestions.getByRole('textbox', { name: /^Title: \d+$/ });
+	const prompts = suggestions.getByRole('textbox', { name: /^Prompt \(English\): \d+$/ });
+	// Each row's fields name that row, so rows are told apart by their names alone.
+	await expect(titles.first()).toHaveAccessibleName('Title: 1');
+	await expect(titles.last()).toHaveAccessibleName(`Title: ${await titles.count()}`);
+	const crownTitle = titles.last();
+	const crownPrompt = prompts.last();
 	await crownTitle.fill('studioSlots.labels.head');
 	await crownPrompt.fill('a bright gold crown with blue gems');
 	await crownPrompt.press('Tab');

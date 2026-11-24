@@ -133,6 +133,7 @@
 					>{t('promptSuggestions.title')}
 					<input
 						class="bu-input"
+						aria-label={`${t('promptSuggestions.title')}: ${index + 1}`}
 						value={suggestion.title}
 						disabled={unreadable}
 						onchange={(event) => edit(suggestion.id, 'title', event.currentTarget)}
@@ -146,6 +147,7 @@
 					<textarea
 						class="bu-input"
 						rows={2}
+						aria-label={`${t('promptSuggestions.prompt')}: ${index + 1}`}
 						value={suggestion.prompt}
 						disabled={unreadable}
 						onchange={(event) => edit(suggestion.id, 'prompt', event.currentTarget)}
@@ -188,11 +190,20 @@
 		<div class="row">
 			<label
 				>{t('promptSuggestions.title')}
-				<input class="bu-input" bind:this={draftTitle} bind:value={draft.title} />
+				<input
+					class="bu-input"
+					aria-label={`${t('promptSuggestions.title')}: ${suggestions.length + 1}`}
+					bind:this={draftTitle}
+					bind:value={draft.title}
+				/>
 			</label>
 			<label
 				>{t('promptSuggestions.prompt')}
-				<textarea class="bu-input" rows={2} bind:value={draft.prompt}></textarea>
+				<textarea
+					class="bu-input"
+					rows={2}
+					aria-label={`${t('promptSuggestions.prompt')}: ${suggestions.length + 1}`}
+					bind:value={draft.prompt}></textarea>
 			</label>
 		</div>
 	{/if}
