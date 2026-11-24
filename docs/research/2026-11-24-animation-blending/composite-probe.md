@@ -55,8 +55,17 @@ The review also found that silhouette continuity alone cannot validate a pair. E
 
 The review's equipment pass is the most important addition to this probe. With the real layer stack:
 
-- A y46 threshold removes 77-87 sword pixels and 105-196 cape pixels per action cell, while removing almost nothing from vest, hair or helmet.
-- Keeping the sword intact looks materially better than clipping it, which means the cut cannot be a blanket "everything below the waist" rule.
+A direct A/B at the same hip row on the dressed demo character (cape, vest, helmet, sword) shows what the two removal rules actually decide:
+
+![Straight cut at the hip removes the sword blade and cape pixels](evidence/13-gear-straight-cut-removes.png)
+
+![Leg-shaped removal at the same row keeps the sword blade](evidence/14-gear-leg-removal-keeps-sword.png)
+
+- The straight cut removes 84 sword pixels and 224 cape pixels that sit below the hip row, because they are below the line.
+- The leg-shaped removal takes none of the sword: the blade is not part of the leg shape. It still takes 70 cape pixels, because the cape overlaps the legs, which is why the cape needs its own decision.
+- Arms are not the story at hip height. The punch's fists end above the hip row, so both rules leave them alone. Arms only mattered when the cut was high enough to cross the chest, which was a bad example in the first version of this document.
+
+With the real layer stack, the same cut also removes 77-87 sword pixels and 105-196 cape pixels per action cell in the review's measurement, while vest, hair and helmet are almost untouched. Keeping the sword intact looks materially better than clipping it, which means the cut cannot be a blanket "everything below the waist" rule.
 - The cape, moved as one piece, intersects 6-31 walk pixels below the junction in the eight aligned south samples, leaving holes and old outlines. A cape with foreground folds needs alternate occlusion or separately authored fragments.
 - A missing wizard hat (walk only, no action sheet) shows why the whole recipe must fail coverage validation before any gear is dropped.
 

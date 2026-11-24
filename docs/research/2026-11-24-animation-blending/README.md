@@ -15,7 +15,9 @@ Inputs in this folder:
 
 ## 1. Answer
 
-**In plain terms.** The attack picture is a single drawing of the whole body, so simply sawing it in half at the waist cuts through hands, swords and capes. But you do not have to saw the attack in half. You can keep the attack's upper body whole, throw away only its own legs, and put the walking legs underneath, lining up the hips frame by frame. Arms and weapons stay intact because they belong to the upper picture. That is the cheap way, and a careful test showed the join can be about one pixel off rather than a visible gash, as long as both halves face the same direction. What it cannot do is make the chest face one way while the legs walk another; that pose was never drawn. And anything that hangs across the waist (cape, long coat, low-held two-hander) has no clear owner at the join, so those characters need a different approach.
+**In plain terms.** At hip height the arms are above the line, so they are not the problem. The armed demo character makes the real difference visible: with a **straight cut**, everything below the hip line goes, which deletes the sword blade and the cape. With **leg-shaped removal**, only the pixels that belong to the legs are replaced, so the sword stays intact because a blade is not part of a leg shape. The cape still needs a decision because it hangs across the legs. The rest of the method is careful alignment: shift the two halves a whole pixel or two per frame so the hips match, and put the seam on a belt or shorts edge.
+
+So the owner's reading was basically right: it is a hip-level replacement, not a different concept. What the first version of this document overstated was the arm problem. Arms only get cut if the line runs through the chest, which is not where this seam belongs.
 
 Technical summary follows.
 
@@ -78,7 +80,7 @@ Full detail and URLs are in [research-industry.md](research-industry.md). The re
 4. Overlap the two pieces by one row at the joint, so the darker belt or shorts edge covers the seam.
 5. Repeat for every worn layer with the same joint, so the vest comes from the attack picture and the boots come from the walk picture.
 
-**Why the arms are no longer a problem.** The earlier objection was about cutting a single attack drawing at the waist, which severs an arm or weapon that crosses that line. In this method the attack drawing is never cut across its middle. Its arms, weapon and torso stay in one piece, exactly as drawn. Only the legs at the bottom are removed, and the walk supplies replacement legs. A sword held in the hand stays with the hand.
+**Why the arms are not the issue at this seam height.** In the demo punch the fists end above the hip row, so a hip-level seam leaves them alone in both methods. The first version of this document used a cut through the chest to show arm loss, which was misleading. The real difference between a straight cut and leg-shaped removal is gear that crosses the hip line: the dressed test keeps the sword blade only with leg-shaped removal, while both rules leave the fists intact.
 
 **Why some outfits still fail.** A cape, skirt or long coat can pass in front of one leg and behind the other. At the joint it cannot belong to both pictures, so it has to be authored with alternate depth or excluded. The same applies to a weapon held so low that it overlaps the legs. The review measured this: a fixed cut destroyed 77-87 sword pixels and 105-196 cape pixels per action frame, while vest, hair and helmet were almost untouched.
 
