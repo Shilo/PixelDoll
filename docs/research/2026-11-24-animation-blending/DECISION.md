@@ -47,6 +47,12 @@ Semantics:
 
 Why not the alternatives: a two-clock `presentMotion` forces games into manual time and duplicates the loop clock; a versioned pair registry is review tooling in the API and would need maintenance the owner does not want. If a future game needs exact time control, it can call `play` with its own sampling later.
 
+## Mounted facing
+
+While mounted, the mount follows travel only and never turns for an attack. The rider turns to the attack aim. The two are separate drawings, so this needs no new art: the mount view is selected from the locomotion facing, the rider's presentation and hip contact come from the attack facing, and the rider is offset so its hip sits on the mount's seat for the travel facing. Attacking must not change the mount's direction, gait phase, height or visibility.
+
+No exported API operation is added for this. Mounts are editor-only today, and a rider is simply a second doll with its own `play(move, direction)`, so a host game can already compose a mount and a rider that face differently. If mounts become exportable, add a seat helper then, not now. Record the general rule in the architecture note.
+
 ## Live view setting
 
 In Settings, Live views, directly under the Attack picker, per character:
