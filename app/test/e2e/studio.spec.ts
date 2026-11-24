@@ -7191,11 +7191,12 @@ test('a view kept without poses names the move and view to make again before equ
 			delete layer.cells.idle?.east;
 		}
 		clone.coverage = clone.coverage.filter((key: string) => !/^idle\/(west|east)\//.test(key));
-		// A copy from another body cannot be posed here: no offer and no unposed note, only its own remake.
+		// A copy from another body cannot be posed here: no offer and no unposed note, only making one for this character.
 		copied.id = 'copied-vest';
 		copied.name = 'Copied vest';
 		copied.slot = 'feet';
 		copied.baseHash = 'sha256:otherbody';
+		copied.copiedFrom = { id: 'other-body', name: 'Other body' };
 		for (const layer of copied.layers) delete layer.cells.idle?.west;
 		copied.coverage = copied.coverage.filter((key: string) => !key.startsWith('idle/west/'));
 		rec.manifest.items.push(clone, copied);
@@ -7204,6 +7205,9 @@ test('a view kept without poses names the move and view to make again before equ
 		if (s.doc.items.head !== clone.id) s.wear(clone.id);
 		if (s.doc.items.feet !== copied.id) s.wear(copied.id);
 		if (s.doc.items.main_hand !== itemId) s.wear(itemId);
+		// The demo's other worn items are partial too; leave only these three so each way on is unambiguous.
+		for (const slot of ['torso_inner', 'back', 'hair'])
+			if (s.doc.items[slot]) s.wear(s.doc.items[slot]);
 		s.ui.anim = 'idle';
 		s.ui.dir = 'west';
 		s.ui.all = false;
@@ -7214,9 +7218,7 @@ test('a view kept without poses names the move and view to make again before equ
 	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
 		'gens'
 	);
-	await expect(
-		stageNote.getByRole('button', { name: /^(Set up character|Make it again)/ })
-	).toBeVisible();
+	await expect(stageNote.getByRole('button', { name: /^Make one for / })).toBeVisible();
 	expect(posts.length).toBe(sent);
 });
 
@@ -7942,6 +7944,17 @@ test('stage makes all missing item views while explicit repair stays on the curr
 			delete layer.cells.walk.west;
 		}
 		item.coverage = item.coverage.filter((key: string) => !/^walk\/(south|east|west)\//.test(key));
+		// Every other item already has the new view, so only this one tests a shown view the offer leaves out.
+		for (const other of p.manifest.items) {
+			if (other.id === id || other.id === rig.baseItem) continue;
+			for (const layer of other.layers)
+				if (layer.cells?.walk?.south) layer.cells.walk['south-east'] = [...layer.cells.walk.south];
+			other.coverage?.push(
+				...other.coverage
+					.filter((key: string) => key.startsWith('walk/south/'))
+					.map((key: string) => key.replace('walk/south/', 'walk/south-east/'))
+			);
+		}
 		s.store.project = {
 			...p,
 			manifest: {
@@ -7966,7 +7979,25 @@ test('stage makes all missing item views while explicit repair stays on the curr
 		};
 	}, fixture.itemId);
 	await inspectStage(page);
-	const make = page.locator('.stage-note').getByRole('button', { name: /^Make missing views/ });
+	const stageNote = page.locator('.stage-note');
+	// The extra view on stage has no rest joints: the offer makes the other missing views, and the item keeps its own
+	// way on for this one instead of only a price that leaves it missing.
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.ui.dir = 'south-east';
+	});
+	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
+		'~6 gens'
+	);
+	await expect(stageNote.getByRole('button', { name: /^Make it again/ })).toBeVisible();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.ui.dir = 'west';
+	});
+	await expect(stageNote.getByRole('button', { name: /^Make it again/ })).toHaveCount(0);
+	const make = stageNote.getByRole('button', { name: /^Make missing views/ });
 	await expect(make).toContainText('~6 gens');
 	await expect(make).not.toContainText('...');
 	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
