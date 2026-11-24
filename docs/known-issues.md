@@ -47,6 +47,16 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Generation and quality
 
+- **Template moves are qualified on the mannequin body, in south, east and north only.** PixelLab template IDs are
+  per body template. Every character PixelDoll creates is a `mannequin`, but an imported PixelLab character made from
+  another body template may refuse `walking-8-frames`, `running-8-frames` or `two-footed-jump` (a free 422). Diagonal
+  views, clothing and held items were not part of the blind study. See the
+  [template study](research/2026-11-24-template-study/README.md).
+- **The Walk template is stronger in east than in south.** It won every east sheet. In south, the described walk won
+  two of three seeds. Template frames can also sit 1 to 4 px from the standing art before the re-render, so watch for a
+  small jump between Standing and a template move.
+- **Described loops lose only exact standing seam frames.** A looping described move that opens or closes on a copy of
+  the standing pose drops that frame. A seam that merely pauses near standing is kept, and can still read as a hitch.
 - **Generated States and their equipment still need visual review.** A successful joint fit does not guarantee that
   props persist in a Move made from a State or that equipment stays aligned and free of stray pixels across facings.
   Review the State and Move separately before relying on them. See the

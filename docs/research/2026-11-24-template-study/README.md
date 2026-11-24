@@ -112,6 +112,80 @@ and Codex still saw a south seam pause, so the trim removes exact stand frames, 
 - Template frames sit 1-4 px off the standing art in the best silhouette match. The Studio's existing body checks
   (feet drift, placement) still apply to the re-render; watch for a small jump between Standing and a template move.
 
+## Findings for future work
+
+### PixelLab behavior (observed 2026-11-23/24)
+
+**Template list for free.** Sending an invalid `template_animation_id` to `POST /characters/animations` returns a 422
+that lists every valid template for that character's body template. The generic list in the OpenAPI spec is different,
+and it is truncated.
+
+**The mannequin lacks several templates.** `attack`, `attack-back/left/right`, `angry` and `dying` are rejected.
+
+**Response shapes and costs.**
+
+| Route                                 | Canvas (64 px body)               | Leading echo frame     | Cost per view                                                   |
+| ------------------------------------- | --------------------------------- | ---------------------- | --------------------------------------------------------------- |
+| Template motion                       | 96 px                             | No                     | 3 gens; 2 for a 3-frame template (`poseCallGens` of its frames) |
+| Managed described motion (PixMiniMax) | 84 px, registered art at (10, 10) | Yes                    | 1 gen                                                           |
+| Standalone PixMiniMax                 | the first frame's size            | Yes (required leading) | 1 gen                                                           |
+
+Template frame counts:
+
+| Frames | Templates                                                                                                                                                                                       |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3      | `lead-jab`                                                                                                                                                                                      |
+| 4      | `breathing-idle`, `running-4-frames`, `hurricane-kick`, `walking-2`, `walking-5`, `walking-4-frames`                                                                                            |
+| 5      | `crouching`, `getting-up`, `picking-up`                                                                                                                                                         |
+| 6      | `cross-punch`, `flying-kick`, `fireball`, `taking-punch`, `running-6-frames`, `running-slide`, `front-flip`, `drinking`, `pull-heavy-object`, `pushing`, `crouched-walking`, most walk variants |
+| 7      | `surprise-uppercut`, `high-kick`, `roundhouse-kick`, `leg-sweep`, `throw-object`, `falling-back-death`, `two-footed-jump`                                                                       |
+| 8      | `running-8-frames`, `walking-8-frames`, `fight-stance-idle-8-frames`, `jumping-2`, `running-jump`, `sad-walk`, `scary-walk`                                                                     |
+| 9      | `jumping-1`                                                                                                                                                                                     |
+| 10     | `backflip`                                                                                                                                                                                      |
+
+**Background jobs expire.** `GET /background-jobs/{id}` returned 404 for the Oct 28 jobs. The 84 Motion Lab renders
+existed only in browser storage and were lost. Always save paid frames to disk as they arrive, as the
+`spikes/api/c25/lib.mts` `paid()` harness does.
+
+**Raw re-renders copy template defects.** The raw `animate-with-skeleton-v3` re-render reproduces whatever the template
+does: torn frames, facing turns and props. Judge the re-render, not only the raw template.
+
+**South is the hard view.** Motion toward or away from the camera (punches, kicks, hurt) is often unreadable or turns the
+body three-quarter. Every candidate needs south and north checked, not just east.
+
+### Method lessons
+
+- **Use a pre-run challenge and a pilot.** The pre-run adversarial review (Codex) caught three plan flaws before any
+  spending:
+  - an unfaithful production baseline (standalone instead of managed);
+  - a best-of-several multiple-comparison problem;
+  - an expensive full matrix where a pilot would answer first.
+- **Use an independent post-run challenge.** It caught a sign bug that bent every knee the wrong way in a joint fix, an
+  adopted template with a facing defect, a loop trim that could gut subtle loops, and overstated counts. Budget for both
+  challenges.
+- **Keep comparisons blind.** Shuffle rows per sheet and keep the key outside the reviewed folder. Never include a named
+  sheet whose pixels match a compared row in the same review round.
+- **Write down the verdict rule before rendering.** Record per-reviewer ballots, not just winners, and count from the
+  ballots when writing the report.
+- **Keep frames and arms matched.** Match the canvas (here 84 px), reference art, rest joints, action text and render
+  seed across arms. Confirm that the managed character's registered art equals the local reference before comparing
+  routes; `c27man` did not match the managed benchmark.
+- **Watch the ledger's estimates.** The `c25` ledger counts the estimate for rows that errored (free 422s) toward
+  `spent()`. Report actual usage from the `gens` field.
+
+### Environment pitfalls (this Windows workstation)
+
+- **Python writes CRLF by default.** On Windows, Python text-mode writes convert files to CRLF. Open with `newline=''`
+  when editing repository files.
+- **The root `tsconfig.json` checks nothing.** It has no files, so `npx tsc --noEmit -p .` is a no-op. Use
+  `npm run check`.
+- **Node 25 needs `--experimental-transform-types`.** App modules use TypeScript parameter properties, so Node 25 needs
+  this flag to import them, for example from spike scripts.
+- **Codex needs two flags here.** `codex exec` outside a git repository needs `--skip-git-repo-check`, and images are
+  attached with `-i <file>`.
+- **The agent key needs resolving outside the dev server.** `.env` stores the agent key as a `${NAME}` reference, which
+  `node --env-file` does not expand. Spike scripts resolve it (`spikes/api/mocap-salvage/env.mts`).
+
 ## Reproduce
 
 From `spikes/api`, using Node 24+ and the repo-root `.env`:

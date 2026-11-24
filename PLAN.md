@@ -188,6 +188,25 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   `edit-image-pixen` for explicit, quoted, reviewed State creation. Preserve D29 for equipment. Prefer a verified
   managed parent for the default text edit; local Pro uses `edit-images-v2`, or a compatible batch route chosen before
   submission. Never silently drop a reference, switch an explicit model, or resend an accepted or uncertain paid job.
+- D31 (2026-11-23, user-approved research): the mocap route (3D clips converted to 18 skeleton joints and rendered with
+  raw `animate-with-skeleton-v3`) is retired. In matched blind tests it lost to the authored tables, the described route
+  or PixelLab templates on every move. The raw renderer reproduces 3D joints too literally: deep knee folds, wide arms,
+  forward lean, and a 3D overhead strike that projects to a backward swing in profile. Keep the Motion Lab as research
+  tooling only. Reopen only if PixelLab accepts richer pose input (hands, spine, feet) or a pixel-art motion source
+  appears ([mocap salvage study](docs/research/2026-11-23-mocap-salvage/README.md)).
+- D32 (2026-11-24, user-approved research): Skeleton V3 move suggestions use a PixelLab template only where the template
+  passed blind review in south, east and north and beat the existing route: Walk `walking-8-frames`, Run
+  `running-8-frames`, Jump `two-footed-jump` (`MOVE_TEMPLATES` in `routes.ts`).
+  - One rule (`moveTemplate` in `movePricing.ts`) drives requests, frame counts, prices, re-pricing, the planner and the
+    Move sheet.
+  - It requires a registered character, the unedited suggestion, Automatic or at most the template's frame count, and no
+    start frame. A partial redraw keeps the saved move's route.
+  - Hurt, Idle, Death, Slash and Cast stay authored. No kick, punch, slash or attack template qualified, and
+    `taking-punch` faces three-quarter in south.
+  - Looping described motions drop one exact standing copy per seam (`trimStandingSeam`); template loops are never
+    trimmed.
+  - Add more templates only after the same blind protocol
+    ([template study](docs/research/2026-11-24-template-study/README.md)).
 
 ## Progressive equipment generation (2026-11-03)
 
@@ -381,3 +400,7 @@ The owner then requested the completed branch on main and a new [eight-direction
 The [animation closeout](docs/research/2026-11-02-animation-closeout.md) fixes actual live-world analog walk cadence, connects native playback slots to source-bound manual hand/foot authoring, blocks missing/off-body grips, and separates sampled contact residual from held-frame travel. Retained-artwork checks use no generations. Eight-direction equipped art and universal physical planting remain unqualified rather than being inferred from code tests.
 
 The owner authorized integration of the tested engineering fixes. Main passed CI and Pages deployment, and the merged branch was deleted locally and on origin. The [remaining concerns](docs/known-issues.md#generation-and-quality) stay explicit: the body pack is experimental, hidden grips and directional weapon artwork need visual qualification, and cadence matching does not establish physical foot planting. Broad research stops here; production generation defaults are not promoted and no further credit use is implied.
+
+The 2026-11-23/24 follow-ups closed this checkpoint's motion question: the corrected mocap converter lost every matched
+blind test (D31), and PixelLab templates replaced the described Walk and Run on registered characters (D32). The
+equipped-preset work stays on the board as a Later card.
