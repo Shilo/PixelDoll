@@ -739,7 +739,7 @@ test('PixelLab leaves a roomy canvas at its size and keeps the 64 px floor for s
 	expect(await frameOf(body(48, 4, 44))).toBe(64);
 });
 
-test('PixelLab applies its disclosed alpha threshold and refuses wholly empty animation frames', async () => {
+test('PixelLab applies its disclosed alpha threshold and leaves out a wholly empty animation direction', async () => {
 	const image = makeImg(64, 64);
 	image.data.set([70, 80, 90, 127], 0);
 	image.data.set([80, 90, 100, 128], 4);
@@ -763,34 +763,67 @@ test('PixelLab applies its disclosed alpha threshold and refuses wholly empty an
 		name: 'animations/disappear/south/frame_0.png',
 		data: await encodePngBytes(makeImg(64, 64))
 	});
+	const partial = await readCharacterZip(await zip(entries));
+	expect(partial.project.manifest.rig.animations.map(({ id }) => id)).toEqual(['default']);
+	expect(partial.warnings).toContain(
+		'“disappear” facing south was left out: its frames are empty, missing or out of order.'
+	);
+	expect(partial.warningKeys).toContainEqual({
+		key: 'import.warning.skippedDirection',
+		vars: { move: 'disappear', direction: 'south' }
+	});
+	// An empty standing view is still refused.
+	entries[1].data = await encodePngBytes(makeImg(64, 64));
 	await expect(readCharacterZip(await zip(entries))).rejects.toThrow(
-		'animations/disappear/south/frame_0.png is an empty frame'
+		'rotations/south.png is an empty frame'
 	);
 });
 
 test.each([null, [], 17, 'bad', {}])(
-	'PixelLab refuses malformed selected direction frame lists with a clear error: %j',
+	'PixelLab leaves out a malformed selected direction frame list with a warning: %j',
 	async (frames) => {
 		const entries = await pixelLabFiles(),
 			meta = JSON.parse(new TextDecoder().decode(entries[0].data));
 		meta.states[0].frames.animations.walking.south = frames;
 		entries[0].data = enc.encode(JSON.stringify(meta));
-		await expect(readCharacterZip(await zip(entries))).rejects.toThrow(
-			'walking/south animation must contain 1–120 frame paths'
+		// Animation files the metadata no longer lists are still refused, so this export has none.
+		const imported = await readCharacterZip(
+			await zip(entries.filter(({ name }) => !name.includes('/animations/')))
+		);
+		expect(imported.project.manifest.rig.animations.map(({ id }) => id)).toEqual(['default']);
+		expect(imported.warnings).toContain(
+			'“walking” facing south was left out: its frames are empty, missing or out of order.'
 		);
 	}
 );
 
-test('PixelLab reports missing referenced images and directions before accepting a partial character', async () => {
+test('PixelLab leaves out a direction whose declared frames or standing view are missing, and names it', async () => {
 	const entries = await pixelLabFiles();
+	// A declared animation frame missing from the archive leaves its direction out before sizing.
+	const partial = await readCharacterZip(
+		await zip(entries.filter((entry) => !entry.name.endsWith('frame_001.png')))
+	);
+	expect(partial.project.manifest.rig.animations.map(({ id }) => id)).toEqual(['default']);
+	expect(partial.warnings).toContain(
+		'“walking” facing south was left out: its frames are empty, missing or out of order.'
+	);
+	// A missing standing view still stops the import.
 	await expect(
-		readCharacterZip(await zip(entries.filter((entry) => !entry.name.endsWith('frame_001.png'))))
-	).rejects.toThrow('Missing file: Idle/animations/walking/south/frame_001.png');
+		readCharacterZip(
+			await zip(entries.filter((entry) => !entry.name.endsWith('rotations/east.png')))
+		)
+	).rejects.toThrow('Missing file: Idle/rotations/east.png');
 	const meta = JSON.parse(new TextDecoder().decode(entries[0].data));
 	meta.states[0].frames.animations.walking.north = meta.states[0].frames.animations.walking.south;
 	entries[0].data = enc.encode(JSON.stringify(meta));
-	await expect(readCharacterZip(await zip(entries))).rejects.toThrow(
-		'walking/north animation has no matching standing view'
+	// A direction without a standing view is left out; the others keep every frame.
+	const imported = await readCharacterZip(await zip(entries));
+	expect(imported.project.manifest.items[0].layers[0].cells!.walking).toEqual({
+		south: expect.any(Array)
+	});
+	expect(imported.project.manifest.items[0].layers[0].cells!.walking.south).toHaveLength(2);
+	expect(imported.warnings).toContain(
+		'“walking” facing north was left out: the character has no standing view facing that way.'
 	);
 });
 
@@ -921,11 +954,15 @@ test('PixelLab rejects oversized animation metadata and duplicate frame indices'
 				{ name: 'animations/walk/south/frame_00.png', data: png }
 			])
 		)
-	).rejects.toThrow('missing animation frames');
+	).resolves.toMatchObject({
+		warnings: expect.arrayContaining([
+			'“walk” facing south was left out: its frames are empty, missing or out of order.'
+		])
+	});
 });
 
 test.each(['9007199254740992', '9007199254740993', '9'.repeat(400)])(
-	'PixelLab refuses unsafe legacy frame indices instead of changing order: %s',
+	'PixelLab leaves out a move with unsafe legacy frame indices instead of changing order: %s',
 	async (index) => {
 		const png = await encodePngBytes(sprite(80));
 		await expect(
@@ -936,10 +973,16 @@ test.each(['9007199254740992', '9007199254740993', '9'.repeat(400)])(
 						data: enc.encode(JSON.stringify({ name: 'Unsafe frame number' }))
 					},
 					{ name: 'rotations/south.png', data: png },
+					{ name: 'animations/walk/south/frame_0.png', data: png },
 					{ name: `animations/walk/south/frame_${index}.png`, data: png }
 				])
 			)
-		).rejects.toThrow('invalid animation frame number');
+		).resolves.toMatchObject({
+			project: { manifest: { rig: { animations: [{ id: 'default' }] } } },
+			warnings: expect.arrayContaining([
+				'“walk” was left out: its animation frames could not be read. Export it again with individual numbered frames.'
+			])
+		});
 	}
 );
 
@@ -1207,14 +1250,38 @@ test('PixelLab metadata references remain authoritative inside animation-named f
 });
 
 test.each([
-	['animations/walk/south/FRAME_0.PNG', 'Unsupported animation frame path'],
-	['animations/walk/south/frame_last.png', 'Unsupported animation frame path'],
-	['animations/walk/south/frame_0-final.png', 'Unsupported animation frame path'],
-	['animations/walk/south/frame_1', 'Unsupported animation frame path'],
+	'animations/walk/south/FRAME_0.PNG',
+	'animations/walk/south/frame_last.png',
+	'animations/walk/south/frame_0-final.png',
+	'animations/walk/south/frame_1'
+])(
+	'PixelLab leaves out a move whose frame order cannot be proven, with a warning: %s',
+	async (path) => {
+		const png = await encodePngBytes(sprite(80));
+		const imported = await readCharacterZip(
+			await zip([
+				{ name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Partial character' })) },
+				{ name: 'rotations/south.png', data: png },
+				{ name: 'animations/walk/south/frame_0.png', data: png },
+				{ name: 'animations/run/south/frame_0.png', data: png },
+				{ name: path, data: png }
+			])
+		);
+		expect(imported.project.manifest.rig.animations.map(({ id }) => id)).toEqual([
+			'default',
+			'run'
+		]);
+		expect(imported.warnings).toContain(
+			'“walk” was left out: its animation frames could not be read. Export it again with individual numbered frames.'
+		);
+	}
+);
+
+test.each([
 	['rotations/EAST.PNG', 'Unsupported rotation image path'],
 	['rotations/diagonal.png', 'Unsupported rotation image path']
 ])(
-	'PixelLab refuses unconsumed legacy PNG data instead of importing a partial character: %s',
+	'PixelLab refuses unconsumed standing PNG data instead of importing a partial character: %s',
 	async (path, message) => {
 		const png = await encodePngBytes(sprite(80));
 		await expect(

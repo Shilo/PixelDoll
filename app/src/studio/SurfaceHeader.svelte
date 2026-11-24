@@ -29,8 +29,10 @@
 		end?: Snippet;
 		back?: () => void;
 		backTo?: string;
-		/** A sibling page the sheet can open (Export's Settings); Back takes its place inside that page. */
-		opener?: { label: string; icon: Component; onclick: () => void };
+		/** A sibling page the sheet can open (Export's Settings); Back takes its place inside that page. `iconOnly` shows just
+		 *  the icon, named by its label and tooltip (Import, an infrequent page of New item, New move and New State), after Back
+		 *  when the sheet also has one (New move queued over a running move). */
+		opener?: { label: string; icon: Component; onclick: () => void; iconOnly?: boolean };
 		/** A full-window screen names itself beside Back, as the top bar names the open character. */
 		titleAtStart?: boolean;
 		/** The id of a note about what leaving does, read with the exit control (Back on a screen, else the X). */
@@ -54,7 +56,16 @@
 				disabled={locked}
 				describedBy={end ? exitNote : undefined}
 			/>
-		{:else if opener}<button
+		{/if}
+		{#if opener?.iconOnly}<button
+				type="button"
+				class="bu-action btn plain icon surface-opener"
+				data-variant="quiet"
+				aria-label={opener.label}
+				title={opener.label}
+				disabled={locked}
+				onclick={opener.onclick}><opener.icon size={20} aria-hidden="true" /></button
+			>{:else if opener && !back}<button
 				type="button"
 				class="bu-action btn plain surface-back surface-opener"
 				data-variant="quiet"

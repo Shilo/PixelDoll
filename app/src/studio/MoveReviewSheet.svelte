@@ -3,6 +3,7 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import ProblemNotice from './ProblemNotice.svelte';
+	import PoseIssues from './PoseIssues.svelte';
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import PromptLine from './PromptLine.svelte';
@@ -14,7 +15,8 @@
 	import { displayMove } from './displayMove.ts';
 	import { bodyQualityNote } from './model.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
-	import { readMoveCandidateImages, skeletonMoveReview } from './create.ts';
+	import { readMoveCandidateImages, skeletonMoveReview, unposedItemMoves } from './create.ts';
+	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { clipItemOffer, pickedOffers } from './itemGeneration.ts';
 	import { itemOfferAccess } from './itemOfferAccess.ts';
 	import { moveAnimationModel, moveFrames } from './movePricing.ts';
@@ -39,6 +41,7 @@
 	} from './state.svelte.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
+	import { displayNestedMessage } from '../lib/i18n.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import type { ImageReference } from '../lib/image/reference.ts';
@@ -114,9 +117,23 @@
 				offer: clipItemOffer(project.manifest, item.id, id, currentItemDrawing(), {
 					seed: candidate.spec.seed,
 					dirs: candidate.dirs,
-					reviewedMoveItems: true
+					reviewedMoveItems: true,
+					redo: setupRedoMoves(store.exportRecord)
 				})
 			}));
+	});
+	// Every equipment offer here is for this move, so its views kept without poses are named once.
+	const unposedNotes = $derived.by(() => {
+		const offered = equipment.find(({ offer }) => offer?.unposed.length)?.offer?.unposed;
+		if (offered || !project) return offered ?? [];
+		// No offer at all when every view of this move was kept without poses: name them anyway.
+		const redo = setupRedoMoves(store.exportRecord);
+		const entry = equipment
+			.flatMap(({ item }) =>
+				unposedItemMoves(project.manifest, item.id, currentItemDrawing(), redo)
+			)
+			.find((unposed) => unposed.move === id);
+		return entry ? [entry.note] : [];
 	});
 	const { chosen, gens: total, specs } = $derived(pickedOffers(equipment, selected));
 	const access = $derived(itemOfferAccess(manifest, specs));
@@ -211,7 +228,8 @@
 			ui.anim = id;
 			ui.frame = 0;
 			acceptedInput = input;
-			if (changed || equipment.some(({ offer }) => offer?.specs.length)) itemsStep = true;
+			if (changed || equipment.some(({ offer }) => offer?.specs.length) || unposedNotes.length)
+				itemsStep = true;
 			else ui.sheet = null;
 		} catch (cause) {
 			error = cause;
@@ -312,6 +330,10 @@
 			/>{/if}
 		<p class="muted small checkpoint-note">{t('moveSheet.checkpoint.later', { move: name })}</p>
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
+		{#each unposedNotes as note, i (i)}<p class="notice warn small">
+				{displayNestedMessage(note)}
+			</p>{/each}
+		<PoseIssues issues={[...new Set(chosen.flatMap(({ offer }) => offer?.poseIssues ?? []))]} />
 	{:else if candidate}
 		{#if candidate.warnings.length}
 			<div class="notice warn small quality-notice">

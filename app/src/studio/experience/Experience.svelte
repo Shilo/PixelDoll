@@ -5,6 +5,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage, displayNestedMessage } from '../../lib/i18n.ts';
 	import { message } from '../../lib/message.ts';
+	import { tabActivity, workTabs } from '../activityStatus.svelte.ts';
 	import { onMount, tick, untrack } from 'svelte';
 	import Toolbar from '../Toolbar.svelte';
 	import CharacterActions from '../CharacterActions.svelte';
@@ -124,6 +125,21 @@
 	const movesOff = $derived(
 		message(experience.testMount ? 'experience.movesOffMounted' : 'experience.movesOffWalking')
 	);
+	// Wardrobe, Moves and States carry a dot for this character's work there, red when some failed (activityStatus.svelte.ts);
+	// disabled Moves and States leave theirs to More.
+	const tabWork = $derived({
+		wardrobe: tabActivity('wardrobe'),
+		moves: tabActivity('moves'),
+		states: tabActivity('states')
+	});
+	// While a tab is on screen and usable, More's dot leaves its work to it: not without a panel, under a sheet or on
+	// another screen, and not Moves or States outside Preview, where they are disabled.
+	$effect(() => {
+		const shown = experience.screen === 'studio' && !(g.sheet && !g.sheetHeight) && !ui.sheet,
+			clips = shown && experience.mode === 'preview';
+		Object.assign(workTabs, { wardrobe: shown, moves: clips, states: clips });
+		return () => Object.assign(workTabs, { wardrobe: false, moves: false, states: false });
+	});
 	const tabs = [
 		['wardrobe', 'experience.tabWardrobe'],
 		['colors', 'experience.tabColors'],
@@ -887,7 +903,8 @@
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
 				{#each tabs as [id, label]}{@const off =
-						(id === 'moves' || id === 'states') && experience.mode !== 'preview'}<button
+						(id === 'moves' || id === 'states') && experience.mode !== 'preview'}{@const work =
+						!off && id in tabWork ? tabWork[id as keyof typeof tabWork] : undefined}<button
 						class="bu-action"
 						data-variant="tab"
 						role="tab"
@@ -895,7 +912,10 @@
 						aria-selected={ui.tab === id}
 						aria-controls="customization-panel"
 						aria-disabled={off || undefined}
-						aria-describedby={off ? 'moves-tab-note' : undefined}
+						aria-describedby={[off && 'moves-tab-note', work && `tab-work-${work}`]
+							.filter(Boolean)
+							.join(' ') || undefined}
+						data-activity={work}
 						title={off ? displayMessage(movesOff) : undefined}
 						tabindex={ui.tab === id || off ? 0 : -1}
 						onclick={() => {
@@ -905,6 +925,8 @@
 					>{/each}
 			</div>
 			<span class="sr" id="moves-tab-note">{displayMessage(movesOff)}</span>
+			<span hidden id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
+			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
 			<PhonePanel />
 		</aside>
 	{/if}

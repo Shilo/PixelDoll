@@ -45,6 +45,11 @@
 	"librarySettings": {
 		"title": "라이브러리",
 		"scope": "저장된 캐릭터, 이미지, 보관 데이터를 백업해요. 환경설정, 초안, 작업은 포함되지 않아요.",
+		"backupWithDebug": "디버깅 정보 포함",
+		"debugDetails": "디버깅 정보 포함",
+		"debugDetailsHint": "문제를 진단할 수 있도록 모든 백업에 오류 로그, 요청 기록, 초안, 작업, 앱 상태를 추가합니다. 이 탭의 오류가 포함되며, 지금부터는 새로고침과 다른 탭의 오류도 보관됩니다. PixelLab 키는 절대 포함되지 않습니다.",
+		"scopeDebug": "저장된 캐릭터, 아트워크, 보관된 데이터, 디버깅 정보를 백업합니다.",
+		"debugNotSaved": "브라우저가 이 설정을 저장하지 못했습니다.",
 		"backup": "라이브러리 백업하기",
 		"restoreFromBackup": "백업에서 복원",
 		"review": "백업 검토",
@@ -415,13 +420,13 @@
 		"saving": "저장 중…",
 		"reviewChanges": "변경 사항 확인",
 		"changeTitle": "방향을 변경할까요?",
-		"confirmMixedRemoval": "캐릭터의 동작과 장비에서 다음 방향을 제거해요: {directions}. 이 페이지를 새로고침하거나 닫기 전까지는 실행 취소로 되돌릴 수 있어요.",
+		"confirmMixedRemoval": "캐릭터의 동작과 장비에서 다음 방향을 제거해요: {directions}. 이 페이지를 새로고침하거나 닫기 전까지, 그사이 캐릭터가 달리 바뀌지 않았다면 실행 취소로 되돌릴 수 있어요.",
 		"confirmReplace": "대칭을 켜면 {directions} 방향의 이미지가 반대쪽의 뒤집힌 프레임으로 바뀌어요. 나중에 대칭을 꺼도 이 프레임은 유지돼요. 원본을 보관하려면 백업을 다운로드하세요.",
 		"labelDirectionsToKeep": "유지할 방향",
 		"loadingDirections": "방향을 불러오는 중…",
 		"downloadBackup": "백업 다운로드",
 		"reviewRemoval": "제거 검토",
-		"confirmRemoval": "{directions} 방향이 이 캐릭터의 동작과 장비에서 제거돼요. 다른 방향은 그대로예요. 이 페이지를 새로고침하거나 닫기 전까지는 실행 취소로 되돌릴 수 있어요.",
+		"confirmRemoval": "{directions} 방향이 이 캐릭터의 동작과 장비에서 제거돼요. 다른 방향은 그대로예요. 이 페이지를 새로고침하거나 닫기 전까지, 그사이 캐릭터가 달리 바뀌지 않았다면 실행 취소로 되돌릴 수 있어요.",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker로 내보내려면 동서남북 네 방향이 모두 필요해요.",
 		"directionsWereSavedReloadToRefreshThe": "방향이 저장됐어요. 캐릭터를 새로 고치려면 다시 불러와 주세요.",
 		"directionsWereSavedReloadToRefreshThe2": "방향이 저장됐어요. 캐릭터를 새로 고치려면 다시 불러와 주세요: {reason}"
@@ -518,6 +523,7 @@
 			"other": "{direction} 방향으로 저장된 {move} 프레임 {n}개에서 아이템의 기존 색상 팔레트에 맞춰요: {pixels}."
 		},
 		"colorMatchFixed": "다른 뷰, 동작, 재질, 저장된 색상 변경은 그대로예요.",
+		"colorMatchMissing": "프레임 {frames}에는 아직 그림이 없어서 제외돼요.",
 		"colorMatchUnmatched": {
 			"other": "일치하지 않는 대상 픽셀 {n}개는 그대로 남아요."
 		},
@@ -774,6 +780,8 @@
 		"itemMoved": "{name}을(를) {label}(으)로 옮겼습니다.",
 		"itemMoveBusy": "이 아이템을 옮기기 전에 관련 생성을 완료하거나 폐기하세요.",
 		"itemMoveChanged": "아이템 또는 슬롯이 변경되었습니다. 다시 시도하세요.",
+		"itemMoving": "다른 아이템을 아직 옮기는 중이에요. 끝나면 다시 시도하세요.",
+		"itemNotReady": "이 아이템은 아직 만드는 중이거나 검토를 기다리고 있어요. 저장된 뒤 다시 시도하세요.",
 		"notShownInMove": "이 동작에서는 표시되지 않음",
 		"notShownInMoveNote": "착용 중이지만 이 동작의 모든 방향에 프레임이 없어 표시되지 않습니다.",
 		"randomLowerItem": "무작위 {lower} 아이템",
@@ -833,7 +841,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, 착용 중",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "{move}용으로 그리는 중, {percent}",
+		"itemQueued": "{move}용으로 대기 중"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "데모는 계정이 필요 없어요. 캐릭터를 만들 때는 {pixelLab} 계정의 생성 횟수를 사용해요.",
@@ -885,7 +895,9 @@
 		"still": "정지",
 		"inspect": "검사",
 		"customization": "꾸미기",
-		"customizationPanels": "꾸미기 패널"
+		"customizationPanels": "꾸미기 패널",
+		"tabWorkRunning": "여기에 진행 중이거나 대기 중이거나 검토할 준비가 된 작업이 있습니다",
+		"tabWorkAttention": "여기에 확인이 필요한 작업이 있습니다"
 	},
 	"worldStage": {
 		"groundUnavailable": "바닥을 실시간으로 렌더링할 수 없어 정적 장면을 표시합니다.",
@@ -1028,6 +1040,7 @@
 		"couldNotSaveFlowFailure": "{error} 이 기기에 이 실패를 저장하지 못했어요. 다시 불러오기 전에 이 작업을 버려 주세요.",
 		"useSavedFramesInTheTabThat": "PixelDoll 작업을 관리하는 탭에서 저장된 프레임을 사용하세요.",
 		"anotherMoveIsStillBeingAddedSo": "다른 동작을 아직 추가하고 있어서 이 동작은 시작되지 않았어요. 끝나면 다시 시도해 주세요.",
+		"moveStillAtPixelLab": "이 동작의 요청이 아직 PixelLab에서 처리 중이라 새 시도를 시작하지 않았고 요금도 없어요. 활동에서 끝날 때까지 기다린 뒤 동작을 검토하세요.",
 		"moveNameAdded": "{moveName} 추가됨",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} 쪽에 검토할 아이템 문제가 있어요. 유료 재시도는 시작되지 않았어요.",
 		"moveFailedOpen": "{moveName} 실패. 애니메이션을 열어 복구 옵션을 확인하세요.",
@@ -1077,9 +1090,11 @@
 		"changeDirections": "방향 변경",
 		"restoreOriginals": "원본 복원",
 		"changeDescription": "설명 변경",
-		"changed": "그 뒤로 캐릭터가 바뀌어서 이 단계는 더 이상 실행 취소하거나 다시 실행할 수 없어요.",
+		"changed": "이 단계는 기록에서 제거됐어요. 그 뒤로 캐릭터가 바뀌어서 더 이상 실행 취소하거나 다시 실행할 수 없어요.",
 		"notRecorded": "저장했지만 이 변경은 되돌릴 수 없어요. 일부 프레임이 더 이상 저장되어 있지 않아요.",
-		"busy": "마지막 실행 취소나 다시 실행이 끝날 때까지 기다려 주세요. 끝나지 않으면 페이지를 새로고침하세요."
+		"busy": "마지막 실행 취소나 다시 실행이 끝날 때까지 기다려 주세요. 끝나지 않으면 페이지를 새로고침하세요.",
+		"notInHistory": "이 단계는 더 이상 기록에 없어요.",
+		"saveFailed": "최근 변경을 저장하지 못했어요. 저장소 오류를 해결한 다음 다시 시도하세요."
 	},
 	"export": {
 		"sheet": {
@@ -1300,6 +1315,7 @@
 		"drop": "캐릭터 ZIP을 여기에 놓으세요",
 		"dropNote": "PixelLab 캐릭터 또는 PixelDoll 내보내기 · 최대 64MB",
 		"chooseZip": "ZIP 선택",
+		"chooseAnother": "다른 ZIP 선택",
 		"characterZip": "캐릭터 ZIP",
 		"devicePrivacy": "파일은 이 기기에 남아요. 가져오기 전에 캐릭터를 미리 확인하세요.",
 		"pixelLabHint": "PixelLab 캐릭터 생성기에서 개별 프레임이 담긴 ZIP을 내보내세요. 상위 폴더도 지원해요. 다른 스프라이트 시트 레이아웃과 PNG만 있는 ZIP은 지원하지 않아요.",
@@ -1358,6 +1374,9 @@
 			"noRoom": "이 캐릭터는 이미지 픽셀이 너무 많아 동작용 공간을 추가하지 않았어요. 가져온 뒤 프레임 조정에서 추가하세요.",
 			"fixedBase": "가져온 아트워크는 고정 기본 몸체예요. 기존 옷과 머리카락은 제거할 수 없어요. 스켈레톤 자세 장비와 새 동작을 쓰려면 자세 리그를 설정하세요.",
 			"frameCounts": "“{move}” 동작은 방향마다 프레임 수가 달라요. 모든 원본 프레임과 방향 길이를 유지하려고 방향을 별도 동작으로 가져왔어요.",
+			"skippedMove": "“{move}”은(는) 제외됐어요. 애니메이션 프레임을 읽을 수 없어요. 번호가 붙은 개별 프레임으로 다시 내보내세요.",
+			"skippedDirection": "“{move}”의 {direction} 방향은 제외됐어요. 프레임이 비어 있거나, 빠져 있거나, 순서가 맞지 않아요.",
+			"skippedStanding": "“{move}”의 {direction} 방향은 제외됐어요. 캐릭터에 그 방향의 서 있는 뷰가 없어요.",
 			"semiAlpha": "부분적으로 투명한 가장자리를 픽셀 아트 투명도로 변환했어요.",
 			"detailsDropped": "저장된 캐릭터 정보 일부가 손상되어 제외했어요. 필요하면 자세 리그를 다시 설정하세요."
 		},
@@ -1395,9 +1414,6 @@
 			"stateFrames": "“{state}” 상태의 프레임 레이아웃이 잘못됐어요.",
 			"undeclaredAnimation": "‘{state}’ 상태에 메타데이터에 없는 애니메이션 파일이 있습니다: {path}.",
 			"stateAnimations": "“{state}” 상태의 애니메이션 목록이 잘못됐어요.",
-			"moveDirections": "{move} 동작에 애니메이션 방향이 없어요.",
-			"moveDirection": "{move}/{direction} 애니메이션의 방향이 지원되지 않아요.",
-			"moveFrames": "{move}/{direction} 애니메이션에는 프레임 경로가 1–120개 있어야 해요.",
 			"selectedState": "이 PixelLab 내보내기에 선택한 캐릭터 상태가 포함되지 않았어요.",
 			"stateInfo": "{detail} 다른 서 있는 자세를 선택하거나 해당 ZIP을 다시 내보내세요.",
 			"selectedRotations": "이 PixelLab 내보내기에 선택한 캐릭터 상태 회전이 포함되지 않았어요.",
@@ -1406,17 +1422,11 @@
 			"fixState": "{detail} 계속하려면 해당 상태의 동작 선택을 해제하거나 해당 ZIP을 다시 내보내세요.",
 			"stateMetadata": "“{state}” 상태의 동작에 잘못된 크기나 카메라 메타데이터가 있어요: {detail} 계속하려면 해당 상태의 동작 선택을 해제하세요.",
 			"stateMismatch": "“{state}” 상태의 동작이 다른 캐릭터 크기나 카메라 뷰를 사용해요. 계속하려면 해당 상태 선택을 해제하세요.",
-			"missingStandingView": "{move}/{direction} 애니메이션에 선택한 상태에서 일치하는 서 있는 뷰가 없어요.",
 			"tooManyMoves": "이 캐릭터에 동작이 너무 많아요. 상태 수를 줄이거나 애니메이션 수를 줄여 내보내세요(서 있기 외 최대 99개).",
 			"orphanFile": "이 ZIP에 상태 레이아웃을 명확히 알 수 없는 애니메이션 파일이 있어요: {path}. 개별 프레임이 담긴 새 캐릭터 ZIP을 내보내세요.",
 			"rotationPathName": "지원하지 않는 회전 이미지 경로예요: {path}. 방향 이름이 붙은 PNG가 담긴 캐릭터 ZIP을 내보내세요.",
 			"animationPath": "지원하지 않는 애니메이션 프레임 경로예요: {path}. 번호가 붙은 개별 프레임이 담긴 캐릭터 ZIP을 내보내세요.",
-			"frameNumber": "{path} 파일의 애니메이션 프레임 번호가 잘못됐어요.",
-			"animationDirection": "{move} 애니메이션의 방향이 지원되지 않아요: {direction}.",
 			"noRotations": "이 PixelLab ZIP에는 지원되는 회전 이미지가 없어요. rotations/ 및 animations/ 폴더가 있는 캐릭터 하나를 내보내세요.",
-			"noRotation": "{direction} 애니메이션에 일치하는 회전이 없어요.",
-			"moveFrameRange": "{move}/{direction} 애니메이션에는 프레임이 1–120개 있어야 해요.",
-			"missingAnimationFrames": "{move}/{direction} 애니메이션에 프레임이 빠져 있어요.",
 			"frameImage": "{path} 파일이 PNG가 아니거나 가져오기 크기 한도를 넘어요.",
 			"cutPixels": "{path} 파일은 {frame}px 셀에서 표시 픽셀 {cut}개를 잃게 돼요. 더 작은 캐릭터를 가져오세요. 아트워크 크기는 조정되지 않아요.",
 			"emptyFrame": "{path} 파일은 빈 프레임이에요.",
@@ -1431,36 +1441,18 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "워크스페이스 활동",
-		"activityIntro": "PixelDoll {build} 버전에서 워크스페이스와 함께 저장됐어요. ZIP에 포함된 작업은 다시 시작되지 않아요.",
+		"activityTitle": "백업 정보",
+		"activityIntro": "PixelDoll {build}(으)로 만든 백업에서 열었습니다.",
 		"missing": {
 			"other": "아트워크 파일 {count}개가 없거나 읽을 수 없었어요."
 		},
 		"skippedCharacters": {
 			"other": "건너뛴 저장 캐릭터: {count}개."
-		},
-		"demoOutfit": "데모는 기본 코디 설정을 사용해요.",
-		"exportSettings": "사본은 기본 내보내기 설정을 사용해요.",
-		"tier": "PixelLab 티어: {tier}",
-		"noErrors": "최근 오류나 끝나지 않은 작업이 기록되지 않았어요.",
-		"noRecent": "최근 오류는 포함되지 않았어요.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · 코드 {code}",
-		"error": {
-			"tooLarge": "이 워크스페이스는 ZIP 크기나 아트워크 한도를 넘어요. 대신 캐릭터별 ZIP을 사용하세요.",
-			"containsKey": "저장된 필드에 연결됐거나 기억된 PixelLab 키가 있어요. 내보내기 전에 워크스페이스에서 제거하세요.",
-			"invalidIndex": "이 워크스페이스 인덱스가 잘못됐어요.",
-			"unsupportedVersion": "이 워크스페이스 파일 버전은 지원하지 않아요.",
-			"duplicateRecord": "이 워크스페이스에 지원하지 않거나 중복된 저장 레코드가 있어요.",
-			"missingFiles": "이 워크스페이스의 빠진 파일 목록이 잘못됐어요.",
-			"unexpectedFile": "이 워크스페이스에 예상하지 못한 파일이 있어요.",
-			"invalidDiagnostics": "이 워크스페이스의 최근 오류가 잘못됐어요."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "캐릭터 ZIP이 아닌 PixelDoll 백업 또는 워크스페이스 ZIP을 선택하세요.",
+			"notBackup": "캐릭터 ZIP이 아닌 PixelDoll 백업을 선택하세요.",
 			"unsupportedVersion": "지원하지 않는 백업 파일 버전이에요.",
 			"invalid": "이 백업은 손상되었거나 올바르지 않아요.",
 			"tooLarge": "이 백업은 ZIP 크기 또는 아트워크 한도를 넘어요. 대신 캐릭터별 ZIP을 사용하세요.",
@@ -1530,6 +1522,8 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: 아이템 품질 검사 결과를 확인해야 해요. 유료 재시도는 시작되지 않았어요.",
 		"bodyQuality": "{move} {direction}: {reason}",
+		"bridgedJoints": "모션 프레임 {frame}/{total}의 관절은 앞뒤 프레임에서 추정했습니다",
+		"shortFrames": "PixelLab이 {expected}개가 아닌 {count}개 프레임을 보내서 첫 프레임이나 마지막 프레임이 다를 수 있습니다",
 		"health": {
 			"clean": "정상",
 			"accepted": "수락됨",
@@ -1577,6 +1571,8 @@
 			"noRepairGrid": "{move}({direction})의 복구 그리드가 없어요: {reason}. 가장 좋은 시도를 유지했어요",
 			"heldLoop": "동작이 반복될 때 든 아이템의 모양이나 각도가 바뀌어요",
 			"registrationShift": "PixelLab이 투명한 가장자리를 포함한 결과를 반환해 시트가 밀렸을 수 있어요. 모든 프레임에서 아이템이 정렬되는지 확인하세요.",
+			"suspiciousJoints": "{move} {direction} 프레임 {frame}에서 관절이 이상해 보여서 아이템이 맞지 않을 수 있어요. 잡는 위치나 정렬을 확인하세요.",
+			"jointReview": "일부 프레임이 이상해 보이는 관절에 맞춰졌어요. 잡는 위치나 정렬을 확인하세요.",
 			"bodyUnmeasured": "아이템이 몸 거의 전체를 덮어 확인할 수 없었어요. 다시 그려진 몸이 아닌지 확인하세요"
 		},
 		"anotherCharacter": "다른 캐릭터",
@@ -1987,6 +1983,9 @@
 		"waitingTitle": "다른 탭을 기다리는 중",
 		"waitingBody": "생성이 아직 시작되지 않았어요. 활동을 열어 두면 다른 탭이 준비되는 대로 여기서 계속돼요.",
 		"stopInRunningTab": "이 작업을 실행 중인 탭에서 중지해 주세요.",
+		"saving": "이 기기에 저장 중…",
+		"stopNoAnswer": "이 작업을 실행 중인 탭이 아직 중지를 확인하지 않았어요. 잠시 후 활동을 확인하고, 아직 실행 중이면 그 탭에서 중지해 주세요.",
+		"stopNotConfirmed": "PixelLab이 중지를 확인하지 않아 작업이 계속 실행되고 요금이 청구될 수 있어요. 활동을 확인해 주세요.",
 		"pausedStorage": "저장된 작업을 읽거나 저장할 수 없어 새 요청을 보내지 않아요. 재개하면 다시 시도해요.",
 		"cancelSaveFailed": "취소를 저장할 수 없었어요. 이 탭은 요청을 보내지 않지만, 다른 탭이나 새로고침 후에는 보내질 수 있어요."
 	},
@@ -2001,6 +2000,9 @@
 		"checking": "프레임 확인 중…",
 		"someChecks": "일부 검사를 검토해야 해요.",
 		"noRetryStarted": "유료 재시도는 시작되지 않았어요. 새로 시도하려면 다시 생성를, 이 경고가 있는 완성된 아트워크를 받아들이려면 유지를 선택하세요. 이 검토를 닫으면 대기 상태로 남아요.",
+		"noRetryStartedFreeKeep": "유료 재시도는 시작되지 않았어요. 돌아온 프레임을 무료로 보관하거나, 다시 생성으로 새로 시도하세요. 이 검토를 닫아도 계속 기다려요.",
+		"noRetryStartedNoKeep": "유료 재시도는 시작되지 않았어요. 다시 생성으로 새로 시도하세요. 이 검토를 닫아도 계속 기다려요.",
+		"incompleteFreeKeep": "일부 프레임이 생성되지 않았어요. 돌아온 프레임을 무료로 보관하거나 새로 시도할 수 있어요.",
 		"keep": "유지",
 		"retryLabel": "{name} 다시 시도",
 		"incomplete": "일부 프레임이 생성되지 않았어요. 이 아이템을 유지하려면 새 시도가 필요해요.",
@@ -2032,7 +2034,10 @@
 		"rerollFailed": "실패한 호출 다시 생성",
 		"rerollFailedDetail": "실패한 호출과 그에 의존하는 것만 다시 구매해요. 완료된 다른 호출은 다시 사용해요.",
 		"keepFinished": "완료된 동작 보관",
-		"keepFinishedDetail": "모든 프레임이 완료된 동작을 저장해요. 나머지는 누락된 프레임으로 남고 나중에 만들 수 있어요."
+		"keepFinishedDetail": "모든 프레임이 완료된 동작을 저장해요. 나머지는 누락된 프레임으로 남고 나중에 만들 수 있어요.",
+		"keepAvailable": "받은 프레임 보관",
+		"keepAvailableDetail": "받은 프레임을 모두 저장해요. 누락: {views}. 누락된 프레임으로 남고 나중에 만들 수 있어요.",
+		"missingFrames": "{move} {direction} ({total}개 중 {missing}개 프레임 누락)"
 	},
 	"generationDetails": {
 		"copiedFrom": "{name} 캐릭터에서 한 번 결제했고, 여기에는 무료로 복사했어요",
@@ -2106,12 +2111,20 @@
 		"needsRedo": "관절을 찾지 못함: 아이템을 움직이려면 다시 그리세요",
 		"itemsDrawn": {
 			"other": "아이템 {n}개 중 {drawn}개 그림"
+		},
+		"drawingItem": "{item} 그리는 중",
+		"moreQueued": {
+			"other": "{n}개 더 대기 중"
+		},
+		"itemsQueued": {
+			"other": "아이템 {n}개 대기 중"
 		}
 	},
 	"setup": {
 		"warnings": {
 			"headroom": "{direction} 방향은 머리 위 여유가 {count} px뿐이에요. 높은 헤어스타일이나 모자에는 더 큰 프레임이 필요할 수 있어요.",
 			"keptFrames": "{name}: 기존 프레임을 유지해요. 설정 후 다시 만들면 이후 동작에도 애니메이션을 적용할 수 있어요.",
+			"moveSkippedEmpty": "{move}을(를) 건너뛰었어요. 프레임 중 하나가 비어 있어요. 아이템을 움직이려면 그 프레임을 고치거나 다시 만드세요.",
 			"moveSkipped": "{move}을(를) 건너뛰었어요. PixelLab이 그 프레임 중 하나에서 유효한 관절을 찾지 못했어요. 아이템을 움직이려면 다시 만드세요."
 		},
 		"title": "캐릭터 설정",
@@ -2134,6 +2147,7 @@
 		"saveDescription": "설명 저장",
 		"descriptionSaved": "설명을 저장했어요. 새 동작에 사용돼요.",
 		"estimate": "고유 몸체 프레임 {frames}개 · 예상 생성 {gens}회. 계정 연결 비용(생성 {connection}회)이 포함돼요. 일치하는 저장 측정값은 재사용해요.",
+		"willSkip": "{moves}은(는) 건너뛰어요. 빈 프레임이 있어서 비용이 들지 않아요. 아이템을 움직이려면 그 프레임을 고치거나 다시 만드세요.",
 		"reconnectEstimate": "다시 연결해도 모든 포즈, 아이템 맞춤, 프레임은 그대로 유지돼요. 계정 연결에 약 {gens}회 생성이 들어요.",
 		"busyElsewhere": "설정을 시작하기 전에 다른 캐릭터 작업을 끝내세요.",
 		"resumeRigSetup": "리그 설정 재개",
@@ -2198,6 +2212,8 @@
 			"savedEquipmentRecoveryNeeds": "저장된 장비 복구에는 기존 동작과 그 장비만 필요해요. 생성은 요청되지 않았어요.",
 			"anchoredEquipmentGenerationRequires": "앵커 장비 생성에는 기존 동작과 저장된 서 있는 아이템이 필요해요. 생성은 요청되지 않았어요.",
 			"moveItemMissingStored": "이 동작이나 아이템에 저장된 관절이나 서 있는 참조가 빠져 있어요. 장비를 생성하기 전에 포즈를 설정하세요. 생성은 요청되지 않았어요.",
+			"moveKeptUnposed": "{move} {direction} 방향은 포즈 없이 보관되었어요. 장비를 맞추기 전에 그 방향을 다시 만드세요. 생성 요청은 보내지 않았어요.",
+			"freeChoiceCacheMissing": "이 무료 선택이 다시 쓰는 결과가 더 이상 저장되어 있지 않아 아무것도 요청하지 않았어요. 동작을 다시 검토하세요.",
 			"setUpRigFirst": "동작을 추가하기 전에 이 캐릭터의 자세 리그를 설정하세요.",
 			"newMoveNeedsEvery": "새 동작에는 독립적으로 그린 모든 방향이 필요해요.",
 			"partialRepairMustKeep": "부분 복구는 기존 프레임 수를 유지해야 해요.",
@@ -2209,7 +2225,6 @@
 			"characterChangedAnotherTab2": "동작을 저장하기 전에 다른 탭에서 이 캐릭터가 바뀌었어요. 다시 시도하기 전에 다시 여세요.",
 			"demoStandingReferenceMissing": "데모의 서 있는 참조가 없어요.",
 			"resultMissingStorage": "결제된 결과가 이 브라우저 저장소에 없어요.",
-			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab이 불완전하거나 잘못된 서 있는 관절을 반환했어요. 이 관절로 애니메이션을 시작하지 않았고 기존 결과는 유지됐어요.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab이 잘못된 프레임 수를 반환했어요. 유료 재시도는 시작되지 않았어요. 다른 시도를 요청하기 전에 활동을 검토하세요.",
 			"animationExceedsPxFrame": "{move} {direction}: 몸체 프레임이 {w}px 프레임에 맞지 않아요. 검토용으로 보관했고, 저장된 것은 없어요.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab이 빈 프레임을 반환했어요. 유료 재시도는 시작되지 않았어요. 다른 시도를 요청하기 전에 활동을 검토하세요.",
@@ -2259,6 +2274,8 @@
 			"partialSaved": "{reason} 완료된 뷰를 저장했어요({views}).",
 			"partialSavedNewFrames": "{reason} 완료된 뷰를 저장했어요({views}). 새 프레임 생성은 빠진 것만 요청해요.",
 			"partialSavedRetry": "{reason} 완료된 뷰를 저장했어요({views}). 다시 생성하면 빠진 뷰만 요청해요.",
+			"partialSavedRedraw": "{reason} 완료된 프레임은 저장했어요({views}). 다시 생성하면 완료되지 않은 방향의 모든 프레임을 표시된 가격으로 다시 그려요.",
+			"savedFrameRange": "{view} 프레임 {frames}",
 			"replacementFailsQa": "대체 결과도 몸체 포즈 품질 검사를 통과하지 못해요. 기존 방향은 유지됐어요. 다시 시도하기 전에 결과를 검토하세요.",
 			"newMoveFailsQa": "새 동작이 몸체 포즈 품질 검사를 통과하지 못해 저장되지 않았어요. 다시 시도하기 전에 결과를 검토하세요.",
 			"moveDirectionsChanged": "캐릭터 방향이 바뀌었어요. 다시 시도하기 전에 동작의 최신 예상 비용을 확인하세요. 생성 요청은 보내지 않았어요.",
@@ -2479,6 +2496,7 @@
 			"label": "시작 기준",
 			"frame": "프레임 {number}",
 			"unavailable": "이 프레임을 사용하려면 선택한 모든 방향의 몸체 이미지와 측정된 관절 위치가 필요해요.",
+			"missingViews": "이 프레임에는 {directions} 방향 뷰가 없어서 여기서 동작을 시작할 수 없어요. 다른 프레임을 고르세요.",
 			"changed": "선택한 시작 프레임이 변경됐어요. 시작할 프레임을 다시 선택하세요. 생성은 요청되지 않았어요.",
 			"stateTarget": "상태는 동작처럼 교체할 수 없어요."
 		},
@@ -2538,6 +2556,7 @@
 			"unavailable": "사용할 수 없음",
 			"findings": "품질 안내",
 			"hardFailure": "저장하기 전에 이 동작을 다시 생성하세요.",
+			"reviewWaiting": "이 동작에는 검토를 기다리는 프레임이 있어요. 먼저 저장하거나 버리세요. 요청은 보내지 않았어요.",
 			"beforeItems": "아이템을 움직이기 전에 동작을 검토하세요.",
 			"changed": "캐릭터 또는 동작이 변경됐어요. 검토 화면을 다시 열어 주세요.",
 			"missingFrames": "검토한 프레임을 더 이상 사용할 수 없어요.",
@@ -2546,7 +2565,6 @@
 			"later": "이 동작의 아이템은 나중에 동작 탭의 메뉴에서 생성할 수 있어요: {move}"
 		},
 		"thatCharacter": "해당 캐릭터",
-		"recoveryCheckFailed": "캐시된 프레임을 확인하지 못했어요: {error}",
 		"retryLabel": "동작 다시 생성",
 		"newSetup": "새 애니메이션…",
 		"useSaved": "저장된 프레임 사용",
@@ -2649,6 +2667,11 @@
 			"finish": "검토 완료",
 			"useRedrawn": "다시 그린 프레임 사용",
 			"useRepaired": "수정한 프레임 사용",
+			"useFinishedRedraws": "완료된 다시 그리기 사용",
+			"useFinishedRepairs": "완료된 수정 사용",
+			"stopped": {
+				"other": "이후 배치가 멈춰서 프레임 {n}개는 현재 그림을 유지해요({frames}). 더 이상 구매하지 않았어요."
+			},
 			"heldBy": "{character}의 아이템 프레임을 검토할 수 있어요. 대기 중인 동작은 선택이 끝날 때까지 기다려요.",
 			"compare": "아이템 프레임 비교",
 			"saved": "새 프레임은 이미 저장됐어요. 계속하려면 검토를 완료하세요.",
@@ -2657,9 +2680,9 @@
 			"repairIssues": "유료 수정이 끝났지만 일부 프레임에 시각적 문제가 있을 수 있어요.",
 			"noCost": "현재 이미지는 그대로예요. 어느 쪽을 선택해도 비용이 들지 않아요. 나중에 결정하려면 이 패널을 숨기세요.",
 			"frame": "프레임 {number}",
-			"currentFrames": "현재 프레임",
-			"redrawnFrames": "다시 그린 프레임",
-			"repairedFrames": "수정한 프레임",
+			"currentLabel": "현재 프레임",
+			"redrawnLabel": "다시 그린 프레임",
+			"repairedLabel": "수정한 프레임",
 			"findings": "품질 검사 결과",
 			"redrawInManagingTab": "PixelDoll 작업을 관리하는 탭에서 다시 그리기 결과를 검토하세요.",
 			"repairInManagingTab": "PixelDoll 작업을 관리하는 탭에서 수정 결과를 검토하세요.",
@@ -2685,6 +2708,12 @@
 			"designFrameMissing": "디자인 호출에서 아이템을 입힌 프레임을 반환하지 않았어요.",
 			"incompleteReferenceFrames": "PixelLab이 참조 프레임 또는 서 있는 프레임을 불완전하게 반환했어요. 종속 요청은 전송되지 않았어요.",
 			"standingFrameSize": "PixelLab이 잘못된 크기의 서 있는 프레임을 반환했어요. 종속 요청은 전송되지 않았어요.",
+			"poseFramesMalformed": "PixelLab이 {item}의 프레임을 누락되거나 손상된 상태로 돌려보냈어요. 자동으로 다시 시도하지 않았어요.",
+			"poseFrameSize": "PixelLab이 {item}의 프레임을 잘못된 크기로 돌려보냈어요. 자동으로 다시 시도하지 않았어요.",
+			"gridStopped": "{item} 수정 요청이 끝나지 않았어요({state}). 다시 보내지 않았어요.",
+			"poseStopped": "{item} 포즈 요청이 끝나지 않았어요({state}). 다시 보내지 않았어요.",
+			"requestLost": "{item} 요청이 사라져서 실행되고 요금이 청구됐을 수 있어요. 다시 보내지 않았어요.",
+			"noUsableFrames": "PixelLab이 {item}에 쓸 수 있는 프레임을 돌려보내지 않았어요.",
 			"layersMismatch": "장비 레이어가 이 장착 슬롯과 맞지 않아요. 생성은 요청되지 않았어요.",
 			"reviewChanged": "이 아이템이나 검사 결과가 변경됐어요. 현재 아트워크를 승인하기 전에 아이템을 다시 여세요.",
 			"paletteReviewChanged": "이 아이템이나 색상이 변경됐어요. 색상 맞추기를 다시 검토하세요.",
@@ -2716,6 +2745,7 @@
 		"copyDemo": "데모 몸체 복사",
 		"feature": "장비 생성",
 		"needsSetup": "스켈레톤 자세 장비, 큰 무기, 새 동작을 쓰려면 이 캐릭터를 설정하세요.",
+		"poseIssues": "측정한 관절 일부가 이상해 보여요. 아이템이 그대로 따라가니 만든 뒤 이 프레임들을 확인하세요:",
 		"standingFirst": "서 있는 디자인을 먼저 만드세요. 마음에 들면 세부 정보에서 개별 동작용으로 이 아이템을 생성하세요.",
 		"where": "어디에 착용하나요?",
 		"notShown": "아직 옷장에 표시되지 않았어요. 아이템을 만들면 표시돼요.",
@@ -2778,6 +2808,12 @@
 		"changed": "원본이나 견적이 바뀌었어요. 생성하기 전에 비용을 다시 확인해 주세요.",
 		"sourceUnavailable": "원본 프레임에는 그려진 모든 방향의 저장된 아트가 있어야 해요.",
 		"invalidResult": "PixelLab이 예정된 크기로 모든 방향의 이미지를 반환하지 않았어요.",
+		"missingViews": "{directions} 방향은 사용할 수 있는 뷰가 돌아오지 않았어요. 저장하면 다른 방향은 유지되지만, 이 State에는 그 방향과 반전된 방향의 그림이 없어요.",
+		"unfetchedViews": "{directions} 방향 뷰를 다운로드하지 못했어요. 먼저 다시 시도하세요. 그 뷰 없이 저장하면 나중에 가져올 수 없어요.",
+		"canceledViews": "{directions} 방향 뷰는 만들어지기 전에 취소됐어요. 지금 저장하면 그 뷰는 만들어지지 않아요.",
+		"unmadeViews": "{directions} 방향 뷰는 아직 만들어지지 않았어요. 만드는 비용을 확인하거나 그 뷰 없이 저장하세요.",
+		"newViews": "이 State의 새 뷰가 완성됐어요. 저장하기 전에 다시 확인하세요. 아무것도 저장되거나 청구되지 않았어요.",
+		"saveWithout": "없이 저장",
 		"unfinished": "완료되지 않았거나 사용할 수 없는 결과가 있어요. 활동을 확인해 주세요. 요청을 다시 보내지 않았어요.",
 		"outdated": "이 미완성 상태는 이전 버전의 PixelDoll에서 시작됐어요. 버리고 다시 시작하세요.",
 		"quoteUnavailable": "PixelLab에서 유효한 Pro Flash 견적을 받지 못했어요.",
@@ -2819,6 +2855,8 @@
 		"quote": "관절 측정 비용 확인",
 		"measure": "관절 측정",
 		"review": "저장하기 전에 각 방향에 표시된 관절의 위치를 확인하세요.",
+		"notFitted": "{directions} 방향에서 관절을 찾지 못해 그 방향은 아직 시작점으로 쓸 수 없어요. 저장하면 다른 방향의 관절은 유지돼요.",
+		"notChecked": "{directions} 방향의 관절 확인이 끝나지 않았고 다시 보내지 않았어요. 저장하면 다른 방향의 관절은 유지돼요.",
 		"save": "관절 저장"
 	},
 	"stateCapture": {
@@ -3026,6 +3064,7 @@
 		"download": "결제된 결과 다운로드",
 		"frame": "{view}, 프레임 {number}",
 		"waiting": "유료 요청 일부가 아직 PixelLab에서 처리 중이에요. 완료되면 이 선택지를 쓸 수 있어요.",
+		"loadFailed": "결제한 결과를 읽을 수 없어 다시 사용하는 방법이 숨겨져 있어요. 잃어버린 것은 없어요.",
 		"state": {
 			"ready": "준비됨",
 			"pending": "아직 구매 안 함",
@@ -3046,8 +3085,15 @@
 		"liftDetailWarned": "{views}: 모션이 프레임에 맞도록 모션 프레임 {total}개 중 {frames}개에서 발이 최대 {px}px 올라가요. {limit}px 발 검사를 넘기 때문에, 동작은 발 경고와 함께 저장돼요.",
 		"reroll": "다시 생성: {views}",
 		"rerollDetail": "다시 생성은 그 방향에만 새 시도를 구매해요. 다른 방향은 결제된 결과를 그대로 써요.",
-		"keepUnposedDetail": "몸 프레임을 그대로 저장해요. 일부 프레임에서 관절을 찾지 못해, 다시 그리기 전까지 이 동작에는 아이템을 맞출 수 없어요.",
+		"keepUnposedDetail": "몸 프레임을 그대로 무료로 저장해요. 일부 프레임에서 관절을 찾지 못해, 그 방향을 다시 만들기 전까지는 아이템을 맞출 수 없어요. 다른 방향은 포즈를 유지해요.",
 		"keepUnposed": "아이템 맞춤 없이 유지",
+		"unposedViews": {
+			"other": "{move} {directions} 방향은 포즈 없이 보관되어 그곳에는 장비를 맞추지 않아요. 맞추려면 그 방향을 다시 만드세요."
+		},
+		"saveFinished": "완성된 방향 저장",
+		"saveFinishedDetail": {
+			"other": "확인한 뒤 {views}을(를) 무료로 저장해요. {missing}은(는) 완성되지 않아 빠지며, 나중에 이 동작에서 만들 수 있어요."
+		},
 		"pending": "구매 예정: 약 {gens}젠.",
 		"liftable": "올려서 맞출 수 있어요: 프레임 {total}개 중 {frames}개에서 발이 최대 {px}px 올라가요.",
 		"notLiftable": "올려도 맞지 않아요: 모션이 옆이나 위에서 잘려 있어요."
@@ -3226,7 +3272,7 @@
 			"overflow": "올리기나 더 큰 프레임이 제안되면 선택하고, 아니면 다시 시도하세요.",
 			"empty": "결제된 결과는 활동에 남아 있어요. 새 시도로 다시 시도하세요.",
 			"dropped": "잠시 기다린 뒤 다시 시도하세요.",
-			"joints": "결제한 결과는 활동에 남아 있어요. 새로 시도하거나 더 분명한 서 있는 자세에서 시작하세요.",
+			"joints": "결제한 결과는 활동에 남아 있어요. 제안되면 아이템을 맞추지 않고 프레임을 보관하거나, 더 분명한 서 있는 자세에서 시작하세요.",
 			"stopped": "다시 보내지 않았어요. 다시 시작하기 전에 돌아온 결과를 확인하세요.",
 			"quality": "결과를 검토한 뒤 유지하거나 다시 시도하세요.",
 			"changed": "계속하기 전에 다시 검토하세요.",
@@ -3253,10 +3299,31 @@
 		"allDrawn": "모든 아이템이 이미 그려졌어요: {move}",
 		"noneAvailable": "이 아이템들은 모두 생성할 수 없어요: {move}",
 		"notDrawnFor": "아직 그리지 않음: {move}",
-		"generateFor": "생성하기: {move}"
+		"generateFor": "생성하기: {move}",
+		"wearOn": "{move}에서 착용"
+	},
+	"itemImport": {
+		"title": "아이템 가져오기",
+		"intro": "캐릭터의 ZIP, 백업 또는 공유된 캐릭터. 아이템이 이 캐릭터에 맞으면 무료예요.",
+		"empty": "이 ZIP에는 완성된 아이템이 없어요.",
+		"skipped": {
+			"other": "아이템 {count}개를 읽을 수 없어요."
+		},
+		"notFitted": "{names}은(는) 더 이상 맞지 않아 추가되지 않았어요.",
+		"busy": "아이템이 추가될 때까지 기다린 뒤 다시 시도해 주세요.",
+		"row": {
+			"copy": "이 캐릭터에 정확히 맞아요",
+			"refit": "이 몸에 무료로 맞췄어요. 가져온 뒤 프레임을 확인해 주세요.",
+			"unfitted": "다른 몸용이에요. 그려진 그대로 착용해서 떠 보이거나 겹칠 수 있어요.",
+			"remake": "다른 몸용이라 여기서는 착용할 수 없어요"
+		}
+	},
+	"importDrop": {
+		"items": "놓아서 아이템 가져오기",
+		"moves": "놓아서 동작 가져오기",
+		"states": "놓아서 상태 가져오기"
 	},
 	"moveImport": {
-		"title": "동작 가져오기",
 		"importMoves": "동작 가져오기",
 		"importStates": "상태 가져오기",
 		"dropArea": "PixelDoll ZIP 놓기 영역",

@@ -1,12 +1,13 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { equipmentFixture, bodyOnly } from './equipment-fixture.ts';
-import { acceptCopy, flipper, prepareCopy } from '../../src/lib/equipment/copy.ts';
+import { acceptCopy, flipper, freeItemName, prepareCopy } from '../../src/lib/equipment/copy.ts';
 import { assessCopy } from '../../src/lib/equipment/compatibility.ts';
 import { forgetFits, listShared } from '../../src/lib/equipment/shared.ts';
 import { loadProject, type StoredProject } from '../../src/lib/store/project.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
+import { LABELS } from '../../src/lib/rig/poses.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
 import * as core from '../../src/lib/runtime/paperdoll.js';
 import { PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
@@ -491,6 +492,45 @@ test('views both characters mirror are covered by their drawn source view', asyn
 	expect(made.size).toBe(0); // nothing needed flipping
 });
 
+test('a target with a move view without poses still keeps the standing references for future fitting', async () => {
+	const source = await equipmentFixture();
+	// A set-up standing: measured rest view, the standing move posed from it, and the item's dressed standing view.
+	const points = LABELS.map((label, i) => ({ label, x: 0.3 + i * 0.01, y: 0.3 + i * 0.015 }));
+	const standing = source.manifest.items.find((item) => item.slot === 'body')!.layers[0].cells!
+		.rest!.south![0]!;
+	source.manifest.rig.rest = { south: { image: standing, keypoints: points } };
+	source.manifest.rig.animations[0].sources = {
+		south: {
+			route: 'import',
+			reference: standing,
+			keypoints: [points],
+			motion: 'imported-rest',
+			provenance: []
+		}
+	};
+	hatOf(source).dressed = { south: standing };
+	const target = bodyOnly(source);
+	const frames = flipper(async (h) => source.images.get(h)!);
+	expect(
+		(await assessCopy(source.manifest, hatOf(source), target.manifest, frames)).canExtend
+	).toBe(true);
+	// A move kept without poses in its view (no sources there): equipment is not fitted there yet, nothing else changes.
+	const rig = target.manifest.rig,
+		body = target.manifest.items.find((item) => item.id === rig.baseItem)!;
+	rig.animations.push({ ...structuredClone(rig.animations[0]), id: 'walk', sources: undefined });
+	body.layers[0].cells!.walk = structuredClone(body.layers[0].cells!.rest);
+	expect(
+		(await assessCopy(source.manifest, hatOf(source), target.manifest, frames)).canExtend
+	).toBe(true);
+	// Stored poses that are present but incomplete still refuse.
+	rig.animations[1].sources = {
+		south: { ...rig.animations[0].sources!.south!, motion: 'estimated', keypoints: [] }
+	};
+	expect(
+		(await assessCopy(source.manifest, hatOf(source), target.manifest, frames)).canExtend
+	).toBe(false);
+});
+
 test('deleting the source removes its entry while the copy stays intact', async () => {
 	const source = named(await equipmentFixture(), 'Knight');
 	// The most recent of equal items is offered: keep the original ahead of its copy.
@@ -536,6 +576,34 @@ test('the bundled demo shares its items: listed from memory, and a copy writes t
 	expect(worn(copied.project, { body: 'base', head: item.id })).toEqual(
 		worn(demo, { body: 'base', head: 'hat' })
 	);
+});
+
+test('an imported ZIP lists only its own items, and a name in use is kept as “Name 2”', async () => {
+	const target = named(await equipmentFixture(), 'Squire');
+	await store('rig-target', target);
+	const saved = named(await equipmentFixture(), 'Saved');
+	Object.assign(hatOf(saved), { prompt: 'a saved cap' });
+	await store('rig-saved', saved);
+	const zip = named(await equipmentFixture(), 'Friend');
+	Object.assign(hatOf(zip), { prompt: 'a red hood', name: hatOf(target).name });
+	const source = { id: 'zip:friend', manifest: zip.manifest, variants: {}, images: zip.images };
+	const { items } = await listShared('rig-target', target.manifest, undefined, [source], {
+		saved: false
+	});
+	expect(items.map((x) => [x.sourceId, x.item.prompt, x.fit])).toEqual([
+		['zip:friend', 'a red hood', 'copy']
+	]);
+	// The wardrobe's own listing still offers the saved characters.
+	expect((await listShared('rig-target', target.manifest)).items.map((x) => x.sourceId)).toEqual([
+		'rig-saved'
+	]);
+	const item = (await acceptCopy('zip:friend', 'hat', 'rig-target', source, {
+		numberName: true
+	}))!;
+	const name = hatOf(target).name;
+	expect(item.name).toBe(`${name} 2`);
+	expect(item.copiedFrom).toEqual({ id: 'zip:friend', name: 'Friend', item: 'hat' });
+	expect(freeItemName(`${name} 2`, [...target.manifest.items, item])).toBe(`${name} 3`);
 });
 
 test('a copy saved before fit notes were recorded (unfitted: true) still reads, as one without notes', async () => {

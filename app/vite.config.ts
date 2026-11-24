@@ -128,6 +128,10 @@ const BOOTSTRAP = normalizePath(fileURLToPath(new URL('./src/bootstrap.ts', impo
 const WORKSPACE_MODE = normalizePath(
 	fileURLToPath(new URL('./src/lib/store/workspace-mode.ts', import.meta.url))
 );
+// main.ts starts the debug log before anything else, so it must not import the startup chunk.
+const DEBUG_LOG = ['log', 'flags', 'sanitize'].map((name) =>
+	normalizePath(fileURLToPath(new URL(`./src/lib/debug/${name}.ts`, import.meta.url)))
+);
 const STARTUP_UPDATE = normalizePath(
 	fileURLToPath(new URL('./src/lib/startup-update.ts', import.meta.url))
 );
@@ -216,6 +220,7 @@ export default defineConfig(({ command, mode }) => {
 						groups: [
 							{ name: 'workspace-mode', test: (id) => id === WORKSPACE_MODE, priority: 2 },
 							{ name: 'startup-update', test: (id) => id === STARTUP_UPDATE, priority: 2 },
+							{ name: 'debug-log', test: (id) => DEBUG_LOG.includes(id), priority: 2 },
 							{ name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 },
 							{ name: startupChunk(), debugName: 'startup' }
 						]

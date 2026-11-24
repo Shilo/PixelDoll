@@ -39,6 +39,7 @@ export type PaidOptionId =
 	| 'register'
 	| 'reroll-calls'
 	| 'keep-finished'
+	| 'keep-available'
 	| 'keep-unposed'
 	| 'enlarge-frame';
 /** One choice of a review, priced from the request cache: `gens` is 0 when everything it needs is already paid for. */

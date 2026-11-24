@@ -5,6 +5,8 @@ format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Open work:
 
 The [shared JavaScript runtime and cross-engine API contract](architecture/javascript-runtime.md) documents canonical application/JavaScript behavior, native-port responsibilities and required parity checks. The [cross-engine audit](testing/cross-engine-api-contract-2026-11-12.md) records the challenged fixes and verification.
 
+To diagnose and fix what a user reported (a Library backup with or without debugging details, a problem report, pasted errors), hand it to an agent with the [debug-user-report skill](../.agents/skills/debug-user-report/SKILL.md); see [how to use it](handoff/debug-user-report-skill.md#using-the-skill).
+
 For a new agent-led research and implementation cycle, invoke the [repeatable paper-doll improvement workflow](handoff/paperdoll-improvement-cycle.md). It covers repository review, online discovery, local source and tool experiments, independent challenge, live PixelLab testing, and verified improvements.
 
 **Evidence media lives at commit [1f95029](https://github.com/Shilo/PixelDoll/tree/1f950291f90d43f5c6f27572445664f757f5716e).** Spike outputs (`spikes/api/out/`), test
@@ -54,6 +56,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
+- [State palette trial](research/2026-11-23-state-palette-trial/README.md) compares PixelLab's State palette options with the free save-time snap (335 generations) and recommends keeping only the snap.
 - [Animation model default audit](research/2026-11-19-animation-model-audit.md) records a data-only 216-frame archival screen and the matched live protocol for Skeleton V3, PixMiniMax, and Text V3.
 - [PixelLab Character Creator states and animations](research/2026-11-18-character-creator-states.md) describes the website workflow, public endpoint lifecycle, and how PixelDoll currently imports and uses standing references.
 - [PixelDoll state authoring study](research/2026-11-18-pixeldoll-states/README.md) proposes reusable poses, shared playback, state-derived move generation and independent removal. It includes an interactive layout comparison and runtime probe.
@@ -93,6 +96,8 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 
 - [Paper-doll generation cost risks](research/2026-11-16-generation-costs/README.md): Tier 3 examples, direction and retry tradeoffs, a smaller MVP, and a standalone summary image.
 - [PixelLab cost calculator](research/2026-11-22-cost-calculator/README.md): cost model from the app's price functions, adversarial review, and an interactive mock-up.
+- [Developer console spike](research/2026-11-23-developer-console/README.md): why a raw in-app JavaScript console loses to errors in the backup, copy-for-AI diagnostics and named repairs for helping users.
+- [Diagnose-any-user-report skill handoff](handoff/debug-user-report-skill.md): brief for the skill that audits a backup (with or without `debug/`), problem reports and pasted errors, then fixes, tests and commits.
 
 | Doc                                                                                                                                                            | What                                                                                                                                                                                                                                                                                                                                                  |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

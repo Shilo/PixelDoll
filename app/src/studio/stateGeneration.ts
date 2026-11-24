@@ -8,7 +8,9 @@ import { api, API_BASE, ApiError } from '../lib/pixellab/client.ts';
 import { planRestriction, localizedPlanRestriction } from '../lib/pixellab/plans.ts';
 import { live, managedStateSubmitChildId, queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { routes, type Req, type Size } from '../lib/pixellab/routes.ts';
+import { regionMarker, withoutRegions } from '../lib/dress/regions.ts';
 import { opaqueBox } from '../lib/rig/normalize.ts';
+import { snapToBodyColors } from '../lib/rig/palette.ts';
 import {
 	DEFAULT_MOVE,
 	baseHashOf,
@@ -27,7 +29,13 @@ import { stateClipName } from '../lib/rig/poses.ts';
 import { moveLabel } from './model.ts';
 import { withClipWriteLock } from './clipName.ts';
 import { doc, flushSave, openProject, syncStoredProject, toast, ui } from './state.svelte.ts';
-import { stateAttempts, stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.ts';
+import {
+	stateAttempts,
+	stateContinuationBatches,
+	stateRecoveryRecords,
+	stateReviewBatches,
+	stateReviewReceipts
+} from './stateRecovery.ts';
 import { groundToSource } from './stateGrounding.ts';
 import {
 	localStateCost,
@@ -37,7 +45,7 @@ import {
 	type StateGenerationModel
 } from './stateGenerationPlan.ts';
 import {
-	managedStateRotations,
+	managedStateInventory,
 	stateGenerationSource,
 	stateSourceFits,
 	verifyManagedStateParent,
@@ -104,6 +112,16 @@ export interface StateReview {
 	sourceVersion: string;
 	endpoint: ReadyStatePlan['endpoint'];
 	views: { direction: DirectionName; image: Img }[];
+	/** Drawn facings PixelLab returned blank, failed or unreadable: the State is saved without them and their mirrors. */
+	missing: DirectionName[];
+	/** Of `missing`: facings whose download failed, which may still come back on Try again. */
+	unfetched: DirectionName[];
+	/** Of `missing`: facings of a batch canceled before it was made. */
+	canceled: DirectionName[];
+	/** Of `missing`: facings of batches never sent because an earlier batch stopped the run; a continuation can buy them. */
+	unmade: DirectionName[];
+	/** The batch receipts this review was read from (stateReviewReceipts), checked again before saving without `unmade`. */
+	receipts?: string;
 	/** As returned, for facings that came back off the source's ground and were moved onto it in `views`. */
 	ungrounded: Partial<Record<DirectionName, Img>>;
 	provenance: ReturnType<typeof provOf>[];
@@ -136,6 +154,12 @@ const unfinished = () =>
 
 // One lock per attempt, held while it sends or reads its requests, so no tab resends or discards it meanwhile.
 const stateLockName = (token: string) => `pixeldoll-state:${token}`;
+
+/** Whether no tab holds this attempt's lock right now (it is not sending or reading its requests). */
+function stateLockFree(token: string): Promise<boolean> {
+	if (!navigator.locks) return Promise.resolve(false);
+	return navigator.locks.request(stateLockName(token), { ifAvailable: true }, (lock) => !!lock);
+}
 
 function withStateLock<T>(token: string, work: () => Promise<T>): Promise<T> {
 	if (!navigator.locks)
@@ -437,7 +461,8 @@ async function prepareStatePlan(
 	};
 }
 
-async function childViews(attempt: StateAttempt, record: JobRec) {
+/** `known`: views this review already read from the same child; a retry keeps them and fetches only the rest. */
+async function childViews(attempt: StateAttempt, record: JobRec, known?: StateReview) {
 	const childId = managedStateSubmitChildId(record);
 	if (
 		!childId ||
@@ -448,41 +473,67 @@ async function childViews(attempt: StateAttempt, record: JobRec) {
 	if (!app.key || app.keyRejected)
 		throw error('Connect to PixelLab to recover the saved State views.', 'connect');
 	const detail = await readManaged(childId);
-	const inventory = managedStateRotations(detail);
+	if (detail.id !== childId) throw invalidResult();
+	const status = detail.status ?? 'completed';
+	// A lost poll can settle while PixelLab still draws the child: it is not done yet, not a bad result.
+	if (status !== 'completed' && status !== 'failed') throw unfinished();
+	const inventory = managedStateInventory(detail);
 	const { width, height } = attempt.plan.cellSize;
 	if (
-		detail.id !== childId ||
-		(detail.status ?? 'completed') !== 'completed' ||
+		status !== 'completed' ||
 		detail.size?.width !== width ||
 		detail.size?.height !== height ||
 		inventory?.count !== attempt.plan.remoteFacingCount
 	)
 		throw invalidResult();
-	const views = await Promise.all(
+	// Each facing on its own: a missing, unreadable or blank one is named in review instead of costing the rest. One that
+	// could not be downloaded is named apart: it may still download on Try again, and is lost once the State is saved.
+	const unfetched: DirectionName[] = [];
+	const read = await Promise.all(
 		attempt.plan.batches[0].facingIds.map(async (direction) => {
+			const kept =
+				known?.token === attempt.token && known.childId === childId
+					? known.views.find((view) => view.direction === direction)
+					: undefined;
+			if (kept) return kept;
 			const url = inventory.rotations[direction];
-			if (!url) throw invalidResult();
-			const image = await readRotation(url);
-			if (image.w !== width || image.h !== height || !opaqueBox(image)) throw invalidResult();
-			return { direction, image };
+			if (typeof url !== 'string' || !url.trim()) return null;
+			const image = await readRotation(url).then(
+				(image) => image,
+				(cause: unknown) => {
+					console.warn(`The ${direction} State view could not be downloaded.`, cause);
+					unfetched.push(direction);
+					return null;
+				}
+			);
+			return image?.w === width && image.h === height && opaqueBox(image)
+				? { direction, image }
+				: null;
 		})
 	);
-	return { childId, views };
+	return { childId, views: read.filter((view) => view !== null), unfetched };
 }
 
 async function readReview(
 	projectId: string,
 	attempt: StateAttempt,
-	records: JobRec[]
+	records: JobRec[],
+	known?: StateReview
 ): Promise<StateReview> {
 	const plan = attempt.plan;
-	const result =
+	const result: {
+		childId?: string;
+		views: StateReview['views'];
+		unfetched?: DirectionName[];
+	} =
 		plan.endpoint === '/create-character-state'
-			? await childViews(attempt, records[0])
+			? await childViews(attempt, records[0], known)
 			: {
 					views: (
 						await Promise.all(
 							records.map(async (record, index) => {
+								// A batch that failed or cannot be read loses only its own facings, which review names.
+								if (record.state !== 'done') return [];
 								try {
 									const images = await imagesOf(record);
 									return decodeStateBatch(
@@ -491,12 +542,25 @@ async function readReview(
 										images.map(({ img }) => img)
 									);
 								} catch (cause) {
-									throw Object.assign(invalidResult(), { cause });
+									console.warn('A State batch could not be read.', cause);
+									return [];
 								}
 							})
 						)
 					).flat()
 				};
+	if (!result.views.length) throw invalidResult();
+	const drawn = new Set(result.views.map(({ direction }) => direction));
+	const missing = plan.batches
+		.flatMap(({ facingIds }) => facingIds)
+		.filter((direction) => !drawn.has(direction));
+	const unfetched = missing.filter((direction) => result.unfetched?.includes(direction));
+	// Canceled batches were never made; saving says so rather than dropping them unnoticed.
+	const canceled = records.flatMap((record, index) =>
+		plan.endpoint !== '/create-character-state' && record.state === 'canceled'
+			? plan.batches[index].facingIds
+			: []
+	);
 	const ungrounded: StateReview['ungrounded'] = {};
 	// Managed results stay exactly as PixelLab stored them; local edits are offered back on the source's ground.
 	if (plan.endpoint !== '/create-character-state') {
@@ -512,7 +576,12 @@ async function readReview(
 			});
 	}
 	return {
-		...result,
+		childId: result.childId,
+		views: result.views,
+		missing,
+		unfetched,
+		canceled,
+		unmade: [],
 		ungrounded,
 		projectId,
 		id: attempt.id,
@@ -698,8 +767,10 @@ async function prepareContinuation(projectId: string, token: string) {
 		token: attempt.token,
 		keyRevision,
 		missing: batches.missing,
+		// Only finished batches keep views; a stopped one is never resent and is not counted as kept.
 		keptViews: batches.records.reduce(
-			(count, { index }) => count + attempt.plan.batches[index].facingIds.length,
+			(count, { index, record }) =>
+				count + (record.state === 'done' ? attempt.plan.batches[index].facingIds.length : 0),
 			0
 		),
 		remainingViews: remainingPlan.batches.reduce(
@@ -807,14 +878,40 @@ async function submitStateBatches(
 	}
 }
 
-export async function pendingState(projectId: string, token: string): Promise<StateReview | null> {
+/** `known`: the review shown before Try again, whose downloaded views are kept. */
+export async function pendingState(
+	projectId: string,
+	token: string,
+	known?: StateReview
+): Promise<StateReview | null> {
 	const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGenerations?.[token];
 	if (!attempt) return null;
 	if (!attempt.source) throw outdated();
-	const records = stateRecoveryRecords(attempt, await db.all<JobRec>('jobs'));
-	if (!records) throw unfinished();
+	const ledger = await db.all<JobRec>('jobs');
+	const ready = stateReviewBatches(attempt, ledger);
+	if (!ready) throw unfinished();
+	// Batches never sent are reviewed without only once no tab is still sending them.
+	if (ready.unmade.length && !(await stateLockFree(token))) throw unfinished();
 	try {
-		return await readReview(projectId, attempt, records);
+		const review = await readReview(
+			projectId,
+			{
+				...attempt,
+				plan: {
+					...attempt.plan,
+					batches: ready.records.map(({ index }) => attempt.plan.batches[index])
+				}
+			},
+			ready.records.map(({ record }) => record),
+			known
+		);
+		const unmade = ready.unmade.flatMap((index) => attempt.plan.batches[index].facingIds);
+		return {
+			...review,
+			missing: [...review.missing, ...unmade],
+			unmade,
+			receipts: stateReviewReceipts(attempt, ledger)
+		};
 	} catch (cause) {
 		// Known causes (no key to recover the views, a PixelLab error) say what to do; only unreadable results are invalid.
 		if (cause instanceof LocalizedError || cause instanceof ApiError) throw cause;
@@ -849,6 +946,23 @@ async function clearStateAttempt(projectId: string, token: string): Promise<void
 
 /** `riding`: saved from the Riding template, so the notice says where to use it. */
 export async function saveState(review: StateReview, riding = false): Promise<void> {
+	// With views never sent, no tab may be sending them while this save gives them up, and none may have bought them since
+	// this review was read: saving the older subset would delete those paid views with the attempt.
+	if (review.unmade.length)
+		return withStateLock(review.token, async () => {
+			const attempt = (await db.get<StoredProject>('projects', review.projectId))
+				?.stateGenerations?.[review.token];
+			if (attempt && stateReviewReceipts(attempt, await db.all<JobRec>('jobs')) !== review.receipts)
+				throw error(
+					'New views finished for this State. Review it again before saving. Nothing was saved or charged.',
+					'newViews'
+				);
+			return publishState(review, riding);
+		});
+	return publishState(review, riding);
+}
+
+async function publishState(review: StateReview, riding: boolean): Promise<void> {
 	const { projectId, id } = review;
 	assertSelected(projectId);
 	await flushSave();
@@ -866,8 +980,23 @@ export async function saveState(review: StateReview, riding = false): Promise<vo
 	const layer = base?.layers[0];
 	if (!base || !layer?.cells) throw missing();
 	const blobs = new Map<string, Blob>();
+	// Recolors swap exact body colors, and a State is a new drawing with its own shading: put it on the body's colors (and
+	// its shirt and shorts in their regions) or a recolor reaches only the pixels that happen to match.
+	const states = new Set(
+		rig.animations.filter((clip) => clip.kind === 'state').map((clip) => clip.id)
+	);
+	const bodyColors = Object.entries(layer.cells)
+		.filter(([clip]) => !states.has(clip))
+		.flatMap(([, dirs]) => Object.values(dirs ?? {}).flat())
+		.flatMap((hash) => {
+			const image = hash && project.images.get(hash);
+			return image ? [withoutRegions(image)] : [];
+		});
+	const mark = regionMarker(project, id);
 	const views = await Promise.all(
-		review.views.map(async ({ direction, image }) => {
+		review.views.map(async ({ direction, image: drawn }) => {
+			const [snapped] = snapToBodyColors(bodyColors, [drawn]);
+			const image = mark ? mark(direction, 0, snapped) : snapped;
 			const hash = await cellHash(image);
 			blobs.set(hash.slice(7), await cellBlob(image));
 			return [direction, [hash]] as const;

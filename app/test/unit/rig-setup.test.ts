@@ -12,7 +12,8 @@ import {
 	fromApi,
 	hasAll
 } from '../../src/lib/rig/poses.ts';
-import { DIRECTIONS, cellHash, type Keypoint } from '../../src/lib/rig/rig.ts';
+import { DIRECTIONS, cellHash, validateRig, type Keypoint } from '../../src/lib/rig/rig.ts';
+import { riderContact } from '../../src/studio/experience/mounts.ts';
 import { flipSkeleton } from '../../src/lib/rig/skeleton.ts';
 import { flipH, planDirections } from '../../src/lib/rig/mirror.ts';
 import { paddedPoses, poseBatches, rawClip } from '../../src/lib/rig/clips.ts';
@@ -192,7 +193,7 @@ test('a move with an unmeasured frame is skipped and marked to make again; the r
 	expect(neck?.walk).toBeUndefined();
 });
 
-test('an unmeasured frame of the standing move stops setup instead of skipping it', async () => {
+test('a later unmeasured frame of the standing move skips that move; its reference frame stays required', async () => {
 	const project = await source(),
 		odd = makeImg(64, 64);
 	for (let y = 12; y < 60; y++)
@@ -200,14 +201,142 @@ test('an unmeasured frame of the standing move stops setup instead of skipping i
 	const oddHash = await cellHash(odd);
 	project.images.set(oddHash, odd);
 	project.manifest.items[0].layers[0].cells!.walk.south![3] = oddHash;
-	// walk is the standing move here, so its unmeasured frame cannot be skipped
+	// walk is the standing move here: only its first frame is the reference
 	const plan = { ...(await setupPlan(project)), restAnim: 'walk' };
 	const measurements = new Map(
 		[...plan.frames].filter(([hash]) => hash !== oddHash).map(([hash]) => [hash, pose()])
 	);
+	const result = await attachImportedRig(project, plan, measurements, []);
+	const walk = result.manifest.rig.animations.find((a) => a.id === 'walk')!;
+	expect(walk.sources).toBeUndefined();
+	expect(result.rigQa).toMatchObject({ redo: ['walk'], pivotFrom: 'walk/south/0' });
+	expect(result.manifest.rig.anchors?.neck?.walk).toBeUndefined();
+	expect(result.manifest.rig.anchors?.neck?.blink?.south).toHaveLength(2);
+	expect(rigReady({ ...result, character: { id: 'managed', looks: 'red hair' } })).toBe(true);
+	// Consumers that read per-move anchors find none for the skipped standing move and fall back.
+	expect(validateRig(result.manifest.rig)).toEqual([]);
+	expect(
+		riderContact(result.manifest.rig, { x: 32, y: 60 }, 'walk', 'south', 0, { x: 32, y: 60 }, 40)
+			.source
+	).toBe('estimate');
+
+	// Its reference frame without joints still stops setup.
+	const first = project.manifest.items[0].layers[0].cells!.walk.south![0]!;
+	project.manifest.items[0].layers[0].cells!.walk.south![0] = oddHash;
+	project.manifest.items[0].layers[0].cells!.walk.south![3] = first;
 	await expect(attachImportedRig(project, plan, measurements, [])).rejects.toMatchObject({
 		translation: { key: 'setup.errors.jointsMissing' }
 	});
+});
+
+test('the pivot and anchors come only from the standing reference frames, not later standing frames', async () => {
+	const project = await source(),
+		odd = makeImg(64, 64);
+	for (let y = 12; y < 60; y++)
+		for (let x = 26; x < 38; x++) odd.data.set([170, 90, 80, 255], (y * 64 + x) * 4);
+	const oddHash = await cellHash(odd);
+	project.images.set(oddHash, odd);
+	project.manifest.items[0].layers[0].cells!.walk.south![3] = oddHash;
+	const plan = { ...(await setupPlan(project)), restAnim: 'walk' };
+	const all = new Map([...plan.frames].map(([hash]) => [hash, pose()]));
+	const measured = await attachImportedRig(project, plan, all, []);
+	// Moving the later frame's joints, or losing them, leaves the pivot and the other moves' anchors as they were.
+	const moved = await attachImportedRig(
+		project,
+		plan,
+		new Map([...all].map(([hash, k]) => [hash, hash === oddHash ? pose(6) : k])),
+		[]
+	);
+	const lost = await attachImportedRig(
+		project,
+		plan,
+		new Map([...all].filter(([hash]) => hash !== oddHash)),
+		[]
+	);
+	for (const result of [moved, lost]) {
+		expect(result.manifest.rig.pivot).toEqual(measured.manifest.rig.pivot);
+		expect(result.manifest.rig.rest).toEqual(measured.manifest.rig.rest);
+		expect((result.rigQa as { pivotFrom: string }).pivotFrom).toBe('walk/south/0');
+		expect(result.manifest.rig.anchors?.neck?.blink).toEqual(
+			measured.manifest.rig.anchors?.neck?.blink
+		);
+	}
+});
+
+test('setup skips a move with an empty frame before measuring it; standing and Default stay required', async () => {
+	const project = await source(),
+		odd = makeImg(64, 64);
+	for (let y = 12; y < 60; y++)
+		for (let x = 26; x < 38; x++) odd.data.set([170, 90, 80, 255], (y * 64 + x) * 4);
+	const oddHash = await cellHash(odd);
+	project.images.set(oddHash, odd);
+	const cells = project.manifest.items[0].layers[0].cells!;
+	cells.blink.south = [oddHash, null];
+	const plan = await setupPlan(project);
+	expect(plan.skipped).toEqual(['blink']);
+	// Nothing is spent measuring a move that is skipped.
+	expect(plan.frames.has(oddHash)).toBe(false);
+	const result = await attachImportedRig(
+		project,
+		plan,
+		new Map([...plan.frames].map(([hash]) => [hash, pose()])),
+		[]
+	);
+	expect(result.manifest.rig.animations.find((a) => a.id === 'blink')?.sources).toBeUndefined();
+	expect(result.manifest.rig.animations.find((a) => a.id === 'walk')?.sources?.south).toBeDefined();
+	expect(result.rigQa).toMatchObject({ redo: ['blink'] });
+	expect((result.rigQa as { warnings: string[] }).warnings).toContain(
+		'blink was skipped: one of its frames is empty. Fix that frame or make the move again to animate items on it.'
+	);
+	// A later empty frame skips the standing move too, but its reference frame stays required.
+	for (const d of ['east', 'north', 'west'] as const) cells.walk[d] = [...cells.walk.south!];
+	cells.walk.south![5] = null;
+	const walking = await setupPlan(project, 'walk');
+	expect(walking.skipped.toSorted()).toEqual(['blink', 'walk']);
+	expect(walking.frames.size).toBe(1); // the reference frame alone is measured
+	cells.walk.south![5] = cells.walk.east![5];
+	cells.walk.south![0] = null;
+	await expect(setupPlan(project, 'walk')).rejects.toMatchObject({
+		translation: { key: 'setup.errors.noStandingReference' }
+	});
+	// Default is never skipped.
+	const standing = project.manifest.rig.animations.find((a) => a.id === 'default')!;
+	standing.cells = 2;
+	standing.frames = [
+		{ cell: 0, ms: 100 },
+		{ cell: 1, ms: 100 }
+	];
+	cells.default.south = [cells.default.south![0], null];
+	await expect(setupPlan(project)).rejects.toMatchObject({
+		translation: { key: 'setup.errors.emptyBodyFrame' }
+	});
+});
+
+test('a stored blank Default row stops setup before spending, while a missing row is sparse', async () => {
+	const project = await source(),
+		{ rig } = project.manifest,
+		cells = project.manifest.items[0].layers[0].cells!,
+		blank = makeImg(64, 64),
+		blankHash = await cellHash(blank);
+	project.images.set(blankHash, blank);
+	// Saved standing originals, so the standing reference does not come from Default.
+	rig.rest = Object.fromEntries(
+		(['south', 'east', 'north', 'west'] as const).map((d) => [
+			d,
+			{ image: cells.default[d]![0]!, keypoints: pose() }
+		])
+	);
+	delete cells.walk.south;
+	const sparse = await setupPlan(project, 'default');
+	expect(sparse.skipped).not.toContain('walk');
+	cells.default.south = [blankHash];
+	await expect(setupPlan(project, 'default')).rejects.toMatchObject({
+		translation: { key: 'setup.errors.emptyBodyFrame' }
+	});
+	// A stored blank row of another move skips that move for its empty frame.
+	cells.default.south = [rig.rest.south!.image];
+	cells.walk.south = [blankHash];
+	expect((await setupPlan(project, 'default')).skipped).toContain('walk');
 });
 
 test('setup refuses missing or invalid measurements and rejects unsupported input before spending', async () => {

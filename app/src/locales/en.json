@@ -48,6 +48,11 @@
 	"librarySettings": {
 		"title": "Library",
 		"scope": "Back up saved characters, artwork, and archived data. Preferences, drafts, and jobs are not included.",
+		"backupWithDebug": "Includes debugging details",
+		"debugDetails": "Include debugging details",
+		"debugDetailsHint": "Adds error logs, request history, drafts, jobs and app state to every backup so problems can be diagnosed. Errors from this tab are included, and from now on errors are also kept across reloads and tabs. Your PixelLab key is never included.",
+		"scopeDebug": "Back up saved characters, artwork, archived data, and debugging details.",
+		"debugNotSaved": "The browser could not save this setting.",
 		"backup": "Back up library",
 		"restoreFromBackup": "Restore from backup",
 		"review": "Review backup",
@@ -423,13 +428,13 @@
 		"saving": "Saving…",
 		"reviewChanges": "Review changes",
 		"changeTitle": "Change directions?",
-		"confirmMixedRemoval": "{directions} will be removed from this character’s moves and equipment. Undo brings them back until you reload or close this page.",
+		"confirmMixedRemoval": "{directions} will be removed from this character’s moves and equipment. Until you reload or close this page, Undo can bring them back if nothing else changes this character first.",
 		"confirmReplace": "Mirroring replaces the artwork for {directions} with flipped frames from the opposite view. Turning mirroring off later keeps those flipped frames. Download a backup to keep the original artwork.",
 		"labelDirectionsToKeep": "Directions to keep",
 		"loadingDirections": "Loading directions…",
 		"downloadBackup": "Download backup",
 		"reviewRemoval": "Review removal",
-		"confirmRemoval": "{directions} will be removed from this character’s moves and equipment. The other directions stay unchanged. Undo brings them back until you reload or close this page.",
+		"confirmRemoval": "{directions} will be removed from this character’s moves and equipment. The other directions stay unchanged. Until you reload or close this page, Undo can bring them back if nothing else changes this character first.",
 		"rPGMakerExportNeedsAllFourCardinal": "RPG Maker export needs all four cardinal directions.",
 		"directionsWereSavedReloadToRefreshThe": "Directions were saved. Reload to refresh the character.",
 		"directionsWereSavedReloadToRefreshThe2": "Directions were saved. Reload to refresh the character: {reason}"
@@ -530,6 +535,7 @@
 			"other": "Match {pixels} in {n} saved {move} frames facing {direction} to the item’s existing color palette."
 		},
 		"colorMatchFixed": "Other views, moves, materials and saved recolors stay fixed.",
+		"colorMatchMissing": "Frames {frames} have no art yet, so they are left out.",
 		"colorMatchUnmatched": {
 			"one": "{n} unmatched eligible pixel stays unchanged.",
 			"other": "{n} unmatched eligible pixels stay unchanged."
@@ -796,6 +802,8 @@
 		"itemMoved": "Moved {name} to {label}.",
 		"itemMoveBusy": "Finish or discard the related generation before moving this item.",
 		"itemMoveChanged": "The item or slot changed. Try again.",
+		"itemMoving": "Another item is still moving. Try again when it finishes.",
+		"itemNotReady": "This item is still being made or reviewed. Try again once it is saved.",
 		"notShownInMove": "Not shown in this move",
 		"notShownInMoveNote": "Wearing it, but it is missing frames for this move in every view, so it is not shown.",
 		"randomLowerItem": "Random {lower} item",
@@ -856,7 +864,9 @@
 		"generationTileRunning": "{name}, {percent}, {status}",
 		"generationTileWearing": "{name}, {status}, Wearing",
 		"generationTile": "{name}, {status}",
-		"generationProgress": "{percent}, {status}"
+		"generationProgress": "{percent}, {status}",
+		"itemDrawing": "drawing for {move}, {percent}",
+		"itemQueued": "queued for {move}"
 	},
 	"welcome": {
 		"demoNeedsNoAccount": "The demo needs no account. Creating uses your {pixelLab} generations.",
@@ -909,7 +919,9 @@
 		"still": "Still",
 		"inspect": "Inspect",
 		"customization": "Customization",
-		"customizationPanels": "Customization panels"
+		"customizationPanels": "Customization panels",
+		"tabWorkRunning": "Work here is running, waiting or ready to review",
+		"tabWorkAttention": "Work here needs attention"
 	},
 	"worldStage": {
 		"groundUnavailable": "Continuous ground rendering unavailable. Showing the static scene.",
@@ -1058,6 +1070,7 @@
 		"couldNotSaveFlowFailure": "{error} Could not save this failure on this device. Dismiss this operation before reloading.",
 		"useSavedFramesInTheTabThat": "Use saved frames in the tab that is managing your PixelDoll jobs.",
 		"anotherMoveIsStillBeingAddedSo": "Another move is still being added, so this one did not start. Try again when it finishes.",
+		"moveStillAtPixelLab": "A request of this move is still at PixelLab, so a new attempt did not start and nothing was charged. Wait for it to finish in Activity, then review the move.",
 		"moveNameAdded": "{moveName} added",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} has item issues to review. No paid retry was started.",
 		"moveFailedOpen": "{moveName} failed. Open Moves for recovery options.",
@@ -1108,9 +1121,11 @@
 		"changeDirections": "Change directions",
 		"restoreOriginals": "Restore originals",
 		"changeDescription": "Change description",
-		"changed": "This character changed since, so this step can no longer be undone or redone.",
+		"changed": "This step was removed from the history: the character changed since, so it can no longer be undone or redone.",
 		"notRecorded": "Saved, but this change cannot be undone: some of its frames are no longer stored.",
-		"busy": "Wait for the last Undo or Redo to finish. If it never does, reload the page."
+		"busy": "Wait for the last Undo or Redo to finish. If it never does, reload the page.",
+		"notInHistory": "This step is no longer in the history.",
+		"saveFailed": "Your latest changes could not be saved. Resolve the storage error, then try again."
 	},
 	"export": {
 		"sheet": {
@@ -1343,6 +1358,7 @@
 		"drop": "Drop a character ZIP here",
 		"dropNote": "PixelLab character or PixelDoll export · up to 64 MB",
 		"chooseZip": "Choose ZIP",
+		"chooseAnother": "Choose another ZIP",
 		"characterZip": "Character ZIP",
 		"devicePrivacy": "Your files stay on this device. Preview your character before importing.",
 		"pixelLabHint": "In PixelLab’s character creator, export a ZIP with individual frames. Enclosing folders are supported. Other spritesheet layouts and PNG-only ZIPs are not supported.",
@@ -1403,6 +1419,9 @@
 			"noRoom": "Room for moves was not added because this character has too many image pixels. Use Adjust frame after importing to add it.",
 			"fixedBase": "Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.",
 			"frameCounts": "“{move}” has different frame counts by direction. Its directions were imported as separate moves to keep every original frame and direction length.",
+			"skippedMove": "“{move}” was left out: its animation frames could not be read. Export it again with individual numbered frames.",
+			"skippedDirection": "“{move}” facing {direction} was left out: its frames are empty, missing or out of order.",
+			"skippedStanding": "“{move}” facing {direction} was left out: the character has no standing view facing that way.",
 			"semiAlpha": "Partially transparent edges were converted to pixel-art transparency.",
 			"detailsDropped": "Some saved character details were damaged and were left out. Set up its pose rig again if needed."
 		},
@@ -1440,9 +1459,6 @@
 			"stateFrames": "The “{state}” state has an invalid frame layout.",
 			"undeclaredAnimation": "The “{state}” state contains an animation file missing from its metadata: {path}.",
 			"stateAnimations": "The “{state}” state has an invalid animation list.",
-			"moveDirections": "The {move} move has no animation directions.",
-			"moveDirection": "The {move}/{direction} animation has an unsupported direction.",
-			"moveFrames": "The {move}/{direction} animation must contain 1–120 frame paths.",
 			"selectedState": "This PixelLab export does not include the selected character state.",
 			"stateInfo": "{detail} Choose another standing pose or export its ZIP again.",
 			"selectedRotations": "This PixelLab export does not include the selected character state rotations.",
@@ -1451,17 +1467,11 @@
 			"fixState": "{detail} Uncheck that state’s moves to continue, or export its ZIP again.",
 			"stateMetadata": "Moves from “{state}” have invalid size or camera metadata: {detail} Uncheck that state’s moves to continue.",
 			"stateMismatch": "Moves from “{state}” use a different character size or camera view. Uncheck that state to continue.",
-			"missingStandingView": "The {move}/{direction} animation has no matching standing view in the selected state.",
 			"tooManyMoves": "This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Standing).",
 			"orphanFile": "This ZIP contains an animation file without an unambiguous state layout: {path}. Export a new character ZIP with individual frames.",
 			"rotationPathName": "Unsupported rotation image path: {path}. Export a character ZIP with named direction PNGs.",
 			"animationPath": "Unsupported animation frame path: {path}. Export a character ZIP with individual numbered frames.",
-			"frameNumber": "{path} has an invalid animation frame number.",
-			"animationDirection": "The {move} animation has an unsupported direction: {direction}.",
 			"noRotations": "This PixelLab ZIP has no supported rotation images. Export a single character with rotations/ and animations/ folders.",
-			"noRotation": "The {direction} animation has no matching rotation.",
-			"moveFrameRange": "{move}/{direction} must contain 1–120 frames.",
-			"missingAnimationFrames": "{move}/{direction} is missing animation frames.",
 			"frameImage": "{path} is not a PNG or exceeds the import size limit.",
 			"cutPixels": "{path} would lose {cut} visible pixels in a {frame} px cell. Import a smaller character; artwork is never rescaled.",
 			"emptyFrame": "{path} is an empty frame.",
@@ -1476,8 +1486,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Workspace activity",
-		"activityIntro": "Saved with the workspace from PixelDoll {build}. Jobs from the ZIP do not restart.",
+		"activityTitle": "Backup details",
+		"activityIntro": "Opened from a backup made with PixelDoll {build}.",
 		"missing": {
 			"one": "{count} artwork file was missing or unreadable.",
 			"other": "{count} artwork files were missing or unreadable."
@@ -1485,29 +1495,11 @@
 		"skippedCharacters": {
 			"one": "Saved characters skipped: {count}.",
 			"other": "Saved characters skipped: {count}."
-		},
-		"demoOutfit": "The demo uses its default outfit settings.",
-		"exportSettings": "The copy uses default export settings.",
-		"tier": "PixelLab tier: {tier}",
-		"noErrors": "No recent errors or unfinished jobs were recorded.",
-		"noRecent": "Recent errors were not included.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Code {code}",
-		"error": {
-			"tooLarge": "This workspace exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.",
-			"containsKey": "A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.",
-			"invalidIndex": "This workspace index is invalid.",
-			"unsupportedVersion": "This workspace file version is not supported.",
-			"duplicateRecord": "This workspace contains an unsupported or duplicate saved record.",
-			"missingFiles": "This workspace has an invalid list of missing files.",
-			"unexpectedFile": "This workspace contains an unexpected file.",
-			"invalidDiagnostics": "This workspace has invalid recent errors."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Choose a PixelDoll backup or workspace ZIP, not a character ZIP.",
+			"notBackup": "Choose a PixelDoll backup ZIP, not a character ZIP.",
 			"unsupportedVersion": "This backup file version is not supported.",
 			"invalid": "This backup is damaged or invalid.",
 			"tooLarge": "This backup exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.",
@@ -1579,6 +1571,8 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: item quality checks need review. No paid retry was started.",
 		"bodyQuality": "{move} {direction}: {reason}",
+		"bridgedJoints": "joints of motion frame {frame} of {total} were inferred from the frames next to it",
+		"shortFrames": "PixelLab sent {count} frames instead of {expected}, so the first or last frame may differ",
 		"health": {
 			"clean": "Clean",
 			"accepted": "Accepted",
@@ -1627,6 +1621,8 @@
 			"noRepairGrid": "No repair grid for {move} ({direction}): {reason}; the best try was kept",
 			"heldLoop": "The held item changes shape or angle when a move loops",
 			"registrationShift": "PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame.",
+			"suspiciousJoints": "The joints look unusual in {move} {direction} frame {frame}, so the item may not fit there. Check the grip or alignment.",
+			"jointReview": "Some frames were fitted on joints that look unusual. Check the grip or alignment.",
 			"bodyUnmeasured": "The item covers almost all of the body, so it could not be checked; make sure it is not a redrawn body"
 		},
 		"anotherCharacter": "another character",
@@ -2048,6 +2044,9 @@
 		"waitingTitle": "Waiting for another tab",
 		"waitingBody": "Your generation hasn’t started. Keep Activity open and PixelDoll will continue here when the other tab is ready.",
 		"stopInRunningTab": "Stop this job in the tab that is running it.",
+		"saving": "Saving on this device…",
+		"stopNoAnswer": "The tab running this job has not confirmed the stop yet. Check Activity in a moment; if it is still running, stop it in that tab.",
+		"stopNotConfirmed": "PixelLab did not confirm the stop, so it may still run and charge. Check Activity.",
 		"pausedStorage": "Saved jobs couldn’t be read or saved, so nothing new is sent. Resume to try again.",
 		"cancelSaveFailed": "The cancel couldn’t be saved. This tab won’t send the request, but another tab or a reload could."
 	},
@@ -2062,6 +2061,9 @@
 		"checking": "Checking the frames…",
 		"someChecks": "Some checks need review.",
 		"noRetryStarted": "No paid retry has been started. Choose Generate again for a new attempt, or Keep it to accept the complete artwork with these warnings. Closing this review keeps it waiting.",
+		"noRetryStartedFreeKeep": "No paid retry has been started. Keep the frames that came back for free, or choose Generate again for a new attempt. Closing this review keeps it waiting.",
+		"noRetryStartedNoKeep": "No paid retry has been started. Choose Generate again for a new attempt. Closing this review keeps it waiting.",
+		"incompleteFreeKeep": "Some frames were not generated. You can keep the frames that came back for free, or make a new attempt.",
 		"keep": "Keep it",
 		"retryLabel": "Try {name} again",
 		"incomplete": "Some frames were not generated. A new attempt is required before this item can be kept.",
@@ -2093,7 +2095,10 @@
 		"rerollFailed": "Re-roll failed calls",
 		"rerollFailedDetail": "Only the calls that failed are bought again, with whatever depends on them. Every other finished call is reused.",
 		"keepFinished": "Keep finished moves",
-		"keepFinishedDetail": "Saves the moves whose frames all finished. The others stay listed as missing frames, which you can make later."
+		"keepFinishedDetail": "Saves the moves whose frames all finished. The others stay listed as missing frames, which you can make later.",
+		"keepAvailable": "Keep available frames",
+		"keepAvailableDetail": "Saves every frame that came back. Missing: {views}. They stay listed as missing frames, which you can make later.",
+		"missingFrames": "{move} {direction} ({missing} of {total} frames)"
 	},
 	"generationDetails": {
 		"copiedFrom": "paid once for {name}; copied here for free",
@@ -2171,12 +2176,22 @@
 		"itemsDrawn": {
 			"one": "{drawn} of {n} item drawn",
 			"other": "{drawn} of {n} items drawn"
+		},
+		"drawingItem": "Drawing {item}",
+		"moreQueued": {
+			"one": "{n} more queued",
+			"other": "{n} more queued"
+		},
+		"itemsQueued": {
+			"one": "{n} item queued",
+			"other": "{n} items queued"
 		}
 	},
 	"setup": {
 		"warnings": {
 			"headroom": "{direction} leaves {count} px above the head; tall hair or hats may need a larger frame.",
 			"keptFrames": "{name} keeps its existing frames. Make it again after setup to animate it onto future moves.",
+			"moveSkippedEmpty": "{move} was skipped: one of its frames is empty. Fix that frame or make the move again to animate items on it.",
 			"moveSkipped": "{move} was skipped: PixelLab could not find valid joints on one of its frames. Make it again to animate items on it."
 		},
 		"title": "Set up character",
@@ -2199,6 +2214,7 @@
 		"saveDescription": "Save description",
 		"descriptionSaved": "Description saved. New moves use it.",
 		"estimate": "{frames} unique body frames · {gens} gens estimated. Includes a {connection}-gen account connection. Matching saved measurements are reused.",
+		"willSkip": "{moves} will be skipped: each has an empty frame, so nothing is spent on it. Fix those frames or make the moves again to animate items on them.",
 		"reconnectEstimate": "Reconnecting keeps every pose, item fit and frame as they are. {gens} gens estimated, for the account connection.",
 		"busyElsewhere": "Finish the other character operation before starting setup.",
 		"resumeRigSetup": "Resume rig setup",
@@ -2263,6 +2279,8 @@
 			"savedEquipmentRecoveryNeeds": "Saved equipment recovery needs an existing move and its equipment only. No generation was requested.",
 			"anchoredEquipmentGenerationRequires": "Anchored equipment generation requires an existing move and its saved standing items. No generation was requested.",
 			"moveItemMissingStored": "This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.",
+			"moveKeptUnposed": "{move} {direction} was kept without poses. Make that view again before fitting equipment there. No generation was requested.",
+			"freeChoiceCacheMissing": "A result this free choice reuses is no longer saved, so nothing was requested. Review the move again.",
 			"setUpRigFirst": "Set up this character’s pose rig before adding moves.",
 			"newMoveNeedsEvery": "A new move needs every independently drawn direction.",
 			"partialRepairMustKeep": "A partial repair must keep the existing frame count.",
@@ -2274,7 +2292,6 @@
 			"characterChangedAnotherTab2": "This character changed in another tab before the move could be saved. Reopen it before trying again.",
 			"demoStandingReferenceMissing": "The demo standing reference is missing.",
 			"resultMissingStorage": "A paid result is missing from this browser's storage.",
-			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.",
 			"animationExceedsPxFrame": "{move} {direction}: the body frames do not fit the {w} px frame. They were kept for review; nothing was saved.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.",
@@ -2324,6 +2341,8 @@
 			"partialSaved": "{reason} The finished views were saved ({views}).",
 			"partialSavedNewFrames": "{reason} The finished views were saved ({views}); Generate new frames requests only the missing ones.",
 			"partialSavedRetry": "{reason} The finished views were saved ({views}). Generating again requests only the missing ones.",
+			"partialSavedRedraw": "{reason} The finished frames were saved ({views}). Generating again redraws every frame of the views that are not complete, at the price it shows.",
+			"savedFrameRange": "{view} frames {frames}",
 			"replacementFailsQa": "The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.",
 			"newMoveFailsQa": "The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.",
 			"moveDirectionsChanged": "Character directions changed. Review the move’s current estimate before trying again. No generation was requested.",
@@ -2545,6 +2564,7 @@
 			"label": "Start from",
 			"frame": "Frame {number}",
 			"unavailable": "This frame needs body artwork and measured joints for every selected facing.",
+			"missingViews": "This frame has no view facing {directions}, so a move can’t start from it. Choose another frame.",
 			"changed": "The selected starting frame changed. Choose the source again. No generation was requested.",
 			"stateTarget": "A State cannot be replaced as a Move."
 		},
@@ -2605,6 +2625,7 @@
 			"unavailable": "Not available",
 			"findings": "Quality notes",
 			"hardFailure": "Regenerate this move before saving it.",
+			"reviewWaiting": "This move has frames waiting in its review. Save or discard them first. No request was made.",
 			"beforeItems": "Review the move before animating items.",
 			"changed": "The character or move changed. Reopen the review before continuing.",
 			"missingFrames": "The reviewed frames are no longer available.",
@@ -2613,7 +2634,6 @@
 			"later": "You can generate items for {move} later from its menu in Moves."
 		},
 		"thatCharacter": "that character",
-		"recoveryCheckFailed": "Could not check cached frames: {error}",
 		"retryLabel": "Generate move again",
 		"newSetup": "New move…",
 		"useSaved": "Use saved frames",
@@ -2722,6 +2742,12 @@
 			"finish": "Finish review",
 			"useRedrawn": "Use redrawn frames",
 			"useRepaired": "Use repaired frames",
+			"useFinishedRedraws": "Use finished redraws",
+			"useFinishedRepairs": "Use finished repairs",
+			"stopped": {
+				"one": "A later batch stopped, so {n} frame keeps its current art ({frames}). Nothing more was bought.",
+				"other": "A later batch stopped, so {n} frames keep their current art ({frames}). Nothing more was bought."
+			},
 			"heldBy": "An item frame review on {character} is ready. Queued moves will wait for your choice.",
 			"compare": "Compare item frames",
 			"saved": "The new frames are already saved. Finish the review to continue.",
@@ -2730,9 +2756,9 @@
 			"repairIssues": "The paid repair is ready, but some frames may have visual issues.",
 			"noCost": "Your current artwork is unchanged. Either choice costs nothing. Hide this panel to decide later.",
 			"frame": "Frame {number}",
-			"currentFrames": "Current frames",
-			"redrawnFrames": "Redrawn frames",
-			"repairedFrames": "Repaired frames",
+			"currentLabel": "Current frame",
+			"redrawnLabel": "Redrawn frame",
+			"repairedLabel": "Repaired frame",
 			"findings": "Quality findings",
 			"redrawInManagingTab": "Review the redraw in the tab managing your PixelDoll jobs.",
 			"repairInManagingTab": "Review the repair in the tab managing your PixelDoll jobs.",
@@ -2758,6 +2784,12 @@
 			"designFrameMissing": "The design call returned no dressed frame.",
 			"incompleteReferenceFrames": "PixelLab returned incomplete reference or standing frames. No dependent request was sent.",
 			"standingFrameSize": "PixelLab returned a standing frame of the wrong size. No dependent request was sent.",
+			"poseFramesMalformed": "PixelLab returned missing or malformed frames for {item}. No automatic retry was made.",
+			"poseFrameSize": "PixelLab returned frames of the wrong size for {item}. No automatic retry was made.",
+			"gridStopped": "The {item} repair request did not finish ({state}). It was not sent again.",
+			"poseStopped": "The {item} posing request did not finish ({state}). It was not sent again.",
+			"requestLost": "The {item} request was lost, so it may have run and charged. It was not sent again.",
+			"noUsableFrames": "PixelLab returned no usable frames for {item}.",
 			"layersMismatch": "Equipment layers do not match this slot. No generation was requested.",
 			"reviewChanged": "This item or its checks changed. Reopen it before accepting its current artwork.",
 			"paletteReviewChanged": "This item or its colors changed. Review the color match again.",
@@ -2789,6 +2821,7 @@
 		"copyDemo": "Copy the demo body",
 		"feature": "Equipment generation",
 		"needsSetup": "Set up this character to use skeleton-posed equipment, oversize weapons and new moves.",
+		"poseIssues": "Some measured joints look unusual. The item will follow them, so check these frames after it is made:",
 		"standingFirst": "Make the standing design first. Generate this item for individual moves from its details after you like the result.",
 		"where": "Where does it go?",
 		"notShown": "Not shown in Wardrobe yet. Making an item shows it.",
@@ -2851,6 +2884,12 @@
 		"changed": "The source or quote changed. Check the cost again before generating.",
 		"sourceUnavailable": "The source frame needs saved artwork in every drawn direction.",
 		"invalidResult": "PixelLab did not return all expected views at the planned size.",
+		"missingViews": "No usable view came back facing {directions}. Saving keeps the other views; this State will have no art in those facings or their mirrored views.",
+		"unfetchedViews": "The view facing {directions} could not be downloaded. Try again first: once you save without it, it can’t be fetched later.",
+		"canceledViews": "The view facing {directions} was canceled before it was made. If you save now, it won’t be made.",
+		"unmadeViews": "The view facing {directions} was not made yet. Check the cost of making it, or save without it.",
+		"newViews": "New views finished for this State. Review it again before saving. Nothing was saved or charged.",
+		"saveWithout": "Save without them",
 		"unfinished": "This attempt has unfinished or unavailable results. Check Activity. No request was resent.",
 		"outdated": "This unfinished State was started by an older version of PixelDoll. Discard it to start again.",
 		"quoteUnavailable": "PixelLab did not provide a usable Pro Flash quote.",
@@ -2892,6 +2931,8 @@
 		"quote": "Check joint fitting cost",
 		"measure": "Measure joints",
 		"review": "Check that the marked joints line up with each view before saving.",
+		"notFitted": "No joints were found facing {directions}, so those views can’t be a starting point yet. Saving keeps the joints of the other views.",
+		"notChecked": "The joint check facing {directions} did not finish and was not resent. Saving keeps the joints of the other views.",
 		"save": "Save joints"
 	},
 	"stateCapture": {
@@ -3108,6 +3149,7 @@
 		"download": "Download paid results",
 		"frame": "{view} frame {number}",
 		"waiting": "Some paid requests are still running at PixelLab. These choices unlock when they finish.",
+		"loadFailed": "Your paid results could not be read, so the ways to reuse them are hidden. Nothing was lost.",
 		"state": {
 			"ready": "Ready",
 			"pending": "Not bought yet",
@@ -3128,8 +3170,17 @@
 		"liftDetailWarned": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame. This is above the {limit} px feet check, so the move is saved with a feet warning.",
 		"reroll": "Re-roll {views}",
 		"rerollDetail": "A re-roll buys a new attempt only for those views. Every other view keeps its paid results.",
-		"keepUnposedDetail": "Saves the body frames as they are. Joints were not found on some frames, so items can’t be fitted to this move until you redraw it.",
+		"keepUnposedDetail": "Saves the body frames as they are, for free. Joints were not found on some frames, so items can’t be fitted in those views until you make them again. The other views keep their poses.",
 		"keepUnposed": "Keep without fitting items",
+		"unposedViews": {
+			"one": "{move} {directions} was kept without poses, so equipment is not fitted there. Make that view again to fit it.",
+			"other": "{move} {directions} were kept without poses, so equipment is not fitted there. Make those views again to fit it."
+		},
+		"saveFinished": "Save the finished views",
+		"saveFinishedDetail": {
+			"one": "Saves {views} for free, after review. {missing} did not finish and is left out; you can make it later from this move.",
+			"other": "Saves {views} for free, after review. {missing} did not finish and are left out; you can make them later from this move."
+		},
 		"pending": "Still to buy: about {gens} gens.",
 		"liftable": "Can be lifted to fit: feet rise up to {px} px in {frames} of {total} frames.",
 		"notLiftable": "Lifting cannot fit this motion: it is cut at a side or at the top."
@@ -3318,7 +3369,7 @@
 			"overflow": "Choose a lift or a larger frame if one is offered, or try again.",
 			"empty": "Your paid results stay in Activity. Try again with a new attempt.",
 			"dropped": "Wait a moment, then try again.",
-			"joints": "Anything paid stays in Activity. Try a new attempt, or start from a clearer standing pose.",
+			"joints": "Anything paid stays in Activity. Keep the frames without fitting items if that is offered, or start from a clearer standing pose.",
 			"stopped": "It was not sent again. Look at what it returned before starting again.",
 			"quality": "Review the results, then keep them or try again.",
 			"changed": "Review it again before continuing.",
@@ -3345,10 +3396,32 @@
 		"allDrawn": "Every item is already drawn for {move}.",
 		"noneAvailable": "None of these items can be generated for {move}.",
 		"notDrawnFor": "Not drawn for {move} yet",
-		"generateFor": "Generate for {move}"
+		"generateFor": "Generate for {move}",
+		"wearOn": "Wear for {move}"
+	},
+	"itemImport": {
+		"title": "Import items",
+		"intro": "A character’s Download ZIP, a backup or a shared character. Free when its items fit this character.",
+		"empty": "This ZIP has no finished items.",
+		"skipped": {
+			"one": "{count} item couldn’t be read.",
+			"other": "{count} items couldn’t be read."
+		},
+		"notFitted": "{names} no longer fit and weren’t added.",
+		"busy": "Wait for the item being added, then try again.",
+		"row": {
+			"copy": "Fits this character exactly",
+			"refit": "Fitted to this body for free. Check its frames after importing.",
+			"unfitted": "Made for another body. Worn as drawn, so it may float or clip.",
+			"remake": "Made for another body, so it can’t be worn here"
+		}
+	},
+	"importDrop": {
+		"items": "Drop to import items",
+		"moves": "Drop to import moves",
+		"states": "Drop to import States"
 	},
 	"moveImport": {
-		"title": "Import moves",
 		"importMoves": "Import moves",
 		"importStates": "Import States",
 		"dropArea": "PixelDoll ZIP drop area",

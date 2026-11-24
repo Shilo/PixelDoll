@@ -13,7 +13,7 @@ import {
 	restoreParts
 } from '../../src/lib/store/recently-deleted.ts';
 import { restoreRemoved, type DressedRecord } from '../../src/lib/store/project.ts';
-import { retainMoves, restoreMove } from '../../src/lib/rig/moves.ts';
+import { retainMoveMetadata, retainMoves, restoreMove } from '../../src/lib/rig/moves.ts';
 import { stableStringify } from '../../src/lib/image/hash.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import type { Preset, Sha256 } from '../../src/lib/store/manifest.ts';
@@ -372,6 +372,32 @@ test('a deleted move comes back with its clip, item frames and pose records', as
 	expect(record.rigQa).toMatchObject({ warnings: ['walk/south/0 smudge'] });
 	// Restoring twice changes nothing.
 	expect(await restoreMove(record, before, 'walk')).toBe('exists');
+});
+
+test('a deleted move without poses leaves the redo list and comes back on it with its artwork', async () => {
+	const project = await equipmentFixture();
+	const source = project.manifest;
+	source.rig.animations.push({ ...source.rig.animations[0], id: 'walk', sources: undefined });
+	for (const item of source.items)
+		item.layers[0].cells!.walk = structuredClone(item.layers[0].cells!.rest);
+	const before: Pick<StoredProject, 'manifest' | 'skeletons' | 'rigQa'> = {
+		manifest: structuredClone(source),
+		skeletons: {},
+		rigQa: { clips: {}, warnings: [], redo: ['walk', 'walk/south', 'rest/east'] }
+	};
+	// Deleting it drops its own entries only.
+	expect(retainMoveMetadata(before, new Set(['rest'])).rigQa).toMatchObject({
+		redo: ['rest/east']
+	});
+	const removed = await retainMoves(source, new Set(['rest']));
+	// Setup ran again while it was deleted: live QA exists without the move's entries.
+	const record: Pick<StoredProject, 'manifest' | 'skeletons' | 'rigQa'> = {
+		manifest: structuredClone(removed),
+		skeletons: {},
+		rigQa: { clips: {}, warnings: [], redo: ['rest/east'] }
+	};
+	expect(await restoreMove(record, before, 'walk')).toBe('restored');
+	expect((record.rigQa as { redo: string[] }).redo).toEqual(['rest/east', 'walk', 'walk/south']);
 });
 
 test('a move waits for a deleted item that owns its frames', async () => {

@@ -187,20 +187,20 @@ export function decodeStateBatch(
 	batch: StateGenerationBatch,
 	images: Img[]
 ): { direction: DirectionName; image: Img }[] {
+	// A blank facing is left out, so the batch's other facings stay usable; the caller names what is missing.
 	if (plan.endpoint === '/create-character-state')
 		throw new Error('Managed State results must come from the child character.');
 	const canvas = canvasFor(plan.cellSize, batch);
 	const count = batch.transport === 'sheet' ? 1 : batch.facingIds.length;
 	if (images.length !== count) throw new Error(`Expected ${count} State result image(s).`);
 	for (const image of images) requireImage(image, canvas);
-	return batch.facingIds.map((direction, index) => {
+	return batch.facingIds.flatMap((direction, index) => {
 		let image = images[index];
 		if (batch.transport === 'sheet') {
 			const { cellSize } = plan;
 			image = makeImg(cellSize.width, cellSize.height);
 			copyPixels(images[0], image, cellSize, cellOffset(cellSize, batch.columns, index));
 		}
-		if (!opaqueBox(image)) throw new Error(`The ${direction} State result is empty.`);
-		return { direction, image };
+		return opaqueBox(image) ? [{ direction, image }] : [];
 	});
 }

@@ -19,10 +19,18 @@ import { coverageGaps, deriveMaterials } from '../dress/dress.ts';
 import { decodePngBytes, encodePngBytes } from '../image/pngraw.ts';
 import { hardMaskBits } from '../image/hard-mask.ts';
 import * as db from '../store/db.ts';
-import { loadProject, saveItem, withItem, type StoredProject } from '../store/project.ts';
+import {
+	loadProject,
+	pngBlobs,
+	saveItem,
+	withItem,
+	type BeforeWrite,
+	type StoredProject
+} from '../store/project.ts';
 import { itemContent, itemExportIdTaken } from '../store/identity.ts';
 import type {
 	CellKey,
+	CellQa,
 	Item,
 	Manifest,
 	Material,
@@ -116,6 +124,8 @@ import {
 	padImg,
 	padOf,
 	planItem,
+	poseFitIssues,
+	suspiciousPoseCells,
 	postProcess,
 	restKey,
 	unrotate,
@@ -169,20 +179,63 @@ export interface ItemResult {
 const structuralReason = (why: string) => /(?:^|;\s*)G1\b/.test(why);
 export const hasStructuralFailure = (r: Pick<ItemResult, 'g1'>) =>
 	[...r.g1.values()].some(structuralReason);
+/** The draft's planned cells of these moves without a verified frame, or undefined when the rig lost one of the moves. */
+function missingCells(
+	d: Draft,
+	rig: Rig,
+	r: Pick<ItemResult, 'cells'>,
+	anims = d.spec.anims
+): string[] | undefined {
+	const covered = new Set(r.cells.map((c) => c.key)),
+		missing: string[] = [];
+	for (const anim of anims) {
+		const clip = rig.animations.find((a) => a.id === anim);
+		if (!clip) return undefined;
+		for (const dir of d.spec.clipDirs?.[anim] ?? d.spec.dirs)
+			for (let i = 0; i < clip.cells; i++)
+				if (!covered.has(`${anim}/${dir}/${i}`)) missing.push(`${anim}/${dir}/${i}`);
+	}
+	return missing;
+}
 /** Standing checks may stop before animation: review must not offer to save incomplete coverage. */
 export function incompleteCoverage(d: Draft, rig: Rig, r: Pick<ItemResult, 'cells'>): boolean {
-	const covered = new Set(r.cells.map((c) => c.key));
-	return d.spec.anims.some((anim) => {
-		const clip = rig.animations.find((a) => a.id === anim);
-		return (
-			!clip ||
-			(d.spec.clipDirs?.[anim] ?? d.spec.dirs).some((dir) =>
-				Array.from({ length: clip.cells }, (_, i) => `${anim}/${dir}/${i}`).some(
-					(key) => !covered.has(key)
-				)
-			)
-		);
-	});
+	const missing = missingCells(d, rig, r);
+	return !missing || missing.length > 0;
+}
+/** The standing move the draft is designed from (the first move when it names none). */
+const draftStanding = (d: Draft) => d.spec.standing ?? d.spec.anims[0];
+/** The planned views missing frames when the draft can be kept from its available frames, else undefined: its design call
+ *  and every frame of the standing move it is designed from must be intact, since later frames are made from them. */
+export function availableGaps(
+	d: Draft,
+	rig: Rig,
+	r: Pick<ItemResult, 'cells' | 'g1' | 'qa'>
+): { anim: string; dir: DirectionName; missing: number; total: number }[] | undefined {
+	const missing = missingCells(d, rig, r);
+	if (
+		!r.qa ||
+		!missing ||
+		structuralReason(r.g1.get(0) ?? '') ||
+		recOf(d.calls[0]?.recId)?.state !== 'done' ||
+		missingCells(d, rig, r, [draftStanding(d)])?.length !== 0
+	)
+		return undefined;
+	const gaps = new Map<
+		string,
+		{ anim: string; dir: DirectionName; missing: number; total: number }
+	>();
+	for (const key of missing) {
+		const [anim, dir] = key.split('/') as [string, DirectionName];
+		const gap = gaps.get(`${anim}/${dir}`) ?? {
+			anim,
+			dir,
+			missing: 0,
+			total: rig.animations.find((a) => a.id === anim)!.cells
+		};
+		gap.missing++;
+		gaps.set(`${anim}/${dir}`, gap);
+	}
+	return [...gaps.values()];
 }
 /** A frozen rig opened with store/project.ts loadProject(). */
 export interface RigCtx {
@@ -291,6 +344,19 @@ const outputsOf = (r: JobRec) => [...(r.jobs[0]?.results ?? [])].sort(frameOrder
 const hasAnchor = (k: number, c: CallState) => !!(c.reference || c.concept || anchored(k, c.kind));
 const cellOuts = (k: number, c: CallState, r: JobRec) =>
 	outputsOf(r).slice(hasAnchor(k, c) ? 1 : 0);
+const expectedCellOutputs = (k: number, c: CallState) =>
+	c.kind === 'pose'
+		? Math.max(3, c.cells.length)
+		: Math.max(EDIT_MIN_FRAMES - Number(hasAnchor(k, c)), c.cells.length);
+
+function identifiedOutputs(k: number, c: CallState, r: JobRec) {
+	const outputs = outputsOf(r);
+	return r.jobs.length === 1 &&
+		outputs.length === expectedCellOutputs(k, c) + Number(hasAnchor(k, c)) &&
+		outputs.every((frame, index) => frame.label.split('/').at(-1) === String(index))
+		? outputs.slice(Number(hasAnchor(k, c)))
+		: undefined;
+}
 /** Dressed keyframe outputs of dress call k, per rest cell (the call must be done). */
 function chunkOuts(
 	calls: CallState[],
@@ -316,13 +382,13 @@ const keyframeOf = (calls: CallState[], dir: DirectionName) => {
 	const k = calls.findIndex((c) => c.kind === 'dress' && c.cells.includes(restKey(dir)));
 	return k < 0 ? undefined : new Map(chunkOuts(calls, k, recOf)).get(restKey(dir));
 };
-const dressedRefs = (d: Draft) =>
-	Promise.all(
-		[...dressedOf(d.calls)].map(async ([k, o]) => ({
-			dir: k.split('/')[1] as DirectionName,
-			im: await img(o.sha)
-		}))
-	);
+/** Call k's outputs by cell when it finished and its labels prove each frame's cell (a pose call's in request order). */
+const identifiedCells = (d: Draft, k: number): [string, { sha: string }][] => {
+	const c = d.calls[k],
+		r = recOf(c.recId),
+		o = r?.state === 'done' ? identifiedOutputs(k, c, r) : undefined;
+	return o ? c.cells.map((key, i) => [key, o[i]]) : [];
+};
 /** Generations spent on a draft, re-rolls included. */
 const draftRecords = (d: Draft) => [
 	...new Set(d.calls.flatMap((c) => [c.recId, ...c.old]).filter((id): id is string => !!id))
@@ -602,8 +668,11 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 		pad = padOf(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method, rig.cell);
 	let req;
 	if (c.kind === 'grid') {
-		// B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
-		req = await gridReq(ctx, d.spec, c.cells, await dressedRefs(d), c.seed);
+		// A grid only consumes the design for its own view.
+		const dir = c.cells[0].split('/')[1] as DirectionName;
+		const kf = keyframeOf(d.calls, dir);
+		if (!kf) throw new Error(`${dir}: no dressed keyframe`);
+		req = await gridReq(ctx, d.spec, c.cells, [{ dir, im: await img(kf.sha) }], c.seed);
 		const blocked = queue.planBlocks(req, 1);
 		if (blocked) throw automaticRepairError(blocked);
 	} else if (c.kind === 'pose') {
@@ -653,7 +722,7 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 			// anchor cell: the design call's dressed cell 0 (cross-call design lock, S2; B16: dress chunks too)
 			const a = recOf(d.calls[0].recId);
 			if (a?.state !== 'done') throw new Error('design call not done');
-			const dressed = cellOuts(0, d.calls[0], a)[0];
+			const dressed = identifiedOutputs(0, d.calls[0], a)?.[0];
 			if (!dressed)
 				throw new LocalizedError(
 					'The design call returned no dressed frame.',
@@ -823,7 +892,7 @@ export function finishedPart(d: Draft, rig: Rig, r: ItemResult): Draft | undefin
 			)
 		);
 	});
-	const standing = d.spec.standing ?? d.spec.anims[0];
+	const standing = draftStanding(d);
 	if (!complete.includes(standing) || complete.length === d.spec.anims.length) return undefined;
 	const inside = (cell: string) => complete.includes(cell.split('/')[0]);
 	return {
@@ -987,38 +1056,67 @@ export async function runItem(
 				}
 			}
 			const gates = [poseEarly(early, 0, r0)];
-			const rd = await Promise.all(
-				d.calls.slice(1, nd).map((_, i) =>
-					call(i + 1).then((r) => {
-						gates.push(poseEarly(early, i + 1, r));
-						return r;
-					})
-				)
+			// Re-rolling call 1 drops every later call (rerollCall), so nothing after it is bought unless each of its requested
+			// frames is identified and of the item's size, not only the anchor frame.
+			const designOuts = identifiedOutputs(0, d.calls[0], r0)?.slice(0, d.calls[0].cells.length);
+			const { cell } = ctx.rec.manifest.rig;
+			const pad = padOf(specSlot(d.spec), d.spec.method, cell);
+			const designIntact =
+				!!designOuts &&
+				(await Promise.all(designOuts.map((o) => img(o.sha)))).every(
+					(im) => im.w === cell.w + 2 * pad && im.h === cell.h + 2 * pad
+				);
+			const anchoredCallReady = (c: CallState) => !!c.recId || designIntact;
+			await Promise.all(
+				d.calls.slice(1, nd).map((c, i) => {
+					const k = i + 1;
+					if (!anchoredCallReady(c)) return;
+					return call(k).then((r) => {
+						gates.push(poseEarly(early, k, r));
+						if (r.state !== 'done') d.log.push(callStopped(k + 1, r));
+					});
+				})
 			);
 			await Promise.all(gates);
-			const bd = rd.findIndex((r) => r.state !== 'done');
-			if (bd >= 0) {
-				d.log.push(callStopped(bd + 2, rd[bd]));
-				break;
-			}
-			res = await evalItem();
-			if (hasStructuralFailure(res)) {
+			const design = await evalItem();
+			res = design;
+			if (hasStructuralFailure(design)) {
 				d.log.push({
 					key: 'generation.outcome.standingFrames',
 					text: 'PixelLab returned incomplete or malformed standing frames. No automatic retry was made.'
 				});
-				break;
 			}
-			status(`calls ${nd + 1}–${d.calls.length}`);
-			const rs = await Promise.all(
-				d.calls.slice(nd).map((_, i) => early.get(i + nd) ?? call(i + nd))
+			const readyDesigns = new Set(
+				d.calls
+					.slice(0, nd)
+					.flatMap((c, k) =>
+						c.kind === 'dress' &&
+						recOf(c.recId)?.state === 'done' &&
+						!structuralReason(design.g1.get(k) ?? '')
+							? c.cells
+							: []
+					)
 			);
-			const broken = rs.findIndex((r) => r.state !== 'done');
-			if (broken >= 0) {
-				d.log.push(callStopped(broken + nd + 1, rs[broken]));
-				break;
-			}
+			// Re-rolling a malformed design call drops every later call (rerollCall), so buy none of them yet.
+			const designReady = !structuralReason(design.g1.get(0) ?? '');
+			status(`calls ${nd + 1}–${d.calls.length}`);
+			const stopped = await Promise.all(
+				d.calls.slice(nd).map(async (c, i) => {
+					const k = i + nd;
+					if (!c.recId && !designReady) return true;
+					if (!anchoredCallReady(c)) return true;
+					if (c.kind === 'pose' || c.kind === 'grid') {
+						const dir = c.cells[0].split('/')[1] as DirectionName;
+						if (!c.recId && !readyDesigns.has(restKey(dir))) return true;
+					}
+					const r = await (early.get(k) ?? call(k));
+					if (r.state === 'done') return false;
+					d.log.push(callStopped(k + 1, r));
+					return true;
+				})
+			);
 			res = await evalItem();
+			if (stopped.some(Boolean)) break;
 			d.log.push(
 				isClean(res)
 					? { key: 'generation.outcome.passed', text: 'Every frame passed the checks.' }
@@ -1041,12 +1139,23 @@ export async function runItem(
 // ---------- extraction + QA (re-derived from the ledger) ----------
 const decoded = new Map<string, Img>();
 async function img(sha: string) {
-	let im = decoded.get(sha);
-	if (!im) {
-		im = binaryAlpha(await decodePng(await storedFrame(sha)));
-		decoded.set(sha, im);
-	}
+	const im = await decodedFrame(sha);
+	if (im instanceof Error) throw im;
 	return im;
+}
+/** A frame's image, or the decode error that makes it that frame's own failure. The storage read stays outside: a failed or
+ *  missing read stops the whole check (its free Try again), never a gap the user could keep. */
+async function decodedFrame(sha: string): Promise<Img | Error> {
+	const cached = decoded.get(sha);
+	if (cached) return cached;
+	const blob = await storedFrame(sha);
+	try {
+		const im = binaryAlpha(await decodePng(blob));
+		decoded.set(sha, im);
+		return im;
+	} catch (error) {
+		return error instanceof Error ? error : new Error(String(error));
+	}
 }
 /** Decode this submitted request's mask bytes or its saved record; do not reconstruct permissions during extraction. */
 async function inpaintStencils(
@@ -1178,7 +1287,11 @@ export async function evaluateItem(
 				g1.set(k, `G1 ${(error as Error).message}`);
 				continue;
 			}
-			const g = await img(outputs[0].sha);
+			const g = await decodedFrame(outputs[0].sha);
+			if (g instanceof Error) {
+				g1.set(k, `G1 repair grid unreadable: ${g.message}`);
+				continue;
+			}
 			if (g.w !== masks.size.width || g.h !== masks.size.height) {
 				g1.set(k, 'G1 repair grid does not match its submitted frame layout');
 				continue;
@@ -1197,21 +1310,10 @@ export async function evaluateItem(
 			);
 			continue;
 		}
-		let o = cellOuts(k, c, r);
-		const expected =
-			c.kind === 'pose'
-				? Math.max(3, c.cells.length)
-				: Math.max(EDIT_MIN_FRAMES - Number(hasAnchor(k, c)), c.cells.length);
-		if (o.length !== expected) {
-			g1.set(k, `G1 ${o.length} outputs for ${expected} requested frames`);
+		let o = identifiedOutputs(k, c, r);
+		if (!o) {
+			g1.set(k, `G1 expected ${expectedCellOutputs(k, c)} identifiable frame outputs`);
 			continue;
-		}
-		if (c.kind !== 'pose' && o.length > c.cells.length) {
-			const padding = await Promise.all(o.slice(c.cells.length).map((output) => img(output.sha)));
-			if (padding.some((im) => im.w !== W || im.h !== H)) {
-				g1.set(k, 'G1 duplicated edit output has the wrong frame size');
-				continue;
-			}
 		}
 		if (c.kind === 'pose') {
 			const dir = c.cells[0].split('/')[1] as DirectionName;
@@ -1226,11 +1328,21 @@ export async function evaluateItem(
 				)
 			).slice(0, c.cells.length);
 		}
+		// Labels prove each frame's cell, so a malformed frame drops only itself; the call stays G1 for review and re-roll.
+		// A frame that cannot be decoded is named with its own reason, like a wrong size. A standing frame it hides still
+		// blocks keeping the draft (availableGaps).
 		for (const [i, key] of c.cells.entries()) {
-			const im = await img(o[i].sha);
+			const im = await decodedFrame(o[i].sha);
+			if (im instanceof Error) {
+				g1.set(
+					k,
+					[g1.get(k), `G1 frame ${key} unreadable: ${im.message}`].filter(Boolean).join('; ')
+				);
+				continue;
+			}
 			if (im.w !== W || im.h !== H) {
 				g1.set(k, `G1 output ${im.w}x${im.h}`);
-				break;
+				continue;
 			}
 			(c.kind === 'dress' ? dressOuts : outs).push({
 				k,
@@ -1353,8 +1465,7 @@ export async function evaluateItem(
 					.join('; ')
 			);
 		}
-	const run = (useCc?: boolean) =>
-		outs.filter((o) => !structuralReason(g1.get(o.k) ?? '')).map((o) => ex(o, useCc));
+	const run = (useCc?: boolean) => outs.map((o) => ex(o, useCc));
 	let cells = run();
 	if (route === 'none' && cells.length) {
 		// per-item novel_cc decision (S1): novel2 lost > 25 % of the area over all cells
@@ -1389,6 +1500,12 @@ export async function evaluateItem(
 		qa.warnings.push(...hiddenWarnings);
 		if (qa.qa.status === 'pass') qa.qa.status = 'warn';
 	}
+	if (qa)
+		discloseJoints(
+			qa,
+			rig,
+			d.calls.filter((c) => recOf(c.recId)?.state === 'done')
+		);
 	// Dressed item pixels can land before any target animation cell exists. Expose them without waiting for pose coverage.
 	const thumbnail = (
 		kfCells.find((c) => c.area && c.key.split('/')[1] === 'south') ?? kfCells.find((c) => c.area)
@@ -1551,12 +1668,19 @@ const toProv = (r: JobRec, c: CallState): Provenance => ({
 	createdAt: new Date(r.submittedAt ?? r.createdAt).toISOString(),
 	produced: [...c.cells] as Provenance['produced']
 });
-/** A draft's receipts: its current calls in call order (CellQa.provenance indexes them), then the done attempts that
- *  re-rolls replaced, each with its own seed, so a saved item's recorded cost includes them. */
-function draftProvenance(d: Draft): Provenance[] {
-	const current = d.calls.map((c) => toProv(recOf(c.recId)!, c));
-	const used = new Set(d.calls.map((c) => c.recId));
-	const replaced = [...new Set(d.calls.flatMap((c) => c.old))]
+/** A draft's receipts: its finished current calls in call order (`index` maps a call to the entry CellQa.provenance names),
+ *  then the attempts that re-rolls replaced, each with its own seed, so a saved item's recorded cost includes them. A call
+ *  that never finished (a kept draft's missing frames) counts like a replaced attempt. */
+function draftProvenance(d: Draft): { provenance: Provenance[]; index: Map<number, number> } {
+	const index = new Map<number, number>();
+	const current = d.calls.flatMap((c, k) => {
+		const r = recOf(c.recId);
+		if (r?.state !== 'done') return [];
+		index.set(k, index.size);
+		return [toProv(r, c)];
+	});
+	const used = new Set(d.calls.flatMap((c) => (recOf(c.recId)?.state === 'done' ? [c.recId] : [])));
+	const replaced = [...new Set(d.calls.flatMap((c) => [...c.old, ...(c.recId ? [c.recId] : [])]))]
 		.filter((id) => !used.has(id))
 		.map(recOf)
 		// A failed or canceled attempt counts only when PixelLab reported what it billed.
@@ -1568,7 +1692,7 @@ function draftProvenance(d: Draft): Provenance[] {
 				replaced: true
 			};
 		});
-	return [...current, ...replaced];
+	return { provenance: [...current, ...replaced], index };
 }
 /** The body cells (what baseHash covers) of `anims`, comparable across records. */
 const bodyCells = (m: Manifest, anims: string[]) =>
@@ -1576,60 +1700,107 @@ const bodyCells = (m: Manifest, anims: string[]) =>
 		m.rig.directions.map((d) => d.id),
 		anims.map((a) => m.items.find((i) => i.id === m.rig.baseItem)?.layers[0].cells?.[a] ?? null)
 	]);
-/** Write the item (layers + cell blobs + provenance + QA) into the rig's project record. A non-pass QA becomes "accepted". */
+/** Write the item (layers + cell blobs + provenance + QA) into the rig's project record. A non-pass QA becomes "accepted".
+ *  With `available`, a stopped draft is kept from its verified frames only (availableGaps); the rest stay missing coverage. */
 export async function acceptItem(
 	d: Draft,
 	savedCtx: RigCtx,
-	res?: ItemResult
+	res?: ItemResult,
+	available = false
 ): Promise<{ item: Item; cells: number }> {
-	const ctx = draftContext(d, savedCtx);
+	const ctx = draftContext(d, savedCtx),
+		rig = ctx.rec.manifest.rig;
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	const r = res ?? (await evaluateItem(d, savedCtx));
-	if (hasStructuralFailure(r))
-		throw new Error(
-			`${d.spec.id}: a batch has missing or malformed frames. Try again before keeping this item.`
-		);
-	if (incompleteCoverage(d, ctx.rec.manifest.rig, r))
-		throw new Error(
-			`${d.spec.id}: a batch has missing or malformed frames. Try again before keeping this item.`
-		);
-	if (!r.qa || d.calls.some((c) => recOf(c.recId)?.state !== 'done'))
-		throw new Error(`${d.spec.id}: not all calls are done`);
-	const qa = acceptQa(r.qa.qa);
+	if (available) {
+		if (!availableGaps(d, rig, r)) throw keepWithoutStandingError();
+		if (d.calls.some((c) => c.recId && !terminal(recOf(c.recId))))
+			throw new Error(`${d.spec.id}: not all calls are done`);
+	} else {
+		if (hasStructuralFailure(r) || incompleteCoverage(d, rig, r))
+			throw new Error(
+				`${d.spec.id}: a batch has missing or malformed frames. Try again before keeping this item.`
+			);
+		if (d.calls.some((c) => recOf(c.recId)?.state !== 'done'))
+			throw new Error(`${d.spec.id}: not all calls are done`);
+	}
+	if (!r.qa) throw new Error(`${d.spec.id}: not all calls are done`);
+	const pad = padOf(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method, rig.cell);
+	const { provenance, index } = draftProvenance(d);
+	// Fresh cells, remapped from the review's own call numbers: the review stays intact for a Keep retried after a failed save.
+	const qa = {
+		...acceptQa(r.qa.qa),
+		cells: Object.fromEntries(
+			Object.entries(r.qa.qa.cells).map(([key, cell]) => [
+				key,
+				cell.provenance === undefined ? cell : { ...cell, provenance: index.get(cell.provenance) }
+			])
+		) as typeof r.qa.qa.cells
+	};
+	// Missing frames are not a passing check.
+	if (available) qa.status = 'accepted';
 	const dress = d.calls[0].kind === 'dress',
 		dressed: Partial<Record<DirectionName, Img>> = {};
-	if (dress) for (const r of await dressedRefs(d)) dressed[r.dir] = r.im;
+	// Keyframes are kept only where their cell and frame size are proven: a kept draft can lack some.
+	const keepDressed = async (k: number, kept: (key: string) => boolean) => {
+		for (const [key, out] of identifiedCells(d, k)) {
+			if (!kept(key)) continue;
+			const im = await img(out.sha);
+			if (im.w === rig.cell.w + 2 * pad && im.h === rig.cell.h + 2 * pad)
+				dressed[key.split('/')[1] as DirectionName] = im;
+		}
+	};
+	if (dress) {
+		for (const [k, c] of d.calls.entries())
+			if (c.kind === 'dress') await keepDressed(k, () => true);
+	}
 	// Preserve the original chroma outputs before setup too. Later skeleton estimates can reuse them only if the
 	// selected standing body frames still exactly match the registered references.
 	else if (d.spec.standing && d.spec.key !== 'none')
-		for (const [k] of d.calls.entries()) {
-			for (const [key, out] of chunkOuts(d.calls, k, recOf))
-				if (key.startsWith(`${d.spec.standing}/`))
-					dressed[key.split('/')[1] as DirectionName] = await img(out.sha);
-		}
-	const provenance = draftProvenance(d);
+		for (const k of d.calls.keys())
+			await keepDressed(k, (key) => key.startsWith(`${d.spec.standing}/`));
+	// A kept draft saves only the moves and views it has frames in; the others stay missing coverage like any gap.
+	const covered = [...new Set(r.cells.map((c) => c.key))];
+	const has = (anim: string, dir?: string) =>
+		covered.some((key) => key.startsWith(dir ? `${anim}/${dir}/` : `${anim}/`));
+	const keptAnims = available ? d.spec.anims.filter((anim) => has(anim)) : d.spec.anims;
+	const spec = available
+		? {
+				...d.spec,
+				anims: keptAnims,
+				clipDirs: Object.fromEntries(
+					keptAnims.map((anim) => [
+						anim,
+						(d.spec.clipDirs?.[anim] ?? d.spec.dirs).filter((dir) => has(anim, dir))
+					])
+				)
+			}
+		: d.spec;
 	const { item, images } = await buildItem({
 		spec: JSON.parse(
-			JSON.stringify({ ...d.spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) })
+			JSON.stringify({ ...spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) })
 		) as ItemSpec,
-		rig: ctx.rec.manifest.rig,
-		cells: r.cells,
+		rig,
+		// A cut hides body pixels under the item, so a kept draft has none where it has no item pixels.
+		cells: available ? r.cells.map((c) => (c.area ? c : { ...c, cut: undefined })) : r.cells,
 		route: d.spec.key,
 		qa,
 		...(Object.keys(dressed).length ? { dressed } : {}),
-		pad: padOf(
-			requireSlot(ctx.rec.manifest, d.spec.slot),
-			d.spec.method,
-			ctx.rec.manifest.rig.cell
-		),
+		pad,
 		provenance,
 		anchorCell: d.calls.length > 1 ? d.calls[0].cells[0] : undefined
 	});
 	// Accepted keyframe issues, and the dark-patch review notes, stay with the saved item (2026-11-07 session counter-review F2).
+	// Malformed frames are not design issues: a kept draft lists them as missing coverage instead.
 	const darkNotes = r.qa.warnings.filter((why) => why.startsWith('D1 '));
 	const designWarnings = [
-		...new Set([...[...r.g1.values()].flatMap((why) => why.split(/;\s*/)), ...darkNotes])
+		...new Set([
+			...[...r.g1.values()]
+				.flatMap((why) => why.split(/;\s*/))
+				.filter((why) => !structuralReason(why)),
+			...darkNotes
+		])
 	];
 	if (designWarnings.length) {
 		item.designWarnings = designWarnings;
@@ -1729,38 +1900,46 @@ export async function animateAnchoredItem(
 		? await evaluateItem(draft, ctx, standingPalettes)
 		: await runItem(draft, ctx, { standingPalettes });
 	// Views that finished are paid for: publish them even when another view failed, so a retry buys only the missing ones.
-	const failedDirs = new Set<DirectionName>();
-	if (whole)
-		for (const k of failedCalls(draft, whole))
-			failedDirs.add(draft.calls[k].reference!.cell.split('/')[1] as DirectionName);
-	for (const dir of dirs)
-		if (
-			!whole?.qa ||
-			draft.calls.some(
-				(c) => c.reference!.cell.split('/')[1] === dir && recOf(c.recId)?.state !== 'done'
-			)
-		)
-			failedDirs.add(dir);
+	// Each call is anchored on the standing design alone, so a view's finished calls are kept when a later one failed.
+	const failedCallSet = new Set(whole ? failedCalls(draft, whole) : draft.calls.keys());
+	const dirOfCall = (c: CallState) => c.reference!.cell.split('/')[1] as DirectionName;
+	const good = (c: CallState, k: number) =>
+		!!whole?.qa && !failedCallSet.has(k) && recOf(c.recId)?.state === 'done';
+	const failedDirs = new Set(
+		dirs.filter((dir) => draft.calls.some((c, k) => dirOfCall(c) === dir && !good(c, k)))
+	);
 	const doneDirs = dirs.filter((dir) => !failedDirs.has(dir));
+	const partialDirs = [...failedDirs].filter((dir) =>
+		draft.calls.some((c, k) => dirOfCall(c) === dir && good(c, k))
+	);
+	const kept = new Set(
+		draft.calls.flatMap((c, k) =>
+			partialDirs.includes(dirOfCall(c)) && !good(c, k) ? c.cells : []
+		)
+	);
 	const detail =
 		draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.';
 	const detailError = () =>
 		typeof detail === 'string'
 			? (localizedAutomaticRepairError(detail) ?? new Error(detail))
 			: loggedError(detail);
-	if (!doneDirs.length) throw detailError();
+	const savedDirs = [...doneDirs, ...partialDirs];
+	if (!savedDirs.length) throw detailError();
 	const finished: Draft = {
 		...draft,
-		spec: { ...draft.spec, dirs: doneDirs },
-		calls: draft.calls.filter((c) =>
-			doneDirs.includes(c.reference!.cell.split('/')[1] as DirectionName)
-		)
+		spec: { ...draft.spec, dirs: savedDirs },
+		calls: draft.calls.filter((c, k) => savedDirs.includes(dirOfCall(c)) && good(c, k))
 	};
 	const result =
 		doneDirs.length === dirs.length ? whole : await evaluateItem(finished, ctx, standingPalettes);
-	if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(finished, rig, result))
+	const covered = new Set(result?.cells.map((c) => c.key));
+	if (
+		!result?.qa ||
+		hasStructuralFailure(result) ||
+		finished.calls.some((c) => c.cells.some((key) => !covered.has(key)))
+	)
 		throw detailError();
-	dirs = doneDirs;
+	dirs = savedDirs;
 	const missed = [...failedDirs];
 	let materials = ctx.rec.manifest.materials.filter(
 		(m) => m.owner === item.id && item.materials.includes(m.id)
@@ -1800,13 +1979,25 @@ export async function animateAnchoredItem(
 		anim,
 		dirs,
 		cells,
-		draftProvenance(finished),
+		draftProvenance(finished).provenance,
 		result.qa,
 		0,
-		needsMaterials ? materials : undefined
+		needsMaterials ? materials : undefined,
+		kept
 	);
 	dirs.forEach(onCall);
-	if (missed.length) throw new PartialMoveError(detailError(), dirs);
+	if (missed.length)
+		throw new PartialMoveError(
+			detailError(),
+			doneDirs,
+			partialDirs.map((dir) => ({
+				dir,
+				frames: finished.calls
+					.filter((c) => dirOfCall(c) === dir)
+					.flatMap((c) => c.cells.map((key) => Number(key.split('/')[2])))
+					.sort((a, b) => a - b)
+			}))
+		);
 }
 const seedOf = (s: string) =>
 	1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
@@ -1816,12 +2007,48 @@ export class PartialMoveError extends Error {
 	constructor(
 		/** Why the other views stopped; a LocalizedError keeps its translation. */
 		readonly reason: string | Error,
-		readonly savedDirs: DirectionName[]
+		readonly savedDirs: DirectionName[],
+		/** Directions saved only in part: the frames their finished batches made. The rest stay missing. */
+		readonly savedFrames: { dir: DirectionName; frames: number[] }[] = []
 	) {
 		super(`${errorText(reason)} The finished views were saved.`);
 	}
 }
 
+/** Suspicious imported joints never stop a fit on valid coordinates. They are named for review and counted on the clips
+ *  they were posed in, so saved checks keep them until those frames are replaced. */
+function discloseJoints(
+	q: QaResult,
+	rig: Rig,
+	calls: readonly { kind?: CallKind; cells: string[] }[]
+) {
+	const cells = suspiciousPoseCells(rig, calls).filter((key) => q.qa.cells[key as CellKey]);
+	if (!cells.length) return;
+	q.warnings.push(...poseFitIssues(rig, calls));
+	for (const key of cells) {
+		const clip = q.qa.clips[key.split('/').slice(0, 2).join('/')];
+		q.qa.cells[key as CellKey].jointReview = true;
+		if (!clip) continue;
+		clip.jointReviewFrames = (clip.jointReviewFrames ?? 0) + 1;
+		if (clip.status === 'pass') clip.status = 'warn';
+	}
+	q.qa.jointReviewFrames = (q.qa.jointReviewFrames ?? 0) + cells.length;
+	if (q.qa.status === 'pass') q.qa.status = 'warn';
+}
+/** A paid item request that ended without results; a lost one may still have run and charged. */
+function requestStopped(
+	item: Item,
+	r: JobRec,
+	text: string,
+	key: 'itemRoute.errors.poseStopped' | 'itemRoute.errors.gridStopped'
+) {
+	return r.state === 'lost'
+		? new LocalizedError(text, 'itemRoute.errors.requestLost', { item: item.name })
+		: new LocalizedError(text, key, {
+				item: item.name,
+				state: message(`activity.state.${r.state}`)
+			});
+}
 export const SAVED_FRAMES_UNAVAILABLE =
 	'Completed frames matching the current body and equipment are unavailable. No generation was requested.';
 export const INVALID_ITEM_GRID = 'PixelLab returned an unusable item grid.';
@@ -1882,6 +2109,7 @@ export async function poseItemClip(
 	const { keys: k0, cuts, hidden } = await dressedKeys(ctx, item, pad);
 	const bodies = referenceBodies(rig, ctx.project.images);
 	Object.assign(keys, k0);
+	const posed: { kind: 'pose'; cells: string[] }[] = [];
 	const perDir = await Promise.allSettled(
 		dirs.map(async (dir, k) => {
 			const allPoses = clipKeypoints(rig, anim, dir),
@@ -1889,125 +2117,162 @@ export async function poseItemClip(
 			if (!allPoses || !rest) throw new Error(`${anim}/${dir}: no stored keypoints`);
 			const collected: CellOut[] = [],
 				prov: Provenance[] = [];
-			for (const { start, count } of poseBatches(allPoses.length)) {
-				const poses = allPoses.slice(start, start + count),
-					cells = poses.map((_, i) => `${anim}/${dir}/${start + i}`);
-				const seed = seedOf(
-					`${item.id}/${anim}/${dir}/0${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`
-				);
-				if (
-					frozenGrid(
-						rig,
-						{
-							slot: item.slot,
-							slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
-							key
-						},
-						cells
-					)
-				) {
-					const g = await gridItemClip(
-						ctx,
-						item,
+			const batches = poseBatches(allPoses.length);
+			for (const [b, { start, count }] of batches.entries()) {
+				try {
+					const poses = allPoses.slice(start, start + count),
+						cells = poses.map((_, i) => `${anim}/${dir}/${start + i}`);
+					const seed = seedOf(
+						`${item.id}/${anim}/${dir}/0${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`
+					);
+					if (
+						frozenGrid(
+							rig,
+							{
+								slot: item.slot,
+								slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
+								key
+							},
+							cells
+						)
+					) {
+						const g = await gridItemClip(
+							ctx,
+							item,
+							anim,
+							dir,
+							k,
+							keys,
+							cuts,
+							seed,
+							cells,
+							activityScope,
+							savedOnly,
+							undefined,
+							title
+						);
+						if ('blocked' in g)
+							throw new Error(
+								`The planned frozen-frame request is unavailable: ${g.blocked}. Existing artwork was kept.`
+							);
+						onCall();
+						prov.push(g.prov);
+						collected.push(...g.cells);
+						continue;
+					}
+					posed.push({ kind: 'pose', cells });
+					const req = itemRoute.pose({
+						keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)),
+						rest,
+						poses,
+						item: item.prompt,
+						slot: requireSlot(ctx.rec.manifest, item.slot),
+						key,
 						anim,
 						dir,
-						k,
-						keys,
-						cuts,
 						seed,
-						cells,
-						activityScope,
-						savedOnly,
-						undefined,
-						title
-					);
-					if ('blocked' in g)
-						throw new Error(
-							`The planned frozen-frame request is unavailable: ${g.blocked}. Existing artwork was kept.`
-						);
-					onCall();
-					prov.push(g.prov);
-					collected.push(...g.cells);
-					continue;
-				}
-				const req = itemRoute.pose({
-					keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)),
-					rest,
-					poses,
-					item: item.prompt,
-					slot: requireSlot(ctx.rec.manifest, item.slot),
-					key,
-					anim,
-					dir,
-					seed,
-					cell: rig.cell,
-					pad,
-					view: rig.view
-				});
-				const rec = await submitOrSaved(
-					req,
-					{
-						label: `pose ${item.name} · ${anim} ${dir}`,
-						...(title ? { title: title(anim, dir) } : {}),
-						tag: 'studio-move',
-						activityScope,
-						minimumTier
-					},
-					savedOnly
-				);
-				const r = terminal(rec) ? rec : await settled(rec.id);
-				onCall();
-				if (r.state !== 'done')
-					throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
-				const outputs = outputsOf(r);
-				if (outputs.length !== Math.max(3, cells.length))
-					throw new Error(
-						`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames. No automatic retry was made.`
-					);
-				const outs = unrotate(
-					outputs,
-					f0Last(requireSlot(ctx.rec.manifest, item.slot), rest, paddedPoses(poses), rig.cell)
-				).slice(0, cells.length);
-				const images = await Promise.all(outs.map((o) => img(o.sha)));
-				if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad))
-					throw new Error(
-						`${item.name} ${anim} ${dir}: PixelLab returned the wrong frame size. No automatic retry was made.`
-					);
-				const candidate = cells.map((c, i) =>
-					extractCell({
-						key: c,
-						call: k,
-						base: padImg(baseCell(ctx, c), pad),
-						out: images[i],
-						route: key,
-						band: bandOf(
-							requireSlot(ctx.rec.manifest, item.slot),
-							pad ? undefined : skelOf(ctx, c),
-							rig.cell.h + 2 * pad
-						),
-						posed: true,
-						clip: slot.band,
-						held: slot.class === 'held',
+						cell: rig.cell,
 						pad,
-						cut: cutFor(ctx, item.slot, c, true, cuts)
-					})
-				);
-				postProcess(rig, slot, candidate, keys, pad);
-				prov.push(toProv(r, { cells, seed, rerolls: 0, old: [] }));
-				collected.push(...candidate);
+						view: rig.view
+					});
+					const rec = await submitOrSaved(
+						req,
+						{
+							label: `pose ${item.name} · ${anim} ${dir}`,
+							...(title ? { title: title(anim, dir) } : {}),
+							tag: 'studio-move',
+							activityScope,
+							minimumTier
+						},
+						savedOnly
+					);
+					const r = terminal(rec) ? rec : await settled(rec.id);
+					onCall();
+					if (r.state !== 'done')
+						throw requestStopped(
+							item,
+							r,
+							`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`,
+							'itemRoute.errors.poseStopped'
+						);
+					const outputs = outputsOf(r);
+					if (outputs.length !== Math.max(3, cells.length))
+						throw new LocalizedError(
+							`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames. No automatic retry was made.`,
+							'itemRoute.errors.poseFramesMalformed',
+							{ item: item.name }
+						);
+					const outs = unrotate(
+						outputs,
+						f0Last(requireSlot(ctx.rec.manifest, item.slot), rest, paddedPoses(poses), rig.cell)
+					).slice(0, cells.length);
+					const images = await Promise.all(outs.map((o) => img(o.sha)));
+					if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad))
+						throw new LocalizedError(
+							`${item.name} ${anim} ${dir}: PixelLab returned the wrong frame size. No automatic retry was made.`,
+							'itemRoute.errors.poseFrameSize',
+							{ item: item.name }
+						);
+					const candidate = cells.map((c, i) =>
+						extractCell({
+							key: c,
+							call: k,
+							base: padImg(baseCell(ctx, c), pad),
+							out: images[i],
+							route: key,
+							band: bandOf(
+								requireSlot(ctx.rec.manifest, item.slot),
+								pad ? undefined : skelOf(ctx, c),
+								rig.cell.h + 2 * pad
+							),
+							posed: true,
+							clip: slot.band,
+							held: slot.class === 'held',
+							pad,
+							cut: cutFor(ctx, item.slot, c, true, cuts)
+						})
+					);
+					postProcess(rig, slot, candidate, keys, pad);
+					prov.push(toProv(r, { cells, seed, rerolls: 0, old: [] }));
+					collected.push(...candidate);
+				} catch (error) {
+					// The direction's finished batches are paid and verified: they are saved, and the frames of this batch and the
+					// later ones keep their current art (missing on a new move). Nothing more is bought for this direction.
+					if (!collected.length) throw error;
+					const kept = batches
+						.slice(b)
+						.flatMap(({ start, count }) =>
+							Array.from({ length: count }, (_, i) => `${anim}/${dir}/${start + i}`)
+						);
+					return { collected, prov, failed: error as unknown, kept };
+				}
 			}
-			return { collected, prov };
+			return { collected, prov, failed: undefined, kept: [] as string[] };
 		})
 	);
 	// Directions that finished are paid for: save them even when another direction failed, so a retry that skips complete
 	// directions (addMove without replace) requests only the missing ones instead of buying them again (2026-11-07 audit).
-	const doneDirs = dirs.filter((_, i) => perDir[i].status === 'fulfilled'),
-		failures = perDir.flatMap((r) => (r.status === 'rejected' ? [r.reason] : []));
+	// A direction stopped after a finished batch saves that batch but is not complete, so a retry poses it again.
+	const doneDirs = dirs.filter(
+			(_, i) =>
+				perDir[i].status === 'fulfilled' &&
+				!(perDir[i] as { value: { kept: string[] } }).value.kept.length
+		),
+		failures = perDir.flatMap((r) =>
+			r.status === 'rejected' ? [r.reason] : r.value.kept.length ? [r.value.failed] : []
+		);
+	const savedDirs = dirs.filter((_, i) => perDir[i].status === 'fulfilled');
+	const kept = new Set(perDir.flatMap((r) => (r.status === 'fulfilled' ? r.value.kept : [])));
 	const done = perDir.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])),
 		cells = done.flatMap((r) => r.collected),
 		prov = done.flatMap((r) => r.prov);
 	if (failures.length && !cells.length) throw failures[0];
-	if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
+	if (!cells.length)
+		throw new LocalizedError(
+			`${item.name}: PixelLab returned no usable ${anim} frames`,
+			'itemRoute.errors.noUsableFrames',
+			{ item: item.name }
+		);
 	const q = withH4(
 		itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad, hidden),
 		slot,
@@ -2017,9 +2282,10 @@ export async function poseItemClip(
 		bodies,
 		item.prompt
 	);
+	discloseJoints(q, rig, posed);
 	const first = failures.length ? errorText(failures[0]) : '';
 	try {
-		await mergeClip(ctx, item, anim, doneDirs, cells, prov, q, pad);
+		await mergeClip(ctx, item, anim, savedDirs, cells, prov, q, pad, undefined, kept);
 	} catch (error) {
 		// The save error leads and keeps its code: the Studio offers free saved-frame recovery on a save conflict.
 		throw failures.length
@@ -2041,7 +2307,17 @@ export async function poseItemClip(
 	if (failures.length)
 		throw new PartialMoveError(
 			failures[0] instanceof Error ? failures[0] : String(failures[0]),
-			doneDirs
+			doneDirs,
+			perDir.flatMap((r, i) =>
+				r.status === 'fulfilled' && r.value.kept.length
+					? [
+							{
+								dir: dirs[i],
+								frames: r.value.collected.map((c) => Number(c.key.split('/')[2]))
+							}
+						]
+					: []
+			)
 		);
 	return q;
 }
@@ -2062,11 +2338,13 @@ export async function mergeClip(
 	prov: Provenance[],
 	q: QaResult,
 	pad = 0,
-	standingMaterials?: Material[]
+	standingMaterials?: Material[],
+	/** Frames of these directions a stopped batch left: they keep their current art, cut and checks. */
+	kept?: ReadonlySet<string>
 ) {
 	await publishClip(
 		ctx.rec.id,
-		await prepareClip(ctx, item, anim, dirs, cells, prov, q, pad),
+		await prepareClip(ctx, item, anim, dirs, cells, prov, q, pad, undefined, kept),
 		standingMaterials
 	);
 }
@@ -2081,7 +2359,9 @@ async function prepareClip(
 	q: QaResult,
 	pad: number,
 	/** Frames taken from artwork an earlier call already paid for: the item's record of that call, by frame. */
-	reused?: ReadonlyMap<string, number>
+	reused?: ReadonlyMap<string, number>,
+	/** Frames a stopped repair did not replace: they keep their current art, cut and checks. */
+	kept: ReadonlySet<string> = new Set()
 ) {
 	const { rig } = ctx.rec.manifest,
 		key = item.key!;
@@ -2089,7 +2369,9 @@ async function prepareClip(
 		originalItem = clipArtwork(item);
 	const count = rig.animations.find((a) => a.id === anim)?.cells;
 	const expected = new Set(
-		dirs.flatMap((d) => Array.from({ length: count ?? 0 }, (_, i) => `${anim}/${d}/${i}`))
+		dirs
+			.flatMap((d) => Array.from({ length: count ?? 0 }, (_, i) => `${anim}/${d}/${i}`))
+			.filter((k) => !kept.has(k))
 	);
 	if (
 		!count ||
@@ -2122,20 +2404,39 @@ async function prepareClip(
 			...built.item.coverage!
 		])
 	];
+	// A kept frame takes its current entry; every other frame of the replaced directions takes the new one.
+	const merge = <T>(row: (T | null)[] | undefined, old: (T | null)[] | undefined, d: string) =>
+		(row ?? Array<T | null>(count).fill(null)).map((entry, i) =>
+			kept.has(`${anim}/${d}/${i}`) ? (old?.[i] ?? null) : entry
+		);
 	out.layers.forEach((l, j) => {
-		l.cells = { ...l.cells, [anim]: { ...l.cells?.[anim], ...built.item.layers[j].cells![anim] } };
+		const rows = built.item.layers[j].cells![anim];
+		l.cells = {
+			...l.cells,
+			[anim]: {
+				...l.cells?.[anim],
+				...Object.fromEntries(
+					Object.entries(rows).map(([d, row]) => [
+						d,
+						merge(row, item.layers[j].cells?.[anim]?.[d as DirectionName], d)
+					])
+				)
+			}
+		};
 	});
 	dropCut(out, anim, dirs); // replaced directions take their new cut, never a stale one
 	for (const d of dirs) {
-		const c = built.item.baseCut?.[anim]?.[d];
-		if (c) ((out.baseCut ??= {})[anim] ??= {})[d] = c;
+		const c = kept.size
+			? merge(built.item.baseCut?.[anim]?.[d], item.baseCut?.[anim]?.[d], d)
+			: built.item.baseCut?.[anim]?.[d];
+		if (c?.some((entry) => entry)) ((out.baseCut ??= {})[anim] ??= {})[d] = c;
 	}
 	// Per-direction call numbers are local to this move; records arrive in completion order (and may be grid fallbacks).
 	// Resolve the selected record by its produced keys, then offset into the item's full provenance history.
 	const source = new Map(
 		prov.flatMap((p, i) => p.produced.map((k) => [k, item.provenance.length + i] as const))
 	);
-	const qaCells = Object.fromEntries(
+	const qaCells: Record<string, CellQa> = Object.fromEntries(
 		Object.entries(q.qa.cells).map(([k, c]) => {
 			const provenance = source.get(k as keyof typeof q.qa.cells) ?? reused?.get(k);
 			if (provenance == null) throw new Error(`No source record for ${k}`);
@@ -2143,9 +2444,30 @@ async function prepareClip(
 		})
 	);
 	out.provenance = [...out.provenance, ...prov];
-	out.qa = mergeQa(item, q.qa, qaCells);
+	// Kept frames keep their checks, and their direction is no better than it was, since its summary covers only new frames.
+	for (const k of kept) {
+		const old = item.qa?.cells[k as CellKey];
+		if (old) qaCells[k] = old;
+	}
+	const next = structuredClone(q.qa);
+	if (kept.size)
+		for (const d of dirs) {
+			const before = item.qa?.clips[`${anim}/${d}`]?.status,
+				clip = next.clips[`${anim}/${d}`];
+			if (before && STATUS_ORDER.indexOf(before) > STATUS_ORDER.indexOf(clip.status))
+				clip.status = before;
+			// The count covers kept and new frames alike, from each frame's own finding.
+			const joints = Object.entries(qaCells).filter(
+				([key, cell]) => key.startsWith(`${anim}/${d}/`) && cell.jointReview
+			).length;
+			if (joints) clip.jointReviewFrames = joints;
+			else delete clip.jointReviewFrames;
+		}
+	out.qa = mergeQa(item, next, qaCells);
 	return { out, images: built.images, originalItem, version, ladder: slotLadder(rig) };
 }
+/** QA statuses from best to worst. */
+const STATUS_ORDER = ['pass', 'accepted', 'warn', 'fail'];
 
 type PreparedClip = Awaited<ReturnType<typeof prepareClip>>;
 export type RepairReview = {
@@ -2153,6 +2475,10 @@ export type RepairReview = {
 	findings: string[];
 	current: Img[];
 	replacement: Img[];
+	/** Frame indices a stopped batch left with their current art, when the finished batches are offered alone. */
+	kept?: number[];
+	/** Why that batch stopped (a failed request or the plan refusing it), shown with the review. */
+	stoppedBy?: Message | string;
 };
 
 async function publishClip(
@@ -2323,14 +2649,17 @@ export function keepWithoutRefusal(
 	)
 		return undefined;
 	return keepsFramesWithout(item, moves)
-		? new LocalizedError(
-				'This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.',
-				'itemRoute.errors.keepWithoutStanding'
-			)
+		? keepWithoutStandingError()
 		: new LocalizedError(
 				'This item has no complete move to keep. Make the missing frames instead.',
 				'itemRoute.errors.keepWithoutNothingLeft'
 			);
+}
+function keepWithoutStandingError() {
+	return new LocalizedError(
+		'This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.',
+		'itemRoute.errors.keepWithoutStanding'
+	);
 }
 export const keepableWithout = (m: Manifest, item: Item, moves: readonly string[]) =>
 	!keepWithoutRefusal(m, item, moves);
@@ -2527,7 +2856,12 @@ async function gridItemClip(
 	);
 	const r = terminal(rec) ? rec : await settled(rec.id);
 	if (r.state !== 'done')
-		throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
+		throw requestStopped(
+			item,
+			r,
+			`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`,
+			'itemRoute.errors.gridStopped'
+		);
 	if (outputsOf(r).length !== 1)
 		throw new LocalizedError(
 			`${INVALID_ITEM_GRID} Expected exactly one sheet. Existing artwork was kept.`,
@@ -2684,24 +3018,43 @@ export async function regridClip(
 	const cells: CellOut[] = [],
 		provenance: Provenance[] = [],
 		registrationFindings: string[] = [];
+	let stopped: number | undefined, stoppedBy: Message | string | undefined;
 	for (const [index, request] of requests.entries()) {
-		const result = await gridItemClip(
-			ctx,
-			item,
-			anim,
-			dir,
-			index,
-			keys,
-			cuts,
-			request.seed,
-			request.cells,
-			activityScope,
-			savedOnly,
-			request,
-			title
-		);
-		if ('blocked' in result)
-			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
+		let result: Awaited<ReturnType<typeof gridItemClip>>;
+		try {
+			result = await gridItemClip(
+				ctx,
+				item,
+				anim,
+				dir,
+				index,
+				keys,
+				cuts,
+				request.seed,
+				request.cells,
+				activityScope,
+				savedOnly,
+				request,
+				title
+			);
+		} catch (error) {
+			// The finished batches are paid and verified, so they stay usable; the frames of this batch and of the batches
+			// not bought yet keep their current art. Nothing more is bought after a failure.
+			if (!cells.length) throw error;
+			console.error('item repair batch', error);
+			stopped = index;
+			stoppedBy = errorMessage(error);
+			break;
+		}
+		if ('blocked' in result) {
+			const refused = localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
+			// A plan that stops allowing a later batch keeps the finished ones usable, like a failed batch.
+			if (!cells.length) throw refused;
+			console.error('item repair batch', refused);
+			stopped = index;
+			stoppedBy = errorMessage(refused);
+			break;
+		}
 		// A shifted batch is flagged G10 (itemQa) and lands in the review with the rest of the approved, already priced
 		// batches: stopping them offered only a paid re-roll and left the bought frames unusable.
 		cells.push(...result.cells);
@@ -2727,8 +3080,20 @@ export async function regridClip(
 				qa.qa.clips[`${anim}/${dir}`].status = 'fail';
 			}
 		}
-	const clip = await prepareClip(ctx, item, anim, [dir], cells, provenance, qa, pad);
-	if (!redraw && !qa.failCalls.size) {
+	const kept = stopped === undefined ? [] : requests.slice(stopped).flatMap((r) => r.cells);
+	const clip = await prepareClip(
+		ctx,
+		item,
+		anim,
+		[dir],
+		cells,
+		provenance,
+		qa,
+		pad,
+		undefined,
+		new Set(kept)
+	);
+	if (!redraw && !qa.failCalls.size && !kept.length) {
 		await publishClip(ctx.rec.id, clip);
 		return { qa, saved: true, cells };
 	}
@@ -2759,7 +3124,10 @@ export async function regridClip(
 			clip,
 			findings: [...new Set([...registrationFindings, ...[...qa.failCalls.values()].flat()])],
 			current: previews(project),
-			replacement: previews(repaired)
+			replacement: previews(repaired),
+			...(kept.length
+				? { kept: kept.map((k) => Number(k.split('/')[2])), stoppedBy: stoppedBy! }
+				: {})
 		}
 	};
 }
@@ -2836,6 +3204,8 @@ export interface ItemPaletteRepairPlan {
 	changedPixels: number;
 	changedFrames: number[];
 	unmatchedPixels: number;
+	/** Frames of the view the item has no art for: matching runs on the others, and the review names these. */
+	missingFrames: number[];
 }
 const paletteVersion = (rec: StoredProject, itemId: string) => {
 	const item = rec.manifest.items.find((entry) => entry.id === itemId);
@@ -2878,7 +3248,9 @@ async function prepareItemPalette(
 		unmatchedPixels = 0;
 	for (const [j, layer] of item.layers.entries()) {
 		const row = layer.cells?.[anim]?.[dir];
-		if (!row || row.length !== count)
+		// A layer without frames in this view has nothing to match; a row of another length is malformed.
+		if (!row) continue;
+		if (row.length !== count)
 			throw new Error('Color matching needs every stored frame in this view.');
 		for (const [i, before] of row.entries()) {
 			if (!before) continue;
@@ -2913,7 +3285,10 @@ async function prepareItemPalette(
 		materialId: matcher.materialId,
 		changedPixels,
 		changedFrames: edits.map((f) => f.cell),
-		unmatchedPixels
+		unmatchedPixels,
+		missingFrames: Array.from({ length: count }, (_, i) => i).filter(
+			(i) => item.coverage && !item.coverage.includes(cellKey(anim, dir, i) as CellKey)
+		)
 	};
 	next.paletteRepairs = [
 		...(next.paletteRepairs ?? []),
@@ -2935,27 +3310,40 @@ export async function itemPaletteRepairPlan(
 	return (await prepareItemPalette(projectId, itemId, anim, dir)).plan;
 }
 /** Apply exactly the reviewed free edit, atomically. Historical QA flags and original paid provenance are preserved.
- *  Returns the record it started from and the record as saved. */
+ *  `beforeWrite` gets the record it starts from and the record as it will be saved: the save refuses any item, body or
+ *  material that differs from this read, so those are exactly its two sides. */
 export async function matchItemColors(
 	projectId: string,
 	itemId: string,
 	anim: string,
 	dir: DirectionName,
-	reviewed: ItemPaletteRepairPlan
-): Promise<{ before: StoredProject; after: StoredProject }> {
+	reviewed: ItemPaletteRepairPlan,
+	beforeWrite?: BeforeWrite
+): Promise<void> {
 	const prepared = await prepareItemPalette(projectId, itemId, anim, dir);
 	if (stableStringify(prepared.plan) !== stableStringify(reviewed))
 		throw new LocalizedError(
 			'This item or its colors changed. Review the color match again.',
 			'itemRoute.errors.paletteReviewChanged'
 		);
-	await saveItem(projectId, prepared.next, prepared.images, [], (current) => {
-		if (paletteVersion(current, itemId) !== prepared.version)
-			throw new LocalizedError(
-				'This item, body or material changed. Existing colors were kept; review again.',
-				'itemRoute.errors.paletteSaveChanged'
-			);
-	});
-	// The save refused any item, body or material that differs from this read: these are exactly the two sides of it.
-	return { before: prepared.rec, after: withItem(prepared.rec, prepared.next) };
+	const blobs = await pngBlobs(prepared.images);
+	await beforeWrite?.(
+		{ before: prepared.rec, after: withItem(prepared.rec, prepared.next) },
+		blobs
+	);
+	await saveItem(
+		projectId,
+		prepared.next,
+		prepared.images,
+		[],
+		(current) => {
+			if (paletteVersion(current, itemId) !== prepared.version)
+				throw new LocalizedError(
+					'This item, body or material changed. Existing colors were kept; review again.',
+					'itemRoute.errors.paletteSaveChanged'
+				);
+		},
+		undefined,
+		blobs
+	);
 }

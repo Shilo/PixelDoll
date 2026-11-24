@@ -9,6 +9,7 @@
 	import type { EnhanceSpec } from './promptEnhance.ts';
 	import ReferenceField from './ReferenceField.svelte';
 	import TierNotice from './TierNotice.svelte';
+	import PoseIssues from './PoseIssues.svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -37,14 +38,21 @@
 		startItem,
 		withKey,
 		copyDemo,
-		busySlots
+		busySlots,
+		takeImport
 	} from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
 	import { SWATCHES } from '../lib/dress/dress.ts';
 	import type { RigCtx } from '../lib/items/run.ts';
 	import { padOf, type Method } from '../lib/items/items.ts';
 	import { rigReady } from '../lib/rig/setup.ts';
-	import { ChevronDown, ChevronRight, Info, Sparkles, TriangleAlert } from './icons.ts';
+	import { ChevronDown, ChevronRight, Import, Info, Sparkles, TriangleAlert } from './icons.ts';
+	import ImportItemsPane from './ImportItemsPane.svelte';
+	import ImportFoot from './ImportFoot.svelte';
+	import { ItemImporter } from './itemImporter.svelte.ts';
+	import { leaveSheetForm, showSheetPage } from './sheetPage.ts';
+	import type { SharedItem } from '../lib/equipment/shared.ts';
+	import { freeItemName } from '../lib/equipment/copy.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { displaySwatch } from './displaySwatch.ts';
 	import { displayError, displayMessage } from '../lib/i18n.ts';
@@ -191,6 +199,34 @@ ${name}` !== typedAtStart || reference !== draft?.reference
 			: ''
 	);
 
+	// Import: a page of this sheet (a ZIP dropped on the Wardrobe opens on it); Back keeps the form as it was.
+	const opening = takeImport('items');
+	let importing = $state(!!opening);
+	const importer = new ItemImporter();
+	if (opening?.files) void importer.read(opening.files);
+	$effect(() => () => {
+		importer.gone = true;
+	});
+	function page(inner: boolean) {
+		if (inner) leaveSheetForm();
+		importing = inner;
+		void showSheetPage(inner);
+	}
+	/** An item of another body, made new here: the form, filled in from it (a name in use as "Name 2"), ready to read. */
+	async function makeFrom(entry: SharedItem) {
+		if (all.some((c) => c.key === entry.item.slot)) group = entry.item.slot;
+		prompt = entry.item.prompt;
+		name = freeItemName(
+			entry.item.name,
+			(m?.items ?? []).filter((it) => it.slot !== 'body' && !it.variantOf)
+		);
+		color = '';
+		reference = undefined;
+		importing = false;
+		await showSheetPage(false);
+		document.querySelector<HTMLElement>('dialog.sheet[open] .sheet-body textarea')?.focus();
+	}
+
 	async function make(i: typeof input, consent?: Parameters<typeof startItem>[1]) {
 		formDrafts.item = undefined;
 		busy = true;
@@ -263,25 +299,40 @@ ${name}` !== typedAtStart || reference !== draft?.reference
 		></span
 	>
 {/snippet}
+{#snippet importFoot()}
+	<ImportFoot
+		busy={importer.busy}
+		disabled={!importer.chosen.length}
+		onimport={() => void importer.save()}
+	/>
+{/snippet}
 
 <Sheet
-	title={t('newItem.title')}
+	title={importing ? t('itemImport.title') : t('newItem.title')}
+	className={importing ? 'importing' : ''}
 	{dirty}
 	onclose={() => (ui.sheet = null)}
-	footer={isDemo() ? undefined : foot}
+	back={importing ? () => page(false) : undefined}
+	backTo={t('newItem.title')}
+	opener={isDemo() || importing
+		? undefined
+		: { label: t('itemImport.title'), icon: Import, iconOnly: true, onclick: () => page(true) }}
+	locked={importing && importer.busy && !!importer.review}
+	footer={isDemo() ? undefined : importing ? (importer.ready ? importFoot : undefined) : foot}
 >
 	{#snippet developer()}
-		<ApiPeek
-			targets={[
-				{
-					scope: 'item-make',
-					label: t('newItem.makeLabel'),
-					plan: itemPlan(context, plannedInput)
-				}
-			]}
-		/>
+		{#if !importing}<ApiPeek
+				targets={[
+					{
+						scope: 'item-make',
+						label: t('newItem.makeLabel'),
+						plan: itemPlan(context, plannedInput)
+					}
+				]}
+			/>{/if}
 	{/snippet}
 
+	{#if importing}<ImportItemsPane {importer} onmake={makeFrom} />{/if}
 	{#if isDemo()}
 		<div class="notice small">
 			<Sparkles size={16} />
@@ -310,6 +361,7 @@ ${name}` !== typedAtStart || reference !== draft?.reference
 			minimumTier={plan?.minimumTier ?? 0}
 			feature={t('newItem.feature')}
 		/>
+		<PoseIssues issues={plan?.poseIssues ?? []} />
 		{#if rec && !rigReady(rec)}<p class="notice small">
 				<TriangleAlert size={16} /><span>{t('newItem.needsSetup')}</span><button
 					class="bu-action btn small"

@@ -306,6 +306,28 @@ test('a ledger that cannot be read pauses the queue visibly until a tick succeed
 	}
 });
 
+test('a failed save keeps the storage notice until a later save works, not just until a tick returns', async () => {
+	vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+	const f = failing(true);
+	try {
+		await f.q.connect();
+		f.fail.put = true;
+		await expect(f.q.enqueue(request, { tag: 'studio-move' })).rejects.toThrow(
+			'IndexedDB unavailable'
+		);
+		expect(f.q.snapshot().paused).toBe('storage');
+		await vi.advanceTimersByTimeAsync(3_000); // ticks that save nothing prove nothing
+		expect(f.q.snapshot().paused).toBe('storage');
+		f.fail.put = false;
+		await f.q.enqueue(request, { tag: 'studio-move' });
+		await vi.advanceTimersByTimeAsync(1_000);
+		expect(f.q.snapshot().paused).toBeNull();
+	} finally {
+		f.q.disconnect();
+		vi.useRealTimers();
+	}
+});
+
 test('saving a stopped running job again keeps its stop and never stops it twice', async () => {
 	const f = failing();
 	const deletes: string[] = [];

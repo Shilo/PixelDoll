@@ -152,6 +152,8 @@ export function facingRatios(
  * shoulder width and a north one flipped sign; walk, idle, run and hurt stayed >= 0.85). Review threshold only; authored
  * presets skip it (their death falls on purpose: 0.01). */
 export const FACING_MIN = 0.5;
+/** The structural failure of frames without measured joints, the only one a view kept without poses may carry. */
+export const MISSING_JOINTS = 'missing or invalid frame joints';
 export function clipQa(o: {
 	anim: string;
 	rest: Img;
@@ -183,7 +185,7 @@ export function clipQa(o: {
 		away = ratios.flatMap((r, i) => (r != null && r < 0 ? [i + 1] : []));
 	const fails = [
 		(!o.frames.length || o.frames.some((f) => !opaqueBox(f))) && 'empty animation frame',
-		!complete && 'missing or invalid frame joints',
+		!complete && MISSING_JOINTS,
 		!countMatches && 'requested pose count does not match frames'
 	].filter((s): s is string => !!s);
 	const warnings = [

@@ -79,7 +79,7 @@ import { missingLowerGarment } from './garment-coverage.ts';
 import { footwearWarnings } from './footwear-review.ts';
 import { expectsWaistBand, waistBandEvidence } from './design-consistency.ts';
 import { torsoConsistency } from './torso-consistency.ts';
-import { assertImportedPoses, importedPoseIssues } from '../rig/pose-review.ts';
+import { importedPoseIssues } from '../rig/pose-review.ts';
 import { LocalizedError } from '../message.ts';
 
 const automaticRepairPrefix = 'Automatic equipment repair is unavailable: ';
@@ -666,24 +666,37 @@ export function planItem(
 		}))
 	];
 }
-/** Keep imported artwork and avoid posing through corroborated bad estimates. Never guess replacement joints. */
+/** Keep imported artwork and avoid posing through corroborated bad estimates where the grid route fits. Never guess
+ *  replacement joints: elsewhere the item is posed on the valid measured joints and the findings are disclosed
+ *  (poseFitIssues). */
 export function frozenGrid(
 	rig: Rig,
 	spec: { slot?: string; slotConfig?: Slot; key?: Route },
 	cells: string[]
 ): boolean {
-	if (!importedPoseIssues(rig, { cells }).length) return false;
-	if (
-		spec.key &&
+	return (
+		!!importedPoseIssues(rig, { cells }).length &&
+		!!spec.key &&
 		spec.key !== 'none' &&
-		spec.slot &&
+		!!spec.slot &&
 		specSlot(spec).class !== 'held' &&
 		gridFits(rig.cell, cells.length, 1)
-	)
-		return true;
-	assertImportedPoses(rig, { cells });
-	return false;
+	);
 }
+/** Suspicious imported joints in the frames a plan poses by skeleton, to disclose before and after the paid fit (the grid
+ *  route dresses frozen frames instead, so its frames have none). */
+export const poseFitIssues = (rig: Rig, calls: readonly { kind?: CallKind; cells: string[] }[]) =>
+	calls.flatMap((c) => (c.kind === 'pose' ? importedPoseIssues(rig, { cells: c.cells }) : []));
+/** The frames of those skeleton-posed calls with such findings. */
+export const suspiciousPoseCells = (
+	rig: Rig,
+	calls: readonly { kind?: CallKind; cells: string[] }[]
+) =>
+	calls.flatMap((c) =>
+		c.kind === 'pose'
+			? c.cells.filter((cell) => importedPoseIssues(rig, { cells: [cell] }).length)
+			: []
+	);
 /**
  * Pose calls: one per clip-direction (split above 15 frames), except that idle and walk of one direction share a call when they
  * fit 15 frames: 12 frames cost 3 gens like 8, and both parts passed QA in all 6 chibi clip-directions (round 4 arm I). Held

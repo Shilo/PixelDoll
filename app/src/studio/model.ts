@@ -13,7 +13,7 @@ import type {
 } from '../lib/store/manifest.ts';
 import { GATES, isAction, ITEM_GRID_REGISTRATION_NOTICE, SLOTS } from '../lib/items/items.ts';
 import { coverageGaps, missingFrames } from '../lib/dress/dress.ts';
-import { DIRECTIONS, type Rig, type RigAnimation } from '../lib/rig/rig.ts';
+import { DEFAULT_MOVE, DIRECTIONS, type Rig, type RigAnimation } from '../lib/rig/rig.ts';
 import { moveExportId } from '../lib/store/identity.ts';
 import { stateClipName } from '../lib/rig/poses.ts';
 import { clipKind } from '../lib/runtime/timeline.js';
@@ -41,8 +41,29 @@ export function bodyQualityNote(
 	return copy(translate)(`${move} ${direction}: ${reason}`, 'studioModel.bodyQuality', {
 		move,
 		direction,
-		reason
+		reason: bodyReason(reason, translate)
 	});
+}
+/** Body-check reasons the app words itself (create.ts) in the active language; measured observations stay as written. */
+function bodyReason(reason: string, translate?: Translate): string {
+	const bridged = /^joints of motion frame (\d+) of (\d+) were inferred from its neighbors$/.exec(
+		reason
+	);
+	if (bridged)
+		return copy(translate)(reason, 'studioModel.bridgedJoints', {
+			frame: Number(bridged[1]),
+			total: Number(bridged[2])
+		});
+	const short =
+		/^PixelLab sent (\d+) frames instead of (\d+), so the first or last frame may differ$/.exec(
+			reason
+		);
+	if (short)
+		return copy(translate)(reason, 'studioModel.shortFrames', {
+			count: Number(short[1]),
+			expected: Number(short[2])
+		});
+	return reason;
 }
 
 /** A rig setup warning (lib/rig/setup.ts) in the active language; clip-scoped observations read like body quality notes. */
@@ -74,6 +95,14 @@ export function setupWarningNote(
 	if (skipped)
 		return copy(translate)(warning, 'setup.warnings.moveSkipped', {
 			move: displayMoveName(skipped[1])
+		});
+	const empty =
+		/^(.+) was skipped: one of its frames is empty\. Fix that frame or make the move again to animate items on it\.$/.exec(
+			warning
+		);
+	if (empty)
+		return copy(translate)(warning, 'setup.warnings.moveSkippedEmpty', {
+			move: displayMoveName(empty[1])
 		});
 	return bodyQualityNote(warning, translate, displayDirection);
 }
@@ -381,6 +410,15 @@ export function missingFramesNote(m: Manifest, it: Item): Message | '' {
 /** No view of `anim` has every frame of the item, so the stage shows none of it there (an incomplete view is hidden whole). */
 export const notShownIn = (m: Manifest, it: Item, anim: string): boolean =>
 	m.rig.directions.every((d) => missingFrames(m, it, anim, d.id).length > 0);
+/** Where Preview goes when the item is put on while `anim` does not show it: Standing, else the first move or State that
+ *  shows it. Undefined when `anim` shows it or nothing does. */
+export function wearClip(m: Manifest, it: Item, anim: string): string | undefined {
+	if (!notShownIn(m, it, anim)) return;
+	const shows = (id: string) => id !== anim && !notShownIn(m, it, id);
+	return m.rig.animations.some((a) => a.id === DEFAULT_MOVE) && shows(DEFAULT_MOVE)
+		? DEFAULT_MOVE
+		: m.rig.animations.find((a) => shows(a.id))?.id;
+}
 /** Those moves by name, for a message with room to list them. */
 export function missingMoves(m: Manifest, it: Item): string[] {
 	return [...new Set(coverageGaps(m, it).map((g) => g.split('/')[0]))];
@@ -396,10 +434,26 @@ function describeReason(s: string): { text: string; translation: Message | strin
 	const scoped = /^[^ :/]+\/[^ :/]+: ([A-Z]\d+ .*)$/.exec(s);
 	if (scoped) return describeReason(scoped[1]);
 	if (s === ITEM_GRID_REGISTRATION_NOTICE) return say(s, 'studioModel.qa.registrationShift');
+	const joints = /^([^/ ]+)\/([^ ]+) frame (\d+): suspicious estimated joints/.exec(s);
+	if (joints) {
+		const move = joints[1].replaceAll('-', ' '),
+			direction = joints[2].replaceAll('-', ' '),
+			frame = Number(joints[3]);
+		return say(
+			`The joints look unusual in ${move} ${direction} frame ${frame}, so the item may not fit there. Check the grip or alignment.`,
+			'studioModel.qa.suspiciousJoints',
+			{ move, direction, frame }
+		);
+	}
 	if (s.startsWith('D2 '))
 		return say(
 			'The requested waist band differs between standing views',
 			'studioModel.qa.standingWaist'
+		);
+	if (s === 'J1 joint review')
+		return say(
+			'Some frames were fitted on joints that look unusual. Check the grip or alignment.',
+			'studioModel.qa.jointReview'
 		);
 	if (s.startsWith('G13 '))
 		return say(
@@ -573,6 +627,7 @@ function qaReasonCodes(
 	if (q.footwearReviewFrames) r.push('G12 footwear coverage');
 	if (q.waistReviewFrames) r.push('G13 waist-band consistency');
 	if (q.facingReviewFrames) r.push('G14 torso consistency');
+	if (q.jointReviewFrames) r.push('J1 joint review');
 	if (q.detailReviewFrames) r.push('G15 design detail');
 	if (q.heldLoopReviewClips) r.push('The held item changes shape or angle when a move loops');
 	if (q.heldHangReviewClips)

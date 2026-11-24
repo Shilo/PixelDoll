@@ -9,6 +9,9 @@
 	import { clipItemOffer, clipMissingItems, pickedOffers, seeded } from './itemGeneration.ts';
 	import { itemOfferAccess } from './itemOfferAccess.ts';
 	import { doc, pendingMoves, queueMoves, store, ui, withKey } from './state.svelte.ts';
+	import { setupRedoMoves } from '../lib/rig/setup.ts';
+	import { unposedItemMoves } from './create.ts';
+	import { displayNestedMessage } from '../lib/i18n.ts';
 
 	// Equipment for a saved move or State, chosen together after the fact (its row menu in Moves or States).
 	const projectId = untrack(() => doc.id);
@@ -25,8 +28,23 @@
 		return clipMissingItems(manifest, clipId).map((item) =>
 			busyFor(item.id)
 				? { item, offer: null, note: t('itemGeneration.inProgress') }
-				: { item, offer: clipItemOffer(manifest, item.id, clipId, currentItemDrawing()) }
+				: {
+						item,
+						offer: clipItemOffer(manifest, item.id, clipId, currentItemDrawing(), {
+							redo: setupRedoMoves(store.exportRecord)
+						})
+					}
 		);
+	});
+	// Views kept without poses get no equipment: name them once instead of skipping them silently.
+	const unposedNotes = $derived.by(() => {
+		const offered = rows.find(({ offer }) => offer?.unposed.length)?.offer?.unposed;
+		if (offered || !manifest) return offered ?? [];
+		const redo = setupRedoMoves(store.exportRecord);
+		const entry = rows
+			.flatMap(({ item }) => unposedItemMoves(manifest, item.id, currentItemDrawing(), redo))
+			.find((unposed) => unposed.move === clipId);
+		return entry ? [entry.note] : [];
 	});
 	const { chosen, gens: total, specs } = $derived(pickedOffers(rows, selected));
 	const access = $derived(itemOfferAccess(manifest, specs));
@@ -91,6 +109,9 @@
 				label={t('moveSheet.checkpoint.titleItems')}
 			/>{/if}
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
+		{#each unposedNotes as note, i (i)}<p class="notice warn small">
+				{displayNestedMessage(note)}
+			</p>{/each}
 	{/if}
 </Sheet>
 

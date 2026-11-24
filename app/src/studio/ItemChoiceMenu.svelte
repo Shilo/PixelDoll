@@ -6,10 +6,13 @@
 	import { popoverFocus } from './experience/focus.ts';
 	import { swallowTilePress } from './tilePress.ts';
 	import { displayMove } from './displayMove.ts';
+	import { wearClip } from './model.ts';
 	import { clipItemOffer, seeded } from './itemGeneration.ts';
 	import { itemOfferAccess } from './itemOfferAccess.ts';
 	import { Circle, CircleCheck, Sparkles } from './icons.ts';
 	import { doc, pendingMoves, queueMoves, store, ui, view, wear, withKey } from './state.svelte.ts';
+	import { setupRedoMoves } from '../lib/rig/setup.ts';
+	import { displayNestedMessage } from '../lib/i18n.ts';
 
 	// A dimmed Wardrobe tile's own menu: its item has no frames for the move or State Preview shows, so a tap offers to
 	// draw it there (priced) or to wear it anyway, instead of quietly switching Preview back to Standing.
@@ -29,9 +32,15 @@
 	const it = $derived(m?.items.find((item) => item.id === itemId));
 	const move = $derived(displayMove(clip, m?.rig.animations ?? []));
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
+	/** Where Preview goes when it is put on (wear in state.svelte.ts), named on the Wear row. */
+	const shownIn = $derived(m && it && wearClip(m, it, clip));
 	const pending = $derived(!!it && pendingMoves(projectId, it.id).some((spec) => spec.id === clip));
 	const offer = $derived(
-		open && m && it && !pending ? clipItemOffer(m, it.id, clip, currentItemDrawing()) : null
+		open && m && it && !pending
+			? clipItemOffer(m, it.id, clip, currentItemDrawing(), {
+					redo: setupRedoMoves(store.exportRecord)
+				})
+			: null
 	);
 	const access = $derived(itemOfferAccess(m, offer?.specs ?? []));
 
@@ -94,6 +103,10 @@
 					<small>{t('itemGeneration.notDrawnFor', { move })}</small>
 				</span>
 			</div>
+			<!-- Views kept without poses get no equipment from this offer: say which. -->
+			{#each offer?.unposed ?? [] as note, i (i)}<p class="small muted item-choice-note">
+					{displayNestedMessage(note)}
+				</p>{/each}
 			<div role="menu" aria-labelledby="item-choice-name">
 				<button
 					class="row bu-action"
@@ -121,7 +134,9 @@
 					>{#if on}<CircleCheck size={16} aria-hidden="true" />{t('common.takeOff')}{:else}<Circle
 							size={16}
 							aria-hidden="true"
-						/>{t('common.wear')}{/if}</button
+						/>{shownIn
+							? t('itemGeneration.wearOn', { move: displayMove(shownIn, m.rig.animations) })
+							: t('common.wear')}{/if}</button
 				>
 			</div>
 			<p class="muted small item-choice-note" id="item-choice-cost">{t('moveSheet.costNotice')}</p>

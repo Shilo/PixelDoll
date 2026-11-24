@@ -1,4 +1,5 @@
 // App-wide UI state: API key (memory by default, localStorage only when opted in) and the /balance snapshot.
+import { rememberDebugKey } from './debug/log.ts';
 import { api, ApiError } from './pixellab/client.ts';
 import type { Balance } from './pixellab/routes.ts';
 import { queue } from './pixellab/queue.ts';
@@ -15,6 +16,7 @@ const clearSavedKey = () => {
 let keyRevision = 0;
 export const getKeyRevision = () => keyRevision;
 const stored = workspaceCopy ? '' : readSavedKey();
+rememberDebugKey(stored);
 export const app = $state({
 	key: stored,
 	remembered: !!stored,
@@ -54,6 +56,7 @@ function installKey(key: string, remember: boolean) {
 	sharedAuth.acknowledge(); // a fresh connection supersedes any already-persisted Forget notification
 	keyRevision++;
 	app.key = key.trim();
+	rememberDebugKey(app.key);
 	app.keyRejected = false;
 	app.balance = null; // never show another key's balance
 	app.balanceError = '';

@@ -272,7 +272,27 @@ test('resuming an interrupted anchored move reattaches deterministic paid calls 
 	await expect(animateAnchoredItem(ctx, item, 'custom_18', ['east'], 99)).rejects.toThrow();
 	expect(ledger.billed).toBe(2);
 	expect(ledger.records.map((r) => r.requestHash)).toEqual(hashes);
-	expect(saveItem).not.toHaveBeenCalled();
+});
+
+test('a facing keeps its finished anchored batch when a later batch fails', async () => {
+	// The first batch's 15 frames are paid and identifiable; they used to be discarded with the failed second batch.
+	const ctx = await fixture(),
+		item = ctx.rec.manifest.items[1];
+	ledger.failAt = 1;
+	const error = await animateAnchoredItem(ctx, item, 'custom_18', ['east'], 99).catch(
+		(e: unknown) => e
+	);
+	expect(error).toBeInstanceOf(PartialMoveError);
+	expect((error as PartialMoveError).savedDirs).toEqual([]);
+	expect((error as PartialMoveError).savedFrames).toEqual([
+		{ dir: 'east', frames: Array.from({ length: 15 }, (_, i) => i) }
+	]);
+	const saved = vi.mocked(saveItem).mock.calls.at(-1)![1];
+	const row = saved.layers[0].cells!.custom_18!.east!;
+	expect(row).toHaveLength(18);
+	expect(row.slice(15)).toEqual([null, null, null]);
+	expect(saved.coverage?.filter((key) => key.startsWith('custom_18/east/'))).toHaveLength(15);
+	expect(saved.provenance).toHaveLength(1);
 });
 
 test('anchored extension validates standing reference dimensions and presence before the first paid call', async () => {

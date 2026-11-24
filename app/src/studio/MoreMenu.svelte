@@ -175,9 +175,10 @@
 			}}
 			><Activity size={18} /><span class="row-name">{openerLabel(t('activity.title'))}</span
 			>{#if $queue.role === 'follower'}<span class="small">{t('toolbar.otherTab')}</span
-				>{/if}{#if activityStatus.active}<span class="badge accent"
+				>{/if}{#if activityStatus.stopped}<span class="badge danger"
+					>{formatNumber(activityStatus.stopped)}</span
+				>{:else if activityStatus.active}<span class="badge accent"
 					>{formatNumber(activityStatus.active)}</span
-				>{:else if activityStatus.stopped}<span class="badge danger">{activityStatus.stopped}</span
 				>{/if}<SurfaceChevron /></button
 		>
 		{#if workspaceCopy}

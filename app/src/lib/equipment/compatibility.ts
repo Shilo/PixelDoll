@@ -290,13 +290,19 @@ export async function assessCopy(
 			}
 		}
 	}
+	// A view with no stored poses (kept without poses, or not set up yet) is a view equipment is not fitted to yet: extending
+	// quotes and runs per view (missingItemMoves, canPose there), so it does not cost the copy its standing references. Poses
+	// that are stored but incomplete still refuse.
+	const posedDirs = Object.fromEntries(
+		target.rig.animations.map((a) => [a.id, clipDirs[a.id].filter((d) => !!a.sources?.[d])])
+	);
 	const canExtend =
 		!!target.rig.rest &&
 		!!item.dressed &&
 		canPose(target.rig, {
-			anims: target.rig.animations.filter((a) => clipDirs[a.id].length).map((a) => a.id),
+			anims: target.rig.animations.filter((a) => posedDirs[a.id].length).map((a) => a.id),
 			dirs: targetDirs,
-			clipDirs
+			clipDirs: posedDirs
 		}) &&
 		targetDirs.every(
 			(d) =>

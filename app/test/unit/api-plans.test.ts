@@ -163,6 +163,7 @@ test('setup preflight prices each unique measurement and registration without in
 		fixedRest: false,
 		rest: {},
 		registrationDirections: 8,
+		skipped: [],
 		gens: 0.45,
 		warnings: [],
 		reconnect: false

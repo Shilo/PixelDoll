@@ -870,3 +870,21 @@ test('a damaged saved record never stops the queue from opening and is never res
 	// Stored as read, so other readers of the store (State recovery, other tabs) see it lost and readable too.
 	expect(f.records.get(old.id)).toMatchObject({ state: 'lost', jobs: [{ results: [] }] });
 });
+
+test('a saved record with a damaged result entry is unreadable but keeps its whole results', async () => {
+	const f = fixture(500),
+		q = f.make();
+	const old = await q.enqueue(request);
+	await q.tick();
+	const kept = { label: 'east', sha: 'a'.repeat(64), w: 1, h: 1 };
+	f.records.set(old.id, {
+		...f.records.get(old.id)!,
+		state: 'done',
+		jobs: [{ id: 'job', status: 'completed', done: true, results: [null, kept] }]
+	} as unknown as JobRec);
+	const resumed = f.make();
+	await resumed.load();
+	const [shown] = resumed.snapshot().jobs;
+	expect(shown).toMatchObject({ state: 'lost', jobs: [{ results: [kept] }] });
+	expect(queueErrorParts(shown)).toEqual([message('activity.error.unreadable')]);
+});

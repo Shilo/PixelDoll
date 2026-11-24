@@ -155,16 +155,24 @@
 	});
 	// A stopped attempt shows what it already bought and only offers ways on that reuse it (or say what they cost).
 	let paid = $state.raw<CreatePaidReview | null>(null);
+	// Reading the paid results failed: the ways on stay one free Try again away instead of silently disappearing.
+	let paidUnread = $state(false),
+		paidReads = $state(0);
 	$effect(() => {
 		const spec = creating?.error && !creating.running ? $state.snapshot(creating.spec) : undefined;
+		void paidReads;
 		let active = true;
 		paid = null;
+		paidUnread = false;
 		if (spec)
 			void reviewCreateResults(spec)
 				.then((review) => {
 					if (active) paid = review ?? null;
 				})
-				.catch((error: unknown) => console.error('create review', error));
+				.catch((error: unknown) => {
+					console.error('create review', error);
+					if (active) paidUnread = true;
+				});
 		return () => {
 			active = false;
 		};
@@ -353,7 +361,10 @@
 						name={creating.spec?.name ?? ''}
 						busy={creating.running}
 						onchoose={choosePaid}
-					/>{/if}
+					/>{:else if paidUnread}<p class="notice warn small">{t('paidReview.loadFailed')}</p>
+					<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
+						>{t('common.tryAgain')}</button
+					>{/if}
 			{:else}
 				<p class="muted small">
 					{t('create.sheet.time', { minutes: formatNumber(est.minutes) })}

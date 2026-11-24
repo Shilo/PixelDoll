@@ -97,6 +97,7 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
 			| 'footwearReviewFrames'
 			| 'waistReviewFrames'
 			| 'facingReviewFrames'
+			| 'jointReviewFrames'
 			| 'detailReviewFrames'
 			| 'rawKeyReviewFrames'
 			| 'heldLoopReviewClips'
@@ -142,6 +143,7 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
 		...(footwearReviewFrames ? { footwearReviewFrames } : {}),
 		...(waistReviewFrames ? { waistReviewFrames } : {}),
 		...(facingReviewFrames ? { facingReviewFrames } : {}),
+		...(sum('jointReviewFrames') ? { jointReviewFrames: sum('jointReviewFrames') } : {}),
 		...(sum('detailReviewFrames') ? { detailReviewFrames: sum('detailReviewFrames') } : {}),
 		...(sum('rawKeyReviewFrames') ? { rawKeyReviewFrames: sum('rawKeyReviewFrames') } : {}),
 		...(sum('heldLoopReviewClips') ? { heldLoopReviewClips: sum('heldLoopReviewClips') } : {}),

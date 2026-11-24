@@ -4,6 +4,7 @@ import type { MoveSpec, Progress } from '../../src/studio/create.ts';
 import type { RepairReview } from '../../src/lib/items/run.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import type { Balance } from '../../src/lib/pixellab/routes.ts';
+import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import { message } from '../../src/lib/message.ts';
 import { characterFacts } from '../../src/studio/model.ts';
 import { readFileSync } from 'node:fs';
@@ -37,6 +38,7 @@ const mocks = vi.hoisted(() => ({
 	updateCharacter: vi.fn(),
 	saveIdle: vi.fn()
 }));
+const ledger = vi.hoisted(() => ({ jobs: [] as JobRec[] }));
 const mockAccount = vi.hoisted(() => ({ key: '', balance: null as Balance | null }));
 vi.mock('../../src/studio/create.ts', () => ({
 	createCharacter: mocks.create,
@@ -91,9 +93,10 @@ vi.mock('../../src/lib/store/db.ts', async (original) => ({
 }));
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: mockAccount }));
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({
+	live: (r?: JobRec) => !!r && ['queued', 'submitting', 'running'].includes(r.state),
 	queue: {
 		role: 'leader',
-		snapshot: () => ({ jobs: [] }),
+		snapshot: () => ({ jobs: ledger.jobs }),
 		subscribe: mocks.subscribe,
 		requestHandoff: mocks.handoff,
 		idle: () => true,
@@ -142,6 +145,21 @@ beforeEach(() => {
 	stubGlobals();
 });
 afterEach(() => vi.unstubAllGlobals());
+test('a review draft whose frames cannot be read says so and reads them again for free', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const g = {
+		draft: { rigId: 'rig-unread', spec: { id: 'unread_hat' }, calls: [] }
+	} as unknown as Parameters<typeof state.readGenReview>[0];
+	mocks.load.mockRejectedValueOnce(new Error('storage unavailable'));
+	await state.readGenReview(g);
+	expect(state.store.resultsUnread.unread_hat).toBe(true);
+	expect(state.store.results.unread_hat).toBeUndefined();
+	mocks.load.mockRejectedValueOnce(new Error('still unavailable'));
+	await state.readGenReview(g);
+	expect(mocks.load).toHaveBeenLastCalledWith('rig-unread');
+	expect(state.store.resultsUnread.unread_hat).toBe(true);
+});
+
 test('canceling from a follower explains that generation has not stopped without opening Activity', async () => {
 	const state = await import('../../src/studio/state.svelte.ts');
 	const { queue } = await import('../../src/lib/pixellab/queue.ts');
@@ -735,6 +753,24 @@ const recoverySpec = {
 	poseStyle: 'visible-side-v1' as const
 };
 
+test('a fresh attempt of a failed move waits while one of its requests is still at PixelLab', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const failed = { ...recoverySpec, activityScope: 'move:2438:attempt' };
+	Object.assign(s.moving, { projectId: 'project', spec: failed, error: 'stopped', done: false });
+	ledger.jobs = [{ id: 'render', state: 'running', activityScope: failed.activityScope } as JobRec];
+	await s.startMove('project', { ...failed, seed: 99 });
+	// Nothing new is bought and the failed move stays as it was.
+	expect(mocks.move).not.toHaveBeenCalled();
+	expect(s.moving.spec).toBe(failed);
+	expect(s.ui.toast).toMatchObject({ key: 'state.moveStillAtPixelLab' });
+	// Once that request has an outcome, the fresh attempt starts.
+	ledger.jobs = [{ id: 'render', state: 'done', activityScope: failed.activityScope } as JobRec];
+	mocks.move.mockResolvedValue({ warnings: [] });
+	await s.startMove('project', { ...failed, seed: 99 });
+	expect(mocks.move).toHaveBeenCalledOnce();
+	ledger.jobs = [];
+});
+
 test('explicit joint-check recovery preserves the body identity and persists one reviewed intent before work', async () => {
 	const persisted = pending<void>();
 	mocks.put.mockImplementationOnce(() => persisted.promise);
@@ -1294,12 +1330,8 @@ const itemColorPlan = {
 	materialId: 'sword-metal',
 	changedPixels: 20,
 	changedFrames: [0, 1],
-	unmatchedPixels: 0
-};
-/** What a color match returns: the record it started from and the record as saved (unchanged here). */
-const unchangedSides = () => {
-	const rec = { id: 'project', savedAt: '', origin: 'studio', manifest: fixtureManifest() };
-	return { before: rec, after: rec };
+	unmatchedPixels: 0,
+	missingFrames: []
 };
 
 test('free item palette refresh preserves the outfit, selected view and inspector without invoking paid flow', async () => {
@@ -1312,10 +1344,17 @@ test('free item palette refresh preserves the outfit, selected view and inspecto
 	s.ui.dir = 'west';
 	s.ui.frame = 3;
 	const project = { manifest: { name: 'Refreshed palette' }, images: new Map() };
-	mocks.match.mockResolvedValue(unchangedSides());
+	mocks.match.mockResolvedValue(undefined);
 	mocks.load.mockResolvedValue({ project });
 	await s.matchItemPalette('project', 'sword', 'slash', 'west', itemColorPlan);
-	expect(mocks.match).toHaveBeenCalledWith('project', 'sword', 'slash', 'west', itemColorPlan);
+	expect(mocks.match).toHaveBeenCalledWith(
+		'project',
+		'sword',
+		'slash',
+		'west',
+		itemColorPlan,
+		expect.any(Function)
+	);
 	expect(s.store.project).toBe(project);
 	expect(s.doc.items).toEqual({ main_hand: 'sword' });
 	expect(s.doc.variants).toEqual({ 'sword-metal': 'azure' });
@@ -1326,7 +1365,7 @@ test('free item palette refresh preserves the outfit, selected view and inspecto
 });
 
 test('free item palette cannot replace a newer pending navigation even while the old project remains displayed', async () => {
-	const work = pending<ReturnType<typeof unchangedSides>>(),
+	const work = pending<void>(),
 		navigation = pending<never>();
 	mocks.match.mockReturnValue(work.promise);
 	mocks.source.mockReturnValue(navigation.promise);
@@ -1337,7 +1376,7 @@ test('free item palette cannot replace a newer pending navigation even while the
 	void s.openProject('new-project');
 	await vi.waitFor(() => expect(mocks.source).toHaveBeenCalledOnce());
 	expect(s.doc.id).toBe('old-project');
-	work.resolve(unchangedSides());
+	work.resolve();
 	await run;
 	expect(mocks.load).not.toHaveBeenCalled();
 });
@@ -1345,7 +1384,7 @@ test('free item palette cannot replace a newer pending navigation even while the
 test('free item palette applies only the newest refresh when two item corrections complete close together', async () => {
 	const older = pending<{ project: any }>(),
 		newer = pending<{ project: any }>();
-	mocks.match.mockResolvedValue(unchangedSides());
+	mocks.match.mockResolvedValue(undefined);
 	mocks.load.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
 	const s = await import('../../src/studio/state.svelte.ts');
 	s.doc.id = 'project';
@@ -1367,7 +1406,7 @@ test('a palette refresh re-reads export preferences saved after its project read
 		first = pending<{ project: typeof original }>();
 	s.doc.id = 'project';
 	s.store.project = structuredClone(original);
-	mocks.match.mockResolvedValue(unchangedSides());
+	mocks.match.mockResolvedValue(undefined);
 	mocks.load
 		.mockReturnValueOnce(first.promise)
 		.mockImplementationOnce(async () => ({ project: structuredClone(s.store.project) }));
@@ -1572,6 +1611,11 @@ describe('undo history', () => {
 		return { s, saved };
 	}
 	const hat = () => message('history.wear', { name: 'Wizard hat' });
+	/** An artwork step as an edit records it once its save landed (the new artwork is already stored here). */
+	const pushed = async (
+		s: typeof import('../../src/studio/state.svelte.ts'),
+		o: Parameters<typeof s.prepareArtworkStep>[0]
+	) => s.recordArtworkStep(o.projectId, await s.prepareArtworkStep(o, new Map()));
 	const itemIn = (record: any, id: string) =>
 		record.manifest.items.find((item: { id: string }) => item.id === id);
 
@@ -1649,7 +1693,7 @@ describe('undo history', () => {
 		after.manifest.rig.rest = { south: { image: `sha256:${added}` } };
 		saved.set('rig-a', structuredClone(after));
 		mocks.getBlob.mockResolvedValue(new Blob(['png']));
-		await s.pushArtworkStep({
+		await pushed(s, {
 			projectId: 'rig-a',
 			label: message('adjustFrame.title'),
 			before,
@@ -1668,12 +1712,149 @@ describe('undo history', () => {
 		await s.redo();
 		expect(saved.get('rig-a').manifest.rig.cell).toEqual({ w: 96, h: 96 });
 		expect(saved.get('rig-a').manifest.name).toBe('Renamed');
-		// Artwork changed since (a new move): writing the old record back would lose it, so the step refuses and stays.
+		// Artwork changed since (a new move): writing the old record back would lose it, so the step refuses, for good, and
+		// is removed so the steps behind it stay reachable.
 		saved.get('rig-a').manifest.rig.animations.push({ id: 'new', cells: 1, frames: [] });
 		await s.undo();
 		expect(s.ui.toast).toEqual(message('history.changed'));
-		expect(s.doc.undo.map((step) => step.label)).toEqual([message('adjustFrame.title')]);
+		expect([s.doc.undo, s.doc.redo]).toEqual([[], []]);
 		expect(saved.get('rig-a').manifest.rig.cell).toEqual({ w: 96, h: 96 });
+	});
+
+	test('a step refused for good is removed so the older steps stay reachable; one refused for now stays', async () => {
+		const { s, saved } = await opened('rig-a');
+		s.wear('hat_wizard');
+		await s.flushSave();
+		const before = structuredClone(saved.get('rig-a')),
+			after = structuredClone(before);
+		after.manifest.rig.cell = { w: 96, h: 96 };
+		saved.set('rig-a', structuredClone(after));
+		await pushed(s, {
+			projectId: 'rig-a',
+			label: message('adjustFrame.title'),
+			before,
+			after,
+			action: 'change the frame of'
+		});
+		// Refused for now (the character is still loading): it stays and says why.
+		s.doc.loading = true;
+		await s.undo();
+		expect(s.ui.toast).toEqual(message('state.waitForCharacter'));
+		expect(s.doc.undo.map((step) => step.label)).toEqual([hat(), message('adjustFrame.title')]);
+		s.doc.loading = false;
+		// Refused for good: removed, and the wear behind it undoes next.
+		saved.get('rig-a').manifest.rig.animations.push({ id: 'new', cells: 1, frames: [] });
+		s.ui.toast = '';
+		await s.undo();
+		expect(s.ui.toast).toEqual(message('history.changed'));
+		expect(s.doc.undo.map((step) => step.label)).toEqual([hat()]);
+		await s.undo();
+		expect(s.doc.items.head ?? null).toBeNull();
+	});
+
+	test("undoing a direction removal brings back that direction's layer order and keeps slot edits made since", async () => {
+		const { s, saved } = await opened('rig-a');
+		const before = structuredClone(saved.get('rig-a')),
+			after = structuredClone(before);
+		const slot = (r: any, id: string) => r.manifest.slots.find((x: { id: string }) => x.id === id);
+		slot(before, 'head').zOverrides = [{ layer: 'fg', z: 77, dir: 'north' }];
+		after.manifest.rig.directions = after.manifest.rig.directions.filter(
+			(d: { id: string }) => d.id !== 'north'
+		);
+		saved.set('rig-a', structuredClone(after));
+		await pushed(s, {
+			projectId: 'rig-a',
+			label: message('history.changeDirections'),
+			before,
+			after,
+			action: 'change directions for'
+		});
+		// A layer order edit made since, in the same slot list.
+		slot(saved.get('rig-a'), 'hair').zOverrides = [{ layer: 'fg', z: 55 }];
+		await s.undo();
+		expect(saved.get('rig-a').manifest.rig.directions).toEqual(before.manifest.rig.directions);
+		expect(slot(saved.get('rig-a'), 'head').zOverrides).toEqual([
+			{ layer: 'fg', z: 77, dir: 'north' }
+		]);
+		expect(slot(saved.get('rig-a'), 'hair').zOverrides).toEqual([{ layer: 'fg', z: 55 }]);
+		await s.redo();
+		expect(slot(saved.get('rig-a'), 'head').zOverrides ?? []).toEqual([]);
+		expect(slot(saved.get('rig-a'), 'hair').zOverrides).toEqual([{ layer: 'fg', z: 55 }]);
+	});
+
+	test('a draft saving itself keeps Redo, while Keep it clears it', async () => {
+		const { s } = await opened('rig-a');
+		s.wear('helmet_steel');
+		await s.undo();
+		expect(s.doc.redo).toHaveLength(1);
+		await s.openProject('rig-a', { quiet: true, wear: 'hat_wizard' });
+		expect(s.doc.undo.map((step) => step.label)).toEqual([hat()]);
+		expect(s.doc.redo).toHaveLength(1);
+		await s.undo();
+		await s.openProject('rig-a', { wear: 'hat_wizard' });
+		expect(s.doc.redo).toEqual([]);
+	});
+
+	test('a finished Redo always rejoins Undo; a finished Undo joins Redo unless a new action cleared it', async () => {
+		const { s, saved } = await opened('rig-a');
+		const before = structuredClone(saved.get('rig-a')),
+			after = structuredClone(before);
+		after.manifest.rig.cell = { w: 96, h: 96 };
+		saved.set('rig-a', structuredClone(after));
+		const frame = message('adjustFrame.title');
+		const step = (await s.prepareArtworkStep(
+			{ projectId: 'rig-a', label: frame, before, after, action: 'change the frame of' },
+			new Map()
+		))!;
+		s.recordArtworkStep('rig-a', step);
+		/** The next write waits until `land` is called while something else happens. */
+		const held = () => {
+			const gate: { land?: () => void } = {};
+			mocks.saveIdle.mockImplementationOnce(
+				(original, next) =>
+					new Promise<void>((resolve) => {
+						gate.land = () => {
+							saved.set(original.id, structuredClone(next));
+							resolve();
+						};
+					})
+			);
+			return gate;
+		};
+		const labels = () => [
+			s.doc.undo.map((entry) => entry.label),
+			s.doc.redo.map((entry) => entry.label)
+		];
+		await s.undo();
+		// A notice's Undo of a step no longer in the history says so.
+		await s.undoStep('rig-a', step);
+		expect(s.ui.toast).toEqual(message('history.notInHistory'));
+		// A Redo that lands after a new action still rejoins Undo: its change is in storage.
+		let gate = held();
+		const redoing = s.redo();
+		await vi.waitFor(() => expect(gate.land).toBeDefined());
+		s.wear('hat_wizard');
+		gate.land!();
+		await redoing;
+		expect(labels()).toEqual([[hat(), frame], []]);
+		// An Undo landing while a Trash update replaced the stacks (no action of the person) still joins Redo.
+		gate = held();
+		const undoing = s.undo();
+		await vi.waitFor(() => expect(gate.land).toBeDefined());
+		await s.refreshRecentlyDeleted();
+		gate.land!();
+		await undoing;
+		expect(labels()).toEqual([[hat()], [frame]]);
+		// An Undo landing after a new action, which cleared Redo, joins neither.
+		await s.redo();
+		gate = held();
+		const cleared = s.undo();
+		await vi.waitFor(() => expect(gate.land).toBeDefined());
+		s.wear('helmet_steel');
+		gate.land!();
+		await cleared;
+		expect(labels()).toEqual([[hat(), message('history.wear', { name: 'Steel helmet' })], []]);
+		expect(saved.get('rig-a').manifest.rig.cell).toEqual(before.manifest.rig.cell);
 	});
 
 	test('a step stays on its stack while its write runs, and a write that fails or never finishes neither loses it nor silently stops Undo', async () => {
@@ -1682,7 +1863,7 @@ describe('undo history', () => {
 			after = structuredClone(before);
 		after.manifest.rig.cell = { w: 96, h: 96 };
 		saved.set('rig-a', structuredClone(after));
-		await s.pushArtworkStep({
+		await pushed(s, {
 			projectId: 'rig-a',
 			label: message('adjustFrame.title'),
 			before,
@@ -1712,7 +1893,7 @@ describe('undo history', () => {
 			after = structuredClone(before);
 		after.manifest.rig.cell = { w: 96, h: 96 };
 		saved.set('rig-a', structuredClone(after));
-		await s.pushArtworkStep({
+		await pushed(s, {
 			projectId: 'rig-a',
 			label: message('adjustFrame.title'),
 			before,
@@ -1744,15 +1925,17 @@ describe('undo history', () => {
 	test('Match item colors is a step that writes back only that item', async () => {
 		const { s, saved } = await opened('rig-a');
 		const matched = 'c'.repeat(64);
-		mocks.getBlob.mockResolvedValue(new Blob(['png']));
 		mocks.load.mockImplementation(async () => ({
 			rec: saved.get('rig-a'),
 			project: { manifest: saved.get('rig-a').manifest, images: new Map() }
 		}));
-		mocks.match.mockImplementation(async () => {
-			const before = structuredClone(saved.get('rig-a'));
-			itemIn(saved.get('rig-a'), 'hat_wizard').dressed = { south: `sha256:${matched}` };
-			return { before, after: structuredClone(saved.get('rig-a')) };
+		mocks.match.mockImplementation(async (_p, _i, _a, _d, _r, beforeWrite) => {
+			const before = structuredClone(saved.get('rig-a')),
+				after = structuredClone(before);
+			itemIn(after, 'hat_wizard').dressed = { south: `sha256:${matched}` };
+			// The new frame is in what the save writes, not yet stored.
+			await beforeWrite({ before, after }, new Map([[matched, new Blob(['png'])]]));
+			saved.set('rig-a', structuredClone(after));
 		});
 		await s.matchItemPalette('rig-a', 'hat_wizard', 'walk', 'south', itemColorPlan);
 		expect(s.doc.undo.map((step) => step.label)).toEqual([message('itemPane.matchItemColors')]);
@@ -1769,7 +1952,7 @@ describe('undo history', () => {
 			south: `sha256:${matched}`
 		});
 		expect(itemIn(saved.get('rig-a'), 'hat_wizard').name).toBe('Pointy hat');
-		// The same item's artwork changed since (another tab): Undo refuses rather than revert that change, and stays.
+		// The same item's artwork changed since (another tab): Undo refuses rather than revert that change, and the step goes.
 		itemIn(saved.get('rig-a'), 'hat_wizard').prompt = 'redrawn elsewhere';
 		await s.undo();
 		expect(s.ui.toast).toEqual(message('history.changed'));
@@ -1777,7 +1960,7 @@ describe('undo history', () => {
 		expect(itemIn(saved.get('rig-a'), 'hat_wizard').dressed).toEqual({
 			south: `sha256:${matched}`
 		});
-		expect(s.doc.undo).toHaveLength(1);
+		expect(s.doc.undo).toEqual([]);
 	});
 
 	test('a dress step made before Adjust frame still undoes and redoes over the changed frame', async () => {
@@ -1832,12 +2015,12 @@ describe('undo history', () => {
 		);
 		await s.redo();
 		expect(itemIn(saved.get('rig-a'), 'hat_wizard').name).toBe('Pointy hat');
-		// Renamed again elsewhere: Undo refuses rather than overwrite it, and stays.
+		// Renamed again elsewhere: Undo refuses rather than overwrite it, and the step goes.
 		itemIn(saved.get('rig-a'), 'hat_wizard').name = 'Other hat';
 		await s.undo();
 		expect(itemIn(saved.get('rig-a'), 'hat_wizard').name).toBe('Other hat');
 		expect(s.ui.toast).toEqual(message('history.changed'));
-		expect(s.doc.undo).toHaveLength(1);
+		expect(s.doc.undo).toEqual([]);
 	});
 
 	test('a changed move description is a step that Undo and Redo write back', async () => {
@@ -1868,6 +2051,18 @@ describe('undo history', () => {
 		await s.redo();
 		expect(itemIn(saved.get('rig-a'), item.id).slot).toBe(to);
 		expect(s.doc.undo).toHaveLength(1);
+		// Being made again for now (a draft): the step waits rather than going.
+		itemIn(saved.get('rig-a'), item.id).status = 'draft';
+		await s.undo();
+		expect(s.ui.toast).toEqual(message('wardrobe.itemNotReady'));
+		expect(s.doc.undo).toHaveLength(1);
+		itemIn(saved.get('rig-a'), item.id).status = 'accepted';
+		// The item deleted since: the step reports it and goes, never failing silently.
+		const live = s.store.project!.manifest;
+		live.items = live.items.filter((entry) => entry.id !== item.id);
+		await s.undo();
+		expect(s.ui.toast).toEqual(message('history.changed'));
+		expect(s.doc.undo).toEqual([]);
 	});
 });
 

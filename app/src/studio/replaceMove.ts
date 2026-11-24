@@ -23,6 +23,9 @@ export interface MoveCandidate {
 	skeletons: Record<string, Skeleton>;
 	checks: Record<string, ClipQa>;
 	warnings: string[];
+	/** The recovery receipt a staged recovery result publishes on Save (StoredProject.moveRecovery, without the body version
+	 *  that only Save fixes), so retry eligibility after Save matches a direct recovery. */
+	moveRecovery?: Omit<NonNullable<StoredProject['moveRecovery']>, 'bodyRigVersion'>;
 }
 
 export function applyMoveLoop(

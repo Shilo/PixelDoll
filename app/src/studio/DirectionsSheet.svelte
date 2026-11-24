@@ -16,16 +16,16 @@
 	} from '../lib/rig/directions.ts';
 	import { displayDirectionList, displayDirectionProblem } from './displayDirectionProblem.ts';
 	import type { DirectionName, RigDirection } from '../lib/rig/rig.ts';
-	import { encodePngBytes } from '../lib/image/pngraw.ts';
 	import * as db from '../lib/store/db.ts';
-	import { loadProject } from '../lib/store/project.ts';
+	import { loadProject, pngBlobs } from '../lib/store/project.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
 	import {
 		blockedByWork,
 		directionEditsBlocked,
 		flushSave,
 		openPendingWork,
-		pushArtworkStep,
+		prepareArtworkStep,
+		recordArtworkStep,
 		refreshCharacterDirections,
 		splitBeforeEdit,
 		toast,
@@ -96,40 +96,44 @@
 		if (!loaded || !record || !changed || problem || blocked || busy) return;
 		busy = true;
 		error = '';
-		const before = record;
-		let after: typeof record;
+		let step: Awaited<ReturnType<typeof prepareArtworkStep>>;
 		try {
 			const { record: next, newImages } = await configureDirections(
 				record,
 				retained,
 				loaded.project.images
 			);
-			const blobs = new Map<string, Blob>();
-			for (const [hash, image] of newImages)
-				blobs.set(
-					hash.slice(7),
-					new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], {
-						type: 'image/png'
-					})
-				);
+			const blobs = await pngBlobs(newImages);
 			const reason = directionEditsBlocked(id);
 			if (reason) throw reason;
 			next.savedAt = new Date().toISOString();
+			step = await prepareArtworkStep(
+				{
+					projectId: id,
+					label: message('history.changeDirections'),
+					before: record,
+					after: next,
+					action: 'change directions for'
+				},
+				blobs
+			);
 			await db.saveIdleCharacter(record, next, blobs, 'change directions for');
-			after = next;
+			recordArtworkStep(id, step);
 		} catch (failure) {
 			error = errorMessage(failure);
 			busy = false;
 			return;
 		}
 		try {
-			if (await refreshCharacterDirections(id))
-				toast(
-					removalOnly
-						? message('directionsSheet.removed', { count: excluded.length })
-						: message('directionsSheet.saved')
-				);
-			else
+			// Without a step, the notice that it was saved but cannot be undone stays unless a reload is needed.
+			if (await refreshCharacterDirections(id)) {
+				if (step)
+					toast(
+						removalOnly
+							? message('directionsSheet.removed', { count: excluded.length })
+							: message('directionsSheet.saved')
+					);
+			} else
 				toast(message('directionsSheet.directionsWereSavedReloadToRefreshThe'), {
 					tone: 'warning'
 				});
@@ -143,15 +147,6 @@
 		} finally {
 			ui.sheet = null;
 		}
-		// After the notices: a step that cannot be recorded says so on top of them.
-		if (after)
-			await pushArtworkStep({
-				projectId: id,
-				label: message('history.changeDirections'),
-				before,
-				after,
-				action: 'change directions for'
-			});
 	}
 </script>
 

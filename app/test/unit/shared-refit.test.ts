@@ -1,7 +1,7 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { acceptCopy, copyMoreFrames, freeFrames, sharedFit } from '../../src/lib/equipment/copy.ts';
-import { REFIT, refitShared, refittable } from '../../src/lib/equipment/refit.ts';
+import { refitShared, refittable } from '../../src/lib/equipment/refit.ts';
 import { refitNotes } from '../../src/studio/model.ts';
 import { forgetFits, listShared } from '../../src/lib/equipment/shared.ts';
 import { translate } from '../../src/lib/items/items.ts';
@@ -335,11 +335,15 @@ test('a held item on a body moved by a known offset moves by exactly that offset
 });
 
 const turned = { 'RIGHT ELBOW': [21, 36] as Px, 'RIGHT ARM': [27, 37] as Px };
-test('a forearm at a different angle in more than a quarter of the frames does not fit', async () => {
-	// One of three frames.
-	expect(
-		await refit(await knight(), await character({ name: 'Fencer', at: [1, 0], slash1: turned }))
-	).toBeNull();
+test('a forearm at a different angle in more than a quarter of the frames still fits, named for a look', async () => {
+	// One of three frames: this used to refuse the whole free fit.
+	const fit = await refit(
+		await knight(),
+		await character({ name: 'Fencer', at: [1, 0], slash1: turned })
+	);
+	expect(fit?.item.refit).toEqual([
+		{ anim: 'slash', dir: 'south', frames: [1], checks: ['angle'] }
+	]);
 });
 
 test('up to a quarter of the frames may fail a check: the copy names them for a look', async () => {
@@ -521,16 +525,10 @@ test('a grip up to 2 px beside a slimmer body still counts as on it; farther, it
 		(await refit(await knight(), await character({ name: 'Slim', slim: 5 })))!.item.refit
 	).toEqual([]);
 	const far = await character({ name: 'Slimmer', slim: 6 });
-	expect(await refit(await knight(), far)).toBeNull();
-	REFIT.maxFailing = 1;
-	try {
-		expect((await refit(await knight(), far))!.item.refit).toEqual([
-			{ anim: 'default', dir: 'south', frames: [0], checks: ['body'] },
-			{ anim: 'slash', dir: 'south', frames: [0, 1], checks: ['body'] }
-		]);
-	} finally {
-		REFIT.maxFailing = 0.25;
-	}
+	expect((await refit(await knight(), far))!.item.refit).toEqual([
+		{ anim: 'default', dir: 'south', frames: [0], checks: ['body'] },
+		{ anim: 'slash', dir: 'south', frames: [0, 1], checks: ['body'] }
+	]);
 });
 
 test('the source design’s smudges move with a re-fit as notes on that view, never counted as failed frames', async () => {

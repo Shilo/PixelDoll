@@ -155,25 +155,69 @@ export const clear = async (s: StoreName) => {
 	else await tx(s, 'readwrite', (o) => o.clear());
 };
 
+/** For a debugging backup: every saved record and job, and the hash, size and type of all artwork, in one snapshot. */
+export async function readDebugSnapshot() {
+	const db = await open();
+	return new Promise<{
+		projects: Map<string, unknown>;
+		jobs: unknown[];
+		blobs: { hash: string; size: number; type: string }[];
+	}>((resolve, reject) => {
+		const transaction = db.transaction(['projects', 'jobs', 'blobs'], 'readonly');
+		const projects = new Map<string, unknown>();
+		const blobs: { hash: string; size: number; type: string }[] = [];
+		const jobs = transaction.objectStore('jobs').getAll();
+		// Kept incompatible archives can be large and the backup already carries them: their keys only.
+		const archiveStart = RETAINED_ARCHIVE_PREFIX,
+			archiveEnd = `${RETAINED_ARCHIVE_PREFIX}\uffff`;
+		const store = transaction.objectStore('projects');
+		const archives = store.getAllKeys(IDBKeyRange.bound(archiveStart, archiveEnd));
+		for (const range of [
+			IDBKeyRange.upperBound(archiveStart, true),
+			IDBKeyRange.lowerBound(archiveEnd, true)
+		]) {
+			const records = store.openCursor(range);
+			records.onsuccess = () => {
+				const row = records.result;
+				if (!row) return;
+				projects.set(String(row.key), row.value);
+				row.continue();
+			};
+		}
+		archives.onsuccess = () => {
+			for (const key of archives.result) projects.set(String(key), undefined);
+		};
+		const images = transaction.objectStore('blobs').openCursor();
+		images.onsuccess = () => {
+			const row = images.result;
+			if (!row) return;
+			const value = row.value as Partial<Blob> | undefined;
+			blobs.push({
+				hash: String(row.key),
+				size: typeof value?.size === 'number' ? value.size : -1,
+				type: typeof value?.type === 'string' ? value.type : typeof value
+			});
+			row.continue();
+		};
+		transaction.oncomplete = () => resolve({ projects, jobs: jobs.result, blobs });
+		transaction.onerror = transaction.onabort = () => reject(transaction.error);
+	});
+}
+
 export async function readWorkspaceSnapshot(
 	select: (key: string, value: unknown) => boolean,
-	references: (records: Map<string, unknown>) => ReadonlyMap<string, unknown>,
-	includeErrors: boolean
+	references: (records: Map<string, unknown>) => ReadonlyMap<string, unknown>
 ) {
 	const db = await open();
 	return new Promise<{
 		projects: Map<string, unknown>;
 		blobs: Map<string, Blob>;
-		jobs: unknown[];
 		retainedIds: string[];
 	}>((resolve, reject) => {
-		const stores: StoreName[] = ['projects', 'blobs'];
-		if (includeErrors) stores.push('jobs');
-		const transaction = db.transaction(stores, 'readonly');
+		const transaction = db.transaction(['projects', 'blobs'], 'readonly');
 		const projects = new Map<string, unknown>();
 		const blobs = new Map<string, Blob>();
 		const retainedIds: string[] = [];
-		const jobs = includeErrors ? transaction.objectStore('jobs').getAll() : undefined;
 		const cursor = transaction.objectStore('projects').openCursor();
 		let error: unknown;
 		cursor.onsuccess = () => {
@@ -199,8 +243,7 @@ export async function readWorkspaceSnapshot(
 				transaction.abort();
 			}
 		};
-		transaction.oncomplete = () =>
-			resolve({ projects, blobs, jobs: jobs?.result ?? [], retainedIds });
+		transaction.oncomplete = () => resolve({ projects, blobs, retainedIds });
 		transaction.onerror = transaction.onabort = () => reject(error ?? transaction.error);
 	});
 }
