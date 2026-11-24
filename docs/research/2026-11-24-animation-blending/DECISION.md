@@ -58,7 +58,9 @@ Everything else is automatic: eligibility, registration, fragment cleanup, which
 
 ## Slowdown
 
-App policy, not exported API. While a grounded attack plays, travel speed is multiplied by 0.8, in both modes, layered or not. Attack playback and repeat timing stay at 1.0, because authored timing is part of the attack's feel and a slower swing reads as lag. Gait cadence follows velocity, so the legs slow with the body and do not skate. Mouse destination reach and movement integration use the same factor. Airborne movement is unchanged. Fixed, no setting.
+App policy, not exported API. While a grounded, unmounted attack plays, travel speed is multiplied by 0.8, in both modes, layered or not. Attack playback and repeat timing stay at 1.0, because authored timing is part of the attack's feel and a slower swing reads as lag. Gait cadence follows velocity, so the legs slow with the body and do not skate. Mouse destination reach and movement integration use the same factor. Airborne movement is unchanged.
+
+**Mounted characters are exempt.** The rider and the mount are separate entities, so a rider's attack must never change the mount's speed or gait. While mounted or in a riding pose, travel stays at 1.0 and the mount keeps its own 1.3 multiplier. Layering is already off while mounted; the speed factor is off for the same reason. The Live setting tooltip words the slowdown as applying to walking characters.
 
 0.8 is noticeable without reading as a stop. Sol proposed 0.8, Opus 0.7, and the owner asked for a small but noticeable slowdown.
 
