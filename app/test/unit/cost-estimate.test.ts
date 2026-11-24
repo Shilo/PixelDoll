@@ -282,15 +282,15 @@ describe('cost estimate', () => {
 		).toBeCloseTo(0.55);
 	});
 
-	test('fits items as Items on moves resolves: on the move frames by default, posed when they cannot be', () => {
+	test('fits items as Items on moves resolves: on the move frames when chosen, posed when they cannot be', () => {
 		const m = manifest({
 			cell: 92,
 			directions: FOUR,
 			items: [{ id: 'a' }, { id: 'b', extra: { standing: undefined } }]
 		});
-		const shipped = characterOf('rig-test', m, { ...defaults, itemDrawing: 'anchor' });
-		const seed = { ...firstPass(seedInputs(shipped)), moves: 1 };
-		const anchored = characterCost(shipped, seed),
+		const chosen = characterOf('rig-test', m, { ...defaults, itemDrawing: 'anchor' });
+		const seed = { ...firstPass(seedInputs(chosen)), moves: 1 };
+		const anchored = characterCost(chosen, seed),
 			posed = characterCost(of(m), seed);
 		const idle = {
 			...m.rig,

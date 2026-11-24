@@ -59,7 +59,7 @@ export const creationDefaults: Readonly<{
 		frame: 'auto',
 		directions: presetOf(character)!
 	},
-	moves: { model: 'skeleton-v3', frames: 'auto', itemDrawing: 'anchor' },
+	moves: { model: 'skeleton-v3', frames: 'auto', itemDrawing: 'skeleton' },
 	states: { model: 'pro' },
 	items: { method: 'auto' }
 };

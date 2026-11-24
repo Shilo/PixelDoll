@@ -2773,8 +2773,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		.getByRole('combobox', { name: 'Motion model', exact: true })
 		.selectOption('skeleton-v3');
 	const drawing = move.getByRole('combobox', { name: 'Items on this move', exact: true });
-	await expect(drawing.locator('option:checked')).toHaveText('Default (Draw on move frames)');
-	await drawing.selectOption('skeleton');
+	await expect(drawing.locator('option:checked')).toHaveText('Default (Pose a separate body)');
+	await drawing.selectOption('anchor');
 	await page.getByRole('button', { name: /^Generate / }).click();
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
@@ -2800,7 +2800,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	]);
 	expect(after.manifest.rig.baseHash).not.toBe('sha256:');
 	expect(idle.cells).toBe(4);
-	expect(idle.itemDrawing).toBe('skeleton');
+	expect(idle.itemDrawing).toBe('anchor');
 	expect(Object.keys(idle.sources!)).toEqual(['south', 'east', 'north', 'west']);
 	expect(
 		Object.values(idle.sources!).every((s) => s.route === 'skeleton-v3' && s.measured?.length === 4)

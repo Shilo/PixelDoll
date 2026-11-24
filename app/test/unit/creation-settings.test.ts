@@ -100,7 +100,7 @@ describe('creation preferences', () => {
 		expect(readCreationSettings(storage, 'moves').values).toEqual({
 			model: 'pixminimax',
 			frames: 20,
-			itemDrawing: 'anchor'
+			itemDrawing: 'skeleton'
 		});
 	});
 
@@ -109,14 +109,14 @@ describe('creation preferences', () => {
 		const key = creationSettingsKey('moves');
 		storage.setItem(key, '{"model":"pixminimax","frames":20}');
 		expect(readCreationSettings(storage, 'moves')).toEqual({
-			values: { model: 'pixminimax', frames: 20, itemDrawing: 'anchor' },
+			values: { model: 'pixminimax', frames: 20, itemDrawing: 'skeleton' },
 			valid: true
 		});
-		expect(saveCreationSettings(storage, 'moves', { itemDrawing: 'skeleton' })).toBe(true);
+		expect(saveCreationSettings(storage, 'moves', { itemDrawing: 'anchor' })).toBe(true);
 		expect(JSON.parse(storage.getItem(key)!)).toEqual({
 			model: 'pixminimax',
 			frames: 20,
-			itemDrawing: 'skeleton'
+			itemDrawing: 'anchor'
 		});
 		for (const raw of [
 			'{"model":"pixminimax","frames":20,"itemDrawing":"grid"}',

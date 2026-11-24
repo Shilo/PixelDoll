@@ -564,7 +564,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		['Character', 'base-clothing', 'none', 'underwear', 'select'],
 		['Move', 'move-model', 'v3', 'skeleton-v3', 'select'],
 		['Move', 'move-frames', '6', 'auto', 'select'],
-		['Move', 'item-drawing', 'skeleton', 'anchor', 'select'],
+		['Move', 'item-drawing', 'anchor', 'skeleton', 'select'],
 		['State', 'state-model', 'pixen', 'pro', 'select'],
 		['Item', 'item-method', 'anchor', 'auto', 'select']
 	] as const;
