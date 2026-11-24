@@ -1,0 +1,51 @@
+{
+  "note": "First place per blind reviewer per sheet, mapped to arms with blind-keys.json after all ballots for a set were in. '=' marks a reviewer tie. 'self' is the coordinating agent's own blind read (recorded before unblinding; pilot84 and mr2-vs-template only). Opus reviewers were rate-limited for mr2-vs-template. Full reviewer text was kept in the session, not in the repo; Codex reports are under the ignored scratchpad.",
+  "pilot84": {
+    "south_s31": { "opus": "A", "sonnet": "A", "codex": "A", "self": "A" },
+    "south_s47": { "opus": "A", "sonnet": "A", "codex": "A", "self": "A" },
+    "east_s31": { "opus": "A", "sonnet": "A", "codex": "A", "self": "A" },
+    "east_s47": { "opus": "A", "sonnet": "P", "codex": "A", "self": "A" }
+  },
+  "hurt": {
+    "south_s31": { "opus": "P", "sonnet": "P", "codex": "A" },
+    "south_s47": { "opus": "P", "sonnet": "A", "codex": "A" },
+    "east_s31": { "opus": "A", "sonnet": "M0", "codex": "A" },
+    "east_s47": { "opus": "A", "sonnet": "P", "codex": "A" }
+  },
+  "run": {
+    "south_s31": { "opus": "P", "sonnet": "M0", "codex": "M0" },
+    "south_s47": { "opus": "P", "sonnet": "M0", "codex": "M0" },
+    "east_s31": { "opus": "M0", "sonnet": "M0", "codex": "M0" },
+    "east_s47": { "opus": "P", "sonnet": "M0", "codex": "M0" }
+  },
+  "run-follow (MR used the flipped-knee pass)": {
+    "south_s53": { "opus": "MR", "sonnet": "M0=MR", "codex": "MR" },
+    "south_s61": { "opus": "MR", "sonnet": "P", "codex": "MR" },
+    "east_s53": { "opus": "MR", "sonnet": "MR", "codex": "M0" },
+    "east_s61": { "opus": "MR", "sonnet": "MR", "codex": "M0" }
+  },
+  "chibi-run (MR used the flipped-knee pass)": {
+    "south_s71": { "opus": "MR", "sonnet": "P", "codex": "MR" },
+    "south_s83": { "opus": "MR", "sonnet": "P", "codex": "MR" },
+    "east_s71": { "opus": "M0=MR", "sonnet": "MR=M0", "codex": "M0" },
+    "east_s83": { "opus": "M0=MR", "sonnet": "MR=M0", "codex": "M0" }
+  },
+  "bench-walk (MR used the flipped-knee pass)": {
+    "south_s71": { "opus": "P", "sonnet": "P", "codex": "T" },
+    "south_s83": { "opus": "P", "sonnet": "P", "codex": "T" },
+    "east_s71": { "opus": "T", "sonnet": "P", "codex": "T" },
+    "east_s83": { "opus": "P=T", "sonnet": "T", "codex": "T" }
+  },
+  "bench-run-template (MR used the flipped-knee pass)": {
+    "south_s97": { "opus": "T", "sonnet": "T", "codex": "MR" },
+    "south_s101": { "opus": "T", "sonnet": "T", "codex": "MR" },
+    "east_s97": { "opus": "T", "sonnet": "T", "codex": "T" },
+    "east_s101": { "opus": "T", "sonnet": "T", "codex": "T" }
+  },
+  "mr2-vs-template (corrected knee pass)": {
+    "south_s97": { "sonnet": "T", "codex": "MR2", "self": "T" },
+    "south_s101": { "sonnet": "T", "codex": "MR2", "self": "T" },
+    "east_s97": { "sonnet": "T", "codex": "T", "self": "MR2=T" },
+    "east_s101": { "sonnet": "MR2", "codex": "T", "self": "MR2=T" }
+  }
+}
