@@ -7086,6 +7086,41 @@ test('a view kept without poses names the move and view to make again before equ
 		'Idle West was kept without poses, so equipment is not fitted there. Make that view again to fit it.'
 	);
 	expect(posts.length).toBe(sent);
+	// Another item on the same view that still can be made must not hide this one's redraw note: the stage note keeps
+	// both the way on and the offer for the item that has one.
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.evaluate(async (itemId) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts',
+			s = await import(statePath),
+			db = await import(dbPath);
+		const rec = await db.get('projects', s.doc.id),
+			source = rec.manifest.items.find((it: { id: string }) => it.id === itemId),
+			clone = structuredClone(source);
+		clone.id = 'extra-helm';
+		clone.name = 'Extra helm';
+		clone.slot = 'head';
+		for (const layer of clone.layers) {
+			delete layer.cells.idle?.west;
+			delete layer.cells.idle?.east;
+		}
+		clone.coverage = clone.coverage.filter((key: string) => !/^idle\/(west|east)\//.test(key));
+		rec.manifest.items.push(clone);
+		await db.put('projects', s.doc.id, rec);
+		await s.openProject(s.doc.id);
+		if (s.doc.items.head !== clone.id) s.wear(clone.id);
+		if (s.doc.items.main_hand !== itemId) s.wear(itemId);
+		s.ui.anim = 'idle';
+		s.ui.dir = 'west';
+		s.ui.all = false;
+	}, itemId);
+	await inspectStage(page);
+	const stageNote = page.locator('.stage-note');
+	await expect(stageNote).toContainText('Idle West was kept without poses');
+	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
+		'gens'
+	);
+	expect(posts.length).toBe(sent);
 });
 
 test('an item missing a standing view restores it from its saved design for free', async ({

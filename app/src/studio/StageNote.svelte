@@ -56,9 +56,10 @@
 				)
 			: []
 	);
-	// The move on stage was kept without poses where these items are missing: no offer, only the way on.
+	// The move on stage was kept without poses where these items are missing: no offer for those items, only the way on.
+	// Items that do have an offer for the move never add a note here, so both can show when they are mixed.
 	const unposedNotes = $derived(
-		m && anim && !poseSpecs.length
+		m && anim
 			? missing
 					.flatMap((item) =>
 						unposedItemMoves(
@@ -166,35 +167,38 @@
 						>{t('itemPane.copyFrom', { name: freeCopy.copiedFrom.name })}
 						<span class="cost">{t('common.free')}</span></button
 					>
-				{:else if poseSpecs.length === missing.length}
-					<span class="api-action"
-						><button
-							class="bu-action btn sm primary"
-							data-variant="primary"
-							disabled={(!!moving.spec && !moving.done) || !poseOffer?.specs.length || poseBlocked}
-							aria-describedby={poseBlocked ? 'stage-pose-tier' : undefined}
-							onclick={makePose}
-							>{t('stageNote.makeMissingViews')}
-							<span class="cost"
-								>{poseOffer?.gens == null
-									? t('common.unavailable')
-									: t('stageNote.estimate', {
-											count: poseOffer.gens,
-											n: formatNumber(poseOffer.gens)
-										})}</span
-							></button
-						></span
-					>
-					{#if poseOffer?.error}<span role="status">{displayMessage(poseOffer.error)}</span>{/if}
-					{#each poseOffer?.unposed ?? [] as note, i (i)}<span>{displayNestedMessage(note)}</span
-						>{/each}
-					<PoseIssues issues={poseOffer?.poseIssues ?? []} />
-					{#if poseTier}<TierNotice
-							id="stage-pose-tier"
-							minimumTier={poseTier}
-							feature={t('stageNote.makingMissingFrames')}
-						/>{/if}
-				{:else if unposedNotes.length}
+				{:else if poseSpecs.length || unposedNotes.length}
+					{#if poseSpecs.length}
+						<span class="api-action"
+							><button
+								class="bu-action btn sm primary"
+								data-variant="primary"
+								disabled={(!!moving.spec && !moving.done) ||
+									!poseOffer?.specs.length ||
+									poseBlocked}
+								aria-describedby={poseBlocked ? 'stage-pose-tier' : undefined}
+								onclick={makePose}
+								>{t('stageNote.makeMissingViews')}
+								<span class="cost"
+									>{poseOffer?.gens == null
+										? t('common.unavailable')
+										: t('stageNote.estimate', {
+												count: poseOffer.gens,
+												n: formatNumber(poseOffer.gens)
+											})}</span
+								></button
+							></span
+						>
+						{#if poseOffer?.error}<span role="status">{displayMessage(poseOffer.error)}</span>{/if}
+						{#each poseOffer?.unposed ?? [] as note, i (i)}<span>{displayNestedMessage(note)}</span
+							>{/each}
+						<PoseIssues issues={poseOffer?.poseIssues ?? []} />
+						{#if poseTier}<TierNotice
+								id="stage-pose-tier"
+								minimumTier={poseTier}
+								feature={t('stageNote.makingMissingFrames')}
+							/>{/if}
+					{/if}
 					{#each unposedNotes as note, i (i)}<span>{displayNestedMessage(note)}</span>{/each}
 				{:else if remake?.standing && !copyOnly}
 					<button
