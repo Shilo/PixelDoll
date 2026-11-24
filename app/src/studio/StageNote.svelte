@@ -4,6 +4,7 @@
 	import Sheet from './Sheet.svelte';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import { displayMessage, displayNestedMessage } from '../lib/i18n.ts';
+	import { sameMessage } from '../lib/message.ts';
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import { itemMoveOffer, missingItemMoves, moveMinimumTier, unposedItemMoves } from './create.ts';
@@ -56,35 +57,41 @@
 				)
 			: []
 	);
-	// The move on stage was kept without poses where these items are missing: no offer for those items, only the way on.
-	// Items that do have an offer for the move never add a note here, so both can show when they are mixed.
-	const unposedNotes = $derived(
-		m && anim
-			? missing
-					.flatMap((item) =>
-						unposedItemMoves(
-							m,
-							item.id,
-							currentItemDrawing(),
-							setupRedoMoves(store.exportRecord)
-						).filter((entry) => entry.move === anim.id)
-					)
-					.slice(0, 1)
-					.map((entry) => entry.note)
-			: []
-	);
+	const poseItems = $derived(new Set(poseSpecs.flatMap((spec) => spec.items)));
 	const poseOffer = $derived(
 		m && poseSpecs.length ? itemMoveOffer(m, poseSpecs, setupRedoMoves(store.exportRecord)) : null
 	);
+	// The move on stage was kept without poses where these items are missing: no offer for those items, only the way on.
+	// An offered item's own offer names the same views, so each sentence is shown once.
+	const unposedByItem = $derived(
+		m && anim
+			? missing.flatMap((item) =>
+					unposedItemMoves(m, item.id, currentItemDrawing(), setupRedoMoves(store.exportRecord))
+						.filter((entry) => entry.move === anim.id)
+						.map((entry) => ({ id: item.id, note: entry.note }))
+				)
+			: []
+	);
+	const unposedIds = $derived(new Set(unposedByItem.map((entry) => entry.id)));
+	const unposedNotes = $derived(
+		unposedByItem
+			.map((entry) => entry.note)
+			.filter((note, i, all) => all.findIndex((other) => sameMessage(note, other)) === i)
+			.filter((note) => !(poseOffer?.unposed ?? []).some((other) => sameMessage(note, other)))
+	);
+	// Items the note neither offers nor explains get their own way on beside it.
+	const otherMissing = $derived(
+		missing.filter((item) => !poseItems.has(item.id) && !unposedIds.has(item.id))
+	);
+	const freeCopy = $derived(missing.find((i) => shared.free[i.id]));
+	const remake = $derived(otherMissing.find((i) => i.prompt));
+	const copyOnly = $derived(!!m && !!remake?.copiedFrom && !extendable(m, remake.id));
 	const poseTier = $derived(
 		m ? Math.max(0, ...(poseOffer?.specs ?? []).map((s) => moveMinimumTier(m, s))) : 0
 	);
 	const poseBlocked = $derived(
 		tierDecision(app.balance, { required: poseTier }).kind === 'required'
 	);
-	const freeCopy = $derived(missing.find((i) => shared.free[i.id]));
-	const remake = $derived(missing.find((i) => i.prompt));
-	const copyOnly = $derived(!!m && !!remake?.copiedFrom && !extendable(m, remake.id));
 	const busy = $derived(
 		!!moving.spec &&
 			moving.projectId === doc.id &&
@@ -112,11 +119,7 @@
 >
 	{#snippet developer()}
 		<ApiPeek
-			targets={missing.length &&
-			!busy &&
-			!isDemo() &&
-			!freeCopy?.copiedFrom &&
-			poseSpecs.length === missing.length
+			targets={missing.length && !busy && !isDemo() && !freeCopy?.copiedFrom && poseSpecs.length > 0
 				? [
 						{
 							scope: 'equipment-missing-move',
@@ -167,7 +170,7 @@
 						>{t('itemPane.copyFrom', { name: freeCopy.copiedFrom.name })}
 						<span class="cost">{t('common.free')}</span></button
 					>
-				{:else if poseSpecs.length || unposedNotes.length}
+				{:else if poseSpecs.length || unposedNotes.length || remake}
 					{#if poseSpecs.length}
 						<span class="api-action"
 							><button
@@ -200,22 +203,23 @@
 							/>{/if}
 					{/if}
 					{#each unposedNotes as note, i (i)}<span>{displayNestedMessage(note)}</span>{/each}
-				{:else if remake?.standing && !copyOnly}
-					<button
-						class="bu-action btn sm"
-						data-variant="outline"
-						onclick={() => (ui.sheet = 'setup')}>{t('setup.title')}</button
-					>
-				{:else if remake}
-					<!-- A copy without its own standing design cannot be posed onto more moves: make one for this character. -->
-					<button
-						class="bu-action btn sm"
-						data-variant="outline"
-						onclick={() => openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
-						>{copyOnly
-							? t('itemMenu.makeOneForName', { name: m?.name })
-							: t('stageNote.makeItAgain')}</button
-					>
+					{#if remake?.standing && !copyOnly}
+						<button
+							class="bu-action btn sm"
+							data-variant="outline"
+							onclick={() => (ui.sheet = 'setup')}>{t('setup.title')}</button
+						>
+					{:else if remake}
+						<!-- A copy without its own standing design cannot be posed onto more moves: make one for this character. -->
+						<button
+							class="bu-action btn sm"
+							data-variant="outline"
+							onclick={() => openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
+							>{copyOnly
+								? t('itemMenu.makeOneForName', { name: m?.name })
+								: t('stageNote.makeItAgain')}</button
+						>
+					{/if}
 				{/if}
 			</div>
 		{/if}

@@ -182,6 +182,7 @@ import {
 	LocalizedError,
 	message,
 	PreflightWarning,
+	sameMessage,
 	type Message
 } from '../lib/message.ts';
 import { localizedPlanRestriction } from '../lib/pixellab/plans.ts';
@@ -2992,7 +2993,9 @@ export function itemMoveOffer(
 	/** Views of these moves kept without poses: priced out of the offer and named here, so the user knows to make them again. */
 	unposed: Message[];
 } {
-	const unposed = specs.flatMap((spec) => unposedViewNote(m, spec, redo));
+	const unposed = specs
+		.flatMap((spec) => unposedViewNote(m, spec, redo))
+		.filter((note, i, all) => all.findIndex((other) => sameMessage(note, other)) === i);
 	try {
 		const reviewed = specs.map((spec) => reviewItemMove(m, spec, redo));
 		return {

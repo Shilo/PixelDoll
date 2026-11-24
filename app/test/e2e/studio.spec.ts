@@ -7086,8 +7086,8 @@ test('a view kept without poses names the move and view to make again before equ
 		'Idle West was kept without poses, so equipment is not fitted there. Make that view again to fit it.'
 	);
 	expect(posts.length).toBe(sent);
-	// Another item on the same view that still can be made must not hide this one's redraw note: the stage note keeps
-	// both the way on and the offer for the item that has one.
+	// Another item on the same view that still can be made must not hide this one's redraw note, and a worn copy from
+	// another body has no offer or note, so its own way on must stay reachable beside both.
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.evaluate(async (itemId) => {
 		const statePath = '/src/studio/state.svelte.ts',
@@ -7096,7 +7096,8 @@ test('a view kept without poses names the move and view to make again before equ
 			db = await import(dbPath);
 		const rec = await db.get('projects', s.doc.id),
 			source = rec.manifest.items.find((it: { id: string }) => it.id === itemId),
-			clone = structuredClone(source);
+			clone = structuredClone(source),
+			copied = structuredClone(source);
 		clone.id = 'extra-helm';
 		clone.name = 'Extra helm';
 		clone.slot = 'head';
@@ -7105,10 +7106,18 @@ test('a view kept without poses names the move and view to make again before equ
 			delete layer.cells.idle?.east;
 		}
 		clone.coverage = clone.coverage.filter((key: string) => !/^idle\/(west|east)\//.test(key));
-		rec.manifest.items.push(clone);
+		// A copy from another body cannot be posed here: no offer and no unposed note, only its own remake.
+		copied.id = 'copied-vest';
+		copied.name = 'Copied vest';
+		copied.slot = 'feet';
+		copied.baseHash = 'sha256:otherbody';
+		for (const layer of copied.layers) delete layer.cells.idle?.west;
+		copied.coverage = copied.coverage.filter((key: string) => !key.startsWith('idle/west/'));
+		rec.manifest.items.push(clone, copied);
 		await db.put('projects', s.doc.id, rec);
 		await s.openProject(s.doc.id);
 		if (s.doc.items.head !== clone.id) s.wear(clone.id);
+		if (s.doc.items.feet !== copied.id) s.wear(copied.id);
 		if (s.doc.items.main_hand !== itemId) s.wear(itemId);
 		s.ui.anim = 'idle';
 		s.ui.dir = 'west';
@@ -7116,10 +7125,13 @@ test('a view kept without poses names the move and view to make again before equ
 	}, itemId);
 	await inspectStage(page);
 	const stageNote = page.locator('.stage-note');
-	await expect(stageNote).toContainText('Idle West was kept without poses');
+	await expect(stageNote.getByText('Idle West was kept without poses')).toHaveCount(1);
 	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
 		'gens'
 	);
+	await expect(
+		stageNote.getByRole('button', { name: /^(Set up character|Make it again)/ })
+	).toBeVisible();
 	expect(posts.length).toBe(sent);
 });
 
