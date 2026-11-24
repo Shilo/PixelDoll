@@ -2226,6 +2226,45 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	);
 	step('recolor changes the stage pixels');
 
+	// The custom picker previews while it is dragged, but only its close adds one undo step.
+	const pickWell = page.locator('.colors .swatch.pick').first();
+	const picker = pickWell.locator('input[type="color"]');
+	const picked = '#3366cc';
+	const azureStage = await stage();
+	await picker.evaluate((input, value) => {
+		const element = input as HTMLInputElement;
+		element.value = value;
+		element.dispatchEvent(new Event('input', { bubbles: true }));
+	}, picked);
+	await expect.poll(stage).not.toBe(azureStage);
+	assert.equal(
+		await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'),
+		'true',
+		'a dragged color is not committed yet'
+	);
+	await expect
+		.poll(() => pickWell.evaluate((well) => getComputedStyle(well).backgroundColor))
+		.toBe('rgb(51, 102, 204)');
+	await picker.evaluate((input) => input.dispatchEvent(new Event('change', { bubbles: true })));
+	assert.equal(
+		await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'),
+		'false'
+	);
+	await page.getByRole('button', { name: /^Undo/ }).click();
+	assert.equal(
+		await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'),
+		'true',
+		'one undo step takes back the whole drag'
+	);
+	await page.getByRole('button', { name: /^Undo/ }).click();
+	assert.equal(
+		await page.locator('.colors .swatch').first().getAttribute('aria-checked'),
+		'true',
+		'the drag was the only step after the swatch'
+	);
+	await page.locator('.colors .swatch[aria-label="azure"]').first().click();
+	step('a dragged custom color previews live and commits as one undo step');
+
 	await equipmentMode(page, 'Outfits');
 	await page.getByRole('button', { name: 'Save current look', exact: true }).click();
 	await page.locator('input[aria-label="Outfit name"]').fill('Smoke look');

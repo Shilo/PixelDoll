@@ -770,7 +770,10 @@ export const doc = $state({
 	redo: [] as UndoStep[],
 	/** Worn drafts, slot -> draft id: shown over the outfit, never in doc.items, so autosave, undo, outfits and exports never
 	 *  see a draft. Cleared when a saved item or None takes the slot, on discard and when another character opens. */
-	drafts: {} as Record<string, string>
+	drafts: {} as Record<string, string>,
+	/** The color being dragged in the custom color picker: shown by the stage and tiles, never saved or undone until the picker
+	 *  commits it (then it becomes one ordinary color change). */
+	colorPreview: null as { id: string; value: string } | null
 });
 export const isDemo = () => doc.id.startsWith('fixture:');
 
@@ -779,8 +782,11 @@ export const isDemo = () => doc.id.startsWith('fixture:');
 class View {
 	recolored = $derived.by(() => {
 		void doc.rev;
-		const p = store.project;
-		return p ? recolor(p, $state.snapshot(doc.variants)) : null;
+		const p = store.project,
+			preview = doc.colorPreview;
+		if (!p) return null;
+		const variants = $state.snapshot(doc.variants);
+		return recolor(p, preview ? { ...variants, [preview.id]: preview.value } : variants);
 	});
 	project = $derived.by(() => this.recolored && withDrafts(this.recolored));
 	// a worn draft is never invisible: a draft in the other hand shows instead of a two-handed item (display only)
@@ -959,6 +965,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 			doc.variants = { ...current.variants };
 		} // in place: keep the live outfit
 		if (id !== doc.id) doc.drafts = {};
+		doc.colorPreview = null;
 		// Items put on by this open (Keep it, an accepted worn draft) are replayed below as one undoable edit, which also says
 		// what a two-handed item took off.
 		const outfit = { ...doc.items },
@@ -2339,6 +2346,25 @@ export function setVariant(matId: string, name: string | null) {
 		if (name == null) delete doc.variants[matId];
 		else doc.variants[matId] = name;
 	});
+}
+const PREVIEW_MS = 33;
+let previewTimer: ReturnType<typeof setTimeout> | undefined,
+	pendingPreview: { id: string; value: string } | null = null;
+/** Show a color from the picker while it is still being chosen: no undo entry and no save until the picker closes. Dragging
+ *  emits far more events than a repaint needs, so at most one preview lands per PREVIEW_MS. */
+export function previewVariant(matId: string, value: string) {
+	pendingPreview = { id: matId, value };
+	previewTimer ??= setTimeout(() => {
+		previewTimer = undefined;
+		doc.colorPreview = pendingPreview;
+	}, PREVIEW_MS);
+}
+/** Drop the live color preview: the picker closed, was cancelled, or its palette is gone. */
+export function clearVariantPreview() {
+	clearTimeout(previewTimer);
+	previewTimer = undefined;
+	pendingPreview = null;
+	doc.colorPreview = null;
 }
 export function resetColors(matIds?: string[], label = message('history.resetColors')) {
 	commit(label, () => {
