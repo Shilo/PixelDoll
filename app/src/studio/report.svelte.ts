@@ -10,12 +10,15 @@ import {
 	type ProblemReport
 } from '../lib/report/report.ts';
 import { englishMessage } from '../lib/report/english.ts';
+import { creationModelOf } from '../lib/store/generation.ts';
+import { DEFAULT_MOVE, type RigAnimation } from '../lib/rig/rig.ts';
 import { queueErrorParts, type JobRec } from '../lib/pixellab/queue.ts';
 import { app } from '../lib/app.svelte.ts';
 import type { Message } from '../lib/message.ts';
 import { experience } from './experience/state.svelte.ts';
+import { moveTemplate } from './movePricing.ts';
 import { PRE_RELEASE } from './previewNotice.ts';
-import { ui, type SheetId } from './state.svelte.ts';
+import { doc, frames, moving, store, ui, view, type SheetId } from './state.svelte.ts';
 
 export type { Problem } from '../lib/report/report.ts';
 
@@ -54,10 +57,56 @@ const AREAS: Record<NonNullable<SheetId>, string> = {
 export const areaOf = (sheet: SheetId) =>
 	sheet ? AREAS[sheet] : experience.screen === 'characters' ? 'Characters' : 'Studio';
 
+/** The open character and failing move, reduced to fixed facts: report.ts checks every value again. The move kind comes only
+ *  from a move that surface actually names: the generating spec, the Move review candidate, or Fix frames' selected move. */
+function characterFacts(area: string): ProblemFacts['character'] {
+	const manifest = store.project?.manifest;
+	if (!manifest) return undefined;
+	const base = manifest.items.find((item) => item.id === manifest.rig.baseItem);
+	const move = moving.spec && moving.projectId === doc.id ? moving.spec : undefined;
+	const candidate = area === 'Move review' ? store.moveReviews[ui.moveReview] : undefined;
+	const frameMove =
+		area === 'Frames'
+			? manifest.rig.animations.find((animation) => animation.id === frames.anim)
+			: undefined;
+	const shownMove = area === 'Add a move' ? view.anim : undefined;
+	const moveSpec = move ?? candidate?.spec;
+	return {
+		frame: { ...manifest.rig.cell },
+		directions: manifest.rig.directions.length,
+		model: base ? creationModelOf(base) : undefined,
+		moveFailure: !!move,
+		moveKind: moveSpec
+			? moveTemplate(moveSpec)
+				? 'built-in'
+				: 'custom'
+			: savedMoveKind(frameMove ?? shownMove)
+	};
+}
+
+/** A saved move is built-in only when every drawn view used a PixelLab template, custom when every view was described or
+ *  authored; mixed, imported or unknown sources are left out rather than guessed. */
+function savedMoveKind(anim: RigAnimation | undefined): 'built-in' | 'custom' | undefined {
+	if (!anim || anim.id === DEFAULT_MOVE || anim.kind === 'state') return undefined;
+	const motions = Object.values(anim.sources ?? {}).map((source) => source?.motion);
+	if (!motions.length) return undefined;
+	if (motions.every((motion) => motion?.startsWith('managed-skeleton-v3:'))) return 'built-in';
+	if (
+		motions.every((motion) => motion?.startsWith('authored:') || motion?.startsWith('pixminimax:'))
+	)
+		return 'custom';
+	return undefined;
+}
+
 /** Opens the report preview. Without an area, the problem belongs to the sheet that is open now. */
 export function reportProblem(problem: Problem) {
+	const area = problem.area ?? areaOf(ui.sheet);
 	reportDialog.report = buildReport(
-		{ ...problem, area: problem.area ?? areaOf(ui.sheet) },
+		{
+			...problem,
+			area,
+			facts: { ...problem.facts, character: problem.facts?.character ?? characterFacts(area) }
+		},
 		{
 			env: browserEnvironment(getLocale() || 'en', PRE_RELEASE),
 			english: englishMessage,

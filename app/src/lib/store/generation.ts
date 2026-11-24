@@ -16,6 +16,13 @@ const TOOLS: Record<string, string> = {
 	'/inpaint-v3': 'Inpaint V3',
 	'/transfer-outfit-v2': 'Transfer outfit V2'
 };
+/** Fixed model labels for the calls that draw a character; report labels must come from this allow-list. */
+export const CREATION_MODEL_LABELS: Readonly<Record<string, string>> = {
+	'/create-character-v3': 'V3',
+	'/create-character-with-8-directions': 'Standard',
+	'/create-character-pro': 'Pro',
+	'/create-character-pro-flash': 'Pro Flash'
+};
 const MODES: Record<string, string> = {
 	'skeleton-v3': 'Skeleton V3',
 	pixminimax: 'PixMiniMax',
@@ -173,6 +180,11 @@ const CREATORS = [
 /** The call that drew a created character, absent for imported art (registration-only calls send direction images). */
 export const creationCall = (base: Pick<Item, 'provenance'>) =>
 	base.provenance?.find((p) => CREATORS.includes(p.endpoint) && !p.params?.direction_images);
+/** The fixed model label of the call that drew a created character, absent for imported art. */
+export const creationModelOf = (base: Pick<Item, 'provenance'>): string | undefined => {
+	const created = creationCall(base);
+	return created ? CREATION_MODEL_LABELS[created.endpoint] : undefined;
+};
 /** The summary for one item; the base body describes the character's creation. */
 export function generationDetails(m: Manifest, it: Item): GenerationDetails {
 	const prov = it.provenance ?? [];

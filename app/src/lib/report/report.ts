@@ -3,8 +3,24 @@
 // an image, a prompt, a name, an ID or project data. Kept free of Svelte and the locale catalog so it can be tested alone.
 import type { Message } from '../message.ts';
 import { repository } from '../repository.ts';
+import { DIRECTIONS } from '../rig/rig.ts';
+import { CREATION_MODEL_LABELS } from '../store/generation.ts';
 
 export type ProblemTone = 'error' | 'warning';
+
+/** The open character and failing move, for triage only. Every field is a fixed shape checked again below. */
+export interface CharacterFacts {
+	/** The rig's square frame cell, in px. */
+	frame?: { w?: unknown; h?: unknown };
+	/** How many directions the rig has. */
+	directions?: unknown;
+	/** One of CREATION_MODEL_LABELS, from the stored creation call. */
+	model?: unknown;
+	/** True when the failing move generation belongs to this character, so its move kind is safe from any area. */
+	moveFailure?: unknown;
+	/** built-in for a PixelLab template move, custom for a described or authored one. */
+	moveKind?: unknown;
+}
 
 /** Facts a failure surface may add. Each is checked again here: a value that does not fit its shape is dropped. */
 export interface ProblemFacts {
@@ -24,6 +40,8 @@ export interface ProblemFacts {
 	attempts?: number;
 	/** How long the work ran, in seconds. */
 	seconds?: number;
+	/** The open character and failing move, reduced to fixed facts. */
+	character?: CharacterFacts;
 }
 
 export interface Problem {
@@ -187,6 +205,35 @@ const NON_ERROR = 'Non-error value';
 const ERROR_NAME = /^[A-Z][A-Za-z]{0,40}(?:Error|Exception)$/;
 const errorName = (value: unknown) =>
 	typeof value === 'string' && ERROR_NAME.test(value) ? value : 'Error';
+
+/** The rig's supported square cell sides, as validateRig enforces (32–256 whole pixels). */
+const FRAME_MIN = 32;
+const FRAME_MAX = 256;
+const MODEL_LABELS = new Set(Object.values(CREATION_MODEL_LABELS));
+const MOVE_KINDS = new Set(['built-in', 'custom']);
+/** Surfaces where a move or frame failure makes the current move context meaningful. */
+const MOVE_AREAS = new Set(['Add a move', 'Move review', 'Frames', 'Adjust frame']);
+const within = (value: unknown, min: number, max: number) =>
+	typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max
+		? value
+		: undefined;
+
+/** One compact value of fixed character facts; every field that does not fit its shape is dropped, never printed raw. */
+function characterFacts(facts: CharacterFacts | undefined, area: string): string | undefined {
+	if (!facts || typeof facts !== 'object') return undefined;
+	const parts: string[] = [];
+	const w = within(facts.frame?.w, FRAME_MIN, FRAME_MAX);
+	const h = within(facts.frame?.h, FRAME_MIN, FRAME_MAX);
+	if (w !== undefined && w === h) parts.push(`${w}x${h} px frame`);
+	const directions = within(facts.directions, 1, DIRECTIONS.length);
+	if (directions !== undefined)
+		parts.push(`${directions} ${directions === 1 ? 'direction' : 'directions'}`);
+	if (typeof facts.model === 'string' && MODEL_LABELS.has(facts.model)) parts.push(facts.model);
+	// A move kind is only triage for a move or frame failure, never for whatever Preview happens to show elsewhere.
+	const moveKind = facts.moveFailure === true || MOVE_AREAS.has(area) ? facts.moveKind : undefined;
+	if (typeof moveKind === 'string' && MOVE_KINDS.has(moveKind)) parts.push(`${moveKind} move`);
+	return parts.length ? parts.join(', ') : undefined;
+}
 
 interface ErrorFacts {
 	name?: string;
@@ -385,6 +432,7 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 	const lines: [string, string | number | undefined][] = [
 		['Area', area],
 		['Kind', kind],
+		['Character', characterFacts(facts.character, area)],
 		// The message itself is already the problem text; a plain "Error" name says nothing more.
 		['Message key', english && shown?.key],
 		['Error type', fromError.name === 'Error' ? undefined : fromError.name],

@@ -13,6 +13,7 @@ import {
 	reportText,
 	reportUrl,
 	sanitize,
+	type ProblemFacts,
 	type ReportEnvironment
 } from '../../src/lib/report/report.ts';
 
@@ -320,5 +321,94 @@ describe('buildReport', () => {
 		);
 		expect(reportUrl(report).length).toBeLessThanOrEqual(MAX_URL_LENGTH);
 		expect(report.problem.endsWith('...')).toBe(true);
+	});
+});
+
+describe('character facts', () => {
+	const details = (character: unknown, area = 'Add a move') =>
+		buildReport({ area, facts: { character } as unknown as ProblemFacts }, context).details;
+
+	test('frame, directions, model and move kind appear as one fixed line', () => {
+		const report = buildReport(
+			{
+				area: 'Add a move',
+				facts: {
+					character: {
+						frame: { w: 64, h: 64 },
+						directions: 8,
+						model: 'Pro Flash',
+						moveKind: 'custom'
+					}
+				}
+			},
+			context
+		);
+		expect(report.details).toContain(
+			'Character: 64x64 px frame, 8 directions, Pro Flash, custom move'
+		);
+	});
+
+	test('only the fixed model labels are accepted', () => {
+		for (const model of ['V3', 'Standard', 'Pro', 'Pro Flash'])
+			expect(details({ model })).toContain(`Character: ${model}`);
+	});
+
+	test('move kind is dropped outside move and frame reports, even when supplied', () => {
+		for (const area of ['Export', 'Settings', 'Connect', 'Activity', 'Item generation', 'Studio'])
+			expect(details({ moveKind: 'custom' }, area)).not.toContain('move');
+		expect(details({ moveKind: 'custom' }, 'Characters')).not.toContain('move');
+	});
+
+	test('move kind appears for move and frame reports, or a failing move from any area', () => {
+		for (const area of ['Add a move', 'Move review', 'Frames', 'Adjust frame'])
+			expect(details({ moveKind: 'custom' }, area)).toContain('custom move');
+		expect(details({ moveKind: 'custom', moveFailure: true }, 'Activity')).toContain('custom move');
+		// Only the boolean true is a move failure; anything else cannot widen the gate.
+		expect(details({ moveKind: 'custom', moveFailure: 'yes' }, 'Activity')).not.toContain('move');
+	});
+
+	test('partial facts keep only the parts that fit', () => {
+		expect(details({ frame: { w: 32, h: 32 }, moveKind: 'built-in' })).toContain(
+			'Character: 32x32 px frame, built-in move'
+		);
+		expect(details({ directions: 1 })).toContain('Character: 1 direction');
+	});
+
+	test('unsupported frames, direction counts, models and move kinds are dropped', () => {
+		const invalid = [
+			{ frame: { w: 31, h: 31 } },
+			{ frame: { w: 257, h: 257 } },
+			{ frame: { w: 64, h: 65 } },
+			{ frame: { w: 64.5, h: 64.5 } },
+			{ frame: { w: '64', h: '64' } },
+			{ directions: 0 },
+			{ directions: 9 },
+			{ directions: 2.5 },
+			{ directions: '8' },
+			{ model: '/create-character-pro' },
+			{ model: 'Pro Flash (beta)' },
+			{ model: SECRETS.apiKey },
+			{ moveKind: 'managed-skeleton-v3:walking-8-frames' },
+			{ moveKind: 'template' },
+			{ moveKind: 'Custom' }
+		];
+		for (const character of invalid) expect(details(character)).not.toContain('Character:');
+	});
+
+	test('a valid fact survives an invalid neighbor', () => {
+		expect(
+			details({
+				frame: { w: 64, h: 64 },
+				directions: 9,
+				model: 'raw stored string',
+				moveKind: 'custom'
+			})
+		).toContain('Character: 64x64 px frame, custom move');
+	});
+
+	test('a report without character facts is unchanged', () => {
+		const report = buildReport({}, context);
+		expect(report.details).toBe('Area: PixelDoll\nKind: error\nApp open for: 13 min');
+		expect(reportText(report)).not.toContain('Character:');
 	});
 });
