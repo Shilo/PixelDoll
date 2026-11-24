@@ -19,6 +19,8 @@ Inputs in this folder:
 
 Technical summary follows.
 
+An interactive visual explainer using the real frames is in [layering-explainer.html](layering-explainer.html): drag the cut line to see the straight-cut failure, then compare the leg-only removal.
+
 **The requested capability is achievable for the case that matters most, if it is treated as authored, reviewed layering rather than an automatic split.**
 
 - **Same-facing action layering works as a pilot.** Keep the Walk legs and gait, play the attack's upper body over them, both facing the same direction. The independent review's fitted per-frame graft reached a **1 px median and 2 px maximum junction edge step** on the south pair, with no detached fragments in most phase pairs. That is reviewable art, not a broken cut.
