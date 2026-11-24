@@ -168,14 +168,16 @@
 							}))
 						: [],
 				tips: scope === 'all' || !character || !inputs ? [] : savingTips(character, inputs, rate),
-				failure: ''
+				failure: '',
+				error: undefined as unknown
 			};
 		} catch (e) {
 			return {
 				result: null,
 				allResults: [],
 				tips: [] as Tip[],
-				failure: displayMessage(errorMessage(e))
+				failure: displayMessage(errorMessage(e)),
+				error: e
 			};
 		}
 	});
@@ -371,7 +373,7 @@
 			<!-- Reset keeps one place and stays mounted through a pricing error and its recovery. -->
 			<div class="headline">
 				{#if priced.failure}<p class="notice bad small" role="alert">
-						{priced.failure}<ReportButton />
+						{priced.failure}<ReportButton error={priced.error} />
 					</p>
 				{:else}<p class="readout" role="status" aria-atomic="true">
 						<strong class="amount num">{usd(projected)}</strong>

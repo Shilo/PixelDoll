@@ -15,7 +15,7 @@ export interface ProblemFacts {
 	endpoint?: string;
 	/** Queue record state, such as failed or lost. */
 	state?: string;
-	/** Remote job status word. */
+	/** Remote job status word; only the known PixelLab statuses (and the queue's own "lost") are reported. */
 	jobStatus?: string;
 	/** Studio phase, such as failed or review. */
 	phase?: string;
@@ -140,6 +140,12 @@ export function sanitize(text: string, max = 2000): string {
 // ---------- allow-listed facts ----------
 
 const ROUTE_PART = /^(?:[a-z]+|v\d{1,2}|\d{1,2})$/;
+/** Collections whose next segment is an ID, except for their own fixed sub-routes. An imported project can hold any
+ *  string as a character ID, so its shape alone cannot tell an ID from a route word. */
+const ID_AFTER = new Map<string, readonly string[]>([
+	['characters', ['animations']],
+	['background-jobs', []]
+]);
 /** A PixelLab endpoint as a bare path: no origin, query or fragment, and every ID-like segment becomes {id}. */
 export function endpointPath(raw: string): string | undefined {
 	const path = raw
@@ -155,8 +161,10 @@ export function endpointPath(raw: string): string | undefined {
 		.slice(0, 6)
 		// Route words are lowercase words, versions and small numbers (create-character-with-8-directions, inpaint-v3);
 		// anything else, such as letters mixed with digits, is an ID.
-		.map((segment) =>
-			segment.length <= 40 && segment.split('-').every((part) => ROUTE_PART.test(part))
+		.map((segment, i, all) =>
+			(ID_AFTER.get(all[i - 1])?.includes(segment) ?? true) &&
+			segment.length <= 40 &&
+			segment.split('-').every((part) => ROUTE_PART.test(part))
 				? segment
 				: '{id}'
 		);
@@ -171,6 +179,8 @@ const count = (value: unknown, max = 1e6) =>
 		? value
 		: undefined;
 const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+// The status comes from PixelLab's response as-is, so any other word could be text the server echoed back.
+const JOB_STATUSES = new Set(['queued', 'processing', 'completed', 'failed', 'cancelled', 'lost']);
 /** A thrown value that is not an error object, or cannot be read. */
 const NON_ERROR = 'Non-error value';
 /** Error class and DOMException names; anything else (a name a script made up) is reported as Error. */
@@ -254,9 +264,10 @@ export function onceShown(show: (error: unknown) => boolean): (error: unknown) =
 	};
 }
 
-/** The status in a saved "METHOD /path -> 422: ..." queue error. */
+/** The status in a saved "METHOD /path -> 422: ..." error. The method and path must lead, so a status-like phrase in
+ *  provider text is not read as one. */
 export function statusIn(text: string | undefined): number | undefined {
-	const status = text && /(?:^|\s)-> (\d{3})\b/.exec(text);
+	const status = text && /\b(?:GET|POST|PUT|PATCH|DELETE) \/\S* -> (\d{3})\b/.exec(text);
 	return status ? Number(status[1]) : undefined;
 }
 
@@ -381,7 +392,7 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 		['HTTP status', count(facts.status, 999) || fromError.status],
 		['Endpoint', endpoint && (method ? `${method} ${endpoint}` : endpoint)],
 		['Queue state', word(facts.state)],
-		['Job status', word(facts.jobStatus)],
+		['Job status', JOB_STATUSES.has(facts.jobStatus ?? '') ? facts.jobStatus : undefined],
 		['Phase', word(facts.phase)],
 		['Queue role', word(facts.queueRole)],
 		['Error code', count(facts.errorCode, 99999)],

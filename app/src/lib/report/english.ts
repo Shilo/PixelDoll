@@ -4,8 +4,9 @@ import type { Message } from '../message.ts';
 type Catalog = { [key: string]: string | Catalog };
 // Plain dots: the sanitizer normalizes an ellipsis character to them anyway (NFKC).
 const HIDDEN = '...';
-/** A number or a size such as 32×32, which reports need and which cannot carry user text. */
-const MEASURE = /^\d{1,6}(?:×\d{1,6})?$/;
+/** Variables that hold a measured size such as 32×32. Only these show it: elsewhere the same text could be a name. */
+const SIZE_VARS: Record<string, readonly string[]> = { 'fixFrames.errors.size': ['got', 'want'] };
+const SIZE = /^\d{1,5}×\d{1,5}$/;
 
 const isMessage = (value: unknown): value is Message =>
 	!!value && typeof value === 'object' && typeof (value as Message).key === 'string';
@@ -28,7 +29,8 @@ export function englishMessage(value: Message, depth = 0): string | undefined {
 	return entry.replace(/\{(\w+)\}/g, (_, name: string) => {
 		const variable = vars[name];
 		if (typeof variable === 'number' && Number.isFinite(variable)) return String(variable);
-		if (typeof variable === 'string' && MEASURE.test(variable)) return variable;
+		if (typeof variable === 'string' && SIZE_VARS[value.key]?.includes(name) && SIZE.test(variable))
+			return variable;
 		if (isMessage(variable) && depth < 3) return englishMessage(variable, depth + 1) ?? HIDDEN;
 		return HIDDEN;
 	});
