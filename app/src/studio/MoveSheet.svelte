@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
@@ -111,15 +112,20 @@
 		toast,
 		openProject,
 		pendingMoves,
-		withKey
+		withKey,
+		takeImport
 	} from './state.svelte.ts';
+	import ImportMovesPane from './ImportMovesPane.svelte';
+	import ImportFoot from './ImportFoot.svelte';
+	import { MoveImporter } from './moveImporter.svelte.ts';
+	import { leaveSheetForm, showSheetPage } from './sheetPage.ts';
 	import { bodyQualityNote, displayMoveJob, plainReasonMessage } from './model.ts';
 	import { displayMove } from './displayMove.ts';
 	import { affectedMoveDirections, moveCandidateInput } from './replaceMove.ts';
 	import { displayDirection as directionLabel, displayDirectionShort } from './displayDirection.ts';
 	import { displayDirectionList } from './displayDirectionProblem.ts';
 	import { ANGLES } from './characterConfig.ts';
-	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert } from './icons.ts';
+	import { ArrowUp, Check, ChevronRight, Circle, CircleAlert, Import } from './icons.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import { opaqueBox } from '../lib/rig/normalize.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -140,13 +146,17 @@
 	import ProblemNotice from './ProblemNotice.svelte';
 	import {
 		creationDefaults,
+		itemDrawings,
 		moveModels,
 		openingCreationSettings,
 		resolveMoveFramePreference
 	} from './creationSettings.ts';
+	import type { ItemDrawing } from '../lib/rig/rig.ts';
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
+	// The character whose record was last read: until it is, readiness is unknown and nothing claims setup is needed.
+	let recFor = $state('');
 	// Re-read after a failure (a move saves its body and finished item views before failing, and Try again is priced from
 	// them) and after Frame size replaced the character.
 	$effect(() => {
@@ -154,7 +164,11 @@
 		void moving.error;
 		void store.project;
 		void moving.done;
-		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
+		if (!isDemo())
+			void db.get<StoredProject>('projects', id).then((r) => {
+				rec = r ?? null;
+				recFor = id;
+			});
 	});
 	const ok = $derived(!!m && moveRigReady(rec ? { ...rec, manifest: m } : null));
 	const sourceClips = $derived(playbackClips(m?.rig.animations ?? []));
@@ -232,11 +246,17 @@
 		v3: 'moveSheet.models.v3',
 		pixminimax: 'moveSheet.models.pixminimax'
 	};
+	const ITEM_DRAWING_TEXT = {
+		anchor: 'creationSettings.itemDrawings.anchor',
+		skeleton: 'creationSettings.itemDrawings.skeleton',
+		sheet: 'creationSettings.itemDrawings.sheet'
+	} as const satisfies Record<ItemDrawing, WhisperKey>;
 	// Advanced starts open when a restored draft already changed something there, so no choice is hidden.
 	let advancedOpen = $state(
 		draft?.advancedOpen ??
 			(!!(draft?.frameReferences && Object.keys(draft.frameReferences).length) ||
-				(draft?.animation?.model !== undefined && draft.animation.model !== redrawFallbackModel))
+				(draft?.animation?.model !== undefined && draft.animation.model !== redrawFallbackModel) ||
+				(draft?.itemDrawing !== undefined && draft.itemDrawing !== 'default'))
 	);
 	const showAdvanced = $derived(sideBySide && advancedOpen);
 	// The column opens beside the top of the form, away from the toggle, so bring its first control into view.
@@ -269,6 +289,8 @@
 		!!draft?.action || untrack(() => !!action && text !== moveTemplatePrompt(action))
 	);
 	let loopChoice = $state<boolean | undefined>(draft?.loop);
+	let itemDrawingChoice = $state<ItemDrawing | 'default' | undefined>(draft?.itemDrawing);
+	const defaultItemDrawing = $derived(currentItemDrawing());
 	let frameReferences = $state<MoveFrameReferences<PickedReference>>(draft?.frameReferences ?? {});
 	let referenceDirection = $state<DirectionName>();
 	let frameTabWidths = $state<Partial<Record<DirectionName, number>>>({});
@@ -284,6 +306,9 @@
 		loopChoice ??
 			(replacing ? (savedMove?.moveLoop ?? savedMove?.loop) : undefined) ??
 			templateLoops(action)
+	);
+	const itemDrawing = $derived(
+		itemDrawingChoice ?? (replacing ? savedMove?.itemDrawing : undefined) ?? 'default'
 	);
 	const draftRegeneration = $derived.by(() => {
 		const reference = draft?.regeneration;
@@ -559,6 +584,7 @@
 	const advancedNote = $derived(
 		[
 			t(MODEL_TEXT[model]),
+			itemDrawing === 'default' ? '' : t(ITEM_DRAWING_TEXT[itemDrawing]),
 			targetDirs.some(
 				(direction) =>
 					frameReferences[direction]?.start ||
@@ -710,6 +736,11 @@
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
 	ui.moveFormOpen = !!reopen;
 	let reviewingSkeletonFor = $state.raw<MoveSpec | null>(null);
+	// An item sheet's views that failed a check are kept only on request; with none passing, nothing is chosen yet.
+	let keepFailed = $state(false);
+	const nothingChosen = $derived(
+		!!moving.repairReview?.failed?.length && !moving.repairReview.passClip && !keepFailed
+	);
 	const skeletonOffer = $derived.by(() => {
 		if (!mine || !moving.spec || !m || !rec || !ok || moving.repairReview) return;
 		if (
@@ -730,23 +761,27 @@
 	const progress = $derived(mine && !ui.moveFormOpen && !skeletonReview);
 	const repairReview = $derived(progress ? moving.repairReview : null);
 	const busy = $derived(!!moving.spec && !moving.done);
+	// The item sheet is a reviewed redraw too: it is compared before it replaces frames (lib/items/run.ts sheetItemMove).
+	const redrawing = $derived(!!moving.spec?.redrawItem || moving.spec?.itemMethod === 'sheet');
 	const savedItemFrames = $derived(
 		!!moving.spec &&
 			!!moving.spec.itemsOnly &&
 			!moving.spec.replace &&
-			(moving.spec.itemMethod === 'grid'
+			(moving.spec.itemMethod === 'grid' || moving.spec.itemMethod === 'sheet'
 				? !!moving.spec.itemReview &&
 					!(
 						[
 							'itemRoute.errors.invalidItemGridSheet',
 							'itemRoute.errors.invalidItemGridLayout',
-							'itemRoute.errors.savedFramesUnavailable'
+							'itemRoute.errors.savedFramesUnavailable',
+							'itemRoute.errors.itemSheetChanged',
+							'itemRoute.errors.itemSheetNoView'
 						] as const
 					).some((key) => key === errorKey(moving.error)) &&
 					$queue.jobs.some(
 						(job) =>
 							job.activityScope === moving.spec?.activityScope &&
-							job.endpoint === (moving.spec?.redrawItem ? '/edit-images-v2' : '/inpaint-v3') &&
+							job.endpoint === (redrawing ? '/edit-images-v2' : '/inpaint-v3') &&
 							job.state === 'done'
 					)
 				: !moving.spec.itemReview &&
@@ -982,6 +1017,7 @@
 			source: sourceSelection,
 			frameReferences: $state.snapshot(frameReferences),
 			loop: loopChoice,
+			itemDrawing: itemDrawingChoice,
 			animation: { model }
 		};
 	}
@@ -1052,6 +1088,7 @@
 			reviewRegeneration: regeneration,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
+			itemDrawing,
 			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] }),
 			...(preflight.length ? { acceptedWarnings: preflight.map((warning) => warning.id) } : {})
 		};
@@ -1353,7 +1390,34 @@
 		);
 		if (close && !moving.spec) ui.sheet = null;
 	}
+
+	// Import: a page of the New move form (a ZIP dropped on Moves opens on it); Back keeps the form as it was.
+	const opening = takeImport('moves');
+	// A ZIP dropped while a move runs opens the form over it, as "Queue another move" does.
+	if (opening) ui.moveFormOpen = true;
+	let importing = $state(!!opening);
+	const importer = new MoveImporter();
+	if (opening?.files) void importer.read(opening.files);
+	$effect(() => () => {
+		importer.gone = true;
+	});
+	// Free imports need no rig: the page is there before setup too, wherever the form or its setup notice shows.
+	const canImport = $derived(!isDemo() && !skeletonReview && !progress);
+	const importPage = $derived(importing && canImport);
+	function page(inner: boolean) {
+		if (inner) leaveSheetForm();
+		importing = inner;
+		void showSheetPage(inner);
+	}
 </script>
+
+{#snippet importFoot()}
+	<ImportFoot
+		busy={importer.busy}
+		disabled={!importer.chosen.length || !!importer.blocked}
+		onimport={() => void importer.save()}
+	/>
+{/snippet}
 
 {#snippet framePicker(
 	direction: DirectionName,
@@ -1423,15 +1487,17 @@
 		<button
 			class="bu-action btn primary"
 			data-variant="primary"
-			disabled={moving.resolvingRepair || queue.role === 'follower'}
-			onclick={() => void resolveRepairReview(true)}
+			disabled={moving.resolvingRepair ||
+				queue.role === 'follower' ||
+				(!moving.repairApplied && nothingChosen)}
+			onclick={() => void resolveRepairReview(true, keepFailed)}
 			>{moving.repairApplied
 				? t('moveSheet.review.finish')
 				: repairReview.kept
-					? moving.spec?.redrawItem
+					? redrawing
 						? t('moveSheet.review.useFinishedRedraws')
 						: t('moveSheet.review.useFinishedRepairs')
-					: moving.spec?.redrawItem
+					: redrawing
 						? t('moveSheet.review.useRedrawn')
 						: t('moveSheet.review.useRepaired')}</button
 		>
@@ -1552,6 +1618,32 @@
 			onopen={() => (pricingModels = true)}
 			onpick={chooseModel}
 		/>
+	</div>
+	<div class="advanced-field">
+		<div class="advanced-label">
+			<label for={`${advancedId}-item-drawing`}>{t('moveSheet.itemDrawing')}</label>
+			<Help
+				iconOnly
+				title={t('moveSheet.itemDrawing')}
+				text={t('creationSettings.itemDrawingHelp')}
+			/>
+		</div>
+		<select
+			id={`${advancedId}-item-drawing`}
+			class="bu-select input"
+			value={itemDrawing}
+			onchange={(event) =>
+				(itemDrawingChoice = event.currentTarget.value as ItemDrawing | 'default')}
+		>
+			<option value="default"
+				>{t('moveSheet.itemDrawingDefault', {
+					method: t(ITEM_DRAWING_TEXT[defaultItemDrawing])
+				})}</option
+			>
+			{#each itemDrawings as option (option)}<option value={option}
+					>{t(ITEM_DRAWING_TEXT[option])}</option
+				>{/each}
+		</select>
 	</div>
 	{#if frameDirection && m}
 		{@const direction = frameDirection}
@@ -1708,70 +1800,98 @@
 {/snippet}
 
 <Sheet
-	title={skeletonReview
-		? t('moveSheet.skeleton.title')
-		: repairReview
-			? moving.spec?.redrawItem
-				? t('moveSheet.review.redrawTitle')
-				: t('moveSheet.review.repairTitle')
-			: progress && moving.spec?.itemMethod === 'grid'
-				? moving.spec?.redrawItem
-					? t('moveSheet.review.redrawProgress')
-					: t('moveSheet.titleRepair')
-				: (progress ? moving.spec?.replace : replacing)
-					? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
-					: t('moves.add')}
-	back={skeletonReview
-		? () => (reviewingSkeletonFor = null)
-		: mine && ui.moveFormOpen
-			? () => (ui.moveFormOpen = false)
-			: undefined}
+	className={importPage ? 'importing' : ''}
+	title={importPage
+		? t('moveImport.importMoves')
+		: skeletonReview
+			? t('moveSheet.skeleton.title')
+			: repairReview
+				? redrawing
+					? t('moveSheet.review.redrawTitle')
+					: t('moveSheet.review.repairTitle')
+				: progress && moving.spec?.itemMethod === 'grid'
+					? moving.spec?.redrawItem
+						? t('moveSheet.review.redrawProgress')
+						: t('moveSheet.titleRepair')
+					: (progress ? moving.spec?.replace : replacing)
+						? t('moveSheet.redraw', { move: nice(progress ? (moving.spec?.id ?? action) : action) })
+						: t('moves.add')}
+	back={importPage
+		? () => page(false)
+		: skeletonReview
+			? () => (reviewingSkeletonFor = null)
+			: mine && ui.moveFormOpen
+				? () => (ui.moveFormOpen = false)
+				: undefined}
+	backTo={importPage ? t('moves.add') : undefined}
+	opener={canImport && !importPage && !redrawTarget
+		? {
+				label: t('moveImport.importMoves'),
+				icon: Import,
+				iconOnly: true,
+				onclick: () => page(true)
+			}
+		: undefined}
+	locked={importPage && importer.busy && !!importer.review}
 	onclose={() => (ui.sheet = null)}
 	exitNote={progress && !moving.done && !moving.error && !repairReview
 		? 'sheet-exit-note'
 		: undefined}
 	dirty={ok && !progress && !skeletonReview && !repairReview && textTyped && !!text.trim()}
-	footer={isDemo() || (!ok && !progress) ? undefined : foot}
+	footer={importPage
+		? importer.ready
+			? importFoot
+			: undefined
+		: isDemo() || (!ok && !progress)
+			? undefined
+			: foot}
 >
 	{#snippet developer()}
 		{@const review = skeletonReview?.review}
-		<ApiPeek
-			targets={isDemo()
-				? []
-				: progress
-					? [
-							{
-								scope: 'move-progress',
-								label: t('moveSheet.progressLabel'),
-								plan: moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : [],
-								activityScope: moving.spec?.activityScope
-							},
-							...(moving.error && !moving.done
-								? [{ scope: 'move-retry', label: t('moveSheet.retryLabel'), plan: retryPlan }]
-								: [])
-						]
-					: ok && est
+		{#if !importPage}<ApiPeek
+				targets={isDemo()
+					? []
+					: progress
 						? [
 								{
-									scope: 'move-add',
-									label: t('moveSheet.addLabel'),
-									plan: movePlan(
-										rec,
-										review
-											? { ...review, seed: undefined }
-											: {
-													...motion,
-													items: [],
-													poseStyle: 'visible-side-v1',
-													...(replacing ? { dirs: [...targetDirs] } : {})
-												}
-									)
-								}
+									scope: 'move-progress',
+									label: t('moveSheet.progressLabel'),
+									plan: moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : [],
+									activityScope: moving.spec?.activityScope
+								},
+								...(moving.error && !moving.done
+									? [{ scope: 'move-retry', label: t('moveSheet.retryLabel'), plan: retryPlan }]
+									: [])
 							]
-						: []}
-		/>
+						: ok && est
+							? [
+									{
+										scope: 'move-add',
+										label: t('moveSheet.addLabel'),
+										plan: movePlan(
+											rec,
+											review
+												? { ...review, seed: undefined }
+												: {
+														...motion,
+														items: [],
+														poseStyle: 'visible-side-v1',
+														...(replacing ? { dirs: [...targetDirs] } : {})
+													}
+										)
+									}
+								]
+							: []}
+			/>{/if}
 	{/snippet}
 
+	{#if importPage}<ImportMovesPane
+			{importer}
+			onqueued={() => {
+				importing = false;
+				ui.moveFormOpen = false;
+			}}
+		/>{/if}
 	{#if holder}<p class="notice small">
 			<CircleAlert size={14} /><span
 				>{moving.repairReview
@@ -1786,9 +1906,7 @@
 		</p>{/if}
 	{#if mine && ui.moveFormOpen && moving.repairReview}
 		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = false)}
-			>{moving.spec?.redrawItem
-				? t('moveSheet.review.redrawTitle')
-				: t('moveSheet.review.repairTitle')}</button
+			>{redrawing ? t('moveSheet.review.redrawTitle') : t('moveSheet.review.repairTitle')}</button
 		>
 	{/if}
 	{#if repairReview && moving.spec}
@@ -1801,7 +1919,7 @@
 			{#if moving.repairApplied}<p class="small" role="status">
 					{t('moveSheet.review.saved')}
 				</p>{:else}<p class="small" role="status">
-					{moving.spec.redrawItem
+					{redrawing
 						? repairReview.findings.length
 							? t('moveSheet.review.redrawIssues')
 							: t('moveSheet.review.redrawReady')
@@ -1818,14 +1936,35 @@
 					)}
 					{#if repairReview.stoppedBy}{displayNestedMessage(repairReview.stoppedBy)}{/if}
 				</p>{/if}
+			{#if repairReview.skipped?.length}<p class="small notice">
+					<CircleAlert size={14} /><span
+						>{t('moveSheet.review.skippedViews', {
+							views: repairReview.skipped.map(directionLabel).join(', ')
+						})}</span
+					>
+				</p>{/if}
+			{#if repairReview.failed?.length && !moving.repairApplied}<label class="check small">
+					<input
+						type="checkbox"
+						bind:checked={keepFailed}
+						disabled={moving.resolvingRepair || queue.role === 'follower'}
+					/>
+					{t('moveSheet.review.keepFailedViews', {
+						views: repairReview.failed.map(directionLabel).join(', ')
+					})}
+				</label>{/if}
 			<div class="repair-pairs">
 				{#each repairReview.replacement as frame, index (index)}
+					{@const view = repairReview.views?.[index]}
+					{@const number = formatNumber((view?.index ?? index) + 1)}
 					<div class="repair-pair">
 						<span class="small"
-							>{t('moveSheet.review.frame', { number: formatNumber(index + 1) })}</span
+							>{view
+								? t('moveSheet.review.viewFrame', { view: directionLabel(view.dir), number })
+								: t('moveSheet.review.frame', { number })}</span
 						>
 						<div class="repair-pair-columns">
-							{#each [{ img: repairReview.current[index], label: t('moveSheet.review.currentLabel'), frameLabel: t( 'moveSheet.review.currentFrame', { number: formatNumber(index + 1) } ) }, { img: frame, label: moving.spec.redrawItem ? t('moveSheet.review.redrawnLabel') : t('moveSheet.review.repairedLabel'), frameLabel: t( moving.spec.redrawItem ? 'moveSheet.review.redrawnFrame' : 'moveSheet.review.repairedFrame', { number: formatNumber(index + 1) } ) }] as version (version.label)}
+							{#each [{ img: repairReview.current[index], label: t('moveSheet.review.currentLabel'), frameLabel: t( 'moveSheet.review.currentFrame', { number } ) }, { img: frame, label: redrawing ? t('moveSheet.review.redrawnLabel') : t('moveSheet.review.repairedLabel'), frameLabel: t( redrawing ? 'moveSheet.review.redrawnFrame' : 'moveSheet.review.repairedFrame', { number } ) }] as version (version.label)}
 								<div class="keep-view">
 									<strong class="small">{version.label}</strong>
 									<div class="repair-sprite" style:aspect-ratio={`${frame.w} / ${frame.h}`}>
@@ -1853,7 +1992,7 @@
 				</details>{/if}
 			{#if moving.error}<ProblemNotice error={moving.error} />{/if}
 			{#if queue.role === 'follower'}<p class="notice small">
-					{moving.spec.redrawItem
+					{redrawing
 						? t('moveSheet.review.redrawInManagingTab')
 						: t('moveSheet.review.repairInManagingTab')}
 				</p>{/if}
@@ -1893,10 +2032,10 @@
 					? ` · ${moving.spec.dirs.map(directionLabel).join(', ')}`
 					: ''}
 			</p>
-			{#if moving.spec?.itemMethod === 'grid'}<p class="muted small">
-					{moving.spec.redrawItem
-						? t('moveSheet.review.redrawNote')
-						: t('moveSheet.review.repairNote')}
+			{#if moving.spec?.itemMethod === 'grid' || moving.spec?.itemMethod === 'sheet'}<p
+					class="muted small"
+				>
+					{redrawing ? t('moveSheet.review.redrawNote') : t('moveSheet.review.repairNote')}
 				</p>{/if}
 			<ol class="steps-list">
 				{#each steps as s, i (s.id)}
@@ -2073,13 +2212,17 @@
 					>
 						{t('moveSheet.skeleton.title')}
 						<span class="cost">
-							{t('moves.estimate', { gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens)) })}
+							{t('moves.estimate', {
+								gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens))
+							})}
 						</span>
 						<SurfaceChevron />
 					</button>
 				</p>
 			{/if}
 		</div>
+	{:else if !isDemo() && !ok && recFor !== doc.id}
+		<!-- Still reading the character: no setup notice flashes before readiness is known. -->
 	{:else if isDemo() || !ok}
 		<p class="notice small">
 			<CircleAlert size={14} />{isDemo() ? t('moveSheet.demo') : t('moveSheet.needsSetup')}
@@ -2396,7 +2539,9 @@
 						</p>{:else if busy}<p class="faint small">
 							{t('moveSheet.waitsForCurrent')}
 						</p>{/if}
-					{#if addAccess.error}<p class="notice warn small" role="status">{addAccess.error}</p>{/if}
+					{#if addAccess.error}<p class="notice warn small" role="status">
+							{addAccess.error}
+						</p>{/if}
 					<TierNotice
 						id="move-action-tier"
 						minimumTier={addTier}

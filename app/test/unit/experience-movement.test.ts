@@ -91,4 +91,46 @@ describe('shared world movement', () => {
 		expect(position).toEqual({ x: 0, y: 0 });
 		expect(integrateMovement(position, camera, { x: NaN, y: 0 }, 0.05).position).toEqual(position);
 	});
+
+	test('a leading camera trails a steady walk by only the unled share of the eased lag, then settles on the actor', () => {
+		const walk = (lead: number) => {
+			let position = { x: 0, y: 0 },
+				camera = { x: 0, y: 0 };
+			for (let frame = 0; frame < 120; frame++)
+				({ position, camera } = integrateMovement(
+					position,
+					camera,
+					{ x: 0, y: -1 },
+					1 / 60,
+					300,
+					9,
+					lead
+				));
+			const walking = camera.y - position.y;
+			for (let frame = 0; frame < 120; frame++)
+				({ position, camera } = integrateMovement(
+					position,
+					camera,
+					{ x: 0, y: 0 },
+					1 / 60,
+					300,
+					9,
+					lead
+				));
+			return { walking, stopped: camera.y - position.y };
+		};
+		const eased = walk(0),
+			led = walk(MOTION.cameraLead);
+		// About speed / response behind with a plain ease, and only a quarter of that with the lead.
+		expect(eased.walking).toBeGreaterThan(25);
+		expect(led.walking).toBeGreaterThan(0);
+		expect(led.walking).toBeLessThan(eased.walking * (1 - MOTION.cameraLead));
+		expect(Math.abs(led.stopped)).toBeLessThan(0.1);
+		expect(
+			integrateMovement({ x: 0, y: 0 }, { x: 0, y: 0 }, { x: NaN, y: 0 }, 0.05, 300, 9, 1).camera
+		).toEqual({
+			x: 0,
+			y: 0
+		});
+	});
 });

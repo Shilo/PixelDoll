@@ -54,6 +54,16 @@
 		"scopeDebug": "Gespeicherte Figuren, Grafiken, archivierte Daten und Debugging-Details sichern.",
 		"debugNotSaved": "Der Browser konnte diese Einstellung nicht speichern.",
 		"backup": "Bibliothek sichern",
+		"originals": "Originalgenerierungen herunterladen",
+		"originalsHint": "Die Rohbilder, die PixelLab für gespeicherte Charaktere zurückgegeben hat, bevor PixelDoll sie verarbeitet hat, mit den Anfragen, die sie gekauft haben. Nur Anfragen, die noch auf diesem Gerät gespeichert sind, werden einbezogen.",
+		"originalsName": "Originalgenerierungen",
+		"originalsNone": "Für deine gespeicherten Charaktere sind keine Originalbilder mehr gespeichert.",
+		"originalsPartial": {
+			"one": "Originale werden für {count} Charakter nicht mehr gespeichert.",
+			"other": "Originale werden für {count} Charaktere nicht mehr gespeichert."
+		},
+		"originalsStarted": "Der Download der Originalgenerierungen wurde gestartet.",
+		"originalsTooLarge": "Die Originalgenerierungen sind zu groß, um sie auf einmal herunterzuladen.",
 		"restoreFromBackup": "Aus Sicherung wiederherstellen",
 		"review": "Sicherung prüfen",
 		"add": "Hinzuzufügende Charaktere",
@@ -127,7 +137,14 @@
 		"saveFailed": "Die Auswahl konnte nicht gespeichert werden. Versuche es erneut.",
 		"incompatible": "Wähle für die Frames Automatisch oder eine Anzahl, die das neue Modell unterstützt.",
 		"framesHelp": "Die verfügbaren Frame-Anzahlen hängen von der Leinwandgröße der Figur ab.",
-		"methodHelp": "Verwendet {pose}, wenn unterstützt. Andernfalls wird {edit} verwendet."
+		"methodHelp": "Verwendet {pose}, wenn unterstützt. Andernfalls wird {edit} verwendet.",
+		"itemDrawing": "Gegenstände in Animationen",
+		"itemDrawingHelp": "Auf den Frames der Animation gezeichnet passen Gegenstände zu ihrer eigenen Grafik. Mit einem separaten Körper posiert werden Gegenstände eigenständig animiert und können um einige Pixel verrutschen. Alle Ansichten auf einmal zu zeichnen kostet mehr als das Posieren und weniger als das Zeichnen auf den Frames, und du prüfst das Ergebnis, bevor es gespeichert wird. Das eignet sich für getragene Gegenstände an Figuren mit vier Blickrichtungen und 80 bis 128 px; andere Gegenstände werden auf den Frames gezeichnet, gehaltene posiert.",
+		"itemDrawings": {
+			"anchor": "Auf Animations-Frames zeichnen",
+			"skeleton": "Separaten Körper posieren",
+			"sheet": "Alle Ansichten auf einmal zeichnen"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Reittier-Vorschau abspielen",
@@ -717,7 +734,7 @@
 		"missingFrames": "Für {names} fehlen Frames in {move}",
 		"missingFrameViews": "Für {names} fehlen Frames in {move} mit Blickrichtung {direction}",
 		"making": "Wird erstellt…",
-		"makeIt": "Erstellen",
+		"makeMissingViews": "Fehlende Ansichten erstellen",
 		"estimate": {
 			"one": "~{n} Generierung",
 			"other": "~{n} Generierungen"
@@ -885,7 +902,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Wähle Animationen in der Vorschau. Beim Reiten gilt die Reitpose aus den Reittier-Einstellungen.",
-		"movesOffWalking": "Wähle Animationen in der Vorschau. Hier wird je nach Bewegung die Idle- oder Gehanimation abgespielt.",
+		"movesOffWalking": "Wähle Animationen in der Vorschau. Hier legen die Einstellungen der Live-Ansichten fest, was abgespielt wird.",
 		"tabWardrobe": "Garderobe",
 		"tabColors": "Farben",
 		"tabOutfits": "Outfits",
@@ -898,6 +915,10 @@
 			"other": "Für {n} angelegte Gegenstände fehlen Frames"
 		},
 		"missingFramesForMove": "Fehlende Frames für {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} Problem",
+			"other": "{n} Probleme"
+		},
 		"workspaceCopyPixelLabOff": "Arbeitsbereichskopie · PixelLab aus",
 		"characterSelectionWASDOrArrowsSelectEnter": "Figurenauswahl. Wähle mit WASD oder den Pfeiltasten, bearbeite mit der Eingabetaste und zoome mit Plus und Minus.",
 		"previousCharacter": "Vorherige Figur",
@@ -914,20 +935,21 @@
 		"inspect": "Prüfen",
 		"customization": "Anpassen",
 		"customizationPanels": "Bereiche zum Anpassen",
-		"tabWorkRunning": "Hier läuft gerade etwas",
+		"tabWorkRunning": "Hier läuft, wartet oder ist etwas zum Prüfen bereit",
 		"tabWorkAttention": "Hier braucht etwas deine Aufmerksamkeit"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} nutzt die Körperfarben bereits.",
+		"drift": "{name} übernimmt die Körperfarben nicht",
+		"match": "Farben angleichen",
+		"matched": "{name} an die Körperfarben angeglichen."
 	},
 	"worldStage": {
 		"groundUnavailable": "Die fortlaufende Bodendarstellung ist nicht verfügbar. Die statische Szene wird angezeigt.",
 		"materialUnavailable": "Das Bodenmaterial ist nicht verfügbar. Die statische Szene wird angezeigt.",
 		"sceneUnavailable": "Die Live-Szene ist nicht verfügbar. Lade die Seite neu.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Figurenvorschau. Ändere die Blickrichtung mit WASD oder den Pfeiltasten. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
-		"sideScrollerTestWorldADLeft": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts oder durch waagerechtes Ziehen. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
-		"characterTestWorldWASDArrowsOrDrag": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten oder durch Ziehen. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
 		"loadingCharacter": "Figur wird geladen…",
-		"dragInTheWorldToMove": "Zieh in der Welt, um dich zu bewegen",
-		"focusWorldADOrToMove": "Welt fokussieren · Bewegen mit A/D oder ←/→",
-		"focusWorldWASDOrArrowKeysTo": "Welt fokussieren · Bewegen mit WASD oder den Pfeiltasten",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} Gegenstand ausgeblendet: Bilder für {move} fehlen",
@@ -1352,6 +1374,7 @@
 		"drop": "Zieh ein Figuren-ZIP hierher",
 		"dropNote": "PixelLab-Figur oder PixelDoll-Export · bis zu 64 MB",
 		"chooseZip": "ZIP auswählen",
+		"chooseAnother": "Anderes ZIP auswählen",
 		"characterZip": "Figuren-ZIP",
 		"devicePrivacy": "Deine Dateien bleiben auf diesem Gerät. Sieh dir die Figur vor dem Import in der Vorschau an.",
 		"pixelLabHint": "Exportiere im Figureneditor von PixelLab ein ZIP mit einzelnen Frames. Übergeordnete Ordner werden unterstützt. Andere Spritesheet-Layouts und ZIPs, die nur PNGs enthalten, werden nicht unterstützt.",
@@ -1479,8 +1502,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Arbeitsbereichsaktivität",
-		"activityIntro": "Mit dem Arbeitsbereich aus PixelDoll {build} gespeichert. Aufträge aus der ZIP-Datei werden nicht neu gestartet.",
+		"activityTitle": "Sicherungsdetails",
+		"activityIntro": "Aus einer Sicherung von PixelDoll {build} geöffnet.",
 		"missing": {
 			"one": "{count} Grafikdatei fehlte oder war nicht lesbar.",
 			"other": "{count} Grafikdateien fehlten oder waren nicht lesbar."
@@ -1488,29 +1511,11 @@
 		"skippedCharacters": {
 			"one": "Gespeicherte Figuren übersprungen: {count}.",
 			"other": "Gespeicherte Figuren übersprungen: {count}."
-		},
-		"demoOutfit": "Die Demo verwendet ihre Standard-Outfiteinstellungen.",
-		"exportSettings": "Die Kopie verwendet die Standard-Exporteinstellungen.",
-		"tier": "PixelLab-Tarif: {tier}",
-		"noErrors": "Es wurden keine kürzlichen Fehler oder offenen Aufträge erfasst.",
-		"noRecent": "Kürzliche Fehler wurden nicht aufgenommen.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Code {code}",
-		"error": {
-			"tooLarge": "Dieser Arbeitsbereich überschreitet das Limit für die ZIP-Größe oder die Grafiken. Verwende stattdessen einzelne Figuren-ZIPs.",
-			"containsKey": "Ein gespeichertes Feld enthält den verbundenen oder gespeicherten PixelLab-Schlüssel. Entferne ihn vor dem Export aus dem Arbeitsbereich.",
-			"invalidIndex": "Dieser Arbeitsbereichsindex ist ungültig.",
-			"unsupportedVersion": "Diese Version der Arbeitsbereichsdatei wird nicht unterstützt.",
-			"duplicateRecord": "Dieser Arbeitsbereich enthält einen nicht unterstützten oder doppelten gespeicherten Datensatz.",
-			"missingFiles": "Dieser Arbeitsbereich enthält eine ungültige Liste fehlender Dateien.",
-			"unexpectedFile": "Dieser Arbeitsbereich enthält eine unerwartete Datei.",
-			"invalidDiagnostics": "Dieser Arbeitsbereich enthält ungültige Daten zu kürzlichen Fehlern."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Wähle eine PixelDoll-Sicherung oder ein Arbeitsbereich-ZIP, kein Figuren-ZIP.",
+			"notBackup": "Wähle eine PixelDoll-Sicherung, kein Figuren-ZIP.",
 			"unsupportedVersion": "Diese Version der Sicherungsdatei wird nicht unterstützt.",
 			"invalid": "Diese Sicherung ist beschädigt oder ungültig.",
 			"tooLarge": "Diese Sicherung überschreitet das Limit für die ZIP-Größe oder die Grafiken. Verwende stattdessen einzelne Figuren-ZIPs.",
@@ -1604,6 +1609,7 @@
 			"facing": "Einige Frames ähneln der gegenüberliegenden Ansicht. Prüfe den Oberkörper",
 			"detail": "In einigen Frames fehlt ein Detail oder hat eine andere Farbe",
 			"motion": "Prüfe Größe und Winkel des Gegenstands in Bewegung",
+			"fill": "Der Gegenstand ist in einigen Frames hohl, nur sein Umriss ist übrig; prüfe seine Form",
 			"lowerClothing": "Im Vergleich zur Standpose fehlen Teile der Beinbekleidung",
 			"footwear": "Das Schuhwerk weicht von der Standpose ab. Prüfe die Füße",
 			"bodyPixels": "Das Modell hat einige Pixel des Grundkörpers verändert",
@@ -1947,7 +1953,9 @@
 			"conceptNote": "Die hochgeladene Vorlage kommt zuerst, vor den Frames der Figur. Ihre Ausgabe wird nicht verwendet.",
 			"redrawEquipment": "{item} {direction} · Ausrüstung neu zeichnen",
 			"redrawEquipmentNote": "{width}×{height}, Frames {from}–{to}. Sendet ein ungemaskertes Sheet mit einer passenden Referenz. PixelDoll begrenzt, was übernommen wird, und fragt immer, bevor deine Frames ersetzt werden. PixelDoll benötigt Tier 1. Bei Abrechnung in Dollar beträgt das Minimum {minimum}; die tatsächliche Belastung kann höher sein.",
-			"gridRepairNote": "{width}×{height}, Frames {from}–{to}. Nutzt eine geschützte Referenz derselben Blickrichtung. Der Grundkörper bleibt unverändert. Vollständige Reparaturen mit blockierenden visuellen Problemen werden dir zur Prüfung vorgelegt."
+			"gridRepairNote": "{width}×{height}, Frames {from}–{to}. Nutzt eine geschützte Referenz derselben Blickrichtung. Der Grundkörper bleibt unverändert. Vollständige Reparaturen mit blockierenden visuellen Problemen werden dir zur Prüfung vorgelegt.",
+			"itemSheet": "{item}: {directions}, ein Sheet",
+			"itemSheetNote": "{width}×{height}: eine Zeile pro Ansicht, zuerst das Design im Stand, dann {frames} Frames der Animation, jeweils auf {cellWidth}×{cellHeight} px zugeschnitten. Der Körper bleibt unverändert. PixelDoll fragt vor dem Speichern, übernimmt nur Ansichten, die die Prüfungen bestehen, und listet die anderen auf. PixelDoll benötigt Tier 1. Ein Versuch; jede bezahlte Wiederholung braucht deine Bestätigung."
 		},
 		"copyEndpointTitle": "Endpunkt kopieren",
 		"manualCopyLabel": "Endpunkt zum manuellen Kopieren",
@@ -2059,7 +2067,11 @@
 		"stopNoAnswer": "Der Tab, in dem dieser Auftrag läuft, hat das Stoppen noch nicht bestätigt. Sieh gleich in der Aktivität nach; läuft er noch, stoppe ihn in diesem Tab.",
 		"stopNotConfirmed": "PixelLab hat das Stoppen nicht bestätigt, daher kann der Auftrag weiterlaufen und Kosten verursachen. Sieh in der Aktivität nach.",
 		"pausedStorage": "Gespeicherte Aufträge konnten nicht gelesen oder gespeichert werden, deshalb wird nichts Neues gesendet. Setze fort, um es erneut zu versuchen.",
-		"cancelSaveFailed": "Der Abbruch konnte nicht gespeichert werden. Dieser Tab sendet die Anfrage nicht, ein anderer Tab oder ein Neuladen aber schon."
+		"cancelSaveFailed": "Der Abbruch konnte nicht gespeichert werden. Dieser Tab sendet die Anfrage nicht, ein anderer Tab oder ein Neuladen aber schon.",
+		"titleItemViews": {
+			"one": "{item}: {move}, {count} Ansicht",
+			"other": "{item}: {move}, {count} Ansichten"
+		}
 	},
 	"genCard": {
 		"retryKey": "Beim neuen Versuch wird die Hintergrundfarbe {color} verwendet. Sie wurde anhand der Farben dieses Designs bestimmt",
@@ -2720,6 +2732,8 @@
 		"motionOnly": "Beschreibe nur die Körperbewegung. Füge Waffen und Requisiten als Gegenstände hinzu.",
 		"motionModel": "Bewegungsmodell",
 		"motionModelHelp": "Skeleton v3 verwendet dieselben Posen für Körper und Ausrüstung. V3 und PixMiniMax zeichnen zuerst den Körper. Danach ermittelt PixelDoll die Posen für die Ausrüstung.",
+		"itemDrawing": "Gegenstände in dieser Animation",
+		"itemDrawingDefault": "Standard ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
@@ -2776,7 +2790,11 @@
 			"repairNote": "Der Körper bleibt unverändert. Eine abgeschlossene Reparatur mit Darstellungsfehlern bleibt zur Prüfung zurückgestellt.",
 			"currentFrame": "Aktueller Frame {number}",
 			"redrawnFrame": "Neu gezeichneter Frame {number}",
-			"repairedFrame": "Reparierter Frame {number}"
+			"repairedFrame": "Reparierter Frame {number}",
+			"skippedViews": "Nicht übernommen: {views}. PixelLab hat dort keinen Gegenstand gezeichnet, er fehlt also noch. Du kannst nur diese Ansichten erneut zeichnen.",
+			"viewFrame": "{view}, Frame {number}",
+			"keepFailedViews": "Auch {views} übernehmen, obwohl die Prüfungen nicht bestanden wurden",
+			"chooseViews": "Wähle vor dem Speichern die Ansichten aus, die übernommen werden sollen."
 		}
 	},
 	"itemRoute": {
@@ -2810,7 +2828,9 @@
 			"itemMoveSaveConflictAlso": "Diese Figur oder dieser Gegenstand hat sich geändert, während die Frames generiert wurden. Die vorhandenen Grafiken wurden behalten; fertige Frames bleiben unter „Aktivität“. Eine weitere Ansicht wurde ebenfalls gestoppt: {reason}",
 			"keepWithoutStanding": "Diesem Gegenstand fehlen Frames in der Animation, aus der er entworfen ist, daher kann er nicht ohne sie behalten werden. Zeige diese Animation und nutze „Gegenstand reparieren“ oder „Gegenstand neu zeichnen“, falls angeboten, oder erstelle den Gegenstand erneut.",
 			"keepWithoutNothingLeft": "Dieser Gegenstand hat keine vollständige Animation, die behalten werden kann. Erstelle stattdessen die fehlenden Frames.",
-			"savedFrameMissing": "Ein gespeicherter Frame dieses Gegenstands fehlt im Speicher."
+			"savedFrameMissing": "Ein gespeicherter Frame dieses Gegenstands fehlt im Speicher.",
+			"itemSheetChanged": "Dieser Gegenstand oder diese Animation hat sich geändert, seit das Sheet berechnet wurde. Öffne den Gegenstand erneut, um ihn noch einmal zu prüfen. Es wurde keine Generierung angefordert.",
+			"itemSheetNoView": "PixelLab hat in keiner Ansicht einen Gegenstand gezeichnet, daher wurde nichts übernommen. Das Sheet bleibt in der Aktivität."
 		}
 	},
 	"newItem": {
@@ -3406,8 +3426,29 @@
 		"generateFor": "Für {move} generieren",
 		"wearOn": "In {move} anlegen"
 	},
+	"itemImport": {
+		"title": "Gegenstände importieren",
+		"intro": "Das ZIP einer Figur, ein Backup oder eine geteilte Figur. Kostenlos, wenn die Gegenstände zu dieser Figur passen.",
+		"empty": "Dieses ZIP enthält keine fertigen Gegenstände.",
+		"skipped": {
+			"one": "{count} Gegenstand konnte nicht gelesen werden.",
+			"other": "{count} Gegenstände konnten nicht gelesen werden."
+		},
+		"notFitted": "{names} passt nicht mehr und wurde nicht hinzugefügt.",
+		"busy": "Warte, bis der Gegenstand hinzugefügt ist, und versuche es dann erneut.",
+		"row": {
+			"copy": "Passt genau zu dieser Figur",
+			"refit": "Kostenlos an diesen Körper angepasst. Prüfe die Frames nach dem Import.",
+			"unfitted": "Für einen anderen Körper erstellt. Wird wie gezeichnet getragen und kann schweben oder überlappen.",
+			"remake": "Für einen anderen Körper erstellt, daher hier nicht tragbar"
+		}
+	},
+	"importDrop": {
+		"items": "Ablegen, um Gegenstände zu importieren",
+		"moves": "Ablegen, um Animationen zu importieren",
+		"states": "Ablegen, um Zustände zu importieren"
+	},
 	"moveImport": {
-		"title": "Animationen importieren",
 		"importMoves": "Animationen importieren",
 		"importStates": "Zustände importieren",
 		"dropArea": "Ablagebereich für PixelDoll-ZIP",
@@ -3448,5 +3489,34 @@
 			"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du Animationen importierst.",
 			"changed": "Diese Figur hat sich geändert. Wähle das ZIP erneut, um die aktuelle Version zu prüfen."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Automatisch: steht still",
+		"controls": "Steuerung",
+		"title": "Live-Ansichten",
+		"forCharacter": "Animationen, die {name} in Draufsicht und Seitenansicht abspielt.",
+		"idle": "Ruhe",
+		"walk": "Gehen",
+		"attack": "Angriff",
+		"jump": "Sprung",
+		"attackUp": "Angriff nach oben",
+		"attackDown": "Angriff nach unten",
+		"automaticClip": "Automatisch: {clip}",
+		"automaticNone": "Automatisch: keine",
+		"sameAsAttack": "Wie Angriff",
+		"sideAttackHelp": "In der Seitenansicht spielt Angriff nach oben oder unten, wenn du nach oben oder unten zielst.",
+		"notSaved": "Die Einstellung der Live-Ansichten wurde geändert, aber dieser Browser konnte sie nicht speichern.",
+		"openCharacter": "Öffne einen Charakter, um seine Animationen auszuwählen.",
+		"mount": "Reittier",
+		"actions": "Spielaktionen",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Leertaste",
+		"noAttack": "Für Angriff ist noch nichts festgelegt. Wähle in den Einstellungen der Live-Ansichten eine Animation oder einen Zustand.",
+		"noAttackDirection": "{move} hat keine Frames in Richtung {direction}, daher ist dort kein Angriff möglich.",
+		"hintTopDown": "WASD oder Klick zum Bewegen · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",
+		"hintSide": "A/D oder Klick zum Bewegen · Rechtsklick oder X zum Angreifen · Leertaste zum Springen · M zum Auf- und Absitzen",
+		"hintTouch": "Linke Seite bewegt · Rechte Seite zielt, loslassen greift an · Tasten springen und sitzen auf",
+		"stageTopDown": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten, per Klick oder durch Ziehen. Rechtsklick oder X greift an, die Leertaste springt, M sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
+		"stageSide": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts, per Klick oder durch Ziehen. Rechtsklick oder X greift an, die Leertaste springt, M sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht."
 	}
 }

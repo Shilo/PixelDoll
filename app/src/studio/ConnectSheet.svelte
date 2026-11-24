@@ -3,6 +3,7 @@
 	import { t, type WhisperKey } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import { message } from '../lib/message.ts';
+	import { balanceFacts } from './report.svelte.ts';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
 	import { ApiError } from '../lib/pixellab/client.ts';
@@ -41,6 +42,7 @@
 	const refreshLabel = $derived(t(refreshing ? 'usage.refreshing' : 'activity.refreshBalance'));
 	let replacing = $state(replaceOnly);
 	let replacementError = $state<WhisperKey>();
+	let replacementFailure = $state<unknown>();
 	let limitedAccess = $state(false);
 	let connectionFailed = $state(false);
 	let firstOpen = $state(false);
@@ -100,6 +102,7 @@
 				if (!(await replaceKey(nextKey, false, isCurrent, activity)))
 					replacementError = 'connectSheet.connectionChanged';
 			} catch (error) {
+				replacementFailure = error;
 				replacementError =
 					error instanceof ApiError && error.kind === 'auth'
 						? 'connectSheet.keyRejected'
@@ -138,6 +141,7 @@
 			}
 		} catch (error) {
 			if (!isCurrent()) return;
+			replacementFailure = error;
 			replacementError =
 				error instanceof ApiError && error.kind === 'auth'
 					? 'connectSheet.replacementRejected'
@@ -232,7 +236,10 @@
 		</PixelLabUsage>
 		{#if app.balanceError}
 			<p class="notice bad small" role="status">
-				{t('usage.loadFailed')}<ReportButton message={message('usage.loadFailed')} />
+				{t('usage.loadFailed')}<ReportButton
+					message={message('usage.loadFailed')}
+					facts={balanceFacts()}
+				/>
 			</p>
 		{/if}
 		<p class="small bu-muted">
@@ -330,6 +337,7 @@
 					replacementError
 				)}{#if replacementError === 'connectSheet.balanceError' || replacementError === 'connectSheet.replacementUnverified'}<ReportButton
 						message={message(replacementError)}
+						error={replacementFailure}
 					/>{/if}
 			</p>
 		{:else if app.keyRejected}
@@ -340,6 +348,7 @@
 			<p class="notice bad small" role="status">
 				{t('connectSheet.balanceError')}<ReportButton
 					message={message('connectSheet.balanceError')}
+					facts={balanceFacts()}
 				/>
 			</p>
 		{/if}

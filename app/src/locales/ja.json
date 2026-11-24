@@ -51,6 +51,15 @@
 		"scopeDebug": "保存したキャラクター、アートワーク、アーカイブ済みデータ、デバッグ情報をバックアップします。",
 		"debugNotSaved": "ブラウザーがこの設定を保存できませんでした。",
 		"backup": "ライブラリをバックアップ",
+		"originals": "元の生成画像をダウンロード",
+		"originalsHint": "PixelDoll が処理する前に PixelLab が保存済みキャラクター用に返した元の画像と、それらを購入したリクエストです。この端末にまだ保存されているリクエストのみが含まれます。",
+		"originalsName": "元の生成画像",
+		"originalsNone": "保存済みキャラクターの元の画像は残っていません。",
+		"originalsPartial": {
+			"other": "元画像が残っていないキャラクター：{count}。"
+		},
+		"originalsStarted": "元の生成画像のダウンロードを開始しました。",
+		"originalsTooLarge": "元の生成画像が大きすぎて一度にダウンロードできません。",
 		"restoreFromBackup": "バックアップから復元",
 		"review": "バックアップを確認",
 		"add": "追加するキャラクター",
@@ -122,7 +131,14 @@
 		"saveFailed": "この設定を保存できませんでした。もう一度お試しください。",
 		"incompatible": "フレーム数を自動にするか、新しいモデルが対応する数を選択してください。",
 		"framesHelp": "選べるフレーム数はキャラクターのキャンバスサイズによって異なります。",
-		"methodHelp": "対応している場合は「{pose}」、それ以外の場合は「{edit}」を使用します。"
+		"methodHelp": "対応している場合は「{pose}」、それ以外の場合は「{edit}」を使用します。",
+		"itemDrawing": "モーション上のアイテム",
+		"itemDrawingHelp": "モーションのフレームに描くと、アイテムがモーション自体の絵に合います。別の体でポーズを付けると、アイテムを個別にアニメーションさせるため、数ピクセルずれることがあります。すべての向きを一度に描く方法は、ポーズを付けるより費用がかかり、フレームに描くより安く、保存する前に結果を確認できます。80〜128 pxで4方向のキャラクターが身に着けるアイテムに向いています。その他のアイテムはモーションのフレームに描き、手に持つアイテムはポーズを付けます。",
+		"itemDrawings": {
+			"anchor": "モーションのフレームに描く",
+			"skeleton": "別の体でポーズを付ける",
+			"sheet": "すべての向きを一度に描く"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "乗り物のプレビューを再生",
@@ -698,7 +714,7 @@
 		"missingFrames": "{names}には{move}のフレームが必要です",
 		"missingFrameViews": "{names}には{direction}向きの{move}のフレームが必要です",
 		"making": "作成中…",
-		"makeIt": "作成する",
+		"makeMissingViews": "不足している向きを作成",
 		"estimate": {
 			"other": "~{n}回の生成"
 		},
@@ -862,7 +878,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "モーションはプレビューで選びます。騎乗中の移動は、乗り物の設定の騎乗ポーズに従います。",
-		"movesOffWalking": "モーションはプレビューで選びます。ここでは、止まると待機、移動すると歩きのモーションが再生されます。",
+		"movesOffWalking": "モーションはプレビューで選びます。ここで再生されるものはライブビューの設定で選べます。",
 		"tabWardrobe": "装備",
 		"tabColors": "カラー",
 		"tabOutfits": "コーデ一覧",
@@ -874,6 +890,9 @@
 			"other": "装備中の{n}個のアイテムにフレームが必要です"
 		},
 		"missingFramesForMove": "{move}の{direction}向きのフレームが不足しています",
+		"previewProblems": {
+			"other": "{n}件の問題"
+		},
 		"workspaceCopyPixelLabOff": "ワークスペースのコピー・PixelLabは無効",
 		"characterSelectionWASDOrArrowsSelectEnter": "キャラクターの選択。WASDまたは矢印キーで選択、Enterでカスタマイズ、プラスとマイナスでズームします。",
 		"previousCharacter": "前のキャラクター",
@@ -890,20 +909,21 @@
 		"inspect": "キャラクターを確認",
 		"customization": "カスタマイズ",
 		"customizationPanels": "カスタマイズパネル",
-		"tabWorkRunning": "ここで処理を実行中です",
+		"tabWorkRunning": "ここに実行中、待機中、または確認待ちの処理があります",
 		"tabWorkAttention": "ここで対応が必要な処理があります"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name}はすでに体の色を使っています。",
+		"drift": "{name}は体の色に合っていません",
+		"match": "色を合わせる",
+		"matched": "{name}を体の色に合わせました。"
 	},
 	"worldStage": {
 		"groundUnavailable": "地面をリアルタイムで描画できないため、静止シーンを表示しています。",
 		"materialUnavailable": "地面のマテリアルを読み込めないため、静止シーンを表示しています。",
 		"sceneUnavailable": "ライブシーンを表示できません。ページを再読み込みしてください。",
 		"characterPreviewWASDOrArrowsChangeFacing": "キャラクターのプレビュー。WASDまたは矢印キーで向きを変えます。1、2、3キーでビューを切り替えます。",
-		"sideScrollerTestWorldADLeft": "横スクロールのテストワールド。A/D、左右の矢印キー、または横方向のドラッグで移動します。1、2、3キーでビューを切り替えます。",
-		"characterTestWorldWASDArrowsOrDrag": "キャラクターのテストワールド。WASD、矢印キー、またはドラッグで移動します。1、2、3キーでビューを切り替えます。",
 		"loadingCharacter": "キャラクターを読み込み中…",
-		"dragInTheWorldToMove": "ワールド内をドラッグして移動",
-		"focusWorldADOrToMove": "ワールドにフォーカス・A/Dまたは←/→で移動",
-		"focusWorldWASDOrArrowKeysTo": "ワールドにフォーカス・WASDまたは矢印キーで移動",
 		"notice": {
 			"hiddenItemsInMove": {
 				"other": "アイテム{count}個を非表示：{move}のフレームが不足しています"
@@ -1309,6 +1329,7 @@
 		"drop": "ここにキャラクターのZIPをドロップ",
 		"dropNote": "PixelLabのキャラクターまたはPixelDollのエクスポート・最大64 MB",
 		"chooseZip": "ZIPを選択",
+		"chooseAnother": "別のZIPを選択",
 		"characterZip": "キャラクターのZIP",
 		"devicePrivacy": "ファイルはこのデバイスから外に出ません。インポートする前にキャラクターをプレビューできます。",
 		"pixelLabHint": "PixelLabのキャラクター作成画面で、フレームが個別に入ったZIPをエクスポートしてください。ファイルが外側のフォルダーにまとめられていてもインポートできます。他のスプライトシートのレイアウトや、PNGしか含まないZIPには対応していません。",
@@ -1434,36 +1455,18 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "ワークスペースのアクティビティ",
-		"activityIntro": "PixelDoll {build}でワークスペースと一緒に保存された記録です。ZIP内のジョブは再開されません。",
+		"activityTitle": "バックアップの詳細",
+		"activityIntro": "PixelDoll {build} で作成したバックアップから開きました。",
 		"missing": {
 			"other": "{count}個のアートワークファイルが見つからないか、読み込めませんでした。"
 		},
 		"skippedCharacters": {
 			"other": "スキップした保存済みキャラクター：{count}体。"
-		},
-		"demoOutfit": "デモでは初期設定のコーディネートを使用します。",
-		"exportSettings": "コピーのエクスポート設定には初期値が使われます。",
-		"tier": "PixelLabのTier：{tier}",
-		"noErrors": "最近のエラーや未完了のジョブは記録されていません。",
-		"noRecent": "最近のエラーは含まれていません。",
-		"errorLine": "{date}・{tool}・{outcome}{http}{code}",
-		"errorLineHttp": "・HTTP {status}",
-		"errorLineCode": "・コード {code}",
-		"error": {
-			"tooLarge": "このワークスペースはZIPのサイズまたはアートワークの上限を超えています。代わりにキャラクターごとのZIPを使ってください。",
-			"containsKey": "保存済みの入力内容に、現在使っているか、このデバイスに記憶したPixelLabのキーが含まれています。エクスポートする前に、入力内容からキーを削除してください。",
-			"invalidIndex": "このワークスペースのインデックスは無効です。",
-			"unsupportedVersion": "このワークスペースファイルのバージョンには対応していません。",
-			"duplicateRecord": "このワークスペースには、対応していないか重複している保存レコードが含まれています。",
-			"missingFiles": "このワークスペースの不足ファイルのリストが無効です。",
-			"unexpectedFile": "このワークスペースには想定外のファイルが含まれています。",
-			"invalidDiagnostics": "このワークスペースに記録された最近のエラー情報が無効です。"
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "キャラクターのZIPではなく、PixelDollのバックアップまたはワークスペースのZIPを選んでください。",
+			"notBackup": "キャラクターのZIPではなく、PixelDollのバックアップを選んでください。",
 			"unsupportedVersion": "このバージョンのバックアップファイルには対応していません。",
 			"invalid": "このバックアップは破損しているか、無効です。",
 			"tooLarge": "このバックアップはZIPのサイズまたはアートワークの上限を超えています。代わりにキャラクターごとのZIPを使ってください。",
@@ -1555,6 +1558,7 @@
 			"facing": "反対向きのビューに似ているフレームがあります。胴体を確認してください",
 			"detail": "一部のフレームで、デザインの細部が欠けているか色が変わっています",
 			"motion": "動いているときのアイテムのサイズと角度を確認してください",
+			"fill": "一部のフレームでアイテムの中が抜け、輪郭だけになっています。形を確認してください",
 			"lowerClothing": "立ちポーズのデザインと比べて、下半身の服の一部が欠けています",
 			"footwear": "靴などが立ちポーズのデザインと異なります。足元を確認してください",
 			"bodyPixels": "モデルによって体のピクセルの一部が変更されました",
@@ -1889,7 +1893,9 @@
 			"conceptNote": "アップロードしたアートワークがキャラクターのフレームより先に送られます。その出力は使用しません。",
 			"redrawEquipment": "{item} {direction}・装備を描き直す",
 			"redrawEquipmentNote": "{width}×{height}、フレーム {from}–{to}。マスクなしのシートと一致する参照画像を送信します。PixelDollは保持する内容を制限し、フレームを置き換える前に必ず確認します。PixelDollにはTier 1が必要です。ドル課金の場合、最低額は{minimum}で、実際の請求はそれより高くなる場合があります。",
-			"gridRepairNote": "{width}×{height}、フレーム {from}–{to}。同じ向きの保護された参照画像1枚を使います。素体は変更しません。視覚的な問題が残る修復は確認用に保留されます。"
+			"gridRepairNote": "{width}×{height}、フレーム {from}–{to}。同じ向きの保護された参照画像1枚を使います。素体は変更しません。視覚的な問題が残る修復は確認用に保留されます。",
+			"itemSheet": "{item}：{directions}、シート1枚",
+			"itemSheetNote": "{width}×{height}：向きごとに1行で、最初に立ち姿のデザイン、続いてモーションの{frames}フレームを、それぞれ{cellWidth}×{cellHeight} pxに切り出して並べます。体は変わりません。PixelDollは保存前に確認し、チェックに合格した向きだけを残して、ほかの向きを一覧にします。PixelDollにはTier 1が必要です。1回だけ試行し、有料の再試行にはあなたの操作が必要です。"
 		},
 		"copyEndpointTitle": "エンドポイントをコピー",
 		"manualCopyLabel": "手動でコピーするエンドポイント",
@@ -1998,7 +2004,10 @@
 		"stopNoAnswer": "このジョブを実行しているタブは、まだ停止を確認していません。少し待ってからアクティビティを確認し、まだ実行中ならそのタブで停止してください。",
 		"stopNotConfirmed": "PixelLab が停止を確認しなかったため、ジョブが続行して料金が発生する可能性があります。アクティビティを確認してください。",
 		"pausedStorage": "保存されたジョブを読み込みまたは保存できなかったため、新しい送信は行いません。再開すると、もう一度試します。",
-		"cancelSaveFailed": "キャンセルを保存できませんでした。このタブからリクエストは送信しませんが、別のタブや再読み込みで送信される場合があります。"
+		"cancelSaveFailed": "キャンセルを保存できませんでした。このタブからリクエストは送信しませんが、別のタブや再読み込みで送信される場合があります。",
+		"titleItemViews": {
+			"other": "{item}：{move}、{count}方向"
+		}
 	},
 	"genCard": {
 		"retryKey": "再生成と、このデザインの色から算出した{color}の背景を使用します",
@@ -2648,6 +2657,8 @@
 		"motionOnly": "体の動きだけを説明してください。武器や小道具はアイテムとして追加します。",
 		"motionModel": "モーションのモデル",
 		"motionModelHelp": "Skeleton v3 は体と装備に同じポーズを使います。V3 と PixMiniMax は先に体を描き、その後 PixelDoll が装備用のポーズを検出します。",
+		"itemDrawing": "このモーションのアイテム",
+		"itemDrawingDefault": "デフォルト（{method}）",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
@@ -2700,7 +2711,11 @@
 			"repairNote": "体は変わりません。修復が完了しても見た目に問題がある場合は、確認するまで結果の適用を保留します。",
 			"currentFrame": "現在のフレーム {number}",
 			"redrawnFrame": "描き直したフレーム {number}",
-			"repairedFrame": "修復したフレーム {number}"
+			"repairedFrame": "修復したフレーム {number}",
+			"skippedViews": "保存していない向き：{views}。PixelLabがそこにアイテムを描かなかったため、まだありません。これらの向きだけを描き直せます。",
+			"viewFrame": "{view}、フレーム {number}",
+			"keepFailedViews": "チェックに合格しなかった{views}も保存する",
+			"chooseViews": "保存する前に、残す向きを選んでください。"
 		}
 	},
 	"itemRoute": {
@@ -2734,7 +2749,9 @@
 			"itemMoveSaveConflictAlso": "フレームの生成中にこのキャラクターまたはアイテムが変更されました。既存のアートはそのままです。完成したフレームはアクティビティに残っています。ほかの向きも停止しました：{reason}",
 			"keepWithoutStanding": "このアイテムはデザインの元になったモーションのフレームが不足しているため、そのモーションなしでは残せません。そのモーションを表示して、表示される場合は「アイテムを修復」か「アイテムを描き直す」を使うか、アイテムをもう一度作成してください。",
 			"keepWithoutNothingLeft": "このアイテムには残せる完全なモーションがありません。代わりに不足しているフレームを作成してください。",
-			"savedFrameMissing": "このアイテムの保存済みフレームがストレージにありません。"
+			"savedFrameMissing": "このアイテムの保存済みフレームがストレージにありません。",
+			"itemSheetChanged": "シートの価格を計算した後に、このアイテムまたはモーションが変更されました。アイテムを開き直して、もう一度確認してください。生成はリクエストしていません。",
+			"itemSheetNoView": "PixelLabはどの向きにもアイテムを描かなかったため、何も保存していません。シートはアクティビティに残っています。"
 		}
 	},
 	"newItem": {
@@ -3312,8 +3329,28 @@
 		"generateFor": "{move}用に生成",
 		"wearOn": "{move}で装備"
 	},
+	"itemImport": {
+		"title": "アイテムを読み込む",
+		"intro": "キャラクターのZIP、バックアップ、共有されたキャラクター。アイテムがこのキャラクターに合うなら無料です。",
+		"empty": "このZIPには完成したアイテムがありません。",
+		"skipped": {
+			"other": "{count}個のアイテムを読み込めませんでした。"
+		},
+		"notFitted": "{names}は合わなくなったため追加されませんでした。",
+		"busy": "アイテムの追加が終わってから、もう一度お試しください。",
+		"row": {
+			"copy": "このキャラクターにぴったり合います",
+			"refit": "この体に無料で合わせました。読み込み後にフレームを確認してください。",
+			"unfitted": "別の体用です。描かれたまま着けるため、浮いたりはみ出したりすることがあります。",
+			"remake": "別の体用のため、ここでは着けられません"
+		}
+	},
+	"importDrop": {
+		"items": "ドロップしてアイテムを読み込む",
+		"moves": "ドロップしてモーションを読み込む",
+		"states": "ドロップしてステートを読み込む"
+	},
 	"moveImport": {
-		"title": "モーションを読み込む",
 		"importMoves": "モーションを読み込む",
 		"importStates": "ステートを読み込む",
 		"dropArea": "PixelDoll ZIPのドロップエリア",
@@ -3353,5 +3390,34 @@
 			"resolveDrafts": "モーションを読み込む前に、このキャラクターのアイテム下書きを保存するか破棄してください。",
 			"changed": "このキャラクターが変更されました。最新の内容を確認するには、ZIPをもう一度選んでください。"
 		}
+	},
+	"liveViews": {
+		"automaticStill": "自動：静止",
+		"controls": "操作",
+		"title": "ライブビュー",
+		"forCharacter": "{name} が見下ろし型と横スクロールで再生するモーションです。",
+		"idle": "待機",
+		"walk": "歩行",
+		"attack": "攻撃",
+		"jump": "ジャンプ",
+		"attackUp": "上攻撃",
+		"attackDown": "下攻撃",
+		"automaticClip": "自動：{clip}",
+		"automaticNone": "自動：なし",
+		"sameAsAttack": "攻撃と同じ",
+		"sideAttackHelp": "横スクロールでは、上または下を狙うと上攻撃または下攻撃を再生します。",
+		"notSaved": "ライブビューの設定を変更しましたが、このブラウザーに保存できませんでした。",
+		"openCharacter": "キャラクターを開くと、再生するモーションを選べます。",
+		"mount": "乗り物",
+		"actions": "ゲーム操作",
+		"withShortcut": "{action}（{key}）",
+		"spaceKey": "スペース",
+		"noAttack": "攻撃に割り当てられたものがまだありません。ライブビューの設定でモーションか状態を選んでください。",
+		"noAttackDirection": "{move} には{direction}向きのフレームがないため、その方向には攻撃できません。",
+		"hintTopDown": "WASD またはクリックで移動 · 右クリックまたは X で攻撃 · スペースでジャンプ · M で乗り降り",
+		"hintSide": "A/D またはクリックで移動 · 右クリックまたは X で攻撃 · スペースでジャンプ · M で乗り降り",
+		"hintTouch": "左側で移動 · 右側で狙い、指を離すと攻撃 · ボタンでジャンプと乗り降り",
+		"stageTopDown": "キャラクターのテストワールド。WASD、矢印キー、クリック、またはドラッグで移動します。右クリックまたは X で攻撃、スペースでジャンプ、M で乗り降りします。1、2、3キーでビューを切り替えます。",
+		"stageSide": "横スクロールのテストワールド。A/D、左右の矢印キー、クリック、またはドラッグで移動します。右クリックまたは X で攻撃、スペースでジャンプ、M で乗り降りします。1、2、3キーでビューを切り替えます。"
 	}
 }

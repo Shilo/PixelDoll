@@ -39,8 +39,10 @@
 		characterName,
 		showStanding,
 		toast,
-		view
+		view,
+		matchStateColors
 	} from '../state.svelte.ts';
+	import { stateColorDrift } from '../../lib/dress/stateColors.ts';
 	import {
 		experience,
 		customize as enterCustomize,
@@ -86,6 +88,15 @@
 	const clips = $derived(playbackClips(m?.rig.animations ?? []));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const selectedMove = $derived(m?.rig.animations.find((animation) => animation.id === ui.anim));
+	// A State saved before States were matched to the body's colors: recolors miss most of it (stateColors.ts).
+	const colorDrift = $derived(
+		!!store.project &&
+			doc.id.startsWith('rig-') &&
+			selectedMove?.kind === 'state' &&
+			stateColorDrift(store.project, selectedMove.id)
+	);
+	let matchingColors = $state(false);
+	const problems = $derived((missing?.items.length ?? 0) + (colorDrift ? 1 : 0));
 	// A shown mount has its own gait, so Play/Pause stays useful even over a single-frame move.
 	const canPlay = $derived(
 		(experience.presentation === 'animation' &&
@@ -125,16 +136,21 @@
 	const movesOff = $derived(
 		message(experience.testMount ? 'experience.movesOffMounted' : 'experience.movesOffWalking')
 	);
-	// Moves and States carry a dot while this character's work runs there, red when it stopped (activityStatus.svelte.ts).
-	const movesWork = $derived(tabActivity('move'));
-	const statesWork = $derived(tabActivity('state'));
-	// While the tabs are on screen, More's dot leaves their work to them.
-	const showWorkTabs = () => {
-		workTabs.shown = true;
-		return () => {
-			workTabs.shown = false;
-		};
-	};
+	// Wardrobe, Moves and States carry a dot for this character's work there, red when some failed (activityStatus.svelte.ts);
+	// disabled Moves and States leave theirs to More.
+	const tabWork = $derived({
+		wardrobe: tabActivity('wardrobe'),
+		moves: tabActivity('moves'),
+		states: tabActivity('states')
+	});
+	// While a tab is on screen and usable, More's dot leaves its work to it: not without a panel, under a sheet or on
+	// another screen, and not Moves or States outside Preview, where they are disabled.
+	$effect(() => {
+		const shown = experience.screen === 'studio' && !(g.sheet && !g.sheetHeight) && !ui.sheet,
+			clips = shown && experience.mode === 'preview';
+		Object.assign(workTabs, { wardrobe: shown, moves: clips, states: clips });
+		return () => Object.assign(workTabs, { wardrobe: false, moves: false, states: false });
+	});
 	const tabs = [
 		['wardrobe', 'experience.tabWardrobe'],
 		['colors', 'experience.tabColors'],
@@ -846,18 +862,21 @@
 						title={t('experience.inspect')}
 						onclick={() => (ui.sheet = 'inspect')}><Grid2x2 size={16} /></button
 					>
-					{#if missing}
-						{@const coverageLabel = t('experience.missingEquippedFrames', {
-							count: missing.items.length,
-							n: formatNumber(missing.items.length)
-						})}
+					{#if problems}
+						{@const coverageLabel =
+							missing && !colorDrift
+								? t('experience.missingEquippedFrames', {
+										count: missing.items.length,
+										n: formatNumber(missing.items.length)
+									})
+								: t('experience.previewProblems', { count: problems, n: formatNumber(problems) })}
 						<button
 							class="bu-action"
 							data-variant="quiet"
 							aria-label={coverageLabel}
 							title={coverageLabel}
 							popovertarget="preview-coverage"
-							><TriangleAlert size={16} /><span>{formatNumber(missing.items.length)}</span></button
+							><TriangleAlert size={16} /><span>{formatNumber(problems)}</span></button
 						>
 						<div
 							id="preview-coverage"
@@ -869,22 +888,42 @@
 						>
 							<PopoverArrow />
 							<div class="menu-surface bu-popover-surface bu-floating">
-								<p class="menu-sec">
-									{t('experience.missingFramesForMove', {
-										move: displayMove(missing.clip, moveRefs),
-										direction: displayDirection(missing.direction)
-									})}
-								</p>
-								{#each missing.items as item (item.id)}
-									{@const saved = m.items.find((i) => i.id === (item.variantOf ?? item.id))}
-									{#if saved}<button
-											class="row bu-action"
-											data-variant="quiet"
-											onclick={() => showMissingItem(saved)}
-											>{item.name}<ChevronRight size={16} aria-hidden="true" /></button
-										>
-									{:else}<p class="menu-sec">{item.name}</p>{/if}
-								{/each}
+								{#if missing}
+									<p class="menu-sec">
+										{t('experience.missingFramesForMove', {
+											move: displayMove(missing.clip, moveRefs),
+											direction: displayDirection(missing.direction)
+										})}
+									</p>
+									{#each missing.items as item (item.id)}
+										{@const saved = m.items.find((i) => i.id === (item.variantOf ?? item.id))}
+										{#if saved}<button
+												class="row bu-action"
+												data-variant="quiet"
+												onclick={() => showMissingItem(saved)}
+												>{item.name}<ChevronRight size={16} aria-hidden="true" /></button
+											>
+										{:else}<p class="menu-sec">{item.name}</p>{/if}
+									{/each}
+								{/if}
+								{#if colorDrift && selectedMove}
+									{@const stateName = displayMove(selectedMove.id, moveRefs)}
+									<p class="menu-sec">{t('stateColors.drift', { name: stateName })}</p>
+									<button
+										class="row bu-action"
+										data-variant="quiet"
+										disabled={matchingColors}
+										onclick={async () => {
+											coveragePopover?.hidePopover();
+											matchingColors = true;
+											try {
+												await matchStateColors(selectedMove.id, stateName);
+											} finally {
+												matchingColors = false;
+											}
+										}}>{t('stateColors.match')}<span class="cost">{t('common.free')}</span></button
+									>
+								{/if}
 							</div>
 						</div>
 					{/if}
@@ -894,17 +933,12 @@
 		{/if}
 		<aside class="equipment-rail" aria-label={t('experience.customization')}>
 			{#if g.sheet}<span class="sheet-handle" aria-hidden="true"></span>{/if}
-			<div
-				class="equipment-modes"
-				role="tablist"
-				aria-label={t('experience.customizationPanels')}
-				{@attach showWorkTabs}
-			>
+			<div class="equipment-modes" role="tablist" aria-label={t('experience.customizationPanels')}>
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
 				{#each tabs as [id, label]}{@const off =
 						(id === 'moves' || id === 'states') && experience.mode !== 'preview'}{@const work =
-						id === 'moves' ? movesWork : id === 'states' ? statesWork : undefined}<button
+						!off && id in tabWork ? tabWork[id as keyof typeof tabWork] : undefined}<button
 						class="bu-action"
 						data-variant="tab"
 						role="tab"
@@ -925,8 +959,8 @@
 					>{/each}
 			</div>
 			<span class="sr" id="moves-tab-note">{displayMessage(movesOff)}</span>
-			<span class="sr" id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
-			<span class="sr" id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
+			<span hidden id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
+			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
 			<PhonePanel />
 		</aside>
 	{/if}

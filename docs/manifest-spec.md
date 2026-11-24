@@ -19,6 +19,8 @@ An item copied from another character is an ordinary item with its own IDs and m
 
 Animation `loop` records playback in exported files. Studio Export honors `moveLoop` when the Add a move sheet saved a Loop setting: Idle, Walk and Run default to looping, and other new moves default to playing once. For other clips, Export applies the global Play animation once defaults, matching exact lowercase animation IDs. Imported metadata does not change global preferences. App previews, live views and sharing always loop. Format, dressed sheets and selected animation names are stored separately in IndexedDB under `studio-export-settings`, owned by `lib/store/export-settings.ts`. Dressed sheets are optional extra PNGs; separate layers and outfit definitions remain included either way.
 
+Animation `itemDrawing` records the Add a move sheet's Items on this move choice: `"anchor"` draws an item's saved standing design onto the move's own frames (`/edit-animation-v2`), `"skeleton"` poses it on a separate body along the move's stored joints (`/animate-with-skeleton-v3`), and `"sheet"` draws every drawn view of the move in one `/edit-images-v2` sheet (a row per view: the view's standing design, then its frames cut to one crop window), reviewed before it is saved. When it is absent, Settings > Creation > Moves decides (default `"skeleton"`). The sheet applies only to worn or rigid items with a standing design in every drawn view, on 80-128 px rigs without diagonal views, when the sheet fits 512 px; otherwise held items are posed and other items are drawn on the move's frames. Items made by frame editing are always drawn on the move's frames (or the sheet), and an item that cannot be (no standing design for the view, another body, or a held layer padded beyond the frame) is posed. It is a Studio choice for future item requests only: it changes no artwork, and exports and runtimes ignore it.
+
 ---
 
 ## 1. Conventions
@@ -127,6 +129,7 @@ export interface Clip {
   cells: number; // stored poses per direction = sheet columns
   loop: boolean; // serialized playback metadata resolved at export
   moveLoop?: boolean; // per-move export choice; otherwise use global defaults
+  itemDrawing?: "anchor" | "skeleton" | "sheet"; // Studio only: how items are later drawn on this move; otherwise Settings decides
   frames: { cell: number; ms: number }[]; // playlist; cells may repeat (holds, ping-pong)
   sources: Partial<Record<DirectionName, ClipSource>>; // generated directions only (mirrors derive)
 }

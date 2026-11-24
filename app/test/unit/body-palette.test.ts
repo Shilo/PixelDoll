@@ -1,5 +1,9 @@
 import { expect, test } from 'vitest';
-import { PaletteRepairUnavailable, repairBodyPalette } from '../../src/lib/rig/palette.ts';
+import {
+	PaletteRepairUnavailable,
+	repairBodyPalette,
+	bodyColorSnapper
+} from '../../src/lib/rig/palette.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 const frame = (rgb: number[], count = 20) => {
 	const im = makeImg(count, 1);
@@ -131,4 +135,21 @@ test('missing reference or incompatible frame geometry is rejected', () => {
 	expect(() => repairBodyPalette(frame([0, 0, 0]), [makeImg(2, 2)])).not.toThrow(
 		PaletteRepairUnavailable
 	);
+});
+
+test('a State takes the nearest same-family body color and keeps new detail as drawn', () => {
+	const body = frame([249, 193, 173], 3); // skin
+	body.data.set([200, 150, 130, 255], 4); // a second, less used skin shade
+	body.data.set([24, 16, 12, 255], 8);
+	const drawn = makeImg(4, 1);
+	drawn.data.set([240, 180, 160, 255], 0); // skin drifted up to 13/255: snapped
+	drawn.data.set([225, 172, 152, 255], 4); // 24/255 away: still the same skin
+	drawn.data.set([230, 190, 40, 255], 8); // a gold hilt: kept
+	drawn.data.set([1, 2, 3, 0], 12); // transparent: untouched
+	const before = structuredClone(drawn);
+	const out = bodyColorSnapper([body])(drawn);
+	expect([...out.data]).toEqual([
+		249, 193, 173, 255, 249, 193, 173, 255, 230, 190, 40, 255, 1, 2, 3, 0
+	]);
+	expect(drawn).toEqual(before);
 });

@@ -54,6 +54,16 @@
 		"scopeDebug": "Sauvegarder les personnages, illustrations, données archivées et détails de débogage.",
 		"debugNotSaved": "Le navigateur n’a pas pu enregistrer ce réglage.",
 		"backup": "Sauvegarder la bibliothèque",
+		"originals": "Télécharger les générations d’origine",
+		"originalsHint": "Les images brutes renvoyées par PixelLab pour les personnages enregistrés, avant leur traitement par PixelDoll, avec les requêtes qui les ont achetées. Seules les requêtes encore conservées sur cet appareil sont incluses.",
+		"originalsName": "générations d’origine",
+		"originalsNone": "Aucune image d’origine n’est conservée pour vos personnages enregistrés.",
+		"originalsPartial": {
+			"one": "Les originales ne sont plus conservées pour {count} personnage.",
+			"other": "Les originales ne sont plus conservées pour {count} personnages."
+		},
+		"originalsStarted": "Le téléchargement des générations d’origine a commencé.",
+		"originalsTooLarge": "Les générations d’origine sont trop volumineuses pour être téléchargées en une fois.",
 		"restoreFromBackup": "Restaurer depuis une sauvegarde",
 		"review": "Vérifier la sauvegarde",
 		"add": "Personnages à ajouter",
@@ -127,7 +137,14 @@
 		"saveFailed": "Impossible d’enregistrer ce choix. Réessayez.",
 		"incompatible": "Choisissez Automatique ou un nombre d’images compatible avec le nouveau modèle.",
 		"framesHelp": "Le nombre d’images disponible dépend de la taille du canevas du personnage.",
-		"methodHelp": "Utilise {pose} si possible. Sinon, utilise {edit}."
+		"methodHelp": "Utilise {pose} si possible. Sinon, utilise {edit}.",
+		"itemDrawing": "Objets dans les animations",
+		"itemDrawingHelp": "Dessiner sur les images de l’animation ajuste les objets à son propre dessin. Poser un corps séparé anime les objets à part, ils peuvent donc se décaler de quelques pixels. Dessiner toutes les vues d’un coup coûte plus que poser un corps et moins que dessiner sur les images, et vous vérifiez le résultat avant son enregistrement. Cela convient aux objets portés sur des personnages à quatre directions de 80 à 128 px ; les autres objets sont dessinés sur les images, et les objets tenus sont posés.",
+		"itemDrawings": {
+			"anchor": "Dessiner sur les images",
+			"skeleton": "Poser un corps séparé",
+			"sheet": "Dessiner toutes les vues d’un coup"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Lire l’aperçu de la monture",
@@ -717,7 +734,7 @@
 		"missingFrames": "{names} : images manquantes pour {move}",
 		"missingFrameViews": "{names} : images manquantes pour {move} (direction : {direction})",
 		"making": "Création…",
-		"makeIt": "Générer les images",
+		"makeMissingViews": "Générer les vues manquantes",
 		"estimate": {
 			"one": "~{n} génération",
 			"other": "~{n} générations"
@@ -885,7 +902,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture suit la pose du cavalier des réglages de la monture.",
-		"movesOffWalking": "Choisissez les animations dans « Aperçu ». Ici, le personnage joue l’animation d’attente à l’arrêt et celle de marche quand il se déplace.",
+		"movesOffWalking": "Choisissez les animations dans « Aperçu ». Ici, les réglages des vues en direct choisissent ce qui est joué.",
 		"tabWardrobe": "Garde-robe",
 		"tabColors": "Couleurs",
 		"tabOutfits": "Tenues",
@@ -898,6 +915,10 @@
 			"other": "{n} objets portés ont besoin d’images"
 		},
 		"missingFramesForMove": "Images manquantes pour {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problème",
+			"other": "{n} problèmes"
+		},
 		"workspaceCopyPixelLabOff": "Copie de l’espace de travail · PixelLab désactivé",
 		"characterSelectionWASDOrArrowsSelectEnter": "Sélection du personnage. WASD ou les flèches pour choisir ; Entrée pour personnaliser ; plus et moins pour zoomer.",
 		"previousCharacter": "Personnage précédent",
@@ -914,20 +935,21 @@
 		"inspect": "Inspecter",
 		"customization": "Personnalisation",
 		"customizationPanels": "Panneaux de personnalisation",
-		"tabWorkRunning": "Un travail est en cours ici",
+		"tabWorkRunning": "Un travail ici est en cours, en attente ou prêt à être vérifié",
 		"tabWorkAttention": "Un travail ici demande votre attention"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} utilise déjà les couleurs du corps.",
+		"drift": "{name} ne suit pas les couleurs du corps",
+		"match": "Harmoniser les couleurs",
+		"matched": "{name} utilise maintenant les couleurs du corps."
 	},
 	"worldStage": {
 		"groundUnavailable": "Le rendu du sol en temps réel est indisponible. La scène statique est affichée.",
 		"materialUnavailable": "Le matériau du sol est indisponible. La scène statique est affichée.",
 		"sceneUnavailable": "La scène en direct est indisponible. Rechargez la page pour réessayer.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Aperçu du personnage. WASD ou les flèches changent l’orientation. Les touches 1, 2, 3 changent de vue.",
-		"sideScrollerTestWorldADLeft": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite ou un glissement horizontal pour se déplacer. Les touches 1, 2, 3 changent de vue.",
-		"characterTestWorldWASDArrowsOrDrag": "Monde de test du personnage. WASD, les flèches ou un glissement pour se déplacer. Les touches 1, 2, 3 changent de vue.",
 		"loadingCharacter": "Chargement du personnage…",
-		"dragInTheWorldToMove": "Faites glisser le pointeur dans la scène pour vous déplacer",
-		"focusWorldADOrToMove": "Sélectionnez la scène · A/D ou ←/→ pour vous déplacer",
-		"focusWorldWASDOrArrowKeysTo": "Sélectionnez la scène · WASD ou les flèches pour vous déplacer",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} objet masqué : images manquantes pour {move}",
@@ -1352,6 +1374,7 @@
 		"drop": "Déposez un ZIP de personnage ici",
 		"dropNote": "Personnage PixelLab ou export PixelDoll · jusqu’à 64 Mo",
 		"chooseZip": "Choisir un ZIP",
+		"chooseAnother": "Choisir un autre ZIP",
 		"characterZip": "ZIP de personnage",
 		"devicePrivacy": "Vos fichiers restent sur cet appareil. Prévisualisez votre personnage avant de l’importer.",
 		"pixelLabHint": "Dans le créateur de personnages de PixelLab, exportez un ZIP avec des images individuelles. Les images peuvent être regroupées dans des dossiers. Les autres dispositions de feuilles de sprites et les ZIP contenant uniquement des PNG ne sont pas pris en charge.",
@@ -1479,8 +1502,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Activité de l’espace de travail",
-		"activityIntro": "Cette activité a été enregistrée avec l’espace de travail dans PixelDoll {build}. Les tâches du ZIP ne redémarrent pas.",
+		"activityTitle": "Détails de la sauvegarde",
+		"activityIntro": "Ouverte depuis une sauvegarde faite avec PixelDoll {build}.",
 		"missing": {
 			"one": "{count} fichier de visuel était manquant ou illisible.",
 			"other": "{count} fichiers de visuels étaient manquants ou illisibles."
@@ -1488,29 +1511,11 @@
 		"skippedCharacters": {
 			"one": "Personnages enregistrés ignorés : {count}.",
 			"other": "Personnages enregistrés ignorés : {count}."
-		},
-		"demoOutfit": "La démo utilise ses réglages de tenue par défaut.",
-		"exportSettings": "La copie utilise les réglages d’export par défaut.",
-		"tier": "Niveau du forfait PixelLab : {tier}",
-		"noErrors": "Aucune erreur récente ni tâche inachevée n’a été enregistrée.",
-		"noRecent": "Les erreurs récentes n’ont pas été incluses.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Code {code}",
-		"error": {
-			"tooLarge": "Cet espace de travail dépasse la taille maximale du ZIP ou la limite de visuels. Utilisez plutôt des ZIP de personnages individuels.",
-			"containsKey": "Un champ enregistré contient la clé PixelLab utilisée pour la connexion ou mémorisée sur cet appareil. Supprimez-la de l’espace de travail avant d’exporter.",
-			"invalidIndex": "L’index de cet espace de travail est invalide.",
-			"unsupportedVersion": "Cette version de fichier d’espace de travail n’est pas prise en charge.",
-			"duplicateRecord": "Cet espace de travail contient un enregistrement non pris en charge ou en double.",
-			"missingFiles": "Cet espace de travail a une liste de fichiers manquants invalide.",
-			"unexpectedFile": "Cet espace de travail contient un fichier inattendu.",
-			"invalidDiagnostics": "Cet espace de travail contient des erreurs récentes invalides."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Choisissez une sauvegarde PixelDoll ou un ZIP d’espace de travail, pas un ZIP de personnage.",
+			"notBackup": "Choisissez une sauvegarde PixelDoll, pas un ZIP de personnage.",
 			"unsupportedVersion": "Cette version du fichier de sauvegarde n’est pas prise en charge.",
 			"invalid": "Cette sauvegarde est endommagée ou non valide.",
 			"tooLarge": "Cette sauvegarde dépasse la taille maximale du ZIP ou la limite de visuels. Utilisez plutôt des ZIP de personnages individuels.",
@@ -1604,6 +1609,7 @@
 			"facing": "Certaines images ressemblent à la vue opposée ; inspectez le torse",
 			"detail": "Un détail du design est absent ou recoloré sur certaines images",
 			"motion": "Vérifiez la taille et l’angle de l’objet pendant le mouvement",
+			"fill": "L’objet est creux sur certaines images, seul son contour reste ; vérifiez sa forme",
 			"lowerClothing": "Une partie des vêtements du bas manque par rapport à la pose debout",
 			"footwear": "Les chaussures diffèrent de celles de la pose debout ; vérifiez les pieds",
 			"bodyPixels": "Certains pixels du corps ont été modifiés par le modèle",
@@ -1947,7 +1953,9 @@
 			"conceptNote": "L’illustration importée passe en premier, avant les images du personnage. Son résultat n’est pas utilisé.",
 			"redrawEquipment": "{item} {direction} · redessiner l’équipement",
 			"redrawEquipmentNote": "{width}×{height}, images {from}–{to}. Envoie une feuille sans masque avec une référence correspondante. PixelDoll limite ce qu’il conserve et demande toujours avant de remplacer vos images. PixelDoll nécessite le Tier 1. Si la facturation est en dollars, le minimum est de {minimum} ; le montant réel peut être plus élevé.",
-			"gridRepairNote": "{width}×{height}, images {from}–{to}. Utilise une référence protégée de la direction correspondante. Le corps reste inchangé. Les réparations complètes comportant des problèmes visuels bloquants sont gardées pour votre vérification."
+			"gridRepairNote": "{width}×{height}, images {from}–{to}. Utilise une référence protégée de la direction correspondante. Le corps reste inchangé. Les réparations complètes comportant des problèmes visuels bloquants sont gardées pour votre vérification.",
+			"itemSheet": "{item} : {directions}, une feuille",
+			"itemSheetNote": "{width}×{height} : une ligne par vue, d’abord son design debout, puis {frames} images de l’animation, chacune découpée à {cellWidth}×{cellHeight} px. Le corps reste inchangé. PixelDoll demande avant d’enregistrer, ne conserve que les vues qui passent leurs contrôles et liste les autres. PixelDoll nécessite le Tier 1. Une seule tentative ; toute nouvelle tentative payante nécessite votre action."
 		},
 		"copyEndpointTitle": "Copier le point d’accès",
 		"manualCopyLabel": "Point d’accès à copier manuellement",
@@ -2059,7 +2067,11 @@
 		"stopNoAnswer": "L’onglet qui exécute cette tâche n’a pas encore confirmé l’arrêt. Consultez l’Activité dans un instant ; si elle tourne encore, arrêtez-la depuis cet onglet.",
 		"stopNotConfirmed": "PixelLab n’a pas confirmé l’arrêt : la tâche peut encore s’exécuter et être facturée. Consultez l’Activité.",
 		"pausedStorage": "Les tâches enregistrées n’ont pas pu être lues ni enregistrées, donc rien de nouveau n’est envoyé. Reprenez pour réessayer.",
-		"cancelSaveFailed": "L’annulation n’a pas pu être enregistrée. Cet onglet n’enverra pas la requête, mais un autre onglet ou un rechargement pourrait l’envoyer."
+		"cancelSaveFailed": "L’annulation n’a pas pu être enregistrée. Cet onglet n’enverra pas la requête, mais un autre onglet ou un rechargement pourrait l’envoyer.",
+		"titleItemViews": {
+			"one": "{item} : {move}, {count} vue",
+			"other": "{item} : {move}, {count} vues"
+		}
 	},
 	"genCard": {
 		"retryKey": "La nouvelle tentative utilise un fond {color}, choisi d’après les couleurs de ce visuel",
@@ -2720,6 +2732,8 @@
 		"motionOnly": "Décrivez uniquement le mouvement du corps. Ajoutez les armes et accessoires comme objets.",
 		"motionModel": "Modèle de mouvement",
 		"motionModelHelp": "Skeleton v3 utilise les mêmes poses pour le corps et l’équipement. V3 et PixMiniMax dessinent d’abord le corps, puis PixelDoll détecte les poses pour l’équipement.",
+		"itemDrawing": "Objets de cette animation",
+		"itemDrawingDefault": "Par défaut ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
@@ -2776,7 +2790,11 @@
 			"repairNote": "Le corps reste inchangé. Si une réparation terminée présente des défauts visuels, elle attendra votre vérification.",
 			"currentFrame": "Image actuelle {number}",
 			"redrawnFrame": "Image redessinée {number}",
-			"repairedFrame": "Image réparée {number}"
+			"repairedFrame": "Image réparée {number}",
+			"skippedViews": "Non conservé : {views}. PixelLab n’y a pas dessiné l’objet, il y manque donc encore. Vous pouvez redessiner uniquement ces vues.",
+			"viewFrame": "{view}, image {number}",
+			"keepFailedViews": "Conserver aussi {views}, qui n’ont pas passé leurs contrôles",
+			"chooseViews": "Choisissez les vues à conserver avant d’enregistrer."
 		}
 	},
 	"itemRoute": {
@@ -2810,7 +2828,9 @@
 			"itemMoveSaveConflictAlso": "Ce personnage ou cet objet a changé pendant la génération de ses images. Les images existantes ont été conservées ; les images terminées restent dans Activité. Une autre vue s’est aussi arrêtée : {reason}",
 			"keepWithoutStanding": "Il manque des images à cet objet dans l’animation dont il est conçu, il ne peut donc pas être gardé sans elle. Affichez cette animation et utilisez Réparer l’objet ou Redessiner l’objet s’ils sont proposés, ou recréez l’objet.",
 			"keepWithoutNothingLeft": "Cet objet n’a aucune animation complète à garder. Créez plutôt les images manquantes.",
-			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage."
+			"savedFrameMissing": "Une image enregistrée de cet objet est introuvable dans le stockage.",
+			"itemSheetChanged": "Cet objet ou cette animation a changé depuis le calcul du prix de sa feuille. Rouvrez l’objet pour le vérifier à nouveau. Aucune génération n’a été demandée.",
+			"itemSheetNoView": "PixelLab n’a dessiné l’objet dans aucune vue, rien n’a donc été conservé. La feuille reste dans Activité."
 		}
 	},
 	"newItem": {
@@ -3409,8 +3429,29 @@
 		"generateFor": "Générer pour {move}",
 		"wearOn": "Porter dans {move}"
 	},
+	"itemImport": {
+		"title": "Importer des objets",
+		"intro": "Le ZIP d’un personnage, une sauvegarde ou un personnage partagé. Gratuit si ses objets conviennent à ce personnage.",
+		"empty": "Ce ZIP ne contient aucun objet terminé.",
+		"skipped": {
+			"one": "{count} objet n’a pas pu être lu.",
+			"other": "{count} objets n’ont pas pu être lus."
+		},
+		"notFitted": "{names} ne convient plus et n’a pas été ajouté.",
+		"busy": "Attendez que l’objet soit ajouté, puis réessayez.",
+		"row": {
+			"copy": "Convient exactement à ce personnage",
+			"refit": "Ajusté gratuitement à ce corps. Vérifiez ses images après l’import.",
+			"unfitted": "Créé pour un autre corps. Porté tel quel, il peut flotter ou déborder.",
+			"remake": "Créé pour un autre corps, il ne peut donc pas être porté ici"
+		}
+	},
+	"importDrop": {
+		"items": "Déposez pour importer des objets",
+		"moves": "Déposez pour importer des animations",
+		"states": "Déposez pour importer des états"
+	},
 	"moveImport": {
-		"title": "Importer des animations",
 		"importMoves": "Importer des animations",
 		"importStates": "Importer des états",
 		"dropArea": "Zone de dépôt du ZIP PixelDoll",
@@ -3451,5 +3492,34 @@
 			"resolveDrafts": "Gardez ou ignorez les brouillons d’objets de ce personnage avant d’importer des mouvements.",
 			"changed": "Ce personnage a changé. Choisissez à nouveau le ZIP pour vérifier la dernière version."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Automatique : immobile",
+		"controls": "Commandes",
+		"title": "Vues en direct",
+		"forCharacter": "Animations que {name} joue en Vue de dessus et en Défilement horizontal.",
+		"idle": "Repos",
+		"walk": "Marche",
+		"attack": "Attaque",
+		"jump": "Saut",
+		"attackUp": "Attaque vers le haut",
+		"attackDown": "Attaque vers le bas",
+		"automaticClip": "Automatique : {clip}",
+		"automaticNone": "Automatique : aucune",
+		"sameAsAttack": "Comme Attaque",
+		"sideAttackHelp": "En Défilement horizontal, Attaque vers le haut ou vers le bas est jouée quand vous visez dans cette direction.",
+		"notSaved": "Le réglage des vues en direct a changé, mais ce navigateur n’a pas pu l’enregistrer.",
+		"openCharacter": "Ouvrez un personnage pour choisir ses animations.",
+		"mount": "Monture",
+		"actions": "Actions de jeu",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Espace",
+		"noAttack": "Rien n’est encore associé à Attaque. Choisissez une animation ou un état dans les réglages des vues en direct.",
+		"noAttackDirection": "{move} n’a pas d’images vers {direction}, il ne peut donc pas attaquer dans cette direction.",
+		"hintTopDown": "WASD ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
+		"hintSide": "A/D ou clic pour se déplacer · Clic droit ou X pour attaquer · Espace pour sauter · M pour monter ou descendre",
+		"hintTouch": "Le côté gauche déplace · Le côté droit vise, relâchez pour attaquer · Les boutons sautent et montent",
+		"stageTopDown": "Monde de test du personnage. WASD, les flèches, un clic ou un glissement pour se déplacer. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue.",
+		"stageSide": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite, un clic ou un glissement pour se déplacer. Clic droit ou X attaque, Espace saute, M monte ou descend. Les touches 1, 2, 3 changent de vue."
 	}
 }

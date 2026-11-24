@@ -183,6 +183,7 @@ export interface QaSummary {
 	heldLoopReviewClips?: number; // held items with a shape or angle jump at the playback seam
 	heldHangReviewClips?: number; // held clips excused from G9 because the item hangs below the hand (review note)
 	motionReviewClips?: number; // observable item changes needing review when motion overrides a gait label
+	fillReviewClips?: number; // G17: held or rigid clips with posed frames that lost the design's solid fill (outline only)
 	grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
 	strayPx?: number; // extraction/cleanup removals, including permission clipping; not a semantic artifact count
 	status: 'pass' | 'warn' | 'fail' | 'accepted';
@@ -334,6 +335,8 @@ export interface ClipSource {
 	provenance: number[]; // indexes into the base item's provenance
 }
 
+export type ItemDrawing = 'anchor' | 'skeleton' | 'sheet';
+
 export interface RigAnimation {
 	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
@@ -349,6 +352,10 @@ export interface RigAnimation {
 	loop: boolean;
 	/** Explicit Add a move choice; omitted when global Export preferences supply the default. */
 	moveLoop?: boolean;
+	/** Explicit Add a move choice of how items are drawn on this move: on its own frames ('anchor'), posed as a separate
+	 *  body ('skeleton') or on every view's frames in one reviewed sheet ('sheet'); omitted when Settings > Creation supplies
+	 *  the default. */
+	itemDrawing?: ItemDrawing;
 	frames: { cell: number; ms: number }[];
 	source?: {
 		endpoint: string;

@@ -125,3 +125,12 @@ test('camera-only placement reuses prepared pixels and reflects without horizont
 		vi.unstubAllGlobals();
 	}
 });
+
+test('a jump keeps the floor line and mirrors its lift below it', () => {
+	const grounded = reflectionPlacement({ x: 0, y: 40, scale: 2, groundRow: 8 }, 8, 0.3);
+	// Drawn 12 px higher, the actor's floor is unchanged and its mirror image drops by the lift, compressed.
+	const lifted = reflectionPlacement({ x: 0, y: 28, scale: 2, groundRow: 8, lift: 12 }, 8, 0.3);
+	expect(lifted.floor).toBe(grounded.floor);
+	expect(lifted.top).toBeCloseTo(grounded.top + 12 * 0.3);
+	expect(lifted.height).toBe(grounded.height);
+});

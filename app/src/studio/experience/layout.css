@@ -524,15 +524,17 @@
 		font-size: clamp(12px, 4cqi, 15px);
 	}
 }
-/* Work running on a Moves or States tab: a dot after its label, like the one on More; red when it stopped. */
+/* Work on a Wardrobe, Moves or States tab: a 6px dot 4px after its label (the flex label sets the gap and centers it),
+   like the one on More; red when some of it failed. */
+.equipment-modes button[data-activity] .bu-tab-label {
+	column-gap: 4px;
+}
 .equipment-modes button[data-activity] .bu-tab-label::after {
 	content: '';
-	display: inline-block;
+	flex: none;
 	width: 6px;
 	height: 6px;
-	margin-inline-start: 4px;
 	border-radius: 50%;
-	vertical-align: super;
 	background: var(--bu-accent);
 }
 .equipment-modes button[data-activity='stopped'] .bu-tab-label::after {

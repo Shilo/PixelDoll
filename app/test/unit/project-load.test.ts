@@ -427,7 +427,6 @@ describe('saved data from earlier versions', () => {
 			return {
 				projects: kept,
 				blobs: new Map(blobs.filter(([hash]) => wanted.has(hash))),
-				jobs: [],
 				retainedIds: []
 			};
 		});
@@ -501,7 +500,7 @@ describe('saved data from earlier versions', () => {
 		const key = '9f8e7d6c-5b4a-4321-8fed-0fedcba98765';
 		snapshot([['rig-old', { ...character, note: key }]]);
 		await expect(packIncompatible([key])).rejects.toMatchObject({
-			translation: { key: 'workspace.error.containsKey' }
+			translation: { key: 'backup.error.containsKey' }
 		});
 	});
 

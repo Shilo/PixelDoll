@@ -206,6 +206,7 @@ export interface QaSummary {
 	heldLoopReviewClips?: number; // held items with a shape or angle jump at the playback seam
 	heldHangReviewClips?: number; // held clips excused from G9 because the item hangs below the hand (review note)
 	motionReviewClips?: number; // observable item changes needing review when motion overrides a gait label
+	fillReviewClips?: number; // G17: held or rigid clips with posed frames that lost the design's solid fill (outline only)
 	grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
 	strayPx?: number; // extraction/cleanup removals, including permission clipping; not a semantic artifact count
 	status: 'pass' | 'warn' | 'fail' | 'accepted';

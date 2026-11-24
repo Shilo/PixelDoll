@@ -2837,9 +2837,8 @@ test.describe('two-finger equipment input', () => {
 	});
 });
 
-// Desktop drives the stick with a mouse; the others use real touch through CDP. Sizes mirror MOTION.joystick.
+// Real touch through CDP; a mouse walks to a clicked point instead (live views mouse test). Sizes mirror MOTION.joystick.
 for (const screen of [
-	{ name: 'desktop', width: 1920, height: 1080, touch: false, theme: 'dark' },
 	{ name: 'tablet portrait', width: 820, height: 1180, touch: true, theme: 'light' },
 	{ name: 'phone portrait', width: 390, height: 844, touch: true, theme: 'dark' },
 	{ name: 'phone landscape', width: 844, height: 390, touch: true, theme: 'light' },
@@ -2872,14 +2871,14 @@ for (const screen of [
 				expect(Math.abs(actual - expected)).toBeLessThan(1);
 			const position = () =>
 				world(page).evaluate((element) => element.dataset.position!.split(',').map(Number));
-			// A blank world point with room for the whole base, nearest the stage center.
+			// A blank world point with room for the whole base on the moving (left) half, nearest the stage center.
 			const blank = () =>
 				page.evaluate(
 					(inset) => {
 						const r = document.querySelector('.world-stage')!.getBoundingClientRect();
 						const points: { x: number; y: number }[] = [];
 						for (let y = r.top + inset; y <= r.bottom - inset; y += 8)
-							for (let x = r.left + inset; x <= r.right - inset; x += 8) points.push({ x, y });
+							for (let x = r.left + inset; x < innerWidth / 2; x += 8) points.push({ x, y });
 						const center = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 						points.sort(
 							(a, b) =>
@@ -2920,19 +2919,12 @@ for (const screen of [
 						accent
 					};
 				});
-			const cdp = screen.touch ? await context.newCDPSession(page) : null;
-			const press = async (type: 'down' | 'move' | 'up', x = 0, y = 0) => {
-				if (cdp)
-					await cdp.send('Input.dispatchTouchEvent', {
-						type: type === 'down' ? 'touchStart' : type === 'move' ? 'touchMove' : 'touchEnd',
-						touchPoints: type === 'up' ? [] : [{ x, y, id: 1 }]
-					});
-				else if (type === 'down') {
-					await page.mouse.move(x, y);
-					await page.mouse.down();
-				} else if (type === 'move') await page.mouse.move(x, y, { steps: 4 });
-				else await page.mouse.up();
-			};
+			const cdp = await context.newCDPSession(page);
+			const press = (type: 'down' | 'move' | 'up', x = 0, y = 0) =>
+				cdp.send('Input.dispatchTouchEvent', {
+					type: type === 'down' ? 'touchStart' : type === 'move' ? 'touchMove' : 'touchEnd',
+					touchPoints: type === 'up' ? [] : [{ x, y, id: 1 }]
+				});
 			let pressed = false;
 			try {
 				for (const view of ['Top-down', 'Side-scroller'] as const) {
@@ -3001,7 +2993,7 @@ for (const screen of [
 				}
 			} finally {
 				if (pressed) await press('up');
-				await cdp?.detach();
+				await cdp.detach();
 			}
 		});
 	});
@@ -4086,5 +4078,314 @@ test.describe('Preview facing lineup', () => {
 			if (capacity > 1) expect(counts.get('1920×1080')).toBeGreaterThan(1);
 			const widths = ['3440×1440', '2560×1440', '1920×1080', '1366×768'].map((k) => counts.get(k)!);
 			for (let i = 1; i < widths.length; i++) expect(widths[i]).toBeLessThanOrEqual(widths[i - 1]);
+		});
+});
+
+test.describe('live views actions', () => {
+	// Every stage state the scene shows, recorded as it changes: a jump or an attack is over in well under a second.
+	const record = (page: Page) =>
+		world(page).evaluate((host) => {
+			const shown: { clip: string; facing: string; jump: number }[] = [];
+			(window as unknown as { shown: typeof shown }).shown = shown;
+			new MutationObserver(() =>
+				shown.push({
+					clip: host.dataset.clip ?? '',
+					facing: host.dataset.facing ?? '',
+					jump: Number(host.dataset.jump || 0)
+				})
+			).observe(host, { attributes: true });
+		});
+	const shown = (page: Page) =>
+		page.evaluate(
+			() => (window as unknown as { shown: { clip: string; facing: string; jump: number }[] }).shown
+		);
+	const jumped = async (page: Page, jump: () => Promise<void>) => {
+		await record(page);
+		await jump();
+		await expect
+			.poll(async () => Math.max(...(await shown(page)).map((s) => s.jump)))
+			.toBeGreaterThan(0.2);
+		await expect(world(page)).toHaveAttribute('data-jump', '0.000');
+	};
+	const attacked = async (page: Page, facing: string, attack: () => Promise<void>) => {
+		await record(page);
+		await attack();
+		await expect(world(page)).toHaveAttribute('data-attack', `cross-punch ${facing}`);
+		await expect
+			.poll(async () =>
+				(await shown(page)).some((s) => s.clip === 'cross-punch' && s.facing === facing)
+			)
+			.toBe(true);
+	};
+
+	test('keys and a mouse jump, mount, attack and walk to a clicked point, and game buttons never take focus', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await customize(page);
+		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
+		const host = world(page);
+		await expect(host).toBeFocused();
+		await expect(page.locator('.world-hint')).toHaveText(
+			'WASD or click to move · Right-click or X to attack · Space to jump · M to mount'
+		);
+		const bar = page.getByRole('group', { name: 'Game actions', exact: true });
+		const jump = bar.getByRole('button', { name: 'Jump', exact: true });
+		const mount = bar.getByRole('button', { name: 'Mount', exact: true });
+		await expect(jump).toHaveAttribute('aria-keyshortcuts', 'Space');
+		await expect(jump).toHaveAttribute('title', 'Jump (Space)');
+		await expect(jump).toHaveAttribute('tabindex', '-1');
+		await jumped(page, () => page.keyboard.press('Space'));
+		await jumped(page, () => jump.click());
+		await expect(host).toBeFocused();
+		// M and the Mount button toggle the same mount; the stage keeps the keyboard.
+		await expect(mount).toHaveAttribute('aria-pressed', 'false');
+		await page.keyboard.press('m');
+		await expect(mount).toHaveAttribute('aria-pressed', 'true');
+		await expect(host).toHaveAttribute('data-mount', /\S/);
+		await mount.click();
+		await expect(mount).toHaveAttribute('aria-pressed', 'false');
+		await expect(host).not.toHaveAttribute('data-mount');
+		await expect(host).toBeFocused();
+		// X attacks once along the facing; Automatic plays the demo's Cross punch.
+		await attacked(page, 'south', () => page.keyboard.press('x'));
+		await expect(host).not.toHaveAttribute('data-clip', 'cross-punch');
+		// A left click walks to the floor point and stops there.
+		const [ax, ay] = (await host.getAttribute('data-scene-anchor'))!.split(',').map(Number);
+		await page.mouse.click(ax + 240, ay - 20);
+		await expect(host).toHaveAttribute('data-destination', /\S/);
+		await expect
+			.poll(async () => Number((await host.getAttribute('data-position'))!.split(',')[0]))
+			.toBeGreaterThan(20);
+		await expect(host).toHaveAttribute('data-destination', '', { timeout: 10_000 });
+		// A right click attacks toward the cursor, not the facing, and opens no menu. The walk faced east.
+		await page.evaluate(() =>
+			addEventListener('contextmenu', (e) =>
+				document.body.setAttribute('data-menu', String(e.defaultPrevented))
+			)
+		);
+		// The open stage well west of the body (side panels cover the window's edges).
+		const west = await page.evaluate(
+			([x, y]) => {
+				for (let at = x - 400; at < x - 150; at += 10)
+					if (document.elementFromPoint(at, y)?.classList.contains('world-input')) return at;
+				return null;
+			},
+			[ax, ay - 300]
+		);
+		expect(west, 'open stage west of the character').not.toBeNull();
+		await page.mouse.click(west!, ay - 300, { button: 'right' });
+		await expect(page.locator('body'), 'the stage right press opens no menu').toHaveAttribute(
+			'data-menu',
+			'true'
+		);
+		// Above and west of the body: no south art within 90°, and never the walk's east facing.
+		await expect(host).toHaveAttribute('data-attack', /^missing (west|north-west)$/);
+		// Chorded buttons: walking to a left-press point continues while the right button aims and attacks.
+		await page.mouse.move(ax + 300, ay - 20);
+		await page.mouse.down();
+		await expect(host).toHaveAttribute('data-destination', /\S/);
+		const target = (await host.getAttribute('data-destination'))!;
+		await page.mouse.down({ button: 'right' });
+		await page.mouse.move(ax - 200, ay - 150, { steps: 3 });
+		// The right-held cursor only aims: the walk keeps its point, or has already reached it.
+		const [now, at] = await host.evaluate((element) => [
+			element.dataset.destination!,
+			Number(element.dataset.position!.split(',')[0])
+		]);
+		if (now) expect(now).toBe(target);
+		else expect(Math.abs((at as number) - Number(target.split(',')[0]))).toBeLessThan(0.5);
+		await page.mouse.up({ button: 'right' });
+		await page.mouse.up();
+		// A keyboard-opened menu (button 0) stays native.
+		expect(
+			await page.evaluate(() => {
+				const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+				document.querySelector('.world-input')!.dispatchEvent(event);
+				return event.defaultPrevented;
+			}),
+			'a keyboard menu stays native'
+		).toBe(false);
+	});
+
+	test('Live views settings save the clip each action plays per character', async ({ page }) => {
+		await customize(page);
+		await page.keyboard.press('Control+,');
+		const settings = page.getByRole('dialog', { name: 'Settings' });
+		const open = () => settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		await open();
+		const attack = settings.getByRole('button', { name: /^Attack: / });
+		await expect(attack).toHaveAccessibleName('Attack: Automatic: Cross punch');
+		await attack.click();
+		await page.getByRole('menuitemradio', { name: 'Walk', exact: true }).click();
+		await expect(attack).toHaveAccessibleName('Attack: Walk');
+		expect(
+			await page.evaluate(() => JSON.parse(localStorage.getItem('pixeldoll.liveViews')!))
+		).toEqual({ roles: { 'fixture:s2': { attack: 'walk' } } });
+		await page.reload();
+		await page.locator('.customize-action').click();
+		await page.keyboard.press('Control+,');
+		await open();
+		await expect(attack).toHaveAccessibleName('Attack: Walk');
+	});
+
+	test.describe('on touch', () => {
+		test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+		test('the right half aims and attacks on release, and the thumb Jump button jumps', async ({
+			page,
+			context
+		}) => {
+			await customize(page);
+			await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
+			const host = world(page);
+			const jump = page
+				.getByRole('group', { name: 'Game actions', exact: true })
+				.getByRole('button', { name: 'Jump', exact: true });
+			await jumped(page, () => jump.tap());
+			// An open world point on the aiming half.
+			const point = await page.evaluate(() => {
+				for (let y = innerHeight * 0.6; y > 40; y -= 8)
+					for (let x = innerWidth * 0.55; x < innerWidth * 0.8; x += 8)
+						if (document.elementFromPoint(x, y)?.classList.contains('world-input'))
+							return { x: Math.round(x), y: Math.round(y) };
+				return null;
+			});
+			expect(point, 'an open point on the right half').toBeTruthy();
+			const cdp = await context.newCDPSession(page);
+			const box = (await host.boundingBox())!;
+			const move = { x: Math.round(box.x + 12), y: point!.y, id: 1 };
+			const aim = (y = 0) => ({ x: point!.x, y: point!.y + y, id: 2 });
+			const touch = (
+				type: 'touchStart' | 'touchMove' | 'touchEnd',
+				points: { x: number; y: number; id: number }[]
+			) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+			const x = async () => Number((await host.getAttribute('data-position'))!.split(',')[0]);
+			try {
+				// Hold the left stick to walk, then aim with a second finger on the right half: both sticks stay.
+				await touch('touchStart', [move]);
+				await touch('touchMove', [{ ...move, x: move.x + 42 }]);
+				await expect.poll(x).toBeGreaterThan(2);
+				await touch('touchStart', [{ ...move, x: move.x + 42 }, aim()]);
+				await expect(page.locator('.world-aim')).toBeVisible();
+				await expect(page.locator('.world-stick:not(.world-aim)')).toBeVisible();
+				await touch('touchMove', [{ ...move, x: move.x + 42 }, aim(15)]);
+				// Released aimed down: the demo's south punch, while the walk goes on.
+				const walked = await x();
+				await attacked(page, 'south', async () => {
+					await touch('touchMove', [{ ...move, x: move.x + 42 }, aim(40)]);
+					// touchEnd names the finger that lifts.
+					await touch('touchEnd', [aim(40)]);
+				});
+				await expect(page.locator('.world-aim')).toHaveCount(0);
+				await expect.poll(x).toBeGreaterThan(walked + 2);
+				await touch('touchEnd', [{ ...move, x: move.x + 42 }]);
+			} finally {
+				await cdp.detach();
+			}
+		});
+	});
+});
+
+test.describe('live view framing', () => {
+	// The topmost opaque actor pixel, so an underestimated reach shows up as cropped art, not just a wrong number.
+	const paintedTop = (page: Page) =>
+		page.evaluate(() => {
+			const canvas = document.querySelector<HTMLCanvasElement>('.world-actors')!;
+			const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+			for (let y = 0; y < canvas.height; y++)
+				for (let x = 0; x < canvas.width; x++)
+					if (pixels[(y * canvas.width + x) * 4 + 3] >= 200)
+						return (y * canvas.getBoundingClientRect().height) / canvas.height;
+			return Infinity;
+		});
+	for (const screen of [
+		{ name: 'desktop', width: 1280, height: 800 },
+		{ name: 'phone portrait', width: 390, height: 844 }
+	])
+		test(`${screen.name}: the body stands mid-stage with its reach in view, walking south and in a mounted jump`, async ({
+			page
+		}) => {
+			await page.setViewportSize({ width: screen.width, height: screen.height });
+			await customize(page);
+			const host = world(page);
+			const frame = () =>
+				host.evaluate((element) => {
+					const stage = element.getBoundingClientRect();
+					return { top: stage.top, bottom: stage.bottom, feet: Number(element.dataset.feetY) };
+				});
+			for (const view of ['Top-down', 'Side-scroller'] as const) {
+				await modes(page).getByRole('button', { name: view, exact: true }).click();
+				await expect(host).toHaveAttribute('data-feet-y', /\d/);
+				const rest = await frame();
+				// Raised off the bottom, and every painted pixel inside the stage.
+				expect(rest.feet).toBeLessThan(rest.top + (rest.bottom - rest.top) * 0.8);
+				expect(await paintedTop(page)).toBeGreaterThanOrEqual(rest.top);
+				await host.focus();
+				const key = view === 'Top-down' ? 's' : 'd';
+				const start = await host.getAttribute('data-position');
+				await page.keyboard.down(key);
+				await expect(host).not.toHaveAttribute('data-position', start!);
+				await page.waitForTimeout(800);
+				const walking = await frame();
+				await page.keyboard.up(key);
+				// The leading camera keeps a steady walk close to where it started.
+				expect(Math.abs(walking.feet - rest.feet)).toBeLessThan(12);
+			}
+			// Zoomed well in, a steady walk south still drifts no further on screen and the feet stay in the stage.
+			await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
+			await host.focus();
+			const fitZoom = Number(await host.getAttribute('data-scene-zoom'));
+			for (let step = 0; step < 6; step++) await page.keyboard.press('+');
+			await expect
+				.poll(async () => Number(await host.getAttribute('data-scene-zoom')))
+				.toBeGreaterThan(fitZoom * 1.8);
+			const zoomed = await frame();
+			await page.keyboard.down('s');
+			await page.waitForTimeout(1200);
+			const south = await frame();
+			await page.keyboard.up('s');
+			expect(Math.abs(south.feet - zoomed.feet)).toBeLessThan(16);
+			expect(south.feet).toBeLessThanOrEqual(south.bottom);
+			await page.keyboard.press('0');
+			// Mounted, at the top of a jump, nothing painted leaves the top of the stage.
+			await page.keyboard.press('m');
+			await expect(host).toHaveAttribute('data-mount', /\S/);
+			const top = (await frame()).top;
+			await host.focus();
+			const jumping = page.keyboard.press('Space');
+			// A jump lasts under half a second: sample the height and the painted top together on every frame.
+			const apex = await page.evaluate(
+				() =>
+					new Promise<{ height: number; top: number }>((resolve) => {
+						const stage = document.querySelector<HTMLElement>('.world-stage')!,
+							canvas = document.querySelector<HTMLCanvasElement>('.world-actors')!;
+						let best = { height: 0, top: Infinity };
+						const started = performance.now();
+						const frame = () => {
+							const height = Number(stage.dataset.jump);
+							if (height > best.height) {
+								const pixels = canvas
+									.getContext('2d')!
+									.getImageData(0, 0, canvas.width, canvas.height).data;
+								let top = Infinity;
+								for (let y = 0; y < canvas.height && top === Infinity; y++)
+									for (let x = 0; x < canvas.width; x++)
+										if (pixels[(y * canvas.width + x) * 4 + 3] >= 200) {
+											top = (y * canvas.getBoundingClientRect().height) / canvas.height;
+											break;
+										}
+								best = { height, top };
+							}
+							if (performance.now() - started < 1200) requestAnimationFrame(frame);
+							else resolve(best);
+						};
+						requestAnimationFrame(frame);
+					})
+			);
+			await jumping;
+			expect(apex.height).toBeGreaterThan(0.3);
+			expect(Number.isFinite(apex.top)).toBe(true);
+			expect(apex.top).toBeGreaterThanOrEqual(top);
+			await page.keyboard.press('m');
 		});
 });

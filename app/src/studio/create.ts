@@ -76,6 +76,7 @@ import {
 	validateRig,
 	type ClipSource,
 	type DirectionName,
+	type ItemDrawing,
 	type Keypoint,
 	type RigAnimation,
 	type RigDirection,
@@ -99,6 +100,11 @@ import {
 import {
 	anchorable,
 	canPose,
+	canSheet,
+	ITEM_SHEET_CHANGED,
+	itemDrawingFor,
+	itemSheetTier,
+	itemSheetWindows,
 	posable,
 	poseGens,
 	repairGridPlan,
@@ -112,6 +118,7 @@ import {
 	animateAnchoredItem,
 	poseItemClip,
 	regridClip,
+	sheetItemMove,
 	PartialMoveError,
 	type ItemViewTitle,
 	type RepairReview,
@@ -138,6 +145,7 @@ import {
 } from './moveSource.ts';
 import {
 	affectedMoveDirections,
+	applyItemDrawing,
 	applyMoveLoop,
 	movePlaybackChanged,
 	clearMovePoseData,
@@ -179,6 +187,7 @@ import {
 	LocalizedError,
 	message,
 	PreflightWarning,
+	sameMessage,
 	type Message
 } from '../lib/message.ts';
 import { localizedPlanRestriction } from '../lib/pixellab/plans.ts';
@@ -1821,7 +1830,12 @@ export interface MoveSpec {
 	activityScope?: string;
 	dirs?: DirectionName[];
 	approvedDirs?: DirectionName[];
-	itemMethod?: 'grid' | 'anchor';
+	itemMethod?: 'grid' | 'anchor' | 'sheet';
+	/** The sheet route's measured crop cell (itemSheetWindows), priced and reviewed with the offer. */
+	itemSheet?: { w: number; h: number };
+	/** Add a move's choice of how items are later drawn on this move, saved on it: 'default' clears a saved choice so Settings
+	 *  decides; absent (an automatic retry) keeps the saved one. Draws nothing itself. */
+	itemDrawing?: ItemDrawing | 'default';
 	preferTierOneRepair?: true;
 	redrawItem?: true;
 	reuseItemFrames?: true;
@@ -2589,36 +2603,61 @@ async function inspectMeasurementRecovery(
 }
 
 /** Moves a saved item lacks, e.g. idle and walk added after it was planned on the standing views, as items-only specs (addMove
- * keeps the body clip and poses only these directions, the same request "Make it" sends). Only directions the body has frames
- * and stored keypoints for count (the Default move's standing views are never posed). The user starts them from a priced offer; nothing is queued automatically (credits are real money). */
+ * keeps the body clip and draws only these directions, the same request "Make it" sends). Each move draws the item as
+ * itemDrawingFor resolves it, in the views the item has a standing design for: on the move's own frames, or posed as a
+ * separate body where the move and the standing view also have the joints posing needs (the Default move's standing views
+ * are never drawn). `drawing` is the Settings > Creation default (currentItemDrawing). The sheet is measured on the loaded
+ * `images`, so without them it is never offered. The user starts them from a priced offer; nothing is queued automatically
+ * (credits are real money). */
 export function missingItemMoves(
 	m: Manifest,
 	itemId: string,
-	seed = 1 + Math.floor(Math.random() * 1_000_000)
+	drawing: ItemDrawing,
+	seed = 1 + Math.floor(Math.random() * 1_000_000),
+	images?: ReadonlyMap<string, Img>,
+	/** Only these views (e.g. those a Move Review accepted), applied before the route is chosen and its sheet measured. */
+	onlyDirs?: readonly DirectionName[]
 ): MoveSpec[] {
 	const item = extendable(m, itemId);
 	if (!item) return [];
 	const { clipDirs } = coverage({ rec: { manifest: m } } as RigCtx);
-	const anchored = item.route === 'ea2-anchor';
-	const posableDir = (a: RigAnimation, d: DirectionName) =>
-		a.sources?.[d]?.motion !== 'imported-rest' &&
-		(anchored ? !!item.dressed?.[d] : a.sources?.[d]?.keypoints?.length === a.cells);
 	return m.rig.animations
-		.map((a) => ({
-			a,
-			dirs: (clipDirs?.[a.id] ?? []).filter(
-				(d) => posableDir(a, d) && !hasCompleteCells(m, item, a.id, d)
-			)
-		}))
+		.map((a) => {
+			const missing = (clipDirs?.[a.id] ?? []).filter(
+				(d) =>
+					(!onlyDirs || onlyDirs.includes(d)) &&
+					a.sources?.[d]?.motion !== 'imported-rest' &&
+					!!item.dressed?.[d] &&
+					!hasCompleteCells(m, item, a.id, d)
+			);
+			const sheet =
+				images && (a.itemDrawing ?? drawing) === 'sheet'
+					? itemSheetWindows(m, images, item, a.id, missing)?.cell
+					: undefined;
+			const method = itemDrawingFor(
+				m,
+				item,
+				a,
+				drawing,
+				missing,
+				sheet && { anim: a.id, cell: sheet, frames: a.cells }
+			);
+			const drawable = (d: DirectionName) =>
+				method !== 'skeleton' ||
+				(a.sources?.[d]?.keypoints?.length === a.cells &&
+					canPose(m.rig, { anims: [a.id], dirs: [d] }));
+			return { a, method, sheet, dirs: missing.filter(drawable) };
+		})
 		.filter(({ dirs }) => dirs.length)
-		.map(({ a, dirs }) => ({
+		.map(({ a, method, sheet, dirs }) => ({
 			id: a.id,
 			frames: a.cells,
 			items: [item.id],
 			dirs,
 			itemsOnly: true,
 			seed,
-			...(anchored ? { itemMethod: 'anchor' as const } : {})
+			...(method === 'anchor' ? { itemMethod: 'anchor' as const } : {}),
+			...(method === 'sheet' ? { itemMethod: 'sheet' as const, itemSheet: sheet } : {})
 		}));
 }
 export function partialMoveFrameIssue(
@@ -2797,7 +2836,8 @@ export function skeletonMoveReview(
 			approvedDirs: dirs,
 			...(saved ? { dirs } : {}),
 			// Warnings the user already generated past (the frame room check) stay accepted for the same move.
-			...(spec.acceptedWarnings ? { acceptedWarnings: spec.acceptedWarnings } : {})
+			...(spec.acceptedWarnings ? { acceptedWarnings: spec.acceptedWarnings } : {}),
+			...(spec.itemDrawing ? { itemDrawing: spec.itemDrawing } : {})
 		};
 		if (bodyMoveIssue(manifest, review) || partialMoveFrameIssue(manifest, review, dirs.length))
 			return;
@@ -2847,6 +2887,7 @@ export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
 							).map((batch) => batch.tier)
 						)
 					: 0;
+			if (spec.itemMethod === 'sheet') return dirs.length ? itemSheetTier() : 0;
 			const calls =
 				spec.itemMethod === 'anchor'
 					? planAnchoredMove(manifest.rig, item, spec.id, dirs)
@@ -2875,7 +2916,11 @@ export function reviewItemMove(
 			'create.errors.onlyExistingItemFrames'
 		);
 	const dirs = moveDirections(m, spec.dirs);
-	if (spec.itemMethod !== 'anchor' && !canPose(m.rig, { anims: [spec.id], dirs }))
+	if (
+		spec.itemMethod !== 'anchor' &&
+		spec.itemMethod !== 'sheet' &&
+		!canPose(m.rig, { anims: [spec.id], dirs })
+	)
 		throw (
 			unposedMoveIssue(m, spec.id, dirs, redo) ??
 			new LocalizedError(
@@ -2946,11 +2991,15 @@ export function reviewItemMove(
 			dirs: spec.dirs,
 			items: spec.items,
 			itemMethod: spec.itemMethod,
+			itemSheet: spec.itemSheet,
 			preferTierOneRepair: spec.preferTierOneRepair,
 			redrawItem: spec.redrawItem,
-			redrawSlots: spec.redrawItem
-				? items.slice(1).map((item) => requireSlot(m, item.slot))
-				: undefined
+			// The redraw and sheet prompts read the slot (its creative hint and behavior): a change must refuse a resumed request
+			// before it is rebuilt with another identity and paid for again.
+			redrawSlots:
+				spec.redrawItem || spec.itemMethod === 'sheet'
+					? items.slice(1).map((item) => requireSlot(m, item.slot))
+					: undefined
 		}
 	});
 	return { ...spec, itemReview: { gens: moveEstimate(m, spec).items, artwork } };
@@ -3007,7 +3056,9 @@ export function itemMoveOffer(
 	/** Views of these moves kept without poses: priced out of the offer and named here, so the user knows to make them again. */
 	unposed: Message[];
 } {
-	const unposed = specs.flatMap((spec) => unposedViewNote(m, spec, redo));
+	const unposed = specs
+		.flatMap((spec) => unposedViewNote(m, spec, redo))
+		.filter((note, i, all) => all.findIndex((other) => sameMessage(note, other)) === i);
 	try {
 		const reviewed = specs.map((spec) => reviewItemMove(m, spec, redo));
 		return {
@@ -3022,17 +3073,19 @@ export function itemMoveOffer(
 	}
 }
 /** Moves an item would be posed onto whose views were all kept without poses: missingItemMoves makes no offer for them, so
- *  they are named here (no price, no paid action) wherever item offers show. */
+ *  they are named here (no price, no paid action) wherever item offers show. Moves the item is drawn on (itemDrawingFor
+ *  with `drawing`, the Settings > Creation default) need no poses and are never named. */
 export function unposedItemMoves(
 	m: Manifest,
 	itemId: string,
+	drawing: ItemDrawing,
 	redo: readonly string[]
 ): { move: string; note: Message }[] {
 	const item = extendable(m, itemId);
-	if (!item || item.route === 'ea2-anchor') return [];
-	const offered = new Set(missingItemMoves(m, itemId, 0).map((spec) => spec.id));
+	if (!item) return [];
+	const offered = new Set(missingItemMoves(m, itemId, drawing, 0).map((spec) => spec.id));
 	return m.rig.animations.flatMap((a) =>
-		offered.has(a.id)
+		offered.has(a.id) || itemDrawingFor(m, item, a, drawing) === 'anchor'
 			? []
 			: unposedViewNote(m, { id: a.id }, redo).map((note) => ({ move: a.id, note }))
 	);
@@ -3060,6 +3113,11 @@ function unposedViewNote(
 			]
 		: [];
 }
+
+/** Item routes whose result waits for the player's review before it saves: their priced review stays on the spec, so a
+ *  resumed request reattaches to the reviewed one and saved-frame recovery can rebuild it. */
+const reviewedItemRoute = (spec: Pick<MoveSpec, 'itemMethod'>) =>
+	spec.itemMethod === 'grid' || spec.itemMethod === 'sheet';
 
 /**
  * Freeze a pose-first or text-rendered body move, then
@@ -3167,16 +3225,24 @@ async function addMoveUnlocked(
 	// Saved-frame recovery only reattaches completed equipment requests, never a new or replaced body clip.
 	if (
 		spec.reuseItemFrames &&
-		((spec.itemMethod === 'grid' && !spec.itemReview) ||
-			!spec.itemsOnly ||
-			!existing ||
-			spec.replace)
+		((reviewedItemRoute(spec) && !spec.itemReview) || !spec.itemsOnly || !existing || spec.replace)
 	)
 		throw new LocalizedError(
 			'Saved equipment recovery needs an existing move and its equipment only. No generation was requested.',
 			'create.errors.savedEquipmentRecoveryNeeds'
 		);
-	if (spec.itemMethod === 'anchor') {
+	if (
+		spec.itemMethod === 'sheet' &&
+		(!spec.itemSheet ||
+			!spec.itemReview ||
+			spec.items.length !== 1 ||
+			spec.items.some((id) => {
+				const item = rec.manifest.items.find((i) => i.id === id);
+				return !item || !canSheet(rec.manifest, item, dirs);
+			}))
+	)
+		throw new LocalizedError(ITEM_SHEET_CHANGED, 'itemRoute.errors.itemSheetChanged');
+	if (spec.itemMethod === 'anchor' || spec.itemMethod === 'sheet') {
 		if (
 			!spec.itemsOnly ||
 			!existing ||
@@ -3279,7 +3345,7 @@ async function addMoveUnlocked(
 	const fresh = await loadProject(projectId),
 		frames = fresh.rec.manifest.rig.animations.find((a) => a.id === spec.id)!.cells;
 	assertReview(fresh.rec.manifest);
-	if (spec.itemReview && spec.itemMethod !== 'grid' && !spec.reviewedMoveItems) {
+	if (spec.itemReview && !reviewedItemRoute(spec) && !spec.reviewedMoveItems) {
 		const reviewed = spec.itemReview;
 		delete spec.itemReview;
 		try {
@@ -3422,7 +3488,22 @@ async function addMoveUnlocked(
 				plannedDirs: spec.reuseItemFrames ? dirs : undefined,
 				activityScope: spec.activityScope
 			}).catch(partialSaved);
-		else if (spec.itemMethod === 'grid')
+		else if (spec.itemMethod === 'sheet') {
+			const review = await sheetItemMove(ctx, it, spec.id, plan.dirs, spec.seed, spec.itemSheet!, {
+				savedOnly: spec.reuseItemFrames,
+				activityScope: spec.activityScope,
+				title:
+					plan.dirs.length === 1
+						? itemTitle(ctx.rec.manifest, it)(spec.id, plan.dirs[0])
+						: message('activity.titleItemViews', {
+								item: it.name,
+								move: moveName(spec.id, ctx.rec.manifest.rig.animations),
+								count: plan.dirs.length
+							})
+			});
+			plan.dirs.forEach(tick);
+			return { warnings: [], repairReview: review };
+		} else if (spec.itemMethod === 'grid')
 			for (const d of plan.dirs) {
 				const current = await loadProject(projectId),
 					item = current.rec.manifest.items.find((i) => i.id === plan.id);
@@ -4921,6 +5002,7 @@ async function addBodyClip(
 			basePlayback,
 			cur.manifest.rig.animations.find((animation) => animation.id === spec.id)
 		);
+		applyItemDrawing(anim, spec.itemDrawing);
 		cur.manifest.rig = frig;
 		cb.provenance = baseIt.provenance;
 		cb.layers[0].cells = layer.cells;
@@ -5067,6 +5149,7 @@ export async function resolveMoveCandidate(
 				candidate.basePlayback,
 				manifest.rig.animations.find((animation) => animation.id === id)
 			);
+			applyItemDrawing(next, candidate.spec.itemDrawing);
 			manifest.rig = rig;
 			if (candidate.moveRecovery)
 				current.moveRecovery = {

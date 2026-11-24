@@ -54,6 +54,16 @@
 		"scopeDebug": "Back up saved characters, artwork, archived data, and debugging details.",
 		"debugNotSaved": "The browser could not save this setting.",
 		"backup": "Back up library",
+		"originals": "Download original generations",
+		"originalsHint": "The raw images PixelLab returned for saved characters, before PixelDoll processed them, with the requests that bought them. Only requests still kept on this device are included.",
+		"originalsName": "original generations",
+		"originalsNone": "No original images are kept for your saved characters.",
+		"originalsPartial": {
+			"one": "Originals are no longer kept for {count} character.",
+			"other": "Originals are no longer kept for {count} characters."
+		},
+		"originalsStarted": "Original generations download started.",
+		"originalsTooLarge": "The original generations are too large to download at once.",
 		"restoreFromBackup": "Restore from backup",
 		"review": "Review backup",
 		"add": "Characters to add",
@@ -127,7 +137,14 @@
 		"saveFailed": "Could not save this choice. Try again.",
 		"incompatible": "Set Frames to Automatic or choose a count supported by the new model.",
 		"framesHelp": "Available frame counts depend on the character canvas size.",
-		"methodHelp": "Uses {pose} when supported. Otherwise, uses {edit}."
+		"methodHelp": "Uses {pose} when supported. Otherwise, uses {edit}.",
+		"itemDrawing": "Items on moves",
+		"itemDrawingHelp": "Drawing on move frames fits items to the move's own art. Posing a separate body animates items on their own, so they can drift a few pixels. Drawing all views at once costs more than posing and less than drawing on move frames, and you review it before it is saved. It suits worn items on four-direction characters of 80 to 128 px; other items are drawn on move frames, and held items are posed.",
+		"itemDrawings": {
+			"anchor": "Draw on move frames",
+			"skeleton": "Pose a separate body",
+			"sheet": "Draw all views at once"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Play mount preview",
@@ -717,7 +734,7 @@
 		"missingFrames": "{names} need frames for {move}",
 		"missingFrameViews": "{names} need frames for {move} facing {direction}",
 		"making": "Making…",
-		"makeIt": "Make it",
+		"makeMissingViews": "Make missing views",
 		"estimate": {
 			"one": "~{n} gen",
 			"other": "~{n} gens"
@@ -885,7 +902,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Moves are picked in Preview. Mounted movement follows the Riding pose in Mount settings.",
-		"movesOffWalking": "Moves are picked in Preview. Here, moving plays idle or walk.",
+		"movesOffWalking": "Moves are picked in Preview. Here, Live views settings choose what plays.",
 		"tabWardrobe": "Wardrobe",
 		"tabColors": "Colors",
 		"tabOutfits": "Outfits",
@@ -898,6 +915,10 @@
 			"other": "{n} equipped items need frames"
 		},
 		"missingFramesForMove": "Missing frames for {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problem",
+			"other": "{n} problems"
+		},
 		"workspaceCopyPixelLabOff": "Workspace copy · PixelLab off",
 		"characterSelectionWASDOrArrowsSelectEnter": "Character selection. WASD or arrows select; Enter customizes; plus and minus zoom.",
 		"previousCharacter": "Previous character",
@@ -914,20 +935,21 @@
 		"inspect": "Inspect",
 		"customization": "Customization",
 		"customizationPanels": "Customization panels",
-		"tabWorkRunning": "Work is running here",
+		"tabWorkRunning": "Work here is running, waiting or ready to review",
 		"tabWorkAttention": "Work here needs attention"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} already uses the body colors.",
+		"drift": "{name} doesn’t follow the body colors",
+		"match": "Match colors",
+		"matched": "Matched {name} to the body colors."
 	},
 	"worldStage": {
 		"groundUnavailable": "Continuous ground rendering unavailable. Showing the static scene.",
 		"materialUnavailable": "Ground material unavailable. Showing the static scene.",
 		"sceneUnavailable": "Live scene unavailable. Reload to try again.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Character preview. WASD or arrows change facing. Keys 1, 2, 3 switch views.",
-		"sideScrollerTestWorldADLeft": "Side-scroller test world. A/D, left/right arrows or horizontal drag to move. Keys 1, 2, 3 switch views.",
-		"characterTestWorldWASDArrowsOrDrag": "Character test world. WASD, arrows or drag to move. Keys 1, 2, 3 switch views.",
 		"loadingCharacter": "Loading character…",
-		"dragInTheWorldToMove": "Drag in the world to move",
-		"focusWorldADOrToMove": "Focus world · A/D or ←/→ to move",
-		"focusWorldWASDOrArrowKeysTo": "Focus world · WASD or arrow keys to move",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} item hidden: missing {move} frames",
@@ -1352,6 +1374,7 @@
 		"drop": "Drop a character ZIP here",
 		"dropNote": "PixelLab character or PixelDoll export · up to 64 MB",
 		"chooseZip": "Choose ZIP",
+		"chooseAnother": "Choose another ZIP",
 		"characterZip": "Character ZIP",
 		"devicePrivacy": "Your files stay on this device. Preview your character before importing.",
 		"pixelLabHint": "In PixelLab’s character creator, export a ZIP with individual frames. Enclosing folders are supported. Other spritesheet layouts and PNG-only ZIPs are not supported.",
@@ -1479,8 +1502,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Workspace activity",
-		"activityIntro": "Saved with the workspace from PixelDoll {build}. Jobs from the ZIP do not restart.",
+		"activityTitle": "Backup details",
+		"activityIntro": "Opened from a backup made with PixelDoll {build}.",
 		"missing": {
 			"one": "{count} artwork file was missing or unreadable.",
 			"other": "{count} artwork files were missing or unreadable."
@@ -1488,29 +1511,11 @@
 		"skippedCharacters": {
 			"one": "Saved characters skipped: {count}.",
 			"other": "Saved characters skipped: {count}."
-		},
-		"demoOutfit": "The demo uses its default outfit settings.",
-		"exportSettings": "The copy uses default export settings.",
-		"tier": "PixelLab tier: {tier}",
-		"noErrors": "No recent errors or unfinished jobs were recorded.",
-		"noRecent": "Recent errors were not included.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Code {code}",
-		"error": {
-			"tooLarge": "This workspace exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.",
-			"containsKey": "A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.",
-			"invalidIndex": "This workspace index is invalid.",
-			"unsupportedVersion": "This workspace file version is not supported.",
-			"duplicateRecord": "This workspace contains an unsupported or duplicate saved record.",
-			"missingFiles": "This workspace has an invalid list of missing files.",
-			"unexpectedFile": "This workspace contains an unexpected file.",
-			"invalidDiagnostics": "This workspace has invalid recent errors."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Choose a PixelDoll backup or workspace ZIP, not a character ZIP.",
+			"notBackup": "Choose a PixelDoll backup ZIP, not a character ZIP.",
 			"unsupportedVersion": "This backup file version is not supported.",
 			"invalid": "This backup is damaged or invalid.",
 			"tooLarge": "This backup exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.",
@@ -1604,6 +1609,7 @@
 			"facing": "Some frames resemble the opposite view; inspect the torso",
 			"detail": "A detail of the design is missing or recolored in some frames",
 			"motion": "Check the item's size and angle as it moves",
+			"fill": "The item is hollow in some frames, with only its outline left; inspect its shape",
 			"lowerClothing": "Some lower clothing is missing compared with the standing design",
 			"footwear": "Footwear differs from the standing design; inspect the feet",
 			"bodyPixels": "Some body pixels were changed by the model",
@@ -1947,7 +1953,9 @@
 			"conceptNote": "The uploaded artwork goes first, before the character frames. Its output is not used.",
 			"redrawEquipment": "{item} {direction} · redraw equipment",
 			"redrawEquipmentNote": "{width}×{height}, frames {from}–{to}. Sends an unmasked sheet with a matching reference. PixelDoll limits what it keeps and always asks before replacing your frames. PixelDoll requires Tier 1. If billed in dollars, the minimum is {minimum}; the actual charge may be higher.",
-			"gridRepairNote": "{width}×{height}, frames {from}–{to}. Uses one protected matching-direction reference. The body remains unchanged. Complete repairs with blocking visual issues are held for your review."
+			"gridRepairNote": "{width}×{height}, frames {from}–{to}. Uses one protected matching-direction reference. The body remains unchanged. Complete repairs with blocking visual issues are held for your review.",
+			"itemSheet": "{item}: {directions}, one sheet",
+			"itemSheetNote": "{width}×{height}: one row per view, its standing design first, then {frames} move frames, each cut to {cellWidth}×{cellHeight} px. The body stays fixed. PixelDoll asks before saving, keeps only the views that pass their checks and lists the others. PixelDoll requires Tier 1. One attempt; any paid retry needs your action."
 		},
 		"copyEndpointTitle": "Copy endpoint",
 		"manualCopyLabel": "Endpoint for manual copy",
@@ -2059,7 +2067,11 @@
 		"stopNoAnswer": "The tab running this job has not confirmed the stop yet. Check Activity in a moment; if it is still running, stop it in that tab.",
 		"stopNotConfirmed": "PixelLab did not confirm the stop, so it may still run and charge. Check Activity.",
 		"pausedStorage": "Saved jobs couldn’t be read or saved, so nothing new is sent. Resume to try again.",
-		"cancelSaveFailed": "The cancel couldn’t be saved. This tab won’t send the request, but another tab or a reload could."
+		"cancelSaveFailed": "The cancel couldn’t be saved. This tab won’t send the request, but another tab or a reload could.",
+		"titleItemViews": {
+			"one": "{item}: {move}, {count} view",
+			"other": "{item}: {move}, {count} views"
+		}
 	},
 	"genCard": {
 		"retryKey": "Generate again uses a {color} background, measured from this design's colors",
@@ -2720,6 +2732,8 @@
 		"motionOnly": "Describe body motion only. Add weapons and props as items.",
 		"motionModel": "Motion model",
 		"motionModelHelp": "Skeleton v3 uses shared poses for the body and equipment. V3 and PixMiniMax draw the body first, then PixelDoll finds poses for equipment.",
+		"itemDrawing": "Items on this move",
+		"itemDrawingDefault": "Default ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
@@ -2776,7 +2790,11 @@
 			"repairNote": "The body stays fixed. A complete repair with visual issues is held for your review.",
 			"currentFrame": "Current frame {number}",
 			"redrawnFrame": "Redrawn frame {number}",
-			"repairedFrame": "Repaired frame {number}"
+			"repairedFrame": "Repaired frame {number}",
+			"skippedViews": "Not kept: {views}. PixelLab drew no item there, so it is still missing. You can draw just those views again.",
+			"viewFrame": "{view}, frame {number}",
+			"keepFailedViews": "Also keep {views}, which did not pass their checks",
+			"chooseViews": "Choose the views to keep before saving."
 		}
 	},
 	"itemRoute": {
@@ -2810,7 +2828,9 @@
 			"itemMoveSaveConflictAlso": "This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity. Another view also stopped: {reason}",
 			"keepWithoutStanding": "This item is missing frames in the move it is designed from, so it cannot be kept without it. Show that move and use Repair item or Redraw item if offered, or make the item again.",
 			"keepWithoutNothingLeft": "This item has no complete move to keep. Make the missing frames instead.",
-			"savedFrameMissing": "A saved frame of this item is missing from storage."
+			"savedFrameMissing": "A saved frame of this item is missing from storage.",
+			"itemSheetChanged": "This item or move changed since its sheet was priced. Reopen the item to review it again. No generation was requested.",
+			"itemSheetNoView": "PixelLab drew no item in any view, so nothing was kept. The sheet stays in Activity."
 		}
 	},
 	"newItem": {
@@ -3409,8 +3429,29 @@
 		"generateFor": "Generate for {move}",
 		"wearOn": "Wear for {move}"
 	},
+	"itemImport": {
+		"title": "Import items",
+		"intro": "A character’s Download ZIP, a backup or a shared character. Free when its items fit this character.",
+		"empty": "This ZIP has no finished items.",
+		"skipped": {
+			"one": "{count} item couldn’t be read.",
+			"other": "{count} items couldn’t be read."
+		},
+		"notFitted": "{names} no longer fit and weren’t added.",
+		"busy": "Wait for the item being added, then try again.",
+		"row": {
+			"copy": "Fits this character exactly",
+			"refit": "Fitted to this body for free. Check its frames after importing.",
+			"unfitted": "Made for another body. Worn as drawn, so it may float or clip.",
+			"remake": "Made for another body, so it can’t be worn here"
+		}
+	},
+	"importDrop": {
+		"items": "Drop to import items",
+		"moves": "Drop to import moves",
+		"states": "Drop to import States"
+	},
 	"moveImport": {
-		"title": "Import moves",
 		"importMoves": "Import moves",
 		"importStates": "Import States",
 		"dropArea": "PixelDoll ZIP drop area",
@@ -3451,5 +3492,34 @@
 			"resolveDrafts": "Keep or dismiss this character’s item drafts before importing moves.",
 			"changed": "This character changed. Choose the ZIP again to review the latest version."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Automatic: stands still",
+		"controls": "Controls",
+		"title": "Live views",
+		"forCharacter": "What {name} plays in Top-down and Side-scroller.",
+		"idle": "Idle",
+		"walk": "Walk",
+		"attack": "Attack",
+		"jump": "Jump",
+		"attackUp": "Attack up",
+		"attackDown": "Attack down",
+		"automaticClip": "Automatic: {clip}",
+		"automaticNone": "Automatic: none",
+		"sameAsAttack": "Same as Attack",
+		"sideAttackHelp": "Side-scroller plays Attack up or Attack down when you aim up or down.",
+		"notSaved": "Live views setting changed, but this browser could not save it.",
+		"openCharacter": "Open a character to choose what it plays.",
+		"mount": "Mount",
+		"actions": "Game actions",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Space",
+		"noAttack": "Nothing plays as Attack yet. Choose a move or state in Live views settings.",
+		"noAttackDirection": "{move} has no {direction} frames, so it can’t attack that way.",
+		"hintTopDown": "WASD or click to move · Right-click or X to attack · Space to jump · M to mount",
+		"hintSide": "A/D or click to move · Right-click or X to attack · Space to jump · M to mount",
+		"hintTouch": "Left side moves · Right side aims, lift to attack · Buttons jump and mount",
+		"stageTopDown": "Character test world. WASD, arrows, click or drag to move. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views.",
+		"stageSide": "Side-scroller test world. A/D, left and right arrows, click or drag to move. Right-click or X attacks, Space jumps, M mounts. Keys 1, 2, 3 switch views."
 	}
 }

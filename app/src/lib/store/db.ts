@@ -206,23 +206,18 @@ export async function readDebugSnapshot() {
 
 export async function readWorkspaceSnapshot(
 	select: (key: string, value: unknown) => boolean,
-	references: (records: Map<string, unknown>) => ReadonlyMap<string, unknown>,
-	includeErrors: boolean
+	references: (records: Map<string, unknown>) => ReadonlyMap<string, unknown>
 ) {
 	const db = await open();
 	return new Promise<{
 		projects: Map<string, unknown>;
 		blobs: Map<string, Blob>;
-		jobs: unknown[];
 		retainedIds: string[];
 	}>((resolve, reject) => {
-		const stores: StoreName[] = ['projects', 'blobs'];
-		if (includeErrors) stores.push('jobs');
-		const transaction = db.transaction(stores, 'readonly');
+		const transaction = db.transaction(['projects', 'blobs'], 'readonly');
 		const projects = new Map<string, unknown>();
 		const blobs = new Map<string, Blob>();
 		const retainedIds: string[] = [];
-		const jobs = includeErrors ? transaction.objectStore('jobs').getAll() : undefined;
 		const cursor = transaction.objectStore('projects').openCursor();
 		let error: unknown;
 		cursor.onsuccess = () => {
@@ -248,8 +243,7 @@ export async function readWorkspaceSnapshot(
 				transaction.abort();
 			}
 		};
-		transaction.oncomplete = () =>
-			resolve({ projects, blobs, jobs: jobs?.result ?? [], retainedIds });
+		transaction.oncomplete = () => resolve({ projects, blobs, retainedIds });
 		transaction.onerror = transaction.onabort = () => reject(error ?? transaction.error);
 	});
 }

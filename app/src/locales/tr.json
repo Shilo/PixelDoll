@@ -54,6 +54,16 @@
 		"scopeDebug": "Kayıtlı karakterleri, çizimleri, arşivlenmiş verileri ve hata ayıklama ayrıntılarını yedekle.",
 		"debugNotSaved": "Tarayıcı bu ayarı kaydedemedi.",
 		"backup": "Kitaplığı yedekle",
+		"originals": "Orijinal üretimleri indir",
+		"originalsHint": "PixelLab’in kayıtlı karakterler için PixelDoll işlemeden önce döndürdüğü ham görseller ve bunları satın alan istekler. Yalnızca bu cihazda hâlâ saklanan istekler eklenir.",
+		"originalsName": "orijinal üretimler",
+		"originalsNone": "Kayıtlı karakterleriniz için orijinal görsel saklanmıyor.",
+		"originalsPartial": {
+			"one": "Orijinali saklanmayan karakter: {count}.",
+			"other": "Orijinali saklanmayan karakterler: {count}."
+		},
+		"originalsStarted": "Orijinal üretimlerin indirilmesi başladı.",
+		"originalsTooLarge": "Orijinal üretimler tek seferde indirilemeyecek kadar büyük.",
 		"restoreFromBackup": "Yedekten geri yükle",
 		"review": "Yedeği incele",
 		"add": "Eklenecek karakterler",
@@ -127,7 +137,14 @@
 		"saveFailed": "Bu seçim kaydedilemedi. Tekrar deneyin.",
 		"incompatible": "Kare sayısını Otomatik olarak ayarlayın veya yeni modelin desteklediği bir sayı seçin.",
 		"framesHelp": "Kullanılabilir kare sayıları karakterin tuval boyutuna bağlıdır.",
-		"methodHelp": "Destekleniyorsa {pose}, aksi takdirde {edit} kullanılır."
+		"methodHelp": "Destekleniyorsa {pose}, aksi takdirde {edit} kullanılır.",
+		"itemDrawing": "Animasyonlardaki eşyalar",
+		"itemDrawingHelp": "Animasyon karelerine çizmek eşyaları animasyonun kendi çizimine uydurur. Ayrı bir gövdeye poz vermek eşyaları ayrı canlandırır, bu yüzden birkaç piksel kayabilirler. Tüm görünümleri tek seferde çizmek poz vermekten pahalı, animasyon karelerine çizmekten ucuzdur ve sonucu kaydetmeden önce incelersiniz. 80 ile 128 px arası, dört yönlü karakterlerin giydiği eşyalar için uygundur; diğer eşyalar animasyon karelerine çizilir, elde tutulan eşyalara poz verilir.",
+		"itemDrawings": {
+			"anchor": "Animasyon karelerine çiz",
+			"skeleton": "Ayrı bir gövdeye poz ver",
+			"sheet": "Tüm görünümleri tek seferde çiz"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Binek önizlemesini oynat",
@@ -717,7 +734,7 @@
 		"missingFrames": "{names} için {move} kareleri eksik",
 		"missingFrameViews": "{names} için {move} animasyonunun {direction} yönündeki kareleri eksik",
 		"making": "Üretiliyor…",
-		"makeIt": "Üretin",
+		"makeMissingViews": "Eksik görünümleri üret",
 		"estimate": {
 			"one": "~{n} üretim hakkı",
 			"other": "~{n} üretim hakkı"
@@ -885,7 +902,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket, binek ayarlarındaki Binici pozunu izler.",
-		"movesOffWalking": "Animasyonlar Önizleme'de seçilir. Burada harekete göre bekleme veya yürüme animasyonu oynatılır.",
+		"movesOffWalking": "Animasyonlar Önizleme'de seçilir. Burada ne oynatılacağını Canlı görünüm ayarları belirler.",
 		"tabWardrobe": "Gardırop",
 		"tabColors": "Renkler",
 		"tabOutfits": "Kıyafetler",
@@ -898,6 +915,10 @@
 			"other": "Giyili {n} eşyanın kareleri eksik"
 		},
 		"missingFramesForMove": "Eksik kareler: {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} sorun",
+			"other": "{n} sorun"
+		},
 		"workspaceCopyPixelLabOff": "Çalışma alanı kopyası · PixelLab kapalı",
 		"characterSelectionWASDOrArrowsSelectEnter": "Karakter seçimi. WASD veya ok tuşlarıyla seçin, Enter ile özelleştirin, artı ve eksiyle yakınlaştırıp uzaklaştırın.",
 		"previousCharacter": "Önceki karakter",
@@ -914,20 +935,21 @@
 		"inspect": "İnceleyin",
 		"customization": "Özelleştirme",
 		"customizationPanels": "Özelleştirme panelleri",
-		"tabWorkRunning": "Burada süren bir iş var",
+		"tabWorkRunning": "Burada süren, bekleyen ya da incelemeye hazır bir iş var",
 		"tabWorkAttention": "Burada ilgilenmeniz gereken bir iş var"
+	},
+	"stateColors": {
+		"alreadyMatched": "Zaten vücut renklerini kullanıyor: {name}.",
+		"drift": "Vücut renklerine uymuyor: {name}",
+		"match": "Renkleri eşle",
+		"matched": "Vücut renklerine eşlendi: {name}."
 	},
 	"worldStage": {
 		"groundUnavailable": "Zemin gerçek zamanlı olarak çizilemiyor. Sabit sahne gösteriliyor.",
 		"materialUnavailable": "Zemin malzemesi kullanılamıyor. Sabit sahne gösteriliyor.",
 		"sceneUnavailable": "Canlı sahne kullanılamıyor. Tekrar denemek için sayfayı yenileyin.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Karakter önizlemesi. Yönü WASD veya ok tuşlarıyla değiştirin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
-		"sideScrollerTestWorldADLeft": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D veya sol/sağ ok tuşlarını kullanın ya da yatay sürükleyin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
-		"characterTestWorldWASDArrowsOrDrag": "Karakter test dünyası. Hareket etmek için WASD veya ok tuşlarını kullanın ya da sürükleyin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
 		"loadingCharacter": "Karakter yükleniyor…",
-		"dragInTheWorldToMove": "Hareket etmek için dünyada sürükleyin",
-		"focusWorldADOrToMove": "Dünyaya odaklanın · A/D veya ←/→ ile hareket edin",
-		"focusWorldWASDOrArrowKeysTo": "Dünyaya odaklanın · WASD veya ok tuşlarıyla hareket edin",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} eşya gizli: {move} kareleri eksik",
@@ -1352,6 +1374,7 @@
 		"drop": "Karakter ZIP dosyasını buraya bırakın",
 		"dropNote": "PixelLab karakteri veya PixelDoll dışa aktarımı · En fazla 64 MB",
 		"chooseZip": "ZIP seçin",
+		"chooseAnother": "Başka bir ZIP seçin",
 		"characterZip": "Karakter ZIP dosyası",
 		"devicePrivacy": "Dosyalarınız bu cihazda kalır. İçe aktarmadan önce karakteri önizleyin.",
 		"pixelLabHint": "PixelLab karakter oluşturucusunda her karenin ayrı dosya olduğu bir ZIP dışa aktarın. Üst klasörler desteklenir. Diğer sprite sayfası düzenleri ve yalnızca PNG içeren ZIP dosyaları desteklenmez.",
@@ -1479,8 +1502,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Çalışma alanı etkinliği",
-		"activityIntro": "Çalışma alanıyla birlikte PixelDoll {build} sürümünden kaydedildi. ZIP dosyasındaki işler yeniden başlatılmaz.",
+		"activityTitle": "Yedek ayrıntıları",
+		"activityIntro": "PixelDoll {build} ile yapılan bir yedekten açıldı.",
 		"missing": {
 			"one": "{count} görsel dosyası eksikti veya okunamadı.",
 			"other": "{count} görsel dosyası eksikti veya okunamadı."
@@ -1488,29 +1511,11 @@
 		"skippedCharacters": {
 			"one": "Atlanan kayıtlı karakter sayısı: {count}.",
 			"other": "Atlanan kayıtlı karakter sayısı: {count}."
-		},
-		"demoOutfit": "Demo varsayılan kıyafet ayarlarını kullanır.",
-		"exportSettings": "Kopya varsayılan dışa aktarım ayarlarını kullanır.",
-		"tier": "PixelLab plan seviyesi: {tier}",
-		"noErrors": "Yakın zamanda oluşmuş hata veya yarım kalan iş kaydedilmemiş.",
-		"noRecent": "Yakın zamanda oluşan hatalar dahil edilmedi.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Kod {code}",
-		"error": {
-			"tooLarge": "Bu çalışma alanı ZIP boyutu veya görsel sınırını aşıyor. Bunun yerine karakterleri ayrı ZIP dosyaları olarak alın.",
-			"containsKey": "Kayıtlı bir alan, bağlı veya hatırlanan PixelLab anahtarını içeriyor. Dışa aktarmadan önce anahtarı çalışma alanından kaldırın.",
-			"invalidIndex": "Bu çalışma alanı dizini geçersiz.",
-			"unsupportedVersion": "Bu çalışma alanı dosyasının sürümü desteklenmiyor.",
-			"duplicateRecord": "Bu çalışma alanı desteklenmeyen veya yinelenen bir kayıt içeriyor.",
-			"missingFiles": "Bu çalışma alanında geçersiz bir eksik dosya listesi var.",
-			"unexpectedFile": "Bu çalışma alanında beklenmeyen bir dosya var.",
-			"invalidDiagnostics": "Bu çalışma alanında geçersiz yakın tarihli hata kayıtları var."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Karakter ZIP dosyası yerine bir PixelDoll yedeği veya çalışma alanı ZIP dosyası seçin.",
+			"notBackup": "Karakter ZIP dosyası yerine bir PixelDoll yedeği seçin.",
 			"unsupportedVersion": "Bu yedek dosyası sürümü desteklenmiyor.",
 			"invalid": "Bu yedek hasarlı veya geçersiz.",
 			"tooLarge": "Bu yedek ZIP boyutu veya görsel sınırını aşıyor. Bunun yerine karakterleri ayrı ZIP dosyaları olarak alın.",
@@ -1604,6 +1609,7 @@
 			"facing": "Bazı kareler karşı yönden görünüyormuş gibi; gövdeyi inceleyin",
 			"detail": "Tasarımın bir ayrıntısı bazı karelerde eksik veya farklı renkte",
 			"motion": "Hareket ederken eşyanın boyutunu ve açısını kontrol edin",
+			"fill": "Eşyanın içi bazı karelerde boş, yalnızca dış çizgisi kalmış; şeklini kontrol edin",
 			"lowerClothing": "Ayakta duruş tasarımına kıyasla bazı alt giysiler eksik",
 			"footwear": "Ayakkabılar ayakta duruş tasarımından farklı; ayakları inceleyin",
 			"bodyPixels": "Model bazı gövde piksellerini değiştirdi",
@@ -1947,7 +1953,9 @@
 			"conceptNote": "Yüklenen görsel karakter karelerinden önce gönderilir. Çıktısı kullanılmaz.",
 			"redrawEquipment": "{item} {direction} · ekipmanı yeniden çiz",
 			"redrawEquipmentNote": "{width}×{height}, kareler {from}–{to}. Maskesiz bir sayfa ve eşleşen bir referans gönderir. PixelDoll neyi tutacağını sınırlar ve karelerinizi değiştirmeden önce her zaman sorar. PixelDoll için Tier 1 gerekir. Dolar olarak faturalanırsa minimum {minimum} olur; gerçek ücret daha yüksek olabilir.",
-			"gridRepairNote": "{width}×{height}, kareler {from}–{to}. Aynı yönden korumalı bir referans kullanır. Gövde değişmez. Görsel olarak engelleyici sorunları olan tamamlanmış onarımlar incelenmeniz için tutulur."
+			"gridRepairNote": "{width}×{height}, kareler {from}–{to}. Aynı yönden korumalı bir referans kullanır. Gövde değişmez. Görsel olarak engelleyici sorunları olan tamamlanmış onarımlar incelenmeniz için tutulur.",
+			"itemSheet": "{item}: {directions}, tek sayfa",
+			"itemSheetNote": "{width}×{height}: her görünüm için bir satır; önce ayakta duran tasarım, ardından her biri {cellWidth}×{cellHeight} px olarak kesilmiş {frames} animasyon karesi. Gövde değişmez. PixelDoll kaydetmeden önce sorar, yalnızca denetimlerden geçen görünümleri tutar ve diğerlerini listeler. PixelDoll için Tier 1 gerekir. Tek deneme; ücretli her yeniden deneme sizin işleminizi gerektirir."
 		},
 		"copyEndpointTitle": "Uç noktayı kopyala",
 		"manualCopyLabel": "Elle kopyalamak için uç nokta",
@@ -2059,7 +2067,11 @@
 		"stopNoAnswer": "Bu işi çalıştıran sekme durdurmayı henüz onaylamadı. Birazdan Etkinlik bölümüne bakın; hâlâ çalışıyorsa işi o sekmeden durdurun.",
 		"stopNotConfirmed": "PixelLab durdurmayı onaylamadı, bu yüzden iş çalışmaya ve ücretlendirilmeye devam edebilir. Etkinlik bölümüne bakın.",
 		"pausedStorage": "Kayıtlı işler okunamadı veya kaydedilemedi, bu yüzden yeni bir şey gönderilmiyor. Yeniden denemek için devam edin.",
-		"cancelSaveFailed": "İptal kaydedilemedi. Bu sekme isteği göndermeyecek, ancak başka bir sekme veya sayfayı yenilemek gönderebilir."
+		"cancelSaveFailed": "İptal kaydedilemedi. Bu sekme isteği göndermeyecek, ancak başka bir sekme veya sayfayı yenilemek gönderebilir.",
+		"titleItemViews": {
+			"one": "{item}: {move}, {count} görünüm",
+			"other": "{item}: {move}, {count} görünüm"
+		}
 	},
 	"genCard": {
 		"retryKey": "Yeniden deneme, tasarımın renklerine göre belirlenen {color} bir arka plan kullanır",
@@ -2720,6 +2732,8 @@
 		"motionOnly": "Yalnızca gövdenin hareketini tarif edin. Silah ve aksesuarları eşya olarak ekleyin.",
 		"motionModel": "Hareket modeli",
 		"motionModelHelp": "Skeleton v3, gövde ve ekipman için aynı pozları kullanır. V3 ve PixMiniMax önce gövdeyi çizer, ardından PixelDoll ekipman için pozları belirler.",
+		"itemDrawing": "Bu animasyondaki eşyalar",
+		"itemDrawingDefault": "Varsayılan ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
@@ -2776,7 +2790,11 @@
 			"repairNote": "Gövde değişmez. Tamamlanan onarımda görsel sorun varsa sonuç incelemeniz için bekletilir.",
 			"currentFrame": "Geçerli kare {number}",
 			"redrawnFrame": "Yeniden çizilen kare {number}",
-			"repairedFrame": "Onarılan kare {number}"
+			"repairedFrame": "Onarılan kare {number}",
+			"skippedViews": "Tutulmayanlar: {views}. PixelLab orada eşya çizmedi, bu yüzden eşya hâlâ eksik. Yalnızca bu görünümleri yeniden çizebilirsiniz.",
+			"viewFrame": "{view}, kare {number}",
+			"keepFailedViews": "Denetimlerden geçmeyen görünümleri de tut: {views}",
+			"chooseViews": "Kaydetmeden önce tutulacak görünümleri seçin."
 		}
 	},
 	"itemRoute": {
@@ -2810,7 +2828,9 @@
 			"itemMoveSaveConflictAlso": "Kareleri oluşturulurken bu karakter veya eşya değişti. Mevcut çizimler korundu; tamamlanan kareler Etkinlik bölümünde duruyor. Başka bir görünüm de durdu: {reason}",
 			"keepWithoutStanding": "Bu eşyanın tasarlandığı animasyonda eksik kareler var, bu yüzden o animasyon olmadan tutulamaz. O animasyonu gösterin ve sunuluyorsa Eşyayı onarın veya Eşyayı yeniden çizin seçeneğini kullanın ya da eşyayı yeniden oluşturun.",
 			"keepWithoutNothingLeft": "Bu eşyanın tutulabilecek eksiksiz bir animasyonu yok. Bunun yerine eksik kareleri oluşturun.",
-			"savedFrameMissing": "Bu eşyanın kayıtlı bir karesi depolamada yok."
+			"savedFrameMissing": "Bu eşyanın kayıtlı bir karesi depolamada yok.",
+			"itemSheetChanged": "Sayfanın fiyatı hesaplandıktan sonra bu eşya veya animasyon değişti. Yeniden incelemek için eşyayı tekrar açın. Oluşturma istenmedi.",
+			"itemSheetNoView": "PixelLab hiçbir görünümde eşya çizmedi, bu yüzden hiçbir şey tutulmadı. Sayfa Etkinlik bölümünde kalır."
 		}
 	},
 	"newItem": {
@@ -3406,8 +3426,29 @@
 		"generateFor": "Şunun için üret: {move}",
 		"wearOn": "{move} için giydirin"
 	},
+	"itemImport": {
+		"title": "Eşyaları içe aktarın",
+		"intro": "Bir karakterin ZIP dosyası, bir yedek veya paylaşılan bir karakter. Eşyaları bu karaktere uyuyorsa ücretsizdir.",
+		"empty": "Bu ZIP dosyasında tamamlanmış eşya yok.",
+		"skipped": {
+			"one": "{count} eşya okunamadı.",
+			"other": "{count} eşya okunamadı."
+		},
+		"notFitted": "{names} artık uymuyor ve eklenmedi.",
+		"busy": "Eşyanın eklenmesini bekleyin, sonra tekrar deneyin.",
+		"row": {
+			"copy": "Bu karaktere tam uyuyor",
+			"refit": "Bu bedene ücretsiz uyarlandı. İçe aktardıktan sonra karelerini kontrol edin.",
+			"unfitted": "Başka bir beden için yapıldı. Çizildiği gibi giyilir, bu yüzden havada kalabilir veya taşabilir.",
+			"remake": "Başka bir beden için yapıldı, bu yüzden burada giyilemez"
+		}
+	},
+	"importDrop": {
+		"items": "Eşyaları içe aktarmak için bırakın",
+		"moves": "Animasyonları içe aktarmak için bırakın",
+		"states": "Durumları içe aktarmak için bırakın"
+	},
 	"moveImport": {
-		"title": "Animasyonları içe aktarın",
 		"importMoves": "Animasyonları içe aktarın",
 		"importStates": "Durumları içe aktarın",
 		"dropArea": "PixelDoll ZIP bırakma alanı",
@@ -3448,5 +3489,34 @@
 			"resolveDrafts": "Hareketleri içe aktarmadan önce bu karakterin eşya taslaklarını tutun veya kapatın.",
 			"changed": "Bu karakter değişti. En son sürümü incelemek için ZIP dosyasını yeniden seçin."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Otomatik: hareketsiz durur",
+		"controls": "Kontroller",
+		"title": "Canlı görünümler",
+		"forCharacter": "{name} karakterinin Üstten görünüm ve Yandan kaydırmalı görünümde oynattığı animasyonlar.",
+		"idle": "Bekleme",
+		"walk": "Yürüme",
+		"attack": "Saldırı",
+		"jump": "Zıplama",
+		"attackUp": "Yukarı saldırı",
+		"attackDown": "Aşağı saldırı",
+		"automaticClip": "Otomatik: {clip}",
+		"automaticNone": "Otomatik: yok",
+		"sameAsAttack": "Saldırı ile aynı",
+		"sideAttackHelp": "Yandan kaydırmalı görünümde yukarı veya aşağı nişan aldığınızda Yukarı saldırı veya Aşağı saldırı oynatılır.",
+		"notSaved": "Canlı görünüm ayarı değişti ancak bu tarayıcı kaydedemedi.",
+		"openCharacter": "Oynatacağı animasyonları seçmek için bir karakter açın.",
+		"mount": "Binek",
+		"actions": "Oyun eylemleri",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Boşluk",
+		"noAttack": "Henüz Saldırı için bir şey seçilmedi. Canlı görünüm ayarlarından bir animasyon veya durum seçin.",
+		"noAttackDirection": "Bu animasyonda ({move}) {direction} yönüne bakan kare yok, bu yüzden o yöne saldıramaz.",
+		"hintTopDown": "Hareket için WASD veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
+		"hintSide": "Hareket için A/D veya tıklama · Saldırı için sağ tık veya X · Zıplama için Boşluk · Binmek için M",
+		"hintTouch": "Sol taraf hareket ettirir · Sağ taraf nişan alır, bırakınca saldırır · Düğmeler zıplatır ve bindirir",
+		"stageTopDown": "Karakter test dünyası. Hareket etmek için WASD, ok tuşları, tıklama veya sürükleme kullanın. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir.",
+		"stageSide": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D, sol ve sağ ok tuşları, tıklama veya sürükleme kullanın. Sağ tık veya X saldırır, Boşluk zıplar, M biner veya iner. 1, 2, 3 tuşları görünümü değiştirir."
 	}
 }

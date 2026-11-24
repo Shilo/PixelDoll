@@ -21,6 +21,8 @@ import { CURRENT_FORMAT, type Manifest } from '../../src/lib/store/manifest.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { CharacterApi } from '../fixtures/character-api.ts';
+import { itemSheetCells, itemSheetLayout, itemSheetWindows } from '../../src/lib/items/items.ts';
+import { answer, sheetCharacter } from '../fixtures/item-sheet.ts';
 import './studio-thumbnails.ts';
 import './dialog-dismissal.ts';
 
@@ -367,7 +369,7 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
 	await expect(report).toBeVisible();
 	await expect(notice).toContainText('Something went wrong.');
-	await expect(report).toContainText('Error: TypeError');
+	await expect(report).toContainText('Error type: TypeError');
 	await expect(report).not.toContainText('sk-ant');
 	const href = await report.getByRole('link', { name: 'Open on GitHub' }).getAttribute('href');
 	expect(href).toMatch(
@@ -549,6 +551,91 @@ test('Library deletes local work only after confirmation and offers a backup fir
 	expect(await saved()).toEqual({ ...original, character: false });
 });
 
+test('Library downloads the raw PixelLab results a saved character still has', async ({
+	page
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await openStudio(page, dev);
+	await page.evaluate(async () => {
+		const dbPath = '/src/lib/store/db.ts';
+		const pngPath = '/src/lib/image/pngraw.ts';
+		const db = await import(dbPath);
+		const { encodePngBytes } = await import(pngPath);
+		const sha = await db.putBlob(
+			await encodePngBytes({ w: 2, h: 2, data: new Uint8ClampedArray(16) })
+		);
+		const requestHash = 'abc123';
+		await db.put('projects', 'rig-originals', {
+			id: 'rig-originals',
+			savedAt: new Date().toISOString(),
+			manifest: {
+				format: 'pixeldoll/3',
+				name: 'Originals Test',
+				items: [
+					{ provenance: [{ requestHash: `sha256:${requestHash}`, jobId: 'remote-originals' }] }
+				]
+			}
+		});
+		await db.put('jobs', 'job-originals', {
+			id: 'job-originals',
+			label: 'Raw result',
+			method: 'POST',
+			endpoint: '/characters/animations',
+			params: {},
+			inputs: [],
+			requestHash,
+			state: 'done',
+			attempts: 1,
+			nextAt: 0,
+			createdAt: 0,
+			gens: 1,
+			usd: 0,
+			jobs: [
+				{
+					id: 'remote-originals',
+					status: 'completed',
+					done: true,
+					results: [{ label: 'frame', sha }]
+				}
+			]
+		});
+	});
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Library', exact: true }).click();
+	const downloading = page.waitForEvent('download');
+	await settings
+		.getByRole('button', { name: 'Download original generations', exact: true })
+		.click();
+	const download = await downloading;
+	expect(download.suggestedFilename()).toMatch(/-originals\.zip$/);
+	const files = await unzip(new Uint8Array(readFileSync((await download.path())!)));
+	expect(files.has('01-originals-test/01-characters-animations/frame.png')).toBe(true);
+	const requests = new TextDecoder().decode(files.get('01-originals-test/requests.json'));
+	expect(requests).toContain('job-originals');
+});
+
+test('Library says when no original generations are kept', async ({ page }, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await openStudio(page, dev);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Library', exact: true }).click();
+	let downloaded = false;
+	page.on('download', () => (downloaded = true));
+	await settings
+		.getByRole('button', { name: 'Download original generations', exact: true })
+		.click();
+	await expect(
+		page.getByText('No original images are kept for your saved characters.')
+	).toBeVisible();
+	expect(downloaded).toBe(false);
+});
+
 test('Settings saves creation choices across reload and resets them by scope', async ({ page }) => {
 	await page.setViewportSize({ width: 1280, height: 800 });
 	const sheet = (tab: Page) => tab.getByRole('dialog', { name: 'Settings', exact: true });
@@ -565,6 +652,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		['Character', 'base-clothing', 'none', 'underwear', 'select'],
 		['Move', 'move-model', 'v3', 'skeleton-v3', 'select'],
 		['Move', 'move-frames', '6', 'auto', 'select'],
+		['Move', 'item-drawing', 'sheet', 'skeleton', 'select'],
 		['State', 'state-model', 'pixen', 'pro', 'select'],
 		['Item', 'item-method', 'anchor', 'auto', 'select']
 	] as const;
@@ -2226,6 +2314,45 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	);
 	step('recolor changes the stage pixels');
 
+	// The custom picker previews while it is dragged, but only its close adds one undo step.
+	const pickWell = page.locator('.colors .swatch.pick').first();
+	const picker = pickWell.locator('input[type="color"]');
+	const picked = '#3366cc';
+	const azureStage = await stage();
+	await picker.evaluate((input, value) => {
+		const element = input as HTMLInputElement;
+		element.value = value;
+		element.dispatchEvent(new Event('input', { bubbles: true }));
+	}, picked);
+	await expect.poll(stage).not.toBe(azureStage);
+	assert.equal(
+		await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'),
+		'true',
+		'a dragged color is not committed yet'
+	);
+	await expect
+		.poll(() => pickWell.evaluate((well) => getComputedStyle(well).backgroundColor))
+		.toBe('rgb(51, 102, 204)');
+	await picker.evaluate((input) => input.dispatchEvent(new Event('change', { bubbles: true })));
+	assert.equal(
+		await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'),
+		'false'
+	);
+	await page.getByRole('button', { name: /^Undo/ }).click();
+	assert.equal(
+		await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'),
+		'true',
+		'one undo step takes back the whole drag'
+	);
+	await page.getByRole('button', { name: /^Undo/ }).click();
+	assert.equal(
+		await page.locator('.colors .swatch').first().getAttribute('aria-checked'),
+		'true',
+		'the drag was the only step after the swatch'
+	);
+	await page.locator('.colors .swatch[aria-label="azure"]').first().click();
+	step('a dragged custom color previews live and commits as one undo step');
+
 	await equipmentMode(page, 'Outfits');
 	await page.getByRole('button', { name: 'Save current look', exact: true }).click();
 	await page.locator('input[aria-label="Outfit name"]').fill('Smoke look');
@@ -3801,9 +3928,21 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await setup.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await equipmentMode(page, 'Moves');
+	// A set-up character never flashes the setup notice while its record is still being read.
+	await page.evaluate(() => {
+		const seen = window as unknown as { setupNoticeSeen?: boolean };
+		seen.setupNoticeSeen = false;
+		new MutationObserver(() => {
+			if (document.body.textContent?.includes('pose rig to add moves')) seen.setupNoticeSeen = true;
+		}).observe(document.body, { subtree: true, childList: true, characterData: true });
+	});
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'New move', exact: true })).toBeVisible();
 	const move = page.getByRole('dialog', { name: /^(New move|Redraw .+)$/ });
+	await expect(move.getByRole('textbox', { name: /^Describe the motion$/ })).toBeVisible();
+	expect(
+		await page.evaluate(() => (window as unknown as { setupNoticeSeen?: boolean }).setupNoticeSeen)
+	).toBe(false);
 	const description = move.getByRole('textbox', { name: /^Describe the (motion|replacement)$/ });
 	// Templates are suggestions under the prompt: pressed while applied.
 	const templates = move.getByRole('group', { name: 'Move templates', exact: true });
@@ -7034,6 +7173,55 @@ test('a view kept without poses names the move and view to make again before equ
 		'Idle West was kept without poses, so equipment is not fitted there. Make that view again to fit it.'
 	);
 	expect(posts.length).toBe(sent);
+	// Another item on the same view that still can be made must not hide this one's redraw note, and a worn copy from
+	// another body has no offer or note, so its own way on must stay reachable beside both.
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.evaluate(async (itemId) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts',
+			s = await import(statePath),
+			db = await import(dbPath);
+		const rec = await db.get('projects', s.doc.id),
+			source = rec.manifest.items.find((it: { id: string }) => it.id === itemId),
+			clone = structuredClone(source),
+			copied = structuredClone(source);
+		clone.id = 'extra-helm';
+		clone.name = 'Extra helm';
+		clone.slot = 'head';
+		for (const layer of clone.layers) {
+			delete layer.cells.idle?.west;
+			delete layer.cells.idle?.east;
+		}
+		clone.coverage = clone.coverage.filter((key: string) => !/^idle\/(west|east)\//.test(key));
+		// A copy from another body cannot be posed here: no offer and no unposed note, only making one for this character.
+		copied.id = 'copied-vest';
+		copied.name = 'Copied vest';
+		copied.slot = 'feet';
+		copied.baseHash = 'sha256:otherbody';
+		copied.copiedFrom = { id: 'other-body', name: 'Other body' };
+		for (const layer of copied.layers) delete layer.cells.idle?.west;
+		copied.coverage = copied.coverage.filter((key: string) => !key.startsWith('idle/west/'));
+		rec.manifest.items.push(clone, copied);
+		await db.put('projects', s.doc.id, rec);
+		await s.openProject(s.doc.id);
+		if (s.doc.items.head !== clone.id) s.wear(clone.id);
+		if (s.doc.items.feet !== copied.id) s.wear(copied.id);
+		if (s.doc.items.main_hand !== itemId) s.wear(itemId);
+		// The demo's other worn items are partial too; leave only these three so each way on is unambiguous.
+		for (const slot of ['torso_inner', 'back', 'hair'])
+			if (s.doc.items[slot]) s.wear(s.doc.items[slot]);
+		s.ui.anim = 'idle';
+		s.ui.dir = 'west';
+		s.ui.all = false;
+	}, itemId);
+	await inspectStage(page);
+	const stageNote = page.locator('.stage-note');
+	await expect(stageNote.getByText('Idle West was kept without poses')).toHaveCount(1);
+	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
+		'gens'
+	);
+	await expect(stageNote.getByRole('button', { name: /^Make one for / })).toBeVisible();
+	expect(posts.length).toBe(sent);
 });
 
 test('an item missing a standing view restores it from its saved design for free', async ({
@@ -7708,7 +7896,7 @@ test('targeted move replacement names mirrored effects without offering a separa
 	await expect(directions).not.toHaveAccessibleDescription(/Mirrored views also change/);
 });
 
-test('partial missing gear and explicit item repair stay on the current move and view', async ({
+test('stage makes all missing item views while explicit repair stays on the current view', async ({
 	page,
 	context
 }, info) => {
@@ -7734,14 +7922,41 @@ test('partial missing gear and explicit item repair stay on the current move and
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	const fixture = await targetedRepairFixture(page);
+	const fixture = await targetedRepairFixture(page, true);
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		const p = s.store.project,
 			item = p.manifest.items.find((it: { id: string }) => it.id === id);
-		for (const layer of item.layers) delete layer.cells.walk.west;
-		item.coverage = item.coverage.filter((key: string) => !key.startsWith('walk/west/'));
+		// Both extra views have body frames and clip joints. One lacks the item design, the other lacks rest joints.
+		const rig = p.manifest.rig,
+			body = p.manifest.items.find((it: { id: string }) => it.id === rig.baseItem),
+			walk = rig.animations.find((a: { id: string }) => a.id === 'walk');
+		for (const dir of ['north-east', 'south-east']) {
+			rig.directions.push({ id: dir });
+			body.layers[0].cells.walk[dir] = [...body.layers[0].cells.walk.south];
+			walk.sources[dir] = { ...walk.sources.south };
+			rig.rest[dir] = { ...rig.rest.south };
+		}
+		item.dressed['south-east'] = item.dressed.south;
+		delete rig.rest['south-east'].keypoints;
+		for (const layer of item.layers) {
+			delete layer.cells.walk.south;
+			delete layer.cells.walk.east;
+			delete layer.cells.walk.west;
+		}
+		item.coverage = item.coverage.filter((key: string) => !/^walk\/(south|east|west)\//.test(key));
+		// Every other item already has the new view, so only this one tests a shown view the offer leaves out.
+		for (const other of p.manifest.items) {
+			if (other.id === id || other.id === rig.baseItem) continue;
+			for (const layer of other.layers)
+				if (layer.cells?.walk?.south) layer.cells.walk['south-east'] = [...layer.cells.walk.south];
+			other.coverage?.push(
+				...other.coverage
+					.filter((key: string) => key.startsWith('walk/south/'))
+					.map((key: string) => key.replace('walk/south/', 'walk/south-east/'))
+			);
+		}
 		s.store.project = {
 			...p,
 			manifest: {
@@ -7766,8 +7981,26 @@ test('partial missing gear and explicit item repair stay on the current move and
 		};
 	}, fixture.itemId);
 	await inspectStage(page);
-	const make = page.locator('.stage-note').getByRole('button', { name: /^Make it/ });
-	await expect(make).toContainText('~3 gens');
+	const stageNote = page.locator('.stage-note');
+	// The extra view on stage has no rest joints: the offer makes the other missing views, and the item keeps its own
+	// way on for this one instead of only a price that leaves it missing.
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.ui.dir = 'south-east';
+	});
+	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
+		'~6 gens'
+	);
+	await expect(stageNote.getByRole('button', { name: /^Make it again/ })).toBeVisible();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.ui.dir = 'west';
+	});
+	await expect(stageNote.getByRole('button', { name: /^Make it again/ })).toHaveCount(0);
+	const make = stageNote.getByRole('button', { name: /^Make missing views/ });
+	await expect(make).toContainText('~6 gens');
 	await expect(make).not.toContainText('...');
 	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
@@ -7783,7 +8016,7 @@ test('partial missing gear and explicit item repair stay on the current move and
 			s = await import(path);
 		return s.moving.spec;
 	});
-	expect(poseScope).toMatchObject({ id: 'walk', dirs: ['west'], items: [fixture.itemId] });
+	expect(poseScope).toMatchObject({ id: 'walk', dirs: ['south', 'east'], items: [fixture.itemId] });
 	expect(poseScope.replace).toBeUndefined();
 	expect(poseScope.itemMethod).toBeUndefined();
 	// The stopped repair's footer Discard leaves it, as Cancel did.
@@ -7845,7 +8078,7 @@ test('partial missing gear and explicit item repair stay on the current move and
 	});
 	expect(gridScope).toMatchObject({
 		id: 'walk',
-		dirs: ['west'],
+		dirs: ['east'],
 		items: [fixture.itemId],
 		itemMethod: 'grid'
 	});
@@ -8152,6 +8385,144 @@ test('paid item repair review survives reload and both decisions send no extra r
 	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3', '/v2/edit-images-v2']);
 });
 
+test('the item sheet offers one priced edit-images-v2 request and holds its result for review', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	const outputs = new Map<string, Record<string, unknown>>();
+	// A synthetic 92 px, four-direction character whose jeans have only their standing design (test/fixtures/item-sheet.ts).
+	const character = await sheetCharacter(),
+		views = ['south', 'east', 'north'] as const,
+		measured = itemSheetWindows(
+			character.manifest,
+			character.images,
+			character.manifest.items.find((it) => it.id === 'jeans')!,
+			'walk',
+			views
+		)!,
+		plan = itemSheetCells('walk', 'default', views, 6, measured),
+		gens = itemSheetLayout(measured.cell, 3, 6)!.gens;
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (path === '/v2/balance')
+			return route.fulfill({
+				json: {
+					subscription: {
+						plan: 'Tier 1',
+						type: 'generations',
+						status: 'active',
+						generations: 100,
+						total: 100
+					},
+					credits: { type: 'usd', usd: 0 }
+				}
+			});
+		if (request.method() === 'POST' && path === '/v2/edit-images-v2') {
+			posts.push(path);
+			const sent = await decodePngBytes(
+				Buffer.from(request.postDataJSON().edit_images[0].image.base64, 'base64')
+			);
+			// The offline model draws the jeans on every frame, but redraws the body in the north row (a failed, usable view).
+			const sheet = answer(sent, plan, measured.cell, character.jeans, (dir) =>
+				dir === 'north' ? 'naked' : 'jeans'
+			);
+			const id = `offline-item-sheet-${posts.length}`,
+				base64 = Buffer.from(await encodePngBytes(sheet)).toString('base64');
+			outputs.set(id, { images: [{ type: 'base64', base64, format: 'png' }] });
+			return route.fulfill({ status: 202, json: { background_job_id: id } });
+		}
+		const id = path.split('/').at(-1)!;
+		if (outputs.has(id))
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 15 },
+					last_response: outputs.get(id)
+				}
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-item-sheet-key');
+		localStorage.setItem('pixeldoll.developerMode', '1');
+		localStorage.setItem(
+			'pixeldoll.creation.moves',
+			JSON.stringify({ model: 'skeleton-v3', frames: 'auto', itemDrawing: 'sheet' })
+		);
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const fixture = {
+		manifest: character.manifest,
+		images: Object.fromEntries(
+			await Promise.all(
+				[...character.images].map(
+					async ([h, im]) => [h, Buffer.from(await encodePngBytes(im)).toString('base64')] as const
+				)
+			)
+		)
+	};
+	const projectId: string = await page.evaluate(async (raw) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			createPath = '/src/studio/create.ts',
+			pngPath = '/src/lib/image/pngraw.ts';
+		const s = await import(statePath),
+			create = await import(createPath),
+			png = await import(pngPath);
+		const images = new Map();
+		for (const [h, b64] of Object.entries(raw.images as Record<string, string>))
+			images.set(h, await png.decodePngBytes(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))));
+		const id = await create.saveCopy({ manifest: raw.manifest, images }, 'Sheet fixture');
+		await s.refreshProjects();
+		await s.openProject(id);
+		s.ui.anim = 'walk';
+		s.pick('jeans');
+		return id;
+	}, fixture);
+	const walkCells = () =>
+		page.evaluate(async (id) => {
+			const dbPath = '/src/lib/store/db.ts',
+				db = await import(dbPath);
+			const rec = await db.get('projects', id);
+			return rec.manifest.items.find((it: { id: string }) => it.id === 'jeans').layers[0].cells
+				.walk;
+		}, projectId);
+	const pane = await selectedItemDetails(page);
+	const make = pane.getByRole('button', { name: /^Make for Walk/ });
+	await expect(make).toContainText(`~${gens} gens`);
+	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
+	const api = page.getByRole('dialog', { name: 'API calls', exact: true });
+	await expect(api).toContainText('/edit-images-v2');
+	await expect(api).toContainText('one sheet');
+	await expect(api).not.toContainText('/edit-animation-v2');
+	await api.getByRole('button', { name: 'Close API calls', exact: true }).click();
+	await make.click();
+	const review = page.getByRole('dialog', { name: 'Review item redraw' });
+	await expect(review.getByRole('img', { name: 'Redrawn frame 6', exact: true })).toHaveCount(3);
+	await expect(review).toContainText('North, frame 6');
+	// The failed north view is shown, but kept only on request.
+	await expect(
+		review.getByRole('checkbox', {
+			name: 'Also keep North, which did not pass their checks',
+			exact: true
+		})
+	).not.toBeChecked();
+	expect(await walkCells()).toBeUndefined();
+	await review.getByRole('button', { name: 'Use redrawn frames', exact: true }).click();
+	await expect
+		.poll(async () => Object.keys((await walkCells()) ?? {}).sort())
+		.toEqual(['east', 'south']);
+	expect(posts).toEqual(['/v2/edit-images-v2']);
+});
+
 test('unsafe imported equipment prices its frozen route and discloses suspicious joints on held offers', async ({
 	page,
 	context
@@ -8225,9 +8596,10 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 		s.ui.group = 'torso_inner';
 	}, fixture.itemId);
 	await inspectStage(page);
-	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toContainText(
-		'~10 gens'
-	);
+	const stageMake = page
+		.locator('.stage-note')
+		.getByRole('button', { name: /^Make missing views/ });
+	await expect(stageMake).toContainText('~10 gens');
 	await selectedItemDetails(page);
 	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('~10 gens');
 	await page.evaluate(async (id) => {
@@ -8255,7 +8627,7 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await inspectStage(page);
-	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toBeEnabled();
+	await expect(stageMake).toBeEnabled();
 	await expect(
 		page.locator('.stage-note .notice').filter({ hasText: 'Some measured joints look unusual' })
 	).toBeVisible();
@@ -9004,6 +9376,11 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		// Priced as posed on a separate body until Settings switches to drawing on the move frames below.
+		localStorage.setItem(
+			'pixeldoll.creation.moves',
+			JSON.stringify({ model: 'skeleton-v3', frames: 'auto', itemDrawing: 'skeleton' })
+		);
 	});
 	await openStudio(
 		page,
@@ -9153,7 +9530,17 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(statesTab).not.toHaveAttribute('data-activity');
 	await expect(more).not.toHaveAttribute('data-activity');
 	expect(await dot(movesTab, 'label')).toBe('accent');
-	await expect(movesTab).toHaveAccessibleDescription('Work is running here');
+	await expect(movesTab).toHaveAccessibleDescription(
+		'Work here is running, waiting or ready to review'
+	);
+	// Outside Preview, Moves and States are disabled, so their work moves to More's dot.
+	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
+	await expect(movesTab).not.toHaveAttribute('data-activity');
+	await expect(more).toHaveAttribute('data-activity', 'busy');
+	await page.getByRole('button', { name: 'Preview', exact: true }).click();
+	await equipmentMode(page, 'Moves');
+	await expect(movesTab).toHaveAttribute('data-activity', 'busy');
+	await expect(more).not.toHaveAttribute('data-activity');
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
@@ -9172,18 +9559,36 @@ test('standing-first items quote only standing and offer actual custom moves one
 	expect(await dot(movesTab, 'label')).toBe('red');
 	expect(await dot(statesTab, 'label')).toBe('accent');
 	await expect(movesTab).toHaveAccessibleDescription('Work here needs attention');
-	// Work outside the tabs (an item draft) marks More: running, then stopped.
-	const draft = (phase: string) =>
-		page.evaluate(async (phase) => {
-			const path = '/src/studio/state.svelte.ts',
-				s = await import(path);
-			s.gens.splice(0, s.gens.length, {
-				phase,
-				draft: { rigId: 'another-character', spec: { id: 'outside-draft' } },
-				input: { slot: 'head', name: 'Outside draft' }
-			});
-		}, phase);
-	await draft('running');
+	// This character's item drafts mark Wardrobe (gold, red when one failed); another character's mark More instead.
+	const wardrobeTab = page.locator('#customization-tab-wardrobe');
+	const draft = (phase: string, own: boolean) =>
+		page.evaluate(
+			async ({ phase, own }) => {
+				const path = '/src/studio/state.svelte.ts',
+					s = await import(path);
+				s.gens.splice(0, s.gens.length, {
+					phase,
+					status: '',
+					draft: {
+						rigId: own ? s.doc.id : 'another-character',
+						spec: { id: 'dot-draft' },
+						calls: []
+					},
+					input: { slot: 'head', name: 'Dot draft' }
+				});
+			},
+			{ phase, own }
+		);
+	await draft('running', true);
+	await expect(wardrobeTab).toHaveAttribute('data-activity', 'busy');
+	expect(await dot(wardrobeTab, 'label')).toBe('accent');
+	await expect(more).not.toHaveAttribute('data-activity');
+	await draft('failed', true);
+	await expect(wardrobeTab).toHaveAttribute('data-activity', 'stopped');
+	expect(await dot(wardrobeTab, 'label')).toBe('red');
+	await expect(more).not.toHaveAttribute('data-activity');
+	await draft('running', false);
+	await expect(wardrobeTab).not.toHaveAttribute('data-activity');
 	await expect(more).toHaveAttribute('data-activity', 'busy');
 	expect(await dot(more, 'button')).toBe('accent');
 	const size = (target: Locator, pseudo: string) =>
@@ -9195,7 +9600,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 			return [after.width, after.height];
 		}, pseudo);
 	expect(await size(more, 'button')).toEqual(await size(movesTab, 'label'));
-	await draft('failed');
+	await draft('failed', false);
 	await expect(more).toHaveAttribute('data-activity', 'stopped');
 	expect(await dot(more, 'button')).toBe('red');
 	await page.evaluate(async () => {
@@ -9243,6 +9648,27 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).toContainText(
 		'~12 gens'
 	);
+	const peekCalls = async (endpoint: string, other: string) => {
+		await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
+		const api = page.getByRole('dialog', { name: 'API calls', exact: true });
+		await expect(api).toContainText(endpoint);
+		await expect(api).not.toContainText(other);
+		await api.getByRole('button', { name: 'Close API calls', exact: true }).click();
+	};
+	await peekCalls('/animate-with-skeleton-v3', '/edit-animation-v2');
+	// Settings > Creation > Moves now draws items on the move's own frames: the open offer follows it.
+	await page.evaluate(async () => {
+		const path = '/src/studio/settingsDefaults.svelte.ts';
+		localStorage.setItem(
+			'pixeldoll.creation.moves',
+			JSON.stringify({ model: 'skeleton-v3', frames: 'auto', itemDrawing: 'anchor' })
+		);
+		(await import(path)).noteCreationSettings();
+	});
+	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).not.toContainText(
+		'~12 gens'
+	);
+	await peekCalls('/edit-animation-v2', '/animate-with-skeleton-v3');
 	await pane.getByRole('button', { name: /^Make for Custom walk/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	await connect
@@ -9264,7 +9690,12 @@ test('standing-first items quote only standing and offer actual custom moves one
 		const path = '/src/studio/state.svelte.ts';
 		return (await import(path)).moving.spec;
 	});
-	expect(scope).toMatchObject({ id: 'custom_walk', items: [fixture.itemId], itemsOnly: true });
+	expect(scope).toMatchObject({
+		id: 'custom_walk',
+		items: [fixture.itemId],
+		itemsOnly: true,
+		itemMethod: 'anchor'
+	});
 	expect(scope.dirs).toEqual(['south', 'east', 'north', 'west']);
 	expect(posts).toEqual([]);
 });
@@ -9758,10 +10189,15 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		.getByRole('dialog', { name: 'Item review', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
-	// Activity (in More, which carries a warning dot) lists the stopped draft that holds its slot and opens its review.
+	// Wardrobe carries the stopped draft's warning dot (More leaves it to the tab); Activity in More lists the draft that
+	// holds its slot and opens its review.
+	await expect(page.locator('#customization-tab-wardrobe')).toHaveAttribute(
+		'data-activity',
+		'stopped'
+	);
 	await expect(
-		page.locator('.experience-header [popovertarget="experience-options"][data-activity="stopped"]')
-	).toBeVisible();
+		page.locator('.experience-header [popovertarget="experience-options"]')
+	).not.toHaveAttribute('data-activity');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')

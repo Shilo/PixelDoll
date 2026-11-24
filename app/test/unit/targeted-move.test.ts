@@ -1832,15 +1832,15 @@ test('one replaced view kept without poses loses only its own poses and fitted e
 		dressed: { south: 'sha256:dressed' }
 	});
 	// The posed views already have the hat, so there is no offer: the unposed East view is still named.
-	expect(unposedItemMoves(saved.manifest, 'hat', setupRedoMoves(saved))).toEqual([
+	expect(unposedItemMoves(saved.manifest, 'hat', 'skeleton', setupRedoMoves(saved))).toEqual([
 		{ move: 'idle', note: expect.objectContaining({ vars: expect.objectContaining({ count: 1 }) }) }
 	]);
 	delete saved.manifest.rig.animations[0].sources;
 	(saved.rigQa as { redo: string[] }).redo = ['idle'];
 	expect(
-		missingItemMoves(saved.manifest, 'hat').find((spec) => spec.id === 'idle')
+		missingItemMoves(saved.manifest, 'hat', 'skeleton').find((spec) => spec.id === 'idle')
 	).toBeUndefined();
-	expect(unposedItemMoves(saved.manifest, 'hat', setupRedoMoves(saved))).toEqual([
+	expect(unposedItemMoves(saved.manifest, 'hat', 'skeleton', setupRedoMoves(saved))).toEqual([
 		{
 			move: 'idle',
 			note: expect.objectContaining({
@@ -1849,6 +1849,23 @@ test('one replaced view kept without poses loses only its own poses and fitted e
 			})
 		}
 	]);
+	// Two items offering the same move name its kept-without-poses views once, not once per item.
+	const cap = structuredClone(saved.manifest.items[1]);
+	cap.id = 'cap';
+	saved.manifest.items.push(cap);
+	const pair = itemMoveOffer(
+		saved.manifest,
+		[
+			{ ...fit, items: ['hat'], dirs: ['south'] },
+			{ ...fit, items: ['cap'], dirs: ['south'] }
+		],
+		setupRedoMoves(saved)
+	);
+	expect(pair.unposed).toHaveLength(1);
+	expect(pair.unposed[0]).toMatchObject({
+		key: 'moveReview.unposedViews',
+		vars: expect.objectContaining({ count: 3 })
+	});
 });
 
 test('redoing one view of a move kept without poses leaves the rest of the rig ready', async () => {

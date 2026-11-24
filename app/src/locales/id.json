@@ -51,6 +51,15 @@
 		"scopeDebug": "Cadangkan karakter, artwork, data arsip, dan detail debugging.",
 		"debugNotSaved": "Browser tidak dapat menyimpan pengaturan ini.",
 		"backup": "Cadangkan pustaka",
+		"originals": "Unduh hasil asli",
+		"originalsHint": "Gambar mentah yang dikembalikan PixelLab untuk karakter tersimpan, sebelum diproses PixelDoll, beserta permintaan yang membelinya. Hanya permintaan yang masih tersimpan di perangkat ini yang disertakan.",
+		"originalsName": "hasil asli",
+		"originalsNone": "Tidak ada gambar asli yang tersimpan untuk karakter tersimpan Anda.",
+		"originalsPartial": {
+			"other": "Karakter tanpa hasil asli tersimpan: {count}."
+		},
+		"originalsStarted": "Unduhan hasil asli dimulai.",
+		"originalsTooLarge": "Hasil asli terlalu besar untuk diunduh sekaligus.",
 		"restoreFromBackup": "Pulihkan dari cadangan",
 		"review": "Tinjau cadangan",
 		"add": "Karakter yang akan ditambahkan",
@@ -122,7 +131,14 @@
 		"saveFailed": "Pilihan ini tidak dapat disimpan. Coba lagi.",
 		"incompatible": "Pilih Otomatis atau jumlah bingkai yang didukung model baru.",
 		"framesHelp": "Jumlah bingkai yang tersedia bergantung pada ukuran kanvas karakter.",
-		"methodHelp": "Menggunakan {pose} jika didukung. Jika tidak, menggunakan {edit}."
+		"methodHelp": "Menggunakan {pose} jika didukung. Jika tidak, menggunakan {edit}.",
+		"itemDrawing": "Item pada animasi",
+		"itemDrawingHelp": "Menggambar pada frame animasi menyesuaikan item dengan gambar animasi itu sendiri. Memberi pose pada tubuh terpisah menganimasikan item secara tersendiri, sehingga item bisa bergeser beberapa piksel. Menggambar semua tampilan sekaligus lebih mahal daripada memberi pose dan lebih murah daripada menggambar pada frame animasi, dan Anda memeriksanya sebelum disimpan. Cocok untuk item yang dikenakan pada karakter empat arah berukuran 80 hingga 128 px; item lain digambar pada frame animasi, dan item yang dipegang diberi pose.",
+		"itemDrawings": {
+			"anchor": "Gambar pada frame animasi",
+			"skeleton": "Pose tubuh terpisah",
+			"sheet": "Gambar semua tampilan sekaligus"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Putar pratinjau tunggangan",
@@ -698,7 +714,7 @@
 		"missingFrames": "{names} perlu frame untuk animasi {move}",
 		"missingFrameViews": "{names} perlu frame untuk animasi {move} yang menghadap {direction}",
 		"making": "Membuat…",
-		"makeIt": "Buat",
+		"makeMissingViews": "Buat tampilan yang belum ada",
 		"estimate": {
 			"other": "~{n} generasi"
 		},
@@ -862,7 +878,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Pilih animasi di Pratinjau. Saat menunggang, gerakan mengikuti Pose penunggang di pengaturan tunggangan.",
-		"movesOffWalking": "Pilih animasi di Pratinjau. Di sini, karakter memakai animasi diam atau jalan saat Anda menggerakkannya.",
+		"movesOffWalking": "Pilih animasi di Pratinjau. Di sini, pengaturan Tampilan langsung menentukan apa yang diputar.",
 		"tabWardrobe": "Lemari",
 		"tabColors": "Warna",
 		"tabOutfits": "Setelan",
@@ -874,6 +890,9 @@
 			"other": "{n} item yang terpasang perlu frame"
 		},
 		"missingFramesForMove": "Frame belum ada untuk {move} · {direction}",
+		"previewProblems": {
+			"other": "{n} masalah"
+		},
 		"workspaceCopyPixelLabOff": "Salinan ruang kerja · PixelLab nonaktif",
 		"characterSelectionWASDOrArrowsSelectEnter": "Pemilihan karakter. Pilih dengan WASD atau tombol panah. Tekan Enter untuk menyesuaikan, atau plus dan minus untuk mengubah zoom.",
 		"previousCharacter": "Karakter sebelumnya",
@@ -890,20 +909,21 @@
 		"inspect": "Periksa",
 		"customization": "Penyesuaian",
 		"customizationPanels": "Panel penyesuaian",
-		"tabWorkRunning": "Ada pekerjaan yang sedang berjalan di sini",
+		"tabWorkRunning": "Ada pekerjaan di sini yang sedang berjalan, menunggu, atau siap ditinjau",
 		"tabWorkAttention": "Ada pekerjaan di sini yang perlu diperhatikan"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} sudah memakai warna tubuh.",
+		"drift": "{name} tidak mengikuti warna tubuh",
+		"match": "Samakan warna",
+		"matched": "{name} kini memakai warna tubuh."
 	},
 	"worldStage": {
 		"groundUnavailable": "Perenderan lantai secara langsung tidak tersedia. Adegan statis ditampilkan.",
 		"materialUnavailable": "Material lantai tidak tersedia. Adegan statis ditampilkan.",
 		"sceneUnavailable": "Adegan langsung tidak tersedia. Muat ulang untuk mencoba lagi.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Pratinjau karakter. Ubah arah hadap dengan WASD atau tombol panah. Beralih tampilan dengan tombol 1, 2, 3.",
-		"sideScrollerTestWorldADLeft": "Dunia uji gulir samping. Bergerak dengan A/D, panah kiri/kanan, atau seret mendatar. Beralih tampilan dengan tombol 1, 2, 3.",
-		"characterTestWorldWASDArrowsOrDrag": "Dunia uji karakter. Bergerak dengan WASD, tombol panah, atau seret. Beralih tampilan dengan tombol 1, 2, 3.",
 		"loadingCharacter": "Memuat karakter…",
-		"dragInTheWorldToMove": "Seret di area dunia untuk bergerak",
-		"focusWorldADOrToMove": "Fokuskan area dunia · Bergerak dengan A/D atau ←/→",
-		"focusWorldWASDOrArrowKeysTo": "Fokuskan area dunia · Bergerak dengan WASD atau tombol panah",
 		"notice": {
 			"hiddenItemsInMove": {
 				"other": "{count} item disembunyikan: bingkai {move} tidak lengkap"
@@ -1309,6 +1329,7 @@
 		"drop": "Letakkan ZIP karakter di sini",
 		"dropNote": "Karakter PixelLab atau ekspor PixelDoll · maksimal 64 MB",
 		"chooseZip": "Pilih ZIP",
+		"chooseAnother": "Pilih ZIP lain",
 		"characterZip": "ZIP karakter",
 		"devicePrivacy": "File Anda tetap di perangkat ini. Lihat pratinjau karakter sebelum mengimpor.",
 		"pixelLabHint": "Di pembuat karakter PixelLab, ekspor ZIP dengan file terpisah untuk tiap frame. File boleh berada di dalam folder. Tata letak sprite sheet lain dan ZIP yang hanya berisi PNG tidak didukung.",
@@ -1434,36 +1455,18 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Aktivitas ruang kerja",
-		"activityIntro": "Disimpan bersama ruang kerja dari PixelDoll {build}. Tugas dari ZIP tidak dimulai ulang.",
+		"activityTitle": "Detail cadangan",
+		"activityIntro": "Dibuka dari cadangan yang dibuat dengan PixelDoll {build}.",
 		"missing": {
 			"other": "{count} file gambar tidak ditemukan atau tidak dapat dibaca."
 		},
 		"skippedCharacters": {
 			"other": "Karakter tersimpan yang dilewati: {count}."
-		},
-		"demoOutfit": "Demo menggunakan pengaturan setelan bawaan.",
-		"exportSettings": "Salinan menggunakan pengaturan ekspor bawaan.",
-		"tier": "Tier PixelLab: {tier}",
-		"noErrors": "Tidak ada kesalahan terbaru atau pekerjaan yang belum selesai yang tercatat.",
-		"noRecent": "Kesalahan terbaru tidak disertakan.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Kode {code}",
-		"error": {
-			"tooLarge": "Ruang kerja ini melebihi batas ukuran ZIP atau gambar. Gunakan ZIP per karakter sebagai gantinya.",
-			"containsKey": "Ada kolom tersimpan yang berisi kunci PixelLab yang terhubung atau diingat. Hapus kunci tersebut dari ruang kerja sebelum mengekspor.",
-			"invalidIndex": "Indeks ruang kerja ini tidak valid.",
-			"unsupportedVersion": "Versi file ruang kerja ini tidak didukung.",
-			"duplicateRecord": "Ruang kerja ini berisi data tersimpan yang tidak didukung atau duplikat.",
-			"missingFiles": "Daftar file yang tidak ditemukan dalam ruang kerja ini tidak valid.",
-			"unexpectedFile": "Ruang kerja ini berisi file yang tidak semestinya.",
-			"invalidDiagnostics": "Data kesalahan terbaru di ruang kerja ini tidak valid."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Pilih cadangan PixelDoll atau ZIP ruang kerja, bukan ZIP karakter.",
+			"notBackup": "Pilih cadangan PixelDoll, bukan ZIP karakter.",
 			"unsupportedVersion": "Versi file cadangan ini tidak didukung.",
 			"invalid": "Cadangan ini rusak atau tidak valid.",
 			"tooLarge": "Cadangan ini melebihi batas ukuran ZIP atau gambar. Gunakan ZIP karakter satu per satu.",
@@ -1555,6 +1558,7 @@
 			"facing": "Sebagian frame menyerupai tampilan arah berlawanan. Periksa bagian torso",
 			"detail": "Ada detail desain yang hilang atau berubah warna di sebagian frame",
 			"motion": "Periksa ukuran dan sudut item saat bergerak",
+			"fill": "Item berlubang di beberapa frame, hanya tersisa garis luarnya; periksa bentuknya",
 			"lowerClothing": "Sebagian pakaian bawah hilang dibandingkan dengan desain pose berdiri",
 			"footwear": "Alas kaki berbeda dari desain pose berdiri. Periksa bagian kaki",
 			"bodyPixels": "Model mengubah sebagian piksel tubuh",
@@ -1889,7 +1893,9 @@
 			"conceptNote": "Gambar yang diunggah dikirim lebih dulu, sebelum frame karakter. Hasilnya tidak dipakai.",
 			"redrawEquipment": "{item} {direction} · gambar ulang perlengkapan",
 			"redrawEquipmentNote": "{width}×{height}, frame {from}–{to}. Mengirim sheet tanpa masker dengan referensi yang cocok. PixelDoll membatasi apa yang disimpan dan selalu bertanya sebelum mengganti frame Anda. PixelDoll memerlukan Tier 1. Jika ditagih dalam dolar, minimumnya {minimum}; biaya sebenarnya bisa lebih tinggi.",
-			"gridRepairNote": "{width}×{height}, frame {from}–{to}. Memakai satu referensi searah yang dilindungi. Tubuh tetap sama. Perbaikan lengkap dengan masalah visual yang menghalangi disimpan untuk Anda tinjau."
+			"gridRepairNote": "{width}×{height}, frame {from}–{to}. Memakai satu referensi searah yang dilindungi. Tubuh tetap sama. Perbaikan lengkap dengan masalah visual yang menghalangi disimpan untuk Anda tinjau.",
+			"itemSheet": "{item}: {directions}, satu sheet",
+			"itemSheetNote": "{width}×{height}: satu baris per tampilan, desain berdirinya lebih dulu, lalu {frames} frame animasi, masing-masing dipotong menjadi {cellWidth}×{cellHeight} px. Tubuh tidak berubah. PixelDoll bertanya sebelum menyimpan, hanya menyimpan tampilan yang lolos pemeriksaan, dan mencantumkan yang lain. PixelDoll memerlukan Tier 1. Satu percobaan; setiap percobaan ulang berbayar memerlukan tindakan Anda."
 		},
 		"copyEndpointTitle": "Salin endpoint",
 		"manualCopyLabel": "Endpoint untuk salin manual",
@@ -1998,7 +2004,10 @@
 		"stopNoAnswer": "Tab yang menjalankan pekerjaan ini belum mengonfirmasi penghentian. Periksa Aktivitas sebentar lagi; jika masih berjalan, hentikan di tab itu.",
 		"stopNotConfirmed": "PixelLab tidak mengonfirmasi penghentian, jadi pekerjaan ini mungkin masih berjalan dan dikenai biaya. Periksa Aktivitas.",
 		"pausedStorage": "Pekerjaan yang tersimpan tidak dapat dibaca atau disimpan, jadi tidak ada yang baru dikirim. Lanjutkan untuk mencoba lagi.",
-		"cancelSaveFailed": "Pembatalan tidak dapat disimpan. Tab ini tidak akan mengirim permintaan, tetapi tab lain atau memuat ulang halaman bisa mengirimnya."
+		"cancelSaveFailed": "Pembatalan tidak dapat disimpan. Tab ini tidak akan mengirim permintaan, tetapi tab lain atau memuat ulang halaman bisa mengirimnya.",
+		"titleItemViews": {
+			"other": "{item}: {move}, {count} tampilan"
+		}
 	},
 	"genCard": {
 		"retryKey": "Percobaan ulang memakai latar belakang {color}, berdasarkan pengukuran warna desain ini",
@@ -2648,6 +2657,8 @@
 		"motionOnly": "Jelaskan gerakan tubuh saja. Tambahkan senjata dan properti sebagai item.",
 		"motionModel": "Model gerakan",
 		"motionModelHelp": "Skeleton v3 memakai pose yang sama untuk tubuh dan perlengkapan. V3 dan PixMiniMax menggambar tubuh terlebih dahulu, lalu PixelDoll mendeteksi pose untuk perlengkapan.",
+		"itemDrawing": "Item pada animasi ini",
+		"itemDrawingDefault": "Default ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
@@ -2700,7 +2711,11 @@
 			"repairNote": "Tubuh tidak berubah. Jika perbaikan selesai tetapi masih ada masalah visual, hasilnya ditahan untuk Anda tinjau.",
 			"currentFrame": "Frame saat ini {number}",
 			"redrawnFrame": "Frame yang digambar ulang {number}",
-			"repairedFrame": "Frame yang diperbaiki {number}"
+			"repairedFrame": "Frame yang diperbaiki {number}",
+			"skippedViews": "Tidak disimpan: {views}. PixelLab tidak menggambar item di sana, jadi item masih belum ada. Anda bisa menggambar ulang tampilan tersebut saja.",
+			"viewFrame": "{view}, frame {number}",
+			"keepFailedViews": "Simpan juga {views}, yang tidak lolos pemeriksaan",
+			"chooseViews": "Pilih tampilan yang ingin disimpan sebelum menyimpan."
 		}
 	},
 	"itemRoute": {
@@ -2734,7 +2749,9 @@
 			"itemMoveSaveConflictAlso": "Karakter atau item ini berubah saat frame-nya sedang dibuat. Gambar yang ada tetap disimpan; frame yang selesai tetap ada di Aktivitas. Tampilan lain juga berhenti: {reason}",
 			"keepWithoutStanding": "Item ini kehilangan frame pada animasi yang menjadi dasar desainnya, jadi tidak dapat disimpan tanpa animasi itu. Tampilkan animasi itu lalu gunakan Perbaiki item atau Gambar ulang item jika tersedia, atau buat item lagi.",
 			"keepWithoutNothingLeft": "Item ini tidak punya animasi lengkap untuk disimpan. Buat frame yang hilang sebagai gantinya.",
-			"savedFrameMissing": "Sebuah frame tersimpan dari item ini tidak ada di penyimpanan."
+			"savedFrameMissing": "Sebuah frame tersimpan dari item ini tidak ada di penyimpanan.",
+			"itemSheetChanged": "Item atau animasi ini berubah sejak harga sheet-nya dihitung. Buka kembali item untuk memeriksanya lagi. Tidak ada pembuatan yang diminta.",
+			"itemSheetNoView": "PixelLab tidak menggambar item di tampilan mana pun, jadi tidak ada yang disimpan. Sheet tetap ada di Aktivitas."
 		}
 	},
 	"newItem": {
@@ -3312,8 +3329,28 @@
 		"generateFor": "Buat untuk {move}",
 		"wearOn": "Kenakan di {move}"
 	},
+	"itemImport": {
+		"title": "Impor item",
+		"intro": "ZIP unduhan karakter, cadangan, atau karakter yang dibagikan. Gratis jika item-nya cocok dengan karakter ini.",
+		"empty": "ZIP ini tidak berisi item yang sudah selesai.",
+		"skipped": {
+			"other": "{count} item tidak dapat dibaca."
+		},
+		"notFitted": "{names} sudah tidak cocok dan tidak ditambahkan.",
+		"busy": "Tunggu hingga item selesai ditambahkan, lalu coba lagi.",
+		"row": {
+			"copy": "Cocok persis dengan karakter ini",
+			"refit": "Disesuaikan gratis dengan tubuh ini. Periksa frame-nya setelah impor.",
+			"unfitted": "Dibuat untuk tubuh lain. Dipakai seperti digambar, jadi bisa melayang atau menembus.",
+			"remake": "Dibuat untuk tubuh lain, jadi tidak bisa dipakai di sini"
+		}
+	},
+	"importDrop": {
+		"items": "Lepaskan untuk mengimpor item",
+		"moves": "Lepaskan untuk mengimpor animasi",
+		"states": "Lepaskan untuk mengimpor status"
+	},
 	"moveImport": {
-		"title": "Impor animasi",
 		"importMoves": "Impor animasi",
 		"importStates": "Impor status",
 		"dropArea": "Area lepas ZIP PixelDoll",
@@ -3353,5 +3390,34 @@
 			"resolveDrafts": "Simpan atau buang draf item karakter ini sebelum mengimpor gerakan.",
 			"changed": "Karakter ini berubah. Pilih ZIP lagi untuk meninjau versi terbaru."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Otomatis: diam di tempat",
+		"controls": "Kontrol",
+		"title": "Tampilan langsung",
+		"forCharacter": "Animasi yang diputar {name} di Tampak atas dan Gulir samping.",
+		"idle": "Diam",
+		"walk": "Berjalan",
+		"attack": "Serangan",
+		"jump": "Lompat",
+		"attackUp": "Serangan ke atas",
+		"attackDown": "Serangan ke bawah",
+		"automaticClip": "Otomatis: {clip}",
+		"automaticNone": "Otomatis: tidak ada",
+		"sameAsAttack": "Sama seperti Serangan",
+		"sideAttackHelp": "Di Gulir samping, Serangan ke atas atau ke bawah diputar saat Anda membidik ke atas atau ke bawah.",
+		"notSaved": "Pengaturan tampilan langsung berubah, tetapi browser ini tidak dapat menyimpannya.",
+		"openCharacter": "Buka karakter untuk memilih animasi yang diputarnya.",
+		"mount": "Tunggangan",
+		"actions": "Aksi permainan",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Spasi",
+		"noAttack": "Belum ada yang diputar sebagai Serangan. Pilih animasi atau keadaan di pengaturan Tampilan langsung.",
+		"noAttackDirection": "{move} tidak memiliki frame ke arah {direction}, jadi tidak dapat menyerang ke arah itu.",
+		"hintTopDown": "WASD atau klik untuk bergerak · Klik kanan atau X untuk menyerang · Spasi untuk melompat · M untuk naik atau turun",
+		"hintSide": "A/D atau klik untuk bergerak · Klik kanan atau X untuk menyerang · Spasi untuk melompat · M untuk naik atau turun",
+		"hintTouch": "Sisi kiri untuk bergerak · Sisi kanan untuk membidik, lepaskan untuk menyerang · Tombol untuk melompat dan menunggang",
+		"stageTopDown": "Dunia uji karakter. Gunakan WASD, tombol panah, klik, atau seret untuk bergerak. Klik kanan atau X menyerang, Spasi melompat, M naik atau turun. Tombol 1, 2, 3 mengganti tampilan.",
+		"stageSide": "Dunia uji gulir samping. Gunakan A/D, panah kiri dan kanan, klik, atau seret untuk bergerak. Klik kanan atau X menyerang, Spasi melompat, M naik atau turun. Tombol 1, 2, 3 mengganti tampilan."
 	}
 }

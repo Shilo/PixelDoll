@@ -1161,7 +1161,14 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 				bottom: geometry.playbackTop - 2
 			};
 		});
-		const middle = fit * (1 + Math.max(0.25, (room.bottom - room.top) / (32 * fit) - 1) / 2);
+		// The live views frame the actor themselves: at the fit its whole reach is inside the stage, and zooming in keeps
+		// its feet in place across and its ground inside the stage (geometry.ts liveFeetY), never past the bottom.
+		const stage = await preview.boundingBox();
+		expect(painted.top, `${mode} fit keeps the painted top in the stage`).toBeGreaterThanOrEqual(
+			stage!.y
+		);
+		const feetX = (await preview.getAttribute('data-scene-anchor'))!.split(',').map(Number)[0];
+		const middle = fit * 1.5;
 		expect(middle).toBeLessThanOrEqual((await readScene(preview)).max);
 		await page.evaluate(async (scale) => {
 			const { experience } = await import(
@@ -1172,24 +1179,20 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 		await expect.poll(async () => (await readScene(preview)).zoom).toBe(middle);
 		const moved = await actorBounds(page, 255);
 		expect(
-			Math.abs((moved.left + moved.right) / 2 - ((painted.left + painted.right) / 2 + room.x) / 2)
-		).toBeLessThanOrEqual(1);
-		expect(
 			Math.abs(
-				(moved.top + moved.bottom) / 2 -
-					((painted.top + painted.bottom) / 2 + (room.top + room.bottom) / 2) / 2
-			)
+				(moved.left + moved.right) / 2 -
+					(feetX + ((painted.left + painted.right) / 2 - feetX) * 1.5)
+			),
+			`${mode} zooms around the feet across`
 		).toBeLessThanOrEqual(1);
+		expect(moved.bottom, `${mode} keeps the ground in the stage`).toBeLessThanOrEqual(
+			stage!.y + stage!.height - 15
+		);
 		await zoomToMax(page, preview);
-		const anchor = (await preview.getAttribute('data-scene-anchor'))!.split(',').map(Number);
-		expect(
-			Math.abs(anchor[0] - (painted.left + painted.right) / 2),
-			`${mode} uses padded standing center x`
-		).toBeLessThanOrEqual(halfPixel);
-		expect(
-			Math.abs(anchor[1] - (painted.top + painted.bottom) / 2),
-			`${mode} uses padded standing center y`
-		).toBeLessThanOrEqual(halfPixel);
+		const max = await actorBounds(page, 255);
+		expect(max.bottom, `${mode} max zoom keeps the feet in the stage`).toBeLessThanOrEqual(
+			stage!.y + stage!.height - 15
+		);
 		expectCovered(await backdrop(page), `${mode} padded max`);
 		await zoomToMin(page, preview);
 		await preview.focus();
@@ -2109,15 +2112,18 @@ test('playable zoom keeps the fallback actor on its environment camera when the 
 	await zoomStep(page, host, 'in');
 	const state = await readScene(host);
 	const shown = await actorBounds(page, 255);
-	const [x, y] = (await host.getAttribute('data-scene-anchor'))!.split(',').map(Number);
-	const [dx, dy] = (await host.getAttribute('data-scene-offset'))!.split(',').map(Number);
+	const [x] = (await host.getAttribute('data-scene-anchor'))!.split(',').map(Number);
+	const [dx] = (await host.getAttribute('data-scene-offset'))!.split(',').map(Number);
 	const factor = state.zoom / state.fit;
 	expect(
 		Math.abs(
 			(shown.left + shown.right) / 2 - (x + ((base.left + base.right) / 2 - x) * factor + dx)
 		)
 	).toBeLessThanOrEqual(1.5);
-	expect(Math.abs(shown.bottom - (y + (base.bottom - y) * factor + dy))).toBeLessThanOrEqual(1.5);
+	// Up and down, the live views place the feet themselves (geometry.ts liveFeetY), so the ground is where they say.
+	expect(
+		Math.abs(shown.bottom - Number(await host.getAttribute('data-feet-y')))
+	).toBeLessThanOrEqual(1.5);
 	expectCovered(await backdrop(page), 'renderer failure fallback');
 });
 

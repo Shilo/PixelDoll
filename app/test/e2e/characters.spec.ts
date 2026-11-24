@@ -9,7 +9,7 @@ import {
 	openPlaybackPicker
 } from './immersive-helpers.ts';
 import './setup-concurrency.ts';
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes, decodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -1835,7 +1835,7 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 			{ rec, project: s.store.project },
 			{ name: 'Coat', slot: 'torso_inner', prompt: 'long coat and boots' }
 		);
-		const move = missingItemMoves(rec.manifest, vest.id, 0).find(
+		const move = missingItemMoves(rec.manifest, vest.id, 'anchor', 0).find(
 			(spec: { id: string }) => spec.id === 'walk'
 		);
 		const offer = itemMoveOffer(rec.manifest, [move]),
@@ -2235,7 +2235,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	expect(requests).toEqual([]);
 });
 
-test('Import moves brings a deleted move back free from the character ZIP', async ({
+test('Import pages bring moves and items back free from the character ZIP, by browsing or dropping', async ({
 	page,
 	context
 }) => {
@@ -2272,14 +2272,32 @@ test('Import moves brings a deleted move back free from the character ZIP', asyn
 		.getByRole('button', { name: 'Move to Trash', exact: true })
 		.click();
 	await expect(punch).toHaveCount(0);
-	await page.getByRole('button', { name: 'Import moves...', exact: true }).click();
+	const zipFile = { name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes };
+	/** Drags the ZIP over `target` (dragenter and dragover); the returned function drops it there. */
+	const dragZip = async (target: Locator) => {
+		const transfer = await page.evaluateHandle((base64) => {
+			const data = new DataTransfer();
+			const raw = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+			data.items.add(new File([raw], 'hero.pixeldoll.zip', { type: 'application/zip' }));
+			return data;
+		}, Buffer.from(bytes).toString('base64'));
+		await target.dispatchEvent('dragenter', { dataTransfer: transfer });
+		await target.dispatchEvent('dragover', { dataTransfer: transfer });
+		return () => target.dispatchEvent('drop', { dataTransfer: transfer });
+	};
+	const sameBody = 'Made for this character. Its frames fit as they are.';
+	// New move pages to Import and back, then browses for the ZIP there.
+	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	const moveSheet = page.getByRole('dialog', { name: 'New move', exact: true });
+	const importMoves = moveSheet.getByRole('button', { name: 'Import moves', exact: true });
+	await importMoves.click();
 	const sheet = page.getByRole('dialog', { name: 'Import moves', exact: true });
-	await sheet
-		.getByLabel('PixelDoll ZIP', { exact: true })
-		.setInputFiles({ name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes });
-	await expect(sheet.getByRole('status')).toHaveText(
-		'Made for this character. Its frames fit as they are.'
-	);
+	await expect(sheet.getByRole('heading', { name: 'Import moves', exact: true })).toBeFocused();
+	await sheet.getByRole('button', { name: 'Back to New move', exact: true }).click();
+	await expect(importMoves).toBeFocused();
+	await importMoves.click();
+	await sheet.getByLabel('PixelDoll ZIP', { exact: true }).setInputFiles(zipFile);
+	await expect(sheet.getByRole('status')).toHaveText(sameBody);
 	await expect(sheet.getByRole('checkbox', { name: 'Cross punch', exact: true })).toBeChecked();
 	await expect(sheet).toContainText('Already on this character');
 	await sheet.getByRole('button', { name: 'Import', exact: true }).click();
@@ -2288,6 +2306,68 @@ test('Import moves brings a deleted move back free from the character ZIP', asyn
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
 	await expect(punch).toHaveCount(1);
+	// A ZIP dragged over Moves or States says what dropping does, and opens that Import page reading it.
+	const panel = page.locator('#customization-panel'),
+		hint = panel.locator('.drop-hint');
+	let drop = await dragZip(panel);
+	await expect(hint).toHaveText('Drop to import moves');
+	await drop();
+	await expect(hint).toHaveCount(0);
+	await expect(sheet.getByRole('status')).toHaveText(sameBody);
+	await expect(sheet).toContainText('Already on this character');
+	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await equipmentMode(page, 'States');
+	drop = await dragZip(panel);
+	await expect(hint).toHaveText('Drop to import States');
+	await drop();
+	const stateSheet = page.getByRole('dialog', { name: 'Import States', exact: true });
+	await expect(stateSheet.getByRole('status')).toHaveText(sameBody);
+	await stateSheet.getByRole('button', { name: 'Back to New State', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'New State', exact: true })).toBeVisible();
+	await page
+		.getByRole('dialog', { name: 'New State', exact: true })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
+	// Items: trash one, then New item pages to Import, keeping its typed draft, and takes the ZIP dropped on the page.
+	await equipmentMode(page, 'Wardrobe');
+	const hat = page.locator('.equipment-scroll .item-tile', { hasText: 'Wizard hat' });
+	await page.getByRole('button', { name: 'More options for Wizard hat', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Move to Trash/ }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
+	await expect(hat).toHaveCount(0);
+	await page.getByRole('button', { name: 'New head item', exact: true }).first().click();
+	const itemSheet = page.getByRole('dialog', { name: 'New item', exact: true });
+	const prompt = itemSheet.getByRole('textbox', { name: 'What is it?', exact: true });
+	await prompt.fill('a straw hat');
+	await itemSheet.getByRole('button', { name: 'Import items', exact: true }).click();
+	const items = page.getByRole('dialog', { name: 'Import items', exact: true });
+	await expect(items.getByRole('heading', { name: 'Import items', exact: true })).toBeFocused();
+	await items.getByRole('button', { name: 'Back to New item', exact: true }).click();
+	await expect(prompt).toHaveValue('a straw hat');
+	await itemSheet.getByRole('button', { name: 'Import items', exact: true }).click();
+	const area = items.getByRole('region', { name: 'PixelDoll ZIP drop area', exact: true });
+	drop = await dragZip(area);
+	await expect(area).toContainText('Release ZIP to preview');
+	await drop();
+	await expect(items.getByRole('checkbox', { name: 'Wizard hat', exact: true })).toBeChecked();
+	await expect(items).toContainText('Fits this character exactly');
+	await expect(items).toContainText('Already on this character');
+	await items.getByRole('button', { name: 'Import', exact: true }).click();
+	await expect(items).toBeHidden({ timeout: 30_000 });
+	await expect(hat).toHaveCount(1);
+	// Dropped on the Wardrobe, the ZIP opens Import items with nothing left to bring.
+	drop = await dragZip(panel);
+	await expect(hint).toHaveText('Drop to import items');
+	await drop();
+	// Opened on its Import page, the sheet starts on that page's title, not in the hidden form.
+	await expect(items.getByRole('heading', { name: 'Import items', exact: true })).toBeFocused();
+	await expect(items).toContainText('Already on this character');
+	await expect(items.getByRole('checkbox')).toHaveCount(0);
+	await expect(items.getByRole('button', { name: 'Import', exact: true })).toHaveCount(0);
+	await items.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(requests).toEqual([]);
 });
 
@@ -2772,6 +2852,15 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await move
 		.getByRole('combobox', { name: 'Motion model', exact: true })
 		.selectOption('skeleton-v3');
+	const drawing = move.getByRole('combobox', { name: 'Items on this move', exact: true });
+	await expect(drawing.locator('option:checked')).toHaveText('Default (Pose a separate body)');
+	await expect(drawing.locator('option')).toHaveText([
+		'Default (Pose a separate body)',
+		'Draw on move frames',
+		'Pose a separate body',
+		'Draw all views at once'
+	]);
+	await drawing.selectOption('anchor');
 	await page.getByRole('button', { name: /^Generate / }).click();
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
@@ -2797,6 +2886,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	]);
 	expect(after.manifest.rig.baseHash).not.toBe('sha256:');
 	expect(idle.cells).toBe(4);
+	expect(idle.itemDrawing).toBe('anchor');
 	expect(Object.keys(idle.sources!)).toEqual(['south', 'east', 'north', 'west']);
 	expect(
 		Object.values(idle.sources!).every((s) => s.route === 'skeleton-v3' && s.measured?.length === 4)
@@ -2950,7 +3040,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		expect(cells['rest-pose'][direction]).toEqual([cells.idle[direction]![chosenCell]]);
 	const panel = page.getByRole('tabpanel', { name: 'States', exact: true });
 	const addState = panel.getByRole('button', { name: 'New State...', exact: true });
-	await expect(panel.locator('.add-line + details')).toBeVisible();
+	await expect(panel.locator('.cta + details')).toBeVisible();
 	await addState.click();
 	await createState.getByRole('button', { name: 'Source: Standing', exact: true }).click();
 	const sources = page.getByRole('menu', { name: 'Source' });
@@ -2978,7 +3068,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(addState).toBeFocused();
 	await equipmentMode(page, 'Moves');
 	await expect(
-		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.add-line + details')
+		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.cta + details')
 	).toBeVisible();
 	await page.getByRole('button', { name: 'New move...', exact: true }).click();
 	const moveSheet = page.getByRole('dialog', { name: 'New move' });

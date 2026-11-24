@@ -11,6 +11,7 @@ import {
 } from '../lib/report/report.ts';
 import { englishMessage } from '../lib/report/english.ts';
 import { queueErrorParts, type JobRec } from '../lib/pixellab/queue.ts';
+import { app } from '../lib/app.svelte.ts';
 import type { Message } from '../lib/message.ts';
 import { experience } from './experience/state.svelte.ts';
 import { PRE_RELEASE } from './previewNotice.ts';
@@ -39,7 +40,6 @@ const AREAS: Record<NonNullable<SheetId>, string> = {
 	directions: 'Directions',
 	importZip: 'Import from device',
 	importPixelLab: 'Import from PixelLab',
-	importMoves: 'Import moves',
 	delete: 'Delete',
 	details: 'Character details',
 	setup: 'Rig setup',
@@ -61,7 +61,7 @@ export function reportProblem(problem: Problem) {
 		{
 			env: browserEnvironment(getLocale() || 'en', PRE_RELEASE),
 			english: englishMessage,
-			uptime: performance.now() / 1000
+			uptime: (Date.now() - performance.timeOrigin) / 1000
 		}
 	);
 }
@@ -72,6 +72,13 @@ export function closeReport() {
 
 const isMessage = (value: Message | string | undefined): value is Message =>
 	typeof value === 'object';
+
+/** The failed balance check: only its error text is kept, but its request and HTTP status are safe to report. */
+export const balanceFacts = (): ProblemFacts => ({
+	method: 'GET',
+	endpoint: '/balance',
+	status: statusIn(app.balanceError)
+});
 
 /** The allow-listed facts of a failed or lost PixelLab request, and the app message it showed. */
 export function jobProblem(record: JobRec): Pick<Problem, 'message' | 'facts'> {

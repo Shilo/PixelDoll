@@ -33,5 +33,6 @@ export const formDrafts: {
 			import('../lib/image/reference.ts').PickedReference
 		>;
 		loop?: boolean;
+		itemDrawing?: import('../lib/rig/rig.ts').ItemDrawing | 'default';
 	};
 } = {};

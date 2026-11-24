@@ -59,6 +59,8 @@ export const WORLDS: Record<
 export const MOTION = {
 	...TRAVEL,
 	cameraResponse: 9,
+	/** Share of the eased camera's trailing lag removed by aiming it ahead of travel (movement.ts integrateMovement). */
+	cameraLead: 0.75,
 	/** Touch stick sizes in CSS px; compact applies on narrow or short screens such as phones in landscape. */
 	joystick: {
 		regular: { base: 144, thumb: 48, stroke: 2 },

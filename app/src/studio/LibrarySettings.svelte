@@ -12,7 +12,7 @@
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
-	import { Archive, Trash, TriangleAlert, Upload } from './icons.ts';
+	import { Archive, Download, Trash, TriangleAlert, Upload } from './icons.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import DestructiveConfirmButton from './DestructiveConfirmButton.svelte';
 	import { openerLabel } from './openerLabel.ts';
@@ -38,7 +38,7 @@
 	} from './state.svelte.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { downloadLibraryBackup } from './downloadLibraryBackup.ts';
-	import { saveZip } from './download.svelte.ts';
+	import { downloadOriginalGenerations, saveZip } from './download.svelte.ts';
 	import { fileDrop } from './fileDrop.ts';
 
 	type RestorePreview = {
@@ -90,6 +90,7 @@
 	const heading = $props.id();
 	const dropHint = `${heading}-drop`;
 	const debugHint = `${heading}-debug`;
+	const originalsHint = `${heading}-originals`;
 	const keys = () => [app.key, readSavedKey()];
 	const today = () => new Date().toISOString().slice(0, 10);
 	onMount(() => {
@@ -344,6 +345,21 @@
 					{t('librarySettings.debugDetailsHint')}
 				</p>
 			{/if}
+		</section>
+		<hr class="bu-separator" />
+		<section class="library-task">
+			<SettingsItemButton
+				data-setting="originals"
+				disabled={busy}
+				aria-describedby={originalsHint}
+				onclick={() => perform(() => downloadOriginalGenerations())}
+			>
+				<Download size={18} aria-hidden="true" />
+				{t('librarySettings.originals')}
+			</SettingsItemButton>
+			<p class="bu-muted settings-description" id={originalsHint}>
+				{t('librarySettings.originalsHint')}
+			</p>
 		</section>
 		<hr class="bu-separator" />
 		<section class="library-task">

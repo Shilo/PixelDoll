@@ -191,6 +191,48 @@ export function heroRoom(g: Layout): { above: number; side: number; below: numbe
 	};
 }
 
+/** How far a live actor reaches, from the feet: `above` (the tallest gear, a mount, the jump's apex), its standing
+ * `body` height and `below` (a mount's hooves). In art px for liveFrame, in CSS px as drawn for liveFeetY. */
+export interface LiveReach {
+	above: number;
+	body: number;
+	below: number;
+}
+
+/**
+ * Top-down and Side-scroller have no playback bar, so they stand the character's body at the middle of the free stage.
+ * Fitting this frame (the reach, pivoted at the body's middle) into liveRoom finds the largest scale that keeps the whole
+ * reach inside the stage that way.
+ */
+export function liveFrame(frame: { x: number; w: number }, reach: LiveReach) {
+	return {
+		x: frame.x,
+		w: frame.w,
+		y: Math.max(0, reach.above - reach.body / 2),
+		h: Math.max(0, reach.above - reach.body / 2) + reach.body / 2 + reach.below
+	};
+}
+export function liveRoom(g: Layout): { above: number; side: number; below: number } {
+	const half = Math.max(0, g.stage.b - g.stage.t - 32) / 2;
+	return { above: half, below: half, side: heroRoom(g).side };
+}
+
+/**
+ * Where the live views put the feet: the body's middle at the stage's middle, lowered as far as the reach's top needs
+ * (a tall hat, a mount, the jump's apex), but never so far that the feet and what is below them leave the stage. Zoomed
+ * in past what the stage holds, the feet stay in view and the reach's top goes first.
+ */
+export function liveFeetY(g: Layout, reach: LiveReach): number {
+	const { above, body, below } = reach;
+	if (![above, body, below].every(Number.isFinite)) return g.feet.y;
+	const top = g.stage.t + 16,
+		bottom = g.stage.b - 16,
+		middle = (g.stage.t + g.stage.b) / 2;
+	return Math.round(
+		Math.max(top, Math.min(bottom - Math.max(0, below), Math.max(middle + body / 2, top + above)))
+	);
+}
+
 /** Largest whole-pixel scale at which a `width`×`height` px character above the feet fits its room. */
 export function heroScale(g: Layout, height: number, width: number): number {
 	const room = heroRoom(g);

@@ -5,6 +5,9 @@ import {
 	heroRoom,
 	heroScale,
 	layout,
+	liveFeetY,
+	liveFrame,
+	liveRoom,
 	placeWorld,
 	ringRise
 } from '../../src/studio/experience/geometry.ts';
@@ -334,5 +337,45 @@ describe('scene geometry', () => {
 			((travelSpeed('topdown') * topdown.focal) / topdown.depth);
 		expect(ratio).toBeGreaterThan(0.8);
 		expect(ratio).toBeLessThan(1.3);
+	});
+});
+
+describe('live view framing', () => {
+	const sizes = [
+		[1280, 800],
+		[390, 844],
+		[844, 390],
+		[1920, 1080],
+		[320, 568]
+	] as const;
+	// A 45 px body with a tall hat (to 70 px), the jump's apex (35%) and 2 px below the feet.
+	const reach = { above: 70 + 45 * 0.35, body: 45, below: 2 };
+	const frame = { x: 16, w: 32 };
+
+	test('the default fit stands the body at the stage middle with the whole reach inside, below Preview', () => {
+		for (const [w, h] of sizes) {
+			const g = layout(w, h, 'studio');
+			const scale = actorScale(liveFrame(frame, reach), liveRoom(g));
+			const feet = liveFeetY(g, {
+				above: reach.above * scale,
+				body: reach.body * scale,
+				below: reach.below * scale
+			});
+			const bodyMiddle = feet - (reach.body * scale) / 2;
+			expect(Math.abs(bodyMiddle - (g.stage.t + g.stage.b) / 2)).toBeLessThanOrEqual(1);
+			expect(feet - reach.above * scale).toBeGreaterThanOrEqual(g.stage.t + 16 - 1);
+			expect(feet + reach.below * scale).toBeLessThanOrEqual(g.stage.b - 16 + 1);
+			expect(feet).toBeLessThanOrEqual(g.feet.y);
+		}
+	});
+
+	test('a reach too tall to center keeps its top in view, and past the stage keeps the feet in view', () => {
+		const g = layout(1280, 800, 'studio');
+		const tall = { above: 540, body: 300, below: 0 };
+		// Centering the 300 px body would cut the 540 px reach, so the top rests on the inset.
+		expect(liveFeetY(g, tall)).toBe(g.stage.t + 16 + 540);
+		// Zoomed in past the stage: the feet and what is below them stay in view, the reach's top goes first.
+		expect(liveFeetY(g, { above: 2000, body: 600, below: 10 })).toBe(g.stage.b - 16 - 10);
+		expect(liveFeetY(g, { above: Number.NaN, body: 10, below: 0 })).toBe(g.feet.y);
 	});
 });

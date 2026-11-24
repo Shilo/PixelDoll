@@ -4,6 +4,7 @@
 	import { tick } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
+	import { balanceFacts } from './report.svelte.ts';
 	import { message } from '../lib/message.ts';
 	import { app, forgetKey, getKeyRevision, refreshBalance } from '../lib/app.svelte.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
@@ -91,7 +92,10 @@
 		{/snippet}
 	</PixelLabUsage>
 	{#if app.balanceError}<p class="notice bad small" role="status">
-			{t('usage.loadFailed')}<ReportButton message={message('usage.loadFailed')} />
+			{t('usage.loadFailed')}<ReportButton
+				message={message('usage.loadFailed')}
+				facts={balanceFacts()}
+			/>
 		</p>{/if}
 	<hr class="bu-separator" />
 {/if}

@@ -6,7 +6,9 @@ import { ACTIONS, authoredPoses, fromApi } from '../lib/rig/poses.ts';
 import { poseCallGens } from '../lib/rig/clips.ts';
 import {
 	anchorable,
+	ITEM_SHEET_CHANGED,
 	itemPoseGens,
+	itemSheetLayout,
 	planAnchoredMove,
 	planGens,
 	posable,
@@ -191,6 +193,7 @@ export function moveEstimate(
 		| 'items'
 		| 'dirs'
 		| 'itemMethod'
+		| 'itemSheet'
 		| 'replace'
 		| 'itemsOnly'
 		| 'preferTierOneRepair'
@@ -241,6 +244,15 @@ export function moveEstimate(
 					const targets = moveDirections(m, s.dirs).filter(
 						(d) => !s.itemsOnly || s.replace || !hasCompleteCells(m, item, s.id, d)
 					);
+					if (s.itemMethod === 'sheet') {
+						const sheet =
+							s.itemSheet && targets.length
+								? itemSheetLayout(s.itemSheet, targets.length, n)
+								: undefined;
+						if (targets.length && !sheet)
+							throw new LocalizedError(ITEM_SHEET_CHANGED, 'itemRoute.errors.itemSheetChanged');
+						return sum + (sheet?.gens ?? 0);
+					}
 					return (
 						sum +
 						(s.itemMethod === 'anchor'

@@ -54,6 +54,16 @@
 		"scopeDebug": "Faça backup de personagens, artes, dados arquivados e detalhes de depuração.",
 		"debugNotSaved": "O navegador não conseguiu salvar esta configuração.",
 		"backup": "Fazer backup da biblioteca",
+		"originals": "Baixar gerações originais",
+		"originalsHint": "As imagens brutas que o PixelLab retornou para os personagens salvos, antes de o PixelDoll processá-las, com as solicitações que as compraram. Apenas as solicitações ainda mantidas neste dispositivo são incluídas.",
+		"originalsName": "gerações originais",
+		"originalsNone": "Nenhuma imagem original é mantida para os seus personagens salvos.",
+		"originalsPartial": {
+			"one": "Os originais não são mais mantidos para {count} personagem.",
+			"other": "Os originais não são mais mantidos para {count} personagens."
+		},
+		"originalsStarted": "O download das gerações originais foi iniciado.",
+		"originalsTooLarge": "As gerações originais são grandes demais para baixar de uma vez.",
 		"restoreFromBackup": "Restaurar de um backup",
 		"review": "Revisar backup",
 		"add": "Personagens a adicionar",
@@ -127,7 +137,14 @@
 		"saveFailed": "Não foi possível salvar esta opção. Tente novamente.",
 		"incompatible": "Escolha Automático ou uma quantidade de quadros compatível com o novo modelo.",
 		"framesHelp": "As quantidades de quadros disponíveis dependem do tamanho da tela do personagem.",
-		"methodHelp": "Usa {pose} quando houver suporte. Caso contrário, usa {edit}."
+		"methodHelp": "Usa {pose} quando houver suporte. Caso contrário, usa {edit}.",
+		"itemDrawing": "Itens nas animações",
+		"itemDrawingHelp": "Desenhar nos quadros da animação ajusta os itens à arte da própria animação. Posar um corpo separado anima os itens por conta própria, então eles podem se deslocar alguns pixels. Desenhar todas as vistas de uma vez custa mais que posar e menos que desenhar nos quadros, e você revisa o resultado antes de salvar. Serve para itens vestidos em personagens de quatro direções de 80 a 128 px; os outros itens são desenhados nos quadros, e os itens segurados são posados.",
+		"itemDrawings": {
+			"anchor": "Desenhar nos quadros",
+			"skeleton": "Posar um corpo separado",
+			"sheet": "Desenhar todas as vistas de uma vez"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Reproduzir prévia da montaria",
@@ -717,7 +734,7 @@
 		"missingFrames": "Faltam quadros para {names} em {move}",
 		"missingFrameViews": "Faltam quadros para {names} em {move} na direção {direction}",
 		"making": "Gerando…",
-		"makeIt": "Gerar",
+		"makeMissingViews": "Gerar vistas que faltam",
 		"estimate": {
 			"one": "~{n} geração",
 			"other": "~{n} gerações"
@@ -888,7 +905,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Escolha as animações na Prévia. Ao se mover montado, o personagem segue a pose de montaria das configurações da montaria.",
-		"movesOffWalking": "Escolha as animações na Prévia. Aqui, o personagem usa a animação de repouso ou de caminhada.",
+		"movesOffWalking": "Escolha as animações na Prévia. Aqui, as configurações de Visualizações ao vivo escolhem o que é reproduzido.",
 		"tabWardrobe": "Guarda-roupa",
 		"tabColors": "Cores",
 		"tabOutfits": "Trajes",
@@ -901,6 +918,10 @@
 			"other": "Faltam quadros para {n} itens equipados"
 		},
 		"missingFramesForMove": "Quadros ausentes: {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problema",
+			"other": "{n} problemas"
+		},
 		"workspaceCopyPixelLabOff": "Cópia do espaço de trabalho · PixelLab desativado",
 		"characterSelectionWASDOrArrowsSelectEnter": "Seleção de personagem. Use WASD ou as setas para selecionar, Enter para personalizar e mais ou menos para ajustar o zoom.",
 		"previousCharacter": "Personagem anterior",
@@ -917,20 +938,21 @@
 		"inspect": "Inspecionar",
 		"customization": "Personalização",
 		"customizationPanels": "Painéis de personalização",
-		"tabWorkRunning": "Há trabalho em andamento aqui",
+		"tabWorkRunning": "Há trabalho aqui em andamento, aguardando ou pronto para revisão",
 		"tabWorkAttention": "Há trabalho aqui que precisa de atenção"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} já usa as cores do corpo.",
+		"drift": "{name} não segue as cores do corpo",
+		"match": "Igualar cores",
+		"matched": "{name} agora usa as cores do corpo."
 	},
 	"worldStage": {
 		"groundUnavailable": "Não é possível renderizar o chão em tempo real. A cena estática é exibida.",
 		"materialUnavailable": "O material do chão não está disponível. A cena estática é exibida.",
 		"sceneUnavailable": "A cena ao vivo não está disponível. Recarregue a página para tentar de novo.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Prévia do personagem. Use WASD ou as setas para mudar de direção. Use as teclas 1, 2 e 3 para alternar as vistas.",
-		"sideScrollerTestWorldADLeft": "Cenário de teste com rolagem lateral. Use A/D ou as setas esquerda e direita, ou arraste na horizontal para mover. Use as teclas 1, 2 e 3 para alternar as vistas.",
-		"characterTestWorldWASDArrowsOrDrag": "Cenário de teste do personagem. Use WASD ou as setas, ou arraste para mover. Use as teclas 1, 2 e 3 para alternar as vistas.",
 		"loadingCharacter": "Carregando personagem…",
-		"dragInTheWorldToMove": "Arraste no cenário para mover",
-		"focusWorldADOrToMove": "Coloque o foco no cenário · A/D ou ←/→ para mover",
-		"focusWorldWASDOrArrowKeysTo": "Coloque o foco no cenário · WASD ou setas para mover",
 		"notice": {
 			"hiddenItemsInMove": {
 				"one": "{count} item oculto: faltam quadros de {move}",
@@ -1357,6 +1379,7 @@
 		"drop": "Solte aqui o ZIP de um personagem",
 		"dropNote": "Personagem do PixelLab ou exportação do PixelDoll · até 64 MB",
 		"chooseZip": "Escolher ZIP",
+		"chooseAnother": "Escolher outro ZIP",
 		"characterZip": "ZIP do personagem",
 		"devicePrivacy": "Seus arquivos ficam neste dispositivo. Confira a prévia do personagem antes de importar.",
 		"pixelLabHint": "No criador de personagens do PixelLab, exporte um ZIP com quadros individuais. Os arquivos podem estar dentro de pastas no ZIP. Outros layouts de folhas de sprites e ZIPs só com PNGs não são compatíveis.",
@@ -1485,8 +1508,8 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "Atividade do espaço de trabalho",
-		"activityIntro": "Salvo com o espaço de trabalho do PixelDoll {build}. As tarefas do ZIP não são retomadas.",
+		"activityTitle": "Detalhes do backup",
+		"activityIntro": "Aberto a partir de um backup feito com o PixelDoll {build}.",
 		"missing": {
 			"one": "{count} arquivo de arte estava ausente ou ilegível.",
 			"other": "{count} arquivos de arte estavam ausentes ou ilegíveis."
@@ -1494,29 +1517,11 @@
 		"skippedCharacters": {
 			"one": "Personagens salvos ignorados: {count}.",
 			"other": "Personagens salvos ignorados: {count}."
-		},
-		"demoOutfit": "A demo usa as configurações padrão de traje.",
-		"exportSettings": "A cópia usa as configurações padrão de exportação.",
-		"tier": "Plano do PixelLab: {tier}",
-		"noErrors": "Nenhum erro recente ou tarefa inacabada foi registrado.",
-		"noRecent": "Os erros recentes não foram incluídos.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · Código {code}",
-		"error": {
-			"tooLarge": "Este espaço de trabalho excede o limite de tamanho do ZIP ou de arte. Use ZIPs de personagens individuais.",
-			"containsKey": "Um campo salvo contém a chave do PixelLab em uso ou salva neste dispositivo. Remova-a do espaço de trabalho antes de exportar.",
-			"invalidIndex": "O índice deste espaço de trabalho é inválido.",
-			"unsupportedVersion": "Esta versão de arquivo do espaço de trabalho não é compatível.",
-			"duplicateRecord": "Este espaço de trabalho contém um registro salvo incompatível ou duplicado.",
-			"missingFiles": "Este espaço de trabalho tem uma lista inválida de arquivos ausentes.",
-			"unexpectedFile": "Este espaço de trabalho contém um arquivo inesperado.",
-			"invalidDiagnostics": "Este espaço de trabalho tem registros inválidos de erros recentes."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "Escolha um backup do PixelDoll ou um ZIP de espaço de trabalho, não um ZIP de personagem.",
+			"notBackup": "Escolha um backup do PixelDoll, não um ZIP de personagem.",
 			"unsupportedVersion": "Esta versão do arquivo de backup não é compatível.",
 			"invalid": "Este backup está danificado ou é inválido.",
 			"tooLarge": "Este backup excede o limite de tamanho do ZIP ou de arte. Use ZIPs de personagens individuais.",
@@ -1610,6 +1615,7 @@
 			"facing": "Alguns quadros parecem mostrar a vista oposta. Confira o tronco",
 			"detail": "Um detalhe do visual sumiu ou mudou de cor em alguns quadros",
 			"motion": "Confira o tamanho e o ângulo do item durante a animação",
+			"fill": "O item está oco em alguns quadros, só com o contorno; confira o formato",
 			"lowerClothing": "Faltam partes da roupa da cintura para baixo em comparação com a arte da pose em pé",
 			"footwear": "Os calçados não correspondem à arte da pose em pé. Confira os pés",
 			"bodyPixels": "O modelo alterou alguns pixels do corpo",
@@ -1955,7 +1961,9 @@
 			"conceptNote": "A arte enviada vem primeiro, antes dos quadros do personagem. O resultado dela não é usado.",
 			"redrawEquipment": "{item} {direction} · redesenhar equipamento",
 			"redrawEquipmentNote": "{width}×{height}, quadros {from}–{to}. Envia uma folha sem máscara com uma referência correspondente. O PixelDoll limita o que mantém e sempre pergunta antes de substituir seus quadros. O PixelDoll exige o Tier 1. Se cobrado em dólares, o mínimo é {minimum}; o valor real pode ser maior.",
-			"gridRepairNote": "{width}×{height}, quadros {from}–{to}. Usa uma referência protegida da mesma direção. O corpo não muda. Reparos completos com problemas visuais bloqueantes ficam retidos para sua revisão."
+			"gridRepairNote": "{width}×{height}, quadros {from}–{to}. Usa uma referência protegida da mesma direção. O corpo não muda. Reparos completos com problemas visuais bloqueantes ficam retidos para sua revisão.",
+			"itemSheet": "{item}: {directions}, uma folha",
+			"itemSheetNote": "{width}×{height}: uma linha por vista, primeiro o design em pé e depois {frames} quadros da animação, cada um recortado em {cellWidth}×{cellHeight} px. O corpo não muda. O PixelDoll pergunta antes de salvar, mantém só as vistas que passam nas verificações e lista as outras. O PixelDoll exige o Tier 1. Uma tentativa; qualquer nova tentativa paga precisa da sua ação."
 		},
 		"copyEndpointTitle": "Copiar endpoint",
 		"manualCopyLabel": "Endpoint para copiar manualmente",
@@ -2068,7 +2076,11 @@
 		"stopNoAnswer": "A aba que está executando esta tarefa ainda não confirmou a interrupção. Confira a Atividade em instantes; se ainda estiver em execução, interrompa-a nessa aba.",
 		"stopNotConfirmed": "O PixelLab não confirmou a interrupção, então a tarefa ainda pode rodar e ser cobrada. Confira a Atividade.",
 		"pausedStorage": "Não foi possível ler ou salvar as tarefas salvas, então nada novo é enviado. Retome para tentar de novo.",
-		"cancelSaveFailed": "Não foi possível salvar o cancelamento. Esta aba não vai enviar a solicitação, mas outra aba ou um recarregamento pode enviar."
+		"cancelSaveFailed": "Não foi possível salvar o cancelamento. Esta aba não vai enviar a solicitação, mas outra aba ou um recarregamento pode enviar.",
+		"titleItemViews": {
+			"one": "{item}: {move}, {count} vista",
+			"other": "{item}: {move}, {count} vistas"
+		}
 	},
 	"genCard": {
 		"retryKey": "A nova tentativa usa um fundo {color}, escolhido com base nas cores deste visual",
@@ -2729,6 +2741,8 @@
 		"motionOnly": "Descreva apenas o movimento do corpo. Adicione armas e acessórios como itens.",
 		"motionModel": "Modelo de movimento",
 		"motionModelHelp": "Skeleton v3 usa as mesmas poses para o corpo e o equipamento. V3 e PixMiniMax desenham o corpo primeiro. Depois, o PixelDoll detecta as poses para o equipamento.",
+		"itemDrawing": "Itens nesta animação",
+		"itemDrawingDefault": "Padrão ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
@@ -2785,7 +2799,11 @@
 			"repairNote": "O corpo não muda. Se o reparo for concluído com problemas visuais, o resultado ficará aguardando sua revisão.",
 			"currentFrame": "Quadro atual {number}",
 			"redrawnFrame": "Quadro redesenhado {number}",
-			"repairedFrame": "Quadro reparado {number}"
+			"repairedFrame": "Quadro reparado {number}",
+			"skippedViews": "Não mantido: {views}. O PixelLab não desenhou o item ali, então ele ainda falta. Você pode desenhar só essas vistas de novo.",
+			"viewFrame": "{view}, quadro {number}",
+			"keepFailedViews": "Manter também {views}, que não passaram nas verificações",
+			"chooseViews": "Escolha as vistas que serão mantidas antes de salvar."
 		}
 	},
 	"itemRoute": {
@@ -2819,7 +2837,9 @@
 			"itemMoveSaveConflictAlso": "Este personagem ou item mudou enquanto seus quadros eram gerados. A arte existente foi mantida; os quadros prontos continuam em Atividade. Outra vista também parou: {reason}",
 			"keepWithoutStanding": "Faltam quadros deste item na animação da qual ele foi desenhado, então ele não pode ser mantido sem ela. Mostre essa animação e use Reparar item ou Redesenhar item se aparecerem, ou crie o item de novo.",
 			"keepWithoutNothingLeft": "Este item não tem nenhuma animação completa para manter. Crie os quadros que faltam.",
-			"savedFrameMissing": "Um quadro salvo deste item está faltando no armazenamento."
+			"savedFrameMissing": "Um quadro salvo deste item está faltando no armazenamento.",
+			"itemSheetChanged": "Este item ou esta animação mudou desde que o preço da folha foi calculado. Abra o item de novo para revisá-lo. Nenhuma geração foi solicitada.",
+			"itemSheetNoView": "O PixelLab não desenhou o item em nenhuma vista, então nada foi mantido. A folha continua em Atividade."
 		}
 	},
 	"newItem": {
@@ -3418,8 +3438,29 @@
 		"generateFor": "Gerar para {move}",
 		"wearOn": "Equipar em {move}"
 	},
+	"itemImport": {
+		"title": "Importar itens",
+		"intro": "O ZIP de um personagem, um backup ou um personagem compartilhado. Grátis quando os itens servem neste personagem.",
+		"empty": "Este ZIP não tem itens prontos.",
+		"skipped": {
+			"one": "Não foi possível ler {count} item.",
+			"other": "Não foi possível ler {count} itens."
+		},
+		"notFitted": "{names} não serve mais e não foi adicionado.",
+		"busy": "Aguarde o item ser adicionado e tente de novo.",
+		"row": {
+			"copy": "Serve exatamente neste personagem",
+			"refit": "Ajustado de graça a este corpo. Confira os quadros depois de importar.",
+			"unfitted": "Feito para outro corpo. Usado como foi desenhado, então pode flutuar ou atravessar.",
+			"remake": "Feito para outro corpo, então não pode ser usado aqui"
+		}
+	},
+	"importDrop": {
+		"items": "Solte para importar itens",
+		"moves": "Solte para importar animações",
+		"states": "Solte para importar estados"
+	},
 	"moveImport": {
-		"title": "Importar animações",
 		"importMoves": "Importar animações",
 		"importStates": "Importar estados",
 		"dropArea": "Área para soltar o ZIP do PixelDoll",
@@ -3460,5 +3501,34 @@
 			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de importar movimentos.",
 			"changed": "Este personagem mudou. Escolha o ZIP de novo para revisar a versão mais recente."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "Automático: parado",
+		"controls": "Controles",
+		"title": "Visualizações ao vivo",
+		"forCharacter": "Animações que {name} usa em Vista de cima e Rolagem lateral.",
+		"idle": "Parado",
+		"walk": "Andar",
+		"attack": "Ataque",
+		"jump": "Pulo",
+		"attackUp": "Ataque para cima",
+		"attackDown": "Ataque para baixo",
+		"automaticClip": "Automático: {clip}",
+		"automaticNone": "Automático: nenhuma",
+		"sameAsAttack": "Igual ao Ataque",
+		"sideAttackHelp": "Na Rolagem lateral, Ataque para cima ou para baixo é usado quando você mira nessa direção.",
+		"notSaved": "A configuração das visualizações ao vivo mudou, mas este navegador não conseguiu salvá-la.",
+		"openCharacter": "Abra um personagem para escolher as animações dele.",
+		"mount": "Montaria",
+		"actions": "Ações de jogo",
+		"withShortcut": "{action} ({key})",
+		"spaceKey": "Espaço",
+		"noAttack": "Ainda não há nada definido como Ataque. Escolha uma animação ou um estado nas configurações de Visualizações ao vivo.",
+		"noAttackDirection": "{move} não tem quadros na direção {direction}, então não pode atacar para esse lado.",
+		"hintTopDown": "WASD ou clique para mover · Botão direito ou X para atacar · Espaço para pular · M para montar",
+		"hintSide": "A/D ou clique para mover · Botão direito ou X para atacar · Espaço para pular · M para montar",
+		"hintTouch": "O lado esquerdo move · O lado direito mira; solte para atacar · Os botões pulam e montam",
+		"stageTopDown": "Mundo de teste do personagem. WASD, setas, clique ou arraste para mover. Botão direito ou X ataca, Espaço pula, M monta. As teclas 1, 2 e 3 trocam a visualização.",
+		"stageSide": "Mundo de teste em rolagem lateral. A/D, setas esquerda e direita, clique ou arraste para mover. Botão direito ou X ataca, Espaço pula, M monta. As teclas 1, 2 e 3 trocam a visualização."
 	}
 }

@@ -15,6 +15,7 @@
 		Clapperboard,
 		CodeXml,
 		Download,
+		Gamepad2,
 		Info,
 		KeyRound,
 		Layers2,
@@ -36,6 +37,7 @@
 	import LanguagePicker from './LanguagePicker.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import MountSettings from './MountSettings.svelte';
+	import LiveViewSettings from './LiveViewSettings.svelte';
 	import AboutSettings from './AboutSettings.svelte';
 	import PixelLabSettings from './PixelLabSettings.svelte';
 	import LibrarySettings from './LibrarySettings.svelte';
@@ -140,6 +142,23 @@
 			]
 		},
 		{
+			id: 'live',
+			label: settingsLabels.live,
+			icon: Gamepad2,
+			entries: [
+				{
+					id: 'live-idle',
+					label: 'liveViews.idle',
+					terms: ['toolbar.viewTopDown', 'toolbar.viewSide']
+				},
+				{ id: 'live-walk', label: 'liveViews.walk' },
+				{ id: 'live-attack', label: 'liveViews.attack' },
+				{ id: 'live-jump', label: 'liveViews.jump' },
+				{ id: 'live-attackUp', label: 'liveViews.attackUp' },
+				{ id: 'live-attackDown', label: 'liveViews.attackDown' }
+			]
+		},
+		{
 			id: 'characters',
 			label: settingsLabels.characters,
 			icon: UserRound,
@@ -229,6 +248,7 @@
 			icon: Archive,
 			entries: [
 				{ id: 'backup', label: 'librarySettings.backup' },
+				{ id: 'originals', label: 'librarySettings.originals' },
 				{ id: 'restore', label: 'librarySettings.restoreFromBackup' }
 			]
 		},
@@ -271,7 +291,7 @@
 	);
 	const groups: SettingsSection[][] = [
 		['pixellab'],
-		['general', 'wardrobe', 'mount'],
+		['general', 'wardrobe', 'mount', 'live'],
 		['characters', 'moves', 'states', 'items'],
 		['export', 'library', 'trash'],
 		['developer', 'about']
@@ -521,6 +541,8 @@
 				</div>
 			{:else if active.id === 'mount'}
 				<MountSettings />
+			{:else if active.id === 'live'}
+				<LiveViewSettings />
 			{:else if isCreationSection(active.id)}
 				{#key active.id}<CreationSettings section={active.id} />{/key}
 			{:else if active.id === 'export'}

@@ -11,6 +11,7 @@
 		type CharacterModel
 	} from './characterConfig.ts';
 	import {
+		itemDrawings,
 		itemMethods,
 		moveModels,
 		preferredMoveFrameCounts,
@@ -52,6 +53,11 @@
 		auto: 'creationSettings.automatic',
 		skel: 'generationDetails.method.skeletonPose',
 		anchor: 'generationDetails.method.frameEditing'
+	} as const;
+	const itemDrawingNames = {
+		anchor: 'creationSettings.itemDrawings.anchor',
+		skeleton: 'creationSettings.itemDrawings.skeleton',
+		sheet: 'creationSettings.itemDrawings.sheet'
 	} as const;
 	const id = $props.id();
 	const itemProfiles = (
@@ -275,6 +281,24 @@
 					>{/each}
 			</select>
 		{/snippet}
+		{#snippet itemDrawing(inputId: string)}
+			<select
+				id={inputId}
+				class="bu-select select"
+				value={move.itemDrawing}
+				onchange={({ currentTarget }) =>
+					change(
+						'moves',
+						{ itemDrawing: currentTarget.value as CreationSettings['moves']['itemDrawing'] },
+						currentTarget,
+						move.itemDrawing
+					)}
+			>
+				{#each itemDrawings as option (option)}<option value={option}
+						>{t(itemDrawingNames[option])}</option
+					>{/each}
+			</select>
+		{/snippet}
 		{@render field('move-model', 'moveSheet.motionModel', model)}
 		{@render field('move-frames', 'moveSheet.frames', frames)}
 		{#if move.frames === 'auto'}
@@ -282,6 +306,8 @@
 		{:else if move.model === 'v3'}
 			<p class="bu-muted note">{t('creationSettings.framesHelp')}</p>
 		{/if}
+		{@render field('item-drawing', 'creationSettings.itemDrawing', itemDrawing)}
+		<p class="bu-muted note">{t('creationSettings.itemDrawingHelp')}</p>
 	{:else if section === 'states'}
 		{#snippet model(inputId: string)}
 			<select

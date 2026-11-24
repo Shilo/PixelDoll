@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import Sheet from './Sheet.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
@@ -213,10 +214,14 @@
 	const missingMoves = $derived.by(() => {
 		if (!m || !it || isDemo()) return [];
 		const pending = pendingMoves(doc.id, it.id).map((s) => s.id);
-		return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id));
+		return missingItemMoves(m, it.id, currentItemDrawing(), 0, store.project?.images).filter(
+			(s) => !pending.includes(s.id)
+		);
 	});
 	// Moves whose views were all kept without poses get no offer; they are named so the user knows to make them again.
-	const unposedMoves = $derived(m && it && !isDemo() ? unposedItemMoves(m, it.id, redo) : []);
+	const unposedMoves = $derived(
+		m && it && !isDemo() ? unposedItemMoves(m, it.id, currentItemDrawing(), redo) : []
+	);
 	let chosenMove = $state('');
 	const missingMove = $derived(
 		missingMoves.find((s) => s.id === chosenMove) ??
@@ -318,7 +323,7 @@
 			? qaReasonMessages(
 					it.qa,
 					SLOTS.find((s) => s.id === it.slot)?.class === 'held',
-					it.route === 'skeleton-pose',
+					it.route === 'skeleton-pose' && it,
 					m?.rig
 				).map(displayMessage)
 			: []

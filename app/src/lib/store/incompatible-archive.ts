@@ -102,11 +102,11 @@ function checkLossless(value: unknown, path: string, open = new Set<object>()): 
 	open.delete(value);
 }
 
-/** Throws when the text holds the connected or remembered PixelLab key (as the workspace export does). */
+/** Throws when the text holds the connected or remembered PixelLab key (as the backup does). */
 const containsKey = () =>
 	new LocalizedError(
-		'A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.',
-		'workspace.error.containsKey'
+		'A saved character contains the connected or remembered PixelLab key. Remove it before backing up.',
+		'backup.error.containsKey'
 	);
 
 function refuseKeys(json: string, keys: readonly string[]) {
@@ -128,9 +128,7 @@ export async function packIncompatible(
 ): Promise<{ bytes: Uint8Array; counts: IncompatibleCounts; missing: number } | undefined> {
 	const { projects, blobs } = await db.readWorkspaceSnapshot(
 		(_key, value) => !!incompatibleKind(value),
-		(records) =>
-			new Map([...blobReferences(records.values())].map((hash) => [hash, true] as const)),
-		false
+		(records) => new Map([...blobReferences(records.values())].map((hash) => [hash, true] as const))
 	);
 	if (!projects.size) return undefined;
 	if (projects.size > MAX_ZIP_ENTRIES) throw tooLarge();

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import { untrack } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import Sheet from './Sheet.svelte';
@@ -29,8 +30,9 @@
 				? { item, offer: null, note: t('itemGeneration.inProgress') }
 				: {
 						item,
-						offer: clipItemOffer(manifest, item.id, clipId, {
-							redo: setupRedoMoves(store.exportRecord)
+						offer: clipItemOffer(manifest, item.id, clipId, currentItemDrawing(), {
+							redo: setupRedoMoves(store.exportRecord),
+							images: project?.images
 						})
 					}
 		);
@@ -41,7 +43,7 @@
 		if (offered || !manifest) return offered ?? [];
 		const redo = setupRedoMoves(store.exportRecord);
 		const entry = rows
-			.flatMap(({ item }) => unposedItemMoves(manifest, item.id, redo))
+			.flatMap(({ item }) => unposedItemMoves(manifest, item.id, currentItemDrawing(), redo))
 			.find((unposed) => unposed.move === clipId);
 		return entry ? [entry.note] : [];
 	});

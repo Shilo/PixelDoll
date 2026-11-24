@@ -51,6 +51,15 @@
 		"scopeDebug": "저장된 캐릭터, 아트워크, 보관된 데이터, 디버깅 정보를 백업합니다.",
 		"debugNotSaved": "브라우저가 이 설정을 저장하지 못했습니다.",
 		"backup": "라이브러리 백업하기",
+		"originals": "원본 생성 이미지 다운로드",
+		"originalsHint": "PixelDoll이 처리하기 전에 PixelLab이 저장된 캐릭터를 위해 반환한 원본 이미지와 이를 구매한 요청입니다. 이 기기에 아직 보관된 요청만 포함됩니다.",
+		"originalsName": "원본 생성 이미지",
+		"originalsNone": "저장된 캐릭터의 원본 이미지가 남아 있지 않습니다.",
+		"originalsPartial": {
+			"other": "원본이 남아 있지 않은 캐릭터: {count}."
+		},
+		"originalsStarted": "원본 생성 이미지 다운로드를 시작했습니다.",
+		"originalsTooLarge": "원본 생성 이미지가 너무 커서 한 번에 다운로드할 수 없습니다.",
 		"restoreFromBackup": "백업에서 복원",
 		"review": "백업 검토",
 		"add": "추가할 캐릭터",
@@ -122,7 +131,14 @@
 		"saveFailed": "이 값을 저장하지 못했습니다. 다시 시도해 주세요.",
 		"incompatible": "프레임 수를 자동으로 설정하거나 새 모델이 지원하는 수를 선택하세요.",
 		"framesHelp": "사용 가능한 프레임 수는 캐릭터의 캔버스 크기에 따라 달라집니다.",
-		"methodHelp": "지원되는 경우 {pose}을 사용하고, 그 외에는 {edit}을 사용합니다."
+		"methodHelp": "지원되는 경우 {pose}을 사용하고, 그 외에는 {edit}을 사용합니다.",
+		"itemDrawing": "동작의 아이템",
+		"itemDrawingHelp": "동작 프레임에 그리면 아이템이 동작 자체의 그림에 맞춰져요. 별도 몸체에 포즈를 잡으면 아이템을 따로 애니메이션하므로 몇 픽셀 어긋날 수 있어요. 모든 뷰를 한 번에 그리면 포즈를 잡는 것보다 비용이 더 들고 동작 프레임에 그리는 것보다 적게 들며, 저장하기 전에 결과를 검토해요. 80~128 px의 4방향 캐릭터가 착용하는 아이템에 알맞아요. 다른 아이템은 동작 프레임에 그리고, 손에 드는 아이템은 포즈를 잡아요.",
+		"itemDrawings": {
+			"anchor": "동작 프레임에 그리기",
+			"skeleton": "별도 몸체에 포즈 잡기",
+			"sheet": "모든 뷰를 한 번에 그리기"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "탈것 미리보기 재생",
@@ -698,7 +714,7 @@
 		"missingFrames": "{names}: {move} 프레임이 필요해요",
 		"missingFrameViews": "{names}: {move} 동작의 {direction} 방향 프레임이 필요해요",
 		"making": "만드는 중…",
-		"makeIt": "만들기",
+		"makeMissingViews": "빠진 방향 만들기",
 		"estimate": {
 			"other": "생성 ~{n}회"
 		},
@@ -862,7 +878,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "동작은 미리보기에서 선택해요. 탑승 이동은 탈것 설정의 탑승 포즈를 따라요.",
-		"movesOffWalking": "동작은 미리보기에서 선택해요. 여기서 이동하면 대기 또는 걷기 동작이 재생돼요.",
+		"movesOffWalking": "동작은 미리보기에서 선택해요. 여기서 재생할 동작은 라이브 뷰 설정에서 골라요.",
 		"tabWardrobe": "옷장",
 		"tabColors": "색상",
 		"tabOutfits": "코디",
@@ -874,6 +890,9 @@
 			"other": "착용한 아이템 {n}개에 프레임이 필요해요"
 		},
 		"missingFramesForMove": "{move} · {direction} 프레임이 부족해요",
+		"previewProblems": {
+			"other": "문제 {n}개"
+		},
 		"workspaceCopyPixelLabOff": "워크스페이스 사본 · PixelLab 꺼짐",
 		"characterSelectionWASDOrArrowsSelectEnter": "캐릭터 선택. WASD 또는 방향키로 선택하고 Enter로 꾸미며, 더하기와 빼기로 확대/축소해요.",
 		"previousCharacter": "이전 캐릭터",
@@ -890,20 +909,21 @@
 		"inspect": "검사",
 		"customization": "꾸미기",
 		"customizationPanels": "꾸미기 패널",
-		"tabWorkRunning": "여기서 작업이 진행 중입니다",
+		"tabWorkRunning": "여기에 진행 중이거나 대기 중이거나 검토할 준비가 된 작업이 있습니다",
 		"tabWorkAttention": "여기에 확인이 필요한 작업이 있습니다"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name}: 이미 몸 색상을 사용해요.",
+		"drift": "{name}: 몸 색상과 맞지 않아요",
+		"match": "색상 맞추기",
+		"matched": "{name}: 몸 색상에 맞췄어요."
 	},
 	"worldStage": {
 		"groundUnavailable": "바닥을 실시간으로 렌더링할 수 없어 정적 장면을 표시합니다.",
 		"materialUnavailable": "바닥 재질을 불러올 수 없어 정적 장면을 표시합니다.",
 		"sceneUnavailable": "라이브 장면을 표시할 수 없습니다. 새로고침하여 다시 시도하세요.",
 		"characterPreviewWASDOrArrowsChangeFacing": "캐릭터 미리보기. WASD 또는 방향키로 방향을 바꾸고, 숫자 1, 2, 3으로 뷰를 전환해요.",
-		"sideScrollerTestWorldADLeft": "사이드 스크롤러 테스트 월드. A/D, 좌우 방향키 또는 가로 드래그로 이동하고, 숫자 1, 2, 3으로 뷰를 전환해요.",
-		"characterTestWorldWASDArrowsOrDrag": "캐릭터 테스트 월드. WASD, 방향키 또는 드래그로 이동하고, 숫자 1, 2, 3으로 뷰를 전환해요.",
 		"loadingCharacter": "캐릭터 불러오는 중…",
-		"dragInTheWorldToMove": "월드에서 드래그해 이동하세요",
-		"focusWorldADOrToMove": "월드 포커스 · A/D 또는 ←/→로 이동",
-		"focusWorldWASDOrArrowKeysTo": "월드 포커스 · WASD 또는 방향키로 이동",
 		"notice": {
 			"hiddenItemsInMove": {
 				"other": "아이템 {count}개 숨김: {move} 프레임 부족"
@@ -1309,6 +1329,7 @@
 		"drop": "캐릭터 ZIP을 여기에 놓으세요",
 		"dropNote": "PixelLab 캐릭터 또는 PixelDoll 내보내기 · 최대 64MB",
 		"chooseZip": "ZIP 선택",
+		"chooseAnother": "다른 ZIP 선택",
 		"characterZip": "캐릭터 ZIP",
 		"devicePrivacy": "파일은 이 기기에 남아요. 가져오기 전에 캐릭터를 미리 확인하세요.",
 		"pixelLabHint": "PixelLab 캐릭터 생성기에서 개별 프레임이 담긴 ZIP을 내보내세요. 상위 폴더도 지원해요. 다른 스프라이트 시트 레이아웃과 PNG만 있는 ZIP은 지원하지 않아요.",
@@ -1434,36 +1455,18 @@
 		}
 	},
 	"workspace": {
-		"activityTitle": "워크스페이스 활동",
-		"activityIntro": "PixelDoll {build} 버전에서 워크스페이스와 함께 저장됐어요. ZIP에 포함된 작업은 다시 시작되지 않아요.",
+		"activityTitle": "백업 정보",
+		"activityIntro": "PixelDoll {build}(으)로 만든 백업에서 열었습니다.",
 		"missing": {
 			"other": "아트워크 파일 {count}개가 없거나 읽을 수 없었어요."
 		},
 		"skippedCharacters": {
 			"other": "건너뛴 저장 캐릭터: {count}개."
-		},
-		"demoOutfit": "데모는 기본 코디 설정을 사용해요.",
-		"exportSettings": "사본은 기본 내보내기 설정을 사용해요.",
-		"tier": "PixelLab 티어: {tier}",
-		"noErrors": "최근 오류나 끝나지 않은 작업이 기록되지 않았어요.",
-		"noRecent": "최근 오류는 포함되지 않았어요.",
-		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
-		"errorLineHttp": " · HTTP {status}",
-		"errorLineCode": " · 코드 {code}",
-		"error": {
-			"tooLarge": "이 워크스페이스는 ZIP 크기나 아트워크 한도를 넘어요. 대신 캐릭터별 ZIP을 사용하세요.",
-			"containsKey": "저장된 필드에 연결됐거나 기억된 PixelLab 키가 있어요. 내보내기 전에 워크스페이스에서 제거하세요.",
-			"invalidIndex": "이 워크스페이스 인덱스가 잘못됐어요.",
-			"unsupportedVersion": "이 워크스페이스 파일 버전은 지원하지 않아요.",
-			"duplicateRecord": "이 워크스페이스에 지원하지 않거나 중복된 저장 레코드가 있어요.",
-			"missingFiles": "이 워크스페이스의 빠진 파일 목록이 잘못됐어요.",
-			"unexpectedFile": "이 워크스페이스에 예상하지 못한 파일이 있어요.",
-			"invalidDiagnostics": "이 워크스페이스의 최근 오류가 잘못됐어요."
 		}
 	},
 	"backup": {
 		"error": {
-			"notBackup": "캐릭터 ZIP이 아닌 PixelDoll 백업 또는 워크스페이스 ZIP을 선택하세요.",
+			"notBackup": "캐릭터 ZIP이 아닌 PixelDoll 백업을 선택하세요.",
 			"unsupportedVersion": "지원하지 않는 백업 파일 버전이에요.",
 			"invalid": "이 백업은 손상되었거나 올바르지 않아요.",
 			"tooLarge": "이 백업은 ZIP 크기 또는 아트워크 한도를 넘어요. 대신 캐릭터별 ZIP을 사용하세요.",
@@ -1555,6 +1558,7 @@
 			"facing": "일부 프레임이 반대쪽 뷰와 비슷해요. 몸통을 확인하세요",
 			"detail": "일부 프레임에서 디자인의 세부 요소가 빠지거나 색이 바뀌었어요",
 			"motion": "움직일 때 아이템의 크기와 각도를 확인하세요",
+			"fill": "일부 프레임에서 아이템 속이 비어 윤곽선만 남았어요. 모양을 확인하세요",
 			"lowerClothing": "서 있는 디자인에 비해 하의 일부가 빠져 있어요",
 			"footwear": "신발이 서 있는 디자인과 달라요. 발을 확인하세요",
 			"bodyPixels": "모델이 일부 몸 픽셀을 바꿨어요",
@@ -1889,7 +1893,9 @@
 			"conceptNote": "업로드한 그림이 캐릭터 프레임보다 먼저 전송돼요. 그 출력은 사용하지 않아요.",
 			"redrawEquipment": "{item} {direction} · 장비 다시 그리기",
 			"redrawEquipmentNote": "{width}×{height}, 프레임 {from}–{to}. 마스크 없는 시트와 일치하는 참조를 보내요. PixelDoll은 보관할 내용을 제한하며 프레임을 바꾸기 전에 항상 물어봐요. PixelDoll에는 Tier 1이 필요해요. 달러로 청구되면 최소 {minimum}이며 실제 청구액은 더 높을 수 있어요.",
-			"gridRepairNote": "{width}×{height}, 프레임 {from}–{to}. 같은 방향의 보호된 참조 하나를 사용해요. 몸체는 바뀌지 않아요. 시각적으로 막히는 문제가 있는 완료된 복구는 검토를 위해 보관돼요."
+			"gridRepairNote": "{width}×{height}, 프레임 {from}–{to}. 같은 방향의 보호된 참조 하나를 사용해요. 몸체는 바뀌지 않아요. 시각적으로 막히는 문제가 있는 완료된 복구는 검토를 위해 보관돼요.",
+			"itemSheet": "{item}: {directions}, 시트 1장",
+			"itemSheetNote": "{width}×{height}: 뷰마다 한 줄로, 먼저 서 있는 디자인, 그다음 동작 프레임 {frames}개를 각각 {cellWidth}×{cellHeight} px로 잘라 넣어요. 몸체는 그대로예요. PixelDoll은 저장하기 전에 물어보고, 검사를 통과한 뷰만 보관하며 나머지는 목록으로 보여 줘요. PixelDoll에는 Tier 1이 필요해요. 한 번만 시도하며, 유료 재시도는 직접 요청해야 해요."
 		},
 		"copyEndpointTitle": "엔드포인트 복사",
 		"manualCopyLabel": "직접 복사할 엔드포인트",
@@ -1998,7 +2004,10 @@
 		"stopNoAnswer": "이 작업을 실행 중인 탭이 아직 중지를 확인하지 않았어요. 잠시 후 활동을 확인하고, 아직 실행 중이면 그 탭에서 중지해 주세요.",
 		"stopNotConfirmed": "PixelLab이 중지를 확인하지 않아 작업이 계속 실행되고 요금이 청구될 수 있어요. 활동을 확인해 주세요.",
 		"pausedStorage": "저장된 작업을 읽거나 저장할 수 없어 새 요청을 보내지 않아요. 재개하면 다시 시도해요.",
-		"cancelSaveFailed": "취소를 저장할 수 없었어요. 이 탭은 요청을 보내지 않지만, 다른 탭이나 새로고침 후에는 보내질 수 있어요."
+		"cancelSaveFailed": "취소를 저장할 수 없었어요. 이 탭은 요청을 보내지 않지만, 다른 탭이나 새로고침 후에는 보내질 수 있어요.",
+		"titleItemViews": {
+			"other": "{item}: {move}, 뷰 {count}개"
+		}
 	},
 	"genCard": {
 		"retryKey": "다시 생성에는 이 디자인의 색상에서 측정한 {color} 배경을 사용해요",
@@ -2648,6 +2657,8 @@
 		"motionOnly": "몸체의 움직임만 설명하세요. 무기와 소품은 아이템으로 추가하세요.",
 		"motionModel": "모션 모델",
 		"motionModelHelp": "Skeleton v3는 몸과 장비에 같은 포즈를 사용해요. V3와 PixMiniMax는 몸을 먼저 그리고, 이후 PixelDoll이 장비에 사용할 포즈를 찾아요.",
+		"itemDrawing": "이 동작의 아이템",
+		"itemDrawingDefault": "기본({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
@@ -2700,7 +2711,11 @@
 			"repairNote": "몸체는 그대로예요. 수정이 끝나도 시각적 문제가 있으면 검토할 때까지 적용을 보류해요.",
 			"currentFrame": "현재 프레임 {number}",
 			"redrawnFrame": "다시 그린 프레임 {number}",
-			"repairedFrame": "수정한 프레임 {number}"
+			"repairedFrame": "수정한 프레임 {number}",
+			"skippedViews": "보관하지 않은 뷰: {views}. PixelLab이 그곳에 아이템을 그리지 않아서 아직 없어요. 이 뷰들만 다시 그릴 수 있어요.",
+			"viewFrame": "{view}, 프레임 {number}",
+			"keepFailedViews": "검사를 통과하지 못한 뷰도 보관: {views}",
+			"chooseViews": "저장하기 전에 보관할 뷰를 선택하세요."
 		}
 	},
 	"itemRoute": {
@@ -2734,7 +2749,9 @@
 			"itemMoveSaveConflictAlso": "프레임을 생성하는 동안 이 캐릭터나 아이템이 바뀌었어요. 기존 그림은 그대로 두었고, 완성된 프레임은 활동에 남아 있어요. 다른 방향도 멈췄어요: {reason}",
 			"keepWithoutStanding": "이 아이템은 디자인의 기준이 된 동작에 빠진 프레임이 있어 그 동작 없이 유지할 수 없어요. 그 동작을 표시하고 아이템 복구나 아이템 다시 그리기가 있으면 사용하거나, 아이템을 다시 만드세요.",
 			"keepWithoutNothingLeft": "이 아이템에는 유지할 수 있는 완전한 동작이 없어요. 대신 빠진 프레임을 만드세요.",
-			"savedFrameMissing": "이 아이템의 저장된 프레임이 저장소에 없어요."
+			"savedFrameMissing": "이 아이템의 저장된 프레임이 저장소에 없어요.",
+			"itemSheetChanged": "시트 가격을 계산한 뒤 이 아이템이나 동작이 바뀌었어요. 아이템을 다시 열어 한 번 더 검토하세요. 생성은 요청하지 않았어요.",
+			"itemSheetNoView": "PixelLab이 어떤 뷰에도 아이템을 그리지 않아 아무것도 보관하지 않았어요. 시트는 활동에 남아 있어요."
 		}
 	},
 	"newItem": {
@@ -3312,8 +3329,28 @@
 		"generateFor": "생성하기: {move}",
 		"wearOn": "{move}에서 착용"
 	},
+	"itemImport": {
+		"title": "아이템 가져오기",
+		"intro": "캐릭터의 ZIP, 백업 또는 공유된 캐릭터. 아이템이 이 캐릭터에 맞으면 무료예요.",
+		"empty": "이 ZIP에는 완성된 아이템이 없어요.",
+		"skipped": {
+			"other": "아이템 {count}개를 읽을 수 없어요."
+		},
+		"notFitted": "{names}은(는) 더 이상 맞지 않아 추가되지 않았어요.",
+		"busy": "아이템이 추가될 때까지 기다린 뒤 다시 시도해 주세요.",
+		"row": {
+			"copy": "이 캐릭터에 정확히 맞아요",
+			"refit": "이 몸에 무료로 맞췄어요. 가져온 뒤 프레임을 확인해 주세요.",
+			"unfitted": "다른 몸용이에요. 그려진 그대로 착용해서 떠 보이거나 겹칠 수 있어요.",
+			"remake": "다른 몸용이라 여기서는 착용할 수 없어요"
+		}
+	},
+	"importDrop": {
+		"items": "놓아서 아이템 가져오기",
+		"moves": "놓아서 동작 가져오기",
+		"states": "놓아서 상태 가져오기"
+	},
 	"moveImport": {
-		"title": "동작 가져오기",
 		"importMoves": "동작 가져오기",
 		"importStates": "상태 가져오기",
 		"dropArea": "PixelDoll ZIP 놓기 영역",
@@ -3353,5 +3390,34 @@
 			"resolveDrafts": "동작을 가져오기 전에 이 캐릭터의 아이템 초안을 유지하거나 버리세요.",
 			"changed": "이 캐릭터가 바뀌었어요. 최신 버전을 확인하려면 ZIP을 다시 선택하세요."
 		}
+	},
+	"liveViews": {
+		"automaticStill": "자동: 가만히 서 있기",
+		"controls": "조작",
+		"title": "라이브 뷰",
+		"forCharacter": "{name} 캐릭터가 탑다운과 사이드 스크롤러에서 재생하는 동작이에요.",
+		"idle": "대기",
+		"walk": "걷기",
+		"attack": "공격",
+		"jump": "점프",
+		"attackUp": "위로 공격",
+		"attackDown": "아래로 공격",
+		"automaticClip": "자동: {clip}",
+		"automaticNone": "자동: 없음",
+		"sameAsAttack": "공격과 같음",
+		"sideAttackHelp": "사이드 스크롤러에서 위나 아래를 조준하면 위로 공격이나 아래로 공격을 재생해요.",
+		"notSaved": "라이브 뷰 설정을 바꿨지만 이 브라우저에 저장하지 못했어요.",
+		"openCharacter": "캐릭터를 열면 재생할 동작을 고를 수 있어요.",
+		"mount": "탈것",
+		"actions": "게임 동작",
+		"withShortcut": "{action}({key})",
+		"spaceKey": "스페이스",
+		"noAttack": "아직 공격으로 재생할 것이 없어요. 라이브 뷰 설정에서 동작이나 상태를 골라 주세요.",
+		"noAttackDirection": "{move}에는 {direction} 방향 프레임이 없어서 그쪽으로는 공격할 수 없어요.",
+		"hintTopDown": "WASD 또는 클릭으로 이동 · 오른쪽 클릭 또는 X로 공격 · 스페이스로 점프 · M으로 타기/내리기",
+		"hintSide": "A/D 또는 클릭으로 이동 · 오른쪽 클릭 또는 X로 공격 · 스페이스로 점프 · M으로 타기/내리기",
+		"hintTouch": "왼쪽은 이동 · 오른쪽은 조준, 손을 떼면 공격 · 버튼으로 점프하고 타기",
+		"stageTopDown": "캐릭터 테스트 월드예요. WASD, 화살표 키, 클릭 또는 드래그로 이동해요. 오른쪽 클릭이나 X로 공격하고, 스페이스로 점프하고, M으로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요.",
+		"stageSide": "사이드 스크롤러 테스트 월드예요. A/D, 좌우 화살표 키, 클릭 또는 드래그로 이동해요. 오른쪽 클릭이나 X로 공격하고, 스페이스로 점프하고, M으로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요."
 	}
 }

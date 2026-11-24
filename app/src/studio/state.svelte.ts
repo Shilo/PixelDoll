@@ -178,6 +178,7 @@ import {
 	type FrameChange
 } from '../lib/rig/reframe.ts';
 import { forgetRidingPose, syncRiderPose } from './experience/riderPose.ts';
+import { forgetLiveChoices } from './experience/liveViews.ts';
 import { clearDebugLog, recordDebug } from '../lib/debug/log.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
@@ -287,7 +288,6 @@ export type SheetId =
 	| 'directions'
 	| 'importZip'
 	| 'importPixelLab'
-	| 'importMoves'
 	| 'delete'
 	| 'details'
 	| 'setup'
@@ -793,7 +793,10 @@ export const doc = $state({
 	redo: [] as UndoStep[],
 	/** Worn drafts, slot -> draft id: shown over the outfit, never in doc.items, so autosave, undo, outfits and exports never
 	 *  see a draft. Cleared when a saved item or None takes the slot, on discard and when another character opens. */
-	drafts: {} as Record<string, string>
+	drafts: {} as Record<string, string>,
+	/** The color being dragged in the custom color picker: shown by the stage and tiles, never saved or undone until the picker
+	 *  commits it (then it becomes one ordinary color change). */
+	colorPreview: null as { id: string; value: string } | null
 });
 export const isDemo = () => doc.id.startsWith('fixture:');
 
@@ -802,8 +805,11 @@ export const isDemo = () => doc.id.startsWith('fixture:');
 class View {
 	recolored = $derived.by(() => {
 		void doc.rev;
-		const p = store.project;
-		return p ? recolor(p, $state.snapshot(doc.variants)) : null;
+		const p = store.project,
+			preview = doc.colorPreview;
+		if (!p) return null;
+		const variants = $state.snapshot(doc.variants);
+		return recolor(p, preview ? { ...variants, [preview.id]: preview.value } : variants);
 	});
 	project = $derived.by(() => this.recolored && withDrafts(this.recolored));
 	// a worn draft is never invisible: a draft in the other hand shows instead of a two-handed item (display only)
@@ -982,6 +988,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 			doc.variants = { ...current.variants };
 		} // in place: keep the live outfit
 		if (id !== doc.id) doc.drafts = {};
+		doc.colorPreview = null;
 		// Items put on by this open (Keep it, an accepted worn draft) are replayed below as one undoable edit, which also says
 		// what a two-handed item took off.
 		const outfit = { ...doc.items },
@@ -2315,10 +2322,15 @@ export async function deleteDeletedForever(id: string): Promise<void> {
 	void cleanUp(0, true).catch((error) => console.error('cleanup after delete forever', error));
 }
 
-/** Drop the Riding pose a permanently deleted thing held: a character's, or a State's own. */
+/** Drop the Riding pose and Live Views choices a permanently deleted thing held: a character's, or a clip's own. */
 function forgetPose(entry: RecentlyDeleted) {
-	if (entry.kind === 'character') forgetRidingPose(entry.projectId);
-	else if (entry.scope.moveId) forgetRidingPose(entry.projectId, entry.scope.moveId);
+	if (entry.kind === 'character') {
+		forgetRidingPose(entry.projectId);
+		forgetLiveChoices(entry.projectId);
+	} else if (entry.scope.moveId) {
+		forgetRidingPose(entry.projectId, entry.scope.moveId);
+		forgetLiveChoices(entry.projectId, entry.scope.moveId);
+	}
 }
 
 export async function removeProject(id = doc.id): Promise<void> {
@@ -2424,6 +2436,25 @@ export function setVariant(matId: string, name: string | null) {
 		if (name == null) delete doc.variants[matId];
 		else doc.variants[matId] = name;
 	});
+}
+const PREVIEW_MS = 33;
+let previewTimer: ReturnType<typeof setTimeout> | undefined,
+	pendingPreview: { id: string; value: string } | null = null;
+/** Show a color from the picker while it is still being chosen: no undo entry and no save until the picker closes. Dragging
+ *  emits far more events than a repaint needs, so at most one preview lands per PREVIEW_MS. */
+export function previewVariant(matId: string, value: string) {
+	pendingPreview = { id: matId, value };
+	previewTimer ??= setTimeout(() => {
+		previewTimer = undefined;
+		doc.colorPreview = pendingPreview;
+	}, PREVIEW_MS);
+}
+/** Drop the live color preview: the picker closed, was cancelled, or its palette is gone. */
+export function clearVariantPreview() {
+	clearTimeout(previewTimer);
+	previewTimer = undefined;
+	pendingPreview = null;
+	doc.colorPreview = null;
 }
 export function resetColors(matIds?: string[], label = message('history.resetColors')) {
 	commit(label, () => {
@@ -2720,6 +2751,40 @@ export async function replaceFrames(prepared: PreparedFrames, name: string) {
 			action: () => undoStep(projectId, step),
 			actionLabel: message('fixFrames.undo')
 		});
+}
+/** Put a State saved before States were matched to the body's colors onto those colors: free and local, one history step
+ *  that the notice's Undo (or Restore originals in Fix frames) reverses. `name` is how the Studio shows the State. */
+export async function matchStateColors(anim: string, name: string) {
+	const projectId = doc.id,
+		request = openRequest;
+	try {
+		await flushSave();
+		const prepared = await (await framesModule()).prepareStateColorMatch(projectId, anim);
+		if (!prepared) {
+			toast(message('stateColors.alreadyMatched', { name }));
+			return;
+		}
+		const { step } = await withItemStep(
+			projectId,
+			prepared.plan.itemId,
+			message('stateColors.match'),
+			async (beforeWrite) => (await framesModule()).saveFrames(prepared, beforeWrite)
+		);
+		await refreshSaved(projectId, request);
+		if (step)
+			toast(message('stateColors.matched', { name }), {
+				tone: 'success',
+				duration: 10000,
+				action: () => undoStep(projectId, step),
+				actionLabel: message('fixFrames.undo')
+			});
+	} catch (error) {
+		console.error('match state colors', error);
+		toast(errorTranslation(error) ?? message('fixFrames.errors.saveFailed'), {
+			tone: 'danger',
+			error
+		});
+	}
 }
 /** Restore every edited frame of an item, as one history step. */
 export async function restoreFrames(projectId: string, itemId: string) {
@@ -3171,6 +3236,81 @@ async function addEntry(entry: SharedItem, openedDemoCopy = false) {
 			{ tone: 'danger' }
 		);
 	}
+}
+
+/** Free: copy the chosen items of an imported ZIP (`source`, not stored) into `projectId` one by one, exactly as tapping a
+ *  shared tile would (exact copy, re-fit or worn as drawn); a name in use keeps both as "Name 2". One item that fails or no
+ *  longer fits leaves the others to finish. Wears what was added; `notes` are what wearing took off and the categories it
+ *  showed, as a shared tile's toast says them. */
+export async function importItems(
+	projectId: string,
+	source: BundledSource,
+	entries: readonly SharedItem[]
+): Promise<{
+	added: Item[];
+	skipped: SharedItem[];
+	failed: { entry: SharedItem; error: unknown }[];
+	notes: Message[];
+}> {
+	if (shared.adding) throw new LocalizedError('Wait for the item being added.', 'itemImport.busy');
+	shared.adding = 'import';
+	const added: Item[] = [],
+		skipped: SharedItem[] = [],
+		failed: { entry: SharedItem; error: unknown }[] = [],
+		notes: Message[] = [];
+	try {
+		await flushSave();
+		for (const entry of entries)
+			try {
+				const item = await acceptCopy(source.id, entry.item.id, projectId, source, {
+					numberName: true
+				});
+				if (item) added.push(item);
+				else skipped.push(entry);
+			} catch (error) {
+				failed.push({ entry, error });
+			}
+	} finally {
+		shared.adding = '';
+		if (added.length) {
+			forgetFits();
+			await openProject(projectId, { quiet: true });
+			if (doc.id === projectId) {
+				for (const item of added) {
+					const note = wear(item.id, true);
+					if (note) notes.push(note);
+				}
+				for (const slot of new Set(added.map((item) => item.slot))) {
+					const shown = revealSlot(slot);
+					if (shown) notes.push(shown);
+				}
+			}
+			void refreshShared();
+		}
+	}
+	return { added, skipped, failed, notes };
+}
+
+/** Where an import starts: the New item, New move or New State sheet opens on its Import page, reading a dropped ZIP. */
+export type ImportKind = 'items' | 'moves' | 'states';
+let importOpening: { kind: ImportKind; projectId: string; files?: File[] } | undefined;
+export function openImport(kind: ImportKind, files?: File[]) {
+	importOpening = { kind, projectId: doc.id, files };
+	if (kind === 'items') openNewItem(ui.group);
+	else if (kind === 'moves') {
+		ui.redrawMove = '';
+		ui.sheet = 'move';
+	} else {
+		ui.stateCaptureMove = '';
+		ui.sheet = 'stateCapture';
+	}
+}
+/** The import a sheet of `kind` was opened for, or undefined. Every New item, New move and New State sheet takes it as it
+ *  opens, so a request is used once and never resurfaces later, for another sheet or character. */
+export function takeImport(kind: ImportKind): { files?: File[] } | undefined {
+	const opening = importOpening;
+	importOpening = undefined;
+	return opening?.kind === kind && opening.projectId === doc.id && !isDemo() ? opening : undefined;
 }
 
 /** Free: an exact copy takes the frames its source item gained since (moves added there), into the same item. */
@@ -5409,7 +5549,8 @@ export async function resumeMove() {
 	else void startMove(r.projectId, r.spec);
 }
 
-export async function resolveRepairReview(useRepair: boolean) {
+/** `keepFailed`: an item sheet's review also keeps the views that failed a check (unselected by default). */
+export async function resolveRepairReview(useRepair: boolean, keepFailed = false) {
 	if (moveRunning || !moving.repairReview || queue.role === 'follower') return;
 	const projectId = moving.projectId,
 		review = $state.snapshot(moving.repairReview),
@@ -5419,7 +5560,7 @@ export async function resolveRepairReview(useRepair: boolean) {
 	try {
 		const run = await itemRun();
 		if (useRepair) {
-			if (!moving.repairApplied) await run.applyRepairReview(projectId, review);
+			if (!moving.repairApplied) await run.applyRepairReview(projectId, review, keepFailed);
 			moving.repairApplied = true;
 		} else if (await run.repairAlreadyApplied(projectId, review)) {
 			moving.repairApplied = true;

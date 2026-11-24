@@ -49,7 +49,7 @@
 		/** Back drops the pane's unsaved state (`dirty`), so it asks first like the X. */
 		backDiscards?: boolean;
 		/** A sibling page this sheet opens (Export's Settings), in Back's place at the start. */
-		opener?: { label: string; icon: Component; onclick: () => void };
+		opener?: { label: string; icon: Component; onclick: () => void; iconOnly?: boolean };
 		/** The id of a note about what leaving does (work that keeps running), read with the exit control. */
 		exitNote?: string;
 		/** The sheet Back returns to, when it is another sheet (names it "Back to …"). */
@@ -112,11 +112,14 @@
 			pop = from?.closest<HTMLElement>('[popover]');
 		const opener = pop ? document.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`) : from;
 		dlg.showModal();
+		// A sheet that opens on another page (Import) keeps its form mounted but hidden: its fields are not a start.
 		const field =
 			matchMedia('(pointer: fine)').matches &&
-			dlg.querySelector<HTMLElement>(
-				':is(.sheet-heading, .sheet-body) :is(textarea, input:is([type=text], [type=password], :not([type])))'
-			);
+			[
+				...dlg.querySelectorAll<HTMLElement>(
+					':is(.sheet-heading, .sheet-body) :is(textarea, input:is([type=text], [type=password], :not([type])))'
+				)
+			].find((element) => element.getClientRects().length > 0);
 		if (field) field.focus();
 		else titleElement?.focus({ preventScroll: true });
 		return () => {

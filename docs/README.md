@@ -5,6 +5,8 @@ format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Open work:
 
 The [shared JavaScript runtime and cross-engine API contract](architecture/javascript-runtime.md) documents canonical application/JavaScript behavior, native-port responsibilities and required parity checks. The [cross-engine audit](testing/cross-engine-api-contract-2026-11-12.md) records the challenged fixes and verification.
 
+To diagnose and fix what a user reported (a Library backup with or without debugging details, a problem report, pasted errors), hand it to an agent with the [debug-user-report skill](../.agents/skills/debug-user-report/SKILL.md); see [how to use it](handoff/debug-user-report-skill.md#using-the-skill).
+
 For a new agent-led research and implementation cycle, invoke the [repeatable paper-doll improvement workflow](handoff/paperdoll-improvement-cycle.md). It covers repository review, online discovery, local source and tool experiments, independent challenge, live PixelLab testing, and verified improvements.
 
 **Evidence media lives at commit [1f95029](https://github.com/Shilo/PixelDoll/tree/1f950291f90d43f5c6f27572445664f757f5716e).** Spike outputs (`spikes/api/out/`), test
@@ -54,8 +56,9 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
-- [Template study](research/2026-11-24-template-study/README.md) tested all 49 PixelLab mannequin templates through the Studio pipeline with blind reviews. Walk, Run and a new Jump suggestion now use templates on registered characters; Hurt stays authored, and no kick, punch or slash template qualified.
+- [Template study](research/2026-11-24-template-study/README.md) ran the PixelLab mannequin templates through the Studio pipeline and blind-reviewed 34 of the 49. Walk, Run and a new Jump suggestion now use templates on registered characters; Hurt stays authored, and no kick, punch or slash template qualified.
 - [Mocap salvage study](research/2026-11-23-mocap-salvage/README.md) re-tested converted 3D clips against the Studio's authored tables, described moves and PixelLab templates in blind matched comparisons. Verdict: not salvageable; templates and authored tables win.
+- [State palette trial](research/2026-11-23-state-palette-trial/README.md) compares PixelLab's State palette options with the free save-time snap (335 generations) and recommends keeping only the snap.
 - [Animation model default audit](research/2026-11-19-animation-model-audit.md) records a data-only 216-frame archival screen and the matched live protocol for Skeleton V3, PixMiniMax, and Text V3.
 - [PixelLab Character Creator states and animations](research/2026-11-18-character-creator-states.md) describes the website workflow, public endpoint lifecycle, and how PixelDoll currently imports and uses standing references.
 - [PixelDoll state authoring study](research/2026-11-18-pixeldoll-states/README.md) proposes reusable poses, shared playback, state-derived move generation and independent removal. It includes an interactive layout comparison and runtime probe.

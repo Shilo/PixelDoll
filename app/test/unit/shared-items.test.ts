@@ -1,6 +1,6 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { equipmentFixture, bodyOnly } from './equipment-fixture.ts';
-import { acceptCopy, flipper, prepareCopy } from '../../src/lib/equipment/copy.ts';
+import { acceptCopy, flipper, freeItemName, prepareCopy } from '../../src/lib/equipment/copy.ts';
 import { assessCopy } from '../../src/lib/equipment/compatibility.ts';
 import { forgetFits, listShared } from '../../src/lib/equipment/shared.ts';
 import { loadProject, type StoredProject } from '../../src/lib/store/project.ts';
@@ -576,6 +576,34 @@ test('the bundled demo shares its items: listed from memory, and a copy writes t
 	expect(worn(copied.project, { body: 'base', head: item.id })).toEqual(
 		worn(demo, { body: 'base', head: 'hat' })
 	);
+});
+
+test('an imported ZIP lists only its own items, and a name in use is kept as “Name 2”', async () => {
+	const target = named(await equipmentFixture(), 'Squire');
+	await store('rig-target', target);
+	const saved = named(await equipmentFixture(), 'Saved');
+	Object.assign(hatOf(saved), { prompt: 'a saved cap' });
+	await store('rig-saved', saved);
+	const zip = named(await equipmentFixture(), 'Friend');
+	Object.assign(hatOf(zip), { prompt: 'a red hood', name: hatOf(target).name });
+	const source = { id: 'zip:friend', manifest: zip.manifest, variants: {}, images: zip.images };
+	const { items } = await listShared('rig-target', target.manifest, undefined, [source], {
+		saved: false
+	});
+	expect(items.map((x) => [x.sourceId, x.item.prompt, x.fit])).toEqual([
+		['zip:friend', 'a red hood', 'copy']
+	]);
+	// The wardrobe's own listing still offers the saved characters.
+	expect((await listShared('rig-target', target.manifest)).items.map((x) => x.sourceId)).toEqual([
+		'rig-saved'
+	]);
+	const item = (await acceptCopy('zip:friend', 'hat', 'rig-target', source, {
+		numberName: true
+	}))!;
+	const name = hatOf(target).name;
+	expect(item.name).toBe(`${name} 2`);
+	expect(item.copiedFrom).toEqual({ id: 'zip:friend', name: 'Friend', item: 'hat' });
+	expect(freeItemName(`${name} 2`, [...target.manifest.items, item])).toBe(`${name} 3`);
 });
 
 test('a copy saved before fit notes were recorded (unfitted: true) still reads, as one without notes', async () => {
