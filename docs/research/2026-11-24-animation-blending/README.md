@@ -21,7 +21,7 @@ So the owner's reading was basically right: it is a hip-level replacement, not a
 
 Technical summary follows.
 
-An interactive visual explainer using the real frames is in [layering-explainer.html](layering-explainer.html): drag the cut line to see the straight-cut failure, then compare the leg-only removal.
+Two interactive pages use the real frames: [layering-explainer.html](layering-explainer.html) for the cut-versus-removal idea, and [layering-lab.html](layering-lab.html) for every walk/attack phase pair with per-pair grading, an animated slide comparison, outfit switches, and the failing cases left visible.
 
 **The requested capability is achievable for the case that matters most, if it is treated as authored, reviewed layering rather than an automatic split.**
 
