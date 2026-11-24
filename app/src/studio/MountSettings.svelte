@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import { getLocale, t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
@@ -59,6 +60,8 @@
 	function saved(ok: boolean) {
 		if (!ok) toast(message('settings.mountNotSaved'), { tone: 'warning' });
 	}
+	// The F shortcut belongs to a keyboard, so only a hovering pointer (a desktop mouse) gets the hint.
+	const hoverPointer = new MediaQuery('(hover: hover) and (pointer: fine)');
 	function choosePose(clip: string) {
 		if (!doc.id) return;
 		saved(setRidingPose(doc.id, clip));
@@ -69,6 +72,9 @@
 <MountPreview />
 <SettingsItemToggle
 	setting="show-mount"
+	tooltip={hoverPointer.current
+		? t('liveViews.withShortcut', { action: t('toolbar.showMount'), key: 'F' })
+		: undefined}
 	checked={experience.testMount}
 	onchange={(event) => {
 		showMount(event.currentTarget.checked);
