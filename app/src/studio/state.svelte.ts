@@ -3633,9 +3633,11 @@ export function startupResumed() {
 	runWaiting();
 }
 /** Stopped item drafts, moves, setups and new characters: each waits for the user and blocks related edits. */
+/** A failed move or item job that holds the queue (it counts as stopped work once). */
+export const stoppedMove = () => !!heldMove() && !!moving.error && !moveRunning;
 export const stoppedWork = () =>
 	gens.filter((g) => g.phase === 'failed').length +
-	(heldMove() && moving.error && !moveRunning ? 1 : 0) +
+	(stoppedMove() ? 1 : 0) +
 	(heldSetup() && settingUp.error ? 1 : 0) +
 	creates.filter((run) => !run.projectId && run.error && !run.running).length;
 /** Work that stopped before this page loaded waits silently in its panel, so say so once. */

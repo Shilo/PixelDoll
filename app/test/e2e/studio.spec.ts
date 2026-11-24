@@ -9132,7 +9132,8 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(
 		page.getByRole('button', { name: new RegExp(` · ${fixture.itemName}`) })
 	).toHaveCount(0);
-	// The tab with the work carries a dot, and so does More; a failed job turns both red.
+	// The tab with the work carries a dot, red when its job failed; More only marks work the tabs do not show, with the
+	// same 6px dot.
 	const movesTab = page.locator('#customization-tab-moves'),
 		statesTab = page.locator('#customization-tab-states'),
 		more = page.getByRole('button', { name: 'More options', exact: true });
@@ -9150,9 +9151,8 @@ test('standing-first items quote only standing and offer actual custom moves one
 		}, pseudo);
 	await expect(movesTab).toHaveAttribute('data-activity', 'busy');
 	await expect(statesTab).not.toHaveAttribute('data-activity');
-	await expect(more).toHaveAttribute('data-activity', 'busy');
+	await expect(more).not.toHaveAttribute('data-activity');
 	expect(await dot(movesTab, 'label')).toBe('accent');
-	expect(await dot(more, 'button')).toBe('accent');
 	await expect(movesTab).toHaveAccessibleDescription('Work is running here');
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
@@ -9168,11 +9168,41 @@ test('standing-first items quote only standing and offer actual custom moves one
 	}, fixture.itemId);
 	await expect(statesTab).toHaveAttribute('data-activity', 'busy');
 	await expect(movesTab).toHaveAttribute('data-activity', 'stopped');
-	await expect(more).toHaveAttribute('data-activity', 'stopped');
+	await expect(more).not.toHaveAttribute('data-activity');
 	expect(await dot(movesTab, 'label')).toBe('red');
 	expect(await dot(statesTab, 'label')).toBe('accent');
-	expect(await dot(more, 'button')).toBe('red');
 	await expect(movesTab).toHaveAccessibleDescription('Work here needs attention');
+	// Work outside the tabs (an item draft) marks More: running, then stopped.
+	const draft = (phase: string) =>
+		page.evaluate(async (phase) => {
+			const path = '/src/studio/state.svelte.ts',
+				s = await import(path);
+			s.gens.splice(0, s.gens.length, {
+				phase,
+				draft: { rigId: 'another-character', spec: { id: 'outside-draft' } },
+				input: { slot: 'head', name: 'Outside draft' }
+			});
+		}, phase);
+	await draft('running');
+	await expect(more).toHaveAttribute('data-activity', 'busy');
+	expect(await dot(more, 'button')).toBe('accent');
+	const size = (target: Locator, pseudo: string) =>
+		target.evaluate((node, pseudo) => {
+			const after = getComputedStyle(
+				pseudo === 'label' ? node.querySelector('.bu-tab-label')! : node,
+				'::after'
+			);
+			return [after.width, after.height];
+		}, pseudo);
+	expect(await size(more, 'button')).toEqual(await size(movesTab, 'label'));
+	await draft('failed');
+	await expect(more).toHaveAttribute('data-activity', 'stopped');
+	expect(await dot(more, 'button')).toBe('red');
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.gens.splice(0, s.gens.length);
+	});
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
