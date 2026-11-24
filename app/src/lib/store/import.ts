@@ -1,6 +1,7 @@
 // Local-only import: decode and validate everything before writing a new project. Never runs a generation.
 import { decodePng, makeImg, pngSize, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
+import { detectUpscale } from '../image/upscale.ts';
 import { cellImg, layerFrame } from '../compose/compose.ts';
 import { validate } from '../export/generic.ts';
 import {
@@ -906,12 +907,20 @@ async function pixelLab(
 				if (!work) decoded.set(path, (work = image(required(files, path))));
 				return work;
 			};
+		// An integer upscale shows in the standing rotations, which are the base cells every direction shares; animation and
+		// pose cells would only repeat the same warning, so the detector runs on the standing cells only.
+		const standingCells = await Promise.all(rotations.map((r) => decode(r.path)));
+		const upscale = standingCells.reduce((max, im) => Math.max(max, detectUpscale(im)), 1);
+		if (upscale >= 2) {
+			warnings.push(
+				`The standing artwork looks like a ${upscale}x upscale. It is kept as it is: items made from it cost more pixels, mix pixel sizes and recolor less cleanly. Import the original 1x art if you can.`
+			);
+			warningKeys.push(message('import.warning.upscaledBase', { scale: upscale }));
+		}
 		// PixelLab draws standing feet about 1 px above its canvas edge and a walk steps lower, so the frame adds room for moves
 		// (lib/rig/reframe.ts roomFrame), centered as PixelLab centers its own larger animation canvases.
 		const room = standingRoom(
-				await Promise.all(
-					rotations.map(async (r) => normalize(await decode(r.path), char, char, 128, char).img)
-				),
+				standingCells.map((im) => normalize(im, char, char, 128, char).img),
 				char
 			),
 			roomy = room ? roomFrame(char, room) : char,

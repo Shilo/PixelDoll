@@ -1439,6 +1439,7 @@
 			"skippedDirection": "„{move}“ in Blickrichtung {direction} wurde weggelassen: Die Frames sind leer, fehlen oder sind nicht in Reihenfolge.",
 			"skippedStanding": "„{move}“ in Blickrichtung {direction} wurde weggelassen: Die Figur hat keine Standansicht in diese Richtung.",
 			"semiAlpha": "Teiltransparente Kanten wurden in harte Pixelgrafik-Transparenz umgewandelt.",
+			"upscaledBase": "Die Standbilder sehen wie eine {scale}x-Vergrößerung aus. Sie bleiben unverändert: Gegenstände daraus brauchen mehr Pixel, mischen Pixelgrößen und lassen sich weniger sauber umfärben. Importiere nach Möglichkeit die Originalgrafik in 1x.",
 			"detailsDropped": "Einige gespeicherte Angaben zur Figur waren beschädigt und wurden ausgelassen. Richte bei Bedarf ihr Posen-Rig erneut ein."
 		},
 		"error": {

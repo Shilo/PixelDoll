@@ -1392,6 +1392,7 @@
 			"skippedDirection": "已略过朝向{direction}的“{move}”：其帧为空、缺失或顺序不对。",
 			"skippedStanding": "已略过朝向{direction}的“{move}”：角色没有朝向该方向的站立视图。",
 			"semiAlpha": "部分透明的边缘已转换为像素画透明。",
+			"upscaledBase": "站立图像看起来是 {scale}x 放大后的结果。它会保持原样：用它制作的装备会占用更多像素、混用不同的像素尺寸，重新着色也更不干净。如果可以，请导入原始的 1x 图像。",
 			"detailsDropped": "部分已保存的角色信息已损坏，已被略过。如有需要，请重新设置其姿势绑定结构。"
 		},
 		"error": {

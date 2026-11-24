@@ -1392,6 +1392,7 @@
 			"skippedDirection": "“{move}” yang menghadap {direction} tidak disertakan: frame-nya kosong, hilang, atau tidak berurutan.",
 			"skippedStanding": "“{move}” yang menghadap {direction} tidak disertakan: karakter tidak punya tampilan berdiri ke arah itu.",
 			"semiAlpha": "Tepi yang transparan sebagian diubah menjadi transparansi khas pixel art.",
+			"upscaledBase": "Gambar berdiri tampak diperbesar {scale}x. Gambar tetap seperti apa adanya: item yang dibuat darinya memakai lebih banyak piksel, mencampur ukuran piksel, dan pewarnaan ulang kurang bersih. Impor gambar asli 1x jika ada.",
 			"detailsDropped": "Beberapa detail karakter yang tersimpan rusak dan tidak disertakan. Siapkan rig pose-nya lagi jika perlu."
 		},
 		"error": {

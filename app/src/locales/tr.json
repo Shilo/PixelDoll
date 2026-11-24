@@ -1439,6 +1439,7 @@
 			"skippedDirection": "“{move}” animasyonunun {direction} yönü dışarıda bırakıldı: kareleri boş, eksik veya sırasız.",
 			"skippedStanding": "“{move}” animasyonunun {direction} yönü dışarıda bırakıldı: karakterin o yöne bakan duruş görünümü yok.",
 			"semiAlpha": "Kısmen şeffaf kenarlar piksel sanatına uygun şeffaflığa dönüştürüldü.",
+			"upscaledBase": "Ayakta duran görsel {scale}x büyütülmüş gibi görünüyor. Olduğu gibi tutulur: ondan yapılan eşyalar daha fazla piksel kullanır, piksel boyutlarını karıştırır ve renk değişimi daha az temiz olur. Mümkünse özgün 1x görseli içe aktarın.",
 			"detailsDropped": "Kayıtlı bazı karakter bilgileri bozuktu ve dahil edilmedi. Gerekirse poz rig’ini yeniden kurun."
 		},
 		"error": {
