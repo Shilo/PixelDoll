@@ -1810,6 +1810,23 @@ test('one replaced view kept without poses loses only its own poses and fitted e
 			})
 		}
 	]);
+	// Two items offering the same move name its kept-without-poses views once, not once per item.
+	const cap = structuredClone(saved.manifest.items[1]);
+	cap.id = 'cap';
+	saved.manifest.items.push(cap);
+	const pair = itemMoveOffer(
+		saved.manifest,
+		[
+			{ ...fit, items: ['hat'], dirs: ['south'] },
+			{ ...fit, items: ['cap'], dirs: ['south'] }
+		],
+		setupRedoMoves(saved)
+	);
+	expect(pair.unposed).toHaveLength(1);
+	expect(pair.unposed[0]).toMatchObject({
+		key: 'moveReview.unposedViews',
+		vars: expect.objectContaining({ count: 3 })
+	});
 });
 
 test('redoing one view of a move kept without poses leaves the rest of the rig ready', async () => {
