@@ -334,6 +334,8 @@ export interface ClipSource {
 	provenance: number[]; // indexes into the base item's provenance
 }
 
+export type ItemDrawing = 'anchor' | 'skeleton';
+
 export interface RigAnimation {
 	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
@@ -349,6 +351,9 @@ export interface RigAnimation {
 	loop: boolean;
 	/** Explicit Add a move choice; omitted when global Export preferences supply the default. */
 	moveLoop?: boolean;
+	/** Explicit Add a move choice of how items are drawn on this move: on its own frames ('anchor') or posed as a separate
+	 *  body ('skeleton'); omitted when Settings > Creation supplies the default. */
+	itemDrawing?: ItemDrawing;
 	frames: { cell: number; ms: number }[];
 	source?: {
 		endpoint: string;

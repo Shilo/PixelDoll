@@ -367,7 +367,7 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
 	await expect(report).toBeVisible();
 	await expect(notice).toContainText('Something went wrong.');
-	await expect(report).toContainText('Error: TypeError');
+	await expect(report).toContainText('Error type: TypeError');
 	await expect(report).not.toContainText('sk-ant');
 	const href = await report.getByRole('link', { name: 'Open on GitHub' }).getAttribute('href');
 	expect(href).toMatch(
@@ -565,6 +565,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		['Character', 'base-clothing', 'none', 'underwear', 'select'],
 		['Move', 'move-model', 'v3', 'skeleton-v3', 'select'],
 		['Move', 'move-frames', '6', 'auto', 'select'],
+		['Move', 'item-drawing', 'anchor', 'skeleton', 'select'],
 		['State', 'state-model', 'pixen', 'pro', 'select'],
 		['Item', 'item-method', 'anchor', 'auto', 'select']
 	] as const;
@@ -2225,6 +2226,45 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 		'true'
 	);
 	step('recolor changes the stage pixels');
+
+	// The custom picker previews while it is dragged, but only its close adds one undo step.
+	const pickWell = page.locator('.colors .swatch.pick').first();
+	const picker = pickWell.locator('input[type="color"]');
+	const picked = '#3366cc';
+	const azureStage = await stage();
+	await picker.evaluate((input, value) => {
+		const element = input as HTMLInputElement;
+		element.value = value;
+		element.dispatchEvent(new Event('input', { bubbles: true }));
+	}, picked);
+	await expect.poll(stage).not.toBe(azureStage);
+	assert.equal(
+		await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'),
+		'true',
+		'a dragged color is not committed yet'
+	);
+	await expect
+		.poll(() => pickWell.evaluate((well) => getComputedStyle(well).backgroundColor))
+		.toBe('rgb(51, 102, 204)');
+	await picker.evaluate((input) => input.dispatchEvent(new Event('change', { bubbles: true })));
+	assert.equal(
+		await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'),
+		'false'
+	);
+	await page.getByRole('button', { name: /^Undo/ }).click();
+	assert.equal(
+		await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'),
+		'true',
+		'one undo step takes back the whole drag'
+	);
+	await page.getByRole('button', { name: /^Undo/ }).click();
+	assert.equal(
+		await page.locator('.colors .swatch').first().getAttribute('aria-checked'),
+		'true',
+		'the drag was the only step after the swatch'
+	);
+	await page.locator('.colors .swatch[aria-label="azure"]').first().click();
+	step('a dragged custom color previews live and commits as one undo step');
 
 	await equipmentMode(page, 'Outfits');
 	await page.getByRole('button', { name: 'Save current look', exact: true }).click();
@@ -7046,6 +7086,53 @@ test('a view kept without poses names the move and view to make again before equ
 		'Idle West was kept without poses, so equipment is not fitted there. Make that view again to fit it.'
 	);
 	expect(posts.length).toBe(sent);
+	// Another item on the same view that still can be made must not hide this one's redraw note, and a worn copy from
+	// another body has no offer or note, so its own way on must stay reachable beside both.
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.evaluate(async (itemId) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts',
+			s = await import(statePath),
+			db = await import(dbPath);
+		const rec = await db.get('projects', s.doc.id),
+			source = rec.manifest.items.find((it: { id: string }) => it.id === itemId),
+			clone = structuredClone(source),
+			copied = structuredClone(source);
+		clone.id = 'extra-helm';
+		clone.name = 'Extra helm';
+		clone.slot = 'head';
+		for (const layer of clone.layers) {
+			delete layer.cells.idle?.west;
+			delete layer.cells.idle?.east;
+		}
+		clone.coverage = clone.coverage.filter((key: string) => !/^idle\/(west|east)\//.test(key));
+		// A copy from another body cannot be posed here: no offer and no unposed note, only its own remake.
+		copied.id = 'copied-vest';
+		copied.name = 'Copied vest';
+		copied.slot = 'feet';
+		copied.baseHash = 'sha256:otherbody';
+		for (const layer of copied.layers) delete layer.cells.idle?.west;
+		copied.coverage = copied.coverage.filter((key: string) => !key.startsWith('idle/west/'));
+		rec.manifest.items.push(clone, copied);
+		await db.put('projects', s.doc.id, rec);
+		await s.openProject(s.doc.id);
+		if (s.doc.items.head !== clone.id) s.wear(clone.id);
+		if (s.doc.items.feet !== copied.id) s.wear(copied.id);
+		if (s.doc.items.main_hand !== itemId) s.wear(itemId);
+		s.ui.anim = 'idle';
+		s.ui.dir = 'west';
+		s.ui.all = false;
+	}, itemId);
+	await inspectStage(page);
+	const stageNote = page.locator('.stage-note');
+	await expect(stageNote.getByText('Idle West was kept without poses')).toHaveCount(1);
+	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
+		'gens'
+	);
+	await expect(
+		stageNote.getByRole('button', { name: /^(Set up character|Make it again)/ })
+	).toBeVisible();
+	expect(posts.length).toBe(sent);
 });
 
 test('an item missing a standing view restores it from its saved design for free', async ({
@@ -7720,7 +7807,7 @@ test('targeted move replacement names mirrored effects without offering a separa
 	await expect(directions).not.toHaveAccessibleDescription(/Mirrored views also change/);
 });
 
-test('partial missing gear and explicit item repair stay on the current move and view', async ({
+test('stage makes all missing item views while explicit repair stays on the current view', async ({
 	page,
 	context
 }, info) => {
@@ -7746,14 +7833,30 @@ test('partial missing gear and explicit item repair stay on the current move and
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	const fixture = await targetedRepairFixture(page);
+	const fixture = await targetedRepairFixture(page, true);
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		const p = s.store.project,
 			item = p.manifest.items.find((it: { id: string }) => it.id === id);
-		for (const layer of item.layers) delete layer.cells.walk.west;
-		item.coverage = item.coverage.filter((key: string) => !key.startsWith('walk/west/'));
+		// Both extra views have body frames and clip joints. One lacks the item design, the other lacks rest joints.
+		const rig = p.manifest.rig,
+			body = p.manifest.items.find((it: { id: string }) => it.id === rig.baseItem),
+			walk = rig.animations.find((a: { id: string }) => a.id === 'walk');
+		for (const dir of ['north-east', 'south-east']) {
+			rig.directions.push({ id: dir });
+			body.layers[0].cells.walk[dir] = [...body.layers[0].cells.walk.south];
+			walk.sources[dir] = { ...walk.sources.south };
+			rig.rest[dir] = { ...rig.rest.south };
+		}
+		item.dressed['south-east'] = item.dressed.south;
+		delete rig.rest['south-east'].keypoints;
+		for (const layer of item.layers) {
+			delete layer.cells.walk.south;
+			delete layer.cells.walk.east;
+			delete layer.cells.walk.west;
+		}
+		item.coverage = item.coverage.filter((key: string) => !/^walk\/(south|east|west)\//.test(key));
 		s.store.project = {
 			...p,
 			manifest: {
@@ -7778,8 +7881,8 @@ test('partial missing gear and explicit item repair stay on the current move and
 		};
 	}, fixture.itemId);
 	await inspectStage(page);
-	const make = page.locator('.stage-note').getByRole('button', { name: /^Make it/ });
-	await expect(make).toContainText('~3 gens');
+	const make = page.locator('.stage-note').getByRole('button', { name: /^Make missing views/ });
+	await expect(make).toContainText('~6 gens');
 	await expect(make).not.toContainText('...');
 	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
@@ -7795,7 +7898,7 @@ test('partial missing gear and explicit item repair stay on the current move and
 			s = await import(path);
 		return s.moving.spec;
 	});
-	expect(poseScope).toMatchObject({ id: 'walk', dirs: ['west'], items: [fixture.itemId] });
+	expect(poseScope).toMatchObject({ id: 'walk', dirs: ['south', 'east'], items: [fixture.itemId] });
 	expect(poseScope.replace).toBeUndefined();
 	expect(poseScope.itemMethod).toBeUndefined();
 	// The stopped repair's footer Discard leaves it, as Cancel did.
@@ -7857,7 +7960,7 @@ test('partial missing gear and explicit item repair stay on the current move and
 	});
 	expect(gridScope).toMatchObject({
 		id: 'walk',
-		dirs: ['west'],
+		dirs: ['east'],
 		items: [fixture.itemId],
 		itemMethod: 'grid'
 	});
@@ -8237,9 +8340,10 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 		s.ui.group = 'torso_inner';
 	}, fixture.itemId);
 	await inspectStage(page);
-	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toContainText(
-		'~10 gens'
-	);
+	const stageMake = page
+		.locator('.stage-note')
+		.getByRole('button', { name: /^Make missing views/ });
+	await expect(stageMake).toContainText('~10 gens');
 	await selectedItemDetails(page);
 	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('~10 gens');
 	await page.evaluate(async (id) => {
@@ -8267,7 +8371,7 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await inspectStage(page);
-	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toBeEnabled();
+	await expect(stageMake).toBeEnabled();
 	await expect(
 		page.locator('.stage-note .notice').filter({ hasText: 'Some measured joints look unusual' })
 	).toBeVisible();
@@ -9016,6 +9120,11 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		// Priced as posed on a separate body until Settings switches to drawing on the move frames below.
+		localStorage.setItem(
+			'pixeldoll.creation.moves',
+			JSON.stringify({ model: 'skeleton-v3', frames: 'auto', itemDrawing: 'skeleton' })
+		);
 	});
 	await openStudio(
 		page,
@@ -9283,6 +9392,27 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).toContainText(
 		'~12 gens'
 	);
+	const peekCalls = async (endpoint: string, other: string) => {
+		await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
+		const api = page.getByRole('dialog', { name: 'API calls', exact: true });
+		await expect(api).toContainText(endpoint);
+		await expect(api).not.toContainText(other);
+		await api.getByRole('button', { name: 'Close API calls', exact: true }).click();
+	};
+	await peekCalls('/animate-with-skeleton-v3', '/edit-animation-v2');
+	// Settings > Creation > Moves now draws items on the move's own frames: the open offer follows it.
+	await page.evaluate(async () => {
+		const path = '/src/studio/settingsDefaults.svelte.ts';
+		localStorage.setItem(
+			'pixeldoll.creation.moves',
+			JSON.stringify({ model: 'skeleton-v3', frames: 'auto', itemDrawing: 'anchor' })
+		);
+		(await import(path)).noteCreationSettings();
+	});
+	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).not.toContainText(
+		'~12 gens'
+	);
+	await peekCalls('/edit-animation-v2', '/animate-with-skeleton-v3');
 	await pane.getByRole('button', { name: /^Make for Custom walk/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	await connect
@@ -9304,7 +9434,12 @@ test('standing-first items quote only standing and offer actual custom moves one
 		const path = '/src/studio/state.svelte.ts';
 		return (await import(path)).moving.spec;
 	});
-	expect(scope).toMatchObject({ id: 'custom_walk', items: [fixture.itemId], itemsOnly: true });
+	expect(scope).toMatchObject({
+		id: 'custom_walk',
+		items: [fixture.itemId],
+		itemsOnly: true,
+		itemMethod: 'anchor'
+	});
 	expect(scope.dirs).toEqual(['south', 'east', 'north', 'west']);
 	expect(posts).toEqual([]);
 });

@@ -17,7 +17,7 @@ import {
 import { estimate, moveEstimate } from '../../src/studio/movePricing.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { poseCallGens, poseGensFor } from '../../src/lib/rig/clips.ts';
-import { padOf, planGens, planItem } from '../../src/lib/items/items.ts';
+import { padOf, planAnchoredMove, planGens, planItem } from '../../src/lib/items/items.ts';
 import { DEFAULT_MOVE, type DirectionName, type RigDirection } from '../../src/lib/rig/rig.ts';
 import type { Item, Manifest, Provenance, Sha256 } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
@@ -173,7 +173,11 @@ function demoFixture(): Manifest {
 	}
 	return m;
 }
-const defaults = { moveModel: 'skeleton-v3' as const, stateModel: 'pro' as const };
+const defaults = {
+	moveModel: 'skeleton-v3' as const,
+	stateModel: 'pro' as const,
+	itemDrawing: 'skeleton' as const
+};
 const of = (m: Manifest, id = 'rig-test') => characterOf(id, m, defaults);
 const firstPass = (inputs: CostInputs) => ({ ...inputs, retries: 0 });
 
@@ -276,6 +280,31 @@ describe('cost estimate', () => {
 				]
 			}).setup.gens
 		).toBeCloseTo(0.55);
+	});
+
+	test('fits items as Items on moves resolves: on the move frames when chosen, posed when they cannot be', () => {
+		const m = manifest({
+			cell: 92,
+			directions: FOUR,
+			items: [{ id: 'a' }, { id: 'b', extra: { standing: undefined } }]
+		});
+		const chosen = characterOf('rig-test', m, { ...defaults, itemDrawing: 'anchor' });
+		const seed = { ...firstPass(seedInputs(chosen)), moves: 1 };
+		const anchored = characterCost(chosen, seed),
+			posed = characterCost(of(m), seed);
+		const idle = {
+			...m.rig,
+			animations: [
+				...m.rig.animations,
+				{ id: 'idle', cells: 4, loop: true, frames: [{ cell: 0, ms: 100 }] }
+			]
+		};
+		const perView = planGens(planAnchoredMove(idle, m.items[1], 'idle', ['south']), m.rig.cell);
+		expect(perView).not.toBeCloseTo(3);
+		// 'a' is drawn on the four views of Idle; 'b' has no standing design to anchor and is posed as before.
+		expect(anchored.item(0).toGo).toBeCloseTo(4 * perView);
+		expect(anchored.item(1).toGo).toBeCloseTo(posed.item(1).toGo);
+		expect(posed.item(0).toGo).toBeCloseTo(4 * 3);
 	});
 
 	test('fits every item to every added move, with nothing to go for saved work', () => {
@@ -392,10 +421,7 @@ describe('cost estimate', () => {
 	});
 
 	test('prices a new character from creation defaults', () => {
-		const c = newCharacter(
-			{ body: 64, frame: 80, model: 'v3', directions: EIGHT },
-			{ moveModel: 'skeleton-v3', stateModel: 'pro' }
-		);
+		const c = newCharacter({ body: 64, frame: 80, model: 'v3', directions: EIGHT }, defaults);
 		const seed = seedInputs(c);
 		expect(seed).toMatchObject({ moves: 0, items: 0, states: 0, retries: 2 });
 		const r = characterCost(c, { ...firstPass(seed), moves: 1, states: 1 });
@@ -446,10 +472,7 @@ describe('cost estimate', () => {
 
 	test('projects the end cost as money spent plus the work still to go', () => {
 		const rate = planRate(2);
-		const fresh = newCharacter(
-			{ body: 64, frame: 64, model: 'v3', directions: FOUR },
-			{ moveModel: 'skeleton-v3', stateModel: 'pro' }
-		);
+		const fresh = newCharacter({ body: 64, frame: 64, model: 'v3', directions: FOUR }, defaults);
 		const planned = characterCost(fresh, { ...seedInputs(fresh), moves: 2, items: 3 });
 		// Nothing exists yet: no current work, and the end cost is the whole estimate.
 		expect(currentGens(planned)).toBe(0);

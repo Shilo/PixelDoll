@@ -127,7 +127,13 @@
 		"saveFailed": "Não foi possível salvar esta opção. Tente novamente.",
 		"incompatible": "Escolha Automático ou uma quantidade de quadros compatível com o novo modelo.",
 		"framesHelp": "As quantidades de quadros disponíveis dependem do tamanho da tela do personagem.",
-		"methodHelp": "Usa {pose} quando houver suporte. Caso contrário, usa {edit}."
+		"methodHelp": "Usa {pose} quando houver suporte. Caso contrário, usa {edit}.",
+		"itemDrawing": "Itens nas animações",
+		"itemDrawingHelp": "Desenhar nos quadros da animação ajusta os itens à arte da própria animação. Posar um corpo separado anima os itens por conta própria, então eles podem se deslocar alguns pixels.",
+		"itemDrawings": {
+			"anchor": "Desenhar nos quadros",
+			"skeleton": "Posar um corpo separado"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Reproduzir prévia da montaria",
@@ -717,7 +723,7 @@
 		"missingFrames": "Faltam quadros para {names} em {move}",
 		"missingFrameViews": "Faltam quadros para {names} em {move} na direção {direction}",
 		"making": "Gerando…",
-		"makeIt": "Gerar",
+		"makeMissingViews": "Gerar vistas que faltam",
 		"estimate": {
 			"one": "~{n} geração",
 			"other": "~{n} gerações"
@@ -2707,6 +2713,8 @@
 		"motionOnly": "Descreva apenas o movimento do corpo. Adicione armas e acessórios como itens.",
 		"motionModel": "Modelo de movimento",
 		"motionModelHelp": "Skeleton v3 usa as mesmas poses para o corpo e o equipamento. V3 e PixMiniMax desenham o corpo primeiro. Depois, o PixelDoll detecta as poses para o equipamento.",
+		"itemDrawing": "Itens nesta animação",
+		"itemDrawingDefault": "Padrão ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",

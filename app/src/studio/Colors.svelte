@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
+	import { onDestroy } from 'svelte';
 	// Material swatches: each option is the REAL variant ramp (lib/dress exact index swap), drawn as its color steps.
 	import { SWATCHES, materialNames, variantOf, variantRampOf } from '../lib/dress/dress.ts';
 	import type { Hex, Material } from '../lib/store/manifest.ts';
-	import { doc, store, setVariant } from './state.svelte.ts';
+	import { doc, store, setVariant, previewVariant, clearVariantPreview } from './state.svelte.ts';
 	import { displaySwatch } from './displaySwatch.ts';
 	import { Plus } from './icons.ts';
 	// One item's materials; ColorSections gives each worn item its own section and header.
@@ -37,6 +38,31 @@
 			? v
 			: (variantRampOf(mat, v ?? '') ?? mat.ramp)[Math.floor(mat.ramp.length / 2)];
 	};
+	// The "+" well shows the color while it is dragged, before the picker commits it.
+	const shownPick = (mat: Material) => {
+		const preview = doc.colorPreview?.id === mat.id ? doc.colorPreview.value : '';
+		const used = chosen(mat);
+		return preview || (used?.startsWith('#') ? used : '');
+	};
+	// One undo step and one save when the picker closes, never one per dragged pixel.
+	const commitPick = (mat: Material, value: string) => {
+		const was = custom(mat);
+		clearVariantPreview();
+		if (value !== was) setVariant(mat.id, value);
+	};
+	// A section that goes away takes its uncommitted preview with it.
+	onDestroy(clearVariantPreview);
+	// A picker that closes without a change (cancelled) can leave its last previewed color behind; the next click outside the
+	// well ends it. Clicks inside the well keep it so the picker can be reopened.
+	$effect(() => {
+		if (!doc.colorPreview) return;
+		const end = (e: PointerEvent) => {
+			if ((e.target as Element | null)?.closest?.('.swatch.pick')) return;
+			clearVariantPreview();
+		};
+		window.addEventListener('pointerdown', end, true);
+		return () => window.removeEventListener('pointerdown', end, true);
+	});
 </script>
 
 <div class="colors">
@@ -44,7 +70,6 @@
 		{@const mats = matsOf(it.id)}
 		{@const names = namesOf(it, mats)}
 		{#each mats as mat, mi (mat.id)}
-			{@const pick = chosen(mat)}
 			<div class="mat">
 				<span class="muted small">{names[mi]}</span>
 				{#if mat.linkTo}
@@ -90,14 +115,16 @@
 						<label
 							class="swatch pick"
 							title={t('colors.titlePickAnyColor')}
-							style:background={pick?.startsWith('#') ? pick : ''}
+							style:background={shownPick(mat)}
 						>
-							{#if !pick?.startsWith('#')}<Plus size={14} />{/if}
+							{#if !shownPick(mat)}<Plus size={14} />{/if}
 							<span class="sr">{t('colors.titlePickAnyColor')}</span>
 							<input
 								type="color"
 								value={custom(mat)}
-								onchange={(e) => setVariant(mat.id, e.currentTarget.value)}
+								oninput={(e) => previewVariant(mat.id, e.currentTarget.value)}
+								onchange={(e) => commitPick(mat, e.currentTarget.value)}
+								onblur={clearVariantPreview}
 							/>
 						</label>
 					</div>

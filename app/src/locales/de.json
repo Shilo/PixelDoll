@@ -127,7 +127,13 @@
 		"saveFailed": "Die Auswahl konnte nicht gespeichert werden. Versuche es erneut.",
 		"incompatible": "Wähle für die Frames Automatisch oder eine Anzahl, die das neue Modell unterstützt.",
 		"framesHelp": "Die verfügbaren Frame-Anzahlen hängen von der Leinwandgröße der Figur ab.",
-		"methodHelp": "Verwendet {pose}, wenn unterstützt. Andernfalls wird {edit} verwendet."
+		"methodHelp": "Verwendet {pose}, wenn unterstützt. Andernfalls wird {edit} verwendet.",
+		"itemDrawing": "Gegenstände in Animationen",
+		"itemDrawingHelp": "Auf den Frames der Animation gezeichnet passen Gegenstände zu ihrer eigenen Grafik. Mit einem separaten Körper posiert werden Gegenstände eigenständig animiert und können um einige Pixel verrutschen.",
+		"itemDrawings": {
+			"anchor": "Auf Animations-Frames zeichnen",
+			"skeleton": "Separaten Körper posieren"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "Reittier-Vorschau abspielen",
@@ -717,7 +723,7 @@
 		"missingFrames": "Für {names} fehlen Frames in {move}",
 		"missingFrameViews": "Für {names} fehlen Frames in {move} mit Blickrichtung {direction}",
 		"making": "Wird erstellt…",
-		"makeIt": "Erstellen",
+		"makeMissingViews": "Fehlende Ansichten erstellen",
 		"estimate": {
 			"one": "~{n} Generierung",
 			"other": "~{n} Generierungen"
@@ -2698,6 +2704,8 @@
 		"motionOnly": "Beschreibe nur die Körperbewegung. Füge Waffen und Requisiten als Gegenstände hinzu.",
 		"motionModel": "Bewegungsmodell",
 		"motionModelHelp": "Skeleton v3 verwendet dieselben Posen für Körper und Ausrüstung. V3 und PixMiniMax zeichnen zuerst den Körper. Danach ermittelt PixelDoll die Posen für die Ausrüstung.",
+		"itemDrawing": "Gegenstände in dieser Animation",
+		"itemDrawingDefault": "Standard ({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",

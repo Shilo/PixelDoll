@@ -65,6 +65,7 @@ export interface ClipSource {
 	motionBridged?: number[];
 	provenance: number[]; // indexes into the base item's provenance
 }
+export type ItemDrawing = 'anchor' | 'skeleton';
 export interface RigAnimation {
 	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
@@ -80,6 +81,9 @@ export interface RigAnimation {
 	loop: boolean;
 	/** Explicit Add a move choice; omitted when global Export preferences supply the default. */
 	moveLoop?: boolean;
+	/** Explicit Add a move choice of how items are drawn on this move: on its own frames ('anchor') or posed as a separate
+	 *  body ('skeleton'); omitted when Settings > Creation supplies the default. */
+	itemDrawing?: ItemDrawing;
 	frames: { cell: number; ms: number }[];
 	source?: {
 		endpoint: string;
@@ -190,25 +194,35 @@ export const rigContent = (rig: Rig): Rig => ({
 	animations: rig.animations.map(({ name: _name, exportId: _exportId, ...animation }) => animation)
 });
 
-/** Playback preferences and move names do not change the artwork inputs of a pending generation or recovery. */
+/** Playback preferences, item-drawing choices and move names do not change the artwork inputs of a pending generation or
+ * recovery. */
 export const rigArtworkVersion = (rig: Rig, character: unknown): string =>
 	stableStringify({
 		rig: {
 			...rig,
 			animations: rig.animations.map(
-				({ loop: _loop, moveLoop: _moveLoop, name: _name, exportId: _exportId, ...animation }) =>
-					animation
+				({
+					loop: _loop,
+					moveLoop: _moveLoop,
+					itemDrawing: _itemDrawing,
+					name: _name,
+					exportId: _exportId,
+					...animation
+				}) => animation
 			)
 		},
 		character
 	});
 
-/** Preserve archived playback metadata through artwork/pose publication. */
+/** Preserve archived playback metadata and the saved item-drawing choice through artwork/pose publication. */
 export function retainPlaybackChoices(next: Rig, current: Rig): void {
 	for (const animation of next.animations) {
 		const saved = current.animations.find((a) => a.id === animation.id);
 		if (saved?.moveLoop !== undefined) animation.moveLoop = saved.moveLoop;
 		animation.loop = animation.moveLoop ?? saved?.loop ?? true;
+		if (!saved) continue;
+		if (saved.itemDrawing) animation.itemDrawing = saved.itemDrawing;
+		else delete animation.itemDrawing;
 	}
 }
 
@@ -246,6 +260,8 @@ export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[]
 		if (typeof a.loop !== 'boolean') e.push(`${a.id}: loop must be true or false`);
 		if (a.moveLoop !== undefined && typeof a.moveLoop !== 'boolean')
 			e.push(`${a.id}: moveLoop must be true or false`);
+		if (a.itemDrawing !== undefined && a.itemDrawing !== 'anchor' && a.itemDrawing !== 'skeleton')
+			e.push(`${a.id}: itemDrawing must be anchor or skeleton`);
 		if (!a.frames.length) e.push(`${a.id}: empty playlist`);
 		for (const f of a.frames)
 			if (

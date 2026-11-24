@@ -6,6 +6,7 @@ import {
 	browserOf,
 	buildReport,
 	endpointPath,
+	statusIn,
 	MAX_URL_LENGTH,
 	onceShown,
 	osOf,
@@ -78,11 +79,21 @@ describe('sanitize', () => {
 	});
 });
 
+test('statusIn reads only the client request prefix', () => {
+	expect(statusIn('POST /inpaint-v3 -> 422: bad')).toBe(422);
+	expect(statusIn('no clear answer (GET /balance -> 503: x)')).toBe(503);
+	expect(statusIn('provider says retry -> 500 later')).toBeUndefined();
+});
+
 test('endpointPath keeps only a normalized path', () => {
 	expect(endpointPath(`https://api.pixellab.ai/v2/background-jobs/${SECRETS.uuidKey}?a=1#x`)).toBe(
 		'/background-jobs/{id}'
 	);
 	expect(endpointPath('/characters/c8f1a2b3d4/animations')).toBe('/characters/{id}/animations');
+	// An imported project can carry any character ID, even a plain word.
+	expect(endpointPath('/characters/alice')).toBe('/characters/{id}');
+	expect(endpointPath('/characters/animations')).toBe('/characters/animations');
+	expect(endpointPath('/constructor/zip')).toBe('/constructor/zip');
 	for (const route of [
 		'/inpaint-v3',
 		'/create-character-with-8-directions',
@@ -139,6 +150,14 @@ test('englishMessage hides text variables and fills numbers and nested messages'
 	expect(
 		englishMessage(message('recentlyDeleted.restoredWithDrafts', { name: 'X', count: 1 }))
 	).toBe('Restored ... with 1 draft');
+	expect(
+		englishMessage(
+			message('fixFrames.errors.size', { got: '64×64', want: `32×32 ${SECRETS.prompt}` })
+		)
+	).toBe('This PNG is 64×64 px, but these frames need ... px. Keep the original size and grid.');
+	// Digits or a size elsewhere are still a name.
+	for (const name of ['123456', '64×64'])
+		expect(englishMessage(message('recentlyDeleted.restoreNamed', { name }))).toBe('Restore ...');
 	expect(englishMessage({ key: 'nope.missing' } as unknown as Message)).toBeUndefined();
 });
 
@@ -154,7 +173,7 @@ describe('buildReport', () => {
 				area: 'Add a move',
 				message: message('state.couldNotSaveReason', { reason: SECRETS.prompt }),
 				error,
-				facts: { state: 'failed', attempts: 2, seconds: 95 }
+				facts: { state: 'failed', jobStatus: 'failed', attempts: 2, seconds: 95 }
 			},
 			context
 		);
@@ -164,15 +183,15 @@ describe('buildReport', () => {
 				'Area: Add a move',
 				'Kind: error',
 				'Message key: state.couldNotSaveReason',
-				'Message: Could not save: ...',
-				'Error: ApiError',
+				'Error type: ApiError',
 				'Error kind: invalid',
 				'HTTP status: 422',
 				'Endpoint: POST /characters/{id}/animations',
 				'Queue state: failed',
+				'Job status: failed',
 				'Attempts: 2',
 				'Ran for: 2 min',
-				'Page open for: 13 min'
+				'App open for: 13 min'
 			].join('\n')
 		);
 		expect(report.environment).toBe(
@@ -187,7 +206,7 @@ describe('buildReport', () => {
 			{ error: new TypeError(`Cannot read ${SECRETS.windowsPath}`), tone: 'warning' },
 			context
 		);
-		expect(plain.details).toContain('Error: TypeError');
+		expect(plain.details).toContain('Error type: TypeError');
 		expect(plain.title).toBe('PixelDoll: Unexpected TypeError');
 		expect(reportText(plain)).not.toContain('Cannot read');
 	});
@@ -225,6 +244,11 @@ describe('buildReport', () => {
 			expect(query.get(field)).toBe(report[field]);
 	});
 
+	test('a job status PixelLab did not document is left out', () => {
+		const report = buildReport({ facts: { jobStatus: 'Silver' } }, context);
+		expect(report.details).not.toContain('Job status');
+	});
+
 	test('only app message keys and error-shaped names are reported', () => {
 		const report = buildReport(
 			{
@@ -234,10 +258,10 @@ describe('buildReport', () => {
 			context
 		);
 		expect(report.details).not.toContain('Message key');
-		expect(report.details).toContain('Error: Error');
+		expect(report.details).not.toContain('Error type');
 		expect(
 			buildReport({ error: new DOMException('x', 'QuotaExceededError') }, context).details
-		).toContain('Error: QuotaExceededError');
+		).toContain('Error type: QuotaExceededError');
 	});
 
 	test('an uncaught error is titled by its name and area, and Steps to reproduce is left to the person', () => {
@@ -282,7 +306,7 @@ describe('buildReport', () => {
 				context
 			);
 			expect(report.title).toBe('Unexpected problem in Characters');
-			expect(report.details).toContain('Error: Non-error value');
+			expect(report.details).toContain('Error type: Non-error value');
 		}
 		expect(buildReport({ error: 42, uncaught: true }, context).title).toBe(
 			'Unexpected problem in PixelDoll'

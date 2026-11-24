@@ -96,7 +96,7 @@ test.each([0, 1, 40])(
 		expect(calls.reduce((sum, c) => sum + c.generations!, 0)).toBe(10);
 		expect(itemRoute.plan(ctx.rec.manifest.rig, ctx, input).gens).toBe(10);
 		expect(itemRoute.plan(ctx.rec.manifest.rig, ctx, input).minimumTier).toBe(1);
-		expect(missingItemMoves(ctx.rec.manifest, 'hat').map((s) => s.id)).toEqual(
+		expect(missingItemMoves(ctx.rec.manifest, 'hat', 'anchor').map((s) => s.id)).toEqual(
 			Array.from({ length: count }, (_, i) => `custom_action_${i}`)
 		);
 	}
@@ -110,7 +110,7 @@ test('eight-direction nine-frame imported motion costs 24 later, with no new bod
 	);
 	expect(initial).toHaveLength(1);
 	expect(initial[0].generations).toBe(10);
-	const [spec] = missingItemMoves(m, 'hat', 12),
+	const [spec] = missingItemMoves(m, 'hat', 'anchor', 12),
 		offer = itemMoveOffer(m, [spec]),
 		calls = movePlan(ctx.rec, offer.specs[0]).filter((c) => c.method === 'POST');
 	expect(offer.gens).toBe(24);
@@ -139,14 +139,14 @@ test('missing moves preserve sparse body directions, mirrors, existing and inten
 	m.items[1].coverage!.push(
 		...Array.from({ length: 31 }, (_, i) => `spell_charge/east/${i}` as const)
 	);
-	expect(missingItemMoves(m, 'hat', 1).map((s) => ({ id: s.id, dirs: s.dirs }))).toEqual([
+	expect(missingItemMoves(m, 'hat', 'anchor', 1).map((s) => ({ id: s.id, dirs: s.dirs }))).toEqual([
 		{ id: 'spell_charge', dirs: ['south'] },
 		{ id: 'blink_any_name', dirs: ['south'] }
 	]);
 	expect(hasCells(m, m.items[1], 'spell_charge', 'west')).toBe(true);
 	expect(missingAt(m, { head: 'hat' }, 'spell_charge', 'west')).toEqual([]);
 	expect(coverageGaps(m, m.items[1])).toEqual(['spell_charge/south', 'blink_any_name/south']);
-	const [long] = missingItemMoves(m, 'hat'),
+	const [long] = missingItemMoves(m, 'hat', 'anchor'),
 		plan = movePlan(ctx.rec, long).filter((c) => c.method === 'POST');
 	expect(plan.map((c) => c.generations)).toEqual([3, 3, 3]); // balanced 11/10/10-frame batches
 	const still = m.items[1];
@@ -160,7 +160,7 @@ test('a bad move quote does not prevent a separate valid move offer', async () =
 			['invalid_cast', 8]
 		]),
 		m = ctx.rec.manifest;
-	const specs = missingItemMoves(m, 'hat');
+	const specs = missingItemMoves(m, 'hat', 'anchor');
 	specs[1].dirs = ['north']; // a stale offer names a direction the character no longer has
 	expect(itemMoveOffer(m, [specs[1]])).toMatchObject({
 		specs: [],
@@ -181,13 +181,13 @@ test('explicit partial imported coverage cannot be skipped as complete just beca
 	item.coverage!.push('custom_partial/south/0');
 	expect(hasCells(m, item, 'custom_partial', 'south')).toBe(true); // copied artwork remains previewable
 	expect(hasCompleteCells(m, item, 'custom_partial', 'south')).toBe(false);
-	const specs = missingItemMoves(m, item.id);
+	const specs = missingItemMoves(m, item.id, 'anchor');
 	expect(specs.map((s) => s.id)).toEqual(['custom_partial']);
 	expect(itemMoveOffer(m, specs).gens).toBe(2);
 	expect(movePlan(ctx.rec, specs[0]).filter((c) => c.method === 'POST')).toHaveLength(1);
 	item.coverage!.push('custom_partial/south/1'); // explicitly generated transparency completes the view
 	expect(hasCompleteCells(m, item, 'custom_partial', 'south')).toBe(true);
-	expect(missingItemMoves(m, item.id)).toEqual([]);
+	expect(missingItemMoves(m, item.id, 'anchor')).toEqual([]);
 });
 
 test('replacing a custom standing clip with motion makes its new equipment frames available', async () => {
@@ -210,9 +210,9 @@ test('replacing a custom standing clip with motion makes its new equipment frame
 	};
 	m.items[0].layers[0].cells![standing.id] = { south: Array(4).fill(rest.image) };
 	delete item.layers[0].cells![standing.id];
-	expect(missingItemMoves(m, item.id).map((s) => ({ id: s.id, frames: s.frames }))).toEqual([
-		{ id: standing.id, frames: 4 }
-	]);
+	expect(
+		missingItemMoves(m, item.id, 'anchor').map((s) => ({ id: s.id, frames: s.frames }))
+	).toEqual([{ id: standing.id, frames: 4 }]);
 });
 
 test('standing discovery never buys an animated clip or trusts its name', async () => {
@@ -343,15 +343,15 @@ test('move and State item counts need every body view complete, and offers keep 
 	expect(clipItemCoverage(m, 'no_such_move')).toBeNull();
 	expect(clipMissingItems(m, 'spell_charge').map((it) => it.id)).toEqual(['hat']);
 	expect(clipMissingItems(m, 'still-custom')).toEqual([]);
-	expect(clipItemOffer(m, 'hat', 'spell_charge')?.specs[0]).toMatchObject({
+	expect(clipItemOffer(m, 'hat', 'spell_charge', 'anchor')?.specs[0]).toMatchObject({
 		id: 'spell_charge',
 		items: ['hat'],
 		dirs: ['south'],
 		itemsOnly: true
 	});
 	// A reviewed move only offers the views it accepted.
-	expect(clipItemOffer(m, 'hat', 'spell_charge', { dirs: ['east'] })).toBeNull();
-	expect(clipItemOffer(m, 'hat', 'still-custom')).toBeNull();
+	expect(clipItemOffer(m, 'hat', 'spell_charge', 'anchor', { dirs: ['east'] })).toBeNull();
+	expect(clipItemOffer(m, 'hat', 'still-custom', 'anchor')).toBeNull();
 });
 
 test('Wear shows a dimmed item where it is drawn: Standing first, else the first move or State that has it', async () => {

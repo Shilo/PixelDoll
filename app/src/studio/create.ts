@@ -76,6 +76,7 @@ import {
 	validateRig,
 	type ClipSource,
 	type DirectionName,
+	type ItemDrawing,
 	type Keypoint,
 	type RigAnimation,
 	type RigDirection,
@@ -99,6 +100,7 @@ import {
 import {
 	anchorable,
 	canPose,
+	itemDrawingFor,
 	posable,
 	poseGens,
 	repairGridPlan,
@@ -138,6 +140,7 @@ import {
 } from './moveSource.ts';
 import {
 	affectedMoveDirections,
+	applyItemDrawing,
 	applyMoveLoop,
 	movePlaybackChanged,
 	clearMovePoseData,
@@ -179,6 +182,7 @@ import {
 	LocalizedError,
 	message,
 	PreflightWarning,
+	sameMessage,
 	type Message
 } from '../lib/message.ts';
 import { localizedPlanRestriction } from '../lib/pixellab/plans.ts';
@@ -1797,6 +1801,9 @@ export interface MoveSpec {
 	dirs?: DirectionName[];
 	approvedDirs?: DirectionName[];
 	itemMethod?: 'grid' | 'anchor';
+	/** Add a move's choice of how items are later drawn on this move, saved on it: 'default' clears a saved choice so Settings
+	 *  decides; absent (an automatic retry) keeps the saved one. Draws nothing itself. */
+	itemDrawing?: ItemDrawing | 'default';
 	preferTierOneRepair?: true;
 	redrawItem?: true;
 	reuseItemFrames?: true;
@@ -2557,29 +2564,39 @@ async function inspectMeasurementRecovery(
 }
 
 /** Moves a saved item lacks, e.g. idle and walk added after it was planned on the standing views, as items-only specs (addMove
- * keeps the body clip and poses only these directions, the same request "Make it" sends). Only directions the body has frames
- * and stored keypoints for count (the Default move's standing views are never posed). The user starts them from a priced offer; nothing is queued automatically (credits are real money). */
+ * keeps the body clip and draws only these directions, the same request "Make it" sends). Each move draws the item as
+ * itemDrawingFor resolves it, in the views the item has a standing design for: on the move's own frames, or posed as a
+ * separate body where the move and the standing view also have the joints posing needs (the Default move's standing views
+ * are never drawn). `drawing` is the Settings > Creation default (currentItemDrawing). The user starts them from a priced
+ * offer; nothing is queued automatically (credits are real money). */
 export function missingItemMoves(
 	m: Manifest,
 	itemId: string,
+	drawing: ItemDrawing,
 	seed = 1 + Math.floor(Math.random() * 1_000_000)
 ): MoveSpec[] {
 	const item = extendable(m, itemId);
 	if (!item) return [];
 	const { clipDirs } = coverage({ rec: { manifest: m } } as RigCtx);
-	const anchored = item.route === 'ea2-anchor';
-	const posableDir = (a: RigAnimation, d: DirectionName) =>
-		a.sources?.[d]?.motion !== 'imported-rest' &&
-		(anchored ? !!item.dressed?.[d] : a.sources?.[d]?.keypoints?.length === a.cells);
 	return m.rig.animations
-		.map((a) => ({
-			a,
-			dirs: (clipDirs?.[a.id] ?? []).filter(
-				(d) => posableDir(a, d) && !hasCompleteCells(m, item, a.id, d)
-			)
-		}))
+		.map((a) => {
+			const anchored = itemDrawingFor(m, item, a, drawing) === 'anchor';
+			const drawable = (d: DirectionName) =>
+				a.sources?.[d]?.motion !== 'imported-rest' &&
+				!!item.dressed?.[d] &&
+				(anchored ||
+					(a.sources?.[d]?.keypoints?.length === a.cells &&
+						canPose(m.rig, { anims: [a.id], dirs: [d] })));
+			return {
+				a,
+				anchored,
+				dirs: (clipDirs?.[a.id] ?? []).filter(
+					(d) => drawable(d) && !hasCompleteCells(m, item, a.id, d)
+				)
+			};
+		})
 		.filter(({ dirs }) => dirs.length)
-		.map(({ a, dirs }) => ({
+		.map(({ a, anchored, dirs }) => ({
 			id: a.id,
 			frames: a.cells,
 			items: [item.id],
@@ -2765,7 +2782,8 @@ export function skeletonMoveReview(
 			approvedDirs: dirs,
 			...(saved ? { dirs } : {}),
 			// Warnings the user already generated past (the frame room check) stay accepted for the same move.
-			...(spec.acceptedWarnings ? { acceptedWarnings: spec.acceptedWarnings } : {})
+			...(spec.acceptedWarnings ? { acceptedWarnings: spec.acceptedWarnings } : {}),
+			...(spec.itemDrawing ? { itemDrawing: spec.itemDrawing } : {})
 		};
 		if (bodyMoveIssue(manifest, review) || partialMoveFrameIssue(manifest, review, dirs.length))
 			return;
@@ -2975,7 +2993,9 @@ export function itemMoveOffer(
 	/** Views of these moves kept without poses: priced out of the offer and named here, so the user knows to make them again. */
 	unposed: Message[];
 } {
-	const unposed = specs.flatMap((spec) => unposedViewNote(m, spec, redo));
+	const unposed = specs
+		.flatMap((spec) => unposedViewNote(m, spec, redo))
+		.filter((note, i, all) => all.findIndex((other) => sameMessage(note, other)) === i);
 	try {
 		const reviewed = specs.map((spec) => reviewItemMove(m, spec, redo));
 		return {
@@ -2990,17 +3010,19 @@ export function itemMoveOffer(
 	}
 }
 /** Moves an item would be posed onto whose views were all kept without poses: missingItemMoves makes no offer for them, so
- *  they are named here (no price, no paid action) wherever item offers show. */
+ *  they are named here (no price, no paid action) wherever item offers show. Moves the item is drawn on (itemDrawingFor
+ *  with `drawing`, the Settings > Creation default) need no poses and are never named. */
 export function unposedItemMoves(
 	m: Manifest,
 	itemId: string,
+	drawing: ItemDrawing,
 	redo: readonly string[]
 ): { move: string; note: Message }[] {
 	const item = extendable(m, itemId);
-	if (!item || item.route === 'ea2-anchor') return [];
-	const offered = new Set(missingItemMoves(m, itemId, 0).map((spec) => spec.id));
+	if (!item) return [];
+	const offered = new Set(missingItemMoves(m, itemId, drawing, 0).map((spec) => spec.id));
 	return m.rig.animations.flatMap((a) =>
-		offered.has(a.id)
+		offered.has(a.id) || itemDrawingFor(m, item, a, drawing) === 'anchor'
 			? []
 			: unposedViewNote(m, { id: a.id }, redo).map((note) => ({ move: a.id, note }))
 	);
@@ -4886,6 +4908,7 @@ async function addBodyClip(
 			basePlayback,
 			cur.manifest.rig.animations.find((animation) => animation.id === spec.id)
 		);
+		applyItemDrawing(anim, spec.itemDrawing);
 		cur.manifest.rig = frig;
 		cb.provenance = baseIt.provenance;
 		cb.layers[0].cells = layer.cells;
@@ -5032,6 +5055,7 @@ export async function resolveMoveCandidate(
 				candidate.basePlayback,
 				manifest.rig.animations.find((animation) => animation.id === id)
 			);
+			applyItemDrawing(next, candidate.spec.itemDrawing);
 			manifest.rig = rig;
 			if (candidate.moveRecovery)
 				current.moveRecovery = {

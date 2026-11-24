@@ -1,5 +1,6 @@
 import { hasCompleteCells, moveDirs } from '../lib/dress/dress.ts';
 import type { DirectionName, Item, Manifest } from '../lib/store/manifest.ts';
+import type { ItemDrawing } from '../lib/rig/rig.ts';
 import { itemMoveOffer, missingItemMoves, type MoveSpec } from './create.ts';
 
 /** Equipment that has every frame in every view the body has for the move or State. */
@@ -36,6 +37,7 @@ export function clipItemOffer(
 	m: Manifest,
 	itemId: string,
 	clipId: string,
+	drawing: ItemDrawing,
 	options: {
 		seed?: number;
 		dirs?: readonly DirectionName[];
@@ -45,10 +47,9 @@ export function clipItemOffer(
 	} = {}
 ) {
 	const item = m.items.find((it) => it.id === itemId);
-	const spec = item && missingItemMoves(m, itemId, options.seed ?? 0).find((s) => s.id === clipId);
-	const dirs = options.dirs
-		? spec?.dirs?.filter((dir) => options.dirs!.includes(dir) && item?.dressed?.[dir])
-		: spec?.dirs;
+	const spec =
+		item && missingItemMoves(m, itemId, drawing, options.seed ?? 0).find((s) => s.id === clipId);
+	const dirs = options.dirs ? spec?.dirs?.filter((dir) => options.dirs!.includes(dir)) : spec?.dirs;
 	if (!spec || !dirs?.length) return null;
 	return itemMoveOffer(
 		m,

@@ -122,7 +122,13 @@
 		"saveFailed": "이 값을 저장하지 못했습니다. 다시 시도해 주세요.",
 		"incompatible": "프레임 수를 자동으로 설정하거나 새 모델이 지원하는 수를 선택하세요.",
 		"framesHelp": "사용 가능한 프레임 수는 캐릭터의 캔버스 크기에 따라 달라집니다.",
-		"methodHelp": "지원되는 경우 {pose}을 사용하고, 그 외에는 {edit}을 사용합니다."
+		"methodHelp": "지원되는 경우 {pose}을 사용하고, 그 외에는 {edit}을 사용합니다.",
+		"itemDrawing": "동작의 아이템",
+		"itemDrawingHelp": "동작 프레임에 그리면 아이템이 동작 자체의 그림에 맞춰져요. 별도 몸체에 포즈를 잡으면 아이템을 따로 애니메이션하므로 몇 픽셀 어긋날 수 있어요.",
+		"itemDrawings": {
+			"anchor": "동작 프레임에 그리기",
+			"skeleton": "별도 몸체에 포즈 잡기"
+		}
 	},
 	"settings": {
 		"mountPreviewPlay": "탈것 미리보기 재생",
@@ -698,7 +704,7 @@
 		"missingFrames": "{names}: {move} 프레임이 필요해요",
 		"missingFrameViews": "{names}: {move} 동작의 {direction} 방향 프레임이 필요해요",
 		"making": "만드는 중…",
-		"makeIt": "만들기",
+		"makeMissingViews": "빠진 방향 만들기",
 		"estimate": {
 			"other": "생성 ~{n}회"
 		},
@@ -2626,6 +2632,8 @@
 		"motionOnly": "몸체의 움직임만 설명하세요. 무기와 소품은 아이템으로 추가하세요.",
 		"motionModel": "모션 모델",
 		"motionModelHelp": "Skeleton v3는 몸과 장비에 같은 포즈를 사용해요. V3와 PixMiniMax는 몸을 먼저 그리고, 이후 PixelDoll이 장비에 사용할 포즈를 찾아요.",
+		"itemDrawing": "이 동작의 아이템",
+		"itemDrawingDefault": "기본({method})",
 		"models": {
 			"skeletonV3": "Skeleton V3",
 			"v3": "V3",

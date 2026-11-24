@@ -1,7 +1,7 @@
 // The cost estimate's model: a character's moves, items, States and directions priced with the same planners the Studio
 // quotes before each paid request (movePricing, items, stateGenerationPlan), then turned into dollars at a plan's published
 // price. Pure: no Svelte, queue or storage. Hypothetical moves and items are priced on a cloned rig; nothing is saved.
-import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
+import { DEFAULT_MOVE, DIRECTIONS, type ItemDrawing } from '../lib/rig/rig.ts';
 import type {
 	DirectionName,
 	Item,
@@ -16,6 +16,7 @@ import { mirrorPartner } from '../lib/rig/mirror.ts';
 import {
 	canPose,
 	itemPoseGens,
+	itemDrawingFor,
 	padOf,
 	planAnchoredMove,
 	planGens,
@@ -91,6 +92,8 @@ export interface CostCharacter {
 	states: StateRoute[];
 	addedState: AddedStateRoute;
 	moveModel: MoveAnimationModel;
+	/** Settings > Creation > Moves: how items are drawn on a move without its own choice. */
+	itemDrawing: ItemDrawing;
 	spent: RecordedCost;
 }
 export interface Coverage {
@@ -204,7 +207,11 @@ function stateRoute(a: RigAnimation): StateRoute {
 export function characterOf(
 	id: string,
 	m: Manifest,
-	defaults: { moveModel: MoveAnimationModel; stateModel: StateGenerationModel }
+	defaults: {
+		moveModel: MoveAnimationModel;
+		stateModel: StateGenerationModel;
+		itemDrawing: ItemDrawing;
+	}
 ): CostCharacter {
 	const base = m.items.find((i) => i.id === m.rig.baseItem);
 	const created = base && creationCall(base);
@@ -241,6 +248,7 @@ export function characterOf(
 			? { route: generated.at(-1)!, assumed: false }
 			: { route: defaults.stateModel, assumed: true },
 		moveModel: defaults.moveModel,
+		itemDrawing: defaults.itemDrawing,
 		spent: recordedCost(ownProvenance(m).filter((p) => !!p.requestHash))
 	};
 }
@@ -252,7 +260,11 @@ const restJoints = (): Keypoint[] =>
 /** A character the creator would make with these defaults, with no moves, items or States yet. */
 export function newCharacter(
 	draft: { body: number; frame: number; model?: CharacterModel; directions: RigDirection[] },
-	defaults: { moveModel: MoveAnimationModel; stateModel: StateGenerationModel }
+	defaults: {
+		moveModel: MoveAnimationModel;
+		stateModel: StateGenerationModel;
+		itemDrawing: ItemDrawing;
+	}
 ): CostCharacter {
 	const cell = { w: draft.frame, h: draft.frame };
 	const m: Manifest = {
@@ -289,6 +301,7 @@ export function newCharacter(
 		states: [],
 		addedState: { route: defaults.stateModel, assumed: true },
 		moveModel: defaults.moveModel,
+		itemDrawing: defaults.itemDrawing,
 		spent: recordedCost([])
 	};
 }
@@ -581,6 +594,35 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		});
 		return planGens(plan, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
 	};
+	// Fitting to a move follows itemDrawingFor. A design not made yet is priced as the item it will be: the Items method's
+	// route on the standing views, with a held layer padded when it is posed.
+	const fitMethod = (item: Item, index: number): Method => {
+		if (!posable) return 'anchor';
+		const move =
+			index < c.moves.length
+				? original.rig.animations.find((a) => a.id === c.moves[index].id)
+				: undefined;
+		const method = methodOf(item),
+			pad = padOf(requireSlot(original, item.slot), method, rig.cell);
+		const made: Item = item.route
+			? item
+			: {
+					...item,
+					route: method === 'anchor' ? 'ea2-anchor' : 'skeleton-pose',
+					standing,
+					baseHash: rig.baseHash,
+					dressed: Object.fromEntries(drawn.map((d) => [d, 'sha256:cost' as const])),
+					layers: [
+						{
+							id: 'main',
+							role: 'fg',
+							z: 0,
+							cell: { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad }
+						}
+					]
+				};
+		return itemDrawingFor(m, made, move, c.itemDrawing) === 'anchor' ? 'anchor' : 'skel';
+	};
 	const fitCache = new Map<string, number>();
 	const fit = (item: Item, index: number, dirs: DirectionName[]) => {
 		if (!dirs.length) return 0;
@@ -590,7 +632,7 @@ export function characterCost(c: CostCharacter, inputs: CostInputs): CostResult 
 		if (gens === undefined) {
 			const anim = specAt(index).id;
 			gens =
-				methodOf(item) === 'anchor'
+				fitMethod(item, index) === 'anchor'
 					? planGens(
 							planAnchoredMove(
 								rig,

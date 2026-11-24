@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
@@ -137,10 +138,12 @@
 	import ProblemNotice from './ProblemNotice.svelte';
 	import {
 		creationDefaults,
+		itemDrawings,
 		moveModels,
 		openingCreationSettings,
 		resolveMoveFramePreference
 	} from './creationSettings.ts';
+	import type { ItemDrawing } from '../lib/rig/rig.ts';
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
@@ -235,11 +238,16 @@
 		v3: 'moveSheet.models.v3',
 		pixminimax: 'moveSheet.models.pixminimax'
 	};
+	const ITEM_DRAWING_TEXT = {
+		anchor: 'creationSettings.itemDrawings.anchor',
+		skeleton: 'creationSettings.itemDrawings.skeleton'
+	} as const satisfies Record<ItemDrawing, WhisperKey>;
 	// Advanced starts open when a restored draft already changed something there, so no choice is hidden.
 	let advancedOpen = $state(
 		draft?.advancedOpen ??
 			(!!(draft?.frameReferences && Object.keys(draft.frameReferences).length) ||
-				(draft?.animation?.model !== undefined && draft.animation.model !== redrawFallbackModel))
+				(draft?.animation?.model !== undefined && draft.animation.model !== redrawFallbackModel) ||
+				(draft?.itemDrawing !== undefined && draft.itemDrawing !== 'default'))
 	);
 	const showAdvanced = $derived(sideBySide && advancedOpen);
 	// The column opens beside the top of the form, away from the toggle, so bring its first control into view.
@@ -272,6 +280,8 @@
 		!!draft?.action || untrack(() => !!action && text !== moveTemplatePrompt(action))
 	);
 	let loopChoice = $state<boolean | undefined>(draft?.loop);
+	let itemDrawingChoice = $state<ItemDrawing | 'default' | undefined>(draft?.itemDrawing);
+	const defaultItemDrawing = $derived(currentItemDrawing());
 	let frameReferences = $state<MoveFrameReferences<PickedReference>>(draft?.frameReferences ?? {});
 	let referenceDirection = $state<DirectionName>();
 	let frameTabWidths = $state<Partial<Record<DirectionName, number>>>({});
@@ -287,6 +297,9 @@
 		loopChoice ??
 			(replacing ? (savedMove?.moveLoop ?? savedMove?.loop) : undefined) ??
 			templateLoops(action)
+	);
+	const itemDrawing = $derived(
+		itemDrawingChoice ?? (replacing ? savedMove?.itemDrawing : undefined) ?? 'default'
 	);
 	const draftRegeneration = $derived.by(() => {
 		const reference = draft?.regeneration;
@@ -562,6 +575,7 @@
 	const advancedNote = $derived(
 		[
 			t(MODEL_TEXT[model]),
+			itemDrawing === 'default' ? '' : t(ITEM_DRAWING_TEXT[itemDrawing]),
 			targetDirs.some(
 				(direction) =>
 					frameReferences[direction]?.start ||
@@ -975,6 +989,7 @@
 			source: sourceSelection,
 			frameReferences: $state.snapshot(frameReferences),
 			loop: loopChoice,
+			itemDrawing: itemDrawingChoice,
 			animation: { model }
 		};
 	}
@@ -1045,6 +1060,7 @@
 			reviewRegeneration: regeneration,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
+			itemDrawing,
 			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] }),
 			...(preflight.length ? { acceptedWarnings: preflight.map((warning) => warning.id) } : {})
 		};
@@ -1572,6 +1588,32 @@
 			onopen={() => (pricingModels = true)}
 			onpick={chooseModel}
 		/>
+	</div>
+	<div class="advanced-field">
+		<div class="advanced-label">
+			<label for={`${advancedId}-item-drawing`}>{t('moveSheet.itemDrawing')}</label>
+			<Help
+				iconOnly
+				title={t('moveSheet.itemDrawing')}
+				text={t('creationSettings.itemDrawingHelp')}
+			/>
+		</div>
+		<select
+			id={`${advancedId}-item-drawing`}
+			class="bu-select input"
+			value={itemDrawing}
+			onchange={(event) =>
+				(itemDrawingChoice = event.currentTarget.value as ItemDrawing | 'default')}
+		>
+			<option value="default"
+				>{t('moveSheet.itemDrawingDefault', {
+					method: t(ITEM_DRAWING_TEXT[defaultItemDrawing])
+				})}</option
+			>
+			{#each itemDrawings as option (option)}<option value={option}
+					>{t(ITEM_DRAWING_TEXT[option])}</option
+				>{/each}
+		</select>
 	</div>
 	{#if frameDirection && m}
 		{@const direction = frameDirection}
