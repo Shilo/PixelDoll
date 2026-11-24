@@ -904,6 +904,10 @@
 			"other": "Für {n} angelegte Gegenstände fehlen Frames"
 		},
 		"missingFramesForMove": "Fehlende Frames für {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} Problem",
+			"other": "{n} Probleme"
+		},
 		"workspaceCopyPixelLabOff": "Arbeitsbereichskopie · PixelLab aus",
 		"characterSelectionWASDOrArrowsSelectEnter": "Figurenauswahl. Wähle mit WASD oder den Pfeiltasten, bearbeite mit der Eingabetaste und zoome mit Plus und Minus.",
 		"previousCharacter": "Vorherige Figur",
@@ -922,6 +926,12 @@
 		"customizationPanels": "Bereiche zum Anpassen",
 		"tabWorkRunning": "Hier läuft, wartet oder ist etwas zum Prüfen bereit",
 		"tabWorkAttention": "Hier braucht etwas deine Aufmerksamkeit"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} nutzt die Körperfarben bereits.",
+		"drift": "{name} übernimmt die Körperfarben nicht",
+		"match": "Farben angleichen",
+		"matched": "{name} an die Körperfarben angeglichen."
 	},
 	"worldStage": {
 		"groundUnavailable": "Die fortlaufende Bodendarstellung ist nicht verfügbar. Die statische Szene wird angezeigt.",

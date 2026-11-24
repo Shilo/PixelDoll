@@ -880,6 +880,9 @@
 			"other": "装備中の{n}個のアイテムにフレームが必要です"
 		},
 		"missingFramesForMove": "{move}の{direction}向きのフレームが不足しています",
+		"previewProblems": {
+			"other": "{n}件の問題"
+		},
 		"workspaceCopyPixelLabOff": "ワークスペースのコピー・PixelLabは無効",
 		"characterSelectionWASDOrArrowsSelectEnter": "キャラクターの選択。WASDまたは矢印キーで選択、Enterでカスタマイズ、プラスとマイナスでズームします。",
 		"previousCharacter": "前のキャラクター",
@@ -898,6 +901,12 @@
 		"customizationPanels": "カスタマイズパネル",
 		"tabWorkRunning": "ここに実行中、待機中、または確認待ちの処理があります",
 		"tabWorkAttention": "ここで対応が必要な処理があります"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name}はすでに体の色を使っています。",
+		"drift": "{name}は体の色に合っていません",
+		"match": "色を合わせる",
+		"matched": "{name}を体の色に合わせました。"
 	},
 	"worldStage": {
 		"groundUnavailable": "地面をリアルタイムで描画できないため、静止シーンを表示しています。",

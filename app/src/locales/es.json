@@ -904,6 +904,10 @@
 			"other": "{n} objetos puestos necesitan fotogramas"
 		},
 		"missingFramesForMove": "Faltan fotogramas de {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problema",
+			"other": "{n} problemas"
+		},
 		"workspaceCopyPixelLabOff": "Copia del espacio de trabajo · PixelLab desactivado",
 		"characterSelectionWASDOrArrowsSelectEnter": "Selección de personaje. WASD o flechas para elegir; Enter para personalizar; más y menos para el zoom.",
 		"previousCharacter": "Personaje anterior",
@@ -922,6 +926,12 @@
 		"customizationPanels": "Paneles de personalización",
 		"tabWorkRunning": "Aquí hay trabajo en curso, en espera o listo para revisar",
 		"tabWorkAttention": "Hay trabajo aquí que requiere atención"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} ya usa los colores del cuerpo.",
+		"drift": "{name} no sigue los colores del cuerpo",
+		"match": "Igualar colores",
+		"matched": "{name} ahora usa los colores del cuerpo."
 	},
 	"worldStage": {
 		"groundUnavailable": "No se puede renderizar el suelo en tiempo real. Se muestra la escena estática.",

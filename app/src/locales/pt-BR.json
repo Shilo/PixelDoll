@@ -907,6 +907,10 @@
 			"other": "Faltam quadros para {n} itens equipados"
 		},
 		"missingFramesForMove": "Quadros ausentes: {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problema",
+			"other": "{n} problemas"
+		},
 		"workspaceCopyPixelLabOff": "Cópia do espaço de trabalho · PixelLab desativado",
 		"characterSelectionWASDOrArrowsSelectEnter": "Seleção de personagem. Use WASD ou as setas para selecionar, Enter para personalizar e mais ou menos para ajustar o zoom.",
 		"previousCharacter": "Personagem anterior",
@@ -925,6 +929,12 @@
 		"customizationPanels": "Painéis de personalização",
 		"tabWorkRunning": "Há trabalho aqui em andamento, aguardando ou pronto para revisão",
 		"tabWorkAttention": "Há trabalho aqui que precisa de atenção"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} já usa as cores do corpo.",
+		"drift": "{name} não segue as cores do corpo",
+		"match": "Igualar cores",
+		"matched": "{name} agora usa as cores do corpo."
 	},
 	"worldStage": {
 		"groundUnavailable": "Não é possível renderizar o chão em tempo real. A cena estática é exibida.",

@@ -880,6 +880,9 @@
 			"other": "착용한 아이템 {n}개에 프레임이 필요해요"
 		},
 		"missingFramesForMove": "{move} · {direction} 프레임이 부족해요",
+		"previewProblems": {
+			"other": "문제 {n}개"
+		},
 		"workspaceCopyPixelLabOff": "워크스페이스 사본 · PixelLab 꺼짐",
 		"characterSelectionWASDOrArrowsSelectEnter": "캐릭터 선택. WASD 또는 방향키로 선택하고 Enter로 꾸미며, 더하기와 빼기로 확대/축소해요.",
 		"previousCharacter": "이전 캐릭터",
@@ -898,6 +901,12 @@
 		"customizationPanels": "꾸미기 패널",
 		"tabWorkRunning": "여기에 진행 중이거나 대기 중이거나 검토할 준비가 된 작업이 있습니다",
 		"tabWorkAttention": "여기에 확인이 필요한 작업이 있습니다"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name}: 이미 몸 색상을 사용해요.",
+		"drift": "{name}: 몸 색상과 맞지 않아요",
+		"match": "색상 맞추기",
+		"matched": "{name}: 몸 색상에 맞췄어요."
 	},
 	"worldStage": {
 		"groundUnavailable": "바닥을 실시간으로 렌더링할 수 없어 정적 장면을 표시합니다.",

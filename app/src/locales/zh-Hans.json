@@ -880,6 +880,9 @@
 			"other": "{n} 件已穿戴装备需要帧"
 		},
 		"missingFramesForMove": "{move}缺少帧 · {direction}",
+		"previewProblems": {
+			"other": "{n} 个问题"
+		},
 		"workspaceCopyPixelLabOff": "工作区副本 · PixelLab 已关闭",
 		"characterSelectionWASDOrArrowsSelectEnter": "角色选择。使用 WASD 或方向键选择；按 Enter 自定义；加号和减号缩放。",
 		"previousCharacter": "上一个角色",
@@ -898,6 +901,12 @@
 		"customizationPanels": "自定义面板",
 		"tabWorkRunning": "此处有任务正在进行、等待中或可供审阅",
 		"tabWorkAttention": "此处有任务需要处理"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name}已使用身体颜色。",
+		"drift": "{name}没有使用身体颜色",
+		"match": "匹配颜色",
+		"matched": "已将{name}匹配到身体颜色。"
 	},
 	"worldStage": {
 		"groundUnavailable": "无法实时渲染地面，正在显示静态场景。",

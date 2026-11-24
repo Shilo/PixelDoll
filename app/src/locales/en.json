@@ -904,6 +904,10 @@
 			"other": "{n} equipped items need frames"
 		},
 		"missingFramesForMove": "Missing frames for {move} · {direction}",
+		"previewProblems": {
+			"one": "{n} problem",
+			"other": "{n} problems"
+		},
 		"workspaceCopyPixelLabOff": "Workspace copy · PixelLab off",
 		"characterSelectionWASDOrArrowsSelectEnter": "Character selection. WASD or arrows select; Enter customizes; plus and minus zoom.",
 		"previousCharacter": "Previous character",
@@ -922,6 +926,12 @@
 		"customizationPanels": "Customization panels",
 		"tabWorkRunning": "Work here is running, waiting or ready to review",
 		"tabWorkAttention": "Work here needs attention"
+	},
+	"stateColors": {
+		"alreadyMatched": "{name} already uses the body colors.",
+		"drift": "{name} doesn’t follow the body colors",
+		"match": "Match colors",
+		"matched": "Matched {name} to the body colors."
 	},
 	"worldStage": {
 		"groundUnavailable": "Continuous ground rendering unavailable. Showing the static scene.",
