@@ -84,6 +84,7 @@
 		type MeasurementRecoveryPlan
 	} from './create.ts';
 	import {
+		builtInMotion,
 		fixedPoses,
 		moveFrames,
 		moveMotionFrames,
@@ -627,6 +628,24 @@
 	const motion = $derived(motionFor(model, animationOptions));
 	const regeneration = $derived(draftRegeneration?.id === id ? draftRegeneration : undefined);
 	const skeletonRetry = draft?.skeletonRetry;
+	// A suggestion's own motion is only claimed once the route is known: a template waits for the managed character
+	// probe, which decides whether one can run, and a Skeleton V3 retry replays the reviewed move instead of this form.
+	const suggestionRoute = $derived.by(() => {
+		if (!action || skeletonRetry) return undefined;
+		if (describing) return 'described';
+		if (managedId && !motionAccess?.source) return undefined;
+		return builtInMotion(motion) ? 'built-in' : 'described';
+	});
+	// The pill says which route it has in a tooltip and to screen readers; its fill and dashes carry it in the form.
+	const suggestionHint = $derived(
+		suggestionRoute
+			? t(
+					suggestionRoute === 'built-in'
+						? 'moveSheet.suggestionBuiltIn'
+						: 'moveSheet.suggestionDescribed'
+				)
+			: undefined
+	);
 	function motionIssueFor(option: MoveAnimationModel, motion: ReturnType<typeof motionFor>) {
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
 		if (Object.hasOwn(store.moveReviews, id) && !regeneration)
@@ -2388,6 +2407,8 @@
 								label={t('moveSheet.templates')}
 								value={text}
 								active={action}
+								described={suggestionRoute === 'described'}
+								hint={suggestionHint}
 								{suggestions}
 								onpick={pickSuggestion}
 							/>

@@ -2728,6 +2728,8 @@
 		"duplicateOption": "{move} is already a move option. Start the description with different words.",
 		"costNotice": "PixelLab may charge in dollars. Retries and fallbacks cost extra.",
 		"templates": "Move templates",
+		"suggestionBuiltIn": "Uses this move's built-in motion.",
+		"suggestionDescribed": "PixelLab animates this move from your prompt instead of its built-in motion.",
 		"describeMotion": "Describe the motion",
 		"motionOnly": "Describe body motion only. Add weapons and props as items.",
 		"motionModel": "Motion model",

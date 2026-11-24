@@ -2653,6 +2653,8 @@
 		"duplicateOption": "{move} sudah ada di pilihan animasi. Awali deskripsi dengan kata-kata lain.",
 		"costNotice": "PixelLab mungkin mengenakan biaya dalam dolar. Percobaan ulang dan metode cadangan dikenai biaya tambahan.",
 		"templates": "Templat animasi",
+		"suggestionBuiltIn": "Memakai animasi bawaan gerakan ini.",
+		"suggestionDescribed": "PixelLab menganimasikan gerakan ini dari teks Anda, bukan dari animasi bawaannya.",
 		"describeMotion": "Deskripsikan gerakannya",
 		"motionOnly": "Jelaskan gerakan tubuh saja. Tambahkan senjata dan properti sebagai item.",
 		"motionModel": "Model gerakan",

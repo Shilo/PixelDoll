@@ -2653,6 +2653,8 @@
 		"duplicateOption": "「{move}」はすでに候補にあります。別の言葉で説明を書き始めてください。",
 		"costNotice": "PixelLab がドルで請求する場合があります。再試行や代替手段には追加料金がかかります。",
 		"templates": "モーションのテンプレート",
+		"suggestionBuiltIn": "このモーションの組み込みアニメーションを使用します。",
+		"suggestionDescribed": "PixelLab は組み込みアニメーションではなく、入力したテキストからこのモーションを生成します。",
 		"describeMotion": "動きを説明",
 		"motionOnly": "体の動きだけを説明してください。武器や小道具はアイテムとして追加します。",
 		"motionModel": "モーションのモデル",

@@ -15,7 +15,12 @@ import {
 	usdOf,
 	type CostInputs
 } from '../../src/studio/costEstimate.ts';
-import { estimate, moveEstimate, moveTemplate } from '../../src/studio/movePricing.ts';
+import {
+	builtInMotion,
+	estimate,
+	moveEstimate,
+	moveTemplate
+} from '../../src/studio/movePricing.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { poseCallGens, poseGensFor } from '../../src/lib/rig/clips.ts';
 import { padOf, planAnchoredMove, planGens, planItem } from '../../src/lib/items/items.ts';
@@ -264,6 +269,36 @@ describe('cost estimate', () => {
 		// An imported character may not be registered with PixelLab, so it is planned on the standalone route.
 		const imported = { ...draw, setup: { kind: 'import' as const } };
 		expect(moveTemplate(walk(imported))).toBeUndefined();
+	});
+
+	test('knows when a suggestion uses its own motion instead of the prompt', () => {
+		const spec = (
+			action?: string,
+			model: 'skeleton-v3' | 'pixminimax' = 'skeleton-v3',
+			frames = 8,
+			extra: { motionSource?: 'standalone' | 'managed' } = {}
+		) => ({
+			id: action ?? 'walk',
+			action,
+			frames,
+			...extra,
+			animation: { model, frameCount: frames }
+		});
+		expect(builtInMotion(spec('walk'))).toBe(true);
+		// Past the template's own frame count the prompt draws the motion instead, and Jump's cap is 7, not 8.
+		expect(builtInMotion(spec('walk', 'skeleton-v3', 9))).toBe(false);
+		expect(builtInMotion(spec('jump', 'skeleton-v3', 7))).toBe(true);
+		expect(builtInMotion(spec('jump', 'skeleton-v3', 8))).toBe(false);
+		expect(builtInMotion(spec('walk', 'pixminimax'))).toBe(false);
+		// A character PixelLab did not register has no template to run.
+		expect(builtInMotion(spec('walk', 'skeleton-v3', 8, { motionSource: 'standalone' }))).toBe(
+			false
+		);
+		// PixelDoll's authored keyframes count too, but a native model only reads the text.
+		expect(builtInMotion(spec('slash'))).toBe(true);
+		expect(builtInMotion(spec('slash', 'pixminimax'))).toBe(false);
+		// No action means the prompt is the motion.
+		expect(builtInMotion(spec())).toBe(false);
 	});
 
 	test('prices pose batches at 3, 12, 15 and 16 frames like itemPoseGens', () => {

@@ -8,6 +8,8 @@
 		label,
 		value,
 		active,
+		described = false,
+		hint,
 		onpick
 	}: {
 		suggestions: readonly PromptSuggestion[];
@@ -17,10 +19,16 @@
 		value: string;
 		/** The applied template's id. Set for templates (they stay visible, the applied one pressed); omit for ideas. */
 		active?: string;
+		/** The applied template's own motion is not used: the prompt replaced it. Keeps the pill pressed, outlined. */
+		described?: boolean;
+		/** What the applied template's state means, for its tooltip. */
+		hint?: string;
 		onpick: (suggestion: PromptSuggestion) => void;
 	} = $props();
 
 	const templates = $derived(active !== undefined);
+	const uid = $props.id();
+	const hintId = `${uid}-state`;
 	const text = $derived(value.trim());
 	// Ideas show while the box is empty or still holds one of them, so swapping ideas never costs typed text.
 	const shown = $derived(
@@ -31,15 +39,20 @@
 {#if shown && suggestions.length}
 	<div class="prompt-suggestions" role="group" aria-label={label}>
 		{#each suggestions as suggestion (suggestion.id)}
+			{@const applied = !!suggestion.action && active === suggestion.action}
 			<button
 				type="button"
 				class="suggestion"
 				aria-pressed={suggestion.action
 					? active === suggestion.action
 					: suggestion.prompt.trim() === text}
+				aria-describedby={applied && hint ? hintId : undefined}
+				data-described={applied && described ? '' : undefined}
+				title={applied ? hint : undefined}
 				onclick={() => onpick(suggestion)}>{suggestion.title}</button
 			>
 		{/each}
+		{#if hint}<span class="sr" id={hintId}>{hint}</span>{/if}
 	</div>
 {/if}
 
@@ -76,6 +89,12 @@
 		border-color: color-mix(in srgb, var(--accent) 55%, transparent);
 		background: var(--accent-soft);
 		color: var(--accent-text);
+	}
+	/* Pressed, but its built-in motion no longer runs: the outline and dashes keep the fill meaning "this runs". */
+	.suggestion[aria-pressed='true'][data-described] {
+		border-style: dashed;
+		background: transparent;
+		color: var(--bu-muted);
 	}
 	@media (pointer: coarse) {
 		.suggestion {

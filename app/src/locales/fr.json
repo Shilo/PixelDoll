@@ -2728,6 +2728,8 @@
 		"duplicateOption": "{move} figure déjà parmi les animations proposées. Commencez la description par d’autres mots.",
 		"costNotice": "PixelLab peut facturer en dollars. Les nouvelles tentatives et les méthodes de secours coûtent plus cher.",
 		"templates": "Modèles d’animation",
+		"suggestionBuiltIn": "Utilise l’animation intégrée de ce mouvement.",
+		"suggestionDescribed": "PixelLab anime ce mouvement à partir de votre texte au lieu de son animation intégrée.",
 		"describeMotion": "Décrivez le mouvement",
 		"motionOnly": "Décrivez uniquement le mouvement du corps. Ajoutez les armes et accessoires comme objets.",
 		"motionModel": "Modèle de mouvement",

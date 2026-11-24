@@ -2728,6 +2728,8 @@
 		"duplicateOption": "{move} steht bereits zur Auswahl. Beginne die Beschreibung mit anderen Wörtern.",
 		"costNotice": "PixelLab kann in US-Dollar abrechnen. Erneute Versuche und Ausweichverfahren kosten extra.",
 		"templates": "Animationsvorlagen",
+		"suggestionBuiltIn": "Nutzt die eingebaute Bewegung dieser Animation.",
+		"suggestionDescribed": "PixelLab animiert diese Animation aus deinem Prompt statt aus ihrer eingebauten Bewegung.",
 		"describeMotion": "Beschreibe die Bewegung",
 		"motionOnly": "Beschreibe nur die Körperbewegung. Füge Waffen und Requisiten als Gegenstände hinzu.",
 		"motionModel": "Bewegungsmodell",

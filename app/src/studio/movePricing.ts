@@ -108,6 +108,10 @@ export function moveTemplate(spec: MoveFrameSpec): BaseAnim | undefined {
  *  (moveTemplate) is not fixed. */
 export const fixedPoses = (spec: MoveFrameSpec) =>
 	!!spec.poses || (isAuthoredAction(spec.action) && !moveTemplate(spec));
+/** A suggestion's own motion runs on Skeleton V3: PixelLab's template or PixelDoll's authored keypoints, never the
+ *  prompt. Any other model draws the motion from the text, and an authored action means nothing to a native model. */
+export const builtInMotion = (spec: MoveFrameSpec) =>
+	!!moveTemplate(spec) || (moveAnimationModel(spec) === 'skeleton-v3' && fixedPoses(spec));
 /** ClipSource.motion of a move drawn in another body's imported joints. */
 export const IMPORTED_MOTION = 'imported-motion';
 export type MoveFrameSpec = Pick<

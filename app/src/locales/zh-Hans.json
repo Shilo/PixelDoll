@@ -2653,6 +2653,8 @@
 		"duplicateOption": "{move} 已在动作选项中。请用其他词语开头。",
 		"costNotice": "PixelLab 可能以美元收费。重试和备用方案会产生额外费用。",
 		"templates": "动作模板",
+		"suggestionBuiltIn": "使用此动作内置的动画。",
+		"suggestionDescribed": "PixelLab 会根据你的文本而不是内置动画来生成此动作。",
 		"describeMotion": "描述动作",
 		"motionOnly": "只描述身体动作。武器和道具请通过装备添加。",
 		"motionModel": "运动模型",

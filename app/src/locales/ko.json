@@ -2653,6 +2653,8 @@
 		"duplicateOption": "{move}은(는) 이미 동작 목록에 있어요. 설명을 다른 단어로 시작하세요.",
 		"costNotice": "PixelLab에서 달러로 청구할 수 있어요. 재시도와 대체 방식에는 추가 비용이 들어요.",
 		"templates": "동작 템플릿",
+		"suggestionBuiltIn": "이 동작의 내장 애니메이션을 사용해요.",
+		"suggestionDescribed": "PixelLab이 내장 애니메이션이 아닌 입력한 텍스트로 이 동작을 만들어요.",
 		"describeMotion": "움직임 설명",
 		"motionOnly": "몸체의 움직임만 설명하세요. 무기와 소품은 아이템으로 추가하세요.",
 		"motionModel": "모션 모델",

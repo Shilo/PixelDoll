@@ -3953,7 +3953,19 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await cast.click();
 	await description.focus();
 	await expect(cast).toHaveAttribute('aria-pressed', 'true');
+	// Cast's authored keyframes run while its prompt stands; editing the prompt outlines the pill.
+	await expect(cast).not.toHaveAttribute('data-described');
+	await expect(cast).toHaveAttribute('title', "Uses this move's built-in motion.");
+	const describedBy = await cast.getAttribute('aria-describedby');
+	await expect(move.locator(`#${describedBy}`)).toHaveText("Uses this move's built-in motion.");
+	// The fill is the visible signal, so the two states must actually paint differently.
+	await expect(cast).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 	await description.fill('cast with a wide overhead sweep');
+	await expect(cast).toHaveAttribute('data-described', '');
+	await expect(cast).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+	await expect(move.locator(`#${describedBy}`)).toHaveText(
+		'PixelLab animates this move from your prompt instead of its built-in motion.'
+	);
 	await expect(move.getByRole('button', { name: /^Generate Cast/ })).toBeEnabled();
 	// Pressing the applied template again lets the text stand as a custom move.
 	await cast.click();

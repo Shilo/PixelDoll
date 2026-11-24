@@ -2728,6 +2728,8 @@
 		"duplicateOption": "Bu animasyon zaten seçenekler arasında: {move}. Açıklamaya başka sözcüklerle başlayın.",
 		"costNotice": "PixelLab dolar üzerinden ücret alabilir. Yeniden denemeler ve alternatif yöntemler ek ücrete tabidir.",
 		"templates": "Animasyon şablonları",
+		"suggestionBuiltIn": "Bu hareketin yerleşik animasyonunu kullanır.",
+		"suggestionDescribed": "PixelLab bu hareketi yerleşik animasyon yerine metninizden canlandırır.",
 		"describeMotion": "Hareketi tarif edin",
 		"motionOnly": "Yalnızca gövdenin hareketini tarif edin. Silah ve aksesuarları eşya olarak ekleyin.",
 		"motionModel": "Hareket modeli",

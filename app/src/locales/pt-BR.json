@@ -2737,6 +2737,8 @@
 		"duplicateOption": "{move} já está na lista de animações. Comece a descrição com outras palavras.",
 		"costNotice": "O PixelLab pode cobrar em dólares. Novas tentativas e métodos alternativos custam mais.",
 		"templates": "Modelos de animação",
+		"suggestionBuiltIn": "Usa a animação integrada deste movimento.",
+		"suggestionDescribed": "O PixelLab anima este movimento a partir do seu texto em vez da animação integrada.",
 		"describeMotion": "Descreva o movimento",
 		"motionOnly": "Descreva apenas o movimento do corpo. Adicione armas e acessórios como itens.",
 		"motionModel": "Modelo de movimento",
