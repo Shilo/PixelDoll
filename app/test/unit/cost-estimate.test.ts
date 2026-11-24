@@ -257,10 +257,7 @@ describe('cost estimate', () => {
 	});
 
 	test('plans suggestions on the template route only for characters drawn here', () => {
-		const draw = newCharacter(
-			{ body: 48, frame: 64, directions: FOUR },
-			{ moveModel: 'skeleton-v3', stateModel: 'pro' }
-		);
+		const draw = newCharacter({ body: 48, frame: 64, directions: FOUR }, defaults);
 		const walk = (c: ReturnType<typeof newCharacter>) =>
 			addedMoves(c).suggested.find((spec) => spec.action === 'walk')!;
 		expect(moveTemplate(walk(draw))?.template).toBe('walking-8-frames');
