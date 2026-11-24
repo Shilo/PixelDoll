@@ -54,6 +54,16 @@
 		"scopeDebug": "Back up saved characters, artwork, archived data, and debugging details.",
 		"debugNotSaved": "The browser could not save this setting.",
 		"backup": "Back up library",
+		"originals": "Download original generations",
+		"originalsHint": "The raw images PixelLab returned for saved characters, before PixelDoll processed them, with the requests that bought them. Only requests still kept on this device are included.",
+		"originalsName": "original generations",
+		"originalsNone": "No original images are kept for your saved characters.",
+		"originalsPartial": {
+			"one": "Originals are no longer kept for {count} character.",
+			"other": "Originals are no longer kept for {count} characters."
+		},
+		"originalsStarted": "Original generations download started.",
+		"originalsTooLarge": "The original generations are too large to download at once.",
 		"restoreFromBackup": "Restore from backup",
 		"review": "Review backup",
 		"add": "Characters to add",

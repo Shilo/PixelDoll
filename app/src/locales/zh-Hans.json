@@ -51,6 +51,15 @@
 		"scopeDebug": "备份已保存的角色、图稿、归档数据和调试信息。",
 		"debugNotSaved": "浏览器无法保存此设置。",
 		"backup": "备份角色库",
+		"originals": "下载原始生成图",
+		"originalsHint": "PixelLab 为已保存角色返回的、经 PixelDoll 处理之前的原始图像，以及购买这些图像的请求。仅包含仍保存在此设备上的请求。",
+		"originalsName": "原始生成图",
+		"originalsNone": "已保存角色没有保留的原始图像。",
+		"originalsPartial": {
+			"other": "没有保留原始生成图的角色：{count}。"
+		},
+		"originalsStarted": "已开始下载原始生成图。",
+		"originalsTooLarge": "原始生成图过大，无法一次下载。",
 		"restoreFromBackup": "从备份恢复",
 		"review": "检查备份",
 		"add": "待添加的角色",

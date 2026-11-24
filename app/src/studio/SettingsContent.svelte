@@ -229,6 +229,7 @@
 			icon: Archive,
 			entries: [
 				{ id: 'backup', label: 'librarySettings.backup' },
+				{ id: 'originals', label: 'librarySettings.originals' },
 				{ id: 'restore', label: 'librarySettings.restoreFromBackup' }
 			]
 		},

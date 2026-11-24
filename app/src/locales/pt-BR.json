@@ -54,6 +54,16 @@
 		"scopeDebug": "Faça backup de personagens, artes, dados arquivados e detalhes de depuração.",
 		"debugNotSaved": "O navegador não conseguiu salvar esta configuração.",
 		"backup": "Fazer backup da biblioteca",
+		"originals": "Baixar gerações originais",
+		"originalsHint": "As imagens brutas que o PixelLab retornou para os personagens salvos, antes de o PixelDoll processá-las, com as solicitações que as compraram. Apenas as solicitações ainda mantidas neste dispositivo são incluídas.",
+		"originalsName": "gerações originais",
+		"originalsNone": "Nenhuma imagem original é mantida para os seus personagens salvos.",
+		"originalsPartial": {
+			"one": "Os originais não são mais mantidos para {count} personagem.",
+			"other": "Os originais não são mais mantidos para {count} personagens."
+		},
+		"originalsStarted": "O download das gerações originais foi iniciado.",
+		"originalsTooLarge": "As gerações originais são grandes demais para baixar de uma vez.",
 		"restoreFromBackup": "Restaurar de um backup",
 		"review": "Revisar backup",
 		"add": "Personagens a adicionar",

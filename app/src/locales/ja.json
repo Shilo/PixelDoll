@@ -51,6 +51,15 @@
 		"scopeDebug": "保存したキャラクター、アートワーク、アーカイブ済みデータ、デバッグ情報をバックアップします。",
 		"debugNotSaved": "ブラウザーがこの設定を保存できませんでした。",
 		"backup": "ライブラリをバックアップ",
+		"originals": "元の生成画像をダウンロード",
+		"originalsHint": "PixelDoll が処理する前に PixelLab が保存済みキャラクター用に返した元の画像と、それらを購入したリクエストです。この端末にまだ保存されているリクエストのみが含まれます。",
+		"originalsName": "元の生成画像",
+		"originalsNone": "保存済みキャラクターの元の画像は残っていません。",
+		"originalsPartial": {
+			"other": "元画像が残っていないキャラクター：{count}。"
+		},
+		"originalsStarted": "元の生成画像のダウンロードを開始しました。",
+		"originalsTooLarge": "元の生成画像が大きすぎて一度にダウンロードできません。",
 		"restoreFromBackup": "バックアップから復元",
 		"review": "バックアップを確認",
 		"add": "追加するキャラクター",

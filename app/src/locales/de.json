@@ -54,6 +54,16 @@
 		"scopeDebug": "Gespeicherte Figuren, Grafiken, archivierte Daten und Debugging-Details sichern.",
 		"debugNotSaved": "Der Browser konnte diese Einstellung nicht speichern.",
 		"backup": "Bibliothek sichern",
+		"originals": "Originalgenerierungen herunterladen",
+		"originalsHint": "Die Rohbilder, die PixelLab für gespeicherte Charaktere zurückgegeben hat, bevor PixelDoll sie verarbeitet hat, mit den Anfragen, die sie gekauft haben. Nur Anfragen, die noch auf diesem Gerät gespeichert sind, werden einbezogen.",
+		"originalsName": "Originalgenerierungen",
+		"originalsNone": "Für deine gespeicherten Charaktere sind keine Originalbilder mehr gespeichert.",
+		"originalsPartial": {
+			"one": "Originale werden für {count} Charakter nicht mehr gespeichert.",
+			"other": "Originale werden für {count} Charaktere nicht mehr gespeichert."
+		},
+		"originalsStarted": "Der Download der Originalgenerierungen wurde gestartet.",
+		"originalsTooLarge": "Die Originalgenerierungen sind zu groß, um sie auf einmal herunterzuladen.",
 		"restoreFromBackup": "Aus Sicherung wiederherstellen",
 		"review": "Sicherung prüfen",
 		"add": "Hinzuzufügende Charaktere",

@@ -54,6 +54,16 @@
 		"scopeDebug": "Kayıtlı karakterleri, çizimleri, arşivlenmiş verileri ve hata ayıklama ayrıntılarını yedekle.",
 		"debugNotSaved": "Tarayıcı bu ayarı kaydedemedi.",
 		"backup": "Kitaplığı yedekle",
+		"originals": "Orijinal üretimleri indir",
+		"originalsHint": "PixelLab’in kayıtlı karakterler için PixelDoll işlemeden önce döndürdüğü ham görseller ve bunları satın alan istekler. Yalnızca bu cihazda hâlâ saklanan istekler eklenir.",
+		"originalsName": "orijinal üretimler",
+		"originalsNone": "Kayıtlı karakterleriniz için orijinal görsel saklanmıyor.",
+		"originalsPartial": {
+			"one": "Orijinali saklanmayan karakter: {count}.",
+			"other": "Orijinali saklanmayan karakterler: {count}."
+		},
+		"originalsStarted": "Orijinal üretimlerin indirilmesi başladı.",
+		"originalsTooLarge": "Orijinal üretimler tek seferde indirilemeyecek kadar büyük.",
 		"restoreFromBackup": "Yedekten geri yükle",
 		"review": "Yedeği incele",
 		"add": "Eklenecek karakterler",

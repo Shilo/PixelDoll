@@ -549,6 +549,91 @@ test('Library deletes local work only after confirmation and offers a backup fir
 	expect(await saved()).toEqual({ ...original, character: false });
 });
 
+test('Library downloads the raw PixelLab results a saved character still has', async ({
+	page
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await openStudio(page, dev);
+	await page.evaluate(async () => {
+		const dbPath = '/src/lib/store/db.ts';
+		const pngPath = '/src/lib/image/pngraw.ts';
+		const db = await import(dbPath);
+		const { encodePngBytes } = await import(pngPath);
+		const sha = await db.putBlob(
+			await encodePngBytes({ w: 2, h: 2, data: new Uint8ClampedArray(16) })
+		);
+		const requestHash = 'abc123';
+		await db.put('projects', 'rig-originals', {
+			id: 'rig-originals',
+			savedAt: new Date().toISOString(),
+			manifest: {
+				format: 'pixeldoll/3',
+				name: 'Originals Test',
+				items: [
+					{ provenance: [{ requestHash: `sha256:${requestHash}`, jobId: 'remote-originals' }] }
+				]
+			}
+		});
+		await db.put('jobs', 'job-originals', {
+			id: 'job-originals',
+			label: 'Raw result',
+			method: 'POST',
+			endpoint: '/characters/animations',
+			params: {},
+			inputs: [],
+			requestHash,
+			state: 'done',
+			attempts: 1,
+			nextAt: 0,
+			createdAt: 0,
+			gens: 1,
+			usd: 0,
+			jobs: [
+				{
+					id: 'remote-originals',
+					status: 'completed',
+					done: true,
+					results: [{ label: 'frame', sha }]
+				}
+			]
+		});
+	});
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Library', exact: true }).click();
+	const downloading = page.waitForEvent('download');
+	await settings
+		.getByRole('button', { name: 'Download original generations', exact: true })
+		.click();
+	const download = await downloading;
+	expect(download.suggestedFilename()).toMatch(/-originals\.zip$/);
+	const files = await unzip(new Uint8Array(readFileSync((await download.path())!)));
+	expect(files.has('01-originals-test/01-characters-animations/frame.png')).toBe(true);
+	const requests = new TextDecoder().decode(files.get('01-originals-test/requests.json'));
+	expect(requests).toContain('job-originals');
+});
+
+test('Library says when no original generations are kept', async ({ page }, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await openStudio(page, dev);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Library', exact: true }).click();
+	let downloaded = false;
+	page.on('download', () => (downloaded = true));
+	await settings
+		.getByRole('button', { name: 'Download original generations', exact: true })
+		.click();
+	await expect(
+		page.getByText('No original images are kept for your saved characters.')
+	).toBeVisible();
+	expect(downloaded).toBe(false);
+});
+
 test('Settings saves creation choices across reload and resets them by scope', async ({ page }) => {
 	await page.setViewportSize({ width: 1280, height: 800 });
 	const sheet = (tab: Page) => tab.getByRole('dialog', { name: 'Settings', exact: true });

@@ -51,6 +51,15 @@
 		"scopeDebug": "저장된 캐릭터, 아트워크, 보관된 데이터, 디버깅 정보를 백업합니다.",
 		"debugNotSaved": "브라우저가 이 설정을 저장하지 못했습니다.",
 		"backup": "라이브러리 백업하기",
+		"originals": "원본 생성 이미지 다운로드",
+		"originalsHint": "PixelDoll이 처리하기 전에 PixelLab이 저장된 캐릭터를 위해 반환한 원본 이미지와 이를 구매한 요청입니다. 이 기기에 아직 보관된 요청만 포함됩니다.",
+		"originalsName": "원본 생성 이미지",
+		"originalsNone": "저장된 캐릭터의 원본 이미지가 남아 있지 않습니다.",
+		"originalsPartial": {
+			"other": "원본이 남아 있지 않은 캐릭터: {count}."
+		},
+		"originalsStarted": "원본 생성 이미지 다운로드를 시작했습니다.",
+		"originalsTooLarge": "원본 생성 이미지가 너무 커서 한 번에 다운로드할 수 없습니다.",
 		"restoreFromBackup": "백업에서 복원",
 		"review": "백업 검토",
 		"add": "추가할 캐릭터",

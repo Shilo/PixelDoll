@@ -51,6 +51,15 @@
 		"scopeDebug": "Cadangkan karakter, artwork, data arsip, dan detail debugging.",
 		"debugNotSaved": "Browser tidak dapat menyimpan pengaturan ini.",
 		"backup": "Cadangkan pustaka",
+		"originals": "Unduh hasil asli",
+		"originalsHint": "Gambar mentah yang dikembalikan PixelLab untuk karakter tersimpan, sebelum diproses PixelDoll, beserta permintaan yang membelinya. Hanya permintaan yang masih tersimpan di perangkat ini yang disertakan.",
+		"originalsName": "hasil asli",
+		"originalsNone": "Tidak ada gambar asli yang tersimpan untuk karakter tersimpan Anda.",
+		"originalsPartial": {
+			"other": "Karakter tanpa hasil asli tersimpan: {count}."
+		},
+		"originalsStarted": "Unduhan hasil asli dimulai.",
+		"originalsTooLarge": "Hasil asli terlalu besar untuk diunduh sekaligus.",
 		"restoreFromBackup": "Pulihkan dari cadangan",
 		"review": "Tinjau cadangan",
 		"add": "Karakter yang akan ditambahkan",

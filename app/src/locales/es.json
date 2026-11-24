@@ -54,6 +54,16 @@
 		"scopeDebug": "Guarda personajes, ilustraciones, datos archivados y detalles de depuración.",
 		"debugNotSaved": "El navegador no pudo guardar este ajuste.",
 		"backup": "Hacer una copia de seguridad",
+		"originals": "Descargar generaciones originales",
+		"originalsHint": "Las imágenes sin procesar que PixelLab devolvió para los personajes guardados, antes de que PixelDoll las procesara, con las solicitudes que las compraron. Solo se incluyen las solicitudes que aún se conservan en este dispositivo.",
+		"originalsName": "generaciones originales",
+		"originalsNone": "No se conservan imágenes originales de tus personajes guardados.",
+		"originalsPartial": {
+			"one": "Ya no se conservan originales de {count} personaje.",
+			"other": "Ya no se conservan originales de {count} personajes."
+		},
+		"originalsStarted": "Se inició la descarga de las generaciones originales.",
+		"originalsTooLarge": "Las generaciones originales son demasiado grandes para descargarlas de una vez.",
 		"restoreFromBackup": "Restaurar desde una copia de seguridad",
 		"review": "Revisar copia de seguridad",
 		"add": "Personajes por añadir",
