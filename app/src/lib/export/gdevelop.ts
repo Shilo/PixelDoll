@@ -104,6 +104,26 @@ export function gdevelopFiles(m: Manifest, sheets: Map<string, Img>): OutFile[] 
 		objects: Record<string, unknown>[] = [];
 	const names: Record<string, Record<string, string>> = {};
 	const character = gdCharacterKey(m);
+	const written = new Map<string, { image: Img; file: string }[]>();
+	const sharedFile = (image: Img, file: string) => {
+		let hash = 0x811c9dc5;
+		for (const word of new Uint32Array(
+			image.data.buffer,
+			image.data.byteOffset,
+			image.data.length / 4
+		))
+			hash = Math.imul(hash ^ word, 0x01000193);
+		const key = `${image.w}x${image.h}:${hash >>> 0}`,
+			same = written.get(key) ?? [];
+		const found = same.find(({ image: other }) =>
+			other.data.every((value, index) => value === image.data[index])
+		);
+		if (found) return found.file;
+		same.push({ image, file });
+		written.set(key, same);
+		files.push({ name: `gdevelop/images/${file}`, data: image });
+		return file;
+	};
 	for (const [ii, it] of m.items.entries()) {
 		names[it.id] = {};
 		for (const [li, l] of it.layers.entries()) {
@@ -123,9 +143,13 @@ export function gdevelopFiles(m: Manifest, sheets: Map<string, Img>): OutFile[] 
 							const start = ((row * f.h + y) * source.w + cell * f.w) * 4;
 							data.set(source.data.subarray(start, start + f.w * 4), y * f.w * 4);
 						}
-						// Short filenames also keep unpacking safe for Windows' path limits; resource names remain identity-specific.
-						const imageFile = `${character}_${ii}_${li}_${ai}_${row}_${cell}.png`;
-						files.push({ name: `gdevelop/images/${imageFile}`, data: { w: f.w, h: f.h, data } });
+						// Identical frames (above all the blank ones of items not drawn for a move) share one file, so a character
+						// with many items stays within the ZIP entry limit; resources stay one per frame for the runtime's lookups.
+						const imageFile = sharedFile(
+							{ w: f.w, h: f.h, data },
+							// Short filenames also keep unpacking safe for Windows' path limits; resource names remain identity-specific.
+							`${character}_${ii}_${li}_${ai}_${row}_${cell}.png`
+						);
 						resources.push({
 							kind: 'image',
 							name: resource,
