@@ -1,6 +1,14 @@
 import type { Manifest } from '../store/manifest.ts';
 import { DEFAULT_MOVE, type DirectionName, type RigAnimation, type RiderSeatPoint } from './rig.ts';
 
+/** The signed pixel offset written to the engine manifest. */
+export function riderSeatOffset(
+	point: Pick<RiderSeatPoint, 'x' | 'y'>,
+	pivot: Manifest['rig']['pivot']
+) {
+	return { x: point.x - pivot.x, y: point.y - pivot.y };
+}
+
 /** A repeated timeline entry still displays the same cell. Standing and multi-cell clips have no seat edit. */
 export function seatPose(clip: RigAnimation | undefined) {
 	return (

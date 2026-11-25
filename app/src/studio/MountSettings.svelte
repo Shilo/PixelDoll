@@ -69,40 +69,44 @@
 	}
 </script>
 
-<MountPreview />
-<SettingsItemToggle
-	setting="show-mount"
-	tooltip={hoverPointer.current
-		? t('liveViews.withShortcut', { action: t('toolbar.showMount'), key: 'F' })
-		: undefined}
-	checked={experience.testMount}
-	onchange={(event) => {
-		showMount(event.currentTarget.checked);
-	}}
->
-	<PawPrint size={18} aria-hidden="true" />
-	<span class="row-name">{t('toolbar.showMount')}</span>
-</SettingsItemToggle>
-{#if doc.id}
-	<div class="riding-pose" data-setting="riding-pose" tabindex="-1">
-		<PlaybackPicker
-			settings
-			{clips}
-			moveRefs={moves}
-			selected={pose ?? ''}
-			label={t('toolbar.riderPose')}
-			automatic={t('toolbar.riderPoseRide')}
-			{unavailable}
-			thumbnail={(key) => view.project && lookClipThumbnail(view.project, view.items, key, ui.dir)}
-			onselect={choosePose}
-		/>
-		{#if hidden}<p class="notice warn small" role="status">
-				<TriangleAlert size={14} aria-hidden="true" />{t('toolbar.riderPoseHides', {
-					items: hidden
-				})}
-			</p>{/if}
-	</div>
-{/if}
+<MountPreview>
+	{#snippet controls()}
+		<SettingsItemToggle
+			setting="show-mount"
+			tooltip={hoverPointer.current
+				? t('liveViews.withShortcut', { action: t('toolbar.showMount'), key: 'F' })
+				: undefined}
+			checked={experience.testMount}
+			onchange={(event) => {
+				showMount(event.currentTarget.checked);
+			}}
+		>
+			<PawPrint size={18} aria-hidden="true" />
+			<span class="row-name">{t('toolbar.showMount')}</span>
+		</SettingsItemToggle>
+		{#if doc.id}
+			<div class="riding-pose" data-setting="riding-pose" tabindex="-1">
+				<PlaybackPicker
+					settings
+					{clips}
+					moveRefs={moves}
+					selected={pose ?? ''}
+					label={t('toolbar.riderPose')}
+					automatic={t('toolbar.riderPoseRide')}
+					{unavailable}
+					thumbnail={(key) =>
+						view.project && lookClipThumbnail(view.project, view.items, key, ui.dir)}
+					onselect={choosePose}
+				/>
+				{#if hidden}<p class="notice warn small" role="status">
+						<TriangleAlert size={14} aria-hidden="true" />{t('toolbar.riderPoseHides', {
+							items: hidden
+						})}
+					</p>{/if}
+			</div>
+		{/if}
+	{/snippet}
+</MountPreview>
 <SettingsItemSegmented
 	label={t('toolbar.hideLegs')}
 	setting="hide-legs"

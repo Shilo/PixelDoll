@@ -22,9 +22,12 @@ The schematic has eight authored or explicitly mirrored directions. A four-direc
 ## Correct a saved seat
 
 In Mount settings, turn on **Show mount**, choose a saved one-cell **Riding pose**, and
-select its facing. **Adjust seat** pauses the preview. The arrow buttons move the whole
-rider one pixel at a time. **Save** keeps the point for that pose and facing, and
-**Use automatic** previews removing it before you save. Mirrored facings can be
+select its facing under the preview. Open the pencil on the **Seat position** row to
+pause on that facing. The crosshair marks the contact with the test saddle. The arrow
+buttons move the whole rider one pixel at a time, and the row displays the same
+pivot-relative coordinates used by the export. Click the preview to check the mount's
+gait while the facing stays fixed. **Save** keeps the point for that pose and facing.
+The center button previews automatic placement before you save. Mirrored facings can be
 corrected individually. Closing the page discards a draft. Resetting Mount settings
 resets the display preferences and keeps the character's reviewed points.
 

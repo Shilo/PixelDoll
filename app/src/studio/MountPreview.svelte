@@ -2,8 +2,11 @@
 	// The Mount settings preview: the test mount always walks in place and turns through its facings. With Show mount on,
 	// the open character (or the demo, when none is open) rides it exactly as on stage, following every mount setting.
 	// Clicking pauses and plays. Its loop and image caches live only while Settings shows this page.
-	import { tick } from 'svelte';
+	import { tick, type Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
+	import Armchair from '@lucide/svelte/icons/armchair';
+	import Crosshair from '@lucide/svelte/icons/crosshair';
+	import LocateFixed from '@lucide/svelte/icons/locate-fixed';
 	import { bakedFrame } from '../lib/compose/compose.ts';
 	import { openFixture } from '../lib/dress/project.ts';
 	import { displayNestedMessage } from '../lib/i18n.ts';
@@ -12,6 +15,7 @@
 	import {
 		reviewedSeatPoint,
 		riderSeatArt,
+		riderSeatOffset,
 		seatPose,
 		type RiderSeatEdit
 	} from '../lib/rig/riderSeat.ts';
@@ -22,7 +26,13 @@
 	import { hideMountedLegs, mountLegGeometry } from './experience/mountLegs.ts';
 	import { imageCanvas } from './experience/imageCanvas.ts';
 	import { mountPlacement } from './experience/mountPlacement.ts';
-	import { mountView, placeRider, sampleMountFrame, TEST_MOUNT } from './experience/mounts.ts';
+	import {
+		mountedFrame,
+		mountView,
+		placeRider,
+		sampleMountFrame,
+		TEST_MOUNT
+	} from './experience/mounts.ts';
 	import {
 		advancePlayback,
 		buildPresentation,
@@ -33,7 +43,7 @@
 	import { activeRiderPose, legsKept } from './experience/riderPose.ts';
 	import { currentLiveClips } from './experience/liveViews.ts';
 	import { experience } from './experience/state.svelte.ts';
-	import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pause, Play } from './icons.ts';
+	import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pause, Pencil, Play } from './icons.ts';
 	import {
 		DEMO,
 		doc,
@@ -44,8 +54,11 @@
 		view
 	} from './state.svelte.ts';
 
+	let { controls }: { controls: Snippet } = $props();
 	const TURN_MS = 1400;
 	let canvas = $state<HTMLCanvasElement>();
+	let marker = $state<HTMLSpanElement>();
+	let facingControl = $state<HTMLSelectElement>();
 	let playing = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
 	let facing = $state<DirectionName>('south-east');
 
@@ -91,6 +104,7 @@
 		rider && presentation ? mountPlacement(rider.project, shown, presentation, grounding) : null
 	);
 	const authored = $derived(store.project?.manifest);
+	const frame = $derived(rider ? bakedFrame(rider.project.manifest) : null);
 	const selected = $derived(authored?.rig.animations.find(({ id }) => id === pose));
 	const selectable = $derived(
 		riding && doc.id && !doc.id.startsWith('fixture:') && !openingProjectId() && seatPose(selected)
@@ -140,16 +154,28 @@
 		editing &&
 			(editing.point?.x !== editing.target.saved?.x || editing.point?.y !== editing.target.saved?.y)
 	);
+	const point = $derived(editing ? editing.point : target?.saved);
+	const offset = $derived(point && authored ? riderSeatOffset(point, authored.rig.pivot) : null);
 	let busy = $state(false);
 	let failure = $state<string | Message>('');
 	let adjustButton = $state<HTMLButtonElement>();
 	let nudgeControls = $state<HTMLDivElement>();
-	const nudges = $derived([
-		{ label: t('settings.seatLeft'), icon: ArrowLeft, x: -1, y: 0 },
-		{ label: t('settings.seatUp'), icon: ArrowUp, x: 0, y: -1 },
-		{ label: t('settings.seatDown'), icon: ArrowDown, x: 0, y: 1 },
-		{ label: t('settings.seatRight'), icon: ArrowRight, x: 1, y: 0 }
-	]);
+	const nudges = [
+		{ area: 'up', label: 'settings.seatUp', icon: ArrowUp, x: 0, y: -1 },
+		{ area: 'left', label: 'settings.seatLeft', icon: ArrowLeft, x: -1, y: 0 },
+		{ area: 'right', label: 'settings.seatRight', icon: ArrowRight, x: 1, y: 0 },
+		{ area: 'down', label: 'settings.seatDown', icon: ArrowDown, x: 0, y: 1 }
+	] as const;
+	const nudgeOrigin = $derived.by(() => {
+		if (!editing || !authored || !frame || !draftPlacement?.view) return null;
+		const { pivot } = authored.rig;
+		const contact = draftPlacement.contact;
+		// Match placeRider's half-pixel tie before applying the first whole-pixel nudge.
+		return {
+			x: Math.ceil(contact.x - frame.x + pivot.x - 0.5),
+			y: Math.ceil(contact.y - frame.y + pivot.y - 0.5)
+		};
+	});
 
 	async function beginEdit() {
 		if (!target) return;
@@ -157,26 +183,36 @@
 		failure = '';
 		draft = { id: doc.id, target, point: target.saved ?? null };
 		await tick();
-		nudgeControls?.querySelector('button')?.focus();
+		nudgeControls?.querySelector<HTMLButtonElement>('[data-nudge="left"]')?.focus();
 	}
 	async function endEdit() {
 		draft = null;
+		playing = false;
 		await tick();
 		adjustButton?.focus({ preventScroll: true });
 	}
 	function nudge(x: number, y: number) {
-		if (!editing || !authored || !rider || !draftPlacement?.view) return;
-		const { cell, pivot } = authored.rig;
-		const frame = bakedFrame(rider.project.manifest);
-		const contact = draftPlacement.contact;
-		// Match placeRider's half-pixel tie before applying the first whole-pixel nudge.
+		if (!editing || !authored || !nudgeOrigin || busy) return;
+		const { cell } = authored.rig;
 		draft = {
 			...editing,
 			point: {
-				x: Math.max(0, Math.min(cell.w, Math.ceil(contact.x - frame.x + pivot.x - 0.5) - x)),
-				y: Math.max(0, Math.min(cell.h, Math.ceil(contact.y - frame.y + pivot.y - 0.5) - y))
+				x: Math.max(0, Math.min(cell.w, nudgeOrigin.x - x)),
+				y: Math.max(0, Math.min(cell.h, nudgeOrigin.y - y))
 			}
 		};
+	}
+	function padKey(event: KeyboardEvent) {
+		if (event.key === 'Escape' && !busy) {
+			event.preventDefault();
+			event.stopPropagation();
+			void endEdit();
+			return;
+		}
+		const step = nudges.find(({ area }) => event.key.toLowerCase() === 'arrow' + area);
+		if (!step || event.altKey || event.ctrlKey || event.metaKey) return;
+		event.preventDefault();
+		nudge(step.x, step.y);
 	}
 	async function saveSeat() {
 		if (!editing || !changed || busy) return;
@@ -202,6 +238,8 @@
 
 	$effect(() => {
 		const target = canvas,
+			contactMarker = marker,
+			bodyFrame = frame,
 			a = availability,
 			current = rider,
 			direction = shown,
@@ -212,8 +250,23 @@
 			legs = experience.mountLegs,
 			height = standingHeight,
 			running = playing,
-			turning = facings;
+			turning = facings,
+			selector = facingControl;
 		if (!target) return;
+		// Fit the full gait envelope, not a single bob frame. A stationary edit keeps its saved framing
+		// unless the draft needs more room.
+		const envelope = (contact: Point) =>
+			place?.view && bodyFrame
+				? mountedFrame(
+						{ ...bodyFrame, ...place.riderGround },
+						place.ground,
+						place.view,
+						contact,
+						place.riderGround
+					)
+				: null;
+		const bounds = place?.view ? envelope(place.contact) : null;
+		const fixed = savedPlacement?.view ? envelope(savedPlacement.contact) : bounds;
 		const g = target.getContext('2d')!;
 		if (current?.id !== clockRider) {
 			clock = undefined;
@@ -227,14 +280,15 @@
 			const dt = running ? now - last : 0;
 			last = now;
 			elapsed += dt;
-			turned += dt;
-			if (turned >= TURN_MS && turning.length > 1) {
+			const autoTurn = !savedPlacement && document.activeElement !== selector;
+			if (autoTurn) turned += dt;
+			if (autoTurn && turned >= TURN_MS && turning.length > 1) {
 				turned = 0;
 				facing = turning[(turning.indexOf(direction) + 1) % turning.length];
 				return;
 			}
 			const layers: { image: Img | HTMLCanvasElement; x: number; y: number }[] = [];
-			let center: Point | undefined;
+			let contact: Point | undefined;
 			if (mounted && a && current && p) {
 				clock = advancePlayback(p, clock, dt);
 				const key = JSON.stringify([p.clip, p.direction, clock.cell]);
@@ -267,19 +321,7 @@
 						{ image: composed.image, x: at.rider.x, y: at.rider.y },
 						{ image: pose.front, x: at.mount.x, y: at.mount.y }
 					);
-					if (savedPlacement?.view) {
-						const { rider: rest } = placeRider(place.ground, savedPlacement.contact, pose);
-						center = {
-							x:
-								(Math.min(at.mount.x, rest.x) +
-									Math.max(at.mount.x + pose.back.w, rest.x + composed.image.w)) /
-								2,
-							y:
-								(Math.min(at.mount.y, rest.y) +
-									Math.max(at.mount.y + pose.back.h, rest.y + composed.image.h)) /
-								2
-						};
-					}
+					contact = { x: at.mount.x + pose.seat.x, y: at.mount.y + pose.seat.y };
 				}
 			}
 			if (!layers.length) {
@@ -289,19 +331,27 @@
 					layers.push({ image: pose.back, x: 0, y: 0 }, { image: pose.front, x: 0, y: 0 });
 				}
 			}
-			const box = layers.reduce(
-				(b, l) => {
-					const w = 'w' in l.image ? l.image.w : l.image.width,
-						h = 'h' in l.image ? l.image.h : l.image.height;
-					return {
-						l: Math.min(b.l, l.x),
-						t: Math.min(b.t, l.y),
-						r: Math.max(b.r, l.x + w),
-						b: Math.max(b.b, l.y + h)
-					};
-				},
-				{ l: Infinity, t: Infinity, r: -Infinity, b: -Infinity }
-			);
+			const box =
+				bounds && place?.view && contact
+					? {
+							l: place.ground.x - bounds.x,
+							t: place.ground.y - bounds.y,
+							r: place.ground.x - bounds.x + bounds.w,
+							b: place.ground.y - bounds.y + bounds.h
+						}
+					: layers.reduce(
+							(b, l) => {
+								const w = 'w' in l.image ? l.image.w : l.image.width,
+									h = 'h' in l.image ? l.image.h : l.image.height;
+								return {
+									l: Math.min(b.l, l.x),
+									t: Math.min(b.t, l.y),
+									r: Math.max(b.r, l.x + w),
+									b: Math.max(b.b, l.y + h)
+								};
+							},
+							{ l: Infinity, t: Infinity, r: -Infinity, b: -Infinity }
+						);
 			const width = Math.round(target.clientWidth * devicePixelRatio),
 				tall = Math.round(target.clientHeight * devicePixelRatio);
 			if (target.width !== width || target.height !== tall) {
@@ -311,7 +361,13 @@
 			g.clearRect(0, 0, width, tall);
 			if (layers.length) {
 				// Whole-pixel scale, the same for the walk's rise and fall, centered on the stage.
-				center ??= { x: (box.l + box.r) / 2, y: (box.t + box.b) / 2 };
+				const center =
+					fixed && place?.view && contact
+						? {
+								x: place.ground.x - fixed.x + fixed.w / 2,
+								y: place.ground.y - fixed.y + fixed.h / 2
+							}
+						: { x: (box.l + box.r) / 2, y: (box.t + box.b) / 2 };
 				const spanX = 2 * Math.max(center.x - box.l, box.r - center.x),
 					spanY = 2 * Math.max(center.y - box.t, box.b - center.y);
 				const scale = Math.max(
@@ -331,7 +387,13 @@
 						image.height * scale
 					);
 				}
+				target.dataset.scale = String(scale);
+				if (contactMarker && contact) {
+					contactMarker.style.left = `${((left + contact.x * scale) / width) * 100}%`;
+					contactMarker.style.top = `${((top + contact.y * scale) / tall) * 100}%`;
+				}
 			}
+			if (contactMarker) contactMarker.hidden = !contact || !width || !tall;
 			target.dataset.facing = direction;
 			target.dataset.rider = mounted && layers.length > 2 ? (current?.id ?? '') : '';
 			// Paused, the frame stays drawn; a settings change reruns this effect and draws once more.
@@ -356,73 +418,119 @@
 	class="mount-preview"
 	type="button"
 	aria-label={t(playing ? 'settings.mountPreviewPause' : 'settings.mountPreviewPlay')}
-	aria-describedby={!selectable || editing ? 'mount-preview-facing' : undefined}
-	disabled={!!editing}
+	aria-describedby={editing ? 'mount-preview-facing' : undefined}
 	onclick={() => (playing = !playing)}
 >
 	<canvas bind:this={canvas} aria-hidden="true"></canvas>
-	<span class="mount-play" aria-hidden="true" hidden={!!editing}>
+	{#if editing}
+		<span class="seat-marker" bind:this={marker} aria-hidden="true" hidden>
+			<Crosshair size={16} strokeWidth={2} />
+		</span>
+	{/if}
+	<span class="mount-play" aria-hidden="true">
 		{#if playing}<Pause size={18} />{:else}<Play size={18} />{/if}
 	</span>
 </button>
-{#if !selectable || editing}
-	<p class="mount-caption" id="mount-preview-facing">{displayDirection(shown)}</p>
+<div class="mount-caption">
+	<span>{t('settings.testMount')}</span>
+	{#if editing}
+		<span id="mount-preview-facing">{displayDirection(shown)}</span>
+	{:else}
+		<label for="mount-preview-facing">{t('settings.seatFacing')}</label>
+		<select
+			id="mount-preview-facing"
+			class="bu-select select"
+			bind:this={facingControl}
+			value={shown}
+			onchange={(event) => {
+				playing = false;
+				turned = 0;
+				facing = event.currentTarget.value as DirectionName;
+			}}
+		>
+			{#each facings as direction (direction)}
+				<option value={direction}>{displayDirection(direction)}</option>
+			{/each}
+		</select>
+	{/if}
+</div>
+
+{#if !editing}{@render controls()}{/if}
+
+{#if target}
+	<div class="seat-row" data-setting="rider-seat">
+		<Armchair size={18} aria-hidden="true" />
+		<span>{t('settings.seatPosition')}</span>
+		<output
+			class="seat-value"
+			title={t('settings.seatOffsetHelp')}
+			aria-live={editing ? 'polite' : 'off'}
+			>{offset ? t('settings.seatOffset', offset) : t('creationSettings.automatic')}</output
+		>
+		{#if !editing}
+			<button
+				type="button"
+				class="bu-action"
+				data-variant="field"
+				aria-label={t('settings.adjustSeat')}
+				title={t('settings.adjustSeat')}
+				bind:this={adjustButton}
+				onclick={beginEdit}><Pencil size={16} aria-hidden="true" /></button
+			>
+		{/if}
+	</div>
 {/if}
-{#if selectable}
-	<div class="seat-controls">
-		{#if editing}
-			<div class="seat-nudges" dir="ltr" bind:this={nudgeControls}>
-				{#each nudges as nudgeButton (nudgeButton.icon)}
-					<button
-						type="button"
-						class="bu-btn"
-						aria-label={nudgeButton.label}
-						disabled={busy}
-						onclick={() => nudge(nudgeButton.x, nudgeButton.y)}
-					>
-						<nudgeButton.icon size={18} aria-hidden="true" />
-					</button>
-				{/each}
-			</div>
-			<div class="seat-actions">
+
+{#if editing}
+	<p class="seat-help">{t('settings.seatMarkerHelp')}</p>
+	<div class="seat-nudges" dir="ltr" bind:this={nudgeControls}>
+		{#each nudges as step, index (step.area)}
+			{#if index === 2}
 				<button
 					type="button"
-					class="bu-btn bu-quiet"
+					class="bu-action"
+					data-variant="field"
+					style:grid-area="reset"
+					aria-label={t('settings.seatAuto')}
+					title={t('settings.seatAuto')}
 					aria-pressed={!editing.point}
 					disabled={busy}
+					onkeydown={padKey}
 					onclick={() => {
 						if (editing?.point) draft = { ...editing, point: null };
-					}}>{t('settings.seatAuto')}</button
-				>
-				<button type="button" class="bu-btn" disabled={busy} onclick={endEdit}
-					>{t('common.cancel')}</button
-				>
-				<button type="button" class="btn primary" disabled={!changed || busy} onclick={saveSeat}>
-					{t(busy ? 'directionsSheet.saving' : 'common.save')}
-				</button>
-			</div>
-			{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
-		{:else}
-			<select
-				class="bu-select select"
-				aria-label={t('settings.seatFacing')}
-				value={shown}
-				onfocus={() => (playing = false)}
-				onchange={(event) => {
-					playing = false;
-					facing = event.currentTarget.value as DirectionName;
-				}}
-			>
-				{#each facings as direction (direction)}
-					<option value={direction}>{displayDirection(direction)}</option>
-				{/each}
-			</select>
-			{#if target}
-				<button type="button" class="bu-btn" bind:this={adjustButton} onclick={beginEdit}
-					>{t('settings.adjustSeat')}</button
+					}}><LocateFixed size={18} aria-hidden="true" /></button
 				>
 			{/if}
-		{/if}
+			<button
+				type="button"
+				class="bu-action"
+				data-variant="field"
+				data-nudge={step.area}
+				style:grid-area={step.area}
+				aria-label={t(step.label)}
+				title={t(step.label)}
+				disabled={busy}
+				onkeydown={padKey}
+				onclick={() => nudge(step.x, step.y)}
+			>
+				<step.icon size={18} aria-hidden="true" />
+			</button>
+		{/each}
+	</div>
+	{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
+	<div class="seat-actions">
+		<button type="button" class="bu-action" data-variant="quiet" disabled={busy} onclick={endEdit}
+			>{t('common.cancel')}</button
+		>
+		<button
+			type="button"
+			class="bu-action"
+			data-variant="primary"
+			disabled={!changed || busy}
+			onclick={saveSeat}
+		>
+			{t(busy ? 'directionsSheet.saving' : 'common.save')}
+		</button>
 	</div>
 {/if}
 
@@ -443,6 +551,8 @@
 		border-color: var(--bu-border);
 	}
 	canvas {
+		min-inline-size: 0;
+		min-block-size: 0;
 		inline-size: 100%;
 		block-size: 100%;
 		image-rendering: pixelated;
@@ -457,29 +567,74 @@
 		place-items: center;
 		color: var(--bu-text);
 	}
-	.mount-play[hidden] {
-		display: none;
+	.seat-marker {
+		position: absolute;
+		translate: -50% -50%;
+		pointer-events: none;
+		line-height: 0;
+		color: var(--bu-text);
+		filter: drop-shadow(0 0 1px var(--bu-canvas)) drop-shadow(0 0 1px var(--bu-canvas));
+	}
+	.mount-caption,
+	.seat-row,
+	.seat-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
 	}
 	.mount-caption {
-		margin: 4px 0 8px;
-		text-align: center;
+		flex-wrap: wrap;
+		margin-block: 4px 8px;
 		font-size: 12px;
 		color: var(--bu-muted);
 	}
-	.seat-controls,
-	.seat-actions,
-	.seat-nudges {
-		display: flex;
+	.mount-caption > :first-child {
+		margin-inline-end: auto;
+	}
+	.mount-caption select {
+		max-inline-size: 100%;
+	}
+	.seat-row {
 		flex-wrap: wrap;
-		gap: 8px;
+		min-block-size: 44px;
 	}
-	.seat-controls {
-		align-items: center;
-		justify-content: center;
-		margin-block: 8px 12px;
-	}
-	.seat-nudges button {
+	.seat-row button {
 		min-inline-size: 44px;
 		min-block-size: 44px;
+		justify-content: center;
+	}
+	.seat-value {
+		margin-inline-start: auto;
+		font-variant-numeric: tabular-nums;
+		color: var(--bu-muted);
+	}
+	.seat-help {
+		margin-block: 0 8px;
+		font-size: 12px;
+		color: var(--bu-muted);
+	}
+	.seat-nudges {
+		display: grid;
+		grid-template-areas: '. up .' 'left reset right' '. down .';
+		grid-template-columns: repeat(3, 44px);
+		grid-template-rows: repeat(3, 44px);
+		gap: 6px;
+		inline-size: max-content;
+		margin-inline: auto;
+	}
+	.seat-nudges button {
+		inline-size: 44px;
+		block-size: 44px;
+		min-inline-size: 0;
+		justify-content: center;
+	}
+	.seat-actions {
+		justify-content: flex-end;
+		flex-wrap: wrap;
+		margin-block: 8px 12px;
+	}
+	.seat-actions button {
+		min-block-size: 44px;
+		padding-inline: 12px;
 	}
 </style>

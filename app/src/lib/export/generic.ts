@@ -3,7 +3,7 @@ import type { Img } from '../image/png.ts';
 import { DIRECTIONS, exportUnit, validateRig } from '../rig/rig.ts';
 import { centeredMirrorFrame } from '../rig/mirror.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
-import { reviewedSeatPoint } from '../rig/riderSeat.ts';
+import { reviewedSeatPoint, riderSeatOffset } from '../rig/riderSeat.ts';
 import { CURRENT_FORMAT } from '../store/manifest.ts';
 import { behaviorOf, SLOTS } from '../items/slots.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
@@ -459,7 +459,7 @@ export function exportManifest(
 		for (const facing of directions) {
 			const point = reviewedSeatPoint(src, sourceClip, facing);
 			if (point && p.images.has(point.body))
-				contacts[facing] = { x: point.x - src.rig.pivot.x, y: point.y - src.rig.pivot.y };
+				contacts[facing] = riderSeatOffset(point, src.rig.pivot);
 		}
 		delete a.seatPoints;
 		delete a.riderSeat;

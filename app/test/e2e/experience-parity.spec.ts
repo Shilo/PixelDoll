@@ -1212,17 +1212,39 @@ touchTest(
 		const facing = mountMenu.getByRole('combobox', { name: 'Facing', exact: true });
 		const adjustSeat = mountMenu.getByRole('button', { name: 'Adjust seat', exact: true });
 		const left = mountMenu.getByRole('button', { name: 'Move rider left', exact: true });
+		const seat = mountMenu.locator('[data-setting="rider-seat"] output');
+		const marker = mountMenu.locator('.seat-marker');
 		const saveSeat = mountMenu.getByRole('button', { name: 'Save', exact: true });
 		await facing.selectOption('east');
+		await expect(seat).toHaveText('Automatic');
 		await adjustSeat.click();
 		await expect(left).toBeFocused();
+		await expect(marker).toBeVisible();
+		await expect(facing).toHaveCount(0);
+		const pad = await mountMenu.locator('.seat-nudges button').evaluateAll((buttons) =>
+			buttons.map((button) => {
+				const { x, y, width, height } = button.getBoundingClientRect();
+				return { x, y, width, height };
+			})
+		);
+		expect(new Set(pad.map(({ x, y }) => `${x},${y}`)).size).toBe(5);
+		expect(pad.every(({ width, height }) => width === 44 && height === 44)).toBe(true);
+		const markBefore = await marker.getAttribute('style');
+		const canvas = mountMenu.locator('.mount-preview canvas');
+		const scale = await canvas.getAttribute('data-scale');
+		const play = mountMenu.getByRole('button', { name: 'Play mount preview', exact: true });
+		await play.click();
+		await expect(marker).not.toHaveAttribute('style', markBefore!);
+		await expect(canvas).toHaveAttribute('data-scale', scale!);
+		await mountMenu.getByRole('button', { name: 'Pause mount preview', exact: true }).click();
 		await left.tap();
+		await expect(seat).toHaveText(/^x -?\d+, y -?\d+$/);
 		await expect(saveSeat).toBeEnabled();
 		await mountMenu.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await expect(adjustSeat).toBeFocused();
 		await expect(world(page)).not.toHaveAttribute('data-mount-contact', 'reviewed');
 		await adjustSeat.press('Enter');
-		await left.press('Space');
+		await left.press('ArrowLeft');
 		await page.evaluate(() => {
 			const put = IDBObjectStore.prototype.put;
 			IDBObjectStore.prototype.put = function (record, key) {
@@ -1253,6 +1275,7 @@ touchTest(
 		await facing.selectOption('east');
 		await adjustSeat.click();
 		await mountMenu.getByRole('button', { name: 'Use automatic', exact: true }).click();
+		await expect(seat).toHaveText('Automatic');
 		await saveSeat.click();
 		await expect(adjustSeat).toBeVisible();
 		await expect(world(page)).toHaveAttribute('data-mount-contact', /estimate|hip|joints/);
