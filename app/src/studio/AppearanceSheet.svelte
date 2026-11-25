@@ -666,6 +666,9 @@
 		}
 	}
 	@container appearance-form (max-width: 280px) {
+		.appearance-options :global(.bu-segmented) {
+			grid-template-columns: minmax(0, 1.24fr) repeat(2, minmax(0, 1fr));
+		}
 		.appearance-options :global(.bu-segment-face) {
 			column-gap: 1px;
 			padding-inline: 1px;
