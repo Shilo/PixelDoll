@@ -446,21 +446,26 @@
 		<span id="mount-preview-facing">{displayDirection(shown)}</span>
 	{:else}
 		<label for="mount-preview-facing">{t('settings.seatFacing')}</label>
-		<select
-			id="mount-preview-facing"
-			class="bu-select select"
-			bind:this={facingControl}
-			value={shown}
-			onchange={(event) => {
-				playing = false;
-				turned = 0;
-				facing = event.currentTarget.value as DirectionName;
-			}}
-		>
+		<div class="direction-select">
 			{#each facings as direction (direction)}
-				<option value={direction}>{displayDirection(direction)}</option>
+				<span class="direction-measure" aria-hidden="true">{displayDirection(direction)}</span>
 			{/each}
-		</select>
+			<select
+				id="mount-preview-facing"
+				class="bu-select select"
+				bind:this={facingControl}
+				value={shown}
+				onchange={(event) => {
+					playing = false;
+					turned = 0;
+					facing = event.currentTarget.value as DirectionName;
+				}}
+			>
+				{#each facings as direction (direction)}
+					<option value={direction}>{displayDirection(direction)}</option>
+				{/each}
+			</select>
+		</div>
 	{/if}
 </div>
 <hr class="bu-separator preview-divider" />
@@ -602,8 +607,21 @@
 		font-size: 12px;
 		color: var(--bu-muted);
 	}
-	.mount-caption select {
+	.direction-select {
+		display: grid;
 		max-inline-size: 100%;
+	}
+	.direction-select > * {
+		grid-area: 1 / 1;
+	}
+	.direction-select select {
+		inline-size: 100%;
+	}
+	/* The customizable select sizes to the selected label. Reserve room for every translated label and the arrow. */
+	.direction-measure {
+		visibility: hidden;
+		white-space: nowrap;
+		padding-inline: 8px calc(26px + 1.25em + 2px);
 	}
 	.preview-divider {
 		margin-block: 4px 8px;
