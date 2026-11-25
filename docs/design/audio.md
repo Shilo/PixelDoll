@@ -55,8 +55,10 @@ physical Pixel 8 Pro, both reference gains rose by 10 dB to 0.05761 for music an
 This keeps their gain ratio at the midpoint. A smooth taper runs from silence through each reference
 to a maximum of 0.40 for music and 0.25 for effects. The measured assets leave about 1.9 dB of margin
 even if four copies of the highest-peak effect align with the music's peak at maximum settings.
-The Characters, New character, and Customize top bars always link to Audio, including while both
-channels are muted. Closing Audio from New character returns to the draft.
+The Characters, New character, and Customize top bars show the Audio shortcut while Music or Sound
+effects is enabled at a nonzero volume. On Characters it sits to the left of New character when
+that action is in the top bar. When both channels are silent, the shortcut takes up no space and
+Audio remains available through Settings. Closing Audio from New character returns to the draft.
 The PWA verifies and caches the module and soundtrack
 on demand. If the first gesture happens offline before the module is cached,
 reconnect and reload to enable audio. The 1.42 MB FLAC decodes to about 31 MB at a 48 kHz device rate.
