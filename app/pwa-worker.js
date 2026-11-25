@@ -11,9 +11,9 @@ const PENDING = new URL('.pwa-meta/pending/', SCOPE).href;
 const METADATA_LOCK = `pixeldoll-cache-metadata:${SCOPE}`;
 const FILE_URLS = FILES.map((file) => ({ ...file, url: new URL(file.path, SCOPE).href }));
 const CURRENT_FILES = new Map(FILE_URLS.map((file) => [file.url, file]));
-const REQUIRED_FILES = FILE_URLS.filter((file) => !file.locale);
+const REQUIRED_FILES = FILE_URLS.filter((file) => !file.optional);
 const LOCALES = new Map(FILE_URLS.filter((file) => file.locale).map((file) => [file.locale, file]));
-const localeDownloads = new Map();
+const optionalDownloads = new Map();
 const INDEX = new URL(`index.html?pd-build=${encodeURIComponent(RELEASE.build)}`, SCOPE).href;
 
 const leaseUrl = (id) => new URL(`.pwa-meta/client/${encodeURIComponent(id)}`, SCOPE).href;
@@ -130,17 +130,17 @@ async function currentResponse(file, repair = true) {
 	if (stored) return stored();
 	if (!repair) throw new Error('The downloaded update is incomplete. Reconnect and try again.');
 	// A public URL can now belong to a later deployment. Only this worker's exact bytes can repair its release.
-	if (!file.locale) return (await download(file, cache))();
-	if (!localeDownloads.has(file.url)) {
-		localeDownloads.set(
+	if (!file.optional) return (await download(file, cache))();
+	if (!optionalDownloads.has(file.url)) {
+		optionalDownloads.set(
 			file.url,
-			loadLocale(file, cache).finally(() => localeDownloads.delete(file.url))
+			loadOptional(file, cache).finally(() => optionalDownloads.delete(file.url))
 		);
 	}
-	return (await localeDownloads.get(file.url))();
+	return (await optionalDownloads.get(file.url))();
 }
 
-async function loadLocale(file, cache) {
+async function loadOptional(file, cache) {
 	const stored = await retainedFile(file, await caches.keys());
 	if (!stored) return download(file, cache);
 	await saveDownload(file, cache, stored);
@@ -212,8 +212,12 @@ async function saveDownload(file, cache, downloaded) {
 	try {
 		await cache.put(file.url, downloaded());
 	} catch (error) {
-		if (!file.locale) throw error;
-		console.warn('PixelDoll could not save a language for offline use:', error);
+		if (!file.optional) throw error;
+		console.warn(
+			'PixelDoll could not save an optional app resource for offline use:',
+			file.path,
+			error
+		);
 	}
 }
 

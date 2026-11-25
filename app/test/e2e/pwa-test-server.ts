@@ -71,15 +71,18 @@ export async function testRelease(
 		files.set(target, content);
 	}
 	transform?.(files);
-	const locales = new Map(
+	const optionalFiles = new Map(
 		originalInventory
-			.filter((file) => file.locale)
-			.map(({ path, locale }) => ['assets/' + renamed.get(path.slice('assets/'.length)), locale])
+			.filter((file) => file.optional)
+			.map(({ path, optional, locale }) => [
+				'assets/' + renamed.get(path.slice('assets/'.length)),
+				{ optional, ...(locale ? { locale } : {}) }
+			])
 	);
 	const inventory = [...files].map(([path, bytes]) => ({
 		path: revisionPath(path, release.build),
 		hash: createHash('sha256').update(bytes).digest('hex'),
-		...(locales.has(path) ? { locale: locales.get(path) } : {})
+		...optionalFiles.get(path)
 	}));
 	const worker = await readFile(new URL('../../pwa-worker.js', import.meta.url), 'utf8');
 	files.set(

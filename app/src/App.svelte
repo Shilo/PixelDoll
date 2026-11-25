@@ -7,7 +7,7 @@
 	import { watchLivePreferences } from './studio/experience/liveViews.ts';
 	import { applyRiderPose } from './studio/mountPreview.ts';
 	import { experience } from './studio/experience/state.svelte.ts';
-	import { doc, ui } from './studio/state.svelte.ts';
+	import { doc } from './studio/state.svelte.ts';
 	import { syncAudio, watchAudio } from './studio/audio.svelte.ts';
 	import { watchPromptSuggestions } from './studio/promptSuggestions.svelte.ts';
 
@@ -40,7 +40,7 @@
 	$effect(watchPromptSuggestions);
 	$effect(watchLivePreferences);
 	$effect(watchAudio);
-	$effect(() => syncAudio(ui.theme));
+	$effect(syncAudio);
 	$effect(() => {
 		if (!import.meta.env.DEV || workspaceCopy || localDeveloperToolsEnabled() || route === '/')
 			return;

@@ -6,8 +6,8 @@ import {
 	type AudioChannel,
 	type AudioPreferences
 } from './audioPreferences.ts';
-import type { AudioCue, AudioPlayback } from './audioPlayback.ts';
-import type { WorldTheme } from './experience/config.ts';
+import type { AudioCue } from './audioCues.ts';
+import type { AudioPlayback } from './audioPlayback.ts';
 
 let preferences = $state.raw(audioPreferenceStore.read());
 let unsaved = false;
@@ -15,7 +15,7 @@ let context: AudioContext | undefined;
 let playback: AudioPlayback | undefined;
 let loading = false;
 let unavailable = false;
-let world: WorldTheme = 'dark';
+let effectsUnavailable = false;
 let pageOpen = true;
 let musicPlaying = $state(false);
 
@@ -62,14 +62,14 @@ function visible(): boolean {
 
 function updatePlayback() {
 	try {
-		musicPlaying = playback?.update(preferences, world, visible()) ?? false;
+		playback?.update(preferences, visible());
 	} catch (error) {
 		disableAudio(error);
 	}
 }
 
-export function syncAudio(theme: WorldTheme) {
-	world = theme;
+export function syncAudio() {
+	// Track preferences before Web Audio exists so settings stay in sync after activation.
 	void preferences;
 	updatePlayback();
 }
@@ -138,7 +138,9 @@ function activateAudio(event: Event) {
 	void import('./audioPlayback.ts')
 		.then(({ createAudioPlayback }) => {
 			if (context !== started) return;
-			playback = createAudioPlayback(started);
+			playback = createAudioPlayback(started, (playing) => {
+				if (context === started) musicPlaying = playing;
+			});
 			updatePlayback();
 		})
 		.catch((error: unknown) => {
@@ -149,13 +151,20 @@ function activateAudio(event: Event) {
 let cueRevision = 0;
 
 export function playAudioCue(cue: AudioCue): void {
-	if (!playback || context?.state !== 'running' || !channelAudible(preferences, 'effects')) return;
+	if (
+		effectsUnavailable ||
+		!playback ||
+		context?.state !== 'running' ||
+		!channelAudible(preferences, 'effects')
+	)
+		return;
 	if (!visible()) return;
 	cueRevision++;
 	try {
 		playback.play(cue);
 	} catch (error) {
-		disableAudio(error);
+		effectsUnavailable = true;
+		console.warn('PixelDoll sound effects could not play.', error);
 	}
 }
 
@@ -190,7 +199,7 @@ export function watchAudio() {
 			const entered = control(event.target);
 			if (!entered || entered === control(event.relatedTarget)) return;
 			const now = performance.now();
-			if (now - lastHover < 120 || now - lastPress < 100) return;
+			if (now - lastHover < 400 || now - lastPress < 250) return;
 			lastHover = now;
 			playAudioCue('hover');
 		},
@@ -239,6 +248,17 @@ export function watchAudio() {
 	document.addEventListener('visibilitychange', updatePlayback, { signal });
 	addEventListener('focus', updatePlayback, { signal });
 	addEventListener('blur', updatePlayback, { signal });
+	addEventListener(
+		'online',
+		() => {
+			try {
+				playback?.retryMusic();
+			} catch (error) {
+				disableAudio(error);
+			}
+		},
+		{ signal }
+	);
 	addEventListener(
 		'pagehide',
 		() => {

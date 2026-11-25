@@ -53,7 +53,8 @@ function worker(
 	workerRelease = release,
 	workerBytes = bytes,
 	locksSupported = true,
-	locales = new Map<string, string>()
+	locales = new Map<string, string>(),
+	optional = new Set<string>()
 ) {
 	if (!sharedLocks.has(cacheData)) {
 		const tails = new Map<string, Promise<unknown>>();
@@ -117,7 +118,8 @@ function worker(
 	const inventory = [...workerBytes].map(([path, body]) => ({
 		path,
 		hash: createHash('sha256').update(body).digest('hex'),
-		locale: locales.get(path)
+		locale: locales.get(path),
+		optional: locales.has(path) || optional.has(path) || undefined
 	}));
 	runInNewContext(
 		`const RELEASE=${JSON.stringify(workerRelease)};const FILES=${JSON.stringify(inventory)};\n${workerSource}`,
@@ -241,20 +243,38 @@ describe('PWA release construction', () => {
 	it('includes public files and unopened lazy chunks with their exact byte hashes', () => {
 		const directory = mkdtempSync(join(tmpdir(), 'pixeldoll-pwa-'));
 		try {
+			const chunk = 'assets/audioPlayback-abc.js';
+			const studioMusic = 'assets/studio-ambient-abc123.mp3';
 			mkdirSync(join(directory, 'assets'));
 			writeFileSync(join(directory, 'index.html'), '<html>shell</html>');
 			writeFileSync(join(directory, 'assets/lazy-abc.js'), 'export default 42');
+			writeFileSync(join(directory, chunk), 'export default "audio"');
+			writeFileSync(join(directory, studioMusic), 'MP3 bytes');
 			writeFileSync(
 				join(directory, 'manifest.webmanifest'),
 				JSON.stringify({ icons: [{ src: './icons/pwa/icon-192.png' }] })
 			);
-			const result = emitPwa(directory, release);
+			const result = emitPwa(directory, release, undefined, chunk);
 			expect(result.map((file) => file.path)).toEqual([
+				chunk,
 				'assets/lazy-abc.js',
+				studioMusic,
 				'index.html?pd-build=build-b',
 				'manifest.webmanifest?pd-build=build-b'
 			]);
-			expect(result[0]!.hash).toBe(createHash('sha256').update('export default 42').digest('hex'));
+			expect(result[1]!.hash).toBe(createHash('sha256').update('export default 42').digest('hex'));
+			expect(result.filter((file) => file.optional)).toEqual([
+				{
+					path: chunk,
+					hash: createHash('sha256').update('export default "audio"').digest('hex'),
+					optional: true
+				},
+				{
+					path: studioMusic,
+					hash: createHash('sha256').update('MP3 bytes').digest('hex'),
+					optional: true
+				}
+			]);
 			expect(
 				JSON.parse(readFileSync(join(directory, 'manifest.webmanifest'), 'utf8')).icons[0].src
 			).toBe('./icons/pwa/icon-192.png?pd-build=build-b');
@@ -272,6 +292,44 @@ describe('PWA release construction', () => {
 });
 
 describe('PWA worker release safety', () => {
+	it('verifies the lazy playback chunk and content-hashed soundtrack only on demand', async () => {
+		const audio = new Map([
+			['assets/audioPlayback-abc123.js', 'export default "audio"'],
+			['assets/studio-ambient-abc123.mp3', 'MP3 bytes']
+		]);
+		const app = worker(
+			undefined,
+			release,
+			new Map([...bytes, ...audio]),
+			true,
+			undefined,
+			new Set(audio.keys())
+		);
+		await app.event('install');
+		expect(await app.message({ type: 'VERIFY', build: release.build })).toMatchObject({
+			ready: true
+		});
+		expect(await app.message({ type: 'ACTIVATE', build: release.build })).toMatchObject({
+			ready: true
+		});
+		expect(app.fetched.map(({ url }) => url).sort()).toEqual(
+			files.map(({ path }) => scope + path).sort()
+		);
+
+		const cache = await app.caches.open(prefix + release.build);
+		const get = (url: string) => app.event('fetch', { request: new Request(url) });
+		app.interceptNetwork(async () => new Response('bad network bytes'));
+		for (const path of audio.keys()) {
+			const url = scope + path;
+			expect((await get(url))!.status).toBe(503);
+			expect(await cache.match(url)).toBeUndefined();
+		}
+		app.interceptNetwork(undefined);
+		for (const [path, body] of audio) expect(await (await get(scope + path))!.text()).toBe(body);
+		app.goOffline();
+		for (const [path, body] of audio) expect(await (await get(scope + path))!.text()).toBe(body);
+	});
+
 	it('ignores optional catalogs for readiness, verifies them on demand, and retains only good bytes', async () => {
 		const path = 'assets/fr-language.js';
 		const url = scope + path;

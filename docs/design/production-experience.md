@@ -11,7 +11,8 @@ contextual wardrobe visibility, library backup, Activity, and app actions (insta
 Studio audio is enabled by default at low levels and starts after a gesture in the active tab. Settings > Audio uses
 positive switches for Play audio, Music, and Sound effects. Any switch can silence its scope while preserving the volume
 choices. People can also set either volume to zero. The Studio toolbar links directly to Audio while music is playing.
-The browser remembers the choices. The two world scores and interface cues are [original synthesized audio](audio.md).
+The browser remembers the choices. Both themes share one longer [original synthesized soundtrack](audio.md).
+The soundtrack and its player download on demand, and the interface cue buffers are synthesized only when used.
 Separate channel levels follow familiar [game audio settings](https://www.ea.com/able/resources/dead-space/dead-space/ps5/audio),
 and the positive switch wording follows [macOS sound settings](https://support.apple.com/guide/mac-help/change-the-alert-sounds-mchlp2207/mac).
 

@@ -34,8 +34,13 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	page,
 	baseURL
 }) => {
+	const audioRequests: string[] = [];
+	page.on('request', (request) => {
+		if (/audioPlayback|studio-ambient-[^/]+\.mp3/.test(request.url()))
+			audioRequests.push(request.url());
+	});
 	await page.addInitScript(() => {
-		const calls = { opened: 0, loops: 0, failed: false };
+		const calls = { opened: 0, loops: 0, musicStarts: 0, failed: false };
 		Object.defineProperty(window, 'audioTestCalls', { value: calls });
 		Object.defineProperty(window, 'AudioContext', {
 			value: class extends EventTarget {
@@ -68,9 +73,13 @@ test('Audio settings start after a gesture and preserve independent levels and m
 				createBuffer(_channels: number, frames: number, rate: number) {
 					return { duration: frames / rate, getChannelData: () => new Float32Array(frames) };
 				}
+				async decodeAudioData() {
+					return this.createBuffer(1, 240, 24_000);
+				}
 				createBufferSource() {
 					return {
 						loop: false,
+						detune: { value: 0 },
 						connect() {},
 						disconnect() {},
 						start() {
@@ -78,7 +87,10 @@ test('Audio settings start after a gesture and preserve independent levels and m
 								calls.failed = true;
 								throw new DOMException('Synthetic audio start failure', 'NotSupportedError');
 							}
-							if (this.loop) calls.loops++;
+							if (this.loop) {
+								calls.loops++;
+								calls.musicStarts++;
+							}
 						},
 						stop() {
 							if (this.loop) calls.loops--;
@@ -102,13 +114,23 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await customize.dispatchEvent('pointerdown', { pointerType: 'mouse' });
 	await expect(shortcut).toHaveCount(0);
 	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
+	expect(audioRequests).toEqual([]);
 	await enterStudio(page);
 	await expect(shortcut).toBeVisible();
+	expect(audioRequests).toEqual([
+		expect.stringMatching(/assets\/audioPlayback-.*\.js/),
+		expect.stringMatching(/assets\/studio-ambient-[^/]+\.mp3/)
+	]);
 	await expect(page.locator('.header-audio + .header-random')).toBeVisible();
 	await shortcut.click();
 	await expect(master).toBeChecked();
 	await expect(musicSwitch).toBeChecked();
 	await expect(effectsSwitch).toBeChecked();
+	await settings.getByRole('button', { name: 'Appearance', exact: true }).click();
+	await settings.getByRole('radio', { name: 'Light', exact: true }).check();
+	await settings.getByRole('button', { name: 'Audio', exact: true }).click();
+	await expect(master).toBeChecked();
+	expect(await calls()).toMatchObject({ loops: 1, musicStarts: 1 });
 	const rightEdges = await settings
 		.getByRole('switch')
 		.evaluateAll((switches) => switches.map((element) => element.getBoundingClientRect().right));
@@ -156,7 +178,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await page.evaluate(() => document.body.setAttribute('data-fail-audio', ''));
 	await tile.press('Enter');
 	await expect(tile).toHaveAttribute('aria-pressed', 'true');
-	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0, failed: true });
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1, failed: true });
 	expect(errors).toEqual([]);
 });
 
