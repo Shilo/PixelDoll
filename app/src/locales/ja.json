@@ -495,11 +495,13 @@
 		"artworkSection": "画像",
 		"movesSection": "動きと状態",
 		"outfitSection": "装備時の設定",
-		"replaceFrames": "この向きのフレームを置き換え",
+		"replaceFrames": "この向きを修復または再描画",
 		"technicalDetails": "技術詳細",
 		"openSprite": "{title}を拡大",
-		"drawForMoves": "不足フレームを描画",
-		"drawSelected": "選択項目を描画",
+		"previewContext": "{move} · {frame}/{count} フレーム",
+		"drawForMoves": "不足しているモーション用に生成",
+		"drawSelected": "選択したモーションを生成",
+		"drawMovesSelect": "モーションを1つ以上選択してください。",
 		"selectAllMoves": "すべて選択",
 		"clearSelection": "選択を解除",
 		"drawMovesHelp": "不足しているアイテムのフレームだけを描画します。PixelLab の生成料金がかかる場合があります。",
@@ -541,7 +543,6 @@
 		},
 		"coverageClipDrawn": "{move}: 描画済み",
 		"coverageClipMissing": "{move}: 未描画",
-		"madeForAnotherBodyItMayNot": "別の素体用に作られたアイテムです。位置が合わない場合があります。",
 		"itsMirroredViewsUpdateToo": "反転で作った向きのフレームも更新されます。",
 		"matchingColors": "色を合わせています…",
 		"matchItemColors": "アイテムの色を合わせる",
@@ -594,7 +595,7 @@
 		"frames": {
 			"other": "{n}フレーム"
 		},
-		"onlyFacing": "{direction}向きのときのみ",
+		"onlyFacing": "{direction}向きのときだけレイヤーを移動",
 		"tuckNote": "{slots}が表示されていても、一部が重なって見えないことがあります。",
 		"chromaKey": "キー色：{color}",
 		"qaStatus": {

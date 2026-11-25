@@ -2729,7 +2729,21 @@ function layerPlacement(itemId: string) {
 	const anim = m.rig.animations.find((x) => x.id === ui.anim);
 	if (!anim?.frames.length) return null;
 	const cell = anim.frames[ui.frame % anim.frames.length].cell;
-	const order = drawList(m, { ...doc.items, [it.slot]: itemId }, ui.anim, ui.dir, cell);
+	// An unworn item is placed as if it were worn, even when a worn item hides its category: its order can still be set
+	// before it is shown. Lend the manifest only for this draw so the saved hides stay untouched.
+	const placed =
+		doc.items[it.slot] === itemId
+			? m
+			: {
+					...m,
+					items: m.items.map((entry) => {
+						const hidden = hidesOf(m, entry);
+						return hidden.includes(it.slot)
+							? { ...entry, hides: hidden.filter((slot) => slot !== it.slot) }
+							: entry;
+					})
+				};
+	const order = drawList(placed, { ...doc.items, [it.slot]: itemId }, ui.anim, ui.dir, cell);
 	const i = order.findIndex((d) => d.item.slot === it.slot && d.layer.role === 'fg');
 	return i < 0 ? null : { order, i };
 }

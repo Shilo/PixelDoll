@@ -495,11 +495,13 @@
 		"artworkSection": "图像",
 		"movesSection": "动作与状态",
 		"outfitSection": "穿戴行为",
-		"replaceFrames": "替换此视角的帧",
+		"replaceFrames": "修复或重绘此朝向",
 		"technicalDetails": "技术详情",
 		"openSprite": "放大{title}",
-		"drawForMoves": "绘制缺失帧",
-		"drawSelected": "绘制选中项",
+		"previewContext": "{move} · 第 {frame}/{count} 帧",
+		"drawForMoves": "为缺失的动作生成",
+		"drawSelected": "生成所选动作",
+		"drawMovesSelect": "请至少选择一个动作。",
 		"selectAllMoves": "全选",
 		"clearSelection": "清除选择",
 		"drawMovesHelp": "仅绘制缺失的装备帧。PixelLab 可能收取生成费用。",
@@ -541,7 +543,6 @@
 		},
 		"coverageClipDrawn": "{move}：已绘制",
 		"coverageClipMissing": "{move}：缺少",
-		"madeForAnotherBodyItMayNot": "为另一个身体制作，可能无法对齐。",
 		"itsMirroredViewsUpdateToo": "其镜像视图也会更新。",
 		"matchingColors": "匹配颜色…",
 		"matchItemColors": "匹配装备颜色",
@@ -594,7 +595,7 @@
 		"frames": {
 			"other": "{n} 帧"
 		},
-		"onlyFacing": "仅朝向{direction}时",
+		"onlyFacing": "仅在朝向{direction}时移动图层",
 		"tuckNote": "{slots}中可见的装备可能会被部分遮挡。",
 		"chromaKey": "色键：{color}",
 		"qaStatus": {

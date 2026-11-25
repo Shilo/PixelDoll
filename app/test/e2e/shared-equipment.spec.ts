@@ -965,7 +965,7 @@ test('a copy missing frames its source item has copies them for free into the sa
 	await expect(details).toContainText(
 		`Twin has ${dropped} frames of this item that Adventurer copy lacks. Nothing is generated.`
 	);
-	await expect(details.getByRole('button', { name: /^Draw selected/ })).toHaveCount(0);
+	await expect(details.getByRole('button', { name: /^Generate selected moves/ })).toHaveCount(0);
 	await copy.click();
 	await expect(page.locator('.bu-toast').last()).toContainText(
 		`Copied ${dropped} frames of Traveling wizard hat from Twin. No generations used.`

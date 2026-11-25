@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import { setPanelOpen } from './experience/state.svelte.ts';
 	import Sheet from './Sheet.svelte';
@@ -99,6 +99,7 @@
 		EyeOff,
 		Grid2x2,
 		Layers2,
+		LoaderCircle,
 		Maximize,
 		Palette,
 		RefreshCw,
@@ -134,8 +135,11 @@
 	);
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	let wearButton = $state<HTMLButtonElement>();
+	let forwardButton = $state<HTMLButtonElement>();
+	let backwardButton = $state<HTMLButtonElement>();
 	const hiders = $derived(it ? itemHiders(it.slot) : []);
-	const hiddenNow = $derived(hiders.length > 0);
+	// Only a worn item can be hidden now. An unworn item can still be ordered before wearing it.
+	const hiddenNow = $derived(on && hiders.length > 0);
 	const neighbors = $derived(it ? itemLayerNeighbors(it.id) : null);
 	const health = $derived(m && it ? healthOf(m, it) : 'demo');
 	const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim));
@@ -157,7 +161,7 @@
 				: []
 		) ?? []
 	);
-	let expanded = $state.raw<{ image: Img; title: string } | null>(null);
+	let expanded = $state.raw<{ image: Img; title: string; note: string } | null>(null);
 	const k = $derived(
 		strip.length
 			? Math.max(1, Math.floor(Math.min(60 / strip[0].w, 72 / strip[0].h, 6) * ui.dpr))
@@ -199,6 +203,13 @@
 		gaps.filter((g) => g.startsWith(`${ui.anim}/`)).map((g) => g.split('/')[1])
 	);
 	const moveName = $derived(displayMove(ui.anim, moveRefs));
+	const previewNote = $derived(
+		t('itemPane.previewContext', {
+			move: moveName,
+			frame: number((ui.frame % (previews.length || 1)) + 1),
+			count: number(previews.length || 1)
+		})
+	);
 	const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir);
 	const repairSpec = $derived(
 		it &&
@@ -253,12 +264,15 @@
 			ui.sheet = 'move';
 		}, tier);
 	}
+	// Work already running for this item stays visible in the picker instead of leaving a lower count with no explanation.
+	const pendingMoveIds = $derived(
+		m && it ? [...new Set(pendingMoves(doc.id, it.id).map((spec) => spec.id))] : []
+	);
 	// The character's actual missing moves, regardless of their names or when they were imported.
 	const missingMoves = $derived.by(() => {
 		if (!m || !it || isDemo()) return [];
-		const pending = pendingMoves(doc.id, it.id).map((s) => s.id);
 		return missingItemMoves(m, it.id, currentItemDrawing(), 0, store.project?.images).filter(
-			(s) => !pending.includes(s.id)
+			(spec) => !pendingMoveIds.includes(spec.id)
 		);
 	});
 	// Moves whose views were all kept without poses get no offer; they are named so the user knows to make them again.
@@ -384,6 +398,8 @@
 	);
 	let artworkOpen = $state(untrack(() => restorable.length > 0));
 	let movesOpen = $state(untrack(() => !previewDirections.length && missingMoves.length > 0));
+	// Review is the first thing to read when checks found a problem.
+	let qualityOpen = $state(untrack(() => health === 'look'));
 	// A re-fit's checks were measured on the source body; its fit notes replace them. An unfitted copy keeps its source's pixels,
 	// so the source's findings (a grip in the wrong hand) still describe them.
 	const reasons = $derived(
@@ -428,6 +444,28 @@
 		} finally {
 			acceptingIssues = false;
 		}
+	}
+	// Keep the keyboard on a usable layer control when a move reaches an end or Reset removes its own button.
+	async function stepLayer(step: 1 | -1) {
+		if (!it) return;
+		moveLayer(it.id, step, onlyDir);
+		await tick();
+		const moved = step > 0 ? forwardButton : backwardButton;
+		if (moved?.disabled) {
+			const other = step > 0 ? backwardButton : forwardButton;
+			(other && !other.disabled ? other : wearButton)?.focus({ preventScroll: true });
+		}
+	}
+	async function resetOrder() {
+		if (!it) return;
+		resetLayer(it.id, ladder);
+		await tick();
+		(forwardButton && !forwardButton.disabled
+			? forwardButton
+			: backwardButton && !backwardButton.disabled
+				? backwardButton
+				: wearButton
+		)?.focus({ preventScroll: true });
 	}
 </script>
 
@@ -520,7 +558,7 @@
 								data-variant="quiet"
 								aria-haspopup="dialog"
 								aria-label={t('itemPane.openSprite', { title })}
-								onclick={() => (expanded = { image: frame, title })}
+								onclick={() => (expanded = { image: frame, title, note: previewNote })}
 							>
 								<span class="view-art" aria-hidden="true">
 									<Sprite img={frame} {k} limit={52} label={title} />
@@ -560,10 +598,6 @@
 						t
 					)}{#if !isDemo()}{' '}{t('itemPane.remakeToFit', { name: m.name })}{/if}
 				</p>{/if}
-			{#if health === 'stale'}<p class="notice warn small">
-					<TriangleAlert size={14} />{t('itemPane.madeForAnotherBodyItMayNot')}
-				</p>{/if}
-
 			{#if moveGaps.length}<p class="notice warn small">
 					<TriangleAlert size={14} />{t('itemPane.moveGaps', {
 						move: moveName,
@@ -585,6 +619,90 @@
 				</p>
 			{/if}
 			<div class="item-sections">
+				{#if designReasons.length || reasons.length || notes.length || health === 'look' || health === 'accepted'}
+					<details class="bu-details item-disclosure" bind:open={qualityOpen}>
+						{@render sectionTitle(t('itemPane.qualityChecks'))}
+						<div class="stack">
+							<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
+							<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
+							{#if designReasons.length && !it.refit}
+								<div class="field">
+									<span class="sec-title">{t('itemPane.acceptedAppearanceWarnings')}</span>
+									<ul class="reasons small">
+										{#each designReasons as reason (reason)}<li>
+												<TriangleAlert size={12} />{reason}
+											</li>{/each}
+									</ul>
+								</div>
+							{/if}
+							{#if (health === 'look' || health === 'unfitted' || health === 'accepted') && reasons.length}
+								<ul class="reasons small">
+									{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}
+								</ul>
+							{/if}
+							{#if notes.length}
+								<div class="field">
+									<p class="small" id="refit-{it.id}">
+										{t('itemPane.refitIntro', {
+											from: it.copiedFrom?.name ?? t('studioModel.anotherCharacter')
+										})}
+									</p>
+									<ul class="refit-notes" aria-labelledby="refit-{it.id}">
+										{#each notes as note (note.text)}<li>
+												<button
+													class="bu-action btn sm plain"
+													data-variant="quiet"
+													title={t('itemPane.titleShowThisFrame')}
+													onclick={() => {
+														showFrame(note.anim, note.dir, note.frame);
+														// The details sheet covers the stage: close it to show the frame.
+														if (ui.sheet === 'item') ui.sheet = null;
+													}}><TriangleAlert size={12} />{note.text}</button
+												>
+											</li>{/each}
+									</ul>
+								</div>
+							{/if}
+							<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
+							{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail')}
+								<div class="field">
+									<!-- "Accept it as it is" is not on offer when keeping is refused, so only the refusal speaks. -->
+									{#if !(gaps.length && keepRefusal)}<p class="notice warn small">
+											{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
+										</p>{/if}
+									{#if gaps.length && keepRefusal}
+										<!-- Says why it cannot be kept as it is: the missing frames are the way on, offered below. -->
+										<p class="small">{displayMessage(errorMessage(keepRefusal))}</p>
+									{:else if gaps.length}<button
+											class="bu-action btn"
+											data-variant="outline"
+											disabled={acceptingIssues || acceptWaits}
+											onclick={() => acceptIssues(true)}>{t('itemPane.keepWithoutMoves')}</button
+										>
+										<p class="faint small">
+											{t('itemPane.keepWithoutMovesDetail', {
+												moves: formatList(keepWithout.map((move) => displayMove(move, moveRefs)))
+											})}
+										</p>
+									{:else}<button
+											class="bu-action btn"
+											data-variant="outline"
+											disabled={acceptingIssues || acceptWaits}
+											onclick={() => acceptIssues()}>{t('itemPane.acceptAsIs')}</button
+										>
+										<p class="faint small">
+											{t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits')}
+										</p>{/if}
+									{#if acceptanceError}<p class="notice bad small" role="alert">
+											{displayMessage(acceptanceError)}<ReportButton error={acceptanceError} />
+										</p>{/if}
+								</div>
+							{:else if health === 'accepted'}
+								<p class="muted small">{t('itemPane.youAcceptedThisArtworkWithItsRecorded')}</p>
+							{/if}
+						</div>
+					</details>
+				{/if}
 				<details class="bu-details item-disclosure" bind:open={artworkOpen}>
 					{@render sectionTitle(t('itemPane.artworkSection'))}
 					<div class="stack">
@@ -821,7 +939,10 @@
 								</div>
 							{/if}
 
-							{#if missingMoves.length && !(freeFrames && it.copiedFrom && !isDemo())}
+							{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
+									{displayNestedMessage(note)}
+								</p>{/each}
+							{#if (missingMoves.length || pendingMoveIds.length) && !(freeFrames && it.copiedFrom && !isDemo())}
 								<fieldset class="move-picker">
 									<legend>{t('itemPane.drawForMoves')}</legend>
 									{#if availableMoves.length > 1}
@@ -855,40 +976,52 @@
 											>
 										</label>
 									{/each}
+									{#each pendingMoveIds as id (id)}
+										<div class="move-choice pending">
+											<LoaderCircle size={14} aria-hidden="true" />
+											<span>{displayMove(id, moveRefs)}</span>
+											<span class="muted">{t('activity.inProgress')}</span>
+										</div>
+									{/each}
 								</fieldset>
-								{#if missingOffer?.error}<p class="notice warn small" role="status">
-										{displayMessage(missingOffer.error)}
-									</p>{/if}
-								{#each missingOffer?.unposed ?? [] as note, i (i)}
-									<p class="notice warn small">{displayNestedMessage(note)}</p>
-								{/each}
-								<PoseIssues issues={missingOffer?.poseIssues ?? []} />
-								{#if missingTier}<TierNotice
-										id="item-missing-tier"
-										minimumTier={missingTier}
-										feature={t('itemPane.makingMoreMoves')}
-									/>{/if}
-								<div class="paid-action">
-									<p class="muted small" id="item-missing-help">{t('itemPane.drawMovesHelp')}</p>
-									<button
-										class="bu-action btn"
-										data-variant="primary"
-										disabled={missingOffer?.gens == null || tierBlocked(missingTier)}
-										aria-describedby={tierBlocked(missingTier)
-											? 'item-missing-tier'
-											: 'item-missing-help'}
-										onclick={makeMissing}
-									>
-										{t('itemPane.drawSelected')}
-										{#if missingOffer?.gens != null}<span class="cost"
-												>{t('moves.estimate', { gens: number(Math.ceil(missingOffer.gens)) })}</span
-											>{/if}
-									</button>
-								</div>
+								{#if missingMoves.length}
+									{#if missingOffer?.error}<p class="notice warn small" role="status">
+											{displayMessage(missingOffer.error)}
+										</p>{/if}
+									{#each missingOffer?.unposed ?? [] as note, i (i)}
+										<p class="notice warn small">{displayNestedMessage(note)}</p>
+									{/each}
+									<PoseIssues issues={missingOffer?.poseIssues ?? []} />
+									{#if missingTier}<TierNotice
+											id="item-missing-tier"
+											minimumTier={missingTier}
+											feature={t('itemPane.makingMoreMoves')}
+										/>{/if}
+									<div class="paid-action">
+										<p class="muted small" id="item-missing-help">
+											{selectedSpecs.length || !availableMoves.length
+												? t('itemPane.drawMovesHelp')
+												: t('itemPane.drawMovesSelect')}
+										</p>
+										<button
+											class="bu-action btn"
+											data-variant="primary"
+											disabled={missingOffer?.gens == null || tierBlocked(missingTier)}
+											aria-describedby={tierBlocked(missingTier)
+												? 'item-missing-tier'
+												: 'item-missing-help'}
+											onclick={makeMissing}
+										>
+											{t('itemPane.drawSelected')}
+											{#if missingOffer?.gens != null}<span class="cost"
+													>{t('moves.estimate', {
+														gens: number(Math.ceil(missingOffer.gens))
+													})}</span
+												>{/if}
+										</button>
+									</div>
+								{/if}
 							{/if}
-							{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
-									{displayNestedMessage(note)}
-								</p>{/each}
 							{#if coverage.length}
 								<div class="field">
 									<span class="sec-title">{t('itemPane.coverageTitle')}</span>
@@ -925,26 +1058,26 @@
 							<div class="layer-heading">
 								<h3><Layers2 size={16} aria-hidden="true" />{t('itemPane.layerOrder')}</h3>
 								{#if customOrder}
-									<button
-										class="bu-action btn sm plain"
-										data-variant="quiet"
-										onclick={() => resetLayer(it.id, ladder)}>{t('itemPane.reset')}</button
+									<button class="bu-action btn sm plain" data-variant="quiet" onclick={resetOrder}
+										>{t('itemPane.reset')}</button
 									>
 								{/if}
 							</div>
 							<div class="layer-actions">
 								<button
+									bind:this={backwardButton}
 									class="bu-action btn"
 									data-variant="outline"
 									disabled={!neighbors?.behind}
-									onclick={() => moveLayer(it.id, -1, onlyDir)}
+									onclick={() => stepLayer(-1)}
 									><ArrowDown size={16} />{t('itemPane.sendBackward')}</button
 								>
 								<button
+									bind:this={forwardButton}
 									class="bu-action btn"
 									data-variant="outline"
 									disabled={!neighbors?.ahead}
-									onclick={() => moveLayer(it.id, 1, onlyDir)}
+									onclick={() => stepLayer(1)}
 									><ArrowUp size={16} />{t('itemPane.bringForward')}</button
 								>
 							</div>
@@ -1000,90 +1133,6 @@
 						{/if}
 					</div>
 				</details>
-				{#if designReasons.length || reasons.length || notes.length || health === 'look' || health === 'accepted'}
-					<details class="bu-details item-disclosure">
-						{@render sectionTitle(t('itemPane.qualityChecks'))}
-						<div class="stack">
-							<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
-							<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
-							{#if designReasons.length && !it.refit}
-								<div class="field">
-									<span class="sec-title">{t('itemPane.acceptedAppearanceWarnings')}</span>
-									<ul class="reasons small">
-										{#each designReasons as reason (reason)}<li>
-												<TriangleAlert size={12} />{reason}
-											</li>{/each}
-									</ul>
-								</div>
-							{/if}
-							{#if (health === 'look' || health === 'unfitted' || health === 'accepted') && reasons.length}
-								<ul class="reasons small">
-									{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}
-								</ul>
-							{/if}
-							{#if notes.length}
-								<div class="field">
-									<p class="small" id="refit-{it.id}">
-										{t('itemPane.refitIntro', {
-											from: it.copiedFrom?.name ?? t('studioModel.anotherCharacter')
-										})}
-									</p>
-									<ul class="refit-notes" aria-labelledby="refit-{it.id}">
-										{#each notes as note (note.text)}<li>
-												<button
-													class="bu-action btn sm plain"
-													data-variant="quiet"
-													title={t('itemPane.titleShowThisFrame')}
-													onclick={() => {
-														showFrame(note.anim, note.dir, note.frame);
-														// The details sheet covers the stage: close it to show the frame.
-														if (ui.sheet === 'item') ui.sheet = null;
-													}}><TriangleAlert size={12} />{note.text}</button
-												>
-											</li>{/each}
-									</ul>
-								</div>
-							{/if}
-							<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
-							{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail')}
-								<div class="field">
-									<!-- "Accept it as it is" is not on offer when keeping is refused, so only the refusal speaks. -->
-									{#if !(gaps.length && keepRefusal)}<p class="notice warn small">
-											{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
-										</p>{/if}
-									{#if gaps.length && keepRefusal}
-										<!-- Says why it cannot be kept as it is: the missing frames are the way on, offered below. -->
-										<p class="small">{displayMessage(errorMessage(keepRefusal))}</p>
-									{:else if gaps.length}<button
-											class="bu-action btn"
-											data-variant="outline"
-											disabled={acceptingIssues || acceptWaits}
-											onclick={() => acceptIssues(true)}>{t('itemPane.keepWithoutMoves')}</button
-										>
-										<p class="faint small">
-											{t('itemPane.keepWithoutMovesDetail', {
-												moves: formatList(keepWithout.map((move) => displayMove(move, moveRefs)))
-											})}
-										</p>
-									{:else}<button
-											class="bu-action btn"
-											data-variant="outline"
-											disabled={acceptingIssues || acceptWaits}
-											onclick={() => acceptIssues()}>{t('itemPane.acceptAsIs')}</button
-										>
-										<p class="faint small">
-											{t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits')}
-										</p>{/if}
-									{#if acceptanceError}<p class="notice bad small" role="alert">
-											{displayMessage(acceptanceError)}<ReportButton error={acceptanceError} />
-										</p>{/if}
-								</div>
-							{:else if health === 'accepted'}
-								<p class="muted small">{t('itemPane.youAcceptedThisArtworkWithItsRecorded')}</p>
-							{/if}
-						</div>
-					</details>
-				{/if}
 				<details class="bu-details item-disclosure">
 					{@render sectionTitle(t('itemPane.howItWasMade'))}
 					<div><GenerationDetails {m} {it} /></div>
@@ -1374,6 +1423,9 @@
 	}
 	.move-choice span {
 		overflow-wrap: anywhere;
+	}
+	.move-choice.pending {
+		color: var(--text-2);
 	}
 	.paid-action {
 		flex-wrap: wrap;

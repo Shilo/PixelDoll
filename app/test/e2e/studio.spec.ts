@@ -3495,6 +3495,8 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 			for (const b of sample.sprites) {
 				expect(b.x).toBeGreaterThanOrEqual(sample.strip.x);
 				expect(b.x + b.width).toBeLessThanOrEqual(sample.strip.x + sample.strip.width);
+				expect(b.y).toBeGreaterThanOrEqual(sample.strip.y);
+				expect(b.y + b.height).toBeLessThanOrEqual(sample.strip.y + sample.strip.height);
 			}
 		}
 		expect(new Set(geometry.filter((_, i) => i % 2 === 0)).size).toBe(1);
@@ -3507,8 +3509,20 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.keyboard.press('Enter');
 	const spritePreview = page.getByRole('dialog', { name: 'Red cape facing South', exact: true });
 	await expect(spritePreview.getByRole('img')).toBeVisible();
+	await expect(spritePreview.locator('.preview-context')).toContainText(
+		/^Walk · frame \d+ of \d+$/
+	);
 	await expect(inspector).toBeVisible();
+	const viewport = page.viewportSize()!;
+	const previewBox = (await spritePreview.boundingBox())!;
+	expect(Math.round(previewBox.width)).toBe(viewport.width);
+	expect(Math.round(previewBox.height)).toBe(viewport.height);
 	await page.keyboard.press('Escape');
+	await expect(spritePreview).toHaveCount(0);
+	await expect(southView).toBeFocused();
+	await southView.click();
+	await expect(spritePreview).toBeVisible();
+	await spritePreview.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(spritePreview).toHaveCount(0);
 	await expect(southView).toBeFocused();
 	await southView.click();
@@ -8654,7 +8668,7 @@ test('targeted move replacement names mirrored effects without offering a separa
 async function openFrameReplacement(details: Locator) {
 	await expect(details).toBeVisible();
 	await openItemSection(details, 'Artwork');
-	await openItemSection(details, 'Replace frames for this view');
+	await openItemSection(details, 'Repair or redraw this view');
 }
 
 test('stage makes all missing item views while explicit repair stays on the current view', async ({
@@ -9259,7 +9273,7 @@ test('the item sheet offers one priced edit-images-v2 request and holds its resu
 		}, projectId);
 	const pane = await selectedItemDetails(page);
 	await openItemSection(pane, 'Moves & States');
-	const make = pane.getByRole('button', { name: /^Draw selected/ });
+	const make = pane.getByRole('button', { name: /^Generate selected moves/ });
 	await expect(make).toContainText(`~${gens} gens`);
 	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
 	const api = page.getByRole('dialog', { name: 'API calls', exact: true });
@@ -9364,7 +9378,9 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 		.getByRole('button', { name: /^Make missing views/ });
 	await expect(stageMake).toContainText('~10 gens');
 	await openItemSection(await selectedItemDetails(page), 'Moves & States');
-	await expect(page.getByRole('button', { name: /^Draw selected/ })).toContainText('~10 gens');
+	await expect(page.getByRole('button', { name: /^Generate selected moves/ })).toContainText(
+		'~10 gens'
+	);
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path),
@@ -9381,8 +9397,10 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 	// A held item cannot use the frozen grid. It used to be refused here; it is now priced on its measured joints with the
 	// suspicious frames named on the quote before anything is bought.
 	await openItemSection(page.locator('dialog.item-detail[open]'), 'Moves & States');
-	await expect(page.getByRole('button', { name: /^Draw selected/ })).toBeEnabled();
-	await expect(page.getByRole('button', { name: /^Draw selected/ })).toContainText('gens');
+	await expect(page.getByRole('button', { name: /^Generate selected moves/ })).toBeEnabled();
+	await expect(page.getByRole('button', { name: /^Generate selected moves/ })).toContainText(
+		'gens'
+	);
 	await expect(
 		page.locator('.notice').filter({ hasText: 'Some measured joints look unusual' }).first()
 	).toContainText('frame 2');
@@ -10409,7 +10427,7 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	await openItemSection(pane, 'Moves & States');
 	const walk = pane.getByRole('checkbox', { name: /^Custom walk/ });
 	const punch = pane.getByRole('checkbox', { name: /^Custom cross punch/ });
-	const draw = pane.getByRole('button', { name: /^Draw selected/ });
+	const draw = pane.getByRole('button', { name: /^Generate selected moves/ });
 	await expect(walk).toBeChecked();
 	await expect(punch).not.toBeChecked();
 	await expect(draw).toContainText('~12 gens');
@@ -10426,6 +10444,7 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	await expect(draw).toContainText('~15 gens');
 	await pane.getByRole('button', { name: 'Clear selection', exact: true }).click();
 	await expect(draw).toBeDisabled();
+	await expect(pane.locator('#item-missing-help')).toHaveText('Select at least one move.');
 	await walk.check();
 	await punch.check();
 	await draw.click();
@@ -10455,7 +10474,9 @@ test('standing-first items quote standing and draw selected custom moves togethe
 		);
 		(await import(path)).noteCreationSettings();
 	});
-	await expect(pane.getByRole('button', { name: /^Draw selected/ })).not.toContainText('~12 gens');
+	await expect(pane.getByRole('button', { name: /^Generate selected moves/ })).not.toContainText(
+		'~12 gens'
+	);
 	await peekCalls('/edit-animation-v2', '/animate-with-skeleton-v3');
 	await punch.check();
 	await draw.click();
@@ -11897,7 +11918,9 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 	await expect(backward).toBeEnabled();
 	const before = await headLayerOverrides(page);
 	const [south, east] = await headDepths(page);
-	const direction = details.getByRole('switch', { name: 'Only when facing South' });
+	const direction = details.getByRole('switch', {
+		name: 'Only move the layer when facing South'
+	});
 	await direction.check();
 	await backward.click();
 	const [southOnly, eastOnly] = await headDepths(page);
@@ -11935,6 +11958,22 @@ test('layer order explains why a hidden item cannot be reordered', async ({ page
 	await expect(
 		details.getByText(/Another worn item hides this one, so its layer order cannot change here/)
 	).toBeVisible();
+});
+
+test('an unworn item in a hidden category is not called hidden and keeps its order controls', async ({
+	page
+}, info) => {
+	await editableCopy(page, devBaseURL(info));
+	await hideHairWithHelmet(page);
+	// The helmet still hides Hair, but no hair item is worn now.
+	await section(page, 'Hair').getByRole('button', { name: 'Empty hair', exact: true }).click();
+	await expect.poll(() => wornItem(page, 'hair')).toBe(null);
+	const details = await openItemDetails(page, 'Messy brown hair');
+	await expect(details.getByText(/^Hidden by /)).toHaveCount(0);
+	await openItemSection(details, 'Outfit behavior');
+	await expect(details.getByRole('button', { name: 'Bring forward', exact: true })).toBeEnabled();
+	await expect(details.getByRole('button', { name: 'Send backward', exact: true })).toBeEnabled();
+	await expect(details.getByText(/Another worn item hides this one/)).toHaveCount(0);
 });
 
 for (const width of [1280, 390])

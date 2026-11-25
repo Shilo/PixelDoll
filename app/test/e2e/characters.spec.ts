@@ -2138,7 +2138,9 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 	await pickItem(page, 'Leather vest');
 	const pane = await selectedItemDetails(page);
 	await openItemSection(pane, 'Moves & States');
-	await expect(pane.getByRole('button', { name: /^Draw selected/ })).toContainText('~10 gens');
+	await expect(pane.getByRole('button', { name: /^Generate selected moves/ })).toContainText(
+		'~10 gens'
+	);
 	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
 	const frozen = api.locator('.peek-call').filter({ hasText: planned.extension[0].label });
 	await expect(frozen).toHaveCount(1);
@@ -2194,8 +2196,15 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await pickItem(page, garmentName);
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.badge.look')).toContainText('Needs a look');
-	// The notes sit in the quality checks disclosure, one intentional step from the summary.
+	// Review comes first and is already open when checks found an issue.
 	const itemPane = page.locator('dialog.item-detail[open]');
+	await expect(itemPane.locator('summary').first()).toContainText('Quality checks');
+	const quality = itemPane
+		.locator('summary')
+		.filter({ hasText: 'Quality checks' })
+		.first()
+		.locator('xpath=..');
+	await expect(quality).toHaveAttribute('open', '');
 	await openItemSection(itemPane, 'Quality checks');
 	await expect(
 		itemPane.getByText('Some lower clothing is missing compared with the standing design', {

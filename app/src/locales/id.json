@@ -495,11 +495,13 @@
 		"artworkSection": "Gambar",
 		"movesSection": "Gerakan dan keadaan",
 		"outfitSection": "Perilaku pakaian",
-		"replaceFrames": "Ganti bingkai tampilan ini",
+		"replaceFrames": "Perbaiki atau gambar ulang tampilan ini",
 		"technicalDetails": "Detail teknis",
 		"openSprite": "Perbesar {title}",
-		"drawForMoves": "Gambar bingkai yang hilang",
-		"drawSelected": "Gambar yang dipilih",
+		"previewContext": "{move} · bingkai {frame} dari {count}",
+		"drawForMoves": "Buat untuk gerakan yang hilang",
+		"drawSelected": "Buat gerakan terpilih",
+		"drawMovesSelect": "Pilih setidaknya satu gerakan.",
 		"selectAllMoves": "Pilih semua",
 		"clearSelection": "Hapus pilihan",
 		"drawMovesHelp": "Hanya menggambar bingkai item yang hilang. PixelLab dapat mengenakan biaya pembuatan.",
@@ -541,7 +543,6 @@
 		},
 		"coverageClipDrawn": "{move}: sudah digambar",
 		"coverageClipMissing": "{move}: belum ada",
-		"madeForAnotherBodyItMayNot": "Dibuat untuk tubuh lain. Letaknya mungkin tidak pas.",
 		"itsMirroredViewsUpdateToo": "Tampilan cerminnya juga diperbarui.",
 		"matchingColors": "Mencocokkan warna…",
 		"matchItemColors": "Cocokkan warna item",
@@ -594,7 +595,7 @@
 		"frames": {
 			"other": "{n} frame"
 		},
-		"onlyFacing": "Hanya saat menghadap {direction}",
+		"onlyFacing": "Pindahkan lapisan hanya saat menghadap {direction}",
 		"tuckNote": "Item yang terlihat di {slots} mungkin tertutup sebagian.",
 		"chromaKey": "Warna kunci {color}",
 		"qaStatus": {

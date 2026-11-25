@@ -495,11 +495,13 @@
 		"artworkSection": "아트워크",
 		"movesSection": "동작 및 상태",
 		"outfitSection": "의상 동작",
-		"replaceFrames": "이 방향의 프레임 교체",
+		"replaceFrames": "이 방향 복구 또는 다시 그리기",
 		"technicalDetails": "기술 세부 정보",
 		"openSprite": "{title} 확대",
-		"drawForMoves": "누락된 프레임 그리기",
-		"drawSelected": "선택 항목 그리기",
+		"previewContext": "{move} · {frame}/{count} 프레임",
+		"drawForMoves": "누락된 동작용으로 생성",
+		"drawSelected": "선택한 동작 생성",
+		"drawMovesSelect": "동작을 하나 이상 선택하세요.",
 		"selectAllMoves": "모두 선택",
 		"clearSelection": "선택 해제",
 		"drawMovesHelp": "누락된 아이템 프레임만 그립니다. PixelLab에서 생성 비용이 청구될 수 있습니다.",
@@ -541,7 +543,6 @@
 		},
 		"coverageClipDrawn": "{move}: 그려짐",
 		"coverageClipMissing": "{move}: 누락",
-		"madeForAnotherBodyItMayNot": "다른 몸체용으로 만들어졌어요. 정렬이 맞지 않을 수 있어요.",
 		"itsMirroredViewsUpdateToo": "대칭으로 복사된 뷰도 함께 업데이트돼요.",
 		"matchingColors": "색상 맞추는 중…",
 		"matchItemColors": "아이템 색상 맞추기",
@@ -594,7 +595,7 @@
 		"frames": {
 			"other": "프레임 {n}개"
 		},
-		"onlyFacing": "{direction} 방향일 때만",
+		"onlyFacing": "{direction} 방향일 때만 레이어 이동",
 		"tuckNote": "{slots}의 보이는 아이템이 일부 가려질 수 있습니다.",
 		"chromaKey": "{color} 키",
 		"qaStatus": {

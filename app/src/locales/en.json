@@ -504,11 +504,13 @@
 		"artworkSection": "Artwork",
 		"movesSection": "Moves & States",
 		"outfitSection": "Outfit behavior",
-		"replaceFrames": "Replace frames for this view",
+		"replaceFrames": "Repair or redraw this view",
 		"technicalDetails": "Technical details",
 		"openSprite": "Enlarge {title}",
-		"drawForMoves": "Draw missing frames",
-		"drawSelected": "Draw selected",
+		"previewContext": "{move} · frame {frame} of {count}",
+		"drawForMoves": "Generate for missing moves",
+		"drawSelected": "Generate selected moves",
+		"drawMovesSelect": "Select at least one move.",
 		"selectAllMoves": "Select all",
 		"clearSelection": "Clear selection",
 		"drawMovesHelp": "Draws only missing item frames. PixelLab may charge for generation.",
@@ -553,7 +555,6 @@
 		},
 		"coverageClipDrawn": "{move}: drawn",
 		"coverageClipMissing": "{move}: missing",
-		"madeForAnotherBodyItMayNot": "Made for another body. It may not line up.",
 		"itsMirroredViewsUpdateToo": "Its mirrored views update too.",
 		"matchingColors": "Matching colors…",
 		"matchItemColors": "Match item colors",
@@ -611,7 +612,7 @@
 			"one": "{n} frame",
 			"other": "{n} frames"
 		},
-		"onlyFacing": "Only when facing {direction}",
+		"onlyFacing": "Only move the layer when facing {direction}",
 		"tuckNote": "Visible items in {slots} may be partly covered.",
 		"chromaKey": "{color} key",
 		"qaStatus": {
@@ -3473,7 +3474,9 @@
 			"other": "{n} unpriced calls"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Report",
 		"actionLabel": "Report this problem",
