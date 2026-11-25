@@ -532,10 +532,7 @@
 		"hiddenByAnotherItem": "Von einem anderen Gegenstand verdeckt",
 		"hiddenByItem": "Verdeckt von {name}",
 		"showName": "{name} anzeigen",
-		"notWorn": "Nicht getragen",
 		"qualityChecks": "Qualitätsprüfungen",
-		"customize": "Anpassen",
-		"itemActions": "Gegenstandsaktionen",
 		"layerHiddenHint": "Ein anderer getragener Gegenstand verdeckt diesen, daher lässt sich die Ebenenreihenfolge hier nicht ändern. Zeige ihn zuerst an.",
 		"nameInEveryDirection": "{name} in allen Blickrichtungen",
 		"labelNameFacingId": "{name}, Blickrichtung: {id}",
@@ -548,7 +545,6 @@
 		"keepWithoutMoves": "Ohne diese Animationen behalten",
 		"keepWithoutMovesDetail": "Behält den Gegenstand aus seinen vollständigen Animationen, ohne Guthaben zu verbrauchen. In {moves} ist er ausgeblendet; diese bleiben als fehlend aufgeführt, damit du sie später zu ihrem eigenen Preis erstellen kannst.",
 		"youAcceptedThisArtworkWithItsRecorded": "Du hast diese Grafik mit den festgehaltenen Qualitätshinweisen übernommen.",
-		"generateItemForMove": "Gegenstand für Animation generieren",
 		"coverageTitle": "Animationsabdeckung",
 		"coverageAllDrawn": "In jeder Animation und jedem Zustand gezeichnet",
 		"coverageMissing": {
@@ -557,25 +553,14 @@
 		},
 		"coverageClipDrawn": "{move}: gezeichnet",
 		"coverageClipMissing": "{move}: fehlt",
-		"fillMissingMoves": "Fehlende Animationen füllen",
-		"fillMissingHint": {
-			"one": "Zeichnet diesen Gegenstand für {n} fehlende Animation in einem Angebot, aus dem stehenden Design.",
-			"other": "Zeichnet diesen Gegenstand für alle {n} fehlenden Animationen in einem Angebot, aus dem stehenden Design."
-		},
-		"labelMakeNameForMissingName": "{name} für {missingName} erstellen",
-		"generatesOnlyThisItemSMissingViews": "Generiert nur die fehlenden Ansichten dieses Gegenstands für die gewählte Animation und verwendet dabei sein Design aus der Standpose. Der Grundkörper bleibt unverändert. PixelLab kann Kosten in US-Dollar berechnen. Die Wartezeit kann variieren.",
 		"madeForAnotherBodyItMayNot": "Für einen anderen Grundkörper erstellt. Passt möglicherweise nicht genau.",
 		"itsMirroredViewsUpdateToo": "Die gespiegelten Ansichten werden ebenfalls aktualisiert.",
 		"matchingColors": "Farben werden abgeglichen…",
 		"matchItemColors": "Gegenstandsfarben abgleichen",
 		"recolor": "Umfärben",
 		"layerOrder": "Ebenenreihenfolge",
-		"titleDrawInFrontOfTheNext": "Vor der nächsten Ebene zeichnen",
-		"forward": "Nach vorn",
-		"titleDrawBehindThePreviousLayer": "Hinter der vorherigen Ebene zeichnen",
-		"backward": "Nach hinten",
 		"reset": "Zurücksetzen",
-		"whenWornHide": "Beim Anlegen ausblenden",
+		"whenWornHide": "Kategorien beim Tragen ausblenden",
 		"howItWasMade": "So wurde der Gegenstand erstellt",
 		"iD": "ID",
 		"slot": "Ausrüstungsplatz",
@@ -605,7 +590,6 @@
 			"one": "{from} hat {n} Frame dieses Gegenstands, der bei {name} fehlt. Es wird nichts generiert.",
 			"other": "{from} hat {n} Frames dieses Gegenstands, die bei {name} fehlen. Es wird nichts generiert."
 		},
-		"makeFor": "Für {move} erstellen",
 		"makingMoreMoves": "Gegenstände werden für weitere Animationen erstellt",
 		"colorMatchNote": {
 			"one": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherter Frame in {move}, Blickrichtung {direction}.",
@@ -628,8 +612,7 @@
 			"other": "{n} Frames"
 		},
 		"onlyFacing": "Nur in Blickrichtung {direction}",
-		"hideWhenWorn": "Markierte Gegenstände werden ausgeblendet, solange {name} angelegt ist.",
-		"tuckNote": "Ohne Häkchen liegt {slots} darunter: Sichtbar bleibt nur, was unter der Krempe hervorschaut. Setze das Häkchen für Kapuzen und Vollmasken.",
+		"tuckNote": "Sichtbare Objekte in {slots} können teilweise bedeckt sein.",
 		"chromaKey": "Key-Farbe: {color}",
 		"qaStatus": {
 			"pass": "bestanden",

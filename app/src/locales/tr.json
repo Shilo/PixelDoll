@@ -532,10 +532,7 @@
 		"hiddenByAnotherItem": "Başka bir eşya tarafından gizleniyor",
 		"hiddenByItem": "{name} tarafından gizleniyor",
 		"showName": "{name} öğesini göster",
-		"notWorn": "Giyili değil",
 		"qualityChecks": "Kalite kontrolleri",
-		"customize": "Özelleştir",
-		"itemActions": "Eşya işlemleri",
 		"layerHiddenHint": "Giyilen başka bir eşya bunu gizliyor, bu yüzden katman sırası burada değiştirilemez. Önce gösterin.",
 		"nameInEveryDirection": "{name}, tüm yönler",
 		"labelNameFacingId": "{name}, yön: {id}",
@@ -548,7 +545,6 @@
 		"keepWithoutMoves": "Bu animasyonlar olmadan tut",
 		"keepWithoutMovesDetail": "Kredi harcamadan eşyayı tamamlanmış animasyonlarıyla tutar. {moves} içinde gizlenir; bunlar, daha sonra kendi fiyatlarıyla oluşturabilmeniz için eksik olarak listelenmeye devam eder.",
 		"youAcceptedThisArtworkWithItsRecorded": "Bu görseli kayıtlı kalite notlarıyla birlikte kabul ettiniz.",
-		"generateItemForMove": "Animasyon için eşya üretin",
 		"coverageTitle": "Animasyon kapsamı",
 		"coverageAllDrawn": "Her animasyon ve durumda çizildi",
 		"coverageMissing": {
@@ -557,25 +553,14 @@
 		},
 		"coverageClipDrawn": "{move}: çizildi",
 		"coverageClipMissing": "{move}: eksik",
-		"fillMissingMoves": "Eksik animasyonları tamamla",
-		"fillMissingHint": {
-			"one": "Bu eşyayı ayakta duruş tasarımını yeniden kullanarak eksik {n} animasyon için tek teklifte çizer.",
-			"other": "Bu eşyayı ayakta duruş tasarımını yeniden kullanarak eksik {n} animasyonun tümü için tek teklifte çizer."
-		},
-		"labelMakeNameForMissingName": "{missingName} için şu eşyayı üretin: {name}",
-		"generatesOnlyThisItemSMissingViews": "Duruş tasarımını yeniden kullanarak yalnızca seçilen animasyondaki eksik eşya görünümlerini üretir. Gövde olduğu gibi kalır. PixelLab dolar cinsinden ücret alabilir; bekleme süresi değişir.",
 		"madeForAnotherBodyItMayNot": "Başka bir gövde için yapılmış. Tam oturmayabilir.",
 		"itsMirroredViewsUpdateToo": "Aynalanmış görünümler de güncellenir.",
 		"matchingColors": "Renkler eşleştiriliyor…",
 		"matchItemColors": "Eşya renklerini eşleştirin",
 		"recolor": "Renkleri değiştirin",
 		"layerOrder": "Katman sırası",
-		"titleDrawInFrontOfTheNext": "Sonraki katmanın önünde çizin",
-		"forward": "Öne alın",
-		"titleDrawBehindThePreviousLayer": "Önceki katmanın arkasında çizin",
-		"backward": "Arkaya alın",
 		"reset": "Sıfırlayın",
-		"whenWornHide": "Giyildiğinde gizleyin",
+		"whenWornHide": "Takıldığında kategorileri gizle",
 		"howItWasMade": "Nasıl yapıldı?",
 		"iD": "ID",
 		"slot": "Ekipman yuvası",
@@ -605,7 +590,6 @@
 			"one": "{from} karakterinde bu eşyaya ait, {name} karakterinde eksik olan {n} kare var. Yeni üretim yapılmaz.",
 			"other": "{from} karakterinde bu eşyaya ait, {name} karakterinde eksik olan {n} kare var. Yeni üretim yapılmaz."
 		},
-		"makeFor": "{move} için üretin",
 		"makingMoreMoves": "Eşya başka animasyonlar için hazırlanıyor",
 		"colorMatchNote": {
 			"one": "{move} animasyonunun {direction} yönünde kayıtlı {n} karedeki şu pikselleri eşyanın mevcut paletiyle eşleştirin: {pixels}.",
@@ -628,8 +612,7 @@
 			"other": "{n} kare"
 		},
 		"onlyFacing": "Yalnızca şu yöne bakarken: {direction}",
-		"hideWhenWorn": "{name} giyildiğinde işaretli eşyalar gizlenir.",
-		"tuckNote": "İşaretlenmemiş {slots} altta kalır; yalnızca siperliğin altından sarkan bölüm görünür. Kapüşonlar ve tam yüz maskeleri için bu seçeneği işaretleyin.",
+		"tuckNote": "{slots} içindeki görünür eşyalar kısmen örtülebilir.",
 		"chromaKey": "Anahtar rengi: {color}",
 		"qaStatus": {
 			"pass": "geçti",

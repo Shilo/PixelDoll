@@ -46,6 +46,7 @@ import {
 	equipped,
 	handHides,
 	handSide,
+	hiddenSlots,
 	hidesOf,
 	oppositeHands,
 	settleHands,
@@ -2666,11 +2667,26 @@ const hideTargets = (m: Manifest, it: Item) =>
 const withoutHide = (m: Manifest, it: Item, slot: string) =>
 	hideTargets(m, it).filter((target) => !handHides(m, it.slot, [target]).includes(slot));
 
+export function itemHiders(slot: string) {
+	const m = store.project!.manifest;
+	const worn = equipped(m, doc.items);
+	if (!hiddenSlots(m, worn).has(slot)) return [];
+	const candidates = worn.filter((it) => it.slot !== slot && hidesOf(m, it).includes(slot));
+	if (candidates.length < 2) return candidates;
+	// Test each rule in the same outfit with the other rules for this slot set aside.
+	return candidates.filter((hider) =>
+		hiddenSlots(
+			m,
+			worn.map((it) =>
+				it !== hider && candidates.includes(it) ? { ...it, hides: withoutHide(m, it, slot) } : it
+			)
+		).has(slot)
+	);
+}
+
 export function showHiddenItem(slot: string) {
 	const m = store.project!.manifest;
-	const hiders = equipped(m, doc.items).filter(
-		(it) => it.slot !== slot && hidesOf(m, it).includes(slot)
-	);
+	const hiders = itemHiders(slot);
 	if (!hiders.length) return;
 	commit(message('history.show', { name: slotLabel(m, slot) }), () => {
 		for (const it of hiders) it.hides = withoutHide(m, it, slot);
@@ -2763,12 +2779,15 @@ export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
 		];
 	});
 }
-/** `ladder`: the slot's default order from lib/items SLOTS (T3), passed in so the item pipeline stays out of startup. */
+/** Restore the foreground ladder. Back layers have their own authored positions. */
 export function resetLayer(itemId: string, ladder: ZOverride[]) {
 	const m = store.project!.manifest,
 		slot = m.slots.find((s) => s.id === itemById(itemId)!.slot)!;
 	commit(message('history.resetLayerOrder'), () => {
-		slot.zOverrides = structuredClone(ladder);
+		slot.zOverrides = [
+			...(slot.zOverrides ?? []).filter((rule) => rule.layer !== 'fg'),
+			...structuredClone(ladder)
+		];
 	});
 }
 

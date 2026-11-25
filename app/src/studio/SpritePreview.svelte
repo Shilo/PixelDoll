@@ -1,27 +1,62 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { Img } from '../lib/image/png.ts';
-	import Sheet from './Sheet.svelte';
 	import Sprite from './Sprite.svelte';
+	import SurfaceHeader from './SurfaceHeader.svelte';
+	import { openingTrigger, restoreTrigger } from './experience/focus.ts';
+	import { claimSheetExit } from './sheetExit.ts';
 	import { ui } from './state.svelte.ts';
 
 	let { image, title, onclose }: { image: Img; title: string; onclose: () => void } = $props();
+	const titleId = $props.id();
+	let dialog: HTMLDialogElement;
+	let heading = $state<HTMLHeadingElement>();
 	let width = $state(0);
 	let height = $state(0);
-	const scale = $derived(
-		Math.max(1, Math.floor(Math.min(width / image.w, height / image.h) * ui.dpr))
-	);
+	const fit = $derived(Math.min(width / image.w, height / image.h));
+	const scale = $derived(Math.max(1, Math.floor(fit * ui.dpr)));
+
+	onMount(() => {
+		const trigger = openingTrigger();
+		const releaseExit = claimSheetExit({ close: () => onclose() });
+		dialog.showModal();
+		heading?.focus({ preventScroll: true });
+		return () => {
+			releaseExit();
+			dialog.close();
+			restoreTrigger(trigger);
+		};
+	});
 </script>
 
-<Sheet {title} {onclose} overlay className="sprite-preview">
-	<div class="preview-stage" bind:clientWidth={width} bind:clientHeight={height}>
-		{#if width && height}
-			<Sprite img={image} k={scale} checker checkerSize={24} label={title} />
-		{/if}
+<dialog
+	class="sheet sprite-preview"
+	bind:this={dialog}
+	aria-labelledby={titleId}
+	oncancel={(event) => {
+		event.preventDefault();
+		onclose();
+	}}
+>
+	<SurfaceHeader {title} {titleId} {onclose} bind:titleElement={heading} />
+	<div class="preview-stage">
+		<div class="preview-fit" bind:clientWidth={width} bind:clientHeight={height}>
+			{#if width && height}
+				<Sprite
+					img={image}
+					k={scale}
+					limit={fit * Math.max(image.w, image.h)}
+					checker
+					checkerSize={24}
+					label={title}
+				/>
+			{/if}
+		</div>
 	</div>
-</Sheet>
+</dialog>
 
 <style>
-	:global(dialog.sheet.sprite-preview) {
+	dialog.sprite-preview {
 		inset: 0;
 		width: 100%;
 		height: 100dvh;
@@ -30,14 +65,16 @@
 		margin: 0;
 		border-radius: 0;
 	}
-	:global(.sprite-preview > .sheet-body) {
+	.preview-stage {
 		flex: 1;
+		min-height: 0;
+		padding: clamp(12px, 4vmin, 32px);
 		display: grid;
 		grid-template: minmax(0, 1fr) / minmax(0, 1fr);
 	}
-	.preview-stage {
+	.preview-fit {
 		display: grid;
-		place-items: center;
-		overflow: auto;
+		grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+		place-items: safe center;
 	}
 </style>

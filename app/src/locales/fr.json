@@ -532,10 +532,7 @@
 		"hiddenByAnotherItem": "Masqué par un autre objet",
 		"hiddenByItem": "Masqué par {name}",
 		"showName": "Afficher {name}",
-		"notWorn": "Non porté",
 		"qualityChecks": "Contrôles de qualité",
-		"customize": "Personnaliser",
-		"itemActions": "Actions de l’objet",
 		"layerHiddenHint": "Un autre objet porté masque celui-ci, son ordre de calques ne peut donc pas changer ici. Affichez-le d’abord.",
 		"nameInEveryDirection": "{name} dans toutes les directions",
 		"labelNameFacingId": "{name}, orientation {id}",
@@ -548,7 +545,6 @@
 		"keepWithoutMoves": "Garder sans ces animations",
 		"keepWithoutMovesDetail": "Garde l’objet dans ses animations complètes sans dépenser de crédits. Il est masqué dans {moves}, qui restent indiquées comme manquantes pour que vous puissiez les créer plus tard à leur propre prix.",
 		"youAcceptedThisArtworkWithItsRecorded": "Vous avez accepté ce visuel. Les remarques sur sa qualité restent enregistrées.",
-		"generateItemForMove": "Générer l’objet pour l’animation",
 		"coverageTitle": "Couverture des animations",
 		"coverageAllDrawn": "Dessiné dans toutes les animations et tous les états",
 		"coverageMissing": {
@@ -557,25 +553,14 @@
 		},
 		"coverageClipDrawn": "{move} : dessiné",
 		"coverageClipMissing": "{move} : manquant",
-		"fillMissingMoves": "Compléter les animations manquantes",
-		"fillMissingHint": {
-			"one": "Dessine cet objet pour {n} animation manquante en une seule offre, à partir de son design debout.",
-			"other": "Dessine cet objet pour les {n} animations manquantes en une seule offre, à partir de son design debout."
-		},
-		"labelMakeNameForMissingName": "Créer {name} pour {missingName}",
-		"generatesOnlyThisItemSMissingViews": "Génère uniquement les vues manquantes de cet objet pour l’animation choisie, à partir du visuel de la pose debout. Le corps ne change pas. PixelLab peut facturer en dollars américains ; le temps d’attente varie.",
 		"madeForAnotherBodyItMayNot": "Créé pour un autre corps. Il risque de ne pas s’aligner.",
 		"itsMirroredViewsUpdateToo": "Ses vues en miroir sont aussi mises à jour.",
 		"matchingColors": "Harmonisation des couleurs…",
 		"matchItemColors": "Harmoniser les couleurs de l’objet",
 		"recolor": "Recolorer",
 		"layerOrder": "Ordre des calques",
-		"titleDrawInFrontOfTheNext": "Placer devant le calque suivant",
-		"forward": "Avancer",
-		"titleDrawBehindThePreviousLayer": "Placer derrière le calque précédent",
-		"backward": "Reculer",
 		"reset": "Réinitialiser",
-		"whenWornHide": "Une fois porté, masquer",
+		"whenWornHide": "Masquer les catégories quand équipé",
 		"howItWasMade": "Comment il a été créé",
 		"iD": "ID",
 		"slot": "Emplacement",
@@ -605,7 +590,6 @@
 			"one": "{from} a {n} image de cet objet qui manque à {name}. Rien n’est généré.",
 			"other": "{from} a {n} images de cet objet qui manquent à {name}. Rien n’est généré."
 		},
-		"makeFor": "Créer pour {move}",
 		"makingMoreMoves": "Génération des images de l’objet pour d’autres animations",
 		"colorMatchNote": {
 			"one": "Harmoniser {pixels} avec la palette de l’objet dans {n} image enregistrée de {move} (direction : {direction}).",
@@ -628,8 +612,7 @@
 			"other": "{n} images"
 		},
 		"onlyFacing": "Uniquement en orientation {direction}",
-		"hideWhenWorn": "Les objets cochés sont masqués quand {name} est porté.",
-		"tuckNote": "Sans cocher les cases, les éléments de ces emplacements ({slots}) sont glissés sous l’objet : seule la partie qui dépasse sous le bord reste visible. Cochez les cases pour les masquer entièrement sous une capuche ou un masque intégral.",
+		"tuckNote": "Les objets visibles dans {slots} peuvent être partiellement recouverts.",
 		"chromaKey": "Couleur clé {color}",
 		"qaStatus": {
 			"pass": "réussi",

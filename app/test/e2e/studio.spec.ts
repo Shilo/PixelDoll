@@ -8651,6 +8651,12 @@ test('targeted move replacement names mirrored effects without offering a separa
 	await expect(directions).not.toHaveAccessibleDescription(/Mirrored views also change/);
 });
 
+async function openFrameReplacement(page: Page) {
+	const details = await selectedItemDetails(page);
+	await openItemSection(details, 'Artwork');
+	await openItemSection(details, 'Replace frames for this view');
+}
+
 test('stage makes all missing item views while explicit repair stays on the current view', async ({
 	page,
 	context
@@ -8777,8 +8783,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	// The stopped repair's footer Discard leaves it, as Cancel did.
 	await sheet.getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(sheet).toBeHidden();
-	await openItemSection(await selectedItemDetails(page), 'Artwork');
-	await openItemSection(page.locator('dialog.item-detail[open]'), 'Replace frames for this view');
+	await openFrameReplacement(page);
 	const repair = page.getByRole('button', { name: /^Repair this view/ });
 	const redraw = page.getByRole('button', { name: /^Redraw this view/ });
 	const simulateRepairPlan = (tier: number) =>
@@ -8823,6 +8828,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	};
 	await expectRepairTiers(10, 10, 10);
 	await oversizedItemFixture(page, fixture.itemId);
+	await openFrameReplacement(page);
 	await expectRepairTiers(30, 15, 15);
 	await repair.click();
 	sheet = page.getByRole('dialog', { name: 'Repair item frames', exact: true });
@@ -8966,8 +8972,7 @@ test('a repair whose later batch fails offers its finished repairs for free and 
 		state.ui.all = false;
 		state.pick(id);
 	}, itemId);
-	await openItemSection(await selectedItemDetails(page), 'Artwork');
-	await openItemSection(page.locator('dialog.item-detail[open]'), 'Replace frames for this view');
+	await openFrameReplacement(page);
 	await page.getByRole('button', { name: /^Repair this view/ }).click();
 	const review = page.getByRole('dialog', { name: 'Review item repair' });
 	// The note names what is kept and why the later batch stopped.
@@ -9061,9 +9066,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 			state.ui.all = false;
 			state.pick(id);
 		}, itemId);
-		const detail = await selectedItemDetails(page);
-		await openItemSection(detail, 'Artwork');
-		await openItemSection(detail, 'Replace frames for this view');
+		await openFrameReplacement(page);
 		await page.getByRole('button', { name: action }).click();
 	};
 	const saved = () =>
@@ -9377,6 +9380,7 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 	}, fixture.itemId);
 	// A held item cannot use the frozen grid. It used to be refused here; it is now priced on its measured joints with the
 	// suspicious frames named on the quote before anything is bought.
+	await openItemSection(page.locator('dialog.item-detail[open]'), 'Moves & States');
 	await expect(page.getByRole('button', { name: /^Draw selected/ })).toBeEnabled();
 	await expect(page.getByRole('button', { name: /^Draw selected/ })).toContainText('gens');
 	await expect(
@@ -9432,8 +9436,7 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 		s.ui.dir = 'west';
 		s.pick(id);
 	}, fixture.itemId);
-	await openItemSection(await selectedItemDetails(page), 'Artwork');
-	await openItemSection(page.locator('dialog.item-detail[open]'), 'Replace frames for this view');
+	await openFrameReplacement(page);
 	const repair = page.getByRole('button', { name: /^Repair this view/ });
 	await expect(repair).toContainText('~10 gens');
 	await repair.click();
@@ -10109,7 +10112,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
 	expect(errors).toEqual([]);
 });
 
-test('standing-first items quote only standing and offer actual custom moves one at a time', async ({
+test('standing-first items quote standing and draw selected custom moves together', async ({
 	page,
 	context
 }, info) => {
@@ -11745,7 +11748,7 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	let details = await selectedItemDetails(page);
 	await openItemSection(details, 'Outfit behavior');
 	const hairChip = details
-		.getByRole('group', { name: 'When worn, hide', exact: true })
+		.getByRole('group', { name: 'Hide categories when worn', exact: true })
 		.getByRole('switch', { name: 'Hair', exact: true });
 	await expect(hairChip).not.toBeChecked();
 	await hairChip.click();
@@ -11831,13 +11834,13 @@ const headDepths = (page: Page) =>
 		);
 	});
 
-/** The worn helmet hides the worn hair through its When worn, hide switch. */
+/** The worn helmet hides the worn hair through its Hide categories when worn switch. */
 async function hideHairWithHelmet(page: Page) {
 	await pickItem(page, 'Steel helmet');
 	const details = await selectedItemDetails(page);
 	await openItemSection(details, 'Outfit behavior');
 	await details
-		.getByRole('group', { name: 'When worn, hide', exact: true })
+		.getByRole('group', { name: 'Hide categories when worn', exact: true })
 		.getByRole('switch', { name: 'Hair', exact: true })
 		.check();
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
@@ -11860,10 +11863,18 @@ test('item details wears and takes off from its primary action', async ({ page }
 test('item details names what hides an item and shows it again', async ({ page }, info) => {
 	await editableCopy(page, devBaseURL(info));
 	await hideHairWithHelmet(page);
+	await pickItem(page, 'Red cape');
+	const cape = await selectedItemDetails(page);
+	await openItemSection(cape, 'Outfit behavior');
+	await cape.getByRole('switch', { name: 'Hair', exact: true }).check();
+	await cape.getByRole('button', { name: 'Close', exact: true }).click();
 	const details = await openItemDetails(page, 'Messy brown hair');
-	await expect(details.getByText('Hidden by Steel helmet', { exact: true })).toBeVisible();
+	const hidden = details.getByText(
+		/^Hidden by (Red cape and Steel helmet|Steel helmet and Red cape)$/
+	);
+	await expect(hidden).toBeVisible();
 	await details.getByRole('button', { name: 'Show Messy brown hair', exact: true }).click();
-	await expect(details.getByText('Hidden by Steel helmet', { exact: true })).toHaveCount(0);
+	await expect(hidden).toHaveCount(0);
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentGroup(page, 'Hair');
 	await expect(
@@ -12189,7 +12200,15 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 		});
 		const slotsPath = '/src/lib/items/slots.ts',
 			slots = await import(slotsPath);
-		m.slots.push(slots.slotLadder(m.rig).find((slot: { id: string }) => slot.id === 'off_hand'));
+		const offHand = slots.slotLadder(m.rig).find((slot: { id: string }) => slot.id === 'off_hand');
+		m.slots.push(offHand, slots.createSlot('spare_shield', offHand, 'Spare shield'));
+		m.items.push({
+			...structuredClone(sword),
+			id: 'spare_round_shield',
+			name: 'Spare round shield',
+			slot: 'spare_shield',
+			materials: []
+		});
 		await db.put('projects', ctx.rec.id, ctx.rec);
 		await s.openProject(ctx.rec.id);
 		s.pick(sword.id);
@@ -12223,6 +12242,16 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(off).toContainText('Held by Steel longsword (two-handed).');
+
+	const details = await openItemDetails(page, 'Steel longsword');
+	await openItemSection(details, 'Outfit behavior');
+	const oppositeHand = details.getByRole('switch', { name: 'Off hand', exact: true });
+	await expect(details.getByRole('switch', { name: 'Spare shield', exact: true })).toHaveCount(0);
+	await expect(oppositeHand).toBeChecked();
+	await oppositeHand.uncheck();
+	await expect(oppositeHand).not.toBeChecked();
+	await oppositeHand.check();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 
 	// Putting something in the other hand takes the two-handed item off.
 	await shield.click();

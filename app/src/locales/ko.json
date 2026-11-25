@@ -521,10 +521,7 @@
 		"hiddenByAnotherItem": "다른 아이템에 가려짐",
 		"hiddenByItem": "{name}에 가려짐",
 		"showName": "{name} 표시",
-		"notWorn": "착용 안 함",
 		"qualityChecks": "품질 검사",
-		"customize": "사용자 설정",
-		"itemActions": "아이템 작업",
 		"layerHiddenHint": "다른 착용 아이템이 이것을 가리고 있어 여기서는 레이어 순서를 바꿀 수 없습니다. 먼저 표시하세요.",
 		"nameInEveryDirection": "모든 방향의 {name}",
 		"labelNameFacingId": "{id} 방향의 {name}",
@@ -537,7 +534,6 @@
 		"keepWithoutMoves": "그 동작 없이 유지",
 		"keepWithoutMovesDetail": "크레딧을 쓰지 않고 완성된 동작만으로 아이템을 유지해요. {moves}에서는 숨겨지고, 나중에 각자의 가격으로 만들 수 있도록 빠진 동작으로 계속 표시돼요.",
 		"youAcceptedThisArtworkWithItsRecorded": "기록된 품질 참고 사항과 함께 이 아트워크를 수락했어요.",
-		"generateItemForMove": "동작용 아이템 생성",
 		"coverageTitle": "동작 적용 범위",
 		"coverageAllDrawn": "모든 동작과 상태에 그려짐",
 		"coverageMissing": {
@@ -545,24 +541,14 @@
 		},
 		"coverageClipDrawn": "{move}: 그려짐",
 		"coverageClipMissing": "{move}: 누락",
-		"fillMissingMoves": "누락된 동작 채우기",
-		"fillMissingHint": {
-			"other": "서 있는 디자인을 재사용해 누락된 {n}개 동작 모두에 이 아이템을 한 번의 견적으로 그립니다."
-		},
-		"labelMakeNameForMissingName": "{missingName} 대상으로 {name} 만들기",
-		"generatesOnlyThisItemSMissingViews": "선택한 동작에 대해 이 아이템의 빠진 뷰만, 서 있는 자세의 디자인을 재사용해 생성해요. 몸체는 그대로예요. PixelLab에서 달러로 요금이 청구될 수 있고 대기 시간은 달라질 수 있어요.",
 		"madeForAnotherBodyItMayNot": "다른 몸체용으로 만들어졌어요. 정렬이 맞지 않을 수 있어요.",
 		"itsMirroredViewsUpdateToo": "대칭으로 복사된 뷰도 함께 업데이트돼요.",
 		"matchingColors": "색상 맞추는 중…",
 		"matchItemColors": "아이템 색상 맞추기",
 		"recolor": "색상 변경",
 		"layerOrder": "레이어 순서",
-		"titleDrawInFrontOfTheNext": "다음 레이어 앞에 그리기",
-		"forward": "앞으로",
-		"titleDrawBehindThePreviousLayer": "이전 레이어 뒤에 그리기",
-		"backward": "뒤로",
 		"reset": "초기화",
-		"whenWornHide": "착용 시 가리기",
+		"whenWornHide": "착용 시 숨길 카테고리",
 		"howItWasMade": "만든 방식",
 		"iD": "ID",
 		"slot": "장착 슬롯",
@@ -591,7 +577,6 @@
 		"copyFrames": {
 			"other": "{from} 캐릭터에는 {name} 캐릭터에 없는 이 아이템 프레임이 {n}개 있어요. 새로 생성하지 않아요."
 		},
-		"makeFor": "{move} 동작용 만들기",
 		"makingMoreMoves": "더 많은 동작용 아이템 만드는 중",
 		"colorMatchNote": {
 			"other": "{direction} 방향으로 저장된 {move} 프레임 {n}개에서 아이템의 기존 색상 팔레트에 맞춰요: {pixels}."
@@ -610,8 +595,7 @@
 			"other": "프레임 {n}개"
 		},
 		"onlyFacing": "{direction} 방향일 때만",
-		"hideWhenWorn": "{name} 착용 중에는 선택한 아이템이 가려져요.",
-		"tuckNote": "선택하지 않은 {slots} 항목은 그 아래로 들어가서 챙 아래로 내려오는 부분만 보여요. 후드나 얼굴 전체를 가리는 가면이면 선택하세요.",
+		"tuckNote": "{slots}의 보이는 아이템이 일부 가려질 수 있습니다.",
 		"chromaKey": "{color} 키",
 		"qaStatus": {
 			"pass": "통과",
