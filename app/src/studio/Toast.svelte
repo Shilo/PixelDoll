@@ -4,8 +4,7 @@
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { t } from 'svelte-whisper';
 	import { ui, activateToast, dismissToast, pauseToast, resumeToast } from './state.svelte.ts';
-	import { experience } from './experience/state.svelte.ts';
-	import { layout } from './experience/geometry.ts';
+	import { experience, experienceLayout } from './experience/state.svelte.ts';
 	import { restoreTrigger } from './experience/focus.ts';
 	import { updateNotice } from './updateNotice.svelte.ts';
 	import PwaNotice from './PwaNotice.svelte';
@@ -121,11 +120,11 @@
 				room: sheetBox.right - sheetBox.left - 32,
 				height: Math.min(viewportHeight * 0.45, sheetBox.bottom - 12 - sheetBox.top)
 			};
-		const g = layout(viewportWidth, viewportHeight, experience.screen),
+		const g = experienceLayout(viewportWidth, viewportHeight),
 			studio = experience.screen === 'studio',
 			bottom = Math.min(
 				studio && g.sheet ? g.sheetTop - 12 : viewportHeight - 16,
-				studio && experience.mode === 'preview' ? g.playbackTop - 12 : Infinity
+				studio && !g.panelOnly && experience.mode === 'preview' ? g.playbackTop - 12 : Infinity
 			);
 		return {
 			top: g.toastTop,
@@ -191,27 +190,38 @@
 							? ui.toast.map(displayNestedMessage).join(' ')
 							: displayNestedMessage(ui.toast)}</span
 					>{/if}
-				{#if ui.toastActionLabel}<span class="toast-actions"
-						><button class="bu-action btn sm" data-variant="outline" onclick={activate}
-							>{displayNestedMessage(ui.toastActionLabel)}</button
-						>{#if ui.toastProblem}<ReportButton
+				{#if ui.toastActionLabel || ui.toastProblem}
+					<div class="toast-actions">
+						{#if ui.toastActionLabel}
+							<button
+								type="button"
+								class="bu-action btn sm"
+								data-variant="outline"
+								onclick={activate}>{displayNestedMessage(ui.toastActionLabel)}</button
+							>
+						{/if}
+						{#if ui.toastProblem}<ReportButton
 								{...ui.toastProblem}
 								area={areaOf(ui.toastSheet)}
-							/>{/if}</span
-					>{:else if ui.toastProblem}
-					<ReportButton {...ui.toastProblem} area={areaOf(ui.toastSheet)} />{/if}
+								outlined
+							/>{/if}
+					</div>
+				{/if}
 			</Notice>{/if}
 		{#if showUpdate}<PwaNotice ondismiss={restoreNoticeFocus} />{/if}
 	</div>
 {/if}
 
 <style>
-	.toast-actions {
+	.toast :global(.toast-actions) {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px;
-		margin-top: 6px;
+		margin-block-start: 6px;
+	}
+	.toast :global(.toast-actions > .compact-backup) {
+		margin-block-start: 0;
 	}
 	@media (pointer: coarse) {
 		.toast-controls-only {

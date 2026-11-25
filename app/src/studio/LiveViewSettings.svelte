@@ -23,6 +23,7 @@
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 
 	import { experience } from './experience/state.svelte.ts';
+	import { panelSettings, setPanelSettings } from './experience/panelSettings.svelte.ts';
 
 	import { lookClipThumbnail } from './moveThumbnails.ts';
 
@@ -81,6 +82,21 @@
 			toast(message('liveViews.notSaved'), { tone: 'warning' });
 	}
 </script>
+
+<SettingsItemToggle
+	setting="panel-auto-hide"
+	checked={panelSettings.autoHide}
+	aria-describedby="studio-panel-auto-hide-help"
+	onchange={(event) => {
+		if (!setPanelSettings({ autoHide: event.currentTarget.checked }))
+			toast(message('studioPanel.notSaved'), { tone: 'warning' });
+	}}
+>
+	<span class="row-name">{t('studioPanel.autoHide')}</span>
+</SettingsItemToggle>
+<p class="bu-muted small auto-hide-help" id="studio-panel-auto-hide-help">
+	{t('studioPanel.autoHideHelp')}
+</p>
 
 {#if doc.id}
 	<p class="bu-muted small character">{t('liveViews.forCharacter', { name: characterName() })}</p>
@@ -161,6 +177,9 @@
 {/if}
 
 <style>
+	.auto-hide-help {
+		margin: -2px 0 16px;
+	}
 	.layering {
 		display: grid;
 

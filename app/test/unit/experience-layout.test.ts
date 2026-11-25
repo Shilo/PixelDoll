@@ -113,12 +113,13 @@ describe('scene geometry', () => {
 		expect(layout(500, 700, 'characters', 146)).toEqual(layout(500, 700, 'characters'));
 	});
 
-	test('hides an unusable short-phone sheet rather than covering wrapped controls', () => {
+	test('uses a single-pane editor when wrapped controls leave too little room for a split', () => {
 		const before = layout(320, 400, 'studio');
 		const wrapped = layout(320, 400, 'studio', 146);
 		expect(before.sheetHeight).toBe(200);
 		expect(wrapped.sheet).toBe(true);
 		expect(wrapped.sheetHeight).toBe(0);
+		expect(wrapped.panelOnly).toBe(true);
 		expect(wrapped.stage.r).toBe(before.stage.r);
 		expect(wrapped.playbackTop + wrapped.playbackHeight).toBeLessThanOrEqual(400);
 		expect(wrapped.feet.y).toBeGreaterThan(wrapped.stage.t);
@@ -148,7 +149,7 @@ describe('scene geometry', () => {
 					expect(p.y).toBeLessThanOrEqual(0.001);
 					expect(p.x + width).toBeGreaterThanOrEqual(w - 0.001);
 					expect(p.y + height).toBeGreaterThanOrEqual(p.coverBottom - 0.001);
-					expect(p.coverBottom).toBe(g.sheet && screen === 'studio' ? g.sheetTop + 24 : h);
+					expect(p.coverBottom).toBe(g.sheetHeight && screen === 'studio' ? g.sheetTop + 24 : h);
 					// The vanishing line (image x 0.5) stays on the character unless that needs over 1.3x; then the
 					// image is clamped to the viewport edge on the far side instead.
 					if (p.centered) expect(p.x + 0.5 * width).toBeCloseTo(g.feet.x, 6);
@@ -338,6 +339,22 @@ describe('scene geometry', () => {
 		expect(ratio).toBeGreaterThan(0.8);
 		expect(ratio).toBeLessThan(1.3);
 	});
+});
+
+test('panel disclosure frees the reserved area, and left docking mirrors the scene bounds', () => {
+	const desktop = layout(1440, 900, 'studio');
+	const left = layout(1440, 900, 'studio', 0, true, 'left');
+	const closed = layout(1440, 900, 'studio', 0, false, 'left');
+	expect(left.stage.l).toBeCloseTo(desktop.w - desktop.stage.r);
+	expect(left.stage.r).toBe(desktop.w);
+	expect(closed.stage).toEqual({ l: 0, r: 1440, t: desktop.stage.t, b: 900 });
+
+	const phone = layout(390, 844, 'studio', 0, false);
+	expect(phone.sheetHeight).toBe(0);
+	expect(phone.stage.b).toBe(phone.h);
+	expect(placeWorld(phone, worldArt('dark'), phone.feet, 100).coverBottom).toBe(phone.h);
+	expect(layout(320, 300, 'studio').panelOnly).toBe(true);
+	expect(layout(320, 300, 'studio', 0, false).panelOnly).toBe(false);
 });
 
 describe('live view framing', () => {

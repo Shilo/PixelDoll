@@ -25,13 +25,16 @@ const studioJob = (job: { tag?: unknown }) =>
  *  they are downloadable data, not work. Blobs are swept by what is left (deleteStoredWork). */
 export function selectLocalWork({ projects, jobs }: StoredWork) {
 	const ledger = [...jobs.values()] as { tag?: unknown; state?: unknown }[];
-	const pendingState = [...projects].some(
-		([key, value]) =>
+	const pendingReview = [...projects].some(([key, value]) => {
+		const record = value as Partial<StoredProject> | undefined;
+		return (
 			key.startsWith('rig-') &&
 			!incompatibleKind(value) &&
-			Object.keys((value as Partial<StoredProject> | undefined)?.stateGenerations ?? {}).length
-	);
-	if (pendingState || generationWork([...projects.values()], ledger, runningFlow))
+			(Object.keys(record?.stateGenerations ?? {}).length ||
+				Object.keys(record?.appearanceEdits ?? {}).length)
+		);
+	});
+	if (pendingReview || generationWork([...projects.values()], ledger, runningFlow))
 		throw new LocalizedError(
 			'Finish or dismiss pending generation work before deleting local work. Nothing was deleted.',
 			'librarySettings.deleteWork.generating'

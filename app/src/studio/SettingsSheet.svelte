@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
-	import { ui } from './state.svelte.ts';
 	import Sheet from './Sheet.svelte';
 	import Lazy from './Lazy.svelte';
 	import SettingsContent from './SettingsContent.svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { ui } from './state.svelte.ts';
 	import type { ResetScope } from './resetSettings.ts';
 	import { watchExportDefaults } from './settingsDefaults.svelte.ts';
 	import {
+		closeSettings,
 		openSettingsExport,
 		settingsLabels,
 		settingsNavigation
@@ -34,11 +35,12 @@
 <Sheet
 	title={t('export.sheet.settings')}
 	className="settings-sheet"
+	overlay={ui.settingsOverlay}
 	wide
 	locked={busy}
 	{back}
 	backTo={t('export.sheet.settings')}
-	onclose={() => (ui.sheet = null)}
+	onclose={closeSettings}
 >
 	{#snippet heading()}{#if settingsNavigation.section}<span class="settings-page-title"
 				>{t(settingsLabels[settingsNavigation.section])}</span

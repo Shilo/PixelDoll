@@ -30,6 +30,289 @@ test.beforeEach(async ({ context }) => {
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });
 
+test('Audio settings start after a gesture and preserve independent levels and mutes', async ({
+	page,
+	baseURL
+}) => {
+	const audioRequests: string[] = [];
+	page.on('request', (request) => {
+		if (/audioPlayback|studio-ambient-[^/]+\.flac/.test(request.url()))
+			audioRequests.push(request.url());
+	});
+	await page.addInitScript(() => {
+		const calls = {
+			opened: 0,
+			loops: 0,
+			musicStarts: 0,
+			musicStopTime: 0,
+			failed: false,
+			gainTargets: [] as number[]
+		};
+		Object.defineProperty(window, 'audioTestCalls', { value: calls });
+		Object.defineProperty(window, 'AudioContext', {
+			value: class extends EventTarget {
+				state = 'suspended';
+				currentTime = 0;
+				constructor() {
+					super();
+					calls.opened++;
+				}
+				async resume() {
+					this.state = 'running';
+					this.dispatchEvent(new Event('statechange'));
+				}
+				async close() {
+					this.state = 'closed';
+				}
+				createGain() {
+					const noop = () => {};
+					return {
+						connect: noop,
+						disconnect: noop,
+						gain: {
+							value: 0,
+							setTargetAtTime: (level: number) => calls.gainTargets.push(level),
+							setValueAtTime: noop,
+							cancelScheduledValues: noop,
+							linearRampToValueAtTime: noop
+						}
+					};
+				}
+				createBuffer(_channels: number, frames: number, rate: number) {
+					return { duration: frames / rate, getChannelData: () => new Float32Array(frames) };
+				}
+				async decodeAudioData() {
+					return this.createBuffer(1, 240, 24_000);
+				}
+				createBufferSource() {
+					return {
+						loop: false,
+						onended: null as (() => void) | null,
+						detune: { value: 0 },
+						connect() {},
+						disconnect() {},
+						start() {
+							if (!this.loop && document.body.hasAttribute('data-fail-audio')) {
+								calls.failed = true;
+								throw new DOMException('Synthetic audio start failure', 'NotSupportedError');
+							}
+							if (this.loop) {
+								calls.loops++;
+								calls.musicStarts++;
+							}
+						},
+						stop(when = 0) {
+							if (this.loop) {
+								calls.loops--;
+								calls.musicStopTime = when;
+							}
+							this.onended?.();
+						}
+					};
+				}
+			}
+		});
+	});
+	const calls = () => page.evaluate(() => Reflect.get(window, 'audioTestCalls'));
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	const master = settings.getByRole('switch', { name: 'Play all audio', exact: true });
+	const musicSwitch = settings.getByRole('switch', { name: 'Music', exact: true });
+	const effectsSwitch = settings.getByRole('switch', { name: 'Sound effects', exact: true });
+	const music = settings.getByRole('slider', { name: 'Music volume', exact: true });
+	const effects = settings.getByRole('slider', { name: 'Sound effects volume', exact: true });
+	const topBar = page.locator('.experience-header');
+	const shortcut = topBar.locator('.header-audio');
+	const expectAlignedAudioRows = async () => {
+		const [masterBox, musicBox, effectsBox, musicToggle, effectsToggle] = await Promise.all(
+			[master, music, effects, musicSwitch, effectsSwitch].map((control) => control.boundingBox())
+		);
+		for (const [slider, toggle] of [
+			[musicBox!, musicToggle!],
+			[effectsBox!, effectsToggle!]
+		]) {
+			expect(slider.y + slider.height / 2).toBeCloseTo(toggle.y + toggle.height / 2, 0);
+			expect(toggle.x + toggle.width).toBeCloseTo(masterBox!.x + masterBox!.width, 0);
+			expect(toggle.x).toBeGreaterThan(slider.x + slider.width);
+			expect(slider.width).toBeGreaterThanOrEqual(44);
+		}
+	};
+	await page.goto(baseURL!);
+	const customize = page.locator('.customize-action');
+	await expect(customize).toBeVisible();
+	await customize.dispatchEvent('pointerdown', { pointerType: 'mouse' });
+	await expect(shortcut).toBeVisible();
+	const newCharacter = topBar.getByRole('button', { name: 'New character', exact: true });
+	await expect(newCharacter).toBeVisible();
+	expect((await shortcut.boundingBox())!.x).toBeLessThan((await newCharacter.boundingBox())!.x);
+	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
+	expect(audioRequests).toEqual([]);
+	await enterStudio(page);
+	await expect(shortcut).toBeVisible();
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
+	expect(audioRequests).toEqual([
+		expect.stringMatching(/assets\/audioPlayback-.*\.js/),
+		expect.stringMatching(/assets\/studio-ambient-[^/]+\.flac/)
+	]);
+	const loop = await page.evaluate(async (url) => {
+		const rate = 48_000;
+		const halfSecond = rate / 2;
+		const offline = new OfflineAudioContext(1, rate, rate);
+		const response = await fetch(url);
+		const track = await offline.decodeAudioData(await response.arrayBuffer());
+		const source = offline.createBufferSource();
+		source.buffer = track;
+		source.loop = true;
+		source.connect(offline.destination);
+		source.start(0, track.duration - 0.5);
+		const rendered = (await offline.startRendering()).getChannelData(0);
+		const original = track.getChannelData(0);
+		let wrapError = 0;
+		let nearbyStep = 0;
+		let before = 0;
+		let after = 0;
+		for (let i = 0; i < halfSecond; i++) {
+			const tail = rendered[i]!;
+			const head = rendered[halfSecond + i]!;
+			wrapError = Math.max(
+				wrapError,
+				Math.abs(tail - original[original.length - halfSecond + i]!),
+				Math.abs(head - original[i]!)
+			);
+			before += tail * tail;
+			after += head * head;
+			if (i)
+				nearbyStep = Math.max(
+					nearbyStep,
+					Math.abs(tail - rendered[i - 1]!),
+					Math.abs(head - rendered[halfSecond + i - 1]!)
+				);
+		}
+		return {
+			frames: track.length,
+			wrapError,
+			levelDifference: Math.abs(10 * Math.log10(before / after)),
+			seamStep: Math.abs(rendered[halfSecond]! - rendered[halfSecond - 1]!),
+			nearbyStep
+		};
+	}, audioRequests[1]!);
+	expect(loop.frames).toBe(160 * 48_000);
+	expect(loop.wrapError).toBeLessThan(1e-5);
+	expect(loop.levelDifference).toBeLessThan(0.2);
+	expect(loop.seamStep).toBeLessThan(loop.nearbyStep);
+	await expect(page.locator('.header-audio + .header-random')).toBeVisible();
+	await shortcut.click();
+	await expect(master).toBeChecked();
+	await expect(musicSwitch).toBeChecked();
+	await expect(effectsSwitch).toBeChecked();
+	await expect(music).toHaveValue('50');
+	await expect(effects).toHaveValue('50');
+	const { gainTargets } = await calls();
+	expect(gainTargets[0]).toBeCloseTo(0.05761, 5);
+	expect(gainTargets[1]).toBeCloseTo(0.13796, 5);
+	await music.press('End');
+	await expect.poll(async () => (await calls()).gainTargets.at(-1)).toBeCloseTo(0.4, 5);
+	await music.fill('50');
+	await settings.getByRole('button', { name: 'Appearance', exact: true }).click();
+	await settings.getByRole('radio', { name: 'Light', exact: true }).check();
+	await settings.getByRole('button', { name: 'Audio', exact: true }).click();
+	await expect(master).toBeChecked();
+	expect(await calls()).toMatchObject({ loops: 1, musicStarts: 1 });
+	await expectAlignedAudioRows();
+	await effects.press('End');
+	await expect(effects).toHaveValue('100');
+	await expect(music).toHaveValue('50');
+	expect((await calls()).gainTargets.at(-1)).toBeCloseTo(0.25, 5);
+	await effects.press('ArrowLeft');
+	await musicSwitch.uncheck();
+	await expect(shortcut).toBeVisible();
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0, musicStopTime: 0.05 });
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await shortcut.click();
+	await expect(musicSwitch).not.toBeChecked();
+	await expect(effectsSwitch).toBeChecked();
+	await effectsSwitch.uncheck();
+	await expect(shortcut).toHaveCSS('display', 'none');
+	await musicSwitch.check();
+	await expect(shortcut).toBeVisible();
+	await music.press('Home');
+	await expect(shortcut).toHaveCSS('display', 'none');
+	await music.fill('50');
+	await expect(shortcut).toBeVisible();
+	await master.uncheck();
+	await expect(shortcut).toHaveCSS('display', 'none');
+	await master.check();
+	await expect(shortcut).toBeVisible();
+	await expect(effectsSwitch).not.toBeChecked();
+	await page.evaluate(() => {
+		Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+		document.dispatchEvent(new Event('visibilitychange'));
+	});
+	expect(await calls()).toMatchObject({ opened: 1, loops: 0, musicStopTime: 0 });
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.reload();
+	await expect(page.locator('.customize-action, .experience-stage')).toBeVisible();
+	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
+	await enterStudio(page);
+	await shortcut.click();
+	await expect(master).toBeChecked();
+	await expect(effectsSwitch).not.toBeChecked();
+	await expect(effects).toHaveValue('99');
+	await expect(music).toHaveValue('50');
+	await page.setViewportSize({ width: 320, height: 568 });
+	await expectAlignedAudioRows();
+	await page.setViewportSize({ width: 390, height: 844 });
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
+	await effectsSwitch.check();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(settings).toBeHidden();
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	const tile = page.locator('[data-tile="hat_wizard"]');
+	await tile.focus();
+	await page.evaluate(() => document.body.setAttribute('data-fail-audio', ''));
+	await tile.press('Enter');
+	await expect(tile).toHaveAttribute('aria-pressed', 'true');
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1, failed: true });
+	expect(errors).toEqual([]);
+
+	await shortcut.click();
+	await master.uncheck();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.setViewportSize({ width: 320, height: 568 });
+	await expect(shortcut).toHaveCSS('display', 'none');
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	await expect(shortcut).toHaveCSS('display', 'none');
+	await topBar.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await expect(master).not.toBeChecked();
+	await master.check();
+	await expect(shortcut).toBeVisible();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.getByRole('button', { name: 'New character', exact: true }).first().click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
+	const draftName = creator.getByRole('textbox', { name: 'Name', exact: true });
+	const creatorScreen = page.locator('dialog.character-sheet:modal');
+	await draftName.fill('Audio draft');
+	await creator.getByRole('button', { name: 'Audio settings', exact: true }).click();
+	await expect(settings).toBeVisible();
+	await expect(creatorScreen).toBeVisible();
+	await expect(settings.locator(':focus')).toHaveCount(1);
+	await expect(creatorScreen.locator('.character-name')).toHaveValue('Audio draft');
+	await master.uncheck();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(draftName).toHaveValue('Audio draft');
+	await expect(creator.locator('.header-audio')).toHaveCSS('display', 'none');
+	await draftName.press('ControlOrMeta+,');
+	await expect(settings).toBeVisible();
+	await expect(creatorScreen).toBeVisible();
+	await page.goBack();
+	await expect(settings.getByRole('button', { name: 'Audio', exact: true })).toBeVisible();
+	await page.goBack();
+	await expect(settings).toBeHidden();
+	await expect(draftName).toHaveValue('Audio draft');
+});
+
 async function reviewSelectedDraft(page: Page) {
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
@@ -263,6 +546,26 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await expect(settings.getByRole('status')).toHaveText('No settings match your search.');
 });
 
+test.describe('Settings on a touchscreen', () => {
+	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+	test('keeps search unfocused until tapped', async ({ page }) => {
+		await page.goto('/');
+		await page.getByRole('button', { name: 'More options', exact: true }).tap();
+		await page.getByRole('button', { name: 'Settings...', exact: true }).tap();
+		const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+		const search = settings.getByRole('searchbox', { name: 'Search settings', exact: true });
+		await expect(search).toBeVisible();
+		await expect(search).not.toBeFocused();
+		await settings.getByRole('button', { name: 'About', exact: true }).tap();
+		await settings.getByRole('button', { name: 'Back to Settings', exact: true }).tap();
+		await expect(search).toBeVisible();
+		await expect(search).not.toBeFocused();
+		await search.tap();
+		await expect(search).toBeFocused();
+	});
+});
+
 test('notifications support optional titles, keyboard dismissal and visible errors inside dialogs', async ({
 	page
 }, info) => {
@@ -299,6 +602,10 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 		tone: 'warning',
 		duration: 0
 	});
+	await expect(notice).toContainText('Preview details');
+	await expect(
+		notice.getByRole('button', { name: 'Report this problem', exact: true })
+	).toHaveCount(0);
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	await expect(dialog).toBeVisible();
@@ -370,7 +677,14 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	// The body stays a button, named by the message alone; Report is its own target and does not dismiss the notice.
 	const unexpected = 'Something went wrong. If it keeps happening, please report it.';
 	await expect(notice.locator('.bu-notice-activate')).toHaveAccessibleName(unexpected);
-	await notice.getByRole('button', { name: 'Report this problem', exact: true }).click();
+	const reportButton = notice.getByRole('button', { name: 'Report this problem', exact: true });
+	await expect(reportButton).toHaveAttribute('data-variant', 'outline');
+	const description = notice.getByText(unexpected, { exact: true });
+	const descriptionBox = (await description.boundingBox())!;
+	const reportBox = (await reportButton.boundingBox())!;
+	expect(reportBox.x).toBeCloseTo(descriptionBox.x, 0);
+	expect(reportBox.y).toBeGreaterThanOrEqual(descriptionBox.y + descriptionBox.height);
+	await reportButton.click();
 	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
 	await expect(report).toBeVisible();
 	await expect(notice).toContainText('Something went wrong.');
@@ -426,6 +740,12 @@ test('the startup notice and More menu download a library backup with archives',
 	try {
 		await expect(backupButton).toBeVisible();
 		await expect(backupButton).toBeDisabled();
+		await expect(backupButton).toHaveAttribute('data-variant', 'outline');
+		const description = notice.getByText('Keep a local copy of your characters and artwork.');
+		const descriptionBox = (await description.boundingBox())!;
+		const backupBox = (await backupButton.boundingBox())!;
+		expect(backupBox.x).toBeCloseTo(descriptionBox.x, 0);
+		expect(backupBox.y).toBeGreaterThanOrEqual(descriptionBox.y + descriptionBox.height);
 		loadingHeight = await notice.evaluate((element) => element.clientHeight);
 	} finally {
 		releaseFixture();
@@ -688,6 +1008,9 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		'Direction',
 		'Base clothing'
 	]);
+	// base-select draws its picker icon inside the field, so the shared inset keeps the caret at the edge.
+	if (await page.evaluate(() => CSS.supports('appearance', 'base-select')))
+		await expect(await controlAt('Character', 'character-model')).toHaveCSS('padding-right', '8px');
 	await controlAt('Move', 'move-model');
 	await expect(
 		settings.getByRole('combobox', { name: 'Frames', exact: true }).locator('option:checked')
@@ -1296,6 +1619,13 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
 								.querySelector('[aria-label="Dismiss notification"]')!
 								.getBoundingClientRect();
 							if (close.width < 44 || close.height < 44) issues.push('small dismiss target');
+							if (card.dataset.tone === 'danger') {
+								const button = card.querySelector('.report-problem[data-variant="outline"]');
+								const action = button?.getBoundingClientRect();
+								const text = card.querySelector('.bu-small > span')!.getBoundingClientRect();
+								if (!action || Math.abs(action.left - text.left) > 1 || action.top < text.bottom)
+									issues.push('report button off the bottom-left action row');
+							}
 							if (card.dataset.tone === 'info') {
 								const text = document.createRange();
 								text.selectNodeContents(card.querySelector('.bu-notice-content')!);
@@ -3075,7 +3405,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 		buffer: Buffer.from(bytes)
 	});
 	await page.getByRole('img', { name: 'Character import preview' }).waitFor();
-	const setup = page.getByRole('checkbox', { name: /Set up the pose rig next/ });
+	const setup = page.getByRole('switch', { name: /Set up the pose rig next/ });
 	if (await setup.count()) await setup.uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(playbackPicker(page)).toHaveAttribute('value', 'default'); // a new character, standing again
@@ -4912,7 +5242,7 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 	// Records whether Activity ever opened in this tab, however briefly.
 	await follower.addInitScript(() => {
 		new MutationObserver(() => {
-			if (document.querySelector('#sheet-title')?.textContent === 'Activity')
+			if (document.querySelector('dialog[open] .sheet-title')?.textContent === 'Activity')
 				(window as unknown as { sawActivity: boolean }).sawActivity = true;
 		}).observe(document, { childList: true, subtree: true, characterData: true });
 	});
@@ -9880,7 +10210,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await expect(coverage).toBeVisible();
 	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
-	await expect(page.locator('.world-coverage')).toContainText('hidden for this view');
+	await expect(page.locator('.world-coverage')).toContainText('hidden (missing frames)');
 	await page.getByRole('button', { name: 'Preview', exact: true }).click();
 	await expect(coverage).toBeVisible();
 	await page.setViewportSize({ width: 844, height: 390 });
@@ -10466,9 +10796,13 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		'data-activity',
 		'stopped'
 	);
-	await expect(
-		page.locator('.experience-header [popovertarget="experience-options"]')
-	).not.toHaveAttribute('data-activity');
+	const more = page.locator('.experience-header [popovertarget="experience-options"]');
+	await expect(more).not.toHaveAttribute('data-activity');
+	const disclosure = page.locator('#customization-toggle');
+	await disclosure.click();
+	await expect(more).toHaveAttribute('data-activity', 'stopped');
+	await disclosure.click();
+	await expect(more).not.toHaveAttribute('data-activity');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')
@@ -11070,6 +11404,9 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await page.keyboard.press('ArrowDown');
 	await expect(items.nth(1)).toHaveAccessibleName('Rename...');
 	await expect(items.nth(1)).toBeFocused();
+	await page.keyboard.press('ArrowDown');
+	await expect(items.nth(2)).toHaveAccessibleName('Edit appearance…');
+	await expect(items.nth(2)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect.poll(() => menuOpen(page)).toBe(false);
 	await expect(more).toBeFocused();

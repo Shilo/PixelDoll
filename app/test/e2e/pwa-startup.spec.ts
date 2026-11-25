@@ -125,7 +125,7 @@ async function stage(
 async function verifyFiles(
 	page: Page,
 	release: TestRelease,
-	inventory = release.inventory.filter((file) => !file.locale)
+	inventory = release.inventory.filter((file) => !file.optional)
 ) {
 	const actual = await page.evaluate(
 		async ({ base, inventory }) =>

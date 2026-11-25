@@ -1,3 +1,4 @@
+import { rawClip } from '../lib/rig/clips.ts';
 import { base64ToBytes, bytesToBase64, makeImg, pngSize, type Img } from '../lib/image/png.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import type { ImageReference } from '../lib/image/reference.ts';
@@ -79,7 +80,8 @@ export async function stateRequests(
 	id: string,
 	description: string,
 	seed: number,
-	reference?: ImageReference
+	reference?: ImageReference,
+	looks = 'the same character as in the source image'
 ): Promise<Req[]> {
 	const { cellSize } = plan;
 	const sourceViews = new Map(source.views.map(({ direction, image }) => [direction, image]));
@@ -128,6 +130,22 @@ export async function stateRequests(
 				inputs.map(async (image) => png(bytesToBase64(await encodePngBytes(image))))
 			);
 			switch (plan.endpoint) {
+				case '/animate-with-skeleton-v3': {
+					const guide = plan.guides.find(({ direction }) => direction === batch.facingIds[0]);
+					if (!guide || batch.facingIds.length !== 1 || batch.transport !== 'cells')
+						throw new Error('The Riding pose does not match the planned facing.');
+					return rawClip({
+						first: images[0].base64,
+						rest: guide.joints,
+						keypoints: guide.poses,
+						description: looks,
+						action: prompt,
+						dir: guide.direction,
+						view: plan.view,
+						seed: controls.seed
+					});
+				}
+
 				case '/edit-images-v2': {
 					const shared = {
 						edit_images: images.map((image) => ({ image, ...canvas })),
@@ -191,6 +209,13 @@ export function decodeStateBatch(
 	if (plan.endpoint === '/create-character-state')
 		throw new Error('Managed State results must come from the child character.');
 	const canvas = canvasFor(plan.cellSize, batch);
+	if (plan.endpoint === '/animate-with-skeleton-v3') {
+		if (images.length !== 3 || batch.facingIds.length !== 1)
+			throw new Error('Expected three Riding result images for one facing.');
+		for (const image of images) requireImage(image, canvas);
+		const image = images.find((candidate) => opaqueBox(candidate));
+		return image ? [{ direction: batch.facingIds[0], image }] : [];
+	}
 	const count = batch.transport === 'sheet' ? 1 : batch.facingIds.length;
 	if (images.length !== count) throw new Error(`Expected ${count} State result image(s).`);
 	for (const image of images) requireImage(image, canvas);

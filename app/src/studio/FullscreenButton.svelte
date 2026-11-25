@@ -5,6 +5,8 @@
 	import { Maximize, Minimize } from './icons.ts';
 	import { toast } from './state.svelte.ts';
 
+	/** `row`: More's fallback entry, used only when the top bar has no room left for the button. */
+	let { row = false, onactivate }: { row?: boolean; onactivate?: () => void } = $props();
 	let available = $state(false);
 	let active = $state(false);
 	let pending = $state(false);
@@ -35,6 +37,7 @@
 
 	async function toggle() {
 		if (pending) return;
+		onactivate?.();
 		pending = true;
 		const exiting = !!document.fullscreenElement;
 		try {
@@ -54,7 +57,17 @@
 	}
 </script>
 
-{#if available}
+{#if available && row}
+	<button
+		class="row bu-action mobile-fullscreen"
+		data-variant="quiet"
+		disabled={pending}
+		onclick={toggle}
+		>{#if active}<Minimize size={18} />{:else}<Maximize size={18} />{/if}<span class="row-name"
+			>{label}</span
+		></button
+	>
+{:else if available}
 	<button
 		class="bu-action header-fullscreen"
 		data-variant="quiet"

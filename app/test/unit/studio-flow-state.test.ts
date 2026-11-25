@@ -36,10 +36,12 @@ const mocks = vi.hoisted(() => ({
 	observe: vi.fn(),
 	getBlob: vi.fn(),
 	updateCharacter: vi.fn(),
-	saveIdle: vi.fn()
+	saveIdle: vi.fn(),
+	playAudioCue: vi.fn()
 }));
 const ledger = vi.hoisted(() => ({ jobs: [] as JobRec[] }));
 const mockAccount = vi.hoisted(() => ({ key: '', balance: null as Balance | null }));
+vi.mock('../../src/studio/audio.svelte.ts', () => ({ playAudioCue: mocks.playAudioCue }));
 vi.mock('../../src/studio/create.ts', () => ({
 	createCharacter: mocks.create,
 	addMove: mocks.move,
@@ -4212,6 +4214,7 @@ test('category Random switches to another item of that category in its own slot,
 	// Head holds a helmet (worn) and a wizard hat: only the hat is a choice.
 	expect(s.groupRandomChoices('head').map((i) => i.id)).toEqual(['hat_wizard']);
 	s.randomizeGroup('head');
+	expect(mocks.playAudioCue.mock.calls).toEqual([['recolor']]);
 	expect(s.doc.items).toEqual({ body: 'base', head: 'hat_wizard', torso_inner: 'vest_leather' });
 	expect(s.ui.selected).toBe('hat_wizard');
 	expect(s.doc.undo.map((u) => u.label)).toEqual([message('history.randomItem', { name: 'head' })]);
@@ -4235,6 +4238,7 @@ test('category Random re-rolls the colors when the only item of that category is
 	s.doc.undo = [];
 	expect(s.groupRandomChoices('back').map((i) => i.id)).toEqual(['cape_red']);
 	s.randomizeGroup('back');
+	expect(mocks.playAudioCue.mock.calls).toEqual([['recolor']]);
 	expect(s.doc.items).toEqual({ body: 'base', back: 'cape_red' });
 	expect(s.doc.variants.cloth).toBeDefined();
 	expect(s.doc.variants.cloth).not.toBe('crimson');
@@ -4243,4 +4247,12 @@ test('category Random re-rolls the colors when the only item of that category is
 	s.store.project!.manifest.materials = [];
 	expect(s.groupRandomChoices('back')).toEqual([]);
 	expect(s.groupRandomChoices('face_acc')).toEqual([]);
+});
+
+test('Random look plays a single recolor cue', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	s.store.project = { manifest: fixtureManifest(), images: new Map() };
+	s.doc.id = 'fixture:s2';
+	s.randomize();
+	expect(mocks.playAudioCue.mock.calls).toEqual([['recolor']]);
 });

@@ -1,6 +1,12 @@
 // Lucide icons used by the Studio (one import site; per-icon paths keep dev fast and the build small).
 export { default as PanelLeft } from '@lucide/svelte/icons/panel-left';
 export { default as PanelRight } from '@lucide/svelte/icons/panel-right';
+export { default as PanelLeftOpen } from '@lucide/svelte/icons/panel-left-open';
+export { default as PanelLeftClose } from '@lucide/svelte/icons/panel-left-close';
+export { default as PanelRightOpen } from '@lucide/svelte/icons/panel-right-open';
+export { default as PanelRightClose } from '@lucide/svelte/icons/panel-right-close';
+export { default as PanelBottomOpen } from '@lucide/svelte/icons/panel-bottom-open';
+export { default as PanelBottomClose } from '@lucide/svelte/icons/panel-bottom-close';
 export { default as Undo2 } from '@lucide/svelte/icons/undo-2';
 export { default as Redo2 } from '@lucide/svelte/icons/redo-2';
 export { default as Play } from '@lucide/svelte/icons/play';
@@ -78,6 +84,9 @@ export { default as Scaling } from '@lucide/svelte/icons/scaling';
 export { default as ListPlus } from '@lucide/svelte/icons/list-plus';
 export { default as ListMinus } from '@lucide/svelte/icons/list-minus';
 export { default as Settings2 } from '@lucide/svelte/icons/settings-2';
+export { default as Volume2 } from '@lucide/svelte/icons/volume-2';
+export { default as Music2 } from '@lucide/svelte/icons/music-2';
+export { default as Waves } from '@lucide/svelte/icons/waves';
 export { default as Shirt } from '@lucide/svelte/icons/shirt';
 export { default as Gamepad2 } from '@lucide/svelte/icons/gamepad-2';
 export { default as ArrowBigUp } from '@lucide/svelte/icons/arrow-big-up';

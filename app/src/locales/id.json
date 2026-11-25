@@ -158,6 +158,17 @@
 		"seatRight": "Geser posisi duduk ke kanan",
 		"seatAuto": "Gunakan posisi otomatis",
 		"seatChanged": "Posisi duduk yang tersimpan telah berubah. Tutup editor posisi duduk dan coba lagi.",
+		"audio": {
+			"title": "Audio",
+			"open": "Pengaturan audio",
+			"play": "Putar semua audio",
+			"mute": "Bisukan semua audio",
+			"music": "Musik",
+			"musicVolume": "Volume musik",
+			"effects": "Efek suara",
+			"effectsVolume": "Volume efek suara",
+			"notSaved": "Audio diubah, tetapi browser tidak dapat menyimpan perubahan."
+		},
 		"reset": {
 			"allAction": "Atur ulang semua pengaturan",
 			"pageAction": "Atur ulang halaman ini",
@@ -955,19 +966,19 @@
 			"hiddenItemsInMove": {
 				"other": "{count} item disembunyikan: bingkai {move} tidak lengkap"
 			},
-			"noMoveNothing": "Belum ada animasi {move}, jadi tidak ada yang ditampilkan",
-			"noMoveStill": "Belum ada animasi {move}, jadi karakter diam di tempat",
-			"noMovePlays": "Belum ada animasi {move}, jadi yang diputar adalah {fallback}",
-			"noFramesNothing": "{move} belum punya frame ke arah {direction}, jadi tidak ada yang ditampilkan",
-			"noFramesStill": "{move} belum punya frame ke arah {direction}, jadi karakter diam di tempat",
-			"noFramesPlays": "{move} belum punya frame ke arah {direction}, jadi yang diputar adalah {fallback}",
-			"noFramesFaces": "{move} belum punya frame ke arah {direction}, jadi karakter menghadap ke {fallback}",
+			"noMoveNothing": "Gerakan {move} belum ada.",
+			"noMoveStill": "{move} belum ada. Menampilkan pose diam.",
+			"noMovePlays": "{move} belum ada. Memutar {fallback}.",
+			"noFramesNothing": "Tidak ada bingkai {direction} untuk {move}.",
+			"noFramesStill": "Tidak ada bingkai {direction} untuk {move}. Menampilkan pose diam.",
+			"noFramesPlays": "Tidak ada bingkai {direction} untuk {move}. Memutar {fallback}.",
+			"noFramesFaces": "Tidak ada bingkai {direction} untuk {move}. Menghadap {fallback}.",
 			"undeclaredDirection": "Arah ini belum ditetapkan untuk karakter ini",
 			"hiddenItems": {
 				"other": "{count} item disembunyikan: frame {move} / {direction} tidak ada"
 			},
 			"equippedHidden": {
-				"other": "{count} item terpasang disembunyikan di tampilan ini"
+				"other": "{count} item disembunyikan (bingkai kurang)"
 			},
 			"itemLoading": "{item} sedang dimuat: {directions}",
 			"legsAxial": "Tampilan depan dan belakang tetap menampilkan kedua kaki.",
@@ -1394,6 +1405,9 @@
 		"previewZip": "Pratinjau ZIP karakter",
 		"previewCharacter": "Pratinjau karakter",
 		"preview": "Pratinjau",
+		"appearanceTip": "Pakaian yang digambar bisa terlihat di balik perlengkapan.",
+		"appearanceTipPath": "Untuk melepas atau mengubahnya setelah impor:",
+		"appearanceTipSteps": "Tekan {name} di bilah atas → tekan {action}",
 		"previewArtwork": "Pratinjau impor karakter",
 		"stalePreview": "Menampilkan pratinjau terakhir. Perbarui pilihan Anda untuk melanjutkan.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1417,7 +1431,7 @@
 		"untitledState": "Varian tanpa nama",
 		"warning": {
 			"noRoom": "Ruang untuk animasi tidak ditambahkan karena karakter ini memiliki terlalu banyak piksel gambar. Gunakan Sesuaikan frame setelah mengimpor untuk menambahkannya.",
-			"fixedBase": "Gambar yang diimpor menjadi dasar tetap: pakaian dan rambut yang sudah ada tidak dapat dihapus. Siapkan rig pose untuk memakai perlengkapan yang mengikuti pose kerangka dan menambahkan animasi baru.",
+			"fixedBase": "Siapkan rig pose untuk menyesuaikan item dan menambahkan gerakan baru.",
 			"frameCounts": "Jumlah frame “{move}” berbeda di setiap arah. Setiap arah diimpor sebagai animasi terpisah agar semua frame asli dan durasi tiap arah tetap utuh.",
 			"skippedMove": "“{move}” tidak disertakan: frame animasinya tidak bisa dibaca. Ekspor lagi dengan frame bernomor satu per satu.",
 			"skippedDirection": "“{move}” yang menghadap {direction} tidak disertakan: frame-nya kosong, hilang, atau tidak berurutan.",
@@ -2866,6 +2880,39 @@
 		"scaryWalk": "Jalan seram",
 		"runningJump": "Lompat sambil berlari"
 	},
+	"appearance": {
+		"action": "Edit tampilan…",
+		"title": "Edit tampilan",
+		"choose": "Pilih perubahan",
+		"custom": "Edit khusus",
+		"instructions": "Apa yang ingin Anda ubah?",
+		"reference": "Pro dapat menggunakan gambar referensi bersama petunjuk tertulis.",
+		"underwearHint": "Ganti pakaian yang tergambar dengan pakaian dalam putih polos.",
+		"facing": "Arah hadap",
+		"original": "Asli",
+		"edited": "Diedit",
+		"showWorn": "Tampilkan pada karakter",
+		"review": "Tinjau perubahan",
+		"checkViews": "Periksa bentuk dan keselarasan dari setiap arah sebelum menyimpan.",
+		"characterSource": "Menggunakan bingkai pertama dari {move}.",
+		"characterScope": "Karakter baru diawali dengan tampilan berdiri. Tambahkan animasi dan pasang perlengkapan setelah menyimpan.",
+		"itemScope": "Sumber: {move}, frame pertama. Tambahkan gambar untuk frame lain setelah menyimpan.",
+		"editCharacter": "Edit karakter",
+		"editItem": "Edit item",
+		"editCost": "{action} · {cost}",
+		"saveCharacter": "Simpan sebagai karakter baru",
+		"saveItem": "Simpan sebagai item baru",
+		"editedSuffix": "(diedit)",
+		"saved": "Salinan hasil edit disimpan",
+		"running": "Membuat pratinjau…",
+		"unsupported": "Model ini tidak dapat mengedit tampilan sebesar ini. Pilih model lain.",
+		"unavailable": "Tidak ada gambar yang kompatibel untuk diedit.",
+		"changed": "Gambar atau perkiraan biaya berubah. Tinjau lagi perubahan ini.",
+		"keptDirections": "Salinan ini menyimpan gambar asli untuk arah berikut: {directions}.",
+		"incomplete": "Beberapa tampilan hasil edit tidak tersedia. Buka Aktivitas untuk melihat detail atau unduh hasil yang diterima.",
+		"reviewPending": "Simpan atau buang pratinjau tampilan sebelum mengubah sumbernya.",
+		"discardNotice": "Buang pratinjau? Biaya PixelLab tetap berlaku."
+	},
 	"stateGeneration": {
 		"continueIntro": "Anda dapat menyelesaikan tampilan yang belum pernah dikirim. Tampilan yang sudah selesai akan disimpan.",
 		"continueAccount": "Hubungkan kembali dengan kunci PixelLab awal untuk melanjutkan status ini.",
@@ -3446,6 +3493,14 @@
 			"changed": "Karakter ini berubah. Pilih ZIP lagi untuk meninjau versi terbaru."
 		}
 	},
+	"studioPanel": {
+		"side": "Sisi panel",
+		"left": "Kiri",
+		"right": "Kanan",
+		"autoHide": "Sembunyikan panel saat membuka tampilan langsung",
+		"autoHideHelp": "Untuk layar sentuh kecil. Buka lagi kapan saja dari bilah alat.",
+		"notSaved": "Pengaturan panel berubah, tetapi browser tidak bisa menyimpannya."
+	},
 	"liveViews": {
 		"walkWhileAttacking": "Berjalan saat menyerang",
 		"layeringHelp": "Berjalan dan menyerang harus menghadap ke arah yang sama, kaki perlu gambar untuk kedua gerakan, dan sambungan pinggang harus selaras. Jika tidak, serangan seluruh tubuh biasa akan diputar.",
@@ -3478,11 +3533,11 @@
 		"actions": "Aksi permainan",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Spasi",
-		"noAttack": "Belum ada yang diputar sebagai Serangan. Pilih animasi atau keadaan di pengaturan Tampilan langsung.",
-		"noAttackDirection": "{move} tidak memiliki frame ke arah {direction}, jadi tidak dapat menyerang ke arah itu.",
-		"hintTopDown": "WASD atau tahan klik untuk bergerak · Shift untuk lari cepat · Klik kanan atau E untuk menyerang · Spasi untuk melompat · F untuk naik atau turun",
-		"hintSide": "A/D atau tahan klik untuk bergerak · Shift untuk lari cepat · Klik kanan atau E untuk menyerang · Spasi untuk melompat · F untuk naik atau turun",
-		"hintTouch": "Seret untuk bergerak · Tahan dan seret pedang untuk menyerang dan membidik · Tombol untuk melompat, lari cepat, dan menunggang",
+		"noAttack": "Serangan belum diatur. Buka pengaturan tampilan langsung.",
+		"noAttackDirection": "Tidak ada bingkai {direction} untuk {move}.",
+		"hintTopDown": "WASD atau tahan klik untuk bergerak",
+		"hintSide": "A/D atau tahan klik untuk bergerak",
+		"hintTouch": "Seret untuk bergerak",
 		"stageTopDown": "Dunia uji karakter. Gunakan WASD, tombol panah, klik, atau seret untuk bergerak; Shift untuk lari cepat. Klik kanan atau E menyerang, Spasi melompat, F naik atau turun. Tombol 1, 2, 3 mengganti tampilan.",
 		"stageSide": "Dunia uji gulir samping. Gunakan A/D, panah kiri dan kanan, klik, atau seret untuk bergerak; Shift untuk lari cepat. Klik kanan atau E menyerang, Spasi melompat, F naik atau turun. Tombol 1, 2, 3 mengganti tampilan."
 	},

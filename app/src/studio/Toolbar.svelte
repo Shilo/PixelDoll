@@ -6,7 +6,8 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { navigateMenu, popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
-	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
+	import { experience, characters, type WorldMode } from './experience/state.svelte.ts';
+	import type { PanelSide } from './experience/panelSettings.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
 	import SharePopover from './SharePopover.svelte';
 	import CharacterActions from './CharacterActions.svelte';
@@ -15,6 +16,7 @@
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import GlobalActions from './GlobalActions.svelte';
+	import AudioSettingsButton from './AudioSettingsButton.svelte';
 	import MoreMenu from './MoreMenu.svelte';
 	import { historyText } from './historyText.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
@@ -25,6 +27,7 @@
 		store,
 		openProject,
 		openRename,
+		openAppearance,
 		undo,
 		redo,
 		randomize,
@@ -43,13 +46,48 @@
 		House,
 		Activity,
 		Pencil,
+		Sparkles,
 		PersonStanding,
 		Copy,
 		Dices,
 		Eye,
 		Layers2,
-		Mountain
+		Mountain,
+		PanelLeftOpen,
+		PanelLeftClose,
+		PanelRightOpen,
+		PanelRightClose,
+		PanelBottomOpen,
+		PanelBottomClose
 	} from './icons.ts';
+	let {
+		panelOpen,
+		panelSide,
+		onpanel,
+		onmode
+	}: {
+		panelOpen: boolean;
+		panelSide: PanelSide | 'bottom';
+		onpanel: () => void;
+		onmode: (mode: WorldMode, pointer: string) => void;
+	} = $props();
+	// The icon shows what a press does: open toward the dock edge, or close into it.
+	const PANEL_ICONS = {
+		left: [PanelLeftOpen, PanelLeftClose],
+		right: [PanelRightOpen, PanelRightClose],
+		bottom: [PanelBottomOpen, PanelBottomClose]
+	} as const;
+	const PanelIcon = $derived(PANEL_ICONS[panelSide][panelOpen ? 1 : 0]);
+	$effect.pre(() => {
+		void panelSide;
+		const focused = document.activeElement;
+		if (focused?.id === 'customization-toggle') {
+			void tick().then(() => {
+				if (!focused.isConnected && document.activeElement === document.body)
+					document.getElementById('customization-toggle')?.focus({ preventScroll: true });
+			});
+		}
+	});
 
 	const m = $derived(store.project?.manifest);
 	const facts = $derived(m && characterFacts(m));
@@ -61,18 +99,23 @@
 		['topdown', 'toolbar.viewTopDown', Layers2],
 		['side', 'toolbar.viewSide', Mountain]
 	] as const;
-	async function changeMode(mode: WorldMode) {
-		setMode(mode);
+	let activationPointer = '';
+	async function changeMode(mode: WorldMode, event: MouseEvent) {
+		const pointer = event.detail ? (event as PointerEvent).pointerType || activationPointer : '';
+		activationPointer = '';
+		onmode(mode, pointer);
 		await tick();
 		focusWorld();
 	}
 	function focusWorld() {
-		document.querySelector<HTMLElement>('.world-stage')?.focus({ preventScroll: true });
+		const stage = document.querySelector<HTMLElement>('.world-stage');
+		if (!stage?.closest('[inert]')) stage?.focus({ preventScroll: true });
 	}
 	function resumeWorldAfterPointer(header: HTMLElement) {
 		const clicked = async (event: MouseEvent) => {
 			const button = event.target instanceof Element ? event.target.closest('button') : null;
-			if (event.detail === 0 || !button || button.hasAttribute('popovertarget')) return;
+			if (event.detail === 0 || !button || button.matches('[popovertarget], #customization-toggle'))
+				return;
 			await tick();
 			if (
 				experience.screen !== 'studio' ||
@@ -140,6 +183,12 @@
 	 *  name and the actions, and fall back to the bar's center when there is no room. Floating rows (phones,
 	 *  sheets) are positioned by CSS and are left alone. */
 	function centerOnStage(node: HTMLElement) {
+		// The stage changes as the panel opens and once it has finished closing.
+		void panelOpen;
+		void experience.panelClosing;
+		void panelSide;
+		// Reposition after translated labels change, before a stale offset can cover adjacent actions.
+		void t('toolbar.viewSide');
 		const header = node.parentElement!;
 		const update = () => {
 			node.style.removeProperty('--view-shift');
@@ -173,11 +222,92 @@
 		return () => {
 			observer.disconnect();
 			removeEventListener('resize', update);
+			node.style.removeProperty('--view-shift');
 		};
 	}
+	/** Optional actions that move into More as the bar runs out of room, one at a time in their left-to-right order;
+	 *  Full screen goes only when nothing else is left to move. Phone portrait widths start with the first four already
+	 *  there (layout.css), so this order is the only priority. */
+	const OVERFLOW = ['undo', 'redo', 'random', 'share', 'export', 'fullscreen'] as const;
+	/** The narrowest a truncated character name may get before the next action moves into More. */
+	const MIN_NAME = 96;
+	let fitFrame = 0;
+	let fitHeader: HTMLElement | undefined;
+	/** The bar control that last had focus, so focus can follow it into More when it leaves the bar. */
+	let fitFocus: Element | null = null;
+	function fitNow() {
+		const header = fitHeader,
+			root = header?.closest<HTMLElement>('.experience');
+		if (!header || !root) return;
+		const name = header.querySelector<HTMLElement>('.name-text');
+		const crowded = () =>
+			header.scrollWidth > header.clientWidth + 1 ||
+			(!!name && name.clientWidth < Math.min(name.scrollWidth, MIN_NAME));
+		const moved: string[] = [];
+		delete root.dataset.overflow;
+		if (experience.screen === 'studio')
+			for (const action of OVERFLOW) {
+				if (!crowded()) break;
+				moved.push(action);
+				root.dataset.overflow = moved.join(' ');
+			}
+		// A focused action that moved into More hands focus to More rather than dropping it on the page.
+		const focus = fitFocus;
+		if (
+			focus?.isConnected &&
+			header.contains(focus) &&
+			!focus.checkVisibility() &&
+			(document.activeElement === focus || document.activeElement === document.body)
+		)
+			header
+				.querySelector<HTMLElement>('[popovertarget="experience-options"]')
+				?.focus({ preventScroll: true });
+	}
+	function scheduleFit() {
+		cancelAnimationFrame(fitFrame);
+		fitFrame = requestAnimationFrame(fitNow);
+	}
+	function fitActions(header: HTMLElement) {
+		fitHeader = header;
+		// Fit once before the first paint, so a long saved name never shows a squeezed bar for a frame.
+		fitNow();
+		const observer = new ResizeObserver(scheduleFit);
+		for (const el of [header, ...header.children]) observer.observe(el);
+		const focused = (e: FocusEvent) => (fitFocus = e.target as Element);
+		header.addEventListener('focusin', focused);
+		// A web font arriving late widens the name without resizing the bar.
+		document.fonts.addEventListener('loadingdone', scheduleFit);
+		return () => {
+			observer.disconnect();
+			header.removeEventListener('focusin', focused);
+			document.fonts.removeEventListener('loadingdone', scheduleFit);
+			cancelAnimationFrame(fitFrame);
+			fitHeader = undefined;
+			fitFocus = null;
+			delete header.closest<HTMLElement>('.experience')?.dataset.overflow;
+		};
+	}
+	// Content that changes a control's width without resizing the bar: the name, labels and history.
+	$effect(() => {
+		void [name, undoText, redoText, m, panelSide, experience.screen, t('toolbar.export')];
+		scheduleFit();
+	});
 </script>
 
-<header class="experience-header" {@attach resumeWorldAfterPointer}>
+{#snippet panelToggle()}
+	<button
+		id="customization-toggle"
+		class="bu-action panel-toggle"
+		data-variant="quiet"
+		aria-expanded={panelOpen}
+		aria-controls="customization-rail"
+		aria-label={t('experience.customization')}
+		title={t('experience.customization')}
+		onclick={onpanel}><PanelIcon size={20} aria-hidden="true" /></button
+	>
+{/snippet}
+
+<header class="experience-header" {@attach resumeWorldAfterPointer} {@attach fitActions}>
 	<div class="header-start">
 		{#if experience.screen === 'studio'}<button
 				class="bu-action header-back"
@@ -186,6 +316,7 @@
 				title={t('common.characters')}
 				onclick={characters}><ChevronLeft size={20} /></button
 			><!-- The page heading sits beside the menu button: a heading is not allowed inside a button. -->
+			{#if panelSide === 'left'}{@render panelToggle()}{/if}
 			<h1 class="sr">{name}</h1>
 			<button
 				class="name-menu project-btn"
@@ -231,7 +362,8 @@
 					aria-controls="world-stage"
 					aria-label={label}
 					title={label}
-					onclick={() => changeMode(id)}
+					onpointerdown={(event) => (activationPointer = event.pointerType)}
+					onclick={(event) => changeMode(id, event)}
 					><span class="bu-tab-label"
 						><Icon size={18} aria-hidden="true" /><span
 							class="view-label bu-tab-text"
@@ -243,6 +375,7 @@
 	{/if}
 	<div class="header-actions">
 		{#if experience.screen === 'characters'}
+			<AudioSettingsButton />
 			<NewCharacterButton />
 		{:else}
 			<!-- Undo shows once there is something to undo, and Redo after it once there is something to redo. Each takes room
@@ -267,6 +400,7 @@
 				bind:this={redoButton}
 				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
 			>
+			<AudioSettingsButton />
 			<button
 				class="bu-action header-random"
 				data-variant="quiet"
@@ -295,7 +429,10 @@
 				/></button
 			>
 		{/if}
-		<GlobalActions />
+		<GlobalActions
+			showAudio={false}
+			beforeMore={experience.screen === 'studio' && panelSide !== 'left' ? panelToggle : undefined}
+		/>
 	</div>
 </header>
 <SharePopover />
@@ -358,6 +495,18 @@
 					openRename(doc.id);
 				}}
 				><Pencil size={16} /><span class="row-name">{openerLabel(t('toolbar.rename'))}</span
+				><SurfaceChevron /></button
+			>{/if}
+		{#if doc.id.startsWith('rig-')}<button
+				class="row"
+				role="menuitem"
+				aria-haspopup="dialog"
+				onclick={() => {
+					close();
+					openAppearance(doc.id);
+				}}
+				><Sparkles size={16} aria-hidden="true" /><span class="row-name"
+					>{t('appearance.action')}</span
 				><SurfaceChevron /></button
 			>{/if}
 		{#if !isDemo()}<button

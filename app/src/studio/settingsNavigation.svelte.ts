@@ -4,6 +4,7 @@ import type { CreationSection } from './creationSettings.ts';
 
 export type SettingsSection =
 	| 'general'
+	| 'audio'
 	| 'wardrobe'
 	| 'mount'
 	| 'live'
@@ -17,6 +18,7 @@ export type SettingsSection =
 
 export const settingsLabels = {
 	general: 'settings.appearance',
+	audio: 'settings.audio.title',
 	wardrobe: 'experience.tabWardrobe',
 	mount: 'settings.mount',
 	live: 'liveViews.title',
@@ -67,12 +69,20 @@ export const isSettingsShortcut = (e: KeyboardEvent) =>
 /** Without a section, Settings reopens on the page last shown; kept in memory only, so a reload starts at the index. */
 export function openSettings(section?: SettingsSection) {
 	returnFocus = undefined;
-	settingsNavigation.fromExport = ui.sheet === 'export';
+	settingsNavigation.fromExport = ui.sheet === 'export' && section === 'export';
 	if (section) settingsNavigation.section = section;
-	ui.sheet = 'settings';
+	if (ui.sheet && ui.sheet !== 'settings' && !settingsNavigation.fromExport)
+		ui.settingsOverlay = true;
+	else ui.sheet = 'settings';
+}
+
+export function closeSettings() {
+	if (ui.settingsOverlay) ui.settingsOverlay = false;
+	else ui.sheet = null;
 }
 
 export function openSettingsAccount(replace = false) {
+	ui.settingsOverlay = false;
 	settingsNavigation.accountOpen = true;
 	settingsNavigation.accountReplace = replace;
 	ui.sheet = 'connect';
@@ -88,6 +98,7 @@ export function closeSettingsAccount(): boolean {
 }
 
 export function openSettingsActivity() {
+	ui.settingsOverlay = false;
 	settingsNavigation.activityOpen = true;
 	ui.sheet = 'activity';
 }
@@ -103,6 +114,7 @@ export function closeSettingsActivity(): boolean {
 
 /** Cost estimate for the open character, returning to Settings when it closes. */
 export function openSettingsCost() {
+	ui.settingsOverlay = false;
 	settingsNavigation.costOpen = true;
 	ui.costProject = doc.id;
 	ui.sheet = 'cost';
@@ -118,6 +130,7 @@ export function closeSettingsCost(): boolean {
 }
 
 export function openSettingsExport() {
+	ui.settingsOverlay = false;
 	settingsNavigation.exportOpen = true;
 	ui.sheet = 'export';
 }

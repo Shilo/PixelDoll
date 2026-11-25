@@ -158,6 +158,17 @@
 		"seatRight": "좌석을 오른쪽으로 이동",
 		"seatAuto": "자동 배치 사용",
 		"seatChanged": "저장된 좌석 위치가 변경되었습니다. 좌석 편집을 닫고 다시 시도하세요.",
+		"audio": {
+			"title": "오디오",
+			"open": "오디오 설정",
+			"play": "모든 오디오 재생",
+			"mute": "모든 소리 끄기",
+			"music": "음악",
+			"musicVolume": "음악 음량",
+			"effects": "효과음",
+			"effectsVolume": "효과음 음량",
+			"notSaved": "오디오 설정을 변경했지만 브라우저에 저장하지 못했습니다."
+		},
 		"reset": {
 			"allAction": "모든 설정 초기화",
 			"pageAction": "이 페이지 초기화",
@@ -955,19 +966,19 @@
 			"hiddenItemsInMove": {
 				"other": "아이템 {count}개 숨김: {move} 프레임 부족"
 			},
-			"noMoveNothing": "아직 {move} 동작이 없어서 표시할 내용이 없어요",
-			"noMoveStill": "아직 {move} 동작이 없어서 캐릭터가 가만히 서 있어요",
-			"noMovePlays": "아직 {move} 동작이 없어서 대신 {fallback} 동작을 재생해요",
-			"noFramesNothing": "{move} 동작에 {direction} 방향 프레임이 아직 없어서 표시할 내용이 없어요",
-			"noFramesStill": "{move} 동작에 {direction} 방향 프레임이 아직 없어서 캐릭터가 가만히 서 있어요",
-			"noFramesPlays": "{move} 동작에 {direction} 방향 프레임이 아직 없어서 대신 {fallback} 동작을 재생해요",
-			"noFramesFaces": "{move} 동작에 {direction} 방향 프레임이 아직 없어서 대신 {fallback} 방향을 바라봐요",
+			"noMoveNothing": "{move} 동작이 없어요.",
+			"noMoveStill": "{move} 동작이 없어 정지 자세를 표시해요.",
+			"noMovePlays": "{move} 동작이 없어 {fallback}을 재생해요.",
+			"noFramesNothing": "{move}에 {direction} 프레임이 없어요.",
+			"noFramesStill": "{move}에 {direction} 프레임이 없어 정지 자세를 표시해요.",
+			"noFramesPlays": "{move}에 {direction} 프레임이 없어 {fallback}을 재생해요.",
+			"noFramesFaces": "{move}에 {direction} 프레임이 없어 {fallback} 방향을 표시해요.",
 			"undeclaredDirection": "캐릭터에 선언되지 않은 방향이에요",
 			"hiddenItems": {
 				"other": "아이템 {count}개 숨김: {move} / {direction} 프레임이 없어요"
 			},
 			"equippedHidden": {
-				"other": "이 뷰에서는 착용 중인 아이템 {count}개가 가려져요"
+				"other": "아이템 {count}개 숨김 (프레임 부족)"
 			},
 			"itemLoading": "{item} 불러오는 중: {directions}",
 			"legsAxial": "앞모습과 뒷모습에서는 두 다리가 모두 보여요.",
@@ -1394,6 +1405,9 @@
 		"previewZip": "캐릭터 ZIP 미리보기",
 		"previewCharacter": "캐릭터 미리보기",
 		"preview": "미리보기",
+		"appearanceTip": "캐릭터에 그려진 옷은 장비 아래로 보일 수 있습니다.",
+		"appearanceTipPath": "가져온 후 옷을 벗기거나 바꾸려면:",
+		"appearanceTipSteps": "상단 바에서 {name} 누르기 → {action} 누르기",
 		"previewArtwork": "캐릭터 가져오기 미리보기",
 		"stalePreview": "마지막 미리보기를 표시하고 있어요. 계속하려면 선택을 업데이트하세요.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1417,7 +1431,7 @@
 		"untitledState": "제목 없는 상태",
 		"warning": {
 			"noRoom": "이 캐릭터는 이미지 픽셀이 너무 많아 동작용 공간을 추가하지 않았어요. 가져온 뒤 프레임 조정에서 추가하세요.",
-			"fixedBase": "가져온 아트워크는 고정 기본 몸체예요. 기존 옷과 머리카락은 제거할 수 없어요. 스켈레톤 자세 장비와 새 동작을 쓰려면 자세 리그를 설정하세요.",
+			"fixedBase": "아이템을 맞추고 새 동작을 추가하려면 포즈 리그를 설정하세요.",
 			"frameCounts": "“{move}” 동작은 방향마다 프레임 수가 달라요. 모든 원본 프레임과 방향 길이를 유지하려고 방향을 별도 동작으로 가져왔어요.",
 			"skippedMove": "“{move}”은(는) 제외됐어요. 애니메이션 프레임을 읽을 수 없어요. 번호가 붙은 개별 프레임으로 다시 내보내세요.",
 			"skippedDirection": "“{move}”의 {direction} 방향은 제외됐어요. 프레임이 비어 있거나, 빠져 있거나, 순서가 맞지 않아요.",
@@ -2866,6 +2880,39 @@
 		"scaryWalk": "으스스한 걷기",
 		"runningJump": "달리며 점프"
 	},
+	"appearance": {
+		"action": "외형 편집…",
+		"title": "외형 편집",
+		"choose": "편집 방식 선택",
+		"custom": "직접 편집",
+		"instructions": "무엇을 바꿀까요?",
+		"reference": "Pro에서는 참조 이미지와 텍스트 지시를 함께 사용할 수 있습니다.",
+		"underwearHint": "그려진 옷을 무늬 없는 흰색 속옷으로 바꿔요.",
+		"facing": "방향",
+		"original": "원본",
+		"edited": "편집본",
+		"showWorn": "캐릭터에 착용해서 보기",
+		"review": "편집 결과 확인",
+		"checkViews": "저장하기 전에 모든 방향에서 형태와 정렬을 확인하세요.",
+		"characterSource": "{move}의 첫 프레임을 사용합니다.",
+		"characterScope": "새 캐릭터에는 서 있는 모습이 들어 있어요. 저장한 뒤 동작을 추가하고 장비를 맞추세요.",
+		"itemScope": "원본 동작은 {move}이며 첫 프레임을 사용해요. 나머지 프레임은 저장한 뒤 추가하세요.",
+		"editCharacter": "캐릭터 편집",
+		"editItem": "아이템 편집",
+		"editCost": "{action} · {cost}",
+		"saveCharacter": "새 캐릭터로 저장",
+		"saveItem": "새 아이템으로 저장",
+		"editedSuffix": "(편집본)",
+		"saved": "편집한 복사본을 저장했어요",
+		"running": "미리보기 생성 중…",
+		"unsupported": "이 모델은 현재 크기의 이미지를 편집할 수 없어요. 다른 모델을 선택하세요.",
+		"unavailable": "편집할 수 있는 이미지가 없어요.",
+		"changed": "이미지나 예상 비용이 바뀌었어요. 편집 내용을 다시 확인하세요.",
+		"keptDirections": "이 사본은 다음 방향에 원본 그림을 유지합니다: {directions}.",
+		"incomplete": "일부 편집 이미지를 가져오지 못했어요. 활동에서 세부 정보를 보거나 받은 결과를 다운로드하세요.",
+		"reviewPending": "원본을 변경하기 전에 외형 미리보기를 저장하거나 버리세요.",
+		"discardNotice": "미리보기를 버릴까요? PixelLab 요금은 그대로 적용돼요."
+	},
 	"stateGeneration": {
 		"continueIntro": "아직 전송하지 않은 방향의 이미지를 생성할 수 있습니다. 완료된 이미지는 유지됩니다.",
 		"continueAccount": "이 상태를 계속하려면 원래 PixelLab 키로 다시 연결하세요.",
@@ -3446,6 +3493,14 @@
 			"changed": "이 캐릭터가 바뀌었어요. 최신 버전을 확인하려면 ZIP을 다시 선택하세요."
 		}
 	},
+	"studioPanel": {
+		"side": "패널 위치",
+		"left": "왼쪽",
+		"right": "오른쪽",
+		"autoHide": "라이브 뷰에 들어갈 때 패널 숨기기",
+		"autoHideHelp": "작은 터치스크린에 적용돼요. 언제든지 도구 모음에서 다시 열 수 있어요.",
+		"notSaved": "패널 설정이 바뀌었지만 브라우저에 저장하지 못했어요."
+	},
 	"liveViews": {
 		"walkWhileAttacking": "공격하면서 걷기",
 		"layeringHelp": "걷기와 공격의 방향이 같고, 두 동작에 모두 다리 이미지가 있으며, 허리 연결부가 맞아야 해요. 그렇지 않으면 일반 전신 공격이 재생돼요.",
@@ -3478,11 +3533,11 @@
 		"actions": "게임 동작",
 		"withShortcut": "{action}({key})",
 		"spaceKey": "스페이스",
-		"noAttack": "아직 공격으로 재생할 것이 없어요. 라이브 뷰 설정에서 동작이나 상태를 골라 주세요.",
-		"noAttackDirection": "{move}에는 {direction} 방향 프레임이 없어서 그쪽으로는 공격할 수 없어요.",
-		"hintTopDown": "WASD 또는 클릭을 누른 채로 이동 · Shift로 질주 · 오른쪽 클릭 또는 E로 공격 · 스페이스로 점프 · F로 타기/내리기",
-		"hintSide": "A/D 또는 클릭을 누른 채로 이동 · Shift로 질주 · 오른쪽 클릭 또는 E로 공격 · 스페이스로 점프 · F로 타기/내리기",
-		"hintTouch": "드래그로 이동 · 검을 누른 채 드래그해 공격하고 조준 · 버튼으로 점프, 질주, 타기",
+		"noAttack": "공격이 설정되지 않았어요. 라이브 뷰 설정을 여세요.",
+		"noAttackDirection": "{move}에 {direction} 프레임이 없어요.",
+		"hintTopDown": "WASD 또는 클릭을 길게 눌러 이동",
+		"hintSide": "A/D 또는 클릭을 길게 눌러 이동",
+		"hintTouch": "드래그해서 이동",
 		"stageTopDown": "캐릭터 테스트 월드예요. WASD, 화살표 키, 클릭 또는 드래그로 이동하고 Shift로 질주해요. 오른쪽 클릭이나 E로 공격하고, 스페이스로 점프하고, F로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요.",
 		"stageSide": "사이드 스크롤러 테스트 월드예요. A/D, 좌우 화살표 키, 클릭 또는 드래그로 이동하고 Shift로 질주해요. 오른쪽 클릭이나 E로 공격하고, 스페이스로 점프하고, F로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요."
 	},

@@ -61,6 +61,7 @@
 	import type { StateGenerationCost, StateGenerationModel } from './stateGenerationPlan.ts';
 	import ModelSelect from './ModelSelect.svelte';
 	import { stateCostText } from './stateCost.ts';
+	import { ridingStatePlan } from './ridingStatePlan.ts';
 	import { generateState } from './stateJobs.svelte.ts';
 	import { stateAttempts } from './stateRecovery.ts';
 	import { openingCreationSettings, resolveStateModelPreference } from './creationSettings.ts';
@@ -191,6 +192,15 @@
 	);
 	const connected = $derived(!!app.key && !app.keyRejected);
 	const flashReference = $derived(model === 'pro-flash' && !!reference);
+	const guided = $derived(
+		!!(
+			ridingIdea &&
+			!reference &&
+			manifest &&
+			views &&
+			ridingStatePlan(manifest.rig, source, views)
+		)
+	);
 	const sourceReady = $derived(!!views && !changed);
 	const editReady = $derived(
 		!!(description.trim() || (model !== 'pixen' && reference)) && !referenceLoading
@@ -206,6 +216,7 @@
 			quoted.draft.name === name &&
 			quoted.draft.description === description &&
 			quoted.draft.model === model &&
+			Boolean(quoted.prepared.guided) === guided &&
 			quoted.draft.reference === reference
 			? quoted.prepared
 			: null
@@ -338,7 +349,7 @@
 	$effect(() => {
 		if (!editing || !connected || !formReady || busy || !views) return;
 		// Reprice after any change the quote depends on, once typing pauses.
-		void [clip, frame, name, description, model, reference, views.version, priceRetry];
+		void [clip, frame, name, description, model, reference, guided, views.version, priceRetry];
 		const timer = setTimeout(() => void price(), 400);
 		return () => clearTimeout(timer);
 	});
@@ -367,7 +378,8 @@
 				id,
 				input.description,
 				draft.model,
-				input.reference
+				input.reference,
+				guided
 			);
 			if (request !== priceRequest) return;
 			if (prepared.sourceVersion !== version)
@@ -551,7 +563,7 @@
 							onvalue={describe}
 							spec={enhanceSpec}
 							activity={{ scope: enhanceScope, label: 'Enhance State instructions' }}
-							maxOutput={model === 'pixen' ? 500 : 2000}
+							maxOutput={model === 'pixen' && !guided ? 500 : 2000}
 							enhanceDisabled={!!busy}
 							disabled={!!busy}
 						/>
@@ -577,35 +589,37 @@
 					)}
 					disabled={!!busy || model === 'pixen'}
 				/>
-				{#if !modelEdited && savedModel !== undefined && initialModel !== savedModel}
-					<p class="notice warn small" role="status">
-						{t('creationSettings.fallback', {
-							setting: t('create.form.model'),
-							value: t('create.form.models.pro.label')
-						})}
-					</p>
+				{#if !guided}
+					{#if !modelEdited && savedModel !== undefined && initialModel !== savedModel}
+						<p class="notice warn small" role="status">
+							{t('creationSettings.fallback', {
+								setting: t('create.form.model'),
+								value: t('create.form.models.pro.label')
+							})}
+						</p>
+					{/if}
+					<details class="disclosure" bind:open={advancedOpen}>
+						<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
+						<label class="field">
+							<span class="label">{t('create.form.model')}</span>
+							<ModelSelect
+								value={model}
+								options={[
+									{ value: 'pro', label: t('create.form.models.pro.label') },
+									{ value: 'pro-flash', label: t('create.form.models.proFlash.label') },
+									{ value: 'pixen', label: 'V3 (Pixen)' }
+								]}
+								cost={modelCost}
+								onopen={priceModels}
+								onpick={(next) => {
+									modelEdited = true;
+									model = next;
+								}}
+								disabled={!!busy || referenceLoading}
+							/>
+						</label>
+					</details>
 				{/if}
-				<details class="disclosure" bind:open={advancedOpen}>
-					<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
-					<label class="field">
-						<span class="label">{t('create.form.model')}</span>
-						<ModelSelect
-							value={model}
-							options={[
-								{ value: 'pro', label: t('create.form.models.pro.label') },
-								{ value: 'pro-flash', label: t('create.form.models.proFlash.label') },
-								{ value: 'pixen', label: 'V3 (Pixen)' }
-							]}
-							cost={modelCost}
-							onopen={priceModels}
-							onpick={(next) => {
-								modelEdited = true;
-								model = next;
-							}}
-							disabled={!!busy || referenceLoading}
-						/>
-					</label>
-				</details>
 				{#if quote}
 					{@const managed = quote.plan.endpoint === '/create-character-state'}
 					<div class="notice small" role="status">
@@ -616,6 +630,7 @@
 								</p>
 							{:else}
 								<p>{t('stateGeneration.localOnly')}</p>
+								{#if guided}<p>{t('moveSheet.models.skeletonV3')}</p>{/if}
 							{/if}
 							{#if quote.plan.endpoint === '/transfer-outfit-v2'}<p>
 									{t('stateGeneration.transfer')}

@@ -38,6 +38,14 @@
 .sheet-layout .scene-reading {
 	background: linear-gradient(180deg, var(--bu-reading-start), transparent 30%);
 }
+.panel-left.panel-open .scene-reading {
+	background:
+		linear-gradient(180deg, var(--bu-reading-start), transparent 30%),
+		linear-gradient(90deg, var(--bu-reading-end), transparent 35%);
+}
+.experience:not(.selection, .panel-open) .scene-reading {
+	background: linear-gradient(180deg, var(--bu-reading-start), transparent 30%);
+}
 
 /* ---------- top bar: no solid bar, controls sit on the scene ---------- */
 .experience-header {
@@ -91,13 +99,20 @@
 .experience-header .bu-action[data-variant='quiet'] {
 	padding: 0;
 }
+.experience-header .panel-toggle {
+	flex: none;
+}
 /* Phones keep every header target 44 px but tighter, so the name keeps its room: the view tabs float below, so the
    bar has no middle column, and the actions take only their own width. */
 .phone-layout .experience-header {
 	grid-template-columns: minmax(0, 1fr) auto max-content;
 	column-gap: 0;
 }
-.phone-layout :is(.header-actions, .header-start) {
+.phone-layout .header-actions,
+.phone-layout:not(.selection) .header-start {
+	gap: 0;
+}
+.phone-layout .experience-header .global-actions {
 	gap: 0;
 }
 .experience
@@ -106,6 +121,8 @@
 		.mobile-undo,
 		.mobile-redo,
 		.mobile-share,
+		.mobile-export,
+		.mobile-fullscreen,
 		.mobile-inspect,
 		.mobile-mount,
 		.mobile-sep
@@ -120,11 +137,15 @@
 	font-size: 15px;
 	white-space: nowrap;
 }
+/* The first label starts where the icons of the bar's 44px controls start, so both outer edges look equally padded. */
+.selection .header-start {
+	padding-left: 12px;
+}
+/* The group gap spaces the divider like any other item. */
 .brand-divider {
 	flex: none;
 	width: 1px;
 	height: 20px;
-	margin: 0 8px;
 	background: var(--bu-line);
 }
 .screen-title {
@@ -133,7 +154,6 @@
 	white-space: nowrap;
 }
 .screen-count {
-	margin-left: 4px;
 	color: var(--bu-muted);
 	font-size: 13px;
 }
@@ -266,22 +286,45 @@
 		background: none;
 	}
 }
-.sheet-layout :is(.selection-import, .selection-create) {
+.phone-layout .experience-header .selection-create {
+	padding-inline: 0;
+}
+.phone-layout .selection-create :is(.new-character-label, svg[data-surface-chevron]) {
 	display: none;
 }
-/* Phones keep Back, the name, Random look, Mount settings, Undo, Export, Full screen and More in the bar; Redo and Share move into More
-   so the character name stays readable (Share's popover then points at More). Random look follows up to 430 px and
-   Undo up to 430 px. Full screen always stays on the bar (production-experience.md). */
-.phone-layout:not(.selection) :is(.header-redo, .header-share) {
+.phone-layout.selection .screen-title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+@media (max-width: 400px) {
+	.selection :is(.brand, .brand-divider) {
+		display: none;
+	}
+}
+/* Wherever the character name would get too narrow, the optional actions move into More one at a time from left to
+   right: Undo, Redo, Random look, Share, Export, and Full screen only as a last resort (Toolbar.svelte fitActions).
+   Share's popover then points at More. */
+.experience[data-overflow~='undo'] .header-undo,
+.experience[data-overflow~='redo'] .header-redo,
+.experience[data-overflow~='random'] .header-random,
+.experience[data-overflow~='share'] .header-share,
+.experience[data-overflow~='export'] .header-export,
+.experience[data-overflow~='fullscreen'] .experience-header .header-fullscreen {
 	display: none !important;
 }
-.phone-layout:not(.selection) :is(.mobile-redo, .mobile-share) {
+.experience[data-overflow~='undo'] .mobile-undo,
+.experience[data-overflow~='redo'] .mobile-redo,
+.experience[data-overflow~='random'] .mobile-random,
+.experience[data-overflow~='share'] .mobile-share,
+.experience[data-overflow~='export'] .mobile-export,
+.experience[data-overflow~='fullscreen'] .mobile-fullscreen {
 	display: flex !important;
 }
-.phone-layout:not(.selection) .mobile-sep {
+.experience[data-overflow] .mobile-sep {
 	display: block !important;
 }
 @media (max-width: 430px) {
+	/* Phones keep the bar closer to the window than the desktop edge so every 44 px control still fits at 320 px. */
 	.phone-layout .experience-header {
 		left: 8px;
 		right: 8px;
@@ -293,17 +336,15 @@
 	.phone-layout .name-facts {
 		display: none;
 	}
-	.phone-layout .header-random {
+	/* Phone portrait widths always start with the first four of that order in More, so the bar never flashes them. */
+	.phone-layout :is(.header-undo, .header-redo, .header-random, .header-share) {
 		display: none !important;
 	}
-	.phone-layout:not(.selection) .mobile-random {
+	.phone-layout:not(.selection) :is(.mobile-undo, .mobile-redo, .mobile-random, .mobile-share) {
 		display: flex !important;
 	}
-	.phone-layout .header-undo {
-		display: none !important;
-	}
-	.phone-layout:not(.selection) .mobile-undo {
-		display: flex !important;
+	.phone-layout:not(.selection) .mobile-sep {
+		display: block !important;
 	}
 }
 @media (max-width: 360px) {
@@ -383,16 +424,9 @@
 	left: var(--stage-left);
 	right: var(--stage-right);
 	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 4px;
+	justify-content: center;
 	padding: 0 8px;
 	pointer-events: none;
-}
-.preview-note {
-	margin: 0;
-	text-align: center;
-	overflow-wrap: anywhere;
 }
 .playback-bar {
 	display: flex;
@@ -480,11 +514,21 @@
 .equipment-rail {
 	gap: 8px;
 }
-/* A window too short for a usable sheet hides the panel until it grows (geometry.ts). */
-.no-panel .equipment-rail {
+.equipment-rail[hidden] {
 	display: none;
 }
-.sheet-layout .equipment-rail {
+.panel-left .equipment-rail {
+	left: var(--edge);
+	right: auto;
+}
+/* The slot rail sits on the panel's outer edge, so the icons are always against the window edge nearest the panel. */
+.panel-left .wardrobe-panes {
+	flex-direction: row-reverse;
+}
+.panel-left .wardrobe-panes .section-list {
+	padding: 0 5px var(--panel-bottom) 6px;
+}
+:is(.sheet-layout, .panel-only) .equipment-rail {
 	/* The sheet already pads its bottom edge; the lists keep only room for a focus ring. */
 	--panel-bottom: 6px;
 	left: 0;
@@ -500,21 +544,45 @@
 	border-radius: var(--bu-radius-dialog) var(--bu-radius-dialog) 0 0;
 	box-shadow: var(--bu-shadow);
 }
+/* A 20 px band around the 4 px bar, so a finger can drag the sheet by its grabber. */
 .sheet-handle {
+	position: relative;
 	flex: none;
+	width: 100%;
+	height: 20px;
+	cursor: grab;
+	touch-action: none;
+}
+.sheet-handle::before {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 8px;
 	width: 36px;
 	height: 4px;
-	margin: 8px auto 0;
+	margin-left: -18px;
 	border-radius: 2px;
 	background: var(--bu-muted);
 	opacity: 0.5;
+}
+.panel-only .equipment-rail {
+	top: var(--stage-top);
+	height: auto;
 }
 .equipment-modes {
 	display: flex;
 	flex-wrap: wrap;
 	flex: none;
 	container: equipment-tabs / inline-size;
+	/* The tab row is the panel's other drag surface: a pull toward the dock edge closes the panel. */
+	touch-action: none;
 }
+.sheet-handle[data-panel-drag],
+.equipment-modes[data-panel-drag] {
+	cursor: grabbing;
+	user-select: none;
+}
+
 /* Equal-width tabs with centered labels, like Material fixed tabs and Apple segmented controls: they fill the row, so
    there is no dead space between targets, and the label carries the underline (Bronze .bu-tab-label). */
 .equipment-modes button {
@@ -1085,23 +1153,7 @@
 }
 .cast-search {
 	display: flex;
-	gap: 8px;
 	flex: none;
-}
-.cast-search .bu-input {
-	flex: 1;
-	min-height: 44px;
-	font-size: 16px;
-}
-.cast-action {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 6px;
-	min-width: 44px;
-	min-height: 44px;
-	padding: 0 12px;
-	font-size: 14px;
 }
 .character-rows {
 	min-height: 0;
@@ -1187,18 +1239,6 @@
 	display: grid;
 	place-items: center;
 	flex-shrink: 0;
-}
-/* The library's final row looks like an unselected character row at about half its height (a full touch target): its
-   plus sits in the thumbnail column and its label in the name column. */
-.character-rows .new-character-row {
-	min-height: 44px;
-	padding-block: 4px;
-	font-size: 16px;
-	font-weight: 600;
-}
-.character-rows .new-character-icon {
-	width: 64px;
-	color: var(--bu-muted);
 }
 .character-row strong {
 	font-weight: 600;
@@ -1422,7 +1462,7 @@
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 6px;
-	max-width: min(420px, calc(100% - var(--stage-right) - 2 * var(--edge)));
+	max-width: min(420px, calc(100% - var(--stage-left) - var(--stage-right) - 2 * var(--edge)));
 	pointer-events: none;
 }
 .world-notes p {
@@ -1432,10 +1472,12 @@
 	font-size: 13px;
 	color: var(--bu-muted);
 }
-/* A failed live renderer is a failure, not a coverage report: it stays readable on the short landscape layouts, where
-   every routine coverage note is hidden. */
-.short-layout .world-coverage:not(.world-renderer-warning) {
+/* Live views keep their coverage note on short screens unless a renderer failure needs the space. */
+.short-layout .world-coverage:not(.world-renderer-warning, .world-live-note) {
 	display: none;
+}
+.world-live-note {
+	overflow-wrap: anywhere;
 }
 .world-loading-items {
 	display: flex;
@@ -1688,10 +1730,10 @@
 	font-size: 16px;
 }
 .studio-app .character-sheet :is(input:where(:not([type='checkbox'], [type='radio'])), select),
-.studio-app .character-sheet .base-clothing .bu-segmented {
+.studio-app .compact-segments .bu-segmented {
 	min-height: 44px;
 }
-.studio-app .character-sheet .base-clothing .bu-segment-face {
+.studio-app .compact-segments .bu-segment-face {
 	min-height: 0;
 	padding-block: 0;
 }

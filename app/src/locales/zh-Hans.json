@@ -158,6 +158,17 @@
 		"seatRight": "向右移动座位",
 		"seatAuto": "使用自动位置",
 		"seatChanged": "已保存的座位已更改。请关闭座位编辑器后重试。",
+		"audio": {
+			"title": "音频",
+			"open": "音频设置",
+			"play": "播放全部音频",
+			"mute": "将所有声音静音",
+			"music": "音乐",
+			"musicVolume": "音乐音量",
+			"effects": "音效",
+			"effectsVolume": "音效音量",
+			"notSaved": "音频设置已更改，但浏览器无法保存。"
+		},
 		"reset": {
 			"allAction": "重置所有设置",
 			"pageAction": "重置此页面",
@@ -955,19 +966,19 @@
 			"hiddenItemsInMove": {
 				"other": "已隐藏 {count} 件物品：缺少 {move} 的帧"
 			},
-			"noMoveNothing": "还没有{move}动作，因此没有可显示的内容",
-			"noMoveStill": "还没有{move}动作，因此角色保持静止",
-			"noMovePlays": "还没有{move}动作，因此改为播放{fallback}",
-			"noFramesNothing": "{move}还没有朝向{direction}的帧，因此没有可显示的内容",
-			"noFramesStill": "{move}还没有朝向{direction}的帧，因此角色保持静止",
-			"noFramesPlays": "{move}还没有朝向{direction}的帧，因此改为播放{fallback}",
-			"noFramesFaces": "{move}还没有朝向{direction}的帧，因此改为朝向{fallback}",
+			"noMoveNothing": "缺少{move}动作。",
+			"noMoveStill": "缺少{move}动作，显示静止姿势。",
+			"noMovePlays": "缺少{move}动作，正在播放{fallback}。",
+			"noFramesNothing": "{move}缺少{direction}帧。",
+			"noFramesStill": "{move}缺少{direction}帧，显示静止姿势。",
+			"noFramesPlays": "{move}缺少{direction}帧，正在播放{fallback}。",
+			"noFramesFaces": "{move}缺少{direction}帧，改为朝向{fallback}。",
 			"undeclaredDirection": "角色未声明此朝向",
 			"hiddenItems": {
 				"other": "已隐藏 {count} 件装备：缺少{move} / {direction}的帧"
 			},
 			"equippedHidden": {
-				"other": "当前视图隐藏了 {count} 件已穿戴的装备"
+				"other": "已隐藏 {count} 件装备（缺少帧）"
 			},
 			"itemLoading": "{item}正在加载：{directions}",
 			"legsAxial": "从正面和背面看时，双腿都会保持可见。",
@@ -1394,6 +1405,9 @@
 		"previewZip": "预览角色 ZIP",
 		"previewCharacter": "预览角色",
 		"preview": "预览",
+		"appearanceTip": "画在角色身上的衣服可能会从装备下露出来。",
+		"appearanceTipPath": "导入后若要移除或更换衣服：",
+		"appearanceTipSteps": "点击顶部栏中的{name} → 点击{action}",
 		"previewArtwork": "角色导入预览",
 		"stalePreview": "正在显示上一次预览。请更新选择以继续。",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1417,7 +1431,7 @@
 		"untitledState": "未命名状态",
 		"warning": {
 			"noRoom": "由于此角色的图像像素过多，未添加动作空间。导入后可使用“调整帧”添加。",
-			"fixedBase": "导入的图像是固定基础身体：现有衣服和头发无法移除。设置其姿势绑定结构，以使用骨架姿态装备并添加新动作。",
+			"fixedBase": "设置姿势骨骼后，即可为角色适配物品并添加新动作。",
 			"frameCounts": "“{move}”各朝向的帧数不同。其朝向已作为独立动作导入，以保留每个原始帧和朝向长度。",
 			"skippedMove": "已略过“{move}”：无法读取其动画帧。请使用逐帧编号的帧重新导出。",
 			"skippedDirection": "已略过朝向{direction}的“{move}”：其帧为空、缺失或顺序不对。",
@@ -2866,6 +2880,39 @@
 		"scaryWalk": "诡异行走",
 		"runningJump": "奔跑跳跃"
 	},
+	"appearance": {
+		"action": "编辑外观…",
+		"title": "编辑外观",
+		"choose": "选择编辑方式",
+		"custom": "自定义编辑",
+		"instructions": "你想修改什么？",
+		"reference": "Pro 可以同时使用参考图片和文字指令。",
+		"underwearHint": "将画在角色身上的服装替换为纯白色内衣。",
+		"facing": "朝向",
+		"original": "原图",
+		"edited": "编辑结果",
+		"showWorn": "在角色身上查看",
+		"review": "检查编辑结果",
+		"checkViews": "保存前请逐个朝向检查形状和对齐情况。",
+		"characterSource": "使用“{move}”的第一帧。",
+		"characterScope": "新角色从站立视图开始。保存后可添加动作并调整装备。",
+		"itemScope": "来源：{move}的第一帧。保存后可补充其他帧的图像。",
+		"editCharacter": "编辑角色",
+		"editItem": "编辑物品",
+		"editCost": "{action} · {cost}",
+		"saveCharacter": "另存为新角色",
+		"saveItem": "另存为新装备",
+		"editedSuffix": "（已编辑）",
+		"saved": "已保存编辑后的副本",
+		"running": "正在生成预览…",
+		"unsupported": "此模型无法编辑当前尺寸的视图。请选择其他模型。",
+		"unavailable": "没有可编辑的兼容图像。",
+		"changed": "图像或报价已更改。请重新检查编辑。",
+		"keptDirections": "此副本会在以下方向保留原始图像：{directions}。",
+		"incomplete": "部分编辑后的视图不可用。请打开活动查看详情，或下载已收到的结果。",
+		"reviewPending": "更改来源前，请先保存或丢弃外观预览。",
+		"discardNotice": "要丢弃预览吗？PixelLab 的费用仍然适用。"
+	},
 	"stateGeneration": {
 		"continueIntro": "你可以完成从未提交的视角。已完成的视角将保留。",
 		"continueAccount": "请使用原来的 PixelLab 密钥重新连接，以继续生成此状态。",
@@ -3446,6 +3493,14 @@
 			"changed": "此角色已更改。请重新选择 ZIP 以查看最新版本。"
 		}
 	},
+	"studioPanel": {
+		"side": "面板位置",
+		"left": "左侧",
+		"right": "右侧",
+		"autoHide": "进入实时视图时隐藏面板",
+		"autoHideHelp": "适用于小型触摸屏。可随时从工具栏重新打开。",
+		"notSaved": "面板设置已更改，但浏览器未能保存。"
+	},
 	"liveViews": {
 		"walkWhileAttacking": "攻击时保持行走",
 		"layeringHelp": "行走和攻击的朝向必须相同，双腿需要有两种动作的图像，腰部接缝也必须对齐。否则会播放普通的全身攻击。",
@@ -3478,11 +3533,11 @@
 		"actions": "游戏操作",
 		"withShortcut": "{action}（{key}）",
 		"spaceKey": "空格",
-		"noAttack": "还没有指定攻击。请在实时视图设置中选择一个动作或状态。",
-		"noAttackDirection": "{move} 没有朝向{direction}的帧，无法向该方向攻击。",
-		"hintTopDown": "WASD 或按住点击移动 · Shift 冲刺 · 右键或 E 攻击 · 空格跳跃 · F 上下坐骑",
-		"hintSide": "A/D 或按住点击移动 · Shift 冲刺 · 右键或 E 攻击 · 空格跳跃 · F 上下坐骑",
-		"hintTouch": "拖动移动 · 按住并拖动剑来攻击和瞄准 · 按钮用于跳跃、冲刺和上下坐骑",
+		"noAttack": "尚未设置攻击。请打开实时视图设置。",
+		"noAttackDirection": "{move}缺少{direction}帧。",
+		"hintTopDown": "按住鼠标或用 WASD 移动",
+		"hintSide": "按住鼠标或用 A/D 移动",
+		"hintTouch": "拖动以移动",
 		"stageTopDown": "角色测试世界。使用 WASD、方向键、点击或拖动来移动；Shift 冲刺。右键或 E 攻击，空格跳跃，F 上下坐骑。按 1、2、3 切换视图。",
 		"stageSide": "横版测试世界。使用 A/D、左右方向键、点击或拖动来移动；Shift 冲刺。右键或 E 攻击，空格跳跃，F 上下坐骑。按 1、2、3 切换视图。"
 	},

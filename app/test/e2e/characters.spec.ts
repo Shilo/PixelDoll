@@ -17,12 +17,266 @@ import { zip, unzip } from '../../src/lib/store/zip.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
-import { readCharacterZip } from '../../src/lib/store/import.ts';
+import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts';
 import { splitBase } from '../../src/lib/dress/regions.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
+import { loadFixture } from '../../src/lib/compose/fixture.ts';
+import { DEFAULT_MOVE, playlist } from '../../src/lib/rig/rig.ts';
 
 const ID = 'f6a0bdc5-354e-4682-8df3-55fc3d118737';
 const moreOptions = 'button[popovertarget="experience-options"]';
+
+test('Edit appearance makes reviewed character and equipment copies from saved pixels', async ({
+	page,
+	context
+}) => {
+	const project = await loadFixture((path) =>
+		readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))
+	);
+	const { rig, items } = project.manifest;
+	const body = items.find(({ id }) => id === rig.baseItem)!;
+	const hat = items.find(({ id }) => id === 'hat_wizard')!;
+	for (const { layers } of [body, hat])
+		for (const layer of layers) {
+			layer.cells![DEFAULT_MOVE] = Object.fromEntries(
+				Object.entries(layer.cells!.walk!).map(([direction, cells]) => [direction, [cells[0]]])
+			);
+		}
+	rig.animations.push({ id: DEFAULT_MOVE, cells: 1, frames: playlist(1, 150), loop: true });
+	const archive = await zip(await projectEntries(project));
+	const posted: {
+		description: string;
+		method: string;
+		reference_image?: { image: { base64: string }; width: number; height: number };
+		edit_images: { image: { type: string; base64: string } }[];
+	}[] = [];
+	const enhanced: { action: string; last_frame?: { base64: string } }[] = [];
+	const pngs = new Map<string, { type: string; base64: string }[]>();
+	const pageErrors: string[] = [];
+	page.on('pageerror', (error) => pageErrors.push(error.message));
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const path = new URL(route.request().url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					subscription: {
+						type: 'generations',
+						status: 'active',
+						generations: 500,
+						total: 500,
+						tier: 1
+					}
+				}
+			});
+		if (path.endsWith('/enhance-animation-v3-prompt') && route.request().method() === 'POST') {
+			enhanced.push(route.request().postDataJSON());
+			return route.fulfill({
+				json: {
+					usage: { type: 'generations', generations: 0.05 },
+					enhanced_prompt: 'Give the hat a broader, flatter brim'
+				}
+			});
+		}
+		if (path.endsWith('/edit-images-v2') && route.request().method() === 'POST') {
+			const payload = route.request().postDataJSON() as (typeof posted)[number];
+			const id = `appearance-${posted.push(payload)}`;
+			pngs.set(
+				id,
+				await Promise.all(
+					payload.edit_images.map(async ({ image }, index) => {
+						const png = await decodePngBytes(Buffer.from(image.base64, 'base64'));
+						const pixel = png.data.findIndex((a, i) => i % 4 === 3 && a === 255);
+						if (id === 'appearance-1' && index === 1) png.data.fill(0);
+						else png.data[pixel - 3] ^= 1;
+						return {
+							type: 'base64',
+							base64: Buffer.from(await encodePngBytes(png)).toString('base64')
+						};
+					})
+				)
+			);
+			return route.fulfill({ status: 202, json: { background_job_id: id } });
+		}
+		const id = path.split('/').pop()!;
+		if (pngs.has(id))
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					created_at: '',
+					last_response: { images: pngs.get(id) },
+					usage: { type: 'generations', generations: 10 }
+				}
+			});
+		return route.fulfill({ status: 404, json: {} });
+	});
+	await page.addInitScript(() =>
+		localStorage.setItem('pixellabApiKey', 'test-only-appearance-key')
+	);
+	await openStudio(page, '/');
+	const nameMenu = page.locator('.project-btn');
+	await nameMenu.click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
+		name: 'appearance.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(archive)
+	});
+	await page.getByLabel('Character name', { exact: true }).fill('Appearance source');
+	await page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('button', { name: 'Import character', exact: true }).click();
+	await expect(nameMenu).toContainText('Appearance source');
+
+	const read = () =>
+		page.evaluate(
+			() =>
+				new Promise<StoredProject[]>((resolve, reject) => {
+					const request = indexedDB.open('pixeldoll');
+					request.onerror = () => reject(request.error);
+					request.onsuccess = () => {
+						const q = request.result.transaction('projects').objectStore('projects').getAll();
+						q.onsuccess = () => {
+							request.result.close();
+							resolve(q.result.filter((value) => !!value?.manifest));
+						};
+						q.onerror = () => reject(q.error);
+					};
+				})
+		);
+	const source = (await read()).find(({ manifest }) => manifest.name === 'Appearance source')!;
+	const edit = page.getByRole('dialog', { name: 'Edit appearance', exact: true });
+	const action = /^Edit appearance…$/;
+	const characterEditor = async () => {
+		await nameMenu.click();
+		await page.locator('#project-menu').getByRole('menuitem', { name: action }).click();
+		await expect(edit).toBeVisible();
+	};
+	await characterEditor();
+	const choices = edit.getByRole('radiogroup', { name: 'Choose an edit' });
+	await expect(choices.getByRole('radio', { name: 'Underwear', exact: true })).toBeChecked();
+	const viewport = page.viewportSize()!;
+	for (const size of [
+		{ width: 320, height: 568 },
+		{ width: 568, height: 320 }
+	]) {
+		await page.setViewportSize(size);
+		await expect(choices).toBeVisible();
+		await expect
+			.poll(() =>
+				choices.evaluate((group) => {
+					const sheet = group.closest('.sheet-body')!.getBoundingClientRect();
+					const control = group.getBoundingClientRect();
+					const label = document.createRange();
+					label.selectNodeContents(group.querySelector('.bu-segment-face > span')!);
+					return (
+						control.left >= sheet.left - 1 &&
+						control.right <= sheet.right + 1 &&
+						control.bottom <= sheet.bottom + 1 &&
+						group.scrollWidth <= group.clientWidth + 1 &&
+						label.getClientRects().length === 1 &&
+						Math.abs(control.height - 44) <= 1
+					);
+				})
+			)
+			.toBe(true);
+	}
+	await page.setViewportSize(viewport);
+	const underwear = choices.getByRole('radio', { name: 'Underwear', exact: true });
+	await underwear.focus();
+	await underwear.press('ArrowRight');
+	await expect(choices.getByRole('radio', { name: 'Nothing worn', exact: true })).toBeChecked();
+	await expect(edit.getByRole('img', { name: 'Original', exact: true })).toBeVisible();
+	const generate = edit.getByRole('button', { name: /^Edit character ·/ });
+	await expect(generate).toBeEnabled();
+	expect(posted).toHaveLength(0);
+	await generate.click();
+	await expect(edit.getByRole('heading', { name: 'Review the edit' })).toBeVisible();
+	expect(posted).toHaveLength(1);
+	expect(posted[0].description).toContain('nothing worn');
+	await reloadStudio(page);
+	await characterEditor();
+	const saveCharacter = edit.getByRole('button', { name: 'Save as new character', exact: true });
+	await expect(saveCharacter).toBeEnabled();
+	await expect(edit.getByText(/Saving this copy keeps the original artwork/)).toContainText('East');
+	await expect(
+		edit.locator('header').getByRole('button', { name: 'Download paid results' })
+	).toBeVisible();
+	await expect(edit.getByRole('button', { name: 'Discard', exact: true })).toBeVisible();
+	expect(posted).toHaveLength(1);
+	await saveCharacter.click();
+	await expect(edit).toBeHidden();
+	await expect
+		.poll(async () =>
+			(await read())
+				.find(({ manifest }) => manifest.name === 'Appearance source (edited)')
+				?.manifest.rig.animations.map(({ id }) => id)
+		)
+		.toEqual(['default']);
+	expect((await read()).find(({ id }) => id === source.id)!.manifest.rig.baseHash).toBe(
+		source.manifest.rig.baseHash
+	);
+	const editedBody = (await read()).find(
+		({ manifest }) => manifest.name === 'Appearance source (edited)'
+	)!.manifest.items[0].layers[0].cells![DEFAULT_MOVE];
+	const originalBody = source.manifest.items.find(({ id }) => id === source.manifest.rig.baseItem)!
+		.layers[0].cells![DEFAULT_MOVE];
+	expect(editedBody.east).toEqual(originalBody.east);
+	expect(editedBody.south).not.toEqual(originalBody.south);
+	await nameMenu.click();
+	await page
+		.locator('#project-menu')
+		.getByRole('menuitemradio', { name: 'Appearance source', exact: true })
+		.click();
+	await equipmentGroup(page, 'Head');
+	await pickItem(page, hat.name);
+	const details = await selectedItemDetails(page);
+	await details.getByRole('button', { name: action }).click();
+	const editItem = edit.getByRole('button', { name: /^Edit item ·/ });
+	await expect(edit.getByRole('radio')).toHaveCount(0);
+	await expect(edit.getByRole('button', { name: 'Back to Item' })).toBeVisible();
+	const instructions = edit.getByRole('textbox', { name: 'What should change?' });
+	await instructions.fill('Make the brim broader');
+	const referenceImage = makeImg(32, 32);
+	referenceImage.data.set([150, 45, 20, 255], (16 * 32 + 16) * 4);
+	const reference = await encodePngBytes(referenceImage);
+	await edit.locator('input[type=file]').setInputFiles({
+		name: 'reference.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(reference)
+	});
+	await expect(editItem).toBeEnabled();
+	await expect(edit.getByRole('button', { name: 'Copy prompt' })).toBeEnabled();
+	await edit.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await expect(instructions).toHaveValue('Give the hat a broader, flatter brim');
+	expect(enhanced).toHaveLength(1);
+	expect(enhanced[0].action).toBe('Make the brim broader');
+	expect(enhanced[0].last_frame?.base64).toBeTruthy();
+	await edit.getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(instructions).toHaveValue('Make the brim broader');
+	expect(posted).toHaveLength(1);
+	await editItem.click();
+	const worn = edit.getByRole('switch', { name: 'Show on character', exact: true });
+	await expect(worn).toBeVisible();
+	await worn.check();
+	await expect(edit.getByRole('img', { name: 'Edited', exact: true })).toBeVisible();
+	await edit.getByRole('button', { name: 'Save as new item', exact: true }).click();
+	await expect(edit).toBeHidden();
+	const saved = (await read()).find(({ id }) => id === source.id)!;
+	expect(saved.manifest.items.find(({ id }) => id === hat.id)?.layers).toEqual(
+		source.manifest.items.find(({ id }) => id === hat.id)?.layers
+	);
+	expect(saved.manifest.items.some(({ name }) => name === `${hat.name} (edited)`)).toBe(true);
+	expect(posted).toHaveLength(2);
+	expect(posted[1].description).toContain('Make the brim broader');
+	expect(posted[1].method).toBe('edit_with_reference');
+	expect(posted[1].reference_image).toMatchObject({ width: 32, height: 32 });
+	expect(posted[1].reference_image?.image.base64).toBe(enhanced[0].last_frame?.base64);
+	expect(pageErrors).toEqual([]);
+});
 
 test.describe('first Studio render in French', () => {
 	test.use({ locale: 'fr-CA' });
@@ -61,7 +315,8 @@ test.describe('first Studio render in French', () => {
 		const name = draft.getByRole('textbox', { name: french.common.name, exact: true });
 		await name.fill('Draft hero');
 		await expect(name).toHaveValue('Draft hero');
-		// Escape with typed text asks first.
+		// Move off Help so Escape reaches the dirty sheet and asks before discarding.
+		await page.mouse.move(0, 0);
 		await page.keyboard.press('Escape');
 		await page
 			.getByRole('alertdialog', { name: french.common.discardChangesTitle, exact: true })
@@ -471,7 +726,7 @@ test.describe('character actions on a touch screen', () => {
 	});
 });
 
-test('both New character entry points offer separate import sources on desktop and phone', async ({
+test('the New character header button offers separate import sources on desktop and phone', async ({
 	page
 }) => {
 	await page.addInitScript(() => localStorage.setItem('pixeldoll.welcomed', '1'));
@@ -481,48 +736,52 @@ test('both New character entry points offer separate import sources on desktop a
 		const more = page.getByRole('button', { name: 'More options', exact: true });
 		await expect(more).toHaveAttribute('title', 'More options');
 		await expect(more.locator('svg')).toHaveCount(1);
-		const library = page.getByRole('complementary', { name: 'Your characters' });
-		const add = library.locator('.new-character-row');
-		await expect(add).toBeVisible();
-		const entry =
-			width === 1440
-				? page.locator('.experience-header .selection-create')
-				: library.locator('.cast-action');
-		for (const trigger of [entry, add]) {
-			await expect(trigger.locator(':scope > span').last()).toHaveText(/\.\.\.$/);
-			await expect(trigger.locator('svg[data-surface-chevron]')).toBeVisible();
-			await trigger.click();
-			const menu = page.getByRole('menu', { name: 'New character', exact: true });
-			await expect(
-				menu.locator('[role="menuitem"] > svg[data-surface-chevron][aria-hidden="true"]')
-			).toHaveCount(3);
-			await expect(menu.getByRole('menuitem')).toHaveText([
-				'Create from scratch...',
-				'Import from device...',
-				'Import from PixelLab...'
-			]);
-			await menu.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
-			await expect(
-				page.getByRole('dialog', { name: 'Import from device', exact: true })
-			).toBeVisible();
-			await expect(page.getByRole('tablist', { name: 'Import source' })).toHaveCount(0);
-			await page
-				.getByRole('dialog', { name: 'Import from device', exact: true })
-				.getByRole('button', { name: 'Close', exact: true })
-				.click();
-			await trigger.click();
-			await menu.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
-			await expect(
-				page.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
-			).toBeVisible();
-			await expect(
-				page.getByLabel('Direct import (connection optional)', { exact: true })
-			).toBeVisible();
-			await page
-				.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
-				.getByRole('button', { name: 'Close', exact: true })
-				.click();
+		const create = page.getByRole('button', { name: 'New character', exact: true });
+		await expect(create).toHaveCount(1);
+		const trigger = page
+			.locator('.experience-header')
+			.getByRole('button', { name: 'New character', exact: true });
+		const label = trigger.getByText('New character...', { exact: true });
+		const chevron = trigger.locator('svg[data-surface-chevron]');
+		if (width === 1440) {
+			await expect(label).toBeVisible();
+			await expect(chevron).toBeVisible();
+		} else {
+			await expect(label).toBeHidden();
+			await expect(chevron).toBeHidden();
+			await expect(trigger.locator('svg:visible')).toHaveCount(1);
 		}
+		await trigger.click();
+		const menu = page.getByRole('menu', { name: 'New character', exact: true });
+		await expect(
+			menu.locator('[role="menuitem"] > svg[data-surface-chevron][aria-hidden="true"]')
+		).toHaveCount(3);
+		await expect(menu.getByRole('menuitem')).toHaveText([
+			'Create from scratch...',
+			'Import from device...',
+			'Import from PixelLab...'
+		]);
+		await menu.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+		await expect(
+			page.getByRole('dialog', { name: 'Import from device', exact: true })
+		).toBeVisible();
+		await expect(page.getByRole('tablist', { name: 'Import source' })).toHaveCount(0);
+		await page
+			.getByRole('dialog', { name: 'Import from device', exact: true })
+			.getByRole('button', { name: 'Close', exact: true })
+			.click();
+		await trigger.click();
+		await menu.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
+		await expect(
+			page.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
+		).toBeVisible();
+		await expect(
+			page.getByLabel('Direct import (connection optional)', { exact: true })
+		).toBeVisible();
+		await page
+			.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
+			.getByRole('button', { name: 'Close', exact: true })
+			.click();
 	}
 });
 
@@ -634,7 +893,7 @@ test('experimental native attack imports with warnings and exact frame stepping 
 		page.getByRole('img', { name: 'Character import preview', exact: true })
 	).toBeVisible();
 	await page
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(
@@ -1038,7 +1297,7 @@ test('device import includes sibling moves and preserves explicit selections whe
 	await expect(punch).toBeEnabled();
 	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await dialog
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
@@ -1139,9 +1398,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 		.getByRole('button', { name: 'Mirror South east from South west', exact: true })
 		.click();
 	await expect(importer.locator('.import-preview')).toContainText('7 directions');
-	await importer
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' })
-		.uncheck();
+	await importer.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await importer.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(importer).toBeHidden();
 	const openDirections = async () => {
@@ -1154,6 +1411,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			'Details...',
 			'Cost estimate...',
 			'Rename...',
+			'Edit appearance…',
 			'Directions...',
 			'Adjust frame...',
 			'Download ZIP',
@@ -1347,7 +1605,7 @@ test('browser Back respects an atomic import and closes sheets after it finishes
 	});
 	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await dialog
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	// Pause the real content-hash work that opening the saved copy performs, without mocking the sheet's busy state.
 	await page.evaluate(() => {
@@ -1471,7 +1729,7 @@ test('standing state updates retain the preview, optional moves, edited names an
 	await expect(dialog.locator('.import-preview')).toContainText('0 moves');
 	await name.fill('Static rotations only');
 	await dialog
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
@@ -2184,13 +2442,25 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 			.getByLabel('Character ZIP', { exact: true })
 			.setInputFiles({ name: 'saved-character.zip', mimeType: 'application/zip', buffer: bytes });
 		await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
+		const appearanceNote = page
+			.locator('.notice')
+			.filter({ hasText: 'Clothes drawn on the character' });
+		await expect(appearanceNote).toContainText('To remove or change them after import:');
 		await page.getByLabel('Character name', { exact: true }).fill(name);
-		await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+		await expect(appearanceNote.locator('code')).toHaveText([name, 'Edit appearance…']);
+		const setup = page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' });
+		await expect(setup).toBeChecked();
+		await page.getByText('Set up the pose rig next (recommended)', { exact: true }).click();
+		await expect(setup).not.toBeChecked();
 		await page.getByRole('button', { name: 'Import character', exact: true }).click();
 		// Saving then reopening a full character decodes every frame; parallel workers can stretch it past 10s.
 		await expect(page.locator('.project-btn')).toContainText(name, { timeout: 30_000 });
 	}
 	await importCopy('Imported one');
+	await page.getByRole('button', { name: 'Edit appearance…', exact: true }).click();
+	const appearance = page.getByRole('dialog', { name: 'Edit appearance', exact: true });
+	await expect(appearance).toContainText('Imported one');
+	await appearance.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('Imported one');
 	await importCopy('Imported two');
@@ -2260,7 +2530,7 @@ test('Import pages bring moves and items back free from the character ZIP, by br
 		.getByLabel('Character ZIP', { exact: true })
 		.setInputFiles({ name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes });
 	await page.getByLabel('Character name', { exact: true }).fill('Move owner');
-	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Move owner', { timeout: 30_000 });
 	await equipmentMode(page, 'Moves');
@@ -2559,6 +2829,9 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.getByRole('button', { name: 'Next page', exact: true }).click();
 	await page.getByRole('button', { name: /Page two hero/ }).click();
 	await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
+	await expect(
+		dialog.locator('.notice').filter({ hasText: 'Clothes drawn on the character' })
+	).toBeVisible();
 	// Back drops the staged review, so it asks first.
 	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
 	await page
@@ -2577,7 +2850,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: /Page two hero/ }).click();
 	await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
-	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Library hero');
 	await expect(page.locator('.world-loading')).toBeHidden();
@@ -2645,6 +2918,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		y: (12 + Math.floor(i / 4) * 8) / 64
 	}));
 	const jobs = new Map<string, number>(),
+		ridingInputs = new Map<string, string>(),
 		posts: { path: string; body: Record<string, unknown> }[] = [],
 		errors: string[] = [];
 	let stateImages: { type: 'base64'; base64: string }[] = [];
@@ -2711,6 +2985,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			if (path.endsWith('/animate-with-skeleton-v3')) {
 				const id = `pose-${jobs.size}`;
 				jobs.set(id, (body.keypoints as unknown[]).length);
+				if (String(body.action).startsWith('Hold a still riding pose.'))
+					ridingInputs.set(id, (body.first_frame as { base64: string }).base64);
 				return route.fulfill({ json: { background_job_id: id } });
 			}
 		}
@@ -2723,7 +2999,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 					created_at: '',
 					usage: { type: 'generations', generations: 2 },
 					last_response: {
-						images: Array.from({ length: count }, () => ({ type: 'base64', base64 }))
+						images: Array.from({ length: count }, () => ({
+							type: 'base64',
+							base64: ridingInputs.get(path.split('/').pop()!) ?? base64
+						}))
 					}
 				}
 			});
@@ -3149,7 +3428,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const ridingIdea = ideas.getByRole('button', { name: 'Riding', exact: true });
 	const stateName = newState.getByRole('textbox', { name: 'State name' });
 	await ridingIdea.click();
-	await expect(instructions).toHaveValue(/^Change only the pose\. Keep the same view and facing\./);
+	await expect(instructions).toHaveValue(/^Hold a still riding pose\. Preserve the direction/);
 	await expect(stateName).toHaveValue('Riding');
 	// Riding stays pressed through edits; pressing it again releases it and its suggested name.
 	await instructions.press('End');
@@ -3393,6 +3672,37 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await saveJoints.click();
 	await expect.poll(async () => (await savedSource())?.south?.measured?.[0]?.length).toBe(18);
 	await expect(moveSheet.getByRole('button', { name: /^Generate / })).toBeEnabled();
+	await moveSheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await addState.click();
+	await expect(
+		newState.getByRole('button', { name: 'Source: Standing', exact: true })
+	).toBeVisible();
+	await newState.getByRole('switch', { name: 'Edit this pose' }).check();
+	await ridingIdea.click();
+	await expect(newState.getByText('Skeleton V3', { exact: true })).toBeVisible();
+	const beforeRide = posts.length;
+	await newState.getByRole('button', { name: 'Generate State', exact: true }).click();
+	const ridingRow = panel.getByRole('button', { name: 'Riding Ready to review', exact: true });
+	await ridingRow.click();
+	const ridingReview = page.getByRole('dialog', { name: 'Riding', exact: true });
+	await expect(ridingReview.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+	const ridingPosts = posts.slice(beforeRide);
+	expect(ridingPosts).toHaveLength(4);
+	for (const { path, body } of ridingPosts) {
+		expect(path).toBe('/v2/animate-with-skeleton-v3');
+		expect(body.keypoints).toHaveLength(3);
+		expect(body.no_background).toBe(true);
+	}
+	await ridingReview.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect
+		.poll(async () => (await read()).manifest.rig.anchors?.hip?.riding?.south?.length)
+		.toBe(1);
+	expect((await read()).manifest.rig.animations.find(({ id }) => id === 'riding')).toMatchObject({
+		kind: 'state',
+		cells: 1,
+		source: { endpoint: '/animate-with-skeleton-v3' }
+	});
 	expect(errors).toEqual([]);
 });
 

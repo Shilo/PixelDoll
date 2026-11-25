@@ -1,7 +1,7 @@
 import { queueErrorParts, type JobRec, type RecState } from '../lib/pixellab/queue.ts';
 import { itemGenerationMinutes } from '../lib/items/items.ts';
 import type { Gen } from './state.svelte.ts';
-import { message, type LoggedMessage, type Message } from '../lib/message.ts';
+import { errorTranslation, message, type LoggedMessage, type Message } from '../lib/message.ts';
 import {
 	paidRetryLeads,
 	problemKind,
@@ -18,6 +18,19 @@ export const GENERATION_PHASES = {
 } as const;
 
 export const activityStateMessage = (state: RecState) => message(`activity.state.${state}`);
+
+export function isGenerationCancellation(cause: unknown): boolean {
+	if (cause instanceof Error && cause.name === 'AbortError') return true;
+	const outcome = cause instanceof Error ? errorTranslation(cause) : (cause as Message | undefined);
+	const vars = outcome?.vars;
+	const state = vars && typeof vars === 'object' && 'state' in vars ? vars.state : undefined;
+	return (
+		!!state &&
+		typeof state === 'object' &&
+		'key' in state &&
+		state.key === 'activity.state.canceled'
+	);
+}
 
 type RenderMessage = (value: Message | string) => string;
 type OutcomeFormatters = {

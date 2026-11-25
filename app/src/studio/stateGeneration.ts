@@ -1,3 +1,5 @@
+import { flipSkeleton } from '../lib/rig/skeleton.ts';
+import { ridingStatePlan } from './ridingStatePlan.ts';
 import { app, getKeyRevision, refreshBalance } from '../lib/app.svelte.ts';
 import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { base64ToBytes, bytesToBase64, decodePng, type Img } from '../lib/image/png.ts';
@@ -25,7 +27,7 @@ import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { cellBlob, imagesOf, provOf, run } from './create.ts';
 import { pendingStateName, stateCaptureNameIssue } from './moveActions.svelte.ts';
-import { stateClipName } from '../lib/rig/poses.ts';
+import { fromApi, stateClipName } from '../lib/rig/poses.ts';
 import { moveLabel } from './model.ts';
 import { withClipWriteLock } from './clipName.ts';
 import { doc, flushSave, openProject, syncStoredProject, toast, ui } from './state.svelte.ts';
@@ -95,6 +97,7 @@ export interface PreparedState {
 	source: StateSourceFrame;
 	description: string;
 	model: StateGenerationModel;
+	guided?: boolean;
 	reference?: ImageReference;
 	sourceVersion: string;
 	keyRevision: number;
@@ -206,7 +209,7 @@ function validShape(value: unknown): value is Size {
 	);
 }
 
-async function flashShapes(reference: boolean) {
+export async function flashShapes(reference: boolean) {
 	type EditCapabilities = {
 		sizes?: unknown;
 		edit_methods?: unknown;
@@ -253,7 +256,7 @@ async function flashShapes(reference: boolean) {
 	return shapes;
 }
 
-async function flashCost(plan: ReadyStatePlan): Promise<StateGenerationCost> {
+export async function flashCost(plan: ReadyStatePlan): Promise<StateGenerationCost> {
 	const canvases = plan.batches.map((batch) =>
 		batch.transport === 'sheet' ? batch.canvas : plan.cellSize
 	);
@@ -286,10 +289,16 @@ async function routeState(
 	sourceFrame: StateSourceFrame,
 	description: string,
 	model: StateGenerationModel,
-	reference?: ImageReference
+	reference?: ImageReference,
+	guided = false
 ) {
 	const source = stateGenerationSource(project, sourceFrame);
 	if (!source) throw missing();
+	if (guided) {
+		const candidate = ridingStatePlan(project.manifest.rig, sourceFrame, source);
+		if (!candidate?.cost || reference) throw changed();
+		return { source, candidate, cost: candidate.cost, managedParent: undefined };
+	}
 	let managedParent;
 	// Only Standing matches the character's own PixelLab rotations; other frames use image edits.
 	if (
@@ -389,9 +398,10 @@ export async function prepareState(
 	id: string,
 	description: string,
 	model: StateGenerationModel,
-	reference?: ImageReference
+	reference?: ImageReference,
+	guided = false
 ): Promise<PreparedState> {
-	return prepareStatePlan(projectId, source, id, description, model, reference);
+	return prepareStatePlan(projectId, source, id, description, model, reference, undefined, guided);
 }
 
 async function prepareStatePlan(
@@ -401,13 +411,14 @@ async function prepareStatePlan(
 	description: string,
 	model: StateGenerationModel,
 	reference?: ImageReference,
-	continuationToken?: string
+	continuationToken?: string,
+	guided = false
 ): Promise<PreparedState> {
 	assertSelected(projectId);
 	if (!app.key) throw error('Connect to PixelLab to check the route and price.', 'connect');
 	const keyRevision = getKeyRevision();
 	description = description.trim();
-	const limit = model === 'pixen' ? 500 : 2000;
+	const limit = model === 'pixen' && !guided ? 500 : 2000;
 	if (
 		(!description && !reference) ||
 		Array.from(description).length > limit ||
@@ -431,7 +442,8 @@ async function prepareStatePlan(
 		sourceFrame,
 		description,
 		model,
-		reference
+		reference,
+		guided
 	);
 	await refreshBalance();
 	if (app.keyRejected || app.balanceError)
@@ -453,6 +465,7 @@ async function prepareStatePlan(
 		source: { ...sourceFrame },
 		description,
 		model,
+		...(guided && { guided }),
 		reference,
 		sourceVersion: source.version,
 		keyRevision,
@@ -563,7 +576,10 @@ async function readReview(
 	);
 	const ungrounded: StateReview['ungrounded'] = {};
 	// Managed results stay exactly as PixelLab stored them; local edits are offered back on the source's ground.
-	if (plan.endpoint !== '/create-character-state') {
+	if (
+		plan.endpoint !== '/create-character-state' &&
+		plan.endpoint !== '/animate-with-skeleton-v3'
+	) {
 		const { project } = await loadProject(projectId);
 		const source = stateGenerationSource(project, attempt.source);
 		if (source?.version === attempt.sourceVersion)
@@ -619,7 +635,15 @@ export async function startState(
 async function beginState(prepared: PreparedState, token: string, riding: boolean) {
 	const { projectId, source: sourceFrame, id, description, model, reference } = prepared;
 	if (prepared.keyRevision !== getKeyRevision()) throw changed();
-	const fresh = await prepareState(projectId, sourceFrame, id, description, model, reference);
+	const fresh = await prepareState(
+		projectId,
+		sourceFrame,
+		id,
+		description,
+		model,
+		reference,
+		prepared.guided
+	);
 	if (
 		fresh.sourceVersion !== prepared.sourceVersion ||
 		stableStringify(fresh.plan) !== stableStringify(prepared.plan)
@@ -638,7 +662,15 @@ async function beginState(prepared: PreparedState, token: string, riding: boolea
 		plan: fresh.plan
 	};
 	const seed = crypto.getRandomValues(new Uint32Array(1))[0] & 0x7fffffff;
-	const requests = await stateRequests(fresh.plan, source, id, description, seed, reference);
+	const requests = await stateRequests(
+		fresh.plan,
+		source,
+		id,
+		description,
+		seed,
+		reference,
+		rec.character?.looks
+	);
 	const blobs = new Map<string, Blob>();
 	if (requests.length > 1) {
 		const savedReference = reference ? base64ToBytes(reference.base64) : undefined;
@@ -746,7 +778,8 @@ async function prepareContinuation(projectId: string, token: string) {
 		saved.description,
 		saved.model,
 		reference,
-		attempt.token
+		attempt.token,
+		attempt.plan.endpoint === '/animate-with-skeleton-v3'
 	);
 	if (
 		fresh.sourceVersion !== source.version ||
@@ -789,7 +822,7 @@ export function quoteStateContinuation(projectId: string, token: string) {
 export function continueState(approved: StateContinuationQuote): Promise<StateReview> {
 	return withStateLock(approved.token, async () => {
 		const { projectId, token } = approved;
-		const { quote, source, reference, attempt, saved } = await prepareContinuation(
+		const { quote, rec, source, reference, attempt, saved } = await prepareContinuation(
 			projectId,
 			token
 		);
@@ -800,7 +833,8 @@ export function continueState(approved: StateContinuationQuote): Promise<StateRe
 			attempt.id,
 			saved.description,
 			saved.seed,
-			reference
+			reference,
+			rec.character?.looks
 		);
 		return submitStateBatches(projectId, attempt, quote.keyRevision, requests, quote.missing);
 	});
@@ -1005,6 +1039,37 @@ async function publishState(review: StateReview, riding: boolean): Promise<void>
 		frames: [{ cell: 0, ms: 100 }],
 		source: { endpoint: review.endpoint }
 	};
+	const posePlan = rec.stateGenerations?.[review.token]?.plan;
+	const skeletons: NonNullable<StoredProject['skeletons']> = {};
+	if (posePlan?.endpoint === '/animate-with-skeleton-v3') {
+		clip.sources = {};
+		const contacts: Partial<Record<DirectionName, [number, number][]>> = {};
+		for (const { direction } of review.views) {
+			const guide = posePlan.guides.find((entry) => entry.direction === direction);
+			const hips = guide?.poses[0].filter(({ label }) => label.endsWith(' HIP'));
+			if (!guide || hips?.length !== 2) continue;
+			const target = guide.poses[0];
+			const pose = fromApi(target, rig.cell);
+			skeletons[`${id}/${direction}/0`] = pose;
+			clip.sources[direction] = {
+				route: 'skeleton-v3',
+				reference: guide.reference,
+				referenceKeypoints: guide.joints,
+				keypoints: [target],
+				provenance: []
+			};
+			const [left, right] = hips;
+			const x = Math.floor(((left.x + right.x) / 2) * rig.cell.w);
+			const y = Math.floor(((left.y + right.y) / 2) * rig.cell.h);
+			contacts[direction] = [[x, y]];
+			for (const mirror of rig.directions.filter(({ mirrorOf }) => mirrorOf === direction)) {
+				contacts[mirror.id] = [[rig.cell.w - 1 - x, y]];
+				skeletons[`${id}/${mirror.id}/0`] = flipSkeleton(pose, rig.cell.w);
+			}
+		}
+		rig.anchors ??= {};
+		(rig.anchors.hip ??= {})[id] = contacts;
+	}
 	assignNewClipExportId(clip, rig.animations);
 	rig.animations.push(clip);
 	base.provenance = [...(base.provenance ?? []), ...review.provenance];
@@ -1024,7 +1089,12 @@ async function publishState(review: StateReview, riding: boolean): Promise<void>
 		delete current.stateGenerations[review.token];
 		if (review.childId) (current.managedStates ??= {})[id] = review.childId;
 		else if (current.managedStates) delete current.managedStates[id];
-		return { ...current, manifest, savedAt: new Date().toISOString() };
+		return {
+			...current,
+			manifest,
+			...(Object.keys(skeletons).length && { skeletons: { ...current.skeletons, ...skeletons } }),
+			savedAt: new Date().toISOString()
+		};
 	});
 	if (doc.id !== projectId) return syncStoredProject(projectId);
 	await openProject(projectId, { quiet: true });

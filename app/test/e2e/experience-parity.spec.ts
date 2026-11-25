@@ -252,7 +252,7 @@ test('the Characters panel keeps its Customize button on the edge margin', async
 	}
 });
 
-test('character list thumbnails and New stay left-aligned and sizes fit', async ({ page }) => {
+test('character list thumbnails stay left-aligned and sizes fit', async ({ page }) => {
 	for (const [width, height] of [
 		[1440, 900],
 		[960, 800],
@@ -265,8 +265,8 @@ test('character list thumbnails and New stay left-aligned and sizes fit', async 
 				(value) => document.documentElement.setAttribute('data-theme', value),
 				theme
 			);
-			const rows = page.locator('.character-rows :is(.character-row, .new-character-row)');
-			await expect(rows).toHaveCount(2);
+			const rows = page.locator('.character-rows .character-row');
+			await expect(rows).toHaveCount(1);
 			const sizes = rows.first().locator('.character-sizes');
 			await expect(sizes.locator('span')).toHaveText([/^\d+×\d+ px body$/, '· 64×64 px frame']);
 			const overflow = await sizes.evaluate((node) => {
@@ -297,8 +297,8 @@ test('character list thumbnails and New stay left-aligned and sizes fit', async 
 				expect(geometry.inset).toBeCloseTo(geometry.expected, 0);
 			}
 			const name = rows.first().locator('strong');
-			const newLabel = rows.last().locator('span').last();
-			const alignedLeft = (await newLabel.boundingBox())!.x;
+			// The New character action lives in the header now, so the name column is checked against its own facts.
+			const alignedLeft = (await rows.first().locator('.character-sizes').boundingBox())!.x;
 			expect((await name.boundingBox())!.x).toBeCloseTo(alignedLeft, 0);
 			const longNameLeft = await name.evaluate((node) => {
 				const longName = document.createElement('span');
@@ -543,42 +543,59 @@ test('PWA fullscreen launch hides an unusable toggle while standalone permits it
 	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeEnabled();
 });
 
-test('movement warnings are combined and remain eligible while an error takes priority', async ({
+test('live coverage stays in the world notes while movement diagnostics respect error priority', async ({
 	page
 }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	await page.goto(dev);
 	await expect(page.locator('.customize-action')).toBeEnabled();
 	await page.locator('.customize-action').click();
-	await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		const manifest = s.store.project.manifest;
-		manifest.rig.directions.push({ id: 'notification-fixture' });
 		const head = manifest.items.find((item: { slot: string }) => item.slot === 'head');
 		head.coverage = [];
 		s.doc.items[head.slot] = head.id;
 		s.doc.rev++;
-		s.toast('Could not save your work.', { tone: 'danger' });
 	});
 	const notice = page.locator('.toast');
-	await world(page).focus();
-	await page.keyboard.down('ArrowRight');
-	try {
-		await expect
-			.poll(() => world(page).evaluate((el) => Number(el.dataset.position!.split(',')[0])))
-			.toBeGreaterThan(0);
-		await expect(notice.getByRole('alert')).toContainText('Could not save your work.');
-	} finally {
-		await page.keyboard.up('ArrowRight');
+	const coverageNote = page
+		.locator('.world-live-note')
+		.filter({ hasText: '1 item hidden (missing frames)' });
+	const desktop = page.viewportSize()!;
+	for (const mode of ['Side-scroller', 'Top-down']) {
+		await page.setViewportSize(mode === 'Side-scroller' ? { width: 568, height: 320 } : desktop);
+		await modes(page).getByRole('button', { name: mode, exact: true }).click();
+		await world(page).focus();
+		await page.keyboard.down('ArrowRight');
+		try {
+			await expect
+				.poll(() => world(page).evaluate((el) => Number(el.dataset.position!.split(',')[0])))
+				.toBeGreaterThan(0);
+			await expect(coverageNote).toBeVisible();
+			await expect(notice).toHaveCount(0);
+		} finally {
+			await page.keyboard.up('ArrowRight');
+		}
 	}
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.store.project.manifest.rig.directions.push({ id: 'notification-fixture' });
+		s.doc.rev++;
+		s.toast('Could not save your work.', { tone: 'danger' });
+	});
+	await expect(notice.getByRole('alert')).toContainText('Could not save your work.');
 	// The demo has no Idle or stored rest image, so stopping uses a still pose.
 	await expect(world(page)).toHaveAttribute('data-presentation', 'still');
 	await notice.getByRole('button', { name: 'Dismiss notification' }).click();
 	await expect(notice.locator('[data-tone]')).toHaveAttribute('data-tone', 'warning');
 	await expect(notice).toContainText('Unknown direction: notification-fixture');
-	await expect(notice).toContainText('1 item hidden');
+	await expect(
+		notice.getByRole('button', { name: 'Report this problem', exact: true })
+	).toBeVisible();
+	await expect(notice).not.toContainText('item hidden');
 	await notice.getByRole('button', { name: 'Dismiss notification' }).click();
 	await page.evaluate(
 		() =>
@@ -587,6 +604,38 @@ test('movement warnings are combined and remain eligible while an error takes pr
 			)
 	);
 	await expect(notice).toHaveCount(0);
+});
+
+test('live view notices stay above the phone panel without moving it', async ({ page }, info) => {
+	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto(dev);
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	await page.locator('.customize-action').click();
+	const panel = page.locator('.sheet-layout .equipment-rail');
+	const error = page.getByRole('alert').filter({ hasText: 'Could not open this character.' });
+	for (const mode of ['Top-down', 'Side-scroller']) {
+		await modes(page).getByRole('button', { name: mode, exact: true }).click();
+		const before = await panel.boundingBox();
+		expect(before).not.toBeNull();
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts';
+			const { doc } = await import(path);
+			doc.error = 'Could not open this character. '.repeat(8);
+		});
+		await expect(error).toBeVisible();
+		const box = (await error.boundingBox())!;
+		expect(box.x).toBe(16);
+		expect(box.y + box.height).toBeLessThan(before!.y);
+		expect(await panel.boundingBox()).toEqual(before);
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts';
+			const { doc } = await import(path);
+			doc.error = '';
+		});
+		await expect(error).toHaveCount(0);
+		expect(await panel.boundingBox()).toEqual(before);
+	}
 });
 
 test('screen transitions preserve world keyboard focus while creator fields remain native', async ({
@@ -840,10 +889,12 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.keyboard.press('Escape');
 	await expect(toggle).toHaveAccessibleName('Mount settings');
 	await expect(toggle).toHaveAttribute('aria-haspopup', 'dialog');
-	// Mount settings sits in Preview's playback bar, right of Inspect; the top bar keeps Undo, Redo, Random look, Share.
+	// Mount settings sits right of Inspect. While music plays, Audio sits immediately before Random look.
 	await expect(page.locator('.playback-bar .playback-inspect + .test-mount-toggle')).toHaveCount(1);
 	await expect(
-		page.locator('.header-actions > .header-undo + .header-redo + .header-random + .header-share')
+		page.locator(
+			'.header-actions > .header-undo + .header-redo + .header-audio + .header-random + .header-share'
+		)
 	).toHaveCount(1);
 	// F shows and hides the mount in Preview too.
 	await world(page).focus();
@@ -1442,7 +1493,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 		importing.getByRole('img', { name: 'Character import preview', exact: true })
 	).toBeVisible();
 	await importing
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await importing.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(importing).toBeHidden();
@@ -2617,7 +2668,7 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 		).toBeVisible();
 		await dialog.getByLabel('Character name', { exact: true }).fill(`Wheel character ${copy + 1}`);
 		await dialog
-			.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+			.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 			.uncheck();
 		await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
 		await expect(page.locator('.name-menu .name-text')).toHaveText(`Wheel character ${copy + 1}`, {
@@ -3634,6 +3685,63 @@ test('translated State and Move tabs do not overlap on a 320px phone', async ({ 
 	}
 });
 
+test('a 320px bar keeps the panel toggle before More and moves actions into More left to right for a long name', async ({
+	page
+}) => {
+	// Audio is a separate always-available control: mute it so this covers the panel toggle's fit alone.
+	await page.addInitScript(() =>
+		localStorage.setItem(
+			'pixeldoll.audio',
+			JSON.stringify({ muted: true, musicMuted: true, effectsMuted: true, music: 0, effects: 0 })
+		)
+	);
+	await page.setViewportSize({ width: 320, height: 568 });
+	await customize(page);
+	const toggle = page.getByRole('button', { name: 'Customization', exact: true });
+	const more = page.getByRole('button', { name: 'More options', exact: true });
+	const bar = page.locator('.experience-header');
+	const fits = () => bar.evaluate((header) => header.scrollWidth <= header.clientWidth + 1);
+	// Equal insets on both sides of the floating bar.
+	const barBox = (await bar.boundingBox())!;
+	expect(barBox.x).toBe(8);
+	expect(page.viewportSize()!.width - barBox.x - barBox.width).toBe(8);
+	// The demo's short name leaves room: nothing moves beyond what phones always keep in More.
+	await expect(page.locator('.experience')).not.toHaveAttribute('data-overflow');
+	expect(await fits()).toBe(true);
+	await more.click();
+	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await expect(page.locator('.name-text')).not.toContainText('(Demo)');
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: /^Rename character/ }).click();
+	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
+	const longName = 'A very long character name that cannot fit';
+	await rename.getByRole('textbox', { name: 'Display name', exact: true }).fill(longName);
+	await rename.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(page.locator('.name-text')).toHaveText(longName);
+	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+	await expect(toggle).toHaveAttribute('aria-controls', 'customization-rail');
+	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-bottom-close/);
+	// Export moves into More first; whatever else moved is a prefix of the left-to-right order.
+	await expect(page.locator('.header-export')).toBeHidden();
+	const order = ['undo', 'redo', 'random', 'share', 'export', 'fullscreen'];
+	const moved = (await page.locator('.experience').getAttribute('data-overflow'))!.split(' ');
+	expect(moved).toEqual(order.slice(0, moved.length));
+	expect(await fits()).toBe(true);
+	const placed = (await toggle.boundingBox())!;
+	const end = (await more.boundingBox())!;
+	expect(placed.width).toBeGreaterThanOrEqual(44);
+	expect(placed.height).toBeGreaterThanOrEqual(44);
+	expect(placed.x + placed.width).toBeLessThanOrEqual(end.x);
+	await toggle.click();
+	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-bottom-open/);
+	await expect(page.locator('#customization-rail')).toBeHidden();
+	expect(await toggle.boundingBox()).toEqual(placed);
+	await more.click();
+	await page.locator('#experience-options .mobile-export').click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+});
+
 test('Moves stays in place, disabled with its reason, in the live views', async ({ page }) => {
 	await customize(page);
 	const tabs = page.getByRole('tablist', { name: 'Customization panels' });
@@ -3674,6 +3782,580 @@ test('Moves stays in place, disabled with its reason, in the live views', async 
 	await expect(page.locator('.world-notes')).not.toContainText('missing —');
 	await views.getByRole('button', { name: 'Preview', exact: true }).click();
 	await expect(moves).not.toHaveAttribute('aria-disabled', 'true');
+});
+
+test('customization panel docks on either side, gives the stage its width back and resets on reload', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await customize(page);
+	const toggle = page.locator('#customization-toggle');
+	const rail = page.locator('#customization-rail');
+	const stage = page.locator('.experience-stage');
+	const originalToggle = await toggle.boundingBox();
+	const originalStage = (await stage.boundingBox())!;
+	const originalPanel = (await rail.boundingBox())!;
+	const originalSlots = (await page.locator('.slot-rail-column').boundingBox())!;
+	const originalList = (await rail.locator('.section-list').boundingBox())!;
+	const headerEdge = (await page.locator('.experience-header').boundingBox())!.x;
+	// The panel's outer edge keeps the top bar's inset, and its list meets the panel's inner edge.
+	expect(page.viewportSize()!.width - (originalPanel.x + originalPanel.width)).toBeCloseTo(
+		headerEdge,
+		0
+	);
+	expect(originalList.x).toBeCloseTo(originalPanel.x, 0);
+	const slotGap = originalSlots.x - (originalList.x + originalList.width);
+	expect(slotGap).toBeCloseTo(12, 0);
+	// The slot rail sits on the panel's outer edge, so its icons stay against the window edge.
+	expect(originalSlots.x + originalSlots.width).toBeCloseTo(
+		originalPanel.x + originalPanel.width,
+		0
+	);
+	const list = rail.locator('.equipment-scroll').first();
+	const scroll = await list.evaluate((el) => {
+		el.scrollTop = 150;
+		return el.scrollTop;
+	});
+	expect(scroll).toBeGreaterThan(0);
+	await expect(toggle).toHaveAccessibleName('Customization');
+	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-right-close/);
+	// Right dock: Full screen, the toggle, then More, which stays last.
+	const more = (await page
+		.getByRole('button', { name: 'More options', exact: true })
+		.boundingBox())!;
+	expect(originalToggle!.x + originalToggle!.width).toBeLessThanOrEqual(more.x);
+	await toggle.press('Space');
+	await expect(toggle).toHaveAccessibleName('Customization');
+	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await expect(toggle).toBeFocused();
+	await expect(rail).toBeHidden();
+	expect((await stage.boundingBox())!.width).toBe(1440);
+	expect(await toggle.boundingBox()).toEqual(originalToggle);
+	await toggle.press('Enter');
+	await expect(rail).toBeVisible();
+	await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBe(scroll);
+	expect(await stage.boundingBox()).toEqual(originalStage);
+	// Closing slides the inert panel out over its own space; the stage takes that space only once it has gone.
+	const closing = await toggle.evaluate(async (button) => {
+		const panel = document.getElementById('customization-rail')!;
+		await new Promise(requestAnimationFrame);
+		await Promise.all(panel.getAnimations().map((animation) => animation.finished));
+		await new Promise(requestAnimationFrame);
+		// Capture the animation at creation. Chromium can still report zero active effects on the first
+		// frame of a reversed Web Animation, especially when the full suite keeps the browser busy.
+		const animate = panel.animate;
+		let slide: Animation | undefined;
+		panel.animate = function (...args) {
+			return (slide = animate.apply(this, args));
+		};
+		(button as HTMLButtonElement).click();
+		panel.animate = animate;
+		await Promise.resolve();
+		return {
+			shown: !panel.hidden,
+			inert: panel.inert,
+			sliding: Number(slide?.effect?.getTiming().duration) >= 100,
+			stage: document.querySelector('.experience-stage')!.getBoundingClientRect().width
+		};
+	});
+	expect(closing).toEqual({ shown: true, inert: true, sliding: true, stage: originalStage.width });
+	await expect(rail).toBeHidden();
+	expect((await stage.boundingBox())!.width).toBe(1440);
+	await toggle.click();
+	await expect(rail).toBeVisible();
+	await expect(rail).toHaveJSProperty('inert', false);
+	// Let the opening slide finish, so this close starts a full one that the test can hold.
+	await page.evaluate(() =>
+		Promise.all(
+			document
+				.getElementById('customization-rail')!
+				.getAnimations()
+				.map((a) => a.finished)
+		)
+	);
+	// A slide paused by a background tab never delivers its finish event: it still settles, and the next press starts
+	// its own slide instead of reversing a dead one.
+	const stalled = await page.evaluate(async () => {
+		const toggle = document.getElementById('customization-toggle') as HTMLButtonElement;
+		const panel = document.getElementById('customization-rail')!;
+		// Capture the animation at creation: Chromium can report no relevant animations on its first frame.
+		const animate = panel.animate;
+		let slide: Animation | undefined;
+		panel.animate = function (...args: Parameters<Element['animate']>) {
+			return (slide = animate.apply(this, args));
+		};
+		toggle.click();
+		panel.animate = animate;
+		await Promise.resolve();
+		slide?.pause();
+		return slide?.playState ?? 'none';
+	});
+	expect(stalled).toBe('paused');
+	await expect(rail).toBeHidden();
+	expect((await stage.boundingBox())!.width).toBe(1440);
+	await toggle.click();
+	await expect(rail).toBeVisible();
+	await expect(rail).toHaveJSProperty('inert', false);
+	await page.keyboard.press('Control+,');
+	const search = page.getByRole('searchbox', { name: 'Search settings' });
+	await search.fill('Panel side');
+	await page.getByRole('button', { name: /Panel side/ }).click();
+	const sides = page.getByRole('radiogroup', { name: 'Panel side' });
+	await expect(sides.getByRole('radio', { name: 'Right' })).toBeChecked();
+	await sides.getByRole('radio', { name: 'Left' }).check();
+	await page.keyboard.press('Escape');
+	const leftStage = (await stage.boundingBox())!;
+	const leftRail = (await rail.boundingBox())!;
+	const leftSlots = (await page.locator('.slot-rail-column').boundingBox())!;
+	const leftList = (await rail.locator('.section-list').boundingBox())!;
+	expect(leftRail.x).toBeCloseTo(headerEdge, 0);
+	expect(leftSlots.x).toBeCloseTo(leftRail.x, 0);
+	expect(leftSlots.width).toBeCloseTo(originalSlots.width, 0);
+	expect(leftList.x + leftList.width).toBeCloseTo(leftRail.x + leftRail.width, 0);
+	expect(leftList.x - (leftSlots.x + leftSlots.width)).toBeCloseTo(slotGap, 0);
+	expect(leftRail.x + leftRail.width).toBeLessThan(leftStage.x);
+	expect(leftStage.width).toBeCloseTo(originalStage.width, 0);
+	// Left dock: Back, the toggle, then the character name.
+	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-left-close/);
+	const back = (await page.locator('.header-back').boundingBox())!;
+	const leftToggle = (await toggle.boundingBox())!;
+	const name = (await page.locator('.name-menu').boundingBox())!;
+	expect(back.x + back.width).toBeLessThanOrEqual(leftToggle.x);
+	expect(leftToggle.x + leftToggle.width).toBeLessThanOrEqual(name.x);
+	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
+	await rail.getByRole('tab', { name: 'Moves', exact: true }).click({ force: true });
+	const toast = page.locator('.toast');
+	await expect
+		.poll(() =>
+			toast.evaluate((el) => Number.parseFloat(el.style.getPropertyValue('--bu-toast-center')))
+		)
+		.toBeCloseTo(leftStage.x + leftStage.width / 2, 1);
+	await toggle.click();
+	await expect(rail).toBeHidden();
+	await expect(toast).toHaveCSS('--bu-toast-center', '720px');
+	await customize(page);
+	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+	expect((await stage.boundingBox())!.x).toBeGreaterThan(0);
+});
+
+test('the top bar keeps one gap and equal edge insets on both screens and panel docks', async ({
+	page
+}) => {
+	const measure = () =>
+		page.evaluate(() => {
+			const boxes = (selector: string) =>
+				[...document.querySelectorAll<HTMLElement>(selector)]
+					.filter((el) => el.getBoundingClientRect().width > 0 && !el.classList.contains('sr'))
+					.map((el) => {
+						const box = el.getBoundingClientRect();
+						return { left: box.left, right: box.right };
+					});
+			const gaps = (items: { left: number; right: number }[]) =>
+				items.slice(1).map((item, i) => Math.round((item.left - items[i].right) * 100) / 100);
+			const header = document.querySelector<HTMLElement>('.experience-header')!;
+			const frame = header.getBoundingClientRect();
+			const firstItem = [...document.querySelectorAll<HTMLElement>('.header-start > *')].find(
+				(el) => el.getBoundingClientRect().width > 0 && !el.classList.contains('sr')
+			);
+			const firstIcon = firstItem?.querySelector<SVGElement>('svg');
+			const firstGlyph =
+				firstIcon && firstIcon.getBoundingClientRect().width > 0
+					? firstIcon.getBoundingClientRect()
+					: firstItem?.getBoundingClientRect();
+			const lastButton = [...document.querySelectorAll<HTMLElement>('.header-actions button')]
+				.filter((button) => button.getBoundingClientRect().width > 0)
+				.at(-1)!;
+			const lastGlyph = (lastButton.querySelector('svg') ?? lastButton).getBoundingClientRect();
+			return {
+				innerWidth,
+				header: { left: frame.left, right: frame.right },
+				firstGlyph: firstGlyph ? firstGlyph.left : null,
+				lastGlyph: lastGlyph.right,
+				startGaps: gaps(boxes('.header-start > *')),
+				actionGaps: gaps(boxes('.header-actions > *')),
+				globalGap: getComputedStyle(header.querySelector('.global-actions')!).gap
+			};
+		});
+	const check = async (gapStart: number, gapActions: number) => {
+		const metrics = await measure();
+		// The first control on the left and the last control on the right sit the same distance from their window edges.
+		expect(metrics.header.left).toBeCloseTo(metrics.innerWidth - metrics.header.right, 1);
+		expect(metrics.firstGlyph).toBeCloseTo(metrics.innerWidth - metrics.lastGlyph, 1);
+		expect(metrics.startGaps.every((value) => value === gapStart)).toBe(true);
+		expect(metrics.actionGaps.every((value) => value === gapActions)).toBe(true);
+		expect(metrics.globalGap).toBe(`${gapActions}px`);
+	};
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await page.goto('/');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	// The Characters bar spaces the brand, its title and its count like the actions.
+	await check(4, 4);
+	await customize(page);
+	await check(4, 4);
+	await page.evaluate(() =>
+		localStorage.setItem('pixeldoll.studioPanel', JSON.stringify({ side: 'left', autoHide: true }))
+	);
+	await page.reload();
+	await customize(page);
+	await check(4, 4);
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto('/');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	// Phones touch their 44 px targets; the Characters label group keeps its own rhythm.
+	await check(4, 0);
+	await customize(page);
+	await check(0, 0);
+});
+
+test.describe('customization panel on compact touch screens', () => {
+	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+	test('the panel tabs still activate by tap and by click', async ({ page }) => {
+		await customize(page);
+		const rail = page.locator('#customization-rail');
+		const colors = rail.getByRole('tab', { name: 'Colors' });
+		await colors.tap();
+		await expect(colors).toHaveAttribute('aria-selected', 'true');
+		const wardrobe = rail.getByRole('tab', { name: 'Wardrobe' });
+		await wardrobe.click();
+		await expect(wardrobe).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test('auto-hide is scoped to each visit and restores the Preview tab', async ({
+		page,
+		context
+	}) => {
+		await customize(page);
+		const toggle = page.locator('#customization-toggle');
+		const modes = page.getByRole('group', { name: 'Character view', exact: true });
+		const preview = modes.getByRole('button', { name: 'Preview' });
+		const topDown = modes.getByRole('button', { name: 'Top-down' });
+		const side = modes.getByRole('button', { name: 'Side-scroller' });
+		const rail = page.locator('#customization-rail');
+		const moves = rail.getByRole('tab', { name: 'Moves' });
+		const stage = page.locator('.experience-stage');
+		const editing = (await stage.boundingBox())!;
+		const list = rail.locator('#wardrobe-list');
+		const browsePosition = await list.evaluate((el) => {
+			el.scrollTop = 495;
+			return el.scrollTop;
+		});
+		expect(browsePosition).toBeGreaterThan(0);
+		await topDown.tap();
+		await expect(rail).toBeHidden();
+		await toggle.tap();
+		await rail.getByRole('tab', { name: 'Colors' }).tap();
+		await preview.tap();
+		await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBe(browsePosition);
+		await moves.tap();
+		await topDown.tap();
+		await expect(rail).toBeHidden();
+		await expect(page.locator('.game-touch')).toBeVisible();
+		expect((await stage.boundingBox())!.height).toBeGreaterThan(editing.height);
+		const touch = await context.newCDPSession(page);
+		try {
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [{ id: 1, x: 90, y: 300 }]
+			});
+			await expect(page.locator('.world-stick')).toBeVisible();
+			await toggle.evaluate((button) => (button as HTMLButtonElement).click());
+			await expect(page.locator('.world-stick')).toBeHidden();
+		} finally {
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+			await touch.detach();
+		}
+		await expect(rail.getByRole('tab', { name: 'Wardrobe' })).toHaveAttribute(
+			'aria-selected',
+			'true'
+		);
+		await page.setViewportSize({ width: 568, height: 320 });
+		await side.tap();
+		await expect(rail).toBeVisible();
+		const split = (await stage.boundingBox())!;
+		const dock = (await rail.boundingBox())!;
+		const disclosure = (await toggle.boundingBox())!;
+		expect(disclosure.y + disclosure.height).toBeLessThanOrEqual(dock.y);
+		const attack = (await page
+			.locator('.game-touch')
+			.getByRole('button', { name: 'Attack' })
+			.boundingBox())!;
+		expect(attack.x + attack.width).toBeLessThanOrEqual(split.x + split.width);
+		await preview.tap();
+		await expect(moves).toHaveAttribute('aria-selected', 'true');
+		await toggle.tap();
+		await topDown.tap();
+		await toggle.tap();
+		await preview.tap();
+		await expect(rail).toBeHidden();
+		await toggle.tap();
+		await page.keyboard.press('Control+,');
+		const search = page.getByRole('searchbox', { name: 'Search settings' });
+		await search.fill('Hide panel when entering Live Views');
+		await page.getByRole('button', { name: /Hide panel when entering Live Views/ }).click();
+		const autoHide = page.getByRole('switch', { name: 'Hide panel when entering Live Views' });
+		await expect(autoHide).toBeChecked();
+		await autoHide.uncheck();
+		await page.keyboard.press('Escape');
+		await topDown.tap();
+		await expect(rail).toBeVisible();
+		await customize(page);
+		await side.tap();
+		await expect(rail).toBeVisible();
+	});
+
+	test('a pull toward the dock closes the panel from the tab row or the grabber and never from the stage', async ({
+		page,
+		context
+	}) => {
+		await customize(page);
+		const rail = page.locator('#customization-rail');
+		const toggle = page.locator('#customization-toggle');
+		const stage = page.locator('.experience-stage');
+		const tabs = page.getByRole('tablist', { name: 'Customization panels' });
+		const modes = page.getByRole('group', { name: 'Character view', exact: true });
+		const before = (await stage.boundingBox())!;
+		await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+		const touch = await context.newCDPSession(page);
+		const settle = () =>
+			page.evaluate(() =>
+				Promise.all(
+					document
+						.getElementById('customization-rail')!
+						.getAnimations()
+						.map((animation) => animation.finished)
+				)
+			);
+		const point = (x: number, y: number, id = 1) => ({ x, y, id, radiusX: 1, radiusY: 1 });
+		const drag = async (from: { x: number; y: number }, to: { x: number; y: number }) => {
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(from.x, from.y)]
+			});
+			for (let step = 1; step <= 3; step++)
+				await touch.send('Input.dispatchTouchEvent', {
+					type: 'touchMove',
+					touchPoints: [
+						point(from.x + ((to.x - from.x) * step) / 3, from.y + ((to.y - from.y) * step) / 3)
+					]
+				});
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+		};
+		try {
+			const row = (await tabs.boundingBox())!;
+			const x = row.x + 24,
+				y = row.y + row.height / 2;
+			// Upward, sideways and short pulls leave the panel where it is.
+			await drag({ x, y }, { x, y: y - 90 });
+			await expect(rail).toBeVisible();
+			await drag({ x, y }, { x: x + 90, y });
+			await expect(rail).toBeVisible();
+			await drag({ x, y }, { x, y: y + 24 });
+			await expect(rail).toBeVisible();
+			// A second finger is a pinch, not a pull.
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(x, y)]
+			});
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchMove',
+				touchPoints: [point(x, y + 20)]
+			});
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(x, y + 20), point(x + 40, y + 20, 2)]
+			});
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchMove',
+				touchPoints: [point(x, y + 90), point(x + 40, y + 90, 2)]
+			});
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+			await expect(rail).toBeVisible();
+			// A cancelled touch lets go without closing.
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(x, y)]
+			});
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchMove',
+				touchPoints: [point(x, y + 40)]
+			});
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+			await expect(rail).toBeVisible();
+			// A downward pull from the tab row closes it and gives its height back to the stage.
+			await drag({ x, y }, { x, y: y + 90 });
+			await expect(rail).toBeHidden();
+			await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+			expect((await stage.boundingBox())!.height).toBeGreaterThan(before.height);
+			// The grabber is the sheet's other drag surface. A CDP touch tap after a CDP drag does not synthesize a
+			// click in this harness, so reopen through the button's own handler; the toolbar's touch tap is covered by
+			// the auto-hide test above.
+			const reopen = () => toggle.evaluate((button) => (button as HTMLButtonElement).click());
+			await reopen();
+			await expect(rail).toBeVisible();
+			await settle();
+			const grip = (await rail.locator('.sheet-handle').boundingBox())!;
+			await drag(
+				{ x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+				{ x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 + 90 }
+			);
+			await expect(rail).toBeHidden();
+			// A finger on the live stage belongs to the joystick: dragging it never closes the panel.
+			await modes
+				.getByRole('button', { name: 'Top-down' })
+				.evaluate((button) => (button as HTMLButtonElement).click());
+			await expect(rail).toBeHidden();
+			await reopen();
+			await expect(rail).toBeVisible();
+			await settle();
+			const play = (await stage.boundingBox())!;
+			const start = { x: play.x + play.width / 3, y: play.y + play.height / 2 };
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [{ ...start, id: 1, radiusX: 1, radiusY: 1 }]
+			});
+			await expect(page.locator('.world-stick')).toBeVisible();
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchMove',
+				touchPoints: [{ ...start, x: start.x + 90, id: 1, radiusX: 1, radiusY: 1 }]
+			});
+			await expect(rail).toBeVisible();
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+		} finally {
+			await touch.detach();
+		}
+	});
+});
+
+test('a mouse drag follows the Side panel position on either dock', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await customize(page);
+	const toggle = page.locator('#customization-toggle');
+	const rail = page.locator('#customization-rail');
+	const tabs = page.getByRole('tablist', { name: 'Customization panels' });
+	const row = (await tabs.boundingBox())!;
+	const y = row.y + row.height / 2;
+	const pull = async (fromX: number, dx: number, dy = 0) => {
+		await page.mouse.move(fromX, y);
+		await page.mouse.down();
+		await page.mouse.move(fromX + dx, y + dy, { steps: 4 });
+		await page.mouse.up();
+	};
+	// Right dock: away from it, or straight down, leaves the panel open.
+	await pull(row.x + 30, -90);
+	await expect(rail).toBeVisible();
+	await pull(row.x + 30, 0, 90);
+	await expect(rail).toBeVisible();
+	// A pull right closes it, and its own click never selects the tab under the release.
+	const colors = rail.getByRole('tab', { name: 'Colors' });
+	const colorsBox = (await colors.boundingBox())!;
+	await page.mouse.move(colorsBox.x + 8, y);
+	await page.mouse.down();
+	await page.mouse.move(colorsBox.x + 78, y, { steps: 4 });
+	await page.mouse.up();
+	await expect(rail).toBeHidden();
+	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await toggle.click();
+	await expect(rail).toBeVisible();
+	await expect(rail.getByRole('tab', { name: 'Wardrobe' })).toHaveAttribute(
+		'aria-selected',
+		'true'
+	);
+	// Left dock: the same pull right leaves it open, and a pull left closes it.
+	await page.evaluate(() =>
+		localStorage.setItem('pixeldoll.studioPanel', JSON.stringify({ side: 'left', autoHide: true }))
+	);
+	await page.reload();
+	await customize(page);
+	const left = (await tabs.boundingBox())!;
+	expect((await rail.boundingBox())!.x).toBeCloseTo(left.x, 0);
+	expect(left.x).toBeLessThan(200);
+	await pull(left.x + left.width - 30, 90);
+	await expect(rail).toBeVisible();
+	const states = rail.getByRole('tab', { name: 'States' });
+	const statesBox = (await states.boundingBox())!;
+	await page.mouse.move(statesBox.x + statesBox.width - 10, y);
+	await page.mouse.down();
+	await page.mouse.move(statesBox.x + statesBox.width - 70, y, { steps: 4 });
+	await page.mouse.up();
+	await expect(rail).toBeHidden();
+	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await toggle.click();
+	await expect(rail).toBeVisible();
+	await expect(rail.getByRole('tab', { name: 'Wardrobe' })).toHaveAttribute(
+		'aria-selected',
+		'true'
+	);
+});
+
+test.describe('customization panel pull follows the dock on a phone', () => {
+	test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+
+	test('a pull toward the dock follows Side panel position, and the portrait sheet still pulls down', async ({
+		page,
+		context
+	}) => {
+		await customize(page);
+		const rail = page.locator('#customization-rail');
+		const toggle = page.locator('#customization-toggle');
+		const tabs = page.getByRole('tablist', { name: 'Customization panels' });
+		expect((await rail.boundingBox())!.x).toBeGreaterThan(400);
+		const touch = await context.newCDPSession(page);
+		const point = (x: number, y: number) => ({ x, y, id: 1, radiusX: 1, radiusY: 1 });
+		const drag = async (from: { x: number; y: number }, to: { x: number; y: number }) => {
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(from.x, from.y)]
+			});
+			for (let step = 1; step <= 3; step++)
+				await touch.send('Input.dispatchTouchEvent', {
+					type: 'touchMove',
+					touchPoints: [
+						point(from.x + ((to.x - from.x) * step) / 3, from.y + ((to.y - from.y) * step) / 3)
+					]
+				});
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+		};
+		try {
+			let row = (await tabs.boundingBox())!;
+			let y = row.y + row.height / 2;
+			// Right dock: a leftward pull leaves it open, a rightward pull closes it.
+			await drag({ x: row.x + 30, y }, { x: row.x - 60, y });
+			await expect(rail).toBeVisible();
+			await drag({ x: row.x + 30, y }, { x: row.x + 130, y });
+			await expect(rail).toBeHidden();
+			await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+			// Left dock: the mirror image.
+			await page.evaluate(() =>
+				localStorage.setItem(
+					'pixeldoll.studioPanel',
+					JSON.stringify({ side: 'left', autoHide: true })
+				)
+			);
+			await page.reload();
+			await customize(page);
+			expect((await rail.boundingBox())!.x).toBeLessThan(200);
+			row = (await tabs.boundingBox())!;
+			y = row.y + row.height / 2;
+			await drag({ x: row.x + row.width - 30, y }, { x: row.x + row.width + 60, y });
+			await expect(rail).toBeVisible();
+			await drag({ x: row.x + row.width - 10, y }, { x: row.x + row.width - 70, y });
+			await expect(rail).toBeHidden();
+			await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+			// Portrait keeps the sheet, whatever the dock setting, and still pulls down.
+			await page.setViewportSize({ width: 390, height: 844 });
+			await page.reload();
+			await customize(page);
+			const grip = (await rail.locator('.sheet-handle').boundingBox())!;
+			await drag(
+				{ x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+				{ x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 + 90 }
+			);
+			await expect(rail).toBeHidden();
+		} finally {
+			await touch.detach();
+		}
+	});
 });
 
 test('short tab labels, the character name and sheet Done buttons keep 44 px targets', async ({
@@ -3928,7 +4610,7 @@ test.describe('Preview facing lineup', () => {
 			]) {
 				await page.setViewportSize({ width, height });
 				await expect(page.locator('.world-actors')).toHaveJSProperty('width', width);
-				const controls = page.getByRole('toolbar', { name: 'Preview controls' });
+				const controls = page.locator('.playback-bar');
 				await expect
 					.poll(
 						async () => {
@@ -3943,6 +4625,14 @@ test.describe('Preview facing lineup', () => {
 						{ message: `${theme} ${width}×${height}: geometry tracks the wrapped toolbar` }
 					)
 					.toBeLessThanOrEqual(1);
+				const stage = page.locator('.experience-stage');
+				const singlePane = await stage.evaluate((element) => (element as HTMLElement).inert);
+				const toggle = page.locator('#customization-toggle');
+				if (singlePane) {
+					await toggle.click();
+					await expect(stage).toHaveJSProperty('inert', false);
+					await expect(page.locator('.equipment-rail')).toBeHidden();
+				}
 				const bar = (await controls.boundingBox())!;
 				heights.add(Math.round(bar.height));
 				const bottom = await page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement) => {
@@ -3975,6 +4665,7 @@ test.describe('Preview facing lineup', () => {
 					expect(box.width).toBeGreaterThanOrEqual(44);
 					expect(box.height).toBeGreaterThanOrEqual(44);
 				}
+				if (singlePane) await toggle.click();
 			}
 		}
 		expect([...heights].some((height) => height >= 100)).toBe(true);
@@ -3996,6 +4687,25 @@ test.describe('Preview facing lineup', () => {
 						)
 				)
 				.toBe(expected);
+		}
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await expect(page.locator('.world-actors')).toHaveJSProperty('width', 1280);
+		const toolbar = page.getByRole('toolbar', { name: 'Preview controls' });
+		const baseline = (await toolbar.boundingBox())!;
+		const notice = page.locator('.preview-note');
+		for (const mirrorOf of ['missing-facing-' + 'layout-fixture-'.repeat(16), undefined]) {
+			await page.evaluate(async (mirrorOf) => {
+				const path = '/src/studio/state.svelte.ts';
+				const { doc, store } = await import(path);
+				store.project.manifest.rig.directions[0].mirrorOf = mirrorOf;
+				doc.rev++;
+			}, mirrorOf);
+			if (mirrorOf) {
+				await expect(notice).toContainText('Missing mirror source');
+				const box = (await notice.boundingBox())!;
+				expect(box.y + box.height).toBeLessThan(baseline.y);
+			} else await expect(notice).toHaveCount(0);
+			expect(await toolbar.boundingBox()).toEqual(baseline);
 		}
 	});
 
@@ -4318,7 +5028,7 @@ test.describe('Preview facing lineup', () => {
 			s.doc.rev++;
 		});
 		await expect(world(page)).toHaveAttribute('data-facing', 'south');
-		const note = page.locator('.world-coverage');
+		const note = page.locator('.preview-note');
 		await expect(note).toContainText('missing Walk / North frames');
 		await expect(note).toContainText('missing Walk / East frames');
 		await expect
@@ -4327,7 +5037,7 @@ test.describe('Preview facing lineup', () => {
 				const playback = await page
 					.getByRole('toolbar', { name: 'Preview controls' })
 					.boundingBox();
-				return notice !== null && playback !== null && notice.y >= playback.y + playback.height;
+				return notice !== null && playback !== null && notice.y + notice.height <= playback.y;
 			})
 			.toBe(true);
 		await page.evaluate(async () => {
@@ -4338,9 +5048,7 @@ test.describe('Preview facing lineup', () => {
 		});
 		await expect(page.locator('.world-loading-items')).toContainText('Lineup hat loading');
 		await expect(page.locator('.world-loading-items')).toContainText('North, East');
-		await expect(page.locator('.world-coverage').filter({ hasText: 'missing Walk' })).toHaveCount(
-			0
-		);
+		await expect(note.filter({ hasText: 'missing Walk' })).toHaveCount(0);
 	});
 
 	type Rig = [DirectionName, DirectionName?][];
@@ -4572,9 +5280,7 @@ test.describe('live views actions', () => {
 		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 		const host = world(page);
 		await expect(host).toBeFocused();
-		await expect(page.locator('.world-hint')).toHaveText(
-			'WASD or hold click to move · Shift to sprint · Right-click or E to attack · Space to jump · F to mount'
-		);
+		await expect(page.locator('.world-hint')).toHaveText('WASD or hold click to move');
 		const bar = page.getByRole('group', { name: 'Game actions', exact: true });
 		const jump = bar.getByRole('button', { name: 'Jump', exact: true });
 		const mount = bar.getByRole('button', { name: 'Mount', exact: true });
@@ -4691,6 +5397,10 @@ test.describe('live views actions', () => {
 		);
 		// Above and west of the body: no south art within 90°, and never the walk's east facing.
 		await expect(host).toHaveAttribute('data-attack', /^missing (west|north-west)$/);
+		await expect(page.locator('.world-notes')).toContainText(
+			/No (west|northwest|north-west) frames for Cross punch\./i
+		);
+		await expect(page.locator('.toast')).toHaveCount(0);
 		// Chorded buttons: walking to a left-press point continues while the right button aims and attacks.
 		await page.mouse.move(ax + 300, ay - 20);
 		await page.mouse.down();

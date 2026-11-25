@@ -7,7 +7,7 @@
 		tooltip,
 		...attributes
 	}: HTMLInputAttributes & {
-		children: Snippet;
+		children?: Snippet;
 		setting?: string;
 		/** Shown on hovering the whole row, not just the switch. */
 		tooltip?: string;
@@ -15,7 +15,7 @@
 </script>
 
 <label class="row bu-check" data-setting={setting} title={tooltip}>
-	{@render children()}
+	{@render children?.()}
 	<input {...attributes} class="bu-switch" type="checkbox" role="switch" />
 </label>
 
@@ -24,5 +24,8 @@
 		inline-size: 100%;
 		min-height: 44px;
 		padding-inline: 0;
+	}
+	.row > .bu-switch {
+		margin-inline-start: auto;
 	}
 </style>

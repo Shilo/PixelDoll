@@ -3,9 +3,9 @@
 	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
 	import type { Snippet } from 'svelte';
-	import { openRename, ui } from './state.svelte.ts';
+	import { openAppearance, openRename, ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { Calculator, Compass, Download, Frame, Info, Pencil } from './icons.ts';
+	import { Calculator, Compass, Download, Frame, Info, Pencil, Sparkles } from './icons.ts';
 	import DeleteRow from './DeleteRow.svelte';
 	import RowActions from './RowActions.svelte';
 	import DemoCopyRow from './DemoCopyRow.svelte';
@@ -57,6 +57,19 @@
 			>
 		{/if}
 		{#if id.startsWith('rig-')}
+			<button
+				class="row"
+				role="menuitem"
+				aria-haspopup="dialog"
+				onclick={() => {
+					close();
+					document
+						.querySelectorAll<HTMLElement>('[popover]:popover-open')
+						.forEach((popover) => popover.hidePopover());
+					openAppearance(id);
+				}}
+				><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron /></button
+			>
 			<button
 				class="row"
 				role="menuitem"

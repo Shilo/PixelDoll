@@ -1060,7 +1060,7 @@ async function pixelLab(
 			states,
 			stateId,
 			warnings: [
-				'Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.',
+				'Set up the pose rig to fit items and add new moves.',
 				...warnings,
 				...(semi ? ['Partially transparent edges were converted to pixel-art transparency.'] : [])
 			],

@@ -21,6 +21,8 @@
 		KeyRound,
 		Layers2,
 		Moon,
+		PanelLeft,
+		PanelRight,
 		PawPrint,
 		PersonStanding,
 		Settings2,
@@ -28,7 +30,8 @@
 		Sun,
 		SunMoon,
 		Trash,
-		UserRound
+		UserRound,
+		Volume2
 	} from './icons.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
@@ -40,6 +43,7 @@
 	import MountSettings from './MountSettings.svelte';
 	import LiveViewSettings from './LiveViewSettings.svelte';
 	import AboutSettings from './AboutSettings.svelte';
+	import AudioSettings from './AudioSettings.svelte';
 	import PixelLabSettings from './PixelLabSettings.svelte';
 	import LibrarySettings from './LibrarySettings.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
@@ -52,6 +56,11 @@
 	import { message } from '../lib/message.ts';
 	import { characterName, setTheme, store, toast, ui } from './state.svelte.ts';
 	import { openerLabel } from './openerLabel.ts';
+	import {
+		panelSettings,
+		setPanelSettings,
+		type PanelSide
+	} from './experience/panelSettings.svelte.ts';
 
 	let {
 		exportSettings,
@@ -75,6 +84,13 @@
 		{ value: 'dark', label: t('settings.dark') },
 		{ value: 'light', label: t('settings.light') }
 	] as const);
+	const panelSides = $derived([
+		{ value: 'left', label: t('studioPanel.left') },
+		{ value: 'right', label: t('studioPanel.right') }
+	] as const);
+	function setPanelSide(side: PanelSide) {
+		if (!setPanelSettings({ side })) toast(message('studioPanel.notSaved'), { tone: 'warning' });
+	}
 	const sections = [
 		{
 			id: 'pixellab',
@@ -108,8 +124,25 @@
 					label: 'settings.theme',
 					terms: ['toolbar.lightMode', 'toolbar.darkMode']
 				},
+				{
+					id: 'panel-side',
+					label: 'studioPanel.side',
+					terms: ['studioPanel.left', 'studioPanel.right', 'experience.customization']
+				},
 				{ id: 'language', label: 'language.label' },
 				{ id: 'reset', label: 'settings.reset.allAction', terms: ['settings.reset.action'] }
+			]
+		},
+		{
+			id: 'audio',
+			label: settingsLabels.audio,
+			icon: Volume2,
+			entries: [
+				{ id: 'audio-enabled', label: 'settings.audio.play', terms: ['settings.audio.mute'] },
+				{ id: 'audio-music', label: 'settings.audio.music' },
+				{ id: 'audio-music-volume', label: 'settings.audio.musicVolume' },
+				{ id: 'audio-effects', label: 'settings.audio.effects' },
+				{ id: 'audio-effects-volume', label: 'settings.audio.effectsVolume' }
 			]
 		},
 		{
@@ -148,6 +181,11 @@
 			label: settingsLabels.live,
 			icon: Gamepad2,
 			entries: [
+				{
+					id: 'panel-auto-hide',
+					label: 'studioPanel.autoHide',
+					terms: ['toolbar.viewTopDown', 'toolbar.viewSide', 'experience.customization']
+				},
 				{
 					id: 'live-idle',
 					label: 'liveViews.idle',
@@ -299,7 +337,7 @@
 	);
 	const groups: SettingsSection[][] = [
 		['pixellab'],
-		['general', 'wardrobe', 'mount', 'live'],
+		['general', 'audio', 'wardrobe', 'mount', 'live'],
 		['characters', 'moves', 'states', 'items'],
 		['export', 'library', 'trash'],
 		['developer', 'about']
@@ -319,14 +357,21 @@
 	let resetFailures = $state<WhisperKey[]>([]);
 	let targetEntry = $state<string>();
 	let panel: HTMLElement;
+	let indexElement: HTMLElement;
 	let search: HTMLInputElement;
+	function homeFocusTarget() {
+		// A touchscreen laptop can still report a fine primary pointer.
+		return navigator.maxTouchPoints === 0 && matchMedia('(pointer: fine)').matches
+			? search
+			: indexElement;
+	}
 	onMount(() => {
 		const stopWatching = watchCreationSettings();
 		const entry = takeSettingsReturnFocus();
 		void tick().then(() => {
 			if (!search.isConnected) return;
 			if (entry) panel.querySelector<HTMLElement>(`[data-setting="${entry}"] button`)?.focus();
-			else if (matchMedia('(pointer: fine)').matches) search.focus({ preventScroll: true });
+			else homeFocusTarget().focus({ preventScroll: true });
 		});
 		return stopWatching;
 	});
@@ -342,7 +387,7 @@
 			query = '';
 			void tick().then(() => {
 				scrollToTop();
-				search.focus({ preventScroll: true });
+				homeFocusTarget().focus({ preventScroll: true });
 			});
 		}
 		previousSection = section;
@@ -381,7 +426,7 @@
 		await tick();
 		scrollToTop();
 		if (!section) {
-			search.focus({ preventScroll: true });
+			homeFocusTarget().focus({ preventScroll: true });
 			return;
 		}
 		const row = entry && panel.querySelector<HTMLElement>(`[data-setting="${entry}"]`);
@@ -408,7 +453,7 @@
 				// The Reset that opened the dialog is now disabled at defaults, so focus cannot return to it.
 				await tick();
 				if (!document.activeElement?.closest('.settings-content'))
-					(panel.querySelector<HTMLElement>('.settings-heading') ?? search).focus();
+					(panel.querySelector<HTMLElement>('.settings-heading') ?? homeFocusTarget()).focus();
 			}
 		} finally {
 			resetting = false;
@@ -431,7 +476,7 @@
 		}
 	]}
 >
-	<div class="settings-index">
+	<div class="settings-index" tabindex="-1" bind:this={indexElement}>
 		<input
 			class="bu-input input"
 			type="search"
@@ -543,7 +588,24 @@
 							/>{/if}
 					{/snippet}
 				</SettingsItemSegmented>
+				<SettingsItemSegmented
+					label={t('studioPanel.side')}
+					setting="panel-side"
+					options={panelSides}
+					value={panelSettings.side}
+					onselect={setPanelSide}
+				>
+					{#snippet icon()}<PanelRight size={18} aria-hidden="true" />{/snippet}
+					{#snippet optionIcon(value)}
+						{#if value === 'left'}<PanelLeft size={16} aria-hidden="true" />{:else}<PanelRight
+								size={16}
+								aria-hidden="true"
+							/>{/if}
+					{/snippet}
+				</SettingsItemSegmented>
 				<div data-setting="language" tabindex="-1"><LanguagePicker settings /></div>
+			{:else if active.id === 'audio'}
+				<AudioSettings />
 			{:else if active.id === 'wardrobe'}
 				<div data-setting="visibility" tabindex="-1">
 					<WardrobeVisibility settings />

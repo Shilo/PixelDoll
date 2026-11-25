@@ -2155,7 +2155,7 @@ test.describe('renderer failure on short screens', () => {
 			warningBox = (await warning.boundingBox())!;
 		expect(hintBox.y + hintBox.height).toBeLessThanOrEqual(warningBox.y);
 		// The fixture has no Idle art, so the live fallback already reports a routine coverage note.
-		await expect(routine).toContainText('No Idle move yet');
+		await expect(routine).toContainText('No Idle move. Showing a still pose.');
 		await expect(routine).toBeVisible();
 		// Desktop and portrait keep both notes; short landscape keeps only the failure warning, clear of the touch
 		// controls and inside the viewport.
@@ -2168,6 +2168,9 @@ test.describe('renderer failure on short screens', () => {
 			] as const) {
 				await page.setViewportSize({ width, height });
 				await settle(page);
+				const singlePane = (await experience.getAttribute('class'))?.includes('panel-only');
+				const panel = page.locator('#customization-toggle');
+				if (singlePane) await panel.tap();
 				const short = height <= 540;
 				if (short) await expect(experience).toHaveClass(/\bshort-layout\b/);
 				else await expect(experience).not.toHaveClass(/\bshort-layout\b/);
@@ -2194,6 +2197,7 @@ test.describe('renderer failure on short screens', () => {
 					`${width}x${height} ${theme}: the warning stays above the bottom edge`
 				).toBeLessThanOrEqual(height);
 				await shot(page, info, `renderer-warning-${theme}-${width}x${height}`);
+				if (singlePane) await panel.tap();
 			}
 		}
 	});

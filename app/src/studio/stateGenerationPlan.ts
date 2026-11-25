@@ -1,6 +1,7 @@
 import { editGens } from '../lib/items/items.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, type Size } from '../lib/pixellab/routes.ts';
-import type { DirectionName } from '../lib/rig/rig.ts';
+import { poseCallGens } from '../lib/rig/clips.ts';
+import type { DirectionName, Keypoint, Rig, Sha256 } from '../lib/rig/rig.ts';
 
 export type StateGenerationModel = 'pro' | 'pro-flash' | 'pixen';
 
@@ -15,6 +16,7 @@ export interface StateGenerationInput {
 	readonly cellSize: Readonly<Size>;
 	readonly facingIds: readonly DirectionName[];
 	readonly referenceSize?: Readonly<Size>;
+	readonly allowOutfitTransfer?: boolean;
 	readonly managedParent?: VerifiedStateParent;
 	readonly flashNativeShapes?: readonly Readonly<Size>[];
 }
@@ -64,6 +66,17 @@ export type StateGenerationPlan =
 			readonly cost?: StateGenerationCost;
 	  } & (
 			| (LocalStateRoute & { readonly referenceSize?: Readonly<Size> })
+			| {
+					readonly endpoint: '/animate-with-skeleton-v3';
+					readonly method: 'text';
+					readonly view: NonNullable<Rig['view']>;
+					readonly guides: readonly {
+						direction: DirectionName;
+						reference: Sha256;
+						joints: Keypoint[];
+						poses: Keypoint[][];
+					}[];
+			  }
 			| {
 					readonly endpoint: '/create-character-state';
 					readonly method: 'text';
@@ -152,12 +165,14 @@ export function managedStateCost(cellSize: Readonly<Size>): StateGenerationCost 
 }
 
 export function localStateCost(
-	endpoint: LocalStateRoute['endpoint'],
+	endpoint: LocalStateRoute['endpoint'] | '/animate-with-skeleton-v3',
 	cellSize: Readonly<Size>,
 	batches: readonly StateGenerationBatch[]
 ): StateGenerationCost | undefined {
 	const count = batches.length;
 	switch (endpoint) {
+		case '/animate-with-skeleton-v3':
+			return estimate(count, poseCallGens(3));
 		case '/edit-image-pro-flash':
 			return undefined;
 		case '/edit-image-pixen':
@@ -289,7 +304,10 @@ export function planStateGeneration(input: StateGenerationInput): StateGeneratio
 	const animationRoute =
 		!referenceSize && shortest(cellSize) >= 16
 			? ({ endpoint: '/edit-animation-v2', method: 'text' } as const)
-			: referenceSize && nativePro && longest(referenceSize) <= 256
+			: referenceSize &&
+				  input.allowOutfitTransfer !== false &&
+				  nativePro &&
+				  longest(referenceSize) <= 256
 				? ({ endpoint: '/transfer-outfit-v2', method: 'reference' } as const)
 				: undefined;
 	if (animationRoute && side <= 256 && (side >= 129 || !nativePro)) {

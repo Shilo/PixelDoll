@@ -1,9 +1,11 @@
 import type { WhisperKey } from 'svelte-whisper';
+import { resetAudio } from './audio.svelte.ts';
 import { selectLanguage } from '../lib/i18n.ts';
 import { defaultExportSettings, resetExportSettings } from '../lib/store/export-settings.ts';
 import { setDeveloperMode } from './developerMode.svelte.ts';
 import { resetMount } from './experience/riderPose.ts';
 import { resetLiveViews } from './experience/liveViews.ts';
+import { setPanelSettings, panelSettings } from './experience/panelSettings.svelte.ts';
 import { applyRiderPose } from './mountPreview.ts';
 import {
 	getCreationSettings,
@@ -25,6 +27,7 @@ import {
 
 const resettableSections = [
 	'general',
+	'audio',
 	'wardrobe',
 	'mount',
 	'live',
@@ -58,6 +61,14 @@ export async function resetSettings(scope: ResetScope): Promise<WhisperKey[]> {
 	}
 	if ((scope === 'all' || scope === 'general') && !setTheme('dark'))
 		failures.push('settings.theme');
+	if ((scope === 'all' || scope === 'audio') && !resetAudio())
+		failures.push('settings.audio.title');
+	if (
+		(scope === 'all' || scope === 'general') &&
+		panelSettings.side !== 'right' &&
+		!setPanelSettings({ side: 'right' })
+	)
+		failures.push('studioPanel.side');
 	if (scope === 'all' || scope === 'wardrobe') {
 		const refresh = demoItemsShown() && store.project && !isDemo();
 		const shared = setSharedItemsHiddenForAll(false);
@@ -76,6 +87,12 @@ export async function resetSettings(scope: ResetScope): Promise<WhisperKey[]> {
 	}
 	if ((scope === 'all' || scope === 'live') && !resetLiveViews(scope === 'all' ? null : doc.id))
 		failures.push('liveViews.title');
+	if (
+		(scope === 'all' || scope === 'live') &&
+		!panelSettings.autoHide &&
+		!setPanelSettings({ autoHide: true })
+	)
+		failures.push('studioPanel.autoHide');
 	if ((scope === 'all' || scope === 'developer') && !setDeveloperMode(false))
 		failures.push('developer.title');
 	if (scope === 'all' || scope === 'export') {

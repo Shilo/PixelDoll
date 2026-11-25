@@ -72,7 +72,7 @@ function inScroller(target: HTMLElement) {
 	return false;
 }
 export function restoreTrigger(target: HTMLElement | null) {
-	const dialog = document.querySelector<HTMLDialogElement>('dialog[open]');
+	const dialog = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].at(-1);
 	if (dialog) {
 		if (visibleInViewport(target) && dialog.contains(target)) target.focus({ preventScroll: true });
 		return;

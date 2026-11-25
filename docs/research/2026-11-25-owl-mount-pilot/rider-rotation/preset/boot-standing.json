@@ -1,0 +1,47 @@
+{
+  "id": "boot-standing",
+  "endpoint": "/edit-animation-v2",
+  "body": {
+    "description": "This pixel art character is a solid bright green mannequin. The bright green color is intentional (a chroma key) and must stay exactly the same bright green in every frame. Add only ankle-high dark brown leather boots with tan soles, drawn in its own colors (no bright green on the item), identical design in all frames. Cells in order: 1 cells rest facing south (front view), 1 cells rest facing east (side view). Keep every other pixel, the pose, the outline and the transparent background unchanged.",
+    "frames": [
+      {
+        "image": {
+          "type": "base64",
+          "base64": "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",
+          "format": "png"
+        },
+        "size": {
+          "width": 80,
+          "height": 80
+        }
+      },
+      {
+        "image": {
+          "type": "base64",
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAEcklEQVR4nO2cvU9UQRTFhyyQDRAIgYQCCgpoqKAkeS8kNDQUWFBqQmGwIsbEwsLCxMJGOzu1szKWllrbWdhY2Vj4B1hZjTmzc2bvm53HYkUx5yQ3b99jl4Sf92tm7uqcJEmSJEmSJEmSJEmSJEk3Vuv8VJN61Dq/9W7LH3w5SHb49TAZ7nc/7gpkUREeQB19O/KnP0+Tnf8+7xjeE0A2gjhS6/zG6w2/92lvAh4BXv69TIb7kx8nwSPlic65xSeLwaPgWTk8mIUniLmmeF8fSIYzPpPyYpUyAFk0pkG8+HORAOJZvQBb51eerySAMFt1aaWcaA1euPB4oUKIBiDbF1ZiGuDklsODAX61ANdfrQdwMIQjjPfTANZdTCJAGGDBEy08GguMBTh3f84P7g7CFeFbPUALMTTIsbjYCk2buTMT4NFwD5D1Ndat8+gBCRChjGfwMFRa5MASQIDG+wkavyN8tjqAruuFAAB4w0fDZOzzWFCQ77iMO/5+7OcfzIfP1ru0a7oAAQrg4Hm42lWKbbThhVf+yq++WA3ex9xYJ8TohfjjAQ4FgQBZSNjWwAPz6ourrc5VFhN4Ggyvmedwb9sbwKIXMk9iZQKADO3wD1EdQDcKZQKE9xEKwhPGlYpdMzMnEl6oxFXCowixccnzBvcGASB7RK6Z6Y15da4boBuFM3IfWxQAZJEpQYSxYtdZQEoyOZHweM9lH5d8zI2CRyEEm26DnQpD1ngzzOttoktqXOjt0sFR7BNTlW50Utev1vm1l2vBNt9sBsPrAM0s21itBS6XAbj/eT80zjsfdsJr2Pb77Y5HCqBVOwpdQAK4s19nyQAPV6x98ZoeGYAKYlT0PsLKDeGcPwNoAaSmAMTP4IH5czwTRDcCCC8rQQLU5WfLoYEuwRXAmP/6APLACD/P86MAulHvx/DNAQJYaGViiJcAKhdeM8pG70MIAyDamtLZsQC2k8s32zADYB9EhXGExI0C7rJwZGP4cJgAWnh5jrztP+N2FQECHLfmCWbp6dIEPGt4LoAFgDwkAjyuUkoQBdCND5bgdfk0qs2BBAiY1uoGGHMgz3cBqOOFESBhcafGtjzVA0Se44ESzztygKzC3J3p7NJUDdB1d6J5Dswz4NTn6esP16h1YUyDxQShbKexCAnvgaG1gXV2r6tW7PdmL2ZTKPMMOK/KYcf67WYIe1zTNn/Vit4VADYuHabnANlcw/MAMOROHShlANt+gNyNZgjL86xaNwGQU1kcNidAvk8ArWIe5HQC+0KARHVOY7wRdIIoRZlKTIAcccPgUPo+SCOAZWV5kFtc6dpEwI16v7KaMcBOjouGloUH7QGoVNANVhz1DlHeRGZ8w5oz0/jpqxBSQRkoGL/+YJ9z11q5MFc73lCwM4D2zISDlhz1VUhbtd0dGTbR9v9KyIct8R4BpAxAuy+IiXxYcT5Q+dAoC2H75ZrONr+g9ajpzkczB2Jzld9QwhX3Cts+FcKUh+3wSM5HC+D/SFv4kiRJkiRdq3/vqsESGMVPGwAAAABJRU5ErkJggg==",
+          "format": "png"
+        },
+        "size": {
+          "width": 80,
+          "height": 80
+        }
+      }
+    ],
+    "image_size": {
+      "width": 80,
+      "height": 80
+    },
+    "no_background": true,
+    "seed": 7471
+  },
+  "status": "completed",
+  "http": 202,
+  "usage": {
+    "type": "generations",
+    "generations": 10
+  },
+  "sourceImages": [
+    "../body-c-south-standing.png",
+    "../body-c-east-standing.png"
+  ]
+}

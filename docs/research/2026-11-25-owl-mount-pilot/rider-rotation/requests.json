@@ -1,0 +1,95 @@
+{
+  "billedGenerations": 9,
+  "requests": [
+    {
+      "name": "rider-only-east",
+      "endpoint": "animate-with-skeleton-v3",
+      "image": "body-c-east-standing.png",
+      "mask": "east-joints.json",
+      "seed": 7363,
+      "status": "completed",
+      "http": 200,
+      "usage": {
+        "type": "generations",
+        "generations": 2
+      },
+      "images": 3
+    },
+    {
+      "name": "rider-only-rotation",
+      "endpoint": "create-character-v3",
+      "image": "rider-only-south-0.png",
+      "mask": "none",
+      "seed": 7361,
+      "status": "completed",
+      "http": 200,
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "images": 0,
+      "directions": [
+        "east",
+        "west",
+        "north",
+        "south",
+        "north-east",
+        "north-west",
+        "south-east",
+        "south-west"
+      ]
+    },
+    {
+      "name": "rider-only-south",
+      "endpoint": "animate-with-skeleton-v3",
+      "image": "body-c-south-standing.png",
+      "mask": "south-joints.json",
+      "seed": 7362,
+      "status": "completed",
+      "http": 200,
+      "usage": {
+        "type": "generations",
+        "generations": 2
+      },
+      "images": 3
+    },
+    {
+      "name": "rider-only-south-wide",
+      "endpoint": "animate-with-skeleton-v3",
+      "image": "body-c-south-standing.png",
+      "mask": "south-wide-joints.json",
+      "seed": 7362,
+      "status": "completed",
+      "http": 200,
+      "usage": {
+        "type": "generations",
+        "generations": 2
+      },
+      "images": 3
+    },
+    {
+      "name": "south-only-rotation",
+      "endpoint": "create-character-v3",
+      "image": "hand-cut-south.png",
+      "mask": "none",
+      "seed": 7361,
+      "status": "completed",
+      "http": 200,
+      "usage": {
+        "type": "generations",
+        "generations": 2
+      },
+      "images": 0,
+      "directions": [
+        "east",
+        "west",
+        "north",
+        "south",
+        "north-east",
+        "north-west",
+        "south-east",
+        "south-west"
+      ]
+    }
+  ]
+}

@@ -3,6 +3,8 @@ import { errorMessage, message, type Message } from '../lib/message.ts';
 import type { JobRec } from '../lib/pixellab/queue.ts';
 import * as db from '../lib/store/db.ts';
 import type { StoredProject } from '../lib/store/project.ts';
+import { playAudioCue } from './audio.svelte.ts';
+import { isGenerationCancellation } from './generationStatus.ts';
 import { moveLabel } from './model.ts';
 import { doc, openProject, store, toast, ui } from './state.svelte.ts';
 import {
@@ -54,11 +56,13 @@ function track(projectId: string, token: string, id: string, finished: Promise<u
 	finished.then(
 		() => {
 			delete stateRuns[token];
+			playAudioCue('success');
 			if (!reviewing(token))
 				toast(message('stateGeneration.readyToReview', { name }), { action: open });
 		},
 		(cause) => {
 			stateRuns[token] = { error: errorMessage(cause) };
+			if (!isGenerationCancellation(cause)) playAudioCue('failure');
 			if (!reviewing(token))
 				toast(message('stateGeneration.failedOpen', { name }), {
 					tone: 'danger',

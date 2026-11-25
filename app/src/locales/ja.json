@@ -158,6 +158,17 @@
 		"seatRight": "座る位置を右に移動",
 		"seatAuto": "自動配置に戻す",
 		"seatChanged": "保存した座る位置が変更されました。編集を閉じてから、もう一度お試しください。",
+		"audio": {
+			"title": "オーディオ",
+			"open": "オーディオ設定",
+			"play": "すべての音を再生",
+			"mute": "すべての音をミュート",
+			"music": "音楽",
+			"musicVolume": "音楽の音量",
+			"effects": "効果音",
+			"effectsVolume": "効果音の音量",
+			"notSaved": "音の設定を変更しましたが、ブラウザーに保存できませんでした。"
+		},
 		"reset": {
 			"allAction": "すべての設定をリセット",
 			"pageAction": "このページをリセット",
@@ -955,19 +966,19 @@
 			"hiddenItemsInMove": {
 				"other": "アイテム{count}個を非表示：{move}のフレームが不足しています"
 			},
-			"noMoveNothing": "{move}モーションがまだないため、表示できるものがありません",
-			"noMoveStill": "{move}モーションがまだないため、キャラクターは静止しています",
-			"noMovePlays": "{move}モーションがまだないため、{fallback}を再生しています",
-			"noFramesNothing": "{move}には{direction}向きのフレームがまだないため、表示できるものがありません",
-			"noFramesStill": "{move}には{direction}向きのフレームがまだないため、キャラクターは静止しています",
-			"noFramesPlays": "{move}には{direction}向きのフレームがまだないため、{fallback}を再生しています",
-			"noFramesFaces": "{move}には{direction}向きのフレームがまだないため、{fallback}向きで表示しています",
+			"noMoveNothing": "{move}の動きがありません。",
+			"noMoveStill": "{move}がありません。静止ポーズを表示します。",
+			"noMovePlays": "{move}がありません。{fallback}を再生します。",
+			"noFramesNothing": "{move}の{direction}フレームがありません。",
+			"noFramesStill": "{move}の{direction}フレームがありません。静止ポーズを表示します。",
+			"noFramesPlays": "{move}の{direction}フレームがありません。{fallback}を再生します。",
+			"noFramesFaces": "{move}の{direction}フレームがありません。{fallback}を向いています。",
 			"undeclaredDirection": "このキャラクターには、この向きが設定されていません",
 			"hiddenItems": {
 				"other": "装備{count}個を非表示：{move}／{direction}のフレーム不足"
 			},
 			"equippedHidden": {
-				"other": "このビューでは装備中の{count}個のアイテムを非表示にしています"
+				"other": "{count}個のアイテムを非表示（フレーム不足）"
 			},
 			"itemLoading": "{item}を読み込み中：{directions}",
 			"legsAxial": "正面と背面のビューでは両脚が表示されたままです。",
@@ -1394,6 +1405,9 @@
 		"previewZip": "キャラクターのZIPをプレビュー",
 		"previewCharacter": "キャラクターをプレビュー",
 		"preview": "プレビュー",
+		"appearanceTip": "描かれた服は装備の下から見えることがあります。",
+		"appearanceTipPath": "インポート後に服を脱がせたり変えたりするには：",
+		"appearanceTipSteps": "上部バーの{name}を押す → {action}を押す",
 		"previewArtwork": "キャラクターのインポートのプレビュー",
 		"stalePreview": "前回のプレビューを表示しています。続けるには選択内容を更新してください。",
 		"previewSummary": "{directions}・{states}・{moves}・{items}",
@@ -1417,7 +1431,7 @@
 		"untitledState": "無題のステート",
 		"warning": {
 			"noRoom": "このキャラクターは画像のピクセル数が多すぎるため、モーション用の余白を追加しませんでした。読み込み後に「フレームを調整」で追加できます。",
-			"fixedBase": "インポートしたアートワークは固定の素体になります。元の服や髪は取り除けません。スケルトンでポーズを付ける装備を使ったり新しいモーションを追加したりするには、ポーズ用のリグをセットアップしてください。",
+			"fixedBase": "アイテムのフィットや新しい動きの追加には、ポーズリグを設定してください。",
 			"frameCounts": "「{move}」は向きによってフレーム数が異なります。元のフレームと各向きの再生時間を保つため、向きごとに別々のモーションとしてインポートしました。",
 			"skippedMove": "「{move}」は除外されました。アニメーションのフレームを読み取れませんでした。番号付きの個別フレームで書き出し直してください。",
 			"skippedDirection": "「{move}」の{direction}向きは除外されました。フレームが空、不足、または順番どおりではありません。",
@@ -2866,6 +2880,39 @@
 		"scaryWalk": "不気味な歩き",
 		"runningJump": "走りジャンプ"
 	},
+	"appearance": {
+		"action": "見た目を編集…",
+		"title": "見た目を編集",
+		"choose": "編集内容を選択",
+		"custom": "カスタム編集",
+		"instructions": "何を変更しますか？",
+		"reference": "Pro では参照画像とテキストの指示を併用できます。",
+		"underwearHint": "描き込まれた服を無地の白い下着に置き換えます。",
+		"facing": "向き",
+		"original": "元の画像",
+		"edited": "編集後",
+		"showWorn": "キャラクターに装着して表示",
+		"review": "編集結果を確認",
+		"checkViews": "保存する前に、すべての向きで形と位置合わせを確認してください。",
+		"characterSource": "「{move}」の最初のフレームを使います。",
+		"characterScope": "新しいキャラクターは立ち姿から始まります。保存後にモーションを追加し、装備を合わせてください。",
+		"itemScope": "元の画像：{move}の最初のフレーム。保存後にほかのフレームの画像を追加してください。",
+		"editCharacter": "キャラクターを編集",
+		"editItem": "アイテムを編集",
+		"editCost": "{action} · {cost}",
+		"saveCharacter": "新しいキャラクターとして保存",
+		"saveItem": "新しいアイテムとして保存",
+		"editedSuffix": "（編集済み）",
+		"saved": "編集したコピーを保存しました",
+		"running": "プレビューを生成中…",
+		"unsupported": "このモデルは現在のサイズの画像を編集できません。別のモデルを選んでください。",
+		"unavailable": "編集できる画像がありません。",
+		"changed": "画像または見積もりが変わりました。編集内容を再確認してください。",
+		"keptDirections": "このコピーでは次の向きに元の絵を使います：{directions}。",
+		"incomplete": "一部の編集画像を取得できませんでした。アクティビティで詳細を確認するか、取得済みの結果をダウンロードしてください。",
+		"reviewPending": "元の画像を変更する前に、見た目のプレビューを保存するか破棄してください。",
+		"discardNotice": "プレビューを破棄しますか？PixelLabの料金は発生します。"
+	},
 	"stateGeneration": {
 		"continueIntro": "まだ送信していない向きの画像を生成できます。完了した画像は保持されます。",
 		"continueAccount": "このステートを続けるには、元の PixelLab キーで再接続してください。",
@@ -3446,6 +3493,14 @@
 			"changed": "このキャラクターが変更されました。最新の内容を確認するには、ZIPをもう一度選んでください。"
 		}
 	},
+	"studioPanel": {
+		"side": "パネルの位置",
+		"left": "左",
+		"right": "右",
+		"autoHide": "ライブビューを開くときにパネルを隠す",
+		"autoHideHelp": "小さなタッチ画面で適用されます。ツールバーからいつでも開けます。",
+		"notSaved": "パネルの設定を変更しましたが、ブラウザーに保存できませんでした。"
+	},
 	"liveViews": {
 		"walkWhileAttacking": "攻撃しながら歩く",
 		"layeringHelp": "歩行と攻撃の向きが同じで、脚の画像が両方の動作にあり、腰のつなぎ目が合う必要があります。合わない場合は通常の全身攻撃が再生されます。",
@@ -3478,11 +3533,11 @@
 		"actions": "ゲーム操作",
 		"withShortcut": "{action}（{key}）",
 		"spaceKey": "スペース",
-		"noAttack": "攻撃に割り当てられたものがまだありません。ライブビューの設定でモーションか状態を選んでください。",
-		"noAttackDirection": "{move} には{direction}向きのフレームがないため、その方向には攻撃できません。",
-		"hintTopDown": "WASD またはクリック長押しで移動 · Shift でダッシュ · 右クリックまたは E で攻撃 · スペースでジャンプ · F で乗り降り",
-		"hintSide": "A/D またはクリック長押しで移動 · Shift でダッシュ · 右クリックまたは E で攻撃 · スペースでジャンプ · F で乗り降り",
-		"hintTouch": "ドラッグで移動 · 剣を押したままドラッグで攻撃と狙い · ボタンでジャンプ、ダッシュ、乗り降り",
+		"noAttack": "攻撃が未設定です。ライブビューの設定を開いてください。",
+		"noAttackDirection": "{move}の{direction}フレームがありません。",
+		"hintTopDown": "WASDまたはクリック長押しで移動",
+		"hintSide": "A/Dまたはクリック長押しで移動",
+		"hintTouch": "ドラッグで移動",
 		"stageTopDown": "キャラクターのテストワールド。WASD、矢印キー、クリック、またはドラッグで移動し、Shift でダッシュします。右クリックまたは E で攻撃、スペースでジャンプ、F で乗り降りします。1、2、3キーでビューを切り替えます。",
 		"stageSide": "横スクロールのテストワールド。A/D、左右の矢印キー、クリック、またはドラッグで移動し、Shift でダッシュします。右クリックまたは E で攻撃、スペースでジャンプ、F で乗り降りします。1、2、3キーでビューを切り替えます。"
 	},

@@ -2,6 +2,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { onDestroy } from 'svelte';
+	import SettingsItemToggle from './SettingsItemToggle.svelte';
 	import Sheet from './Sheet.svelte';
 	import { fileDrop, preventFileNavigation } from './fileDrop.ts';
 	import DirectionCompass from './DirectionCompass.svelte';
@@ -42,8 +43,10 @@
 	import { clipKind } from '../lib/runtime/timeline.js';
 	import {
 		ui,
+		doc,
 		store,
 		dismissWelcome,
+		openAppearance,
 		refreshProjects,
 		openProject,
 		toast,
@@ -55,11 +58,13 @@
 		ChevronRight,
 		Download,
 		FileArchive,
+		Info,
 		KeyRound,
 		TriangleAlert
 	} from './icons.ts';
 	import { t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
+	import RichMessage from './RichMessage.svelte';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { errorTranslation, LocalizedError, message, type Message } from '../lib/message.ts';
 
@@ -68,6 +73,7 @@
 	let previewValid = $state(false),
 		nameInitialized = false;
 	let setupNext = $state(true);
+	const setupHint = $props.id();
 	let directionChoices = $state.raw<RigDirection[] | null>(null);
 	let facing = $state<DirectionName>('south');
 	const originalDirections = $derived(prepared?.project.manifest.rig.directions ?? []);
@@ -403,7 +409,19 @@
 				store.projects.some((entry) => entry.id !== projectId && entry.exportId === alias)
 			)
 				toast(message('renameSheet.characterIdConflict'), { tone: 'warning', report: false });
-			else toast(message('import.imported', { name: name.trim() }));
+			else
+				toast(
+					message('import.imported', { name: name.trim() }),
+					!ui.sheet
+						? {
+								duration: 8000,
+								actionLabel: message('appearance.action'),
+								action: () => {
+									if (doc.id === projectId) openAppearance(projectId);
+								}
+							}
+						: undefined
+				);
 		} catch (e) {
 			if (alive) fail(e);
 		} finally {
@@ -728,6 +746,23 @@
 					})}
 				</p>{/if}
 		</div>
+		{#if preview && previewValid}
+			<p class="notice small">
+				<Info size={16} aria-hidden="true" />
+				<span>
+					{t('import.appearanceTip')}<br />
+					{t('import.appearanceTipPath')}<br />
+					{#snippet nameCode()}<code>{name.trim() || t('import.characterName')}</code>{/snippet}
+					{#snippet actionCode()}<code>{t('appearance.action')}</code>{/snippet}
+					<span class="steps"
+						><RichMessage
+							key="import.appearanceTipSteps"
+							slots={{ name: nameCode, action: actionCode }}
+						/></span
+					>
+				</span>
+			</p>
+		{/if}
 		{#if busy && !saving}<p class="muted" role="status">{t('import.updatingPreview')}</p>{/if}
 		<label class="field"
 			><span class="label">{t('import.characterName')}</span><input
@@ -797,14 +832,20 @@
 					>{displayMessage(prepared.warningKeys?.[index] ?? warning)}</span
 				>
 			</p>{/each}
-		{#if needsSetup}<label class="check"
-				><input type="checkbox" bind:checked={setupNext} disabled={busy} />{t(
-					'import.setupNext'
-				)}</label
+		{#if needsSetup}
+			<SettingsItemToggle
+				setting="setup-after-import"
+				checked={setupNext}
+				disabled={busy}
+				aria-describedby={setupHint}
+				onchange={(event) => (setupNext = event.currentTarget.checked)}
 			>
-			<p class="faint small">
+				<span class="row-name">{t('import.setupNext')}</span>
+			</SettingsItemToggle>
+			<p class="faint small" id={setupHint}>
 				{t('import.setupNextHint')}
-			</p>{/if}
+			</p>
+		{/if}
 	{/if}
 	{#if busy && (!prepared || saving)}<p class="muted" role="status">
 			{saving ? t('import.saving') : t('import.preparing')}
@@ -847,6 +888,14 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
+	}
+	/* The buttons to press read like keys, not as part of the sentence. */
+	.steps code {
+		padding: 1px 4px;
+		border-radius: var(--r-ctl);
+		background: var(--stage);
+		font-family: var(--font-mono);
+		color: var(--bu-text);
 	}
 	.library-entry {
 		display: flex;

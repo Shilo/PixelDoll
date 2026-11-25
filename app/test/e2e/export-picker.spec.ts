@@ -716,7 +716,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 	).toBeVisible();
 	const warning = copy
 		.locator('.world-coverage')
-		.filter({ hasText: '1 equipped item hidden for this view' });
+		.filter({ hasText: '1 item hidden (missing frames)' });
 	await copy.locator('.world-stage').focus();
 	await copy.keyboard.down('s');
 	try {
@@ -1938,7 +1938,16 @@ test('one-frame and hundred-animation characters keep exact summaries, readable 
 		}, count);
 		await page.setViewportSize({ width: 320, height: 568 });
 		await page.emulateMedia({ reducedMotion: 'reduce' });
-		await page.getByRole('button', { name: 'Export', exact: true }).click();
+		// Whether Export still fits beside this character's name at 320px is the bar's call (experience-parity).
+		await page.evaluate(
+			() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
+		);
+		const barExport = page.locator('.header-export');
+		if (await barExport.isVisible()) await barExport.click();
+		else {
+			await page.getByRole('button', { name: 'More options', exact: true }).click();
+			await page.locator('#experience-options .mobile-export').click();
+		}
 		const summary = dialog.locator('.export-summary dd').first();
 		await expect(summary).toHaveText(count === 1 ? 'None' : 'All');
 		await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
@@ -3557,9 +3566,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 
 	await page.keyboard.press('Escape');
 	await page.setViewportSize({ width: 390, height: 844 });
-	// Phones keep Export on the bar and open Share from More; the popover then points at More.
+	// Phones keep the audio and panel controls on the bar and open Share from More; the popover then points at More.
+	// Export's position follows the measured name width, so this does not assert it here.
 	await expect(trigger).toBeHidden();
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')
@@ -3603,7 +3612,8 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await selectShareClip(popover, 'Everything');
 	await fixedLayout(smallLayout);
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	// The audio control and the panel toggle leave no room for Export here, so it moves into More. The bar still fits.
+	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeHidden();
 	await headerFits();
 	await page.screenshot({ path: testInfo.outputPath('share-grid-320.png') });
 	await selectShareClip(popover, 'Walk');
@@ -3631,7 +3641,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await page.setViewportSize({ width: 320, height: 390 });
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	// The panel toggle and audio control leave no room for Export on a 320 px bar; Full screen stays.
+	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeHidden();
+	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeVisible();
 	await headerFits();
 	expect(
 		(await popover.boundingBox())!.y + (await popover.boundingBox())!.height
@@ -3685,7 +3697,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		.boundingBox())!;
 	expect(reachableDownload.y + reachableDownload.height).toBeLessThanOrEqual(390);
 	await page.setViewportSize({ width: 390, height: 844 });
-	await expect(page.locator('.header-export')).toBeVisible();
+	// Export's place follows the measured name width; the bar itself must always come back.
+	await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
+	await headerFits();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Export game assets' })).toHaveCount(0);
 	const disabledRedo = page.locator('.mobile-redo');
@@ -3745,7 +3759,7 @@ test('Share resets to Standing when switching characters', async ({ page, contex
 		.getByLabel('Character ZIP', { exact: true })
 		.setInputFiles({ name: 'share-memory.zip', mimeType: 'application/zip', buffer: bytes });
 	await page.getByLabel('Character name', { exact: true }).fill('Share memory copy');
-	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Share memory copy', {
 		timeout: 30_000

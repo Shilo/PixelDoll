@@ -12,6 +12,7 @@ export interface ActivityContext {
 }
 
 export const stateBatchScope = (token: string, index: number) => `state:${token}:${index}`;
+export const appearanceBatchScope = (id: string, index: number) => `appearance:${id}:${index}`;
 
 export interface ApiCost {
 	generations: number | null;

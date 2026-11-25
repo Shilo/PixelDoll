@@ -162,6 +162,7 @@ function recoverRecords(
 			if (!studioCharacter(key, value) || id !== key || !supportedFormat(manifest?.format))
 				throw new Error('Unsupported character record.');
 			delete record.stateGenerations;
+			delete record.appearanceEdits;
 			manifestShape(manifest);
 			if (pruneHistory(manifest, () => true)) trimmed.add(key);
 			for (const [hash, frame] of artworkRefs(manifest)) add(hash, frame);
