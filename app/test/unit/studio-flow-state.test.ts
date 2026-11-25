@@ -1559,6 +1559,37 @@ test('putting on an item the shown move has no frames for shows it standing inst
 	expect([s.doc.items.head, s.ui.anim]).toEqual(['hat', 'walk']);
 });
 
+test('an unworn item can be ordered among the worn layers, and a hidden one cannot', async () => {
+	const project = await equipmentFixture();
+	const s = await import('../../src/studio/state.svelte.ts');
+	s.store.project = project;
+	s.doc.id = 'layer-order';
+	s.doc.items = { body: 'base' };
+	s.ui.anim = 'rest';
+	s.ui.dir = 'south';
+	s.ui.frame = 0;
+	const head = project.manifest.slots.find((slot) => slot.id === 'head')!;
+	// Not worn: the hat is placed as if worn, so it can be ordered before wearing it.
+	expect(s.canMoveLayer('hat', -1)).toBe(true);
+	expect(s.canMoveLayer('hat', 1)).toBe(false);
+	s.moveLayer('hat', -1, false);
+	expect(head.zOverrides).toEqual([{ layer: 'fg', z: 9 }]);
+	expect(s.canMoveLayer('hat', 1)).toBe(true);
+	// Only this direction keeps the all-direction step and adds a direction-specific one.
+	s.moveLayer('hat', 1, true);
+	expect(head.zOverrides).toEqual([
+		{ layer: 'fg', z: 9 },
+		{ layer: 'fg', z: 11, dir: 'south' }
+	]);
+	// A worn item that hides the body's slot leaves it out of the draw order: its arrows do nothing.
+	const hat = project.manifest.items.find((item) => item.id === 'hat')!;
+	hat.hides = ['body'];
+	s.doc.items = { body: 'base', head: 'hat' };
+	expect(s.canMoveLayer('base', -1)).toBe(false);
+	s.moveLayer('base', -1, false);
+	expect(project.manifest.slots.find((slot) => slot.id === 'body')!.zOverrides).toBeUndefined();
+});
+
 const draftsSaved = () => mocks.put.mock.calls.filter(([, key]) => key === 'studio-drafts');
 
 describe('undo history', () => {

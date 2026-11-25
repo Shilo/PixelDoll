@@ -509,6 +509,13 @@
 			"other": "Rebuilt from this item’s saved {directions} designs. Nothing is generated."
 		},
 		"hiddenByAnotherItem": "Hidden by another item",
+		"hiddenByItem": "Hidden by {name}",
+		"showName": "Show {name}",
+		"notWorn": "Not worn",
+		"qualityChecks": "Quality checks",
+		"customize": "Customize",
+		"itemActions": "Item actions",
+		"layerHiddenHint": "Another worn item hides this one, so its layer order cannot change here. Show it first.",
 		"nameInEveryDirection": "{name} in every direction",
 		"labelNameFacingId": "{name} facing {id}",
 		"acceptedAppearanceWarnings": "Accepted appearance warnings",

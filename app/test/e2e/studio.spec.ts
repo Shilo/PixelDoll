@@ -6,6 +6,7 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
+	openItemSection,
 	inspectStage,
 	openAccount,
 	pickItem,
@@ -3347,6 +3348,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	}
 	await checkFrames();
 	// Delete asks in an alert over the details; Cancel keeps the item and the details open.
+	await openItemSection(inspector, 'Item actions');
 	await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
 	const deleteAlert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
@@ -4296,6 +4298,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
 	await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0);
 	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor opens.
+	await openItemSection(pane, 'Customize');
 	await pane.getByRole('button', { name: 'Recolor', exact: true }).click();
 	await expect(
 		page
@@ -11036,6 +11039,18 @@ async function editableCopy(page: Page) {
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 }
+/** Open an item's details from its tile menu without changing what is worn. */
+async function openItemDetails(page: Page, name: string) {
+	await equipmentMode(page, 'Wardrobe');
+	const more = page.getByRole('button', { name: `More options for ${name}`, exact: true }).first();
+	await more.scrollIntoViewIfNeeded();
+	await more.click();
+	await page.getByRole('menuitem', { name: 'Details...', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'Item', exact: true });
+	await expect(dialog.locator('.insp-body')).toBeVisible();
+	return dialog;
+}
+
 const itemMenu = (page: Page) => page.locator('#item-menu');
 
 for (const kind of ['outfit', 'move'] as const) {
@@ -11539,10 +11554,14 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	// The worn helmet hides the worn hair.
 	await pickItem(page, 'Steel helmet');
 	let details = await selectedItemDetails(page);
-	await details
+	await openItemSection(details, 'When worn, hide');
+	const hairChip = details
 		.getByRole('group', { name: 'When worn, hide', exact: true })
-		.getByRole('button', { name: 'Hair', exact: true })
-		.click();
+		.getByRole('button', { name: 'Hair', exact: true });
+	await expect(hairChip).toHaveAttribute('aria-pressed', 'false');
+	await hairChip.click();
+	// The chip itself shows the saved hide (the manifest is raw state, refreshed through doc.rev).
+	await expect(hairChip).toHaveAttribute('aria-pressed', 'true');
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentGroup(page, 'Hair');
 	const hair = section(page, 'Hair').getByRole('button', {
@@ -11568,6 +11587,7 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	details = await selectedItemDetails(page);
 	// The trimmed sheet links to the Colors tab instead of repeating it.
 	await expect(details.locator('.colors')).toHaveCount(0);
+	await openItemSection(details, 'Customize');
 	await details.getByRole('button', { name: 'Recolor', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await expect(
@@ -11579,6 +11599,108 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	await expect(heading).toBeInViewport();
 	const list = (await page.locator('.color-sections').boundingBox())!;
 	expect(Math.abs((await heading.boundingBox())!.y - list.y)).toBeLessThan(24);
+});
+
+const wornItem = (page: Page, slot: string) =>
+	page.evaluate(
+		async ({ path, slot }) => {
+			const state = await import(path);
+			return state.doc.items[slot] ?? null;
+		},
+		{ path: '/src/studio/state.svelte.ts', slot }
+	);
+
+const headLayerOverrides = (page: Page) =>
+	page.evaluate(async (path) => {
+		const state = await import(path);
+		return (
+			state.store.project?.manifest.slots.find((slot: { id: string }) => slot.id === 'head')
+				?.zOverrides ?? []
+		);
+	}, '/src/studio/state.svelte.ts');
+
+/** The worn helmet hides the worn hair through its When worn, hide chip. */
+async function hideHairWithHelmet(page: Page) {
+	await pickItem(page, 'Steel helmet');
+	const details = await selectedItemDetails(page);
+	await openItemSection(details, 'When worn, hide');
+	await details
+		.getByRole('group', { name: 'When worn, hide', exact: true })
+		.getByRole('button', { name: 'Hair', exact: true })
+		.click();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
+}
+
+test('item details wears and takes off from its primary action', async ({ page }) => {
+	await editableCopy(page);
+	const details = await openItemDetails(page, 'Wizard hat');
+	await expect(details.locator('.insp-sub')).toContainText('Not worn');
+	const wear = details.getByRole('button', { name: 'Wear', exact: true });
+	// The primary action sits in the sheet footer, in view without scrolling the long details.
+	await expect(wear).toBeInViewport();
+	await wear.click();
+	await expect.poll(() => wornItem(page, 'head')).toBe('hat_wizard');
+	await expect(details.getByRole('button', { name: 'Take off', exact: true })).toBeVisible();
+	await expect(details.locator('.insp-sub')).toContainText('Wearing');
+	await details.getByRole('button', { name: 'Take off', exact: true }).click();
+	await expect.poll(() => wornItem(page, 'head')).toBe(null);
+	await expect(details.getByRole('button', { name: 'Wear', exact: true })).toBeVisible();
+});
+
+test('item details names what hides an item and shows it again', async ({ page }) => {
+	await editableCopy(page);
+	await hideHairWithHelmet(page);
+	const details = await openItemDetails(page, 'Messy brown hair');
+	await expect(details.locator('.insp-sub')).toContainText('Hidden by another item');
+	await expect(details.getByText('Hidden by Steel helmet', { exact: true })).toBeVisible();
+	await details.getByRole('button', { name: 'Show Messy brown hair', exact: true }).click();
+	await expect(details.locator('.insp-sub')).not.toContainText('Hidden by another item');
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
+	await equipmentGroup(page, 'Hair');
+	await expect(
+		section(page, 'Hair')
+			.getByRole('button', { name: /^Messy brown hair/ })
+			.first()
+	).not.toHaveAttribute('data-dim');
+});
+
+test('item details reorders layers for an unworn item, gates the ends and resets them', async ({
+	page
+}) => {
+	await editableCopy(page);
+	const details = await openItemDetails(page, 'Wizard hat');
+	const layerSection = await openItemSection(details, 'Layer order');
+	const forward = details.getByRole('button', { name: 'Forward', exact: true });
+	const backward = details.getByRole('button', { name: 'Backward', exact: true });
+	// The hat is not worn; it is placed as if worn, so Backward works and Forward is already at the front.
+	await expect(forward).toBeDisabled();
+	await expect(backward).toBeEnabled();
+	const before = await headLayerOverrides(page);
+	await backward.click();
+	await expect.poll(() => headLayerOverrides(page)).not.toEqual(before);
+	await expect(details.getByRole('button', { name: 'Reset', exact: true })).toBeVisible();
+	await expect(forward).toBeEnabled();
+	// A disclosure toggles from the keyboard, and its controls stay reachable.
+	const summary = details.locator('summary').filter({ hasText: 'Layer order' });
+	await summary.focus();
+	await page.keyboard.press('Enter');
+	await expect(layerSection).not.toHaveAttribute('open', '');
+	await page.keyboard.press('Space');
+	await expect(layerSection).toHaveAttribute('open', '');
+	await details.getByRole('button', { name: 'Reset', exact: true }).click();
+	await expect.poll(() => headLayerOverrides(page)).toEqual(before);
+});
+
+test('layer order explains why a hidden item cannot be reordered', async ({ page }) => {
+	await editableCopy(page);
+	await hideHairWithHelmet(page);
+	const details = await openItemDetails(page, 'Messy brown hair');
+	await openItemSection(details, 'Layer order');
+	await expect(details.getByRole('button', { name: 'Forward', exact: true })).toBeDisabled();
+	await expect(details.getByRole('button', { name: 'Backward', exact: true })).toBeDisabled();
+	await expect(
+		details.getByText(/Another worn item hides this one, so its layer order cannot change here/)
+	).toBeVisible();
 });
 
 for (const width of [1280, 390])
@@ -12137,6 +12259,7 @@ test('a deleted item comes back from the notice, the history and the Trash after
 
 	async function deleteItem() {
 		const inspector = await selectedItemDetails(page);
+		await openItemSection(inspector, 'Item actions');
 		await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
 		const alert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 		await alert.getByRole('button', { name: 'Move to Trash', exact: true }).click();

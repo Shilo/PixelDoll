@@ -114,6 +114,17 @@ export async function selectedItemDetails(page: Page) {
 	return dialog;
 }
 
+/** Open one of the Item sheet's disclosure sections, such as Customize or Layer order. */
+export async function openItemSection(dialog: Locator, name: string) {
+	const section = dialog
+		.locator('details')
+		.filter({ has: dialog.locator('summary', { hasText: name }) });
+	if (!(await section.evaluate((element) => (element as HTMLDetailsElement).open)))
+		await section.locator('summary').first().click();
+	await expect(section).toHaveAttribute('open', '');
+	return section;
+}
+
 export async function pickItem(page: Page, name: string) {
 	await equipmentMode(page, 'Wardrobe');
 	const item = page.locator('.equipment-scroll .item-tile').getByText(name, { exact: true });
