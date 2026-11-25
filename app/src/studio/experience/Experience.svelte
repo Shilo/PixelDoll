@@ -724,6 +724,7 @@
 					})}
 					shown={searchVisibility.visible}
 				/>
+				{#if g.sheet}<NewCharacterButton compact />{/if}
 			</div>
 			<div class="character-rows" bind:this={rows}>
 				{#each pending as run (run.id)}
