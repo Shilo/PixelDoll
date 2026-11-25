@@ -539,9 +539,9 @@ export interface ToastOptions {
 	actionLabel?: string | Message;
 	/** The error behind a danger or warning notice: its report names the error and any PixelLab status and endpoint. */
 	error?: unknown;
-	/** false: expected guidance (a plan limit, a busy tab), or a notice that opens a failure view with its own Report.
-	 *  'uncaught': the error reached the global handlers. */
-	report?: false | 'uncaught';
+	/** Warnings get Report when they carry an error or explicitly opt in. Use false for expected guidance or if a
+	 *  linked failure view already offers Report. 'uncaught' identifies errors that reached the global handlers. */
+	report?: boolean | 'uncaught';
 }
 const firstMessage = (value: unknown): Message | undefined =>
 	Array.isArray(value)
@@ -639,8 +639,11 @@ export function toast(
 	ui.toastSheet = ui.sheet;
 	ui.toastAction = o.action ?? null;
 	ui.toastActionLabel = o.actionLabel ?? '';
+	const reportable =
+		o.tone === 'danger' ||
+		(o.tone === 'warning' && (o.error != null || o.report === true || o.report === 'uncaught'));
 	ui.toastProblem =
-		(o.tone === 'danger' || o.tone === 'warning') && o.report !== false
+		reportable && o.report !== false
 			? {
 					message: firstMessage(s) ?? firstMessage(o.title),
 					error: o.error,
@@ -1256,6 +1259,7 @@ async function whileStepping(run: () => Promise<void>, drop?: () => void) {
 		if (gone) drop();
 		toast(gone ? message('history.changed') : (errorTranslation(error) ?? errorMessage(error)), {
 			tone: 'danger',
+			report: gone ? false : undefined,
 			error
 		});
 	} finally {

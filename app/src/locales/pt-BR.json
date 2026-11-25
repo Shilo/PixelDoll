@@ -971,21 +971,21 @@
 				"one": "{count} item oculto: faltam quadros de {move}",
 				"other": "{count} itens ocultos: faltam quadros de {move}"
 			},
-			"noMoveNothing": "Ainda não há a animação {move}, então não há nada para mostrar",
-			"noMoveStill": "Ainda não há a animação {move}, então o personagem fica parado",
-			"noMovePlays": "Ainda não há a animação {move}, então a animação “{fallback}” é reproduzida",
-			"noFramesNothing": "{move} ainda não tem quadros na direção {direction}, então não há nada para mostrar",
-			"noFramesStill": "{move} ainda não tem quadros na direção {direction}, então o personagem fica parado",
-			"noFramesPlays": "{move} ainda não tem quadros na direção {direction}, então a animação “{fallback}” é reproduzida",
-			"noFramesFaces": "{move} ainda não tem quadros na direção {direction}, então o personagem fica voltado para a direção {fallback}",
+			"noMoveNothing": "O movimento {move} está ausente.",
+			"noMoveStill": "{move} ausente. Exibindo uma pose parada.",
+			"noMovePlays": "{move} ausente. Reproduzindo {fallback}.",
+			"noFramesNothing": "Sem quadros de {move} para {direction}.",
+			"noFramesStill": "Sem quadros de {move} para {direction}. Exibindo uma pose parada.",
+			"noFramesPlays": "Sem quadros de {move} para {direction}. Reproduzindo {fallback}.",
+			"noFramesFaces": "Sem quadros de {move} para {direction}. Virado para {fallback}.",
 			"undeclaredDirection": "O personagem não declara esta direção",
 			"hiddenItems": {
 				"one": "{count} item oculto: faltam quadros de {move} / {direction}",
 				"other": "{count} itens ocultos: faltam quadros de {move} / {direction}"
 			},
 			"equippedHidden": {
-				"one": "{count} item equipado oculto nesta vista",
-				"other": "{count} itens equipados ocultos nesta vista"
+				"one": "{count} item oculto (faltam quadros)",
+				"other": "{count} itens ocultos (faltam quadros)"
 			},
 			"itemLoading": "{item} carregando: {directions}",
 			"legsAxial": "As vistas de frente e de costas mantêm as duas pernas visíveis.",
@@ -3569,11 +3569,11 @@
 		"actions": "Ações de jogo",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Espaço",
-		"noAttack": "Ainda não há nada definido como Ataque. Escolha uma animação ou um estado nas configurações de Visualizações ao vivo.",
-		"noAttackDirection": "{move} não tem quadros na direção {direction}, então não pode atacar para esse lado.",
-		"hintTopDown": "WASD ou segure o clique para mover · Shift para disparar · Botão direito ou E para atacar · Espaço para pular · F para montar",
-		"hintSide": "A/D ou segure o clique para mover · Shift para disparar · Botão direito ou E para atacar · Espaço para pular · F para montar",
-		"hintTouch": "Arraste para mover · Segure e arraste a espada para atacar e mirar · Os botões pulam, disparam e montam",
+		"noAttack": "Sem ataque definido. Abra as configurações das vistas ao vivo.",
+		"noAttackDirection": "Sem quadros de {move} para {direction}.",
+		"hintTopDown": "Use WASD ou mantenha o clique para mover",
+		"hintSide": "Use A/D ou mantenha o clique para mover",
+		"hintTouch": "Arraste para mover",
 		"stageTopDown": "Mundo de teste do personagem. WASD, setas, clique ou arraste para mover; Shift dispara. Botão direito ou E ataca, Espaço pula, F monta. As teclas 1, 2 e 3 trocam a visualização.",
 		"stageSide": "Mundo de teste em rolagem lateral. A/D, setas esquerda e direita, clique ou arraste para mover; Shift dispara. Botão direito ou E ataca, Espaço pula, F monta. As teclas 1, 2 e 3 trocam a visualização."
 	}

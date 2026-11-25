@@ -968,21 +968,21 @@
 				"one": "{count} objeto oculto: faltan fotogramas de {move}",
 				"other": "{count} objetos ocultos: faltan fotogramas de {move}"
 			},
-			"noMoveNothing": "Aún no hay animación {move}, así que no hay nada que mostrar",
-			"noMoveStill": "Aún no hay animación {move}, así que el personaje se queda quieto",
-			"noMovePlays": "Aún no hay animación {move}, así que se reproduce {fallback}",
-			"noFramesNothing": "{move} aún no tiene fotogramas en dirección {direction}, así que no hay nada que mostrar",
-			"noFramesStill": "{move} aún no tiene fotogramas en dirección {direction}, así que el personaje se queda quieto",
-			"noFramesPlays": "{move} aún no tiene fotogramas en dirección {direction}, así que se reproduce {fallback}",
-			"noFramesFaces": "{move} aún no tiene fotogramas en dirección {direction}, así que el personaje mira hacia {fallback}",
+			"noMoveNothing": "Falta el movimiento {move}.",
+			"noMoveStill": "Falta {move}. Se muestra una pose fija.",
+			"noMovePlays": "Falta {move}. Se reproduce {fallback}.",
+			"noFramesNothing": "Sin fotogramas hacia {direction} para {move}.",
+			"noFramesStill": "Sin fotogramas hacia {direction} para {move}. Se muestra una pose fija.",
+			"noFramesPlays": "Sin fotogramas hacia {direction} para {move}. Se reproduce {fallback}.",
+			"noFramesFaces": "Sin fotogramas hacia {direction} para {move}. Mira hacia {fallback}.",
 			"undeclaredDirection": "El personaje no declara esta dirección",
 			"hiddenItems": {
 				"one": "{count} objeto oculto: faltan fotogramas de {move} / {direction}",
 				"other": "{count} objetos ocultos: faltan fotogramas de {move} / {direction}"
 			},
 			"equippedHidden": {
-				"one": "En esta vista se oculta {count} objeto equipado",
-				"other": "En esta vista se ocultan {count} objetos equipados"
+				"one": "{count} objeto oculto (faltan fotogramas)",
+				"other": "{count} objetos ocultos (faltan fotogramas)"
 			},
 			"itemLoading": "{item} cargando: {directions}",
 			"legsAxial": "Las vistas de frente y de espaldas mantienen visibles ambas piernas.",
@@ -3560,11 +3560,11 @@
 		"actions": "Acciones de juego",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Espacio",
-		"noAttack": "Aún no hay nada asignado a Ataque. Elige una animación o un estado en los ajustes de Vistas en vivo.",
-		"noAttackDirection": "{move} no tiene fotogramas hacia {direction}, así que no puede atacar en esa dirección.",
-		"hintTopDown": "WASD o mantén el clic para moverte · Mayús para esprintar · Clic derecho o E para atacar · Espacio para saltar · F para montar",
-		"hintSide": "A/D o mantén el clic para moverte · Mayús para esprintar · Clic derecho o E para atacar · Espacio para saltar · F para montar",
-		"hintTouch": "Arrastra para moverte · Mantén y arrastra la espada para atacar y apuntar · Los botones saltan, esprintan y montan",
+		"noAttack": "Sin ataque asignado. Abre los ajustes de las vistas en vivo.",
+		"noAttackDirection": "Sin fotogramas hacia {direction} para {move}.",
+		"hintTopDown": "Mantén pulsado el ratón o usa WASD para moverte",
+		"hintSide": "Mantén pulsado el ratón o usa A/D para moverte",
+		"hintTouch": "Arrastra para moverte",
 		"stageTopDown": "Mundo de prueba del personaje. WASD, flechas, clic o arrastre para moverte; Mayús esprinta. Clic derecho o E ataca, Espacio salta, F monta. Las teclas 1, 2 y 3 cambian de vista.",
 		"stageSide": "Mundo de prueba en vista lateral. A/D, flechas izquierda y derecha, clic o arrastre para moverte; Mayús esprinta. Clic derecho o E ataca, Espacio salta, F monta. Las teclas 1, 2 y 3 cambian de vista."
 	}

@@ -939,19 +939,19 @@
 			"hiddenItemsInMove": {
 				"other": "已隐藏 {count} 件物品：缺少 {move} 的帧"
 			},
-			"noMoveNothing": "还没有{move}动作，因此没有可显示的内容",
-			"noMoveStill": "还没有{move}动作，因此角色保持静止",
-			"noMovePlays": "还没有{move}动作，因此改为播放{fallback}",
-			"noFramesNothing": "{move}还没有朝向{direction}的帧，因此没有可显示的内容",
-			"noFramesStill": "{move}还没有朝向{direction}的帧，因此角色保持静止",
-			"noFramesPlays": "{move}还没有朝向{direction}的帧，因此改为播放{fallback}",
-			"noFramesFaces": "{move}还没有朝向{direction}的帧，因此改为朝向{fallback}",
+			"noMoveNothing": "缺少{move}动作。",
+			"noMoveStill": "缺少{move}动作，显示静止姿势。",
+			"noMovePlays": "缺少{move}动作，正在播放{fallback}。",
+			"noFramesNothing": "{move}缺少{direction}帧。",
+			"noFramesStill": "{move}缺少{direction}帧，显示静止姿势。",
+			"noFramesPlays": "{move}缺少{direction}帧，正在播放{fallback}。",
+			"noFramesFaces": "{move}缺少{direction}帧，改为朝向{fallback}。",
 			"undeclaredDirection": "角色未声明此朝向",
 			"hiddenItems": {
 				"other": "已隐藏 {count} 件装备：缺少{move} / {direction}的帧"
 			},
 			"equippedHidden": {
-				"other": "当前视图隐藏了 {count} 件已穿戴的装备"
+				"other": "已隐藏 {count} 件装备（缺少帧）"
 			},
 			"itemLoading": "{item}正在加载：{directions}",
 			"legsAxial": "从正面和背面看时，双腿都会保持可见。",
@@ -3456,11 +3456,11 @@
 		"actions": "游戏操作",
 		"withShortcut": "{action}（{key}）",
 		"spaceKey": "空格",
-		"noAttack": "还没有指定攻击。请在实时视图设置中选择一个动作或状态。",
-		"noAttackDirection": "{move} 没有朝向{direction}的帧，无法向该方向攻击。",
-		"hintTopDown": "WASD 或按住点击移动 · Shift 冲刺 · 右键或 E 攻击 · 空格跳跃 · F 上下坐骑",
-		"hintSide": "A/D 或按住点击移动 · Shift 冲刺 · 右键或 E 攻击 · 空格跳跃 · F 上下坐骑",
-		"hintTouch": "拖动移动 · 按住并拖动剑来攻击和瞄准 · 按钮用于跳跃、冲刺和上下坐骑",
+		"noAttack": "尚未设置攻击。请打开实时视图设置。",
+		"noAttackDirection": "{move}缺少{direction}帧。",
+		"hintTopDown": "按住鼠标或用 WASD 移动",
+		"hintSide": "按住鼠标或用 A/D 移动",
+		"hintTouch": "拖动以移动",
 		"stageTopDown": "角色测试世界。使用 WASD、方向键、点击或拖动来移动；Shift 冲刺。右键或 E 攻击，空格跳跃，F 上下坐骑。按 1、2、3 切换视图。",
 		"stageSide": "横版测试世界。使用 A/D、左右方向键、点击或拖动来移动；Shift 冲刺。右键或 E 攻击，空格跳跃，F 上下坐骑。按 1、2、3 切换视图。"
 	}

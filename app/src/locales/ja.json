@@ -939,19 +939,19 @@
 			"hiddenItemsInMove": {
 				"other": "アイテム{count}個を非表示：{move}のフレームが不足しています"
 			},
-			"noMoveNothing": "{move}モーションがまだないため、表示できるものがありません",
-			"noMoveStill": "{move}モーションがまだないため、キャラクターは静止しています",
-			"noMovePlays": "{move}モーションがまだないため、{fallback}を再生しています",
-			"noFramesNothing": "{move}には{direction}向きのフレームがまだないため、表示できるものがありません",
-			"noFramesStill": "{move}には{direction}向きのフレームがまだないため、キャラクターは静止しています",
-			"noFramesPlays": "{move}には{direction}向きのフレームがまだないため、{fallback}を再生しています",
-			"noFramesFaces": "{move}には{direction}向きのフレームがまだないため、{fallback}向きで表示しています",
+			"noMoveNothing": "{move}の動きがありません。",
+			"noMoveStill": "{move}がありません。静止ポーズを表示します。",
+			"noMovePlays": "{move}がありません。{fallback}を再生します。",
+			"noFramesNothing": "{move}の{direction}フレームがありません。",
+			"noFramesStill": "{move}の{direction}フレームがありません。静止ポーズを表示します。",
+			"noFramesPlays": "{move}の{direction}フレームがありません。{fallback}を再生します。",
+			"noFramesFaces": "{move}の{direction}フレームがありません。{fallback}を向いています。",
 			"undeclaredDirection": "このキャラクターには、この向きが設定されていません",
 			"hiddenItems": {
 				"other": "装備{count}個を非表示：{move}／{direction}のフレーム不足"
 			},
 			"equippedHidden": {
-				"other": "このビューでは装備中の{count}個のアイテムを非表示にしています"
+				"other": "{count}個のアイテムを非表示（フレーム不足）"
 			},
 			"itemLoading": "{item}を読み込み中：{directions}",
 			"legsAxial": "正面と背面のビューでは両脚が表示されたままです。",
@@ -3456,11 +3456,11 @@
 		"actions": "ゲーム操作",
 		"withShortcut": "{action}（{key}）",
 		"spaceKey": "スペース",
-		"noAttack": "攻撃に割り当てられたものがまだありません。ライブビューの設定でモーションか状態を選んでください。",
-		"noAttackDirection": "{move} には{direction}向きのフレームがないため、その方向には攻撃できません。",
-		"hintTopDown": "WASD またはクリック長押しで移動 · Shift でダッシュ · 右クリックまたは E で攻撃 · スペースでジャンプ · F で乗り降り",
-		"hintSide": "A/D またはクリック長押しで移動 · Shift でダッシュ · 右クリックまたは E で攻撃 · スペースでジャンプ · F で乗り降り",
-		"hintTouch": "ドラッグで移動 · 剣を押したままドラッグで攻撃と狙い · ボタンでジャンプ、ダッシュ、乗り降り",
+		"noAttack": "攻撃が未設定です。ライブビューの設定を開いてください。",
+		"noAttackDirection": "{move}の{direction}フレームがありません。",
+		"hintTopDown": "WASDまたはクリック長押しで移動",
+		"hintSide": "A/Dまたはクリック長押しで移動",
+		"hintTouch": "ドラッグで移動",
 		"stageTopDown": "キャラクターのテストワールド。WASD、矢印キー、クリック、またはドラッグで移動し、Shift でダッシュします。右クリックまたは E で攻撃、スペースでジャンプ、F で乗り降りします。1、2、3キーでビューを切り替えます。",
 		"stageSide": "横スクロールのテストワールド。A/D、左右の矢印キー、クリック、またはドラッグで移動し、Shift でダッシュします。右クリックまたは E で攻撃、スペースでジャンプ、F で乗り降りします。1、2、3キーでビューを切り替えます。"
 	}

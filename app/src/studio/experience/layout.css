@@ -383,16 +383,9 @@
 	left: var(--stage-left);
 	right: var(--stage-right);
 	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 4px;
+	justify-content: center;
 	padding: 0 8px;
 	pointer-events: none;
-}
-.preview-note {
-	margin: 0;
-	text-align: center;
-	overflow-wrap: anywhere;
 }
 .playback-bar {
 	display: flex;
@@ -1417,10 +1410,12 @@
 	font-size: 13px;
 	color: var(--bu-muted);
 }
-/* A failed live renderer is a failure, not a coverage report: it stays readable on the short landscape layouts, where
-   every routine coverage note is hidden. */
-.short-layout .world-coverage:not(.world-renderer-warning) {
+/* Live views keep their coverage note on short screens unless a renderer failure needs the space. */
+.short-layout .world-coverage:not(.world-renderer-warning, .world-live-note) {
 	display: none;
+}
+.world-live-note {
+	overflow-wrap: anywhere;
 }
 .world-loading-items {
 	display: flex;

@@ -939,19 +939,19 @@
 			"hiddenItemsInMove": {
 				"other": "{count} item disembunyikan: bingkai {move} tidak lengkap"
 			},
-			"noMoveNothing": "Belum ada animasi {move}, jadi tidak ada yang ditampilkan",
-			"noMoveStill": "Belum ada animasi {move}, jadi karakter diam di tempat",
-			"noMovePlays": "Belum ada animasi {move}, jadi yang diputar adalah {fallback}",
-			"noFramesNothing": "{move} belum punya frame ke arah {direction}, jadi tidak ada yang ditampilkan",
-			"noFramesStill": "{move} belum punya frame ke arah {direction}, jadi karakter diam di tempat",
-			"noFramesPlays": "{move} belum punya frame ke arah {direction}, jadi yang diputar adalah {fallback}",
-			"noFramesFaces": "{move} belum punya frame ke arah {direction}, jadi karakter menghadap ke {fallback}",
+			"noMoveNothing": "Gerakan {move} belum ada.",
+			"noMoveStill": "{move} belum ada. Menampilkan pose diam.",
+			"noMovePlays": "{move} belum ada. Memutar {fallback}.",
+			"noFramesNothing": "Tidak ada bingkai {direction} untuk {move}.",
+			"noFramesStill": "Tidak ada bingkai {direction} untuk {move}. Menampilkan pose diam.",
+			"noFramesPlays": "Tidak ada bingkai {direction} untuk {move}. Memutar {fallback}.",
+			"noFramesFaces": "Tidak ada bingkai {direction} untuk {move}. Menghadap {fallback}.",
 			"undeclaredDirection": "Arah ini belum ditetapkan untuk karakter ini",
 			"hiddenItems": {
 				"other": "{count} item disembunyikan: frame {move} / {direction} tidak ada"
 			},
 			"equippedHidden": {
-				"other": "{count} item terpasang disembunyikan di tampilan ini"
+				"other": "{count} item disembunyikan (bingkai kurang)"
 			},
 			"itemLoading": "{item} sedang dimuat: {directions}",
 			"legsAxial": "Tampilan depan dan belakang tetap menampilkan kedua kaki.",
@@ -3456,11 +3456,11 @@
 		"actions": "Aksi permainan",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Spasi",
-		"noAttack": "Belum ada yang diputar sebagai Serangan. Pilih animasi atau keadaan di pengaturan Tampilan langsung.",
-		"noAttackDirection": "{move} tidak memiliki frame ke arah {direction}, jadi tidak dapat menyerang ke arah itu.",
-		"hintTopDown": "WASD atau tahan klik untuk bergerak · Shift untuk lari cepat · Klik kanan atau E untuk menyerang · Spasi untuk melompat · F untuk naik atau turun",
-		"hintSide": "A/D atau tahan klik untuk bergerak · Shift untuk lari cepat · Klik kanan atau E untuk menyerang · Spasi untuk melompat · F untuk naik atau turun",
-		"hintTouch": "Seret untuk bergerak · Tahan dan seret pedang untuk menyerang dan membidik · Tombol untuk melompat, lari cepat, dan menunggang",
+		"noAttack": "Serangan belum diatur. Buka pengaturan tampilan langsung.",
+		"noAttackDirection": "Tidak ada bingkai {direction} untuk {move}.",
+		"hintTopDown": "WASD atau tahan klik untuk bergerak",
+		"hintSide": "A/D atau tahan klik untuk bergerak",
+		"hintTouch": "Seret untuk bergerak",
 		"stageTopDown": "Dunia uji karakter. Gunakan WASD, tombol panah, klik, atau seret untuk bergerak; Shift untuk lari cepat. Klik kanan atau E menyerang, Spasi melompat, F naik atau turun. Tombol 1, 2, 3 mengganti tampilan.",
 		"stageSide": "Dunia uji gulir samping. Gunakan A/D, panah kiri dan kanan, klik, atau seret untuk bergerak; Shift untuk lari cepat. Klik kanan atau E menyerang, Spasi melompat, F naik atau turun. Tombol 1, 2, 3 mengganti tampilan."
 	}

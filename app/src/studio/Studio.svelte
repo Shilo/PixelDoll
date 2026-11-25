@@ -374,12 +374,14 @@
 
 {#snippet previewNoticeDetails()}
 	<div><strong class="preview-risk">{t('studio.previewRisk')}</strong></div>
-	{t('studio.previewBackupDescription')}
-	<LibraryBackupButton
-		disabled={!store.project}
-		bind:pending={backingUp}
-		onbackup={activateToast}
-	/>
+	<span>{t('studio.previewBackupDescription')}</span>
+	<div class="toast-actions">
+		<LibraryBackupButton
+			disabled={!store.project}
+			bind:pending={backingUp}
+			onbackup={activateToast}
+		/>
+	</div>
 {/snippet}
 
 <svelte:window

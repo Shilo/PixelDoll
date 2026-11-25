@@ -299,6 +299,10 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 		tone: 'warning',
 		duration: 0
 	});
+	await expect(notice).toContainText('Preview details');
+	await expect(
+		notice.getByRole('button', { name: 'Report this problem', exact: true })
+	).toHaveCount(0);
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	await expect(dialog).toBeVisible();
@@ -370,7 +374,14 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	// The body stays a button, named by the message alone; Report is its own target and does not dismiss the notice.
 	const unexpected = 'Something went wrong. If it keeps happening, please report it.';
 	await expect(notice.locator('.bu-notice-activate')).toHaveAccessibleName(unexpected);
-	await notice.getByRole('button', { name: 'Report this problem', exact: true }).click();
+	const reportButton = notice.getByRole('button', { name: 'Report this problem', exact: true });
+	await expect(reportButton).toHaveAttribute('data-variant', 'outline');
+	const description = notice.getByText(unexpected, { exact: true });
+	const descriptionBox = (await description.boundingBox())!;
+	const reportBox = (await reportButton.boundingBox())!;
+	expect(reportBox.x).toBeCloseTo(descriptionBox.x, 0);
+	expect(reportBox.y).toBeGreaterThanOrEqual(descriptionBox.y + descriptionBox.height);
+	await reportButton.click();
 	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
 	await expect(report).toBeVisible();
 	await expect(notice).toContainText('Something went wrong.');
@@ -426,6 +437,12 @@ test('the startup notice and More menu download a library backup with archives',
 	try {
 		await expect(backupButton).toBeVisible();
 		await expect(backupButton).toBeDisabled();
+		await expect(backupButton).toHaveAttribute('data-variant', 'outline');
+		const description = notice.getByText('Keep a local copy of your characters and artwork.');
+		const descriptionBox = (await description.boundingBox())!;
+		const backupBox = (await backupButton.boundingBox())!;
+		expect(backupBox.x).toBeCloseTo(descriptionBox.x, 0);
+		expect(backupBox.y).toBeGreaterThanOrEqual(descriptionBox.y + descriptionBox.height);
 		loadingHeight = await notice.evaluate((element) => element.clientHeight);
 	} finally {
 		releaseFixture();
@@ -1296,6 +1313,13 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
 								.querySelector('[aria-label="Dismiss notification"]')!
 								.getBoundingClientRect();
 							if (close.width < 44 || close.height < 44) issues.push('small dismiss target');
+							if (card.dataset.tone === 'danger') {
+								const button = card.querySelector('.report-problem[data-variant="outline"]');
+								const action = button?.getBoundingClientRect();
+								const text = card.querySelector('.bu-small > span')!.getBoundingClientRect();
+								if (!action || Math.abs(action.left - text.left) > 1 || action.top < text.bottom)
+									issues.push('report button off the bottom-left action row');
+							}
 							if (card.dataset.tone === 'info') {
 								const text = document.createRange();
 								text.selectNodeContents(card.querySelector('.bu-notice-content')!);
@@ -9783,7 +9807,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await expect(coverage).toBeVisible();
 	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
-	await expect(page.locator('.world-coverage')).toContainText('hidden for this view');
+	await expect(page.locator('.world-coverage')).toContainText('hidden (missing frames)');
 	await page.getByRole('button', { name: 'Preview', exact: true }).click();
 	await expect(coverage).toBeVisible();
 	await page.setViewportSize({ width: 844, height: 390 });
