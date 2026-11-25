@@ -11,7 +11,6 @@
 
 	import Help from './Help.svelte';
 
-	import NumberStepper from './NumberStepper.svelte';
 	import SettingsItemToggle from './SettingsItemToggle.svelte';
 
 	import {
@@ -34,7 +33,10 @@
 
 	const layering = $derived(currentLiveLayering(doc.id));
 
-	const waistLabel = $props.id();
+	let waistInput = $state<HTMLInputElement>();
+
+	/** True between typing in the waist field and leaving it. Auto stays unpressed while an edit is in progress. */
+	let waistEdited = $state(false);
 
 	const choices = $derived(experience.liveRoles[doc.id]);
 
@@ -43,9 +45,8 @@
 
 		{ role: 'walk', label: 'liveViews.walk' },
 		{ role: 'run', label: 'liveViews.run' },
-		{ role: 'attack', label: 'liveViews.attack' },
-
 		{ role: 'jump', label: 'liveViews.jump' },
+		{ role: 'attack', label: 'liveViews.attack' },
 
 		{ role: 'attackUp', label: 'liveViews.attackUp' },
 
@@ -73,6 +74,19 @@
 	function setLayering(on: boolean, waist: number) {
 		if (doc.id && !chooseLiveLayering(doc.id, { on, waist }))
 			toast(message('liveViews.notSaved'), { tone: 'warning' });
+	}
+
+	/** Out-of-range whole numbers clamp to the nearest limit; empty or invalid text shows the committed value again. */
+	function finishWaistEdit(input: HTMLInputElement) {
+		waistEdited = false;
+		const waist = input.valueAsNumber;
+		if (!Number.isInteger(waist)) {
+			input.value = String(layering.waist);
+			return;
+		}
+		const clamped = Math.min(4, Math.max(-4, waist));
+		if (clamped !== layering.waist) setLayering(true, clamped);
+		input.value = String(clamped);
 	}
 
 	function choose(role: LiveRole, clip: string) {
@@ -115,24 +129,41 @@
 			</SettingsItemToggle>
 
 			{#if layering.on}
-				<div class="layering">
-					<span id={waistLabel}
-						>{t('liveViews.waist')}{layering.waist === 0
-							? ' / ' + t('liveViews.automaticWaist')
-							: ''}</span
-					>
+				<div class="layering" data-setting="live-waist">
+					<span>{t('liveViews.waist')}</span>
 
 					<Help iconOnly title={t('liveViews.waist')} text={t('liveViews.waistHelp')} />
 
-					<NumberStepper
-						value={layering.waist}
-						min={-4}
-						max={4}
-						labelledby={waistLabel}
-						decreaseLabel={t('liveViews.raiseWaist')}
-						increaseLabel={t('liveViews.lowerWaist')}
-						onchange={(waist) => setLayering(true, waist)}
-					/>
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						aria-pressed={!waistEdited && layering.waist === 0}
+						onclick={() => {
+							waistEdited = false;
+							setLayering(true, 0);
+							waistInput?.focus();
+							waistInput?.select();
+						}}>{t('create.form.auto')}</button
+					>
+
+					<div class="pixel-input">
+						<input
+							bind:this={waistInput}
+							class="bu-input input"
+							aria-label={t('liveViews.waist')}
+							type="number"
+							min={-4}
+							max={4}
+							step={1}
+							value={layering.waist}
+							oninput={(event) => {
+								waistEdited = true;
+								const waist = event.currentTarget.valueAsNumber;
+								if (Number.isInteger(waist) && waist >= -4 && waist <= 4) setLayering(true, waist);
+							}}
+							onblur={(event) => finishWaistEdit(event.currentTarget)}
+						/><span aria-hidden="true">px</span>
+					</div>
 				</div>
 			{/if}
 		{/if}
@@ -164,6 +195,33 @@
 
 	.layering {
 		flex-wrap: wrap;
+	}
+
+	.pixel-input {
+		position: relative;
+		inline-size: 80px;
+	}
+
+	.pixel-input input {
+		inline-size: 100%;
+		padding-right: 33px;
+		font-variant-numeric: tabular-nums;
+		appearance: textfield;
+		-moz-appearance: textfield;
+	}
+
+	.pixel-input input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+	}
+
+	.pixel-input > span {
+		position: absolute;
+		right: 10px;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--text-3);
+		font-size: var(--fs-sm);
+		pointer-events: none;
 	}
 
 	.character {
