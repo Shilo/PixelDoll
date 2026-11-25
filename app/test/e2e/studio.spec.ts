@@ -120,7 +120,8 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	const effectsSwitch = settings.getByRole('switch', { name: 'Sound effects', exact: true });
 	const music = settings.getByRole('slider', { name: 'Music volume', exact: true });
 	const effects = settings.getByRole('slider', { name: 'Sound effects volume', exact: true });
-	const shortcut = page.locator('.header-audio');
+	const topBar = page.locator('.experience-header');
+	const shortcut = topBar.locator('.header-audio');
 	const expectAlignedAudioRows = async () => {
 		const [masterBox, musicBox, effectsBox, musicToggle, effectsToggle] = await Promise.all(
 			[master, music, effects, musicSwitch, effectsSwitch].map((control) => control.boundingBox())
@@ -140,6 +141,9 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(customize).toBeVisible();
 	await customize.dispatchEvent('pointerdown', { pointerType: 'mouse' });
 	await expect(shortcut).toBeVisible();
+	const newCharacter = topBar.getByRole('button', { name: 'New character', exact: true });
+	await expect(newCharacter).toBeVisible();
+	expect((await shortcut.boundingBox())!.x).toBeLessThan((await newCharacter.boundingBox())!.x);
 	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
 	expect(audioRequests).toEqual([]);
 	await enterStudio(page);
@@ -227,17 +231,17 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(musicSwitch).not.toBeChecked();
 	await expect(effectsSwitch).toBeChecked();
 	await effectsSwitch.uncheck();
-	await expect(shortcut).toBeVisible();
+	await expect(shortcut).toHaveCSS('display', 'none');
 	await musicSwitch.check();
-	await expect(shortcut).toHaveCount(1);
+	await expect(shortcut).toBeVisible();
 	await music.press('Home');
-	await expect(shortcut).toBeVisible();
+	await expect(shortcut).toHaveCSS('display', 'none');
 	await music.fill('50');
-	await expect(shortcut).toHaveCount(1);
-	await master.uncheck();
 	await expect(shortcut).toBeVisible();
+	await master.uncheck();
+	await expect(shortcut).toHaveCSS('display', 'none');
 	await master.check();
-	await expect(shortcut).toHaveCount(1);
+	await expect(shortcut).toBeVisible();
 	await expect(effectsSwitch).not.toBeChecked();
 	await page.evaluate(() => {
 		Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
@@ -275,11 +279,14 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await master.uncheck();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.setViewportSize({ width: 320, height: 568 });
-	await expect(shortcut).toBeVisible();
+	await expect(shortcut).toHaveCSS('display', 'none');
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
-	const topBar = page.locator('.experience-header');
-	await topBar.getByRole('button', { name: 'Audio settings', exact: true }).click();
+	await expect(shortcut).toHaveCSS('display', 'none');
+	await topBar.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	await expect(master).not.toBeChecked();
+	await master.check();
+	await expect(shortcut).toBeVisible();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await page
 		.getByRole('complementary', { name: 'Your characters' })
@@ -291,9 +298,10 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	const draftName = creator.getByRole('textbox', { name: 'Name', exact: true });
 	await draftName.fill('Audio draft');
 	await creator.getByRole('button', { name: 'Audio settings', exact: true }).click();
-	await expect(master).not.toBeChecked();
+	await master.uncheck();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(draftName).toHaveValue('Audio draft');
+	await expect(creator.locator('.header-audio')).toHaveCSS('display', 'none');
 });
 
 async function reviewSelectedDraft(page: Page) {

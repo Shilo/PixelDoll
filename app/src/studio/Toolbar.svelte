@@ -246,6 +246,7 @@
 	{/if}
 	<div class="header-actions">
 		{#if experience.screen === 'characters'}
+			<AudioSettingsButton />
 			<NewCharacterButton />
 		{:else}
 			<!-- Undo shows once there is something to undo, and Redo after it once there is something to redo. Each takes room
@@ -299,7 +300,7 @@
 				/></button
 			>
 		{/if}
-		<GlobalActions showAudio={experience.screen === 'characters'} />
+		<GlobalActions showAudio={false} />
 	</div>
 </header>
 <SharePopover />
