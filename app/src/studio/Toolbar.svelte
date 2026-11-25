@@ -232,39 +232,42 @@
 	let fitHeader: HTMLElement | undefined;
 	/** The bar control that last had focus, so focus can follow it into More when it leaves the bar. */
 	let fitFocus: Element | null = null;
+	function fitNow() {
+		const header = fitHeader,
+			root = header?.closest<HTMLElement>('.experience');
+		if (!header || !root) return;
+		const name = header.querySelector<HTMLElement>('.name-text');
+		const crowded = () =>
+			header.scrollWidth > header.clientWidth + 1 ||
+			(!!name && name.clientWidth < Math.min(name.scrollWidth, MIN_NAME));
+		const moved: string[] = [];
+		delete root.dataset.overflow;
+		if (experience.screen === 'studio')
+			for (const action of OVERFLOW) {
+				if (!crowded()) break;
+				moved.push(action);
+				root.dataset.overflow = moved.join(' ');
+			}
+		// A focused action that moved into More hands focus to More rather than dropping it on the page.
+		const focus = fitFocus;
+		if (
+			focus?.isConnected &&
+			header.contains(focus) &&
+			!focus.checkVisibility() &&
+			(document.activeElement === focus || document.activeElement === document.body)
+		)
+			header
+				.querySelector<HTMLElement>('[popovertarget="experience-options"]')
+				?.focus({ preventScroll: true });
+	}
 	function scheduleFit() {
 		cancelAnimationFrame(fitFrame);
-		fitFrame = requestAnimationFrame(() => {
-			const header = fitHeader,
-				root = header?.closest<HTMLElement>('.experience');
-			if (!header || !root) return;
-			const name = header.querySelector<HTMLElement>('.name-text');
-			const crowded = () =>
-				header.scrollWidth > header.clientWidth + 1 ||
-				(!!name && name.clientWidth < Math.min(name.scrollWidth, MIN_NAME));
-			const moved: string[] = [];
-			delete root.dataset.overflow;
-			if (experience.screen === 'studio')
-				for (const action of OVERFLOW) {
-					if (!crowded()) break;
-					moved.push(action);
-					root.dataset.overflow = moved.join(' ');
-				}
-			// A focused action that moved into More hands focus to More rather than dropping it on the page.
-			const focus = fitFocus;
-			if (
-				focus?.isConnected &&
-				header.contains(focus) &&
-				!focus.checkVisibility() &&
-				(document.activeElement === focus || document.activeElement === document.body)
-			)
-				header
-					.querySelector<HTMLElement>('[popovertarget="experience-options"]')
-					?.focus({ preventScroll: true });
-		});
+		fitFrame = requestAnimationFrame(fitNow);
 	}
 	function fitActions(header: HTMLElement) {
 		fitHeader = header;
+		// Fit once before the first paint, so a long saved name never shows a squeezed bar for a frame.
+		fitNow();
 		const observer = new ResizeObserver(scheduleFit);
 		for (const el of [header, ...header.children]) observer.observe(el);
 		const focused = (e: FocusEvent) => (fitFocus = e.target as Element);
