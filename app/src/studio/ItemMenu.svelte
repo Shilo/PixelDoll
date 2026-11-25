@@ -366,15 +366,6 @@
 						)}<SurfaceChevron /></button
 					>
 					{#if !isDemo() && !it.variantOf}
-						{#if canEditItemAppearance(m, it)}<button
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								aria-haspopup="dialog"
-								onclick={() => act(() => openAppearance(doc.id, it.id))}
-								><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
-								/></button
-							>{/if}
 						<button
 							class="row bu-action"
 							data-variant="quiet"
@@ -385,6 +376,15 @@
 								t('toolbar.rename')
 							)}<SurfaceChevron />
 						</button>
+						{#if canEditItemAppearance(m, it)}<button
+								class="row bu-action"
+								data-variant="quiet"
+								role="menuitem"
+								aria-haspopup="dialog"
+								onclick={() => act(() => openAppearance(doc.id, it.id))}
+								><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
+								/></button
+							>{/if}
 					{/if}
 					{#if targets.length}
 						<button

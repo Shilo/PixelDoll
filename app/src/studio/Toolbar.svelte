@@ -351,6 +351,17 @@
 			{#each store.projects.filter((p) => !p.dev) as p (p.id)}{@render proj(p)}{/each}
 		</div>
 		<NewCharacterButton row />
+		{#if !isDemo()}<button
+				class="row"
+				role="menuitem"
+				aria-label={t('toolbar.renameCharacter')}
+				onclick={() => {
+					close();
+					openRename(doc.id);
+				}}
+				><Pencil size={16} /><span class="row-name">{openerLabel(t('toolbar.rename'))}</span
+				><SurfaceChevron /></button
+			>{/if}
 		{#if doc.id.startsWith('rig-')}<button
 				class="row"
 				role="menuitem"
@@ -361,17 +372,6 @@
 				}}
 				><Sparkles size={16} aria-hidden="true" /><span class="row-name"
 					>{t('appearance.action')}</span
-				><SurfaceChevron /></button
-			>{/if}
-		{#if !isDemo()}<button
-				class="row"
-				role="menuitem"
-				aria-label={t('toolbar.renameCharacter')}
-				onclick={() => {
-					close();
-					openRename(doc.id);
-				}}
-				><Pencil size={16} /><span class="row-name">{openerLabel(t('toolbar.rename'))}</span
 				><SurfaceChevron /></button
 			>{/if}
 		{#if !isDemo()}<button

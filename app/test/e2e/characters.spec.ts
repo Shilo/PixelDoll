@@ -1398,6 +1398,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			'Details...',
 			'Cost estimate...',
 			'Rename...',
+			'Edit appearance…',
 			'Directions...',
 			'Adjust frame...',
 			'Download ZIP',
