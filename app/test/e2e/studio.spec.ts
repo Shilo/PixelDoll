@@ -3509,9 +3509,12 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.keyboard.press('Enter');
 	const spritePreview = page.getByRole('dialog', { name: 'Red cape facing South', exact: true });
 	await expect(spritePreview.getByRole('img')).toBeVisible();
-	await expect(spritePreview.locator('.preview-context')).toContainText(
-		/^Walk · frame \d+ of \d+$/
-	);
+	const frameNote = spritePreview.locator('.preview-context');
+	await expect(frameNote).toContainText(/^Walk · frame \d+ of \d+$/);
+	const firstNote = await frameNote.textContent();
+	await page.keyboard.press('ArrowRight');
+	await expect(frameNote).not.toHaveText(firstNote!);
+	await expect(frameNote).toContainText(/of 8$/);
 	await expect(inspector).toBeVisible();
 	const viewport = page.viewportSize()!;
 	const previewBox = (await spritePreview.boundingBox())!;
@@ -5850,8 +5853,8 @@ test('a stopped item draft keeps its available frames for free, and an unreadabl
 	});
 	// The saved item lists the view it still lacks among its missing frames.
 	const details = await selectedItemDetails(page);
-	await expect(details.locator('dl', { hasText: 'Missing frames' })).toContainText(
-		/Missing frames.*cross-punch\/south/
+	await expect(details.locator('dl', { hasText: 'Missing frame keys' })).toContainText(
+		/Missing frame keys.*cross-punch\/south/
 	);
 	expect(requests.filter((method) => method === 'POST')).toEqual([]);
 });
@@ -11974,6 +11977,32 @@ test('an unworn item in a hidden category is not called hidden and keeps its ord
 	await expect(details.getByRole('button', { name: 'Bring forward', exact: true })).toBeEnabled();
 	await expect(details.getByRole('button', { name: 'Send backward', exact: true })).toBeEnabled();
 	await expect(details.getByText(/Another worn item hides this one/)).toHaveCount(0);
+});
+
+test('item details fill a phone screen and keep Wear pinned while the body scrolls', async ({
+	page
+}, info) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await editableCopy(page, devBaseURL(info));
+	const details = await openItemDetails(page, 'Wizard hat');
+	const viewport = page.viewportSize()!;
+	const bounds = (await details.boundingBox())!;
+	expect(Math.round(bounds.y)).toBe(0);
+	expect(Math.round(bounds.height)).toBe(viewport.height);
+	const wear = details.getByRole('button', { name: 'Wear', exact: true });
+	await expect(wear).toBeInViewport();
+	for (const section of [
+		'Artwork',
+		'Moves & States',
+		'Outfit behavior',
+		'How it was made',
+		'Technical details'
+	])
+		await openItemSection(details, section);
+	await expect(details.getByRole('heading', { name: 'Artwork', level: 3 })).toBeVisible();
+	await details.locator('.sheet-body').evaluate((body) => (body.scrollTop = body.scrollHeight));
+	await expect(wear).toBeInViewport();
+	await expect(details.getByRole('button', { name: 'Close', exact: true })).toBeInViewport();
 });
 
 for (const width of [1280, 390])
