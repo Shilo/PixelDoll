@@ -5713,13 +5713,44 @@ test.describe('live views actions', () => {
 			page,
 			context
 		}) => {
+			await page.addInitScript(() => {
+				const start = AudioBufferSourceNode.prototype.start;
+				const createGain = AudioContext.prototype.createGain;
+				const cues = { count: 0, context: null as AudioContext | null };
+				Object.defineProperty(window, 'liveCueStarts', { value: cues });
+				AudioContext.prototype.createGain = function () {
+					const gain = createGain.call(this);
+					cues.context = this;
+					return gain;
+				};
+				AudioBufferSourceNode.prototype.start = function (...args) {
+					start.apply(this, args);
+					if (!this.loop) cues.count++;
+				};
+			});
+			const cueCount = () =>
+				page.evaluate(async () => {
+					// Include any generic click cue scheduled after pointer release.
+					await new Promise<void>((resolve) =>
+						requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+					);
+					return Reflect.get(window, 'liveCueStarts').count as number;
+				});
 			await customize(page);
 			await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 			const host = world(page);
 			const actions = page.getByRole('group', { name: 'Game actions', exact: true });
 			const jump = actions.getByRole('button', { name: 'Jump', exact: true });
 			const stick = actions.getByRole('button', { name: 'Attack', exact: true });
+			// The lazy player creates the gains when it loads. Earlier clicks can be silent.
+			await page.waitForFunction(
+				() => Reflect.get(window, 'liveCueStarts').context?.state === 'running'
+			);
+			const beforeJump = await cueCount();
 			await jumped(page, () => jump.tap());
+			expect(await cueCount(), 'a single tap cues once, even if it also produces a click').toBe(
+				beforeJump + 1
+			);
 			// The cluster: the Attack stick at the lower right, Jump above it, Sprint and Mount to its upper left.
 			const boxes = await page.evaluate(() =>
 				Object.fromEntries(
@@ -5754,14 +5785,19 @@ test.describe('live views actions', () => {
 			) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
 			const x = async () => Number((await host.getAttribute('data-position'))!.split(',')[0]);
 			try {
+				const beforeAttack = await cueCount();
 				await touch('touchStart', [move]);
 				await touch('touchMove', [{ ...move, x: move.x + 42 }]);
 				await expect.poll(x).toBeGreaterThan(2);
+				expect(await cueCount(), 'movement alone stays quiet').toBe(beforeAttack);
 				// A second finger on the Attack stick attacks at once along the facing, while the walk goes on.
 				const walked = await x();
 				await expect(stick).not.toHaveClass(/held/);
 				await touch('touchStart', [{ ...move, x: move.x + 42 }, thumb]);
 				await expect(stick).toHaveClass(/held/);
+				expect(await cueCount(), 'attack cues while both thumbs are still down').toBe(
+					beforeAttack + 1
+				);
 				await expect(page.locator('.stick-control-held')).toBeVisible();
 				await expect(host).toHaveAttribute('data-attack', /^(cross-punch|missing) /);
 				// Dragged down, it aims south: the demo's south punch.
@@ -5777,6 +5813,30 @@ test.describe('live views actions', () => {
 				await expect(stick).not.toHaveClass(/held/);
 				await expect(page.locator('.stick-control-held')).toHaveCount(0);
 				await touch('touchEnd', [{ ...move, x: move.x + 42 }]);
+				expect(await cueCount(), 'aiming and releasing add no cues').toBe(beforeAttack + 1);
+
+				const side = modes(page).getByRole('button', { name: 'Side-scroller', exact: true });
+				await side.tap();
+				await expect(side).toHaveAttribute('aria-pressed', 'true');
+				const beforeSideJump = await cueCount();
+				const moving = { ...move, x: move.x + 42 };
+				await touch('touchStart', [move]);
+				await touch('touchMove', [moving]);
+				await expect(page.locator('.world-stick')).toBeVisible();
+				const box = (await jump.boundingBox())!;
+				const jumpThumb = {
+					id: 2,
+					x: Math.round(box.x + box.width / 2),
+					y: Math.round(box.y + box.height / 2)
+				};
+				await touch('touchStart', [moving, jumpThumb]);
+				await expect(jump).toHaveAttribute('data-pressed', '');
+				expect(await cueCount(), 'side-scroller jump cues with the movement thumb down').toBe(
+					beforeSideJump + 1
+				);
+				await touch('touchEnd', [jumpThumb]);
+				await touch('touchEnd', [moving]);
+				expect(await cueCount()).toBe(beforeSideJump + 1);
 			} finally {
 				await cdp.detach();
 			}

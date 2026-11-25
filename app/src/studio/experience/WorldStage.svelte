@@ -52,6 +52,7 @@
 	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
 	import { activeRiderPose, legsKept } from './riderPose.ts';
 	import { currentLiveClips, currentLiveLayering } from './liveViews.ts';
+	import { playAudioCue } from '../audio.svelte.ts';
 	import { showMount } from '../mountPreview.ts';
 	import { resolveAttack, type AttackFailure } from './attack.ts';
 	import { LiveActions } from './liveActions.ts';
@@ -448,27 +449,34 @@
 	const keyAim = () => travel;
 	const playing = () => experience.mode !== 'preview' && !ui.sheet;
 	/** Jumps now and on every landing while the source (Space, the Jump button) is held. */
-	function jump(source: string) {
-		if (playing()) actions.holdJump(source);
+	function jump(source: 'key' | 'button') {
+		if (!playing()) return;
+		actions.holdJump(source);
+		if (source === 'button') playAudioCue('press');
 	}
-	/** An attack along the travel or facing, repeating while the source (the Attack button) is held. */
-	function attack(source: string) {
-		if (playing()) actions.hold(source, keyAim);
+	/** An attack along the travel or facing, repeating while the Attack button is held. */
+	function attackButton() {
+		if (!playing()) return;
+		actions.hold('button', keyAim);
+		playAudioCue('press');
 	}
 	/** The touch Attack stick: attacks at once along the facing, then wherever the stick points while it is held. */
-	function attackStick(snapshot: JoystickSnapshot) {
+	function attackStick(snapshot: JoystickSnapshot, starting: boolean) {
 		if (snapshot.pointerId === null) {
 			actions.release('stick');
 			return;
 		}
 		touchInput = true;
 		stickAim = { x: snapshot.value.x, y: -snapshot.value.y };
-		if (playing() && !actions.holds('stick')) actions.hold('stick', () => stickAim);
+		if (!playing()) return;
+		if (!actions.holds('stick')) actions.hold('stick', () => stickAim);
+		if (starting) playAudioCue('press');
 	}
 	/** F and the Mount action, in every view; the live views mount only on the floor. */
 	function toggleMount() {
-		if (ui.sheet || (experience.mode !== 'preview' && !actions.grounded)) return;
+		if (ui.sheet || (experience.mode !== 'preview' && !actions.grounded)) return false;
 		showMount(!experience.testMount);
+		return true;
 	}
 	function key(e: KeyboardEvent) {
 		if (e.target !== host || ui.sheet || e.ctrlKey || e.metaKey || e.altKey || e.isComposing)
@@ -1956,13 +1964,18 @@
 			touch={touchInput}
 			mounted={experience.testMount}
 			sprinting={sprintOn}
-			onattack={() => attack('button')}
+			onattack={attackButton}
 			onattackrelease={() => actions.release('button')}
 			onstick={attackStick}
 			onjump={() => jump('button')}
 			onjumprelease={() => actions.releaseJump('button')}
-			onsprint={() => (sprintOn = !sprintOn)}
-			onmount={toggleMount}
+			onsprint={() => {
+				sprintOn = !sprintOn;
+				playAudioCue('press');
+			}}
+			onmount={() => {
+				if (toggleMount()) playAudioCue('press');
+			}}
 		/>{/key}
 {/if}
 
