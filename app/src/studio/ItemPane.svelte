@@ -11,11 +11,7 @@
 	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
 	import { toast } from './state.svelte.ts';
 	import type { Message } from '../lib/message.ts';
-	import {
-		displayDirection,
-		displayDirectionInSentence,
-		displayDirectionShort
-	} from './displayDirection.ts';
+	import { displayDirection, displayDirectionInSentence } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayKey } from './displayKey.ts';
 	import { coverageGaps, moveDirs } from '../lib/dress/dress.ts';
@@ -508,8 +504,7 @@
 			{#if strip.length && previewDirections.length}
 				<div
 					class="item-views"
-					style:--cols={previewDirections.length}
-					style:--compact-cols={Math.min(4, previewDirections.length)}
+					style:--cols={Math.min(4, previewDirections.length)}
 					role="group"
 					aria-label={t('itemPane.nameInEveryDirection', { name: it.name })}
 				>
@@ -527,10 +522,11 @@
 								aria-label={t('itemPane.openSprite', { title })}
 								onclick={() => (expanded = { image: frame, title })}
 							>
-								<span aria-hidden="true"><Sprite img={frame} {k} limit={52} label={title} /></span>
-								<span class="view-caption">
-									{displayDirectionShort(d.id)}<Maximize size={12} aria-hidden="true" />
+								<span class="view-art" aria-hidden="true">
+									<Sprite img={frame} {k} limit={52} label={title} />
+									<span class="view-expand"><Maximize size={12} /></span>
 								</span>
+								<span class="view-caption">{displayDirection(d.id)}</span>
 							</button>
 						{/if}
 					{/each}
@@ -963,6 +959,10 @@
 										{#if neighbors.behind}<span
 												>{t('itemPane.inFrontOf', { name: neighbors.behind })}</span
 											>{/if}
+										{#if neighbors.behind && neighbors.ahead}<span
+												class="layer-separator"
+												aria-hidden="true">·</span
+											>{/if}
 										{#if neighbors.ahead}<span
 												>{t('itemPane.behind', { name: neighbors.ahead })}</span
 											>{/if}
@@ -1205,9 +1205,6 @@
 		display: grid;
 		gap: 12px;
 	}
-	.item-workbench {
-		container-type: inline-size;
-	}
 	.item-meta {
 		display: flex;
 		flex-wrap: wrap;
@@ -1253,11 +1250,6 @@
 		background: var(--stage);
 		border-radius: var(--r-card);
 	}
-	@container (max-width: 460px) {
-		.item-views {
-			grid-template-columns: repeat(var(--compact-cols), minmax(0, 1fr));
-		}
-	}
 	.item-view {
 		display: grid;
 		grid-template-rows: 60px auto;
@@ -1266,14 +1258,40 @@
 		align-items: center;
 		gap: 2px;
 		min-width: 0;
-		padding: 8px 0 4px;
+		padding: 8px 4px 6px;
 		font-size: var(--fs-sm);
 		color: var(--text-2);
 	}
+	.view-art {
+		position: relative;
+		display: grid;
+		place-items: center;
+		width: 100%;
+		height: 60px;
+	}
+	.view-expand {
+		position: absolute;
+		inset-block-start: 0;
+		inset-inline-end: 0;
+		display: grid;
+		place-items: center;
+		width: 20px;
+		height: 20px;
+		color: var(--text-3);
+		opacity: 0.7;
+		transition:
+			opacity var(--dur),
+			color var(--dur);
+	}
+	.item-view:hover .view-expand,
+	.item-view:focus-visible .view-expand {
+		color: var(--text);
+		opacity: 1;
+	}
 	.view-caption {
-		display: flex;
-		align-items: center;
-		gap: 5px;
+		max-width: 100%;
+		overflow-wrap: anywhere;
+		text-align: center;
 	}
 	.hidden-row {
 		justify-content: start;
@@ -1380,6 +1398,9 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 8px;
+	}
+	.layer-separator {
+		color: var(--text-3);
 	}
 	.switch-row {
 		min-height: 44px;
