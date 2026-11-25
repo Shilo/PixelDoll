@@ -339,8 +339,8 @@ Call setActionLayering(true) to enable moving attacks when the ZIP contains prec
 
 play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
 doll.setDirection(dir) turns the active move (e.g. an aimed attack) while keeping its frame, time, loop position and completion; it emits no start or complete events. The current direction is a no-op; an unavailable direction or no active move throws before changing state.
-Invalid move/direction, equipment and outfit IDs throw before changing state. Unequip a non-body slot with null.
-Recolor with doll.setVariants({ material_id: "stored_variant" }).
+Invalid move/direction, equipment and outfit IDs throw before changing state. Equip an item with doll.equip(slot, itemId); null empties a non-body slot.
+Recolor with doll.setVariants({ "<material-id>": "<variant-id>" }).
 setVariants replaces all explicit color selections. Omitted keys or null restore material defaults; an empty-string selection uses source colors. Linked materials follow their target's selection.
 Palette swaps use exact source RGBs and stored material ramps in Canvas or WebGL.
 paletteMap returns only active source-RGB to target-RGB swaps; unselected colors are omitted.
