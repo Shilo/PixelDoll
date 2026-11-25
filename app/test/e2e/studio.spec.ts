@@ -12367,10 +12367,9 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await page.getByRole('button', { name: 'Customize Adventurer copy' }).first().click();
 	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
 	await page.getByRole('menuitem', { name: /^Details/ }).click();
-	await page
-		.getByRole('dialog', { name: 'Item' })
-		.getByRole('button', { name: /^Fix frames/ })
-		.click();
+	const itemPane = page.getByRole('dialog', { name: 'Item' });
+	await openItemSection(itemPane, 'Customize');
+	await itemPane.getByRole('button', { name: /^Fix frames/ }).click();
 	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 	await sheet.getByRole('button', { name: 'Restore original · 1' }).click();
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Restore', exact: true }).click();
