@@ -1,0 +1,121 @@
+=== Single signals (each used alone, no slot gate) ===
+signal                                       truth    pred  FP  FN  falseSafe
+1 slot: different slot                       material   14   7   0        50%
+1 slot: different slot                       strict     14   9   0        64%
+2 band: body-derived bands differ            material    9   3   1        33%
+2 band: body-derived bands differ            strict      9   4   0        44%
+3 silhouette: no standing overlap            material    9   2   0        22%
+3 silhouette: no standing overlap            strict      9   4   0        44%
+4 distance: min standing gap >= 2 px         material    6   0   1         0%
+4 distance: min standing gap >= 2 px         strict      6   1   0        17%
+4b bbox: min bbox gap >= 1 px                material    2   0   5         0%
+4b bbox: min bbox gap >= 1 px                strict      2   0   3         0%
+5 score: distance + bbox >= 4                material    5   0   2         0%
+5 score: distance + bbox >= 4                strict      5   0   0         0%
+
+=== Rule scores, pair level (n=15 pairs, 8 material-unsafe, 10 strict-unsafe) ===
+rule                                                 truth    pred  TP  FP  FN   prec    rec  falseSafe falseUnsafe
+A: different slot                                    material   14   7   7   0    50%   100%        50%          0%
+A: different slot                                    strict     14   5   9   0    36%   100%        64%          0%
+B: A + no standing overlap                           material    9   7   2   0    78%   100%        22%          0%
+B: A + no standing overlap                           strict      9   5   4   0    56%   100%        44%          0%
+C: B + standing gap >= 2 px                          material    6   6   0   1   100%    86%         0%         14%
+C: B + standing gap >= 2 px                          strict      6   5   1   0    83%   100%        17%          0%
+D: B + (distance + bbox gap) >= 4                    material    5   5   0   2   100%    71%         0%         29%
+D: B + (distance + bbox gap) >= 4                    strict      5   5   0   0   100%   100%         0%          0%
+
+=== Pair matrix (standing proxy = walk frame 0) ===
+pair                                 slot?  band          std ov   std d   bbox    truth             A  B  C  D
+vest_leather + cape_red              diff   torso/torso   16/42/163 0/0/0   0/0/0   material          Y  .  .  .
+vest_leather + hair_brown            diff   torso/head    0/0/0    2/1/2   1/0/1   strict-only       Y  Y  .  .
+vest_leather + helmet_steel          diff   torso/head    0/0/0    2/1/2   1/0/1   material          Y  Y  .  .
+vest_leather + hat_wizard            diff   torso/head    0/0/0    6/3.16/- 5/1/-1  clean             Y  Y  Y  Y
+vest_leather + sword_steel           diff   torso/torso   0/0/0    6.4/2.83/6.71 0/0/1   strict-only       Y  Y  Y  .
+cape_red + hair_brown                diff   torso/head    0/3/0    1/0/2   0/0/1   material          Y  .  .  .
+cape_red + helmet_steel              diff   torso/head    0/0/0    1/1/2   0/0/1   material          Y  Y  .  .
+cape_red + hat_wizard                diff   torso/head    0/0/0    5/3/-   4/1/-1  clean             Y  Y  Y  Y
+cape_red + sword_steel               diff   torso/torso   44/0/27  0/8/0   0/0/0   material          Y  .  .  .
+hair_brown + helmet_steel            diff   head/head     98/101/135 0/0/0   0/0/0   material          Y  .  .  .
+hair_brown + hat_wizard              diff   head/head     101/91/0 0/0/-   0/0/-1  material          Y  .  .  .
+hair_brown + sword_steel             diff   head/torso    0/0/0    19.31/19.8/19.7 17/13/17 clean             Y  Y  Y  Y
+helmet_steel + hat_wizard            SAME   head/head     96/102/0 0/0/-   0/0/-1  material          .  .  .  .
+helmet_steel + sword_steel           diff   head/torso    0/0/0    18.97/17.89/18.97 17/15/17 clean             Y  Y  Y  Y
+hat_wizard + sword_steel             diff   head/torso    0/0/0    22/21.54/- 21/16/-1 clean             Y  Y  Y  Y
+
+=== Margin sweep: different slot + no standing overlap + min standing gap >= m ===
+m px pred FS strict FS material falseUnsafe strict falseUnsafe material
+   0    9         4           2                  0                    0
+   1    9         4           2                  0                    0
+   2    6         1           0                  0                    1
+   3    5         0           0                  0                    2
+   4    3         0           0                  2                    4
+   5    3         0           0                  2                    4
+   6    3         0           0                  2                    4
+
+=== Per-direction check (45 pair-directions; 8 with no cells skipped) ===
+rule                                     truth    pred  FP  FN  falseSafe
+C: gap >= 2                              material   22   2  16         9%
+C: gap >= 2                              strict     22   4  18        18%
+D: distance + bbox >= 4                  material   15   1  17         7%
+D: distance + bbox >= 4                  strict     15   2  20        13%
+
+=== Proxy stability: each walk frame used as the standing cell ===
+frame C pred C FS strict C FS material D pred D FS strict D FS material
+    0      6           1             0      5           0             0
+    1      6           1             0      6           1             0
+    2      6           1             0      6           1             0
+    3      6           1             0      5           0             0
+    4      5           0             0      5           0             0
+    5      6           1             0      5           0             0
+    6      6           1             0      5           0             0
+    7      5           0             0      5           0             0
+
+=== What a false safe hides (rule C, strict truth) ===
+A: different slot:
+  vest_leather + cape_red              max 163 px, mean  60.7 px, 30/30 cells, max 100.0% of the lower item, union oracle {'south': 154, 'east': 44, 'north': 182}
+  vest_leather + hair_brown            max   3 px, mean   2.2 px, 4/30 cells, max 3.9% of the lower item, union oracle {'south': 8, 'east': 3, 'north': 1}
+  vest_leather + helmet_steel          max   5 px, mean   4.0 px, 5/30 cells, max 6.5% of the lower item, union oracle {'south': 21, 'east': 5, 'north': 5}
+  vest_leather + sword_steel           max   3 px, mean   2.0 px, 2/30 cells, max 3.3% of the lower item, union oracle {'south': 5, 'east': 1, 'north': 0}
+  cape_red + hair_brown                max  15 px, mean   5.0 px, 13/30 cells, max 4.2% of the lower item, union oracle {'south': 57, 'east': 6, 'north': 1}
+  cape_red + helmet_steel              max  22 px, mean   8.4 px, 10/30 cells, max 5.6% of the lower item, union oracle {'south': 74, 'east': 6, 'north': 5}
+  cape_red + sword_steel               max  84 px, mean  37.8 px, 26/30 cells, max 30.8% of the lower item, union oracle {'south': 218, 'east': 17, 'north': 48}
+  hair_brown + helmet_steel            max 135 px, mean 102.9 px, 30/30 cells, max 98.8% of the lower item, union oracle {'south': 237, 'east': 107, 'north': 155}
+  hair_brown + hat_wizard              max 102 px, mean  95.9 px, 16/16 cells, max 89.5% of the lower item, union oracle {'south': 165, 'east': 97, 'north': 0}
+B: A + no standing overlap:
+  vest_leather + hair_brown            max   3 px, mean   2.2 px, 4/30 cells, max 3.9% of the lower item, union oracle {'south': 8, 'east': 3, 'north': 1}
+  vest_leather + helmet_steel          max   5 px, mean   4.0 px, 5/30 cells, max 6.5% of the lower item, union oracle {'south': 21, 'east': 5, 'north': 5}
+  vest_leather + sword_steel           max   3 px, mean   2.0 px, 2/30 cells, max 3.3% of the lower item, union oracle {'south': 5, 'east': 1, 'north': 0}
+  cape_red + helmet_steel              max  22 px, mean   8.4 px, 10/30 cells, max 5.6% of the lower item, union oracle {'south': 74, 'east': 6, 'north': 5}
+C: B + standing gap >= 2 px:
+  vest_leather + sword_steel           max   3 px, mean   2.0 px, 2/30 cells, max 3.3% of the lower item, union oracle {'south': 5, 'east': 1, 'north': 0}
+
+=== Greedy clique groups (an item joins a group only if it is safe with every member) ===
+A: different slot:
+  batch: vest_leather, cape_red, hair_brown, helmet_steel, sword_steel
+  separate: hat_wizard
+  union-find would give: vest_leather, cape_red, hair_brown, helmet_steel, hat_wizard, sword_steel
+B: A + no standing overlap:
+  batch: vest_leather, hair_brown, sword_steel
+  batch: cape_red, helmet_steel
+  separate: hat_wizard
+  union-find would give: vest_leather, cape_red, hair_brown, helmet_steel, hat_wizard, sword_steel
+C: B + standing gap >= 2 px:
+  batch: vest_leather, hat_wizard, sword_steel
+  separate: cape_red
+  separate: hair_brown
+  separate: helmet_steel
+  union-find would give: vest_leather, cape_red, hair_brown, helmet_steel, hat_wizard, sword_steel
+D: B + (distance + bbox gap) >= 4:
+  batch: vest_leather, hat_wizard
+  separate: cape_red
+  batch: hair_brown, sword_steel
+  separate: helmet_steel
+  union-find would give: vest_leather, cape_red, hair_brown, helmet_steel, hat_wizard, sword_steel
+
+=== Group reasons under rule C ===
+  batch vest_leather, hat_wizard, sword_steel: different slots, no standing overlap, min standing gap 2.83 px across 3 checked pairs
+  separate cape_red: vest_leather: standing masks overlap; hair_brown: standing masks overlap; helmet_steel: standing gap 1 px; sword_steel: standing masks overlap
+  separate hair_brown: vest_leather: standing gap 1 px; cape_red: standing masks overlap; helmet_steel: standing masks overlap; hat_wizard: standing masks overlap
+  separate helmet_steel: vest_leather: standing gap 1 px; cape_red: standing gap 1 px; hair_brown: standing masks overlap; hat_wizard: same slot (head)
+
+wrote rules_result.json
