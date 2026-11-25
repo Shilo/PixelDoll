@@ -1256,7 +1256,7 @@ touchTest(
 		await facing.selectOption('east');
 		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
 		await expect(canvas).toHaveAttribute('data-facing', 'east');
-		await expect(play).toBeDisabled();
+		await expect(play).toBeEnabled();
 		await expect(auto).toHaveAttribute('aria-pressed', 'true');
 		await right.tap();
 		await expect(seat).toHaveText('x 1, y 0');
@@ -1266,6 +1266,11 @@ touchTest(
 		await expect(canvas).toHaveAttribute('data-facing', 'east');
 		await expect(seat).toHaveText('x 1, y 0');
 		await expect(marker).toHaveAttribute('style', pausedMarker!);
+		await play.click();
+		await expect(marker).not.toHaveAttribute('style', pausedMarker!);
+		await expect(canvas).toHaveAttribute('data-facing', 'east');
+		await pausePreview.click();
+		await expect(play).toBeEnabled();
 		await adjustSeat.click();
 		await expect(left).toBeHidden();
 		await expect(seat).toHaveText('x 0, y 0');
@@ -1306,6 +1311,8 @@ touchTest(
 		await riderPose.click();
 		await page.getByRole('menuitemradio', { name: 'Walk', exact: true }).click();
 		await expect(seat).toHaveText('x 1, y 0');
+		await play.click();
+		await expect(pausePreview).toBeEnabled();
 		await mountMenu.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await expect(play).toBeEnabled();
 		await expect(adjustSeat).toBeFocused();

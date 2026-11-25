@@ -104,10 +104,15 @@
 		rider && presentation ? mountPlacement(rider.project, facing, presentation, grounding) : null
 	);
 	const frame = $derived(rider ? bakedFrame(rider.project.manifest) : null);
-	type Draft = { id: string; before: MountSeatOffsets; offsets: MountSeatOffsets };
+	type Draft = {
+		id: string;
+		before: MountSeatOffsets;
+		offsets: MountSeatOffsets;
+		playing: boolean;
+	};
 	let draft = $state.raw<Draft | null>(null);
 	const editing = $derived(editable && draft?.id === doc.id ? draft : null);
-	const previewPlaying = $derived(playing && !editing);
+	const previewPlaying = $derived(editing?.playing ?? playing);
 	$effect.pre(() => {
 		if (draft && !editing) draft = null;
 	});
@@ -155,7 +160,8 @@
 			before: Object.fromEntries(
 				DIRECTIONS.map((dir) => [dir, mountSeatOffset(authored?.rig, dir)])
 			),
-			offsets: {}
+			offsets: {},
+			playing: false
 		};
 		await tick();
 		nudgeControls?.querySelector<HTMLButtonElement>('[data-nudge="left"]')?.focus();
@@ -429,8 +435,10 @@
 	class:editing={!!editing}
 	type="button"
 	aria-label={t(previewPlaying ? 'settings.mountPreviewPause' : 'settings.mountPreviewPlay')}
-	disabled={!!editing}
-	onclick={() => (playing = !playing)}
+	onclick={() => {
+		if (editing) draft = { ...editing, playing: !editing.playing };
+		else playing = !playing;
+	}}
 >
 	<canvas bind:this={canvas} aria-hidden="true"></canvas>
 	{#if editing}
@@ -577,10 +585,7 @@
 		border: 1px solid var(--bu-line);
 		border-radius: var(--r-ctl);
 	}
-	.mount-preview:disabled {
-		cursor: default;
-	}
-	.mount-preview:not(:disabled):hover {
+	.mount-preview:hover {
 		border-color: var(--bu-border);
 	}
 	@media (max-height: 700px) {
