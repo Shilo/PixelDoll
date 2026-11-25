@@ -140,6 +140,7 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	const hideInDemo = page.getByRole('switch', {
 		name: /^Hide shared items in Adventurer's wardrobe/
 	});
+	const library = page.getByRole('complementary', { name: 'Your characters' });
 	const settings = page.getByRole('button', { name: /^Wardrobe visibility/ });
 	const openCharacterVisibility = async () => {
 		await page.getByRole('button', { name: 'More options', exact: true }).click();

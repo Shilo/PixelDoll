@@ -297,8 +297,8 @@ test('character list thumbnails stay left-aligned and sizes fit', async ({ page 
 				expect(geometry.inset).toBeCloseTo(geometry.expected, 0);
 			}
 			const name = rows.first().locator('strong');
-			const newLabel = rows.last().locator('span').last();
-			const alignedLeft = (await newLabel.boundingBox())!.x;
+			// The New character action lives in the header now, so the name column is checked against its own facts.
+			const alignedLeft = (await rows.first().locator('.character-sizes').boundingBox())!.x;
 			expect((await name.boundingBox())!.x).toBeCloseTo(alignedLeft, 0);
 			const longNameLeft = await name.evaluate((node) => {
 				const longName = document.createElement('span');
