@@ -726,7 +726,7 @@ test.describe('character actions on a touch screen', () => {
 	});
 });
 
-test('both New character entry points offer separate import sources on desktop and phone', async ({
+test('the New character header button offers separate import sources on desktop and phone', async ({
 	page
 }) => {
 	await page.addInitScript(() => localStorage.setItem('pixeldoll.welcomed', '1'));
@@ -736,48 +736,52 @@ test('both New character entry points offer separate import sources on desktop a
 		const more = page.getByRole('button', { name: 'More options', exact: true });
 		await expect(more).toHaveAttribute('title', 'More options');
 		await expect(more.locator('svg')).toHaveCount(1);
-		const library = page.getByRole('complementary', { name: 'Your characters' });
-		const add = library.locator('.new-character-row');
-		await expect(add).toBeVisible();
-		const entry =
-			width === 1440
-				? page.locator('.experience-header .selection-create')
-				: library.locator('.cast-action');
-		for (const trigger of [entry, add]) {
-			await expect(trigger.locator(':scope > span').last()).toHaveText(/\.\.\.$/);
-			await expect(trigger.locator('svg[data-surface-chevron]')).toBeVisible();
-			await trigger.click();
-			const menu = page.getByRole('menu', { name: 'New character', exact: true });
-			await expect(
-				menu.locator('[role="menuitem"] > svg[data-surface-chevron][aria-hidden="true"]')
-			).toHaveCount(3);
-			await expect(menu.getByRole('menuitem')).toHaveText([
-				'Create from scratch...',
-				'Import from device...',
-				'Import from PixelLab...'
-			]);
-			await menu.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
-			await expect(
-				page.getByRole('dialog', { name: 'Import from device', exact: true })
-			).toBeVisible();
-			await expect(page.getByRole('tablist', { name: 'Import source' })).toHaveCount(0);
-			await page
-				.getByRole('dialog', { name: 'Import from device', exact: true })
-				.getByRole('button', { name: 'Close', exact: true })
-				.click();
-			await trigger.click();
-			await menu.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
-			await expect(
-				page.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
-			).toBeVisible();
-			await expect(
-				page.getByLabel('Direct import (connection optional)', { exact: true })
-			).toBeVisible();
-			await page
-				.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
-				.getByRole('button', { name: 'Close', exact: true })
-				.click();
+		const create = page.getByRole('button', { name: 'New character', exact: true });
+		await expect(create).toHaveCount(1);
+		const trigger = page
+			.locator('.experience-header')
+			.getByRole('button', { name: 'New character', exact: true });
+		const label = trigger.getByText('New character...', { exact: true });
+		const chevron = trigger.locator('svg[data-surface-chevron]');
+		if (width === 1440) {
+			await expect(label).toBeVisible();
+			await expect(chevron).toBeVisible();
+		} else {
+			await expect(label).toBeHidden();
+			await expect(chevron).toBeHidden();
+			await expect(trigger.locator('svg:visible')).toHaveCount(1);
 		}
+		await trigger.click();
+		const menu = page.getByRole('menu', { name: 'New character', exact: true });
+		await expect(
+			menu.locator('[role="menuitem"] > svg[data-surface-chevron][aria-hidden="true"]')
+		).toHaveCount(3);
+		await expect(menu.getByRole('menuitem')).toHaveText([
+			'Create from scratch...',
+			'Import from device...',
+			'Import from PixelLab...'
+		]);
+		await menu.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+		await expect(
+			page.getByRole('dialog', { name: 'Import from device', exact: true })
+		).toBeVisible();
+		await expect(page.getByRole('tablist', { name: 'Import source' })).toHaveCount(0);
+		await page
+			.getByRole('dialog', { name: 'Import from device', exact: true })
+			.getByRole('button', { name: 'Close', exact: true })
+			.click();
+		await trigger.click();
+		await menu.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
+		await expect(
+			page.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
+		).toBeVisible();
+		await expect(
+			page.getByLabel('Direct import (connection optional)', { exact: true })
+		).toBeVisible();
+		await page
+			.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
+			.getByRole('button', { name: 'Close', exact: true })
+			.click();
 	}
 });
 

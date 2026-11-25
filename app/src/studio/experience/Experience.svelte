@@ -12,7 +12,6 @@
 	import { openSettings } from '../settingsNavigation.svelte.ts';
 	import CharacterActions from '../CharacterActions.svelte';
 	import CharacterName from '../CharacterName.svelte';
-	import NewCharacterButton from '../NewCharacterButton.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
@@ -891,21 +890,19 @@
 			</div>
 		{/if}
 		<aside class="cast-library" aria-label={t('experience.yourCharacters')}>
-			<div class="cast-search">
-				<ListSearch
-					flush
-					bind:value={search}
-					label={t('experience.searchCharacters')}
-					placeholder={t('experience.placeholderSearch')}
-					clearLabel={t('search.clear')}
-					summary={t('search.results', {
-						count: list.length + pending.length,
-						total: searchTotal
-					})}
-					shown={searchVisibility.visible}
-				/>
-				{#if g.sheet}<NewCharacterButton compact />{/if}
-			</div>
+			{#if searchVisibility.visible}<div class="cast-search">
+					<ListSearch
+						flush
+						bind:value={search}
+						label={t('experience.searchCharacters')}
+						placeholder={t('experience.placeholderSearch')}
+						clearLabel={t('search.clear')}
+						summary={t('search.results', {
+							count: list.length + pending.length,
+							total: searchTotal
+						})}
+					/>
+				</div>{/if}
 			<div class="character-rows" bind:this={rows}>
 				{#each pending as run (run.id)}
 					{@const spec = run.spec}
@@ -985,7 +982,6 @@
 						>
 					</CharacterActions>
 				{/each}
-				<NewCharacterButton row />
 			</div>
 			<button
 				class="bu-action customize-action"

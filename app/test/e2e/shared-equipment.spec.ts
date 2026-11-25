@@ -287,8 +287,10 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 
 	await page.setViewportSize({ width: 320, height: 568 });
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
-	const library = page.getByRole('complementary', { name: 'Your characters' });
-	await library.locator('.new-character-row').click();
+	await page
+		.locator('.experience-header')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
 	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	// The creator reaches Wardrobe visibility through its own More menu.

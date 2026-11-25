@@ -252,7 +252,7 @@ test('the Characters panel keeps its Customize button on the edge margin', async
 	}
 });
 
-test('character list thumbnails and New stay left-aligned and sizes fit', async ({ page }) => {
+test('character list thumbnails stay left-aligned and sizes fit', async ({ page }) => {
 	for (const [width, height] of [
 		[1440, 900],
 		[960, 800],
@@ -265,8 +265,8 @@ test('character list thumbnails and New stay left-aligned and sizes fit', async 
 				(value) => document.documentElement.setAttribute('data-theme', value),
 				theme
 			);
-			const rows = page.locator('.character-rows :is(.character-row, .new-character-row)');
-			await expect(rows).toHaveCount(2);
+			const rows = page.locator('.character-rows .character-row');
+			await expect(rows).toHaveCount(1);
 			const sizes = rows.first().locator('.character-sizes');
 			await expect(sizes.locator('span')).toHaveText([/^\d+×\d+ px body$/, '· 64×64 px frame']);
 			const overflow = await sizes.evaluate((node) => {

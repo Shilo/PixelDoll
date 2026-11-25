@@ -279,8 +279,20 @@
 		background: none;
 	}
 }
-.sheet-layout :is(.selection-import, .selection-create) {
+.phone-layout .experience-header .selection-create {
+	padding-inline: 0;
+}
+.phone-layout .selection-create :is(.new-character-label, svg[data-surface-chevron]) {
 	display: none;
+}
+.phone-layout.selection .screen-title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+@media (max-width: 400px) {
+	.selection :is(.brand, .brand-divider) {
+		display: none;
+	}
 }
 /* Wherever the character name would get too narrow, the optional actions move into More one at a time from left to
    right: Undo, Redo, Random look, Share, Export, and Full screen only as a last resort (Toolbar.svelte fitActions).
@@ -1106,23 +1118,7 @@
 }
 .cast-search {
 	display: flex;
-	gap: 8px;
 	flex: none;
-}
-.cast-search .bu-input {
-	flex: 1;
-	min-height: 44px;
-	font-size: 16px;
-}
-.cast-action {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 6px;
-	min-width: 44px;
-	min-height: 44px;
-	padding: 0 12px;
-	font-size: 14px;
 }
 .character-rows {
 	min-height: 0;
@@ -1208,18 +1204,6 @@
 	display: grid;
 	place-items: center;
 	flex-shrink: 0;
-}
-/* The library's final row looks like an unselected character row at about half its height (a full touch target): its
-   plus sits in the thumbnail column and its label in the name column. */
-.character-rows .new-character-row {
-	min-height: 44px;
-	padding-block: 4px;
-	font-size: 16px;
-	font-weight: 600;
-}
-.character-rows .new-character-icon {
-	width: 64px;
-	color: var(--bu-muted);
 }
 .character-row strong {
 	font-weight: 600;
