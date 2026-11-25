@@ -99,11 +99,13 @@
 	let {
 		missing = $bindable(null),
 		note = $bindable(''),
-		playbackHeight = 0
+		playbackHeight = 0,
+		stageRoom
 	}: {
 		missing: { clip: string; direction: DirectionName; items: Item[] } | null;
 		note?: string;
 		playbackHeight?: number;
+		stageRoom: number;
 	} = $props();
 	let host: HTMLDivElement,
 		canvas: HTMLCanvasElement,
@@ -123,6 +125,11 @@
 	const actions = new LiveActions();
 	// The last input that pressed the stage: touch shows thumb buttons, a mouse the icon bar.
 	let touchInput = $state(matchMedia('(pointer: coarse)').matches);
+	// Share the bottom edge with the live controls when there is room for readable text beside them.
+	const noteRoom = $derived(stageRoom - (touchInput ? 204 : 196));
+	const notesAboveControls = $derived(noteRoom < 80);
+	const touchControlsHeight =
+		MOTION.actions.stick.base + MOTION.actions.gap + MOTION.actions.buttons.jump.size;
 	// Mouse travel: a left press sets a floor destination; while right is held the cursor only aims.
 	let destination: Vector | null = null,
 		mouse = { left: false, right: false },
@@ -318,7 +325,9 @@
 	// Preview's latest fit, so input reads the shared zoom as it is now rather than as the last frame drew it.
 	let previewFit = 0;
 	let clock: ReturnType<typeof advancePlayback> | undefined;
-	const noticed = new Set<string>();
+	const reportedDiagnostics = new Set<string>();
+	let attackNote = $state(''),
+		attackNoteUntil = 0;
 	function release() {
 		endMove();
 	}
@@ -351,7 +360,9 @@
 		camera = { x: 0, y: 0 };
 		previous = undefined;
 		clock = undefined;
-		noticed.clear();
+		reportedDiagnostics.clear();
+		attackNote = '';
+		attackNoteUntil = 0;
 		note = '';
 		missing = null;
 		hasMoved = false;
@@ -361,20 +372,14 @@
 		void experience.mode;
 		untrack(reset);
 	});
-	/** Why an attack could not play, once per gap until the character changes. */
-	function attackWarning(failure: AttackFailure) {
-		const key =
-			failure.kind === 'no-attack' ? 'attack:none' : `attack:${failure.move}:${failure.direction}`;
-		if (noticed.has(key)) return;
+	function describeAttackGap(failure: AttackFailure) {
 		const moves = view.project?.manifest.rig.animations ?? [];
-		const text =
-			failure.kind === 'no-attack'
-				? t('liveViews.noAttack')
-				: t('liveViews.noAttackDirection', {
-						move: displayMove(failure.move, moves),
-						direction: failure.direction ? displayDirectionInSentence(failure.direction) : ''
-					});
-		if (toast(text, { tone: 'warning' })) noticed.add(key);
+		return failure.kind === 'no-attack'
+			? t('liveViews.noAttack')
+			: t('liveViews.noAttackDirection', {
+					move: displayMove(failure.move, moves),
+					direction: failure.direction ? displayDirectionInSentence(failure.direction) : ''
+				});
 	}
 	// Live views briefly name their movement controls, as in the approved prototype; moving or 6.5s dismisses it.
 	let hint = $state(false);
@@ -388,7 +393,9 @@
 	});
 	$effect(() => {
 		void doc.rev;
-		noticed.clear();
+		reportedDiagnostics.clear();
+		attackNote = '';
+		attackNoteUntil = 0;
 	});
 	// The top-down and side-scroller renderer stays out of the startup bundle until a live view first opens.
 	let scene: typeof import('./ground.ts') | undefined,
@@ -1240,6 +1247,10 @@
 						})
 					: null;
 			if (loco && a && !paused) {
+				if (attackNoteUntil && now >= attackNoteUntil) {
+					attackNote = '';
+					attackNoteUntil = 0;
+				}
 				const request = actions.step(dt);
 				if (request) {
 					const choice = resolveAttack(a, roles, request, {
@@ -1250,10 +1261,14 @@
 						'sequence' in choice
 							? `${choice.sequence.clip} ${choice.sequence.direction}`
 							: `missing ${choice.failure.kind === 'no-direction' ? (choice.failure.direction ?? '') : ''}`;
-					if ('sequence' in choice) actions.start(choice.sequence, choice.sector);
-					else {
+					if ('sequence' in choice) {
+						actions.start(choice.sequence, choice.sector);
+						attackNote = '';
+						attackNoteUntil = 0;
+					} else {
 						actions.refused();
-						attackWarning(choice.failure);
+						attackNote = describeAttackGap(choice.failure);
+						attackNoteUntil = now + 4000;
 					}
 				}
 				// A held attack turns with its aim mid-swing and carries on from the same frame. An aim it has no art for,
@@ -1536,21 +1551,17 @@
 					hasMoved = true;
 					hint = false;
 				}
-				if (live && hasMoved && !ui.sheet) {
-					const issues: [string, string][] = [];
-					for (const shown of [p, result])
-						if (shown?.issueKey && shown.notice && !noticed.has(shown.issueKey))
-							issues.push([
-								shown.issueKey,
-								displayPresentationNotice(shown.notice, view.project?.manifest.rig.animations)
-							]);
-					// An unresolved error can defer this batch; only consume warnings the toast accepts.
-					if (
-						issues.length &&
-						toast([...new Set(issues.map(([, text]) => text))].join(' '), { tone: 'warning' })
-					)
-						for (const [id] of issues) noticed.add(id);
-				}
+				// Missing artwork belongs in the stage notes. Escalate malformed data or input once a toast can show it.
+				if (
+					live &&
+					hasMoved &&
+					!ui.sheet &&
+					p.notice?.kind === 'diagnostic' &&
+					p.issueKey &&
+					!reportedDiagnostics.has(p.issueKey) &&
+					toast(p.notice.text, { tone: 'warning', report: true })
+				)
+					reportedDiagnostics.add(p.issueKey);
 				if (img && result) {
 					const frame = result.frame,
 						point = s
@@ -1870,14 +1881,15 @@
 </div>
 <!-- One bottom-anchored stack: the movement hint always sits above the fallback note, whatever the note wraps to.
      In Preview it also clears the playback bar, whose top is --playback-top. -->
-{#if mountIssue || hint || (experience.mode !== 'preview' && note) || loadingNote || rendererWarning}<div
+{#if mountIssue || hint || experience.mode !== 'preview' || loadingNote || rendererWarning}<div
 		class="world-notes"
 		style:bottom={experience.mode === 'preview' && playbackHeight
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
-			: undefined}
+			: experience.mode !== 'preview' && notesAboveControls
+				? `calc(var(--stage-bottom) + ${touchInput ? touchControlsHeight + 20 : 68}px)`
+				: undefined}
 		style:max-width={experience.mode !== 'preview'
-			? // Stop short of the game controls at the stage's lower right (GameControls.svelte).
-				`min(420px, calc(100vw - var(--stage-left) - var(--stage-right) - 2 * var(--edge) - ${touchInput ? 204 : 196}px))`
+			? `${Math.min(420, notesAboveControls ? stageRoom : noteRoom)}px`
 			: undefined}
 	>
 		{#if mountIssue}<p class="world-hint" role="status">{mountIssue}</p>{/if}
@@ -1894,7 +1906,14 @@
 				role="status"
 			>
 				{t(rendererWarning)}
-			</p>{/if}{#if experience.mode !== 'preview' && note}<p class="world-coverage">{note}</p>{/if}
+			</p>{/if}{#if experience.mode !== 'preview'}
+			<p class={attackNote ? 'world-coverage world-live-note' : 'sr'} role="status">
+				{attackNote}
+			</p>
+			{#if note}<p class={['world-coverage', { 'world-live-note': !rendererWarning }]}>
+					{note}
+				</p>{/if}
+		{/if}
 	</div>{/if}
 <JoystickView
 	class="world-stick"

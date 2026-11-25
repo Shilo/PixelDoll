@@ -142,7 +142,7 @@
 				message('directionsSheet.directionsWereSavedReloadToRefreshThe2', {
 					reason: errorMessage(failure)
 				}),
-				{ tone: 'warning' }
+				{ tone: 'warning', error: failure }
 			);
 		} finally {
 			ui.sheet = null;

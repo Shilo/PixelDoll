@@ -803,7 +803,12 @@
 		</aside>
 	{:else}
 		<div class="experience-stage">
-			<WorldStage playbackHeight={previewHeight} bind:missing bind:note={stageNote} />
+			<WorldStage
+				playbackHeight={previewHeight}
+				stageRoom={g.stage.r - g.stage.l - 2 * g.edge}
+				bind:missing
+				bind:note={stageNote}
+			/>
 		</div>
 		{#if experience.zoomFits.studio && experience.sceneZoom !== null}
 			<div class="scene-zoom-controls">

@@ -532,42 +532,60 @@ test('PWA fullscreen launch hides an unusable toggle while standalone permits it
 	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeEnabled();
 });
 
-test('movement warnings are combined and remain eligible while an error takes priority', async ({
+test('live coverage stays in the world notes while movement diagnostics respect error priority', async ({
 	page
 }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	await page.goto(dev);
 	await expect(page.locator('.customize-action')).toBeEnabled();
 	await page.locator('.customize-action').click();
-	await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		const manifest = s.store.project.manifest;
-		manifest.rig.directions.push({ id: 'notification-fixture' });
 		const head = manifest.items.find((item: { slot: string }) => item.slot === 'head');
 		head.coverage = [];
 		s.doc.items[head.slot] = head.id;
 		s.doc.rev++;
-		s.toast('Could not save your work.', { tone: 'danger' });
 	});
 	const notice = page.locator('.toast');
-	await world(page).focus();
-	await page.keyboard.down('ArrowRight');
-	try {
-		await expect
-			.poll(() => world(page).evaluate((el) => Number(el.dataset.position!.split(',')[0])))
-			.toBeGreaterThan(0);
-		await expect(notice.getByRole('alert')).toContainText('Could not save your work.');
-	} finally {
-		await page.keyboard.up('ArrowRight');
+	const coverageNote = page
+		.locator('.world-live-note')
+		.filter({ hasText: /1 equipped item hidden/ });
+	const desktop = page.viewportSize()!;
+	for (const mode of ['Side-scroller', 'Top-down']) {
+		await page.setViewportSize(mode === 'Side-scroller' ? { width: 568, height: 320 } : desktop);
+		await modes(page).getByRole('button', { name: mode, exact: true }).click();
+		await world(page).focus();
+		await page.keyboard.down('ArrowRight');
+		try {
+			await expect
+				.poll(() => world(page).evaluate((el) => Number(el.dataset.position!.split(',')[0])))
+				.toBeGreaterThan(0);
+			await expect(coverageNote).toHaveText(/1 equipped item hidden/);
+			await expect(coverageNote).toBeVisible();
+			await expect(notice).toHaveCount(0);
+		} finally {
+			await page.keyboard.up('ArrowRight');
+		}
 	}
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.store.project.manifest.rig.directions.push({ id: 'notification-fixture' });
+		s.doc.rev++;
+		s.toast('Could not save your work.', { tone: 'danger' });
+	});
+	await expect(notice.getByRole('alert')).toContainText('Could not save your work.');
 	// The demo has no Idle or stored rest image, so stopping uses a still pose.
 	await expect(world(page)).toHaveAttribute('data-presentation', 'still');
 	await notice.getByRole('button', { name: 'Dismiss notification' }).click();
 	await expect(notice.locator('[data-tone]')).toHaveAttribute('data-tone', 'warning');
 	await expect(notice).toContainText('Unknown direction: notification-fixture');
-	await expect(notice).toContainText('1 item hidden');
+	await expect(
+		notice.getByRole('button', { name: 'Report this problem', exact: true })
+	).toBeVisible();
+	await expect(notice).not.toContainText('item hidden');
 	await notice.getByRole('button', { name: 'Dismiss notification' }).click();
 	await page.evaluate(
 		() =>
@@ -4410,6 +4428,8 @@ test.describe('live views actions', () => {
 		);
 		// Above and west of the body: no south art within 90°, and never the walk's east facing.
 		await expect(host).toHaveAttribute('data-attack', /^missing (west|north-west)$/);
+		await expect(page.locator('.world-notes')).toContainText('so it can’t attack that way.');
+		await expect(page.locator('.toast')).toHaveCount(0);
 		// Chorded buttons: walking to a left-press point continues while the right button aims and attacks.
 		await page.mouse.move(ax + 300, ay - 20);
 		await page.mouse.down();
