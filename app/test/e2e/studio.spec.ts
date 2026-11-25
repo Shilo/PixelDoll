@@ -30,6 +30,121 @@ test.beforeEach(async ({ context }) => {
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });
 
+test('Audio settings stay silent until enabled and preserve independent levels across reload', async ({
+	page,
+	baseURL
+}) => {
+	await page.addInitScript(() => {
+		const calls = { opened: 0, loops: 0, failed: false };
+		Object.defineProperty(window, 'audioTestCalls', { value: calls });
+		Object.defineProperty(window, 'AudioContext', {
+			value: class extends EventTarget {
+				state = 'suspended';
+				currentTime = 0;
+				constructor() {
+					super();
+					calls.opened++;
+				}
+				async resume() {
+					this.state = 'running';
+					this.dispatchEvent(new Event('statechange'));
+				}
+				async close() {
+					this.state = 'closed';
+				}
+				createGain() {
+					const noop = () => {};
+					return {
+						connect: noop,
+						disconnect: noop,
+						gain: {
+							value: 0,
+							setTargetAtTime: noop,
+							setValueAtTime: noop,
+							linearRampToValueAtTime: noop
+						}
+					};
+				}
+				createBuffer(_channels: number, frames: number, rate: number) {
+					return { duration: frames / rate, getChannelData: () => new Float32Array(frames) };
+				}
+				createBufferSource() {
+					return {
+						loop: false,
+						connect() {},
+						disconnect() {},
+						start() {
+							if (!this.loop && document.body.hasAttribute('data-fail-audio')) {
+								calls.failed = true;
+								throw new DOMException('Synthetic audio start failure', 'NotSupportedError');
+							}
+							if (this.loop) calls.loops++;
+						},
+						stop() {
+							if (this.loop) calls.loops--;
+						}
+					};
+				}
+			}
+		});
+	});
+	const calls = () => page.evaluate(() => Reflect.get(window, 'audioTestCalls'));
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	const mute = settings.getByRole('switch', { name: 'Mute all audio', exact: true });
+	const music = settings.getByRole('slider', { name: 'Music', exact: true });
+	const effects = settings.getByRole('slider', { name: 'Sound effects', exact: true });
+	const openAudio = async () => {
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+		await settings.getByRole('searchbox', { name: 'Search settings' }).fill('sound effects');
+		await settings.getByRole('button', { name: /Sound effects/ }).click();
+		await expect(effects).toBeFocused();
+	};
+	await openStudio(page, baseURL!);
+	await openAudio();
+	await expect(mute).toBeChecked();
+	await effects.press('End');
+	await expect(effects).toHaveValue('100');
+	await expect(music).toHaveValue('20');
+	await mute.evaluate((input: HTMLInputElement) => {
+		input.checked = false;
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+	});
+	await expect(mute).not.toBeChecked();
+	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
+	await effects.press('ArrowLeft');
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
+	await page.evaluate(() => {
+		Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+		document.dispatchEvent(new Event('visibilitychange'));
+	});
+	expect(await calls()).toMatchObject({ opened: 1, loops: 0 });
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.reload();
+	await expect(page.locator('.customize-action, .experience-stage')).toBeVisible();
+	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
+	await enterStudio(page);
+	await openAudio();
+	await expect(mute).not.toBeChecked();
+	await expect(effects).toHaveValue('99');
+	await expect(music).toHaveValue('20');
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
+	await mute.check();
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0 });
+	await mute.uncheck();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(settings).toBeHidden();
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	const tile = page.locator('[data-tile="hat_wizard"]');
+	await tile.focus();
+	await page.evaluate(() => document.body.setAttribute('data-fail-audio', ''));
+	await tile.press('Enter');
+	await expect(tile).toHaveAttribute('aria-pressed', 'true');
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0, failed: true });
+	expect(errors).toEqual([]);
+});
+
 async function reviewSelectedDraft(page: Page) {
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',

@@ -151,6 +151,13 @@
 		"mountPreviewPause": "Mettre en pause l’aperçu de la monture",
 		"mount": "Monture",
 		"mountNotSaved": "Le réglage de la monture a changé, mais ce navigateur n’a pas pu l’enregistrer.",
+		"audio": {
+			"title": "Audio",
+			"mute": "Couper tous les sons",
+			"music": "Musique",
+			"effects": "Effets sonores",
+			"notSaved": "Le son a été modifié, mais le navigateur n’a pas pu enregistrer le changement."
+		},
 		"reset": {
 			"allAction": "Réinitialiser tous les paramètres",
 			"pageAction": "Réinitialiser cette page",

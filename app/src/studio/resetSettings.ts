@@ -1,4 +1,5 @@
 import type { WhisperKey } from 'svelte-whisper';
+import { resetAudio } from './audio.svelte.ts';
 import { selectLanguage } from '../lib/i18n.ts';
 import { defaultExportSettings, resetExportSettings } from '../lib/store/export-settings.ts';
 import { setDeveloperMode } from './developerMode.svelte.ts';
@@ -25,6 +26,7 @@ import {
 
 const resettableSections = [
 	'general',
+	'audio',
 	'wardrobe',
 	'mount',
 	'live',
@@ -58,6 +60,8 @@ export async function resetSettings(scope: ResetScope): Promise<WhisperKey[]> {
 	}
 	if ((scope === 'all' || scope === 'general') && !setTheme('dark'))
 		failures.push('settings.theme');
+	if ((scope === 'all' || scope === 'audio') && !resetAudio())
+		failures.push('settings.audio.title');
 	if (scope === 'all' || scope === 'wardrobe') {
 		const refresh = demoItemsShown() && store.project && !isDemo();
 		const shared = setSharedItemsHiddenForAll(false);

@@ -8,6 +8,10 @@ The More menu starts with one PixelLab row: Connect PixelLab, Reconnect PixelLab
 
 The PixelLab row is followed by character actions (demo copy and phone shortcuts), Settings, a Language recovery shortcut,
 contextual wardrobe visibility, library backup, Activity, and app actions (installation, updates, and help).
+Audio is off until enabled in Settings > Audio. The mute switch keeps the Music and Sound effects levels, and each level
+can also be set to zero independently. The app remembers these choices in the browser and only plays after a gesture in
+the active tab. The two world scores and all interface cues are [original synthesized audio](audio.md).
+
 The version button lives in Settings and opens a popover to view source code, open the displayed commit, or copy the
 version details for support. The row uses `-pre` for prereleases, no suffix for stable builds, and `-dev` for the
 Vite dev server regardless of release status. The dev commit is the checked-out revision and does not include local edits. The PixelLab affiliation

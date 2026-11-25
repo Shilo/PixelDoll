@@ -75,6 +75,7 @@ export { default as Scaling } from '@lucide/svelte/icons/scaling';
 export { default as ListPlus } from '@lucide/svelte/icons/list-plus';
 export { default as ListMinus } from '@lucide/svelte/icons/list-minus';
 export { default as Settings2 } from '@lucide/svelte/icons/settings-2';
+export { default as Volume2 } from '@lucide/svelte/icons/volume-2';
 export { default as Shirt } from '@lucide/svelte/icons/shirt';
 export { default as Gamepad2 } from '@lucide/svelte/icons/gamepad-2';
 export { default as ArrowBigUp } from '@lucide/svelte/icons/arrow-big-up';

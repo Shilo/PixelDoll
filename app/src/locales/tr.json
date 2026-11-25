@@ -151,6 +151,13 @@
 		"mountPreviewPause": "Binek önizlemesini duraklat",
 		"mount": "Binek",
 		"mountNotSaved": "Binek ayarı değişti ancak bu tarayıcı kaydedemedi.",
+		"audio": {
+			"title": "Ses",
+			"mute": "Tüm sesleri kapat",
+			"music": "Müzik",
+			"effects": "Ses efektleri",
+			"notSaved": "Ses ayarı değişti ancak tarayıcı bu değişikliği kaydedemedi."
+		},
 		"reset": {
 			"allAction": "Tüm ayarları sıfırla",
 			"pageAction": "Bu sayfayı sıfırla",

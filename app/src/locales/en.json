@@ -151,6 +151,13 @@
 		"mountPreviewPause": "Pause mount preview",
 		"mount": "Mount",
 		"mountNotSaved": "Mount setting changed, but this browser could not save it.",
+		"audio": {
+			"title": "Audio",
+			"mute": "Mute all audio",
+			"music": "Music",
+			"effects": "Sound effects",
+			"notSaved": "Audio changed, but this browser could not save it."
+		},
 		"reset": {
 			"allAction": "Reset all settings",
 			"pageAction": "Reset this page",

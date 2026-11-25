@@ -145,6 +145,13 @@
 		"mountPreviewPause": "Jeda pratinjau tunggangan",
 		"mount": "Tunggangan",
 		"mountNotSaved": "Pengaturan tunggangan berubah, tetapi browser ini tidak dapat menyimpannya.",
+		"audio": {
+			"title": "Audio",
+			"mute": "Bisukan semua audio",
+			"music": "Musik",
+			"effects": "Efek suara",
+			"notSaved": "Audio diubah, tetapi browser tidak dapat menyimpan perubahan."
+		},
 		"reset": {
 			"allAction": "Atur ulang semua pengaturan",
 			"pageAction": "Atur ulang halaman ini",

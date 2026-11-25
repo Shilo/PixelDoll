@@ -4,6 +4,7 @@ import type { CreationSection } from './creationSettings.ts';
 
 export type SettingsSection =
 	| 'general'
+	| 'audio'
 	| 'wardrobe'
 	| 'mount'
 	| 'live'
@@ -17,6 +18,7 @@ export type SettingsSection =
 
 export const settingsLabels = {
 	general: 'settings.appearance',
+	audio: 'settings.audio.title',
 	wardrobe: 'experience.tabWardrobe',
 	mount: 'settings.mount',
 	live: 'liveViews.title',

@@ -2,6 +2,7 @@
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
 import type { Snippet } from 'svelte';
+import { playAudioCue } from './audio.svelte.ts';
 import {
 	errorMessage,
 	errorText,
@@ -148,6 +149,7 @@ import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import { stateAttempts } from './stateRecovery.ts';
 import {
 	activityStateMessage,
+	isGenerationCancellation,
 	GENERATION_PHASES,
 	GENERATION_STOPPED,
 	NO_USABLE_FRAMES
@@ -2401,6 +2403,7 @@ export function wear(id: string, quiet = false): Message | undefined {
 	const it = itemById(id);
 	if (!it) return;
 	const on = doc.items[it.slot] === id && !doc.drafts[it.slot];
+	const hadDraft = !!doc.drafts[it.slot];
 	delete doc.drafts[it.slot]; // a saved item put on or taken off replaces the draft worn in its slot
 	ui.selected = id;
 	// Put on while Preview shows a move it has no frames for: it would be worn and invisible, so Preview shows one that has
@@ -2416,27 +2419,36 @@ export function wear(id: string, quiet = false): Message | undefined {
 			if (facing) ui.dir = facing.id;
 		}
 	}
-	if (doc.items[it.slot] !== (on ? null : id))
-		return commit(
-			message(on ? 'history.takeOffItem' : 'history.wear', { name: it.name }),
-			() => {
-				doc.items[it.slot] = on ? null : id;
-			},
-			{ quiet }
-		);
+	const changed = doc.items[it.slot] !== (on ? null : id);
+	const note = changed
+		? commit(
+				message(on ? 'history.takeOffItem' : 'history.wear', { name: it.name }),
+				() => {
+					doc.items[it.slot] = on ? null : id;
+				},
+				{ quiet }
+			)
+		: undefined;
+	if (!quiet && (changed || hadDraft)) playAudioCue(on ? 'unequip' : 'equip');
+	return note;
 }
 export function clearSlots(slots: string[]) {
+	const hadDraft = slots.some((s) => doc.drafts[s]);
 	for (const s of slots) delete doc.drafts[s];
-	if (!slots.some((s) => doc.items[s])) return;
-	commit(message('history.takeOff'), () => {
-		for (const s of slots) doc.items[s] = null;
-	});
+	const hadItem = slots.some((s) => doc.items[s]);
+	if (hadItem)
+		commit(message('history.takeOff'), () => {
+			for (const s of slots) doc.items[s] = null;
+		});
+	if (hadItem || hadDraft) playAudioCue('unequip');
 }
 export function setVariant(matId: string, name: string | null) {
+	const changed = (doc.variants[matId] ?? null) !== name;
 	commit(message('history.changeColor'), () => {
 		if (name == null) delete doc.variants[matId];
 		else doc.variants[matId] = name;
 	});
+	if (changed && store.project) playAudioCue('recolor');
 }
 const PREVIEW_MS = 33;
 let previewTimer: ReturnType<typeof setTimeout> | undefined,
@@ -2458,9 +2470,12 @@ export function clearVariantPreview() {
 	doc.colorPreview = null;
 }
 export function resetColors(matIds?: string[], label = message('history.resetColors')) {
+	const ids = matIds ?? Object.keys(doc.variants);
+	const changed = ids.some((id) => Object.hasOwn(doc.variants, id));
 	commit(label, () => {
-		for (const k of matIds ?? Object.keys(doc.variants)) delete doc.variants[k];
+		for (const k of ids) delete doc.variants[k];
 	});
+	if (changed && store.project) playAudioCue('recolor');
 }
 /** Items a category's Random can switch to: every item of the category except the one worn now. */
 export function groupRandomChoices(groupId: string) {
@@ -2479,6 +2494,7 @@ export function randomizeGroup(groupId: string) {
 		choices = groupRandomChoices(groupId);
 	if (!m || !choices.length) return;
 	const it = choices[Math.floor(Math.random() * choices.length)];
+	const wearing = doc.items[it.slot] !== it.id;
 	const variants = randomVariants(
 		m,
 		m.materials.filter((x) => x.owner === it.id),
@@ -2486,11 +2502,14 @@ export function randomizeGroup(groupId: string) {
 		1,
 		doc.variants
 	);
+	const recolored = Object.entries(variants).some(([id, color]) => doc.variants[id] !== color);
 	commit(message('history.randomItem', { name: slotLabel(m, groupId).toLowerCase() }), () => {
 		doc.items[it.slot] = it.id;
 		Object.assign(doc.variants, variants);
 	});
 	ui.selected = it.id;
+	if (wearing) playAudioCue('equip');
+	else if (recolored) playAudioCue('recolor');
 }
 /** Colors-only Random for the given item ids (the character or one worn item). Never changes what is worn. */
 export function randomizeColors(owners: string[], label: Message) {
@@ -2503,7 +2522,9 @@ export function randomizeColors(owners: string[], label: Message) {
 		1,
 		doc.variants
 	);
+	const changed = Object.entries(variants).some(([id, color]) => doc.variants[id] !== color);
 	commit(label, () => Object.assign(doc.variants, variants));
+	if (changed) playAudioCue('recolor');
 }
 /** The open character's name as people see it (the demo without its "(demo)" suffix). */
 export function characterName() {
@@ -3941,9 +3962,9 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 	}
 	if (replaced && doc.drafts[replaced.draft.spec.slot] === replaced.draft.spec.id)
 		delete doc.drafts[replaced.draft.spec.slot];
-	void runGen(g, ctx);
+	void runGen(g, ctx, true);
 }
-async function runGen(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
+async function runGen(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>, announce = false) {
 	const id = g.draft.spec.id;
 	if (
 		runningGens.has(id) ||
@@ -3957,7 +3978,7 @@ async function runGen(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
 	const controller = new AbortController();
 	generationControllers.set(id, controller);
 	try {
-		const pending = runGenOnce(g, ctx, controller.signal);
+		const pending = runGenOnce(g, ctx, controller.signal, announce);
 		generationRuns.set(id, pending);
 		await pending;
 	} finally {
@@ -3968,8 +3989,9 @@ async function runGen(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
 }
 async function runGenOnce(
 	g: Gen,
-	ctx?: Awaited<ReturnType<typeof loadProject>>,
-	signal?: AbortSignal
+	ctx: Awaited<ReturnType<typeof loadProject>> | undefined,
+	signal: AbortSignal,
+	announce: boolean
 ) {
 	g.phase = 'running';
 	g.error = undefined;
@@ -4007,6 +4029,10 @@ async function runGenOnce(
 	}
 	takeOffGone();
 	await saveGens();
+	if (announce && !signal.aborted && gens.includes(g)) {
+		if (g.phase === 'review') playAudioCue('item');
+		else if (!isGenerationCancellation(g.error)) playAudioCue('failure');
+	}
 	if (g.phase === 'failed')
 		toast(message('state.nameCouldNotFinishNoPaidRetry', { name: g.input.name }), {
 			tone: 'danger',
@@ -4148,9 +4174,11 @@ export function wearDraft(id: string) {
 	const g = gens.find((x) => x.draft.spec.id === id);
 	if (!g || g.draft.rigId !== doc.id) return;
 	const slot = g.draft.spec.slot;
-	if (doc.drafts[slot] === id) delete doc.drafts[slot];
+	const on = doc.drafts[slot] === id;
+	if (on) delete doc.drafts[slot];
 	else doc.drafts[slot] = id;
 	ui.selected = `gen:${id}`;
+	playAudioCue(on ? 'unequip' : 'equip');
 }
 /** The project plus each worn draft's current preview item; the saved manifest is never changed. A running draft without a
  *  preview yet is a layerless stand-in whose target cells are all pending, so the stage says it is loading. */
@@ -4398,7 +4426,7 @@ export function rerollGen(g: Gen, calls: number[], reviewedGens: number, minimum
 			} finally {
 				settling.delete(id);
 			}
-			if (g.phase === 'running') void runGen(g);
+			if (g.phase === 'running') void runGen(g, undefined, true);
 		})().catch((error: unknown) => toast(errorMessage(error), { tone: 'danger', error }));
 	}, minimumTier);
 }
@@ -4920,6 +4948,7 @@ export async function startCreate(input: CreateSpec, present = false, attemptId?
 		// A result also waits behind a sheet opened over New character, which steps back to it.
 		if (createPresentation.id === run.id || creatorReturn?.attempt === run.id) run.projectId = id;
 		else removeCreate(run);
+		if (present) playAudioCue('success');
 	} catch (e) {
 		if (current()) {
 			callbacksDone = true;
@@ -4929,7 +4958,11 @@ export async function startCreate(input: CreateSpec, present = false, attemptId?
 				{ spec, progress: $state.snapshot(run.progress) },
 				e
 			);
-			if (current()) run.error = error;
+			if (current()) {
+				run.error = error;
+				if (present && !(e instanceof LoadError) && !isGenerationCancellation(e))
+					playAudioCue('failure');
+			}
 			if (current() && (ui.sheet !== 'create' || createPresentation.id !== run.id))
 				toast(message('state.createFailedOpen', { name: spec.name }), {
 					tone: 'danger',
@@ -4993,6 +5026,8 @@ export async function discardCreate(id: string) {
 
 // ---------- add a move (one at a time, FIFO; resumable like create) ----------
 type QueuedMove = { projectId: string; spec: MoveSpec };
+// Track intent only for this page, since a recovered queue can replay results that were already seen.
+const localQueuedMoves = new WeakSet<QueuedMove>();
 /** `queued`: moves waiting for the current one. Persisted with it, so closing the sheet or reloading keeps the order. */
 export const moving = $state({
 	spec: null as MoveSpec | null,
@@ -5041,14 +5076,23 @@ function storeMove(record = moveRecord) {
  * is retried (the queue continues) or dismissed (the queue is dropped). */
 export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	if (hmrReloading || !specs.length) return;
-	moving.queued = [...moving.queued, ...specs.map((spec) => ({ projectId, spec }))];
+	const added = specs.map((spec) => {
+		const entry = $state<QueuedMove>({ projectId, spec });
+		localQueuedMoves.add(entry);
+		return entry;
+	});
+	moving.queued = [...moving.queued, ...added];
 	if (moveRunning || (moving.spec && !moving.done)) {
 		await storeMove();
 		return;
 	}
+	await startQueuedMove();
+}
+
+async function startQueuedMove() {
 	const [next, ...rest] = moving.queued;
 	moving.queued = rest;
-	await startMove(next.projectId, next.spec);
+	await startMove(next.projectId, next.spec, localQueuedMoves.has(next));
 }
 
 export async function refreshMoveReviews(projectId: string) {
@@ -5136,7 +5180,7 @@ export async function pendingBodyMoveName(projectId: string, id: string) {
 	);
 }
 
-export async function startMove(projectId: string, spec: MoveSpec) {
+export async function startMove(projectId: string, spec: MoveSpec, announce = true) {
 	if (hmrReloading) return;
 	if (relocating) await saving;
 	if (moving.repairReview) {
@@ -5273,6 +5317,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 					report: false,
 					action: () => openFlow('move', projectId)
 				});
+			if (announce) playAudioCue('item');
 			return;
 		}
 		moving.warnings = result.warnings;
@@ -5341,6 +5386,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 					action: () => openItemReview(projectId, reviewItem, spec.id)
 				}
 			);
+		if (announce && current()) playAudioCue(spec.itemsOnly ? 'item' : 'success');
 	} catch (e) {
 		if (current()) {
 			failed = true;
@@ -5351,7 +5397,11 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 				e,
 				storeMove
 			);
-			if (current()) moving.error = error;
+			if (current()) {
+				moving.error = error;
+				if (announce && !(e instanceof LoadError) && !isGenerationCancellation(e))
+					playAudioCue('failure');
+			}
 			// queued moves now run unattended: a failure that holds them says so wherever the user is
 			if (current() && ui.sheet !== 'move')
 				toast(message('state.moveFailedOpen', { moveName }), {
@@ -5366,9 +5416,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 	}
 	// the live queue after the finish steps: a move queued while this one finished is never left behind
 	if (revision === moveRevision && moving.done && moving.queued.length) {
-		const [next, ...rest] = moving.queued;
-		moving.queued = rest;
-		await startMove(next.projectId, next.spec);
+		await startQueuedMove();
 	}
 }
 /** Explicit consent to reuse cached body frames or retry only the reviewed checks, keeping the original body identity. */
@@ -5588,7 +5636,7 @@ export async function resumeMove() {
 			done: false,
 			warnings: []
 		});
-	else void startMove(r.projectId, r.spec);
+	else void startMove(r.projectId, r.spec, false);
 }
 
 /** `keepFailed`: an item sheet's review also keeps the views that failed a check (unselected by default). */
@@ -5630,9 +5678,7 @@ export async function resolveRepairReview(useRepair: boolean, keepFailed = false
 		moveRunning = moving.resolvingRepair = false;
 	}
 	if (moving.done && moving.queued.length) {
-		const [next, ...rest] = moving.queued;
-		moving.queued = rest;
-		await startMove(next.projectId, next.spec);
+		await startQueuedMove();
 	}
 }
 /** Drops the failed or finished move and the moves queued for the same character; other characters' queued moves go on. */
@@ -5654,9 +5700,7 @@ export async function dismissMove() {
 	await storeMove(null);
 	// others stay queued until one starts: a move started meanwhile (e.g. an item repair) takes them up when it finishes
 	if (moveRunning || moving.spec || !moving.queued.length) return;
-	const [next, ...rest] = moving.queued;
-	moving.queued = rest;
-	await startMove(next.projectId, next.spec);
+	await startQueuedMove();
 }
 
 // ---------- imported character setup ----------
@@ -5674,7 +5718,7 @@ let setupRunning = $state(false),
 	setupRevision = 0;
 /** A setup (perhaps one resumed from a closed tab) runs here, so another cannot start yet. */
 export const setupBusy = () => setupRunning;
-export async function startSetup(spec: SetupSpec) {
+export async function startSetup(spec: SetupSpec, announce = true) {
 	if (hmrReloading) return;
 	if (setupRunning) {
 		toast(message('state.anotherRigSetupIsStillRunningSo'), {
@@ -5713,6 +5757,7 @@ export async function startSetup(spec: SetupSpec) {
 		if (viewing(spec.projectId)) await openProject(spec.projectId);
 		else await syncStoredProject(spec.projectId);
 		toast(message('state.characterReadyForSkeletonPosedItemsAnd'));
+		if (announce && current()) playAudioCue('success');
 	} catch (e) {
 		if (current()) {
 			failed = true;
@@ -5722,7 +5767,11 @@ export async function startSetup(spec: SetupSpec) {
 				{ spec, progress: $state.snapshot(settingUp.progress) },
 				e
 			);
-			if (current()) settingUp.error = error;
+			if (current()) {
+				settingUp.error = error;
+				if (announce && !(e instanceof LoadError) && !isGenerationCancellation(e))
+					playAudioCue('failure');
+			}
 			if (current() && ui.sheet !== 'setup')
 				toast(message('state.setupFailedOpen'), {
 					tone: 'danger',
@@ -5776,7 +5825,7 @@ export async function resumeSetup() {
 				done: false,
 				warnings: []
 			});
-		else void startSetup(rec.spec);
+		else void startSetup(rec.spec, false);
 	} finally {
 		setupRecovering = false;
 	}

@@ -10,6 +10,7 @@ import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
 import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
 import { errorMessage, LocalizedError, message } from '../lib/message.ts';
+import { playAudioCue } from './audio.svelte.ts';
 
 /** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). `build` names the app
  *  that wrote the file, for diagnosing a report; an import never reads it. */
@@ -29,6 +30,7 @@ export function saveFile(bytes: Uint8Array, filename: string, type: string) {
 	a.download = filename;
 	a.click();
 	setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+	playAudioCue('export');
 }
 export const saveZip = (bytes: Uint8Array, filename: string) =>
 	saveFile(bytes, filename, 'application/zip');
