@@ -14,6 +14,7 @@
 		castTransform
 	} from './carousel.ts';
 	import { castStill } from './castMount.ts';
+	import { watchSize } from './watchSize.ts';
 	import { groundedThumb, stills } from './thumbnails.svelte.ts';
 	type Entry = { p: { id: string; name: string }; offset: number };
 	type Actor = Entry & { leaving?: boolean; exitDirection?: number };
@@ -49,8 +50,19 @@
 		floorFocal: number;
 		select: (id: string, activate: boolean, side?: number) => void;
 	} = $props();
+	let cast = $state<HTMLDivElement>();
 	let width = $state(0),
 		height = $state(0);
+	$effect(() => {
+		const node = cast;
+		if (!node) return;
+		// Measure once before the cast positions its actors; later observer updates are deferred so the cast's own layout
+		// change cannot re-enter the observer.
+		return watchSize(node, () => {
+			width = node.clientWidth;
+			height = node.clientHeight;
+		});
+	});
 	let actors = $state.raw<Actor[]>([]);
 	const nodes = new Map<string, HTMLButtonElement>();
 	const reflections = new Map<string, HTMLElement>();
@@ -242,7 +254,7 @@
 	}
 </script>
 
-<div class="cast" bind:clientWidth={width} bind:clientHeight={height}>
+<div class="cast" bind:this={cast}>
 	<div
 		class="cast-camera"
 		style:transform="translate({cameraOffset.x}px, {cameraOffset.y}px) scale({zoom})"

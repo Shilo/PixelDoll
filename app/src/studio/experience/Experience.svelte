@@ -29,6 +29,7 @@
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
 	import { sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
 	import { castStill } from './castMount.ts';
+	import { watchSize } from './watchSize.ts';
 	import { stills, groundedThumb, thumbScale } from './thumbnails.svelte.ts';
 	import { castPose } from './carousel.ts';
 	import { floorRing, RING_GAP } from './floorRing.ts';
@@ -88,6 +89,10 @@
 	let playbackHeight = $state(0);
 	let stageNote = $state('');
 	let selectionCaptionHeight = $state(0);
+	const watchCaption = (node: HTMLElement) =>
+		watchSize(node, () => (selectionCaptionHeight = node.offsetHeight));
+	const watchPlayback = (node: HTMLElement) =>
+		watchSize(node, () => (playbackHeight = node.offsetHeight));
 	const previewHeight = $derived(experience.mode === 'preview' ? playbackHeight : 0);
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
@@ -670,7 +675,7 @@
 			/>
 			<div
 				class="selected-caption"
-				bind:offsetHeight={selectionCaptionHeight}
+				{@attach watchCaption}
 				style:top="{g.feet.y + selectionCaptionGap}px"
 			>
 				{#if list.length}
@@ -824,7 +829,7 @@
 			</div>
 		{/if}
 		{#if experience.mode === 'preview' && m}
-			<div class="experience-playback" bind:offsetHeight={playbackHeight}>
+			<div class="experience-playback" {@attach watchPlayback}>
 				<div
 					class="playback-bar bu-floating"
 					role="toolbar"
