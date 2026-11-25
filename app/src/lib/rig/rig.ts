@@ -73,6 +73,10 @@ export interface RiderSeatPoint {
 	body: Sha256;
 	source: DirectionName;
 }
+/** Displayed mount-facing correction in sprite pixels, positive right and down. */
+export type MountSeatOffset = Pick<RiderSeatPoint, 'x' | 'y'>;
+export type MountSeatOffsets = Partial<Record<DirectionName, MountSeatOffset>>;
+
 export interface RigAnimation {
 	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
@@ -113,6 +117,7 @@ export interface Rig {
 	pivot: { x: number; y: number }; // pixel-edge coords
 	directions: RigDirection[];
 	animations: RigAnimation[];
+	mountSeatOffsets?: MountSeatOffsets;
 	baseItem: string;
 	baseHash: Sha256;
 	pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
@@ -200,7 +205,7 @@ const ID = /^[a-z0-9][a-z0-9_-]*$/;
 export const validAnimationId = (id: string): boolean => ID.test(id);
 
 /** The rig without move names and export IDs, which never change artwork or fitting. */
-export const rigContent = (rig: Rig): Rig => ({
+export const rigContent = ({ mountSeatOffsets: _mountSeatOffsets, ...rig }: Rig): Rig => ({
 	...rig,
 	animations: rig.animations.map(
 		({ name: _name, exportId: _exportId, seatPoints: _seatPoints, ...animation }) => animation
@@ -209,7 +214,10 @@ export const rigContent = (rig: Rig): Rig => ({
 
 /** Playback preferences, item-drawing choices and move names do not change the artwork inputs of a pending generation or
  * recovery. */
-export const rigArtworkVersion = (rig: Rig, character: unknown): string =>
+export const rigArtworkVersion = (
+	{ mountSeatOffsets: _mountSeatOffsets, ...rig }: Rig,
+	character: unknown
+): string =>
 	stableStringify({
 		rig: {
 			...rig,

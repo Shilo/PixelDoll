@@ -1,5 +1,35 @@
 import type { Manifest } from '../store/manifest.ts';
-import { DEFAULT_MOVE, type DirectionName, type RigAnimation, type RiderSeatPoint } from './rig.ts';
+import {
+	DEFAULT_MOVE,
+	type DirectionName,
+	type MountSeatOffset,
+	type Rig,
+	type RigAnimation,
+	type RiderSeatPoint
+} from './rig.ts';
+
+export const MAX_MOUNT_SEAT_OFFSET = 32;
+export const AUTOMATIC_MOUNT_SEAT: Readonly<MountSeatOffset> = { x: 0, y: 0 };
+
+export function validMountSeatOffset(
+	offset: MountSeatOffset | undefined
+): offset is MountSeatOffset {
+	return (
+		!!offset &&
+		Number.isInteger(offset.x) &&
+		Math.abs(offset.x) <= MAX_MOUNT_SEAT_OFFSET &&
+		Number.isInteger(offset.y) &&
+		Math.abs(offset.y) <= MAX_MOUNT_SEAT_OFFSET
+	);
+}
+
+export function mountSeatOffset(
+	rig: Pick<Rig, 'mountSeatOffsets'> | undefined,
+	direction: DirectionName
+): MountSeatOffset {
+	const offset = rig?.mountSeatOffsets?.[direction];
+	return validMountSeatOffset(offset) ? offset : AUTOMATIC_MOUNT_SEAT;
+}
 
 /** The signed pixel offset written to the engine manifest. */
 export function riderSeatOffset(
@@ -56,11 +86,4 @@ export function reviewedSeatPoint(
 	if (!point || !validSeatPoint(manifest.rig, point)) return;
 	const art = riderSeatArt(manifest, clip, direction);
 	if (art && art.body === point.body && art.source === point.source) return point;
-}
-
-export interface RiderSeatEdit {
-	clip: string;
-	facing: DirectionName;
-	art: Pick<RiderSeatPoint, 'body' | 'source'>;
-	saved: RiderSeatPoint | undefined;
 }

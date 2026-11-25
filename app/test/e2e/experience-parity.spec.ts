@@ -853,7 +853,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(toggle).not.toHaveAttribute('data-active');
 	// The mount icon opens the Mount page of Settings directly.
 	const mountMenu = page.getByRole('dialog', { name: 'Settings' });
-	const shown = mountMenu.getByRole('switch', { name: 'Show mount', exact: true });
+	const shown = mountMenu.getByRole('switch', { name: 'Show character mounted', exact: true });
 	const closeMount = async () => {
 		await page.keyboard.press('Escape');
 		await expect(mountMenu).toBeHidden();
@@ -1155,8 +1155,23 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(legMode('Far leg')).toBeChecked();
 	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
 	expect(await savedMount()).toEqual({ show: false, legs: 'far', poses: {} });
+	// The bundled demo keeps its own seat edit even though its source artwork is read-only.
+	const facing = mountMenu.getByRole('combobox', { name: 'Preview direction', exact: true });
+	const adjust = mountMenu.getByRole('button', { name: 'Seat position', exact: true });
+	const seat = mountMenu.locator('[data-setting="rider-seat"] output');
+	await facing.selectOption('east');
+	await adjust.click();
+	await mountMenu.getByRole('button', { name: 'Move seat right', exact: true }).click();
+	await mountMenu.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(adjust).toHaveAttribute('aria-expanded', 'false');
 	await closeMount();
 	await expect(world(page)).not.toHaveAttribute('data-mount');
+	await page.reload();
+	await landing(page);
+	await page.keyboard.press('Enter');
+	await toggle.click();
+	await facing.selectOption('east');
+	await expect(seat).toHaveText('x 1, y 0');
 });
 
 const touchTest = test.extend({ hasTouch: true });
@@ -1212,31 +1227,32 @@ touchTest(
 		const wide = (await facing.boundingBox())!.width;
 		await facing.selectOption('east');
 		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
-		const adjustSeat = mountMenu.getByRole('button', { name: 'Adjust seat', exact: true });
-		await expect(adjustSeat).toBeDisabled();
-		await expect(seatRow).toContainText('Turn on Show mount to adjust the seat.');
-		await mountMenu.getByRole('switch', { name: 'Show mount', exact: true }).check();
+		const adjustSeat = mountMenu.getByRole('button', { name: 'Seat position', exact: true });
+		const shown = mountMenu.getByRole('switch', { name: 'Show character mounted', exact: true });
+		await expect(shown).not.toBeChecked();
+		await expect(
+			mountMenu.locator('[data-setting="show-mount"] + [data-setting="rider-seat"]')
+		).toBeVisible();
 		await expect(riderPose).toContainText('Automatic');
-		await expect(adjustSeat).toBeEnabled();
-		await riderPose.click();
-		await page.getByRole('menuitemradio', { name: 'Walk', exact: true }).click();
-		await expect(adjustSeat).toBeDisabled();
-		await expect(seatRow).toContainText('In Riding pose, choose a State or a move with one frame.');
-		await riderPose.click();
-		await page.getByRole('menuitemradio', { name: 'Riding', exact: true }).click();
-		await expect(adjustSeat).toBeEnabled();
-		await riderPose.click();
-		await page.getByRole('menuitemradio', { name: 'Automatic', exact: true }).click();
-		const left = mountMenu.getByRole('button', { name: 'Move rider left', exact: true });
+		const left = mountMenu.getByRole('button', { name: 'Move seat left', exact: true });
+		const right = mountMenu.getByRole('button', { name: 'Move seat right', exact: true });
 		const seat = seatRow.locator('output');
 		const marker = mountMenu.locator('.seat-marker');
+		const auto = mountMenu.getByRole('button', { name: 'Use automatic', exact: true });
 		const saveSeat = mountMenu.getByRole('button', { name: 'Save', exact: true });
-		await facing.selectOption('east');
-		await expect(seat).toHaveText('Automatic');
+		const canvas = mountMenu.locator('.mount-preview canvas');
+		const play = mountMenu.getByRole('button', { name: 'Play mount preview', exact: true });
+		const pausePreview = mountMenu.getByRole('button', {
+			name: 'Pause mount preview',
+			exact: true
+		});
+		await expect(seat).toHaveText('x 0, y 0');
 		await adjustSeat.click();
 		await expect(left).toBeFocused();
 		await expect(marker).toBeVisible();
-		await expect(facing).toHaveCount(0);
+		await expect(facing).toBeEnabled();
+		await expect(pausePreview).toBeVisible();
+		await expect(auto).toHaveAttribute('aria-pressed', 'true');
 		const pad = await mountMenu.locator('.seat-nudges button').evaluateAll((buttons) =>
 			buttons.map((button) => {
 				const { x, y, width, height } = button.getBoundingClientRect();
@@ -1245,30 +1261,51 @@ touchTest(
 		);
 		expect(new Set(pad.map(({ x, y }) => `${x},${y}`)).size).toBe(5);
 		expect(pad.every(({ width, height }) => width === 44 && height === 44)).toBe(true);
-		const markBefore = await marker.getAttribute('style');
-		const canvas = mountMenu.locator('.mount-preview canvas');
-		const scale = await canvas.getAttribute('data-scale');
-		const play = mountMenu.getByRole('button', { name: 'Play mount preview', exact: true });
-		await play.click();
-		await expect(marker).not.toHaveAttribute('style', markBefore!);
-		await expect(canvas).toHaveAttribute('data-scale', scale!);
-		await mountMenu.getByRole('button', { name: 'Pause mount preview', exact: true }).click();
-		await left.tap();
-		await expect(seat).toHaveText(/^x -?\d+, y -?\d+$/);
+		await pausePreview.click();
+		await expect(canvas).toHaveAttribute('data-rider', '');
+		const markBefore = (await marker.boundingBox())!;
+		const scale = Number(await canvas.getAttribute('data-scale'));
+		await right.tap();
+		await expect(seat).toHaveText('x 1, y 0');
+		await expect(auto).toHaveAttribute('aria-pressed', 'false');
+		await expect
+			.poll(async () => (await marker.boundingBox())!.x - markBefore.x)
+			.toBeCloseTo(scale / (await page.evaluate(() => devicePixelRatio)), 1);
 		await expect(saveSeat).toBeEnabled();
+		await page.evaluate(async () => {
+			const { doc, openProject } = await import(String('/src/studio/state.svelte.ts'));
+			await openProject(doc.id, { quiet: true });
+		});
+		await expect(adjustSeat).toHaveAttribute('aria-expanded', 'true');
+		await expect(seat).toHaveText('x 1, y 0');
+		await shown.check();
+		await expect(canvas).not.toHaveAttribute('data-rider', '');
+		await riderPose.click();
+		await page.getByRole('menuitemradio', { name: 'Riding', exact: true }).click();
+		await expect(seat).toHaveText('x 1, y 0');
+		await riderPose.click();
+		await page.getByRole('menuitemradio', { name: 'Walk', exact: true }).click();
+		await expect(seat).toHaveText('x 1, y 0');
+		const pausedMarker = await marker.getAttribute('style');
+		const pausedScale = await canvas.getAttribute('data-scale');
+		await play.click();
+		await expect(pausePreview).toBeVisible();
+		await expect(marker).not.toHaveAttribute('style', pausedMarker!);
+		await expect(canvas).toHaveAttribute('data-scale', pausedScale!);
 		await mountMenu.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await expect(adjustSeat).toBeFocused();
-		await expect(world(page)).not.toHaveAttribute('data-mount-contact', 'reviewed');
+		await expect(seat).toHaveText('x 0, y 0');
 		await adjustSeat.press('Enter');
 		await left.press('ArrowLeft');
+		await expect(seat).toHaveText('x -1, y 0');
+		await facing.selectOption('south-east');
+		await expect(seat).toHaveText('x 0, y 0');
+		await right.press('ArrowDown');
+		await expect(seat).toHaveText('x 0, y 1');
 		await page.evaluate(() => {
 			const put = IDBObjectStore.prototype.put;
 			IDBObjectStore.prototype.put = function (record, key) {
-				if (
-					record?.manifest?.rig?.animations?.some(
-						(clip: { seatPoints?: unknown }) => clip.seatPoints
-					)
-				) {
+				if (record?.manifest?.rig?.mountSeatOffsets) {
 					IDBObjectStore.prototype.put = put;
 					throw new DOMException('Seat storage refused', 'QuotaExceededError');
 				}
@@ -1278,25 +1315,30 @@ touchTest(
 		await saveSeat.click();
 		await expect(mountMenu.getByRole('alert')).toContainText('Seat storage refused');
 		await saveSeat.click();
-		await expect(adjustSeat).toBeVisible();
+		await expect(adjustSeat).toHaveAttribute('aria-expanded', 'false');
+		await expect(seat).toHaveText('x 0, y 1');
+		await facing.selectOption('east');
+		await expect(seat).toHaveText('x -1, y 0');
 		await mountMenu.getByRole('button', { name: 'Close', exact: true }).click();
-		await selectPlaybackClip(page, 'riding');
-		await page.getByRole('button', { name: 'Face east', exact: true }).click();
-		await expect(world(page)).toHaveAttribute('data-mount-contact', 'reviewed');
 
 		await page.reload();
 		await customize.click();
-		await selectPlaybackClip(page, 'riding');
-		await page.getByRole('button', { name: 'Face east', exact: true }).click();
-		await expect(world(page)).toHaveAttribute('data-mount-contact', 'reviewed');
+		await page.setViewportSize({ width: 320, height: 568 });
 		await openCompactMount();
+		await facing.selectOption('south-east');
+		await expect(seat).toHaveText('x 0, y 1');
 		await facing.selectOption('east');
+		await expect(seat).toHaveText('x -1, y 0');
 		await adjustSeat.click();
-		await mountMenu.getByRole('button', { name: 'Use automatic', exact: true }).click();
-		await expect(seat).toHaveText('Automatic');
+		expect(await mountMenu.evaluate((sheet) => sheet.scrollWidth)).toBeLessThanOrEqual(320);
+		await auto.click();
+		await expect(marker).toBeInViewport();
+		await expect(seat).toBeInViewport();
+		await expect(auto).toHaveAttribute('aria-pressed', 'true');
+		await expect(seat).toHaveText('x 0, y 0');
 		await saveSeat.click();
-		await expect(adjustSeat).toBeVisible();
-		await expect(world(page)).toHaveAttribute('data-mount-contact', /estimate|hip|joints/);
+		await expect(adjustSeat).toHaveAttribute('aria-expanded', 'false');
+		await expect(seat).toHaveText('x 0, y 0');
 	}
 );
 

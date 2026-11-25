@@ -17,6 +17,7 @@ import { PaidStepError, type PaidStep } from '../lib/pixellab/paid-results.ts';
 import {
 	applyDress,
 	dressOf,
+	archiveFixtureDress,
 	mergeSlotEdits,
 	openSource,
 	openFixture,
@@ -166,16 +167,17 @@ import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import { onceShown, type Problem } from '../lib/report/report.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
-import {
-	reviewedSeatPoint,
-	riderSeatArt,
-	validSeatPoint,
-	type RiderSeatEdit
-} from '../lib/rig/riderSeat.ts';
+import { mountSeatOffset, validMountSeatOffset } from '../lib/rig/riderSeat.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
 import type { MoveImportPlan } from '../lib/rig/moveImport.ts';
-import { DEFAULT_MOVE, type RiderSeatPoint, type Sha256 } from '../lib/rig/rig.ts';
+import {
+	DEFAULT_MOVE,
+	DIRECTIONS,
+	type MountSeatOffset,
+	type MountSeatOffsets,
+	type Sha256
+} from '../lib/rig/rig.ts';
 import {
 	canvasLift,
 	frameChangeText,
@@ -1358,6 +1360,7 @@ function liveParts(r: StoredProject): Part[] {
 		field((x) => x as unknown as Record<string, unknown>, 'dress'),
 		field((x) => x as unknown as Record<string, unknown>, 'savedAt'),
 		field((x) => x.character, 'looks'),
+		field((x) => x.manifest.rig, 'mountSeatOffsets'),
 		...(['name', 'exportId', 'presets', 'materials', 'slots'] as const).map((key) =>
 			field(manifestOf, key)
 		),
@@ -2675,40 +2678,81 @@ async function refreshSaved(projectId: string, request: number) {
 	}
 }
 
-/** Update one reviewed seat against the latest saved art and point, including edits from other tabs. */
-export async function saveRiderSeat(
+/** Save all changed facings together, leaving any untouched facings from other tabs alone. */
+export async function saveMountSeatOffsets(
 	id: string,
-	target: RiderSeatEdit,
-	point: Pick<RiderSeatPoint, 'x' | 'y'> | null
+	changes: readonly { facing: DirectionName; before: MountSeatOffset; after: MountSeatOffset }[]
 ) {
 	const request = openRequest;
 	const changed = new LocalizedError(
-		'The saved pose changed. Reopen Adjust seat and try again.',
+		'The saved seat changed. Close the seat editor and try again.',
 		'settings.seatChanged'
 	);
 	if (doc.id !== id || opening) throw changed;
+	function updateOffsets(current: MountSeatOffsets | undefined) {
+		if (doc.id !== id || request !== openRequest) throw changed;
+		const offsets = { ...current };
+		for (const { facing, before, after } of changes) {
+			const saved = mountSeatOffset({ mountSeatOffsets: current }, facing);
+			if (
+				!DIRECTIONS.includes(facing) ||
+				saved.x !== before.x ||
+				saved.y !== before.y ||
+				!validMountSeatOffset(after)
+			)
+				throw changed;
+			if (after.x || after.y) offsets[facing] = after;
+			else delete offsets[facing];
+		}
+		return Object.keys(offsets).length ? offsets : undefined;
+	}
+	if (id === DEMO) {
+		if (!store.project || dressUnread === id) throw changed;
+		const key = `dress-${id}`;
+		const fallback = JSON.parse(snap()) as DressState;
+		const showOffsets = (offsets: MountSeatOffsets | undefined) => {
+			const project = store.project;
+			if (!project || doc.id !== id || request !== openRequest) return;
+			project.manifest.rig.mountSeatOffsets = offsets;
+			store.project = { ...project };
+			doc.rev++;
+		};
+		const saved = await db
+			.update<DressState>(
+				'projects',
+				key,
+				(record) => {
+					const current = record?.format === CURRENT_FORMAT ? record : fallback;
+					return {
+						id: key,
+						kind: 'dress',
+						...current,
+						mountSeatOffsets: updateOffsets(current.mountSeatOffsets)
+					};
+				},
+				[],
+				(previous) => archiveFixtureDress(key, previous)
+			)
+			.catch(async (error: unknown) => {
+				if (error === changed) {
+					const { project } = await openFixture(id);
+					showOffsets(project.manifest.rig.mountSeatOffsets);
+				}
+				throw error;
+			});
+		showOffsets(saved.mountSeatOffsets);
+		store.projects = store.projects.map((ref) =>
+			ref.id === id ? { ...ref, look: stableStringify(saved) } : ref
+		);
+		return;
+	}
 	const record = await db
 		.update<StoredProject>('projects', id, (record) => {
 			if (doc.id !== id || request !== openRequest || record?.origin !== 'studio') throw changed;
-			const { manifest } = record;
-			const clip = manifest.rig.animations.find(({ id }) => id === target.clip);
-			const art = riderSeatArt(manifest, clip, target.facing);
-			const saved = reviewedSeatPoint(manifest, clip, target.facing);
-			if (
-				!clip ||
-				!art ||
-				art.body !== target.art.body ||
-				art.source !== target.art.source ||
-				saved?.x !== target.saved?.x ||
-				saved?.y !== target.saved?.y ||
-				(point && !validSeatPoint(manifest.rig, point))
-			)
-				throw changed;
-			const points = { ...clip.seatPoints };
-			if (point) points[target.facing] = { ...point, ...art };
-			else delete points[target.facing];
-			if (Object.keys(points).length) clip.seatPoints = points;
-			else delete clip.seatPoints;
+			const { rig } = record.manifest;
+			const offsets = updateOffsets(rig.mountSeatOffsets);
+			if (offsets) rig.mountSeatOffsets = offsets;
+			else delete rig.mountSeatOffsets;
 			record.savedAt = new Date().toISOString();
 			return record;
 		})

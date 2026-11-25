@@ -332,14 +332,27 @@ export interface ExportInfo {
 
 ### Rider seat contact
 
+The optional `rig.mountSeatOffsets` map stores the **Seat position** values from Studio in signed
+sprite pixels by mount facing. Positive x moves the seat right and positive y moves it down.
+Studio allows whole-pixel corrections from −32 to 32 on each axis. Applying Automatic removes
+that facing’s entry. A missing entry is equivalent to `{x: 0, y: 0}`.
+These values are character settings shared across clips and are included in the editor copy and
+engine manifest. All eight mount facings are available, independent of how many directions the
+rider has. The host adds the correction to its saddle point before aligning the rider:
+`riderPivot = saddlePoint + mountSeatOffsets[facing] - riderContactFromPivot`. Apply the same
+correction when the rider looks in a different direction than the mount. Game integrations
+choose their own scale and can opt into these values. Use `riderSeat` for the rider contact
+when available. For other clips the host supplies its own contact, such as a rig hip anchor.
+Studio uses its own automatic contact estimates when displaying a mounted character.
+
 On a saved one-cell State or Move, `rig.animations[].riderSeat` in `manifest.json` maps
 reviewed facings to signed pixel offsets from the character pivot. Positive x is right and
 positive y is down. The entry uses the public clip ID. Mirrored views have their own optional
 entry, expressed in the displayed facing. Missing entries mean that the export has no reviewed
 point for that facing.
 
-For a saddle at `{x: 104, y: 80}` and a rider seat offset of `{x: -3, y: -12}`, place
-the rider pivot at `{x: 107, y: 92}`. Subtract the offset from the saddle in the same units,
+For a saddle at `{x: 104, y: 80}`, a seat correction of `{x: 2, y: -1}`, and a rider contact
+of `{x: -3, y: -12}`, place the rider pivot at `{x: 109, y: 91}`. Work in the same units,
 then use the renderer's normal layer, trim and baked pivot handling. The same offset applies
 to padded equipment and baked sheets. Repeat the calculation as the saddle moves. The host owns
 saddle coordinates, playback and draw order.

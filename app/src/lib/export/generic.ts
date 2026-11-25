@@ -3,7 +3,7 @@ import type { Img } from '../image/png.ts';
 import { DIRECTIONS, exportUnit, validateRig } from '../rig/rig.ts';
 import { centeredMirrorFrame } from '../rig/mirror.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
-import { reviewedSeatPoint, riderSeatOffset } from '../rig/riderSeat.ts';
+import { mountSeatOffset, reviewedSeatPoint, riderSeatOffset } from '../rig/riderSeat.ts';
 import { CURRENT_FORMAT } from '../store/manifest.ts';
 import { behaviorOf, SLOTS } from '../items/slots.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
@@ -403,6 +403,16 @@ export function exportManifest(
 		return exported;
 	});
 	const m: Manifest = structuredClone({ ...src, items, slots, export: undefined });
+	if (src.rig.mountSeatOffsets) {
+		const offsets = Object.fromEntries(
+			DIRECTIONS.flatMap((id) => {
+				const offset = mountSeatOffset(src.rig, id);
+				return offset.x || offset.y ? [[id, offset] as const] : [];
+			})
+		);
+		if (Object.keys(offsets).length) m.rig.mountSeatOffsets = offsets;
+		else delete m.rig.mountSeatOffsets;
+	}
 	// Export is also a public API: do not depend on the Studio having materialized procedural swatches first.
 	storeVariants(m, {}, ...m.presets.map((pr) => pr.variants));
 	// A palette link can target a stale item. Freeze its resolved selections before dropping the excluded owner's metadata.

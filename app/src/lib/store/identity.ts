@@ -122,6 +122,8 @@ export function newItemExportId(items: readonly Item[], itemId: string): string 
  *  ID another move already exports as gets the first free suffixed export ID, so exports never hold two moves with one ID. */
 export function retainMoveChoices(next: Rig, current: Rig): void {
 	retainPlaybackChoices(next, current);
+	if (current.mountSeatOffsets) next.mountSeatOffsets = structuredClone(current.mountSeatOffsets);
+	else delete next.mountSeatOffsets;
 	const added: RigAnimation[] = [];
 	for (const move of next.animations) {
 		const saved = current.animations.find((entry) => entry.id === move.id);

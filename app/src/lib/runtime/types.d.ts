@@ -368,6 +368,10 @@ export interface RiderSeatPoint {
 	source: DirectionName;
 }
 
+export type MountSeatOffset = Pick<RiderSeatPoint, 'x' | 'y'>;
+
+export type MountSeatOffsets = Partial<Record<DirectionName, MountSeatOffset>>;
+
 export interface RigAnimation {
 	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
@@ -409,6 +413,7 @@ export interface Rig {
 	pivot: { x: number; y: number }; // pixel-edge coords
 	directions: RigDirection[];
 	animations: RigAnimation[];
+	mountSeatOffsets?: MountSeatOffsets;
 	baseItem: string;
 	baseHash: Sha256;
 	pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)

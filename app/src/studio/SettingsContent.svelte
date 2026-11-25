@@ -134,6 +134,7 @@
 			icon: PawPrint,
 			entries: [
 				{ id: 'show-mount', label: 'toolbar.showMount' },
+				{ id: 'rider-seat', label: 'settings.seatPosition', terms: ['settings.adjustSeat'] },
 				{ id: 'riding-pose', label: 'toolbar.riderPose', terms: ['toolbar.riderPoseRide'] },
 				{
 					id: 'hide-legs',

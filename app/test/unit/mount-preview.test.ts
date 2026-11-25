@@ -373,6 +373,12 @@ describe('rider placement', () => {
 		expect(manifest.export?.bakedPivot).toEqual({ x: 40, y: 72 });
 		const offset = entry.riderSeat!.east!;
 		expect({ x: 98 - offset.x, y: 90 - offset.y }).toEqual({ x: 101, y: 110 });
+		project.manifest.rig.mountSeatOffsets = {
+			east: { x: 3, y: -2 },
+			'south-east': { x: -1, y: 4 }
+		};
+		expect(exported().rig.mountSeatOffsets).toEqual(project.manifest.rig.mountSeatOffsets);
+		expect(exported().rig.animations[0].riderSeat).toEqual(entry.riderSeat);
 
 		const west = { ...p, direction: 'west' as const, intendedDirection: 'west' as const };
 		const westPlacement = mountPlacement(project, 'west', west, grounding);
@@ -445,6 +451,23 @@ describe('rider placement', () => {
 			expect(
 				Math.abs(at.rider.y + south.contact.y - at.mount.y - frame.seat.y)
 			).toBeLessThanOrEqual(0.5);
+		}
+		project.manifest.rig.mountSeatOffsets = { east: { x: 3, y: -2 } };
+		for (const p of [action, { ...action, kind: 'still' as const, clip: 'default' }]) {
+			const before = mountPlacement(project, 'west', p, grounding);
+			expect(before?.view).toBe(view(TEST_MOUNT, 'west', 50));
+			const adjusted = mountPlacement(project, 'east', p, grounding);
+			if (!adjusted?.view) throw new Error('Expected mounted artwork');
+			for (const [index, frame] of adjusted.view.frames.entries()) {
+				const automatic = south.view.frames[index];
+				expect(frame.back).toBe(automatic.back);
+				expect(frame.ground).toEqual(automatic.ground);
+				expect(frame.seat).toEqual({ x: automatic.seat.x + 3, y: automatic.seat.y - 2 });
+				const base = placeRider(adjusted.ground, adjusted.contact, automatic);
+				const actual = placeRider(adjusted.ground, adjusted.contact, frame);
+				expect(actual.mount).toEqual(base.mount);
+				expect(actual.rider).toEqual({ x: base.rider.x + 3, y: base.rider.y - 2 });
+			}
 		}
 	});
 

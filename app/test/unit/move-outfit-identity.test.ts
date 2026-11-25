@@ -251,8 +251,11 @@ test('publishing a move keeps saved names and gives a new move a free export ID'
 	const current = structuredClone(manifest.rig);
 	editMoveIdentity({ ...manifest, rig: current }, 'cross-punch', 'Jab', 'kick');
 	const next = structuredClone(manifest.rig);
+	current.mountSeatOffsets = { east: { x: 4, y: -2 } };
+	expect(rigArtworkVersion(current, null)).toBe(rigArtworkVersion(manifest.rig, null));
 	next.animations.push({ id: 'kick', cells: 2, loop: true, frames: playlist(2, 100) });
 	retainMoveChoices(next, current);
+	expect(next.mountSeatOffsets).toEqual(current.mountSeatOffsets);
 	expect(next.animations.map((move) => [move.id, move.name, moveExportId(move)])).toEqual([
 		['walk', undefined, 'walk'],
 		['cross-punch', 'Jab', 'kick'],

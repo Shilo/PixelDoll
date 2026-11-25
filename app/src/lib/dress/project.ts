@@ -7,7 +7,7 @@ import {
 	untilAborted,
 	type StoredProject
 } from '../store/project.ts';
-import { rigArtworkVersion } from '../rig/rig.ts';
+import { rigArtworkVersion, type MountSeatOffsets } from '../rig/rig.ts';
 import * as db from '../store/db.ts';
 import type { Manifest, Material, Preset, Project, Sha256, Slot } from '../store/manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from '../store/manifest.ts';
@@ -50,6 +50,8 @@ export interface DressState {
 	slots: Slot[];
 	hides: Record<string, string[] | null>;
 	current?: Outfit;
+	/** Local seat adjustments for a bundled character, whose source art is read-only. */
+	mountSeatOffsets?: MountSeatOffsets;
 	itemIds: string[];
 }
 interface ProjectRecord {
@@ -130,6 +132,7 @@ export async function openFixture(
 	signal?.throwIfAborted();
 	if (saved?.format !== CURRENT_FORMAT) return { project };
 	applyDress(project.manifest, saved);
+	if (saved.mountSeatOffsets) project.manifest.rig.mountSeatOffsets = saved.mountSeatOffsets;
 	return { project, current: saved.current };
 }
 
@@ -160,6 +163,12 @@ export const dressOf = (m: Manifest, current?: Outfit): DressState => ({
 	hides: Object.fromEntries(m.items.map((it) => [it.id, it.hides ?? null])),
 	current
 });
+
+export function archiveFixtureDress(key: string, previous: DressState | undefined) {
+	if (previous === undefined || previous?.format === CURRENT_FORMAT) return;
+	const archive = `dress-archived:${crypto.randomUUID()}`;
+	return { key: archive, record: { id: archive, kind: 'dress', source: key, original: previous } };
+}
 
 /** The snapshot's slot definitions, plus any slot it does not know that holds items (a newer fit: a snapshot never strands art).
  *  An empty slot absent from the snapshot was deleted or not yet organized there; an empty built-in falls back to its default. */
@@ -320,17 +329,17 @@ export async function saveDress(
 					previous?.format === CURRENT_FORMAT && Array.isArray(previous.slots)
 						? previous.slots
 						: (slotSave?.base ?? d.slots);
-				return { id: key, kind: 'dress', ...d, slots: merged(theirs, m.items) };
+				return {
+					id: key,
+					kind: 'dress',
+					...d,
+					slots: merged(theirs, m.items),
+					mountSeatOffsets:
+						previous?.format === CURRENT_FORMAT ? previous.mountSeatOffsets : undefined
+				};
 			},
 			[],
-			(previous) => {
-				if (previous === undefined || previous?.format === CURRENT_FORMAT) return;
-				const archive = `dress-archived:${crypto.randomUUID()}`;
-				return {
-					key: archive,
-					record: { id: archive, kind: 'dress', source: key, original: previous }
-				};
-			}
+			(previous) => archiveFixtureDress(key, previous)
 		);
 		return structuredClone(saved.slots);
 	}

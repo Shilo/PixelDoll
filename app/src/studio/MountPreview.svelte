@@ -11,13 +11,11 @@
 	import { openFixture } from '../lib/dress/project.ts';
 	import { displayNestedMessage } from '../lib/i18n.ts';
 	import type { Img } from '../lib/image/png.ts';
-	import { DIRECTIONS, type DirectionName, type RiderSeatPoint } from '../lib/rig/rig.ts';
+	import { DIRECTIONS, type DirectionName, type MountSeatOffsets } from '../lib/rig/rig.ts';
 	import {
-		reviewedSeatPoint,
-		riderSeatArt,
-		riderSeatOffset,
-		seatPose,
-		type RiderSeatEdit
+		AUTOMATIC_MOUNT_SEAT,
+		mountSeatOffset,
+		validMountSeatOffset
 	} from '../lib/rig/riderSeat.ts';
 	import { errorMessage, type Message } from '../lib/message.ts';
 	import type { Preset, Project } from '../lib/store/manifest.ts';
@@ -25,7 +23,8 @@
 	import { previewBounds } from './experience/bounds.ts';
 	import { hideMountedLegs, mountLegGeometry } from './experience/mountLegs.ts';
 	import { imageCanvas } from './experience/imageCanvas.ts';
-	import { mountPlacement } from './experience/mountPlacement.ts';
+	import { mountPlacement, offsetMountSeat } from './experience/mountPlacement.ts';
+	import { directionInfo, nearestDirection } from './experience/movement.ts';
 	import {
 		mountedFrame,
 		mountView,
@@ -38,8 +37,6 @@
 		buildPresentation,
 		renderPresentation,
 		resolveLive,
-		RIDE_MOVE,
-		RIDING_STATE,
 		type PlaybackClock
 	} from './experience/presentation.ts';
 	import { activeRiderPose, legsKept } from './experience/riderPose.ts';
@@ -50,18 +47,19 @@
 		DEMO,
 		doc,
 		openingProjectId,
-		saveRiderSeat,
+		saveMountSeatOffsets,
 		store,
 		toast,
 		view
 	} from './state.svelte.ts';
+	import SettingsItemButton from './SettingsItemButton.svelte';
 
-	let { controls, hasSeatPose }: { controls: Snippet; hasSeatPose: boolean } = $props();
+	let { visibility }: { visibility: Snippet } = $props();
 	const TURN_MS = 1400;
 	let canvas = $state<HTMLCanvasElement>();
 	let marker = $state<HTMLSpanElement>();
-	let facingControl = $state<HTMLSelectElement>();
 	let playing = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
+	let pinned = $state(false);
 	let facing = $state<DirectionName>('south-east');
 
 	// The open character, else the demo with its saved outfit, read once while this page is shown.
@@ -84,97 +82,56 @@
 	const grounding = $derived(rider ? previewBounds(rider.project) : null);
 	const pose = $derived(rider ? activeRiderPose(rider.id, rider.project.manifest) : undefined);
 	const riding = $derived(experience.testMount && !!rider);
-	// Mounted, the turn follows the rider's own facings; the mount alone shows all eight.
-	const facings = $derived<readonly DirectionName[]>(
-		riding && availability?.directions.length ? availability.directions : DIRECTIONS
-	);
-	const shown = $derived(facings.includes(facing) ? facing : facings[0]);
-	const standingHeight = $derived(grounding?.facings.get(shown)?.standingHeight ?? 48);
+	const authored = $derived(store.project?.manifest);
+	const editable = $derived(!!authored && !!doc.id);
+	const opening = $derived(!!openingProjectId());
+	const standingHeight = $derived(grounding?.facings.get(facing)?.standingHeight ?? 48);
 	const presentation = $derived(
-		riding && rider && availability
+		rider && availability && (riding || editable)
 			? resolveLive(availability, {
 					velocity: { x: 0, y: 0 },
 					riding: true,
 					riderPose: pose,
 					items: rider.items,
-					defaultDirection: shown,
+					defaultDirection:
+						nearestDirection(availability.directions, directionInfo(facing)!.vector) ?? facing,
 					clips: currentLiveClips(rider.id, rider.project.manifest.rig.animations)
 				})
 			: null
 	);
 	const placement = $derived(
-		rider && presentation ? mountPlacement(rider.project, shown, presentation, grounding) : null
+		rider && presentation ? mountPlacement(rider.project, facing, presentation, grounding) : null
 	);
-	const authored = $derived(store.project?.manifest);
 	const frame = $derived(rider ? bakedFrame(rider.project.manifest) : null);
-	// With Automatic selected, only actual riding art is eligible. Idle and Standing are display fallbacks.
-	const presentedClip = $derived(presentation?.clip);
-	const seatClip = $derived(
-		pose ??
-			(presentedClip === RIDE_MOVE || presentedClip === RIDING_STATE ? presentedClip : undefined)
-	);
-	const selected = $derived(authored?.rig.animations.find(({ id }) => id === seatClip));
-	const selectable = $derived(
-		riding && doc.id && !doc.id.startsWith('fixture:') && !openingProjectId() && seatPose(selected)
-	);
-	const target = $derived.by((): RiderSeatEdit | null => {
-		if (
-			!selectable ||
-			!authored ||
-			!selected ||
-			!placement?.view ||
-			presentation?.clip !== selected.id ||
-			presentation.direction !== shown
-		)
-			return null;
-		const art = riderSeatArt(authored, selected, shown);
-		if (!art || !store.project?.images.has(art.body)) return null;
-		return {
-			clip: selected.id,
-			facing: shown,
-			art,
-			saved: reviewedSeatPoint(authored, selected, shown)
-		};
-	});
-	const seatHint = $derived(
-		!doc.id || doc.id.startsWith('fixture:')
-			? 'settings.seatNeedsCharacter'
-			: !riding
-				? 'settings.seatNeedsMount'
-				: seatPose(selected)
-					? 'settings.seatNeedsFrame'
-					: hasSeatPose
-						? 'settings.seatNeedsPose'
-						: 'settings.seatNeedsNewPose'
-	);
-
-	type Point = Pick<RiderSeatPoint, 'x' | 'y'>;
-	let draft = $state.raw<{ id: string; target: RiderSeatEdit; point: Point | null } | null>(null);
-	const editing = $derived(
-		draft &&
-			target &&
-			draft.id === doc.id &&
-			draft.target.clip === target.clip &&
-			draft.target.facing === target.facing &&
-			draft.target.art.body === target.art.body &&
-			draft.target.art.source === target.art.source
-			? draft
-			: null
-	);
+	type Draft = { id: string; before: MountSeatOffsets; offsets: MountSeatOffsets };
+	let draft = $state.raw<Draft | null>(null);
+	const editing = $derived(editable && draft?.id === doc.id ? draft : null);
 	$effect.pre(() => {
 		if (draft && !editing) draft = null;
 	});
+	const savedOffset = $derived.by(() => {
+		void doc.rev;
+		return mountSeatOffset(authored?.rig, facing);
+	});
+	const offset = $derived(editing?.offsets[facing] ?? editing?.before[facing] ?? savedOffset);
+	const automatic = $derived(offset.x === 0 && offset.y === 0);
 	const draftPlacement = $derived(
 		editing && rider && presentation
-			? mountPlacement(rider.project, shown, presentation, grounding, editing.point)
+			? mountPlacement(rider.project, facing, presentation, grounding, offset)
 			: placement
 	);
-	const changed = $derived(
-		editing &&
-			(editing.point?.x !== editing.target.saved?.x || editing.point?.y !== editing.target.saved?.y)
+	const changes = $derived(
+		editing
+			? DIRECTIONS.flatMap((facing) => {
+					const before = editing.before[facing],
+						after = editing.offsets[facing];
+					return before && after && (before.x !== after.x || before.y !== after.y)
+						? [{ facing, before, after }]
+						: [];
+				})
+			: []
 	);
-	const point = $derived(editing ? editing.point : target?.saved);
-	const offset = $derived(point && authored ? riderSeatOffset(point, authored.rig.pivot) : null);
+	const controlsId = $props.id();
 	let busy = $state(false);
 	let failure = $state<string | Message>('');
 	let adjustButton = $state<HTMLButtonElement>();
@@ -185,41 +142,33 @@
 		{ area: 'right', label: 'settings.seatRight', icon: ArrowRight, x: 1, y: 0 },
 		{ area: 'down', label: 'settings.seatDown', icon: ArrowDown, x: 0, y: 1 }
 	] as const;
-	const nudgeOrigin = $derived.by(() => {
-		if (!editing || !authored || !frame || !draftPlacement?.view) return null;
-		const { pivot } = authored.rig;
-		const contact = draftPlacement.contact;
-		// Match placeRider's half-pixel tie before applying the first whole-pixel nudge.
-		return {
-			x: Math.ceil(contact.x - frame.x + pivot.x - 0.5),
-			y: Math.ceil(contact.y - frame.y + pivot.y - 0.5)
-		};
-	});
 
 	async function beginEdit() {
-		if (!target) return;
-		playing = false;
+		if (!editable || editing || opening) return;
+		turned = 0;
 		failure = '';
-		draft = { id: doc.id, target, point: target.saved ?? null };
+		draft = {
+			id: doc.id,
+			before: Object.fromEntries(
+				DIRECTIONS.map((dir) => [dir, mountSeatOffset(authored?.rig, dir)])
+			),
+			offsets: {}
+		};
 		await tick();
 		nudgeControls?.querySelector<HTMLButtonElement>('[data-nudge="left"]')?.focus();
 	}
 	async function endEdit() {
 		draft = null;
-		playing = false;
+		turned = 0;
 		await tick();
 		adjustButton?.focus({ preventScroll: true });
 	}
 	function nudge(x: number, y: number) {
-		if (!editing || !authored || !nudgeOrigin || busy) return;
-		const { cell } = authored.rig;
-		draft = {
-			...editing,
-			point: {
-				x: Math.max(0, Math.min(cell.w, nudgeOrigin.x - x)),
-				y: Math.max(0, Math.min(cell.h, nudgeOrigin.y - y))
-			}
-		};
+		setOffset({ x: offset.x + x, y: offset.y + y });
+	}
+	function setOffset(point: typeof offset) {
+		if (!editing || !editing.before[facing] || busy || !validMountSeatOffset(point)) return;
+		draft = { ...editing, offsets: { ...editing.offsets, [facing]: point } };
 	}
 	function padKey(event: KeyboardEvent) {
 		if (event.key === 'Escape' && !busy) {
@@ -234,11 +183,11 @@
 		nudge(step.x, step.y);
 	}
 	async function saveSeat() {
-		if (!editing || !changed || busy) return;
+		if (!editing || !changes.length || busy || opening) return;
 		busy = true;
 		failure = '';
 		try {
-			await saveRiderSeat(editing.id, editing.target, editing.point);
+			await saveMountSeatOffsets(editing.id, changes);
 			await endEdit();
 		} catch (error) {
 			if (editing) failure = errorMessage(error);
@@ -261,7 +210,7 @@
 			bodyFrame = frame,
 			a = availability,
 			current = rider,
-			direction = shown,
+			direction = facing,
 			mounted = riding,
 			p = presentation,
 			place = draftPlacement,
@@ -269,23 +218,25 @@
 			legs = experience.mountLegs,
 			height = standingHeight,
 			running = playing,
-			turning = facings,
-			selector = facingControl;
+			autoTurn = !pinned && !editing,
+			seatOffset = offset;
 		if (!target) return;
 		// Fit the full gait envelope, not a single bob frame. A stationary edit keeps its saved framing
 		// unless the draft needs more room.
-		const envelope = (contact: Point) =>
-			place?.view && bodyFrame
+		const envelope = (placement: typeof place) =>
+			placement?.view && bodyFrame
 				? mountedFrame(
-						{ ...bodyFrame, ...place.riderGround },
-						place.ground,
-						place.view,
-						contact,
-						place.riderGround
+						{ ...bodyFrame, ...placement.riderGround },
+						placement.ground,
+						placement.view,
+						placement.contact,
+						placement.riderGround
 					)
 				: null;
-		const bounds = place?.view ? envelope(place.contact) : null;
-		const fixed = savedPlacement?.view ? envelope(savedPlacement.contact) : bounds;
+		const bounds = envelope(place);
+		const fixed = envelope(savedPlacement) ?? bounds;
+		const alone = place?.view ? null : mountView(TEST_MOUNT, direction, height);
+		const view = place?.view ?? (alone?.ok ? offsetMountSeat(alone.view, seatOffset) : null);
 		const g = target.getContext('2d')!;
 		if (current?.id !== clockRider) {
 			clock = undefined;
@@ -299,15 +250,14 @@
 			const dt = running ? now - last : 0;
 			last = now;
 			elapsed += dt;
-			const autoTurn = !savedPlacement && document.activeElement !== selector;
 			if (autoTurn) turned += dt;
-			if (autoTurn && turned >= TURN_MS && turning.length > 1) {
+			if (autoTurn && turned >= TURN_MS) {
 				turned = 0;
-				facing = turning[(turning.indexOf(direction) + 1) % turning.length];
+				facing = DIRECTIONS[(DIRECTIONS.indexOf(direction) + 1) % DIRECTIONS.length];
 				return;
 			}
 			const layers: { image: Img | HTMLCanvasElement; x: number; y: number }[] = [];
-			let contact: Point | undefined;
+			let contact: { x: number; y: number } | undefined;
 			if (mounted && a && current && p) {
 				clock = advancePlayback(p, clock, dt);
 				const key = JSON.stringify([p.clip, p.direction, clock.cell]);
@@ -332,23 +282,16 @@
 							}
 						: null;
 				}
-				if (composed && place?.view) {
-					const pose = place.view.frames[sampleMountFrame(place.view, elapsed)];
-					const at = placeRider(place.ground, place.contact, pose);
-					layers.push(
-						{ image: pose.back, x: at.mount.x, y: at.mount.y },
-						{ image: composed.image, x: at.rider.x, y: at.rider.y },
-						{ image: pose.front, x: at.mount.x, y: at.mount.y }
-					);
-					contact = { x: at.mount.x + pose.seat.x, y: at.mount.y + pose.seat.y };
-				}
 			}
-			if (!layers.length) {
-				const alone = mountView(TEST_MOUNT, direction, height);
-				if (alone.ok) {
-					const pose = alone.view.frames[sampleMountFrame(alone.view, elapsed)];
-					layers.push({ image: pose.back, x: 0, y: 0 }, { image: pose.front, x: 0, y: 0 });
-				}
+			if (view) {
+				const gait = view.frames[sampleMountFrame(view, elapsed)];
+				const at = place?.view ? placeRider(place.ground, place.contact, gait) : null;
+				const { x, y } = at?.mount ?? { x: 0, y: 0 };
+				layers.push({ image: gait.back, x, y });
+				if (mounted && composed && at)
+					layers.push({ image: composed.image, x: at.rider.x, y: at.rider.y });
+				layers.push({ image: gait.front, x, y });
+				contact = { x: x + gait.seat.x, y: y + gait.seat.y };
 			}
 			const box =
 				bounds && place?.view && contact
@@ -369,7 +312,9 @@
 									b: Math.max(b.b, l.y + h)
 								};
 							},
-							{ l: Infinity, t: Infinity, r: -Infinity, b: -Infinity }
+							contactMarker && contact
+								? { l: contact.x, t: contact.y, r: contact.x, b: contact.y }
+								: { l: Infinity, t: Infinity, r: -Infinity, b: -Infinity }
 						);
 			const width = Math.round(target.clientWidth * devicePixelRatio),
 				tall = Math.round(target.clientHeight * devicePixelRatio);
@@ -435,9 +380,9 @@
 
 <button
 	class="mount-preview"
+	class:editing={!!editing}
 	type="button"
 	aria-label={t(playing ? 'settings.mountPreviewPause' : 'settings.mountPreviewPlay')}
-	aria-describedby={editing ? 'mount-preview-facing' : undefined}
 	onclick={() => (playing = !playing)}
 >
 	<canvas bind:this={canvas} aria-hidden="true"></canvas>
@@ -451,124 +396,110 @@
 	</span>
 </button>
 <div class="mount-caption">
-	{#if editing}
-		<span>{t('settings.seatFacing')}</span>
-		<span id="mount-preview-facing">{displayDirection(shown)}</span>
-	{:else}
-		<label for="mount-preview-facing">{t('settings.seatFacing')}</label>
-		<div class="direction-select">
-			{#each facings as direction (direction)}
-				<span class="direction-measure" aria-hidden="true">{displayDirection(direction)}</span>
+	<label for="mount-preview-facing">{t('settings.seatFacing')}</label>
+	<div class="direction-select">
+		{#each DIRECTIONS as direction (direction)}
+			<span class="direction-measure" aria-hidden="true">{displayDirection(direction)}</span>
+		{/each}
+		<select
+			id="mount-preview-facing"
+			class="bu-select select"
+			value={facing}
+			disabled={busy}
+			onchange={(event) => {
+				pinned = true;
+				turned = 0;
+				facing = event.currentTarget.value as DirectionName;
+			}}
+		>
+			{#each DIRECTIONS as direction (direction)}
+				<option value={direction}>{displayDirection(direction)}</option>
 			{/each}
-			<select
-				id="mount-preview-facing"
-				class="bu-select select"
-				bind:this={facingControl}
-				value={shown}
-				onchange={(event) => {
-					playing = false;
-					turned = 0;
-					facing = event.currentTarget.value as DirectionName;
-				}}
-			>
-				{#each facings as direction (direction)}
-					<option value={direction}>{displayDirection(direction)}</option>
-				{/each}
-			</select>
-		</div>
-	{/if}
+		</select>
+	</div>
 </div>
 <hr class="bu-separator preview-divider" />
 
-{#if !editing}{@render controls()}{/if}
+{@render visibility()}
 
-<div data-setting="rider-seat">
-	<div class="seat-row">
+<div class="seat-setting" class:editing={!!editing} data-setting="rider-seat">
+	<SettingsItemButton
+		aria-label={t('settings.seatPosition')}
+		title={t('settings.adjustSeat')}
+		aria-expanded={!!editing}
+		aria-controls={editing ? controlsId : undefined}
+		aria-describedby={editable ? `${controlsId}-value` : `${controlsId}-help`}
+		disabled={!editable || busy || (opening && !editing)}
+		bind:element={adjustButton}
+		onclick={beginEdit}
+	>
 		<Armchair size={18} aria-hidden="true" />
-		<span>{t('settings.seatPosition')}</span>
-		{#if target}
-			<output
-				class="seat-value"
-				title={t('settings.seatOffsetHelp')}
-				aria-live={editing ? 'polite' : 'off'}
-				>{offset ? t('settings.seatOffset', offset) : t('creationSettings.automatic')}</output
-			>
+		<span class="row-name">{t('settings.seatPosition')}</span>
+		{#if editable}
+			<output class="seat-value" id={`${controlsId}-value`} aria-live={editing ? 'polite' : 'off'}>
+				{t('settings.seatOffset', offset)}
+			</output>
 		{/if}
-		{#if !editing}
-			<button
-				type="button"
-				class="bu-action"
-				data-variant="field"
-				aria-describedby={target ? undefined : 'mount-seat-help'}
-				disabled={!target}
-				bind:this={adjustButton}
-				onclick={beginEdit}
-			>
-				<Pencil size={16} aria-hidden="true" />{t('settings.adjustSeat')}
-			</button>
-		{/if}
-	</div>
-	{#if !target}
-		<p class="seat-help" id="mount-seat-help">
-			{seatHint === 'settings.seatNeedsNewPose'
-				? t(seatHint, { states: t('experience.tabStates'), add: t('moves.addState') })
-				: seatHint === 'settings.seatNeedsPose'
-					? t(seatHint, { pose: t('toolbar.riderPose') })
-					: t(seatHint)}
+		<Pencil size={16} aria-hidden="true" />
+	</SettingsItemButton>
+	{#if !editable}
+		<p class="seat-help" id={`${controlsId}-help`}>
+			{t('settings.seatNeedsCharacter')}
 		</p>
 	{/if}
 </div>
 
 {#if editing}
-	<p class="seat-help">{t('settings.seatMarkerHelp')}</p>
-	<div class="seat-nudges" dir="ltr" bind:this={nudgeControls}>
-		{#each nudges as step, index (step.area)}
-			{#if index === 2}
+	<div class="seat-editor" id={controlsId}>
+		<p class="seat-help">{t('settings.seatMarkerHelp')}</p>
+		<div class="seat-nudges" dir="ltr" bind:this={nudgeControls}>
+			{#each nudges as step, index (step.area)}
+				{#if index === 2}
+					<button
+						type="button"
+						class="bu-action"
+						data-variant="outline"
+						style:grid-area="reset"
+						aria-label={t('settings.seatAuto')}
+						title={t('settings.seatAuto')}
+						aria-pressed={automatic}
+						disabled={busy}
+						onkeydown={padKey}
+						onclick={() => setOffset(AUTOMATIC_MOUNT_SEAT)}
+						><LocateFixed size={18} aria-hidden="true" /></button
+					>
+				{/if}
 				<button
 					type="button"
 					class="bu-action"
-					data-variant="field"
-					style:grid-area="reset"
-					aria-label={t('settings.seatAuto')}
-					title={t('settings.seatAuto')}
-					aria-pressed={!editing.point}
+					data-variant="outline"
+					data-nudge={step.area}
+					style:grid-area={step.area}
+					aria-label={t(step.label)}
+					title={t(step.label)}
 					disabled={busy}
 					onkeydown={padKey}
-					onclick={() => {
-						if (editing?.point) draft = { ...editing, point: null };
-					}}><LocateFixed size={18} aria-hidden="true" /></button
+					onclick={() => nudge(step.x, step.y)}
 				>
-			{/if}
+					<step.icon size={18} aria-hidden="true" />
+				</button>
+			{/each}
+		</div>
+		{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
+		<div class="seat-actions">
+			<button type="button" class="bu-action" data-variant="quiet" disabled={busy} onclick={endEdit}
+				>{t('common.cancel')}</button
+			>
 			<button
 				type="button"
 				class="bu-action"
-				data-variant="field"
-				data-nudge={step.area}
-				style:grid-area={step.area}
-				aria-label={t(step.label)}
-				title={t(step.label)}
-				disabled={busy}
-				onkeydown={padKey}
-				onclick={() => nudge(step.x, step.y)}
+				data-variant="primary"
+				disabled={!changes.length || busy || opening}
+				onclick={saveSeat}
 			>
-				<step.icon size={18} aria-hidden="true" />
+				{t(busy ? 'directionsSheet.saving' : 'common.save')}
 			</button>
-		{/each}
-	</div>
-	{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
-	<div class="seat-actions">
-		<button type="button" class="bu-action" data-variant="quiet" disabled={busy} onclick={endEdit}
-			>{t('common.cancel')}</button
-		>
-		<button
-			type="button"
-			class="bu-action"
-			data-variant="primary"
-			disabled={!changed || busy}
-			onclick={saveSeat}
-		>
-			{t(busy ? 'directionsSheet.saving' : 'common.save')}
-		</button>
+		</div>
 	</div>
 {/if}
 
@@ -587,6 +518,25 @@
 	}
 	.mount-preview:hover {
 		border-color: var(--bu-border);
+	}
+	@media (max-height: 700px) {
+		:global(.sheet-body):has(.mount-preview.editing) {
+			--compact-stage: clamp(88px, 22dvh, 140px);
+			scroll-padding-block-start: calc(var(--compact-stage) + 48px);
+		}
+		.mount-preview.editing,
+		.seat-setting.editing {
+			position: sticky;
+			z-index: 1;
+		}
+		.mount-preview.editing {
+			inset-block-start: 0;
+			block-size: var(--compact-stage);
+		}
+		.seat-setting.editing {
+			inset-block-start: var(--compact-stage);
+			background: var(--bu-surface);
+		}
 	}
 	canvas {
 		min-inline-size: 0;
@@ -614,7 +564,6 @@
 		filter: drop-shadow(0 0 1px var(--bu-canvas)) drop-shadow(0 0 1px var(--bu-canvas));
 	}
 	.mount-caption,
-	.seat-row,
 	.seat-actions {
 		display: flex;
 		align-items: center;
@@ -646,23 +595,13 @@
 	.preview-divider {
 		margin-block: 4px 8px;
 	}
-	.seat-row {
-		flex-wrap: wrap;
-		min-block-size: 44px;
-	}
-	.seat-row button {
-		margin-inline-start: auto;
-		min-inline-size: 44px;
-		min-block-size: 44px;
-		justify-content: center;
-	}
-	.seat-value + button {
-		margin-inline-start: 0;
-	}
 	.seat-value {
 		margin-inline-start: auto;
 		font-variant-numeric: tabular-nums;
 		color: var(--bu-muted);
+	}
+	.seat-setting .seat-help {
+		margin-block: 6px 0;
 	}
 	.seat-help {
 		margin-block: 0 8px;
