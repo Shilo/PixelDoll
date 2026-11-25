@@ -116,11 +116,12 @@ export async function selectedItemDetails(page: Page) {
 
 /** Open one of the Item sheet's disclosure sections, such as Customize or Layer order. */
 export async function openItemSection(dialog: Locator, name: string) {
-	const section = dialog
-		.locator('details')
-		.filter({ has: dialog.locator('summary', { hasText: name }) });
+	const summary = dialog.locator('summary').filter({ hasText: name }).first();
+	// `xpath=..` takes the summary's own details: a has: filter would look for the named summary inside each candidate,
+	// where a chained dialog locator never matches.
+	const section = summary.locator('xpath=..');
 	if (!(await section.evaluate((element) => (element as HTMLDetailsElement).open)))
-		await section.locator('summary').first().click();
+		await summary.click();
 	await expect(section).toHaveAttribute('open', '');
 	return section;
 }

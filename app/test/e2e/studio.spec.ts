@@ -14,7 +14,14 @@ import {
 	playbackPicker,
 	selectPlaybackClip
 } from './immersive-helpers.ts';
-import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
+import {
+	expect,
+	test,
+	type BrowserContext,
+	type Locator,
+	type Page,
+	type TestInfo
+} from '@playwright/test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
@@ -11024,12 +11031,12 @@ for (const changed of ['item', 'rig'] as const)
 
 // ---- Per-tile item menu (docs/design/2026-11-11-ui-refinement/ui-lab-7.html) and Wardrobe placement ----
 
-async function editableCopy(page: Page) {
+async function editableCopy(page: Page, url = '/#/') {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
 	});
-	await openStudio(page, '/#/');
+	await openStudio(page, url);
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
@@ -11601,6 +11608,10 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	expect(Math.abs((await heading.boundingBox())!.y - list.y)).toBeLessThan(24);
 });
 
+/** Page-data tests load the dev server, whose /src modules the preview server does not serve. */
+const devBaseURL = (info: TestInfo) =>
+	info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!;
+
 const wornItem = (page: Page, slot: string) =>
 	page.evaluate(
 		async ({ path, slot }) => {
@@ -11631,8 +11642,8 @@ async function hideHairWithHelmet(page: Page) {
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 }
 
-test('item details wears and takes off from its primary action', async ({ page }) => {
-	await editableCopy(page);
+test('item details wears and takes off from its primary action', async ({ page }, info) => {
+	await editableCopy(page, devBaseURL(info));
 	const details = await openItemDetails(page, 'Wizard hat');
 	await expect(details.locator('.insp-sub')).toContainText('Not worn');
 	const wear = details.getByRole('button', { name: 'Wear', exact: true });
@@ -11647,8 +11658,8 @@ test('item details wears and takes off from its primary action', async ({ page }
 	await expect(details.getByRole('button', { name: 'Wear', exact: true })).toBeVisible();
 });
 
-test('item details names what hides an item and shows it again', async ({ page }) => {
-	await editableCopy(page);
+test('item details names what hides an item and shows it again', async ({ page }, info) => {
+	await editableCopy(page, devBaseURL(info));
 	await hideHairWithHelmet(page);
 	const details = await openItemDetails(page, 'Messy brown hair');
 	await expect(details.locator('.insp-sub')).toContainText('Hidden by another item');
@@ -11666,19 +11677,22 @@ test('item details names what hides an item and shows it again', async ({ page }
 
 test('item details reorders layers for an unworn item, gates the ends and resets them', async ({
 	page
-}) => {
-	await editableCopy(page);
+}, info) => {
+	await editableCopy(page, devBaseURL(info));
 	const details = await openItemDetails(page, 'Wizard hat');
 	const layerSection = await openItemSection(details, 'Layer order');
 	const forward = details.getByRole('button', { name: 'Forward', exact: true });
 	const backward = details.getByRole('button', { name: 'Backward', exact: true });
-	// The hat is not worn; it is placed as if worn, so Backward works and Forward is already at the front.
-	await expect(forward).toBeDisabled();
+	// The hat is not worn; it is placed as if worn, so Backward works among the worn layers.
 	await expect(backward).toBeEnabled();
 	const before = await headLayerOverrides(page);
 	await backward.click();
 	await expect.poll(() => headLayerOverrides(page)).not.toEqual(before);
 	await expect(details.getByRole('button', { name: 'Reset', exact: true })).toBeVisible();
+	await expect(forward).toBeEnabled();
+	// At the very back there is nothing left to move behind: the arrow disables instead of silently doing nothing.
+	for (let step = 0; step < 8 && (await backward.isEnabled()); step++) await backward.click();
+	await expect(backward).toBeDisabled();
 	await expect(forward).toBeEnabled();
 	// A disclosure toggles from the keyboard, and its controls stay reachable.
 	const summary = details.locator('summary').filter({ hasText: 'Layer order' });
@@ -11691,8 +11705,8 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 	await expect.poll(() => headLayerOverrides(page)).toEqual(before);
 });
 
-test('layer order explains why a hidden item cannot be reordered', async ({ page }) => {
-	await editableCopy(page);
+test('layer order explains why a hidden item cannot be reordered', async ({ page }, info) => {
+	await editableCopy(page, devBaseURL(info));
 	await hideHairWithHelmet(page);
 	const details = await openItemDetails(page, 'Messy brown hair');
 	await openItemSection(details, 'Layer order');
