@@ -40,6 +40,8 @@
 		display: flex;
 		align-items: center;
 		flex: none;
+		/* The same gap as the top bar's other action groups. */
+		gap: 4px;
 	}
 	/* The same 44px targets in the top bar and in the New character screen's bar. */
 	.global-actions :global(.bu-action) {

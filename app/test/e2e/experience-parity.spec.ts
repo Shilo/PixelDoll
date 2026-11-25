@@ -3467,8 +3467,15 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	const more = page.getByRole('button', { name: 'More options', exact: true });
 	const bar = page.locator('.experience-header');
 	const fits = () => bar.evaluate((header) => header.scrollWidth <= header.clientWidth + 1);
-	// The demo's short name leaves room: nothing moves beyond what phones always keep in More.
-	await expect(page.locator('.experience')).not.toHaveAttribute('data-overflow');
+	// The phone bar shares the window's edge margin with the customization sheet.
+	const barBox = (await bar.boundingBox())!;
+	expect(barBox.x).toBe(16);
+	expect(page.viewportSize()!.width - barBox.x - barBox.width).toBe(16);
+	// At 320 the phone edge margin leaves the demo name just enough room: Export moves into More first.
+	await expect(page.locator('.experience')).toHaveAttribute(
+		'data-overflow',
+		'undo redo random share export'
+	);
 	expect(await fits()).toBe(true);
 	await more.click();
 	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
@@ -3556,6 +3563,13 @@ test('customization panel docks on either side, gives the stage its width back a
 	const stage = page.locator('.experience-stage');
 	const originalToggle = await toggle.boundingBox();
 	const originalStage = (await stage.boundingBox())!;
+	const originalPanel = (await rail.boundingBox())!;
+	const originalSlots = (await page.locator('.slot-rail-column').boundingBox())!;
+	// The slot rail sits on the panel's outer edge, so its icons stay against the window edge.
+	expect(originalSlots.x + originalSlots.width).toBeCloseTo(
+		originalPanel.x + originalPanel.width,
+		0
+	);
 	const list = rail.locator('.equipment-scroll').first();
 	const scroll = await list.evaluate((el) => {
 		el.scrollTop = 150;
@@ -3651,6 +3665,8 @@ test('customization panel docks on either side, gives the stage its width back a
 	await page.keyboard.press('Escape');
 	const leftStage = (await stage.boundingBox())!;
 	const leftRail = (await rail.boundingBox())!;
+	const leftSlots = (await page.locator('.slot-rail-column').boundingBox())!;
+	expect(leftSlots.x).toBeCloseTo(leftRail.x, 0);
 	expect(leftRail.x + leftRail.width).toBeLessThan(leftStage.x);
 	expect(leftStage.width).toBeCloseTo(originalStage.width, 0);
 	// Left dock: Back, the toggle, then the character name.
@@ -3674,6 +3690,50 @@ test('customization panel docks on either side, gives the stage its width back a
 	await customize(page);
 	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 	expect((await stage.boundingBox())!.x).toBeGreaterThan(0);
+});
+
+test('the Studio top bar keeps one gap and equal edge insets', async ({ page }) => {
+	for (const [width, height, gap] of [
+		[1440, 900, 4],
+		[390, 844, 0]
+	] as const) {
+		await page.setViewportSize({ width, height });
+		await customize(page);
+		const metrics = await page.evaluate(() => {
+			const boxes = (selector: string) =>
+				[...document.querySelectorAll<HTMLElement>(selector)]
+					.filter((el) => el.getBoundingClientRect().width > 0)
+					.map((el) => {
+						const box = el.getBoundingClientRect();
+						return { left: box.left, right: box.right };
+					});
+			const gaps = (items: { left: number; right: number }[]) =>
+				items.slice(1).map((item, i) => Math.round((item.left - items[i].right) * 100) / 100);
+			const header = document.querySelector<HTMLElement>('.experience-header')!;
+			const start = boxes('.header-start > button');
+			const actions = boxes('.header-actions button');
+			const frame = header.getBoundingClientRect();
+			return {
+				innerWidth,
+				header: { left: frame.left, right: frame.right },
+				start,
+				actions,
+				startGaps: gaps(start),
+				actionGaps: gaps(actions),
+				globalGap: getComputedStyle(header.querySelector('.global-actions')!).gap
+			};
+		});
+		// The first action on the left and the last action on the right sit the same distance from their window edges.
+		expect(metrics.start[0].left).toBeCloseTo(metrics.header.left, 1);
+		expect(metrics.header.left).toBeCloseTo(metrics.innerWidth - metrics.header.right, 1);
+		expect(metrics.start[0].left).toBeCloseTo(
+			metrics.innerWidth - metrics.actions.at(-1)!.right,
+			1
+		);
+		expect(metrics.startGaps.every((value) => value === gap)).toBe(true);
+		expect(metrics.actionGaps.every((value) => value === gap)).toBe(true);
+		expect(metrics.globalGap).toBe(`${gap}px`);
+	}
 });
 
 test.describe('customization panel on compact touch screens', () => {

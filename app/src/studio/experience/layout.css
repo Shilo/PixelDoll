@@ -111,6 +111,9 @@
 .phone-layout :is(.header-actions, .header-start) {
 	gap: 0;
 }
+.phone-layout .experience-header .global-actions {
+	gap: 0;
+}
 .experience
 	:is(
 		.mobile-random,
@@ -317,10 +320,6 @@
 	display: block !important;
 }
 @media (max-width: 430px) {
-	.phone-layout .experience-header {
-		left: 8px;
-		right: 8px;
-	}
 	.phone-layout .name-text .bu-muted {
 		display: block;
 		font-size: 12px;
@@ -512,6 +511,13 @@
 .panel-left .equipment-rail {
 	left: var(--edge);
 	right: auto;
+}
+/* The slot rail sits on the panel's outer edge, so the icons are always against the window edge nearest the panel. */
+.panel-left .wardrobe-panes {
+	flex-direction: row-reverse;
+}
+.panel-left .wardrobe-panes .section-list {
+	padding: 0 5px var(--panel-bottom) 6px;
 }
 :is(.sheet-layout, .panel-only) .equipment-rail {
 	/* The sheet already pads its bottom edge; the lists keep only room for a focus ring. */
