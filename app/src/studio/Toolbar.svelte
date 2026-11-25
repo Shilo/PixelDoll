@@ -25,6 +25,7 @@
 		store,
 		openProject,
 		openRename,
+		openAppearance,
 		undo,
 		redo,
 		randomize,
@@ -43,6 +44,7 @@
 		House,
 		Activity,
 		Pencil,
+		Sparkles,
 		PersonStanding,
 		Copy,
 		Dices,
@@ -349,6 +351,18 @@
 			{#each store.projects.filter((p) => !p.dev) as p (p.id)}{@render proj(p)}{/each}
 		</div>
 		<NewCharacterButton row />
+		{#if doc.id.startsWith('rig-')}<button
+				class="row"
+				role="menuitem"
+				aria-haspopup="dialog"
+				onclick={() => {
+					close();
+					openAppearance(doc.id);
+				}}
+				><Sparkles size={16} aria-hidden="true" /><span class="row-name"
+					>{t('appearance.action')}</span
+				><SurfaceChevron /></button
+			>{/if}
 		{#if !isDemo()}<button
 				class="row"
 				role="menuitem"

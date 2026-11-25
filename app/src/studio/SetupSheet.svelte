@@ -21,7 +21,8 @@
 		setupBusy,
 		dismissSetup,
 		saveDescription,
-		withKey
+		withKey,
+		openAppearance
 	} from './state.svelte.ts';
 	import { Check, TriangleAlert } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
@@ -220,6 +221,17 @@
 						]}
 		/>
 	{/snippet}
+	{#if doc.id.startsWith('rig-') && rec && plan && !active && !ready && !busyElsewhere}
+		<button
+			class="bu-action"
+			data-variant="quiet"
+			aria-haspopup="dialog"
+			onclick={() => {
+				formDrafts.setup = { projectId: doc.id, looks, restAnim };
+				openAppearance(doc.id, undefined, 'setup');
+			}}>{t('appearance.action')}</button
+		>
+	{/if}
 
 	{#if mine && settingUp.spec}
 		<div class="api-action">

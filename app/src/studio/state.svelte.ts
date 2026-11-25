@@ -144,7 +144,8 @@ import {
 import { live, queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { itemJobs } from './itemJobs.ts';
 import { mirroredMove, type ElsewhereMove } from './elsewhereMove.ts';
-import { stateBatchScope } from '../lib/pixellab/activity.ts';
+import { appearanceBatchScope, stateBatchScope } from '../lib/pixellab/activity.ts';
+import { appearanceReviewHold } from './appearanceSource.ts';
 import { stateAttempts } from './stateRecovery.ts';
 import {
 	activityStateMessage,
@@ -285,6 +286,7 @@ export type SheetId =
 	| 'itemGeneration'
 	| 'stateCapture'
 	| 'stateReview'
+	| 'appearance'
 	| 'rename'
 	| 'directions'
 	| 'importZip'
@@ -336,6 +338,14 @@ export const ui = $state({
 	itemGeneration: '', // the saved move or State whose missing equipment the item picker offers
 	stateCaptureMove: '',
 	stateReview: '', // token of the State attempt the review sheet shows
+	appearance: null as {
+		target: import('./appearanceSource.ts').AppearanceTarget;
+		choice: import('./appearanceSource.ts').AppearanceChoice;
+		model: import('./stateGenerationPlan.ts').StateGenerationModel;
+		prompt: string;
+		reference?: import('../lib/image/reference.ts').PickedReference;
+		back?: 'item' | 'setup';
+	} | null,
 	redrawMove: '',
 	moveFormOpen: false,
 	get sheet(): SheetId {
@@ -800,6 +810,17 @@ export const doc = $state({
 	colorPreview: null as { id: string; value: string } | null
 });
 export const isDemo = () => doc.id.startsWith('fixture:');
+
+export function openAppearance(projectId: string, itemId?: string, back?: 'item' | 'setup') {
+	ui.appearance = {
+		target: { projectId, itemId, clip: itemId ? ui.anim : undefined },
+		choice: itemId ? 'custom' : 'underwear',
+		model: 'pro',
+		prompt: '',
+		back
+	};
+	ui.sheet = 'appearance';
+}
 
 /** What the stage shows: the project with the selected color variants swapped in (exact ramp swap) and the worn drafts' current
  *  previews, the outfit with those drafts on, and the playing cell. */
@@ -1823,6 +1844,7 @@ export async function adjustCharacter(
 		);
 	const reviewing = moveReviewHold(rec.moveReviews);
 	if (reviewing) throw reviewing;
+	if (Object.keys(rec.appearanceEdits ?? {}).length) throw appearanceReviewHold();
 	if (stateAttempts(rec).length)
 		throw new LocalizedError(
 			'Save or discard the pending State before adjusting the frame.',
@@ -1909,6 +1931,7 @@ export async function importMoves(
 	blocked();
 	await flushSave();
 	const { rec, project } = await loadProject(id);
+	if (Object.keys(rec.appearanceEdits ?? {}).length) throw appearanceReviewHold();
 	if (stableStringify(expect) !== stableStringify(rec))
 		throw new LocalizedError(
 			'This character changed. Choose the ZIP again to review the latest version.',
@@ -2348,6 +2371,7 @@ export async function removeProject(id = doc.id): Promise<void> {
 	let kept: RecentlyDeleted | undefined;
 	try {
 		kept = await db.deleteCharacter<RecentlyDeleted>(id, (record, drafts) => {
+			if (Object.keys(record.appearanceEdits ?? {}).length) throw appearanceReviewHold();
 			const entry = deletedEntry({
 				kind: 'character',
 				record,
@@ -2822,6 +2846,7 @@ export async function removeItem(itemId: string) {
 			projectId,
 			itemId,
 			(rec) => {
+				if (rec.appearanceEdits?.[itemId]) throw appearanceReviewHold();
 				// Another tab may have deleted it already: nothing was removed, so nothing needs an entry.
 				if (!rec.manifest.items.some((item) => item.id === itemId)) return undefined;
 				const entry = deletedEntry({
@@ -4437,10 +4462,20 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 			)
 		)
 	);
+	const appearanceScopes = new Set(
+		projects.flatMap((value) =>
+			Object.values((value as Partial<StoredProject> | undefined)?.appearanceEdits ?? {}).flatMap(
+				(attempt) => attempt.plan.batches.map((_, index) => appearanceBatchScope(attempt.id, index))
+			)
+		)
+	);
 	const jobs = await queue.clearFinished(
 		(r) =>
 			refs.has(r.id) ||
 			(r.tag === 'studio-state' && !!r.activityScope && stateScopes.has(r.activityScope)) ||
+			(r.tag === 'studio-appearance' &&
+				!!r.activityScope &&
+				appearanceScopes.has(r.activityScope)) ||
 			((flow || heldCreate()) && FLOW_TAGS.includes(r.tag ?? '')) ||
 			(r.finishedAt ?? r.createdAt) > cutoff
 	);

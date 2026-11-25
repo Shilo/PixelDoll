@@ -84,6 +84,7 @@
 		itemGeneration: () => import('./ItemGenerationSheet.svelte'),
 		stateCapture: () => import('./StateCaptureSheet.svelte'),
 		stateReview: () => import('./StateReviewSheet.svelte'),
+		appearance: () => import('./AppearanceSheet.svelte'),
 		importZip: () => import('./ImportSheet.svelte'),
 		importPixelLab: () => import('./ImportSheet.svelte'),
 		setup: () => import('./SetupSheet.svelte'),
@@ -414,6 +415,7 @@
 			/>{/key}{/if}
 	{#if ui.sheet === 'stateCapture'}<Lazy load={parts.stateCapture} />{/if}
 	{#if ui.sheet === 'stateReview'}{#key ui.stateReview}<Lazy load={parts.stateReview} />{/key}{/if}
+	{#if ui.sheet === 'appearance' && ui.appearance}<Lazy load={parts.appearance} />{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
 	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}
 	{#if ui.sheet === 'adjustFrame'}<Lazy load={parts.adjustFrame} id={ui.frameProject} />{/if}

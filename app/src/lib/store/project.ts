@@ -20,6 +20,7 @@ export interface StoredProject {
 	moveReviews?: Record<string, import('../../studio/replaceMove.ts').MoveCandidate>;
 	/** Unsaved State attempts by token. */
 	stateGenerations?: Record<string, import('../../studio/stateGeneration.ts').StateAttempt>;
+	appearanceEdits?: Record<string, import('../../studio/appearanceEdit.ts').AppearanceAttempt>;
 	managedStates?: Record<string, string>;
 	moveRecovery?: {
 		id: string;

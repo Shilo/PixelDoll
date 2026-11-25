@@ -129,7 +129,8 @@ test('a backup holds only saved Studio characters and restores them with their a
 		}
 	};
 	const stateGenerations = { 'pending-state': { token: 'pending-state' } };
-	saved.projects.set('rig-a', { ...character, stateGenerations });
+	const appearanceEdits = { '': { id: 'pending-appearance' } };
+	saved.projects.set('rig-a', { ...character, stateGenerations, appearanceEdits });
 	const file = await exportBackup([]);
 	expect(file).toMatchObject({ characters: 1, hasOmissions: false });
 	const source = await readRestoreSource(file.bytes);
@@ -137,8 +138,9 @@ test('a backup holds only saved Studio characters and restores them with their a
 	expect([...source.characters.keys()]).toEqual(['rig-a']);
 	expect(source.characters.get('rig-a')!.creationSpec).toBeUndefined();
 	expect(source.characters.get('rig-a')!.stateGenerations).toBeUndefined();
+	expect(source.characters.get('rig-a')!.appearanceEdits).toBeUndefined();
 	expect(source.blobs.has(reference)).toBe(true);
-	expect(restored('rig-a')).toMatchObject({ stateGenerations });
+	expect(restored('rig-a')).toMatchObject({ stateGenerations, appearanceEdits });
 	expect((await planRestore(source)).entries).toMatchObject([{ action: 'skip', match: 'rig-a' }]);
 
 	saved.projects = new Map([['rig-dev', { id: 'rig-dev', origin: 'dev' }]]);

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
+	import { canEditItemAppearance } from './appearanceSource.ts';
 	import { t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import { tick } from 'svelte';
@@ -32,6 +33,7 @@
 		isDemo,
 		openNewItem,
 		openRename,
+		openAppearance,
 		toggleTwoHanded,
 		otherHandOf,
 		cancelGen,
@@ -53,6 +55,7 @@
 		ArrowRightLeft,
 		ChevronLeft,
 		Pencil,
+		Sparkles,
 		RefreshCw,
 		Trash
 	} from './icons.ts';
@@ -363,6 +366,15 @@
 						)}<SurfaceChevron /></button
 					>
 					{#if !isDemo() && !it.variantOf}
+						{#if canEditItemAppearance(m, it)}<button
+								class="row bu-action"
+								data-variant="quiet"
+								role="menuitem"
+								aria-haspopup="dialog"
+								onclick={() => act(() => openAppearance(doc.id, it.id))}
+								><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
+								/></button
+							>{/if}
 						<button
 							class="row bu-action"
 							data-variant="quiet"

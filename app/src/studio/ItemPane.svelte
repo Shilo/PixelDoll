@@ -3,6 +3,7 @@
 	import Sheet from './Sheet.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
+	import { canEditItemAppearance } from './appearanceSource.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
@@ -65,6 +66,7 @@
 		removeItem,
 		isDemo,
 		openNewItem,
+		openAppearance,
 		withKey,
 		startMove,
 		queueMoves,
@@ -831,6 +833,15 @@
 					data-variant="outline"
 					onclick={() => wear(it.id)}>{on ? t('common.takeOff') : t('common.wear')}</button
 				>
+				{#if !isDemo() && canEditItemAppearance(m, it)}
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						aria-haspopup="dialog"
+						onclick={() => openAppearance(doc.id, it.id, 'item')}
+						>{t('appearance.action')}<SurfaceChevron /></button
+					>
+				{/if}
 				{#if !isDemo() && it.prompt}
 					<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
 					<button
