@@ -1257,12 +1257,6 @@
 .sheet-layout .customize-action {
 	min-height: 48px;
 }
-.empty-cast {
-	position: absolute;
-	inset: 50% 0 auto;
-	text-align: center;
-	color: var(--bu-muted);
-}
 
 /* ---------- Inspect, menus, notes ---------- */
 .inspection-stage {

@@ -2647,7 +2647,9 @@ test('selection search shows an honest zero-result state and preserves native ed
 	await search.fill('There is no such saved character');
 	await expect(page.locator('.character-row')).toHaveCount(0);
 	await expect(page.locator('.cast-character')).toHaveCount(0);
-	await expect(page.locator('.empty-cast')).toHaveText('No matching characters');
+	await expect(page.locator('.selected-caption')).toContainText('No matching characters');
+	await expect(page.locator('.cast-library')).not.toContainText('No matching characters');
+	await expect(search).toHaveAttribute('placeholder', 'Search');
 	await expect(page.locator('.customize-action')).toBeDisabled();
 	await page.keyboard.press('ArrowLeft');
 	await page.keyboard.press('Enter');
@@ -2668,7 +2670,7 @@ test('selection search follows the whole library, not the filtered rows', async 
 	});
 	await expect(search).toBeVisible();
 	await search.fill('There is no such saved character');
-	await expect(page.locator('.empty-cast')).toHaveText('No matching characters');
+	await expect(page.locator('.selected-caption')).toContainText('No matching characters');
 	// Losing focus or narrowing to nothing never takes the field away from a query.
 	await search.blur();
 	await expect(search).toBeVisible();

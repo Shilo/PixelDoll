@@ -662,11 +662,12 @@
 				floorFocal={baseWorld.scale * worldArt(ui.theme).focal}
 				select={pick}
 			/>
-			{#if list.length}<div
-					class="selected-caption"
-					bind:offsetHeight={selectionCaptionHeight}
-					style:top="{g.feet.y + selectionCaptionGap}px"
-				>
+			<div
+				class="selected-caption"
+				bind:offsetHeight={selectionCaptionHeight}
+				style:top="{g.feet.y + selectionCaptionGap}px"
+			>
+				{#if list.length}
 					<!-- The heading sits beside the menu button: a heading is not allowed inside a button. -->
 					<h2 class="sr">{name}</h2>
 					<button
@@ -689,7 +690,10 @@
 								onclick={() => next(1)}><ChevronRight size={18} /></button
 							>
 						</div>{/if}
-				</div>{:else}<p class="empty-cast">{t('experience.noMatchingCharacters')}</p>{/if}
+				{:else if !pending.length}
+					<p class="selected-name-text">{t('experience.noMatchingCharacters')}</p>
+				{/if}
+			</div>
 		</div>
 		{#if selectionZoom.zoomed}
 			<div class="scene-zoom-controls">
@@ -702,9 +706,7 @@
 					flush
 					bind:value={search}
 					label={t('experience.searchCharacters')}
-					placeholder={g.sheet
-						? t('experience.placeholderSearch')
-						: t('experience.searchCharacters')}
+					placeholder={t('experience.placeholderSearch')}
 					clearLabel={t('search.clear')}
 					summary={t('search.results', {
 						count: list.length + pending.length,
@@ -792,9 +794,7 @@
 							></button
 						>
 					</CharacterActions>
-				{:else}{#if !pending.length}<p class="muted">
-							{t('experience.noMatchingCharacters')}
-						</p>{/if}{/each}
+				{/each}
 				<NewCharacterButton row />
 			</div>
 			<button

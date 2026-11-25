@@ -1516,6 +1516,7 @@ test('studio demo: list search appears only when a panel overflows and filters w
 	// Wardrobe already has more rows than a glance, so its field shows without help.
 	const wardrobe = page.getByRole('searchbox', { name: 'Search wardrobe', exact: true });
 	await expect(wardrobe).toBeVisible();
+	await expect(wardrobe).toHaveAttribute('placeholder', 'Search');
 	await wardrobe.fill('wizard');
 	await expect(page.getByRole('button', { name: /^Wizard hat(,|$)/ })).toHaveCount(1);
 	await expect(page.getByRole('button', { name: /^Steel helmet(,|$)/ })).toHaveCount(0);
@@ -1540,6 +1541,14 @@ test('studio demo: list search appears only when a panel overflows and filters w
 	const shownOrder = await groupKeys();
 	const positions = shownOrder.map((key) => fullOrder.indexOf(key!));
 	expect(positions).toEqual([...positions].sort((a, b) => a - b));
+	// A matching hidden slot stays under Not shown and is counted in the result summary.
+	const hiddenName = (await page.locator('.not-shown-slot').first().getAttribute('aria-label'))
+		?.replace(/^Show /, '')
+		.trim();
+	expect(hiddenName).toBeTruthy();
+	await wardrobe.fill(hiddenName!);
+	await expect(page.locator('.not-shown-toggle')).toBeVisible();
+	await expect(page.locator('.list-search .sr')).toHaveText(/^1 of \d+$/);
 	await page.getByRole('button', { name: 'Clear search', exact: true }).click();
 
 	// Short panels stay uncluttered until their content scrolls.
@@ -1555,6 +1564,7 @@ test('studio demo: list search appears only when a panel overflows and filters w
 			(element as HTMLElement).style.maxHeight = '40px';
 		});
 		await expect(search).toBeVisible();
+		await expect(search).toHaveAttribute('placeholder', 'Search');
 		await search.fill(query);
 		await expect(list.getByRole('button', { name: new RegExp(kept) })).toHaveCount(1);
 		await expect(list.getByRole('button', { name: new RegExp(hidden) })).toHaveCount(0);

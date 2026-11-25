@@ -1,5 +1,7 @@
 // Keeps a list's search field honest: it appears once the unfiltered list is longer than a glance, and it stays
 // while a query is active, even when the filter leaves nothing behind.
+import { searchFieldVisible } from '../lib/search/visibility.ts';
+
 export function createSearchVisibility(options: {
 	element: () => HTMLElement | undefined;
 	total: () => number;
@@ -7,6 +9,8 @@ export function createSearchVisibility(options: {
 	minItems?: number;
 	/** Height inside the scroll box that is reserved room, not content (the list spacer). */
 	reserve?: () => number;
+	/** False when the list holds nothing searchable, so it must not show the field even if it scrolls. */
+	canSearch?: () => boolean;
 }) {
 	let overflowing = $state(false);
 	$effect(() => {
@@ -40,7 +44,13 @@ export function createSearchVisibility(options: {
 	});
 	return {
 		get visible() {
-			return options.query() !== '' || overflowing || options.total() >= (options.minItems ?? 6);
+			return searchFieldVisible({
+				query: options.query(),
+				overflowing,
+				total: options.total(),
+				minItems: options.minItems,
+				canSearch: options.canSearch?.()
+			});
 		}
 	};
 }

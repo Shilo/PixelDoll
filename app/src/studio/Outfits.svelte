@@ -76,6 +76,7 @@
 		<ListSearch
 			bind:value={query}
 			label={t('search.outfits')}
+			placeholder={t('experience.placeholderSearch')}
 			clearLabel={t('search.clear')}
 			summary={t('search.results', { count: matched.length, total: m.presets.length })}
 			shown={visibility.visible}

@@ -392,18 +392,21 @@
 		searching ? notShown.filter((c) => matchesSearch([c.label], query)) : notShown
 	);
 	const searchTotal = $derived(
-		sections.reduce((n, s) => n + s.items.length + s.pending.length + s.others.length, 0) +
-			(notShown.length ? 1 : 0)
+		sections.reduce((n, s) => n + s.items.length + s.pending.length + s.others.length, 0)
 	);
 	const searchShown = $derived(
-		filteredSections.reduce((n, s) => n + s.items.length + s.pending.length + s.others.length, 0) +
-			(filteredNotShown.length ? 1 : 0)
+		filteredSections.reduce((n, s) => n + s.items.length + s.pending.length + s.others.length, 0)
 	);
+	// The summary counts Not shown as one row: a hidden slot can match a category word without being a searchable item.
+	const summaryTotal = $derived(searchTotal + (notShown.length ? 1 : 0));
+	const summaryShown = $derived(searchShown + (filteredNotShown.length ? 1 : 0));
 	const searchVisibility = createSearchVisibility({
 		element: () => list,
 		total: () => searchTotal,
 		query: () => query,
-		reserve: () => spacer
+		reserve: () => spacer,
+		// Only Empty and New tiles: nothing to search, so never show the field even though the slots scroll.
+		canSearch: () => searchTotal > 0
 	});
 	// A query belongs to the character whose items it filters.
 	$effect(() => {
@@ -1046,8 +1049,9 @@
 		<ListSearch
 			bind:value={query}
 			label={t('search.wardrobe')}
+			placeholder={t('experience.placeholderSearch')}
 			clearLabel={t('search.clear')}
-			summary={t('search.results', { count: searchShown, total: searchTotal })}
+			summary={t('search.results', { count: summaryShown, total: summaryTotal })}
 			shown={searchVisibility.visible}
 		/>
 		<div class="wardrobe-panes">

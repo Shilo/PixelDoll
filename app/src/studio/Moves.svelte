@@ -192,6 +192,7 @@
 	<ListSearch
 		bind:value={query}
 		label={t(kind === 'state' ? 'search.states' : 'search.moves')}
+		placeholder={t('experience.placeholderSearch')}
 		clearLabel={t('search.clear')}
 		summary={t('search.results', { count: rowMatches, total: rowTotal })}
 		shown={visibility.visible}
