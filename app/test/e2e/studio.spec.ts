@@ -281,7 +281,11 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await topBar.getByRole('button', { name: 'Audio settings', exact: true }).click();
 	await expect(master).not.toBeChecked();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
-	await topBar.getByRole('button', { name: 'New character', exact: true }).click();
+	await page
+		.getByRole('complementary', { name: 'Your characters' })
+		.getByRole('button', { name: 'New character', exact: true })
+		.first()
+		.click();
 	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const draftName = creator.getByRole('textbox', { name: 'Name', exact: true });
