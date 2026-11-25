@@ -7,6 +7,7 @@
 	import { message } from '../../lib/message.ts';
 	import { tabActivity, workTabs } from '../activityStatus.svelte.ts';
 	import { onMount, tick, untrack } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import Toolbar from '../Toolbar.svelte';
 	import { openSettings } from '../settingsNavigation.svelte.ts';
 	import CharacterActions from '../CharacterActions.svelte';
@@ -87,6 +88,11 @@
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
 	const m = $derived(store.project?.manifest);
+	// The F shortcut belongs to a keyboard, so only a hovering pointer (a desktop mouse) gets the hint.
+	const hoverPointer = new MediaQuery('(hover: hover) and (pointer: fine)');
+	const mountTitle = $derived(
+		experience.testMount ? t('toolbar.titleMountSettingsMounted') : t('toolbar.mountSettings')
+	);
 	const clips = $derived(playbackClips(m?.rig.animations ?? []));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const selectedMove = $derived(m?.rig.animations.find((animation) => animation.id === ui.anim));
@@ -873,10 +879,11 @@
 						data-variant="quiet"
 						aria-label={t('toolbar.mountSettings')}
 						aria-haspopup="dialog"
+						aria-keyshortcuts="F"
 						data-active={experience.testMount || undefined}
-						title={experience.testMount
-							? t('toolbar.titleMountSettingsMounted')
-							: t('toolbar.mountSettings')}
+						title={hoverPointer.current
+							? t('liveViews.withShortcut', { action: mountTitle, key: 'F' })
+							: mountTitle}
 						onclick={() => openSettings('mount')}><PawPrint size={16} aria-hidden="true" /></button
 					>
 					{#if problems}
