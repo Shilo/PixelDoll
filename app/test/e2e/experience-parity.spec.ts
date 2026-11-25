@@ -3993,27 +3993,26 @@ test.describe('customization panel on compact touch screens', () => {
 	});
 });
 
-test('a mouse drag toward the dock closes the panel from its tab row', async ({ page }) => {
+test('a mouse drag follows the Side panel position on either dock', async ({ page }) => {
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await customize(page);
 	const toggle = page.locator('#customization-toggle');
 	const rail = page.locator('#customization-rail');
 	const tabs = page.getByRole('tablist', { name: 'Customization panels' });
 	const row = (await tabs.boundingBox())!;
-	const x = row.x + 24,
-		y = row.y + row.height / 2;
-	const pull = async (dx: number, dy: number) => {
-		await page.mouse.move(x, y);
+	const y = row.y + row.height / 2;
+	const pull = async (fromX: number, dx: number, dy = 0) => {
+		await page.mouse.move(fromX, y);
 		await page.mouse.down();
-		await page.mouse.move(x + dx, y + dy, { steps: 4 });
+		await page.mouse.move(fromX + dx, y + dy, { steps: 4 });
 		await page.mouse.up();
 	};
-	// Away from the dock, and straight down, leave the panel open.
-	await pull(-90, 0);
+	// Right dock: away from it, or straight down, leaves the panel open.
+	await pull(row.x + 30, -90);
 	await expect(rail).toBeVisible();
-	await pull(0, 90);
+	await pull(row.x + 30, 0, 90);
 	await expect(rail).toBeVisible();
-	// A pull right closes the right dock, and its own click never selects the tab under the release.
+	// A pull right closes it, and its own click never selects the tab under the release.
 	const colors = rail.getByRole('tab', { name: 'Colors' });
 	const colorsBox = (await colors.boundingBox())!;
 	await page.mouse.move(colorsBox.x + 8, y);
@@ -4028,6 +4027,101 @@ test('a mouse drag toward the dock closes the panel from its tab row', async ({ 
 		'aria-selected',
 		'true'
 	);
+	// Left dock: the same pull right leaves it open, and a pull left closes it.
+	await page.evaluate(() =>
+		localStorage.setItem('pixeldoll.studioPanel', JSON.stringify({ side: 'left', autoHide: true }))
+	);
+	await page.reload();
+	await customize(page);
+	const left = (await tabs.boundingBox())!;
+	expect((await rail.boundingBox())!.x).toBeCloseTo(left.x, 0);
+	expect(left.x).toBeLessThan(200);
+	await pull(left.x + left.width - 30, 90);
+	await expect(rail).toBeVisible();
+	const states = rail.getByRole('tab', { name: 'States' });
+	const statesBox = (await states.boundingBox())!;
+	await page.mouse.move(statesBox.x + statesBox.width - 10, y);
+	await page.mouse.down();
+	await page.mouse.move(statesBox.x + statesBox.width - 70, y, { steps: 4 });
+	await page.mouse.up();
+	await expect(rail).toBeHidden();
+	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await toggle.click();
+	await expect(rail).toBeVisible();
+	await expect(rail.getByRole('tab', { name: 'Wardrobe' })).toHaveAttribute(
+		'aria-selected',
+		'true'
+	);
+});
+
+test.describe('customization panel pull follows the dock on a phone', () => {
+	test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+
+	test('a pull toward the dock follows Side panel position, and the portrait sheet still pulls down', async ({
+		page,
+		context
+	}) => {
+		await customize(page);
+		const rail = page.locator('#customization-rail');
+		const toggle = page.locator('#customization-toggle');
+		const tabs = page.getByRole('tablist', { name: 'Customization panels' });
+		expect((await rail.boundingBox())!.x).toBeGreaterThan(400);
+		const touch = await context.newCDPSession(page);
+		const point = (x: number, y: number) => ({ x, y, id: 1, radiusX: 1, radiusY: 1 });
+		const drag = async (from: { x: number; y: number }, to: { x: number; y: number }) => {
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(from.x, from.y)]
+			});
+			for (let step = 1; step <= 3; step++)
+				await touch.send('Input.dispatchTouchEvent', {
+					type: 'touchMove',
+					touchPoints: [
+						point(from.x + ((to.x - from.x) * step) / 3, from.y + ((to.y - from.y) * step) / 3)
+					]
+				});
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+		};
+		try {
+			let row = (await tabs.boundingBox())!;
+			let y = row.y + row.height / 2;
+			// Right dock: a leftward pull leaves it open, a rightward pull closes it.
+			await drag({ x: row.x + 30, y }, { x: row.x - 60, y });
+			await expect(rail).toBeVisible();
+			await drag({ x: row.x + 30, y }, { x: row.x + 130, y });
+			await expect(rail).toBeHidden();
+			await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+			// Left dock: the mirror image.
+			await page.evaluate(() =>
+				localStorage.setItem(
+					'pixeldoll.studioPanel',
+					JSON.stringify({ side: 'left', autoHide: true })
+				)
+			);
+			await page.reload();
+			await customize(page);
+			expect((await rail.boundingBox())!.x).toBeLessThan(200);
+			row = (await tabs.boundingBox())!;
+			y = row.y + row.height / 2;
+			await drag({ x: row.x + row.width - 30, y }, { x: row.x + row.width + 60, y });
+			await expect(rail).toBeVisible();
+			await drag({ x: row.x + row.width - 10, y }, { x: row.x + row.width - 70, y });
+			await expect(rail).toBeHidden();
+			await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+			// Portrait keeps the sheet, whatever the dock setting, and still pulls down.
+			await page.setViewportSize({ width: 390, height: 844 });
+			await page.reload();
+			await customize(page);
+			const grip = (await rail.locator('.sheet-handle').boundingBox())!;
+			await drag(
+				{ x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+				{ x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 + 90 }
+			);
+			await expect(rail).toBeHidden();
+		} finally {
+			await touch.detach();
+		}
+	});
 });
 
 test('short tab labels, the character name and sheet Done buttons keep 44 px targets', async ({
