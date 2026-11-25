@@ -940,7 +940,7 @@
 		"layersHint": "Oyunda eşyaları değiştirebilmek için gövde ve ekipmanın sprite sayfalarını dışa aktar.",
 		"playMove": "Oynat: {move}",
 		"dismissQuickstart": "Hızlı başlangıcı kapat",
-		"tryTheDemo": "Demoyu deneyin",
+		"demoQuickstart": "Demo hızlı başlangıcı",
 		"exportDemo": "Demoyu dışa aktar",
 		"createYourCharacter": "Karakterinizi oluşturun"
 	},

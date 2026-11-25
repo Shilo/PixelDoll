@@ -40,16 +40,19 @@ README, website metadata and GitHub description. No notice is overlaid on the ch
 
 The first useful moment is seeing a real item change on the Adventurer. Characters explains what the demo can do and
 that it needs no key. Opening Customize shows a small, dismissible hint in the Wardrobe. A gear change reveals the next
-hint about playback. The quickstart suggests a move and facing with frames for the equipped gear. Playing it or trying
-the Studio's playback or live views reveals the link to the usual Export sheet. These controls
-use the real project, so the look is saved and the exported ZIP is usable. Help > Try the demo brings back the hints.
+hint about playback. The quickstart suggests a move and facing with frames for the equipped gear, preferring the move
+already on screen. Playing it or trying the Studio's playback or live views reveals the link to the usual Export sheet.
+These controls use the real project, so the look is saved and the exported ZIP is usable. Each new hint takes focus so
+keyboard and screen-reader users hear the step they just reached. Help > Demo quickstart brings back the hints.
 
 We compared a welcome wizard, a persistent checklist, and hints alongside the actual work. A wizard delays the first
 edit and a checklist adds a second interface to learn. The demo keeps the character in view and reveals each hint when
-the previous concept is visible. The first hint scrolls with the Wardrobe so it cannot crowd the item tiles. After the
-first gear change, the preview and export choices stay in view even when the user has scrolled to a later item. Colors,
-Outfits, and paid creation stay in their normal locations. We have no first-use study
-showing how quickly newcomers find the hints or export on their own.
+the previous concept is visible. The first hint scrolls with the Wardrobe so it cannot crowd the item tiles. On taller
+screens the later hints stay pinned above the list; on a short bottom sheet they scroll with the list instead, because
+pinning them at 320x568 left the list only six pixels tall. Colors, Outfits, and paid creation stay in their normal
+locations. The old welcome component was already unreachable before this change; this removes its dead styles and
+reuses its stored flag for the demo hints. The pre-release notice remains a separate first-run element and dismisses
+on entering Customize. We have no first-use study showing how quickly newcomers find the hints or export on their own.
 
 - Let people start immediately with bundled content and optional help tied to the task. [Apple Onboarding](https://developer.apple.com/design/human-interface-guidelines/onboarding) · [Apple Offering help](https://developer.apple.com/design/human-interface-guidelines/offering-help)
 - Give users real sample content to change, as Pages does with editable templates, Linear does with its demo workspace, and Figma Sites does with its practice file. [Pages templates](https://support.apple.com/guide/pages/use-templates-tan5c52a733c/mac) · [Linear Start Guide](https://linear.app/docs/start-guide) · [Figma Sites playground](https://help.figma.com/hc/en-us/articles/35898387859607-Figma-Sites-collection-Figma-Sites-playground-file-hands-on-exercises)

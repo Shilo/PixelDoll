@@ -1865,25 +1865,40 @@ test('quickstart teaches the real demo, remembers dismissal and can be replayed'
 	await expect(guide.getByRole('heading')).toHaveText('Change gear');
 	await expect(guide).toBeInViewport();
 
-	const hat = page.getByRole('button', { name: /^Wizard hat(,|$)/ });
-	await hat.click();
-	await expect(hat).toHaveAttribute('aria-pressed', 'true');
+	// A complete head item keeps the first lesson free of a missing-frames warning.
+	const emptyHead = page.getByRole('button', { name: 'Empty head', exact: true });
+	await emptyHead.focus();
+	await page.keyboard.press('Enter');
+	await expect(emptyHead).toHaveAttribute('aria-pressed', 'true');
 	await expect(guide.getByRole('heading')).toHaveText('Preview your gear');
+	await expect(guide.getByRole('heading')).toBeFocused();
 	const play = guide.getByRole('button', { name: 'Play Walk', exact: true });
 	await expect(play).toBeInViewport();
-	await play.click();
+	// The guide is pinned above the list on this tall phone.
+	expect(await guide.evaluate((el) => !!el.closest('#wardrobe-list'))).toBe(false);
+	await page.keyboard.press('Tab');
+	await page.keyboard.press('Tab');
+	await expect(play).toBeFocused();
+	await page.keyboard.press('Enter');
 	await expect(playbackPicker(page)).toHaveAttribute('value', 'walk');
 	await expect(guide.getByRole('heading')).toHaveText('Take it into your game');
+	await expect(guide.getByRole('heading')).toBeFocused();
 	await guide.getByRole('button', { name: 'Export demo', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Export', exact: true });
+	await expect(dialog).toBeVisible();
+	// The guide stays mounted as the sheet's focus opener. The open dialog removes the background from the
+	// accessibility tree, so check the mounted element directly.
+	await expect(page.locator('section[aria-label="Quickstart"]')).toHaveCount(1);
 	const downloadButton = dialog.getByRole('button', { name: /^Download ZIP/ });
 	const [download] = await Promise.all([page.waitForEvent('download'), downloadButton.click()]);
 	expect(download.suggestedFilename()).toMatch(/\.zip$/);
 	await expect(download.failure()).resolves.toBeNull();
 	const files = await unzip(new Uint8Array(readFileSync((await download.path())!)));
 	const manifest = JSON.parse(new TextDecoder().decode(files.get('manifest.json')!)) as Manifest;
-	expect(manifest.items.find((item) => item.id === 'hat_wizard')?.layers).not.toHaveLength(0);
+	expect(manifest.items.find((item) => item.id === 'vest_leather')?.layers).not.toHaveLength(0);
+	await expect(dialog).toHaveCount(0);
 	await expect(guide).toHaveCount(0);
+	await expect(page.getByRole('tab', { name: 'Wardrobe', exact: true })).toBeFocused();
 
 	await page.setViewportSize({ width: 320, height: 568 });
 	await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -1892,12 +1907,24 @@ test('quickstart teaches the real demo, remembers dismissal and can be replayed'
 	await expect(customize).not.toHaveAccessibleDescription(/No PixelLab key needed/);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: /^Help/ }).click();
-	await page.getByRole('button', { name: 'Try the demo', exact: true }).click();
+	await page.getByRole('button', { name: 'Demo quickstart', exact: true }).click();
 	await expect(guide.getByRole('heading')).toBeFocused();
 	await expect(guide).toBeInViewport();
 	await expect(section(page, 'Head')).toBeInViewport();
-	await expect(hat).toHaveAttribute('aria-pressed', 'true');
-	await guide.getByRole('button', { name: 'Dismiss quickstart', exact: true }).press('Enter');
+	await expect(emptyHead).toHaveAttribute('aria-pressed', 'true');
+	// At 320, the follow-up hint scrolls with the list instead of squeezing it to a few pixels.
+	const helmet = page.getByRole('button', { name: 'Steel helmet', exact: true });
+	await helmet.focus();
+	await page.keyboard.press('Enter');
+	await expect(guide.getByRole('heading')).toHaveText('Preview your gear');
+	await expect(guide.getByRole('heading')).toBeFocused();
+	expect(await guide.evaluate((el) => !!el.closest('#wardrobe-list'))).toBe(true);
+	expect(await page.locator('#wardrobe-list').evaluate((el) => el.clientHeight)).toBeGreaterThan(
+		100
+	);
+	await section(page, 'Head').scrollIntoViewIfNeeded();
+	await expect(helmet).toBeInViewport();
+	await guide.getByRole('button', { name: 'Dismiss quickstart', exact: true }).click();
 	await expect(guide).toHaveCount(0);
 	await expect(page.getByRole('tab', { name: 'Wardrobe', exact: true })).toBeFocused();
 	finish();

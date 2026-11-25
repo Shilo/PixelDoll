@@ -914,7 +914,7 @@
 		"layersHint": "Ekspor spritesheet tubuh dan perlengkapan agar kamu bisa mengganti item di dalam game.",
 		"playMove": "Putar {move}",
 		"dismissQuickstart": "Tutup panduan mulai cepat",
-		"tryTheDemo": "Coba demo",
+		"demoQuickstart": "Mulai cepat demo",
 		"exportDemo": "Ekspor demo",
 		"createYourCharacter": "Buat karakter Anda"
 	},

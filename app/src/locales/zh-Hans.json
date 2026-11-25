@@ -914,7 +914,7 @@
 		"layersHint": "导出身体和装备的精灵图集，即可在游戏中切换装备。",
 		"playMove": "播放{move}",
 		"dismissQuickstart": "关闭快速入门",
-		"tryTheDemo": "试用演示",
+		"demoQuickstart": "演示快速入门",
 		"exportDemo": "导出示例角色",
 		"createYourCharacter": "创建你的角色"
 	},

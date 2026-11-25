@@ -914,7 +914,7 @@
 		"layersHint": "몸체와 장비의 스프라이트 시트를 내보내면 게임에서 아이템을 바꿀 수 있어요.",
 		"playMove": "{move} 재생",
 		"dismissQuickstart": "빠른 시작 닫기",
-		"tryTheDemo": "데모 사용해 보기",
+		"demoQuickstart": "데모 빠른 시작",
 		"exportDemo": "데모 내보내기",
 		"createYourCharacter": "캐릭터 만들기"
 	},

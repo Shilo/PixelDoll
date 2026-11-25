@@ -940,7 +940,7 @@
 		"layersHint": "Exporta hojas de sprites del cuerpo y el equipo para cambiar objetos en tu juego.",
 		"playMove": "Reproducir {move}",
 		"dismissQuickstart": "Cerrar el inicio rápido",
-		"tryTheDemo": "Prueba la demo",
+		"demoQuickstart": "Inicio rápido de la demo",
 		"exportDemo": "Exportar la demo",
 		"createYourCharacter": "Crea tu personaje"
 	},

@@ -18,6 +18,8 @@ test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		try {
 			localStorage.setItem('pixeldoll.agentKey', 'off');
+			// These checks exercise the settled editor; the demo quickstart has its own end-to-end test.
+			localStorage.setItem('pixeldoll.welcomed', '1');
 		} catch {
 			/* Opaque initial pages have no storage. */
 		}

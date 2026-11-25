@@ -943,7 +943,7 @@
 		"layersHint": "Exporte as folhas de sprites do corpo e do equipamento para trocar itens no seu jogo.",
 		"playMove": "Reproduzir {move}",
 		"dismissQuickstart": "Fechar o início rápido",
-		"tryTheDemo": "Experimentar a demo",
+		"demoQuickstart": "Início rápido da demo",
 		"exportDemo": "Exportar a demonstração",
 		"createYourCharacter": "Criar seu personagem"
 	},

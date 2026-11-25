@@ -166,7 +166,9 @@
 		{ step: 'gear'; items: string } | { step: 'move'; clip: string } | { step: 'export' } | null
 	>(null);
 	let quickstartHeading = $state<HTMLHeadingElement>();
-	let focusQuickstartOnEntry = false;
+	let quickstartExport = false;
+	let quickstartExportFromGuide = false;
+	let focusedQuickstartStep: 'gear' | 'move' | 'export' | null = null;
 	const gear = () =>
 		JSON.stringify(
 			Object.entries(doc.items)
@@ -177,9 +179,10 @@
 		const manifest = m;
 		if (quickstart?.step !== 'move' || !manifest) return;
 		const worn = manifest.items.filter((item) => doc.items[item.slot] === item.id);
+		// Prefer the move already on screen, then the current facing, so the hint continues what the user sees.
 		const moves = clips
 			.filter(({ kind }) => kind === 'move')
-			.sort((a, b) => Number(a.key === ui.anim) - Number(b.key === ui.anim));
+			.sort((a, b) => Number(b.key === ui.anim) - Number(a.key === ui.anim));
 		for (const { key } of moves) {
 			const direction = moveDirs(manifest, key)
 				.sort((a, b) => Number(b === ui.dir) - Number(a === ui.dir))
@@ -189,9 +192,30 @@
 	});
 	$effect(() => {
 		if (!quickstart || doc.loading) return;
-		if (doc.id !== DEMO || experience.screen !== 'studio') quickstart = null;
-		else if (ui.sheet === 'export') finishQuickstart();
-		else if (quickstart.step === 'gear' && quickstart.items !== gear()) {
+		if (doc.id !== DEMO || experience.screen !== 'studio') {
+			quickstart = null;
+			quickstartExport = false;
+			quickstartExportFromGuide = false;
+			return;
+		}
+		// Keep the guide mounted while Export is open: its button is the sheet's focus opener. Finish on close instead,
+		// when a guide-opened sheet returns focus to that button and would otherwise leave it on a removed element.
+		if (ui.sheet === 'export') {
+			quickstartExport = true;
+			return;
+		}
+		if (quickstartExport) {
+			quickstartExport = false;
+			const focusWardrobe = quickstartExportFromGuide;
+			quickstartExportFromGuide = false;
+			finishQuickstart();
+			if (focusWardrobe)
+				void tick().then(() =>
+					document.getElementById('customization-tab-wardrobe')?.focus({ preventScroll: true })
+				);
+			return;
+		}
+		if (quickstart.step === 'gear' && quickstart.items !== gear()) {
 			quickstart = { step: 'move', clip: ui.anim };
 		} else if (
 			quickstart.step === 'move' &&
@@ -218,7 +242,10 @@
 			ui.dir = nextPreview.direction;
 			ui.playing = true;
 			quickstart = { step: 'export' };
-		} else ui.sheet = 'export';
+		} else {
+			if (quickstart?.step === 'export') quickstartExportFromGuide = true;
+			ui.sheet = 'export';
+		}
 	}
 	function enterSelectedCustomize(startGuide: boolean) {
 		// Customize opens on the standing move, also for the character already shown, or mounted on its Riding pose.
@@ -228,6 +255,7 @@
 		if (startGuide) {
 			panel('wardrobe');
 			setPanelOpen(true);
+			focusedQuickstartStep = null;
 			quickstart = { step: 'gear', items: gear() };
 		}
 	}
@@ -243,12 +271,7 @@
 			ui.sheet
 		)
 			return;
-		focusQuickstartOnEntry = screen === 'characters';
 		enterSelectedCustomize(true);
-		if (screen === 'studio') {
-			await tick();
-			quickstartHeading?.focus();
-		}
 	}
 	const pending = $derived(allPending.filter((run) => matchesSearch([run.spec.name], query)));
 	const searchTotal = $derived(saved.length + allPending.length);
@@ -300,6 +323,11 @@
 		['states', 'experience.tabStates']
 	] as const;
 	const g = $derived(experienceLayout(viewportWidth, viewportHeight));
+	// Pin the follow-up hints only where the sheet leaves the item list useful room; on short sheets they scroll with
+	// the list, so a pinned card cannot squeeze the work it is teaching down to a few pixels.
+	const pinQuickstart = $derived(
+		quickstart?.step !== 'gear' && (!g.sheet || viewportHeight >= 700)
+	);
 	$effect.pre(() => {
 		if (g.panelOnly && document.activeElement?.closest('.experience-stage')) {
 			void tick().then(() => {
@@ -835,8 +863,6 @@
 	});
 	$effect(() => {
 		const screen = experience.screen;
-		const focusGuide = screen === 'studio' && focusQuickstartOnEntry;
-		focusQuickstartOnEntry = false;
 		if (screen === 'characters') {
 			experience.livePanelOpen = null;
 			previewContext = undefined;
@@ -844,13 +870,23 @@
 		}
 		void tick().then(() => {
 			if (ui.sheet) return;
-			if (focusGuide && quickstartHeading) quickstartHeading.focus();
-			else
-				(screen === 'characters'
-					? selection
-					: document.querySelector<HTMLElement>('.world-stage')
-				)?.focus({ preventScroll: true });
+			(screen === 'characters'
+				? selection
+				: document.querySelector<HTMLElement>('.world-stage')
+			)?.focus({ preventScroll: true });
 		});
+	});
+	// Focus follows each new hint, so keyboard and screen-reader users hear the step they just reached instead of
+	// staying on the tile that completed the last one.
+	$effect(() => {
+		const step = quickstart?.step ?? null;
+		if (!step) {
+			focusedQuickstartStep = null;
+			return;
+		}
+		if (step === focusedQuickstartStep) return;
+		focusedQuickstartStep = step;
+		void tick().then(() => quickstartHeading?.focus());
 	});
 
 	function back(e: KeyboardEvent) {
@@ -1318,7 +1354,7 @@
 			<span class="sr" id="moves-tab-note">{displayMessage(movesOff)}</span>
 			<span hidden id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
 			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
-			<PhonePanel {wardrobeScroll} pinGuide={quickstart?.step !== 'gear'}>
+			<PhonePanel {wardrobeScroll} pinGuide={pinQuickstart}>
 				{#snippet guide()}
 					{#if quickstart && doc.id === DEMO}
 						<Quickstart

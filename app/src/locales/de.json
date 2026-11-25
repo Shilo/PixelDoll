@@ -940,7 +940,7 @@
 		"layersHint": "Exportiere Spritesheets für Körper und Ausrüstung, damit du Gegenstände im Spiel wechseln kannst.",
 		"playMove": "{move} abspielen",
 		"dismissQuickstart": "Schnellstart ausblenden",
-		"tryTheDemo": "Demo ausprobieren",
+		"demoQuickstart": "Demo-Schnellstart",
 		"exportDemo": "Demo exportieren",
 		"createYourCharacter": "Erstelle deine Figur"
 	},

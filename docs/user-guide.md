@@ -7,8 +7,8 @@ them at runtime. The pictures are drawn by [PixelLab](https://pixellab.ai) using
 
 The app opens to **Characters**, including the bundled demo and characters saved on this device. Choose **Customize** to dress the selected character. Clicking an already-selected character also opens customization. The demo needs no account: you can dress it, recolor it, save outfits and export it. Creating characters and items requires a PixelLab key.
 
-The demo's first-run hints help you swap gear, preview it in motion and open Export. You can dismiss them at any time.
-To bring them back, choose **More options → Help → Try the demo**.
+The demo's quickstart hints help you swap gear, preview it in motion and open Export. You can dismiss them at any time.
+To bring them back, choose **More options → Help → Demo quickstart**.
 
 In customization, **Preview** provides animation playback and facing controls. **Top-down** and **Side-scroller** provide continuous movement with a following camera. Focus the world and use WASD/arrows, or drag the world on touch screens. Equipment and outfits remain available in every view. **Inspect** opens the precise frame/direction viewer. Use its previous/next arrows or comma/period keys to pause and step one frame; the counter shows your position. Click the character name to switch characters or manage imports and setup.
 

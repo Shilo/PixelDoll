@@ -940,7 +940,7 @@
 		"layersHint": "Export spritesheets for the body and gear so you can swap items in your game.",
 		"playMove": "Play {move}",
 		"dismissQuickstart": "Dismiss quickstart",
-		"tryTheDemo": "Try the demo",
+		"demoQuickstart": "Demo quickstart",
 		"exportDemo": "Export demo",
 		"createYourCharacter": "Create your character"
 	},

@@ -914,7 +914,7 @@
 		"layersHint": "素体と装備のスプライトシートをエクスポートすると、ゲーム内で装備を切り替えられます。",
 		"playMove": "{move}を再生",
 		"dismissQuickstart": "クイックスタートを閉じる",
-		"tryTheDemo": "デモを試す",
+		"demoQuickstart": "デモのクイックスタート",
 		"exportDemo": "デモをエクスポート",
 		"createYourCharacter": "キャラクターを作成"
 	},

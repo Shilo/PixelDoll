@@ -279,7 +279,7 @@
 							onquickstart?.();
 						}}
 						><Shirt size={18} aria-hidden="true" /><span class="row-name"
-							>{t('welcome.tryTheDemo')}</span
+							>{t('welcome.demoQuickstart')}</span
 						></button
 					>
 				{/if}

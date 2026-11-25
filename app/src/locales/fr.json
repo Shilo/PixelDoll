@@ -940,7 +940,7 @@
 		"layersHint": "Exporte les planches de sprites du corps et de l’équipement pour changer d’objet dans ton jeu.",
 		"playMove": "Lire {move}",
 		"dismissQuickstart": "Fermer le démarrage rapide",
-		"tryTheDemo": "Essayer la démo",
+		"demoQuickstart": "Démarrage rapide de la démo",
 		"exportDemo": "Exporter la démo",
 		"createYourCharacter": "Créer votre personnage"
 	},
