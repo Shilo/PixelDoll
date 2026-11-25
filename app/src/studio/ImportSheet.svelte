@@ -750,7 +750,10 @@
 				<Info size={16} aria-hidden="true" />
 				<span>
 					{t('import.appearanceTip')}<br />
-					{t('import.appearanceTipPath', { action: t('appearance.action') })}
+					{t('import.appearanceTipPath')}<br />
+					<code class="instruction"
+						>{t('import.appearanceTipSteps', { action: t('appearance.action') })}</code
+					>
 				</span>
 			</p>
 		{/if}
@@ -879,6 +882,20 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
+	}
+	/* Set like a code block so it reads as steps to follow, not interface copy. */
+	.instruction {
+		display: inline-block;
+		max-inline-size: 100%;
+		margin-block-start: 4px;
+		padding: 6px 10px;
+		border: 1px solid var(--bu-line);
+		border-radius: var(--r-ctl);
+		background: var(--stage);
+		font-family: var(--font-mono);
+		line-height: 1.5;
+		color: var(--bu-text);
+		overflow-wrap: anywhere;
 	}
 	.library-entry {
 		display: flex;

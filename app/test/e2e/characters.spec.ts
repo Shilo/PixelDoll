@@ -2437,10 +2437,12 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 			.getByLabel('Character ZIP', { exact: true })
 			.setInputFiles({ name: 'saved-character.zip', mimeType: 'application/zip', buffer: bytes });
 		await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
-		await expect(
-			page.locator('.notice').filter({ hasText: 'Clothes drawn on the character' })
-		).toContainText(
-			'To remove or change them after import: click the character name at the top left, then click Edit appearance…'
+		const appearanceNote = page
+			.locator('.notice')
+			.filter({ hasText: 'Clothes drawn on the character' });
+		await expect(appearanceNote).toContainText('To remove or change them after import:');
+		await expect(appearanceNote.locator('code')).toContainText(
+			'click the character name at the top left, then click Edit appearance…'
 		);
 		await page.getByLabel('Character name', { exact: true }).fill(name);
 		const setup = page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' });
