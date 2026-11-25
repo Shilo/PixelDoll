@@ -2,6 +2,7 @@
 	// Full screen and More, always the last two controls of whichever bar is on top (the top bar, or the New character
 	// screen that covers it), in the same place on every screen.
 	import { t } from 'svelte-whisper';
+	import AudioSettingsButton from './AudioSettingsButton.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import { Ellipsis } from './icons.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
@@ -10,9 +11,11 @@
 	// tabs already mark is left to their dots.
 	const activity = $derived(activityStatus.elsewhere);
 	const statusId = $props.id();
+	let { showAudio = true }: { showAudio?: boolean } = $props();
 </script>
 
 <span class="global-actions">
+	{#if showAudio}<AudioSettingsButton />{/if}
 	<FullscreenButton />
 	<button
 		class="bu-action"

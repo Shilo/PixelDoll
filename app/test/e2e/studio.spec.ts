@@ -139,7 +139,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	const customize = page.locator('.customize-action');
 	await expect(customize).toBeVisible();
 	await customize.dispatchEvent('pointerdown', { pointerType: 'mouse' });
-	await expect(shortcut).toHaveCount(0);
+	await expect(shortcut).toBeVisible();
 	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
 	expect(audioRequests).toEqual([]);
 	await enterStudio(page);
@@ -227,15 +227,15 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(musicSwitch).not.toBeChecked();
 	await expect(effectsSwitch).toBeChecked();
 	await effectsSwitch.uncheck();
-	await expect(shortcut).toHaveCount(0);
+	await expect(shortcut).toBeVisible();
 	await musicSwitch.check();
 	await expect(shortcut).toHaveCount(1);
 	await music.press('Home');
-	await expect(shortcut).toHaveCount(0);
+	await expect(shortcut).toBeVisible();
 	await music.fill('50');
 	await expect(shortcut).toHaveCount(1);
 	await master.uncheck();
-	await expect(shortcut).toHaveCount(0);
+	await expect(shortcut).toBeVisible();
 	await master.check();
 	await expect(shortcut).toHaveCount(1);
 	await expect(effectsSwitch).not.toBeChecked();
@@ -270,6 +270,26 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(tile).toHaveAttribute('aria-pressed', 'true');
 	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1, failed: true });
 	expect(errors).toEqual([]);
+
+	await shortcut.click();
+	await master.uncheck();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.setViewportSize({ width: 320, height: 568 });
+	await expect(shortcut).toBeVisible();
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	const topBar = page.locator('.experience-header');
+	await topBar.getByRole('button', { name: 'Audio settings', exact: true }).click();
+	await expect(master).not.toBeChecked();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await topBar.getByRole('button', { name: 'New character', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
+	const draftName = creator.getByRole('textbox', { name: 'Name', exact: true });
+	await draftName.fill('Audio draft');
+	await creator.getByRole('button', { name: 'Audio settings', exact: true }).click();
+	await expect(master).not.toBeChecked();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(draftName).toHaveValue('Audio draft');
 });
 
 async function reviewSelectedDraft(page: Page) {

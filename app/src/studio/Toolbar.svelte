@@ -15,10 +15,9 @@
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import GlobalActions from './GlobalActions.svelte';
+	import AudioSettingsButton from './AudioSettingsButton.svelte';
 	import MoreMenu from './MoreMenu.svelte';
 	import { historyText } from './historyText.ts';
-	import { hasEnabledAudio } from './audio.svelte.ts';
-	import { openSettings } from './settingsNavigation.svelte.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
 	import { characterFacts } from './model.ts';
 	import {
@@ -50,8 +49,7 @@
 		Dices,
 		Eye,
 		Layers2,
-		Mountain,
-		Volume2
+		Mountain
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
@@ -270,16 +268,7 @@
 				bind:this={redoButton}
 				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
 			>
-			{#if hasEnabledAudio()}
-				<button
-					class="bu-action header-audio"
-					data-variant="quiet"
-					aria-label={t('settings.audio.open')}
-					aria-haspopup="dialog"
-					title={t('settings.audio.open')}
-					onclick={() => openSettings('audio')}><Volume2 size={18} aria-hidden="true" /></button
-				>
-			{/if}
+			<AudioSettingsButton />
 			<button
 				class="bu-action header-random"
 				data-variant="quiet"
@@ -308,7 +297,7 @@
 				/></button
 			>
 		{/if}
-		<GlobalActions />
+		<GlobalActions showAudio={experience.screen === 'characters'} />
 	</div>
 </header>
 <SharePopover />

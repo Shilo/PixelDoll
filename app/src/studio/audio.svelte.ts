@@ -72,7 +72,7 @@ export function syncAudio() {
 	updatePlayback();
 }
 
-export function hasEnabledAudio(): boolean {
+function hasEnabledAudio(): boolean {
 	return channelAudible(preferences, 'music') || channelAudible(preferences, 'effects');
 }
 
