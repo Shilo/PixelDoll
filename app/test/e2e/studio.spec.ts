@@ -1008,6 +1008,9 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		'Direction',
 		'Base clothing'
 	]);
+	// base-select draws its picker icon inside the field, so the shared inset keeps the caret at the edge.
+	if (await page.evaluate(() => CSS.supports('appearance', 'base-select')))
+		await expect(await controlAt('Character', 'character-model')).toHaveCSS('padding-right', '8px');
 	await controlAt('Move', 'move-model');
 	await expect(
 		settings.getByRole('combobox', { name: 'Frames', exact: true }).locator('option:checked')
