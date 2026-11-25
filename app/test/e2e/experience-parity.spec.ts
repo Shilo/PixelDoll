@@ -1212,12 +1212,21 @@ touchTest(
 		const wide = (await facing.boundingBox())!.width;
 		await facing.selectOption('east');
 		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
+		const adjustSeat = mountMenu.getByRole('button', { name: 'Adjust seat', exact: true });
+		await expect(adjustSeat).toBeDisabled();
 		await expect(seatRow).toContainText('Turn on Show mount to adjust the seat.');
 		await mountMenu.getByRole('switch', { name: 'Show mount', exact: true }).check();
-		await expect(seatRow).toContainText('Choose a saved one-frame Riding pose to adjust the seat.');
+		await expect(riderPose).toContainText('Automatic');
+		await expect(adjustSeat).toBeEnabled();
+		await riderPose.click();
+		await page.getByRole('menuitemradio', { name: 'Walk', exact: true }).click();
+		await expect(adjustSeat).toBeDisabled();
+		await expect(seatRow).toContainText('In Riding pose, choose a State or a move with one frame.');
 		await riderPose.click();
 		await page.getByRole('menuitemradio', { name: 'Riding', exact: true }).click();
-		const adjustSeat = mountMenu.getByRole('button', { name: 'Adjust seat', exact: true });
+		await expect(adjustSeat).toBeEnabled();
+		await riderPose.click();
+		await page.getByRole('menuitemradio', { name: 'Automatic', exact: true }).click();
 		const left = mountMenu.getByRole('button', { name: 'Move rider left', exact: true });
 		const seat = seatRow.locator('output');
 		const marker = mountMenu.locator('.seat-marker');
@@ -1271,11 +1280,13 @@ touchTest(
 		await saveSeat.click();
 		await expect(adjustSeat).toBeVisible();
 		await mountMenu.getByRole('button', { name: 'Close', exact: true }).click();
+		await selectPlaybackClip(page, 'riding');
 		await page.getByRole('button', { name: 'Face east', exact: true }).click();
 		await expect(world(page)).toHaveAttribute('data-mount-contact', 'reviewed');
 
 		await page.reload();
 		await customize.click();
+		await selectPlaybackClip(page, 'riding');
 		await page.getByRole('button', { name: 'Face east', exact: true }).click();
 		await expect(world(page)).toHaveAttribute('data-mount-contact', 'reviewed');
 		await openCompactMount();

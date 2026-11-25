@@ -3,6 +3,7 @@
 	import { getLocale, t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+	import { seatPose } from '../lib/rig/riderSeat.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { buildPresentation, itemsHiddenIn } from './experience/presentation.ts';
@@ -29,6 +30,11 @@
 	const clips = $derived(playbackClips(moves).filter((clip) => clip.key !== DEFAULT_MOVE));
 	const poses = $derived(riderPoseOptions(manifest));
 	const pose = $derived(activeRiderPose(doc.id, manifest));
+	const hasSeatPose = $derived(
+		moves.some(
+			(move) => seatPose(move) && poses.some(({ id, missing }) => id === move.id && !missing.length)
+		)
+	);
 	const unavailable = $derived(
 		new Map(
 			poses
@@ -69,7 +75,7 @@
 	}
 </script>
 
-<MountPreview>
+<MountPreview {hasSeatPose}>
 	{#snippet controls()}
 		<SettingsItemToggle
 			setting="show-mount"

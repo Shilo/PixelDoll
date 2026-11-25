@@ -38,6 +38,8 @@
 		buildPresentation,
 		renderPresentation,
 		resolveLive,
+		RIDE_MOVE,
+		RIDING_STATE,
 		type PlaybackClock
 	} from './experience/presentation.ts';
 	import { activeRiderPose, legsKept } from './experience/riderPose.ts';
@@ -54,7 +56,7 @@
 		view
 	} from './state.svelte.ts';
 
-	let { controls }: { controls: Snippet } = $props();
+	let { controls, hasSeatPose }: { controls: Snippet; hasSeatPose: boolean } = $props();
 	const TURN_MS = 1400;
 	let canvas = $state<HTMLCanvasElement>();
 	let marker = $state<HTMLSpanElement>();
@@ -105,7 +107,13 @@
 	);
 	const authored = $derived(store.project?.manifest);
 	const frame = $derived(rider ? bakedFrame(rider.project.manifest) : null);
-	const selected = $derived(authored?.rig.animations.find(({ id }) => id === pose));
+	// With Automatic selected, only actual riding art is eligible. Idle and Standing are display fallbacks.
+	const presentedClip = $derived(presentation?.clip);
+	const seatClip = $derived(
+		pose ??
+			(presentedClip === RIDE_MOVE || presentedClip === RIDING_STATE ? presentedClip : undefined)
+	);
+	const selected = $derived(authored?.rig.animations.find(({ id }) => id === seatClip));
 	const selectable = $derived(
 		riding && doc.id && !doc.id.startsWith('fixture:') && !openingProjectId() && seatPose(selected)
 	);
@@ -133,9 +141,11 @@
 			? 'settings.seatNeedsCharacter'
 			: !riding
 				? 'settings.seatNeedsMount'
-				: !seatPose(selected)
-					? 'settings.seatNeedsPose'
-					: 'settings.seatNeedsFrame'
+				: seatPose(selected)
+					? 'settings.seatNeedsFrame'
+					: hasSeatPose
+						? 'settings.seatNeedsPose'
+						: 'settings.seatNeedsNewPose'
 	);
 
 	type Point = Pick<RiderSeatPoint, 'x' | 'y'>;
@@ -483,20 +493,30 @@
 				aria-live={editing ? 'polite' : 'off'}
 				>{offset ? t('settings.seatOffset', offset) : t('creationSettings.automatic')}</output
 			>
-			{#if !editing}
-				<button
-					type="button"
-					class="bu-action"
-					data-variant="field"
-					aria-label={t('settings.adjustSeat')}
-					title={t('settings.adjustSeat')}
-					bind:this={adjustButton}
-					onclick={beginEdit}><Pencil size={16} aria-hidden="true" /></button
-				>
-			{/if}
+		{/if}
+		{#if !editing}
+			<button
+				type="button"
+				class="bu-action"
+				data-variant="field"
+				aria-describedby={target ? undefined : 'mount-seat-help'}
+				disabled={!target}
+				bind:this={adjustButton}
+				onclick={beginEdit}
+			>
+				<Pencil size={16} aria-hidden="true" />{t('settings.adjustSeat')}
+			</button>
 		{/if}
 	</div>
-	{#if !target}<p class="seat-help">{t(seatHint)}</p>{/if}
+	{#if !target}
+		<p class="seat-help" id="mount-seat-help">
+			{seatHint === 'settings.seatNeedsNewPose'
+				? t(seatHint, { states: t('experience.tabStates'), add: t('moves.addState') })
+				: seatHint === 'settings.seatNeedsPose'
+					? t(seatHint, { pose: t('toolbar.riderPose') })
+					: t(seatHint)}
+		</p>
+	{/if}
 </div>
 
 {#if editing}
@@ -631,9 +651,13 @@
 		min-block-size: 44px;
 	}
 	.seat-row button {
+		margin-inline-start: auto;
 		min-inline-size: 44px;
 		min-block-size: 44px;
 		justify-content: center;
+	}
+	.seat-value + button {
+		margin-inline-start: 0;
 	}
 	.seat-value {
 		margin-inline-start: auto;

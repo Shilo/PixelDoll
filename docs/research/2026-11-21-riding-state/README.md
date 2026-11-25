@@ -13,6 +13,8 @@ A saved State can be the rider's pose on the Studio test mount. Create State off
 - **Hide legs:** stays available for other moves but does not apply to a State Riding pose. The State is drawn seated, and generated States have no joints, so cutting legs from standing or estimated geometry would cut the wrong pixels. A Move Riding pose keeps the setting, like the other moves; a seated-looking move such as Ride is treated the same way because clip kinds cannot tell.
 - **Seat contact:** uses the rig's hip anchor when one exists; States captured from a Ride frame and skeleton-posed Moves carry one. Otherwise the clip's measured hip joints are used, and without either the existing 0.45 standing-height estimate.
 
+- **Adjust seat:** The action stays beside **Seat position**. With **Show mount** on, it can edit the saved one-cell Ride or Riding artwork that **Automatic** is already showing, or an explicitly selected one-cell pose. If the current pose cannot be edited, the page points to the **Riding pose** picker or to **States → New State** when no eligible pose can be selected. Seat edits use the artwork for the previewed direction, so an Idle or Standing fallback cannot receive a correction by accident.
+
 ## Terminology
 
 Moves are animations and take the base verb: Idle, Walk, Run, Ride, Attack. States are held stances and take the -ing posture word: Standing, Sitting, Riding. So the Ride Move and the Riding State are told apart at a glance.
