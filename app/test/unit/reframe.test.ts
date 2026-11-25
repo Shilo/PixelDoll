@@ -126,6 +126,17 @@ const read = (history: Map<Sha256, Img>) => async (h: Sha256) => history.get(h)!
 
 test('Frame size pads every layer, move, direction and frame by the same centered border', async () => {
 	const { rec, project, history } = await character();
+	const body = rec.manifest.items[0].layers[0].cells!;
+	const seated = body.walk.south![0]!;
+	body.riding = { south: [seated] };
+	rec.manifest.rig.animations.push({
+		id: 'riding',
+		kind: 'state',
+		cells: 1,
+		loop: false,
+		frames: [{ cell: 0, ms: 100 }],
+		seatPoints: { south: { x: 27, y: 42, body: seated, source: 'south' } }
+	});
 	const p = 24;
 	const { record, newImages } = await reframeCharacter(
 		rec,
@@ -141,6 +152,14 @@ test('Frame size pads every layer, move, direction and frame by the same centere
 	expect(m.rig.cell).toEqual({ w: 112, h: 112 });
 	expect(m.rig.pivot).toEqual({ x: 32 + p, y: 64 + p });
 	expect(m.rig.pixelsPerUnit).toBe(64);
+	expect(m.rig.animations.find(({ id }) => id === 'riding')?.seatPoints).toEqual({
+		south: {
+			x: 51,
+			y: 66,
+			source: 'south',
+			body: m.items[0].layers[0].cells!.riding.south![0]
+		}
+	});
 	const before = rec.manifest,
 		outfits = [before.presets[0].items, ...before.presets.map((x) => x.items)];
 	let compared = 0;

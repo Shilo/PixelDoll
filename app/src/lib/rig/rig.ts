@@ -66,6 +66,13 @@ export interface ClipSource {
 	provenance: number[]; // indexes into the base item's provenance
 }
 export type ItemDrawing = 'anchor' | 'skeleton' | 'sheet';
+/** Editable contact in body-frame pixel-edge coordinates, tied to the displayed artwork. */
+export interface RiderSeatPoint {
+	x: number;
+	y: number;
+	body: Sha256;
+	source: DirectionName;
+}
 export interface RigAnimation {
 	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
@@ -76,6 +83,9 @@ export interface RigAnimation {
 	exportId?: string;
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
+	seatPoints?: Partial<Record<DirectionName, RiderSeatPoint>>;
+	/** Exported contact in signed pixels from the rider pivot, in the displayed facing. */
+	riderSeat?: Partial<Record<DirectionName, { x: number; y: number }>>;
 	cells: number;
 	/** Serialized playback metadata; app previews and sharing always loop. */
 	loop: boolean;
@@ -192,7 +202,9 @@ export const validAnimationId = (id: string): boolean => ID.test(id);
 /** The rig without move names and export IDs, which never change artwork or fitting. */
 export const rigContent = (rig: Rig): Rig => ({
 	...rig,
-	animations: rig.animations.map(({ name: _name, exportId: _exportId, ...animation }) => animation)
+	animations: rig.animations.map(
+		({ name: _name, exportId: _exportId, seatPoints: _seatPoints, ...animation }) => animation
+	)
 });
 
 /** Playback preferences, item-drawing choices and move names do not change the artwork inputs of a pending generation or
@@ -208,6 +220,7 @@ export const rigArtworkVersion = (rig: Rig, character: unknown): string =>
 					itemDrawing: _itemDrawing,
 					name: _name,
 					exportId: _exportId,
+					seatPoints: _seatPoints,
 					...animation
 				}) => animation
 			)

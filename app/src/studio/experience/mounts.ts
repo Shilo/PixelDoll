@@ -332,7 +332,7 @@ export function sampleMountFrame(view: MountView, elapsedMs: number): number {
 export interface RiderContact extends Point {
 	/** `hip` is the rig's hip anchor and `joints` the clip's measured hips (a fitted State): candidates, not reviewed
 	 *  saddle contact. */
-	source: 'hip' | 'joints' | 'estimate';
+	source: 'reviewed' | 'hip' | 'joints' | 'estimate';
 }
 /** Fraction of standing height above the feet used when no hip anchor exists. A disclosed estimate. */
 export const ESTIMATED_HIP = 0.45;

@@ -166,10 +166,16 @@ import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import { onceShown, type Problem } from '../lib/report/report.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
+import {
+	reviewedSeatPoint,
+	riderSeatArt,
+	validSeatPoint,
+	type RiderSeatEdit
+} from '../lib/rig/riderSeat.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
 import type { MoveImportPlan } from '../lib/rig/moveImport.ts';
-import { DEFAULT_MOVE, type Sha256 } from '../lib/rig/rig.ts';
+import { DEFAULT_MOVE, type RiderSeatPoint, type Sha256 } from '../lib/rig/rig.ts';
 import {
 	canvasLift,
 	frameChangeText,
@@ -2666,6 +2672,55 @@ async function refreshSaved(projectId: string, request: number) {
 		slotBase = { id: projectId, slots: structuredClone(fresh.project.manifest.slots) };
 		doc.rev++;
 		return;
+	}
+}
+
+/** Update one reviewed seat against the latest saved art and point, including edits from other tabs. */
+export async function saveRiderSeat(
+	id: string,
+	target: RiderSeatEdit,
+	point: Pick<RiderSeatPoint, 'x' | 'y'> | null
+) {
+	const request = openRequest;
+	const changed = new LocalizedError(
+		'The saved pose changed. Reopen Adjust seat and try again.',
+		'settings.seatChanged'
+	);
+	if (doc.id !== id || opening) throw changed;
+	const record = await db
+		.update<StoredProject>('projects', id, (record) => {
+			if (doc.id !== id || request !== openRequest || record?.origin !== 'studio') throw changed;
+			const { manifest } = record;
+			const clip = manifest.rig.animations.find(({ id }) => id === target.clip);
+			const art = riderSeatArt(manifest, clip, target.facing);
+			const saved = reviewedSeatPoint(manifest, clip, target.facing);
+			if (
+				!clip ||
+				!art ||
+				art.body !== target.art.body ||
+				art.source !== target.art.source ||
+				saved?.x !== target.saved?.x ||
+				saved?.y !== target.saved?.y ||
+				(point && !validSeatPoint(manifest.rig, point))
+			)
+				throw changed;
+			const points = { ...clip.seatPoints };
+			if (point) points[target.facing] = { ...point, ...art };
+			else delete points[target.facing];
+			if (Object.keys(points).length) clip.seatPoints = points;
+			else delete clip.seatPoints;
+			record.savedAt = new Date().toISOString();
+			return record;
+		})
+		.catch(async (error: unknown) => {
+			if (error === changed) await refreshSaved(id, request);
+			throw error;
+		});
+	syncProjectRef(record);
+	try {
+		await refreshSaved(id, request);
+	} catch (error) {
+		toast(errorMessage(error), { tone: 'danger', error });
 	}
 }
 /** Free, explicit correction of one saved item view; keep the open outfit and inspector selection. */

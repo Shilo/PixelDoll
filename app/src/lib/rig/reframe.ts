@@ -12,6 +12,7 @@ import type { StoredProject } from '../store/project.ts';
 import { rehash } from './directions.ts';
 import { HEADROOM_MIN } from './freeze.ts';
 import { FLOOR, opaqueBox, type Box } from './normalize.ts';
+import { reviewedSeatPoint, validSeatPoint } from './riderSeat.ts';
 import {
 	cellHash,
 	rigArtworkVersion,
@@ -473,6 +474,18 @@ export async function reframeCharacter<R extends FrameRecord>(
 				if (s.keypoints) s.keypoints = s.keypoints.map(keypoints);
 				if (s.measured) s.measured = s.measured.map(keypoints);
 			}
+	for (const [index, clip] of rig.animations.entries()) {
+		if (!clip.seatPoints) continue;
+		const original = record.manifest.rig.animations[index];
+		delete clip.seatPoints;
+		for (const { id } of rig.directions) {
+			const point = reviewedSeatPoint(record.manifest, original, id);
+			if (!point) continue;
+			const translated = { ...point, x: point.x + p, y: point.y + q };
+			if (!validSeatPoint(rig, translated)) continue;
+			(clip.seatPoints ??= {})[id] = { ...translated, body: await move(point.body) };
+		}
+	}
 	for (const track of Object.values(rig.anchors ?? {}))
 		for (const rows of Object.values(track ?? {}))
 			for (const [dir, pts] of Object.entries(rows ?? {}))

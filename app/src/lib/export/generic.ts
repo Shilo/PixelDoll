@@ -3,6 +3,7 @@ import type { Img } from '../image/png.ts';
 import { DIRECTIONS, exportUnit, validateRig } from '../rig/rig.ts';
 import { centeredMirrorFrame } from '../rig/mirror.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
+import { reviewedSeatPoint } from '../rig/riderSeat.ts';
 import { CURRENT_FORMAT } from '../store/manifest.ts';
 import { behaviorOf, SLOTS } from '../items/slots.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
@@ -450,9 +451,19 @@ export function exportManifest(
 	for (const pr of m.presets)
 		for (const s in pr.items) if (pr.items[s] && !ids.has(pr.items[s]!)) pr.items[s] = null;
 	// B10: the views each move has (the base has frames there); the other rows of its sheets are empty
-	for (const a of m.rig.animations) {
+	for (const [index, a] of m.rig.animations.entries()) {
 		const directions = moveDirs(src, a.id);
 		Object.assign(a, { directions });
+		const sourceClip = src.rig.animations[index];
+		const contacts: NonNullable<typeof a.riderSeat> = {};
+		for (const facing of directions) {
+			const point = reviewedSeatPoint(src, sourceClip, facing);
+			if (point && p.images.has(point.body))
+				contacts[facing] = { x: point.x - src.rig.pivot.x, y: point.y - src.rig.pivot.y };
+		}
+		delete a.seatPoints;
+		delete a.riderSeat;
+		if (Object.keys(contacts).length) a.riderSeat = contacts;
 		if (!directions.length) {
 			const move = a.id.replace(/[_-]/g, ' ');
 			note(

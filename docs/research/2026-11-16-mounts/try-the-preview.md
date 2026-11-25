@@ -19,6 +19,25 @@ Far is approximate: overlapping legs, wide feet and connected clothing can survi
 
 The schematic has eight authored or explicitly mirrored directions. A four-direction character still shows only its own four directions. This is not proof that generated creature art works from eight camera angles.
 
+## Correct a saved seat
+
+In Mount settings, turn on **Show mount**, choose a saved one-cell **Riding pose**, and
+select its facing. **Adjust seat** pauses the preview. The arrow buttons move the whole
+rider one pixel at a time. **Save** keeps the point for that pose and facing, and
+**Use automatic** previews removing it before you save. Mirrored facings can be
+corrected individually. Closing the page discards a draft. Resetting Mount settings
+resets the display preferences and keeps the character's reviewed points.
+
+The [stored East Ride frame](evidence/mount-live-east-raw-strip.png) reproduces why the
+fallback can need a correction. With a standing ground of (32, 60) and height of 50 px,
+the estimate meets the saddle at body (32, 37.5). A reviewed contact of (30, 45) places
+the same chair-sit sprite 2 px right and 8 px up on the unchanged saddle. The
+[placement test](../../../app/test/unit/mount-preview.test.ts) checks two saddle positions
+with independent expected coordinates and padded gear. This verifies contact placement.
+The stored frame still needs suitable astride anatomy and matching gear for art qualification.
+
+Saved points travel in [exports and editable copies](../../manifest-spec.md#rider-seat-contact).
+
 ## What to judge
 
 Watch the rider's hips, knees, boots and long clothing. The open saddle deliberately leaves these visible so bad contact and far-leg overlap are not hidden by a broad front wall. There is no reviewed rider-part mask yet.

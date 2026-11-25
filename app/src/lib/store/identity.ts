@@ -125,6 +125,8 @@ export function retainMoveChoices(next: Rig, current: Rig): void {
 	const added: RigAnimation[] = [];
 	for (const move of next.animations) {
 		const saved = current.animations.find((entry) => entry.id === move.id);
+		if (saved?.seatPoints) move.seatPoints = structuredClone(saved.seatPoints);
+		else delete move.seatPoints;
 		if (!saved) added.push(move);
 		for (const key of ['name', 'exportId'] as const)
 			if (saved?.[key] === undefined) delete move[key];

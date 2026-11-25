@@ -361,6 +361,13 @@ export interface ClipSource {
 
 export type ItemDrawing = 'anchor' | 'skeleton' | 'sheet';
 
+export interface RiderSeatPoint {
+	x: number;
+	y: number;
+	body: Sha256;
+	source: DirectionName;
+}
+
 export interface RigAnimation {
 	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
@@ -371,6 +378,9 @@ export interface RigAnimation {
 	exportId?: string;
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
+	seatPoints?: Partial<Record<DirectionName, RiderSeatPoint>>;
+	/** Exported contact in signed pixels from the rider pivot, in the displayed facing. */
+	riderSeat?: Partial<Record<DirectionName, { x: number; y: number }>>;
 	cells: number;
 	/** Serialized playback metadata; app previews and sharing always loop. */
 	loop: boolean;

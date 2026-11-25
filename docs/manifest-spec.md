@@ -130,6 +130,7 @@ export interface Clip {
   loop: boolean; // serialized playback metadata resolved at export
   moveLoop?: boolean; // per-move export choice; otherwise use global defaults
   itemDrawing?: "anchor" | "skeleton" | "sheet"; // Studio only: how items are later drawn on this move; otherwise Settings decides
+  riderSeat?: Partial<Record<DirectionName, { x: number; y: number }>>; // manifest.json only
   frames: { cell: number; ms: number }[]; // playlist; cells may repeat (holds, ping-pong)
   sources: Partial<Record<DirectionName, ClipSource>>; // generated directions only (mirrors derive)
 }
@@ -328,6 +329,25 @@ export interface ExportInfo {
   bakedPivot?: { x: number; y: number }; //   (64 rig + 96 sword -> 96x96, pivot rig.pivot + 16); = rig cell/pivot without oversize
 }
 ```
+
+### Rider seat contact
+
+On a saved one-cell State or Move, `rig.animations[].riderSeat` in `manifest.json` maps
+reviewed facings to signed pixel offsets from the character pivot. Positive x is right and
+positive y is down. The entry uses the public clip ID. Mirrored views have their own optional
+entry, expressed in the displayed facing. Missing entries mean that the export has no reviewed
+point for that facing.
+
+For a saddle at `{x: 104, y: 80}` and a rider seat offset of `{x: -3, y: -12}`, place
+the rider pivot at `{x: 107, y: 92}`. Subtract the offset from the saddle in the same units,
+then use the renderer's normal layer, trim and baked pivot handling. The same offset applies
+to padded equipment and baked sheets. Repeat the calculation as the saddle moves. The host owns
+saddle coordinates, playback and draw order.
+
+The editable copy and library backups keep `seatPoints` on the internal clip. Each point is in
+body-frame pixel-edge coordinates and records its body hash and drawn source facing. A replacement
+cell or mirror source invalidates a mismatched point. A lossless frame adjustment translates
+in-bounds points with the art. Mount display preferences do not travel with the project.
 
 ### 2.1 Oversize layers (v1.3.1)
 

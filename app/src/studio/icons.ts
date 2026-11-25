@@ -66,6 +66,8 @@ export { default as RotateCcw } from '@lucide/svelte/icons/rotate-ccw';
 export { default as WandSparkles } from '@lucide/svelte/icons/wand-sparkles';
 export { default as ArrowUp } from '@lucide/svelte/icons/arrow-up';
 export { default as ArrowDown } from '@lucide/svelte/icons/arrow-down';
+export { default as ArrowLeft } from '@lucide/svelte/icons/arrow-left';
+export { default as ArrowRight } from '@lucide/svelte/icons/arrow-right';
 export { default as ArrowRightLeft } from '@lucide/svelte/icons/arrow-right-left';
 export { default as Pencil } from '@lucide/svelte/icons/pencil';
 export { default as WifiOff } from '@lucide/svelte/icons/wifi-off';

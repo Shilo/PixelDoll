@@ -1159,6 +1159,106 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(world(page)).not.toHaveAttribute('data-mount');
 });
 
+const touchTest = test.extend({ hasTouch: true });
+touchTest(
+	'a saved seat point survives reload and resets to automatic in the compact Mount sheet',
+	async ({ page }, info) => {
+		const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+			.baseURL!;
+		await page.setViewportSize({ width: 390, height: 844 });
+		await landing(page, dev);
+		await page.evaluate(async () => {
+			const { openSource } = await import(String('/src/lib/dress/project.ts'));
+			const { saveImportedCharacter } = await import(String('/src/lib/store/import.ts'));
+			const { rehash } = await import(String('/src/lib/rig/directions.ts'));
+			const { refreshProjects, openProject } = await import(String('/src/studio/state.svelte.ts'));
+			const { project } = (await openSource('fixture:s2')) as {
+				project: import('../../src/lib/store/manifest.ts').Project;
+			};
+			const m = project.manifest;
+			m.rig.animations.push({
+				id: 'riding',
+				kind: 'state',
+				cells: 1,
+				loop: false,
+				frames: [{ cell: 0, ms: 100 }]
+			});
+			const body = m.items.find(({ id }) => id === m.rig.baseItem)!.layers[0];
+			body.cells!.riding = Object.fromEntries(
+				Object.entries(body.cells!.walk).map(([dir, row]) => [dir, row!.slice(0, 1)])
+			);
+			await rehash(m);
+			const id = await saveImportedCharacter(
+				{ project, warnings: [], extra: {} },
+				'Seat test rider'
+			);
+			await refreshProjects();
+			await openProject(id);
+		});
+		const customize = page
+			.getByRole('button', { name: 'Customize Seat test rider', exact: true })
+			.last();
+		await customize.click();
+		const mountMenu = page.getByRole('dialog', { name: 'Settings' });
+		const riderPose = mountMenu.getByRole('button', { name: /^Riding pose:/ });
+		const openCompactMount = async () => {
+			await page.getByRole('button', { name: 'More options', exact: true }).click();
+			await page.locator('.mobile-mount').click();
+		};
+		await openCompactMount();
+		await mountMenu.getByRole('switch', { name: 'Show mount', exact: true }).check();
+		await riderPose.click();
+		await page.getByRole('menuitemradio', { name: 'Riding', exact: true }).click();
+		const facing = mountMenu.getByRole('combobox', { name: 'Facing', exact: true });
+		const adjustSeat = mountMenu.getByRole('button', { name: 'Adjust seat', exact: true });
+		const left = mountMenu.getByRole('button', { name: 'Move rider left', exact: true });
+		const saveSeat = mountMenu.getByRole('button', { name: 'Save', exact: true });
+		await facing.selectOption('east');
+		await adjustSeat.click();
+		await expect(left).toBeFocused();
+		await left.tap();
+		await expect(saveSeat).toBeEnabled();
+		await mountMenu.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await expect(adjustSeat).toBeFocused();
+		await expect(world(page)).not.toHaveAttribute('data-mount-contact', 'reviewed');
+		await adjustSeat.press('Enter');
+		await left.press('Space');
+		await page.evaluate(() => {
+			const put = IDBObjectStore.prototype.put;
+			IDBObjectStore.prototype.put = function (record, key) {
+				if (
+					record?.manifest?.rig?.animations?.some(
+						(clip: { seatPoints?: unknown }) => clip.seatPoints
+					)
+				) {
+					IDBObjectStore.prototype.put = put;
+					throw new DOMException('Seat storage refused', 'QuotaExceededError');
+				}
+				return put.call(this, record, key);
+			};
+		});
+		await saveSeat.click();
+		await expect(mountMenu.getByRole('alert')).toContainText('Seat storage refused');
+		await saveSeat.click();
+		await expect(adjustSeat).toBeVisible();
+		await mountMenu.getByRole('button', { name: 'Close', exact: true }).click();
+		await page.getByRole('button', { name: 'Face east', exact: true }).click();
+		await expect(world(page)).toHaveAttribute('data-mount-contact', 'reviewed');
+
+		await page.reload();
+		await customize.click();
+		await page.getByRole('button', { name: 'Face east', exact: true }).click();
+		await expect(world(page)).toHaveAttribute('data-mount-contact', 'reviewed');
+		await openCompactMount();
+		await facing.selectOption('east');
+		await adjustSeat.click();
+		await mountMenu.getByRole('button', { name: 'Use automatic', exact: true }).click();
+		await saveSeat.click();
+		await expect(adjustSeat).toBeVisible();
+		await expect(world(page)).toHaveAttribute('data-mount-contact', /estimate|hip|joints/);
+	}
+);
+
 test('imported move names remain readable, distinct and contained in Preview and Inspect at every screen size', async ({
 	page
 }) => {

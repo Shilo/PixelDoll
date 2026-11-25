@@ -14,7 +14,10 @@ import type { DirectionName, Project } from '../../src/lib/store/manifest.ts';
 import { mountPlacement } from '../../src/studio/experience/mountPlacement.ts';
 import type { Presentation } from '../../src/studio/experience/presentation.ts';
 import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
-import type { Img } from '../../src/lib/image/png.ts';
+import { makeImg, type Img } from '../../src/lib/image/png.ts';
+import { bakedFrame, composeCell } from '../../src/lib/compose/compose.ts';
+import { exportManifest } from '../../src/lib/export/generic.ts';
+import { projectExportIdentity } from '../../src/lib/export/identity.ts';
 
 const view = (id: MountId, direction: DirectionName, height = 50) => {
 	const result = mountView(id, direction, height);
@@ -216,6 +219,171 @@ describe('rider placement', () => {
 	const rig = { pivot: { x: 32, y: 64 } };
 	const frame = { x: 40, y: 70 };
 	const ground = { x: 40.5, y: 70 };
+
+	test('a reviewed point moves a padded rider relative to two saddle positions', () => {
+		const body = 'sha256:seated' as const;
+		const gear = 'sha256:gear' as const;
+		const riderImage = makeImg(64, 64);
+		riderImage.data.set([200, 10, 20, 255], 4 * (44 * 64 + 29));
+		const itemImage = makeImg(80, 80);
+		itemImage.data.set([10, 20, 200, 255], 4 * (53 * 80 + 69));
+		const project: Project = {
+			manifest: {
+				format: 'pixeldoll/3',
+				name: 'Rider',
+				app: 'test',
+				rig: {
+					...rig,
+					cell: { w: 64, h: 64 },
+					baseItem: 'rider',
+					baseHash: body,
+					directions: [{ id: 'east' }, { id: 'west', mirrorOf: 'east' }],
+					animations: [
+						{
+							id: 'riding',
+							exportId: 'mounted_idle',
+							kind: 'state',
+							cells: 1,
+							loop: false,
+							frames: [
+								{ cell: 0, ms: 100 },
+								{ cell: 0, ms: 50 }
+							]
+						}
+					],
+					anchors: { hip: { riding: { east: [[32, 40]], west: [[31, 40]] } } }
+				},
+				items: [
+					{
+						id: 'rider',
+						name: 'Rider',
+						slot: 'body',
+						status: 'accepted',
+						mirror: 'flip',
+						baseHash: body,
+						materials: [],
+						prompt: '',
+						provenance: [],
+						layers: [{ id: 'main', role: 'fg', z: 0, cells: { riding: { east: [body] } } }]
+					},
+					{
+						id: 'gear',
+						name: 'Gear',
+						slot: 'main_hand',
+						status: 'accepted',
+						mirror: 'flip',
+						baseHash: body,
+						materials: [],
+						prompt: '',
+						provenance: [],
+						layers: [
+							{
+								id: 'main',
+								role: 'fg',
+								z: 1,
+								cell: { w: 80, h: 80 },
+								pivot: { x: 40, y: 72 },
+								cells: { riding: { east: [gear] } }
+							}
+						]
+					}
+				],
+				slots: [
+					{ id: 'body', z: 0, class: 'base' },
+					{ id: 'main_hand', z: 1, class: 'held' }
+				],
+				materials: [],
+				presets: []
+			},
+			images: new Map([
+				[body, riderImage],
+				[gear, itemImage]
+			])
+		};
+		const p: Presentation = {
+			kind: 'still',
+			clip: 'riding',
+			direction: 'east',
+			moving: false,
+			requestedClip: 'riding',
+			intendedDirection: 'east',
+			cell: 0,
+			issue: null,
+			issueKey: null,
+			loading: false
+		};
+		const clip = project.manifest.rig.animations[0];
+		const bodyBounds = { w: 30, h: 50, x: 15, y: 50 };
+		const grounding = { body: bodyBounds, reach: bodyBounds, facings: new Map() };
+		const automatic = mountPlacement(project, 'east', p, grounding);
+		const exported = () =>
+			JSON.parse(
+				JSON.stringify(
+					exportManifest(projectExportIdentity(project), {
+						engines: ['generic'],
+						baked: true
+					}).manifest
+				)
+			) as Project['manifest'];
+		expect(exported().rig.animations[0].riderSeat).toBeUndefined();
+		clip.seatPoints = { east: { body, source: 'east', x: 29, y: 44 } };
+		const reviewed = mountPlacement(project, 'east', p, grounding);
+		if (!automatic?.view || !reviewed?.view) throw new Error('Expected mounted artwork');
+		expect(automatic.contact).toEqual({ x: 40.5, y: 48.5, source: 'hip' });
+		expect(reviewed.contact).toEqual({ x: 37, y: 52, source: 'reviewed' });
+		const composed = composeCell(
+			project,
+			{ main_hand: 'gear' },
+			'riding',
+			'east',
+			0,
+			bakedFrame(project.manifest)
+		);
+		expect(alpha(composed, 37, 52)).toBe(255);
+		expect(alpha(composed, 69, 53)).toBe(255);
+		const saddle = { ...reviewed.view.frames[0], ground: { x: 10, y: 20 } };
+		for (const seat of [
+			{ x: 8, y: 10 },
+			{ x: 12, y: 8 }
+		]) {
+			const pose = { ...saddle, seat };
+			const ground = { x: 100, y: 100 };
+			const at = placeRider(ground, reviewed.contact, pose);
+			const before = placeRider(ground, automatic.contact, pose);
+			expect(at.mount).toEqual({ x: 90, y: 80 });
+			expect(at.rider).toEqual({ x: 53 + seat.x, y: 28 + seat.y });
+			expect({ x: at.rider.x - before.rider.x, y: at.rider.y - before.rider.y }).toEqual({
+				x: 3,
+				y: -4
+			});
+			expect({ x: at.rider.x + 37, y: at.rider.y + 52 }).toEqual({
+				x: 90 + seat.x,
+				y: 80 + seat.y
+			});
+			expect({ x: at.rider.x + 69, y: at.rider.y + 53 }).toEqual({
+				x: 122 + seat.x,
+				y: 81 + seat.y
+			});
+		}
+		const manifest = exported();
+		const entry = manifest.rig.animations[0];
+		expect(entry.id).toBe('mounted_idle');
+		expect(entry.riderSeat).toEqual({ east: { x: -3, y: -20 } });
+		expect(entry.seatPoints).toBeUndefined();
+		expect(manifest.export?.bakedPivot).toEqual({ x: 40, y: 72 });
+		const offset = entry.riderSeat!.east!;
+		expect({ x: 98 - offset.x, y: 90 - offset.y }).toEqual({ x: 101, y: 110 });
+
+		const west = { ...p, direction: 'west' as const, intendedDirection: 'west' as const };
+		const westPlacement = mountPlacement(project, 'west', west, grounding);
+		expect(westPlacement?.view && westPlacement.contact.source).toBe('hip');
+		clip.seatPoints.west = { body, source: 'east', x: 36, y: 41 };
+		expect(exported().rig.animations[0].riderSeat?.west).toEqual({ x: 4, y: -23 });
+		project.manifest.items[0].layers[0].cells!.riding.west = [null];
+		expect(exported().rig.animations[0].riderSeat?.west).toBeUndefined();
+		project.manifest.items[0].layers[0].cells!.riding.east = [gear];
+		expect(exported().rig.animations[0].riderSeat).toBeUndefined();
+	});
 
 	test('a south-facing attack uses its own hip on the unchanged east-facing mount', () => {
 		const project: Project = {
