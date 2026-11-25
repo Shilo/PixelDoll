@@ -202,8 +202,8 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(music).toHaveValue('50');
 	await expect(effects).toHaveValue('50');
 	const { gainTargets } = await calls();
-	expect(gainTargets[0]).toBeCloseTo(0.01822, 5);
-	expect(gainTargets[1]).toBeCloseTo(0.04363, 5);
+	expect(gainTargets[0]).toBeCloseTo(0.05761, 5);
+	expect(gainTargets[1]).toBeCloseTo(0.13796, 5);
 	await music.press('End');
 	await expect.poll(async () => (await calls()).gainTargets.at(-1)).toBeCloseTo(0.4, 5);
 	await music.fill('50');
@@ -216,7 +216,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await effects.press('End');
 	await expect(effects).toHaveValue('100');
 	await expect(music).toHaveValue('50');
-	expect((await calls()).gainTargets.at(-1)).toBeCloseTo(0.18, 5);
+	expect((await calls()).gainTargets.at(-1)).toBeCloseTo(0.25, 5);
 	await effects.press('ArrowLeft');
 	await effectsSwitch.uncheck();
 	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });

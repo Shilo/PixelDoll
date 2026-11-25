@@ -50,9 +50,11 @@ The Studio controller manages preferences, user activation, and visibility. The 
 loads after a trusted gesture with an audible channel and uses a shared Web Audio context with
 independent music and effects gain controls. Music downloads and decodes when enabled at a nonzero
 level in the foreground. Each cue is synthesized on first use and its buffer is reused. Both sliders
-default to 50%, the reference listening position for each channel. At that position, music keeps
-its previous 20% setting's gain and effects keep their previous 35% setting's gain. Music has extra
-headroom above 50% for listeners who need it. Its maximum channel gain is 0.40, up from 0.16.
+default to 50%, the reference listening position for each channel. After listening feedback on a
+physical Pixel 8 Pro, both reference gains rose by 10 dB to 0.05761 for music and 0.13796 for effects.
+This keeps their gain ratio at the midpoint. A smooth taper runs from silence through each reference
+to a maximum of 0.40 for music and 0.25 for effects. The measured assets leave about 1.9 dB of margin
+even if four copies of the highest-peak effect align with the music's peak at maximum settings.
 The PWA verifies and caches the module and soundtrack
 on demand. If the first gesture happens offline before the module is cached,
 reconnect and reload to enable audio. The 1.42 MB FLAC decodes to about 31 MB at a 48 kHz device rate.
@@ -67,8 +69,10 @@ intervals without loud outliers. [Web Audio spec](https://www.w3.org/TR/webaudio
 
 Match perceived loudness among cues with similar jobs and keep quieter tiers for frequent feedback.
 The synthesized cues measured within 2.8 dB of each other by full-cue RMS before
-channel gain and per-play variation.
-RMS helps spot outliers and peaks help check headroom. Compare short cues by ear in context because
+channel gain and per-play variation. At the 50% reference the music measures about −45 LUFS
+integrated, and the cues measure about −26 to −30 dBFS over their loudest 50 ms. RMS helps spot
+outliers and peaks help check headroom. These are digital measurements. The device's media volume
+and output determine the sound level at the listener. Compare short cues by ear in context because
 duration, frequency, and envelope affect perceived loudness. Broadcast loudness targets use
 measurement windows longer than many Studio cues. [EBU loudness measurement windows](https://tech.ebu.ch/docs/tech/tech3343v3_0.pdf)
 
