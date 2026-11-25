@@ -1,8 +1,8 @@
 param(
     [Parameter(Mandatory)] [ValidateSet('tauri', 'wails', 'electron')] [string] $Shell,
     [Parameter(Mandatory)] [string] $Executable,
-    [int] $Runs = 3,
-    [int] $IdleSeconds = 60,
+    [ValidateRange(1, 100)] [int] $Runs = 3,
+    [ValidateRange(0, 3600)] [int] $IdleSeconds = 60,
     [ValidateSet('startup', 'transfer', 'chunked', 'online', 'download', 'backup')] [string] $Case = 'startup',
     [string] $ScratchParent = [IO.Path]::GetTempPath(),
     [switch] $SeparateProfile
@@ -23,7 +23,13 @@ $samples = [System.Collections.Generic.List[object]]::new()
 
 function Read-Events {
     if (Test-Path -LiteralPath $eventFile) {
-        $lines = ([IO.File]::ReadAllText($eventFile)) -split "`n"
+        $stream = [IO.File]::Open($eventFile, 'Open', 'Read', 'ReadWrite')
+        $reader = [IO.StreamReader]::new($stream)
+        try {
+            $lines = $reader.ReadToEnd() -split "`n"
+        } finally {
+            $reader.Dispose()
+        }
         $lines | Select-Object -SkipLast 1 | ForEach-Object { $_ | ConvertFrom-Json }
     }
 }
@@ -55,7 +61,7 @@ for ($i = 0; $i -lt $Runs; $i++) {
     $launch = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     $process = if ($Shell -eq 'electron') {
         $entrypoint = Join-Path $PSScriptRoot 'electron-baseline.mjs'
-        Start-Process -FilePath $exe -ArgumentList ('"' + $entrypoint + '"') -PassThru
+        Start-Process -FilePath $exe -ArgumentList ('"' + $entrypoint + '"') -Environment @{ ELECTRON_RUN_AS_NODE = $null } -PassThru
     } else {
         Start-Process -FilePath $exe -PassThru
     }
@@ -65,6 +71,8 @@ for ($i = 0; $i -lt $Runs; $i++) {
             if ($process.HasExited) { throw "Shell exited before startup completed: $($process.ExitCode)" }
             if ([DateTime]::UtcNow -gt $deadline) { throw "Shell startup timed out. Results: $root" }
             $events = @(Read-Events)
+            $fatal = $events | Where-Object { $_.event.name -eq 'fatal' } | Select-Object -First 1
+            if ($fatal) { throw "Studio probe failed: $($fatal.event.error). Results: $root" }
             $started = $events | Where-Object { $_.event.name -eq 'studio-ready' } | Select-Object -First 1
             if (!$started) { Start-Sleep -Milliseconds 50 }
         } until ($started)
@@ -77,6 +85,9 @@ for ($i = 0; $i -lt $Runs; $i++) {
                 $memory = Read-TreeMemory $process.Id
                 if (!$peak -or $memory.privateMiB -gt $peak.privateMiB) { $peak = $memory }
                 $events = @(Read-Events)
+                if (!($events | Where-Object { $_.event.name -eq 'finished' })) {
+                    Start-Sleep -Milliseconds 40
+                }
             } until ($events | Where-Object { $_.event.name -eq 'finished' })
         } elseif ($Shell -eq 'tauri') {
             do {
@@ -100,6 +111,11 @@ for ($i = 0; $i -lt $Runs; $i++) {
             sampledTransferPeak = $peak
             idle = $idle
         })
+        $failures = @($samples[$i].events | Where-Object { $_.event.PSObject.Properties['error'] })
+        if ($failures.Count) {
+            $details = ($failures | ForEach-Object { "$($_.event.name): $($_.event.error)" }) -join ', '
+            throw "Studio probe failed: $details. Results: $root"
+        }
     } finally {
         if (!$process.HasExited) {
             $process.Refresh()
@@ -111,5 +127,11 @@ for ($i = 0; $i -lt $Runs; $i++) {
     }
 }
 
-$result = [pscustomobject]@{ shell = $Shell; case = $Case; data = $root; samples = $samples }
+$result = [pscustomobject]@{
+    shell = $Shell
+    case = $Case
+    data = $root
+    executableSha256 = (Get-FileHash -LiteralPath $exe).Hash
+    samples = $samples
+}
 $result | ConvertTo-Json -Depth 12

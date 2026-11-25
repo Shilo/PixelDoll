@@ -148,6 +148,8 @@ async function main() {
       });
       return response.status;
     });
+    await report('finished');
+    return;
   }
   for (const size of [1024 * 1024, 64 * 1024 * 1024, 128 * 1024 * 1024]) {
     if (mode === 'chunked') {

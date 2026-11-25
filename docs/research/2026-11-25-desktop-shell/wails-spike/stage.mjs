@@ -1,9 +1,9 @@
-import { cp, readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
+import { stageAssets } from '../stage-assets.mjs';
 
 const at = (path) => new URL(path, import.meta.url);
-await cp(at('../../../../app/dist/'), at('dist/'), { recursive: true });
+const html = await stageAssets(import.meta.url);
 const index = at('dist/index.html');
-const html = await readFile(index, 'utf8');
 await writeFile(index, html.replace('</head>', '  <script defer src="./wails-spike.js"></script>\n</head>'));
 const probe = await readFile(at('../tauri-spike/probe.js'), 'utf8');
 const start = probe.indexOf('async function studioReady()');

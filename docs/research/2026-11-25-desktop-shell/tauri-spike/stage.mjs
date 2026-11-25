@@ -1,12 +1,12 @@
-import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, writeFile } from 'node:fs/promises';
+import { stageAssets } from '../stage-assets.mjs';
 
 const at = (path) => new URL(path, import.meta.url);
 await mkdir(at('icons/'), { recursive: true });
 await cp(at('../../../../app/public/icons/pwa/favicon.ico'), at('icons/icon.ico'));
-await cp(at('../../../../app/dist/'), at('dist/'), { recursive: true });
+const html = await stageAssets(import.meta.url);
 await cp(at('probe.js'), at('dist/tauri-spike.js'));
 const index = at('dist/index.html');
-const html = await readFile(index, 'utf8');
 if (!html.includes("connect-src 'self'") || !html.includes('</head>')) {
   throw new Error('The PixelDoll build changed. Review the desktop CSP and script injection.');
 }
