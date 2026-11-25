@@ -2943,6 +2943,7 @@
 		"showWorn": "Karakter üzerinde göster",
 		"review": "Düzenlemeyi inceleyin",
 		"checkViews": "Kaydetmeden önce her yönde şekli ve hizalamayı kontrol edin.",
+		"characterSource": "{move} hareketinin ilk karesini kullanır.",
 		"characterScope": "Yeni karakter ayakta duruş görünümleriyle başlar. Kaydettikten sonra animasyon ekleyin ve eşyaları uyarlayın.",
 		"itemScope": "Kaynak: {move}, ilk kare. Diğer karelerin çizimlerini kaydettikten sonra ekleyin.",
 		"editCharacter": "Karakteri düzenle",

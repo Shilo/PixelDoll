@@ -2862,6 +2862,7 @@
 		"showWorn": "在角色身上查看",
 		"review": "检查编辑结果",
 		"checkViews": "保存前请逐个朝向检查形状和对齐情况。",
+		"characterSource": "使用“{move}”的第一帧。",
 		"characterScope": "新角色从站立视图开始。保存后可添加动作并调整装备。",
 		"itemScope": "来源：{move}的第一帧。保存后可补充其他帧的图像。",
 		"editCharacter": "编辑角色",

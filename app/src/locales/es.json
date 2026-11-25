@@ -2943,6 +2943,7 @@
 		"showWorn": "Mostrar en el personaje",
 		"review": "Revisa la edición",
 		"checkViews": "Comprueba la forma y la alineación en cada orientación antes de guardar.",
+		"characterSource": "Usa el primer fotograma de {move}.",
 		"characterScope": "El nuevo personaje empieza con vistas de pie. Añade animaciones y ajusta el equipo después de guardar.",
 		"itemScope": "Origen: {move}, primer fotograma. Añade gráficos para otros fotogramas después de guardar.",
 		"editCharacter": "Editar personaje",

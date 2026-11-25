@@ -2943,6 +2943,7 @@
 		"showWorn": "Afficher sur le personnage",
 		"review": "Vérifiez la modification",
 		"checkViews": "Vérifiez la forme et l’alignement dans chaque orientation avant d’enregistrer.",
+		"characterSource": "Utilise la première image de {move}.",
 		"characterScope": "Le nouveau personnage commence avec des vues debout. Après l’enregistrement, ajoutez des animations et ajustez l’équipement.",
 		"itemScope": "Source : {move}, première image. Ajoutez les autres images après l’enregistrement.",
 		"editCharacter": "Modifier le personnage",

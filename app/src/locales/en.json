@@ -2943,6 +2943,7 @@
 		"showWorn": "Show on character",
 		"review": "Review the edit",
 		"checkViews": "Check the shape and alignment from each facing before saving.",
+		"characterSource": "Uses the first frame of {move}.",
 		"characterScope": "The new character starts with Standing views. Add moves and fit gear after saving.",
 		"itemScope": "Source: {move}, first frame. Add artwork for other frames after saving.",
 		"editCharacter": "Edit character",

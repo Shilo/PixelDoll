@@ -2952,6 +2952,7 @@
 		"showWorn": "Mostrar no personagem",
 		"review": "Revise a edição",
 		"checkViews": "Confira a forma e o alinhamento em cada direção antes de salvar.",
+		"characterSource": "Usa o primeiro quadro de {move}.",
 		"characterScope": "O novo personagem começa com as vistas em pé. Adicione animações e ajuste os itens depois de salvar.",
 		"itemScope": "Origem: {move}, primeiro quadro. Adicione imagens aos outros quadros depois de salvar.",
 		"editCharacter": "Editar personagem",

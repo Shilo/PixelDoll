@@ -2862,6 +2862,7 @@
 		"showWorn": "Tampilkan pada karakter",
 		"review": "Tinjau perubahan",
 		"checkViews": "Periksa bentuk dan keselarasan dari setiap arah sebelum menyimpan.",
+		"characterSource": "Menggunakan bingkai pertama dari {move}.",
 		"characterScope": "Karakter baru diawali dengan tampilan berdiri. Tambahkan animasi dan pasang perlengkapan setelah menyimpan.",
 		"itemScope": "Sumber: {move}, frame pertama. Tambahkan gambar untuk frame lain setelah menyimpan.",
 		"editCharacter": "Edit karakter",

@@ -17,6 +17,7 @@ import {
 	type Rig,
 	type Sha256
 } from '../lib/rig/rig.ts';
+import { setupRestAnimation } from '../lib/rig/setup.ts';
 import type { CellKey, Item, Layer, Manifest, Project, Provenance } from '../lib/store/manifest.ts';
 import type { StateGenerationSource } from './stateGenerationSource.ts';
 import { BASE_CLOTHES, UNDERWEAR_CLOTHES } from './model.ts';
@@ -87,9 +88,12 @@ export async function appearanceSource(
 	const frame = first ? layerFrame(rig, first) : { ...rig.cell, ...rig.pivot };
 	const selected = item ? { [item.slot]: item.id } : {};
 	const itemOnly = item ? { ...project, manifest: { ...m, items: [item] } } : undefined;
-	const ids = item
-		? new Set([DEFAULT_MOVE, target.clip, ...rig.animations.map(({ id }) => id)])
-		: new Set([DEFAULT_MOVE]);
+	const clips = rig.animations.map(({ id }) => id);
+	const ids = new Set(
+		item
+			? [DEFAULT_MOVE, target.clip, ...clips]
+			: [target.clip, DEFAULT_MOVE, setupRestAnimation(rig)?.id, ...clips]
+	);
 	for (const id of ids) {
 		const clip = rig.animations.find((candidate) => candidate.id === id);
 		const cell = clip?.frames[0]?.cell;

@@ -8,7 +8,7 @@
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
-	import type { DirectionName } from '../lib/rig/rig.ts';
+	import { DEFAULT_MOVE, type DirectionName } from '../lib/rig/rig.ts';
 	import { appearancePrompt, editedItem } from './appearanceSource.ts';
 	import {
 		discardAppearance,
@@ -374,16 +374,17 @@
 	{#if source || attempt}
 		{#if !attempt}<div class="appearance-context">
 				{#if source}<strong>{source.name}</strong>{/if}
-				{#if item && source && loaded}
-					<span class="faint"
-						>{t('appearance.itemScope', {
+				{#if source && loaded && (item || source.clip !== DEFAULT_MOVE)}
+					<span class="faint">
+						{t(item ? 'appearance.itemScope' : 'appearance.characterSource', {
 							move: displayMove(
 								source.clip,
 								loaded.project.manifest.rig.animations.map(({ id }) => id)
 							)
-						})}</span
-					>
-				{:else if !item}<span class="faint">{t('appearance.characterScope')}</span>{/if}
+						})}
+					</span>
+				{/if}
+				{#if !item}<span class="faint">{t('appearance.characterScope')}</span>{/if}
 			</div>{/if}
 		{#if attempt}
 			{#if review?.views.length}

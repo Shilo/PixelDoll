@@ -2943,6 +2943,7 @@
 		"showWorn": "An der Figur zeigen",
 		"review": "Änderung prüfen",
 		"checkViews": "Prüfe Form und Ausrichtung aus jeder Blickrichtung, bevor du speicherst.",
+		"characterSource": "Verwendet das erste Bild aus „{move}“.",
 		"characterScope": "Die neue Figur beginnt mit Standansichten. Füge nach dem Speichern Animationen hinzu und passe Ausrüstung an.",
 		"itemScope": "Quelle: {move}, erster Frame. Ergänze weitere Frames nach dem Speichern.",
 		"editCharacter": "Charakter bearbeiten",

@@ -17,6 +17,13 @@ import {
 const fixture = () =>
 	loadFixture((path) => readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url)));
 
+test('an imported character without Standing can use its first complete move as the source', async () => {
+	const project = await fixture();
+	const standing = await appearanceSource(project, { projectId: 'rig-imported' });
+	expect(standing?.clip).toBe('walk');
+	expect(standing?.views.map(({ direction }) => direction)).toEqual(['south', 'east', 'north']);
+});
+
 test('publishes edited Standing as a new character without carrying move art, skeletons, gear or mirror requests', async () => {
 	const source = await fixture();
 	const { rig, items } = source.manifest;
