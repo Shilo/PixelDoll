@@ -108,7 +108,8 @@
 	grid-template-columns: minmax(0, 1fr) auto max-content;
 	column-gap: 0;
 }
-.phone-layout :is(.header-actions, .header-start) {
+.phone-layout .header-actions,
+.phone-layout:not(.selection) .header-start {
 	gap: 0;
 }
 .phone-layout .experience-header .global-actions {
@@ -136,11 +137,15 @@
 	font-size: 15px;
 	white-space: nowrap;
 }
+/* The first label starts where the icons of the bar's 44px controls start, so both outer edges look equally padded. */
+.selection .header-start {
+	padding-left: 12px;
+}
+/* The group gap spaces the divider like any other item. */
 .brand-divider {
 	flex: none;
 	width: 1px;
 	height: 20px;
-	margin: 0 8px;
 	background: var(--bu-line);
 }
 .screen-title {
@@ -149,7 +154,6 @@
 	white-space: nowrap;
 }
 .screen-count {
-	margin-left: 4px;
 	color: var(--bu-muted);
 	font-size: 13px;
 }
@@ -320,6 +324,11 @@
 	display: block !important;
 }
 @media (max-width: 430px) {
+	/* Phones keep the bar closer to the window than the desktop edge so every 44 px control still fits at 320 px. */
+	.phone-layout .experience-header {
+		left: 8px;
+		right: 8px;
+	}
 	.phone-layout .name-text .bu-muted {
 		display: block;
 		font-size: 12px;
