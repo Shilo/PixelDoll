@@ -3524,6 +3524,8 @@
 		"layeringHelp": "Yürüyüş ve saldırı aynı yöne bakmalı, iki hareket için de bacak görselleri olmalı ve beldeki birleşim uyuşmalı. Aksi halde normal tüm vücut saldırısı oynatılır.",
 		"waist": "Bel",
 		"waistHelp": "Yürüyen bacakların saldıran üst gövdeyle birleştiği çizgiyi kaydırır. Pozitif değerler aşağı, negatif değerler yukarı, en fazla 4 piksel kaydırır. Otomatik, her karede izlenen kalçaları kullanır.",
+		"raiseWaist": "Beli yükselt",
+		"lowerWaist": "Beli alçalt",
 		"automaticStill": "Otomatik: hareketsiz durur",
 		"controls": "Kontroller",
 		"title": "Canlı görünümler",

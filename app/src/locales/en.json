@@ -3527,6 +3527,8 @@
 		"layeringHelp": "Walk and attack must face the same way, the legs need art for both moves, and the waist join must line up. Otherwise, the normal full-body attack plays.",
 		"waist": "Waist",
 		"waistHelp": "Moves the line where the walking legs meet the attacking upper body. Positive values move it down and negative values up, up to 4 px. Auto uses the hips tracked in each frame.",
+		"raiseWaist": "Raise waist",
+		"lowerWaist": "Lower waist",
 		"automaticStill": "Automatic: stands still",
 		"controls": "Controls",
 		"title": "Live views",

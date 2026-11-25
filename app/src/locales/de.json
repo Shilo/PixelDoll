@@ -3524,6 +3524,8 @@
 		"layeringHelp": "Gehen und Angriff müssen in dieselbe Richtung zeigen, die Beine brauchen Grafiken für beide Bewegungen und der Übergang an der Taille muss passen. Sonst läuft der normale Ganzkörperangriff.",
 		"waist": "Taille",
 		"waistHelp": "Verschiebt die Linie, an der die laufenden Beine auf den angreifenden Oberkörper treffen. Positive Werte verschieben sie nach unten, negative nach oben, um bis zu 4 Pixel. Auto verwendet die in jedem Einzelbild verfolgten Hüften.",
+		"raiseWaist": "Taille anheben",
+		"lowerWaist": "Taille absenken",
 		"automaticStill": "Automatisch: steht still",
 		"controls": "Steuerung",
 		"title": "Live-Ansichten",

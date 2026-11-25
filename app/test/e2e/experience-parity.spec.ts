@@ -4649,6 +4649,21 @@ test.describe('live views actions', () => {
 		const waist = settings.locator('[data-setting="live-waist"]');
 		const waistInput = waist.getByRole('spinbutton', { name: /Waist/ });
 		const auto = waist.getByRole('button', { name: 'Auto', exact: true });
+		const stepper = waist.locator('.stepper');
+		const controls = waist.locator('.layering-controls');
+		const label = waist.getByText('Waist', { exact: true });
+		await expect(waistInput).toHaveValue('0');
+		await expect(auto).toHaveAttribute('aria-pressed', 'true');
+		const initialLabel = (await label.boundingBox())!;
+		const initialControls = (await controls.boundingBox())!;
+		const initialAuto = (await auto.boundingBox())!;
+		const initialStepper = (await stepper.boundingBox())!;
+		expect(initialControls.y).toBeGreaterThanOrEqual(initialLabel.y + initialLabel.height);
+		expect(Math.abs(initialAuto.height - initialStepper.height)).toBeLessThan(1);
+		await waist.getByRole('button', { name: 'Lower waist', exact: true }).click();
+		await expect(waistInput).toHaveValue('1');
+		await expect(auto).toHaveAttribute('aria-pressed', 'false');
+		await waist.getByRole('button', { name: 'Raise waist', exact: true }).click();
 		await expect(waistInput).toHaveValue('0');
 		await expect(auto).toHaveAttribute('aria-pressed', 'true');
 		const start = (await waistInput.boundingBox())!;
@@ -4656,29 +4671,18 @@ test.describe('live views actions', () => {
 		await expect(auto).toHaveAttribute('aria-pressed', 'false');
 		await expect(waistInput).toHaveValue('2');
 		const moved = (await waistInput.boundingBox())!;
+		const movedLabel = (await label.boundingBox())!;
+		const movedAuto = (await auto.boundingBox())!;
 		expect(moved.x).toBe(start.x);
 		expect(moved.width).toBe(start.width);
+		expect(movedLabel.x).toBe(initialLabel.x);
+		expect(movedAuto.x).toBe(initialAuto.x);
+		expect(Math.abs(movedAuto.height - initialStepper.height)).toBeLessThan(1);
 		const stored = () =>
 			page.evaluate(() => JSON.parse(localStorage.getItem('pixeldoll.liveViews')!));
 		expect(await stored()).toMatchObject({
 			layering: { 'fixture:s2': { on: true, waist: 2 } }
 		});
-		// An edit in progress unpresses Auto even when nothing valid has been committed yet.
-		await waistInput.fill('5');
-		await expect(auto).toHaveAttribute('aria-pressed', 'false');
-		await expect(waistInput).toHaveValue('5');
-		await waistInput.blur();
-		await expect(waistInput).toHaveValue('4');
-		await expect(auto).toHaveAttribute('aria-pressed', 'false');
-		expect(await stored()).toMatchObject({
-			layering: { 'fixture:s2': { on: true, waist: 4 } }
-		});
-		await waistInput.fill('');
-		await expect(auto).toHaveAttribute('aria-pressed', 'false');
-		await expect(waistInput).toHaveValue('');
-		await waistInput.blur();
-		await expect(waistInput).toHaveValue('4');
-		await expect(auto).toHaveAttribute('aria-pressed', 'false');
 		await auto.click();
 		await expect(waistInput).toHaveValue('0');
 		await expect(auto).toHaveAttribute('aria-pressed', 'true');

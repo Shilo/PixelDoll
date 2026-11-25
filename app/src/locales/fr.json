@@ -3527,6 +3527,8 @@
 		"layeringHelp": "La marche et l’attaque doivent être orientées dans le même sens, les jambes doivent avoir des images pour les deux mouvements et le raccord à la taille doit être aligné. Sinon, l’attaque normale du corps entier est jouée.",
 		"waist": "Taille",
 		"waistHelp": "Déplace la ligne où les jambes en marche rejoignent le haut du corps qui attaque. Les valeurs positives la déplacent vers le bas, les négatives vers le haut, jusqu’à 4 pixels. Automatique utilise les hanches suivies dans chaque image.",
+		"raiseWaist": "Remonter la taille",
+		"lowerWaist": "Abaisser la taille",
 		"automaticStill": "Automatique : immobile",
 		"controls": "Commandes",
 		"title": "Vues en direct",

@@ -3527,6 +3527,8 @@
 		"layeringHelp": "La caminata y el ataque deben mirar en la misma dirección, las piernas necesitan imágenes para ambos movimientos y la unión en la cintura debe encajar. Si no, se reproduce el ataque normal de cuerpo entero.",
 		"waist": "Cintura",
 		"waistHelp": "Mueve la línea donde las piernas al caminar se unen al torso que ataca. Los valores positivos la bajan y los negativos la suben, hasta 4 píxeles. Automático usa las caderas registradas en cada fotograma.",
+		"raiseWaist": "Subir cintura",
+		"lowerWaist": "Bajar cintura",
 		"automaticStill": "Automático: quieto",
 		"controls": "Controles",
 		"title": "Vistas en vivo",

@@ -3536,6 +3536,8 @@
 		"layeringHelp": "A caminhada e o ataque devem estar voltados para a mesma direção, as pernas precisam de imagens para os dois movimentos e a junção na cintura deve se encaixar. Caso contrário, o ataque normal de corpo inteiro é reproduzido.",
 		"waist": "Cintura",
 		"waistHelp": "Move a linha onde as pernas em caminhada encontram a parte superior do corpo que ataca. Valores positivos movem para baixo e negativos para cima, até 4 pixels. Automático usa o quadril rastreado em cada quadro.",
+		"raiseWaist": "Subir a cintura",
+		"lowerWaist": "Baixar a cintura",
 		"automaticStill": "Automático: parado",
 		"controls": "Controles",
 		"title": "Visualizações ao vivo",
