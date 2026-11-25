@@ -27,10 +27,7 @@ function volume(level: number, midpointGain: number, ceiling: number): number {
 	return (ceiling * position) / (position + shape * (1 - position));
 }
 
-export function createAudioPlayback(
-	context: AudioContext,
-	onMusicPlaying: (playing: boolean) => void
-): AudioPlayback {
+export function createAudioPlayback(context: AudioContext): AudioPlayback {
 	const musicGain = context.createGain();
 	const effectsGain = context.createGain();
 	for (const gain of [musicGain, effectsGain]) {
@@ -55,7 +52,6 @@ export function createAudioPlayback(
 	let disposed = false;
 
 	function stopMusic(fade = false) {
-		onMusicPlaying(false);
 		if (!fade || music) {
 			finishMusicRelease?.();
 			finishMusicRelease = undefined;
@@ -123,15 +119,7 @@ export function createAudioPlayback(
 			stopMusic(foreground && !disposed && context.state === 'running');
 			return;
 		}
-		if (context.state !== 'running') {
-			onMusicPlaying(false);
-			return;
-		}
-		if (music) {
-			onMusicPlaying(true);
-			return;
-		}
-		if (musicFailed) return;
+		if (context.state !== 'running' || music || musicFailed) return;
 		if (!musicBuffer) {
 			if (!musicLoading) void loadMusic();
 			return;
@@ -154,7 +142,6 @@ export function createAudioPlayback(
 			throw error;
 		}
 		music = { source, envelope, startedAt };
-		onMusicPlaying(true);
 	}
 
 	function disconnectCue(voice: ActiveCue) {

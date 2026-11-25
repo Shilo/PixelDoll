@@ -17,7 +17,7 @@
 	import GlobalActions from './GlobalActions.svelte';
 	import MoreMenu from './MoreMenu.svelte';
 	import { historyText } from './historyText.ts';
-	import { isMusicPlaying } from './audio.svelte.ts';
+	import { hasEnabledAudio } from './audio.svelte.ts';
 	import { openSettings } from './settingsNavigation.svelte.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
 	import { characterFacts } from './model.ts';
@@ -270,7 +270,7 @@
 				bind:this={redoButton}
 				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
 			>
-			{#if isMusicPlaying()}
+			{#if hasEnabledAudio()}
 				<button
 					class="bu-action header-audio"
 					data-variant="quiet"

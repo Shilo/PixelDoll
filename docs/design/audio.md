@@ -55,6 +55,7 @@ physical Pixel 8 Pro, both reference gains rose by 10 dB to 0.05761 for music an
 This keeps their gain ratio at the midpoint. A smooth taper runs from silence through each reference
 to a maximum of 0.40 for music and 0.25 for effects. The measured assets leave about 1.9 dB of margin
 even if four copies of the highest-peak effect align with the music's peak at maximum settings.
+The Customize toolbar shows the Audio shortcut whenever either channel is enabled at a nonzero level.
 The PWA verifies and caches the module and soundtrack
 on demand. If the first gesture happens offline before the module is cached,
 reconnect and reload to enable audio. The 1.42 MB FLAC decodes to about 31 MB at a 48 kHz device rate.
@@ -69,10 +70,15 @@ intervals without loud outliers. [Web Audio spec](https://www.w3.org/TR/webaudio
 
 Match perceived loudness among cues with similar jobs and keep quieter tiers for frequent feedback.
 The synthesized cues measured within 2.8 dB of each other by full-cue RMS before
-channel gain and per-play variation. At the 50% reference the music measures about −45 LUFS
+channel gain and per-play variation. The previous 50% mix measured about −55 LUFS for music and
+−36 to −40 dBFS for effects over their loudest 50 ms. In Brave on the Pixel 8 Pro, that midpoint
+was too quiet, and the old 100% mix felt only slightly louder than the desired default.
+At the current 50% reference the music measures about −45 LUFS
 integrated, and the cues measure about −26 to −30 dBFS over their loudest 50 ms. RMS helps spot
 outliers and peaks help check headroom. These are digital measurements. The device's media volume
-and output determine the sound level at the listener. Compare short cues by ear in context because
+and output determine the sound level at the listener. Treat the current midpoint as the reference
+to audition, with device media volume held fixed. The new levels have been verified digitally and
+still need a listening check on the Pixel. Compare short cues by ear in context because
 duration, frequency, and envelope affect perceived loudness. Broadcast loudness targets use
 measurement windows longer than many Studio cues. [EBU loudness measurement windows](https://tech.ebu.ch/docs/tech/tech3343v3_0.pdf)
 

@@ -144,6 +144,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	expect(audioRequests).toEqual([]);
 	await enterStudio(page);
 	await expect(shortcut).toBeVisible();
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
 	expect(audioRequests).toEqual([
 		expect.stringMatching(/assets\/audioPlayback-.*\.js/),
 		expect.stringMatching(/assets\/studio-ambient-[^/]+\.flac/)
@@ -218,12 +219,20 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(music).toHaveValue('50');
 	expect((await calls()).gainTargets.at(-1)).toBeCloseTo(0.25, 5);
 	await effects.press('ArrowLeft');
-	await effectsSwitch.uncheck();
-	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
 	await musicSwitch.uncheck();
-	await expect(shortcut).toHaveCount(0);
+	await expect(shortcut).toBeVisible();
 	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0, musicStopTime: 0.05 });
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await shortcut.click();
+	await expect(musicSwitch).not.toBeChecked();
+	await expect(effectsSwitch).toBeChecked();
+	await effectsSwitch.uncheck();
+	await expect(shortcut).toHaveCount(0);
 	await musicSwitch.check();
+	await expect(shortcut).toHaveCount(1);
+	await music.press('Home');
+	await expect(shortcut).toHaveCount(0);
+	await music.fill('50');
 	await expect(shortcut).toHaveCount(1);
 	await master.uncheck();
 	await expect(shortcut).toHaveCount(0);

@@ -10,7 +10,7 @@ The PixelLab row is followed by character actions (demo copy and phone shortcuts
 contextual wardrobe visibility, library backup, Activity, and app actions (installation, updates, and help).
 Studio audio is enabled by default at low levels and starts after a gesture in the active tab. Settings > Audio uses
 positive switches for Play audio, Music, and Sound effects. Any switch can silence its scope while preserving the volume
-choices. People can also set either volume to zero. The Studio toolbar links directly to Audio while music is playing.
+choices. People can also set either volume to zero. The Customize toolbar links directly to Audio whenever music or sound effects are enabled at a nonzero level.
 The browser remembers the choices. Both themes share one longer [original synthesized soundtrack](audio.md).
 The soundtrack and its player download on demand, and the interface cue buffers are synthesized only when used.
 Separate channel levels follow familiar [game audio settings](https://www.ea.com/able/resources/dead-space/dead-space/ps5/audio),

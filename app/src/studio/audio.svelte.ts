@@ -17,10 +17,8 @@ let loading = false;
 let unavailable = false;
 let effectsUnavailable = false;
 let pageOpen = true;
-let musicPlaying = $state(false);
 
 export const audioPreferences = () => preferences;
-export const isMusicPlaying = () => musicPlaying;
 
 export function audioAtDefaults(): boolean {
 	return (
@@ -74,7 +72,7 @@ export function syncAudio() {
 	updatePlayback();
 }
 
-function allowedAudio(): boolean {
+export function hasEnabledAudio(): boolean {
 	return channelAudible(preferences, 'music') || channelAudible(preferences, 'effects');
 }
 
@@ -83,7 +81,6 @@ function closeAudio() {
 	const player = playback;
 	context = undefined;
 	playback = undefined;
-	musicPlaying = false;
 	loading = false;
 	closing?.removeEventListener('statechange', updatePlayback);
 	try {
@@ -111,7 +108,7 @@ function activateAudio(event: Event) {
 		unavailable ||
 		!event.isTrusted ||
 		navigator.userActivation?.isActive === false ||
-		!allowedAudio() ||
+		!hasEnabledAudio() ||
 		!visible()
 	)
 		return;
@@ -138,9 +135,7 @@ function activateAudio(event: Event) {
 	void import('./audioPlayback.ts')
 		.then(({ createAudioPlayback }) => {
 			if (context !== started) return;
-			playback = createAudioPlayback(started, (playing) => {
-				if (context === started) musicPlaying = playing;
-			});
+			playback = createAudioPlayback(started);
 			updatePlayback();
 		})
 		.catch((error: unknown) => {
