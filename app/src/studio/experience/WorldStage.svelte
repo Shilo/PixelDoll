@@ -681,14 +681,6 @@
 	const stageBounds = $derived(
 		`${place.stage.l},${place.stage.r},${place.stage.t},${place.stage.b},${place.panelOnly}`
 	);
-	const narrowLiveStage = $derived(
-		experience.mode !== 'preview' && place.stage.r - place.stage.l < 360
-	);
-	const shortLiveStage = $derived(place.stage.b - place.stage.t < 196);
-	$effect(() => {
-		void stageBounds;
-		untrack(stop);
-	});
 	// A walk held on the keyboard continues through a plain mouse click on a control outside the stage (a wardrobe tile,
 	// a tab). The click takes focus; while it does (`handoff`), movement keys stay the stage's, and one frame after the
 	// button is released the stage takes focus back, so the held keys and the next ones still move the character.
@@ -696,6 +688,16 @@
 	// dialog, another key, another mouse button (a native menu, autoscroll), a touch or pen press (a long press).
 	let handoff = false,
 		handback = 0;
+	// Let go of held presses before the stage moves under them (the panel opening or closing). A pre-effect runs
+	// synchronously while the component initializes, so the first run only records the bounds; the teardown drops a
+	// pending focus handback when the stage unmounts.
+	let seenBounds = '';
+	$effect.pre(() => {
+		const bounds = stageBounds;
+		if (seenBounds && bounds !== seenBounds) untrack(stop);
+		seenBounds = bounds;
+		return () => cancelAnimationFrame(handback);
+	});
 	const typing = (target: EventTarget | null) =>
 		target instanceof Element && !!target.closest('input, textarea, select, [contenteditable]');
 	function pressOutside(e: PointerEvent) {
@@ -1886,17 +1888,16 @@
      In Preview it also clears the playback bar, whose top is --playback-top. -->
 {#if mountIssue || hint || (experience.mode !== 'preview' && note) || loadingNote || rendererWarning}<div
 		class="world-notes"
-		class:notes-at-top={narrowLiveStage || (experience.mode !== 'preview' && shortLiveStage)}
-		style:bottom={experience.mode === 'preview'
+		style:bottom={experience.mode === 'preview' && experience.playbackHeight
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
 			: undefined}
-		style:max-width={experience.mode !== 'preview' && !narrowLiveStage && !shortLiveStage
+		style:max-width={experience.mode !== 'preview'
 			? // Stop short of the game controls at the stage's lower right (GameControls.svelte).
 				`min(420px, calc(100vw - var(--stage-left) - var(--stage-right) - 2 * var(--edge) - ${touchInput ? 204 : 196}px))`
 			: undefined}
 	>
 		{#if mountIssue}<p class="world-hint" role="status">{mountIssue}</p>{/if}
-		{#if hint && !(narrowLiveStage && place.short)}<p class="world-hint">
+		{#if hint}<p class="world-hint">
 				{touchInput
 					? t('liveViews.hintTouch')
 					: experience.mode === 'side'
@@ -1920,7 +1921,6 @@
 {#if experience.mode !== 'preview' && view.project && !ui.sheet}{#key interruptions}
 		<GameControls
 			touch={touchInput}
-			compact={shortLiveStage}
 			mounted={experience.testMount}
 			sprinting={sprintOn}
 			onattack={() => attack('button')}

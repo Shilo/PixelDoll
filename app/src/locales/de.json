@@ -3520,13 +3520,11 @@
 		}
 	},
 	"studioPanel": {
-		"showPanel": "Anpassen",
-		"hidePanel": "Panel ausblenden",
 		"side": "Panelposition",
 		"left": "Links",
 		"right": "Rechts",
 		"autoHide": "Panel beim Start der Live-Ansichten ausblenden",
-		"autoHideHelp": "Auf kompakten Touchscreens. Über „Anpassen“ jederzeit wieder öffnen.",
+		"autoHideHelp": "Auf kompakten Touchscreens. Jederzeit über die Symbolleiste wieder öffnen.",
 		"notSaved": "Die Panel-Einstellungen wurden geändert, konnten aber im Browser nicht gespeichert werden."
 	},
 	"liveViews": {

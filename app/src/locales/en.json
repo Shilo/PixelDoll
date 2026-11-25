@@ -3523,13 +3523,11 @@
 		}
 	},
 	"studioPanel": {
-		"showPanel": "Customize",
-		"hidePanel": "Hide panel",
 		"side": "Panel side",
 		"left": "Left",
 		"right": "Right",
 		"autoHide": "Hide panel when entering Live Views",
-		"autoHideHelp": "On compact touch screens. Open it anytime with Customize.",
+		"autoHideHelp": "On compact touch screens. Open it anytime from the toolbar.",
 		"notSaved": "Panel settings changed, but this browser could not save them."
 	},
 	"liveViews": {

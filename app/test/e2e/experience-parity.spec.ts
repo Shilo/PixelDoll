@@ -3353,21 +3353,50 @@ test('translated State and Move tabs do not overlap on a 320px phone', async ({ 
 	}
 });
 
-test('the longest translated panel toggle fits beside all view buttons at 320px', async ({
+test('a 320px bar keeps the panel toggle before More and moves actions into More left to right for a long name', async ({
 	page
 }) => {
 	await page.setViewportSize({ width: 320, height: 568 });
-	await page.addInitScript(() => localStorage.setItem('pixeldoll.locale', 'fr'));
-	await page.goto('/');
-	await page.locator('.customize-action').click();
-	const toggle = page.locator('#customization-toggle');
-	await expect(toggle).toHaveAccessibleName('Masquer le panneau');
-	const expanded = (await toggle.boundingBox())!;
-	const views = (await page.locator('.view-modes').boundingBox())!;
-	expect(views.x + views.width).toBeLessThan(expanded.x);
+	await customize(page);
+	const toggle = page.getByRole('button', { name: 'Customization', exact: true });
+	const more = page.getByRole('button', { name: 'More options', exact: true });
+	const bar = page.locator('.experience-header');
+	const fits = () => bar.evaluate((header) => header.scrollWidth <= header.clientWidth + 1);
+	// The demo's short name leaves room: nothing moves beyond what phones always keep in More.
+	await expect(page.locator('.experience')).not.toHaveAttribute('data-overflow');
+	expect(await fits()).toBe(true);
+	await more.click();
+	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await expect(page.locator('.name-text')).not.toContainText('(Demo)');
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: /^Rename character/ }).click();
+	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
+	const longName = 'A very long character name that cannot fit';
+	await rename.getByRole('textbox', { name: 'Display name', exact: true }).fill(longName);
+	await rename.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(page.locator('.name-text')).toHaveText(longName);
+	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+	await expect(toggle).toHaveAttribute('aria-controls', 'customization-rail');
+	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-bottom-close/);
+	// Export moves into More first; whatever else moved is a prefix of the left-to-right order.
+	await expect(page.locator('.header-export')).toBeHidden();
+	const order = ['undo', 'redo', 'random', 'share', 'export', 'fullscreen'];
+	const moved = (await page.locator('.experience').getAttribute('data-overflow'))!.split(' ');
+	expect(moved).toEqual(order.slice(0, moved.length));
+	expect(await fits()).toBe(true);
+	const placed = (await toggle.boundingBox())!;
+	const end = (await more.boundingBox())!;
+	expect(placed.width).toBeGreaterThanOrEqual(44);
+	expect(placed.height).toBeGreaterThanOrEqual(44);
+	expect(placed.x + placed.width).toBeLessThanOrEqual(end.x);
 	await toggle.click();
-	await expect(toggle).toHaveAccessibleName('Personnaliser');
-	expect(await toggle.boundingBox()).toEqual(expanded);
+	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-bottom-open/);
+	await expect(page.locator('#customization-rail')).toBeHidden();
+	expect(await toggle.boundingBox()).toEqual(placed);
+	await more.click();
+	await page.locator('#experience-options .mobile-export').click();
+	await expect(page.getByRole('dialog')).toBeVisible();
 });
 
 test('Moves stays in place, disabled with its reason, in the live views', async ({ page }) => {
@@ -3428,8 +3457,15 @@ test('customization panel docks on either side, gives the stage its width back a
 		return el.scrollTop;
 	});
 	expect(scroll).toBeGreaterThan(0);
+	await expect(toggle).toHaveAccessibleName('Customization');
+	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-right-close/);
+	// Right dock: Full screen, the toggle, then More, which stays last.
+	const more = (await page
+		.getByRole('button', { name: 'More options', exact: true })
+		.boundingBox())!;
+	expect(originalToggle!.x + originalToggle!.width).toBeLessThanOrEqual(more.x);
 	await toggle.press('Space');
-	await expect(toggle).toHaveAccessibleName('Customize');
+	await expect(toggle).toHaveAccessibleName('Customization');
 	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 	await expect(toggle).toBeFocused();
 	await expect(rail).toBeHidden();
@@ -3439,6 +3475,35 @@ test('customization panel docks on either side, gives the stage its width back a
 	await expect(rail).toBeVisible();
 	await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBe(scroll);
 	expect(await stage.boundingBox()).toEqual(originalStage);
+	// Closing slides the inert panel out over its own space; the stage takes that space only once it has gone.
+	const closing = await toggle.evaluate(async (button) => {
+		const panel = document.getElementById('customization-rail')!;
+		await new Promise(requestAnimationFrame);
+		await Promise.all(panel.getAnimations().map((animation) => animation.finished));
+		await new Promise(requestAnimationFrame);
+		// Capture the animation at creation. Chromium can still report zero active effects on the first
+		// frame of a reversed Web Animation, especially when the full suite keeps the browser busy.
+		const animate = panel.animate;
+		let slide: Animation | undefined;
+		panel.animate = function (...args) {
+			return (slide = animate.apply(this, args));
+		};
+		(button as HTMLButtonElement).click();
+		panel.animate = animate;
+		await Promise.resolve();
+		return {
+			shown: !panel.hidden,
+			inert: panel.inert,
+			sliding: Number(slide?.effect?.getTiming().duration) > 0,
+			stage: document.querySelector('.experience-stage')!.getBoundingClientRect().width
+		};
+	});
+	expect(closing).toEqual({ shown: true, inert: true, sliding: true, stage: originalStage.width });
+	await expect(rail).toBeHidden();
+	expect((await stage.boundingBox())!.width).toBe(1440);
+	await toggle.click();
+	await expect(rail).toBeVisible();
+	await expect(rail).toHaveJSProperty('inert', false);
 	await page.keyboard.press('Control+,');
 	const search = page.getByRole('searchbox', { name: 'Search settings' });
 	await search.fill('Panel side');
@@ -3451,6 +3516,13 @@ test('customization panel docks on either side, gives the stage its width back a
 	const leftRail = (await rail.boundingBox())!;
 	expect(leftRail.x + leftRail.width).toBeLessThan(leftStage.x);
 	expect(leftStage.width).toBeCloseTo(originalStage.width, 0);
+	// Left dock: Back, the toggle, then the character name.
+	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-left-close/);
+	const back = (await page.locator('.header-back').boundingBox())!;
+	const leftToggle = (await toggle.boundingBox())!;
+	const name = (await page.locator('.name-menu').boundingBox())!;
+	expect(back.x + back.width).toBeLessThanOrEqual(leftToggle.x);
+	expect(leftToggle.x + leftToggle.width).toBeLessThanOrEqual(name.x);
 	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
 	await rail.getByRole('tab', { name: 'Moves', exact: true }).click({ force: true });
 	const toast = page.locator('.toast');
@@ -3463,7 +3535,7 @@ test('customization panel docks on either side, gives the stage its width back a
 	await expect(rail).toBeHidden();
 	await expect(toast).toHaveCSS('--bu-toast-center', '720px');
 	await customize(page);
-	await expect(toggle).toHaveAccessibleName('Hide panel');
+	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 	expect((await stage.boundingBox())!.x).toBeGreaterThan(0);
 });
 

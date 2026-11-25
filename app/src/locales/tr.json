@@ -3520,13 +3520,11 @@
 		}
 	},
 	"studioPanel": {
-		"showPanel": "Özelleştir",
-		"hidePanel": "Paneli gizle",
 		"side": "Panel konumu",
 		"left": "Sol",
 		"right": "Sağ",
 		"autoHide": "Canlı görünümleri açarken paneli gizle",
-		"autoHideHelp": "Küçük dokunmatik ekranlarda geçerli. Özelleştir ile istediğin zaman yeniden aç.",
+		"autoHideHelp": "Küçük dokunmatik ekranlarda geçerli. İstediğin zaman araç çubuğundan yeniden aç.",
 		"notSaved": "Panel ayarları değişti ama tarayıcı bunları kaydedemedi."
 	},
 	"liveViews": {

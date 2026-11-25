@@ -50,9 +50,12 @@
 		Eye,
 		Layers2,
 		Mountain,
-		PanelLeft,
-		PanelRight,
-		PanelBottom
+		PanelLeftOpen,
+		PanelLeftClose,
+		PanelRightOpen,
+		PanelRightClose,
+		PanelBottomOpen,
+		PanelBottomClose
 	} from './icons.ts';
 	let {
 		panelOpen,
@@ -65,10 +68,13 @@
 		onpanel: () => void;
 		onmode: (mode: WorldMode, pointer: string) => void;
 	} = $props();
-	const panelLabel = $derived(t(panelOpen ? 'studioPanel.hidePanel' : 'studioPanel.showPanel'));
-	const PanelIcon = $derived(
-		panelSide === 'left' ? PanelLeft : panelSide === 'right' ? PanelRight : PanelBottom
-	);
+	// The icon shows what a press does: open toward the dock edge, or close into it.
+	const PANEL_ICONS = {
+		left: [PanelLeftOpen, PanelLeftClose],
+		right: [PanelRightOpen, PanelRightClose],
+		bottom: [PanelBottomOpen, PanelBottomClose]
+	} as const;
+	const PanelIcon = $derived(PANEL_ICONS[panelSide][panelOpen ? 1 : 0]);
 	$effect.pre(() => {
 		void panelSide;
 		const focused = document.activeElement;
@@ -174,7 +180,9 @@
 	 *  name and the actions, and fall back to the bar's center when there is no room. Floating rows (phones,
 	 *  sheets) are positioned by CSS and are left alone. */
 	function centerOnStage(node: HTMLElement) {
+		// The stage changes as the panel opens and once it has finished closing.
 		void panelOpen;
+		void experience.panelClosing;
 		void panelSide;
 		// Reposition after translated labels change, before a stale offset can cover adjacent actions.
 		void t('toolbar.viewSide');
@@ -214,28 +222,86 @@
 			node.style.removeProperty('--view-shift');
 		};
 	}
+	/** Optional actions that move into More as the bar runs out of room, one at a time in their left-to-right order;
+	 *  Full screen goes only when nothing else is left to move. Phone portrait widths start with the first four already
+	 *  there (layout.css), so this order is the only priority. */
+	const OVERFLOW = ['undo', 'redo', 'random', 'share', 'export', 'fullscreen'] as const;
+	/** The narrowest a truncated character name may get before the next action moves into More. */
+	const MIN_NAME = 96;
+	let fitFrame = 0;
+	let fitHeader: HTMLElement | undefined;
+	/** The bar control that last had focus, so focus can follow it into More when it leaves the bar. */
+	let fitFocus: Element | null = null;
+	function scheduleFit() {
+		cancelAnimationFrame(fitFrame);
+		fitFrame = requestAnimationFrame(() => {
+			const header = fitHeader,
+				root = header?.closest<HTMLElement>('.experience');
+			if (!header || !root) return;
+			const name = header.querySelector<HTMLElement>('.name-text');
+			const crowded = () =>
+				header.scrollWidth > header.clientWidth + 1 ||
+				(!!name && name.clientWidth < Math.min(name.scrollWidth, MIN_NAME));
+			const moved: string[] = [];
+			delete root.dataset.overflow;
+			if (experience.screen === 'studio')
+				for (const action of OVERFLOW) {
+					if (!crowded()) break;
+					moved.push(action);
+					root.dataset.overflow = moved.join(' ');
+				}
+			// A focused action that moved into More hands focus to More rather than dropping it on the page.
+			const focus = fitFocus;
+			if (
+				focus?.isConnected &&
+				header.contains(focus) &&
+				!focus.checkVisibility() &&
+				(document.activeElement === focus || document.activeElement === document.body)
+			)
+				header
+					.querySelector<HTMLElement>('[popovertarget="experience-options"]')
+					?.focus({ preventScroll: true });
+		});
+	}
+	function fitActions(header: HTMLElement) {
+		fitHeader = header;
+		const observer = new ResizeObserver(scheduleFit);
+		for (const el of [header, ...header.children]) observer.observe(el);
+		const focused = (e: FocusEvent) => (fitFocus = e.target as Element);
+		header.addEventListener('focusin', focused);
+		// A web font arriving late widens the name without resizing the bar.
+		document.fonts.addEventListener('loadingdone', scheduleFit);
+		return () => {
+			observer.disconnect();
+			header.removeEventListener('focusin', focused);
+			document.fonts.removeEventListener('loadingdone', scheduleFit);
+			cancelAnimationFrame(fitFrame);
+			fitHeader = undefined;
+			fitFocus = null;
+			delete header.closest<HTMLElement>('.experience')?.dataset.overflow;
+		};
+	}
+	// Content that changes a control's width without resizing the bar: the name, labels and history.
+	$effect(() => {
+		void [name, undoText, redoText, m, panelSide, experience.screen, t('toolbar.export')];
+		scheduleFit();
+	});
 </script>
 
 {#snippet panelToggle()}
 	<button
 		id="customization-toggle"
 		class="bu-action panel-toggle"
-		data-variant="outline"
+		data-variant="quiet"
 		aria-expanded={panelOpen}
 		aria-controls="customization-rail"
-		aria-label={panelLabel}
-		title={panelLabel}
-		onclick={onpanel}
+		aria-label={t('experience.customization')}
+		title={t('experience.customization')}
+		onclick={onpanel}><PanelIcon size={20} aria-hidden="true" /></button
 	>
-		<PanelIcon size={18} aria-hidden="true" />
-		<span class="panel-toggle-label" aria-hidden="true">
-			<span class={{ inactive: panelOpen }}>{t('studioPanel.showPanel')}</span>
-			<span class={{ inactive: !panelOpen }}>{t('studioPanel.hidePanel')}</span>
-		</span>
-	</button>
 {/snippet}
 
-<header class="experience-header" {@attach resumeWorldAfterPointer}>
+<header class="experience-header" {@attach resumeWorldAfterPointer} {@attach fitActions}>
 	<div class="header-start">
 		{#if experience.screen === 'studio'}<button
 				class="bu-action header-back"
@@ -355,8 +421,9 @@
 				/></button
 			>
 		{/if}
-		<GlobalActions />
-		{#if experience.screen === 'studio' && panelSide !== 'left'}{@render panelToggle()}{/if}
+		<GlobalActions
+			beforeMore={experience.screen === 'studio' && panelSide !== 'left' ? panelToggle : undefined}
+		/>
 	</div>
 </header>
 <SharePopover />

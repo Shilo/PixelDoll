@@ -2181,11 +2181,9 @@ test.describe('renderer failure on short screens', () => {
 					`${width}x${height} ${theme}: the warning starts inside the screen`
 				).toBeGreaterThanOrEqual(0);
 				expect(
-					box.x + box.width <= cluster.x || box.y + box.height <= cluster.y,
+					box.x + box.width,
 					`${width}x${height} ${theme}: clear of the touch controls`
-				).toBe(true);
-				const toggle = (await panel.boundingBox())!;
-				expect(cluster.y).toBeGreaterThanOrEqual(toggle.y + toggle.height);
+				).toBeLessThanOrEqual(cluster.x);
 				expect(
 					box.y,
 					`${width}x${height} ${theme}: the warning stays below the top edge`

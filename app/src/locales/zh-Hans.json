@@ -3419,13 +3419,11 @@
 		}
 	},
 	"studioPanel": {
-		"showPanel": "自定义",
-		"hidePanel": "隐藏面板",
 		"side": "面板位置",
 		"left": "左侧",
 		"right": "右侧",
 		"autoHide": "进入实时视图时隐藏面板",
-		"autoHideHelp": "适用于小型触摸屏。选择“自定义”即可随时重新打开。",
+		"autoHideHelp": "适用于小型触摸屏。可随时从工具栏重新打开。",
 		"notSaved": "面板设置已更改，但浏览器未能保存。"
 	},
 	"liveViews": {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	// Full screen and More, always the last two controls of whichever bar is on top (the top bar, or the New character
 	// screen that covers it), in the same place on every screen.
+	import type { Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import { Ellipsis } from './icons.ts';
@@ -10,10 +11,13 @@
 	// tabs already mark is left to their dots.
 	const activity = $derived(activityStatus.elsewhere);
 	const statusId = $props.id();
+	/** A control that belongs between Full screen and More, which stays last (the Studio's panel toggle). */
+	let { beforeMore }: { beforeMore?: Snippet } = $props();
 </script>
 
 <span class="global-actions">
 	<FullscreenButton />
+	{@render beforeMore?.()}
 	<button
 		class="bu-action"
 		data-variant="quiet"

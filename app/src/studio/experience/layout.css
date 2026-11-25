@@ -102,23 +102,6 @@
 .experience-header .panel-toggle {
 	flex: none;
 }
-.panel-toggle-label {
-	display: grid;
-}
-.panel-toggle-label > span {
-	grid-area: 1 / 1;
-}
-.panel-toggle-label .inactive {
-	visibility: hidden;
-}
-@media (max-width: 1299px) {
-	.experience-header .panel-toggle {
-		padding-inline: 0;
-	}
-	.panel-toggle-label {
-		display: none;
-	}
-}
 /* Phones keep every header target 44 px but tighter, so the name keeps its room: the view tabs float below, so the
    bar has no middle column, and the actions take only their own width. */
 .phone-layout .experience-header {
@@ -134,6 +117,8 @@
 		.mobile-undo,
 		.mobile-redo,
 		.mobile-share,
+		.mobile-export,
+		.mobile-fullscreen,
 		.mobile-inspect,
 		.mobile-mount,
 		.mobile-sep
@@ -263,6 +248,11 @@
 	translate: none;
 	gap: 0;
 }
+/* A phone held sideways keeps the panel beside the stage (geometry.ts): the tab row centers over the stage instead. */
+.phone-layout:not(.sheet-layout) .view-modes {
+	/* The whole header is the containing block (an absolute grid item's is its grid area otherwise). */
+	left: calc((var(--stage-left) + 100vw - var(--stage-right)) / 2 - var(--edge));
+}
 :is(.sheet-layout, .phone-layout) .view-modes .view-label {
 	display: none;
 }
@@ -271,41 +261,7 @@
 }
 :is(.sheet-layout, .phone-layout) .experience-header .view-modes .bu-action {
 	width: 44px;
-	height: 44px;
-}
-:is(.sheet-layout, .phone-layout) .experience-header .panel-toggle {
-	position: absolute;
-	top: var(--header-row);
-	right: 0;
-	padding-inline: 10px;
-}
-.phone-layout.panel-left .experience-header .panel-toggle {
-	left: 0;
-	right: auto;
-}
-:is(.sheet-layout, .phone-layout) .panel-toggle-label {
-	display: grid;
-}
-@media (max-width: 600px) {
-	.phone-layout .experience-header .view-modes {
-		left: 0;
-		transform: none;
-	}
-	.phone-layout.panel-left .experience-header .view-modes {
-		left: auto;
-		right: 0;
-	}
-}
-@media (max-width: 310px) {
-	.phone-layout .panel-toggle-label {
-		display: none;
-	}
-}
-@media (max-width: 360px) {
-	.phone-layout .experience-header .panel-toggle {
-		column-gap: 6px;
-		padding-inline: 6px;
-	}
+	height: 40px;
 }
 @media (max-width: 899px), (max-height: 540px) {
 	.name-facts {
@@ -326,17 +282,27 @@
 .sheet-layout :is(.selection-import, .selection-create) {
 	display: none;
 }
-/* Keep room for the name and the dock toggle beside a narrow stage. Share and Redo stay available in More. */
-@media (max-width: 700px) {
-	.experience:not(.selection) :is(.header-redo, .header-share) {
-		display: none !important;
-	}
-	.experience:not(.selection) :is(.mobile-redo, .mobile-share) {
-		display: flex !important;
-	}
-	.experience:not(.selection) .mobile-sep {
-		display: block !important;
-	}
+/* Wherever the character name would get too narrow, the optional actions move into More one at a time from left to
+   right: Undo, Redo, Random look, Share, Export, and Full screen only as a last resort (Toolbar.svelte fitActions).
+   Share's popover then points at More. */
+.experience[data-overflow~='undo'] .header-undo,
+.experience[data-overflow~='redo'] .header-redo,
+.experience[data-overflow~='random'] .header-random,
+.experience[data-overflow~='share'] .header-share,
+.experience[data-overflow~='export'] .header-export,
+.experience[data-overflow~='fullscreen'] .experience-header .header-fullscreen {
+	display: none !important;
+}
+.experience[data-overflow~='undo'] .mobile-undo,
+.experience[data-overflow~='redo'] .mobile-redo,
+.experience[data-overflow~='random'] .mobile-random,
+.experience[data-overflow~='share'] .mobile-share,
+.experience[data-overflow~='export'] .mobile-export,
+.experience[data-overflow~='fullscreen'] .mobile-fullscreen {
+	display: flex !important;
+}
+.experience[data-overflow] .mobile-sep {
+	display: block !important;
 }
 @media (max-width: 430px) {
 	.phone-layout .experience-header {
@@ -350,17 +316,15 @@
 	.phone-layout .name-facts {
 		display: none;
 	}
-	.phone-layout .header-random {
+	/* Phone portrait widths always start with the first four of that order in More, so the bar never flashes them. */
+	.phone-layout :is(.header-undo, .header-redo, .header-random, .header-share) {
 		display: none !important;
 	}
-	.phone-layout:not(.selection) .mobile-random {
+	.phone-layout:not(.selection) :is(.mobile-undo, .mobile-redo, .mobile-random, .mobile-share) {
 		display: flex !important;
 	}
-	.phone-layout .header-undo {
-		display: none !important;
-	}
-	.phone-layout:not(.selection) .mobile-undo {
-		display: flex !important;
+	.phone-layout:not(.selection) .mobile-sep {
+		display: block !important;
 	}
 }
 @media (max-width: 360px) {
@@ -559,6 +523,15 @@
 	border-top: 1px solid var(--bu-rim);
 	border-radius: var(--bu-radius-dialog) var(--bu-radius-dialog) 0 0;
 	box-shadow: var(--bu-shadow);
+}
+.sheet-handle {
+	flex: none;
+	width: 36px;
+	height: 4px;
+	margin: 8px auto 0;
+	border-radius: 2px;
+	background: var(--bu-muted);
+	opacity: 0.5;
 }
 .panel-only .equipment-rail {
 	top: var(--stage-top);
@@ -1464,10 +1437,6 @@
 	gap: 6px;
 	max-width: min(420px, calc(100% - var(--stage-left) - var(--stage-right) - 2 * var(--edge)));
 	pointer-events: none;
-}
-.world-notes.notes-at-top {
-	top: calc(var(--stage-top) + 8px);
-	bottom: auto;
 }
 .world-notes p {
 	margin: 0;

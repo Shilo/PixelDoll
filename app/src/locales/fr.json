@@ -3523,13 +3523,11 @@
 		}
 	},
 	"studioPanel": {
-		"showPanel": "Personnaliser",
-		"hidePanel": "Masquer le panneau",
 		"side": "Côté du panneau",
 		"left": "Gauche",
 		"right": "Droite",
 		"autoHide": "Masquer le panneau à l’ouverture des vues interactives",
-		"autoHideHelp": "Sur les petits écrans tactiles. Pour le rouvrir, sélectionne Personnaliser.",
+		"autoHideHelp": "Sur les petits écrans tactiles. Tu peux le rouvrir à tout moment depuis la barre d’outils.",
 		"notSaved": "Les réglages du panneau ont changé, mais le navigateur n’a pas pu les enregistrer."
 	},
 	"liveViews": {

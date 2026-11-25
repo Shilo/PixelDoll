@@ -124,12 +124,7 @@
 				{
 					id: 'panel-side',
 					label: 'studioPanel.side',
-					terms: [
-						'studioPanel.left',
-						'studioPanel.right',
-						'studioPanel.showPanel',
-						'experience.customization'
-					]
+					terms: ['studioPanel.left', 'studioPanel.right', 'experience.customization']
 				},
 				{ id: 'language', label: 'language.label' },
 				{ id: 'reset', label: 'settings.reset.allAction', terms: ['settings.reset.action'] }
@@ -173,7 +168,7 @@
 				{
 					id: 'panel-auto-hide',
 					label: 'studioPanel.autoHide',
-					terms: ['toolbar.viewTopDown', 'toolbar.viewSide', 'studioPanel.showPanel']
+					terms: ['toolbar.viewTopDown', 'toolbar.viewSide', 'experience.customization']
 				},
 				{
 					id: 'live-idle',

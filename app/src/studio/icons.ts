@@ -1,7 +1,12 @@
 // Lucide icons used by the Studio (one import site; per-icon paths keep dev fast and the build small).
 export { default as PanelLeft } from '@lucide/svelte/icons/panel-left';
 export { default as PanelRight } from '@lucide/svelte/icons/panel-right';
-export { default as PanelBottom } from '@lucide/svelte/icons/panel-bottom';
+export { default as PanelLeftOpen } from '@lucide/svelte/icons/panel-left-open';
+export { default as PanelLeftClose } from '@lucide/svelte/icons/panel-left-close';
+export { default as PanelRightOpen } from '@lucide/svelte/icons/panel-right-open';
+export { default as PanelRightClose } from '@lucide/svelte/icons/panel-right-close';
+export { default as PanelBottomOpen } from '@lucide/svelte/icons/panel-bottom-open';
+export { default as PanelBottomClose } from '@lucide/svelte/icons/panel-bottom-close';
 export { default as Undo2 } from '@lucide/svelte/icons/undo-2';
 export { default as Redo2 } from '@lucide/svelte/icons/redo-2';
 export { default as Play } from '@lucide/svelte/icons/play';

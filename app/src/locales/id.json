@@ -3419,13 +3419,11 @@
 		}
 	},
 	"studioPanel": {
-		"showPanel": "Sesuaikan",
-		"hidePanel": "Sembunyikan panel",
 		"side": "Sisi panel",
 		"left": "Kiri",
 		"right": "Kanan",
 		"autoHide": "Sembunyikan panel saat membuka tampilan langsung",
-		"autoHideHelp": "Untuk layar sentuh kecil. Buka lagi kapan saja lewat Sesuaikan.",
+		"autoHideHelp": "Untuk layar sentuh kecil. Buka lagi kapan saja dari bilah alat.",
 		"notSaved": "Pengaturan panel berubah, tetapi browser tidak bisa menyimpannya."
 	},
 	"liveViews": {

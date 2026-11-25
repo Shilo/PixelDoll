@@ -56,7 +56,7 @@ export interface Layout {
 
 export const PLAYBACK_HEIGHT = 54;
 /** The phone's floating view tab row under the header. */
-export const VIEW_TABS = 44;
+export const VIEW_TABS = 40;
 /** The side rail's first row: Customize's panel tabs, 44 px. */
 const PANEL_ROW = 44;
 /** The eye line sits this share of the visible character height above the feet. */
@@ -120,10 +120,8 @@ export function layout(
 	const tabs = studio && (sheet || phone) ? VIEW_TABS : 0;
 	// Compact heights (320×568) give the stage enough room for a 2x hero above the playback bar before the sheet grows.
 	const heroFloor = headerBottom + tabs + 16 + PHONE_HERO / 0.75 + 14 + PLAYBACK_HEIGHT + 10;
-	// Take the extra height of the 44 px toolbar from the editor's preferred share where it has room to spare.
-	const preferredSheet = Math.max(240, h * 0.45) - (tabs ? VIEW_TABS - 40 : 0);
 	let sheetHeight = sheet
-		? Math.round(Math.min(h - 250, preferredSheet, Math.max(MIN_SHEET, h - heroFloor)))
+		? Math.round(Math.min(h - 250, Math.max(240, h * 0.45), Math.max(200, h - heroFloor)))
 		: 0;
 	if (sheet && sheetHeight < MIN_SHEET) {
 		// Too short for a usable sheet (a phone in landscape, a squat window): the panel moves beside the stage when a
@@ -140,7 +138,7 @@ export function layout(
 	const panelOnly = studio && panelOpen && sheet && !sheetHeight;
 	if (studio && (!panelOpen || panelOnly)) sheetHeight = 0;
 	const sheetTop = h - sheetHeight;
-	const railTop = headerBottom + (studio && !sheet ? tabs : 0) + (short ? 4 : 12);
+	const railTop = headerBottom + (short ? 4 : 12);
 	const reserved = !sheet && (!studio || panelOpen) ? edge + rail + GAP : 0;
 	const left = studio && panelSide === 'left' ? reserved : 0;
 	const stage: Box = { l: left, r: w - (reserved - left), t: headerBottom + tabs, b: sheetTop };
@@ -185,7 +183,7 @@ export function layout(
 		cycleFacing,
 		listTop,
 		feet: { x: Math.round((stage.l + stage.r) / 2), y: feetY },
-		fill: tight ? 0.92 : studio ? 0.75 : 0.6,
+		fill: tight ? 0.9 : studio ? 0.75 : 0.6,
 		column,
 		// Spanning the width beside a short rail, a toast on Customize starts under the panel tabs so it never covers
 		// them. Characters keeps it high: lower, it would hide the selected character, the screen's hero.

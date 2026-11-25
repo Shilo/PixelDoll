@@ -3532,13 +3532,11 @@
 		}
 	},
 	"studioPanel": {
-		"showPanel": "Personalizar",
-		"hidePanel": "Ocultar painel",
 		"side": "Lado do painel",
 		"left": "Esquerdo",
 		"right": "Direito",
 		"autoHide": "Ocultar o painel ao entrar nas visualizações ao vivo",
-		"autoHideHelp": "Em telas de toque compactas. Abra quando quiser com Personalizar.",
+		"autoHideHelp": "Em telas de toque compactas. Abra quando quiser pela barra de ferramentas.",
 		"notSaved": "As configurações do painel mudaram, mas o navegador não conseguiu salvá-las."
 	},
 	"liveViews": {

@@ -15,6 +15,8 @@ export const experience = $state({
 	previewPanelOpen: true,
 	/** A separate visibility choice for one compact touch visit. Null shares Preview's visibility. */
 	livePanelOpen: null as boolean | null,
+	/** A closed panel still slides out over its own space, which the stage takes only once it has gone. */
+	panelClosing: false,
 	playbackHeight: 0,
 	testMount: saved.show,
 	mountLegs: saved.legs as MountLegMode,
@@ -79,7 +81,7 @@ export function experienceLayout(width: number, height: number) {
 		height,
 		experience.screen,
 		experience.mode === 'preview' ? experience.playbackHeight : 0,
-		panelIsOpen(),
+		panelIsOpen() || experience.panelClosing,
 		panelSettings.side
 	);
 }

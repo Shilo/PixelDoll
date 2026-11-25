@@ -3419,13 +3419,11 @@
 		}
 	},
 	"studioPanel": {
-		"showPanel": "꾸미기",
-		"hidePanel": "패널 숨기기",
 		"side": "패널 위치",
 		"left": "왼쪽",
 		"right": "오른쪽",
 		"autoHide": "라이브 뷰에 들어갈 때 패널 숨기기",
-		"autoHideHelp": "작은 터치스크린에 적용돼요. 언제든지 꾸미기를 눌러 다시 열 수 있어요.",
+		"autoHideHelp": "작은 터치스크린에 적용돼요. 언제든지 도구 모음에서 다시 열 수 있어요.",
 		"notSaved": "패널 설정이 바뀌었지만 브라우저에 저장하지 못했어요."
 	},
 	"liveViews": {

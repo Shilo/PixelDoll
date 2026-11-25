@@ -106,6 +106,8 @@
 			: undefined
 	);
 	const panelOpen = $derived(panelIsOpen());
+	/** Open, or still sliding out after a close. */
+	const panelShown = $derived(panelOpen || experience.panelClosing);
 	onMount(watchPanelSettings);
 	const m = $derived(store.project?.manifest);
 	// The F shortcut belongs to a keyboard, so only a hovering pointer (a desktop mouse) gets the hint.
@@ -580,6 +582,56 @@
 		if (rail?.contains(focused) || rail?.contains(document.activeElement))
 			document.getElementById('customization-toggle')?.focus({ preventScroll: true });
 	}
+	// The panel slides from its dock edge, clipped to its own space. An opening panel takes that space at once and a
+	// closing one gives it back only when it has gone, so the stage, camera, floor and controls move once per toggle
+	// and never chase the panel. A second press reverses the slide from where it is.
+	let panelMotion: Animation | undefined;
+	const dockEdge = $derived(g.sheet ? 'bottom' : panelSettings.side);
+	const SLIDE = {
+		left: ['-100% 0', 'inset(0 0 0 100%)'],
+		right: ['100% 0', 'inset(0 100% 0 0)'],
+		bottom: ['0 100%', 'inset(0 0 100% 0)']
+	} as const;
+	function slidePanel(open: boolean) {
+		if (panelMotion) {
+			experience.panelClosing = !open;
+			panelMotion.reverse();
+			return;
+		}
+		// Bronze's duration, which is 0 under reduced motion.
+		const duration = rail
+			? parseFloat(getComputedStyle(rail).getPropertyValue('--bu-duration'))
+			: 0;
+		if (!rail || !(duration > 0)) return;
+		const [translate, clipPath] = SLIDE[dockEdge];
+		const motion = rail.animate(
+			[
+				{ translate, clipPath },
+				{ translate: '0 0', clipPath: 'inset(0)' }
+			],
+			{ duration, easing: 'ease-out' }
+		);
+		if (!open) motion.reverse();
+		experience.panelClosing = !open;
+		panelMotion = motion;
+		// A press that reversed the slide after it finished but before this event arrived leaves it running.
+		motion.onfinish = () => {
+			if (panelMotion === motion && motion.playState === 'finished') stopPanelMotion();
+		};
+	}
+	/** Ends a slide at once when the layout changes under it (a mode, dock or screen change) or the screen unmounts.
+	 *  Synchronous, so a press before the cancel event starts a new slide rather than reversing the canceled one. */
+	function stopPanelMotion() {
+		const motion = panelMotion;
+		panelMotion = undefined;
+		experience.panelClosing = false;
+		motion?.cancel();
+	}
+	$effect(() => {
+		void dockEdge;
+		void experience.screen;
+		return stopPanelMotion;
+	});
 	function togglePanel() {
 		const next = !panelOpen;
 		if (!next) {
@@ -587,10 +639,12 @@
 			leavePanelFocus();
 		}
 		setPanelOpen(next);
+		slidePanel(next);
 		if (next) restorePanelScroll();
 	}
 	function changeMode(mode: WorldMode, pointer = '') {
 		if (experience.mode === mode) return;
+		stopPanelMotion();
 		if (experience.mode === 'preview') {
 			previewContext = { project: doc.id, tab: ui.tab, scroll: readPanelScroll() };
 			const touch = pointer ? pointer !== 'mouse' : matchMedia('(pointer: coarse)').matches;
@@ -696,18 +750,13 @@
 	class:compact-playback={g.compactPlayback}
 	class:panel-only={g.panelOnly}
 	class:panel-left={experience.screen === 'studio' && !g.sheet && panelSettings.side === 'left'}
-	class:panel-open={experience.screen === 'studio' && panelOpen}
+	class:panel-open={experience.screen === 'studio' && panelShown}
 	style:--world-image="url('{background}')"
 	style={vars}
 >
 	<div class="scene-backdrop" aria-hidden="true"></div>
 	<div class="scene-reading" aria-hidden="true"></div>
-	<Toolbar
-		{panelOpen}
-		panelSide={g.sheet || g.panelOnly ? 'bottom' : panelSettings.side}
-		onpanel={togglePanel}
-		onmode={changeMode}
-	/>
+	<Toolbar {panelOpen} panelSide={dockEdge} onpanel={togglePanel} onmode={changeMode} />
 	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
 			{t(
 				app.key && !app.keyRejected
@@ -1060,9 +1109,11 @@
 			id="customization-rail"
 			class="equipment-rail"
 			aria-label={t('experience.customization')}
-			hidden={!panelOpen}
+			hidden={!panelShown}
+			inert={!panelOpen}
 			bind:this={rail}
 		>
+			{#if g.sheet}<span class="sheet-handle" aria-hidden="true"></span>{/if}
 			<div class="equipment-modes" role="tablist" aria-label={t('experience.customizationPanels')}>
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->

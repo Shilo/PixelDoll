@@ -14,7 +14,6 @@
 
 	let {
 		touch,
-		compact = false,
 		mounted,
 		sprinting,
 		onattack,
@@ -26,7 +25,6 @@
 		onmount
 	}: {
 		touch: boolean;
-		compact?: boolean;
 		mounted: boolean;
 		/** The Sprint toggle's state (Shift sprints without it). */
 		sprinting: boolean;
@@ -47,7 +45,6 @@
 	const { stick } = MOTION.actions,
 		arc = actionArc(),
 		radius = stick.base / 2;
-	const compactStick = { ...stick, base: 80 };
 	/** A button's place in the cluster, measured from the cluster's lower right like the stick itself. */
 	const place = ({ size, x, y }: { size: number; x: number; y: number }) =>
 		`right: ${radius - x - size / 2}px; bottom: ${radius - y - size / 2}px;`;
@@ -59,7 +56,6 @@
 {#if touch}
 	<div
 		class="game-touch"
-		class:compact
 		role="group"
 		aria-label={t('liveViews.actions')}
 		style:--cluster-w="{width}px"
@@ -68,7 +64,7 @@
 		<div class="stick-place">
 			<StickControl
 				label={attack}
-				size={compact ? compactStick : stick}
+				size={stick}
 				deadZone={MOTION.joystick.deadZone}
 				onchange={onstick}
 				onactivate={() => {
@@ -77,28 +73,25 @@
 				}}><Sword aria-hidden="true" /></StickControl
 			>
 		</div>
-		<div class="button-place" style={compact ? undefined : place(arc.jump)}>
+		<div class="button-place" style={place(arc.jump)}>
 			<TouchActionButton
 				label={jump}
-				size={compact ? 44 : arc.jump.size}
+				size={arc.jump.size}
 				onactivate={onjump}
 				onrelease={onjumprelease}><ArrowBigUp aria-hidden="true" /></TouchActionButton
 			>
 		</div>
-		<div class="button-place" style={compact ? undefined : place(arc.sprint)}>
+		<div class="button-place" style={place(arc.sprint)}>
 			<TouchActionButton
 				label={sprint}
-				size={compact ? 44 : arc.sprint.size}
+				size={arc.sprint.size}
 				pressed={sprinting}
 				onactivate={onsprint}><ChevronsRight aria-hidden="true" /></TouchActionButton
 			>
 		</div>
-		<div class="button-place" style={compact ? undefined : place(arc.mount)}>
-			<TouchActionButton
-				label={mount}
-				size={compact ? 44 : arc.mount.size}
-				pressed={mounted}
-				onactivate={onmount}><PawPrint aria-hidden="true" /></TouchActionButton
+		<div class="button-place" style={place(arc.mount)}>
+			<TouchActionButton label={mount} size={arc.mount.size} pressed={mounted} onactivate={onmount}
+				><PawPrint aria-hidden="true" /></TouchActionButton
 			>
 		</div>
 	</div>
@@ -166,19 +159,6 @@
 		block-size: var(--cluster-h);
 		/* The cluster's empty corners let presses through to the stage, so movement can start anywhere. */
 		pointer-events: none;
-	}
-	.game-touch.compact {
-		inline-size: auto;
-		block-size: auto;
-		display: flex;
-		align-items: center;
-		gap: 4px;
-	}
-	.compact :is(.stick-place, .button-place) {
-		position: static;
-	}
-	.compact .stick-place {
-		order: 1;
 	}
 	.stick-place,
 	.button-place {

@@ -3523,13 +3523,11 @@
 		}
 	},
 	"studioPanel": {
-		"showPanel": "Personalizar",
-		"hidePanel": "Ocultar panel",
 		"side": "Posición del panel",
 		"left": "Izquierda",
 		"right": "Derecha",
 		"autoHide": "Ocultar el panel al entrar en las vistas en vivo",
-		"autoHideHelp": "En pantallas táctiles compactas. Ábrelo cuando quieras con Personalizar.",
+		"autoHideHelp": "En pantallas táctiles compactas. Ábrelo cuando quieras desde la barra de herramientas.",
 		"notSaved": "Los ajustes del panel cambiaron, pero el navegador no pudo guardarlos."
 	},
 	"liveViews": {
