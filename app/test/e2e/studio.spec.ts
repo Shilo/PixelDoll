@@ -2939,6 +2939,64 @@ test('studio demo: base colors, Create size and direction pricing, stripped dev 
 	finish();
 });
 
+test('studio demo: New character fits an HD window and smaller screens scroll to the same fields', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await page.setViewportSize({ width: 1920, height: 1080 });
+	await openDemo(page);
+	await page.locator('.project-btn').click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
+	const body = creator.locator('.sheet-body');
+	const foot = creator.locator('.sheet-foot');
+	const create = creator.getByRole('button', { name: /^Create/ });
+	const fitsWithoutScrolling = () => body.evaluate((el) => el.scrollHeight <= el.clientHeight + 1);
+	// The window's name and the character's name share the bar; the form keeps only character controls.
+	await expect(creator.locator('.sheet-head .sheet-title')).toHaveText('New character');
+	await expect(creator.locator('.sheet-head .character-name')).toBeVisible();
+	await expect.poll(fitsWithoutScrolling).toBe(true);
+	await expect(create).toBeInViewport();
+	step('1920x1080: the whole form and Create fit without scrolling the sheet');
+	// 1440x900: the traits pair up, so the prompt excerpt clears the floating footer.
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await expect.poll(fitsWithoutScrolling).toBe(true);
+	const [excerpt, footer] = await Promise.all([
+		creator.getByRole('button', { name: 'Edit exact prompt', exact: true }).boundingBox(),
+		foot.boundingBox()
+	]);
+	expect(excerpt!.y + excerpt!.height).toBeLessThanOrEqual(footer!.y);
+	await expect(create).toBeInViewport();
+	step('1440x900: paired traits keep the lowest field above the footer');
+	// Expanding Advanced may scroll the sheet, but every field stays reachable and Create stays put.
+	await creator.locator('details.advanced > summary').click();
+	const seed = creator.getByRole('textbox', { name: 'Seed', exact: true });
+	await seed.scrollIntoViewIfNeeded();
+	await expect(seed).toBeInViewport();
+	await expect(create).toBeInViewport();
+	await creator.locator('details.advanced > summary').click();
+	step('Advanced expands over a scrolling sheet, with Create fixed');
+	// Phones and short landscape keep their scrolling layouts; the create action never leaves the viewport.
+	for (const [width, height] of [
+		[390, 844],
+		[844, 390]
+	] as const) {
+		await page.setViewportSize({ width, height });
+		await expect.poll(fitsWithoutScrolling).toBe(false);
+		await body.evaluate((el) => el.scrollTo(0, 200));
+		expect(await body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+		await expect(create).toBeInViewport();
+		await body.evaluate((el) => el.scrollTo(0, 0));
+	}
+	step('390x844 and 844x390: the sheet scrolls with the action in place');
+	finish();
+});
+
 test('studio demo: Create without a key opens Connect, Escape restores focus and Back closes a sheet', async ({
 	context,
 	page

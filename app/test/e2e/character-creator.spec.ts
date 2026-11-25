@@ -1320,23 +1320,31 @@ for (const viewport of [
 			const style = getComputedStyle(element),
 				width = element.getBoundingClientRect().width;
 			const appearance = element.querySelector('.appearance')!,
-				appearanceWidth = appearance.getBoundingClientRect().width;
+				appearanceWidth = appearance.getBoundingClientRect().width,
+				panel = appearance.querySelector('.editor-panel')!;
 			return {
 				stacked: style.display === 'flex' && style.flexDirection === 'column',
 				width,
 				appearanceWidth,
+				paired: getComputedStyle(panel).display === 'grid',
 				sections: [
 					...element.querySelectorAll(':scope > .appearance, :scope > .geometry, :scope > .facing')
 				].map((section) => section.getBoundingClientRect().width),
-				controls: [...appearance.querySelectorAll('textarea, select')].map(
-					(control) => control.getBoundingClientRect().width
-				)
+				controls: [...appearance.querySelectorAll('textarea, select')].map((control) => ({
+					tag: control.tagName,
+					width: control.getBoundingClientRect().width
+				}))
 			};
 		});
 		// A contained flex item can collapse without overflowing. Stacked editors must use the available width.
 		if (layout.stacked)
 			for (const width of layout.sections) expect(width).toBeCloseTo(layout.width, 0);
-		for (const width of layout.controls) expect(width).toBeCloseTo(layout.appearanceWidth, 0);
+		for (const { tag, width } of layout.controls) {
+			// Desktop pairs two traits per row; textareas keep the full appearance width.
+			if (layout.paired && tag === 'SELECT')
+				expect(width).toBeGreaterThan(layout.appearanceWidth * 0.4);
+			else expect(width).toBeCloseTo(layout.appearanceWidth, 0);
+		}
 		await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly dwarf');
 		const horizontal = await sheet.evaluate((element) => ({
 			client: element.clientWidth,
