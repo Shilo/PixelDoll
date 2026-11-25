@@ -19,8 +19,12 @@ type ActiveCue = {
 	gain: GainNode;
 };
 
-function volume(level: number, ceiling: number): number {
-	return ceiling * (Math.max(0, Math.min(100, level)) / 100) ** 1.35;
+function volume(level: number, reference: number, ceiling: number): number {
+	const dial = Math.max(0, Math.min(100, level)) / 100;
+	// Add headroom smoothly above the halfway reference without crowding out quieter settings.
+	const aboveHalf = Math.max(0, 2 * dial - 1);
+	const mix = 2 * reference * dial + (1 - 2 * reference) * aboveHalf ** 2;
+	return ceiling * mix ** 1.35;
 }
 
 export function createAudioPlayback(
@@ -146,9 +150,11 @@ export function createAudioPlayback(
 		update(settings, visible) {
 			if (disposed || context.state === 'closed') return;
 			playingAllowed = visible && !settings.muted;
-			const nextMusicLevel = channelAudible(settings, 'music') ? volume(settings.music, 0.16) : 0;
+			const nextMusicLevel = channelAudible(settings, 'music')
+				? volume(settings.music, 0.2, 0.16)
+				: 0;
 			const nextEffectsLevel = channelAudible(settings, 'effects')
-				? volume(settings.effects, 0.18)
+				? volume(settings.effects, 0.35, 0.18)
 				: 0;
 			if (nextMusicLevel !== musicLevel) {
 				if (!musicLevel) musicFailed = false;

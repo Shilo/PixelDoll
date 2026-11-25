@@ -14,8 +14,8 @@ export const defaultAudioPreferences: AudioPreferences = {
 	muted: false,
 	musicMuted: false,
 	effectsMuted: false,
-	music: 20,
-	effects: 35
+	music: 50,
+	effects: 50
 };
 
 export const channelAudible = (settings: AudioPreferences, channel: AudioChannel) =>

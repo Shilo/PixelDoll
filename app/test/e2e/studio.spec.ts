@@ -40,7 +40,13 @@ test('Audio settings start after a gesture and preserve independent levels and m
 			audioRequests.push(request.url());
 	});
 	await page.addInitScript(() => {
-		const calls = { opened: 0, loops: 0, musicStarts: 0, failed: false };
+		const calls = {
+			opened: 0,
+			loops: 0,
+			musicStarts: 0,
+			failed: false,
+			gainTargets: [] as number[]
+		};
 		Object.defineProperty(window, 'audioTestCalls', { value: calls });
 		Object.defineProperty(window, 'AudioContext', {
 			value: class extends EventTarget {
@@ -64,7 +70,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 						disconnect: noop,
 						gain: {
 							value: 0,
-							setTargetAtTime: noop,
+							setTargetAtTime: (level: number) => calls.gainTargets.push(level),
 							setValueAtTime: noop,
 							linearRampToValueAtTime: noop
 						}
@@ -140,6 +146,11 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(master).toBeChecked();
 	await expect(musicSwitch).toBeChecked();
 	await expect(effectsSwitch).toBeChecked();
+	await expect(music).toHaveValue('50');
+	await expect(effects).toHaveValue('50');
+	const { gainTargets } = await calls();
+	expect(gainTargets[0]).toBeCloseTo(0.01822, 5);
+	expect(gainTargets[1]).toBeCloseTo(0.04363, 5);
 	await settings.getByRole('button', { name: 'Appearance', exact: true }).click();
 	await settings.getByRole('radio', { name: 'Light', exact: true }).check();
 	await settings.getByRole('button', { name: 'Audio', exact: true }).click();
@@ -148,7 +159,8 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expectAlignedAudioRows();
 	await effects.press('End');
 	await expect(effects).toHaveValue('100');
-	await expect(music).toHaveValue('20');
+	await expect(music).toHaveValue('50');
+	expect((await calls()).gainTargets.at(-1)).toBeCloseTo(0.18, 5);
 	await effects.press('ArrowLeft');
 	await effectsSwitch.uncheck();
 	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
@@ -176,7 +188,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(master).toBeChecked();
 	await expect(effectsSwitch).not.toBeChecked();
 	await expect(effects).toHaveValue('99');
-	await expect(music).toHaveValue('20');
+	await expect(music).toHaveValue('50');
 	await page.setViewportSize({ width: 320, height: 568 });
 	await expectAlignedAudioRows();
 	await page.setViewportSize({ width: 390, height: 844 });
