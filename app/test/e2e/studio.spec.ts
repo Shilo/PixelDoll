@@ -1917,7 +1917,7 @@ test('studio demo: list search appears only when a panel overflows and filters w
 
 	await equipmentMode(page, 'Colors');
 	const colors = page.getByRole('searchbox', { name: 'Search colors', exact: true });
-	await page.locator('.panel-stack > .section-list').evaluate((list) => {
+	await page.locator('.color-panes > .section-list').evaluate((list) => {
 		(list as HTMLElement).style.maxHeight = '80px';
 	});
 	await expect(colors).toBeVisible();
@@ -7340,6 +7340,8 @@ test('accepted held-item review reasons survive actual reload without claiming a
 	await pickItem(page, name);
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
+	// The review reasons sit in the quality checks disclosure, one intentional step from the summary.
+	await openItemSection(pane, 'Quality checks');
 	await expect(
 		pane.getByText('The grip side is unclear; check the intended hand (idle, west)', {
 			exact: true
@@ -10389,6 +10391,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 		'~12 gens'
 	);
 	// Coverage marks each move this item is drawn for, and one action fills every missing move together.
+	await openItemSection(pane, 'Quality checks');
 	const coverageList = pane.getByRole('list', { name: 'Move coverage', exact: true });
 	await expect(coverageList.getByRole('listitem', { name: 'Standing: missing' })).toBeVisible();
 	await expect(coverageList.getByRole('listitem', { name: 'Custom walk: missing' })).toBeVisible();

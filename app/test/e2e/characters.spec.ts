@@ -2193,8 +2193,11 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await pickItem(page, garmentName);
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.badge.look')).toContainText('Needs a look');
+	// The notes sit in the quality checks disclosure, one intentional step from the summary.
+	const itemPane = page.getByRole('dialog', { name: 'Item', exact: true });
+	await openItemSection(itemPane, 'Quality checks');
 	await expect(
-		pane.getByText('Some lower clothing is missing compared with the standing design', {
+		itemPane.getByText('Some lower clothing is missing compared with the standing design', {
 			exact: true
 		})
 	).toBeVisible();
@@ -2263,6 +2266,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await pickItem(page, before.item.name);
 	await selectedItemDetails(page);
 	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
+	await openItemSection(itemPane, 'Quality checks');
 	await expect(
 		pane.getByText('Some lower clothing is missing compared with the standing design', {
 			exact: true
@@ -4897,6 +4901,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
 	});
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.badge.accepted')).toContainText('Accepted');
+	await openItemSection(pane, 'Quality checks');
 	await expect(pane.getByText('Accepted appearance warnings', { exact: true })).toBeVisible();
 	await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible();
 	await expect(
