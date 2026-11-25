@@ -1438,7 +1438,7 @@
 		"preview": "Prévia",
 		"appearanceTip": "A roupa desenhada pode aparecer por baixo do equipamento.",
 		"appearanceTipPath": "Para remover ou trocar a roupa após importar:",
-		"appearanceTipSteps": "clique no nome do personagem no canto superior esquerdo e depois em {action}",
+		"appearanceTipSteps": "Pressione {name} na barra superior → pressione {action}",
 		"previewArtwork": "Prévia da importação do personagem",
 		"stalePreview": "Mostrando a última prévia. Atualize suas seleções para continuar.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",

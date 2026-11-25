@@ -1383,7 +1383,7 @@
 		"preview": "미리보기",
 		"appearanceTip": "캐릭터에 그려진 옷은 장비 아래로 보일 수 있습니다.",
 		"appearanceTipPath": "가져온 후 옷을 벗기거나 바꾸려면:",
-		"appearanceTipSteps": "왼쪽 위의 캐릭터 이름을 클릭한 다음 {action}을 클릭하세요",
+		"appearanceTipSteps": "상단 바에서 {name} 누르기 → {action} 누르기",
 		"previewArtwork": "캐릭터 가져오기 미리보기",
 		"stalePreview": "마지막 미리보기를 표시하고 있어요. 계속하려면 선택을 업데이트하세요.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",

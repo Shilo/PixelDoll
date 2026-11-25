@@ -64,6 +64,7 @@
 	} from './icons.ts';
 	import { t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
+	import RichMessage from './RichMessage.svelte';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { errorTranslation, LocalizedError, message, type Message } from '../lib/message.ts';
 
@@ -751,8 +752,13 @@
 				<span>
 					{t('import.appearanceTip')}<br />
 					{t('import.appearanceTipPath')}<br />
-					<code class="instruction"
-						>{t('import.appearanceTipSteps', { action: t('appearance.action') })}</code
+					{#snippet nameCode()}<code>{name.trim() || t('import.characterName')}</code>{/snippet}
+					{#snippet actionCode()}<code>{t('appearance.action')}</code>{/snippet}
+					<span class="steps"
+						><RichMessage
+							key="import.appearanceTipSteps"
+							slots={{ name: nameCode, action: actionCode }}
+						/></span
 					>
 				</span>
 			</p>
@@ -883,19 +889,13 @@
 		justify-content: space-between;
 		gap: 8px;
 	}
-	/* Set like a code block so it reads as steps to follow, not interface copy. */
-	.instruction {
-		display: inline-block;
-		max-inline-size: 100%;
-		margin-block-start: 4px;
-		padding: 6px 10px;
-		border: 1px solid var(--bu-line);
+	/* The buttons to press read like keys, not as part of the sentence. */
+	.steps code {
+		padding: 1px 4px;
 		border-radius: var(--r-ctl);
 		background: var(--stage);
 		font-family: var(--font-mono);
-		line-height: 1.5;
 		color: var(--bu-text);
-		overflow-wrap: anywhere;
 	}
 	.library-entry {
 		display: flex;

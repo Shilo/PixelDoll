@@ -2441,10 +2441,8 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 			.locator('.notice')
 			.filter({ hasText: 'Clothes drawn on the character' });
 		await expect(appearanceNote).toContainText('To remove or change them after import:');
-		await expect(appearanceNote.locator('code')).toContainText(
-			'click the character name at the top left, then click Edit appearance…'
-		);
 		await page.getByLabel('Character name', { exact: true }).fill(name);
+		await expect(appearanceNote.locator('code')).toHaveText([name, 'Edit appearance…']);
 		const setup = page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' });
 		await expect(setup).toBeChecked();
 		await page.getByText('Set up the pose rig next (recommended)', { exact: true }).click();

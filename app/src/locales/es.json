@@ -1432,7 +1432,7 @@
 		"preview": "Vista previa",
 		"appearanceTip": "La ropa dibujada puede verse debajo del equipo.",
 		"appearanceTipPath": "Para quitarla o cambiarla tras importar:",
-		"appearanceTipSteps": "haz clic en el nombre del personaje arriba a la izquierda y luego en {action}",
+		"appearanceTipSteps": "Pulsa {name} en la barra superior → pulsa {action}",
 		"previewArtwork": "Vista previa de importación del personaje",
 		"stalePreview": "Se muestra la última vista previa. Actualiza tu selección para continuar.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",

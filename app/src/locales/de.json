@@ -1432,7 +1432,7 @@
 		"preview": "Vorschau",
 		"appearanceTip": "Auf die Figur gezeichnete Kleidung kann unter der Ausrüstung sichtbar bleiben.",
 		"appearanceTipPath": "Zum Entfernen oder Ändern nach dem Import:",
-		"appearanceTipSteps": "Klicke oben links auf den Namen der Figur und dann auf {action}",
+		"appearanceTipSteps": "Oben in der Leiste {name} drücken → {action} drücken",
 		"previewArtwork": "Vorschau für den Figurenimport",
 		"stalePreview": "Die letzte Vorschau wird angezeigt. Aktualisiere deine Auswahl, um fortzufahren.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",

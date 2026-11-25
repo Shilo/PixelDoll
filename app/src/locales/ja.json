@@ -1383,7 +1383,7 @@
 		"preview": "プレビュー",
 		"appearanceTip": "描かれた服は装備の下から見えることがあります。",
 		"appearanceTipPath": "インポート後に服を脱がせたり変えたりするには：",
-		"appearanceTipSteps": "左上のキャラクター名をクリックし、{action}をクリックします",
+		"appearanceTipSteps": "上部バーの{name}を押す → {action}を押す",
 		"previewArtwork": "キャラクターのインポートのプレビュー",
 		"stalePreview": "前回のプレビューを表示しています。続けるには選択内容を更新してください。",
 		"previewSummary": "{directions}・{states}・{moves}・{items}",

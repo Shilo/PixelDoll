@@ -1432,7 +1432,7 @@
 		"preview": "Önizleme",
 		"appearanceTip": "Çizilmiş kıyafetler ekipmanın altından görünebilir.",
 		"appearanceTipPath": "İçe aktardıktan sonra kıyafetleri çıkarmak veya değiştirmek için:",
-		"appearanceTipSteps": "sol üstteki karakter adına, ardından {action} seçeneğine tıklayın",
+		"appearanceTipSteps": "Üst çubukta {name} öğesine basın → {action} öğesine basın",
 		"previewArtwork": "Karakter içe aktarım önizlemesi",
 		"stalePreview": "Son önizleme gösteriliyor. Devam etmek için seçimlerinizi güncelleyin.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
