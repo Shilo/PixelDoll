@@ -1,12 +1,11 @@
 export type AudioCue =
-	'hover' | 'press' | 'equip' | 'unequip' | 'recolor' | 'item' | 'success' | 'failure' | 'export';
+	'press' | 'equip' | 'unequip' | 'recolor' | 'item' | 'success' | 'failure' | 'export';
 
 type Note = readonly [start: number, pitch: number, duration: number, strength: number];
 const sampleRate = 24000;
 
 // These original cues are dedicated under CC0 1.0 Universal.
 const cues: Record<AudioCue, readonly Note[]> = {
-	hover: [[0, 79, 0.045, 0.22]],
 	press: [[0, 65, 0.074, 0.44]],
 	equip: [
 		[0, 64, 0.105, 0.54],

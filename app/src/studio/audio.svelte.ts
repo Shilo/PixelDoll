@@ -190,21 +190,7 @@ export function watchAudio() {
 		preferences = audioPreferenceStore.read();
 		unsaved = false;
 	});
-	let lastHover = -Infinity;
 	let lastPress = -Infinity;
-	addEventListener(
-		'pointerover',
-		(event) => {
-			if (!event.isTrusted || event.pointerType !== 'mouse' || event.buttons || !playback) return;
-			const entered = control(event.target);
-			if (!entered || entered === control(event.relatedTarget)) return;
-			const now = performance.now();
-			if (now - lastHover < 400 || now - lastPress < 250) return;
-			lastHover = now;
-			playAudioCue('hover');
-		},
-		{ signal, passive: true }
-	);
 	addEventListener(
 		'keydown',
 		(event) => {

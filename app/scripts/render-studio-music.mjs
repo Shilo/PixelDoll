@@ -96,7 +96,8 @@ const score = [
 			[0.1, 1.7, 'E3 B3 D4 G4'],
 			[2, 1.4, 'G3 B3 E4 A4'],
 			[3.7, 1.15, 'A2 E3 B3 D4'],
-			[5.05, 2.8, 'D3 A3 E4 F#4']
+			// Hold the shared voicing through the loop while the opening pads enter.
+			[5.05, 3.25, 'D3 A3 E4 F#4']
 		],
 		accents: [
 			[4.4, 'G4', 0.55],
@@ -124,7 +125,7 @@ function smoothRamp(fraction) {
 
 function addPad(start, duration, note, voice, phrase) {
 	const first = Math.round(start * sampleRate);
-	const last = Math.min(mix.length, first + Math.round(duration * sampleRate));
+	const last = first + Math.round(duration * sampleRate);
 	const angularFrequency = fullTurn * frequency(note);
 	const attack = 0.95 + ((voice * 3 + phrase) % 6) * 0.19;
 	const release = 1.55 + voice * 0.24;
@@ -141,7 +142,7 @@ function addPad(start, duration, note, voice, phrase) {
 			(0.1 + 0.032 * drift) * Math.sin(2 * phase + 0.45) +
 			0.037 * Math.sin(3 * phase);
 		const envelope = smoothRamp(age / attack) * smoothRamp((duration - age) / release);
-		mix[frame] += level * envelope * tone * (0.92 + 0.08 * drift);
+		mix[frame % mix.length] += level * envelope * tone * (0.92 + 0.08 * drift);
 	}
 }
 
@@ -158,14 +159,14 @@ function addAccent(start, note, strength, phrase) {
 
 	for (const [delay, gain] of reflections) {
 		const first = Math.round((start + delay) * sampleRate);
-		const last = Math.min(mix.length, first + Math.round(duration * sampleRate));
+		const last = first + Math.round(duration * sampleRate);
 		for (let frame = first; frame < last; frame++) {
 			const age = (frame - first) / sampleRate;
 			const phase = angularFrequency * age + 0.18 * Math.sin(age * 4.1 + phrase);
 			const tone = Math.sin(phase) + 0.21 * Math.exp(-age * 1.6) * Math.sin(phase * 2);
 			const envelope =
 				smoothRamp(age / 0.18) * Math.exp(-age * 1.52) * smoothRamp((duration - age) / 0.65);
-			mix[frame] += 0.17 * strength * gain * envelope * tone;
+			mix[frame % mix.length] += 0.17 * strength * gain * envelope * tone;
 		}
 	}
 }
@@ -187,9 +188,7 @@ for (const [phrase, { pads, accents }] of score.entries()) {
 
 const pcm = Buffer.alloc(mix.length * Float32Array.BYTES_PER_ELEMENT);
 for (let frame = 0; frame < mix.length; frame++) {
-	const fadeIn = smoothRamp(frame / (4.2 * sampleRate));
-	const fadeOut = smoothRamp((mix.length - 1 - frame) / (7 * sampleRate));
-	pcm.writeFloatLE(mix[frame] * fadeIn * fadeOut, frame * Float32Array.BYTES_PER_ELEMENT);
+	pcm.writeFloatLE(mix[frame], frame * Float32Array.BYTES_PER_ELEMENT);
 }
 
 const outputDirectory = new URL('../src/studio/audio/', import.meta.url);

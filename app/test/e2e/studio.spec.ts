@@ -44,6 +44,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 			opened: 0,
 			loops: 0,
 			musicStarts: 0,
+			musicStopTime: 0,
 			failed: false,
 			gainTargets: [] as number[]
 		};
@@ -72,6 +73,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 							value: 0,
 							setTargetAtTime: (level: number) => calls.gainTargets.push(level),
 							setValueAtTime: noop,
+							cancelScheduledValues: noop,
 							linearRampToValueAtTime: noop
 						}
 					};
@@ -85,6 +87,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 				createBufferSource() {
 					return {
 						loop: false,
+						onended: null as (() => void) | null,
 						detune: { value: 0 },
 						connect() {},
 						disconnect() {},
@@ -98,8 +101,12 @@ test('Audio settings start after a gesture and preserve independent levels and m
 								calls.musicStarts++;
 							}
 						},
-						stop() {
-							if (this.loop) calls.loops--;
+						stop(when = 0) {
+							if (this.loop) {
+								calls.loops--;
+								calls.musicStopTime = when;
+							}
+							this.onended?.();
 						}
 					};
 				}
@@ -151,6 +158,9 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	const { gainTargets } = await calls();
 	expect(gainTargets[0]).toBeCloseTo(0.01822, 5);
 	expect(gainTargets[1]).toBeCloseTo(0.04363, 5);
+	await music.press('End');
+	await expect.poll(async () => (await calls()).gainTargets.at(-1)).toBeCloseTo(0.4, 5);
+	await music.fill('50');
 	await settings.getByRole('button', { name: 'Appearance', exact: true }).click();
 	await settings.getByRole('radio', { name: 'Light', exact: true }).check();
 	await settings.getByRole('button', { name: 'Audio', exact: true }).click();
@@ -166,7 +176,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
 	await musicSwitch.uncheck();
 	await expect(shortcut).toHaveCount(0);
-	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0 });
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0, musicStopTime: 0.05 });
 	await musicSwitch.check();
 	await expect(shortcut).toHaveCount(1);
 	await master.uncheck();
@@ -178,7 +188,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 		Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
 		document.dispatchEvent(new Event('visibilitychange'));
 	});
-	expect(await calls()).toMatchObject({ opened: 1, loops: 0 });
+	expect(await calls()).toMatchObject({ opened: 1, loops: 0, musicStopTime: 0 });
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.reload();
 	await expect(page.locator('.customize-action, .experience-stage')).toBeVisible();

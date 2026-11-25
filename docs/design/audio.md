@@ -14,7 +14,7 @@ of the compositions and recordings, with no attribution required. The source cod
   and delayed pluck reflections into mono PCM. [FFmpeg](https://ffmpeg.org/) encodes that PCM as a
   24 kHz, 48 kbps MP3. To change the track, edit the score and run
   `node scripts/render-studio-music.mjs` from `app/` with FFmpeg and its `libmp3lame` encoder on PATH.
-- All nine effects come from [audioCues.ts](../../app/src/studio/audioCues.ts). Edit the cue's note
+- All eight effects come from [audioCues.ts](../../app/src/studio/audioCues.ts). Edit the cue's note
   tuples (start in seconds, MIDI pitch, duration in seconds, and strength) to change its contour.
   The browser synthesizes a 24 kHz mono buffer using sine harmonics, a smooth attack and release,
   and exponential decay. Trigger the corresponding action in Studio to audition the result.
@@ -36,7 +36,6 @@ at a quiet level.
 
 | Cue                | Intention and contour                                                        |
 | ------------------ | ---------------------------------------------------------------------------- |
-| Hover              | A short, faint high note for pointer entry.                                  |
 | Press              | A lower, soft tap for control activation.                                    |
 | Equip and unequip  | A rising two-note interval for wear and the reverse for removal.             |
 | Recolor            | A light rising three-note accent for a committed palette change.             |
@@ -52,27 +51,26 @@ loads after a trusted gesture with an audible channel and uses a shared Web Audi
 independent music and effects gain controls. Music downloads and decodes when enabled at a nonzero
 level in the foreground. Each cue is synthesized on first use and its buffer is reused. Both sliders
 default to 50%, the reference listening position for each channel. At that position, music keeps
-its previous 20% setting's gain and effects keep their previous 35% setting's gain. The sliders retain
-their original maximum gains and independent switches. Saved slider numbers use the new curve,
-so a previously saved mix can play more quietly. The PWA verifies and caches the module and MP3
+its previous 20% setting's gain and effects keep their previous 35% setting's gain. Music has extra
+headroom above 50% for listeners who need it. Its maximum channel gain is 0.40, up from 0.16.
+The PWA verifies and caches the module and MP3
 on demand. If the first gesture happens offline before the module is cached,
 reconnect and reload to enable audio. The 0.96 MB MP3 decodes to about 31 MB at a 48 kHz device rate.
 
-For effects, reduce how often cues fire and how loud they are first. Studio throttles hover to once
-per 400 ms, attenuates it further, and caps overlap at four voices. Action cues take priority over
-hover and press. Each play detunes the whole cue by up to ±24 cents for hover and press, or ±12 cents
-for action cues. Gain can decrease by up to 14% or 6%, respectively. That preserves the cue's intervals
-and meaning without loud outliers. If rapid browsing still feels busy, compare against silent hover
-before widening randomization. [Web Audio spec](https://www.w3.org/TR/webaudio/#AudioBufferSourceNode)
+For effects, reduce how often cues fire and how loud they are first. Pointer movement alone is
+silent. Studio rate-limits control presses, caps overlap at four voices, and gives action cues
+priority over presses. Each play detunes the whole cue by up to ±10 cents for press or ±12 cents
+for action cues. Gain can decrease by up to 14% or 6%, respectively. This preserves the cue's
+intervals without loud outliers. [Web Audio spec](https://www.w3.org/TR/webaudio/#AudioBufferSourceNode)
 · [Xbox audio accessibility guidance](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/105)
 · [Foley et al. on auditory interface annoyance](https://doi.org/10.1121/10.0010447)
 
 Match perceived loudness among cues with similar jobs and keep quieter tiers for frequent feedback.
-The synthesized cues other than hover measured within 2.8 dB of each other by full-cue RMS before
-channel gain and per-play variation. Hover measured about 9 dB below press after its fixed trim.
+The synthesized cues measured within 2.8 dB of each other by full-cue RMS before
+channel gain and per-play variation.
 RMS helps spot outliers and peaks help check headroom. Compare short cues by ear in context because
 duration, frequency, and envelope affect perceived loudness. Broadcast loudness targets use
-measurement windows longer than the 45 ms hover cue. [EBU loudness measurement windows](https://tech.ebu.ch/docs/tech/tech3343v3_0.pdf)
+measurement windows longer than many Studio cues. [EBU loudness measurement windows](https://tech.ebu.ch/docs/tech/tech3343v3_0.pdf)
 
 For music, start with quiet, evolving phrases and space between lead notes. Studio already uses
 this approach and keeps music pitch fixed. Target **2–4 minutes per loop**, with 3–4 minutes a
@@ -84,12 +82,13 @@ phrase, or the urge to mute. Sustained listening fatigue still needs validation 
 
 ## Looping and additional tracks
 
-Fade in when playback starts or resumes. Studio already applies a 650 ms gain ramp for that.
-Studio Ambient also has a 4.2-second fade-in and a 7-second fade-out baked into the MP3, so every
-repetition dips in level. For the next revision, compose a continuous end-to-start transition.
-Carry pad and reflection tails across the seam or use a short overlap when needed. Check the actual
-decoded asset for clicks, gaps, and obvious restarting phrases. Keep the runtime entrance fade and
-prompt mute behavior. If a deliberate stop clicks in listening tests, use a short gain release.
+Studio applies a 650 ms gain ramp when playback starts or resumes and a 50 ms release for a
+foreground mute. When the tab loses focus or visibility, audio stops immediately. Studio Ambient carries the
+closing pad into the opening phrase. The renderer wraps any notes and reflections that extend
+past the last sample into the start of the loop, so there is no baked fade between repetitions.
+The decoded 24 kHz asset has exactly 160 seconds of samples. The half-second on each side of the
+seam matches within 0.1 dB RMS, and the sample step at the seam is smaller than nearby steps.
+Check the decoded asset by ear for clicks, gaps, and obvious restarting phrases.
 Keep fades or crossfades for track changes where they help, matching the
 tracks' perceived loudness. [Wwise music segment and transition guide](https://www.audiokinetic.com/download/documents/WwiseProjectAdventure_en.pdf)
 

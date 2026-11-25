@@ -11,7 +11,7 @@ export interface AudioPlayback {
 
 const maxConcurrentCues = 4;
 const musicFade = 0.65;
-const isControlCue = (cue: AudioCue) => cue === 'hover' || cue === 'press';
+const musicRelease = 0.05;
 
 type ActiveCue = {
 	cue: AudioCue;
@@ -19,12 +19,12 @@ type ActiveCue = {
 	gain: GainNode;
 };
 
-function volume(level: number, reference: number, ceiling: number): number {
+function volume(level: number, reference: number, ceiling: number, extraHeadroom = 0): number {
 	const dial = Math.max(0, Math.min(100, level)) / 100;
 	// Add headroom smoothly above the halfway reference without crowding out quieter settings.
 	const aboveHalf = Math.max(0, 2 * dial - 1);
 	const mix = 2 * reference * dial + (1 - 2 * reference) * aboveHalf ** 2;
-	return ceiling * mix ** 1.35;
+	return ceiling * mix ** 1.35 + extraHeadroom * aboveHalf ** 2;
 }
 
 export function createAudioPlayback(
@@ -44,24 +44,50 @@ export function createAudioPlayback(
 	let musicBuffer: AudioBuffer | undefined;
 	let musicBytes: ArrayBuffer | undefined;
 	let music: { source: AudioBufferSourceNode; envelope: GainNode; startedAt: number } | undefined;
+	let finishMusicRelease: (() => void) | undefined;
 	let musicLoading = false;
 	let musicFailed = false;
 	let musicOffset = 0;
 	let musicLevel = 0;
 	let effectsLevel = 0;
+	let foreground = false;
 	let playingAllowed = false;
 	let disposed = false;
 
-	function stopMusic() {
+	function stopMusic(fade = false) {
 		onMusicPlaying(false);
+		if (!fade || music) {
+			finishMusicRelease?.();
+			finishMusicRelease = undefined;
+		}
 		if (!music) return;
 		const { source, envelope, startedAt } = music;
 		music = undefined;
-		musicOffset =
-			(musicOffset + Math.max(0, context.currentTime - startedAt)) % musicBuffer!.duration;
-		source.disconnect();
-		envelope.disconnect();
-		source.stop();
+		const now = context.currentTime;
+		const elapsed = Math.max(0, now - startedAt);
+		musicOffset = (musicOffset + elapsed) % musicBuffer!.duration;
+		const disconnect = () => {
+			source.onended = null;
+			source.disconnect();
+			envelope.disconnect();
+		};
+		if (!fade) {
+			disconnect();
+			source.stop();
+			return;
+		}
+		envelope.gain.cancelScheduledValues(now);
+		envelope.gain.setValueAtTime(Math.min(1, elapsed / musicFade), now);
+		envelope.gain.linearRampToValueAtTime(0, now + musicRelease);
+		finishMusicRelease = () => {
+			disconnect();
+			source.stop();
+		};
+		source.onended = () => {
+			disconnect();
+			finishMusicRelease = undefined;
+		};
+		source.stop(now + musicRelease);
 	}
 
 	async function loadMusic() {
@@ -94,7 +120,7 @@ export function createAudioPlayback(
 
 	function syncMusic() {
 		if (!playingAllowed || !musicLevel || disposed || context.state === 'closed') {
-			stopMusic();
+			stopMusic(foreground && !disposed && context.state === 'running');
 			return;
 		}
 		if (context.state !== 'running') {
@@ -149,9 +175,10 @@ export function createAudioPlayback(
 	return {
 		update(settings, visible) {
 			if (disposed || context.state === 'closed') return;
+			foreground = visible;
 			playingAllowed = visible && !settings.muted;
 			const nextMusicLevel = channelAudible(settings, 'music')
-				? volume(settings.music, 0.2, 0.16)
+				? volume(settings.music, 0.2, 0.16, 0.24)
 				: 0;
 			const nextEffectsLevel = channelAudible(settings, 'effects')
 				? volume(settings.effects, 0.35, 0.18)
@@ -174,10 +201,10 @@ export function createAudioPlayback(
 		},
 		play(cue) {
 			if (disposed || !playingAllowed || !effectsLevel || context.state !== 'running') return;
-			const frequent = isControlCue(cue);
+			const frequent = cue === 'press';
 			if (activeCues.size >= maxConcurrentCues) {
 				if (frequent) return;
-				const oldestControl = [...activeCues].find((voice) => isControlCue(voice.cue));
+				const oldestControl = [...activeCues].find((voice) => voice.cue === 'press');
 				const evicted = oldestControl ?? activeCues.values().next().value;
 				if (evicted) stopCue(evicted);
 			}
@@ -188,11 +215,11 @@ export function createAudioPlayback(
 			}
 			const source = context.createBufferSource();
 			const gain = context.createGain();
-			const cents = frequent ? 24 : 12;
+			const cents = frequent ? 10 : 12;
 			const variation = frequent ? 0.14 : 0.06;
 			// Apply one bounded pitch and gain change per play. The buffer and its note intervals are shared.
 			source.detune.value = (2 * Math.random() - 1) * cents;
-			gain.gain.value = (1 - Math.random() * variation) * (cue === 'hover' ? 0.7 : 1);
+			gain.gain.value = 1 - Math.random() * variation;
 			const voice = { cue, source, gain };
 			source.buffer = buffer;
 			source.connect(gain);
