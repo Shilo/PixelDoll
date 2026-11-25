@@ -2992,7 +2992,13 @@
 		"description": "像装扮纸娃娃一样，为 2D 游戏角色进行像素级换装。生成逐帧对齐、可替换的装备图层，并导出到任意游戏引擎。",
 		"viewCommit": "查看提交",
 		"copyDetails": "复制详细信息",
-		"copyFailed": "无法复制应用详情。"
+		"copyFailed": "无法复制应用详情。",
+		"checkForUpdates": "检查更新",
+		"checkingForUpdates": "正在检查更新…",
+		"upToDate": "已是最新版本。",
+		"preparingUpdate": "正在准备 {version} 版本…",
+		"updateStuck": "更新尚未就绪。",
+		"updateFailed": "无法检查更新。"
 	},
 	"repairReview": {
 		"finishFirst": "请先打开“动作”，决定是否使用已完成的修复。",
@@ -3431,8 +3437,7 @@
 		"walkWhileAttacking": "攻击时保持行走",
 		"layeringHelp": "行走和攻击的朝向必须相同，双腿需要有两种动作的图像，腰部接缝也必须对齐。否则会播放普通的全身攻击。",
 		"waist": "腰线",
-		"automaticWaist": "自动",
-		"waistHelp": "将接缝向上或向下移动最多 4 像素。自动模式使用每帧跟踪的髋部位置。",
+		"waistHelp": "移动行走时双腿与攻击时上半身相接的线。正值向下移，负值向上移，最多 4 像素。自动使用每一帧跟踪的髋部位置。",
 		"raiseWaist": "升高腰线",
 		"lowerWaist": "降低腰线",
 		"automaticStill": "自动：静止站立",

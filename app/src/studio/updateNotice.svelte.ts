@@ -3,6 +3,7 @@ import { pwa } from '../lib/pwa.ts';
 
 const status = fromStore(pwa);
 // Shared across Toast mounts when a sheet opens or closes; polling must not resurrect an expired notice.
+let aboutPanels = $state(0);
 const hidden = $state({ build: '', phase: '' });
 const phase = $derived(
 	status.current.available
@@ -28,6 +29,15 @@ function timeLeft() {
 	return Math.max(0, remaining - (started === null ? 0 : Date.now() - started));
 }
 export const updateNotice = {
+	get aboutOpen() {
+		return aboutPanels > 0;
+	},
+	showInAbout() {
+		aboutPanels++;
+		return () => {
+			aboutPanels--;
+		};
+	},
 	get phase() {
 		return phase;
 	},

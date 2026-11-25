@@ -2992,7 +2992,13 @@
 		"description": "Dandani karakter game 2D dengan lapisan boneka kertas yang presisi hingga ke piksel. Buat lapisan perlengkapan yang dapat ditukar dan selaras di setiap bingkai, lalu ekspor ke mesin game apa pun.",
 		"viewCommit": "Lihat commit",
 		"copyDetails": "Salin detail",
-		"copyFailed": "Detail aplikasi tidak dapat disalin."
+		"copyFailed": "Detail aplikasi tidak dapat disalin.",
+		"checkForUpdates": "Periksa pembaruan",
+		"checkingForUpdates": "Memeriksa pembaruan...",
+		"upToDate": "Versi Anda sudah terbaru.",
+		"preparingUpdate": "Menyiapkan versi {version}...",
+		"updateStuck": "Pembaruan belum siap.",
+		"updateFailed": "Tidak dapat memeriksa pembaruan."
 	},
 	"repairReview": {
 		"finishFirst": "Buka Animasi untuk memutuskan dulu apakah akan menggunakan hasil perbaikan.",
@@ -3431,8 +3437,7 @@
 		"walkWhileAttacking": "Berjalan saat menyerang",
 		"layeringHelp": "Berjalan dan menyerang harus menghadap ke arah yang sama, kaki perlu gambar untuk kedua gerakan, dan sambungan pinggang harus selaras. Jika tidak, serangan seluruh tubuh biasa akan diputar.",
 		"waist": "Pinggang",
-		"automaticWaist": "Otomatis",
-		"waistHelp": "Menggeser sambungan hingga 4 piksel ke atas atau ke bawah. Mode otomatis memakai posisi pinggul di setiap bingkai.",
+		"waistHelp": "Menggeser garis tempat kaki berjalan bertemu tubuh atas yang menyerang. Nilai positif menggesernya ke bawah dan nilai negatif ke atas, hingga 4 piksel. Otomatis memakai pinggul yang dilacak di setiap bingkai.",
 		"raiseWaist": "Naikkan pinggang",
 		"lowerWaist": "Turunkan pinggang",
 		"automaticStill": "Otomatis: diam di tempat",

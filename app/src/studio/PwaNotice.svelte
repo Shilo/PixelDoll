@@ -5,18 +5,7 @@
 	import { displayPwaError } from './pwaText.ts';
 	import { updateNotice } from './updateNotice.svelte.ts';
 	import PendingIndicator from './PendingIndicator.svelte';
-	let { paused = false, ondismiss }: { paused?: boolean; ondismiss: () => void } = $props();
-	$effect(() => {
-		const phase = updateNotice.phase;
-		if (!updateNotice.visible || $pwa.reloading) return;
-		if (paused) {
-			updateNotice.pause(phase);
-			return;
-		}
-		// The shared clock survives sheet remounts. Only readiness or a new release starts a fresh window.
-		const timer = setTimeout(() => updateNotice.expire(phase), updateNotice.delay(phase));
-		return () => clearTimeout(timer);
-	});
+	let { ondismiss }: { ondismiss: () => void } = $props();
 	function dismiss() {
 		ondismiss();
 		updateNotice.dismiss();
@@ -32,7 +21,7 @@
 		tone="info"
 		indicator={$pwa.reloading || (!$pwa.ready && !$pwa.error) ? pendingIndicator : undefined}
 		live
-		onactivate={$pwa.ready && !$pwa.reloading ? requestUpdate : undefined}
+		onactivate={$pwa.ready && !$pwa.reloading ? () => requestUpdate() : undefined}
 		ondismiss={$pwa.reloading ? undefined : dismiss}
 	>
 		{#if $pwa.reloading}{t('pwaNotice.readyToUpdateReloading')}{:else if $pwa.ready}{t(

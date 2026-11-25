@@ -4,6 +4,7 @@
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { pwa } from '../lib/pwa.ts';
 	import { getKeyRevision } from '../lib/app.svelte.ts';
 	import { isResettableSection, resetSettings, type ResetScope } from './resetSettings.ts';
 	import { settingsAtDefaults, watchCreationSettings } from './settingsDefaults.svelte.ts';
@@ -153,8 +154,8 @@
 				},
 				{ id: 'live-walk', label: 'liveViews.walk' },
 				{ id: 'live-run', label: 'liveViews.run', terms: ['liveViews.sprint'] },
-				{ id: 'live-attack', label: 'liveViews.attack' },
 				{ id: 'live-jump', label: 'liveViews.jump' },
+				{ id: 'live-attack', label: 'liveViews.attack' },
 				{ id: 'live-attackUp', label: 'liveViews.attackUp' },
 				{ id: 'live-attackDown', label: 'liveViews.attackDown' }
 			]
@@ -358,6 +359,7 @@
 					[
 						...[entry.label, ...('terms' in entry ? (entry.terms ?? []) : [])].map((key) => t(key)),
 						...(entry.id === 'reset' ? [] : [t(section.label)]),
+						...(entry.id === 'about' && $pwa.enabled ? [t('versionRow.checkForUpdates')] : []),
 						...('names' in entry ? (entry.names ?? []) : [])
 					].join(' '),
 					locale

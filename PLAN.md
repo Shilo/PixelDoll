@@ -288,6 +288,9 @@ service worker. The implementation uses the platform APIs without another depend
   inline outfit draft, unfinished startup, character load or pending paid workflow blocks application. For manual updates, a native modal
   prevents new interactions while verification and activation run. Only the requesting tab reloads. The notice
   discloses view/undo reset and session-only reconnection.
+- **About updates:** One row above Open source shows the check result and the next action. It checks the deployed
+  build even when the version number is unchanged. Once verified, it uses the same guarded update as More and the
+  toast. About pauses the duplicate toast while the row is visible. Build and commit details stay in About.
 - **Discovery:** startup, foreground focus/visibility, page restoration and reconnect check the deployed `release.json`;
   a visible app also checks every hour. Metadata uses a cache-busting query and `cache: 'no-store'`; worker checks
   use `updateViaCache: 'none'`. Discovery keeps retrying after network or staging failures. A commit becomes visible

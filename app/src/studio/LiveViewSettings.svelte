@@ -43,9 +43,8 @@
 
 		{ role: 'walk', label: 'liveViews.walk' },
 		{ role: 'run', label: 'liveViews.run' },
-		{ role: 'attack', label: 'liveViews.attack' },
-
 		{ role: 'jump', label: 'liveViews.jump' },
+		{ role: 'attack', label: 'liveViews.attack' },
 
 		{ role: 'attackUp', label: 'liveViews.attackUp' },
 
@@ -106,39 +105,41 @@
 		</div>
 
 		{#if role === 'attack'}
-			<div class="layering switch-row">
-				<SettingsItemToggle
-					checked={layering.on}
-					onchange={(event) => setLayering(event.currentTarget.checked, layering.waist)}
-				>
-					{t('liveViews.walkWhileAttacking')}
-				</SettingsItemToggle>
-				<Help
-					iconOnly
-					title={t('liveViews.walkWhileAttacking')}
-					text={t('liveViews.layeringHelp')}
-				/>
-			</div>
+			<SettingsItemToggle
+				tooltip={t('liveViews.layeringHelp')}
+				checked={layering.on}
+				onchange={(event) => setLayering(event.currentTarget.checked, layering.waist)}
+			>
+				<span class="row-name">{t('liveViews.walkWhileAttacking')}</span>
+			</SettingsItemToggle>
 
 			{#if layering.on}
-				<div class="layering">
-					<span id={waistLabel}
-						>{t('liveViews.waist')}{layering.waist === 0
-							? ' / ' + t('liveViews.automaticWaist')
-							: ''}</span
-					>
+				<div class="layering" data-setting="live-waist">
+					<div class="layering-head">
+						<span id={waistLabel}>{t('liveViews.waist')}</span>
 
-					<Help iconOnly title={t('liveViews.waist')} text={t('liveViews.waistHelp')} />
+						<Help iconOnly title={t('liveViews.waist')} text={t('liveViews.waistHelp')} />
+					</div>
 
-					<NumberStepper
-						value={layering.waist}
-						min={-4}
-						max={4}
-						labelledby={waistLabel}
-						decreaseLabel={t('liveViews.raiseWaist')}
-						increaseLabel={t('liveViews.lowerWaist')}
-						onchange={(waist) => setLayering(true, waist)}
-					/>
+					<div class="layering-controls">
+						<button
+							class="bu-action btn layering-auto"
+							data-variant="outline"
+							aria-pressed={layering.waist === 0}
+							onclick={() => setLayering(true, 0)}>{t('create.form.auto')}</button
+						>
+
+						<NumberStepper
+							value={layering.waist}
+							min={-4}
+							max={4}
+							suffix="px"
+							labelledby={waistLabel}
+							decreaseLabel={t('liveViews.raiseWaist')}
+							increaseLabel={t('liveViews.lowerWaist')}
+							onchange={(waist) => setLayering(true, waist)}
+						/>
+					</div>
 				</div>
 			{/if}
 		{/if}
@@ -161,6 +162,13 @@
 
 <style>
 	.layering {
+		display: grid;
+
+		gap: 8px;
+	}
+
+	.layering-head,
+	.layering-controls {
 		display: flex;
 
 		align-items: center;
@@ -168,15 +176,12 @@
 		gap: 8px;
 	}
 
-	.layering {
+	.layering-controls {
 		flex-wrap: wrap;
 	}
-	.switch-row {
-		flex-wrap: nowrap;
-	}
-	.switch-row :global(label) {
-		flex: 1;
-		min-inline-size: 0;
+
+	.layering-auto {
+		min-block-size: 44px;
 	}
 
 	.character {

@@ -3073,7 +3073,13 @@
 		"description": "Habillez vos personnages de jeu 2D avec des couches de poupée de papier au pixel près. Générez des couches d’équipement interchangeables, alignées image par image, et exportez-les vers n’importe quel moteur de jeu.",
 		"viewCommit": "Voir le commit",
 		"copyDetails": "Copier les détails",
-		"copyFailed": "Impossible de copier les détails de l’application."
+		"copyFailed": "Impossible de copier les détails de l’application.",
+		"checkForUpdates": "Rechercher des mises à jour",
+		"checkingForUpdates": "Recherche de mises à jour...",
+		"upToDate": "Vous êtes à jour.",
+		"preparingUpdate": "Préparation de la version {version}...",
+		"updateStuck": "La mise à jour n’est pas encore prête.",
+		"updateFailed": "Impossible de rechercher des mises à jour."
 	},
 	"repairReview": {
 		"finishFirst": "Ouvrez d’abord Animations pour décider si vous souhaitez utiliser la réparation terminée.",
@@ -3533,8 +3539,7 @@
 		"walkWhileAttacking": "Marcher en attaquant",
 		"layeringHelp": "La marche et l’attaque doivent être orientées dans le même sens, les jambes doivent avoir des images pour les deux mouvements et le raccord à la taille doit être aligné. Sinon, l’attaque normale du corps entier est jouée.",
 		"waist": "Taille",
-		"automaticWaist": "Automatique",
-		"waistHelp": "Déplace la jonction de 4 pixels au maximum vers le haut ou le bas. Le mode automatique utilise la position des hanches dans chaque image.",
+		"waistHelp": "Déplace la ligne où les jambes en marche rejoignent le haut du corps qui attaque. Les valeurs positives la déplacent vers le bas, les négatives vers le haut, jusqu’à 4 pixels. Automatique utilise les hanches suivies dans chaque image.",
 		"raiseWaist": "Remonter la taille",
 		"lowerWaist": "Abaisser la taille",
 		"automaticStill": "Automatique : immobile",

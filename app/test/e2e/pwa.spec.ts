@@ -612,6 +612,117 @@ test('updates in an already-used tab require an explicit click, preserve its rel
 	}
 });
 
+async function openAbout(page: Page) {
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	const about = settings.getByRole('button', { name: 'About', exact: true });
+	const heading = settings.getByRole('heading', { name: 'About', exact: true });
+	await expect(about.or(heading).first()).toBeVisible();
+	if (!(await heading.isVisible())) await about.click();
+	await expect(heading).toBeVisible();
+	return settings;
+}
+
+test('one About button checks, retries, tracks a staged update and reloads the verified build', async ({
+	page
+}) => {
+	const a = await testRelease('about-a', '8.8.1'),
+		b = await testRelease('about-b', '8.8.2');
+	const server = await pwaServer(a);
+	try {
+		await openInstalled(page, server.url, a);
+		const settings = await openAbout(page);
+		const panel = settings.locator('[data-setting="about"]');
+		const action = panel.getByRole('button').first();
+		const leadingIcon = (name: string) => action.locator(`:scope > svg.lucide-${name}:first-child`);
+		const notice = page.locator('.bu-toast').filter({ hasText: 'Update to v8.8.2' });
+		await expect(action).toHaveAccessibleName('Check for updates');
+		await expect(leadingIcon('refresh-cw')).toBeVisible();
+		await expect(action).toHaveAccessibleDescription("You're up to date.");
+		const search = settings.getByRole('searchbox', { name: 'Search settings', exact: true });
+		await search.fill('check for updates');
+		await settings.getByRole('button', { name: 'About About', exact: true }).click();
+		await expect(action).toBeFocused();
+		await expect(panel.getByRole('button')).toHaveCount(4);
+		await expect(panel.getByRole('button').nth(1)).toHaveAccessibleName(/^Open source/);
+
+		const discovery = server.hold('release.json');
+		server.failures.add('release.json');
+		await action.press('Enter');
+		await discovery.requested;
+		await expect(action).toHaveAccessibleName('Checking for updates...');
+		await expect(action).toBeDisabled();
+		await expect(action).toBeFocused();
+		discovery.release();
+		await expect(action).toHaveAccessibleDescription("Couldn't check for updates.");
+		await expect(action).toHaveAccessibleName('Check for updates');
+		await expect(action).toBeEnabled();
+		server.failures.delete('release.json');
+
+		const asset = [...b.files.keys()].find(
+			(path) => path.startsWith('assets/') && path.endsWith('.js')
+		)!;
+		const download = server.hold(asset);
+		server.deploy(b);
+		await action.press('Enter');
+		await download.requested;
+		await expect(action).toHaveAccessibleDescription('Getting version 8.8.2 ready...');
+		await expect(notice).toHaveCount(0);
+		await expectLoadedBuild(page, a);
+		download.release();
+		await expect(action).toHaveAccessibleName('Update to v8.8.2');
+		await expect(leadingIcon('download')).toBeVisible();
+		await expect(action).toBeEnabled();
+		await expect(notice).toHaveCount(0);
+
+		await settings.getByRole('button', { name: 'Close', exact: true }).click();
+		await expect(notice).toBeVisible();
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await expect(
+			page
+				.locator('#experience-options')
+				.getByRole('button', { name: 'Update to v8.8.2', exact: true })
+		).toBeEnabled();
+		await page.keyboard.press('Escape');
+		await enterStudio(page);
+		await page.getByRole('button', { name: 'Export', exact: true }).click();
+		const exporting = page.getByRole('dialog', { name: 'Export', exact: true });
+		await exporting.getByRole('button', { name: 'Settings', exact: true }).click();
+		await settings.getByRole('button', { name: 'About', exact: true }).click();
+		await action.click();
+		const paused = page.getByRole('dialog', { name: 'Update paused', exact: true });
+		await expect(paused.getByRole('alert')).toHaveText(
+			'Finish and close the open panel before updating.'
+		);
+		await page.goBack();
+		await expect(paused).toBeHidden();
+		await expect(action).toBeFocused();
+		await expectLoadedBuild(page, a);
+		await settings.getByRole('button', { name: 'Back to Export', exact: true }).click();
+		await exporting.getByRole('button', { name: 'Close', exact: true }).click();
+		await openAbout(page);
+		await expect(notice).toHaveCount(0);
+		await action.press('Enter');
+		await expectLoadedBuild(page, b);
+		await expect.poll(() => controllerBuild(page)).toBe(b.release.build);
+		await openAbout(page);
+		await expect(action).toHaveAccessibleDescription("You're up to date.");
+		await expect(panel.getByText('Version 8.8.2', { exact: true })).toBeVisible();
+		await expect(notice).toHaveCount(0);
+		await page.evaluate(() => localStorage.setItem('pixeldoll.theme', 'light'));
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.reload();
+		await openAbout(page);
+		await expect(action).toHaveAccessibleDescription("You're up to date.");
+		await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+		await expect(action).toBeInViewport();
+		await expect(leadingIcon('refresh-cw')).toBeVisible();
+	} finally {
+		await server.close();
+	}
+});
+
 test('update notices expire without hiding the menu action, survive interaction, and do not return on polls or sheet changes', async ({
 	page
 }) => {
@@ -626,8 +737,14 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.clock.pauseAt(new Date());
 		server.deploy(b);
 		await discover(page, b);
-		const notice = page.getByRole('status').filter({ hasText: 'Update to v8.9.2' });
+		const notice = page.locator('.bu-toast').filter({ hasText: 'Update to v8.9.2' });
 		await page.clock.fastForward(6000);
+		const aboutSettings = await openAbout(page);
+		await expect(aboutSettings.getByRole('button', { name: 'Update to v8.9.2' })).toBeEnabled();
+		await expect(notice).toHaveCount(0);
+		await page.clock.fastForward(20000);
+		await aboutSettings.getByRole('button', { name: 'Close', exact: true }).click();
+		await expect(notice).toBeVisible();
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
 		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
@@ -646,6 +763,10 @@ test('update notices expire without hiding the menu action, survive interaction,
 		const update = menu.getByRole('button', { name: 'Update to v8.9.2', exact: true });
 		await expect(update).toBeEnabled();
 		await page.keyboard.press('Escape');
+		const reopenedAbout = await openAbout(page);
+		await expect(reopenedAbout.getByRole('button', { name: 'Update to v8.9.2' })).toBeEnabled();
+		await reopenedAbout.getByRole('button', { name: 'Close', exact: true }).click();
+		await expect(notice).toHaveCount(0);
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
 		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
@@ -925,14 +1046,17 @@ test('an unfinished outfit name and failed storage block reload; a saved outfit 
 			};
 		});
 		await page.locator('.inline-form').getByRole('button', { name: 'Save', exact: true }).click();
-		await update.click();
+		const settings = await openAbout(page);
+		const aboutUpdate = settings.getByRole('button', { name: 'Update to v8.5.2', exact: true });
+		await aboutUpdate.click();
 		await expect(paused).toContainText('Your outfit could not be saved.');
 		await expectLoadedBuild(page, a);
 		await paused.getByRole('button', { name: 'Close', exact: true }).click();
+		await expect(aboutUpdate).toBeFocused();
 		await page.evaluate(() => {
 			(window as unknown as { restorePwaPut: () => void }).restorePwaPut();
 		});
-		await update.click();
+		await aboutUpdate.click();
 		await expectLoadedBuild(page, b);
 		await enterStudio(page);
 		await equipmentMode(page, 'Outfits');
@@ -1054,11 +1178,17 @@ for (const loading of ['stalled', 'failed'] as const) {
 			const paused = page.getByRole('dialog', { name: 'Update paused', exact: true });
 			await expect(paused.getByRole('alert')).toHaveText(reason);
 			await paused.getByRole('button', { name: 'Close', exact: true }).click();
-			await page.getByRole('button', { name: 'More options', exact: true }).click();
-			await page
+			const more = page.getByRole('button', { name: 'More options', exact: true });
+			const update = page
 				.locator('#experience-options')
-				.getByRole('button', { name: 'Update to v9.3.2', exact: true })
-				.click();
+				.getByRole('button', { name: 'Update to v9.3.2', exact: true });
+			await more.click();
+			await update.press('Enter');
+			await expect(paused.getByRole('alert')).toHaveText(reason);
+			await page.keyboard.press('Escape');
+			await expect(more).toBeFocused();
+			await more.click();
+			await update.click();
 			await expect(paused.getByRole('alert')).toHaveText(reason);
 			const recovery = await openUpdatedApp(
 				page,

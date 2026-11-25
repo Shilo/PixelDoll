@@ -1,0 +1,205 @@
+item, slot, z, frames, paletteColors(walk/south)
+vest_leather, torso_inner, 40, 42, 4
+cape_red, back, 90, 42, 6
+hair_brown, hair, 110, 42, 3
+helmet_steel, head, 130, 42, 4
+hat_wizard, head, 130, 24, 7
+sword_steel, main_hand, 150, 42, 4
+body cells: 42
+
+=== A. item/item coincidence on accepted layers (legit occlusion of the lower-z item) ===
+pair, lower, frames, overlapPxMean, overlapPxMax, shareOfLowerMean, shareOfLowerMax
+vest_leather+cape_red, vest_leather, 30, 60.7, 163, 0.466, 1
+vest_leather+hair_brown, vest_leather, 30, 0.3, 3, 0.004, 0.039
+vest_leather+helmet_steel, vest_leather, 30, 0.7, 5, 0.008, 0.065
+vest_leather+hat_wizard, vest_leather, 24, 0, 0, 0, 0
+vest_leather+sword_steel, vest_leather, 30, 0.1, 3, 0.001, 0.033
+cape_red+hair_brown, cape_red, 30, 2.2, 15, 0.006, 0.042
+cape_red+helmet_steel, cape_red, 30, 2.8, 22, 0.008, 0.056
+cape_red+hat_wizard, cape_red, 24, 0, 0, 0, 0
+cape_red+sword_steel, cape_red, 30, 32.8, 84, 0.098, 0.308
+hair_brown+helmet_steel, hair_brown, 30, 102.9, 135, 0.855, 0.988
+hair_brown+hat_wizard, hair_brown, 24, 63.9, 102, 0.558, 0.895
+hair_brown+sword_steel, hair_brown, 30, 0, 0, 0, 0
+helmet_steel+hat_wizard, helmet_steel, 24, 67, 108, 0.527, 0.817
+helmet_steel+sword_steel, helmet_steel, 30, 0, 0, 0, 0
+hat_wizard+sword_steel, hat_wizard, 16, 0, 0, 0, 0
+
+=== B. body pixels hidden by each item (legit body occlusion) ===
+item, frames, itemPxMean, itemPxOnBodyMean, shareOfItemOnBody, bodyPxMean, shareOfBodyCovered
+vest_leather, 42, 92.0, 87.7, 0.954, 384.4, 0.2282
+cape_red, 42, 278.3, 102.8, 0.369, 384.4, 0.2673
+hair_brown, 42, 87.1, 40.9, 0.470, 384.4, 0.1064
+helmet_steel, 42, 93.7, 49.8, 0.532, 384.4, 0.1296
+hat_wizard, 24, 155.1, 41.2, 0.266, 534.4, 0.0771
+sword_steel, 42, 65.7, 3.1, 0.047, 384.4, 0.0080
+
+=== C. could a union of the two items be split by nearest item palette? ===
+pair, exclusivePx, exclusiveRight, exclusiveAcc, overlapPx, overlapToUpper, tieShare, sharedColorsSouth, palA, palB
+vest_leather+cape_red, 11908, 11908, 1.000, 1821, 1.000, 0.000, 0, 4, 6
+vest_leather+hair_brown, 7503, 7503, 1.000, 9, 1.000, 0.000, 0, 4, 3
+vest_leather+helmet_steel, 7757, 7757, 1.000, 20, 1.000, 0.000, 0, 4, 4
+vest_leather+hat_wizard, 6926, 6926, 1.000, 0, n/a, 0.000, 0, 4, 7
+vest_leather+sword_steel, 6614, 6614, 1.000, 4, 1.000, 0.000, 0, 4, 4
+cape_red+hair_brown, 15215, 15215, 1.000, 65, 1.000, 0.000, 0, 6, 3
+cape_red+helmet_steel, 15453, 15453, 1.000, 84, 1.000, 0.000, 0, 6, 4
+cape_red+hat_wizard, 13439, 13439, 1.000, 0, n/a, 0.000, 0, 6, 7
+cape_red+sword_steel, 12480, 12480, 1.000, 983, 1.000, 0.000, 0, 6, 4
+hair_brown+helmet_steel, 1416, 1416, 1.000, 3088, 1.000, 0.000, 0, 3, 4
+hair_brown+hat_wizard, 3787, 3787, 1.000, 1534, 1.000, 0.000, 0, 3, 7
+hair_brown+sword_steel, 6417, 6417, 1.000, 0, n/a, 0.000, 0, 3, 4
+helmet_steel+hat_wizard, 3668, 3668, 1.000, 1609, 1.000, 0.000, 0, 4, 7
+helmet_steel+sword_steel, 6693, 6693, 1.000, 0, n/a, 0.000, 0, 4, 4
+hat_wizard+sword_steel, 5916, 5916, 1.000, 0, n/a, 0.000, 0, 7, 4
+
+=== D. chroma key loss on each accepted item layer (px scoring as key would be removed) ===
+item, key, lostPx, lostShare, nearKeyShare, itemPx
+vest_leather, green, 0, 0.0000, 0.0000, 3863
+vest_leather, magenta, 0, 0.0000, 0.0000, 3863
+vest_leather, blue, 0, 0.0000, 0.0000, 3863
+vest_leather, azure, 0, 0.0000, 0.0000, 3863
+cape_red, green, 0, 0.0000, 0.0000, 11687
+cape_red, magenta, 0, 0.0000, 0.0000, 11687
+cape_red, blue, 0, 0.0000, 0.0000, 11687
+cape_red, azure, 0, 0.0000, 0.0000, 11687
+hair_brown, green, 0, 0.0000, 0.0000, 3658
+hair_brown, magenta, 0, 0.0000, 0.0000, 3658
+hair_brown, blue, 0, 0.0000, 0.0000, 3658
+hair_brown, azure, 0, 0.0000, 0.0000, 3658
+helmet_steel, green, 0, 0.0000, 0.0000, 3934
+helmet_steel, magenta, 0, 0.0000, 0.0000, 3934
+helmet_steel, blue, 0, 0.0000, 0.0000, 3934
+helmet_steel, azure, 0, 0.0000, 0.0000, 3934
+hat_wizard, green, 0, 0.0000, 0.0000, 3722
+hat_wizard, magenta, 0, 0.0000, 0.0000, 3722
+hat_wizard, blue, 3373, 0.9062, 0.0000, 3722
+hat_wizard, azure, 3373, 0.9062, 0.0000, 3722
+sword_steel, green, 0, 0.0000, 0.0000, 2759
+sword_steel, magenta, 0, 0.0000, 0.0000, 2759
+sword_steel, blue, 0, 0.0000, 0.0000, 2759
+sword_steel, azure, 0, 0.0000, 0.1240, 2759
+
+=== E. single-key feasibility for a pair on one mannequin ===
+pair, key, lostA, lostB, ok
+vest_leather+cape_red, green, 0, 0, true
+vest_leather+cape_red, magenta, 0, 0, true
+vest_leather+cape_red, blue, 0, 0, true
+vest_leather+cape_red, azure, 0, 0, true
+vest_leather+hair_brown, green, 0, 0, true
+vest_leather+hair_brown, magenta, 0, 0, true
+vest_leather+hair_brown, blue, 0, 0, true
+vest_leather+hair_brown, azure, 0, 0, true
+vest_leather+helmet_steel, green, 0, 0, true
+vest_leather+helmet_steel, magenta, 0, 0, true
+vest_leather+helmet_steel, blue, 0, 0, true
+vest_leather+helmet_steel, azure, 0, 0, true
+vest_leather+hat_wizard, green, 0, 0, true
+vest_leather+hat_wizard, magenta, 0, 0, true
+vest_leather+hat_wizard, blue, 0, 3373, false
+vest_leather+hat_wizard, azure, 0, 3373, false
+vest_leather+sword_steel, green, 0, 0, true
+vest_leather+sword_steel, magenta, 0, 0, true
+vest_leather+sword_steel, blue, 0, 0, true
+vest_leather+sword_steel, azure, 0, 0, true
+cape_red+hair_brown, green, 0, 0, true
+cape_red+hair_brown, magenta, 0, 0, true
+cape_red+hair_brown, blue, 0, 0, true
+cape_red+hair_brown, azure, 0, 0, true
+cape_red+helmet_steel, green, 0, 0, true
+cape_red+helmet_steel, magenta, 0, 0, true
+cape_red+helmet_steel, blue, 0, 0, true
+cape_red+helmet_steel, azure, 0, 0, true
+cape_red+hat_wizard, green, 0, 0, true
+cape_red+hat_wizard, magenta, 0, 0, true
+cape_red+hat_wizard, blue, 0, 3373, false
+cape_red+hat_wizard, azure, 0, 3373, false
+cape_red+sword_steel, green, 0, 0, true
+cape_red+sword_steel, magenta, 0, 0, true
+cape_red+sword_steel, blue, 0, 0, true
+cape_red+sword_steel, azure, 0, 0, true
+hair_brown+helmet_steel, green, 0, 0, true
+hair_brown+helmet_steel, magenta, 0, 0, true
+hair_brown+helmet_steel, blue, 0, 0, true
+hair_brown+helmet_steel, azure, 0, 0, true
+hair_brown+hat_wizard, green, 0, 0, true
+hair_brown+hat_wizard, magenta, 0, 0, true
+hair_brown+hat_wizard, blue, 0, 3373, false
+hair_brown+hat_wizard, azure, 0, 3373, false
+hair_brown+sword_steel, green, 0, 0, true
+hair_brown+sword_steel, magenta, 0, 0, true
+hair_brown+sword_steel, blue, 0, 0, true
+hair_brown+sword_steel, azure, 0, 0, true
+helmet_steel+hat_wizard, green, 0, 0, true
+helmet_steel+hat_wizard, magenta, 0, 0, true
+helmet_steel+hat_wizard, blue, 0, 3373, false
+helmet_steel+hat_wizard, azure, 0, 3373, false
+helmet_steel+sword_steel, green, 0, 0, true
+helmet_steel+sword_steel, magenta, 0, 0, true
+helmet_steel+sword_steel, blue, 0, 0, true
+helmet_steel+sword_steel, azure, 0, 0, true
+hat_wizard+sword_steel, green, 0, 0, true
+hat_wizard+sword_steel, magenta, 0, 0, true
+hat_wizard+sword_steel, blue, 3373, 0, false
+hat_wizard+sword_steel, azure, 3373, 0, false
+
+=== F. union connectivity (would a component rule merge the two items?) ===
+pair, frames, unionComponentsMean, framesWithOneComponent, maxComponents
+vest_leather+cape_red, 30, 2.77, 16, 12
+vest_leather+hair_brown, 30, 1.60, 12, 2
+vest_leather+helmet_steel, 30, 1.07, 28, 2
+vest_leather+hat_wizard, 24, 1.67, 8, 2
+vest_leather+sword_steel, 30, 2.17, 0, 3
+cape_red+hair_brown, 30, 3.60, 10, 11
+cape_red+helmet_steel, 30, 2.93, 15, 10
+cape_red+hat_wizard, 24, 3.00, 8, 7
+cape_red+sword_steel, 30, 3.83, 8, 14
+hair_brown+helmet_steel, 30, 1.00, 30, 1
+hair_brown+hat_wizard, 24, 1.00, 24, 1
+hair_brown+sword_steel, 30, 2.37, 0, 4
+helmet_steel+hat_wizard, 24, 1.00, 24, 1
+helmet_steel+sword_steel, 30, 2.37, 0, 4
+hat_wizard+sword_steel, 24, 1.96, 8, 3
+
+=== G. how far apart are the two palettes? (misassignment margin on exclusive pixels) ===
+pair, minPaletteDist, exclusivePx, margin<=8, margin<=16, margin<=24
+vest_leather+cape_red, 16, 11908, 0.000, 0.040, 0.245
+vest_leather+hair_brown, 10, 7503, 0.000, 0.463, 0.796
+vest_leather+helmet_steel, 20, 7757, 0.000, 0.000, 0.322
+vest_leather+hat_wizard, 21, 6926, 0.000, 0.000, 0.116
+vest_leather+sword_steel, 24, 6614, 0.000, 0.000, 0.166
+cape_red+hair_brown, 8, 15215, 0.108, 0.250, 0.317
+cape_red+helmet_steel, 21, 15453, 0.000, 0.000, 0.165
+cape_red+hat_wizard, 33, 13439, 0.000, 0.000, 0.000
+cape_red+sword_steel, 26, 12480, 0.000, 0.000, 0.000
+hair_brown+helmet_steel, 14, 1416, 0.000, 0.379, 0.685
+hair_brown+hat_wizard, 28, 3787, 0.000, 0.000, 0.000
+hair_brown+sword_steel, 14, 6417, 0.000, 0.173, 0.421
+helmet_steel+hat_wizard, 12, 3668, 0.000, 0.029, 0.337
+helmet_steel+sword_steel, 13, 6693, 0.000, 0.587, 0.748
+hat_wizard+sword_steel, 9, 5916, 0.000, 0.444, 0.444
+
+=== H. item/item boundary length (pixels where a wrong overlap order is visible) ===
+pair, frames, boundaryPxMean, boundaryPxMax, overlapPxMean
+vest_leather+cape_red, 30, 428.2, 518, 60.7
+vest_leather+hair_brown, 30, 250.4, 327, 0.3
+vest_leather+helmet_steel, 30, 259.2, 305, 0.7
+vest_leather+hat_wizard, 24, 288.6, 415, 0.0
+vest_leather+sword_steel, 30, 220.6, 268, 0.1
+cape_red+hair_brown, 30, 509.3, 772, 2.2
+cape_red+helmet_steel, 30, 517.9, 753, 2.8
+cape_red+hat_wizard, 24, 560.0, 622, 0.0
+cape_red+sword_steel, 30, 443.7, 673, 32.8
+hair_brown+helmet_steel, 30, 96.6, 118, 102.9
+hair_brown+hat_wizard, 24, 195.1, 222, 63.9
+hair_brown+sword_steel, 30, 213.9, 264, 0.0
+helmet_steel+hat_wizard, 24, 182.6, 221, 67.0
+helmet_steel+sword_steel, 30, 223.1, 244, 0.0
+hat_wizard+sword_steel, 24, 246.5, 345, 0.0
+
+=== I. body pixels claimed by 0, 1 or 2+ items in a frame (legit stacking depth) ===
+set, frames, bodyPx, bare, one, twoPlus, twoPlusShare
+hair_brown+helmet_steel, 42, 16144, 334.1, 9.8, 40.5, 0.105
+vest_leather+cape_red, 42, 16144, 234.6, 109.1, 40.7, 0.106
+vest_leather+hair_brown+cape_red, 42, 16144, 194.8, 147.8, 41.7, 0.109
+helmet_steel+vest_leather+cape_red, 42, 16144, 186.4, 156.0, 41.9, 0.109
+vest_leather+cape_red+hair_brown+helmet_steel+sword_steel, 42, 16144, 183.2, 119.7, 81.5, 0.212

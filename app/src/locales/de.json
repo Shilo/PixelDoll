@@ -3073,7 +3073,13 @@
 		"description": "Kleide deine 2D-Spielfiguren mit pixelgenauen Papierpuppen-Ebenen ein. Erstelle austauschbare, an den Einzelbildern ausgerichtete Ausrüstungsebenen und exportiere sie in jede Spiel-Engine.",
 		"viewCommit": "Commit ansehen",
 		"copyDetails": "Details kopieren",
-		"copyFailed": "App-Details konnten nicht kopiert werden."
+		"copyFailed": "App-Details konnten nicht kopiert werden.",
+		"checkForUpdates": "Nach Updates suchen",
+		"checkingForUpdates": "Suche nach Updates...",
+		"upToDate": "Du bist auf dem neuesten Stand.",
+		"preparingUpdate": "Version {version} wird vorbereitet...",
+		"updateStuck": "Das Update ist noch nicht bereit.",
+		"updateFailed": "Die Suche nach Updates ist fehlgeschlagen."
 	},
 	"repairReview": {
 		"finishFirst": "Öffne zuerst die Bewegungen und entscheide, ob du die fertige Reparatur verwenden möchtest.",
@@ -3533,8 +3539,7 @@
 		"walkWhileAttacking": "Beim Angriff weiterlaufen",
 		"layeringHelp": "Gehen und Angriff müssen in dieselbe Richtung zeigen, die Beine brauchen Grafiken für beide Bewegungen und der Übergang an der Taille muss passen. Sonst läuft der normale Ganzkörperangriff.",
 		"waist": "Taille",
-		"automaticWaist": "Automatisch",
-		"waistHelp": "Verschiebt den Übergang um bis zu 4 Pixel nach oben oder unten. Automatisch verwendet die Hüftposition jedes Einzelbilds.",
+		"waistHelp": "Verschiebt die Linie, an der die laufenden Beine auf den angreifenden Oberkörper treffen. Positive Werte verschieben sie nach unten, negative nach oben, um bis zu 4 Pixel. Auto verwendet die in jedem Einzelbild verfolgten Hüften.",
 		"raiseWaist": "Taille anheben",
 		"lowerWaist": "Taille absenken",
 		"automaticStill": "Automatisch: steht still",

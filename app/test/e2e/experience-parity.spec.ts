@@ -4677,9 +4677,63 @@ test.describe('live views actions', () => {
 		await page.keyboard.press('Control+,');
 		const settings = page.getByRole('dialog', { name: 'Settings' });
 		await settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		expect(
+			await settings
+				.locator('[data-setting^="live-"]')
+				.evaluateAll((rows) => rows.map((row) => row.getAttribute('data-setting')))
+		).toEqual([
+			'live-idle',
+			'live-walk',
+			'live-run',
+			'live-jump',
+			'live-attack',
+			'live-waist',
+			'live-attackUp',
+			'live-attackDown'
+		]);
 		const toggle = settings.getByRole('switch', { name: 'Walk while attacking' });
 		await expect(toggle).toBeChecked();
-		await expect(settings.getByRole('spinbutton', { name: /Waist/ })).toHaveValue('0');
+		const waist = settings.locator('[data-setting="live-waist"]');
+		const waistInput = waist.getByRole('spinbutton', { name: /Waist/ });
+		const auto = waist.getByRole('button', { name: 'Auto', exact: true });
+		const stepper = waist.locator('.stepper');
+		const controls = waist.locator('.layering-controls');
+		const label = waist.getByText('Waist', { exact: true });
+		await expect(waistInput).toHaveValue('0');
+		await expect(auto).toHaveAttribute('aria-pressed', 'true');
+		const initialLabel = (await label.boundingBox())!;
+		const initialControls = (await controls.boundingBox())!;
+		const initialAuto = (await auto.boundingBox())!;
+		const initialStepper = (await stepper.boundingBox())!;
+		expect(initialControls.y).toBeGreaterThanOrEqual(initialLabel.y + initialLabel.height);
+		expect(Math.abs(initialAuto.height - initialStepper.height)).toBeLessThan(1);
+		await waist.getByRole('button', { name: 'Lower waist', exact: true }).click();
+		await expect(waistInput).toHaveValue('1');
+		await expect(auto).toHaveAttribute('aria-pressed', 'false');
+		await waist.getByRole('button', { name: 'Raise waist', exact: true }).click();
+		await expect(waistInput).toHaveValue('0');
+		await expect(auto).toHaveAttribute('aria-pressed', 'true');
+		const start = (await waistInput.boundingBox())!;
+		await waistInput.fill('2');
+		await expect(auto).toHaveAttribute('aria-pressed', 'false');
+		await expect(waistInput).toHaveValue('2');
+		const moved = (await waistInput.boundingBox())!;
+		const movedLabel = (await label.boundingBox())!;
+		const movedAuto = (await auto.boundingBox())!;
+		expect(moved.x).toBe(start.x);
+		expect(moved.width).toBe(start.width);
+		expect(movedLabel.x).toBe(initialLabel.x);
+		expect(movedAuto.x).toBe(initialAuto.x);
+		expect(Math.abs(movedAuto.height - initialStepper.height)).toBeLessThan(1);
+		const stored = () =>
+			page.evaluate(() => JSON.parse(localStorage.getItem('pixeldoll.liveViews')!));
+		expect(await stored()).toMatchObject({
+			layering: { 'fixture:s2': { on: true, waist: 2 } }
+		});
+		await auto.click();
+		await expect(waistInput).toHaveValue('0');
+		await expect(auto).toHaveAttribute('aria-pressed', 'true');
+		expect((await stored()).layering?.['fixture:s2']).toBeUndefined();
 		await toggle.uncheck();
 		await expect(settings.getByRole('spinbutton', { name: /Waist/ })).toHaveCount(0);
 		await page.keyboard.press('Escape');
